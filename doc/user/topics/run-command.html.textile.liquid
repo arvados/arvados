@@ -110,7 +110,7 @@ The "index" list item function extracts a single item from a list.  The "index" 
 
 <pre>
 "script_parameters": {
-  "command": ["echo", {"list": "a", index: 1, "command": ["--something", "$(a)"]}],
+  "command": ["echo", {"list": "a", "index": 1, "command": ["--something", "$(a)"]}],
   "a": ["alice", "bob"]
 }
 </pre>
@@ -121,7 +121,7 @@ Filter the list so that it only includes items that match a regular expression. 
 
 <pre>
 "script_parameters": {
-  "command": ["echo", {"filter": "a", regex: "b.*"]}],
+  "command": ["echo", {"filter": "a", "regex": "b.*"}],
   "a": ["alice", "bob"]
 }
 </pre>
@@ -132,8 +132,9 @@ Generate a list of lists, where items are grouped on common subexpression match.
 
 <pre>
 "script_parameters": {
-  "command": ["echo", {"foreach": {"group": "a", regex: ".*(a?).*"]}, "command":["--group", {"foreach": "a", "command":"$(a)"}]],
-  "a": ["alice", "bob", "carol", "dave"]
+  "command": ["echo", {"foreach": "b", "command":["--group", {"foreach": "b", "command":"$(b)"}]}],
+  "a": ["alice", "bob", "carol", "dave"],
+  "b": {"group": "a", "regex": "[^a]*(a?).*"}
 }
 </pre>
 
@@ -143,8 +144,9 @@ Generate a list of lists, where items are split by subexpression match.  Items w
 
 <pre>
 "script_parameters": {
-  "command": ["echo", {"foreach": {"extract": "a", regex: "(.+)(a)(.*)"]}, "command":[{"foreach": "a", "command":"$(a)"}]],
-  "a": ["alice", "bob", "carol", "dave"]
+  "command": ["echo", {"foreach": "b", "command":[{"foreach": "b", "command":"$(b)"}]}],
+  "a": ["alice", "bob", "carol", "dave"],
+  "b": {"extract": "a", "regex": "(.+)(a)(.*)"}
 }
 </pre>
 
@@ -212,9 +214,3 @@ This evaluates to the commands:
 ["echo", "bob", "carol"]
 ["echo", "bob", "dave"]
 </pre>
-
-h1. Examples
-
-<notextile>{% code 'run_command_simple_example' as javascript %}</notextile>
-
-<notextile>{% code 'run_command_foreach_example' as javascript %}</notextile>

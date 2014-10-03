@@ -25,25 +25,39 @@ import pprint
 import multiprocessing
 import crunchutil.robust_put as robust_put
 import crunchutil.vwd as vwd
+import argparse
+import json
+import tempfile
+
+parser = argparse.ArgumentParser()
+parser.add_argument('--dry-run', action='store_true')
+parser.add_argument('--job-parameters', type=str, default="{}")
+args = parser.parse_args()
 
 os.umask(0077)
 
-t = arvados.current_task().tmpdir
+if not args.dry_run:
+    api = arvados.api('v1')
+    t = arvados.current_task().tmpdir
+    os.chdir(arvados.current_task().tmpdir)
+    os.mkdir("tmpdir")
+    os.mkdir("output")
 
-api = arvados.api('v1')
+    os.chdir("output")
 
-os.chdir(arvados.current_task().tmpdir)
-os.mkdir("tmpdir")
-os.mkdir("output")
+    outdir = os.getcwd()
 
-os.chdir("output")
-
-outdir = os.getcwd()
-
-taskp = None
-jobp = arvados.current_job()['script_parameters']
-if len(arvados.current_task()['parameters']) > 0:
-    taskp = arvados.current_task()['parameters']
+    taskp = None
+    jobp = arvados.current_job()['script_parameters']
+    if len(arvados.current_task()['parameters']) > 0:
+        taskp = arvados.current_task()['parameters']
+else:
+    outdir = "/tmp"
+    jobp = json.loads(args.job_parameters)
+    os.environ['JOB_UUID'] = 'zzzzz-8i9sb-1234567890abcde'
+    os.environ['TASK_UUID'] = 'zzzzz-ot0gb-1234567890abcde'
+    os.environ['CRUNCH_SRC'] = '/tmp/crunch-src'
+    os.environ['TASK_KEEPMOUNT'] = '/keep'
 
 links = []
 
@@ -80,6 +94,12 @@ class SigHandler(object):
         sp.send_signal(signum)
         self.sig = signum
 
+def add_to_group(gr, match):
+    m = ('^_^').join(match.groups())
+    if m not in gr:
+        gr[m] = []
+    gr[m].append(match.group(0))
+
 def expand_item(p, c):
     if isinstance(c, dict):
         if "foreach" in c and "command" in c:
@@ -97,26 +117,26 @@ def expand_item(p, c):
             params = copy.copy(p)
             params[var] = items[int(c["index"])]
             return expand_list(params, c["command"])
-        if "regex" in value:
-            pattern = re.compile(value["regex"])
-            if "filter" in value:
-                items = get_items(p, value["filter"])
+        if "regex" in c:
+            pattern = re.compile(c["regex"])
+            if "filter" in c:
+                items = get_items(p, p[c["filter"]])
                 return [i for i in items if pattern.match(i)]
-            elif "group" in value:
-                items = get_items(p, value["group"])
+            elif "group" in c:
+                items = get_items(p, p[c["group"]])
                 groups = {}
                 for i in items:
                     p = pattern.match(i)
                     if p:
                         add_to_group(groups, p)
                 return [groups[k] for k in groups]
-            elif "extract" in value:
-                items = get_items(p, value["extract"])
+            elif "extract" in c:
+                items = get_items(p, p[c["extract"]])
                 r = []
                 for i in items:
                     p = pattern.match(i)
                     if p:
-                        r.append(p.groups())
+                        r.append(list(p.groups()))
                 return r
     elif isinstance(c, list):
         return expand_list(p, c)
@@ -131,15 +151,9 @@ def expand_list(p, l):
     else:
         return [exp for arg in l for exp in expand_item(p, arg)]
 
-def add_to_group(gr, match):
-    m = ('^_^').join(match.groups())
-    if m not in gr:
-        gr[m] = []
-    gr[m].append(match.group(0))
-
 def get_items(p, value):
     if isinstance(value, dict):
-        return expand_list(p, value)
+        return expand_item(p, value)
 
     if isinstance(value, list):
         return expand_list(p, value)
@@ -175,20 +189,22 @@ def recursive_foreach(params, fvars):
             if len(fvars) > 0:
                 recursive_foreach(params, fvars)
             else:
-                arvados.api().job_tasks().create(body={
-                    'job_uuid': arvados.current_job()['uuid'],
-                    'created_by_job_task_uuid': arvados.current_task()['uuid'],
-                    'sequence': 1,
-                    'parameters': params
-                    }
-                ).execute()
+                if not args.dry_run:
+                    arvados.api().job_tasks().create(body={
+                        'job_uuid': arvados.current_job()['uuid'],
+                        'created_by_job_task_uuid': arvados.current_task()['uuid'],
+                        'sequence': 1,
+                        'parameters': params
+                    }).execute()
+                else:
+                    logger.info(expand_list(params, params["command"]))
     else:
         logger.error("parameter %s with value %s in task.foreach yielded no items" % (var, params[var]))
         sys.exit(1)
 
 try:
     if "task.foreach" in jobp:
-        if arvados.current_task()['sequence'] == 0:
+        if args.dry_run or arvados.current_task()['sequence'] == 0:
             # This is the first task to start the other tasks and exit
             fvars = jobp["task.foreach"]
             if isinstance(fvars, basestring):
@@ -197,36 +213,42 @@ try:
                 logger.error("value of task.foreach must be a string or non-empty list")
                 sys.exit(1)
             recursive_foreach(jobp, jobp["task.foreach"])
-            if "task.vwd" in jobp:
-                # Set output of the first task to the base vwd collection so it
-                # will be merged with output fragments from the other tasks by
-                # crunch.
-                arvados.current_task().set_output(subst.do_substitution(jobp, jobp["task.vwd"]))
-            else:
-                arvados.current_task().set_output(None)
+            if not args.dry_run:
+                if "task.vwd" in jobp:
+                    # Set output of the first task to the base vwd collection so it
+                    # will be merged with output fragments from the other tasks by
+                    # crunch.
+                    arvados.current_task().set_output(subst.do_substitution(jobp, jobp["task.vwd"]))
+                else:
+                    arvados.current_task().set_output(None)
             sys.exit(0)
     else:
         # This is the only task so taskp/jobp are the same
         taskp = jobp
 
-    if "task.vwd" in taskp:
-        # Populate output directory with symlinks to files in collection
-        vwd.checkout(subst.do_substitution(taskp, taskp["task.vwd"]), outdir)
+    if not args.dry_run:
+        if "task.vwd" in taskp:
+            # Populate output directory with symlinks to files in collection
+            vwd.checkout(subst.do_substitution(taskp, taskp["task.vwd"]), outdir)
 
-    if "task.cwd" in taskp:
-        os.chdir(subst.do_substitution(taskp, taskp["task.cwd"]))
+        if "task.cwd" in taskp:
+            os.chdir(subst.do_substitution(taskp, taskp["task.cwd"]))
 
     cmd = expand_list(taskp, taskp["command"])
 
-    if "task.stdin" in taskp:
-        stdinname = subst.do_substitution(taskp, taskp["task.stdin"])
-        stdinfile = open(stdinname, "rb")
+    if not args.dry_run:
+        if "task.stdin" in taskp:
+            stdinname = subst.do_substitution(taskp, taskp["task.stdin"])
+            stdinfile = open(stdinname, "rb")
 
-    if "task.stdout" in taskp:
-        stdoutname = subst.do_substitution(taskp, taskp["task.stdout"])
-        stdoutfile = open(stdoutname, "wb")
+        if "task.stdout" in taskp:
+            stdoutname = subst.do_substitution(taskp, taskp["task.stdout"])
+            stdoutfile = open(stdoutname, "wb")
 
     logger.info("{}{}{}".format(' '.join(cmd), (" < " + stdinname) if stdinname is not None else "", (" > " + stdoutname) if stdoutname is not None else ""))
+
+    if args.dry_run:
+        sys.exit(0)
 except subst.SubstitutionError as e:
     logger.error(str(e))
     logger.error("task parameters were:")
