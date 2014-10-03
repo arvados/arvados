@@ -83,7 +83,7 @@ use IPC::Open2;
 use IO::Select;
 use File::Temp;
 use Fcntl ':flock';
-use File::Path qw( make_path );
+use File::Path qw( make_path remove_tree );
 
 use constant EX_TEMPFAIL => 75;
 
@@ -353,137 +353,195 @@ if (!$have_slurm)
 
 
 my $build_script;
+do {
+  local $/ = undef;
+  $build_script = <DATA>;
+};
+my $nodelist = join(",", @node);
 
+if (!defined $no_clear_tmp) {
+  # Clean out crunch_tmp/work, crunch_tmp/opt, crunch_tmp/src*
+  Log (undef, "Clean work dirs");
 
-$ENV{"CRUNCH_SRC_COMMIT"} = $Job->{script_version};
-
-my $skip_install = ($local_job && $Job->{script_version} =~ m{^/});
-if ($skip_install)
-{
-  if (!defined $no_clear_tmp) {
-    my $clear_tmp_cmd = 'rm -rf $JOB_WORK $CRUNCH_TMP/opt $CRUNCH_TMP/src*';
-    system($clear_tmp_cmd) == 0
-	or croak ("`$clear_tmp_cmd` failed: ".($?>>8));
+  my $cleanpid = fork();
+  if ($cleanpid == 0)
+  {
+    srun (["srun", "--nodelist=$nodelist", "-D", $ENV{'TMPDIR'}],
+          ['bash', '-c', 'if mount | grep -q $JOB_WORK/; then for i in $JOB_WORK/*keep; do /bin/fusermount -z -u $i; done; fi; sleep 1; rm -rf $JOB_WORK $CRUNCH_TMP/opt $CRUNCH_TMP/src*']);
+    exit (1);
   }
-  $ENV{"CRUNCH_SRC"} = $Job->{script_version};
-  for my $src_path ("$ENV{CRUNCH_SRC}/arvados/sdk/python") {
-    if (-d $src_path) {
-      system("virtualenv", "$ENV{CRUNCH_TMP}/opt") == 0
-          or croak ("virtualenv $ENV{CRUNCH_TMP}/opt failed: exit ".($?>>8));
-      system ("cd $src_path && ./build.sh && \$CRUNCH_TMP/opt/bin/python setup.py install")
-          == 0
-          or croak ("setup.py in $src_path failed: exit ".($?>>8));
-    }
+  while (1)
+  {
+    last if $cleanpid == waitpid (-1, WNOHANG);
+    freeze_if_want_freeze ($cleanpid);
+    select (undef, undef, undef, 0.1);
   }
+  Log (undef, "Cleanup command exited $?");
 }
-else
-{
-  do {
-    local $/ = undef;
-    $build_script = <DATA>;
-  };
-  Log (undef, "Install revision ".$Job->{script_version});
-  my $nodelist = join(",", @node);
 
-  if (!defined $no_clear_tmp) {
-    # Clean out crunch_tmp/work, crunch_tmp/opt, crunch_tmp/src*
 
-    my $cleanpid = fork();
-    if ($cleanpid == 0)
-    {
-      srun (["srun", "--nodelist=$nodelist", "-D", $ENV{'TMPDIR'}],
-	    ['bash', '-c', 'if mount | grep -q $JOB_WORK/; then for i in $JOB_WORK/*keep; do /bin/fusermount -z -u $i; done; fi; sleep 1; rm -rf $JOB_WORK $CRUNCH_TMP/opt $CRUNCH_TMP/src*']);
-      exit (1);
-    }
-    while (1)
-    {
-      last if $cleanpid == waitpid (-1, WNOHANG);
-      freeze_if_want_freeze ($cleanpid);
-      select (undef, undef, undef, 0.1);
-    }
-    Log (undef, "Clean-work-dir exited $?");
-  }
-
-  # Install requested code version
-
-  my @execargs;
-  my @srunargs = ("srun",
-		  "--nodelist=$nodelist",
-		  "-D", $ENV{'TMPDIR'}, "--job-name=$job_id");
-
-  $ENV{"CRUNCH_SRC_COMMIT"} = $Job->{script_version};
+my $git_archive;
+if (!defined $git_dir && $Job->{'script_version'} =~ m{^/}) {
+  # If we're in user-land (i.e., not called from crunch-dispatch)
+  # script_version can be an absolute directory path, signifying we
+  # should work straight out of that directory instead of using a git
+  # commit.
+  $ENV{"CRUNCH_SRC_COMMIT"} = $Job->{'script_version'};
+  $ENV{"CRUNCH_SRC"} = $Job->{'script_version'};
+}
+else {
   $ENV{"CRUNCH_SRC"} = "$ENV{CRUNCH_TMP}/src";
 
-  my $commit;
-  my $git_archive;
-  my $treeish = $Job->{'script_version'};
+  # Install requested code version
+  Log (undef, "Looking for version ".$Job->{script_version}." from repository ".$Job->{repository});
 
-  # If we're running under crunch-dispatch, it will have pulled the
-  # appropriate source tree into its own repository, and given us that
-  # repo's path as $git_dir. If we're running a "local" job, and a
-  # script_version was specified, it's up to the user to provide the
-  # full path to a local repository in Job->{repository}.
-  #
-  # TODO: Accept URLs too, not just local paths. Use git-ls-remote and
-  # git-archive --remote where appropriate.
-  #
-  # TODO: Accept a locally-hosted Arvados repository by name or
-  # UUID. Use arvados.v1.repositories.list or .get to figure out the
-  # appropriate fetch-url.
-  my $repo = $git_dir || $ENV{'CRUNCH_DEFAULT_GIT_DIR'} || $Job->{'repository'};
+  $ENV{"CRUNCH_SRC_COMMIT"} = $Job->{script_version};
 
+  # If we're running under crunch-dispatch, it will have already
+  # pulled the appropriate source tree into its own repository, and
+  # given us that repo's path as $git_dir.
+  #
+  # If we're running a "local" job, we might have to fetch content
+  # from a remote repository.
+  #
+  # (Currently crunch-dispatch gives a local path with --git-dir, but
+  # we might as well accept URLs there too in case it changes its
+  # mind.)
+  my $repo = $git_dir || $Job->{'repository'};
+
+  # Repository can be remote or local. If remote, we'll need to fetch it
+  # to a local dir before doing `git log` et al.
+  my $repo_location;
+
+  if ($repo =~ m{://|\@.*:}) {
+    # $repo is a git url we can clone, like git:// or https:// or
+    # file:/// or git@host:repo.git
+    $repo_location = 'remote';
+  } elsif ($repo =~ m{^\.*/}) {
+    # $repo is a local path to a git index. We'll also resolve ../foo
+    # to ../foo/.git if the latter is a directory.
+    if (-d "$repo/.git") {
+      $repo = "$repo/.git";
+    }
+    $repo_location = 'local';
+    Log(undef, "Using local repository '$repo'");
+  } else {
+    # $repo is none of the above. It must be the name of a hosted
+    # repository.
+    my $arv_repo_list = $arv->{'repositories'}->{'list'}->execute(
+      'filters' => [['name','=',$repo]]
+        )->{'items'};
+    my $n_found = scalar @{$arv_repo_list};
+    if ($n_found > 0) {
+      Log(undef, "Repository '$repo' -> "
+          . join(", ", map { $_->{'uuid'} } @{$arv_repo_list}));
+    }
+    if ($n_found != 1) {
+      croak("Error: Found $n_found repositories with name '$repo'.");
+    }
+    $repo = $arv_repo_list->[0]->{'fetch_url'};
+    $repo_location = 'remote';
+  }
+  Log(undef, "Using $repo_location repository '$repo'");
   $ENV{"CRUNCH_SRC_URL"} = $repo;
 
-  if (-d "$repo/.git") {
-    # We were given a working directory, but we are only interested in
-    # the index.
-    $repo = "$repo/.git";
-  }
+  # Resolve given script_version (we'll call that $treeish here) to a
+  # commit sha1 ($commit).
+  my $treeish = $Job->{'script_version'};
+  my $commit;
+  if ($repo_location eq 'remote') {
+    # We minimize excess object-fetching by re-using the same bare
+    # repository in CRUNCH_TMP/.git for multiple crunch-jobs -- we
+    # just keep adding remotes to it as needed.
+    my $local_repo = $ENV{'CRUNCH_TMP'}."/.git";
+    my $gitcmd = "git --git-dir=\Q$local_repo\E";
 
-  # If this looks like a subversion r#, look for it in git-svn commit messages
-
-  if ($treeish =~ m{^\d{1,4}$}) {
-    my $gitlog = `git --git-dir=\Q$repo\E log --pretty="format:%H" --grep="git-svn-id:.*\@"\Q$treeish\E" " master`;
-    chomp $gitlog;
-    Log(undef, "git Subversion search exited $?");
-    if (($? == 0) && ($gitlog =~ /^[a-f0-9]{40}$/)) {
-      $commit = $gitlog;
-      Log(undef, "Using commit $commit for Subversion revision $treeish");
+    # Set up our local repo for caching remote objects, making
+    # archives, etc.
+    if (!-d $local_repo) {
+      make_path($local_repo) or croak("Error: could not create $local_repo");
     }
-  }
+    # This works (exits 0 and doesn't delete fetched objects) even
+    # if $local_repo is already initialized:
+    `$gitcmd init --bare`;
+    if ($?) {
+      croak("Error: $gitcmd init --bare exited $?");
+    }
 
-  # If that didn't work, try asking git to look it up as a tree-ish.
-
-  if (!defined $commit) {
-    my $found = `git --git-dir=\Q$repo\E rev-list -1 ''\Q$treeish\E`;
-    chomp $found;
-    Log(undef, "git rev-list exited $? with result '$found'");
-    if (($? == 0) && ($found =~ /^[0-9a-f]{40}$/s)) {
-      $commit = $found;
-      Log(undef, "Using commit $commit for tree-ish $treeish");
-      if ($commit ne $treeish) {
-	# Make sure we record the real commit id in the database,
-	# frozentokey, logs, etc. -- instead of an abbreviation or a
-	# branch name which can become ambiguous or point to a
-	# different commit in the future.
-        $Job->{'script_version'} = $commit;
-        !$job_has_uuid or
-            $Job->update_attributes('script_version' => $commit) or
-            croak("Error while updating job");
+    # If $treeish looks like a hash (or abbrev hash) we look it up in
+    # our local cache first, since that's cheaper. (We don't want to
+    # do that with tags/branches though -- those change over time, so
+    # they should always be resolved by the remote repo.)
+    if ($treeish =~ /^[0-9a-f]{3,40}$/s) {
+      my $sha1 = `$gitcmd rev-list -n1 ''\Q$treeish\E`;
+      if ($? == 0 &&
+          $sha1 =~ /^$treeish/ && # Don't use commit 123 @ branch abc!
+          $sha1 =~ /^([0-9a-f]{40})$/) {
+        $commit = $1;
+        Log(undef, "Commit $commit already present in $local_repo");
       }
     }
+
+    if (!defined $commit) {
+      # If $treeish isn't just a hash or abbrev hash, or isn't here
+      # yet, we need to fetch the remote to resolve it correctly.
+
+      # First, remove all local heads. This prevents a name that does
+      # not exist on the remote from resolving to (or colliding with)
+      # a previously fetched branch or tag (possibly from a different
+      # remote).
+      remove_tree("$local_repo/refs/heads", {keep_root => 1});
+
+      Log(undef, "Fetching objects from $repo to $local_repo");
+      `$gitcmd fetch --no-progress --tags ''\Q$repo\E \Q+refs/heads/*:refs/heads/*\E`;
+      if ($?) {
+        croak("Error: `$gitcmd fetch` exited $?");
+      }
+    }
+
+    # Now that the data is all here, we will use our local repo for
+    # the rest of our git activities.
+    $repo = $local_repo;
   }
 
-  if (defined $commit) {
-    $ENV{"CRUNCH_SRC_COMMIT"} = $commit;
-    @execargs = ("sh", "-c",
-		 "mkdir -p $ENV{CRUNCH_INSTALL} && cd $ENV{CRUNCH_TMP} && perl -");
-    $git_archive = `git --git-dir=\Q$repo\E archive ''\Q$commit\E`;
-    croak("git archive failed: exit " . ($? >> 8)) if ($? != 0);
+  my $gitcmd = "git --git-dir=\Q$repo\E";
+  my $sha1 = `$gitcmd rev-list -n1 ''\Q$treeish\E`;
+  unless ($? == 0 && $sha1 =~ /^([0-9a-f]{40})$/) {
+    croak("`$gitcmd rev-list` exited $?, '$treeish' not found. Giving up.");
   }
-  else {
-    croak ("could not figure out commit id for $treeish");
+  $commit = $1;
+  Log(undef, "Version $treeish is commit $commit");
+
+  if ($commit ne $Job->{'script_version'}) {
+    # Record the real commit id in the database, frozentokey, logs,
+    # etc. -- instead of an abbreviation or a branch name which can
+    # become ambiguous or point to a different commit in the future.
+    if (!$Job->update_attributes('script_version' => $commit)) {
+      croak("Error: failed to update job's script_version attribute");
+    }
   }
+
+  $ENV{"CRUNCH_SRC_COMMIT"} = $commit;
+  $git_archive = `$gitcmd archive ''\Q$commit\E`;
+  if ($?) {
+    croak("Error: $gitcmd archive exited $?");
+  }
+}
+
+if (!defined $git_archive) {
+  Log(undef, "Skip install phase (no git archive)");
+  if ($have_slurm) {
+    Log(undef, "Warning: This probably means workers have no source tree!");
+  }
+}
+else {
+  Log(undef, "Run install script on all workers");
+
+  my @srunargs = ("srun",
+                  "--nodelist=$nodelist",
+                  "-D", $ENV{'TMPDIR'}, "--job-name=$job_id");
+  my @execargs = ("sh", "-c",
+                  "mkdir -p $ENV{CRUNCH_INSTALL} && cd $ENV{CRUNCH_TMP} && perl -");
 
   # Note: this section is almost certainly unnecessary if we're
   # running tasks in docker containers.
@@ -499,7 +557,7 @@ else
     freeze_if_want_freeze ($installpid);
     select (undef, undef, undef, 0.1);
   }
-  Log (undef, "Install exited $?");
+  Log (undef, "Install script exited $?");
 }
 
 if (!$have_slurm)
