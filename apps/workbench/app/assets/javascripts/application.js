@@ -214,4 +214,26 @@ jQuery(function($){
         $(e.target.href).collapse('toggle');
     });
 
+    $(document).on('click', '.force-cache-reload', function(e) {
+        history.replaceState( { nocache: true }, '' );
+    });
 });
+
+window.addEventListener("DOMContentLoaded", function(e) {
+    if(history.state) {
+        if(history.state.nocache) {
+            console.log('no cache!');
+            showLoadingModal();
+            history.replaceState( {}, '' );
+            location.reload(true);
+        }
+    }
+});
+
+function showLoadingModal() {
+    $('#loading-modal').modal('show');
+}
+
+function hideLoadingModal() {
+    $('#loading-modal').modal('hide');
+}

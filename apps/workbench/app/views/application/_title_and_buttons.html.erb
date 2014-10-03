@@ -42,7 +42,7 @@
              selection_param: 'uuid',
              success: 'redirect-to-created-object'
            }.to_json),
-          { class: "btn btn-sm btn-primary", remote: true, method: 'get' }) do %>
+          { class: "btn btn-sm btn-primary force-cache-reload", remote: true, method: 'get' }) do %>
         <i class="fa fa-fw fa-truck"></i> Move to project...
       <% end %>
     <% end %>
