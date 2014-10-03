@@ -88,7 +88,7 @@ class User < ArvadosModel
                       name: sufficient_perms,
                       tail_uuid: groups_i_can(action) + [self.uuid],
                       head_uuid: target_uuid).any?
-          return true
+          next
         end
       end
       return false
