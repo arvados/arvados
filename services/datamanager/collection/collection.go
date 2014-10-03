@@ -32,7 +32,7 @@ type GetCollectionsParams struct {
 
 func GetCollections(params GetCollectionsParams) (results ReadCollections) {
 	if &params.Client == nil {
-		log.Fatalf("Received params.Client passed to GetCollections() should " +
+		log.Fatalf("params.Client passed to GetCollections() should " +
 			"contain a valid ArvadosClient, but instead it is nil.")
 	}
 

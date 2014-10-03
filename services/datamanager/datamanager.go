@@ -7,6 +7,7 @@ import (
 	"git.curoverse.com/arvados.git/sdk/go/arvadosclient"
 	"git.curoverse.com/arvados.git/sdk/go/util"
 	"git.curoverse.com/arvados.git/services/datamanager/collection"
+	"git.curoverse.com/arvados.git/services/datamanager/keep"
 	"log"
 )
 
@@ -41,21 +42,8 @@ func main() {
 	log.Printf("Read and processed %d collections",
 		len(readCollections.UuidToCollection))
 
-	// TODO(misha): Send SDK and Keep requests in parallel
+	readServers := keep.GetKeepServers(
+		keep.GetKeepServersParams{Client: arv, Limit: 1000})
 
-	keepParams := arvadosclient.Dict{"limit": 1000}
-	var keepDisks map[string]interface{}
-	err = arv.List("keep_disks", keepParams, &keepDisks)
-	if err != nil {
-		log.Fatalf("Error requesting keep disks from API server: %v", err)
-	}
-	var retrievedAll bool
-	var numDisksReturned, numDisksAvailable int
-	if retrievedAll, numDisksReturned, numDisksAvailable =
-		util.SdkListResponseContainsAllAvailableItems(keepDisks); !retrievedAll {
-		log.Fatalf("Failed to retrieve all keep disks. Only received %d of %d",
-			numDisksReturned, numDisksAvailable)
-	}
-
-	log.Printf("Returned %d keep disks", numDisksReturned)
+	log.Printf("Returned %d keep disks", len(readServers.AddressToContents))
 }
