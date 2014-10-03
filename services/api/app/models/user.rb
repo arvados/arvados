@@ -83,7 +83,10 @@ class User < ArvadosModel
                          end
       if sufficient_perms
         # Check permission links with head_uuid pointing directly at
-        # the target object
+        # the target object. If target is a Group, this is redundant
+        # and will fail except [a] if permission caching is broken or
+        # [b] during a race condition, where a permission link has
+        # *just* been added.
         if Link.where(link_class: 'permission',
                       name: sufficient_perms,
                       tail_uuid: groups_i_can(action) + [self.uuid],
