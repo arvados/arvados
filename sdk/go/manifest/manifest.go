@@ -34,7 +34,8 @@ type ManifestLine struct {
 
 func parseBlockLocator(s string) (b BlockLocator, err error) {
 	if !LocatorPattern.MatchString(s) {
-		fmt.Errorf("String \"%s\" does not match BlockLocator pattern \"%s\".",
+		err = fmt.Errorf("String \"%s\" does not match BlockLocator pattern " +
+			"\"%s\".",
 			s,
 			LocatorPattern.String())
 	} else {
