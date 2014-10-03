@@ -70,6 +70,27 @@ class User < ArvadosModel
         next if (group_permissions[target.owner_uuid] and
                  group_permissions[target.owner_uuid][action])
       end
+      sufficient_perms = case action
+                         when :manage
+                           ['can_manage']
+                         when :write
+                           ['can_manage', 'can_write']
+                         when :read
+                           ['can_manage', 'can_write', 'can_read']
+                         else
+                           # (Skip this kind of permission opportunity
+                           # if action is an unknown permission type)
+                         end
+      if sufficient_perms
+        # Check permission links with head_uuid pointing directly at
+        # the target object
+        if Link.where(link_class: 'permission',
+                      name: sufficient_perms,
+                      tail_uuid: groups_i_can(action) + [self.uuid],
+                      head_uuid: target_uuid).any?
+          return true
+        end
+      end
       return false
     end
     true
