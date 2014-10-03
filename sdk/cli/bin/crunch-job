@@ -1298,10 +1298,13 @@ sub collate_output
     if ($s->can_read(120)) {
       sysread($child_out, $joboutput, 64 * 1024 * 1024);
       chomp($joboutput);
+      # TODO: Ensure exit status == 0.
     } else {
       Log (undef, "timed out reading from 'arv-put'");
     }
   }
+  # TODO: kill $pid instead of waiting, now that we've decided to
+  # ignore further output.
   waitpid($pid, 0);
 
   return $joboutput;
