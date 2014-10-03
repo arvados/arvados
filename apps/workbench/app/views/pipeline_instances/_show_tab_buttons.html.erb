@@ -1,7 +1,8 @@
   <% if @object.state.in? ['Complete', 'Failed', 'Cancelled', 'Paused'] %>
 
   <%= link_to(copy_pipeline_instance_path('id' => @object.uuid, 'script' => "use_latest", "components" => "use_latest", "pipeline_instance[state]" => "RunningOnServer"),
-      class: 'btn btn-primary', title: 'Re-run with latest options',
+      class: 'btn btn-primary',
+      title: 'Re-run with latest options',
       #data: {toggle: :tooltip, placement: :top}, title: 'Re-run',
       method: :post,
       ) do %>

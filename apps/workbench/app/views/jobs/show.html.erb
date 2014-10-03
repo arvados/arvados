@@ -11,8 +11,9 @@
       <% [:script_parameters, :runtime_constraints].each do |d| %>
         <%= hidden_field :job, d, :value => JSON.dump(@object[d]) %>
       <% end %>
-      <%= button_tag ({class: 'btn btn-sm btn-primary', id: "re-run-same-job-button", title: 'Re-run job using the same script version as this run'}) do %>
-        <i class="fa fa-gear"></i> Re-run same version
+      <%= button_tag ({class: 'btn btn-sm btn-primary', id: "re-run-same-job-button",
+                       title: 'Re-run job using the same script version as this run'}) do %>
+        <i class="fa fa-fw fa-gear"></i> Re-run same version
       <% end %>
     <% end %>
   <% if @object.respond_to? :supplied_script_version and !@object.supplied_script_version.nil? and !@object.supplied_script_version.empty? and @object.script_version != @object.supplied_script_version%>
@@ -24,8 +25,9 @@
       <% [:script_parameters, :runtime_constraints].each do |d| %>
         <%= hidden_field :job, d, :value => JSON.dump(@object[d]) %>
       <% end %>
-      <%= button_tag ({class: 'btn btn-sm btn-primary', id: "re-run-latest-job-button", title: 'Re-run job using the latest script version'}) do%>
-        <i class="fa fa-gear"></i> Re-run latest version
+      <%= button_tag ({class: 'btn btn-sm btn-primary', id: "re-run-latest-job-button",
+                       title: 'Re-run job using the latest script version'}) do%>
+        <i class="fa fa-fw fa-gear"></i> Re-run latest version
       <% end %>
     <% end %>
   <% end %>
