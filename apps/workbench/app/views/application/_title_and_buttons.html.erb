@@ -1,3 +1,4 @@
+<% object_class = @object.class_for_display.downcase %>
 <% content_for :page_title do %>
   <%= (@object.respond_to?(:properties) and !@object.properties.nil? ? @object.properties[:page_title] : nil) ||
       @name_link.andand.name ||
@@ -15,7 +16,7 @@
     <% if @object.class.copies_to_projects? %>
       <%= link_to(
           choose_projects_path(
-           title: 'Copy to project...',
+           title: "Copy this #{object_class} to:",
            action_name: 'Copy',
            action_href: actions_path,
            action_method: 'post',
@@ -25,14 +26,14 @@
              selection_param: 'uuid',
              success: 'redirect-to-created-object'
            }.to_json),
-          { class: "btn btn-sm btn-primary", remote: true, method: 'get' }) do %>
+          { class: "btn btn-sm btn-primary", remote: true, method: 'get', title: "Copy this #{object_class} to a different project" }) do %>
         <i class="fa fa-fw fa-copy"></i> Copy to project...
       <% end %>
     <% end %>
     <% if @object.owner_uuid == current_user.uuid or (Group.find(@object.owner_uuid).writable_by.include?(current_user.uuid) rescue nil) %>
       <%= link_to(
           choose_projects_path(
-           title: 'Move to project...',
+           title: "Move this #{object_class} to:",
            action_name: 'Move',
            action_href: actions_path,
            action_method: 'post',
@@ -42,10 +43,9 @@
              selection_param: 'uuid',
              success: 'redirect-to-created-object'
            }.to_json),
-          { class: "btn btn-sm btn-primary", remote: true, method: 'get' }) do %>
-        <i class="fa fa-fw fa-truck"></i> Move to project...
+          { class: "btn btn-sm btn-primary", remote: true, method: 'get', title: "Move this #{object_class} to a different project"}) do %>
+        <i class="fa fa-fw fa-truck"></i> Move...
       <% end %>
     <% end %>
   <% end %>
 <% end %>
-
