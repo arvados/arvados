@@ -25,6 +25,17 @@ fi
 source /etc/profile.d/rvm.sh
 echo $WORKSPACE
 
+# Make all files world-readable -- jenkins runs with umask 027, and has checked
+# out our git tree here
+chmod o+r "$WORKSPACE" -R
+
+# Now fix our umask to something better suited to building and publishing
+# gems and packages
+umask 0022
+
+echo "umask is"
+umask
+
 # Build arvados GEM
 echo "Build and publish ruby gem"
 cd "$WORKSPACE"
@@ -127,7 +138,6 @@ build_and_scp_deb () {
       if [[ "$FPM_EXIT_CODE" != "0" ]]; then
         echo "Error building debian package for $1:\n $FPM_RESULTS"
       else
-        chmod 644 $FPM_PACKAGE_NAME
         scp -P2222 $FPM_PACKAGE_NAME $APTUSER@$APTSERVER:tmp/
         CALL_FREIGHT=1
       fi
@@ -147,15 +157,15 @@ if [[ ! -d "$WORKSPACE/src-build-dir" ]]; then
   mkdir "$WORKSPACE/src-build-dir"
   cd "$WORKSPACE"
   git clone https://github.com/curoverse/arvados.git src-build-dir
-fi  
+fi
 
 cd "$WORKSPACE/src-build-dir"
 # just in case, check out master
 git checkout master
 git pull
+
 # go into detached-head state
 git checkout `git log --format=format:%h -n1 .`
-cd $WORKSPACE
 
 cd $WORKSPACE/debs
 build_and_scp_deb $WORKSPACE/src-build-dir/=/usr/local/arvados/src arvados-src 'Curoverse, Inc.' 'dir' "0.1.$GIT_HASH" "-x 'usr/local/arvados/src/.git*'" "--url=https://arvados.org" "--license=GNU Affero General Public License, version 3.0" "--description=The Arvados source code" "--architecture=all"
