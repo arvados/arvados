@@ -1,22 +1,24 @@
   <% if @object.state.in? ['Complete', 'Failed', 'Cancelled', 'Paused'] %>
 
   <%= link_to(copy_pipeline_instance_path('id' => @object.uuid, 'script' => "use_latest", "components" => "use_latest", "pipeline_instance[state]" => "RunningOnServer"),
-      class: 'btn btn-primary',
+      class: 'btn btn-primary', title: 'Re-run with latest options',
       #data: {toggle: :tooltip, placement: :top}, title: 'Re-run',
       method: :post,
       ) do %>
     <i class="fa fa-fw fa-play"></i> Re-run with latest
   <% end %>
 
-  <%= link_to raw('<i class="fa fa-fw fa-cogs"></i> Re-run options'),
+  <%= link_to raw('<i class="fa fa-fw fa-cogs"></i> Re-run options...'),
       "#",
       {class: 'btn btn-primary', 'data-toggle' =>  "modal",
-        'data-target' => '#clone-and-edit-modal-window'}  %>
+        'data-target' => '#clone-and-edit-modal-window',
+        title: 'Re-run with options'}  %>
   <% end %>
 
   <% if @object.state.in? ['New', 'Ready'] %>
     <%= link_to(url_for('pipeline_instance[state]' => 'RunningOnServer'),
         class: 'btn btn-primary run-pipeline-button',
+        title: 'Run this pipeline',
         method: :patch
         ) do %>
       <i class="fa fa-fw fa-play"></i> Run
@@ -25,6 +27,7 @@
     <% if @object.state.in? ['RunningOnClient', 'RunningOnServer'] %>
       <%= link_to(url_for('pipeline_instance[state]' => 'Paused'),
           class: 'btn btn-primary run-pipeline-button',
+          title: 'Pause this pipeline',
           method: :patch
           ) do %>
         <i class="fa fa-fw fa-pause"></i> Pause
@@ -32,6 +35,7 @@
     <% elsif @object.state == 'Paused' %>
       <%= link_to(url_for('pipeline_instance[state]' => 'RunningOnServer'),
           class: 'btn btn-primary run-pipeline-button',
+          title: 'Resume this pipeline',
           method: :patch
           ) do %>
         <i class="fa fa-fw fa-play"></i> Resume
