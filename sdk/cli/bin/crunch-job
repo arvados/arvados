@@ -125,8 +125,7 @@ if (defined $job_api_token) {
 }
 
 my $have_slurm = exists $ENV{SLURM_JOBID} && exists $ENV{SLURM_NODELIST};
-my $job_has_uuid = $jobspec =~ /^[-a-z\d]+$/;
-my $local_job = !$job_has_uuid;
+my $local_job = 0;
 
 
 $SIG{'USR1'} = sub
@@ -145,12 +144,13 @@ my $local_logfile;
 
 my $User = $arv->{'users'}->{'current'}->execute;
 
-my $Job = {};
+my $Job;
 my $job_id;
 my $dbh;
 my $sth;
-if ($job_has_uuid)
+if ($jobspec =~ /^[-a-z\d]+$/)
 {
+  # $jobspec is an Arvados UUID, not a JSON job specification
   $Job = $arv->{'jobs'}->{'get'}->execute('uuid' => $jobspec);
   if (!$force_unlock) {
     # If some other crunch-job process has grabbed this job (or we see
@@ -193,8 +193,6 @@ else
   $Job->{'started_at'} = gmtime;
 
   $Job = $arv->{'jobs'}->{'create'}->execute('job' => $Job);
-
-  $job_has_uuid = 1;
 }
 $job_id = $Job->{'uuid'};
 
@@ -283,20 +281,17 @@ foreach (@sinfo)
 
 
 my $jobmanager_id;
-if ($job_has_uuid)
-{
-  # Claim this job, and make sure nobody else does
-  unless ($Job->update_attributes('is_locked_by_uuid' => $User->{'uuid'}) &&
-          $Job->{'is_locked_by_uuid'} == $User->{'uuid'}) {
-    Log(undef, "Error while updating / locking job, exiting ".EX_TEMPFAIL);
-    exit EX_TEMPFAIL;
-  }
-  $Job->update_attributes('state' => 'Running',
-                          'tasks_summary' => { 'failed' => 0,
-                                               'todo' => 1,
-                                               'running' => 0,
-                                               'done' => 0 });
+# Claim this job, and make sure nobody else does
+unless ($Job->update_attributes('is_locked_by_uuid' => $User->{'uuid'}) &&
+        $Job->{'is_locked_by_uuid'} == $User->{'uuid'}) {
+  Log(undef, "Error while updating / locking job, exiting ".EX_TEMPFAIL);
+  exit EX_TEMPFAIL;
 }
+$Job->update_attributes('state' => 'Running',
+                        'tasks_summary' => { 'failed' => 0,
+                                             'todo' => 1,
+                                             'running' => 0,
+                                             'done' => 0 });
 
 
 Log (undef, "start");
@@ -866,7 +861,7 @@ else {
     });
     Log(undef, "output uuid " . $output->{uuid});
     Log(undef, "output hash " . $output->{portable_data_hash});
-    $Job->update_attributes('output' => $output->{portable_data_hash}) if $job_has_uuid;
+    $Job->update_attributes('output' => $output->{portable_data_hash});
   };
   if ($@) {
     Log (undef, "Failed to register output manifest: $@");
@@ -900,9 +895,7 @@ sub update_progress_stats
   $Job->{'tasks_summary'}->{'todo'} = $todo;
   $Job->{'tasks_summary'}->{'done'} = $done;
   $Job->{'tasks_summary'}->{'running'} = $running;
-  if ($job_has_uuid) {
-    $Job->update_attributes('tasks_summary' => $Job->{'tasks_summary'});
-  }
+  $Job->update_attributes('tasks_summary' => $Job->{'tasks_summary'});
   Log (undef, "status: $done done, $running running, $todo todo");
   $progress_is_dirty = 0;
 }
@@ -1031,23 +1024,21 @@ sub check_refresh_wanted
   my @stat = stat $ENV{"CRUNCH_REFRESH_TRIGGER"};
   if (@stat && $stat[9] > $latest_refresh) {
     $latest_refresh = scalar time;
-    if ($job_has_uuid) {
-      my $Job2 = $arv->{'jobs'}->{'get'}->execute('uuid' => $jobspec);
-      for my $attr ('cancelled_at',
-                    'cancelled_by_user_uuid',
-                    'cancelled_by_client_uuid',
-                    'state') {
-        $Job->{$attr} = $Job2->{$attr};
+    my $Job2 = $arv->{'jobs'}->{'get'}->execute('uuid' => $jobspec);
+    for my $attr ('cancelled_at',
+                  'cancelled_by_user_uuid',
+                  'cancelled_by_client_uuid',
+                  'state') {
+      $Job->{$attr} = $Job2->{$attr};
+    }
+    if ($Job->{'state'} ne "Running") {
+      if ($Job->{'state'} eq "Cancelled") {
+        Log (undef, "Job cancelled at " . $Job->{'cancelled_at'} . " by user " . $Job->{'cancelled_by_user_uuid'});
+      } else {
+        Log (undef, "Job state unexpectedly changed to " . $Job->{'state'});
       }
-      if ($Job->{'state'} ne "Running") {
-        if ($Job->{'state'} eq "Cancelled") {
-          Log (undef, "Job cancelled at " . $Job->{'cancelled_at'} . " by user " . $Job->{'cancelled_by_user_uuid'});
-        } else {
-          Log (undef, "Job state unexpectedly changed to " . $Job->{'state'});
-        }
-        $main::success = 0;
-        $main::please_freeze = 1;
-      }
+      $main::success = 0;
+      $main::please_freeze = 1;
     }
   }
 }
@@ -1333,7 +1324,7 @@ sub croak
   Log (undef, $message);
   freeze() if @jobstep_todo;
   collate_output() if @jobstep_todo;
-  cleanup();
+  cleanup() if $Job;
   save_meta() if $local_logfile;
   die;
 }
@@ -1341,7 +1332,6 @@ sub croak
 
 sub cleanup
 {
-  return if !$job_has_uuid;
   if ($Job->{'state'} eq 'Cancelled') {
     $Job->update_attributes('finished_at' => scalar gmtime);
   } else {
@@ -1366,7 +1356,7 @@ sub save_meta
   $local_logfile = undef;   # the temp file is automatically deleted
   Log (undef, "log manifest is $loglocator");
   $Job->{'log'} = $loglocator;
-  $Job->update_attributes('log', $loglocator) if $job_has_uuid;
+  $Job->update_attributes('log', $loglocator);
 }
 
 
