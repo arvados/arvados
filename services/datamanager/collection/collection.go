@@ -3,6 +3,7 @@
 package collection
 
 import (
+	"errors"
 	"git.curoverse.com/arvados.git/sdk/go/arvadosclient"
 	"git.curoverse.com/arvados.git/sdk/go/manifest"
 	"log"
@@ -47,6 +48,26 @@ func SdkListResponseContainsAllAvailableItems(response map[string]interface{}) (
 	return
 }
 
+func IterateSdkListItems(response map[string]interface{}) (c <-chan map[string]interface{}, err error) {
+	if value, ok := response["items"]; ok {
+		ch := make(chan map[string]interface{})
+		c = ch
+		items := value.([]interface{})
+		go func() {
+			for _, item := range items {
+				ch <- item.(map[string]interface{})
+			}
+			close(ch)
+		}()
+	} else {
+		err = errors.New("Could not find \"items\" field in response " +
+			"passed to IterateSdkListItems()")
+	}
+	return
+}
+
+
+
 func GetCollections(params GetCollectionsParams) (results ReadCollections) {
 	if &params.Client == nil {
 		log.Fatalf("Received params.Client passed to GetCollections() should " +
@@ -83,15 +104,16 @@ func GetCollections(params GetCollectionsParams) (results ReadCollections) {
 			numAvailable)
 	}
 
-	if value, ok := collections["items"]; ok {
-		items := value.([]interface{})
-
-		results.UuidToCollection = make(map[string]Collection)
-		for index, item := range items {
+	if collectionChannel, err := IterateSdkListItems(collections); err != nil {
+		log.Fatalf("Error trying to iterate collections returned by SDK: %v", err)
+	} else {
+		index := 0
+	 	results.UuidToCollection = make(map[string]Collection)
+		for item_map := range collectionChannel {
+			index += 1
 			if m := params.LogEveryNthCollectionProcessed; m >0 && (index % m) == 0 {
 				log.Printf("Processing collection #%d", index)
 			}
-			item_map := item.(map[string]interface{})
 			collection := Collection{Uuid: item_map["uuid"].(string),
 				OwnerUuid: item_map["owner_uuid"].(string),
 				BlockDigestToSize: make(map[string]int)}
