@@ -101,7 +101,47 @@ class Arvados::V1::JobsControllerTest < ActionController::TestCase
                  'trigger file should be created when job is cancelled')
   end
 
-  test "cancelling a cancelled jobs stays cancelled" do
+  test "cancelling a cancelled job stays cancelled" do
+    # We need to verify that "cancel" creates a trigger file, so first
+    # let's make sure there is no stale trigger file.
+    begin
+      File.unlink(Rails.configuration.crunch_refresh_trigger)
+    rescue Errno::ENOENT
+    end
+
+    authorize_with :active
+    put :update, {
+      id: jobs(:running).uuid,
+      job: {
+        state: 'Cancelled'
+      }
+    }
+    job = JSON.parse(@response.body)
+    assert_not_nil job['cancelled_at'], 'cancelled again job did not stay cancelled'
+    assert_equal job['state'], 'Cancelled', 'cancelled again job state not cancelled'
+  end
+
+  test "cancelling a cancelled job using cancelled_at stays cancelled" do
+    # We need to verify that "cancel" creates a trigger file, so first
+    # let's make sure there is no stale trigger file.
+    begin
+      File.unlink(Rails.configuration.crunch_refresh_trigger)
+    rescue Errno::ENOENT
+    end
+
+    authorize_with :active
+    put :update, {
+      id: jobs(:running).uuid,
+      job: {
+        cancelled_at: Time.now
+      }
+    }
+    job = JSON.parse(@response.body)
+    assert_not_nil job['cancelled_at'], 'cancelled again job did not stay cancelled'
+    assert_equal job['state'], 'Cancelled', 'cancelled again job state not cancelled'
+  end
+
+  test "cancelled to any other state change results in error" do
     # We need to verify that "cancel" creates a trigger file, so first
     # let's make sure there is no stale trigger file.
     begin
