@@ -88,7 +88,7 @@ title "Deploying API server complete"
 # Install updated debian packages
 title "Deploying updated arvados debian packages"
 
-ssh -p2222 root@$IDENTIFIER.arvadosapi.com -C "apt-get update && apt-get install arvados-src python-arvados-fuse python-arvados-python-client"
+ssh -p2222 root@$IDENTIFIER.arvadosapi.com -C "apt-get update && apt-get -qqy install arvados-src python-arvados-fuse python-arvados-python-client"
 
 if [[ "$ECODE" != "0" ]]; then
   title "!!!!!! DEPLOYING DEBIAN PACKAGES FAILED !!!!!!"
@@ -135,5 +135,60 @@ if [[ "$ECODE" != "0" ]]; then
 fi
 
 title "Deploying workbench complete"
+
+# Update compute0
+title "Update compute0"
+
+ssh -p2222 root@compute0.$IDENTIFIER -C "/usr/bin/puppet agent -t"
+
+ECODE=$?
+
+if [[ "$ECODE" == "2" ]]; then
+  # Puppet exits '2' if there are changes. For real!
+  ECODE=0
+fi
+
+if [[ "$ECODE" != "0" ]]; then
+  title "!!!!!! Update compute0 FAILED !!!!!!"
+  EXITCODE=$(($EXITCODE + $ECODE))
+fi
+
+title "Update compute0 complete"
+
+title "Update shell"
+
+ssh -p2222 root@shell.$IDENTIFIER -C "/usr/bin/puppet agent -t"
+
+ECODE=$?
+
+if [[ "$ECODE" == "2" ]]; then
+  # Puppet exits '2' if there are changes. For real!
+  ECODE=0
+fi
+
+if [[ "$ECODE" != "0" ]]; then
+  title "!!!!!! Update shell FAILED !!!!!!"
+  EXITCODE=$(($EXITCODE + $ECODE))
+fi
+
+title "Update shell complete"
+
+title "Update keep0"
+
+ssh -p2222 root@keep0.$IDENTIFIER -C "/usr/bin/puppet agent -t"
+
+ECODE=$?
+
+if [[ "$ECODE" == "2" ]]; then
+  # Puppet exits '2' if there are changes. For real!
+  ECODE=0
+fi
+
+if [[ "$ECODE" != "0" ]]; then
+  title "!!!!!! Update keep0 FAILED !!!!!!"
+  EXITCODE=$(($EXITCODE + $ECODE))
+fi
+
+title "Update keep0 complete"
 
 exit $EXITCODE
