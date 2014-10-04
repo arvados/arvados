@@ -141,6 +141,66 @@ class Arvados::V1::JobsControllerTest < ActionController::TestCase
     assert_equal job['state'], 'Cancelled', 'cancelled again job state not cancelled'
   end
 
+  test "cancelled job stays cancelled when state set to Running" do
+    # We need to verify that "cancel" creates a trigger file, so first
+    # let's make sure there is no stale trigger file.
+    begin
+      File.unlink(Rails.configuration.crunch_refresh_trigger)
+    rescue Errno::ENOENT
+    end
+
+    authorize_with :active
+    put :update, {
+      id: jobs(:cancelled).uuid,
+      job: {
+        state: 'Running'
+      }
+    }
+    job = JSON.parse(@response.body)
+    assert_not_nil job['cancelled_at'], 'cancelled job did not stay cancelled when state set to running'
+    assert_equal job['state'], 'Cancelled', 'was able to change state to running for a cancelled job'
+  end
+
+  test "cancelled job stays cancelled when state set to Complete" do
+    # We need to verify that "cancel" creates a trigger file, so first
+    # let's make sure there is no stale trigger file.
+    begin
+      File.unlink(Rails.configuration.crunch_refresh_trigger)
+    rescue Errno::ENOENT
+    end
+
+    authorize_with :active
+    put :update, {
+      id: jobs(:cancelled).uuid,
+      job: {
+        state: 'Complete'
+      }
+    }
+    job = JSON.parse(@response.body)
+    assert_not_nil job['cancelled_at'], 'cancelled job did not stay cancelled when state set to complete'
+    assert_equal job['state'], 'Cancelled', 'was able to change state to complete for a cancelled job'
+  end
+
+  test "cancelled job stays cancelled when state set to Failed" do
+    # We need to verify that "cancel" creates a trigger file, so first
+    # let's make sure there is no stale trigger file.
+    begin
+      File.unlink(Rails.configuration.crunch_refresh_trigger)
+    rescue Errno::ENOENT
+    end
+
+    authorize_with :active
+    put :update, {
+      id: jobs(:cancelled).uuid,
+      job: {
+        state: 'Failed'
+      }
+    }
+    job = JSON.parse(@response.body)
+    assert_not_nil job['cancelled_at'], 'cancelled job did not stay cancelled when state set to failed'
+    assert_equal job['state'], 'Cancelled', 'was able to change state to failed for a cancelled job'
+  end
+
   test "cancelled to any other state change results in error" do
     # We need to verify that "cancel" creates a trigger file, so first
     # let's make sure there is no stale trigger file.
