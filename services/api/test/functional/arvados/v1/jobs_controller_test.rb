@@ -101,107 +101,35 @@ class Arvados::V1::JobsControllerTest < ActionController::TestCase
                  'trigger file should be created when job is cancelled')
   end
 
-  test "cancelling a cancelled job stays cancelled" do
-    # We need to verify that "cancel" creates a trigger file, so first
-    # let's make sure there is no stale trigger file.
-    begin
-      File.unlink(Rails.configuration.crunch_refresh_trigger)
-    rescue Errno::ENOENT
-    end
+  [
+    ['cancelled_at', Time.now],
+    ['state', 'Cancelled'],
+    ['state', 'Running'],
+    ['state', 'Failed'],
+    ['state', 'Complete'],
+  ].each do |attribute, value|
+    test "cancelled job stays cancelled when updated using #{attribute} #{value}" do
+      # We need to verify that "cancel" creates a trigger file, so first
+      # let's make sure there is no stale trigger file.
+      begin
+        File.unlink(Rails.configuration.crunch_refresh_trigger)
+      rescue Errno::ENOENT
+      end
 
-    authorize_with :active
-    put :update, {
-      id: jobs(:running).uuid,
-      job: {
-        state: 'Cancelled'
+      authorize_with :active
+      put :update, {
+        id: jobs(:cancelled).uuid,
+        job: {
+          attribute => value
+        }
       }
-    }
-    job = JSON.parse(@response.body)
-    assert_not_nil job['cancelled_at'], 'cancelled again job did not stay cancelled'
-    assert_equal job['state'], 'Cancelled', 'cancelled again job state not cancelled'
+      job = JSON.parse(@response.body)
+      assert_not_nil job['cancelled_at'], 'job cancelled again using #{attribute}=#{value} did not have cancelled_at value'
+      assert_equal job['state'], 'Cancelled', 'cancelled again job state changed when updated using using #{attribute}=#{value}'
+    end
   end
 
-  test "cancelling a cancelled job using cancelled_at stays cancelled" do
-    # We need to verify that "cancel" creates a trigger file, so first
-    # let's make sure there is no stale trigger file.
-    begin
-      File.unlink(Rails.configuration.crunch_refresh_trigger)
-    rescue Errno::ENOENT
-    end
-
-    authorize_with :active
-    put :update, {
-      id: jobs(:running).uuid,
-      job: {
-        cancelled_at: Time.now
-      }
-    }
-    job = JSON.parse(@response.body)
-    assert_not_nil job['cancelled_at'], 'cancelled again job did not stay cancelled'
-    assert_equal job['state'], 'Cancelled', 'cancelled again job state not cancelled'
-  end
-
-  test "cancelled job stays cancelled when state set to Running" do
-    # We need to verify that "cancel" creates a trigger file, so first
-    # let's make sure there is no stale trigger file.
-    begin
-      File.unlink(Rails.configuration.crunch_refresh_trigger)
-    rescue Errno::ENOENT
-    end
-
-    authorize_with :active
-    put :update, {
-      id: jobs(:cancelled).uuid,
-      job: {
-        state: 'Running'
-      }
-    }
-    job = JSON.parse(@response.body)
-    assert_not_nil job['cancelled_at'], 'cancelled job did not stay cancelled when state set to running'
-    assert_equal job['state'], 'Cancelled', 'was able to change state to running for a cancelled job'
-  end
-
-  test "cancelled job stays cancelled when state set to Complete" do
-    # We need to verify that "cancel" creates a trigger file, so first
-    # let's make sure there is no stale trigger file.
-    begin
-      File.unlink(Rails.configuration.crunch_refresh_trigger)
-    rescue Errno::ENOENT
-    end
-
-    authorize_with :active
-    put :update, {
-      id: jobs(:cancelled).uuid,
-      job: {
-        state: 'Complete'
-      }
-    }
-    job = JSON.parse(@response.body)
-    assert_not_nil job['cancelled_at'], 'cancelled job did not stay cancelled when state set to complete'
-    assert_equal job['state'], 'Cancelled', 'was able to change state to complete for a cancelled job'
-  end
-
-  test "cancelled job stays cancelled when state set to Failed" do
-    # We need to verify that "cancel" creates a trigger file, so first
-    # let's make sure there is no stale trigger file.
-    begin
-      File.unlink(Rails.configuration.crunch_refresh_trigger)
-    rescue Errno::ENOENT
-    end
-
-    authorize_with :active
-    put :update, {
-      id: jobs(:cancelled).uuid,
-      job: {
-        state: 'Failed'
-      }
-    }
-    job = JSON.parse(@response.body)
-    assert_not_nil job['cancelled_at'], 'cancelled job did not stay cancelled when state set to failed'
-    assert_equal job['state'], 'Cancelled', 'was able to change state to failed for a cancelled job'
-  end
-
-  test "cancelled to any other state change results in error" do
+  test "cancelled job updated to any other state change results in error" do
     # We need to verify that "cancel" creates a trigger file, so first
     # let's make sure there is no stale trigger file.
     begin
