@@ -7,7 +7,6 @@ If you are interested in using Arvados or setting up your own Arvados
 installation, you most likely do not need this source tree.
 
 For the Arvados source code, check out the git repository at
-
   https://github.com/curoverse/arvados
 
 The main Arvados web site is 
