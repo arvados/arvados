@@ -1,5 +1,7 @@
 #!/usr/bin/env python
 
+from __future__ import absolute_import, print_function
+
 # First import and expose all the classes we want to export.
 from .computenode import \
     ComputeNodeSetupActor, ComputeNodeShutdownActor, ComputeNodeActor, \
