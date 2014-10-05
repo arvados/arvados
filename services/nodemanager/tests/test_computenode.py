@@ -33,7 +33,6 @@ class ComputeNodeSetupActorTestCase(testutil.ActorTestMixin, unittest.TestCase):
         self.make_actor()
         self.wait_for_call(self.api_client.nodes().create().execute)
         self.wait_for_call(self.cloud_client.create_node)
-        self.wait_for_call(self.cloud_client.post_create_node)
 
     def test_creation_with_arvados_node(self):
         arv_node = testutil.arvados_node_mock()
@@ -41,9 +40,6 @@ class ComputeNodeSetupActorTestCase(testutil.ActorTestMixin, unittest.TestCase):
         self.make_actor(arv_node)
         self.wait_for_call(self.api_client.nodes().update().execute)
         self.wait_for_call(self.cloud_client.create_node)
-        self.wait_for_call(self.cloud_client.post_create_node)
-        self.cloud_client.post_create_node.assert_called_with(
-            self.cloud_client.create_node(), arv_node)
 
     def test_failed_calls_retried(self):
         self.make_mocks([

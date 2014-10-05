@@ -75,9 +75,6 @@ class BaseComputeNodeDriver(object):
         kwargs['size'] = size
         return self.real.create_node(**kwargs)
 
-    def post_create_node(self, cloud_node, arvados_node):
-        pass
-
     @classmethod
     def node_start_time(cls, node):
         raise NotImplementedError("BaseComputeNodeDriver.node_start_time")
@@ -132,14 +129,7 @@ class ComputeNodeSetupActor(config.actor_class):
                           self.cloud_size.name)
         self.cloud_node = self._cloud.create_node(self.cloud_size,
                                                   self.arvados_node)
-        self._logger.info("Cloud node %s created.  Setting up.",
-                          self.cloud_node.id)
-        self._later.setup_cloud_node()
-
-    @_retry(config.CLOUD_ERRORS)
-    def setup_cloud_node(self):
-        self._cloud.post_create_node(self.cloud_node, self.arvados_node)
-        self._logger.info("Cloud node %s set up.", self.cloud_node.id)
+        self._logger.info("Cloud node %s created.", self.cloud_node.id)
         _notify_subscribers(self._later, self.subscribers)
         self.subscribers = None
 

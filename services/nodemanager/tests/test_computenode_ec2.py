@@ -53,7 +53,7 @@ class EC2ComputeNodeDriverTestCase(unittest.TestCase):
                       create_method.call_args[1].get('ex_userdata',
                                                      'arg missing'))
 
-    def test_post_create_tags_node(self):
+    def test_tags_created_from_arvados_node(self):
         arv_node = testutil.arvados_node_mock(8)
         cloud_node = testutil.cloud_node_mock(8)
         driver = self.new_driver(list_kwargs={'tag:list': 'test'})
