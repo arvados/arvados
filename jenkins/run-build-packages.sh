@@ -64,24 +64,15 @@ GIT_HASH=`git log --format=format:%ct.%h -n1 .`
 
 cd sdk/python
 
-# We mess with this file below, reset it here
-git checkout setup.py
-
 # Make sure only to use sdist - that's the only format pip can deal with (sigh)
-python setup.py egg_info -b ".$GIT_HASH" sdist upload
+python setup.py sdist upload
 
 cd ../../services/fuse
 
-# We mess with this file below, reset it here
-git checkout setup.py
-
 # Make sure only to use sdist - that's the only format pip can deal with (sigh)
-python setup.py egg_info -b ".$GIT_HASH" sdist upload
+python setup.py sdist upload
 
 # Build debs for everything
-
-# Build arvados src deb package
-
 build_and_scp_deb () {
   PACKAGE=$1
   shift
@@ -167,6 +158,7 @@ git pull
 # go into detached-head state
 git checkout `git log --format=format:%h -n1 .`
 
+# Build arvados src deb package
 cd $WORKSPACE/debs
 build_and_scp_deb $WORKSPACE/src-build-dir/=/usr/local/arvados/src arvados-src 'Curoverse, Inc.' 'dir' "0.1.$GIT_HASH" "-x 'usr/local/arvados/src/.git*'" "--url=https://arvados.org" "--license=GNU Affero General Public License, version 3.0" "--description=The Arvados source code" "--architecture=all"
 
@@ -195,28 +187,20 @@ cd $WORKSPACE/debs
 build_and_scp_deb $GOPATH/bin/crunchstat=/usr/bin/crunchstat crunchstat 'Curoverse, Inc.' 'dir' "0.1.$GIT_HASH" "--url=https://arvados.org" "--license=GNU Affero General Public License, version 3.0" "--description=Crunchstat gathers cpu/memory/network statistics of running Crunch jobs"
 
 # The Python SDK
-cd $WORKSPACE/sdk/python
-sed -i'' -e "s:version='0.1':version='0.1.$GIT_HASH':" setup.py
-
-cd $WORKSPACE/debs
-
 # Please resist the temptation to add --no-python-fix-name to the fpm call here
 # (which would remove the python- prefix from the package name), because this
 # package is a dependency of arvados-fuse, and fpm can not omit the python-
 # prefix from only one of the dependencies of a package...  Maybe I could
 # whip up a patch and send it upstream, but that will be for another day. Ward,
 # 2014-05-15
-build_and_scp_deb $WORKSPACE/sdk/python python-arvados-python-client 'Curoverse, Inc.' 'python' "0.1.${GIT_HASH}" "--url=https://arvados.org" "--description=The Arvados Python SDK"
+cd $WORKSPACE/debs
+build_and_scp_deb $WORKSPACE/sdk/python python-arvados-python-client 'Curoverse, Inc.' 'python' "$(awk '($1 == "Version:"){print $2}' $WORKSPACE/sdk/python/arvados_python_client.egg-info/PKG-INFO)" "--url=https://arvados.org" "--description=The Arvados Python SDK"
 
 # The FUSE driver
-cd $WORKSPACE/services/fuse
-sed -i'' -e "s:version='0.1':version='0.1.$GIT_HASH':" setup.py
-
-cd $WORKSPACE/debs
-
 # Please seem comment about --no-python-fix-name above; we stay consistent and do
 # not omit the python- prefix first.
-build_and_scp_deb $WORKSPACE/services/fuse python-arvados-fuse 'Curoverse, Inc.' 'python' "0.1.${GIT_HASH}" "--url=https://arvados.org" "--description=The Keep FUSE driver"
+cd $WORKSPACE/debs
+build_and_scp_deb $WORKSPACE/services/fuse python-arvados-fuse 'Curoverse, Inc.' 'python' "$(awk '($1 == "Version:"){print $2}' $WORKSPACE/services/fuse/arvados_fuse.egg-info/PKG-INFO)" "--url=https://arvados.org" "--description=The Keep FUSE driver"
 
 # A few dependencies
 build_and_scp_deb python-gflags
