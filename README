@@ -1,0 +1,31 @@
+Welcome to Arvados!
+
+This is the arvados-dev source tree. It contains scripts that can be useful
+if you want to hack on Arvados itself.
+
+If you are interested in using Arvados or setting up your own Arvados
+installation, you most likely do not need this source tree.
+
+For the Arvados source code, check out the git repository at
+
+  https://github.com/curoverse/arvados
+
+The main Arvados web site is 
+  https://arvados.org
+
+The Arvados public wiki is located at 
+  https://arvados.org/projects/arvados/wiki
+
+The Arvados public bug tracker is located at 
+  https://arvados.org/projects/arvados/issues
+
+For support see 
+  http://doc.arvados.org/user/getting_started/community.html
+
+Installation documentation is located at 
+  http://doc.arvados.org/install
+
+If you wish to build the documentation yourself, follow the instructions in
+doc/README to build the documentation, then consult the "Install Guide".
+
+See COPYING for information about Arvados Free Software licenses.
