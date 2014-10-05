@@ -1,8 +1,7 @@
 #!/usr/bin/env python
 
-import arvados.errors as arverror
-
 from . import clientactor
+from .config import ARVADOS_ERRORS
 
 class ServerCalculator(object):
     class SizeWrapper(object):
@@ -60,7 +59,7 @@ class ServerCalculator(object):
 
 
 class JobQueueMonitorActor(clientactor.RemotePollLoopActor):
-    CLIENT_ERRORS = (arverror.ApiError,)
+    CLIENT_ERRORS = ARVADOS_ERRORS
     LOGGER_NAME = 'arvnodeman.jobqueue'
 
     def __init__(self, client, timer_actor, server_calc, *args, **kwargs):
