@@ -141,6 +141,7 @@ $SIG{'USR2'} = sub
 
 
 my $arv = Arvados->new('apiVersion' => 'v1');
+my @jobstep;
 my $local_logfile;
 
 my $User = retry_op(sub { $arv->{'users'}->{'current'}->execute; });
@@ -321,7 +322,6 @@ $ENV{"CRUNCH_JOB_UUID"} = $job_id;
 $ENV{"JOB_UUID"} = $job_id;
 
 
-my @jobstep;
 my @jobstep_todo = ();
 my @jobstep_done = ();
 my @jobstep_tomerge = ();
