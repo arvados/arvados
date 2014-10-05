@@ -1522,9 +1522,11 @@ sub retry_count {
   # Calculate the number of times an operation should be retried,
   # assuming exponential backoff, and that we're willing to retry as
   # long as tasks have been running.  Enforce a minimum of 3 retries.
-  my $endtime = $jobstep[-1]->{finishtime};
-  my $starttime = $jobstep[0]->{starttime};
-  my $timediff;
+  my ($starttime, $endtime, $timediff);
+  if (@jobstep) {
+    $starttime = $jobstep[0]->{starttime};
+    $endtime = $jobstep[-1]->{finishtime};
+  }
   if (!defined($starttime)) {
     $timediff = 0;
   } elsif (!defined($endtime)) {
