@@ -364,11 +364,11 @@ def desired_project_uuid(api_client, project_uuid, num_retries):
 
 def main(arguments=None, stdout=sys.stdout, stderr=sys.stderr):
     global api_client
-    if api_client is None:
-        api_client = arvados.api('v1')
-    status = 0
 
     args = parse_arguments(arguments)
+    status = 0
+    if api_client is None:
+        api_client = arvados.api('v1')
 
     # Determine the name to use
     if args.name:
