@@ -161,7 +161,7 @@ class ProjectsTest < ActionDispatch::IntegrationTest
     end
     wait_for_ajax
 
-    click_link 'Move...'
+    click_link 'Move project...'
     find('.selectable', text: 'Project 1234').click
     find('.modal-footer a,button', text: 'Move').click
     wait_for_ajax
