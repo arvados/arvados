@@ -1554,7 +1554,7 @@ sub retry_op {
     if (!$@) {
       return $result;
     } elsif ($try_count < $retries) {
-      my $sleep_time = time - $next_try;
+      my $sleep_time = $next_try - time;
       sleep($sleep_time) if ($sleep_time > 0);
     }
   }
