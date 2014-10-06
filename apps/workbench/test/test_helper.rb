@@ -36,10 +36,15 @@ class ActiveSupport::TestCase
     Thread.current[:arvados_api_token] = auth['api_token']
   end
 
-  def teardown
+  teardown do
     Thread.current[:arvados_api_token] = nil
     Thread.current[:reader_tokens] = nil
-    super
+    # Restore configuration settings changed during tests
+    $application_config.each do |k,v|
+      if k.match /^[^.]*$/
+        Rails.configuration.send (k + '='), v
+      end
+    end
   end
 end
 
