@@ -102,12 +102,13 @@ class Arvados::V1::JobsControllerTest < ActionController::TestCase
   end
 
   [
-    ['cancelled_at', Time.now],
-    ['state', 'Cancelled'],
-    ['state', 'Running'],
-    ['state', 'Failed'],
-    ['state', 'Complete'],
-  ].each do |attribute, value|
+    ['cancelled_at', Time.now, :success],
+    ['state', 'Cancelled', :success],
+    ['state', 'Running', :unprocessable_entity],
+    ['state', 'Failed', :unprocessable_entity],
+    ['state', 'Complete', :unprocessable_entity],
+    [:use_action, :cancel, :success],
+  ].each do |attribute, value, expected_response|
     test "cancelled job stays cancelled when updated using #{attribute} #{value}" do
       # We need to verify that "cancel" creates a trigger file, so first
       # let's make sure there is no stale trigger file.
@@ -117,13 +118,18 @@ class Arvados::V1::JobsControllerTest < ActionController::TestCase
       end
 
       authorize_with :active
-      put :update, {
-        id: jobs(:cancelled).uuid,
-        job: {
-          attribute => value
+      if attribute == :use_action
+        post value, { id: jobs(:cancelled).uuid }
+      else
+        put :update, {
+          id: jobs(:cancelled).uuid,
+          job: {
+            attribute => value
+          }
         }
-      }
-      job = JSON.parse(@response.body)
+      end
+      assert_response expected_response
+      job = json_response
       assert_not_nil job['cancelled_at'], 'job cancelled again using #{attribute}=#{value} did not have cancelled_at value'
       assert_equal job['state'], 'Cancelled', 'cancelled again job state changed when updated using using #{attribute}=#{value}'
     end
