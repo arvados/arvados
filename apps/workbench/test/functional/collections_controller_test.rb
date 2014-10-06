@@ -181,4 +181,20 @@ class CollectionsControllerTest < ActionController::TestCase
     show_collection({uuid: NONEXISTENT_COLLECTION, id: NONEXISTENT_COLLECTION},
                     :active, 404)
   end
+
+  test "use a reasonable read buffer even if client requests a huge range" do
+    fakefiledata = mock
+    IO.expects(:popen).returns(fakefiledata)
+    fakefiledata.expects(:read).twice.with() do |length|
+      # Fail the test if read() is called with length>1MiB:
+      length < 2**20
+    end.returns("foo\n", nil)
+    fakefiledata.expects(:close)
+    foo_file = api_fixture('collections')['foo_file']
+    @request.headers['Range'] = 'bytes=0-4294967296/*'
+    get :show_file, {
+      uuid: foo_file['uuid'],
+      file: foo_file['manifest_text'].match(/ \d+:\d+:(\S+)/)[1]
+    }, session_for(:active)
+  end
 end
