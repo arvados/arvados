@@ -16,8 +16,6 @@
       </th><th>
 	status
       </th><th>
-	progress
-      </th><th>
 	uuid
       </th><th>
 	script
@@ -35,9 +33,6 @@
     <tr class="cell-noborder">
       <td>
         <i class="icon-plus-sign expand-collapse-row" data-id="<%= j.uuid %>" style="cursor: pointer"></i>
-      </td>
-      <td>
-        <%= render partial: 'job_status_label', locals: {:j => j} %>
       </td>
       <td>
         <div class="inline-progress-container">
@@ -123,4 +118,3 @@
 
   </tbody>
 </table>
-

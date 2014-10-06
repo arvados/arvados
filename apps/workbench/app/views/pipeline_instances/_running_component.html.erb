@@ -2,7 +2,8 @@
   <div class="panel panel-default">
     <div class="panel-heading">
       <div class="container-fluid">
-        <div class="row">
+        <div class="row-fluid">
+          <%# column offset 3 %>
           <div class="col-md-3">
             <h4 class="panel-title">
               <a data-toggle="collapse" href="#collapse<%= i %>" style="white-space: nowrap;">
@@ -11,11 +12,13 @@
             </h4>
           </div>
 
-          <% if current_job %>
-            <div class="col-md-1">
-              <%= render(partial: 'job_status_label', locals: { j: current_job }) %>
-            </div>
+          <%# column offset 3 %>
+          <div class="col-md-2 pipeline-instance-spacing">
+            <%= pj[:progress_bar] %>
+          </div>
 
+          <% if current_job %>
+            <%# column offset 5 %>
             <div class="col-md-3">
               <% if current_job[:started_at] %>
                 <% walltime = ((if current_job[:finished_at] then current_job[:finished_at] else Time.now() end) - current_job[:started_at]) %>
@@ -32,7 +35,8 @@
             </div>
 
             <% if current_job[:state].in? ["Complete", "Failed", "Cancelled"] %>
-              <div class="col-md-5 text-overflow-ellipsis">
+              <%# column offset 8 %>
+              <div class="col-md-4 text-overflow-ellipsis">
                 <% if pj[:output_uuid] %>
                   <%= link_to_if_arvados_object pj[:output_uuid], friendly_name: true %>
                 <% elsif current_job[:output] %>
@@ -41,18 +45,29 @@
                   No output.
                 <% end %>
               </div>
-            <% elsif current_job[:state] == "Running" %>
-              <div class="col-md-3 pipeline-instance-spacing">
-                <%= pj[:progress_bar] %>
-              </div>
-              <div class="col-md-1 pipeline-instance-spacing">
+            <% elsif current_job[:state].in? ["Queued", "Running"] %>
+              <%# column offset 8 %>
+            <div class="col-md-3">
+              <% if current_job[:state].in? ["Running"] %>
+                <span class="task-summary-status">
+                <%= current_job[:tasks_summary][:done] %>&nbsp;task<%= if current_job[:tasks_summary][:done] > 1 then 's' else '' end %> done,
+                <%= current_job[:tasks_summary][:failed] %>&nbsp;failed,
+                <%= current_job[:tasks_summary][:running] %>&nbsp;running,
+                <%= current_job[:tasks_summary][:todo] %>&nbsp;pending
+                </span>
+              <% end %>
+            </div>
+            <%# column offset 11 %>
+            <div class="col-md-1 pipeline-instance-spacing">
                 <%= form_tag "/jobs/#{current_job[:uuid]}/cancel", style: "display:inline; padding-left: 1em" do |f| %>
                 <%= hidden_field_tag :return_to, url_for(@object) %>
                 <%= button_tag "Cancel", {class: 'btn btn-xs btn-danger', id: "cancel-job-button"} %>
             </div>
             <% end %>
+
           <% elsif current_job[:state] == "Queued" %>
-            <div class="col-md-5">
+            <%# column offset 8 %>
+            <div class="col-md-4">
               <% queuetime = Time.now - current_job[:created_at] %>
               Queued for <%= render_runtime(queuetime, true) %>.
               <% begin %>
@@ -67,10 +82,6 @@
           <% end %>
             </div>
           <% end %>
-        <% else %>
-          <div class="col-md-3 col-md-offset-3">
-            <span class="label label-default">Not ready</span>
-          </div>
 <% end %>
 </div>
 </div>
@@ -154,19 +165,6 @@
             <p>script_parameters:</p>
             <pre><%= JSON.pretty_generate(current_component[:script_parameters]) rescue nil %></pre>
           </div>
-          <% if current_component[:tasks_summary] %>
-          <div class="col-md-3">
-            <table>
-              <% [:done, :running, :failed, :todo].each do |d| %>
-              <tr>
-                <td style="padding-right: 1em"><%= 'tasks:' if d == :done %></td>
-                <td style="padding-right: 1em"><%= d.to_s %></td>
-                <td><%= current_component[:tasks_summary][d] %></td>
-              </tr>
-              <% end %>
-            </table>
-          </div>
-          <% end %>
         </div>
     </div>
   </div>
