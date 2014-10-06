@@ -75,10 +75,9 @@ class Job < ArvadosModel
   end
 
   def queue_position
-    i = 0
-    Job::queue.each do |j|
-      if j[:uuid] == self.uuid
-        return i
+    Job::queue.each_with_index do |job, index|
+      if job[:uuid] == self.uuid
+        return index
       end
     end
     nil
