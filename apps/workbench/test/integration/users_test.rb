@@ -70,7 +70,7 @@ class UsersTest < ActionDispatch::IntegrationTest
 
     # verify that the new user showed up in the users page and find
     # the new user's UUID
-    new_user_uuid = 
+    new_user_uuid =
       find('tr[data-object-uuid]', text: 'foo@example.com')['data-object-uuid']
     assert new_user_uuid, "Expected new user uuid not found"
 
@@ -106,6 +106,7 @@ class UsersTest < ActionDispatch::IntegrationTest
     find('tr', text: 'zzzzz-tpzed-xurymjxw79nv3jz').
       find('a', text: 'Show').
       click
+    user_url = page.current_url
 
     # Setup user
     click_link 'Admin'
@@ -119,6 +120,7 @@ class UsersTest < ActionDispatch::IntegrationTest
       click_button "Submit"
     end
 
+    visit user_url
     assert page.has_text? 'modified_by_client_uuid'
 
     click_link 'Advanced'
@@ -136,6 +138,7 @@ class UsersTest < ActionDispatch::IntegrationTest
       click_button "Submit"
     end
 
+    visit user_url
     find '#Attributes', text: 'modified_by_client_uuid'
 
     click_link 'Advanced'
@@ -161,6 +164,7 @@ class UsersTest < ActionDispatch::IntegrationTest
     find('tr', text: 'zzzzz-tpzed-xurymjxw79nv3jz').
       find('a', text: 'Show').
       click
+    user_url = page.current_url
 
     # Verify that is_active is set
     find('a,button', text: 'Attributes').click
@@ -202,6 +206,7 @@ class UsersTest < ActionDispatch::IntegrationTest
       click_button "Submit"
     end
 
+    visit user_url
     assert page.has_text? 'modified_by_client_uuid'
 
     click_link 'Advanced'

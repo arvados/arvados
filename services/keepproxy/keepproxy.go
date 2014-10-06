@@ -80,12 +80,12 @@ func main() {
 
 	if pidfile != "" {
 		f, err := os.Create(pidfile)
-		if err == nil {
-			fmt.Fprint(f, os.Getpid())
-			f.Close()
-		} else {
-			log.Printf("Error writing pid file (%s): %s", pidfile, err.Error())
+		if err != nil {
+			log.Fatalf("Error writing pid file (%s): %s", pidfile, err.Error())
 		}
+		fmt.Fprint(f, os.Getpid())
+		f.Close()
+		defer os.Remove(pidfile)
 	}
 
 	kc.Want_replicas = default_replicas
@@ -104,19 +104,10 @@ func main() {
 		s := <-sig
 		log.Println("caught signal:", s)
 		listener.Close()
+		listener = nil
 	}(term)
 	signal.Notify(term, syscall.SIGTERM)
 	signal.Notify(term, syscall.SIGINT)
-
-	if pidfile != "" {
-		f, err := os.Create(pidfile)
-		if err == nil {
-			fmt.Fprint(f, os.Getpid())
-			f.Close()
-		} else {
-			log.Printf("Error writing pid file (%s): %s", pidfile, err.Error())
-		}
-	}
 
 	log.Printf("Arvados Keep proxy started listening on %v with server list %v", listener.Addr(), kc.ServiceRoots())
 
@@ -124,10 +115,6 @@ func main() {
 	http.Serve(listener, MakeRESTRouter(!no_get, !no_put, &kc))
 
 	log.Println("shutting down")
-
-	if pidfile != "" {
-		os.Remove(pidfile)
-	}
 }
 
 type ApiTokenCache struct {
