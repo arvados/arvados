@@ -163,7 +163,7 @@ def get_items(p, value):
     prefix = fn[len(os.environ['TASK_KEEPMOUNT'])+1:]
     if mode is not None:
         if stat.S_ISDIR(mode):
-            items = ["$(dir %s/%s/)" % (prefix, l) for l in os.listdir(fn)]
+            items = [os.path.join(fn, l) for l in os.listdir(fn)]
         elif stat.S_ISREG(mode):
             with open(fn) as f:
                 items = [line.rstrip("\r\n") for line in f]
