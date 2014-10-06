@@ -81,6 +81,7 @@ def shutdown_signal(signal_code, frame):
     current_count = _caught_signals.get(signal_code, 0)
     _caught_signals[signal_code] = current_count + 1
     if node_daemon is None:
+        pykka.ActorRegistry.stop_all()
         sys.exit(-signal_code)
     elif current_count == 0:
         node_daemon.shutdown()
