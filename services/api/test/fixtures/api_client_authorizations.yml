@@ -174,3 +174,9 @@ active_no_prefs_profile:
   user: active_no_prefs_profile
   api_token: 3kg612cdc0f3415c242856758f33bdfb07bc3561b00e86qdmi
   expires_at: 2038-01-01 00:00:00
+
+user_foo_in_sharing_group:
+  api_client: untrusted
+  user: user_foo_in_sharing_group
+  api_token: 2p1pou8p4ls208mcbedeewlotghppenobcyrmyhq8pyf51xd8u
+  expires_at: 2038-01-01 00:00:00
