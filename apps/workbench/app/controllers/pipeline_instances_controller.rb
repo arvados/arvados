@@ -47,6 +47,13 @@ class PipelineInstancesController < ApplicationController
       component.delete :job
     end
     @object.state = 'New'
+
+    # set owner_uuid to that of source, provided it is wriable by current user
+    current_project = Group.find(source.owner_uuid) rescue nil
+    if (current_project && current_project.writable_by.andand.include?(current_user.uuid))
+      @object.owner_uuid = source.owner_uuid
+    end
+
     super
   end
 
