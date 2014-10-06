@@ -44,7 +44,7 @@
              selection_param: 'uuid',
              success: 'redirect-to-created-object'
            }.to_json),
-          { class: "btn btn-sm btn-primary", remote: true, method: 'get',
+          { class: "btn btn-sm btn-primary force-cache-reload", remote: true, method: 'get',
             title: "Move this #{object_class} to a different project"}) do %>
         <i class="fa fa-fw fa-truck"></i> Move <%=object_class%>...
       <% end %>
@@ -53,7 +53,7 @@
 <% end %>
 
 <%
-  # Display any flash messages in an alert. If there is any entry with "error" key, alert-danger is used. 
+  # Display any flash messages in an alert. If there is any entry with "error" key, alert-danger is used.
   flash_msg = ''
   flash_msg_is_error = false
   flash.each do |msg|
