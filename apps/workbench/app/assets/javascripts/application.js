@@ -222,7 +222,6 @@ jQuery(function($){
 window.addEventListener("DOMContentLoaded", function(e) {
     if(history.state) {
         if(history.state.nocache) {
-            console.log('no cache!');
             showLoadingModal();
             history.replaceState( {}, '' );
             location.reload(true);
