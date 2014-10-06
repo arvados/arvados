@@ -105,8 +105,23 @@ class ApplicationController < ActionController::Base
     end
   end
 
+  # params[:order]:
+  #
+  # The order can be unspecified, or it can be a column name.
+  # Column names should always be qualified by a table name and a direction is optional, defaulting to asc
+  # (e.g. "collections.name" or "collections.name desc").
+  # If a column name is specified, that table will be sorted by that column.
+  # If there are objects from different models that will be shown (such as in Jobs and Pipelines tab),
+  # then a sort column name can optionally be specified for each model, passed as an array (e.g. "['jobs.description', 'pipeline_instances.name']")
+  # Currently only one sort column name and direction can be specified for each model.
   def load_filters_and_paging_params
-    @order = params[:order] || 'created_at desc'
+    if params[:order].blank?
+      @order = 'created_at desc'
+    elsif params[:order].starts_with? '['
+      @order = Oj.load params[:order]
+    else
+      @order = params[:order]
+    end
     @order = [@order] unless @order.is_a? Array
 
     @limit ||= 200

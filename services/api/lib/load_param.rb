@@ -70,7 +70,7 @@ module LoadParam
     end
 
     @orders = []
-    if params[:order]
+    if (params[:order].is_a?(Array) && !params[:order].empty?) || !params[:order].blank?
       od = []
       (case params[:order]
        when String
@@ -93,6 +93,8 @@ module LoadParam
             model_class.columns.collect(&:name).index(attr) and
             ['asc','desc'].index direction.downcase
           @orders << "#{table_name}.#{attr} #{direction.downcase}"
+        elsif attr.match /^([a-z][_a-z0-9]+)\.([a-z][_a-z0-9]+)$/
+          @orders << "#{attr} #{direction.downcase}"
         end
       end
     end

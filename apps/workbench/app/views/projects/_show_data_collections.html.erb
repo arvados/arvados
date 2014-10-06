@@ -1,3 +1,4 @@
 <%= render_pane 'tab_contents', to_string: true, locals: {
-    filters: [['uuid', 'is_a', "arvados#collection"]]
+    filters: [['uuid', 'is_a', "arvados#collection"]],
+    order: 'collections.name'
     }.merge(local_assigns) %>
