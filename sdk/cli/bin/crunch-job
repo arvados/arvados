@@ -153,30 +153,15 @@ if ($job_has_uuid)
 {
   $Job = $arv->{'jobs'}->{'get'}->execute('uuid' => $jobspec);
   if (!$force_unlock) {
-    # If some other crunch-job process has grabbed this job (or we see
-    # other evidence that the job is already underway) we exit
-    # EX_TEMPFAIL so crunch-dispatch (our parent process) doesn't
-    # mark the job as failed.
-    if ($Job->{'is_locked_by_uuid'}) {
-      Log(undef, "Job is locked by " . $Job->{'is_locked_by_uuid'});
+    # Claim this job, and make sure nobody else does
+    eval {
+      # lock() sets is_locked_by_uuid and changes state to Running.
+      $arv->{'jobs'}->{'lock'}->execute('uuid' => $Job->{'uuid'})
+    };
+    if ($@) {
+      Log(undef, "Error while locking job, exiting ".EX_TEMPFAIL);
       exit EX_TEMPFAIL;
-    }
-    if ($Job->{'state'} ne 'Queued') {
-      Log(undef, "Job state is " . $Job->{'state'} . ", but I can only start queued jobs.");
-      exit EX_TEMPFAIL;
-    }
-    if ($Job->{'success'} ne undef) {
-      Log(undef, "Job 'success' flag (" . $Job->{'success'} . ") is not null");
-      exit EX_TEMPFAIL;
-    }
-    if ($Job->{'running'}) {
-      Log(undef, "Job 'running' flag is already set");
-      exit EX_TEMPFAIL;
-    }
-    if ($Job->{'started_at'}) {
-      Log(undef, "Job 'started_at' time is already set (" . $Job->{'started_at'} . ")");
-      exit EX_TEMPFAIL;
-    }
+    };
   }
 }
 else
@@ -281,23 +266,11 @@ foreach (@sinfo)
 @slot = sort { $a->{cpu} <=> $b->{cpu} } @slot;
 
 
-
-my $jobmanager_id;
-if ($job_has_uuid)
-{
-  # Claim this job, and make sure nobody else does
-  unless ($Job->update_attributes('is_locked_by_uuid' => $User->{'uuid'}) &&
-          $Job->{'is_locked_by_uuid'} == $User->{'uuid'}) {
-    Log(undef, "Error while updating / locking job, exiting ".EX_TEMPFAIL);
-    exit EX_TEMPFAIL;
-  }
-  $Job->update_attributes('state' => 'Running',
-                          'tasks_summary' => { 'failed' => 0,
-                                               'todo' => 1,
-                                               'running' => 0,
-                                               'done' => 0 });
-}
-
+$Job->update_attributes(
+  'tasks_summary' => { 'failed' => 0,
+                       'todo' => 1,
+                       'running' => 0,
+                       'done' => 0 });
 
 Log (undef, "start");
 $SIG{'INT'} = sub { $main::please_freeze = 1; };
