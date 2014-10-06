@@ -83,7 +83,7 @@ use IPC::Open2;
 use IO::Select;
 use File::Temp;
 use Fcntl ':flock';
-use File::Path qw( make_path );
+use File::Path qw( make_path remove_tree );
 
 use constant EX_TEMPFAIL => 75;
 
@@ -125,8 +125,7 @@ if (defined $job_api_token) {
 }
 
 my $have_slurm = exists $ENV{SLURM_JOBID} && exists $ENV{SLURM_NODELIST};
-my $job_has_uuid = $jobspec =~ /^[-a-z\d]+$/;
-my $local_job = !$job_has_uuid;
+my $local_job = 0;
 
 
 $SIG{'USR1'} = sub
@@ -144,12 +143,13 @@ my $arv = Arvados->new('apiVersion' => 'v1');
 
 my $User = $arv->{'users'}->{'current'}->execute;
 
-my $Job = {};
+my $Job;
 my $job_id;
 my $dbh;
 my $sth;
-if ($job_has_uuid)
+if ($jobspec =~ /^[-a-z\d]+$/)
 {
+  # $jobspec is an Arvados UUID, not a JSON job specification
   $Job = $arv->{'jobs'}->{'get'}->execute('uuid' => $jobspec);
   if (!$force_unlock) {
     # Claim this job, and make sure nobody else does
@@ -175,10 +175,9 @@ else
 
   $Job->{'is_locked_by_uuid'} = $User->{'uuid'};
   $Job->{'started_at'} = gmtime;
+  $Job->{'state'} = 'Running';
 
   $Job = $arv->{'jobs'}->{'create'}->execute('job' => $Job);
-
-  $job_has_uuid = 1;
 }
 $job_id = $Job->{'uuid'};
 
@@ -330,137 +329,202 @@ if (!$have_slurm)
 
 
 my $build_script;
+do {
+  local $/ = undef;
+  $build_script = <DATA>;
+};
+my $nodelist = join(",", @node);
 
+if (!defined $no_clear_tmp) {
+  # Clean out crunch_tmp/work, crunch_tmp/opt, crunch_tmp/src*
+  Log (undef, "Clean work dirs");
 
-$ENV{"CRUNCH_SRC_COMMIT"} = $Job->{script_version};
-
-my $skip_install = ($local_job && $Job->{script_version} =~ m{^/});
-if ($skip_install)
-{
-  if (!defined $no_clear_tmp) {
-    my $clear_tmp_cmd = 'rm -rf $JOB_WORK $CRUNCH_TMP/opt $CRUNCH_TMP/src*';
-    system($clear_tmp_cmd) == 0
-	or croak ("`$clear_tmp_cmd` failed: ".($?>>8));
+  my $cleanpid = fork();
+  if ($cleanpid == 0)
+  {
+    srun (["srun", "--nodelist=$nodelist", "-D", $ENV{'TMPDIR'}],
+          ['bash', '-c', 'if mount | grep -q $JOB_WORK/; then for i in $JOB_WORK/*keep; do /bin/fusermount -z -u $i; done; fi; sleep 1; rm -rf $JOB_WORK $CRUNCH_TMP/opt $CRUNCH_TMP/src*']);
+    exit (1);
   }
-  $ENV{"CRUNCH_SRC"} = $Job->{script_version};
-  for my $src_path ("$ENV{CRUNCH_SRC}/arvados/sdk/python") {
-    if (-d $src_path) {
-      system("virtualenv", "$ENV{CRUNCH_TMP}/opt") == 0
-          or croak ("virtualenv $ENV{CRUNCH_TMP}/opt failed: exit ".($?>>8));
-      system ("cd $src_path && ./build.sh && \$CRUNCH_TMP/opt/bin/python setup.py install")
-          == 0
-          or croak ("setup.py in $src_path failed: exit ".($?>>8));
-    }
+  while (1)
+  {
+    last if $cleanpid == waitpid (-1, WNOHANG);
+    freeze_if_want_freeze ($cleanpid);
+    select (undef, undef, undef, 0.1);
   }
+  Log (undef, "Cleanup command exited ".exit_status_s($?));
 }
-else
-{
-  do {
-    local $/ = undef;
-    $build_script = <DATA>;
-  };
-  Log (undef, "Install revision ".$Job->{script_version});
-  my $nodelist = join(",", @node);
 
-  if (!defined $no_clear_tmp) {
-    # Clean out crunch_tmp/work, crunch_tmp/opt, crunch_tmp/src*
 
-    my $cleanpid = fork();
-    if ($cleanpid == 0)
-    {
-      srun (["srun", "--nodelist=$nodelist", "-D", $ENV{'TMPDIR'}],
-	    ['bash', '-c', 'if mount | grep -q $JOB_WORK/; then for i in $JOB_WORK/*keep; do /bin/fusermount -z -u $i; done; fi; sleep 1; rm -rf $JOB_WORK $CRUNCH_TMP/opt $CRUNCH_TMP/src*']);
-      exit (1);
-    }
-    while (1)
-    {
-      last if $cleanpid == waitpid (-1, WNOHANG);
-      freeze_if_want_freeze ($cleanpid);
-      select (undef, undef, undef, 0.1);
-    }
-    Log (undef, "Clean-work-dir exited $?");
-  }
-
-  # Install requested code version
-
-  my @execargs;
-  my @srunargs = ("srun",
-		  "--nodelist=$nodelist",
-		  "-D", $ENV{'TMPDIR'}, "--job-name=$job_id");
-
-  $ENV{"CRUNCH_SRC_COMMIT"} = $Job->{script_version};
+my $git_archive;
+if (!defined $git_dir && $Job->{'script_version'} =~ m{^/}) {
+  # If we're in user-land (i.e., not called from crunch-dispatch)
+  # script_version can be an absolute directory path, signifying we
+  # should work straight out of that directory instead of using a git
+  # commit.
+  $ENV{"CRUNCH_SRC_COMMIT"} = $Job->{'script_version'};
+  $ENV{"CRUNCH_SRC"} = $Job->{'script_version'};
+}
+else {
   $ENV{"CRUNCH_SRC"} = "$ENV{CRUNCH_TMP}/src";
 
-  my $commit;
-  my $git_archive;
-  my $treeish = $Job->{'script_version'};
+  # Install requested code version
+  Log (undef, "Looking for version ".$Job->{script_version}." from repository ".$Job->{repository});
 
-  # If we're running under crunch-dispatch, it will have pulled the
-  # appropriate source tree into its own repository, and given us that
-  # repo's path as $git_dir. If we're running a "local" job, and a
-  # script_version was specified, it's up to the user to provide the
-  # full path to a local repository in Job->{repository}.
-  #
-  # TODO: Accept URLs too, not just local paths. Use git-ls-remote and
-  # git-archive --remote where appropriate.
-  #
-  # TODO: Accept a locally-hosted Arvados repository by name or
-  # UUID. Use arvados.v1.repositories.list or .get to figure out the
-  # appropriate fetch-url.
-  my $repo = $git_dir || $ENV{'CRUNCH_DEFAULT_GIT_DIR'} || $Job->{'repository'};
+  $ENV{"CRUNCH_SRC_COMMIT"} = $Job->{script_version};
 
+  # If we're running under crunch-dispatch, it will have already
+  # pulled the appropriate source tree into its own repository, and
+  # given us that repo's path as $git_dir.
+  #
+  # If we're running a "local" job, we might have to fetch content
+  # from a remote repository.
+  #
+  # (Currently crunch-dispatch gives a local path with --git-dir, but
+  # we might as well accept URLs there too in case it changes its
+  # mind.)
+  my $repo = $git_dir || $Job->{'repository'};
+
+  # Repository can be remote or local. If remote, we'll need to fetch it
+  # to a local dir before doing `git log` et al.
+  my $repo_location;
+
+  if ($repo =~ m{://|^[^/]*:}) {
+    # $repo is a git url we can clone, like git:// or https:// or
+    # file:/// or [user@]host:repo.git. Note "user/name@host:foo" is
+    # not recognized here because distinguishing that from a local
+    # path is too fragile. If you really need something strange here,
+    # use the ssh:// form.
+    $repo_location = 'remote';
+  } elsif ($repo =~ m{^\.*/}) {
+    # $repo is a local path to a git index. We'll also resolve ../foo
+    # to ../foo/.git if the latter is a directory. To help
+    # disambiguate local paths from named hosted repositories, this
+    # form must be given as ./ or ../ if it's a relative path.
+    if (-d "$repo/.git") {
+      $repo = "$repo/.git";
+    }
+    $repo_location = 'local';
+  } else {
+    # $repo is none of the above. It must be the name of a hosted
+    # repository.
+    my $arv_repo_list = $arv->{'repositories'}->{'list'}->execute(
+      'filters' => [['name','=',$repo]]
+        )->{'items'};
+    my $n_found = scalar @{$arv_repo_list};
+    if ($n_found > 0) {
+      Log(undef, "Repository '$repo' -> "
+          . join(", ", map { $_->{'uuid'} } @{$arv_repo_list}));
+    }
+    if ($n_found != 1) {
+      croak("Error: Found $n_found repositories with name '$repo'.");
+    }
+    $repo = $arv_repo_list->[0]->{'fetch_url'};
+    $repo_location = 'remote';
+  }
+  Log(undef, "Using $repo_location repository '$repo'");
   $ENV{"CRUNCH_SRC_URL"} = $repo;
 
-  if (-d "$repo/.git") {
-    # We were given a working directory, but we are only interested in
-    # the index.
-    $repo = "$repo/.git";
-  }
+  # Resolve given script_version (we'll call that $treeish here) to a
+  # commit sha1 ($commit).
+  my $treeish = $Job->{'script_version'};
+  my $commit;
+  if ($repo_location eq 'remote') {
+    # We minimize excess object-fetching by re-using the same bare
+    # repository in CRUNCH_TMP/.git for multiple crunch-jobs -- we
+    # just keep adding remotes to it as needed.
+    my $local_repo = $ENV{'CRUNCH_TMP'}."/.git";
+    my $gitcmd = "git --git-dir=\Q$local_repo\E";
 
-  # If this looks like a subversion r#, look for it in git-svn commit messages
-
-  if ($treeish =~ m{^\d{1,4}$}) {
-    my $gitlog = `git --git-dir=\Q$repo\E log --pretty="format:%H" --grep="git-svn-id:.*\@"\Q$treeish\E" " master`;
-    chomp $gitlog;
-    Log(undef, "git Subversion search exited $?");
-    if (($? == 0) && ($gitlog =~ /^[a-f0-9]{40}$/)) {
-      $commit = $gitlog;
-      Log(undef, "Using commit $commit for Subversion revision $treeish");
+    # Set up our local repo for caching remote objects, making
+    # archives, etc.
+    if (!-d $local_repo) {
+      make_path($local_repo) or croak("Error: could not create $local_repo");
     }
-  }
+    # This works (exits 0 and doesn't delete fetched objects) even
+    # if $local_repo is already initialized:
+    `$gitcmd init --bare`;
+    if ($?) {
+      croak("Error: $gitcmd init --bare exited ".exit_status_s($?));
+    }
 
-  # If that didn't work, try asking git to look it up as a tree-ish.
-
-  if (!defined $commit) {
-    my $found = `git --git-dir=\Q$repo\E rev-list -1 ''\Q$treeish\E`;
-    chomp $found;
-    Log(undef, "git rev-list exited $? with result '$found'");
-    if (($? == 0) && ($found =~ /^[0-9a-f]{40}$/s)) {
-      $commit = $found;
-      Log(undef, "Using commit $commit for tree-ish $treeish");
-      if ($commit ne $treeish) {
-	# Make sure we record the real commit id in the database,
-	# frozentokey, logs, etc. -- instead of an abbreviation or a
-	# branch name which can become ambiguous or point to a
-	# different commit in the future.
-        $Job->{'script_version'} = $commit;
-        !$job_has_uuid or
-            $Job->update_attributes('script_version' => $commit) or
-            croak("Error while updating job");
+    # If $treeish looks like a hash (or abbrev hash) we look it up in
+    # our local cache first, since that's cheaper. (We don't want to
+    # do that with tags/branches though -- those change over time, so
+    # they should always be resolved by the remote repo.)
+    if ($treeish =~ /^[0-9a-f]{3,40}$/s) {
+      # Hide stderr because it's normal for this to fail:
+      my $sha1 = `$gitcmd rev-list -n1 ''\Q$treeish\E 2>/dev/null`;
+      if ($? == 0 &&
+          $sha1 =~ /^$treeish/ && # Don't use commit 123 @ branch abc!
+          $sha1 =~ /^([0-9a-f]{40})$/s) {
+        $commit = $1;
+        Log(undef, "Commit $commit already present in $local_repo");
       }
     }
+
+    if (!defined $commit) {
+      # If $treeish isn't just a hash or abbrev hash, or isn't here
+      # yet, we need to fetch the remote to resolve it correctly.
+
+      # First, remove all local heads. This prevents a name that does
+      # not exist on the remote from resolving to (or colliding with)
+      # a previously fetched branch or tag (possibly from a different
+      # remote).
+      remove_tree("$local_repo/refs/heads", {keep_root => 1});
+
+      Log(undef, "Fetching objects from $repo to $local_repo");
+      `$gitcmd fetch --no-progress --tags ''\Q$repo\E \Q+refs/heads/*:refs/heads/*\E`;
+      if ($?) {
+        croak("Error: `$gitcmd fetch` exited ".exit_status_s($?));
+      }
+    }
+
+    # Now that the data is all here, we will use our local repo for
+    # the rest of our git activities.
+    $repo = $local_repo;
   }
 
-  if (defined $commit) {
-    $ENV{"CRUNCH_SRC_COMMIT"} = $commit;
-    @execargs = ("sh", "-c",
-		 "mkdir -p $ENV{CRUNCH_INSTALL} && cd $ENV{CRUNCH_TMP} && perl -");
-    $git_archive = `git --git-dir=\Q$repo\E archive ''\Q$commit\E`;
-    croak("git archive failed: exit " . ($? >> 8)) if ($? != 0);
+  my $gitcmd = "git --git-dir=\Q$repo\E";
+  my $sha1 = `$gitcmd rev-list -n1 ''\Q$treeish\E`;
+  unless ($? == 0 && $sha1 =~ /^([0-9a-f]{40})$/) {
+    croak("`$gitcmd rev-list` exited "
+          .exit_status_s($?)
+          .", '$treeish' not found. Giving up.");
   }
-  else {
-    croak ("could not figure out commit id for $treeish");
+  $commit = $1;
+  Log(undef, "Version $treeish is commit $commit");
+
+  if ($commit ne $Job->{'script_version'}) {
+    # Record the real commit id in the database, frozentokey, logs,
+    # etc. -- instead of an abbreviation or a branch name which can
+    # become ambiguous or point to a different commit in the future.
+    if (!$Job->update_attributes('script_version' => $commit)) {
+      croak("Error: failed to update job's script_version attribute");
+    }
   }
+
+  $ENV{"CRUNCH_SRC_COMMIT"} = $commit;
+  $git_archive = `$gitcmd archive ''\Q$commit\E`;
+  if ($?) {
+    croak("Error: $gitcmd archive exited ".exit_status_s($?));
+  }
+}
+
+if (!defined $git_archive) {
+  Log(undef, "Skip install phase (no git archive)");
+  if ($have_slurm) {
+    Log(undef, "Warning: This probably means workers have no source tree!");
+  }
+}
+else {
+  Log(undef, "Run install script on all workers");
+
+  my @srunargs = ("srun",
+                  "--nodelist=$nodelist",
+                  "-D", $ENV{'TMPDIR'}, "--job-name=$job_id");
+  my @execargs = ("sh", "-c",
+                  "mkdir -p $ENV{CRUNCH_INSTALL} && cd $ENV{CRUNCH_TMP} && perl -");
 
   # Note: this section is almost certainly unnecessary if we're
   # running tasks in docker containers.
@@ -476,7 +540,7 @@ else
     freeze_if_want_freeze ($installpid);
     select (undef, undef, undef, 0.1);
   }
-  Log (undef, "Install exited $?");
+  Log (undef, "Install script exited ".exit_status_s($?));
 }
 
 if (!$have_slurm)
@@ -515,7 +579,8 @@ fi
   }
   if ($? != 0)
   {
-    croak("Installing Docker image from $docker_locator returned exit code $?");
+    croak("Installing Docker image from $docker_locator exited "
+          .exit_status_s($?));
   }
 }
 
@@ -838,7 +903,7 @@ else {
     });
     Log(undef, "output uuid " . $output->{uuid});
     Log(undef, "output hash " . $output->{portable_data_hash});
-    $Job->update_attributes('output' => $output->{portable_data_hash}) if $job_has_uuid;
+    $Job->update_attributes('output' => $output->{portable_data_hash});
   };
   if ($@) {
     Log (undef, "Failed to register output manifest: $@");
@@ -849,15 +914,15 @@ Log (undef, "finish");
 
 save_meta();
 
-if ($job_has_uuid) {
-  if ($collated_output && $main::success) {
-    $Job->update_attributes('state' => 'Complete')
-  } else {
-    $Job->update_attributes('state' => 'Failed')
-  }
+my $final_state;
+if ($collated_output && $main::success) {
+  $final_state = 'Complete';
+} else {
+  $final_state = 'Failed';
 }
+$Job->update_attributes('state' => $final_state);
 
-exit ($Job->{'state'} != 'Complete' ? 1 : 0);
+exit (($final_state eq 'Complete') ? 0 : 1);
 
 
 
@@ -872,9 +937,7 @@ sub update_progress_stats
   $Job->{'tasks_summary'}->{'todo'} = $todo;
   $Job->{'tasks_summary'}->{'done'} = $done;
   $Job->{'tasks_summary'}->{'running'} = $running;
-  if ($job_has_uuid) {
-    $Job->update_attributes('tasks_summary' => $Job->{'tasks_summary'});
-  }
+  $Job->update_attributes('tasks_summary' => $Job->{'tasks_summary'});
   Log (undef, "status: $done done, $running running, $todo todo");
   $progress_is_dirty = 0;
 }
@@ -895,10 +958,7 @@ sub reapchildren
 
   my $childstatus = $?;
   my $exitvalue = $childstatus >> 8;
-  my $exitinfo = sprintf("exit %d signal %d%s",
-                         $exitvalue,
-                         $childstatus & 127,
-                         ($childstatus & 128 ? ' core dump' : ''));
+  my $exitinfo = "exit ".exit_status_s($childstatus);
   $Jobstep->{'arvados_task'}->reload;
   my $task_success = $Jobstep->{'arvados_task'}->{success};
 
@@ -944,10 +1004,8 @@ sub reapchildren
       $main::success = 0;
       $main::please_freeze = 1;
     }
-    else {
-      # Put this task back on the todo queue
-      push @jobstep_todo, $jobstepid;
-    }
+    # Put this task back on the todo queue
+    push @jobstep_todo, $jobstepid;
     $Job->{'tasks_summary'}->{'failed'}++;
   }
   else
@@ -1005,23 +1063,21 @@ sub check_refresh_wanted
   my @stat = stat $ENV{"CRUNCH_REFRESH_TRIGGER"};
   if (@stat && $stat[9] > $latest_refresh) {
     $latest_refresh = scalar time;
-    if ($job_has_uuid) {
-      my $Job2 = $arv->{'jobs'}->{'get'}->execute('uuid' => $jobspec);
-      for my $attr ('cancelled_at',
-                    'cancelled_by_user_uuid',
-                    'cancelled_by_client_uuid',
-                    'state') {
-        $Job->{$attr} = $Job2->{$attr};
+    my $Job2 = $arv->{'jobs'}->{'get'}->execute('uuid' => $jobspec);
+    for my $attr ('cancelled_at',
+                  'cancelled_by_user_uuid',
+                  'cancelled_by_client_uuid',
+                  'state') {
+      $Job->{$attr} = $Job2->{$attr};
+    }
+    if ($Job->{'state'} ne "Running") {
+      if ($Job->{'state'} eq "Cancelled") {
+        Log (undef, "Job cancelled at " . $Job->{'cancelled_at'} . " by user " . $Job->{'cancelled_by_user_uuid'});
+      } else {
+        Log (undef, "Job state unexpectedly changed to " . $Job->{'state'});
       }
-      if ($Job->{'state'} ne "Running") {
-        if ($Job->{'state'} eq "Cancelled") {
-          Log (undef, "Job cancelled at " . $Job->{'cancelled_at'} . " by user " . $Job->{'cancelled_by_user_uuid'});
-        } else {
-          Log (undef, "Job state unexpectedly changed to " . $Job->{'state'});
-        }
-        $main::success = 0;
-        $main::please_freeze = 1;
-      }
+      $main::success = 0;
+      $main::please_freeze = 1;
     }
   }
 }
@@ -1223,10 +1279,13 @@ sub collate_output
     if ($s->can_read(120)) {
       sysread($child_out, $joboutput, 64 * 1024 * 1024);
       chomp($joboutput);
+      # TODO: Ensure exit status == 0.
     } else {
       Log (undef, "timed out reading from 'arv-put'");
     }
   }
+  # TODO: kill $pid instead of waiting, now that we've decided to
+  # ignore further output.
   waitpid($pid, 0);
 
   return $joboutput;
@@ -1331,7 +1390,7 @@ sub log_writer_finish()
   waitpid($log_pipe_pid, 0);
   $log_pipe_pid = $log_pipe_in = $log_pipe_out = undef;
   if ($?) {
-    Log("log_writer_finish: arv-put returned error $?")
+    Log("log_writer_finish: arv-put exited ".exit_status_s($?))
   }
 
   return $arv_put_output;
@@ -1374,7 +1433,7 @@ sub croak
   Log (undef, $message);
   freeze() if @jobstep_todo;
   collate_output() if @jobstep_todo;
-  cleanup();
+  cleanup() if $Job;
   save_meta() if log_writer_is_active();
   die;
 }
@@ -1382,7 +1441,6 @@ sub croak
 
 sub cleanup
 {
-  return if !$job_has_uuid;
   if ($Job->{'state'} eq 'Cancelled') {
     $Job->update_attributes('finished_at' => scalar gmtime);
   } else {
@@ -1399,7 +1457,7 @@ sub save_meta
   my $loglocator = log_writer_finish();
   Log (undef, "log manifest is $loglocator");
   $Job->{'log'} = $loglocator;
-  $Job->update_attributes('log', $loglocator) if $job_has_uuid;
+  $Job->update_attributes('log', $loglocator);
 }
 
 
@@ -1427,7 +1485,7 @@ sub freeze_if_want_freeze
     collate_output();
     cleanup();
     save_meta();
-    exit 0;
+    exit 1;
   }
 }
 
@@ -1549,6 +1607,20 @@ sub put_retry_count {
     $timediff /= 2;
   }
   return ($retries > 3) ? $retries : 3;
+}
+
+sub exit_status_s {
+  # Given a $?, return a human-readable exit code string like "0" or
+  # "1" or "0 with signal 1" or "1 with signal 11".
+  my $exitcode = shift;
+  my $s = $exitcode >> 8;
+  if ($exitcode & 0x7f) {
+    $s .= " with signal " . ($exitcode & 0x7f);
+  }
+  if ($exitcode & 0x80) {
+    $s .= " with core dump";
+  }
+  return $s;
 }
 
 __DATA__
