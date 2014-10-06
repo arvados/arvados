@@ -61,63 +61,68 @@ class Dispatcher
     end
   end
 
-  def sinfo
+  def each_slurm_line(cmd, outfmt, max_fields=nil)
+    max_fields ||= outfmt.split(":").size
+    max_fields += 1  # To accommodate the node field we add
     @@slurm_version ||= Gem::Version.new(`sinfo --version`.match(/\b[\d\.]+\b/)[0])
     if Gem::Version.new('2.3') <= @@slurm_version
-      `sinfo --noheader -o '%n:%t'`.strip
+      `#{cmd} --noheader -o '%n:#{outfmt}'`.each_line do |line|
+        yield line.chomp.split(":", max_fields)
+      end
     else
       # Expand rows with hostname ranges (like "foo[1-3,5,9-12]:idle")
       # into multiple rows with one hostname each.
-      `sinfo --noheader -o '%N:%t'`.split("\n").collect do |line|
-        tokens = line.split ":"
+      `#{cmd} --noheader -o '%N:#{outfmt}'`.each_line do |line|
+        tokens = line.chomp.split(":", max_fields)
         if (re = tokens[0].match /^(.*?)\[([-,\d]+)\]$/)
-          re[2].split(",").collect do |range|
+          tokens.shift
+          re[2].split(",").each do |range|
             range = range.split("-").collect(&:to_i)
-            (range[0]..range[-1]).collect do |n|
-              [re[1] + n.to_s, tokens[1..-1]].join ":"
+            (range[0]..range[-1]).each do |n|
+              yield [re[1] + n.to_s] + tokens
             end
           end
         else
-          tokens.join ":"
+          yield tokens
         end
-      end.flatten.join "\n"
+      end
     end
   end
 
+  def slurm_status
+    slurm_nodes = {}
+    each_slurm_line("sinfo", "%t") do |hostname, state|
+      state.sub!(/\W+$/, "")
+      state = "down" unless %w(idle alloc down).include?(state)
+      slurm_nodes[hostname] = {state: state, job: nil}
+    end
+    each_slurm_line("squeue", "%j") do |hostname, job_uuid|
+      slurm_nodes[hostname][:job] = job_uuid if slurm_nodes[hostname]
+    end
+    slurm_nodes
+  end
+
   def update_node_status
-    if Server::Application.config.crunch_job_wrapper.to_s.match /^slurm/
-      @node_state ||= {}
-      node_seen = {}
+    return unless Server::Application.config.crunch_job_wrapper.to_s.match /^slurm/
+    @node_state ||= {}
+    slurm_status.each_pair do |hostname, slurmdata|
+      next if @node_state[hostname] == slurmdata
       begin
-        sinfo.split("\n").
-          each do |line|
-          re = line.match /(\S+?):+(idle|alloc|down)?/
-          next if !re
-
-          _, node_name, node_state = *re
-          node_state = 'down' unless %w(idle alloc down).include? node_state
-
-          # sinfo tells us about a node N times if it is shared by N partitions
-          next if node_seen[node_name]
-          node_seen[node_name] = true
-
-          # update our database (and cache) when a node's state changes
-          if @node_state[node_name] != node_state
-            @node_state[node_name] = node_state
-            node = Node.where('hostname=?', node_name).order(:last_ping_at).last
-            if node
-              $stderr.puts "dispatch: update #{node_name} state to #{node_state}"
-              node.info['slurm_state'] = node_state
-              if not node.save
-                $stderr.puts "dispatch: failed to update #{node.uuid}: #{node.errors.messages}"
-              end
-            elsif node_state != 'down'
-              $stderr.puts "dispatch: sinfo reports '#{node_name}' is not down, but no node has that name"
-            end
+        node = Node.where('hostname=?', hostname).order(:last_ping_at).last
+        if node
+          $stderr.puts "dispatch: update #{hostname} state to #{slurmdata}"
+          node.info["slurm_state"] = slurmdata[:state]
+          node.job_uuid = slurmdata[:job]
+          if node.save
+            @node_state[hostname] = slurmdata
+          else
+            $stderr.puts "dispatch: failed to update #{node.uuid}: #{node.errors.messages}"
           end
+        elsif slurmdata[:state] != 'down'
+          $stderr.puts "dispatch: SLURM reports '#{hostname}' is not down, but no node has that name"
         end
       rescue => error
-        $stderr.puts "dispatch: error updating node status: #{error}"
+        $stderr.puts "dispatch: error updating #{hostname} node status: #{error}"
       end
     end
   end
@@ -217,8 +222,6 @@ class Dispatcher
         raise "Unknown crunch_job_wrapper: #{Server::Application.config.crunch_job_wrapper}"
       end
 
-      next if !take(job)
-
       if Server::Application.config.crunch_job_user
         cmd_args.unshift("sudo", "-E", "-u",
                          Server::Application.config.crunch_job_user,
@@ -232,7 +235,10 @@ class Dispatcher
       job_auth = ApiClientAuthorization.
         new(user: User.where('uuid=?', job.modified_by_user_uuid).first,
             api_client_id: 0)
-      job_auth.save
+      if not job_auth.save
+        $stderr.puts "dispatch: job_auth.save failed"
+        next
+      end
 
       crunch_job_bin = (ENV['CRUNCH_JOB_BIN'] || `which arv-crunch-job`.strip)
       if crunch_job_bin == ''
@@ -253,17 +259,51 @@ class Dispatcher
         if not File.exists? src_repo
           $stderr.puts "dispatch: No #{job.repository}.git or #{job.repository}/.git at #{repo_root}"
           sleep 1
-          untake job
           next
         end
       end
 
-      $stderr.puts `cd #{arvados_internal.shellescape} && git fetch-pack --all #{src_repo.shellescape} && git tag #{job.uuid.shellescape} #{job.script_version.shellescape}`
-      unless $? == 0
-        $stderr.puts "dispatch: git fetch-pack && tag failed"
-        sleep 1
-        untake job
-        next
+      git = "git --git-dir=#{arvados_internal.shellescape}"
+
+      # check if the commit needs to be fetched or not
+      commit_rev = `#{git} rev-list -n1 #{job.script_version.shellescape} 2>/dev/null`.chomp
+      unless $? == 0 and commit_rev == job.script_version
+        # commit does not exist in internal repository, so import the source repository using git fetch-pack
+        cmd = "#{git} fetch-pack --no-progress --all #{src_repo.shellescape}"
+        $stderr.puts cmd
+        $stderr.puts `#{cmd}`
+        unless $? == 0
+          $stderr.puts "dispatch: git fetch-pack failed"
+          sleep 1
+          next
+        end
+      end
+
+      # check if the commit needs to be tagged with this job uuid
+      tag_rev = `#{git} rev-list -n1 #{job.uuid.shellescape} 2>/dev/null`.chomp
+      if $? != 0
+        # no job tag found, so create one
+        cmd = "#{git} tag #{job.uuid.shellescape} #{job.script_version.shellescape}"
+        $stderr.puts cmd
+        $stderr.puts `#{cmd}`
+        unless $? == 0
+          $stderr.puts "dispatch: git tag failed"
+          sleep 1
+          next
+        end
+      else
+        # job tag found, check that it has the expected revision
+        unless tag_rev == job.script_version
+          # Uh oh, the tag doesn't point to the revision we were expecting.
+          # Someone has been monkeying with the job record and/or git.
+          $stderr.puts "dispatch: Already a tag #{job.script_version} pointing to commit #{tag_rev} but expected commit #{job.script_version}"
+          job.state = "Failed"
+          if not job.save
+            $stderr.puts "dispatch: job.save failed"
+            next
+          end
+          next
+        end
       end
 
       cmd_args << crunch_job_bin
@@ -281,7 +321,6 @@ class Dispatcher
       rescue
         $stderr.puts "dispatch: popen3: #{$!}"
         sleep 1
-        untake(job)
         next
       end
 
@@ -295,28 +334,67 @@ class Dispatcher
         stderr: e,
         wait_thr: t,
         job: job,
-        stderr_buf: '',
+        buf: {stderr: '', stdout: ''},
         started: false,
         sent_int: 0,
         job_auth: job_auth,
         stderr_buf_to_flush: '',
-        stderr_flushed_at: 0,
+        stderr_flushed_at: Time.new(0),
         bytes_logged: 0,
         events_logged: 0,
-        log_truncated: false
+        log_throttle_timestamp: Time.new(0),
+        log_throttle_bytes_so_far: 0,
+        log_throttle_lines_so_far: 0,
+        log_throttle_bytes_skipped: 0,
       }
       i.close
       update_node_status
     end
   end
 
-  def take(job)
-    # no-op -- let crunch-job take care of locking.
-    true
-  end
+  # Test for hard cap on total output and for log throttling.  Returns whether
+  # the log line should go to output or not.  Modifies "line" in place to
+  # replace it with an error if a logging limit is tripped.
+  def rate_limit running_job, line
+    if running_job[:bytes_logged] > Rails.configuration.crunch_limit_log_bytes_per_job
+      # Don't log anything if the hard cap has already been exceeded
+      return false
+    end
 
-  def untake(job)
-    # no-op -- let crunch-job take care of locking.
+    now = Time.now
+    throttle_period = Rails.configuration.crunch_log_throttle_period
+
+    if running_job[:log_throttle_bytes_skipped] > 0
+      # We've skipped some log in the current time period already, so continue to
+      # skip the log
+      running_job[:log_throttle_bytes_skipped] += line.size
+      return false
+    end
+
+    # Count lines and bytes logged in this period, and total bytes logged for the job
+    running_job[:log_throttle_lines_so_far] += 1
+    running_job[:log_throttle_bytes_so_far] += line.size
+    running_job[:bytes_logged] += line.size
+
+    if running_job[:log_throttle_bytes_so_far] > Rails.configuration.crunch_log_throttle_bytes or
+        running_job[:log_throttle_lines_so_far] > Rails.configuration.crunch_log_throttle_lines
+      # We've exceeded the per-period throttle, so start skipping
+      running_job[:log_throttle_bytes_skipped] += line.size
+
+      # Replace log line with a message about skipping the log
+      remaining_time = throttle_period - (now - running_job[:log_throttle_timestamp])
+      if running_job[:log_throttle_bytes_so_far] > Rails.configuration.crunch_log_throttle_bytes
+        line.replace "Exceeded rate #{Rails.configuration.crunch_log_throttle_bytes} bytes per #{throttle_period} seconds (crunch_log_throttle_bytes), logging will be silenced for the next #{remaining_time.round} seconds\n"
+      else
+        line.replace "Exceeded rate #{Rails.configuration.crunch_log_throttle_lines} lines per #{throttle_period} seconds (crunch_log_throttle_lines), logging will be silenced for the next #{remaining_time.round} seconds\n"
+      end
+    end
+
+    if running_job[:bytes_logged] > Rails.configuration.crunch_limit_log_bytes_per_job
+      # Replace log line with a message about truncating the log
+      line.replace "Exceeded log limit #{Rails.configuration.crunch_limit_log_bytes_per_job} bytes (crunch_limit_log_bytes_per_job).  Log will be truncated."
+    end
+
     true
   end
 
@@ -324,40 +402,55 @@ class Dispatcher
     @running.each do |job_uuid, j|
       job = j[:job]
 
-      # Throw away child stdout
-      begin
-        j[:stdout].read_nonblock(2**20)
-      rescue Errno::EAGAIN, EOFError
+      now = Time.now
+      if (now - j[:log_throttle_timestamp]) > Rails.configuration.crunch_log_throttle_period
+        # It has been more than throttle_period seconds since the last checkpoint so reset the
+        # throttle
+        if j[:log_throttle_bytes_skipped] > 0
+          j[:stderr_buf_to_flush] << "Skipped #{j[:log_throttle_bytes_skipped]} bytes of log"
+        end
+
+        j[:log_throttle_timestamp] = now
+        j[:log_throttle_bytes_so_far] = 0
+        j[:log_throttle_lines_so_far] = 0
+        j[:log_throttle_bytes_skipped] = 0
       end
 
-      # Read whatever is available from child stderr
-      stderr_buf = false
-      begin
-        stderr_buf = j[:stderr].read_nonblock(2**20)
-      rescue Errno::EAGAIN, EOFError
-      end
+      j[:buf].each do |stream, streambuf|
+        # Read some data from the child stream
+        buf = false
+        begin
+          buf = j[stream].read_nonblock(2**16)
+        rescue Errno::EAGAIN, EOFError
+        end
 
-      if stderr_buf
-        j[:stderr_buf] << stderr_buf
-        if j[:stderr_buf].index "\n"
-          lines = j[:stderr_buf].lines("\n").to_a
-          if j[:stderr_buf][-1] == "\n"
-            j[:stderr_buf] = ''
-          else
-            j[:stderr_buf] = lines.pop
-          end
-          lines.each do |line|
-            $stderr.print "#{job_uuid} ! " unless line.index(job_uuid)
-            $stderr.puts line
-            pub_msg = "#{Time.now.ctime.to_s} #{line.strip} \n"
-            if not j[:log_truncated]
-              j[:stderr_buf_to_flush] << pub_msg
-            end
-          end
+        if buf
+          # Add to the stream buffer
+          streambuf << buf
 
-          if not j[:log_truncated]
-            if (Rails.configuration.crunch_log_bytes_per_event < j[:stderr_buf_to_flush].size or
-                (j[:stderr_flushed_at] + Rails.configuration.crunch_log_seconds_between_events < Time.now.to_i))
+          # Check for at least one complete line
+          if streambuf.index "\n"
+            lines = streambuf.lines("\n").to_a
+
+            # check if the last line is partial or not
+            streambuf.replace(if streambuf[-1] == "\n"
+                                ''        # ends on a newline
+                              else
+                                lines.pop # Put the partial line back into the buffer
+                              end)
+
+            # Now spool the lines to the log output buffer
+            lines.each do |line|
+              # rate_limit returns true or false as to whether to actually log
+              # the line or not.  It also modifies "line" in place to replace
+              # it with an error if a logging limit is tripped.
+              if rate_limit j, line
+                $stderr.print "#{job_uuid} ! " unless line.index(job_uuid)
+                $stderr.puts line
+                pub_msg = "#{Time.now.ctime.to_s} #{line.strip} \n"
+                j[:stderr_buf_to_flush] << pub_msg
+              end
+              # Send log output to the logs table
               write_log j
             end
           end
@@ -407,25 +500,27 @@ class Dispatcher
 
     # Ensure every last drop of stdout and stderr is consumed
     read_pipes
+    j_done[:stderr_flushed_at] = Time.new(0) # reset flush timestamp to make sure log gets written
     write_log j_done # write any remaining logs
 
-    if j_done[:stderr_buf] and j_done[:stderr_buf] != ''
-      $stderr.puts j_done[:stderr_buf] + "\n"
+    j_done[:buf].each do |stream, streambuf|
+      if streambuf != ''
+        $stderr.puts streambuf + "\n"
+      end
     end
 
     # Wait the thread (returns a Process::Status)
-    exit_status = j_done[:wait_thr].value
+    exit_status = j_done[:wait_thr].value.exitstatus
 
     jobrecord = Job.find_by_uuid(job_done.uuid)
-    if exit_status.to_i != 75 and jobrecord.started_at
-      # Clean up state fields in case crunch-job exited without
-      # putting the job in a suitable "finished" state.
-      jobrecord.running = false
-      jobrecord.finished_at ||= Time.now
-      if jobrecord.success.nil?
-        jobrecord.success = false
+    if exit_status != 75 and jobrecord.state == "Running"
+      # crunch-job did not return exit code 75 (see below) and left the job in
+      # the "Running" state, which means there was an unhandled error.  Fail
+      # the job.
+      jobrecord.state = "Failed"
+      if not jobrecord.save
+        $stderr.puts "dispatch: jobrecord.save failed"
       end
-      jobrecord.save!
     else
       # Don't fail the job if crunch-job didn't even get as far as
       # starting it. If the job failed to run due to an infrastructure
@@ -503,15 +598,6 @@ class Dispatcher
 
   protected
 
-  def too_many_bytes_logged_for_job(j)
-    return (j[:bytes_logged] + j[:stderr_buf_to_flush].size >
-            Rails.configuration.crunch_limit_log_event_bytes_per_job)
-  end
-
-  def too_many_events_logged_for_job(j)
-    return (j[:events_logged] >= Rails.configuration.crunch_limit_log_events_per_job)
-  end
-
   def did_recently(thing, min_interval)
     @did_recently ||= {}
     if !@did_recently[thing] or @did_recently[thing] < Time.now - min_interval
@@ -524,34 +610,34 @@ class Dispatcher
 
   # send message to log table. we want these records to be transient
   def write_log running_job
-    return if running_job[:log_truncated]
     return if running_job[:stderr_buf_to_flush] == ''
-    begin
-      # Truncate logs if they exceed crunch_limit_log_event_bytes_per_job
-      # or crunch_limit_log_events_per_job.
-      if (too_many_bytes_logged_for_job(running_job))
-        running_job[:log_truncated] = true
-        running_job[:stderr_buf_to_flush] =
-          "Server configured limit reached (crunch_limit_log_event_bytes_per_job: #{Rails.configuration.crunch_limit_log_event_bytes_per_job}). Subsequent logs truncated"
-      elsif (too_many_events_logged_for_job(running_job))
-        running_job[:log_truncated] = true
-        running_job[:stderr_buf_to_flush] =
-          "Server configured limit reached (crunch_limit_log_events_per_job: #{Rails.configuration.crunch_limit_log_events_per_job}). Subsequent logs truncated"
-      end
-      log = Log.new(object_uuid: running_job[:job].uuid,
-                    event_type: 'stderr',
-                    owner_uuid: running_job[:job].owner_uuid,
-                    properties: {"text" => running_job[:stderr_buf_to_flush]})
-      log.save!
-      running_job[:bytes_logged] += running_job[:stderr_buf_to_flush].size
-      running_job[:events_logged] += 1
-    rescue
-      running_job[:stderr_buf] = "Failed to write logs\n" + running_job[:stderr_buf]
-    end
-    running_job[:stderr_buf_to_flush] = ''
-    running_job[:stderr_flushed_at] = Time.now.to_i
-  end
+    return if running_job[:events_logged] > Rails.configuration.crunch_limit_log_events_per_job
 
+    # Send out to log event if buffer size exceeds the bytes per event or if
+    # it has been at least crunch_log_seconds_between_events seconds since
+    # the last flush.
+    if running_job[:stderr_buf_to_flush].size > Rails.configuration.crunch_log_bytes_per_event or
+        (Time.now - running_job[:stderr_flushed_at]) >= Rails.configuration.crunch_log_seconds_between_events
+      begin
+        # Just reached crunch_limit_log_events_per_job so replace log with notification.
+        if running_job[:events_logged] == Rails.configuration.crunch_limit_log_events_per_job
+          running_job[:stderr_buf_to_flush] =
+            "Exceeded live log limit #{Rails.configuration.crunch_limit_log_events_per_job} events (crunch_limit_log_events_per_job).  Live log will be truncated."
+        end
+        log = Log.new(object_uuid: running_job[:job].uuid,
+                      event_type: 'stderr',
+                      owner_uuid: running_job[:job].owner_uuid,
+                      properties: {"text" => running_job[:stderr_buf_to_flush]})
+        log.save!
+        running_job[:events_logged] += 1
+      rescue => exception
+        $stderr.puts "Failed to write logs"
+        $stderr.puts exception.backtrace
+      end
+      running_job[:stderr_buf_to_flush] = ''
+      running_job[:stderr_flushed_at] = Time.now
+    end
+  end
 end
 
 # This is how crunch-job child procs know where the "refresh" trigger file is

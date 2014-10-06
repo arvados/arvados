@@ -1,11 +1,10 @@
-<% status = Job.state j %>
 <% to_label = {
      "Cancelled" => "danger",
-     "Completed" => "success",
+     "Complete" => "success",
      "Running" => "info",
      "Failed" => "danger",
      "Queued" => "default",
      nil => "default"
    } %>
 
-  <span class="label label-<%= to_label[status] %>"><%= if defined? title then title else status.downcase end %></span>
+  <span class="label label-<%= to_label[j[:state]] %>"><%= if defined? title then title else j[:state].downcase end %></span>

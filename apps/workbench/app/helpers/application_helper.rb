@@ -93,7 +93,7 @@ module ApplicationHelper
 
         if opts[:friendly_name]
           if attrvalue.respond_to? :friendly_link_name
-            link_name = attrvalue.friendly_link_name
+            link_name = attrvalue.friendly_link_name opts[:lookup]
           else
             begin
               if resource_class.name == 'Collection'
@@ -468,6 +468,10 @@ module ApplicationHelper
     else
       return attrvalue
     end
+  end
+
+  def render_localized_date(date, opts="")
+    raw("<span class='utc-date' data-utc-date='#{date}' data-utc-date-opts='noseconds'>#{date}</span>")
   end
 
 private

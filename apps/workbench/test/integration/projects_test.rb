@@ -161,7 +161,7 @@ class ProjectsTest < ActionDispatch::IntegrationTest
     end
     wait_for_ajax
 
-    click_link 'Move to project...'
+    click_link 'Move project...'
     find('.selectable', text: 'Project 1234').click
     find('.modal-footer a,button', text: 'Move').click
     wait_for_ajax
@@ -266,15 +266,16 @@ class ProjectsTest < ActionDispatch::IntegrationTest
   end
 
   [
-    'Move',
-    'Remove',
-    'Copy',
-  ].each do |action|
-    test "selection #{action} for project" do
-      src = api_fixture('groups')['aproject']
-      dest = api_fixture('groups')['asubproject']
-      my_collection = api_fixture('collections')['collection_to_move_around_in_aproject']
-
+    ['Move',api_fixture('collections')['collection_to_move_around_in_aproject'],
+      api_fixture('groups')['aproject'],api_fixture('groups')['asubproject']],
+    ['Remove',api_fixture('collections')['collection_to_move_around_in_aproject'],
+      api_fixture('groups')['aproject']],
+    ['Copy',api_fixture('collections')['collection_to_move_around_in_aproject'],
+      api_fixture('groups')['aproject'],api_fixture('groups')['asubproject']],
+    ['Remove',api_fixture('collections')['collection_in_aproject_with_same_name_as_in_home_project'],
+      api_fixture('groups')['aproject'],nil,true],
+  ].each do |action, my_collection, src, dest=nil, expect_name_change=nil|
+    test "selection #{action} #{expect_name_change} for project" do
       perform_selection_action src, dest, my_collection, action
 
       case action
@@ -302,6 +303,10 @@ class ProjectsTest < ActionDispatch::IntegrationTest
         find("#projects-menu").click
         find(".dropdown-menu a", text: "Home").click
         assert page.has_text?(my_collection['name']), 'Collection not found in home project after remove'
+        if expect_name_change
+          assert page.has_text?(my_collection['name']+' removed from ' + src['name']),
+            'Collection with update name is not found in home project after remove'
+        end
       end
     end
   end
@@ -434,27 +439,50 @@ class ProjectsTest < ActionDispatch::IntegrationTest
     end
   end
 
-  test "combine selected collections into new collection" do
-    my_project = api_fixture('groups')['aproject']
-    my_collection = api_fixture('collections')['collection_to_move_around_in_aproject']
+  [
+    ['active', true],
+    ['project_viewer', false],
+  ].each do |user, expect_collection_in_aproject|
+    test "combine selected collections into new collection #{user} #{expect_collection_in_aproject}" do
+      my_project = api_fixture('groups')['aproject']
+      my_collection = api_fixture('collections')['collection_to_move_around_in_aproject']
 
-    visit page_with_token 'active', '/'
-    find("#projects-menu").click
-    find(".dropdown-menu a", text: my_project['name']).click
-    assert page.has_text?(my_collection['name']), 'Collection not found in project'
+      visit page_with_token user, '/'
+      find("#projects-menu").click
+      find(".dropdown-menu a", text: my_project['name']).click
+      assert page.has_text?(my_collection['name']), 'Collection not found in project'
 
-    within('tr', text: my_collection['name']) do
-      find('input[type=checkbox]').click
+      within('tr', text: my_collection['name']) do
+        find('input[type=checkbox]').click
+      end
+
+      click_button 'Selection...'
+      within('.selection-action-container') do
+        click_link 'Create new collection with selected collections'
+      end
+
+      # now in the new collection page
+      if expect_collection_in_aproject
+        assert page.has_text?("Created new collection in the project #{my_project['name']}"),
+                              'Not found flash message that new collection is created in aproject'
+      else
+        assert page.has_text?("Created new collection in your Home project"),
+                              'Not found flash message that new collection is created in Home project'
+      end
+      assert page.has_text?('Content hash'), 'Not found content hash in collection page'
     end
+  end
 
-    click_button 'Selection...'
-    within('.selection-action-container') do
-      click_link 'Create new collection with selected collections'
+  [
+    ["jobs", "/jobs"],
+    ["pipelines", "/pipeline_instances"],
+    ["collections", "/collections"]
+  ].each do |target,path|
+    test "Test dashboard button all #{target}" do
+      visit page_with_token 'active', '/'
+      click_link "All #{target}"
+      assert_equal path, current_path
     end
-
-    # back in project page
-    assert page.has_text?(my_collection['name']), 'Collection not found in project'
-    assert page.has_link?('Jobs and pipelines'), 'Jobs and pipelines link not found in project'
   end
 
 end

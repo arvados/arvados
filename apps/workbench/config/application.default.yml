@@ -15,7 +15,7 @@
 #   max_wait_seconds: max time in seconds to wait for the pipeline run to complete.
 #     Default value of 30 seconds is used when this value is not provided.
 diagnostics:
-  arvados_workbench_url: https://localhost:3000
+  arvados_workbench_url: https://localhost:3031
   user_tokens:
     active: eu33jurqntstmwo05h1jr3eblmi961e802703y6657s8zb14r
   pipelines_to_test:
@@ -40,6 +40,11 @@ development:
   site_name: Arvados Workbench (dev)
   local_modified: <%= '-modified' if `git status -s` %>
 
+  # API server configuration
+  arvados_login_base: ~
+  arvados_v1_base: ~
+  arvados_insecure_https: ~
+
 production:
   force_ssl: true
   cache_classes: true
@@ -57,6 +62,11 @@ production:
 
   data_import_dir: /data/arvados-workbench-upload/data
   data_export_dir: /data/arvados-workbench-download/data
+
+  # API server configuration
+  arvados_login_base: ~
+  arvados_v1_base: ~
+  arvados_insecure_https: ~
 
   site_name: Arvados Workbench
 
@@ -79,8 +89,8 @@ test:
   # server as a dependency.  These settings should match the API
   # server's Rails defaults.  If you adjust those, change these
   # settings in application.yml to match.
-  arvados_login_base: https://localhost:3001/login
-  arvados_v1_base: https://localhost:3001/arvados/v1
+  arvados_login_base: https://localhost:3000/login
+  arvados_v1_base: https://localhost:3000/arvados/v1
   arvados_insecure_https: true
 
   site_name: Workbench:test
@@ -170,3 +180,6 @@ common:
 
   # filename suffixes for which view icon would be shown in collection show page
   filename_suffixes_with_view_icon: [txt, gif, jpeg, jpg, png, html, htm, pdf]
+
+  # the maximum number of bytes to load in the log viewer
+  log_viewer_max_bytes: 1000000

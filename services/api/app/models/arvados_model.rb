@@ -36,6 +36,12 @@ class ArvadosModel < ActiveRecord::Base
     end
   end
 
+  class AlreadyLockedError < StandardError
+    def http_status
+      403
+    end
+  end
+
   class UnauthorizedError < StandardError
     def http_status
       401
@@ -196,13 +202,6 @@ class ArvadosModel < ActiveRecord::Base
 
   def logged_attributes
     attributes
-  end
-
-  def has_permission? perm_type, target_uuid
-    Link.where(link_class: "permission",
-               name: perm_type,
-               tail_uuid: uuid,
-               head_uuid: target_uuid).any?
   end
 
   protected

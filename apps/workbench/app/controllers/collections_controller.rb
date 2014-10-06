@@ -1,4 +1,6 @@
 class CollectionsController < ApplicationController
+  include ActionController::Live
+
   skip_around_filter(:require_thread_api_token,
                      only: [:show_file, :show_file_links])
   skip_before_filter(:find_object_by_uuid,
@@ -148,13 +150,37 @@ class CollectionsController < ApplicationController
     elsif params[:file].nil? or not coll.manifest.has_file?(params[:file])
       return render_not_found
     end
+
     opts = params.merge(arvados_api_token: usable_token)
+
+    # Handle Range requests. Currently we support only 'bytes=0-....'
+    if request.headers.include? 'HTTP_RANGE'
+      if m = /^bytes=0-(\d+)/.match(request.headers['HTTP_RANGE'])
+        opts[:maxbytes] = m[1]
+        size = params[:size] || '*'
+        self.response.status = 206
+        self.response.headers['Content-Range'] = "bytes 0-#{m[1]}/#{size}"
+      end
+    end
+
     ext = File.extname(params[:file])
     self.response.headers['Content-Type'] =
       Rack::Mime::MIME_TYPES[ext] || 'application/octet-stream'
-    self.response.headers['Content-Length'] = params[:size] if params[:size]
+    if params[:size]
+      size = params[:size].to_i
+      if opts[:maxbytes]
+        size = [size, opts[:maxbytes].to_i].min
+      end
+      self.response.headers['Content-Length'] = size.to_s
+    end
     self.response.headers['Content-Disposition'] = params[:disposition] if params[:disposition]
-    self.response_body = file_enumerator opts
+    begin
+      file_enumerator(opts).each do |bytes|
+        response.stream.write bytes
+      end
+    ensure
+      response.stream.close
+    end
   end
 
   def sharing_scopes
@@ -297,9 +323,15 @@ class CollectionsController < ApplicationController
       env['ARVADOS_API_TOKEN'] = @opts[:arvados_api_token]
       env['ARVADOS_API_HOST_INSECURE'] = "true" if Rails.configuration.arvados_insecure_https
 
+      bytesleft = @opts[:maxbytes].andand.to_i || 2**16
       IO.popen([env, 'arv-get', "#{@opts[:uuid]}/#{@opts[:file]}"],
                'rb') do |io|
-        while buf = io.read(2**16)
+        while bytesleft > 0 && (buf = io.read(bytesleft)) != nil
+          # shrink the bytesleft count, if we were given a
+          # maximum byte count to read
+          if @opts.include? :maxbytes
+            bytesleft = bytesleft - buf.length
+          end
           yield buf
         end
       end

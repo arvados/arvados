@@ -2,17 +2,21 @@ require 'test_helper'
 
 class Arvados::V1::LinksControllerTest < ActionController::TestCase
 
-  test "no symbol keys in serialized hash" do
-    link = {
-      properties: {username: 'testusername'},
-      link_class: 'test',
-      name: 'encoding',
-      tail_uuid: users(:admin).uuid,
-      head_uuid: virtual_machines(:testvm).uuid
-    }
-    authorize_with :admin
-    [link, link.to_json].each do |formatted_link|
-      post :create, link: formatted_link
+  ['link', 'link_json'].each do |formatted_link|
+    test "no symbol keys in serialized hash #{formatted_link}" do
+      link = {
+        properties: {username: 'testusername'},
+        link_class: 'test',
+        name: 'encoding',
+        tail_uuid: users(:admin).uuid,
+        head_uuid: virtual_machines(:testvm).uuid
+      }
+      authorize_with :admin
+      if formatted_link == 'link_json'
+        post :create, link: link.to_json
+      else
+        post :create, link: link
+      end
       assert_response :success
       assert_not_nil assigns(:object)
       assert_equal 'testusername', assigns(:object).properties['username']
@@ -335,5 +339,23 @@ class Arvados::V1::LinksControllerTest < ActionController::TestCase
     assert_response :success
     assert_not_nil assigns(:objects)
     assert_empty assigns(:objects)
+  end
+
+  # Granting permissions.
+  test "grant can_read on project to other users in group" do
+    authorize_with :user_foo_in_sharing_group
+
+    refute users(:user_bar_in_sharing_group).can?(read: collections(:collection_owned_by_foo).uuid)
+
+    post :create, {
+      link: {
+        tail_uuid: users(:user_bar_in_sharing_group).uuid,
+        link_class: 'permission',
+        name: 'can_read',
+        head_uuid: collections(:collection_owned_by_foo).uuid,
+      }
+    }
+    assert_response :success
+    assert users(:user_bar_in_sharing_group).can?(read: collections(:collection_owned_by_foo).uuid)
   end
 end

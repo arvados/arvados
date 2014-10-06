@@ -473,14 +473,14 @@ class KeepClient(object):
             if not keep_services:
                 raise arvados.errors.NoKeepServersError()
 
-            self.using_proxy = (keep_services[0].get('service_type') ==
-                                'proxy')
+            self.using_proxy = any(ks.get('service_type') == 'proxy'
+                                   for ks in keep_services)
 
-            roots = (("http%s://%s:%d/" %
-                      ('s' if f['service_ssl_flag'] else '',
-                       f['service_host'],
-                       f['service_port']))
-                     for f in keep_services)
+            roots = ("{}://[{}]:{:d}/".format(
+                        'https' if ks['service_ssl_flag'] else 'http',
+                         ks['service_host'],
+                         ks['service_port'])
+                     for ks in keep_services)
             self.service_roots = sorted(set(roots))
             _logger.debug(str(self.service_roots))
 

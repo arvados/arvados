@@ -78,3 +78,30 @@ parameter_with_search:
           title: "Foo/bar pair"
           description: "Provide a collection containing at least two files."
           search_for: sometime  # Matches baz_collection_in_asubproject
+
+new_pipeline_template:
+  # This template must include components that are not
+  # present in the pipeline instance 'pipeline_with_newer_template',
+  # at least one of which has a script_parameter that is a hash
+  # with a 'dataclass' field (ticket #4000)
+  uuid: zzzzz-p5p6p-vq4wuvy84xvaq2r
+  owner_uuid: zzzzz-tpzed-xurymjxw79nv3jz
+  created_at: 2014-09-14 12:00:00
+  modified_at: 2014-09-16 12:00:00
+  components:
+    foo:
+      script: foo
+      script_version: master
+      script_parameters:
+        input:
+          required: true
+          dataclass: Collection
+          title: foo template input
+    bar:
+      script: bar
+      script_version: master
+      script_parameters:
+        input:
+          required: true
+          dataclass: Collection
+          title: bar template input

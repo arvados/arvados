@@ -20,6 +20,7 @@ running:
     running: 1
     done: 1
   runtime_constraints: {}
+  state: Running
 
 running_cancelled:
   uuid: zzzzz-8i9sb-4cf0nhn6xte809j
@@ -43,6 +44,7 @@ running_cancelled:
     running: 1
     done: 1
   runtime_constraints: {}
+  state: Cancelled
 
 uses_nonexistent_script_version:
   uuid: zzzzz-8i9sb-7m339pu0x9mla88
@@ -66,6 +68,7 @@ uses_nonexistent_script_version:
     running: 0
     done: 1
   runtime_constraints: {}
+  state: Complete
 
 foobar:
   uuid: zzzzz-8i9sb-aceg2bnq7jt7kon
@@ -91,6 +94,7 @@ foobar:
     running: 0
     done: 1
   runtime_constraints: {}
+  state: Complete
 
 barbaz:
   uuid: zzzzz-8i9sb-cjs4pklxxjykyuq
@@ -118,6 +122,35 @@ barbaz:
     running: 0
     done: 1
   runtime_constraints: {}
+  state: Complete
+
+runningbarbaz:
+  uuid: zzzzz-8i9sb-cjs4pklxxjykyuj
+  owner_uuid: zzzzz-tpzed-xurymjxw79nv3jz
+  cancelled_at: ~
+  cancelled_by_user_uuid: ~
+  cancelled_by_client_uuid: ~
+  script_version: 7def43a4d3f20789dda4700f703b5514cc3ed250
+  script_parameters:
+    input: fa7aeb5140e2848d39b416daeef4ffc5+45
+    an_integer: 1
+  created_at: <%= 4.minute.ago.to_s(:db) %>
+  started_at: <%= 3.minute.ago.to_s(:db) %>
+  finished_at: <%= 2.minute.ago.to_s(:db) %>
+  running: true
+  success: ~
+  repository: foo
+  output: ea10d51bcf88862dbcc36eb292017dfd+45
+  priority: 0
+  log: d41d8cd98f00b204e9800998ecf8427e+0
+  is_locked_by_uuid: ~
+  tasks_summary:
+    failed: 0
+    todo: 0
+    running: 1
+    done: 0
+  runtime_constraints: {}
+  state: Running
 
 previous_job_run:
   uuid: zzzzz-8i9sb-cjs4pklxxjykqqq
@@ -131,6 +164,7 @@ previous_job_run:
     an_integer: "1"
   success: true
   output: ea10d51bcf88862dbcc36eb292017dfd+45
+  state: Complete
 
 previous_docker_job_run:
   uuid: zzzzz-8i9sb-k6emstgk4kw4yhi
@@ -145,6 +179,7 @@ previous_docker_job_run:
   success: true
   output: ea10d51bcf88862dbcc36eb292017dfd+45
   docker_image_locator: fa3c1a9cb6783f85f2ecda037e07b8c3+167
+  state: Complete
 
 previous_job_run_no_output:
   uuid: zzzzz-8i9sb-cjs4pklxxjykppp
@@ -158,6 +193,7 @@ previous_job_run_no_output:
     an_integer: "2"
   success: true
   output: ~
+  state: Complete
 
 nondeterminisic_job_run:
   uuid: zzzzz-8i9sb-cjs4pklxxjykyyy
@@ -171,6 +207,7 @@ nondeterminisic_job_run:
     an_integer: "1"
   success: true
   nondeterministic: true
+  state: Complete
 
 nearly_finished_job:
   uuid: zzzzz-8i9sb-2gx6rz0pjl033w3
@@ -191,6 +228,7 @@ nearly_finished_job:
     running: 1
     done: 0
   runtime_constraints: {}
+  state: Complete
 
 queued:
   uuid: zzzzz-8i9sb-grx15v5mjnsyxk7
@@ -212,3 +250,13 @@ queued:
   is_locked_by_uuid: ~
   tasks_summary: {}
   runtime_constraints: {}
+  state: Queued
+
+# A job with a log collection that can be parsed by the log viewer.
+job_with_real_log:
+  uuid: zzzzz-8i9sb-0vsrcqi7whchuil
+  created_at: 2014-09-01 12:00:00
+  owner_uuid: zzzzz-tpzed-xurymjxw79nv3jz
+  log: 0b9a7787660e1fce4a93f33e01376ba6+81
+  script_version: 7def43a4d3f20789dda4700f703b5514cc3ed250
+  state: Complete
