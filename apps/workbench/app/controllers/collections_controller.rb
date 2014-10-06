@@ -324,17 +324,18 @@ class CollectionsController < ApplicationController
       env['ARVADOS_API_HOST_INSECURE'] = "true" if Rails.configuration.arvados_insecure_https
 
       bytesleft = @opts[:maxbytes].andand.to_i || 2**16
-      IO.popen([env, 'arv-get', "#{@opts[:uuid]}/#{@opts[:file]}"],
-               'rb') do |io|
-        while bytesleft > 0 && (buf = io.read(bytesleft)) != nil
-          # shrink the bytesleft count, if we were given a
-          # maximum byte count to read
-          if @opts.include? :maxbytes
-            bytesleft = bytesleft - buf.length
-          end
-          yield buf
+      io = IO.popen([env, 'arv-get', "#{@opts[:uuid]}/#{@opts[:file]}"], 'rb')
+      while bytesleft > 0 && (buf = io.read(bytesleft)) != nil
+        # shrink the bytesleft count, if we were given a maximum byte
+        # count to read
+        if @opts.include? :maxbytes
+          bytesleft = bytesleft - buf.length
         end
+        yield buf
       end
+      io.close
+      # "If ios is opened by IO.popen, close sets $?."
+      # http://www.ruby-doc.org/core-2.1.3/IO.html#method-i-close
       Rails.logger.warn("#{@opts[:uuid]}/#{@opts[:file]}: #{$?}") if $? != 0
     end
   end
