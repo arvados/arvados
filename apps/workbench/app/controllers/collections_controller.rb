@@ -325,7 +325,7 @@ class CollectionsController < ApplicationController
 
       bytesleft = @opts[:maxbytes].andand.to_i || 2**16
       io = IO.popen([env, 'arv-get', "#{@opts[:uuid]}/#{@opts[:file]}"], 'rb')
-      while bytesleft > 0 && (buf = io.read(bytesleft)) != nil
+      while bytesleft > 0 && (buf = io.read([bytesleft, 2**16].min)) != nil
         # shrink the bytesleft count, if we were given a maximum byte
         # count to read
         if @opts.include? :maxbytes
