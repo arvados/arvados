@@ -1551,10 +1551,11 @@ sub retry_op {
   foreach my $try_count (0..$retries) {
     my $next_try = time + (2 ** $try_count);
     my $result = eval { $operation->(@_); };
-    if ($@ && ($try_count < $retries)) {
-      sleep(time - $next_try);
-    } else {
+    if (!$@) {
       return $result;
+    } elsif ($try_count < $retries) {
+      my $sleep_time = time - $next_try;
+      sleep($sleep_time) if ($sleep_time > 0);
     }
   }
   # Ensure the error message ends in a newline, so Perl doesn't add
