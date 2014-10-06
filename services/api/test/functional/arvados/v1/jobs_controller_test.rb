@@ -102,13 +102,14 @@ class Arvados::V1::JobsControllerTest < ActionController::TestCase
   end
 
   [
-    ['cancelled_at', Time.now],
-    ['state', 'Cancelled'],
-    ['state', 'Running'],
-    ['state', 'Failed'],
-    ['state', 'Complete'],
-  ].each do |attribute, value|
-    test "cancelled job stays cancelled when updated using #{attribute} #{value}" do
+   [:put, :update, {job:{cancelled_at: Time.now}}, :success],
+   [:put, :update, {job:{state: 'Cancelled'}}, :success],
+   [:put, :update, {job:{state: 'Running'}}, :unprocessable_entity],
+   [:put, :update, {job:{state: 'Failed'}}, :unprocessable_entity],
+   [:put, :update, {job:{state: 'Complete'}}, :unprocessable_entity],
+   [:post, :cancel, {}, :success],
+  ].each do |http_method, action, params, expected_response|
+    test "cancelled job stays cancelled after #{[http_method, action, params].inspect}" do
       # We need to verify that "cancel" creates a trigger file, so first
       # let's make sure there is no stale trigger file.
       begin
@@ -117,15 +118,15 @@ class Arvados::V1::JobsControllerTest < ActionController::TestCase
       end
 
       authorize_with :active
-      put :update, {
-        id: jobs(:cancelled).uuid,
-        job: {
-          attribute => value
-        }
-      }
-      job = JSON.parse(@response.body)
-      assert_not_nil job['cancelled_at'], 'job cancelled again using #{attribute}=#{value} did not have cancelled_at value'
-      assert_equal job['state'], 'Cancelled', 'cancelled again job state changed when updated using using #{attribute}=#{value}'
+      self.send http_method, action, { id: jobs(:cancelled).uuid }.merge(params)
+      assert_response expected_response
+      if expected_response == :success
+        job = json_response
+        assert_not_nil job['cancelled_at'], 'job cancelled again using #{attribute}=#{value} did not have cancelled_at value'
+        assert_equal job['state'], 'Cancelled', 'cancelled again job state changed when updated using using #{attribute}=#{value}'
+      end
+      # Verify database record still says Cancelled
+      assert_equal 'Cancelled', Job.find(jobs(:cancelled).id).state, 'job was un-cancelled'
     end
   end
 
