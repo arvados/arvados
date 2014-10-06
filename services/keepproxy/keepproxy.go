@@ -80,12 +80,12 @@ func main() {
 
 	if pidfile != "" {
 		f, err := os.Create(pidfile)
-		if err == nil {
-			fmt.Fprint(f, os.Getpid())
-			f.Close()
-		} else {
-			log.Printf("Error writing pid file (%s): %s", pidfile, err.Error())
+		if err != nil {
+			log.Fatalf("Error writing pid file (%s): %s", pidfile, err.Error())
 		}
+		fmt.Fprint(f, os.Getpid())
+		f.Close()
+		defer os.Remove(pidfile)
 	}
 
 	kc.Want_replicas = default_replicas
@@ -114,10 +114,6 @@ func main() {
 	http.Serve(listener, MakeRESTRouter(!no_get, !no_put, &kc))
 
 	log.Println("shutting down")
-
-	if pidfile != "" {
-		os.Remove(pidfile)
-	}
 }
 
 type ApiTokenCache struct {
