@@ -198,7 +198,7 @@ else
 $job_id = $Job->{'uuid'};
 
 my $keep_logfile = $job_id . '.log.txt';
-start_output_log($keep_logfile);
+log_writer_start($keep_logfile);
 
 $Job->{'runtime_constraints'} ||= {};
 $Job->{'runtime_constraints'}->{'max_tasks_per_node'} ||= 0;
@@ -1301,30 +1301,30 @@ sub fhbits
 }
 
 
-# Output logging to arv-put.
+# Send log output to Keep via arv-put.
 #
 # $log_pipe_in and $log_pipe_out are the input and output filehandles to the arv-put pipe.
 # $log_pipe_pid is the pid of the arv-put subprocess.
 #
 # The only functions that should access these variables directly are:
 #
-# start_output_log($logfilename)
+# log_writer_start($logfilename)
 #     Starts an arv-put pipe, reading data on stdin and writing it to
 #     a $logfilename file in an output collection.
 #
-# write_output_log($txt)
+# log_writer_send($txt)
 #     Writes $txt to the output log collection.
 #
-# finish_output_log()
+# log_writer_finish()
 #     Closes the arv-put pipe and returns the output that it produces.
 #
-# output_log_is_active()
+# log_writer_is_active()
 #     Returns a true value if there is currently a live arv-put
 #     process, false otherwise.
 #
 my ($log_pipe_in, $log_pipe_out, $log_pipe_pid);
 
-sub start_output_log($)
+sub log_writer_start($)
 {
   my $logfilename = shift;
   $log_pipe_pid = open2($log_pipe_out, $log_pipe_in,
@@ -1334,13 +1334,13 @@ sub start_output_log($)
                         '-');
 }
 
-sub write_output_log($)
+sub log_writer_send($)
 {
   my $txt = shift;
   print $log_pipe_in $txt;
 }
 
-sub finish_output_log()
+sub log_writer_finish()
 {
   return unless $log_pipe_pid;
 
@@ -1358,14 +1358,14 @@ sub finish_output_log()
   waitpid($log_pipe_pid, 0);
   $log_pipe_pid = $log_pipe_in = $log_pipe_out = undef;
   if ($?) {
-    Log("finish_output_log: arv-put returned error $?")
+    Log("log_writer_finish: arv-put returned error $?")
   }
 
   return $arv_put_output;
 }
 
-sub output_log_is_active() {
-  return $log_pipe_pid
+sub log_writer_is_active() {
+  return $log_pipe_pid;
 }
 
 sub Log				# ($jobstep_id, $logmessage)
@@ -1381,15 +1381,15 @@ sub Log				# ($jobstep_id, $logmessage)
   $message =~ s{([^ -\176])}{"\\" . sprintf ("%03o", ord($1))}ge;
   $message .= "\n";
   my $datetime;
-  if (output_log_is_active() || -t STDERR) {
+  if (log_writer_is_active() || -t STDERR) {
     my @gmtime = gmtime;
     $datetime = sprintf ("%04d-%02d-%02d_%02d:%02d:%02d",
 			 $gmtime[5]+1900, $gmtime[4]+1, @gmtime[3,2,1,0]);
   }
   print STDERR ((-t STDERR) ? ($datetime." ".$message) : $message);
 
-  if (output_log_is_active()) {
-    write_output_log($datetime . " " . $message);
+  if (log_writer_is_active()) {
+    log_writer_send($datetime . " " . $message);
   }
 }
 
@@ -1402,7 +1402,7 @@ sub croak
   freeze() if @jobstep_todo;
   collate_output() if @jobstep_todo;
   cleanup();
-  save_meta() if output_log_is_active();
+  save_meta() if log_writer_is_active();
   die;
 }
 
@@ -1423,7 +1423,7 @@ sub save_meta
   my $justcheckpoint = shift; # false if this will be the last meta saved
   return if $justcheckpoint;  # checkpointing is not relevant post-Warehouse.pm
 
-  my $loglocator = finish_output_log();
+  my $loglocator = log_writer_finish();
   Log (undef, "log manifest is $loglocator");
   $Job->{'log'} = $loglocator;
   $Job->update_attributes('log', $loglocator) if $job_has_uuid;
