@@ -128,3 +128,12 @@ active_user_has_can_manage:
   uuid: zzzzz-j7d0g-ptt1ou6a9lxrv07
   owner_uuid: zzzzz-tpzed-d9tiejq69daie8f
   name: Active user has can_manage
+
+# Group for testing granting permission between users who share a group.
+#
+group_for_sharing_tests:
+  uuid: zzzzz-j7d0g-t4ucgncwteul7zt
+  owner_uuid: zzzzz-tpzed-000000000000000
+  name: Group for sharing tests
+  description: Users who can share objects with each other
+  group_class: role
