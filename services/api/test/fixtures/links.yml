@@ -702,3 +702,36 @@ auto_setup_vm_login_username_can_login_to_test_vm:
   head_uuid: zzzzz-2x53u-382brsig8rp3064
   properties: {username: 'auto_setup_vm_login'}
   updated_at: 2014-08-06 22:11:51.242010312 Z
+
+user_foo_can_read_sharing_group:
+  uuid: zzzzz-o0j2j-gdpvwvpj9kjs5in
+  owner_uuid: zzzzz-tpzed-000000000000000
+  tail_uuid: zzzzz-tpzed-81hsbo6mk8nl05c
+  link_class: permission
+  name: can_read
+  head_uuid: zzzzz-j7d0g-t4ucgncwteul7zt
+
+user_foo_is_in_sharing_group:
+  uuid: zzzzz-o0j2j-bwmcf9nqwomvtny
+  owner_uuid: zzzzz-tpzed-000000000000000
+  tail_uuid: zzzzz-j7d0g-t4ucgncwteul7zt
+  link_class: permission
+  name: can_read
+  head_uuid: zzzzz-tpzed-81hsbo6mk8nl05c
+
+user_bar_can_read_sharing_group:
+  uuid: zzzzz-o0j2j-23djaoza9g2zvjx
+  owner_uuid: zzzzz-tpzed-000000000000000
+  tail_uuid: zzzzz-tpzed-n3oaj4sm5fcnwib
+  link_class: permission
+  name: can_read
+  head_uuid: zzzzz-j7d0g-t4ucgncwteul7zt
+
+user_bar_is_in_sharing_group:
+  uuid: zzzzz-o0j2j-ga7fgy3xsz4hu28
+  owner_uuid: zzzzz-tpzed-000000000000000
+  tail_uuid: zzzzz-j7d0g-t4ucgncwteul7zt
+  link_class: permission
+  name: can_read
+  head_uuid: zzzzz-tpzed-n3oaj4sm5fcnwib
+
