@@ -80,7 +80,10 @@ class NodeManagerConfig(ConfigParser.SafeConfigParser):
     def new_cloud_client(self):
         module = importlib.import_module('arvnodeman.computenode.' +
                                          self.get('Cloud', 'provider'))
-        return module.ComputeNodeDriver(self.get_section('Cloud Credentials'),
+        auth_kwargs = self.get_section('Cloud Credentials')
+        if 'timeout' in auth_kwargs:
+            auth_kwargs['timeout'] = int(auth_kwargs['timeout'])
+        return module.ComputeNodeDriver(auth_kwargs,
                                         self.get_section('Cloud List'),
                                         self.get_section('Cloud Create'))
 
