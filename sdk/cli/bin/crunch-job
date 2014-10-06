@@ -175,6 +175,7 @@ else
 
   $Job->{'is_locked_by_uuid'} = $User->{'uuid'};
   $Job->{'started_at'} = gmtime;
+  $Job->{'state'} = 'Running';
 
   $Job = $arv->{'jobs'}->{'create'}->execute('job' => $Job);
 }
