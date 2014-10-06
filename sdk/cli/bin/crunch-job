@@ -413,13 +413,18 @@ else {
   # to a local dir before doing `git log` et al.
   my $repo_location;
 
-  if ($repo =~ m{://|\@.*:}) {
+  if ($repo =~ m{://|^[^/]*:}) {
     # $repo is a git url we can clone, like git:// or https:// or
-    # file:/// or git@host:repo.git
+    # file:/// or [user@]host:repo.git. Note "user/name@host:foo" is
+    # not recognized here because distinguishing that from a local
+    # path is too fragile. If you really need something strange here,
+    # use the ssh:// form.
     $repo_location = 'remote';
   } elsif ($repo =~ m{^\.*/}) {
     # $repo is a local path to a git index. We'll also resolve ../foo
-    # to ../foo/.git if the latter is a directory.
+    # to ../foo/.git if the latter is a directory. To help
+    # disambiguate local paths from named hosted repositories, this
+    # form must be given as ./ or ../ if it's a relative path.
     if (-d "$repo/.git") {
       $repo = "$repo/.git";
     }
