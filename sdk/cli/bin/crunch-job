@@ -1543,21 +1543,23 @@ sub retry_count {
 }
 
 sub retry_op {
-  # Given a function reference, call it with the given arguments.  If
+  # Given a function reference, call it with the remaining arguments.  If
   # it dies, retry it with exponential backoff until it succeeds, or until
   # the current retry_count is exhausted.
   my $operation = shift;
-  foreach my $try_count (0..retry_count()) {
+  my $retries = retry_count();
+  foreach my $try_count (0..$retries) {
+    my $next_try = time + (2 ** $try_count);
     my $result = eval { $operation->(@_); };
-    if ($@) {
-      sleep(2 ** $try_count);
+    if ($@ && ($try_count < $retries)) {
+      sleep(time - $next_try);
     } else {
       return $result;
     }
   }
   # Ensure the error message ends in a newline, so Perl doesn't add
   # retry_op's line number to it.
-  chomp $@;
+  chomp($@);
   die($@ . "\n");
 }
 
