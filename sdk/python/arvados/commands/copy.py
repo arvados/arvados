@@ -208,6 +208,8 @@ def copy_pipeline_instance(pi_uuid, src, dst, dst_git_repo, dst_project=None, re
     # Update the pipeline instance properties, and create the new
     # instance at dst.
     pi['properties']['copied_from_pipeline_instance_uuid'] = pi_uuid
+    pi['description'] = "Pipeline copied from {}\n\n{}".format(
+        pi_uuid, pi.get('description', ''))
     if dst_project:
         pi['owner_uuid'] = dst_project
     else:
@@ -241,7 +243,9 @@ def copy_pipeline_template(pt_uuid, src, dst, dst_git_repo, recursive=True):
         pt = copy_collections(pt, src, dst)
         copy_git_repos(pt, src, dst, dst_git_repo)
 
-    pt['name'] = pt['name'] + ' copy'
+    pt['description'] = "Pipeline template copied from {}\n\n{}".format(
+        pt_uuid, pt.get('description', ''))
+    pt['name'] = "{} copied from {}".format(pt.get('name', ''), pt_uuid)
     pt['ensure_unique_name'] = True
     del pt['uuid']
     del pt['owner_uuid']
