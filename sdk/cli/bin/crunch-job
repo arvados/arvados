@@ -367,10 +367,11 @@ if (!defined $no_clear_tmp) {
 
 my $git_archive;
 if (!defined $git_dir && $Job->{'script_version'} =~ m{^/}) {
-  # If we're in user-land (i.e., not called from crunch-dispatch)
-  # script_version can be an absolute directory path, signifying we
-  # should work straight out of that directory instead of using a git
-  # commit.
+  # If script_version looks like an absolute path, *and* the --git-dir
+  # argument was not given -- which implies we were not invoked by
+  # crunch-dispatch -- we will use the given path as a working
+  # directory instead of resolving script_version to a git commit (or
+  # doing anything else with git).
   $ENV{"CRUNCH_SRC_COMMIT"} = $Job->{'script_version'};
   $ENV{"CRUNCH_SRC"} = $Job->{'script_version'};
 }
