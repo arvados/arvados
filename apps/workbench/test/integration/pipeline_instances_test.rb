@@ -202,15 +202,18 @@ class PipelineInstancesTest < ActionDispatch::IntegrationTest
   end
 
   [
-    [false, false, false],
-    [false, false, true],
-    [true, false, false],
-    [true, true, false],
-    [true, false, true],
-    [true, true, true],
-  ].each do |with_options, choose_options, in_aproject|
-    test "Rerun pipeline instance using options #{with_options} #{choose_options} in #{in_aproject}" do
-      visit page_with_token('active_trustedclient')
+    ['active', false, false, false],
+    ['active', false, false, true],
+    ['active', true, false, false],
+    ['active', true, true, false],
+    ['active', true, false, true],
+    ['active', true, true, true],
+    ['project_viewer', false, false, true],
+    ['project_viewer', true, false, true],
+    ['project_viewer', true, true, true],
+  ].each do |user, with_options, choose_options, in_aproject|
+    test "Rerun pipeline instance as #{user} using options #{with_options} #{choose_options} in #{in_aproject}" do
+      visit page_with_token('active')
 
       if in_aproject
         find("#projects-menu").click
@@ -220,13 +223,24 @@ class PipelineInstancesTest < ActionDispatch::IntegrationTest
       create_and_run_pipeline_in_aproject in_aproject
       instance_path = current_path
 
-      # pause the pipeline
+      # Pause the pipeline
       find('a,button', text: 'Pause').click
       assert page.has_text? 'Paused'
       page.assert_no_selector 'a.disabled,button.disabled', text: 'Resume'
       page.assert_selector 'a,button', text: 'Re-run with latest'
       page.assert_selector 'a,button', text: 'Re-run options'
 
+      # Pipeline can be re-run now. Access it as the specified user, and re-run
+      if user == 'project_viewer'
+        visit page_with_token(user)
+        visit instance_path
+        assert page.has_text? 'A Project'
+        page.assert_no_selector 'a.disabled,button.disabled', text: 'Resume'
+        page.assert_selector 'a,button', text: 'Re-run with latest'
+        page.assert_selector 'a,button', text: 'Re-run options'
+      end
+
+      # Now re-run the pipeline
       if with_options
         find('a,button', text: 'Re-run options').click
         within('.modal-dialog') do
@@ -242,12 +256,16 @@ class PipelineInstancesTest < ActionDispatch::IntegrationTest
         find('a,button', text: 'Re-run with latest').click
       end
 
-      # verify that the newly created instance is in the expected project
+      # Verify that the newly created instance is created in the right project.
+      # In case of project_viewer user, since the use cannot write to the project,
+      # the pipeline should have been created in the user's Home project.
       rerun_instance_path = current_path
       assert_not_equal instance_path, rerun_instance_path, 'Rerun instance path expected to be different'
       assert page.has_text? 'Home'
-      if in_aproject
+      if in_aproject && (user != 'project_viewer')
         assert page.has_text? 'A Project'
+      else
+        assert page.has_no_text? 'A Project'
       end
     end
   end
