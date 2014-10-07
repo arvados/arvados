@@ -20,6 +20,13 @@ def timestamp_fresh(timestamp, fresh_time):
     return (time.time() - timestamp) < fresh_time
 
 def _retry(errors):
+    """Retry decorator for an actor method that makes remote requests.
+
+    Use this function to decorator an actor method, and pass in a tuple of
+    exceptions to catch.  This decorator will schedule retries of that method
+    with exponential backoff if the original method raises any of the given
+    errors.
+    """
     def decorator(orig_func):
         @functools.wraps(orig_func)
         def wrapper(self, *args, **kwargs):
@@ -40,6 +47,18 @@ def _retry(errors):
     return decorator
 
 class BaseComputeNodeDriver(object):
+    """Abstract base class for compute node drivers.
+
+    libcloud abstracts away many of the differences between cloud providers,
+    but managing compute nodes requires some cloud-specific features (e.g.,
+    on EC2 we use tags to identify compute nodes).  Compute node drivers
+    are responsible for translating the node manager's cloud requests to a
+    specific cloud's vocabulary.
+
+    Subclasses must implement arvados_create_kwargs (to update node creation
+    kwargs with information about the specific Arvados node record) and
+    node_start_time.
+    """
     def __init__(self, auth_kwargs, list_kwargs, create_kwargs, driver_class):
         self.real = driver_class(**auth_kwargs)
         self.list_kwargs = list_kwargs
@@ -85,6 +104,13 @@ class BaseComputeNodeDriver(object):
 ComputeNodeDriverClass = BaseComputeNodeDriver
 
 class ComputeNodeSetupActor(config.actor_class):
+    """Actor to create and set up a cloud compute node.
+
+    This actor prepares an Arvados node record for a new compute node
+    (either creating one or cleaning one passed in), then boots the
+    actual compute node.  It notifies subscribers when the node finishes
+    booting.
+    """
     def __init__(self, timer_actor, arvados_client, cloud_client,
                  cloud_size, arvados_node=None,
                  retry_wait=1, max_retry_wait=180):
@@ -150,6 +176,10 @@ class ComputeNodeSetupActor(config.actor_class):
 
 
 class ComputeNodeShutdownActor(config.actor_class):
+    """Actor to shut down a compute node.
+
+    This actor simply destroys a cloud node, retrying as needed.
+    """
     def __init__(self, timer_actor, cloud_client, cloud_node,
                  retry_wait=1, max_retry_wait=180):
         super(ComputeNodeShutdownActor, self).__init__()
@@ -170,7 +200,20 @@ class ComputeNodeShutdownActor(config.actor_class):
 
 
 class ShutdownTimer(object):
+    """Keep track of a cloud node's shutdown windows.
+
+    Instantiate this class with a timestamp of when a cloud node started,
+    and a list of durations (in minutes) of when the node must not and may
+    be shut down, alternating.  The class will tell you when a shutdown
+    window is open, and when the next open window will start.
+    """
     def __init__(self, start_time, shutdown_windows):
+        # The implementation is easiest if we have an even number of windows,
+        # because then windows always alternate between open and closed.
+        # Rig that up: calculate the first shutdown window based on what's
+        # passed in.  Then, if we were given an odd number of windows, merge
+        # that first window into the last one, since they both# represent
+        # closed state.
         first_window = shutdown_windows[0]
         shutdown_windows = list(shutdown_windows[1:])
         self._next_opening = start_time + (60 * first_window)
@@ -199,6 +242,12 @@ class ShutdownTimer(object):
 
 
 class ComputeNodeActor(config.actor_class):
+    """Actor to manage a running compute node.
+
+    This actor gets updates about a compute node's cloud and Arvados records.
+    It uses this information to notify subscribers when the node is eligible
+    for shutdown.
+    """
     def __init__(self, cloud_node, cloud_node_start_time, shutdown_timer,
                  timer_actor, arvados_node=None,
                  poll_stale_after=600, node_stale_after=3600):

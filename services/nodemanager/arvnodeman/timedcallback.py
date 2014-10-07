@@ -10,6 +10,12 @@ import pykka
 from .config import actor_class
 
 class TimedCallBackActor(actor_class):
+    """Send messages to other actors on a schedule.
+
+    Other actors can call the schedule() method to schedule delivery of a
+    message at a later time.  This actor runs the necessary event loop for
+    delivery.
+    """
     def __init__(self, max_sleep=1):
         super(TimedCallBackActor, self).__init__()
         self._proxy = self.actor_ref.proxy()

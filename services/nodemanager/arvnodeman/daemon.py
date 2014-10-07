@@ -12,6 +12,14 @@ from . import computenode as cnode
 from .config import actor_class
 
 class NodeManagerDaemonActor(actor_class):
+    """Node Manager daemon.
+
+    This actor subscribes to all information polls about cloud nodes,
+    Arvados nodes, and the job queue.  It creates a ComputeNodeActor
+    for every cloud node, subscribing them to poll updates
+    appropriately, and starts and stops cloud nodes based on job queue
+    demand.
+    """
     class PairingTracker(object):
         def __init__(self, key_func, paired_items, unpaired_items):
             self.key_func = key_func
@@ -173,6 +181,12 @@ class NodeManagerDaemonActor(actor_class):
             self._later.stop_booting_node()
 
     def _check_poll_freshness(orig_func):
+        """Decorator to inhibit a method when poll information is stale.
+
+        This decorator checks the timestamps of all the poll information the
+        daemon has received.  The decorated method is only called if none
+        of the timestamps are considered stale.
+        """
         @functools.wraps(orig_func)
         def wrapper(self, *args, **kwargs):
             now = time.time()

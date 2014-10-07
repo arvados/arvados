@@ -12,6 +12,8 @@ from libcloud.compute.drivers import ec2 as cloud_ec2
 from . import BaseComputeNodeDriver
 
 ### Monkeypatch libcloud to support AWS' new SecurityGroup API.
+# These classes can be removed when libcloud support specifying
+# security groups with the SecurityGroupId parameter.
 class ANMEC2Connection(cloud_ec2.EC2Connection):
     def request(self, *args, **kwargs):
         params = kwargs.get('params')
@@ -29,6 +31,10 @@ class ANMEC2NodeDriver(cloud_ec2.EC2NodeDriver):
 
 
 class ComputeNodeDriver(BaseComputeNodeDriver):
+    """Compute node driver wrapper for EC2.
+
+    This translates cloud driver requests to EC2's specific parameters.
+    """
     DEFAULT_DRIVER = ANMEC2NodeDriver
 ### End monkeypatch
     SEARCH_CACHE = {}

@@ -10,6 +10,11 @@ import pykka
 from .config import actor_class
 
 def _notify_subscribers(response, subscribers):
+    """Send the response to all the subscriber methods.
+
+    If any of the subscriber actors have stopped, remove them from the
+    subscriber set.
+    """
     dead_subscribers = set()
     for subscriber in subscribers:
         try:
@@ -19,6 +24,16 @@ def _notify_subscribers(response, subscribers):
     subscribers.difference_update(dead_subscribers)
 
 class RemotePollLoopActor(actor_class):
+    """Abstract actor class to regularly poll a remote service.
+
+    This actor sends regular requests to a remote service, and sends each
+    response to subscribers.  It takes care of error handling, and retrying
+    requests with exponential backoff.
+
+    To use this actor, define CLIENT_ERRORS and the _send_request method.
+    If you also define an _item_key method, this class will support
+    subscribing to a specific item by key in responses.
+    """
     def __init__(self, client, timer_actor, poll_wait=60, max_poll_wait=180):
         super(RemotePollLoopActor, self).__init__()
         self._client = client
@@ -44,6 +59,8 @@ class RemotePollLoopActor(actor_class):
         self._logger.debug("%r subscribed to all events", subscriber)
         self._start_polling()
 
+    # __init__ exposes this method to the proxy if the subclass defines
+    # _item_key.
     def _subscribe_to(self, key, subscriber):
         self.key_subscribers.setdefault(key, set()).add(subscriber)
         self._logger.debug("%r subscribed to events for '%s'", subscriber, key)

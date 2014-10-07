@@ -10,6 +10,11 @@ import libcloud.compute.types as cloud_types
 from . import BaseComputeNodeDriver
 
 class ComputeNodeDriver(BaseComputeNodeDriver):
+    """Compute node driver wrapper for libcloud's dummy driver.
+
+    This class provides the glue necessary to run the node manager with a
+    dummy cloud.  It's useful for testing.
+    """
     DEFAULT_DRIVER = cloud_provider.get_driver(cloud_types.Provider.DUMMY)
     DEFAULT_REAL = DEFAULT_DRIVER('ComputeNodeDriver')
     DUMMY_START_TIME = time.time()

@@ -6,6 +6,15 @@ from . import clientactor
 from .config import ARVADOS_ERRORS
 
 class ServerCalculator(object):
+    """Generate cloud server wishlists from an Arvados job queue.
+
+    Instantiate this class with a list of cloud node sizes you're willing to
+    use, plus keyword overrides from the configuration.  Then you can pass
+    job queues to servers_for_queue.  It will return a list of node sizes
+    that would best satisfy the jobs, choosing the cheapest size that
+    satisfies each job, and ignoring jobs that can't be satisfied.
+    """
+
     class SizeWrapper(object):
         def __init__(self, real_size, **kwargs):
             self.real = real_size
@@ -61,6 +70,13 @@ class ServerCalculator(object):
 
 
 class JobQueueMonitorActor(clientactor.RemotePollLoopActor):
+    """Actor to generate server wishlists from the job queue.
+
+    This actor regularly polls Arvados' job queue, and uses the provided
+    ServerCalculator to turn that into a list of requested node sizes.  That
+    list is sent to subscribers on every poll.
+    """
+
     CLIENT_ERRORS = ARVADOS_ERRORS
     LOGGER_NAME = 'arvnodeman.jobqueue'
 

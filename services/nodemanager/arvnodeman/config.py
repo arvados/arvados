@@ -23,6 +23,12 @@ CLOUD_ERRORS = NETWORK_ERRORS + (cloud_types.LibcloudError,)
 actor_class = pykka.ThreadingActor
 
 class NodeManagerConfig(ConfigParser.SafeConfigParser):
+    """Node Manager Configuration class.
+
+    This a standard Python ConfigParser, with additional helper methods to
+    create objects instantiated with configuration information.
+    """
+
     LOGGING_NONLEVELS = frozenset(['file'])
 
     def __init__(self, *args, **kwargs):
