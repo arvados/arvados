@@ -108,8 +108,9 @@ class ComputeNodeSetupActor(config.actor_class):
 
     This actor prepares an Arvados node record for a new compute node
     (either creating one or cleaning one passed in), then boots the
-    actual compute node.  It notifies subscribers when the node finishes
-    booting.
+    actual compute node.  It notifies subscribers when the cloud node
+    is successfully created (the last step in the process for Node
+    Manager to handle).
     """
     def __init__(self, timer_actor, arvados_client, cloud_client,
                  cloud_size, arvados_node=None,
