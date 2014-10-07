@@ -425,7 +425,7 @@ else {
       'filters' => [['name','=',$repo]]
         );
     my @repos_found = @{$arv_repo_list->{'items'}};
-    my $n_found = $arv_repo_list->{'items_available'};
+    my $n_found = $arv_repo_list->{'serverResponse'}->{'items_available'};
     if ($n_found > 0) {
       Log(undef, "Repository '$repo' -> "
           . join(", ", map { $_->{'uuid'} } @repos_found));
