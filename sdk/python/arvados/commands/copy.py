@@ -354,7 +354,7 @@ def copy_collection(obj_uuid, src, dst, force=False):
 
     # Enumerate the block locators found in the manifest.
     collection_blocks = set()
-    src_keep = arvados.keep.KeepClient(src)
+    src_keep = arvados.keep.KeepClient(api_client=src, num_retries=2)
     for line in manifest.splitlines():
         for block_hash in line.split()[1:]:
             if arvados.util.portable_data_hash_pattern.match(block_hash):
@@ -363,7 +363,7 @@ def copy_collection(obj_uuid, src, dst, force=False):
                 break
 
     # Copy each block from src_keep to dst_keep.
-    dst_keep = arvados.keep.KeepClient(dst)
+    dst_keep = arvados.keep.KeepClient(api_client=dst, num_retries=2)
     for locator in collection_blocks:
         parts = locator.split('+')
         logger.info("Copying block %s (%s bytes)", locator, parts[1])
