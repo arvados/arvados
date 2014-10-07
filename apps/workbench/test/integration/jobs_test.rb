@@ -5,27 +5,12 @@ require 'integration_helper'
 
 class JobsTest < ActionDispatch::IntegrationTest
 
-  def setup
-    # Set up KEEP_LOCAL_STORE with a file that satisfies
-    # the log collection for job 'job_with_real_log'
-    # TODO: figure out a better way to store this test data
-    # (e.g. in a dummy test fixture)
-    #
-    ENV['KEEP_LOCAL_STORE'] ||= Dir.mktmpdir
-    keepdir = ENV['KEEP_LOCAL_STORE']
-    open(File.join(keepdir, 'cdd549ae79fe6640fa3d5c6261d8303c'), 'w') do |f|
-      f.write("2014-01-01_12:00:01 zzzzz-8i9sb-0vsrcqi7whchuil 0  log message 1\n")
-      f.write("2014-01-01_12:00:02 zzzzz-8i9sb-0vsrcqi7whchuil 0  log message 2\n")
-      f.write("2014-01-01_12:00:03 zzzzz-8i9sb-0vsrcqi7whchuil 0  log message 3\n")
-    end
-
-    @log_viewer_max_bytes = Rails.configuration.log_viewer_max_bytes
-  end
-
-  def teardown
-    keepdir = ENV.delete 'KEEP_LOCAL_STORE'
-    FileUtils.rm_rf(keepdir) if keepdir
-    Rails.configuration.log_viewer_max_bytes = @log_viewer_max_bytes
+  def fakepipe_with_log_data
+    content =
+      "2014-01-01_12:00:01 zzzzz-8i9sb-0vsrcqi7whchuil 0  log message 1\n" +
+      "2014-01-01_12:00:02 zzzzz-8i9sb-0vsrcqi7whchuil 0  log message 2\n" +
+      "2014-01-01_12:00:03 zzzzz-8i9sb-0vsrcqi7whchuil 0  log message 3\n"
+    StringIO.new content, 'r'
   end
 
   test "add job description" do
@@ -57,6 +42,8 @@ class JobsTest < ActionDispatch::IntegrationTest
     Capybara.current_driver = Capybara.javascript_driver
     job = api_fixture('jobs')['job_with_real_log']
 
+    IO.expects(:popen).returns(fakepipe_with_log_data)
+
     visit page_with_token("active", "/jobs/#{job['uuid']}")
     assert page.has_text? job['script_version']
 
@@ -67,11 +54,15 @@ class JobsTest < ActionDispatch::IntegrationTest
     assert page.has_text? 'log message 1'
     assert page.has_text? 'log message 2'
     assert page.has_text? 'log message 3'
+    refute page.has_text? 'Showing only 100 bytes of this log'
   end
 
   test 'view partial job log' do
     Capybara.current_driver = Capybara.javascript_driver
+    # This config will be restored during teardown by ../test_helper.rb:
     Rails.configuration.log_viewer_max_bytes = 100
+
+    IO.expects(:popen).returns(fakepipe_with_log_data)
     job = api_fixture('jobs')['job_with_real_log']
 
     visit page_with_token("active", "/jobs/#{job['uuid']}")
