@@ -10,12 +10,14 @@ crunch-job: Execute job steps, save snapshots as requested, collate output.
 Obtain job details from Arvados, run tasks on compute nodes (typically
 invoked by scheduler on controller):
 
- crunch-job --job x-y-z
+ crunch-job --job x-y-z --git-dir /path/to/repo/.git
 
 Obtain job details from command line, run tasks on local machine
 (typically invoked by application or developer on VM):
 
- crunch-job --job '{"script_version":"/path/to/tree","script":"scriptname",...}'
+ crunch-job --job '{"script_version":"/path/to/working/tree","script":"scriptname",...}'
+
+ crunch-job --job '{"repository":"https://github.com/curoverse/arvados.git","script_version":"master","script":"scriptname",...}'
 
 =head1 OPTIONS
 
@@ -27,7 +29,9 @@ If the job is already locked, steal the lock and run it anyway.
 
 =item --git-dir
 
-Path to .git directory where the specified commit is found.
+Path to a .git directory (or a git URL) where the commit given in the
+job's C<script_version> attribute is to be found. If this is I<not>
+given, the job's C<repository> attribute will be used.
 
 =item --job-api-token
 
@@ -38,6 +42,11 @@ Arvados API authorization token to use during the course of the job.
 Do not clear per-job/task temporary directories during initial job
 setup. This can speed up development and debugging when running jobs
 locally.
+
+=item --job
+
+UUID of the job to run, or a JSON-encoded job resource without a
+UUID. If the latter is given, a new job object will be created.
 
 =back
 
@@ -363,17 +372,21 @@ if (!defined $no_clear_tmp) {
 
 my $git_archive;
 if (!defined $git_dir && $Job->{'script_version'} =~ m{^/}) {
-  # If we're in user-land (i.e., not called from crunch-dispatch)
-  # script_version can be an absolute directory path, signifying we
-  # should work straight out of that directory instead of using a git
-  # commit.
+  # If script_version looks like an absolute path, *and* the --git-dir
+  # argument was not given -- which implies we were not invoked by
+  # crunch-dispatch -- we will use the given path as a working
+  # directory instead of resolving script_version to a git commit (or
+  # doing anything else with git).
   $ENV{"CRUNCH_SRC_COMMIT"} = $Job->{'script_version'};
   $ENV{"CRUNCH_SRC"} = $Job->{'script_version'};
 }
 else {
+  # Resolve the given script_version to a git commit sha1. Also, if
+  # the repository is remote, clone it into our local filesystem: this
+  # ensures "git archive" will work, and is necessary to reliably
+  # resolve a symbolic script_version like "master^".
   $ENV{"CRUNCH_SRC"} = "$ENV{CRUNCH_TMP}/src";
 
-  # Install requested code version
   Log (undef, "Looking for version ".$Job->{script_version}." from repository ".$Job->{repository});
 
   $ENV{"CRUNCH_SRC_COMMIT"} = $Job->{script_version};
@@ -415,17 +428,18 @@ else {
     # repository.
     my $arv_repo_list = retry_op(sub {
       $arv->{'repositories'}->{'list'}->execute(
-        'filters' => [['name','=',$repo]])->{'items'};
+        'filters' => [['name','=',$repo]]);
     });
-    my $n_found = scalar @{$arv_repo_list};
+    my @repos_found = @{$arv_repo_list->{'items'}};
+    my $n_found = $arv_repo_list->{'serverResponse'}->{'items_available'};
     if ($n_found > 0) {
       Log(undef, "Repository '$repo' -> "
-          . join(", ", map { $_->{'uuid'} } @{$arv_repo_list}));
+          . join(", ", map { $_->{'uuid'} } @repos_found));
     }
     if ($n_found != 1) {
       croak("Error: Found $n_found repositories with name '$repo'.");
     }
-    $repo = $arv_repo_list->[0]->{'fetch_url'};
+    $repo = $repos_found[0]->{'fetch_url'};
     $repo_location = 'remote';
   }
   Log(undef, "Using $repo_location repository '$repo'");
@@ -458,11 +472,12 @@ else {
     # our local cache first, since that's cheaper. (We don't want to
     # do that with tags/branches though -- those change over time, so
     # they should always be resolved by the remote repo.)
-    if ($treeish =~ /^[0-9a-f]{3,40}$/s) {
+    if ($treeish =~ /^[0-9a-f]{7,40}$/s) {
       # Hide stderr because it's normal for this to fail:
       my $sha1 = `$gitcmd rev-list -n1 ''\Q$treeish\E 2>/dev/null`;
       if ($? == 0 &&
-          $sha1 =~ /^$treeish/ && # Don't use commit 123 @ branch abc!
+          # Careful not to resolve a branch named abcdeff to commit 1234567:
+          $sha1 =~ /^$treeish/ &&
           $sha1 =~ /^([0-9a-f]{40})$/s) {
         $commit = $1;
         Log(undef, "Commit $commit already present in $local_repo");
@@ -1444,14 +1459,15 @@ sub croak
   Log (undef, $message);
   freeze() if @jobstep_todo;
   collate_output() if @jobstep_todo;
-  cleanup() if $Job;
-  save_meta() if log_writer_is_active();
+  cleanup();
+  save_meta();
   die;
 }
 
 
 sub cleanup
 {
+  return unless $Job;
   if ($Job->{'state'} eq 'Cancelled') {
     $Job->update_attributes('finished_at' => scalar gmtime);
   } else {
@@ -1464,6 +1480,7 @@ sub save_meta
 {
   my $justcheckpoint = shift; # false if this will be the last meta saved
   return if $justcheckpoint;  # checkpointing is not relevant post-Warehouse.pm
+  return unless log_writer_is_active();
 
   my $loglocator = log_writer_finish();
   Log (undef, "log manifest is $loglocator");
