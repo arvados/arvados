@@ -260,3 +260,27 @@ job_with_real_log:
   log: 0b9a7787660e1fce4a93f33e01376ba6+81
   script_version: 7def43a4d3f20789dda4700f703b5514cc3ed250
   state: Complete
+
+cancelled:
+  uuid: zzzzz-8i9sb-4cf0abc123e809j
+  owner_uuid: zzzzz-tpzed-xurymjxw79nv3jz
+  cancelled_at: <%= 1.minute.ago.to_s(:db) %>
+  cancelled_by_user_uuid: zzzzz-tpzed-xurymjxw79nv3jz
+  cancelled_by_client_uuid: zzzzz-ozdt8-obw7foaks3qjyej
+  created_at: <%= 4.minute.ago.to_s(:db) %>
+  started_at: <%= 3.minute.ago.to_s(:db) %>
+  finished_at: ~
+  script_version: 1de84a854e2b440dc53bf42f8548afa4c17da332
+  running: false
+  success: ~
+  output: ~
+  priority: 0
+  log: ~
+  is_locked_by_uuid: zzzzz-tpzed-xurymjxw79nv3jz
+  tasks_summary:
+    failed: 0
+    todo: 3
+    running: 1
+    done: 1
+  runtime_constraints: {}
+  state: Cancelled
