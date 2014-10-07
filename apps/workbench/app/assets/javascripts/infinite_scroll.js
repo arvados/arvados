@@ -168,4 +168,32 @@ $(document).
                 on('scroll resize', { container: this }, maybe_load_more_content).
                 trigger('scroll');
         });
+    }).
+    on('click', 'th[data-sort-order]', function() {
+        var direction = $(this).data('sort-order-direction');
+        // reverse the current direction, or do ascending if none
+        if( typeof(direction) == 'undefined' || direction == 'desc' ) {
+            direction = 'asc';
+        } else {
+            direction = 'desc';
+        }
+        $(this).data('sort-order-direction', direction);
+        // change the ordering parameter and refresh the data display with the new order
+        var $target = $(this).closest('table').find('[data-infinite-content-params-attr]');
+        var params_attr = 'infinite-content-params-' + $target.data('infinite-content-params-attr');
+        var params = $target.data(params_attr) || {};
+        params.order = $(this).data('sort-order') + ' ' + direction;
+        $target.data('params_attr', params);
+        $target.trigger('refresh-content');
+    }).
+    on('ready arv:pane:loaded refresh-content', function() {
+        $('th[data-sort-order]').each(function() {
+            $(this).find('i').remove();
+            var direction = $(this).data('sort-order-direction');
+            if( typeof(direction) != 'undefined' ) {
+                $(this).append('<i class="fa fa-sort-' + direction + '"/>');
+            } else {
+                $(this).append('<i class="fa fa-sort"/>');
+            }
+        });
     });
