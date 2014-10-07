@@ -95,12 +95,14 @@ def main():
                                         src_arv, dst_arv,
                                         args.dst_git_repo,
                                         dst_project=args.project_uuid,
-                                        recursive=args.recursive)
+                                        recursive=args.recursive,
+                                        force=args.force)
     elif t == 'PipelineTemplate':
         result = copy_pipeline_template(args.object_uuid,
                                         src_arv, dst_arv,
                                         args.dst_git_repo,
-                                        recursive=args.recursive)
+                                        recursive=args.recursive,
+                                        force=args.force)
     else:
         abort("cannot copy object {} of type {}".format(args.object_uuid, t))
 
@@ -170,6 +172,8 @@ def api_for_instance(instance_name):
 #      3. Copy git repositories
 #      4. Copy the pipeline template
 #
+#    The 'force' option is passed through to copy_collections.
+#
 #    The only changes made to the copied pipeline instance are:
 #      1. The original pipeline instance UUID is preserved in
 #         the 'properties' hash as 'copied_from_pipeline_instance_uuid'.
@@ -177,7 +181,7 @@ def api_for_instance(instance_name):
 #      3. The owner_uuid of the instance is changed to the user who
 #         copied it.
 #
-def copy_pipeline_instance(pi_uuid, src, dst, dst_git_repo, dst_project=None, recursive=True):
+def copy_pipeline_instance(pi_uuid, src, dst, dst_git_repo, dst_project=None, recursive=True, force=False):
     # Fetch the pipeline instance record.
     pi = src.pipeline_instances().get(uuid=pi_uuid).execute()
 
@@ -192,7 +196,7 @@ def copy_pipeline_instance(pi_uuid, src, dst, dst_git_repo, dst_project=None, re
                                         recursive=True)
 
         # Copy input collections, docker images and git repos.
-        pi = copy_collections(pi, src, dst)
+        pi = copy_collections(pi, src, dst, force)
         copy_git_repos(pi, src, dst, dst_git_repo)
 
         # Update the fields of the pipeline instance with the copied
@@ -232,7 +236,7 @@ def copy_pipeline_instance(pi_uuid, src, dst, dst_git_repo, dst_project=None, re
 #
 #    Returns the copied pipeline template object.
 #
-def copy_pipeline_template(pt_uuid, src, dst, dst_git_repo, recursive=True):
+def copy_pipeline_template(pt_uuid, src, dst, dst_git_repo, recursive=True, force=False):
     # fetch the pipeline template from the source instance
     pt = src.pipeline_templates().get(uuid=pt_uuid).execute()
 
@@ -240,7 +244,7 @@ def copy_pipeline_template(pt_uuid, src, dst, dst_git_repo, recursive=True):
         if not dst_git_repo:
             abort('--dst-git-repo is required when copying a pipeline recursively.')
         # Copy input collections, docker images and git repos.
-        pt = copy_collections(pt, src, dst)
+        pt = copy_collections(pt, src, dst, force)
         copy_git_repos(pt, src, dst, dst_git_repo)
 
     pt['description'] = "Pipeline template copied from {}\n\n{}".format(
@@ -260,17 +264,17 @@ def copy_pipeline_template(pt_uuid, src, dst, dst_git_repo, recursive=True):
 #    Returns a copy of obj with any old collection uuids replaced by
 #    the new ones.
 #
-def copy_collections(obj, src, dst):
+def copy_collections(obj, src, dst, force=False):
     if type(obj) in [str, unicode]:
         if uuid_type(src, obj) == 'Collection':
-            newc = copy_collection(obj, src, dst)
+            newc = copy_collection(obj, src, dst, force)
             if obj != newc['uuid'] and obj != newc['portable_data_hash']:
                 return newc['uuid']
         return obj
     elif type(obj) == dict:
-        return {v: copy_collections(obj[v], src, dst) for v in obj}
+        return {v: copy_collections(obj[v], src, dst, force) for v in obj}
     elif type(obj) == list:
-        return [copy_collections(v, src, dst) for v in obj]
+        return [copy_collections(v, src, dst, force) for v in obj]
     return obj
 
 # copy_git_repos(p, src, dst, dst_repo)
@@ -317,10 +321,17 @@ def copy_git_repos(p, src, dst, dst_repo):
                 if 'supplied_script_version' in j:
                     j['supplied_script_version'] = git_rev_parse(j['supplied_script_version'], repo_dir)
 
-# copy_collection(obj_uuid, src, dst)
+# copy_collection(obj_uuid, src, dst, force)
 #
 #    Copies the collection identified by obj_uuid from src to dst.
 #    Returns the collection object created at dst.
+#
+#    If a collection with the desired portable_data_hash already
+#    exists at dst, and the 'force' argument is False, copy_collection
+#    returns the existing collection without copying any blocks.
+#    Otherwise (if no collection exists or if 'force' is True)
+#    copy_collection copies all of the collection data blocks from src
+#    to dst.
 #
 #    For this application, it is critical to preserve the
 #    collection's manifest hash, which is not guaranteed with the
