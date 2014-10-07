@@ -9,7 +9,7 @@ import libcloud.compute.providers as cloud_provider
 import libcloud.compute.types as cloud_types
 from libcloud.compute.drivers import ec2 as cloud_ec2
 
-from . import BaseComputeNodeDriver
+from . import BaseComputeNodeDriver, arvados_node_fqdn
 
 ### Monkeypatch libcloud to support AWS' new SecurityGroup API.
 # These classes can be removed when libcloud support specifying
@@ -79,8 +79,7 @@ class ComputeNodeDriver(BaseComputeNodeDriver):
 
     def arvados_create_kwargs(self, arvados_node):
         result = {'ex_metadata': self.tags.copy(),
-                  'name': '{}.{}'.format(arvados_node['hostname'],
-                                         arvados_node['domain'])}
+                  'name': arvados_node_fqdn(arvados_node)}
         ping_secret = arvados_node['info'].get('ping_secret')
         if ping_secret is not None:
             ping_url = ('https://{}/arvados/v1/nodes/{}/ping?ping_secret={}'.
@@ -88,6 +87,12 @@ class ComputeNodeDriver(BaseComputeNodeDriver):
                                ping_secret))
             result['ex_userdata'] = ping_url
         return result
+
+    def sync_node(self, cloud_node, arvados_node):
+        metadata = self.arvados_create_kwargs(arvados_node)
+        tags = metadata['ex_metadata']
+        tags['Name'] = metadata['name']
+        self.real.ex_create_tags(cloud_node, tags)
 
     @classmethod
     def node_start_time(cls, node):

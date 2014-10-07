@@ -18,13 +18,14 @@ class NodeManagerDaemonActorTestCase(testutil.ActorTestMixin,
         self.arv_factory = mock.MagicMock(name='arvados_mock')
         self.cloud_factory = mock.MagicMock(name='cloud_mock')
         self.cloud_factory().node_start_time.return_value = time.time()
+        self.cloud_updates = mock.MagicMock(name='updates_mock')
         self.timer = testutil.MockTimer()
         self.node_factory = mock.MagicMock(name='factory_mock')
         self.node_setup = mock.MagicMock(name='setup_mock')
         self.node_shutdown = mock.MagicMock(name='shutdown_mock')
         self.daemon = nmdaemon.NodeManagerDaemonActor.start(
             self.server_wishlist_poller, self.arvados_nodes_poller,
-            self.cloud_nodes_poller, self.timer,
+            self.cloud_nodes_poller, self.cloud_updates, self.timer,
             self.arv_factory, self.cloud_factory,
             [54, 5, 1], 8, 600, 3600,
             self.node_setup, self.node_shutdown, self.node_factory).proxy()

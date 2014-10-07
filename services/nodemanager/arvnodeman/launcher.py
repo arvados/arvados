@@ -11,8 +11,14 @@ import time
 import daemon
 import pykka
 
-from . import *  # This imports all the Actor classes.
 from . import config as nmconfig
+from .computenode import \
+    ComputeNodeSetupActor, ComputeNodeShutdownActor, ComputeNodeUpdateActor, \
+    ComputeNodeActor, ShutdownTimer
+from .daemon import NodeManagerDaemonActor
+from .jobqueue import JobQueueMonitorActor, ServerCalculator
+from .nodelist import ArvadosNodeListMonitorActor, CloudNodeListMonitorActor
+from .timedcallback import TimedCallBackActor
 
 node_daemon = None
 
@@ -103,8 +109,11 @@ def main(args=None):
     setup_logging(config.get('Logging', 'file'), **config.log_levels())
     timer, cloud_node_poller, arvados_node_poller, job_queue_poller = \
         launch_pollers(config)
+    cloud_node_updater = ComputeNodeUpdateActor.start(
+        config.new_cloud_client).proxy()
     node_daemon = NodeManagerDaemonActor.start(
-        job_queue_poller, arvados_node_poller, cloud_node_poller, timer,
+        job_queue_poller, arvados_node_poller, cloud_node_poller,
+        cloud_node_updater, timer,
         config.new_arvados_client, config.new_cloud_client,
         config.shutdown_windows(), config.getint('Daemon', 'max_nodes'),
         config.getint('Daemon', 'poll_stale_after'),

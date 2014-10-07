@@ -12,6 +12,10 @@ import pykka
 from ..clientactor import _notify_subscribers
 from .. import config
 
+def arvados_node_fqdn(arvados_node, default_hostname='dynamic.compute'):
+    hostname = arvados_node.get('hostname') or default_hostname
+    return '{}.{}'.format(hostname, arvados_node['domain'])
+
 def arvados_node_mtime(node):
     return time.mktime(time.strptime(node['modified_at'] + 'UTC',
                                      '%Y-%m-%dT%H:%M:%SZ%Z')) - time.timezone
@@ -55,9 +59,9 @@ class BaseComputeNodeDriver(object):
     are responsible for translating the node manager's cloud requests to a
     specific cloud's vocabulary.
 
-    Subclasses must implement arvados_create_kwargs (to update node creation
-    kwargs with information about the specific Arvados node record) and
-    node_start_time.
+    Subclasses must implement arvados_create_kwargs (to update node
+    creation kwargs with information about the specific Arvados node
+    record), sync_node, and node_start_time.
     """
     def __init__(self, auth_kwargs, list_kwargs, create_kwargs, driver_class):
         self.real = driver_class(**auth_kwargs)
@@ -95,6 +99,13 @@ class BaseComputeNodeDriver(object):
         kwargs.update(self.arvados_create_kwargs(arvados_node))
         kwargs['size'] = size
         return self.real.create_node(**kwargs)
+
+    def sync_node(self, cloud_node, arvados_node):
+        # When a compute node first pings the API server, the API server
+        # will automatically assign some attributes on the corresponding
+        # node record, like hostname.  This method should propagate that
+        # information back to the cloud node appropriately.
+        raise NotImplementedError("BaseComputeNodeDriver.sync_node")
 
     @classmethod
     def node_start_time(cls, node):
@@ -200,6 +211,52 @@ class ComputeNodeShutdownActor(config.actor_class):
         self._logger.info("Cloud node %s shut down.", self.cloud_node.id)
 
 
+class ComputeNodeUpdateActor(config.actor_class):
+    """Actor to dispatch one-off cloud management requests.
+
+    This actor receives requests for small cloud updates, and dispatches them
+    to a real driver.  ComputeNodeActors use this to perform maintenance
+    tasks on themselves.  Having a dedicated actor for this gives us the
+    opportunity to control the flow of requests; e.g., by backing off when
+    errors occur.
+
+    This actor is most like a "traditional" Pykka actor: there's no
+    subscribing, but instead methods return real driver results.  If
+    you're interested in those results, you should get them from the
+    Future that the proxy method returns.  Be prepared to handle exceptions
+    from the cloud driver when you do.
+    """
+    def __init__(self, cloud_factory, max_retry_wait=180):
+        super(ComputeNodeUpdateActor, self).__init__()
+        self._cloud = cloud_factory()
+        self.max_retry_wait = max_retry_wait
+        self.error_streak = 0
+        self.next_request_time = time.time()
+
+    def _throttle_errors(orig_func):
+        @functools.wraps(orig_func)
+        def wrapper(self, *args, **kwargs):
+            throttle_time = self.next_request_time - time.time()
+            if throttle_time > 0:
+                time.sleep(throttle_time)
+            self.next_request_time = time.time()
+            try:
+                result = orig_func(self, *args, **kwargs)
+            except config.CLOUD_ERRORS:
+                self.error_streak += 1
+                self.next_request_time += min(2 ** self.error_streak,
+                                              self.max_retry_wait)
+                raise
+            else:
+                self.error_streak = 0
+                return result
+        return wrapper
+
+    @_throttle_errors
+    def sync_node(self, cloud_node, arvados_node):
+        return self._cloud.sync_node(cloud_node, arvados_node)
+
+
 class ShutdownTimer(object):
     """Keep track of a cloud node's shutdown windows.
 
@@ -250,7 +307,7 @@ class ComputeNodeActor(config.actor_class):
     for shutdown.
     """
     def __init__(self, cloud_node, cloud_node_start_time, shutdown_timer,
-                 timer_actor, arvados_node=None,
+                 timer_actor, update_actor, arvados_node=None,
                  poll_stale_after=600, node_stale_after=3600):
         super(ComputeNodeActor, self).__init__()
         self._later = self.actor_ref.proxy()
@@ -258,12 +315,14 @@ class ComputeNodeActor(config.actor_class):
         self._last_log = None
         self._shutdowns = shutdown_timer
         self._timer = timer_actor
+        self._update = update_actor
         self.cloud_node = cloud_node
         self.cloud_node_start_time = cloud_node_start_time
-        self.arvados_node = arvados_node
         self.poll_stale_after = poll_stale_after
         self.node_stale_after = node_stale_after
         self.subscribers = set()
+        self.arvados_node = None
+        self._later.update_arvados_node(arvados_node)
         self.last_shutdown_opening = None
         self._later.consider_shutdown()
 
@@ -305,7 +364,7 @@ class ComputeNodeActor(config.actor_class):
         if self.arvados_node is not None:
             return None
         elif arvados_node['ip_address'] in self.cloud_node.private_ips:
-            self.arvados_node = arvados_node
+            self._later.update_arvados_node(arvados_node)
             return self.cloud_node.id
         else:
             return None
@@ -318,4 +377,7 @@ class ComputeNodeActor(config.actor_class):
     def update_arvados_node(self, arvados_node):
         if arvados_node is not None:
             self.arvados_node = arvados_node
+            new_hostname = arvados_node_fqdn(self.arvados_node)
+            if new_hostname != self.cloud_node.name:
+                self._update.sync_node(self.cloud_node, self.arvados_node)
             self._later.consider_shutdown()

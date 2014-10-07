@@ -55,7 +55,7 @@ class NodeManagerDaemonActor(actor_class):
 
 
     def __init__(self, server_wishlist_actor, arvados_nodes_actor,
-                 cloud_nodes_actor, timer_actor,
+                 cloud_nodes_actor, cloud_update_actor, timer_actor,
                  arvados_factory, cloud_factory,
                  shutdown_windows, max_nodes,
                  poll_stale_after=600, node_stale_after=7200,
@@ -66,6 +66,7 @@ class NodeManagerDaemonActor(actor_class):
         self._node_setup = node_setup_class
         self._node_shutdown = node_shutdown_class
         self._node_actor = node_actor_class
+        self._cloud_updater = cloud_update_actor
         self._timer = timer_actor
         self._new_arvados = arvados_factory
         self._new_cloud = cloud_factory
@@ -115,6 +116,7 @@ class NodeManagerDaemonActor(actor_class):
             cloud_node=cloud_node,
             cloud_node_start_time=start_time,
             shutdown_timer=shutdown_timer,
+            update_actor=self._cloud_updater,
             timer_actor=self._timer,
             arvados_node=arvados_node,
             poll_stale_after=self.poll_stale_after,

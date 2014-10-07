@@ -63,6 +63,23 @@ class EC2ComputeNodeDriverTestCase(unittest.TestCase):
                           'name': 'compute8.zzzzz.arvadosapi.com'},
                          driver.arvados_create_kwargs(arv_node))
 
+    def test_tags_set_default_hostname_from_new_arvados_node(self):
+        arv_node = testutil.arvados_node_mock(hostname=None)
+        driver = self.new_driver()
+        actual = driver.arvados_create_kwargs(arv_node)
+        self.assertEqual('dynamic.compute.zzzzz.arvadosapi.com',
+                         actual['name'])
+
+    def test_sync_node(self):
+        arv_node = testutil.arvados_node_mock(1)
+        cloud_node = testutil.cloud_node_mock(2)
+        driver = self.new_driver()
+        driver.sync_node(cloud_node, arv_node)
+        tag_mock = self.driver_mock().ex_create_tags
+        self.assertTrue(tag_mock.called)
+        self.assertEqual('compute1.zzzzz.arvadosapi.com',
+                         tag_mock.call_args[0][1].get('Name', 'no name'))
+
     def test_node_create_time(self):
         refsecs = int(time.time())
         reftuple = time.gmtime(refsecs)

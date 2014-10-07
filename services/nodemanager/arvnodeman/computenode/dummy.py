@@ -7,7 +7,7 @@ import time
 import libcloud.compute.providers as cloud_provider
 import libcloud.compute.types as cloud_types
 
-from . import BaseComputeNodeDriver
+from . import BaseComputeNodeDriver, arvados_node_fqdn
 
 class ComputeNodeDriver(BaseComputeNodeDriver):
     """Compute node driver wrapper for libcloud's dummy driver.
@@ -43,6 +43,9 @@ class ComputeNodeDriver(BaseComputeNodeDriver):
         node = super(ComputeNodeDriver, self).create_node(size, arvados_node)
         self._ensure_private_ip(node)
         return node
+
+    def sync_node(self, cloud_node, arvados_node):
+        cloud_node.name = arvados_node_fqdn(arvados_node)
 
     @classmethod
     def node_start_time(cls, node):
