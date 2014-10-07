@@ -103,7 +103,9 @@ class Arvados::V1::JobsControllerTest < ActionController::TestCase
 
   [
    [:put, :update, {job:{cancelled_at: Time.now}}, :success],
+   [:put, :update, {job:{cancelled_at: nil}}, :unprocessable_entity],
    [:put, :update, {job:{state: 'Cancelled'}}, :success],
+   [:put, :update, {job:{state: 'Queued'}}, :unprocessable_entity],
    [:put, :update, {job:{state: 'Running'}}, :unprocessable_entity],
    [:put, :update, {job:{state: 'Failed'}}, :unprocessable_entity],
    [:put, :update, {job:{state: 'Complete'}}, :unprocessable_entity],

@@ -14,7 +14,7 @@ class Job < ArvadosModel
   validate :find_docker_image_locator
   validate :validate_status
   validate :validate_state_change
-  after_validation :update_timestamps_when_state_changes
+  before_save :update_timestamps_when_state_changes
 
   has_many :commit_ancestors, :foreign_key => :descendant, :primary_key => :script_version
   has_many(:nodes, foreign_key: :job_uuid, primary_key: :uuid)
@@ -261,6 +261,7 @@ class Job < ArvadosModel
 
   def update_timestamps_when_state_changes
     return if not (state_changed? or new_record?)
+
     case state
     when Running
       self.started_at ||= Time.now
