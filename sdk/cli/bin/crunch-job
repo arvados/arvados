@@ -376,9 +376,12 @@ if (!defined $git_dir && $Job->{'script_version'} =~ m{^/}) {
   $ENV{"CRUNCH_SRC"} = $Job->{'script_version'};
 }
 else {
+  # Resolve the given script_version to a git commit sha1. Also, if
+  # the repository is remote, clone it into our local filesystem: this
+  # ensures "git archive" will work, and is necessary to reliably
+  # resolve a symbolic script_version like "master^".
   $ENV{"CRUNCH_SRC"} = "$ENV{CRUNCH_TMP}/src";
 
-  # Install requested code version
   Log (undef, "Looking for version ".$Job->{script_version}." from repository ".$Job->{repository});
 
   $ENV{"CRUNCH_SRC_COMMIT"} = $Job->{script_version};
