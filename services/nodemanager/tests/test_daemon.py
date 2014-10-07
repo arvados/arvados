@@ -95,6 +95,23 @@ class NodeManagerDaemonActorTestCase(testutil.ActorTestMixin,
         self.daemon.update_server_wishlist(server_wishlist).get(self.TIMEOUT)
         self.assertFalse(self.node_setup.called)
 
+    def test_no_duplication_when_booting_node_listed_fast(self):
+        # Test that we don't start two ComputeNodeActors when we learn about
+        # a booting node through a listing before we get the "node up"
+        # message from CloudNodeSetupActor.
+        cloud_node = testutil.cloud_node_mock(1)
+        self.make_daemon(want_sizes=[testutil.MockSize(1)])
+        self.wait_for_call(self.node_setup.start)
+        setup = mock.MagicMock(name='setup_node_mock')
+        setup.actor_ref = self.node_setup.start().proxy().actor_ref
+        setup.cloud_node.get.return_value = cloud_node
+        setup.arvados_node.get.return_value = testutil.arvados_node_mock(1)
+        self.daemon.update_cloud_nodes([cloud_node])
+        self.wait_for_call(self.node_factory.start)
+        self.node_factory.reset_mock()
+        self.daemon.node_up(setup).get(self.TIMEOUT)
+        self.assertFalse(self.node_factory.start.called)
+
     def test_booting_nodes_shut_down(self):
         self.make_daemon(want_sizes=[testutil.MockSize(1)])
         self.wait_for_call(self.node_setup.start)

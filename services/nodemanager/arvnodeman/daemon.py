@@ -237,9 +237,16 @@ class NodeManagerDaemonActor(actor_class):
 
     def node_up(self, setup_proxy):
         cloud_node, arvados_node = self._actor_nodes(setup_proxy)
-        self._new_node(cloud_node, arvados_node)
+        cloud_key = cloud_node.id
+        arv_key = arvados_node['uuid']
         del self.booting[setup_proxy.actor_ref.actor_urn]
-        self.assigned_arv.pop(arvados_node['uuid'], None)
+        self.assigned_arv.pop(arv_key, None)
+        if cloud_key in self.unpaired_clouds:
+            if self.unpaired_clouds[cloud_key].offer_arvados_pair(
+                  arvados_node).get():
+                self._pair_nodes(cloud_key, arv_key)
+        elif cloud_key not in self.paired_clouds:
+            self._new_node(cloud_node, arvados_node)
         setup_proxy.stop()
 
     @_check_poll_freshness
