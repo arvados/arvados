@@ -1463,6 +1463,7 @@ sub save_meta
 
 sub freeze_if_want_freeze
 {
+  check_refresh_wanted();
   if ($main::please_freeze)
   {
     release_allocation();
