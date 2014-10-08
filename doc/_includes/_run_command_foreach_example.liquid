@@ -15,25 +15,10 @@
                     {
                         "foreach": "read_pair",
                         "command": "$(read_pair)"
-                    },
-                    "$(glob $(dir $(sample))/*_1.fastq)",
-                    "$(glob $(dir $(sample))/*_2.fastq)"
+                    }
                 ],
                 "task.stdout": "$(basename $(glob $(dir $(sample))/*_1.fastq)).sam",
                 "task.foreach": ["sample_subdir", "read_pair"],
-                "reference_collection": "2463fa9efeb75e099685528b3b9071e0+438",
-                "samples": "df45f4be79668b6d3d974e24f78e766f+149",
-                "sample_subdir": "$(dir $(samples))",
-                "read_pair": {
-                    "group": "sample_subdir",
-                    "regex": "(.*)_[12]\\.fastq(\\.gz)?$"
-                }
-            }
-        }
-    }
-}
-
-
                 "reference_collection": {
                     "required": true,
                     "dataclass": "Collection"
@@ -42,3 +27,14 @@
                     "required": true,
                     "dataclass": "Collection"
                 }
+                "sample_subdir": "$(dir $(samples))",
+                "read_pair": {
+                    "value": {
+                        "group": "sample_subdir",
+                        "regex": "(.*)_[12]\\.fastq(\\.gz)?$"
+                    }
+                }
+            }
+        }
+    }
+}

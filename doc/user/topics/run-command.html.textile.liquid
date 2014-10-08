@@ -214,3 +214,13 @@ This evaluates to the commands:
 ["echo", "bob", "carol"]
 ["echo", "bob", "dave"]
 </pre>
+
+h1. Examples
+
+The following is a single task pipeline using run-command to run the bwa alignment tool to align a single paired-end read fastq sample.  The input to this pipeline is the reference genome and a collection consisting of two fastq files for the read pair.
+
+<notextile>{% code 'run_command_simple_example' as javascript %}</notextile>
+
+The following is a concurrent task pipeline using run-command to run the bwa alignment tool to align a set of fastq reads over multiple sample.  The input to this pipeline is the reference genome and a collection consisting subdirectories for each sample, with each subdirectory containing pairs of fastq files for each set of reads.
+
+<notextile>{% code 'run_command_foreach_example' as javascript %}</notextile>
