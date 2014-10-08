@@ -10,6 +10,22 @@ if [[ "$INSTANCE" == '' ]]; then
   exit 1
 fi
 
+if [[ "$REVISION" == '' ]]; then
+  # See if there's a configuration file with the revision?
+  CONFIG_PATH=/home/jenkins/configuration/$INSTANCE.arvadosapi.com-versions.conf
+  if [[ -f $CONFIG_PATH ]]; then
+    echo "Loading git revision from $CONFIG_PATH"
+    . $CONFIG_PATH
+    REVISION=$ARVADOS_GIT_REVISION
+  fi
+fi
+
+if [[ "$REVISION" != '' ]]; then
+  echo "Git revision is $REVISION"
+else
+  echo "No valid git revision found, proceeding with what is in place."
+fi
+
 # Sanity check
 if ! [[ -n "$WORKSPACE" ]]; then
   echo "WORKSPACE environment variable not set"
