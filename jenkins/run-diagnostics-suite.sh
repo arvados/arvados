@@ -36,7 +36,7 @@ timer_reset
 
 cd $WORKSPACE
 
-cp -f /home/jenkins/diagnostics/arvados-workbench/$INSTANCE-application.yml $WORKSPACE/apps/workbench/config/
+cp -f /home/jenkins/diagnostics/arvados-workbench/$INSTANCE-application.yml $WORKSPACE/apps/workbench/config/application.yml
 
 cd $WORKSPACE/apps/workbench
 
