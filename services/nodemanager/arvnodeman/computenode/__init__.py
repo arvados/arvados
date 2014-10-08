@@ -214,11 +214,11 @@ class ComputeNodeShutdownActor(config.actor_class):
 class ComputeNodeUpdateActor(config.actor_class):
     """Actor to dispatch one-off cloud management requests.
 
-    This actor receives requests for small cloud updates, and dispatches them
-    to a real driver.  ComputeNodeActors use this to perform maintenance
-    tasks on themselves.  Having a dedicated actor for this gives us the
-    opportunity to control the flow of requests; e.g., by backing off when
-    errors occur.
+    This actor receives requests for small cloud updates, and
+    dispatches them to a real driver.  ComputeNodeMonitorActors use
+    this to perform maintenance tasks on themselves.  Having a
+    dedicated actor for this gives us the opportunity to control the
+    flow of requests; e.g., by backing off when errors occur.
 
     This actor is most like a "traditional" Pykka actor: there's no
     subscribing, but instead methods return real driver results.  If
@@ -299,7 +299,7 @@ class ShutdownTimer(object):
         return 0 < (time.time() - self._open_start) < self._open_for
 
 
-class ComputeNodeActor(config.actor_class):
+class ComputeNodeMonitorActor(config.actor_class):
     """Actor to manage a running compute node.
 
     This actor gets updates about a compute node's cloud and Arvados records.
@@ -309,7 +309,7 @@ class ComputeNodeActor(config.actor_class):
     def __init__(self, cloud_node, cloud_node_start_time, shutdown_timer,
                  timer_actor, update_actor, arvados_node=None,
                  poll_stale_after=600, node_stale_after=3600):
-        super(ComputeNodeActor, self).__init__()
+        super(ComputeNodeMonitorActor, self).__init__()
         self._later = self.actor_ref.proxy()
         self._logger = logging.getLogger('arvnodeman.computenode')
         self._last_log = None

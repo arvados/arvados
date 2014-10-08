@@ -14,7 +14,7 @@ import pykka
 from . import config as nmconfig
 from .computenode import \
     ComputeNodeSetupActor, ComputeNodeShutdownActor, ComputeNodeUpdateActor, \
-    ComputeNodeActor, ShutdownTimer
+    ShutdownTimer
 from .daemon import NodeManagerDaemonActor
 from .jobqueue import JobQueueMonitorActor, ServerCalculator
 from .nodelist import ArvadosNodeListMonitorActor, CloudNodeListMonitorActor
@@ -63,12 +63,12 @@ def setup_logging(path, level, **sublevels):
 def launch_pollers(config):
     cloud_client = config.new_cloud_client()
     arvados_client = config.new_arvados_client()
-    size_list = config.node_sizes(cloud_client.list_sizes())
-    if not size_list:
-        abort("No valid sizes configured")
+    cloud_size_list = config.node_sizes(cloud_client.list_sizes())
+    if not cloud_size_list:
+        abort("No valid node sizes configured")
 
     server_calculator = ServerCalculator(
-        size_list, config.getint('Daemon', 'max_nodes'))
+        cloud_size_list, config.getint('Daemon', 'max_nodes'))
     poll_time = config.getint('Daemon', 'poll_time')
     max_poll_time = config.getint('Daemon', 'max_poll_time')
 

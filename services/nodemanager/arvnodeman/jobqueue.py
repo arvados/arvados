@@ -15,7 +15,7 @@ class ServerCalculator(object):
     satisfies each job, and ignoring jobs that can't be satisfied.
     """
 
-    class SizeWrapper(object):
+    class CloudSizeWrapper(object):
         def __init__(self, real_size, **kwargs):
             self.real = real_size
             for name in ['id', 'name', 'ram', 'disk', 'bandwidth', 'price',
@@ -37,8 +37,9 @@ class ServerCalculator(object):
 
 
     def __init__(self, server_list, max_nodes=None):
-        self.sizes = [self.SizeWrapper(s, **kws) for s, kws in server_list]
-        self.sizes.sort(key=lambda s: s.price)
+        self.cloud_sizes = [self.CloudSizeWrapper(s, **kws)
+                            for s, kws in server_list]
+        self.cloud_sizes.sort(key=lambda s: s.price)
         self.max_nodes = max_nodes or float("inf")
 
     @staticmethod
@@ -48,12 +49,12 @@ class ServerCalculator(object):
         except (TypeError, ValueError):
             return fallback
 
-    def size_for_constraints(self, constraints):
+    def cloud_size_for_constraints(self, constraints):
         want_value = lambda key: self.coerce_int(constraints.get(key), 0)
         wants = {'cores': want_value('min_cores_per_node'),
                  'ram': want_value('min_ram_mb_per_node'),
                  'scratch': want_value('min_scratch_mb_per_node')}
-        for size in self.sizes:
+        for size in self.cloud_sizes:
             if size.meets_constraints(**wants):
                 return size
         return None
@@ -63,9 +64,9 @@ class ServerCalculator(object):
         for job in queue:
             constraints = job['runtime_constraints']
             want_count = self.coerce_int(constraints.get('min_nodes'), 1)
-            size = self.size_for_constraints(constraints)
-            if (want_count < self.max_nodes) and (size is not None):
-                servers.extend([size.real] * max(1, want_count))
+            cloud_size = self.cloud_size_for_constraints(constraints)
+            if (want_count < self.max_nodes) and (cloud_size is not None):
+                servers.extend([cloud_size.real] * max(1, want_count))
         return servers
 
 

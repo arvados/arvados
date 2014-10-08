@@ -147,7 +147,8 @@ class ShutdownTimerTestCase(unittest.TestCase):
         self.assertFalse(timer.window_open())
 
 
-class ComputeNodeActorTestCase(testutil.ActorTestMixin, unittest.TestCase):
+class ComputeNodeMonitorActorTestCase(testutil.ActorTestMixin,
+                                      unittest.TestCase):
     class MockShutdownTimer(object):
         def _set_state(self, is_open, next_opening):
             self.window_open = lambda: is_open
@@ -168,7 +169,7 @@ class ComputeNodeActorTestCase(testutil.ActorTestMixin, unittest.TestCase):
         if start_time is None:
             start_time = time.time()
         start_time = time.time()
-        self.node_actor = cnode.ComputeNodeActor.start(
+        self.node_actor = cnode.ComputeNodeMonitorActor.start(
             self.cloud_mock, start_time, self.shutdowns, self.timer,
             self.updates, arv_node).proxy()
         self.node_actor.subscribe(self.subscriber)

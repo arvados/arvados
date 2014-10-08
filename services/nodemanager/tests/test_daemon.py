@@ -96,9 +96,9 @@ class NodeManagerDaemonActorTestCase(testutil.ActorTestMixin,
         self.assertFalse(self.node_setup.called)
 
     def test_no_duplication_when_booting_node_listed_fast(self):
-        # Test that we don't start two ComputeNodeActors when we learn about
-        # a booting node through a listing before we get the "node up"
-        # message from CloudNodeSetupActor.
+        # Test that we don't start two ComputeNodeMonitorActors when
+        # we learn about a booting node through a listing before we
+        # get the "node up" message from CloudNodeSetupActor.
         cloud_node = testutil.cloud_node_mock(1)
         self.make_daemon(want_sizes=[testutil.MockSize(1)])
         self.wait_for_call(self.node_setup.start)
@@ -124,13 +124,13 @@ class NodeManagerDaemonActorTestCase(testutil.ActorTestMixin,
         size = testutil.MockSize(1)
         self.make_daemon(cloud_nodes=[cloud_node], want_sizes=[size])
         node_actor = self.node_factory().proxy()
-        self.daemon.shutdown_offer(node_actor).get(self.TIMEOUT)
+        self.daemon.node_can_shutdown(node_actor).get(self.TIMEOUT)
         self.assertFalse(node_actor.shutdown.called)
 
     def test_shutdown_accepted_below_capacity(self):
         self.make_daemon(cloud_nodes=[testutil.cloud_node_mock()])
         node_actor = self.node_factory().proxy()
-        self.daemon.shutdown_offer(node_actor)
+        self.daemon.node_can_shutdown(node_actor)
         self.wait_for_call(self.node_shutdown.start)
 
     def test_clean_shutdown_waits_for_node_setup_finish(self):
