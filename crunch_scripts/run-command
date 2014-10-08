@@ -56,8 +56,9 @@ else:
     jobp = json.loads(args.job_parameters)
     os.environ['JOB_UUID'] = 'zzzzz-8i9sb-1234567890abcde'
     os.environ['TASK_UUID'] = 'zzzzz-ot0gb-1234567890abcde'
-    os.environ['CRUNCH_SRC'] = '/tmp/crunch-src'
-    os.environ['TASK_KEEPMOUNT'] = '/keep'
+    os.environ['CRUNCH_SRC'] = '/tmp/crunche-src'
+    if 'TASK_KEEPMOUNT' not in os.environ:
+        os.environ['TASK_KEEPMOUNT'] = '/keep'
 
 links = []
 

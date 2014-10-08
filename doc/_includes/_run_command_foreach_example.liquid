@@ -1,25 +1,44 @@
-"bwa-mem": {
-    "script": "run-command",
-    "script_version": "master",
-    "repository": "arvados",
-    "script_parameters": {
-        "command": [
-            "bwa",
-            "mem",
-            "-t",
-            "$(node.cores)",
-            "$(glob $(dir $(reference_collection))/*.fasta)",
-            "$(glob $(dir $(sample))/*_1.fastq)",
-            "$(glob $(dir $(sample))/*_2.fastq)"
-        ],
-        "task.stdout": "$(basename $(glob $(dir $(sample))/*_1.fastq)).sam"
-        "reference_collection": {
-            "required": true,
-            "dataclass": "Collection"
-        },
-        "samples": {
-            "required": true,
-            "dataclass": "Collection"
-        },
+{
+    "name":"run-command example pipeline",
+    "components":{
+        "bwa-mem": {
+            "script": "run-command",
+            "script_version": "master",
+            "repository": "arvados",
+            "script_parameters": {
+                "command": [
+                    "bwa",
+                    "mem",
+                    "-t",
+                    "$(node.cores)",
+                    "$(glob $(dir $(reference_collection))/*.fasta)",
+                    {
+                        "foreach": "read_pair",
+                        "command": "$(read_pair)"
+                    },
+                    "$(glob $(dir $(sample))/*_1.fastq)",
+                    "$(glob $(dir $(sample))/*_2.fastq)"
+                ],
+                "task.stdout": "$(basename $(glob $(dir $(sample))/*_1.fastq)).sam",
+                "task.foreach": ["sample_subdir", "read_pair"],
+                "reference_collection": "2463fa9efeb75e099685528b3b9071e0+438",
+                "samples": "df45f4be79668b6d3d974e24f78e766f+149",
+                "sample_subdir": "$(dir $(samples))",
+                "read_pair": {
+                    "group": "sample_subdir",
+                    "regex": "(.*)_[12]\\.fastq(\\.gz)?$"
+                }
+            }
+        }
     }
 }
+
+
+                "reference_collection": {
+                    "required": true,
+                    "dataclass": "Collection"
+                },
+                "sample": {
+                    "required": true,
+                    "dataclass": "Collection"
+                }
