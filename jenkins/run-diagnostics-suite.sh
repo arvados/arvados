@@ -2,6 +2,13 @@
 
 EXITCODE=0
 
+INSTANCE=$1
+
+if [[ "$INSTANCE" == '' ]]; then
+  echo "Syntax: $0 <instance>"
+  exit 1
+fi
+
 # Sanity check
 if ! [[ -n "$WORKSPACE" ]]; then
   echo "WORKSPACE environment variable not set"
@@ -29,7 +36,7 @@ timer_reset
 
 cd $WORKSPACE
 
-cp -f /home/jenkins/diagnostics/arvados-workbench/application.yml $WORKSPACE/apps/workbench/config/
+cp -f /home/jenkins/diagnostics/arvados-workbench/$INSTANCE-application.yml $WORKSPACE/apps/workbench/config/
 
 cd $WORKSPACE/apps/workbench
 
