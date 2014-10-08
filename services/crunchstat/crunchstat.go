@@ -120,6 +120,7 @@ func PollCgroupStats(cgroup_root string, cgroup_parent string, container_id stri
 			c, err := os.Open(cpuset_cpus)
 			if err != nil {
 				stderr <- fmt.Sprintf("open %s: %s", cpuset_cpus, err)
+				// cgroup probably gone -- skip other stats too.
 				continue
 			}
 			b, _ := ioutil.ReadAll(c)
@@ -152,6 +153,8 @@ func PollCgroupStats(cgroup_root string, cgroup_parent string, container_id stri
 				// be >1 interval old, so stats will
 				// be incorrect. Start over instead.
 				last_user = -1
+
+				// cgroup probably gone -- skip other stats too.
 				continue
 			}
 			b, _ := ioutil.ReadAll(c)
@@ -188,6 +191,7 @@ func PollCgroupStats(cgroup_root string, cgroup_parent string, container_id stri
 			c, err := os.Open(blkio_io_service_bytes)
 			if err != nil {
 				stderr <- fmt.Sprintf("open %s: %s", blkio_io_service_bytes, err)
+				// cgroup probably gone -- skip other stats too.
 				continue
 			}
 			b := bufio.NewScanner(c)
@@ -221,6 +225,7 @@ func PollCgroupStats(cgroup_root string, cgroup_parent string, container_id stri
 			c, err := os.Open(memory_stat)
 			if err != nil {
 				stderr <- fmt.Sprintf("open %s: %s", memory_stat, err)
+				// cgroup probably gone -- skip other stats too.
 				continue
 			}
 			b := bufio.NewScanner(c)
