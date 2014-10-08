@@ -95,7 +95,7 @@ class SigHandler(object):
         self.sig = signum
 
 def add_to_group(gr, match):
-    m = ('^_^').join(match.groups())
+    m = match.groups()
     if m not in gr:
         gr[m] = []
     gr[m].append(match.group(0))
@@ -126,17 +126,17 @@ def expand_item(p, c):
                 items = get_items(p, p[c["group"]])
                 groups = {}
                 for i in items:
-                    p = pattern.match(i)
-                    if p:
-                        add_to_group(groups, p)
+                    match = pattern.match(i)
+                    if match:
+                        add_to_group(groups, match)
                 return [groups[k] for k in groups]
             elif "extract" in c:
                 items = get_items(p, p[c["extract"]])
                 r = []
                 for i in items:
-                    p = pattern.match(i)
-                    if p:
-                        r.append(list(p.groups()))
+                    match = pattern.match(i)
+                    if match:
+                        r.append(list(match.groups()))
                 return r
     elif isinstance(c, list):
         return expand_list(p, c)
