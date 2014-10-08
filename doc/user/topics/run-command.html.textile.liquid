@@ -17,7 +17,7 @@ Run-command is controlled through the script_parameters section of a pipeline co
 
 h2. Command template
 
-The value of the "command" key is a list.  The first parameter of the list is the actual program to invoke, followed by the commmand arguments.  The simplest run-command invocation simply runs a program with static parameters.  In this example, run "echo" with the first argument "hello":
+The value of the "command" key is a list.  The first parameter of the list is the actual program to invoke, followed by the command arguments.  The simplest run-command invocation simply runs a program with static parameters.  In this example, run "echo" with the first argument "hello world":
 
 <pre>
   "script_parameters": {
@@ -27,9 +27,9 @@ The value of the "command" key is a list.  The first parameter of the list is th
 
 Running this job will print "hello world" to the job log.
 
-By default, the command will start with the current working directory set to the output directory.  Anything written to the output directory will be saved to Keep when the command is finished.  You can change the default working directory using the @task.cwd@ and get the path to the output directory using @$(task.outdir)@ as explained below.
+By default, the command will start with the current working directory set to the output directory.  Anything written to the output directory will be saved to Keep when the command is finished.  You can change the default working directory using @task.cwd@ and get the path to the output directory using @$(task.outdir)@ as explained below.
 
-Items in the "command" list may include lists and objects in addition to strings.  Lists are flattened to produce the final command line.  JSON objects are evaluted as list item functions (see below).  For example, the following evalutes to ["echo", "hello", "world"]:
+Items in the "command" list may include lists and objects in addition to strings.  Lists are flattened to produce the final command line.  JSON objects are evaluated as list item functions (see below).  For example, the following evaluates to @["echo", "hello", "world"]@:
 
 <pre>
   "script_parameters": {
@@ -56,9 +56,9 @@ table(table table-bordered table-condensed).
 |_. Parameter   |_. Value |
 |$(node.cores)     |Number of cores on the current node|
 |$(task.tmpdir)    |Path to the temporary directory for this task      |
-|$(task.outdir)    |Path to the task's designated output directory.  This |
+|$(task.outdir)    |Path to the task's designated output directory.  Files written to this directory are automatically uploaded to Keep when the command completes.|
 |$(task.uuid)      |The current task's unique identifier      |
-|$(job.srcdir)     |The directory containing the source code for the run-command- script      |
+|$(job.srcdir)     |The directory containing the source code for the run-command script|
 |$(job.uuid)       |The current job's unique identifier      |
 
 h2. Substitution functions
@@ -74,28 +74,28 @@ Substitutions can also make use of functions.  Functions take a single parameter
 
 table(table table-bordered table-condensed).
 |_. Function|_. Action|
-|$(file ...)       | Takes a reference to a file within an Arvados collection and evaluates to a file path on the local file system where that file can be accessed by your command.  Will raise an error if the file is not accessable.|
-|$(dir ...)        | Takes a reference to an Arvados collection or directory within an Arvados collection and evaluates to a directory path on the local file system where that directory can be accessed by your command.  The path may include a file name, in which case it will evaluate to the parent directory of the file.  Uses Python's os.path.dirname(), so "/foo/bar" will evaluate to "/foo" but "/foo/bar/" will evaluate to "/foo/bar".  Will raise an error if the directory is not accessable. |
+|$(file ...)       | Takes a reference to a file within an Arvados collection and evaluates to a file path on the local file system where that file can be accessed by your command.  Will raise an error if the file is not accessible.|
+|$(dir ...)        | Takes a reference to an Arvados collection or directory within an Arvados collection and evaluates to a directory path on the local file system where that directory can be accessed by your command.  The path may include a file name, in which case it will evaluate to the parent directory of the file.  Uses Python's os.path.dirname(), so "/foo/bar" will evaluate to "/foo" but "/foo/bar/" will evaluate to "/foo/bar".  Will raise an error if the directory is not accessible. |
 |$(basename&nbsp;...)   | Strip leading directory and trailing file extension from the path provided.  For example, $(basename /foo/bar.baz.txt) will evaluate to "bar.baz".|
 |$(glob ...)       | Take a unix shell path pattern (supports @*@ @?@ and @[]@) and search the local filesystem, returning the first match found.  Use together with $(dir ...) to get a local filesystem path for Arvados collections.  For example: $(glob $(dir $(mycollection)/*.bam)) will find the first .bam file in the collection specified by the user parameter "mycollection".  If there is more than one match, which one is returned is undefined.  Will raise an error if no matches are found.|
 
 h2. List context
 
-When a parameter is evaluted in a list context, that means its value should evaluate to a list instead of a string.  Parameter values can be a static list (as demonstrated above), a path to a file, a path to a directory, or a JSON object describing a list context function.
+When a parameter is evaluated in a list context, that means its value should evaluate to a list instead of a string.  Parameter values can be a static list (as demonstrated above), a path to a file, a path to a directory, or a JSON object describing a list context function.
 
-If the value is a static list, it will evaluate the list items for parameter substition and list functions.
+If the value is a static list, it will evaluate the list items for parameter substation and list functions.
 
-If the value is a string, it is interpreted as a path.  If the path specifies a regular file, that file will be opened as a text file and produce a list with one item for each line in the file (end-of-line characters will be stripped).  If the path specifies a directory, produce a list containing all of the entries in the directory.  Note that parameter expansion is not performed lists produced this way.
+If the value is a string, it is interpreted as a path.  If the path specifies a regular file, that file will be opened as a text file and produce a list with one item for each line in the file (end-of-line characters will be stripped).  If the path specifies a directory, produce a list containing all of the entries in the directory.  Note that parameter expansion is not performed on lists produced this way.
 
 If the value is a JSON object, it is evaluated as a list function described below.
 
 h2. List functions
 
-When run-command is evaluating a list (such as "command"), in addition to string parameter substitution, you can use list items functions.
+When run-command is evaluating a list (such as "command"), in addition to string parameter substitution, you can use list item functions.  Note: in the following functions, you specify the name of a user parameter to act on; you cannot provide the list value directly in line.
 
 h3. foreach
 
-The @foreach@ list item function (not to be confused with the @task.foreach@ directive) expands a command template for each item in the specified user parameter (the value of the user parameter is evaluated in a list context, as described below).  The following example will evaluate "command" to @["echo", "--something", "alice", "--something", "bob"]@:
+The @foreach@ list item function (not to be confused with the @task.foreach@ directive) expands a command template for each item in the specified user parameter (the value of the user parameter is evaluated in a list context, as described above).  The following example will evaluate "command" to @["echo", "--something", "alice", "--something", "bob"]@:
 
 <pre>
 "script_parameters": {
@@ -106,7 +106,7 @@ The @foreach@ list item function (not to be confused with the @task.foreach@ dir
 
 h3. index
 
-The "index" list item function extracts a single item from a list.  The "index" is zero-based (i.e. the first item is at index 0, the second item index 1, etc).  The following example will evaluate "command" to ["echo", "--something", "bob"]:
+This function extracts a single item from a list.  The value of @index@ is zero-based (i.e. the first item is at index 0, the second item index 1, etc).  The following example will evaluate "command" to @["echo", "--something", "bob"]@:
 
 <pre>
 "script_parameters": {
@@ -162,7 +162,7 @@ h3. task.stdin and task.stdout
 
 Provide standard input and standard output redirection.
 
-@task.stdin@ must evalute to a path to a file to be bound to the commands's standard input stream.
+@task.stdin@ must evaluate to a path to a file to be bound to the command's standard input stream.
 
 @task.stdout@ specifies the desired file name in the output directory to save the content of standard output.
 
@@ -170,13 +170,13 @@ h3. task.vwd
 
 Background: because Keep collections are read-only, this does not play well with certain tools that expect to be able to write their outputs alongside their inputs (such as tools that generate indexes that are closely associated with the original file.)  The run-command's solution to this is the "virtual working directory".
 
-@task.vwd@ specifies a Keep collection with the starting contents of the directory.  Run-command will then populate @task.outdir@ with directories and symlinks to mirror the contents of the @task.vwd@ collection.  Your command will then be able to both access its input files and write it output files in @task.outdir@.  When the command completes, the output collection will merge the output of your command with the contents of the starting collection.  Note that files in the starting collection remain read-only and cannot be altered or deleted.
+@task.vwd@ specifies a Keep collection with the starting contents of the directory.  Run-command will then populate @task.outdir@ with directories and symlinks to mirror the contents of the @task.vwd@ collection.  Your command will then be able to both access its input files and write its output files in @task.outdir@.  When the command completes, the output collection will merge the output of your command with the contents of the starting collection.  Note that files in the starting collection remain read-only and cannot be altered or deleted.
 
 h3. task.foreach
 
 Using @task.foreach@, you can run your command concurrently over large datasets.
 
-@task.foreach@ takes the names of one or more user-defined parameters.  The value of these parameters are evaluated in a list context.  Run-command then generates tasks based on the cartesian product (i.e. all combinations) of the input lists.  The outputs of all tasks are merged to create the final output collection.  Note that if two tasks output a file in the same directory with the same name, that file will be concatinated in the final output.  In the following example, three tasks will be created for the "grep" command, based on the contents of user parameter "a":
+@task.foreach@ takes the names of one or more user-defined parameters.  The value of these parameters are evaluated in a list context.  Run-command then generates tasks based on the Cartesian product (i.e. all combinations) of the input lists.  The outputs of all tasks are merged to create the final output collection.  Note that if two tasks output a file in the same directory with the same name, that file will be concatenated in the final output.  In the following example, three tasks will be created for the "grep" command, based on the contents of user parameter "a":
 
 <pre>
 "script_parameters": {
