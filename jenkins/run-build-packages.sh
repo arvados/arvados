@@ -70,110 +70,28 @@ if ! [[ -n "$WORKSPACE" ]]; then
   exit 1
 fi
 
-source /etc/profile.d/rvm.sh
-
 if [[ "$DEBUG" != 0 ]]; then
   echo "Workspace is $WORKSPACE"
 fi
 
-# Make all files world-readable -- jenkins runs with umask 027, and has checked
-# out our git tree here
-chmod o+r "$WORKSPACE" -R
-
-# Now fix our umask to something better suited to building and publishing
-# gems and packages
-umask 0022
-
-if [[ "$DEBUG" != 0 ]]; then
-  echo "umask is" `umask`
-fi
-
-# Build arvados GEM
-if [[ "$DEBUG" != 0 ]]; then
-  echo "Build and publish ruby gems"
-fi
-
-cd "$WORKSPACE"
-cd sdk/ruby
-# clean up old gems
-rm -f arvados-*gem
-
-if [[ "$DEBUG" != 0 ]]; then
-  gem build arvados.gemspec
-else
-  # -q appears to be broken in gem version 2.2.2
-  gem build arvados.gemspec -q >/dev/null
-fi
-
-if [[ "$UPLOAD" != 0 ]]; then
-  # publish new gem
-  gem push arvados-*gem
-fi
-
-# Build arvados-cli GEM
-cd "$WORKSPACE"
-cd sdk/cli
-# clean up old gems
-rm -f arvados-cli*gem
-
-if [[ "$DEBUG" != 0 ]]; then
-  gem build arvados-cli.gemspec
-else
-  # -q appears to be broken in gem version 2.2.2
-  gem build arvados-cli.gemspec -q >/dev/null
-fi
-
-if [[ "$UPLOAD" != 0 ]]; then
-  # publish new gem
-  gem push arvados-cli*gem
-fi
-
-# Build arvados-python-client Python package
-if [[ "$DEBUG" != 0 ]]; then
-  echo "Build and publish arvados-python-client package"
-fi
-
-cd "$WORKSPACE"
-
-GIT_HASH=`git log --format=format:%ct.%h -n1 .`
-
-cd sdk/python
-
-# Make sure only to use sdist - that's the only format pip can deal with (sigh)
-
-if [[ "$UPLOAD" != 0 ]]; then
-  # Make sure only to use sdist - that's the only format pip can deal with (sigh)
-  if [[ "$DEBUG" != 0 ]]; then
-    python setup.py sdist upload
+handle_python_package () {
+  # This function assumes the current working directory is the python package directory
+  if [[ "$UPLOAD" != 0 ]]; then
+    # Make sure only to use sdist - that's the only format pip can deal with (sigh)
+    if [[ "$DEBUG" != 0 ]]; then
+      python setup.py sdist upload
+    else
+      python setup.py -q sdist upload
+    fi
   else
-    python setup.py -q sdist upload
+    # Make sure only to use sdist - that's the only format pip can deal with (sigh)
+    if [[ "$DEBUG" != 0 ]]; then
+      python setup.py sdist
+    else
+      python setup.py -q sdist
+    fi
   fi
-else
-  # Make sure only to use sdist - that's the only format pip can deal with (sigh)
-  if [[ "$DEBUG" != 0 ]]; then
-    python setup.py sdist
-  else
-    python setup.py -q sdist
-  fi
-fi
-
-cd ../../services/fuse
-
-if [[ "$UPLOAD" != 0 ]]; then
-  # Make sure only to use sdist - that's the only format pip can deal with (sigh)
-  if [[ "$DEBUG" != 0 ]]; then
-    python setup.py sdist upload
-  else
-    python setup.py -q sdist upload
-  fi
-else
-  # Make sure only to use sdist - that's the only format pip can deal with (sigh)
-  if [[ "$DEBUG" != 0 ]]; then
-    python setup.py sdist
-  else
-    python setup.py -q sdist
-  fi
-fi
+}
 
 # Build debs for everything
 build_and_scp_deb () {
@@ -218,7 +136,6 @@ build_and_scp_deb () {
 
   if [[ "$DEBUG" != 0 ]]; then
     echo
-    echo "Fpm command:"
     echo "${COMMAND_ARR[@]}"
     echo
   fi
@@ -249,6 +166,82 @@ build_and_scp_deb () {
     fi
   fi
 }
+
+source /etc/profile.d/rvm.sh
+
+# Make all files world-readable -- jenkins runs with umask 027, and has checked
+# out our git tree here
+chmod o+r "$WORKSPACE" -R
+
+# Now fix our umask to something better suited to building and publishing
+# gems and packages
+umask 0022
+
+if [[ "$DEBUG" != 0 ]]; then
+  echo "umask is" `umask`
+fi
+
+# Ruby gems
+if [[ "$DEBUG" != 0 ]]; then
+  echo
+  echo "Ruby gems"
+  echo
+fi
+
+cd "$WORKSPACE"
+cd sdk/ruby
+# clean up old gems
+rm -f arvados-*gem
+
+if [[ "$DEBUG" != 0 ]]; then
+  gem build arvados.gemspec
+else
+  # -q appears to be broken in gem version 2.2.2
+  gem build arvados.gemspec -q >/dev/null
+fi
+
+if [[ "$UPLOAD" != 0 ]]; then
+  # publish new gem
+  gem push arvados-*gem
+fi
+
+# Build arvados-cli GEM
+cd "$WORKSPACE"
+cd sdk/cli
+# clean up old gems
+rm -f arvados-cli*gem
+
+if [[ "$DEBUG" != 0 ]]; then
+  gem build arvados-cli.gemspec
+else
+  # -q appears to be broken in gem version 2.2.2
+  gem build arvados-cli.gemspec -q >/dev/null
+fi
+
+if [[ "$UPLOAD" != 0 ]]; then
+  # publish new gem
+  gem push arvados-cli*gem
+fi
+
+# Python packages
+if [[ "$DEBUG" != 0 ]]; then
+  echo
+  echo "Python packages"
+  echo
+fi
+
+cd "$WORKSPACE"
+
+GIT_HASH=`git log --format=format:%ct.%h -n1 .`
+
+cd sdk/python
+handle_python_package
+
+cd ../../services/fuse
+handle_python_package
+
+cd ../../services/nodemanager
+handle_python_package
 
 if [[ ! -d "$WORKSPACE/debs" ]]; then
   mkdir -p $WORKSPACE/debs
@@ -327,6 +320,10 @@ build_and_scp_deb $WORKSPACE/sdk/python python-arvados-python-client 'Curoverse,
 # not omit the python- prefix first.
 cd $WORKSPACE/debs
 build_and_scp_deb $WORKSPACE/services/fuse python-arvados-fuse 'Curoverse, Inc.' 'python' "$(awk '($1 == "Version:"){print $2}' $WORKSPACE/services/fuse/arvados_fuse.egg-info/PKG-INFO)" "--url=https://arvados.org" "--description=The Keep FUSE driver"
+
+# The node manager
+cd $WORKSPACE/debs
+build_and_scp_deb $WORKSPACE/services/nodemanager arvados-node-manager 'Curoverse, Inc.' 'python' "$(awk '($1 == "Version:"){print $2}' $WORKSPACE/services/nodemanager/arvados_node_manager.egg-info/PKG-INFO)" "--url=https://arvados.org" "--description=The Arvados node manager"
 
 # A few dependencies
 build_and_scp_deb python-gflags
