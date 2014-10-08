@@ -232,8 +232,7 @@ class PipelineInstancesTest < ActionDispatch::IntegrationTest
 
       # Pipeline can be re-run now. Access it as the specified user, and re-run
       if user == 'project_viewer'
-        visit page_with_token(user)
-        visit instance_path
+        visit page_with_token(user, instance_path)
         assert page.has_text? 'A Project'
         page.assert_no_selector 'a.disabled,button.disabled', text: 'Resume'
         page.assert_selector 'a,button', text: 'Re-run with latest'
