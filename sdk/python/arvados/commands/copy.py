@@ -363,33 +363,45 @@ def copy_collection(obj_uuid, src, dst, force=False):
     # Fetch the collection's manifest.
     manifest = c['manifest_text']
 
-    # Enumerate the block locators found in the manifest.
-    collection_blocks = set()
-    src_keep = arvados.keep.KeepClient(api_client=src, num_retries=2)
-    for line in manifest.splitlines():
-        for block_hash in line.split()[1:]:
-            if arvados.util.portable_data_hash_pattern.match(block_hash):
-                collection_blocks.add(block_hash)
-            else:
-                break
-
     # Copy each block from src_keep to dst_keep.
+    # Use the newly signed locators returned from dst_keep to build
+    # a new manifest as we go.
+    src_keep = arvados.keep.KeepClient(api_client=src, num_retries=2)
     dst_keep = arvados.keep.KeepClient(api_client=dst, num_retries=2)
-    for locator in collection_blocks:
-        parts = locator.split('+')
-        logger.info("Copying block %s (%s bytes)", locator, parts[1])
-        data = src_keep.get(locator)
-        dst_keep.put(data)
+
+    dst_manifest = ""
+    dst_locators = {}
+    for line in manifest.splitlines():
+        words = line.split()
+        dst_manifest_line = words[0]
+        for word in words[1:]:
+            try:
+                loc = arvados.KeepLocator(word)
+                blockhash = loc.md5sum
+                # copy this block if we haven't seen it before
+                # (otherwise, just reuse the existing dst_locator)
+                if blockhash not in dst_locators:
+                    logger.info("Copying block %s (%s bytes)", blockhash, loc.size)
+                    data = src_keep.get(word)
+                    dst_locator = dst_keep.put(data)
+                    dst_locators[blockhash] = dst_locator
+                dst_manifest_line += ' ' + dst_locators[blockhash]
+            except ValueError:
+                # If 'word' can't be parsed as a locator,
+                # presume it's a filename.
+                dst_manifest_line += ' ' + word
+        dst_manifest += dst_manifest_line + "\n"
 
     # Copy the manifest and save the collection.
-    logger.debug('saving {} manifest: {}'.format(obj_uuid, manifest))
-    dst_keep.put(manifest)
+    logger.debug('saving {} manifest: {}'.format(obj_uuid, dst_manifest))
+    dst_keep.put(dst_manifest)
 
     if 'uuid' in c:
         del c['uuid']
     if 'owner_uuid' in c:
         del c['owner_uuid']
     c['ensure_unique_name'] = True
+    c['manifest_text'] = dst_manifest
     return dst.collections().create(body=c).execute()
 
 # copy_git_repo(src_git_repo, src, dst, dst_git_repo)
