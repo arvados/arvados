@@ -3,9 +3,10 @@
 EXITCODE=0
 
 INSTANCE=$1
+REVISION=$2
 
 if [[ "$INSTANCE" == '' ]]; then
-  echo "Syntax: $0 <instance>"
+  echo "Syntax: $0 <instance> [revision]"
   exit 1
 fi
 
@@ -36,6 +37,10 @@ timer_reset
 
 cd $WORKSPACE
 
+if [[ "$REVISION" != '' ]]; then
+  git checkout $REVISION
+fi
+
 cp -f /home/jenkins/diagnostics/arvados-workbench/$INSTANCE-application.yml $WORKSPACE/apps/workbench/config/application.yml
 
 cd $WORKSPACE/apps/workbench
@@ -49,6 +54,10 @@ fi
 RAILS_ENV=diagnostics bundle exec rake TEST=test/diagnostics/pipeline_test.rb
 
 ECODE=$?
+
+if [[ "$REVISION" != '' ]]; then
+  git checkout master
+fi
 
 if [[ "$ECODE" != "0" ]]; then
   title "!!!!!! DIAGNOSTICS FAILED (`timer`) !!!!!!"
