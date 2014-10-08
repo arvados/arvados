@@ -1,95 +1,97 @@
-  <% current_job = pj[:job] if pj[:job] != {} and pj[:job][:uuid] %>
-  <div class="panel panel-default">
-    <div class="panel-heading">
-      <div class="container-fluid">
-        <div class="row-fluid">
-          <%# column offset 3 %>
+<% current_job = pj[:job] if pj[:job] != {} and pj[:job][:uuid] %>
+<div class="panel panel-default">
+  <div class="panel-heading">
+    <div class="container-fluid">
+      <div class="row-fluid">
+        <%# column offset 0 %>
+        <div class="col-md-3">
+          <h4 class="panel-title">
+            <a data-toggle="collapse" href="#collapse<%= i %>" style="white-space: nowrap;">
+              <%= pj[:name] %> <span class="caret"></span>
+            </a>
+          </h4>
+        </div>
+
+        <%# column offset 3 %>
+        <div class="col-md-2 pipeline-instance-spacing">
+          <%= pj[:progress_bar] %>
+        </div>
+
+        <% if current_job %>
+          <%# column offset 5 %>
+          <% if current_job[:state] != "Queued" %>
           <div class="col-md-3">
-            <h4 class="panel-title">
-              <a data-toggle="collapse" href="#collapse<%= i %>" style="white-space: nowrap;">
-                <%= pj[:name] %> <span class="caret"></span>
-              </a>
-            </h4>
-          </div>
-
-          <%# column offset 3 %>
-          <div class="col-md-2 pipeline-instance-spacing">
-            <%= pj[:progress_bar] %>
-          </div>
-
-          <% if current_job %>
-            <%# column offset 5 %>
-            <div class="col-md-3">
-              <% if current_job[:started_at] %>
-                <% walltime = ((if current_job[:finished_at] then current_job[:finished_at] else Time.now() end) - current_job[:started_at]) %>
-                <% cputime = tasks.map { |task|
-                     if task.started_at and task.job_uuid == current_job[:uuid]
-                       (if task.finished_at then task.finished_at else Time.now() end) - task.started_at
-                     else
-                       0
-                     end
-                   }.reduce(:+) || 0 %>
-                <%= render_runtime(walltime, false, false) %>
-                <% if cputime > 0 %> / <%= render_runtime(cputime, false, false) %> (<%= (cputime/walltime).round(1) %>&Cross;)<% end %>
-              <% end %>
-            </div>
-
-            <% if current_job[:state].in? ["Complete", "Failed", "Cancelled"] %>
-              <%# column offset 8 %>
-              <div class="col-md-4 text-overflow-ellipsis">
-                <% if pj[:output_uuid] %>
-                  <%= link_to_if_arvados_object pj[:output_uuid], friendly_name: true %>
-                <% elsif current_job[:output] %>
-                  <%= link_to_if_arvados_object current_job[:output], link_text: "Output of #{pj[:name]}" %>
-                <% else %>
-                  No output.
-                <% end %>
-              </div>
-            <% elsif current_job[:state].in? ["Queued", "Running"] %>
-              <%# column offset 8 %>
-            <div class="col-md-3">
-              <% if current_job[:state].in? ["Running"] %>
-                <span class="task-summary-status">
-                <%= current_job[:tasks_summary][:done] %>&nbsp;task<%= if current_job[:tasks_summary][:done] > 1 then 's' else '' end %> done,
-                <%= current_job[:tasks_summary][:failed] %>&nbsp;failed,
-                <%= current_job[:tasks_summary][:running] %>&nbsp;running,
-                <%= current_job[:tasks_summary][:todo] %>&nbsp;pending
-                </span>
-              <% end %>
-            </div>
-            <%# column offset 11 %>
-            <div class="col-md-1 pipeline-instance-spacing">
-                <%= form_tag "/jobs/#{current_job[:uuid]}/cancel", style: "display:inline; padding-left: 1em" do |f| %>
-                <%= hidden_field_tag :return_to, url_for(@object) %>
-                <%= button_tag "Cancel", {class: 'btn btn-xs btn-danger', id: "cancel-job-button"} %>
-            </div>
+            <% if current_job[:started_at] %>
+              <% walltime = ((if current_job[:finished_at] then current_job[:finished_at] else Time.now() end) - current_job[:started_at]) %>
+              <% cputime = tasks.map { |task|
+                   if task.started_at and task.job_uuid == current_job[:uuid]
+                     (if task.finished_at then task.finished_at else Time.now() end) - task.started_at
+                   else
+                     0
+                   end
+                 }.reduce(:+) || 0 %>
+              <%= render_runtime(walltime, false, false) %>
+              <% if cputime > 0 %> / <%= render_runtime(cputime, false, false) %> (<%= (cputime/walltime).round(1) %>&Cross;)<% end %>
             <% end %>
+          </div>
+          <% end %>
 
-          <% elsif current_job[:state] == "Queued" %>
-            <%# column offset 8 %>
-            <div class="col-md-4">
+          <% if current_job[:state] == "Queued" %>
+            <%# column offset 3 %>
+            <div class="col-md-6">
               <% queuetime = Time.now - current_job[:created_at] %>
               Queued for <%= render_runtime(queuetime, true) %>.
               <% begin %>
-              <% if current_job[:queue_position] == 0 %>
-                This job is next in the queue to run.
-              <% elsif current_job[:queue_position] == 1 %>
-                There is 1 job in the queue ahead of this one.
-              <% else  %>
-                There are <%= current_job[:queue_position] %> jobs in the queue ahead of this one.
-              <% end %>
+                <% if current_job[:queue_position] == 0 %>
+                  This job is next in the queue to run.
+                <% elsif current_job[:queue_position] == 1 %>
+                  There is 1 job in the queue ahead of this one.
+                <% else %>
+                  There are <%= current_job[:queue_position] %> jobs in the queue ahead of this one.
+                <% end %>
               <% rescue %>
-          <% end %>
+              <% end %>
+            </div>
+          <% elsif current_job[:state] == "Running" %>
+            <%# column offset 8 %>
+            <div class="col-md-3">
+              <span class="task-summary-status">
+                <%= current_job[:tasks_summary][:done] %>&nbsp;<%= "task".pluralize(current_job[:tasks_summary][:done]) %> done,
+                <%= current_job[:tasks_summary][:failed] %>&nbsp;failed,
+                <%= current_job[:tasks_summary][:running] %>&nbsp;running,
+                <%= current_job[:tasks_summary][:todo] %>&nbsp;pending
+              </span>
+            </div>
+          <% elsif current_job[:state].in? ["Complete", "Failed", "Cancelled"] %>
+            <%# column offset 8 %>
+            <div class="col-md-4 text-overflow-ellipsis">
+              <% if pj[:output_uuid] %>
+                <%= link_to_if_arvados_object pj[:output_uuid], friendly_name: true %>
+              <% elsif current_job[:output] %>
+                <%= link_to_if_arvados_object current_job[:output], link_text: "Output of #{pj[:name]}" %>
+              <% else %>
+                No output.
+              <% end %>
             </div>
           <% end %>
-<% end %>
-</div>
-</div>
-</div>
 
-<div id="collapse<%= i %>" class="panel-collapse collapse <%= if expanded then 'in' end %>">
-  <div class="panel-body">
-    <div class="container">
+          <% if current_job[:state].in? ["Queued", "Running"] %>
+            <%# column offset 11 %>
+            <div class="col-md-1 pipeline-instance-spacing">
+              <%= form_tag "/jobs/#{current_job[:uuid]}/cancel", style: "display:inline; padding-left: 1em" do |f| %>
+                <%= hidden_field_tag :return_to, url_for(@object) %>
+                <%= button_tag "Cancel", {class: 'btn btn-xs btn-danger', id: "cancel-job-button"} %>
+              <% end %>
+            </div>
+          <% end %>
+        <% end %>
+      </div>
+    </div>
+  </div>
+
+  <div id="collapse<%= i %>" class="panel-collapse collapse <%= if expanded then 'in' end %>">
+    <div class="panel-body">
+      <div class="container">
         <% current_component = (if current_job then current_job else pj end) %>
         <div class="row">
           <div class="col-md-6">
@@ -166,7 +168,7 @@
             <pre><%= JSON.pretty_generate(current_component[:script_parameters]) rescue nil %></pre>
           </div>
         </div>
+      </div>
     </div>
   </div>
-</div>
 </div>

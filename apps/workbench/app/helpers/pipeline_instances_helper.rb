@@ -18,12 +18,12 @@ module PipelineInstancesHelper
   def render_pipeline_job pj
     pj[:progress_bar] = render partial: 'job_progress', locals: {:j => pj[:job]}
     pj[:output_link] = link_to_if_arvados_object pj[:output]
-    pj[:job_link] = link_to_if_arvados_object pj[:job][:uuid]
+    pj[:job_link] = link_to_if_arvados_object pj[:job][:uuid] if pj[:job]
     pj
   end
 
   # Merge (started_at, finished_at) time range into the list of time ranges in
-  # timestamps (timestamps must be sorted and non-overlapping).  
+  # timestamps (timestamps must be sorted and non-overlapping).
   # return the updated timestamps list.
   def merge_range timestamps, started_at, finished_at
     # in the comments below, 'i' is the entry in the timestamps array and 'j'
@@ -62,7 +62,7 @@ module PipelineInstancesHelper
 
     timestamps << [started_at, finished_at]
   end
-  
+
   # Accept a list of objects with [:started_at] and [:finshed_at] keys and
   # merge overlapping ranges to compute the time spent running after periods of
   # overlapping execution are factored out.
@@ -269,7 +269,7 @@ module PipelineInstancesHelper
 
     if round_to_min and seconds >= 30
       minutes += 1
-    end    
+    end
 
     if use_words
       s = []

@@ -33,15 +33,17 @@
                 <div class="pull-right" style="width: 40%">
                   <div class="progress" style="margin-bottom: 0px">
                     <% p.components.each do |k, v| %>
-                      <%= render partial: 'job_progress', locals: {:j => v[:job], :scaleby => (1.0/p.components.size)} %>
+                      <% if v.is_a? Hash and v[:job] %>
+                        <%= render partial: 'job_progress', locals: {:j => v[:job], :scaleby => (1.0/p.components.size)} %>
+                      <% end %>
                     <% end %>
                   </div>
                 </div>
               </div>
 
               <%
-                running = p.components.select { |k, c| c.andand[:job].andand[:state] == "Running" }
-                queued = p.components.select { |k, c| c.andand[:job].andand[:state] == "Queued" }
+                running = p.components.select { |k, c| c.is_a? Hash and c[:job].andand[:state] == "Running" }
+                queued = p.components.select { |k, c| c.is_a? Hash and c[:job].andand[:state] == "Queued" }
                 %>
 
               <div class="clearfix">
