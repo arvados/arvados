@@ -7,6 +7,8 @@ import time
 import mock
 import pykka
 
+from . import pykka_timeout
+
 no_sleep = mock.patch('time.sleep', lambda n: None)
 
 def arvados_node_mock(node_num=99, job_uuid=None, age=0, **kwargs):
@@ -60,7 +62,7 @@ class MockTimer(object):
 
 class ActorTestMixin(object):
     FUTURE_CLASS = pykka.ThreadingFuture
-    TIMEOUT = 5
+    TIMEOUT = pykka_timeout
 
     def tearDown(self):
         pykka.ActorRegistry.stop_all()
