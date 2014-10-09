@@ -401,6 +401,11 @@ test_fuse() {
 }
 do_test fuse
 
+test_nodemanager() {
+    cd "$WORKSPACE/services/nodemanager" && python setup.py test
+}
+do_test nodemanager
+
 for g in "${gostuff[@]}"
 do
     do_test "$g" go
