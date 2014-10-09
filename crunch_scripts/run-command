@@ -31,7 +31,7 @@ import tempfile
 
 parser = argparse.ArgumentParser()
 parser.add_argument('--dry-run', action='store_true')
-parser.add_argument('--job-parameters', type=str, default="{}")
+parser.add_argument('--script-parameters', type=str, default="{}")
 args = parser.parse_args()
 
 os.umask(0077)
