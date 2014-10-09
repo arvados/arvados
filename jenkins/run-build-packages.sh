@@ -150,7 +150,10 @@ build_and_scp_deb () {
 
   if [[ "$FPM_PACKAGE_NAME" == "" ]]; then
     EXITCODE=1
-    echo "Error: Unable to figure out package name from fpm results:\n $FPM_RESULTS"
+    echo "Error: Unable to figure out package name from fpm results:"
+    echo
+    echo $FPM_RESULTS
+    echo
   else
     if [[ ! $FPM_RESULTS =~ "File already exists" ]]; then
       if [[ "$FPM_EXIT_CODE" != "0" ]]; then
