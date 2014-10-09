@@ -235,7 +235,9 @@ fi
 
 cd "$WORKSPACE"
 
-GIT_HASH=`git log --format=format:%ct.%h -n1 .`
+GIT_TIMESTAMP=`git log --format=format:%ct -n1 .`
+HUMAN_READABLE_TIMESTAMP=`TZ=UTC date -d @$GIT_TIMESTAMP +%Y%m%d%H%M%S`
+GIT_HASH=`git log --format=format:$HUMAN_READABLE_TIMESTAMP.%h -n1 .`
 
 cd sdk/python
 handle_python_package
