@@ -23,6 +23,7 @@ begin
   require 'oj'
   require 'active_support/inflector'
   require 'yaml'
+  require 'tempfile'
 rescue LoadError
   abort <<-EOS
 
@@ -112,7 +113,7 @@ def init_config
   end
 end
 
-subcommands = %w(keep pipeline tag ws edit)
+subcommands = %w(keep pipeline tag ws edit create)
 
 def check_subcommands client, arvados, subcommand, global_opts, remaining_opts
   case subcommand
@@ -148,12 +149,75 @@ def check_subcommands client, arvados, subcommand, global_opts, remaining_opts
     exec `which arv-ws`.strip, *remaining_opts
   when 'edit'
     arv_edit client, arvados, global_opts, remaining_opts
+  when 'create'
+    arv_create client, arvados, global_opts, remaining_opts
   end
 end
 
 def arv_edit_save_tmp tmp
   FileUtils::cp tmp.path, tmp.path + ".saved"
   puts "Saved contents to " + tmp.path + ".saved"
+end
+
+def command_exists?(command)
+  ENV['PATH'].split(':').each {|folder| File.executable?(File.join(folder, command))}
+end
+
+def run_editor tmp, global_opts
+  need_edit = true
+  while need_edit
+    pid = Process::fork
+    if pid.nil?
+      editor = nil
+      [ENV["VISUAL"], ENV["EDITOR"], "nano", "vi"].each do |e|
+        editor ||= e if e and command_exists? e
+      end
+      if editor.nil?
+        puts "Could not find any editor to use, please set $VISUAL or $EDITOR to your desired editor."
+        exit 1
+      end
+      exec editor, tmp.path
+    else
+      Process.wait pid
+    end
+
+    if $?.exitstatus == 0
+      tmp.open
+      newcontent = tmp.read()
+
+      newobj = {}
+      begin
+        case global_opts[:format]
+        when 'json'
+          newobj = Oj.load(newcontent)
+        when 'yaml'
+          newobj = YAML.load(newcontent)
+        end
+        need_edit = false
+      rescue Exception => e
+        n = 1
+        newcontent.each_line do |line|
+          puts "#{n.to_s.rjust 4}  #{line}"
+          n += 1
+        end
+        puts "Parse error! " + e.to_s
+        puts "\nTry again (y/n)? "
+        yn = "X"
+        while not ["y", "Y", "n", "N"].include?(yn)
+          yn = $stdin.read 1
+        end
+        if yn == 'n' or yn == 'N'
+          arv_edit_save_tmp tmp
+          abort
+        end
+      end
+    else
+      puts "Editor exited with status #{$?.exitstatus}"
+      exit $?.exitstatus
+    end
+  end
+
+  newobj
 end
 
 def arv_edit client, arvados, global_opts, remaining_opts
@@ -224,60 +288,11 @@ def arv_edit client, arvados, global_opts, remaining_opts
     content = results.to_yaml
   end
 
-  require 'tempfile'
-
   tmp = Tempfile.new([uuid, "." + global_opts[:format]])
   tmp.write(content)
   tmp.close
 
-  need_edit = true
-
-  while need_edit
-    pid = Process::fork
-    if pid.nil?
-      editor ||= ENV["VISUAL"]
-      editor ||= ENV["EDITOR"]
-      editor ||= "nano"
-      exec editor, tmp.path
-    else
-      Process.wait pid
-    end
-
-    if $?.exitstatus == 0
-      tmp.open
-      newcontent = tmp.read()
-
-      newobj = {}
-      begin
-        case global_opts[:format]
-        when 'json'
-          newobj = Oj.load(newcontent)
-        when 'yaml'
-          newobj = YAML.load(newcontent)
-        end
-        need_edit = false
-      rescue Exception => e
-        puts "Parse error! " + e.to_s
-        n = 1
-        newcontent.each_line do |line|
-          puts "#{n.to_s.rjust 4}  #{line}"
-          n += 1
-        end
-        puts "\nTry again (y/n)? "
-        yn = "X"
-        while not ["y", "Y", "n", "N"].include?(yn)
-          yn = $stdin.read 1
-        end
-        if yn == 'n' or yn == 'N'
-          arv_edit_save_tmp tmp
-          abort
-        end
-      end
-    else
-      puts "Editor exited with status #{$?.exitstatus}"
-      exit $?.exitstatus
-    end
-  end
+  newobj = run_editor tmp, global_opts
 
   begin
     if newobj != results
@@ -303,6 +318,7 @@ def arv_edit client, arvados, global_opts, remaining_opts
       begin
         results = JSON.parse result.body
       rescue JSON::ParserError => e
+        arv_edit_save_tmp tmp
         abort "Failed to parse server response:\n" + e.to_s
       end
 
@@ -315,6 +331,81 @@ def arv_edit client, arvados, global_opts, remaining_opts
       end
     else
       puts "Object is unchanged, did not update."
+    end
+  ensure
+    tmp.close(true)
+  end
+
+  exit 0
+end
+
+def arv_create client, arvados, global_opts, remaining_opts
+  types = resource_types(arvados.discovery_document)
+  create_opts = Trollop::options do
+    opt :project_uuid, "Project uuid in which to create the object", :type => :string
+    stop_on resource_types(arvados.discovery_document)
+  end
+
+  object_type = remaining_opts.shift
+  if object_type.nil?
+    abort "Missing resource type, must be one of #{types.join ', '}"
+  end
+
+  rsc = arvados.discovery_document["resources"].keys.select { |k| object_type == k.singularize }
+  if rsc.empty?
+    abort "Could not determine resource type #{object_type}"
+  end
+  rsc = rsc.first
+
+  newobj = {object_type => {}}
+  if create_opts[:project_uuid]
+    newobj[object_type]["owner_uuid"] = create_opts[:project_uuid]
+  end
+
+  case global_opts[:format]
+  when 'json'
+    content = Oj.dump(newobj, :indent => 1)
+  when 'yaml'
+    content = newobj.to_yaml
+  end
+
+  tmp = Tempfile.new(["", ".#{global_opts[:format]}"])
+  tmp.write(content)
+  tmp.close
+
+  newobj = run_editor tmp, global_opts
+
+  begin
+    api_method = 'arvados.' + rsc + '.create'
+    dumped = Oj.dump(newobj)
+
+    result = client.execute(:api_method => eval(api_method),
+                            :body_object => newobj,
+                            :authenticated => false,
+                            :headers => {
+                              authorization: 'OAuth2 '+ENV['ARVADOS_API_TOKEN']
+                            })
+
+    begin
+      results = JSON.parse result.body
+    rescue JSON::ParserError => e
+      arv_edit_save_tmp tmp
+      abort "Failed to parse server response:\n" + e.to_s
+    end
+
+    if result.response.status != 200
+      puts "Create failed.  Server responded #{result.response.status}: #{results['errors']} "
+      puts "Create body was:"
+      puts dumped
+      arv_edit_save_tmp tmp
+      abort
+    end
+
+    begin
+      puts "Created object #{results['uuid']}"
+    rescue
+      arv_edit_save_tmp tmp
+      abort "Unexpected response:\n#{results}"
     end
   ensure
     tmp.close(true)
@@ -361,13 +452,16 @@ def help_resources(option_parser, discovery_document, resource)
   exit 255
 end
 
-def parse_arguments(discovery_document, subcommands)
+def resource_types discovery_document
   resource_types = Array.new()
   discovery_document["resources"].each do |k,v|
     resource_types << k.singularize
   end
+  resource_types
+end
 
-  resource_types += subcommands
+def parse_arguments(discovery_document, subcommands)
+  resources_and_subcommands = resource_types(discovery_document) + subcommands
 
   option_parser = Trollop::Parser.new do
     version __FILE__
@@ -396,7 +490,7 @@ def parse_arguments(discovery_document, subcommands)
     banner "Additional options:"
 
     conflicts :short, :format
-    stop_on resource_types
+    stop_on resources_and_subcommands
   end
 
   global_opts = Trollop::with_standard_exception_handling option_parser do
@@ -416,7 +510,7 @@ def parse_arguments(discovery_document, subcommands)
   resource = ARGV.shift
 
   if not subcommands.include? resource
-    if not resource_types.include?(resource)
+    if not resources_and_subcommands.include?(resource)
       puts "Resource or subcommand '#{resource}' is not recognized.\n\n" if !resource.nil?
       help_resources(option_parser, discovery_document, resource)
     end
