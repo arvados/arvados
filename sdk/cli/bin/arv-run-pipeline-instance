@@ -446,17 +446,13 @@ class WhRunPipelineInstance
             ![false,'false',0,'0'].index parameter[:required]
           if parameter[:output_of]
             next
-          elsif parameter.is_a? Hash
-            value = parameter
-            next
           end
           errors << [componentname, parametername, "required parameter is missing"]
         end
         debuglog "parameter #{componentname}::#{parametername} == #{value}"
 
-        component[:script_parameters][parametername] = value
-        #component[:script_parameters][parametername] =
-        #  parameter.dup.merge(value: value)
+        component[:script_parameters][parametername] =
+          parameter.dup.merge(value: value)
       end
     end
     if !errors.empty?
