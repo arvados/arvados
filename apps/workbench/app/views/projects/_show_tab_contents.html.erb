@@ -85,10 +85,17 @@
         <th></th>
         <th></th>
         <% sort_order = sortable_columns['name'] %>
-        <th <%= raw sort_order.nil? ? "" : "data-sort-order='#{sort_order}'" %>>
+        <th <% if !sort_order.nil? %>
+              data-sort-order='<%= raw sort_order %>'
+            <% end %> >
           name
         </th>
-        <th>description</th>
+        <% sort_order = sortable_columns['description'] %>
+        <th <% if !sort_order.nil? %>
+              data-sort-order='<%= raw sort_order %>'
+            <% end %> >
+          description
+        </th>
       </tr>
     </thead>
   </table>

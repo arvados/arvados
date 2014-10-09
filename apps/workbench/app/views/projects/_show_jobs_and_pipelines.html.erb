@@ -1,3 +1,4 @@
 <%= render_pane 'tab_contents', to_string: true, locals: {
-    filters: [['uuid', 'is_a', ["arvados#job", "arvados#pipelineInstance"]]]
+	    filters: [['uuid', 'is_a', ["arvados#job", "arvados#pipelineInstance"]]],
+	    sortable_columns: { 'name' => 'jobs.script, pipeline_instances.name' }
     }.merge(local_assigns) %>

@@ -182,8 +182,8 @@ $(document).
         var $target = $(this).closest('table').find('[data-infinite-content-params-attr]');
         var params_attr = 'infinite-content-params-' + $target.data('infinite-content-params-attr');
         var params = $target.data(params_attr) || {};
-        params.order = $(this).data('sort-order') + ' ' + direction;
-        $target.data('params_attr', params);
+        params.order = $(this).data('sort-order').split(",").join( ' ' + direction + ', ' ) + ' ' + direction;
+        $target.data(params_attr, params);
         $target.trigger('refresh-content');
     }).
     on('ready arv:pane:loaded refresh-content', function() {
