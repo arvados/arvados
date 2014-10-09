@@ -39,7 +39,11 @@ navbar:
       - user/tutorials/tutorial-firstscript.html.textile.liquid
       - user/tutorials/tutorial-submit-job.html.textile.liquid
       - user/topics/tutorial-parallel.html.textile.liquid
+      - user/topics/arv-docker.html.textile.liquid
+    - Reference:
       - user/topics/run-command.html.textile.liquid
+      - api/schema/PipelineTemplate.html.textile.liquid
+      - api/schema/Job.html.textile.liquid
       - user/examples/crunch-examples.html.textile.liquid
     - Query the metadata database:
       - user/topics/tutorial-trait-search.html.textile.liquid

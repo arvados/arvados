@@ -1,0 +1,20 @@
+---
+layout: default
+navsection: userguide
+title: "Customizing the Crunch runtime environment"
+...
+
+This page describes how to customize the runtime environment (e.g. the programs, libraries, and other dependencies needed to run a job) that a crunch script will be run in.
+
+{% include 'tutorial_expectations' %}
+
+h1. Docker
+
+Arvados uses "Docker":https://www.docker.com/ images to provide a runtime environment for Crunch jobs.
+
+This page will demonstrate how to build the arvados/jobs Docker image, manually install additional software into the image to create a new custom image, and upload that image to Arvados for use by Crunch jobs.
+
+Arvados images are based on "Debian.":https://debian.org  In order to build
+
+cd ~/arvados/docker
+./build.sh jobs-image
