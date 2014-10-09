@@ -22,6 +22,7 @@ else:
 setup(name='arvados-node-manager',
       version='0.1',
       description='Arvados compute node manager',
+      long_description=open(os.path.join(SETUP_DIR, 'README.rst')).read(),
       author='Arvados',
       author_email='info@arvados.org',
       url="https://arvados.org",
