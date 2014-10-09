@@ -9,18 +9,16 @@ A pipeline in Arvados is a collection of crunch scripts, in which the output fro
 {% include 'tutorial_expectations' %}
 
 
-First, use @arv pipeline_template create@ to create a new empty template.  The @--format=uuid@ option will print out the unique identifier for the new template:
+First, use @arv create pipeline_template@ to create a new empty template. This will open the template record in an interactive text editor (as specified by $EDITOR or $VISUAL, otherwise defaults to @nano@).
 
 <notextile>
-<pre><code>~$ <span class="userinput">arv --format=uuid pipeline_template create --pipeline-template '{}'</span>
-qr1hi-p5p6p-wt1vdhkezgx7g2k
-</span></code></pre>
+<pre><code>~$ <span class="userinput">arv create pipeline_template</span>
+</code></pre>
 </notextile>
 
-Next, use @arv edit@ to edit the template.  This will open the template record in an interactive text editor (as specified by $EDITOR or $VISUAL, otherwise defaults to @nano@).  Replace the empty fields with the following content:
+Replace the empty fields with the following content:
 
 <notextile>{% code 'tutorial_bwa_pipeline' as javascript %}</notextile>
-
 
 Your new pipeline template will appear on the Workbench "Pipeline&nbsp;templates":https://{{ site.arvados_workbench_host }}/pipeline_templates page.
 
