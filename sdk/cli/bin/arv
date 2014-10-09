@@ -357,9 +357,33 @@ def arv_create client, arvados, global_opts, remaining_opts
   end
   rsc = rsc.first
 
-  newobj = {object_type => {}}
+  discovered_params = arvados.discovery_document["resources"][rsc]["methods"]["create"]["parameters"]
+  method_opts = Trollop::options do
+    banner head_banner
+    banner "Usage: arv create [--project-uuid] #{object_type} [create parameters]"
+    banner ""
+    banner "This method supports the following parameters:"
+    banner ""
+    discovered_params.each do |k,v|
+      opts = Hash.new()
+      opts[:type] = v["type"].to_sym if v.include?("type")
+      if [:datetime, :text, :object, :array].index opts[:type]
+        opts[:type] = :string                       # else trollop bork
+      end
+      opts[:default] = v["default"] if v.include?("default")
+      opts[:default] = v["default"].to_i if opts[:type] == :integer
+      opts[:default] = to_boolean(v["default"]) if opts[:type] == :boolean
+      opts[:required] = true if v.include?("required") and v["required"]
+      description = ''
+      description = '  ' + v["description"] if v.include?("description")
+      opt k.to_sym, description, opts
+    end
+  end
+
+
+  newobj = {}
   if create_opts[:project_uuid]
-    newobj[object_type]["owner_uuid"] = create_opts[:project_uuid]
+    newobj["owner_uuid"] = create_opts[:project_uuid]
   end
 
   case global_opts[:format]
@@ -380,7 +404,8 @@ def arv_create client, arvados, global_opts, remaining_opts
     dumped = Oj.dump(newobj)
 
     result = client.execute(:api_method => eval(api_method),
-                            :body_object => newobj,
+                            :parameters => method_opts,
+                            :body_object => {object_type => newobj},
                             :authenticated => false,
                             :headers => {
                               authorization: 'OAuth2 '+ENV['ARVADOS_API_TOKEN']
