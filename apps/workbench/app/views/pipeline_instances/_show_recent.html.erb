@@ -56,7 +56,7 @@
       <td style="border-top: 0; opacity: 0.5;" colspan="6">
         <% ob.components.each do |cname, c| %>
           <% if c.is_a?(Hash) and c[:job] %>
-            <%= render partial: "job_status_label", locals: {:j => c[:job], :title => cname.to_s } %>
+            <%= render partial: "job_progress", locals: {:j => c[:job], :title => cname.to_s, :show_progress_bar => false } %>
           <% else %>
             <span class="label label-default"><%= cname.to_s %></span>
           <% end %>

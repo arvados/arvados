@@ -32,43 +32,19 @@
 
                 <div class="pull-right" style="width: 40%">
                   <div class="progress" style="margin-bottom: 0px">
-                    <% running = [] %>
-                    <% failed = [] %>
-                    <% completed = [] %>
-                    <% queued = [] %>
                     <% p.components.each do |k, v| %>
                       <% if v.is_a? Hash and v[:job] %>
-                        <% if v[:job][:state] == "Running" %>
-                          <% running << k %>
-                        <% elsif v[:job][:state] == "Failed" or v[:job][:state] == "Cancelled" %>
-                          <% failed << k %>
-                        <% elsif v[:job][:state] == "Complete" %>
-                          <% completed << k %>
-                        <% elsif v[:job][:state] == "Queued" %>
-                          <% queued << k %>
-                        <% end %>
+                        <%= render partial: 'job_progress', locals: {:j => v[:job], :scaleby => (1.0/p.components.size)} %>
                       <% end %>
                     <% end %>
-                    <% completed_pct = (completed.size * 100) / p.components.size %>
-                    <% failed_pct = (failed.size * 100) / p.components.size %>
-                    <% running_pct = (running.size * 100) / p.components.size %>
-                    <% queued_pct = (queued.size * 100) / p.components.size %>
-
-                    <div class="progress-bar progress-bar-success" style="width: <%= completed_pct %>%">
-                      <span class="sr-only"></span>
-                    </div>
-                    <div class="progress-bar progress-bar-danger" style="width: <%= failed_pct %>%">
-                      <span class="sr-only"></span>
-                    </div>
-                    <div class="progress-bar progress-bar-primary" style="width: <%= running_pct %>%">
-                      <span class="sr-only"></span>
-                    </div>
-                    <div class="progress-bar progress-bar-default" style="width: <%= queued_pct %>%">
-                      <span class="sr-only"></span>
-                    </div>
                   </div>
                 </div>
               </div>
+
+              <%
+                running = p.components.select { |k, c| c.is_a? Hash and c[:job].andand[:state] == "Running" }
+                queued = p.components.select { |k, c| c.is_a? Hash and c[:job].andand[:state] == "Queued" }
+                %>
 
               <div class="clearfix">
                 Started at <%= render_localized_date(p[:started_at] || p[:created_at], "noseconds") %>.
@@ -76,11 +52,11 @@
                 Active for <%= render_runtime(pipeline_time, false) %>.
 
                 <div class="pull-right">
-                  <% running.each do |k| %>
-                    <span class="label label-primary"><%= k %></span>
+                  <% running.each do |k,v| %>
+                    <%= render partial: 'job_progress', locals: {:j => v[:job], :show_progress_bar => false, :title => k} %>
                   <% end %>
-                  <% queued.each do |k| %>
-                    <span class="label label-default"><%= k %></span>
+                  <% queued.each do |k,v| %>
+                    <%= render partial: 'job_progress', locals: {:j => v[:job], :show_progress_bar => false, :title => k} %>
                   <% end %>
                 </div>
               </div>

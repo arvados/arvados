@@ -7,13 +7,13 @@
   </p>
 <% end %>
 
-<% tasks = JobTask.filter([['job_uuid', 'in', render_pipeline_jobs.map { |j| j[:job].andand[:uuid] }]]).results %>
-<% runningtime = determine_wallclock_runtime(render_pipeline_jobs.map {|j| j[:job]}) %>
+<% tasks = JobTask.filter([['job_uuid', 'in', render_pipeline_jobs.map { |j| j[:job].andand[:uuid] }.compact]]).results %>
+<% runningtime = determine_wallclock_runtime(render_pipeline_jobs.map {|j| j[:job]}.compact) %>
 
 <p>
   <% if @object.started_at %>
     This pipeline started at <%= render_localized_date(@object.started_at) %>.
-    It 
+    It
     <% if @object.state == 'Complete' %>
       completed in
     <% elsif @object.state == 'Failed' %>
@@ -27,11 +27,11 @@
                   else
                     Time.now - @object.started_at
                   end %>
-    
-    <%= if walltime > runningtime 
-          render_runtime(walltime, true, false) 
-        else 
-          render_runtime(runningtime, true, false) 
+
+    <%= if walltime > runningtime
+          render_runtime(walltime, true, false)
+        else
+          render_runtime(runningtime, true, false)
         end %><% if @object.finished_at %> at <%= render_localized_date(@object.finished_at) %><% end %>.
     <% else %>
       This pipeline is <%= if @object.state.start_with? 'Running' then 'active' else @object.state.downcase end %>.

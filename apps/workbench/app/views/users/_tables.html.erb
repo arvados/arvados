@@ -22,7 +22,6 @@
           <th>Log</th>
           <th>Created at</th>
           <th>Status</th>
-          <th>Progress</th>
         </tr>
 
         <%# Preload collections, logs, and pipeline instance objects %>
@@ -96,9 +95,6 @@
   </small>
 </td>
 
-<td>
-  <%= render partial: 'job_status_label', locals: {:j => j} %>
-</td>
 <td>
   <div class="inline-progress-container">
   <%= render partial: 'job_progress', locals: {:j => j} %>
