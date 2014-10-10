@@ -235,7 +235,12 @@ try:
         if "task.cwd" in taskp:
             os.chdir(subst.do_substitution(taskp, taskp["task.cwd"]))
 
-    cmd = expand_list(taskp, taskp["command"])
+    if "piped_commands" in taskp:
+        cmd = []
+        for c in taskp["piped_commands"]:
+            cmd += expand_list(taskp, c)
+    else:
+        cmd = [expand_list(taskp, taskp["command"])]
 
     if not args.dry_run:
         if "task.stdin" in taskp:
@@ -262,13 +267,24 @@ except Exception as e:
     sys.exit(1)
 
 try:
-    sp = subprocess.Popen(cmd, shell=False, stdin=stdinfile, stdout=stdoutfile)
-    sig = SigHandler()
+    subprocesses = []
+    next_cmd_stdin = stdinfile
+    for i in xrange(len(cmd)):
+        if i == len(cmd)-1:
+            next_cmd_stdout = stdoutfile
+        else:
+            next_cmd_stdout = subprocess.PIPE
+        sp = subprocess.Popen(cmd, shell=False, stdin=next_cmd_stdin, stdout=next_cmd_stdout)
+        next_cmd_stdin = sp.stdout
 
-    # forward signals to the process.
-    signal.signal(signal.SIGINT, lambda signum, frame: sig.send_signal(sp, signum))
-    signal.signal(signal.SIGTERM, lambda signum, frame: sig.send_signal(sp, signum))
-    signal.signal(signal.SIGQUIT, lambda signum, frame: sig.send_signal(sp, signum))
+        sig = SigHandler()
+
+        # forward signals to the process.
+        signal.signal(signal.SIGINT, lambda signum, frame: sig.send_signal(sp, signum))
+        signal.signal(signal.SIGTERM, lambda signum, frame: sig.send_signal(sp, signum))
+        signal.signal(signal.SIGQUIT, lambda signum, frame: sig.send_signal(sp, signum))
+
+        subprocesses.append(sp)
 
     # wait for process to complete.
     rcode = sp.wait()
