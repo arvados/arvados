@@ -149,10 +149,10 @@ func DoNetworkStats(stderr chan<- string, cgroup Cgroup, lastStat map[string]Net
 		nextSample.txBytes = tx
 		nextSample.rxBytes = rx
 		if lastSample, ok := lastStat[ifName]; ok {
-			stderr <- fmt.Sprintf("crunchstat: task net %s tx %d rx %d interval %.4f",
+			stderr <- fmt.Sprintf("crunchstat: net %s tx %d +%d rx %d +%d interval %.4f",
 				ifName,
-				nextSample.txBytes - lastSample.txBytes,
-				nextSample.rxBytes - lastSample.rxBytes,
+				tx, tx - lastSample.txBytes,
+				rx, rx - lastSample.rxBytes,
 				nextSample.sampleTime.Sub(lastSample.sampleTime).Seconds())
 		}
 		lastStat[ifName] = nextSample
