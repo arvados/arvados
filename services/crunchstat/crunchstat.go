@@ -10,6 +10,7 @@ import (
 	"os"
 	"os/exec"
 	"os/signal"
+	"path/filepath"
 	"strings"
 	"syscall"
 	"time"
@@ -23,6 +24,12 @@ import (
 */
 import "C"
 // The above block of magic allows us to look up user_hz via _SC_CLK_TCK.
+
+type Cgroup struct {
+	root   string
+	parent string
+	cid    string
+}
 
 func CopyPipeToChan(in io.Reader, out chan string, done chan<- bool) {
 	s := bufio.NewScanner(in)
@@ -56,20 +63,20 @@ func OpenAndReadAll(filename string, log_chan chan<- string) ([]byte, error) {
 	}
 }
 
-func FindStat(stderr chan<- string, cgroup_root string, cgroup_parent string, container_id string, statgroup string, stat string) string {
+func FindStat(stderr chan<- string, cgroup Cgroup, statgroup string, stat string) string {
 	var path string
-	path = fmt.Sprintf("%s/%s/%s/%s/%s", cgroup_root, statgroup, cgroup_parent, container_id, stat)
+	path = fmt.Sprintf("%s/%s/%s/%s/%s", cgroup.root, statgroup, cgroup.parent, cgroup.cid, stat)
 	if _, err := os.Stat(path); err != nil {
-		path = fmt.Sprintf("%s/%s/%s/%s", cgroup_root, cgroup_parent, container_id, stat)
+		path = fmt.Sprintf("%s/%s/%s/%s", cgroup.root, cgroup.parent, cgroup.cid, stat)
 	}
 	if _, err := os.Stat(path); err != nil {
-		path = fmt.Sprintf("%s/%s/%s", cgroup_root, statgroup, stat)
+		path = fmt.Sprintf("%s/%s/%s", cgroup.root, statgroup, stat)
 	}
 	if _, err := os.Stat(path); err != nil {
-		path = fmt.Sprintf("%s/%s", cgroup_root, stat)
+		path = fmt.Sprintf("%s/%s", cgroup.root, stat)
 	}
 	if _, err := os.Stat(path); err != nil {
-		stderr <- fmt.Sprintf("crunchstat: did not find stats file (root %s, parent %s, cid %s, statgroup %s, stat %s)", cgroup_root, cgroup_parent, container_id, statgroup, stat)
+		stderr <- fmt.Sprintf("crunchstat: did not find stats file (root %s, parent %s, cid %s, statgroup %s, stat %s)", cgroup.root, cgroup.parent, cgroup.cid, statgroup, stat)
 		return ""
 	}
 	stderr <- fmt.Sprintf("crunchstat: reading stats from %s", path)
@@ -110,40 +117,48 @@ func SetNetworkNamespace(stderr chan<- string, procsFilename string) (string) {
 	return "host"
 }
 
-type NetStat struct {
-	tx_bytes int64
-	rx_bytes int64
+type NetSample struct {
+	sampleTime time.Time
+	txBytes    int64
+	rxBytes    int64
 }
-func DoNetworkStats(stderr chan<- string, procsFilename string, lastStat *NetStat, elapsed float64) (*NetStat) {
+
+func DoNetworkStats(stderr chan<- string, procsFilename string, lastStat map[string]NetSample) (map[string]NetSample) {
 	statScope := SetNetworkNamespace(stderr, procsFilename)
 
-	ifName := "eth0"
-	tx_s, tx_err := OpenAndReadAll(fmt.Sprintf("/sys/class/net/%s/statistics/tx_bytes", ifName), stderr)
-	rx_s, rx_err := OpenAndReadAll(fmt.Sprintf("/sys/class/net/%s/statistics/rx_bytes", ifName), stderr)
-	if rx_err != nil || tx_err != nil {
-		return nil
+	ifDirs, err := filepath.Glob("/sys/class/net/*")
+	if err != nil {
+		stderr <- fmt.Sprintf("crunchstat: could not list interfaces", err)
+		return lastStat
 	}
-	nextStat := new(NetStat)
-	fmt.Sscanf(string(tx_s), "%d", &nextStat.tx_bytes)
-	fmt.Sscanf(string(rx_s), "%d", &nextStat.rx_bytes)
-	if lastStat != nil {
-		stderr <- fmt.Sprintf("crunchstat: %s net %s tx %d rx %d interval %.4f",
-			statScope,
-			ifName,
-			nextStat.tx_bytes - lastStat.tx_bytes,
-			nextStat.rx_bytes - lastStat.rx_bytes,
-			elapsed)
+	if lastStat == nil {
+		lastStat = make(map[string]NetSample)
 	}
-	return nextStat
+	for _, ifDir := range ifDirs {
+		ifName := filepath.Base(ifDir)
+		tx_s, tx_err := OpenAndReadAll(fmt.Sprintf("/sys/class/net/%s/statistics/tx_bytes", ifName), stderr)
+		rx_s, rx_err := OpenAndReadAll(fmt.Sprintf("/sys/class/net/%s/statistics/rx_bytes", ifName), stderr)
+		if rx_err != nil || tx_err != nil {
+			return nil
+		}
+		nextSample := NetSample{}
+		nextSample.sampleTime = time.Now()
+		fmt.Sscanf(string(tx_s), "%d", &nextSample.txBytes)
+		fmt.Sscanf(string(rx_s), "%d", &nextSample.rxBytes)
+		if lastSample, ok := lastStat[ifName]; ok {
+			stderr <- fmt.Sprintf("crunchstat: %s net %s tx %d rx %d interval %.4f",
+				statScope,
+				ifName,
+				nextSample.txBytes - lastSample.txBytes,
+				nextSample.rxBytes - lastSample.rxBytes,
+				nextSample.sampleTime.Sub(lastSample.sampleTime).Seconds())
+		}
+		lastStat[ifName] = nextSample
+	}
+	return lastStat
 }
 
-type Cgroup struct {
-	cgroup_root   string
-	cgroup_parent string
-	container_id  string
-}
-
-func PollCgroupStats(cgroup_root string, cgroup_parent string, container_id string, stderr chan string, poll int64, stop_poll_chan <-chan bool) {
+func PollCgroupStats(cgroup Cgroup, stderr chan string, poll int64, stop_poll_chan <-chan bool) {
 	var last_user int64 = -1
 	var last_sys int64 = -1
 	var last_cpucount int64 = 0
@@ -159,12 +174,12 @@ func PollCgroupStats(cgroup_root string, cgroup_parent string, container_id stri
 
 	user_hz := float64(C.sysconf(C._SC_CLK_TCK))
 
-	cpuacct_stat := FindStat(stderr, cgroup_root, cgroup_parent, container_id, "cpuacct", "cpuacct.stat")
-	blkio_io_service_bytes := FindStat(stderr, cgroup_root, cgroup_parent, container_id, "blkio", "blkio.io_service_bytes")
-	cpuset_cpus := FindStat(stderr, cgroup_root, cgroup_parent, container_id, "cpuset", "cpuset.cpus")
-	memory_stat := FindStat(stderr, cgroup_root, cgroup_parent, container_id, "memory", "memory.stat")
-	procs := FindStat(stderr, cgroup_root, cgroup_parent, container_id, "cpuacct", "cgroup.procs")
-	lastNetStat := DoNetworkStats(stderr, procs, nil, 0)
+	cpuacct_stat := FindStat(stderr, cgroup, "cpuacct", "cpuacct.stat")
+	blkio_io_service_bytes := FindStat(stderr, cgroup, "blkio", "blkio.io_service_bytes")
+	cpuset_cpus := FindStat(stderr, cgroup, "cpuset", "cpuset.cpus")
+	memory_stat := FindStat(stderr, cgroup, "memory", "memory.stat")
+	procs := FindStat(stderr, cgroup, "cpuacct", "cgroup.procs")
+	lastNetStat := DoNetworkStats(stderr, procs, nil)
 
 	poll_chan := make(chan bool, 1)
 	go func() {
@@ -294,7 +309,7 @@ func PollCgroupStats(cgroup_root string, cgroup_parent string, container_id stri
 			c.Close()
 		}
 
-		lastNetStat = DoNetworkStats(stderr, procs, lastNetStat, elapsed)
+		lastNetStat = DoNetworkStats(stderr, procs, lastNetStat)
 	}
 }
 
@@ -390,7 +405,8 @@ func run(logger *log.Logger) error {
 	}
 
 	stop_poll_chan := make(chan bool, 1)
-	go PollCgroupStats(cgroup_root, cgroup_parent, container_id, stderr_chan, poll, stop_poll_chan)
+	cgroup := Cgroup{cgroup_root, cgroup_parent, container_id}
+	go PollCgroupStats(cgroup, stderr_chan, poll, stop_poll_chan)
 
 	// When the child exits, tell the polling goroutine to stop.
 	defer func() { stop_poll_chan <- true }()
