@@ -118,7 +118,7 @@ class EventBus
           # Add a filter.  This gets the :filters field which is the same
           # format as used for regular index queries.
           ws.filters << Filter.new(p)
-          ws.send ({status: 200, message: 'subscribe ok'}.to_json)
+          ws.send ({status: 200, message: 'subscribe ok', filter: p}.to_json)
 
           # Send any pending events
           push_events ws

@@ -24,6 +24,7 @@ def main(arguments=None):
 
     args = parser.parse_args(arguments)
 
+    global filters
     filters = []
     if args.uuid:
         filters += [ ['object_uuid', '=', args.uuid] ]
@@ -35,21 +36,29 @@ def main(arguments=None):
         filters += [ ['object_uuid', '=', args.pipeline] ]
 
     if args.job:
-        filters += [ ['object_uuid', '=', args.job], ['event_type', 'in', ['stderr', 'stdout'] ] ]
+        filters += [ ['object_uuid', '=', args.job] ]
 
     api = arvados.api('v1', cache=False)
 
+    global known_component_jobs
+    global ws
+
     known_component_jobs = set()
+    ws = None
     def on_message(ev):
+        global known_component_jobs
+        global filters
+        global ws
+
         logger.debug(ev)
         if 'event_type' in ev and (args.pipeline or args.job):
             if ev['event_type'] in ('stderr', 'stdout'):
                 sys.stdout.write(ev["properties"]["text"])
             elif ev["event_type"] in ("create", "update"):
-                if args.job or ev["object_kind"] == "arvados#pipeline_instance":
-                    if ev["properties"]["new_attributes"]["state"] in ("Complete", "Failed", "Cancelled"):
-                        ws.close_connection()
-                if ev["object_kind"] == "arvados#pipeline_instance":
+                #if args.job or ev["object_kind"] == "arvados#pipelineInstance":
+                #    if ev["properties"]["new_attributes"]["state"] in ("Complete", "Failed", "Cancelled"):
+                #        ws.close()
+                if ev["object_kind"] == "arvados#pipelineInstance":
                     pipeline_jobs = set()
                     for c in ev["properties"]["new_attributes"]["components"]:
                         if "job" in ev["properties"]["new_attributes"]["components"][c]:
@@ -62,7 +71,6 @@ def main(arguments=None):
         else:
             print json.dumps(ev)
 
-    ws = None
     try:
         ws = subscribe(api, filters, lambda ev: on_message(ev), poll_fallback=args.poll_fallback)
         ws.run_forever()

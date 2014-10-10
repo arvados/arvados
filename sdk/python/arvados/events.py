@@ -19,7 +19,7 @@ class EventClient(WebSocketClient):
         else:
             ssl_options={'cert_reqs': ssl.CERT_REQUIRED}
         super(EventClient, self).__init__(url, ssl_options=ssl_options)
-        self.filters = []
+        self.filters = filters
         self.on_event = on_event
 
     def opened(self):
