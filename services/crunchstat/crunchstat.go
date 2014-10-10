@@ -29,6 +29,24 @@ func CopyChanToPipe(in <-chan string, out io.Writer) {
 	}
 }
 
+func OpenAndReadAll(filename string, log_chan chan<- string) ([]byte, error) {
+	in, err := os.Open(filename)
+	if err != nil {
+		if log_chan != nil {
+			log_chan <- fmt.Sprintf("open %s: %s", filename, err)
+		}
+		return nil, err
+	}
+	defer in.Close()
+	{
+		content, err := ioutil.ReadAll(in)
+		if err != nil && log_chan != nil {
+			log_chan <- fmt.Sprintf("read %s: %s", filename, err)
+		}
+		return content, err
+	}
+}
+
 func FindStat(cgroup_root string, cgroup_parent string, container_id string, statgroup string, stat string) string {
 	var path string
 	path = fmt.Sprintf("%s/%s/%s/%s/%s.%s", cgroup_root, statgroup, cgroup_parent, container_id, statgroup, stat)
@@ -51,7 +69,6 @@ func FindStat(cgroup_root string, cgroup_parent string, container_id string, sta
 }
 
 func PollCgroupStats(cgroup_root string, cgroup_parent string, container_id string, stderr chan string, poll int64, stop_poll_chan <-chan bool) {
-	//var last_usage int64 = 0
 	var last_user int64 = -1
 	var last_sys int64 = -1
 	var last_cpucount int64 = 0
@@ -65,7 +82,6 @@ func PollCgroupStats(cgroup_root string, cgroup_parent string, container_id stri
 
 	disk := make(map[string]*Disk)
 
-	//cpuacct_usage := FindStat(cgroup_path, "cpuacct", "usage")
 	cpuacct_stat := FindStat(cgroup_root, cgroup_parent, container_id, "cpuacct", "stat")
 	blkio_io_service_bytes := FindStat(cgroup_root, cgroup_parent, container_id, "blkio", "io_service_bytes")
 	cpuset_cpus := FindStat(cgroup_root, cgroup_parent, container_id, "cpuset", "cpus")
@@ -103,27 +119,13 @@ func PollCgroupStats(cgroup_root string, cgroup_parent string, container_id stri
 		}
 		morning := time.Now()
 		elapsed := morning.Sub(bedtime).Nanoseconds() / int64(time.Millisecond)
-		/*{
-			c, _ := os.Open(cpuacct_usage)
-			b, _ := ioutil.ReadAll(c)
-			var next int64
-			fmt.Sscanf(string(b), "%d", &next)
-			if last_usage != 0 {
-				stderr <- fmt.Sprintf("crunchstat: cpuacct.usage %v", (next-last_usage)/10000000)
-			}
-			//fmt.Printf("usage %d %d %d %d%%\n", last_usage, next, next-last_usage, (next-last_usage)/10000000)
-			last_usage = next
-			c.Close()
-		}*/
 		var cpus int64 = 0
 		if cpuset_cpus != "" {
-			c, err := os.Open(cpuset_cpus)
+			b, err := OpenAndReadAll(cpuset_cpus, stderr)
 			if err != nil {
-				stderr <- fmt.Sprintf("open %s: %s", cpuset_cpus, err)
 				// cgroup probably gone -- skip other stats too.
 				continue
 			}
-			b, _ := ioutil.ReadAll(c)
 			sp := strings.Split(string(b), ",")
 			for _, v := range sp {
 				var min, max int64
@@ -139,16 +141,13 @@ func PollCgroupStats(cgroup_root string, cgroup_parent string, container_id stri
 				stderr <- fmt.Sprintf("crunchstat: cpuset.cpus %v", cpus)
 			}
 			last_cpucount = cpus
-
-			c.Close()
 		}
 		if cpus == 0 {
 			cpus = 1
 		}
 		if cpuacct_stat != "" {
-			c, err := os.Open(cpuacct_stat)
+			b, err := OpenAndReadAll(cpuacct_stat, stderr)
 			if err != nil {
-				stderr <- fmt.Sprintf("open %s: %s", cpuacct_stat, err)
 				// Next time around, last_user would
 				// be >1 interval old, so stats will
 				// be incorrect. Start over instead.
@@ -157,11 +156,9 @@ func PollCgroupStats(cgroup_root string, cgroup_parent string, container_id stri
 				// cgroup probably gone -- skip other stats too.
 				continue
 			}
-			b, _ := ioutil.ReadAll(c)
 			var next_user int64
 			var next_sys int64
 			fmt.Sscanf(string(b), "user %d\nsystem %d", &next_user, &next_sys)
-			c.Close()
 
 			if elapsed > 0 && last_user != -1 {
 				user_diff := next_user - last_user
@@ -181,9 +178,6 @@ func PollCgroupStats(cgroup_root string, cgroup_parent string, container_id stri
 				stderr <- fmt.Sprintf("crunchstat: cpuacct.stat sys %v", sys_pct)
 			}
 
-			/*fmt.Printf("user %d %d %d%%\n", last_user, next_user, next_user-last_user)
-			fmt.Printf("sys %d %d %d%%\n", last_sys, next_sys, next_sys-last_sys)
-			fmt.Printf("sum %d%%\n", (next_user-last_user)+(next_sys-last_sys))*/
 			last_user = next_user
 			last_sys = next_sys
 		}
@@ -194,31 +188,32 @@ func PollCgroupStats(cgroup_root string, cgroup_parent string, container_id stri
 				// cgroup probably gone -- skip other stats too.
 				continue
 			}
+			defer c.Close()
 			b := bufio.NewScanner(c)
 			var device, op string
 			var next int64
 			for b.Scan() {
-				if _, err := fmt.Sscanf(string(b.Text()), "%s %s %d", &device, &op, &next); err == nil {
-					if disk[device] == nil {
-						disk[device] = new(Disk)
+				if _, err := fmt.Sscanf(string(b.Text()), "%s %s %d", &device, &op, &next); err != nil {
+					continue
+				}
+				if disk[device] == nil {
+					disk[device] = new(Disk)
+				}
+				if op == "Read" {
+					disk[device].last_read = disk[device].next_read
+					disk[device].next_read = next
+					if disk[device].last_read > 0 && (disk[device].next_read != disk[device].last_read) {
+						stderr <- fmt.Sprintf("crunchstat: blkio.io_service_bytes %s read %v", device, disk[device].next_read-disk[device].last_read)
 					}
-					if op == "Read" {
-						disk[device].last_read = disk[device].next_read
-						disk[device].next_read = next
-						if disk[device].last_read > 0 && (disk[device].next_read != disk[device].last_read) {
-							stderr <- fmt.Sprintf("crunchstat: blkio.io_service_bytes %s read %v", device, disk[device].next_read-disk[device].last_read)
-						}
-					}
-					if op == "Write" {
-						disk[device].last_write = disk[device].next_write
-						disk[device].next_write = next
-						if disk[device].last_write > 0 && (disk[device].next_write != disk[device].last_write) {
-							stderr <- fmt.Sprintf("crunchstat: blkio.io_service_bytes %s write %v", device, disk[device].next_write-disk[device].last_write)
-						}
+				}
+				if op == "Write" {
+					disk[device].last_write = disk[device].next_write
+					disk[device].next_write = next
+					if disk[device].last_write > 0 && (disk[device].next_write != disk[device].last_write) {
+						stderr <- fmt.Sprintf("crunchstat: blkio.io_service_bytes %s write %v", device, disk[device].next_write-disk[device].last_write)
 					}
 				}
 			}
-			c.Close()
 		}
 
 		if memory_stat != "" {
@@ -321,15 +316,11 @@ func run(logger *log.Logger) error {
 		ok := false
 		var i time.Duration
 		for i = 0; i < time.Duration(wait)*time.Second; i += (100 * time.Millisecond) {
-			f, err := os.Open(cgroup_cidfile)
-			if err == nil {
-				defer f.Close()
-				cid, err2 := ioutil.ReadAll(f)
-				if err2 == nil && len(cid) > 0 {
-					ok = true
-					container_id = string(cid)
-					break
-				}
+			cid, err := OpenAndReadAll(cgroup_cidfile, nil)
+			if err == nil && len(cid) > 0 {
+				ok = true
+				container_id = string(cid)
+				break
 			}
 			time.Sleep(100 * time.Millisecond)
 		}
