@@ -73,13 +73,15 @@ class EventBus
           param_out = []
           ws.filters.each do |filter|
             ft = record_filters filter.filters, Log
-            cond_out += ft[:cond_out]
-            param_out += ft[:param_out]
+            if ft[:cond_out].any?
+              cond_out << "(#{ft[:cond_out].join ') AND ('})"
+              param_out += ft[:param_out]
+            end
           end
 
           # Add filters to query
           if cond_out.any?
-            logs = logs.where('(' + cond_out.join(') OR (') + ')', *param_out)
+            logs = logs.where("(#{cond_out.join ') OR ('})", *param_out)
           end
 
           # Finally execute query and actually send the matching log rows
@@ -92,8 +94,8 @@ class EventBus
           ws.last_log_id = id.to_i
         end
       rescue Exception => e
-        puts "Error publishing event: #{$!}"
-        puts "Backtrace:\n\t#{e.backtrace.join("\n\t")}"
+        Rails.logger.warn "Error publishing event: #{$!}"
+        Rails.logger.warn "Backtrace:\n\t#{e.backtrace.join("\n\t")}"
         ws.send ({status: 500, message: 'error'}.to_json)
         ws.close
       end
@@ -143,8 +145,8 @@ class EventBus
     rescue Oj::Error => e
       ws.send ({status: 400, message: "malformed request"}.to_json)
     rescue Exception => e
-      puts "Error handling message: #{$!}"
-      puts "Backtrace:\n\t#{e.backtrace.join("\n\t")}"
+      Rails.logger.warn "Error handling message: #{$!}"
+      Rails.logger.warn "Backtrace:\n\t#{e.backtrace.join("\n\t")}"
       ws.send ({status: 500, message: 'error'}.to_json)
       ws.close
     end
