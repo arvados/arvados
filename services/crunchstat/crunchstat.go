@@ -3,6 +3,7 @@ package main
 import (
 	"bufio"
 	"flag"
+	"errors"
 	"fmt"
 	"io"
 	"io/ioutil"
@@ -10,7 +11,6 @@ import (
 	"os"
 	"os/exec"
 	"os/signal"
-	"path/filepath"
 	"strings"
 	"syscall"
 	"time"
@@ -63,7 +63,7 @@ func OpenAndReadAll(filename string, log_chan chan<- string) ([]byte, error) {
 	}
 }
 
-func FindStat(stderr chan<- string, cgroup Cgroup, statgroup string, stat string) string {
+func FindStat(stderr chan<- string, cgroup Cgroup, statgroup string, stat string, verbose bool) string {
 	var path string
 	path = fmt.Sprintf("%s/%s/%s/%s/%s", cgroup.root, statgroup, cgroup.parent, cgroup.cid, stat)
 	if _, err := os.Stat(path); err != nil {
@@ -79,42 +79,32 @@ func FindStat(stderr chan<- string, cgroup Cgroup, statgroup string, stat string
 		stderr <- fmt.Sprintf("crunchstat: did not find stats file (root %s, parent %s, cid %s, statgroup %s, stat %s)", cgroup.root, cgroup.parent, cgroup.cid, statgroup, stat)
 		return ""
 	}
-	stderr <- fmt.Sprintf("crunchstat: reading stats from %s", path)
+	if verbose {
+		stderr <- fmt.Sprintf("crunchstat: reading stats from %s", path)
+	}
 	return path
 }
 
-func SetNetworkNamespace(stderr chan<- string, procsFilename string) (string) {
-	// Not supported yet -- we'll just report host-wide network stats.
-	return "host"
-
-	if procsFilename == "" { return "host" }
+func GetContainerNetStats(stderr chan<- string, cgroup Cgroup) (io.Reader, error) {
+	procsFilename := FindStat(stderr, cgroup, "cpuacct", "cgroup.procs", false)
 	procsFile, err := os.Open(procsFilename)
 	if err != nil {
 		stderr <- fmt.Sprintf("crunchstat: open %s: %s", procsFilename, err)
-		return "host"
+		return nil, err
 	}
 	defer procsFile.Close()
 	reader := bufio.NewScanner(procsFile)
 	for reader.Scan() {
 		taskPid := reader.Text()
-		netnsFilename := fmt.Sprintf("/proc/%s/ns/net", taskPid)
-		netnsFile, err := os.Open(netnsFilename)
+		statsFilename := fmt.Sprintf("/proc/%s/net/dev", taskPid)
+		stats, err := OpenAndReadAll(statsFilename, stderr)
 		if err != nil {
-			stderr <- fmt.Sprintf("crunchstat: open %s: %s", netnsFilename, err)
+			stderr <- fmt.Sprintf("crunchstat: open %s: %s", statsFilename, err)
 			continue
 		}
-		defer netnsFile.Close()
-
-		// syscall.Setns() doesn't exist yet, and doesn't work
-		// from a multithreaded program yet.
-		//
-		// if _, err2 := syscall.Setns(netnsFile.Fd()); err != nil {
-		// 	stderr <- fmt.Sprintf("crunchstat: Setns: %s", err2)
-		// 	continue
-		// }
-		return "task"
+		return strings.NewReader(string(stats)), nil
 	}
-	return "host"
+	return nil, errors.New("Could not read stats for any proc in container")
 }
 
 type NetSample struct {
@@ -123,31 +113,43 @@ type NetSample struct {
 	rxBytes    int64
 }
 
-func DoNetworkStats(stderr chan<- string, procsFilename string, lastStat map[string]NetSample) (map[string]NetSample) {
-	statScope := SetNetworkNamespace(stderr, procsFilename)
+func DoNetworkStats(stderr chan<- string, cgroup Cgroup, lastStat map[string]NetSample) (map[string]NetSample) {
+	stats, err := GetContainerNetStats(stderr, cgroup)
+	if err != nil { return lastStat }
 
-	ifDirs, err := filepath.Glob("/sys/class/net/*")
-	if err != nil {
-		stderr <- fmt.Sprintf("crunchstat: could not list interfaces", err)
-		return lastStat
-	}
 	if lastStat == nil {
 		lastStat = make(map[string]NetSample)
 	}
-	for _, ifDir := range ifDirs {
-		ifName := filepath.Base(ifDir)
-		tx_s, tx_err := OpenAndReadAll(fmt.Sprintf("/sys/class/net/%s/statistics/tx_bytes", ifName), stderr)
-		rx_s, rx_err := OpenAndReadAll(fmt.Sprintf("/sys/class/net/%s/statistics/rx_bytes", ifName), stderr)
-		if rx_err != nil || tx_err != nil {
-			return nil
+	scanner := bufio.NewScanner(stats)
+	Iface: for scanner.Scan() {
+		var ifName string
+		var rx, tx int64
+		words := bufio.NewScanner(strings.NewReader(scanner.Text()))
+		words.Split(bufio.ScanWords)
+		wordIndex := 0
+		for words.Scan() {
+			word := words.Text()
+			switch wordIndex {
+			case 0:
+				ifName = strings.TrimRight(word, ":")
+			case 1:
+				if _, err := fmt.Sscanf(word, "%d", &rx); err != nil {
+					continue Iface
+				}
+			case 9:
+				if _, err := fmt.Sscanf(word, "%d", &tx); err != nil {
+					continue Iface
+				}
+			}
+			wordIndex++
 		}
+		if ifName == "lo" || ifName == "" { continue }
 		nextSample := NetSample{}
 		nextSample.sampleTime = time.Now()
-		fmt.Sscanf(string(tx_s), "%d", &nextSample.txBytes)
-		fmt.Sscanf(string(rx_s), "%d", &nextSample.rxBytes)
+		nextSample.txBytes = tx
+		nextSample.rxBytes = rx
 		if lastSample, ok := lastStat[ifName]; ok {
-			stderr <- fmt.Sprintf("crunchstat: %s net %s tx %d rx %d interval %.4f",
-				statScope,
+			stderr <- fmt.Sprintf("crunchstat: task net %s tx %d rx %d interval %.4f",
 				ifName,
 				nextSample.txBytes - lastSample.txBytes,
 				nextSample.rxBytes - lastSample.rxBytes,
@@ -174,12 +176,11 @@ func PollCgroupStats(cgroup Cgroup, stderr chan string, poll int64, stop_poll_ch
 
 	user_hz := float64(C.sysconf(C._SC_CLK_TCK))
 
-	cpuacct_stat := FindStat(stderr, cgroup, "cpuacct", "cpuacct.stat")
-	blkio_io_service_bytes := FindStat(stderr, cgroup, "blkio", "blkio.io_service_bytes")
-	cpuset_cpus := FindStat(stderr, cgroup, "cpuset", "cpuset.cpus")
-	memory_stat := FindStat(stderr, cgroup, "memory", "memory.stat")
-	procs := FindStat(stderr, cgroup, "cpuacct", "cgroup.procs")
-	lastNetStat := DoNetworkStats(stderr, procs, nil)
+	cpuacct_stat := FindStat(stderr, cgroup, "cpuacct", "cpuacct.stat", true)
+	blkio_io_service_bytes := FindStat(stderr, cgroup, "blkio", "blkio.io_service_bytes", true)
+	cpuset_cpus := FindStat(stderr, cgroup, "cpuset", "cpuset.cpus", true)
+	memory_stat := FindStat(stderr, cgroup, "memory", "memory.stat", true)
+	lastNetStat := DoNetworkStats(stderr, cgroup, nil)
 
 	poll_chan := make(chan bool, 1)
 	go func() {
@@ -309,7 +310,7 @@ func PollCgroupStats(cgroup Cgroup, stderr chan string, poll int64, stop_poll_ch
 			c.Close()
 		}
 
-		lastNetStat = DoNetworkStats(stderr, procs, lastNetStat)
+		lastNetStat = DoNetworkStats(stderr, cgroup, lastNetStat)
 	}
 }
 
