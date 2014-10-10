@@ -57,20 +57,24 @@ class EventBus
           # Start with log rows readable by user, sorted in ascending order
           logs = Log.readable_by(ws.user).order("id asc")
 
+          cond_id = nil
+          cond_out = []
+          param_out = []
+
           if ws.last_log_id
             # Client is only interested in log rows that are newer than the
             # last log row seen by the client.
-            logs = logs.where("logs.id > ?", ws.last_log_id)
+            cond_id = "logs.id > ?"
+            param_out << ws.last_log_id
           elsif id
             # No last log id, so only look at the most recently changed row
-            logs = logs.where("logs.id = ?", id.to_i)
+            cond_id = "logs.id = ?"
+            param_out << id.to_i
           else
             return
           end
 
           # Now process filters provided by client
-          cond_out = []
-          param_out = []
           ws.filters.each do |filter|
             ft = record_filters filter.filters, Log
             if ft[:cond_out].any?
@@ -81,7 +85,9 @@ class EventBus
 
           # Add filters to query
           if cond_out.any?
-            logs = logs.where("(#{cond_out.join ') OR ('})", *param_out)
+            logs = logs.where(cond_id + " AND (#{cond_out.join ') OR ('})", *param_out)
+          else
+            logs = logs.where(cond_id, *param_out)
           end
 
           # Finally execute query and actually send the matching log rows
