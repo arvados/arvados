@@ -5,7 +5,6 @@
 package manifest
 
 import (
-	"bufio"
 	"fmt"
 	"log"
 	"regexp"
@@ -71,15 +70,19 @@ func parseManifestLine(s string) (m ManifestLine) {
 func (m *Manifest) LineIter() <-chan ManifestLine {
 	ch := make(chan ManifestLine)
 	go func(input string) {
-		scanner := bufio.NewScanner(strings.NewReader(input))
-		for scanner.Scan() {
-			// We parse one line at a time, to save effort if we only need
-			// the first few lines.
-			ch <- parseManifestLine(scanner.Text())
-		}
-		if err := scanner.Err(); err != nil {
-			log.Fatalf("Error encountered iterating through manifest lines: %v",
-				err)
+		// This slice holds the current line and the remainder of the
+		// manifest.  We parse one line at a time, to save effort if we
+		// only need the first few lines.
+		lines := []string{"", input}
+		for {
+			lines = strings.SplitN(lines[1], "\n", 2)
+			if len(lines[0]) > 0 {
+				// Only parse non-blank lines
+				ch <- parseManifestLine(lines[0])
+			}
+			if len(lines) == 1 {
+				break
+			}
 		}
 		close(ch)
 	}(m.Text)

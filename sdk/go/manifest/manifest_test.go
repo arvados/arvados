@@ -125,6 +125,28 @@ func TestParseBlockLocatorSimple(t *testing.T) {
 			"Af0c9a66381f3b028677411926f0be1c6282fe67c@542b5ddf"}})
 }
 
+func TestLineIterShortManifestWithBlankLines(t *testing.T) {
+	content, err := ioutil.ReadFile("testdata/short_manifest")
+	if err != nil {
+		t.Fatalf("Unexpected error reading manifest from file: %v", err)
+	}
+	manifest := Manifest{string(content)}
+	lineIter := manifest.LineIter()
+
+	firstLine := <-lineIter
+	expectManifestLine(t,
+		firstLine,
+		ManifestLine{StreamName: ".",
+			Blocks: []string{"b746e3d2104645f2f64cd3cc69dd895d+15693477+E2866e643690156651c03d876e638e674dcd79475@5441920c"},
+			Files: []string{"0:15893477:chr10_band0_s0_e3000000.fj"}})
+
+	received, ok := <- lineIter
+	if ok {
+		t.Fatalf("Expected lineIter to be closed, but received %v instead.",
+			received)
+	}
+}
+
 func TestBlockIterLongManifest(t *testing.T) {
 	content, err := ioutil.ReadFile("testdata/long_manifest")
 	if err != nil {
@@ -136,9 +158,20 @@ func TestBlockIterLongManifest(t *testing.T) {
 	firstBlock := <-blockChannel
 	expectBlockLocator(t,
 		firstBlock,
-		BlockLocator{Digest: "b748a3d2104645e2e84cd3cc69ddf95d",
-			Size: 15893477,
-			Hints: []string{"A2f66a643690158851c03df78a83fa874dcd79475@5441920c"}})
-	// TODO(misha): Add tests to check the number of blocks and that we
-	// see the last block.
+		BlockLocator{Digest: "b746e3d2104645f2f64cd3cc69dd895d",
+			Size: 15693477,
+			Hints: []string{"E2866e643690156651c03d876e638e674dcd79475@5441920c"}})
+	blocksRead := 1
+	var lastBlock BlockLocator
+	for lastBlock = range blockChannel {
+		//log.Printf("Blocks Read: %d", blocksRead)
+	 	blocksRead++
+	}
+	expectEqual(t, blocksRead, 853)
+
+	expectBlockLocator(t,
+		lastBlock,
+		BlockLocator{Digest: "f9ce82f59e5908d2d70e18df9679b469",
+			Size: 31367794,
+			Hints: []string{"E53f903684239bcc114f7bf8ff9bd6089f33058db@5441920c"}})
 }
