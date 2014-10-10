@@ -15,6 +15,15 @@ import (
 	"time"
 )
 
+/*
+#include <unistd.h>
+#include <sys/types.h>
+#include <pwd.h>
+#include <stdlib.h>
+*/
+import "C"
+// The above block of magic allows us to look up user_hz via _SC_CLK_TCK.
+
 func CopyPipeToChan(in io.Reader, out chan string, done chan<- bool) {
 	s := bufio.NewScanner(in)
 	for s.Scan() {
@@ -82,6 +91,8 @@ func PollCgroupStats(cgroup_root string, cgroup_parent string, container_id stri
 
 	disk := make(map[string]*Disk)
 
+	user_hz := float64(C.sysconf(C._SC_CLK_TCK))
+
 	cpuacct_stat := FindStat(cgroup_root, cgroup_parent, container_id, "cpuacct", "stat")
 	blkio_io_service_bytes := FindStat(cgroup_root, cgroup_parent, container_id, "blkio", "io_service_bytes")
 	cpuset_cpus := FindStat(cgroup_root, cgroup_parent, container_id, "cpuset", "cpus")
@@ -118,8 +129,7 @@ func PollCgroupStats(cgroup_root string, cgroup_parent string, container_id stri
 			// Emit stats, then select again.
 		}
 		morning := time.Now()
-		elapsed := morning.Sub(bedtime).Nanoseconds() / int64(time.Millisecond)
-		var cpus int64 = 0
+		elapsed := morning.Sub(bedtime).Seconds()
 		if cpuset_cpus != "" {
 			b, err := OpenAndReadAll(cpuset_cpus, stderr)
 			if err != nil {
@@ -127,6 +137,7 @@ func PollCgroupStats(cgroup_root string, cgroup_parent string, container_id stri
 				continue
 			}
 			sp := strings.Split(string(b), ",")
+			cpus := int64(0)
 			for _, v := range sp {
 				var min, max int64
 				n, _ := fmt.Sscanf(v, "%d-%d", &min, &max)
@@ -136,14 +147,7 @@ func PollCgroupStats(cgroup_root string, cgroup_parent string, container_id stri
 					cpus += 1
 				}
 			}
-
-			if cpus != last_cpucount {
-				stderr <- fmt.Sprintf("crunchstat: cpuset.cpus %v", cpus)
-			}
 			last_cpucount = cpus
-		}
-		if cpus == 0 {
-			cpus = 1
 		}
 		if cpuacct_stat != "" {
 			b, err := OpenAndReadAll(cpuacct_stat, stderr)
@@ -163,19 +167,18 @@ func PollCgroupStats(cgroup_root string, cgroup_parent string, container_id stri
 			if elapsed > 0 && last_user != -1 {
 				user_diff := next_user - last_user
 				sys_diff := next_sys - last_sys
-				// Assume we're reading stats based on 100
-				// jiffies per second.  Because the elapsed
-				// time is in milliseconds, we need to boost
-				// that to 1000 jiffies per second, then boost
-				// it by another 100x to get a percentage, then
-				// finally divide by the actual elapsed time
-				// and the number of cpus to get average load
-				// over the polling period.
-				user_pct := (user_diff * 10 * 100) / (elapsed * cpus)
-				sys_pct := (sys_diff * 10 * 100) / (elapsed * cpus)
+				// {*_diff} == {1/user_hz}-second
+				// ticks of CPU core consumed in an
+				// {elapsed}-second interval.
+				//
+				// We report this as CPU core usage
+				// (i.e., 1.0 == one pegged core). We
+				// also report the number of cores
+				// (maximum possible usage).
+				user := float64(user_diff) / elapsed / user_hz
+				sys := float64(sys_diff) / elapsed / user_hz
 
-				stderr <- fmt.Sprintf("crunchstat: cpuacct.stat user %v", user_pct)
-				stderr <- fmt.Sprintf("crunchstat: cpuacct.stat sys %v", sys_pct)
+				stderr <- fmt.Sprintf("crunchstat: cpuacct.stat user %.4f sys %.4f cpus %d interval %.4f", user, sys, last_cpucount, elapsed)
 			}
 
 			last_user = next_user
