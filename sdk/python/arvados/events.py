@@ -37,13 +37,13 @@ class EventClient(WebSocketClient):
             pass
 
     def subscribe(self, filters, last_log_id=None):
-        m = {"method": "subscribe", "filters": self.filters}
+        m = {"method": "subscribe", "filters": filters}
         if last_log_id is not None:
             m["last_log_id"] = last_log_id
         self.send(json.dumps(m))
 
     def unsubscribe(self, filters):
-        self.send(json.dumps({"method": "unsubscribe", "filters": self.filters}))
+        self.send(json.dumps({"method": "unsubscribe", "filters": filters}))
 
 class PollClient(threading.Thread):
     def __init__(self, api, filters, on_event):
