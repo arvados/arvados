@@ -122,6 +122,12 @@ declare -A skip
 # Always skip CLI tests. They don't know how to use run_test_server.py.
 skip[cli]=1
 
+# Skip Node Manager tests.  Because these tests are multithreaded, their
+# performance is a little unpredictable, and Jenkins regularly has trouble
+# with them.  Brett has a plan for making them more robust, but it's going
+# to take a little time to implement.  -2014-10-10
+skip[nodemanager]=1
+
 while [[ -n "$1" ]]
 do
     arg="$1"; shift
