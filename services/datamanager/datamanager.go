@@ -11,9 +11,6 @@ import (
 	"log"
 )
 
-// Helper type so we don't have to write out 'map[string]interface{}' every time.
-type Dict map[string]interface{}
-
 func main() {
 	arv, err := arvadosclient.MakeArvadosClient()
 	if err != nil {
