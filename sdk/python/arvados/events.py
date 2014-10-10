@@ -36,14 +36,43 @@ class EventClient(WebSocketClient):
         except:
             pass
 
+class PollClient(threading.Thread):
+    def __init__(self, api, filters, on_event):
+        self.api = api
+        self.filters = filters
+        self.on_event = on_event
+        items = self.api.logs().list(limit=1, order=json.dumps(["id desc"]), filters=json.dumps(filters)).execute()['items']
+        if len(items) > 0:
+            self.id = items[0]["id"]
+        else:
+            self.id = 0
+        self.loop = True
+
+    def run_forever(self):
+        while self.loop:
+            time.sleep(15)
+            items = self.api.logs().list(limit=1, order=json.dumps(["id asc"]), filters=json.dumps(self.filters+[["id", ">", str(self.id)]])).execute()['items']
+            for i in items:
+                self.id = i['id']
+                self.on_event(i)
+
+    def close_connection(self):
+        self.loop = False
+
 def subscribe(api, filters, on_event):
     ws = None
     try:
-        url = "{}?api_token={}".format(api._rootDesc['websocketUrl'], config.get('ARVADOS_API_TOKEN'))
-        ws = EventClient(url, filters, on_event)
-        ws.connect()
+        if 'websocketUrl' in api._rootDesc:
+            url = "{}?api_token={}".format(api._rootDesc['websocketUrl'], config.get('ARVADOS_API_TOKEN'))
+            ws = EventClient(url, filters, on_event)
+            ws.connect()
+        else:
+            ws = PollClient(api, filters, on_event)
         return ws
     except Exception:
         if (ws):
           ws.close_connection()
-        raise
+        try:
+            return PollClient(api, filters, on_event)
+        except:
+            raise
