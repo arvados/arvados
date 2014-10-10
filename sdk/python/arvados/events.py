@@ -18,8 +18,7 @@ class EventClient(WebSocketClient):
             ssl_options={'cert_reqs': ssl.CERT_NONE}
         else:
             ssl_options={'cert_reqs': ssl.CERT_REQUIRED}
-
-        super(EventClient, self).__init__(url, ssl_options)
+        super(EventClient, self).__init__(url, ssl_options=ssl_options)
         self.filters = []
         self.on_event = on_event
 
@@ -46,7 +45,7 @@ class EventClient(WebSocketClient):
         self.send(json.dumps({"method": "unsubscribe", "filters": filters}))
 
 class PollClient(threading.Thread):
-    def __init__(self, api, filters, on_event):
+    def __init__(self, api, filters, on_event, poll_time):
         self.api = api
         self.filters = filters
         self.on_event = on_event
@@ -55,11 +54,12 @@ class PollClient(threading.Thread):
             self.id = items[0]["id"]
         else:
             self.id = 0
+        self.poll_time = poll_time
         self.loop = True
 
     def run_forever(self):
         while self.loop:
-            time.sleep(15)
+            time.sleep(self.poll_time)
             items = self.api.logs().list(limit=1, order=json.dumps(["id asc"]), filters=json.dumps(self.filters+[["id", ">", str(self.id)]])).execute()['items']
             for i in items:
                 self.id = i['id']
@@ -74,21 +74,25 @@ class PollClient(threading.Thread):
     def unsubscribe(self, filters):
         del self.filters[self.filters.index(filters)]
 
-def subscribe(api, filters, on_event):
+def subscribe(api, filters, on_event, poll_fallback=15):
     ws = None
     try:
         if 'websocketUrl' in api._rootDesc:
             url = "{}?api_token={}".format(api._rootDesc['websocketUrl'], config.get('ARVADOS_API_TOKEN'))
             ws = EventClient(url, filters, on_event)
             ws.connect()
+        elif poll_fallback:
+            _logger.warn("Web sockets not available, falling back to log table polling")
+            ws = PollClient(api, filters, on_event, poll_fallback)
         else:
-            _logger.info("Web sockets not available, falling back to log table polling")
-            ws = PollClient(api, filters, on_event)
+            _logger.error("Web sockets not available")
+            return None
         return ws
     except Exception:
-        if (ws):
-          ws.close_connection()
-        try:
-            return PollClient(api, filters, on_event)
-        except:
+        if ws:
+            ws.close_connection()
+        if poll_fallback:
+            return PollClient(api, filters, on_event, poll_fallback)
+        else:
+            _logger.error("Web sockets not available at %s" % api._rootDesc['websocketUrl'])
             raise
