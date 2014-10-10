@@ -1,6 +1,7 @@
 package manifest
 
 import (
+	"io/ioutil"
 	"runtime"
 	"testing"
 )
@@ -122,4 +123,22 @@ func TestParseBlockLocatorSimple(t *testing.T) {
 		Size: 2310,
 		Hints: []string{"K@qr1hi",
 			"Af0c9a66381f3b028677411926f0be1c6282fe67c@542b5ddf"}})
+}
+
+func TestBlockIterLongManifest(t *testing.T) {
+	content, err := ioutil.ReadFile("testdata/long_manifest")
+	if err != nil {
+		t.Fatalf("Unexpected error reading manifest from file: %v", err)
+	}
+	manifest := Manifest{string(content)}
+	blockChannel := manifest.BlockIterWithDuplicates()
+
+	firstBlock := <-blockChannel
+	expectBlockLocator(t,
+		firstBlock,
+		BlockLocator{Digest: "b748a3d2104645e2e84cd3cc69ddf95d",
+			Size: 15893477,
+			Hints: []string{"A2f66a643690158851c03df78a83fa874dcd79475@5441920c"}})
+	// TODO(misha): Add tests to check the number of blocks and that we
+	// see the last block.
 }
