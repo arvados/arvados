@@ -67,11 +67,19 @@ class ActorTestMixin(object):
     def tearDown(self):
         pykka.ActorRegistry.stop_all()
 
-    def wait_for_call(self, mock_func, timeout=TIMEOUT):
+    def stop_proxy(self, proxy):
+        return proxy.actor_ref.stop(timeout=self.TIMEOUT)
+
+    def wait_for_assignment(self, proxy, attr_name, unassigned=None,
+                            timeout=TIMEOUT):
         deadline = time.time() + timeout
-        while (not mock_func.called) and (time.time() < deadline):
-            time.sleep(.1)
-        self.assertTrue(mock_func.called, "{} not called".format(mock_func))
+        while True:
+            loop_timeout = deadline - time.time()
+            if loop_timeout <= 0:
+                self.fail("actor did not assign {} in time".format(attr_name))
+            result = getattr(proxy, attr_name).get(loop_timeout)
+            if result is not unassigned:
+                return result
 
 
 class RemotePollLoopActorTestMixin(ActorTestMixin):
