@@ -211,6 +211,7 @@ class ComputeNodeMonitorActorTestCase(testutil.ActorTestMixin,
         self.shutdowns._set_state(window_open, next_window)
         self.timer.schedule.reset_mock()
         self.node_actor.consider_shutdown().get(self.TIMEOUT)
+        self.stop_proxy(self.node_actor)
         self.assertTrue(self.timer.schedule.called)
         if schedule_time is not None:
             self.assertEqual(schedule_time, self.timer.schedule.call_args[0][0])

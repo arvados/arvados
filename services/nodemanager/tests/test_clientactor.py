@@ -46,10 +46,10 @@ class RemotePollLoopActorTestCase(testutil.RemotePollLoopActorTestMixin,
                          "poll loop notified subscribers after error")
 
     def test_late_subscribers_get_responses(self):
-        self.build_monitor(['late_test'])
-        self.monitor.subscribe(lambda response: None)
+        self.build_monitor(['pre_late_test', 'late_test'])
+        self.monitor.subscribe(lambda response: None).get(self.TIMEOUT)
         self.monitor.subscribe(self.subscriber)
-        self.monitor.poll().get()
+        self.monitor.poll().get(self.TIMEOUT)
         self.stop_proxy(self.monitor)
         self.subscriber.assert_called_with('late_test')
 
