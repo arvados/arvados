@@ -21,10 +21,13 @@ arvrun_parser.add_argument('--docker-image', type=str, default="arvados/jobs")
 arvrun_parser.add_argument('--git-dir', type=str, default="")
 arvrun_parser.add_argument('args', nargs=argparse.REMAINDER)
 
-class UploadFile(object):
+class ArvFile(object):
     def __init__(self, prefix, fn):
         self.prefix = prefix
         self.fn = fn
+
+class UploadFile(ArvFile):
+    pass
 
 def is_in_collection(root, branch):
     if root == "/":
@@ -46,7 +49,7 @@ def statfile(prefix, fn):
             sp = os.path.split(absfn)
             (pdh, branch) = is_in_collection(sp[0], sp[1])
             if pdh:
-                return "%s$(file %s/%s)" % (prefix, pdh, branch)
+                return ArvFile(prefix, "$(file %s/%s)" % (pdh, branch))
             else:
                 # trim leading '/' for path prefix test later
                 return UploadFile(prefix, absfn[1:])
@@ -132,15 +135,17 @@ def main(arguments=None):
         else:
             pdh = put.main(["--portable-data-hash"]+[c.fn for c in files])
 
-        for i in xrange(1, len(slots)):
-            slots[i] = [("%s$(file %s/%s)" % (c.prefix, pdh, c.fn)) if isinstance(c, UploadFile) else c for c in slots[i]]
+        for c in files:
+            c.fn = "$(file %s/%s)" % (pdh, c.fn)
+
+    for i in xrange(1, len(slots)):
+        slots[i] = [("%s%s" % (c.prefix, c.fn)) if isinstance(c, ArvFile) else c for c in slots[i]]
 
     component = {
         "script": "run-command",
         "script_version": "3609-arv-run",
         "repository": "arvados",
         "script_parameters": {
-            "command": slots[2:]
         },
         "runtime_constraints": {
             "docker_image": args.docker_image
@@ -148,6 +153,27 @@ def main(arguments=None):
     }
 
     task_foreach = []
+    group_parser = argparse.ArgumentParser()
+    group_parser.add_argument('--group', type=str)
+    group_parser.add_argument('args', nargs=argparse.REMAINDER)
+
+    for s in xrange(2, len(slots)):
+        for i in xrange(0, len(slots[s])):
+            if slots[s][i] == '--':
+                inp = "input%i" % s
+                groupargs = group_parser.parse_args(slots[2][i+1:])
+                component["script_parameters"][inp] = groupargs.args
+                if groupargs.group:
+                    inpgroups = inp+"_groups"
+                    component["script_parameters"][inpgroups] = {"group":inp, "regex":groupargs.group}
+                    slots[s] = slots[s][0:i] + [{"foreach": inpgroups, "command": "$(%s)" % inpgroups}]
+                    task_foreach.append(inpgroups)
+                else:
+                    slots[s] = slots[s][0:i] + ["$(%s)" % inp]
+                    task_foreach.append(inp)
+                break
+            if slots[s][i] == '\--':
+                slots[s][i] = '--'
 
     if slots[0]:
         component["script_parameters"]["task.stdout"] = slots[0][0]
@@ -158,6 +184,8 @@ def main(arguments=None):
 
     if task_foreach:
         component["script_parameters"]["task.foreach"] = task_foreach
+
+    component["script_parameters"]["command"] = slots[2:]
 
     pipeline = {
         "name": "",
@@ -174,6 +202,7 @@ def main(arguments=None):
     else:
         api = arvados.api('v1')
         pi = api.pipeline_instances().create(body=pipeline).execute()
+        print "Running pipeline %s" % pi["uuid"]
         #ws.main(["--pipeline", pi["uuid"]])
 
 if __name__ == '__main__':
