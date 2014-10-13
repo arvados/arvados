@@ -315,10 +315,12 @@ try:
         except OSError as e:
             if e.errno == errno.ECHILD:
                 # child already exited
+                print "got ECHILD"
                 pass
             else:
                 raise
         active = sum([1 if s.poll() is None else 0 for s in subprocesses])
+        print "active is %i" % active
 
     # wait for process to complete.
     rcode = subprocesses[len(subprocesses)-1].returncode

@@ -119,7 +119,7 @@ def main(arguments=None):
 
     component = {
         "script": "run-command",
-        "script_version": "4f4ad25bf60751a09e316dca8c29cf3628ad7bdc",
+        "script_version": "0fdfa049801418ecd1faf33ec1415f3b689ea761",
         "repository": "arvados",
         "script_parameters": {
             "command": [args.command]+commandargs
