@@ -178,7 +178,6 @@ stdoutname = None
 stdoutfile = None
 stdinname = None
 stdinfile = None
-rcode = 1
 
 def recursive_foreach(params, fvars):
     var = fvars[0]
@@ -309,29 +308,20 @@ try:
     signal.signal(signal.SIGQUIT, lambda signum, frame: sig.send_signal(subprocesses, signum))
 
     active = 1
-    while active > 0:
-        try:
-            os.waitpid(0, 0)
-        except OSError as e:
-            if e.errno == errno.ECHILD:
-                # child already exited
-                print "got ECHILD"
-                time.sleep(1)
-                for s in subprocesses:
-                    print s.poll()
-            else:
-                raise
-        active = sum([1 if s.poll() is None else 0 for s in subprocesses])
-        print "active is %i" % active
-
-    # wait for process to complete.
-    rcode = subprocesses[len(subprocesses)-1].returncode
+    pids = set([s.pid for s in subprocesses])
+    rcode = {}
+    while len(pids) > 0:
+        (pid, status) = os.wait()
+        pids.discard(pid)
+        rcode[pid] = (status >> 8)
 
     if sig.sig is not None:
         logger.critical("terminating on signal %s" % sig.sig)
         sys.exit(2)
     else:
-        logger.info("completed with exit code %i (%s)" % (rcode, "success" if rcode == 0 else "failed"))
+        for i in xrange(len(cmd)):
+            r = rcode[subprocesses[i].pid]
+            logger.info("%s completed with exit code %i (%s)" % (cmd[i][0], r, "success" if r == 0 else "failed"))
 
 except Exception as e:
     logger.exception("caught exception")
@@ -360,10 +350,12 @@ if "task.vwd" in taskp:
 else:
     outcollection = robust_put.upload(outdir, logger)
 
+success = reduce(lambda x, y: x & (y == 0), [True]+rcode.values())
+
 api.job_tasks().update(uuid=arvados.current_task()['uuid'],
                                      body={
                                          'output': outcollection,
-                                         'success': (rcode == 0),
+                                         'success': success,
                                          'progress':1.0
                                      }).execute()
 
