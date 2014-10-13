@@ -28,6 +28,7 @@ import crunchutil.vwd as vwd
 import argparse
 import json
 import tempfile
+import errno
 
 parser = argparse.ArgumentParser()
 parser.add_argument('--dry-run', action='store_true')
@@ -309,7 +310,14 @@ try:
 
     active = 1
     while active > 0:
-        os.waitpid(0, 0)
+        try:
+            os.waitpid(0, 0)
+        except OSError as e:
+            if e.errno == errno.ECHILD:
+                # child already exited
+                pass
+            else:
+                raise
         active = sum([1 if s.poll() is None else 0 for s in subprocesses])
 
     # wait for process to complete.

@@ -7,12 +7,15 @@ import re
 import os
 import stat
 import put
-import arvados.events
 import time
+#import arvados.command.ws as ws
+import subprocess
 
 arvrun_parser = argparse.ArgumentParser()
 arvrun_parser.add_argument('--dry-run', action="store_true")
+arvrun_parser.add_argument('--local', action="store_true")
 arvrun_parser.add_argument('--docker-image', type=str, default="arvados/jobs")
+arvrun_parser.add_argument('--git-dir', type=str, default="")
 arvrun_parser.add_argument('command')
 arvrun_parser.add_argument('args', nargs=argparse.REMAINDER)
 
@@ -116,7 +119,7 @@ def main(arguments=None):
 
     component = {
         "script": "run-command",
-        "script_version": "bf243e064a7a2ee4e69a87dc3ba46e949a545150",
+        "script_version": "4f4ad25bf60751a09e316dca8c29cf3628ad7bdc",
         "repository": "arvados",
         "script_parameters": {
             "command": [args.command]+commandargs
@@ -141,21 +144,12 @@ def main(arguments=None):
 
     if args.dry_run:
         print(json.dumps(pipeline, indent=4))
+    elif args.local:
+        subprocess.call(["arv-crunch-job", "--job", json.dumps(component), "--git-dir", args.git_dir])
     else:
         api = arvados.api('v1')
         pi = api.pipeline_instances().create(body=pipeline).execute()
-        ws = None
-        def report(x):
-            if "event_type" in x:
-                print "\n"
-                print x
-                if x["event_type"] == "stderr":
-                    print x["properties"]["text"]
-                elif x["event_type"] == "update" and x["properties"]["new_attributes"]["state"] in ["Complete", "Failed"]:
-                    ws.close_connection()
-
-        ws =  arvados.events.subscribe(api, [["object_uuid", "=", pi["uuid"]], ["event_type", "in", ["stderr", "update"]]], report)
-        ws.run_forever()
+        #ws.main(["--pipeline", pi["uuid"]])
 
 if __name__ == '__main__':
     main()
