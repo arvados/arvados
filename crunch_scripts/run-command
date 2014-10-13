@@ -316,7 +316,9 @@ try:
             if e.errno == errno.ECHILD:
                 # child already exited
                 print "got ECHILD"
-                pass
+                time.sleep(1)
+                for s in subprocesses:
+                    print s.poll()
             else:
                 raise
         active = sum([1 if s.poll() is None else 0 for s in subprocesses])
