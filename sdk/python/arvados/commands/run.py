@@ -15,10 +15,10 @@ import logging
 logger = logging.getLogger('arvados.arv-run')
 
 arvrun_parser = argparse.ArgumentParser()
-arvrun_parser.add_argument('--dry-run', action="store_true")
-arvrun_parser.add_argument('--local', action="store_true")
-arvrun_parser.add_argument('--docker-image', type=str, default="arvados/jobs")
-arvrun_parser.add_argument('--git-dir', type=str, default="")
+arvrun_parser.add_argument('--dry-run', action="store_true", help="Print out the pipeline that would be submitted and exit")
+arvrun_parser.add_argument('--local', action="store_true", help="Run locally using arv-crunch-job")
+arvrun_parser.add_argument('--docker-image', type=str, default="arvados/jobs", help="Docker image to use, default arvados/jobs")
+arvrun_parser.add_argument('--git-dir', type=str, default="", help="Git directory to use to find run-command when using --local")
 arvrun_parser.add_argument('args', nargs=argparse.REMAINDER)
 
 class ArvFile(object):
