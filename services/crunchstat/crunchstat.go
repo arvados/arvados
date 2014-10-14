@@ -184,10 +184,11 @@ func DoMemoryStats(stderr chan<- string, cgroup Cgroup) {
 	var stat string
 	var val int64
 	for b.Scan() {
-		if _, err := fmt.Sscanf(string(b.Text()), "%s %d", &stat, &val); err == nil {
-			if stat == "rss" {
-				stderr <- fmt.Sprintf("crunchstat: memory.stat rss %v", val)
-			}
+		if _, err := fmt.Sscanf(string(b.Text()), "%s %d", &stat, &val); err != nil {
+			continue
+		}
+		if stat == "rss" {
+			stderr <- fmt.Sprintf("crunchstat: mem %d rss", val)
 		}
 	}
 }
