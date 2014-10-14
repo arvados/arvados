@@ -78,6 +78,8 @@ class EventBus
           ws.filters.each do |filter|
             ft = record_filters filter.filters, Log
             if ft[:cond_out].any?
+              # Join the clauses within a single subscription filter with AND
+              # so it is consistent with regular queries
               cond_out << "(#{ft[:cond_out].join ') AND ('})"
               param_out += ft[:param_out]
             end
@@ -85,7 +87,8 @@ class EventBus
 
           # Add filters to query
           if cond_out.any?
-            logs = logs.where(cond_id + " AND (#{cond_out.join ') OR ('})", *param_out)
+            # Join subscriptions with OR
+            logs = logs.where(cond_id + " AND ((#{cond_out.join ') OR ('}))", *param_out)
           else
             logs = logs.where(cond_id, *param_out)
           end
