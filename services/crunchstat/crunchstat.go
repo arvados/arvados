@@ -283,7 +283,32 @@ type CpuSample struct {
 	cpus       int64
 }
 
-func DoCpuStats(stderr chan<- string, cgroup Cgroup, cpus int64, user_hz float64, lastSample *CpuSample) (*CpuSample) {
+// Return the number of CPUs available in the container. Return 0 if
+// we can't figure out the real number of CPUs.
+func GetCpuCount(stderr chan<- string, cgroup Cgroup) (int64) {
+	cpuset_cpus := FindStat(stderr, cgroup, "cpuset", "cpuset.cpus")
+	if cpuset_cpus == "" {
+		return 0
+	}
+	b, err := OpenAndReadAll(cpuset_cpus, stderr)
+	if err != nil {
+		return 0
+	}
+	sp := strings.Split(string(b), ",")
+	cpus := int64(0)
+	for _, v := range sp {
+		var min, max int64
+		n, _ := fmt.Sscanf(v, "%d-%d", &min, &max)
+		if n == 2 {
+			cpus += (max - min) + 1
+		} else {
+			cpus += 1
+		}
+	}
+	return cpus
+}
+
+func DoCpuStats(stderr chan<- string, cgroup Cgroup, lastSample *CpuSample) (*CpuSample) {
 	cpuacct_stat := FindStat(stderr, cgroup, "cpuacct", "cpuacct.stat")
 	if cpuacct_stat == "" {
 		return lastSample
@@ -292,9 +317,11 @@ func DoCpuStats(stderr chan<- string, cgroup Cgroup, cpus int64, user_hz float64
 	if err != nil {
 		return lastSample
 	}
-	nextSample := &CpuSample{time.Now(), 0, 0, cpus}
+
+	nextSample := &CpuSample{time.Now(), 0, 0, GetCpuCount(stderr, cgroup)}
 	var userTicks, sysTicks int64
 	fmt.Sscanf(string(b), "user %d\nsystem %d", &nextSample.user, &nextSample.sys)
+	user_hz := float64(C.sysconf(C._SC_CLK_TCK))
 	nextSample.user = float64(userTicks) / user_hz
 	nextSample.sys = float64(sysTicks) / user_hz
 
@@ -306,15 +333,11 @@ func DoCpuStats(stderr chan<- string, cgroup Cgroup, cpus int64, user_hz float64
 			nextSample.sys - lastSample.sys)
 	}
 	stderr <- fmt.Sprintf("crunchstat: cpu %.4f user %.4f sys %d cpus%s",
-		nextSample.user, nextSample.sys, cpus, delta)
+		nextSample.user, nextSample.sys, nextSample.cpus, delta)
 	return nextSample
 }
 
 func PollCgroupStats(cgroup Cgroup, stderr chan string, poll int64, stop_poll_chan <-chan bool) {
-	var last_cpucount int64 = 0
-
-	user_hz := float64(C.sysconf(C._SC_CLK_TCK))
-
 	var lastNetSample map[string]IoSample = nil
 	var lastDiskSample map[string]IoSample = nil
 	var lastCpuSample *CpuSample = nil
@@ -335,29 +358,8 @@ func PollCgroupStats(cgroup Cgroup, stderr chan string, poll int64, stop_poll_ch
 		case <-poll_chan:
 			// Emit stats, then select again.
 		}
-		cpuset_cpus := FindStat(stderr, cgroup, "cpuset", "cpuset.cpus")
-		if cpuset_cpus != "" {
-			b, err := OpenAndReadAll(cpuset_cpus, stderr)
-			if err != nil {
-				// cgroup probably gone -- skip other stats too.
-				continue
-			}
-			sp := strings.Split(string(b), ",")
-			cpus := int64(0)
-			for _, v := range sp {
-				var min, max int64
-				n, _ := fmt.Sscanf(v, "%d-%d", &min, &max)
-				if n == 2 {
-					cpus += (max - min) + 1
-				} else {
-					cpus += 1
-				}
-			}
-			last_cpucount = cpus
-		}
-
 		DoMemoryStats(stderr, cgroup)
-		lastCpuSample = DoCpuStats(stderr, cgroup, last_cpucount, user_hz, lastCpuSample)
+		lastCpuSample = DoCpuStats(stderr, cgroup, lastCpuSample)
 		lastDiskSample = DoBlkIoStats(stderr, cgroup, lastDiskSample)
 		lastNetSample = DoNetworkStats(stderr, cgroup, lastNetSample)
 	}
