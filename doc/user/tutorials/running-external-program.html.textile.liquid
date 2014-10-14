@@ -8,15 +8,13 @@ This tutorial demonstrates how to construct a two stage pipeline template that u
 
 {% include 'tutorial_expectations' %}
 
-Use the following command to create a new empty template using @arv pipeline_template create@:
+Use the following command to create an empty template using @arv create pipeline_template@:
 
 <notextile>
-<pre><code>~$ <span class="userinput">arv edit $(arv --format=uuid pipeline_template create --pipeline-template '{}') name components </span></code></pre>
+<pre><code>~$ <span class="userinput">arv create pipeline_template</span></code></pre>
 </notextile>
 
-* @--format=uuid@ option prints out just the unique identifier for the new template, instead of the entire template record (default)
-
-This will open the template record in an interactive text editor (as specified by $EDITOR or $VISUAL, otherwise defaults to @nano@) using @arv edit@.  Now add the following content:
+This will open the template record in an interactive text editor (as specified by $EDITOR or $VISUAL, otherwise defaults to @nano@).  Now, update the contents of the editor with the following content:
 
 <notextile>{% code 'tutorial_bwa_sortsam_pipeline' as javascript %}</notextile>
 
@@ -39,6 +37,8 @@ This will open the template record in an interactive text editor (as specified b
 ** @"output_of"@ indicates that the @output@ of the @bwa-mem@ component should be used as the @"input"@ of @SortSam@.  Arvados uses these dependencies between components to automatically determine the correct order to run them.
 
 When using @run-command@, the tool should write its output to the current working directory.  The output will be automatically uploaded to Keep when the job completes.
+
+See the "run-command reference":{{site.baseurl}}/user/topics/run-command.html for more information about using @run-command@.
 
 h2. Running your pipeline
 
