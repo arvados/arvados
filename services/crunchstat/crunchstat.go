@@ -114,6 +114,7 @@ type NetSample struct {
 }
 
 func DoNetworkStats(stderr chan<- string, cgroup Cgroup, lastStat map[string]NetSample) (map[string]NetSample) {
+	sampleTime := time.Now()
 	stats, err := GetContainerNetStats(stderr, cgroup)
 	if err != nil { return lastStat }
 
@@ -145,16 +146,19 @@ func DoNetworkStats(stderr chan<- string, cgroup Cgroup, lastStat map[string]Net
 		}
 		if ifName == "lo" || ifName == "" { continue }
 		nextSample := NetSample{}
-		nextSample.sampleTime = time.Now()
+		nextSample.sampleTime = sampleTime
 		nextSample.txBytes = tx
 		nextSample.rxBytes = rx
+		var delta string
 		if lastSample, ok := lastStat[ifName]; ok {
-			stderr <- fmt.Sprintf("crunchstat: net %s tx %d +%d rx %d +%d interval %.4f",
-				ifName,
-				tx, tx - lastSample.txBytes,
-				rx, rx - lastSample.rxBytes,
-				nextSample.sampleTime.Sub(lastSample.sampleTime).Seconds())
+			interval := nextSample.sampleTime.Sub(lastSample.sampleTime).Seconds()
+			delta = fmt.Sprintf(" -- interval %.4f seconds %d tx %d rx",
+				interval,
+				tx - lastSample.txBytes,
+				rx - lastSample.rxBytes)
 		}
+		stderr <- fmt.Sprintf("crunchstat: net:%s %d tx %d rx%s",
+			ifName, tx, rx, delta)
 		lastStat[ifName] = nextSample
 	}
 	return lastStat
