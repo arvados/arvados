@@ -63,7 +63,15 @@ func OpenAndReadAll(filename string, log_chan chan<- string) ([]byte, error) {
 	}
 }
 
-func FindStat(stderr chan<- string, cgroup Cgroup, statgroup string, stat string, verbose bool) string {
+var reportedStatFile map[string]bool
+var reportedNoStatFile map[string]bool
+
+func FindStat(stderr chan<- string, cgroup Cgroup, statgroup string, stat string) string {
+	if reportedStatFile == nil {
+		reportedStatFile = make(map[string]bool)
+		reportedNoStatFile = make(map[string]bool)
+	}
+
 	var path string
 	path = fmt.Sprintf("%s/%s/%s/%s/%s", cgroup.root, statgroup, cgroup.parent, cgroup.cid, stat)
 	if _, err := os.Stat(path); err != nil {
@@ -76,17 +84,21 @@ func FindStat(stderr chan<- string, cgroup Cgroup, statgroup string, stat string
 		path = fmt.Sprintf("%s/%s", cgroup.root, stat)
 	}
 	if _, err := os.Stat(path); err != nil {
-		stderr <- fmt.Sprintf("crunchstat: did not find stats file (root %s, parent %s, cid %s, statgroup %s, stat %s)", cgroup.root, cgroup.parent, cgroup.cid, statgroup, stat)
+		if _, ok := reportedNoStatFile[path]; !ok {
+			stderr <- fmt.Sprintf("crunchstat: did not find stats file (root %s, parent %s, cid %s, statgroup %s, stat %s)", cgroup.root, cgroup.parent, cgroup.cid, statgroup, stat)
+			reportedNoStatFile[path] = true
+		}
 		return ""
 	}
-	if verbose {
+	if _, ok := reportedStatFile[path]; !ok {
 		stderr <- fmt.Sprintf("crunchstat: reading stats from %s", path)
+		reportedStatFile[path] = true
 	}
 	return path
 }
 
 func GetContainerNetStats(stderr chan<- string, cgroup Cgroup) (io.Reader, error) {
-	procsFilename := FindStat(stderr, cgroup, "cpuacct", "cgroup.procs", false)
+	procsFilename := FindStat(stderr, cgroup, "cpuacct", "cgroup.procs")
 	procsFile, err := os.Open(procsFilename)
 	if err != nil {
 		stderr <- fmt.Sprintf("crunchstat: open %s: %s", procsFilename, err)
@@ -104,6 +116,80 @@ func GetContainerNetStats(stderr chan<- string, cgroup Cgroup) (io.Reader, error
 		return strings.NewReader(string(stats)), nil
 	}
 	return nil, errors.New("Could not read stats for any proc in container")
+}
+
+type Disk struct {
+	last_read  int64
+	next_read  int64
+	last_write int64
+	next_write int64
+}
+var disk map[string]*Disk
+
+func DoBlkIoStats(stderr chan<- string, cgroup Cgroup) {
+	blkio_io_service_bytes := FindStat(stderr, cgroup, "blkio", "blkio.io_service_bytes")
+	if blkio_io_service_bytes == "" {
+		return
+	}
+
+	if disk == nil {
+		disk = make(map[string]*Disk)
+	}
+
+	c, err := os.Open(blkio_io_service_bytes)
+	if err != nil {
+		stderr <- fmt.Sprintf("open %s: %s", blkio_io_service_bytes, err)
+		return
+	}
+	defer c.Close()
+	b := bufio.NewScanner(c)
+	var device, op string
+	var next int64
+	for b.Scan() {
+		if _, err := fmt.Sscanf(string(b.Text()), "%s %s %d", &device, &op, &next); err != nil {
+			continue
+		}
+		if disk[device] == nil {
+			disk[device] = new(Disk)
+		}
+		if op == "Read" {
+			disk[device].last_read = disk[device].next_read
+			disk[device].next_read = next
+			if disk[device].last_read > 0 && (disk[device].next_read != disk[device].last_read) {
+				stderr <- fmt.Sprintf("crunchstat: blkio.io_service_bytes %s read %v", device, disk[device].next_read-disk[device].last_read)
+			}
+		}
+		if op == "Write" {
+			disk[device].last_write = disk[device].next_write
+			disk[device].next_write = next
+			if disk[device].last_write > 0 && (disk[device].next_write != disk[device].last_write) {
+				stderr <- fmt.Sprintf("crunchstat: blkio.io_service_bytes %s write %v", device, disk[device].next_write-disk[device].last_write)
+			}
+		}
+	}
+}
+
+func DoMemoryStats(stderr chan<- string, cgroup Cgroup) {
+	memory_stat := FindStat(stderr, cgroup, "memory", "memory.stat")
+	if memory_stat == "" {
+		return
+	}
+	c, err := os.Open(memory_stat)
+	if err != nil {
+		stderr <- fmt.Sprintf("open %s: %s", memory_stat, err)
+		return
+	}
+	defer c.Close()
+	b := bufio.NewScanner(c)
+	var stat string
+	var val int64
+	for b.Scan() {
+		if _, err := fmt.Sscanf(string(b.Text()), "%s %d", &stat, &val); err == nil {
+			if stat == "rss" {
+				stderr <- fmt.Sprintf("crunchstat: memory.stat rss %v", val)
+			}
+		}
+	}
 }
 
 type NetSample struct {
@@ -171,22 +257,9 @@ func PollCgroupStats(cgroup Cgroup, stderr chan string, poll int64, stop_poll_ch
 	var last_sys int64 = -1
 	var last_cpucount int64 = 0
 
-	type Disk struct {
-		last_read  int64
-		next_read  int64
-		last_write int64
-		next_write int64
-	}
-
-	disk := make(map[string]*Disk)
-
 	user_hz := float64(C.sysconf(C._SC_CLK_TCK))
 
-	cpuacct_stat := FindStat(stderr, cgroup, "cpuacct", "cpuacct.stat", true)
-	blkio_io_service_bytes := FindStat(stderr, cgroup, "blkio", "blkio.io_service_bytes", true)
-	cpuset_cpus := FindStat(stderr, cgroup, "cpuset", "cpuset.cpus", true)
-	memory_stat := FindStat(stderr, cgroup, "memory", "memory.stat", true)
-	lastNetStat := DoNetworkStats(stderr, cgroup, nil)
+	var lastNetStat map[string]NetSample = nil
 
 	poll_chan := make(chan bool, 1)
 	go func() {
@@ -207,6 +280,7 @@ func PollCgroupStats(cgroup Cgroup, stderr chan string, poll int64, stop_poll_ch
 		}
 		morning := time.Now()
 		elapsed := morning.Sub(bedtime).Seconds()
+		cpuset_cpus := FindStat(stderr, cgroup, "cpuset", "cpuset.cpus")
 		if cpuset_cpus != "" {
 			b, err := OpenAndReadAll(cpuset_cpus, stderr)
 			if err != nil {
@@ -226,6 +300,7 @@ func PollCgroupStats(cgroup Cgroup, stderr chan string, poll int64, stop_poll_ch
 			}
 			last_cpucount = cpus
 		}
+		cpuacct_stat := FindStat(stderr, cgroup, "cpuacct", "cpuacct.stat")
 		if cpuacct_stat != "" {
 			b, err := OpenAndReadAll(cpuacct_stat, stderr)
 			if err != nil {
@@ -256,61 +331,9 @@ func PollCgroupStats(cgroup Cgroup, stderr chan string, poll int64, stop_poll_ch
 			last_user = next_user
 			last_sys = next_sys
 		}
-		if blkio_io_service_bytes != "" {
-			c, err := os.Open(blkio_io_service_bytes)
-			if err != nil {
-				stderr <- fmt.Sprintf("open %s: %s", blkio_io_service_bytes, err)
-				// cgroup probably gone -- skip other stats too.
-				continue
-			}
-			defer c.Close()
-			b := bufio.NewScanner(c)
-			var device, op string
-			var next int64
-			for b.Scan() {
-				if _, err := fmt.Sscanf(string(b.Text()), "%s %s %d", &device, &op, &next); err != nil {
-					continue
-				}
-				if disk[device] == nil {
-					disk[device] = new(Disk)
-				}
-				if op == "Read" {
-					disk[device].last_read = disk[device].next_read
-					disk[device].next_read = next
-					if disk[device].last_read > 0 && (disk[device].next_read != disk[device].last_read) {
-						stderr <- fmt.Sprintf("crunchstat: blkio.io_service_bytes %s read %v", device, disk[device].next_read-disk[device].last_read)
-					}
-				}
-				if op == "Write" {
-					disk[device].last_write = disk[device].next_write
-					disk[device].next_write = next
-					if disk[device].last_write > 0 && (disk[device].next_write != disk[device].last_write) {
-						stderr <- fmt.Sprintf("crunchstat: blkio.io_service_bytes %s write %v", device, disk[device].next_write-disk[device].last_write)
-					}
-				}
-			}
-		}
 
-		if memory_stat != "" {
-			c, err := os.Open(memory_stat)
-			if err != nil {
-				stderr <- fmt.Sprintf("open %s: %s", memory_stat, err)
-				// cgroup probably gone -- skip other stats too.
-				continue
-			}
-			b := bufio.NewScanner(c)
-			var stat string
-			var val int64
-			for b.Scan() {
-				if _, err := fmt.Sscanf(string(b.Text()), "%s %d", &stat, &val); err == nil {
-					if stat == "rss" {
-						stderr <- fmt.Sprintf("crunchstat: memory.stat rss %v", val)
-					}
-				}
-			}
-			c.Close()
-		}
-
+		DoBlkIoStats(stderr, cgroup)
+		DoMemoryStats(stderr, cgroup)
 		lastNetStat = DoNetworkStats(stderr, cgroup, lastNetStat)
 	}
 }
