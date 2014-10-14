@@ -13,20 +13,20 @@ First add the Arvados apt repository, and then install the Keep package.
 ~$ <span class="userinput">echo "deb http://apt.arvados.org/ wheezy main" >> /etc/apt/sources.list.d/apt.arvados.org.list</span>
 ~$ <span class="userinput">/usr/bin/apt-key adv --keyserver pgp.mit.edu --recv 1078ECD7</span>
 ~$ <span class="userinput">/usr/bin/apt-get update</span>
-~$ <span class="userinput">/usr/bin/apt-get install keep</span>
+~$ <span class="userinput">/usr/bin/apt-get install keepstore</span>
 </code></pre>
 </notextile>
 
 Verify that Keep is functional:
 
 <notextile>
-<pre><code>~$ <span class="userinput">keep -h</span>
-keep -h
+<pre><code>~$ <span class="userinput">keepstore -h</span>
 2014/07/24 15:38:27 Keep started: pid 13606
-Usage of keep:
+Usage of keepstore:
   -data-manager-token-file="": File with the API token used by the Data Manager. All DELETE requests or GET /index requests must carry this token.
   -enforce-permissions=false: Enforce permission signatures on requests.
   -listen=":25107": Interface on which to listen for requests, in the format ipaddr:port. e.g. -listen=10.0.1.24:8000. Use -listen=:port to listen on all network interfaces.
+  -never-delete=false: If set, nothing will be deleted. HTTP 405 will be returned for valid DELETE requests.
   -permission-key-file="": File containing the secret key for generating and verifying permission signatures.
   -permission-ttl=1209600: Expiration time (in seconds) for newly generated permission signatures.
   -pid="": Path to write pid file
@@ -38,7 +38,7 @@ Usage of keep:
 Prepare one or more volumes for Keep to use. Simply create a /keep directory on all the partitions you would like Keep to use, and then start Keep. For example, using 2 tmpfs volumes:
 
 <notextile>
-<pre><code>~$ <span class="userinput">keep</span>
+<pre><code>~$ <span class="userinput">keepstore</span>
 2014/07/24 11:41:37 Keep started: pid 20736
 2014/07/24 11:41:37 adding Keep volume: /tmp/tmp.vwSCtUCyeH/keep
 2014/07/24 11:41:37 adding Keep volume: /tmp/tmp.Lsn4w8N3Xv/keep

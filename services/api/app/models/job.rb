@@ -9,12 +9,12 @@ class Job < ArvadosModel
   before_create :ensure_unique_submit_id
   after_commit :trigger_crunch_dispatch_if_cancelled, :on => :update
   before_validation :set_priority
-  before_validation :update_timestamps_when_state_changes
   before_validation :update_state_from_old_state_attrs
   validate :ensure_script_version_is_commit
   validate :find_docker_image_locator
   validate :validate_status
   validate :validate_state_change
+  before_save :update_timestamps_when_state_changes
 
   has_many :commit_ancestors, :foreign_key => :descendant, :primary_key => :script_version
   has_many(:nodes, foreign_key: :job_uuid, primary_key: :uuid)
@@ -75,10 +75,9 @@ class Job < ArvadosModel
   end
 
   def queue_position
-    i = 0
-    Job::queue.each do |j|
-      if j[:uuid] == self.uuid
-        return i
+    Job::queue.each_with_index do |job, index|
+      if job[:uuid] == self.uuid
+        return index
       end
     end
     nil
@@ -262,6 +261,7 @@ class Job < ArvadosModel
 
   def update_timestamps_when_state_changes
     return if not (state_changed? or new_record?)
+
     case state
     when Running
       self.started_at ||= Time.now

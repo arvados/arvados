@@ -51,6 +51,8 @@ GEM
       multi_json (>= 1.0.0)
     bootstrap-sass (3.1.0.1)
       sass (~> 3.2)
+    bootstrap-tab-history-rails (0.1.0)
+      railties (>= 3.1)
     bootstrap-x-editable-rails (1.5.1.1)
       railties (>= 3.0)
     builder (3.2.2)
@@ -234,6 +236,7 @@ DEPENDENCIES
   andand
   arvados (>= 0.1.20140917180103)
   bootstrap-sass (~> 3.1.0)
+  bootstrap-tab-history-rails
   bootstrap-x-editable-rails
   capybara
   coffee-rails

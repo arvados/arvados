@@ -178,3 +178,25 @@ active_no_prefs_profile:
   is_admin: false
   prefs:
     test: abc
+
+# Fixtures to test granting and removing permissions.
+
+user_foo_in_sharing_group:
+  owner_uuid: zzzzz-tpzed-000000000000000
+  uuid: zzzzz-tpzed-81hsbo6mk8nl05c
+  email: user_foo_in_sharing_group@arvados.local
+  first_name: Foo
+  last_name: Sharing
+  identity_url: https://user_foo_in_sharing_group.openid.local
+  is_active: true
+  is_admin: false
+
+user_bar_in_sharing_group:
+  owner_uuid: zzzzz-tpzed-000000000000000
+  uuid: zzzzz-tpzed-n3oaj4sm5fcnwib
+  email: user_bar_in_sharing_group@arvados.local
+  first_name: Bar
+  last_name: Sharing
+  identity_url: https://user_bar_in_sharing_group.openid.local
+  is_active: true
+  is_admin: false

@@ -21,6 +21,7 @@
 //= require bootstrap/modal
 //= require bootstrap/button
 //= require bootstrap3-editable/bootstrap-editable
+//= require bootstrap-tab-history
 //= require wiselinks
 //= require_tree .
 
@@ -213,4 +214,25 @@ jQuery(function($){
         $(e.target.href).collapse('toggle');
     });
 
+    $(document).on('click', '.force-cache-reload', function(e) {
+        history.replaceState( { nocache: true }, '' );
+    });
 });
+
+window.addEventListener("DOMContentLoaded", function(e) {
+    if(history.state) {
+        if(history.state.nocache) {
+            showLoadingModal();
+            history.replaceState( {}, '' );
+            location.reload(true);
+        }
+    }
+});
+
+function showLoadingModal() {
+    $('#loading-modal').modal('show');
+}
+
+function hideLoadingModal() {
+    $('#loading-modal').modal('hide');
+}

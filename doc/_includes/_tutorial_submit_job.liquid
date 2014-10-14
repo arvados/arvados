@@ -1,0 +1,19 @@
+{
+  "name":"My md5 pipeline",
+  "components":{
+    "do_hash":{
+      "repository":"$USER",
+      "script":"hash.py",
+      "script_version":"master",
+      "runtime_constraints":{
+        "docker_image":"arvados/jobs-java-bwa-samtools"
+      },
+      "script_parameters":{
+        "input":{
+          "required": true,
+          "dataclass": "Collection"
+        }
+      }
+    }
+  }
+}
