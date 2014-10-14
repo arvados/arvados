@@ -276,15 +276,48 @@ func DoNetworkStats(stderr chan<- string, cgroup Cgroup, lastSample map[string]I
 	return lastSample
 }
 
+type CpuSample struct {
+	sampleTime time.Time
+	user       float64
+	sys        float64
+	cpus       int64
+}
+
+func DoCpuStats(stderr chan<- string, cgroup Cgroup, cpus int64, user_hz float64, lastSample *CpuSample) (*CpuSample) {
+	cpuacct_stat := FindStat(stderr, cgroup, "cpuacct", "cpuacct.stat")
+	if cpuacct_stat == "" {
+		return lastSample
+	}
+	b, err := OpenAndReadAll(cpuacct_stat, stderr)
+	if err != nil {
+		return lastSample
+	}
+	nextSample := &CpuSample{time.Now(), 0, 0, cpus}
+	var userTicks, sysTicks int64
+	fmt.Sscanf(string(b), "user %d\nsystem %d", &nextSample.user, &nextSample.sys)
+	nextSample.user = float64(userTicks) / user_hz
+	nextSample.sys = float64(sysTicks) / user_hz
+
+	delta := ""
+	if lastSample != nil {
+		delta = fmt.Sprintf(" -- interval %.4f seconds %.4f user %.4f sys",
+			nextSample.sampleTime.Sub(lastSample.sampleTime).Seconds(),
+			nextSample.user - lastSample.user,
+			nextSample.sys - lastSample.sys)
+	}
+	stderr <- fmt.Sprintf("crunchstat: cpu %.4f user %.4f sys %d cpus%s",
+		nextSample.user, nextSample.sys, cpus, delta)
+	return nextSample
+}
+
 func PollCgroupStats(cgroup Cgroup, stderr chan string, poll int64, stop_poll_chan <-chan bool) {
-	var last_user int64 = -1
-	var last_sys int64 = -1
 	var last_cpucount int64 = 0
 
 	user_hz := float64(C.sysconf(C._SC_CLK_TCK))
 
 	var lastNetSample map[string]IoSample = nil
 	var lastDiskSample map[string]IoSample = nil
+	var lastCpuSample *CpuSample = nil
 
 	poll_chan := make(chan bool, 1)
 	go func() {
@@ -296,15 +329,12 @@ func PollCgroupStats(cgroup Cgroup, stderr chan string, poll int64, stop_poll_ch
 		}
 	}()
 	for {
-		bedtime := time.Now()
 		select {
 		case <-stop_poll_chan:
 			return
 		case <-poll_chan:
 			// Emit stats, then select again.
 		}
-		morning := time.Now()
-		elapsed := morning.Sub(bedtime).Seconds()
 		cpuset_cpus := FindStat(stderr, cgroup, "cpuset", "cpuset.cpus")
 		if cpuset_cpus != "" {
 			b, err := OpenAndReadAll(cpuset_cpus, stderr)
@@ -325,39 +355,9 @@ func PollCgroupStats(cgroup Cgroup, stderr chan string, poll int64, stop_poll_ch
 			}
 			last_cpucount = cpus
 		}
-		cpuacct_stat := FindStat(stderr, cgroup, "cpuacct", "cpuacct.stat")
-		if cpuacct_stat != "" {
-			b, err := OpenAndReadAll(cpuacct_stat, stderr)
-			if err != nil {
-				// Next time around, last_user would
-				// be >1 interval old, so stats will
-				// be incorrect. Start over instead.
-				last_user = -1
-
-				// cgroup probably gone -- skip other stats too.
-				continue
-			}
-			var next_user int64
-			var next_sys int64
-			fmt.Sscanf(string(b), "user %d\nsystem %d", &next_user, &next_sys)
-
-			delta := ""
-			if elapsed > 0 && last_user != -1 {
-				delta = fmt.Sprintf(" -- interval %.4f seconds %.4f user %.4f sys",
-					elapsed,
-					float64(next_user - last_user) / user_hz,
-					float64(next_sys - last_sys) / user_hz)
-			}
-			stderr <- fmt.Sprintf("crunchstat: cpu %.4f user %.4f sys %d cpus%s",
-				float64(next_user) / user_hz,
-				float64(next_sys) / user_hz,
-				last_cpucount,
-				delta)
-			last_user = next_user
-			last_sys = next_sys
-		}
 
 		DoMemoryStats(stderr, cgroup)
+		lastCpuSample = DoCpuStats(stderr, cgroup, last_cpucount, user_hz, lastCpuSample)
 		lastDiskSample = DoBlkIoStats(stderr, cgroup, lastDiskSample)
 		lastNetSample = DoNetworkStats(stderr, cgroup, lastNetSample)
 	}
