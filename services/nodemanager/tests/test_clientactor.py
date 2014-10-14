@@ -30,26 +30,27 @@ class RemotePollLoopActorTestCase(testutil.RemotePollLoopActorTestMixin,
 
     def test_poll_loop_starts_after_subscription(self):
         self.build_monitor(['test1'])
-        self.monitor.subscribe(self.subscriber)
-        self.wait_for_call(self.subscriber)
+        self.monitor.subscribe(self.subscriber).get(self.TIMEOUT)
+        self.stop_proxy(self.monitor)
         self.subscriber.assert_called_with('test1')
-        self.wait_for_call(self.timer.schedule)
+        self.assertTrue(self.timer.schedule.called)
 
     def test_poll_loop_continues_after_failure(self):
         self.build_monitor(self.MockClientError)
-        self.monitor.subscribe(self.subscriber)
-        self.wait_for_call(self.timer.schedule)
-        self.assertTrue(self.monitor.actor_ref.is_alive(),
+        self.monitor.subscribe(self.subscriber).get(self.TIMEOUT)
+        self.assertTrue(self.stop_proxy(self.monitor),
                         "poll loop died after error")
+        self.assertTrue(self.timer.schedule.called,
+                        "poll loop did not reschedule after error")
         self.assertFalse(self.subscriber.called,
                          "poll loop notified subscribers after error")
 
     def test_late_subscribers_get_responses(self):
-        self.build_monitor(['late_test'])
-        self.monitor.subscribe(lambda response: None)
+        self.build_monitor(['pre_late_test', 'late_test'])
+        self.monitor.subscribe(lambda response: None).get(self.TIMEOUT)
         self.monitor.subscribe(self.subscriber)
-        self.monitor.poll()
-        self.wait_for_call(self.subscriber)
+        self.monitor.poll().get(self.TIMEOUT)
+        self.stop_proxy(self.monitor)
         self.subscriber.assert_called_with('late_test')
 
     def test_survive_dead_subscriptions(self):
@@ -57,13 +58,11 @@ class RemotePollLoopActorTestCase(testutil.RemotePollLoopActorTestMixin,
         dead_subscriber = mock.Mock(name='dead_subscriber')
         dead_subscriber.side_effect = pykka.ActorDeadError
         self.monitor.subscribe(dead_subscriber)
-        self.wait_for_call(dead_subscriber)
         self.monitor.subscribe(self.subscriber)
-        self.monitor.poll()
-        self.wait_for_call(self.subscriber)
-        self.subscriber.assert_called_with('survive2')
-        self.assertTrue(self.monitor.actor_ref.is_alive(),
+        self.monitor.poll().get(self.TIMEOUT)
+        self.assertTrue(self.stop_proxy(self.monitor),
                         "poll loop died from dead subscriber")
+        self.subscriber.assert_called_with('survive2')
 
     def test_no_subscriptions_by_key_without_support(self):
         self.build_monitor([])
@@ -86,8 +85,8 @@ class RemotePollLoopActorWithKeysTestCase(testutil.RemotePollLoopActorTestMixin,
 
     def test_key_subscription(self):
         self.build_monitor([[{'key': 1}, {'key': 2}]])
-        self.monitor.subscribe_to(2, self.subscriber)
-        self.wait_for_call(self.subscriber)
+        self.monitor.subscribe_to(2, self.subscriber).get(self.TIMEOUT)
+        self.stop_proxy(self.monitor)
         self.subscriber.assert_called_with({'key': 2})
 
     def test_survive_dead_key_subscriptions(self):
@@ -96,13 +95,11 @@ class RemotePollLoopActorWithKeysTestCase(testutil.RemotePollLoopActorTestMixin,
         dead_subscriber = mock.Mock(name='dead_subscriber')
         dead_subscriber.side_effect = pykka.ActorDeadError
         self.monitor.subscribe_to(3, dead_subscriber)
-        self.wait_for_call(dead_subscriber)
         self.monitor.subscribe_to(3, self.subscriber)
-        self.monitor.poll()
-        self.wait_for_call(self.subscriber)
-        self.subscriber.assert_called_with(item)
-        self.assertTrue(self.monitor.actor_ref.is_alive(),
+        self.monitor.poll().get(self.TIMEOUT)
+        self.assertTrue(self.stop_proxy(self.monitor),
                         "poll loop died from dead key subscriber")
+        self.subscriber.assert_called_with(item)
 
     def test_mixed_subscriptions(self):
         item = {'key': 4}
@@ -110,15 +107,15 @@ class RemotePollLoopActorWithKeysTestCase(testutil.RemotePollLoopActorTestMixin,
         key_subscriber = mock.Mock(name='key_subscriber')
         self.monitor.subscribe(self.subscriber)
         self.monitor.subscribe_to(4, key_subscriber)
-        self.monitor.poll()
-        self.wait_for_call(self.subscriber)
+        self.monitor.poll().get(self.TIMEOUT)
+        self.stop_proxy(self.monitor)
         self.subscriber.assert_called_with([item])
         key_subscriber.assert_called_with(item)
 
     def test_subscription_to_missing_key(self):
         self.build_monitor([[]])
-        self.monitor.subscribe_to('nonesuch', self.subscriber)
-        self.wait_for_call(self.subscriber)
+        self.monitor.subscribe_to('nonesuch', self.subscriber).get(self.TIMEOUT)
+        self.stop_proxy(self.monitor)
         self.subscriber.assert_called_with(None)
 
 
