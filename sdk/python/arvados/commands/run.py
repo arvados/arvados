@@ -19,6 +19,8 @@ arvrun_parser.add_argument('--dry-run', action="store_true", help="Print out the
 arvrun_parser.add_argument('--local', action="store_true", help="Run locally using arv-crunch-job")
 arvrun_parser.add_argument('--docker-image', type=str, default="arvados/jobs", help="Docker image to use, default arvados/jobs")
 arvrun_parser.add_argument('--git-dir', type=str, default="", help="Git directory to use to find run-command when using --local")
+arvrun_parser.add_argument('--repository', type=str, default="arvados", help="repository field of pipeline submission, default 'arvados'")
+arvrun_parser.add_argument('--script-version', type=str, default="master", help="script_version field of pipeline submission, default 'master'")
 arvrun_parser.add_argument('args', nargs=argparse.REMAINDER)
 
 class ArvFile(object):
@@ -143,8 +145,8 @@ def main(arguments=None):
 
     component = {
         "script": "run-command",
-        "script_version": "3609-arv-run",
-        "repository": "arvados",
+        "script_version": args.script_version,
+        "repository": args.repository,
         "script_parameters": {
         },
         "runtime_constraints": {
