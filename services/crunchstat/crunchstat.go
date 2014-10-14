@@ -49,7 +49,7 @@ func OpenAndReadAll(filename string, log_chan chan<- string) ([]byte, error) {
 	in, err := os.Open(filename)
 	if err != nil {
 		if log_chan != nil {
-			log_chan <- fmt.Sprintf("open %s: %s", filename, err)
+			log_chan <- fmt.Sprintf("crunchstat: open %s: %s", filename, err)
 		}
 		return nil, err
 	}
@@ -57,7 +57,7 @@ func OpenAndReadAll(filename string, log_chan chan<- string) ([]byte, error) {
 	{
 		content, err := ioutil.ReadAll(in)
 		if err != nil && log_chan != nil {
-			log_chan <- fmt.Sprintf("read %s: %s", filename, err)
+			log_chan <- fmt.Sprintf("crunchstat: read %s: %s", filename, err)
 		}
 		return content, err
 	}
@@ -99,7 +99,6 @@ func GetContainerNetStats(stderr chan<- string, cgroup Cgroup) (io.Reader, error
 		statsFilename := fmt.Sprintf("/proc/%s/net/dev", taskPid)
 		stats, err := OpenAndReadAll(statsFilename, stderr)
 		if err != nil {
-			stderr <- fmt.Sprintf("crunchstat: open %s: %s", statsFilename, err)
 			continue
 		}
 		return strings.NewReader(string(stats)), nil
