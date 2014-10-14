@@ -67,6 +67,13 @@ func OpenAndReadAll(filename string, log_chan chan<- string) ([]byte, error) {
 var reportedStatFile map[string]bool
 var reportedNoStatFile map[string]bool
 
+// Find the cgroup stats file in /sys/fs corresponding to the target
+// cgroup.
+//
+// TODO: Instead of trying all options, choose a process in the
+// container, and read /proc/PID/cgroup to determine the appropriate
+// cgroup root for the given statgroup. (This will avoid falling back
+// to host-level stats during container setup and teardown.)
 func FindStat(stderr chan<- string, cgroup Cgroup, statgroup string, stat string) string {
 	if reportedStatFile == nil {
 		reportedStatFile = make(map[string]bool)
