@@ -143,7 +143,10 @@ func DoNetworkStats(stderr chan<- string, cgroup Cgroup, lastStat map[string]Net
 			}
 			wordIndex++
 		}
-		if ifName == "lo" || ifName == "" { continue }
+		if ifName == "lo" || ifName == "" || wordIndex != 17 {
+			// Skip loopback interface and lines with wrong format
+			continue
+		}
 		nextSample := NetSample{}
 		nextSample.sampleTime = sampleTime
 		nextSample.txBytes = tx
