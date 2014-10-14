@@ -3,7 +3,7 @@
 package main
 
 import (
-	//"git.curoverse.com/arvados.git/sdk/go/keepclient"
+	"flag"
 	"git.curoverse.com/arvados.git/sdk/go/arvadosclient"
 	"git.curoverse.com/arvados.git/sdk/go/util"
 	"git.curoverse.com/arvados.git/services/datamanager/collection"
@@ -12,6 +12,8 @@ import (
 )
 
 func main() {
+	flag.Parse()
+
 	arv, err := arvadosclient.MakeArvadosClient()
 	if err != nil {
 		log.Fatalf("Error setting up arvados client %s", err.Error())
