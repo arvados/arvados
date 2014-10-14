@@ -241,23 +241,18 @@ func PollCgroupStats(cgroup Cgroup, stderr chan string, poll int64, stop_poll_ch
 			var next_sys int64
 			fmt.Sscanf(string(b), "user %d\nsystem %d", &next_user, &next_sys)
 
+			delta := ""
 			if elapsed > 0 && last_user != -1 {
-				user_diff := next_user - last_user
-				sys_diff := next_sys - last_sys
-				// {*_diff} == {1/user_hz}-second
-				// ticks of CPU core consumed in an
-				// {elapsed}-second interval.
-				//
-				// We report this as CPU core usage
-				// (i.e., 1.0 == one pegged core). We
-				// also report the number of cores
-				// (maximum possible usage).
-				user := float64(user_diff) / elapsed / user_hz
-				sys := float64(sys_diff) / elapsed / user_hz
-
-				stderr <- fmt.Sprintf("crunchstat: cpuacct.stat user %.4f sys %.4f cpus %d interval %.4f", user, sys, last_cpucount, elapsed)
+				delta = fmt.Sprintf(" -- interval %.4f seconds %.4f user %.4f sys",
+					elapsed,
+					float64(next_user - last_user) / user_hz,
+					float64(next_sys - last_sys) / user_hz)
 			}
-
+			stderr <- fmt.Sprintf("crunchstat: cpu %.4f user %.4f sys %d cpus%s",
+				float64(next_user) / user_hz,
+				float64(next_sys) / user_hz,
+				last_cpucount,
+				delta)
 			last_user = next_user
 			last_sys = next_sys
 		}
