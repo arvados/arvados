@@ -47,4 +47,17 @@ fi
 
 title "docker build java-bwa-samtools complete"
 
+title "upload arvados/jobs image"
+
+docker push arvados/jobs
+
+ECODE=$?
+
+if [[ "$ECODE" != "0" ]]; then
+  title "!!!!!! upload arvados/jobs FAILED !!!!!!"
+  EXITCODE=$(($EXITCODE + $ECODE))
+fi
+
+title "upload arvados/jobs image complete"
+
 exit $EXITCODE
