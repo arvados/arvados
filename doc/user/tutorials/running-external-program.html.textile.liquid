@@ -8,13 +8,13 @@ This tutorial demonstrates how to construct a two stage pipeline template that u
 
 {% include 'tutorial_expectations' %}
 
-Use the following command to create a new empty template using @arv create pipeline_template@:
+Use the following command to create an empty template using @arv create pipeline_template@:
 
 <notextile>
 <pre><code>~$ <span class="userinput">arv create pipeline_template</span></code></pre>
 </notextile>
 
-This will open the template record in an interactive text editor (as specified by $EDITOR or $VISUAL, otherwise defaults to @nano@).  Now add the following content:
+This will open the template record in an interactive text editor (as specified by $EDITOR or $VISUAL, otherwise defaults to @nano@).  Now, update the contents of the editor with the following content:
 
 <notextile>{% code 'tutorial_bwa_sortsam_pipeline' as javascript %}</notextile>
 

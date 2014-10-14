@@ -113,10 +113,14 @@ def init_config
   end
 end
 
-subcommands = %w(keep pipeline tag ws edit create)
+subcommands = %w(create edit keep pipeline tag ws)
 
 def check_subcommands client, arvados, subcommand, global_opts, remaining_opts
   case subcommand
+  when 'create'
+    arv_create client, arvados, global_opts, remaining_opts
+  when 'edit'
+    arv_edit client, arvados, global_opts, remaining_opts
   when 'keep'
     @sub = remaining_opts.shift
     if ['get', 'put', 'ls', 'normalize'].index @sub then
@@ -147,10 +151,6 @@ def check_subcommands client, arvados, subcommand, global_opts, remaining_opts
     exec `which arv-tag`.strip, *remaining_opts
   when 'ws'
     exec `which arv-ws`.strip, *remaining_opts
-  when 'edit'
-    arv_edit client, arvados, global_opts, remaining_opts
-  when 'create'
-    arv_create client, arvados, global_opts, remaining_opts
   end
 end
 
@@ -163,7 +163,7 @@ def command_exists?(command)
   ENV['PATH'].split(':').each {|folder| File.executable?(File.join(folder, command))}
 end
 
-def run_editor tmp, global_opts
+def run_editor tmp_file, global_opts
   need_edit = true
   while need_edit
     pid = Process::fork
@@ -176,14 +176,14 @@ def run_editor tmp, global_opts
         puts "Could not find any editor to use, please set $VISUAL or $EDITOR to your desired editor."
         exit 1
       end
-      exec editor, tmp.path
+      exec editor, tmp_file.path
     else
       Process.wait pid
     end
 
     if $?.exitstatus == 0
-      tmp.open
-      newcontent = tmp.read()
+      tmp_file.open
+      newcontent = tmp_file.read()
 
       newobj = {}
       begin
@@ -207,7 +207,7 @@ def run_editor tmp, global_opts
           yn = $stdin.read 1
         end
         if yn == 'n' or yn == 'N'
-          arv_edit_save_tmp tmp
+          arv_edit_save_tmp tmp_file
           abort
         end
       end
@@ -288,11 +288,11 @@ def arv_edit client, arvados, global_opts, remaining_opts
     content = results.to_yaml
   end
 
-  tmp = Tempfile.new([uuid, "." + global_opts[:format]])
-  tmp.write(content)
-  tmp.close
+  tmp_file = Tempfile.new([uuid, "." + global_opts[:format]])
+  tmp_file.write(content)
+  tmp_file.close
 
-  newobj = run_editor tmp, global_opts
+  newobj = run_editor tmp_file, global_opts
 
   begin
     if newobj != results
@@ -311,14 +311,14 @@ def arv_edit client, arvados, global_opts, remaining_opts
         puts "Error communicating with server, error was #{e}"
         puts "Update body was:"
         puts dumped
-        arv_edit_save_tmp tmp
+        arv_edit_save_tmp tmp_file
         abort
       end
 
       begin
         results = JSON.parse result.body
       rescue JSON::ParserError => e
-        arv_edit_save_tmp tmp
+        arv_edit_save_tmp tmp_file
         abort "Failed to parse server response:\n" + e.to_s
       end
 
@@ -326,14 +326,14 @@ def arv_edit client, arvados, global_opts, remaining_opts
         puts "Update failed.  Server responded #{result.response.status}: #{results['errors']} "
         puts "Update body was:"
         puts dumped
-        arv_edit_save_tmp tmp
+        arv_edit_save_tmp tmp_file
         abort
       end
     else
       puts "Object is unchanged, did not update."
     end
   ensure
-    tmp.close(true)
+    tmp_file.close(true)
   end
 
   exit 0
@@ -393,11 +393,11 @@ def arv_create client, arvados, global_opts, remaining_opts
     content = newobj.to_yaml
   end
 
-  tmp = Tempfile.new(["", ".#{global_opts[:format]}"])
-  tmp.write(content)
-  tmp.close
+  tmp_file = Tempfile.new(["", ".#{global_opts[:format]}"])
+  tmp_file.write(content)
+  tmp_file.close
 
-  newobj = run_editor tmp, global_opts
+  newobj = run_editor tmp_file, global_opts
 
   begin
     api_method = 'arvados.' + rsc + '.create'
@@ -414,7 +414,7 @@ def arv_create client, arvados, global_opts, remaining_opts
     begin
       results = JSON.parse result.body
     rescue JSON::ParserError => e
-      arv_edit_save_tmp tmp
+      arv_edit_save_tmp tmp_file
       abort "Failed to parse server response:\n" + e.to_s
     end
 
@@ -422,18 +422,18 @@ def arv_create client, arvados, global_opts, remaining_opts
       puts "Create failed.  Server responded #{result.response.status}: #{results['errors']} "
       puts "Create body was:"
       puts dumped
-      arv_edit_save_tmp tmp
+      arv_edit_save_tmp tmp_file
       abort
     end
 
     begin
       puts "Created object #{results['uuid']}"
     rescue
-      arv_edit_save_tmp tmp
+      arv_edit_save_tmp tmp_file
       abort "Unexpected response:\n#{results}"
     end
   ensure
-    tmp.close(true)
+    tmp_file.close(true)
   end
 
   exit 0
