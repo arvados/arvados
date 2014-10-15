@@ -7,12 +7,8 @@ class Job < ArvadosBase
     "#{script} job"
   end
 
-  def attribute_editable? attr, *args
-    if attr.to_sym == :description
-      super && attr.to_sym == :description
-    else
-      false
-    end
+  def editable_attributes
+    %w(description)
   end
 
   def self.creatable?
@@ -42,7 +38,7 @@ class Job < ArvadosBase
     arvados_api_client.api("jobs/", "queue_size", {"_method"=> "GET"})[:queue_size] rescue 0
   end
 
-  def self.queue 
+  def self.queue
     arvados_api_client.unpack_api_response arvados_api_client.api("jobs/", "queue", {"_method"=> "GET"})
   end
 
