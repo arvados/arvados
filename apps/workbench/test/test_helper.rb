@@ -38,7 +38,9 @@ class ActiveSupport::TestCase
 
   teardown do
     Thread.current[:arvados_api_token] = nil
+    Thread.current[:user] = nil
     Thread.current[:reader_tokens] = nil
+    Rails.cache.clear
     # Restore configuration settings changed during tests
     $application_config.each do |k,v|
       if k.match /^[^.]*$/
