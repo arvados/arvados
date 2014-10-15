@@ -18,9 +18,9 @@ arvrun_parser = argparse.ArgumentParser()
 arvrun_parser.add_argument('--dry-run', action="store_true", help="Print out the pipeline that would be submitted and exit")
 arvrun_parser.add_argument('--local', action="store_true", help="Run locally using arv-crunch-job")
 arvrun_parser.add_argument('--docker-image', type=str, default="arvados/jobs", help="Docker image to use, default arvados/jobs")
-arvrun_parser.add_argument('--git-dir', type=str, default="", help="Git directory to use to find run-command when using --local")
-arvrun_parser.add_argument('--repository', type=str, default="arvados", help="repository field of pipeline submission, default 'arvados'")
-arvrun_parser.add_argument('--script-version', type=str, default="master", help="script_version field of pipeline submission, default 'master'")
+arvrun_parser.add_argument('--git-dir', type=str, default="", help="Git repository passed to arv-crunch-job when using --local")
+arvrun_parser.add_argument('--repository', type=str, default="arvados", help="repository field of component, default 'arvados'")
+arvrun_parser.add_argument('--script-version', type=str, default="master", help="script_version field of component, default 'master'")
 arvrun_parser.add_argument('args', nargs=argparse.REMAINDER)
 
 class ArvFile(object):
@@ -156,23 +156,23 @@ def main(arguments=None):
 
     task_foreach = []
     group_parser = argparse.ArgumentParser()
-    group_parser.add_argument('--group', type=str)
+    group_parser.add_argument('--batch-size', type=int)
     group_parser.add_argument('args', nargs=argparse.REMAINDER)
 
     for s in xrange(2, len(slots)):
         for i in xrange(0, len(slots[s])):
             if slots[s][i] == '--':
-                inp = "input%i" % s
+                inp = "input%i" % (s-2)
                 groupargs = group_parser.parse_args(slots[2][i+1:])
-                component["script_parameters"][inp] = groupargs.args
-                if groupargs.group:
-                    inpgroups = inp+"_groups"
-                    component["script_parameters"][inpgroups] = {"group":inp, "regex":groupargs.group}
-                    slots[s] = slots[s][0:i] + [{"foreach": inpgroups, "command": "$(%s)" % inpgroups}]
-                    task_foreach.append(inpgroups)
+                if groupargs.batch_size:
+                    component["script_parameters"][inp] = []
+                    for j in xrange(0, len(groupargs.args), groupargs.batch_size):
+                        component["script_parameters"][inp].append(groupargs.args[j:j+groupargs.batch_size])
+                    slots[s] = slots[s][0:i] + [{"foreach": inp, "command": "$(%s)" % inp}]
                 else:
+                    component["script_parameters"][inp] = groupargs.args
                     slots[s] = slots[s][0:i] + ["$(%s)" % inp]
-                    task_foreach.append(inp)
+                task_foreach.append(inp)
                 break
             if slots[s][i] == '\--':
                 slots[s][i] = '--'

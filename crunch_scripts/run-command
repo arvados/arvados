@@ -103,7 +103,7 @@ def add_to_group(gr, match):
         gr[m] = []
     gr[m].append(match.group(0))
 
-def expand_item(p, c):
+def expand_item(p, c, flatten=True):
     if isinstance(c, dict):
         if "foreach" in c and "command" in c:
             var = c["foreach"]
@@ -112,7 +112,7 @@ def expand_item(p, c):
             for i in items:
                 params = copy.copy(p)
                 params[var] = i
-                r.extend(expand_list(params, c["command"]))
+                r.extend(expand_item(params, c["command"]))
             return r
         if "list" in c and "index" in c and "command" in c:
             var = c["list"]
@@ -144,22 +144,27 @@ def expand_item(p, c):
     elif isinstance(c, list):
         return expand_list(p, c)
     elif isinstance(c, basestring):
-        return [subst.do_substitution(p, c)]
+        if flatten:
+            return [subst.do_substitution(p, c)]
+        else:
+            return subst.do_substitution(p, c)
 
     return []
 
-def expand_list(p, l):
+def expand_list(p, l, flatten=True):
     if isinstance(l, basestring):
         return expand_item(p, l)
+    elif flatten:
+        return [exp for arg in l for exp in expand_item(p, arg, flatten)]
     else:
-        return [exp for arg in l for exp in expand_item(p, arg)]
+        return [expand_item(p, arg, flatten) for arg in l]
 
-def get_items(p, value):
+def get_items(p, value, flatten=True):
     if isinstance(value, dict):
         return expand_item(p, value)
 
     if isinstance(value, list):
-        return expand_list(p, value)
+        return expand_list(p, value, flatten)
 
     fn = subst.do_substitution(p, value)
     mode = os.stat(fn).st_mode
@@ -182,7 +187,7 @@ stdinfile = None
 def recursive_foreach(params, fvars):
     var = fvars[0]
     fvars = fvars[1:]
-    items = get_items(params, params[var])
+    items = get_items(params, params[var], False)
     logger.info("parallelizing on %s with items %s" % (var, items))
     if items is not None:
         for i in items:
@@ -199,7 +204,10 @@ def recursive_foreach(params, fvars):
                         'parameters': params
                     }).execute()
                 else:
-                    logger.info(expand_list(params, params["command"]))
+                    if isinstance(params["command"][0], list):
+                        logger.info(expand_list(params, params["command"], False))
+                    else:
+                        logger.info(expand_list(params, params["command"], True))
     else:
         logger.error("parameter %s with value %s in task.foreach yielded no items" % (var, params[var]))
         sys.exit(1)
@@ -227,7 +235,13 @@ try:
     else:
         # This is the only task so taskp/jobp are the same
         taskp = jobp
+except Exception as e:
+    logger.exception("caught exception")
+    logger.error("job parameters were:")
+    logger.error(pprint.pformat(jobp))
+    sys.exit(1)
 
+try:
     if not args.dry_run:
         if "task.vwd" in taskp:
             # Populate output directory with symlinks to files in collection
@@ -238,10 +252,9 @@ try:
 
     cmd = []
     if isinstance(taskp["command"][0], list):
-        for c in taskp["command"]:
-            cmd.append(expand_list(taskp, c))
+        cmd.append(expand_list(taskp, taskp["command"], False))
     else:
-        cmd.append(expand_list(taskp, taskp["command"]))
+        cmd.append(expand_list(taskp, taskp["command"], True))
 
     if "task.stdin" in taskp:
         stdinname = subst.do_substitution(taskp, taskp["task.stdin"])
