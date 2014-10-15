@@ -64,10 +64,14 @@ def main(arguments=None):
 
     slots = [[], [], []]
     for c in args.args:
-        if c == '>':
+        if c.startswith('>'):
             reading_into = 0
-        elif c == '<':
+            if len(c) > 1:
+                slots[reading_into].append(c[1:])
+        elif c.startswith('<'):
             reading_into = 1
+            if len(c) > 1:
+                slots[reading_into].append(c[1:])
         elif c == '|':
             reading_into = len(slots)
             slots.append([])
@@ -165,9 +169,7 @@ def main(arguments=None):
                 inp = "input%i" % (s-2)
                 groupargs = group_parser.parse_args(slots[2][i+1:])
                 if groupargs.batch_size:
-                    component["script_parameters"][inp] = []
-                    for j in xrange(0, len(groupargs.args), groupargs.batch_size):
-                        component["script_parameters"][inp].append(groupargs.args[j:j+groupargs.batch_size])
+                    component["script_parameters"][inp] = {"batch":groupargs.args, "size":groupargs.batch_size}
                     slots[s] = slots[s][0:i] + [{"foreach": inp, "command": "$(%s)" % inp}]
                 else:
                     component["script_parameters"][inp] = groupargs.args
