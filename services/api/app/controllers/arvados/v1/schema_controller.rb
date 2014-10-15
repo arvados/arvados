@@ -230,8 +230,8 @@ class Arvados::V1::SchemaController < ApplicationController
                   location: "query"
                 },
                 order: {
-                  type: "array",
-                  description: "Fields to use to determine order for returning #{k.to_s.underscore.pluralize} object matches.",
+                  type: "string",
+                  description: "Order in which to return matching #{k.to_s.underscore.pluralize}.",
                   location: "query"
                 },
                 select: {
