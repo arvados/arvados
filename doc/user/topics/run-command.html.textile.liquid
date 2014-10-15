@@ -77,7 +77,32 @@ If the value is a JSON object, it is evaluated as a list function described belo
 
 h2. List functions
 
-When @run-command@ is evaluating a list (such as "command"), in addition to string parameter substitution, you can use list item functions.  Note: in the following functions, you specify the name of a user parameter to act on; you cannot provide the list value directly in line.
+When @run-command@ is evaluating a list (such as "command"), in addition to string parameter substitution, you can use list item functions.  In the following functions, you can either specify the name of a user parameter to act on or provide list value directly in line, for example, the following two fragments yield the same result:
+
+<pre>
+{
+  "command": ["echo", {"foreach": "$(a)", "command": ["--something", "$(a)"]}],
+  "a": ["alice", "bob"]
+}
+</pre>
+
+<pre>
+{
+  "command": ["echo", {"foreach": ["alice", "bob"], "var":"a", "command": ["--something", "$(a)"]}],
+}
+</pre>
+
+Note: when you provide the list inline with "foreach" or "index", you must include the "var" parameter to specify the substitution variable name to use when evaluating the command fragment.
+
+You can also nest functions:
+
+<pre>
+{
+  "command": ["echo", {"foreach": {"filter": ["alice", "bob"], "regex": "b.*"},
+                       "var":"a",
+                       "command": ["--something", "$(a)"]}]
+}
+</pre>
 
 h3. foreach
 
@@ -85,7 +110,7 @@ The @foreach@ list item function (not to be confused with the @task.foreach@ dir
 
 <pre>
 {
-  "command": ["echo", {"foreach": "a", "command": ["--something", "$(a)"]}],
+  "command": ["echo", {"foreach": "$(a)", "command": ["--something", "$(a)"]}],
   "a": ["alice", "bob"]
 }
 </pre>
@@ -96,7 +121,7 @@ This function extracts a single item from a list.  The value of @index@ is zero-
 
 <pre>
 {
-  "command": ["echo", {"list": "a", "index": 1, "command": ["--something", "$(a)"]}],
+  "command": ["echo", {"list": "$(a)", "var":"a", "index": 1, "command": ["--something", "$(a)"]}],
   "a": ["alice", "bob"]
 }
 </pre>
@@ -107,7 +132,7 @@ Filter the list so that it only includes items that match a regular expression. 
 
 <pre>
 {
-  "command": ["echo", {"filter": "a", "regex": "b.*"}],
+  "command": ["echo", {"filter": "$(a)", "regex": "b.*"}],
   "a": ["alice", "bob"]
 }
 </pre>
@@ -118,7 +143,7 @@ Generate a list of lists, where items are grouped on common subexpression match.
 
 <pre>
 {
-  "command": ["echo", {"foreach": "b", "command":["--group", {"foreach": "b", "command":"$(b)"}]}],
+  "command": ["echo", {"foreach": "$(b)", "command":["--group", {"foreach": "b", "command":"$(b)"}]}],
   "a": ["alice", "bob", "carol", "dave"],
   "b": {"group": "a", "regex": "[^a]*(a?).*"}
 }
@@ -130,9 +155,20 @@ Generate a list of lists, where items are split by subexpression match.  Items w
 
 <pre>
 {
-  "command": ["echo", {"foreach": "b", "command":[{"foreach": "b", "command":"$(b)"}]}],
+  "command": ["echo", {"foreach": "$(b)", "command":[{"foreach": "$(b)", "command":"$(b)"}]}],
   "a": ["alice", "bob", "carol", "dave"],
   "b": {"extract": "a", "regex": "(.+)(a)(.*)"}
+}
+</pre>
+
+h3. batch
+
+Generate a list of lists, where items are split into batch size.  If the list does not divide evenly into batch sizes, the last batch will be short.  The following example evaluates to @["echo", "--something", "alice", "bob", "--something", "carol", "dave"]@
+
+<pre>
+{
+  "command": ["echo", {"foreach":{"batch": "$(a)", "size": 2}, "var":"a", "command":["--something", "$(a)"]}],
+  "a": ["alice", "bob", "carol", "dave"]
 }
 </pre>
 

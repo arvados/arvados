@@ -97,36 +97,64 @@ class SigHandler(object):
             sp.send_signal(signum)
         self.sig = signum
 
+# http://rightfootin.blogspot.com/2006/09/more-on-python-flatten.html
+def flatten(l, ltypes=(list, tuple)):
+    ltype = type(l)
+    l = list(l)
+    i = 0
+    while i < len(l):
+        while isinstance(l[i], ltypes):
+            if not l[i]:
+                l.pop(i)
+                i -= 1
+                break
+            else:
+                l[i:i + 1] = l[i]
+        i += 1
+    return ltype(l)
+
 def add_to_group(gr, match):
     m = match.groups()
     if m not in gr:
         gr[m] = []
     gr[m].append(match.group(0))
 
-def expand_item(p, c, flatten=True):
+def var_items(p, c, key):
+    if "var" in c:
+        # Var specifies
+        return (c["var"], get_items(p, c[key]))
+    else:
+        if isinstance(c[key], list):
+            return (None, get_items(p, c[key]))
+        m = re.match("^\$\((.*)\)$", c[key])
+        if m and m.group(1) in p:
+            return (m.group(1), get_items(p, c[key]))
+        else:
+            # backwards compatible, foreach specifies bare parameter name to use
+            return (c[key], get_items(p, p[c[key]]))
+
+def expand_item(p, c):
     if isinstance(c, dict):
         if "foreach" in c and "command" in c:
-            var = c["foreach"]
-            items = get_items(p, p[var])
+            var, items = var_items(p, c, "foreach")
             r = []
             for i in items:
                 params = copy.copy(p)
                 params[var] = i
-                r.extend(expand_item(params, c["command"]))
+                r.append(expand_item(params, c["command"]))
             return r
         if "list" in c and "index" in c and "command" in c:
-            var = c["list"]
-            items = get_items(p, p[var])
+            var, items = var_items(p, c, "list")
             params = copy.copy(p)
             params[var] = items[int(c["index"])]
-            return expand_list(params, c["command"])
+            return expand_item(params, c["command"])
         if "regex" in c:
             pattern = re.compile(c["regex"])
             if "filter" in c:
-                items = get_items(p, p[c["filter"]])
+                var, items = var_items(p, c, "filter")
                 return [i for i in items if pattern.match(i)]
             elif "group" in c:
-                items = get_items(p, p[c["group"]])
+                var, items = var_items(p, c, "group")
                 groups = {}
                 for i in items:
                     match = pattern.match(i)
@@ -134,50 +162,46 @@ def expand_item(p, c, flatten=True):
                         add_to_group(groups, match)
                 return [groups[k] for k in groups]
             elif "extract" in c:
-                items = get_items(p, p[c["extract"]])
+                var, items = var_items(p, c, "extract")
                 r = []
                 for i in items:
                     match = pattern.match(i)
                     if match:
                         r.append(list(match.groups()))
                 return r
+        if "batch" in c and "size" in c:
+            var, items = var_items(p, c, "batch")
+            sz = int(c["size"])
+            r = []
+            for j in xrange(0, len(items), sz):
+                r.append(items[j:j+sz])
+            return r
     elif isinstance(c, list):
-        return expand_list(p, c)
+        return [expand_item(p, arg) for arg in c]
     elif isinstance(c, basestring):
-        if flatten:
-            return [subst.do_substitution(p, c)]
+        m = re.match("^\$\((.*)\)$", c)
+        if m and m.group(1) in p:
+            return expand_item(p, p[m.group(1)])
         else:
             return subst.do_substitution(p, c)
 
     return []
 
-def expand_list(p, l, flatten=True):
-    if isinstance(l, basestring):
-        return expand_item(p, l)
-    elif flatten:
-        return [exp for arg in l for exp in expand_item(p, arg, flatten)]
-    else:
-        return [expand_item(p, arg, flatten) for arg in l]
-
-def get_items(p, value, flatten=True):
-    if isinstance(value, dict):
-        return expand_item(p, value)
-
+def get_items(p, value):
+    value = expand_item(p, value)
     if isinstance(value, list):
-        return expand_list(p, value, flatten)
-
-    fn = subst.do_substitution(p, value)
-    mode = os.stat(fn).st_mode
-    prefix = fn[len(os.environ['TASK_KEEPMOUNT'])+1:]
-    if mode is not None:
-        if stat.S_ISDIR(mode):
-            items = [os.path.join(fn, l) for l in os.listdir(fn)]
-        elif stat.S_ISREG(mode):
-            with open(fn) as f:
-                items = [line.rstrip("\r\n") for line in f]
-        return items
-    else:
-        return None
+        return value
+    elif isinstance(value, basestring):
+        mode = os.stat(value).st_mode
+        prefix = value[len(os.environ['TASK_KEEPMOUNT'])+1:]
+        if mode is not None:
+            if stat.S_ISDIR(mode):
+                items = [os.path.join(value, l) for l in os.listdir(value)]
+            elif stat.S_ISREG(mode):
+                with open(value) as f:
+                    items = [line.rstrip("\r\n") for line in f]
+            return items
+    raise Exception("get_items did not yield a list")
 
 stdoutname = None
 stdoutfile = None
@@ -187,7 +211,7 @@ stdinfile = None
 def recursive_foreach(params, fvars):
     var = fvars[0]
     fvars = fvars[1:]
-    items = get_items(params, params[var], False)
+    items = get_items(params, params[var])
     logger.info("parallelizing on %s with items %s" % (var, items))
     if items is not None:
         for i in items:
@@ -205,9 +229,10 @@ def recursive_foreach(params, fvars):
                     }).execute()
                 else:
                     if isinstance(params["command"][0], list):
-                        logger.info(expand_list(params, params["command"], False))
+                        for c in params["command"]:
+                            logger.info(flatten(expand_item(params, c)))
                     else:
-                        logger.info(expand_list(params, params["command"], True))
+                        logger.info(flatten(expand_item(params, params["command"])))
     else:
         logger.error("parameter %s with value %s in task.foreach yielded no items" % (var, params[var]))
         sys.exit(1)
@@ -252,9 +277,10 @@ try:
 
     cmd = []
     if isinstance(taskp["command"][0], list):
-        cmd.append(expand_list(taskp, taskp["command"], False))
+        for c in taskp["command"]:
+            cmd.append(flatten(expand_item(taskp, c)))
     else:
-        cmd.append(expand_list(taskp, taskp["command"], True))
+        cmd.append(flatten(expand_item(taskp, taskp["command"])))
 
     if "task.stdin" in taskp:
         stdinname = subst.do_substitution(taskp, taskp["task.stdin"])
