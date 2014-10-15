@@ -48,32 +48,36 @@ class PollClient(threading.Thread):
     def __init__(self, api, filters, on_event, poll_time):
         super(PollClient, self).__init__()
         self.api = api
-        self.filters = filters
+        self.filters = [filters]
         self.on_event = on_event
-        items = self.api.logs().list(limit=1, order=["id desc"], filters=filters).execute()['items']
+        items = self.api.logs().list(limit=1, order="id desc", filters=filters).execute()['items']
         if len(items) > 0:
             self.id = items[0]["id"]
         else:
             self.id = 0
         self.poll_time = poll_time
-        self.loop = True
+        self.stop = threading.Event()
         self.on_event({'status': 200})
 
     def run(self):
-        while self.loop:
-            time.sleep(self.poll_time)
-            items = self.api.logs().list(order=["id asc"], filters=self.filters+[["id", ">", str(self.id)]]).execute()['items']
-            for i in items:
-                self.id = i['id']
-                self.on_event(i)
+        while not self.stop.isSet():
+            max_id = 0
+            for f in self.filters:
+                items = self.api.logs().list(order="id asc", filters=f+[["id", ">", str(self.id)]]).execute()['items']
+                for i in items:
+                    if i['id'] > max_id:
+                        max_id = i['id']
+                    self.on_event(i)
+            self.id = max_id
+            self.stop.wait(self.poll_time)
 
     def close(self):
-        self.loop = False
+        self.stop.set()
         self.join()
 
     def subscribe(self, filters):
         self.on_event({'status': 200})
-        self.filters += filters
+        self.filters.append(filters)
 
     def unsubscribe(self, filters):
         del self.filters[self.filters.index(filters)]
@@ -87,9 +91,9 @@ def subscribe(api, filters, on_event, poll_fallback=15):
             ws.connect()
             return ws
         except Exception as e:
-            _logger.warn("Got exception %s trying to connect to web sockets" % e)
+            _logger.warn("Got exception %s trying to connect to web sockets at %s" % (e, api._rootDesc['websocketUrl']))
             if ws:
-                ws.close()
+                ws.close_connection()
     if poll_fallback:
         _logger.warn("Web sockets not available, falling back to log table polling")
         p = PollClient(api, filters, on_event, poll_fallback)
