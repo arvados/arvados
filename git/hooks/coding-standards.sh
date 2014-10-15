@@ -13,6 +13,20 @@ $oldrev  = ARGV[1]
 $newrev  = ARGV[2]
 $user    = ENV['USER']
 
+def blacklist bl
+  all_revs = `git rev-list #{$oldrev}..#{$newrev}`.split("\n")
+  all_revs.each do |rev|
+    bl.each do |b|
+      if rev == b
+        puts "Revision #{b} is blacklisted, you must remove it from your branch (possibly using git rebase) before you can push."
+        exit 1
+      end
+    end
+  end
+end
+
+blacklist ['26d74dc0524c87c5dcc0c76040ce413a4848b57a']
+
 # Only enforce policy on the master branch
 exit 0 if $refname != 'refs/heads/master'
 
