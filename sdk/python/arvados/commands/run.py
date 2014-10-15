@@ -60,6 +60,10 @@ def statfile(prefix, fn):
 def main(arguments=None):
     args = arvrun_parser.parse_args(arguments)
 
+    if len(args.args) == 0:
+        arvrun_parser.print_help()
+        return
+
     reading_into = 2
 
     slots = [[], [], []]
