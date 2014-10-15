@@ -43,6 +43,25 @@ func TestVerifySignature(t *testing.T) {
 	}
 }
 
+func TestVerifySignatureExtraHints(t *testing.T) {
+	PermissionSecret = []byte(known_key)
+	defer func() { PermissionSecret = nil }()
+
+	sig_stuff := "+A" + known_signature + "@" + known_timestamp
+
+	if !VerifySignature(known_locator + "+K@xyzzy" + sig_stuff, known_token) {
+		t.Fatal("Verify cannot handle hint before permission signature")
+	}
+
+	if !VerifySignature(known_locator + sig_stuff + "+Zfoo", known_token) {
+		t.Fatal("Verify cannot handle hint after permission signature")
+	}
+
+	if !VerifySignature(known_locator + "+K@xyzzy" + sig_stuff + "+Zfoo", known_token) {
+		t.Fatal("Verify cannot handle hints around permission signature")
+	}
+}
+
 // The size hint on the locator string should not affect signature validation.
 func TestVerifySignatureWrongSize(t *testing.T) {
 	PermissionSecret = []byte(known_key)

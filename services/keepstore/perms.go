@@ -83,20 +83,24 @@ func SignLocator(blob_locator string, api_token string, expiry time.Time) string
 // VerifySignature returns true if the signature on the signed_locator
 // can be verified using the given api_token.
 func VerifySignature(signed_locator string, api_token string) bool {
-	if re, err := regexp.Compile(`^([a-f0-9]{32}(\+[0-9]+)?).*\+A[[:xdigit:]]+@([[:xdigit:]]{8})`); err == nil {
-		if matches := re.FindStringSubmatch(signed_locator); matches != nil {
-			blob_locator := matches[1]
-			timestamp_hex := matches[3]
-			if expire_ts, err := ParseHexTimestamp(timestamp_hex); err == nil {
-				// Fail signatures with expired timestamps.
-				if expire_ts.Before(time.Now()) {
-					return false
-				}
-				return signed_locator == SignLocator(blob_locator, api_token, expire_ts)
-			}
-		}
+	re, err := regexp.Compile(`^([[:xdigit:]]{32}).*\+A([[:xdigit:]]{40})@([[:xdigit:]]{8})`)
+	if err != nil {
+		// Could not compile regexp(!)
+		return false
 	}
-	return false
+	matches := re.FindStringSubmatch(signed_locator)
+	if matches == nil {
+		// Could not find a permission signature at all
+		return false
+	}
+	blob_hash := matches[1]
+	sig_hex := matches[2]
+	exp_hex := matches[3]
+	if exp_time, err := ParseHexTimestamp(exp_hex); err != nil || exp_time.Before(time.Now()) {
+		// Signature is expired, or timestamp is unparseable
+		return false
+	}
+	return sig_hex == MakePermSignature(blob_hash, api_token, exp_hex)
 }
 
 func ParseHexTimestamp(timestamp_hex string) (ts time.Time, err error) {
