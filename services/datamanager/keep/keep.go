@@ -3,6 +3,7 @@
 package keep
 
 import (
+	"bufio"
 	"flag"
 	"fmt"
 	//"git.curoverse.com/arvados.git/sdk/go/keepclient"
@@ -141,6 +142,20 @@ func GetKeepServers(params GetKeepServersParams) (results ReadServers) {
 			log.Fatalf("Received error code %d in response to request for %s: %s",
 				resp.StatusCode, url, resp.Status)
 		}
+		scanner := bufio.NewScanner(resp.Body)
+		numLines := 0
+		for scanner.Scan() {
+			numLines++
+			if numLines == 1 {
+				log.Printf("First line from %s is %s", url, scanner.Text())
+			}
+		}
+		if err := scanner.Err(); err != nil {
+			log.Fatalf("Received error scanning response from %s: %v", url, err)
+		} else {
+			log.Printf("Read %d lines from %s.", numLines, url)
+		}
+		resp.Body.Close()
 	}
 
 	return
