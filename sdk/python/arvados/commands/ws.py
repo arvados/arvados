@@ -11,16 +11,16 @@ def main(arguments=None):
     logger = logging.getLogger('arvados.arv-ws')
 
     parser = argparse.ArgumentParser()
-    parser.add_argument('-u', '--uuid', type=str, default="")
-    parser.add_argument('-f', '--filters', type=str, default="")
+    parser.add_argument('-u', '--uuid', type=str, default="", help="Filter events on object_uuid")
+    parser.add_argument('-f', '--filters', type=str, default="", help="Arvados query filter to apply to log events (JSON encoded)")
 
     group = parser.add_argument_group('Polling fallback')
-    group.add_argument('--poll-fallback', default=15)
-    group.add_argument('--no-poll-fallback', action='store_false', dest='poll_fallback')
+    group.add_argument('--poll-interval', default=15, help="If websockets is not available, specify the polling interval, default is every 15 seconds")
+    group.add_argument('--no-poll', action='store_false', dest='poll_fallback', help="Do not poll if websockets are not available, just fail")
 
     group = parser.add_argument_group('Jobs and Pipelines')
-    group.add_argument('-p', '--pipeline', type=str, default="", help="Print log output from a pipeline and its jobs")
-    group.add_argument('-j', '--job', type=str, default="", help="Print log output from a job")
+    group.add_argument('-p', '--pipeline', type=str, default="", help="Supply pipeline uuid, print log output from pipeline and its jobs")
+    group.add_argument('-j', '--job', type=str, default="", help="Supply job uuid, print log output from jobs")
 
     args = parser.parse_args(arguments)
 
@@ -55,9 +55,6 @@ def main(arguments=None):
             if ev['event_type'] in ('stderr', 'stdout'):
                 sys.stdout.write(ev["properties"]["text"])
             elif ev["event_type"] in ("create", "update"):
-                #if args.job or ev["object_kind"] == "arvados#pipelineInstance":
-                #    if ev["properties"]["new_attributes"]["state"] in ("Complete", "Failed", "Cancelled"):
-                #        ws.close()
                 if ev["object_kind"] == "arvados#pipelineInstance":
                     pipeline_jobs = set()
                     for c in ev["properties"]["new_attributes"]["components"]:
@@ -72,7 +69,7 @@ def main(arguments=None):
             print json.dumps(ev)
 
     try:
-        ws = subscribe(api, filters, lambda ev: on_message(ev), poll_fallback=args.poll_fallback)
+        ws = subscribe(api, filters, on_message, poll_fallback=args.poll_fallback)
         ws.run_forever()
     except KeyboardInterrupt:
         pass
@@ -80,4 +77,4 @@ def main(arguments=None):
         logger.exception('')
     finally:
         if ws:
-            ws.close_connection()
+            ws.close()

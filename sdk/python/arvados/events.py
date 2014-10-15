@@ -46,29 +46,33 @@ class EventClient(WebSocketClient):
 
 class PollClient(threading.Thread):
     def __init__(self, api, filters, on_event, poll_time):
+        super(PollClient, self).__init__()
         self.api = api
         self.filters = filters
         self.on_event = on_event
-        items = self.api.logs().list(limit=1, order=json.dumps(["id desc"]), filters=json.dumps(filters)).execute()['items']
+        items = self.api.logs().list(limit=1, order=["id desc"], filters=filters).execute()['items']
         if len(items) > 0:
             self.id = items[0]["id"]
         else:
             self.id = 0
         self.poll_time = poll_time
         self.loop = True
+        self.on_event({'status': 200})
 
-    def run_forever(self):
+    def run(self):
         while self.loop:
             time.sleep(self.poll_time)
-            items = self.api.logs().list(limit=1, order=json.dumps(["id asc"]), filters=json.dumps(self.filters+[["id", ">", str(self.id)]])).execute()['items']
+            items = self.api.logs().list(order=["id asc"], filters=self.filters+[["id", ">", str(self.id)]]).execute()['items']
             for i in items:
                 self.id = i['id']
                 self.on_event(i)
 
-    def close_connection(self):
+    def close(self):
         self.loop = False
+        self.join()
 
     def subscribe(self, filters):
+        self.on_event({'status': 200})
         self.filters += filters
 
     def unsubscribe(self, filters):
@@ -76,23 +80,21 @@ class PollClient(threading.Thread):
 
 def subscribe(api, filters, on_event, poll_fallback=15):
     ws = None
-    try:
-        if 'websocketUrl' in api._rootDesc:
-            url = "{}?api_token={}".format(api._rootDesc['websocketUrl'], config.get('ARVADOS_API_TOKEN'))
+    if 'websocketUrl' in api._rootDesc:
+        try:
+            url = "{}?api_token={}".format(api._rootDesc['websocketUrl'], api.api_token)
             ws = EventClient(url, filters, on_event)
             ws.connect()
-        elif poll_fallback:
-            _logger.warn("Web sockets not available, falling back to log table polling")
-            ws = PollClient(api, filters, on_event, poll_fallback)
-        else:
-            _logger.error("Web sockets not available")
-            return None
-        return ws
-    except Exception:
-        if ws:
-            ws.close_connection()
-        if poll_fallback:
-            return PollClient(api, filters, on_event, poll_fallback)
-        else:
-            _logger.error("Web sockets not available at %s" % api._rootDesc['websocketUrl'])
-            raise
+            return ws
+        except Exception as e:
+            _logger.warn("Got exception %s trying to connect to web sockets" % e)
+            if ws:
+                ws.close()
+    if poll_fallback:
+        _logger.warn("Web sockets not available, falling back to log table polling")
+        p = PollClient(api, filters, on_event, poll_fallback)
+        p.start()
+        return p
+    else:
+        _logger.error("Web sockets not available")
+        return None
