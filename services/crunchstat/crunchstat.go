@@ -3,8 +3,8 @@ package main
 import (
 	"bufio"
 	"bytes"
-	"flag"
 	"errors"
+	"flag"
 	"fmt"
 	"io"
 	"io/ioutil"
@@ -24,6 +24,7 @@ import (
 #include <stdlib.h>
 */
 import "C"
+
 // The above block of magic allows us to look up user_hz via _SC_CLK_TCK.
 
 type Cgroup struct {
@@ -95,7 +96,7 @@ func OpenStatFile(stderr chan<- string, cgroup Cgroup, statgroup string, stat st
 	if err != nil {
 		file = nil
 		path = ""
-	} 
+	}
 	if pathWas, ok := reportedStatFile[stat]; !ok || pathWas != path {
 		// Log whenever we start using a new/different cgroup
 		// stat file for a given statistic. This typically
@@ -174,8 +175,8 @@ func DoBlkIoStats(stderr chan<- string, cgroup Cgroup, lastSample map[string]IoS
 		if prev, ok := lastSample[dev]; ok {
 			delta = fmt.Sprintf(" -- interval %.4f seconds %d write %d read",
 				sample.sampleTime.Sub(prev.sampleTime).Seconds(),
-				sample.txBytes - prev.txBytes,
-				sample.rxBytes - prev.rxBytes)
+				sample.txBytes-prev.txBytes,
+				sample.rxBytes-prev.rxBytes)
 		}
 		stderr <- fmt.Sprintf("crunchstat: blkio:%s %d write %d read%s", dev, sample.txBytes, sample.rxBytes, delta)
 		lastSample[dev] = sample
@@ -216,10 +217,13 @@ func DoMemoryStats(stderr chan<- string, cgroup Cgroup) {
 func DoNetworkStats(stderr chan<- string, cgroup Cgroup, lastSample map[string]IoSample) {
 	sampleTime := time.Now()
 	stats, err := GetContainerNetStats(stderr, cgroup)
-	if err != nil { return }
+	if err != nil {
+		return
+	}
 
 	scanner := bufio.NewScanner(stats)
-	Iface: for scanner.Scan() {
+Iface:
+	for scanner.Scan() {
 		var ifName string
 		var rx, tx int64
 		words := bufio.NewScanner(strings.NewReader(scanner.Text()))
@@ -254,8 +258,8 @@ func DoNetworkStats(stderr chan<- string, cgroup Cgroup, lastSample map[string]I
 			interval := nextSample.sampleTime.Sub(lastSample.sampleTime).Seconds()
 			delta = fmt.Sprintf(" -- interval %.4f seconds %d tx %d rx",
 				interval,
-				tx - lastSample.txBytes,
-				rx - lastSample.rxBytes)
+				tx-lastSample.txBytes,
+				rx-lastSample.rxBytes)
 		}
 		stderr <- fmt.Sprintf("crunchstat: net:%s %d tx %d rx%s",
 			ifName, tx, rx, delta)
@@ -264,7 +268,7 @@ func DoNetworkStats(stderr chan<- string, cgroup Cgroup, lastSample map[string]I
 }
 
 type CpuSample struct {
-	hasData    bool		// to distinguish the zero value from real data
+	hasData    bool // to distinguish the zero value from real data
 	sampleTime time.Time
 	user       float64
 	sys        float64
@@ -273,7 +277,7 @@ type CpuSample struct {
 
 // Return the number of CPUs available in the container. Return 0 if
 // we can't figure out the real number of CPUs.
-func GetCpuCount(stderr chan<- string, cgroup Cgroup) (int64) {
+func GetCpuCount(stderr chan<- string, cgroup Cgroup) int64 {
 	cpusetFile, err := OpenStatFile(stderr, cgroup, "cpuset", "cpuset.cpus")
 	if err != nil {
 		return 0
@@ -316,8 +320,8 @@ func DoCpuStats(stderr chan<- string, cgroup Cgroup, lastSample *CpuSample) {
 	if lastSample.hasData {
 		delta = fmt.Sprintf(" -- interval %.4f seconds %.4f user %.4f sys",
 			nextSample.sampleTime.Sub(lastSample.sampleTime).Seconds(),
-			nextSample.user - lastSample.user,
-			nextSample.sys - lastSample.sys)
+			nextSample.user-lastSample.user,
+			nextSample.sys-lastSample.sys)
 	}
 	stderr <- fmt.Sprintf("crunchstat: cpu %.4f user %.4f sys %d cpus%s",
 		nextSample.user, nextSample.sys, nextSample.cpus, delta)
