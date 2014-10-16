@@ -63,8 +63,8 @@ class JobQueueMonitorActorTestCase(testutil.RemotePollLoopActorTestMixin,
 
     def test_subscribers_get_server_lists(self):
         self.build_monitor([{'items': [1, 2]}], self.MockCalculator())
-        self.monitor.subscribe(self.subscriber)
-        self.wait_for_call(self.subscriber)
+        self.monitor.subscribe(self.subscriber).get(self.TIMEOUT)
+        self.stop_proxy(self.monitor)
         self.subscriber.assert_called_with([testutil.MockSize(1),
                                             testutil.MockSize(2)])
 

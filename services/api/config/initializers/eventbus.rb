@@ -12,5 +12,8 @@ Server::Application.configure do
       :mount => "/websocket",
       :websocket_only => (ENV['ARVADOS_WEBSOCKETS'] == "ws-only")
     }
+    Rails.logger.info "Websockets #{ENV['ARVADOS_WEBSOCKETS']}, running at /websocket"
+  else
+    Rails.logger.info "Websockets disabled"
   end
 end

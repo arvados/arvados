@@ -19,8 +19,9 @@ class ArvadosNodeListMonitorActorTestCase(testutil.RemotePollLoopActorTestMixin,
     def test_uuid_is_subscription_key(self):
         node = testutil.arvados_node_mock()
         self.build_monitor([{'items': [node]}])
-        self.monitor.subscribe_to(node['uuid'], self.subscriber)
-        self.wait_for_call(self.subscriber)
+        self.monitor.subscribe_to(node['uuid'],
+                                  self.subscriber).get(self.TIMEOUT)
+        self.stop_proxy(self.monitor)
         self.subscriber.assert_called_with(node)
 
 
@@ -46,8 +47,8 @@ class CloudNodeListMonitorActorTestCase(testutil.RemotePollLoopActorTestMixin,
     def test_id_is_subscription_key(self):
         node = self.MockNode(1)
         self.build_monitor([[node]])
-        self.monitor.subscribe_to('1', self.subscriber)
-        self.wait_for_call(self.subscriber)
+        self.monitor.subscribe_to('1', self.subscriber).get(self.TIMEOUT)
+        self.stop_proxy(self.monitor)
         self.subscriber.assert_called_with(node)
 
 

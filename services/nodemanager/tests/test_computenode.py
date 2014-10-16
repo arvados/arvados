@@ -16,7 +16,8 @@ from . import testutil
 class ComputeNodeSetupActorTestCase(testutil.ActorTestMixin, unittest.TestCase):
     def make_mocks(self, arvados_effect=None, cloud_effect=None):
         if arvados_effect is None:
-            arvados_effect = testutil.arvados_node_mock()
+            arvados_effect = [testutil.arvados_node_mock()]
+        self.arvados_effect = arvados_effect
         self.timer = testutil.MockTimer()
         self.api_client = mock.MagicMock(name='api_client')
         self.api_client.nodes().create().execute.side_effect = arvados_effect
@@ -26,22 +27,26 @@ class ComputeNodeSetupActorTestCase(testutil.ActorTestMixin, unittest.TestCase):
 
     def make_actor(self, arv_node=None):
         if not hasattr(self, 'timer'):
-            self.make_mocks()
+            self.make_mocks(arvados_effect=[arv_node])
         self.setup_actor = cnode.ComputeNodeSetupActor.start(
             self.timer, self.api_client, self.cloud_client,
             testutil.MockSize(1), arv_node).proxy()
 
     def test_creation_without_arvados_node(self):
         self.make_actor()
-        self.wait_for_call(self.api_client.nodes().create().execute)
-        self.wait_for_call(self.cloud_client.create_node)
+        self.assertEqual(self.arvados_effect[-1],
+                         self.setup_actor.arvados_node.get(self.TIMEOUT))
+        self.assertTrue(self.api_client.nodes().create().execute.called)
+        self.assertEqual(self.cloud_client.create_node(),
+                         self.setup_actor.cloud_node.get(self.TIMEOUT))
 
     def test_creation_with_arvados_node(self):
-        arv_node = testutil.arvados_node_mock()
-        self.make_mocks([arv_node])
-        self.make_actor(arv_node)
-        self.wait_for_call(self.api_client.nodes().update().execute)
-        self.wait_for_call(self.cloud_client.create_node)
+        self.make_actor(testutil.arvados_node_mock())
+        self.assertEqual(self.arvados_effect[-1],
+                         self.setup_actor.arvados_node.get(self.TIMEOUT))
+        self.assertTrue(self.api_client.nodes().update().execute.called)
+        self.assertEqual(self.cloud_client.create_node(),
+                         self.setup_actor.cloud_node.get(self.TIMEOUT))
 
     def test_failed_calls_retried(self):
         self.make_mocks([
@@ -49,22 +54,22 @@ class ComputeNodeSetupActorTestCase(testutil.ActorTestMixin, unittest.TestCase):
                 testutil.arvados_node_mock(),
                 ])
         self.make_actor()
-        self.wait_for_call(self.cloud_client.create_node)
+        self.wait_for_assignment(self.setup_actor, 'cloud_node')
 
     def test_stop_when_no_cloud_node(self):
         self.make_mocks(
             arverror.ApiError(httplib2.Response({'status': '500'}), ""))
         self.make_actor()
-        self.wait_for_call(self.api_client.nodes().create().execute)
         self.setup_actor.stop_if_no_cloud_node()
         self.assertTrue(
             self.setup_actor.actor_ref.actor_stopped.wait(self.TIMEOUT))
 
     def test_no_stop_when_cloud_node(self):
         self.make_actor()
-        self.wait_for_call(self.cloud_client.create_node)
+        self.wait_for_assignment(self.setup_actor, 'cloud_node')
         self.setup_actor.stop_if_no_cloud_node().get(self.TIMEOUT)
-        self.assertFalse(self.setup_actor.actor_ref.actor_stopped.is_set())
+        self.assertTrue(self.stop_proxy(self.setup_actor),
+                        "actor was stopped by stop_if_no_cloud_node")
 
     def test_subscribe(self):
         self.make_mocks(
@@ -74,16 +79,16 @@ class ComputeNodeSetupActorTestCase(testutil.ActorTestMixin, unittest.TestCase):
         self.setup_actor.subscribe(subscriber)
         self.api_client.nodes().create().execute.side_effect = [
             testutil.arvados_node_mock()]
-        self.wait_for_call(subscriber)
+        self.wait_for_assignment(self.setup_actor, 'cloud_node')
         self.assertEqual(self.setup_actor.actor_ref.actor_urn,
                          subscriber.call_args[0][0].actor_ref.actor_urn)
 
     def test_late_subscribe(self):
         self.make_actor()
         subscriber = mock.Mock(name='subscriber_mock')
-        self.wait_for_call(self.cloud_client.create_node)
-        self.setup_actor.subscribe(subscriber)
-        self.wait_for_call(subscriber)
+        self.wait_for_assignment(self.setup_actor, 'cloud_node')
+        self.setup_actor.subscribe(subscriber).get(self.TIMEOUT)
+        self.stop_proxy(self.setup_actor)
         self.assertEqual(self.setup_actor.actor_ref.actor_urn,
                          subscriber.call_args[0][0].actor_ref.actor_urn)
 
@@ -105,7 +110,9 @@ class ComputeNodeShutdownActorTestCase(testutil.ActorTestMixin,
 
     def test_easy_shutdown(self):
         self.make_actor()
-        self.wait_for_call(self.cloud_client.destroy_node)
+        self.shutdown_actor.cloud_node.get(self.TIMEOUT)
+        self.stop_proxy(self.shutdown_actor)
+        self.assertTrue(self.cloud_client.destroy_node.called)
 
 
 class ComputeNodeUpdateActorTestCase(testutil.ActorTestMixin,
@@ -168,43 +175,44 @@ class ComputeNodeMonitorActorTestCase(testutil.ActorTestMixin,
             self.make_mocks(node_num)
         if start_time is None:
             start_time = time.time()
-        start_time = time.time()
         self.node_actor = cnode.ComputeNodeMonitorActor.start(
             self.cloud_mock, start_time, self.shutdowns, self.timer,
             self.updates, arv_node).proxy()
-        self.node_actor.subscribe(self.subscriber)
+        self.subscription = self.node_actor.subscribe(self.subscriber)
 
     def test_init_shutdown_scheduling(self):
         self.make_actor()
-        self.wait_for_call(self.timer.schedule)
+        self.subscription.get(self.TIMEOUT)
+        self.assertTrue(self.timer.schedule.called)
         self.assertEqual(300, self.timer.schedule.call_args[0][0])
 
     def test_shutdown_subscription(self):
         self.make_actor()
         self.shutdowns._set_state(True, 600)
-        self.node_actor.consider_shutdown()
-        self.wait_for_call(self.subscriber)
+        self.node_actor.consider_shutdown().get(self.TIMEOUT)
+        self.assertTrue(self.subscriber.called)
         self.assertEqual(self.node_actor.actor_ref.actor_urn,
                          self.subscriber.call_args[0][0].actor_ref.actor_urn)
 
     def test_shutdown_without_arvados_node(self):
         self.make_actor()
         self.shutdowns._set_state(True, 600)
-        self.node_actor.consider_shutdown()
-        self.wait_for_call(self.subscriber)
+        self.node_actor.consider_shutdown().get(self.TIMEOUT)
+        self.assertTrue(self.subscriber.called)
 
     def test_no_shutdown_without_arvados_node_and_old_cloud_node(self):
         self.make_actor(start_time=0)
         self.shutdowns._set_state(True, 600)
-        self.node_actor.consider_shutdown()
+        self.node_actor.consider_shutdown().get(self.TIMEOUT)
         self.assertFalse(self.subscriber.called)
 
     def check_shutdown_rescheduled(self, window_open, next_window,
                                    schedule_time=None):
         self.shutdowns._set_state(window_open, next_window)
         self.timer.schedule.reset_mock()
-        self.node_actor.consider_shutdown()
-        self.wait_for_call(self.timer.schedule)
+        self.node_actor.consider_shutdown().get(self.TIMEOUT)
+        self.stop_proxy(self.node_actor)
+        self.assertTrue(self.timer.schedule.called)
         if schedule_time is not None:
             self.assertEqual(schedule_time, self.timer.schedule.call_args[0][0])
         self.assertFalse(self.subscriber.called)
@@ -229,16 +237,16 @@ class ComputeNodeMonitorActorTestCase(testutil.ActorTestMixin,
         self.make_actor(2)
         arv_node = testutil.arvados_node_mock(
             2, hostname='compute-two.zzzzz.arvadosapi.com')
-        pair_future = self.node_actor.offer_arvados_pair(arv_node)
-        self.assertEqual(self.cloud_mock.id, pair_future.get(self.TIMEOUT))
-        self.wait_for_call(self.updates.sync_node)
+        pair_id = self.node_actor.offer_arvados_pair(arv_node).get(self.TIMEOUT)
+        self.assertEqual(self.cloud_mock.id, pair_id)
+        self.stop_proxy(self.node_actor)
         self.updates.sync_node.assert_called_with(self.cloud_mock, arv_node)
 
     def test_arvados_node_mismatch(self):
         self.make_actor(3)
         arv_node = testutil.arvados_node_mock(1)
-        pair_future = self.node_actor.offer_arvados_pair(arv_node)
-        self.assertIsNone(pair_future.get(self.TIMEOUT))
+        self.assertIsNone(
+            self.node_actor.offer_arvados_pair(arv_node).get(self.TIMEOUT))
 
     def test_update_cloud_node(self):
         self.make_actor(1)
