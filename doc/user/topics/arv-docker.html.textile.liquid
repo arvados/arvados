@@ -148,6 +148,8 @@ Type 'q()' to quit R.
 </code></pre>
 </notextile>
 
+Note that you are not limited to installing Debian packages.  You may compile C programs or libraries from source and install them, edit systemwide configuration files, use other package managers such as @pip@ or @gem@, and perform any other customization necessary to run your program.
+
 h2. Create a new image
 
 We're now ready to create a new Docker image.  First, quit the container, then use @docker commit@ to create a new image from the stopped container.  The container id can be found in the default hostname of the container displayed in the prompt, in this case @a0e8299b59aa@:
