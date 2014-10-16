@@ -167,9 +167,9 @@ pipeline_<%=i%>_of_10:
           title: foo instance input
 <% end %>
 
-# pipelines in project_with_20_pipelines_and_20_jobs
-<% for i in 1..20 do %>
-pipeline_<%=i%>_of_20_pipelines_and_20_jobs:
+# pipelines in project_with_10_pipelines_and_10_jobs
+<% for i in 1..10 do %>
+pipeline_<%=i%>_of_10_pipelines_and_10_jobs:
   name: pipeline_<%= i %>
   state: New
   uuid: zzzzz-d1hrv-abcgneyn6brx<%= i.to_s.rjust(3, '0') %>
@@ -186,13 +186,13 @@ pipeline_<%=i%>_of_20_pipelines_and_20_jobs:
           title: foo instance input
 <% end %>
 
-# pipelines in project_with_250_pipelines
+# pipelines in project_with_25_pipelines
 <% for i in 1..25 do %>
-pipeline_<%=i%>_of_250:
+pipeline_<%=i%>_of_25:
   name: pipeline_<%=i%>
   state: New
-  uuid: zzzzz-d1hrv-250neyn6br1x<%= i.to_s.rjust(3, '0') %>
-  owner_uuid: zzzzz-j7d0g-000250pipelines
+  uuid: zzzzz-d1hrv-25xneyn6br1x<%= i.to_s.rjust(3, '0') %>
+  owner_uuid: zzzzz-j7d0g-000025pipelines
   created_at: <%= 1.minute.ago.to_s(:db) %>
   components:
     foo:

@@ -513,13 +513,10 @@ class ProjectsTest < ActionDispatch::IntegrationTest
       unexpected_items = []
       collections_count = 0
       within('.arv-project-Data_collections') do
-        scrollbar_present = page.execute_script("return document.documentElement.scrollHeight>document.documentElement.clientHeight;");
-        if scrollbar_present
-          page.execute_script "window.scrollBy(0,10000)"
-          begin
-            wait_for_ajax
-          rescue
-          end
+        page.execute_script "window.scrollBy(0,999000)"
+        begin
+          wait_for_ajax
+        rescue
         end
 
         # Visit all rows. If not all expected collections are found, retry
@@ -537,22 +534,16 @@ class ProjectsTest < ActionDispatch::IntegrationTest
         end
 
         assert_equal true, unexpected_items.empty?, "Found unexpected items #{unexpected_items.inspect}"
-        if amount > 200
-          assert_equal 200, collections_count, "Found different number of collections"
-          assert_equal amount-200, verify_collections.length, "Did not find all the collections"
-        else
-          assert_equal amount, collections_count, "Found different number of collections"
-          assert_equal true, verify_collections.empty?, "Did not find all the collections"
-        end
+        assert_equal amount, collections_count, "Found different number of collections"
+        assert_equal true, verify_collections.empty?, "Did not find all the collections"
       end
     end
   end
 
   [
     ['project with 10 pipelines', 10, 0],
-    ['project with 20 pipelines and jobs', 20, 20],
-    # The following test fails for large sizes. I am thinking it is failing because of large data being sent in test env.
-    ['project with 250 pipelines', 25, 0],
+    ['project with 10 jobs and 10 pipelines', 10, 10],
+    ['project with 25 pipelines', 25, 0],   # 20 is the page limit for this tab; hence two pages
   ].each do |project_name, num_pipelines, num_jobs|
     test "scroll pipeline instances tab for #{project_name} with #{num_pipelines} pipelines and #{num_jobs} jobs" do
       visit page_with_token 'user1_with_load'
@@ -578,19 +569,16 @@ class ProjectsTest < ActionDispatch::IntegrationTest
       unexpected_items = []
       object_count = 0
       within('.arv-project-Jobs_and_pipelines') do
-        scrollbar_present = page.execute_script("return document.documentElement.scrollHeight>document.documentElement.clientHeight;");
-        if scrollbar_present
-          page.execute_script "window.scrollBy(0,10000)"
-          begin
-            wait_for_ajax
-          rescue
-          end
+        page.execute_script "window.scrollBy(0,99999999)"
+        begin
+          wait_for_ajax
+        rescue
         end
 
         # Visit all rows. Repeat if not all expected my_pipelines are found (inifinite scrolling should kick in)
         pipelines_found = page.all('tr[data-kind="arvados#pipelineInstance"]')
-        pipeline_count = pipelines_found.count
-        (0..pipeline_count-1).each do |i|
+        found_pipeline_count = pipelines_found.count
+        (0..found_pipeline_count-1).each do |i|
           name = pipelines_found[i].text.split[1]
           if !my_pipelines.include? name
             unexpected_items << name
@@ -600,12 +588,13 @@ class ProjectsTest < ActionDispatch::IntegrationTest
 
           assert_equal true, unexpected_items.empty?, "Found unexpected items #{unexpected_items.inspect}"
         end
-        assert_equal num_pipelines, pipeline_count, "Found different number of pipelines"
-        assert_equal true, verify_pipelines.empty?, "Did not find all the pipelines"
 
         jobs_found = page.all('tr[data-kind="arvados#job"]')
-        job_count = jobs_found.count
-        assert_equal num_jobs, job_count, 'Did not find expected number of jobs'
+        found_job_count = jobs_found.count
+
+        assert_equal num_pipelines, found_pipeline_count, "Found different number of pipelines and jobs"
+        assert_equal num_jobs, found_job_count, 'Did not find expected number of jobs'
+        assert_equal true, verify_pipelines.empty?, "Did not find all the pipelines and jobs"
       end
     end
   end

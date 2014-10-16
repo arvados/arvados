@@ -289,9 +289,9 @@ cancelled:
 
 # Do not add your fixtures below this line as the rest of this file will be trimmed by test_helper
 
-# jobs in project_with_20_pipelines_and_20_jobs
-<% for i in 1..20 do %>
-job_<%=i%>_of_20:
+# jobs in project_with_10_pipelines_and_10_jobs
+<% for i in 1..10 do %>
+job_<%=i%>_of_10:
   uuid: zzzzz-8i9sb-0vsrcqi7whch<%= i.to_s.rjust(3, '0') %>
   created_at: 2014-09-01 12:00:00
   owner_uuid: zzzzz-j7d0g-20jobspipelines
