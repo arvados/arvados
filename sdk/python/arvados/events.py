@@ -52,17 +52,18 @@ class PollClient(threading.Thread):
         if filters:
             self.filters = [filters]
         else:
-            self.filters = []
+            self.filters = [[]]
         self.on_event = on_event
         self.poll_time = poll_time
         self.stop = threading.Event()
 
     def run(self):
-        items = self.api.logs().list(limit=1, order="id desc", filters=self.filters[0]).execute()['items']
-        if len(items) > 0:
-            self.id = items[0]["id"]
-        else:
-            self.id = 0
+        self.id = 0
+        for f in self.filters:
+            items = self.api.logs().list(limit=1, order="id desc", filters=f).execute()['items']
+            if items:
+                if items[0]['id'] > self.id:
+                    self.id = items[0]['id']
 
         self.on_event({'status': 200})
 
