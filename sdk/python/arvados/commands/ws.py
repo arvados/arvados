@@ -7,6 +7,7 @@ import arvados
 import json
 import time
 from arvados.events import subscribe
+import signal
 
 def main(arguments=None):
     logger = logging.getLogger('arvados.arv-ws')
@@ -15,11 +16,11 @@ def main(arguments=None):
     parser.add_argument('-u', '--uuid', type=str, default="", help="Filter events on object_uuid")
     parser.add_argument('-f', '--filters', type=str, default="", help="Arvados query filter to apply to log events (JSON encoded)")
 
-    group = parser.add_mutually_exclusive_group('Polling fallback')
+    group = parser.add_mutually_exclusive_group()
     group.add_argument('--poll-interval', default=15, type=int, help="If websockets is not available, specify the polling interval, default is every 15 seconds")
     group.add_argument('--no-poll', action='store_false', dest='poll_interval', help="Do not poll if websockets are not available, just fail")
 
-    group = parser.add_mutually_exclusive_group('Jobs and Pipelines')
+    group = parser.add_mutually_exclusive_group()
     group.add_argument('-p', '--pipeline', type=str, default="", help="Supply pipeline uuid, print log output from pipeline and its jobs")
     group.add_argument('-j', '--job', type=str, default="", help="Supply job uuid, print log output from jobs")
 
