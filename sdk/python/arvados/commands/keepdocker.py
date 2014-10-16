@@ -116,7 +116,8 @@ def stat_cache_name(image_file):
     return getattr(image_file, 'name', image_file) + '.stat'
 
 def pull_image(image_name, image_tag):
-    check_docker(popen_docker(['pull', '-t', image_tag, image_name]), "pull")
+    check_docker(popen_docker(['pull', '{}:{}'.format(image_name, image_tag)]),
+                 "pull")
 
 def save_image(image_hash, image_file):
     # Save the specified Docker image to image_file, then try to save its

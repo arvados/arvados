@@ -32,4 +32,8 @@ To run tests, just run::
 Our `hacking guide
 <https://arvados.org/projects/arvados/wiki/Hacking_Node_Manager>`_
 provides an architectural overview of the Arvados Node Manager to help
-you find your way around the source.
+you find your way around the source.  The `Lifecycle of an Arvados
+compute node
+<https://arvados.org/projects/arvados/wiki/Lifecycle_of_an_Arvados_compute_node>`_
+page explains how it works in concert with other Arvados components to
+prepare a node for compute work.

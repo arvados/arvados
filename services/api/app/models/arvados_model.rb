@@ -526,7 +526,6 @@ class ArvadosModel < ActiveRecord::Base
     log = Log.new(event_type: event_type).fill_object(self)
     yield log
     log.save!
-    connection.execute "NOTIFY logs, '#{log.id}'"
     log_start_state
   end
 
