@@ -154,7 +154,10 @@ def api(version=None, cache=True, host=None, token=None, insecure=False, **kwarg
     kwargs['http'] = credentials.authorize(kwargs['http'])
 
     svc = apiclient.discovery.build('arvados', version, **kwargs)
+    svc.api_version = version
+    svc.api_host = host
     svc.api_token = token
+    svc.api_insecure = insecure
     kwargs['http'].cache = None
     if cache:
         conncache[connprofile] = svc
