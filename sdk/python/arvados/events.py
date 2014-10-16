@@ -67,7 +67,7 @@ class PollClient(threading.Thread):
         self.on_event({'status': 200})
 
         while not self.stop.isSet():
-            max_id = 0
+            max_id = self.id
             for f in self.filters:
                 items = self.api.logs().list(order="id asc", filters=f+[["id", ">", str(self.id)]]).execute()['items']
                 for i in items:
@@ -88,7 +88,14 @@ class PollClient(threading.Thread):
     def unsubscribe(self, filters):
         del self.filters[self.filters.index(filters)]
 
+
 def subscribe(api, filters, on_event, poll_fallback=15):
+    '''
+    api: Must be a newly created from arvados.api(cache=False), not shared with the caller, as it may be used by a background thread.
+    filters: Initial subscription filters.
+    on_event: The callback when a message is received
+    poll_fallback: If websockets are not available, fall back to polling every N seconds.  If poll_fallback=False, this will return None if websockets are not available.
+    '''
     ws = None
     if 'websocketUrl' in api._rootDesc:
         try:
@@ -97,12 +104,11 @@ def subscribe(api, filters, on_event, poll_fallback=15):
             ws.connect()
             return ws
         except Exception as e:
-            _logger.warn("Got exception %s trying to connect to web sockets at %s" % (e, api._rootDesc['websocketUrl']))
+            _logger.warn("Got exception %s trying to connect to websockets at %s" % (e, api._rootDesc['websocketUrl']))
             if ws:
                 ws.close_connection()
     if poll_fallback:
         _logger.warn("Websockets not available, falling back to log table polling")
-        api = arvados.api(version=api.api_version, cache=False, host=api.api_host, token=api.api_token, insecure=api.api_insecure)
         p = PollClient(api, filters, on_event, poll_fallback)
         p.start()
         return p
