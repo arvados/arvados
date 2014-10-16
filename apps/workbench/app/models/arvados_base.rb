@@ -329,7 +329,9 @@ class ArvadosBase < ActiveRecord::Base
      (current_user.is_admin or
       current_user.uuid == self.owner_uuid or
       new_record? or
-      (writable_by.include? current_user.uuid rescue false))) or false
+      (respond_to?(:writable_by) ?
+       writable_by.include?(current_user.uuid) :
+       (ArvadosBase.find(owner_uuid).writable_by.include? current_user.uuid rescue false)))) or false
   end
 
   def attribute_editable?(attr, ever=nil)
