@@ -320,7 +320,7 @@ func DoCpuStats(stderr chan<- string, cgroup Cgroup, lastSample *CpuSample) (*Cp
 
 	nextSample := &CpuSample{time.Now(), 0, 0, GetCpuCount(stderr, cgroup)}
 	var userTicks, sysTicks int64
-	fmt.Sscanf(string(b), "user %d\nsystem %d", &nextSample.user, &nextSample.sys)
+	fmt.Sscanf(string(b), "user %d\nsystem %d", &userTicks, &sysTicks)
 	user_hz := float64(C.sysconf(C._SC_CLK_TCK))
 	nextSample.user = float64(userTicks) / user_hz
 	nextSample.sys = float64(sysTicks) / user_hz
