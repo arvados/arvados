@@ -29,6 +29,7 @@ class User < ArvadosModel
     t.add :is_admin
     t.add :is_invited
     t.add :prefs
+    t.add :writable_by
   end
 
   ALL_PERMISSIONS = {read: true, write: true, manage: true}
