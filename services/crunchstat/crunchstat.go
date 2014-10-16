@@ -138,10 +138,10 @@ type IoSample struct {
 	rxBytes    int64
 }
 
-func DoBlkIoStats(stderr chan<- string, cgroup Cgroup, lastSample map[string]IoSample) (map[string]IoSample) {
+func DoBlkIoStats(stderr chan<- string, cgroup Cgroup, lastSample map[string]IoSample) {
 	c, err := OpenStatFile(stderr, cgroup, "blkio", "blkio.io_service_bytes")
 	if err != nil {
-		return lastSample
+		return
 	}
 	defer c.Close()
 	b := bufio.NewScanner(c)
@@ -166,9 +166,6 @@ func DoBlkIoStats(stderr chan<- string, cgroup Cgroup, lastSample map[string]IoS
 		}
 		newSamples[device] = thisSample
 	}
-	if lastSample == nil {
-		lastSample = make(map[string]IoSample)
-	}
 	for dev, sample := range newSamples {
 		if sample.txBytes < 0 || sample.rxBytes < 0 {
 			continue
@@ -183,7 +180,6 @@ func DoBlkIoStats(stderr chan<- string, cgroup Cgroup, lastSample map[string]IoS
 		stderr <- fmt.Sprintf("crunchstat: blkio:%s %d write %d read%s", dev, sample.txBytes, sample.rxBytes, delta)
 		lastSample[dev] = sample
 	}
-	return lastSample
 }
 
 type MemSample struct {
@@ -217,14 +213,11 @@ func DoMemoryStats(stderr chan<- string, cgroup Cgroup) {
 	stderr <- fmt.Sprintf("crunchstat: mem%s", outstat.String())
 }
 
-func DoNetworkStats(stderr chan<- string, cgroup Cgroup, lastSample map[string]IoSample) (map[string]IoSample) {
+func DoNetworkStats(stderr chan<- string, cgroup Cgroup, lastSample map[string]IoSample) {
 	sampleTime := time.Now()
 	stats, err := GetContainerNetStats(stderr, cgroup)
-	if err != nil { return lastSample }
+	if err != nil { return }
 
-	if lastSample == nil {
-		lastSample = make(map[string]IoSample)
-	}
 	scanner := bufio.NewScanner(stats)
 	Iface: for scanner.Scan() {
 		var ifName string
@@ -268,10 +261,10 @@ func DoNetworkStats(stderr chan<- string, cgroup Cgroup, lastSample map[string]I
 			ifName, tx, rx, delta)
 		lastSample[ifName] = nextSample
 	}
-	return lastSample
 }
 
 type CpuSample struct {
+	hasData    bool		// to distinguish the zero value from real data
 	sampleTime time.Time
 	user       float64
 	sys        float64
@@ -301,18 +294,18 @@ func GetCpuCount(stderr chan<- string, cgroup Cgroup) (int64) {
 	return cpus
 }
 
-func DoCpuStats(stderr chan<- string, cgroup Cgroup, lastSample *CpuSample) (*CpuSample) {
+func DoCpuStats(stderr chan<- string, cgroup Cgroup, lastSample *CpuSample) {
 	statFile, err := OpenStatFile(stderr, cgroup, "cpuacct", "cpuacct.stat")
 	if err != nil {
-		return lastSample
+		return
 	}
 	defer statFile.Close()
 	b, err := ReadAllOrWarn(statFile, stderr)
 	if err != nil {
-		return lastSample
+		return
 	}
 
-	nextSample := &CpuSample{time.Now(), 0, 0, GetCpuCount(stderr, cgroup)}
+	nextSample := CpuSample{true, time.Now(), 0, 0, GetCpuCount(stderr, cgroup)}
 	var userTicks, sysTicks int64
 	fmt.Sscanf(string(b), "user %d\nsystem %d", &userTicks, &sysTicks)
 	user_hz := float64(C.sysconf(C._SC_CLK_TCK))
@@ -320,7 +313,7 @@ func DoCpuStats(stderr chan<- string, cgroup Cgroup, lastSample *CpuSample) (*Cp
 	nextSample.sys = float64(sysTicks) / user_hz
 
 	delta := ""
-	if lastSample != nil {
+	if lastSample.hasData {
 		delta = fmt.Sprintf(" -- interval %.4f seconds %.4f user %.4f sys",
 			nextSample.sampleTime.Sub(lastSample.sampleTime).Seconds(),
 			nextSample.user - lastSample.user,
@@ -328,13 +321,13 @@ func DoCpuStats(stderr chan<- string, cgroup Cgroup, lastSample *CpuSample) (*Cp
 	}
 	stderr <- fmt.Sprintf("crunchstat: cpu %.4f user %.4f sys %d cpus%s",
 		nextSample.user, nextSample.sys, nextSample.cpus, delta)
-	return nextSample
+	*lastSample = nextSample
 }
 
 func PollCgroupStats(cgroup Cgroup, stderr chan string, poll int64, stop_poll_chan <-chan bool) {
-	var lastNetSample map[string]IoSample = nil
-	var lastDiskSample map[string]IoSample = nil
-	var lastCpuSample *CpuSample = nil
+	var lastNetSample = map[string]IoSample{}
+	var lastDiskSample = map[string]IoSample{}
+	var lastCpuSample = CpuSample{}
 
 	poll_chan := make(chan bool, 1)
 	go func() {
@@ -353,9 +346,9 @@ func PollCgroupStats(cgroup Cgroup, stderr chan string, poll int64, stop_poll_ch
 			// Emit stats, then select again.
 		}
 		DoMemoryStats(stderr, cgroup)
-		lastCpuSample = DoCpuStats(stderr, cgroup, lastCpuSample)
-		lastDiskSample = DoBlkIoStats(stderr, cgroup, lastDiskSample)
-		lastNetSample = DoNetworkStats(stderr, cgroup, lastNetSample)
+		DoCpuStats(stderr, cgroup, &lastCpuSample)
+		DoBlkIoStats(stderr, cgroup, lastDiskSample)
+		DoNetworkStats(stderr, cgroup, lastNetSample)
 	}
 }
 
