@@ -22,6 +22,7 @@ end
 
 require File.expand_path('../../config/environment', __FILE__)
 require 'rails/test_help'
+require 'mocha/mini_test'
 
 class ActiveSupport::TestCase
   # Setup all fixtures in test/fixtures/*.(yml|csv) for all tests in
@@ -35,10 +36,15 @@ class ActiveSupport::TestCase
     Thread.current[:arvados_api_token] = auth['api_token']
   end
 
-  def teardown
+  teardown do
     Thread.current[:arvados_api_token] = nil
     Thread.current[:reader_tokens] = nil
-    super
+    # Restore configuration settings changed during tests
+    $application_config.each do |k,v|
+      if k.match /^[^.]*$/
+        Rails.configuration.send (k + '='), v
+      end
+    end
   end
 end
 

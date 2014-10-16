@@ -1,5 +1,6 @@
 import os
 import glob
+import stat
 
 class SubstitutionError(Exception):
     pass
@@ -35,13 +36,23 @@ def search(c):
     return None
 
 def sub_file(v):
-    return os.path.join(os.environ['TASK_KEEPMOUNT'], v)
+    path = os.path.join(os.environ['TASK_KEEPMOUNT'], v)
+    st = os.stat(path)
+    if st and stat.S_ISREG(st.st_mode):
+        return path
+    else:
+        raise SubstitutionError("$(file {}) is not accessible or is not a regular file".format(path))
 
 def sub_dir(v):
     d = os.path.dirname(v)
     if d == '':
         d = v
-    return os.path.join(os.environ['TASK_KEEPMOUNT'], d)
+    path = os.path.join(os.environ['TASK_KEEPMOUNT'], d)
+    st = os.stat(path)
+    if st and stat.S_ISDIR(st.st_mode):
+        return path
+    else:
+        raise SubstitutionError("$(dir {}) is not accessible or is not a directory".format(path))
 
 def sub_basename(v):
     return os.path.splitext(os.path.basename(v))[0]
@@ -49,7 +60,7 @@ def sub_basename(v):
 def sub_glob(v):
     l = glob.glob(v)
     if len(l) == 0:
-        raise SubstitutionError("$(glob): No match on '%s'" % v)
+        raise SubstitutionError("$(glob {}) no match fonud".format(v))
     else:
         return l[0]
 

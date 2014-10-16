@@ -101,7 +101,38 @@ class Arvados::V1::JobsControllerTest < ActionController::TestCase
                  'trigger file should be created when job is cancelled')
   end
 
-  test "cancelling a cancelled jobs stays cancelled" do
+  [
+   [:put, :update, {job:{cancelled_at: Time.now}}, :success],
+   [:put, :update, {job:{cancelled_at: nil}}, :unprocessable_entity],
+   [:put, :update, {job:{state: 'Cancelled'}}, :success],
+   [:put, :update, {job:{state: 'Queued'}}, :unprocessable_entity],
+   [:put, :update, {job:{state: 'Running'}}, :unprocessable_entity],
+   [:put, :update, {job:{state: 'Failed'}}, :unprocessable_entity],
+   [:put, :update, {job:{state: 'Complete'}}, :unprocessable_entity],
+   [:post, :cancel, {}, :success],
+  ].each do |http_method, action, params, expected_response|
+    test "cancelled job stays cancelled after #{[http_method, action, params].inspect}" do
+      # We need to verify that "cancel" creates a trigger file, so first
+      # let's make sure there is no stale trigger file.
+      begin
+        File.unlink(Rails.configuration.crunch_refresh_trigger)
+      rescue Errno::ENOENT
+      end
+
+      authorize_with :active
+      self.send http_method, action, { id: jobs(:cancelled).uuid }.merge(params)
+      assert_response expected_response
+      if expected_response == :success
+        job = json_response
+        assert_not_nil job['cancelled_at'], 'job cancelled again using #{attribute}=#{value} did not have cancelled_at value'
+        assert_equal job['state'], 'Cancelled', 'cancelled again job state changed when updated using using #{attribute}=#{value}'
+      end
+      # Verify database record still says Cancelled
+      assert_equal 'Cancelled', Job.find(jobs(:cancelled).id).state, 'job was un-cancelled'
+    end
+  end
+
+  test "cancelled job updated to any other state change results in error" do
     # We need to verify that "cancel" creates a trigger file, so first
     # let's make sure there is no stale trigger file.
     begin
@@ -116,8 +147,7 @@ class Arvados::V1::JobsControllerTest < ActionController::TestCase
         cancelled_at: nil
       }
     }
-    job = JSON.parse(@response.body)
-    assert_not_nil job['cancelled_at'], 'un-cancelled job stays cancelled'
+    assert_response 422
   end
 
   ['abc.py', 'hash.py'].each do |script|
@@ -347,5 +377,19 @@ class Arvados::V1::JobsControllerTest < ActionController::TestCase
     get :show, {id: jobs(:nearly_finished_job).uuid}
     assert_response :success
     assert_equal([nodes(:busy).uuid], json_response["node_uuids"])
+  end
+
+  test "job lock success" do
+    authorize_with :active
+    post :lock, {id: jobs(:queued).uuid}
+    assert_response :success
+    job = Job.where(uuid: jobs(:queued).uuid).first
+    assert_equal "Running", job.state
+  end
+
+  test "job lock conflict" do
+    authorize_with :active
+    post :lock, {id: jobs(:running).uuid}
+    assert_response 403 # forbidden
   end
 end

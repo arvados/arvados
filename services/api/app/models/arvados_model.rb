@@ -36,6 +36,12 @@ class ArvadosModel < ActiveRecord::Base
     end
   end
 
+  class AlreadyLockedError < StandardError
+    def http_status
+      403
+    end
+  end
+
   class UnauthorizedError < StandardError
     def http_status
       401
@@ -520,7 +526,6 @@ class ArvadosModel < ActiveRecord::Base
     log = Log.new(event_type: event_type).fill_object(self)
     yield log
     log.save!
-    connection.execute "NOTIFY logs, '#{log.id}'"
     log_start_state
   end
 

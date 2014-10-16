@@ -9,11 +9,12 @@ class Job < ArvadosModel
   before_create :ensure_unique_submit_id
   after_commit :trigger_crunch_dispatch_if_cancelled, :on => :update
   before_validation :set_priority
-  before_validation :update_timestamps_when_state_changes
   before_validation :update_state_from_old_state_attrs
   validate :ensure_script_version_is_commit
   validate :find_docker_image_locator
   validate :validate_status
+  validate :validate_state_change
+  before_save :update_timestamps_when_state_changes
 
   has_many :commit_ancestors, :foreign_key => :descendant, :primary_key => :script_version
   has_many(:nodes, foreign_key: :job_uuid, primary_key: :uuid)
@@ -74,10 +75,9 @@ class Job < ArvadosModel
   end
 
   def queue_position
-    i = 0
-    Job::queue.each do |j|
-      if j[:uuid] == self.uuid
-        return i
+    Job::queue.each_with_index do |job, index|
+      if job[:uuid] == self.uuid
+        return index
       end
     end
     nil
@@ -86,6 +86,18 @@ class Job < ArvadosModel
   def self.running
     self.where('running = ?', true).
       order('priority desc, created_at')
+  end
+
+  def lock locked_by_uuid
+    transaction do
+      self.reload
+      unless self.state == Queued and self.is_locked_by_uuid.nil?
+        raise AlreadyLockedError
+      end
+      self.state = Running
+      self.is_locked_by_uuid = locked_by_uuid
+      self.save!
+    end
   end
 
   protected
@@ -110,7 +122,7 @@ class Job < ArvadosModel
   end
 
   def ensure_script_version_is_commit
-    if self.is_locked_by_uuid and self.started_at
+    if self.state == Running
       # Apparently client has already decided to go for it. This is
       # needed to run a local job using a local working directory
       # instead of a commit-ish.
@@ -197,7 +209,8 @@ class Job < ArvadosModel
           success_changed? or
           output_changed? or
           log_changed? or
-          tasks_summary_changed?
+          tasks_summary_changed? or
+          state_changed?
         logger.warn "User #{current_user.uuid if current_user} tried to change protected job attributes on locked #{self.class.to_s} #{uuid_was}"
         return false
       end
@@ -248,6 +261,7 @@ class Job < ArvadosModel
 
   def update_timestamps_when_state_changes
     return if not (state_changed? or new_record?)
+
     case state
     when Running
       self.started_at ||= Time.now
@@ -315,4 +329,30 @@ class Job < ArvadosModel
     end
   end
 
+  def validate_state_change
+    ok = true
+    if self.state_changed?
+      ok = case self.state_was
+           when nil
+             # state isn't set yet
+             true
+           when Queued
+             # Permit going from queued to any state
+             true
+           when Running
+             # From running, may only transition to a finished state
+             [Complete, Failed, Cancelled].include? self.state
+           when Complete, Failed, Cancelled
+             # Once in a finished state, don't permit any more state changes
+             false
+           else
+             # Any other state transition is also invalid
+             false
+           end
+      if not ok
+        errors.add :state, "invalid change from #{self.state_was} to #{self.state}"
+      end
+    end
+    ok
+  end
 end

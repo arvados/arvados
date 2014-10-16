@@ -96,7 +96,12 @@ class Arvados::V1::JobsController < ApplicationController
 
   def cancel
     reload_object_before_update
-    @object.update_attributes! cancelled_at: Time.now
+    @object.update_attributes! state: Job::Cancelled
+    show
+  end
+
+  def lock
+    @object.lock current_user.uuid
     show
   end
 

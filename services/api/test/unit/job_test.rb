@@ -169,7 +169,6 @@ class JobTest < ActiveSupport::TestCase
     [['running', true, [['state', 'Running']]], ['success', false, [['state', 'Failed']]]],
     [['running', true, [['state', 'Running']]], ['state', 'Complete', [['success', true],['finished_at', 'not_nil']]]],
     [['running', true, [['state', 'Running']]], ['state', 'Failed', [['success', false],['finished_at', 'not_nil']]]],
-    [['running', true, [['state', 'Running']]], ['running', false, [['state', 'Queued']]]],
     [['cancelled_at', Time.now, [['state', 'Cancelled']]], ['success', false, [['state', 'Cancelled'],['finished_at', 'nil'], ['cancelled_at', 'not_nil']]]],
     [['cancelled_at', Time.now, [['state', 'Cancelled'],['running', false]]], ['success', true, [['state', 'Cancelled'],['running', false],['finished_at', 'nil'],['cancelled_at', 'not_nil']]]],
     # potential migration cases
@@ -205,6 +204,81 @@ class JobTest < ActiveSupport::TestCase
         end
       end
     end
+  end
+
+  test "Test job state changes" do
+    all = ["Queued", "Running", "Complete", "Failed", "Cancelled"]
+    valid = {"Queued" => all, "Running" => ["Complete", "Failed", "Cancelled"]}
+    all.each do |start|
+      all.each do |finish|
+        if start != finish
+          job = Job.create! job_attrs(state: start)
+          assert_equal start, job.state
+          job.state = finish
+          job.save
+          job.reload
+          if valid[start] and valid[start].include? finish
+            assert_equal finish, job.state
+          else
+            assert_equal start, job.state
+          end
+        end
+      end
+    end
+  end
+
+  test "Test job locking" do
+    set_user_from_auth :active_trustedclient
+    job = Job.create! job_attrs
+
+    assert_equal "Queued", job.state
+
+    # Should be able to lock successfully
+    job.lock current_user.uuid
+    assert_equal "Running", job.state
+
+    assert_raises ArvadosModel::AlreadyLockedError do
+      # Can't lock it again
+      job.lock current_user.uuid
+    end
+    job.reload
+    assert_equal "Running", job.state
+
+    set_user_from_auth :project_viewer
+    assert_raises ArvadosModel::AlreadyLockedError do
+      # Can't lock it as a different user either
+      job.lock current_user.uuid
+    end
+    job.reload
+    assert_equal "Running", job.state
+
+    assert_raises ArvadosModel::PermissionDeniedError do
+      # Can't update fields as a different user
+      job.update_attributes(state: "Failed")
+    end
+    job.reload
+    assert_equal "Running", job.state
+
+
+    set_user_from_auth :active_trustedclient
+
+    # Can update fields as the locked_by user
+    job.update_attributes(state: "Failed")
+    assert_equal "Failed", job.state
+  end
+
+  test "verify job queue position" do
+    job1 = Job.create! job_attrs
+    assert job1.valid?, job1.errors.full_messages.to_s
+    assert_equal 'Queued', job1.state, "Incorrect job state for newly created job1"
+
+    job2 = Job.create! job_attrs
+    assert job2.valid?, job2.errors.full_messages.to_s
+    assert_equal 'Queued', job2.state, "Incorrect job state for newly created job2"
+
+    assert_not_nil job1.queue_position, "Expected non-nil queue position for job1"
+    assert_not_nil job2.queue_position, "Expected non-nil queue position for job2"
+    assert_not_equal job1.queue_position, job2.queue_position
   end
 
 end
