@@ -26,3 +26,4 @@ table(table table-bordered table-condensed).
 |prefs|hash|||
 |default_owner_uuid|string|||
 |is_active|boolean|||
+|writable_by|array|List of UUID strings identifying Groups and other Users that can modify this User object.  This will include the user's owner_uuid and, for administrators and users requesting their own User object, the requesting user's UUID.||
