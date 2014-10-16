@@ -5,7 +5,7 @@ import (
 	"time"
 )
 
-var (
+const (
 	known_hash    = "acbd18db4cc2f85cedef654fccc4a4d8"
 	known_locator = known_hash + "+3"
 	known_token   = "hocfupkn2pjhrpgp2vxv8rsku7tvtx49arbc9s4bvu7p7wxqvk"
@@ -18,7 +18,8 @@ var (
 		"786u5rw2a9gx743dj3fgq2irk"
 	known_signature      = "257f3f5f5f0a4e4626a18fc74bd42ec34dcb228a"
 	known_timestamp      = "7fffffff"
-	known_signed_locator = known_locator + "+A" + known_signature + "@" + known_timestamp
+	known_sig_hint       = "+A" + known_signature + "@" + known_timestamp
+	known_signed_locator = known_locator + known_sig_hint
 )
 
 func TestSignLocator(t *testing.T) {
@@ -47,17 +48,15 @@ func TestVerifySignatureExtraHints(t *testing.T) {
 	PermissionSecret = []byte(known_key)
 	defer func() { PermissionSecret = nil }()
 
-	sig_stuff := "+A" + known_signature + "@" + known_timestamp
-
-	if !VerifySignature(known_locator + "+K@xyzzy" + sig_stuff, known_token) {
+	if !VerifySignature(known_locator + "+K@xyzzy" + known_sig_hint, known_token) {
 		t.Fatal("Verify cannot handle hint before permission signature")
 	}
 
-	if !VerifySignature(known_locator + sig_stuff + "+Zfoo", known_token) {
+	if !VerifySignature(known_locator + known_sig_hint + "+Zfoo", known_token) {
 		t.Fatal("Verify cannot handle hint after permission signature")
 	}
 
-	if !VerifySignature(known_locator + "+K@xyzzy" + sig_stuff + "+Zfoo", known_token) {
+	if !VerifySignature(known_locator + "+K@xyzzy" + known_sig_hint + "+Zfoo", known_token) {
 		t.Fatal("Verify cannot handle hints around permission signature")
 	}
 }
@@ -67,9 +66,12 @@ func TestVerifySignatureWrongSize(t *testing.T) {
 	PermissionSecret = []byte(known_key)
 	defer func() { PermissionSecret = nil }()
 
-	signed_locator_wrong_size := known_hash + "+999999+A" + known_signature + "@" + known_timestamp
-	if !VerifySignature(signed_locator_wrong_size, known_token) {
-		t.Fail()
+	if !VerifySignature(known_hash + "+999999" + known_sig_hint, known_token) {
+		t.Fatal("Verify cannot handle incorrect size hint")
+	}
+
+	if !VerifySignature(known_hash + known_sig_hint, known_token) {
+		t.Fatal("Verify cannot handle missing size hint")
 	}
 }
 
