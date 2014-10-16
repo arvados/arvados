@@ -7,6 +7,7 @@ import ssl
 import re
 import config
 import logging
+import arvados
 
 _logger = logging.getLogger('arvados.events')
 
@@ -48,18 +49,23 @@ class PollClient(threading.Thread):
     def __init__(self, api, filters, on_event, poll_time):
         super(PollClient, self).__init__()
         self.api = api
-        self.filters = [filters]
+        if filters:
+            self.filters = [filters]
+        else:
+            self.filters = []
         self.on_event = on_event
-        items = self.api.logs().list(limit=1, order="id desc", filters=filters).execute()['items']
+        self.poll_time = poll_time
+        self.stop = threading.Event()
+
+    def run(self):
+        items = self.api.logs().list(limit=1, order="id desc", filters=self.filters[0]).execute()['items']
         if len(items) > 0:
             self.id = items[0]["id"]
         else:
             self.id = 0
-        self.poll_time = poll_time
-        self.stop = threading.Event()
+
         self.on_event({'status': 200})
 
-    def run(self):
         while not self.stop.isSet():
             max_id = 0
             for f in self.filters:
@@ -95,10 +101,11 @@ def subscribe(api, filters, on_event, poll_fallback=15):
             if ws:
                 ws.close_connection()
     if poll_fallback:
-        _logger.warn("Web sockets not available, falling back to log table polling")
+        _logger.warn("Websockets not available, falling back to log table polling")
+        api = arvados.api(version=api.api_version, cache=False, host=api.api_host, token=api.api_token, insecure=api.api_insecure)
         p = PollClient(api, filters, on_event, poll_fallback)
         p.start()
         return p
     else:
-        _logger.error("Web sockets not available")
+        _logger.error("Websockets not available")
         return None
