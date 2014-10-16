@@ -8,7 +8,7 @@ import os
 import stat
 import put
 import time
-#import arvados.command.ws as ws
+import arvados.commands.ws as ws
 import subprocess
 import logging
 
@@ -63,6 +63,8 @@ def main(arguments=None):
     if len(args.args) == 0:
         arvrun_parser.print_help()
         return
+
+    starting_args = args.args
 
     reading_into = 2
 
@@ -196,7 +198,7 @@ def main(arguments=None):
     component["script_parameters"]["command"] = slots[2:]
 
     pipeline = {
-        "name": "",
+        "name": " ".join(starting_args),
         "components": {
             "command": component
         },
@@ -211,7 +213,7 @@ def main(arguments=None):
         api = arvados.api('v1')
         pi = api.pipeline_instances().create(body=pipeline).execute()
         print "Running pipeline %s" % pi["uuid"]
-        #ws.main(["--pipeline", pi["uuid"]])
+        ws.main(["--pipeline", pi["uuid"]])
 
 if __name__ == '__main__':
     main()
