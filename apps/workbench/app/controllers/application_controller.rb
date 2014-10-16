@@ -337,15 +337,6 @@ class ApplicationController < ActionController::Base
     Thread.current[:user]
   end
 
-  helper_method :object_attribute_editable?
-  def object_attribute_editable?(object, attr)
-    object and object.attribute_editable?(attr, :ever) and
-      (object.editable? or
-       (object.owner_uuid == current_user.uuid) or
-       (Group.find(object.owner_uuid).writable_by
-          .include?(current_user.uuid) rescue false))
-  end
-
   def model_class
     controller_name.classify.constantize
   end

@@ -321,33 +321,4 @@ class ApplicationControllerTest < ActionController::TestCase
       Rails.configuration.arvados_v1_base = orig_api_server
     end
   end
-
-  def user_can_edit_collection_name?(token_sym, collection_key)
-    use_token token_sym
-    coll = Collection.find(api_fixture("collections")[collection_key]["uuid"])
-    @controller.object_attribute_editable?(coll, "name")
-  end
-
-  test "admin can edit object attributes" do
-    assert(user_can_edit_collection_name?(:admin, "foo_file"),
-           "admin not allowed to edit collection name")
-  end
-
-  test "project owner can edit object attributes" do
-    assert(user_can_edit_collection_name?(:active,
-                                          "foo_collection_in_aproject"),
-           "project owner not allowed to edit collection name")
-  end
-
-  test "project admin can edit object attributes" do
-    assert(user_can_edit_collection_name?(:subproject_admin,
-                                          "baz_file_in_asubproject"),
-           "project admin not allowed to edit collection name")
-  end
-
-  test "project viewer cannot edit object attributes" do
-    refute(user_can_edit_collection_name?(:project_viewer,
-                                          "foo_collection_in_aproject"),
-           "project viewer allowed to edit collection name")
-  end
 end

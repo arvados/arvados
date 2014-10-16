@@ -332,8 +332,15 @@ class ArvadosBase < ActiveRecord::Base
       (writable_by.include? current_user.uuid rescue false))) or false
   end
 
+  # Array of strings that are the names of attributes that can be edited
+  # with X-Editable.
+  def editable_attributes
+    self.class.columns.map(&:name) -
+      %w(created_at modified_at modified_by_user_uuid modified_by_client_uuid updated_at)
+  end
+
   def attribute_editable?(attr, ever=nil)
-    if %w(created_at modified_at modified_by_user_uuid modified_by_client_uuid updated_at).include? attr.to_s
+    if not editable_attributes.include?(attr.to_s)
       false
     elsif not (current_user.andand.is_active)
       false

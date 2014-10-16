@@ -40,4 +40,35 @@ class CollectionTest < ActiveSupport::TestCase
                  get_files_tree('multilevel_collection_2'),
                  "Collection file tree was malformed")
   end
+
+  test "portable_data_hash never editable" do
+    refute(Collection.new.attribute_editable?("portable_data_hash", :ever))
+  end
+
+  test "admin can edit name" do
+    use_token :admin
+    assert(find_fixture(Collection, "foo_file").attribute_editable?("name"),
+           "admin not allowed to edit collection name")
+  end
+
+  test "project owner can edit name" do
+    use_token :active
+    assert(find_fixture(Collection, "foo_collection_in_aproject")
+             .attribute_editable?("name"),
+           "project owner not allowed to edit collection name")
+  end
+
+  test "project admin can edit name" do
+    use_token :subproject_admin
+    assert(find_fixture(Collection, "baz_file_in_asubproject")
+             .attribute_editable?("name"),
+           "project admin not allowed to edit collection name")
+  end
+
+  test "project viewer cannot edit name" do
+    use_token :project_viewer
+    refute(find_fixture(Collection, "foo_collection_in_aproject")
+             .attribute_editable?("name"),
+           "project viewer allowed to edit collection name")
+  end
 end

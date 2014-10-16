@@ -4,6 +4,12 @@ new_pipeline:
   owner_uuid: zzzzz-tpzed-xurymjxw79nv3jz
   created_at: <%= 1.minute.ago.to_s(:db) %>
 
+new_pipeline_in_subproject:
+  state: New
+  uuid: zzzzz-d1hrv-subprojpipeline
+  owner_uuid: zzzzz-j7d0g-axqo7eu9pwvna1x
+  created_at: <%= 1.minute.ago.to_s(:db) %>
+
 has_component_with_no_script_parameters:
   state: Ready
   uuid: zzzzz-d1hrv-1xfj6xkicf2muk2

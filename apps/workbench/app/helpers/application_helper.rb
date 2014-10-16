@@ -150,7 +150,7 @@ module ApplicationHelper
 
   def render_editable_attribute(object, attr, attrvalue=nil, htmloptions={})
     attrvalue = object.send(attr) if attrvalue.nil?
-    if not object_attribute_editable?(object, attr)
+    if not object.attribute_editable?(attr)
       if attrvalue && attrvalue.length > 0
         return render_attribute_as_textile( object, attr, attrvalue, false )
       else
@@ -239,7 +239,7 @@ module ApplicationHelper
       preconfigured_search_str = value_info[:search_for]
     end
 
-    if not object_attribute_editable?(object, attr)
+    if not object.andand.attribute_editable?(attr)
       return link_to_if_arvados_object attrvalue
     end
 

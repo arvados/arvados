@@ -284,3 +284,13 @@ cancelled:
     done: 1
   runtime_constraints: {}
   state: Cancelled
+
+job_in_subproject:
+  uuid: zzzzz-8i9sb-subprojectjob01
+  created_at: 2014-10-15 12:00:00
+  owner_uuid: zzzzz-j7d0g-axqo7eu9pwvna1x
+  log: ~
+  repository: foo
+  script: hash
+  script_version: 4fe459abe02d9b365932b8f5dc419439ab4e2577
+  state: Complete
