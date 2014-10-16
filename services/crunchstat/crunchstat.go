@@ -103,7 +103,7 @@ func OpenStatFile(stderr chan<- string, cgroup Cgroup, statgroup string, stat st
 		// [b] after all contained processes have exited.
 		reportedStatFile[stat] = path
 		if path == "" {
-			stderr <- fmt.Sprintf("crunchstat: did not find stats file (root %s, parent %s, cid %s, statgroup %s, stat %s)", cgroup.root, cgroup.parent, cgroup.cid, statgroup, stat)
+			stderr <- fmt.Sprintf("crunchstat: did not find stats file: stat %s, statgroup %s, cid %s, parent %s, root %s", stat, statgroup, cgroup.cid, cgroup.parent, cgroup.root)
 		} else {
 			stderr <- fmt.Sprintf("crunchstat: reading stats from %s", path)
 		}
