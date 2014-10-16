@@ -80,15 +80,12 @@ func SignLocator(blob_locator string, api_token string, expiry time.Time) string
 		"@" + timestamp_hex
 }
 
+var signedLocatorRe = regexp.MustCompile(`^([[:xdigit:]]{32}).*\+A([[:xdigit:]]{40})@([[:xdigit:]]{8})`)
+
 // VerifySignature returns true if the signature on the signed_locator
 // can be verified using the given api_token.
 func VerifySignature(signed_locator string, api_token string) bool {
-	re, err := regexp.Compile(`^([[:xdigit:]]{32}).*\+A([[:xdigit:]]{40})@([[:xdigit:]]{8})`)
-	if err != nil {
-		// Could not compile regexp(!)
-		return false
-	}
-	matches := re.FindStringSubmatch(signed_locator)
+	matches := signedLocatorRe.FindStringSubmatch(signed_locator)
 	if matches == nil {
 		// Could not find a permission signature at all
 		return false
