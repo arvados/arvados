@@ -224,21 +224,15 @@ func TestPutHandler(t *testing.T) {
 }
 
 // Test /index requests:
-//   - enforce_permissions off | unauthenticated /index request
-//   - enforce_permissions off | unauthenticated /index/prefix request
-//   - enforce_permissions off | authenticated /index request        | non-superuser
-//   - enforce_permissions off | authenticated /index/prefix request | non-superuser
-//   - enforce_permissions off | authenticated /index request        | superuser
-//   - enforce_permissions off | authenticated /index/prefix request | superuser
-//   - enforce_permissions on  | unauthenticated /index request
-//   - enforce_permissions on  | unauthenticated /index/prefix request
-//   - enforce_permissions on  | authenticated /index request        | non-superuser
-//   - enforce_permissions on  | authenticated /index/prefix request | non-superuser
-//   - enforce_permissions on  | authenticated /index request        | superuser
-//   - enforce_permissions on  | authenticated /index/prefix request | superuser
+//   - unauthenticated /index request
+//   - unauthenticated /index/prefix request
+//   - authenticated   /index request        | non-superuser
+//   - authenticated   /index/prefix request | non-superuser
+//   - authenticated   /index request        | superuser
+//   - authenticated   /index/prefix request | superuser
 //
 // The only /index requests that should succeed are those issued by the
-// superuser when enforce_permissions = true.
+// superuser. They should pass regardless of the value of enforce_permissions.
 //
 func TestIndexHandler(t *testing.T) {
 	defer teardown()
@@ -289,94 +283,44 @@ func TestIndexHandler(t *testing.T) {
 		api_token: data_manager_token,
 	}
 
-	// ----------------------------
-	// enforce_permissions disabled
-	// All /index requests should fail.
-	enforce_permissions = false
+	// -------------------------------------------------------------
+	// Only the superuser should be allowed to issue /index requests.
+
+  // ---------------------------
+  // enforce_permissions enabled
+	// This setting should not affect tests passing.
+  enforce_permissions = true
 
 	// unauthenticated /index request
-	// => PermissionError
+	// => UnauthorizedError
 	response := IssueRequest(rest, unauthenticated_req)
 	ExpectStatusCode(t,
-		"enforce_permissions off, unauthenticated request",
-		PermissionError.HTTPCode,
-		response)
-
-	// unauthenticated /index/prefix request
-	// => PermissionError
-	response = IssueRequest(rest, unauth_prefix_req)
-	ExpectStatusCode(t,
-		"enforce_permissions off, unauthenticated /index/prefix request",
-		PermissionError.HTTPCode,
-		response)
-
-	// authenticated /index request, non-superuser
-	// => PermissionError
-	response = IssueRequest(rest, authenticated_req)
-	ExpectStatusCode(t,
-		"enforce_permissions off, authenticated request, non-superuser",
-		PermissionError.HTTPCode,
-		response)
-
-	// authenticated /index/prefix request, non-superuser
-	// => PermissionError
-	response = IssueRequest(rest, auth_prefix_req)
-	ExpectStatusCode(t,
-		"enforce_permissions off, authenticated /index/prefix request, non-superuser",
-		PermissionError.HTTPCode,
-		response)
-
-	// authenticated /index request, superuser
-	// => PermissionError
-	response = IssueRequest(rest, superuser_req)
-	ExpectStatusCode(t,
-		"enforce_permissions off, superuser request",
-		PermissionError.HTTPCode,
-		response)
-
-	// superuser /index/prefix request
-	// => PermissionError
-	response = IssueRequest(rest, superuser_prefix_req)
-	ExpectStatusCode(t,
-		"enforce_permissions off, superuser /index/prefix request",
-		PermissionError.HTTPCode,
-		response)
-
-	// ---------------------------
-	// enforce_permissions enabled
-	// Only the superuser should be allowed to issue /index requests.
-	enforce_permissions = true
-
-	// unauthenticated /index request
-	// => PermissionError
-	response = IssueRequest(rest, unauthenticated_req)
-	ExpectStatusCode(t,
 		"enforce_permissions on, unauthenticated request",
-		PermissionError.HTTPCode,
+		UnauthorizedError.HTTPCode,
 		response)
 
 	// unauthenticated /index/prefix request
-	// => PermissionError
+	// => UnauthorizedError
 	response = IssueRequest(rest, unauth_prefix_req)
 	ExpectStatusCode(t,
 		"permissions on, unauthenticated /index/prefix request",
-		PermissionError.HTTPCode,
+		UnauthorizedError.HTTPCode,
 		response)
 
 	// authenticated /index request, non-superuser
-	// => PermissionError
+	// => UnauthorizedError
 	response = IssueRequest(rest, authenticated_req)
 	ExpectStatusCode(t,
 		"permissions on, authenticated request, non-superuser",
-		PermissionError.HTTPCode,
+		UnauthorizedError.HTTPCode,
 		response)
 
 	// authenticated /index/prefix request, non-superuser
-	// => PermissionError
+	// => UnauthorizedError
 	response = IssueRequest(rest, auth_prefix_req)
 	ExpectStatusCode(t,
 		"permissions on, authenticated /index/prefix request, non-superuser",
-		PermissionError.HTTPCode,
+		UnauthorizedError.HTTPCode,
 		response)
 
 	// superuser /index request
@@ -386,6 +330,21 @@ func TestIndexHandler(t *testing.T) {
 		"permissions on, superuser request",
 		http.StatusOK,
 		response)
+
+	// ----------------------------
+	// enforce_permissions disabled
+	// Valid Request should still pass.
+	enforce_permissions = false
+
+	// superuser /index request
+	// => OK
+	response = IssueRequest(rest, superuser_req)
+	ExpectStatusCode(t,
+		"permissions on, superuser request",
+		http.StatusOK,
+		response)
+
+
 
 	expected := `^` + TEST_HASH + `\+\d+ \d+\n` +
 		TEST_HASH_2 + `\+\d+ \d+\n$`

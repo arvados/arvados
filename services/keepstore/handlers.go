@@ -244,18 +244,15 @@ func PutBlockHandler(resp http.ResponseWriter, req *http.Request) {
 //     A HandleFunc to address /index and /index/{prefix} requests.
 //
 func IndexHandler(resp http.ResponseWriter, req *http.Request) {
-	prefix := mux.Vars(req)["prefix"]
-
-	// Only the data manager may issue /index requests,
-	// and only if enforce_permissions is enabled.
-	// All other requests return 403 Forbidden.
-	api_token := GetApiToken(req)
-	if !enforce_permissions ||
-		api_token == "" ||
-		data_manager_token != api_token {
-		http.Error(resp, PermissionError.Error(), PermissionError.HTTPCode)
+	// Reject unauthorized requests.
+	if !IsDataManagerToken(GetApiToken(req)) {
+		http.Error(resp, UnauthorizedError.Error(), UnauthorizedError.HTTPCode)
+		log.Printf("%s %s: %s\n", req.Method, req.URL, UnauthorizedError.Error())
 		return
 	}
+
+	prefix := mux.Vars(req)["prefix"]
+
 	var index string
 	for _, vol := range KeepVM.Volumes() {
 		index = index + vol.Index(prefix)

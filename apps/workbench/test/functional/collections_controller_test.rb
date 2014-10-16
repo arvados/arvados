@@ -188,6 +188,10 @@ class CollectionsControllerTest < ActionController::TestCase
     fakefiledata.expects(:read).twice.with() do |length|
       # Fail the test if read() is called with length>1MiB:
       length < 2**20
+      ## Force the ActionController::Live thread to lose the race to
+      ## verify that @response.body.length actually waits for the
+      ## response (see below):
+      # sleep 3
     end.returns("foo\n", nil)
     fakefiledata.expects(:close)
     foo_file = api_fixture('collections')['foo_file']
@@ -196,5 +200,10 @@ class CollectionsControllerTest < ActionController::TestCase
       uuid: foo_file['uuid'],
       file: foo_file['manifest_text'].match(/ \d+:\d+:(\S+)/)[1]
     }, session_for(:active)
+    # Wait for the whole response to arrive before deciding whether
+    # mocks' expectations were met. Otherwise, Mocha will fail the
+    # test depending on how slowly the ActionController::Live thread
+    # runs.
+    @response.body.length
   end
 end

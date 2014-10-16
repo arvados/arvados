@@ -42,7 +42,7 @@ setup(name='arvados-python-client',
         ],
       install_requires=[
         'python-gflags',
-        'google-api-python-client',
+        'google-api-python-client<1.3',
         'httplib2',
         'urllib3',
         'ws4py'
