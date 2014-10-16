@@ -110,7 +110,7 @@ class ArvadosModel < ActiveRecord::Base
     unless (owner_uuid == current_user.uuid or
             current_user.is_admin or
             (current_user.groups_i_can(:manage) & [uuid, owner_uuid]).any?)
-      if current_user.groups_i_can(:write).index(uuid)
+      if (current_user.groups_i_can(:write) & [uuid, owner_uuid]).any?
         return [owner_uuid, current_user.uuid]
       else
         return [owner_uuid]
