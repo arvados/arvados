@@ -198,7 +198,8 @@ def main(arguments=None):
     component["script_parameters"]["command"] = slots[2:]
 
     pipeline = {
-        "name": " ".join(starting_args),
+        "name": " | ".join([s[0] for s in slots[2:]]),
+        "description": "@" + " ".join(starting_args) + "@",
         "components": {
             "command": component
         },
