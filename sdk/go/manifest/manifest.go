@@ -31,7 +31,7 @@ type ManifestLine struct {
 	Files        []string
 }
 
-func parseBlockLocator(s string) (b BlockLocator, err error) {
+func ParseBlockLocator(s string) (b BlockLocator, err error) {
 	if !LocatorPattern.MatchString(s) {
 		err = fmt.Errorf("String \"%s\" does not match BlockLocator pattern " +
 			"\"%s\".",
@@ -98,7 +98,7 @@ func (m *Manifest) BlockIterWithDuplicates() <-chan BlockLocator {
 	go func(lineChannel <-chan ManifestLine) {
 		for m := range lineChannel {
 			for _, block := range m.Blocks {
-				if b, err := parseBlockLocator(block); err == nil {
+				if b, err := ParseBlockLocator(block); err == nil {
 					blockChannel <- b
 				} else {
 					log.Printf("ERROR: Failed to parse block: %v", err)
