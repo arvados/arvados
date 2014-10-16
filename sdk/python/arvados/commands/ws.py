@@ -5,7 +5,6 @@ import logging
 import argparse
 import arvados
 import json
-import time
 from arvados.events import subscribe
 import signal
 
@@ -78,7 +77,7 @@ def main(arguments=None):
             print json.dumps(ev)
 
     try:
-        ws = subscribe(api, filters, on_message, poll_fallback=args.poll_interval)
+        ws = subscribe(arvados.api('v1', cache=False), filters, on_message, poll_fallback=args.poll_interval)
         if ws:
             if args.pipeline:
                 c = api.pipeline_instances().get(uuid=args.pipeline).execute()
