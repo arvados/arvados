@@ -10,16 +10,37 @@ The @arv-run@ command enables you create Arvados pipelines at the command line t
 
 h1. Usage
 
-@arv-run@ takes a command or command pipeline, along with stdin and stdout redirection, and creates an Arvados pipeline to run the command.  The syntax is designed to mimic standard shell syntax, so it is usually necessary to quote the metacharacters < > and | as either \< \> and \| or '<' '>' and '|'.
-
-@arv-run@ introspects the command line to determine which arguments are file inputs.  If you specify a file that is only available on the local filesystem, it will be first uploaded to Arvados, and then the command line will be rewritten to refer to the newly uploaded file.  @arv-run@ also works together with @arv-mount@ to identify if a file specified on the command line is part of an Arvados collection.  If so, the command line will be rewritten to refer to the file within the collection without any upload necessary.
-
-@arv-run@ will parallelize on the files listed on the command line after @--@.  You may specify @--batch-size N@ after the @--@ but before listing any files to specify how many files to provide put on the command line for each task (see below for example).
+Using @arv-run@ you can write and test command lines interactively, then insert @arv-run@ at the beginning of the command line to run the command on Arvados.  For example:
 
 <notextile>
 <pre>
 $ <span class="userinput">cd ~/keep/by_id/3229739b505d2b878b62aed09895a55a+142</span>
-$ <span class="userinput">ls</span>
+$ <span class="userinput">ls *.fastq</span>
+HWI-ST1027_129_D0THKACXX.1_1.fastq  HWI-ST1027_129_D0THKACXX.1_2.fastq
+$ <span class="userinput">grep -H -n ATTGGAGGAAAGATGAGTGAC HWI-ST1027_129_D0THKACXX.1_1.fastq</span>
+HWI-ST1027_129_D0THKACXX.1_1.fastq:14:TCTGGCCCCTGTTGTCTGCATGTAACTTAATACCACAACCAGGCATAGGGGAAAGATTGGAGGAAAGATGAGTGACAGCATCAACTTCTCTCCCAACCTA
+HWI-ST1027_129_D0THKACXX.1_1.fastq:18:AACCAGGCATAGGGGAAAGATTGGAGGAAAGATGAGTGACAGCATCAACTTCTCTCACAACCTAGGCCAGTAAGTAGTGCTTGTGCTCATCTCCTTGGCT
+HWI-ST1027_129_D0THKACXX.1_1.fastq:30:ATAGGGGAAAGATTGGAGGAAAGATGAGTGACAGCATCAACTTCTCTCACAACCTAGGCCAGTAAGTAGTGCTTGTGCTCATCTCCTTGGCTGTGATACG
+$ <span class="userinput">arv-run grep -H -n ATTGGAGGAAAGATGAGTGAC HWI-ST1027_129_D0THKACXX.1_1.fastq</span>
+Running pipeline qr1hi-d1hrv-mg3bju0u7r6w241
+[...]
+Thu Oct 16 17:30:41 2014 qr1hi-8i9sb-8wdaabnughiolpy 13541 0 stderr run-command: grep -H -n ATTGGAGGAAAGATGAGTGAC /keep/3229739b505d2b878b62aed09895a55a+142/HWI-ST1027_129_D0THKACXX.1_1.fastq
+Thu Oct 16 17:30:41 2014 qr1hi-8i9sb-8wdaabnughiolpy 13541 0 stderr /keep/3229739b505d2b878b62aed09895a55a+142/HWI-ST1027_129_D0THKACXX.1_1.fastq:14:TCTGGCCCCTGTTGTCTGCATGTAACTTAATACCACAACCAGGCATAGGGGAAAGATTGGAGGAAAGATGAGTGACAGCATCAACTTCTCTCCCAACCTA
+Thu Oct 16 17:30:41 2014 qr1hi-8i9sb-8wdaabnughiolpy 13541 0 stderr /keep/3229739b505d2b878b62aed09895a55a+142/HWI-ST1027_129_D0THKACXX.1_1.fastq:18:AACCAGGCATAGGGGAAAGATTGGAGGAAAGATGAGTGACAGCATCAACTTCTCTCACAACCTAGGCCAGTAAGTAGTGCTTGTGCTCATCTCCTTGGCT
+Thu Oct 16 17:30:41 2014 qr1hi-8i9sb-8wdaabnughiolpy 13541 0 stderr /keep/3229739b505d2b878b62aed09895a55a+142/HWI-ST1027_129_D0THKACXX.1_1.fastq:30:ATAGGGGAAAGATTGGAGGAAAGATGAGTGACAGCATCAACTTCTCTCACAACCTAGGCCAGTAAGTAGTGCTTGTGCTCATCTCCTTGGCTGTGATACG
+Thu Oct 16 17:30:42 2014 qr1hi-8i9sb-8wdaabnughiolpy 13541 0 stderr run-command: completed with exit code 0 (success)
+[...]
+</pre>
+</notextile>
+
+A key feature of @arv-run@ is the ability to introspect the command line to determine which arguments are file inputs, and transform those paths so they are usable inside the Arvados container.  In the above example, @HWI-ST1027_129_D0THKACXX.1_2.fastq@ is transformed into @/keep/3229739b505d2b878b62aed09895a55a+142/HWI-ST1027_129_D0THKACXX.1_1.fastq@.  In the above example, @arv-run@ works together with @arv-mount@ to identify that the file is already part of an Arvados collection.  In this case, it will use the existing collection without any upload step.  If you specify a file that is only available on the local filesystem, @arv-run@ will upload a new collection and use that.
+
+@arv-run@ will parallelize on the files listed on the command line after @--@.  You may specify @--batch-size N@ after the @--@ but before listing any files to specify how many files to provide put on the command line for each task.  The syntax is designed to mimic standard shell syntax, so it is usually necessary to quote the metacharacters < > and | as either \< \> and \| or '<' '>' and '|'.
+
+<notextile>
+<pre>
+$ <span class="userinput">cd ~/keep/by_id/3229739b505d2b878b62aed09895a55a+142</span>
+$ <span class="userinput">ls *.fastq</span>
 HWI-ST1027_129_D0THKACXX.1_1.fastq  HWI-ST1027_129_D0THKACXX.1_2.fastq
 $ <span class="userinput">arv-run grep -H -n ATTGGAGGAAAGATGAGTGAC -- *.fastq \&gt; output.txt</span>
 Running pipeline qr1hi-d1hrv-mg3bju0u7r6w241
