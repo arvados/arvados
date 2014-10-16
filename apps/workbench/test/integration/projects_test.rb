@@ -527,7 +527,7 @@ class ProjectsTest < ActionDispatch::IntegrationTest
         collections_count = found_collections.count
 
         (0..collections_count-1).each do |i|
-          # Found row text would be of the format "Show Collection_#{n} " 
+          # Found row text would be of the format "Show Collection_#{n} "
           collection_name = found_collections[i].text.split[1]
           if !my_collections.include? collection_name
             unexpected_items << collection_name
@@ -539,7 +539,7 @@ class ProjectsTest < ActionDispatch::IntegrationTest
         assert_equal true, unexpected_items.empty?, "Found unexpected items #{unexpected_items.inspect}"
         if amount > 200
           assert_equal 200, collections_count, "Found different number of collections"
-          assert_equal amount-200, verify_collections.length, "Did not find all the collections"  
+          assert_equal amount-200, verify_collections.length, "Did not find all the collections"
         else
           assert_equal amount, collections_count, "Found different number of collections"
           assert_equal true, verify_collections.empty?, "Did not find all the collections"
@@ -572,7 +572,7 @@ class ProjectsTest < ActionDispatch::IntegrationTest
         wait_for_ajax
       rescue
       end
-      
+
       verify_pipelines = my_pipelines.dup
       unexpected_items = []
       object_count = 0
