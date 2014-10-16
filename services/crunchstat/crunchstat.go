@@ -55,61 +55,67 @@ func OpenAndReadAll(filename string, log_chan chan<- string) ([]byte, error) {
 		return nil, err
 	}
 	defer in.Close()
-	{
-		content, err := ioutil.ReadAll(in)
-		if err != nil && log_chan != nil {
-			log_chan <- fmt.Sprintf("crunchstat: read %s: %s", filename, err)
-		}
-		return content, err
-	}
+	return ReadAllOrWarn(in, log_chan)
 }
 
-var reportedStatFile map[string]bool
-var reportedNoStatFile map[string]bool
+func ReadAllOrWarn(in *os.File, log_chan chan<- string) ([]byte, error) {
+	content, err := ioutil.ReadAll(in)
+	if err != nil && log_chan != nil {
+		log_chan <- fmt.Sprintf("crunchstat: read %s: %s", in.Name(), err)
+	}
+	return content, err
+}
 
-// Find the cgroup stats file in /sys/fs corresponding to the target
-// cgroup.
+var reportedStatFile = map[string]string{}
+
+// Open the cgroup stats file in /sys/fs corresponding to the target
+// cgroup, and return an *os.File. If no stats file is available,
+// return nil.
 //
 // TODO: Instead of trying all options, choose a process in the
 // container, and read /proc/PID/cgroup to determine the appropriate
 // cgroup root for the given statgroup. (This will avoid falling back
 // to host-level stats during container setup and teardown.)
-func FindStat(stderr chan<- string, cgroup Cgroup, statgroup string, stat string) string {
-	if reportedStatFile == nil {
-		reportedStatFile = make(map[string]bool)
-		reportedNoStatFile = make(map[string]bool)
-	}
-
+func OpenStatFile(stderr chan<- string, cgroup Cgroup, statgroup string, stat string) (*os.File, error) {
 	var path string
 	path = fmt.Sprintf("%s/%s/%s/%s/%s", cgroup.root, statgroup, cgroup.parent, cgroup.cid, stat)
-	if _, err := os.Stat(path); err != nil {
+	file, err := os.Open(path)
+	if err != nil {
 		path = fmt.Sprintf("%s/%s/%s/%s", cgroup.root, cgroup.parent, cgroup.cid, stat)
+		file, err = os.Open(path)
 	}
-	if _, err := os.Stat(path); err != nil {
+	if err != nil {
 		path = fmt.Sprintf("%s/%s/%s", cgroup.root, statgroup, stat)
+		file, err = os.Open(path)
 	}
-	if _, err := os.Stat(path); err != nil {
+	if err != nil {
 		path = fmt.Sprintf("%s/%s", cgroup.root, stat)
+		file, err = os.Open(path)
 	}
-	if _, err := os.Stat(path); err != nil {
-		if _, ok := reportedNoStatFile[stat]; !ok {
+	if err != nil {
+		file = nil
+		path = ""
+	} 
+	if pathWas, ok := reportedStatFile[stat]; !ok || pathWas != path {
+		// Log whenever we start using a new/different cgroup
+		// stat file for a given statistic. This typically
+		// happens 1 to 3 times per statistic, depending on
+		// whether we happen to collect stats [a] before any
+		// processes have been created in the container and
+		// [b] after all contained processes have exited.
+		reportedStatFile[stat] = path
+		if path == "" {
 			stderr <- fmt.Sprintf("crunchstat: did not find stats file (root %s, parent %s, cid %s, statgroup %s, stat %s)", cgroup.root, cgroup.parent, cgroup.cid, statgroup, stat)
-			reportedNoStatFile[stat] = true
+		} else {
+			stderr <- fmt.Sprintf("crunchstat: reading stats from %s", path)
 		}
-		return ""
 	}
-	if _, ok := reportedStatFile[path]; !ok {
-		stderr <- fmt.Sprintf("crunchstat: reading stats from %s", path)
-		reportedStatFile[path] = true
-	}
-	return path
+	return file, err
 }
 
 func GetContainerNetStats(stderr chan<- string, cgroup Cgroup) (io.Reader, error) {
-	procsFilename := FindStat(stderr, cgroup, "cpuacct", "cgroup.procs")
-	procsFile, err := os.Open(procsFilename)
+	procsFile, err := OpenStatFile(stderr, cgroup, "cpuacct", "cgroup.procs")
 	if err != nil {
-		stderr <- fmt.Sprintf("crunchstat: open %s: %s", procsFilename, err)
 		return nil, err
 	}
 	defer procsFile.Close()
@@ -133,14 +139,8 @@ type IoSample struct {
 }
 
 func DoBlkIoStats(stderr chan<- string, cgroup Cgroup, lastSample map[string]IoSample) (map[string]IoSample) {
-	blkio_io_service_bytes := FindStat(stderr, cgroup, "blkio", "blkio.io_service_bytes")
-	if blkio_io_service_bytes == "" {
-		return lastSample
-	}
-
-	c, err := os.Open(blkio_io_service_bytes)
+	c, err := OpenStatFile(stderr, cgroup, "blkio", "blkio.io_service_bytes")
 	if err != nil {
-		stderr <- fmt.Sprintf("crunchstat: open %s: %s", blkio_io_service_bytes, err)
 		return lastSample
 	}
 	defer c.Close()
@@ -192,13 +192,8 @@ type MemSample struct {
 }
 
 func DoMemoryStats(stderr chan<- string, cgroup Cgroup) {
-	memory_stat := FindStat(stderr, cgroup, "memory", "memory.stat")
-	if memory_stat == "" {
-		return
-	}
-	c, err := os.Open(memory_stat)
+	c, err := OpenStatFile(stderr, cgroup, "memory", "memory.stat")
 	if err != nil {
-		stderr <- fmt.Sprintf("crunchstat: open %s: %s", memory_stat, err)
 		return
 	}
 	defer c.Close()
@@ -286,14 +281,12 @@ type CpuSample struct {
 // Return the number of CPUs available in the container. Return 0 if
 // we can't figure out the real number of CPUs.
 func GetCpuCount(stderr chan<- string, cgroup Cgroup) (int64) {
-	cpuset_cpus := FindStat(stderr, cgroup, "cpuset", "cpuset.cpus")
-	if cpuset_cpus == "" {
-		return 0
-	}
-	b, err := OpenAndReadAll(cpuset_cpus, stderr)
+	cpusetFile, err := OpenStatFile(stderr, cgroup, "cpuset", "cpuset.cpus")
 	if err != nil {
 		return 0
 	}
+	defer cpusetFile.Close()
+	b, err := ReadAllOrWarn(cpusetFile, stderr)
 	sp := strings.Split(string(b), ",")
 	cpus := int64(0)
 	for _, v := range sp {
@@ -309,11 +302,12 @@ func GetCpuCount(stderr chan<- string, cgroup Cgroup) (int64) {
 }
 
 func DoCpuStats(stderr chan<- string, cgroup Cgroup, lastSample *CpuSample) (*CpuSample) {
-	cpuacct_stat := FindStat(stderr, cgroup, "cpuacct", "cpuacct.stat")
-	if cpuacct_stat == "" {
+	statFile, err := OpenStatFile(stderr, cgroup, "cpuacct", "cpuacct.stat")
+	if err != nil {
 		return lastSample
 	}
-	b, err := OpenAndReadAll(cpuacct_stat, stderr)
+	defer statFile.Close()
+	b, err := ReadAllOrWarn(statFile, stderr)
 	if err != nil {
 		return lastSample
 	}
