@@ -206,10 +206,12 @@ class ProjectsController < ApplicationController
         attr == 'created_at' and op == nextpage_operator
       end
       if @objects.any?
+        @offset += @objects.length
         @next_page_filters += [['created_at',
                                 nextpage_operator,
                                 @objects.last.created_at]]
         @next_page_href = url_for(partial: :contents_rows,
+                                  offset: @offset,
                                   filters: @next_page_filters.to_json)
       else
         @next_page_href = nil

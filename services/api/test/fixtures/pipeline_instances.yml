@@ -143,3 +143,66 @@ pipeline_with_newer_template:
           required: true
           dataclass: Collection
           title: foo instance input
+
+# Test Helper trims the rest of the file
+
+# Do not add your fixtures below this line as the rest of this file will be trimmed by test_helper
+
+# pipelines in project_with_10_pipelines
+<% for i in 1..10 do %>
+pipeline_<%=i%>_of_10:
+  name: pipeline_<%= i %>
+  state: New
+  uuid: zzzzz-d1hrv-10gneyn6br1x<%= i.to_s.rjust(3, '0') %>
+  owner_uuid: zzzzz-j7d0g-000010pipelines
+  created_at: <%= 1.minute.ago.to_s(:db) %>
+  components:
+    foo:
+      script: foo
+      script_version: master
+      script_parameters:
+        input:
+          required: true
+          dataclass: Collection
+          title: foo instance input
+<% end %>
+
+# pipelines in project_with_20_pipelines_and_20_jobs
+<% for i in 1..20 do %>
+pipeline_<%=i%>_of_20_pipelines_and_20_jobs:
+  name: pipeline_<%= i %>
+  state: New
+  uuid: zzzzz-d1hrv-abcgneyn6brx<%= i.to_s.rjust(3, '0') %>
+  owner_uuid: zzzzz-j7d0g-20jobspipelines
+  created_at: <%= 1.minute.ago.to_s(:db) %>
+  components:
+    foo:
+      script: foo
+      script_version: master
+      script_parameters:
+        input:
+          required: true
+          dataclass: Collection
+          title: foo instance input
+<% end %>
+
+# pipelines in project_with_250_pipelines
+<% for i in 1..250 do %>
+pipeline_<%=i%>_of_250_pipelines:
+  name: pipeline_<%= i %>
+  state: New
+  uuid: zzzzz-d1hrv-250gneyn6brx<%= i.to_s.rjust(3, '0') %>
+  owner_uuid: zzzzz-j7d0g-000250pipelines
+  created_at: <%= 1.minute.ago.to_s(:db) %>
+  components:
+    foo:
+      script: foo
+      script_version: master
+      script_parameters:
+        input:
+          required: true
+          dataclass: Collection
+          title: foo instance input
+<% end %>
+
+# Do not add your fixtures below this line as the rest of this file will be trimmed by test_helper
