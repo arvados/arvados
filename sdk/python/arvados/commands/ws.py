@@ -71,6 +71,14 @@ def main(arguments=None):
             elif ev["event_type"] in ("create", "update"):
                 if ev["object_kind"] == "arvados#pipelineInstance":
                     update_subscribed_components(ev["properties"]["new_attributes"]["components"])
+
+                if ev["object_kind"] == "arvados#pipelineInstance" and args.pipeline:
+                    if ev["properties"]["new_attributes"]["state"] in ("Complete", "Failed", "Paused"):
+                        ws.close()
+
+                if ev["object_kind"] == "arvados#job" and args.job:
+                    if ev["properties"]["new_attributes"]["state"] in ("Complete", "Failed", "Cancelled"):
+                        ws.close()
         elif 'status' in ev and ev['status'] == 200:
             pass
         else:
@@ -82,9 +90,9 @@ def main(arguments=None):
             if args.pipeline:
                 c = api.pipeline_instances().get(uuid=args.pipeline).execute()
                 update_subscribed_components(c["components"])
-
-            while True:
-                signal.pause()
+                if c["state"] in ("Complete", "Failed", "Paused"):
+                    ws.close()
+            ws.run_forever()
     except KeyboardInterrupt:
         pass
     except Exception as e:

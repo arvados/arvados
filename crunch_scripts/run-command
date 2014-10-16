@@ -352,7 +352,10 @@ try:
     while len(pids) > 0:
         (pid, status) = os.wait()
         pids.discard(pid)
-        rcode[pid] = (status >> 8)
+        if not taskp.get("task.ignore_rcode"):
+            rcode[pid] = (status >> 8)
+        else:
+            rcode[pid] = 0
 
     if sig.sig is not None:
         logger.critical("terminating on signal %s" % sig.sig)

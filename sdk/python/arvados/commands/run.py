@@ -18,6 +18,9 @@ arvrun_parser = argparse.ArgumentParser()
 arvrun_parser.add_argument('--dry-run', action="store_true", help="Print out the pipeline that would be submitted and exit")
 arvrun_parser.add_argument('--local', action="store_true", help="Run locally using arv-crunch-job")
 arvrun_parser.add_argument('--docker-image', type=str, default="arvados/jobs", help="Docker image to use, default arvados/jobs")
+arvrun_parser.add_argument('--ignore-rcode', action="store_true", help="Set this to indicate commands that return non-zero return codes should not be considered failed.")
+arvrun_parser.add_argument('--no-reuse', action="store_true", help="Do not reuse past jobs.")
+arvrun_parser.add_argument('--no-wait', action="store_true", help="Do not wait and display logs after submitting command, just exit.")
 arvrun_parser.add_argument('--git-dir', type=str, default="", help="Git repository passed to arv-crunch-job when using --local")
 arvrun_parser.add_argument('--repository', type=str, default="arvados", help="repository field of component, default 'arvados'")
 arvrun_parser.add_argument('--script-version', type=str, default="master", help="script_version field of component, default 'master'")
@@ -196,6 +199,8 @@ def main(arguments=None):
         component["script_parameters"]["task.foreach"] = task_foreach
 
     component["script_parameters"]["command"] = slots[2:]
+    if args.ignore_rcode:
+        component["script_parameters"]["task.ignore_rcode"] = args.ignore_rcode
 
     pipeline = {
         "name": " | ".join([s[0] for s in slots[2:]]),
@@ -203,18 +208,27 @@ def main(arguments=None):
         "components": {
             "command": component
         },
-        "state":"RunningOnServer"
+        "state": "RunningOnClient" if args.local else "RunningOnServer"
     }
 
     if args.dry_run:
         print(json.dumps(pipeline, indent=4))
-    elif args.local:
-        subprocess.call(["arv-crunch-job", "--job", json.dumps(component), "--git-dir", args.git_dir])
     else:
         api = arvados.api('v1')
         pi = api.pipeline_instances().create(body=pipeline).execute()
         print "Running pipeline %s" % pi["uuid"]
-        ws.main(["--pipeline", pi["uuid"]])
+
+        if args.local:
+            subprocess.call(["arv-run-pipeline-instance", "--instance", pi["uuid"], "--run-jobs-here"] + (["--no-reuse"] if args.no_reuse else []))
+        elif not args.no_wait:
+            ws.main(["--pipeline", pi["uuid"]])
+
+        pi = api.pipeline_instances().get(uuid=pi["uuid"]).execute()
+        print "Pipeline is %s" % pi["state"]
+        if "output_uuid" in pi["components"]["command"]:
+            print "Output is %s" % pi["components"]["command"]["output_uuid"]
+        else:
+            print "No output"
 
 if __name__ == '__main__':
     main()

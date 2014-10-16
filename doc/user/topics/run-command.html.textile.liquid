@@ -180,6 +180,10 @@ h3. task.cwd
 
 This directive sets the initial current working directory that your command will run in.  If @task.cwd@ is not specified, the default current working directory is @task.outdir@.
 
+h3. task.ignore_rcode
+
+By Unix convention a task which exits with a non-zero return code is considered failed.  However, some programs (such as @grep@) return non-zero codes for conditions that should not be considered fatal errors.  Set @"task.ignore_rcode": true@ to indicate the task should always succeed.
+
 h3. task.stdin and task.stdout
 
 Provide standard input and standard output redirection.
