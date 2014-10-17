@@ -206,10 +206,12 @@ class ProjectsController < ApplicationController
         attr == 'created_at' and op == nextpage_operator
       end
       if @objects.any?
-        @next_page_filters += [['created_at',
-                                nextpage_operator,
-                                @objects.last.created_at]]
+        created_at_filter = ['created_at',
+                              nextpage_operator,
+                              @objects.last.created_at]
+        @next_page_filters << created_at_filter
         @next_page_href = url_for(partial: :contents_rows,
+                                  created_at_filter: created_at_filter,
                                   filters: @next_page_filters.to_json)
       else
         @next_page_href = nil
@@ -227,6 +229,9 @@ class ProjectsController < ApplicationController
   end
 
   def show
+    # The created_at filter is getting lost somewhere. Adding it again explicitly.
+    @filters << params['created_at_filter'] if params['created_at_filter']
+
     if !@object
       return render_not_found("object not found")
     end
