@@ -192,7 +192,7 @@ class ProjectsController < ApplicationController
                                      limit: @limit,
                                      include_linked: true,
                                      filters: (@filters - kind_filters + [['uuid', 'is_a', type]]),
-                                     offset: @offset)
+                                    )
           objects.each do |object|
             @name_link_for[object.andand.uuid] = objects.links_for(object, 'name').first
           end
@@ -206,12 +206,10 @@ class ProjectsController < ApplicationController
         attr == 'created_at' and op == nextpage_operator
       end
       if @objects.any?
-        @offset += @objects.length
         @next_page_filters += [['created_at',
                                 nextpage_operator,
                                 @objects.last.created_at]]
         @next_page_href = url_for(partial: :contents_rows,
-                                  offset: @offset,
                                   filters: @next_page_filters.to_json)
       else
         @next_page_href = nil

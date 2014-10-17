@@ -173,15 +173,15 @@ project_with_10_pipelines:
   description: project with 10 pipelines
   group_class: project
 
-project_with_10_pipelines_and_10_jobs:
-  uuid: zzzzz-j7d0g-20jobspipelines
+project_with_10_pipelines_and_200_jobs:
+  uuid: zzzzz-j7d0g-nnjobspipelines
   owner_uuid: zzzzz-tpzed-user1withloadab
   created_at: 2014-04-21 15:37:48 -0400
   modified_by_client_uuid: zzzzz-ozdt8-brczlopd8u8d0jr
   modified_by_user_uuid: zzzzz-tpzed-user1withloadab
   modified_at: 2014-04-21 15:37:48 -0400
   updated_at: 2014-04-21 15:37:48 -0400
-  name: project with 10 jobs and 10 pipelines
+  name: project with 200 jobs and 10 pipelines
   description: This will result in two pages in the display
   group_class: project
 

@@ -490,6 +490,10 @@ class ProjectsTest < ActionDispatch::IntegrationTest
     ['project with 201 collections', 201], # two pages of data
   ].each do |project_name, amount|
     test "scroll collections tab for #{project_name} with #{amount} objects" do
+      headless = Headless.new
+      headless.start
+      Capybara.current_driver = :selenium
+
       visit page_with_token 'user1_with_load'
 
       find("#projects-menu").click
@@ -542,10 +546,14 @@ class ProjectsTest < ActionDispatch::IntegrationTest
 
   [
     ['project with 10 pipelines', 10, 0],
-    ['project with 10 jobs and 10 pipelines', 10, 10],
+    ['project with 200 jobs and 10 pipelines', 10, 200],
     ['project with 25 pipelines', 25, 0],   # 20 is the page limit for this tab; hence two pages
   ].each do |project_name, num_pipelines, num_jobs|
     test "scroll pipeline instances tab for #{project_name} with #{num_pipelines} pipelines and #{num_jobs} jobs" do
+      headless = Headless.new
+      headless.start
+      Capybara.current_driver = :selenium
+
       visit page_with_token 'user1_with_load'
 
       find("#projects-menu").click
@@ -569,7 +577,7 @@ class ProjectsTest < ActionDispatch::IntegrationTest
       unexpected_items = []
       object_count = 0
       within('.arv-project-Jobs_and_pipelines') do
-        page.execute_script "window.scrollBy(0,99999999)"
+        page.execute_script "window.scrollBy(0,999000)"
         begin
           wait_for_ajax
         rescue

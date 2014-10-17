@@ -270,7 +270,7 @@ collection_<%=i%>_of_10:
   manifest_text: ". 73feffa4b7f6bb68e44cf984c85f6e88+3 0:3:baz\n"
   uuid: zzzzz-4zz18-10gneyn6brkx<%= i.to_s.rjust(3, '0') %>
   owner_uuid: zzzzz-j7d0g-0010collections
-  created_at: <%= 1.minute.ago.to_s(:db) %>
+  created_at: <%= i.minute.ago.to_s(:db) %>
 <% end %>
 
 # collections in project_with_201_collections
@@ -281,7 +281,7 @@ collection_<%=i%>_of_201:
   manifest_text: ". 73feffa4b7f6bb68e44cf984c85f6e88+3 0:3:baz\n"
   uuid: zzzzz-4zz18-201gneyn6brd<%= i.to_s.rjust(3, '0') %>
   owner_uuid: zzzzz-j7d0g-0201collections
-  created_at: <%= 1.minute.ago.to_s(:db) %>
+  created_at: <%= i.minute.ago.to_s(:db) %>
 <% end %>
 
 # Do not add your fixtures below this line as the rest of this file will be trimmed by test_helper
