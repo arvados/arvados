@@ -5,7 +5,7 @@ read -rd "\000" helpmessage <<EOF
 $(basename $0): Build Arvados packages and (optionally) upload them.
 
 Syntax:
-        $(basename $0) WORKSPACE=/path/to/arvados [options]
+        WORKSPACE=/path/to/arvados $(basename $0) [options]
 
 Options:
 
@@ -150,7 +150,7 @@ build_and_scp_deb () {
 
   if [[ "$FPM_PACKAGE_NAME" == "" ]]; then
     EXITCODE=1
-    echo "Error: Unable to figure out package name from fpm results:"
+    echo "Error: $PACKAGE: Unable to figure out package name from fpm results:"
     echo
     echo $FPM_RESULTS
     echo
@@ -334,6 +334,8 @@ build_and_scp_deb $WORKSPACE/services/nodemanager arvados-node-manager 'Curovers
 build_and_scp_deb python-gflags
 build_and_scp_deb pyvcf
 build_and_scp_deb google-api-python-client
+build_and_scp_deb oauth2client
+build_and_scp_deb uritemplate
 build_and_scp_deb httplib2
 build_and_scp_deb ws4py
 build_and_scp_deb virtualenv
