@@ -1,9 +1,9 @@
 # errors.py - Arvados-specific exceptions.
 
-import apiclient.errors
 import json
+from apiclient import errors as apiclient_errors
 
-class ApiError(apiclient.errors.HttpError):
+class ApiError(apiclient_errors.HttpError):
     def _get_reason(self):
         try:
             return '; '.join(json.loads(self.content)['errors'])

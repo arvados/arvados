@@ -7,11 +7,11 @@ import importlib
 import logging
 import ssl
 
-import apiclient.errors as apierror
 import arvados
 import httplib2
 import libcloud.common.types as cloud_types
 import pykka
+from apiclient import errors as apierror
 
 # IOError is the base class for socket.error and friends.
 # It seems like it hits the sweet spot for operations we want to retry:

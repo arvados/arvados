@@ -103,6 +103,7 @@ func (v *UnixVolume) Touch(loc string) error {
 	if err != nil {
 		return err
 	}
+	defer f.Close()
 	if e := lockfile(f); e != nil {
 		return e
 	}
@@ -259,6 +260,7 @@ func (v *UnixVolume) Delete(loc string) error {
 	if err != nil {
 		return err
 	}
+	defer f.Close()
 	if e := lockfile(f); e != nil {
 		return e
 	}

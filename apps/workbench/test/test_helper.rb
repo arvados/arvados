@@ -40,7 +40,8 @@ class ActiveSupport::TestCase
     Thread.current[:arvados_api_token] = nil
     Thread.current[:user] = nil
     Thread.current[:reader_tokens] = nil
-    Rails.cache.clear
+    # Diagnostics suite doesn't run a server, so there's no cache to clear.
+    Rails.cache.clear unless (Rails.env == "diagnostics")
     # Restore configuration settings changed during tests
     $application_config.each do |k,v|
       if k.match /^[^.]*$/

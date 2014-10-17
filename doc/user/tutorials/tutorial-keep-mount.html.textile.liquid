@@ -16,17 +16,21 @@ h2. Arv-mount
 * It is easy for existing tools to access files in Keep.
 * Data is downloaded on demand.  It is not necessary to download an entire file or collection to start processing.
 
-The default mode permits browsing any collection in Arvados as a subdirectory under the mount directory.  To avoid having to fetch a potentially large list of all collections, collection directories only come into existence when explicitly accessed by their keep locator.
+The default mode permits browsing any collection in Arvados as a subdirectory under the mount directory.  To avoid having to fetch a potentially large list of all collections, collection directories only come into existence when explicitly accessed by their Keep locator. For instance, a collection may be found by its content hash in the @keep/by_id@ directory.
 
 <notextile>
 <pre><code>~$ <span class="userinput">mkdir -p keep</span>
 ~$ <span class="userinput">arv-mount keep</span>
-~$ <span class="userinput">cd keep/c1bad4b39ca5a924e481008009d94e32+210</span>
-~/keep/c1bad4b39ca5a924e481008009d94e32+210$ <span class="userinput">ls</span>
+~$ <span class="userinput">cd keep/by_id/c1bad4b39ca5a924e481008009d94e32+210</span>
+~/keep/by_id/c1bad4b39ca5a924e481008009d94e32+210$ <span class="userinput">ls</span>
 var-GS000016015-ASM.tsv.bz2
-~/keep/c1bad4b39ca5a924e481008009d94e32+210$ <span class="userinput">md5sum var-GS000016015-ASM.tsv.bz2</span>
+~/keep/by_id/c1bad4b39ca5a924e481008009d94e32+210$ <span class="userinput">md5sum var-GS000016015-ASM.tsv.bz2</span>
 44b8ae3fde7a8a88d2f7ebd237625b4f  var-GS000016015-ASM.tsv.bz2
-~/keep/c1bad4b39ca5a924e481008009d94e32+210$ <span class="userinput">cd ../..</span>
+~/keep/by_id/c1bad4b39ca5a924e481008009d94e32+210$ <span class="userinput">cd ../..</span>
 ~$ <span class="userinput">fusermount -u keep</span>
 </code></pre>
 </notextile>
+
+The last line unmounts Keep.  Subdirectories will no longer be accessible.
+
+Within each directory on Keep, there is a @.arvados#collection@ file that does not show up with @ls@. Its contents include, for instance, the @portable_data_hash@, which is the same as the Keep locator.
