@@ -211,8 +211,8 @@ def copy_pipeline_instance(pi_uuid, src, dst, args):
     pi['properties']['copied_from_pipeline_instance_uuid'] = pi_uuid
     pi['description'] = "Pipeline copied from {}\n\n{}".format(
         pi_uuid, pi.get('description', ''))
-    if dst_project:
-        pi['owner_uuid'] = dst_project
+    if args.project_uuid:
+        pi['owner_uuid'] = args.project_uuid
     else:
         del pi['owner_uuid']
     del pi['uuid']
@@ -297,24 +297,26 @@ def copy_git_repos(p, src, dst, dst_repo):
         component = p['components'][c]
         if 'repository' in component:
             repo = component['repository']
+            script_version = component.get('script_version', None)
             if repo not in copied:
-                copy_git_repo(repo, src, dst, dst_repo)
+                copy_git_repo(repo, src, dst, dst_repo, script_version)
                 copied.add(repo)
             component['repository'] = dst_repo
-            if 'script_version' in component:
+            if script_version:
                 repo_dir = local_repo_dir[repo]
-                component['script_version'] = git_rev_parse(component['script_version'], repo_dir)
+                component['script_version'] = git_rev_parse(script_version, repo_dir)
         if 'job' in component:
             j = component['job']
             if 'repository' in j:
                 repo = j['repository']
+                script_version = j.get('script_version', None)
                 if repo not in copied:
-                    copy_git_repo(repo, src, dst, dst_repo)
+                    copy_git_repo(repo, src, dst, dst_repo, script_version)
                     copied.add(repo)
                 j['repository'] = dst_repo
                 repo_dir = local_repo_dir[repo]
-                if 'script_version' in j:
-                    j['script_version'] = git_rev_parse(j['script_version'], repo_dir)
+                if script_version:
+                    j['script_version'] = git_rev_parse(script_version, repo_dir)
                 if 'supplied_script_version' in j:
                     j['supplied_script_version'] = git_rev_parse(j['supplied_script_version'], repo_dir)
 
@@ -435,7 +437,7 @@ def copy_collection(obj_uuid, src, dst, args):
     c['manifest_text'] = dst_manifest
     return dst.collections().create(body=c).execute()
 
-# copy_git_repo(src_git_repo, src, dst, dst_git_repo)
+# copy_git_repo(src_git_repo, src, dst, dst_git_repo, script_version)
 #
 #    Copies commits from git repository 'src_git_repo' on Arvados
 #    instance 'src' to 'dst_git_repo' on 'dst'.  Both src_git_repo
@@ -451,7 +453,7 @@ def copy_collection(obj_uuid, src, dst, args):
 #    The user running this command must be authenticated
 #    to both repositories.
 #
-def copy_git_repo(src_git_repo, src, dst, dst_git_repo):
+def copy_git_repo(src_git_repo, src, dst, dst_git_repo, script_version):
     # Identify the fetch and push URLs for the git repositories.
     r = src.repositories().list(
         filters=[['name', '=', src_git_repo]]).execute()
@@ -469,7 +471,16 @@ def copy_git_repo(src_git_repo, src, dst, dst_git_repo):
     dst_git_push_url  = r['items'][0]['push_url']
     logger.debug('dst_git_push_url: {}'.format(dst_git_push_url))
 
-    dst_branch = re.sub(r'\W+', '_', src_git_url)
+    # script_version is the "script_version" parameter from the source
+    # component or job.  It is used here to tie the destination branch
+    # to the commit that was used on the source.  If no script_version
+    # was supplied in the component or job, it is a mistake in the pipeline,
+    # but for the purposes of copying the repository, default to "master".
+    #
+    if not script_version:
+        script_version = "master"
+
+    dst_branch = re.sub(r'\W+', '_', "{}_{}".format(src_git_url, script_version))
 
     # Copy git commits from src repo to dst repo (but only if
     # we have not already copied this repo in this session).
@@ -480,10 +491,10 @@ def copy_git_repo(src_git_repo, src, dst, dst_git_repo):
         tmprepo = tempfile.mkdtemp()
         local_repo_dir[src_git_repo] = tmprepo
         arvados.util.run_command(
-            ["git", "clone", src_git_url, tmprepo],
+            ["git", "clone", "--bare", src_git_url, tmprepo],
             cwd=os.path.dirname(tmprepo))
         arvados.util.run_command(
-            ["git", "checkout", "-b", dst_branch],
+            ["git", "branch", dst_branch, script_version],
             cwd=tmprepo)
         arvados.util.run_command(["git", "remote", "add", "dst", dst_git_push_url], cwd=tmprepo)
         arvados.util.run_command(["git", "push", "dst", dst_branch], cwd=tmprepo)
