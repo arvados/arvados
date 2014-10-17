@@ -38,7 +38,9 @@ class ActiveSupport::TestCase
 
   teardown do
     Thread.current[:arvados_api_token] = nil
+    Thread.current[:user] = nil
     Thread.current[:reader_tokens] = nil
+    Rails.cache.clear
     # Restore configuration settings changed during tests
     $application_config.each do |k,v|
       if k.match /^[^.]*$/
@@ -55,7 +57,7 @@ module ApiFixtureLoader
 
   module ClassMethods
     @@api_fixtures = {}
-    def api_fixture(name)
+    def api_fixture(name, *keys)
       # Returns the data structure from the named API server test fixture.
       @@api_fixtures[name] ||= \
       begin
@@ -66,10 +68,16 @@ module ApiFixtureLoader
         file = file[0, trim_index] if trim_index
         YAML.load(file)
       end
+      keys.inject(@@api_fixtures[name]) { |hash, key| hash[key] }
     end
   end
-  def api_fixture name
-    self.class.api_fixture name
+  def api_fixture(name, *keys)
+    self.class.api_fixture(name, *keys)
+  end
+
+  def find_fixture(object_class, name)
+    object_class.find(api_fixture(object_class.to_s.pluralize.underscore,
+                                  name, "uuid"))
   end
 end
 

@@ -779,6 +779,16 @@ class Arvados::V1::UsersControllerTest < ActionController::TestCase
     assert_equal false, found_email, 'Expected no email after updating profile'
   end
 
+  test "user API response includes writable_by" do
+    authorize_with :active
+    get :current
+    assert_response :success
+    assert_includes(json_response["writable_by"], users(:active).uuid,
+                    "user's writable_by should include self")
+    assert_includes(json_response["writable_by"], users(:active).owner_uuid,
+                    "user's writable_by should include its owner_uuid")
+  end
+
 
   NON_ADMIN_USER_DATA = ["uuid", "kind", "is_active", "email", "first_name",
                          "last_name"].sort
