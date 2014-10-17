@@ -9,6 +9,7 @@ import subprocess
 import sys
 import tarfile
 import tempfile
+import _strptime
 
 from collections import namedtuple
 from stat import *
