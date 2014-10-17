@@ -3,7 +3,6 @@
 # TODO:
 # --md5sum - display md5 of each file as read from disk
 
-import apiclient.errors
 import argparse
 import arvados
 import base64
@@ -18,6 +17,7 @@ import signal
 import socket
 import sys
 import tempfile
+from apiclient import errors as apiclient_errors
 
 import arvados.commands._util as arv_cmd
 
@@ -390,7 +390,7 @@ def main(arguments=None, stdout=sys.stdout, stderr=sys.stderr):
     try:
         project_uuid = desired_project_uuid(api_client, args.project_uuid,
                                             args.retries)
-    except (apiclient.errors.Error, ValueError) as error:
+    except (apiclient_errors.Error, ValueError) as error:
         print >>stderr, error
         sys.exit(1)
 
@@ -468,7 +468,7 @@ def main(arguments=None, stdout=sys.stdout, stderr=sys.stderr):
             else:
                 output = collection['uuid']
 
-        except apiclient.errors.Error as error:
+        except apiclient_errors.Error as error:
             print >>stderr, (
                 "arv-put: Error creating Collection on project: {}.".format(
                     error))
