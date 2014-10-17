@@ -445,7 +445,11 @@ class WhRunPipelineInstance
         if value.nil? and
             ![false,'false',0,'0'].index parameter[:required]
           if parameter[:output_of]
-            next
+            if not @components[parameter[:output_of]]
+              errors << [componentname, parametername, "output_of refers to nonexistent component"]
+            else
+              next
+            end
           end
           errors << [componentname, parametername, "required parameter is missing"]
         end
