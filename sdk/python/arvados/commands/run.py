@@ -16,11 +16,12 @@ logger = logging.getLogger('arvados.arv-run')
 
 arvrun_parser = argparse.ArgumentParser()
 arvrun_parser.add_argument('--dry-run', action="store_true", help="Print out the pipeline that would be submitted and exit")
-arvrun_parser.add_argument('--local', action="store_true", help="Run locally using arv-crunch-job")
+arvrun_parser.add_argument('--local', action="store_true", help="Run locally using arv-run-pipeline-instance")
 arvrun_parser.add_argument('--docker-image', type=str, default="arvados/jobs", help="Docker image to use, default arvados/jobs")
-arvrun_parser.add_argument('--ignore-rcode', action="store_true", help="Set this to indicate commands that return non-zero return codes should not be considered failed.")
+arvrun_parser.add_argument('--ignore-rcode', action="store_true", help="Commands that return non-zero return codes should not be considered failed.")
 arvrun_parser.add_argument('--no-reuse', action="store_true", help="Do not reuse past jobs.")
 arvrun_parser.add_argument('--no-wait', action="store_true", help="Do not wait and display logs after submitting command, just exit.")
+arvrun_parser.add_argument('--project-uuid', type=str, help="Parent project of the pipeline")
 arvrun_parser.add_argument('--git-dir', type=str, default="", help="Git repository passed to arv-crunch-job when using --local")
 arvrun_parser.add_argument('--repository', type=str, default="arvados", help="repository field of component, default 'arvados'")
 arvrun_parser.add_argument('--script-version', type=str, default="master", help="script_version field of component, default 'master'")
@@ -35,16 +36,37 @@ class UploadFile(ArvFile):
     pass
 
 def is_in_collection(root, branch):
-    if root == "/":
+    try:
+        if root == "/":
+            return (None, None)
+        fn = os.path.join(root, ".arvados#collection")
+        if os.path.exists(fn):
+            with file(fn, 'r') as f:
+                c = json.load(f)
+            return (c["portable_data_hash"], branch)
+        else:
+            sp = os.path.split(root)
+            return is_in_collection(sp[0], os.path.join(sp[1], branch))
+    except:
         return (None, None)
-    fn = os.path.join(root, ".arvados#collection")
-    if os.path.exists(fn):
-        with file(fn, 'r') as f:
-            c = json.load(f)
-        return (c["portable_data_hash"], branch)
-    else:
-        sp = os.path.split(root)
-        return is_in_collection(sp[0], os.path.join(sp[1], branch))
+
+def determine_project(root, current_user):
+    try:
+        if root == "/":
+            return current_user
+        fn = os.path.join(root, ".arvados#project")
+        if os.path.exists(fn):
+            with file(fn, 'r') as f:
+                c = json.load(f)
+            if 'writable_by' in c and current_user in c['writable_by']:
+                return c["uuid"]
+            else:
+                return current_user
+        else:
+            sp = os.path.split(root)
+            return determine_project(sp[0], current_user)
+    except:
+        return current_user
 
 def statfile(prefix, fn):
     absfn = os.path.abspath(fn)
@@ -91,25 +113,37 @@ def main(arguments=None):
         logger.error("Can only specify a single stdout file (run-command substitutions are permitted)")
         return
 
-    patterns = [re.compile("(--[^=]+=)(.*)"),
-                re.compile("(-[^=]+=)(.*)"),
+    if not args.dry_run:
+        api = arvados.api('v1')
+        if args.project_uuid:
+            project = args.project_uuid
+        else:
+            project = determine_project(os.getcwd(), api.users().current().execute()["uuid"])
+
+    patterns = [re.compile("([^=]+=)(.*)"),
                 re.compile("(-.)(.+)")]
 
-    for command in slots[1:]:
-        for i in xrange(0, len(command)):
-            a = command[i]
-            if a[0] == '-':
-                # parameter starts with '-' so it might be a command line
-                # parameter with a file name, do some pattern matching
+    for j, command in enumerate(slots[1:]):
+        for i, a in enumerate(command):
+            if j > 0 and i == 0:
+                # j == 0 is stdin, j > 0 is commands
+                # always skip program executable (i == 0) in commands
+                pass
+            elif a.startswith('\\'):
+                # if it starts with a \ then don't do any interpretation
+                command[i] = a[1:]
+            else:
+                # Do some pattern matching
                 matched = False
                 for p in patterns:
                     m = p.match(a)
                     if m:
                         command[i] = statfile(m.group(1), m.group(2))
+                        matched = True
                         break
-            else:
-                # parameter might be a file, so test it
-                command[i] = statfile('', a)
+                if not matched:
+                    # parameter might be a file, so test it
+                    command[i] = statfile('', a)
 
     n = True
     pathprefix = "/"
@@ -141,17 +175,32 @@ def main(arguments=None):
                 for c in files:
                     c.fn = c.fn[len(pathstep):]
 
+        orgdir = os.getcwd()
         os.chdir(pathprefix)
+
+        print("Upload local files: \"%s\"" % '" "'.join([c.fn for c in files]))
 
         if args.dry_run:
             print("cd %s" % pathprefix)
-            print("arv-put \"%s\"" % '" "'.join([c.fn for c in files]))
             pdh = "$(input)"
         else:
-            pdh = put.main(["--portable-data-hash"]+[c.fn for c in files])
+            files = sorted(files, key=lambda x: x.fn)
+            collection = arvados.CollectionWriter(api, num_retries=3)
+            stream = None
+            for f in files:
+                sp = os.path.split(f.fn)
+                if sp[0] != stream:
+                    stream = sp[0]
+                    collection.start_new_stream(stream)
+                collection.write_file(f.fn, sp[1])
+            item = api.collections().create(body={"owner_uuid": project, "manifest_text": collection.manifest_text()}).execute()
+            pdh = item["portable_data_hash"]
+            print "Uploaded to %s" % item["uuid"]
 
         for c in files:
             c.fn = "$(file %s/%s)" % (pdh, c.fn)
+
+        os.chdir(orgdir)
 
     for i in xrange(1, len(slots)):
         slots[i] = [("%s%s" % (c.prefix, c.fn)) if isinstance(c, ArvFile) else c for c in slots[i]]
@@ -169,7 +218,7 @@ def main(arguments=None):
 
     task_foreach = []
     group_parser = argparse.ArgumentParser()
-    group_parser.add_argument('--batch-size', type=int)
+    group_parser.add_argument('-b', '--batch-size', type=int)
     group_parser.add_argument('args', nargs=argparse.REMAINDER)
 
     for s in xrange(2, len(slots)):
@@ -178,7 +227,7 @@ def main(arguments=None):
                 inp = "input%i" % (s-2)
                 groupargs = group_parser.parse_args(slots[2][i+1:])
                 if groupargs.batch_size:
-                    component["script_parameters"][inp] = {"batch":groupargs.args, "size":groupargs.batch_size}
+                    component["script_parameters"][inp] = {"value": {"batch":groupargs.args, "size":groupargs.batch_size}}
                     slots[s] = slots[s][0:i] + [{"foreach": inp, "command": "$(%s)" % inp}]
                 else:
                     component["script_parameters"][inp] = groupargs.args
@@ -203,7 +252,7 @@ def main(arguments=None):
         component["script_parameters"]["task.ignore_rcode"] = args.ignore_rcode
 
     pipeline = {
-        "name": " | ".join([s[0] for s in slots[2:]]),
+        "name": "arv-run " + " | ".join([s[0] for s in slots[2:]]),
         "description": "@" + " ".join(starting_args) + "@",
         "components": {
             "command": component
@@ -214,7 +263,7 @@ def main(arguments=None):
     if args.dry_run:
         print(json.dumps(pipeline, indent=4))
     else:
-        api = arvados.api('v1')
+        pipeline["owner_uuid"] = project
         pi = api.pipeline_instances().create(body=pipeline).execute()
         print "Running pipeline %s" % pi["uuid"]
 
