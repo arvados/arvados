@@ -237,8 +237,8 @@ def copy_pipeline_template(pt_uuid, src, dst, args):
     # fetch the pipeline template from the source instance
     pt = src.pipeline_templates().get(uuid=pt_uuid).execute()
 
-    if recursive:
-        if not dst_git_repo:
+    if args.recursive:
+        if not args.dst_git_repo:
             abort('--dst-git-repo is required when copying a pipeline recursively.')
         # Copy input collections, docker images and git repos.
         pt = copy_collections(pt, src, dst, args)
@@ -271,7 +271,7 @@ def copy_collections(obj, src, dst, args):
     elif type(obj) == dict:
         return {v: copy_collections(obj[v], src, dst, args) for v in obj}
     elif type(obj) == list:
-        return [copy_collections(v, src, dst, force, args) for v in obj]
+        return [copy_collections(v, src, dst, args) for v in obj]
     return obj
 
 # copy_git_repos(p, src, dst, dst_repo)
