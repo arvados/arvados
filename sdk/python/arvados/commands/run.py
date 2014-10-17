@@ -121,7 +121,7 @@ def main(arguments=None):
             project = determine_project(os.getcwd(), api.users().current().execute()["uuid"])
 
     patterns = [re.compile("([^=]+=)(.*)"),
-                re.compile("(-.)(.+)")]
+                re.compile("(-[A-Za-z])(.+)")]
 
     for j, command in enumerate(slots[1:]):
         for i, a in enumerate(command):
