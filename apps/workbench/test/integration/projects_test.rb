@@ -194,7 +194,7 @@ class ProjectsTest < ActionDispatch::IntegrationTest
       find(".selectable", text: name).click
       assert(has_no_selector?(".modal-dialog-preview-pane"),
              "preview pane available in sharing dialog")
-      if share_type == 'users'
+      if share_type == 'users' and obj and obj['email']
         assert(page.has_text?(obj['email']), "Did not find user's email")
       end
       assert_raises(Capybara::ElementNotFound,
