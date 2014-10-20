@@ -47,22 +47,18 @@ func CopyChanToPipe(in <-chan string, out io.Writer) {
 	}
 }
 
-func OpenAndReadAll(filename string, log_chan chan<- string) ([]byte, error) {
-	in, err := os.Open(filename)
-	if err != nil {
-		if log_chan != nil {
-			log_chan <- fmt.Sprintf("crunchstat: open %s: %s", filename, err)
-		}
-		return nil, err
+var logChan chan string
+func LogPrintf(format string, args ...interface{}) {
+	if logChan == nil {
+		return
 	}
-	defer in.Close()
-	return ReadAllOrWarn(in, log_chan)
+	logChan <- fmt.Sprintf("crunchstat: " + format, args...)
 }
 
-func ReadAllOrWarn(in *os.File, log_chan chan<- string) ([]byte, error) {
+func ReadAllOrWarn(in *os.File) ([]byte, error) {
 	content, err := ioutil.ReadAll(in)
-	if err != nil && log_chan != nil {
-		log_chan <- fmt.Sprintf("crunchstat: read %s: %s", in.Name(), err)
+	if err != nil {
+		LogPrintf("read %s: %s", in.Name(), err)
 	}
 	return content, err
 }
@@ -104,16 +100,16 @@ func OpenStatFile(cgroup Cgroup, statgroup string, stat string) (*os.File, error
 		// [b] after all contained processes have exited.
 		reportedStatFile[stat] = path
 		if path == "" {
-			stderr <- fmt.Sprintf("crunchstat: did not find stats file: stat %s, statgroup %s, cid %s, parent %s, root %s", stat, statgroup, cgroup.cid, cgroup.parent, cgroup.root)
+			LogPrintf("did not find stats file: stat %s, statgroup %s, cid %s, parent %s, root %s", stat, statgroup, cgroup.cid, cgroup.parent, cgroup.root)
 		} else {
-			stderr <- fmt.Sprintf("crunchstat: reading stats from %s", path)
+			LogPrintf("reading stats from %s", path)
 		}
 	}
 	return file, err
 }
 
-func GetContainerNetStats(stderr chan<- string, cgroup Cgroup) (io.Reader, error) {
-	procsFile, err := OpenStatFile(stderr, cgroup, "cpuacct", "cgroup.procs")
+func GetContainerNetStats(cgroup Cgroup) (io.Reader, error) {
+	procsFile, err := OpenStatFile(cgroup, "cpuacct", "cgroup.procs")
 	if err != nil {
 		return nil, err
 	}
@@ -122,8 +118,9 @@ func GetContainerNetStats(stderr chan<- string, cgroup Cgroup) (io.Reader, error
 	for reader.Scan() {
 		taskPid := reader.Text()
 		statsFilename := fmt.Sprintf("/proc/%s/net/dev", taskPid)
-		stats, err := OpenAndReadAll(statsFilename, stderr)
+		stats, err := ioutil.ReadFile(statsFilename)
 		if err != nil {
+			LogPrintf("read %s: %s", statsFilename, err)
 			continue
 		}
 		return strings.NewReader(string(stats)), nil
@@ -137,8 +134,8 @@ type IoSample struct {
 	rxBytes    int64
 }
 
-func DoBlkIoStats(stderr chan<- string, cgroup Cgroup, lastSample map[string]IoSample) {
-	c, err := OpenStatFile(stderr, cgroup, "blkio", "blkio.io_service_bytes")
+func DoBlkIoStats(cgroup Cgroup, lastSample map[string]IoSample) {
+	c, err := OpenStatFile(cgroup, "blkio", "blkio.io_service_bytes")
 	if err != nil {
 		return
 	}
@@ -176,7 +173,7 @@ func DoBlkIoStats(stderr chan<- string, cgroup Cgroup, lastSample map[string]IoS
 				sample.txBytes-prev.txBytes,
 				sample.rxBytes-prev.rxBytes)
 		}
-		stderr <- fmt.Sprintf("crunchstat: blkio:%s %d write %d read%s", dev, sample.txBytes, sample.rxBytes, delta)
+		LogPrintf("blkio:%s %d write %d read%s", dev, sample.txBytes, sample.rxBytes, delta)
 		lastSample[dev] = sample
 	}
 }
@@ -186,8 +183,8 @@ type MemSample struct {
 	memStat    map[string]int64
 }
 
-func DoMemoryStats(stderr chan<- string, cgroup Cgroup) {
-	c, err := OpenStatFile(stderr, cgroup, "memory", "memory.stat")
+func DoMemoryStats(cgroup Cgroup) {
+	c, err := OpenStatFile(cgroup, "memory", "memory.stat")
 	if err != nil {
 		return
 	}
@@ -209,12 +206,12 @@ func DoMemoryStats(stderr chan<- string, cgroup Cgroup) {
 			outstat.WriteString(fmt.Sprintf(" %d %s", val, key))
 		}
 	}
-	stderr <- fmt.Sprintf("crunchstat: mem%s", outstat.String())
+	LogPrintf("mem%s", outstat.String())
 }
 
-func DoNetworkStats(stderr chan<- string, cgroup Cgroup, lastSample map[string]IoSample) {
+func DoNetworkStats(cgroup Cgroup, lastSample map[string]IoSample) {
 	sampleTime := time.Now()
-	stats, err := GetContainerNetStats(stderr, cgroup)
+	stats, err := GetContainerNetStats(cgroup)
 	if err != nil {
 		return
 	}
@@ -259,8 +256,7 @@ Iface:
 				tx-lastSample.txBytes,
 				rx-lastSample.rxBytes)
 		}
-		stderr <- fmt.Sprintf("crunchstat: net:%s %d tx %d rx%s",
-			ifName, tx, rx, delta)
+		LogPrintf("net:%s %d tx %d rx%s", ifName, tx, rx, delta)
 		lastSample[ifName] = nextSample
 	}
 }
@@ -275,13 +271,13 @@ type CpuSample struct {
 
 // Return the number of CPUs available in the container. Return 0 if
 // we can't figure out the real number of CPUs.
-func GetCpuCount(stderr chan<- string, cgroup Cgroup) int64 {
-	cpusetFile, err := OpenStatFile(stderr, cgroup, "cpuset", "cpuset.cpus")
+func GetCpuCount(cgroup Cgroup) int64 {
+	cpusetFile, err := OpenStatFile(cgroup, "cpuset", "cpuset.cpus")
 	if err != nil {
 		return 0
 	}
 	defer cpusetFile.Close()
-	b, err := ReadAllOrWarn(cpusetFile, stderr)
+	b, err := ReadAllOrWarn(cpusetFile)
 	sp := strings.Split(string(b), ",")
 	cpus := int64(0)
 	for _, v := range sp {
@@ -296,18 +292,18 @@ func GetCpuCount(stderr chan<- string, cgroup Cgroup) int64 {
 	return cpus
 }
 
-func DoCpuStats(stderr chan<- string, cgroup Cgroup, lastSample *CpuSample) {
-	statFile, err := OpenStatFile(stderr, cgroup, "cpuacct", "cpuacct.stat")
+func DoCpuStats(cgroup Cgroup, lastSample *CpuSample) {
+	statFile, err := OpenStatFile(cgroup, "cpuacct", "cpuacct.stat")
 	if err != nil {
 		return
 	}
 	defer statFile.Close()
-	b, err := ReadAllOrWarn(statFile, stderr)
+	b, err := ReadAllOrWarn(statFile)
 	if err != nil {
 		return
 	}
 
-	nextSample := CpuSample{true, time.Now(), 0, 0, GetCpuCount(stderr, cgroup)}
+	nextSample := CpuSample{true, time.Now(), 0, 0, GetCpuCount(cgroup)}
 	var userTicks, sysTicks int64
 	fmt.Sscanf(string(b), "user %d\nsystem %d", &userTicks, &sysTicks)
 	user_hz := float64(C.sysconf(C._SC_CLK_TCK))
@@ -321,12 +317,12 @@ func DoCpuStats(stderr chan<- string, cgroup Cgroup, lastSample *CpuSample) {
 			nextSample.user-lastSample.user,
 			nextSample.sys-lastSample.sys)
 	}
-	stderr <- fmt.Sprintf("crunchstat: cpu %.4f user %.4f sys %d cpus%s",
+	LogPrintf("cpu %.4f user %.4f sys %d cpus%s",
 		nextSample.user, nextSample.sys, nextSample.cpus, delta)
 	*lastSample = nextSample
 }
 
-func PollCgroupStats(cgroup Cgroup, stderr chan string, poll int64, stop_poll_chan <-chan bool) {
+func PollCgroupStats(cgroup Cgroup, poll int64, stop_poll_chan <-chan bool) {
 	var lastNetSample = map[string]IoSample{}
 	var lastDiskSample = map[string]IoSample{}
 	var lastCpuSample = CpuSample{}
@@ -347,10 +343,10 @@ func PollCgroupStats(cgroup Cgroup, stderr chan string, poll int64, stop_poll_ch
 		case <-poll_chan:
 			// Emit stats, then select again.
 		}
-		DoMemoryStats(stderr, cgroup)
-		DoCpuStats(stderr, cgroup, &lastCpuSample)
-		DoBlkIoStats(stderr, cgroup, lastDiskSample)
-		DoNetworkStats(stderr, cgroup, lastNetSample)
+		DoMemoryStats(cgroup)
+		DoCpuStats(cgroup, &lastCpuSample)
+		DoBlkIoStats(cgroup, lastDiskSample)
+		DoNetworkStats(cgroup, lastNetSample)
 	}
 }
 
@@ -376,12 +372,12 @@ func run(logger *log.Logger) error {
 		logger.Fatal("Must provide -cgroup-root")
 	}
 
-	stderr_chan := make(chan string, 1)
-	defer close(stderr_chan)
+	logChan = make(chan string, 1)
+	defer close(logChan)
 	finish_chan := make(chan bool)
 	defer close(finish_chan)
 
-	go CopyChanToPipe(stderr_chan, os.Stderr)
+	go CopyChanToPipe(logChan, os.Stderr)
 
 	var cmd *exec.Cmd
 
@@ -413,7 +409,7 @@ func run(logger *log.Logger) error {
 		if err != nil {
 			logger.Fatal(err)
 		}
-		go CopyPipeToChan(stderr_pipe, stderr_chan, finish_chan)
+		go CopyPipeToChan(stderr_pipe, logChan, finish_chan)
 
 		// Run subprocess
 		if err := cmd.Start(); err != nil {
@@ -432,7 +428,7 @@ func run(logger *log.Logger) error {
 		ok := false
 		var i time.Duration
 		for i = 0; i < time.Duration(wait)*time.Second; i += (100 * time.Millisecond) {
-			cid, err := OpenAndReadAll(cgroup_cidfile, nil)
+			cid, err := ioutil.ReadFile(cgroup_cidfile)
 			if err == nil && len(cid) > 0 {
 				ok = true
 				container_id = string(cid)
@@ -447,7 +443,7 @@ func run(logger *log.Logger) error {
 
 	stop_poll_chan := make(chan bool, 1)
 	cgroup := Cgroup{cgroup_root, cgroup_parent, container_id}
-	go PollCgroupStats(cgroup, stderr_chan, poll, stop_poll_chan)
+	go PollCgroupStats(cgroup, poll, stop_poll_chan)
 
 	// When the child exits, tell the polling goroutine to stop.
 	defer func() { stop_poll_chan <- true }()
