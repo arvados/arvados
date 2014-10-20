@@ -331,14 +331,10 @@ cd $WORKSPACE/debs
 build_and_scp_deb $WORKSPACE/services/nodemanager arvados-node-manager 'Curoverse, Inc.' 'python' "$(awk '($1 == "Version:"){print $2}' $WORKSPACE/services/nodemanager/arvados_node_manager.egg-info/PKG-INFO)" "--url=https://arvados.org" "--description=The Arvados node manager"
 
 # A few dependencies
-build_and_scp_deb python-gflags
-build_and_scp_deb pyvcf
-build_and_scp_deb google-api-python-client
-build_and_scp_deb oauth2client
-build_and_scp_deb uritemplate
-build_and_scp_deb httplib2
-build_and_scp_deb ws4py
-build_and_scp_deb virtualenv
+for deppkg in python-gflags pyvcf google-api-python-client oauth2client \
+      pyasn1 pyasn1-modules rsa uritemplate httplib2 ws4py virtualenv; do
+    build_and_scp_deb "$deppkg"
+done
 
 # Finally, publish the packages, if necessary
 if [[ "$UPLOAD" != 0 && "$CALL_FREIGHT" != 0 ]]; then
