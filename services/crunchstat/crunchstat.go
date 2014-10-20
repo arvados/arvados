@@ -12,6 +12,7 @@ import (
 	"os"
 	"os/exec"
 	"os/signal"
+	"strconv"
 	"strings"
 	"syscall"
 	"time"
@@ -217,31 +218,23 @@ func DoNetworkStats(cgroup Cgroup, lastSample map[string]IoSample) {
 	}
 
 	scanner := bufio.NewScanner(stats)
-Iface:
 	for scanner.Scan() {
 		var ifName string
 		var rx, tx int64
-		words := bufio.NewScanner(strings.NewReader(scanner.Text()))
-		words.Split(bufio.ScanWords)
-		wordIndex := 0
-		for words.Scan() {
-			word := words.Text()
-			switch wordIndex {
-			case 0:
-				ifName = strings.TrimRight(word, ":")
-			case 1:
-				if _, err := fmt.Sscanf(word, "%d", &rx); err != nil {
-					continue Iface
-				}
-			case 9:
-				if _, err := fmt.Sscanf(word, "%d", &tx); err != nil {
-					continue Iface
-				}
-			}
-			wordIndex++
+		words := strings.Fields(scanner.Text())
+		if len(words) != 17 {
+			// Skip lines with wrong format
+			continue
 		}
-		if ifName == "lo" || ifName == "" || wordIndex != 17 {
+		ifName = strings.TrimRight(words[0], ":")
+		if ifName == "lo" || ifName == "" {
 			// Skip loopback interface and lines with wrong format
+			continue
+		}
+		if tx, err = strconv.ParseInt(words[9], 10, 64); err != nil {
+			continue
+		}
+		if rx, err = strconv.ParseInt(words[1], 10, 64); err != nil {
 			continue
 		}
 		nextSample := IoSample{}
