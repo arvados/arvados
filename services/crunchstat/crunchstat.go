@@ -77,12 +77,13 @@ var reportedStatFile = map[string]string{}
 // container, and read /proc/PID/cgroup to determine the appropriate
 // cgroup root for the given statgroup. (This will avoid falling back
 // to host-level stats during container setup and teardown.)
-func OpenStatFile(stderr chan<- string, cgroup Cgroup, statgroup string, stat string) (*os.File, error) {
-	var paths = []string{}
-	paths = append(paths, fmt.Sprintf("%s/%s/%s/%s/%s", cgroup.root, statgroup, cgroup.parent, cgroup.cid, stat))
-	paths = append(paths, fmt.Sprintf("%s/%s/%s/%s", cgroup.root, cgroup.parent, cgroup.cid, stat))
-	paths = append(paths, fmt.Sprintf("%s/%s/%s", cgroup.root, statgroup, stat))
-	paths = append(paths, fmt.Sprintf("%s/%s", cgroup.root, stat))
+func OpenStatFile(cgroup Cgroup, statgroup string, stat string) (*os.File, error) {
+	var paths = []string{
+		fmt.Sprintf("%s/%s/%s/%s/%s", cgroup.root, statgroup, cgroup.parent, cgroup.cid, stat),
+		fmt.Sprintf("%s/%s/%s/%s", cgroup.root, cgroup.parent, cgroup.cid, stat),
+		fmt.Sprintf("%s/%s/%s", cgroup.root, statgroup, stat),
+		fmt.Sprintf("%s/%s", cgroup.root, stat),
+	}
 	var path string
 	var file *os.File
 	var err error
