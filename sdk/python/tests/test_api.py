@@ -1,6 +1,5 @@
 #!/usr/bin/env python
 
-import apiclient.errors
 import arvados
 import httplib2
 import json
@@ -8,8 +7,9 @@ import mimetypes
 import os
 import run_test_server
 import unittest
+from apiclient import errors as apiclient_errors
+from apiclient import http as apiclient_http
 
-from apiclient.http import RequestMockBuilder
 from arvados_testutil import fake_httplib2_response
 
 if not mimetypes.inited:
@@ -41,7 +41,7 @@ class ArvadosApiClientTest(unittest.TestCase):
             'arvados.humans.list': (None, json.dumps(
                     {'items_available': 0, 'items': []})),
             }
-        req_builder = RequestMockBuilder(mock_responses)
+        req_builder = apiclient_http.RequestMockBuilder(mock_responses)
         cls.api = arvados.api('v1', cache=False,
                               host=os.environ['ARVADOS_API_HOST'],
                               token='discovery-doc-only-no-token-needed',
@@ -58,14 +58,14 @@ class ArvadosApiClientTest(unittest.TestCase):
         self.assertEqual(answer['items_available'], len(answer['items']))
 
     def test_exceptions_include_errors(self):
-        with self.assertRaises(apiclient.errors.HttpError) as err_ctx:
+        with self.assertRaises(apiclient_errors.HttpError) as err_ctx:
             self.api.humans().get(uuid='xyz-xyz-abcdef').execute()
         err_s = str(err_ctx.exception)
         for msg in ["Bad UUID format", "Bad output format"]:
             self.assertIn(msg, err_s)
 
     def test_exceptions_without_errors_have_basic_info(self):
-        with self.assertRaises(apiclient.errors.HttpError) as err_ctx:
+        with self.assertRaises(apiclient_errors.HttpError) as err_ctx:
             self.api.humans().delete(uuid='xyz-xyz-abcdef').execute()
         self.assertIn("500", str(err_ctx.exception))
 

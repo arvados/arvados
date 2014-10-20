@@ -5,6 +5,7 @@ import (
 	"fmt"
 	"io/ioutil"
 	"os"
+	"syscall"
 	"testing"
 	"time"
 )
@@ -110,32 +111,41 @@ func TestPutTouch(t *testing.T) {
 	if err := v.Put(TEST_HASH, TEST_BLOCK); err != nil {
 		t.Error(err)
 	}
-	old_mtime, err := v.Mtime(TEST_HASH)
-	if err != nil {
-		t.Error(err)
+
+	// We'll verify { t0 < threshold < t1 }, where t0 is the
+	// existing block's timestamp on disk before Put() and t1 is
+	// its timestamp after Put().
+	threshold := time.Now().Add(-time.Second)
+
+	// Set the stored block's mtime far enough in the past that we
+	// can see the difference between "timestamp didn't change"
+	// and "timestamp granularity is too low".
+	{
+		oldtime := time.Now().Add(-20 * time.Second).Unix()
+		if err := syscall.Utime(v.blockPath(TEST_HASH),
+			&syscall.Utimbuf{oldtime, oldtime}); err != nil {
+			t.Error(err)
+		}
+
+		// Make sure v.Mtime() agrees the above Utime really worked.
+		if t0, err := v.Mtime(TEST_HASH); err != nil || t0.IsZero() || !t0.Before(threshold) {
+			t.Errorf("Setting mtime failed: %v, %v", t0, err)
+		}
 	}
-	if old_mtime.IsZero() {
-		t.Errorf("v.Mtime(%s) returned a zero mtime\n", TEST_HASH)
-	}
-	// Sleep for 1s, then put the block again.  The volume
-	// should report a more recent mtime.
-	//
-	// TODO(twp): this would be better handled with a mock Time object.
-	// Alternatively, set the mtime manually to some moment in the past
-	// (maybe a v.SetMtime method?)
-	//
-	time.Sleep(time.Second)
+
+	// Write the same block again.
 	if err := v.Put(TEST_HASH, TEST_BLOCK); err != nil {
 		t.Error(err)
 	}
-	new_mtime, err := v.Mtime(TEST_HASH)
+
+	// Verify threshold < t1
+	t1, err := v.Mtime(TEST_HASH)
 	if err != nil {
 		t.Error(err)
 	}
-
-	if !new_mtime.After(old_mtime) {
-		t.Errorf("v.Put did not update the block mtime:\nold_mtime = %v\nnew_mtime = %v\n",
-			old_mtime, new_mtime)
+	if t1.Before(threshold) {
+		t.Errorf("t1 %v must be >= threshold %v after v.Put ",
+			t1, threshold)
 	}
 }
 

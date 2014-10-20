@@ -150,9 +150,7 @@ module ApplicationHelper
 
   def render_editable_attribute(object, attr, attrvalue=nil, htmloptions={})
     attrvalue = object.send(attr) if attrvalue.nil?
-    if !object.attribute_editable?(attr, :ever) or
-        (!object.editable? and
-         !object.owner_uuid.in?(my_projects.collect(&:uuid)))
+    if not object.attribute_editable?(attr)
       if attrvalue && attrvalue.length > 0
         return render_attribute_as_textile( object, attr, attrvalue, false )
       else
@@ -241,10 +239,7 @@ module ApplicationHelper
       preconfigured_search_str = value_info[:search_for]
     end
 
-    if !object or
-        !object.attribute_editable?(attr, :ever) or
-        (!object.editable? and
-         !object.owner_uuid.in?(my_projects.collect(&:uuid)))
+    if not object.andand.attribute_editable?(attr)
       return link_to_if_arvados_object attrvalue
     end
 
