@@ -11,12 +11,12 @@ This page will demonstrate how to:
 # Fetch the arvados/jobs Docker image
 # Manually install additional software into the container
 # Create a new custom image
-# Upload that image to Arvados for use by Crunch jobs.
+# Upload that image to Arvados for use by Crunch jobs
 # Share your image with others
 
 {% include 'tutorial_expectations' %}
 
-*You also need ensure that "Docker is installed":https://docs.docker.com/installation/ and the Docker daemon is running.  You can test this by running @docker version@.*
+You also need ensure that "Docker is installed,":https://docs.docker.com/installation/ the Docker daemon is running, and you have permission to access Docker.  You can test this by running @docker version@.  If you receive a permission denied error, your user account may need to be added to the @docker@ group.  If you have root access, you can add yourself to the docker group using @$ sudo addgroup $USER docker@ then log out and log back in again; otherwise consult your local sysadmin.
 
 h2. Fetch a starting image
 
@@ -47,7 +47,7 @@ c7fd77eedb96: Download complete
 
 h2. Install new packages
 
-Next, enter the container using "docker run", the arvados/jobs image, and the program you want to run (in this case the bash shell).
+Next, enter the container using @docker run@, providing the arvados/jobs image and the program you want to run (in this case the bash shell).
 
 <notextile>
 <pre><code>$ <span class="userinput">docker run --interactive --tty --user root arvados/jobs /bin/bash</span>
@@ -152,7 +152,7 @@ Type 'q()' to quit R.
 </code></pre>
 </notextile>
 
-Note that you are not limited to installing Debian packages.  You may compile C programs or libraries from source and install them, edit systemwide configuration files, use other package managers such as @pip@ or @gem@, and perform any other customization necessary to run your program.
+Note that you are not limited to installing Debian packages.  You may compile programs or libraries from source and install them, edit systemwide configuration files, use other package managers such as @pip@ or @gem@, and perform any other customization necessary to run your program.
 
 h2. Create a new image
 
@@ -190,7 +190,7 @@ You are now able to specify the runtime environment for your program using the @
 {% code 'example_docker' as javascript %}
 </notextile>
 
-* The @docker_image@ field can be one of: the Docker repository name (as shown above), the Docker image hash, the Arvados collection uuid, or the Arvados collection portable data hash.
+* The @docker_image@ field can be one of: the Docker repository name (as shown above), the Docker image hash, the Arvados collection UUID, or the Arvados collection portable data hash.
 
 h2. Share Docker images
 
