@@ -40,9 +40,13 @@ logger = logging.getLogger('arvados.arv-copy')
 #
 local_repo_dir = {}
 
+# List of collections that have been copied in this session, and their
+# destination collection UUIDs.
+collections_copied = {}
+
 def main():
     parser = argparse.ArgumentParser(
-        description='Copy a pipeline instance from one Arvados instance to another.')
+        description='Copy a pipeline instance, template or collection from one Arvados instance to another.')
 
     parser.add_argument(
         '-v', '--verbose', dest='verbose', action='store_true',
@@ -203,8 +207,8 @@ def copy_pipeline_instance(pi_uuid, src, dst, args):
 
     else:
         # not recursive
-        print >>sys.stderr, "Copying only pipeline instance {}.".format(pi_uuid)
-        print >>sys.stderr, "You are responsible for making sure all pipeline dependencies have been updated."
+        logger.info("Copying only pipeline instance %s.", pi_uuid)
+        logger.info("You are responsible for making sure all pipeline dependencies have been updated.")
 
     # Update the pipeline instance properties, and create the new
     # instance at dst.
@@ -216,9 +220,8 @@ def copy_pipeline_instance(pi_uuid, src, dst, args):
     else:
         del pi['owner_uuid']
     del pi['uuid']
-    pi['ensure_unique_name'] = True
 
-    new_pi = dst.pipeline_instances().create(body=pi).execute()
+    new_pi = dst.pipeline_instances().create(body=pi, ensure_unique_name=True).execute()
     return new_pi
 
 # copy_pipeline_template(pt_uuid, src, dst, args)
@@ -247,26 +250,45 @@ def copy_pipeline_template(pt_uuid, src, dst, args):
     pt['description'] = "Pipeline template copied from {}\n\n{}".format(
         pt_uuid, pt.get('description', ''))
     pt['name'] = "{} copied from {}".format(pt.get('name', ''), pt_uuid)
-    pt['ensure_unique_name'] = True
     del pt['uuid']
     del pt['owner_uuid']
 
-    return dst.pipeline_templates().create(body=pt).execute()
+    return dst.pipeline_templates().create(body=pt, ensure_unique_name=True).execute()
 
 # copy_collections(obj, src, dst, args)
 #
 #    Recursively copies all collections referenced by 'obj' from src
-#    to dst.
+#    to dst.  obj may be a dict or a list, in which case we run
+#    copy_collections on every value it contains. If it is a string,
+#    search it for any substring that matches a collection hash or uuid
+#    (this will find hidden references to collections like
+#      "input0": "$(file 3229739b505d2b878b62aed09895a55a+142/HWI-ST1027_129_D0THKACXX.1_1.fastq)")
 #
 #    Returns a copy of obj with any old collection uuids replaced by
 #    the new ones.
 #
 def copy_collections(obj, src, dst, args):
-    if type(obj) in [str, unicode]:
-        if uuid_type(src, obj) == 'Collection':
-            newc = copy_collection(obj, src, dst, args)
-            if obj != newc['uuid'] and obj != newc['portable_data_hash']:
-                return newc['uuid']
+
+    def copy_collection_fn(src_id):
+        """Helper function for regex substitution: copies a single collection
+        identified by 'src_id' to the destination.  Returns the
+        destination collection uuid (or the portable data hash if
+        that's what src_id is).
+
+        """
+        if src_id not in collections_copied:
+            dst_col = copy_collection(src_id, src, dst, args)
+            if src_id in [dst_col['uuid'], dst_col['portable_data_hash']]:
+                collections_copied[src_id] = src_id
+            else:
+                collections_copied[src_id] = dst_col['uuid']
+        return collections_copied[src_id]
+
+    if isinstance(obj, basestring):
+        # Copy any collections identified in this string to dst, replacing
+        # them with the dst uuids as necessary.
+        obj = arvados.util.portable_data_hash_pattern.sub(copy_collection_fn, obj)
+        obj = arvados.util.collection_uuid_pattern.sub(copy_collection_fn, obj)
         return obj
     elif type(obj) == dict:
         return {v: copy_collections(obj[v], src, dst, args) for v in obj}
@@ -379,10 +401,9 @@ def copy_collection(obj_uuid, src, dst, args):
             logger.debug("Skipping collection %s (already at dst)", obj_uuid)
             return dstcol['items'][0]
 
-    logger.debug("Copying collection %s", obj_uuid)
-
     # Fetch the collection's manifest.
     manifest = c['manifest_text']
+    logger.debug("Copying collection %s with manifest: <%s>", obj_uuid, manifest)
 
     # Copy each block from src_keep to dst_keep.
     # Use the newly signed locators returned from dst_keep to build
@@ -420,22 +441,23 @@ def copy_collection(obj_uuid, src, dst, args):
                 # If 'word' can't be parsed as a locator,
                 # presume it's a filename.
                 dst_manifest_line += ' ' + word
-        dst_manifest += dst_manifest_line + "\n"
+        dst_manifest += dst_manifest_line
+        if line.endswith("\n"):
+            dst_manifest += "\n"
 
     if progress_writer:
         progress_writer.finish()
 
     # Copy the manifest and save the collection.
-    logger.debug('saving {} manifest: {}'.format(obj_uuid, dst_manifest))
+    logger.debug('saving %s with manifest: <%s>', obj_uuid, dst_manifest)
     dst_keep.put(dst_manifest)
 
     if 'uuid' in c:
         del c['uuid']
     if 'owner_uuid' in c:
         del c['owner_uuid']
-    c['ensure_unique_name'] = True
     c['manifest_text'] = dst_manifest
-    return dst.collections().create(body=c).execute()
+    return dst.collections().create(body=c, ensure_unique_name=True).execute()
 
 # copy_git_repo(src_git_repo, src, dst, dst_git_repo, script_version)
 #
@@ -533,7 +555,7 @@ def uuid_type(api, object_uuid):
     return None
 
 def abort(msg, code=1):
-    print >>sys.stderr, "arv-copy:", msg
+    logger.info("arv-copy:", msg)
     exit(code)
 
 
