@@ -485,4 +485,24 @@ class ProjectsTest < ActionDispatch::IntegrationTest
     end
   end
 
+  # Move button accessibility
+  [
+    ['admin', true],
+    ['active', true],  # project owner
+    ['project_viewer', false],
+    ].each do |user, can_move|
+    test "#{user} can move subproject under another user's Home #{can_move}" do
+      project = api_fixture('groups')['aproject']
+      collection = api_fixture('collections')['collection_to_move_around_in_aproject']
+
+      # verify the project move button
+      visit page_with_token user, "/projects/#{project['uuid']}"
+      if can_move
+        assert page.has_link? 'Move project...'
+      else
+        assert page.has_no_link? 'Move project...'
+      end
+    end
+  end
+
 end

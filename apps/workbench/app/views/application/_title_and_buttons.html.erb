@@ -31,7 +31,8 @@
         <i class="fa fa-fw fa-copy"></i> Copy to project...
       <% end %>
     <% end %>
-    <% if @object.owner_uuid == current_user.uuid or (Group.find(@object.owner_uuid).writable_by.include?(current_user.uuid) rescue nil) %>
+    <% if @object.owner_uuid == current_user.uuid or current_user.is_admin or
+                                (Group.find(@object.owner_uuid).writable_by.include?(current_user.uuid) rescue nil) %>
       <%= link_to(
           choose_projects_path(
            title: "Move this #{object_class} to:",
