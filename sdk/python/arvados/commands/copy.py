@@ -214,7 +214,8 @@ def copy_pipeline_instance(pi_uuid, src, dst, args):
     # instance at dst.
     pi['properties']['copied_from_pipeline_instance_uuid'] = pi_uuid
     pi['description'] = "Pipeline copied from {}\n\n{}".format(
-        pi_uuid, pi.get('description', ''))
+        pi_uuid,
+        pi['description'] if pi.get('description', None) else '')
     if args.project_uuid:
         pi['owner_uuid'] = args.project_uuid
     else:
@@ -248,7 +249,8 @@ def copy_pipeline_template(pt_uuid, src, dst, args):
         copy_git_repos(pt, src, dst, args.dst_git_repo)
 
     pt['description'] = "Pipeline template copied from {}\n\n{}".format(
-        pt_uuid, pt.get('description', ''))
+        pt_uuid,
+        pt['description'] if pt.get('description', None) else '')
     pt['name'] = "{} copied from {}".format(pt.get('name', ''), pt_uuid)
     del pt['uuid']
     del pt['owner_uuid']
@@ -447,6 +449,7 @@ def copy_collection(obj_uuid, src, dst, args):
             dst_manifest += "\n"
 
     if progress_writer:
+        progress_writer.report(obj_uuid, bytes_written, bytes_expected)
         progress_writer.finish()
 
     # Copy the manifest and save the collection.
@@ -556,7 +559,7 @@ def uuid_type(api, object_uuid):
     return None
 
 def abort(msg, code=1):
-    logger.info("arv-copy:", msg)
+    logger.info("arv-copy: %s", msg)
     exit(code)
 
 
