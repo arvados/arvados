@@ -485,4 +485,126 @@ class ProjectsTest < ActionDispatch::IntegrationTest
     end
   end
 
+  [
+    ['project with 10 collections', 10],
+    ['project with 201 collections', 201], # two pages of data
+  ].each do |project_name, amount|
+    test "scroll collections tab for #{project_name} with #{amount} objects" do
+      headless = Headless.new
+      headless.start
+      Capybara.current_driver = :selenium
+
+      visit page_with_token 'user1_with_load'
+
+      find("#projects-menu").click
+      find(".dropdown-menu a", text: project_name).click
+
+      my_collections = []
+      for i in 1..amount
+        my_collections << "Collection_#{i}"
+      end
+
+      # verify Data collections scroll
+      assert(page.has_text?("Data collections (#{amount})"), "Number of collections did not match the input amount")
+
+      click_link 'Data collections'
+      begin
+        wait_for_ajax
+      rescue
+      end
+
+      verify_collections = my_collections.dup
+      unexpected_items = []
+      collections_count = 0
+      within('.arv-project-Data_collections') do
+        page.execute_script "window.scrollBy(0,999000)"
+        begin
+          wait_for_ajax
+        rescue
+        end
+
+        # Visit all rows. If not all expected collections are found, retry
+        found_collections = page.all('tr[data-kind="arvados#collection"]')
+        collections_count = found_collections.count
+
+        (0..collections_count-1).each do |i|
+          # Found row text would be of the format "Show Collection_#{n} "
+          collection_name = found_collections[i].text.split[1]
+          if !my_collections.include? collection_name
+            unexpected_items << collection_name
+          else
+            verify_collections.delete collection_name
+          end
+        end
+
+        assert_equal true, unexpected_items.empty?, "Found unexpected items #{unexpected_items.inspect}"
+        assert_equal amount, collections_count, "Found different number of collections"
+        assert_equal true, verify_collections.empty?, "Did not find all the collections"
+      end
+    end
+  end
+
+  [
+    ['project with 10 pipelines', 10, 0],
+    ['project with 200 jobs and 10 pipelines', 10, 200],
+    ['project with 25 pipelines', 25, 0],
+  ].each do |project_name, num_pipelines, num_jobs|
+    test "scroll pipeline instances tab for #{project_name} with #{num_pipelines} pipelines and #{num_jobs} jobs" do
+      headless = Headless.new
+      headless.start
+      Capybara.current_driver = :selenium
+
+      visit page_with_token 'user1_with_load'
+
+      find("#projects-menu").click
+      find(".dropdown-menu a", text: project_name).click
+
+      my_pipelines = []
+      (1..num_pipelines).each do |i|
+        name = "pipeline_#{i}"
+        my_pipelines << name
+      end
+
+      # verify Jobs and pipelines tab scroll
+      assert(page.has_text?("Jobs and pipelines (#{num_pipelines+num_jobs})"), "Number of objects did not match the input counts")
+      click_link 'Jobs and pipelines'
+      begin
+        wait_for_ajax
+      rescue
+      end
+
+      verify_pipelines = my_pipelines.dup
+      unexpected_items = []
+      object_count = 0
+      within('.arv-project-Jobs_and_pipelines') do
+        page.execute_script "window.scrollBy(0,999000)"
+        begin
+          wait_for_ajax
+        rescue
+        end
+
+        # Visit all rows. Repeat if not all expected my_pipelines are found (inifinite scrolling should kick in)
+        pipelines_found = page.all('tr[data-kind="arvados#pipelineInstance"]')
+        found_pipeline_count = pipelines_found.count
+        (0..found_pipeline_count-1).each do |i|
+          name = pipelines_found[i].text.split[1]
+          if !my_pipelines.include? name
+            unexpected_items << name
+          else
+            verify_pipelines.delete name
+          end
+
+          assert_equal true, unexpected_items.empty?, "Found unexpected items #{unexpected_items.inspect}"
+        end
+
+        jobs_found = page.all('tr[data-kind="arvados#job"]')
+        found_job_count = jobs_found.count
+
+        assert_equal num_pipelines, found_pipeline_count, "Found different number of pipelines and jobs"
+        assert_equal num_jobs, found_job_count, 'Did not find expected number of jobs'
+        assert_equal true, verify_pipelines.empty?, "Did not find all the pipelines and jobs"
+      end
+    end
+  end
+
 end
