@@ -269,13 +269,14 @@ def copy_pipeline_template(pt_uuid, src, dst, args):
 #
 def copy_collections(obj, src, dst, args):
 
-    def copy_collection_fn(src_id):
-        """Helper function for regex substitution: copies a single collection
-        identified by 'src_id' to the destination.  Returns the
-        destination collection uuid (or the portable data hash if
-        that's what src_id is).
+    def copy_collection_fn(collection_match):
+        """Helper function for regex substitution: copies a single collection,
+        identified by the collection_match MatchObject, to the
+        destination.  Returns the destination collection uuid (or the
+        portable data hash if that's what src_id is).
 
         """
+        src_id = collection_match.group(0)
         if src_id not in collections_copied:
             dst_col = copy_collection(src_id, src, dst, args)
             if src_id in [dst_col['uuid'], dst_col['portable_data_hash']]:
@@ -419,7 +420,7 @@ def copy_collection(obj_uuid, src, dst, args):
     else:
         progress_writer = None
 
-    for line in manifest.splitlines():
+    for line in manifest.splitlines(True):
         words = line.split()
         dst_manifest_line = words[0]
         for word in words[1:]:
