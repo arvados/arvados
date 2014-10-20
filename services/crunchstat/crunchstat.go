@@ -242,12 +242,12 @@ func DoNetworkStats(cgroup Cgroup, lastSample map[string]IoSample) {
 		nextSample.txBytes = tx
 		nextSample.rxBytes = rx
 		var delta string
-		if lastSample, ok := lastSample[ifName]; ok {
-			interval := nextSample.sampleTime.Sub(lastSample.sampleTime).Seconds()
+		if prev, ok := lastSample[ifName]; ok {
+			interval := nextSample.sampleTime.Sub(prev.sampleTime).Seconds()
 			delta = fmt.Sprintf(" -- interval %.4f seconds %d tx %d rx",
 				interval,
-				tx-lastSample.txBytes,
-				rx-lastSample.rxBytes)
+				tx-prev.txBytes,
+				rx-prev.rxBytes)
 		}
 		LogPrintf("net:%s %d tx %d rx%s", ifName, tx, rx, delta)
 		lastSample[ifName] = nextSample
