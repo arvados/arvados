@@ -1,24 +1,28 @@
 ---
 layout: default
 navsection: userguide
-title: "Customizing the Crunch runtime environment"
+title: "Customizing Crunch environment using Docker"
 ...
 
-This page describes how to customize the runtime environment (e.g. the programs, libraries, and other dependencies needed to run a job) that a crunch script will be run in using "Docker.":https://www.docker.com/
+This page describes how to customize the runtime environment (e.g. the programs, libraries, and other dependencies needed to run a job) that a crunch script will be run in using "Docker.":https://www.docker.com/  Docker is a tool for building and running containers that isolate applications from other applications running on the same node.  For detailed information about Docker, see the "Docker User Guide.":https://docs.docker.com/userguide/
 
-This page will demonstrate:
+This page will demonstrate how to:
 
-# How to fetch the arvados/jobs Docker image
+# Fetch the arvados/jobs Docker image
 # Manually install additional software into the container
 # Create a new custom image
 # Upload that image to Arvados for use by Crunch jobs.
-
+# Share your image with others
 
 {% include 'tutorial_expectations' %}
 
-h2. Fetching a starting image
+*You also need ensure that "Docker is installed":https://docs.docker.com/installation/ and the Docker daemon is running.  You can test this by running @docker version@.*
 
-First, download the latest image from the Docker registry:
+h2. Fetch a starting image
+
+The easiest way to begin is to start from the "arvados/jobs" image which already has the Arvados SDK installed along with other configuration required for use with Crunch.
+
+Download the latest "arvados/jobs" image from the Docker registry:
 
 <notextile>
 <pre><code>$ <span class="userinput">docker pull arvados/jobs</span>
@@ -41,7 +45,7 @@ c7fd77eedb96: Download complete
 </code></pre>
 </notextile>
 
-h2. Installing new packages
+h2. Install new packages
 
 Next, enter the container using "docker run", the arvados/jobs image, and the program you want to run (in this case the bash shell).
 
@@ -184,4 +188,15 @@ You are now able to specify the runtime environment for your program using the @
 
 <notextile>
 {% code 'example_docker' as javascript %}
+</notextile>
+
+* The @docker_image@ field can be one of: the Docker repository name (as shown above), the Docker image hash, the Arvados collection uuid, or the Arvados collection portable data hash.
+
+h2. Share Docker images
+
+Docker images are subject to normal Arvados permissions.  If wish to share your Docker image with others (or wish to share a pipeline template that uses your Docker image) you will need to use @arv keep docker@ with the @--project-uuid@ option to upload the image to a shared project.
+
+<notextile>
+<pre><code>$ <span class="userinput">arv keep docker --project-uuid zzzzz-j7d0g-u7zg1qdaowykd8d arvados/jobs-with-r</span>
+</code></pre>
 </notextile>
