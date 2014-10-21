@@ -313,4 +313,48 @@ class PipelineInstancesTest < ActionDispatch::IntegrationTest
     assert_not page.has_text? 'Graph'
   end
 
+  (1..20).each do |index|
+    test "pipeline dates #{index}" do
+      visit page_with_token("user1_with_load", "/pipeline_instances/zzzzz-d1hrv-25pipelines0#{index.to_s.rjust(3, '0')}")
+      assert page.has_text? 'This pipeline started at'
+
+      page_text = page.text
+      match = /This pipeline started at (.*)\. It failed after (.*) seconds at (.*)\. Check the Log/.match page_text
+      start_at = match[1].split(' ')
+      ran_for = match[2].split(' ')
+      finished_at = match[3].split(' ')
+
+      # start and finished time display is of the format '2:20 PM 10/20/2014'
+      start_date = start_at[2].split('/')
+      start_time = Time.parse(start_date[2]+'/'+start_date[0]+'/'+start_date[1]+'T'+start_at[0])
+      if start_at[1].eql?('PM') and !start_at[0].start_with?('12:')
+        start_time += 12*60*60 
+      end
+
+      finished_date = finished_at[2].split('/')
+      finished_time = Time.parse(finished_date[2]+'/'+finished_date[0]+'/'+finished_date[1]+'T'+finished_at[0])
+      if finished_at[1].eql?('PM') and !finished_at[0].start_with?('12:')
+        finished_time += 12*60*60 
+      end
+
+      # ran for time display is of the format 4 minutes 52 seconds
+      run_time = ran_for[-1].to_i
+      if ran_for[-2].andand.start_with?('minute')
+        run_time += ran_for[-3].to_i*60 if ran_for[-3]
+      elsif ran_for[-2].andand.start_with?('hour')
+        run_time += ran_for[-3].to_i*60*60 if ran_for[-3]
+      elsif ran_for[-2].andand.start_with?('day')
+        run_time += ran_for[-3].to_i*60*60*60 if ran_for[-3]
+      end
+      if ran_for[-4].andand.start_with?('hour')
+        run_time += ran_for[-5].to_i*60*60 if ran_for[-5]
+      elsif ran_for[-4].andand.start_with?('day')
+        run_time += ran_for[-5].to_i*60*60*60 if ran_for[-5]
+      end
+      run_time += ran_for[-7].to_i*60*60*60 if ran_for[-7]
+
+      assert_equal(run_time, finished_time-start_time, "Time difference did not match for start_at #{start_at}, finished_at #{finished_at}, ran_for  #{ran_for}")
+    end
+  end
+
 end
