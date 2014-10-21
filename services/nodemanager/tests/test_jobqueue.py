@@ -14,7 +14,9 @@ class ServerCalculatorTestCase(unittest.TestCase):
 
     def calculate(self, servcalc, *constraints):
         return servcalc.servers_for_queue(
-            [{'runtime_constraints': cdict} for cdict in constraints])
+            [{'uuid': 'zzzzz-jjjjj-{:015x}'.format(index),
+              'runtime_constraints': cdict}
+             for index, cdict in enumerate(constraints)])
 
     def test_empty_queue_needs_no_servers(self):
         servcalc = self.make_calculator([1])
