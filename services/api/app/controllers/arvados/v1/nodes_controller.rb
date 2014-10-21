@@ -4,10 +4,8 @@ class Arvados::V1::NodesController < ApplicationController
   skip_before_filter :render_404_if_no_object, :only => :ping
 
   def create
-    @object = Node.new
-    @object.save!
-    @object.start!(lambda { |h| ping_arvados_v1_node_url(h) })
-    show
+    @attrs = {}
+    super
   end
 
   def update
