@@ -463,7 +463,7 @@ class Dispatcher
               # crunch_log_throttle_bytes immediately. However, we'll
               # leave [...] in bufend: if the trailing end of the long
               # line does end up getting sent anywhere, it will have
-              # some indication that it incomplete.
+              # some indication that it is incomplete.
               bufend = "[...]"
             else
               # If line length is sane, we'll wait for the rest of the
