@@ -182,7 +182,7 @@ class ProjectsTest < ActionDispatch::IntegrationTest
     find('#project_sharing').all('tr')
   end
 
-  def add_share_and_check(share_type, name)
+  def add_share_and_check(share_type, name, obj=nil)
     assert(page.has_no_text?(name), "project is already shared with #{name}")
     start_share_count = share_rows.size
     click_on("Share with #{share_type}")
@@ -194,6 +194,9 @@ class ProjectsTest < ActionDispatch::IntegrationTest
       find(".selectable", text: name).click
       assert(has_no_selector?(".modal-dialog-preview-pane"),
              "preview pane available in sharing dialog")
+      if share_type == 'users' and obj and obj['email']
+        assert(page.has_text?(obj['email']), "Did not find user's email")
+      end
       assert_raises(Capybara::ElementNotFound,
                     "Projects pulldown available from sharing dialog") do
         click_on "All projects"
@@ -240,7 +243,7 @@ class ProjectsTest < ActionDispatch::IntegrationTest
 
     show_project_using("active")
     click_on "Sharing"
-    add_share_and_check("users", new_name)
+    add_share_and_check("users", new_name, add_user)
     modify_share_and_check(new_name)
   end
 
@@ -546,7 +549,7 @@ class ProjectsTest < ActionDispatch::IntegrationTest
 
   [
     ['project with 10 pipelines', 10, 0],
-    ['project with 200 jobs and 10 pipelines', 10, 200],
+    ['project with 200 jobs and 10 pipelines', 2, 200],
     ['project with 25 pipelines', 25, 0],
   ].each do |project_name, num_pipelines, num_jobs|
     test "scroll pipeline instances tab for #{project_name} with #{num_pipelines} pipelines and #{num_jobs} jobs" do
