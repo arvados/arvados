@@ -444,33 +444,26 @@ class Dispatcher
           next
         end
 
-        # Add to the stream buffer
+        # Append to incomplete line from previous read, if any
         streambuf << buf
 
-        # Check for at least one complete line
-        if streambuf.index "\n"
-          lines = streambuf.lines("\n").to_a
-
-          # check if the last line is partial or not
-          streambuf.replace(if streambuf[-1] == "\n"
-                              ''        # ends on a newline
-                            else
-                              lines.pop # Put the partial line back into the buffer
-                            end)
-
-          # Now spool the lines to the log output buffer
-          lines.each do |line|
-            # rate_limit returns true or false as to whether to actually log
-            # the line or not.  It also modifies "line" in place to replace
-            # it with an error if a logging limit is tripped.
-            if rate_limit j, line
-              $stderr.print "#{job_uuid} ! " unless line.index(job_uuid)
-              $stderr.puts line
-              pub_msg = "#{Time.now.ctime.to_s} #{line.strip}\n"
-              j[:stderr_buf_to_flush] << pub_msg
-            end
+        bufend = ''
+        streambuf.lines("\n").each do |line|
+          if not line.end_with? "\n"
+            bufend = line
+            break
+          end
+          # rate_limit returns true or false as to whether to actually log
+          # the line or not.  It also modifies "line" in place to replace
+          # it with an error if a logging limit is tripped.
+          if rate_limit j, line
+            $stderr.print "#{job_uuid} ! " unless line.index(job_uuid)
+            $stderr.puts line
+            pub_msg = "#{Time.now.ctime.to_s} #{line.strip}\n"
+            j[:stderr_buf_to_flush] << pub_msg
           end
         end
+        streambuf.replace bufend
       end
       # Flush buffered logs to the logs table, if appropriate. We have
       # to do this even if we didn't collect any new logs this time:
