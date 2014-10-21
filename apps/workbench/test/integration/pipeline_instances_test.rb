@@ -314,7 +314,7 @@ class PipelineInstancesTest < ActionDispatch::IntegrationTest
   end
 
   (1..20).each do |index|
-    test "pipeline dates #{index}" do
+    test "pipeline start and finish time display #{index}" do
       visit page_with_token("user1_with_load", "/pipeline_instances/zzzzz-d1hrv-25pipelines0#{index.to_s.rjust(3, '0')}")
       assert page.has_text? 'This pipeline started at'
 
@@ -337,7 +337,7 @@ class PipelineInstancesTest < ActionDispatch::IntegrationTest
         finished_time += 12*60*60 
       end
 
-      # ran for time display is of the format 4 minutes 52 seconds
+      # ran_for time display is of the format "4 minutes 52 seconds"
       run_time = ran_for[-1].to_i
       if ran_for[-2].andand.start_with?('minute')
         run_time += ran_for[-3].to_i*60 if ran_for[-3]
