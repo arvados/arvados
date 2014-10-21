@@ -97,18 +97,19 @@ end
 class ApiServerForTests
   ARV_API_SERVER_DIR = File.expand_path('../../../../services/api', __FILE__)
   SERVER_PID_PATH = File.expand_path('tmp/pids/wbtest-server.pid', ARV_API_SERVER_DIR)
+  WEBSOCKET_PID_PATH = File.expand_path('tmp/pids/wstest-server.pid', ARV_API_SERVER_DIR)
   @main_process_pid = $$
 
-  def self._system(*cmd)
+  def _system(*cmd)
     $stderr.puts "_system #{cmd.inspect}"
     Bundler.with_clean_env do
-      if not system({'RAILS_ENV' => 'test'}, *cmd)
+      if not system({'RAILS_ENV' => 'test', "ARVADOS_WEBSOCKETS" => (if @websocket then "ws-only" end)}, *cmd)
         raise RuntimeError, "#{cmd[0]} returned exit code #{$?.exitstatus}"
       end
     end
   end
 
-  def self.make_ssl_cert
+  def make_ssl_cert
     unless File.exists? './self-signed.key'
       _system('openssl', 'req', '-new', '-x509', '-nodes',
               '-out', './self-signed.pem',
@@ -118,27 +119,29 @@ class ApiServerForTests
     end
   end
 
-  def self.kill_server
+  def kill_server
     if (pid = find_server_pid)
       $stderr.puts "Sending TERM to API server, pid #{pid}"
       Process.kill 'TERM', pid
     end
   end
 
-  def self.find_server_pid
+  def find_server_pid
     pid = nil
     begin
-      pid = IO.read(SERVER_PID_PATH).to_i
+      pid = IO.read(if @websocket then WEBSOCKET_PID_PATH else SERVER_PID_PATH end).to_i
       $stderr.puts "API server is running, pid #{pid.inspect}"
     rescue Errno::ENOENT
     end
     return pid
   end
 
-  def self.run(args=[])
+  def run(args=[])
     ::MiniTest.after_run do
       self.kill_server
     end
+
+    @websocket = args.include?("--websockets")
 
     # Kill server left over from previous test run
     self.kill_server
@@ -146,14 +149,19 @@ class ApiServerForTests
     Capybara.javascript_driver = :poltergeist
     Dir.chdir(ARV_API_SERVER_DIR) do |apidir|
       ENV["NO_COVERAGE_TEST"] = "1"
-      make_ssl_cert
-      _system('bundle', 'exec', 'rake', 'db:test:load')
-      _system('bundle', 'exec', 'rake', 'db:fixtures:load')
-      _system('bundle', 'exec', 'passenger', 'start', '-d', '-p3000',
-              '--pid-file', SERVER_PID_PATH,
-              '--ssl',
-              '--ssl-certificate', 'self-signed.pem',
-              '--ssl-certificate-key', 'self-signed.key')
+      if @websocket
+        _system('bundle', 'exec', 'passenger', 'start', '-d', '-p3333',
+                '--pid-file', WEBSOCKET_PID_PATH)
+      else
+        make_ssl_cert
+        _system('bundle', 'exec', 'rake', 'db:test:load')
+        _system('bundle', 'exec', 'rake', 'db:fixtures:load')
+        _system('bundle', 'exec', 'passenger', 'start', '-d', '-p3000',
+                '--pid-file', SERVER_PID_PATH,
+                '--ssl',
+                '--ssl-certificate', 'self-signed.pem',
+                '--ssl-certificate-key', 'self-signed.key')
+      end
       timeout = Time.now.tv_sec + 10
       good_pid = false
       while (not good_pid) and (Time.now.tv_sec < timeout)
@@ -191,5 +199,6 @@ class ActionController::TestCase
 end
 
 if ENV["RAILS_ENV"].eql? 'test'
-  ApiServerForTests.run
+  ApiServerForTests.new.run
+  ApiServerForTests.new.run ["--websockets"]
 end
