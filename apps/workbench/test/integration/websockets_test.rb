@@ -17,4 +17,20 @@ class WebsocketTest < ActionDispatch::IntegrationTest
     assert page.has_text? '"status":400'
   end
 
+  test "test live logging" do
+    visit(page_with_token("active", "/pipeline_instances/zzzzz-d1hrv-9fm8l10i9z2kqc6"))
+    click_link("Log")
+    assert page.has_no_text? '123 hello'
+
+    api = ArvadosApiClient.new
+
+    Thread.current[:arvados_api_token] = @@API_AUTHS["active"]['api_token']
+    api.api("logs", "", {log: {
+                object_uuid: "zzzzz-d1hrv-9fm8l10i9z2kqc6",
+                event_type: "stderr",
+                properties: {"text" => "123 hello"}}})
+    assert page.has_text? '123 hello'
+    Thread.current[:arvados_api_token] = nil
+  end
+
 end
