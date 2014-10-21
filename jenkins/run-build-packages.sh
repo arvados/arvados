@@ -125,7 +125,7 @@ build_and_scp_deb () {
     PACKAGE_TYPE='python'
   fi
 
-  declare -a COMMAND_ARR=("fpm" "--maintainer=Ward Vandewege <ward@curoverse.com>" "-s" "$PACKAGE_TYPE" "-t" "deb")
+  declare -a COMMAND_ARR=("fpm" "--maintainer=Ward Vandewege <ward@curoverse.com>" "-s" "$PACKAGE_TYPE" "-t" "deb" "-x" "usr/local/lib/python2.7/dist-packages/tests")
 
   if [[ "$PACKAGE_NAME" != "$PACKAGE" ]]; then
     COMMAND_ARR+=('-n' "$PACKAGE_NAME")
@@ -291,7 +291,7 @@ fi
 
 # Build arvados src deb package
 cd $WORKSPACE/debs
-build_and_scp_deb $WORKSPACE/src-build-dir/=/usr/local/arvados/src arvados-src 'Curoverse, Inc.' 'dir' "0.1.$GIT_HASH" "-x 'usr/local/arvados/src/.git*'" "--url=https://arvados.org" "--license=GNU Affero General Public License, version 3.0" "--description=The Arvados source code" "--architecture=all"
+build_and_scp_deb $WORKSPACE/src-build-dir/=/usr/local/arvados/src arvados-src 'Curoverse, Inc.' 'dir' "0.1.$GIT_HASH" "--exclude=usr/local/arvados/src/.git" "--url=https://arvados.org" "--license=GNU Affero General Public License, version 3.0" "--description=The Arvados source code" "--architecture=all"
 
 # clean up, check out master and step away from detached-head state
 cd "$WORKSPACE/src-build-dir"
