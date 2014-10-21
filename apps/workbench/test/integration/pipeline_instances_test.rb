@@ -313,9 +313,9 @@ class PipelineInstancesTest < ActionDispatch::IntegrationTest
     assert_not page.has_text? 'Graph'
   end
 
-  (1..20).each do |index|
+  (1..10).each do |index|
     test "pipeline start and finish time display #{index}" do
-      visit page_with_token("user1_with_load", "/pipeline_instances/zzzzz-d1hrv-25pipelines0#{index.to_s.rjust(3, '0')}")
+      visit page_with_token("user1_with_load", "/pipeline_instances/zzzzz-d1hrv-10pipelines0#{index.to_s.rjust(3, '0')}")
       assert page.has_text? 'This pipeline started at'
 
       page_text = page.text

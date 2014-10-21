@@ -158,10 +158,12 @@ pipeline_with_newer_template:
 <% for i in 1..10 do %>
 pipeline_<%=i%>_of_10:
   name: pipeline_<%= i %>
-  state: New
-  uuid: zzzzz-d1hrv-10gneyn6br1x<%= i.to_s.rjust(3, '0') %>
+  state: Failed
+  uuid: zzzzz-d1hrv-10pipelines0<%= i.to_s.rjust(3, '0') %>
   owner_uuid: zzzzz-j7d0g-000010pipelines
-  created_at: <%= i.minute.ago.to_s(:db) %>
+  created_at: <%= i.hour.ago.to_s(:db) %>
+  started_at: <%= i.hour.ago.to_s(:db) %>
+  finished_at: <%= i.minute.ago.to_s(:db) %>
   components:
     foo:
       script: foo
@@ -173,9 +175,9 @@ pipeline_<%=i%>_of_10:
           title: foo instance input
 <% end %>
 
-# pipelines in project_with_10_pipelines_and_200_jobs
+# pipelines in project_with_2_pipelines_and_200_jobs
 <% for i in 1..2 do %>
-pipeline_<%=i%>_of_10_pipelines_and_200_jobs:
+pipeline_<%=i%>_of_2_pipelines_and_200_jobs:
   name: pipeline_<%= i %>
   state: New
   uuid: zzzzz-d1hrv-abcgneyn6brx<%= i.to_s.rjust(3, '0') %>
