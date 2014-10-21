@@ -70,6 +70,17 @@ if ! [[ -n "$WORKSPACE" ]]; then
   exit 1
 fi
 
+# Test for fpm
+fpm --version >/dev/null 2>&1
+
+if [[ "$?" != 0 ]]; then
+  echo >&2 "$helpmessage"
+  echo >&2
+  echo >&2 "Error: fpm not found"
+  echo >&2
+  exit 1
+fi
+
 if [[ "$DEBUG" != 0 ]]; then
   echo "Workspace is $WORKSPACE"
 fi
