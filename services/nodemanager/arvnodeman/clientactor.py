@@ -40,6 +40,7 @@ class RemotePollLoopActor(actor_class):
         self._timer = timer_actor
         self._logger = logging.getLogger(self.LOGGER_NAME)
         self._later = self.actor_ref.proxy()
+        self.log_prefix = "{} (at {})".format(self.__class__.__name__, id(self))
         self.min_poll_wait = poll_wait
         self.max_poll_wait = max_poll_wait
         self.poll_wait = self.min_poll_wait
@@ -70,6 +71,8 @@ class RemotePollLoopActor(actor_class):
         raise NotImplementedError("subclasses must implement request method")
 
     def _got_response(self, response):
+        self._logger.debug("%s got response with %d items",
+                           self.log_prefix, len(response))
         self.poll_wait = self.min_poll_wait
         _notify_subscribers(response, self.all_subscribers)
         if hasattr(self, '_item_key'):
@@ -79,10 +82,11 @@ class RemotePollLoopActor(actor_class):
 
     def _got_error(self, error):
         self.poll_wait = min(self.poll_wait * 2, self.max_poll_wait)
-        self._logger.warning("Client error: %s - waiting %s seconds",
-                             error, self.poll_wait)
+        self._logger.warning("%s got error: %s - waiting %s seconds",
+                             self.log_prefix, error, self.poll_wait)
 
     def poll(self):
+        self._logger.debug("%s sending poll", self.log_prefix)
         start_time = time.time()
         try:
             response = self._send_request()
