@@ -449,8 +449,8 @@ class Dispatcher
         streambuf << buf
 
         bufend = ''
-        streambuf.lines("\n").each do |line|
-          if not line.end_with? "\n"
+        streambuf.each_line do |line|
+          if not line.end_with? $/
             if line.size > Rails.configuration.crunch_log_throttle_bytes
               # Without a limit here, we'll use 2x an arbitrary amount
               # of memory, and waste a lot of time copying strings
