@@ -23,8 +23,9 @@ class TimedCallBackActor(actor_class):
         self.max_sleep = max_sleep
 
     def schedule(self, delivery_time, receiver, *args, **kwargs):
+        if not self.messages:
+            self._proxy.deliver()
         heapq.heappush(self.messages, (delivery_time, receiver, args, kwargs))
-        self._proxy.deliver()
 
     def deliver(self):
         if not self.messages:
