@@ -440,6 +440,7 @@ class Dispatcher
         if not j[:log_throttle_is_open]
           j[:log_throttle_bytes_skipped] += streambuf.size + buf.size
           streambuf.replace ''
+          next
         elsif buf == ''
           next
         end
