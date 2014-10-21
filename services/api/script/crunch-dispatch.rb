@@ -450,14 +450,20 @@ class Dispatcher
         bufend = ''
         streambuf.lines("\n").each do |line|
           if not line.end_with? "\n"
-            if line.size > 2**20
+            if line.size > Rails.configuration.crunch_log_throttle_bytes
               # Without a limit here, we'll use 2x an arbitrary amount
               # of memory, and waste a lot of time copying strings
               # around, all without providing any feedback to anyone
               # about what's going on _or_ hitting any of our throttle
-              # limits. Better to introduce a spurious line break once
-              # in a while:
-              line << "[...]\n"
+              # limits.
+              #
+              # Here we leave "line" alone, knowing it will never be
+              # sent anywhere: rate_limit() will reach
+              # crunch_log_throttle_bytes immediately. However, we'll
+              # leave [...] in bufend: if the trailing end of the long
+              # line does end up getting sent anywhere, it will have
+              # some indication that it incomplete.
+              bufend = "[...]"
             else
               # If line length is sane, we'll wait for the rest of the
               # line to appear in the next read_pipes() call.
