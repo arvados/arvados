@@ -450,8 +450,20 @@ class Dispatcher
         bufend = ''
         streambuf.lines("\n").each do |line|
           if not line.end_with? "\n"
-            bufend = line
-            break
+            if line.size > 2**20
+              # Without a limit here, we'll use 2x an arbitrary amount
+              # of memory, and waste a lot of time copying strings
+              # around, all without providing any feedback to anyone
+              # about what's going on _or_ hitting any of our throttle
+              # limits. Better to introduce a spurious line break once
+              # in a while:
+              line << "[...]\n"
+            else
+              # If line length is sane, we'll wait for the rest of the
+              # line to appear in the next read_pipes() call.
+              bufend = line
+              break
+            end
           end
           # rate_limit returns true or false as to whether to actually log
           # the line or not.  It also modifies "line" in place to replace
@@ -463,6 +475,9 @@ class Dispatcher
             j[:stderr_buf_to_flush] << pub_msg
           end
         end
+
+        # Leave the trailing incomplete line (if any) in streambuf for
+        # next time.
         streambuf.replace bufend
       end
       # Flush buffered logs to the logs table, if appropriate. We have
