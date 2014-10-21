@@ -61,6 +61,7 @@
 <table id="project_sharing" class="topalign table" style="clear: both; margin-top: 1em;">
   <tr>
     <th>User/Group Name</th>
+    <th>Email Address</th>
     <th colspan="2">Project Access</th>
   </tr>
 
@@ -72,11 +73,18 @@
          link_name = shared_with.full_name
        else
          link_name = shared_with.name
-       end %>
+       end
+       if shared_with && shared_with.respond_to?(:email)
+         email = shared_with.email
+       end
+  %>
   <tr data-object-uuid="<%= link.uuid %>">
     <td>
       <i class="fa fa-fw <%= fa_icon_class_for_uuid(link.tail_uuid) %>"></i>
       <%= link_to_if_arvados_object(link.tail_uuid, link_text: link_name) %>
+    </td>
+    <td>
+      <%= email %>
     </td>
     <td><%= link_to perm_name_desc_map[link.name], '#', {
       "data-emptytext" => "Read",
