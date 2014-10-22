@@ -22,7 +22,6 @@
   <div class="tab-content">
     <% pane_list.each_with_index do |pane, i| %>
       <% pane_name = (pane.is_a?(Hash) ? pane[:name] : pane) %>
-      <% puts pane.is_a?(Hash) && pane[:no_auto_reload] %>
       <div id="<%= pane_name %>"
            class="tab-pane <%= 'in active pane-loaded' if i==0 %>"
            <% if controller.action_name == "index" %>
