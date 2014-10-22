@@ -47,6 +47,14 @@ $(document).on('ready ajax:complete', function() {
     run_pipeline_button_state();
 });
 
+$(document).on('arv-log-event', '.arv-refresh-on-state-change', function(event, eventData){
+    if (eventData.event_type == "update" &&
+        eventData.properties.old_attributes.state != eventData.properties.new_attributes.state)
+    {
+        $(event.target).trigger('arv:pane:reload');
+    }
+});
+
 $(document).on('arv-log-event', '.arv-log-event-handler-append-logs', function(event, eventData){
     var wasatbottom = ($(this).scrollTop() + $(this).height() >= this.scrollHeight);
 
@@ -86,9 +94,3 @@ var showhide_compare = function() {
 };
 $('[data-object-uuid*=-d1hrv-] input[name="uuids[]"]').on('click', showhide_compare);
 showhide_compare();
-
-setInterval(function(){
-    if ($('[data-pipeline-state=RunningOnServer],[data-pipeline-state=RunningOnClient]').length > 0) {
-        $('#Components-tab,#Graph-tab,#pipeline-instance-tab-buttons').trigger('arv:pane:reload');
-    }
-}, 15000);

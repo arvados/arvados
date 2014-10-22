@@ -18,12 +18,12 @@
 <% content_for :tab_line_buttons do %>
 
   <div id="pipeline-instance-tab-buttons"
-       class="pane-anchor active arv-log-event-listener arv-refresh-on-pipeline-state-change"
+       class="pane-anchor active arv-log-event-listener arv-refresh-on-state-change"
        href="#pipeline-instance-tab-buttons-pane"
        data-pane-content-url="<%= url_for(params.merge(tab_pane: "tab_buttons")) %>"
        data-object-uuid="<%= @object.uuid %>"
        >
-    <div id="pipeline-instance-tab-buttons-pane">
+    <div id="pipeline-instance-tab-buttons-pane" class="active">
       <%= render partial: 'show_tab_buttons', locals: {object: @object}%>
     </div>
   </div>

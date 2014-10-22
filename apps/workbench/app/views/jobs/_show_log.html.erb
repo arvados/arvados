@@ -1,11 +1,10 @@
 <% if !@object.log %>
 
 <% log_history = stderr_log_history([@object.uuid]) %>
-<div class="arv-log-event-listener arv-log-event-handler-append-logs arv-job-log-window" id="pipeline_event_log_div" data-object-uuids="<%= @object.uuid %>">
-  <% log_history.each do |entry| %>
-    <%=entry%><br/>
-  <% end %>
+
+<div class="arv-log-event-listener arv-log-event-handler-append-logs arv-job-log-window" id="pipeline_event_log_div" data-object-uuid="<%= @object.uuid %>"><%= log_history.join("\n") %>
 </div>
+
 
 <% else %>
 

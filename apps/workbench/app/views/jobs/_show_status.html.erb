@@ -1,9 +1,16 @@
 <div style="margin-top: 10px">
-<% pj = {} %>
-<% pj[:job] = @object %>
-<% pj[:name] = @object[:name] || "this job" %>
-<% tasks = JobTask.filter([['job_uuid', '=', @object.uuid]]).results %>
-<%= render partial: 'pipeline_instances/running_component', locals: {tasks: tasks, pj: pj, i: 0, expanded: true} %>
+
+<div id="job-status"
+     class="pane-anchor arv-log-event-listener arv-refresh-on-log-event"
+     href="#job-status-pane"
+     data-pane-content-url="<%= url_for(params.merge(tab_pane: "job_component")) %>"
+     data-object-uuid="<%= @object.uuid %>"
+     data-load-throttle="5000"
+     >
+  <div id="job-status-pane" class="active">
+    <%= render 'show_job_component' %>
+  </div>
+</div>
 </div>
 
   <div class="panel panel-default">
@@ -17,7 +24,7 @@
   <% pipeline.components.each do |k, v| %>
     <% if v[:job] and v[:job][:uuid] == @object.uuid %>
       <div>
-      <b><%= k %></b> component of <%= link_to_if_arvados_object pipeline, friendly_name: true %> 
+      <b><%= k %></b> component of <%= link_to_if_arvados_object pipeline, friendly_name: true %>
       created at <%= render_localized_date(pipeline.created_at) %>.
       </div>
     <% end %>

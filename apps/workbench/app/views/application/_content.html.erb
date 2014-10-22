@@ -7,7 +7,7 @@
       <% pane_name = (pane.is_a?(Hash) ? pane[:name] : pane) %>
       <li class="<%= 'active' if i==0 %>">
         <a href="#<%= pane_name %>"
-           class="pane-anchor"
+           class="pane-anchor <%= 'pane-no-auto-reload' if pane.is_a?(Hash) && pane[:no_auto_reload] %>"
            id="<%= pane_name %>-tab"
            data-toggle="tab"
            data-tab-history=true
@@ -22,8 +22,9 @@
   <div class="tab-content">
     <% pane_list.each_with_index do |pane, i| %>
       <% pane_name = (pane.is_a?(Hash) ? pane[:name] : pane) %>
+      <% puts pane.is_a?(Hash) && pane[:no_auto_reload] %>
       <div id="<%= pane_name %>"
-           class="tab-pane <%= 'in active loaded' if i==0 %>"
+           class="tab-pane <%= 'in active pane-loaded' if i==0 %>"
            <% if controller.action_name == "index" %>
              data-object-kind="arvados#<%= ArvadosApiClient.class_kind controller.model_class %>"
            <% else %>

@@ -231,9 +231,11 @@ class PipelineInstancesController < ApplicationController
   end
 
   def show_pane_list
-    panes = %w(Components Log Graph Advanced)
+    panes = %w(Components Graph Advanced)
     if @object and @object.state.in? ['New', 'Ready']
-      panes = %w(Inputs) + panes - %w(Log)
+      panes = %w(Inputs) + panes
+    else
+      panes.insert(1, {:name => "Log", :no_auto_reload => true})
     end
     if not @object.components.values.any? { |x| x[:job] rescue false }
       panes -= ['Graph']
