@@ -1718,6 +1718,7 @@ if (readlink ("$destdir.commit") eq $commit && -d $destdir) {
 }
 
 unlink "$destdir.commit";
+open STDERR_ORIG, ">&STDERR";
 open STDOUT, ">", "$destdir.log";
 open STDERR, ">&STDOUT";
 
@@ -1772,8 +1773,12 @@ sub shell_or_die
   if ($ENV{"DEBUG"}) {
     print STDERR "@_\n";
   }
-  system (@_) == 0
-      or die "@_ failed: $! exit 0x".sprintf("%x",$?);
+  if (system (@_) != 0) {
+    my $exitstatus = sprintf("exit %d signal %d", $? >> 8, $? & 0x7f);
+    open STDERR, ">&STDERR_ORIG";
+    system ("cat $destdir.log >&2");
+    die "@_ failed ($!): $exitstatus";
+  }
 }
 
 __DATA__
