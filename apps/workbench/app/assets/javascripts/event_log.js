@@ -41,7 +41,7 @@ function onEventLogDispatcherMessage(event) {
 
   // if there are any listeners for this object uuid or "all", trigger the event
   matches = ".arv-log-event-listener[data-object-uuid=\"" + object_uuid + "\"],.arv-log-event-listener[data-object-uuids~=\"" + object_uuid + "\"],.arv-log-event-listener[data-object-uuid=\"all\"],.arv-log-event-listener[data-object-kind=\"" + parsedData.object_kind + "\"]";
-  $(matches).trigger('arv-log-event', event.data);
+  $(matches).trigger('arv-log-event', parsedData);
 }
 
 /* Automatically connect if there are any elements on the page that want to

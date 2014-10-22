@@ -23,14 +23,14 @@
     <% pane_list.each_with_index do |pane, i| %>
       <% pane_name = (pane.is_a?(Hash) ? pane[:name] : pane) %>
       <div id="<%= pane_name %>"
-           class="tab-pane fade <%= 'in active loaded' if i==0 %> arv-log-event-listener"
+           class="tab-pane <%= 'in active loaded' if i==0 %>"
            <% if controller.action_name == "index" %>
              data-object-kind="arvados#<%= ArvadosApiClient.class_kind controller.model_class %>"
            <% else %>
              data-object-uuid="<%= @object.uuid %>"
            <% end %>
+           style="margin-top:0.5em;"
       >
-        <div id="<%= pane_name %>-scroll" style="margin-top:0.5em;">
           <div class="pane-content">
             <% if i == 0 %>
               <%= render_pane pane_name, to_string: true %>
@@ -38,7 +38,6 @@
               <div class="spinner spinner-32px spinner-h-center"></div>
             <% end %>
           </div>
-        </div>
       </div>
     <% end %>
   </div>

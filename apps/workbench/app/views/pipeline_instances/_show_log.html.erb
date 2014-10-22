@@ -1,6 +1,4 @@
-<% log_history = stderr_log_history([@object.uuid] + pipeline_jobs(@object).collect{|x|x[:job].andand[:uuid]}.compact) %>
-<div class="arv-log-event-listener arv-log-event-handler-append-logs arv-job-log-window" id="pipeline_event_log_div" data-object-uuids="<%= @object.uuid %>" data-object-uuids-live="#Components tr[data-object-uuid]">
-  <% log_history.each do |entry| %>
-    <%=entry%><br/>
-  <% end %>
+<% log_uuids = [@object.uuid] + pipeline_jobs(@object).collect{|x|x[:job].andand[:uuid]}.compact %>
+<% log_history = stderr_log_history(log_uuids) %>
+<div class="arv-log-event-listener arv-log-event-handler-append-logs arv-job-log-window" id="pipeline_event_log_div" data-object-uuids="<%= log_uuids.join(' ') %>"><%= log_history.join("\n") %>
 </div>

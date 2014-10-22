@@ -1,5 +1,8 @@
 <%# Summary %>
 
+<% pipeline_jobs = render_pipeline_jobs %>
+<% job_uuids = pipeline_jobs.map { |j| j[:job].andand[:uuid] }.compact %>
+
 <% if @object.state == 'Paused' %>
   <p>
     This pipeline is paused.  Jobs that are
@@ -7,8 +10,8 @@
   </p>
 <% end %>
 
-<% tasks = JobTask.filter([['job_uuid', 'in', render_pipeline_jobs.map { |j| j[:job].andand[:uuid] }.compact]]).results %>
-<% runningtime = determine_wallclock_runtime(render_pipeline_jobs.map {|j| j[:job]}.compact) %>
+<% tasks = JobTask.filter([['job_uuid', 'in', job_uuids]]).results %>
+<% runningtime = determine_wallclock_runtime(pipeline_jobs.map {|j| j[:job]}.compact) %>
 
 <p>
   <% if @object.started_at %>
@@ -68,6 +71,6 @@
 
 <%# Components %>
 
-<% render_pipeline_jobs.each_with_index do |pj, i| %>
+<% pipeline_jobs.each_with_index do |pj, i| %>
   <%= render partial: 'running_component', locals: {tasks: tasks, pj: pj, i: i, expanded: false} %>
 <% end %>

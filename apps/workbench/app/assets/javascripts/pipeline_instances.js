@@ -48,51 +48,26 @@ $(document).on('ready ajax:complete', function() {
 });
 
 $(document).on('arv-log-event', '.arv-log-event-handler-append-logs', function(event, eventData){
-    var wasatbottom = ($(this).scrollTop() + $(this).height() >=
-                       this.scrollHeight);
-    var parsedData = JSON.parse(eventData);
-    var propertyText = undefined;
-    var properties = parsedData.properties;
+    var wasatbottom = ($(this).scrollTop() + $(this).height() >= this.scrollHeight);
 
-    if (properties !== null) {
-        propertyText = properties.text;
-    }
-    if (propertyText !== undefined) {
-        propertyText = propertyText.
-            replace(/\n$/, '').
-            replace(/\n/g, '<br/>');
-        $(this).append(propertyText + "<br/>");
-    } else if (parsedData.summary !== undefined) {
-        if (parsedData.summary.match(/^update of [-a-z0-9]{27}$/))
-            ; // Not helpful.
-        else
-            $(this).append(parsedData.summary + "<br/>");
-    }
-    if (wasatbottom)
-        this.scrollTop = this.scrollHeight;
-}).on('arv:pane:loaded', '#Logs,#Log', function(){
-    $('.arv-log-event-handler-append-logs', this).each(function() {
-        this.scrollTop = this.scrollHeight;
-        $(this).closest('.tab-pane').on('arv:pane:reload', function(e) {
-            // Do not let this tab auto-refresh.
-            e.stopPropagation();
-        });
-    });
-}).on('ready ajax:complete', function(){
-    $(".arv-log-event-listener[data-object-uuids-live]").each(function() {
-        // Look at data-object-uuid attribute of elements matching
-        // given selector, so the event listener can listen for events
-        // that appeared on the page via ajax.
-        var $listener = $(this);
-        var have_uuids = '' + $listener.attr('data-object-uuids');
-        $($listener.attr('data-object-uuids-live')).each(function() {
-            var this_uuid = $(this).attr('data-object-uuid');
-            if (have_uuids.indexOf(this_uuid) == -1) {
-                have_uuids = have_uuids + ' ' + this_uuid;
+    if (eventData.event_type == "stderr" || eventData.event_type == "stdout") {
+        $(this).append(eventData.properties.text);
+    } else if (eventData.event_type == "create" || eventData.event_type == "update") {
+        if (eventData.object_kind == 'arvados#pipelineInstance') {
+            var objs = "";
+            var components = eventData.properties.new_attributes.components;
+            for (a in components) {
+                if (components[a].job && components[a].job.uuid) {
+                    objs += " " + components[a].job.uuid;
+                }
             }
-        });
-        $listener.attr('data-object-uuids', have_uuids);
-    });
+            $(event.target).attr("data-object-uuids", eventData.object_uuid + objs);
+        }
+    }
+
+    if (wasatbottom) {
+        this.scrollTop = this.scrollHeight;
+    }
 });
 
 var showhide_compare = function() {
