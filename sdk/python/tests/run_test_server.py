@@ -231,7 +231,13 @@ def fixture(fix):
     '''load a fixture yaml file'''
     with open(os.path.join(SERVICES_SRC_DIR, 'api', "test", "fixtures",
                            fix + ".yml")) as f:
-        return yaml.load(f.read())
+        yaml_file = f.read()
+        try:
+          trim_index = yaml_file.index("# Test Helper trims the rest of the file")
+          yaml_file = yaml_file[0:trim_index]
+        except ValueError:
+          pass
+        return yaml.load(yaml_file)
 
 def authorize_with(token):
     '''token is the symbolic name of the token from the api_client_authorizations fixture'''
