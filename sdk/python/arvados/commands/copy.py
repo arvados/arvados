@@ -29,6 +29,7 @@ import arvados
 import arvados.config
 import arvados.keep
 import arvados.util
+import arvados.commands._util as arv_cmd
 
 logger = logging.getLogger('arvados.arv-copy')
 
@@ -45,45 +46,47 @@ local_repo_dir = {}
 collections_copied = {}
 
 def main():
-    parser = argparse.ArgumentParser(
-        description='Copy a pipeline instance, template or collection from one Arvados instance to another.')
+    copy_opts = argparse.ArgumentParser(add_help=False)
 
-    parser.add_argument(
+    copy_opts.add_argument(
         '-v', '--verbose', dest='verbose', action='store_true',
         help='Verbose output.')
-    parser.add_argument(
+    copy_opts.add_argument(
         '--progress', dest='progress', action='store_true',
         help='Report progress on copying collections. (default)')
-    parser.add_argument(
+    copy_opts.add_argument(
         '--no-progress', dest='progress', action='store_false',
         help='Do not report progress on copying collections.')
-    parser.add_argument(
+    copy_opts.add_argument(
         '-f', '--force', dest='force', action='store_true',
         help='Perform copy even if the object appears to exist at the remote destination.')
-    parser.add_argument(
+    copy_opts.add_argument(
         '--src', dest='source_arvados', required=True,
         help='The name of the source Arvados instance (required). May be either a pathname to a config file, or the basename of a file in $HOME/.config/arvados/instance_name.conf.')
-    parser.add_argument(
+    copy_opts.add_argument(
         '--dst', dest='destination_arvados', required=True,
         help='The name of the destination Arvados instance (required). May be either a pathname to a config file, or the basename of a file in $HOME/.config/arvados/instance_name.conf.')
-    parser.add_argument(
+    copy_opts.add_argument(
         '--recursive', dest='recursive', action='store_true',
         help='Recursively copy any dependencies for this object. (default)')
-    parser.add_argument(
+    copy_opts.add_argument(
         '--no-recursive', dest='recursive', action='store_false',
         help='Do not copy any dependencies. NOTE: if this option is given, the copied object will need to be updated manually in order to be functional.')
-    parser.add_argument(
+    copy_opts.add_argument(
         '--dst-git-repo', dest='dst_git_repo',
         help='The name of the destination git repository. Required when copying a pipeline recursively.')
-    parser.add_argument(
+    copy_opts.add_argument(
         '--project-uuid', dest='project_uuid',
         help='The UUID of the project at the destination to which the pipeline should be copied.')
-    parser.add_argument(
+    copy_opts.add_argument(
         'object_uuid',
         help='The UUID of the object to be copied.')
-    parser.set_defaults(progress=True)
-    parser.set_defaults(recursive=True)
+    copy_opts.set_defaults(progress=True)
+    copy_opts.set_defaults(recursive=True)
 
+    parser = argparse.ArgumentParser(
+        description='Copy a pipeline instance, template or collection from one Arvados instance to another.',
+        parents=[copy_opts, arv_cmd.retry_opt])
     args = parser.parse_args()
 
     if args.verbose:
@@ -199,6 +202,7 @@ def copy_pipeline_instance(pi_uuid, src, dst, args):
         # Copy input collections, docker images and git repos.
         pi = copy_collections(pi, src, dst, args)
         copy_git_repos(pi, src, dst, args.dst_git_repo)
+        copy_docker_images(pi, src, dst, args)
 
         # Update the fields of the pipeline instance with the copied
         # pipeline template.
@@ -247,6 +251,7 @@ def copy_pipeline_template(pt_uuid, src, dst, args):
         # Copy input collections, docker images and git repos.
         pt = copy_collections(pt, src, dst, args)
         copy_git_repos(pt, src, dst, args.dst_git_repo)
+        copy_docker_images(pt, src, dst, args)
 
     pt['description'] = "Pipeline template copied from {}\n\n{}".format(
         pt_uuid,
@@ -411,8 +416,8 @@ def copy_collection(obj_uuid, src, dst, args):
     # Copy each block from src_keep to dst_keep.
     # Use the newly signed locators returned from dst_keep to build
     # a new manifest as we go.
-    src_keep = arvados.keep.KeepClient(api_client=src, num_retries=2)
-    dst_keep = arvados.keep.KeepClient(api_client=dst, num_retries=2)
+    src_keep = arvados.keep.KeepClient(api_client=src, num_retries=args.retries)
+    dst_keep = arvados.keep.KeepClient(api_client=dst, num_retries=args.retries)
     dst_manifest = ""
     dst_locators = {}
     bytes_written = 0
@@ -524,6 +529,62 @@ def copy_git_repo(src_git_repo, src, dst, dst_git_repo, script_version):
             cwd=tmprepo)
         arvados.util.run_command(["git", "remote", "add", "dst", dst_git_push_url], cwd=tmprepo)
         arvados.util.run_command(["git", "push", "dst", dst_branch], cwd=tmprepo)
+
+
+def copy_docker_images(pipeline, src, dst, args):
+    """Copy any docker images named in the pipeline components'
+    runtime_constraints field from src to dst."""
+
+    for c in pipeline['components']:
+        if ('runtime_constraints' in c and
+            'docker_image' in c['runtime_constraints']):
+            copy_docker_image(
+                c['runtime_constraints']['docker_image'],
+                c['runtime_constraints'].get('docker_image_tag'),
+                src, dst, args)
+
+
+def copy_docker_image(docker_image, docker_image_tag, src, dst, args):
+    """Copy the docker image identified by docker_image and
+    docker_image_tag from src to dst. Create appropriate
+    docker_image_repo+tag and docker_image_hash links at dst.
+
+    """
+
+    # Find the link identifying this docker image.
+    docker_link_name = "{}:{}".format(docker_image, docker_image_tag or "latest")
+    links = src.links().list(
+        filters=[
+            ['link_class', '=', 'docker_image_repo+tag'],
+            ['name', '=', docker_link_name],
+        ]
+    ).execute(num_retries=args.retries)
+    if links['items_available'] == 0:
+        raise ValueError("no docker image {} at src".format(docker_link_name))
+    docker_link = links['items'][0]
+    docker_image_uuid = docker_link['head_uuid']
+
+    # Copy the collection it refers to.
+    dst_image_col = copy_collection(docker_image_uuid, src, dst, args)
+
+    # Create docker_image_repo+tag and docker_image_hash links
+    # at the destination.
+    dst.links().create(
+        body={
+            'head_uuid': dst_image_col['uuid'],
+            'link_class': 'docker_image_repo+tag',
+            'name': docker_link_name,
+        }
+    ).execute(num_retries=args.retries)
+
+    dst.links().create(
+        body={
+            'head_uuid': dst_image_col['uuid'],
+            'link_class': 'docker_image_hash',
+            'name': dst_image_col['portable_data_hash'],
+        }
+    ).execute(num_retries=args.retries)
+
 
 # git_rev_parse(rev, repo)
 #
