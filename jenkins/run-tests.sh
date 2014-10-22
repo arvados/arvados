@@ -337,6 +337,7 @@ do_install apiserver
 
 declare -a gostuff
 gostuff=(
+    services/crunchstat
     services/keepstore
     services/keepproxy
     sdk/go/arvadosclient
