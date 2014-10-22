@@ -147,4 +147,32 @@ class CollectionsTest < ActionDispatch::IntegrationTest
       headless.stop
     end
   end
+
+  test "combine selected collection files from collection subdirectory" do
+    headless = Headless.new
+    headless.start
+    Capybara.current_driver = :selenium
+
+    visit page_with_token('user1_with_load', "/collections/zzzzz-4zz18-filesinsubdir00")
+
+    # now in collection page
+    input_files = page.all('input[type=checkbox]')
+    (0..input_files.count-1).each do |i|
+      input_files[i].click
+    end
+
+    click_button 'Selection...'
+    within('.selection-action-container') do
+      click_link 'Create new collection with selected files'
+    end
+
+    # now in the newly created collection page
+    assert(page.has_text?('file_in_subdir1'), 'file not found - file_in_subdir1')
+    assert(page.has_text?('file1_in_subdir3.txt'), 'file not found - file1_in_subdir3.txt')
+    assert(page.has_text?('file2_in_subdir3.txt'), 'file not found - file2_in_subdir3.txt')
+    assert(page.has_text?('file1_in_subdir4.txt'), 'file not found - file1_in_subdir4.txt')
+    assert(page.has_text?('file2_in_subdir4.txt'), 'file not found - file1_in_subdir4.txt')
+
+    headless.stop
+  end
 end
