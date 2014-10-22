@@ -192,7 +192,7 @@ func DoMemoryStats(cgroup Cgroup) {
 	defer c.Close()
 	b := bufio.NewScanner(c)
 	thisSample := MemSample{time.Now(), make(map[string]int64)}
-	wantStats := [...]string{"cache", "pgmajfault", "rss"}
+	wantStats := [...]string{"cache", "swap", "pgmajfault", "rss"}
 	for b.Scan() {
 		var stat string
 		var val int64
