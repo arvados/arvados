@@ -1,0 +1,6 @@
+<% pj = {} %>
+<% pj[:job] = @object %>
+<% pj[:name] = @object[:name] || "this job" %>
+<% pj[:progress_bar] = render(partial: "job_progress", locals: {:j => @object }) %>
+<% tasks = JobTask.filter([['job_uuid', '=', @object.uuid]]).results %>
+<%= render partial: 'pipeline_instances/running_component', locals: {tasks: tasks, pj: pj, i: 0, expanded: true} %>
