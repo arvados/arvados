@@ -167,10 +167,10 @@ class NodeManagerDaemonActorTestCase(testutil.ActorTestMixin,
     def test_booted_node_lifecycle(self):
         cloud_node = testutil.cloud_node_mock(6)
         setup = self.start_node_boot(cloud_node, id_num=6)
-        self.daemon.node_up(setup)
-        self.daemon.update_server_wishlist([])
         monitor = self.node_factory.start().proxy()
         monitor.cloud_node.get.return_value = cloud_node
+        self.daemon.node_up(setup)
+        self.daemon.update_server_wishlist([])
         self.daemon.node_can_shutdown(monitor).get(self.TIMEOUT)
         self.assertTrue(self.node_shutdown.start.called,
                         "daemon did not shut down booted node on offer")
