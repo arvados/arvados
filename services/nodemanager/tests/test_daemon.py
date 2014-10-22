@@ -100,22 +100,92 @@ class NodeManagerDaemonActorTestCase(testutil.ActorTestMixin,
         self.stop_proxy(self.daemon)
         self.assertEqual(1, self.node_setup.start.call_count)
 
+    def mock_setup_actor(self, cloud_node, arv_node):
+        setup = mock.MagicMock(name='setup_node_mock')
+        setup.actor_ref = self.node_setup.start().proxy().actor_ref
+        self.node_setup.reset_mock()
+        setup.actor_urn = cloud_node.id
+        setup.cloud_node.get.return_value = cloud_node
+        setup.arvados_node.get.return_value = arv_node
+        return setup
+
+    def start_node_boot(self, cloud_node=None, arv_node=None, id_num=1):
+        if cloud_node is None:
+            cloud_node = testutil.cloud_node_mock(id_num)
+        if arv_node is None:
+            arv_node = testutil.arvados_node_mock(id_num)
+        self.make_daemon(want_sizes=[testutil.MockSize(id_num)])
+        self.daemon.max_nodes.get(self.TIMEOUT)
+        self.assertEqual(1, self.node_setup.start.call_count)
+        return self.mock_setup_actor(cloud_node, arv_node)
+
     def test_no_duplication_when_booting_node_listed_fast(self):
         # Test that we don't start two ComputeNodeMonitorActors when
         # we learn about a booting node through a listing before we
         # get the "node up" message from CloudNodeSetupActor.
         cloud_node = testutil.cloud_node_mock(1)
-        self.make_daemon(want_sizes=[testutil.MockSize(1)])
-        self.daemon.max_nodes.get(self.TIMEOUT)
-        self.assertEqual(1, self.node_setup.start.call_count)
-        setup = mock.MagicMock(name='setup_node_mock')
-        setup.actor_ref = self.node_setup.start().proxy().actor_ref
-        setup.cloud_node.get.return_value = cloud_node
-        setup.arvados_node.get.return_value = testutil.arvados_node_mock(1)
+        setup = self.start_node_boot(cloud_node)
         self.daemon.update_cloud_nodes([cloud_node]).get(self.TIMEOUT)
         self.assertTrue(self.node_factory.start.called)
         self.daemon.node_up(setup).get(self.TIMEOUT)
         self.assertEqual(1, self.node_factory.start.call_count)
+
+    def test_node_counted_after_boot_with_slow_listing(self):
+        # Test that, after we boot a compute node, we assume it exists
+        # even it doesn't appear in the listing (e.g., because of delays
+        # propagating tags).
+        setup = self.start_node_boot()
+        self.daemon.node_up(setup).get(self.TIMEOUT)
+        self.assertTrue(self.node_factory.start.called,
+                        "daemon not monitoring booted node")
+        self.daemon.update_cloud_nodes([])
+        self.stop_proxy(self.daemon)
+        self.assertEqual(1, self.node_factory.start.call_count,
+                         "daemon has duplicate monitors for booted node")
+        self.assertFalse(self.node_factory.start().proxy().stop.called,
+                         "daemon prematurely stopped monitoring a new node")
+
+    def test_booted_unlisted_node_counted(self):
+        setup = self.start_node_boot(id_num=1)
+        self.daemon.node_up(setup)
+        self.daemon.update_server_wishlist(
+            [testutil.MockSize(1)]).get(self.TIMEOUT)
+        self.stop_proxy(self.daemon)
+        self.assertFalse(self.node_setup.start.called,
+                         "daemon did not count booted node toward wishlist")
+
+    def test_booted_node_can_shutdown(self):
+        setup = self.start_node_boot()
+        self.daemon.node_up(setup)
+        self.daemon.update_server_wishlist([])
+        self.daemon.node_can_shutdown(
+            self.node_factory.start().proxy()).get(self.TIMEOUT)
+        self.stop_proxy(self.daemon)
+        self.assertTrue(self.node_shutdown.start.called,
+                        "daemon did not shut down booted node on offer")
+
+    def test_booted_node_lifecycle(self):
+        cloud_node = testutil.cloud_node_mock(6)
+        setup = self.start_node_boot(cloud_node, id_num=6)
+        self.daemon.node_up(setup)
+        self.daemon.update_server_wishlist([])
+        monitor = self.node_factory.start().proxy()
+        monitor.cloud_node.get.return_value = cloud_node
+        self.daemon.node_can_shutdown(monitor).get(self.TIMEOUT)
+        self.assertTrue(self.node_shutdown.start.called,
+                        "daemon did not shut down booted node on offer")
+        shutdown = self.node_shutdown.start().proxy()
+        shutdown.cloud_node.get.return_value = cloud_node
+        self.daemon.node_finished_shutdown(shutdown).get(self.TIMEOUT)
+        self.assertTrue(shutdown.stop.called,
+                        "shutdown actor not stopped after finishing")
+        self.assertTrue(monitor.stop.called,
+                        "monitor for booted node not stopped after shutdown")
+        self.daemon.update_server_wishlist(
+            [testutil.MockSize(2)]).get(self.TIMEOUT)
+        self.stop_proxy(self.daemon)
+        self.assertTrue(self.node_setup.start.called,
+                        "second node not started after booted node stopped")
 
     def test_booting_nodes_shut_down(self):
         self.make_daemon(want_sizes=[testutil.MockSize(1)])
@@ -128,10 +198,10 @@ class NodeManagerDaemonActorTestCase(testutil.ActorTestMixin,
         cloud_node = testutil.cloud_node_mock(1)
         size = testutil.MockSize(1)
         self.make_daemon(cloud_nodes=[cloud_node], want_sizes=[size])
-        node_actor = self.node_factory().proxy()
-        self.daemon.node_can_shutdown(node_actor).get(self.TIMEOUT)
+        self.daemon.node_can_shutdown(
+            self.node_factory.start().proxy()).get(self.TIMEOUT)
         self.stop_proxy(self.daemon)
-        self.assertFalse(node_actor.shutdown.called)
+        self.assertFalse(self.node_shutdown.start.called)
 
     def test_shutdown_accepted_below_capacity(self):
         self.make_daemon(cloud_nodes=[testutil.cloud_node_mock()])

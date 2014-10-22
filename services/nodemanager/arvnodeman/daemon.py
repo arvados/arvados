@@ -123,6 +123,7 @@ class NodeManagerDaemonActor(actor_class):
         self.cloud_nodes = _CloudNodeTracker()
         self.arvados_nodes = _ArvadosNodeTracker()
         self.booting = {}       # Actor IDs to ComputeNodeSetupActors
+        self.booted = {}        # Cloud node IDs to _ComputeNodeRecords
         self.shutdowns = {}     # Cloud node IDs to ComputeNodeShutdownActors
         self._logger.debug("Daemon initialized")
 
@@ -154,22 +155,24 @@ class NodeManagerDaemonActor(actor_class):
         self._cloud_nodes_actor.subscribe_to(cloud_node.id,
                                              actor.update_cloud_node)
         record = _ComputeNodeRecord(actor, cloud_node)
-        self.cloud_nodes.add(record)
         return record
 
     def update_cloud_nodes(self, nodelist):
         self._update_poll_time('cloud_nodes')
         for key, node in self.cloud_nodes.update_from(nodelist):
             self._logger.info("Registering new cloud node %s", key)
-            record = self._new_node(node)
+            if key in self.booting:
+                record = self.booting.pop(key)
+            else:
+                record = self._new_node(node)
+            self.cloud_nodes.add(record)
             for arv_rec in self.arvados_nodes.unpaired():
                 if record.actor.offer_arvados_pair(arv_rec.arvados_node).get():
                     self._pair_nodes(record, arv_rec.arvados_node)
                     break
         for key, record in self.cloud_nodes.orphans.iteritems():
             record.actor.stop()
-            if key in self.shutdowns:
-                self.shutdowns.pop(key).stop()
+            self.shutdowns.pop(key, None)
 
     def update_arvados_nodes(self, nodelist):
         self._update_poll_time('arvados_nodes')
@@ -185,7 +188,8 @@ class NodeManagerDaemonActor(actor_class):
                     break
 
     def _node_count(self):
-        up = sum(len(nodelist) for nodelist in [self.cloud_nodes, self.booting])
+        up = sum(len(nodelist) for nodelist in
+                 [self.cloud_nodes, self.booted, self.booting])
         return up - len(self.shutdowns)
 
     def _nodes_wanted(self):
@@ -253,6 +257,7 @@ class NodeManagerDaemonActor(actor_class):
         record = self.cloud_nodes.get(cloud_node.id)
         if record is None:
             record = self._new_node(cloud_node)
+            self.booted[cloud_node.id] = record
         self._pair_nodes(record, arvados_node)
 
     @_check_poll_freshness
@@ -279,6 +284,14 @@ class NodeManagerDaemonActor(actor_class):
                                              cloud_client=self._new_cloud(),
                                              cloud_node=cloud_node).proxy()
         self.shutdowns[cloud_node.id] = shutdown
+        shutdown.subscribe(self._later.node_finished_shutdown)
+
+    def node_finished_shutdown(self, shutdown_actor):
+        cloud_node_id = shutdown_actor.cloud_node.get().id
+        shutdown_actor.stop()
+        if cloud_node_id in self.booted:
+            self.booted.pop(cloud_node_id).actor.stop()
+            del self.shutdowns[cloud_node_id]
 
     def shutdown(self):
         self._logger.info("Shutting down after signal.")
