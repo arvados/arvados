@@ -136,24 +136,35 @@ fi
 
 title "Deploying workbench complete"
 
-# Update compute0
-title "Update compute0"
+# Update compute node(s)
+title "Update compute node(s)"
 
-ssh -p2222 root@compute0.$IDENTIFIER -C "/usr/bin/puppet agent -t"
+# Get list of nodes that are up
+COMPRESSED_NODE_LIST=`ssh -p2222 root@$IDENTIFIER -C "sinfo --long -p crypto -r -o "%N" -h"`
 
-ECODE=$?
+if [[ "$COMPRESSED_NODE_LIST" != '' ]]; then
+  COMPUTE_NODES=`ssh -p2222 root@$IDENTIFIER -C "scontrol show hostname $COMPRESSED_NODE_LIST"`
 
-if [[ "$ECODE" == "2" ]]; then
-  # Puppet exits '2' if there are changes. For real!
-  ECODE=0
+  SUM_ECODE=0
+  for node in $COMPUTE_NODES; do
+    echo "Updating $node.$IDENTIFIER"
+    ssh -p2222  -o "StrictHostKeyChecking no" -o "ConnectTimeout 5" root@$node.$IDENTIFIER -C "/usr/bin/puppet agent -t"
+    ECODE=$?
+    if [[ "$ECODE" != "255" && "$ECODE" != "2" && "$ECODE" != "0"  ]]; then
+      # 255 -> connection timed out. Just ignore that, it's possible the compute node was being shut down.
+      # Puppet exits '2' if there are changes. For real!
+      SUM_ECODE=$(($SUM_ECODE + $ECODE))
+      echo "ERROR updating $node.$IDENTIFIER: exit code $ECODE"
+    fi
+  done
+
+  if [[ "$SUM_ECODE" != "0" ]]; then
+    title "!!!!!! Update compute node(s) FAILED !!!!!!"
+    EXITCODE=$(($EXITCODE + $SUM_ECODE))
+  fi
 fi
 
-if [[ "$ECODE" != "0" ]]; then
-  title "!!!!!! Update compute0 FAILED !!!!!!"
-  EXITCODE=$(($EXITCODE + $ECODE))
-fi
-
-title "Update compute0 complete"
+title "Update compute node(s) complete"
 
 title "Update shell"
 
