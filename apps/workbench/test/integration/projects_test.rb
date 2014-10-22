@@ -563,7 +563,7 @@ class ProjectsTest < ActionDispatch::IntegrationTest
       find(".dropdown-menu a", text: project_name).click
 
       my_pipelines = []
-      (1..num_pipelines).each do |i|
+      (0..num_pipelines-1).each do |i|
         name = "pipeline_#{i}"
         my_pipelines << name
       end
