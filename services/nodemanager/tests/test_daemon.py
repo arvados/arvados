@@ -130,6 +130,13 @@ class NodeManagerDaemonActorTestCase(testutil.ActorTestMixin,
         self.daemon.node_up(setup).get(self.TIMEOUT)
         self.assertEqual(1, self.node_factory.start.call_count)
 
+    def test_no_duplication_when_booted_node_listed(self):
+        cloud_node = testutil.cloud_node_mock(2)
+        setup = self.start_node_boot(cloud_node, id_num=2)
+        self.daemon.node_up(setup)
+        self.daemon.update_cloud_nodes([cloud_node]).get(self.TIMEOUT)
+        self.assertEqual(1, self.node_factory.start.call_count)
+
     def test_node_counted_after_boot_with_slow_listing(self):
         # Test that, after we boot a compute node, we assume it exists
         # even it doesn't appear in the listing (e.g., because of delays

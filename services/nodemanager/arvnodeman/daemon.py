@@ -161,8 +161,8 @@ class NodeManagerDaemonActor(actor_class):
         self._update_poll_time('cloud_nodes')
         for key, node in self.cloud_nodes.update_from(nodelist):
             self._logger.info("Registering new cloud node %s", key)
-            if key in self.booting:
-                record = self.booting.pop(key)
+            if key in self.booted:
+                record = self.booted.pop(key)
             else:
                 record = self._new_node(node)
             self.cloud_nodes.add(record)
