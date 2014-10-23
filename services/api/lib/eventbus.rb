@@ -248,6 +248,9 @@ class EventBus
                   @channel.push payload.to_i
                 end
               end
+            rescue NoMemoryError
+              EventMachine::stop_event_loop
+              abort "Out of memory"
             ensure
               # Don't want the connection to still be listening once we return
               # it to the pool - could result in weird behavior for the next
