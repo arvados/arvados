@@ -205,7 +205,7 @@ class CollectionsController < ApplicationController
     return super if !@object
     if current_user
       if Keep::Locator.parse params["uuid"]
-        @same_pdh = Collection.filter([["portable_data_hash", "=", @object.portable_data_hash]])
+        @same_pdh = Collection.filter([["portable_data_hash", "=", @object.portable_data_hash]]).limit(1000)
         if @same_pdh.results.size == 1
           redirect_to collection_path(@same_pdh[0]["uuid"])
           return
