@@ -299,7 +299,7 @@ job_in_subproject:
 
 # Do not add your fixtures below this line as the rest of this file will be trimmed by test_helper
 
-# jobs in project_with_10_pipelines_and_200_jobs
+# jobs in project_with_2_pipelines_and_200_jobs
 <% for i in 1..200 do %>
 job_<%=i%>_of_200:
   uuid: zzzzz-8i9sb-0vsrcqi7whch<%= i.to_s.rjust(3, '0') %>
