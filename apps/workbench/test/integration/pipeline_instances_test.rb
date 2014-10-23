@@ -322,17 +322,20 @@ class PipelineInstancesTest < ActionDispatch::IntegrationTest
 
       assert page.has_text? 'This pipeline started at'
       page_text = page.text
+
       match = /This pipeline started at (.*)\. It failed after (.*) seconds at (.*)\. Check the Log/.match page_text
+      assert_not_nil(match, 'Did not find text - This pipeline started at . . . ')
 
       start_at = match[1]
       finished_at = match[3]
+      assert_not_nil(start_at, 'Did not find start_at time')
+      assert_not_nil(finished_at, 'Did not find finished_at time')
 
       # start and finished time display is of the format '2:20 PM 10/20/2014'
-      start_time = DateTime.strptime(start_at, '%I:%M %p %m/%d/%Y').to_time
-      finished_time = DateTime.strptime(finished_at, '%I:%M %p %m/%d/%Y').to_time
-
+      start_time = DateTime.strptime(start_at, '%H:%M %p %m/%d/%Y').to_time
+      finished_time = DateTime.strptime(finished_at, '%H:%M %p %m/%d/%Y').to_time
       assert_equal(run_time, finished_time-start_time,
-        "Time difference did not match for start_at #{start_at}, finished_at #{finished_at}, ran_for  #{match[2]}")
+        "Time difference did not match for start_at #{start_at}, finished_at #{finished_at}, ran_for #{match[2]}")
     end
   end
 end
