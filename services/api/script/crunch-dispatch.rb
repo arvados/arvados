@@ -1,5 +1,6 @@
 #!/usr/bin/env ruby
 
+require 'shellwords'
 include Process
 
 $options = {}
@@ -190,6 +191,23 @@ class Dispatcher
     nodelist
   end
 
+  def fail_job job, message
+    $stderr.puts "dispatch: #{job.uuid}: #{message}"
+    begin
+      Log.new(object_uuid: job.uuid,
+              event_type: 'dispatch',
+              owner_uuid: job.owner_uuid,
+              summary: message,
+              properties: {"text" => message}).save
+    rescue
+      $stderr.puts "dispatch: log.create failed"
+    end
+    job.state = "Failed"
+    if not job.save
+      $stderr.puts "dispatch: job.save failed"
+    end
+  end
+
   def start_jobs
     @todo.each do |job|
       next if @running[job.uuid]
@@ -232,12 +250,24 @@ class Dispatcher
                          "GEM_PATH=#{ENV['GEM_PATH']}")
       end
 
-      job_auth = ApiClientAuthorization.
-        new(user: User.where('uuid=?', job.modified_by_user_uuid).first,
-            api_client_id: 0)
-      if not job_auth.save
-        $stderr.puts "dispatch: job_auth.save failed"
-        next
+      @authorizations ||= {}
+      if @authorizations[job.uuid] and
+          @authorizations[job.uuid].user.uuid != job.modified_by_user_uuid
+        # We already made a token for this job, but we need a new one
+        # because modified_by_user_uuid has changed (the job will run
+        # as a different user).
+        @authorizations[job.uuid].update_attributes expires_at: Time.now
+        @authorizations[job.uuid] = nil
+      end
+      if not @authorizations[job.uuid]
+        auth = ApiClientAuthorization.
+          new(user: User.where('uuid=?', job.modified_by_user_uuid).first,
+              api_client_id: 0)
+        if not auth.save
+          $stderr.puts "dispatch: auth.save failed"
+          next
+        end
+        @authorizations[job.uuid] = auth
       end
 
       crunch_job_bin = (ENV['CRUNCH_JOB_BIN'] || `which arv-crunch-job`.strip)
@@ -245,70 +275,71 @@ class Dispatcher
         raise "No CRUNCH_JOB_BIN env var, and crunch-job not in path."
       end
 
-      require 'shellwords'
-
       arvados_internal = Rails.configuration.git_internal_dir
       if not File.exists? arvados_internal
         $stderr.puts `mkdir -p #{arvados_internal.shellescape} && cd #{arvados_internal.shellescape} && git init --bare`
       end
 
-      repo_root = Rails.configuration.git_repositories_dir
-      src_repo = File.join(repo_root, job.repository + '.git')
-      if not File.exists? src_repo
-        src_repo = File.join(repo_root, job.repository, '.git')
-        if not File.exists? src_repo
-          $stderr.puts "dispatch: No #{job.repository}.git or #{job.repository}/.git at #{repo_root}"
-          sleep 1
-          next
-        end
-      end
-
       git = "git --git-dir=#{arvados_internal.shellescape}"
 
-      # check if the commit needs to be fetched or not
-      commit_rev = `#{git} rev-list -n1 #{job.script_version.shellescape} 2>/dev/null`.chomp
-      unless $? == 0 and commit_rev == job.script_version
-        # commit does not exist in internal repository, so import the source repository using git fetch-pack
-        cmd = "#{git} fetch-pack --no-progress --all #{src_repo.shellescape}"
-        $stderr.puts cmd
-        $stderr.puts `#{cmd}`
-        unless $? == 0
-          $stderr.puts "dispatch: git fetch-pack failed"
-          sleep 1
-          next
-        end
-      end
+      @have_commits ||= {}
+      if !@have_commits[job.script_version]
 
-      # check if the commit needs to be tagged with this job uuid
-      tag_rev = `#{git} rev-list -n1 #{job.uuid.shellescape} 2>/dev/null`.chomp
-      if $? != 0
-        # no job tag found, so create one
-        cmd = "#{git} tag #{job.uuid.shellescape} #{job.script_version.shellescape}"
-        $stderr.puts cmd
-        $stderr.puts `#{cmd}`
-        unless $? == 0
-          $stderr.puts "dispatch: git tag failed"
-          sleep 1
-          next
-        end
-      else
-        # job tag found, check that it has the expected revision
-        unless tag_rev == job.script_version
-          # Uh oh, the tag doesn't point to the revision we were expecting.
-          # Someone has been monkeying with the job record and/or git.
-          $stderr.puts "dispatch: Already a tag #{job.script_version} pointing to commit #{tag_rev} but expected commit #{job.script_version}"
-          job.state = "Failed"
-          if not job.save
-            $stderr.puts "dispatch: job.save failed"
+        repo_root = Rails.configuration.git_repositories_dir
+        src_repo = File.join(repo_root, job.repository + '.git')
+        if not File.exists? src_repo
+          src_repo = File.join(repo_root, job.repository, '.git')
+          if not File.exists? src_repo
+            fail_job job, "No #{job.repository}.git or #{job.repository}/.git at #{repo_root}"
             next
           end
-          next
         end
+
+        # check if the commit needs to be fetched or not
+        commit_rev = `#{git} rev-list -n1 #{job.script_version.shellescape} 2>/dev/null`.chomp
+        unless $? == 0 and commit_rev == job.script_version
+          # commit does not exist in internal repository, so import the source repository using git fetch-pack
+          cmd = "#{git} fetch-pack --no-progress --all #{src_repo.shellescape}"
+          $stderr.puts cmd
+          $stderr.puts `#{cmd}`
+          unless $? == 0
+            fail_job job, "git fetch-pack failed"
+            next
+          end
+        end
+        @have_commits[job.script_version] = true
+      end
+
+      @have_tags ||= {}
+      if not @have_tags[job.uuid]
+        # check if the commit needs to be tagged with this job uuid
+        tag_rev = `#{git} rev-list -n1 #{job.uuid.shellescape} 2>/dev/null`.chomp
+        if $? != 0
+          # no job tag found, so create one
+          cmd = "#{git} tag #{job.uuid.shellescape} #{job.script_version.shellescape}"
+          $stderr.puts cmd
+          $stderr.puts `#{cmd}`
+          unless $? == 0
+            fail_job job, "git tag failed"
+            next
+          end
+        else
+          # job tag found, check that it has the expected revision
+          unless tag_rev == job.script_version
+            # Uh oh, the tag doesn't point to the revision we were expecting.
+            # Someone has been monkeying with the job record and/or git.
+            fail_job job, "Existing tag #{job.uuid} points to commit #{tag_rev} but expected commit #{job.script_version}"
+            next
+          end
+        end
+        @have_tags[job.uuid] = job.script_version
+      elsif @have_tags[job.uuid] != job.script_version
+        fail_job job, "Existing tag #{job.uuid} points to commit #{@have_tags[job.uuid]} but this job uses commit #{job.script_version}"
       end
 
       cmd_args << crunch_job_bin
       cmd_args << '--job-api-token'
-      cmd_args << job_auth.api_token
+      cmd_args << @authorizations[job.uuid].api_token
       cmd_args << '--job'
       cmd_args << job.uuid
       cmd_args << '--git-dir'
@@ -337,7 +368,7 @@ class Dispatcher
         buf: {stderr: '', stdout: ''},
         started: false,
         sent_int: 0,
-        job_auth: job_auth,
+        job_auth: @authorizations[job.uuid],
         stderr_buf_to_flush: '',
         stderr_flushed_at: Time.new(0),
         bytes_logged: 0,
