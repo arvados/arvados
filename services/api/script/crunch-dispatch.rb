@@ -620,7 +620,7 @@ class Dispatcher
         end
       else
         refresh_todo unless did_recently(:refresh_todo, 1.0)
-        update_node_status
+        update_node_status unless did_recently(:update_node_status, 1.0)
         unless @todo.empty? or did_recently(:start_jobs, 1.0) or $signal[:term]
           start_jobs
         end
