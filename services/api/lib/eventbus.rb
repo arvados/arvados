@@ -123,7 +123,7 @@ class EventBus
           # another query to get more logs (will start from last_log_id
           # reported by current query)
           @channel.push nil
-        elsif !notify_id.nil? and notify_id > ws.last_log_id
+        elsif !notify_id.nil? and (ws.last_log_id.nil? or notify_id > ws.last_log_id)
           # Number of rows returned was less than cap, but the notify id is
           # higher than the last id visible to the client, so update last_log_id
           ws.last_log_id = notify_id
