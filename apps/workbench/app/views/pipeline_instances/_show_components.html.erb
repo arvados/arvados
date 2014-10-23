@@ -1,15 +1,5 @@
 <% if !@object.state.in? ['New', 'Ready'] %>
 
-  <div class="pull-right" style="padding-left: 1em">
-    Current state: <span class="badge badge-info" data-pipeline-state="<%= @object.state %>">
-      <% if @object.state == "RunningOnServer" %>
-        Active
-      <% else %>
-        <%= @object.state %>
-      <% end %>
-    </span>&nbsp;
-  </div>
-
 <% job_uuids = @object.components.map { |k,j| j[:job].andand[:uuid] }.compact %>
 
 <div id="pipeline-instance-components"

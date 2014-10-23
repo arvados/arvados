@@ -1,5 +1,15 @@
 <%# Summary %>
 
+<div class="pull-right" style="padding-left: 1em">
+  Current state: <span class="badge badge-info" data-pipeline-state="<%= @object.state %>">
+    <% if @object.state == "RunningOnServer" %>
+      Active
+    <% else %>
+      <%= @object.state %>
+    <% end %>
+  </span>&nbsp;
+</div>
+
 <% pipeline_jobs = render_pipeline_jobs %>
 <% job_uuids = pipeline_jobs.map { |j| j[:job].andand[:uuid] }.compact %>
 

@@ -81,4 +81,72 @@ class WebsocketTest < ActionDispatch::IntegrationTest
     Thread.current[:arvados_api_token] = nil
   end
 
+  test "pipeline instance arv-refresh-on-log-event" do
+    Thread.current[:arvados_api_token] = @@API_AUTHS["active"]['api_token']
+    # Do something and check that the pane reloads.
+    p = PipelineInstance.create({state: "RunningOnServer",
+                                  components: {
+                                    c1: {
+                                      script: "test_hash.py",
+                                      script_version: "1de84a854e2b440dc53bf42f8548afa4c17da332"
+                                    }
+                                  }
+                                })
+
+    visit(page_with_token("active", "/pipeline_instances/#{p.uuid}"))
+
+    assert page.has_text? 'Active'
+    assert page.has_link? 'Pause'
+    assert page.has_no_text? 'Complete'
+    assert page.has_no_link? 'Re-run with latest'
+
+    p.state = "Complete"
+    p.save!
+
+    assert page.has_no_text? 'Active'
+    assert page.has_no_link? 'Pause'
+    assert page.has_text? 'Complete'
+    assert page.has_link? 'Re-run with latest'
+
+    Thread.current[:arvados_api_token] = nil
+  end
+
+  test "job arv-refresh-on-log-event" do
+    Thread.current[:arvados_api_token] = @@API_AUTHS["active"]['api_token']
+    # Do something and check that the pane reloads.
+    p = Job.where(uuid: api_fixture('jobs')['running_will_be_completed']['uuid']).results.first
+
+    visit(page_with_token("active", "/jobs/#{p.uuid}"))
+
+    assert page.has_no_text? 'complete'
+    assert page.has_no_text? 'Re-run same version'
+
+    p.state = "Complete"
+    p.save!
+
+    assert page.has_text? 'complete'
+    assert page.has_text? 'Re-run same version'
+
+    Thread.current[:arvados_api_token] = nil
+  end
+
+  test "dashboard arv-refresh-on-log-event" do
+    Thread.current[:arvados_api_token] = @@API_AUTHS["active"]['api_token']
+
+    visit(page_with_token("active", "/"))
+
+    assert page.has_no_text? 'test dashboard arv-refresh-on-log-event'
+
+    # Do something and check that the pane reloads.
+    p = PipelineInstance.create({state: "RunningOnServer",
+                                  name: "test dashboard arv-refresh-on-log-event",
+                                  components: {
+                                  }
+                                })
+
+    assert page.has_text? 'test dashboard arv-refresh-on-log-event'
+
+    Thread.current[:arvados_api_token] = nil
+  end
+
 end
