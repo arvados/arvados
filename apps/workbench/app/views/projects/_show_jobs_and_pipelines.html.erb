@@ -1,3 +1,4 @@
 <%= render_pane 'tab_contents', to_string: true, locals: {
+    limit: 100,
     filters: [['uuid', 'is_a', ["arvados#job", "arvados#pipelineInstance"]]]
     }.merge(local_assigns) %>
