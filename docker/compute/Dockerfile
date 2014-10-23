@@ -3,7 +3,7 @@
 FROM arvados/slurm
 MAINTAINER Ward Vandewege <ward@curoverse.com>
 
-RUN apt-get update && apt-get -qqy install supervisor python-pip python-pyvcf python-gflags python-google-api-python-client python-virtualenv libattr1-dev libfuse-dev python-dev python-llfuse fuse crunchstat python-arvados-fuse cron
+RUN apt-get update && apt-get -qqy install supervisor python-pip python-pyvcf python-gflags python-google-api-python-client python-virtualenv libattr1-dev libfuse-dev python-dev python-llfuse fuse crunchstat python-arvados-fuse cron dnsmasq
 
 ADD fuse.conf /etc/fuse.conf
 
