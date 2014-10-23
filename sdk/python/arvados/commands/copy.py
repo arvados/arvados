@@ -30,6 +30,7 @@ import arvados.config
 import arvados.keep
 import arvados.util
 import arvados.commands._util as arv_cmd
+import arvados.commands.keepdocker
 
 logger = logging.getLogger('arvados.arv-copy')
 
@@ -535,12 +536,13 @@ def copy_docker_images(pipeline, src, dst, args):
     """Copy any docker images named in the pipeline components'
     runtime_constraints field from src to dst."""
 
-    for c in pipeline['components']:
-        if ('runtime_constraints' in c and
-            'docker_image' in c['runtime_constraints']):
+    logger.debug('copy_docker_images: {}'.format(pipeline['uuid']))
+    for c_name, c_info in pipeline['components'].iteritems():
+        if ('runtime_constraints' in c_info and
+            'docker_image' in c_info['runtime_constraints']):
             copy_docker_image(
-                c['runtime_constraints']['docker_image'],
-                c['runtime_constraints'].get('docker_image_tag'),
+                c_info['runtime_constraints']['docker_image'],
+                c_info['runtime_constraints'].get('docker_image_tag', 'latest'),
                 src, dst, args)
 
 
@@ -551,39 +553,36 @@ def copy_docker_image(docker_image, docker_image_tag, src, dst, args):
 
     """
 
+    logger.debug('copying docker image {}:{}'.format(docker_image, docker_image_tag))
+
     # Find the link identifying this docker image.
-    docker_link_name = "{}:{}".format(docker_image, docker_image_tag or "latest")
-    links = src.links().list(
-        filters=[
-            ['link_class', '=', 'docker_image_repo+tag'],
-            ['name', '=', docker_link_name],
-        ]
-    ).execute(num_retries=args.retries)
-    if links['items_available'] == 0:
-        raise ValueError("no docker image {} at src".format(docker_link_name))
-    docker_link = links['items'][0]
-    docker_image_uuid = docker_link['head_uuid']
+    docker_image_list = arvados.commands.keepdocker.list_images_in_arv(
+        src, args.retries, docker_image, docker_image_tag)
+    image_uuid, image_info = docker_image_list[0]
+    logger.debug('copying collection {} {}'.format(image_uuid, image_info))
 
     # Copy the collection it refers to.
-    dst_image_col = copy_collection(docker_image_uuid, src, dst, args)
+    dst_image_col = copy_collection(image_uuid, src, dst, args)
 
     # Create docker_image_repo+tag and docker_image_hash links
     # at the destination.
-    dst.links().create(
+    lk = dst.links().create(
         body={
             'head_uuid': dst_image_col['uuid'],
             'link_class': 'docker_image_repo+tag',
-            'name': docker_link_name,
+            'name': "{}:{}".format(docker_image, docker_image_tag),
         }
     ).execute(num_retries=args.retries)
+    logger.debug('created dst link {}'.format(lk))
 
-    dst.links().create(
+    lk = dst.links().create(
         body={
             'head_uuid': dst_image_col['uuid'],
             'link_class': 'docker_image_hash',
             'name': dst_image_col['portable_data_hash'],
         }
     ).execute(num_retries=args.retries)
+    logger.debug('created dst link {}'.format(lk))
 
 
 # git_rev_parse(rev, repo)
