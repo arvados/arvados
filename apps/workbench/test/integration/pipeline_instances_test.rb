@@ -322,6 +322,7 @@ class PipelineInstancesTest < ActionDispatch::IntegrationTest
 
       assert page.has_text? 'This pipeline started at'
       page_text = page.text
+
       match = /This pipeline started at (.*)\. It failed after (.*) seconds at (.*)\. Check the Log/.match page_text
       assert_not_nil(match, 'Did not find text - This pipeline started at . . . ')
 
