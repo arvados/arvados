@@ -117,10 +117,53 @@ class PipelineInstancesTest < ActionDispatch::IntegrationTest
     create_and_run_pipeline_in_aproject true
   end
 
-  # Create a pipeline instance from within a project and run
+  # Create a pipeline instance from without a project
   test 'Run a pipeline from dashboard' do
     visit page_with_token('active_trustedclient')
     create_and_run_pipeline_in_aproject false
+  end
+
+  # Test that the portable_data_hash is recorded when choosing an
+  # input collection for a pipeline
+  test 'pipeline input collections are recorded with portable_data_hash' do
+    visit page_with_token('active_trustedclient')
+
+    template = api_fixture('pipeline_templates')['simple_pipeline']
+
+    visit '/pipeline_templates'
+    within('tr', text: 'Pipeline Template With Collection Input') do
+      find('a,button', text: 'Run').click
+    end
+
+    # project chooser
+    project = api_fixture('groups')['aproject']
+    within('.modal-dialog') do
+      find('.selectable', text: 'A Project').click
+      find('button', text: 'Choose').click
+    end
+
+    # find the collection input field
+    input = page.all('a', text: 'Choose').select { |a|
+      a[:href] =~ /Choose.a.dataset.for.foo.template.input/
+    }
+    assert_not_empty input
+    input.first.click
+
+    # Select a collection
+    col = api_fixture('collections')['foo_collection_in_aproject']
+    within('.modal-dialog') do
+      find('div', text: col['name']).click
+      find('button', text: 'OK').click
+    end
+
+    # The collection's portable_data_hash, name, and uuid should have
+    # been recorded, respectively, as the value, selection_name and selection_uuid
+    # for this component's input script_parameter.
+    api_response = JSON.parse(find('div#advanced_api_response pre').text)
+    input_params = api_response['components']['part-one']['script_parameters']['input']
+    assert_equal input_params['value'], col['portable_data_hash']
+    assert_equal input_params['selection_name'], col['name']
+    assert_equal input_params['selection_uuid'], col['uuid']
   end
 
   test 'view pipeline with job and see graph' do
