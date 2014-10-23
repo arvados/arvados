@@ -68,7 +68,7 @@ class Arvados::V1::NodesControllerTest < ActionController::TestCase
 
   test "create node" do
     authorize_with :admin
-    post :create
+    post :create, {node: {}}
     assert_response :success
     assert_not_nil json_response['uuid']
     assert_not_nil json_response['info'].is_a? Hash
