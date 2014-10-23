@@ -102,15 +102,9 @@ common:
   # Path to /etc/dnsmasq.d, or false = do not update dnsmasq data.
   dnsmasq_conf_dir: false
 
-  # Set to AMI id (ami-123456) to auto-start nodes. See app/models/node.rb
-  compute_node_ami: false
-  compute_node_ec2run_args: -g arvados-compute
-  compute_node_spot_bid: 0.11
-
   compute_node_domain: false
   compute_node_nameservers:
     - 192.168.1.1
-  compute_node_ec2_tag_enable: false
 
   # The version below is suitable for AWS.
   # To use it, copy it to your application.yml, uncomment, and change <%# to <%=
