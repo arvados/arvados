@@ -35,6 +35,8 @@ Usage of keepstore:
 </code></pre>
 </notextile>
 
+If you want access control on your Keep server(s), you should provide a permission key. The @-permission-key-file@ argument should contain the path to a file that contains a single line with a long random alphanumeric string. It should be the same as the @blob_signing_key@ that can be set in the "API server":install-api-server.html config/application.yml file.
+
 Prepare one or more volumes for Keep to use. Simply create a /keep directory on all the partitions you would like Keep to use, and then start Keep. For example, using 2 tmpfs volumes:
 
 <notextile>
