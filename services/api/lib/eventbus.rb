@@ -51,7 +51,9 @@ class EventBus
   # Push out any pending events to the connection +ws+
   # +notify_id+  the id of the most recent row in the log table, may be nil
   #
-  # This accepts a websocket and a notify_id (this is the row id from Postgres LISTEN/NOTIFY, it may nil)
+  # This accepts a websocket and a notify_id (this is the row id from Postgres
+  # LISTEN/NOTIFY, it may be nil if called from somewhere else)
+  #
   # It queries the database for log rows that are either
   #  a) greater than ws.last_log_id, which is the last log id which was a candidate to be sent out
   #  b) if ws.last_log_id is nil, then it queries rows starting with notify_id
