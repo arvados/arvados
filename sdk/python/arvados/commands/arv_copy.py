@@ -626,7 +626,7 @@ def abort(msg, code=1):
 # Code for reporting on the progress of a collection upload.
 # Stolen from arvados.commands.put.ArvPutCollectionWriter
 # TODO(twp): figure out how to refactor into a shared library
-# (may involve refactoring some arvados.commands.copy.copy_collection
+# (may involve refactoring some arvados.commands.arv_copy.copy_collection
 # code)
 
 def machine_progress(obj_uuid, bytes_written, bytes_expected):
