@@ -93,6 +93,23 @@ class ProjectsControllerTest < ActionController::TestCase
     refute user_can_manage(:project_viewer, "asubproject")
   end
 
+  test "subproject_admin can_manage asubproject" do
+    assert user_can_manage(:subproject_admin, "asubproject")
+  end
+
+  test "project admin can remove items from the project" do
+    coll_key = "collection_to_remove_from_subproject"
+    coll_uuid = api_fixture("collections")[coll_key]["uuid"]
+    delete(:remove_item,
+           { id: api_fixture("groups")["asubproject"]["uuid"],
+             item_uuid: coll_uuid,
+             format: "js" },
+           session_for(:subproject_admin))
+    assert_response :success
+    assert_match(/\b#{coll_uuid}\b/, @response.body,
+                 "removed object not named in response")
+  end
+
   test 'projects#show tab infinite scroll partial obeys limit' do
     get_contents_rows(limit: 1, filters: [['uuid','is_a',['arvados#job']]])
     assert_response :success

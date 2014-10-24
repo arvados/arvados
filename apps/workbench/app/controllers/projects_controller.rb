@@ -192,7 +192,7 @@ class ProjectsController < ApplicationController
                                      limit: @limit,
                                      include_linked: true,
                                      filters: (@filters - kind_filters + [['uuid', 'is_a', type]]),
-                                     offset: @offset)
+                                    )
           objects.each do |object|
             @name_link_for[object.andand.uuid] = objects.links_for(object, 'name').first
           end

@@ -14,7 +14,7 @@ $(document).on('ajax:complete arv:pane:loaded ready', function() {
             if ($(elm).attr('data-utc-date-opts') && $(elm).attr('data-utc-date-opts').match(/noseconds/)) {
                 $(elm).text((ts.getHours() > 12 ? (ts.getHours()-12) : ts.getHours())
                             + ":" + (ts.getMinutes() < 10 ? '0' : '') + ts.getMinutes()
-                            + (ts.getHours() > 12 ? " PM " : " AM ")
+                            + (ts.getHours() >= 12 ? " PM " : " AM ")
                             + ts.toLocaleDateString());
             } else {
                 $(elm).text(ts.toLocaleTimeString() + " " + ts.toLocaleDateString());

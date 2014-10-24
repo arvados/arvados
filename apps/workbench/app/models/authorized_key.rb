@@ -1,7 +1,7 @@
 class AuthorizedKey < ArvadosBase
-  def attribute_editable? attr, *args
-    if attr.to_s == 'authorized_user_uuid'
-      current_user and current_user.is_admin
+  def attribute_editable?(attr, ever=nil)
+    if (attr.to_s == 'authorized_user_uuid') and (not ever)
+      current_user.andand.is_admin
     else
       super
     end

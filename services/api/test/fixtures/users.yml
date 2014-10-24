@@ -85,6 +85,20 @@ future_project_user:
       organization: example.com
       role: Computational biologist
 
+subproject_admin:
+  owner_uuid: zzzzz-tpzed-000000000000000
+  uuid: zzzzz-tpzed-subprojectadmin
+  email: subproject-admin@arvados.local
+  first_name: Subproject
+  last_name: Admin
+  identity_url: https://subproject-admin.openid.local
+  is_active: true
+  is_admin: false
+  prefs:
+    profile:
+      organization: example.com
+      role: Computational biologist
+
 spectator:
   owner_uuid: zzzzz-tpzed-000000000000000
   uuid: zzzzz-tpzed-l1s2piq4t4mps8r
@@ -200,3 +214,17 @@ user_bar_in_sharing_group:
   identity_url: https://user_bar_in_sharing_group.openid.local
   is_active: true
   is_admin: false
+
+user1_with_load:
+  owner_uuid: zzzzz-tpzed-000000000000000
+  uuid: zzzzz-tpzed-user1withloadab
+  email: user1_with_load@arvados.local
+  first_name: user1_with_load
+  last_name: User
+  identity_url: https://user1_with_load.openid.local
+  is_active: true
+  is_admin: false
+  prefs:
+    profile:
+      organization: example.com
+      role: IT

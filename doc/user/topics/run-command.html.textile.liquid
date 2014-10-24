@@ -1,0 +1,212 @@
+---
+layout: default
+navsection: userguide
+title: "run-command reference"
+...
+
+The @run-command@ crunch script enables you run command line programs.
+
+h1. Using run-command
+
+The basic @run-command@ process evaluates its inputs and builds a command line, executes the command, and saves the contents of the output directory back to Keep.  For large datasets, @run-command@ can schedule concurrent tasks to execute the wrapped program over a range of inputs (see @task.foreach@ below.)
+
+@run-command@ is controlled through the @script_parameters@ section of a pipeline component.  @script_parameters@ is a JSON object consisting of key-value pairs.  There are three categories of keys that are meaningful to run-command:
+* The @command@ section defining the template to build the command line of task
+* Special processing directives such as @task.foreach@ @task.cwd@ @task.vwd@ @task.stdin@ @task.stdout@
+* User-defined parameters (everything else)
+
+In the following examples, you can use "dry run mode" to determine the command line that @run-command@ will use without actually running the command.  For example:
+
+<notextile>
+<pre><code>~$ <span class="userinput">./run-command --dry-run --script-parameters '{
+  "command": ["echo", "hello world"]
+}'</span>
+run-command: echo hello world
+</code></pre>
+</notextile>
+
+h2. Command template
+
+The value of the "command" key is a list.  The first parameter of the list is the actual program to invoke, followed by the command arguments.  The simplest @run-command@ invocation simply runs a program with static parameters.  In this example, run "echo" with the first argument "hello world":
+
+<pre>
+{
+  "command": ["echo", "hello world"]
+}
+</pre>
+
+Running this job will print "hello world" to the job log.
+
+By default, the command will start with the current working directory set to the output directory.  Anything written to the output directory will be saved to Keep when the command is finished.  You can change the default working directory using @task.cwd@ and get the path to the output directory using @$(task.outdir)@ as explained below.
+
+Items in the "command" list may include lists and objects in addition to strings.  Lists are flattened to produce the final command line.  JSON objects are evaluated as list item functions (see below).  For example, the following evaluates to @["echo", "hello", "world"]@:
+
+<pre>
+{
+  "command": ["echo", ["hello", "world"]]
+}
+</pre>
+
+h2. Parameter substitution
+
+The "command" list can include parameter substitutions.  Substitutions are enclosed in "$(...)" and may contain the name of a user-defined parameter.  In the following example, the value of "a" is "hello world"; so when "command" is evaluated, it will substitute "hello world" for "$(a)":
+
+<pre>
+{
+  "command": ["echo", "$(file $(a))"],
+  "a": "c1bad4b39ca5a924e481008009d94e32+210/var-GS000016015-ASM.tsv.bz2"
+}
+</pre>
+
+table(table table-bordered table-condensed).
+|_. Function|_. Action|
+|$(file ...)       | Takes a reference to a file within an Arvados collection and evaluates to a file path on the local file system where that file can be accessed by your command.  Will raise an error if the file is not accessible.|
+|$(dir ...)        | Takes a reference to an Arvados collection or directory within an Arvados collection and evaluates to a directory path on the local file system where that directory can be accessed by your command.  The path may include a file name, in which case it will evaluate to the parent directory of the file.  Uses Python's os.path.dirname(), so "/foo/bar" will evaluate to "/foo" but "/foo/bar/" will evaluate to "/foo/bar".  Will raise an error if the directory is not accessible. |
+|$(basename&nbsp;...)   | Strip leading directory and trailing file extension from the path provided.  For example, $(basename /foo/bar.baz.txt) will evaluate to "bar.baz".|
+|$(glob ...)       | Take a Unix shell path pattern (supports @*@ @?@ and @[]@) and search the local filesystem, returning the first match found.  Use together with $(dir ...) to get a local filesystem path for Arvados collections.  For example: $(glob $(dir $(mycollection)/*.bam)) will find the first .bam file in the collection specified by the user parameter "mycollection".  If there is more than one match, which one is returned is undefined.  Will raise an error if no matches are found.|
+
+h2. List context
+
+When a parameter is evaluated in a list context, that means its value should evaluate to a list instead of a string.  Parameter values can be a static list (as demonstrated above), a path to a file, a path to a directory, or a JSON object describing a list context function.
+
+If the value is a static list, it will evaluate the list items for parameter substation and list functions.
+
+If the value is a string, it is interpreted as a path.  If the path specifies a regular file, that file will be opened as a text file and produce a list with one item for each line in the file (end-of-line characters will be stripped).  If the path specifies a directory, produce a list containing all of the entries in the directory.  Note that parameter expansion is not performed on lists produced this way.
+
+If the value is a JSON object, it is evaluated as a list function described below.
+
+h2. List functions
+
+When @run-command@ is evaluating a list (such as "command"), in addition to string parameter substitution, you can use list item functions.  Note: in the following functions, you specify the name of a user parameter to act on; you cannot provide the list value directly in line.
+
+h3. foreach
+
+The @foreach@ list item function (not to be confused with the @task.foreach@ directive) expands a command template for each item in the specified user parameter (the value of the user parameter is evaluated in a list context, as described above).  The following example will evaluate "command" to @["echo", "--something", "alice", "--something", "bob"]@:
+
+<pre>
+{
+  "command": ["echo", {"foreach": "a", "command": ["--something", "$(a)"]}],
+  "a": ["alice", "bob"]
+}
+</pre>
+
+h3. index
+
+This function extracts a single item from a list.  The value of @index@ is zero-based (i.e. the first item is at index 0, the second item index 1, etc).  The following example will evaluate "command" to @["echo", "--something", "bob"]@:
+
+<pre>
+{
+  "command": ["echo", {"list": "a", "index": 1, "command": ["--something", "$(a)"]}],
+  "a": ["alice", "bob"]
+}
+</pre>
+
+h3. filter
+
+Filter the list so that it only includes items that match a regular expression.  The following example will evaluate to @["echo", "bob"]@
+
+<pre>
+{
+  "command": ["echo", {"filter": "a", "regex": "b.*"}],
+  "a": ["alice", "bob"]
+}
+</pre>
+
+h3. group
+
+Generate a list of lists, where items are grouped on common subexpression match.  Items which don't match the regular expression are excluded.  The following example evaluates to @["echo", "--group", "alice", "carol", "dave", "--group", "bob"]@:
+
+<pre>
+{
+  "command": ["echo", {"foreach": "b", "command":["--group", {"foreach": "b", "command":"$(b)"}]}],
+  "a": ["alice", "bob", "carol", "dave"],
+  "b": {"group": "a", "regex": "[^a]*(a?).*"}
+}
+</pre>
+
+h3. extract
+
+Generate a list of lists, where items are split by subexpression match.  Items which don't match the regular expression are excluded.  The following example evaluates to @["echo", "c", "a", "rol", "d", "a", "ve"]@:
+
+<pre>
+{
+  "command": ["echo", {"foreach": "b", "command":[{"foreach": "b", "command":"$(b)"}]}],
+  "a": ["alice", "bob", "carol", "dave"],
+  "b": {"extract": "a", "regex": "(.+)(a)(.*)"}
+}
+</pre>
+
+h2. Directives
+
+Directives alter the behavior of run-command.  All directives are optional.
+
+h3. task.cwd
+
+This directive sets the initial current working directory that your command will run in.  If @task.cwd@ is not specified, the default current working directory is @task.outdir@.
+
+h3. task.stdin and task.stdout
+
+Provide standard input and standard output redirection.
+
+@task.stdin@ must evaluate to a path to a file to be bound to the command's standard input stream.
+
+@task.stdout@ specifies the desired file name in the output directory to save the content of standard output.
+
+h3. task.vwd
+
+Background: because Keep collections are read-only, this does not play well with certain tools that expect to be able to write their outputs alongside their inputs (such as tools that generate indexes that are closely associated with the original file.)  The run-command's solution to this is the "virtual working directory".
+
+@task.vwd@ specifies a Keep collection with the starting contents of the directory.  @run-command@ will then populate @task.outdir@ with directories and symlinks to mirror the contents of the @task.vwd@ collection.  Your command will then be able to both access its input files and write its output files in @task.outdir@.  When the command completes, the output collection will merge the output of your command with the contents of the starting collection.  Note that files in the starting collection remain read-only and cannot be altered or deleted.
+
+h3. task.foreach
+
+Using @task.foreach@, you can run your command concurrently over large datasets.
+
+@task.foreach@ takes the names of one or more user-defined parameters.  The value of these parameters are evaluated in a list context.  @run-command@ then generates tasks based on the Cartesian product (i.e. all combinations) of the input lists.  The outputs of all tasks are merged to create the final output collection.  Note that if two tasks output a file in the same directory with the same name, that file will be concatenated in the final output.  In the following example, three tasks will be created for the "grep" command, based on the contents of user parameter "a":
+
+<pre>
+{
+  "command": ["echo", "$(a)"],
+  "task.foreach": "a",
+  "a": ["alice", "bob", "carol"]
+}
+</pre>
+
+This evaluates to the commands:
+<notextile>
+<pre>
+["echo", "alice"]
+["echo", "bob"]
+["echo", "carol"]
+</pre>
+</notextile>
+
+You can also specify multiple parameters:
+
+<pre>
+{
+  "command": ["echo", "$(a)", "$(b)"],
+  "task.foreach": ["a", "b"],
+  "a": ["alice", "bob"],
+  "b": ["carol", "dave"]
+}
+</pre>
+
+This evaluates to the commands:
+
+<pre>
+["echo", "alice", "carol"]
+["echo", "alice", "dave"]
+["echo", "bob", "carol"]
+["echo", "bob", "dave"]
+</pre>
+
+h1. Examples
+
+The following is a single task pipeline using @run-command@ to run the bwa alignment tool to align a single paired-end read fastq sample.  The input to this pipeline is the reference genome and a collection consisting of two fastq files for the read pair.
+
+<notextile>{% code 'run_command_simple_example' as javascript %}</notextile>
+
+The following is a concurrent task pipeline using @run-command@ to run the bwa alignment tool to align a set of fastq reads over multiple samples.  The input to this pipeline is the reference genome and a collection consisting subdirectories for each sample, with each subdirectory containing pairs of fastq files for each set of reads.
+
+<notextile>{% code 'run_command_foreach_example' as javascript %}</notextile>

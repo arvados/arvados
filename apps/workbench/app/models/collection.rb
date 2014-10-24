@@ -66,12 +66,8 @@ class Collection < ArvadosBase
     dir_to_tree.call('.')
   end
 
-  def attribute_editable? attr, *args
-    if %w(name description manifest_text).include? attr.to_s
-      true
-    else
-      super
-    end
+  def editable_attributes
+    %w(name description manifest_text)
   end
 
   def self.creatable?

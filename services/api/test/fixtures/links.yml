@@ -377,6 +377,20 @@ project_viewer_can_read_project:
   head_uuid: zzzzz-j7d0g-v955i6s2oi1cbso
   properties: {}
 
+subproject_admin_can_manage_subproject:
+  uuid: zzzzz-o0j2j-subprojadminlnk
+  owner_uuid: zzzzz-tpzed-000000000000000
+  created_at: 2014-10-15 10:00:00 -0000
+  modified_by_client_uuid: zzzzz-ozdt8-brczlopd8u8d0jr
+  modified_by_user_uuid: zzzzz-tpzed-xurymjxw79nv3jz
+  modified_at: 2014-10-15 10:00:00 -0000
+  updated_at: 2014-10-15 10:00:00 -0000
+  tail_uuid: zzzzz-tpzed-subprojectadmin
+  link_class: permission
+  name: can_manage
+  head_uuid: zzzzz-j7d0g-axqo7eu9pwvna1x
+  properties: {}
+
 foo_collection_tag:
   uuid: zzzzz-o0j2j-eedahfaho8aphiv
   owner_uuid: zzzzz-tpzed-xurymjxw79nv3jz
@@ -735,3 +749,16 @@ user_bar_is_in_sharing_group:
   name: can_read
   head_uuid: zzzzz-tpzed-n3oaj4sm5fcnwib
 
+user1-with-load_member_of_all_users_group:
+  uuid: zzzzz-o0j2j-user1-with-load
+  owner_uuid: zzzzz-tpzed-000000000000000
+  created_at: 2014-01-24 20:42:26 -0800
+  modified_by_client_uuid: zzzzz-ozdt8-brczlopd8u8d0jr
+  modified_by_user_uuid: zzzzz-tpzed-d9tiejq69daie8f
+  modified_at: 2014-01-24 20:42:26 -0800
+  updated_at: 2014-01-24 20:42:26 -0800
+  tail_uuid: zzzzz-tpzed-user1withloadab
+  link_class: permission
+  name: can_read
+  head_uuid: zzzzz-j7d0g-fffffffffffffff
+  properties: {}

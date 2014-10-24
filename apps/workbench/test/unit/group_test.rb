@@ -25,4 +25,16 @@ class GroupTest < ActiveSupport::TestCase
       assert_nil user.owner_uuid
     end
   end
+
+  test "project editable by its admin" do
+    use_token :subproject_admin
+    project = Group.find(api_fixture("groups")["asubproject"]["uuid"])
+    assert(project.editable?, "project not editable by admin")
+  end
+
+  test "project not editable by reader" do
+    use_token :project_viewer
+    project = Group.find(api_fixture("groups")["aproject"]["uuid"])
+    refute(project.editable?, "project editable by reader")
+  end
 end

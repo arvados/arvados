@@ -240,6 +240,42 @@ class WebsocketTest < ActionDispatch::IntegrationTest
     assert_equal human.uuid, human_ev_uuid
   end
 
+
+  test "connect, subscribe, compound filter" do
+    state = 1
+    t1 = nil
+
+    authorize_with :admin
+
+    ws_helper :admin do |ws|
+      ws.on :open do |event|
+        ws.send ({method: 'subscribe', filters: [['object_uuid', 'is_a', 'arvados#trait'], ['event_type', '=', 'update']]}.to_json)
+      end
+
+      ws.on :message do |event|
+        d = Oj.load event.data
+        case state
+        when 1
+          assert_equal 200, d["status"]
+          t1 = Trait.create("name" => "foo")
+          t1.name = "bar"
+          t1.save!
+          state = 2
+         when 2
+          assert_equal 'update', d['event_type']
+          state = 3
+          ws.close
+        when 3
+          assert false, "Should not get any more events"
+        end
+      end
+
+    end
+
+    assert_equal 3, state
+    assert_not_nil t1
+  end
+
   test "connect, subscribe, ask events starting at seq num" do
     state = 1
     human = nil

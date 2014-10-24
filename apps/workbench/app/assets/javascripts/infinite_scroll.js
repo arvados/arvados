@@ -41,45 +41,26 @@ function maybe_load_more_content(event) {
         $container.append(spinner);
         $container.attr('data-infinite-serial', serial);
 
-        // Combine infiniteContentParams from multiple sources. This
-        // mechanism allows each of several components to set and
-        // update its own set of filters, without having to worry
-        // about stomping on some other component's filters.
-        //
-        // For example, filterable.js writes filters in
-        // infiniteContentParamsFilterable ("search for text foo")
-        // without worrying about clobbering the filters set up by the
-        // tab pane ("only show jobs and pipelines in this tab").
-        params = {};
-        $.each($container.data(), function(datakey, datavalue) {
-            // Note: We attach these data to DOM elements using
-            // <element data-foo-bar="baz">. We store/retrieve them
-            // using $('element').data('foo-bar'), although
-            // .data('fooBar') would also work. The "all data" hash
-            // returned by $('element').data(), however, always has
-            // keys like 'fooBar'. In other words, where we have a
-            // choice, we stick with the 'foo-bar' style to be
-            // consistent with HTML. Here, our only option is
-            // 'fooBar'.
-            if (/^infiniteContentParams/.exec(datakey)) {
-                if (datavalue instanceof Object) {
-                    $.each(datavalue, function(hkey, hvalue) {
-                        if (hvalue instanceof Array) {
-                            params[hkey] = (params[hkey] || []).concat(hvalue);
-                        } else if (hvalue instanceof Object) {
-                            $.extend(params[hkey], hvalue);
-                        } else {
-                            params[hkey] = hvalue;
-                        }
-                    });
+        if (src == $container.attr('data-infinite-content-href0')) {
+            // If we're loading the first page, collect filters from
+            // various sources.
+            params = mergeInfiniteContentParams($container);
+            $.each(params, function(k,v) {
+                if (v instanceof Object) {
+                    params[k] = JSON.stringify(v);
                 }
-            }
-        });
-        $.each(params, function(k,v) {
-            if (v instanceof Object) {
-                params[k] = JSON.stringify(v);
-            }
-        });
+            });
+        } else {
+            // If we're loading page >1, ignore other filtering
+            // mechanisms and just use the "next page" URI from the
+            // previous page's response. Aside from avoiding race
+            // conditions (where page 2 could have different filters
+            // than page 1), this allows the server to use filters in
+            // the "next page" URI to achieve paging. (To apply any
+            // new filters effectively, we need to load page 1 again
+            // anyway.)
+            params = {};
+        }
 
         $.ajax(src,
                {dataType: 'json',
@@ -125,6 +106,45 @@ function ping_all_scrollers() {
     // updating. Adding infinite-scroller class to the window element
     // doesn't work, so we add it explicitly here.
     $('.infinite-scroller').add(window).trigger('scroll');
+}
+
+function mergeInfiniteContentParams($container) {
+    var params = {};
+    // Combine infiniteContentParams from multiple sources. This
+    // mechanism allows each of several components to set and
+    // update its own set of filters, without having to worry
+    // about stomping on some other component's filters.
+    //
+    // For example, filterable.js writes filters in
+    // infiniteContentParamsFilterable ("search for text foo")
+    // without worrying about clobbering the filters set up by the
+    // tab pane ("only show jobs and pipelines in this tab").
+    $.each($container.data(), function(datakey, datavalue) {
+        // Note: We attach these data to DOM elements using
+        // <element data-foo-bar="baz">. We store/retrieve them
+        // using $('element').data('foo-bar'), although
+        // .data('fooBar') would also work. The "all data" hash
+        // returned by $('element').data(), however, always has
+        // keys like 'fooBar'. In other words, where we have a
+        // choice, we stick with the 'foo-bar' style to be
+        // consistent with HTML. Here, our only option is
+        // 'fooBar'.
+        if (/^infiniteContentParams/.exec(datakey)) {
+            if (datavalue instanceof Object) {
+                $.each(datavalue, function(hkey, hvalue) {
+                    if (hvalue instanceof Array) {
+                        params[hkey] = (params[hkey] || []).
+                            concat(hvalue);
+                    } else if (hvalue instanceof Object) {
+                        $.extend(params[hkey], hvalue);
+                    } else {
+                        params[hkey] = hvalue;
+                    }
+                });
+            }
+        }
+    });
+    return params;
 }
 
 $(document).

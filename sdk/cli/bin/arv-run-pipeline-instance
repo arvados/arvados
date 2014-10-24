@@ -445,12 +445,17 @@ class WhRunPipelineInstance
         if value.nil? and
             ![false,'false',0,'0'].index parameter[:required]
           if parameter[:output_of]
+            if not @components[parameter[:output_of].intern]
+              errors << [componentname, parametername, "output_of refers to nonexistent component '#{parameter[:output_of]}'"]
+            end
             next
           end
           errors << [componentname, parametername, "required parameter is missing"]
         end
         debuglog "parameter #{componentname}::#{parametername} == #{value}"
-        component[:script_parameters][parametername] = value
+
+        component[:script_parameters][parametername] =
+          parameter.dup.merge(value: value)
       end
     end
     if !errors.empty?
@@ -518,7 +523,9 @@ class WhRunPipelineInstance
           my_submit_id = "instance #{@instance[:uuid]} rand #{rand(2**64).to_s(36)}"
           job = JobCache.create(@instance, cname, {
             :script => c[:script],
-            :script_parameters => c[:script_parameters],
+            :script_parameters => Hash[c[:script_parameters].map do |key, spec|
+                                         [key, spec[:value]]
+                                       end],
             :script_version => c[:script_version],
             :repository => c[:repository],
             :nondeterministic => c[:nondeterministic],
@@ -594,7 +601,7 @@ class WhRunPipelineInstance
               c2[:script_parameters].each do |pname, p|
                 if p.is_a? Hash and p[:output_of] == cname.to_s
                   debuglog "parameter #{c2name}::#{pname} == #{c[:job][:output]}"
-                  c2[:script_parameters][pname] = c[:job][:output]
+                  c2[:script_parameters][pname] = {value: c[:job][:output]}
                   moretodo = true
                 end
               end

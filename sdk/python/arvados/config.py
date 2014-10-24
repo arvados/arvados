@@ -7,7 +7,10 @@ import os
 import re
 
 _settings = None
-default_config_file = os.environ['HOME'] + '/.config/arvados/settings.conf'
+if os.environ.get('HOME') != None:
+    default_config_file = os.environ['HOME'] + '/.config/arvados/settings.conf'
+else:
+    default_config_file = ''
 
 EMPTY_BLOCK_LOCATOR = 'd41d8cd98f00b204e9800998ecf8427e+0'
 

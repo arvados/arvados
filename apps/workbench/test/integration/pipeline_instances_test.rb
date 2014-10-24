@@ -83,6 +83,7 @@ class PipelineInstancesTest < ActionDispatch::IntegrationTest
     assert page.has_text? 'Paused'
     page.assert_no_selector 'a.disabled,button.disabled', text: 'Resume'
     page.assert_selector 'a,button', text: 'Re-run with latest'
+    page.assert_selector 'a,button', text: 'Re-run options'
 
     # Since it is test env, no jobs are created to run. So, graph not visible
     assert_not page.has_text? 'Graph'
@@ -113,79 +114,14 @@ class PipelineInstancesTest < ActionDispatch::IntegrationTest
       wait_for_ajax
     end
 
-    # create a pipeline instance
-    find('.btn', text: 'Run a pipeline').click
-    within('.modal-dialog') do
-      find('.selectable', text: 'Two Part Pipeline Template').click
-      find('.btn', text: 'Next: choose inputs').click
-    end
-
-    assert find('p', text: 'Provide a value')
-
-    find('div.form-group', text: 'Foo/bar pair').
-      find('.btn', text: 'Choose').
-      click
-
-    within('.modal-dialog') do
-      assert_selector 'button.dropdown-toggle', text: 'A Project'
-      wait_for_ajax
-      first('span', text: 'foo_tag').click
-      find('button', text: 'OK').click
-    end
-    wait_for_ajax
-
-    # "Run" button present and enabled
-    page.assert_no_selector 'a.disabled,button.disabled', text: 'Run'
-    first('a,button', text: 'Run').click
-
-    # Pipeline is running. We have a "Pause" button instead now.
-    page.assert_no_selector 'a,button', text: 'Run'
-    page.assert_selector 'a,button', text: 'Pause'
-
-    # Since it is test env, no jobs are created to run. So, graph not visible
-    assert_not page.has_text? 'Graph'
+    create_and_run_pipeline_in_aproject true
   end
 
   # Create a pipeline instance from within a project and run
   test 'Run a pipeline from dashboard' do
     visit page_with_token('active_trustedclient')
-
-    # create a pipeline instance
-    find('.btn', text: 'Run a pipeline').click
-    within('.modal-dialog') do
-      find('.selectable', text: 'Two Part Pipeline Template').click
-      find('.btn', text: 'Next: choose inputs').click
-    end
-
-    assert find('p', text: 'Provide a value')
-
-    find('div.form-group', text: 'Foo/bar pair').
-      find('.btn', text: 'Choose').
-      click
-
-    within('.modal-dialog') do
-      assert_selector 'button.dropdown-toggle', text: 'Home'
-      wait_for_ajax
-      click_button "Home"
-      click_link "A Project"
-      wait_for_ajax
-      first('span', text: 'foo_tag').click
-      find('button', text: 'OK').click
-    end
-    wait_for_ajax
-
-    # "Run" button present and enabled
-    page.assert_no_selector 'a.disabled,button.disabled', text: 'Run'
-    first('a,button', text: 'Run').click
-
-    # Pipeline is running. We have a "Pause" button instead now.
-    page.assert_no_selector 'a,button', text: 'Run'
-    page.assert_selector 'a,button', text: 'Pause'
-
-    # Since it is test env, no jobs are created to run. So, graph not visible
-    assert_not page.has_text? 'Graph'
+    create_and_run_pipeline_in_aproject false
   end
-
 
   test 'view pipeline with job and see graph' do
     visit page_with_token('active_trustedclient')
@@ -263,5 +199,143 @@ class PipelineInstancesTest < ActionDispatch::IntegrationTest
 
   test "Workbench preserves search_for parameter after project switch" do
     check_parameter_search("A Project")
+  end
+
+  [
+    ['active', false, false, false],
+    ['active', false, false, true],
+    ['active', true, false, false],
+    ['active', true, true, false],
+    ['active', true, false, true],
+    ['active', true, true, true],
+    ['project_viewer', false, false, true],
+    ['project_viewer', true, false, true],
+    ['project_viewer', true, true, true],
+  ].each do |user, with_options, choose_options, in_aproject|
+    test "Rerun pipeline instance as #{user} using options #{with_options} #{choose_options} in #{in_aproject}" do
+      visit page_with_token('active')
+
+      if in_aproject
+        find("#projects-menu").click
+        find('.dropdown-menu a,button', text: 'A Project').click
+      end
+
+      create_and_run_pipeline_in_aproject in_aproject
+      instance_path = current_path
+
+      # Pause the pipeline
+      find('a,button', text: 'Pause').click
+      assert page.has_text? 'Paused'
+      page.assert_no_selector 'a.disabled,button.disabled', text: 'Resume'
+      page.assert_selector 'a,button', text: 'Re-run with latest'
+      page.assert_selector 'a,button', text: 'Re-run options'
+
+      # Pipeline can be re-run now. Access it as the specified user, and re-run
+      if user == 'project_viewer'
+        visit page_with_token(user, instance_path)
+        assert page.has_text? 'A Project'
+        page.assert_no_selector 'a.disabled,button.disabled', text: 'Resume'
+        page.assert_selector 'a,button', text: 'Re-run with latest'
+        page.assert_selector 'a,button', text: 'Re-run options'
+      end
+
+      # Now re-run the pipeline
+      if with_options
+        find('a,button', text: 'Re-run options').click
+        within('.modal-dialog') do
+          page.assert_selector 'a,button', text: 'Copy and edit inputs'
+          page.assert_selector 'a,button', text: 'Run now'
+          if choose_options
+            find('button', text: 'Copy and edit inputs').click
+          else
+            find('button', text: 'Run now').click
+          end
+        end
+      else
+        find('a,button', text: 'Re-run with latest').click
+      end
+
+      # Verify that the newly created instance is created in the right project.
+      # In case of project_viewer user, since the use cannot write to the project,
+      # the pipeline should have been created in the user's Home project.
+      rerun_instance_path = current_path
+      assert_not_equal instance_path, rerun_instance_path, 'Rerun instance path expected to be different'
+      assert page.has_text? 'Home'
+      if in_aproject && (user != 'project_viewer')
+        assert page.has_text? 'A Project'
+      else
+        assert page.has_no_text? 'A Project'
+      end
+    end
+  end
+
+  # Create and run a pipeline for 'Two Part Pipeline Template' in 'A Project'
+  def create_and_run_pipeline_in_aproject in_aproject
+    # create a pipeline instance
+    find('.btn', text: 'Run a pipeline').click
+    within('.modal-dialog') do
+      find('.selectable', text: 'Two Part Pipeline Template').click
+      find('.btn', text: 'Next: choose inputs').click
+    end
+
+    assert find('p', text: 'Provide a value')
+
+    find('div.form-group', text: 'Foo/bar pair').
+      find('.btn', text: 'Choose').
+      click
+
+    within('.modal-dialog') do
+      if in_aproject
+        assert_selector 'button.dropdown-toggle', text: 'A Project'
+        wait_for_ajax
+      else
+        assert_selector 'button.dropdown-toggle', text: 'Home'
+        wait_for_ajax
+        click_button "Home"
+        click_link "A Project"
+        wait_for_ajax
+      end
+      first('span', text: 'foo_tag').click
+      find('button', text: 'OK').click
+    end
+    wait_for_ajax
+
+    # "Run" button present and enabled
+    page.assert_no_selector 'a.disabled,button.disabled', text: 'Run'
+    first('a,button', text: 'Run').click
+
+    # Pipeline is running. We have a "Pause" button instead now.
+    page.assert_no_selector 'a,button', text: 'Run'
+    page.assert_no_selector 'a.disabled,button.disabled', text: 'Resume'
+    page.assert_selector 'a,button', text: 'Pause'
+
+    # Since it is test env, no jobs are created to run. So, graph not visible
+    assert_not page.has_text? 'Graph'
+  end
+
+  [
+    [0, 0], # run time 0 minutes
+    [9, 17*60*60 + 51*60], # run time 17 hours and 51 minutes
+  ].each do |index, run_time|
+    test "pipeline start and finish time display #{index}" do
+      visit page_with_token("user1_with_load", "/pipeline_instances/zzzzz-d1hrv-10pipelines0#{index.to_s.rjust(3, '0')}")
+
+      assert page.has_text? 'This pipeline started at'
+      page_text = page.text
+
+      match = /This pipeline started at (.*)\. It failed after (.*) seconds at (.*)\. Check the Log/.match page_text
+      assert_not_nil(match, 'Did not find text - This pipeline started at . . . ')
+
+      start_at = match[1]
+      finished_at = match[3]
+      assert_not_nil(start_at, 'Did not find start_at time')
+      assert_not_nil(finished_at, 'Did not find finished_at time')
+
+      # start and finished time display is of the format '2:20 PM 10/20/2014'
+      start_time = DateTime.strptime(start_at, '%H:%M %p %m/%d/%Y').to_time
+      finished_time = DateTime.strptime(finished_at, '%H:%M %p %m/%d/%Y').to_time
+      assert_equal(run_time, finished_time-start_time,
+        "Time difference did not match for start_at #{start_at}, finished_at #{finished_at}, ran_for #{match[2]}")
+    end
   end
 end

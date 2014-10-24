@@ -17,6 +17,7 @@ import apiclient
 import json
 import logging
 import time
+import _strptime
 import calendar
 import threading
 from arvados.util import portable_data_hash_pattern, uuid_pattern, collection_uuid_pattern, group_uuid_pattern, user_uuid_pattern, link_uuid_pattern

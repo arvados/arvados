@@ -110,7 +110,8 @@ class ArvadosModel < ActiveRecord::Base
     unless (owner_uuid == current_user.uuid or
             current_user.is_admin or
             (current_user.groups_i_can(:manage) & [uuid, owner_uuid]).any?)
-      if current_user.groups_i_can(:write).index(uuid)
+      if ((current_user.groups_i_can(:write) + [current_user.uuid]) &
+          [uuid, owner_uuid]).any?
         return [owner_uuid, current_user.uuid]
       else
         return [owner_uuid]
@@ -526,7 +527,6 @@ class ArvadosModel < ActiveRecord::Base
     log = Log.new(event_type: event_type).fill_object(self)
     yield log
     log.save!
-    connection.execute "NOTIFY logs, '#{log.id}'"
     log_start_state
   end
 
