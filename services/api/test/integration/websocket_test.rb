@@ -611,7 +611,7 @@ class WebsocketTest < ActionDispatch::IntegrationTest
     authorize_with :admin
 
     ws_helper :admin, false do |ws|
-      EM::Timer.new 8 do
+      EM::Timer.new 45 do
         # Needs a longer timeout than the default
         ws.close
       end
