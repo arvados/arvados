@@ -92,11 +92,6 @@ class Node < ArvadosModel
     if o[:ec2_instance_id]
       if !self.info['ec2_instance_id']
         self.info['ec2_instance_id'] = o[:ec2_instance_id]
-        if (Rails.configuration.compute_node_ec2_tag_enable rescue true)
-          tag_cmd = ("ec2-create-tags #{o[:ec2_instance_id]} " +
-                     "--tag 'Name=#{self.uuid}'")
-          `#{tag_cmd}`
-        end
       elsif self.info['ec2_instance_id'] != o[:ec2_instance_id]
         logger.debug "Multiple nodes have credentials for #{self.uuid}"
         raise "#{self.uuid} is already running at #{self.info['ec2_instance_id']} so rejecting ping from #{o[:ec2_instance_id]}"
@@ -117,11 +112,6 @@ class Node < ArvadosModel
         raise "No available node slots" if try_slot == MAX_SLOTS
       end while true
       self.hostname = self.class.hostname_for_slot(self.slot_number)
-      if info['ec2_instance_id']
-        if (Rails.configuration.compute_node_ec2_tag_enable rescue true)
-          `ec2-create-tags #{self.info['ec2_instance_id']} --tag 'hostname=#{self.hostname}'`
-        end
-      end
     end
 
     # Record other basic stats
@@ -134,50 +124,6 @@ class Node < ArvadosModel
     end
 
     save!
-  end
-
-  def start!(ping_url_method)
-    ensure_permission_to_save
-    ping_url = ping_url_method.call({ id: self.uuid, ping_secret: self.info['ping_secret'] })
-    if (Rails.configuration.compute_node_ec2run_args and
-        Rails.configuration.compute_node_ami)
-      ec2_args = ["--user-data '#{ping_url}'",
-                  "-t c1.xlarge -n 1",
-                  Rails.configuration.compute_node_ec2run_args,
-                  Rails.configuration.compute_node_ami
-                 ]
-      ec2run_cmd = ["ec2-run-instances",
-                    "--client-token", self.uuid,
-                    ec2_args].flatten.join(' ')
-      ec2spot_cmd = ["ec2-request-spot-instances",
-                     "-p #{Rails.configuration.compute_node_spot_bid} --type one-time",
-                     ec2_args].flatten.join(' ')
-    else
-      ec2run_cmd = ''
-      ec2spot_cmd = ''
-    end
-    self.info['ec2_run_command'] = ec2run_cmd
-    self.info['ec2_spot_command'] = ec2spot_cmd
-    self.info['ec2_start_command'] = ec2spot_cmd
-    logger.info "#{self.uuid} ec2_start_command= #{ec2spot_cmd.inspect}"
-    result = `#{ec2spot_cmd} 2>&1`
-    self.info['ec2_start_result'] = result
-    logger.info "#{self.uuid} ec2_start_result= #{result.inspect}"
-    result.match(/INSTANCE\s*(i-[0-9a-f]+)/) do |m|
-      instance_id = m[1]
-      self.info['ec2_instance_id'] = instance_id
-      if (Rails.configuration.compute_node_ec2_tag_enable rescue true)
-        `ec2-create-tags #{instance_id} --tag 'Name=#{self.uuid}'`
-      end
-    end
-    result.match(/SPOTINSTANCEREQUEST\s*(sir-[0-9a-f]+)/) do |m|
-      sir_id = m[1]
-      self.info['ec2_sir_id'] = sir_id
-      if (Rails.configuration.compute_node_ec2_tag_enable rescue true)
-        `ec2-create-tags #{sir_id} --tag 'Name=#{self.uuid}'`
-      end
-    end
-    self.save!
   end
 
   protected
