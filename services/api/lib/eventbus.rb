@@ -124,7 +124,9 @@ class EventBus
           # Number of rows returned was capped by limit(), we need to schedule
           # another query to get more logs (will start from last_log_id
           # reported by current query)
-          @channel.push nil
+          EventMachine::schedule do
+            push_events ws, nil
+          end
         elsif !notify_id.nil? and (ws.last_log_id.nil? or notify_id > ws.last_log_id)
           # Number of rows returned was less than cap, but the notify id is
           # higher than the last id visible to the client, so update last_log_id
