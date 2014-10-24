@@ -192,7 +192,7 @@ $(document).
     on('click', 'th[data-sort-order]', function() {
         var direction = $(this).data('sort-order-direction');
         // reverse the current direction, or do ascending if none
-        if( typeof(direction) == 'undefined' || direction == 'desc' ) {
+        if( typeof(direction) === 'undefined' || direction === 'desc' ) {
             direction = 'asc';
         } else {
             direction = 'desc';
@@ -210,7 +210,7 @@ $(document).
         $('th[data-sort-order]').each(function() {
             $(this).find('i').remove();
             var direction = $(this).data('sort-order-direction');
-            if( typeof(direction) != 'undefined' ) {
+            if( typeof(direction) !== 'undefined' ) {
                 $(this).append('<i class="fa fa-sort-' + direction + '"/>');
             } else {
                 $(this).append('<i class="fa fa-sort"/>');
