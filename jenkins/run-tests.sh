@@ -165,6 +165,10 @@ if [[ -z "$CONFIGSRC" ]] && [[ -d "$HOME/arvados-api-server" ]]; then
     CONFIGSRC="$HOME/arvados-api-server"
 fi
 
+# Clean up .pyc files that may exist in the workspace
+cd "$WORKSPACE"
+find -name '*.pyc' -delete
+
 # Set up temporary install dirs (unless existing dirs were supplied)
 for tmpdir in VENVDIR GOPATH GEMHOME
 do
