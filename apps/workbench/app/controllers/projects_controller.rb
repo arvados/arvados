@@ -232,6 +232,7 @@ class ProjectsController < ApplicationController
                                 last_created_at]]
         @next_page_href = url_for(partial: :contents_rows,
                                   last_uuid: @objects.last.uuid,
+                                  limit: @limit,
                                   filters: @next_page_filters.to_json)
       else
         @next_page_href = nil
