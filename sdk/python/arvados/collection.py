@@ -69,9 +69,9 @@ def normalize_stream(s, stream):
 
 class CollectionBase(object):
     def __enter__(self):
-        pass
+        return self
 
-    def __exit__(self):
+    def __exit__(self, exc_type, exc_value, traceback):
         pass
 
     def _my_keep(self):
@@ -288,8 +288,9 @@ class CollectionWriter(CollectionBase):
         self._queued_dirents = deque()
         self._queued_trees = deque()
 
-    def __exit__(self):
-        self.finish()
+    def __exit__(self, exc_type, exc_value, traceback):
+        if exc_type is None:
+            self.finish()
 
     def do_queued_work(self):
         # The work queue consists of three pieces:
