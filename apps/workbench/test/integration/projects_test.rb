@@ -549,7 +549,7 @@ class ProjectsTest < ActionDispatch::IntegrationTest
 
   [
     ['project with 10 pipelines', 10, 0],
-#    ['project with 200 jobs and 10 pipelines', 2, 200],
+    ['project with 2 pipelines and 100 jobs', 2, 100],
     ['project with 25 pipelines', 25, 0],
   ].each do |project_name, num_pipelines, num_jobs|
     test "scroll pipeline instances tab for #{project_name} with #{num_pipelines} pipelines and #{num_jobs} jobs" do
