@@ -119,7 +119,11 @@ class ApplicationController < ActionController::Base
     if params[:order].blank?
       @order = 'created_at desc'
     elsif !params[:order].is_a? Array
-      @order = params[:order].split(',')
+      begin
+        @order = JSON.load(params[:order])
+      rescue
+        @order = params[:order].split(',')
+      end
     end
     @order = [@order] unless @order.is_a? Array
 
