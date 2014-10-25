@@ -145,9 +145,12 @@ class CollectionsController < ApplicationController
     usable_token = find_usable_token(tokens) do
       coll = Collection.find(params[:uuid])
     end
+
+    file_name = params[:file]
+    file_name = ('./' + file_name) if (file_name and file_name.include?('/'))
     if usable_token.nil?
       return  # Response already rendered.
-    elsif params[:file].nil? or not coll.manifest.has_file?(params[:file])
+    elsif file_name.nil? or not coll.manifest.has_file?(file_name)
       return render_not_found
     end
 
