@@ -548,6 +548,72 @@ class ProjectsTest < ActionDispatch::IntegrationTest
   end
 
   [
+    ['project with 10 collections', 10],
+    ['project with 201 collections', 201], # two pages of data
+  ].each do |project_name, amount|
+    test "scroll collections tab for #{project_name} with #{amount} objects, with ascending sort (case insensitive)" do
+      headless = Headless.new
+      headless.start
+      Capybara.current_driver = :selenium
+
+      visit page_with_token 'user1_with_load'
+
+      find("#projects-menu").click
+      find(".dropdown-menu a", text: project_name).click
+
+      my_collections = []
+      for i in 1..amount
+        my_collections << "Collection_#{i}"
+      end
+
+      # verify Data collections scroll
+      assert(page.has_text?("Data collections (#{amount})"), "Number of collections did not match the input amount")
+
+      click_link 'Data collections'
+      begin
+        wait_for_ajax
+      rescue
+      end
+
+      find('th[data-sort-order="collections.name"]').click
+      wait_for_ajax
+
+      verify_collections = my_collections.dup
+      unexpected_items = []
+      collections_count = 0
+      within('.arv-project-Data_collections') do
+        page.execute_script "window.scrollBy(0,999000)"
+        begin
+          wait_for_ajax
+        rescue
+        end
+
+        # Visit all rows. If not all expected collections are found, retry
+        found_collections = page.all('tr[data-kind="arvados#collection"]')
+        collections_count = found_collections.count
+
+        previous = nil
+        (0..collections_count-1).each do |i|
+          # Found row text would be of the format "Show Collection_#{n} "
+          collection_name = found_collections[i].text.split[1]
+          if !my_collections.include? collection_name
+            unexpected_items << collection_name
+          else
+            verify_collections.delete collection_name
+          end
+          # check sort order
+          assert_operator( previous.downcase, :<=, collection_name.downcase) if previous
+          previous = collection_name
+        end
+
+        assert_equal true, unexpected_items.empty?, "Found unexpected items #{unexpected_items.inspect}"
+        assert_equal amount, collections_count, "Found different number of collections"
+        assert_equal true, verify_collections.empty?, "Did not find all the collections"
+      end
+    end
+  end
+
+  [
     ['project with 10 pipelines', 10, 0],
 #    ['project with 200 jobs and 10 pipelines', 2, 200],
     ['project with 25 pipelines', 25, 0],
