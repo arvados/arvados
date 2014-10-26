@@ -197,6 +197,9 @@ $(document).
         } else {
             direction = 'desc';
         }
+        // reset all sort directions
+        $('th[data-sort-order]').removeData('sort-order-direction');
+        // set the current one
         $(this).data('sort-order-direction', direction);
         // change the ordering parameter and refresh the data display with the new order
         var $target = $(this).closest('table').find('[data-infinite-content-params-attr]');
