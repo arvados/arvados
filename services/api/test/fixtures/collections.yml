@@ -279,6 +279,24 @@ collection_with_files_in_subdir:
   updated_at: 2014-02-03T17:22:54Z
   manifest_text: ". 85877ca2d7e05498dd3d109baf2df106+95+A3a4e26a366ee7e4ed3e476ccf05354761be2e4ae@545a9920 0:95:file_in_subdir1\n./subdir2/subdir3 2bbc341c702df4d8f42ec31f16c10120+64+A315d7e7bad2ce937e711fc454fae2d1194d14d64@545a9920 0:32:file1_in_subdir3.txt 32:32:file2_in_subdir3.txt\n./subdir2/subdir3/subdir4 2bbc341c702df4d8f42ec31f16c10120+64+A315d7e7bad2ce937e711fc454fae2d1194d14d64@545a9920 0:32:file1_in_subdir4.txt 32:32:file2_in_subdir4.txt"
 
+graph_test_collection1:
+  uuid: zzzzz-4zz18-bv31uwvy3neko22
+  portable_data_hash: fa7aeb5140e2848d39b416daeef4ffc5+45
+  manifest_text: ". 37b51d194a7513e45b56f6524f2d51f2+3 0:3:bar\n"
+  name: bar_file
+
+graph_test_collection2:
+  uuid: zzzzz-4zz18-uukreo9rbgwsujx
+  portable_data_hash: b519d9cb706a29fc7ea24dbea2f05851+93
+  manifest_text: ". 6a4ff0499484c6c79c95cd8c566bd25f+249025 0:249025:GNU_General_Public_License,_version_3.pdf\n"
+  name: "GNU General Public License, version 3"
+
+graph_test_collection3:
+  uuid: zzzzz-4zz18-uukreo9rbgwsujj
+  portable_data_hash: ea10d51bcf88862dbcc36eb292017dfd+45
+  manifest_text: ". 73feffa4b7f6bb68e44cf984c85f6e88+3 0:3:baz\n"
+  name: "baz file"
+
 # Test Helper trims the rest of the file
 
 # Do not add your fixtures below this line as the rest of this file will be trimmed by test_helper
