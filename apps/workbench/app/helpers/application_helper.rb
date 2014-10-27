@@ -269,6 +269,8 @@ module ApplicationHelper
           display_value = link.name
         elsif value_info[:link_name]
           display_value = value_info[:link_name]
+        elsif value_info[:selection_name]
+          display_value = value_info[:selection_name]
         end
       end
       if (attr == :components) and (subattr.size > 2)
