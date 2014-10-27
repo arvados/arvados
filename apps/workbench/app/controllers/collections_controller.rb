@@ -146,8 +146,7 @@ class CollectionsController < ApplicationController
       coll = Collection.find(params[:uuid])
     end
 
-    file_name = params[:file]
-    file_name = ('./' + file_name) if (file_name and file_name.include?('/'))
+    file_name = params[:file].andand.sub(/^(\.\/|\/|)/, './')
     if usable_token.nil?
       return  # Response already rendered.
     elsif file_name.nil? or not coll.manifest.has_file?(file_name)
