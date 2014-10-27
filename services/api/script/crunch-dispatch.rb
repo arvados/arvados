@@ -282,8 +282,10 @@ class Dispatcher
 
       git = "git --git-dir=#{arvados_internal.shellescape}"
 
-      @have_commits ||= {}
-      if !@have_commits[job.script_version]
+      # @fetched_commits[V]==true if we know commit V exists in the
+      # arvados_internal git repository.
+      @fetched_commits ||= {}
+      if !@fetched_commits[job.script_version]
 
         repo_root = Rails.configuration.git_repositories_dir
         src_repo = File.join(repo_root, job.repository + '.git')
@@ -307,11 +309,14 @@ class Dispatcher
             next
           end
         end
-        @have_commits[job.script_version] = true
+        @fetched_commits[job.script_version] = true
       end
 
-      @have_tags ||= {}
-      if not @have_tags[job.uuid]
+      # @job_tags[J]==V if we know commit V has been tagged J in the
+      # arvados_internal repository. (J is a job UUID, V is a commit
+      # sha1.)
+      @job_tags ||= {}
+      if not @job_tags[job.uuid]
         # check if the commit needs to be tagged with this job uuid
         tag_rev = `#{git} rev-list -n1 #{job.uuid.shellescape} 2>/dev/null`.chomp
         if $? != 0
@@ -332,9 +337,9 @@ class Dispatcher
             next
           end
         end
-        @have_tags[job.uuid] = job.script_version
-      elsif @have_tags[job.uuid] != job.script_version
-        fail_job job, "Existing tag #{job.uuid} points to commit #{@have_tags[job.uuid]} but this job uses commit #{job.script_version}"
+        @job_tags[job.uuid] = job.script_version
+      elsif @job_tags[job.uuid] != job.script_version
+        fail_job job, "Existing tag #{job.uuid} points to commit #{@job_tags[job.uuid]} but this job uses commit #{job.script_version}"
       end
 
       cmd_args << crunch_job_bin
