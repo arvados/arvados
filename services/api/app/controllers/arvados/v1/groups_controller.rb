@@ -92,7 +92,7 @@ class Arvados::V1::GroupsController < ApplicationController
         end
       end
 
-      @objects = @objects.order("#{klass.table_name}.uuid")
+      @objects = @objects.order("#{klass.table_name}.created_at desc")
       @limit = limit_all - all_objects.count
       apply_where_limit_order_params klass
       klass_items_available = @objects.
