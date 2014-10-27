@@ -198,7 +198,7 @@ class Dispatcher
               event_type: 'dispatch',
               owner_uuid: job.owner_uuid,
               summary: message,
-              properties: {"text" => message}).save
+              properties: {"text" => message}).save!
     rescue
       $stderr.puts "dispatch: log.create failed"
     end
