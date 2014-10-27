@@ -162,16 +162,26 @@ class CollectionReader(CollectionBase):
                     uuid=self._manifest_locator).execute(
                     num_retries=self.num_retries)
                 self._manifest_text = c['manifest_text']
-            except Exception as e:
-                if not util.portable_data_hash_pattern.match(
+            except Exception as error_via_api:
+                if not util.keep_locator_pattern.match(
                       self._manifest_locator):
                     raise
-                _logger.warning(
-                    "API server did not return Collection '%s'. " +
-                    "Trying to fetch directly from Keep (deprecated).",
-                    self._manifest_locator)
-                self._manifest_text = self._my_keep().get(
-                    self._manifest_locator, num_retries=self.num_retries)
+                # _manifest_locator is a Keep locator. Perhaps we can
+                # retrieve it directly from Keep. This has a chance of
+                # working if [a] the locator includes a permission
+                # signature or [b] the Keep services are operating in
+                # world-readable mode.
+                try:
+                    self._manifest_text = self._my_keep().get(
+                        self._manifest_locator, num_retries=self.num_retries)
+                except Exception as error_via_keep:
+                    raise arvados.errors.NotFoundError(
+                        ("Failed to retrieve collection '%s' " +
+                         "from either API server (%s) or Keep (%s)."
+                         ).format(
+                                self._manifest_locator,
+                                error_via_api,
+                                error_via_keep))
         self._streams = [sline.split()
                          for sline in self._manifest_text.split("\n")
                          if sline]

@@ -9,6 +9,7 @@ from arvados.collection import *
 
 HEX_RE = re.compile(r'^[0-9a-fA-F]+$')
 
+keep_locator_pattern = re.compile(r'[0-9a-f]{32}\+\d+(\+\S+)*')
 portable_data_hash_pattern = re.compile(r'[0-9a-f]{32}\+\d+')
 uuid_pattern = re.compile(r'[a-z0-9]{5}-[a-z0-9]{5}-[a-z0-9]{15}')
 collection_uuid_pattern = re.compile(r'[a-z0-9]{5}-4zz18-[a-z0-9]{15}')
