@@ -1570,7 +1570,13 @@ sub srun
   my $stdin = shift;
   my $args = $have_slurm ? [@$srunargs, @$execargs] : $execargs;
 
-  my $show_cmd = "@{$args}";
+  my $show_cmd = join(" ", map {
+    if (/[\s\"]/) {
+      s/[\"\$\\]/\\$&/g;
+      "\"$_\"";
+    } else {
+      $_;
+    }} @{$args});
   $show_cmd =~ s/(TOKEN\\*=)\S+/${1}[...]/g;
   $show_cmd =~ s/\n/ /g;
   warn "starting: $show_cmd\n";
@@ -1796,7 +1802,7 @@ sub shell_or_die
     my $exitstatus = sprintf("exit %d signal %d", $? >> 8, $? & 0x7f);
     open STDERR, ">&STDERR_ORIG";
     system ("cat $destdir.log >&2");
-    die "@_ failed ($!): $exitstatus";
+    die "@_ failed: $exitstatus";
   }
 }
 
