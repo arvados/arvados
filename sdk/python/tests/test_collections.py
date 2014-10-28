@@ -694,15 +694,34 @@ class CollectionReaderTestCase(unittest.TestCase, CollectionTestMixin):
                                               api_client=client)
             self.assertEqual(self.DEFAULT_MANIFEST, reader.manifest_text())
 
-    def test_locator_init_falls_back_to_keep(self):
-        # Reading manifests from Keep is deprecated.  Feel free to
-        # remove this test when we remove the fallback.
+    def test_locator_init_fallback_to_keep(self):
+        # crunch-job needs this to read manifests that have only ever
+        # been written to Keep.
         client = self.api_client_mock(200)
-        self.mock_get_collection(client, 404, None)
-        with tutil.mock_responses(self.DEFAULT_MANIFEST, 200):
+        with tutil.mock_responses(self.DEFAULT_MANIFEST, 404, 200):
             reader = arvados.CollectionReader(self.DEFAULT_DATA_HASH,
-                                              api_client=client, num_retries=3)
+                                              api_client=client)
             self.assertEqual(self.DEFAULT_MANIFEST, reader.manifest_text())
+
+    def test_uuid_init_no_fallback_to_keep(self):
+        # Do not look up a collection UUID in Keep.
+        client = self.api_client_mock(404)
+        reader = arvados.CollectionReader(self.DEFAULT_UUID,
+                                          api_client=client)
+        with tutil.mock_responses(self.DEFAULT_MANIFEST, 200):
+            with self.assertRaises(arvados.errors.ApiError):
+                reader.manifest_text()
+
+    def test_try_keep_first_if_permission_hint(self):
+        # To verify that CollectionReader tries Keep first here, we
+        # mock API server to return the wrong data.
+        client = self.api_client_mock(200)
+        with tutil.mock_responses(self.DEFAULT_MANIFEST, 200):
+            self.assertEqual(
+                self.DEFAULT_MANIFEST,
+                arvados.CollectionReader(
+                    self.DEFAULT_DATA_HASH + '+Affffffffffffffffffffffffffffffffffffffff@fedcba98',
+                    api_client=client).manifest_text())
 
     def test_init_num_retries_propagated(self):
         # More of an integration test...
