@@ -9,11 +9,8 @@ ADD fuse.conf /etc/fuse.conf
 
 RUN /usr/local/rvm/bin/rvm-exec default gem install arvados-cli arvados
 
-# Install Docker from the Arvados package repository
-RUN apt-get update -qq && apt-get install -qqy iptables ca-certificates lxc apt-transport-https
-ADD apt.arvados.org.list /etc/apt/sources.list.d/apt.arvados.org.list
-RUN apt-key adv --keyserver pool.sks-keyservers.net --recv 1078ECD7
-RUN apt-get update -qq && apt-get install -qqy docker.io
+# Install Docker from the Arvados package repository (cf. arvados/base)
+RUN apt-get update -qq && apt-get install -qqy iptables ca-certificates lxc apt-transport-https docker.io
 
 RUN addgroup --gid 4005 crunch && mkdir /home/crunch && useradd --uid 4005 --gid 4005 crunch && usermod crunch -G fuse,docker && chown crunch:crunch /home/crunch
 
