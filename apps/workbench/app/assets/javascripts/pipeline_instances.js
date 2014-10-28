@@ -55,12 +55,8 @@ $(document).on('arv-log-event', '.arv-refresh-on-state-change', function(event, 
     }
 });
 
-$(document).on('arv-log-event', '.arv-log-event-handler-append-logs', function(event, eventData){
-    var wasatbottom = ($(this).scrollTop() + $(this).height() >= this.scrollHeight);
-
-    if (eventData.event_type == "stderr" || eventData.event_type == "stdout") {
-        $(this).append(eventData.properties.text);
-    } else if (eventData.event_type == "create" || eventData.event_type == "update") {
+$(document).on('arv-log-event', '.arv-log-event-subscribe-to-pipeline-job-uuids', function(event, eventData){
+    if (eventData.event_type == "create" || eventData.event_type == "update") {
         if (eventData.object_kind == 'arvados#pipelineInstance') {
             var objs = "";
             var components = eventData.properties.new_attributes.components;
@@ -71,6 +67,14 @@ $(document).on('arv-log-event', '.arv-log-event-handler-append-logs', function(e
             }
             $(event.target).attr("data-object-uuids", eventData.object_uuid + objs);
         }
+    }
+});
+
+$(document).on('arv-log-event', '.arv-log-event-handler-append-logs', function(event, eventData){
+    var wasatbottom = ($(this).scrollTop() + $(this).height() >= this.scrollHeight);
+
+    if (eventData.event_type == "stderr" || eventData.event_type == "stdout") {
+        $(this).append(eventData.properties.text);
     }
 
     if (wasatbottom) {

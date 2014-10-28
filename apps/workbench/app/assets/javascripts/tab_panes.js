@@ -2,6 +2,10 @@
 
 // Fire when a tab is selected/clicked.
 $(document).on('shown.bs.tab', '[data-toggle="tab"]', function(event) {
+    // When we switch tabs, remove "active" from any refreshable panes within
+    // the previous tab content so they don't continue to refresh unnecessarily, and
+    // add "active" to any refreshable panes under the newly shown tab content.
+
     var tgt = $($(event.relatedTarget).attr('href'));
     $(".pane-anchor", tgt).each(function (i, e) {
         var a = $($(e).attr('href'));
@@ -14,56 +18,85 @@ $(document).on('shown.bs.tab', '[data-toggle="tab"]', function(event) {
         a.addClass("active");
     });
 
+    // Now trigger reload of the newly shown tab pane.
     $(event.target).trigger('arv:pane:reload');
 });
 
 // Ask a refreshable pane to reload via ajax.
 // Target of this event is the anchoring element that manages the pane.
-// Panes can be in one of four states: not loaded (no state classes), pane-loading, pane-loading+pane-stale, pane-loaded
+//
+// Panes can be in one of three primary states, managed by setting CSS classes
+// on the object: not loaded (no pane-* state classes), pane-loading, pane-loaded
+//
+// not loaded means the pane needs to be loaded when the pane becomes active
+//
+// pane-loading means there is a current AJAX call outstanding to reload the pane
+//
+// pane-loaded means the pane is believe to be up to date
+//
+// There are two additional states: pane-stale and pane-reload-pending
+//
+// pane-stale indicates a pane that is already loading has been invalidated and
+// should schedule a reload immediately when the current load completes.  (This
+// happens if there are clusters of events, where the reload is trigged by the
+// first event, but we actually want to display the state after the final event
+// has been processed.)
+//
+// pane-reload-pending indicates a reload is scheduled, to suppress
+// scheduling any additional reloads.
 $(document).on('arv:pane:reload', function(e) {
     e.stopPropagation();
 
-    var etarget = $(e.target);
+    // '$anchor' is the event target, which is a .pane-anchor or a bootstrap
+    // tab anchor.  This is the element that stores the state of the pane.  The
+    // actual element that will contain the content is pointed to in the 'href'
+    // attribute of etarget.
+    var $anchor = $(e.target);
 
-    if (etarget.hasClass('pane-loading')) {
+    if ($anchor.hasClass('pane-loading')) {
         // Already loading, mark stale to schedule a reload after this one.
-        //console.log(e.target.id + " stale");
-        etarget.addClass('pane-stale');
+        $anchor.addClass('pane-stale');
         return;
     }
 
-    if (etarget.hasClass('pane-no-auto-reload') && etarget.hasClass('pane-loaded')) {
+    if ($anchor.hasClass('pane-no-auto-reload') && $anchor.hasClass('pane-loaded')) {
         // Have to explicitly remove pane-loaded if we want it to reload.
         return;
     }
 
-    var throttle = etarget.attr('data-load-throttle');
+    var throttle = $anchor.attr('data-load-throttle');
     if (!throttle) {
         throttle = 3000;
     }
     var now = (new Date()).getTime();
-    var loaded_at = etarget.attr('data-loaded-at');
-    if (loaded_at && (now - loaded_at) < throttle) {
-        setTimeout(function() {
-            etarget.trigger('arv:pane:reload');
-        });
+    var loaded_at = $anchor.attr('data-loaded-at');
+    var since_last_load = now - loaded_at;
+    if (loaded_at && (since_last_load < throttle)) {
+        if (!$anchor.hasClass('pane-reload-pending')) {
+            $anchor.addClass('pane-reload-pending');
+            setTimeout((function() {
+                $anchor.trigger('arv:pane:reload');
+            }), throttle - since_last_load);
+        }
         return;
     }
 
-    var $pane = $(etarget.attr('href'));
+    // We know this doesn't have 'pane-loading' because we tested for it above
+    $anchor.removeClass('pane-reload-pending');
+    $anchor.removeClass('pane-loaded');
+    $anchor.removeClass('pane-stale');
+
+    // $pane is the actual content area that is going to be updated.
+    var $pane = $($anchor.attr('href'));
     if ($pane.hasClass('active')) {
-        //console.log(e.target.id + " loading");
+        $anchor.addClass('pane-loading');
 
-        etarget.removeClass('pane-loaded');
-        etarget.removeClass('pane-stale');
-        etarget.addClass('pane-loading');
-
-        var content_url = etarget.attr('data-pane-content-url');
+        var content_url = $anchor.attr('data-pane-content-url');
         $.ajax(content_url, {dataType: 'html', type: 'GET', context: $pane}).
             done(function(data, status, jqxhr) {
                 // Preserve collapsed state
                 var collapsable = {};
-                $(".collapse", $pane).each(function(i, c) {
+                $(".collapse", $(this)).each(function(i, c) {
                     collapsable[c.id] = $(c).hasClass('in');
                 });
                 var tmp = $(data);
@@ -74,16 +107,14 @@ $(document).on('arv:pane:reload', function(e) {
                         $(c).removeClass('in');
                     }
                 });
-                $pane.html(tmp);
-                etarget.removeClass('pane-loading');
-                etarget.addClass('pane-loaded');
-                etarget.attr('data-loaded-at', (new Date()).getTime());
-                $pane.trigger('arv:pane:loaded');
+                $(this).html(tmp);
+                $anchor.removeClass('pane-loading');
+                $anchor.addClass('pane-loaded');
+                $anchor.attr('data-loaded-at', (new Date()).getTime());
+                $(this).trigger('arv:pane:loaded');
 
-                //console.log(e.target.id + " loaded");
-
-                if (etarget.hasClass('pane-stale')) {
-                    etarget.trigger('arv:pane:reload');
+                if ($anchor.hasClass('pane-stale')) {
+                    $anchor.trigger('arv:pane:reload');
                 }
             }).fail(function(jqxhr, status, error) {
                 var errhtml;
@@ -102,35 +133,29 @@ $(document).on('arv:pane:reload', function(e) {
                         replace(/</g, '&lt;').
                         replace(/>/g, '&gt;');
                 }
-                $pane.html('<div><p>' +
+                $(this).html('<div><p>' +
                         '<a href="#" class="btn btn-primary tab_reload">' +
                         '<i class="fa fa-fw fa-refresh"></i> ' +
-                        'Reload tab</a></p><iframe></iframe></div>');
-                $('.tab_reload', $pane).click(function() {
-                    $pane.html('<div class="spinner spinner-32px spinner-h-center"></div>');
-                    etarget.trigger('arv:pane:reload');
+                        'Reload tab</a></p><iframe style="width: 100%"></iframe></div>');
+                $('.tab_reload', $(this)).click(function() {
+                    $(this).html('<div class="spinner spinner-32px spinner-h-center"></div>');
+                    $anchor.trigger('arv:pane:reload');
                 });
                 // We want to render the error in an iframe, in order to
                 // avoid conflicts with the main page's element ids, etc.
                 // In order to do that dynamically, we have to set a
                 // timeout on the iframe window to load our HTML *after*
                 // the default source (e.g., about:blank) has loaded.
-                var iframe = $('iframe', e.target)[0];
+                var iframe = $('iframe', $(this))[0];
                 iframe.contentWindow.setTimeout(function() {
                     $('body', iframe.contentDocument).html(errhtml);
                     iframe.height = iframe.contentDocument.body.scrollHeight + "px";
                 }, 1);
-                etarget.addClass('pane-loaded');
+                $anchor.addClass('pane-loaded');
             });
     } else {
-        //console.log(etarget.attr('href') + " is not active");
-
         // When the user selects e.target tab, show a spinner instead of
         // old content while loading.
-        etarget.removeClass('pane-loading');
-        etarget.removeClass('pane-loaded');
-        etarget.removeClass('pane-stale');
-
         $pane.html('<div class="spinner spinner-32px spinner-h-center"></div>');
     }
 });

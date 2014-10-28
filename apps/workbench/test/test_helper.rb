@@ -128,8 +128,13 @@ class ApiServerForTests
 
   def find_server_pid
     pid = nil
+    @pidfile = if @websocket
+                 WEBSOCKET_PID_PATH
+               else
+                 SERVER_PID_PATH
+               end
     begin
-      pid = IO.read(if @websocket then WEBSOCKET_PID_PATH else SERVER_PID_PATH end).to_i
+      pid = IO.read(@pidfile).to_i
       $stderr.puts "API server is running, pid #{pid.inspect}"
     rescue Errno::ENOENT
     end

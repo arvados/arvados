@@ -1,4 +1,4 @@
 <% log_uuids = [@object.uuid] + pipeline_jobs(@object).collect{|x|x[:job].andand[:uuid]}.compact %>
 <% log_history = stderr_log_history(log_uuids) %>
-<div class="arv-log-event-listener arv-log-event-handler-append-logs arv-job-log-window" id="pipeline_event_log_div" data-object-uuids="<%= log_uuids.join(' ') %>"><%= log_history.join("\n") %>
+<div class="arv-log-event-listener arv-log-event-handler-append-logs arv-log-event-subscribe-to-pipeline-job-uuids arv-job-log-window" id="pipeline_event_log_div" data-object-uuids="<%= log_uuids.join(' ') %>"><%= log_history.join("\n") %>
 </div>
