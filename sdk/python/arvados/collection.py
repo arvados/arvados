@@ -392,6 +392,7 @@ class CollectionWriter(CollectionBase):
                 self._current_stream_length - self._current_file_pos,
                 self._current_file_name])
         self._current_file_pos = self._current_stream_length
+        self._current_file_name = None
 
     def start_new_stream(self, newstreamname='.'):
         self.finish_current_stream()
