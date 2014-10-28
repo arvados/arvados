@@ -29,7 +29,9 @@ module ProvenanceHelper
     def describe_node(uuid, describe_opts={})
       bgcolor = determine_fillcolor (describe_opts[:pip] || @opts[:pips].andand[uuid])
 
-      if GenerateGraph::collection_uuid(uuid)
+      rsc = ArvadosBase::resource_class_for_uuid uuid
+
+      if GenerateGraph::collection_uuid(uuid) || rsc == Collection
         if Collection.is_empty_blob_locator? uuid.to_s
           # special case
           return "\"#{uuid}\" [label=\"(empty collection)\"];\n"
@@ -39,9 +41,15 @@ module ProvenanceHelper
                           :action => :show,
                           :id => uuid.to_s })
 
-        return "\"#{uuid}\" [label=\"#{encode_quotes(describe_opts[:label] || @pdata[uuid][:name] || uuid)}\",shape=box,href=\"#{href}\",#{bgcolor}];\n"
+        return "\"#{uuid}\" [label=\"#{encode_quotes(describe_opts[:label] || (@pdata[uuid] and @pdata[uuid][:name]) || uuid)}\",shape=box,href=\"#{href}\",#{bgcolor}];\n"
       else
-        "\"#{uuid}\" [label=\"#{encode_quotes(describe_opts[:label] || uuid)}\",#{bgcolor},shape=#{describe_opts[:shape] || 'box'}];\n"
+        href = ""
+        if describe_opts[:href]
+          href = ",href=\"#{url_for ({:controller => describe_opts[:href][:controller],
+                            :action => :show,
+                            :id => describe_opts[:href][:id] })}\""
+        end
+        return "\"#{uuid}\" [label=\"#{encode_quotes(describe_opts[:label] || uuid)}\",#{bgcolor},shape=#{describe_opts[:shape] || 'box'}#{href}];\n"
       end
     end
 
@@ -63,15 +71,15 @@ module ProvenanceHelper
 
     def edge(tail, head, extra)
       if @opts[:direction] == :bottom_up
-        gr = "\"#{head}\" -> \"#{tail}\""
+        gr = "\"#{encode_quotes head}\" -> \"#{encode_quotes tail}\""
       else
-        gr = "\"#{tail}\" -> \"#{head}\""
+        gr = "\"#{encode_quotes tail}\" -> \"#{encode_quotes head}\""
       end
 
       if extra.length > 0
         gr += " ["
         extra.each do |k, v|
-          gr += "#{k}=\"#{v}\","
+          gr += "#{k}=\"#{encode_quotes v}\","
         end
         gr += "]"
       end
@@ -79,50 +87,18 @@ module ProvenanceHelper
       gr
     end
 
-    def script_param_edges(uuid, prefix, sp)
+    def script_param_edges(uuid, sp)
       gr = ""
 
-      case sp
-      when Hash
-        sp.each do |k, v|
-          if prefix.size > 0
-            k = prefix + "::" + k.to_s
+      sp.each do |k, v|
+        if @opts[:all_script_parameters]
+          if v.is_a? Array or v.is_a? Hash
+            encv = JSON.pretty_generate(v).gsub("\n", "\\l") + "\\l"
+          else
+            encv = v.to_json
           end
-          gr += script_param_edges(uuid, k.to_s, v)
-        end
-      when Array
-        i = 0
-        node = ""
-        count = 0
-        sp.each do |v|
-          if GenerateGraph::collection_uuid(v)
-            gr += script_param_edges(uuid, "#{prefix}[#{i}]", v)
-          elsif @opts[:all_script_parameters]
-            t = "#{v}"
-            nl = (if (count+t.length) > 60 then "\\n" else " " end)
-            count = 0 if (count+t.length) > 60
-            node += "',#{nl}'" unless node == ""
-            node = "['" if node == ""
-            node += t
-            count += t.length
-          end
-          i += 1
-        end
-        unless node == ""
-          node += "']"
-          node_value = encode_quotes node
-          gr += "\"#{node_value}\" [label=\"#{node_value}\"];\n"
-          gr += edge(uuid, node_value, {:label => prefix})
-        end
-      when String
-        return '' if sp.empty?
-        m = GenerateGraph::collection_uuid(sp)
-        if m and (@pdata[m] or (not @opts[:pdata_only]))
-          gr += edge(m, uuid, {:label => prefix})
-        elsif @opts[:all_script_parameters]
-          sp_value = encode_quotes sp
-          gr += "\"#{sp_value}\" [label=\"\\\"#{sp_value}\\\"\",shape=box];\n"
-          gr += edge(sp_value, uuid, {:label => prefix})
+          gr += "\"#{encode_quotes encv}\" [shape=box];\n"
+          gr += edge(encv, uuid, {:label => k})
         end
       end
       gr
@@ -132,19 +108,32 @@ module ProvenanceHelper
       uuid = job_uuid(job)
       gr = ""
 
-      gr += script_param_edges(uuid, "", job[:script_parameters])
-      if job[:docker_image_locator]
+      ProvenanceHelper::find_collections job[:script_parameters] do |collection_hash, collection_uuid, key|
+        if collection_uuid
+          gr += describe_node(collection_uuid)
+          gr += edge(collection_uuid, uuid, {:label => key})
+        else
+          gr += describe_node(collection_hash)
+          gr += edge(collection_hash, uuid, {:label => key})
+        end
+      end
+
+      if job[:docker_image_locator] and !@opts[:no_docker]
         gr += describe_node(job[:docker_image_locator], {label: (job[:runtime_constraints].andand[:docker_image] || job[:docker_image_locator])})
-        gr += edge(job[:docker_image_locator], uuid, {:label => "docker_image"})
+        gr += edge(job[:docker_image_locator], uuid, {label: "docker_image"})
       end
 
       if @opts[:script_version_nodes]
-        #gr += describe_node(job[:script_version])
+        gr += describe_node(job[:script_version], {:label => "git:#{job[:script_version]}"})
         gr += edge(job[:script_version], uuid, {:label => "script_version"})
       end
 
-      gr += edge(uuid, job[:output], {label: "output" }) if job[:output] and !edge_opts[:no_output]
-      #gr += edge(uuid, job[:log], {label: "log"}) if job[:log] and !edge_opts[:no_log]
+      if job[:output] and !edge_opts[:no_output]
+        gr += describe_node(job[:output])
+        gr += edge(uuid, job[:output], {label: "output" })
+      end
+
+      gr += edge(uuid, job[:log], {label: "log"}) if job[:log] and !edge_opts[:no_log]
 
       gr
     end
@@ -168,24 +157,30 @@ module ProvenanceHelper
         # Pipeline component inputs
         job = @pdata[@pdata[uuid][:job].andand[:uuid]]
 
-        gr += describe_node(job_uuid(job), {label: uuid[38..-1], pip: @opts[:pips].andand[job[:uuid]], shape: "oval"})
-        gr += job_edges job, {no_output: true, no_log: true}
+        if job
+          gr += describe_node(job_uuid(job), {label: uuid[38..-1], pip: @opts[:pips].andand[job[:uuid]], shape: "oval",
+                                href: {controller: 'jobs', id: job[:uuid]}})
+          gr += job_edges job, {no_output: true, no_log: true}
+        end
 
         # Pipeline component output
         outuuid = @pdata[uuid][:output_uuid]
-        outcollection = @pdata[outuuid]
-        gr += edge(job_uuid(job), outcollection[:portable_data_hash], {label: "output"}) if outuuid
-        gr += describe_node(outcollection[:portable_data_hash], {label: outcollection[:name]})
+        if outuuid
+          outcollection = @pdata[outuuid]
+          if outcollection
+            gr += edge(job_uuid(job), outcollection[:portable_data_hash], {label: "output"})
+            gr += describe_node(outcollection[:portable_data_hash], {label: outcollection[:name]})
+          end
+        elsif job and job[:output]
+          gr += describe_node(job[:output])
+          gr += edge(job_uuid(job), job[:output], {label: "output" })
+        end
       else
         rsc = ArvadosBase::resource_class_for_uuid uuid
 
         if rsc == Job
           job = @pdata[uuid]
           gr += job_edges job if job
-        elsif rsc == Link
-          # do nothing
-        else
-          gr += describe_node(uuid)
         end
       end
 
@@ -221,20 +216,25 @@ module ProvenanceHelper
 
         gr += "\",label=\""
 
-        if @opts[:combine_jobs] == :script_only
-          gr += "#{v[0][:script]}"
-        elsif @opts[:combine_jobs] == :script_and_version
-          gr += "#{v[0][:script]}" # Just show the name but the nodes will be distinct
-        else
-          gr += "#{v[0][:script]}\\n#{v[0][:finished_at]}"
+        label = "#{v[0][:script]}"
+
+        if label == "run-command"
+          label = v[0][:script_parameters][:command].join(' ')
         end
+
+        if not @opts[:combine_jobs]
+          label += "\\n#{v[0][:finished_at]}"
+        end
+
+        gr += encode_quotes label
+
         gr += "\",#{determine_fillcolor n}];\n"
       end
       gr
     end
 
     def encode_quotes value
-      value.andand.gsub("\"", "\\\"")
+      value.andand.to_s.gsub("\"", "\\\"").gsub("\n", "\\n")
     end
   end
 
@@ -260,18 +260,27 @@ edge [fontsize=10,fontname=\"Helvetica,Arial,sans-serif\"];
       gr += "edge [dir=back];"
     end
 
-    g = GenerateGraph.new(pdata, opts)
+    begin
+      pdata = pdata.stringify_keys
 
-    pdata.each do |k, v|
-      if !opts[:only_components] or k.start_with? "component_"
-        gr += g.generate_provenance_edges(k)
-      else
-        #gr += describe_node(k)
+      g = GenerateGraph.new(pdata, opts)
+
+      pdata.each do |k, v|
+        if !opts[:only_components] or k.start_with? "component_"
+          gr += g.generate_provenance_edges(k)
+        else
+          #gr += describe_node(k)
+        end
       end
-    end
 
-    if !opts[:only_components]
-      gr += g.describe_jobs
+      if !opts[:only_components]
+        gr += g.describe_jobs
+      end
+
+    rescue => e
+      Rails.logger.warn "#{e.inspect}"
+      Rails.logger.warn "#{e.backtrace.join("\n\t")}"
+      raise
     end
 
     gr += "}"
@@ -292,25 +301,26 @@ edge [fontsize=10,fontname=\"Helvetica,Arial,sans-serif\"];
     svg = svg.sub(/<svg /, "<svg id=\"#{svgId}\" ")
   end
 
-  def self.find_collections(sp, &b)
+  # returns hash, uuid
+  def self.find_collections(sp, key=nil, &b)
     case sp
     when ArvadosBase
       sp.class.columns.each do |c|
-        find_collections(sp[c.name.to_sym], &b)
+        find_collections(sp[c.name.to_sym], nil, &b)
       end
     when Hash
       sp.each do |k, v|
-        find_collections(v, &b)
+        find_collections(v, key || k, &b)
       end
     when Array
       sp.each do |v|
-        find_collections(v, &b)
+        find_collections(v, key, &b)
       end
     when String
       if m = /[a-f0-9]{32}\+\d+/.match(sp)
-        yield m[0], nil
+        yield m[0], nil, key
       elsif m = /[0-9a-z]{5}-4zz18-[0-9a-z]{15}/.match(sp)
-        yield nil, m[0]
+        yield nil, m[0], key
       end
     end
   end

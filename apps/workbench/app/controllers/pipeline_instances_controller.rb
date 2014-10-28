@@ -172,7 +172,9 @@ class PipelineInstancesController < ApplicationController
         :all_script_parameters => true,
         :combine_jobs => :script_and_version,
         :pips => pips,
-        :only_components => true}
+        :only_components => true,
+        :no_docker => true,
+        :no_log => true}
     end
 
     super
