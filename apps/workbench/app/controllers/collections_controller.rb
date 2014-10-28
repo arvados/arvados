@@ -145,9 +145,11 @@ class CollectionsController < ApplicationController
     usable_token = find_usable_token(tokens) do
       coll = Collection.find(params[:uuid])
     end
+
+    file_name = params[:file].andand.sub(/^(\.\/|\/|)/, './')
     if usable_token.nil?
       return  # Response already rendered.
-    elsif params[:file].nil? or not coll.manifest.has_file?(params[:file])
+    elsif file_name.nil? or not coll.manifest.has_file?(file_name)
       return render_not_found
     end
 
@@ -195,51 +197,63 @@ class CollectionsController < ApplicationController
     end
   end
 
+  def find_object_by_uuid
+    if not Keep::Locator.parse params[:id]
+      super
+    end
+  end
+
   def show
     return super if !@object
     if current_user
-      jobs_with = lambda do |conds|
-        Job.limit(RELATION_LIMIT).where(conds)
-          .results.sort_by { |j| j.finished_at || j.created_at }
-      end
-      @output_of = jobs_with.call(output: @object.portable_data_hash)
-      @log_of = jobs_with.call(log: @object.portable_data_hash)
-      @project_links = Link.limit(RELATION_LIMIT).order("modified_at DESC")
-        .where(head_uuid: @object.uuid, link_class: 'name').results
-      project_hash = Group.where(uuid: @project_links.map(&:tail_uuid)).to_hash
-      @projects = project_hash.values
-
-      if @object.uuid.match /[0-9a-f]{32}/
-        @same_pdh = Collection.filter([["portable_data_hash", "=", @object.portable_data_hash]])
-        owners = @same_pdh.map {|s| s.owner_uuid}.to_a
+      if Keep::Locator.parse params["uuid"]
+        @same_pdh = Collection.filter([["portable_data_hash", "=", @object.portable_data_hash]]).limit(1000)
+        if @same_pdh.results.size == 1
+          redirect_to collection_path(@same_pdh[0]["uuid"])
+          return
+        end
+        owners = @same_pdh.map(&:owner_uuid).to_a.uniq
         preload_objects_for_dataclass Group, owners
         preload_objects_for_dataclass User, owners
+        render 'hash_matches'
+        return
+      else
+        jobs_with = lambda do |conds|
+          Job.limit(RELATION_LIMIT).where(conds)
+            .results.sort_by { |j| j.finished_at || j.created_at }
+        end
+        @output_of = jobs_with.call(output: @object.portable_data_hash)
+        @log_of = jobs_with.call(log: @object.portable_data_hash)
+        @project_links = Link.limit(RELATION_LIMIT).order("modified_at DESC")
+          .where(head_uuid: @object.uuid, link_class: 'name').results
+        project_hash = Group.where(uuid: @project_links.map(&:tail_uuid)).to_hash
+        @projects = project_hash.values
+
+        @permissions = Link.limit(RELATION_LIMIT).order("modified_at DESC")
+          .where(head_uuid: @object.uuid, link_class: 'permission',
+                 name: 'can_read').results
+        @logs = Log.limit(RELATION_LIMIT).order("created_at DESC")
+          .where(object_uuid: @object.uuid).results
+        @is_persistent = Link.limit(1)
+          .where(head_uuid: @object.uuid, tail_uuid: current_user.uuid,
+                 link_class: 'resources', name: 'wants')
+          .results.any?
+        @search_sharing = search_scopes
+
+        if params["tab_pane"] == "Provenance_graph"
+          @prov_svg = ProvenanceHelper::create_provenance_graph(@object.provenance, "provenance_svg",
+                                                                {:request => request,
+                                                                  :direction => :bottom_up,
+                                                                  :combine_jobs => :script_only}) rescue nil
+        end
+        if params["tab_pane"] == "Used_by"
+          @used_by_svg = ProvenanceHelper::create_provenance_graph(@object.used_by, "used_by_svg",
+                                                                   {:request => request,
+                                                                     :direction => :top_down,
+                                                                     :combine_jobs => :script_only,
+                                                                     :pdata_only => true}) rescue nil
+        end
       end
-
-      @permissions = Link.limit(RELATION_LIMIT).order("modified_at DESC")
-        .where(head_uuid: @object.uuid, link_class: 'permission',
-               name: 'can_read').results
-      @logs = Log.limit(RELATION_LIMIT).order("created_at DESC")
-        .where(object_uuid: @object.uuid).results
-      @is_persistent = Link.limit(1)
-        .where(head_uuid: @object.uuid, tail_uuid: current_user.uuid,
-               link_class: 'resources', name: 'wants')
-        .results.any?
-      @search_sharing = search_scopes
-    end
-
-    if params["tab_pane"] == "Provenance_graph"
-      @prov_svg = ProvenanceHelper::create_provenance_graph(@object.provenance, "provenance_svg",
-                                                            {:request => request,
-                                                              :direction => :bottom_up,
-                                                              :combine_jobs => :script_only}) rescue nil
-    end
-    if params["tab_pane"] == "Used_by"
-      @used_by_svg = ProvenanceHelper::create_provenance_graph(@object.used_by, "used_by_svg",
-                                                               {:request => request,
-                                                                 :direction => :top_down,
-                                                                 :combine_jobs => :script_only,
-                                                                 :pdata_only => true}) rescue nil
     end
     super
   end

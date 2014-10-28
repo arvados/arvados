@@ -1,5 +1,6 @@
 #!/usr/bin/env ruby
 
+require 'shellwords'
 include Process
 
 $options = {}
@@ -190,6 +191,23 @@ class Dispatcher
     nodelist
   end
 
+  def fail_job job, message
+    $stderr.puts "dispatch: #{job.uuid}: #{message}"
+    begin
+      Log.new(object_uuid: job.uuid,
+              event_type: 'dispatch',
+              owner_uuid: job.owner_uuid,
+              summary: message,
+              properties: {"text" => message}).save!
+    rescue
+      $stderr.puts "dispatch: log.create failed"
+    end
+    job.state = "Failed"
+    if not job.save
+      $stderr.puts "dispatch: job.save failed"
+    end
+  end
+
   def start_jobs
     @todo.each do |job|
       next if @running[job.uuid]
@@ -232,12 +250,24 @@ class Dispatcher
                          "GEM_PATH=#{ENV['GEM_PATH']}")
       end
 
-      job_auth = ApiClientAuthorization.
-        new(user: User.where('uuid=?', job.modified_by_user_uuid).first,
-            api_client_id: 0)
-      if not job_auth.save
-        $stderr.puts "dispatch: job_auth.save failed"
-        next
+      @authorizations ||= {}
+      if @authorizations[job.uuid] and
+          @authorizations[job.uuid].user.uuid != job.modified_by_user_uuid
+        # We already made a token for this job, but we need a new one
+        # because modified_by_user_uuid has changed (the job will run
+        # as a different user).
+        @authorizations[job.uuid].update_attributes expires_at: Time.now
+        @authorizations[job.uuid] = nil
+      end
+      if not @authorizations[job.uuid]
+        auth = ApiClientAuthorization.
+          new(user: User.where('uuid=?', job.modified_by_user_uuid).first,
+              api_client_id: 0)
+        if not auth.save
+          $stderr.puts "dispatch: auth.save failed"
+          next
+        end
+        @authorizations[job.uuid] = auth
       end
 
       crunch_job_bin = (ENV['CRUNCH_JOB_BIN'] || `which arv-crunch-job`.strip)
@@ -245,70 +275,76 @@ class Dispatcher
         raise "No CRUNCH_JOB_BIN env var, and crunch-job not in path."
       end
 
-      require 'shellwords'
-
       arvados_internal = Rails.configuration.git_internal_dir
       if not File.exists? arvados_internal
         $stderr.puts `mkdir -p #{arvados_internal.shellescape} && cd #{arvados_internal.shellescape} && git init --bare`
       end
 
-      repo_root = Rails.configuration.git_repositories_dir
-      src_repo = File.join(repo_root, job.repository + '.git')
-      if not File.exists? src_repo
-        src_repo = File.join(repo_root, job.repository, '.git')
-        if not File.exists? src_repo
-          $stderr.puts "dispatch: No #{job.repository}.git or #{job.repository}/.git at #{repo_root}"
-          sleep 1
-          next
-        end
-      end
-
       git = "git --git-dir=#{arvados_internal.shellescape}"
 
-      # check if the commit needs to be fetched or not
-      commit_rev = `#{git} rev-list -n1 #{job.script_version.shellescape} 2>/dev/null`.chomp
-      unless $? == 0 and commit_rev == job.script_version
-        # commit does not exist in internal repository, so import the source repository using git fetch-pack
-        cmd = "#{git} fetch-pack --no-progress --all #{src_repo.shellescape}"
-        $stderr.puts cmd
-        $stderr.puts `#{cmd}`
-        unless $? == 0
-          $stderr.puts "dispatch: git fetch-pack failed"
-          sleep 1
-          next
-        end
-      end
+      # @fetched_commits[V]==true if we know commit V exists in the
+      # arvados_internal git repository.
+      @fetched_commits ||= {}
+      if !@fetched_commits[job.script_version]
 
-      # check if the commit needs to be tagged with this job uuid
-      tag_rev = `#{git} rev-list -n1 #{job.uuid.shellescape} 2>/dev/null`.chomp
-      if $? != 0
-        # no job tag found, so create one
-        cmd = "#{git} tag #{job.uuid.shellescape} #{job.script_version.shellescape}"
-        $stderr.puts cmd
-        $stderr.puts `#{cmd}`
-        unless $? == 0
-          $stderr.puts "dispatch: git tag failed"
-          sleep 1
-          next
-        end
-      else
-        # job tag found, check that it has the expected revision
-        unless tag_rev == job.script_version
-          # Uh oh, the tag doesn't point to the revision we were expecting.
-          # Someone has been monkeying with the job record and/or git.
-          $stderr.puts "dispatch: Already a tag #{job.script_version} pointing to commit #{tag_rev} but expected commit #{job.script_version}"
-          job.state = "Failed"
-          if not job.save
-            $stderr.puts "dispatch: job.save failed"
+        repo_root = Rails.configuration.git_repositories_dir
+        src_repo = File.join(repo_root, job.repository + '.git')
+        if not File.exists? src_repo
+          src_repo = File.join(repo_root, job.repository, '.git')
+          if not File.exists? src_repo
+            fail_job job, "No #{job.repository}.git or #{job.repository}/.git at #{repo_root}"
             next
           end
-          next
         end
+
+        # check if the commit needs to be fetched or not
+        commit_rev = `#{git} rev-list -n1 #{job.script_version.shellescape} 2>/dev/null`.chomp
+        unless $? == 0 and commit_rev == job.script_version
+          # commit does not exist in internal repository, so import the source repository using git fetch-pack
+          cmd = "#{git} fetch-pack --no-progress --all #{src_repo.shellescape}"
+          $stderr.puts cmd
+          $stderr.puts `#{cmd}`
+          unless $? == 0
+            fail_job job, "git fetch-pack failed"
+            next
+          end
+        end
+        @fetched_commits[job.script_version] = true
+      end
+
+      # @job_tags[J]==V if we know commit V has been tagged J in the
+      # arvados_internal repository. (J is a job UUID, V is a commit
+      # sha1.)
+      @job_tags ||= {}
+      if not @job_tags[job.uuid]
+        # check if the commit needs to be tagged with this job uuid
+        tag_rev = `#{git} rev-list -n1 #{job.uuid.shellescape} 2>/dev/null`.chomp
+        if $? != 0
+          # no job tag found, so create one
+          cmd = "#{git} tag #{job.uuid.shellescape} #{job.script_version.shellescape}"
+          $stderr.puts cmd
+          $stderr.puts `#{cmd}`
+          unless $? == 0
+            fail_job job, "git tag failed"
+            next
+          end
+        else
+          # job tag found, check that it has the expected revision
+          unless tag_rev == job.script_version
+            # Uh oh, the tag doesn't point to the revision we were expecting.
+            # Someone has been monkeying with the job record and/or git.
+            fail_job job, "Existing tag #{job.uuid} points to commit #{tag_rev} but expected commit #{job.script_version}"
+            next
+          end
+        end
+        @job_tags[job.uuid] = job.script_version
+      elsif @job_tags[job.uuid] != job.script_version
+        fail_job job, "Existing tag #{job.uuid} points to commit #{@job_tags[job.uuid]} but this job uses commit #{job.script_version}"
       end
 
       cmd_args << crunch_job_bin
       cmd_args << '--job-api-token'
-      cmd_args << job_auth.api_token
+      cmd_args << @authorizations[job.uuid].api_token
       cmd_args << '--job'
       cmd_args << job.uuid
       cmd_args << '--git-dir'
@@ -337,12 +373,13 @@ class Dispatcher
         buf: {stderr: '', stdout: ''},
         started: false,
         sent_int: 0,
-        job_auth: job_auth,
+        job_auth: @authorizations[job.uuid],
         stderr_buf_to_flush: '',
         stderr_flushed_at: Time.new(0),
         bytes_logged: 0,
         events_logged: 0,
-        log_throttle_timestamp: Time.new(0),
+        log_throttle_is_open: true,
+        log_throttle_reset_time: Time.now + Rails.configuration.crunch_log_throttle_period,
         log_throttle_bytes_so_far: 0,
         log_throttle_lines_so_far: 0,
         log_throttle_bytes_skipped: 0,
@@ -356,46 +393,46 @@ class Dispatcher
   # the log line should go to output or not.  Modifies "line" in place to
   # replace it with an error if a logging limit is tripped.
   def rate_limit running_job, line
-    if running_job[:bytes_logged] > Rails.configuration.crunch_limit_log_bytes_per_job
-      # Don't log anything if the hard cap has already been exceeded
-      return false
-    end
+    message = false
+    linesize = line.size
+    if running_job[:log_throttle_is_open]
+      running_job[:log_throttle_lines_so_far] += 1
+      running_job[:log_throttle_bytes_so_far] += linesize
+      running_job[:bytes_logged] += linesize
 
-    now = Time.now
-    throttle_period = Rails.configuration.crunch_log_throttle_period
+      if (running_job[:bytes_logged] >
+          Rails.configuration.crunch_limit_log_bytes_per_job)
+        message = "Exceeded log limit #{Rails.configuration.crunch_limit_log_bytes_per_job} bytes (crunch_limit_log_bytes_per_job). Log will be truncated."
+        running_job[:log_throttle_reset_time] = Time.now + 100.years
+        running_job[:log_throttle_is_open] = false
 
-    if running_job[:log_throttle_bytes_skipped] > 0
-      # We've skipped some log in the current time period already, so continue to
-      # skip the log
-      running_job[:log_throttle_bytes_skipped] += line.size
-      return false
-    end
+      elsif (running_job[:log_throttle_bytes_so_far] >
+             Rails.configuration.crunch_log_throttle_bytes)
+        remaining_time = running_job[:log_throttle_reset_time] - Time.now
+        message = "Exceeded rate #{Rails.configuration.crunch_log_throttle_bytes} bytes per #{Rails.configuration.crunch_log_throttle_period} seconds (crunch_log_throttle_bytes). Logging will be silenced for the next #{remaining_time.round} seconds.\n"
+        running_job[:log_throttle_is_open] = false
 
-    # Count lines and bytes logged in this period, and total bytes logged for the job
-    running_job[:log_throttle_lines_so_far] += 1
-    running_job[:log_throttle_bytes_so_far] += line.size
-    running_job[:bytes_logged] += line.size
-
-    if running_job[:log_throttle_bytes_so_far] > Rails.configuration.crunch_log_throttle_bytes or
-        running_job[:log_throttle_lines_so_far] > Rails.configuration.crunch_log_throttle_lines
-      # We've exceeded the per-period throttle, so start skipping
-      running_job[:log_throttle_bytes_skipped] += line.size
-
-      # Replace log line with a message about skipping the log
-      remaining_time = throttle_period - (now - running_job[:log_throttle_timestamp])
-      if running_job[:log_throttle_bytes_so_far] > Rails.configuration.crunch_log_throttle_bytes
-        line.replace "Exceeded rate #{Rails.configuration.crunch_log_throttle_bytes} bytes per #{throttle_period} seconds (crunch_log_throttle_bytes), logging will be silenced for the next #{remaining_time.round} seconds\n"
-      else
-        line.replace "Exceeded rate #{Rails.configuration.crunch_log_throttle_lines} lines per #{throttle_period} seconds (crunch_log_throttle_lines), logging will be silenced for the next #{remaining_time.round} seconds\n"
+      elsif (running_job[:log_throttle_lines_so_far] >
+             Rails.configuration.crunch_log_throttle_lines)
+        remaining_time = running_job[:log_throttle_reset_time] - Time.now
+        message = "Exceeded rate #{Rails.configuration.crunch_log_throttle_lines} lines per #{Rails.configuration.crunch_log_throttle_period} seconds (crunch_log_throttle_lines), logging will be silenced for the next #{remaining_time.round} seconds.\n"
+        running_job[:log_throttle_is_open] = false
       end
     end
 
-    if running_job[:bytes_logged] > Rails.configuration.crunch_limit_log_bytes_per_job
-      # Replace log line with a message about truncating the log
-      line.replace "Exceeded log limit #{Rails.configuration.crunch_limit_log_bytes_per_job} bytes (crunch_limit_log_bytes_per_job).  Log will be truncated."
+    if not running_job[:log_throttle_is_open]
+      # Don't log anything if any limit has been exceeded. Just count lossage.
+      running_job[:log_throttle_bytes_skipped] += linesize
     end
 
-    true
+    if message
+      # Yes, write to logs, but use our "rate exceeded" message
+      # instead of the log message that exceeded the limit.
+      line.replace message
+      true
+    else
+      running_job[:log_throttle_is_open]
+    end
   end
 
   def read_pipes
@@ -403,59 +440,94 @@ class Dispatcher
       job = j[:job]
 
       now = Time.now
-      if (now - j[:log_throttle_timestamp]) > Rails.configuration.crunch_log_throttle_period
-        # It has been more than throttle_period seconds since the last checkpoint so reset the
-        # throttle
+      if now > j[:log_throttle_reset_time]
+        # It has been more than throttle_period seconds since the last
+        # checkpoint so reset the throttle
         if j[:log_throttle_bytes_skipped] > 0
-          j[:stderr_buf_to_flush] << "Skipped #{j[:log_throttle_bytes_skipped]} bytes of log"
+          message = "#{job_uuid} ! Skipped #{j[:log_throttle_bytes_skipped]} bytes of log"
+          $stderr.puts message
+          j[:stderr_buf_to_flush] << "#{Time.now.ctime.to_s} #{message}\n"
         end
 
-        j[:log_throttle_timestamp] = now
+        j[:log_throttle_reset_time] = now + Rails.configuration.crunch_log_throttle_period
         j[:log_throttle_bytes_so_far] = 0
         j[:log_throttle_lines_so_far] = 0
         j[:log_throttle_bytes_skipped] = 0
+        j[:log_throttle_is_open] = true
       end
 
       j[:buf].each do |stream, streambuf|
         # Read some data from the child stream
-        buf = false
+        buf = ''
         begin
-          buf = j[stream].read_nonblock(2**16)
+          # It's important to use a big enough buffer here. When we're
+          # being flooded with logs, we must read and discard many
+          # bytes at once. Otherwise, we can easily peg a CPU with
+          # time-checking and other loop overhead. (Quick tests show a
+          # 1MiB buffer working 2.5x as fast as a 64 KiB buffer.)
+          #
+          # So don't reduce this buffer size!
+          buf = j[stream].read_nonblock(2**20)
         rescue Errno::EAGAIN, EOFError
         end
 
-        if buf
-          # Add to the stream buffer
-          streambuf << buf
+        # Short circuit the counting code if we're just going to throw
+        # away the data anyway.
+        if not j[:log_throttle_is_open]
+          j[:log_throttle_bytes_skipped] += streambuf.size + buf.size
+          streambuf.replace ''
+          next
+        elsif buf == ''
+          next
+        end
 
-          # Check for at least one complete line
-          if streambuf.index "\n"
-            lines = streambuf.lines("\n").to_a
+        # Append to incomplete line from previous read, if any
+        streambuf << buf
 
-            # check if the last line is partial or not
-            streambuf.replace(if streambuf[-1] == "\n"
-                                ''        # ends on a newline
-                              else
-                                lines.pop # Put the partial line back into the buffer
-                              end)
-
-            # Now spool the lines to the log output buffer
-            lines.each do |line|
-              # rate_limit returns true or false as to whether to actually log
-              # the line or not.  It also modifies "line" in place to replace
-              # it with an error if a logging limit is tripped.
-              if rate_limit j, line
-                $stderr.print "#{job_uuid} ! " unless line.index(job_uuid)
-                $stderr.puts line
-                pub_msg = "#{Time.now.ctime.to_s} #{line.strip} \n"
-                j[:stderr_buf_to_flush] << pub_msg
-              end
-              # Send log output to the logs table
-              write_log j
+        bufend = ''
+        streambuf.each_line do |line|
+          if not line.end_with? $/
+            if line.size > Rails.configuration.crunch_log_throttle_bytes
+              # Without a limit here, we'll use 2x an arbitrary amount
+              # of memory, and waste a lot of time copying strings
+              # around, all without providing any feedback to anyone
+              # about what's going on _or_ hitting any of our throttle
+              # limits.
+              #
+              # Here we leave "line" alone, knowing it will never be
+              # sent anywhere: rate_limit() will reach
+              # crunch_log_throttle_bytes immediately. However, we'll
+              # leave [...] in bufend: if the trailing end of the long
+              # line does end up getting sent anywhere, it will have
+              # some indication that it is incomplete.
+              bufend = "[...]"
+            else
+              # If line length is sane, we'll wait for the rest of the
+              # line to appear in the next read_pipes() call.
+              bufend = line
+              break
             end
           end
+          # rate_limit returns true or false as to whether to actually log
+          # the line or not.  It also modifies "line" in place to replace
+          # it with an error if a logging limit is tripped.
+          if rate_limit j, line
+            $stderr.print "#{job_uuid} ! " unless line.index(job_uuid)
+            $stderr.puts line
+            pub_msg = "#{Time.now.ctime.to_s} #{line.strip}\n"
+            j[:stderr_buf_to_flush] << pub_msg
+          end
         end
+
+        # Leave the trailing incomplete line (if any) in streambuf for
+        # next time.
+        streambuf.replace bufend
       end
+      # Flush buffered logs to the logs table, if appropriate. We have
+      # to do this even if we didn't collect any new logs this time:
+      # otherwise, buffered data older than seconds_between_events
+      # won't get flushed until new data arrives.
+      write_log j
     end
   end
 
@@ -498,10 +570,12 @@ class Dispatcher
     $stderr.puts "dispatch: child #{pid_done} exit"
     $stderr.puts "dispatch: job #{job_done.uuid} end"
 
-    # Ensure every last drop of stdout and stderr is consumed
+    # Ensure every last drop of stdout and stderr is consumed.
     read_pipes
-    j_done[:stderr_flushed_at] = Time.new(0) # reset flush timestamp to make sure log gets written
-    write_log j_done # write any remaining logs
+    # Reset flush timestamp to make sure log gets written.
+    j_done[:stderr_flushed_at] = Time.new(0)
+    # Write any remaining logs.
+    write_log j_done
 
     j_done[:buf].each do |stream, streambuf|
       if streambuf != ''
@@ -582,7 +656,7 @@ class Dispatcher
         end
       else
         refresh_todo unless did_recently(:refresh_todo, 1.0)
-        update_node_status
+        update_node_status unless did_recently(:update_node_status, 1.0)
         unless @todo.empty? or did_recently(:start_jobs, 1.0) or $signal[:term]
           start_jobs
         end
@@ -611,7 +685,6 @@ class Dispatcher
   # send message to log table. we want these records to be transient
   def write_log running_job
     return if running_job[:stderr_buf_to_flush] == ''
-    return if running_job[:events_logged] > Rails.configuration.crunch_limit_log_events_per_job
 
     # Send out to log event if buffer size exceeds the bytes per event or if
     # it has been at least crunch_log_seconds_between_events seconds since
@@ -619,11 +692,6 @@ class Dispatcher
     if running_job[:stderr_buf_to_flush].size > Rails.configuration.crunch_log_bytes_per_event or
         (Time.now - running_job[:stderr_flushed_at]) >= Rails.configuration.crunch_log_seconds_between_events
       begin
-        # Just reached crunch_limit_log_events_per_job so replace log with notification.
-        if running_job[:events_logged] == Rails.configuration.crunch_limit_log_events_per_job
-          running_job[:stderr_buf_to_flush] =
-            "Exceeded live log limit #{Rails.configuration.crunch_limit_log_events_per_job} events (crunch_limit_log_events_per_job).  Live log will be truncated."
-        end
         log = Log.new(object_uuid: running_job[:job].uuid,
                       event_type: 'stderr',
                       owner_uuid: running_job[:job].owner_uuid,

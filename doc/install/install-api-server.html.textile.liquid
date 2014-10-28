@@ -78,6 +78,8 @@ Generate a new secret token for signing cookies:
 zzzzzzzzzzzzzzzzzzzzzzzzzzzzzzzzzzzzzzzzzzzzzzzzzzzzzzzz
 </code></pre></notextile>
 
+If you want access control on your Keep server(s), you should set @blob_signing_key@ to the same value as the permission key you provided to your "Keep server(s)":install-keep.html.
+
 Put it in @config/application.yml@ in the production or common section:
 
 <notextile>
@@ -124,7 +126,20 @@ Set up omniauth:
 <pre><code>~/arvados/services/api$ <span class="userinput">cp -i config/initializers/omniauth.rb.example config/initializers/omniauth.rb
 </code></pre></notextile>
 
-Edit @config/initializers/omniauth.rb@. Set @APP_SECRET@ to the value of @app_secret@ from "installing the single sign on server":install-sso.html .
+Edit @config/initializers/omniauth.rb@, and tell your api server to use the Curoverse SSO server for authentication:
+
+<notextile>
+<pre><code>APP_ID = 'local_docker_installation'
+APP_SECRET = 'yohbai4eecohshoo1Yoot7tea9zoca9Eiz3Tajahweo9eePaeshaegh9meiye2ph'
+CUSTOM_PROVIDER_URL = 'https://auth.curoverse.com'
+</code></pre></notextile>
+</pre>
+
+<div class="alert alert-block alert-info">
+  <button type="button" class="close" data-dismiss="alert">&times;</button>
+  <h4>Note!</h4>
+  <p>You can also run your own SSO server. However, the SSO server codebase currently uses OpenID 2.0 to talk to Google's authentication service. Google <a href="https://developers.google.com/accounts/docs/OpenID2">has deprecated that protocol</a>. This means that new clients will not be allowed to talk to Google's authentication services anymore over OpenID 2.0, and they will phase out the use of OpenID 2.0 completely in the coming monts. We are working on upgrading the SSO server codebase to a newer protocol. That work should be complete by the end of November 2014. In the mean time, anyone is free to use the existing Curoverse SSO server for any local Arvados installation.</p>
+</div>
 
 You can now run the development server:
 

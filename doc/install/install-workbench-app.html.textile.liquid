@@ -73,7 +73,14 @@ aaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaa
 Copy @config/application.yml.example@ to @config/application.yml@ and edit it appropriately for your environment.
 
 * Set @secret_token@ to the string you generated with @rake secret@.
-* Point @arvados_login_base@ and @arvados_v1_base@ at your "API server":install-api-server.html
+* Point @arvados_login_base@ and @arvados_v1_base@ at your "API server":install-api-server.html, like this:
+
+<notextile>
+<pre><code>arvados_login_base: https://your.host:3030/login
+arvados_v1_base: https://your.host:3030/arvados/v1
+</code></pre>
+</notextile>
+
 * @site_name@ can be any string to identify this Workbench.
 * If the SSL certificate you use for development isn't signed by a CA, make sure @arvados_insecure_https@ is @true@.
 

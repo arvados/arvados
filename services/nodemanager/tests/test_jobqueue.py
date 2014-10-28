@@ -14,7 +14,9 @@ class ServerCalculatorTestCase(unittest.TestCase):
 
     def calculate(self, servcalc, *constraints):
         return servcalc.servers_for_queue(
-            [{'runtime_constraints': cdict} for cdict in constraints])
+            [{'uuid': 'zzzzz-jjjjj-{:015x}'.format(index),
+              'runtime_constraints': cdict}
+             for index, cdict in enumerate(constraints)])
 
     def test_empty_queue_needs_no_servers(self):
         servcalc = self.make_calculator([1])
@@ -45,6 +47,11 @@ class ServerCalculatorTestCase(unittest.TestCase):
                                   {'min_nodes': 12},
                                   {'min_scratch_mb_per_node': 200})
         self.assertEqual(6, len(servlist))
+
+    def test_job_requesting_max_nodes_accepted(self):
+        servcalc = self.make_calculator([1], max_nodes=4)
+        servlist = self.calculate(servcalc, {'min_nodes': 4})
+        self.assertEqual(4, len(servlist))
 
 
 class JobQueueMonitorActorTestCase(testutil.RemotePollLoopActorTestMixin,
