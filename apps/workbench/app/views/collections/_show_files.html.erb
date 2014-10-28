@@ -17,9 +17,28 @@
         </ul>
       </div>
     </div>
+    <div class="pull-right">
+      <%= form_tag collection_path(@object.uuid), {method: 'get'} do %>
+        <input class="form-control" id="file_regex" name="file_regex" value="<%= params[:file_regex] %>" type="text"/>
+        <button id="file_regex_submit" type="submit" class="btn btn-primary" autofocus>Filter</button>
+      <% end %>
+    </div>
   </div>
   <p/>
   <% end %>
+
+<%
+  file_regex = nil
+  if params[:file_regex]
+    begin
+      file_regex = Regexp.new(params[:file_regex])
+    rescue RegexpError
+      # If the pattern is not a valid regex, quote it
+      # (i.e. use it as a simple substring search)
+      file_regex = Regexp.new(Regexp.quote(params[:file_regex]))
+    end
+  end
+%>
 
 <% file_tree = @object.andand.files_tree %>
 <% if file_tree.nil? or file_tree.empty? %>
@@ -40,6 +59,9 @@
       </div>
       <ul class="collection_files">
     <% else %>
+      <% if !file_regex.nil? and !file_regex.match(filename) %>
+        <% next %>
+      <% end %>
       <% link_params = {controller: 'collections', action: 'show_file',
                         uuid: @object.portable_data_hash, file: file_path, size: size} %>
        <div class="collection_files_row">

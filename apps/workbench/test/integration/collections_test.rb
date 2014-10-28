@@ -200,4 +200,38 @@ class CollectionsTest < ActionDispatch::IntegrationTest
     assert page.has_no_text?("Activity")
     assert page.has_no_text?("Sharing and permissions")
   end
+
+  test "Filtering collection files by regexp" do
+    col = api_fixture('collections', 'multilevel_collection_1')
+    visit page_with_token('active', "/collections/#{col['uuid']}")
+
+    # Test when only some files match the regex
+    page.find_field('file_regex').set('file[12]')
+    find('button#file_regex_submit').click
+    assert page.has_text?("file1")
+    assert page.has_text?("file2")
+    assert page.has_no_text?("file3")
+
+    # Test all files matching the regex
+    page.find_field('file_regex').set('file[123]')
+    find('button#file_regex_submit').click
+    assert page.has_text?("file1")
+    assert page.has_text?("file2")
+    assert page.has_text?("file3")
+
+    # Test no files matching the regex
+    page.find_field('file_regex').set('file9')
+    find('button#file_regex_submit').click
+    assert page.has_no_text?("file1")
+    assert page.has_no_text?("file2")
+    assert page.has_no_text?("file3")
+
+    # Syntactically invalid regex
+    # Page loads, but does not match any files
+    page.find_field('file_regex').set('file[2')
+    find('button#file_regex_submit').click
+    assert page.has_no_text?("file1")
+    assert page.has_no_text?("file2")
+    assert page.has_no_text?("file3")
+  end
 end
