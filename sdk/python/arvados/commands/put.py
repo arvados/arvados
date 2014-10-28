@@ -102,6 +102,12 @@ Print the portable data hash instead of the Arvados UUID for the collection
 created by the upload.
 """)
 
+upload_opts.add_argument('--normalize', action='store_true',
+                    help="""
+Normalize the manifest by re-ordering files and streams after writing
+data. This makes the --max-manifest-depth option ineffective.
+""")
+
 run_opts = argparse.ArgumentParser(add_help=False)
 
 run_opts.add_argument('--project-uuid', metavar='UUID', help="""
@@ -447,16 +453,21 @@ def main(arguments=None, stdout=sys.stdout, stderr=sys.stderr):
 
     if args.stream:
         output = writer.manifest_text()
+        if args.normalize:
+            output = CollectionReader(output).normalize().manifest_text()
     elif args.raw:
         output = ','.join(writer.data_locators())
     else:
         try:
+            manifest_text = writer.manifest_text()
+            if args.normalize:
+                manifest_text = CollectionReader(manifest_text).normalize().manifest_text()
             # Register the resulting collection in Arvados.
             collection = api_client.collections().create(
                 body={
                     'owner_uuid': project_uuid,
                     'name': collection_name,
-                    'manifest_text': writer.manifest_text()
+                    'manifest_text': manifest_text
                     },
                 ensure_unique_name=True
                 ).execute(num_retries=args.retries)
