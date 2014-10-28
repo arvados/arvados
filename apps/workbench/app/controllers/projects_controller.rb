@@ -208,19 +208,26 @@ class ProjectsController < ApplicationController
 
       # We are using created_at time slightly greater/lower than the last object created_at (see next block comment).
       # This would mean that the server would now return the previous last item(s) with matching created_at again.
-      # Hence, we need to remove the previous last item (last_uuid) from results before displaying the rest of the
-      # results to prevent "infinite" infinite scrolling.
-      if params['last_uuid'] and @objects.any?
-        @objects.each do |obj|
-          @objects.delete obj if obj.uuid.eql?(params['last_uuid'])
+      # Hence, we need to remove the previous last_uuids from results before displaying the rest of the results
+      # to prevent "infinite" infinite scrolling.
+      if params['last_uuids'] and @objects.any?
+        last_uuids = JSON.parse params['last_uuids']
+        @objects.reject! do |obj|
+          last_uuids.include? obj.uuid
         end
       end
 
       if @objects.any?
         last_created_at = @objects.last.created_at
 
+        last_uuids = [] if (last_created_at != params[:last_created_at])
+        @objects.each do |obj|
+          last_uuids << obj.uuid if obj.created_at.eql?(last_created_at)
+        end
+
         # In order to prevent losing item(s) that have the same created_at time as the current page last item,
-        # next page should look for objects with created_at time slightly greater/lower than the current last.
+        # next page should look for objects with created_at time slightly greater/lower than the current last,
+        # and remove them if they are part of previous page's last_uuids (see the previous block)
         if nextpage_operator == '<'
           last_created_at += 1
         else
@@ -231,7 +238,8 @@ class ProjectsController < ApplicationController
                                 nextpage_operator,
                                 last_created_at]]
         @next_page_href = url_for(partial: :contents_rows,
-                                  last_uuid: @objects.last.uuid,
+                                  last_uuids: last_uuids.to_json,
+                                  last_created_at: @objects.last.created_at,
                                   limit: @limit,
                                   filters: @next_page_filters.to_json)
       else

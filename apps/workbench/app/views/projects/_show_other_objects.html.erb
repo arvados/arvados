@@ -1,4 +1,3 @@
 <%= render_pane 'tab_contents', to_string: true, locals: {
-    limit: 200,
     filters: [['uuid', 'is_a', ["arvados#human", "arvados#specimen", "arvados#trait"]]]
     }.merge(local_assigns) %>
