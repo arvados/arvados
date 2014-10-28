@@ -225,11 +225,16 @@ class CollectionsTest < ActionDispatch::IntegrationTest
     assert page.has_no_text?("file1")
     assert page.has_no_text?("file2")
     assert page.has_no_text?("file3")
+    # make sure that we actually are looking at the collections
+    # page and not e.g. a fiddlesticks
+    assert page.has_text?("multilevel_collection_1")
+    assert page.has_text?(col['portable_data_hash'])
 
     # Syntactically invalid regex
     # Page loads, but does not match any files
     page.find_field('file_regex').set('file[2')
     find('button#file_regex_submit').click
+    assert page.has_text?('could not be parsed as a regular expression')
     assert page.has_no_text?("file1")
     assert page.has_no_text?("file2")
     assert page.has_no_text?("file3")
