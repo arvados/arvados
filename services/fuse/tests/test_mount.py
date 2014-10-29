@@ -259,6 +259,7 @@ class FuseSharedTest(MountTestBase):
         self.assertEqual(['A Project',
                           "Empty collection",
                           "Empty collection.link",
+                          "Pipeline Template Newer Than Instance.pipelineTemplate",
                           "Pipeline Template with Input Parameter with Search.pipelineTemplate",
                           "Pipeline Template with Jobspec Components.pipelineTemplate",
                           "collection_expires_in_future",
