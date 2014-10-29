@@ -55,7 +55,7 @@
   <% file_tree.reject { |(dirname, filename, size)|
        # Eliminate any files that don't match file_regex
        # (or accept all files if no file_regex was given)
-       file_regex and !file_regex.match(filename)
+       size and file_regex and !file_regex.match(filename)
        }
        .take(10000)
        .each_with_index do |(dirname, filename, size), index| %>
