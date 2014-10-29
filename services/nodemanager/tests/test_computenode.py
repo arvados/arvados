@@ -186,7 +186,8 @@ class ComputeNodeMonitorActorTestCase(testutil.ActorTestMixin,
         self.node_actor = cnode.ComputeNodeMonitorActor.start(
             self.cloud_mock, start_time, self.shutdowns, self.timer,
             self.updates, arv_node).proxy()
-        self.subscription = self.node_actor.subscribe(self.subscriber)
+        self.subscription = self.node_actor.subscribe(self.subscriber).get(
+            self.TIMEOUT)
 
     def test_init_shutdown_scheduling(self):
         self.make_actor()
