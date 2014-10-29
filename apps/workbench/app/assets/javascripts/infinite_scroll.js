@@ -147,6 +147,27 @@ function mergeInfiniteContentParams($container) {
     return params;
 }
 
+function setColumnSort( $container, $header, direction ) {
+    // $container should be the tbody or whatever has all the infinite table data attributes
+    // $header should be the th with a preset data-sort-order attribute
+    // direction should be "asc" or "desc"
+    // This function returns the order by clause for this column header as a string
+
+    // First reset all sort directions
+    $('th[data-sort-order]').removeData('sort-order-direction');
+    // set the current one
+    $header.data('sort-order-direction', direction);
+    // change the ordering parameter
+    var paramsAttr = 'infinite-content-params-' + $container.data('infinite-content-params-attr');
+    var params = $container.data(paramsAttr) || {};
+    params.order = $header.data('sort-order').split(",").join( ' ' + direction + ', ' ) + ' ' + direction;
+    $container.data(paramsAttr, params);
+    // show the right icon next to the column header
+    $container.trigger('sortIcons');
+
+    return params.order;
+}
+
 $(document).
     on('click', 'div.infinite-retry button', function() {
         var $retry_div = $(this).closest('.infinite-retry');
@@ -174,6 +195,20 @@ $(document).
                 return;
             $(this).addClass('infinite-scroller-ready');
 
+            // deal with sorting if was set on this page for this tab already
+            var tabId = $(this).closest('div.tab-pane').attr('id');
+            if( typeof(history.state.order) !== 'undefined' && typeof(history.state.order[tabId]) !== 'undefined' ) {
+                // we will use the list of one or more table columns associated with this header to find the right element
+                // see sortable_columns as it is passed to render_pane in the various tab .erbs (e.g. _show_jobs_and_pipelines.html.erb)
+                var strippedColumns = history.state.order[tabId].replace(/\s|asc|desc/g,'');
+                var sortDirection = history.state.order[tabId].split(" ")[1].replace(/,/,'');
+                $columnHeader = $(this).closest('table').find('[data-sort-order="'+ strippedColumns +'"]');
+                setColumnSort( $(this), $columnHeader, sortDirection );
+            } else {
+                // otherwise just reset the sort icons
+                $(this).trigger('sortIcons');
+            }
+
             // $scroller is the DOM element that hears "scroll"
             // events: sometimes it's a div, sometimes it's
             // window. Here, "this" is the DOM element containing the
@@ -197,19 +232,24 @@ $(document).
         } else {
             direction = 'desc';
         }
-        // reset all sort directions
-        $('th[data-sort-order]').removeData('sort-order-direction');
-        // set the current one
-        $(this).data('sort-order-direction', direction);
-        // change the ordering parameter and refresh the data display with the new order
-        var $target = $(this).closest('table').find('[data-infinite-content-params-attr]');
-        var params_attr = 'infinite-content-params-' + $target.data('infinite-content-params-attr');
-        var params = $target.data(params_attr) || {};
-        params.order = $(this).data('sort-order').split(",").join( ' ' + direction + ', ' ) + ' ' + direction;
-        $target.data(params_attr, params);
-        $target.trigger('refresh-content');
+
+        var $container = $(this).closest('table').find('[data-infinite-content-params-attr]');
+
+        var order = setColumnSort( $container, $(this), direction );
+
+        // put it in the browser history state
+        var tabId = $(this).closest('div.tab-pane').attr('id');
+        var state =  history.state;
+        if( typeof(state.order) === 'undefined') {
+            state.order = {};
+        }
+        state.order[tabId] = order;
+        history.replaceState( state, null, null );
+
+        $container.trigger('refresh-content');
     }).
-    on('ready arv:pane:loaded refresh-content', function() {
+    on('sortIcons', function() {
+        // set or reset the icon next to each sortable column header according to the current direction attribute
         $('th[data-sort-order]').each(function() {
             $(this).find('i').remove();
             var direction = $(this).data('sort-order-direction');

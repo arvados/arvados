@@ -84,13 +84,13 @@
         <th></th>
         <th></th>
         <th></th>
-        <% sort_order = sortable_columns['name'] %>
+        <% sort_order = sortable_columns['name'].gsub(/\s/,'') %>
         <th <% if !sort_order.nil? %>
               data-sort-order='<%= sort_order %>'
             <% end %> >
           name
         </th>
-        <% sort_order = sortable_columns['description'] %>
+        <% sort_order = sortable_columns['description'].gsub(/\s/,'') %>
         <th <% if !sort_order.nil? %>
               data-sort-order='<%= sort_order %>'
             <% end %> >
