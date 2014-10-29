@@ -64,7 +64,8 @@ class PipelineInstancesController < ApplicationController
         if component[:script_parameters]
           component[:script_parameters].each do |param, value_info|
             if value_info.is_a? Hash
-              if resource_class_for_uuid(value_info[:value]) == Link
+              value_info_class = resource_class_for_uuid(value_info[:value])
+              if value_info_class == Link
                 # Use the link target, not the link itself, as script
                 # parameter; but keep the link info around as well.
                 link = Link.find value_info[:value]
@@ -75,6 +76,15 @@ class PipelineInstancesController < ApplicationController
                 # Delete stale link_uuid and link_name data.
                 value_info[:link_uuid] = nil
                 value_info[:link_name] = nil
+              end
+              if value_info_class == Collection
+                # to ensure reproducibility, the script_parameter for a
+                # collection should be the portable_data_hash
+                # keep the collection name and uuid for human-readability
+                obj = Collection.find value_info[:value]
+                value_info[:value] = obj.portable_data_hash
+                value_info[:selection_uuid] = obj.uuid
+                value_info[:selection_name] = obj.name
               end
             end
           end

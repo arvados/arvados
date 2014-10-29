@@ -206,4 +206,12 @@ class CollectionsControllerTest < ActionController::TestCase
     # runs.
     @response.body.length
   end
+
+  test "show file in a subdirectory of a collection" do
+    params = collection_params(:collection_with_files_in_subdir, 'subdir2/subdir3/subdir4/file1_in_subdir4.txt')
+    expect_content = stub_file_content
+    get(:show_file, params, session_for(:user1_with_load))
+    assert_response :success
+    assert_equal(expect_content, @response.body, "failed to get a correct file from Keep")
+  end
 end
