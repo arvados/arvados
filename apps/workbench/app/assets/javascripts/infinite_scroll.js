@@ -162,8 +162,8 @@ function setColumnSort( $container, $header, direction ) {
     var params = $container.data(paramsAttr) || {};
     params.order = $header.data('sort-order').split(",").join( ' ' + direction + ', ' ) + ' ' + direction;
     $container.data(paramsAttr, params);
-    // show the right icon next to the column header
-    $container.trigger('sortIcons');
+    // show the correct icon next to the column header
+    $container.trigger('sort-icons');
 
     return params.order;
 }
@@ -195,18 +195,20 @@ $(document).
                 return;
             $(this).addClass('infinite-scroller-ready');
 
-            // deal with sorting if was set on this page for this tab already
-            var tabId = $(this).closest('div.tab-pane').attr('id');
-            if( typeof(history.state.order) !== 'undefined' && typeof(history.state.order[tabId]) !== 'undefined' ) {
-                // we will use the list of one or more table columns associated with this header to find the right element
-                // see sortable_columns as it is passed to render_pane in the various tab .erbs (e.g. _show_jobs_and_pipelines.html.erb)
-                var strippedColumns = history.state.order[tabId].replace(/\s|asc|desc/g,'');
-                var sortDirection = history.state.order[tabId].split(" ")[1].replace(/,/,'');
-                $columnHeader = $(this).closest('table').find('[data-sort-order="'+ strippedColumns +'"]');
-                setColumnSort( $(this), $columnHeader, sortDirection );
-            } else {
-                // otherwise just reset the sort icons
-                $(this).trigger('sortIcons');
+            // deal with sorting if there is any, and if it was set on this page for this tab already
+            if( $('th[data-sort-order]').length ) {
+                var tabId = $(this).closest('div.tab-pane').attr('id');
+                if( hasHTML5History() && history.state !== undefined && history.state !== null && history.state.order !== undefined && history.state.order[tabId] !== undefined ) {
+                    // we will use the list of one or more table columns associated with this header to find the right element
+                    // see sortable_columns as it is passed to render_pane in the various tab .erbs (e.g. _show_jobs_and_pipelines.html.erb)
+                    var strippedColumns = history.state.order[tabId].replace(/\s|asc|desc/g,'');
+                    var sortDirection = history.state.order[tabId].split(" ")[1].replace(/,/,'');
+                    $columnHeader = $(this).closest('table').find('[data-sort-order="'+ strippedColumns +'"]');
+                    setColumnSort( $(this), $columnHeader, sortDirection );
+                } else {
+                    // otherwise just reset the sort icons
+                    $(this).trigger('sort-icons');
+                }
             }
 
             // $scroller is the DOM element that hears "scroll"
@@ -227,7 +229,7 @@ $(document).
     on('click', 'th[data-sort-order]', function() {
         var direction = $(this).data('sort-order-direction');
         // reverse the current direction, or do ascending if none
-        if( typeof(direction) === 'undefined' || direction === 'desc' ) {
+        if( direction === undefined || direction === 'desc' ) {
             direction = 'asc';
         } else {
             direction = 'desc';
@@ -237,23 +239,25 @@ $(document).
 
         var order = setColumnSort( $container, $(this), direction );
 
-        // put it in the browser history state
-        var tabId = $(this).closest('div.tab-pane').attr('id');
-        var state =  history.state;
-        if( typeof(state.order) === 'undefined') {
-            state.order = {};
+        // put it in the browser history state if browser allows it
+        if( hasHTML5History() ) {
+            var tabId = $(this).closest('div.tab-pane').attr('id');
+            var state =  history.state;
+            if( state.order === undefined) {
+                state.order = {};
+            }
+            state.order[tabId] = order;
+            history.replaceState( state, null, null );
         }
-        state.order[tabId] = order;
-        history.replaceState( state, null, null );
 
         $container.trigger('refresh-content');
     }).
-    on('sortIcons', function() {
+    on('sort-icons', function() {
         // set or reset the icon next to each sortable column header according to the current direction attribute
         $('th[data-sort-order]').each(function() {
             $(this).find('i').remove();
             var direction = $(this).data('sort-order-direction');
-            if( typeof(direction) !== 'undefined' ) {
+            if( direction !== undefined ) {
                 $(this).append('<i class="fa fa-sort-' + direction + '"/>');
             } else {
                 $(this).append('<i class="fa fa-sort"/>');
