@@ -48,33 +48,13 @@ It's recommended to run Keepproxy under "runit":https://packages.debian.org/sear
 
 h3. Create an API token for the Keepproxy server
 
-The Keepproxy server needs a token to talk to the API server. The token can be associated with the root user. On the <strong>shell server</strong>, use the following command to create the token.
+The Keepproxy server needs a token to talk to the API server.
+
+On the <strong>API server</strong>, use the following command to create the token:
 
 <notextile>
-<pre><code>~$ <span class="userinput">arv api_client_authorization create_system_auth --scopes "[]"</span>
-{
- "href":"/api_client_authorizations/oethieWeKohy4aesahv2moh0Dapheigh9aeNo3uSahg6yaihui",
- "kind":"arvados#apiClientAuthorization",
- "etag":"ieLohYieh5joo3ahxaileChoo",
- "uuid":"oethieWeKohy4aesahv2moh0Dapheigh9aeNo3uSahg6yaihui",
- "owner_uuid":"uuid_prefix-tpzed-000000000000000",
- "created_at":"2014-10-29T15:01:57Z",
- "modified_by_client_uuid":null,
- "modified_by_user_uuid":null,
- "modified_at":null,
- "user_id":1,
- "api_client_id":0,
- "api_token":"fiekieth2luaWe0feePh7yoo6MaifahChaet4ulaitoothais9",
- "created_by_ip_address":"10.1.1.1",
- "default_owner_uuid":null,
- "expires_at":null,
- "last_used_at":null,
- "last_used_by_ip_address":null,
- "scopes":[],
- "_profile":{
-  "request_time":0.037659336
- }
-}
+<pre><code>~/arvados/services/api/script$ <span class="userinput">RAILS_ENV=production ./get_anonymous_user_token.rb</span>
+hoShoomoo2bai3Ju1xahg6aeng1siquuaZ1yae2gi2Uhaeng2r
 </code></pre></notextile>
 
 The value for the @api_token@ field should be added to Keepproxy's environment as ARVADOS_API_TOKEN. Make sure to also set ARVADOS_API_HOST to @uuid_prefix@.your.domain.
