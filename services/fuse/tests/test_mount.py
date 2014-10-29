@@ -250,22 +250,28 @@ class FuseSharedTest(MountTestBase):
         # wait until the driver is finished initializing
         operations.initlock.wait()
 
-        d1 = os.listdir(self.mounttmp)
-        d1.sort()
-        self.assertIn('FUSE User', d1)
+        # shared_dirs is a list of the directories exposed
+        # by fuse.SharedDirectory (i.e. any object visible
+        # to the current user)
+        shared_dirs = os.listdir(self.mounttmp)
+        shared_dirs.sort()
+        self.assertIn('FUSE User', shared_dirs)
 
-        d2 = os.listdir(os.path.join(self.mounttmp, 'FUSE User'))
-        d2.sort()
+        # fuse_user_dirs is a list of the directories owned
+        # by the "FUSE User" test user.
+        fuse_user_dirs = os.listdir(os.path.join(self.mounttmp, 'FUSE User'))
+        fuse_user_dirs.sort()
         self.assertEqual(['FUSE Test Project',
                           'collection #1 owned by FUSE',
                           'collection #2 owned by FUSE'
-                      ], d2)
+                      ], fuse_user_dirs)
 
-        d3 = os.listdir(os.path.join(self.mounttmp, 'FUSE User', 'FUSE Test Project'))
-        d3.sort()
+        # test_proj_files is a list of the files in the FUSE Test Project.
+        test_proj_files = os.listdir(os.path.join(self.mounttmp, 'FUSE User', 'FUSE Test Project'))
+        test_proj_files.sort()
         self.assertEqual(['Pipeline Template in FUSE Project.pipelineTemplate',
                           'collection in FUSE project',
-                      ], d3)
+                      ], test_proj_files)
 
         with open(os.path.join(
                 self.mounttmp,
