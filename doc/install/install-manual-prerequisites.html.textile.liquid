@@ -1,0 +1,46 @@
+---
+layout: default
+navsection: installguide
+title: Prerequisites
+...
+
+h2. Hardware (or virtual machines)
+
+This guide assumes you have seven systems available in the same network subnet:
+
+<div class="offset1">
+table(table table-bordered table-condensed).
+|_Function_|_Number of nodes_|
+|Arvados REST API, Websockets, Workbench and Crunch dispatcher|1|
+|Arvados SSO server|1|
+|Arvados Keepproxy server|1|
+|Arvados Keepstore servers|2|
+|Arvados shell server|1|
+|Arvados compute node|1|
+</div>
+
+The number of Keepstore, shell and compute nodes listed above is a minimum. In a real production installation, you will likely run many more of each of those types of nodes. In such a scenario, you would probably also want to dedicate a node to the Workbenbench server and crunch dispatcher, respectively. For performance reasons, you may want to run the database server on a separate node as well.
+
+h2. A unique identifier
+
+Each Arvados installation should have a globally unique identifier, which is a unique 5-character alphanumeric string. Here is a snippet of ruby that generates such a string based on the hostname of your computer:
+
+<pre>
+Digest::MD5.hexdigest(`hostname`).to_i(16).to_s(36)[0..4]
+</pre>
+
+You may also use a different method to pick the unique identifier. The unique identifier will be part of the hostname of the services in your Arvados cluster. The rest of this documentation will refer to it as your @uuid_prefix@. 
+
+
+h2. SSL certificates
+
+There are four public-facing services that will require an SSL certificate. If you do not have official SSL certificates, you can use self-signed certificates. By convention, we use the following hostname pattern:
+
+<div class="offset1">
+table(table table-bordered table-condensed).
+|_Function_|_Hostname_|
+|Arvados REST API|@uuid_prefix@.your.domain|
+|Arvados Websockets endpoint|ws.@uuid_prefix@.your.domain|
+|Arvados Keepproxy server|keep.@uuid_prefix@.your.domain|
+|Arvados Workbench|workbench.@uuid_prefix@.your.domain|
+</div>
