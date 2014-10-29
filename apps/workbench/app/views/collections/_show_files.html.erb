@@ -17,10 +17,14 @@
         </ul>
       </div>
     </div>
-    <div class="pull-right">
+    <div class="pull-right col-lg-3">
       <%= form_tag collection_path(@object.uuid), {method: 'get'} do %>
-        <input class="form-control" id="file_regex" name="file_regex" placeholder="regular expression" value="<%= params[:file_regex] %>" type="text"/>
-        <button id="file_regex_submit" type="submit" class="btn btn-primary" autofocus>Filter</button>
+        <div class="input-group">
+          <input class="form-control" id="file_regex" name="file_regex" placeholder="regular expression" value="<%= params[:file_regex] %>" type="text"/>
+          <span class="input-group-btn">
+            <button id="file_regex_submit" type="submit" class="btn btn-primary" autofocus>Filter</button>
+          </span>
+        </div>
       <% end %>
     </div>
   </div>
