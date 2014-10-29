@@ -252,39 +252,28 @@ class FuseSharedTest(MountTestBase):
 
         d1 = os.listdir(self.mounttmp)
         d1.sort()
-        self.assertIn('Active User', d1)
+        self.assertIn('FUSE User', d1)
 
-        d2 = os.listdir(os.path.join(self.mounttmp, 'Active User'))
+        d2 = os.listdir(os.path.join(self.mounttmp, 'FUSE User'))
         d2.sort()
-        self.assertEqual(['A Project',
-                          "Empty collection",
-                          "Empty collection.link",
-                          "Pipeline Template Newer Than Instance.pipelineTemplate",
-                          "Pipeline Template with Input Parameter with Search.pipelineTemplate",
-                          "Pipeline Template with Jobspec Components.pipelineTemplate",
-                          "collection_expires_in_future",
-                          "collection_with_same_name_in_aproject_and_home_project",
-                          "multilevel_collection_1",
-                          "multilevel_collection_2",
-                          "owned_by_active",
-                          "pipeline_to_merge_params.pipelineInstance",
-                          "pipeline_with_job.pipelineInstance",
-                          "pipeline_with_tagged_collection_input.pipelineInstance",
-                          "real_log_collection"
+        self.assertEqual(['FUSE Test Project',
+                          'collection #1 owned by FUSE',
+                          'collection #2 owned by FUSE'
                       ], d2)
 
-        d3 = os.listdir(os.path.join(self.mounttmp, 'Active User', 'A Project'))
+        d3 = os.listdir(os.path.join(self.mounttmp, 'FUSE User', 'FUSE Test Project'))
         d3.sort()
-        self.assertEqual(["A Subproject",
-                          "Two Part Pipeline Template.pipelineTemplate",
-                          "collection_to_move_around",
-                          "collection_with_same_name_in_aproject_and_home_project",
-                          "zzzzz-4zz18-fy296fx3hot09f7 added sometime"
+        self.assertEqual(['Pipeline Template in FUSE Project.pipelineTemplate',
+                          'collection in FUSE project',
                       ], d3)
 
-        with open(os.path.join(self.mounttmp, 'Active User', "A Project", "Two Part Pipeline Template.pipelineTemplate")) as f:
+        with open(os.path.join(
+                self.mounttmp,
+                'FUSE User',
+                'FUSE Test Project',
+                'Pipeline Template in FUSE Project.pipelineTemplate')) as f:
             j = json.load(f)
-            self.assertEqual("Two Part Pipeline Template", j['name'])
+            self.assertEqual("Pipeline Template in FUSE Project", j['name'])
 
 
 class FuseHomeTest(MountTestBase):
