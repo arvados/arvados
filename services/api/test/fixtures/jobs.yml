@@ -299,9 +299,9 @@ job_in_subproject:
 
 # Do not add your fixtures below this line as the rest of this file will be trimmed by test_helper
 
-# jobs in project_with_2_pipelines_and_100_jobs
-<% for i in 1..100 do %>
-job_<%=i%>_of_100:
+# jobs in project_with_2_pipelines_and_60_jobs
+<% for i in 1..60 do %>
+job_<%=i%>_of_60:
   uuid: zzzzz-8i9sb-oneof100jobs<%= i.to_s.rjust(3, '0') %>
   created_at: <%= ((i+5)/5).minute.ago.to_s(:db) %>
   owner_uuid: zzzzz-j7d0g-nnjobspipelines
