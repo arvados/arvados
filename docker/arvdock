@@ -136,8 +136,8 @@ function make_keep_volumes () {
     while [ ${#keep_volumes[*]} -lt 2 ]
     do
         new_keep=$(mktemp -d)
-        echo >&2 "mounting 512M tmpfs keep volume in $new_keep"
-        sudo mount -t tmpfs -o size=512M tmpfs $new_keep
+        echo >&2 "mounting 2G tmpfs keep volume in $new_keep"
+        sudo mount -t tmpfs -o size=2G tmpfs $new_keep
         mkdir $new_keep/keep
         keep_volumes+=($new_keep)
     done
@@ -311,13 +311,16 @@ function do_start {
         start_container "$start_workbench:80" "workbench_server" '' "api_server:api" "arvados/workbench"
     fi
 
-    if [ -d $HOME/.config/arvados ] || mkdir -p $HOME/.config/arvados
+    if [[ $start_api != false ]]
     then
-        cat >$HOME/.config/arvados/settings.conf <<EOF
+        if [ -d $HOME/.config/arvados ] || mkdir -p $HOME/.config/arvados
+        then
+            cat >$HOME/.config/arvados/settings.conf <<EOF
 ARVADOS_API_HOST=$(ip_address "api_server")
 ARVADOS_API_HOST_INSECURE=yes
 ARVADOS_API_TOKEN=$(cat api/generated/superuser_token)
 EOF
+        fi
     fi
 
 }
