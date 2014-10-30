@@ -86,6 +86,7 @@ use POSIX ':sys_wait_h';
 use POSIX qw(strftime);
 use Fcntl qw(F_GETFL F_SETFL O_NONBLOCK);
 use Arvados;
+use Data::Dumper;
 use Digest::MD5 qw(md5_hex);
 use Getopt::Long;
 use IPC::Open2;
@@ -1570,14 +1571,10 @@ sub srun
   my $stdin = shift;
   my $args = $have_slurm ? [@$srunargs, @$execargs] : $execargs;
 
-  my $show_cmd = join(" ", map {
-    if (/[\s\"]/) {
-      s/[\"\$\\]/\\$&/g;
-      "\"$_\"";
-    } else {
-      $_;
-    }} @{$args});
-  $show_cmd =~ s/(TOKEN\\*=)\S+/${1}[...]/g;
+  $Data::Dumper::Terse = 1;
+  $Data::Dumper::Indent = 0;
+  my $show_cmd = Dumper($args);
+  $show_cmd =~ s/(TOKEN\\*=)[^\s\']+/${1}[...]/g;
   $show_cmd =~ s/\n/ /g;
   warn "starting: $show_cmd\n";
 
