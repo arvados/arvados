@@ -70,6 +70,19 @@ class PipelineInstancesTest < ActionDispatch::IntegrationTest
     end
     wait_for_ajax
 
+    # Ensure that the collection's portable_data_hash, uuid and name
+    # are saved in the desired places. (#4015)
+
+    # foo_collection_in_aproject is the collection tagged with foo_tag.
+    col = api_fixture('collections', 'foo_collection_in_aproject')
+    click_link 'Advanced'
+    click_link 'API response'
+    api_response = JSON.parse(find('div#advanced_api_response pre').text)
+    input_params = api_response['components']['part-one']['script_parameters']['input']
+    assert_equal input_params['value'], col['portable_data_hash']
+    assert_equal input_params['selection_name'], col['name']
+    assert_equal input_params['selection_uuid'], col['uuid']
+
     # "Run" button is now enabled
     page.assert_no_selector 'a.disabled,button.disabled', text: 'Run'
 
@@ -117,7 +130,7 @@ class PipelineInstancesTest < ActionDispatch::IntegrationTest
     create_and_run_pipeline_in_aproject true
   end
 
-  # Create a pipeline instance from within a project and run
+  # Create a pipeline instance from outside of a project
   test 'Run a pipeline from dashboard' do
     visit page_with_token('active_trustedclient')
     create_and_run_pipeline_in_aproject false
@@ -300,6 +313,19 @@ class PipelineInstancesTest < ActionDispatch::IntegrationTest
     end
     wait_for_ajax
 
+    # Ensure that the collection's portable_data_hash, uuid and name
+    # are saved in the desired places. (#4015)
+
+    # foo_collection_in_aproject is the collection tagged with foo_tag.
+    col = api_fixture('collections', 'foo_collection_in_aproject')
+    click_link 'Advanced'
+    click_link 'API response'
+    api_response = JSON.parse(find('div#advanced_api_response pre').text)
+    input_params = api_response['components']['part-one']['script_parameters']['input']
+    assert_equal input_params['value'], col['portable_data_hash']
+    assert_equal input_params['selection_name'], col['name']
+    assert_equal input_params['selection_uuid'], col['uuid']
+
     # "Run" button present and enabled
     page.assert_no_selector 'a.disabled,button.disabled', text: 'Run'
     first('a,button', text: 'Run').click
@@ -313,4 +339,29 @@ class PipelineInstancesTest < ActionDispatch::IntegrationTest
     assert_not page.has_text? 'Graph'
   end
 
+  [
+    [0, 0], # run time 0 minutes
+    [9, 17*60*60 + 51*60], # run time 17 hours and 51 minutes
+  ].each do |index, run_time|
+    test "pipeline start and finish time display #{index}" do
+      visit page_with_token("user1_with_load", "/pipeline_instances/zzzzz-d1hrv-10pipelines0#{index.to_s.rjust(3, '0')}")
+
+      assert page.has_text? 'This pipeline started at'
+      page_text = page.text
+
+      match = /This pipeline started at (.*)\. It failed after (.*) seconds at (.*)\. Check the Log/.match page_text
+      assert_not_nil(match, 'Did not find text - This pipeline started at . . . ')
+
+      start_at = match[1]
+      finished_at = match[3]
+      assert_not_nil(start_at, 'Did not find start_at time')
+      assert_not_nil(finished_at, 'Did not find finished_at time')
+
+      # start and finished time display is of the format '2:20 PM 10/20/2014'
+      start_time = DateTime.strptime(start_at, '%H:%M %p %m/%d/%Y').to_time
+      finished_time = DateTime.strptime(finished_at, '%H:%M %p %m/%d/%Y').to_time
+      assert_equal(run_time, finished_time-start_time,
+        "Time difference did not match for start_at #{start_at}, finished_at #{finished_at}, ran_for #{match[2]}")
+    end
+  end
 end

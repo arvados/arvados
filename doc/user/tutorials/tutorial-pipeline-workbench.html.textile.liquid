@@ -4,11 +4,10 @@ navsection: userguide
 title: "Running a pipeline using Workbench"
 ...
 
-A "pipeline" (sometimes called a "workflow" in other systems) is a sequence of steps that apply various programs or tools to transform input data to output data.  Pipelines are the principal means of performing computation with Arvados.  This tutorial demonstrates how to run a single-stage pipeline to take a small data set of paired-end reads from a sample "exome":https://en.wikipedia.org/wiki/Exome in "FASTQ":https://en.wikipedia.org/wiki/FASTQ_format format and align them to "Chromosome 19":https://en.wikipedia.org/wiki/Chromosome_19_%28human%29 using the "bwa mem":http://bio-bwa.sourceforge.net/ tool, producing a "Sequence Alignment/Map (SAM)":https://samtools.github.io/ file.  This will introduce the following Arvados features:
+A "pipeline" (sometimes called a "workflow" in other systems) is a sequence of steps that apply various programs or tools to transform input data to output data.  Pipelines are the principal means of performing computation with Arvados.  This tutorial demonstrates how to run a single-stage pipeline to take a small data set of paired-end reads from a sample "exome":https://en.wikipedia.org/wiki/Exome in "FASTQ":https://en.wikipedia.org/wiki/FASTQ_format format and align them to "Chromosome 19":https://en.wikipedia.org/wiki/Chromosome_19_%28human%29 using the "bwa mem":http://bio-bwa.sourceforge.net/ tool, producing a "Sequence Alignment/Map (SAM)":https://samtools.github.io/ file.  This tutorial will introduce the following Arvados features:
 
 <div class="inside-list">
-* How to create a project.
-* How to browse available pipeline templates and create a new pipeline from an existing template.
+* How to create a new pipeline from an existing template.
 * How to browse and select input data for the pipeline and submit the pipeline to run on the Arvados cluster.
 * How to access your pipeline results.
 </div>
@@ -16,8 +15,6 @@ A "pipeline" (sometimes called a "workflow" in other systems) is a sequence of s
 notextile. <div class="spaced-out">
 
 # Start from the *Workbench Dashboard*.  You can access the Dashboard by clicking on *<i class="fa fa-lg fa-fw fa-dashboard"></i> Dashboard* in the upper left corner of any Workbench page.
-# In the *My projects* panel, click the <span class="btn btn-sm btn-primary" > <i class="fa fa-fw fa-plus"></i> Add new project</span> button.  The new project will be created immediately, and your browser opens the new project's page for you to customize it.
-# On the new project page, click on the pencil icon <i class="fa fa-fw fa-pencil"></i> next to *New project* to pop up a text box and change the project title to *Tutorial output*.  Click the <span class="btn btn-xs btn-primary" ><i class="glyphicon glyphicon-ok"></i></span> checkbox button to save the new name.
 # Click on the <span class="btn btn-sm btn-primary"><i class="fa fa-fw fa-gear"></i> Run a pipeline...</span> button.  This will open a dialog box titled *Choose a pipeline to run*.
 # Click to open the *All projects <span class="caret"></span>* menu.  Under the *Projects shared with me* header, select *<i class="fa fa-fw fa-share-alt"></i> Arvados Tutorial*.
 # Select *<i class="fa fa-fw fa-gear"></i> Tutorial align using bwa mem* and click the <span class="btn btn-sm btn-primary" >Next: choose inputs <i class="fa fa-fw fa-arrow-circle-right"></i></span> button.  This will load a new page where you will supply the inputs for the pipeline.
@@ -25,8 +22,8 @@ notextile. <div class="spaced-out">
 # Once again, open the *All projects <span class="caret"></span>* menu and select *<i class="fa fa-fw fa-share-alt"></i> Arvados Tutorial*.  Select *<i class="fa fa-fw fa-archive"></i> Tutorial chromosome 19 reference* and click the <span class="btn btn-sm btn-primary" >OK</span> button.
 # Repeat the previous two steps to set the *Input genome (fastq)* parameter to *<i class="fa fa-fw fa-archive"></i> Tutorial sample exome*.
 # Click on the <span class="btn btn-sm btn-primary" >Run <i class="fa fa-fw fa-play"></i></span> button.  The page updates to show you that the pipeline has been submitted to run on the Arvados cluster.
-# After the pipeline starts running, you can track the progress by watching log messages from jobs.  This page refreshes automatically.  You will see a <span class="label label-success">success</span> label under the *job* the column when the pipeline completes successfully.
-# Click on *<i class="fa fa-fw fa-archive"></i> Show output files* to see the results of the job.  This will load a new page listing the output files from this pipeline.  You'll see the output SAM file from the alignment tool under the *Files* tab.
+# After the pipeline starts running, you can track the progress by watching log messages from jobs.  This page refreshes automatically.  You will see a <span class="label label-success">complete</span> label under the *job* column when the pipeline completes successfully.
+# Click on the *Output* link to see the results of the job.  This will load a new page listing the output files from this pipeline.  You'll see the output SAM file from the alignment tool under the *Files* tab.
 # Click on the <span class="btn btn-sm btn-info"><i class="fa fa-download"></i></span> download button to the right of the SAM file to download your results.
 
 notextile. </div>

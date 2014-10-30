@@ -61,7 +61,7 @@ baz_file:
 multilevel_collection_1:
   uuid: zzzzz-4zz18-pyw8yp9g3pr7irn
   portable_data_hash: 1fd08fc162a5c6413070a8bd0bffc818+150
-  owner_uuid: qr1hi-tpzed-000000000000000
+  owner_uuid: zzzzz-tpzed-xurymjxw79nv3jz
   created_at: 2014-02-03T17:22:54Z
   modified_by_client_uuid: zzzzz-ozdt8-brczlopd8u8d0jr
   modified_by_user_uuid: zzzzz-tpzed-d9tiejq69daie8f
@@ -74,7 +74,7 @@ multilevel_collection_2:
   uuid: zzzzz-4zz18-45xf9hw1sxkhl6q
   # All of this collection's files are deep in subdirectories.
   portable_data_hash: 80cf6dd2cf079dd13f272ec4245cb4a8+48
-  owner_uuid: qr1hi-tpzed-000000000000000
+  owner_uuid: zzzzz-tpzed-xurymjxw79nv3jz
   created_at: 2014-02-03T17:22:54Z
   modified_by_client_uuid: zzzzz-ozdt8-brczlopd8u8d0jr
   modified_by_user_uuid: zzzzz-tpzed-d9tiejq69daie8f
@@ -266,6 +266,18 @@ collection_to_remove_from_subproject:
   owner_uuid: zzzzz-j7d0g-axqo7eu9pwvna1x
   created_at: 2014-10-15T10:45:00
   name: Collection to remove from subproject
+
+collection_with_files_in_subdir:
+  uuid: zzzzz-4zz18-filesinsubdir00
+  name: collection_files_in_subdir
+  portable_data_hash: 85877ca2d7e05498dd3d109baf2df106+95
+  owner_uuid: zzzzz-tpzed-user1withloadab
+  created_at: 2014-02-03T17:22:54Z
+  modified_by_client_uuid: zzzzz-ozdt8-brczlopd8u8d0jr
+  modified_by_user_uuid: zzzzz-tpzed-user1withloadab
+  modified_at: 2014-02-03T17:22:54Z
+  updated_at: 2014-02-03T17:22:54Z
+  manifest_text: ". 85877ca2d7e05498dd3d109baf2df106+95+A3a4e26a366ee7e4ed3e476ccf05354761be2e4ae@545a9920 0:95:file_in_subdir1\n./subdir2/subdir3 2bbc341c702df4d8f42ec31f16c10120+64+A315d7e7bad2ce937e711fc454fae2d1194d14d64@545a9920 0:32:file1_in_subdir3.txt 32:32:file2_in_subdir3.txt\n./subdir2/subdir3/subdir4 2bbc341c702df4d8f42ec31f16c10120+64+A315d7e7bad2ce937e711fc454fae2d1194d14d64@545a9920 0:32:file1_in_subdir4.txt 32:32:file2_in_subdir4.txt"
 
 # Test Helper trims the rest of the file
 

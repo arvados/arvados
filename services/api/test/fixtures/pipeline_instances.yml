@@ -155,13 +155,15 @@ pipeline_with_newer_template:
 # Do not add your fixtures below this line as the rest of this file will be trimmed by test_helper
 
 # pipelines in project_with_10_pipelines
-<% for i in 1..10 do %>
+<% for i in 0..9 do %>
 pipeline_<%=i%>_of_10:
   name: pipeline_<%= i %>
-  state: New
-  uuid: zzzzz-d1hrv-10gneyn6br1x<%= i.to_s.rjust(3, '0') %>
+  state: Failed
+  uuid: zzzzz-d1hrv-10pipelines0<%= i.to_s.rjust(3, '0') %>
   owner_uuid: zzzzz-j7d0g-000010pipelines
-  created_at: <%= i.minute.ago.to_s(:db) %>
+  created_at: <%= (2*i).hour.ago.to_s(:db) %>
+  started_at: <%= (2*i).hour.ago.to_s(:db) %>
+  finished_at: <%= i.minute.ago.to_s(:db) %>
   components:
     foo:
       script: foo
@@ -173,9 +175,9 @@ pipeline_<%=i%>_of_10:
           title: foo instance input
 <% end %>
 
-# pipelines in project_with_10_pipelines_and_200_jobs
-<% for i in 1..2 do %>
-pipeline_<%=i%>_of_10_pipelines_and_200_jobs:
+# pipelines in project_with_2_pipelines_and_100_jobs
+<% for i in 0..1 do %>
+pipeline_<%=i%>_of_2_pipelines_and_100_jobs:
   name: pipeline_<%= i %>
   state: New
   uuid: zzzzz-d1hrv-abcgneyn6brx<%= i.to_s.rjust(3, '0') %>
@@ -193,13 +195,15 @@ pipeline_<%=i%>_of_10_pipelines_and_200_jobs:
 <% end %>
 
 # pipelines in project_with_25_pipelines
-<% for i in 1..25 do %>
+<% for i in 0..24 do %>
 pipeline_<%=i%>_of_25:
   name: pipeline_<%=i%>
-  state: New
-  uuid: zzzzz-d1hrv-25xneyn6br1x<%= i.to_s.rjust(3, '0') %>
+  state: Failed
+  uuid: zzzzz-d1hrv-25pipelines0<%= i.to_s.rjust(3, '0') %>
   owner_uuid: zzzzz-j7d0g-000025pipelines
-  created_at: <%= i.minute.ago.to_s(:db) %>
+  created_at: <%= i.hour.ago.to_s(:db) %>
+  started_at: <%= i.hour.ago.to_s(:db) %>
+  finished_at: <%= i.minute.ago.to_s(:db) %>
   components:
     foo:
       script: foo

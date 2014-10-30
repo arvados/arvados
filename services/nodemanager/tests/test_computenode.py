@@ -114,6 +114,14 @@ class ComputeNodeShutdownActorTestCase(testutil.ActorTestMixin,
         self.stop_proxy(self.shutdown_actor)
         self.assertTrue(self.cloud_client.destroy_node.called)
 
+    def test_late_subscribe(self):
+        self.make_actor()
+        subscriber = mock.Mock(name='subscriber_mock')
+        self.shutdown_actor.subscribe(subscriber).get(self.TIMEOUT)
+        self.stop_proxy(self.shutdown_actor)
+        self.assertEqual(self.shutdown_actor.actor_ref.actor_urn,
+                         subscriber.call_args[0][0].actor_ref.actor_urn)
+
 
 class ComputeNodeUpdateActorTestCase(testutil.ActorTestMixin,
                                      unittest.TestCase):
@@ -178,11 +186,10 @@ class ComputeNodeMonitorActorTestCase(testutil.ActorTestMixin,
         self.node_actor = cnode.ComputeNodeMonitorActor.start(
             self.cloud_mock, start_time, self.shutdowns, self.timer,
             self.updates, arv_node).proxy()
-        self.subscription = self.node_actor.subscribe(self.subscriber)
+        self.node_actor.subscribe(self.subscriber).get(self.TIMEOUT)
 
     def test_init_shutdown_scheduling(self):
         self.make_actor()
-        self.subscription.get(self.TIMEOUT)
         self.assertTrue(self.timer.schedule.called)
         self.assertEqual(300, self.timer.schedule.call_args[0][0])
 

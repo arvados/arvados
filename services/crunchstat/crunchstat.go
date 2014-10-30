@@ -2,6 +2,8 @@ package main
 
 import (
 	"bufio"
+	"bytes"
+	"errors"
 	"flag"
 	"fmt"
 	"io"
@@ -10,10 +12,27 @@ import (
 	"os"
 	"os/exec"
 	"os/signal"
+	"strconv"
 	"strings"
 	"syscall"
 	"time"
 )
+
+/*
+#include <unistd.h>
+#include <sys/types.h>
+#include <pwd.h>
+#include <stdlib.h>
+*/
+import "C"
+
+// The above block of magic allows us to look up user_hz via _SC_CLK_TCK.
+
+type Cgroup struct {
+	root   string
+	parent string
+	cid    string
+}
 
 func CopyPipeToChan(in io.Reader, out chan string, done chan<- bool) {
 	s := bufio.NewScanner(in)
@@ -29,60 +48,277 @@ func CopyChanToPipe(in <-chan string, out io.Writer) {
 	}
 }
 
-func FindStat(cgroup_root string, cgroup_parent string, container_id string, statgroup string, stat string) string {
-	var path string
-	path = fmt.Sprintf("%s/%s/%s/%s/%s.%s", cgroup_root, statgroup, cgroup_parent, container_id, statgroup, stat)
-	if _, err := os.Stat(path); err == nil {
-		return path
+var logChan chan string
+func LogPrintf(format string, args ...interface{}) {
+	if logChan == nil {
+		return
 	}
-	path = fmt.Sprintf("%s/%s/%s/%s.%s", cgroup_root, cgroup_parent, container_id, statgroup, stat)
-	if _, err := os.Stat(path); err == nil {
-		return path
-	}
-	path = fmt.Sprintf("%s/%s/%s.%s", cgroup_root, statgroup, statgroup, stat)
-	if _, err := os.Stat(path); err == nil {
-		return path
-	}
-	path = fmt.Sprintf("%s/%s.%s", cgroup_root, statgroup, stat)
-	if _, err := os.Stat(path); err == nil {
-		return path
-	}
-	return ""
+	logChan <- fmt.Sprintf("crunchstat: " + format, args...)
 }
 
-func PollCgroupStats(cgroup_root string, cgroup_parent string, container_id string, stderr chan string, poll int64, stop_poll_chan <-chan bool) {
-	//var last_usage int64 = 0
-	var last_user int64 = -1
-	var last_sys int64 = -1
-	var last_cpucount int64 = 0
+func ReadAllOrWarn(in *os.File) ([]byte, error) {
+	content, err := ioutil.ReadAll(in)
+	if err != nil {
+		LogPrintf("read %s: %s", in.Name(), err)
+	}
+	return content, err
+}
 
-	type Disk struct {
-		last_read  int64
-		next_read  int64
-		last_write int64
-		next_write int64
+var reportedStatFile = map[string]string{}
+
+// Open the cgroup stats file in /sys/fs corresponding to the target
+// cgroup, and return an *os.File. If no stats file is available,
+// return nil.
+//
+// TODO: Instead of trying all options, choose a process in the
+// container, and read /proc/PID/cgroup to determine the appropriate
+// cgroup root for the given statgroup. (This will avoid falling back
+// to host-level stats during container setup and teardown.)
+func OpenStatFile(cgroup Cgroup, statgroup string, stat string) (*os.File, error) {
+	var paths = []string{
+		fmt.Sprintf("%s/%s/%s/%s/%s", cgroup.root, statgroup, cgroup.parent, cgroup.cid, stat),
+		fmt.Sprintf("%s/%s/%s/%s", cgroup.root, cgroup.parent, cgroup.cid, stat),
+		fmt.Sprintf("%s/%s/%s", cgroup.root, statgroup, stat),
+		fmt.Sprintf("%s/%s", cgroup.root, stat),
+	}
+	var path string
+	var file *os.File
+	var err error
+	for _, path = range paths {
+		file, err = os.Open(path)
+		if err == nil {
+			break
+		} else {
+			path = ""
+		}
+	}
+	if pathWas, ok := reportedStatFile[stat]; !ok || pathWas != path {
+		// Log whenever we start using a new/different cgroup
+		// stat file for a given statistic. This typically
+		// happens 1 to 3 times per statistic, depending on
+		// whether we happen to collect stats [a] before any
+		// processes have been created in the container and
+		// [b] after all contained processes have exited.
+		reportedStatFile[stat] = path
+		if path == "" {
+			LogPrintf("did not find stats file: stat %s, statgroup %s, cid %s, parent %s, root %s", stat, statgroup, cgroup.cid, cgroup.parent, cgroup.root)
+		} else {
+			LogPrintf("reading stats from %s", path)
+		}
+	}
+	return file, err
+}
+
+func GetContainerNetStats(cgroup Cgroup) (io.Reader, error) {
+	procsFile, err := OpenStatFile(cgroup, "cpuacct", "cgroup.procs")
+	if err != nil {
+		return nil, err
+	}
+	defer procsFile.Close()
+	reader := bufio.NewScanner(procsFile)
+	for reader.Scan() {
+		taskPid := reader.Text()
+		statsFilename := fmt.Sprintf("/proc/%s/net/dev", taskPid)
+		stats, err := ioutil.ReadFile(statsFilename)
+		if err != nil {
+			LogPrintf("read %s: %s", statsFilename, err)
+			continue
+		}
+		return strings.NewReader(string(stats)), nil
+	}
+	return nil, errors.New("Could not read stats for any proc in container")
+}
+
+type IoSample struct {
+	sampleTime time.Time
+	txBytes    int64
+	rxBytes    int64
+}
+
+func DoBlkIoStats(cgroup Cgroup, lastSample map[string]IoSample) {
+	c, err := OpenStatFile(cgroup, "blkio", "blkio.io_service_bytes")
+	if err != nil {
+		return
+	}
+	defer c.Close()
+	b := bufio.NewScanner(c)
+	var sampleTime = time.Now()
+	newSamples := make(map[string]IoSample)
+	for b.Scan() {
+		var device, op string
+		var val int64
+		if _, err := fmt.Sscanf(string(b.Text()), "%s %s %d", &device, &op, &val); err != nil {
+			continue
+		}
+		var thisSample IoSample
+		var ok bool
+		if thisSample, ok = newSamples[device]; !ok {
+			thisSample = IoSample{sampleTime, -1, -1}
+		}
+		switch op {
+		case "Read":
+			thisSample.rxBytes = val
+		case "Write":
+			thisSample.txBytes = val
+		}
+		newSamples[device] = thisSample
+	}
+	for dev, sample := range newSamples {
+		if sample.txBytes < 0 || sample.rxBytes < 0 {
+			continue
+		}
+		delta := ""
+		if prev, ok := lastSample[dev]; ok {
+			delta = fmt.Sprintf(" -- interval %.4f seconds %d write %d read",
+				sample.sampleTime.Sub(prev.sampleTime).Seconds(),
+				sample.txBytes-prev.txBytes,
+				sample.rxBytes-prev.rxBytes)
+		}
+		LogPrintf("blkio:%s %d write %d read%s", dev, sample.txBytes, sample.rxBytes, delta)
+		lastSample[dev] = sample
+	}
+}
+
+type MemSample struct {
+	sampleTime time.Time
+	memStat    map[string]int64
+}
+
+func DoMemoryStats(cgroup Cgroup) {
+	c, err := OpenStatFile(cgroup, "memory", "memory.stat")
+	if err != nil {
+		return
+	}
+	defer c.Close()
+	b := bufio.NewScanner(c)
+	thisSample := MemSample{time.Now(), make(map[string]int64)}
+	wantStats := [...]string{"cache", "swap", "pgmajfault", "rss"}
+	for b.Scan() {
+		var stat string
+		var val int64
+		if _, err := fmt.Sscanf(string(b.Text()), "%s %d", &stat, &val); err != nil {
+			continue
+		}
+		thisSample.memStat[stat] = val
+	}
+	var outstat bytes.Buffer
+	for _, key := range wantStats {
+		if val, ok := thisSample.memStat[key]; ok {
+			outstat.WriteString(fmt.Sprintf(" %d %s", val, key))
+		}
+	}
+	LogPrintf("mem%s", outstat.String())
+}
+
+func DoNetworkStats(cgroup Cgroup, lastSample map[string]IoSample) {
+	sampleTime := time.Now()
+	stats, err := GetContainerNetStats(cgroup)
+	if err != nil {
+		return
 	}
 
-	disk := make(map[string]*Disk)
+	scanner := bufio.NewScanner(stats)
+	for scanner.Scan() {
+		var ifName string
+		var rx, tx int64
+		words := strings.Fields(scanner.Text())
+		if len(words) != 17 {
+			// Skip lines with wrong format
+			continue
+		}
+		ifName = strings.TrimRight(words[0], ":")
+		if ifName == "lo" || ifName == "" {
+			// Skip loopback interface and lines with wrong format
+			continue
+		}
+		if tx, err = strconv.ParseInt(words[9], 10, 64); err != nil {
+			continue
+		}
+		if rx, err = strconv.ParseInt(words[1], 10, 64); err != nil {
+			continue
+		}
+		nextSample := IoSample{}
+		nextSample.sampleTime = sampleTime
+		nextSample.txBytes = tx
+		nextSample.rxBytes = rx
+		var delta string
+		if prev, ok := lastSample[ifName]; ok {
+			interval := nextSample.sampleTime.Sub(prev.sampleTime).Seconds()
+			delta = fmt.Sprintf(" -- interval %.4f seconds %d tx %d rx",
+				interval,
+				tx-prev.txBytes,
+				rx-prev.rxBytes)
+		}
+		LogPrintf("net:%s %d tx %d rx%s", ifName, tx, rx, delta)
+		lastSample[ifName] = nextSample
+	}
+}
 
-	//cpuacct_usage := FindStat(cgroup_path, "cpuacct", "usage")
-	cpuacct_stat := FindStat(cgroup_root, cgroup_parent, container_id, "cpuacct", "stat")
-	blkio_io_service_bytes := FindStat(cgroup_root, cgroup_parent, container_id, "blkio", "io_service_bytes")
-	cpuset_cpus := FindStat(cgroup_root, cgroup_parent, container_id, "cpuset", "cpus")
-	memory_stat := FindStat(cgroup_root, cgroup_parent, container_id, "memory", "stat")
+type CpuSample struct {
+	hasData    bool // to distinguish the zero value from real data
+	sampleTime time.Time
+	user       float64
+	sys        float64
+	cpus       int64
+}
 
-	if cpuacct_stat != "" {
-		stderr <- fmt.Sprintf("crunchstat: reading stats from %s", cpuacct_stat)
+// Return the number of CPUs available in the container. Return 0 if
+// we can't figure out the real number of CPUs.
+func GetCpuCount(cgroup Cgroup) int64 {
+	cpusetFile, err := OpenStatFile(cgroup, "cpuset", "cpuset.cpus")
+	if err != nil {
+		return 0
 	}
-	if blkio_io_service_bytes != "" {
-		stderr <- fmt.Sprintf("crunchstat: reading stats from %s", blkio_io_service_bytes)
+	defer cpusetFile.Close()
+	b, err := ReadAllOrWarn(cpusetFile)
+	sp := strings.Split(string(b), ",")
+	cpus := int64(0)
+	for _, v := range sp {
+		var min, max int64
+		n, _ := fmt.Sscanf(v, "%d-%d", &min, &max)
+		if n == 2 {
+			cpus += (max - min) + 1
+		} else {
+			cpus += 1
+		}
 	}
-	if cpuset_cpus != "" {
-		stderr <- fmt.Sprintf("crunchstat: reading stats from %s", cpuset_cpus)
+	return cpus
+}
+
+func DoCpuStats(cgroup Cgroup, lastSample *CpuSample) {
+	statFile, err := OpenStatFile(cgroup, "cpuacct", "cpuacct.stat")
+	if err != nil {
+		return
 	}
-	if memory_stat != "" {
-		stderr <- fmt.Sprintf("crunchstat: reading stats from %s", memory_stat)
+	defer statFile.Close()
+	b, err := ReadAllOrWarn(statFile)
+	if err != nil {
+		return
 	}
+
+	nextSample := CpuSample{true, time.Now(), 0, 0, GetCpuCount(cgroup)}
+	var userTicks, sysTicks int64
+	fmt.Sscanf(string(b), "user %d\nsystem %d", &userTicks, &sysTicks)
+	user_hz := float64(C.sysconf(C._SC_CLK_TCK))
+	nextSample.user = float64(userTicks) / user_hz
+	nextSample.sys = float64(sysTicks) / user_hz
+
+	delta := ""
+	if lastSample.hasData {
+		delta = fmt.Sprintf(" -- interval %.4f seconds %.4f user %.4f sys",
+			nextSample.sampleTime.Sub(lastSample.sampleTime).Seconds(),
+			nextSample.user-lastSample.user,
+			nextSample.sys-lastSample.sys)
+	}
+	LogPrintf("cpu %.4f user %.4f sys %d cpus%s",
+		nextSample.user, nextSample.sys, nextSample.cpus, delta)
+	*lastSample = nextSample
+}
+
+func PollCgroupStats(cgroup Cgroup, poll int64, stop_poll_chan <-chan bool) {
+	var lastNetSample = map[string]IoSample{}
+	var lastDiskSample = map[string]IoSample{}
+	var lastCpuSample = CpuSample{}
 
 	poll_chan := make(chan bool, 1)
 	go func() {
@@ -94,152 +330,16 @@ func PollCgroupStats(cgroup_root string, cgroup_parent string, container_id stri
 		}
 	}()
 	for {
-		bedtime := time.Now()
 		select {
 		case <-stop_poll_chan:
 			return
 		case <-poll_chan:
 			// Emit stats, then select again.
 		}
-		morning := time.Now()
-		elapsed := morning.Sub(bedtime).Nanoseconds() / int64(time.Millisecond)
-		/*{
-			c, _ := os.Open(cpuacct_usage)
-			b, _ := ioutil.ReadAll(c)
-			var next int64
-			fmt.Sscanf(string(b), "%d", &next)
-			if last_usage != 0 {
-				stderr <- fmt.Sprintf("crunchstat: cpuacct.usage %v", (next-last_usage)/10000000)
-			}
-			//fmt.Printf("usage %d %d %d %d%%\n", last_usage, next, next-last_usage, (next-last_usage)/10000000)
-			last_usage = next
-			c.Close()
-		}*/
-		var cpus int64 = 0
-		if cpuset_cpus != "" {
-			c, err := os.Open(cpuset_cpus)
-			if err != nil {
-				stderr <- fmt.Sprintf("open %s: %s", cpuset_cpus, err)
-				// cgroup probably gone -- skip other stats too.
-				continue
-			}
-			b, _ := ioutil.ReadAll(c)
-			sp := strings.Split(string(b), ",")
-			for _, v := range sp {
-				var min, max int64
-				n, _ := fmt.Sscanf(v, "%d-%d", &min, &max)
-				if n == 2 {
-					cpus += (max - min) + 1
-				} else {
-					cpus += 1
-				}
-			}
-
-			if cpus != last_cpucount {
-				stderr <- fmt.Sprintf("crunchstat: cpuset.cpus %v", cpus)
-			}
-			last_cpucount = cpus
-
-			c.Close()
-		}
-		if cpus == 0 {
-			cpus = 1
-		}
-		if cpuacct_stat != "" {
-			c, err := os.Open(cpuacct_stat)
-			if err != nil {
-				stderr <- fmt.Sprintf("open %s: %s", cpuacct_stat, err)
-				// Next time around, last_user would
-				// be >1 interval old, so stats will
-				// be incorrect. Start over instead.
-				last_user = -1
-
-				// cgroup probably gone -- skip other stats too.
-				continue
-			}
-			b, _ := ioutil.ReadAll(c)
-			var next_user int64
-			var next_sys int64
-			fmt.Sscanf(string(b), "user %d\nsystem %d", &next_user, &next_sys)
-			c.Close()
-
-			if elapsed > 0 && last_user != -1 {
-				user_diff := next_user - last_user
-				sys_diff := next_sys - last_sys
-				// Assume we're reading stats based on 100
-				// jiffies per second.  Because the elapsed
-				// time is in milliseconds, we need to boost
-				// that to 1000 jiffies per second, then boost
-				// it by another 100x to get a percentage, then
-				// finally divide by the actual elapsed time
-				// and the number of cpus to get average load
-				// over the polling period.
-				user_pct := (user_diff * 10 * 100) / (elapsed * cpus)
-				sys_pct := (sys_diff * 10 * 100) / (elapsed * cpus)
-
-				stderr <- fmt.Sprintf("crunchstat: cpuacct.stat user %v", user_pct)
-				stderr <- fmt.Sprintf("crunchstat: cpuacct.stat sys %v", sys_pct)
-			}
-
-			/*fmt.Printf("user %d %d %d%%\n", last_user, next_user, next_user-last_user)
-			fmt.Printf("sys %d %d %d%%\n", last_sys, next_sys, next_sys-last_sys)
-			fmt.Printf("sum %d%%\n", (next_user-last_user)+(next_sys-last_sys))*/
-			last_user = next_user
-			last_sys = next_sys
-		}
-		if blkio_io_service_bytes != "" {
-			c, err := os.Open(blkio_io_service_bytes)
-			if err != nil {
-				stderr <- fmt.Sprintf("open %s: %s", blkio_io_service_bytes, err)
-				// cgroup probably gone -- skip other stats too.
-				continue
-			}
-			b := bufio.NewScanner(c)
-			var device, op string
-			var next int64
-			for b.Scan() {
-				if _, err := fmt.Sscanf(string(b.Text()), "%s %s %d", &device, &op, &next); err == nil {
-					if disk[device] == nil {
-						disk[device] = new(Disk)
-					}
-					if op == "Read" {
-						disk[device].last_read = disk[device].next_read
-						disk[device].next_read = next
-						if disk[device].last_read > 0 && (disk[device].next_read != disk[device].last_read) {
-							stderr <- fmt.Sprintf("crunchstat: blkio.io_service_bytes %s read %v", device, disk[device].next_read-disk[device].last_read)
-						}
-					}
-					if op == "Write" {
-						disk[device].last_write = disk[device].next_write
-						disk[device].next_write = next
-						if disk[device].last_write > 0 && (disk[device].next_write != disk[device].last_write) {
-							stderr <- fmt.Sprintf("crunchstat: blkio.io_service_bytes %s write %v", device, disk[device].next_write-disk[device].last_write)
-						}
-					}
-				}
-			}
-			c.Close()
-		}
-
-		if memory_stat != "" {
-			c, err := os.Open(memory_stat)
-			if err != nil {
-				stderr <- fmt.Sprintf("open %s: %s", memory_stat, err)
-				// cgroup probably gone -- skip other stats too.
-				continue
-			}
-			b := bufio.NewScanner(c)
-			var stat string
-			var val int64
-			for b.Scan() {
-				if _, err := fmt.Sscanf(string(b.Text()), "%s %d", &stat, &val); err == nil {
-					if stat == "rss" {
-						stderr <- fmt.Sprintf("crunchstat: memory.stat rss %v", val)
-					}
-				}
-			}
-			c.Close()
-		}
+		DoMemoryStats(cgroup)
+		DoCpuStats(cgroup, &lastCpuSample)
+		DoBlkIoStats(cgroup, lastDiskSample)
+		DoNetworkStats(cgroup, lastNetSample)
 	}
 }
 
@@ -265,12 +365,12 @@ func run(logger *log.Logger) error {
 		logger.Fatal("Must provide -cgroup-root")
 	}
 
-	stderr_chan := make(chan string, 1)
-	defer close(stderr_chan)
+	logChan = make(chan string, 1)
+	defer close(logChan)
 	finish_chan := make(chan bool)
 	defer close(finish_chan)
 
-	go CopyChanToPipe(stderr_chan, os.Stderr)
+	go CopyChanToPipe(logChan, os.Stderr)
 
 	var cmd *exec.Cmd
 
@@ -302,7 +402,7 @@ func run(logger *log.Logger) error {
 		if err != nil {
 			logger.Fatal(err)
 		}
-		go CopyPipeToChan(stderr_pipe, stderr_chan, finish_chan)
+		go CopyPipeToChan(stderr_pipe, logChan, finish_chan)
 
 		// Run subprocess
 		if err := cmd.Start(); err != nil {
@@ -321,15 +421,11 @@ func run(logger *log.Logger) error {
 		ok := false
 		var i time.Duration
 		for i = 0; i < time.Duration(wait)*time.Second; i += (100 * time.Millisecond) {
-			f, err := os.Open(cgroup_cidfile)
-			if err == nil {
-				defer f.Close()
-				cid, err2 := ioutil.ReadAll(f)
-				if err2 == nil && len(cid) > 0 {
-					ok = true
-					container_id = string(cid)
-					break
-				}
+			cid, err := ioutil.ReadFile(cgroup_cidfile)
+			if err == nil && len(cid) > 0 {
+				ok = true
+				container_id = string(cid)
+				break
 			}
 			time.Sleep(100 * time.Millisecond)
 		}
@@ -339,7 +435,8 @@ func run(logger *log.Logger) error {
 	}
 
 	stop_poll_chan := make(chan bool, 1)
-	go PollCgroupStats(cgroup_root, cgroup_parent, container_id, stderr_chan, poll, stop_poll_chan)
+	cgroup := Cgroup{cgroup_root, cgroup_parent, container_id}
+	go PollCgroupStats(cgroup, poll, stop_poll_chan)
 
 	// When the child exits, tell the polling goroutine to stop.
 	defer func() { stop_poll_chan <- true }()

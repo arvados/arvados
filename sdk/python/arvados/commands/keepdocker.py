@@ -165,9 +165,25 @@ def ptimestamp(t):
         t = s[0] + s[1][-1:]
     return datetime.datetime.strptime(t, "%Y-%m-%dT%H:%M:%SZ")
 
-def list_images_in_arv(api_client, num_retries):
+def list_images_in_arv(api_client, num_retries, image_name=None, image_tag=None):
+    """List all Docker images known to the api_client with image_name and
+    image_tag.  If no image_name is given, defaults to listing all
+    Docker images.
+
+    Returns a list of tuples representing matching Docker images,
+    sorted in preference order (i.e. the first collection in the list
+    is the one that the API server would use). Each tuple is a
+    (collection_uuid, collection_info) pair, where collection_info is
+    a dict with fields "dockerhash", "repo", "tag", and "timestamp".
+
+    """
+    docker_image_filters = [['link_class', 'in', ['docker_image_hash', 'docker_image_repo+tag']]]
+    if image_name:
+        image_link_name = "{}:{}".format(image_name, image_tag or 'latest')
+        docker_image_filters.append(['name', '=', image_link_name])
+
     existing_links = api_client.links().list(
-        filters=[['link_class', 'in', ['docker_image_hash', 'docker_image_repo+tag']]]
+        filters=docker_image_filters
         ).execute(num_retries=num_retries)['items']
     images = {}
     for link in existing_links:
@@ -192,19 +208,18 @@ def list_images_in_arv(api_client, num_retries):
         else:
             images[collection_uuid]["timestamp"] = ptimestamp(link["created_at"])
 
-    st = sorted(images.items(), lambda a, b: cmp(b[1]["timestamp"], a[1]["timestamp"]))
+    return sorted(images.items(), lambda a, b: cmp(b[1]["timestamp"], a[1]["timestamp"]))
 
-    fmt = "{:30}  {:10}  {:12}  {:29}  {:20}"
-    print fmt.format("REPOSITORY", "TAG", "IMAGE ID", "COLLECTION", "CREATED")
-    for i, j in st:
-        print(fmt.format(j["repo"], j["tag"], j["dockerhash"][0:12], i, j["timestamp"].strftime("%c")))
 
 def main(arguments=None):
     args = arg_parser.parse_args(arguments)
     api = arvados.api('v1')
 
     if args.image is None or args.image == 'images':
-        list_images_in_arv(api, args.retries)
+        fmt = "{:30}  {:10}  {:12}  {:29}  {:20}"
+        print fmt.format("REPOSITORY", "TAG", "IMAGE ID", "COLLECTION", "CREATED")
+        for i, j in list_images_in_arv(api, args.retries):
+            print(fmt.format(j["repo"], j["tag"], j["dockerhash"][0:12], i, j["timestamp"].strftime("%c")))
         sys.exit(0)
 
     # Pull the image if requested, unless the image is specified as a hash

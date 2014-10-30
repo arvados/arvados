@@ -150,7 +150,7 @@ class ActionsController < ApplicationController
     files.each do |m|
       mt = chash[m[1]+m[2]].andand.manifest_text
       if not m[4].nil? and m[4].size > 1
-        combined += arv_normalize mt, '--extract', m[4][1..-1]
+        combined += arv_normalize mt, '--extract', ".#{m[4]}"
       else
         combined += mt
       end
