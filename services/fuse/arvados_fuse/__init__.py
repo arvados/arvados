@@ -314,7 +314,7 @@ class CollectionDirectory(Directory):
         self.clear()
         collection = arvados.CollectionReader(
             self.collection_object["manifest_text"], self.api,
-            self.api.localkeep(), num_retries=self.num_retries)
+            self.api.localkeep(), num_retries=self.num_retries).normalize()
         for s in collection.all_streams():
             cwd = self
             for part in s.name().split('/'):
