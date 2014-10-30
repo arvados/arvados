@@ -1796,10 +1796,11 @@ sub shell_or_die
     print STDERR "@_\n";
   }
   if (system (@_) != 0) {
+    my $err = $!;
     my $exitstatus = sprintf("exit %d signal %d", $? >> 8, $? & 0x7f);
     open STDERR, ">&STDERR_ORIG";
     system ("cat $destdir.log >&2");
-    die "@_ failed: $exitstatus";
+    die "@_ failed ($err): $exitstatus";
   }
 }
 
