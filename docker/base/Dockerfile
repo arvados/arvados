@@ -10,8 +10,11 @@ ENV DEBIAN_FRONTEND noninteractive
 #   * git, curl, rvm
 #   * Arvados source code in /usr/src/arvados, for preseeding gem installation
 
-RUN apt-get update && \
-    apt-get -q -y install -q -y openssh-server apt-utils git curl \
+ADD apt.arvados.org.list /etc/apt/sources.list.d/
+RUN apt-key adv --keyserver pool.sks-keyservers.net --recv 1078ECD7
+RUN apt-get update -qq
+
+RUN apt-get install -qqy openssh-server apt-utils git curl \
              libcurl3 libcurl3-gnutls libcurl4-openssl-dev locales \
              postgresql-server-dev-9.1 && \
     /bin/mkdir -p /root/.ssh && \
@@ -22,9 +25,7 @@ RUN apt-get update && \
     /usr/local/rvm/bin/rvm alias create default ruby && \
     /bin/mkdir -p /usr/src/arvados
 
-ADD apt.arvados.org.list /etc/apt/sources.list.d/
-RUN apt-key adv --keyserver pool.sks-keyservers.net --recv 1078ECD7
-RUN apt-get update && apt-get -qqy install python-arvados-python-client
+RUN apt-get install -qqy python-arvados-python-client
 
 ADD generated/arvados.tar.gz /usr/src/arvados/
 
