@@ -739,10 +739,11 @@ for (my $todo_ptr = 0; $todo_ptr <= $#jobstep_todo; $todo_ptr ++)
       $command .= "--volume=\Q$ENV{CRUNCH_SRC}:$ENV{CRUNCH_SRC}:ro\E ";
       $command .= "--volume=\Q$ENV{CRUNCH_INSTALL}:$ENV{CRUNCH_INSTALL}:ro\E ";
 
-      # For some reason we make arv-mount's mount point appear at
-      # /keep inside the container, instead of using the same path as
-      # the host and expecting the task to pay attention to
-      # $TASK_KEEPMOUNT like we do with everything else.
+      # Currently, we make arv-mount's mount point appear at /keep
+      # inside the container (instead of using the same path as the
+      # host like we do with CRUNCH_SRC and CRUNCH_INSTALL). However,
+      # crunch scripts and utilities must not rely on this. They must
+      # use $TASK_KEEPMOUNT.
       $command .= "--volume=\Q$ENV{TASK_KEEPMOUNT}:/keep:ro\E ";
       $ENV{TASK_KEEPMOUNT} = "/keep";
 
