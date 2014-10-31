@@ -92,6 +92,12 @@ def statfile(prefix, fn):
             else:
                 # trim leading '/' for path prefix test later
                 return UploadFile(prefix, absfn[1:])
+        if stat.S_ISDIR(st.st_mode):
+            sp = os.path.split(absfn)
+            (pdh, branch) = is_in_collection(sp[0], sp[1])
+            if pdh:
+                return ArvFile(prefix, "$(dir %s/%s/)" % (pdh, branch))
+
     return prefix+fn
 
 def main(arguments=None):
@@ -208,7 +214,7 @@ def main(arguments=None):
         print("Upload local files: \"%s\"" % '" "'.join([c.fn for c in files]))
 
         if args.dry_run:
-            print("cd %s" % pathprefix)
+            print("$(input) is %s" % pathprefix.rstrip('/'))
             pdh = "$(input)"
         else:
             files = sorted(files, key=lambda x: x.fn)
