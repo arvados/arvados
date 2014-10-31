@@ -201,7 +201,7 @@ $(document).
                 if( hasHTML5History() && history.state !== undefined && history.state !== null && history.state.order !== undefined && history.state.order[tabId] !== undefined ) {
                     // we will use the list of one or more table columns associated with this header to find the right element
                     // see sortable_columns as it is passed to render_pane in the various tab .erbs (e.g. _show_jobs_and_pipelines.html.erb)
-                    var strippedColumns = history.state.order[tabId].replace(/\s|asc|desc/g,'');
+                    var strippedColumns = history.state.order[tabId].replace(/\s|\basc\b|\bdesc\b/g,'');
                     var sortDirection = history.state.order[tabId].split(" ")[1].replace(/,/,'');
                     $columnHeader = $(this).closest('table').find('[data-sort-order="'+ strippedColumns +'"]');
                     setColumnSort( $(this), $columnHeader, sortDirection );
