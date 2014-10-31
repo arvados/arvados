@@ -20,7 +20,7 @@
         <% _running_pipelines = running_pipelines %>
         <% lookup = preload_objects_for_dataclass PipelineTemplate, (_running_pipelines.map(&:pipeline_template_uuid)) %>
 
-        <div class="panel-body">
+        <div class="panel-body arv-dashboard-running-pipelines">
           <% if _running_pipelines.empty? %>
             No pipelines are currently running.
           <% else %>
@@ -119,7 +119,7 @@
             <% end %>
           </span>
         </div>
-        <div class="panel-body">
+        <div class="panel-body arv-dashboard-recent-collections">
           <% r = recent_collections(8) %>
           <% r[:collections].each do |p| %>
             <div class="dashboard-panel-info-row">
