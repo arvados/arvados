@@ -101,8 +101,8 @@ class Arvados::V1::GroupsController < ApplicationController
       if request_order
         @objects = @objects.order(request_order)
       else
-        # default to UUID, ignoring any currently requested ordering because it doesn't apply to this klass
-        @objects = @objects.order("#{klass.table_name}.uuid")
+        # default to created_at desc, ignoring any currently requested ordering because it doesn't apply to this klass
+        @objects = @objects.order("#{klass.table_name}.created_at desc")
       end
 
       @limit = limit_all - all_objects.count

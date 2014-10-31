@@ -175,9 +175,9 @@ pipeline_<%=i%>_of_10:
           title: foo instance input
 <% end %>
 
-# pipelines in project_with_2_pipelines_and_200_jobs
+# pipelines in project_with_2_pipelines_and_100_jobs
 <% for i in 0..1 do %>
-pipeline_<%=i%>_of_2_pipelines_and_200_jobs:
+pipeline_<%=i%>_of_2_pipelines_and_100_jobs:
   name: pipeline_<%= i %>
   state: New
   uuid: zzzzz-d1hrv-abcgneyn6brx<%= i.to_s.rjust(3, '0') %>
