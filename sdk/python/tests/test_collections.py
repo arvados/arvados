@@ -668,6 +668,9 @@ class CollectionTestMixin(object):
     DEFAULT_DATA_HASH = DEFAULT_COLLECTION['portable_data_hash']
     DEFAULT_MANIFEST = DEFAULT_COLLECTION['manifest_text']
     DEFAULT_UUID = DEFAULT_COLLECTION['uuid']
+    ALT_COLLECTION = API_COLLECTIONS['bar_file']
+    ALT_DATA_HASH = ALT_COLLECTION['portable_data_hash']
+    ALT_MANIFEST = ALT_COLLECTION['manifest_text']
 
     def _mock_api_call(self, mock_method, code, body):
         mock_method = mock_method().execute
@@ -747,11 +750,11 @@ class CollectionReaderTestCase(unittest.TestCase, CollectionTestMixin):
         # To verify that CollectionReader tries Keep first here, we
         # mock API server to return the wrong data.
         client = self.api_client_mock(200)
-        with tutil.mock_responses(self.DEFAULT_MANIFEST, 200):
+        with tutil.mock_responses(self.ALT_MANIFEST, 200):
             self.assertEqual(
-                self.DEFAULT_MANIFEST,
+                self.ALT_MANIFEST,
                 arvados.CollectionReader(
-                    self.DEFAULT_DATA_HASH + '+Affffffffffffffffffffffffffffffffffffffff@fedcba98',
+                    self.ALT_DATA_HASH + '+Affffffffffffffffffffffffffffffffffffffff@fedcba98',
                     api_client=client).manifest_text())
 
     def test_init_num_retries_propagated(self):
