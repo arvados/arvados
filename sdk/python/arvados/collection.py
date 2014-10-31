@@ -63,7 +63,7 @@ def normalize_stream(s, stream):
         if current_span != None:
             stream_tokens.append("{0}:{1}:{2}".format(current_span[0], current_span[1] - current_span[0], fout))
 
-        if len(stream[f]) == 0:
+        if not stream[f]:
             stream_tokens.append("0:0:{0}".format(fout))
 
     return stream_tokens
@@ -92,7 +92,7 @@ class CollectionBase(object):
         clean = ''
         for line in raw.split("\n"):
             fields = line.split()
-            if len(fields) > 0:
+            if fields:
                 locators = [ (re.sub(r'\+[^\d][^\+]*', '', x) if re.match(util.keep_locator_pattern, x) else x)
                              for x in fields[1:-1] ]
                 clean += fields[0] + ' ' + ' '.join(locators) + ' ' + fields[-1] + "\n"
@@ -348,7 +348,7 @@ class CollectionWriter(CollectionBase):
         make_dirents = (util.listdir_recursive if (max_manifest_depth == 0)
                         else os.listdir)
         d = make_dirents(path)
-        if len(d) > 0:
+        if d:
             self._queue_dirents(stream_name, d)
         else:
             self._queued_trees.popleft()
