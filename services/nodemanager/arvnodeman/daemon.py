@@ -187,20 +187,27 @@ class NodeManagerDaemonActor(actor_class):
                     self._pair_nodes(cloud_rec, arv_node)
                     break
 
-    def _node_count(self):
+    def _nodes_up(self):
         up = sum(len(nodelist) for nodelist in
                  [self.cloud_nodes, self.booted, self.booting])
         return up - len(self.shutdowns)
 
+    def _nodes_busy(self):
+        return sum(1 for idle in
+                   pykka.get_all(rec.actor.in_state('idle') for rec in
+                                 self.cloud_nodes.nodes.itervalues())
+                   if idle is False)
+
     def _nodes_wanted(self):
-        return len(self.last_wishlist) - self._node_count()
+        return min(len(self.last_wishlist) + self._nodes_busy(),
+                   self.max_nodes) - self._nodes_up()
 
     def _nodes_excess(self):
-        return -self._nodes_wanted()
+        return self._nodes_up() - self._nodes_busy() - len(self.last_wishlist)
 
     def update_server_wishlist(self, wishlist):
         self._update_poll_time('server_wishlist')
-        self.last_wishlist = wishlist[:self.max_nodes]
+        self.last_wishlist = wishlist
         nodes_wanted = self._nodes_wanted()
         if nodes_wanted > 0:
             self._later.start_node()
