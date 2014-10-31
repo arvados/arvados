@@ -23,27 +23,32 @@ $(document).on('shown.bs.tab', '[data-toggle="tab"]', function(event) {
 });
 
 // Ask a refreshable pane to reload via ajax.
-// Target of this event is the anchoring element that manages the pane.
 //
-// Panes can be in one of three primary states, managed by setting CSS classes
-// on the object: not loaded (no pane-* state classes), pane-loading, pane-loaded
+// Target of this event is the anchor element that manages the pane.  A reload
+// consists of an AJAX call to load the "data-pane-content-url" and replace the
+// contents of the DOM node pointed to by "href".
 //
-// not loaded means the pane needs to be loaded when the pane becomes active
+// There are four CSS classes set on the object to indicate its state:
+// pane-loading, pane-stale, pane-loaded, pane-reload-pending
 //
-// pane-loading means there is a current AJAX call outstanding to reload the pane
+// There are five states based on the presence or absence of css classes:
 //
-// pane-loaded means the pane is believe to be up to date
+// 1. no pane-* states means the pane must be loaded when the pane becomes active
 //
-// There are two additional states: pane-stale and pane-reload-pending
+// 2. "pane-loading" means an AJAX call has been made to reload the pane and we are
+// waiting on a result
 //
-// pane-stale indicates a pane that is already loading has been invalidated and
-// should schedule a reload immediately when the current load completes.  (This
-// happens if there are clusters of events, where the reload is trigged by the
-// first event, but we actually want to display the state after the final event
-// has been processed.)
+// 3. "pane-loading pane-stale" indicates a pane that is already loading has
+// been invalidated and should schedule a reload immediately when the current
+// load completes.  (This happens when there is a cluster of events, where the
+// reload is triggered by the first event, but we want ensure that we
+// eventually load the final quiescent state).
 //
-// pane-reload-pending indicates a reload is scheduled, to suppress
-// scheduling any additional reloads.
+// 4. "pane-loaded" means the pane is up to date
+//
+// 5. "pane-loaded pane-reload-pending" indicates a reload is scheduled (but has
+// not started yet), suppressing scheduling of any further reloads.
+//
 $(document).on('arv:pane:reload', function(e) {
     e.stopPropagation();
 
@@ -96,7 +101,7 @@ $(document).on('arv:pane:reload', function(e) {
             done(function(data, status, jqxhr) {
                 // Preserve collapsed state
                 var collapsable = {};
-                $(".collapse", $(this)).each(function(i, c) {
+                $(".collapse", this).each(function(i, c) {
                     collapsable[c.id] = $(c).hasClass('in');
                 });
                 var tmp = $(data);
@@ -107,11 +112,11 @@ $(document).on('arv:pane:reload', function(e) {
                         $(c).removeClass('in');
                     }
                 });
-                $(this).html(tmp);
+                this.html(tmp);
                 $anchor.removeClass('pane-loading');
                 $anchor.addClass('pane-loaded');
                 $anchor.attr('data-loaded-at', (new Date()).getTime());
-                $(this).trigger('arv:pane:loaded');
+                this.trigger('arv:pane:loaded');
 
                 if ($anchor.hasClass('pane-stale')) {
                     $anchor.trigger('arv:pane:reload');
@@ -133,12 +138,12 @@ $(document).on('arv:pane:reload', function(e) {
                         replace(/</g, '&lt;').
                         replace(/>/g, '&gt;');
                 }
-                $(this).html('<div><p>' +
+                this.html('<div><p>' +
                         '<a href="#" class="btn btn-primary tab_reload">' +
                         '<i class="fa fa-fw fa-refresh"></i> ' +
                         'Reload tab</a></p><iframe style="width: 100%"></iframe></div>');
-                $('.tab_reload', $(this)).click(function() {
-                    $(this).html('<div class="spinner spinner-32px spinner-h-center"></div>');
+                $('.tab_reload', this).click(function() {
+                    this.html('<div class="spinner spinner-32px spinner-h-center"></div>');
                     $anchor.trigger('arv:pane:reload');
                 });
                 // We want to render the error in an iframe, in order to
@@ -146,11 +151,12 @@ $(document).on('arv:pane:reload', function(e) {
                 // In order to do that dynamically, we have to set a
                 // timeout on the iframe window to load our HTML *after*
                 // the default source (e.g., about:blank) has loaded.
-                var iframe = $('iframe', $(this))[0];
+                var iframe = $('iframe', this)[0];
                 iframe.contentWindow.setTimeout(function() {
                     $('body', iframe.contentDocument).html(errhtml);
                     iframe.height = iframe.contentDocument.body.scrollHeight + "px";
                 }, 1);
+                $anchor.removeClass('pane-loading');
                 $anchor.addClass('pane-loaded');
             });
     } else {

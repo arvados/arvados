@@ -128,11 +128,6 @@ class ApiServerForTests
 
   def find_server_pid
     pid = nil
-    @pidfile = if @websocket
-                 WEBSOCKET_PID_PATH
-               else
-                 SERVER_PID_PATH
-               end
     begin
       pid = IO.read(@pidfile).to_i
       $stderr.puts "API server is running, pid #{pid.inspect}"
@@ -148,6 +143,12 @@ class ApiServerForTests
 
     @websocket = args.include?("--websockets")
 
+    @pidfile = if @websocket
+                 WEBSOCKET_PID_PATH
+               else
+                 SERVER_PID_PATH
+               end
+
     # Kill server left over from previous test run
     self.kill_server
 
@@ -156,13 +157,13 @@ class ApiServerForTests
       ENV["NO_COVERAGE_TEST"] = "1"
       if @websocket
         _system('bundle', 'exec', 'passenger', 'start', '-d', '-p3333',
-                '--pid-file', WEBSOCKET_PID_PATH)
+                '--pid-file', @pidfile)
       else
         make_ssl_cert
         _system('bundle', 'exec', 'rake', 'db:test:load')
         _system('bundle', 'exec', 'rake', 'db:fixtures:load')
         _system('bundle', 'exec', 'passenger', 'start', '-d', '-p3000',
-                '--pid-file', SERVER_PID_PATH,
+                '--pid-file', @pidfile,
                 '--ssl',
                 '--ssl-certificate', 'self-signed.pem',
                 '--ssl-certificate-key', 'self-signed.key')
