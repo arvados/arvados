@@ -12,6 +12,11 @@ import pykka
 from ..clientactor import _notify_subscribers
 from .. import config
 
+# Node states - mostly matching SLURM states
+UNKNOWN = 0
+IDLE = 50
+ALLOC = 100
+
 def arvados_node_fqdn(arvados_node, default_hostname='dynamic.compute'):
     hostname = arvados_node.get('hostname') or default_hostname
     return '{}.{}'.format(hostname, arvados_node['domain'])
@@ -347,14 +352,27 @@ class ComputeNodeMonitorActor(config.actor_class):
         self._last_log = msg
         self._logger.debug(msg, *args)
 
-    def _shutdown_eligible(self):
-        if self.arvados_node is None:
-            return timestamp_fresh(self.cloud_node_start_time,
-                                   self.node_stale_after)
+    def state(self):
+        if ((self.arvados_node is None) or
+              (not timestamp_fresh(arvados_node_mtime(self.arvados_node),
+                                   self.poll_stale_after))):
+            return UNKNOWN
+        elif ((self.arvados_node['info'].get('slurm_state') == 'idle') and
+                (not self.arvados_node['job_uuid'])):
+            return IDLE
         else:
-            return (timestamp_fresh(arvados_node_mtime(self.arvados_node),
-                                    self.poll_stale_after) and
-                    (self.arvados_node['info'].get('slurm_state') == 'idle'))
+            return ALLOC
+
+    def _shutdown_eligible(self):
+        state = self.state()
+        if state == IDLE:
+            return True
+        elif state == UNKNOWN:
+            return ((self.arvados_node is None) and
+                    timestamp_fresh(self.cloud_node_start_time,
+                                    self.node_stale_after))
+        else:
+            return False
 
     def consider_shutdown(self):
         next_opening = self._shutdowns.next_opening()
