@@ -115,7 +115,7 @@ pipeline_template_in_fuse_project:
   modified_at: 2014-04-14 12:35:04 -0400
   modified_by_client_uuid: zzzzz-ozdt8-brczlopd8u8d0jr
   modified_by_user_uuid: zzzzz-tpzed-0fusedrivertest
-  name: Pipeline Template in FUSE Project
+  name: pipeline template in FUSE project
   components:
     foo_component:
       script: foo

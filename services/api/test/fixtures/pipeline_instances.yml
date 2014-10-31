@@ -150,6 +150,41 @@ pipeline_with_newer_template:
           dataclass: Collection
           title: foo instance input
 
+pipeline_instance_owned_by_fuse:
+  state: Complete
+  uuid: zzzzz-d1hrv-ri9dvgkgqs9y09j
+  owner_uuid: zzzzz-tpzed-0fusedrivertest
+  pipeline_template_uuid: zzzzz-p5p6p-vq4wuvy84xvaq2r
+  created_at: 2014-09-15 12:00:00
+  name: "pipeline instance owned by FUSE"
+  components:
+    foo:
+      script: foo
+      script_version: master
+      script_parameters:
+        input:
+          required: true
+          dataclass: Collection
+          title: foo instance input
+
+pipeline_instance_in_fuse_project:
+  state: Complete
+  uuid: zzzzz-d1hrv-scarxiyajtshq3l
+  owner_uuid: zzzzz-j7d0g-0000ownedbyfuse
+  pipeline_template_uuid: zzzzz-p5p6p-vq4wuvy84xvaq2r
+  created_at: 2014-09-15 12:00:00
+  name: "pipeline instance in FUSE project"
+  components:
+    foo:
+      script: foo
+      script_version: master
+      script_parameters:
+        input:
+          required: true
+          dataclass: Collection
+          title: foo instance input
+
+
 # Test Helper trims the rest of the file
 
 # Do not add your fixtures below this line as the rest of this file will be trimmed by test_helper
