@@ -3,8 +3,8 @@ MAINTAINER Peter Amstutz <peter.amstutz@curoverse.com>
 
 USER root
 
-RUN apt-get update && \
-    apt-get install -y -q openjdk-7-jre-headless && \
+RUN apt-get update -qq
+RUN apt-get install -qqy openjdk-7-jre-headless && \
     cd /tmp && \
     curl --location http://downloads.sourceforge.net/project/bio-bwa/bwa-0.7.9a.tar.bz2 -o bwa-0.7.9a.tar.bz2 && \
     tar xjf bwa-0.7.9a.tar.bz2 && \
