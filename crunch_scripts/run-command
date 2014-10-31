@@ -119,13 +119,19 @@ def add_to_group(gr, match):
         gr[m] = []
     gr[m].append(match.group(0))
 
+# Return the name of variable ('var') that will take on each value in 'items'
+# when performing an inner substitution
 def var_items(p, c, key):
     if "var" in c:
-        # Var specifies
+        # Var specifies the variable name for inner parameter substitution
         return (c["var"], get_items(p, c[key]))
     else:
+        # The component function ('key') value is a list, so return the list
+        # directly with no parameter substition.
         if isinstance(c[key], list):
             return (None, get_items(p, c[key]))
+
+        # check if c[key] is a string that looks like a parameter
         m = re.match("^\$\((.*)\)$", c[key])
         if m and m.group(1) in p:
             return (m.group(1), get_items(p, c[key]))
@@ -133,6 +139,10 @@ def var_items(p, c, key):
             # backwards compatible, foreach specifies bare parameter name to use
             return (c[key], get_items(p, p[c[key]]))
 
+# "p" is the parameter scope, "c" is the item to be expanded.
+# If "c" is a dict, apply function expansion.
+# If "c" is a list, recursively expand each item and return a new list.
+# If "c" is a string, apply parameter substitution
 def expand_item(p, c):
     if isinstance(c, dict):
         if "foreach" in c and "command" in c:
@@ -185,8 +195,13 @@ def expand_item(p, c):
         else:
             return subst.do_substitution(p, c)
 
-    return []
+    raise Exception("expand_item() unexpected parameter type %s" % (type(c))
 
+# Evaluate in a list context
+# "p" is the parameter scope, "value" will be evaluated
+# if "value" is a list after expansion, return that
+# if "value" is a path to a directory, return a list consisting of each entry in the directory
+# if "value" is a path to a file, return a list consisting of each line of the file
 def get_items(p, value):
     value = expand_item(p, value)
     if isinstance(value, list):
@@ -208,6 +223,7 @@ stdoutfile = None
 stdinname = None
 stdinfile = None
 
+# Construct the cross product of all values of each variable listed in fvars
 def recursive_foreach(params, fvars):
     var = fvars[0]
     fvars = fvars[1:]
@@ -392,7 +408,8 @@ if "task.vwd" in taskp:
 else:
     outcollection = robust_put.upload(outdir, logger)
 
-success = reduce(lambda x, y: x & (y == 0), [True]+rcode.values())
+# Success if no non-zero return codes
+success = not any([status != 0 for status in rcode.values()])
 
 api.job_tasks().update(uuid=arvados.current_task()['uuid'],
                                      body={
