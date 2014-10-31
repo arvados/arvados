@@ -98,6 +98,7 @@ class CollectionBase(object):
                 clean += fields[0] + ' ' + ' '.join(locators) + ' ' + fields[-1] + "\n"
         return clean
 
+
 class CollectionReader(CollectionBase):
     def __init__(self, manifest_locator_or_text, api_client=None,
                  keep_client=None, num_retries=0):
