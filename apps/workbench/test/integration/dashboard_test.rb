@@ -104,7 +104,7 @@ class DashboardTest < ActionDispatch::IntegrationTest
     ['user_with_5_finished_pipelines', 5, 0, 0, true],
     ['user_with_1_running_25_finished_pipelines', 25, 1, 0, true],
     ['active', 0, 1, 6, false],
-    ['admin', 35, 2, 8, true],
+    ['admin', 35, 2, 8, false],
   ].each do |user, num_finished, num_running, num_collections, exact_counts|
     test "dashboard recently finished pipelines panel for #{user} with #{num_finished} finished,
           #{num_running} running, #{num_collections} collections, #{exact_counts}" do

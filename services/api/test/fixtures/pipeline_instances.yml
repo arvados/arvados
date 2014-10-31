@@ -240,7 +240,7 @@ pipeline_<%=i%>_of_5:
 <% for i in 0..24 do %>
 pipeline_<%=i%>_of_25:
   name: pipeline_<%=i%>
-  state: Failed
+  state: <%= ((i%2)==1 ? 'Failed' : 'Complete') %>
   uuid: zzzzz-d1hrv-25finishedpi<%= i.to_s.rjust(3, '0') %>
   owner_uuid: zzzzz-tpzed-user025finished
   created_at: <%= i.hour.ago.to_s(:db) %>
