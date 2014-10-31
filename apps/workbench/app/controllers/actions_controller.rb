@@ -206,4 +206,30 @@ class ActionsController < ApplicationController
     end
   end
 
+  expose_action :dashboard_finished_pipeline_rows do
+    limit = params[:limit] ? params[:limit] : 8
+    finished_at = params[:finished_at] ? params[:finished_at] : Time.now+1.years if !finished_at
+    @finished_pipelines = PipelineInstance.limit(limit).
+                            order(["finished_at desc"]).
+                            filter([["state", "in", ["Complete", "Failed", "Paused"]],
+                                    ["finished_at", "<", finished_at]])
+    if @finished_pipelines.results.any?
+      @finished_pipelines_lookup = preload_objects_for_dataclass PipelineTemplate, @finished_pipelines.map(&:pipeline_template_uuid)
+      @next_finished_pipelines_href = url_for(action: :dashboard_finished_pipeline_rows,
+                                              limit: limit,
+                                              finished_at: @finished_pipelines.results.last.finished_at)
+    else
+      @next_finished_pipelines_href = nil
+    end
+
+    respond_to do |f|
+      f.json {
+        render json: {
+          content: render_to_string(partial: "dashboard_finished_pipeline_rows.html",
+                                    formats: [:html]),
+          next_page_href: @next_finished_pipelines_href
+        }
+      }
+    end
+  end
 end

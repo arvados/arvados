@@ -728,11 +728,6 @@ class ApplicationController < ActionController::Base
     pi
   end
 
-  helper_method :finished_pipelines
-  def finished_pipelines lim
-    PipelineInstance.limit(lim).order(["finished_at desc"]).filter([["state", "in", ["Complete", "Failed", "Paused"]], ["finished_at", "!=", nil]])
-  end
-
   helper_method :recent_collections
   def recent_collections lim
     c = Collection.limit(lim).order(["modified_at desc"]).filter([["owner_uuid", "is_a", "arvados#group"]])
