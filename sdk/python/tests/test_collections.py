@@ -8,6 +8,7 @@ import copy
 import mock
 import os
 import pprint
+import re
 import subprocess
 import tempfile
 import unittest
@@ -770,19 +771,22 @@ class CollectionReaderTestCase(unittest.TestCase, CollectionTestMixin):
         # client should be able to use CollectionReader on a manifest without normalizing it
         client = self.api_client_mock(500)
         nonnormal = ". acbd18db4cc2f85cedef654fccc4a4d8+3+Aabadbadbee@abeebdee 0:3:foo.txt 1:0:bar.txt 0:3:foo.txt\n"
+        reader = arvados.CollectionReader(
+            nonnormal,
+            api_client=client, num_retries=0)
+        # Ensure stripped_manifest() doesn't mangle our manifest in
+        # any way other than stripping hints.
         self.assertEqual(
-            ". acbd18db4cc2f85cedef654fccc4a4d8+3 0:3:foo.txt 1:0:bar.txt 0:3:foo.txt\n",
-            arvados.CollectionReader(
-                nonnormal,
-                api_client=client, num_retries=0).stripped_manifest())
+            re.sub('\+[^\d\s\+]+', '', nonnormal),
+            reader.stripped_manifest())
+        # Ensure stripped_manifest() didn't mutate our reader.
+        self.assertEqual(nonnormal, reader.manifest_text())
+        # Ensure the files appear in the order given in the manifest.
         self.assertEqual(
             [[6, '.', 'foo.txt'],
              [0, '.', 'bar.txt']],
             [[f.size(), f.stream_name(), f.name()]
-             for f in
-             arvados.CollectionReader(
-                    nonnormal,
-                    api_client=client, num_retries=0).all_streams()[0].all_files()])
+             for f in reader.all_streams()[0].all_files()])
 
 
 @tutil.skip_sleep
