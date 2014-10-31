@@ -454,14 +454,14 @@ def main(arguments=None, stdout=sys.stdout, stderr=sys.stderr):
     if args.stream:
         output = writer.manifest_text()
         if args.normalize:
-            output = CollectionReader(output).normalize().manifest_text()
+            output = CollectionReader(output).manifest_text(normalize=True)
     elif args.raw:
         output = ','.join(writer.data_locators())
     else:
         try:
             manifest_text = writer.manifest_text()
             if args.normalize:
-                manifest_text = CollectionReader(manifest_text).normalize().manifest_text()
+                manifest_text = CollectionReader(manifest_text).manifest_text(normalize=True)
             # Register the resulting collection in Arvados.
             collection = api_client.collections().create(
                 body={

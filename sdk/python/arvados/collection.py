@@ -219,16 +219,13 @@ class CollectionReader(CollectionBase):
                 for r in f.segments:
                     streams[streamname][filename].extend(s.locators_and_ranges(r[0], r[1]))
 
-        self._streams = []
-        sortedstreams = list(streams.keys())
-        sortedstreams.sort()
-        for s in sortedstreams:
-            self._streams.append(normalize_stream(s, streams[s]))
+        self._streams = [normalize_stream(s, streams[s])
+                         for s in sorted(streams)]
 
         # Regenerate the manifest text based on the normalized streams
-        self._manifest_text = ''.join([StreamReader(stream, keep=self._my_keep()).manifest_text() for stream in self._streams])
-
-        return self
+        self._manifest_text = ''.join(
+            [StreamReader(stream, keep=self._my_keep()).manifest_text()
+             for stream in self._streams])
 
     def all_streams(self):
         self._populate()
@@ -240,8 +237,12 @@ class CollectionReader(CollectionBase):
             for f in s.all_files():
                 yield f
 
-    def manifest_text(self, strip=False):
-        if strip:
+    def manifest_text(self, strip=False, normalize=False):
+        if normalize:
+            cr = CollectionReader(self.manifest_text())
+            cr.normalize()
+            return cr.manifest_text(strip=strip, normalize=False)
+        elif strip:
             return self.stripped_manifest()
         else:
             self._populate()

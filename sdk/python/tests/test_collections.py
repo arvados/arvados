@@ -167,7 +167,7 @@ class ArvadosCollectionsTest(run_test_server.TestCaseWithServers,
         self.check_manifest_file_sizes(cw.manifest_text(), [1,0])
         self.check_manifest_file_sizes(
             arvados.CollectionReader(
-                cw.manifest_text()).normalize().manifest_text(),
+                cw.manifest_text()).manifest_text(normalize=True),
             [0,1])
 
     def check_manifest_file_sizes(self, manifest_text, expect_sizes):
@@ -229,19 +229,19 @@ class ArvadosCollectionsTest(run_test_server.TestCaseWithServers,
 . 085c37f02916da1cad16f93c54d899b7+41 0:41:md5sum.txt
 . 8b22da26f9f433dea0a10e5ec66d73ba+43 0:43:md5sum.txt
 """
-        self.assertEqual(arvados.CollectionReader(m1, self.api_client).normalize().manifest_text(),
+        self.assertEqual(arvados.CollectionReader(m1, self.api_client).manifest_text(normalize=True),
                          """. 5348b82a029fd9e971a811ce1f71360b+43 085c37f02916da1cad16f93c54d899b7+41 8b22da26f9f433dea0a10e5ec66d73ba+43 0:127:md5sum.txt
 """)
 
         m2 = """. 204e43b8a1185621ca55a94839582e6f+67108864 b9677abbac956bd3e86b1deb28dfac03+67108864 fc15aff2a762b13f521baf042140acec+67108864 323d2a3ce20370c4ca1d3462a344f8fd+25885655 0:227212247:var-GS000016015-ASM.tsv.bz2
 """
-        self.assertEqual(arvados.CollectionReader(m2, self.api_client).normalize().manifest_text(), m2)
+        self.assertEqual(arvados.CollectionReader(m2, self.api_client).manifest_text(normalize=True), m2)
 
         m3 = """. 5348b82a029fd9e971a811ce1f71360b+43 3:40:md5sum.txt
 . 085c37f02916da1cad16f93c54d899b7+41 0:41:md5sum.txt
 . 8b22da26f9f433dea0a10e5ec66d73ba+43 0:43:md5sum.txt
 """
-        self.assertEqual(arvados.CollectionReader(m3, self.api_client).normalize().manifest_text(),
+        self.assertEqual(arvados.CollectionReader(m3, self.api_client).manifest_text(normalize=True),
                          """. 5348b82a029fd9e971a811ce1f71360b+43 085c37f02916da1cad16f93c54d899b7+41 8b22da26f9f433dea0a10e5ec66d73ba+43 3:124:md5sum.txt
 """)
 
@@ -249,7 +249,7 @@ class ArvadosCollectionsTest(run_test_server.TestCaseWithServers,
 ./zzz 204e43b8a1185621ca55a94839582e6f+67108864 0:999:zzz
 ./foo 323d2a3ce20370c4ca1d3462a344f8fd+25885655 0:3:bar
 """
-        self.assertEqual(arvados.CollectionReader(m4, self.api_client).normalize().manifest_text(),
+        self.assertEqual(arvados.CollectionReader(m4, self.api_client).manifest_text(normalize=True),
                          """./foo 204e43b8a1185621ca55a94839582e6f+67108864 323d2a3ce20370c4ca1d3462a344f8fd+25885655 0:3:bar 67108864:3:bar
 ./zzz 204e43b8a1185621ca55a94839582e6f+67108864 0:999:zzz
 """)
@@ -258,22 +258,22 @@ class ArvadosCollectionsTest(run_test_server.TestCaseWithServers,
 ./zzz 204e43b8a1185621ca55a94839582e6f+67108864 0:999:zzz
 ./foo 204e43b8a1185621ca55a94839582e6f+67108864 3:3:bar
 """
-        self.assertEqual(arvados.CollectionReader(m5, self.api_client).normalize().manifest_text(),
+        self.assertEqual(arvados.CollectionReader(m5, self.api_client).manifest_text(normalize=True),
                          """./foo 204e43b8a1185621ca55a94839582e6f+67108864 0:6:bar
 ./zzz 204e43b8a1185621ca55a94839582e6f+67108864 0:999:zzz
 """)
 
         with self.data_file('1000G_ref_manifest') as f6:
             m6 = f6.read()
-            self.assertEqual(arvados.CollectionReader(m6, self.api_client).normalize().manifest_text(), m6)
+            self.assertEqual(arvados.CollectionReader(m6, self.api_client).manifest_text(normalize=True), m6)
 
         with self.data_file('jlake_manifest') as f7:
             m7 = f7.read()
-            self.assertEqual(arvados.CollectionReader(m7, self.api_client).normalize().manifest_text(), m7)
+            self.assertEqual(arvados.CollectionReader(m7, self.api_client).manifest_text(normalize=True), m7)
 
         m8 = """./a\\040b\\040c 59ca0efa9f5633cb0371bbc0355478d8+13 0:13:hello\\040world.txt
 """
-        self.assertEqual(arvados.CollectionReader(m8, self.api_client).normalize().manifest_text(), m8)
+        self.assertEqual(arvados.CollectionReader(m8, self.api_client).manifest_text(normalize=True), m8)
 
     def test_locators_and_ranges(self):
         blocks2 = [['a', 10, 0],
@@ -504,7 +504,7 @@ class ArvadosCollectionsTest(run_test_server.TestCaseWithServers,
 . 085c37f02916da1cad16f93c54d899b7+41 5348b82a029fd9e971a811ce1f71360b+43 8b22da26f9f433dea0a10e5ec66d73ba+43 40:80:md9sum.txt
 """
 
-        m2 = arvados.CollectionReader(m1, self.api_client).normalize().manifest_text()
+        m2 = arvados.CollectionReader(m1, self.api_client).manifest_text(normalize=True)
 
         self.assertEqual(m2,
                          ". 5348b82a029fd9e971a811ce1f71360b+43 085c37f02916da1cad16f93c54d899b7+41 8b22da26f9f433dea0a10e5ec66d73ba+43 0:43:md5sum.txt 43:41:md6sum.txt 84:43:md7sum.txt 6:37:md8sum.txt 84:43:md8sum.txt 83:1:md9sum.txt 0:43:md9sum.txt 84:36:md9sum.txt\n")
