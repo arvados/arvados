@@ -118,7 +118,9 @@ class ApplicationController < ActionController::Base
   def load_filters_and_paging_params
     if params[:order].blank?
       @order = 'created_at desc'
-    elsif !params[:order].is_a? Array
+    elsif params[:order].is_a? Array
+      @order = params[:order]
+    else
       begin
         @order = JSON.load(params[:order])
       rescue
