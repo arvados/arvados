@@ -89,14 +89,17 @@ class CollectionBase(object):
         hints other than size hints) removed from the locators.
         """
         raw = self.manifest_text()
-        clean = ''
+        clean = []
         for line in raw.split("\n"):
             fields = line.split()
             if fields:
-                locators = [ (re.sub(r'\+[^\d][^\+]*', '', x) if re.match(util.keep_locator_pattern, x) else x)
-                             for x in fields[1:-1] ]
-                clean += fields[0] + ' ' + ' '.join(locators) + ' ' + fields[-1] + "\n"
-        return clean
+                clean_fields = fields[:1] + [
+                    (re.sub(r'\+[^\d][^\+]*', '', x)
+                     if re.match(util.keep_locator_pattern, x)
+                     else x)
+                    for x in fields[1:]]
+                clean += [' '.join(clean_fields), "\n"]
+        return ''.join(clean)
 
 
 class CollectionReader(CollectionBase):
