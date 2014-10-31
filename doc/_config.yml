@@ -128,9 +128,16 @@ navbar:
     - Docker:
       - install/install-docker.html.textile.liquid
     - Manual installation:
-      - install/install-keep.html.textile.liquid
-      - install/install-sso.html.textile.liquid
+      - install/install-manual-overview.html.textile.liquid
+      - install/install-manual-prerequisites.html.textile.liquid
       - install/install-api-server.html.textile.liquid
       - install/install-workbench-app.html.textile.liquid
+      - install/install-shell-server.html.textile.liquid
       - install/create-standard-objects.html.textile.liquid
+      - install/install-keepstore.html.textile.liquid
+      - install/install-keepproxy.html.textile.liquid
       - install/install-crunch-dispatch.html.textile.liquid
+      - install/install-compute-node.html.textile.liquid
+    - Software prerequisites:
+      - install/install-manual-prerequisites-ruby.html.textile.liquid
+      - install/install-sso.html.textile.liquid
