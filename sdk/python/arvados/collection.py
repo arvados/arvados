@@ -138,27 +138,35 @@ class CollectionReader(CollectionBase):
         self._streams = None
 
     def _populate_from_api_server(self):
-        # As in KeepClient itself, we must wait until the last possible
-        # moment to instantiate an API client, in order to avoid
-        # tripping up clients that don't have access to an API server.
-        # If we do build one, make sure our Keep client uses it.
-        # If instantiation fails, we'll fall back to the except clause,
-        # just like any other Collection lookup failure.
-        if self._api_client is None:
-            self._api_client = arvados.api('v1')
-            self._keep_client = None  # Make a new one with the new api.
-        c = self._api_client.collections().get(
-            uuid=self._manifest_locator).execute(
-            num_retries=self.num_retries)
-        self._manifest_text = c['manifest_text']
+        # As in KeepClient itself, we must wait until the last
+        # possible moment to instantiate an API client, in order to
+        # avoid tripping up clients that don't have access to an API
+        # server.  If we do build one, make sure our Keep client uses
+        # it.  If instantiation fails, we'll fall back to the except
+        # clause, just like any other Collection lookup
+        # failure. Return an exception, or None if successful.
+        try:
+            if self._api_client is None:
+                self._api_client = arvados.api('v1')
+                self._keep_client = None  # Make a new one with the new api.
+            c = self._api_client.collections().get(
+                uuid=self._manifest_locator).execute(
+                num_retries=self.num_retries)
+            self._manifest_text = c['manifest_text']
+            return None
+        except Exception as e:
+            return e
 
     def _populate_from_keep(self):
         # Retrieve a manifest directly from Keep. This has a chance of
         # working if [a] the locator includes a permission signature
         # or [b] the Keep services are operating in world-readable
-        # mode.
-        self._manifest_text = self._my_keep().get(
-            self._manifest_locator, num_retries=self.num_retries)
+        # mode. Return an exception, or None if successful.
+        try:
+            self._manifest_text = self._my_keep().get(
+                self._manifest_locator, num_retries=self.num_retries)
+        except Exception as e:
+            return e
 
     def _populate(self):
         if self._streams is not None:
@@ -170,25 +178,16 @@ class CollectionReader(CollectionBase):
                 self._manifest_locator))
         if (not self._manifest_text and
             util.signed_locator_pattern.match(self._manifest_locator)):
-            try:
-                self._populate_from_keep()
-            except e:
-                error_via_keep = e
+            error_via_keep = self._populate_from_keep()
         if not self._manifest_text:
-            try:
-                self._populate_from_api_server()
-            except Exception as e:
-                if not should_try_keep:
-                    raise
-                error_via_api = e
+            error_via_api = self._populate_from_api_server()
+            if error_via_api != None and not should_try_keep:
+                raise error_via_api
         if (not self._manifest_text and
             not error_via_keep and
             should_try_keep):
             # Looks like a keep locator, and we didn't already try keep above
-            try:
-                self._populate_from_keep()
-            except Exception as e:
-                error_via_keep = e
+            error_via_keep = self._populate_from_keep()
         if not self._manifest_text:
             # Nothing worked!
             raise arvados.errors.NotFoundError(
