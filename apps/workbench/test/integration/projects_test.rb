@@ -488,191 +488,129 @@ class ProjectsTest < ActionDispatch::IntegrationTest
     end
   end
 
-  [
-    ['project with 10 collections', 10],
-    ['project with 201 collections', 201], # two pages of data
-  ].each do |project_name, amount|
-    test "scroll collections tab for #{project_name} with #{amount} objects" do
-      headless = Headless.new
-      headless.start
-      Capybara.current_driver = :selenium
+  def scroll_setup(project_name,
+                   total_nbr_items,
+                   item_list_parameter,
+                   sorted = false,
+                   sort_parameters = nil)
+    headless = Headless.new
+    headless.start
+    Capybara.current_driver = :selenium
 
-      visit page_with_token 'user1_with_load'
+    project_uuid = api_fixture('groups')[project_name]['uuid']
+    visit page_with_token 'user1_with_load', '/projects/' + project_uuid
 
-      find("#projects-menu").click
-      find(".dropdown-menu a", text: project_name).click
+    assert(page.has_text?("#{item_list_parameter.humanize} (#{total_nbr_items})"), "Number of #{item_list_parameter.humanize} did not match the input amount")
 
-      my_collections = []
-      for i in 1..amount
-        my_collections << "Collection_#{i}"
-      end
+    click_link item_list_parameter.humanize
+    wait_for_ajax
 
-      # verify Data collections scroll
-      assert(page.has_text?("Data collections (#{amount})"), "Number of collections did not match the input amount")
-
-      click_link 'Data collections'
-      begin
-        wait_for_ajax
-      rescue
-      end
-
-      verify_collections = my_collections.dup
-      unexpected_items = []
-      collections_count = 0
-      within('.arv-project-Data_collections') do
-        page.execute_script "window.scrollBy(0,999000)"
-        begin
-          wait_for_ajax
-        rescue
-        end
-
-        # Visit all rows. If not all expected collections are found, retry
-        found_collections = page.all('tr[data-kind="arvados#collection"]')
-        collections_count = found_collections.count
-
-        (0..collections_count-1).each do |i|
-          # Found row text would be of the format "Show Collection_#{n} "
-          collection_name = found_collections[i].text.split[1]
-          if !my_collections.include? collection_name
-            unexpected_items << collection_name
-          else
-            verify_collections.delete collection_name
-          end
-        end
-
-        assert_equal true, unexpected_items.empty?, "Found unexpected items #{unexpected_items.inspect}"
-        assert_equal amount, collections_count, "Found different number of collections"
-        assert_equal true, verify_collections.empty?, "Did not find all the collections"
-      end
-    end
-  end
-
-  [
-    ['project with 10 collections', 10],
-    ['project with 201 collections', 201], # two pages of data
-  ].each do |project_name, amount|
-    test "scroll collections tab for #{project_name} with #{amount} objects, with ascending sort (case insensitive)" do
-      headless = Headless.new
-      headless.start
-      Capybara.current_driver = :selenium
-
-      visit page_with_token 'user1_with_load'
-
-      find("#projects-menu").click
-      find(".dropdown-menu a", text: project_name).click
-
-      my_collections = []
-      for i in 1..amount
-        my_collections << "Collection_#{i}"
-      end
-
-      # verify Data collections scroll
-      assert(page.has_text?("Data collections (#{amount})"), "Number of collections did not match the input amount")
-
-      click_link 'Data collections'
-      begin
-        wait_for_ajax
-      rescue
-      end
-
-      find('th[data-sort-order="collections.name"]').click
+    if sorted
+      find("th[data-sort-order='#{sort_parameters.gsub(/\s/,'')}']").click
       wait_for_ajax
+    end
+  end
 
-      verify_collections = my_collections.dup
-      unexpected_items = []
-      collections_count = 0
-      within('.arv-project-Data_collections') do
-        page.execute_script "window.scrollBy(0,999000)"
-        begin
-          wait_for_ajax
-        rescue
-        end
+  def scroll_items_check(nbr_items,
+                         fixture_prefix,
+                         item_list_parameter,
+                         item_selector,
+                         sorted = false)
+    items = []
+    for i in 1..nbr_items
+      items << "#{fixture_prefix}#{i}"
+    end
 
-        # Visit all rows. If not all expected collections are found, retry
-        found_collections = page.all('tr[data-kind="arvados#collection"]')
-        collections_count = found_collections.count
-
-        previous = nil
-        (0..collections_count-1).each do |i|
-          # Found row text would be of the format "Show Collection_#{n} "
-          collection_name = found_collections[i].text.split[1]
-          if !my_collections.include? collection_name
-            unexpected_items << collection_name
-          else
-            verify_collections.delete collection_name
-          end
-          # check sort order
-          assert_operator( previous.downcase, :<=, collection_name.downcase) if previous
-          previous = collection_name
-        end
-
-        assert_equal true, unexpected_items.empty?, "Found unexpected items #{unexpected_items.inspect}"
-        assert_equal amount, collections_count, "Found different number of collections"
-        assert_equal true, verify_collections.empty?, "Did not find all the collections"
+    verify_items = items.dup
+    unexpected_items = []
+    item_count = 0
+    within(".arv-project-#{item_list_parameter}") do
+      page.execute_script "window.scrollBy(0,999000)"
+      begin
+        wait_for_ajax
+      rescue
       end
+
+      # Visit all rows. If not all expected items are found, retry
+      found_items = page.all(item_selector)
+      item_count = found_items.count
+
+      previous = nil
+      (0..item_count-1).each do |i|
+        # Found row text using the fixture string e.g. "Show Collection_#{n} "
+        item_name = found_items[i].text.split[1]
+        if !items.include? item_name
+          unexpected_items << item_name
+        else
+          verify_items.delete item_name
+        end
+        if sorted
+          # check sort order
+          assert_operator( previous.downcase, :<=, item_name.downcase) if previous
+          previous = item_name
+        end
+      end
+
+      assert_equal true, unexpected_items.empty?, "Found unexpected #{item_list_parameter.humanize} #{unexpected_items.inspect}"
+      assert_equal nbr_items, item_count, "Found different number of #{item_list_parameter.humanize}"
+      assert_equal true, verify_items.empty?, "Did not find all the #{item_list_parameter.humanize}"
     end
   end
 
   [
-    ['project with 10 pipelines', 10, 0],
-    ['project with 2 pipelines and 60 jobs', 2, 60],
-    ['project with 25 pipelines', 25, 0],
+    ['project_with_10_collections', 10],
+    ['project_with_201_collections', 201], # two pages of data
+  ].each do |project_name, nbr_items|
+    test "scroll collections tab for #{project_name} with #{nbr_items} objects" do
+      item_list_parameter = "Data_collections"
+      scroll_setup project_name,
+                   nbr_items,
+                   item_list_parameter
+      scroll_items_check nbr_items,
+                         "Collection_",
+                         item_list_parameter,
+                         'tr[data-kind="arvados#collection"]'
+    end
+  end
+
+  [
+    ['project_with_10_collections', 10],
+    ['project_with_201_collections', 201], # two pages of data
+  ].each do |project_name, nbr_items|
+    test "scroll collections tab for #{project_name} with #{nbr_items} objects with ascending sort (case insensitive)" do
+      item_list_parameter = "Data_collections"
+      scroll_setup project_name,
+                   nbr_items,
+                   item_list_parameter,
+                   true,
+                   "collections.name"
+      scroll_items_check nbr_items,
+                         "Collection_",
+                         item_list_parameter,
+                         'tr[data-kind="arvados#collection"]',
+                         true
+    end
+  end
+
+  [
+    ['project_with_10_pipelines', 10, 0],
+    ['project_with_2_pipelines_and_60_jobs', 2, 60],
+    ['project_with_25_pipelines', 25, 0],
   ].each do |project_name, num_pipelines, num_jobs|
     test "scroll pipeline instances tab for #{project_name} with #{num_pipelines} pipelines and #{num_jobs} jobs" do
-      headless = Headless.new
-      headless.start
-      Capybara.current_driver = :selenium
-
-      visit page_with_token 'user1_with_load'
-
-      find("#projects-menu").click
-      find(".dropdown-menu a", text: project_name).click
-
-      my_pipelines = []
-      (0..num_pipelines-1).each do |i|
-        name = "pipeline_#{i}"
-        my_pipelines << name
-      end
-
-      # verify Jobs and pipelines tab scroll
-      assert(page.has_text?("Jobs and pipelines (#{num_pipelines+num_jobs})"), "Number of objects did not match the input counts")
-      click_link 'Jobs and pipelines'
-      begin
-        wait_for_ajax
-      rescue
-      end
-
-      verify_pipelines = my_pipelines.dup
-      unexpected_items = []
-      object_count = 0
-      within('.arv-project-Jobs_and_pipelines') do
-        page.execute_script "window.scrollBy(0,999000)"
-        begin
-          wait_for_ajax
-        rescue
-        end
-
-        # Visit all rows. Repeat if not all expected my_pipelines are found (inifinite scrolling should kick in)
-        pipelines_found = page.all('tr[data-kind="arvados#pipelineInstance"]')
-        found_pipeline_count = pipelines_found.count
-        (0..found_pipeline_count-1).each do |i|
-          name = pipelines_found[i].text.split[1]
-          if !my_pipelines.include? name
-            unexpected_items << name
-          else
-            verify_pipelines.delete name
-          end
-
-          assert_equal true, unexpected_items.empty?, "Found unexpected items #{unexpected_items.inspect}"
-        end
-
-        jobs_found = page.all('tr[data-kind="arvados#job"]')
-        found_job_count = jobs_found.count
-
-        assert_equal num_pipelines, found_pipeline_count, "Found different number of pipelines and jobs"
-        assert_equal num_jobs, found_job_count, 'Did not find expected number of jobs'
-        assert_equal true, verify_pipelines.empty?, "Did not find all the pipelines and jobs"
-      end
+      item_list_parameter = "Jobs_and_pipelines"
+      scroll_setup project_name,
+                   num_pipelines + num_jobs,
+                   item_list_parameter
+      # check the general scrolling and the pipelines
+      scroll_items_check num_pipelines,
+                         "pipeline_",
+                         item_list_parameter,
+                         'tr[data-kind="arvados#pipelineInstance"]'
+      # Check job count separately
+      jobs_found = page.all('tr[data-kind="arvados#job"]')
+      found_job_count = jobs_found.count
+      assert_equal num_jobs, found_job_count, 'Did not find expected number of jobs'
     end
   end
 
