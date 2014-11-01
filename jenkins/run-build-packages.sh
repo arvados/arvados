@@ -187,6 +187,9 @@ source /etc/profile.d/rvm.sh
 # out our git tree here
 chmod o+r "$WORKSPACE" -R
 
+# More cleanup - make sure all executables that we'll package are 755
+find -type d -name 'bin' |xargs -I {} find {} -type f |xargs -I {} chmod 755 {}
+
 # Now fix our umask to something better suited to building and publishing
 # gems and packages
 umask 0022
