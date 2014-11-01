@@ -810,6 +810,12 @@ class ApplicationController < ActionController::Base
     crumbs = []
     current = @name_link || @object
     while current
+      # Halt if a group ownership loop is detected. API should refuse
+      # to produce this state, but it could still arise from a race
+      # condition when group ownership changes between our find()
+      # queries.
+      break if crumbs.collect(&:uuid).include? current.uuid
+
       if current.is_a?(Group) and current.group_class == 'project'
         crumbs.prepend current
       end
