@@ -56,6 +56,10 @@ GEM
     bootstrap-x-editable-rails (1.5.1.1)
       railties (>= 3.0)
     builder (3.2.2)
+    byebug (3.5.1)
+      columnize (~> 0.8)
+      debugger-linecache (~> 1.2)
+      slop (~> 3.6)
     capistrano (2.15.5)
       highline
       net-scp (>= 1.0.0)
@@ -78,8 +82,10 @@ GEM
       coffee-script-source
       execjs
     coffee-script-source (1.7.0)
+    columnize (0.8.9)
     commonjs (0.2.7)
     daemon_controller (1.1.7)
+    debugger-linecache (1.2.0)
     deep_merge (1.0.1)
     erubis (2.7.0)
     execjs (2.0.2)
@@ -171,6 +177,7 @@ GEM
       thor (>= 0.18.1, < 2.0)
     rake (10.3.1)
     ref (1.0.5)
+    ruby-debug-passenger (0.2.0)
     rubyzip (1.1.0)
     rvm-capistrano (1.5.1)
       capistrano (~> 2.15.4)
@@ -196,6 +203,7 @@ GEM
     simplecov-html (0.7.1)
     simplecov-rcov (0.2.3)
       simplecov (>= 0.4.1)
+    slop (3.6.0)
     sprockets (2.11.0)
       hike (~> 1.2)
       multi_json (~> 1.0)
@@ -238,6 +246,7 @@ DEPENDENCIES
   bootstrap-sass (~> 3.1.0)
   bootstrap-tab-history-rails
   bootstrap-x-editable-rails
+  byebug
   capybara
   coffee-rails
   deep_merge
@@ -254,6 +263,7 @@ DEPENDENCIES
   piwik_analytics
   poltergeist
   rails (~> 4.1.0)
+  ruby-debug-passenger
   rvm-capistrano
   sass
   sass-rails
