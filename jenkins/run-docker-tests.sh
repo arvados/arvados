@@ -9,7 +9,7 @@ title () {
 }
 
 docker_push () {
-  docker push $*
+  $DOCKER push $*
 
   ECODE=$?
 
@@ -19,7 +19,27 @@ docker_push () {
   fi
 }
 
+# Sanity check
+if ! [[ -n "$WORKSPACE" ]]; then
+  echo >&2
+  echo >&2 "Error: WORKSPACE environment variable not set"
+  echo >&2
+  exit 1
+fi
+
 echo $WORKSPACE
+
+# find the docker binary
+DOCKER=`which docker.io`
+
+if [[ "$DOCKER" == "" ]]; then
+  DOCKER=`which docker`
+fi
+
+if [[ "$DOCKER" == "" ]]; then
+  title "Error: you need to have docker installed. Could not find the docker executable."
+  exit 1
+fi
 
 # DOCKER
 title "Starting docker build"
