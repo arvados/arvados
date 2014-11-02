@@ -1,14 +1,16 @@
 #!/usr/bin/env bash
 
-# This script is intended for easy Arvados evaluation. It will download the
+# This script is intended to make Arvados installation easy. It will download the
 # latest copy of the Arvados docker images as well as the arvdock command. It
-# then uses arvdoc to spin up Arvados on this computer.
+# then uses arvdock to spin up Arvados on this computer.
 #
-# A version of this script is available at http://get.arvados.org, so that this
+# The latest version of this script is available at http://get.arvados.org, so that this
 # command does the right thing:
 #
 #  $ \curl -sSL http://get.arvados.org | bash
 #
+# Prerequisites: working docker installation. Run this script as a user who is a member 
+# of the docker group.
 
 COLUMNS=80
 
