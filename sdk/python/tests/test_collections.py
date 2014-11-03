@@ -5,6 +5,7 @@
 import arvados
 import bz2
 import copy
+import hashlib
 import mock
 import os
 import pprint
@@ -553,6 +554,18 @@ class ArvadosCollectionsTest(run_test_server.TestCaseWithServers,
         self.assertEqual(cwriter.manifest_text(),
                          """. bd19836ddb62c11c55ab251ccaca5645+2 0:2:f1
 ./d1 50170217e5b04312024aa5cd42934494+13 0:8:d2/f3 8:5:f2\n""")
+
+    @unittest.skip("max_manifest_depth=0 is broken, see #4402")
+    def test_write_directory_tree_with_zero_recursion(self):
+        cwriter = arvados.CollectionWriter(self.api_client)
+        content = 'd1/d2/f3d1/f2f1'
+        blockhash = hashlib.md5(content).hexdigest() + '+' + str(len(content))
+        cwriter.write_directory_tree(
+            self.build_directory_tree(['f1', 'd1/f2', 'd1/d2/f3']),
+            max_manifest_depth=1)
+        self.assertEqual(
+            cwriter.manifest_text(),
+            ". {} 0:8:d1/d2/f3 8:5:d1/f2 13:2:f1\n".format(blockhash))
 
     def test_write_one_file(self):
         cwriter = arvados.CollectionWriter(self.api_client)
