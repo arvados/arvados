@@ -488,10 +488,7 @@ class CollectionWriter(CollectionBase):
             manifest += ' ' + ' '.join("%d:%d:%s" % (sfile[0], sfile[1], sfile[2].replace(' ', '\\040')) for sfile in stream[2])
             manifest += "\n"
 
-        if manifest:
-            return manifest
-        else:
-            return ""
+        return manifest
 
     def data_locators(self):
         ret = []
