@@ -165,7 +165,7 @@ class KeepBlockCache(object):
             self.ready.set()
 
         def size(self):
-            if self.content == None:
+            if self.content is None:
                 return 0
             else:
                 return len(self.content)

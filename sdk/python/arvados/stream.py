@@ -225,7 +225,7 @@ class StreamReader(object):
         # parse stream
         for tok in tokens:
             if debug: print 'tok', tok
-            if self._stream_name == None:
+            if self._stream_name is None:
                 self._stream_name = tok.replace('\\040', ' ')
                 continue
 

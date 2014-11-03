@@ -24,7 +24,7 @@ def clear_tmpdir(path=None):
     Ensure the given directory (or TASK_TMPDIR if none given)
     exists and is empty.
     """
-    if path == None:
+    if path is None:
         path = arvados.current_task().tmpdir
     if os.path.exists(path):
         p = subprocess.Popen(['rm', '-rf', path])

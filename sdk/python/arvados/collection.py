@@ -51,7 +51,7 @@ def normalize_stream(s, stream):
         fout = f.replace(' ', '\\040')
         for segment in stream[f]:
             segmentoffset = blocks[segment[arvados.LOCATOR]] + segment[arvados.OFFSET]
-            if current_span == None:
+            if current_span is None:
                 current_span = [segmentoffset, segmentoffset + segment[arvados.SEGMENTSIZE]]
             else:
                 if segmentoffset == current_span[1]:
@@ -60,7 +60,7 @@ def normalize_stream(s, stream):
                     stream_tokens.append("{0}:{1}:{2}".format(current_span[0], current_span[1] - current_span[0], fout))
                     current_span = [segmentoffset, segmentoffset + segment[arvados.SEGMENTSIZE]]
 
-        if current_span != None:
+        if current_span is not None:
             stream_tokens.append("{0}:{1}:{2}".format(current_span[0], current_span[1] - current_span[0], fout))
 
         if not stream[f]:
@@ -185,7 +185,7 @@ class CollectionReader(CollectionBase):
             error_via_keep = self._populate_from_keep()
         if not self._manifest_text:
             error_via_api = self._populate_from_api_server()
-            if error_via_api != None and not should_try_keep:
+            if error_via_api is not None and not should_try_keep:
                 raise error_via_api
         if (not self._manifest_text and
             not error_via_keep and
@@ -417,7 +417,7 @@ class CollectionWriter(CollectionBase):
         return self._current_file_name
 
     def finish_current_file(self):
-        if self._current_file_name == None:
+        if self._current_file_name is None:
             if self._current_file_pos == self._current_stream_length:
                 return
             raise errors.AssertionError(
