@@ -18,8 +18,10 @@ $(document).on('shown.bs.tab', '[data-toggle="tab"]', function(event) {
         a.addClass("active");
     });
 
-    // Now trigger reload of the newly shown tab pane.
-    $(event.target).trigger('arv:pane:reload');
+    if (!$(event.target).hasClass("pane-loaded")) {
+        // pane needs to be loaded
+        $(event.target).trigger('arv:pane:reload');
+    }
 });
 
 // Ask a refreshable pane to reload via ajax.
@@ -71,7 +73,7 @@ $(document).on('arv:pane:reload', function(e) {
 
     var throttle = $anchor.attr('data-load-throttle');
     if (!throttle) {
-        throttle = 3000;
+        throttle = 15000;
     }
     var now = (new Date()).getTime();
     var loaded_at = $anchor.attr('data-loaded-at');
