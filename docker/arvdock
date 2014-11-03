@@ -136,8 +136,8 @@ function make_keep_volumes () {
     while [ ${#keep_volumes[*]} -lt 2 ]
     do
         new_keep=$(mktemp -d)
-        echo >&2 "mounting 512M tmpfs keep volume in $new_keep"
-        sudo mount -t tmpfs -o size=512M tmpfs $new_keep
+        echo >&2 "mounting 2G tmpfs keep volume in $new_keep"
+        sudo mount -t tmpfs -o size=2G tmpfs $new_keep
         mkdir $new_keep/keep
         keep_volumes+=($new_keep)
     done
@@ -233,7 +233,8 @@ function do_start {
           $start_keep == false ]]
     then
         start_doc=9898
-        start_sso=9901
+        #the sso server is currently not used by default so don't start it unless explicitly requested
+        #start_sso=9901
         start_api=9900
         start_compute=2
         start_workbench=9899
@@ -249,7 +250,11 @@ function do_start {
 
     if [[ $start_api != false ]]
     then
+      if [[ $start_sso != false ]]; then
         start_container "$start_api:443" "api_server" '' "sso_server:sso" "arvados/api"
+      else
+        start_container "$start_api:443" "api_server" '' '' "arvados/api"
+      fi
     fi
 
     if [[ $start_nameserver != false ]]
@@ -311,13 +316,16 @@ function do_start {
         start_container "$start_workbench:80" "workbench_server" '' "api_server:api" "arvados/workbench"
     fi
 
-    if [ -d $HOME/.config/arvados ] || mkdir -p $HOME/.config/arvados
+    if [[ $start_api != false ]]
     then
-        cat >$HOME/.config/arvados/settings.conf <<EOF
+        if [ -d $HOME/.config/arvados ] || mkdir -p $HOME/.config/arvados
+        then
+            cat >$HOME/.config/arvados/settings.conf <<EOF
 ARVADOS_API_HOST=$(ip_address "api_server")
 ARVADOS_API_HOST_INSECURE=yes
 ARVADOS_API_TOKEN=$(cat api/generated/superuser_token)
 EOF
+        fi
     fi
 
 }
