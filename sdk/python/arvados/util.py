@@ -308,13 +308,31 @@ def stream_extract(stream, path, files=[], decompress=True):
     lockfile.close()
     return path
 
-def listdir_recursive(dirname, base=None):
+def listdir_recursive(dirname, base=None, max_depth=None):
+    """listdir_recursive(dirname, base, max_depth)
+
+    Return a list of file and directory names found under dirname.
+
+    If base is not None, prepend "{base}/" to each returned name.
+
+    If max_depth is None, descend into directories and return only the
+    names of files found in the directory tree.
+
+    If max_depth is a non-negative integer, stop descending into
+    directories at the given depth, and at that point return directory
+    names instead.
+
+    If max_depth==0 (and base is None) this is equivalent to
+    sorted(os.listdir(dirname)).
+    """
     allfiles = []
     for ent in sorted(os.listdir(dirname)):
         ent_path = os.path.join(dirname, ent)
         ent_base = os.path.join(base, ent) if base else ent
-        if os.path.isdir(ent_path):
-            allfiles += listdir_recursive(ent_path, ent_base)
+        if os.path.isdir(ent_path) and max_depth != 0:
+            allfiles += listdir_recursive(
+                ent_path, base=ent_base,
+                max_depth=(max_depth-1 if max_depth else None))
         else:
             allfiles += [ent_base]
     return allfiles

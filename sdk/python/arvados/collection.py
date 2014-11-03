@@ -348,9 +348,8 @@ class CollectionWriter(CollectionBase):
 
     def _work_trees(self):
         path, stream_name, max_manifest_depth = self._queued_trees[0]
-        make_dirents = (util.listdir_recursive if (max_manifest_depth == 0)
-                        else os.listdir)
-        d = make_dirents(path)
+        d = util.listdir_recursive(
+            path, max_depth = (None if max_manifest_depth == 0 else 0))
         if d:
             self._queue_dirents(stream_name, d)
         else:
