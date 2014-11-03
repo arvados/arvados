@@ -233,7 +233,8 @@ function do_start {
           $start_keep == false ]]
     then
         start_doc=9898
-        start_sso=9901
+        #the sso server is currently not used by default so don't start it unless explicitly requested
+        #start_sso=9901
         start_api=9900
         start_compute=2
         start_workbench=9899
