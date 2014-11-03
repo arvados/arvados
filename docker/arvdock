@@ -250,7 +250,11 @@ function do_start {
 
     if [[ $start_api != false ]]
     then
+      if [[ $start_sso != false ]]; then
         start_container "$start_api:443" "api_server" '' "sso_server:sso" "arvados/api"
+      else
+        start_container "$start_api:443" "api_server" '' '' "arvados/api"
+      fi
     fi
 
     if [[ $start_nameserver != false ]]
