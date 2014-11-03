@@ -6,6 +6,18 @@ title: Installation overview
 
 Arvados can be installed in multiple ways. Arvados does not depend on any particular cloud operating stack. Arvados runs on one or more GNU/Linux system(s). Arvados is being developed on Debian and Ubuntu GNU/Linux.
 
-The simplest way to try out Arvados is to use the "Docker-based installation":install-docker.html, which installs Arvados in a series of Docker containers.
+h2. Quick installation
 
-For production use or evaluation at scale, a "Manual Installation":install-manual-overview.html is more appropriate.
+Make sure curl and docker are installed on your system. Then, as a user in the docker group, execute
+
+<notextile>
+<pre><code>~$ <span class="userinput">\curl -sSL http://get.arvados.org | bash</span>
+</code></pre></notextile>
+
+This command will download the latest copy of the Arvados docker images as well as the arvdock command. It then uses arvdock to spin up Arvados on this computer. Depending on the speed of your internet connection, it can take a while to download the Arvados docker images.
+
+h2. Installation from source
+
+It is also possible to build the Arvados docker images from source. The instructions are available "here":install-docker.html.
+
+For production use or evaluation at scale a "Manual Installation":install-manual-overview.html is more appropriate. This installation method assumes you have a number of (virtual) machines at your disposal to install the different Arvados components onto.
