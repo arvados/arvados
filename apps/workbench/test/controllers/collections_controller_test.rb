@@ -20,7 +20,8 @@ class CollectionsControllerTest < ActionController::TestCase
 
   test 'provenance graph' do
     use_token 'admin'
-    obj = Collection.where(uuid: 'zzzzz-4zz18-uukreo9rbgwsujj').results.first
+
+    obj = find_fixture Collection, "graph_test_collection3"
 
     provenance = obj.provenance.stringify_keys
 
@@ -33,28 +34,26 @@ class CollectionsControllerTest < ActionController::TestCase
                                                            :direction => :bottom_up,
                                                            :combine_jobs => :script_only})
 
-    # hash -> baz file
-    assert /ea10d51bcf88862dbcc36eb292017dfd\+45&#45;&gt;hash_f866587e2de5291fbd38d616d6d33eab/.match(prov_svg)
+    stage1 = find_fixture Job, "graph_stage1"
+    stage3 = find_fixture Job, "graph_stage3"
+    previous_job_run = find_fixture Job, "previous_job_run"
 
-    # hash2 -> baz file
-    assert /ea10d51bcf88862dbcc36eb292017dfd\+45&#45;&gt;hash2_02a085407e751d00b5dc88f1bd5e8247/.match(prov_svg)
+    obj_id = obj.portable_data_hash.gsub('+', '\\\+')
+    stage1_out = stage1.output.gsub('+', '\\\+')
+    stage1_id = "#{stage1.script}_#{Digest::MD5.hexdigest(stage1[:script_parameters].to_json)}"
+    stage3_id = "#{stage3.script}_#{Digest::MD5.hexdigest(stage3[:script_parameters].to_json)}"
 
-    # owned_by_active -> hash
-    assert /hash_f866587e2de5291fbd38d616d6d33eab&#45;&gt;fa7aeb5140e2848d39b416daeef4ffc5\+45/.match(prov_svg)
+    assert /#{obj_id}&#45;&gt;#{stage3_id}/.match(prov_svg)
 
-    # owned_by_active -> hash2
-    assert /hash2_02a085407e751d00b5dc88f1bd5e8247&#45;&gt;fa7aeb5140e2848d39b416daeef4ffc5\+45/.match(prov_svg)
+    assert /#{stage3_id}&#45;&gt;#{stage1_out}/.match(prov_svg)
 
-    # File::open "./tmp/stuff3.svg", "w" do |f|
-    #   f.write "<?xml version=\"1.0\" ?>\n"
-    #   f.write prov_svg
-    # end
+    assert /#{stage1_out}&#45;&gt;#{stage1_id}/.match(prov_svg)
 
   end
 
   test 'used_by graph' do
     use_token 'admin'
-    obj = Collection.where(uuid: 'zzzzz-4zz18-bv31uwvy3neko22').results.first
+    obj = find_fixture Collection, "graph_test_collection1"
 
     used_by = obj.used_by.stringify_keys
 
@@ -64,20 +63,22 @@ class CollectionsControllerTest < ActionController::TestCase
                                                               :combine_jobs => :script_only,
                                                               :pdata_only => true})
 
-    # bar_file -> hash2
-    assert /fa7aeb5140e2848d39b416daeef4ffc5\+45&#45;&gt;hash2_f866587e2de5291fbd38d616d6d33eab/.match(used_by_svg)
+    stage2 = find_fixture Job, "graph_stage2"
+    stage3 = find_fixture Job, "graph_stage3"
 
-    # hash -> baz file
-    assert /hash_f866587e2de5291fbd38d616d6d33eab&#45;&gt;ea10d51bcf88862dbcc36eb292017dfd\+45/.match(used_by_svg)
+    stage2_id = "#{stage2.script}_#{Digest::MD5.hexdigest(stage2[:script_parameters].to_json)}"
+    stage3_id = "#{stage3.script}_#{Digest::MD5.hexdigest(stage3[:script_parameters].to_json)}"
 
-    # hash2 -> baz file
-    assert /hash2_02a085407e751d00b5dc88f1bd5e8247&#45;&gt;ea10d51bcf88862dbcc36eb292017dfd\+45/.match(used_by_svg)
+    obj_id = obj.portable_data_hash.gsub('+', '\\\+')
+    stage3_out = stage3.output.gsub('+', '\\\+')
 
+    assert /#{obj_id}&#45;&gt;#{stage2_id}/.match(used_by_svg)
 
-    # File::open "./tmp/stuff4.svg", "w" do |f|
-    #   f.write "<?xml version=\"1.0\" ?>\n"
-    #   f.write used_by_svg
-    # end
+    assert /#{obj_id}&#45;&gt;#{stage3_id}/.match(used_by_svg)
+
+    assert /#{stage3_id}&#45;&gt;#{stage3_out}/.match(used_by_svg)
+
+    assert /#{stage3_id}&#45;&gt;#{stage3_out}/.match(used_by_svg)
 
   end
 end

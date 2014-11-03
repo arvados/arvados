@@ -76,15 +76,16 @@ class Arvados::V1::CollectionsController < ApplicationController
 
     if loc
       # uuid is a portable_data_hash
-      c = Collection.readable_by(*@read_users).where(portable_data_hash: loc.to_s).all
+      collections = Collection.readable_by(*@read_users).where(portable_data_hash: loc.to_s)
+      c = collections.limit(2).all
       if c.size == 1
         visited[loc.to_s] = c[0]
       elsif c.size > 1
-        named = c.select {|n| not n.name.nil? and not n.name.empty? }
-        if named.any?
+        name = collections.limit(1).where("name <> ''").first
+        if name
           visited[loc.to_s] = {
             portable_data_hash: c[0].portable_data_hash,
-            name: "#{named[0].name} + #{c.size-1} more"
+            name: "#{name.name} + #{collections.count-1} more"
           }
         else
           visited[loc.to_s] = {

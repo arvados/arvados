@@ -24,10 +24,6 @@ class JobsController < ApplicationController
       nodes[c[:portable_data_hash]] = c
     end
 
-    nodes.each do |n|
-      puts "\n#{n.inspect}"
-    end
-
     @svg = ProvenanceHelper::create_provenance_graph nodes, "provenance_svg", {
       :request => request,
       :all_script_parameters => true,

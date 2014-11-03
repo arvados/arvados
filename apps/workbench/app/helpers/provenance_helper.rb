@@ -218,7 +218,7 @@ module ProvenanceHelper
 
         label = "#{v[0][:script]}"
 
-        if label == "run-command"
+        if label == "run-command" and v[0][:script_parameters][:command].is_a? Array
           label = v[0][:script_parameters][:command].join(' ')
         end
 
@@ -234,7 +234,7 @@ module ProvenanceHelper
     end
 
     def encode_quotes value
-      value.andand.to_s.gsub("\"", "\\\"").gsub("\n", "\\n")
+      value.to_s.gsub("\"", "\\\"").gsub("\n", "\\n")
     end
   end
 
@@ -301,7 +301,9 @@ edge [fontsize=10,fontname=\"Helvetica,Arial,sans-serif\"];
     svg = svg.sub(/<svg /, "<svg id=\"#{svgId}\" ")
   end
 
-  # returns hash, uuid
+  # yields hash, uuid
+  # Position indicates whether it is a content hash or arvados uuid.
+  # One will hold a value, the other will always be nil.
   def self.find_collections(sp, key=nil, &b)
     case sp
     when ArvadosBase
