@@ -281,18 +281,21 @@ collection_with_files_in_subdir:
 
 graph_test_collection1:
   uuid: zzzzz-4zz18-bv31uwvy3neko22
+  owner_uuid: zzzzz-tpzed-xurymjxw79nv3jz
   portable_data_hash: fa7aeb5140e2848d39b416daeef4ffc5+45
   manifest_text: ". 37b51d194a7513e45b56f6524f2d51f2+3 0:3:bar\n"
   name: bar_file
 
 graph_test_collection2:
   uuid: zzzzz-4zz18-uukreo9rbgwsujx
+  owner_uuid: zzzzz-tpzed-xurymjxw79nv3jz
   portable_data_hash: b519d9cb706a29fc7ea24dbea2f05851+93
   manifest_text: ". 6a4ff0499484c6c79c95cd8c566bd25f+249025 0:249025:GNU_General_Public_License,_version_3.pdf\n"
   name: "GNU General Public License, version 3"
 
 graph_test_collection3:
   uuid: zzzzz-4zz18-uukreo9rbgwsujj
+  owner_uuid: zzzzz-tpzed-xurymjxw79nv3jz
   portable_data_hash: ea10d51bcf88862dbcc36eb292017dfd+45
   manifest_text: ". 73feffa4b7f6bb68e44cf984c85f6e88+3 0:3:baz\n"
   name: "baz file"
