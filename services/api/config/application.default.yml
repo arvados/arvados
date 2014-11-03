@@ -133,6 +133,10 @@ common:
   # should be an address associated with a Google account.
   auto_admin_user: false
 
+  # If auto_admin_first_user is set to true, the first user to log in when no
+  # other admin users exist will automatically become an admin user.
+  auto_admin_first_user: false
+
   ## Set Time.zone default to the specified zone and make Active
   ## Record auto-convert to this zone.  Run "rake -D time" for a list
   ## of tasks for finding time zone names. Default is UTC.
