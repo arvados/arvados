@@ -75,7 +75,7 @@ class ServerCalculator(object):
                 if job['uuid'] not in self.logged_jobs:
                     self.logged_jobs.add(job['uuid'])
                     self.logger.debug("job %s not satisfiable", job['uuid'])
-            elif (want_count < self.max_nodes):
+            elif (want_count <= self.max_nodes):
                 servers.extend([cloud_size.real] * max(1, want_count))
         self.logged_jobs.intersection_update(seen_jobs)
         return servers

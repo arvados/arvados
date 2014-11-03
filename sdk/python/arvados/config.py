@@ -17,16 +17,29 @@ EMPTY_BLOCK_LOCATOR = 'd41d8cd98f00b204e9800998ecf8427e+0'
 def initialize(config_file=default_config_file):
     global _settings
     _settings = {}
-    if os.path.exists(config_file):
-        with open(config_file, "r") as f:
-            for config_line in f:
-                if re.match('^\s*#', config_line):
-                    continue
-                var, val = config_line.rstrip().split('=', 2)
-                _settings[var] = val
+
+    # load the specified config file if available
+    try:
+        _settings = load(config_file)
+    except IOError:
+        pass
+
+    # override any settings with environment vars
     for var in os.environ:
         if var.startswith('ARVADOS_'):
             _settings[var] = os.environ[var]
+
+def load(config_file):
+    cfg = {}
+    with open(config_file, "r") as f:
+        for config_line in f:
+            if re.match('^\s*$', config_line):
+                continue
+            if re.match('^\s*#', config_line):
+                continue
+            var, val = config_line.rstrip().split('=', 2)
+            cfg[var] = val
+    return cfg
 
 def flag_is_true(key):
     return get(key, '').lower() in set(['1', 't', 'true', 'y', 'yes'])

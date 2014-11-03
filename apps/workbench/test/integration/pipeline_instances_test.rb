@@ -70,6 +70,19 @@ class PipelineInstancesTest < ActionDispatch::IntegrationTest
     end
     wait_for_ajax
 
+    # Ensure that the collection's portable_data_hash, uuid and name
+    # are saved in the desired places. (#4015)
+
+    # foo_collection_in_aproject is the collection tagged with foo_tag.
+    col = api_fixture('collections', 'foo_collection_in_aproject')
+    click_link 'Advanced'
+    click_link 'API response'
+    api_response = JSON.parse(find('div#advanced_api_response pre').text)
+    input_params = api_response['components']['part-one']['script_parameters']['input']
+    assert_equal input_params['value'], col['portable_data_hash']
+    assert_equal input_params['selection_name'], col['name']
+    assert_equal input_params['selection_uuid'], col['uuid']
+
     # "Run" button is now enabled
     page.assert_no_selector 'a.disabled,button.disabled', text: 'Run'
 
@@ -117,7 +130,7 @@ class PipelineInstancesTest < ActionDispatch::IntegrationTest
     create_and_run_pipeline_in_aproject true
   end
 
-  # Create a pipeline instance from within a project and run
+  # Create a pipeline instance from outside of a project
   test 'Run a pipeline from dashboard' do
     visit page_with_token('active_trustedclient')
     create_and_run_pipeline_in_aproject false
@@ -299,6 +312,19 @@ class PipelineInstancesTest < ActionDispatch::IntegrationTest
       find('button', text: 'OK').click
     end
     wait_for_ajax
+
+    # Ensure that the collection's portable_data_hash, uuid and name
+    # are saved in the desired places. (#4015)
+
+    # foo_collection_in_aproject is the collection tagged with foo_tag.
+    col = api_fixture('collections', 'foo_collection_in_aproject')
+    click_link 'Advanced'
+    click_link 'API response'
+    api_response = JSON.parse(find('div#advanced_api_response pre').text)
+    input_params = api_response['components']['part-one']['script_parameters']['input']
+    assert_equal input_params['value'], col['portable_data_hash']
+    assert_equal input_params['selection_name'], col['name']
+    assert_equal input_params['selection_uuid'], col['uuid']
 
     # "Run" button present and enabled
     page.assert_no_selector 'a.disabled,button.disabled', text: 'Run'

@@ -52,7 +52,11 @@ class PipelineInstance < ArvadosBase
   end
 
   def attribute_editable?(name, ever=nil)
-    (ever or %w(New Ready).include?(state)) and super
+    if name.to_s == "components"
+      (ever or %w(New Ready).include?(state)) and super
+    else
+      super
+    end
   end
 
   def attributes_for_display
