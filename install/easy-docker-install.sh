@@ -50,7 +50,7 @@ main () {
   fi
 
   echo
-  echo "If necessary, this command will download the latest arvados docker images."
+  echo "If necessary, this command will download the latest Arvados docker images."
   echo "The download can take a long time, depending on the speed of your internet connection."
   echo "When the images are downloaded, it will then start an Arvados environment on this computer."
   echo

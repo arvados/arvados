@@ -21,7 +21,7 @@ Options:
 WORKSPACE=path Arvados source tree to test.
 CONFIGSRC=path Dir with api server config files to copy into source tree.
                (If none given, leave config files alone in source tree.)
-apiserver_test="TEST=test/functional/arvados/v1/collections_test.rb"
+apiserver_test="TEST=test/functional/arvados/v1/collections_controller_test.rb"
                Restrict apiserver tests to the given file
 python_sdk_test="--test-suite test.test_keep_locator"
                Restrict Python SDK tests to the given class
