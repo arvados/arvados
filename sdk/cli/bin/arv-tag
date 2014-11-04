@@ -16,7 +16,7 @@ def api_call(method, parameters:{}, request_body:{})
   request_body[:api_token] = ENV['ARVADOS_API_TOKEN']
   result = $client.execute(:api_method => method,
                            :parameters => parameters,
-                           :body => request_body,
+                           :body_object => request_body,
                            :authenticated => false)
 
   begin
@@ -157,7 +157,7 @@ global_opts = Trollop::options do
   opt :yaml, "Return the response received from the API server, in YAML format", :short => "-y"
   stop_on ['add', 'remove']
 end
-  
+
 p = Trollop::Parser.new do
   opt(:all,
       "Remove this tag from all objects under your ownership. Only valid with `tag remove'.",
