@@ -208,7 +208,7 @@ class StreamFileReader(object):
         manifest_text = ['.']
         manifest_text.extend([d[LOCATOR] for d in self._stream._data_locators])
         manifest_text.extend(["{}:{}:{}".format(seg[LOCATOR], seg[BLOCKSIZE], self.name().replace(' ', '\\040')) for seg in self.segments])
-        return arvados.CollectionReader(' '.join(manifest_text) + '\n').manifest_text()
+        return arvados.CollectionReader(' '.join(manifest_text) + '\n').manifest_text(normalize=True)
 
 
 class StreamReader(object):
@@ -225,7 +225,7 @@ class StreamReader(object):
         # parse stream
         for tok in tokens:
             if debug: print 'tok', tok
-            if self._stream_name == None:
+            if self._stream_name is None:
                 self._stream_name = tok.replace('\\040', ' ')
                 continue
 

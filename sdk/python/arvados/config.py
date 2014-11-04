@@ -7,7 +7,7 @@ import os
 import re
 
 _settings = None
-if os.environ.get('HOME') != None:
+if os.environ.get('HOME') is not None:
     default_config_file = os.environ['HOME'] + '/.config/arvados/settings.conf'
 else:
     default_config_file = ''

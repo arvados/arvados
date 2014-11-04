@@ -20,6 +20,7 @@ import arvados
 r = sys.stdin.read()
 
 cr = arvados.CollectionReader(r)
+cr.normalize()
 
 if args.extract:
     i = args.extract.rfind('/')

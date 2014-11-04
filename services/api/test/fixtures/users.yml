@@ -228,3 +228,17 @@ user1_with_load:
     profile:
       organization: example.com
       role: IT
+
+fuse:
+  owner_uuid: zzzzz-tpzed-000000000000000
+  uuid: zzzzz-tpzed-0fusedrivertest
+  email: fuse@arvados.local
+  first_name: FUSE
+  last_name: User
+  identity_url: https://fuse.openid.local
+  is_active: true
+  is_admin: false
+  prefs:
+    profile:
+      organization: example.com
+      role: IT

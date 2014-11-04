@@ -4,37 +4,18 @@ navsection: installguide
 title: Install the API server
 ...
 
-h2. Prerequisites:
+This installation guide assumes you are on a 64 bit Debian or Ubuntu system.
 
-# A GNU/Linux (virtual) machine
-# A domain name for your api server
-
-h2(#dependencies). Install dependencies
+h2. Install prerequisites
 
 <notextile>
 <pre><code>~$ <span class="userinput">sudo apt-get install \
     bison build-essential gettext libcurl3 libcurl3-gnutls \
     libcurl4-openssl-dev libpcre3-dev libpq-dev libreadline-dev \
-    libsqlite3-dev libssl-dev libxslt1.1 postgresql sqlite3 sudo \
-    wget zlib1g-dev
+    libssl-dev libxslt1.1 postgresql sudo wget zlib1g-dev
 </span></code></pre></notextile>
 
-h2(#ruby). Install Ruby and bundler
-
-We recommend Ruby >= 2.1.
-
-<notextile>
-<pre><code><span class="userinput">mkdir -p ~/src
-cd ~/src
-wget http://cache.ruby-lang.org/pub/ruby/2.1/ruby-2.1.2.tar.gz
-tar xzf ruby-2.1.2.tar.gz
-cd ruby-2.1.2
-./configure
-make
-sudo make install
-
-sudo gem install bundler</span>
-</code></pre></notextile>
+Also make sure you have "Ruby and bundler":install-manual-prerequisites-ruby.html installed.
 
 h2. Download the source tree
 
@@ -45,6 +26,8 @@ h2. Download the source tree
 
 See also: "Downloading the source code":https://arvados.org/projects/arvados/wiki/Download on the Arvados wiki.
 
+The API server is in @services/api@ in the source tree.
+
 h2. Install gem dependencies
 
 <notextile>
@@ -52,24 +35,44 @@ h2. Install gem dependencies
 ~/arvados/services/api$ <span class="userinput">bundle install</span>
 </code></pre></notextile>
 
+h2. Choose your environment
+
+The API server can be run in @development@ or in @production@ mode. Unless this installation is going to be used for development on the Arvados API server itself, you should run it in @production@ mode.
+
+Copy the example environment file for your environment. For example, if you choose @production@:
+
+<notextile>
+<pre><code>~/arvados/services/api$ <span class="userinput">cp -i config/environments/production.rb.example config/environments/production.rb</span>
+</code></pre></notextile>
+
 h2. Configure the API server
 
-Edit the main configuration:
+First, copy the example configuration file:
 
 <notextile>
 <pre><code>~/arvados/services/api$ <span class="userinput">cp -i config/application.yml.example config/application.yml</span>
 </code></pre></notextile>
 
-Choose a unique 5-character alphanumeric string to use as your @uuid_prefix@. An example is given that generates a 5-character string based on a hash of your hostname. The @uuid_prefix@ is a unique identifier for your API server. It also serves as the first part of the hostname for your API server.
+The API server reads the @config/application.yml@ file, as well as the @config/application.defaults.yml@ file. Values in @config/application.yml@ take precedence over the defaults that are defined in @config/application.defaults.yml@. The @config/application.yml.example@ file is not read by the API server and is provided for installation convenience, only.
 
-For a development site, use your own domain instead of arvadosapi.com.
+Consult @config/application.default.yml@ for a full list of configuration options. Always put your local configuration in @config/application.yml@, never edit @config/application.default.yml@.
 
-Make sure a clone of the arvados repository exists in @git_repositories_dir@:
+h3(#uuid_prefix). uuid_prefix
+
+It is recommended to explicitly define your @uuid_prefix@ in @config/application.yml@, by setting the 'uuid_prefix' field in the section for your environment.
+
+h3(#git_repositories_dir). git_repositories_dir
+
+This field defaults to @/var/lib/arvados/git@. You can override the value by defining it in @config/application.yml@.
+
+Make sure a clone of the arvados repository exists in @git_repositories_dir@.
 
 <notextile>
-<pre><code>~/arvados/services/api$ <span class="userinput">sudo mkdir -p /var/cache/git</span>
-~/arvados/services/api$ <span class="userinput">sudo git clone --bare ../../.git /var/cache/git/arvados.git</span>
+<pre><code>~/arvados/services/api$ <span class="userinput">sudo mkdir -p /var/lib/arvados/git</span>
+~/arvados/services/api$ <span class="userinput">sudo git clone --bare ../../.git /var/lib/arvados/git/arvados.git</span>
 </code></pre></notextile>
+
+h3. secret_token
 
 Generate a new secret token for signing cookies:
 
@@ -78,16 +81,23 @@ Generate a new secret token for signing cookies:
 zzzzzzzzzzzzzzzzzzzzzzzzzzzzzzzzzzzzzzzzzzzzzzzzzzzzzzzz
 </code></pre></notextile>
 
-If you want access control on your Keep server(s), you should set @blob_signing_key@ to the same value as the permission key you provided to your "Keep server(s)":install-keep.html.
+Then put that value in the @secret_token@ field.
 
-Put it in @config/application.yml@ in the production or common section:
+h3. blob_signing_key
 
-<notextile>
-<pre><code><span class="userinput">    secret_token: zzzzzzzzzzzzzzzzzzzzzzzzzzzzzzzzzzzzzzzzzzzzzzzzzzzzzzzz</span>
-</code></pre>
-</notextile>
+If you want access control on your "Keepstore":install-keepstore.html server(s), you should set @blob_signing_key@ to the same value as the permission key you provide to your Keepstore daemon(s).
+
+h3. workbench_address
+
+Fill in the url of your workbench application in in @workbench_address@, for example 
+
+&nbsp;&nbsp;https://workbench.@prefix_uuid@.your.domain
+
+h3. other options
 
 Consult @application.default.yml@ for a full list of configuration options. Always put your local configuration in @application.yml@ instead of editing @application.default.yml@.
+
+h2. Set up the database
 
 Generate a new database password. Nobody ever needs to memorize it or type it, so we'll make a strong one:
 
@@ -114,19 +124,37 @@ Configure API server to connect to your database by creating and updating @confi
 ~/arvados/services/api$ <span class="userinput">edit config/database.yml</span>
 </code></pre></notextile>
 
-Create and initialize the database.
+Create and initialize the database. If you are planning a production system, choose the @production@ rails environment, otherwise use @development@.
 
 <notextile>
-<pre><code>~/arvados/services/api$ <span class="userinput">RAILS_ENV=development bundle exec rake db:setup</span>
+<pre><code>~/arvados/services/api$ <span class="userinput">RAILS_ENV=production bundle exec rake db:setup</span>
 </code></pre></notextile>
 
-Set up omniauth:
+Alternatively, if the database user you intend to use for the API server is not allowed to create new databases, you can create the database first and then populate it with rake. Be sure to adjust the database name if you are using the @development@ environment. This sequence of commands is functionally equivalent to the rake db:setup command above.
+
+<notextile>
+<pre><code>~/arvados/services/api$ <span class="userinput">su postgres createdb arvados_production -E UTF8 -O arvados</span>
+~/arvados/services/api$ <span class="userinput">RAILS_ENV=production bundle exec rake db:structure:load</span>
+~/arvados/services/api$ <span class="userinput">RAILS_ENV=production bundle exec rake db:seed</span>
+</code></pre></notextile>
+
+<div class="alert alert-block alert-info">
+  <button type="button" class="close" data-dismiss="alert">&times;</button>
+  <h4>Note!</h4>
+You can safely ignore the following error message you may see when loading the database structure:
+<notextile>
+<pre><code>ERROR:  must be owner of extension plpgsql</code></pre></notextile>
+</div>
+
+h2. Set up omniauth
+
+First copy the omniauth configuration file:
 
 <notextile>
 <pre><code>~/arvados/services/api$ <span class="userinput">cp -i config/initializers/omniauth.rb.example config/initializers/omniauth.rb
 </code></pre></notextile>
 
-Edit @config/initializers/omniauth.rb@, and tell your api server to use the Curoverse SSO server for authentication:
+Edit @config/initializers/omniauth.rb@, and tell your api server to use the Curoverse SSO server for authentication. Use the @APP_SECRET@ specified in the snippet below.
 
 <notextile>
 <pre><code>APP_ID = 'local_docker_installation'
@@ -141,41 +169,25 @@ CUSTOM_PROVIDER_URL = 'https://auth.curoverse.com'
   <p>You can also run your own SSO server. However, the SSO server codebase currently uses OpenID 2.0 to talk to Google's authentication service. Google <a href="https://developers.google.com/accounts/docs/OpenID2">has deprecated that protocol</a>. This means that new clients will not be allowed to talk to Google's authentication services anymore over OpenID 2.0, and they will phase out the use of OpenID 2.0 completely in the coming monts. We are working on upgrading the SSO server codebase to a newer protocol. That work should be complete by the end of November 2014. In the mean time, anyone is free to use the existing Curoverse SSO server for any local Arvados installation.</p>
 </div>
 
-You can now run the development server:
+h2. Start the API server
+
+h3. Development environment
+
+If you plan to run in development mode, you can now run the development server this way:
 
 <notextile>
 <pre><code>~/arvados/services/api$ <span class="userinput">bundle exec rails server --port=3030
 </code></pre></notextile>
 
-h3. Apache/Passenger (optional)
+h3. Production environment
 
-You can use "Passenger":https://www.phusionpassenger.com/ for deployment. Point it to the services/api directory in the source tree.
+We recommend "Passenger":https://www.phusionpassenger.com/ to run the API server in production. 
 
-To enable streaming so users can monitor crunch jobs in real time, add to your Passenger configuration in Apache:
+Point it to the services/api directory in the source tree.
+
+To enable streaming so users can monitor crunch jobs in real time, make sure to add the following to your Passenger configuration:
 
 <notextile>
 <pre><code><span class="userinput">PassengerBufferResponse off</span>
 </code></pre>
 </notextile>
-
-h2(#admin-user). Add an admin user
-
-Point your browser to the API server's login endpoint:
-
-<notextile>
-<pre><code><span class="userinput">https://localhost:3030/login</span>
-</code></pre>
-</notextile>
-
-Log in with your google account.
-
-Use the rails console to give yourself admin privileges:
-
-<notextile>
-<pre><code>~/arvados/services/api$ <span class="userinput">bundle exec rails console</span>
-irb(main):001:0&gt; <span class="userinput">Thread.current[:user] = User.all.select(&:identity_url).last</span>
-irb(main):002:0&gt; <span class="userinput">Thread.current[:user].is_admin = true</span>
-irb(main):003:0&gt; <span class="userinput">Thread.current[:user].update_attributes is_admin: true, is_active: true</span>
-irb(main):004:0&gt; <span class="userinput">User.where(is_admin: true).collect &:email</span>
-=&gt; ["root", "<b>your_address@example.com</b>"]
-</code></pre></notextile>
