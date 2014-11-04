@@ -368,6 +368,8 @@ class ComputeNodeMonitorActor(config.actor_class):
         if state == IDLE:
             return True
         elif state == UNKNOWN:
+            # If this is a new, unpaired node, it's eligible for
+            # shutdown--we figure there was an error during bootstrap.
             return ((self.arvados_node is None) and
                     timestamp_fresh(self.cloud_node_start_time,
                                     self.node_stale_after))

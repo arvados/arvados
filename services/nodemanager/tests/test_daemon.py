@@ -235,6 +235,22 @@ class NodeManagerDaemonActorTestCase(testutil.ActorTestMixin,
         self.stop_proxy(self.daemon)
         self.assertTrue(self.node_shutdown.start.called)
 
+    def test_shutdown_declined_when_idle_and_job_queued(self):
+        cloud_nodes = [testutil.cloud_node_mock(n) for n in [3, 4]]
+        arv_nodes = [testutil.arvados_node_mock(3, job_uuid=True),
+                     testutil.arvados_node_mock(4, job_uuid=None)]
+        self.make_daemon(cloud_nodes, arv_nodes, [testutil.MockSize(1)])
+        self.assertEqual(2, self.monitor_count())
+        for mon_ref in self.monitor_list():
+            monitor = mon_ref.proxy()
+            if monitor.cloud_node.get(self.TIMEOUT) is cloud_nodes[-1]:
+                break
+        else:
+            self.fail("monitor for idle node not found")
+        self.daemon.node_can_shutdown(monitor).get(self.TIMEOUT)
+        self.stop_proxy(self.daemon)
+        self.assertFalse(self.node_shutdown.start.called)
+
     def test_clean_shutdown_waits_for_node_setup_finish(self):
         new_node = self.start_node_boot()
         self.daemon.shutdown().get(self.TIMEOUT)

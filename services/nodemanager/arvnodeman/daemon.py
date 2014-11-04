@@ -187,7 +187,7 @@ class NodeManagerDaemonActor(actor_class):
                     self._pair_nodes(cloud_rec, arv_node)
                     break
 
-    def _node_count(self):
+    def _nodes_up(self):
         up = sum(len(nodelist) for nodelist in
                  [self.cloud_nodes, self.booted, self.booting])
         return up - len(self.shutdowns)
@@ -200,10 +200,10 @@ class NodeManagerDaemonActor(actor_class):
 
     def _nodes_wanted(self):
         return min(len(self.last_wishlist) + self._nodes_busy(),
-                   self.max_nodes) - self._node_count()
+                   self.max_nodes) - self._nodes_up()
 
     def _nodes_excess(self):
-        return self._node_count() - len(self.last_wishlist)
+        return self._nodes_up() - self._nodes_busy() - len(self.last_wishlist)
 
     def update_server_wishlist(self, wishlist):
         self._update_poll_time('server_wishlist')

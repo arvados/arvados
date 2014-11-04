@@ -15,7 +15,7 @@ def arvados_node_mock(node_num=99, job_uuid=None, age=0, **kwargs):
     if job_uuid is True:
         job_uuid = 'zzzzz-jjjjj-jobjobjobjobjob'
     slurm_state = 'idle' if (job_uuid is None) else 'alloc'
-    node = {'uuid': 'zzzzz-yyyyy-12345abcde67890',
+    node = {'uuid': 'zzzzz-yyyyy-{:015x}'.format(node_num),
             'created_at': '2014-01-01T01:02:03Z',
             'modified_at': time.strftime('%Y-%m-%dT%H:%M:%SZ',
                                          time.gmtime(time.time() - age)),
