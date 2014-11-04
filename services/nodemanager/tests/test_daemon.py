@@ -41,7 +41,7 @@ class NodeManagerDaemonActorTestCase(testutil.ActorTestMixin,
     def monitor_list(self):
         return pykka.ActorRegistry.get_by_class(nmcnode.ComputeNodeMonitorActor)
 
-    def monitor_count(self):
+    def alive_monitor_count(self):
         return sum(1 for actor in self.monitor_list() if actor.is_alive())
 
     def test_easy_node_creation(self):
@@ -55,7 +55,7 @@ class NodeManagerDaemonActorTestCase(testutil.ActorTestMixin,
         arv_node = testutil.arvados_node_mock(1)
         self.make_daemon([cloud_node], [arv_node])
         self.stop_proxy(self.daemon)
-        self.assertEqual(1, self.monitor_count())
+        self.assertEqual(1, self.alive_monitor_count())
         self.assertIs(
             self.monitor_list()[0].proxy().arvados_node.get(self.TIMEOUT),
             arv_node)
@@ -67,7 +67,7 @@ class NodeManagerDaemonActorTestCase(testutil.ActorTestMixin,
         arv_node = testutil.arvados_node_mock(2)
         self.daemon.update_arvados_nodes([arv_node]).get(self.TIMEOUT)
         self.stop_proxy(self.daemon)
-        self.assertEqual(1, self.monitor_count())
+        self.assertEqual(1, self.alive_monitor_count())
         self.assertIs(
             self.monitor_list()[0].proxy().arvados_node.get(self.TIMEOUT),
             arv_node)
@@ -148,14 +148,14 @@ class NodeManagerDaemonActorTestCase(testutil.ActorTestMixin,
         setup = self.start_node_boot(cloud_node)
         self.daemon.update_cloud_nodes([cloud_node])
         self.daemon.node_up(setup).get(self.TIMEOUT)
-        self.assertEqual(1, self.monitor_count())
+        self.assertEqual(1, self.alive_monitor_count())
 
     def test_no_duplication_when_booted_node_listed(self):
         cloud_node = testutil.cloud_node_mock(2)
         setup = self.start_node_boot(cloud_node, id_num=2)
         self.daemon.node_up(setup)
         self.daemon.update_cloud_nodes([cloud_node]).get(self.TIMEOUT)
-        self.assertEqual(1, self.monitor_count())
+        self.assertEqual(1, self.alive_monitor_count())
 
     def test_node_counted_after_boot_with_slow_listing(self):
         # Test that, after we boot a compute node, we assume it exists
@@ -163,9 +163,9 @@ class NodeManagerDaemonActorTestCase(testutil.ActorTestMixin,
         # propagating tags).
         setup = self.start_node_boot()
         self.daemon.node_up(setup).get(self.TIMEOUT)
-        self.assertEqual(1, self.monitor_count())
+        self.assertEqual(1, self.alive_monitor_count())
         self.daemon.update_cloud_nodes([]).get(self.TIMEOUT)
-        self.assertEqual(1, self.monitor_count())
+        self.assertEqual(1, self.alive_monitor_count())
 
     def test_booted_unlisted_node_counted(self):
         setup = self.start_node_boot(id_num=1)
@@ -179,7 +179,7 @@ class NodeManagerDaemonActorTestCase(testutil.ActorTestMixin,
     def test_booted_node_can_shutdown(self):
         setup = self.start_node_boot()
         self.daemon.node_up(setup).get(self.TIMEOUT)
-        self.assertEqual(1, self.monitor_count())
+        self.assertEqual(1, self.alive_monitor_count())
         monitor = self.monitor_list()[0].proxy()
         self.daemon.update_server_wishlist([])
         self.daemon.node_can_shutdown(monitor).get(self.TIMEOUT)
@@ -191,7 +191,7 @@ class NodeManagerDaemonActorTestCase(testutil.ActorTestMixin,
         cloud_node = testutil.cloud_node_mock(6)
         setup = self.start_node_boot(cloud_node, id_num=6)
         self.daemon.node_up(setup).get(self.TIMEOUT)
-        self.assertEqual(1, self.monitor_count())
+        self.assertEqual(1, self.alive_monitor_count())
         monitor = self.monitor_list()[0].proxy()
         self.daemon.update_server_wishlist([])
         self.daemon.node_can_shutdown(monitor).get(self.TIMEOUT)
@@ -221,7 +221,7 @@ class NodeManagerDaemonActorTestCase(testutil.ActorTestMixin,
         cloud_node = testutil.cloud_node_mock(1)
         size = testutil.MockSize(1)
         self.make_daemon(cloud_nodes=[cloud_node], want_sizes=[size])
-        self.assertEqual(1, self.monitor_count())
+        self.assertEqual(1, self.alive_monitor_count())
         monitor = self.monitor_list()[0].proxy()
         self.daemon.node_can_shutdown(monitor).get(self.TIMEOUT)
         self.stop_proxy(self.daemon)
@@ -229,7 +229,7 @@ class NodeManagerDaemonActorTestCase(testutil.ActorTestMixin,
 
     def test_shutdown_accepted_below_capacity(self):
         self.make_daemon(cloud_nodes=[testutil.cloud_node_mock()])
-        self.assertEqual(1, self.monitor_count())
+        self.assertEqual(1, self.alive_monitor_count())
         monitor = self.monitor_list()[0].proxy()
         self.daemon.node_can_shutdown(monitor).get(self.TIMEOUT)
         self.stop_proxy(self.daemon)
@@ -240,7 +240,7 @@ class NodeManagerDaemonActorTestCase(testutil.ActorTestMixin,
         arv_nodes = [testutil.arvados_node_mock(3, job_uuid=True),
                      testutil.arvados_node_mock(4, job_uuid=None)]
         self.make_daemon(cloud_nodes, arv_nodes, [testutil.MockSize(1)])
-        self.assertEqual(2, self.monitor_count())
+        self.assertEqual(2, self.alive_monitor_count())
         for mon_ref in self.monitor_list():
             monitor = mon_ref.proxy()
             if monitor.cloud_node.get(self.TIMEOUT) is cloud_nodes[-1]:

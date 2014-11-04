@@ -12,11 +12,6 @@ import pykka
 from ..clientactor import _notify_subscribers
 from .. import config
 
-# Node states - mostly matching SLURM states
-UNKNOWN = 0
-IDLE = 50
-ALLOC = 100
-
 def arvados_node_fqdn(arvados_node, default_hostname='dynamic.compute'):
     hostname = arvados_node.get('hostname') or default_hostname
     return '{}.{}'.format(hostname, arvados_node['domain'])
@@ -352,29 +347,27 @@ class ComputeNodeMonitorActor(config.actor_class):
         self._last_log = msg
         self._logger.debug(msg, *args)
 
-    def state(self):
-        if ((self.arvados_node is None) or
-              (not timestamp_fresh(arvados_node_mtime(self.arvados_node),
-                                   self.poll_stale_after))):
-            return UNKNOWN
-        elif ((self.arvados_node['info'].get('slurm_state') == 'idle') and
-                (not self.arvados_node['job_uuid'])):
-            return IDLE
-        else:
-            return ALLOC
+    def in_state(self, *states):
+        # Return a boolean to say whether or not our Arvados node record is in
+        # one of the given states.  If the Arvados node record is unavailable
+        # or stale, return None.
+        if (self.arvados_node is None) or not timestamp_fresh(
+              arvados_node_mtime(self.arvados_node), self.node_stale_after):
+            return None
+        state = self.arvados_node['info'].get('slurm_state')
+        result = state in states
+        if result and state == 'idle':
+            result = not self.arvados_node['job_uuid']
+        return result
 
     def _shutdown_eligible(self):
-        state = self.state()
-        if state == IDLE:
-            return True
-        elif state == UNKNOWN:
+        if self.arvados_node is None:
             # If this is a new, unpaired node, it's eligible for
             # shutdown--we figure there was an error during bootstrap.
-            return ((self.arvados_node is None) and
-                    timestamp_fresh(self.cloud_node_start_time,
-                                    self.node_stale_after))
+            return timestamp_fresh(self.cloud_node_start_time,
+                                   self.node_stale_after)
         else:
-            return False
+            return self.in_state('idle')
 
     def consider_shutdown(self):
         next_opening = self._shutdowns.next_opening()

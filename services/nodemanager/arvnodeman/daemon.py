@@ -193,10 +193,10 @@ class NodeManagerDaemonActor(actor_class):
         return up - len(self.shutdowns)
 
     def _nodes_busy(self):
-        return sum(1 for state in
-                   pykka.get_all(rec.actor.state() for rec in
+        return sum(1 for alloc in
+                   pykka.get_all(rec.actor.in_state('alloc') for rec in
                                  self.cloud_nodes.nodes.itervalues())
-                   if state == cnode.ALLOC)
+                   if alloc)
 
     def _nodes_wanted(self):
         return min(len(self.last_wishlist) + self._nodes_busy(),
