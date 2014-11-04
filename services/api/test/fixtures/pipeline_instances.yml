@@ -161,9 +161,9 @@ pipeline_<%=i%>_of_10:
   state: Failed
   uuid: zzzzz-d1hrv-10pipelines0<%= i.to_s.rjust(3, '0') %>
   owner_uuid: zzzzz-j7d0g-000010pipelines
-  created_at: <%= (2*i).hour.ago.to_s(:db) %>
-  started_at: <%= (2*i).hour.ago.to_s(:db) %>
-  finished_at: <%= i.minute.ago.to_s(:db) %>
+  created_at: <%= (2*(i-1)).hour.ago.to_s(:db) %>
+  started_at: <%= (2*(i-1)).hour.ago.to_s(:db) %>
+  finished_at: <%= (i-1).minute.ago.to_s(:db) %>
   components:
     foo:
       script: foo
