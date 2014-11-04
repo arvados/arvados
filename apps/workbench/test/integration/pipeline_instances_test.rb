@@ -147,7 +147,7 @@ class PipelineInstancesTest < ActionDispatch::IntegrationTest
     # since the pipeline component has a job, expect to see the graph
     assert page.has_text? 'Graph'
     click_link 'Graph'
-    assert page.has_text? 'script_version'
+    page.assert_selector "#provenance_graph"
   end
 
   test 'pipeline description' do
