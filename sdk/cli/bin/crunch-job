@@ -1668,7 +1668,7 @@ sub retry_op {
     if (!$@) {
       return $result;
     } elsif ($try_count < $retries) {
-      retry_callback->($try_count, $@);
+      $retry_callback->($try_count, $@);
       my $sleep_time = $next_try - time;
       sleep($sleep_time) if ($sleep_time > 0);
     }
