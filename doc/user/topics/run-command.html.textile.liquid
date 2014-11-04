@@ -53,8 +53,8 @@ The "command" list can include parameter substitutions.  Substitutions are enclo
 
 <pre>
 {
-  "command": ["echo", "$(file $(a))"],
-  "a": "c1bad4b39ca5a924e481008009d94e32+210/var-GS000016015-ASM.tsv.bz2"
+  "a": "c1bad4b39ca5a924e481008009d94e32+210/var-GS000016015-ASM.tsv.bz2",
+  "command": ["echo", "$(file $(a))"]
 }
 </pre>
 
@@ -67,40 +67,45 @@ table(table table-bordered table-condensed).
 
 h2. List context
 
-When a parameter is evaluated in a list context, that means its value should evaluate to a list instead of a string.  Parameter values can be a static list (as demonstrated above), a path to a file, a path to a directory, or a JSON object describing a list context function.
+Where specified by the documentation, parameters may be evaluated in a "list context".  That means the value will evaluate to a list instead of a string.  Parameter values can be a static list, a path to a file, a path to a directory, or a JSON object describing a list context function.
 
-If the value is a static list, it will evaluate the list items for parameter substation and list functions.
+If the value is a string, it is interpreted as a path.  If the path specifies a regular file, that file will be opened as a text file and produce a list with one item for each line in the file (end-of-line characters will be stripped).  If the path specifies a directory, produce a list containing all of the entries in the directory.  Note that parameter expansion is not performed on list items produced this way.
 
-If the value is a string, it is interpreted as a path.  If the path specifies a regular file, that file will be opened as a text file and produce a list with one item for each line in the file (end-of-line characters will be stripped).  If the path specifies a directory, produce a list containing all of the entries in the directory.  Note that parameter expansion is not performed on lists produced this way.
+If the value is a static list, it will evaluate each item and return the expanded list.  Each item may be a string (evaluated for parameter substitution), a list (recursively evaluated), or a JSON object (indicating a list function, described below).
 
 If the value is a JSON object, it is evaluated as a list function described below.
 
 h2. List functions
 
-When @run-command@ is evaluating a list (such as "command"), in addition to string parameter substitution, you can use list item functions.  In the following functions, you can either specify the name of a user parameter to act on or provide list value directly in line, for example, the following two fragments yield the same result:
+When @run-command@ is evaluating a list (such as "command"), in addition to string parameter substitution, you can use list item functions.  In the following functions, you can either specify the name of a user parameter to act on (@"$(a)"@ in the first example) or provide list value directly in line, for example, the following two fragments yield the same result:
 
 <pre>
 {
-  "command": ["echo", {"foreach": "$(a)", "command": ["--something", "$(a)"]}],
-  "a": ["alice", "bob"]
+  "a": ["alice", "bob"],
+  "command": ["echo", {"foreach": "$(a)",
+                       "var": "a_var",
+                       "command": ["--something", "$(a_var)"]}]
 }
 </pre>
 
 <pre>
 {
-  "command": ["echo", {"foreach": ["alice", "bob"], "var":"a", "command": ["--something", "$(a)"]}],
+  "command": ["echo", {"foreach": ["alice", "bob"],
+                       "var": "a_var",
+                       "command": ["--something", "$(a_var)"]}]
 }
 </pre>
 
 Note: when you provide the list inline with "foreach" or "index", you must include the "var" parameter to specify the substitution variable name to use when evaluating the command fragment.
 
-You can also nest functions:
+You can also nest functions.  This filters @["alice", "bob"]@ on the regular expression @"b.*"@ to get the list @["bob"]@, assigns @a_var@ to each value of the list, then expands @"command"@ to get @["--something", "bob"]@.
 
 <pre>
 {
-  "command": ["echo", {"foreach": {"filter": ["alice", "bob"], "regex": "b.*"},
-                       "var":"a",
-                       "command": ["--something", "$(a)"]}]
+  "command": ["echo", {"foreach": {"filter": ["alice", "bob"],
+                                   "regex": "b.*"},
+                       "var": "a_var",
+                       "command": ["--something", "$(a_var)"]}]
 }
 </pre>
 
@@ -110,8 +115,10 @@ The @foreach@ list item function (not to be confused with the @task.foreach@ dir
 
 <pre>
 {
-  "command": ["echo", {"foreach": "$(a)", "command": ["--something", "$(a)"]}],
-  "a": ["alice", "bob"]
+  "a": ["alice", "bob"],
+  "command": ["echo", {"foreach": "$(a)",
+                       "var": "a_var",
+                       "command": ["--something", "$(a_var)"]}]
 }
 </pre>
 
@@ -121,8 +128,11 @@ This function extracts a single item from a list.  The value of @index@ is zero-
 
 <pre>
 {
-  "command": ["echo", {"list": "$(a)", "var":"a", "index": 1, "command": ["--something", "$(a)"]}],
-  "a": ["alice", "bob"]
+  "a": ["alice", "bob"],
+  "command": ["echo", {"list": "$(a)",
+                       "var": "a_var",
+                       "index": 1,
+                       "command": ["--something", "$(a_var)"]}]
 }
 </pre>
 
@@ -132,20 +142,27 @@ Filter the list so that it only includes items that match a regular expression. 
 
 <pre>
 {
-  "command": ["echo", {"filter": "$(a)", "regex": "b.*"}],
-  "a": ["alice", "bob"]
+  "a": ["alice", "bob"],
+  "command": ["echo", {"filter": "$(a)",
+                       "regex": "b.*"}]
 }
 </pre>
 
 h3. group
 
-Generate a list of lists, where items are grouped on common subexpression match.  Items which don't match the regular expression are excluded.  The following example evaluates to @["echo", "--group", "alice", "carol", "dave", "--group", "bob"]@:
+Generate a list of lists, where items are grouped on common subexpression match.  Items which don't match the regular expression are excluded.  In the following example, the subexpression is @(a?)@, resulting in two groups, strings that contain the letter 'a' and strings that do not.  The following example evaluates to @["echo", "--group", "alice", "carol", "dave", "--group", "bob"]@:
 
 <pre>
 {
-  "command": ["echo", {"foreach": "$(b)", "command":["--group", {"foreach": "b", "command":"$(b)"}]}],
   "a": ["alice", "bob", "carol", "dave"],
-  "b": {"group": "a", "regex": "[^a]*(a?).*"}
+  "b": {"group": "$(a)",
+        "regex": "[^a]*(a?).*"},
+  "command": ["echo", {"foreach": "$(b)",
+                       "var": "b_var",
+                       "command": ["--group",
+                                   {"foreach": "$(b_var)",
+                                    "var": "c_var",
+                                    "command": "$(c_var)"}]}]
 }
 </pre>
 
@@ -155,9 +172,14 @@ Generate a list of lists, where items are split by subexpression match.  Items w
 
 <pre>
 {
-  "command": ["echo", {"foreach": "$(b)", "command":[{"foreach": "$(b)", "command":"$(b)"}]}],
   "a": ["alice", "bob", "carol", "dave"],
-  "b": {"extract": "a", "regex": "(.+)(a)(.*)"}
+  "b": {"extract": "$(a)",
+        "regex": "(.+)(a)(.*)"},
+  "command": ["echo", {"foreach": "$(b)",
+                       "var": "b_var",
+                       "command": [{"foreach": "$(b_var)",
+                                    "var": "c_var",
+                                    "command": "$(c_var)"}]}]
 }
 </pre>
 
@@ -167,8 +189,11 @@ Generate a list of lists, where items are split into batch size.  If the list do
 
 <pre>
 {
-  "command": ["echo", {"foreach":{"batch": "$(a)", "size": 2}, "var":"a", "command":["--something", "$(a)"]}],
-  "a": ["alice", "bob", "carol", "dave"]
+  "a": ["alice", "bob", "carol", "dave"],
+  "command": ["echo", {"foreach":{"batch": "$(a)",
+                                  "size": 2},
+                       "var": "a_var",
+                       "command": ["--something", "$(a_var)"]}]
 }
 </pre>
 
@@ -225,10 +250,10 @@ You can also specify multiple parameters:
 
 <pre>
 {
-  "command": ["echo", "$(a)", "$(b)"],
-  "task.foreach": ["a", "b"],
   "a": ["alice", "bob"],
-  "b": ["carol", "dave"]
+  "b": ["carol", "dave"],
+  "task.foreach": ["a", "b"],
+  "command": ["echo", "$(a)", "$(b)"]
 }
 </pre>
 

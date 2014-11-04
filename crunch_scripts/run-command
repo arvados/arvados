@@ -119,25 +119,35 @@ def add_to_group(gr, match):
         gr[m] = []
     gr[m].append(match.group(0))
 
+class EvaluationError(Exception):
+    pass
+
 # Return the name of variable ('var') that will take on each value in 'items'
 # when performing an inner substitution
 def var_items(p, c, key):
+    if key not in c:
+        raise EvaluationError("'%s' was expected in 'p' but is missing" % key)
+
     if "var" in c:
+        if not isinstance(c["var"], basestring):
+            raise EvaluationError("Value of 'var' must be a string")
         # Var specifies the variable name for inner parameter substitution
         return (c["var"], get_items(p, c[key]))
     else:
         # The component function ('key') value is a list, so return the list
-        # directly with no parameter substition.
+        # directly with no parameter selected.
         if isinstance(c[key], list):
             return (None, get_items(p, c[key]))
-
-        # check if c[key] is a string that looks like a parameter
-        m = re.match("^\$\((.*)\)$", c[key])
-        if m and m.group(1) in p:
-            return (m.group(1), get_items(p, c[key]))
+        elif isinstance(c[key], basestring):
+            # check if c[key] is a string that looks like a parameter
+            m = re.match("^\$\((.*)\)$", c[key])
+            if m and m.group(1) in p:
+                return (m.group(1), get_items(p, c[key]))
+            else:
+                # backwards compatible, foreach specifies bare parameter name to use
+                return (c[key], get_items(p, p[c[key]]))
         else:
-            # backwards compatible, foreach specifies bare parameter name to use
-            return (c[key], get_items(p, p[c[key]]))
+            raise EvaluationError("Value of '%s' must be a string or list" % key)
 
 # "p" is the parameter scope, "c" is the item to be expanded.
 # If "c" is a dict, apply function expansion.
@@ -147,24 +157,28 @@ def expand_item(p, c):
     if isinstance(c, dict):
         if "foreach" in c and "command" in c:
             var, items = var_items(p, c, "foreach")
+            if var is None:
+                raise EvaluationError("Must specify 'var' in foreach")
             r = []
             for i in items:
                 params = copy.copy(p)
                 params[var] = i
                 r.append(expand_item(params, c["command"]))
             return r
-        if "list" in c and "index" in c and "command" in c:
+        elif "list" in c and "index" in c and "command" in c:
             var, items = var_items(p, c, "list")
+            if var is None:
+                raise EvaluationError("Must specify 'var' in list")
             params = copy.copy(p)
             params[var] = items[int(c["index"])]
             return expand_item(params, c["command"])
-        if "regex" in c:
+        elif "regex" in c:
             pattern = re.compile(c["regex"])
             if "filter" in c:
-                var, items = var_items(p, c, "filter")
+                _, items = var_items(p, c, "filter")
                 return [i for i in items if pattern.match(i)]
             elif "group" in c:
-                var, items = var_items(p, c, "group")
+                _, items = var_items(p, c, "group")
                 groups = {}
                 for i in items:
                     match = pattern.match(i)
@@ -172,20 +186,21 @@ def expand_item(p, c):
                         add_to_group(groups, match)
                 return [groups[k] for k in groups]
             elif "extract" in c:
-                var, items = var_items(p, c, "extract")
+                _, items = var_items(p, c, "extract")
                 r = []
                 for i in items:
                     match = pattern.match(i)
                     if match:
                         r.append(list(match.groups()))
                 return r
-        if "batch" in c and "size" in c:
-            var, items = var_items(p, c, "batch")
+        elif "batch" in c and "size" in c:
+            _, items = var_items(p, c, "batch")
             sz = int(c["size"])
             r = []
             for j in xrange(0, len(items), sz):
                 r.append(items[j:j+sz])
             return r
+        raise EvaluationError("Missing valid list context function")
     elif isinstance(c, list):
         return [expand_item(p, arg) for arg in c]
     elif isinstance(c, basestring):
@@ -195,7 +210,7 @@ def expand_item(p, c):
         else:
             return subst.do_substitution(p, c)
 
-    raise Exception("expand_item() unexpected parameter type %s" % (type(c))
+    raise EvaluationError("expand_item() unexpected parameter type %s" % (type(c))
 
 # Evaluate in a list context
 # "p" is the parameter scope, "value" will be evaluated
@@ -216,7 +231,7 @@ def get_items(p, value):
                 with open(value) as f:
                     items = [line.rstrip("\r\n") for line in f]
             return items
-    raise Exception("get_items did not yield a list")
+    raise EvaluationError("get_items did not yield a list")
 
 stdoutname = None
 stdoutfile = None
