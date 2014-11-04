@@ -38,21 +38,6 @@ class PipelineInstancesControllerTest < ActionController::TestCase
     assert_equal 6, determine_wallclock_runtime(r)
   end
 
-
-  class RequestDuck
-    def self.host
-      "localhost"
-    end
-
-    def self.port
-      8080
-    end
-
-    def self.protocol
-      "http"
-    end
-  end
-
   test "generate graph" do
 
     use_token 'admin'

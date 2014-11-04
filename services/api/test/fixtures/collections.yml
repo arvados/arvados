@@ -289,9 +289,9 @@ graph_test_collection1:
 graph_test_collection2:
   uuid: zzzzz-4zz18-uukreo9rbgwsujx
   owner_uuid: zzzzz-tpzed-xurymjxw79nv3jz
-  portable_data_hash: b519d9cb706a29fc7ea24dbea2f05851+93
-  manifest_text: ". 6a4ff0499484c6c79c95cd8c566bd25f+249025 0:249025:GNU_General_Public_License,_version_3.pdf\n"
-  name: "GNU General Public License, version 3"
+  portable_data_hash: 65b17c95fdbc9800fc48acda4e9dcd0b+93
+  manifest_text: ". 6a4ff0499484c6c79c95cd8c566bd25f+249025 0:249025:FOO_General_Public_License,_version_3.pdf\n"
+  name: "FOO General Public License, version 3"
 
 graph_test_collection3:
   uuid: zzzzz-4zz18-uukreo9rbgwsujj

@@ -3,21 +3,6 @@ require 'test_helper'
 class CollectionsControllerTest < ActionController::TestCase
   include PipelineInstancesHelper
 
-  class RequestDuck
-    def self.host
-      "localhost"
-    end
-
-    def self.port
-      8080
-    end
-
-    def self.protocol
-      "http"
-    end
-  end
-
-
   test 'provenance graph' do
     use_token 'admin'
 
