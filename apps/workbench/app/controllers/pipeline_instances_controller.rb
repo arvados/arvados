@@ -245,7 +245,7 @@ class PipelineInstancesController < ApplicationController
     if @object and @object.state.in? ['New', 'Ready']
       panes = %w(Inputs) + panes
     else
-      panes.insert(1, {:name => "Log", :no_auto_reload => true})
+      panes.insert(1, {:name => "Log"})
     end
     if not @object.components.values.any? { |x| x[:job] rescue false }
       panes -= ['Graph']

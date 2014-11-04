@@ -66,11 +66,6 @@ $(document).on('arv:pane:reload', function(e) {
         return;
     }
 
-    if ($anchor.hasClass('pane-no-auto-reload') && $anchor.hasClass('pane-loaded')) {
-        // Have to explicitly remove pane-loaded if we want it to reload.
-        return;
-    }
-
     var throttle = $anchor.attr('data-load-throttle');
     if (!throttle) {
         throttle = 15000;

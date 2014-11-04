@@ -7,7 +7,7 @@
       <% pane_name = (pane.is_a?(Hash) ? pane[:name] : pane) %>
       <li class="<%= 'active' if i==0 %>">
         <a href="#<%= pane_name %>"
-           class="pane-anchor <%= 'pane-no-auto-reload' if pane.is_a?(Hash) && pane[:no_auto_reload] %>"
+           class="pane-anchor"
            id="<%= pane_name %>-tab"
            data-toggle="tab"
            data-tab-history=true
