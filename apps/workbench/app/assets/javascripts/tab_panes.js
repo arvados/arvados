@@ -10,30 +10,33 @@ $(document).on('shown.bs.tab', '[data-toggle="tab"]', function(event) {
 
 // Ask a refreshable pane to reload via ajax.
 //
-// Target of this event is the anchor element that manages the pane.  A reload
-// consists of an AJAX call to load the "data-pane-content-url" and replace the
-// contents of the DOM node pointed to by "href".
+// Target of this event is the DOM element to be updated. A reload
+// consists of an AJAX call to load the "data-pane-content-url" and
+// replace the content of the target element with the retrieved HTML.
 //
-// There are four CSS classes set on the object to indicate its state:
+// There are four CSS classes set on the element to indicate its state:
 // pane-loading, pane-stale, pane-loaded, pane-reload-pending
 //
 // There are five states based on the presence or absence of css classes:
 //
-// 1. no pane-* states means the pane must be loaded when the pane becomes active
+// 1. Absence of any pane-* states means the pane is empty, and should
+// be loaded as soon as it becomes visible.
 //
-// 2. "pane-loading" means an AJAX call has been made to reload the pane and we are
-// waiting on a result
+// 2. "pane-loading" means an AJAX call has been made to reload the
+// pane and we are waiting on a result.
 //
-// 3. "pane-loading pane-stale" indicates a pane that is already loading has
-// been invalidated and should schedule a reload immediately when the current
-// load completes.  (This happens when there is a cluster of events, where the
-// reload is triggered by the first event, but we want ensure that we
-// eventually load the final quiescent state).
+// 3. "pane-loading pane-stale" means the pane is loading, but has
+// already been invalidated and should schedule a reload as soon as
+// possible after the current load completes. (This happens when there
+// is a cluster of events, where the reload is triggered by the first
+// event, but we want ensure that we eventually load the final
+// quiescent state).
 //
-// 4. "pane-loaded" means the pane is up to date
+// 4. "pane-loaded" means the pane is up to date.
 //
-// 5. "pane-loaded pane-reload-pending" indicates a reload is scheduled (but has
-// not started yet), suppressing scheduling of any further reloads.
+// 5. "pane-loaded pane-reload-pending" means a reload is needed, and
+// has been scheduled, but has not started because the pane's
+// minimum-time-between-reloads throttle has not yet been reached.
 //
 $(document).on('arv:pane:reload', '[data-pane-content-url]', function(e) {
     if (this != e.target) {
