@@ -131,35 +131,25 @@ class Arvados::V1::GroupsControllerTest < ActionController::TestCase
     assert_includes ids, collections(:baz_file_in_asubproject).uuid
   end
 
-  test "user with project read permission can sort project collections ascending, ignoring case" do
-    authorize_with :project_viewer
-    get :contents, {
-      id: groups(:asubproject).uuid,
-      format: :json,
-      filters: [['uuid', 'is_a', "arvados#collection"]],
-      order: 'collections.name asc'
-    }
-    sorted_entries = json_response['items'].collect { |item| item["name"].downcase }
-    previous = nil
-    sorted_entries.each do |entry|
-      assert_operator( previous, :<=, entry) if previous
-      previous = entry
-    end
-  end
-
-  test "user with project read permission can sort project collections descending, ignoring case" do
-    authorize_with :project_viewer
-    get :contents, {
-      id: groups(:asubproject).uuid,
-      format: :json,
-      filters: [['uuid', 'is_a', "arvados#collection"]],
-      order: 'collections.name desc'
-    }
-    sorted_entries = json_response['items'].collect { |item| item["name"].downcase }
-    previous = nil
-    sorted_entries.each do |entry|
-      assert_operator( previous, :>=, entry) if previous
-      previous = entry
+  [['asc', :<=],
+   ['desc', :>=]].each do |order, operator|
+    test "user with project read permission can sort project collections #{order}" do
+      authorize_with :project_viewer
+      get :contents, {
+        id: groups(:asubproject).uuid,
+        format: :json,
+        filters: [['uuid', 'is_a', "arvados#collection"]],
+        order: "collections.name #{order}"
+      }
+      sorted_entries = json_response['items'].collect { |item| item["name"] }
+      previous = nil
+      sorted_entries.each do |entry|
+        if previous
+          assert_operator(previous, operator, entry,
+                          "Entries sorted incorrectly. Perhaps the application and database have mismatched locale settings?")
+        end
+        previous = entry
+      end
     end
   end
 
