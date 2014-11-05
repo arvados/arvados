@@ -349,15 +349,18 @@ class ComputeNodeMonitorActor(config.actor_class):
 
     def in_state(self, *states):
         # Return a boolean to say whether or not our Arvados node record is in
-        # one of the given states.  If the Arvados node record is unavailable
-        # or stale, return None.
+        # one of the given states.  If state information is not
+        # available--because this node has no Arvados record, the record is
+        # stale, or the record has no state information--return None.
         if (self.arvados_node is None) or not timestamp_fresh(
               arvados_node_mtime(self.arvados_node), self.node_stale_after):
             return None
         state = self.arvados_node['info'].get('slurm_state')
+        if not state:
+            return None
         result = state in states
-        if result and state == 'idle':
-            result = not self.arvados_node['job_uuid']
+        if state == 'idle':
+            result = result and not self.arvados_node['job_uuid']
         return result
 
     def _shutdown_eligible(self):

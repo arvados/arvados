@@ -200,6 +200,10 @@ class ComputeNodeMonitorActorTestCase(testutil.ActorTestMixin,
                 job_uuid=None, age=90000))
         self.assertIsNone(self.node_state('idle', 'alloc'))
 
+    def test_in_state_when_no_state_available(self):
+        self.make_actor(arv_node=testutil.arvados_node_mock(info={}))
+        self.assertIsNone(self.node_state('idle', 'alloc'))
+
     def test_in_idle_state(self):
         self.make_actor(2, arv_node=testutil.arvados_node_mock(job_uuid=None))
         self.assertTrue(self.node_state('idle'))
