@@ -22,7 +22,7 @@
     <% pane_list.each_with_index do |pane, i| %>
       <% pane_name = (pane.is_a?(Hash) ? pane[:name] : pane) %>
       <div id="<%= pane_name %>"
-           class="tab-pane fade <%= 'in active loaded pane-loaded' if i==0 %> arv-log-event-listener arv-refresh-on-log-event arv-log-event-subscribe-to-pipeline-job-uuids"
+           class="tab-pane fade <%= 'in active pane-loaded' if i==0 %> arv-log-event-listener arv-refresh-on-log-event arv-log-event-subscribe-to-pipeline-job-uuids"
            <% if controller.action_name == "index" %>
              data-object-kind="arvados#<%= ArvadosApiClient.class_kind controller.model_class %>"
            <% else %>
