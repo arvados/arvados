@@ -4,6 +4,9 @@
      class="arv-log-event-listener arv-log-event-handler-append-logs arv-log-event-subscribe-to-pipeline-job-uuids arv-job-log-window"
      data-object-uuids="<%= log_uuids.join(' ') %>"
      ><%= log_history.join("\n") %></div>
+
+<%# Applying a long throttle suppresses the auto-refresh of this
+    partial that would normally be triggered by arv-log-event. %>
 <div class="arv-log-refresh-control"
      data-load-throttle="86486400000" <%# 1001 nights %>
      ></div>
