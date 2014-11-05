@@ -47,6 +47,14 @@ Items in the "command" list may include lists and objects in addition to strings
 }
 </pre>
 
+Finally, if "command" is a list of lists, it specifies a Unix pipeline where the standard output of the previous command is piped into the standard input of the next command.  The following example describes the Unix pipeline @cat foo | grep bar@:
+
+<pre>
+{
+  "command": [["cat", "foo"], ["grep", "bar"]]
+}
+</pre>
+
 h2. Parameter substitution
 
 The "command" list can include parameter substitutions.  Substitutions are enclosed in "$(...)" and may contain the name of a user-defined parameter.  In the following example, the value of "a" is "hello world"; so when "command" is evaluated, it will substitute "hello world" for "$(a)":
@@ -77,7 +85,7 @@ If the value is a JSON object, it is evaluated as a list function described belo
 
 h2. List functions
 
-When @run-command@ is evaluating a list (such as "command"), in addition to string parameter substitution, you can use list item functions.  In the following functions, you can either specify the name of a user parameter to act on (@"$(a)"@ in the first example) or provide list value directly in line, for example, the following two fragments yield the same result:
+When @run-command@ is evaluating a list (such as "command"), in addition to string parameter substitution, you can use list item functions.  In the following functions, you specify the name of a user parameter to act on (@"$(a)"@ in the first example); the value of that user parameter will be evaluated in a list context (as described above) to get the list value. Alternately, you can provide list value directly in line.  As an example, the following two fragments yield the same result:
 
 <pre>
 {
@@ -98,11 +106,11 @@ When @run-command@ is evaluating a list (such as "command"), in addition to stri
 
 Note: when you provide the list inline with "foreach" or "index", you must include the "var" parameter to specify the substitution variable name to use when evaluating the command fragment.
 
-You can also nest functions.  This filters @["alice", "bob"]@ on the regular expression @"b.*"@ to get the list @["bob"]@, assigns @a_var@ to each value of the list, then expands @"command"@ to get @["--something", "bob"]@.
+You can also nest functions.  This filters @["alice", "bob", "betty"]@ on the regular expression @"b.*"@ to get the list @["bob", "betty"]@, assigns @a_var@ to each value of the list, then expands @"command"@ to get @["--something", "bob", "--something", "betty"]@.
 
 <pre>
 {
-  "command": ["echo", {"foreach": {"filter": ["alice", "bob"],
+  "command": ["echo", {"foreach": {"filter": ["alice", "bob", "betty"],
                                    "regex": "b.*"},
                        "var": "a_var",
                        "command": ["--something", "$(a_var)"]}]
@@ -150,11 +158,11 @@ Filter the list so that it only includes items that match a regular expression. 
 
 h3. group
 
-Generate a list of lists, where items are grouped on common subexpression match.  Items which don't match the regular expression are excluded.  In the following example, the subexpression is @(a?)@, resulting in two groups, strings that contain the letter 'a' and strings that do not.  The following example evaluates to @["echo", "--group", "alice", "carol", "dave", "--group", "bob"]@:
+Generate a list of lists, where items are grouped on common subexpression match.  Items which don't match the regular expression are excluded.  In the following example, the subexpression is @(a?)@, resulting in two groups, strings that contain the letter 'a' and strings that do not.  The following example evaluates to @["echo", "--group", "alice", "carol", "dave", "--group", "bob", "betty"]@:
 
 <pre>
 {
-  "a": ["alice", "bob", "carol", "dave"],
+  "a": ["alice", "bob", "betty", "carol", "dave"],
   "b": {"group": "$(a)",
         "regex": "[^a]*(a?).*"},
   "command": ["echo", {"foreach": "$(b)",
@@ -168,7 +176,7 @@ Generate a list of lists, where items are grouped on common subexpression match.
 
 h3. extract
 
-Generate a list of lists, where items are split by subexpression match.  Items which don't match the regular expression are excluded.  The following example evaluates to @["echo", "c", "a", "rol", "d", "a", "ve"]@:
+Generate a list of lists, where items are split by subexpression match.  Items which don't match the regular expression are excluded.  The following example evaluates to @["echo", "--something", "c", "a", "rol", "--something", "d", "a", "ve"]@:
 
 <pre>
 {
@@ -177,15 +185,13 @@ Generate a list of lists, where items are split by subexpression match.  Items w
         "regex": "(.+)(a)(.*)"},
   "command": ["echo", {"foreach": "$(b)",
                        "var": "b_var",
-                       "command": [{"foreach": "$(b_var)",
-                                    "var": "c_var",
-                                    "command": "$(c_var)"}]}]
+                       "command": ["--something", "$(b_var)"]}]
 }
 </pre>
 
 h3. batch
 
-Generate a list of lists, where items are split into batch size.  If the list does not divide evenly into batch sizes, the last batch will be short.  The following example evaluates to @["echo", "--something", "alice", "bob", "--something", "carol", "dave"]@
+Generate a list of lists, where items are split into a batch size.  If the list does not divide evenly into batch sizes, the last batch will be short.  The following example evaluates to @["echo", "--something", "alice", "bob", "--something", "carol", "dave"]@
 
 <pre>
 {
@@ -203,19 +209,19 @@ Directives alter the behavior of run-command.  All directives are optional.
 
 h3. task.cwd
 
-This directive sets the initial current working directory that your command will run in.  If @task.cwd@ is not specified, the default current working directory is @task.outdir@.
+This directive sets the initial current working directory in which your command will run.  If @task.cwd@ is not specified, the default current working directory is @task.outdir@.
 
 h3. task.ignore_rcode
 
-By Unix convention a task which exits with a non-zero return code is considered failed.  However, some programs (such as @grep@) return non-zero codes for conditions that should not be considered fatal errors.  Set @"task.ignore_rcode": true@ to indicate the task should always succeed.
+By Unix convention a task which exits with a non-zero return code is considered failed.  However, some programs (such as @grep@) return non-zero codes for conditions that should not be considered fatal errors.  Set @"task.ignore_rcode": true@ to indicate the task should always be considered a success regardless of the return code.
 
 h3. task.stdin and task.stdout
 
 Provide standard input and standard output redirection.
 
-@task.stdin@ must evaluate to a path to a file to be bound to the command's standard input stream.
+@task.stdin@ must evaluate to a path to a file to be bound to the standard input stream of the command.  When command describes a Unix pipeline, this goes into the first command.
 
-@task.stdout@ specifies the desired file name in the output directory to save the content of standard output.
+@task.stdout@ specifies the desired file name in the output directory to save the content of standard output.  When command describes a Unix pipeline, this captures the output of the last command.
 
 h3. task.vwd
 
