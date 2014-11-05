@@ -97,38 +97,67 @@ class PipelineInstancesController < ApplicationController
   def graph(pipelines)
     return nil, nil if params['tab_pane'] != "Graph"
 
-    count = {}
     provenance = {}
     pips = {}
     n = 1
 
+    # When comparing more than one pipeline, "pips" stores bit fields that
+    # indicates which objects are part of which pipelines.
+
     pipelines.each do |p|
       collections = []
+      hashes = []
+      jobs = []
 
-      p.components.each do |k, v|
-        j = v[:job] || next
+      p[:components].each do |k, v|
+        provenance["component_#{p[:uuid]}_#{k}"] = v
 
-        uuid = j[:uuid].intern
-        provenance[uuid] = j
-        pips[uuid] = 0 unless pips[uuid] != nil
-        pips[uuid] |= n
-
-        collections << j[:output]
-        ProvenanceHelper::find_collections(j[:script_parameters]).each do |k|
-          collections << k
-        end
-
-        uuid = j[:script_version].intern
-        provenance[uuid] = {:uuid => uuid}
-        pips[uuid] = 0 unless pips[uuid] != nil
-        pips[uuid] |= n
+        collections << v[:output_uuid] if v[:output_uuid]
+        jobs << v[:job][:uuid] if v[:job]
       end
 
-      Collection.where(uuid: collections.compact).each do |c|
-        uuid = c.uuid.intern
-        provenance[uuid] = c
-        pips[uuid] = 0 unless pips[uuid] != nil
-        pips[uuid] |= n
+      jobs = jobs.compact.uniq
+      if jobs.any?
+        Job.where(uuid: jobs).each do |j|
+          job_uuid = j.uuid
+
+          provenance[job_uuid] = j
+          pips[job_uuid] = 0 unless pips[job_uuid] != nil
+          pips[job_uuid] |= n
+
+          hashes << j[:output] if j[:output]
+          ProvenanceHelper::find_collections(j) do |hash, uuid|
+            collections << uuid if uuid
+            hashes << hash if hash
+          end
+
+          if j[:script_version]
+            script_uuid = j[:script_version]
+            provenance[script_uuid] = {:uuid => script_uuid}
+            pips[script_uuid] = 0 unless pips[script_uuid] != nil
+            pips[script_uuid] |= n
+          end
+        end
+      end
+
+      hashes = hashes.compact.uniq
+      if hashes.any?
+        Collection.where(portable_data_hash: hashes).each do |c|
+          hash_uuid = c.portable_data_hash
+          provenance[hash_uuid] = c
+          pips[hash_uuid] = 0 unless pips[hash_uuid] != nil
+          pips[hash_uuid] |= n
+        end
+      end
+
+      collections = collections.compact.uniq
+      if collections.any?
+        Collection.where(uuid: collections).each do |c|
+          collection_uuid = c.uuid
+          provenance[collection_uuid] = c
+          pips[collection_uuid] = 0 unless pips[collection_uuid] != nil
+          pips[collection_uuid] |= n
+        end
       end
 
       n = n << 1
@@ -152,8 +181,10 @@ class PipelineInstancesController < ApplicationController
         :request => request,
         :all_script_parameters => true,
         :combine_jobs => :script_and_version,
-        :script_version_nodes => true,
-        :pips => pips }
+        :pips => pips,
+        :only_components => true,
+        :no_docker => true,
+        :no_log => true}
     end
 
     super

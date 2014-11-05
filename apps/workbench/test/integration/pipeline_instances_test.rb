@@ -147,7 +147,7 @@ class PipelineInstancesTest < ActionDispatch::IntegrationTest
     # since the pipeline component has a job, expect to see the graph
     assert page.has_text? 'Graph'
     click_link 'Graph'
-    assert page.has_text? 'script_version'
+    page.assert_selector "#provenance_graph"
   end
 
   test 'pipeline description' do
@@ -340,8 +340,8 @@ class PipelineInstancesTest < ActionDispatch::IntegrationTest
   end
 
   [
-    [0, 0], # run time 0 minutes
-    [9, 17*60*60 + 51*60], # run time 17 hours and 51 minutes
+    [1, 0], # run time 0 minutes
+    [10, 17*60*60 + 51*60], # run time 17 hours and 51 minutes
   ].each do |index, run_time|
     test "pipeline start and finish time display #{index}" do
       visit page_with_token("user1_with_load", "/pipeline_instances/zzzzz-d1hrv-10pipelines0#{index.to_s.rjust(3, '0')}")
