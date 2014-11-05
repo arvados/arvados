@@ -1,11 +1,7 @@
-<div id="dashboard-content"
-     class="pane-anchor pane-loaded arv-log-event-listener arv-refresh-on-log-event"
-     href="#dashboard-content-pane"
+<div class="pane-loaded arv-log-event-listener arv-refresh-on-log-event"
      data-pane-content-url="<%= root_url tab_pane: "dashboard" %>"
      data-object-uuid="all"
      data-load-throttle="15000"
      >
-  <div id="dashboard-content-pane" class="active">
-    <%= render partial: 'show_dashboard' %>
-  </div>
+  <%= render partial: 'show_dashboard' %>
 </div>
