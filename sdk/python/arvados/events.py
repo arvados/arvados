@@ -78,9 +78,19 @@ class PollClient(threading.Thread):
             self.id = max_id
             self.stop.wait(self.poll_time)
 
+    def run_forever(self):
+        self.stop.wait()
+
     def close(self):
         self.stop.set()
-        self.join()
+        try:
+            self.join()
+        except RuntimeError:
+            # "join() raises a RuntimeError if an attempt is made to join the
+            # current thread as that would cause a deadlock. It is also an
+            # error to join() a thread before it has been started and attempts
+            # to do so raises the same exception."
+            pass
 
     def subscribe(self, filters):
         self.on_event({'status': 200})
