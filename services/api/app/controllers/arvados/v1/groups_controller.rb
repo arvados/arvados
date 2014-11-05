@@ -71,6 +71,10 @@ class Arvados::V1::GroupsController < ApplicationController
     # aggregate set.
     limit_all = @limit
     offset_all = @offset
+    # save the orders from the current request as determined by load_param,
+    # but otherwise discard them because we're going to be getting objects
+    # from many models
+    request_orders = @orders.clone
     @orders = []
 
     [Group,
@@ -92,7 +96,15 @@ class Arvados::V1::GroupsController < ApplicationController
         end
       end
 
-      @objects = @objects.order("#{klass.table_name}.created_at desc")
+      # If the currently requested orders specifically match the table_name for the current klass, apply the order
+      request_order = request_orders && request_orders.find{ |r| r =~ /^#{klass.table_name}\./i }
+      if request_order
+        @objects = @objects.order(request_order)
+      else
+        # default to created_at desc, ignoring any currently requested ordering because it doesn't apply to this klass
+        @objects = @objects.order("#{klass.table_name}.created_at desc")
+      end
+
       @limit = limit_all - all_objects.count
       apply_where_limit_order_params klass
       klass_items_available = @objects.

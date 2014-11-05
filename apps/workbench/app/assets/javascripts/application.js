@@ -236,3 +236,7 @@ function showLoadingModal() {
 function hideLoadingModal() {
     $('#loading-modal').modal('hide');
 }
+
+function hasHTML5History() {
+    return !!(window.history && window.history.pushState);
+}

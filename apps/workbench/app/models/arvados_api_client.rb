@@ -124,7 +124,7 @@ class ArvadosApiClient
 
     header = {"Accept" => "application/json"}
 
-    profile_checkpoint { "Prepare request #{url} #{query[:uuid]} #{query[:where]} #{query[:filters]}" }
+    profile_checkpoint { "Prepare request #{url} #{query[:uuid]} #{query[:where]} #{query[:filters]} #{query[:order]}" }
     msg = @client_mtx.synchronize do
       begin
         @api_client.post(url, query, header: header)

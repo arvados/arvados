@@ -302,7 +302,7 @@ def arv_edit client, arvados, global_opts, remaining_opts
       begin
         result = client.execute(:api_method => eval(api_method),
                                 :parameters => {"uuid" => uuid},
-                                :body => { rsc.singularize => dumped },
+                                :body_object => { rsc.singularize => dumped },
                                 :authenticated => false,
                                 :headers => {
                                   authorization: 'OAuth2 '+ENV['ARVADOS_API_TOKEN']
@@ -673,7 +673,7 @@ when
 else
   result = client.execute(:api_method => eval(api_method),
                           :parameters => request_parameters,
-                          :body => request_body,
+                          :body_object => request_body,
                           :authenticated => false,
                           :headers => {
                             authorization: 'OAuth2 '+ENV['ARVADOS_API_TOKEN']

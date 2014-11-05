@@ -43,7 +43,7 @@ def find_server_pid(PID_PATH, wait=10):
         try:
             with open(PID_PATH, 'r') as f:
                 server_pid = int(f.read())
-            good_pid = (os.kill(server_pid, 0) == None)
+            good_pid = (os.kill(server_pid, 0) is None)
         except IOError:
             good_pid = False
         except OSError:
@@ -62,7 +62,7 @@ def kill_server_pid(PID_PATH, wait=10):
         with open(PID_PATH, 'r') as f:
             server_pid = int(f.read())
         while now <= timeout:
-            os.kill(server_pid, signal.SIGTERM) == None
+            os.kill(server_pid, signal.SIGTERM)
             os.getpgid(server_pid) # throw OSError if no such pid
             now = time.time()
             time.sleep(0.1)
@@ -82,7 +82,7 @@ def run(websockets=False, reuse_server=False):
 
     test_pid = find_server_pid(pid_file, 0)
 
-    if test_pid == None or not reuse_server:
+    if test_pid is None or not reuse_server:
         # do not try to run both server variants at once
         stop()
 
@@ -314,7 +314,7 @@ if __name__ == "__main__":
 
     if args.action == 'start':
         run(websockets=args.websockets, reuse_server=args.reuse)
-        if args.auth != None:
+        if args.auth is not None:
             authorize_with(args.auth)
             print("export ARVADOS_API_HOST={}".format(arvados.config.settings()["ARVADOS_API_HOST"]))
             print("export ARVADOS_API_TOKEN={}".format(arvados.config.settings()["ARVADOS_API_TOKEN"]))

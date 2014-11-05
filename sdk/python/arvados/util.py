@@ -9,19 +9,22 @@ from arvados.collection import *
 
 HEX_RE = re.compile(r'^[0-9a-fA-F]+$')
 
+keep_locator_pattern = re.compile(r'[0-9a-f]{32}\+\d+(\+\S+)*')
+signed_locator_pattern = re.compile(r'[0-9a-f]{32}\+\d+(\+\S+)*\+A\S+(\+\S+)*')
 portable_data_hash_pattern = re.compile(r'[0-9a-f]{32}\+\d+')
 uuid_pattern = re.compile(r'[a-z0-9]{5}-[a-z0-9]{5}-[a-z0-9]{15}')
 collection_uuid_pattern = re.compile(r'[a-z0-9]{5}-4zz18-[a-z0-9]{15}')
 group_uuid_pattern = re.compile(r'[a-z0-9]{5}-j7d0g-[a-z0-9]{15}')
 user_uuid_pattern = re.compile(r'[a-z0-9]{5}-tpzed-[a-z0-9]{15}')
 link_uuid_pattern = re.compile(r'[a-z0-9]{5}-o0j2j-[a-z0-9]{15}')
+manifest_pattern = re.compile(r'((\S+)( +[a-f0-9]{32}(\+\d+)(\+\S+)*)+( +\d+:\d+:\S+)+$)+', flags=re.MULTILINE)
 
 def clear_tmpdir(path=None):
     """
     Ensure the given directory (or TASK_TMPDIR if none given)
     exists and is empty.
     """
-    if path == None:
+    if path is None:
         path = arvados.current_task().tmpdir
     if os.path.exists(path):
         p = subprocess.Popen(['rm', '-rf', path])
@@ -305,13 +308,31 @@ def stream_extract(stream, path, files=[], decompress=True):
     lockfile.close()
     return path
 
-def listdir_recursive(dirname, base=None):
+def listdir_recursive(dirname, base=None, max_depth=None):
+    """listdir_recursive(dirname, base, max_depth)
+
+    Return a list of file and directory names found under dirname.
+
+    If base is not None, prepend "{base}/" to each returned name.
+
+    If max_depth is None, descend into directories and return only the
+    names of files found in the directory tree.
+
+    If max_depth is a non-negative integer, stop descending into
+    directories at the given depth, and at that point return directory
+    names instead.
+
+    If max_depth==0 (and base is None) this is equivalent to
+    sorted(os.listdir(dirname)).
+    """
     allfiles = []
     for ent in sorted(os.listdir(dirname)):
         ent_path = os.path.join(dirname, ent)
         ent_base = os.path.join(base, ent) if base else ent
-        if os.path.isdir(ent_path):
-            allfiles += listdir_recursive(ent_path, ent_base)
+        if os.path.isdir(ent_path) and max_depth != 0:
+            allfiles += listdir_recursive(
+                ent_path, base=ent_base,
+                max_depth=(max_depth-1 if max_depth else None))
         else:
             allfiles += [ent_base]
     return allfiles

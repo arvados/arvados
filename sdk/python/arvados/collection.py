@@ -51,7 +51,7 @@ def normalize_stream(s, stream):
         fout = f.replace(' ', '\\040')
         for segment in stream[f]:
             segmentoffset = blocks[segment[arvados.LOCATOR]] + segment[arvados.OFFSET]
-            if current_span == None:
+            if current_span is None:
                 current_span = [segmentoffset, segmentoffset + segment[arvados.SEGMENTSIZE]]
             else:
                 if segmentoffset == current_span[1]:
@@ -60,35 +60,13 @@ def normalize_stream(s, stream):
                     stream_tokens.append("{0}:{1}:{2}".format(current_span[0], current_span[1] - current_span[0], fout))
                     current_span = [segmentoffset, segmentoffset + segment[arvados.SEGMENTSIZE]]
 
-        if current_span != None:
+        if current_span is not None:
             stream_tokens.append("{0}:{1}:{2}".format(current_span[0], current_span[1] - current_span[0], fout))
 
-        if len(stream[f]) == 0:
+        if not stream[f]:
             stream_tokens.append("0:0:{0}".format(fout))
 
     return stream_tokens
-
-def normalize(collection):
-    streams = {}
-    for s in collection.all_streams():
-        for f in s.all_files():
-            filestream = s.name() + "/" + f.name()
-            r = filestream.rindex("/")
-            streamname = filestream[:r]
-            filename = filestream[r+1:]
-            if streamname not in streams:
-                streams[streamname] = {}
-            if filename not in streams[streamname]:
-                streams[streamname][filename] = []
-            for r in f.segments:
-                streams[streamname][filename].extend(s.locators_and_ranges(r[0], r[1]))
-
-    normalized_streams = []
-    sortedstreams = list(streams.keys())
-    sortedstreams.sort()
-    for s in sortedstreams:
-        normalized_streams.append(normalize_stream(s, streams[s]))
-    return normalized_streams
 
 
 class CollectionBase(object):
@@ -103,6 +81,25 @@ class CollectionBase(object):
             self._keep_client = KeepClient(api_client=self._api_client,
                                            num_retries=self.num_retries)
         return self._keep_client
+
+    def stripped_manifest(self):
+        """
+        Return the manifest for the current collection with all
+        non-portable hints (i.e., permission signatures and other
+        hints other than size hints) removed from the locators.
+        """
+        raw = self.manifest_text()
+        clean = []
+        for line in raw.split("\n"):
+            fields = line.split()
+            if fields:
+                clean_fields = fields[:1] + [
+                    (re.sub(r'\+[^\d][^\+]*', '', x)
+                     if re.match(util.keep_locator_pattern, x)
+                     else x)
+                    for x in fields[1:]]
+                clean += [' '.join(clean_fields), "\n"]
+        return ''.join(clean)
 
 
 class CollectionReader(CollectionBase):
@@ -130,13 +127,13 @@ class CollectionReader(CollectionBase):
         self._api_client = api_client
         self._keep_client = keep_client
         self.num_retries = num_retries
-        if re.match(r'[a-f0-9]{32}(\+\d+)?(\+\S+)*$', manifest_locator_or_text):
+        if re.match(util.keep_locator_pattern, manifest_locator_or_text):
             self._manifest_locator = manifest_locator_or_text
             self._manifest_text = None
-        elif re.match(r'[a-z0-9]{5}-[a-z0-9]{5}-[a-z0-9]{15}$', manifest_locator_or_text):
+        elif re.match(util.collection_uuid_pattern, manifest_locator_or_text):
             self._manifest_locator = manifest_locator_or_text
             self._manifest_text = None
-        elif re.match(r'((\S+)( +[a-f0-9]{32}(\+\d+)(\+\S+)*)+( +\d+:\d+:\S+)+$)+', manifest_locator_or_text, re.MULTILINE):
+        elif re.match(util.manifest_pattern, manifest_locator_or_text):
             self._manifest_text = manifest_locator_or_text
             self._manifest_locator = None
         else:
@@ -144,45 +141,95 @@ class CollectionReader(CollectionBase):
                 "Argument to CollectionReader must be a manifest or a collection UUID")
         self._streams = None
 
+    def _populate_from_api_server(self):
+        # As in KeepClient itself, we must wait until the last
+        # possible moment to instantiate an API client, in order to
+        # avoid tripping up clients that don't have access to an API
+        # server.  If we do build one, make sure our Keep client uses
+        # it.  If instantiation fails, we'll fall back to the except
+        # clause, just like any other Collection lookup
+        # failure. Return an exception, or None if successful.
+        try:
+            if self._api_client is None:
+                self._api_client = arvados.api('v1')
+                self._keep_client = None  # Make a new one with the new api.
+            c = self._api_client.collections().get(
+                uuid=self._manifest_locator).execute(
+                num_retries=self.num_retries)
+            self._manifest_text = c['manifest_text']
+            return None
+        except Exception as e:
+            return e
+
+    def _populate_from_keep(self):
+        # Retrieve a manifest directly from Keep. This has a chance of
+        # working if [a] the locator includes a permission signature
+        # or [b] the Keep services are operating in world-readable
+        # mode. Return an exception, or None if successful.
+        try:
+            self._manifest_text = self._my_keep().get(
+                self._manifest_locator, num_retries=self.num_retries)
+        except Exception as e:
+            return e
+
     def _populate(self):
         if self._streams is not None:
             return
+        error_via_api = None
+        error_via_keep = None
+        should_try_keep = (not self._manifest_text and
+                           util.keep_locator_pattern.match(
+                self._manifest_locator))
+        if (not self._manifest_text and
+            util.signed_locator_pattern.match(self._manifest_locator)):
+            error_via_keep = self._populate_from_keep()
         if not self._manifest_text:
-            try:
-                # As in KeepClient itself, we must wait until the last possible
-                # moment to instantiate an API client, in order to avoid
-                # tripping up clients that don't have access to an API server.
-                # If we do build one, make sure our Keep client uses it.
-                # If instantiation fails, we'll fall back to the except clause,
-                # just like any other Collection lookup failure.
-                if self._api_client is None:
-                    self._api_client = arvados.api('v1')
-                    self._keep_client = None  # Make a new one with the new api.
-                c = self._api_client.collections().get(
-                    uuid=self._manifest_locator).execute(
-                    num_retries=self.num_retries)
-                self._manifest_text = c['manifest_text']
-            except Exception as e:
-                if not util.portable_data_hash_pattern.match(
-                      self._manifest_locator):
-                    raise
-                _logger.warning(
-                    "API server did not return Collection '%s'. " +
-                    "Trying to fetch directly from Keep (deprecated).",
-                    self._manifest_locator)
-                self._manifest_text = self._my_keep().get(
-                    self._manifest_locator, num_retries=self.num_retries)
+            error_via_api = self._populate_from_api_server()
+            if error_via_api is not None and not should_try_keep:
+                raise error_via_api
+        if (not self._manifest_text and
+            not error_via_keep and
+            should_try_keep):
+            # Looks like a keep locator, and we didn't already try keep above
+            error_via_keep = self._populate_from_keep()
+        if not self._manifest_text:
+            # Nothing worked!
+            raise arvados.errors.NotFoundError(
+                ("Failed to retrieve collection '{}' " +
+                 "from either API server ({}) or Keep ({})."
+                 ).format(
+                    self._manifest_locator,
+                    error_via_api,
+                    error_via_keep))
         self._streams = [sline.split()
                          for sline in self._manifest_text.split("\n")
                          if sline]
-        self._streams = normalize(self)
 
-        # now regenerate the manifest text based on the normalized stream
+    def normalize(self):
+        self._populate()
 
-        #print "normalizing", self._manifest_text
-        self._manifest_text = ''.join([StreamReader(stream, keep=self._my_keep()).manifest_text() for stream in self._streams])
-        #print "result", self._manifest_text
+        # Rearrange streams
+        streams = {}
+        for s in self.all_streams():
+            for f in s.all_files():
+                filestream = s.name() + "/" + f.name()
+                r = filestream.rindex("/")
+                streamname = filestream[:r]
+                filename = filestream[r+1:]
+                if streamname not in streams:
+                    streams[streamname] = {}
+                if filename not in streams[streamname]:
+                    streams[streamname][filename] = []
+                for r in f.segments:
+                    streams[streamname][filename].extend(s.locators_and_ranges(r[0], r[1]))
 
+        self._streams = [normalize_stream(s, streams[s])
+                         for s in sorted(streams)]
+
+        # Regenerate the manifest text based on the normalized streams
+        self._manifest_text = ''.join(
+            [StreamReader(stream, keep=self._my_keep()).manifest_text()
+             for stream in self._streams])
 
     def all_streams(self):
         self._populate()
@@ -194,12 +241,15 @@ class CollectionReader(CollectionBase):
             for f in s.all_files():
                 yield f
 
-    def manifest_text(self, strip=False):
-        self._populate()
-        if strip:
-            m = ''.join([StreamReader(stream, keep=self._my_keep()).manifest_text(strip=True) for stream in self._streams])
-            return m
+    def manifest_text(self, strip=False, normalize=False):
+        if normalize:
+            cr = CollectionReader(self.manifest_text())
+            cr.normalize()
+            return cr.manifest_text(strip=strip, normalize=False)
+        elif strip:
+            return self.stripped_manifest()
         else:
+            self._populate()
             return self._manifest_text
 
 
@@ -298,10 +348,9 @@ class CollectionWriter(CollectionBase):
 
     def _work_trees(self):
         path, stream_name, max_manifest_depth = self._queued_trees[0]
-        make_dirents = (util.listdir_recursive if (max_manifest_depth == 0)
-                        else os.listdir)
-        d = make_dirents(path)
-        if len(d) > 0:
+        d = util.listdir_recursive(
+            path, max_depth = (None if max_manifest_depth == 0 else 0))
+        if d:
             self._queue_dirents(stream_name, d)
         else:
             self._queued_trees.popleft()
@@ -368,7 +417,7 @@ class CollectionWriter(CollectionBase):
         return self._current_file_name
 
     def finish_current_file(self):
-        if self._current_file_name == None:
+        if self._current_file_name is None:
             if self._current_file_pos == self._current_stream_length:
                 return
             raise errors.AssertionError(
@@ -382,6 +431,7 @@ class CollectionWriter(CollectionBase):
                 self._current_stream_length - self._current_file_pos,
                 self._current_file_name])
         self._current_file_pos = self._current_stream_length
+        self._current_file_name = None
 
     def start_new_stream(self, newstreamname='.'):
         self.finish_current_stream()
@@ -422,20 +472,9 @@ class CollectionWriter(CollectionBase):
         # Store the manifest in Keep and return its locator.
         return self._my_keep().put(self.manifest_text())
 
-    def stripped_manifest(self):
-        """
-        Return the manifest for the current collection with all permission
-        hints removed from the locators in the manifest.
-        """
-        raw = self.manifest_text()
-        clean = ''
-        for line in raw.split("\n"):
-            fields = line.split()
-            if len(fields) > 0:
-                locators = [ re.sub(r'\+A[a-z0-9@_-]+', '', x)
-                             for x in fields[1:-1] ]
-                clean += fields[0] + ' ' + ' '.join(locators) + ' ' + fields[-1] + "\n"
-        return clean
+    def portable_data_hash(self):
+        stripped = self.stripped_manifest()
+        return hashlib.md5(stripped).hexdigest() + '+' + str(len(stripped))
 
     def manifest_text(self):
         self.finish_current_stream()
@@ -449,10 +488,7 @@ class CollectionWriter(CollectionBase):
             manifest += ' ' + ' '.join("%d:%d:%s" % (sfile[0], sfile[1], sfile[2].replace(' ', '\\040')) for sfile in stream[2])
             manifest += "\n"
 
-        if manifest:
-            return CollectionReader(manifest, self._api_client).manifest_text()
-        else:
-            return ""
+        return manifest
 
     def data_locators(self):
         ret = []

@@ -234,7 +234,7 @@ class Arvados
         execute(:api_method => api_method,
                 :authenticated => false,
                 :parameters => parameters,
-                :body => body,
+                :body_object => body,
                 :headers => {
                   authorization: 'OAuth2 '+arvados.config['ARVADOS_API_TOKEN']
                 })

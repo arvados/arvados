@@ -27,11 +27,13 @@ api_client = None
 upload_opts = argparse.ArgumentParser(add_help=False)
 
 upload_opts.add_argument('paths', metavar='path', type=str, nargs='*',
-                    help="""
+                         help="""
 Local file or directory. Default: read from standard input.
 """)
 
-upload_opts.add_argument('--max-manifest-depth', type=int, metavar='N',
+_group = upload_opts.add_mutually_exclusive_group()
+
+_group.add_argument('--max-manifest-depth', type=int, metavar='N',
                     default=-1, help="""
 Maximum depth of directory tree to represent in the manifest
 structure. A directory structure deeper than this will be represented
@@ -40,56 +42,62 @@ a single stream. Default: -1 (unlimited), i.e., exactly one manifest
 stream per filesystem directory that contains files.
 """)
 
+_group.add_argument('--normalize', action='store_true',
+                    help="""
+Normalize the manifest by re-ordering files and streams after writing
+data.
+""")
+
 _group = upload_opts.add_mutually_exclusive_group()
 
 _group.add_argument('--as-stream', action='store_true', dest='stream',
-                   help="""
+                    help="""
 Synonym for --stream.
 """)
 
 _group.add_argument('--stream', action='store_true',
-                   help="""
+                    help="""
 Store the file content and display the resulting manifest on
 stdout. Do not write the manifest to Keep or save a Collection object
 in Arvados.
 """)
 
 _group.add_argument('--as-manifest', action='store_true', dest='manifest',
-                   help="""
+                    help="""
 Synonym for --manifest.
 """)
 
 _group.add_argument('--in-manifest', action='store_true', dest='manifest',
-                   help="""
+                    help="""
 Synonym for --manifest.
 """)
 
 _group.add_argument('--manifest', action='store_true',
-                   help="""
+                    help="""
 Store the file data and resulting manifest in Keep, save a Collection
 object in Arvados, and display the manifest locator (Collection uuid)
 on stdout. This is the default behavior.
 """)
 
 _group.add_argument('--as-raw', action='store_true', dest='raw',
-                   help="""
+                    help="""
 Synonym for --raw.
 """)
 
 _group.add_argument('--raw', action='store_true',
-                   help="""
+                    help="""
 Store the file content and display the data block locators on stdout,
 separated by commas, with a trailing newline. Do not store a
 manifest.
 """)
 
 upload_opts.add_argument('--use-filename', type=str, default=None,
-                    dest='filename', help="""
+                         dest='filename', help="""
 Synonym for --filename.
 """)
 
 upload_opts.add_argument('--filename', type=str, default=None,
-                    help="""
+                         help="""
 Use the given filename in the manifest, instead of the name of the
 local file. This is useful when "-" or "/dev/stdin" is given as an
 input file. It can be used only if there is exactly one path given and
@@ -97,7 +105,7 @@ it is not a directory. Implies --manifest.
 """)
 
 upload_opts.add_argument('--portable-data-hash', action='store_true',
-                    help="""
+                         help="""
 Print the portable data hash instead of the Arvados UUID for the collection
 created by the upload.
 """)
@@ -115,31 +123,31 @@ Save the collection with the specified name.
 
 _group = run_opts.add_mutually_exclusive_group()
 _group.add_argument('--progress', action='store_true',
-                   help="""
+                    help="""
 Display human-readable progress on stderr (bytes and, if possible,
 percentage of total data size). This is the default behavior when
 stderr is a tty.
 """)
 
 _group.add_argument('--no-progress', action='store_true',
-                   help="""
+                    help="""
 Do not display human-readable progress on stderr, even if stderr is a
 tty.
 """)
 
 _group.add_argument('--batch-progress', action='store_true',
-                   help="""
+                    help="""
 Display machine-readable progress on stderr (bytes and, if known,
 total data size).
 """)
 
 _group = run_opts.add_mutually_exclusive_group()
 _group.add_argument('--resume', action='store_true', default=True,
-                   help="""
+                    help="""
 Continue interrupted uploads from cached state (default).
 """)
 _group.add_argument('--no-resume', action='store_false', dest='resume',
-                   help="""
+                    help="""
 Do not continue interrupted uploads from cached state.
 """)
 
@@ -447,16 +455,21 @@ def main(arguments=None, stdout=sys.stdout, stderr=sys.stderr):
 
     if args.stream:
         output = writer.manifest_text()
+        if args.normalize:
+            output = CollectionReader(output).manifest_text(normalize=True)
     elif args.raw:
         output = ','.join(writer.data_locators())
     else:
         try:
+            manifest_text = writer.manifest_text()
+            if args.normalize:
+                manifest_text = CollectionReader(manifest_text).manifest_text(normalize=True)
             # Register the resulting collection in Arvados.
             collection = api_client.collections().create(
                 body={
                     'owner_uuid': project_uuid,
                     'name': collection_name,
-                    'manifest_text': writer.manifest_text()
+                    'manifest_text': manifest_text
                     },
                 ensure_unique_name=True
                 ).execute(num_retries=args.retries)

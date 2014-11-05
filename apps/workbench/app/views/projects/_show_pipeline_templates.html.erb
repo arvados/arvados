@@ -1,3 +1,4 @@
 <%= render_pane 'tab_contents', to_string: true, locals: {
-    filters: [['uuid', 'is_a', ["arvados#pipelineTemplate"]]]
+    filters: [['uuid', 'is_a', ["arvados#pipelineTemplate"]]],
+	sortable_columns: { 'name' => 'pipeline_templates.name', 'description' => 'pipeline_templates.description' }
     }.merge(local_assigns) %>
