@@ -1658,7 +1658,7 @@ sub retry_op {
   # If it dies, retry it with exponential backoff until it succeeds,
   # or until the current retry_count is exhausted.  After each failure
   # that can be retried, the second function will be called with
-  # the current try count (0-based) and error message.
+  # the current try count (0-based), next try time, and error message.
   my $operation = shift;
   my $retry_callback = shift;
   my $retries = retry_count();
@@ -1668,7 +1668,7 @@ sub retry_op {
     if (!$@) {
       return $result;
     } elsif ($try_count < $retries) {
-      $retry_callback->($try_count, $@);
+      $retry_callback->($try_count, $next_try, $@);
       my $sleep_time = $next_try - time;
       sleep($sleep_time) if ($sleep_time > 0);
     }
@@ -1685,10 +1685,18 @@ sub api_call {
   # the current retry_count is exhausted, with a log on the first failure.
   my $method_name = shift;
   my $log_api_retry = sub {
-    my ($try_count, $errmsg) = @_;
-    if ($try_count == 0) {
-      Log(undef, "API method $method_name failed: $errmsg. Retrying.");
-    };
+    my ($try_count, $next_try_at, $errmsg) = @_;
+    $errmsg =~ s/\s*\bat \Q$0\E line \d+\.?\s*//;
+    $errmsg =~ s/\s/ /g;
+    $errmsg =~ s/\s+$//;
+    my $retry_msg;
+    if ($next_try_at < time) {
+      $retry_msg = "Retrying.";
+    } else {
+      my $next_try_fmt = strftime("%Y-%m-%d %H:%M:%S", $retry_msg);
+      $retry_msg = "Retrying at $next_try_fmt.";
+    }
+    Log(undef, "API method $method_name failed: $errmsg. $retry_msg");
   };
   my $method = $arv;
   foreach my $key (split(/\//, $method_name)) {
