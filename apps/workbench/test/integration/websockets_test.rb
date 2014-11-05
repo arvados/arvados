@@ -14,13 +14,13 @@ class WebsocketTest < ActionDispatch::IntegrationTest
     visit(page_with_token("admin", "/websockets"))
     fill_in("websocket-message-content", :with => "Stuff")
     click_button("Send")
-    assert page.has_text? '"status":400'
+    assert_text '"status":400'
   end
 
   test "test live logging" do
     visit(page_with_token("admin", "/pipeline_instances/zzzzz-d1hrv-9fm8l10i9z2kqc6"))
     click_link("Log")
-    assert page.has_no_text? '123 hello'
+    assert_no_text '123 hello'
 
     api = ArvadosApiClient.new
 
@@ -29,14 +29,14 @@ class WebsocketTest < ActionDispatch::IntegrationTest
                 object_uuid: "zzzzz-d1hrv-9fm8l10i9z2kqc6",
                 event_type: "stderr",
                 properties: {"text" => "123 hello"}}})
-    assert page.has_text? '123 hello'
+    assert_text '123 hello'
     Thread.current[:arvados_api_token] = nil
   end
 
   test "test live logging scrolling" do
     visit(page_with_token("admin", "/pipeline_instances/zzzzz-d1hrv-9fm8l10i9z2kqc6"))
     click_link("Log")
-    assert page.has_no_text? '123 hello'
+    assert_no_text '123 hello'
 
     api = ArvadosApiClient.new
 
@@ -50,7 +50,7 @@ class WebsocketTest < ActionDispatch::IntegrationTest
                 object_uuid: "zzzzz-d1hrv-9fm8l10i9z2kqc6",
                 event_type: "stderr",
                 properties: {"text" => text}}})
-    assert page.has_text? '1000 hello'
+    assert_text '1000 hello'
 
     # First test that when we're already at the bottom of the page, it scrolls down
     # when a new line is added.
@@ -60,7 +60,7 @@ class WebsocketTest < ActionDispatch::IntegrationTest
                 object_uuid: "zzzzz-d1hrv-9fm8l10i9z2kqc6",
                 event_type: "stderr",
                 properties: {"text" => "1001 hello\n"}}})
-    assert page.has_text? '1001 hello'
+    assert_text '1001 hello'
 
     # Check that new value of scrollTop is greater than the old one
     assert page.evaluate_script("$('#pipeline_event_log_div').scrollTop()") > old_top
@@ -73,7 +73,7 @@ class WebsocketTest < ActionDispatch::IntegrationTest
                 object_uuid: "zzzzz-d1hrv-9fm8l10i9z2kqc6",
                 event_type: "stderr",
                 properties: {"text" => "1002 hello\n"}}})
-    assert page.has_text? '1002 hello'
+    assert_text '1002 hello'
 
     # Check that we haven't changed scroll position
     assert_equal 30, page.evaluate_script("$('#pipeline_event_log_div').scrollTop()")
@@ -95,17 +95,17 @@ class WebsocketTest < ActionDispatch::IntegrationTest
 
     visit(page_with_token("admin", "/pipeline_instances/#{p.uuid}"))
 
-    assert page.has_text? 'Active'
+    assert_text 'Active'
     assert page.has_link? 'Pause'
-    assert page.has_no_text? 'Complete'
+    assert_no_text 'Complete'
     assert page.has_no_link? 'Re-run with latest'
 
     p.state = "Complete"
     p.save!
 
-    assert page.has_no_text? 'Active'
+    assert_no_text 'Active'
     assert page.has_no_link? 'Pause'
-    assert page.has_text? 'Complete'
+    assert_text 'Complete'
     assert page.has_link? 'Re-run with latest'
 
     Thread.current[:arvados_api_token] = nil
@@ -118,14 +118,14 @@ class WebsocketTest < ActionDispatch::IntegrationTest
 
     visit(page_with_token("admin", "/jobs/#{p.uuid}"))
 
-    assert page.has_no_text? 'complete'
-    assert page.has_no_text? 'Re-run same version'
+    assert_no_text 'complete'
+    assert_no_text 'Re-run same version'
 
     p.state = "Complete"
     p.save!
 
-    assert page.has_text? 'complete'
-    assert page.has_text? 'Re-run same version'
+    assert_text 'complete'
+    assert_text 'Re-run same version'
 
     Thread.current[:arvados_api_token] = nil
   end
@@ -135,7 +135,7 @@ class WebsocketTest < ActionDispatch::IntegrationTest
 
     visit(page_with_token("admin", "/"))
 
-    assert page.has_no_text? 'test dashboard arv-refresh-on-log-event'
+    assert_no_text 'test dashboard arv-refresh-on-log-event'
 
     # Do something and check that the pane reloads.
     p = PipelineInstance.create({state: "RunningOnServer",
@@ -144,7 +144,7 @@ class WebsocketTest < ActionDispatch::IntegrationTest
                                   }
                                 })
 
-    assert page.has_text? 'test dashboard arv-refresh-on-log-event'
+    assert_text 'test dashboard arv-refresh-on-log-event'
 
     Thread.current[:arvados_api_token] = nil
   end
