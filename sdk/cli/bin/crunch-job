@@ -157,20 +157,15 @@ my $dbh;
 my $sth;
 my @jobstep;
 
-my $User = retry_op(sub { $arv->{'users'}->{'current'}->execute; });
+my $User = api_call("users/current");
 
 if ($jobspec =~ /^[-a-z\d]+$/)
 {
   # $jobspec is an Arvados UUID, not a JSON job specification
-  $Job = retry_op(sub {
-    $arv->{'jobs'}->{'get'}->execute('uuid' => $jobspec);
-  });
+  $Job = api_call("jobs/get", uuid => $jobspec);
   if (!$force_unlock) {
     # Claim this job, and make sure nobody else does
-    eval { retry_op(sub {
-      # lock() sets is_locked_by_uuid and changes state to Running.
-      $arv->{'jobs'}->{'lock'}->execute('uuid' => $Job->{'uuid'})
-    }); };
+    eval { api_call("jobs/lock", uuid => $Job->{uuid}); };
     if ($@) {
       Log(undef, "Error while locking job, exiting ".EX_TEMPFAIL);
       exit EX_TEMPFAIL;
@@ -191,7 +186,7 @@ else
   $Job->{'started_at'} = gmtime;
   $Job->{'state'} = 'Running';
 
-  $Job = retry_op(sub { $arv->{'jobs'}->{'create'}->execute('job' => $Job); });
+  $Job = api_call("jobs/create", job => $Job);
 }
 $job_id = $Job->{'uuid'};
 
@@ -321,13 +316,11 @@ if (defined $Job->{thawedfromkey})
 }
 else
 {
-  my $first_task = retry_op(sub {
-    $arv->{'job_tasks'}->{'create'}->execute('job_task' => {
-      'job_uuid' => $Job->{'uuid'},
-      'sequence' => 0,
-      'qsequence' => 0,
-      'parameters' => {},
-    });
+  my $first_task = api_call("job_tasks/create", job_task => {
+    'job_uuid' => $Job->{'uuid'},
+    'sequence' => 0,
+    'qsequence' => 0,
+    'parameters' => {},
   });
   push @jobstep, { 'level' => 0,
 		   'failures' => 0,
@@ -427,10 +420,8 @@ else {
   } else {
     # $repo is none of the above. It must be the name of a hosted
     # repository.
-    my $arv_repo_list = retry_op(sub {
-      $arv->{'repositories'}->{'list'}->execute(
-        'filters' => [['name','=',$repo]]);
-    });
+    my $arv_repo_list = api_call("repositories/list",
+                                 'filters' => [['name','=',$repo]]);
     my @repos_found = @{$arv_repo_list->{'items'}};
     my $n_found = $arv_repo_list->{'serverResponse'}->{'items_available'};
     if ($n_found > 0) {
@@ -935,10 +926,8 @@ else {
     while (my $manifest_line = <$orig_manifest>) {
       $orig_manifest_text .= $manifest_line;
     }
-    my $output = retry_op(sub {
-      $arv->{'collections'}->{'create'}->execute(
-        'collection' => {'manifest_text' => $orig_manifest_text});
-    });
+    my $output = api_call("collections/create", collection => {
+      'manifest_text' => $orig_manifest_text});
     Log(undef, "output uuid " . $output->{uuid});
     Log(undef, "output hash " . $output->{portable_data_hash});
     $Job->update_attributes('output' => $output->{portable_data_hash});
@@ -1072,15 +1061,14 @@ sub reapchildren
     my $newtask_list = [];
     my $newtask_results;
     do {
-      $newtask_results = retry_op(sub {
-        $arv->{'job_tasks'}->{'list'}->execute(
-          'where' => {
-            'created_by_job_task_uuid' => $Jobstep->{'arvados_task'}->{uuid}
-          },
-          'order' => 'qsequence',
-          'offset' => scalar(@$newtask_list),
-        );
-      });
+      $newtask_results = api_call(
+        "job_tasks/list",
+        'where' => {
+          'created_by_job_task_uuid' => $Jobstep->{'arvados_task'}->{uuid}
+        },
+        'order' => 'qsequence',
+        'offset' => scalar(@$newtask_list),
+      );
       push(@$newtask_list, @{$newtask_results->{items}});
     } while (@{$newtask_results->{items}});
     foreach my $arvados_task (@$newtask_list) {
@@ -1103,9 +1091,7 @@ sub check_refresh_wanted
   my @stat = stat $ENV{"CRUNCH_REFRESH_TRIGGER"};
   if (@stat && $stat[9] > $latest_refresh) {
     $latest_refresh = scalar time;
-    my $Job2 = retry_op(sub {
-      $arv->{'jobs'}->{'get'}->execute('uuid' => $jobspec);
-    });
+    my $Job2 = api_call("jobs/get", uuid => $jobspec);
     for my $attr ('cancelled_at',
                   'cancelled_by_user_uuid',
                   'cancelled_by_client_uuid',
@@ -1620,9 +1606,7 @@ sub find_docker_image {
   # If not, return undef for both values.
   my $locator = shift;
   my ($streamname, $filename);
-  my $image = retry_op(sub {
-    $arv->{collections}->{get}->execute(uuid => $locator);
-  });
+  my $image = api_call("collections/get", uuid => $locator);
   if ($image) {
     foreach my $line (split(/\n/, $image->{manifest_text})) {
       my @tokens = split(/\s+/, $line);
@@ -1669,10 +1653,14 @@ sub retry_count {
 }
 
 sub retry_op {
-  # Given a function reference, call it with the remaining arguments.  If
-  # it dies, retry it with exponential backoff until it succeeds, or until
-  # the current retry_count is exhausted.
+  # Pass in two function references.
+  # This method will be called with the remaining arguments.
+  # If it dies, retry it with exponential backoff until it succeeds,
+  # or until the current retry_count is exhausted.  After each failure
+  # that can be retried, the second function will be called with
+  # the current try count (0-based), next try time, and error message.
   my $operation = shift;
+  my $retry_callback = shift;
   my $retries = retry_count();
   foreach my $try_count (0..$retries) {
     my $next_try = time + (2 ** $try_count);
@@ -1680,6 +1668,7 @@ sub retry_op {
     if (!$@) {
       return $result;
     } elsif ($try_count < $retries) {
+      $retry_callback->($try_count, $next_try, $@);
       my $sleep_time = $next_try - time;
       sleep($sleep_time) if ($sleep_time > 0);
     }
@@ -1688,6 +1677,32 @@ sub retry_op {
   # retry_op's line number to it.
   chomp($@);
   die($@ . "\n");
+}
+
+sub api_call {
+  # Pass in a /-separated API method name, and arguments for it.
+  # This function will call that method, retrying as needed until
+  # the current retry_count is exhausted, with a log on the first failure.
+  my $method_name = shift;
+  my $log_api_retry = sub {
+    my ($try_count, $next_try_at, $errmsg) = @_;
+    $errmsg =~ s/\s*\bat \Q$0\E line \d+\.?\s*//;
+    $errmsg =~ s/\s/ /g;
+    $errmsg =~ s/\s+$//;
+    my $retry_msg;
+    if ($next_try_at < time) {
+      $retry_msg = "Retrying.";
+    } else {
+      my $next_try_fmt = strftime("%Y-%m-%d %H:%M:%S", $next_try_at);
+      $retry_msg = "Retrying at $next_try_fmt.";
+    }
+    Log(undef, "API method $method_name failed: $errmsg. $retry_msg");
+  };
+  my $method = $arv;
+  foreach my $key (split(/\//, $method_name)) {
+    $method = $method->{$key};
+  }
+  return retry_op(sub { $method->execute(@_); }, $log_api_retry, @_);
 }
 
 sub exit_status_s {
