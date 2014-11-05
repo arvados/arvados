@@ -40,10 +40,20 @@ $(document).on('click', '.selectable', function() {
     var action_data_from_params = $(this).data('action-data-from-params');
     var selection_param = action_data.selection_param;
     $modal.find('.modal-error').removeClass('hide').hide();
-    $modal.find('.selectable.active[data-object-uuid]').each(function() {
+
+    $checked_selections = $modal.find('.persistent-selection:checked');
+    if ($checked_selections) {
+      $checked_selections.each(function() {
+          data.push({name: selection_param, value: $(this).attr('value')});
+      });
+    }
+
+    if (data.length == 0) {   // no checked persistent selection
+      $modal.find('.selectable.active[data-object-uuid]').each(function() {
         var val = $(this).attr('data-object-uuid');
         data.push({name: selection_param, value: val});
-    });
+      });
+    }
     $.each($.extend({}, action_data, action_data_from_params),
            function(key, value) {
                if (value instanceof Array && key[-1] != ']') {

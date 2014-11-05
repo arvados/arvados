@@ -261,7 +261,7 @@ module ApplicationHelper
       dn += '[value]'
     end
 
-    if dataclass == Collection
+    if (dataclass == Collection) or (dataclass == File)
       selection_param = object.class.to_s.underscore + dn
       display_value = attrvalue
       if value_info.is_a?(Hash)
@@ -274,9 +274,9 @@ module ApplicationHelper
         end
       end
       if (attr == :components) and (subattr.size > 2)
-        chooser_title = "Choose a dataset for #{object.component_input_title(subattr[0], subattr[2])}:"
+        chooser_title = "Choose a #{dataclass == Collection ? 'dataset' : 'file'} for #{object.component_input_title(subattr[0], subattr[2])}:"
       else
-        chooser_title = "Choose a dataset:"
+        chooser_title = "Choose a #{dataclass == Collection ? 'dataset' : 'file'}:"
       end
       modal_path = choose_collections_path \
       ({ title: chooser_title,

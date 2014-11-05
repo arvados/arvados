@@ -86,7 +86,7 @@
         </div>
 
         <div class="collection_files_name">
-          <% if !defined? no_checkboxes or !no_checkboxes %>
+          <%# if !defined? no_checkboxes or !no_checkboxes %>
           <%= check_box_tag 'uuids[]', "#{@object.uuid}/#{file_path}", false, {
                 :class => 'persistent-selection',
                 :friendly_type => "File",
@@ -96,7 +96,7 @@
                 :title => "Include #{file_path} in your selections",
               } %>
           <span>&nbsp;</span>
-          <% end %>
+          <%# end %>
       <% if CollectionsHelper::is_image(filename) %>
           <i class="fa fa-fw fa-bar-chart-o"></i> <%= filename %></div>
        </div>
