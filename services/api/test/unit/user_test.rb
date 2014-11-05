@@ -9,6 +9,40 @@ class UserTest < ActiveSupport::TestCase
     system_user
   end
 
+  test "create_new_user_auto_admin_first_user" do
+    # This test requires no admin users exist (except for the system user)
+    users(:admin).delete
+
+    @all_users = User.where("uuid not like '%-000000000000000'").where(:is_admin => true).find(:all)
+
+    assert_equal 0, @all_users.size, "No admin users should exist (except for the system user)"
+
+    Rails.configuration.auto_admin_first_user = true
+
+    assert_equal true, Rails.configuration.auto_admin_first_user
+    user = User.new
+    user.first_name = "first_name_for_newly_created_admin_user"
+
+    act_as_system_user do
+      user.save!
+    end
+
+    user = User.find(user.id)   # get the user back
+    assert user.is_admin, 'is_admin should be set for first new user'
+    assert_equal 'first_name_for_newly_created_admin_user', user.first_name
+
+    user = User.new
+    user.first_name = "first_name_for_newly_created_ordinary_user"
+
+    act_as_system_user do
+      user.save!
+    end
+
+    user = User.find(user.id)   # get the user back
+    assert !user.is_admin, 'is_admin should not be set for second new user'
+    assert_equal 'first_name_for_newly_created_ordinary_user', user.first_name
+  end
+
   test "check non-admin active user properties" do
     @active_user = users(:active)     # get the active user
     assert !@active_user.is_admin, 'is_admin should not be set for a non-admin user'
