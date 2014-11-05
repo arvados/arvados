@@ -84,9 +84,15 @@ $(document).on('arv:pane:reload', '[data-pane-content-url]', function(e) {
     $pane.removeClass('pane-loaded');
     $pane.removeClass('pane-stale');
 
-    if (!$pane.hasClass('active')) {
-        // When the user selects e.target tab, show a spinner instead of
-        // old content while loading.
+    if (!$pane.hasClass('active') &&
+        $pane.parent().hasClass('tab-content')) {
+        // $pane is one of the content areas in a bootstrap tabs
+        // widget, and it isn't the currently selected tab. If and
+        // when the user does select the corresponding tab, it will
+        // get a shown.bs.tab event, which will invoke this reload
+        // function again (see handler above). For now, we just insert
+        // a spinner, which will be displayed while the new content is
+        // loading.
         $pane.html('<div class="spinner spinner-32px spinner-h-center"></div>');
         return;
     }
