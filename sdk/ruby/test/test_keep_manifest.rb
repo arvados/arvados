@@ -17,14 +17,18 @@ class ManifestTest < Minitest::Test
      "./dir1/subdir #{random_block(9)} 0:3:file1 3:3:file2 6:3:file3\n",
      "./dir2 #{random_block(9)} 0:3:file1 3:3:file2 6:3:file3\n"].join("")
 
+  def check_stream(stream, exp_name, exp_blocks, exp_files)
+    assert_equal(exp_name, stream.first)
+    assert_equal(exp_blocks, stream[1].map(&:to_s))
+    assert_equal(exp_files, stream.last)
+  end
+
   def test_simple_each_line_array
     manifest = Keep::Manifest.new(SIMPLEST_MANIFEST)
     stream_name, block_s, file = SIMPLEST_MANIFEST.strip.split
     stream_a = manifest.each_line.to_a
     assert_equal(1, stream_a.size, "wrong number of streams")
-    assert_equal(stream_name, stream_a[0][0])
-    assert_equal([block_s], stream_a[0][1].map(&:to_s))
-    assert_equal([file], stream_a[0][2])
+    check_stream(stream_a.first, stream_name, [block_s], [file])
   end
 
   def test_simple_each_line_block
@@ -51,6 +55,18 @@ class ManifestTest < Minitest::Test
 
   def test_empty_each_line
     assert_empty(Keep::Manifest.new("").each_line.to_a)
+  end
+
+  def test_empty_line_within_manifest
+    block_s = random_block
+    manifest = Keep::Manifest.
+      new([". #{block_s} 0:1:file1 1:2:file2\n",
+           "\n",
+           ". #{block_s} 3:3:file3 6:4:file4\n"].join(""))
+    streams = manifest.each_line.to_a
+    assert_equal(2, streams.size)
+    check_stream(streams[0], ".", [block_s], ["0:1:file1", "1:2:file2"])
+    check_stream(streams[1], ".", [block_s], ["3:3:file3", "6:4:file4"])
   end
 
   def test_backslash_escape_parsing

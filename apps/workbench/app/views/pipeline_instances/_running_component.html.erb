@@ -46,7 +46,7 @@
                   This job is next in the queue to run.
                 <% elsif current_job[:queue_position] == 1 %>
                   There is 1 job in the queue ahead of this one.
-                <% else %>
+                <% elsif current_job[:queue_position] %>
                   There are <%= current_job[:queue_position] %> jobs in the queue ahead of this one.
                 <% end %>
               <% rescue %>

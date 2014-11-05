@@ -451,6 +451,8 @@ class User < ArvadosModel
   def auto_setup_new_user
     return true if !Rails.configuration.auto_setup_new_users
     return true if !self.email
+    return true if self.uuid == system_user_uuid
+    return true if self.uuid == anonymous_user_uuid
 
     if Rails.configuration.auto_setup_new_users_with_vm_uuid ||
        Rails.configuration.auto_setup_new_users_with_repository

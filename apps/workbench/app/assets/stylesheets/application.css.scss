@@ -150,6 +150,10 @@ nav.navbar-fixed-top .navbar-nav.navbar-right > li > a:hover {
     color: #800;
 }
 
+th[data-sort-order] {
+    cursor: pointer;
+}
+
 .inline-progress-container div.progress {
     margin-bottom: 0;
 }

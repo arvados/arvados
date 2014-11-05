@@ -176,6 +176,8 @@ previous_docker_job_run:
   script_parameters:
     input: fa7aeb5140e2848d39b416daeef4ffc5+45
     an_integer: "1"
+  runtime_constraints:
+    docker_image: arvados/test
   success: true
   output: ea10d51bcf88862dbcc36eb292017dfd+45
   docker_image_locator: fa3c1a9cb6783f85f2ecda037e07b8c3+167
@@ -319,16 +321,49 @@ running_will_be_completed:
   runtime_constraints: {}
   state: Running
 
+graph_stage1:
+  uuid: zzzzz-8i9sb-graphstage10000
+  owner_uuid: zzzzz-j7d0g-v955i6s2oi1cbso
+  repository: foo
+  script: hash
+  script_version: 4fe459abe02d9b365932b8f5dc419439ab4e2577
+  state: Complete
+  output: fa7aeb5140e2848d39b416daeef4ffc5+45
+
+graph_stage2:
+  uuid: zzzzz-8i9sb-graphstage20000
+  owner_uuid: zzzzz-j7d0g-v955i6s2oi1cbso
+  repository: foo
+  script: hash2
+  script_version: 4fe459abe02d9b365932b8f5dc419439ab4e2577
+  state: Complete
+  script_parameters:
+    input: fa7aeb5140e2848d39b416daeef4ffc5+45
+    input2: "stuff"
+  output: 65b17c95fdbc9800fc48acda4e9dcd0b+93
+
+graph_stage3:
+  uuid: zzzzz-8i9sb-graphstage30000
+  owner_uuid: zzzzz-j7d0g-v955i6s2oi1cbso
+  repository: foo
+  script: hash2
+  script_version: 4fe459abe02d9b365932b8f5dc419439ab4e2577
+  state: Complete
+  script_parameters:
+    input: fa7aeb5140e2848d39b416daeef4ffc5+45
+    input2: "stuff2"
+  output: ea10d51bcf88862dbcc36eb292017dfd+45
+
 
 # Test Helper trims the rest of the file
 
 # Do not add your fixtures below this line as the rest of this file will be trimmed by test_helper
 
-# jobs in project_with_2_pipelines_and_200_jobs
-<% for i in 1..200 do %>
-job_<%=i%>_of_200:
-  uuid: zzzzz-8i9sb-0vsrcqi7whch<%= i.to_s.rjust(3, '0') %>
-  created_at: <%= i.minute.ago.to_s(:db) %>
+# jobs in project_with_2_pipelines_and_60_jobs
+<% for i in 1..60 do %>
+job_<%=i%>_of_60:
+  uuid: zzzzz-8i9sb-oneof100jobs<%= i.to_s.rjust(3, '0') %>
+  created_at: <%= ((i+5)/5).minute.ago.to_s(:db) %>
   owner_uuid: zzzzz-j7d0g-nnjobspipelines
   script_version: 7def43a4d3f20789dda4700f703b5514cc3ed250
   state: Complete

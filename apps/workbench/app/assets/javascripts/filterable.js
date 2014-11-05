@@ -1,3 +1,54 @@
+// filterable.js shows/hides content when the user operates
+// search/select widgets. For "infinite scroll" content, it passes the
+// filters to the server and retrieves new content. For other content,
+// it filters the existing DOM elements using jQuery show/hide.
+//
+// Usage:
+//
+// 1. Add the "filterable" class to each filterable content item.
+// Typically, each item is a 'tr' or a 'div class="row"'.
+//
+// <div id="results">
+//   <div class="filterable row">First row</div>
+//   <div class="filterable row">Second row</div>
+// </div>
+//
+// 2. Add the "filterable-control" class to each search/select widget.
+// Also add a data-filterable-target attribute with a jQuery selector
+// for an ancestor of the filterable items, i.e., the container in
+// which this widget should apply filtering.
+//
+// <input class="filterable-control" data-filterable-target="#results"
+//        type="text" />
+//
+// Supported widgets:
+//
+// <input type="text" ... />
+//
+// The input value is used as a regular expression. Rows with content
+// matching the regular expression are shown.
+//
+// <select ... data-filterable-attribute="data-example-attr">
+//  <option value="foo">Foo</option>
+//  <option value="">Show all</option>
+// </select>
+//
+// When the user selects the "Foo" option, rows with
+// data-example-attr="foo" are shown, and all others are hidden. When
+// the user selects the "Show all" option, all rows are shown.
+//
+// Notes:
+//
+// When multiple filterable-control widgets operate on the same
+// data-filterable-target, items must pass _all_ filters in order to
+// be shown.
+//
+// If one data-filterable-target is the parent of another
+// data-filterable-target, results are undefined. Don't do this.
+//
+// Combining "select" filterable-controls with infinite-scroll is not
+// yet supported.
+
 $(document).
     on('paste keyup input', 'input[type=text].filterable-control', function() {
         var $target = $($(this).attr('data-filterable-target'));

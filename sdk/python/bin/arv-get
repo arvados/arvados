@@ -143,6 +143,8 @@ if not get_prefix:
             abort("failed to download '{}': {}".format(collection, error))
     sys.exit(0)
 
+reader.normalize()
+
 # Scan the collection. Make an array of (stream, file, local
 # destination filename) tuples, and add up total size to extract.
 todo = []

@@ -27,12 +27,6 @@ On compute nodes:
 
 * @pip install --upgrade pyvcf@
 
-h4. Redis
-
-On controller:
-
-* @apt-get install redis-server@
-
 h4. Crunch user account
 
 On compute nodes and controller:
@@ -43,7 +37,7 @@ The crunch user should have the same UID, GID, and home directory on all compute
 
 h4. Repositories
 
-Crunch scripts must be in Git repositories in @/var/lib/arvados/git/*.git@ (or whatever is configured in @services/api/config/environments/production.rb@).
+Crunch scripts must be in Git repositories in the directory configured as @git_repositories_dir@/*.git (see the "API server installation":install-api-server.html#git_repositories_dir).
 
 Once you have a repository with commits -- and you have read access to the repository -- you should be able to create a new job:
 

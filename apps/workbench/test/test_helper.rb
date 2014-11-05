@@ -204,6 +204,21 @@ class ActionController::TestCase
   end
 end
 
+# If it quacks like a duck, it must be a HTTP request object.
+class RequestDuck
+  def self.host
+    "localhost"
+  end
+
+  def self.port
+    8080
+  end
+
+  def self.protocol
+    "http"
+  end
+end
+
 if ENV["RAILS_ENV"].eql? 'test'
   ApiServerForTests.new.run
   ApiServerForTests.new.run ["--websockets"]
