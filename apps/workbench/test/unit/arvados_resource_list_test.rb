@@ -37,4 +37,43 @@ class ResourceListTest < ActiveSupport::TestCase
                  "Expected links_for to return all link_classes")
   end
 
+  test 'get all items by default' do
+    use_token :admin
+    a = 0
+    Collection.where(owner_uuid: 'zzzzz-j7d0g-0201collections').each do
+      a += 1
+    end
+    assert_equal 201, a
+  end
+
+  test 'prefetch all items' do
+    use_token :admin
+    a = 0
+    Collection.where(owner_uuid: 'zzzzz-j7d0g-0201collections').all.each do
+      a += 1
+    end
+    assert_equal 201, a
+  end
+
+  test 'get limited items' do
+    use_token :admin
+    a = 0
+    Collection.where(owner_uuid: 'zzzzz-j7d0g-0201collections').limit(51).each do
+      a += 1
+    end
+    assert_equal 51, a
+  end
+
+  test 'get single page of items' do
+    use_token :admin
+    a = 0
+    c = Collection.where(owner_uuid: 'zzzzz-j7d0g-0201collections').fetch_multiple_pages(false)
+    c.each do
+      a += 1
+    end
+
+    assert a < 201
+    assert_equal c.result_limit, a
+  end
+
 end

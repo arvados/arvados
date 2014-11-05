@@ -4,6 +4,7 @@ class ArvadosResourceList
 
   def initialize resource_class=nil
     @resource_class = resource_class
+    @fetch_multiple_pages = true
   end
 
   def eager(bool=true)
@@ -44,17 +45,17 @@ class ArvadosResourceList
   end
 
   def where(cond)
-    cond = cond.dup
-    cond.keys.each do |uuid_key|
-      if cond[uuid_key] and (cond[uuid_key].is_a? Array or
-                             cond[uuid_key].is_a? ArvadosBase)
+    @cond = cond.dup
+    @cond.keys.each do |uuid_key|
+      if @cond[uuid_key] and (@cond[uuid_key].is_a? Array or
+                             @cond[uuid_key].is_a? ArvadosBase)
         # Coerce cond[uuid_key] to an array of uuid strings.  This
         # allows caller the convenience of passing an array of real
         # objects and uuids in cond[uuid_key].
-        if !cond[uuid_key].is_a? Array
-          cond[uuid_key] = [cond[uuid_key]]
+        if !@cond[uuid_key].is_a? Array
+          @cond[uuid_key] = [@cond[uuid_key]]
         end
-        cond[uuid_key] = cond[uuid_key].collect do |item|
+        @cond[uuid_key] = @cond[uuid_key].collect do |item|
           if item.is_a? ArvadosBase
             item.uuid
           else
@@ -63,54 +64,113 @@ class ArvadosResourceList
         end
       end
     end
-    cond.keys.select { |x| x.match /_kind$/ }.each do |kind_key|
-      if cond[kind_key].is_a? Class
-        cond = cond.merge({ kind_key => 'arvados#' + arvados_api_client.class_kind(cond[kind_key]) })
+    @cond.keys.select { |x| x.match /_kind$/ }.each do |kind_key|
+      if @cond[kind_key].is_a? Class
+        @cond = @cond.merge({ kind_key => 'arvados#' + arvados_api_client.class_kind(@cond[kind_key]) })
       end
     end
-    api_params = {
-      _method: 'GET',
-      where: cond
-    }
-    api_params[:eager] = '1' if @eager
-    api_params[:limit] = @limit if @limit
-    api_params[:offset] = @offset if @offset
-    api_params[:select] = @select if @select
-    api_params[:order] = @orderby_spec if @orderby_spec
-    api_params[:filters] = @filters if @filters
-    res = arvados_api_client.api @resource_class, '', api_params
-    @results = arvados_api_client.unpack_api_response res
+    self
+  end
+
+  def fetch_multiple_pages(f)
+    @fetch_multiple_pages = f
     self
   end
 
   def results
-    self.where({}) if !@results
+    if !@results
+      @results = []
+      self.each_page do |r|
+        @results.concat r
+      end
+    end
     @results
   end
 
   def results=(r)
     @results = r
+    @items_available = r.items_available if r.respond_to? :items_available
+    @result_limit = r.limit if r.respond_to? :limit
+    @result_offset = r.offset if r.respond_to? :offset
+    @result_links = r.links if r.respond_to? :links
+    @results
   end
 
   def all
-    where({})
-  end
-
-  def each(&block)
-    results.each do |m|
-      block.call m
-    end
+    results
     self
   end
 
-  def collect
-    results.collect do |m|
-      yield m
-    end
+  def to_ary
+    results
   end
 
-  def first
-    results.first
+  def each_page
+    api_params = {
+      _method: 'GET'
+    }
+    api_params[:where] = @cond if @cond
+    api_params[:eager] = '1' if @eager
+    api_params[:limit] = @limit if @limit
+    api_params[:select] = @select if @select
+    api_params[:order] = @orderby_spec if @orderby_spec
+    api_params[:filters] = @filters if @filters
+
+    item_count = 0
+
+    if @offset
+      offset = @offset
+    else
+      offset = 0
+    end
+
+    if @limit.is_a? Integer
+      items_to_get = @limit
+    else
+      items_to_get = 1000000000
+    end
+
+    begin
+      api_params[:offset] = offset
+
+      res = arvados_api_client.api @resource_class, '', api_params
+      items = arvados_api_client.unpack_api_response res
+
+      if items.nil? or items.size == 0
+        break
+      end
+
+      @items_available = items.items_available if items.respond_to? :items_available
+      @result_limit = items.limit
+      @result_offset = items.offset
+      @result_links = items.links if items.respond_to? :links
+
+      item_count += items.size
+
+      if items.respond_to? :items_available and
+          (@limit.nil? or (@limit.is_a? Integer and  @limit > items.items_available))
+        items_to_get = items.items_available
+      end
+
+      offset = items.offset + items.size
+
+      yield items
+
+    end while @fetch_multiple_pages and item_count < items_to_get
+    self
+  end
+
+  def each(&block)
+    if not @results.nil?
+      @results.each &block
+    else
+      self.each_page do |items|
+        items.each do |i|
+          block.call i
+        end
+      end
+    end
+    self
   end
 
   def last
@@ -129,32 +189,28 @@ class ArvadosResourceList
     end
   end
 
-  def to_ary
-    results
-  end
-
   def to_hash
-    Hash[results.collect { |x| [x.uuid, x] }]
+    Hash[self.collect { |x| [x.uuid, x] }]
   end
 
   def empty?
-    results.empty?
+    self.first.nil?
   end
 
   def items_available
-    results.items_available if results.respond_to? :items_available
+    @items_available
   end
 
   def result_limit
-    results.limit if results.respond_to? :limit
+    @result_limit
   end
 
   def result_offset
-    results.offset if results.respond_to? :offset
+    @result_offset
   end
 
   def result_links
-    results.links if results.respond_to? :links
+    @result_links
   end
 
   # Return links provided with API response that point to the
