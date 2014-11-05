@@ -47,7 +47,7 @@ $(document).on('ready ajax:complete', function() {
     run_pipeline_button_state();
 });
 
-$(document).on('arv-log-event', '.arv-refresh-on-state-change', function(event, eventData){
+$(document).on('arv-log-event', '.arv-refresh-on-state-change', function(event, eventData) {
     if (eventData.event_type == "update" &&
         eventData.properties.old_attributes.state != eventData.properties.new_attributes.state)
     {
@@ -56,18 +56,30 @@ $(document).on('arv-log-event', '.arv-refresh-on-state-change', function(event, 
 });
 
 $(document).on('arv-log-event', '.arv-log-event-subscribe-to-pipeline-job-uuids', function(event, eventData){
-    if (eventData.event_type == "create" || eventData.event_type == "update") {
-        if (eventData.object_kind == 'arvados#pipelineInstance') {
-            var objs = "";
-            var components = eventData.properties.new_attributes.components;
-            for (a in components) {
-                if (components[a].job && components[a].job.uuid) {
-                    objs += " " + components[a].job.uuid;
-                }
-            }
-            $(event.target).attr("data-object-uuids", eventData.object_uuid + objs);
+    if (!((eventData.object_kind == 'arvados#pipelineInstance') &&
+          (eventData.event_type == "create" ||
+           eventData.event_type == "update") &&
+         eventData.properties &&
+         eventData.properties.new_attributes &&
+         eventData.properties.new_attributes.components)) {
+        return;
+    }
+    var objs = "";
+    var components = eventData.properties.new_attributes.components;
+    for (a in components) {
+        if (components[a].job && components[a].job.uuid) {
+            objs += " " + components[a].job.uuid;
         }
     }
+    $(event.target).attr("data-object-uuids", eventData.object_uuid + objs);
+});
+
+$(document).on('ready ajax:success', function() {
+    $('.arv-log-refresh-control').each(function() {
+        var uuids = $(this).attr('data-object-uuids');
+        var $pane = $(this).closest('[data-pane-content-url]');
+        $pane.attr('data-object-uuids', uuids);
+    });
 });
 
 $(document).on('arv-log-event', '.arv-log-event-handler-append-logs', function(event, eventData){

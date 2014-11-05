@@ -7,12 +7,11 @@
       <% pane_name = (pane.is_a?(Hash) ? pane[:name] : pane) %>
       <li class="<%= 'active' if i==0 %>">
         <a href="#<%= pane_name %>"
-           class="pane-anchor"
            id="<%= pane_name %>-tab"
            data-toggle="tab"
            data-tab-history=true
            data-tab-history-update-url=true
-           data-pane-content-url="<%= url_for(params.merge(tab_pane: pane_name)) %>">
+           >
           <%= pane_name.gsub('_', ' ') %> <span id="<%= pane_name %>-count"></span>
         </a>
       </li>
@@ -23,21 +22,22 @@
     <% pane_list.each_with_index do |pane, i| %>
       <% pane_name = (pane.is_a?(Hash) ? pane[:name] : pane) %>
       <div id="<%= pane_name %>"
-           class="tab-pane <%= 'in active pane-loaded' if i==0 %>"
+           class="tab-pane fade <%= 'in active loaded pane-loaded' if i==0 %> arv-log-event-listener arv-refresh-on-log-event arv-log-event-subscribe-to-pipeline-job-uuids"
            <% if controller.action_name == "index" %>
              data-object-kind="arvados#<%= ArvadosApiClient.class_kind controller.model_class %>"
            <% else %>
              data-object-uuid="<%= @object.uuid %>"
            <% end %>
+           data-pane-content-url="<%= url_for(params.merge(tab_pane: pane_name)) %>"
            style="margin-top:0.5em;"
-      >
-          <div class="pane-content">
-            <% if i == 0 %>
-              <%= render_pane pane_name, to_string: true %>
-            <% else %>
-              <div class="spinner spinner-32px spinner-h-center"></div>
-            <% end %>
-          </div>
+           >
+        <div class="pane-content">
+          <% if i == 0 %>
+            <%= render_pane pane_name, to_string: true %>
+          <% else %>
+            <div class="spinner spinner-32px spinner-h-center"></div>
+          <% end %>
+        </div>
       </div>
     <% end %>
   </div>

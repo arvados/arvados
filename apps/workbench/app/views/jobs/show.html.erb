@@ -1,14 +1,9 @@
 <% content_for :tab_line_buttons do %>
-  <div id="job-tab-buttons"
-       class="pane-anchor active arv-log-event-listener arv-refresh-on-state-change"
-       href="#job-tab-buttons-pane"
+  <div class="active pane-loaded arv-log-event-listener arv-refresh-on-state-change"
        data-pane-content-url="<%= url_for(params.merge(tab_pane: "job_buttons")) %>"
        data-object-uuid="<%= @object.uuid %>"
-       style="display: inline"
-       >
-    <div id="job-tab-buttons-pane" class="active" style="display: inline">
-      <%= render partial: 'show_job_buttons', locals: {object: @object}%>
-    </div>
+       style="display: inline">
+    <%= render partial: 'show_job_buttons', locals: {object: @object}%>
   </div>
 <% end %>
 

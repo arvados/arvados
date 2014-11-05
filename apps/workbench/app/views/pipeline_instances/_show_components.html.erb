@@ -1,20 +1,15 @@
 <% if !@object.state.in? ['New', 'Ready'] %>
 
-<% job_uuids = @object.components.map { |k,j| j.is_a? Hash and j[:job].andand[:uuid] }.compact %>
-
-<div id="pipeline-instance-components"
-     class="pane-anchor arv-log-event-listener arv-refresh-on-log-event"
-     href="#pipeline-instance-components-pane"
-     data-pane-content-url="<%= url_for(params.merge(tab_pane: "components_running")) %>"
-     data-object-uuids="<%= @object.uuid %> <%= job_uuids.join(' ') %>"
-     data-load-throttle="5000"
-     >
-  <div id="pipeline-instance-components-pane" class="active">
+  <%
+     job_uuids = @object.components.map { |k,j| j.is_a? Hash and j[:job].andand[:uuid] }.compact
+     throttle = @object.state == 'Running' ? 5000 : 15000
+     %>
+  <div class="arv-log-refresh-control"
+       data-load-throttle="<%= throttle %>"
+       data-object-uuids="<%= @object.uuid %> <%= job_uuids.join(' ') %>"
+       ></div>
 
   <%= render_pipeline_components("running", :json) %>
-
-</div>
-</div>
 
 <% else %>
   <%# state is either New or Ready %>
