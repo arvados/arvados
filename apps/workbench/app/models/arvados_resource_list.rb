@@ -173,6 +173,10 @@ class ArvadosResourceList
     self
   end
 
+  def first
+    results.first
+  end
+
   def last
     results.last
   end
