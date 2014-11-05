@@ -303,33 +303,41 @@ class KeepClientRetryTestMixin(object):
         self.assertRaises(error_class, self.run_method, *args, **kwargs)
 
     def test_immediate_success(self):
-        with tutil.mock_responses(self.DEFAULT_EXPECT, 200):
+        with tutil.mock_requestslib_responses(self.mock_method, self.DEFAULT_EXPECT, 200):
             self.check_success()
 
     def test_retry_then_success(self):
-        with tutil.mock_responses(self.DEFAULT_EXPECT, 500, 200):
+        with tutil.mock_requestslib_responses(self.mock_method, self.DEFAULT_EXPECT, 500, 200):
             self.check_success(num_retries=3)
 
     def test_no_default_retry(self):
-        with tutil.mock_responses(self.DEFAULT_EXPECT, 500, 200):
+        with tutil.mock_requestslib_responses(self.mock_method, self.DEFAULT_EXPECT, 500, 200):
             self.check_exception()
 
     def test_no_retry_after_permanent_error(self):
-        with tutil.mock_responses(self.DEFAULT_EXPECT, 403, 200):
+        with tutil.mock_requestslib_responses(self.mock_method, self.DEFAULT_EXPECT, 403, 200):
             self.check_exception(num_retries=3)
 
     def test_error_after_retries_exhausted(self):
-        with tutil.mock_responses(self.DEFAULT_EXPECT, 500, 500, 200):
+        with tutil.mock_requestslib_responses(self.mock_method, self.DEFAULT_EXPECT, 500, 500, 200):
             self.check_exception(num_retries=1)
 
     def test_num_retries_instance_fallback(self):
         self.client_kwargs['num_retries'] = 3
-        with tutil.mock_responses(self.DEFAULT_EXPECT, 500, 200):
+        with tutil.mock_requestslib_responses(self.mock_method, self.DEFAULT_EXPECT, 500, 200):
             self.check_success()
 
 
+class KeepClientRetryGetTestMixin(KeepClientRetryTestMixin):
+    mock_method = 'requests.get'
+
+
+class KeepClientRetryPutTestMixin(KeepClientRetryTestMixin):
+    mock_method = 'requests.put'
+
+
 @tutil.skip_sleep
-class KeepClientRetryGetTestCase(KeepClientRetryTestMixin, unittest.TestCase):
+class KeepClientRetryGetTestCase(KeepClientRetryGetTestMixin, unittest.TestCase):
     DEFAULT_EXPECT = KeepClientRetryTestMixin.TEST_DATA
     DEFAULT_EXCEPTION = arvados.errors.KeepReadError
     HINTED_LOCATOR = KeepClientRetryTestMixin.TEST_LOCATOR + '+K@xyzzy'
@@ -339,7 +347,7 @@ class KeepClientRetryGetTestCase(KeepClientRetryTestMixin, unittest.TestCase):
         return self.new_client().get(locator, *args, **kwargs)
 
     def test_specific_exception_when_not_found(self):
-        with tutil.mock_responses(self.DEFAULT_EXPECT, 404, 200):
+        with tutil.mock_get_responses(self.DEFAULT_EXPECT, 404, 200):
             self.check_exception(arvados.errors.NotFoundError, num_retries=3)
 
     def test_general_exception_with_mixed_errors(self):
@@ -348,7 +356,7 @@ class KeepClientRetryGetTestCase(KeepClientRetryTestMixin, unittest.TestCase):
         # This test rigs up 50/50 disagreement between two servers, and
         # checks that it does not become a NotFoundError.
         client = self.new_client()
-        with tutil.mock_responses(self.DEFAULT_EXPECT, 404, 500):
+        with tutil.mock_get_responses(self.DEFAULT_EXPECT, 404, 500):
             with self.assertRaises(arvados.errors.KeepReadError) as exc_check:
                 client.get(self.HINTED_LOCATOR)
             self.assertNotIsInstance(
@@ -356,26 +364,26 @@ class KeepClientRetryGetTestCase(KeepClientRetryTestMixin, unittest.TestCase):
                 "mixed errors raised NotFoundError")
 
     def test_hint_server_can_succeed_without_retries(self):
-        with tutil.mock_responses(self.DEFAULT_EXPECT, 404, 200, 500):
+        with tutil.mock_get_responses(self.DEFAULT_EXPECT, 404, 200, 500):
             self.check_success(locator=self.HINTED_LOCATOR)
 
     def test_try_next_server_after_timeout(self):
         side_effects = [
             socket.timeout("timed out"),
-            (tutil.fake_httplib2_response(200), self.DEFAULT_EXPECT)]
-        with mock.patch('httplib2.Http.request',
+            tutil.fake_requests_response(200, self.DEFAULT_EXPECT)]
+        with mock.patch('requests.get',
                         side_effect=iter(side_effects)):
             self.check_success(locator=self.HINTED_LOCATOR)
 
     def test_retry_data_with_wrong_checksum(self):
-        side_effects = ((tutil.fake_httplib2_response(200), s)
+        side_effects = (tutil.fake_requests_response(200, s)
                         for s in ['baddata', self.TEST_DATA])
-        with mock.patch('httplib2.Http.request', side_effect=side_effects):
+        with mock.patch('requests.get', side_effect=side_effects):
             self.check_success(locator=self.HINTED_LOCATOR)
 
 
 @tutil.skip_sleep
-class KeepClientRetryPutTestCase(KeepClientRetryTestMixin, unittest.TestCase):
+class KeepClientRetryPutTestCase(KeepClientRetryPutTestMixin, unittest.TestCase):
     DEFAULT_EXPECT = KeepClientRetryTestMixin.TEST_LOCATOR
     DEFAULT_EXCEPTION = arvados.errors.KeepWriteError
 
@@ -384,5 +392,5 @@ class KeepClientRetryPutTestCase(KeepClientRetryTestMixin, unittest.TestCase):
         return self.new_client().put(data, copies, *args, **kwargs)
 
     def test_do_not_send_multiple_copies_to_same_server(self):
-        with tutil.mock_responses(self.DEFAULT_EXPECT, 200):
+        with tutil.mock_put_responses(self.DEFAULT_EXPECT, 200):
             self.check_exception(copies=2, num_retries=3)

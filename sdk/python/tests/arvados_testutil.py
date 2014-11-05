@@ -3,11 +3,13 @@
 import errno
 import httplib
 import httplib2
+import io
 import mock
 import os
 import shutil
 import tempfile
 import unittest
+import requests
 
 # Use this hostname when you want to make sure the traffic will be
 # instantly refused.  100::/64 is a dedicated black hole.
@@ -15,6 +17,8 @@ TEST_HOST = '100::'
 
 skip_sleep = mock.patch('time.sleep', lambda n: None)  # clown'll eat me
 
+# fake_httplib2_response and mock_responses
+# mock calls to httplib2.Http.request()
 def fake_httplib2_response(code, **headers):
     headers.update(status=str(code),
                    reason=httplib.responses.get(code, "Unknown Response"))
@@ -23,6 +27,28 @@ def fake_httplib2_response(code, **headers):
 def mock_responses(body, *codes, **headers):
     return mock.patch('httplib2.Http.request', side_effect=(
             (fake_httplib2_response(code, **headers), body) for code in codes))
+
+# fake_requests_response, mock_get_responses and mock_put_responses
+# mock calls to requests.get() and requests.put()
+def fake_requests_response(code, body, **headers):
+    r = requests.Response()
+    r.status_code = code
+    r.reason = httplib.responses.get(code, "Unknown Response")
+    r.headers = headers
+    r.raw = io.BytesIO(body)
+    return r
+
+def mock_get_responses(body, *codes, **headers):
+    return mock.patch('requests.get', side_effect=(
+        fake_requests_response(code, body, **headers) for code in codes))
+
+def mock_put_responses(body, *codes, **headers):
+    return mock.patch('requests.put', side_effect=(
+        fake_requests_response(code, body, **headers) for code in codes))
+
+def mock_requestslib_responses(method, body, *codes, **headers):
+    return mock.patch(method, side_effect=(
+        fake_requests_response(code, body, **headers) for code in codes))
 
 class ArvadosBaseTestCase(unittest.TestCase):
     # This class provides common utility functions for our tests.
