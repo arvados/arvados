@@ -48,6 +48,10 @@ $(document).on('ready ajax:complete', function() {
 });
 
 $(document).on('arv-log-event', '.arv-refresh-on-state-change', function(event, eventData) {
+    if (this != event.target) {
+        // Not interested in events sent to child nodes.
+        return;
+    }
     if (eventData.event_type == "update" &&
         eventData.properties.old_attributes.state != eventData.properties.new_attributes.state)
     {
@@ -56,6 +60,10 @@ $(document).on('arv-log-event', '.arv-refresh-on-state-change', function(event, 
 });
 
 $(document).on('arv-log-event', '.arv-log-event-subscribe-to-pipeline-job-uuids', function(event, eventData){
+    if (this != event.target) {
+        // Not interested in events sent to child nodes.
+        return;
+    }
     if (!((eventData.object_kind == 'arvados#pipelineInstance') &&
           (eventData.event_type == "create" ||
            eventData.event_type == "update") &&
@@ -83,6 +91,10 @@ $(document).on('ready ajax:success', function() {
 });
 
 $(document).on('arv-log-event', '.arv-log-event-handler-append-logs', function(event, eventData){
+    if (this != event.target) {
+        // Not interested in events sent to child nodes.
+        return;
+    }
     var wasatbottom = ($(this).scrollTop() + $(this).height() >= this.scrollHeight);
 
     if (eventData.event_type == "stderr" || eventData.event_type == "stdout") {

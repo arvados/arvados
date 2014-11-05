@@ -36,20 +36,21 @@ $(document).on('shown.bs.tab', '[data-toggle="tab"]', function(event) {
 // not started yet), suppressing scheduling of any further reloads.
 //
 $(document).on('arv:pane:reload', '[data-pane-content-url]', function(e) {
-    // $pane, the event target, is an element whose content is to be
-    // replaced. Pseudoclasses on $pane (pane-loading, etc) encode the
-    // current loading state.
-    var $pane = $(e.target);
-
-    var content_url = $pane.attr('data-pane-content-url');
-    if (!content_url) {
-        // When reloadable elements are nested, we can receive
-        // arv:pane:reload events even though the selector in .on()
-        // does not match e.target. Ignore such events.
+    if (this != e.target) {
+        // An arv:pane:reload event was sent to an element (e.target)
+        // which happens to have an ancestor (this) matching the above
+        // '[data-pane-content-url]' selector. This happens because
+        // events bubble up the DOM on their way to document. However,
+        // here we only care about events delivered directly to _this_
+        // selected element (i.e., this==e.target), not ones delivered
+        // to its children. The event "e" is uninteresting here.
         return;
     }
 
-    e.stopPropagation();
+    // $pane, the event target, is an element whose content is to be
+    // replaced. Pseudoclasses on $pane (pane-loading, etc) encode the
+    // current loading state.
+    var $pane = $(this);
 
     if ($pane.hasClass('pane-loading')) {
         // Already loading, mark stale to schedule a reload after this one.
@@ -99,6 +100,7 @@ $(document).on('arv:pane:reload', '[data-pane-content-url]', function(e) {
 
     $pane.addClass('pane-loading');
 
+    var content_url = $pane.attr('data-pane-content-url');
     $.ajax(content_url, {dataType: 'html', type: 'GET', context: $pane}).
         done(function(data, status, jqxhr) {
             // Preserve collapsed state
@@ -174,9 +176,13 @@ $(document).on('arv:pane:reload:all', function() {
     $('[data-pane-content-url]').trigger('arv:pane:reload');
 });
 
-$(document).on('arv-log-event', '.arv-refresh-on-log-event', function(e) {
+$(document).on('arv-log-event', '.arv-refresh-on-log-event', function(event) {
+    if (this != event.target) {
+        // Not interested in events sent to child nodes.
+        return;
+    }
     // Panes marked arv-refresh-on-log-event should be refreshed
-    $(e.target).trigger('arv:pane:reload');
+    $(event.target).trigger('arv:pane:reload');
 });
 
 // If there is a 'tab counts url' in the nav-tabs element then use it to get some javascript that will update them
