@@ -192,3 +192,10 @@ user1_with_load:
   user: user1_with_load
   api_token: 1234k6lzmp9kj5cpkcoxie963cmvjahbt2fod9zru30k1jqdmi
   expires_at: 2038-01-01 00:00:00
+
+fuse:
+  api_client: untrusted
+  user: fuse
+  api_token: 4nagbkv8eap0uok7pxm72nossq5asihls3yn5p4xmvqx5t5e7p
+  expires_at: 2038-01-01 00:00:00
+

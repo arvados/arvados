@@ -237,7 +237,9 @@ class ProjectsController < ApplicationController
                                   include_linked: true,
                                   filters: @filters,
                                   offset: @offset)
-      @next_page_href = next_page_href(partial: :contents_rows, filters: @filters.to_json)
+      @next_page_href = next_page_href(partial: :contents_rows,
+                                       filters: @filters.to_json,
+                                       order: @order.to_json)
     end
 
     preload_links_for_objects(@objects.to_a)
