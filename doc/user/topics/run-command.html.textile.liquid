@@ -167,10 +167,7 @@ Generate a list of lists, where items are grouped on common subexpression match.
         "regex": "[^a]*(a?).*"},
   "command": ["echo", {"foreach": "$(b)",
                        "var": "b_var",
-                       "command": ["--group",
-                                   {"foreach": "$(b_var)",
-                                    "var": "c_var",
-                                    "command": "$(c_var)"}]}]
+                       "command": ["--group", "$(b_var)"]}]
 }
 </pre>
 
