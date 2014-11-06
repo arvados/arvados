@@ -2,7 +2,7 @@
 
   <%
      job_uuids = @object.components.map { |k,j| j.is_a? Hash and j[:job].andand[:uuid] }.compact
-     throttle = @object.state == 'Running' ? 5000 : 15000
+     throttle = @object.state.start_with?('Running') ? 5000 : 15000
      %>
   <div class="arv-log-refresh-control"
        data-load-throttle="<%= throttle %>"
