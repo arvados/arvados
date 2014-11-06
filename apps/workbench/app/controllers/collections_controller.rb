@@ -1,3 +1,5 @@
+require "arvados/keep"
+
 class CollectionsController < ApplicationController
   include ActionController::Live
 
@@ -298,7 +300,9 @@ class CollectionsController < ApplicationController
     most_specific_error = [401]
     token_list.each do |api_token|
       begin
-        using_specific_api_token(api_token) do
+        # We can't load the corresponding user, because the token may not
+        # be scoped for that.
+        using_specific_api_token(api_token, load_user: false) do
           yield
           return api_token
         end
