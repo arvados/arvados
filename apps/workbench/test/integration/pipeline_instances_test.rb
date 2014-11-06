@@ -113,13 +113,13 @@ class PipelineInstancesTest < ActionDispatch::IntegrationTest
       wait_for_ajax
     end
 
-    create_and_run_pipeline_in_aproject true
+    create_and_run_pipeline_in_aproject true, 'Two Part Pipeline Template', false
   end
 
   # Create a pipeline instance from outside of a project
   test 'Run a pipeline from dashboard' do
     visit page_with_token('active_trustedclient')
-    create_and_run_pipeline_in_aproject false
+    create_and_run_pipeline_in_aproject false, 'Two Part Pipeline Template', false
   end
 
   test 'view pipeline with job and see graph' do
@@ -201,25 +201,31 @@ class PipelineInstancesTest < ActionDispatch::IntegrationTest
   end
 
   [
-    ['active', false, false, false],
-    ['active', false, false, true],
-    ['active', true, false, false],
-    ['active', true, true, false],
-    ['active', true, false, true],
-    ['active', true, true, true],
-    ['project_viewer', false, false, true],
-    ['project_viewer', true, false, true],
-    ['project_viewer', true, true, true],
-  ].each do |user, with_options, choose_options, in_aproject|
-    test "Rerun pipeline instance as #{user} using options #{with_options} #{choose_options} in #{in_aproject}" do
+    ['active', false, false, false, 'Two Part Pipeline Template', false],
+    ['active', false, false, true, 'Two Part Pipeline Template', false],
+    ['active', true, false, false, 'Two Part Pipeline Template', false],
+    ['active', true, true, false, 'Two Part Pipeline Template', false],
+    ['active', true, false, true, 'Two Part Pipeline Template', false],
+    ['active', true, true, true, 'Two Part Pipeline Template', false],
+    ['project_viewer', false, false, true, 'Two Part Pipeline Template', false],
+    ['project_viewer', true, false, true, 'Two Part Pipeline Template', false],
+    ['project_viewer', true, true, true, 'Two Part Pipeline Template', false],
+    ['active', false, false, false, 'Two Part Template with dataclass File', true],
+    ['active', false, false, true, 'Two Part Template with dataclass File', true],
+  ].each do |user, with_options, choose_options, in_aproject, template_name, choose_file|
+    test "Rerun pipeline instance as #{user} using options #{with_options} #{choose_options}
+          in #{in_aproject} with #{template_name} with file #{choose_file}" do
       visit page_with_token('active')
+      
+      # need bigger modal size when choosing a file from collection
+      Capybara.current_session.driver.browser.manage.window.resize_to(1024, 768)
 
       if in_aproject
         find("#projects-menu").click
         find('.dropdown-menu a,button', text: 'A Project').click
       end
 
-      create_and_run_pipeline_in_aproject in_aproject
+      create_and_run_pipeline_in_aproject in_aproject, template_name, choose_file
       instance_path = current_path
 
       # Pause the pipeline
@@ -269,11 +275,11 @@ class PipelineInstancesTest < ActionDispatch::IntegrationTest
   end
 
   # Create and run a pipeline for 'Two Part Pipeline Template' in 'A Project'
-  def create_and_run_pipeline_in_aproject in_aproject
+  def create_and_run_pipeline_in_aproject in_aproject, template_name, choose_file
     # create a pipeline instance
     find('.btn', text: 'Run a pipeline').click
     within('.modal-dialog') do
-      find('.selectable', text: 'Two Part Pipeline Template').click
+      find('.selectable', text: template_name).click
       find('.btn', text: 'Next: choose inputs').click
     end
 
@@ -295,6 +301,10 @@ class PipelineInstancesTest < ActionDispatch::IntegrationTest
         wait_for_ajax
       end
       first('span', text: 'foo_tag').click
+      if choose_file
+        wait_for_ajax
+        find('input[type=checkbox]').click
+      end
       find('button', text: 'OK').click
     end
     wait_for_ajax
@@ -308,9 +318,14 @@ class PipelineInstancesTest < ActionDispatch::IntegrationTest
     click_link 'API response'
     api_response = JSON.parse(find('div#advanced_api_response pre').text)
     input_params = api_response['components']['part-one']['script_parameters']['input']
-    assert_equal(input_params['value'], col['portable_data_hash'], "Not found expected input param value")
-    assert_equal(input_params['selection_name'], col['name'], "Not found expected input param name")
     assert_equal(input_params['selection_uuid'], col['uuid'], "Not found expected input param uuid")
+    if choose_file
+      assert_equal(input_params['value'], col['portable_data_hash']+'/foo', "Not found expected input file param value")
+      assert_equal(input_params['selection_name'], col['name']+'/foo', "Not found expected input file param name")
+    else
+      assert_equal(input_params['value'], col['portable_data_hash'], "Not found expected input param value")
+      assert_equal(input_params['selection_name'], col['name'], "Not found expected input param name")
+    end
 
     # "Run" button present and enabled
     page.assert_no_selector 'a.disabled,button.disabled', text: 'Run'
