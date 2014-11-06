@@ -64,7 +64,7 @@ class PipelineInstancesController < ApplicationController
         if component[:script_parameters]
           component[:script_parameters].each do |param, value_info|
             if value_info.is_a? Hash
-              value_info_partitioned = value_info[:value].partition('/') if value_info[:value].andand.class.eql?'String'
+              value_info_partitioned = value_info[:value].partition('/') if value_info[:value].andand.class.eql?(String)
               value_info_value = value_info_partitioned ? value_info_partitioned[0] : value_info[:value]
               value_info_class = resource_class_for_uuid value_info_value
               if value_info_class == Link
