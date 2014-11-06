@@ -302,7 +302,7 @@ class Dispatcher
         unless $? == 0 and commit_rev == job.script_version
           # commit does not exist in internal repository, so import the source repository using git fetch-pack
           cmd = "#{git} fetch-pack --no-progress --all #{src_repo.shellescape}"
-          $stderr.puts cmd
+          $stderr.puts "dispatch: #{cmd}"
           $stderr.puts `#{cmd}`
           unless $? == 0
             fail_job job, "git fetch-pack failed"
@@ -317,12 +317,12 @@ class Dispatcher
       # sha1.)
       @job_tags ||= {}
       if not @job_tags[job.uuid]
-        cmd = "#{git} tag #{job.uuid.shellescape} #{job.script_version.shellescape}"
-        $stderr.puts cmd
+        cmd = "#{git} tag #{job.uuid.shellescape} #{job.script_version.shellescape} 2>/dev/null"
+        $stderr.puts "dispatch: #{cmd}"
         $stderr.puts `#{cmd}`
         unless $? == 0
           # git tag failed.  This may be because the tag already exists, so check for that.
-          tag_rev = `#{git} rev-list -n1 #{job.uuid.shellescape} 2>/dev/null`.chomp
+          tag_rev = `#{git} rev-list -n1 #{job.uuid.shellescape}`.chomp
           if $? == 0
             # We got a revision back
             if tag_rev != job.script_version
@@ -334,7 +334,7 @@ class Dispatcher
             # we're okay (fall through to setting @job_tags below)
           else
             # git rev-list failed for some reason.
-            fail_job job, "'git tag' for #{job.uuid} failed but did not find the tag using 'git rev-list'"
+            fail_job job, "'git tag' for #{job.uuid} failed but did not find any existing tag using 'git rev-list'"
             next
           end
         end
