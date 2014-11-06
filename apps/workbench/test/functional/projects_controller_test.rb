@@ -97,6 +97,18 @@ class ProjectsControllerTest < ActionController::TestCase
     assert user_can_manage(:subproject_admin, "asubproject")
   end
 
+  test "detect ownership loop in project breadcrumbs" do
+    # This test has an arbitrary time limit -- otherwise we'd just sit
+    # here forever instead of reporting that the loop was not
+    # detected. The test passes quickly, but fails slowly.
+    Timeout::timeout 10 do
+      get(:show,
+          { id: api_fixture("groups")["project_owns_itself"]["uuid"] },
+          session_for(:admin))
+    end
+    assert_response :success
+  end
+
   test "project admin can remove items from the project" do
     coll_key = "collection_to_remove_from_subproject"
     coll_uuid = api_fixture("collections")[coll_key]["uuid"]
