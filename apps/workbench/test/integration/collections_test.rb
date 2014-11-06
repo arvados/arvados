@@ -7,6 +7,16 @@ class CollectionsTest < ActionDispatch::IntegrationTest
     Capybara.current_driver = :rack_test
   end
 
+  # check_checkboxes_state asserts that the page holds at least one
+  # checkbox matching 'selector', and that all matching checkboxes
+  # are in state 'checkbox_status' (i.e. checked if true, unchecked otherwise)
+  def assert_checkboxes_state(selector, checkbox_status, msg=nil)
+    assert page.has_selector?(selector)
+    page.all(selector).each do |checkbox|
+      assert(checkbox.checked? == checkbox_status, msg)
+    end
+  end
+
   test "Can copy a collection to a project" do
     Capybara.current_driver = Capybara.javascript_driver
 
@@ -202,26 +212,26 @@ class CollectionsTest < ActionDispatch::IntegrationTest
   end
 
   test "Filtering collection files by regexp" do
+    headless = Headless.new
+    headless.start
+    Capybara.current_driver = :selenium
     col = api_fixture('collections', 'multilevel_collection_1')
     visit page_with_token('active', "/collections/#{col['uuid']}")
 
-    # Test when only some files match the regex
+    # Filter file list to some but not all files in the collection
     page.find_field('file_regex').set('file[12]')
-    find('button#file_regex_submit').click
     assert page.has_text?("file1")
     assert page.has_text?("file2")
     assert page.has_no_text?("file3")
 
-    # Test all files matching the regex
-    page.find_field('file_regex').set('file[123]')
-    find('button#file_regex_submit').click
+    # Filter file list with a regex matching all files
+    page.find_field('file_regex').set('.*')
     assert page.has_text?("file1")
     assert page.has_text?("file2")
     assert page.has_text?("file3")
 
-    # Test no files matching the regex
+    # Filter file list to a regex matching no files
     page.find_field('file_regex').set('file9')
-    find('button#file_regex_submit').click
     assert page.has_no_text?("file1")
     assert page.has_no_text?("file2")
     assert page.has_no_text?("file3")
@@ -230,13 +240,96 @@ class CollectionsTest < ActionDispatch::IntegrationTest
     assert page.has_text?("multilevel_collection_1")
     assert page.has_text?(col['portable_data_hash'])
 
-    # Syntactically invalid regex
-    # Page loads, but does not match any files
+    # Set filename filter to a syntactically invalid regex
+    # Page loads, but stops filtering after the last valid regex parse
     page.find_field('file_regex').set('file[2')
-    find('button#file_regex_submit').click
-    assert page.has_text?('could not be parsed as a regular expression')
-    assert page.has_no_text?("file1")
-    assert page.has_no_text?("file2")
-    assert page.has_no_text?("file3")
+    assert page.has_text?("multilevel_collection_1")
+    assert page.has_text?(col['portable_data_hash'])
+    assert page.has_text?("file1")
+    assert page.has_text?("file2")
+    assert page.has_text?("file3")
+
+    # Test the "Select all" button
+
+    # Note: calling .set('') on a Selenium element is not sufficient
+    # to reset the field for this test, as it does not send any key
+    # events to the browser. To clear the field, we must instead send
+    # a backspace character.
+    # See https://selenium.googlecode.com/svn/trunk/docs/api/rb/Selenium/WebDriver/Element.html#clear-instance_method
+    page.find_field('file_regex').set("\b") # backspace
+    find('button#select-all').click
+    assert_checkboxes_state('input[type=checkbox]', true, '"select all" should check all checkboxes')
+
+    # Test the "Unselect all" button
+    page.find_field('file_regex').set("\b") # backspace
+    find('button#unselect-all').click
+    assert_checkboxes_state('input[type=checkbox]', false, '"unselect all" should clear all checkboxes')
+
+    # Filter files, then "select all", then unfilter
+    page.find_field('file_regex').set("\b") # backspace
+    find('button#unselect-all').click
+    page.find_field('file_regex').set('file[12]')
+    find('button#select-all').click
+    page.find_field('file_regex').set("\b") # backspace
+
+    # all "file1" and "file2" checkboxes must be selected
+    # all "file3" checkboxes must be clear
+    assert_checkboxes_state('[value*="file1"]', true, 'checkboxes for file1 should be selected after filtering')
+    assert_checkboxes_state('[value*="file2"]', true, 'checkboxes for file2 should be selected after filtering')
+    assert_checkboxes_state('[value*="file3"]', false, 'checkboxes for file3 should be clear after filtering')
+ 
+    # Select all files, then filter, then "unselect all", then unfilter
+    page.find_field('file_regex').set("\b") # backspace
+    find('button#select-all').click
+    page.find_field('file_regex').set('file[12]')
+    find('button#unselect-all').click
+    page.find_field('file_regex').set("\b") # backspace
+
+    # all "file1" and "file2" checkboxes must be clear
+    # all "file3" checkboxes must be selected
+    assert_checkboxes_state('[value*="file1"]', false, 'checkboxes for file1 should be clear after filtering')
+    assert_checkboxes_state('[value*="file2"]', false, 'checkboxes for file2 should be clear after filtering')
+    assert_checkboxes_state('[value*="file3"]', true, 'checkboxes for file3 should be selected after filtering')
+  end
+
+  test "Creating collection from list of filtered files" do
+    headless = Headless.new
+    headless.start
+    Capybara.current_driver = :selenium
+
+    col = api_fixture('collections', 'collection_with_files_in_subdir')
+    visit page_with_token('user1_with_load', "/collections/#{col['uuid']}")
+    assert page.has_text?('file_in_subdir1'), 'expected file_in_subdir1 not found'
+    assert page.has_text?('file1_in_subdir3'), 'expected file1_in_subdir3 not found'
+    assert page.has_text?('file2_in_subdir3'), 'expected file2_in_subdir3 not found'
+    assert page.has_text?('file1_in_subdir4'), 'expected file1_in_subdir4 not found'
+    assert page.has_text?('file2_in_subdir4'), 'expected file2_in_subdir4 not found'
+
+    # Select all files but then filter them to files in subdir1, subdir2 or subdir3
+    find('button#select-all').click
+    page.find_field('file_regex').set('_in_subdir[123]')
+    assert page.has_text?('file_in_subdir1'), 'expected file_in_subdir1 not in filtered files'
+    assert page.has_text?('file1_in_subdir3'), 'expected file1_in_subdir3 not in filtered files'
+    assert page.has_text?('file2_in_subdir3'), 'expected file2_in_subdir3 not in filtered files'
+    assert page.has_no_text?('file1_in_subdir4'), 'file1_in_subdir4 found in filtered files'
+    assert page.has_no_text?('file2_in_subdir4'), 'file2_in_subdir4 found in filtered files'
+
+    # Create a new collection
+    click_button 'Selection...'
+    within('.selection-action-container') do
+      click_link 'Create new collection with selected files'
+    end
+
+    # now in the newly created collection page
+    assert page.has_text?('Content hash:'), 'not on new collection page'
+    assert page.has_no_text?(col['uuid']), 'new collection page has old collection uuid'
+    assert page.has_no_text?(col['portable_data_hash']), 'new collection page has old portable_data_hash'
+
+    # must have files in subdir1 and subdir3 but not subdir4
+    assert page.has_text?('file_in_subdir1'), 'file_in_subdir1 missing from new collection'
+    assert page.has_text?('file1_in_subdir3'), 'file1_in_subdir3 missing from new collection'
+    assert page.has_text?('file2_in_subdir3'), 'file2_in_subdir3 missing from new collection'
+    assert page.has_no_text?('file1_in_subdir4'), 'file1_in_subdir4 found in new collection'
+    assert page.has_no_text?('file2_in_subdir4'), 'file2_in_subdir4 found in new collection'
   end
 end
