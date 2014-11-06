@@ -35,8 +35,14 @@ $(document).on('click', '.selectable', function() {
             });
     }
 }).on('click', '.persistent-selection', function() {
+    var checked_status = this.checked;
     var $modal = $(this).closest('.modal');
     $checked_selections = $modal.find('.persistent-selection:checked');
+
+    if (checked_status && ($checked_selections.length > 1)) {
+      $(this).prop('checked', false);
+    }
+
     any = ($checked_selections.length > 0);
     $(this).
         closest('.modal').
