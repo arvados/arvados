@@ -61,7 +61,12 @@
                <% if project_filters.any? %>
                  data-infinite-content-params-from-project-dropdown="<%= {filters: project_filters, project_uuid: project_filters.last.last}.to_json %>"
                <% end %>
-               data-infinite-content-href="<%= url_for partial: true %>">
+               <%
+                  action_data = JSON.parse params['action_data'] if params['action_data']
+                  use_checkbox_sel = action_data ? action_data['use_checkbox_selection'] : false
+                %>
+               data-infinite-content-href="<%= url_for partial: true,
+                                                       use_checkbox_selection: use_checkbox_sel %>">
           </div>
           <% if preview_pane %>
             <div class="col-md-6 hidden-xs hidden-sm modal-dialog-preview-pane" style="height: 100%; overflow-y: scroll">

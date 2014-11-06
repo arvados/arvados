@@ -8,8 +8,11 @@ $(document).on('click', '.selectable', function() {
             removeClass('active');
     }
     $this.toggleClass('active');
-    any = ($container.
+
+    if (!$this.hasClass('use-checkbox-selection')) {
+      any = ($container.
            find('.selectable.active').length > 0)
+    }
     $this.
         closest('.modal').
         find('[data-enable-if-selection]').
@@ -31,7 +34,14 @@ $(document).on('click', '.selectable', function() {
                 $(".modal-dialog-preview-pane").html(no_preview_available);
             });
     }
-
+}).on('click', '.persistent-selection', function() {
+    var $modal = $(this).closest('.modal');
+    $checked_selections = $modal.find('.persistent-selection:checked');
+    any = ($checked_selections.length > 0);
+    $(this).
+        closest('.modal').
+        find('[data-enable-if-selection]').
+        prop('disabled', !any);
 }).on('click', '.modal button[data-action-href]', function() {
     var selection = [];
     var data = [];
