@@ -616,8 +616,11 @@ class Dispatcher
       # fine.
     end
 
-    # Invalidate the per-job auth token
-    j_done[:job_auth].update_attributes expires_at: Time.now
+    # Invalidate the per-job auth token, unless the job is still queued and we
+    # might want to try it again.
+    if jobrecord.state != "Queued"
+      j_done[:job_auth].update_attributes expires_at: Time.now
+    end
 
     @running.delete job_done.uuid
   end
