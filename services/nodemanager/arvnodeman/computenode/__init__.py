@@ -347,14 +347,30 @@ class ComputeNodeMonitorActor(config.actor_class):
         self._last_log = msg
         self._logger.debug(msg, *args)
 
+    def in_state(self, *states):
+        # Return a boolean to say whether or not our Arvados node record is in
+        # one of the given states.  If state information is not
+        # available--because this node has no Arvados record, the record is
+        # stale, or the record has no state information--return None.
+        if (self.arvados_node is None) or not timestamp_fresh(
+              arvados_node_mtime(self.arvados_node), self.node_stale_after):
+            return None
+        state = self.arvados_node['info'].get('slurm_state')
+        if not state:
+            return None
+        result = state in states
+        if state == 'idle':
+            result = result and not self.arvados_node['job_uuid']
+        return result
+
     def _shutdown_eligible(self):
         if self.arvados_node is None:
+            # If this is a new, unpaired node, it's eligible for
+            # shutdown--we figure there was an error during bootstrap.
             return timestamp_fresh(self.cloud_node_start_time,
                                    self.node_stale_after)
         else:
-            return (timestamp_fresh(arvados_node_mtime(self.arvados_node),
-                                    self.poll_stale_after) and
-                    (self.arvados_node['info'].get('slurm_state') == 'idle'))
+            return self.in_state('idle')
 
     def consider_shutdown(self):
         next_opening = self._shutdowns.next_opening()
