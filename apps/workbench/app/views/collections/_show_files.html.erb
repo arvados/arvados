@@ -36,12 +36,14 @@ function unselect_all_files() {
                   'data-toggle' => 'dropdown'
             %></li>
         </ul>
+      </div>
+      <div class="btn-group btn-group-sm">
 	<button id="select-all" type="button" class="btn btn-default" onClick="select_all_files()">Select all</button>
 	<button id="unselect-all" type="button" class="btn btn-default" onClick="unselect_all_files()">Unselect all</button>
       </div>
     </div>
     <div class="pull-right">
-      <input class="form-control filterable-control" data-filterable-target="ul#collection_files" id="file_regex" name="file_regex" placeholder="filename filter" type="text"/>
+      <input class="form-control filterable-control" data-filterable-target="ul#collection_files" id="file_regex" name="file_regex" placeholder="filename regex" type="text"/>
     </div>
   </div>
   <p/>

@@ -7,6 +7,16 @@ class CollectionsTest < ActionDispatch::IntegrationTest
     Capybara.current_driver = :rack_test
   end
 
+  # check_checkboxes_state asserts that the page holds at least one
+  # checkbox matching 'selector', and that all matching checkboxes
+  # are in state 'checkbox_status' (i.e. checked if true, unchecked otherwise)
+  def assert_checkboxes_state(selector, checkbox_status, msg=nil)
+    assert page.has_selector?(selector)
+    page.all(selector).each do |checkbox|
+      assert(checkbox.checked? == checkbox_status, msg)
+    end
+  end
+
   test "Can copy a collection to a project" do
     Capybara.current_driver = Capybara.javascript_driver
 
@@ -248,16 +258,12 @@ class CollectionsTest < ActionDispatch::IntegrationTest
     # See https://selenium.googlecode.com/svn/trunk/docs/api/rb/Selenium/WebDriver/Element.html#clear-instance_method
     page.find_field('file_regex').set("\b") # backspace
     find('button#select-all').click
-    page.all('input[type=checkbox]').each do |checkbox|
-      assert checkbox.checked?
-    end
+    assert_checkboxes_state('input[type=checkbox]', true, '"select all" should check all checkboxes')
 
     # Test the "Unselect all" button
     page.find_field('file_regex').set("\b") # backspace
     find('button#unselect-all').click
-    page.all('input[type=checkbox]').each do |checkbox|
-      refute checkbox.checked?
-    end
+    assert_checkboxes_state('input[type=checkbox]', false, '"unselect all" should clear all checkboxes')
 
     # Filter files, then "select all", then unfilter
     page.find_field('file_regex').set("\b") # backspace
@@ -268,19 +274,10 @@ class CollectionsTest < ActionDispatch::IntegrationTest
 
     # all "file1" and "file2" checkboxes must be selected
     # all "file3" checkboxes must be clear
-    assert page.has_selector?('[value*="file1"]')
-    page.all('[value*="file1"]').each do |checkbox|
-      assert checkbox.checked?, 'checkboxes for file1 should be selected after filtering'
-    end
-    assert page.has_selector?('[value*="file2"]')
-    page.all('[value*="file2"]').each do |checkbox|
-      assert checkbox.checked?, 'checkboxes for file2 should be selected after filtering'
-    end
-    assert page.has_selector?('[value*="file3"]')
-    page.all('[value*="file3"]').each do |checkbox|
-      refute checkbox.checked?, 'checkboxes for file3 should be clear after filtering'
-    end
-
+    assert_checkboxes_state('[value*="file1"]', true, 'checkboxes for file1 should be selected after filtering')
+    assert_checkboxes_state('[value*="file2"]', true, 'checkboxes for file2 should be selected after filtering')
+    assert_checkboxes_state('[value*="file3"]', false, 'checkboxes for file3 should be clear after filtering')
+ 
     # Select all files, then filter, then "unselect all", then unfilter
     page.find_field('file_regex').set("\b") # backspace
     find('button#select-all').click
@@ -290,18 +287,9 @@ class CollectionsTest < ActionDispatch::IntegrationTest
 
     # all "file1" and "file2" checkboxes must be clear
     # all "file3" checkboxes must be selected
-    assert page.has_selector?('[value*="file1"]')
-    page.all('[value*="file1"]').each do |checkbox|
-      refute checkbox.checked?, 'checkboxes for file1 should be clear after filtering'
-    end
-    assert page.has_selector?('[value*="file2"]')
-    page.all('[value*="file2"]').each do |checkbox|
-      refute checkbox.checked?, 'checkboxes for file2 should be clear after filtering'
-    end
-    assert page.has_selector?('[value*="file3"]')
-    page.all('[value*="file3"]').each do |checkbox|
-      assert checkbox.checked?, 'checkboxes for file3 should be selected after filtering'
-    end
+    assert_checkboxes_state('[value*="file1"]', false, 'checkboxes for file1 should be clear after filtering')
+    assert_checkboxes_state('[value*="file2"]', false, 'checkboxes for file2 should be clear after filtering')
+    assert_checkboxes_state('[value*="file3"]', true, 'checkboxes for file3 should be selected after filtering')
   end
 
   test "Creating collection from list of filtered files" do
@@ -323,8 +311,8 @@ class CollectionsTest < ActionDispatch::IntegrationTest
     assert page.has_text?('file_in_subdir1'), 'expected file_in_subdir1 not in filtered files'
     assert page.has_text?('file1_in_subdir3'), 'expected file1_in_subdir3 not in filtered files'
     assert page.has_text?('file2_in_subdir3'), 'expected file2_in_subdir3 not in filtered files'
-    refute page.has_text?('file1_in_subdir4'), 'file1_in_subdir4 found in filtered files'
-    refute page.has_text?('file2_in_subdir4'), 'file2_in_subdir4 found in filtered files'
+    assert page.has_no_text?('file1_in_subdir4'), 'file1_in_subdir4 found in filtered files'
+    assert page.has_no_text?('file2_in_subdir4'), 'file2_in_subdir4 found in filtered files'
 
     # Create a new collection
     click_button 'Selection...'
@@ -334,14 +322,14 @@ class CollectionsTest < ActionDispatch::IntegrationTest
 
     # now in the newly created collection page
     assert page.has_text?('Content hash:'), 'not on new collection page'
-    refute page.has_text?(col['uuid']), 'new collection page has old collection uuid'
-    refute page.has_text?(col['portable_data_hash']), 'new collection page has old portable_data_hash'
+    assert page.has_no_text?(col['uuid']), 'new collection page has old collection uuid'
+    assert page.has_no_text?(col['portable_data_hash']), 'new collection page has old portable_data_hash'
 
     # must have files in subdir1 and subdir3 but not subdir4
     assert page.has_text?('file_in_subdir1'), 'file_in_subdir1 missing from new collection'
     assert page.has_text?('file1_in_subdir3'), 'file1_in_subdir3 missing from new collection'
     assert page.has_text?('file2_in_subdir3'), 'file2_in_subdir3 missing from new collection'
-    refute page.has_text?('file1_in_subdir4'), 'file1_in_subdir4 found in new collection'
-    refute page.has_text?('file2_in_subdir4'), 'file2_in_subdir4 found in new collection'
+    assert page.has_no_text?('file1_in_subdir4'), 'file1_in_subdir4 found in new collection'
+    assert page.has_no_text?('file2_in_subdir4'), 'file2_in_subdir4 found in new collection'
   end
 end
