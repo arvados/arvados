@@ -342,6 +342,7 @@ class Dispatcher
         @job_tags[job.uuid] = job.script_version
       elsif @job_tags[job.uuid] != job.script_version
         fail_job job, "Existing tag #{job.uuid} points to commit #{@job_tags[job.uuid]} but this job uses commit #{job.script_version}"
+        next
       end
 
       cmd_args << crunch_job_bin
