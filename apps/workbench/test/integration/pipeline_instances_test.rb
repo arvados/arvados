@@ -216,7 +216,7 @@ class PipelineInstancesTest < ActionDispatch::IntegrationTest
     test "Rerun pipeline instance as #{user} using options #{with_options} #{choose_options}
           in #{in_aproject} with #{template_name} with file #{choose_file}" do
       visit page_with_token('active')
-      
+
       # need bigger modal size when choosing a file from collection
       Capybara.current_session.driver.browser.manage.window.resize_to(1024, 768)
 
