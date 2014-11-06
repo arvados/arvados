@@ -317,26 +317,28 @@ class Dispatcher
       # sha1.)
       @job_tags ||= {}
       if not @job_tags[job.uuid]
-        # check if the commit needs to be tagged with this job uuid
-        tag_rev = `#{git} rev-list -n1 #{job.uuid.shellescape} 2>/dev/null`.chomp
-        if $? != 0
-          # no job tag found, so create one
-          cmd = "#{git} tag #{job.uuid.shellescape} #{job.script_version.shellescape}"
-          $stderr.puts cmd
-          $stderr.puts `#{cmd}`
-          unless $? == 0
-            fail_job job, "git tag failed"
-            next
-          end
-        else
-          # job tag found, check that it has the expected revision
-          unless tag_rev == job.script_version
-            # Uh oh, the tag doesn't point to the revision we were expecting.
-            # Someone has been monkeying with the job record and/or git.
-            fail_job job, "Existing tag #{job.uuid} points to commit #{tag_rev} but expected commit #{job.script_version}"
+        cmd = "#{git} tag #{job.uuid.shellescape} #{job.script_version.shellescape}"
+        $stderr.puts cmd
+        $stderr.puts `#{cmd}`
+        unless $? == 0
+          # git tag failed.  This may be because the tag already exists, so check for that.
+          tag_rev = `#{git} rev-list -n1 #{job.uuid.shellescape} 2>/dev/null`.chomp
+          if $? == 0
+            # We got a revision back
+            if tag_rev != job.script_version
+              # Uh oh, the tag doesn't point to the revision we were expecting.
+              # Someone has been monkeying with the job record and/or git.
+              fail_job job, "Existing tag #{job.uuid} points to commit #{tag_rev} but expected commit #{job.script_version}"
+              next
+            end
+            # we're okay (fall through to setting @job_tags below)
+          else
+            # git rev-list failed for some reason.
+            fail_job job, "'git tag' for #{job.uuid} failed but did not find the tag using 'git rev-list'"
             next
           end
         end
+        # 'git tag' was successful, or there is an existing tag that points to the same revision.
         @job_tags[job.uuid] = job.script_version
       elsif @job_tags[job.uuid] != job.script_version
         fail_job job, "Existing tag #{job.uuid} points to commit #{@job_tags[job.uuid]} but this job uses commit #{job.script_version}"
