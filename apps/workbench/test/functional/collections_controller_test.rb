@@ -86,11 +86,23 @@ class CollectionsControllerTest < ActionController::TestCase
 
   test "viewing collection files with a reader token" do
     params = collection_params(:foo_file)
-    params[:reader_token] =
-      api_fixture('api_client_authorizations')['active']['api_token']
+    params[:reader_token] = api_fixture("api_client_authorizations",
+                                        "active_all_collections", "api_token")
     get(:show_file_links, params)
     assert_response :success
     assert_equal([['.', 'foo', 3]], assigns(:object).files)
+    assert_no_session
+  end
+
+  test "fetching collection file with reader token" do
+    expected = stub_file_content
+    params = collection_params(:foo_file, "foo")
+    params[:reader_token] = api_fixture("api_client_authorizations",
+                                        "active_all_collections", "api_token")
+    get(:show_file, params)
+    assert_response :success
+    assert_equal(expected, @response.body,
+                 "failed to fetch a Collection file with a reader token")
     assert_no_session
   end
 

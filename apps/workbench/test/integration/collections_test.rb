@@ -45,6 +45,8 @@ class CollectionsTest < ActionDispatch::IntegrationTest
   end
 
   test "can download an entire collection with a reader token" do
+    CollectionsController.any_instance.
+      stubs(:file_enumerator).returns(["foo\n", "file\n"])
     uuid = api_fixture('collections')['foo_file']['uuid']
     token = api_fixture('api_client_authorizations')['active_all_collections']['api_token']
     url_head = "/collections/download/#{uuid}/#{token}/"
@@ -53,9 +55,8 @@ class CollectionsTest < ActionDispatch::IntegrationTest
     # a very blunt approach.
     assert_no_match(/<\s*meta[^>]+\bnofollow\b/i, page.html,
                     "wget prohibited from recursing the collection page")
-    # TODO: When we can test against a Keep server, actually follow links
-    # and check their contents, rather than testing the href directly
-    # (this is too closely tied to implementation details).
+    # Look at all the links that wget would recurse through using our
+    # recommended options, and check that it's exactly the file list.
     hrefs = page.all('a').map do |anchor|
       link = anchor[:href] || ''
       if link.start_with? url_head
@@ -68,6 +69,10 @@ class CollectionsTest < ActionDispatch::IntegrationTest
     end
     assert_equal(['foo'], hrefs.compact.sort,
                  "download page did provide strictly file links")
+    within "#collection_files" do
+      click_link "foo"
+      assert_equal("foo\nfile\n", page.html)
+    end
   end
 
   test "can view empty collection" do
