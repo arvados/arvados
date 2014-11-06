@@ -188,6 +188,34 @@ class ComputeNodeMonitorActorTestCase(testutil.ActorTestMixin,
             self.updates, arv_node).proxy()
         self.node_actor.subscribe(self.subscriber).get(self.TIMEOUT)
 
+    def node_state(self, *states):
+        return self.node_actor.in_state(*states).get(self.TIMEOUT)
+
+    def test_in_state_when_unpaired(self):
+        self.make_actor()
+        self.assertIsNone(self.node_state('idle', 'alloc'))
+
+    def test_in_state_when_pairing_stale(self):
+        self.make_actor(arv_node=testutil.arvados_node_mock(
+                job_uuid=None, age=90000))
+        self.assertIsNone(self.node_state('idle', 'alloc'))
+
+    def test_in_state_when_no_state_available(self):
+        self.make_actor(arv_node=testutil.arvados_node_mock(info={}))
+        self.assertIsNone(self.node_state('idle', 'alloc'))
+
+    def test_in_idle_state(self):
+        self.make_actor(2, arv_node=testutil.arvados_node_mock(job_uuid=None))
+        self.assertTrue(self.node_state('idle'))
+        self.assertFalse(self.node_state('alloc'))
+        self.assertTrue(self.node_state('idle', 'alloc'))
+
+    def test_in_alloc_state(self):
+        self.make_actor(3, arv_node=testutil.arvados_node_mock(job_uuid=True))
+        self.assertFalse(self.node_state('idle'))
+        self.assertTrue(self.node_state('alloc'))
+        self.assertTrue(self.node_state('idle', 'alloc'))
+
     def test_init_shutdown_scheduling(self):
         self.make_actor()
         self.assertTrue(self.timer.schedule.called)
@@ -237,7 +265,7 @@ class ComputeNodeMonitorActorTestCase(testutil.ActorTestMixin,
         self.check_shutdown_rescheduled(True, 600)
 
     def test_no_shutdown_when_node_state_stale(self):
-        self.make_actor(6, testutil.arvados_node_mock(6, age=900))
+        self.make_actor(6, testutil.arvados_node_mock(6, age=90000))
         self.check_shutdown_rescheduled(True, 600)
 
     def test_arvados_node_match(self):
