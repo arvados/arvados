@@ -29,13 +29,6 @@ class PipelineInstancesTest < ActionDispatch::IntegrationTest
 
     instance_page = current_path
 
-    # Go over to the collections page and select something
-    visit '/collections'
-    within('tr', text: 'GNU_General_Public_License') do
-      find('input[type=checkbox]').click
-    end
-    find('#persistent-selection-count').click
-
     # Add this collection to the project
     visit '/projects'
     find("#projects-menu").click
@@ -105,13 +98,6 @@ class PipelineInstancesTest < ActionDispatch::IntegrationTest
   # Create a pipeline instance from within a project and run
   test 'Create pipeline inside a project and run' do
     visit page_with_token('active_trustedclient')
-
-    # Go over to the collections page and select something
-    visit '/collections'
-    within('tr', text: 'GNU_General_Public_License') do
-      find('input[type=checkbox]').click
-    end
-    find('#persistent-selection-count').click
 
     # Add this collection to the project using collections menu from top nav
     visit '/projects'
@@ -322,9 +308,9 @@ class PipelineInstancesTest < ActionDispatch::IntegrationTest
     click_link 'API response'
     api_response = JSON.parse(find('div#advanced_api_response pre').text)
     input_params = api_response['components']['part-one']['script_parameters']['input']
-    assert_equal input_params['value'], col['portable_data_hash']
-    assert_equal input_params['selection_name'], col['name']
-    assert_equal input_params['selection_uuid'], col['uuid']
+    assert_equal(input_params['value'], col['portable_data_hash'], "Not found expected input param value")
+    assert_equal(input_params['selection_name'], col['name'], "Not found expected input param name")
+    assert_equal(input_params['selection_uuid'], col['uuid'], "Not found expected input param uuid")
 
     # "Run" button present and enabled
     page.assert_no_selector 'a.disabled,button.disabled', text: 'Run'

@@ -287,7 +287,7 @@ module ApplicationHelper
          preconfigured_search_str: (preconfigured_search_str || ""),
          action_data: {
            merge: true,
-           use_checkbox_selection: dataclass == File ? true : false,
+           use_checkbox_selection: dataclass == File ? true : nil,
            selection_param: selection_param,
            success: 'page-refresh'
          }.to_json,
