@@ -209,7 +209,7 @@ class Dispatcher
       if not job.save
         $stderr.puts "dispatch: save failed setting job #{job.uuid} to failed"
       end
-    rescue AlreadyLockedError
+    rescue ArvadosModel::AlreadyLockedError
       $stderr.puts "dispatch: tried to mark job #{job.uuid} as failed but it was already locked by someone else"
     end
   end
