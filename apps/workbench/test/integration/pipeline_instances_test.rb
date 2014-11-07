@@ -366,11 +366,21 @@ class PipelineInstancesTest < ActionDispatch::IntegrationTest
   end
 
   [
-    ['fuse', 2, 20],              # has  2 pipeline instances on 11-07-2014
-    ['user1_with_load', 30, 100], # has 37 pipeline instances on 11-07-2014
-  ].each do |user, expected_min, expected_max|
-    test "scroll pipeline instances page for #{user} and expect more than #{expected_min} and less than #{expected_max}" do
+    ['fuse', nil, 2, 20],                           # has  2 as of 11-07-2014
+    ['fuse', 'no such match', 0, 0],
+    ['fuse', 'FUSE project', 1, 1],                 # 1 with this name
+    ['user1_with_load', nil, 30, 100],              # has 37 as of 11-07-2014
+    ['user1_with_load', 'no such match', 0, 0],
+    ['user1_with_load', '000010pipelines', 10, 10], # owned_by the project zzzzz-j7d0g-000010pipelines
+    ['user1_with_load', 'pipeline_10', 2, 2],       # 2 with this name
+  ].each do |user, search_filter, expected_min, expected_max|
+    test "scroll pipeline instances page for #{user} with search filter #{search_filter} and expect more than #{expected_min} and less than #{expected_max}" do
       visit page_with_token(user, "/pipeline_instances")
+
+      if search_filter
+        find('.recent-pipeline-instances-filterable-control').set(search_filter)
+        wait_for_ajax
+      end
 
       num_pages = expected_max/20 + 1 # pipeline_instances page uses 20 for page size
       within('.arv-recent-pipeline-instances') do
