@@ -93,6 +93,9 @@ class Dispatcher
   def slurm_status
     slurm_nodes = {}
     each_slurm_line("sinfo", "%t") do |hostname, state|
+      # Treat nodes in idle* state as down, because the * means that slurm
+      # hasn't been able to communicate with it recently.
+      state.sub!(/^idle\*/, "down")
       state.sub!(/\W+$/, "")
       state = "down" unless %w(idle alloc down).include?(state)
       slurm_nodes[hostname] = {state: state, job: nil}
@@ -202,9 +205,15 @@ class Dispatcher
     rescue
       $stderr.puts "dispatch: log.create failed"
     end
-    job.state = "Failed"
-    if not job.save
-      $stderr.puts "dispatch: job.save failed"
+
+    begin
+      job.lock @authorizations[job.uuid].user.uuid
+      job.state = "Failed"
+      if not job.save
+        $stderr.puts "dispatch: save failed setting job #{job.uuid} to failed"
+      end
+    rescue ArvadosModel::AlreadyLockedError
+      $stderr.puts "dispatch: tried to mark job #{job.uuid} as failed but it was already locked by someone else"
     end
   end
 
@@ -302,7 +311,7 @@ class Dispatcher
         unless $? == 0 and commit_rev == job.script_version
           # commit does not exist in internal repository, so import the source repository using git fetch-pack
           cmd = "#{git} fetch-pack --no-progress --all #{src_repo.shellescape}"
-          $stderr.puts cmd
+          $stderr.puts "dispatch: #{cmd}"
           $stderr.puts `#{cmd}`
           unless $? == 0
             fail_job job, "git fetch-pack failed"
@@ -317,29 +326,32 @@ class Dispatcher
       # sha1.)
       @job_tags ||= {}
       if not @job_tags[job.uuid]
-        # check if the commit needs to be tagged with this job uuid
-        tag_rev = `#{git} rev-list -n1 #{job.uuid.shellescape} 2>/dev/null`.chomp
-        if $? != 0
-          # no job tag found, so create one
-          cmd = "#{git} tag #{job.uuid.shellescape} #{job.script_version.shellescape}"
-          $stderr.puts cmd
-          $stderr.puts `#{cmd}`
-          unless $? == 0
-            fail_job job, "git tag failed"
-            next
-          end
-        else
-          # job tag found, check that it has the expected revision
-          unless tag_rev == job.script_version
-            # Uh oh, the tag doesn't point to the revision we were expecting.
-            # Someone has been monkeying with the job record and/or git.
-            fail_job job, "Existing tag #{job.uuid} points to commit #{tag_rev} but expected commit #{job.script_version}"
+        cmd = "#{git} tag #{job.uuid.shellescape} #{job.script_version.shellescape} 2>/dev/null"
+        $stderr.puts "dispatch: #{cmd}"
+        $stderr.puts `#{cmd}`
+        unless $? == 0
+          # git tag failed.  This may be because the tag already exists, so check for that.
+          tag_rev = `#{git} rev-list -n1 #{job.uuid.shellescape}`.chomp
+          if $? == 0
+            # We got a revision back
+            if tag_rev != job.script_version
+              # Uh oh, the tag doesn't point to the revision we were expecting.
+              # Someone has been monkeying with the job record and/or git.
+              fail_job job, "Existing tag #{job.uuid} points to commit #{tag_rev} but expected commit #{job.script_version}"
+              next
+            end
+            # we're okay (fall through to setting @job_tags below)
+          else
+            # git rev-list failed for some reason.
+            fail_job job, "'git tag' for #{job.uuid} failed but did not find any existing tag using 'git rev-list'"
             next
           end
         end
+        # 'git tag' was successful, or there is an existing tag that points to the same revision.
         @job_tags[job.uuid] = job.script_version
       elsif @job_tags[job.uuid] != job.script_version
         fail_job job, "Existing tag #{job.uuid} points to commit #{@job_tags[job.uuid]} but this job uses commit #{job.script_version}"
+        next
       end
 
       cmd_args << crunch_job_bin
@@ -613,8 +625,11 @@ class Dispatcher
       # fine.
     end
 
-    # Invalidate the per-job auth token
-    j_done[:job_auth].update_attributes expires_at: Time.now
+    # Invalidate the per-job auth token, unless the job is still queued and we
+    # might want to try it again.
+    if jobrecord.state != "Queued"
+      j_done[:job_auth].update_attributes expires_at: Time.now
+    end
 
     @running.delete job_done.uuid
   end

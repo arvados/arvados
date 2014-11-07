@@ -208,3 +208,17 @@ fuse_owned_project:
   name: FUSE Test Project
   description: Test project belonging to FUSE test user
   group_class: project
+
+# This wouldn't pass model validation, but it enables a workbench
+# infinite-loop test. See #4389
+project_owns_itself:
+  uuid: zzzzz-j7d0g-7rqh7hdshd5yp5t
+  owner_uuid: zzzzz-j7d0g-7rqh7hdshd5yp5t
+  created_at: 2014-11-05 22:31:24.258424340 Z
+  modified_by_client_uuid: zzzzz-ozdt8-brczlopd8u8d0jr
+  modified_by_user_uuid: 6pbr1-tpzed-000000000000000
+  modified_at: 2014-11-05 22:31:24.258242890 Z
+  name: zzzzz-j7d0g-7rqh7hdshd5yp5t
+  description: ~
+  updated_at: 2014-11-05 22:31:24.258093171 Z
+  group_class: project

@@ -1,3 +1,24 @@
+<script>
+// The "each" loop in select_all_files() and unselect_all_files()
+// is needed because .trigger("change") does not play well with clippy.
+// Once clippy has been retired, we should be able to compress this
+// into .filter(":visible").prop("checked", true).trigger("change").
+//
+function select_all_files() {
+  $("#collection_files :checkbox").filter(":visible").each(
+    function() {
+      $(this).prop("checked", true).trigger("change");
+    });
+}
+
+function unselect_all_files() {
+  $("#collection_files :checkbox").filter(":visible").each(
+    function() {
+      $(this).prop("checked", false).trigger("change");
+    });
+}
+</script>
+
 <div class="selection-action-container" style="padding-left: 1em">
   <% if !defined? no_checkboxes or !no_checkboxes %>
   <div class="row">
@@ -16,35 +37,17 @@
             %></li>
         </ul>
       </div>
+      <div class="btn-group btn-group-sm">
+	<button id="select-all" type="button" class="btn btn-default" onClick="select_all_files()">Select all</button>
+	<button id="unselect-all" type="button" class="btn btn-default" onClick="unselect_all_files()">Unselect all</button>
+      </div>
     </div>
-    <div class="pull-right col-lg-3">
-      <%= form_tag collection_path(@object.uuid), {method: 'get'} do %>
-        <div class="input-group">
-          <input class="form-control" id="file_regex" name="file_regex" placeholder="regular expression" value="<%= params[:file_regex] %>" type="text"/>
-          <span class="input-group-btn">
-            <button id="file_regex_submit" type="submit" class="btn btn-primary" autofocus>Filter</button>
-          </span>
-        </div>
-      <% end %>
+    <div class="pull-right">
+      <input class="form-control filterable-control" data-filterable-target="ul#collection_files" id="file_regex" name="file_regex" placeholder="filename regex" type="text"/>
     </div>
   </div>
   <p/>
   <% end %>
-
-<% file_regex = nil %>
-<% if params[:file_regex] %>
-  <% begin %>
-    <% file_regex = Regexp.new(params[:file_regex]) %>
-  <% rescue RegexpError %>
-    <% # If the pattern is not a valid regex, quote it %>
-    <% # (i.e. use it as a simple substring search) %>
-    <div class="alert alert-info">
-      <p>The search term <code><%= params[:file_regex] %></code> could not be parsed as a regular expression.</p>
-      <p>Searching for files named <code><%= params[:file_regex] %></code> instead.</p>
-    </div>
-    <% file_regex = Regexp.new(Regexp.quote(params[:file_regex])) %>
-  <% end %>
-<% end %>
 
 <% file_tree = @object.andand.files_tree %>
 <% if file_tree.nil? or file_tree.empty? %>
@@ -52,13 +55,7 @@
 <% else %>
   <ul id="collection_files" class="collection_files">
   <% dirstack = [file_tree.first.first] %>
-  <% file_tree.reject { |(dirname, filename, size)|
-       # Eliminate any files that don't match file_regex
-       # (or accept all files if no file_regex was given)
-       size and file_regex and !file_regex.match(filename)
-       }
-       .take(10000)
-       .each_with_index do |(dirname, filename, size), index| %>
+  <% file_tree.take(10000).each_with_index do |(dirname, filename, size), index| %>
     <% file_path = CollectionsHelper::file_path([dirname, filename]) %>
     <% while dirstack.any? and (dirstack.last != dirname) %>
       <% dirstack.pop %></ul></li>
@@ -73,7 +70,7 @@
     <% else %>
       <% link_params = {controller: 'collections', action: 'show_file',
                         uuid: @object.portable_data_hash, file: file_path, size: size} %>
-       <div class="collection_files_row">
+       <div class="collection_files_row filterable">
         <div class="collection_files_buttons pull-right">
           <%= raw(human_readable_bytes_html(size)) %>
           <% disable_search = (Rails.configuration.filename_suffixes_with_view_icon.include? file_path.split('.')[-1]) ? false : true %>

@@ -234,11 +234,13 @@ class User < ArvadosModel
   end
 
   def check_auto_admin
-    if User.where("uuid not like '%-000000000000000'").where(:is_admin => true).count == 0 and Rails.configuration.auto_admin_user
-      if self.email == Rails.configuration.auto_admin_user
-        self.is_admin = true
-        self.is_active = true
-      end
+    return if self.uuid.end_with?('anonymouspublic')
+    if (User.where("email = ?",self.email).where(:is_admin => true).count == 0 and
+        Rails.configuration.auto_admin_user and self.email == Rails.configuration.auto_admin_user) or
+       (User.where("uuid not like '%-000000000000000'").where(:is_admin => true).count == 0 and 
+        Rails.configuration.auto_admin_first_user)
+      self.is_admin = true
+      self.is_active = true
     end
   end
 
