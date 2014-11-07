@@ -72,7 +72,7 @@ class ResourceListTest < ActiveSupport::TestCase
       a += 1
     end
 
-    assert a < 201
+    assert_operator a, :<, 201
     assert_equal c.result_limit, a
   end
 

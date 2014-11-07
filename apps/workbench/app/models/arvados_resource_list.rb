@@ -5,6 +5,8 @@ class ArvadosResourceList
   def initialize resource_class=nil
     @resource_class = resource_class
     @fetch_multiple_pages = true
+    @arvados_api_token = Thread.current[:arvados_api_token]
+    @reader_tokens = Thread.current[:reader_tokens]
   end
 
   def eager(bool=true)
@@ -13,6 +15,9 @@ class ArvadosResourceList
   end
 
   def limit(max_results)
+    if not max_results.nil? and not max_results.is_a? Integer
+      raise ArgumentError("argument to limit() must be an Integer or nil")
+    end
     @limit = max_results
     self
   end
@@ -100,61 +105,6 @@ class ArvadosResourceList
     results
   end
 
-  def each_page
-    api_params = {
-      _method: 'GET'
-    }
-    api_params[:where] = @cond if @cond
-    api_params[:eager] = '1' if @eager
-    api_params[:limit] = @limit if @limit
-    api_params[:select] = @select if @select
-    api_params[:order] = @orderby_spec if @orderby_spec
-    api_params[:filters] = @filters if @filters
-
-    item_count = 0
-
-    if @offset
-      offset = @offset
-    else
-      offset = 0
-    end
-
-    if @limit.is_a? Integer
-      items_to_get = @limit
-    else
-      items_to_get = 1000000000
-    end
-
-    begin
-      api_params[:offset] = offset
-
-      res = arvados_api_client.api @resource_class, '', api_params
-      items = arvados_api_client.unpack_api_response res
-
-      if items.nil? or items.size == 0
-        break
-      end
-
-      @items_available = items.items_available if items.respond_to? :items_available
-      @result_limit = items.limit
-      @result_offset = items.offset
-      @result_links = items.links if items.respond_to? :links
-
-      item_count += items.size
-
-      if items.respond_to? :items_available and
-          (@limit.nil? or (@limit.is_a? Integer and  @limit > items.items_available))
-        items_to_get = items.items_available
-      end
-
-      offset = items.offset + items.size
-
-      yield items
-
-    end while @fetch_multiple_pages and item_count < items_to_get
-    self
-  end
-
   def each(&block)
     if not @results.nil?
       @results.each &block
@@ -237,9 +187,46 @@ class ArvadosResourceList
     end
   end
 
-  # Note: this arbitrarily chooses one of (possibly) multiple names.
-  def name_for item_or_uuid
-    links_for(item_or_uuid, 'name').first.andand.name
+  protected
+
+  def each_page
+    api_params = {
+      _method: 'GET'
+    }
+    api_params[:where] = @cond if @cond
+    api_params[:eager] = '1' if @eager
+    api_params[:limit] = @limit if @limit
+    api_params[:select] = @select if @select
+    api_params[:order] = @orderby_spec if @orderby_spec
+    api_params[:filters] = @filters if @filters
+
+    item_count = 0
+    offset = @offset || 0
+
+    begin
+      api_params[:offset] = offset
+      api_params[:limit] = (@limit - item_count) if @limit
+
+      res = arvados_api_client.api(@resource_class, '', api_params,
+                                   arvados_api_token: @arvados_api_token,
+                                   reader_tokens: @reader_tokens)
+      items = arvados_api_client.unpack_api_response res
+
+      break if items.nil? or not items.any?
+
+      @items_available = items.items_available if items.respond_to? :items_available
+      @result_limit = items.limit if items.respond_to? :limit
+      @result_offset = items.offset if items.respond_to? :offset
+
+      item_count += items.size
+      offset = @result_offset + items.size
+
+      yield items
+
+      break if @limit.is_a? Integer and item_count >= @limit
+      break if items.respond_to? :items_available and offset >= items.items_available
+    end while @fetch_multiple_pages
+    self
   end
 
 end

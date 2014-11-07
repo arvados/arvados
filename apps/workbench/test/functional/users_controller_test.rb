@@ -32,7 +32,6 @@ class UsersControllerTest < ActionController::TestCase
 
   test "show repositories with read, write, or manage permission" do
     get :manage_account, {}, session_for(:active)
-    use_token :active
     assert_response :success
     repos = assigns(:my_repositories)
     assert repos
