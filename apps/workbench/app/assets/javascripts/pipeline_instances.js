@@ -47,52 +47,63 @@ $(document).on('ready ajax:complete', function() {
     run_pipeline_button_state();
 });
 
-$(document).on('arv-log-event', '.arv-log-event-handler-append-logs', function(event, eventData){
-    var wasatbottom = ($(this).scrollTop() + $(this).height() >=
-                       this.scrollHeight);
-    var parsedData = JSON.parse(eventData);
-    var propertyText = undefined;
-    var properties = parsedData.properties;
+$(document).on('arv-log-event', '.arv-refresh-on-state-change', function(event, eventData) {
+    if (this != event.target) {
+        // Not interested in events sent to child nodes.
+        return;
+    }
+    if (eventData.event_type == "update" &&
+        eventData.properties.old_attributes.state != eventData.properties.new_attributes.state)
+    {
+        $(event.target).trigger('arv:pane:reload');
+    }
+});
 
-    if (properties !== null) {
-        propertyText = properties.text;
+$(document).on('arv-log-event', '.arv-log-event-subscribe-to-pipeline-job-uuids', function(event, eventData){
+    if (this != event.target) {
+        // Not interested in events sent to child nodes.
+        return;
     }
-    if (propertyText !== undefined) {
-        propertyText = propertyText.
-            replace(/\n$/, '').
-            replace(/\n/g, '<br/>');
-        $(this).append(propertyText + "<br/>");
-    } else if (parsedData.summary !== undefined) {
-        if (parsedData.summary.match(/^update of [-a-z0-9]{27}$/))
-            ; // Not helpful.
-        else
-            $(this).append(parsedData.summary + "<br/>");
+    if (!((eventData.object_kind == 'arvados#pipelineInstance') &&
+          (eventData.event_type == "create" ||
+           eventData.event_type == "update") &&
+         eventData.properties &&
+         eventData.properties.new_attributes &&
+         eventData.properties.new_attributes.components)) {
+        return;
     }
-    if (wasatbottom)
-        this.scrollTop = this.scrollHeight;
-}).on('arv:pane:loaded', '#Logs,#Log', function(){
-    $('.arv-log-event-handler-append-logs', this).each(function() {
-        this.scrollTop = this.scrollHeight;
-        $(this).closest('.tab-pane').on('arv:pane:reload', function(e) {
-            // Do not let this tab auto-refresh.
-            e.stopPropagation();
-        });
+    var objs = "";
+    var components = eventData.properties.new_attributes.components;
+    for (a in components) {
+        if (components[a].job && components[a].job.uuid) {
+            objs += " " + components[a].job.uuid;
+        }
+    }
+    $(event.target).attr("data-object-uuids", eventData.object_uuid + objs);
+});
+
+$(document).on('ready ajax:success', function() {
+    $('.arv-log-refresh-control').each(function() {
+        var uuids = $(this).attr('data-object-uuids');
+        var $pane = $(this).closest('[data-pane-content-url]');
+        $pane.attr('data-object-uuids', uuids);
     });
-}).on('ready ajax:complete', function(){
-    $(".arv-log-event-listener[data-object-uuids-live]").each(function() {
-        // Look at data-object-uuid attribute of elements matching
-        // given selector, so the event listener can listen for events
-        // that appeared on the page via ajax.
-        var $listener = $(this);
-        var have_uuids = '' + $listener.attr('data-object-uuids');
-        $($listener.attr('data-object-uuids-live')).each(function() {
-            var this_uuid = $(this).attr('data-object-uuid');
-            if (have_uuids.indexOf(this_uuid) == -1) {
-                have_uuids = have_uuids + ' ' + this_uuid;
-            }
-        });
-        $listener.attr('data-object-uuids', have_uuids);
-    });
+});
+
+$(document).on('arv-log-event', '.arv-log-event-handler-append-logs', function(event, eventData){
+    if (this != event.target) {
+        // Not interested in events sent to child nodes.
+        return;
+    }
+    var wasatbottom = ($(this).scrollTop() + $(this).height() >= this.scrollHeight);
+
+    if (eventData.event_type == "stderr" || eventData.event_type == "stdout") {
+        $(this).append(eventData.properties.text);
+    }
+
+    if (wasatbottom) {
+        this.scrollTop = this.scrollHeight;
+    }
 });
 
 var showhide_compare = function() {
@@ -111,9 +122,3 @@ var showhide_compare = function() {
 };
 $('[data-object-uuid*=-d1hrv-] input[name="uuids[]"]').on('click', showhide_compare);
 showhide_compare();
-
-setInterval(function(){
-    if ($('[data-pipeline-state=RunningOnServer],[data-pipeline-state=RunningOnClient]').length > 0) {
-        $('#Components-tab,#Graph-tab,#pipeline-instance-tab-buttons').trigger('arv:pane:reload');
-    }
-}, 15000);
