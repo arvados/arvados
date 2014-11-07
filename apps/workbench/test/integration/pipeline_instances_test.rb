@@ -364,4 +364,33 @@ class PipelineInstancesTest < ActionDispatch::IntegrationTest
         "Time difference did not match for start_at #{start_at}, finished_at #{finished_at}, ran_for #{match[2]}")
     end
   end
+
+  [
+    ['fuse', 2, 20],              # has  2 pipeline instances on 11-07-2014
+    ['user1_with_load', 30, 100], # has 37 pipeline instances on 11-07-2014
+  ].each do |user, expected_min, expected_max|
+    test "scroll pipeline instances page for #{user} and expect more than #{expected_min} and less than #{expected_max}" do
+      visit page_with_token(user, "/pipeline_instances")
+
+      num_pages = expected_max/20 + 1 # pipeline_instances page uses 20 for page size
+      within('.arv-recent-pipeline-instances') do
+        (0..num_pages).each do |i|
+          page.execute_script "window.scrollBy(0,999000)"
+          begin
+            wait_for_ajax
+          rescue
+          end
+        end
+      end
+
+      # Visit all rows and verify that expected number of pipeline instances are found
+      found_items = page.all('tr[data-kind="arvados#pipelineInstance"]')
+      found_count = found_items.count
+      assert_equal(true, found_count>=expected_min,
+        "Found too few items. Expected at least #{expected_min} and found #{found_count}")
+      assert_equal(true, found_count<=expected_max,
+        "Found too many items. Expected at most #{expected_max} and found #{found_count}")
+    end
+  end
+
 end

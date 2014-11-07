@@ -1,5 +1,5 @@
 <% @objects.sort_by { |ob| ob.created_at }.reverse.each do |ob| %>
-    <tr data-object-uuid="<%= ob.uuid %>">
+    <tr data-object-uuid="<%= ob.uuid %>" data-kind="<%= ob.kind %>" >
       <td>
         <%= check_box_tag 'uuids[]', ob.uuid, false, :class => 'persistent-selection' %>
       </td><td>
