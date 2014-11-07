@@ -93,6 +93,9 @@ class Dispatcher
   def slurm_status
     slurm_nodes = {}
     each_slurm_line("sinfo", "%t") do |hostname, state|
+      # Treat nodes in idle* state as down, because the * means that slurm
+      # hasn't been able to communicate with it recently.
+      state.sub!(/^idle\*/, "down")
       state.sub!(/\W+$/, "")
       state = "down" unless %w(idle alloc down).include?(state)
       slurm_nodes[hostname] = {state: state, job: nil}
