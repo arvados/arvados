@@ -366,20 +366,23 @@ class PipelineInstancesTest < ActionDispatch::IntegrationTest
   end
 
   [
-    ['fuse', nil, 2, 20],                                 # has 2 as of 11-07-2014
-    ['fuse', 'FUSE project', 1, 1],                       # 1 with this name
-    ['user1_with_load', nil, 30, 100],                    # has 37 as of 11-07-2014
-    ['user1_with_load', '000010pipelines', 10, 10],       # owned_by the project zzzzz-j7d0g-000010pipelines
-    ['user1_with_load', 'pipeline_10', 2, 2],             # 2 with this name
-    ['admin', nil, 40, 200],                              # admin can see all of them
-    ['admin', 'FUSE project', 1, 1],                      # 1 with this name and admin can see it
-    ['admin', 'pipeline_10', 2, 2],                       # 2 with this name and admin can see them
-    ['admin', 'containing at least two files', 2, 100],   # component description
-    ['active', 'containing at least two files', 2, 100],  # component description
+    ['fuse', nil, 2, 20],                           # has 2 as of 11-07-2014
+    ['fuse', 'FUSE project', 1, 1],                 # 1 with this name
+    ['user1_with_load', nil, 30, 100],              # has 37 as of 11-07-2014
+    ['user1_with_load', '000010pipelines', 10, 10], # owned_by the project zzzzz-j7d0g-000010pipelines
+    ['user1_with_load', 'pipeline_10', 2, 2],       # 2 with this name
+    ['admin', nil, 40, 200],
+    ['admin', 'FUSE project', 1, 1],
+    ['admin', 'pipeline_10', 2, 2],
+    ['admin', 'containing at least two', 2, 100],
+    ['active', 'containing at least two', 2, 100],  # component description
     ['active', nil, 10, 100],
     ['active', 'no such match', 0, 0],
+    ['user1_with_load', 'pipeline_', 20, 20],       # >20 such, but scrolling disabled when search filter is used
+    ['admin', 'pipeline_', 20, 20],                 # >20 such, but scrolling disabled when search filter is used
   ].each do |user, search_filter, expected_min, expected_max|
-    test "scroll pipeline instances page for #{user} with search filter #{search_filter} and expect more than #{expected_min} and less than #{expected_max}" do
+    test "scroll pipeline instances page for #{user} with search filter #{search_filter}
+          and expect more than #{expected_min} and less than #{expected_max}" do
       visit page_with_token(user, "/pipeline_instances")
 
       if search_filter
@@ -387,9 +390,9 @@ class PipelineInstancesTest < ActionDispatch::IntegrationTest
         wait_for_ajax
       end
 
-      num_pages = expected_max/20 + 1 # pipeline_instances page uses 20 for page size
+      page_scrolls = expected_max/20 + 2    # scroll num_pages+2 times to test scrolling is disabled when it should be
       within('.arv-recent-pipeline-instances') do
-        (0..num_pages).each do |i|
+        (0..page_scrolls).each do |i|
           page.execute_script "window.scrollBy(0,999000)"
           begin
             wait_for_ajax

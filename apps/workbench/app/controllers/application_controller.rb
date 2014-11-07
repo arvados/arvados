@@ -170,7 +170,16 @@ class ApplicationController < ActionController::Base
     if params[:partial]
       respond_to do |f|
         f.json {
-          @next_page_href = next_page_href(partial: params[:partial])
+          if @filters.andand.any?
+            search_filters = @filters.select do |attr,op,val|
+              op == 'ilike' and !val.nil? and !val.eql?('%%')
+            end
+          end
+          if !search_filters || !search_filters.any?  # no search filter was used
+            @next_page_href = next_page_href(partial: params[:partial])
+          else
+            @next_page_href = nil
+          end
           render json: {
             content: render_to_string(partial: "show_#{params[:partial]}.html", formats: [:html]),
                                       next_page_href: @next_page_href
