@@ -366,13 +366,18 @@ class PipelineInstancesTest < ActionDispatch::IntegrationTest
   end
 
   [
-    ['fuse', nil, 2, 20],                           # has  2 as of 11-07-2014
-    ['fuse', 'no such match', 0, 0],
-    ['fuse', 'FUSE project', 1, 1],                 # 1 with this name
-    ['user1_with_load', nil, 30, 100],              # has 37 as of 11-07-2014
-    ['user1_with_load', 'no such match', 0, 0],
-    ['user1_with_load', '000010pipelines', 10, 10], # owned_by the project zzzzz-j7d0g-000010pipelines
-    ['user1_with_load', 'pipeline_10', 2, 2],       # 2 with this name
+    ['fuse', nil, 2, 20],                                 # has 2 as of 11-07-2014
+    ['fuse', 'FUSE project', 1, 1],                       # 1 with this name
+    ['user1_with_load', nil, 30, 100],                    # has 37 as of 11-07-2014
+    ['user1_with_load', '000010pipelines', 10, 10],       # owned_by the project zzzzz-j7d0g-000010pipelines
+    ['user1_with_load', 'pipeline_10', 2, 2],             # 2 with this name
+    ['admin', nil, 40, 200],                              # admin can see all of them
+    ['admin', 'FUSE project', 1, 1],                      # 1 with this name and admin can see it
+    ['admin', 'pipeline_10', 2, 2],                       # 2 with this name and admin can see them
+    ['admin', 'containing at least two files', 2, 100],   # component description
+    ['active', 'containing at least two files', 2, 100],  # component description
+    ['active', nil, 10, 100],
+    ['active', 'no such match', 0, 0],
   ].each do |user, search_filter, expected_min, expected_max|
     test "scroll pipeline instances page for #{user} with search filter #{search_filter} and expect more than #{expected_min} and less than #{expected_max}" do
       visit page_with_token(user, "/pipeline_instances")
