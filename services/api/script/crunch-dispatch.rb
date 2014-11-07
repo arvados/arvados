@@ -202,9 +202,15 @@ class Dispatcher
     rescue
       $stderr.puts "dispatch: log.create failed"
     end
-    job.state = "Failed"
-    if not job.save
-      $stderr.puts "dispatch: job.save failed"
+
+    begin
+      job.lock @authorizations[job.uuid].user.uuid
+      job.state = "Failed"
+      if not job.save
+        $stderr.puts "dispatch: save failed setting job #{job.uuid} to failed"
+      end
+    rescue ArvadosModel::AlreadyLockedError
+      $stderr.puts "dispatch: tried to mark job #{job.uuid} as failed but it was already locked by someone else"
     end
   end
 
