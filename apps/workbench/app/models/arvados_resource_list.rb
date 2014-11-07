@@ -96,11 +96,6 @@ class ArvadosResourceList
     @results
   end
 
-  def all
-    results
-    self
-  end
-
   def to_ary
     results
   end

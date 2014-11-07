@@ -35,7 +35,7 @@ class UsersController < ApplicationController
 
   def activity
     @breadcrumb_page_name = nil
-    @users = User.limit(params[:limit]).all
+    @users = User.limit(params[:limit])
     @user_activity = {}
     @activity = {
       logins: {},
@@ -88,7 +88,7 @@ class UsersController < ApplicationController
 
   def storage
     @breadcrumb_page_name = nil
-    @users = User.limit(params[:limit]).all
+    @users = User.limit(params[:limit])
     @user_storage = {}
     total_storage = {}
     @log_date = {}

@@ -49,7 +49,7 @@ class ResourceListTest < ActiveSupport::TestCase
   test 'prefetch all items' do
     use_token :admin
     a = 0
-    Collection.where(owner_uuid: 'zzzzz-j7d0g-0201collections').all.each do
+    Collection.where(owner_uuid: 'zzzzz-j7d0g-0201collections').each do
       a += 1
     end
     assert_equal 201, a
