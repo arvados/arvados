@@ -68,6 +68,18 @@ class Arvados::V1::CollectionsControllerTest < ActionController::TestCase
     assert_equal unique_uuids.count, resp['items'].count
   end
 
+  test "items.count == items_available with filters" do
+    authorize_with :active
+    get :index, {
+      limit: 100,
+      filters: [['uuid','=',collections(:foo_file).uuid]]
+    }
+    assert_response :success
+    assert_equal 1, assigns(:objects).length
+    assert_equal 1, json_response['items_available']
+    assert_equal 1, json_response['items'].count
+  end
+
   test "get index with limit=2 offset=99999" do
     # Assume there are not that many test fixtures.
     authorize_with :active
