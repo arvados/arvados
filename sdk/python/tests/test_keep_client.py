@@ -265,6 +265,34 @@ class KeepClientServiceTestCase(unittest.TestCase):
         self.assertEqual('100::1', service.hostname)
         self.assertEqual(10, service.port)
 
+    # test_get_timeout and test_put_timeout test that
+    # KeepClient.get and KeepClient.put use the appropriate timeouts
+    # when connected directly to a Keep server (i.e. non-proxy timeout)
+
+    def test_get_timeout(self):
+        api_client = self.mock_keep_services(('keep', 10, False, 'disk'))
+        keep_client = arvados.KeepClient(api_client=api_client)
+        force_timeout = [socket.timeout("timed out")]
+        with mock.patch('requests.get', side_effect=force_timeout) as mock_request:
+            with self.assertRaises(arvados.errors.KeepReadError):
+                keep_client.get('ffffffffffffffffffffffffffffffff')
+            self.assertTrue(mock_request.called)
+            self.assertEqual(
+                arvados.KeepClient.DEFAULT_TIMEOUT,
+                mock_request.call_args[1]['timeout'])
+
+    def test_put_timeout(self):
+        api_client = self.mock_keep_services(('keep', 10, False, 'disk'))
+        keep_client = arvados.KeepClient(api_client=api_client)
+        force_timeout = [socket.timeout("timed out")]
+        with mock.patch('requests.put', side_effect=force_timeout) as mock_request:
+            with self.assertRaises(arvados.errors.KeepWriteError):
+                keep_client.put('foo')
+            self.assertTrue(mock_request.called)
+            self.assertEqual(
+                arvados.KeepClient.DEFAULT_TIMEOUT,
+                mock_request.call_args[1]['timeout'])
+
 
 class KeepClientRetryTestMixin(object):
     # Testing with a local Keep store won't exercise the retry behavior.
@@ -326,6 +354,18 @@ class KeepClientRetryTestMixin(object):
         self.client_kwargs['num_retries'] = 3
         with tutil.mock_requestslib_responses(self.mock_method, self.DEFAULT_EXPECT, 500, 200):
             self.check_success()
+
+    def test_proxy_timeout(self):
+        # Force a timeout, verifying that the requests.get or
+        # requests.put method was called with the proxy_timeout
+        # setting rather than the default timeout.
+        force_timeout = [socket.timeout("timed out")]
+        with mock.patch(self.mock_method, side_effect=force_timeout) as mock_request:
+            self.check_exception()
+            self.assertTrue(mock_request.called)
+            self.assertEqual(
+                arvados.KeepClient.DEFAULT_PROXY_TIMEOUT,
+                mock_request.call_args[1]['timeout'])
 
 
 class KeepClientRetryGetTestMixin(KeepClientRetryTestMixin):
