@@ -399,12 +399,17 @@ class ApplicationController < ActionController::Base
     false  # For convenience to return from callbacks
   end
 
-  def using_specific_api_token(api_token)
+  def using_specific_api_token(api_token, opts={})
     start_values = {}
     [:arvados_api_token, :user].each do |key|
       start_values[key] = Thread.current[key]
     end
-    load_api_token(api_token)
+    if opts.fetch(:load_user, true)
+      load_api_token(api_token)
+    else
+      Thread.current[:arvados_api_token] = api_token
+      Thread.current[:user] = nil
+    end
     begin
       yield
     ensure
