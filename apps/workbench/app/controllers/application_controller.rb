@@ -167,29 +167,27 @@ class ApplicationController < ActionController::Base
   end
 
   def render_index
-    if params[:partial]
-      respond_to do |f|
-        f.json {
+    respond_to do |f|
+      f.json {
+        if params[:partial]
           @next_page_href = next_page_href(partial: params[:partial], filters: @filters.to_json)
           render json: {
-            content: render_to_string(partial: "show_#{params[:partial]}.html", formats: [:html]),
+            content: render_to_string(partial: "show_#{params[:partial]}", formats: [:html]),
                                       next_page_href: @next_page_href
 
           }
-        }
-      end
-    else
-      respond_to do |f|
-        f.json { render json: @objects }
-        f.html {
-          if params[:tab_pane]
-            render_pane params[:tab_pane]
-          else
-            render
-          end
-        }
-        f.js { render }
-      end
+        else
+          render json: @objects
+        end
+      }
+      f.html {
+        if params[:tab_pane]
+          render_pane params[:tab_pane]
+        else
+          render
+        end
+      }
+      f.js { render }
     end
   end
 
