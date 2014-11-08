@@ -369,17 +369,16 @@ class PipelineInstancesTest < ActionDispatch::IntegrationTest
     ['fuse', nil, 2, 20],                           # has 2 as of 11-07-2014
     ['fuse', 'FUSE project', 1, 1],                 # 1 with this name
     ['user1_with_load', nil, 30, 100],              # has 37 as of 11-07-2014
-    ['user1_with_load', '000010pipelines', 10, 10], # owned_by the project zzzzz-j7d0g-000010pipelines
     ['user1_with_load', 'pipeline_10', 2, 2],       # 2 with this name
+    ['user1_with_load', '000010pipelines', 10, 10], # owned_by the project zzzzz-j7d0g-000010pipelines
+    ['user1_with_load', '000025pipelines', 25, 25], # owned_by the project zzzzz-j7d0g-000025pipelines, two pages
     ['admin', nil, 40, 200],
     ['admin', 'FUSE project', 1, 1],
     ['admin', 'pipeline_10', 2, 2],
-    ['admin', 'containing at least two', 2, 100],
     ['active', 'containing at least two', 2, 100],  # component description
+    ['admin', 'containing at least two', 2, 100],
     ['active', nil, 10, 100],
     ['active', 'no such match', 0, 0],
-    ['user1_with_load', 'pipeline_', 20, 20],       # >20 such, but scrolling disabled when search filter is used
-    ['admin', 'pipeline_', 20, 20],                 # >20 such, but scrolling disabled when search filter is used
   ].each do |user, search_filter, expected_min, expected_max|
     test "scroll pipeline instances page for #{user} with search filter #{search_filter}
           and expect more than #{expected_min} and less than #{expected_max}" do
@@ -401,13 +400,18 @@ class PipelineInstancesTest < ActionDispatch::IntegrationTest
         end
       end
 
-      # Visit all rows and verify that expected number of pipeline instances are found
+      # Verify that expected number of pipeline instances are found
       found_items = page.all('tr[data-kind="arvados#pipelineInstance"]')
       found_count = found_items.count
-      assert_equal(true, found_count>=expected_min,
-        "Found too few items. Expected at least #{expected_min} and found #{found_count}")
-      assert_equal(true, found_count<=expected_max,
-        "Found too many items. Expected at most #{expected_max} and found #{found_count}")
+      if expected_min == expected_max
+        assert_equal(true, found_count == expected_min,
+          "Not found expected number of items. Expected at least #{expected_min} and found #{found_count}")
+      else
+        assert_equal(true, found_count>=expected_min,
+          "Found too few items. Expected at least #{expected_min} and found #{found_count}")
+        assert_equal(true, found_count<=expected_max,
+          "Found too many items. Expected at most #{expected_max} and found #{found_count}")
+      end
     end
   end
 

@@ -4,18 +4,11 @@
   &nbsp;
 <% end rescue nil %>
 
-  <%= form_tag pipeline_instances_path, method: 'get', remote: true, class: 'form-search' do %>
-    <div class="input-group">
-      <input type="text" class="form-control filterable-control recent-pipeline-instances-filterable-control"
-             placeholder="Search pipeline instances"
-             data-filterable-target="#recent-pipeline-instances"/>
-       <span class="input-group-btn">
-         <%= button_tag(class: 'btn btn-info') do %>
-         <span class="glyphicon glyphicon-search"></span>
-         <% end %>
-       </span>
-    </div>
-  <% end %>
+  <div class="input-group">
+    <input type="text" class="form-control filterable-control recent-pipeline-instances-filterable-control"
+           placeholder="Search pipeline instances"
+           data-filterable-target="#recent-pipeline-instances"/>
+  </div>
 <% end %>
 
 <%= render file: 'application/index.html.erb', locals: local_assigns %>
