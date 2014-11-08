@@ -297,6 +297,30 @@ job_in_subproject:
   script_version: 4fe459abe02d9b365932b8f5dc419439ab4e2577
   state: Complete
 
+running_will_be_completed:
+  uuid: zzzzz-8i9sb-rshmckwoma9pjh8
+  owner_uuid: zzzzz-j7d0g-v955i6s2oi1cbso
+  cancelled_at: ~
+  cancelled_by_user_uuid: ~
+  cancelled_by_client_uuid: ~
+  created_at: <%= 3.minute.ago.to_s(:db) %>
+  started_at: <%= 3.minute.ago.to_s(:db) %>
+  finished_at: ~
+  script_version: 1de84a854e2b440dc53bf42f8548afa4c17da332
+  running: true
+  success: ~
+  output: ~
+  priority: 0
+  log: ~
+  is_locked_by_uuid: zzzzz-tpzed-d9tiejq69daie8f
+  tasks_summary:
+    failed: 0
+    todo: 3
+    running: 1
+    done: 1
+  runtime_constraints: {}
+  state: Running
+
 graph_stage1:
   uuid: zzzzz-8i9sb-graphstage10000
   owner_uuid: zzzzz-j7d0g-v955i6s2oi1cbso
