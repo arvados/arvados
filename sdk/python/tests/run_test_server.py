@@ -95,27 +95,19 @@ def run(websockets=False, reuse_server=False):
         subprocess.call(['bundle', 'exec', 'rake', 'db:test:load'])
         subprocess.call(['bundle', 'exec', 'rake', 'db:fixtures:load'])
 
+        subprocess.call(['bundle', 'exec', 'rails', 'server', '-d',
+                         '--pid',
+                         os.path.join(os.getcwd(), SERVER_PID_PATH),
+                         '-p3000'])
+        os.environ["ARVADOS_API_HOST"] = "127.0.0.1:3000"
+
         if websockets:
-            os.environ["ARVADOS_WEBSOCKETS"] = "true"
-            subprocess.call(['openssl', 'req', '-new', '-x509', '-nodes',
-                             '-out', './self-signed.pem',
-                             '-keyout', './self-signed.key',
-                             '-days', '3650',
-                             '-subj', '/CN=localhost'])
+            os.environ["ARVADOS_WEBSOCKETS"] = "ws-only"
             subprocess.call(['bundle', 'exec',
                              'passenger', 'start', '-d', '-p3333',
                              '--pid-file',
-                             os.path.join(os.getcwd(), WEBSOCKETS_SERVER_PID_PATH),
-                             '--ssl',
-                             '--ssl-certificate', 'self-signed.pem',
-                             '--ssl-certificate-key', 'self-signed.key'])
-            os.environ["ARVADOS_API_HOST"] = "127.0.0.1:3333"
-        else:
-            subprocess.call(['bundle', 'exec', 'rails', 'server', '-d',
-                             '--pid',
-                             os.path.join(os.getcwd(), SERVER_PID_PATH),
-                             '-p3000'])
-            os.environ["ARVADOS_API_HOST"] = "127.0.0.1:3000"
+                             os.path.join(os.getcwd(), WEBSOCKETS_SERVER_PID_PATH)
+                         ])
 
         pid = find_server_pid(SERVER_PID_PATH)
 
