@@ -801,6 +801,13 @@ class CollectionReaderTestCase(unittest.TestCase, CollectionTestMixin):
             [[f.size(), f.stream_name(), f.name()]
              for f in reader.all_streams()[0].all_files()])
 
+    def test_read_empty_collection(self):
+        client = self.api_client_mock(200)
+        self.mock_get_collection(client, 200, 'empty')
+        reader = arvados.CollectionReader('d41d8cd98f00b204e9800998ecf8427e+0',
+                                          api_client=client)
+        self.assertEqual('', reader.manifest_text())
+
 
 @tutil.skip_sleep
 class CollectionWriterTestCase(unittest.TestCase, CollectionTestMixin):

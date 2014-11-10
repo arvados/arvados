@@ -177,22 +177,22 @@ class CollectionReader(CollectionBase):
             return
         error_via_api = None
         error_via_keep = None
-        should_try_keep = (not self._manifest_text and
+        should_try_keep = ((self._manifest_text is None) and
                            util.keep_locator_pattern.match(
                 self._manifest_locator))
-        if (not self._manifest_text and
+        if ((self._manifest_text is None) and
             util.signed_locator_pattern.match(self._manifest_locator)):
             error_via_keep = self._populate_from_keep()
-        if not self._manifest_text:
+        if self._manifest_text is None:
             error_via_api = self._populate_from_api_server()
             if error_via_api is not None and not should_try_keep:
                 raise error_via_api
-        if (not self._manifest_text and
+        if ((self._manifest_text is None) and
             not error_via_keep and
             should_try_keep):
             # Looks like a keep locator, and we didn't already try keep above
             error_via_keep = self._populate_from_keep()
-        if not self._manifest_text:
+        if self._manifest_text is None:
             # Nothing worked!
             raise arvados.errors.NotFoundError(
                 ("Failed to retrieve collection '{}' " +

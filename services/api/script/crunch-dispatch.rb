@@ -93,6 +93,9 @@ class Dispatcher
   def slurm_status
     slurm_nodes = {}
     each_slurm_line("sinfo", "%t") do |hostname, state|
+      # Treat nodes in idle* state as down, because the * means that slurm
+      # hasn't been able to communicate with it recently.
+      state.sub!(/^idle\*/, "down")
       state.sub!(/\W+$/, "")
       state = "down" unless %w(idle alloc down).include?(state)
       slurm_nodes[hostname] = {state: state, job: nil}
@@ -202,9 +205,15 @@ class Dispatcher
     rescue
       $stderr.puts "dispatch: log.create failed"
     end
-    job.state = "Failed"
-    if not job.save
-      $stderr.puts "dispatch: job.save failed"
+
+    begin
+      job.lock @authorizations[job.uuid].user.uuid
+      job.state = "Failed"
+      if not job.save
+        $stderr.puts "dispatch: save failed setting job #{job.uuid} to failed"
+      end
+    rescue ArvadosModel::AlreadyLockedError
+      $stderr.puts "dispatch: tried to mark job #{job.uuid} as failed but it was already locked by someone else"
     end
   end
 
