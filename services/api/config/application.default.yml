@@ -154,15 +154,29 @@ common:
 
   arvados_theme: default
 
-  # Default: do not advertise a websocket server.
-  websocket_address: false
-
-  # You can run the websocket server separately from the regular HTTP service
-  # by setting "ARVADOS_WEBSOCKETS=ws-only" in the environment before running
-  # the websocket server.  When you do this, you need to set the following
-  # configuration variable so that the primary server can give out the correct
-  # address of the dedicated websocket server:
+  # The ARVADOS_WEBSOCKETS environment variable determines whether to
+  # serve http, websockets, or both.
+  #
+  # If ARVADOS_WEBSOCKETS="true", http and websockets are both served
+  # from the same process.
+  #
+  # If ARVADOS_WEBSOCKETS="ws-only", only websockets is served.
+  #
+  # If ARVADOS_WEBSOCKETS="false" or not set at all, only http is
+  # served. In this case, you should have a separate process serving
+  # websockets, and the address of that service should be given here
+  # as websocket_address.
+  #
+  # If websocket_address is false (which is the default), the
+  # discovery document will tell clients to use the current server as
+  # the websocket service, or (if the current server does not have
+  # websockets enabled) not to use websockets at all.
+  #
+  # Example: Clients will connect to the specified endpoint.
   #websocket_address: wss://127.0.0.1:3333/websocket
+  # Default: Clients will connect to this server if it's running
+  # websockets, otherwise none at all.
+  websocket_address: false
 
   # blob_signing_key is a string of alphanumeric characters used to
   # generate permission signatures for Keep locators. It must be
