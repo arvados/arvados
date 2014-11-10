@@ -152,8 +152,12 @@ class Arvados::V1::GroupsControllerTest < ActionController::TestCase
       end.uniq do |name|
         name[0]
       end
-      # Array#& is documented to preserve order of sorted_names.
-      sorted_names &= reliably_sortable_names
+      # Preserve order of sorted_names. But do not use &=. If
+      # sorted_names has out-of-order duplicates, we want to preserve
+      # them here, so we can detect them and fail the test below.
+      sorted_names.select! do |name|
+        reliably_sortable_names.include? name
+      end
       actually_checked_anything = false
       previous = nil
       sorted_names.each do |entry|
