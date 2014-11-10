@@ -3,14 +3,12 @@
 # ARVADOS_API_TOKEN=abc ARVADOS_API_HOST=arvados.local python -m unittest discover
 
 import arvados
-import bz2
 import copy
 import hashlib
 import mock
 import os
 import pprint
 import re
-import subprocess
 import tempfile
 import unittest
 
@@ -124,25 +122,6 @@ class ArvadosCollectionsTest(run_test_server.TestCaseWithServers,
                            [2, '.', 'ob.txt', 'ob'],
                            [0, '.', 'zero.txt', '']])
 
-    def _test_readline(self, what_in, what_out):
-        cw = arvados.CollectionWriter(self.api_client)
-        cw.start_new_file('test.txt')
-        cw.write(what_in)
-        test1 = cw.finish()
-        cr = arvados.CollectionReader(test1, self.api_client)
-        got = []
-        for x in list(cr.all_files())[0].readlines():
-            got += [x]
-        self.assertEqual(got,
-                         what_out,
-                         "readlines did not split lines correctly: %s" % got)
-
-    def test_collection_readline(self):
-        self._test_readline("\na\nbcd\n\nefg\nz",
-                            ["\n", "a\n", "bcd\n", "\n", "efg\n", "z"])
-        self._test_readline("ab\ncd\n",
-                            ["ab\n", "cd\n"])
-
     def test_collection_empty_file(self):
         cw = arvados.CollectionWriter(self.api_client)
         cw.start_new_file('zero.txt')
@@ -178,53 +157,6 @@ class ArvadosCollectionsTest(run_test_server.TestCaseWithServers,
         for f in cr.all_files():
             got_sizes += [f.size()]
         self.assertEqual(got_sizes, expect_sizes, "got wrong file sizes %s, expected %s" % (got_sizes, expect_sizes))
-
-    def test_collection_bz2_decompression(self):
-        n_lines_in = 2**18
-        data_in = "abc\n"
-        for x in xrange(0, 18):
-            data_in += data_in
-        compressed_data_in = bz2.compress(data_in)
-        cw = arvados.CollectionWriter(self.api_client)
-        cw.start_new_file('test.bz2')
-        cw.write(compressed_data_in)
-        bz2_manifest = cw.manifest_text()
-
-        cr = arvados.CollectionReader(bz2_manifest, self.api_client)
-
-        got = 0
-        for x in list(cr.all_files())[0].readlines():
-            self.assertEqual(x, "abc\n", "decompression returned wrong data: %s" % x)
-            got += 1
-        self.assertEqual(got,
-                         n_lines_in,
-                         "decompression returned %d lines instead of %d" % (got, n_lines_in))
-
-    def test_collection_gzip_decompression(self):
-        n_lines_in = 2**18
-        data_in = "abc\n"
-        for x in xrange(0, 18):
-            data_in += data_in
-        p = subprocess.Popen(["gzip", "-1cn"],
-                             stdout=subprocess.PIPE,
-                             stdin=subprocess.PIPE,
-                             stderr=subprocess.PIPE,
-                             shell=False, close_fds=True)
-        compressed_data_in, stderrdata = p.communicate(data_in)
-
-        cw = arvados.CollectionWriter(self.api_client)
-        cw.start_new_file('test.gz')
-        cw.write(compressed_data_in)
-        gzip_manifest = cw.manifest_text()
-
-        cr = arvados.CollectionReader(gzip_manifest, self.api_client)
-        got = 0
-        for x in list(cr.all_files())[0].readlines():
-            self.assertEqual(x, "abc\n", "decompression returned wrong data: %s" % x)
-            got += 1
-        self.assertEqual(got,
-                         n_lines_in,
-                         "decompression returned %d lines instead of %d" % (got, n_lines_in))
 
     def test_normalized_collection(self):
         m1 = """. 5348b82a029fd9e971a811ce1f71360b+43 0:43:md5sum.txt
@@ -802,6 +734,17 @@ class CollectionWriterTestCase(unittest.TestCase, CollectionTestMixin):
             data_loc = hashlib.md5('123456').hexdigest() + '+6'
         with self.mock_keep(data_loc, 200) as keep_mock:
             self.assertEqual(". {} 0:6:six\n".format(data_loc),
+                             writer.manifest_text())
+
+    def test_open_flush(self):
+        client = self.api_client_mock()
+        writer = arvados.CollectionWriter(client)
+        with writer.open('flush_test') as out_file:
+            out_file.write('flushtext')
+            data_loc = hashlib.md5('flushtext').hexdigest() + '+9'
+            with self.mock_keep(data_loc, 200) as keep_mock:
+                out_file.flush()
+            self.assertEqual(". {} 0:9:flush_test\n".format(data_loc),
                              writer.manifest_text())
 
     def test_two_opens_same_stream(self):

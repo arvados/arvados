@@ -278,6 +278,9 @@ class _WriterFile(ArvadosFileBase):
         for data in seq:
             self.write(data)
 
+    def flush(self):
+        self.dest.flush_data()
+
 
 class CollectionWriter(CollectionBase):
     KEEP_BLOCK_SIZE = 2**26

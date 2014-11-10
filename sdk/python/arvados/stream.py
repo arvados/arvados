@@ -117,12 +117,14 @@ class StreamFileReader(ArvadosFileBase):
         self.segments = segments
         self._filepos = 0L
         self.num_retries = stream.num_retries
-        self._readline_cache = (-1, None, None)
+        self._readline_cache = (None, None)
 
     def __iter__(self):
-        # If we've already started reading the file, don't decompress;
-        # that implicitly seeks to the beginning, which we don't want here.
-        return self.readlines(decompress=self.tell() == 0)
+        while True:
+            data = self.readline()
+            if not data:
+                break
+            yield data
 
     def decompressed_name(self):
         return re.sub('\.(bz2|gz)$', '', self.name)
@@ -131,11 +133,10 @@ class StreamFileReader(ArvadosFileBase):
         return self._stream.name()
 
     @ArvadosFileBase._before_close
-    def seek(self, pos, rel=os.SEEK_SET):
-        """Note that the default is SEEK_SET, not Python's usual SEEK_CUR."""
-        if rel == os.SEEK_CUR:
+    def seek(self, pos, whence=os.SEEK_CUR):
+        if whence == os.SEEK_CUR:
             pos += self._filepos
-        elif rel == os.SEEK_END:
+        elif whence == os.SEEK_END:
             pos += self.size()
         self._filepos = min(max(pos, 0L), self.size())
 
@@ -187,27 +188,26 @@ class StreamFileReader(ArvadosFileBase):
 
     @ArvadosFileBase._before_close
     @retry_method
-    def readline(self, read_iter=None, num_retries=None):
-        cache_pos, cache_iter, cache_data = self._readline_cache
-        if (((read_iter is None) or (read_iter is cache_iter)) and
-              (self.tell() == cache_pos)):
-            read_iter = cache_iter
+    def readline(self, size=float('inf'), num_retries=None):
+        cache_pos, cache_data = self._readline_cache
+        if self.tell() == cache_pos:
             data = [cache_data]
         else:
-            if read_iter is None:
-                read_iter = self.readall_decompressed(num_retries=num_retries)
             data = ['']
-        while '\n' not in data[-1]:
-            try:
-                data.append(next(read_iter))
-            except StopIteration:
+        data_size = len(data[-1])
+        while (data_size < size) and ('\n' not in data[-1]):
+            next_read = self.read(2 ** 20, num_retries=num_retries)
+            if not next_read:
                 break
+            data.append(next_read)
+            data_size += len(next_read)
         data = ''.join(data)
         try:
             nextline_index = data.index('\n') + 1
         except ValueError:
             nextline_index = len(data)
-        self._readline_cache = (self.tell(), read_iter, data[nextline_index:])
+        nextline_index = min(nextline_index, size)
+        self._readline_cache = (self.tell(), data[nextline_index:])
         return data[:nextline_index]
 
     @ArvadosFileBase._before_close
@@ -235,14 +235,15 @@ class StreamFileReader(ArvadosFileBase):
 
     @ArvadosFileBase._before_close
     @retry_method
-    def readlines(self, decompress=True, num_retries=None):
-        read_func = self.readall_decompressed if decompress else self.readall
-        read_iter = read_func(num_retries=num_retries)
-        while True:
-            data = self.readline(read_iter, num_retries=num_retries)
-            if not data:
+    def readlines(self, sizehint=float('inf'), num_retries=None):
+        data = []
+        data_size = 0
+        for s in self.readall(num_retries=num_retries):
+            data.append(s)
+            data_size += len(s)
+            if data_size >= sizehint:
                 break
-            yield data
+        return ''.join(data).splitlines(True)
 
     def as_manifest(self):
         manifest_text = ['.']
