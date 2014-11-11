@@ -336,9 +336,8 @@ class KeepClientRetryTestMixin(object):
     # To use this mixin, define DEFAULT_EXPECT, DEFAULT_EXCEPTION, and
     # run_method().
     #
-    # Test classes must set TEST_PATCHER to a static method that mocks
-    # out appropriate methods in the client --
-    # e.g. tutil.mock_get_responses or tutil.mock_put_responses.
+    # Test classes must define TEST_PATCHER to a method that mocks
+    # out appropriate methods in the client.
 
     PROXY_ADDR = 'http://[%s]:65535/' % (tutil.TEST_HOST,)
     TEST_DATA = 'testdata'
