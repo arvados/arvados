@@ -15,15 +15,13 @@ module GitTestHelper
   def self.included base
     base.setup do
       @tmpdir = Dir.mktmpdir()
-      `cp test/test.git.tar #{@tmpdir} && cd #{@tmpdir} && tar xf test.git.tar`
-      @orig_git_repositories_dir = Rails.configuration.git_repositories_dir
+      system("tar", "-xC", @tmpdir, "-f", "test/test.git.tar")
       Rails.configuration.git_repositories_dir = "#{@tmpdir}/test"
       Commit.refresh_repositories
     end
 
     base.teardown do
       FileUtils.remove_entry @tmpdir, true
-      Rails.configuration.git_repositories_dir = @orig_git_repositories_dir
       Commit.refresh_repositories
     end
   end
