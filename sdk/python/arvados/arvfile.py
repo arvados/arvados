@@ -27,6 +27,3 @@ class ArvadosFileBase(object):
 
     def close(self):
         self.closed = True
-
-    def isatty(self):
-        return False

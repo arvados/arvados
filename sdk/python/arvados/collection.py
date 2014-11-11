@@ -278,6 +278,7 @@ class _WriterFile(ArvadosFileBase):
         for data in seq:
             self.write(data)
 
+    @ArvadosFileBase._before_close
     def flush(self):
         self.dest.flush_data()
 
