@@ -740,11 +740,15 @@ class CollectionWriterTestCase(unittest.TestCase, CollectionTestMixin):
         client = self.api_client_mock()
         writer = arvados.CollectionWriter(client)
         with writer.open('flush_test') as out_file:
-            out_file.write('flushtext')
-            data_loc = hashlib.md5('flushtext').hexdigest() + '+9'
-            with self.mock_keep(data_loc, 200) as keep_mock:
+            out_file.write('flush1')
+            data_loc1 = hashlib.md5('flush1').hexdigest() + '+6'
+            with self.mock_keep(data_loc1, 200) as keep_mock:
                 out_file.flush()
-            self.assertEqual(". {} 0:9:flush_test\n".format(data_loc),
+            out_file.write('flush2')
+            data_loc2 = hashlib.md5('flush2').hexdigest() + '+6'
+        with self.mock_keep(data_loc2, 200) as keep_mock:
+            self.assertEqual(". {} {} 0:12:flush_test\n".format(data_loc1,
+                                                                data_loc2),
                              writer.manifest_text())
 
     def test_two_opens_same_stream(self):
