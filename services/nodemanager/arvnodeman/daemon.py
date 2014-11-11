@@ -204,8 +204,8 @@ class NodeManagerDaemonActor(actor_class):
                    self.max_nodes) - self._nodes_up()
 
     def _nodes_excess(self):
-        idle_nodes = self._nodes_busy() + len(self.last_wishlist)
-        return (self._nodes_up() - max(self.min_nodes, idle_nodes))
+        needed_nodes = self._nodes_busy() + len(self.last_wishlist)
+        return (self._nodes_up() - max(self.min_nodes, needed_nodes))
 
     def update_server_wishlist(self, wishlist):
         self._update_poll_time('server_wishlist')
