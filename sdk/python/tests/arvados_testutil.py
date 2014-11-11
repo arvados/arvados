@@ -6,10 +6,10 @@ import httplib2
 import io
 import mock
 import os
+import requests
 import shutil
 import tempfile
 import unittest
-import requests
 
 # Use this hostname when you want to make sure the traffic will be
 # instantly refused.  100::/64 is a dedicated black hole.
