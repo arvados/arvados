@@ -9,7 +9,8 @@ import libcloud.compute.providers as cloud_provider
 import libcloud.compute.types as cloud_types
 from libcloud.compute.drivers import ec2 as cloud_ec2
 
-from . import BaseComputeNodeDriver, arvados_node_fqdn
+from . import BaseComputeNodeDriver
+from .. import arvados_node_fqdn
 
 ### Monkeypatch libcloud to support AWS' new SecurityGroup API.
 # These classes can be removed when libcloud support specifying
