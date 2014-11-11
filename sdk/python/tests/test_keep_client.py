@@ -1,6 +1,7 @@
 import hashlib
 import mock
 import os
+import re
 import socket
 import unittest
 import urlparse
@@ -21,10 +22,34 @@ class KeepRendezvousWeightTestCase(unittest.TestCase):
     def addServices(self, n):
         for x in range(n):
             uuid = "zzzzz-bi6l4-{:015x}".format(self.n_services)
-            uri = "https://[0.0.0.{}]:25107/".format(self.n_services)
+            uri = "https://keep0x{:x}.zzzzz.arvadosapi.com:25107/".format(self.n_services)
             self.keep_client._keep_services.append(
                 {'uuid': uuid, '_service_root': uri})
             self.n_services += 1
+
+    def test_ProbeOrderReferenceSet(self):
+        # expected_order[i] is the probe order for
+        # hash=md5(sprintf("%064x",i)) where there are 16 services
+        # with uuid sprintf("anything-%015x",j) with j in 0..15. E.g.,
+        # the first probe for the block consisting of 64 "0"
+        # characters is the service whose uuid is
+        # "zzzzz-bi6l4-000000000000003", so expected_order[0][0]=='3'.
+        expected_order = [
+            list('3eab2d5fc9681074'),
+            list('097dba52e648f1c3'),
+            list('c5b4e023f8a7d691'),
+            list('9d81c02e76a3bf54'),
+            ]
+        hashes = [
+            hashlib.md5("{:064x}".format(x)).hexdigest()
+            for x in range(len(expected_order))]
+        self.addServices(16)
+        for i, hash in enumerate(hashes):
+            roots = self.keep_client.weighted_service_roots(hash)
+            got_order = [
+                re.search(r'//keep0x([0-9a-f]+)', root).group(1)
+                for root in roots]
+            self.assertEqual(got_order, expected_order[i])
 
     def test_ProbeWasteAddingOneServer(self):
         hashes = [
