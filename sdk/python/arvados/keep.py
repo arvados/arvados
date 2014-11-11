@@ -210,12 +210,12 @@ class KeepBlockCache(object):
 
 class KeepClient(object):
 
-    # Default Keep server connection timeout:  3 seconds
-    # Default Keep server read timeout:       30 seconds
+    # Default Keep server connection timeout:  2 seconds
+    # Default Keep server read timeout:      300 seconds
     # Default Keep proxy connection timeout:  20 seconds
-    # Default Keep proxy read timeout:        60 seconds
-    DEFAULT_TIMEOUT = (3, 30)
-    DEFAULT_PROXY_TIMEOUT = (20, 60)
+    # Default Keep proxy read timeout:       300 seconds
+    DEFAULT_TIMEOUT = (2, 300)
+    DEFAULT_PROXY_TIMEOUT = (20, 300)
 
     class ThreadLimiter(object):
         """
@@ -279,7 +279,7 @@ class KeepClient(object):
         HTTP_ERRORS = (requests.exceptions.RequestException,
                        socket.error, ssl.SSLError)
 
-        def __init__(self, root, timeout=None, **headers):
+        def __init__(self, root, **headers):
             self.root = root
             self.last_result = None
             self.success_flag = None
@@ -296,7 +296,7 @@ class KeepClient(object):
         def last_status(self):
             try:
                 return self.last_result.status_code
-            except (AttributeError, IndexError, ValueError):
+            except AttributeError:
                 return None
 
         def get(self, locator, timeout=None):
@@ -419,10 +419,10 @@ class KeepClient(object):
           non-proxy servers.  A tuple of two floats is interpreted as
           (connection_timeout, read_timeout): see
           http://docs.python-requests.org/en/latest/user/advanced/#timeouts.
-          Default: (3, 30).
+          Default: (2, 300).
         * proxy_timeout: The timeout (in seconds) for HTTP requests to
           Keep proxies. A tuple of two floats is interpreted as
-          (connection_timeout, read_timeout). Default: (20, 60).
+          (connection_timeout, read_timeout). Default: (20, 300).
         * api_token: If you're not using an API client, but only talking
           directly to a Keep proxy, this parameter specifies an API token
           to authenticate Keep requests.  It is an error to specify both
@@ -437,7 +437,6 @@ class KeepClient(object):
         * num_retries: The default number of times to retry failed requests.
           This will be used as the default num_retries value when get() and
           put() are called.  Default 0.
-
         """
         self.lock = threading.Lock()
         if proxy is None:
@@ -454,6 +453,8 @@ class KeepClient(object):
             local_store = os.environ.get('KEEP_LOCAL_STORE')
 
         self.block_cache = block_cache if block_cache else KeepBlockCache()
+        self.timeout = timeout
+        self.proxy_timeout = proxy_timeout
 
         if local_store:
             self.local_store = local_store
@@ -467,7 +468,6 @@ class KeepClient(object):
                 self.api_token = api_token
                 self.service_roots = [proxy]
                 self.using_proxy = True
-                self.timeout = proxy_timeout
                 self.static_service_roots = True
             else:
                 # It's important to avoid instantiating an API client
@@ -478,8 +478,16 @@ class KeepClient(object):
                 self.api_token = api_client.api_token
                 self.service_roots = None
                 self.using_proxy = None
-                self.timeout = timeout
                 self.static_service_roots = False
+
+    def current_timeout(self):
+        """Return the appropriate timeout to use for this client: the proxy
+        timeout setting if the backend service is currently a proxy,
+        the regular timeout setting otherwise.
+        """
+        # TODO(twp): the timeout should be a property of a
+        # KeepService, not a KeepClient. See #4488.
+        return self.proxy_timeout if self.using_proxy else self.timeout
 
     def build_service_roots(self, force_rebuild=False):
         if (self.static_service_roots or
@@ -642,7 +650,7 @@ class KeepClient(object):
                                for root in (local_roots + hint_roots)
                                if roots_map[root].usable()]
             for keep_service in services_to_try:
-                blob = keep_service.get(locator, timeout=self.timeout)
+                blob = keep_service.get(locator, timeout=self.current_timeout())
                 if blob is not None:
                     break
             loop.save_result((blob, len(services_to_try)))
@@ -715,7 +723,7 @@ class KeepClient(object):
                     data_hash=data_hash,
                     service_root=service_root,
                     thread_limiter=thread_limiter,
-                    timeout=self.timeout)
+                    timeout=self.current_timeout())
                 t.start()
                 threads.append(t)
             for t in threads:

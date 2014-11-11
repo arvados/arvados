@@ -691,7 +691,7 @@ class CollectionTestMixin(object):
             mock_method.return_value = body
         else:
             mock_method.side_effect = arvados.errors.ApiError(
-                tutil.fake_requests_response(code, None), "{}")
+                tutil.fake_httplib2_response(code), "{}")
 
     def mock_keep_services(self, api_mock, code, body):
         self._mock_api_call(api_mock.keep_services().accessible, code, body)

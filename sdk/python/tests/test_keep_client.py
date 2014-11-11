@@ -293,6 +293,36 @@ class KeepClientServiceTestCase(unittest.TestCase):
                 arvados.KeepClient.DEFAULT_TIMEOUT,
                 mock_request.call_args[1]['timeout'])
 
+    def test_proxy_get_timeout(self):
+        # Force a timeout, verifying that the requests.get or
+        # requests.put method was called with the proxy_timeout
+        # setting rather than the default timeout.
+        api_client = self.mock_keep_services(('keep', 10, False, 'proxy'))
+        keep_client = arvados.KeepClient(api_client=api_client)
+        force_timeout = [socket.timeout("timed out")]
+        with mock.patch('requests.get', side_effect=force_timeout) as mock_request:
+            with self.assertRaises(arvados.errors.KeepReadError):
+                keep_client.get('ffffffffffffffffffffffffffffffff')
+            self.assertTrue(mock_request.called)
+            self.assertEqual(
+                arvados.KeepClient.DEFAULT_PROXY_TIMEOUT,
+                mock_request.call_args[1]['timeout'])
+
+    def test_proxy_put_timeout(self):
+        # Force a timeout, verifying that the requests.get or
+        # requests.put method was called with the proxy_timeout
+        # setting rather than the default timeout.
+        api_client = self.mock_keep_services(('keep', 10, False, 'proxy'))
+        keep_client = arvados.KeepClient(api_client=api_client)
+        force_timeout = [socket.timeout("timed out")]
+        with mock.patch('requests.put', side_effect=force_timeout) as mock_request:
+            with self.assertRaises(arvados.errors.KeepWriteError):
+                keep_client.put('foo')
+            self.assertTrue(mock_request.called)
+            self.assertEqual(
+                arvados.KeepClient.DEFAULT_PROXY_TIMEOUT,
+                mock_request.call_args[1]['timeout'])
+
 
 class KeepClientRetryTestMixin(object):
     # Testing with a local Keep store won't exercise the retry behavior.
@@ -305,6 +335,11 @@ class KeepClientRetryTestMixin(object):
     # supporting servers, and prevents side effects in case something hiccups.
     # To use this mixin, define DEFAULT_EXPECT, DEFAULT_EXCEPTION, and
     # run_method().
+    #
+    # Test classes must set TEST_PATCHER to a static method that mocks
+    # out appropriate methods in the client --
+    # e.g. tutil.mock_get_responses or tutil.mock_put_responses.
+
     PROXY_ADDR = 'http://[%s]:65535/' % (tutil.TEST_HOST,)
     TEST_DATA = 'testdata'
     TEST_LOCATOR = 'ef654c40ab4f1747fc699915d4f70902+8'
@@ -331,56 +366,37 @@ class KeepClientRetryTestMixin(object):
         self.assertRaises(error_class, self.run_method, *args, **kwargs)
 
     def test_immediate_success(self):
-        with tutil.mock_requestslib_responses(self.mock_method, self.DEFAULT_EXPECT, 200):
+        with self.TEST_PATCHER(self.DEFAULT_EXPECT, 200):
             self.check_success()
 
     def test_retry_then_success(self):
-        with tutil.mock_requestslib_responses(self.mock_method, self.DEFAULT_EXPECT, 500, 200):
+        with self.TEST_PATCHER(self.DEFAULT_EXPECT, 500, 200):
             self.check_success(num_retries=3)
 
     def test_no_default_retry(self):
-        with tutil.mock_requestslib_responses(self.mock_method, self.DEFAULT_EXPECT, 500, 200):
+        with self.TEST_PATCHER(self.DEFAULT_EXPECT, 500, 200):
             self.check_exception()
 
     def test_no_retry_after_permanent_error(self):
-        with tutil.mock_requestslib_responses(self.mock_method, self.DEFAULT_EXPECT, 403, 200):
+        with self.TEST_PATCHER(self.DEFAULT_EXPECT, 403, 200):
             self.check_exception(num_retries=3)
 
     def test_error_after_retries_exhausted(self):
-        with tutil.mock_requestslib_responses(self.mock_method, self.DEFAULT_EXPECT, 500, 500, 200):
+        with self.TEST_PATCHER(self.DEFAULT_EXPECT, 500, 500, 200):
             self.check_exception(num_retries=1)
 
     def test_num_retries_instance_fallback(self):
         self.client_kwargs['num_retries'] = 3
-        with tutil.mock_requestslib_responses(self.mock_method, self.DEFAULT_EXPECT, 500, 200):
+        with self.TEST_PATCHER(self.DEFAULT_EXPECT, 500, 200):
             self.check_success()
-
-    def test_proxy_timeout(self):
-        # Force a timeout, verifying that the requests.get or
-        # requests.put method was called with the proxy_timeout
-        # setting rather than the default timeout.
-        force_timeout = [socket.timeout("timed out")]
-        with mock.patch(self.mock_method, side_effect=force_timeout) as mock_request:
-            self.check_exception()
-            self.assertTrue(mock_request.called)
-            self.assertEqual(
-                arvados.KeepClient.DEFAULT_PROXY_TIMEOUT,
-                mock_request.call_args[1]['timeout'])
-
-
-class KeepClientRetryGetTestMixin(KeepClientRetryTestMixin):
-    mock_method = 'requests.get'
-
-
-class KeepClientRetryPutTestMixin(KeepClientRetryTestMixin):
-    mock_method = 'requests.put'
 
 
 @tutil.skip_sleep
-class KeepClientRetryGetTestCase(KeepClientRetryGetTestMixin, unittest.TestCase):
+class KeepClientRetryGetTestCase(KeepClientRetryTestMixin, unittest.TestCase):
     DEFAULT_EXPECT = KeepClientRetryTestMixin.TEST_DATA
     DEFAULT_EXCEPTION = arvados.errors.KeepReadError
     HINTED_LOCATOR = KeepClientRetryTestMixin.TEST_LOCATOR + '+K@xyzzy'
+    TEST_PATCHER = staticmethod(tutil.mock_get_responses)
 
     def run_method(self, locator=KeepClientRetryTestMixin.TEST_LOCATOR,
                    *args, **kwargs):
@@ -423,9 +439,10 @@ class KeepClientRetryGetTestCase(KeepClientRetryGetTestMixin, unittest.TestCase)
 
 
 @tutil.skip_sleep
-class KeepClientRetryPutTestCase(KeepClientRetryPutTestMixin, unittest.TestCase):
+class KeepClientRetryPutTestCase(KeepClientRetryTestMixin, unittest.TestCase):
     DEFAULT_EXPECT = KeepClientRetryTestMixin.TEST_LOCATOR
     DEFAULT_EXCEPTION = arvados.errors.KeepWriteError
+    TEST_PATCHER = staticmethod(tutil.mock_put_responses)
 
     def run_method(self, data=KeepClientRetryTestMixin.TEST_DATA,
                    copies=1, *args, **kwargs):
