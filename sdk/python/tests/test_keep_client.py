@@ -1,3 +1,4 @@
+import hashlib
 import mock
 import os
 import socket
@@ -8,6 +9,60 @@ import arvados
 import arvados.retry
 import arvados_testutil as tutil
 import run_test_server
+
+class KeepRendezvousWeightTestCase(unittest.TestCase):
+    def setUp(self):
+        self.keep_client = arvados.KeepClient(
+            api_client=mock.MagicMock(name='api_client'),
+            proxy='', local_store='')
+        self.keep_client._keep_services = []
+        self.n_services = 0
+
+    def addServices(self, n):
+        for x in range(n):
+            uuid = "zzzzz-bi6l4-{:015x}".format(self.n_services)
+            uri = "https://[0.0.0.{}]:25107/".format(self.n_services)
+            self.keep_client._keep_services.append(
+                {'uuid': uuid, '_service_root': uri})
+            self.n_services += 1
+
+    def test_ProbeWasteAddingOneServer(self):
+        hashes = [
+            hashlib.md5("{:064x}".format(x)).hexdigest() for x in range(100)]
+        initial_services = 12
+        self.addServices(initial_services)
+        probes_before = [
+            self.keep_client.weighted_service_roots(hash) for hash in hashes]
+        for added_services in range(1, 12):
+            self.addServices(1)
+            total_penalty = 0
+            for hash_index in range(len(hashes)):
+                probe_after = self.keep_client.weighted_service_roots(
+                    hashes[hash_index])
+                penalty = probe_after.index(probes_before[hash_index][0])
+                self.assertLessEqual(penalty, added_services)
+                total_penalty += penalty
+            # Average penalty per block should not exceed
+            # N(added)/N(orig) by more than 20%, and should get closer
+            # to the ideal as we add data points.
+            expect_penalty = (
+                added_services *
+                len(hashes) / initial_services)
+            max_penalty = (
+                expect_penalty *
+                (120 - added_services)/100)
+            min_penalty = (
+                expect_penalty * 8/10)
+            self.assertTrue(
+                min_penalty <= total_penalty <= max_penalty,
+                "With {}+{} services, {} blocks, penalty {} but expected {}..{}".format(
+                    initial_services,
+                    added_services,
+                    len(hashes),
+                    total_penalty,
+                    min_penalty,
+                    max_penalty))
+
 
 class KeepTestCase(run_test_server.TestCaseWithServers):
     MAIN_SERVER = {}
@@ -249,7 +304,7 @@ class KeepClientServiceTestCase(unittest.TestCase):
     def get_service_roots(self, *services):
         api_client = self.mock_keep_services(*services)
         keep_client = arvados.KeepClient(api_client=api_client)
-        services = keep_client.shuffled_service_roots('000000')
+        services = keep_client.weighted_service_roots('000000')
         return [urlparse.urlparse(url) for url in sorted(services)]
 
     def test_ssl_flag_respected_in_roots(self):
