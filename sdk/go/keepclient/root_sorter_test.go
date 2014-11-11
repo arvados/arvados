@@ -1,7 +1,6 @@
 package keepclient
 
 import (
-	"crypto/md5"
 	"fmt"
 	. "gopkg.in/check.v1"
 	"strconv"
@@ -25,10 +24,6 @@ func FakeServiceRoots(n uint64) (map[string]string) {
 		sr[FakeSvcUuid(i)] = FakeSvcRoot(i)
 	}
 	return sr
-}
-
-func Md5String(data string) (string) {
-	return fmt.Sprintf("%032x", md5.Sum([]byte(data)))
 }
 
 func (*RootSorterSuite) EmptyRoots(c *C) {

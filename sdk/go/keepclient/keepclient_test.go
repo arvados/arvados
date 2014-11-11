@@ -104,11 +104,15 @@ func (s *StandaloneSuite) TestShuffleServiceRoots(c *C) {
 
 	// "foo" acbd18db4cc2f85cedef654fccc4a4d8
 	foo_shuffle := []string{"http://localhost:4", "http://localhost:1", "http://localhost:3", "http://localhost:2"}
-	c.Check(kc.shuffledServiceRoots("acbd18db4cc2f85cedef654fccc4a4d8"), DeepEquals, foo_shuffle)
+	c.Check(NewRootSorter(
+		kc.ServiceRoots(), Md5String("foo")).GetSortedRoots(),
+		DeepEquals, foo_shuffle)
 
 	// "bar" 37b51d194a7513e45b56f6524f2d51f2
 	bar_shuffle := []string{"http://localhost:3", "http://localhost:2", "http://localhost:4", "http://localhost:1"}
-	c.Check(kc.shuffledServiceRoots("37b51d194a7513e45b56f6524f2d51f2"), DeepEquals, bar_shuffle)
+	c.Check(NewRootSorter(
+		kc.ServiceRoots(), Md5String("bar")).GetSortedRoots(),
+		DeepEquals, bar_shuffle)
 }
 
 type StubPutHandler struct {
@@ -273,7 +277,7 @@ func RunSomeFakeKeepServers(st http.Handler, n int, port int) (ks []KeepServer) 
 func (s *StandaloneSuite) TestPutB(c *C) {
 	log.Printf("TestPutB")
 
-	hash := fmt.Sprintf("%x", md5.Sum([]byte("foo")))
+	hash := Md5String("foo")
 
 	st := StubPutHandler{
 		c,
@@ -300,7 +304,8 @@ func (s *StandaloneSuite) TestPutB(c *C) {
 
 	kc.PutB([]byte("foo"))
 
-	shuff := kc.shuffledServiceRoots(fmt.Sprintf("%x", md5.Sum([]byte("foo"))))
+	shuff := NewRootSorter(
+		kc.ServiceRoots(), Md5String("foo")).GetSortedRoots()
 
 	s1 := <-st.handled
 	s2 := <-st.handled
@@ -349,7 +354,7 @@ func (s *StandaloneSuite) TestPutHR(c *C) {
 
 	kc.PutHR(hash, reader, 3)
 
-	shuff := kc.shuffledServiceRoots(hash)
+	shuff := NewRootSorter(kc.ServiceRoots(), hash).GetSortedRoots()
 	log.Print(shuff)
 
 	s1 := <-st.handled
@@ -399,7 +404,8 @@ func (s *StandaloneSuite) TestPutWithFail(c *C) {
 
 	kc.SetServiceRoots(service_roots)
 
-	shuff := kc.shuffledServiceRoots(fmt.Sprintf("%x", md5.Sum([]byte("foo"))))
+	shuff := NewRootSorter(
+		kc.ServiceRoots(), Md5String("foo")).GetSortedRoots()
 
 	phash, replicas, err := kc.PutB([]byte("foo"))
 

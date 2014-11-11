@@ -2,6 +2,7 @@
 package keepclient
 
 import (
+	"crypto/md5"
 	"git.curoverse.com/arvados.git/sdk/go/streamer"
 	"errors"
 	"fmt"
@@ -19,6 +20,10 @@ type keepDisk struct {
 	Port     int    `json:"service_port"`
 	SSL      bool   `json:"service_ssl_flag"`
 	SvcType  string `json:"service_type"`
+}
+
+func Md5String(s string) (string) {
+	return fmt.Sprintf("%x", md5.Sum([]byte(s)))
 }
 
 func (this *KeepClient) DiscoverKeepServers() error {
@@ -68,10 +73,6 @@ func (this *KeepClient) DiscoverKeepServers() error {
 	this.SetServiceRoots(service_roots)
 
 	return nil
-}
-
-func (this KeepClient) shuffledServiceRoots(hash string) (pseq []string) {
-	return NewRootSorter(this.ServiceRoots(), hash).GetSortedRoots()
 }
 
 type uploadStatus struct {
