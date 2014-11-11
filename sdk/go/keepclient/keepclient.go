@@ -12,7 +12,6 @@ import (
 	"log"
 	"net/http"
 	"regexp"
-	"sort"
 	"strings"
 	"sync"
 	"sync/atomic"
@@ -36,7 +35,7 @@ type KeepClient struct {
 	Arvados       *arvadosclient.ArvadosClient
 	Want_replicas int
 	Using_proxy   bool
-	service_roots *[]string
+	service_roots *map[string]string
 	lock          sync.Mutex
 	Client        *http.Client
 }
@@ -133,7 +132,7 @@ func (this KeepClient) AuthorizedGet(hash string,
 	contentLength int64, url string, err error) {
 
 	// Calculate the ordering for asking servers
-	sv := this.shuffledServiceRoots(hash)
+	sv := NewRootSorter(this.ServiceRoots(), hash).GetSortedRoots()
 
 	for _, host := range sv {
 		var req *http.Request
@@ -175,7 +174,7 @@ func (this KeepClient) Ask(hash string) (contentLength int64, url string, err er
 func (this KeepClient) AuthorizedAsk(hash string, signature string,
 	timestamp string) (contentLength int64, url string, err error) {
 	// Calculate the ordering for asking servers
-	sv := this.shuffledServiceRoots(hash)
+	sv := NewRootSorter(this.ServiceRoots(), hash).GetSortedRoots()
 
 	for _, host := range sv {
 		var req *http.Request
@@ -208,20 +207,19 @@ func (this KeepClient) AuthorizedAsk(hash string, signature string,
 }
 
 // Atomically read the service_roots field.
-func (this *KeepClient) ServiceRoots() []string {
-	r := (*[]string)(atomic.LoadPointer((*unsafe.Pointer)(unsafe.Pointer(&this.service_roots))))
+func (this *KeepClient) ServiceRoots() map[string]string {
+	r := (*map[string]string)(atomic.LoadPointer((*unsafe.Pointer)(unsafe.Pointer(&this.service_roots))))
 	return *r
 }
 
 // Atomically update the service_roots field.  Enables you to update
 // service_roots without disrupting any GET or PUT operations that might
 // already be in progress.
-func (this *KeepClient) SetServiceRoots(svc []string) {
-	// Must be sorted for ShuffledServiceRoots() to produce consistent
-	// results.
-	roots := make([]string, len(svc))
-	copy(roots, svc)
-	sort.Strings(roots)
+func (this *KeepClient) SetServiceRoots(new_roots map[string]string) {
+	roots := make(map[string]string)
+	for uuid, root := range new_roots {
+		roots[uuid] = root
+	}
 	atomic.StorePointer((*unsafe.Pointer)(unsafe.Pointer(&this.service_roots)),
 		unsafe.Pointer(&roots))
 }
