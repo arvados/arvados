@@ -1,0 +1,248 @@
+---
+layout: default
+navsection: sdk
+navmenu: CLI
+title: "arv subcommands"
+
+...
+
+The @arv@ CLI tool provides access to a number of subcommands which are described on this page.
+
+h3(#arv-create). arv create
+
+@arv create@ can be used to create Arvados objects from the command line. Arv create opens up the editor of your choice (set the EDITOR environment variable) and allows you to type or paste a json or yaml description. When saved the object will be created on the API server, if it passes validation.
+
+<notextile>
+<pre>
+$ <code class="userinput">arv create --help</code>
+Options:
+  --project-uuid, -p &lt;s&gt;:   Project uuid in which to create the object
+              --help, -h:   Show this message
+</pre>
+</notextile>
+
+h3(#arv-edit). arv edit
+
+@arv edit@ can be used to edit Arvados objects from the command line. Arv edit opens up the editor of your choice (set the EDITOR environment variable) with the json or yaml description of the object. Saving the file will update the Arvados object on the API server, if it passes validation.
+
+<notextile>
+<pre>
+$ <code class="userinput">arv edit --help</code>
+Arvados command line client
+Usage: arv edit [uuid] [fields...]
+
+Fetch the specified Arvados object, select the specified fields,
+open an interactive text editor on a text representation (json or
+yaml, use --format) and then update the object.  Will use 'nano'
+by default, customize with the EDITOR or VISUAL environment variable.
+</pre>
+</notextile>
+
+h3(#arv-copy). arv copy
+
+@arv copy@ can be used to copy a pipeline instance, template or collection from one Arvados instance to another. It takes care of copying the object and all its dependencies.
+
+<notextile>
+<pre>
+$ <code class="userinput">arv copy --help</code>
+usage: arv-copy [-h] [-v] [--progress] [--no-progress] [-f] --src
+                SOURCE_ARVADOS --dst DESTINATION_ARVADOS [--recursive]
+                [--no-recursive] [--dst-git-repo DST_GIT_REPO]
+                [--project-uuid PROJECT_UUID] [--retries RETRIES]
+                object_uuid
+
+Copy a pipeline instance, template or collection from one Arvados instance to
+another.
+
+positional arguments:
+  object_uuid           The UUID of the object to be copied.
+
+optional arguments:
+  -h, --help            show this help message and exit
+  -v, --verbose         Verbose output.
+  --progress            Report progress on copying collections. (default)
+  --no-progress         Do not report progress on copying collections.
+  -f, --force           Perform copy even if the object appears to exist at
+                        the remote destination.
+  --src SOURCE_ARVADOS  The name of the source Arvados instance (required).
+                        May be either a pathname to a config file, or the
+                        basename of a file in
+                        $HOME/.config/arvados/instance_name.conf.
+  --dst DESTINATION_ARVADOS
+                        The name of the destination Arvados instance
+                        (required). May be either a pathname to a config file,
+                        or the basename of a file in
+                        $HOME/.config/arvados/instance_name.conf.
+  --recursive           Recursively copy any dependencies for this object.
+                        (default)
+  --no-recursive        Do not copy any dependencies. NOTE: if this option is
+                        given, the copied object will need to be updated
+                        manually in order to be functional.
+  --dst-git-repo DST_GIT_REPO
+                        The name of the destination git repository. Required
+                        when copying a pipeline recursively.
+  --project-uuid PROJECT_UUID
+                        The UUID of the project at the destination to which
+                        the pipeline should be copied.
+  --retries RETRIES     Maximum number of times to retry server requests that
+                        encounter temporary failures (e.g., server down).
+                        Default 3.
+</pre>
+</notextile>
+
+h3(#arv-tag). arv tag
+
+@arv tag@ is used to tag Arvados objects.
+
+<notextile>
+<pre>
+$ <code class="userinput">arv tag --help</code>
+arvados cli client
+  --dry-run, -n:   Don't actually do anything
+  --verbose, -v:   Print some things on stderr
+     --uuid, -u:   Return the UUIDs of the objects in the response, one per
+                   line (default)
+     --json, -j:   Return the entire response received from the API server, as
+                   a JSON object
+    --human, -h:   Return the response received from the API server, as a JSON
+                   object with whitespace added for human consumption
+   --pretty, -p:   Synonym of --human
+     --yaml, -y:   Return the response received from the API server, in YAML
+                   format
+     --help, -e:   Show this message
+</pre>
+</notextile>
+
+
+h3(#arv-ws). arv ws
+
+@arv ws@ provides access to the websockets event stream.
+
+<notextile>
+<pre>
+$ <code class="userinput">arv ws --help</code>
+usage: arv-ws [-h] [-u UUID] [-f FILTERS]
+              [--poll-interval POLL_INTERVAL | --no-poll]
+              [-p PIPELINE | -j JOB]
+
+optional arguments:
+  -h, --help            show this help message and exit
+  -u UUID, --uuid UUID  Filter events on object_uuid
+  -f FILTERS, --filters FILTERS
+                        Arvados query filter to apply to log events (JSON
+                        encoded)
+  --poll-interval POLL_INTERVAL
+                        If websockets is not available, specify the polling
+                        interval, default is every 15 seconds
+  --no-poll             Do not poll if websockets are not available, just fail
+  -p PIPELINE, --pipeline PIPELINE
+                        Supply pipeline uuid, print log output from pipeline
+                        and its jobs
+  -j JOB, --job JOB     Supply job uuid, print log output from jobs
+</pre>
+</notextile>
+
+h3(#arv-keep). arv keep
+
+@arv keep@ provides access to the Keep storage service.
+
+<notextile>
+<pre>
+$ <code class="userinput">arv keep --help</code>
+Usage: arv keep [method] [--parameters]
+Use 'arv keep [method] --help' to get more information about specific methods.
+
+Available methods: ls, get, put, less, check, docker
+</pre>
+</notextile>
+
+h3(#arv-pipeline-run). arv pipeline run
+
+@arv pipeline run@ can be used to start a pipeline run from the command line.
+
+The User Guide has a page with a bit more information on "using arv pipeline run":{{site.baseurl}}/user/topics/running-pipeline-command-line.html.
+
+<notextile>
+<pre>
+$ <code class="userinput">arv pipeline run --help</code>
+Options:
+        --dry-run, -n:   Do not start any new jobs or wait for existing jobs to
+                         finish. Just find out whether jobs are finished,
+                         queued, or running for each component.
+    --status-text &lt;s&gt;:   Store plain text status in given file. (Default:
+                         /dev/stdout)
+    --status-json &lt;s&gt;:   Store json-formatted pipeline in given file. (Default:
+                         /dev/null)
+            --no-wait:   Do not wait for jobs to finish. Just look up status,
+                         submit new jobs if needed, and exit.
+           --no-reuse:   Do not reuse existing jobs to satisfy pipeline
+                         components. Submit a new job for every component.
+          --debug, -d:   Print extra debugging information on stderr.
+    --debug-level &lt;i&gt;:   Set debug verbosity level.
+       --template &lt;s&gt;:   UUID of pipeline template, or path to local pipeline
+                         template file.
+       --instance &lt;s&gt;:   UUID of pipeline instance.
+             --submit:   Submit the pipeline instance to the server, and exit.
+                         Let the Crunch dispatch service satisfy the components
+                         by finding/running jobs.
+  --run-pipeline-here:   Manage the pipeline instance in-process. Submit jobs
+                         to Crunch as needed. Do not exit until the pipeline
+                         finishes (or fails).
+      --run-jobs-here:   Run jobs in the local terminal session instead of
+                         submitting them to Crunch. Implies
+                         --run-pipeline-here. Note: this results in a
+                         significantly different job execution environment, and
+                         some Crunch features are not supported. It can be
+                         necessary to modify a pipeline in order to make it run
+                         this way.
+           --run-here:   Synonym for --run-jobs-here.
+    --description &lt;s&gt;:   Description for the pipeline instance.
+        --version, -v:   Print version and exit
+           --help, -h:   Show this message
+</pre>
+</notextile>
+
+h3(#arv-run). arv run
+
+The @arv-run@ command creates Arvados pipelines at the command line that fan out to multiple concurrent tasks across Arvado compute nodes.
+
+The User Guide has a page on "using arv-run":{{site.baseurl}}/user/topics/arv-run.html.
+
+<notextile>
+<pre>
+$ <code class="userinput">arv run --help</code>
+usage: arv-run [-h] [--retries RETRIES] [--dry-run] [--local]
+               [--docker-image DOCKER_IMAGE] [--ignore-rcode] [--no-reuse]
+               [--no-wait] [--project-uuid PROJECT_UUID] [--git-dir GIT_DIR]
+               [--repository REPOSITORY] [--script-version SCRIPT_VERSION]
+               ...
+
+positional arguments:
+  args
+
+optional arguments:
+  -h, --help            show this help message and exit
+  --retries RETRIES     Maximum number of times to retry server requests that
+                        encounter temporary failures (e.g., server down).
+                        Default 3.
+  --dry-run             Print out the pipeline that would be submitted and
+                        exit
+  --local               Run locally using arv-run-pipeline-instance
+  --docker-image DOCKER_IMAGE
+                        Docker image to use, default arvados/jobs
+  --ignore-rcode        Commands that return non-zero return codes should not
+                        be considered failed.
+  --no-reuse            Do not reuse past jobs.
+  --no-wait             Do not wait and display logs after submitting command,
+                        just exit.
+  --project-uuid PROJECT_UUID
+                        Parent project of the pipeline
+  --git-dir GIT_DIR     Git repository passed to arv-crunch-job when using
+                        --local
+  --repository REPOSITORY
+                        repository field of component, default 'arvados'
+  --script-version SCRIPT_VERSION
+                        script_version field of component, default 'master'
+</pre>
+</notextile>
+
