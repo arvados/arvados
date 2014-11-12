@@ -1,8 +1,6 @@
 package keepclient
 
 import (
-	"crypto/md5"
-	"fmt"
 	"sort"
 )
 
@@ -29,14 +27,12 @@ func NewRootSorter(serviceRoots map[string]string, hash string) (*RootSorter) {
 }
 
 func (rs RootSorter) getWeight(hash string, uuid string) (string) {
-	var service_key []byte
 	if len(uuid) == 27 {
-		service_key = []byte(hash + uuid[12:])
+		return Md5String(hash + uuid[12:])
 	} else {
 		// Only useful for testing, a set of one service root, etc.
-		service_key = []byte(hash + uuid)
+		return Md5String(hash + uuid)
 	}
-	return fmt.Sprintf("%x", md5.Sum(service_key))
 }
 
 func (rs RootSorter) GetSortedRoots() ([]string) {
