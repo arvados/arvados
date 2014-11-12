@@ -2,7 +2,7 @@
    uuid_map = {}
    if @share_links
      [User, Group].each do |type|
-       type.limit(10000)
+       type
          .filter([['uuid','in',@share_links.collect(&:tail_uuid)]])
          .each do |o|
          uuid_map[o.uuid] = o
@@ -40,7 +40,6 @@
       by_project: false,
       preview_pane: false,
       multiple: true,
-      limit: 10000,
       filters: choose_filters[share_class].to_json,
       action_method: 'post',
       action_href: share_with_project_path,

@@ -345,6 +345,64 @@ class KeepClientServiceTestCase(unittest.TestCase):
         self.assertEqual('100::1', service.hostname)
         self.assertEqual(10, service.port)
 
+    # test_get_timeout and test_put_timeout test that
+    # KeepClient.get and KeepClient.put use the appropriate timeouts
+    # when connected directly to a Keep server (i.e. non-proxy timeout)
+
+    def test_get_timeout(self):
+        api_client = self.mock_keep_services(('keep', 10, False, 'disk'))
+        keep_client = arvados.KeepClient(api_client=api_client)
+        force_timeout = [socket.timeout("timed out")]
+        with mock.patch('requests.get', side_effect=force_timeout) as mock_request:
+            with self.assertRaises(arvados.errors.KeepReadError):
+                keep_client.get('ffffffffffffffffffffffffffffffff')
+            self.assertTrue(mock_request.called)
+            self.assertEqual(
+                arvados.KeepClient.DEFAULT_TIMEOUT,
+                mock_request.call_args[1]['timeout'])
+
+    def test_put_timeout(self):
+        api_client = self.mock_keep_services(('keep', 10, False, 'disk'))
+        keep_client = arvados.KeepClient(api_client=api_client)
+        force_timeout = [socket.timeout("timed out")]
+        with mock.patch('requests.put', side_effect=force_timeout) as mock_request:
+            with self.assertRaises(arvados.errors.KeepWriteError):
+                keep_client.put('foo')
+            self.assertTrue(mock_request.called)
+            self.assertEqual(
+                arvados.KeepClient.DEFAULT_TIMEOUT,
+                mock_request.call_args[1]['timeout'])
+
+    def test_proxy_get_timeout(self):
+        # Force a timeout, verifying that the requests.get or
+        # requests.put method was called with the proxy_timeout
+        # setting rather than the default timeout.
+        api_client = self.mock_keep_services(('keep', 10, False, 'proxy'))
+        keep_client = arvados.KeepClient(api_client=api_client)
+        force_timeout = [socket.timeout("timed out")]
+        with mock.patch('requests.get', side_effect=force_timeout) as mock_request:
+            with self.assertRaises(arvados.errors.KeepReadError):
+                keep_client.get('ffffffffffffffffffffffffffffffff')
+            self.assertTrue(mock_request.called)
+            self.assertEqual(
+                arvados.KeepClient.DEFAULT_PROXY_TIMEOUT,
+                mock_request.call_args[1]['timeout'])
+
+    def test_proxy_put_timeout(self):
+        # Force a timeout, verifying that the requests.get or
+        # requests.put method was called with the proxy_timeout
+        # setting rather than the default timeout.
+        api_client = self.mock_keep_services(('keep', 10, False, 'proxy'))
+        keep_client = arvados.KeepClient(api_client=api_client)
+        force_timeout = [socket.timeout("timed out")]
+        with mock.patch('requests.put', side_effect=force_timeout) as mock_request:
+            with self.assertRaises(arvados.errors.KeepWriteError):
+                keep_client.put('foo')
+            self.assertTrue(mock_request.called)
+            self.assertEqual(
+                arvados.KeepClient.DEFAULT_PROXY_TIMEOUT,
+                mock_request.call_args[1]['timeout'])
+
 
 class KeepClientRetryTestMixin(object):
     # Testing with a local Keep store won't exercise the retry behavior.
@@ -357,6 +415,10 @@ class KeepClientRetryTestMixin(object):
     # supporting servers, and prevents side effects in case something hiccups.
     # To use this mixin, define DEFAULT_EXPECT, DEFAULT_EXCEPTION, and
     # run_method().
+    #
+    # Test classes must define TEST_PATCHER to a method that mocks
+    # out appropriate methods in the client.
+
     PROXY_ADDR = 'http://[%s]:65535/' % (tutil.TEST_HOST,)
     TEST_DATA = 'testdata'
     TEST_LOCATOR = 'ef654c40ab4f1747fc699915d4f70902+8'
@@ -383,28 +445,28 @@ class KeepClientRetryTestMixin(object):
         self.assertRaises(error_class, self.run_method, *args, **kwargs)
 
     def test_immediate_success(self):
-        with tutil.mock_responses(self.DEFAULT_EXPECT, 200):
+        with self.TEST_PATCHER(self.DEFAULT_EXPECT, 200):
             self.check_success()
 
     def test_retry_then_success(self):
-        with tutil.mock_responses(self.DEFAULT_EXPECT, 500, 200):
+        with self.TEST_PATCHER(self.DEFAULT_EXPECT, 500, 200):
             self.check_success(num_retries=3)
 
     def test_no_default_retry(self):
-        with tutil.mock_responses(self.DEFAULT_EXPECT, 500, 200):
+        with self.TEST_PATCHER(self.DEFAULT_EXPECT, 500, 200):
             self.check_exception()
 
     def test_no_retry_after_permanent_error(self):
-        with tutil.mock_responses(self.DEFAULT_EXPECT, 403, 200):
+        with self.TEST_PATCHER(self.DEFAULT_EXPECT, 403, 200):
             self.check_exception(num_retries=3)
 
     def test_error_after_retries_exhausted(self):
-        with tutil.mock_responses(self.DEFAULT_EXPECT, 500, 500, 200):
+        with self.TEST_PATCHER(self.DEFAULT_EXPECT, 500, 500, 200):
             self.check_exception(num_retries=1)
 
     def test_num_retries_instance_fallback(self):
         self.client_kwargs['num_retries'] = 3
-        with tutil.mock_responses(self.DEFAULT_EXPECT, 500, 200):
+        with self.TEST_PATCHER(self.DEFAULT_EXPECT, 500, 200):
             self.check_success()
 
 
@@ -413,13 +475,14 @@ class KeepClientRetryGetTestCase(KeepClientRetryTestMixin, unittest.TestCase):
     DEFAULT_EXPECT = KeepClientRetryTestMixin.TEST_DATA
     DEFAULT_EXCEPTION = arvados.errors.KeepReadError
     HINTED_LOCATOR = KeepClientRetryTestMixin.TEST_LOCATOR + '+K@xyzzy'
+    TEST_PATCHER = staticmethod(tutil.mock_get_responses)
 
     def run_method(self, locator=KeepClientRetryTestMixin.TEST_LOCATOR,
                    *args, **kwargs):
         return self.new_client().get(locator, *args, **kwargs)
 
     def test_specific_exception_when_not_found(self):
-        with tutil.mock_responses(self.DEFAULT_EXPECT, 404, 200):
+        with tutil.mock_get_responses(self.DEFAULT_EXPECT, 404, 200):
             self.check_exception(arvados.errors.NotFoundError, num_retries=3)
 
     def test_general_exception_with_mixed_errors(self):
@@ -428,7 +491,7 @@ class KeepClientRetryGetTestCase(KeepClientRetryTestMixin, unittest.TestCase):
         # This test rigs up 50/50 disagreement between two servers, and
         # checks that it does not become a NotFoundError.
         client = self.new_client()
-        with tutil.mock_responses(self.DEFAULT_EXPECT, 404, 500):
+        with tutil.mock_get_responses(self.DEFAULT_EXPECT, 404, 500):
             with self.assertRaises(arvados.errors.KeepReadError) as exc_check:
                 client.get(self.HINTED_LOCATOR)
             self.assertNotIsInstance(
@@ -436,21 +499,21 @@ class KeepClientRetryGetTestCase(KeepClientRetryTestMixin, unittest.TestCase):
                 "mixed errors raised NotFoundError")
 
     def test_hint_server_can_succeed_without_retries(self):
-        with tutil.mock_responses(self.DEFAULT_EXPECT, 404, 200, 500):
+        with tutil.mock_get_responses(self.DEFAULT_EXPECT, 404, 200, 500):
             self.check_success(locator=self.HINTED_LOCATOR)
 
     def test_try_next_server_after_timeout(self):
         side_effects = [
             socket.timeout("timed out"),
-            (tutil.fake_httplib2_response(200), self.DEFAULT_EXPECT)]
-        with mock.patch('httplib2.Http.request',
+            tutil.fake_requests_response(200, self.DEFAULT_EXPECT)]
+        with mock.patch('requests.get',
                         side_effect=iter(side_effects)):
             self.check_success(locator=self.HINTED_LOCATOR)
 
     def test_retry_data_with_wrong_checksum(self):
-        side_effects = ((tutil.fake_httplib2_response(200), s)
+        side_effects = (tutil.fake_requests_response(200, s)
                         for s in ['baddata', self.TEST_DATA])
-        with mock.patch('httplib2.Http.request', side_effect=side_effects):
+        with mock.patch('requests.get', side_effect=side_effects):
             self.check_success(locator=self.HINTED_LOCATOR)
 
 
@@ -458,11 +521,12 @@ class KeepClientRetryGetTestCase(KeepClientRetryTestMixin, unittest.TestCase):
 class KeepClientRetryPutTestCase(KeepClientRetryTestMixin, unittest.TestCase):
     DEFAULT_EXPECT = KeepClientRetryTestMixin.TEST_LOCATOR
     DEFAULT_EXCEPTION = arvados.errors.KeepWriteError
+    TEST_PATCHER = staticmethod(tutil.mock_put_responses)
 
     def run_method(self, data=KeepClientRetryTestMixin.TEST_DATA,
                    copies=1, *args, **kwargs):
         return self.new_client().put(data, copies, *args, **kwargs)
 
     def test_do_not_send_multiple_copies_to_same_server(self):
-        with tutil.mock_responses(self.DEFAULT_EXPECT, 200):
+        with tutil.mock_put_responses(self.DEFAULT_EXPECT, 200):
             self.check_exception(copies=2, num_retries=3)

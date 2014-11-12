@@ -8,33 +8,76 @@ class ResourceListTest < ActiveSupport::TestCase
     assert_equal [], results.links_for(api_fixture('users')['active']['uuid'])
   end
 
-  test 'links_for returns all link classes (simulated results)' do
-    project_uuid = api_fixture('groups')['aproject']['uuid']
-    specimen_uuid = api_fixture('specimens')['in_aproject']['uuid']
-    api_response = {
-      kind: 'arvados#specimenList',
-      links: [{kind: 'arvados#link',
-                uuid: 'zzzzz-o0j2j-asdfasdfasdfas1',
-                tail_uuid: project_uuid,
-                head_uuid: specimen_uuid,
-                link_class: 'foo',
-                name: 'Bob'},
-              {kind: 'arvados#link',
-                uuid: 'zzzzz-o0j2j-asdfasdfasdfas2',
-                tail_uuid: project_uuid,
-                head_uuid: specimen_uuid,
-                link_class: nil,
-                name: 'Clydesdale'}],
-      items: [{kind: 'arvados#specimen',
-                uuid: specimen_uuid}]
-    }
-    arl = ArvadosResourceList.new
-    arl.results = ArvadosApiClient.new.unpack_api_response(api_response)
-    assert_equal(['foo', nil],
-                 (arl.
-                  links_for(specimen_uuid).
-                  collect { |x| x.link_class }),
-                 "Expected links_for to return all link_classes")
+  test 'get all items by default' do
+    use_token :admin
+    a = 0
+    Collection.where(owner_uuid: 'zzzzz-j7d0g-0201collections').each do
+      a += 1
+    end
+    assert_equal 201, a
+  end
+
+  test 'prefetch all items' do
+    use_token :admin
+    a = 0
+    Collection.where(owner_uuid: 'zzzzz-j7d0g-0201collections').each do
+      a += 1
+    end
+    assert_equal 201, a
+  end
+
+  test 'get limited items' do
+    use_token :admin
+    a = 0
+    Collection.where(owner_uuid: 'zzzzz-j7d0g-0201collections').limit(51).each do
+      a += 1
+    end
+    assert_equal 51, a
+  end
+
+  test 'get limited items, limit % page_size != 0' do
+    skip "Requires server MAX_LIMIT < 200 which is not currently the default"
+
+    use_token :admin
+    max_page_size = Collection.
+      where(owner_uuid: 'zzzzz-j7d0g-0201collections').
+      limit(1000000000).
+      fetch_multiple_pages(false).
+      count
+    # Conditions necessary for this test to be valid:
+    assert_operator 200, :>, max_page_size
+    assert_operator 1, :<, max_page_size
+    # Verify that the server really sends max_page_size when asked for max_page_size+1
+    assert_equal max_page_size, Collection.
+      where(owner_uuid: 'zzzzz-j7d0g-0201collections').
+      limit(max_page_size+1).
+      fetch_multiple_pages(false).
+      results.
+      count
+    # Now that we know the max_page_size+1 is in the middle of page 2,
+    # make sure #each returns page 1 and only the requested part of
+    # page 2.
+    a = 0
+    saw_uuid = {}
+    Collection.where(owner_uuid: 'zzzzz-j7d0g-0201collections').limit(max_page_size+1).each do |item|
+      a += 1
+      saw_uuid[item.uuid] = true
+    end
+    assert_equal max_page_size+1, a
+    # Ensure no overlap between pages
+    assert_equal max_page_size+1, saw_uuid.size
+  end
+
+  test 'get single page of items' do
+    use_token :admin
+    a = 0
+    c = Collection.where(owner_uuid: 'zzzzz-j7d0g-0201collections').fetch_multiple_pages(false)
+    c.each do
+      a += 1
+    end
+
+    assert_operator a, :<, 201
+    assert_equal c.result_limit, a
   end
 
 end
