@@ -1,20 +1,9 @@
-import gflags
-import os
-import pprint
-import sys
-import types
-import subprocess
-import json
-import UserDict
-import re
-import hashlib
-import string
 import bz2
-import zlib
-import fcntl
-import time
-import threading
 import collections
+import hashlib
+import os
+import re
+import zlib
 
 from arvados.retry import retry_method
 from keep import *
@@ -193,7 +182,7 @@ class StreamFileReader(object):
             data += newdata
             sol = 0
             while True:
-                eol = string.find(data, "\n", sol)
+                eol = data.find("\n", sol)
                 if eol < 0:
                     break
                 yield data[sol:eol+1]
