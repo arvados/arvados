@@ -39,7 +39,7 @@ func (*RootSorterSuite) JustOneRoot(c *C) {
 func (*RootSorterSuite) ReferenceSet(c *C) {
 	fakeroots := FakeServiceRoots(16)
 	// These reference probe orders are explained further in
-	// ../../python/arvados/keep.py:
+	// ../../python/tests/test_keep_client.py:
 	expected_orders := []string{
 		"3eab2d5fc9681074",
 		"097dba52e648f1c3",
