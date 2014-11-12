@@ -94,7 +94,7 @@ class NodeManagerDaemonActor(actor_class):
     def __init__(self, server_wishlist_actor, arvados_nodes_actor,
                  cloud_nodes_actor, cloud_update_actor, timer_actor,
                  arvados_factory, cloud_factory,
-                 shutdown_windows, max_nodes,
+                 shutdown_windows, min_nodes, max_nodes,
                  poll_stale_after=600, node_stale_after=7200,
                  node_setup_class=cnode.ComputeNodeSetupActor,
                  node_shutdown_class=cnode.ComputeNodeShutdownActor,
@@ -111,6 +111,7 @@ class NodeManagerDaemonActor(actor_class):
         self._logger = logging.getLogger('arvnodeman.daemon')
         self._later = self.actor_ref.proxy()
         self.shutdown_windows = shutdown_windows
+        self.min_nodes = min_nodes
         self.max_nodes = max_nodes
         self.poll_stale_after = poll_stale_after
         self.node_stale_after = node_stale_after
@@ -187,20 +188,28 @@ class NodeManagerDaemonActor(actor_class):
                     self._pair_nodes(cloud_rec, arv_node)
                     break
 
-    def _node_count(self):
+    def _nodes_up(self):
         up = sum(len(nodelist) for nodelist in
                  [self.cloud_nodes, self.booted, self.booting])
         return up - len(self.shutdowns)
 
+    def _nodes_busy(self):
+        return sum(1 for idle in
+                   pykka.get_all(rec.actor.in_state('idle') for rec in
+                                 self.cloud_nodes.nodes.itervalues())
+                   if idle is False)
+
     def _nodes_wanted(self):
-        return len(self.last_wishlist) - self._node_count()
+        return min(len(self.last_wishlist) + self._nodes_busy(),
+                   self.max_nodes) - self._nodes_up()
 
     def _nodes_excess(self):
-        return -self._nodes_wanted()
+        needed_nodes = self._nodes_busy() + len(self.last_wishlist)
+        return (self._nodes_up() - max(self.min_nodes, needed_nodes))
 
     def update_server_wishlist(self, wishlist):
         self._update_poll_time('server_wishlist')
-        self.last_wishlist = wishlist[:self.max_nodes]
+        self.last_wishlist = wishlist
         nodes_wanted = self._nodes_wanted()
         if nodes_wanted > 0:
             self._later.start_node()

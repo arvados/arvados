@@ -39,12 +39,14 @@ setup(name='arvados-python-client',
         'bin/arv-ls',
         'bin/arv-normalize',
         'bin/arv-put',
-        'bin/arv-ws',
+        'bin/arv-run',
+        'bin/arv-ws'
         ],
       install_requires=[
         'python-gflags',
         'google-api-python-client',
         'httplib2',
+        'requests>=2.4',
         'urllib3',
         'ws4py'
         ],

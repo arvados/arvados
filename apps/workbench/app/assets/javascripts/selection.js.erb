@@ -183,7 +183,7 @@ function dispatch_selection_action() {
     }
     $(this).
         closest('.selection-action-container').
-        find(':checkbox:checked').
+        find(':checkbox:checked:visible').
         each(function() {
             data.push({name: param_name, value: $(this).val()});
         });

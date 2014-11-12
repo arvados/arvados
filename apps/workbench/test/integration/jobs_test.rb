@@ -54,7 +54,7 @@ class JobsTest < ActionDispatch::IntegrationTest
     assert page.has_text? 'log message 1'
     assert page.has_text? 'log message 2'
     assert page.has_text? 'log message 3'
-    refute page.has_text? 'Showing only 100 bytes of this log'
+    assert page.has_no_text? 'Showing only 100 bytes of this log'
   end
 
   test 'view partial job log' do

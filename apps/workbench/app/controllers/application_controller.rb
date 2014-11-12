@@ -400,12 +400,17 @@ class ApplicationController < ActionController::Base
     false  # For convenience to return from callbacks
   end
 
-  def using_specific_api_token(api_token)
+  def using_specific_api_token(api_token, opts={})
     start_values = {}
     [:arvados_api_token, :user].each do |key|
       start_values[key] = Thread.current[key]
     end
-    load_api_token(api_token)
+    if opts.fetch(:load_user, true)
+      load_api_token(api_token)
+    else
+      Thread.current[:arvados_api_token] = api_token
+      Thread.current[:user] = nil
+    end
     begin
       yield
     ensure
@@ -831,6 +836,12 @@ class ApplicationController < ActionController::Base
     crumbs = []
     current = @name_link || @object
     while current
+      # Halt if a group ownership loop is detected. API should refuse
+      # to produce this state, but it could still arise from a race
+      # condition when group ownership changes between our find()
+      # queries.
+      break if crumbs.collect(&:uuid).include? current.uuid
+
       if current.is_a?(Group) and current.group_class == 'project'
         crumbs.prepend current
       end

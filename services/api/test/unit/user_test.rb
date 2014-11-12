@@ -9,6 +9,82 @@ class UserTest < ActiveSupport::TestCase
     system_user
   end
 
+  [[false, 'foo@example.com', true, nil],
+   [false, 'bar@example.com', nil, true],
+   [true, 'foo@example.com', true, nil],
+   [true, 'bar@example.com', true, true],
+   [false, false, nil, nil],
+   [true, false, true, nil]
+  ].each do |auto_admin_first_user_config, auto_admin_user_config, foo_should_be_admin, bar_should_be_admin|
+    # In each case, 'foo' is created first, then 'bar', then 'bar2', then 'baz'.
+    test "auto admin with auto_admin_first=#{auto_admin_first_user_config} auto_admin=#{auto_admin_user_config}" do
+
+      if auto_admin_first_user_config
+        # This test requires no admin users exist (except for the system user)
+        users(:admin).delete
+        @all_users = User.where("uuid not like '%-000000000000000'").where(:is_admin => true).find(:all)
+        assert_equal 0, @all_users.size, "No admin users should exist (except for the system user)"
+      end
+
+      Rails.configuration.auto_admin_first_user = auto_admin_first_user_config
+      Rails.configuration.auto_admin_user = auto_admin_user_config
+
+      # See if the foo user has is_admin
+      foo = User.new
+      foo.first_name = 'foo'
+      foo.email = 'foo@example.com'
+
+      act_as_system_user do
+        foo.save!
+      end
+
+      foo = User.find(foo.id)   # get the user back
+      assert_equal foo_should_be_admin, foo.is_admin, "is_admin is wrong for user foo"
+      assert_equal 'foo', foo.first_name
+
+      # See if the bar user has is_admin
+      bar = User.new
+      bar.first_name = 'bar'
+      bar.email = 'bar@example.com'
+
+      act_as_system_user do
+        bar.save!
+      end
+
+      bar = User.find(bar.id)   # get the user back
+      assert_equal bar_should_be_admin, bar.is_admin, "is_admin is wrong for user bar"
+      assert_equal 'bar', bar.first_name
+
+      # A subsequent user with the bar@example.com address should never be
+      # elevated to admin
+      bar2 = User.new
+      bar2.first_name = 'bar2'
+      bar2.email = 'bar@example.com'
+
+      act_as_system_user do
+        bar2.save!
+      end
+
+      bar2 = User.find(bar2.id)   # get the user back
+      assert !bar2.is_admin, "is_admin is wrong for user bar2"
+      assert_equal 'bar2', bar2.first_name
+
+      # An ordinary new user should not be elevated to admin
+      baz = User.new
+      baz.first_name = 'baz'
+      baz.email = 'baz@example.com'
+
+      act_as_system_user do
+        baz.save!
+      end
+
+      baz = User.find(baz.id)   # get the user back
+      assert !baz.is_admin
+      assert_equal 'baz', baz.first_name
+
+    end
+  end
+
   test "check non-admin active user properties" do
     @active_user = users(:active)     # get the active user
     assert !@active_user.is_admin, 'is_admin should not be set for a non-admin user'

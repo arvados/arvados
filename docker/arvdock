@@ -318,16 +318,18 @@ function do_start {
 
     if [[ $start_api != false ]]
     then
-        if [ -d $HOME/.config/arvados ] || mkdir -p $HOME/.config/arvados
+        if [[ -f "api/generated/superuser_token" ]]
         then
+          if [ -d $HOME/.config/arvados ] || mkdir -p $HOME/.config/arvados
+          then
             cat >$HOME/.config/arvados/settings.conf <<EOF
 ARVADOS_API_HOST=$(ip_address "api_server")
 ARVADOS_API_HOST_INSECURE=yes
 ARVADOS_API_TOKEN=$(cat api/generated/superuser_token)
 EOF
+          fi
         fi
     fi
-
 }
 
 function do_stop {
