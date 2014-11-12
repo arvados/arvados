@@ -92,29 +92,6 @@ func (s *ServerRequiredSuite) TestMakeKeepClient(c *C) {
 	}
 }
 
-func (s *StandaloneSuite) TestShuffleServiceRoots(c *C) {
-	roots := map[string]string{
-		"zzzzz-bi6l4-2q7dq8becevdqfb": "http://localhost:1",
-		"zzzzz-bi6l4-4gbhck2w7lq0d96": "http://localhost:2",
-		"zzzzz-bi6l4-4bt69dsk0quh7ae": "http://localhost:3",
-		"zzzzz-bi6l4-62w1fgd0ud2krxl": "http://localhost:4",
-	}
-	kc := KeepClient{}
-	kc.SetServiceRoots(roots)
-
-	// "foo" acbd18db4cc2f85cedef654fccc4a4d8
-	foo_shuffle := []string{"http://localhost:4", "http://localhost:1", "http://localhost:3", "http://localhost:2"}
-	c.Check(NewRootSorter(
-		kc.ServiceRoots(), Md5String("foo")).GetSortedRoots(),
-		DeepEquals, foo_shuffle)
-
-	// "bar" 37b51d194a7513e45b56f6524f2d51f2
-	bar_shuffle := []string{"http://localhost:3", "http://localhost:2", "http://localhost:4", "http://localhost:1"}
-	c.Check(NewRootSorter(
-		kc.ServiceRoots(), Md5String("bar")).GetSortedRoots(),
-		DeepEquals, bar_shuffle)
-}
-
 type StubPutHandler struct {
 	c              *C
 	expectPath     string
