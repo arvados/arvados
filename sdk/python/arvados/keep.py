@@ -517,16 +517,16 @@ class KeepClient(object):
                     r['service_port'])
             _logger.debug(str(self._keep_services))
 
-    def _service_weight(self, hash, service_uuid):
+    def _service_weight(self, data_hash, service_uuid):
         """Compute the weight of a Keep service endpoint for a data
         block with a known hash.
 
         The weight is md5(h + u) where u is the last 15 characters of
         the service endpoint's UUID.
         """
-        return hashlib.md5(hash + service_uuid[-15:]).hexdigest()
+        return hashlib.md5(data_hash + service_uuid[-15:]).hexdigest()
 
-    def weighted_service_roots(self, hash, force_rebuild=False):
+    def weighted_service_roots(self, data_hash, force_rebuild=False):
         """Return an array of Keep service endpoints, in the order in
         which they should be probed when reading or writing data with
         the given hash.
@@ -534,14 +534,14 @@ class KeepClient(object):
         self.build_services_list(force_rebuild)
 
         # Sort the available services by weight (heaviest first) for
-        # this hash, and return their service_roots (base URIs) in
-        # that order.
+        # this data_hash, and return their service_roots (base URIs)
+        # in that order.
         sorted_roots = [
             svc['_service_root'] for svc in sorted(
                 self._keep_services,
                 reverse=True,
-                key=lambda svc: self._service_weight(hash, svc['uuid']))]
-        _logger.debug(hash + ': ' + str(sorted_roots))
+                key=lambda svc: self._service_weight(data_hash, svc['uuid']))]
+        _logger.debug(data_hash + ': ' + str(sorted_roots))
         return sorted_roots
 
     def map_new_services(self, roots_map, md5_s, force_rebuild, **headers):
