@@ -31,7 +31,7 @@ module SimulateJobLog
 		        	event_at:    Time.zone.local_to_utc(cols[:timestamp]),
 		        	object_uuid: cols[:job_uuid],
 		        	event_type:  cols[:event_type],
-		        	properties:  { 'text' => cols[:message] }
+		        	properties:  { 'text' => line }
 		        }).save!
 			end
 		end
