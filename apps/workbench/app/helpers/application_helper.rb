@@ -287,7 +287,7 @@ module ApplicationHelper
          preconfigured_search_str: (preconfigured_search_str || ""),
          action_data: {
            merge: true,
-           use_checkbox_selection: dataclass == File ? true : nil,
+           use_preview_selection: dataclass == File ? true : nil,
            selection_param: selection_param,
            success: 'page-refresh'
          }.to_json,
@@ -449,10 +449,10 @@ module ApplicationHelper
     end
   end
 
-  def chooser_preview_url_for object, use_checkbox_selection=false
+  def chooser_preview_url_for object, use_preview_selection=false
     case object.class.to_s
     when 'Collection'
-      polymorphic_path(object, tab_pane: 'chooser_preview', use_checkbox_selection: use_checkbox_selection)
+      polymorphic_path(object, tab_pane: 'chooser_preview', use_preview_selection: use_preview_selection)
     else
       nil
     end

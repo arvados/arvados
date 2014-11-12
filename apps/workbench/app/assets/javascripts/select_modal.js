@@ -9,16 +9,18 @@ $(document).on('click', '.selectable', function() {
     }
     $this.toggleClass('active');
 
-    if (!$this.hasClass('use-checkbox-selection')) {
+    if (!$this.hasClass('use-preview-selection')) {
       any = ($container.
            find('.selectable.active').length > 0)
     }
-    $this.
+
+    if (!$container.hasClass('preview-selectable-container')) {
+      $this.
         closest('.modal').
         find('[data-enable-if-selection]').
         prop('disabled', !any);
 
-    if ($this.hasClass('active')) {
+      if ($this.hasClass('active')) {
         var no_preview_available = '<div class="spinner-h-center spinner-v-center"><center>(No preview available)</center></div>';
         if (!$this.attr('data-preview-href')) {
             $(".modal-dialog-preview-pane").html(no_preview_available);
@@ -33,21 +35,16 @@ $(document).on('click', '.selectable', function() {
             fail(function(data, status, jqxhr) {
                 $(".modal-dialog-preview-pane").html(no_preview_available);
             });
+      }
+    } else {
+      any = ($container.
+           find('.preview-selectable.active').length > 0)
+      $(this).
+          closest('.modal').
+          find('[data-enable-if-selection]').
+          prop('disabled', !any);
     }
-}).on('click', '.persistent-selection', function() {
-    var checked_status = this.checked;
-    var $modal = $(this).closest('.modal');
-    $checked_selections = $modal.find('.persistent-selection:checked');
 
-    if (checked_status && ($checked_selections.length > 1)) {
-      $(this).prop('checked', false);
-    }
-
-    any = ($checked_selections.length > 0);
-    $(this).
-        closest('.modal').
-        find('[data-enable-if-selection]').
-        prop('disabled', !any);
 }).on('click', '.modal button[data-action-href]', function() {
     var selection = [];
     var data = [];
@@ -57,14 +54,12 @@ $(document).on('click', '.selectable', function() {
     var selection_param = action_data.selection_param;
     $modal.find('.modal-error').removeClass('hide').hide();
 
-    $checked_selections = $modal.find('.persistent-selection:checked');
-    if ($checked_selections) {
-      $checked_selections.each(function() {
-          data.push({name: selection_param, value: $(this).attr('value')});
-      });
+    var $preview_selections = $modal.find('.preview-selectable.active');
+    if ($preview_selections) {
+      data.push({name: selection_param, value: $preview_selections.first().children('fa-file').prop('title')});
     }
 
-    if (data.length == 0) {   // no checked persistent selection
+    if (data.length == 0) {   // no preview selection option
       $modal.find('.selectable.active[data-object-uuid]').each(function() {
         var val = $(this).attr('data-object-uuid');
         data.push({name: selection_param, value: val});
