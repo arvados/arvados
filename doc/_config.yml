@@ -69,6 +69,8 @@ navbar:
       - sdk/go/index.html.textile.liquid
     - CLI:
       - sdk/cli/index.html.textile.liquid
+      - sdk/cli/install.html.textile.liquid
+      - sdk/cli/subcommands.html.textile.liquid
   api:
     - Concepts:
       - api/index.html.textile.liquid

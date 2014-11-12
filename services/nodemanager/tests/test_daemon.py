@@ -15,7 +15,7 @@ from . import testutil
 class NodeManagerDaemonActorTestCase(testutil.ActorTestMixin,
                                      unittest.TestCase):
     def make_daemon(self, cloud_nodes=[], arvados_nodes=[], want_sizes=[],
-                    max_nodes=8):
+                    min_nodes=0, max_nodes=8):
         for name in ['cloud_nodes', 'arvados_nodes', 'server_wishlist']:
             setattr(self, name + '_poller', mock.MagicMock(name=name + '_mock'))
         self.arv_factory = mock.MagicMock(name='arvados_mock')
@@ -29,7 +29,7 @@ class NodeManagerDaemonActorTestCase(testutil.ActorTestMixin,
             self.server_wishlist_poller, self.arvados_nodes_poller,
             self.cloud_nodes_poller, self.cloud_updates, self.timer,
             self.arv_factory, self.cloud_factory,
-            [54, 5, 1], max_nodes, 600, 3600,
+            [54, 5, 1], min_nodes, max_nodes, 600, 3600,
             self.node_setup, self.node_shutdown).proxy()
         if cloud_nodes is not None:
             self.daemon.update_cloud_nodes(cloud_nodes).get(self.TIMEOUT)
@@ -221,6 +221,15 @@ class NodeManagerDaemonActorTestCase(testutil.ActorTestMixin,
         cloud_node = testutil.cloud_node_mock(1)
         size = testutil.MockSize(1)
         self.make_daemon(cloud_nodes=[cloud_node], want_sizes=[size])
+        self.assertEqual(1, self.alive_monitor_count())
+        monitor = self.monitor_list()[0].proxy()
+        self.daemon.node_can_shutdown(monitor).get(self.TIMEOUT)
+        self.stop_proxy(self.daemon)
+        self.assertFalse(self.node_shutdown.start.called)
+
+    def test_shutdown_declined_below_min_nodes(self):
+        cloud_node = testutil.cloud_node_mock(1)
+        self.make_daemon(cloud_nodes=[cloud_node], min_nodes=1)
         self.assertEqual(1, self.alive_monitor_count())
         monitor = self.monitor_list()[0].proxy()
         self.daemon.node_can_shutdown(monitor).get(self.TIMEOUT)
