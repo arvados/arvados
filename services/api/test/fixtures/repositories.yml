@@ -5,7 +5,7 @@ crunch_dispatch_test:
 
 arvados:
   uuid: zzzzz-s0uqq-arvadosrepo0123
-  owner_uuid: zzzzz-j7d0g-fffffffffffffff # all users
+  owner_uuid: zzzzz-tpzed-000000000000000 # root
   name: arvados
 
 foo:
