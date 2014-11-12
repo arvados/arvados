@@ -10,8 +10,8 @@ The @arv@ CLI tool provides access to a number of subcommands which are describe
 
 h3(#arv-create). arv create
 
-@arv create@ can be used to create Arvados objects from the command line. Arv create opens up the editor of your choice (set the EDITOR environment variable) and allows you to type or paste a json or yaml description. When saved the object will be created on the API server, if it passes validation. 
- 
+@arv create@ can be used to create Arvados objects from the command line. Arv create opens up the editor of your choice (set the EDITOR environment variable) and allows you to type or paste a json or yaml description. When saved the object will be created on the API server, if it passes validation.
+
 <notextile>
 <pre>
 $ <code class="userinput">arv create --help</code>
@@ -31,7 +31,7 @@ $ <code class="userinput">arv edit --help</code>
 Arvados command line client
 Usage: arv edit [uuid] [fields...]
 
-Fetch the specified Arvados object, select the specified fields, 
+Fetch the specified Arvados object, select the specified fields,
 open an interactive text editor on a text representation (json or
 yaml, use --format) and then update the object.  Will use 'nano'
 by default, customize with the EDITOR or VISUAL environment variable.
