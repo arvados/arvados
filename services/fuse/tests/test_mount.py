@@ -311,3 +311,36 @@ class FuseHomeTest(MountTestBase):
         d3 = os.listdir(os.path.join(self.mounttmp, 'Unrestricted public data', 'GNU General Public License, version 3'))
         d3.sort()
         self.assertEqual(["GNU_General_Public_License,_version_3.pdf"], d3)
+
+
+class FuseUnitTest(unittest.TestCase):
+    def test_sanitize_filename(self):
+        acceptable = [
+            "foo.txt",
+            ".foo",
+            "..foo",
+            "...",
+            "foo...",
+            "foo..",
+            "foo.",
+            "-",
+            "\x01\x02\x03",
+            ]
+        unacceptable = [
+            "f\00",
+            "\00\00",
+            "/foo",
+            "foo/",
+            "//",
+            ]
+        for f in acceptable:
+            self.assertEqual(f, fuse.sanitize_filename(f))
+        for f in unacceptable:
+            self.assertNotEqual(f, fuse.sanitize_filename(f))
+            # The sanitized filename should be the same length, though.
+            self.assertEqual(len(f), len(fuse.sanitize_filename(f)))
+        # Special cases
+        self.assertEqual("_", fuse.sanitize_filename(""))
+        self.assertEqual("_", fuse.sanitize_filename("."))
+        self.assertEqual("__", fuse.sanitize_filename(".."))
+        self.assertEqual("__", fuse.sanitize_filename(".."))
