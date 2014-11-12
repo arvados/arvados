@@ -147,7 +147,7 @@ do
             leave_temp[GEMHOME]=1
             ;;
         *=*)
-            eval $(echo $arg | cut -d= -f1)=\"$(echo $arg | cut -d= -f2-)\"
+            eval export $(echo $arg | cut -d= -f1)=\"$(echo $arg | cut -d= -f2-)\"
             ;;
         *)
             echo >&2 "$0: Unrecognized option: '$arg'. Try: $0 --help"
