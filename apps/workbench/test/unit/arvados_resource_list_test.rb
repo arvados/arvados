@@ -8,35 +8,6 @@ class ResourceListTest < ActiveSupport::TestCase
     assert_equal [], results.links_for(api_fixture('users')['active']['uuid'])
   end
 
-  test 'links_for returns all link classes (simulated results)' do
-    project_uuid = api_fixture('groups')['aproject']['uuid']
-    specimen_uuid = api_fixture('specimens')['in_aproject']['uuid']
-    api_response = {
-      kind: 'arvados#specimenList',
-      links: [{kind: 'arvados#link',
-                uuid: 'zzzzz-o0j2j-asdfasdfasdfas1',
-                tail_uuid: project_uuid,
-                head_uuid: specimen_uuid,
-                link_class: 'foo',
-                name: 'Bob'},
-              {kind: 'arvados#link',
-                uuid: 'zzzzz-o0j2j-asdfasdfasdfas2',
-                tail_uuid: project_uuid,
-                head_uuid: specimen_uuid,
-                link_class: nil,
-                name: 'Clydesdale'}],
-      items: [{kind: 'arvados#specimen',
-                uuid: specimen_uuid}]
-    }
-    arl = ArvadosResourceList.new
-    arl.results = ArvadosApiClient.new.unpack_api_response(api_response)
-    assert_equal(['foo', nil],
-                 (arl.
-                  links_for(specimen_uuid).
-                  collect { |x| x.link_class }),
-                 "Expected links_for to return all link_classes")
-  end
-
   test 'get all items by default' do
     use_token :admin
     a = 0
@@ -62,6 +33,15 @@ class ResourceListTest < ActiveSupport::TestCase
       a += 1
     end
     assert_equal 51, a
+  end
+
+  test 'get limited items more than default page size' do
+    use_token :admin
+    a = 0
+    Collection.where(owner_uuid: 'zzzzz-j7d0g-0201collections').limit(110).each do
+      a += 1
+    end
+    assert_equal 110, a
   end
 
   test 'get single page of items' do

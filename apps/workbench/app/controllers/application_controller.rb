@@ -257,6 +257,7 @@ class ApplicationController < ActionController::Base
       if params[:partial]
         f.json {
           find_objects_for_index if !@objects
+          @objects.fetch_multiple_pages(false)
           render json: {
             content: render_to_string(partial: "choose_rows.html",
                                       formats: [:html]),

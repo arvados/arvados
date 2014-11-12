@@ -97,7 +97,6 @@ class ArvadosResourceList
     @items_available = r.items_available if r.respond_to? :items_available
     @result_limit = r.limit if r.respond_to? :limit
     @result_offset = r.offset if r.respond_to? :offset
-    @result_links = r.links if r.respond_to? :links
     @results
   end
 
@@ -158,33 +157,9 @@ class ArvadosResourceList
     @result_offset
   end
 
-  def result_links
-    @result_links
-  end
-
-  # Return links provided with API response that point to the
-  # specified object, and have the specified link_class. If link_class
-  # is false or omitted, return all links pointing to the specified
-  # object.
+  # Obsolete method retained during api transition.
   def links_for item_or_uuid, link_class=false
-    return [] if !result_links
-    unless @links_for_uuid
-      @links_for_uuid = {}
-      result_links.each do |link|
-        if link.respond_to? :head_uuid
-          @links_for_uuid[link.head_uuid] ||= []
-          @links_for_uuid[link.head_uuid] << link
-        end
-      end
-    end
-    if item_or_uuid.respond_to? :uuid
-      uuid = item_or_uuid.uuid
-    else
-      uuid = item_or_uuid
-    end
-    (@links_for_uuid[uuid] || []).select do |link|
-      link_class == false or link.link_class == link_class
-    end
+    []
   end
 
   protected
@@ -195,13 +170,15 @@ class ArvadosResourceList
     }
     api_params[:where] = @cond if @cond
     api_params[:eager] = '1' if @eager
-    api_params[:limit] = @limit if @limit
     api_params[:select] = @select if @select
     api_params[:order] = @orderby_spec if @orderby_spec
     api_params[:filters] = @filters if @filters
 
+
     item_count = 0
     offset = @offset || 0
+    @result_limit = nil
+    @result_offset = nil
 
     begin
       api_params[:offset] = offset
@@ -214,16 +191,20 @@ class ArvadosResourceList
 
       break if items.nil? or not items.any?
 
-      @items_available = items.items_available if items.respond_to? :items_available
-      @result_limit = items.limit if items.respond_to? :limit
-      @result_offset = items.offset if items.respond_to? :offset
+      @items_available = items.items_available if items.respond_to?(:items_available)
+      @result_limit = items.limit if (@fetch_multiple_pages == false) and items.respond_to?(:limit)
+      @result_offset = items.offset if (@fetch_multiple_pages == false) and items.respond_to?(:offset)
 
       item_count += items.size
-      offset = @result_offset + items.size
+      if items.respond_to?(:offset)
+        offset = items.offset + items.size
+      else
+        offset = item_count
+      end
 
       yield items
 
-      break if @limit.is_a? Integer and item_count >= @limit
+      break if @limit and item_count >= @limit
       break if items.respond_to? :items_available and offset >= items.items_available
     end while @fetch_multiple_pages
     self
