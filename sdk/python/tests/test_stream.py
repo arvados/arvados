@@ -1,6 +1,10 @@
 #!/usr/bin/env python
 
+import bz2
+import gzip
+import io
 import mock
+import os
 import unittest
 
 import arvados
@@ -8,6 +12,162 @@ from arvados import StreamReader, StreamFileReader
 
 import arvados_testutil as tutil
 import run_test_server
+
+class StreamFileReaderTestCase(unittest.TestCase):
+    def make_count_reader(self):
+        stream = tutil.MockStreamReader('.', '01234', '34567', '67890')
+        return StreamFileReader(stream, [[1, 3, 0], [6, 3, 3], [11, 3, 6]],
+                                'count.txt')
+
+    def test_read_returns_first_block(self):
+        # read() calls will be aligned on block boundaries - see #3663.
+        sfile = self.make_count_reader()
+        self.assertEqual('123', sfile.read(10))
+
+    def test_small_read(self):
+        sfile = self.make_count_reader()
+        self.assertEqual('12', sfile.read(2))
+
+    def test_successive_reads(self):
+        sfile = self.make_count_reader()
+        for expect in ['123', '456', '789', '']:
+            self.assertEqual(expect, sfile.read(10))
+
+    def test_readfrom_spans_blocks(self):
+        sfile = self.make_count_reader()
+        self.assertEqual('6789', sfile.readfrom(5, 12))
+
+    def test_small_readfrom_spanning_blocks(self):
+        sfile = self.make_count_reader()
+        self.assertEqual('2345', sfile.readfrom(1, 4))
+
+    def test_readall(self):
+        sfile = self.make_count_reader()
+        self.assertEqual('123456789', ''.join(sfile.readall()))
+
+    def test_one_arg_seek(self):
+        self.test_relative_seek([])
+
+    def test_absolute_seek(self, args=[os.SEEK_SET]):
+        sfile = self.make_count_reader()
+        sfile.seek(6, *args)
+        self.assertEqual('78', sfile.read(2))
+        sfile.seek(4, *args)
+        self.assertEqual('56', sfile.read(2))
+
+    def test_relative_seek(self, args=[os.SEEK_CUR]):
+        sfile = self.make_count_reader()
+        self.assertEqual('12', sfile.read(2))
+        sfile.seek(2, *args)
+        self.assertEqual('56', sfile.read(2))
+
+    def test_end_seek(self):
+        sfile = self.make_count_reader()
+        sfile.seek(-6, os.SEEK_END)
+        self.assertEqual('45', sfile.read(2))
+
+    def test_seek_min_zero(self):
+        sfile = self.make_count_reader()
+        sfile.seek(-2, os.SEEK_SET)
+        self.assertEqual(0, sfile.tell())
+
+    def test_seek_max_size(self):
+        sfile = self.make_count_reader()
+        sfile.seek(2, os.SEEK_END)
+        self.assertEqual(9, sfile.tell())
+
+    def test_size(self):
+        self.assertEqual(9, self.make_count_reader().size())
+
+    def test_tell_after_block_read(self):
+        sfile = self.make_count_reader()
+        sfile.read(5)
+        self.assertEqual(3, sfile.tell())
+
+    def test_tell_after_small_read(self):
+        sfile = self.make_count_reader()
+        sfile.read(1)
+        self.assertEqual(1, sfile.tell())
+
+    def test_no_read_after_close(self):
+        sfile = self.make_count_reader()
+        sfile.close()
+        self.assertRaises(ValueError, sfile.read, 2)
+
+    def test_context(self):
+        with self.make_count_reader() as sfile:
+            self.assertFalse(sfile.closed, "reader is closed inside context")
+            self.assertEqual('12', sfile.read(2))
+        self.assertTrue(sfile.closed, "reader is open after context")
+
+    def make_newlines_reader(self):
+        stream = tutil.MockStreamReader('.', 'one\ntwo\n\nth', 'ree\nfour\n\n')
+        return StreamFileReader(stream, [[0, 11, 0], [11, 10, 11]], 'count.txt')
+
+    def check_lines(self, actual):
+        self.assertEqual(['one\n', 'two\n', '\n', 'three\n', 'four\n', '\n'],
+                         actual)
+
+    def test_readline(self):
+        reader = self.make_newlines_reader()
+        actual = []
+        while True:
+            data = reader.readline()
+            if not data:
+                break
+            actual.append(data)
+        self.check_lines(actual)
+
+    def test_readlines(self):
+        self.check_lines(self.make_newlines_reader().readlines())
+
+    def test_iteration(self):
+        self.check_lines(list(iter(self.make_newlines_reader())))
+
+    def test_readline_size(self):
+        reader = self.make_newlines_reader()
+        self.assertEqual('on', reader.readline(2))
+        self.assertEqual('e\n', reader.readline(4))
+        self.assertEqual('two\n', reader.readline(6))
+        self.assertEqual('\n', reader.readline(8))
+        self.assertEqual('thre', reader.readline(4))
+
+    def test_readlines_sizehint(self):
+        result = self.make_newlines_reader().readlines(8)
+        self.assertEqual(['one\n', 'two\n'], result[:2])
+        self.assertNotIn('three\n', result)
+
+    def test_name_attribute(self):
+        # Test both .name and .name() (for backward compatibility)
+        stream = tutil.MockStreamReader()
+        sfile = StreamFileReader(stream, [[0, 0, 0]], 'nametest')
+        self.assertEqual('nametest', sfile.name)
+        self.assertEqual('nametest', sfile.name())
+
+    def check_decompression(self, compress_ext, compress_func):
+        test_text = 'decompression\ntest\n'
+        test_data = compress_func(test_text)
+        stream = tutil.MockStreamReader('.', test_data)
+        reader = StreamFileReader(stream, [[0, len(test_data), 0]],
+                                  'test.' + compress_ext)
+        self.assertEqual(test_text, ''.join(reader.readall_decompressed()))
+
+    @staticmethod
+    def gzip_compress(data):
+        compressed_data = io.BytesIO()
+        with gzip.GzipFile(fileobj=compressed_data, mode='wb') as gzip_file:
+            gzip_file.write(data)
+        return compressed_data.getvalue()
+
+    def test_no_decompression(self):
+        self.check_decompression('log', lambda s: s)
+
+    def test_gzip_decompression(self):
+        self.check_decompression('gz', self.gzip_compress)
+
+    def test_bz2_decompression(self):
+        self.check_decompression('bz2', bz2.compress)
+
 
 class StreamRetryTestMixin(object):
     # Define reader_for(coll_name, **kwargs)
