@@ -103,17 +103,16 @@ def split(path):
     return stream_name, file_name
 
 class StreamFileReader(ArvadosFileBase):
-    class _NameAttribute(str):
+    class _NameAttribute(unicode):
         # The Python file API provides a plain .name attribute.
         # Older SDK provided a name() method.
         # This class provides both, for maximum compatibility.
         def __call__(self):
-            return self.decode('utf-8')
+            return self
 
 
     def __init__(self, stream, segments, name):
-        super(StreamFileReader, self).__init__(
-            self._NameAttribute(name.encode('utf-8')), 'rb')
+        super(StreamFileReader, self).__init__(self._NameAttribute(name), 'rb')
         self._stream = stream
         self.segments = segments
         self._filepos = 0L
