@@ -196,6 +196,16 @@ class ComputeNodeMonitorActorTestCase(testutil.ActorTestMixin,
         self.assertTrue(self.timer.schedule.called)
         self.assertEqual(300, self.timer.schedule.call_args[0][0])
 
+    def test_shutdown_window_close_scheduling(self):
+        self.make_actor()
+        self.shutdowns._set_state(False, 600)
+        self.timer.schedule.reset_mock()
+        self.node_actor.consider_shutdown().get(self.TIMEOUT)
+        self.stop_proxy(self.node_actor)
+        self.assertTrue(self.timer.schedule.called)
+        self.assertEqual(600, self.timer.schedule.call_args[0][0])
+        self.assertFalse(self.subscriber.called)
+
     def test_shutdown_subscription(self):
         self.make_actor()
         self.shutdowns._set_state(True, 600)
@@ -207,41 +217,31 @@ class ComputeNodeMonitorActorTestCase(testutil.ActorTestMixin,
     def test_shutdown_without_arvados_node(self):
         self.make_actor()
         self.shutdowns._set_state(True, 600)
-        self.node_actor.consider_shutdown().get(self.TIMEOUT)
-        self.assertTrue(self.subscriber.called)
+        self.assertTrue(self.node_actor.shutdown_eligible().get(self.TIMEOUT))
 
     def test_no_shutdown_without_arvados_node_and_old_cloud_node(self):
         self.make_actor(start_time=0)
         self.shutdowns._set_state(True, 600)
-        self.node_actor.consider_shutdown().get(self.TIMEOUT)
-        self.assertFalse(self.subscriber.called)
+        self.assertFalse(self.node_actor.shutdown_eligible().get(self.TIMEOUT))
 
-    def check_shutdown_rescheduled(self, window_open, next_window,
-                                   schedule_time=None):
-        self.shutdowns._set_state(window_open, next_window)
-        self.timer.schedule.reset_mock()
-        self.node_actor.consider_shutdown().get(self.TIMEOUT)
-        self.stop_proxy(self.node_actor)
-        self.assertTrue(self.timer.schedule.called)
-        if schedule_time is not None:
-            self.assertEqual(schedule_time, self.timer.schedule.call_args[0][0])
-        self.assertFalse(self.subscriber.called)
-
-    def test_shutdown_window_close_scheduling(self):
-        self.make_actor()
-        self.check_shutdown_rescheduled(False, 600, 600)
+    def test_no_shutdown_when_window_closed(self):
+        self.make_actor(3, testutil.arvados_node_mock(3, job_uuid=None))
+        self.assertFalse(self.node_actor.shutdown_eligible().get(self.TIMEOUT))
 
     def test_no_shutdown_when_node_running_job(self):
         self.make_actor(4, testutil.arvados_node_mock(4, job_uuid=True))
-        self.check_shutdown_rescheduled(True, 600)
+        self.shutdowns._set_state(True, 600)
+        self.assertFalse(self.node_actor.shutdown_eligible().get(self.TIMEOUT))
 
     def test_no_shutdown_when_node_state_unknown(self):
         self.make_actor(5, testutil.arvados_node_mock(5, info={}))
-        self.check_shutdown_rescheduled(True, 600)
+        self.shutdowns._set_state(True, 600)
+        self.assertFalse(self.node_actor.shutdown_eligible().get(self.TIMEOUT))
 
     def test_no_shutdown_when_node_state_stale(self):
         self.make_actor(6, testutil.arvados_node_mock(6, age=90000))
-        self.check_shutdown_rescheduled(True, 600)
+        self.shutdowns._set_state(True, 600)
+        self.assertFalse(self.node_actor.shutdown_eligible().get(self.TIMEOUT))
 
     def test_arvados_node_match(self):
         self.make_actor(2)
