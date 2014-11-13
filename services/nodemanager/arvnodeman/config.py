@@ -68,6 +68,17 @@ class NodeManagerConfig(ConfigParser.SafeConfigParser):
                 for key in self.options('Logging')
                 if key not in self.LOGGING_NONLEVELS}
 
+    def dispatch_classes(self):
+        mod_name = 'arvnodeman.computenode.dispatch'
+        if self.has_option('Daemon', 'dispatcher'):
+            mod_name = '{}.{}'.format(mod_name,
+                                      self.get('Daemon', 'dispatcher'))
+        module = importlib.import_module(mod_name)
+        return (module.ComputeNodeSetupActor,
+                module.ComputeNodeShutdownActor,
+                module.ComputeNodeUpdateActor,
+                module.ComputeNodeMonitorActor)
+
     def new_arvados_client(self):
         if self.has_option('Daemon', 'certs_file'):
             certs_file = self.get('Daemon', 'certs_file')

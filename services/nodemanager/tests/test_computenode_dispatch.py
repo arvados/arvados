@@ -93,8 +93,7 @@ class ComputeNodeSetupActorTestCase(testutil.ActorTestMixin, unittest.TestCase):
                          subscriber.call_args[0][0].actor_ref.actor_urn)
 
 
-class ComputeNodeShutdownActorTestCase(testutil.ActorTestMixin,
-                                       unittest.TestCase):
+class ComputeNodeShutdownActorMixin(testutil.ActorTestMixin):
     def make_mocks(self, cloud_node=None, arvados_node=None,
                    shutdown_open=True):
         self.timer = testutil.MockTimer()
@@ -113,7 +112,7 @@ class ComputeNodeShutdownActorTestCase(testutil.ActorTestMixin,
         monitor_actor = dispatch.ComputeNodeMonitorActor.start(
             self.cloud_node, time.time(), self.shutdowns, self.timer,
             self.updates, self.arvados_node)
-        self.shutdown_actor = dispatch.ComputeNodeShutdownActor.start(
+        self.shutdown_actor = self.ACTOR_CLASS.start(
             self.timer, self.cloud_client, monitor_actor).proxy()
         self.monitor_actor = monitor_actor.proxy()
 
@@ -126,6 +125,11 @@ class ComputeNodeShutdownActorTestCase(testutil.ActorTestMixin,
                 break
         else:
             self.fail("success flag {} is not {}".format(last_flag, expected))
+
+
+class ComputeNodeShutdownActorTestCase(ComputeNodeShutdownActorMixin,
+                                       unittest.TestCase):
+    ACTOR_CLASS = dispatch.ComputeNodeShutdownActor
 
     def test_easy_shutdown(self):
         self.make_actor()

@@ -6,6 +6,8 @@ import io
 import logging
 import unittest
 
+import arvnodeman.computenode.dispatch as dispatch
+import arvnodeman.computenode.dispatch.slurm as slurm_dispatch
 import arvnodeman.config as nmconfig
 
 class NodeManagerConfigTestCase(unittest.TestCase):
@@ -63,3 +65,19 @@ testlogger = INFO
         self.assertEqual({'level': logging.DEBUG,
                           'testlogger': logging.INFO},
                          config.log_levels())
+
+    def check_dispatch_classes(self, config, module):
+        setup, shutdown, update, monitor = config.dispatch_classes()
+        self.assertIs(setup, module.ComputeNodeSetupActor)
+        self.assertIs(shutdown, module.ComputeNodeShutdownActor)
+        self.assertIs(update, module.ComputeNodeUpdateActor)
+        self.assertIs(monitor, module.ComputeNodeMonitorActor)
+
+    def test_default_dispatch(self):
+        config = self.load_config()
+        self.check_dispatch_classes(config, dispatch)
+
+    def test_custom_dispatch(self):
+        config = self.load_config(
+            config_str=self.TEST_CONFIG + "[Daemon]\ndispatcher=slurm\n")
+        self.check_dispatch_classes(config, slurm_dispatch)
