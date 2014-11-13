@@ -95,30 +95,63 @@ class ComputeNodeSetupActorTestCase(testutil.ActorTestMixin, unittest.TestCase):
 
 class ComputeNodeShutdownActorTestCase(testutil.ActorTestMixin,
                                        unittest.TestCase):
-    def make_mocks(self, cloud_node=None):
+    def make_mocks(self, cloud_node=None, arvados_node=None,
+                   shutdown_open=True):
         self.timer = testutil.MockTimer()
+        self.shutdowns = testutil.MockShutdownTimer()
+        self.shutdowns._set_state(shutdown_open, 300)
         self.cloud_client = mock.MagicMock(name='cloud_client')
+        self.updates = mock.MagicMock(name='update_mock')
         if cloud_node is None:
             cloud_node = testutil.cloud_node_mock()
         self.cloud_node = cloud_node
+        self.arvados_node = arvados_node
 
-    def make_actor(self, arv_node=None):
+    def make_actor(self):
         if not hasattr(self, 'timer'):
             self.make_mocks()
+        monitor_actor = dispatch.ComputeNodeMonitorActor.start(
+            self.cloud_node, time.time(), self.shutdowns, self.timer,
+            self.updates, self.arvados_node)
         self.shutdown_actor = dispatch.ComputeNodeShutdownActor.start(
-            self.timer, self.cloud_client, self.cloud_node).proxy()
+            self.timer, self.cloud_client, monitor_actor).proxy()
+        self.monitor_actor = monitor_actor.proxy()
+
+    def check_success_flag(self, expected, allow_msg_count=1):
+        # allow_msg_count is the number of internal messages that may
+        # need to be handled for shutdown to finish.
+        for try_num in range(1 + allow_msg_count):
+            last_flag = self.shutdown_actor.success.get(self.TIMEOUT)
+            if last_flag is expected:
+                break
+        else:
+            self.fail("success flag {} is not {}".format(last_flag, expected))
 
     def test_easy_shutdown(self):
         self.make_actor()
-        self.shutdown_actor.cloud_node.get(self.TIMEOUT)
-        self.stop_proxy(self.shutdown_actor)
+        self.check_success_flag(True)
         self.assertTrue(self.cloud_client.destroy_node.called)
+
+    def test_shutdown_cancelled_when_window_closes(self):
+        self.make_mocks(shutdown_open=False)
+        self.make_actor()
+        self.check_success_flag(False, 2)
+        self.assertFalse(self.cloud_client.destroy_node.called)
+
+    def test_shutdown_retries_when_cloud_fails(self):
+        self.make_mocks()
+        self.cloud_client.destroy_node.return_value = False
+        self.make_actor()
+        self.assertIsNone(self.shutdown_actor.success.get(self.TIMEOUT))
+        self.cloud_client.destroy_node.return_value = True
+        self.check_success_flag(True)
 
     def test_late_subscribe(self):
         self.make_actor()
         subscriber = mock.Mock(name='subscriber_mock')
         self.shutdown_actor.subscribe(subscriber).get(self.TIMEOUT)
         self.stop_proxy(self.shutdown_actor)
+        self.assertTrue(subscriber.called)
         self.assertEqual(self.shutdown_actor.actor_ref.actor_urn,
                          subscriber.call_args[0][0].actor_ref.actor_urn)
 
@@ -139,14 +172,8 @@ class ComputeNodeUpdateActorTestCase(testutil.ActorTestMixin,
 
 class ComputeNodeMonitorActorTestCase(testutil.ActorTestMixin,
                                       unittest.TestCase):
-    class MockShutdownTimer(object):
-        def _set_state(self, is_open, next_opening):
-            self.window_open = lambda: is_open
-            self.next_opening = lambda: next_opening
-
-
     def make_mocks(self, node_num):
-        self.shutdowns = self.MockShutdownTimer()
+        self.shutdowns = testutil.MockShutdownTimer()
         self.shutdowns._set_state(False, 300)
         self.timer = mock.MagicMock(name='timer_mock')
         self.updates = mock.MagicMock(name='update_mock')

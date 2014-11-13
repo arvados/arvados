@@ -41,6 +41,12 @@ def cloud_node_mock(node_num=99):
 def ip_address_mock(last_octet):
     return '10.20.30.{}'.format(last_octet)
 
+class MockShutdownTimer(object):
+    def _set_state(self, is_open, next_opening):
+        self.window_open = lambda: is_open
+        self.next_opening = lambda: next_opening
+
+
 class MockSize(object):
     def __init__(self, factor):
         self.id = 'z{}.test'.format(factor)

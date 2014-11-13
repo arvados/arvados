@@ -6,6 +6,7 @@ import functools
 import logging
 import time
 
+import libcloud.common.types as cloud_types
 import pykka
 
 from .. import arvados_node_fqdn, arvados_node_mtime, timestamp_fresh
@@ -133,19 +134,48 @@ class ComputeNodeShutdownActor(ComputeNodeStateChangeBase):
 
     This actor simply destroys a cloud node, retrying as needed.
     """
-    def __init__(self, timer_actor, cloud_client, cloud_node,
+    def __init__(self, timer_actor, cloud_client, node_monitor,
                  retry_wait=1, max_retry_wait=180):
         super(ComputeNodeShutdownActor, self).__init__(
             'arvnodeman.nodedown', timer_actor, retry_wait, max_retry_wait)
         self._cloud = cloud_client
-        self.cloud_node = cloud_node
+        self._monitor = node_monitor.proxy()
+        self.cloud_node = self._monitor.cloud_node.get()
+        self.success = None
+
+    def on_start(self):
         self._later.shutdown_node()
 
+    def cancel_shutdown(self):
+        self.success = False
+        self._finished()
+
+    def _stop_if_window_closed(orig_func):
+        @functools.wraps(orig_func)
+        def wrapper(self, *args, **kwargs):
+            if not self._monitor.shutdown_eligible().get():
+                self._logger.info(
+                    "Cloud node %s shutdown cancelled - no longer eligible.",
+                    self.cloud_node.id)
+                self._later.cancel_shutdown()
+                return None
+            else:
+                return orig_func(self, *args, **kwargs)
+        return wrapper
+
+    @_stop_if_window_closed
     @ComputeNodeStateChangeBase._retry(config.CLOUD_ERRORS)
     def shutdown_node(self):
-        self._cloud.destroy_node(self.cloud_node)
-        self._logger.info("Cloud node %s shut down.", self.cloud_node.id)
-        self._finished()
+        if self._cloud.destroy_node(self.cloud_node):
+            self._logger.info("Cloud node %s shut down.", self.cloud_node.id)
+            self.success = True
+            self._finished()
+        else:
+            # Force a retry.
+            raise cloud_types.LibcloudError("destroy_node failed")
+
+    # Make the decorator available to subclasses.
+    _stop_if_window_closed = staticmethod(_stop_if_window_closed)
 
 
 class ComputeNodeUpdateActor(config.actor_class):

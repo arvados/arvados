@@ -190,9 +190,8 @@ class NodeManagerDaemonActor(actor_class):
                     break
 
     def _nodes_up(self):
-        up = sum(len(nodelist) for nodelist in
-                 [self.cloud_nodes, self.booted, self.booting])
-        return up - len(self.shutdowns)
+        return sum(len(nodelist) for nodelist in
+                   [self.cloud_nodes, self.booted, self.booting])
 
     def _nodes_busy(self):
         return sum(1 for idle in
@@ -201,12 +200,21 @@ class NodeManagerDaemonActor(actor_class):
                    if idle is False)
 
     def _nodes_wanted(self):
-        return min(len(self.last_wishlist) + self._nodes_busy(),
-                   self.max_nodes) - self._nodes_up()
+        up_count = self._nodes_up()
+        over_max = up_count - self.max_nodes
+        if over_max >= 0:
+            return -over_max
+        else:
+            up_count -= len(self.shutdowns) + self._nodes_busy()
+            return len(self.last_wishlist) - up_count
 
     def _nodes_excess(self):
-        needed_nodes = self._nodes_busy() + len(self.last_wishlist)
-        return (self._nodes_up() - max(self.min_nodes, needed_nodes))
+        up_count = self._nodes_up() - len(self.shutdowns)
+        over_min = up_count - self.min_nodes
+        if over_min <= 0:
+            return over_min
+        else:
+            return up_count - self._nodes_busy() - len(self.last_wishlist)
 
     def update_server_wishlist(self, wishlist):
         self._update_poll_time('server_wishlist')
@@ -257,11 +265,12 @@ class NodeManagerDaemonActor(actor_class):
         if nodes_wanted > 1:
             self._later.start_node()
 
-    def _actor_nodes(self, node_actor):
-        return pykka.get_all([node_actor.cloud_node, node_actor.arvados_node])
+    def _get_actor_attrs(self, actor, *attr_names):
+        return pykka.get_all([getattr(actor, name) for name in attr_names])
 
     def node_up(self, setup_proxy):
-        cloud_node, arvados_node = self._actor_nodes(setup_proxy)
+        cloud_node, arvados_node = self._get_actor_attrs(
+            setup_proxy, 'cloud_node', 'arvados_node')
         del self.booting[setup_proxy.actor_ref.actor_urn]
         setup_proxy.stop()
         record = self.cloud_nodes.get(cloud_node.id)
@@ -287,19 +296,23 @@ class NodeManagerDaemonActor(actor_class):
     def node_can_shutdown(self, node_actor):
         if self._nodes_excess() < 1:
             return None
-        cloud_node, arvados_node = self._actor_nodes(node_actor)
-        if cloud_node.id in self.shutdowns:
+        cloud_node_id = node_actor.cloud_node.get().id
+        if cloud_node_id in self.shutdowns:
             return None
-        shutdown = self._node_shutdown.start(timer_actor=self._timer,
-                                             cloud_client=self._new_cloud(),
-                                             cloud_node=cloud_node).proxy()
-        self.shutdowns[cloud_node.id] = shutdown
+        shutdown = self._node_shutdown.start(
+            timer_actor=self._timer, cloud_client=self._new_cloud(),
+            node_monitor=node_actor.actor_ref).proxy()
+        self.shutdowns[cloud_node_id] = shutdown
         shutdown.subscribe(self._later.node_finished_shutdown)
 
     def node_finished_shutdown(self, shutdown_actor):
-        cloud_node_id = shutdown_actor.cloud_node.get().id
+        success, cloud_node = self._get_actor_attrs(shutdown_actor, 'success',
+                                                    'cloud_node')
         shutdown_actor.stop()
-        if cloud_node_id in self.booted:
+        cloud_node_id = cloud_node.id
+        if not success:
+            del self.shutdowns[cloud_node_id]
+        elif cloud_node_id in self.booted:
             self.booted.pop(cloud_node_id).actor.stop()
             del self.shutdowns[cloud_node_id]
 
