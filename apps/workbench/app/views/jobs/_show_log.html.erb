@@ -1,5 +1,7 @@
 <% if !@object.log %>
 
+<div id="log_graph_div" data-object-uuid="<%= @object.uuid %>"></div>
+
 <% log_history = stderr_log_history([@object.uuid]) %>
 
 <div id="event_log_div"
@@ -12,6 +14,23 @@
 <div class="arv-log-refresh-control"
      data-load-throttle="86486400000" <%# 1001 nights %>
      ></div>
+
+<%= javascript_tag do %>
+  var jobGraphData = [];
+  var jobGraphSeries = [];
+  <% stderr_log_records([@object.uuid]).each.with_index do |log_record, index| %>
+    <% puts log_record.to_yaml %>
+    var logLine = '<%=j log_record.properties[:text] %>';
+    processLogLineForChart( logLine, jobGraphSeries, jobGraphData );
+  <% end %>
+  var jobGraph = Morris.Line({
+    element: 'log_graph_div',
+    data: jobGraphData,
+    xkey: 't',
+    ykeys: jobGraphSeries,
+    labels: jobGraphSeries
+  });
+<% end %>
 
 <% else %>
 

@@ -23,6 +23,8 @@
 //= require bootstrap3-editable/bootstrap-editable
 //= require bootstrap-tab-history
 //= require wiselinks
+//= require raphael
+//= require morris
 //= require_tree .
 
 jQuery(function($){

@@ -56,3 +56,36 @@ $(document).on('ajax:complete ready', function() {
         subscribeToEventLog();
     }
 });
+
+
+function processLogLineForChart( logLine, jobGraphSeries, jobGraphData ) {
+    var match = logLine.match(/(.*)crunchstat:(.*)-- interval(.*)/);
+    if( match ) {
+        var series = match[2].trim().split(' ')[0];
+        if( $.inArray( series, jobGraphSeries) < 0 ) {
+            jobGraphSeries.push(series);
+        }
+        var intervalData = match[3].trim().split(' ');
+        var dt = parseFloat(intervalData[0]);
+        var dsum = 0.0;
+        for(var i=2; i < intervalData.length; i += 2 ) {
+            dsum += parseFloat(intervalData[i]);
+        }
+        var datum = (dsum/dt).toFixed(4);
+        var preamble = match[1].trim().split(' ');
+        var timestamp = preamble[0].replace('_','T');
+        var found = false;
+        for( var i=0; i < jobGraphData.length; i++ ) {
+            if( jobGraphData[i]['t'] == timestamp ) {
+                jobGraphData[i][series] = datum;
+                found = true;
+                break;
+            }
+        }
+        if( !found ){
+            var entry = { 't': timestamp };
+            entry[series] = datum;
+            jobGraphData.push( entry );
+        }
+    }
+}
