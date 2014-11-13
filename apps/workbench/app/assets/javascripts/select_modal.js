@@ -55,11 +55,11 @@ $(document).on('click', '.selectable', function() {
     $modal.find('.modal-error').removeClass('hide').hide();
 
     var $preview_selections = $modal.find('.preview-selectable.active');
-    if ($preview_selections) {
-      data.push({name: selection_param, value: $preview_selections.first().children('fa-file').prop('title')});
+    if ($preview_selections.length > 0) {
+      data.push({name: selection_param, value: $preview_selections.first().attr('href')});
     }
 
-    if (data.length == 0) {   // no preview selection option
+    if (data.length == 0) {   // not using preview selection option
       $modal.find('.selectable.active[data-object-uuid]').each(function() {
         var val = $(this).attr('data-object-uuid');
         data.push({name: selection_param, value: val});

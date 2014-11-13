@@ -78,7 +78,7 @@ function unselect_all_files() {
     <% else %>
       <% link_params = {controller: 'collections', action: 'show_file',
                         uuid: @object.portable_data_hash, file: file_path, size: size} %>
-       <div class="collection_files_row filterable <%=preview_selectable%>">
+       <div class="collection_files_row filterable <%=preview_selectable%>" href="<%=@object.uuid%>/<%=file_path%>">
         <div class="collection_files_buttons pull-right">
           <%= raw(human_readable_bytes_html(size)) %>
           <% disable_search = (Rails.configuration.filename_suffixes_with_view_icon.include? file_path.split('.')[-1]) ? false : true %>
