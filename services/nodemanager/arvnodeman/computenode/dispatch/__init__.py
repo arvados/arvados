@@ -41,13 +41,14 @@ class ComputeNodeStateChangeBase(config.actor_class):
         def decorator(orig_func):
             @functools.wraps(orig_func)
             def wrapper(self, *args, **kwargs):
+                start_time = time.time()
                 try:
                     orig_func(self, *args, **kwargs)
                 except errors as error:
                     self._logger.warning(
                         "Client error: %s - waiting %s seconds",
                         error, self.retry_wait)
-                    self._timer.schedule(self.retry_wait,
+                    self._timer.schedule(start_time + self.retry_wait,
                                          getattr(self._later,
                                                  orig_func.__name__),
                                          *args, **kwargs)
