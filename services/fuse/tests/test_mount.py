@@ -72,6 +72,11 @@ class FuseMountTest(MountTestBase):
             cw.start_new_file(f)
             cw.write('x')
 
+        for f in ":/../.../-/*/\x01\\/ ".split("/"):
+            cw.start_new_stream('edgecases/dirs/' + f)
+            cw.start_new_file('x/x')
+            cw.write('x')
+
         self.testcollection = cw.finish()
         self.api.collections().create(body={"manifest_text":cw.manifest_text()}).execute()
 
@@ -100,7 +105,9 @@ class FuseMountTest(MountTestBase):
         self.assertDirContents('dir2', ['thing5.txt', 'thing6.txt', 'dir3'])
         self.assertDirContents('dir2/dir3', ['thing7.txt', 'thing8.txt'])
         self.assertDirContents('edgecases',
-                               ":/_/__/.../-/*/\x01\\/ ".split("/"))
+                               "dirs/:/_/__/.../-/*/\x01\\/ ".split("/"))
+        self.assertDirContents('edgecases/dirs',
+                               ":/__/.../-/*/\x01\\/ ".split("/"))
 
         files = {'thing1.txt': 'data 1',
                  'thing2.txt': 'data 2',
