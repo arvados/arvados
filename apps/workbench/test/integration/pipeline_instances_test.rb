@@ -303,7 +303,7 @@ class PipelineInstancesTest < ActionDispatch::IntegrationTest
       first('span', text: 'foo_tag').click
       if choose_file
         wait_for_ajax
-        find('input[type=checkbox]').click
+        find('.preview-selectable', text: 'foo').click
       end
       find('button', text: 'OK').click
     end
