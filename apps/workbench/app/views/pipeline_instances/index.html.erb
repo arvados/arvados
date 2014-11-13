@@ -2,7 +2,10 @@
   <div class="input-group">
     <input type="text" class="form-control filterable-control recent-pipeline-instances-filterable-control"
            placeholder="Search pipeline instances"
-           data-filterable-target="#recent-pipeline-instances"/>
+           data-filterable-target="#recent-pipeline-instances"
+           <%# Just for the double-load test in FilterableInfiniteScrollTest: %>
+           value="<%= params[:search] %>"
+           />
   </div>
 
   <%= form_tag({action: 'compare', controller: params[:controller], method: 'get'}, {method: 'get', id: 'compare', class: 'pull-right small-form-margin'}) do |f| %>
