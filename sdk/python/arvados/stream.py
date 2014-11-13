@@ -108,11 +108,12 @@ class StreamFileReader(ArvadosFileBase):
         # Older SDK provided a name() method.
         # This class provides both, for maximum compatibility.
         def __call__(self):
-            return self
+            return self.decode('utf-8')
 
 
     def __init__(self, stream, segments, name):
-        super(StreamFileReader, self).__init__(self._NameAttribute(name), 'rb')
+        super(StreamFileReader, self).__init__(
+            self._NameAttribute(name.encode('utf-8')), 'rb')
         self._stream = stream
         self.segments = segments
         self._filepos = 0L
@@ -327,7 +328,7 @@ class StreamReader(object):
                 manifest_text.append(m.group(0))
         else:
             manifest_text.extend([d[LOCATOR] for d in self._data_locators])
-        manifest_text.extend([' '.join(["{}:{}:{}".format(seg[LOCATOR], seg[BLOCKSIZE], f.name().replace(' ', '\\040'))
+        manifest_text.extend([' '.join([u"{}:{}:{}".format(seg[LOCATOR], seg[BLOCKSIZE], f.name().replace(' ', '\\040'))
                                         for seg in f.segments])
                               for f in self._files.values()])
         return ' '.join(manifest_text) + '\n'

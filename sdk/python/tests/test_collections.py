@@ -209,6 +209,10 @@ class ArvadosCollectionsTest(run_test_server.TestCaseWithServers,
 """
         self.assertEqual(arvados.CollectionReader(m8, self.api_client).manifest_text(normalize=True), m8)
 
+        m_utf8 = """./\xe2\x9b\xb5 59ca0efa9f5633cb0371bbc0355478d8+13 0:13:\xf0\x9f\x98\xb1
+"""
+        self.assertEqual(arvados.CollectionReader(m_utf8, self.api_client).manifest_text(normalize=True), m_utf8)
+
     def test_locators_and_ranges(self):
         blocks2 = [['a', 10, 0],
                   ['b', 10, 10],

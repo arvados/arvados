@@ -42,14 +42,14 @@ def normalize_stream(s, stream):
                 if segmentoffset == current_span[1]:
                     current_span[1] += segment[arvados.SEGMENTSIZE]
                 else:
-                    stream_tokens.append("{0}:{1}:{2}".format(current_span[0], current_span[1] - current_span[0], fout))
+                    stream_tokens.append(u"{0}:{1}:{2}".format(current_span[0], current_span[1] - current_span[0], fout))
                     current_span = [segmentoffset, segmentoffset + segment[arvados.SEGMENTSIZE]]
 
         if current_span is not None:
-            stream_tokens.append("{0}:{1}:{2}".format(current_span[0], current_span[1] - current_span[0], fout))
+            stream_tokens.append(u"{0}:{1}:{2}".format(current_span[0], current_span[1] - current_span[0], fout))
 
         if not stream[f]:
-            stream_tokens.append("0:0:{0}".format(fout))
+            stream_tokens.append(u"0:0:{0}".format(fout))
 
     return stream_tokens
 
@@ -186,9 +186,14 @@ class CollectionReader(CollectionBase):
                     self._manifest_locator,
                     error_via_api,
                     error_via_keep))
-        self._streams = [sline.split()
-                         for sline in self._manifest_text.split("\n")
-                         if sline]
+        if type(self._manifest_text) == unicode:
+            unicode_manifest = self._manifest_text
+        else:
+            unicode_manifest = self._manifest_text.decode('utf-8')
+        self._streams = [
+            sline.split()
+            for sline in unicode_manifest.split("\n")
+            if sline]
 
     def normalize(self):
         self._populate()
@@ -211,7 +216,8 @@ class CollectionReader(CollectionBase):
         # Regenerate the manifest text based on the normalized streams
         self._manifest_text = ''.join(
             [StreamReader(stream, keep=self._my_keep()).manifest_text()
-             for stream in self._streams])
+             for stream in self._streams]
+            ).encode('utf-8')
 
     def open(self, streampath, filename=None):
         """open(streampath[, filename]) -> file-like object

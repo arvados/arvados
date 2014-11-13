@@ -77,6 +77,15 @@ class FuseMountTest(MountTestBase):
             cw.start_new_file('x/x')
             cw.write('x')
 
+        self._utf8 = ["\xe2\x9c\x8c",     # victory sign
+                      "\xe2\x9b\xb5",     # sailboat
+                      "\xf0\x9f\x98\xb1", # scream
+                      ]
+        cw.start_new_stream('edgecases/utf8')
+        for f in self._utf8:
+            cw.start_new_file(f)
+            cw.write(f)
+
         self.testcollection = cw.finish()
         self.api.collections().create(body={"manifest_text":cw.manifest_text()}).execute()
 
@@ -105,9 +114,10 @@ class FuseMountTest(MountTestBase):
         self.assertDirContents('dir2', ['thing5.txt', 'thing6.txt', 'dir3'])
         self.assertDirContents('dir2/dir3', ['thing7.txt', 'thing8.txt'])
         self.assertDirContents('edgecases',
-                               "dirs/:/_/__/.../-/*/\x01\\/ ".split("/"))
+                               "dirs/utf8/:/_/__/.../-/*/\x01\\/ ".split("/"))
         self.assertDirContents('edgecases/dirs',
                                ":/__/.../-/*/\x01\\/ ".split("/"))
+        self.assertDirContents('edgecases/utf8', self._utf8)
 
         files = {'thing1.txt': 'data 1',
                  'thing2.txt': 'data 2',
