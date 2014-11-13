@@ -287,13 +287,6 @@ class PipelineInstancesController < ApplicationController
   end
 
   def index
-    if params[:search].andand.length.andand > 0
-      @select ||= PipelineInstance.columns.map(&:name)
-      base_search = PipelineInstance.select(@select)
-      @objects = base_search.where(any: ['contains', params[:search]]).
-                              uniq { |pi| pi.uuid }
-    end
-
     @limit = 20
     super
   end
