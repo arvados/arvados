@@ -250,6 +250,20 @@ runningbarbaz_job_readable_by_spectator:
   head_uuid: zzzzz-8i9sb-cjs4pklxxjykyuj
   properties: {}
 
+arvados_repository_readable_by_all_users:
+  uuid: zzzzz-o0j2j-allcanreadarvrp
+  owner_uuid: zzzzz-tpzed-000000000000000
+  created_at: 2014-01-24 20:42:26 -0800
+  modified_by_client_uuid: zzzzz-ozdt8-brczlopd8u8d0jr
+  modified_by_user_uuid: zzzzz-tpzed-000000000000000
+  modified_at: 2014-01-24 20:42:26 -0800
+  updated_at: 2014-01-24 20:42:26 -0800
+  tail_uuid: zzzzz-j7d0g-fffffffffffffff
+  link_class: permission
+  name: can_read
+  head_uuid: zzzzz-s0uqq-arvadosrepo0123
+  properties: {}
+
 foo_repository_readable_by_spectator:
   uuid: zzzzz-o0j2j-cpy7p41hpk5xxx
   owner_uuid: zzzzz-tpzed-000000000000000

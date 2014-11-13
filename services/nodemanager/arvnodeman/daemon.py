@@ -9,6 +9,7 @@ import time
 import pykka
 
 from . import computenode as cnode
+from .computenode import dispatch
 from .config import actor_class
 
 class _ComputeNodeRecord(object):
@@ -96,9 +97,9 @@ class NodeManagerDaemonActor(actor_class):
                  arvados_factory, cloud_factory,
                  shutdown_windows, min_nodes, max_nodes,
                  poll_stale_after=600, node_stale_after=7200,
-                 node_setup_class=cnode.ComputeNodeSetupActor,
-                 node_shutdown_class=cnode.ComputeNodeShutdownActor,
-                 node_actor_class=cnode.ComputeNodeMonitorActor):
+                 node_setup_class=dispatch.ComputeNodeSetupActor,
+                 node_shutdown_class=dispatch.ComputeNodeShutdownActor,
+                 node_actor_class=dispatch.ComputeNodeMonitorActor):
         super(NodeManagerDaemonActor, self).__init__()
         self._node_setup = node_setup_class
         self._node_shutdown = node_shutdown_class
