@@ -246,8 +246,10 @@ class ComputeNodeMonitorActor(config.actor_class):
             result = result and not self.arvados_node['job_uuid']
         return result
 
-    def _shutdown_eligible(self):
-        if self.arvados_node is None:
+    def shutdown_eligible(self):
+        if not self._shutdowns.window_open():
+            return False
+        elif self.arvados_node is None:
             # If this is a new, unpaired node, it's eligible for
             # shutdown--we figure there was an error during bootstrap.
             return timestamp_fresh(self.cloud_node_start_time,
@@ -257,17 +259,15 @@ class ComputeNodeMonitorActor(config.actor_class):
 
     def consider_shutdown(self):
         next_opening = self._shutdowns.next_opening()
-        if self._shutdowns.window_open():
-            if self._shutdown_eligible():
-                self._debug("Node %s suggesting shutdown.", self.cloud_node.id)
-                _notify_subscribers(self._later, self.subscribers)
-            else:
-                self._debug("Node %s shutdown window open but node busy.",
-                            self.cloud_node.id)
-        else:
+        if self.shutdown_eligible():
+            self._debug("Node %s suggesting shutdown.", self.cloud_node.id)
+            _notify_subscribers(self._later, self.subscribers)
+        elif self._shutdowns.window_open():
+            self._debug("Node %s shutdown window open but node busy.",
+                        self.cloud_node.id)
+        elif self.last_shutdown_opening != next_opening:
             self._debug("Node %s shutdown window closed.  Next at %s.",
                         self.cloud_node.id, time.ctime(next_opening))
-        if self.last_shutdown_opening != next_opening:
             self._timer.schedule(next_opening, self._later.consider_shutdown)
             self.last_shutdown_opening = next_opening
 
