@@ -122,7 +122,7 @@ def check_subcommands client, arvados, subcommand, global_opts, remaining_opts
     arv_create client, arvados, global_opts, remaining_opts
   when 'edit'
     arv_edit client, arvados, global_opts, remaining_opts
-  when 'copy', 'tag', 'ws'
+  when 'copy', 'tag', 'ws', 'run'
     exec `which arv-#{subcommand}`.strip, *remaining_opts
   when 'keep'
     @sub = remaining_opts.shift
@@ -150,12 +150,6 @@ def check_subcommands client, arvados, subcommand, global_opts, remaining_opts
       puts "Available methods: run"
     end
     abort
-  when 'run'
-    exec `which arv-run`.strip, *remaining_opts
-  when 'tag'
-    exec `which arv-tag`.strip, *remaining_opts
-  when 'ws'
-    exec `which arv-ws`.strip, *remaining_opts
   end
 end
 

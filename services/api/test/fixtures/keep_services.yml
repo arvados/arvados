@@ -1,7 +1,7 @@
 keep0:
   uuid: zzzzz-bi6l4-6zhilxar6r8ey90
   owner_uuid: zzzzz-tpzed-d9tiejq69daie8f
-  service_host: keep0.qr1hi.arvadosapi.com
+  service_host: keep0.zzzzz.arvadosapi.com
   service_port: 25107
   service_ssl_flag: false
   service_type: disk
@@ -9,7 +9,7 @@ keep0:
 keep1:
   uuid: zzzzz-bi6l4-rsnj3c76ndxb7o0
   owner_uuid: zzzzz-tpzed-d9tiejq69daie8f
-  service_host: keep1.qr1hi.arvadosapi.com
+  service_host: keep1.zzzzz.arvadosapi.com
   service_port: 25107
   service_ssl_flag: false
   service_type: disk
@@ -17,7 +17,7 @@ keep1:
 proxy:
   uuid: zzzzz-bi6l4-h0a0xwut9qa6g3a
   owner_uuid: zzzzz-tpzed-d9tiejq69daie8f
-  service_host: keep.qr1hi.arvadosapi.com
+  service_host: keep.zzzzz.arvadosapi.com
   service_port: 25333
   service_ssl_flag: true
   service_type: proxy

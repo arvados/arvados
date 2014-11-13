@@ -97,7 +97,12 @@ h3(#arv-tag). arv tag
 <notextile>
 <pre>
 $ <code class="userinput">arv tag --help</code>
-arvados cli client
+
+Usage:
+arv tag add tag1 [tag2 ...] --object object_uuid1 [object_uuid2...]
+arv tag remove tag1 [tag2 ...] --object object_uuid1 [object_uuid2...]
+arv tag remove --all
+
   --dry-run, -n:   Don't actually do anything
   --verbose, -v:   Print some things on stderr
      --uuid, -u:   Return the UUIDs of the objects in the response, one per
@@ -245,4 +250,3 @@ optional arguments:
                         script_version field of component, default 'master'
 </pre>
 </notextile>
-

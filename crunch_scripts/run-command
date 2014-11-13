@@ -348,6 +348,8 @@ except Exception as e:
     logger.error(pprint.pformat(taskp))
     sys.exit(1)
 
+# rcode holds the return codes produced by each subprocess
+rcode = {}
 try:
     subprocesses = []
     close_streams = []
@@ -389,7 +391,6 @@ try:
 
     active = 1
     pids = set([s.pid for s in subprocesses])
-    rcode = {}
     while len(pids) > 0:
         (pid, status) = os.wait()
         pids.discard(pid)
@@ -434,7 +435,7 @@ else:
     outcollection = robust_put.upload(outdir, logger)
 
 # Success if no non-zero return codes
-success = not any([status != 0 for status in rcode.values()])
+success = any(rcode) and not any([status != 0 for status in rcode.values()])
 
 api.job_tasks().update(uuid=arvados.current_task()['uuid'],
                                      body={

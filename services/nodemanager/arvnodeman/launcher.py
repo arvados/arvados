@@ -12,9 +12,7 @@ import daemon
 import pykka
 
 from . import config as nmconfig
-from .computenode import \
-    ComputeNodeSetupActor, ComputeNodeShutdownActor, ComputeNodeUpdateActor, \
-    ShutdownTimer
+from .computenode.dispatch import ComputeNodeUpdateActor
 from .daemon import NodeManagerDaemonActor
 from .jobqueue import JobQueueMonitorActor, ServerCalculator
 from .nodelist import ArvadosNodeListMonitorActor, CloudNodeListMonitorActor

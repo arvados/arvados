@@ -5,11 +5,15 @@
 #   arv tag remove tag1 [tag2 ...] --object obj_uuid1 [--object obj_uuid2 ...]
 #   arv tag remove tag1 [tag2 ...] --all
 
-def usage
-  abort "Usage:\n" +
-    "arv tag add tag1 [tag2 ...] --objects object_uuid1 [object_uuid2...]\n" +
-    "arv tag remove tag1 [tag2 ...] --objects object_uuid1 [object_uuid2...]\n" +
+def usage_string
+  return "\nUsage:\n" +
+    "arv tag add tag1 [tag2 ...] --object object_uuid1 [object_uuid2...]\n" +
+    "arv tag remove tag1 [tag2 ...] --object object_uuid1 [object_uuid2...]\n" +
     "arv tag remove --all\n"
+end
+
+def usage
+  abort usage_string
 end
 
 def api_call(method, parameters:{}, request_body:{})
@@ -147,7 +151,8 @@ class Google::APIClient
 end
 
 global_opts = Trollop::options do
-  banner "arvados cli client"
+  banner usage_string
+  banner ""
   opt :dry_run, "Don't actually do anything", :short => "-n"
   opt :verbose, "Print some things on stderr", :short => "-v"
   opt :uuid, "Return the UUIDs of the objects in the response, one per line (default)", :short => nil

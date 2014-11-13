@@ -110,24 +110,35 @@ class JobTest < ActiveSupport::TestCase
     assert_equal(image_uuid, job.docker_image_locator)
   end
 
-  test "can't create Job with Docker image locator" do
+  def check_attrs_unset(job, attrs)
+    assert_empty(attrs.each_key.map { |key| job.send(key) }.compact,
+                 "job has values for #{attrs.keys}")
+  end
+
+  def check_creation_prohibited(attrs)
     begin
-      job = Job.new job_attrs(docker_image_locator: BAD_COLLECTION)
+      job = Job.new(job_attrs(attrs))
     rescue ActiveModel::MassAssignmentSecurity::Error
       # Test passes - expected attribute protection
     else
-      assert_nil job.docker_image_locator
+      check_attrs_unset(job, attrs)
     end
   end
 
-  test "can't assign Docker image locator to Job" do
-    job = Job.new job_attrs
-    begin
-      Job.docker_image_locator = BAD_COLLECTION
-    rescue NoMethodError
-      # Test passes - expected attribute protection
+  def check_modification_prohibited(attrs)
+    job = Job.new(job_attrs)
+    attrs.each_pair do |key, value|
+      assert_raises(NoMethodError) { job.send("{key}=".to_sym, value) }
     end
-    assert_nil job.docker_image_locator
+    check_attrs_unset(job, attrs)
+  end
+
+  test "can't create Job with Docker image locator" do
+    check_creation_prohibited(docker_image_locator: BAD_COLLECTION)
+  end
+
+  test "can't assign Docker image locator to Job" do
+    check_modification_prohibited(docker_image_locator: BAD_COLLECTION)
   end
 
   [
@@ -281,4 +292,57 @@ class JobTest < ActiveSupport::TestCase
     assert_not_equal job1.queue_position, job2.queue_position
   end
 
+  SDK_MASTER = "ca68b24e51992e790f29df5cc4bc54ce1da4a1c2"
+  SDK_TAGGED = "00634b2b8a492d6f121e3cf1d6587b821136a9a7"
+
+  def sdk_constraint(version)
+    {runtime_constraints: {"arvados_sdk_version" => version}}
+  end
+
+  def check_job_sdk_version(expected)
+    job = yield
+    if expected.nil?
+      refute(job.valid?, "job valid with bad Arvados SDK version")
+    else
+      assert(job.valid?, "job not valid with good Arvados SDK version")
+      assert_equal(expected, job.arvados_sdk_version)
+    end
+  end
+
+  { "master" => SDK_MASTER,
+    "commit2" => SDK_TAGGED,
+    SDK_TAGGED[0, 8] => SDK_TAGGED,
+    "__nonexistent__" => nil,
+  }.each_pair do |search, commit_hash|
+    test "creating job with SDK version '#{search}'" do
+      check_job_sdk_version(commit_hash) do
+        Job.new(job_attrs(sdk_constraint(search)))
+      end
+    end
+
+    test "updating job with SDK version '#{search}'" do
+      job = Job.create!(job_attrs)
+      assert_nil job.arvados_sdk_version
+      check_job_sdk_version(commit_hash) do
+        job.runtime_constraints = sdk_constraint(search)[:runtime_constraints]
+        job
+      end
+    end
+  end
+
+  test "clear the SDK version" do
+    job = Job.create!(job_attrs(sdk_constraint("master")))
+    assert_equal(SDK_MASTER, job.arvados_sdk_version)
+    job.runtime_constraints = {}
+    assert(job.valid?, "job invalid after clearing SDK version")
+    assert_nil(job.arvados_sdk_version)
+  end
+
+  test "can't create job with SDK version assigned directly" do
+    check_creation_prohibited(arvados_sdk_version: SDK_MASTER)
+  end
+
+  test "can't modify job to assign SDK version directly" do
+    check_modification_prohibited(arvados_sdk_version: SDK_MASTER)
+  end
 end

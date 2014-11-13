@@ -8,8 +8,8 @@ import unittest
 import mock
 import pykka
 
-import arvnodeman.computenode as nmcnode
 import arvnodeman.daemon as nmdaemon
+from arvnodeman.computenode.dispatch import ComputeNodeMonitorActor
 from . import testutil
 
 class NodeManagerDaemonActorTestCase(testutil.ActorTestMixin,
@@ -39,7 +39,7 @@ class NodeManagerDaemonActorTestCase(testutil.ActorTestMixin,
             self.daemon.update_server_wishlist(want_sizes).get(self.TIMEOUT)
 
     def monitor_list(self):
-        return pykka.ActorRegistry.get_by_class(nmcnode.ComputeNodeMonitorActor)
+        return pykka.ActorRegistry.get_by_class(ComputeNodeMonitorActor)
 
     def alive_monitor_count(self):
         return sum(1 for actor in self.monitor_list() if actor.is_alive())

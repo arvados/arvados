@@ -85,7 +85,7 @@ class NodeManagerConfig(ConfigParser.SafeConfigParser):
                            http=http)
 
     def new_cloud_client(self):
-        module = importlib.import_module('arvnodeman.computenode.' +
+        module = importlib.import_module('arvnodeman.computenode.driver.' +
                                          self.get('Cloud', 'provider'))
         auth_kwargs = self.get_section('Cloud Credentials')
         if 'timeout' in auth_kwargs:
