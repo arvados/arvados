@@ -364,4 +364,3 @@ class FuseUnitTest(unittest.TestCase):
         self.assertEqual("_", fuse.sanitize_filename(""))
         self.assertEqual("_", fuse.sanitize_filename("."))
         self.assertEqual("__", fuse.sanitize_filename(".."))
-        self.assertEqual("__", fuse.sanitize_filename(".."))
