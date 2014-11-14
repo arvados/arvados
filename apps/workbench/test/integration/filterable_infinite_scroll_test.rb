@@ -2,6 +2,8 @@ require 'integration_helper'
 
 class FilterableInfiniteScrollTest < ActionDispatch::IntegrationTest
   setup do
+    headless = Headless.new
+    headless.start
     Capybara.current_driver = :selenium
   end
 
