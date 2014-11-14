@@ -294,7 +294,8 @@ class Arvados::V1::JobReuseControllerTest < ActionController::TestCase
     assert_not_nil assigns(:object)
     new_job = JSON.parse(@response.body)
     assert_not_equal 'zzzzz-8i9sb-cjs4pklxxjykqqq', new_job['uuid']
-    assert_equal '077ba2ad3ea24a929091a9e6ce545c93199b8e57', new_job['script_version']
+    assert_not_equal('4fe459abe02d9b365932b8f5dc419439ab4e2577',
+                     new_job['script_version'])
   end
 
   test "cannot reuse job with find_or_create but excluded version" do
@@ -316,7 +317,8 @@ class Arvados::V1::JobReuseControllerTest < ActionController::TestCase
     assert_not_nil assigns(:object)
     new_job = JSON.parse(@response.body)
     assert_not_equal 'zzzzz-8i9sb-cjs4pklxxjykqqq', new_job['uuid']
-    assert_equal '077ba2ad3ea24a929091a9e6ce545c93199b8e57', new_job['script_version']
+    assert_not_equal('4fe459abe02d9b365932b8f5dc419439ab4e2577',
+                     new_job['script_version'])
   end
 
   BASE_FILTERS = {
@@ -324,6 +326,7 @@ class Arvados::V1::JobReuseControllerTest < ActionController::TestCase
     'script' => ['=', 'hash'],
     'script_version' => ['in git', 'master'],
     'docker_image_locator' => ['=', nil],
+    'arvados_sdk_version' => ['=', nil],
   }
 
   def filters_from_hash(hash)
@@ -662,5 +665,33 @@ class Arvados::V1::JobReuseControllerTest < ActionController::TestCase
     errors = check_errors_from(job: {minimum_script_version: "__nosuchbranch__"})
     assert(errors.any? { |msg| msg.include? "__nosuchbranch__" },
            "bad refspec not mentioned in error message")
+  end
+
+  test "can't reuse job with older Arvados SDK version" do
+    params = {
+      script_version: "31ce37fe365b3dc204300a3e4c396ad333ed0556",
+      runtime_constraints: {"arvados_sdk_version" => "master"},
+    }
+    check_new_job_created_from(job: params)
+  end
+
+  test "reuse job from arvados_sdk_version git filters" do
+    filter_h = BASE_FILTERS.
+      merge("arvados_sdk_version" => ["in git", "commit2"])
+    filter_h.delete("script_version")
+    params = create_foo_hash_job_params(filters: filters_from_hash(filter_h))
+    post(:create, params)
+    assert_response :success
+    assert_equal(jobs(:previous_job_run_with_arvados_sdk_version).uuid,
+                 assigns(:object).uuid)
+  end
+
+  test "create new job because of arvados_sdk_version 'not in git' filters" do
+    filter_h = BASE_FILTERS.reject { |k| k == "script_version" }
+    filter_a = filters_from_hash(filter_h)
+    # Allow anything from the root commit, but before commit 2.
+    filter_a += [["arvados_sdk_version", "in git", "436637c8"],
+                 ["arvados_sdk_version", "not in git", "00634b2b"]]
+    check_new_job_created_from(filters: filter_a)
   end
 end
