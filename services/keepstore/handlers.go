@@ -778,8 +778,13 @@ type WrapRESTRouter struct {
 func (wrapper *WrapRESTRouter) ServeHTTP(resp http.ResponseWriter, req *http.Request) {
   loggingWriter := LoggingResponseWriter{200, nil, resp}
   wrapper.router.ServeHTTP(&loggingWriter, req)
-  if loggingWriter.data != nil && loggingWriter.status == 200{
-    log.Printf("[%s] %s %s %d %s", req.RemoteAddr, req.Method, req.URL.Path[1:], loggingWriter.status, loggingWriter.data)
+  if loggingWriter.data != nil && loggingWriter.status == 200 {
+    data_len := len(loggingWriter.data)
+    if data_len > 200 {  // this could be a block
+      log.Printf("[%s] %s %s %d %d", req.RemoteAddr, req.Method, req.URL.Path[1:], loggingWriter.status, data_len)
+    } else {  // this could be a hash or status or a small block etc
+      log.Printf("[%s] %s %s %d %s", req.RemoteAddr, req.Method, req.URL.Path[1:], loggingWriter.status, loggingWriter.data)
+    }
   } else {
     log.Printf("[%s] %s %s %d", req.RemoteAddr, req.Method, req.URL.Path[1:], loggingWriter.status)
   }
