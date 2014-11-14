@@ -262,9 +262,11 @@ func main() {
 	// Start a round-robin VolumeManager with the volumes we have found.
 	KeepVM = MakeRRVolumeManager(goodvols)
 
-	// Tell the built-in HTTP server to direct all requests to the REST
-	// router.
-	http.Handle("/", MakeRESTRouter())
+	// Tell the built-in HTTP server to direct all requests to the REST router.
+  routerWrapper := WrapRESTRouter{MakeRESTRouter()}
+  http.HandleFunc("/", func(resp http.ResponseWriter, req *http.Request) {
+    routerWrapper.ServeHTTP(resp, req)
+  })
 
 	// Set up a TCP listener.
 	listener, err := net.Listen("tcp", listen)

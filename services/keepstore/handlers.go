@@ -754,3 +754,33 @@ func CanDelete(api_token string) bool {
 func IsDataManagerToken(api_token string) bool {
 	return data_manager_token != "" && api_token == data_manager_token
 }
+
+type LoggingResponseWriter struct {
+  status int
+  data []byte
+  http.ResponseWriter
+}
+
+func (loggingWriter *LoggingResponseWriter) WriteHeader(code int) {
+  loggingWriter.status = code
+  loggingWriter.ResponseWriter.WriteHeader(code)
+}
+
+func (loggingWriter *LoggingResponseWriter) Write(data []byte) (int, error){
+  loggingWriter.data = data
+  return loggingWriter.ResponseWriter.Write(data)
+}
+
+type WrapRESTRouter struct {
+  router *mux.Router
+}
+
+func (wrapper *WrapRESTRouter) ServeHTTP(resp http.ResponseWriter, req *http.Request) {
+  loggingWriter := LoggingResponseWriter{200, nil, resp}
+  wrapper.router.ServeHTTP(&loggingWriter, req)
+  if loggingWriter.data != nil && loggingWriter.status == 200{
+    log.Printf("[%s] %s %s %d %s", req.RemoteAddr, req.Method, req.URL.Path[1:], loggingWriter.status, loggingWriter.data)
+  } else {
+    log.Printf("[%s] %s %s %d", req.RemoteAddr, req.Method, req.URL.Path[1:], loggingWriter.status)
+  }
+}
