@@ -745,11 +745,11 @@ func (loggingWriter *LoggingResponseWriter) Write(data []byte) (int, error){
   return loggingWriter.ResponseWriter.Write(data)
 }
 
-type WrapRESTRouter struct {
+type RESTRouterWrapper struct {
   router *mux.Router
 }
 
-func (wrapper *WrapRESTRouter) ServeHTTP(resp http.ResponseWriter, req *http.Request) {
+func (wrapper *RESTRouterWrapper) ServeHTTP(resp http.ResponseWriter, req *http.Request) {
   loggingWriter := LoggingResponseWriter{200, nil, resp}
   wrapper.router.ServeHTTP(&loggingWriter, req)
   if loggingWriter.data != nil && loggingWriter.status == 200 {

@@ -750,7 +750,7 @@ func IssueRequest(router *mux.Router, rt *RequestTester) *httptest.ResponseRecor
 	if rt.api_token != "" {
 		req.Header.Set("Authorization", "OAuth2 "+rt.api_token)
 	}
-  routerWrapper := WrapRESTRouter{router}
+  routerWrapper := RESTRouterWrapper{router}
   routerWrapper.ServeHTTP(response, req)
 	return response
 }
