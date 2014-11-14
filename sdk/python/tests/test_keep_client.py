@@ -1,5 +1,7 @@
+import hashlib
 import mock
 import os
+import re
 import socket
 import unittest
 import urlparse
@@ -235,8 +237,8 @@ class KeepClientServiceTestCase(unittest.TestCase):
         api_client.keep_services().accessible().execute.return_value = {
             'items_available': len(services),
             'items': [{
-                    'uuid': 'zzzzz-bi6l4-mockservice{:04x}'.format(index),
-                    'owner_uuid': 'zzzzz-tpzed-mockownerabcdef',
+                    'uuid': 'zzzzz-bi6l4-{:015x}'.format(index),
+                    'owner_uuid': 'zzzzz-tpzed-000000000000000',
                     'service_host': host,
                     'service_port': port,
                     'service_ssl_flag': ssl,
@@ -246,10 +248,15 @@ class KeepClientServiceTestCase(unittest.TestCase):
             }
         return api_client
 
+    def mock_n_keep_disks(self, service_count):
+        return self.mock_keep_services(
+            *[("keep0x{:x}".format(index), 80, False, 'disk')
+              for index in range(service_count)])
+
     def get_service_roots(self, *services):
         api_client = self.mock_keep_services(*services)
         keep_client = arvados.KeepClient(api_client=api_client)
-        services = keep_client.shuffled_service_roots('000000')
+        services = keep_client.weighted_service_roots('000000')
         return [urlparse.urlparse(url) for url in sorted(services)]
 
     def test_ssl_flag_respected_in_roots(self):
@@ -322,6 +329,70 @@ class KeepClientServiceTestCase(unittest.TestCase):
             self.assertEqual(
                 arvados.KeepClient.DEFAULT_PROXY_TIMEOUT,
                 mock_request.call_args[1]['timeout'])
+
+    def test_probe_order_reference_set(self):
+        # expected_order[i] is the probe order for
+        # hash=md5(sprintf("%064x",i)) where there are 16 services
+        # with uuid sprintf("anything-%015x",j) with j in 0..15. E.g.,
+        # the first probe for the block consisting of 64 "0"
+        # characters is the service whose uuid is
+        # "zzzzz-bi6l4-000000000000003", so expected_order[0][0]=='3'.
+        expected_order = [
+            list('3eab2d5fc9681074'),
+            list('097dba52e648f1c3'),
+            list('c5b4e023f8a7d691'),
+            list('9d81c02e76a3bf54'),
+            ]
+        hashes = [
+            hashlib.md5("{:064x}".format(x)).hexdigest()
+            for x in range(len(expected_order))]
+        api_client = self.mock_n_keep_disks(16)
+        keep_client = arvados.KeepClient(api_client=api_client)
+        for i, hash in enumerate(hashes):
+            roots = keep_client.weighted_service_roots(hash)
+            got_order = [
+                re.search(r'//\[?keep0x([0-9a-f]+)', root).group(1)
+                for root in roots]
+            self.assertEqual(expected_order[i], got_order)
+
+    def test_probe_waste_adding_one_server(self):
+        hashes = [
+            hashlib.md5("{:064x}".format(x)).hexdigest() for x in range(100)]
+        initial_services = 12
+        api_client = self.mock_n_keep_disks(initial_services)
+        keep_client = arvados.KeepClient(api_client=api_client)
+        probes_before = [
+            keep_client.weighted_service_roots(hash) for hash in hashes]
+        for added_services in range(1, 12):
+            api_client = self.mock_n_keep_disks(initial_services+added_services)
+            keep_client = arvados.KeepClient(api_client=api_client)
+            total_penalty = 0
+            for hash_index in range(len(hashes)):
+                probe_after = keep_client.weighted_service_roots(
+                    hashes[hash_index])
+                penalty = probe_after.index(probes_before[hash_index][0])
+                self.assertLessEqual(penalty, added_services)
+                total_penalty += penalty
+            # Average penalty per block should not exceed
+            # N(added)/N(orig) by more than 20%, and should get closer
+            # to the ideal as we add data points.
+            expect_penalty = (
+                added_services *
+                len(hashes) / initial_services)
+            max_penalty = (
+                expect_penalty *
+                (120 - added_services)/100)
+            min_penalty = (
+                expect_penalty * 8/10)
+            self.assertTrue(
+                min_penalty <= total_penalty <= max_penalty,
+                "With {}+{} services, {} blocks, penalty {} but expected {}..{}".format(
+                    initial_services,
+                    added_services,
+                    len(hashes),
+                    total_penalty,
+                    min_penalty,
+                    max_penalty))
 
 
 class KeepClientRetryTestMixin(object):

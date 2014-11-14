@@ -139,8 +139,8 @@ class ArvadosBase < ActiveRecord::Base
     ArvadosResourceList.new(self).eager(*args)
   end
 
-  def self.all(*args)
-    ArvadosResourceList.new(self).all(*args)
+  def self.all
+    ArvadosResourceList.new(self)
   end
 
   def self.permit_attribute_params raw_params

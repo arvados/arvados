@@ -19,7 +19,18 @@ function unselect_all_files() {
 }
 </script>
 
-<div class="selection-action-container" style="padding-left: 1em">
+<%
+  preview_selectable_container = ''
+  preview_selectable = ''
+  padding_left = '1em'
+  if !params['use_preview_selection'].nil? and params['use_preview_selection'] == 'true'
+    preview_selectable_container = 'preview-selectable-container selectable-container'
+    preview_selectable = 'preview-selectable selectable'
+    padding_left = '0em'
+  end
+%>
+
+<div class="selection-action-container" style="padding-left: <%=padding_left%>">
   <% if !defined? no_checkboxes or !no_checkboxes %>
   <div class="row">
     <div class="pull-left">
@@ -53,7 +64,7 @@ function unselect_all_files() {
 <% if file_tree.nil? or file_tree.empty? %>
   <p>This collection is empty.</p>
 <% else %>
-  <ul id="collection_files" class="collection_files">
+  <ul id="collection_files" class="collection_files <%=preview_selectable_container%>">
   <% dirstack = [file_tree.first.first] %>
   <% file_tree.take(10000).each_with_index do |(dirname, filename, size), index| %>
     <% file_path = CollectionsHelper::file_path([dirname, filename]) %>
@@ -64,13 +75,13 @@ function unselect_all_files() {
     <% if size.nil?  # This is a subdirectory. %>
       <% dirstack.push(File.join(dirname, filename)) %>
       <div class="collection_files_row">
-       <div class="collection_files_name"><i class="fa fa-fw fa-folder-open"></i> <%= filename %></div>
+       <div class="collection_files_name><i class="fa fa-fw fa-folder-open"></i> <%= filename %></div>
       </div>
       <ul class="collection_files">
     <% else %>
       <% link_params = {controller: 'collections', action: 'show_file',
                         uuid: @object.portable_data_hash, file: file_path, size: size} %>
-       <div class="collection_files_row filterable">
+       <div class="collection_files_row filterable <%=preview_selectable%>" href="<%=@object.uuid%>/<%=file_path%>">
         <div class="collection_files_buttons pull-right">
           <%= raw(human_readable_bytes_html(size)) %>
           <% disable_search = (Rails.configuration.filename_suffixes_with_view_icon.include? file_path.split('.')[-1]) ? false : true %>
@@ -85,7 +96,7 @@ function unselect_all_files() {
         <div class="collection_files_name">
           <% if !defined? no_checkboxes or !no_checkboxes %>
           <%= check_box_tag 'uuids[]', "#{@object.uuid}/#{file_path}", false, {
-                :class => 'persistent-selection',
+                :class => "persistent-selection",
                 :friendly_type => "File",
                 :friendly_name => "#{@object.uuid}/#{file_path}",
                 :href => url_for(controller: 'collections', action: 'show_file',
@@ -103,7 +114,7 @@ function unselect_all_files() {
                       {title: file_path}) %>
         </div>
       <% else %>
-          <i class="fa fa-fw fa-file"></i> <%= filename %></div>
+          <i class="fa fa-fw fa-file" href="<%=@object.uuid%>/<%=file_path%>" ></i> <%= filename %></div>
        </div>
       <% end %>
       </li>

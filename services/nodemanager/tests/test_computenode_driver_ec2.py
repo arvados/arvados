@@ -7,7 +7,7 @@ import unittest
 
 import mock
 
-import arvnodeman.computenode.ec2 as ec2
+import arvnodeman.computenode.driver.ec2 as ec2
 from . import testutil
 
 class EC2ComputeNodeDriverTestCase(unittest.TestCase):
