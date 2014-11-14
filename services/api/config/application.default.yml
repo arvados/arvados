@@ -50,6 +50,11 @@ test:
 common:
   uuid_prefix: <%= Digest::MD5.hexdigest(`hostname`).to_i(16).to_s(36)[0..4] %>
 
+  # If set, this is the hostname that will be used for root_url and advertised
+  # in the discovery document.  By default, uses the default Rails logic for
+  # deciding on a hostname.
+  host: ~
+
   # If this is not false, HTML requests at the API server's root URL
   # are redirected to this location, and it is provided in the text of
   # user activation notification email messages to remind them where
