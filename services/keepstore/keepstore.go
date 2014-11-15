@@ -13,7 +13,6 @@ import (
 	"strings"
 	"syscall"
 	"time"
-	"git.curoverse.com/arvados.git/services/keep"
 )
 
 // ======================
@@ -264,7 +263,7 @@ func main() {
 	KeepVM = MakeRRVolumeManager(goodvols)
 
 	// Tell the built-in HTTP server to direct all requests to the REST router.
-  routerWrapper := keep_utils.MakeRESTRouterWrapper(MakeRESTRouter())
+  routerWrapper := MakeRESTRouterWrapper(MakeRESTRouter())
   http.HandleFunc("/", func(resp http.ResponseWriter, req *http.Request) {
     routerWrapper.ServeHTTP(resp, req)
   })

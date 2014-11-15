@@ -21,7 +21,6 @@ import (
 	"strings"
 	"testing"
 	"time"
-	"git.curoverse.com/arvados.git/services/keep"
 )
 
 // A RequestTester represents the parameters for an HTTP request to
@@ -751,7 +750,7 @@ func IssueRequest(router *mux.Router, rt *RequestTester) *httptest.ResponseRecor
 	if rt.api_token != "" {
 		req.Header.Set("Authorization", "OAuth2 "+rt.api_token)
 	}
-  routerWrapper := keep_utils.MakeRESTRouterWrapper(router)
+  routerWrapper := MakeRESTRouterWrapper(router)
   routerWrapper.ServeHTTP(response, req)
 	return response
 }
