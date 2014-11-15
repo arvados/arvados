@@ -58,7 +58,8 @@ $(document).on('ajax:complete ready', function() {
 });
 
 
-function processLogLineForChart( logLine, jobGraphSeries, jobGraphData ) {
+function processLogLineForChart( logLine ) {
+    // TODO: make this more robust: anything could go wrong in here
     var match = logLine.match(/(.*)crunchstat:(.*)-- interval(.*)/);
     if( match ) {
         var series = match[2].trim().split(' ')[0];
@@ -71,6 +72,7 @@ function processLogLineForChart( logLine, jobGraphSeries, jobGraphData ) {
         for(var i=2; i < intervalData.length; i += 2 ) {
             dsum += parseFloat(intervalData[i]);
         }
+        // TODO: why 4? what if the data is smaller than 0.0001?
         var datum = (dsum/dt).toFixed(4);
         var preamble = match[1].trim().split(' ');
         var timestamp = preamble[0].replace('_','T');
@@ -89,11 +91,11 @@ function processLogLineForChart( logLine, jobGraphSeries, jobGraphData ) {
 $(document).on('arv-log-event', '#log_graph_div', function(event, eventData) {
     if( eventData.properties.text ) {
         var series_length = jobGraphSeries.length;
-        processLogLineForChart( eventData.properties.text, jobGraphSeries, jobGraphData);
+        processLogLineForChart( eventData.properties.text );
         if( series_length < jobGraphSeries.length) {
             // series have changed, draw entirely new graph
             $('#log_graph_div').html('');
-            jobGraph = Morris.Line({
+            window.jobGraph = Morris.Line({
                 element: 'log_graph_div',
                 data: jobGraphData,
                 xkey: 't',

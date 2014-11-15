@@ -18,14 +18,14 @@
      ></div>
 
 <%= javascript_tag do %>
-  var jobGraphData = [];
-  var jobGraphSeries = [];
+  window.jobGraphData = [];
+  window.jobGraphSeries = [];
   <% stderr_log_records([@object.uuid],[['properties','~','crunchstat:.*-- interval']])
         .each.with_index do |log_record, index| %>
     var logLine = '<%=j log_record.properties[:text] %>';
-    processLogLineForChart( logLine, jobGraphSeries, jobGraphData );
+    processLogLineForChart( logLine );
   <% end %>
-  var jobGraph = Morris.Line({
+  window.jobGraph = Morris.Line({
     element: 'log_graph_div',
     data: jobGraphData,
     xkey: 't',
