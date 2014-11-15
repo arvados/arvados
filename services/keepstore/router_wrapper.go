@@ -29,13 +29,14 @@ type RESTRouterWrapper struct {
   router *mux.Router
 }
 
-func MakeRESTRouterWrapper(r *mux.Router) (RESTRouterWrapper) {
-  return (RESTRouterWrapper{r})
+func MakeRESTRouterWrapper() (RESTRouterWrapper) {
+  router := MakeRESTRouter()
+  return (RESTRouterWrapper{router})
 }
 
-func (this RESTRouterWrapper) ServeHTTP(resp http.ResponseWriter, req *http.Request) {
+func (wrapper RESTRouterWrapper) ServeHTTP(resp http.ResponseWriter, req *http.Request) {
   loggingWriter := LoggingResponseWriter{200, nil, resp}
-  this.router.ServeHTTP(&loggingWriter, req)
+  wrapper.router.ServeHTTP(&loggingWriter, req)
   if loggingWriter.data != nil && loggingWriter.status == 200 {
     data_len := len(loggingWriter.data)
     if data_len > 200 {  // this could be a block, so just print the size
