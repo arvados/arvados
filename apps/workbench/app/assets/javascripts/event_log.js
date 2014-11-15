@@ -59,12 +59,16 @@ $(document).on('ajax:complete ready', function() {
 
 
 function processLogLineForChart( logLine ) {
+    var recreate = false;
+    var rescale = false;
     // TODO: make this more robust: anything could go wrong in here
     var match = logLine.match(/(.*)crunchstat:(.*)-- interval(.*)/);
     if( match ) {
         var series = match[2].trim().split(' ')[0];
         if( $.inArray( series, jobGraphSeries) < 0 ) {
             jobGraphSeries.push(series);
+            jobGraphMaxima[series] = null;
+            recreate = true;
         }
         var intervalData = match[3].trim().split(' ');
         var dt = parseFloat(intervalData[0]);
@@ -72,27 +76,53 @@ function processLogLineForChart( logLine ) {
         for(var i=2; i < intervalData.length; i += 2 ) {
             dsum += parseFloat(intervalData[i]);
         }
-        // TODO: why 4? what if the data is smaller than 0.0001?
-        var datum = (dsum/dt).toFixed(4);
+        var datum = dsum/dt;
+        if( datum !== 0 && ( jobGraphMaxima[series] === null || jobGraphMaxima[series] < datum ) ) {
+            // use old maximum to get a scale conversion
+            var scaleConversion = jobGraphMaxima[series]/datum;
+            // set new maximum
+            jobGraphMaxima[series] = datum;
+            // rescale
+            $.each( jobGraphData, function( i, entry ) {
+                if( entry[series] !== null && entry[series] !== undefined ) {
+                    entry[series] *= scaleConversion;
+                }
+            });
+        }
+        // scale
+        // FIXME: what about negative numbers?
+        var scaledDatum = null;
+        if( jobGraphMaxima[series] !== null && jobGraphMaxima[series] !== 0 ) {
+            scaledDatum = datum/jobGraphMaxima[series]
+        } else {
+            scaledDatum = datum;
+        }
+        // more parsing
         var preamble = match[1].trim().split(' ');
         var timestamp = preamble[0].replace('_','T');
-        var xpoints = $.grep( jobGraphData, function(e){ return e['t'] === timestamp; });
-        if(xpoints.length) {
-            // xpoints[0] is the x point that that matched the timestamp and so already existed: add the new datum
-            xpoints[0][series] = datum;
+        // identify x axis point
+        var found = false;
+        for( var i = 0; i < jobGraphData.length; i++ ) {
+            if( jobGraphData[i]['t'] === timestamp ) {
+                found = true;
+                break;
+            }
+        }
+        if(found) {
+            jobGraphData[i][series] = scaledDatum;
         } else {
             var entry = { 't': timestamp };
-            entry[series] = datum;
+            entry[series] = scaledDatum;
             jobGraphData.push( entry );
         }
     }
+    return recreate;
 }
 
 $(document).on('arv-log-event', '#log_graph_div', function(event, eventData) {
     if( eventData.properties.text ) {
-        var series_length = jobGraphSeries.length;
-        processLogLineForChart( eventData.properties.text );
-        if( series_length < jobGraphSeries.length) {
+        var recreate = processLogLineForChart( eventData.properties.text );
+        if( recreate ) {
             // series have changed, draw entirely new graph
             $('#log_graph_div').html('');
             window.jobGraph = Morris.Line({
