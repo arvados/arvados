@@ -1,6 +1,8 @@
 <% if !@object.log %>
 
-<div id="log_graph_div" data-object-uuid="<%= @object.uuid %>"></div>
+<div id="log_graph_div"
+     class="arv-log-event-listener"
+     data-object-uuid="<%= @object.uuid %>"></div>
 
 <% log_history = stderr_log_history([@object.uuid]) %>
 
@@ -18,8 +20,8 @@
 <%= javascript_tag do %>
   var jobGraphData = [];
   var jobGraphSeries = [];
-  <% stderr_log_records([@object.uuid]).each.with_index do |log_record, index| %>
-    <% puts log_record.to_yaml %>
+  <% stderr_log_records([@object.uuid],[['properties','~','crunchstat:.*-- interval']])
+        .each.with_index do |log_record, index| %>
     var logLine = '<%=j log_record.properties[:text] %>';
     processLogLineForChart( logLine, jobGraphSeries, jobGraphData );
   <% end %>

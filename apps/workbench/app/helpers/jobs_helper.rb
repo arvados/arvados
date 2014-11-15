@@ -18,9 +18,20 @@ module JobsHelper
     return results
   end
 
-  def stderr_log_records(job_uuids)
-    Log.where(event_type: 'stderr',
-              object_uuid: job_uuids).order('id DESC').results
+  def stderr_log_records(job_uuids, extra_filters = nil)
+    filters = [["event_type",  "=", "stderr"],
+               ["object_uuid", "in", job_uuids]]
+    filters += extra_filters if extra_filters
+    last_entry = Log.order('id DESC').limit(1).filter(filters).results.first
+    if last_entry
+      filters += [["event_at", ">=", last_entry.event_at - 3.minutes]]
+      Log.order('id DESC')
+         .limit(10000)
+         .filter(filters)
+         .results
+    else
+      []
+    end
   end
 
 end

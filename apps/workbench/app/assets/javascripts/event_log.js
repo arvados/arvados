@@ -74,18 +74,35 @@ function processLogLineForChart( logLine, jobGraphSeries, jobGraphData ) {
         var datum = (dsum/dt).toFixed(4);
         var preamble = match[1].trim().split(' ');
         var timestamp = preamble[0].replace('_','T');
-        var found = false;
-        for( var i=0; i < jobGraphData.length; i++ ) {
-            if( jobGraphData[i]['t'] == timestamp ) {
-                jobGraphData[i][series] = datum;
-                found = true;
-                break;
-            }
-        }
-        if( !found ){
+        var xpoints = $.grep( jobGraphData, function(e){ return e['t'] === timestamp; });
+        if(xpoints.length) {
+            // xpoints[0] is the x point that that matched the timestamp and so already existed: add the new datum
+            xpoints[0][series] = datum;
+        } else {
             var entry = { 't': timestamp };
             entry[series] = datum;
             jobGraphData.push( entry );
         }
     }
 }
+
+$(document).on('arv-log-event', '#log_graph_div', function(event, eventData) {
+    if( eventData.properties.text ) {
+        var series_length = jobGraphSeries.length;
+        processLogLineForChart( eventData.properties.text, jobGraphSeries, jobGraphData);
+        if( series_length < jobGraphSeries.length) {
+            // series have changed, draw entirely new graph
+            $('#log_graph_div').html('');
+            jobGraph = Morris.Line({
+                element: 'log_graph_div',
+                data: jobGraphData,
+                xkey: 't',
+                ykeys: jobGraphSeries,
+                labels: jobGraphSeries
+            });
+        } else {
+            jobGraph.setData( jobGraphData );
+        }
+    }
+
+} );
