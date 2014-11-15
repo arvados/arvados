@@ -3,6 +3,8 @@ require 'selenium-webdriver'
 require 'headless'
 
 class UserAgreementsTest < ActionDispatch::IntegrationTest
+  # We might change user activation status here, which can affect other test suites.
+  reset_api_fixtures :after_suite
 
   setup do
     Capybara.current_driver = Capybara.javascript_driver

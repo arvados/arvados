@@ -3,6 +3,8 @@ require 'selenium-webdriver'
 require 'headless'
 
 class PipelineInstancesTest < ActionDispatch::IntegrationTest
+  reset_api_fixtures :after_suite
+
   setup do
     # Selecting collections requiresLocalStorage
     headless = Headless.new

@@ -3,6 +3,8 @@ require 'selenium-webdriver'
 require 'headless'
 
 class ProjectsTest < ActionDispatch::IntegrationTest
+  reset_api_fixtures :after_suite
+
   setup do
     Capybara.current_driver = Capybara.javascript_driver
   end
@@ -48,8 +50,7 @@ class ProjectsTest < ActionDispatch::IntegrationTest
 
     # visit project page
     visit current_path
-    assert(has_no_text?('.container-fluid', text: '*Textile description for A project*'),
-           "Description is not rendered properly")
+    assert_no_text '*Textile description for A project*'
     assert(find?('.container-fluid', text: 'Textile description for A project'),
            "Description update did not survive page refresh")
     assert(find?('.container-fluid', text: 'And a new paragraph in description'),

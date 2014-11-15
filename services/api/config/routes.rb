@@ -63,6 +63,10 @@ Server::Application.routes.draw do
     end
   end
 
+  if Rails.configuration.enable_remote_database_reset
+    post '/database/reset', to: 'database#reset'
+  end
+
   # omniauth
   match '/auth/:provider/callback', :to => 'user_sessions#create'
   match '/auth/failure', :to => 'user_sessions#failure'

@@ -204,6 +204,35 @@ class ActionController::TestCase
   end
 end
 
+# Test classes can call reset_api_fixtures(:before_suite) or
+# ...(:after_suite)
+class ActiveSupport::TestCase
+  class << self
+    attr_accessor :want_reset_api_fixtures
+  end
+
+  def self.reset_api_fixtures where, t=true
+    raise unless [:before_suite, :after_suite].include? where
+    self.want_reset_api_fixtures ||= {}
+    self.want_reset_api_fixtures[where] = t
+  end
+
+  def self.run *args
+    self.want_reset_api_fixtures ||= {}
+    reset_api_fixtures_now if want_reset_api_fixtures[:before_suite]
+    super
+    reset_api_fixtures_now if want_reset_api_fixtures[:after_suite]
+  end
+
+  protected
+  def self.reset_api_fixtures_now
+    auth = api_fixture('api_client_authorizations')['admin_trustedclient']
+    Thread.current[:arvados_api_token] = auth['api_token']
+    ArvadosApiClient.new.api(nil, '../../database/reset', {})
+    Thread.current[:arvados_api_token] = nil
+  end
+end
+
 # If it quacks like a duck, it must be a HTTP request object.
 class RequestDuck
   def self.host

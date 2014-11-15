@@ -7,6 +7,7 @@ gem 'rails', '~> 3.2.0'
 
 group :test, :development do
   gem 'factory_girl_rails'
+  gem 'database_cleaner'
   # Note: "require: false" here tells bunder not to automatically
   # 'require' the packages during application startup. Installation is
   # still mandatory.
@@ -67,7 +68,6 @@ gem 'test_after_commit', :group => :test
 gem 'google-api-client', '~> 0.6.3'
 gem 'trollop'
 gem 'faye-websocket'
-gem 'database_cleaner'
 
 gem 'themes_for_rails'
 
