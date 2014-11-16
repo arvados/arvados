@@ -167,8 +167,21 @@ function rescaleJobGraphSeries( series, scaleConversion ) {
 
 $(document).on('arv-log-event', '#log_graph_div', function(event, eventData) {
     if( eventData.properties.text ) {
-        var recreate = processLogLineForChart( eventData.properties.text );
+        var causeRecreate = processLogLineForChart( eventData.properties.text );
+        if( causeRecreate && !window.recreate ) {
+            window.recreate = true;
+        } else {
+            window.redraw = true;
+        }
+    }
+} );
+
+$(document).on('ready', function(){
+    window.recreate = false;
+    window.redraw = false;
+    setInterval( function() {
         if( recreate ) {
+            window.recreate = false;
             // series have changed, draw entirely new graph
             $('#log_graph_div').html('');
             window.jobGraph = Morris.Line({
@@ -178,9 +191,9 @@ $(document).on('arv-log-event', '#log_graph_div', function(event, eventData) {
                 ykeys: jobGraphSeries,
                 labels: jobGraphSeries
             });
-        } else {
+        } else if( redraw ) {
+            window.redraw = false;
             jobGraph.setData( jobGraphData );
         }
-    }
-
-} );
+    }, 5000);
+});
