@@ -2,6 +2,8 @@ class ArvadosResourceList
   include ArvadosApiClientHelper
   include Enumerable
 
+  attr_reader :resource_class
+
   def initialize resource_class=nil
     @resource_class = resource_class
     @fetch_multiple_pages = true
