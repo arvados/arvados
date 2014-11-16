@@ -137,10 +137,11 @@ function processLogLineForChart( logLine ) {
                 // from those that we dropped, are any of them maxima? if so we need to rescale
                 jobGraphSeries.forEach( function(series) {
                     // test that every shifted entry in this series was either not a number (in which case we don't care)
-                    // or else smaller than the scaled maximum (i.e. 1), because otherwise we just scrolled off something that was a maximum point
+                    // or else approximately (to 2 decimal places) smaller than the scaled maximum (i.e. 1),
+                    // because otherwise we just scrolled off something that was a maximum point
                     // and so we need to recalculate a new maximum point by looking at all remaining displayed points in the series
                     if( isJobSeriesRescalable(series) && jobGraphMaxima[series] !== null
-                          && !shifted.every( function(e) { return( !($.isNumeric(e[series])) || e[series] < 1 ) } ) ) {
+                          && !shifted.every( function(e) { return( !$.isNumeric(e[series]) || e[series].toFixed(2) < 1.0 ) } ) ) {
                         // check the remaining displayed points and find the new (scaled) maximum
                         var seriesMax = null;
                         jobGraphData.forEach( function(entry) {
