@@ -29,6 +29,7 @@
   window.jobGraph = Morris.Line({
     element: 'log_graph_div',
     data: jobGraphData,
+    ymax: 1.0,
     xkey: 't',
     ykeys: jobGraphSeries,
     labels: jobGraphSeries

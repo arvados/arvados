@@ -82,16 +82,25 @@ function processLogLineForChart( logLine ) {
         }
         var datum = dsum/dt;
         if( datum !== 0 && ( jobGraphMaxima[series] === null || jobGraphMaxima[series] < datum ) ) {
-            // use old maximum to get a scale conversion
-            var scaleConversion = jobGraphMaxima[series]/datum;
-            // set new maximum and rescale the series
-            jobGraphMaxima[series] = datum;
-            rescaleJobGraphSeries( series, scaleConversion );
+            if( isJobSeriesRescalable(series) ) {
+                // use old maximum to get a scale conversion
+                var scaleConversion = jobGraphMaxima[series]/datum;
+                // set new maximum and rescale the series
+                jobGraphMaxima[series] = datum;
+                rescaleJobGraphSeries( series, scaleConversion );
+            }
+            // and special calculation for cpus
+            if( series === 'cpu' ) {
+                var cpuCountMatch = match[2].match(/(\d+) cpus/);
+                if( cpuCountMatch ) {
+                    datum = datum / cpuCountMatch[1];
+                }
+            }
         }
         // scale
         // FIXME: what about negative numbers?
         var scaledDatum = null;
-        if( jobGraphMaxima[series] !== null && jobGraphMaxima[series] !== 0 ) {
+        if( isJobSeriesRescalable(series) && jobGraphMaxima[series] !== null && jobGraphMaxima[series] !== 0 ) {
             scaledDatum = datum/jobGraphMaxima[series]
         } else {
             scaledDatum = datum;
@@ -130,7 +139,7 @@ function processLogLineForChart( logLine ) {
                     // test that every shifted entry in this series was either not a number (in which case we don't care)
                     // or else smaller than the scaled maximum (i.e. 1), because otherwise we just scrolled off something that was a maximum point
                     // and so we need to recalculate a new maximum point by looking at all remaining displayed points in the series
-                    if( jobGraphMaxima[series] !== null
+                    if( isJobSeriesRescalable(series) && jobGraphMaxima[series] !== null
                           && !shifted.every( function(e) { return( !($.isNumeric(e[series])) || e[series] < 1 ) } ) ) {
                         // check the remaining displayed points and find the new (scaled) maximum
                         var seriesMax = null;
@@ -158,11 +167,18 @@ function processLogLineForChart( logLine ) {
 }
 
 function rescaleJobGraphSeries( series, scaleConversion ) {
-    $.each( jobGraphData, function( i, entry ) {
-        if( entry[series] !== null && entry[series] !== undefined ) {
-            entry[series] *= scaleConversion;
-        }
-    });
+    if( isJobSeriesRescalable() ) {
+        $.each( jobGraphData, function( i, entry ) {
+            if( entry[series] !== null && entry[series] !== undefined ) {
+                entry[series] *= scaleConversion;
+            }
+        });
+    }
+}
+
+// that's right - we never do this for the 'cpu' series, which will always be between 0 and 1 anyway
+function isJobSeriesRescalable( series ) {
+    return series != 'cpu';
 }
 
 $(document).on('arv-log-event', '#log_graph_div', function(event, eventData) {
@@ -187,6 +203,7 @@ $(document).on('ready', function(){
             window.jobGraph = Morris.Line({
                 element: 'log_graph_div',
                 data: jobGraphData,
+                ymax: 1.0,
                 xkey: 't',
                 ykeys: jobGraphSeries,
                 labels: jobGraphSeries
