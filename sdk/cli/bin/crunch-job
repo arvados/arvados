@@ -551,7 +551,9 @@ else {
     freeze_if_want_freeze ($installpid);
     select (undef, undef, undef, 0.1);
   }
-  Log (undef, "Install script exited ".exit_status_s($?));
+  my $install_exited = $?;
+  Log (undef, "Install script exited ".exit_status_s($install_exited));
+  exit (1) if $install_exited != 0;
 }
 
 if (!$have_slurm)
@@ -699,17 +701,10 @@ for (my $todo_ptr = 0; $todo_ptr <= $#jobstep_todo; $todo_ptr ++)
       qw(-n1 -c1 -N1 -D), $ENV{'TMPDIR'},
       "--job-name=$job_id.$id.$$",
 	);
-    my $build_script_to_send = "";
     my $command =
 	"if [ -e $ENV{TASK_WORK} ]; then rm -rf $ENV{TASK_WORK}; fi; "
         ."mkdir -p $ENV{CRUNCH_TMP} $ENV{JOB_WORK} $ENV{TASK_WORK} $ENV{TASK_KEEPMOUNT} "
 	."&& cd $ENV{CRUNCH_TMP} ";
-    if ($build_script)
-    {
-      $build_script_to_send = $build_script;
-      $command .=
-	  "&& perl -";
-    }
     $command .= "&& exec arv-mount --by-id --allow-other $ENV{TASK_KEEPMOUNT} --exec ";
     if ($docker_hash)
     {
@@ -738,18 +733,32 @@ for (my $todo_ptr = 0; $todo_ptr <= $#jobstep_todo; $todo_ptr ++)
       $command .= "--volume=\Q$ENV{TASK_KEEPMOUNT}:/keep:ro\E ";
       $ENV{TASK_KEEPMOUNT} = "/keep";
 
-      # TASK_WORK is a plain docker data volume: it starts out empty,
-      # is writable, and persists until no containers use it any
-      # more. We don't use --volumes-from to share it with other
-      # containers: it is only accessible to this task, and it goes
-      # away when this task stops.
-      $command .= "--volume=\Q$ENV{TASK_WORK}\E ";
+      # TASK_WORK is almost exactly like a docker data volume: it
+      # starts out empty, is writable, and persists until no
+      # containers use it any more. We don't use --volumes-from to
+      # share it with other containers: it is only accessible to this
+      # task, and it goes away when this task stops.
+      #
+      # However, a docker data volume is writable only by root unless
+      # the mount point already happens to exist in the container with
+      # different permissions. Therefore, we [1] assume /tmp already
+      # exists in the image and is writable by the crunch user; [2]
+      # avoid putting TASK_WORK inside CRUNCH_TMP (which won't be
+      # writable if they are created by docker while setting up the
+      # other --volumes); and [3] create $TASK_WORK inside the
+      # container using $build_script.
+      $command .= "--volume=/tmp ";
+      $ENV{"TASK_WORK"} = "/tmp/crunch-job-task-work/$childslotname";
+      $ENV{"HOME"} = $ENV{"TASK_WORK"};
+      $ENV{"TASK_TMPDIR"} = $ENV{"TASK_WORK"}; # deprecated
 
-      # JOB_WORK is also a plain docker data volume for now. TODO:
-      # Share a single JOB_WORK volume across all task containers on a
-      # given worker node, and delete it when the job ends (and, in
-      # case that doesn't work, when the next job starts).
-      $command .= "--volume=\Q$ENV{JOB_WORK}\E ";
+      # TODO: Share a single JOB_WORK volume across all task
+      # containers on a given worker node, and delete it when the job
+      # ends (and, in case that doesn't work, when the next job
+      # starts).
+      #
+      # For now, use the same approach as TASK_WORK above.
+      $ENV{"JOB_WORK"} = "/tmp/crunch-job-work";
 
       while (my ($env_key, $env_val) = each %ENV)
       {
@@ -760,16 +769,16 @@ for (my $todo_ptr = 0; $todo_ptr <= $#jobstep_todo; $todo_ptr ++)
       $command .= "--env=\QHOME=$ENV{HOME}\E ";
       $command .= "\Q$docker_hash\E ";
       $command .= "stdbuf --output=0 --error=0 ";
-      $command .= "$ENV{CRUNCH_SRC}/crunch_scripts/" . $Job->{"script"};
+      $command .= "perl - $ENV{CRUNCH_SRC}/crunch_scripts/" . $Job->{"script"};
     } else {
       # Non-docker run
       $command .= "crunchstat -cgroup-root=/sys/fs/cgroup -poll=10000 ";
       $command .= "stdbuf --output=0 --error=0 ";
-      $command .= "$ENV{CRUNCH_SRC}/crunch_scripts/" . $Job->{"script"};
+      $command .= "perl - $ENV{CRUNCH_SRC}/crunch_scripts/" . $Job->{"script"};
     }
 
     my @execargs = ('bash', '-c', $command);
-    srun (\@srunargs, \@execargs, undef, $build_script_to_send);
+    srun (\@srunargs, \@execargs, undef, $build_script);
     # exec() failed, we assume nothing happened.
     die "srun() failed on build script\n";
   }
@@ -1730,9 +1739,10 @@ use File::Path qw( make_path remove_tree );
 my $destdir = $ENV{"CRUNCH_SRC"};
 my $commit = $ENV{"CRUNCH_SRC_COMMIT"};
 my $repo = $ENV{"CRUNCH_SRC_URL"};
+my $job_work = $ENV{"JOB_WORK"};
 my $task_work = $ENV{"TASK_WORK"};
 
-for my $dir ($destdir, $task_work) {
+for my $dir ($destdir, $job_work, $task_work) {
   if ($dir) {
     make_path $dir;
     -e $dir or die "Failed to create temporary directory ($dir): $!";
@@ -1747,12 +1757,8 @@ if ($task_work) {
 open L, ">", "$destdir.lock" or die "$destdir.lock: $!";
 flock L, LOCK_EX;
 if (readlink ("$destdir.commit") eq $commit && -d $destdir) {
-    if (@ARGV) {
-        exec(@ARGV);
-        die "Cannot exec `@ARGV`: $!";
-    } else {
-        exit 0;
-    }
+  # This version already installed -> nothing to do.
+  run_argv_and_exit();
 }
 
 unlink "$destdir.commit";
@@ -1762,12 +1768,15 @@ open STDERR, ">&STDOUT";
 
 mkdir $destdir;
 my @git_archive_data = <DATA>;
-if (@git_archive_data) {
-  open TARX, "|-", "tar", "-C", $destdir, "-xf", "-";
-  print TARX @git_archive_data;
-  if(!close(TARX)) {
-    die "'tar -C $destdir -xf -' exited $?: $!";
-  }
+if (!@git_archive_data) {
+  # Nothing to extract -> nothing to install.
+  run_argv_and_exit();
+}
+
+open TARX, "|-", "tar", "-C", $destdir, "-xf", "-";
+print TARX @git_archive_data;
+if(!close(TARX)) {
+  die "'tar -C $destdir -xf -' exited $?: $!";
 }
 
 my $pwd;
@@ -1799,11 +1808,16 @@ if ($commit) {
 
 close L;
 
-if (@ARGV) {
+run_argv_and_exit();
+
+sub run_argv_and_exit
+{
+  if (@ARGV) {
     exec(@ARGV);
     die "Cannot exec `@ARGV`: $!";
-} else {
+  } else {
     exit 0;
+  }
 }
 
 sub shell_or_die
