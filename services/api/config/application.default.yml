@@ -100,8 +100,21 @@ common:
   # silenced by throttling are not counted against this total.
   crunch_limit_log_bytes_per_job: 67108864
 
-  # Path to /etc/dnsmasq.d, or false = do not update dnsmasq data.
-  dnsmasq_conf_dir: false
+  # Path to dns server configuration directory (e.g. /etc/unbound.d/conf.d), 
+  # or false = do not update dns server data.
+  dns_server_conf_dir: false
+
+  # Template for the dns server host snippets. See unbound.template in this directory for
+  # an example. Set to false to disable.
+  dns_server_conf_template: false
+
+  # Dns server reload command, or false = do not reload dns server after data change
+  dns_server_reload_command: false
+
+  # Example for unbound
+  #dns_server_conf_dir: /etc/unbound/conf.d
+  #dns_server_conf_template: /path/to/your/api/server/config/unbound.template
+  #dns_server_reload_command: /etc/init.d/unbound reload
 
   compute_node_domain: false
   compute_node_nameservers:
