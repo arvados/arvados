@@ -23,8 +23,7 @@
   window.jobGraphMaxima = {};
   <% stderr_log_records([@object.uuid],[['properties','~','crunchstat:.*-- interval']])
         .each.with_index do |log_record, index| %>
-    var logLine = '<%=j log_record.properties[:text] %>';
-    processLogLineForChart( logLine );
+    processLogLineForChart( '<%=j log_record.properties[:text] %>' );
   <% end %>
   window.jobGraph = Morris.Line({
     element: 'log_graph_div',

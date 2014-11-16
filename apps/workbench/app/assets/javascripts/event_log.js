@@ -66,15 +66,20 @@ function processLogLineForChart( logLine ) {
     var recreate = false;
     var rescale = false;
     // TODO: make this more robust: anything could go wrong in here
-    var match = logLine.match(/(.*)crunchstat:(.*)-- interval(.*)/);
+    var match = logLine.match(/(\S+) (\S+) (\S+) (\S+) stderr crunchstat: (\S+) (.*) -- interval (.*)/);
     if( match ) {
-        var series = match[2].trim().split(' ')[0];
+        // the timestamp comes first
+        var timestamp = match[1].replace('_','T');
+        // for the series use the first word after 'crunchstat:'
+        var series = match[5];
+        // and append the task number (the 4th term)
+        series += '-' + match[4]
         if( $.inArray( series, jobGraphSeries) < 0 ) {
             jobGraphSeries.push(series);
             jobGraphMaxima[series] = null;
             recreate = true;
         }
-        var intervalData = match[3].trim().split(' ');
+        var intervalData = match[7].trim().split(' ');
         var dt = parseFloat(intervalData[0]);
         var dsum = 0.0;
         for(var i=2; i < intervalData.length; i += 2 ) {
@@ -90,8 +95,9 @@ function processLogLineForChart( logLine ) {
                 rescaleJobGraphSeries( series, scaleConversion );
             }
             // and special calculation for cpus
-            if( series === 'cpu' ) {
-                var cpuCountMatch = match[2].match(/(\d+) cpus/);
+            if( /^cpu-/.test(series) ) {
+                // divide the stat by the number of cpus
+                var cpuCountMatch = match[6].match(/(\d+) cpus/);
                 if( cpuCountMatch ) {
                     datum = datum / cpuCountMatch[1];
                 }
@@ -105,9 +111,6 @@ function processLogLineForChart( logLine ) {
         } else {
             scaledDatum = datum;
         }
-        // more parsing
-        var preamble = match[1].trim().split(' ');
-        var timestamp = preamble[0].replace('_','T');
         // identify x axis point
         var found = false;
         for( var i = jobGraphData.length - 1; i >= 0; i-- ) {
@@ -128,9 +131,9 @@ function processLogLineForChart( logLine ) {
             entry[series] = scaledDatum;
             jobGraphData.splice( insertAt, 0, entry );
             var shifted = [];
-            // now let's see about "scrolling" the graph, dropping entries that are too old (>3 minutes)
+            // now let's see about "scrolling" the graph, dropping entries that are too old (>10 minutes)
             while( jobGraphData.length > 0
-                     && (Date.parse( jobGraphData[0]['t'] ).valueOf() + 3*60000 < Date.parse( jobGraphData[jobGraphData.length-1]['t'] ).valueOf()) ) {
+                     && (Date.parse( jobGraphData[0]['t'] ).valueOf() + 10*60000 < Date.parse( jobGraphData[jobGraphData.length-1]['t'] ).valueOf()) ) {
                 shifted.push(jobGraphData.shift());
             }
             if( shifted.length > 0 ) {
