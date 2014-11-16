@@ -57,7 +57,11 @@ $(document).on('ajax:complete ready', function() {
     }
 });
 
-
+/* Assumes existence of:
+  window.jobGraphData = [];
+  window.jobGraphSeries = [];
+  window.jobGraphMaxima = {};
+ */
 function processLogLineForChart( logLine ) {
     var recreate = false;
     var rescale = false;
@@ -80,14 +84,9 @@ function processLogLineForChart( logLine ) {
         if( datum !== 0 && ( jobGraphMaxima[series] === null || jobGraphMaxima[series] < datum ) ) {
             // use old maximum to get a scale conversion
             var scaleConversion = jobGraphMaxima[series]/datum;
-            // set new maximum
+            // set new maximum and rescale the series
             jobGraphMaxima[series] = datum;
-            // rescale
-            $.each( jobGraphData, function( i, entry ) {
-                if( entry[series] !== null && entry[series] !== undefined ) {
-                    entry[series] *= scaleConversion;
-                }
-            });
+            rescaleJobGraphSeries( series, scaleConversion );
         }
         // scale
         // FIXME: what about negative numbers?
@@ -112,14 +111,58 @@ function processLogLineForChart( logLine ) {
                 break;
             }
         }
+        // index counter from previous loop will have gone one too far, so add one
+        var insertAt = i+1;
         if(!found) {
-            i += 1;
+            // create a new x point for this previously unrecorded timestamp
             var entry = { 't': timestamp };
             entry[series] = scaledDatum;
-            jobGraphData.splice( i, 0, entry );
+            jobGraphData.splice( insertAt, 0, entry );
+            var shifted = [];
+            // now let's see about "scrolling" the graph, dropping entries that are too old (>3 minutes)
+            while( jobGraphData.length > 0
+                     && (Date.parse( jobGraphData[0]['t'] ).valueOf() + 3*60000 < Date.parse( jobGraphData[jobGraphData.length-1]['t'] ).valueOf()) ) {
+                shifted.push(jobGraphData.shift());
+            }
+            if( shifted.length > 0 ) {
+                // from those that we dropped, are any of them maxima? if so we need to rescale
+                jobGraphSeries.forEach( function(series) {
+                    // test that every shifted entry in this series was either not a number (in which case we don't care)
+                    // or else smaller than the scaled maximum (i.e. 1), because otherwise we just scrolled off something that was a maximum point
+                    // and so we need to recalculate a new maximum point by looking at all remaining displayed points in the series
+                    if( jobGraphMaxima[series] !== null
+                          && !shifted.every( function(e) { return( !($.isNumeric(e[series])) || e[series] < 1 ) } ) ) {
+                        // check the remaining displayed points and find the new (scaled) maximum
+                        var seriesMax = null;
+                        jobGraphData.forEach( function(entry) {
+                            if( $.isNumeric(entry[series]) && (seriesMax === null || entry[series] > seriesMax)) {
+                                seriesMax = entry[series];
+                            }
+                        });
+                        if( seriesMax !== null && seriesMax !== 0 ) {
+                            // set new actual maximum using the new maximum as the conversion conversion and rescale the series
+                            jobGraphMaxima[series] *= seriesMax;
+                            var scaleConversion = 1/seriesMax;
+                            rescaleJobGraphSeries( series, scaleConversion );
+                        }
+                        else {
+                            // we no longer have any data points displaying for this series
+                            jobGraphMaxima[series] = null;
+                        }
+                    }
+                });
+            }
         }
     }
     return recreate;
+}
+
+function rescaleJobGraphSeries( series, scaleConversion ) {
+    $.each( jobGraphData, function( i, entry ) {
+        if( entry[series] !== null && entry[series] !== undefined ) {
+            entry[series] *= scaleConversion;
+        }
+    });
 }
 
 $(document).on('arv-log-event', '#log_graph_div', function(event, eventData) {
