@@ -170,6 +170,41 @@ function processLogLineForChart( logLine ) {
     return recreate;
 }
 
+function createJobGraph(elementName) {
+    delete jobGraph;
+    window.jobGraph = Morris.Line( {
+        element: elementName,
+        data: jobGraphData,
+        ymax: 1.0,
+        xkey: 't',
+        ykeys: jobGraphSeries,
+        labels: jobGraphSeries,
+        hideHover: 'auto',
+        hoverCallback: function(index, options, content) {
+            var s = "<div class='morris-hover-row-label'>";
+            s += options.data[index][options.xkey];
+            s += "</div> ";
+            for( i = 0; i < options.ykeys.length; i++ ) {
+                var series = options.ykeys[i];
+                var datum = options.data[index][series];
+                s += "<div class='morris-hover-point' style='color: ";
+                s += options.lineColors[i];
+                s += "'>";
+                s += options.labels[i];
+                s += ": ";
+                if ( !(typeof datum === 'undefined') ) {
+                    if( isJobSeriesRescalable( series ) ) {
+                        datum *= jobGraphMaxima[series];
+                    }
+                    s += datum.toFixed(2);
+                }
+                s += "</div> ";
+            }
+            return s;
+        }
+    });
+}
+
 function rescaleJobGraphSeries( series, scaleConversion ) {
     if( isJobSeriesRescalable() ) {
         $.each( jobGraphData, function( i, entry ) {
@@ -182,7 +217,7 @@ function rescaleJobGraphSeries( series, scaleConversion ) {
 
 // that's right - we never do this for the 'cpu' series, which will always be between 0 and 1 anyway
 function isJobSeriesRescalable( series ) {
-    return series != 'cpu';
+    return !/^cpu-/.test(series);
 }
 
 $(document).on('arv-log-event', '#log_graph_div', function(event, eventData) {
@@ -204,14 +239,7 @@ $(document).on('ready', function(){
             window.recreate = false;
             // series have changed, draw entirely new graph
             $('#log_graph_div').html('');
-            window.jobGraph = Morris.Line({
-                element: 'log_graph_div',
-                data: jobGraphData,
-                ymax: 1.0,
-                xkey: 't',
-                ykeys: jobGraphSeries,
-                labels: jobGraphSeries
-            });
+            createJobGraph('log_graph_div');
         } else if( redraw ) {
             window.redraw = false;
             jobGraph.setData( jobGraphData );

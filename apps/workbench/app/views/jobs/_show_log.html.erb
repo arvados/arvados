@@ -25,14 +25,7 @@
         .each.with_index do |log_record, index| %>
     processLogLineForChart( '<%=j log_record.properties[:text] %>' );
   <% end %>
-  window.jobGraph = Morris.Line({
-    element: 'log_graph_div',
-    data: jobGraphData,
-    ymax: 1.0,
-    xkey: 't',
-    ykeys: jobGraphSeries,
-    labels: jobGraphSeries
-  });
+  createJobGraph('log_graph_div');
 <% end %>
 
 <% else %>
