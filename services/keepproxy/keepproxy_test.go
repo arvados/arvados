@@ -143,11 +143,14 @@ func runProxy(c *C, args []string, token string, port int) keepclient.KeepClient
 	os.Setenv("ARVADOS_KEEP_PROXY", fmt.Sprintf("http://localhost:%v", port))
 	os.Setenv("ARVADOS_API_TOKEN", token)
 	arv, err := arvadosclient.MakeArvadosClient()
+	c.Assert(err, Equals, nil)
 	kc, err := keepclient.MakeKeepClient(&arv)
+	c.Assert(err, Equals, nil)
 	c.Check(kc.Using_proxy, Equals, true)
 	c.Check(len(kc.ServiceRoots()), Equals, 1)
-	c.Check(kc.ServiceRoots()[0], Equals, fmt.Sprintf("http://localhost:%v", port))
-	c.Check(err, Equals, nil)
+	for _, root := range(kc.ServiceRoots()) {
+		c.Check(root, Equals, fmt.Sprintf("http://localhost:%v", port))
+	}
 	os.Setenv("ARVADOS_KEEP_PROXY", "")
 	log.Print("keepclient created")
 	return kc
@@ -165,12 +168,15 @@ func (s *ServerRequiredSuite) TestPutAskGet(c *C) {
 
 	os.Setenv("ARVADOS_EXTERNAL_CLIENT", "true")
 	arv, err := arvadosclient.MakeArvadosClient()
+	c.Assert(err, Equals, nil)
 	kc, err := keepclient.MakeKeepClient(&arv)
+	c.Assert(err, Equals, nil)
 	c.Check(kc.Arvados.External, Equals, true)
 	c.Check(kc.Using_proxy, Equals, true)
 	c.Check(len(kc.ServiceRoots()), Equals, 1)
-	c.Check(kc.ServiceRoots()[0], Equals, "http://localhost:29950")
-	c.Check(err, Equals, nil)
+	for _, root := range kc.ServiceRoots() {
+		c.Check(root, Equals, "http://localhost:29950")
+	}
 	os.Setenv("ARVADOS_EXTERNAL_CLIENT", "")
 	log.Print("keepclient created")
 

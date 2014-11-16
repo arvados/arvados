@@ -2,6 +2,7 @@
 package keepclient
 
 import (
+	"crypto/md5"
 	"git.curoverse.com/arvados.git/sdk/go/streamer"
 	"errors"
 	"fmt"
@@ -10,20 +11,25 @@ import (
 	"log"
 	"net/http"
 	"os"
-	"strconv"
 	"strings"
 )
 
 type keepDisk struct {
+	Uuid     string `json:"uuid"`
 	Hostname string `json:"service_host"`
 	Port     int    `json:"service_port"`
 	SSL      bool   `json:"service_ssl_flag"`
 	SvcType  string `json:"service_type"`
 }
 
+func Md5String(s string) (string) {
+	return fmt.Sprintf("%x", md5.Sum([]byte(s)))
+}
+
 func (this *KeepClient) DiscoverKeepServers() error {
 	if prx := os.Getenv("ARVADOS_KEEP_PROXY"); prx != "" {
-		this.SetServiceRoots([]string{prx})
+		sr := map[string]string{"proxy":prx}
+		this.SetServiceRoots(sr)
 		this.Using_proxy = true
 		return nil
 	}
@@ -42,7 +48,7 @@ func (this *KeepClient) DiscoverKeepServers() error {
 	}
 
 	listed := make(map[string]bool)
-	service_roots := make([]string, 0, len(m.Items))
+	service_roots := make(map[string]string)
 
 	for _, element := range m.Items {
 		n := ""
@@ -57,7 +63,7 @@ func (this *KeepClient) DiscoverKeepServers() error {
 		// Skip duplicates
 		if !listed[url] {
 			listed[url] = true
-			service_roots = append(service_roots, url)
+			service_roots[element.Uuid] = url
 		}
 		if element.SvcType == "proxy" {
 			this.Using_proxy = true
@@ -67,55 +73,6 @@ func (this *KeepClient) DiscoverKeepServers() error {
 	this.SetServiceRoots(service_roots)
 
 	return nil
-}
-
-func (this KeepClient) shuffledServiceRoots(hash string) (pseq []string) {
-	// Build an ordering with which to query the Keep servers based on the
-	// contents of the hash.  "hash" is a hex-encoded number at least 8
-	// digits (32 bits) long
-
-	// seed used to calculate the next keep server from 'pool' to be added
-	// to 'pseq'
-	seed := hash
-
-	// Keep servers still to be added to the ordering
-	service_roots := this.ServiceRoots()
-	pool := make([]string, len(service_roots))
-	copy(pool, service_roots)
-
-	// output probe sequence
-	pseq = make([]string, 0, len(service_roots))
-
-	// iterate while there are servers left to be assigned
-	for len(pool) > 0 {
-
-		if len(seed) < 8 {
-			// ran out of digits in the seed
-			if len(pseq) < (len(hash) / 4) {
-				// the number of servers added to the probe
-				// sequence is less than the number of 4-digit
-				// slices in 'hash' so refill the seed with the
-				// last 4 digits.
-				seed = hash[len(hash)-4:]
-			}
-			seed += hash
-		}
-
-		// Take the next 8 digits (32 bytes) and interpret as an integer,
-		// then modulus with the size of the remaining pool to get the next
-		// selected server.
-		probe, _ := strconv.ParseUint(seed[0:8], 16, 32)
-		probe %= uint64(len(pool))
-
-		// Append the selected server to the probe sequence and remove it
-		// from the pool.
-		pseq = append(pseq, pool[probe])
-		pool = append(pool[:probe], pool[probe+1:]...)
-
-		// Remove the digits just used from the seed
-		seed = seed[8:]
-	}
-	return pseq
 }
 
 type uploadStatus struct {
@@ -189,7 +146,7 @@ func (this KeepClient) putReplicas(
 	expectedLength int64) (locator string, replicas int, err error) {
 
 	// Calculate the ordering for uploading to servers
-	sv := this.shuffledServiceRoots(hash)
+	sv := NewRootSorter(this.ServiceRoots(), hash).GetSortedRoots()
 
 	// The next server to try contacting
 	next_server := 0
