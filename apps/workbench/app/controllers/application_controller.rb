@@ -164,6 +164,7 @@ class ApplicationController < ActionController::Base
   def find_objects_for_index
     @objects ||= model_class
     @objects = @objects.filter(@filters).limit(@limit).offset(@offset)
+    @objects.fetch_multiple_pages(false)
   end
 
   def render_index
@@ -172,9 +173,9 @@ class ApplicationController < ActionController::Base
         if params[:partial]
           @next_page_href = next_page_href(partial: params[:partial], filters: @filters.to_json)
           render json: {
-            content: render_to_string(partial: "show_#{params[:partial]}", formats: [:html]),
-                                      next_page_href: @next_page_href
-
+            content: render_to_string(partial: "show_#{params[:partial]}",
+                                      formats: [:html]),
+            next_page_href: @next_page_href
           }
         else
           render json: @objects
@@ -218,6 +219,8 @@ class ApplicationController < ActionController::Base
     if !objects
       objects = @objects
     end
+    # result_limit and result_offset won't work until we call #results
+    objects.results
     if objects.respond_to?(:result_offset) and
         objects.respond_to?(:result_limit) and
         objects.respond_to?(:items_available)
@@ -268,7 +271,6 @@ class ApplicationController < ActionController::Base
       if params[:partial]
         f.json {
           find_objects_for_index if !@objects
-          @objects.fetch_multiple_pages(false)
           render json: {
             content: render_to_string(partial: "choose_rows.html",
                                       formats: [:html]),
