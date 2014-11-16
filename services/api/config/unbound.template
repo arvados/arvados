@@ -1,0 +1,4 @@
+  local-data: "%{hostname} IN A %{ip_address}"
+  local-data: "%{hostname}.%{uuid_prefix} IN A %{ip_address}"
+  local-data: "%{hostname}.%{uuid_prefix}.arvadosapi.com. IN A %{ip_address}"
+  local-data: "%{ptr_domain}. IN PTR %{hostname}.%{uuid_prefix}.arvadosapi.com"
