@@ -102,18 +102,21 @@ function processLogLineForChart( logLine ) {
         var timestamp = preamble[0].replace('_','T');
         // identify x axis point
         var found = false;
-        for( var i = 0; i < jobGraphData.length; i++ ) {
+        for( var i = jobGraphData.length - 1; i >= 0; i-- ) {
             if( jobGraphData[i]['t'] === timestamp ) {
                 found = true;
+                jobGraphData[i][series] = scaledDatum;
+                break;
+            } else if( jobGraphData[i]['t'] < timestamp  ) {
+                // we've gone far enough back in time and this data is supposed to be sorted
                 break;
             }
         }
-        if(found) {
-            jobGraphData[i][series] = scaledDatum;
-        } else {
+        if(!found) {
+            i += 1;
             var entry = { 't': timestamp };
             entry[series] = scaledDatum;
-            jobGraphData.push( entry );
+            jobGraphData.splice( i, 0, entry );
         }
     }
     return recreate;
