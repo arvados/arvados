@@ -186,7 +186,7 @@ class CollectionReader(CollectionBase):
                     self._manifest_locator,
                     error_via_api,
                     error_via_keep))
-        if type(self._manifest_text) == unicode:
+        if isinstance(self._manifest_text, unicode):
             unicode_manifest = self._manifest_text
         else:
             unicode_manifest = self._manifest_text.decode('utf-8')
