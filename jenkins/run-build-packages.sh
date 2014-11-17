@@ -85,6 +85,15 @@ if [[ "$DEBUG" != 0 ]]; then
   echo "Workspace is $WORKSPACE"
 fi
 
+version_from_git() {
+  # Generates a version number from the git log for the current working
+  # directory, and writes it to stdout.
+  local git_ts git_hash
+  declare $(TZ=UTC git log -n1 --first-parent --max-count=1 \
+      --format=format:"git_ts=%ct git_hash=%h" .)
+  echo "0.1.$(date -ud "@$git_ts" +%Y%m%d%H%M%S).$git_hash"
+}
+
 handle_python_package () {
   # This function assumes the current working directory is the python package directory
   if [[ "$UPLOAD" != 0 ]]; then
@@ -106,14 +115,22 @@ handle_python_package () {
 
 # Build debs for everything
 build_and_scp_deb () {
+  # The package source.  Depending on the source type, this can be a
+  # path, or the name of the package in an upstream repository (e.g.,
+  # pip).
   PACKAGE=$1
   shift
+  # The name of the package to build.  Defaults to $PACKAGE.
   PACKAGE_NAME=$1
   shift
+  # Optional: the vendor of the package.  Should be "Curoverse, Inc." for
+  # packages of our own software.  Passed to fpm --vendor.
   VENDOR=$1
   shift
+  # The type of source package.  Passed to fpm -s.  Default "python".
   PACKAGE_TYPE=$1
   shift
+  # Optional: the package version number.  Passed to fpm -v.
   VERSION=$1
   shift
 
@@ -139,6 +156,7 @@ build_and_scp_deb () {
     COMMAND_ARR+=('-v' "$VERSION")
   fi
 
+  # Append remaining function arguments directly to fpm's command line.
   for i; do
     COMMAND_ARR+=("$i")
   done
@@ -198,6 +216,31 @@ if [[ "$DEBUG" != 0 ]]; then
   echo "umask is" `umask`
 fi
 
+# Perl packages
+if [[ "$DEBUG" != 0 ]]; then
+  echo -e "\nPerl packages\n"
+fi
+
+if [[ "$DEBUG" != 0 ]]; then
+  PERL_OUT=/dev/stdout
+else
+  PERL_OUT=/dev/null
+fi
+
+cd "$WORKSPACE/sdk/perl"
+
+if [[ -e Makefile ]]; then
+  make realclean >"$PERL_OUT"
+fi
+find -maxdepth 1 \( -name 'MANIFEST*' -or -name 'libarvados-perl_*.deb' \) \
+    -delete
+rm -rf install
+
+perl Makefile.PL >"$PERL_OUT" && \
+    make install PREFIX=install INSTALLDIRS=perl >"$PERL_OUT" && \
+    build_and_scp_deb install/=/usr libarvados-perl "Curoverse, Inc." dir \
+      "$(version_from_git)"
+
 # Ruby gems
 if [[ "$DEBUG" != 0 ]]; then
   echo
@@ -205,10 +248,17 @@ if [[ "$DEBUG" != 0 ]]; then
   echo
 fi
 
+if type rvm-exec 2>/dev/null; then
+  FPM_GEM_PREFIX=$(rvm-exec system gem environment gemdir)
+else
+  FPM_GEM_PREFIX=$(gem environment gemdir)
+fi
+
 cd "$WORKSPACE"
 cd sdk/ruby
-# clean up old gems
-rm -f arvados-*gem
+# clean up old packages
+find -maxdepth 1 \( -name 'arvados-*.gem' -or -name 'rubygem-arvados_*.deb' \) \
+    -delete
 
 if [[ "$DEBUG" != 0 ]]; then
   gem build arvados.gemspec
@@ -221,6 +271,9 @@ if [[ "$UPLOAD" != 0 ]]; then
   # publish new gem
   gem push arvados-*gem
 fi
+
+build_and_scp_deb arvados-*.gem "" "Curoverse, Inc." gem "" \
+    --prefix "$FPM_GEM_PREFIX"
 
 # Build arvados-cli GEM
 cd "$WORKSPACE"
@@ -248,10 +301,7 @@ if [[ "$DEBUG" != 0 ]]; then
 fi
 
 cd "$WORKSPACE"
-
-GIT_TIMESTAMP=`git log --first-parent --max-count=1 --format=format:%ct -n1 .`
-HUMAN_READABLE_TIMESTAMP=`TZ=UTC date -d @$GIT_TIMESTAMP +%Y%m%d%H%M%S`
-GIT_HASH=`git log --first-parent --max-count=1 --format=format:$HUMAN_READABLE_TIMESTAMP.%h -n1 .`
+PKG_VERSION=$(version_from_git)
 
 cd sdk/python
 handle_python_package
@@ -294,7 +344,7 @@ fi
 
 # Build arvados src deb package
 cd $WORKSPACE/debs
-build_and_scp_deb $WORKSPACE/src-build-dir/=/usr/local/arvados/src arvados-src 'Curoverse, Inc.' 'dir' "0.1.$GIT_HASH" "--exclude=usr/local/arvados/src/.git" "--url=https://arvados.org" "--license=GNU Affero General Public License, version 3.0" "--description=The Arvados source code" "--architecture=all"
+build_and_scp_deb $WORKSPACE/src-build-dir/=/usr/local/arvados/src arvados-src 'Curoverse, Inc.' 'dir' "$PKG_VERSION" "--exclude=usr/local/arvados/src/.git" "--url=https://arvados.org" "--license=GNU Affero General Public License, version 3.0" "--description=The Arvados source code" "--architecture=all"
 
 # clean up, check out master and step away from detached-head state
 cd "$WORKSPACE/src-build-dir"
@@ -312,17 +362,17 @@ ln -sfn "$WORKSPACE" "$GOPATH/src/git.curoverse.com/arvados.git"
 # keepstore
 go get "git.curoverse.com/arvados.git/services/keepstore"
 cd $WORKSPACE/debs
-build_and_scp_deb $GOPATH/bin/keepstore=/usr/bin/keepstore keepstore 'Curoverse, Inc.' 'dir' "0.1.$GIT_HASH" "--url=https://arvados.org" "--license=GNU Affero General Public License, version 3.0" "--description=Keepstore is the Keep storage daemon, accessible to clients on the LAN"
+build_and_scp_deb $GOPATH/bin/keepstore=/usr/bin/keepstore keepstore 'Curoverse, Inc.' 'dir' "$PKG_VERSION" "--url=https://arvados.org" "--license=GNU Affero General Public License, version 3.0" "--description=Keepstore is the Keep storage daemon, accessible to clients on the LAN"
 
 # keepproxy
 go get "git.curoverse.com/arvados.git/services/keepproxy"
 cd $WORKSPACE/debs
-build_and_scp_deb $GOPATH/bin/keepproxy=/usr/bin/keepproxy keepproxy 'Curoverse, Inc.' 'dir' "0.1.$GIT_HASH" "--url=https://arvados.org" "--license=GNU Affero General Public License, version 3.0" "--description=Keepproxy makes a Keep cluster accessible to clients that are not on the LAN"
+build_and_scp_deb $GOPATH/bin/keepproxy=/usr/bin/keepproxy keepproxy 'Curoverse, Inc.' 'dir' "$PKG_VERSION" "--url=https://arvados.org" "--license=GNU Affero General Public License, version 3.0" "--description=Keepproxy makes a Keep cluster accessible to clients that are not on the LAN"
 
 # crunchstat
 go get "git.curoverse.com/arvados.git/services/crunchstat"
 cd $WORKSPACE/debs
-build_and_scp_deb $GOPATH/bin/crunchstat=/usr/bin/crunchstat crunchstat 'Curoverse, Inc.' 'dir' "0.1.$GIT_HASH" "--url=https://arvados.org" "--license=GNU Affero General Public License, version 3.0" "--description=Crunchstat gathers cpu/memory/network statistics of running Crunch jobs"
+build_and_scp_deb $GOPATH/bin/crunchstat=/usr/bin/crunchstat crunchstat 'Curoverse, Inc.' 'dir' "$PKG_VERSION" "--url=https://arvados.org" "--license=GNU Affero General Public License, version 3.0" "--description=Crunchstat gathers cpu/memory/network statistics of running Crunch jobs"
 
 # The Python SDK
 # Please resist the temptation to add --no-python-fix-name to the fpm call here
