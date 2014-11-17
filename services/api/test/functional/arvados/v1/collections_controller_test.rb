@@ -2,19 +2,17 @@ require 'test_helper'
 
 class Arvados::V1::CollectionsControllerTest < ActionController::TestCase
 
-  setup do
-    # Unless otherwise specified in the test, we want normal/secure behavior.
-    permit_unsigned_manifests false
-  end
-
-  teardown do
-    # Reset to secure behavior after each test.
-    permit_unsigned_manifests false
-  end
-
   def permit_unsigned_manifests isok=true
     # Set security model for the life of a test.
     Rails.configuration.permit_create_collection_with_unsigned_manifest = isok
+  end
+
+  def assert_signed_manifest manifest_text, label=''
+    assert_not_nil manifest_text, "#{label} manifest_text was nil"
+    manifest_text.scan(/ [[:xdigit:]]{32}\S*/) do |tok|
+      assert_match(/\+A[[:xdigit:]]+@[[:xdigit:]]{8}\b/, tok,
+                   "Locator in #{label} manifest_text was not signed")
+    end
   end
 
   test "should get index" do
@@ -24,6 +22,14 @@ class Arvados::V1::CollectionsControllerTest < ActionController::TestCase
     assert(assigns(:objects).andand.any?, "no Collections returned in index")
     refute(json_response["items"].any? { |c| c.has_key?("manifest_text") },
            "basic Collections index included manifest_text")
+  end
+
+  test "collections.get returns signed locators" do
+    permit_unsigned_manifests
+    authorize_with :active
+    get :show, {id: collections(:foo_file).uuid}
+    assert_response :success
+    assert_signed_manifest json_response['manifest_text'], 'foo_file'
   end
 
   test "index with manifest_text selected returns signed locators" do
@@ -36,13 +42,7 @@ class Arvados::V1::CollectionsControllerTest < ActionController::TestCase
     json_response["items"].each do |coll|
       assert_equal(columns, columns & coll.keys,
                    "Collections index did not respect selected columns")
-      loc_regexp = / [[:xdigit:]]{32}\+\d+\S+/
-      pos = 0
-      while match = loc_regexp.match(coll["manifest_text"], pos)
-        assert_match(/\+A[[:xdigit:]]+@[[:xdigit:]]{8}\b/, match.to_s,
-                     "Locator in manifest_text was not signed")
-        pos = match.end(0)
-      end
+      assert_signed_manifest coll['manifest_text'], coll['uuid']
     end
   end
 
@@ -126,7 +126,7 @@ EOS
 
       foo_collection = collections(:foo_file)
 
-      # Get foo_file using it's portable data has
+      # Get foo_file using its portable data hash
       get :show, {
         id: foo_collection[:portable_data_hash]
       }
@@ -134,6 +134,7 @@ EOS
       assert_not_nil assigns(:object)
       resp = assigns(:object)
       assert_equal foo_collection[:portable_data_hash], resp['portable_data_hash']
+      assert_signed_manifest resp['manifest_text']
 
       # The manifest in the response will have had permission hints added.
       # Remove any permission hints in the response before comparing it to the source.
@@ -177,21 +178,25 @@ EOS
            "Expected 'duplicate key' error in #{response_errors.first}")
   end
 
-  test "create succeeds with duplicate name with ensure_unique_name" do
-    permit_unsigned_manifests
-    authorize_with :active
-    manifest_text = ". d41d8cd98f00b204e9800998ecf8427e 0:0:foo.txt\n"
-    post :create, {
-      collection: {
-        owner_uuid: users(:active).uuid,
-        manifest_text: manifest_text,
-        portable_data_hash: "d30fe8ae534397864cb96c544f4cf102+47",
-        name: "owned_by_active"
-      },
-      ensure_unique_name: true
-    }
-    assert_response :success
-    assert_equal 'owned_by_active (2)', json_response['name']
+  [false, true].each do |unsigned|
+    test "create with duplicate name, ensure_unique_name, unsigned=#{unsigned}" do
+      permit_unsigned_manifests unsigned
+      authorize_with :active
+      manifest_text = ". acbd18db4cc2f85cedef654fccc4a4d8+3 0:0:foo.txt\n"
+      if !unsigned
+        manifest_text = Collection.sign_manifest manifest_text, api_token(:active)
+      end
+      post :create, {
+        collection: {
+          owner_uuid: users(:active).uuid,
+          manifest_text: manifest_text,
+          name: "owned_by_active"
+        },
+        ensure_unique_name: true
+      }
+      assert_response :success
+      assert_equal 'owned_by_active (2)', json_response['name']
+    end
   end
 
   test "create with owner_uuid set to group i can_manage" do

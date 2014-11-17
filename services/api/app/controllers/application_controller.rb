@@ -1,9 +1,11 @@
 module ApiTemplateOverride
   def allowed_to_render?(fieldset, field, model, options)
+    return false if !super
     if options[:select]
-      return options[:select].include? field.to_s
+      options[:select].include? field.to_s
+    else
+      true
     end
-    super
   end
 end
 
