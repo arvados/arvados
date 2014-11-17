@@ -309,6 +309,9 @@ class PipelineInstancesTest < ActionDispatch::IntegrationTest
     end
     wait_for_ajax
 
+    # The input, after being specified, should still be displayed (#3382)
+    assert find('div.form-group', text: 'Foo/bar pair')
+
     # Ensure that the collection's portable_data_hash, uuid and name
     # are saved in the desired places. (#4015)
 
