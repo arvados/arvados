@@ -61,113 +61,115 @@ $(document).on('ajax:complete ready', function() {
   window.jobGraphData = [];
   window.jobGraphSeries = [];
   window.jobGraphMaxima = {};
-
-  TODO: make this more robust: many type conversions etc problems could theoretically go wrong in here
  */
 function processLogLineForChart( logLine ) {
     var recreate = false;
     var rescale = false;
-    var match = logLine.match(/(\S+) (\S+) (\S+) (\S+) stderr crunchstat: (\S+) (.*) -- interval (.*)/);
-    if( match ) {
-        // the timestamp comes first
-        var timestamp = match[1].replace('_','T');
-        // for the series use the first word after 'crunchstat:'
-        var series = match[5];
-        // and append the task number (the 4th term)
-        series += '-' + match[4]
-        if( $.inArray( series, jobGraphSeries) < 0 ) {
-            jobGraphSeries.push(series);
-            jobGraphMaxima[series] = null;
-            recreate = true;
-        }
-        var intervalData = match[7].trim().split(' ');
-        var dt = parseFloat(intervalData[0]);
-        var dsum = 0.0;
-        for(var i=2; i < intervalData.length; i += 2 ) {
-            dsum += parseFloat(intervalData[i]);
-        }
-        var datum = dsum/dt;
-        if( datum !== 0 && ( jobGraphMaxima[series] === null || jobGraphMaxima[series] < datum ) ) {
-            if( isJobSeriesRescalable(series) ) {
-                // use old maximum to get a scale conversion
-                var scaleConversion = jobGraphMaxima[series]/datum;
-                // set new maximum and rescale the series
-                jobGraphMaxima[series] = datum;
-                rescaleJobGraphSeries( series, scaleConversion );
+    try {
+        var match = logLine.match(/(\S+) (\S+) (\S+) (\S+) stderr crunchstat: (\S+) (.*) -- interval (.*)/);
+        if( match ) {
+            // the timestamp comes first
+            var timestamp = match[1].replace('_','T');
+            // for the series use the first word after 'crunchstat:'
+            var series = match[5];
+            // and append the task number (the 4th term)
+            series += '-' + match[4]
+            if( $.inArray( series, jobGraphSeries) < 0 ) {
+                jobGraphSeries.push(series);
+                jobGraphMaxima[series] = null;
+                recreate = true;
             }
-            // and special calculation for cpus
-            if( /^cpu-/.test(series) ) {
-                // divide the stat by the number of cpus
-                var cpuCountMatch = match[6].match(/(\d+) cpus/);
-                if( cpuCountMatch ) {
-                    datum = datum / cpuCountMatch[1];
+            var intervalData = match[7].trim().split(' ');
+            var dt = parseFloat(intervalData[0]);
+            var dsum = 0.0;
+            for(var i=2; i < intervalData.length; i += 2 ) {
+                dsum += parseFloat(intervalData[i]);
+            }
+            var datum = dsum/dt;
+            if( datum !== 0 && ( jobGraphMaxima[series] === null || jobGraphMaxima[series] < datum ) ) {
+                if( isJobSeriesRescalable(series) ) {
+                    // use old maximum to get a scale conversion
+                    var scaleConversion = jobGraphMaxima[series]/datum;
+                    // set new maximum and rescale the series
+                    jobGraphMaxima[series] = datum;
+                    rescaleJobGraphSeries( series, scaleConversion );
+                }
+                // and special calculation for cpus
+                if( /^cpu-/.test(series) ) {
+                    // divide the stat by the number of cpus
+                    var cpuCountMatch = match[6].match(/(\d+) cpus/);
+                    if( cpuCountMatch ) {
+                        datum = datum / cpuCountMatch[1];
+                    }
+                }
+            }
+            // scale
+            var scaledDatum = null;
+            if( isJobSeriesRescalable(series) && jobGraphMaxima[series] !== null && jobGraphMaxima[series] !== 0 ) {
+                scaledDatum = datum/jobGraphMaxima[series]
+            } else {
+                scaledDatum = datum;
+            }
+            // identify x axis point, searching from the end of the array (most recent)
+            var found = false;
+            for( var i = jobGraphData.length - 1; i >= 0; i-- ) {
+                if( jobGraphData[i]['t'] === timestamp ) {
+                    found = true;
+                    jobGraphData[i][series] = scaledDatum;
+                    jobGraphData[i]['raw-'+series] = match[7];
+                    break;
+                } else if( jobGraphData[i]['t'] < timestamp  ) {
+                    // we've gone far enough back in time and this data is supposed to be sorted
+                    break;
+                }
+            }
+            // index counter from previous loop will have gone one too far, so add one
+            var insertAt = i+1;
+            if(!found) {
+                // create a new x point for this previously unrecorded timestamp
+                var entry = { 't': timestamp };
+                entry[series] = scaledDatum;
+                entry['raw-'+series] = match[7];
+                jobGraphData.splice( insertAt, 0, entry );
+                var shifted = [];
+                // now let's see about "scrolling" the graph, dropping entries that are too old (>10 minutes)
+                while( jobGraphData.length > 0
+                         && (Date.parse( jobGraphData[0]['t'] ).valueOf() + 10*60000 < Date.parse( jobGraphData[jobGraphData.length-1]['t'] ).valueOf()) ) {
+                    shifted.push(jobGraphData.shift());
+                }
+                if( shifted.length > 0 ) {
+                    // from those that we dropped, are any of them maxima? if so we need to rescale
+                    jobGraphSeries.forEach( function(series) {
+                        // test that every shifted entry in this series was either not a number (in which case we don't care)
+                        // or else approximately (to 2 decimal places) smaller than the scaled maximum (i.e. 1),
+                        // because otherwise we just scrolled off something that was a maximum point
+                        // and so we need to recalculate a new maximum point by looking at all remaining displayed points in the series
+                        if( isJobSeriesRescalable(series) && jobGraphMaxima[series] !== null
+                              && !shifted.every( function(e) { return( !$.isNumeric(e[series]) || e[series].toFixed(2) < 1.0 ) } ) ) {
+                            // check the remaining displayed points and find the new (scaled) maximum
+                            var seriesMax = null;
+                            jobGraphData.forEach( function(entry) {
+                                if( $.isNumeric(entry[series]) && (seriesMax === null || entry[series] > seriesMax)) {
+                                    seriesMax = entry[series];
+                                }
+                            });
+                            if( seriesMax !== null && seriesMax !== 0 ) {
+                                // set new actual maximum using the new maximum as the conversion conversion and rescale the series
+                                jobGraphMaxima[series] *= seriesMax;
+                                var scaleConversion = 1/seriesMax;
+                                rescaleJobGraphSeries( series, scaleConversion );
+                            }
+                            else {
+                                // we no longer have any data points displaying for this series
+                                jobGraphMaxima[series] = null;
+                            }
+                        }
+                    });
                 }
             }
         }
-        // scale
-        var scaledDatum = null;
-        if( isJobSeriesRescalable(series) && jobGraphMaxima[series] !== null && jobGraphMaxima[series] !== 0 ) {
-            scaledDatum = datum/jobGraphMaxima[series]
-        } else {
-            scaledDatum = datum;
-        }
-        // identify x axis point, searching from the end of the array (most recent)
-        var found = false;
-        for( var i = jobGraphData.length - 1; i >= 0; i-- ) {
-            if( jobGraphData[i]['t'] === timestamp ) {
-                found = true;
-                jobGraphData[i][series] = scaledDatum;
-                jobGraphData[i]['raw-'+series] = match[7];
-                break;
-            } else if( jobGraphData[i]['t'] < timestamp  ) {
-                // we've gone far enough back in time and this data is supposed to be sorted
-                break;
-            }
-        }
-        // index counter from previous loop will have gone one too far, so add one
-        var insertAt = i+1;
-        if(!found) {
-            // create a new x point for this previously unrecorded timestamp
-            var entry = { 't': timestamp };
-            entry[series] = scaledDatum;
-            entry['raw-'+series] = match[7];
-            jobGraphData.splice( insertAt, 0, entry );
-            var shifted = [];
-            // now let's see about "scrolling" the graph, dropping entries that are too old (>10 minutes)
-            while( jobGraphData.length > 0
-                     && (Date.parse( jobGraphData[0]['t'] ).valueOf() + 10*60000 < Date.parse( jobGraphData[jobGraphData.length-1]['t'] ).valueOf()) ) {
-                shifted.push(jobGraphData.shift());
-            }
-            if( shifted.length > 0 ) {
-                // from those that we dropped, are any of them maxima? if so we need to rescale
-                jobGraphSeries.forEach( function(series) {
-                    // test that every shifted entry in this series was either not a number (in which case we don't care)
-                    // or else approximately (to 2 decimal places) smaller than the scaled maximum (i.e. 1),
-                    // because otherwise we just scrolled off something that was a maximum point
-                    // and so we need to recalculate a new maximum point by looking at all remaining displayed points in the series
-                    if( isJobSeriesRescalable(series) && jobGraphMaxima[series] !== null
-                          && !shifted.every( function(e) { return( !$.isNumeric(e[series]) || e[series].toFixed(2) < 1.0 ) } ) ) {
-                        // check the remaining displayed points and find the new (scaled) maximum
-                        var seriesMax = null;
-                        jobGraphData.forEach( function(entry) {
-                            if( $.isNumeric(entry[series]) && (seriesMax === null || entry[series] > seriesMax)) {
-                                seriesMax = entry[series];
-                            }
-                        });
-                        if( seriesMax !== null && seriesMax !== 0 ) {
-                            // set new actual maximum using the new maximum as the conversion conversion and rescale the series
-                            jobGraphMaxima[series] *= seriesMax;
-                            var scaleConversion = 1/seriesMax;
-                            rescaleJobGraphSeries( series, scaleConversion );
-                        }
-                        else {
-                            // we no longer have any data points displaying for this series
-                            jobGraphMaxima[series] = null;
-                        }
-                    }
-                });
-            }
-        }
+    } catch( err ) {
+        console.log( 'Ignoring error trying to process log line: ' + err);
     }
     return recreate;
 }
