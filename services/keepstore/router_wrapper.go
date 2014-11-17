@@ -1,6 +1,6 @@
 package main
 
-// RESTRouterWrapper
+// LoggingRESTRouter
 // LoggingResponseWriter
 
 import (
@@ -35,9 +35,9 @@ func MakeLoggingRESTRouter() (LoggingRESTRouter) {
   return (LoggingRESTRouter{router})
 }
 
-func (wrapper LoggingRESTRouter) ServeHTTP(resp http.ResponseWriter, req *http.Request) {
+func (loggingRouter LoggingRESTRouter) ServeHTTP(resp http.ResponseWriter, req *http.Request) {
   loggingWriter := LoggingResponseWriter{200, bytes.NewBuffer(make([]byte, 0, 0)), resp}
-  wrapper.router.ServeHTTP(&loggingWriter, req)
+  loggingRouter.router.ServeHTTP(&loggingWriter, req)
   if loggingWriter.Status == 200 {
     if loggingWriter.Data.Len() > 200 {  // could be large block, so just print the size
       log.Printf("[%s] %s %s %d %d", req.RemoteAddr, req.Method, req.URL.Path[1:],
