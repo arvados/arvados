@@ -46,6 +46,7 @@ setup(name='arvados-python-client',
         'python-gflags',
         'google-api-python-client',
         'httplib2',
+        'requests>=2.4',
         'urllib3',
         'ws4py'
         ],

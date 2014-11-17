@@ -44,6 +44,8 @@
 
     <p><i>~/.ssh/config:</i></p>
     <pre>Host *.arvados
+      TCPKeepAlive yes
+      ServerAliveInterval 60
       ProxyCommand ssh -p2222 turnout@switchyard.<%= current_api_host || 'xyzzy.arvadosapi.com' %> -x -a $SSH_PROXY_FLAGS %h
     </pre>
   <% end %>

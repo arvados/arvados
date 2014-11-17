@@ -2,59 +2,16 @@
 layout: default
 navsection: sdk
 navmenu: CLI
-title: "Command line SDK"
+title: "Overview"
 
 ...
 
-The @arv@ CLI tool provides a generic set of wrappers so you can make API calls easily. It performs some validation before connecting to the API server: for example, it refuses to do an API call if a required parameter is missing.
+The @arv@ CLI tool provides a generic set of wrappers so you can make API calls easily. Additionally, it provides access to a number of subcommands.
 
-It also provides access to Keep storage services with the @arv keep@ subcommand.
-
-h3. Usage
+h3. Wrapper for API calls
 
 See the "command line interface":{{site.baseurl}}/user/reference/sdk-cli.html page in the user guide.
 
-h3. Installation
+h3. Subcommands
 
-If you are logged in to an Arvados VM, the @arv@ should be installed.
-
-To use @arv@ elsewhere, you can either install the @arvados-cli@ gem via RubyGems or build and install the package using the arvados source tree.
-
-h4. Prerequisites: Ruby &gt;= 2.0.0 and curl libraries
-
-You can use "RVM":http://rvm.io/rvm/install to install and manage Ruby versions.
-
-<notextile>
-<pre>
-$ <code class="userinput">sudo apt-get install curl</code>
-$ <code class="userinput">sudo sh -c 'curl -sSL https://get.rvm.io | bash -s stable'</code>
-$ <code class="userinput">source /etc/profile.d/rvm.sh</code>
-</pre>
-</notextile>
-
-Install curl libraries with your system's package manager. For example, with Debian or Ubuntu:
-
-<notextile>
-<pre>
-$ <code class="userinput">sudo apt-get install libcurl3 libcurl3-gnutls libcurl4-openssl-dev</code>
-</pre>
-</notextile>
-
-h4. Option 1: install with RubyGems
-
-<notextile>
-<pre>
-$ <code class="userinput">sudo gem install arvados-cli</code>
-</pre>
-</notextile>
-
-h4. Option 2: build and install from source
-
-<notextile>
-<pre>
-$ <code class="userinput">git clone https://github.com/curoverse/arvados.git</code>
-$ <code class="userinput">cd arvados/sdk/cli</code>
-$ <code class="userinput">gem build arvados-cli.gemspec</code>
-$ <code class="userinput">sudo gem install arvados-cli-*.gem</code>
-</pre>
-</notextile>
+See the "arv subcommands":{{site.baseurl}}/sdk/cli/subcommands.html page.

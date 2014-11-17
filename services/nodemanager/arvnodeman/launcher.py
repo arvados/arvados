@@ -12,9 +12,7 @@ import daemon
 import pykka
 
 from . import config as nmconfig
-from .computenode import \
-    ComputeNodeSetupActor, ComputeNodeShutdownActor, ComputeNodeUpdateActor, \
-    ShutdownTimer
+from .computenode.dispatch import ComputeNodeUpdateActor
 from .daemon import NodeManagerDaemonActor
 from .jobqueue import JobQueueMonitorActor, ServerCalculator
 from .nodelist import ArvadosNodeListMonitorActor, CloudNodeListMonitorActor
@@ -68,7 +66,9 @@ def launch_pollers(config):
         abort("No valid node sizes configured")
 
     server_calculator = ServerCalculator(
-        cloud_size_list, config.getint('Daemon', 'max_nodes'))
+        cloud_size_list,
+        config.getint('Daemon', 'min_nodes'),
+        config.getint('Daemon', 'max_nodes'))
     poll_time = config.getint('Daemon', 'poll_time')
     max_poll_time = config.getint('Daemon', 'max_poll_time')
 
@@ -115,7 +115,9 @@ def main(args=None):
         job_queue_poller, arvados_node_poller, cloud_node_poller,
         cloud_node_updater, timer,
         config.new_arvados_client, config.new_cloud_client,
-        config.shutdown_windows(), config.getint('Daemon', 'max_nodes'),
+        config.shutdown_windows(),
+        config.getint('Daemon', 'min_nodes'),
+        config.getint('Daemon', 'max_nodes'),
         config.getint('Daemon', 'poll_stale_after'),
         config.getint('Daemon', 'node_stale_after')).proxy()
 

@@ -349,8 +349,8 @@ def is_hex(s, *length_args):
     """
     num_length_args = len(length_args)
     if num_length_args > 2:
-        raise ArgumentError("is_hex accepts up to 3 arguments ({} given)".
-                            format(1 + num_length_args))
+        raise errors.ArgumentError("is_hex accepts up to 3 arguments ({} given)"
+                                   .format(1 + num_length_args))
     elif num_length_args == 2:
         good_len = (length_args[0] <= len(s) <= length_args[1])
     elif num_length_args == 1:

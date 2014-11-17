@@ -7,7 +7,7 @@ import arvados.errors as arv_error
 import arvados.retry as arv_retry
 import mock
 
-from arvados_testutil import fake_httplib2_response
+from arvados_testutil import fake_requests_response
 
 class RetryLoopTestMixin(object):
     @staticmethod
@@ -150,7 +150,7 @@ class RetryLoopBackoffTestCase(unittest.TestCase, RetryLoopTestMixin):
 class CheckHTTPResponseSuccessTestCase(unittest.TestCase):
     def results_map(self, *codes):
         for code in codes:
-            response = (fake_httplib2_response(code), None)
+            response = fake_requests_response(code, None)
             yield code, arv_retry.check_http_response_success(response)
 
     def check(assert_name):

@@ -37,7 +37,8 @@ class NodeManagerConfig(ConfigParser.SafeConfigParser):
         for sec_name, settings in {
             'Arvados': {'insecure': 'no',
                         'timeout': '15'},
-            'Daemon': {'max_nodes': '1',
+            'Daemon': {'min_nodes': '0',
+                       'max_nodes': '1',
                        'poll_time': '60',
                        'max_poll_time': '300',
                        'poll_stale_after': '600',
@@ -84,7 +85,7 @@ class NodeManagerConfig(ConfigParser.SafeConfigParser):
                            http=http)
 
     def new_cloud_client(self):
-        module = importlib.import_module('arvnodeman.computenode.' +
+        module = importlib.import_module('arvnodeman.computenode.driver.' +
                                          self.get('Cloud', 'provider'))
         auth_kwargs = self.get_section('Cloud Credentials')
         if 'timeout' in auth_kwargs:

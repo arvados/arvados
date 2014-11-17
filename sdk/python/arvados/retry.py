@@ -110,11 +110,11 @@ class RetryLoop(object):
 
 
 def check_http_response_success(result):
-    """Convert an httplib2 request result to a loop control flag.
+    """Convert a 'requests' response to a loop control flag.
 
-    Pass this method the 2-tuple returned by httplib2.Http.request.  It
-    returns True if the response indicates success, None if it indicates
-    temporary failure, and False otherwise.  You can use this as the
+    Pass this method a requests.Response object.  It returns True if
+    the response indicates success, None if it indicates temporary
+    failure, and False otherwise.  You can use this as the
     success_check for a RetryLoop.
 
     Implementation details:
@@ -129,7 +129,7 @@ def check_http_response_success(result):
       retry those requests verbatim.
     """
     try:
-        status = int(result[0].status)
+        status = result.status_code
     except Exception:
         return None
     if status in _HTTP_SUCCESSES:
