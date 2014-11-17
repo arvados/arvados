@@ -1,5 +1,5 @@
 function run_pipeline_button_state() {
-    var a = $('a.editable.required.editable-empty,input.form-control.required[value=]');
+    var a = $('a.editable.required.editable-empty,input.form-control.required[value=""]');
     if (a.length > 0) {
         $(".run-pipeline-button").addClass("disabled");
     }
