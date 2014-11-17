@@ -407,6 +407,7 @@ class PipelineInstancesTest < ActionDispatch::IntegrationTest
       if expected_min == expected_max
         assert_equal(true, found_count == expected_min,
           "Not found expected number of items. Expected at least #{expected_min} and found #{found_count}")
+        assert page.has_no_text? 'request failed'
       else
         assert_equal(true, found_count>=expected_min,
           "Found too few items. Expected at least #{expected_min} and found #{found_count}")
