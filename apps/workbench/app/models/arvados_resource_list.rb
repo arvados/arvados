@@ -148,14 +148,17 @@ class ArvadosResourceList
   end
 
   def items_available
+    results
     @items_available
   end
 
   def result_limit
+    results
     @result_limit
   end
 
   def result_offset
+    results
     @result_offset
   end
 
@@ -191,11 +194,11 @@ class ArvadosResourceList
                                    reader_tokens: @reader_tokens)
       items = arvados_api_client.unpack_api_response res
 
-      break if items.nil? or not items.any?
-
       @items_available = items.items_available if items.respond_to?(:items_available)
       @result_limit = items.limit if (@fetch_multiple_pages == false) and items.respond_to?(:limit)
       @result_offset = items.offset if (@fetch_multiple_pages == false) and items.respond_to?(:offset)
+
+      break if items.nil? or not items.any?
 
       item_count += items.size
       if items.respond_to?(:offset)
