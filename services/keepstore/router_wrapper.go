@@ -26,16 +26,16 @@ func (loggingWriter *LoggingResponseWriter) Write(data []byte) (int, error){
   return loggingWriter.ResponseWriter.Write(data)
 }
 
-type RESTRouterWrapper struct {
+type LoggingRESTRouter struct {
   router *mux.Router
 }
 
-func MakeRESTRouterWrapper() (RESTRouterWrapper) {
+func MakeLoggingRESTRouter() (LoggingRESTRouter) {
   router := MakeRESTRouter()
-  return (RESTRouterWrapper{router})
+  return (LoggingRESTRouter{router})
 }
 
-func (wrapper RESTRouterWrapper) ServeHTTP(resp http.ResponseWriter, req *http.Request) {
+func (wrapper LoggingRESTRouter) ServeHTTP(resp http.ResponseWriter, req *http.Request) {
   loggingWriter := LoggingResponseWriter{200, bytes.NewBuffer(make([]byte, 0, 0)), resp}
   wrapper.router.ServeHTTP(&loggingWriter, req)
   if loggingWriter.Status == 200 {
