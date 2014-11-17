@@ -30,12 +30,12 @@ type LoggingRESTRouter struct {
   router *mux.Router
 }
 
-func MakeLoggingRESTRouter() (LoggingRESTRouter) {
+func MakeLoggingRESTRouter() (*LoggingRESTRouter) {
   router := MakeRESTRouter()
-  return (LoggingRESTRouter{router})
+  return (&LoggingRESTRouter{router})
 }
 
-func (loggingRouter LoggingRESTRouter) ServeHTTP(resp http.ResponseWriter, req *http.Request) {
+func (loggingRouter *LoggingRESTRouter) ServeHTTP(resp http.ResponseWriter, req *http.Request) {
   loggingWriter := LoggingResponseWriter{200, bytes.NewBuffer(make([]byte, 0, 0)), resp}
   loggingRouter.router.ServeHTTP(&loggingWriter, req)
   if loggingWriter.Status == 200 {
