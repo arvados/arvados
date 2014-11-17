@@ -182,6 +182,12 @@ class ApiServerForTests
       end
     end
   end
+
+  def run_rake_task(task_name, arg_string)
+    Dir.chdir(ARV_API_SERVER_DIR) do
+      _system('bundle', 'exec', 'rake', "#{task_name}[#{arg_string}]")
+    end
+  end
 end
 
 class ActionController::TestCase
