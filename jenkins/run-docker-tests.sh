@@ -9,9 +9,14 @@ title () {
 }
 
 docker_push () {
-  $DOCKER push $*
-
-  ECODE=$?
+  # Sometimes docker push fails; retry it a few times if necessary.
+  for i in `seq 1 5`; do
+    $DOCKER push $*
+    ECODE=$?
+    if [[ "$ECODE" == "0" ]]; then
+      break
+    fi
+  done
 
   if [[ "$ECODE" != "0" ]]; then
     title "!!!!!! docker push $* failed !!!!!!"
