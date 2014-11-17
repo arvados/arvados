@@ -219,8 +219,6 @@ class ApplicationController < ActionController::Base
     if !objects
       objects = @objects
     end
-    # result_limit and result_offset won't work until we call #results
-    objects.results
     if objects.respond_to?(:result_offset) and
         objects.respond_to?(:result_limit) and
         objects.respond_to?(:items_available)
