@@ -157,7 +157,7 @@ h2. Putting it all together: bwa mem
 <notextile>
 <pre>
 $ <span class="userinput">cd ~/keep/by_id/d0136bc494c21f79fc1b6a390561e6cb+2778</span>
-$ <span class="userinput">arv-run --docker-image arvados/jobs-java-bwa-samtools --repository peter --script-version 3609-arv-run  bwa mem ../3514b8e5da0e8d109946bc809b20a78a+5698/human_g1k_v37.fasta -- --batch-size 2 *.fastq.gz \> '$(task.uuid).sam'</span>
+$ <span class="userinput">arv-run --docker-image arvados/jobs-java-bwa-samtools --script-version 3609-arv-run bwa mem ../3514b8e5da0e8d109946bc809b20a78a+5698/human_g1k_v37.fasta -- --batch-size 2 *.fastq.gz \> '$(task.uuid).sam'</span>
  0 stderr run-command: parallelizing on input0 with items [[u'/keep/d0136bc494c21f79fc1b6a390561e6cb+2778/HWI-ST1027_129_D0THKACXX.1_1.fastq.gz', u'/keep/d0136bc494c21f79fc1b6a390561e6cb+2778/HWI-ST1027_129_D0THKACXX.1_2.fastq.gz'], [u'/keep/d0136bc494c21f79fc1b6a390561e6cb+2778/HWI-ST1027_129_D0THKACXX.2_1.fastq.gz', u'/keep/d0136bc494c21f79fc1b6a390561e6cb+2778/HWI-ST1027_129_D0THKACXX.2_2.fastq.gz']]
 [...]
  1 stderr run-command: bwa mem /keep/3514b8e5da0e8d109946bc809b20a78a+5698/human_g1k_v37.fasta /keep/d0136bc494c21f79fc1b6a390561e6cb+2778/HWI-ST1027_129_D0THKACXX.1_1.fastq.gz /keep/d0136bc494c21f79fc1b6a390561e6cb+2778/HWI-ST1027_129_D0THKACXX.1_2.fastq.gz > qr1hi-ot0gb-a4bzzyqqz4ubair.sam
