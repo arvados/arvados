@@ -5,6 +5,7 @@ class Collection < ArvadosModel
   include KindAndEtag
   include CommonApiTemplate
 
+  before_validation :check_encoding
   before_validation :check_signatures
   before_validation :strip_manifest_text
   before_validation :set_portable_data_hash
@@ -104,6 +105,15 @@ class Collection < ArvadosModel
       end
     end
     true
+  end
+
+  def check_encoding
+    if manifest_text.encoding.name == 'UTF-8' and manifest_text.valid_encoding?
+      true
+    else
+      errors.add :manifest_text, "must use UTF-8 encoding"
+      false
+    end
   end
 
   def redundancy_status
