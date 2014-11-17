@@ -61,11 +61,12 @@ $(document).on('ajax:complete ready', function() {
   window.jobGraphData = [];
   window.jobGraphSeries = [];
   window.jobGraphMaxima = {};
+
+  TODO: make this more robust: many type conversions etc problems could theoretically go wrong in here
  */
 function processLogLineForChart( logLine ) {
     var recreate = false;
     var rescale = false;
-    // TODO: make this more robust: anything could go wrong in here
     var match = logLine.match(/(\S+) (\S+) (\S+) (\S+) stderr crunchstat: (\S+) (.*) -- interval (.*)/);
     if( match ) {
         // the timestamp comes first
@@ -104,19 +105,19 @@ function processLogLineForChart( logLine ) {
             }
         }
         // scale
-        // FIXME: what about negative numbers?
         var scaledDatum = null;
         if( isJobSeriesRescalable(series) && jobGraphMaxima[series] !== null && jobGraphMaxima[series] !== 0 ) {
             scaledDatum = datum/jobGraphMaxima[series]
         } else {
             scaledDatum = datum;
         }
-        // identify x axis point
+        // identify x axis point, searching from the end of the array (most recent)
         var found = false;
         for( var i = jobGraphData.length - 1; i >= 0; i-- ) {
             if( jobGraphData[i]['t'] === timestamp ) {
                 found = true;
                 jobGraphData[i][series] = scaledDatum;
+                jobGraphData[i]['raw-'+series] = match[7];
                 break;
             } else if( jobGraphData[i]['t'] < timestamp  ) {
                 // we've gone far enough back in time and this data is supposed to be sorted
@@ -129,6 +130,7 @@ function processLogLineForChart( logLine ) {
             // create a new x point for this previously unrecorded timestamp
             var entry = { 't': timestamp };
             entry[series] = scaledDatum;
+            entry['raw-'+series] = match[7];
             jobGraphData.splice( insertAt, 0, entry );
             var shifted = [];
             // now let's see about "scrolling" the graph, dropping entries that are too old (>10 minutes)
@@ -176,6 +178,7 @@ function createJobGraph(elementName) {
         element: elementName,
         data: jobGraphData,
         ymax: 1.0,
+        yLabelFormat: function () { return ''; },
         xkey: 't',
         ykeys: jobGraphSeries,
         labels: jobGraphSeries,
@@ -196,7 +199,19 @@ function createJobGraph(elementName) {
                     if( isJobSeriesRescalable( series ) ) {
                         datum *= jobGraphMaxima[series];
                     }
-                    s += datum.toFixed(2);
+                    if( parseFloat(datum) !== 0 ) {
+                        if( /^cpu-/.test(series) ){
+                            datum = $.number(datum * 100, 1) + '%';
+                        } else if( datum < 10 ) {
+                            datum = $.number(datum, 2);
+                        } else {
+                            datum = $.number(datum);
+                        }
+                        datum += ' (' + options.data[index]['raw-'+series] + ')';
+                    }
+                    s += datum;
+                } else {
+                    s += '-';
                 }
                 s += "</div> ";
             }

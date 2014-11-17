@@ -25,6 +25,7 @@
 //= require wiselinks
 //= require raphael
 //= require morris
+//= require jquery.number.min
 //= require_tree .
 
 jQuery(function($){
