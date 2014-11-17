@@ -1,5 +1,5 @@
 function run_pipeline_button_state() {
-    var a = $('a.editable.required.editable-empty,input.form-control.required[value=]');
+    var a = $('a.editable.required.editable-empty,input.form-control.required[value=""]');
     if (a.length > 0) {
         $(".run-pipeline-button").addClass("disabled");
     }
@@ -120,5 +120,9 @@ var showhide_compare = function() {
         });
     }
 };
-$('[data-object-uuid*=-d1hrv-] input[name="uuids[]"]').on('click', showhide_compare);
-showhide_compare();
+$(document).on('change', '[data-object-uuid*=-d1hrv-] input[name="uuids[]"]', function(e) {
+    if(e.target == this) {
+        showhide_compare();
+    }
+});
+$(document).on('ready ajax:success', showhide_compare);
