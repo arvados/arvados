@@ -56,6 +56,14 @@ class ApplicationController < ActionController::Base
                 :with => :render_not_found)
   end
 
+  def default_url_options
+    if Rails.configuration.host
+      {:host => Rails.configuration.host}
+    else
+      {}
+    end
+  end
+
   def index
     @objects.uniq!(&:id) if @select.nil? or @select.include? "id"
     if params[:eager] and params[:eager] != '0' and params[:eager] != 0 and params[:eager] != ''
