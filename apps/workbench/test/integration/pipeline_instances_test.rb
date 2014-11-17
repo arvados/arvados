@@ -276,6 +276,33 @@ class PipelineInstancesTest < ActionDispatch::IntegrationTest
 
   # Create and run a pipeline for 'Two Part Pipeline Template' in 'A Project'
   def create_and_run_pipeline_in_aproject in_aproject, template_name, choose_file
+
+    def check_input_inedible(in_aproject, choose_file)
+      find('div.form-group', text: 'Foo/bar pair').
+        find('.btn', text: 'Choose').
+        click
+
+      within('.modal-dialog') do
+        if in_aproject
+          assert_selector 'button.dropdown-toggle', text: 'A Project'
+          wait_for_ajax
+        else
+          assert_selector 'button.dropdown-toggle', text: 'Home'
+          wait_for_ajax
+          click_button "Home"
+          click_link "A Project"
+          wait_for_ajax
+        end
+        first('span', text: 'foo_tag').click
+        if choose_file
+          wait_for_ajax
+          find('.preview-selectable', text: 'foo').click
+        end
+        find('button', text: 'OK').click
+      end
+      wait_for_ajax
+    end
+
     # create a pipeline instance
     find('.btn', text: 'Run a pipeline').click
     within('.modal-dialog') do
@@ -284,33 +311,11 @@ class PipelineInstancesTest < ActionDispatch::IntegrationTest
     end
 
     assert find('p', text: 'Provide a value')
+    check_input_inedible in_aproject, choose_file
 
-    find('div.form-group', text: 'Foo/bar pair').
-      find('.btn', text: 'Choose').
-      click
-
-    within('.modal-dialog') do
-      if in_aproject
-        assert_selector 'button.dropdown-toggle', text: 'A Project'
-        wait_for_ajax
-      else
-        assert_selector 'button.dropdown-toggle', text: 'Home'
-        wait_for_ajax
-        click_button "Home"
-        click_link "A Project"
-        wait_for_ajax
-      end
-      first('span', text: 'foo_tag').click
-      if choose_file
-        wait_for_ajax
-        find('.preview-selectable', text: 'foo').click
-      end
-      find('button', text: 'OK').click
-    end
-    wait_for_ajax
-
-    # The input, after being specified, should still be displayed (#3382)
+    # The input, after being specified, should still be displayed and still be editable afterwards (#3382)
     assert find('div.form-group', text: 'Foo/bar pair')
+    check_input_inedible in_aproject, choose_file
 
     # Ensure that the collection's portable_data_hash, uuid and name
     # are saved in the desired places. (#4015)
