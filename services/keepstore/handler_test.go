@@ -276,10 +276,10 @@ func TestIndexHandler(t *testing.T) {
 	// -------------------------------------------------------------
 	// Only the superuser should be allowed to issue /index requests.
 
-  // ---------------------------
-  // enforce_permissions enabled
+	// ---------------------------
+	// enforce_permissions enabled
 	// This setting should not affect tests passing.
-  enforce_permissions = true
+	enforce_permissions = true
 
 	// unauthenticated /index request
 	// => UnauthorizedError
@@ -333,8 +333,6 @@ func TestIndexHandler(t *testing.T) {
 		"permissions on, superuser request",
 		http.StatusOK,
 		response)
-
-
 
 	expected := `^` + TEST_HASH + `\+\d+ \d+\n` +
 		TEST_HASH_2 + `\+\d+ \d+\n$`
@@ -731,8 +729,8 @@ func IssueRequest(rt *RequestTester) *httptest.ResponseRecorder {
 	if rt.api_token != "" {
 		req.Header.Set("Authorization", "OAuth2 "+rt.api_token)
 	}
-  loggingRouter := MakeLoggingRESTRouter()
-  loggingRouter.ServeHTTP(response, req)
+	loggingRouter := MakeLoggingRESTRouter()
+	loggingRouter.ServeHTTP(response, req)
 	return response
 }
 
