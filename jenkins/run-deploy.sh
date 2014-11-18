@@ -148,11 +148,12 @@ if [[ "$COMPRESSED_NODE_LIST" != '' ]]; then
   SUM_ECODE=0
   for node in $COMPUTE_NODES; do
     echo "Updating $node.$IDENTIFIER"
-    ssh -p2222  -o "StrictHostKeyChecking no" -o "ConnectTimeout 5" root@$node.$IDENTIFIER -C "/usr/bin/puppet agent -t"
+    RESULT=`ssh -p2222  -o "StrictHostKeyChecking no" -o "ConnectTimeout 5" root@$node.$IDENTIFIER -C "/usr/bin/puppet agent -t"`
     ECODE=$?
-    if [[ "$ECODE" != "255" && "$ECODE" != "2" && "$ECODE" != "0"  ]]; then
+    if [[ "$ECODE" != "255" && ! ("$RESULT" =~ 'already in progress') && "$ECODE" != "2" && "$ECODE" != "0"  ]]; then
       # 255 -> connection timed out. Just ignore that, it's possible the compute node was being shut down.
       # Puppet exits '2' if there are changes. For real!
+      # Puppet prints 'Notice: Run of Puppet configuration client already in progress' if another puppet process was already running
       SUM_ECODE=$(($SUM_ECODE + $ECODE))
       echo "ERROR updating $node.$IDENTIFIER: exit code $ECODE"
     fi
