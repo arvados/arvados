@@ -16,7 +16,7 @@ class Arvados::V1::CollectionsController < ApplicationController
         @object = {
           uuid: c.portable_data_hash,
           portable_data_hash: c.portable_data_hash,
-          manifest_text: c.manifest_text,
+          manifest_text: c.signed_manifest_text,
         }
       end
     else
@@ -26,16 +26,14 @@ class Arvados::V1::CollectionsController < ApplicationController
   end
 
   def show
-    sign_manifests(@object[:manifest_text])
     if @object.is_a? Collection
-      render json: @object.as_api_response
+      super
     else
       render json: @object
     end
   end
 
   def index
-    sign_manifests(*@objects.map { |c| c[:manifest_text] })
     super
   end
 
@@ -183,27 +181,12 @@ class Arvados::V1::CollectionsController < ApplicationController
 
   protected
 
-  def apply_filters
+  def load_limit_offset_order_params *args
     if action_name == 'index'
       # Omit manifest_text from index results unless expressly selected.
       @select ||= model_class.api_accessible_attributes(:user).
         map { |attr_spec| attr_spec.first.to_s } - ["manifest_text"]
     end
     super
-  end
-
-  def sign_manifests(*manifests)
-    if current_api_client_authorization
-      signing_opts = {
-        key: Rails.configuration.blob_signing_key,
-        api_token: current_api_client_authorization.api_token,
-        ttl: Rails.configuration.blob_signing_ttl,
-      }
-      manifests.each do |text|
-        Collection.munge_manifest_locators(text) do |loc|
-          Blob.sign_locator(loc.to_s, signing_opts)
-        end
-      end
-    end
   end
 end
