@@ -43,6 +43,9 @@ class Arvados::V1::JobsController < ApplicationController
         else
           @filters.append(["docker_image_locator", "=", nil])
         end
+        if sdk_version = resource_attrs[:runtime_constraints].andand["arvados_sdk_version"]
+          @filters.append(["arvados_sdk_version", "in git", sdk_version])
+        end
         begin
           load_job_specific_filters
         rescue ArgumentError => error
@@ -196,59 +199,70 @@ class Arvados::V1::JobsController < ApplicationController
   def load_job_specific_filters
     # Convert Job-specific @filters entries into general SQL filters.
     script_info = {"repository" => nil, "script" => nil}
-    script_range = {"exclude_versions" => []}
-    @filters.select! do |filter|
-      if (script_info.has_key? filter[0]) and (filter[1] == "=")
-        if script_info[filter[0]].nil?
-          script_info[filter[0]] = filter[2]
-        elsif script_info[filter[0]] != filter[2]
-          raise ArgumentError.new("incompatible #{filter[0]} filters")
+    git_filters = Hash.new do |hash, key|
+      hash[key] = {"max_version" => "HEAD", "exclude_versions" => []}
+    end
+    @filters.select! do |(attr, operator, operand)|
+      if (script_info.has_key? attr) and (operator == "=")
+        if script_info[attr].nil?
+          script_info[attr] = operand
+        elsif script_info[attr] != operand
+          raise ArgumentError.new("incompatible #{attr} filters")
         end
       end
-      case filter[0..1]
-      when ["script_version", "in git"]
-        script_range["min_version"] = filter.last
+      case operator
+      when "in git"
+        git_filters[attr]["min_version"] = operand
         false
-      when ["script_version", "not in git"]
-        begin
-          script_range["exclude_versions"] += filter.last
-        rescue TypeError
-          script_range["exclude_versions"] << filter.last
-        end
+      when "not in git"
+        git_filters[attr]["exclude_versions"] += Array.wrap(operand)
         false
-      when ["docker_image_locator", "in docker"], ["docker_image_locator", "not in docker"]
-        filter[1].sub!(/ docker$/, '')
-        search_list = filter[2].is_a?(Enumerable) ? filter[2] : [filter[2]]
-        filter[2] = search_list.flat_map do |search_term|
+      when "in docker", "not in docker"
+        image_hashes = Array.wrap(operand).flat_map do |search_term|
           image_search, image_tag = search_term.split(':', 2)
-          Collection.find_all_for_docker_image(image_search, image_tag, @read_users).map(&:portable_data_hash)
+          Collection.
+            find_all_for_docker_image(image_search, image_tag, @read_users).
+            map(&:portable_data_hash)
         end
-        true
+        @filters << [attr, operator.sub(/ docker$/, ""), image_hashes]
+        false
       else
         true
       end
     end
 
     # Build a real script_version filter from any "not? in git" filters.
-    if (script_range.size > 1) or script_range["exclude_versions"].any?
-      script_info.each_pair do |key, value|
-        if value.nil?
-          raise ArgumentError.new("script_version filter needs #{key} filter")
+    git_filters.each_pair do |attr, filter|
+      case attr
+      when "script_version"
+        script_info.each_pair do |key, value|
+          if value.nil?
+            raise ArgumentError.new("script_version filter needs #{key} filter")
+          end
         end
+        filter["repository"] = script_info["repository"]
+        begin
+          filter["max_version"] = resource_attrs[:script_version]
+        rescue
+          # Using HEAD, set earlier by the hash default, is fine.
+        end
+      when "arvados_sdk_version"
+        filter["repository"] = "arvados"
+      else
+        raise ArgumentError.new("unknown attribute for git filter: #{attr}")
       end
-      last_version = begin resource_attrs[:script_version] rescue "HEAD" end
       version_range = Commit.find_commit_range(current_user,
-                                               script_info["repository"],
-                                               script_range["min_version"],
-                                               last_version,
-                                               script_range["exclude_versions"])
+                                               filter["repository"],
+                                               filter["min_version"],
+                                               filter["max_version"],
+                                               filter["exclude_versions"])
       if version_range.nil?
         raise ArgumentError.
-          new(["error searching #{script_info['repository']} from",
-               "'#{script_range['min_version']}' to '#{last_version}',",
-               "excluding #{script_range['exclude_versions']}"].join(" "))
+          new("error searching #{filter['repository']} from " +
+              "'#{filter['min_version']}' to '#{filter['max_version']}', " +
+              "excluding #{filter['exclude_versions']}")
       end
-      @filters.append(["script_version", "in", version_range])
+      @filters.append([attr, "in", version_range])
     end
   end
 

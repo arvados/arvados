@@ -80,4 +80,15 @@ class ResourceListTest < ActiveSupport::TestCase
     assert_equal c.result_limit, a
   end
 
+  test 'get empty set' do
+    use_token :admin
+    c = Collection.
+      where(owner_uuid: 'doesn-texis-tdoesntexistdoe').
+      fetch_multiple_pages(false)
+    # Important: check c.result_offset before calling c.results here.
+    assert_equal 0, c.result_offset
+    assert_equal 0, c.items_available
+    assert_empty c.results
+  end
+
 end

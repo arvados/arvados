@@ -108,7 +108,8 @@ jQuery(function($){
             }
         });
 
-    $(window).on('load storage', update_count);
+    $(window).on('load', clear_selections);
+    $(window).on('storage', update_count);
 
     $('#selection-form-content').on("click", function(e) {
         e.stopPropagation();

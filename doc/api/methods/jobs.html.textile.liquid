@@ -45,9 +45,9 @@ h3. Specialized filters
 
 Special filter operations are available for specific Job columns.
 
-* @script_version@ @in git@ @REFSPEC@<br>Resolve @REFSPEC@ to a list of git commits, and match jobs with a @script_version@ in that list.  The create method will find commits between @REFSPEC@ and the submitted job's @script_version@; the list method will search between @REFSPEC@ and HEAD.  This list may include parallel branches if there is more than one path between @REFSPEC@ and the end commit in the graph.  Use @not in@ or @not in git@ filters (below) to blacklist specific commits.
+* @script_version@ @in git@ @REFSPEC@, @arvados_sdk_version@ @in git@ @REFSPEC@<br>Resolve @REFSPEC@ to a list of Git commits, and match jobs with a @script_version@ or @arvados_sdk_version@ in that list.  When creating a job and filtering @script_version@, the search will find commits between @REFSPEC@ and the submitted job's @script_version@; all other searches will find commits between @REFSPEC@ and HEAD.  This list may include parallel branches if there is more than one path between @REFSPEC@ and the end commit in the graph.  Use @not in@ or @not in git@ filters (below) to blacklist specific commits.
 
-* @script_version@ @not in git@ @REFSPEC@<br>Resolve @REFSPEC@ to a list of git commits, and match jobs with a @script_version@ not in that list.
+* @script_version@ @not in git@ @REFSPEC@, @arvados_sdk_version@ @not in git@ @REFSPEC@<br>Resolve @REFSPEC@ to a list of Git commits, and match jobs with a @script_version@ or @arvados_sdk_version@ not in that list.
 
 * @docker_image_locator@ @in docker@ @SEARCH@<br>@SEARCH@ can be a Docker image hash, a repository name, or a repository name and tag separated by a colon (@:@).  The server will find collections that contain a Docker image that match that search criteria, then match jobs with a @docker_image_locator@ in that list.
 
@@ -61,7 +61,7 @@ notextile. <div class="spaced-out">
 
 # If @find_or_create@ is false or omitted, create a new job and skip the rest of these steps.
 # If @filters@ are specified, find jobs that match those filters.  Filters *must* be specified to limit the @repository@ and @script@ attributes.  An error is returned if they are missing.
-# If @filters@ are not specified, find jobs with the same @repository@ and @script@, with a @script_version@ between @minimum_script_version@ and @script_version@ (excluding @excluded_script_versions@), and a @docker_image_locator@ with the latest Collection that matches the submitted job's @docker_image@ constraint.
+# If @filters@ are not specified, find jobs with the same @repository@ and @script@, with a @script_version@ between @minimum_script_version@ and @script_version@ (excluding @excluded_script_versions@), and a @docker_image_locator@ with the latest Collection that matches the submitted job's @docker_image@ constraint.  If the submitted job includes an @arvados_sdk_version@ constraint, jobs must have an @arvados_sdk_version@ between that refspec and HEAD to be found.
 # If the found jobs include a completed job, and all found completed jobs have consistent output, return one of them.  Which specific job is returned is undefined.
 # If the found jobs only include incomplete jobs, return one of them.  Which specific job is returned is undefined.
 # If no job has been returned so far, create and return a new job.

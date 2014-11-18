@@ -391,8 +391,14 @@ func (s *StandaloneSuite) TestPutWithFail(c *C) {
 	c.Check(err, Equals, nil)
 	c.Check(phash, Equals, "")
 	c.Check(replicas, Equals, 2)
-	c.Check(<-st.handled, Equals, shuff[1])
-	c.Check(<-st.handled, Equals, shuff[2])
+
+	s1 := <-st.handled
+	s2 := <-st.handled
+
+	c.Check((s1 == shuff[1] && s2 == shuff[2]) ||
+		(s1 == shuff[2] && s2 == shuff[1]),
+		Equals,
+		true)
 }
 
 func (s *StandaloneSuite) TestPutWithTooManyFail(c *C) {

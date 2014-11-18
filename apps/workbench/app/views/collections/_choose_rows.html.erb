@@ -1,6 +1,6 @@
 <% @objects.each do |object| %>
-    <div class="row filterable selectable" data-object-uuid="<%= object.uuid %>"
-         data-preview-href="<%= chooser_preview_url_for object %>"
+    <div class="row filterable selectable <%= 'use-preview-selection' if params['use_preview_selection']%>" data-object-uuid="<%= object.uuid %>"
+         data-preview-href="<%= chooser_preview_url_for object, params['use_preview_selection'] %>"
          style="margin-left: 1em; border-bottom-style: solid; border-bottom-width: 1px; border-bottom-color: #DDDDDD">
       <i class="fa fa-fw fa-archive"></i>
       <% if object.respond_to? :name %>
