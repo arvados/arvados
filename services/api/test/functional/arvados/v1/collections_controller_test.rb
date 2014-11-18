@@ -576,6 +576,7 @@ EOS
   end
 
   test 'Reject manifest with unsigned blob' do
+    permit_unsigned_manifests false
     authorize_with :active
     unsigned_manifest = ". 0cc175b9c0f1b6a831c399e269772661+1 0:1:a.txt\n"
     manifest_uuid = Digest::MD5.hexdigest(unsigned_manifest)
