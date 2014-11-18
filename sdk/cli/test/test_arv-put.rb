@@ -82,7 +82,7 @@ class TestArvPut < Minitest::Test
     end
     $stderr.write err
     assert_match '', err
-    assert_equal true, match_collection_uuid(out)
+    assert match_collection_uuid(out)
   end
 
   def test_as_stream
@@ -99,7 +99,7 @@ class TestArvPut < Minitest::Test
       assert arv_put('--manifest', '--progress', './tmp/foo')
     end
     assert_match /%/, err
-    assert_equal true, match_collection_uuid(out)
+    assert match_collection_uuid(out)
   end
 
   def test_batch_progress
@@ -108,7 +108,7 @@ class TestArvPut < Minitest::Test
     end
     assert_match /: 0 written 3 total/, err
     assert_match /: 3 written 3 total/, err
-    assert_equal true, match_collection_uuid(out)
+    assert match_collection_uuid(out)
   end
 
   def test_progress_and_batch_progress
@@ -144,7 +144,7 @@ class TestArvPut < Minitest::Test
     end
     $stderr.write err
     assert_match '', err
-    assert_equal true, match_collection_uuid(out)
+    assert match_collection_uuid(out)
   end
 
   def test_read_from_implicit_stdin_implicit_manifest
@@ -174,7 +174,7 @@ class TestArvPut < Minitest::Test
     end
     $stderr.write err
     assert_match '', err
-    assert_equal true, match_collection_uuid(out)
+    assert match_collection_uuid(out)
   end
 
   protected
@@ -192,7 +192,6 @@ class TestArvPut < Minitest::Test
   end
 
   def match_collection_uuid(uuid)
-    match = /^([0-9a-z]{5}-4zz18-[0-9a-z]{15})?$/.match(uuid)
-    match and match[1] and !match[1].nil?
+    /^([0-9a-z]{5}-4zz18-[0-9a-z]{15})?$/.match(uuid)
   end
 end
