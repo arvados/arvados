@@ -16,7 +16,7 @@ class CollectionTest < ActiveSupport::TestCase
 
   test 'accept UTF-8 manifest_text' do
     act_as_system_user do
-      c = create_collection "f\xc3\x98\xc3\x98"
+      c = create_collection "f\xc3\x98\xc3\x98", Encoding::UTF_8
       assert c.valid?
     end
   end
