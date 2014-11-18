@@ -9,7 +9,7 @@ class CollectionTest < ActiveSupport::TestCase
 
   test 'accept ASCII manifest_text' do
     act_as_system_user do
-      c = create_collection 'foo'
+      c = create_collection 'foo', Encoding::US_ASCII
       assert c.valid?
     end
   end
