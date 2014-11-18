@@ -27,6 +27,9 @@ class DatabaseController < ApplicationController
     Rails.cache.clear
     ActiveRecord::Base.connection.clear_query_cache
 
+    # Reload database seeds
+    DatabaseSeeds.install
+
     # Done.
     render json: {success: true}
   end
