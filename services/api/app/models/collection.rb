@@ -111,6 +111,19 @@ class Collection < ArvadosModel
     if manifest_text.encoding.name == 'UTF-8' and manifest_text.valid_encoding?
       true
     else
+      begin
+        # If Ruby thinks the encoding is something else, like 7-bit
+        # ASCII, but its stored bytes are equal to the (valid) UTF-8
+        # encoding of the same string, we declare it to be a UTF-8
+        # string.
+        utf8 = manifest_text
+        utf8.force_encoding Encoding::UTF_8
+        if utf8.valid_encoding? and utf8 == manifest_text.encode(Encoding::UTF_8)
+          manifest_text = utf8
+          return true
+        end
+      rescue
+      end
       errors.add :manifest_text, "must use UTF-8 encoding"
       false
     end
