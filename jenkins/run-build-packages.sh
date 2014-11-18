@@ -397,7 +397,7 @@ build_and_scp_deb $WORKSPACE/services/nodemanager arvados-node-manager 'Curovers
 # A few dependencies
 for deppkg in python-gflags pyvcf google-api-python-client oauth2client \
       pyasn1 pyasn1-modules rsa uritemplate httplib2 ws4py virtualenv \
-      pykka apache-libcloud requests six pyexecjs; do
+      pykka apache-libcloud requests six pyexecjs jsonschema; do
     build_and_scp_deb "$deppkg"
 done
 
