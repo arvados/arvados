@@ -320,9 +320,18 @@ class JobTest < ActiveSupport::TestCase
       end
     end
 
-    test "updating job with SDK version '#{search}'" do
+    test "updating job from no SDK to version '#{search}'" do
       job = Job.create!(job_attrs)
       assert_nil job.arvados_sdk_version
+      check_job_sdk_version(commit_hash) do
+        job.runtime_constraints = sdk_constraint(search)[:runtime_constraints]
+        job
+      end
+    end
+
+    test "updating job from SDK version 'master' to '#{search}'" do
+      job = Job.create!(job_attrs(sdk_constraint("master")))
+      assert_equal(SDK_MASTER, job.arvados_sdk_version)
       check_job_sdk_version(commit_hash) do
         job.runtime_constraints = sdk_constraint(search)[:runtime_constraints]
         job
