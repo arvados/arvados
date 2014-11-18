@@ -1,5 +1,6 @@
 require 'minitest/autorun'
 require 'digest/md5'
+require 'active_support/core_ext'
 
 class TestCollectionCreate < Minitest::Test
   def setup
@@ -13,7 +14,9 @@ class TestCollectionCreate < Minitest::Test
                    manifest_text: foo_manifest
                  }.to_json)
     end
-    assert_equal uuid+"\n", out
+
+    match = /^([0-9a-z]{5}-4zz18-[0-9a-z]{15})?$/.match(out)
+    assert_equal true, (match and match[1] and !match[1].nil?)
     assert_equal '', err
     $stderr.puts err
   end
