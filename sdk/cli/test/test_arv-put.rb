@@ -82,7 +82,7 @@ class TestArvPut < Minitest::Test
     end
     $stderr.write err
     assert_match '', err
-    assert_equal "aa4f15cbf013142a7d98b1e273f9c661+45\n", out
+    assert_equal true, match_collection_uuid(out)
   end
 
   def test_as_stream
@@ -99,7 +99,7 @@ class TestArvPut < Minitest::Test
       assert arv_put('--manifest', '--progress', './tmp/foo')
     end
     assert_match /%/, err
-    assert_equal foo_manifest_locator+"\n", out
+    assert_equal true, match_collection_uuid(out)
   end
 
   def test_batch_progress
@@ -108,7 +108,7 @@ class TestArvPut < Minitest::Test
     end
     assert_match /: 0 written 3 total/, err
     assert_match /: 3 written 3 total/, err
-    assert_equal foo_manifest_locator+"\n", out
+    assert_equal true, match_collection_uuid(out)
   end
 
   def test_progress_and_batch_progress
@@ -144,7 +144,7 @@ class TestArvPut < Minitest::Test
     end
     $stderr.write err
     assert_match '', err
-    assert_equal foo_manifest_locator+"\n", out
+    assert_equal true, match_collection_uuid(out)
   end
 
   def test_read_from_implicit_stdin_implicit_manifest
@@ -174,8 +174,7 @@ class TestArvPut < Minitest::Test
     end
     $stderr.write err
     assert_match '', err
-    assert_equal(foo_manifest_locator(expect_filename)+"\n",
-                 out)
+    assert_equal true, match_collection_uuid(out)
   end
 
   protected
@@ -190,5 +189,10 @@ class TestArvPut < Minitest::Test
   def foo_manifest_locator(filename='foo')
     Digest::MD5.hexdigest(foo_manifest(filename)) +
       "+#{foo_manifest(filename).length}"
+  end
+
+  def match_collection_uuid(uuid)
+    match = /^([0-9a-z]{5}-4zz18-[0-9a-z]{15})?$/.match(uuid)
+    match and match[1] and !match[1].nil?
   end
 end
