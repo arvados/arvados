@@ -3,7 +3,7 @@ require 'websocket_runner'
 require 'oj'
 require 'database_cleaner'
 
-DatabaseCleaner.strategy = :truncation
+DatabaseCleaner.strategy = :deletion
 
 class WebsocketTest < ActionDispatch::IntegrationTest
   self.use_transactional_fixtures = false

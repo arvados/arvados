@@ -19,13 +19,28 @@ class Collection < ArvadosModel
     t.add :description
     t.add :properties
     t.add :portable_data_hash
-    t.add :manifest_text
+    t.add :signed_manifest_text, as: :manifest_text
+  end
+
+  def self.attributes_required_columns
+    # If we don't list this explicitly, the params[:select] code gets
+    # confused by the way we expose signed_manifest_text as
+    # manifest_text in the API response, and never let clients select
+    # the manifest_text column.
+    super.merge('manifest_text' => ['manifest_text'])
   end
 
   def check_signatures
     return false if self.manifest_text.nil?
 
     return true if current_user.andand.is_admin
+
+    # Provided the manifest_text hasn't changed materially since an
+    # earlier validation, it's safe to pass this validation on
+    # subsequent passes without checking any signatures. This is
+    # important because the signatures have probably been stripped off
+    # by the time we get to a second validation pass!
+    return true if @signatures_checked and @signatures_checked == compute_pdh
 
     if self.manifest_text_changed?
       # Check permissions on the collection manifest.
@@ -62,13 +77,13 @@ class Collection < ArvadosModel
         end
       end
     end
-    true
+    @signatures_checked = compute_pdh
   end
 
   def strip_manifest_text
     if self.manifest_text_changed?
       # Remove any permission signatures from the manifest.
-      Collection.munge_manifest_locators(self[:manifest_text]) do |loc|
+      self.class.munge_manifest_locators!(self[:manifest_text]) do |loc|
         loc.without_signature.to_s
       end
     end
@@ -76,16 +91,20 @@ class Collection < ArvadosModel
   end
 
   def set_portable_data_hash
-    if (self.portable_data_hash.nil? or (self.portable_data_hash == "") or (manifest_text_changed? and !portable_data_hash_changed?))
-      self.portable_data_hash = "#{Digest::MD5.hexdigest(manifest_text)}+#{manifest_text.bytesize}"
+    if (portable_data_hash.nil? or
+        portable_data_hash == "" or
+        (manifest_text_changed? and !portable_data_hash_changed?))
+      @need_pdh_validation = false
+      self.portable_data_hash = compute_pdh
     elsif portable_data_hash_changed?
+      @need_pdh_validation = true
       begin
         loc = Keep::Locator.parse!(self.portable_data_hash)
         loc.strip_hints!
         if loc.size
           self.portable_data_hash = loc.to_s
         else
-          self.portable_data_hash = "#{loc.hash}+#{self.manifest_text.bytesize}"
+          self.portable_data_hash = "#{loc.hash}+#{portable_manifest_text.bytesize}"
         end
       rescue ArgumentError => e
         errors.add(:portable_data_hash, "#{e}")
@@ -96,15 +115,15 @@ class Collection < ArvadosModel
   end
 
   def ensure_hash_matches_manifest_text
-    if manifest_text_changed? or portable_data_hash_changed?
-      computed_hash = "#{Digest::MD5.hexdigest(manifest_text)}+#{manifest_text.bytesize}"
-      unless computed_hash == portable_data_hash
-        logger.debug "(computed) '#{computed_hash}' != '#{portable_data_hash}' (provided)"
-        errors.add(:portable_data_hash, "does not match hash of manifest_text")
-        return false
-      end
+    return true unless manifest_text_changed? or portable_data_hash_changed?
+    # No need verify it if :set_portable_data_hash just computed it!
+    return true if not @need_pdh_validation
+    expect_pdh = compute_pdh
+    if expect_pdh != portable_data_hash
+      errors.add(:portable_data_hash,
+                 "does not match computed hash #{expect_pdh}")
+      return false
     end
-    true
   end
 
   def check_encoding
@@ -145,7 +164,27 @@ class Collection < ArvadosModel
     end
   end
 
-  def self.munge_manifest_locators(manifest)
+  def signed_manifest_text
+    if has_attribute? :manifest_text
+      token = current_api_client_authorization.andand.api_token
+      @signed_manifest_text = self.class.sign_manifest manifest_text, token
+    end
+  end
+
+  def self.sign_manifest manifest, token
+    signing_opts = {
+      key: Rails.configuration.blob_signing_key,
+      api_token: token,
+      ttl: Rails.configuration.blob_signing_ttl,
+    }
+    m = manifest.dup
+    munge_manifest_locators!(m) do |loc|
+      Blob.sign_locator(loc.to_s, signing_opts)
+    end
+    return m
+  end
+
+  def self.munge_manifest_locators! manifest
     # Given a manifest text and a block, yield each locator,
     # and replace it with whatever the block returns.
     manifest.andand.gsub!(/ [[:xdigit:]]{32}(\+[[:digit:]]+)?(\+\S+)/) do |word|
@@ -228,5 +267,21 @@ class Collection < ArvadosModel
 
   def self.for_latest_docker_image(search_term, search_tag=nil, readers=nil)
     find_all_for_docker_image(search_term, search_tag, readers).first
+  end
+
+  protected
+  def portable_manifest_text
+    portable_manifest = self[:manifest_text].dup
+    self.class.munge_manifest_locators!(portable_manifest) do |loc|
+      loc.hash + '+' + loc.size.to_s
+    end
+    portable_manifest
+  end
+
+  def compute_pdh
+    portable_manifest = portable_manifest_text
+    (Digest::MD5.hexdigest(portable_manifest) +
+     '+' +
+     portable_manifest.bytesize.to_s)
   end
 end
