@@ -382,11 +382,13 @@ class PipelineInstancesTest < ActionDispatch::IntegrationTest
     ['active', 'no such match', 0, 0],
   ].each do |user, search_filter, expected_min, expected_max|
     test "scroll pipeline instances page for #{user} with search filter #{search_filter}
-          and expect more than #{expected_min} and less than #{expected_max}" do
+          and expect #{expected_min} <= found_items <= #{expected_max}" do
       visit page_with_token(user, "/pipeline_instances")
 
       if search_filter
         find('.recent-pipeline-instances-filterable-control').set(search_filter)
+        # Wait for 250ms debounce timer (see filterable.js)
+        sleep 0.350
         wait_for_ajax
       end
 

@@ -24,6 +24,11 @@ from arvados.util import portable_data_hash_pattern, uuid_pattern, collection_uu
 
 _logger = logging.getLogger('arvados.arvados_fuse')
 
+# Match any character which FUSE or Linux cannot accommodate as part
+# of a filename. (If present in a collection filename, they will
+# appear as underscores in the fuse mount.)
+_disallowed_filename_characters = re.compile('[\x00/]')
+
 class SafeApi(object):
     '''Threadsafe wrapper for API object.  This stores and returns a different api
     object per thread, because httplib2 which underlies apiclient is not
@@ -64,24 +69,17 @@ def convertTime(t):
         return 0
 
 def sanitize_filename(dirty):
-    '''Remove troublesome characters from filenames.'''
-    # http://www.dwheeler.com/essays/fixing-unix-linux-filenames.html
+    '''Replace disallowed filename characters with harmless "_".'''
     if dirty is None:
         return None
-
-    fn = ""
-    for c in dirty:
-        if (c >= '\x00' and c <= '\x1f') or c == '\x7f' or c == '/':
-            # skip control characters and /
-            continue
-        fn += c
-
-    # strip leading - or ~ and leading/trailing whitespace
-    stripped = fn.lstrip("-~ ").rstrip()
-    if len(stripped) > 0:
-        return stripped
+    elif dirty == '':
+        return '_'
+    elif dirty == '.':
+        return '_'
+    elif dirty == '..':
+        return '__'
     else:
-        return None
+        return _disallowed_filename_characters.sub('_', dirty)
 
 
 class FreshBase(object):
