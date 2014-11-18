@@ -524,66 +524,100 @@ class WhRunPipelineInstance
 
           if c[:tooldescription]
             require 'shellwords'
-            # command workflow language tool description
-              mktmpdir do |mountdir|
+            require 'tmpdir'
+            # Support command workflow language tool description
+            Dir::mktmpdir do |mountdir|
               begin
-                `arv-mount #{mountdir}`
+                # Create a temporary mount in order to read the tool
+                # description from the collection.  We do this because the tool
+                # description file can have external references to other files
+                # in the same collection.
+                `arv-mount --by-id #{mountdir}`
                 if $?.exitstatus == 0
+                  n = 0
+                  while not File.exist? "#{mountdir}/README"
+                    sleep 0.1
+                    n += 1
+                    if n >= 10
+                      raise IOError.new "arv-mount not ready"
+                    end
+                  end
+
                   require 'tempfile'
                   jobdesc_file = Tempfile.new('jobdesc')
                   begin
+                    # Read the tool description file so we can check for Docker down below.
+                    tooldesc = nil
                     File.open "#{mountdir}/#{c[:tooldescription]}" do |f|
                       tooldesc = JSON.load f
                     end
+
+                    # Create a cwl job order from script_parameters and write
+                    # to tempfile so cwltool can read it.
                     jobdesc_file.write({"inputs" => Hash[c[:script_parameters].map do |key, spec|
                                                            [key, spec[:value]]
                                                          end]}.to_json)
                     jobdesc_file.close
 
-                    args = JSON.load(`cwltool --conformance-test --no-container --basedir='$(task.keepmount)' #{mountdir}/#{c[:tooldescription].shellescape} #{jobdesc_file.path}`)
-                    script_parameters = {}
-                    script_parameters["command"] = args["args"]
-                    script_parameters["task.stdout"] = args["stdout"]
-                    script_parameters["task.stdin"] = args["stdin"]
+                    # Run common workflow language tool in "conformance test"
+                    # mode, this outputs a JSON object with a fully instantiated
+                    # command line based on the job order.
+                    command = `cwltool --conformance-test --no-container --basedir='$(task.keepmount)' #{mountdir}/#{c[:tooldescription].shellescape} #{jobdesc_file.path}`
+                    if $?.exitstatus == 0
+                      args = JSON.load(command)
+                      script_parameters = {}
+                      script_parameters["command"] = args["args"]
+                      script_parameters["task.stdout"] = args["stdout"] if args["stdout"]
+                      script_parameters["task.stdin"] = args["stdin"] if args["stdin"]
 
-                    runtime_constraints = {}
-                    container = tooldesc["requirements"].andand["environment"].andand["container"]
-                    if container and container["type"] == "docker"
-                      runtime_constraints["docker_image"] = container["imageId"]
+                      # Pull out the Docker container specified in the tool
+                      # document and set the Arvados runtime constraint.
+                      runtime_constraints = {}
+                      container = tooldesc["requirements"].andand["environment"].andand["container"]
+                      if container and container["type"] == "docker"
+                        runtime_constraints["docker_image"] = container["imageId"]
+                      end
+
+                      job = JobCache.create(@instance, cname, {
+                                              :script => "run-command",
+                                              :script_parameters => script_parameters,
+                                              :script_version => "a1df01872c35932e945d48e2241aa86972c7f02c",
+                                              :repository => "arvados",
+                                              :nondeterministic => c[:nondeterministic],
+                                              :runtime_constraints => runtime_constraints,
+                                              :owner_uuid => owner_uuid,
+                                              :is_locked_by_uuid => (@options[:run_jobs_here] ? owner_uuid : nil),
+                                              :submit_id => my_submit_id,
+                                              :state => (if @options[:run_jobs_here] then "Running" else "Queued" end)
+                                            }, {
+                                              # This is the right place to put these attributes when
+                                              # dealing with new API servers.
+                                              :minimum_script_version => c[:minimum_script_version],
+                                              :exclude_script_versions => c[:exclude_minimum_script_versions],
+                                              :find_or_create => (@instance[:properties][:run_options].andand[:enable_job_reuse] &&
+                                                                  !c[:nondeterministic]),
+                                              :filters => c[:filters]
+                                            })
+                    else
+                      err_msg = command
                     end
-
-                    job = JobCache.create(@instance, cname, {
-                                            :script => "run-command",
-                                            :script_parameters => script_parameters,
-                                            :script_version => "master",
-                                            :repository => "arvados",
-                                            :nondeterministic => c[:nondeterministic],
-                                            :runtime_constraints => runtime_constraints,
-                                            :owner_uuid => owner_uuid,
-                                            :is_locked_by_uuid => (@options[:run_jobs_here] ? owner_uuid : nil),
-                                            :submit_id => my_submit_id,
-                                            :state => (if @options[:run_jobs_here] then "Running" else "Queued" end)
-                                          }, {
-                                            # This is the right place to put these attributes when
-                                            # dealing with new API servers.
-                                            :minimum_script_version => c[:minimum_script_version],
-                                            :exclude_script_versions => c[:exclude_minimum_script_versions],
-                                            :find_or_create => (@instance[:properties][:run_options].andand[:enable_job_reuse] &&
-                                                                !c[:nondeterministic]),
-                                            :filters => c[:filters]
-                                          })
-
                   ensure
                     jobdesc_file.unlink
                   end
+                else
+                  err_msg = $?
                 end
+              rescue IOError => e
+                err_msg = e
               ensure
+                # harmless if the mount failed
                 `fusermount -u #{mountdir}`
               end
-            end
-          else
-              debuglog "component #{cname} new job failed with output #{tooldesc}", 0
-              job_creation_failed += 1
+
+              if job.nil?
+                debuglog "component #{cname} new job failed #{err_msg}", 0
+                job_creation_failed += 1
+              end
             end
           else
             job = JobCache.create(@instance, cname, {
