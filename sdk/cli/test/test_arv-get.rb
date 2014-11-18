@@ -200,7 +200,9 @@ class TestArvGet < Minitest::Test
     end
     assert_equal '', err
     assert_equal '', out
-    assert foo_manifest_regexp_match(IO.read('tmp/foo'))
+
+    digest = Digest::MD5.hexdigest('foo')
+    !(IO.read('tmp/foo')).gsub!( /^(. #{digest}+3)(.*)( 0:3:foo)$/).nil?
   end
 
   def test_create_directory_tree
@@ -238,11 +240,6 @@ class TestArvGet < Minitest::Test
                  system(['./bin/arv-get', 'arv-get'], *args),
                  "`arv-get #{args.join ' '}` " +
                  "should exit #{if expect then 0 else 'non-zero' end}")
-  end
-
-  def foo_manifest_regexp_match(input)
-    digest = Digest::MD5.hexdigest('foo')
-    !input.gsub!( /^(. #{digest}+3)(.*)( 0:3:foo)$/).nil?
   end
 
   def remove_tmp_foo
