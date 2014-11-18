@@ -81,12 +81,16 @@ def sub_taskid(v):
 def sub_jobsrc(v):
      return os.environ['CRUNCH_SRC']
 
+def sub_task_keepmount(v):
+    return os.environ['TASK_KEEPMOUNT']
+
 subst.default_subs["task.tmpdir"] = sub_tmpdir
 subst.default_subs["task.outdir"] = sub_outdir
 subst.default_subs["job.srcdir"] = sub_jobsrc
 subst.default_subs["node.cores"] = sub_cores
 subst.default_subs["job.uuid"] = sub_jobid
 subst.default_subs["task.uuid"] = sub_taskid
+subst.default_subs["task.keepmount"] = sub_task_keepmount
 
 class SigHandler(object):
     def __init__(self):

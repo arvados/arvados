@@ -525,58 +525,63 @@ class WhRunPipelineInstance
           if c[:tooldescription]
             require 'shellwords'
             # command workflow language tool description
-            tooldesc = JSON.load(`arv-get #{c[:tooldescription].shellescape}`)
-            if $?.exitstatus == 0
-              require 'tempfile'
-              tooldesc_file = Tempfile.new('tooldesc')
-              jobdesc_file = Tempfile.new('jobdesc')
+              mktmpdir do |mountdir|
               begin
-                tooldesc_file.write(tooldesc.to_json)
-                tooldesc_file.close
+                `arv-mount #{mountdir}`
+                if $?.exitstatus == 0
+                  require 'tempfile'
+                  jobdesc_file = Tempfile.new('jobdesc')
+                  begin
+                    File.open "#{mountdir}/#{c[:tooldescription]}" do |f|
+                      tooldesc = JSON.load f
+                    end
+                    jobdesc_file.write({"inputs" => Hash[c[:script_parameters].map do |key, spec|
+                                                           [key, spec[:value]]
+                                                         end]}.to_json)
+                    jobdesc_file.close
 
-                jobdesc_file.write({"inputs" => Hash[c[:script_parameters].map do |key, spec|
-                                           [key, spec[:value]]
-                                         end]}.to_json)
-                jobdesc_file.close
+                    args = JSON.load(`cwltool --conformance-test --no-container --basedir='$(task.keepmount)' #{mountdir}/#{c[:tooldescription].shellescape} #{jobdesc_file.path}`)
+                    script_parameters = {}
+                    script_parameters["command"] = args["args"]
+                    script_parameters["task.stdout"] = args["stdout"]
+                    script_parameters["task.stdin"] = args["stdin"]
 
-                args = JSON.load(`cwltool --conformance-test --no-container --basedir=/keep #{tooldesc_file.path} #{jobdesc_file.path}`)
-                script_parameters = {}
-                script_parameters["command"] = args["args"]
-                script_parameters["task.stdout"] = args["stdout"]
-                script_parameters["task.stdin"] = args["stdin"]
+                    runtime_constraints = {}
+                    container = tooldesc["requirements"].andand["environment"].andand["container"]
+                    if container and container["type"] == "docker"
+                      runtime_constraints["docker_image"] = container["imageId"]
+                    end
 
-                runtime_constraints = {}
-                container = tooldesc["requirements"].andand["environment"].andand["container"]
-                if container and container["type"] == "docker"
-                  runtime_constraints["docker_image"] = container["imageId"]
+                    job = JobCache.create(@instance, cname, {
+                                            :script => "run-command",
+                                            :script_parameters => script_parameters,
+                                            :script_version => "master",
+                                            :repository => "arvados",
+                                            :nondeterministic => c[:nondeterministic],
+                                            :runtime_constraints => runtime_constraints,
+                                            :owner_uuid => owner_uuid,
+                                            :is_locked_by_uuid => (@options[:run_jobs_here] ? owner_uuid : nil),
+                                            :submit_id => my_submit_id,
+                                            :state => (if @options[:run_jobs_here] then "Running" else "Queued" end)
+                                          }, {
+                                            # This is the right place to put these attributes when
+                                            # dealing with new API servers.
+                                            :minimum_script_version => c[:minimum_script_version],
+                                            :exclude_script_versions => c[:exclude_minimum_script_versions],
+                                            :find_or_create => (@instance[:properties][:run_options].andand[:enable_job_reuse] &&
+                                                                !c[:nondeterministic]),
+                                            :filters => c[:filters]
+                                          })
+
+                  ensure
+                    jobdesc_file.unlink
+                  end
                 end
-
-                job = JobCache.create(@instance, cname, {
-                                        :script => "run-command",
-                                        :script_parameters => script_parameters,
-                                        :script_version => "master",
-                                        :repository => "arvados",
-                                        :nondeterministic => c[:nondeterministic],
-                                        :runtime_constraints => runtime_constraints,
-                                        :owner_uuid => owner_uuid,
-                                        :is_locked_by_uuid => (@options[:run_jobs_here] ? owner_uuid : nil),
-                                        :submit_id => my_submit_id,
-                                        :state => (if @options[:run_jobs_here] then "Running" else "Queued" end)
-                                      }, {
-                                        # This is the right place to put these attributes when
-                                        # dealing with new API servers.
-                                        :minimum_script_version => c[:minimum_script_version],
-                                        :exclude_script_versions => c[:exclude_minimum_script_versions],
-                                        :find_or_create => (@instance[:properties][:run_options].andand[:enable_job_reuse] &&
-                                                            !c[:nondeterministic]),
-                                        :filters => c[:filters]
-                                      })
-
               ensure
-                tooldesc_file.unlink
-                jobdesc_file.unlink
+                `fusermount -u #{mountdir}`
               end
-            else
+            end
+          else
               debuglog "component #{cname} new job failed with output #{tooldesc}", 0
               job_creation_failed += 1
             end
