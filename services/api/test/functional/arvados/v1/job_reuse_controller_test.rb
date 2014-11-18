@@ -334,7 +334,7 @@ class Arvados::V1::JobReuseControllerTest < ActionController::TestCase
   end
 
   test "can reuse a Job based on filters" do
-    filter_h = BASE_FILTERS.
+    filters_hash = BASE_FILTERS.
       merge('script_version' => ['in git', 'tag1'])
     post(:create, {
            job: {
@@ -346,7 +346,7 @@ class Arvados::V1::JobReuseControllerTest < ActionController::TestCase
                an_integer: '1'
              }
            },
-           filters: filters_from_hash(filter_h),
+           filters: filters_from_hash(filters_hash),
            find_or_create: true,
          })
     assert_response :success
@@ -357,10 +357,11 @@ class Arvados::V1::JobReuseControllerTest < ActionController::TestCase
   end
 
   test "can not reuse a Job based on filters" do
-    filter_a = filters_from_hash(BASE_FILTERS.reject { |k| k == 'script_version' })
-    filter_a += [["script_version", "in git",
-                  "31ce37fe365b3dc204300a3e4c396ad333ed0556"],
-                 ["script_version", "not in git", ["tag1"]]]
+    filters = filters_from_hash(BASE_FILTERS
+                                  .reject { |k| k == 'script_version' })
+    filters += [["script_version", "in git",
+                 "31ce37fe365b3dc204300a3e4c396ad333ed0556"],
+                ["script_version", "not in git", ["tag1"]]]
     post(:create, {
            job: {
              script: "hash",
@@ -371,7 +372,7 @@ class Arvados::V1::JobReuseControllerTest < ActionController::TestCase
                an_integer: '1'
              }
            },
-           filters: filter_a,
+           filters: filters,
            find_or_create: true,
          })
     assert_response :success
@@ -382,7 +383,7 @@ class Arvados::V1::JobReuseControllerTest < ActionController::TestCase
   end
 
   test "can not reuse a Job based on arbitrary filters" do
-    filter_h = BASE_FILTERS.
+    filters_hash = BASE_FILTERS.
       merge("created_at" => ["<", "2010-01-01T00:00:00Z"])
     post(:create, {
            job: {
@@ -394,7 +395,7 @@ class Arvados::V1::JobReuseControllerTest < ActionController::TestCase
                an_integer: '1'
              }
            },
-           filters: filters_from_hash(filter_h),
+           filters: filters_from_hash(filters_hash),
            find_or_create: true,
          })
     assert_response :success
@@ -430,7 +431,7 @@ class Arvados::V1::JobReuseControllerTest < ActionController::TestCase
   end
 
   test "can reuse a Job with a Docker image hash filter" do
-    filter_h = BASE_FILTERS.
+    filters_hash = BASE_FILTERS.
       merge("script_version" =>
               ["=", "4fe459abe02d9b365932b8f5dc419439ab4e2577"],
             "docker_image_locator" =>
@@ -445,7 +446,7 @@ class Arvados::V1::JobReuseControllerTest < ActionController::TestCase
                an_integer: '1'
              },
            },
-           filters: filters_from_hash(filter_h),
+           filters: filters_from_hash(filters_hash),
            find_or_create: true,
          })
     assert_response :success
@@ -458,7 +459,7 @@ class Arvados::V1::JobReuseControllerTest < ActionController::TestCase
   end
 
   test "reuse Job with Docker image repo+tag" do
-    filter_h = BASE_FILTERS.
+    filters_hash = BASE_FILTERS.
       merge("script_version" =>
               ["=", "4fe459abe02d9b365932b8f5dc419439ab4e2577"],
             "docker_image_locator" =>
@@ -473,7 +474,7 @@ class Arvados::V1::JobReuseControllerTest < ActionController::TestCase
                an_integer: '1'
              },
            },
-           filters: filters_from_hash(filter_h),
+           filters: filters_from_hash(filters_hash),
            find_or_create: true,
          })
     assert_response :success
@@ -486,7 +487,7 @@ class Arvados::V1::JobReuseControllerTest < ActionController::TestCase
   end
 
   test "new job with unknown Docker image filter" do
-    filter_h = BASE_FILTERS.
+    filters_hash = BASE_FILTERS.
       merge("docker_image_locator" => ["in docker", "_nonesuchname_"])
     post(:create, {
            job: {
@@ -498,7 +499,7 @@ class Arvados::V1::JobReuseControllerTest < ActionController::TestCase
                an_integer: '1'
              },
            },
-           filters: filters_from_hash(filter_h),
+           filters: filters_from_hash(filters_hash),
            find_or_create: true,
          })
     assert_response :success
@@ -509,7 +510,7 @@ class Arvados::V1::JobReuseControllerTest < ActionController::TestCase
 
   ["repository", "script"].each do |skip_key|
     test "missing #{skip_key} filter raises an error" do
-      filter_a = filters_from_hash(BASE_FILTERS.reject { |k| k == skip_key })
+      filters = filters_from_hash(BASE_FILTERS.reject { |k| k == skip_key })
       post(:create, {
              job: {
                script: "hash",
@@ -520,7 +521,7 @@ class Arvados::V1::JobReuseControllerTest < ActionController::TestCase
                  an_integer: '1'
                }
              },
-             filters: filter_a,
+             filters: filters,
              find_or_create: true,
            })
       assert_includes(405..599, @response.code.to_i,
@@ -635,8 +636,8 @@ class Arvados::V1::JobReuseControllerTest < ActionController::TestCase
 
   # 1de84a8 is on the b1 branch, after master's tip.
   test "new job created from unsatisfiable minimum version filter" do
-    filter_h = BASE_FILTERS.merge("script_version" => ["in git", "1de84a8"])
-    check_new_job_created_from(filters: filters_from_hash(filter_h))
+    filters_hash = BASE_FILTERS.merge("script_version" => ["in git", "1de84a8"])
+    check_new_job_created_from(filters: filters_from_hash(filters_hash))
   end
 
   test "new job created from unsatisfiable minimum version parameter" do
@@ -648,9 +649,9 @@ class Arvados::V1::JobReuseControllerTest < ActionController::TestCase
   end
 
   test "graceful error from nonexistent minimum version filter" do
-    filter_h = BASE_FILTERS.merge("script_version" =>
-                                  ["in git", "__nosuchbranch__"])
-    errors = check_errors_from(filters: filters_from_hash(filter_h))
+    filters_hash = BASE_FILTERS.merge("script_version" =>
+                                      ["in git", "__nosuchbranch__"])
+    errors = check_errors_from(filters: filters_from_hash(filters_hash))
     assert(errors.any? { |msg| msg.include? "__nosuchbranch__" },
            "bad refspec not mentioned in error message")
   end
@@ -676,10 +677,11 @@ class Arvados::V1::JobReuseControllerTest < ActionController::TestCase
   end
 
   test "reuse job from arvados_sdk_version git filters" do
-    filter_h = BASE_FILTERS.
+    filters_hash = BASE_FILTERS.
       merge("arvados_sdk_version" => ["in git", "commit2"])
-    filter_h.delete("script_version")
-    params = create_foo_hash_job_params(filters: filters_from_hash(filter_h))
+    filters_hash.delete("script_version")
+    params = create_foo_hash_job_params(filters:
+                                        filters_from_hash(filters_hash))
     post(:create, params)
     assert_response :success
     assert_equal(jobs(:previous_job_run_with_arvados_sdk_version).uuid,
@@ -687,11 +689,11 @@ class Arvados::V1::JobReuseControllerTest < ActionController::TestCase
   end
 
   test "create new job because of arvados_sdk_version 'not in git' filters" do
-    filter_h = BASE_FILTERS.reject { |k| k == "script_version" }
-    filter_a = filters_from_hash(filter_h)
+    filters_hash = BASE_FILTERS.reject { |k| k == "script_version" }
+    filters = filters_from_hash(filters_hash)
     # Allow anything from the root commit, but before commit 2.
-    filter_a += [["arvados_sdk_version", "in git", "436637c8"],
-                 ["arvados_sdk_version", "not in git", "00634b2b"]]
-    check_new_job_created_from(filters: filter_a)
+    filters += [["arvados_sdk_version", "in git", "436637c8"],
+                ["arvados_sdk_version", "not in git", "00634b2b"]]
+    check_new_job_created_from(filters: filters)
   end
 end

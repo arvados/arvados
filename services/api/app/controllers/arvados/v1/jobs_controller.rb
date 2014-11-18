@@ -202,32 +202,29 @@ class Arvados::V1::JobsController < ApplicationController
     git_filters = Hash.new do |hash, key|
       hash[key] = {"max_version" => "HEAD", "exclude_versions" => []}
     end
-    @filters.select! do |(col, op, val)|
-      if (script_info.has_key? col) and (op == "=")
-        if script_info[col].nil?
-          script_info[col] = val
-        elsif script_info[col] != val
-          raise ArgumentError.new("incompatible #{col} filters")
+    @filters.select! do |(attr, operator, operand)|
+      if (script_info.has_key? attr) and (operator == "=")
+        if script_info[attr].nil?
+          script_info[attr] = operand
+        elsif script_info[attr] != operand
+          raise ArgumentError.new("incompatible #{attr} filters")
         end
       end
-      case op
+      case operator
       when "in git"
-        git_filters[col]["min_version"] = val
+        git_filters[attr]["min_version"] = operand
         false
       when "not in git"
-        begin
-          git_filters[col]["exclude_versions"] += val
-        rescue TypeError
-          git_filters[col]["exclude_versions"] << val
-        end
+        git_filters[attr]["exclude_versions"] += Array.wrap(operand)
         false
       when "in docker", "not in docker"
-        search_list = val.is_a?(Enumerable) ? val : [val]
-        image_hashes = search_list.flat_map do |search_term|
+        image_hashes = Array.wrap(operand).flat_map do |search_term|
           image_search, image_tag = search_term.split(':', 2)
-          Collection.find_all_for_docker_image(image_search, image_tag, @read_users).map(&:portable_data_hash)
+          Collection.
+            find_all_for_docker_image(image_search, image_tag, @read_users).
+            map(&:portable_data_hash)
         end
-        @filters << [col, op.sub(/ docker$/, ""), image_hashes]
+        @filters << [attr, operator.sub(/ docker$/, ""), image_hashes]
         false
       else
         true
@@ -235,8 +232,8 @@ class Arvados::V1::JobsController < ApplicationController
     end
 
     # Build a real script_version filter from any "not? in git" filters.
-    git_filters.each_pair do |col, filter|
-      case col
+    git_filters.each_pair do |attr, filter|
+      case attr
       when "script_version"
         script_info.each_pair do |key, value|
           if value.nil?
@@ -247,12 +244,12 @@ class Arvados::V1::JobsController < ApplicationController
         begin
           filter["max_version"] = resource_attrs[:script_version]
         rescue
-          # Using the HEAD default is fine.
+          # Using HEAD, set earlier by the hash default, is fine.
         end
       when "arvados_sdk_version"
         filter["repository"] = "arvados"
       else
-        raise ArgumentError.new("unknown column for git filter: #{col}")
+        raise ArgumentError.new("unknown attribute for git filter: #{attr}")
       end
       version_range = Commit.find_commit_range(current_user,
                                                filter["repository"],
@@ -265,7 +262,7 @@ class Arvados::V1::JobsController < ApplicationController
               "'#{filter['min_version']}' to '#{filter['max_version']}', " +
               "excluding #{filter['exclude_versions']}")
       end
-      @filters.append([col, "in", version_range])
+      @filters.append([attr, "in", version_range])
     end
   end
 
