@@ -29,13 +29,6 @@ class PipelineInstancesTest < ActionDispatch::IntegrationTest
 
     instance_page = current_path
 
-    # Go over to the collections page and select something
-    visit '/collections'
-    within('tr', text: 'GNU_General_Public_License') do
-      find('input[type=checkbox]').click
-    end
-    find('#persistent-selection-count').click
-
     # Add this collection to the project
     visit '/projects'
     find("#projects-menu").click
@@ -106,13 +99,6 @@ class PipelineInstancesTest < ActionDispatch::IntegrationTest
   test 'Create pipeline inside a project and run' do
     visit page_with_token('active_trustedclient')
 
-    # Go over to the collections page and select something
-    visit '/collections'
-    within('tr', text: 'GNU_General_Public_License') do
-      find('input[type=checkbox]').click
-    end
-    find('#persistent-selection-count').click
-
     # Add this collection to the project using collections menu from top nav
     visit '/projects'
     find("#projects-menu").click
@@ -127,13 +113,13 @@ class PipelineInstancesTest < ActionDispatch::IntegrationTest
       wait_for_ajax
     end
 
-    create_and_run_pipeline_in_aproject true
+    create_and_run_pipeline_in_aproject true, 'Two Part Pipeline Template', false
   end
 
   # Create a pipeline instance from outside of a project
   test 'Run a pipeline from dashboard' do
     visit page_with_token('active_trustedclient')
-    create_and_run_pipeline_in_aproject false
+    create_and_run_pipeline_in_aproject false, 'Two Part Pipeline Template', false
   end
 
   test 'view pipeline with job and see graph' do
@@ -215,25 +201,31 @@ class PipelineInstancesTest < ActionDispatch::IntegrationTest
   end
 
   [
-    ['active', false, false, false],
-    ['active', false, false, true],
-    ['active', true, false, false],
-    ['active', true, true, false],
-    ['active', true, false, true],
-    ['active', true, true, true],
-    ['project_viewer', false, false, true],
-    ['project_viewer', true, false, true],
-    ['project_viewer', true, true, true],
-  ].each do |user, with_options, choose_options, in_aproject|
-    test "Rerun pipeline instance as #{user} using options #{with_options} #{choose_options} in #{in_aproject}" do
+    ['active', false, false, false, 'Two Part Pipeline Template', false],
+    ['active', false, false, true, 'Two Part Pipeline Template', false],
+    ['active', true, false, false, 'Two Part Pipeline Template', false],
+    ['active', true, true, false, 'Two Part Pipeline Template', false],
+    ['active', true, false, true, 'Two Part Pipeline Template', false],
+    ['active', true, true, true, 'Two Part Pipeline Template', false],
+    ['project_viewer', false, false, true, 'Two Part Pipeline Template', false],
+    ['project_viewer', true, false, true, 'Two Part Pipeline Template', false],
+    ['project_viewer', true, true, true, 'Two Part Pipeline Template', false],
+    ['active', false, false, false, 'Two Part Template with dataclass File', true],
+    ['active', false, false, true, 'Two Part Template with dataclass File', true],
+  ].each do |user, with_options, choose_options, in_aproject, template_name, choose_file|
+    test "Rerun pipeline instance as #{user} using options #{with_options} #{choose_options}
+          in #{in_aproject} with #{template_name} with file #{choose_file}" do
       visit page_with_token('active')
+
+      # need bigger modal size when choosing a file from collection
+      Capybara.current_session.driver.browser.manage.window.resize_to(1024, 768)
 
       if in_aproject
         find("#projects-menu").click
         find('.dropdown-menu a,button', text: 'A Project').click
       end
 
-      create_and_run_pipeline_in_aproject in_aproject
+      create_and_run_pipeline_in_aproject in_aproject, template_name, choose_file
       instance_path = current_path
 
       # Pause the pipeline
@@ -283,11 +275,11 @@ class PipelineInstancesTest < ActionDispatch::IntegrationTest
   end
 
   # Create and run a pipeline for 'Two Part Pipeline Template' in 'A Project'
-  def create_and_run_pipeline_in_aproject in_aproject
+  def create_and_run_pipeline_in_aproject in_aproject, template_name, choose_file
     # create a pipeline instance
     find('.btn', text: 'Run a pipeline').click
     within('.modal-dialog') do
-      find('.selectable', text: 'Two Part Pipeline Template').click
+      find('.selectable', text: template_name).click
       find('.btn', text: 'Next: choose inputs').click
     end
 
@@ -309,6 +301,10 @@ class PipelineInstancesTest < ActionDispatch::IntegrationTest
         wait_for_ajax
       end
       first('span', text: 'foo_tag').click
+      if choose_file
+        wait_for_ajax
+        find('.preview-selectable', text: 'foo').click
+      end
       find('button', text: 'OK').click
     end
     wait_for_ajax
@@ -322,9 +318,14 @@ class PipelineInstancesTest < ActionDispatch::IntegrationTest
     click_link 'API response'
     api_response = JSON.parse(find('div#advanced_api_response pre').text)
     input_params = api_response['components']['part-one']['script_parameters']['input']
-    assert_equal input_params['value'], col['portable_data_hash']
-    assert_equal input_params['selection_name'], col['name']
-    assert_equal input_params['selection_uuid'], col['uuid']
+    assert_equal(input_params['selection_uuid'], col['uuid'], "Not found expected input param uuid")
+    if choose_file
+      assert_equal(input_params['value'], col['portable_data_hash']+'/foo', "Not found expected input file param value")
+      assert_equal(input_params['selection_name'], col['name']+'/foo', "Not found expected input file param name")
+    else
+      assert_equal(input_params['value'], col['portable_data_hash'], "Not found expected input param value")
+      assert_equal(input_params['selection_name'], col['name'], "Not found expected input param name")
+    end
 
     # "Run" button present and enabled
     page.assert_no_selector 'a.disabled,button.disabled', text: 'Run'
@@ -364,4 +365,56 @@ class PipelineInstancesTest < ActionDispatch::IntegrationTest
         "Time difference did not match for start_at #{start_at}, finished_at #{finished_at}, ran_for #{match[2]}")
     end
   end
+
+  [
+    ['fuse', nil, 2, 20],                           # has 2 as of 11-07-2014
+    ['fuse', 'FUSE project', 1, 1],                 # 1 with this name
+    ['user1_with_load', nil, 30, 100],              # has 37 as of 11-07-2014
+    ['user1_with_load', 'pipeline_10', 2, 2],       # 2 with this name
+    ['user1_with_load', '000010pipelines', 10, 10], # owned_by the project zzzzz-j7d0g-000010pipelines
+    ['user1_with_load', '000025pipelines', 25, 25], # owned_by the project zzzzz-j7d0g-000025pipelines, two pages
+    ['admin', nil, 40, 200],
+    ['admin', 'FUSE project', 1, 1],
+    ['admin', 'pipeline_10', 2, 2],
+    ['active', 'containing at least two', 2, 100],  # component description
+    ['admin', 'containing at least two', 2, 100],
+    ['active', nil, 10, 100],
+    ['active', 'no such match', 0, 0],
+  ].each do |user, search_filter, expected_min, expected_max|
+    test "scroll pipeline instances page for #{user} with search filter #{search_filter}
+          and expect more than #{expected_min} and less than #{expected_max}" do
+      visit page_with_token(user, "/pipeline_instances")
+
+      if search_filter
+        find('.recent-pipeline-instances-filterable-control').set(search_filter)
+        wait_for_ajax
+      end
+
+      page_scrolls = expected_max/20 + 2    # scroll num_pages+2 times to test scrolling is disabled when it should be
+      within('.arv-recent-pipeline-instances') do
+        (0..page_scrolls).each do |i|
+          page.execute_script "window.scrollBy(0,999000)"
+          begin
+            wait_for_ajax
+          rescue
+          end
+        end
+      end
+
+      # Verify that expected number of pipeline instances are found
+      found_items = page.all('tr[data-kind="arvados#pipelineInstance"]')
+      found_count = found_items.count
+      if expected_min == expected_max
+        assert_equal(true, found_count == expected_min,
+          "Not found expected number of items. Expected #{expected_min} and found #{found_count}")
+        assert page.has_no_text? 'request failed'
+      else
+        assert_equal(true, found_count>=expected_min,
+          "Found too few items. Expected at least #{expected_min} and found #{found_count}")
+        assert_equal(true, found_count<=expected_max,
+          "Found too many items. Expected at most #{expected_max} and found #{found_count}")
+      end
+    end
+  end
+
 end

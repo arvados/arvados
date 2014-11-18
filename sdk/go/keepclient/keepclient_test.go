@@ -87,21 +87,9 @@ func (s *ServerRequiredSuite) TestMakeKeepClient(c *C) {
 
 	c.Assert(err, Equals, nil)
 	c.Check(len(kc.ServiceRoots()), Equals, 2)
-	c.Check(kc.ServiceRoots()[0], Equals, "http://localhost:25107")
-	c.Check(kc.ServiceRoots()[1], Equals, "http://localhost:25108")
-}
-
-func (s *StandaloneSuite) TestShuffleServiceRoots(c *C) {
-	kc := KeepClient{}
-	kc.SetServiceRoots([]string{"http://localhost:25107", "http://localhost:25108", "http://localhost:25109", "http://localhost:25110", "http://localhost:25111", "http://localhost:25112", "http://localhost:25113", "http://localhost:25114", "http://localhost:25115", "http://localhost:25116", "http://localhost:25117", "http://localhost:25118", "http://localhost:25119", "http://localhost:25120", "http://localhost:25121", "http://localhost:25122", "http://localhost:25123"})
-
-	// "foo" acbd18db4cc2f85cedef654fccc4a4d8
-	foo_shuffle := []string{"http://localhost:25116", "http://localhost:25120", "http://localhost:25119", "http://localhost:25122", "http://localhost:25108", "http://localhost:25114", "http://localhost:25112", "http://localhost:25107", "http://localhost:25118", "http://localhost:25111", "http://localhost:25113", "http://localhost:25121", "http://localhost:25110", "http://localhost:25117", "http://localhost:25109", "http://localhost:25115", "http://localhost:25123"}
-	c.Check(kc.shuffledServiceRoots("acbd18db4cc2f85cedef654fccc4a4d8"), DeepEquals, foo_shuffle)
-
-	// "bar" 37b51d194a7513e45b56f6524f2d51f2
-	bar_shuffle := []string{"http://localhost:25108", "http://localhost:25112", "http://localhost:25119", "http://localhost:25107", "http://localhost:25110", "http://localhost:25116", "http://localhost:25122", "http://localhost:25120", "http://localhost:25121", "http://localhost:25117", "http://localhost:25111", "http://localhost:25123", "http://localhost:25118", "http://localhost:25113", "http://localhost:25114", "http://localhost:25115", "http://localhost:25109"}
-	c.Check(kc.shuffledServiceRoots("37b51d194a7513e45b56f6524f2d51f2"), DeepEquals, bar_shuffle)
+	for _, root := range kc.ServiceRoots() {
+		c.Check(root, Matches, "http://localhost:2510[\\d]")
+	}
 }
 
 type StubPutHandler struct {
@@ -266,26 +254,26 @@ func RunSomeFakeKeepServers(st http.Handler, n int, port int) (ks []KeepServer) 
 func (s *StandaloneSuite) TestPutB(c *C) {
 	log.Printf("TestPutB")
 
-	hash := fmt.Sprintf("%x", md5.Sum([]byte("foo")))
+	hash := Md5String("foo")
 
 	st := StubPutHandler{
 		c,
 		hash,
 		"abc123",
 		"foo",
-		make(chan string, 2)}
+		make(chan string, 5)}
 
 	arv, _ := arvadosclient.MakeArvadosClient()
 	kc, _ := MakeKeepClient(&arv)
 
 	kc.Want_replicas = 2
 	arv.ApiToken = "abc123"
-	service_roots := make([]string, 5)
+	service_roots := make(map[string]string)
 
 	ks := RunSomeFakeKeepServers(st, 5, 2990)
 
 	for i := 0; i < len(ks); i += 1 {
-		service_roots[i] = ks[i].url
+		service_roots[fmt.Sprintf("zzzzz-bi6l4-fakefakefake%03d", i)] = ks[i].url
 		defer ks[i].listener.Close()
 	}
 
@@ -293,7 +281,8 @@ func (s *StandaloneSuite) TestPutB(c *C) {
 
 	kc.PutB([]byte("foo"))
 
-	shuff := kc.shuffledServiceRoots(fmt.Sprintf("%x", md5.Sum([]byte("foo"))))
+	shuff := NewRootSorter(
+		kc.ServiceRoots(), Md5String("foo")).GetSortedRoots()
 
 	s1 := <-st.handled
 	s2 := <-st.handled
@@ -315,19 +304,19 @@ func (s *StandaloneSuite) TestPutHR(c *C) {
 		hash,
 		"abc123",
 		"foo",
-		make(chan string, 2)}
+		make(chan string, 5)}
 
 	arv, _ := arvadosclient.MakeArvadosClient()
 	kc, _ := MakeKeepClient(&arv)
 
 	kc.Want_replicas = 2
 	arv.ApiToken = "abc123"
-	service_roots := make([]string, 5)
+	service_roots := make(map[string]string)
 
 	ks := RunSomeFakeKeepServers(st, 5, 2990)
 
 	for i := 0; i < len(ks); i += 1 {
-		service_roots[i] = ks[i].url
+		service_roots[fmt.Sprintf("zzzzz-bi6l4-fakefakefake%03d", i)] = ks[i].url
 		defer ks[i].listener.Close()
 	}
 
@@ -342,7 +331,7 @@ func (s *StandaloneSuite) TestPutHR(c *C) {
 
 	kc.PutHR(hash, reader, 3)
 
-	shuff := kc.shuffledServiceRoots(hash)
+	shuff := NewRootSorter(kc.ServiceRoots(), hash).GetSortedRoots()
 	log.Print(shuff)
 
 	s1 := <-st.handled
@@ -366,7 +355,7 @@ func (s *StandaloneSuite) TestPutWithFail(c *C) {
 		hash,
 		"abc123",
 		"foo",
-		make(chan string, 2)}
+		make(chan string, 4)}
 
 	fh := FailHandler{
 		make(chan string, 1)}
@@ -376,23 +365,24 @@ func (s *StandaloneSuite) TestPutWithFail(c *C) {
 
 	kc.Want_replicas = 2
 	arv.ApiToken = "abc123"
-	service_roots := make([]string, 5)
+	service_roots := make(map[string]string)
 
 	ks1 := RunSomeFakeKeepServers(st, 4, 2990)
 	ks2 := RunSomeFakeKeepServers(fh, 1, 2995)
 
 	for i, k := range ks1 {
-		service_roots[i] = k.url
+		service_roots[fmt.Sprintf("zzzzz-bi6l4-fakefakefake%03d", i)] = k.url
 		defer k.listener.Close()
 	}
 	for i, k := range ks2 {
-		service_roots[len(ks1)+i] = k.url
+		service_roots[fmt.Sprintf("zzzzz-bi6l4-fakefakefake%03d", i+len(ks1))] = k.url
 		defer k.listener.Close()
 	}
 
 	kc.SetServiceRoots(service_roots)
 
-	shuff := kc.shuffledServiceRoots(fmt.Sprintf("%x", md5.Sum([]byte("foo"))))
+	shuff := NewRootSorter(
+		kc.ServiceRoots(), Md5String("foo")).GetSortedRoots()
 
 	phash, replicas, err := kc.PutB([]byte("foo"))
 
@@ -401,8 +391,14 @@ func (s *StandaloneSuite) TestPutWithFail(c *C) {
 	c.Check(err, Equals, nil)
 	c.Check(phash, Equals, "")
 	c.Check(replicas, Equals, 2)
-	c.Check(<-st.handled, Equals, shuff[1])
-	c.Check(<-st.handled, Equals, shuff[2])
+
+	s1 := <-st.handled
+	s2 := <-st.handled
+
+	c.Check((s1 == shuff[1] && s2 == shuff[2]) ||
+		(s1 == shuff[2] && s2 == shuff[1]),
+		Equals,
+		true)
 }
 
 func (s *StandaloneSuite) TestPutWithTooManyFail(c *C) {
@@ -425,29 +421,27 @@ func (s *StandaloneSuite) TestPutWithTooManyFail(c *C) {
 
 	kc.Want_replicas = 2
 	arv.ApiToken = "abc123"
-	service_roots := make([]string, 5)
+	service_roots := make(map[string]string)
 
 	ks1 := RunSomeFakeKeepServers(st, 1, 2990)
 	ks2 := RunSomeFakeKeepServers(fh, 4, 2991)
 
 	for i, k := range ks1 {
-		service_roots[i] = k.url
+		service_roots[fmt.Sprintf("zzzzz-bi6l4-fakefakefake%03d", i)] = k.url
 		defer k.listener.Close()
 	}
 	for i, k := range ks2 {
-		service_roots[len(ks1)+i] = k.url
+		service_roots[fmt.Sprintf("zzzzz-bi6l4-fakefakefake%03d", i+len(ks1))] = k.url
 		defer k.listener.Close()
 	}
 
 	kc.SetServiceRoots(service_roots)
 
-	shuff := kc.shuffledServiceRoots(fmt.Sprintf("%x", md5.Sum([]byte("foo"))))
-
 	_, replicas, err := kc.PutB([]byte("foo"))
 
 	c.Check(err, Equals, InsufficientReplicasError)
 	c.Check(replicas, Equals, 1)
-	c.Check(<-st.handled, Equals, shuff[1])
+	c.Check(<-st.handled, Matches, ".*2990")
 
 	log.Printf("TestPutWithTooManyFail done")
 }
@@ -483,7 +477,7 @@ func (s *StandaloneSuite) TestGet(c *C) {
 	arv, err := arvadosclient.MakeArvadosClient()
 	kc, _ := MakeKeepClient(&arv)
 	arv.ApiToken = "abc123"
-	kc.SetServiceRoots([]string{url})
+	kc.SetServiceRoots(map[string]string{"x":url})
 
 	r, n, url2, err := kc.Get(hash)
 	defer r.Close()
@@ -509,7 +503,7 @@ func (s *StandaloneSuite) TestGetFail(c *C) {
 	arv, err := arvadosclient.MakeArvadosClient()
 	kc, _ := MakeKeepClient(&arv)
 	arv.ApiToken = "abc123"
-	kc.SetServiceRoots([]string{url})
+	kc.SetServiceRoots(map[string]string{"x":url})
 
 	r, n, url2, err := kc.Get(hash)
 	c.Check(err, Equals, BlockNotFound)
@@ -539,7 +533,7 @@ func (s *StandaloneSuite) TestChecksum(c *C) {
 	arv, err := arvadosclient.MakeArvadosClient()
 	kc, _ := MakeKeepClient(&arv)
 	arv.ApiToken = "abc123"
-	kc.SetServiceRoots([]string{url})
+	kc.SetServiceRoots(map[string]string{"x":url})
 
 	r, n, _, err := kc.Get(barhash)
 	_, err = ioutil.ReadAll(r)
@@ -557,58 +551,68 @@ func (s *StandaloneSuite) TestChecksum(c *C) {
 }
 
 func (s *StandaloneSuite) TestGetWithFailures(c *C) {
-
-	hash := fmt.Sprintf("%x", md5.Sum([]byte("foo")))
+	content := []byte("waz")
+	hash := fmt.Sprintf("%x", md5.Sum(content))
 
 	fh := FailHandler{
-		make(chan string, 1)}
+		make(chan string, 4)}
 
 	st := StubGetHandler{
 		c,
 		hash,
 		"abc123",
-		[]byte("foo")}
+		content}
 
 	arv, err := arvadosclient.MakeArvadosClient()
 	kc, _ := MakeKeepClient(&arv)
 	arv.ApiToken = "abc123"
-	service_roots := make([]string, 5)
+	service_roots := make(map[string]string)
 
 	ks1 := RunSomeFakeKeepServers(st, 1, 2990)
 	ks2 := RunSomeFakeKeepServers(fh, 4, 2991)
 
 	for i, k := range ks1 {
-		service_roots[i] = k.url
+		service_roots[fmt.Sprintf("zzzzz-bi6l4-fakefakefake%03d", i)] = k.url
 		defer k.listener.Close()
 	}
 	for i, k := range ks2 {
-		service_roots[len(ks1)+i] = k.url
+		service_roots[fmt.Sprintf("zzzzz-bi6l4-fakefakefake%03d", i+len(ks1))] = k.url
 		defer k.listener.Close()
 	}
 
 	kc.SetServiceRoots(service_roots)
 
+	// This test works only if one of the failing services is
+	// attempted before the succeeding service. Otherwise,
+	// <-fh.handled below will just hang! (Probe order depends on
+	// the choice of block content "waz" and the UUIDs of the fake
+	// servers, so we just tried different strings until we found
+	// an example that passes this Assert.)
+	c.Assert(NewRootSorter(service_roots, hash).GetSortedRoots()[0], Matches, ".*299[1-4]")
+
 	r, n, url2, err := kc.Get(hash)
+
 	<-fh.handled
 	c.Check(err, Equals, nil)
 	c.Check(n, Equals, int64(3))
 	c.Check(url2, Equals, fmt.Sprintf("%s/%s", ks1[0].url, hash))
 
-	content, err2 := ioutil.ReadAll(r)
+	read_content, err2 := ioutil.ReadAll(r)
 	c.Check(err2, Equals, nil)
-	c.Check(content, DeepEquals, []byte("foo"))
+	c.Check(read_content, DeepEquals, content)
 }
 
 func (s *ServerRequiredSuite) TestPutGetHead(c *C) {
 	os.Setenv("ARVADOS_API_HOST", "localhost:3000")
 	os.Setenv("ARVADOS_API_TOKEN", "4axaw8zxe0qm22wa6urpp5nskcne8z88cvbupv653y1njyi05h")
 	os.Setenv("ARVADOS_API_HOST_INSECURE", "true")
+	content := []byte("TestPutGetHead")
 
 	arv, err := arvadosclient.MakeArvadosClient()
 	kc, err := MakeKeepClient(&arv)
 	c.Assert(err, Equals, nil)
 
-	hash := fmt.Sprintf("%x", md5.Sum([]byte("foo")))
+	hash := fmt.Sprintf("%x", md5.Sum(content))
 
 	{
 		n, _, err := kc.Ask(hash)
@@ -616,25 +620,25 @@ func (s *ServerRequiredSuite) TestPutGetHead(c *C) {
 		c.Check(n, Equals, int64(0))
 	}
 	{
-		hash2, replicas, err := kc.PutB([]byte("foo"))
-		c.Check(hash2, Equals, fmt.Sprintf("%s+%v", hash, 3))
+		hash2, replicas, err := kc.PutB(content)
+		c.Check(hash2, Equals, fmt.Sprintf("%s+%d", hash, len(content)))
 		c.Check(replicas, Equals, 2)
 		c.Check(err, Equals, nil)
 	}
 	{
 		r, n, url2, err := kc.Get(hash)
 		c.Check(err, Equals, nil)
-		c.Check(n, Equals, int64(3))
+		c.Check(n, Equals, int64(len(content)))
 		c.Check(url2, Equals, fmt.Sprintf("http://localhost:25108/%s", hash))
 
-		content, err2 := ioutil.ReadAll(r)
+		read_content, err2 := ioutil.ReadAll(r)
 		c.Check(err2, Equals, nil)
-		c.Check(content, DeepEquals, []byte("foo"))
+		c.Check(read_content, DeepEquals, content)
 	}
 	{
 		n, url2, err := kc.Ask(hash)
 		c.Check(err, Equals, nil)
-		c.Check(n, Equals, int64(3))
+		c.Check(n, Equals, int64(len(content)))
 		c.Check(url2, Equals, fmt.Sprintf("http://localhost:25108/%s", hash))
 	}
 }
@@ -659,12 +663,12 @@ func (s *StandaloneSuite) TestPutProxy(c *C) {
 	kc.Want_replicas = 2
 	kc.Using_proxy = true
 	arv.ApiToken = "abc123"
-	service_roots := make([]string, 1)
+	service_roots := make(map[string]string)
 
 	ks1 := RunSomeFakeKeepServers(st, 1, 2990)
 
 	for i, k := range ks1 {
-		service_roots[i] = k.url
+		service_roots[fmt.Sprintf("zzzzz-bi6l4-fakefakefake%03d", i)] = k.url
 		defer k.listener.Close()
 	}
 
@@ -690,12 +694,12 @@ func (s *StandaloneSuite) TestPutProxyInsufficientReplicas(c *C) {
 	kc.Want_replicas = 3
 	kc.Using_proxy = true
 	arv.ApiToken = "abc123"
-	service_roots := make([]string, 1)
+	service_roots := make(map[string]string)
 
 	ks1 := RunSomeFakeKeepServers(st, 1, 2990)
 
 	for i, k := range ks1 {
-		service_roots[i] = k.url
+		service_roots[fmt.Sprintf("zzzzz-bi6l4-fakefakefake%03d", i)] = k.url
 		defer k.listener.Close()
 	}
 	kc.SetServiceRoots(service_roots)

@@ -1,7 +1,7 @@
 function maybe_load_more_content(event) {
-    var scroller = this;        // element with scroll bars
-    var $container;             // element that receives new content
-    var src;                    // url for retrieving content
+    var scroller = this;
+    var $container = $(event.data.container);
+    var src;                     // url for retrieving content
     var scrollHeight;
     var spinner, colspan;
     var serial = Date.now();
@@ -11,7 +11,6 @@ function maybe_load_more_content(event) {
         >
         scrollHeight - 50)
     {
-        $container = $(event.data.container);
         if (!$container.attr('data-infinite-content-href0')) {
             // Remember the first page source url, so we can refresh
             // from page 1 later.

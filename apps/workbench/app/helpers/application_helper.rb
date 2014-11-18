@@ -261,7 +261,7 @@ module ApplicationHelper
       dn += '[value]'
     end
 
-    if dataclass == Collection
+    if (dataclass == Collection) or (dataclass == File)
       selection_param = object.class.to_s.underscore + dn
       display_value = attrvalue
       if value_info.is_a?(Hash)
@@ -274,9 +274,9 @@ module ApplicationHelper
         end
       end
       if (attr == :components) and (subattr.size > 2)
-        chooser_title = "Choose a dataset for #{object.component_input_title(subattr[0], subattr[2])}:"
+        chooser_title = "Choose a #{dataclass == Collection ? 'dataset' : 'file'} for #{object.component_input_title(subattr[0], subattr[2])}:"
       else
-        chooser_title = "Choose a dataset:"
+        chooser_title = "Choose a #{dataclass == Collection ? 'dataset' : 'file'}:"
       end
       modal_path = choose_collections_path \
       ({ title: chooser_title,
@@ -287,6 +287,7 @@ module ApplicationHelper
          preconfigured_search_str: (preconfigured_search_str || ""),
          action_data: {
            merge: true,
+           use_preview_selection: dataclass == File ? true : nil,
            selection_param: selection_param,
            success: 'page-refresh'
          }.to_json,
@@ -448,10 +449,10 @@ module ApplicationHelper
     end
   end
 
-  def chooser_preview_url_for object
+  def chooser_preview_url_for object, use_preview_selection=false
     case object.class.to_s
     when 'Collection'
-      polymorphic_path(object, tab_pane: 'chooser_preview')
+      polymorphic_path(object, tab_pane: 'chooser_preview', use_preview_selection: use_preview_selection)
     else
       nil
     end

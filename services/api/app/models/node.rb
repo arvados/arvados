@@ -5,7 +5,7 @@ class Node < ArvadosModel
   serialize :info, Hash
   serialize :properties, Hash
   before_validation :ensure_ping_secret
-  after_update :dnsmasq_update
+  after_update :dns_server_update
 
   # Only a controller can figure out whether or not the current API tokens
   # have access to the associated Job.  They're expected to set
@@ -15,7 +15,10 @@ class Node < ArvadosModel
 
   MAX_SLOTS = 64
 
-  @@confdir = Rails.configuration.dnsmasq_conf_dir
+  @@dns_server_conf_dir = Rails.configuration.dns_server_conf_dir
+  @@dns_server_conf_template = Rails.configuration.dns_server_conf_template
+  @@dns_server_reload_command = Rails.configuration.dns_server_reload_command
+  @@uuid_prefix = Rails.configuration.uuid_prefix
   @@domain = Rails.configuration.compute_node_domain rescue `hostname --domain`.strip
   @@nameservers = Rails.configuration.compute_node_nameservers
 
@@ -132,26 +135,44 @@ class Node < ArvadosModel
     self.info['ping_secret'] ||= rand(2**256).to_s(36)
   end
 
-  def dnsmasq_update
+  def dns_server_update
     if self.hostname_changed? or self.ip_address_changed?
       if self.hostname and self.ip_address
-        self.class.dnsmasq_update(self.hostname, self.ip_address)
+        self.class.dns_server_update(self.hostname, self.ip_address)
       end
     end
   end
 
-  def self.dnsmasq_update(hostname, ip_address)
-    return unless @@confdir
+  def self.dns_server_update(hostname, ip_address)
+    return unless @@dns_server_conf_dir and @@dns_server_conf_template
     ptr_domain = ip_address.
       split('.').reverse.join('.').concat('.in-addr.arpa')
-    hostfile = File.join @@confdir, hostname
-    File.open hostfile, 'w' do |f|
-      f.puts "address=/#{hostname}/#{ip_address}"
-      f.puts "address=/#{hostname}.#{@@domain}/#{ip_address}" if @@domain
-      f.puts "ptr-record=#{ptr_domain},#{hostname}"
+    hostfile = File.join @@dns_server_conf_dir, "#{hostname}.conf"
+
+    begin
+      template = IO.read(@@dns_server_conf_template)
+    rescue => e
+      STDERR.puts "Unable to read dns_server_conf_template #{@@dns_server_conf_template}: #{e.message}"
+      return
     end
-    File.open(File.join(@@confdir, 'restart.txt'), 'w') do |f|
-      # this should trigger a dnsmasq restart
+
+    populated = template % {hostname:hostname, uuid_prefix:@@uuid_prefix, ip_address:ip_address, ptr_domain:ptr_domain}
+
+    begin
+      File.open hostfile, 'w' do |f|
+        f.puts populated
+      end
+    rescue => e
+      STDERR.puts "Unable to write #{hostfile}: #{e.message}"
+      return
+    end
+    #  f.puts "address=/#{hostname}/#{ip_address}"
+    #  f.puts "address=/#{hostname}.#{@@domain}/#{ip_address}" if @@domain
+    #  f.puts "ptr-record=#{ptr_domain},#{hostname}"
+    #end
+    File.open(File.join(@@dns_server_conf_dir, 'restart.txt'), 'w') do |f|
+      # this will trigger a dns server restart
+      f.puts @@dns_server_reload_command
     end
   end
 
@@ -161,13 +182,18 @@ class Node < ArvadosModel
 
   # At startup, make sure all DNS entries exist.  Otherwise, slurmctld
   # will refuse to start.
-  if @@confdir and
-      !File.exists? (File.join(@@confdir, hostname_for_slot(MAX_SLOTS-1)))
+  if @@dns_server_conf_dir and @@dns_server_conf_template and
+      !File.exists? (File.join(@@dns_server_conf_dir, "#{hostname_for_slot(MAX_SLOTS-1)}.conf"))
     (0..MAX_SLOTS-1).each do |slot_number|
       hostname = hostname_for_slot(slot_number)
-      hostfile = File.join @@confdir, hostname
+      hostfile = File.join @@dns_server_conf_dir, "#{hostname}.conf"
       if !File.exists? hostfile
-        dnsmasq_update(hostname, '127.40.4.0')
+        n = Node.where(:slot_number => slot_number).first
+        if n.nil? or n.ip_address.nil?
+          dns_server_update(hostname, '127.40.4.0')
+        else
+          dns_server_update(hostname, n.ip_address)
+        end
       end
     end
   end
