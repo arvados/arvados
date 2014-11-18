@@ -77,7 +77,7 @@ class Collection < ArvadosModel
 
   def set_portable_data_hash
     if (self.portable_data_hash.nil? or (self.portable_data_hash == "") or (manifest_text_changed? and !portable_data_hash_changed?))
-      self.portable_data_hash = "#{Digest::MD5.hexdigest(manifest_text)}+#{manifest_text.length}"
+      self.portable_data_hash = "#{Digest::MD5.hexdigest(manifest_text)}+#{manifest_text.bytesize}"
     elsif portable_data_hash_changed?
       begin
         loc = Keep::Locator.parse!(self.portable_data_hash)
@@ -85,7 +85,7 @@ class Collection < ArvadosModel
         if loc.size
           self.portable_data_hash = loc.to_s
         else
-          self.portable_data_hash = "#{loc.hash}+#{self.manifest_text.length}"
+          self.portable_data_hash = "#{loc.hash}+#{self.manifest_text.bytesize}"
         end
       rescue ArgumentError => e
         errors.add(:portable_data_hash, "#{e}")
@@ -97,7 +97,7 @@ class Collection < ArvadosModel
 
   def ensure_hash_matches_manifest_text
     if manifest_text_changed? or portable_data_hash_changed?
-      computed_hash = "#{Digest::MD5.hexdigest(manifest_text)}+#{manifest_text.length}"
+      computed_hash = "#{Digest::MD5.hexdigest(manifest_text)}+#{manifest_text.bytesize}"
       unless computed_hash == portable_data_hash
         logger.debug "(computed) '#{computed_hash}' != '#{portable_data_hash}' (provided)"
         errors.add(:portable_data_hash, "does not match hash of manifest_text")
