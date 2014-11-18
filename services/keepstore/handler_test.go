@@ -13,7 +13,6 @@ import (
 	"bytes"
 	"encoding/json"
 	"fmt"
-	"github.com/gorilla/mux"
 	"net/http"
 	"net/http/httptest"
 	"os"
@@ -51,9 +50,6 @@ func TestGetHandler(t *testing.T) {
 		t.Error(err)
 	}
 
-	// Set up a REST router for testing the handlers.
-	rest := MakeRESTRouter()
-
 	// Create locators for testing.
 	// Turn on permission settings so we can generate signed locators.
 	enforce_permissions = true
@@ -74,7 +70,7 @@ func TestGetHandler(t *testing.T) {
 
 	// Unauthenticated request, unsigned locator
 	// => OK
-	response := IssueRequest(rest,
+	response := IssueRequest(
 		&RequestTester{
 			method: "GET",
 			uri:    unsigned_locator,
@@ -97,7 +93,7 @@ func TestGetHandler(t *testing.T) {
 
 	// Authenticated request, signed locator
 	// => OK
-	response = IssueRequest(rest, &RequestTester{
+	response = IssueRequest(&RequestTester{
 		method:    "GET",
 		uri:       signed_locator,
 		api_token: known_token,
@@ -114,7 +110,7 @@ func TestGetHandler(t *testing.T) {
 
 	// Authenticated request, unsigned locator
 	// => PermissionError
-	response = IssueRequest(rest, &RequestTester{
+	response = IssueRequest(&RequestTester{
 		method:    "GET",
 		uri:       unsigned_locator,
 		api_token: known_token,
@@ -123,7 +119,7 @@ func TestGetHandler(t *testing.T) {
 
 	// Unauthenticated request, signed locator
 	// => PermissionError
-	response = IssueRequest(rest, &RequestTester{
+	response = IssueRequest(&RequestTester{
 		method: "GET",
 		uri:    signed_locator,
 	})
@@ -133,7 +129,7 @@ func TestGetHandler(t *testing.T) {
 
 	// Authenticated request, expired locator
 	// => ExpiredError
-	response = IssueRequest(rest, &RequestTester{
+	response = IssueRequest(&RequestTester{
 		method:    "GET",
 		uri:       expired_locator,
 		api_token: known_token,
@@ -155,16 +151,13 @@ func TestPutHandler(t *testing.T) {
 	KeepVM = MakeTestVolumeManager(2)
 	defer KeepVM.Quit()
 
-	// Set up a REST router for testing the handlers.
-	rest := MakeRESTRouter()
-
 	// --------------
 	// No server key.
 
 	// Unauthenticated request, no server key
 	// => OK (unsigned response)
 	unsigned_locator := "/" + TEST_HASH
-	response := IssueRequest(rest,
+	response := IssueRequest(
 		&RequestTester{
 			method:       "PUT",
 			uri:          unsigned_locator,
@@ -188,7 +181,7 @@ func TestPutHandler(t *testing.T) {
 
 	// Authenticated PUT, signed locator
 	// => OK (signed response)
-	response = IssueRequest(rest,
+	response = IssueRequest(
 		&RequestTester{
 			method:       "PUT",
 			uri:          unsigned_locator,
@@ -208,7 +201,7 @@ func TestPutHandler(t *testing.T) {
 
 	// Unauthenticated PUT, unsigned locator
 	// => OK
-	response = IssueRequest(rest,
+	response = IssueRequest(
 		&RequestTester{
 			method:       "PUT",
 			uri:          unsigned_locator,
@@ -249,9 +242,6 @@ func TestIndexHandler(t *testing.T) {
 	vols[0].Put(TEST_HASH+".meta", []byte("metadata"))
 	vols[1].Put(TEST_HASH_2+".meta", []byte("metadata"))
 
-	// Set up a REST router for testing the handlers.
-	rest := MakeRESTRouter()
-
 	data_manager_token = "DATA MANAGER TOKEN"
 
 	unauthenticated_req := &RequestTester{
@@ -286,14 +276,14 @@ func TestIndexHandler(t *testing.T) {
 	// -------------------------------------------------------------
 	// Only the superuser should be allowed to issue /index requests.
 
-  // ---------------------------
-  // enforce_permissions enabled
+	// ---------------------------
+	// enforce_permissions enabled
 	// This setting should not affect tests passing.
-  enforce_permissions = true
+	enforce_permissions = true
 
 	// unauthenticated /index request
 	// => UnauthorizedError
-	response := IssueRequest(rest, unauthenticated_req)
+	response := IssueRequest(unauthenticated_req)
 	ExpectStatusCode(t,
 		"enforce_permissions on, unauthenticated request",
 		UnauthorizedError.HTTPCode,
@@ -301,7 +291,7 @@ func TestIndexHandler(t *testing.T) {
 
 	// unauthenticated /index/prefix request
 	// => UnauthorizedError
-	response = IssueRequest(rest, unauth_prefix_req)
+	response = IssueRequest(unauth_prefix_req)
 	ExpectStatusCode(t,
 		"permissions on, unauthenticated /index/prefix request",
 		UnauthorizedError.HTTPCode,
@@ -309,7 +299,7 @@ func TestIndexHandler(t *testing.T) {
 
 	// authenticated /index request, non-superuser
 	// => UnauthorizedError
-	response = IssueRequest(rest, authenticated_req)
+	response = IssueRequest(authenticated_req)
 	ExpectStatusCode(t,
 		"permissions on, authenticated request, non-superuser",
 		UnauthorizedError.HTTPCode,
@@ -317,7 +307,7 @@ func TestIndexHandler(t *testing.T) {
 
 	// authenticated /index/prefix request, non-superuser
 	// => UnauthorizedError
-	response = IssueRequest(rest, auth_prefix_req)
+	response = IssueRequest(auth_prefix_req)
 	ExpectStatusCode(t,
 		"permissions on, authenticated /index/prefix request, non-superuser",
 		UnauthorizedError.HTTPCode,
@@ -325,7 +315,7 @@ func TestIndexHandler(t *testing.T) {
 
 	// superuser /index request
 	// => OK
-	response = IssueRequest(rest, superuser_req)
+	response = IssueRequest(superuser_req)
 	ExpectStatusCode(t,
 		"permissions on, superuser request",
 		http.StatusOK,
@@ -338,13 +328,11 @@ func TestIndexHandler(t *testing.T) {
 
 	// superuser /index request
 	// => OK
-	response = IssueRequest(rest, superuser_req)
+	response = IssueRequest(superuser_req)
 	ExpectStatusCode(t,
 		"permissions on, superuser request",
 		http.StatusOK,
 		response)
-
-
 
 	expected := `^` + TEST_HASH + `\+\d+ \d+\n` +
 		TEST_HASH_2 + `\+\d+ \d+\n$`
@@ -357,7 +345,7 @@ func TestIndexHandler(t *testing.T) {
 
 	// superuser /index/prefix request
 	// => OK
-	response = IssueRequest(rest, superuser_prefix_req)
+	response = IssueRequest(superuser_prefix_req)
 	ExpectStatusCode(t,
 		"permissions on, superuser request",
 		http.StatusOK,
@@ -415,9 +403,6 @@ func TestDeleteHandler(t *testing.T) {
 	// even though they have just been created.
 	permission_ttl = time.Duration(0)
 
-	// Set up a REST router for testing the handlers.
-	rest := MakeRESTRouter()
-
 	var user_token = "NOT DATA MANAGER TOKEN"
 	data_manager_token = "DATA MANAGER TOKEN"
 
@@ -446,14 +431,14 @@ func TestDeleteHandler(t *testing.T) {
 
 	// Unauthenticated request returns PermissionError.
 	var response *httptest.ResponseRecorder
-	response = IssueRequest(rest, unauth_req)
+	response = IssueRequest(unauth_req)
 	ExpectStatusCode(t,
 		"unauthenticated request",
 		PermissionError.HTTPCode,
 		response)
 
 	// Authenticated non-admin request returns PermissionError.
-	response = IssueRequest(rest, user_req)
+	response = IssueRequest(user_req)
 	ExpectStatusCode(t,
 		"authenticated non-admin request",
 		PermissionError.HTTPCode,
@@ -466,7 +451,7 @@ func TestDeleteHandler(t *testing.T) {
 	}
 	var response_dc, expected_dc deletecounter
 
-	response = IssueRequest(rest, superuser_nonexistent_block_req)
+	response = IssueRequest(superuser_nonexistent_block_req)
 	ExpectStatusCode(t,
 		"data manager request, nonexistent block",
 		http.StatusNotFound,
@@ -474,7 +459,7 @@ func TestDeleteHandler(t *testing.T) {
 
 	// Authenticated admin request for existing block while never_delete is set.
 	never_delete = true
-	response = IssueRequest(rest, superuser_existing_block_req)
+	response = IssueRequest(superuser_existing_block_req)
 	ExpectStatusCode(t,
 		"authenticated request, existing block, method disabled",
 		MethodDisabledError.HTTPCode,
@@ -482,7 +467,7 @@ func TestDeleteHandler(t *testing.T) {
 	never_delete = false
 
 	// Authenticated admin request for existing block.
-	response = IssueRequest(rest, superuser_existing_block_req)
+	response = IssueRequest(superuser_existing_block_req)
 	ExpectStatusCode(t,
 		"data manager request, existing block",
 		http.StatusOK,
@@ -506,7 +491,7 @@ func TestDeleteHandler(t *testing.T) {
 	vols[0].Put(TEST_HASH, TEST_BLOCK)
 	permission_ttl = time.Duration(1) * time.Hour
 
-	response = IssueRequest(rest, superuser_existing_block_req)
+	response = IssueRequest(superuser_existing_block_req)
 	ExpectStatusCode(t,
 		"data manager request, existing block",
 		http.StatusOK,
@@ -554,9 +539,6 @@ func TestDeleteHandler(t *testing.T) {
 //
 func TestPullHandler(t *testing.T) {
 	defer teardown()
-
-	// Set up a REST router for testing the handlers.
-	rest := MakeRESTRouter()
 
 	var user_token = "USER TOKEN"
 	data_manager_token = "DATA MANAGER TOKEN"
@@ -615,7 +597,7 @@ func TestPullHandler(t *testing.T) {
 	}
 
 	for _, tst := range testcases {
-		response := IssueRequest(rest, &tst.req)
+		response := IssueRequest(&tst.req)
 		ExpectStatusCode(t, tst.name, tst.response_code, response)
 		ExpectBody(t, tst.name, tst.response_body, response)
 	}
@@ -661,9 +643,6 @@ func TestPullHandler(t *testing.T) {
 //
 func TestTrashHandler(t *testing.T) {
 	defer teardown()
-
-	// Set up a REST router for testing the handlers.
-	rest := MakeRESTRouter()
 
 	var user_token = "USER TOKEN"
 	data_manager_token = "DATA MANAGER TOKEN"
@@ -720,7 +699,7 @@ func TestTrashHandler(t *testing.T) {
 	}
 
 	for _, tst := range testcases {
-		response := IssueRequest(rest, &tst.req)
+		response := IssueRequest(&tst.req)
 		ExpectStatusCode(t, tst.name, tst.response_code, response)
 		ExpectBody(t, tst.name, tst.response_body, response)
 	}
@@ -742,15 +721,16 @@ func TestTrashHandler(t *testing.T) {
 // ====================
 
 // IssueTestRequest executes an HTTP request described by rt, to a
-// specified REST router.  It returns the HTTP response to the request.
-func IssueRequest(router *mux.Router, rt *RequestTester) *httptest.ResponseRecorder {
+// REST router.  It returns the HTTP response to the request.
+func IssueRequest(rt *RequestTester) *httptest.ResponseRecorder {
 	response := httptest.NewRecorder()
 	body := bytes.NewReader(rt.request_body)
 	req, _ := http.NewRequest(rt.method, rt.uri, body)
 	if rt.api_token != "" {
 		req.Header.Set("Authorization", "OAuth2 "+rt.api_token)
 	}
-	router.ServeHTTP(response, req)
+	loggingRouter := MakeLoggingRESTRouter()
+	loggingRouter.ServeHTTP(response, req)
 	return response
 }
 
