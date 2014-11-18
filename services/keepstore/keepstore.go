@@ -263,10 +263,10 @@ func main() {
 	KeepVM = MakeRRVolumeManager(goodvols)
 
 	// Tell the built-in HTTP server to direct all requests to the REST router.
-  loggingRouter := MakeLoggingRESTRouter()
-  http.HandleFunc("/", func(resp http.ResponseWriter, req *http.Request) {
-    loggingRouter.ServeHTTP(resp, req)
-  })
+	loggingRouter := MakeLoggingRESTRouter()
+	http.HandleFunc("/", func(resp http.ResponseWriter, req *http.Request) {
+		loggingRouter.ServeHTTP(resp, req)
+	})
 
 	// Set up a TCP listener.
 	listener, err := net.Listen("tcp", listen)
