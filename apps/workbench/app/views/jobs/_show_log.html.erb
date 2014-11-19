@@ -22,7 +22,7 @@
   window.jobGraphSeries = [];
   window.jobGraphMaxima = {};
   <% stderr_log_records([@object.uuid],[['properties','~','crunchstat:.*-- interval']])
-        .each.with_index do |log_record, index| %>
+        .each do |log_record| %>
     processLogLineForChart( '<%=j log_record.properties[:text] %>' );
   <% end %>
   createJobGraph('log_graph_div');
