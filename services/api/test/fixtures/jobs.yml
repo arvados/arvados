@@ -183,6 +183,23 @@ previous_docker_job_run:
   docker_image_locator: fa3c1a9cb6783f85f2ecda037e07b8c3+167
   state: Complete
 
+previous_job_run_with_arvados_sdk_version:
+  uuid: zzzzz-8i9sb-eoo0321or2dw2jg
+  created_at: <%= 14.minute.ago.to_s(:db) %>
+  owner_uuid: zzzzz-tpzed-xurymjxw79nv3jz
+  repository: foo
+  script: hash
+  script_version: 31ce37fe365b3dc204300a3e4c396ad333ed0556
+  script_parameters:
+    input: fa7aeb5140e2848d39b416daeef4ffc5+45
+    an_integer: "1"
+  runtime_constraints:
+    arvados_sdk_version: commit2
+  arvados_sdk_version: 00634b2b8a492d6f121e3cf1d6587b821136a9a7
+  success: true
+  output: ea10d51bcf88862dbcc36eb292017dfd+45
+  state: Complete
+
 previous_job_run_no_output:
   uuid: zzzzz-8i9sb-cjs4pklxxjykppp
   created_at: <%= 14.minute.ago.to_s(:db) %>

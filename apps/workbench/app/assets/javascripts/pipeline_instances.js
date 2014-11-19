@@ -120,5 +120,9 @@ var showhide_compare = function() {
         });
     }
 };
-$('[data-object-uuid*=-d1hrv-] input[name="uuids[]"]').on('click', showhide_compare);
-showhide_compare();
+$(document).on('change', '[data-object-uuid*=-d1hrv-] input[name="uuids[]"]', function(e) {
+    if(e.target == this) {
+        showhide_compare();
+    }
+});
+$(document).on('ready ajax:success', showhide_compare);
