@@ -18,16 +18,16 @@ notextile. <div class="spaced-out">
 100  216M  100  216M    0     0  10.0M      0  0:00:21  0:00:21 --:--:-- 9361k
 </code></pre>
 </notextile>
-# Now upload the file to Keep using @arv-put@ and you will something as follows:
+# Now upload the file to Keep using @arv-put@:
 <notextile>
 <pre><code>~$ <span class="userinput">arv-put var-GS000016015-ASM.tsv.bz2</span>
 216M / 216M 100.0%
 Collection saved as ...
-qr1hi-4zz18-zu4se3zo76t526b
+qr1hi-4zz18-xxxxxxxxxxxxxxx
 </code></pre>
 </notextile>
 
-* The output value @qr1hi-4zz18-zu4se3zo76t526b@ is the uuid of the Arvados collection created.
+* The output value @qr1hi-4zz18-xxxxxxxxxxxxxxx@ is the uuid of the Arvados collection created.
 
 Now visit the Workbench *Dashboard*.  Click on *Projects*<span class="caret"></span> dropdown menu in the top navigation menu, select your *Home* project.  Your newly uploaded collection should appear near the top of the *Data collections* tab.  The collection locator printed by @arv-put@ will appear under the *name* column.
 
@@ -51,6 +51,6 @@ If you give @arv-put@ a directory, it will recursively upload the entire directo
 ~$ <span class="userinput">arv-put tmp</span>
 0M / 0M 100.0%
 Collection saved as ...
-qr1hi-4zz18-xyhx7af7y7uwj80
+qr1hi-4zz18-yyyyyyyyyyyyyyy
 </code></pre>
 </notextile>
