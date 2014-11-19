@@ -63,8 +63,6 @@ $(document).on('ajax:complete ready', function() {
   window.jobGraphMaxima = {};
  */
 function processLogLineForChart( logLine ) {
-    var recreate = false;
-    var rescale = false;
     try {
         var match = logLine.match(/(\S+) (\S+) (\S+) (\S+) stderr crunchstat: (\S+) (.*) -- interval (.*)/);
         if( match ) {
@@ -77,7 +75,7 @@ function processLogLineForChart( logLine ) {
             if( $.inArray( series, jobGraphSeries) < 0 ) {
                 jobGraphSeries.push(series);
                 jobGraphMaxima[series] = null;
-                recreate = true;
+                window.recreate = true;
             }
             var intervalData = match[7].trim().split(' ');
             var dt = parseFloat(intervalData[0]);
@@ -166,17 +164,32 @@ function processLogLineForChart( logLine ) {
                         }
                     });
                 }
+                // add a 10 minute old null data point to keep the chart honest if the oldest point is less than 9.5 minutes old
+                if( jobGraphData.length > 0
+                      && (Date.parse( jobGraphData[0]['t'] ).valueOf() + 9.5*60000 > Date.parse( jobGraphData[jobGraphData.length-1]['t'] ).valueOf()) ) {
+                    var tenMinutesBefore = (new Date(Date.parse( jobGraphData[jobGraphData.length-1]['t'] ).valueOf() - 600*1000)).toISOString().replace('Z','');
+                    jobGraphData.unshift( { 't': tenMinutesBefore } );
+                }
             }
+            window.redraw = true;
         }
     } catch( err ) {
         console.log( 'Ignoring error trying to process log line: ' + err);
     }
-    return recreate;
 }
 
 function createJobGraph(elementName) {
     delete jobGraph;
-    window.jobGraph = Morris.Line( {
+    var emptyGraph = false;
+    if( jobGraphData.length === 0 ) {
+        // If there is no data we still want to show an empty graph,
+        // so add an empty datum and placeholder series to fool it into displaying itself.
+        // Note that when finally a new series is added, the graph will be recreated anyway.
+        jobGraphData.push( {} );
+        jobGraphSeries.push( '' );
+        emptyGraph = true;
+    }
+    var graphteristics = {
         element: elementName,
         data: jobGraphData,
         ymax: 1.0,
@@ -184,7 +197,9 @@ function createJobGraph(elementName) {
         xkey: 't',
         ykeys: jobGraphSeries,
         labels: jobGraphSeries,
+        resize: true,
         hideHover: 'auto',
+        parseTime: true,
         hoverCallback: function(index, options, content) {
             var s = "<div class='morris-hover-row-label'>";
             s += options.data[index][options.xkey];
@@ -219,7 +234,17 @@ function createJobGraph(elementName) {
             }
             return s;
         }
-    });
+    }
+    if( emptyGraph ) {
+        graphteristics['axes'] = false;
+        graphteristics['parseTime'] = false;
+        graphteristics['hideHover'] = 'always';
+    }
+    window.jobGraph = Morris.Line( graphteristics );
+    if( emptyGraph ) {
+        jobGraphData = [];
+        jobGraphSeries = [];
+    }
 }
 
 function rescaleJobGraphSeries( series, scaleConversion ) {
@@ -239,12 +264,7 @@ function isJobSeriesRescalable( series ) {
 
 $(document).on('arv-log-event', '#log_graph_div', function(event, eventData) {
     if( eventData.properties.text ) {
-        var causeRecreate = processLogLineForChart( eventData.properties.text );
-        if( causeRecreate && !window.recreate ) {
-            window.recreate = true;
-        } else {
-            window.redraw = true;
-        }
+        processLogLineForChart( eventData.properties.text );
     }
 } );
 
@@ -254,6 +274,7 @@ $(document).on('ready', function(){
     setInterval( function() {
         if( recreate ) {
             window.recreate = false;
+            window.redraw = false;
             // series have changed, draw entirely new graph
             $('#log_graph_div').html('');
             createJobGraph('log_graph_div');
