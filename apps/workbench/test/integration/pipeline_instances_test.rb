@@ -63,6 +63,26 @@ class PipelineInstancesTest < ActionDispatch::IntegrationTest
     end
     wait_for_ajax
 
+    # The input, after being specified, should still be displayed (#3382)
+    assert find('div.form-group', text: 'Foo/bar pair')
+
+    # The input, after being specified, should still be editable (#3382)
+    find('div.form-group', text: 'Foo/bar pair').
+      find('.btn', text: 'Choose').
+      click
+
+    within('.modal-dialog') do
+      assert(has_text?("Foo/bar pair"),
+             "pipeline input picker missing name of input")
+      wait_for_ajax
+      first('span', text: 'foo_tag').click
+      find('button', text: 'OK').click
+    end
+    wait_for_ajax
+
+    # For good measure, check one last time that the input, after being specified twice, is still be displayed (#3382)
+    assert find('div.form-group', text: 'Foo/bar pair')
+
     # Ensure that the collection's portable_data_hash, uuid and name
     # are saved in the desired places. (#4015)
 
@@ -308,6 +328,9 @@ class PipelineInstancesTest < ActionDispatch::IntegrationTest
       find('button', text: 'OK').click
     end
     wait_for_ajax
+
+    # The input, after being specified, should still be displayed (#3382)
+    assert find('div.form-group', text: 'Foo/bar pair')
 
     # Ensure that the collection's portable_data_hash, uuid and name
     # are saved in the desired places. (#4015)
