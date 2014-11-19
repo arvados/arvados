@@ -20,6 +20,7 @@
 <%= javascript_tag do %>
   window.jobGraphData = [];
   window.jobGraphSeries = [];
+  window.jobGraphSortedSeries = [];
   window.jobGraphMaxima = {};
   <% stderr_log_records([@object.uuid],[['properties','~','crunchstat:.*-- interval']])
         .each do |log_record| %>

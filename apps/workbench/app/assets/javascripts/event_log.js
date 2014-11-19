@@ -60,6 +60,7 @@ $(document).on('ajax:complete ready', function() {
 /* Assumes existence of:
   window.jobGraphData = [];
   window.jobGraphSeries = [];
+  window.jobGraphSortedSeries = [];
   window.jobGraphMaxima = {};
  */
 function processLogLineForChart( logLine ) {
@@ -68,12 +69,18 @@ function processLogLineForChart( logLine ) {
         if( match ) {
             // the timestamp comes first
             var timestamp = match[1].replace('_','T');
-            // for the series use the first word after 'crunchstat:'
-            var series = match[5];
-            // and append the task number (the 4th term)
-            series += '-' + match[4]
+            // for the series use the task number (4th term) and then the first word after 'crunchstat:'
+            var series = 'T' + match[4] + '-' + match[5];
             if( $.inArray( series, jobGraphSeries) < 0 ) {
-                jobGraphSeries.push(series);
+                var newIndex = jobGraphSeries.push(series) - 1;
+                jobGraphSortedSeries.push(newIndex);
+                jobGraphSortedSeries.sort( function(a,b) {
+                    var matchA = jobGraphSeries[a].match(/^T(\d+)-(.*)/);
+                    var matchB = jobGraphSeries[b].match(/^T(\d+)-(.*)/);
+                    var termA = ('000000' + matchA[1]).slice(-6) + matchA[2];
+                    var termB = ('000000' + matchB[1]).slice(-6) + matchB[2];
+                    return termA > termB;
+                });
                 jobGraphMaxima[series] = null;
                 window.recreate = true;
             }
@@ -93,7 +100,7 @@ function processLogLineForChart( logLine ) {
                     rescaleJobGraphSeries( series, scaleConversion );
                 }
                 // and special calculation for cpus
-                if( /^cpu-/.test(series) ) {
+                if( /-cpu$/.test(series) ) {
                     // divide the stat by the number of cpus
                     var cpuCountMatch = match[6].match(/(\d+) cpus/);
                     if( cpuCountMatch ) {
@@ -204,20 +211,21 @@ function createJobGraph(elementName) {
             var s = "<div class='morris-hover-row-label'>";
             s += options.data[index][options.xkey];
             s += "</div> ";
-            for( i = 0; i < options.ykeys.length; i++ ) {
-                var series = options.ykeys[i];
+            for( i = 0; i < jobGraphSortedSeries.length; i++ ) {
+                var sortedIndex = jobGraphSortedSeries[i];
+                var series = options.ykeys[sortedIndex];
                 var datum = options.data[index][series];
                 s += "<div class='morris-hover-point' style='color: ";
-                s += options.lineColors[i];
+                s += options.lineColors[sortedIndex];
                 s += "'>";
-                s += options.labels[i];
+                s += options.labels[sortedIndex];
                 s += ": ";
                 if ( !(typeof datum === 'undefined') ) {
                     if( isJobSeriesRescalable( series ) ) {
                         datum *= jobGraphMaxima[series];
                     }
                     if( parseFloat(datum) !== 0 ) {
-                        if( /^cpu-/.test(series) ){
+                        if( /-cpu$/.test(series) ){
                             datum = $.number(datum * 100, 1) + '%';
                         } else if( datum < 10 ) {
                             datum = $.number(datum, 2);
@@ -259,7 +267,7 @@ function rescaleJobGraphSeries( series, scaleConversion ) {
 
 // that's right - we never do this for the 'cpu' series, which will always be between 0 and 1 anyway
 function isJobSeriesRescalable( series ) {
-    return !/^cpu-/.test(series);
+    return !/-cpu$/.test(series);
 }
 
 $(document).on('arv-log-event', '#log_graph_div', function(event, eventData) {
