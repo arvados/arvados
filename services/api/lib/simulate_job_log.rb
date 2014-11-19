@@ -1,14 +1,18 @@
 module SimulateJobLog
-	def replay(filename, simulated_job_uuid = nil, multiplier = 1)
+	# Note that deleting existing log entries only works if a simulated job uuid is also specified.
+	def replay(filename, multiplier = 1, delete_log_entries = false, simulated_job_uuid = nil)
 		raise "Environment must be development or test" unless [ 'test', 'development' ].include? ENV['RAILS_ENV']
 
 	    multiplier = multiplier.to_f
 	    multiplier = 1.0 if multiplier <= 0
 
+	    delete_log_entries = (delete_log_entries.to_s.downcase == 'true')
+
 	    actual_start_time = Time.now
 	    log_start_time = nil
 
 		act_as_system_user do
+			Log.where("object_uuid = ?", simulated_job_uuid).delete_all if simulated_job_uuid && delete_log_entries
 			File.open(filename).each.with_index do |line, index|
 				cols = {}
 		        cols[:timestamp], cols[:job_uuid], cols[:pid], cols[:task], cols[:event_type], cols[:message] = line.split(' ', 6)
