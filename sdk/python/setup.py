@@ -13,7 +13,9 @@ cmd_opts = {'egg_info': {}}
 try:
     git_tags = subprocess.check_output(
         ['git', 'log', '--first-parent', '--max-count=1',
-         '--format=format:%ct %h', SETUP_DIR]).split()
+         '--format=format:%ct %h', SETUP_DIR],
+        stderr=open('/dev/null','w')
+        ).split()
     assert len(git_tags) == 2
 except (AssertionError, OSError, subprocess.CalledProcessError):
     pass
@@ -46,7 +48,7 @@ setup(name='arvados-python-client',
         'python-gflags',
         'google-api-python-client',
         'httplib2',
-        'requests',
+        'requests>=2.4',
         'urllib3',
         'ws4py'
         ],

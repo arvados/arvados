@@ -178,8 +178,18 @@ def run_keep(blob_signing_key=None, enforce_permissions=False):
     for d in api.keep_disks().list().execute()['items']:
         api.keep_disks().delete(uuid=d['uuid']).execute()
 
-    s1 = api.keep_services().create(body={"keep_service": {"service_host": "localhost",  "service_port": 25107, "service_type": "disk"} }).execute()
-    s2 = api.keep_services().create(body={"keep_service": {"service_host": "localhost",  "service_port": 25108, "service_type": "disk"} }).execute()
+    s1 = api.keep_services().create(body={"keep_service": {
+                "uuid": "zzzzz-bi6l4-5bo5n1iekkjyz6b",
+                "service_host": "localhost",
+                "service_port": 25107,
+                "service_type": "disk"
+                }}).execute()
+    s2 = api.keep_services().create(body={"keep_service": {
+                "uuid": "zzzzz-bi6l4-2nz60e0ksj7vr3s",
+                "service_host": "localhost",
+                "service_port": 25108,
+                "service_type": "disk"
+                }}).execute()
     api.keep_disks().create(body={"keep_disk": {"keep_service_uuid": s1["uuid"] } }).execute()
     api.keep_disks().create(body={"keep_disk": {"keep_service_uuid": s2["uuid"] } }).execute()
 

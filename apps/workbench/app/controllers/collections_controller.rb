@@ -47,34 +47,6 @@ class CollectionsController < ApplicationController
     end
   end
 
-  def choose
-    # Find collections using default find_objects logic, then search for name
-    # links, and preload any other links connected to the collections that are
-    # found.
-    # Name links will be obsolete when issue #3036 is merged,
-    # at which point this entire custom #choose function can probably be
-    # eliminated.
-
-    params[:limit] ||= 40
-
-    find_objects_for_index
-    @collections = @objects
-
-    @filters += [['link_class','=','name'],
-                 ['head_uuid','is_a','arvados#collection']]
-
-    @objects = Link
-    find_objects_for_index
-
-    @name_links = @objects
-
-    @objects = Collection.
-      filter([['uuid','in',@name_links.collect(&:head_uuid)]])
-
-    preload_links_for_objects (@collections.to_a + @objects.to_a)
-    super
-  end
-
   def index
     # API server index doesn't return manifest_text by default, but our
     # callers want it unless otherwise specified.
@@ -82,7 +54,7 @@ class CollectionsController < ApplicationController
     base_search = Collection.select(@select)
     if params[:search].andand.length.andand > 0
       tags = Link.where(any: ['contains', params[:search]])
-      @collections = (base_search.where(uuid: tags.collect(&:head_uuid)) |
+      @objects = (base_search.where(uuid: tags.collect(&:head_uuid)) |
                       base_search.where(any: ['contains', params[:search]])).
         uniq { |c| c.uuid }
     else
@@ -98,12 +70,11 @@ class CollectionsController < ApplicationController
         offset = 0
       end
 
-      @collections = base_search.limit(limit).offset(offset)
+      @objects = base_search.limit(limit).offset(offset)
     end
-    @links = Link.limit(1000).
-      where(head_uuid: @collections.collect(&:uuid))
+    @links = Link.where(head_uuid: @objects.collect(&:uuid))
     @collection_info = {}
-    @collections.each do |c|
+    @objects.each do |c|
       @collection_info[c.uuid] = {
         tag_links: [],
         wanted: false,
@@ -209,7 +180,7 @@ class CollectionsController < ApplicationController
     return super if !@object
     if current_user
       if Keep::Locator.parse params["uuid"]
-        @same_pdh = Collection.filter([["portable_data_hash", "=", @object.portable_data_hash]]).limit(1000)
+        @same_pdh = Collection.filter([["portable_data_hash", "=", @object.portable_data_hash]])
         if @same_pdh.results.size == 1
           redirect_to collection_path(@same_pdh[0]["uuid"])
           return

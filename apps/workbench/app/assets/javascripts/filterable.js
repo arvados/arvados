@@ -49,8 +49,41 @@
 // Combining "select" filterable-controls with infinite-scroll is not
 // yet supported.
 
+function updateFilterableQueryNow($target) {
+    var newquery = $target.data('filterable-query-new');
+    var params = $target.data('infinite-content-params-filterable') || {};
+    params.filters = [['any', 'ilike', '%' + newquery + '%']];
+    $target.data('infinite-content-params-filterable', params);
+    $target.data('filterable-query', newquery);
+}
+
 $(document).
-    on('paste keyup input', 'input[type=text].filterable-control', function() {
+    on('ready ajax:success', function() {
+        // Copy any initial input values into
+        // data-filterable-query[-new].
+        $('input[type=text].filterable-control').each(function() {
+            var $this = $(this);
+            var $target = $($this.attr('data-filterable-target'));
+            if ($target.data('filterable-query-new') === undefined) {
+                $target.data('filterable-query', $this.val());
+                $target.data('filterable-query-new', $this.val());
+                updateFilterableQueryNow($target);
+            }
+        });
+        $('[data-infinite-scroller]').on('refresh-content', '[data-filterable-query]', function(e) {
+            // If some other event causes a refresh-content event while there
+            // is a new query waiting to cooloff, we should use the new query
+            // right away -- otherwise we'd launch an extra ajax request that
+            // would have to be reloaded as soon as the cooloff period ends.
+            if (this != e.target)
+                return;
+            if ($(this).data('filterable-query') == $(this).data('filterable-query-new'))
+                return;
+            updateFilterableQueryNow($(this));
+        });
+    }).
+    on('paste keyup input', 'input[type=text].filterable-control', function(e) {
+        if (this != e.target) return;
         var $target = $($(this).attr('data-filterable-target'));
         var currentquery = $target.data('filterable-query');
         if (currentquery === undefined) currentquery = '';
@@ -74,11 +107,7 @@ $(document).
                 // in the next 1/4 second (like type or erase
                 // characters in the search box), hide the stale
                 // content and ask the server for new results.
-                var newquery = $target.data('filterable-query-new');
-                var params = $target.data('infinite-content-params-filterable') || {};
-                params.filters = [['any', 'ilike', '%' + newquery + '%']];
-                $target.data('infinite-content-params-filterable', params);
-                $target.data('filterable-query', newquery);
+                updateFilterableQueryNow($target);
                 $target.trigger('refresh-content');
             }, 250));
         } else {

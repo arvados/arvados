@@ -11,25 +11,27 @@ min-width: 1.2em;
 }
 <% end %>
 
+<% results.fetch_multiple_pages(false) %>
+
 <% if results.respond_to? :result_offset and
        results.respond_to? :result_limit and
        results.respond_to? :items_available and
        results.result_offset != nil and
        results.result_limit != nil and
-       results.items_available != nil 
+       results.items_available != nil
 %>
 <div class="index-paging">
-  Displaying <%= results.result_offset+1 %> &ndash; 
-  <%= if results.result_offset + results.result_limit > results.items_available 
-        results.items_available 
-      else 
-        results.result_offset + results.result_limit 
+  Displaying <%= results.result_offset+1 %> &ndash;
+  <%= if results.result_offset + results.result_limit > results.items_available
+        results.items_available
+      else
+        results.result_offset + results.result_limit
       end %>
  out of <%= results.items_available %>
 </div>
 
 <% if not (results.result_offset == 0 and results.items_available <= results.result_limit) %>
-  
+
 <div class="index-paging">
 
 <% if results.result_offset > 0 %>
@@ -54,7 +56,7 @@ min-width: 1.2em;
 <% if results.result_offset > 0 %>
   <%= link_to raw("<span class='glyphicon glyphicon-fast-backward'></span>"), {:id => object, :offset => 0, :limit => results.result_limit}  %>
 <% else %>
-  <span class='glyphicon glyphicon-fast-backward text-muted'></span>  
+  <span class='glyphicon glyphicon-fast-backward text-muted'></span>
 <% end %>
 
 <% if prev_offset %>
@@ -111,10 +113,10 @@ min-width: 1.2em;
 <% end %>
 
 <% if (results.items_available - results.result_offset) >= results.result_limit %>
-  <%= link_to raw("<span class='glyphicon glyphicon-fast-forward'></span>"), {:id => @object, :offset => results.items_available - (results.items_available % results.result_limit), 
+  <%= link_to raw("<span class='glyphicon glyphicon-fast-forward'></span>"), {:id => @object, :offset => results.items_available - (results.items_available % results.result_limit),
         :limit => results.result_limit}  %>
 <% else %>
-  <span class='glyphicon glyphicon-fast-forward text-muted'></span>  
+  <span class='glyphicon glyphicon-fast-forward text-muted'></span>
 <% end %>
 
 </span>

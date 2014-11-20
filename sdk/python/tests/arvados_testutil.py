@@ -1,6 +1,7 @@
 #!/usr/bin/env python
 
 import errno
+import hashlib
 import httplib
 import httplib2
 import io
@@ -49,6 +50,21 @@ def mock_put_responses(body, *codes, **headers):
 def mock_requestslib_responses(method, body, *codes, **headers):
     return mock.patch(method, side_effect=(
         fake_requests_response(code, body, **headers) for code in codes))
+
+class MockStreamReader(object):
+    def __init__(self, name='.', *data):
+        self._name = name
+        self._data = ''.join(data)
+        self._data_locators = ['{}+{}'.format(hashlib.md5(d).hexdigest(),
+                                              len(d)) for d in data]
+        self.num_retries = 0
+
+    def name(self):
+        return self._name
+
+    def readfrom(self, start, size, num_retries=None):
+        return self._data[start:start + size]
+
 
 class ArvadosBaseTestCase(unittest.TestCase):
     # This class provides common utility functions for our tests.

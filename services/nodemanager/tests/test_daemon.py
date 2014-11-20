@@ -8,8 +8,8 @@ import unittest
 import mock
 import pykka
 
-import arvnodeman.computenode as nmcnode
 import arvnodeman.daemon as nmdaemon
+from arvnodeman.computenode.dispatch import ComputeNodeMonitorActor
 from . import testutil
 
 class NodeManagerDaemonActorTestCase(testutil.ActorTestMixin,
@@ -39,7 +39,7 @@ class NodeManagerDaemonActorTestCase(testutil.ActorTestMixin,
             self.daemon.update_server_wishlist(want_sizes).get(self.TIMEOUT)
 
     def monitor_list(self):
-        return pykka.ActorRegistry.get_by_class(nmcnode.ComputeNodeMonitorActor)
+        return pykka.ActorRegistry.get_by_class(ComputeNodeMonitorActor)
 
     def alive_monitor_count(self):
         return sum(1 for actor in self.monitor_list() if actor.is_alive())
@@ -259,6 +259,57 @@ class NodeManagerDaemonActorTestCase(testutil.ActorTestMixin,
         self.daemon.node_can_shutdown(monitor).get(self.TIMEOUT)
         self.stop_proxy(self.daemon)
         self.assertFalse(self.node_shutdown.start.called)
+
+    def test_node_shutdown_after_cancelled_shutdown(self):
+        cloud_node = testutil.cloud_node_mock(5)
+        self.make_daemon([cloud_node], [testutil.arvados_node_mock(5)])
+        self.assertEqual(1, self.alive_monitor_count())
+        monitor = self.monitor_list()[0].proxy()
+        shutdown_proxy = self.node_shutdown.start().proxy
+        shutdown_proxy().cloud_node.get.return_value = cloud_node
+        shutdown_proxy().success.get.return_value = False
+        shutdown_proxy.reset_mock()
+        self.daemon.node_can_shutdown(monitor).get(self.TIMEOUT)
+        self.assertTrue(shutdown_proxy.called)
+        self.daemon.node_finished_shutdown(shutdown_proxy()).get(self.TIMEOUT)
+        shutdown_proxy().success.get.return_value = True
+        shutdown_proxy.reset_mock()
+        self.daemon.node_can_shutdown(monitor).get(self.TIMEOUT)
+        self.assertTrue(shutdown_proxy.called)
+
+    def test_nodes_shutting_down_replaced_below_max_nodes(self):
+        cloud_node = testutil.cloud_node_mock(6)
+        self.make_daemon([cloud_node], [testutil.arvados_node_mock(6)])
+        self.assertEqual(1, self.alive_monitor_count())
+        monitor = self.monitor_list()[0].proxy()
+        self.daemon.node_can_shutdown(monitor).get(self.TIMEOUT)
+        self.assertTrue(self.node_shutdown.start.called)
+        self.daemon.update_server_wishlist(
+            [testutil.MockSize(6)]).get(self.TIMEOUT)
+        self.stop_proxy(self.daemon)
+        self.assertTrue(self.node_setup.start.called)
+
+    def test_nodes_shutting_down_not_replaced_at_max_nodes(self):
+        cloud_node = testutil.cloud_node_mock(7)
+        self.make_daemon([cloud_node], [testutil.arvados_node_mock(7)],
+                         max_nodes=1)
+        self.assertEqual(1, self.alive_monitor_count())
+        monitor = self.monitor_list()[0].proxy()
+        self.daemon.node_can_shutdown(monitor).get(self.TIMEOUT)
+        self.assertTrue(self.node_shutdown.start.called)
+        self.daemon.update_server_wishlist(
+            [testutil.MockSize(7)]).get(self.TIMEOUT)
+        self.stop_proxy(self.daemon)
+        self.assertFalse(self.node_setup.start.called)
+
+    def test_nodes_shutting_down_count_against_excess(self):
+        cloud_nodes = [testutil.cloud_node_mock(n) for n in [8, 9]]
+        arv_nodes = [testutil.arvados_node_mock(n) for n in [8, 9]]
+        self.make_daemon(cloud_nodes, arv_nodes, [testutil.MockSize(8)])
+        self.assertEqual(2, self.alive_monitor_count())
+        for mon_ref in self.monitor_list():
+            self.daemon.node_can_shutdown(mon_ref.proxy()).get(self.TIMEOUT)
+        self.assertEqual(1, self.node_shutdown.start.call_count)
 
     def test_clean_shutdown_waits_for_node_setup_finish(self):
         new_node = self.start_node_boot()

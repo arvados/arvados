@@ -64,7 +64,9 @@ class PipelineInstancesController < ApplicationController
         if component[:script_parameters]
           component[:script_parameters].each do |param, value_info|
             if value_info.is_a? Hash
-              value_info_class = resource_class_for_uuid(value_info[:value])
+              value_info_partitioned = value_info[:value].partition('/') if value_info[:value].andand.class.eql?(String)
+              value_info_value = value_info_partitioned ? value_info_partitioned[0] : value_info[:value]
+              value_info_class = resource_class_for_uuid value_info_value
               if value_info_class == Link
                 # Use the link target, not the link itself, as script
                 # parameter; but keep the link info around as well.
@@ -81,10 +83,15 @@ class PipelineInstancesController < ApplicationController
                 # to ensure reproducibility, the script_parameter for a
                 # collection should be the portable_data_hash
                 # keep the collection name and uuid for human-readability
-                obj = Collection.find value_info[:value]
-                value_info[:value] = obj.portable_data_hash
+                obj = Collection.find value_info_value
+                if value_info_partitioned
+                  value_info[:value] = obj.portable_data_hash + value_info_partitioned[1] + value_info_partitioned[2]
+                  value_info[:selection_name] = obj.name + value_info_partitioned[1] + value_info_partitioned[2]
+                else
+                  value_info[:value] = obj.portable_data_hash
+                  value_info[:selection_name] = obj.name
+                end
                 value_info[:selection_uuid] = obj.uuid
-                value_info[:selection_name] = obj.name
               end
             end
           end
@@ -286,11 +293,6 @@ class PipelineInstancesController < ApplicationController
     %w(Compare Graph)
   end
 
-  def index
-    @limit = 20
-    super
-  end
-
   protected
   def for_comparison v
     if v.is_a? Hash or v.is_a? Array
@@ -300,8 +302,12 @@ class PipelineInstancesController < ApplicationController
     end
   end
 
+  def load_filters_and_paging_params
+    params[:limit] = 20
+    super
+  end
+
   def find_objects_by_uuid
     @objects = model_class.where(uuid: params[:uuids])
   end
-
 end

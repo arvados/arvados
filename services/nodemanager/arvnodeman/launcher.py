@@ -12,9 +12,6 @@ import daemon
 import pykka
 
 from . import config as nmconfig
-from .computenode import \
-    ComputeNodeSetupActor, ComputeNodeShutdownActor, ComputeNodeUpdateActor, \
-    ShutdownTimer
 from .daemon import NodeManagerDaemonActor
 from .jobqueue import JobQueueMonitorActor, ServerCalculator
 from .nodelist import ArvadosNodeListMonitorActor, CloudNodeListMonitorActor
@@ -109,10 +106,11 @@ def main(args=None):
         signal.signal(sigcode, shutdown_signal)
 
     setup_logging(config.get('Logging', 'file'), **config.log_levels())
+    node_setup, node_shutdown, node_update, node_monitor = \
+        config.dispatch_classes()
     timer, cloud_node_poller, arvados_node_poller, job_queue_poller = \
         launch_pollers(config)
-    cloud_node_updater = ComputeNodeUpdateActor.start(
-        config.new_cloud_client).proxy()
+    cloud_node_updater = node_update.start(config.new_cloud_client).proxy()
     node_daemon = NodeManagerDaemonActor.start(
         job_queue_poller, arvados_node_poller, cloud_node_poller,
         cloud_node_updater, timer,
@@ -121,7 +119,8 @@ def main(args=None):
         config.getint('Daemon', 'min_nodes'),
         config.getint('Daemon', 'max_nodes'),
         config.getint('Daemon', 'poll_stale_after'),
-        config.getint('Daemon', 'node_stale_after')).proxy()
+        config.getint('Daemon', 'node_stale_after'),
+        node_setup, node_shutdown, node_monitor).proxy()
 
     signal.pause()
     daemon_stopped = node_daemon.actor_ref.actor_stopped.is_set
