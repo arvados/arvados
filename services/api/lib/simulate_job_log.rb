@@ -11,8 +11,19 @@ module SimulateJobLog
 		act_as_system_user do
 			File.open(filename).each.with_index do |line, index|
 				cols = {}
-		        cols[:timestamp], cols[:job_uuid], cols[:pid], cols[:task], cols[:event_type], cols[:message] = line.split(' ', 6)
-		        cols[:timestamp] = Time.strptime( cols[:timestamp], "%Y-%m-%d_%H:%M:%S" )
+		        cols[:timestamp], rest_of_line = line.split(' ', 2)
+		        begin
+		        	cols[:timestamp] = Time.strptime( cols[:timestamp], "%Y-%m-%d_%H:%M:%S" )
+		        rescue ArgumentError
+		        	if line =~ /^((?:Sun|Mon|Tue|Wed|Thu|Fri|Sat) (?:Jan|Feb|Mar|Apr|May|Jun|Jul|Aug|Sep|Oct|Nov|Dec) \d{1,2} \d\d:\d\d:\d\d \d{4}) (.*)/
+			        	# Wed Nov 19 07:12:39 2014
+			        	cols[:timestamp] = Time.strptime( $1, "%a %b %d %H:%M:%S %Y" )
+			        	rest_of_line = $2
+			        else
+				        STDERR.puts "Ignoring log line because of unknown time format: #{line}"
+			        end
+		        end
+	        	cols[:job_uuid], cols[:pid], cols[:task], cols[:event_type], cols[:message] = rest_of_line.split(' ', 5)
 		        # Override job uuid with a simulated one if specified
 		        cols[:job_uuid] = simulated_job_uuid || cols[:job_uuid]
 		        # determine when we want to simulate this log being created, based on the time multiplier
