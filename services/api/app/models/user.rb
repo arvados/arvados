@@ -402,8 +402,7 @@ class User < ArvadosModel
     return (Link.where(tail_uuid: self.uuid,
                        head_uuid: all_users_group[:uuid],
                        link_class: 'permission',
-                       name: 'can_read').first
-            or
+                       name: 'can_read').first or
             Link.create(tail_uuid: self.uuid,
                         head_uuid: all_users_group[:uuid],
                         link_class: 'permission',
