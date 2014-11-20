@@ -44,3 +44,37 @@ Get list of groups
 
 Delete a group
 @arv group delete --uuid 6dnxa-j7d0g-iw7i6n43d37jtog@
+
+
+h3. Common commands
+
+Most @arv@ resources accept the following commands:
+
+* @get@
+* @list@
+* @create@
+* @update@
+* @delete@
+
+
+h4. @list@
+
+Arguments accepted by the @list@ subcommand include:
+
+<pre>
+    --limit, -l <i>:     Maximum number of resources to return.
+   --offset, -o <i>:     Number of users to skip before first returned record.
+  --filters, -f <s>:     Conditions for filtering users.
+    --order, -r <s>:     Order in which to return matching users.
+   --select, -s <s>:     Select which fields to return
+     --distinct, -d:     Return each distinct object
+</pre>
+
+The @--filters@ option takes a string describing a JSON list of filters on which the returned resources should be returned. Each filter is a three-element list of _[field, operator, value]_, where the _operator_ may be one of @=@, @<@, @<=@, @>@, @>=@, @!=@, @like@, or @ilike@.
+
+Example:
+
+@arv collection list --filters '[["name", "=", "PGP VAR inputs"], ["created_at", ">=", "2014-10-01"]]'@
+
+will return a list of all collections visible to the current user which are named "PGP VAR inputs" and were created on or after October 1, 2014.
+
