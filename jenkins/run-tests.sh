@@ -23,7 +23,7 @@ CONFIGSRC=path Dir with api server config files to copy into source tree.
                (If none given, leave config files alone in source tree.)
 apiserver_test="TEST=test/functional/arvados/v1/collections_controller_test.rb"
                Restrict apiserver tests to the given file
-python_sdk_test="--test-suite test.test_keep_locator"
+sdk/python_test="--test-suite test.test_keep_locator"
                Restrict Python SDK tests to the given class
 workbench_test="TEST=test/integration/pipeline_instances_test.rb"
                Restrict Workbench tests to the given file
@@ -59,12 +59,6 @@ GEMHOME=
 
 COLUMNS=80
 
-cli_test=
-workbench_test=
-apiserver_test=
-python_sdk_test=
-ruby_sdk_test=
-fuse_test=
 leave_temp=
 skip_install=
 
@@ -118,6 +112,7 @@ report_outcomes() {
 }
 declare -a failures
 declare -A skip
+declare -A testargs
 
 # Always skip CLI tests. They don't know how to use run_test_server.py.
 skip[cli]=1
@@ -145,6 +140,11 @@ do
             leave_temp[VENVDIR]=1
             leave_temp[GOPATH]=1
             leave_temp[GEMHOME]=1
+            ;;
+        *_test=*)
+            suite="${arg%%_test=*}"
+            args="${arg#*=}"
+            testargs["$suite"]="$args"
             ;;
         *=*)
             eval export $(echo $arg | cut -d= -f1)=\"$(echo $arg | cut -d= -f2-)\"
@@ -212,6 +212,18 @@ do_test() {
         if [[ "$2" == "go" ]]
         then
             go test "git.curoverse.com/arvados.git/$1"
+        elif [[ "$2" == "pip" ]]
+        then
+           # Other test suites can depend on tests_require
+           # dependencies of this package. For example, keepproxy runs
+           # run_test_server.py, which depends on the yaml package,
+           # which is in sdk/python's tests_require but not
+           # install_requires, and therefore does not get installed by
+           # setuptools until we run "setup.py test" *and* install the
+           # .egg files that setup.py downloads.
+           cd "$WORKSPACE/$1" \
+                && HOME="$GEMHOME" python setup.py test ${testargs[$1]} \
+                && easy_install *.egg
         else
             "test_$1"
         fi
@@ -230,6 +242,11 @@ do_install() {
         if [[ "$2" == "go" ]]
         then
             go get -t "git.curoverse.com/arvados.git/$1"
+        elif [[ "$2" == "pip" ]]
+        then
+            cd "$WORKSPACE/$1" \
+                && python setup.py sdist rotate --keep=1 --match .tar.gz \
+                && pip install --upgrade dist/*.tar.gz
         else
             "install_$1"
         fi
@@ -271,25 +288,21 @@ install_cli() {
 }
 do_install cli
 
-install_python_sdk() {
-    # Install the Python SDK early. Various other test suites (like
-    # keepproxy) bring up run_test_server.py, which imports the arvados
-    # module. We can't actually *test* the Python SDK yet though, because
-    # its own test suite brings up some of those other programs (like
-    # keepproxy).
-
-    cd "$WORKSPACE/sdk/python" \
-        && python setup.py sdist rotate --keep=1 --match .tar.gz \
-        && pip install dist/arvados-python-client-0.1.*.tar.gz
-}
-do_install python_sdk
-
-install_fuse() {
-    cd "$WORKSPACE/services/fuse" \
-        && python setup.py sdist rotate --keep=1 --match .tar.gz \
-        && pip install dist/arvados_fuse-0.1.*.tar.gz
-}
-do_install fuse
+# Install the Python SDK early. Various other test suites (like
+# keepproxy) bring up run_test_server.py, which imports the arvados
+# module. We can't actually *test* the Python SDK yet though, because
+# its own test suite brings up some of those other programs (like
+# keepproxy).
+declare -a pythonstuff
+pythonstuff=(
+    sdk/python
+    services/fuse
+    services/nodemanager
+    )
+for p in "${pythonstuff[@]}"
+do
+    do_install "$p" pip
+done
 
 install_apiserver() {
     cd "$WORKSPACE/services/api"
@@ -362,7 +375,7 @@ do_test doclinkchecker
 test_ruby_sdk() {
     cd "$WORKSPACE/sdk/ruby" \
         && HOME="$GEMHOME" bundle install --no-deployment \
-        && HOME="$GEMHOME" bundle exec rake test
+        && HOME="$GEMHOME" bundle exec rake test ${testargs[sdk/ruby]}
 }
 do_test ruby_sdk
 
@@ -371,45 +384,22 @@ test_cli() {
     cd "$WORKSPACE/sdk/cli" \
         && HOME="$GEMHOME" bundle install --no-deployment \
         && mkdir -p /tmp/keep \
-        && KEEP_LOCAL_STORE=/tmp/keep HOME="$GEMHOME" bundle exec rake test $cli_test
+        && KEEP_LOCAL_STORE=/tmp/keep HOME="$GEMHOME" bundle exec rake test ${testargs[sdk/cli]}
 }
 do_test cli
 
 test_apiserver() {
     cd "$WORKSPACE/services/api"
-    HOME="$GEMHOME" bundle exec rake test $apiserver_test
+    HOME="$GEMHOME" bundle exec rake test $testargs[apiserver]
 }
 do_test apiserver
 
-test_python_sdk() {
-    # Python SDK. We test this before testing keepproxy: keepproxy runs
-    # run_test_server.py, which depends on the yaml package, which is in
-    # tests_require but not install_requires, and therefore does not get
-    # installed by setuptools until we run "setup.py test" *and* install
-    # the .egg files that setup.py downloads.
-
-    cd "$WORKSPACE/sdk/python" \
-        && python setup.py test $python_sdk_test
-    r=$?
-    easy_install *.egg
-    return $r
-}
-do_test python_sdk
-
-test_fuse() {
-    # Install test dependencies here too, in case run_test_server needs them.
-    cd "$WORKSPACE/services/fuse" \
-        && python setup.py test $fuse_test
-    r=$?
-    easy_install *.egg
-    return $r
-}
-do_test fuse
-
-test_nodemanager() {
-    cd "$WORKSPACE/services/nodemanager" && python setup.py test
-}
-do_test nodemanager
+# We must test sdk/python before testing services/keepproxy, because
+# keepproxy depends on sdk/python's test dependencies.
+for p in "${pythonstuff[@]}"
+do
+    do_test "$p" pip
+done
 
 for g in "${gostuff[@]}"
 do
@@ -419,7 +409,7 @@ done
 test_workbench() {
     cd "$WORKSPACE/apps/workbench" \
         && HOME="$GEMHOME" bundle install --no-deployment \
-        && HOME="$GEMHOME" bundle exec rake test $workbench_test
+        && HOME="$GEMHOME" bundle exec rake test $testargs[workbench]
 }
 do_test workbench
 
