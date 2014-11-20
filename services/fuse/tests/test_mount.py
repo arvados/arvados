@@ -67,8 +67,24 @@ class FuseMountTest(MountTestBase):
         cw.start_new_file('thing8.txt')
         cw.write("data 8")
 
+        cw.start_new_stream('edgecases')
+        for f in ":/./../.../-/*/\x01\\/ ".split("/"):
+            cw.start_new_file(f)
+            cw.write('x')
+
+        for f in ":/../.../-/*/\x01\\/ ".split("/"):
+            cw.start_new_stream('edgecases/dirs/' + f)
+            cw.start_new_file('x/x')
+            cw.write('x')
+
         self.testcollection = cw.finish()
         self.api.collections().create(body={"manifest_text":cw.manifest_text()}).execute()
+
+    def assertDirContents(self, subdir, expect_content):
+        path = self.mounttmp
+        if subdir:
+            path = os.path.join(path, subdir)
+        self.assertEqual(sorted(expect_content), sorted(os.listdir(path)))
 
     def runTest(self):
         # Create the request handler
@@ -83,21 +99,15 @@ class FuseMountTest(MountTestBase):
         operations.initlock.wait()
 
         # now check some stuff
-        d1 = os.listdir(self.mounttmp)
-        d1.sort()
-        self.assertEqual(['dir1', 'dir2', 'thing1.txt', 'thing2.txt'], d1)
-
-        d2 = os.listdir(os.path.join(self.mounttmp, 'dir1'))
-        d2.sort()
-        self.assertEqual(['thing3.txt', 'thing4.txt'], d2)
-
-        d3 = os.listdir(os.path.join(self.mounttmp, 'dir2'))
-        d3.sort()
-        self.assertEqual(['dir3', 'thing5.txt', 'thing6.txt'], d3)
-
-        d4 = os.listdir(os.path.join(self.mounttmp, 'dir2/dir3'))
-        d4.sort()
-        self.assertEqual(['thing7.txt', 'thing8.txt'], d4)
+        self.assertDirContents(None, ['thing1.txt', 'thing2.txt',
+                                      'edgecases', 'dir1', 'dir2'])
+        self.assertDirContents('dir1', ['thing3.txt', 'thing4.txt'])
+        self.assertDirContents('dir2', ['thing5.txt', 'thing6.txt', 'dir3'])
+        self.assertDirContents('dir2/dir3', ['thing7.txt', 'thing8.txt'])
+        self.assertDirContents('edgecases',
+                               "dirs/:/_/__/.../-/*/\x01\\/ ".split("/"))
+        self.assertDirContents('edgecases/dirs',
+                               ":/__/.../-/*/\x01\\/ ".split("/"))
 
         files = {'thing1.txt': 'data 1',
                  'thing2.txt': 'data 2',
@@ -311,3 +321,35 @@ class FuseHomeTest(MountTestBase):
         d3 = os.listdir(os.path.join(self.mounttmp, 'Unrestricted public data', 'GNU General Public License, version 3'))
         d3.sort()
         self.assertEqual(["GNU_General_Public_License,_version_3.pdf"], d3)
+
+
+class FuseUnitTest(unittest.TestCase):
+    def test_sanitize_filename(self):
+        acceptable = [
+            "foo.txt",
+            ".foo",
+            "..foo",
+            "...",
+            "foo...",
+            "foo..",
+            "foo.",
+            "-",
+            "\x01\x02\x03",
+            ]
+        unacceptable = [
+            "f\00",
+            "\00\00",
+            "/foo",
+            "foo/",
+            "//",
+            ]
+        for f in acceptable:
+            self.assertEqual(f, fuse.sanitize_filename(f))
+        for f in unacceptable:
+            self.assertNotEqual(f, fuse.sanitize_filename(f))
+            # The sanitized filename should be the same length, though.
+            self.assertEqual(len(f), len(fuse.sanitize_filename(f)))
+        # Special cases
+        self.assertEqual("_", fuse.sanitize_filename(""))
+        self.assertEqual("_", fuse.sanitize_filename("."))
+        self.assertEqual("__", fuse.sanitize_filename(".."))

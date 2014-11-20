@@ -1753,6 +1753,11 @@ if ($task_work) {
   remove_tree($task_work, {keep_root => 1});
 }
 
+my @git_archive_data = <DATA>;
+if (!@git_archive_data) {
+  # Nothing to extract -> nothing to install.
+  run_argv_and_exit();
+}
 
 open L, ">", "$destdir.lock" or die "$destdir.lock: $!";
 flock L, LOCK_EX;
@@ -1767,12 +1772,6 @@ open STDOUT, ">", "$destdir.log";
 open STDERR, ">&STDOUT";
 
 mkdir $destdir;
-my @git_archive_data = <DATA>;
-if (!@git_archive_data) {
-  # Nothing to extract -> nothing to install.
-  run_argv_and_exit();
-}
-
 open TARX, "|-", "tar", "-C", $destdir, "-xf", "-";
 print TARX @git_archive_data;
 if(!close(TARX)) {

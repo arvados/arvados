@@ -63,6 +63,26 @@ class PipelineInstancesTest < ActionDispatch::IntegrationTest
     end
     wait_for_ajax
 
+    # The input, after being specified, should still be displayed (#3382)
+    assert find('div.form-group', text: 'Foo/bar pair')
+
+    # The input, after being specified, should still be editable (#3382)
+    find('div.form-group', text: 'Foo/bar pair').
+      find('.btn', text: 'Choose').
+      click
+
+    within('.modal-dialog') do
+      assert(has_text?("Foo/bar pair"),
+             "pipeline input picker missing name of input")
+      wait_for_ajax
+      first('span', text: 'foo_tag').click
+      find('button', text: 'OK').click
+    end
+    wait_for_ajax
+
+    # For good measure, check one last time that the input, after being specified twice, is still be displayed (#3382)
+    assert find('div.form-group', text: 'Foo/bar pair')
+
     # Ensure that the collection's portable_data_hash, uuid and name
     # are saved in the desired places. (#4015)
 
@@ -309,6 +329,9 @@ class PipelineInstancesTest < ActionDispatch::IntegrationTest
     end
     wait_for_ajax
 
+    # The input, after being specified, should still be displayed (#3382)
+    assert find('div.form-group', text: 'Foo/bar pair')
+
     # Ensure that the collection's portable_data_hash, uuid and name
     # are saved in the desired places. (#4015)
 
@@ -365,4 +388,58 @@ class PipelineInstancesTest < ActionDispatch::IntegrationTest
         "Time difference did not match for start_at #{start_at}, finished_at #{finished_at}, ran_for #{match[2]}")
     end
   end
+
+  [
+    ['fuse', nil, 2, 20],                           # has 2 as of 11-07-2014
+    ['fuse', 'FUSE project', 1, 1],                 # 1 with this name
+    ['user1_with_load', nil, 30, 100],              # has 37 as of 11-07-2014
+    ['user1_with_load', 'pipeline_10', 2, 2],       # 2 with this name
+    ['user1_with_load', '000010pipelines', 10, 10], # owned_by the project zzzzz-j7d0g-000010pipelines
+    ['user1_with_load', '000025pipelines', 25, 25], # owned_by the project zzzzz-j7d0g-000025pipelines, two pages
+    ['admin', nil, 40, 200],
+    ['admin', 'FUSE project', 1, 1],
+    ['admin', 'pipeline_10', 2, 2],
+    ['active', 'containing at least two', 2, 100],  # component description
+    ['admin', 'containing at least two', 2, 100],
+    ['active', nil, 10, 100],
+    ['active', 'no such match', 0, 0],
+  ].each do |user, search_filter, expected_min, expected_max|
+    test "scroll pipeline instances page for #{user} with search filter #{search_filter}
+          and expect #{expected_min} <= found_items <= #{expected_max}" do
+      visit page_with_token(user, "/pipeline_instances")
+
+      if search_filter
+        find('.recent-pipeline-instances-filterable-control').set(search_filter)
+        # Wait for 250ms debounce timer (see filterable.js)
+        sleep 0.350
+        wait_for_ajax
+      end
+
+      page_scrolls = expected_max/20 + 2    # scroll num_pages+2 times to test scrolling is disabled when it should be
+      within('.arv-recent-pipeline-instances') do
+        (0..page_scrolls).each do |i|
+          page.execute_script "window.scrollBy(0,999000)"
+          begin
+            wait_for_ajax
+          rescue
+          end
+        end
+      end
+
+      # Verify that expected number of pipeline instances are found
+      found_items = page.all('tr[data-kind="arvados#pipelineInstance"]')
+      found_count = found_items.count
+      if expected_min == expected_max
+        assert_equal(true, found_count == expected_min,
+          "Not found expected number of items. Expected #{expected_min} and found #{found_count}")
+        assert page.has_no_text? 'request failed'
+      else
+        assert_equal(true, found_count>=expected_min,
+          "Found too few items. Expected at least #{expected_min} and found #{found_count}")
+        assert_equal(true, found_count<=expected_max,
+          "Found too many items. Expected at most #{expected_max} and found #{found_count}")
+      end
+    end
+  end
+
 end
