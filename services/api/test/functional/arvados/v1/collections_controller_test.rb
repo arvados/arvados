@@ -347,12 +347,12 @@ EOS
   test "search collections with 'any' operator" do
     authorize_with :active
     get :index, {
-      where: { any: ['contains', '83c2a7f91021234567'] }
+      where: { any: ['contains', 'd0bc8c7f34be170a7b7b'] }
     }
     assert_response :success
     found = assigns(:objects).collect(&:portable_data_hash)
     assert_equal 1, found.count
-    assert_equal true, !!found.index('1f4b0bc7583c2a7f910212345678c5e3+45')
+    assert_equal true, !!found.index('5bd9c1ad0bc8c7f34be170a7b7b39089+45')
   end
 
   [false, true].each do |permit_unsigned|

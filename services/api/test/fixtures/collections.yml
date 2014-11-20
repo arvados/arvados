@@ -347,7 +347,7 @@ collection_with_no_name_in_aproject:
 
 collection_to_search_for_in_aproject:
   uuid: zzzzz-4zz18-abcd6fx123409f7
-  portable_data_hash: 1f4b0bc7583c2a7f910212345678c5e3+45
+  portable_data_hash: 5bd9c1ad0bc8c7f34be170a7b7b39089+45
   owner_uuid: zzzzz-j7d0g-v955i6s2oi1cbso
   created_at: 2014-04-21 15:37:48 -0400
   modified_at: 2014-04-21 15:37:48 -0400
