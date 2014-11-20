@@ -27,6 +27,7 @@ class TagBuildWithCommit(egg_info):
             self.tag_build = '.{}.{}'.format(*git_tags)
         return egg_info.tags(self)
 
+
 setup(name='arvados-python-client',
       version='0.1',
       description='Arvados client library',

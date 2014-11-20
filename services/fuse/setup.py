@@ -27,6 +27,7 @@ class TagBuildWithCommit(egg_info):
             self.tag_build = '.{}.{}'.format(*git_tags)
         return egg_info.tags(self)
 
+
 setup(name='arvados_fuse',
       version='0.1',
       description='Arvados FUSE driver',
