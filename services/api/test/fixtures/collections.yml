@@ -345,6 +345,16 @@ collection_with_no_name_in_aproject:
   updated_at: 2014-04-21 15:37:48 -0400
   manifest_text: ". acbd18db4cc2f85cedef654fccc4a4d8+3 0:3:foo\n"
 
+collection_to_search_for_in_aproject:
+  uuid: zzzzz-4zz18-abcd6fx123409f7
+  portable_data_hash: 1f4b0bc7583c2a7f910212345678c5e3+45
+  owner_uuid: zzzzz-j7d0g-v955i6s2oi1cbso
+  created_at: 2014-04-21 15:37:48 -0400
+  modified_at: 2014-04-21 15:37:48 -0400
+  updated_at: 2014-04-21 15:37:48 -0400
+  manifest_text: ". juku76584cc2f85cedef654fjyhtgimh+3 0:3:foo\n"
+  name: "zzzzz-4zz18-abcd6fx123409f7 used to search with any"
+
 # Test Helper trims the rest of the file
 
 # Do not add your fixtures below this line as the rest of this file will be trimmed by test_helper
