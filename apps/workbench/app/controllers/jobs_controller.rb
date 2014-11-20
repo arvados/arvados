@@ -57,6 +57,9 @@ class JobsController < ApplicationController
   end
 
   def push_logs
+    @push_logs = stderr_log_records([@object.uuid]).select do |log_record|
+      log_record.properties[:text] =~ /crunchstat: (mem.*swap.*rss|.*-- interval)/
+    end
   end
 
   def index_pane_list

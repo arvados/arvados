@@ -65,7 +65,7 @@ $(document).on('ajax:complete ready', function() {
  */
 function processLogLineForChart( logLine ) {
     try {
-        var match = logLine.match(/(\S+) (\S+) (\S+) (\S+) stderr crunchstat: (\S+) (.*) -- interval (.*)/);
+        var match = logLine.match(/(\S+) (\S+) (\S+) (\S+) stderr crunchstat: (\S+) (.*)/);
         if( !match ) {
             match = logLine.match(/((?:Sun|Mon|Tue|Wed|Thu|Fri|Sat) (?:Jan|Feb|Mar|Apr|May|Jun|Jul|Aug|Sep|Oct|Nov|Dec) \d{1,2} \d\d:\d\d:\d\d \d{4}) (\S+) (\S+) (\S+) stderr crunchstat: (\S+) (.*) -- interval (.*)/);
             if( match ) {
@@ -73,122 +73,151 @@ function processLogLineForChart( logLine ) {
             }
         }
         if( match ) {
+            var rawDetailData = '';
+            var datum = null;
+
+            // we are interested in "-- interval" recordings
+            var intervalMatch = match[6].match(/(.*) -- interval (.*)/);
+            if( intervalMatch ) {
+                var intervalData = intervalMatch[2].trim().split(' ');
+                var dt = parseFloat(intervalData[0]);
+                var dsum = 0.0;
+                for(var i=2; i < intervalData.length; i += 2 ) {
+                    dsum += parseFloat(intervalData[i]);
+                }
+                datum = dsum/dt;
+                rawDetailData = intervalMatch[2];
+            } else {
+                // we are also interested in memory ("mem") recordings
+                var memoryMatch = match[6].match(/(\d+) cache (\d+) swap (\d+) pgmajfault (\d+) rss/);
+                if( memoryMatch ) {
+                    datum = parseInt(memoryMatch[4]);
+                    rawDetailData = match[6];
+                } else {
+                    // not interested
+                    return;
+                }
+            }
+
             // the timestamp comes first
             var timestamp = match[1].replace('_','T');
             // for the series use the task number (4th term) and then the first word after 'crunchstat:'
             var series = 'T' + match[4] + '-' + match[5];
-            if( $.inArray( series, jobGraphSeries) < 0 ) {
-                var newIndex = jobGraphSeries.push(series) - 1;
-                jobGraphSortedSeries.push(newIndex);
-                jobGraphSortedSeries.sort( function(a,b) {
-                    var matchA = jobGraphSeries[a].match(/^T(\d+)-(.*)/);
-                    var matchB = jobGraphSeries[b].match(/^T(\d+)-(.*)/);
-                    var termA = ('000000' + matchA[1]).slice(-6) + matchA[2];
-                    var termB = ('000000' + matchB[1]).slice(-6) + matchB[2];
-                    return termA > termB;
-                });
-                jobGraphMaxima[series] = null;
-                window.recreate = true;
-            }
-            var intervalData = match[7].trim().split(' ');
-            var dt = parseFloat(intervalData[0]);
-            var dsum = 0.0;
-            for(var i=2; i < intervalData.length; i += 2 ) {
-                dsum += parseFloat(intervalData[i]);
-            }
-            var datum = dsum/dt;
-            if( datum !== 0 && ( jobGraphMaxima[series] === null || jobGraphMaxima[series] < datum ) ) {
-                if( isJobSeriesRescalable(series) ) {
-                    // use old maximum to get a scale conversion
-                    var scaleConversion = jobGraphMaxima[series]/datum;
-                    // set new maximum and rescale the series
-                    jobGraphMaxima[series] = datum;
-                    rescaleJobGraphSeries( series, scaleConversion );
-                }
-                // and special calculation for cpus
-                if( /-cpu$/.test(series) ) {
-                    // divide the stat by the number of cpus
-                    var cpuCountMatch = match[6].match(/(\d+) cpus/);
-                    if( cpuCountMatch ) {
-                        datum = datum / cpuCountMatch[1];
-                    }
+
+            // special calculation for cpus
+            if( /-cpu$/.test(series) ) {
+                // divide the stat by the number of cpus
+                var cpuCountMatch = intervalMatch[1].match(/(\d+) cpus/);
+                if( cpuCountMatch ) {
+                    datum = datum / cpuCountMatch[1];
                 }
             }
-            // scale
-            var scaledDatum = null;
-            if( isJobSeriesRescalable(series) && jobGraphMaxima[series] !== null && jobGraphMaxima[series] !== 0 ) {
-                scaledDatum = datum/jobGraphMaxima[series]
-            } else {
-                scaledDatum = datum;
-            }
-            // identify x axis point, searching from the end of the array (most recent)
-            var found = false;
-            for( var i = jobGraphData.length - 1; i >= 0; i-- ) {
-                if( jobGraphData[i]['t'] === timestamp ) {
-                    found = true;
-                    jobGraphData[i][series] = scaledDatum;
-                    jobGraphData[i]['raw-'+series] = match[7];
-                    break;
-                } else if( jobGraphData[i]['t'] < timestamp  ) {
-                    // we've gone far enough back in time and this data is supposed to be sorted
-                    break;
-                }
-            }
-            // index counter from previous loop will have gone one too far, so add one
-            var insertAt = i+1;
-            if(!found) {
-                // create a new x point for this previously unrecorded timestamp
-                var entry = { 't': timestamp };
-                entry[series] = scaledDatum;
-                entry['raw-'+series] = match[7];
-                jobGraphData.splice( insertAt, 0, entry );
-                var shifted = [];
-                // now let's see about "scrolling" the graph, dropping entries that are too old (>10 minutes)
-                while( jobGraphData.length > 0
-                         && (Date.parse( jobGraphData[0]['t'] ).valueOf() + 10*60000 < Date.parse( jobGraphData[jobGraphData.length-1]['t'] ).valueOf()) ) {
-                    shifted.push(jobGraphData.shift());
-                }
-                if( shifted.length > 0 ) {
-                    // from those that we dropped, are any of them maxima? if so we need to rescale
-                    jobGraphSeries.forEach( function(series) {
-                        // test that every shifted entry in this series was either not a number (in which case we don't care)
-                        // or else approximately (to 2 decimal places) smaller than the scaled maximum (i.e. 1),
-                        // because otherwise we just scrolled off something that was a maximum point
-                        // and so we need to recalculate a new maximum point by looking at all remaining displayed points in the series
-                        if( isJobSeriesRescalable(series) && jobGraphMaxima[series] !== null
-                              && !shifted.every( function(e) { return( !$.isNumeric(e[series]) || e[series].toFixed(2) < 1.0 ) } ) ) {
-                            // check the remaining displayed points and find the new (scaled) maximum
-                            var seriesMax = null;
-                            jobGraphData.forEach( function(entry) {
-                                if( $.isNumeric(entry[series]) && (seriesMax === null || entry[series] > seriesMax)) {
-                                    seriesMax = entry[series];
-                                }
-                            });
-                            if( seriesMax !== null && seriesMax !== 0 ) {
-                                // set new actual maximum using the new maximum as the conversion conversion and rescale the series
-                                jobGraphMaxima[series] *= seriesMax;
-                                var scaleConversion = 1/seriesMax;
-                                rescaleJobGraphSeries( series, scaleConversion );
-                            }
-                            else {
-                                // we no longer have any data points displaying for this series
-                                jobGraphMaxima[series] = null;
-                            }
-                        }
-                    });
-                }
-                // add a 10 minute old null data point to keep the chart honest if the oldest point is less than 9.5 minutes old
-                if( jobGraphData.length > 0
-                      && (Date.parse( jobGraphData[0]['t'] ).valueOf() + 9.5*60000 > Date.parse( jobGraphData[jobGraphData.length-1]['t'] ).valueOf()) ) {
-                    var tenMinutesBefore = (new Date(Date.parse( jobGraphData[jobGraphData.length-1]['t'] ).valueOf() - 600*1000)).toISOString().replace('Z','');
-                    jobGraphData.unshift( { 't': tenMinutesBefore } );
-                }
-            }
+
+            addJobGraphDatum( timestamp, datum, series, rawDetailData );
+
             window.redraw = true;
         }
     } catch( err ) {
         console.log( 'Ignoring error trying to process log line: ' + err);
     }
+}
+
+function addJobGraphDatum(timestamp, datum, series, rawDetailData) {
+    if( $.inArray( series, jobGraphSeries ) < 0 ) {
+        var newIndex = jobGraphSeries.push(series) - 1;
+        jobGraphSortedSeries.push(newIndex);
+        jobGraphSortedSeries.sort( function(a,b) {
+            var matchA = jobGraphSeries[a].match(/^T(\d+)-(.*)/);
+            var matchB = jobGraphSeries[b].match(/^T(\d+)-(.*)/);
+            var termA = ('000000' + matchA[1]).slice(-6) + matchA[2];
+            var termB = ('000000' + matchB[1]).slice(-6) + matchB[2];
+            return termA > termB;
+        });
+        jobGraphMaxima[series] = null;
+        window.recreate = true;
+    }
+
+    if( datum !== 0 && ( jobGraphMaxima[series] === null || jobGraphMaxima[series] < datum ) ) {
+        if( isJobSeriesRescalable(series) ) {
+            // use old maximum to get a scale conversion
+            var scaleConversion = jobGraphMaxima[series]/datum;
+            // set new maximum and rescale the series
+            jobGraphMaxima[series] = datum;
+            rescaleJobGraphSeries( series, scaleConversion );
+        }
+    }
+
+    // scale
+    var scaledDatum = null;
+    if( isJobSeriesRescalable(series) && jobGraphMaxima[series] !== null && jobGraphMaxima[series] !== 0 ) {
+        scaledDatum = datum/jobGraphMaxima[series]
+    } else {
+        scaledDatum = datum;
+    }
+    // identify x axis point, searching from the end of the array (most recent)
+    var found = false;
+    for( var i = jobGraphData.length - 1; i >= 0; i-- ) {
+        if( jobGraphData[i]['t'] === timestamp ) {
+            found = true;
+            jobGraphData[i][series] = scaledDatum;
+            jobGraphData[i]['raw-'+series] = rawDetailData;
+            break;
+        } else if( jobGraphData[i]['t'] < timestamp  ) {
+            // we've gone far enough back in time and this data is supposed to be sorted
+            break;
+        }
+    }
+    // index counter from previous loop will have gone one too far, so add one
+    var insertAt = i+1;
+    if(!found) {
+        // create a new x point for this previously unrecorded timestamp
+        var entry = { 't': timestamp };
+        entry[series] = scaledDatum;
+        entry['raw-'+series] = rawDetailData;
+        jobGraphData.splice( insertAt, 0, entry );
+        var shifted = [];
+        // now let's see about "scrolling" the graph, dropping entries that are too old (>10 minutes)
+        while( jobGraphData.length > 0
+                 && (Date.parse( jobGraphData[0]['t'] ).valueOf() + 10*60000 < Date.parse( jobGraphData[jobGraphData.length-1]['t'] ).valueOf()) ) {
+            shifted.push(jobGraphData.shift());
+        }
+        if( shifted.length > 0 ) {
+            // from those that we dropped, are any of them maxima? if so we need to rescale
+            jobGraphSeries.forEach( function(series) {
+                // test that every shifted entry in this series was either not a number (in which case we don't care)
+                // or else approximately (to 2 decimal places) smaller than the scaled maximum (i.e. 1),
+                // because otherwise we just scrolled off something that was a maximum point
+                // and so we need to recalculate a new maximum point by looking at all remaining displayed points in the series
+                if( isJobSeriesRescalable(series) && jobGraphMaxima[series] !== null
+                      && !shifted.every( function(e) { return( !$.isNumeric(e[series]) || e[series].toFixed(2) < 1.0 ) } ) ) {
+                    // check the remaining displayed points and find the new (scaled) maximum
+                    var seriesMax = null;
+                    jobGraphData.forEach( function(entry) {
+                        if( $.isNumeric(entry[series]) && (seriesMax === null || entry[series] > seriesMax)) {
+                            seriesMax = entry[series];
+                        }
+                    });
+                    if( seriesMax !== null && seriesMax !== 0 ) {
+                        // set new actual maximum using the new maximum as the conversion conversion and rescale the series
+                        jobGraphMaxima[series] *= seriesMax;
+                        var scaleConversion = 1/seriesMax;
+                        rescaleJobGraphSeries( series, scaleConversion );
+                    }
+                    else {
+                        // we no longer have any data points displaying for this series
+                        jobGraphMaxima[series] = null;
+                    }
+                }
+            });
+        }
+        // add a 10 minute old null data point to keep the chart honest if the oldest point is less than 9.9 minutes old
+        if( jobGraphData.length > 0
+              && (Date.parse( jobGraphData[0]['t'] ).valueOf() + 9.9*60000 > Date.parse( jobGraphData[jobGraphData.length-1]['t'] ).valueOf()) ) {
+            var tenMinutesBefore = (new Date(Date.parse( jobGraphData[jobGraphData.length-1]['t'] ).valueOf() - 600*1000)).toISOString().replace('Z','');
+            jobGraphData.unshift( { 't': tenMinutesBefore } );
+        }
+    }
+
 }
 
 function createJobGraph(elementName) {
