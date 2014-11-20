@@ -24,9 +24,8 @@ module JobsHelper
     filters += extra_filters if extra_filters
     last_entry = Log.order('id DESC').limit(1).filter(filters).results.first
     if last_entry
-      filters += [["event_at", ">=", last_entry.event_at - 5.minutes]]
+      filters += [["event_at", ">=", last_entry.event_at - 10.minutes]]
       Log.order('id DESC')
-         .limit(250)
          .filter(filters)
          .results
     else

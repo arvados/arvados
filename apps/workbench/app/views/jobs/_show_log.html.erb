@@ -22,10 +22,7 @@
   window.jobGraphSeries = [];
   window.jobGraphSortedSeries = [];
   window.jobGraphMaxima = {};
-  <% stderr_log_records([@object.uuid],[['properties','~','crunchstat:.*-- interval']])
-        .each do |log_record| %>
-    processLogLineForChart( '<%=j log_record.properties[:text] %>' );
-  <% end %>
+  $.get('<%= push_logs_job_path(@object) %>');
   createJobGraph('log_graph_div');
 <% end %>
 

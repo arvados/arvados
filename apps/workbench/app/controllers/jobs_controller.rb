@@ -56,6 +56,9 @@ class JobsController < ApplicationController
     super
   end
 
+  def push_logs
+  end
+
   def index_pane_list
     if params[:uuid]
       %w(Recent Provenance)
