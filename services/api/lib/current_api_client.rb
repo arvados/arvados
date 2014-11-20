@@ -108,7 +108,7 @@ module CurrentApiClient
     if not $all_users_group
       act_as_system_user do
         ActiveRecord::Base.transaction do
-          $system_group = Group.
+          $all_users_group = Group.
             where(uuid: all_users_group_uuid).first_or_create do |g|
             g.update_attributes(name: "All users",
                                 description: "All users")
