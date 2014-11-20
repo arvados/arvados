@@ -23,14 +23,20 @@
       </p><p>
 
         <i><%= Rails.configuration.site_name %> uses your name and
-	email address only for identification, and does not retrieve
-	any other personal information from Google.</i>
+	  email address only for identification, and does not retrieve
+	  any other personal information from Google.</i>
 
       </p>
       <p>
-	<%= link_to arvados_api_client.arvados_login_url(return_to: request.url), class: "pull-right btn btn-primary" do %>
-          Log in to <%= Rails.configuration.site_name %>
-          <i class="fa fa-fw fa-arrow-circle-right"></i>
+        <!-- <%= arvados_api_client.arvados_login_url %> -->
+        <%= form_tag(arvados_api_client.arvados_login_url(), :method => :get, :authenticity_token => false) do %>
+          <%= hidden_field_tag 'return_to', request.url %>
+          <div class="row pull-right">
+          <%= select_tag "auth_method", "<option value='google'>Google OpenID</option><option value='google_oauth2'>Google OAuth2</option>".html_safe, class: "form-control", style: "width: 15em; display: inline" %>
+	  <%= button_tag class: "btn btn-primary" do %>
+            Log in to <%= Rails.configuration.site_name %> <i class="fa fa-fw fa-arrow-circle-right"></i>
+          <% end %>
+        </div>
         <% end %>
       </p>
     </div>

@@ -25,21 +25,29 @@ module OmniAuth
           'raw_info' => raw_info
         }
       end
-      
+
+      def authorize_params
+        options.authorize_params[:auth_method] = request.params['auth_method']
+        super
+      end
+
       def client
         options.client_options[:site] = options[:custom_provider_url]
         options.client_options[:authorize_url] = "#{options[:custom_provider_url]}/auth/josh_id/authorize"
         options.client_options[:access_token_url] = "#{options[:custom_provider_url]}/auth/josh_id/access_token"
+        if Rails.configuration.sso_insecure
+          options.client_options[:ssl] = {verify_mode: OpenSSL::SSL::VERIFY_NONE}
+        end
         ::OAuth2::Client.new(options.client_id, options.client_secret, deep_symbolize(options.client_options))
       end
 
       def callback_url
-        full_host + script_name + callback_path + query_string
+        full_host + script_name + callback_path + "?return_to=" + CGI.escape(request.params['return_to'])
       end
 
       def raw_info
         @raw_info ||= access_token.get("/auth/josh_id/user.json?oauth_token=#{access_token.token}").parsed
       end
-    end 
+    end
   end
 end
