@@ -399,34 +399,15 @@ class User < ArvadosModel
 
   # add the user to the 'All users' group
   def create_user_group_link
-    # Look up the "All users" group (we expect uuid *-*-fffffffffffffff).
-    group = Group.where(name: 'All users').select do |g|
-      g[:uuid].match /-f+$/
-    end.first
-
-    if not group
-      logger.warn "No 'All users' group with uuid '*-*-fffffffffffffff'."
-      raise "No 'All users' group with uuid '*-*-fffffffffffffff' is found"
-    else
-      logger.info { "\"All users\" group uuid: " + group[:uuid] }
-
-      group_perms = Link.where(tail_uuid: self.uuid,
-                              head_uuid: group[:uuid],
-                              link_class: 'permission',
-                              name: 'can_read')
-
-      if !group_perms.any?
-        group_perm = Link.create(tail_uuid: self.uuid,
-                                 head_uuid: group[:uuid],
-                                 link_class: 'permission',
-                                 name: 'can_read')
-        logger.info { "group permission: " + group_perm[:uuid] }
-      else
-        group_perm = group_perms.first
-      end
-
-      return group_perm
-    end
+    return (Link.where(tail_uuid: self.uuid,
+                       head_uuid: all_users_group[:uuid],
+                       link_class: 'permission',
+                       name: 'can_read').first
+            or
+            Link.create(tail_uuid: self.uuid,
+                        head_uuid: all_users_group[:uuid],
+                        link_class: 'permission',
+                        name: 'can_read'))
   end
 
   # Give the special "System group" permission to manage this user and
