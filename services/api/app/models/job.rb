@@ -171,10 +171,12 @@ class Job < ArvadosModel
                                :arvados_sdk_version) do |git_search|
       commits = Commit.find_commit_range(current_user, "arvados",
                                          nil, git_search, nil)
-      if commits.andand.any?
-        [true, commits.first]
-      else
+      if commits.nil? or commits.empty?
         [false, "#{git_search} does not resolve to a commit"]
+      elsif not runtime_constraints["docker_image"]
+        [false, "cannot be specified without a Docker image constraint"]
+      else
+        [true, commits.first]
       end
     end
   end

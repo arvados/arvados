@@ -671,7 +671,10 @@ class Arvados::V1::JobReuseControllerTest < ActionController::TestCase
   test "can't reuse job with older Arvados SDK version" do
     params = {
       script_version: "31ce37fe365b3dc204300a3e4c396ad333ed0556",
-      runtime_constraints: {"arvados_sdk_version" => "master"},
+      runtime_constraints: {
+        "arvados_sdk_version" => "master",
+        "docker_image" => links(:docker_image_collection_tag).name,
+      },
     }
     check_new_job_created_from(job: params)
   end
