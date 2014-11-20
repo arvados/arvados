@@ -1,4 +1,5 @@
 class JobsController < ApplicationController
+  include JobsHelper
 
   def generate_provenance(jobs)
     return if params['tab_pane'] != "Provenance"
