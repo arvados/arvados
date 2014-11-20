@@ -30,10 +30,14 @@ class TestArvGet < Minitest::Test
   end
 
   def test_file_to_dev_stdout
+    skip "Waiting unitl #4534 is implemented"
+
     test_file_to_stdout('/dev/stdout')
   end
 
   def test_file_to_stdout(specify_stdout_as='-')
+    skip "Waiting unitl #4534 is implemented"
+
     out, err = capture_subprocess_io do
       assert_arv_get @@foo_manifest_locator + '/foo', specify_stdout_as
     end
@@ -42,6 +46,8 @@ class TestArvGet < Minitest::Test
   end
 
   def test_file_to_file
+    skip "Waiting unitl #4534 is implemented"
+
     remove_tmp_foo
     out, err = capture_subprocess_io do
       assert_arv_get @@foo_manifest_locator + '/foo', 'tmp/foo'
@@ -76,6 +82,8 @@ class TestArvGet < Minitest::Test
   end
 
   def test_file_to_file_force_overwrite
+    skip "Waiting unitl #4534 is implemented"
+
     File.open './tmp/foo', 'wb' do |f|
       f.write 'baz'
     end
@@ -89,6 +97,8 @@ class TestArvGet < Minitest::Test
   end
 
   def test_file_to_file_skip_existing
+    skip "Waiting unitl #4534 is implemented"
+
     File.open './tmp/foo', 'wb' do |f|
       f.write 'baz'
     end
@@ -102,6 +112,8 @@ class TestArvGet < Minitest::Test
   end
 
   def test_file_to_dir
+    skip "Waiting unitl #4534 is implemented"
+
     remove_tmp_foo
     out, err = capture_subprocess_io do
       assert_arv_get @@foo_manifest_locator + '/foo', 'tmp/'
@@ -144,6 +156,8 @@ class TestArvGet < Minitest::Test
   end
 
   def test_manifest_root_to_dir
+    skip "Waiting unitl #4534 is implemented"
+
     remove_tmp_foo
     out, err = capture_subprocess_io do
       assert_arv_get '-r', @@foo_manifest_locator + '/', 'tmp/'
@@ -154,6 +168,8 @@ class TestArvGet < Minitest::Test
   end
 
   def test_manifest_root_to_dir_noslash
+    skip "Waiting unitl #4534 is implemented"
+
     remove_tmp_foo
     out, err = capture_subprocess_io do
       assert_arv_get '-r', @@foo_manifest_locator + '/', 'tmp'
@@ -164,6 +180,8 @@ class TestArvGet < Minitest::Test
   end
 
   def test_display_md5sum
+    skip "Waiting unitl #4534 is implemented"
+
     remove_tmp_foo
     out, err = capture_subprocess_io do
       assert_arv_get '-r', '--md5sum', @@foo_manifest_locator + '/', 'tmp/'
@@ -174,6 +192,8 @@ class TestArvGet < Minitest::Test
   end
 
   def test_md5sum_nowrite
+    skip "Waiting unitl #4534 is implemented"
+
     remove_tmp_foo
     out, err = capture_subprocess_io do
       assert_arv_get '-n', '--md5sum', @@foo_manifest_locator + '/', 'tmp/'
@@ -184,6 +204,8 @@ class TestArvGet < Minitest::Test
   end
 
   def test_sha1_nowrite
+    skip "Waiting unitl #4534 is implemented"
+
     remove_tmp_foo
     out, err = capture_subprocess_io do
       assert_arv_get '-n', '-r', '--hash', 'sha1', @@foo_manifest_locator+'/', 'tmp/'
@@ -194,6 +216,8 @@ class TestArvGet < Minitest::Test
   end
 
   def test_block_to_file
+    skip "Waiting unitl #4534 is implemented"
+
     remove_tmp_foo
     out, err = capture_subprocess_io do
       assert_arv_get @@foo_manifest_locator, 'tmp/foo'
@@ -206,6 +230,8 @@ class TestArvGet < Minitest::Test
   end
 
   def test_create_directory_tree
+    skip "Waiting unitl #4534 is implemented"
+
     `rm -rf ./tmp/arv-get-test/`
     Dir.mkdir './tmp/arv-get-test'
     out, err = capture_subprocess_io do
@@ -217,6 +243,8 @@ class TestArvGet < Minitest::Test
   end
 
   def test_create_partial_directory_tree
+    skip "Waiting unitl #4534 is implemented"
+
     `rm -rf ./tmp/arv-get-test/`
     Dir.mkdir './tmp/arv-get-test'
     out, err = capture_subprocess_io do

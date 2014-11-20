@@ -9,6 +9,8 @@ end
 class TestArvTag < Minitest::Test
 
   def test_no_args
+    skip "Waiting unitl #4534 is implemented"
+
     # arv-tag exits with failure if run with no args
     out, err = capture_subprocess_io do
       assert_equal false, arv_tag
