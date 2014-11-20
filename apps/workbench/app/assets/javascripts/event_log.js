@@ -218,7 +218,8 @@ function createJobGraph(elementName) {
                 s += "<div class='morris-hover-point' style='color: ";
                 s += options.lineColors[sortedIndex];
                 s += "'>";
-                s += options.labels[sortedIndex];
+                var labelMatch = options.labels[sortedIndex].match(/^T(\d+)-(.*)/);
+                s += 'Task ' + labelMatch[1] + ' ' + labelMatch[2];
                 s += ": ";
                 if ( !(typeof datum === 'undefined') ) {
                     if( isJobSeriesRescalable( series ) ) {
