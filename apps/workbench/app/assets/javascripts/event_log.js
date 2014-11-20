@@ -76,6 +76,9 @@ function processLogLineForChart( logLine ) {
             var rawDetailData = '';
             var datum = null;
 
+            // the timestamp comes first
+            var timestamp = match[1].replace('_','T');
+
             // we are interested in "-- interval" recordings
             var intervalMatch = match[6].match(/(.*) -- interval (.*)/);
             if( intervalMatch ) {
@@ -87,33 +90,33 @@ function processLogLineForChart( logLine ) {
                 }
                 datum = dsum/dt;
                 rawDetailData = intervalMatch[2];
+
+                // for the series name use the task number (4th term) and then the first word after 'crunchstat:'
+                var series = 'T' + match[4] + '-' + match[5];
+
+                // special calculation for cpus
+                if( /-cpu$/.test(series) ) {
+                    // divide the stat by the number of cpus
+                    var cpuCountMatch = intervalMatch[1].match(/(\d+) cpus/);
+                    if( cpuCountMatch ) {
+                        datum = datum / cpuCountMatch[1];
+                    }
+                }
+
+                addJobGraphDatum( timestamp, datum, series, rawDetailData );
             } else {
                 // we are also interested in memory ("mem") recordings
                 var memoryMatch = match[6].match(/(\d+) cache (\d+) swap (\d+) pgmajfault (\d+) rss/);
                 if( memoryMatch ) {
-                    datum = parseInt(memoryMatch[4]);
                     rawDetailData = match[6];
+                    // one datapoint for rss and one for swap - only show the rawDetailData for rss
+                    addJobGraphDatum( timestamp, parseInt(memoryMatch[4]), 'T' + match[4] + "-rss", rawDetailData );
+                    addJobGraphDatum( timestamp, parseInt(memoryMatch[2]), 'T' + match[4] + "-swap", '' );
                 } else {
                     // not interested
                     return;
                 }
             }
-
-            // the timestamp comes first
-            var timestamp = match[1].replace('_','T');
-            // for the series use the task number (4th term) and then the first word after 'crunchstat:'
-            var series = 'T' + match[4] + '-' + match[5];
-
-            // special calculation for cpus
-            if( /-cpu$/.test(series) ) {
-                // divide the stat by the number of cpus
-                var cpuCountMatch = intervalMatch[1].match(/(\d+) cpus/);
-                if( cpuCountMatch ) {
-                    datum = datum / cpuCountMatch[1];
-                }
-            }
-
-            addJobGraphDatum( timestamp, datum, series, rawDetailData );
 
             window.redraw = true;
         }
@@ -123,6 +126,7 @@ function processLogLineForChart( logLine ) {
 }
 
 function addJobGraphDatum(timestamp, datum, series, rawDetailData) {
+    // check for new series
     if( $.inArray( series, jobGraphSeries ) < 0 ) {
         var newIndex = jobGraphSeries.push(series) - 1;
         jobGraphSortedSeries.push(newIndex);
@@ -131,7 +135,7 @@ function addJobGraphDatum(timestamp, datum, series, rawDetailData) {
             var matchB = jobGraphSeries[b].match(/^T(\d+)-(.*)/);
             var termA = ('000000' + matchA[1]).slice(-6) + matchA[2];
             var termB = ('000000' + matchB[1]).slice(-6) + matchB[2];
-            return termA > termB;
+            return termA > termB ? 1 : -1;
         });
         jobGraphMaxima[series] = null;
         window.recreate = true;
@@ -256,7 +260,7 @@ function createJobGraph(elementName) {
                 var labelMatch = options.labels[sortedIndex].match(/^T(\d+)-(.*)/);
                 s += 'Task ' + labelMatch[1] + ' ' + labelMatch[2];
                 s += ": ";
-                if ( !(typeof datum === 'undefined') ) {
+                if ( datum !== undefined ) {
                     if( isJobSeriesRescalable( series ) ) {
                         datum *= jobGraphMaxima[series];
                     }
