@@ -221,20 +221,12 @@ class PipelineInstancesTest < ActionDispatch::IntegrationTest
   end
 
   [
-    ['active', false, false, false, 'Two Part Pipeline Template', false],
-    ['active', false, false, true, 'Two Part Pipeline Template', false],
-    ['active', true, false, false, 'Two Part Pipeline Template', false],
-    ['active', true, true, false, 'Two Part Pipeline Template', false],
-    ['active', true, false, true, 'Two Part Pipeline Template', false],
-    ['active', true, true, true, 'Two Part Pipeline Template', false],
-    ['project_viewer', false, false, true, 'Two Part Pipeline Template', false],
-    ['project_viewer', true, false, true, 'Two Part Pipeline Template', false],
-    ['project_viewer', true, true, true, 'Two Part Pipeline Template', false],
-    ['active', false, false, false, 'Two Part Template with dataclass File', true],
-    ['active', false, false, true, 'Two Part Template with dataclass File', true],
-  ].each do |user, with_options, choose_options, in_aproject, template_name, choose_file|
-    test "Rerun pipeline instance as #{user} using options #{with_options} #{choose_options}
-          in #{in_aproject} with #{template_name} with file #{choose_file}" do
+    [true, 'Two Part Pipeline Template', false],
+    [false, 'Two Part Pipeline Template', false],
+    [true, 'Two Part Template with dataclass File', true],
+    [false, 'Two Part Template with dataclass File', true],
+  ].each do |in_aproject, template_name, choose_file|
+    test "Run pipeline instance in #{in_aproject} with #{template_name} with file #{choose_file}" do
       visit page_with_token('active')
 
       # need bigger modal size when choosing a file from collection
@@ -246,6 +238,47 @@ class PipelineInstancesTest < ActionDispatch::IntegrationTest
       end
 
       create_and_run_pipeline_in_aproject in_aproject, template_name, choose_file
+      instance_path = current_path
+
+      # Pause the pipeline
+      find('a,button', text: 'Pause').click
+      assert page.has_text? 'Paused'
+      page.assert_no_selector 'a.disabled,button.disabled', text: 'Resume'
+      page.assert_selector 'a,button', text: 'Re-run with latest'
+      page.assert_selector 'a,button', text: 'Re-run options'
+
+      # Verify that the newly created instance is created in the right project.
+      assert page.has_text? 'Home'
+      if in_aproject
+        assert page.has_text? 'A Project'
+      else
+        assert page.has_no_text? 'A Project'
+      end
+    end
+  end
+
+  [
+    ['active', false, false, false],
+    ['active', false, false, true],
+    ['active', true, false, false],
+    ['active', true, true, false],
+    ['active', true, false, true],
+    ['active', true, true, true],
+    ['project_viewer', false, false, true],
+    ['project_viewer', true, true, true],
+  ].each do |user, with_options, choose_options, in_aproject|
+    test "Rerun pipeline instance as #{user} using options #{with_options} #{choose_options} in #{in_aproject}" do
+      visit page_with_token('active')
+
+      # need bigger modal size when choosing a file from collection
+      Capybara.current_session.driver.browser.manage.window.resize_to(1024, 768)
+
+      if in_aproject
+        find("#projects-menu").click
+        find('.dropdown-menu a,button', text: 'A Project').click
+      end
+
+      create_and_run_pipeline_in_aproject in_aproject, 'Two Part Pipeline Template'
       instance_path = current_path
 
       # Pause the pipeline
@@ -283,8 +316,7 @@ class PipelineInstancesTest < ActionDispatch::IntegrationTest
       # Verify that the newly created instance is created in the right project.
       # In case of project_viewer user, since the use cannot write to the project,
       # the pipeline should have been created in the user's Home project.
-      rerun_instance_path = current_path
-      assert_not_equal instance_path, rerun_instance_path, 'Rerun instance path expected to be different'
+      assert_not_equal instance_path, current_path, 'Rerun instance path expected to be different'
       assert page.has_text? 'Home'
       if in_aproject && (user != 'project_viewer')
         assert page.has_text? 'A Project'
@@ -295,7 +327,7 @@ class PipelineInstancesTest < ActionDispatch::IntegrationTest
   end
 
   # Create and run a pipeline for 'Two Part Pipeline Template' in 'A Project'
-  def create_and_run_pipeline_in_aproject in_aproject, template_name, choose_file
+  def create_and_run_pipeline_in_aproject in_aproject, template_name, choose_file=false
     # create a pipeline instance
     find('.btn', text: 'Run a pipeline').click
     within('.modal-dialog') do
