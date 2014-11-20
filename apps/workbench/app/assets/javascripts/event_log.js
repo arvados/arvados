@@ -254,12 +254,13 @@ function createJobGraph(elementName) {
                 var sortedIndex = jobGraphSortedSeries[i];
                 var series = options.ykeys[sortedIndex];
                 var datum = options.data[index][series];
-                s += "<div class='morris-hover-point' style='color: ";
-                s += options.lineColors[sortedIndex];
-                s += "'>";
+                var point = ''
+                point += "<div class='morris-hover-point' style='color: ";
+                point += options.lineColors[sortedIndex];
+                point += "'>";
                 var labelMatch = options.labels[sortedIndex].match(/^T(\d+)-(.*)/);
-                s += 'Task ' + labelMatch[1] + ' ' + labelMatch[2];
-                s += ": ";
+                point += 'Task ' + labelMatch[1] + ' ' + labelMatch[2];
+                point += ": ";
                 if ( datum !== undefined ) {
                     if( isJobSeriesRescalable( series ) ) {
                         datum *= jobGraphMaxima[series];
@@ -274,11 +275,12 @@ function createJobGraph(elementName) {
                         }
                         datum += ' (' + options.data[index]['raw-'+series] + ')';
                     }
-                    s += datum;
+                    point += datum;
                 } else {
-                    s += '-';
+                    continue;
                 }
-                s += "</div> ";
+                point += "</div> ";
+                s += point;
             }
             return s;
         }
