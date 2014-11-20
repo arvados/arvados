@@ -65,9 +65,9 @@ $(document).on('ajax:complete ready', function() {
  */
 function processLogLineForChart( logLine ) {
     try {
-        var match = logLine.match(/(\S+) (\S+) (\S+) (\S+) stderr crunchstat: (\S+) (.*)/);
+        var match = logLine.match(/^(\S+) (\S+) (\S+) (\S+) stderr crunchstat: (\S+) (.*)/);
         if( !match ) {
-            match = logLine.match(/((?:Sun|Mon|Tue|Wed|Thu|Fri|Sat) (?:Jan|Feb|Mar|Apr|May|Jun|Jul|Aug|Sep|Oct|Nov|Dec) \d{1,2} \d\d:\d\d:\d\d \d{4}) (\S+) (\S+) (\S+) stderr crunchstat: (\S+) (.*) -- interval (.*)/);
+            match = logLine.match(/^((?:Sun|Mon|Tue|Wed|Thu|Fri|Sat) (?:Jan|Feb|Mar|Apr|May|Jun|Jul|Aug|Sep|Oct|Nov|Dec) \d{1,2} \d\d:\d\d:\d\d \d{4}) (\S+) (\S+) (\S+) stderr crunchstat: (\S+) (.*)/);
             if( match ) {
                 match[1] = (new Date(match[1] + ' UTC')).toISOString().replace('Z','');
             }
