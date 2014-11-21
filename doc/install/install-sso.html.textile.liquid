@@ -4,13 +4,13 @@ navsection: installguide
 title: Install Single Sign On (SSO) server
 ...
 
-{% include 'skip_sso_server_install' %}
-
 h2(#dependencies). Install dependencies
 
 Make sure you have "Ruby and bundler":install-manual-prerequisites-ruby.html installed.
 
 h2(#install). Install SSO server
+
+h3. Get SSO server code and create database
 
 <notextile>
 <pre><code>~$ <span class="userinput">cd $HOME</span> # (or wherever you want to install)
@@ -19,7 +19,37 @@ h2(#install). Install SSO server
 ~/sso-devise-omniauth-provider$ <span class="userinput">bundle install</span>
 ~/sso-devise-omniauth-provider$ <span class="userinput">rake db:create</span>
 ~/sso-devise-omniauth-provider$ <span class="userinput">rake db:migrate</span>
+</code></pre>
+</notextile>
+
+h3. Configure Rails secret
+
+Create a secret:
+
+<notextile>
+<pre><code>~/sso-devise-omniauth-provider$ <span class="userinput">cp -i config/initializers/secret_token.rb.example config/initializers/secret_token.rb</span>
 ~/sso-devise-omniauth-provider$ <span class="userinput">rake secret</span>
+zzzzzzzzzzzzzzzzzzzzzzzzzzzzzzzzzzzzzzzzzzzzzzzzzzzzzzzz
+</code></pre>
+</notextile>
+
+Edit @config/initializers/secret_token.rb@ to set @config.secret_token@ to the string produced by @rake secret@.
+
+h3. Configure upstream authentication provider
+
+<notextile>
+<pre><code>~/sso-devise-omniauth-provider$ <span class="userinput">cp -i config/environment.rb.example config/environment.rb</span>
+</code></pre>
+</notextile>
+
+Edit @config/environment.rb@ to set @config.google_client_id@ and @config.google_client_secret@.  See "Omniauth Google OAuth2 gem documentation":https://github.com/zquestz/omniauth-google-oauth2 and "Using OAuth 2.0 to Access Google APIs":https://developers.google.com/accounts/docs/OAuth2 for information about using the "Google Developers Console":https://console.developers.google.com to get a Google client id and client secret.
+
+h3(#client). Create arvados-server client
+
+Use @rails console@ to create a @Client@ record that will be used by the Arvados API server.  The values of @app_id@ and @app_secret@ correspond to the @APP_ID@ and @APP_SECRET@ that must be set in in "Setting up Omniauth in the API server.":install-api-server.html#omniauth
+
+<notextile>
+<pre><code>~/sso-devise-omniauth-provider$ <span class="userinput">rake secret</span>
 xxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxx
 ~/sso-devise-omniauth-provider$ <span class="userinput">rails console</span>
 irb(main):001:0&gt; <span class="userinput">c = Client.new</span>
@@ -28,6 +58,5 @@ irb(main):003:0&gt; <span class="userinput">c.app_id = "arvados-server"</span>
 irb(main):004:0&gt; <span class="userinput">c.app_secret = "xxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxx"</span>
 irb(main):005:0&gt; <span class="userinput">c.save!</span>
 irb(main):006:0&gt; <span class="userinput">quit</span>
-~/sso-devise-omniauth-provider$ <span class="userinput">rails server --port=3002</span>
 </code></pre>
 </notextile>
