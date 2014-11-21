@@ -119,9 +119,6 @@ report_outcomes() {
 declare -a failures
 declare -A skip
 
-# Always skip CLI tests. They don't know how to use run_test_server.py.
-skip[cli]=1
-
 while [[ -n "$1" ]]
 do
     arg="$1"; shift
