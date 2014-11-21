@@ -154,8 +154,15 @@ do
 done
 
 # Sanity check
+if ! [[ -n "$WORKSPACE" ]]; then
+  echo >&2 "$helpmessage"
+  echo >&2
+  echo >&2 "Error: WORKSPACE environment variable not set"
+  echo >&2
+  exit 1
+fi
+
 echo "WORKSPACE=$WORKSPACE"
-[[ -n "$WORKSPACE" ]] || fatal "WORKSPACE not set"
 
 if [[ -z "$CONFIGSRC" ]] && [[ -d "$HOME/arvados-api-server" ]]; then
     # Jenkins expects us to use this by default.
