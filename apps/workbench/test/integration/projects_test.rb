@@ -4,12 +4,18 @@ require 'headless'
 
 class ProjectsTest < ActionDispatch::IntegrationTest
   setup do
-    Capybara.current_driver = Capybara.javascript_driver
+    headless = Headless.new
+    headless.start
+    Capybara.current_driver = :selenium
+
+    # project tests need bigger page size to be able to see all the buttons
+    Capybara.current_session.driver.browser.manage.window.resize_to(1152, 768)
   end
 
   test 'Check collection count for A Project in the tab pane titles' do
     project_uuid = api_fixture('groups')['aproject']['uuid']
     visit page_with_token 'active', '/projects/' + project_uuid
+    wait_for_ajax
     collection_count = page.all("[data-pk*='collection']").count
     assert_selector '#Data_collections-tab span', text: "(#{collection_count})"
   end
@@ -222,7 +228,9 @@ class ProjectsTest < ActionDispatch::IntegrationTest
       assert(has_link?("Write"),
              "failed to change access level on new share")
       click_on "Revoke"
+      page.driver.browser.switch_to.alert.accept
     end
+    wait_for_ajax
     using_wait_time(Capybara.default_wait_time * 3) do
       assert(page.has_no_text?(name),
              "new share row still exists after being revoked")
@@ -493,10 +501,6 @@ class ProjectsTest < ActionDispatch::IntegrationTest
                    item_list_parameter,
                    sorted = false,
                    sort_parameters = nil)
-    headless = Headless.new
-    headless.start
-    Capybara.current_driver = :selenium
-
     project_uuid = api_fixture('groups')[project_name]['uuid']
     visit page_with_token 'user1_with_load', '/projects/' + project_uuid
 
