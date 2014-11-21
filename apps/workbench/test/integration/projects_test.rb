@@ -638,4 +638,32 @@ class ProjectsTest < ActionDispatch::IntegrationTest
     end
   end
 
+  test "error while loading tab" do
+    original_arvados_v1_base = Rails.configuration.arvados_v1_base
+
+    begin
+      visit page_with_token 'active', '/projects/' + api_fixture('groups')['aproject']['uuid']
+
+      # Point to a bad api server url to generate error
+      Rails.configuration.arvados_v1_base = "https://[100::f]:1/"
+      click_link 'Other objects'
+      within '#Other_objects' do
+        # Error
+        assert page.has_link?('Reload tab', 'Did not find Reload tab button')
+
+        # Now point back to the orig api server and reload tab
+        Rails.configuration.arvados_v1_base = original_arvados_v1_base
+        click_link 'Reload tab'
+        wait_for_ajax
+        assert page.has_no_link?('Reload tab', 'Found unexpected Reload tab button')
+        assert page.has_button?('Selection...', 'Did not find Selection... button')
+        within '.selection-action-container' do
+          assert_selector 'tr[data-kind="arvados#trait"]'
+        end
+      end
+    ensure
+      Rails.configuration.arvados_v1_base = original_arvados_v1_base
+    end
+  end
+
 end
