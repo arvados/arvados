@@ -27,7 +27,7 @@ module OmniAuth
       end
 
       def authorize_params
-        options.authorize_params[:auth_method] = request.params['auth_method']
+        options.authorize_params[:auth_provider] = request.params['auth_provider']
         super
       end
 
