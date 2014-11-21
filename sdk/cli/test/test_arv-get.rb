@@ -140,6 +140,8 @@ class TestArvGet < Minitest::Test
   end
 
   def test_nonexistent_block
+    skip "Waiting unitl #4534 is implemented"
+
     out, err = capture_subprocess_io do
       assert_arv_get false, 'f1554a91e925d6213ce7c3103c5110c6'
     end
@@ -148,6 +150,8 @@ class TestArvGet < Minitest::Test
   end
 
   def test_nonexistent_manifest
+    skip "Waiting unitl #4534 is implemented"
+
     out, err = capture_subprocess_io do
       assert_arv_get false, 'f1554a91e925d6213ce7c3103c5110c6/', 'tmp/'
     end
