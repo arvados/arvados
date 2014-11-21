@@ -390,7 +390,7 @@ do_test cli
 
 test_apiserver() {
     cd "$WORKSPACE/services/api"
-    HOME="$GEMHOME" bundle exec rake test $testargs[apiserver]
+    HOME="$GEMHOME" bundle exec rake test ${testargs[apiserver]}
 }
 do_test apiserver
 
@@ -409,7 +409,7 @@ done
 test_workbench() {
     cd "$WORKSPACE/apps/workbench" \
         && HOME="$GEMHOME" bundle install --no-deployment \
-        && HOME="$GEMHOME" bundle exec rake test $testargs[workbench]
+        && HOME="$GEMHOME" bundle exec rake test ${testargs[workbench]}
 }
 do_test workbench
 
