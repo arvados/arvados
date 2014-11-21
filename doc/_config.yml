@@ -33,7 +33,6 @@ navbar:
     - Run a pipeline on the command line:
       - user/topics/running-pipeline-command-line.html.textile.liquid
       - user/topics/arv-run.html.textile.liquid
-      - user/reference/sdk-cli.html.textile.liquid
     - Develop a new pipeline:
       - user/tutorials/intro-crunch.html.textile.liquid
       - user/tutorials/running-external-program.html.textile.liquid
@@ -70,6 +69,7 @@ navbar:
     - CLI:
       - sdk/cli/index.html.textile.liquid
       - sdk/cli/install.html.textile.liquid
+      - sdk/cli/reference.html.textile.liquid
       - sdk/cli/subcommands.html.textile.liquid
   api:
     - Concepts:
