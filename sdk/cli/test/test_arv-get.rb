@@ -64,7 +64,7 @@ class TestArvGet < Minitest::Test
     out, err = capture_subprocess_io do
       assert_arv_get false, @@foo_manifest_locator + '/foo', 'tmp/foo'
     end
-#    assert_match /^ERROR:/, err
+    assert_match /Error:/, err
     assert_equal '', out
     assert_equal 'baz', IO.read('tmp/foo')
   end
@@ -76,7 +76,7 @@ class TestArvGet < Minitest::Test
     out, err = capture_subprocess_io do
       assert_arv_get false, @@foo_manifest_locator + '/', 'tmp/'
     end
-#    assert_match /^ERROR:/, err
+    assert_match /Error:/, err
     assert_equal '', out
     assert_equal 'baz', IO.read('tmp/foo')
   end
