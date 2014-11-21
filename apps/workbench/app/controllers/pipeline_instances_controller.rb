@@ -86,7 +86,7 @@ class PipelineInstancesController < ApplicationController
                 obj = Collection.find value_info_value
                 if value_info_partitioned
                   value_info[:value] = obj.portable_data_hash + value_info_partitioned[1] + value_info_partitioned[2]
-                  value_info[:selection_name] = obj.name + value_info_partitioned[1] + value_info_partitioned[2]
+                  value_info[:selection_name] = obj.name ? obj.name + value_info_partitioned[1] + value_info_partitioned[2] : obj.name
                 else
                   value_info[:value] = obj.portable_data_hash
                   value_info[:selection_name] = obj.name
@@ -293,11 +293,6 @@ class PipelineInstancesController < ApplicationController
     %w(Compare Graph)
   end
 
-  def index
-    @limit = 20
-    super
-  end
-
   protected
   def for_comparison v
     if v.is_a? Hash or v.is_a? Array
@@ -307,8 +302,12 @@ class PipelineInstancesController < ApplicationController
     end
   end
 
+  def load_filters_and_paging_params
+    params[:limit] = 20
+    super
+  end
+
   def find_objects_by_uuid
     @objects = model_class.where(uuid: params[:uuids])
   end
-
 end

@@ -183,12 +183,17 @@ class Node < ArvadosModel
   # At startup, make sure all DNS entries exist.  Otherwise, slurmctld
   # will refuse to start.
   if @@dns_server_conf_dir and @@dns_server_conf_template and
-      !File.exists? (File.join(@@dns_server_conf_dir, hostname_for_slot(MAX_SLOTS-1)))
+      !File.exists? (File.join(@@dns_server_conf_dir, "#{hostname_for_slot(MAX_SLOTS-1)}.conf"))
     (0..MAX_SLOTS-1).each do |slot_number|
       hostname = hostname_for_slot(slot_number)
-      hostfile = File.join @@dns_server_conf_dir, hostname
+      hostfile = File.join @@dns_server_conf_dir, "#{hostname}.conf"
       if !File.exists? hostfile
-        dns_server_update(hostname, '127.40.4.0')
+        n = Node.where(:slot_number => slot_number).first
+        if n.nil? or n.ip_address.nil?
+          dns_server_update(hostname, '127.40.4.0')
+        else
+          dns_server_update(hostname, n.ip_address)
+        end
       end
     end
   end

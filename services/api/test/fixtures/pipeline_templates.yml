@@ -16,7 +16,6 @@ two_part:
           required: true
           dataclass: Collection
           title: "Foo/bar pair"
-          description: "Provide a collection containing at least two files."
     part-two:
       script: bar
       script_version: master

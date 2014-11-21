@@ -189,7 +189,6 @@ class JobTest < ActiveSupport::TestCase
   ].each do |parameters|
     test "verify job status #{parameters}" do
       job = Job.create! job_attrs
-      assert job.valid?, job.errors.full_messages.to_s
       assert_equal 'Queued', job.state, "job.state"
 
       parameters.each do |parameter|
@@ -280,11 +279,9 @@ class JobTest < ActiveSupport::TestCase
 
   test "verify job queue position" do
     job1 = Job.create! job_attrs
-    assert job1.valid?, job1.errors.full_messages.to_s
     assert_equal 'Queued', job1.state, "Incorrect job state for newly created job1"
 
     job2 = Job.create! job_attrs
-    assert job2.valid?, job2.errors.full_messages.to_s
     assert_equal 'Queued', job2.state, "Incorrect job state for newly created job2"
 
     assert_not_nil job1.queue_position, "Expected non-nil queue position for job1"
@@ -296,7 +293,10 @@ class JobTest < ActiveSupport::TestCase
   SDK_TAGGED = "00634b2b8a492d6f121e3cf1d6587b821136a9a7"
 
   def sdk_constraint(version)
-    {runtime_constraints: {"arvados_sdk_version" => version}}
+    {runtime_constraints: {
+        "arvados_sdk_version" => version,
+        "docker_image" => links(:docker_image_collection_tag).name,
+      }}
   end
 
   def check_job_sdk_version(expected)
@@ -320,9 +320,18 @@ class JobTest < ActiveSupport::TestCase
       end
     end
 
-    test "updating job with SDK version '#{search}'" do
+    test "updating job from no SDK to version '#{search}'" do
       job = Job.create!(job_attrs)
       assert_nil job.arvados_sdk_version
+      check_job_sdk_version(commit_hash) do
+        job.runtime_constraints = sdk_constraint(search)[:runtime_constraints]
+        job
+      end
+    end
+
+    test "updating job from SDK version 'master' to '#{search}'" do
+      job = Job.create!(job_attrs(sdk_constraint("master")))
+      assert_equal(SDK_MASTER, job.arvados_sdk_version)
       check_job_sdk_version(commit_hash) do
         job.runtime_constraints = sdk_constraint(search)[:runtime_constraints]
         job
@@ -336,6 +345,23 @@ class JobTest < ActiveSupport::TestCase
     job.runtime_constraints = {}
     assert(job.valid?, "job invalid after clearing SDK version")
     assert_nil(job.arvados_sdk_version)
+  end
+
+  test "job with SDK constraint, without Docker image is invalid" do
+    sdk_attrs = sdk_constraint("master")
+    sdk_attrs[:runtime_constraints].delete("docker_image")
+    job = Job.create(job_attrs(sdk_attrs))
+    refute(job.valid?, "Job valid with SDK version, without Docker image")
+    sdk_errors = job.errors.messages[:arvados_sdk_version] || []
+    refute_empty(sdk_errors.grep(/\bDocker\b/),
+                 "no Job SDK errors mention that Docker is required")
+  end
+
+  test "invalid to clear Docker image constraint when SDK constraint exists" do
+    job = Job.create!(job_attrs(sdk_constraint("master")))
+    job.runtime_constraints.delete("docker_image")
+    refute(job.valid?,
+           "Job with SDK constraint valid after clearing Docker image")
   end
 
   test "can't create job with SDK version assigned directly" do
