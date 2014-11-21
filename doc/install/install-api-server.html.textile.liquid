@@ -154,7 +154,7 @@ First copy the omniauth configuration file:
 <pre><code>~/arvados/services/api$ <span class="userinput">cp -i config/initializers/omniauth.rb.example config/initializers/omniauth.rb
 </code></pre></notextile>
 
-Edit @config/initializers/omniauth.rb@ to configure the SSO server for authentication.  @APP_ID@ and @APP_SECRET@ correspond to the @app_id@ and @app_secret@ set in "Create arvados-server client for Single Sign On (SSO)":install-sso.html#client and @CUSTOM_PROVIDER_URL@ is the endpoint to connect to your SSO server.
+Edit @config/initializers/omniauth.rb@ to configure the SSO server for authentication.  @APP_ID@ and @APP_SECRET@ correspond to the @app_id@ and @app_secret@ set in "Create arvados-server client for Single Sign On (SSO)":install-sso.html#client and @CUSTOM_PROVIDER_URL@ is the address of your SSO server.
 
 <notextile>
 <pre><code>APP_ID = 'arvados-server'
