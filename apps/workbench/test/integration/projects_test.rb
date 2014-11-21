@@ -9,7 +9,7 @@ class ProjectsTest < ActionDispatch::IntegrationTest
     Capybara.current_driver = :selenium
 
     # project tests need bigger page size to be able to see all the buttons
-    Capybara.current_session.driver.browser.manage.window.resize_to(1280, 768)
+    Capybara.current_session.driver.browser.manage.window.resize_to(1152, 768)
   end
 
   test 'Check collection count for A Project in the tab pane titles' do
@@ -228,7 +228,9 @@ class ProjectsTest < ActionDispatch::IntegrationTest
       assert(has_link?("Write"),
              "failed to change access level on new share")
       click_on "Revoke"
+      page.driver.browser.switch_to.alert.accept
     end
+    wait_for_ajax
     using_wait_time(Capybara.default_wait_time * 3) do
       assert(page.has_no_text?(name),
              "new share row still exists after being revoked")
