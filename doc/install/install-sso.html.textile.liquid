@@ -60,3 +60,18 @@ irb(main):005:0&gt; <span class="userinput">c.save!</span>
 irb(main):006:0&gt; <span class="userinput">quit</span>
 </code></pre>
 </notextile>
+
+h2. Start the SSO server
+
+h3. Development environment
+
+To run in development mode, you can now run the development server this way:
+
+<notextile>
+<pre><code>~/arvados/services/api$ <span class="userinput">bundle exec rails server</span>
+</code></pre>
+</notextile>
+
+h3. Production environment
+
+As a Ruby on Rails application, the SSO server should be compatible with any Ruby application server that supports Rack applications.
