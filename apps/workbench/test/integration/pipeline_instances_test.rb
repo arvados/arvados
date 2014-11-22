@@ -34,10 +34,11 @@ class PipelineInstancesTest < ActionDispatch::IntegrationTest
     find("#projects-menu").click
     find('.dropdown-menu a,button', text: 'A Project').click
     find('.btn', text: 'Add data').click
+    find('.dropdown-menu a,button', text: '...from a different project').click
     within('.modal-dialog') do
       wait_for_ajax
       first('span', text: 'foo_tag').click
-      find('.btn', text: 'Add').click
+      find('.btn', text: 'Copy').click
     end
     using_wait_time(Capybara.default_wait_time * 3) do
       wait_for_ajax
@@ -124,10 +125,11 @@ class PipelineInstancesTest < ActionDispatch::IntegrationTest
     find("#projects-menu").click
     find('.dropdown-menu a,button', text: 'A Project').click
     find('.btn', text: 'Add data').click
+    find('.dropdown-menu a,button', text: '...from a different project').click
     within('.modal-dialog') do
       wait_for_ajax
       first('span', text: 'foo_tag').click
-      find('.btn', text: 'Add').click
+      find('.btn', text: 'Copy').click
     end
     using_wait_time(Capybara.default_wait_time * 3) do
       wait_for_ajax

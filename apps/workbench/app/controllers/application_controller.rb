@@ -256,7 +256,9 @@ class ApplicationController < ActionController::Base
         elsif request.method.in? ['GET', 'HEAD']
           render
         else
-          redirect_to params[:return_to] || @object
+          redirect_to (params[:return_to] ||
+                       polymorphic_url(@object,
+                                       anchor: params[:redirect_to_anchor]))
         end
       }
       f.js { render }
@@ -321,15 +323,9 @@ class ApplicationController < ActionController::Base
     @new_resource_attrs.reject! { |k,v| k.to_s == 'uuid' }
     @object ||= model_class.new @new_resource_attrs, params["options"]
     if @object.save
-      respond_to do |f|
-        f.json { render json: @object.attributes.merge(href: url_for(action: :show, id: @object)) }
-        f.html {
-          redirect_to @object
-        }
-        f.js { render }
-      end
+      show
     else
-      self.render_error status: 422
+      render_error status: 422
     end
   end
 

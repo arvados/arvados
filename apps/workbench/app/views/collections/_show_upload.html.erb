@@ -1,0 +1,62 @@
+<div class="arv-log-refresh-control"
+     data-load-throttle="86486400000" <%# 1001 nights %>
+     ></div>
+<div ng-cloak ng-controller="UploadToCollection" arv-uuid="<%= @object.uuid %>">
+  <div class="panel panel-primary">
+    <div class="panel-body">
+      <div class="row">
+        <div class="col-sm-4">
+          <input type="file" multiple ng-model="incoming" onchange="angular.element(this).scope().addFilesToQueue(this.files); $(this).val('');">
+          <div class="btn-group btn-group-sm" role="group" style="margin-top: 1.5em">
+            <button type="button" class="btn btn-default" ng-click="stop()" ng-disabled="uploader.state != 'Running'"><i class="fa fa-fw fa-pause"></i> Pause</button>
+            <button type="button" class="btn btn-primary" ng-click="go()" ng-disabled="uploader.state == 'Running' || uploadQueue.length == 0"><i class="fa fa-fw fa-play"></i> Start</button>
+          </div>
+        </div>
+        <div class="col-sm-8">
+          <div ng-show="uploader.state == 'Running'"
+               class="alert alert-info"
+               ><i class="fa fa-gear"></i>
+            Upload in progress.
+            <span ng-show="countDone() > 0">
+              {{countDone()}} file{{countDone()>1?'s':''}} finished.
+            </span>
+          </div>
+          <div ng-show="uploader.state == 'Idle' && uploader.stateReason"
+               class="alert alert-success"
+               ><i class="fa fa-flag-checkered"></i> {{uploader.stateReason}}
+          </div>
+          <div ng-show="uploader.state == 'Failed'"
+               class="alert alert-danger"
+               ><i class="fa fa-warning"></i> {{uploader.stateReason}}
+          </div>
+        </div>
+      </div>
+    </div>
+  </div>
+  <div ng-repeat="upload in uploadQueue" class="row" ng-class="{lighten: upload.committed}">
+    <div class="col-sm-1">
+      <button class="btn btn-xs btn-default"
+              ng-show="!upload.committed"
+              ng-click="removeFileFromQueue($index)"
+              title="cancel"><i class="fa fa-fw fa-times"></i></button>
+      <span class="label label-success label-info"
+            ng-show="upload.committed">finished</span>
+    </div>
+    <div class="col-sm-4 nowrap" style="overflow-x:hidden;text-overflow:ellipsis">
+      <span title="{{upload.file.name}}">
+        {{upload.file.name}}
+      </span>
+    </div>
+    <div class="col-sm-1" style="text-align: right">
+      {{upload.file.size/1024 | number:0}}K
+    </div>
+    <div class="col-sm-2">
+      <div class="progress">
+        <span class="progress-bar" style="width: {{upload.progress}}%"></span>
+      </div>
+    </div>
+    <div class="col-sm-4" ng-class="{lighten: upload.state != 'Uploading'}">
+      {{upload.statistics}}
+    </div>
+  </div>
+</div>

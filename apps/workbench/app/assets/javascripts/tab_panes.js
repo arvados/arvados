@@ -124,7 +124,7 @@ $(document).on('arv:pane:reload', '[data-pane-content-url]', function(e) {
             $pane.removeClass('pane-loading');
             $pane.addClass('pane-loaded');
             $pane.attr('data-loaded-at', (new Date()).getTime());
-            $pane.trigger('arv:pane:loaded');
+            $pane.trigger('arv:pane:loaded', $pane);
 
             if ($pane.hasClass('pane-stale')) {
                 $pane.trigger('arv:pane:reload');
