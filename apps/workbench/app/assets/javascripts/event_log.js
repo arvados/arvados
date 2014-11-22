@@ -89,6 +89,12 @@ function processLogLineForChart( logLine ) {
                     dsum += parseFloat(intervalData[i]);
                 }
                 datum = dsum/dt;
+
+                if( datum < 0 ) {
+                    // not interested in negative deltas
+                    return;
+                }
+
                 rawDetailData = intervalMatch[2];
 
                 // for the series name use the task number (4th term) and then the first word after 'crunchstat:'
