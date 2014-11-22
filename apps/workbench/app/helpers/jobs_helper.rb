@@ -22,10 +22,11 @@ module JobsHelper
     filters = [["event_type",  "=", "stderr"],
                ["object_uuid", "in", job_uuids]]
     filters += extra_filters if extra_filters
-    last_entry = Log.order('id DESC').limit(1).filter(filters).results.first
+    last_entry = Log.select(%w(event_at)).order('id DESC').limit(1).filter(filters).results.first
     if last_entry
       filters += [["event_at", ">=", last_entry.event_at - 10.minutes]]
-      Log.order('id DESC')
+      Log.select(%w(event_type object_uuid event_at properties))
+         .order('id DESC')
          .filter(filters)
          .results
     else
