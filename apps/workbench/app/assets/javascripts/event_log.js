@@ -273,7 +273,9 @@ function createJobGraph(elementName) {
                         } else {
                             datum = $.number(datum);
                         }
-                        datum += ' (' + options.data[index]['raw-'+series] + ')';
+                        if(options.data[index]['raw-'+series]) {
+                            datum += ' (' + options.data[index]['raw-'+series] + ')';
+                        }
                     }
                     point += datum;
                 } else {
