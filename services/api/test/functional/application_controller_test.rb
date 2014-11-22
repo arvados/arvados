@@ -46,4 +46,15 @@ class ApplicationControllerTest < ActionController::TestCase
     assert_response 422
     check_error_token
   end
+
+  ['foo', '', 'FALSE', 'TRUE', nil, [true], {a:true}, '"true"'].each do |bogus|
+    test "bogus boolean parameter #{bogus.inspect} returns error" do
+      authorize_with :active
+      post :create, {
+        specimen: {},
+        ensure_unique_name: bogus
+      }
+      assert_response 422
+    end
+  end
 end
