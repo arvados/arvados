@@ -3,6 +3,9 @@ Server::Application.routes.draw do
 
   # See http://guides.rubyonrails.org/routing.html
 
+  # OPTIONS requests just get an empty response with CORS headers.
+  match '*a', :to => 'static#empty', :via => 'OPTIONS'
+
   namespace :arvados do
     namespace :v1 do
       resources :api_client_authorizations do
