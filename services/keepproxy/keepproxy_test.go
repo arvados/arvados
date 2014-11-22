@@ -222,7 +222,7 @@ func (s *ServerRequiredSuite) TestPutAskGet(c *C) {
 }
 
 func (s *ServerRequiredSuite) TestPutAskGetForbidden(c *C) {
-	log.Print("TestPutAndGet start")
+	log.Print("TestPutAskGetForbidden start")
 
 	kc := runProxy(c, []string{"keepproxy"}, "123abc", 29951)
 	waitForListener()
@@ -260,7 +260,7 @@ func (s *ServerRequiredSuite) TestPutAskGetForbidden(c *C) {
 		log.Print("Get")
 	}
 
-	log.Print("TestPutAndGetForbidden done")
+	log.Print("TestPutAskGetForbidden done")
 }
 
 func (s *ServerRequiredSuite) TestGetDisabled(c *C) {
@@ -319,4 +319,36 @@ func (s *ServerRequiredSuite) TestPutDisabled(c *C) {
 	}
 
 	log.Print("TestPutDisabled done")
+}
+
+func (s *ServerRequiredSuite) TestCorsHeaders(c *C) {
+	runProxy(c, []string{"keepproxy"}, "4axaw8zxe0qm22wa6urpp5nskcne8z88cvbupv653y1njyi05h", 29954)
+	waitForListener()
+	defer closeListener()
+
+	{
+		client := http.Client{}
+		req, err := http.NewRequest("OPTIONS",
+			fmt.Sprintf("http://localhost:29954/%x+3",
+				md5.Sum([]byte("foo"))),
+			nil)
+		req.Header.Add("Access-Control-Request-Method", "PUT")
+		req.Header.Add("Access-Control-Request-Headers", "Authorization, X-Keep-Desired-Replicas")
+		resp, err := client.Do(req)
+		c.Check(err, Equals, nil)
+		c.Check(resp.StatusCode, Equals, 200)
+		body, err := ioutil.ReadAll(resp.Body)
+		c.Check(string(body), Equals, "")
+		c.Check(resp.Header.Get("Access-Control-Allow-Methods"), Equals, "GET, HEAD, PUT, OPTIONS")
+		c.Check(resp.Header.Get("Access-Control-Allow-Origin"), Equals, "*")
+	}
+
+	{
+		resp, err := http.Get(
+			fmt.Sprintf("http://localhost:29954/%x+3",
+				md5.Sum([]byte("foo"))))
+		c.Check(err, Equals, nil)
+		c.Check(resp.Header.Get("Access-Control-Allow-Headers"), Equals, "Authorization")
+		c.Check(resp.Header.Get("Access-Control-Allow-Origin"), Equals, "*")
+	}
 }

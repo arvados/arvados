@@ -222,6 +222,8 @@ type PutBlockHandler struct {
 
 type InvalidPathHandler struct{}
 
+type OptionsHandler struct{}
+
 // MakeRESTRouter
 //     Returns a mux.Router that passes GET and PUT requests to the
 //     appropriate handlers.
@@ -244,6 +246,7 @@ func MakeRESTRouter(
 	if enable_put {
 		rest.Handle(`/{hash:[0-9a-f]{32}}+{hints}`, PutBlockHandler{kc, t}).Methods("PUT")
 		rest.Handle(`/{hash:[0-9a-f]{32}}`, PutBlockHandler{kc, t}).Methods("PUT")
+		rest.Handle(`/{hash:[0-9a-f]{32}}{ignore}`, OptionsHandler{}).Methods("OPTIONS")
 	}
 
 	rest.NotFoundHandler = InvalidPathHandler{}
@@ -256,7 +259,17 @@ func (this InvalidPathHandler) ServeHTTP(resp http.ResponseWriter, req *http.Req
 	http.Error(resp, "Bad request", http.StatusBadRequest)
 }
 
+func (this OptionsHandler) ServeHTTP(resp http.ResponseWriter, req *http.Request) {
+	log.Printf("%s: %s %s", GetRemoteAddress(req), req.Method, req.URL.Path)
+	resp.Header().Set("Access-Control-Allow-Methods", "GET, HEAD, PUT, OPTIONS")
+	resp.Header().Set("Access-Control-Allow-Origin", "*")
+	resp.Header().Set("Access-Control-Allow-Headers", "Authorization, X-Keep-Desired-Replicas")
+	resp.Header().Set("Access-Control-Max-Age", "86486400")
+}
+
 func (this GetBlockHandler) ServeHTTP(resp http.ResponseWriter, req *http.Request) {
+	resp.Header().Set("Access-Control-Allow-Origin", "*")
+	resp.Header().Set("Access-Control-Allow-Headers", "Authorization")
 
 	kc := *this.KeepClient
 
