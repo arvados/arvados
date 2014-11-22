@@ -7,6 +7,7 @@ import (
 	"fmt"
 	"github.com/gorilla/mux"
 	"io"
+	"io/ioutil"
 	"log"
 	"net"
 	"net/http"
@@ -246,6 +247,7 @@ func MakeRESTRouter(
 	if enable_put {
 		rest.Handle(`/{hash:[0-9a-f]{32}}+{hints}`, PutBlockHandler{kc, t}).Methods("PUT")
 		rest.Handle(`/{hash:[0-9a-f]{32}}`, PutBlockHandler{kc, t}).Methods("PUT")
+		rest.Handle(`/`, PutBlockHandler{kc, t}).Methods("POST")
 		rest.Handle(`/{hash:[0-9a-f]{32}}{ignore}`, OptionsHandler{}).Methods("OPTIONS")
 	}
 
@@ -261,7 +263,7 @@ func (this InvalidPathHandler) ServeHTTP(resp http.ResponseWriter, req *http.Req
 
 func (this OptionsHandler) ServeHTTP(resp http.ResponseWriter, req *http.Request) {
 	log.Printf("%s: %s %s", GetRemoteAddress(req), req.Method, req.URL.Path)
-	resp.Header().Set("Access-Control-Allow-Methods", "GET, HEAD, PUT, OPTIONS")
+	resp.Header().Set("Access-Control-Allow-Methods", "GET, HEAD, POST, PUT, OPTIONS")
 	resp.Header().Set("Access-Control-Allow-Origin", "*")
 	resp.Header().Set("Access-Control-Allow-Headers", "Authorization, X-Keep-Desired-Replicas")
 	resp.Header().Set("Access-Control-Max-Age", "86486400")
@@ -384,7 +386,20 @@ func (this PutBlockHandler) ServeHTTP(resp http.ResponseWriter, req *http.Reques
 	}
 
 	// Now try to put the block through
-	hash, replicas, err := kc.PutHR(hash, req.Body, contentLength)
+	var replicas int
+	var err error
+	if hash == "" {
+		if bytes, err := ioutil.ReadAll(req.Body); err != nil {
+			msg := fmt.Sprintf("Error reading request body: %s", err)
+			log.Printf(msg)
+			http.Error(resp, msg, http.StatusInternalServerError)
+			return
+		} else {
+			hash, replicas, err = kc.PutB(bytes)
+		}
+	} else {
+		hash, replicas, err = kc.PutHR(hash, req.Body, contentLength)
+	}
 
 	// Tell the client how many successful PUTs we accomplished
 	resp.Header().Set(keepclient.X_Keep_Replicas_Stored, fmt.Sprintf("%d", replicas))

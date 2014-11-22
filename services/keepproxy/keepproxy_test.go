@@ -14,6 +14,7 @@ import (
 	"net/url"
 	"os"
 	"os/exec"
+	"strings"
 	"testing"
 	"time"
 )
@@ -339,7 +340,7 @@ func (s *ServerRequiredSuite) TestCorsHeaders(c *C) {
 		c.Check(resp.StatusCode, Equals, 200)
 		body, err := ioutil.ReadAll(resp.Body)
 		c.Check(string(body), Equals, "")
-		c.Check(resp.Header.Get("Access-Control-Allow-Methods"), Equals, "GET, HEAD, PUT, OPTIONS")
+		c.Check(resp.Header.Get("Access-Control-Allow-Methods"), Equals, "GET, HEAD, POST, PUT, OPTIONS")
 		c.Check(resp.Header.Get("Access-Control-Allow-Origin"), Equals, "*")
 	}
 
@@ -350,5 +351,26 @@ func (s *ServerRequiredSuite) TestCorsHeaders(c *C) {
 		c.Check(err, Equals, nil)
 		c.Check(resp.Header.Get("Access-Control-Allow-Headers"), Equals, "Authorization")
 		c.Check(resp.Header.Get("Access-Control-Allow-Origin"), Equals, "*")
+	}
+}
+
+func (s *ServerRequiredSuite) TestPostWithoutHash(c *C) {
+	runProxy(c, []string{"keepproxy"}, "4axaw8zxe0qm22wa6urpp5nskcne8z88cvbupv653y1njyi05h", 29955)
+	waitForListener()
+	defer closeListener()
+
+	{
+		client := http.Client{}
+		req, err := http.NewRequest("POST",
+			"http://localhost:29955/",
+			strings.NewReader("qux"))
+		req.Header.Add("Authorization", "OAuth2 4axaw8zxe0qm22wa6urpp5nskcne8z88cvbupv653y1njyi05h")
+		req.Header.Add("Content-Type", "application/octet-stream")
+		resp, err := client.Do(req)
+		c.Check(err, Equals, nil)
+		body, err := ioutil.ReadAll(resp.Body)
+		c.Check(err, Equals, nil)
+		c.Check(string(body), Equals,
+			fmt.Sprintf("%x+%d", md5.Sum([]byte("qux")), 3))
 	}
 }
