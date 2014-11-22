@@ -77,7 +77,7 @@ function processLogLineForChart( logLine ) {
             var datum = null;
 
             // the timestamp comes first
-            var timestamp = match[1].replace('_','T');
+            var timestamp = match[1].replace('_','T') + 'Z';
 
             // we are interested in "-- interval" recordings
             var intervalMatch = match[6].match(/(.*) -- interval (.*)/);
@@ -188,7 +188,7 @@ function addJobGraphDatum(timestamp, datum, series, rawDetailData) {
         var shifted = [];
         // now let's see about "scrolling" the graph, dropping entries that are too old (>10 minutes)
         while( jobGraphData.length > 0
-                 && (Date.parse( jobGraphData[0]['t'] ).valueOf() + 10*60000 < Date.parse( jobGraphData[jobGraphData.length-1]['t'] ).valueOf()) ) {
+                 && (Date.parse( jobGraphData[0]['t'] ) + 10*60000 < Date.parse( jobGraphData[jobGraphData.length-1]['t'] )) ) {
             shifted.push(jobGraphData.shift());
         }
         if( shifted.length > 0 ) {
@@ -221,10 +221,13 @@ function addJobGraphDatum(timestamp, datum, series, rawDetailData) {
             });
         }
         // add a 10 minute old null data point to keep the chart honest if the oldest point is less than 9.9 minutes old
-        if( jobGraphData.length > 0
-              && (Date.parse( jobGraphData[0]['t'] ).valueOf() + 9.9*60000 > Date.parse( jobGraphData[jobGraphData.length-1]['t'] ).valueOf()) ) {
-            var tenMinutesBefore = (new Date(Date.parse( jobGraphData[jobGraphData.length-1]['t'] ).valueOf() - 600*1000)).toISOString().replace('Z','');
-            jobGraphData.unshift( { 't': tenMinutesBefore } );
+        if( jobGraphData.length > 0 ) {
+            var earliestTimestamp = jobGraphData[0]['t'];
+            var mostRecentTimestamp = jobGraphData[jobGraphData.length-1]['t'];
+            if( (Date.parse( earliestTimestamp ) + 9.9*60000 > Date.parse( mostRecentTimestamp )) ) {
+                var tenMinutesBefore = (new Date(Date.parse( mostRecentTimestamp ) - 600*1000)).toISOString();
+                jobGraphData.unshift( { 't': tenMinutesBefore } );
+            }
         }
     }
 
