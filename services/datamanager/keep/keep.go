@@ -196,7 +196,7 @@ func GetServerContents(keepServer ServerAddress,
 		}
 
 		if storedBlock, ok := response.Contents.BlockDigestToInfo[blockInfo.Digest]; ok {
-			// This server is reporting multiple copies of the same block.
+			// This server returned multiple lines containing the same block digest.
 			numDuplicates += 1
 			if storedBlock.Size != blockInfo.Size {
 				numSizeDisagreements += 1

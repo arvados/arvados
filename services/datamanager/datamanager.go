@@ -25,11 +25,16 @@ func main() {
 		log.Fatalf("Current user is not an admin. Datamanager can only be run by admins.")
 	}
 
+	// TODO(misha): Read Collections and Keep Contents concurrently as goroutines.
+
 	readCollections := collection.GetCollections(
 		collection.GetCollectionsParams{
 			Client: arv, Limit: 50, LogEveryNthCollectionProcessed: 10})
 
 	log.Printf("Read Collections: %v", readCollections)
+
+	UserUsage := ComputeSizeOfOwnedCollections(readCollections)
+	log.Printf("Uuid to Size used: %v", UserUsage)
 
 	// TODO(misha): Add a "readonly" flag. If we're in readonly mode,
 	// lots of behaviors can become warnings (and obviously we can't
@@ -45,4 +50,13 @@ func main() {
 		keep.GetKeepServersParams{Client: arv, Limit: 1000})
 
 	log.Printf("Returned %d keep disks", len(readServers.AddressToContents))
+}
+
+func ComputeSizeOfOwnedCollections(readCollections collection.ReadCollections) (
+	results map[string]int) {
+	results = make(map[string]int)
+	for _, coll := range readCollections.UuidToCollection {
+		results[coll.OwnerUuid] = results[coll.OwnerUuid] + coll.TotalSize
+	}
+	return
 }

@@ -14,6 +14,7 @@ type Collection struct {
 	OwnerUuid string
 	ReplicationLevel int
 	BlockDigestToSize map[string]int
+	TotalSize int
 }
 
 type ReadCollections struct {
@@ -107,6 +108,10 @@ func GetCollections(params GetCollectionsParams) (results ReadCollections) {
 					block.Digest)
 			}
 			collection.BlockDigestToSize[block.Digest] = block.Size
+		}
+		collection.TotalSize = 0
+		for _, size := range collection.BlockDigestToSize {
+			collection.TotalSize += size
 		}
 		results.UuidToCollection[collection.Uuid] = collection
 	}
