@@ -320,19 +320,31 @@ $(document).on('arv-log-event', '#log_graph_div', function(event, eventData) {
     }
 } );
 
-$(document).on('ready', function(){
-    window.recreate = false;
-    window.redraw = false;
-    setInterval( function() {
-        if( recreate ) {
-            window.recreate = false;
-            window.redraw = false;
-            // series have changed, draw entirely new graph
-            $('#log_graph_div').html('');
-            createJobGraph('log_graph_div');
-        } else if( redraw ) {
-            window.redraw = false;
-            jobGraph.setData( jobGraphData );
-        }
-    }, 5000);
+$(document).on('ready ajax:complete', function() {
+    $('#log_graph_div').not('.graph-is-setup').addClass('graph-is-setup').each( function( index, graph_div ) {
+        window.jobGraphData = [];
+        window.jobGraphSeries = [];
+        window.jobGraphSortedSeries = [];
+        window.jobGraphMaxima = {};
+        window.recreate = false;
+        window.redraw = false;
+
+        createJobGraph($(graph_div).attr('id'));
+
+        $(document).trigger('ajax:send');
+        $.get('/jobs/' + $(graph_div).data('object-uuid') + '/push_logs.js');
+
+        setInterval( function() {
+            if( recreate ) {
+                window.recreate = false;
+                window.redraw = false;
+                // series have changed, draw entirely new graph
+                $(graph_div).html('');
+                createJobGraph($(graph_div).attr('id'));
+            } else if( redraw ) {
+                window.redraw = false;
+                jobGraph.setData( jobGraphData );
+            }
+        }, 5000);
+    });
 });

@@ -4,27 +4,16 @@
      class="arv-log-event-listener"
      data-object-uuid="<%= @object.uuid %>"></div>
 
-<% log_history = stderr_log_history([@object.uuid]) %>
-
 <div id="event_log_div"
      class="arv-log-event-listener arv-log-event-handler-append-logs arv-job-log-window"
      data-object-uuid="<%= @object.uuid %>"
-     ><%= log_history.join("\n") %></div>
+     ></div>
 
 <%# Applying a long throttle suppresses the auto-refresh of this
     partial that would normally be triggered by arv-log-event. %>
 <div class="arv-log-refresh-control"
      data-load-throttle="86486400000" <%# 1001 nights %>
      ></div>
-
-<%= javascript_tag do %>
-  window.jobGraphData = [];
-  window.jobGraphSeries = [];
-  window.jobGraphSortedSeries = [];
-  window.jobGraphMaxima = {};
-  $.get('<%= push_logs_job_path(@object) %>');
-  createJobGraph('log_graph_div');
-<% end %>
 
 <% else %>
 
