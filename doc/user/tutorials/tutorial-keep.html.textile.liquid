@@ -4,32 +4,48 @@ navsection: userguide
 title: "Uploading data"
 ...
 
-This tutorial describes how to to upload new Arvados data collections using the command line tool @arv-put@.  This example uses a freely available TSV file containing variant annotations from "Personal Genome Project (PGP)":http://www.pgp-hms.org participant "hu599905.":https://my.pgp-hms.org/profile/hu599905
+This tutorial describes how to to upload new Arvados data collections using the command line tool @arv keep put@.
 
 notextile. <div class="spaced-out">
 
-# Begin by installing the "Arvados Python SDK":{{site.baseurl}}/sdk/python/sdk-python.html on the system from which you will upload the data (such as your workstation, or a server containing data from your sequencer).  This will install the Arvados file upload tool, @arv-put@.  Alternately, you can log into an Arvados VM (instructions for "Unix":{{site.baseurl}}/user/getting_started/ssh-access-unix.html#login or "Windows":{{site.baseurl}}/user/getting_started/ssh-access-windows.html#login).
-# On the system from which you will upload data, configure the environment with the Arvados instance host name and authentication token as decribed in "Getting an API token.":{{site.baseurl}}/user/reference/api-tokens.html  (If you are logged into an Arvados VM, you can skip this step.)
-# Download the following example file.  (If you are uploading your own data, you can skip this step.)
+{% include 'tutorial_expectations' %}
+
+h3. Upload
+
+To upload a file to Keep using @arv keep put@:
 <notextile>
-<pre><code>~$ <span class="userinput">curl -o var-GS000016015-ASM.tsv.bz2 'https://warehouse.pgp-hms.org/warehouse/f815ec01d5d2f11cb12874ab2ed50daa+234+K@ant/var-GS000016015-ASM.tsv.bz2'</span>
-  % Total    % Received % Xferd  Average Speed   Time    Time     Time  Current
-                                 Dload  Upload   Total   Spent    Left  Speed
-100  216M  100  216M    0     0  10.0M      0  0:00:21  0:00:21 --:--:-- 9361k
-</code></pre>
-</notextile>
-# Now upload the file to Keep using @arv-put@:
-<notextile>
-<pre><code>~$ <span class="userinput">arv-put var-GS000016015-ASM.tsv.bz2</span>
+<pre><code>~$ <span class="userinput">arv keep put var-GS000016015-ASM.tsv.bz2</span>
 216M / 216M 100.0%
 Collection saved as ...
 qr1hi-4zz18-xxxxxxxxxxxxxxx
 </code></pre>
 </notextile>
 
-* The output value @qr1hi-4zz18-xxxxxxxxxxxxxxx@ is the uuid of the Arvados collection created.
+The output value @qr1hi-4zz18-xxxxxxxxxxxxxxx@ is the uuid of the Arvados collection created.
 
-Now visit the Workbench *Dashboard*.  Click on *Projects*<span class="caret"></span> dropdown menu in the top navigation menu, select your *Home* project.  Your newly uploaded collection should appear near the top of the *Data collections* tab.  The collection locator printed by @arv-put@ will appear under the *name* column.
+The file used in this example is a freely available TSV file containing variant annotations from "Personal Genome Project (PGP)":http://www.pgp-hms.org participant "hu599905.":https://my.pgp-hms.org/profile/hu599905), downloadable "here":https://warehouse.pgp-hms.org/warehouse/f815ec01d5d2f11cb12874ab2ed50daa+234+K@ant/var-GS000016015-ASM.tsv.bz2.
+
+<notextile><a name="dir"></a></notextile>It is also possible to upload an entire directory with @arv keep put@:
+
+<notextile>
+<pre><code>~$ <span class="userinput">mkdir tmp</span>
+~$ <span class="userinput">echo "hello alice" > tmp/alice.txt</span>
+~$ <span class="userinput">echo "hello bob" > tmp/bob.txt</span>
+~$ <span class="userinput">echo "hello carol" > tmp/carol.txt</span>
+~$ <span class="userinput">arv keep put tmp</span>
+0M / 0M 100.0%
+Collection saved as ...
+qr1hi-4zz18-yyyyyyyyyyyyyyy
+</code></pre>
+</notextile>
+
+In both examples, the @arv keep put@ command created a collection. The first collection contains the single uploaded file. The second collection contains the entire uploaded directory.
+
+@arv keep put@ accepts quite a few optional command line arguments, which are described "on the arv subcommands":{{site.baseurl}}/sdk/cli/subcommands.html#arv-keep-put page.
+
+h3. Locate your collection in Workbench
+
+Visit the Workbench *Dashboard*.  Click on *Projects*<span class="caret"></span> dropdown menu in the top navigation menu, select your *Home* project.  Your newly uploaded collection should appear near the top of the *Data collections* tab.  The collection locator printed by @arv keep put@ will appear under the *name* column.
 
 To move the collection to a different project, check the box at the left of the collection row.  Pull down the *Selection...*<span class="caret"></span> menu near the top of the page tab, and select *Move selected*. This will open a dialog box where you can select a destination project for the collection.  Click a project, then finally the <span class="btn btn-sm btn-primary">Move</span> button.
 
@@ -38,19 +54,3 @@ To move the collection to a different project, check the box at the left of the 
 Click on the *<i class="fa fa-fw fa-archive"></i> Show* button next to the collection's listing on a project page to go to the Workbench page for your collection.  On this page, you can see the collection's contents, download individual files, and set sharing options.
 
 notextile. </div>
-
-h2(#dir). Putting a directory
-
-If you give @arv-put@ a directory, it will recursively upload the entire directory:
-
-<notextile>
-<pre><code>~$ <span class="userinput">mkdir tmp</span>
-~$ <span class="userinput">echo "hello alice" > tmp/alice.txt</span>
-~$ <span class="userinput">echo "hello bob" > tmp/bob.txt</span>
-~$ <span class="userinput">echo "hello carol" > tmp/carol.txt</span>
-~$ <span class="userinput">arv-put tmp</span>
-0M / 0M 100.0%
-Collection saved as ...
-qr1hi-4zz18-yyyyyyyyyyyyyyy
-</code></pre>
-</notextile>
