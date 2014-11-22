@@ -9,7 +9,7 @@ This tutorial describes how to to upload new Arvados data collections using the 
 notextile. <div class="spaced-out">
 
 # Begin by installing the "Arvados Python SDK":{{site.baseurl}}/sdk/python/sdk-python.html on the system from which you will upload the data (such as your workstation, or a server containing data from your sequencer).  This will install the Arvados file upload tool, @arv-put@.  Alternately, you can log into an Arvados VM (instructions for "Unix":{{site.baseurl}}/user/getting_started/ssh-access-unix.html#login or "Windows":{{site.baseurl}}/user/getting_started/ssh-access-windows.html#login).
-# On system from which you will upload data, configure the environment with the Arvados instance host name and authentication token as decribed in "Getting an API token.":{{site.baseurl}}/user/reference/api-tokens.html  (If you are logged into an Arvados VM, you can skip this step.)
+# On the system from which you will upload data, configure the environment with the Arvados instance host name and authentication token as decribed in "Getting an API token.":{{site.baseurl}}/user/reference/api-tokens.html  (If you are logged into an Arvados VM, you can skip this step.)
 # Download the following example file.  (If you are uploading your own data, you can skip this step.)
 <notextile>
 <pre><code>~$ <span class="userinput">curl -o var-GS000016015-ASM.tsv.bz2 'https://warehouse.pgp-hms.org/warehouse/f815ec01d5d2f11cb12874ab2ed50daa+234+K@ant/var-GS000016015-ASM.tsv.bz2'</span>
