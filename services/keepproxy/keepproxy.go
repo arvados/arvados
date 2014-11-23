@@ -248,12 +248,19 @@ func MakeRESTRouter(
 		rest.Handle(`/{hash:[0-9a-f]{32}}+{hints}`, PutBlockHandler{kc, t}).Methods("PUT")
 		rest.Handle(`/{hash:[0-9a-f]{32}}`, PutBlockHandler{kc, t}).Methods("PUT")
 		rest.Handle(`/`, PutBlockHandler{kc, t}).Methods("POST")
-		rest.Handle(`/{hash:[0-9a-f]{32}}{ignore}`, OptionsHandler{}).Methods("OPTIONS")
+		rest.Handle(`/`, OptionsHandler{}).Methods("OPTIONS")
 	}
 
 	rest.NotFoundHandler = InvalidPathHandler{}
 
 	return rest
+}
+
+func SetCorsHeaders(resp http.ResponseWriter) {
+	resp.Header().Set("Access-Control-Allow-Methods", "GET, HEAD, POST, PUT, OPTIONS")
+	resp.Header().Set("Access-Control-Allow-Origin", "*")
+	resp.Header().Set("Access-Control-Allow-Headers", "Authorization, Content-Length, Content-Type, X-Keep-Desired-Replicas")
+	resp.Header().Set("Access-Control-Max-Age", "86486400")
 }
 
 func (this InvalidPathHandler) ServeHTTP(resp http.ResponseWriter, req *http.Request) {
@@ -263,15 +270,11 @@ func (this InvalidPathHandler) ServeHTTP(resp http.ResponseWriter, req *http.Req
 
 func (this OptionsHandler) ServeHTTP(resp http.ResponseWriter, req *http.Request) {
 	log.Printf("%s: %s %s", GetRemoteAddress(req), req.Method, req.URL.Path)
-	resp.Header().Set("Access-Control-Allow-Methods", "GET, HEAD, POST, PUT, OPTIONS")
-	resp.Header().Set("Access-Control-Allow-Origin", "*")
-	resp.Header().Set("Access-Control-Allow-Headers", "Authorization, X-Keep-Desired-Replicas")
-	resp.Header().Set("Access-Control-Max-Age", "86486400")
+	SetCorsHeaders(resp)
 }
 
 func (this GetBlockHandler) ServeHTTP(resp http.ResponseWriter, req *http.Request) {
-	resp.Header().Set("Access-Control-Allow-Origin", "*")
-	resp.Header().Set("Access-Control-Allow-Headers", "Authorization")
+	SetCorsHeaders(resp)
 
 	kc := *this.KeepClient
 
@@ -335,6 +338,7 @@ func (this GetBlockHandler) ServeHTTP(resp http.ResponseWriter, req *http.Reques
 }
 
 func (this PutBlockHandler) ServeHTTP(resp http.ResponseWriter, req *http.Request) {
+	SetCorsHeaders(resp)
 
 	kc := *this.KeepClient
 

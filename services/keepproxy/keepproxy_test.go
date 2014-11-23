@@ -349,7 +349,7 @@ func (s *ServerRequiredSuite) TestCorsHeaders(c *C) {
 			fmt.Sprintf("http://localhost:29954/%x+3",
 				md5.Sum([]byte("foo"))))
 		c.Check(err, Equals, nil)
-		c.Check(resp.Header.Get("Access-Control-Allow-Headers"), Equals, "Authorization")
+		c.Check(resp.Header.Get("Access-Control-Allow-Headers"), Equals, "Authorization, Content-Length, Content-Type, X-Keep-Desired-Replicas")
 		c.Check(resp.Header.Get("Access-Control-Allow-Origin"), Equals, "*")
 	}
 }
