@@ -451,18 +451,18 @@ class ApplicationController < ActionController::Base
     (self.class.send "_#{params[:action]}_requires_parameters" rescue {}).
       each do |key, info|
       if info[:required] and not params.include?(key)
-        raise ArgumentError("#{key} parameter is required")
+        raise ArgumentError.new("#{key} parameter is required")
       elsif info[:type] == 'boolean'
         # Make sure params[key] is either true or false -- not a
         # string, not nil, etc.
         if not params.include?(key)
           params[key] = info[:default]
-        elsif [false, 'false'].include? params[key]
+        elsif [false, 'false', '0', 0].include? params[key]
           params[key] = false
-        elsif [true, 'true'].include? params[key]
+        elsif [true, 'true', '1', 1].include? params[key]
           params[key] = true
         else
-          raise TypeError("#{key} parameter must be a boolean, true or false")
+          raise TypeError.new("#{key} parameter must be a boolean, true or false")
         end
       end
     end
