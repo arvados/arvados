@@ -85,7 +85,6 @@ def main options
       config['ARVADOS_USER_NAME'] = user_name
       config['API_HOSTNAME'] = generate_api_hostname
       config['API_WORKBENCH_ADDRESS'] = 'false'
-      config['PUBLIC_KEY_PATH'] = find_or_create_ssh_key(config['API_HOSTNAME'])
       config.each_key do |var|
         config_out.write "#{var}: #{config[var]}\n"
       end
@@ -164,22 +163,6 @@ end
 #
 def docker_ok?(docker_path)
   return system "#{docker_path} images > /dev/null 2>&1"
-end
-
-# find_or_create_ssh_key arvados_name
-#   Returns the SSH public key appropriate for this Arvados instance,
-#   generating one if necessary.
-#
-def find_or_create_ssh_key arvados_name
-  ssh_key_file = "#{ENV['HOME']}/.ssh/arvados_#{arvados_name}_id_rsa"
-  unless File.exists? ssh_key_file
-    system 'ssh-keygen',
-           '-f', ssh_key_file,
-           '-C', "arvados@#{arvados_name}",
-           '-P', ''
-  end
-
-  return "#{ssh_key_file}.pub"
 end
 
 # install_docker

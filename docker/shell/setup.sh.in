@@ -5,8 +5,6 @@ USER_NAME="@@ARVADOS_USER_NAME@@"
 useradd $USER_NAME -s /bin/bash
 mkdir /home/$USER_NAME/.ssh -p
 
-cp ~root/.ssh/authorized_keys /home/$USER_NAME/.ssh/authorized_keys
-
 # Install our token
 mkdir -p /home/$USER_NAME/.config/arvados;
 echo "ARVADOS_API_HOST=api" >> /home/$USER_NAME/.config/arvados/settings.conf
