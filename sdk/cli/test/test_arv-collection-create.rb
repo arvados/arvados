@@ -1,11 +1,14 @@
 require 'minitest/autorun'
 require 'digest/md5'
+require 'active_support/core_ext'
 
 class TestCollectionCreate < Minitest::Test
   def setup
   end
 
   def test_small_collection
+    skip "Waiting unitl #4534 is implemented"
+
     uuid = Digest::MD5.hexdigest(foo_manifest) + '+' + foo_manifest.size.to_s
     out, err = capture_subprocess_io do
       assert_arv('--format', 'uuid', 'collection', 'create', '--collection', {
@@ -13,7 +16,7 @@ class TestCollectionCreate < Minitest::Test
                    manifest_text: foo_manifest
                  }.to_json)
     end
-    assert_equal uuid+"\n", out
+    assert /^([0-9a-z]{5}-4zz18-[0-9a-z]{15})?$/.match(out)
     assert_equal '', err
     $stderr.puts err
   end
