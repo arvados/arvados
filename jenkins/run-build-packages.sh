@@ -301,7 +301,6 @@ if [[ "$DEBUG" != 0 ]]; then
 fi
 
 cd "$WORKSPACE"
-PKG_VERSION=$(version_from_git)
 
 cd sdk/python
 handle_python_package
@@ -343,6 +342,8 @@ else
 fi
 
 # Build arvados src deb package
+cd "$WORKSPACE"
+PKG_VERSION=$(version_from_git)
 cd $WORKSPACE/debs
 build_and_scp_deb $WORKSPACE/src-build-dir/=/usr/local/arvados/src arvados-src 'Curoverse, Inc.' 'dir' "$PKG_VERSION" "--exclude=usr/local/arvados/src/.git" "--url=https://arvados.org" "--license=GNU Affero General Public License, version 3.0" "--description=The Arvados source code" "--architecture=all"
 
@@ -360,16 +361,22 @@ mkdir -p "$GOPATH/src/git.curoverse.com"
 ln -sfn "$WORKSPACE" "$GOPATH/src/git.curoverse.com/arvados.git"
 
 # keepstore
+cd "$GOPATH/src/git.curoverse.com/arvados.git/services/keepstore"
+PKG_VERSION=$(version_from_git)
 go get "git.curoverse.com/arvados.git/services/keepstore"
 cd $WORKSPACE/debs
 build_and_scp_deb $GOPATH/bin/keepstore=/usr/bin/keepstore keepstore 'Curoverse, Inc.' 'dir' "$PKG_VERSION" "--url=https://arvados.org" "--license=GNU Affero General Public License, version 3.0" "--description=Keepstore is the Keep storage daemon, accessible to clients on the LAN"
 
 # keepproxy
+cd "$GOPATH/src/git.curoverse.com/arvados.git/services/keepproxy"
+PKG_VERSION=$(version_from_git)
 go get "git.curoverse.com/arvados.git/services/keepproxy"
 cd $WORKSPACE/debs
 build_and_scp_deb $GOPATH/bin/keepproxy=/usr/bin/keepproxy keepproxy 'Curoverse, Inc.' 'dir' "$PKG_VERSION" "--url=https://arvados.org" "--license=GNU Affero General Public License, version 3.0" "--description=Keepproxy makes a Keep cluster accessible to clients that are not on the LAN"
 
 # crunchstat
+cd "$GOPATH/src/git.curoverse.com/arvados.git/services/crunchstat"
+PKG_VERSION=$(version_from_git)
 go get "git.curoverse.com/arvados.git/services/crunchstat"
 cd $WORKSPACE/debs
 build_and_scp_deb $GOPATH/bin/crunchstat=/usr/bin/crunchstat crunchstat 'Curoverse, Inc.' 'dir' "$PKG_VERSION" "--url=https://arvados.org" "--license=GNU Affero General Public License, version 3.0" "--description=Crunchstat gathers cpu/memory/network statistics of running Crunch jobs"
