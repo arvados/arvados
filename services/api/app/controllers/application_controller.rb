@@ -475,6 +475,7 @@ class ApplicationController < ActionController::Base
         type: "boolean",
         description: "Adjust name to ensure uniqueness instead of returning an error on (owner_uuid, name) collision.",
         location: "query",
+        required: false,
         default: false
       }
     }
