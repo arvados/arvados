@@ -339,9 +339,16 @@ $(document).on('ready ajax:complete', function() {
         window.redraw = false;
 
         createJobGraph($(graph_div).attr('id'));
+        var object_uuid = $(graph_div).data('object-uuid');
+        // if there are any listeners for this object uuid or "all", we will trigger the event
+        var matches = ".arv-log-event-listener[data-object-uuid=\"" + object_uuid + "\"],.arv-log-event-listener[data-object-uuids~=\"" + object_uuid + "\"]";
 
         $(document).trigger('ajax:send');
-        $.get('/jobs/' + $(graph_div).data('object-uuid') + '/push_logs.js');
+        $.get('/jobs/' + $(graph_div).data('object-uuid') + '/logs.json', function(data) {
+            data.forEach( function( entry ) {
+                $(matches).trigger('arv-log-event', entry);
+            });
+        });
 
         setInterval( function() {
             if( recreate ) {

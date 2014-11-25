@@ -1,9 +1,0 @@
-var object_uuid = '<%= @object.uuid %>';
-// if there are any listeners for this object uuid or "all", we will trigger the event
-var matches = ".arv-log-event-listener[data-object-uuid=\"" + object_uuid + "\"],.arv-log-event-listener[data-object-uuids~=\"" + object_uuid + "\"],.arv-log-event-listener[data-object-uuid=\"all\"],.arv-log-event-listener[data-object-kind=\"" + parsedData.object_kind + "\"]";
-<% @push_logs.each do |log_record| %>
-  var parsedData = { object_uuid: '<%=j log_record.object_uuid %>',
-                     event_type: '<%=j log_record.event_type %>',
-                     properties: { text: '<%=j log_record.properties[:text] %>' } };
-  $(matches).trigger('arv-log-event', parsedData);
-<% end %>

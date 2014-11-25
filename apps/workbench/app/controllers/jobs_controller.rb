@@ -57,8 +57,17 @@ class JobsController < ApplicationController
     super
   end
 
-  def push_logs
-    @push_logs = stderr_log_records([@object.uuid])
+  def logs
+    @logs = Log.select(%w(event_type object_uuid event_at properties))
+               .order('event_at DESC')
+               .filter([["event_type",  "=", "stderr"],
+                        ["object_uuid", "in", [@object.uuid]]])
+               .limit(500)
+               .results
+               .reverse
+    respond_to do |format|
+      format.json { render json: @logs }
+    end
   end
 
   def index_pane_list
