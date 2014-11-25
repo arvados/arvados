@@ -35,6 +35,7 @@ class ApplicationController < ActionController::Base
   before_filter :catch_redirect_hint
   before_filter(:find_object_by_uuid,
                 except: [:index, :create] + ERROR_ACTIONS)
+  before_filter :load_required_parameters
   before_filter :load_limit_offset_order_params, only: [:index, :contents]
   before_filter :load_where_param, only: [:index, :contents]
   before_filter :load_filters_param, only: [:index, :contents]
@@ -444,6 +445,40 @@ class ApplicationController < ActionController::Base
       # Hopefully, we are not!
       @remote_ip = request.env['REMOTE_ADDR']
     end
+  end
+
+  def load_required_parameters
+    (self.class.send "_#{params[:action]}_requires_parameters" rescue {}).
+      each do |key, info|
+      if info[:required] and not params.include?(key)
+        raise ArgumentError.new("#{key} parameter is required")
+      elsif info[:type] == 'boolean'
+        # Make sure params[key] is either true or false -- not a
+        # string, not nil, etc.
+        if not params.include?(key)
+          params[key] = info[:default]
+        elsif [false, 'false', '0', 0].include? params[key]
+          params[key] = false
+        elsif [true, 'true', '1', 1].include? params[key]
+          params[key] = true
+        else
+          raise TypeError.new("#{key} parameter must be a boolean, true or false")
+        end
+      end
+    end
+    true
+  end
+
+  def self._create_requires_parameters
+    {
+      ensure_unique_name: {
+        type: "boolean",
+        description: "Adjust name to ensure uniqueness instead of returning an error on (owner_uuid, name) collision.",
+        location: "query",
+        required: false,
+        default: false
+      }
+    }
   end
 
   def self._index_requires_parameters

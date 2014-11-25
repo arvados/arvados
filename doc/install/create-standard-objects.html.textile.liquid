@@ -1,29 +1,11 @@
 ---
 layout: default
 navsection: installguide
-title: Create standard objects
+title: Add an Arvados repository
 
 ...
 
-
-Next, we're going to use the Arvados CLI tools on the <strong>shell server</strong> to create some standard objects.
-
-h3. "All users" group
-
-The convention is to add every active user to this group. We give it a distinctive UUID that looks like an IP broadcast address.
-
-<notextile>
-<pre><code>~$ <span class="userinput">prefix=`arv --format=uuid user current | cut -d- -f1`</span>
-~$ <span class="userinput">echo "Site prefix is '$prefix'"</span>
-~$ <span class="userinput">read -rd $'\000' newgroup &lt;&lt;EOF; arv group create --group "$newgroup"</span>
-<span class="userinput">{
- "uuid":"$prefix-j7d0g-fffffffffffffff",
- "name":"All users"
-}</span>
-EOF
-</code></pre></notextile>
-
-h3. "arvados" repository
+Next, we're going to use the Arvados CLI tools on the <strong>shell server</strong> to create a few Arvados objects. These objects set up a hosted clone of the arvados repository on this cluster.
 
 This will be readable by the "All users" group, and therefore by every active user. This makes it possible for users to run the bundled Crunch scripts by specifying @"script_version":"master","repository":"arvados"@ rather than pulling the Arvados source tree into their own repositories.
 

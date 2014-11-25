@@ -86,7 +86,7 @@ class PipelineInstancesController < ApplicationController
                 obj = Collection.find value_info_value
                 if value_info_partitioned
                   value_info[:value] = obj.portable_data_hash + value_info_partitioned[1] + value_info_partitioned[2]
-                  value_info[:selection_name] = obj.name + value_info_partitioned[1] + value_info_partitioned[2]
+                  value_info[:selection_name] = obj.name ? obj.name + value_info_partitioned[1] + value_info_partitioned[2] : obj.name
                 else
                   value_info[:value] = obj.portable_data_hash
                   value_info[:selection_name] = obj.name

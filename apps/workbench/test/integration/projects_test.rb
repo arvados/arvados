@@ -4,12 +4,18 @@ require 'headless'
 
 class ProjectsTest < ActionDispatch::IntegrationTest
   setup do
-    Capybara.current_driver = Capybara.javascript_driver
+    headless = Headless.new
+    headless.start
+    Capybara.current_driver = :selenium
+
+    # project tests need bigger page size to be able to see all the buttons
+    Capybara.current_session.driver.browser.manage.window.resize_to(1152, 768)
   end
 
   test 'Check collection count for A Project in the tab pane titles' do
     project_uuid = api_fixture('groups')['aproject']['uuid']
     visit page_with_token 'active', '/projects/' + project_uuid
+    wait_for_ajax
     collection_count = page.all("[data-pk*='collection']").count
     assert_selector '#Data_collections-tab span', text: "(#{collection_count})"
   end
@@ -222,7 +228,9 @@ class ProjectsTest < ActionDispatch::IntegrationTest
       assert(has_link?("Write"),
              "failed to change access level on new share")
       click_on "Revoke"
+      page.driver.browser.switch_to.alert.accept
     end
+    wait_for_ajax
     using_wait_time(Capybara.default_wait_time * 3) do
       assert(page.has_no_text?(name),
              "new share row still exists after being revoked")
@@ -493,10 +501,6 @@ class ProjectsTest < ActionDispatch::IntegrationTest
                    item_list_parameter,
                    sorted = false,
                    sort_parameters = nil)
-    headless = Headless.new
-    headless.start
-    Capybara.current_driver = :selenium
-
     project_uuid = api_fixture('groups')[project_name]['uuid']
     visit page_with_token 'user1_with_load', '/projects/' + project_uuid
 
@@ -630,6 +634,29 @@ class ProjectsTest < ActionDispatch::IntegrationTest
         assert page.has_link? 'Move project...'
       else
         assert page.has_no_link? 'Move project...'
+      end
+    end
+  end
+
+  test "error while loading tab" do
+    original_arvados_v1_base = Rails.configuration.arvados_v1_base
+
+    visit page_with_token 'active', '/projects/' + api_fixture('groups')['aproject']['uuid']
+
+    # Point to a bad api server url to generate error
+    Rails.configuration.arvados_v1_base = "https://[100::f]:1/"
+    click_link 'Other objects'
+    within '#Other_objects' do
+      # Error
+      assert_selector('a', text: 'Reload tab')
+
+      # Now point back to the orig api server and reload tab
+      Rails.configuration.arvados_v1_base = original_arvados_v1_base
+      click_link 'Reload tab'
+      assert_no_selector('a', text: 'Reload tab')
+      assert_selector('button', text: 'Selection...')
+      within '.selection-action-container' do
+        assert_selector 'tr[data-kind="arvados#trait"]'
       end
     end
   end
