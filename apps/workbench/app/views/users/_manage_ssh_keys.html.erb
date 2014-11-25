@@ -2,7 +2,7 @@
   <% if !@my_ssh_keys.any? %>
      <p> You have not yet set up an SSH public key for use with Arvados. </p>
      <p>  <%= link_to "Click here",
-	          "#{Rails.configuration.arvados_docsite}/user/getting_started/ssh-access-unix.html", 
+	          "#{Rails.configuration.arvados_docsite}/user/getting_started/ssh-access-unix.html",
 	          style: "font-weight: bold",
 	          target: "_blank" %>  to learn about SSH keys in Arvados.
      </p>
@@ -43,7 +43,7 @@
               <% end %>
             </td>
             <td>
-              <%= link_to(authorized_key_path(id: key[:uuid]), method: 'delete', class: 'btn btn-sm', data: {confirm: "Really delete key?"}) do %>
+              <%= link_to(authorized_key_path(id: key[:uuid]), method: :delete, class: 'btn btn-sm', data: {confirm: "Really delete key?"}) do %>
                   <i class="fa fa-fw fa-trash-o"></i>
               <% end %>
             </td>
