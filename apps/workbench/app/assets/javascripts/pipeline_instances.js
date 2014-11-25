@@ -98,7 +98,11 @@ $(document).on('arv-log-event', '.arv-log-event-handler-append-logs', function(e
     var wasatbottom = ($(this).scrollTop() + $(this).height() >= this.scrollHeight);
 
     if (eventData.event_type == "stderr" || eventData.event_type == "stdout") {
-        $(this).append(eventData.properties.text);
+        if( eventData.prepend ) {
+            $(this).prepend(eventData.properties.text);
+        } else {
+            $(this).append(eventData.properties.text);
+        }
     }
 
     if (wasatbottom) {

@@ -64,7 +64,8 @@ class JobsController < ApplicationController
                         ["object_uuid", "in", [@object.uuid]]])
                .limit(500)
                .results
-               .reverse
+               .to_a
+               .map{ |e| e.serializable_hash.merge({ 'prepend' => true }) }
     respond_to do |format|
       format.json { render json: @logs }
     end
