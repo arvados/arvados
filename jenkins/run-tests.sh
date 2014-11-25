@@ -227,7 +227,7 @@ do_test() {
            # .egg files that setup.py downloads.
            cd "$WORKSPACE/$1" \
                 && HOME="$GEMHOME" python setup.py test ${testargs[$1]} \
-                && easy_install *.egg
+                && (easy_install *.egg || true)
         else
             "test_$1"
         fi
