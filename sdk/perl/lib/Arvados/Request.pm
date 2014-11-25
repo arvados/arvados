@@ -49,9 +49,9 @@ sub process_request
     my $content;
     while (($p, $v) = each %content) {
         $content .= '&' unless $content eq '';
-        $content .= uri_escape($p);
+        $content .= lean_uri_escape($p);
         $content .= '=';
-        $content .= uri_escape($v);
+        $content .= lean_uri_escape($v);
     }
     $self->{'req'}->content_type("application/x-www-form-urlencoded; charset='utf8'");
     $self->{'req'}->content(Encode::encode('utf8', $content));
@@ -92,6 +92,14 @@ sub set_auth_token
 sub get_headers
 {
     ""
+}
+
+# lean_uri_escape consumes about half as much memory
+# as URI::Escape::uri_escape.
+sub lean_uri_escape {
+    my ($text) = @_;
+    $text =~ s/([^A-Za-z0-9\-\._~])/$URI::Escape::escapes{$&}/ge;
+    return $text;
 }
 
 1;

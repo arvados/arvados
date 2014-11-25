@@ -1702,7 +1702,7 @@ sub api_call {
     if ($next_try_at < time) {
       $retry_msg = "Retrying.";
     } else {
-      my $next_try_fmt = strftime("%Y-%m-%d %H:%M:%S", $next_try_at);
+      my $next_try_fmt = strftime("%Y-%m-%d %H:%M:%S", localtime($next_try_at));
       $retry_msg = "Retrying at $next_try_fmt.";
     }
     Log(undef, "API method $method_name failed: $errmsg. $retry_msg");
