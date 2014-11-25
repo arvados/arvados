@@ -3,7 +3,7 @@ class DatabaseController < ApplicationController
   skip_before_filter :render_404_if_no_object
   before_filter :admin_required
   def reset
-    raise ArvadosModel::PermissionDeniedError unless ENV['RAILS_ENV'] == 'test'
+    raise ArvadosModel::PermissionDeniedError unless Rails.env == 'test'
 
     require 'active_record/fixtures'
 

@@ -17,11 +17,14 @@ class DatabaseControllerTest < ActionController::TestCase
 
   test "reset fails when not in test mode" do
     authorize_with :admin
-    env_was = ENV['RAILS_ENV']
-    ENV['RAILS_ENV'] = 'development'
-    post :reset
-    assert_response 403
-    ENV['RAILS_ENV'] = env_was
+    env_was = Rails.env
+    begin
+      Rails.env = 'development'
+      post :reset
+      assert_response 403
+    ensure
+      Rails.env = env_was
+    end
   end
 
   test "reset fails when not configured" do
