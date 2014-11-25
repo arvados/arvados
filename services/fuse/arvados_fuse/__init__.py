@@ -5,7 +5,6 @@
 import os
 import sys
 import llfuse
-from llfuse import FUSEError
 import errno
 import stat
 import threading
@@ -20,6 +19,8 @@ import time
 import _strptime
 import calendar
 import threading
+import itertools
+
 from arvados.util import portable_data_hash_pattern, uuid_pattern, collection_uuid_pattern, group_uuid_pattern, user_uuid_pattern, link_uuid_pattern
 
 _logger = logging.getLogger('arvados.arvados_fuse')
@@ -391,18 +392,8 @@ class MagicDirectory(Directory):
     to readdir().
     '''
 
-    def __init__(self, parent_inode, inodes, api, num_retries):
-        super(MagicDirectory, self).__init__(parent_inode)
-        self.inodes = inodes
-        self.api = api
-        self.num_retries = num_retries
-        # Have to defer creating readme_file because at this point we don't
-        # yet have an inode assigned.
-        self.readme_file = None
-
-    def create_readme(self):
-        if self.readme_file is None:
-            text = '''This directory provides access to Arvados collections as subdirectories listed
+    README_TEXT = '''
+This directory provides access to Arvados collections as subdirectories listed
 by uuid (in the form 'zzzzz-4zz18-1234567890abcde') or portable data hash (in
 the form '1234567890abcdefghijklmnopqrstuv+123').
 
@@ -410,13 +401,27 @@ Note that this directory will appear empty until you attempt to access a
 specific collection subdirectory (such as trying to 'cd' into it), at which
 point the collection will actually be looked up on the server and the directory
 will appear if it exists.
-'''
-            self.readme_file = self.inodes.add_entry(StringFile(self.inode, text, time.time()))
-            self._entries["README"] = self.readme_file
+'''.lstrip()
+
+    def __init__(self, parent_inode, inodes, api, num_retries):
+        super(MagicDirectory, self).__init__(parent_inode)
+        self.inodes = inodes
+        self.api = api
+        self.num_retries = num_retries
+
+    def __setattr__(self, name, value):
+        super(MagicDirectory, self).__setattr__(name, value)
+        # When we're assigned an inode, add a README.
+        if ((name == 'inode') and (self.inode is not None) and
+              (not self._entries)):
+            self._entries['README'] = self.inodes.add_entry(
+                StringFile(self.inode, self.README_TEXT, time.time()))
+            # If we're the root directory, add an identical by_id subdirectory.
+            if self.inode == llfuse.ROOT_INODE:
+                self._entries['by_id'] = self.inodes.add_entry(MagicDirectory(
+                        self.inode, self.inodes, self.api, self.num_retries))
 
     def __contains__(self, k):
-        self.create_readme()
-
         if k in self._entries:
             return True
 
@@ -434,10 +439,6 @@ will appear if it exists.
         except Exception as e:
             _logger.debug('arv-mount exception keep %s', e)
             return False
-
-    def items(self):
-        self.create_readme()
-        return self._entries.items()
 
     def __getitem__(self, item):
         if item in self:
@@ -692,7 +693,7 @@ class Inodes(object):
 
     def __init__(self):
         self._entries = {}
-        self._counter = llfuse.ROOT_INODE
+        self._counter = itertools.count(llfuse.ROOT_INODE)
 
     def __getitem__(self, item):
         return self._entries[item]
@@ -710,9 +711,8 @@ class Inodes(object):
         return k in self._entries
 
     def add_entry(self, entry):
-        entry.inode = self._counter
+        entry.inode = next(self._counter)
         self._entries[entry.inode] = entry
-        self._counter += 1
         return entry
 
     def del_entry(self, entry):

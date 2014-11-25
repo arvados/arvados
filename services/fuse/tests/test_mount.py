@@ -140,8 +140,6 @@ class FuseMagicTest(MountTestBase):
         operations = fuse.Operations(os.getuid(), os.getgid())
         e = operations.inodes.add_entry(fuse.MagicDirectory(llfuse.ROOT_INODE, operations.inodes, self.api, 0))
 
-        self.mounttmp = tempfile.mkdtemp()
-
         llfuse.init(operations, self.mounttmp, [])
         t = threading.Thread(None, lambda: llfuse.main())
         t.start()
@@ -150,17 +148,20 @@ class FuseMagicTest(MountTestBase):
         operations.initlock.wait()
 
         # now check some stuff
-        d1 = os.listdir(self.mounttmp)
-        d1.sort()
-        self.assertEqual(['README'], d1)
-
-        d2 = os.listdir(os.path.join(self.mounttmp, self.testcollection))
-        d2.sort()
-        self.assertEqual(['thing1.txt'], d2)
-
-        d3 = os.listdir(self.mounttmp)
-        d3.sort()
-        self.assertEqual([self.testcollection, 'README'], d3)
+        mount_ls = os.listdir(self.mounttmp)
+        self.assertIn('README', mount_ls)
+        self.assertFalse(any(arvados.util.keep_locator_pattern.match(fn) or
+                             arvados.util.uuid_pattern.match(fn)
+                             for fn in mount_ls),
+                         "new FUSE MagicDirectory lists Collection")
+        self.assertDirContents(self.testcollection, ['thing1.txt'])
+        self.assertDirContents(os.path.join('by_id', self.testcollection),
+                               ['thing1.txt'])
+        mount_ls = os.listdir(self.mounttmp)
+        self.assertIn('README', mount_ls)
+        self.assertIn(self.testcollection, mount_ls)
+        self.assertIn(self.testcollection,
+                      os.listdir(os.path.join(self.mounttmp, 'by_id')))
 
         files = {}
         files[os.path.join(self.mounttmp, self.testcollection, 'thing1.txt')] = 'data 1'
