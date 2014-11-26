@@ -11,7 +11,7 @@ class Arvados::V1::NodesController < ApplicationController
   end
 
   def self._ping_requires_parameters
-    { ping_secret: true }
+    { ping_secret: {required: true} }
   end
 
   def ping
