@@ -414,9 +414,9 @@ if [[ ! -d "$WORKSPACE/common-workflow-language" ]]; then
   mkdir "$WORKSPACE/common-workflow-language"
   cd "$WORKSPACE"
   if [[ "$DEBUG" != 0 ]]; then
-    git clone https://github.com/rabix/common-workflow-language.git common-workflow-language
+    git clone https://github.com/common-workflow-language/common-workflow-language.git common-workflow-language
   else
-    git clone -q https://github.com/rabix/common-workflow-language.git common-workflow-language
+    git clone -q https://github.com/common-workflow-language/common-workflow-language.git common-workflow-language
   fi
 fi
 
