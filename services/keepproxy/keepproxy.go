@@ -248,6 +248,7 @@ func MakeRESTRouter(
 		rest.Handle(`/{hash:[0-9a-f]{32}}+{hints}`, PutBlockHandler{kc, t}).Methods("PUT")
 		rest.Handle(`/{hash:[0-9a-f]{32}}`, PutBlockHandler{kc, t}).Methods("PUT")
 		rest.Handle(`/`, PutBlockHandler{kc, t}).Methods("POST")
+		rest.Handle(`/{any}`, OptionsHandler{}).Methods("OPTIONS")
 		rest.Handle(`/`, OptionsHandler{}).Methods("OPTIONS")
 	}
 
