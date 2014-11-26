@@ -102,10 +102,12 @@ function processLogLineForChart( logLine ) {
 
                 // special calculation for cpus
                 if( /-cpu$/.test(series) ) {
-                    // divide the stat by the number of cpus
-                    var cpuCountMatch = intervalMatch[1].match(/(\d+) cpus/);
-                    if( cpuCountMatch ) {
-                        datum = datum / cpuCountMatch[1];
+                    // divide the stat by the number of cpus unless the time count is less than the interval length
+                    if( dsum > dt ) {
+                        var cpuCountMatch = intervalMatch[1].match(/(\d+) cpus/);
+                        if( cpuCountMatch ) {
+                            datum = datum / cpuCountMatch[1];
+                        }
                     }
                 }
 
@@ -192,7 +194,7 @@ function addJobGraphDatum(timestamp, datum, series, rawDetailData) {
             shifted.push(jobGraphData.shift());
         }
         if( shifted.length > 0 ) {
-            // from those that we dropped, are any of them maxima? if so we need to rescale
+            // from those that we dropped, were any of them maxima? if so we need to rescale
             jobGraphSeries.forEach( function(series) {
                 // test that every shifted entry in this series was either not a number (in which case we don't care)
                 // or else approximately (to 2 decimal places) smaller than the scaled maximum (i.e. 1),
