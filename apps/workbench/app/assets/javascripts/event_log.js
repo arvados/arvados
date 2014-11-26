@@ -103,7 +103,7 @@ function processLogLineForChart( logLine ) {
                 // special calculation for cpus
                 if( /-cpu$/.test(series) ) {
                     // divide the stat by the number of cpus unless the time count is less than the interval length
-                    if( dsum > dt ) {
+                    if( dsum.toFixed(1) > dt.toFixed(1) ) {
                         var cpuCountMatch = intervalMatch[1].match(/(\d+) cpus/);
                         if( cpuCountMatch ) {
                             datum = datum / cpuCountMatch[1];
@@ -267,7 +267,7 @@ function createJobGraph(elementName) {
                 var datum = options.data[index][series];
                 var point = ''
                 point += "<div class='morris-hover-point' style='color: ";
-                point += options.lineColors[sortedIndex];
+                point += options.lineColors[sortedIndex % options.lineColors.length];
                 point += "'>";
                 var labelMatch = options.labels[sortedIndex].match(/^T(\d+)-(.*)/);
                 point += 'Task ' + labelMatch[1] + ' ' + labelMatch[2];
