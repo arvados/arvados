@@ -258,13 +258,7 @@ class Arvados::V1::SchemaController < ApplicationController
               path: "#{k.to_s.underscore.pluralize}",
               httpMethod: "POST",
               description: "Create a new #{k.to_s}.",
-              parameters: {
-                ensure_unique_name: {
-                  type: "boolean",
-                  description: "Adjust name to ensure uniqueness instead of returning an error on (owner_uuid, name) collision.",
-                  location: "query"
-                }
-              },
+              parameters: {},
               request: {
                 required: true,
                 properties: {

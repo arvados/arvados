@@ -161,6 +161,80 @@ Available methods: ls, get, put, less, check, docker
 </pre>
 </notextile>
 
+h3(#arv-keep-ls). arv keep ls
+
+<notextile>
+<pre>
+$ <code class="userinput">arv keep ls --help</code>
+usage: arv-ls [-h] [--retries RETRIES] [-s] locator
+
+List contents of a manifest
+
+positional arguments:
+  locator            Collection UUID or locator
+
+optional arguments:
+  -h, --help         show this help message and exit
+  --retries RETRIES  Maximum number of times to retry server requests that
+                     encounter temporary failures (e.g., server down). Default
+                     3.
+  -s                 List file sizes, in KiB.
+</pre>
+</notextile>
+
+h3(#arv-keep-get). arv keep get
+
+<notextile>
+<pre>
+$ <code class="userinput">arv keep get --help</code>
+usage: arv-get [-h] [--retries RETRIES]
+               [--progress | --no-progress | --batch-progress]
+               [--hash HASH | --md5sum] [-n] [-r] [-f | --skip-existing]
+               locator [destination]
+
+Copy data from Keep to a local file or pipe.
+
+positional arguments:
+  locator            Collection locator, optionally with a file path or
+                     prefix.
+  destination        Local file or directory where the data is to be written.
+                     Default: /dev/stdout.
+
+optional arguments:
+  -h, --help         show this help message and exit
+  --retries RETRIES  Maximum number of times to retry server requests that
+                     encounter temporary failures (e.g., server down). Default
+                     3.
+  --progress         Display human-readable progress on stderr (bytes and, if
+                     possible, percentage of total data size). This is the
+                     default behavior when it is not expected to interfere
+                     with the output: specifically, stderr is a tty _and_
+                     either stdout is not a tty, or output is being written to
+                     named files rather than stdout.
+  --no-progress      Do not display human-readable progress on stderr.
+  --batch-progress   Display machine-readable progress on stderr (bytes and,
+                     if known, total data size).
+  --hash HASH        Display the hash of each file as it is read from Keep,
+                     using the given hash algorithm. Supported algorithms
+                     include md5, sha1, sha224, sha256, sha384, and sha512.
+  --md5sum           Display the MD5 hash of each file as it is read from
+                     Keep.
+  -n                 Do not write any data -- just read from Keep, and report
+                     md5sums if requested.
+  -r                 Retrieve all files in the specified collection/prefix.
+                     This is the default behavior if the "locator" argument
+                     ends with a forward slash.
+  -f                 Overwrite existing files while writing. The default
+                     behavior is to refuse to write *anything* if any of the
+                     output files already exist. As a special case, -f is not
+                     needed to write to /dev/stdout.
+  --skip-existing    Skip files that already exist. The default behavior is to
+                     refuse to write *anything* if any files exist that would
+                     have to be overwritten. This option causes even devices,
+                     sockets, and fifos to be skipped.
+</pre>
+</notextile>
+
 h3(#arv-keep-put). arv keep put
 
 <notextile>
@@ -231,59 +305,6 @@ optional arguments:
   --retries RETRIES     Maximum number of times to retry server requests that
                         encounter temporary failures (e.g., server down).
                         Default 3.
-</pre>
-</notextile>
-
-h3(#arv-keep-get). arv keep get
-
-<notextile>
-<pre>
-$ <code class="userinput">arv keep get --help</code>
-usage: arv-get [-h] [--retries RETRIES]
-               [--progress | --no-progress | --batch-progress]
-               [--hash HASH | --md5sum] [-n] [-r] [-f | --skip-existing]
-               locator [destination]
-
-Copy data from Keep to a local file or pipe.
-
-positional arguments:
-  locator            Collection locator, optionally with a file path or
-                     prefix.
-  destination        Local file or directory where the data is to be written.
-                     Default: /dev/stdout.
-
-optional arguments:
-  -h, --help         show this help message and exit
-  --retries RETRIES  Maximum number of times to retry server requests that
-                     encounter temporary failures (e.g., server down). Default
-                     3.
-  --progress         Display human-readable progress on stderr (bytes and, if
-                     possible, percentage of total data size). This is the
-                     default behavior when it is not expected to interfere
-                     with the output: specifically, stderr is a tty _and_
-                     either stdout is not a tty, or output is being written to
-                     named files rather than stdout.
-  --no-progress      Do not display human-readable progress on stderr.
-  --batch-progress   Display machine-readable progress on stderr (bytes and,
-                     if known, total data size).
-  --hash HASH        Display the hash of each file as it is read from Keep,
-                     using the given hash algorithm. Supported algorithms
-                     include md5, sha1, sha224, sha256, sha384, and sha512.
-  --md5sum           Display the MD5 hash of each file as it is read from
-                     Keep.
-  -n                 Do not write any data -- just read from Keep, and report
-                     md5sums if requested.
-  -r                 Retrieve all files in the specified collection/prefix.
-                     This is the default behavior if the "locator" argument
-                     ends with a forward slash.
-  -f                 Overwrite existing files while writing. The default
-                     behavior is to refuse to write *anything* if any of the
-                     output files already exist. As a special case, -f is not
-                     needed to write to /dev/stdout.
-  --skip-existing    Skip files that already exist. The default behavior is to
-                     refuse to write *anything* if any files exist that would
-                     have to be overwritten. This option causes even devices,
-                     sockets, and fifos to be skipped.
 </pre>
 </notextile>
 
