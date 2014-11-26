@@ -140,4 +140,8 @@ class UserSessionsController < ApplicationController
     callback_url += 'api_token=' + api_client_auth.api_token
     redirect_to callback_url
   end
+
+  def cross_origin_forbidden
+    send_error 'Forbidden', status: 403
+  end
 end

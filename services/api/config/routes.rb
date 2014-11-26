@@ -3,8 +3,13 @@ Server::Application.routes.draw do
 
   # See http://guides.rubyonrails.org/routing.html
 
-  # OPTIONS requests just get an empty response with CORS headers.
-  match '*a', :to => 'static#empty', :via => 'OPTIONS'
+  # OPTIONS requests are not allowed at routes that use cookies.
+  ['/auth/*a', '/login', '/logout'].each do |nono|
+    match nono, :to => 'user_sessions#cross_origin_forbidden', :via => 'OPTIONS'
+  end
+  # OPTIONS at discovery and API paths get an empty response with CORS headers.
+  match '/discovery/v1/*a', :to => 'static#empty', :via => 'OPTIONS'
+  match '/arvados/v1/*a', :to => 'static#empty', :via => 'OPTIONS'
 
   namespace :arvados do
     namespace :v1 do
