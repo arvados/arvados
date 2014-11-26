@@ -3,7 +3,6 @@ require 'selenium-webdriver'
 require 'headless'
 
 class UsersTest < ActionDispatch::IntegrationTest
-  reset_api_fixtures :after_suite
 
   test "login as active user but not admin" do
     Capybara.current_driver = Capybara.javascript_driver

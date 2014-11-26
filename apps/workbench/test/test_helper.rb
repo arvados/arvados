@@ -204,24 +204,59 @@ class ActionController::TestCase
   end
 end
 
-# Test classes can call reset_api_fixtures(:before_suite) or
-# ...(:after_suite)
+# Test classes can call reset_api_fixtures(when_to_reset,flag) to
+# override the default. Example:
+#
+# class MySuite < ActionDispatch::IntegrationTest
+#   reset_api_fixtures :after_each_test, false
+#   reset_api_fixtures :after_suite, true
+#   ...
+# end
+#
+# The default behavior is reset_api_fixtures(:after_each_test,true).
+#
 class ActiveSupport::TestCase
-  class << self
-    attr_accessor :want_reset_api_fixtures
+
+  def self.inherited subclass
+    subclass.class_eval do
+      class << self
+        attr_accessor :want_reset_api_fixtures
+      end
+      @want_reset_api_fixtures = {
+        after_each_test: true,
+        after_suite: false,
+        before_suite: false,
+      }
+    end
+    super
+  end
+  # Existing subclasses of ActiveSupport::TestCase (ones that already
+  # existed before we set up the self.inherited hook above) will not
+  # get their own instance variable. They're not real test cases
+  # anyway, so we give them a "don't reset anywhere" stub.
+  def self.want_reset_api_fixtures
+    {}
   end
 
   def self.reset_api_fixtures where, t=true
-    raise unless [:before_suite, :after_suite].include? where
-    self.want_reset_api_fixtures ||= {}
+    if not want_reset_api_fixtures.has_key? where
+      raise ArgumentError, "There is no #{where.inspect} hook"
+    end
     self.want_reset_api_fixtures[where] = t
   end
 
   def self.run *args
-    self.want_reset_api_fixtures ||= {}
     reset_api_fixtures_now if want_reset_api_fixtures[:before_suite]
-    super
+    result = super
     reset_api_fixtures_now if want_reset_api_fixtures[:after_suite]
+    result
+  end
+
+  def after_teardown
+    if self.class.want_reset_api_fixtures[:after_each_test]
+      self.class.reset_api_fixtures_now
+    end
+    super
   end
 
   protected

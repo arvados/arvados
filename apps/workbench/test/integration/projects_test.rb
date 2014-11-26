@@ -3,8 +3,6 @@ require 'selenium-webdriver'
 require 'headless'
 
 class ProjectsTest < ActionDispatch::IntegrationTest
-  reset_api_fixtures :after_suite
-
   setup do
     headless = Headless.new
     headless.start
@@ -287,7 +285,7 @@ class ProjectsTest < ActionDispatch::IntegrationTest
     ['Remove',api_fixture('collections')['collection_in_aproject_with_same_name_as_in_home_project'],
       api_fixture('groups')['aproject'],nil,true],
   ].each do |action, my_collection, src, dest=nil, expect_name_change=nil|
-    test "selection #{action} #{expect_name_change} for project" do
+    test "selection #{action} -> #{expect_name_change.inspect} for project" do
       perform_selection_action src, dest, my_collection, action
 
       case action
@@ -298,8 +296,6 @@ class ProjectsTest < ActionDispatch::IntegrationTest
         find(".dropdown-menu a", text: dest['name']).click
         assert page.has_text?(my_collection['name']), 'Collection not found in dest project after copy'
 
-        # now remove it from destination project to restore to original state
-        perform_selection_action dest, nil, my_collection, 'Remove'
       when 'Move'
         assert page.has_no_text?(my_collection['name']), 'Collection still found in src project after move'
         visit page_with_token 'active', '/'
@@ -307,8 +303,6 @@ class ProjectsTest < ActionDispatch::IntegrationTest
         find(".dropdown-menu a", text: dest['name']).click
         assert page.has_text?(my_collection['name']), 'Collection not found in dest project after move'
 
-        # move it back to src project to restore to original state
-        perform_selection_action dest, src, my_collection, action
       when 'Remove'
         assert page.has_no_text?(my_collection['name']), 'Collection still found in src project after remove'
         visit page_with_token 'active', '/'

@@ -3,8 +3,6 @@ require 'selenium-webdriver'
 require 'headless'
 
 class UserManageAccountTest < ActionDispatch::IntegrationTest
-  reset_api_fixtures :after_suite
-
   setup do
     headless = Headless.new
     headless.start

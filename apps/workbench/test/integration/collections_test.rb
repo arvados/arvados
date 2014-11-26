@@ -3,8 +3,6 @@ require 'selenium-webdriver'
 require 'headless'
 
 class CollectionsTest < ActionDispatch::IntegrationTest
-  reset_api_fixtures :after_suite
-
   setup do
     Capybara.current_driver = :rack_test
   end
