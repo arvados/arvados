@@ -325,7 +325,9 @@ function isJobSeriesRescalable( series ) {
 
 $(document).on('arv-log-event', '#log_graph_div', function(event, eventData) {
     if( eventData.properties.text ) {
-        processLogLineForChart( eventData.properties.text );
+        eventData.properties.text.split('\n').forEach( function( logLine ) {
+            processLogLineForChart( logLine );
+        } );
     }
 } );
 
