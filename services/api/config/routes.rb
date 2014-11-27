@@ -63,7 +63,7 @@ Server::Application.routes.draw do
     end
   end
 
-  if Rails.configuration.enable_remote_database_reset
+  if Rails.env == 'test'
     post '/database/reset', to: 'database#reset'
   end
 

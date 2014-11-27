@@ -7,11 +7,16 @@ class DatabaseResetTest < ActionDispatch::IntegrationTest
     Rails.application.reload_routes!
   end
 
-  test "reset fails when not configured" do
-    Rails.configuration.enable_remote_database_reset = false
-    Rails.application.reload_routes!
-    post '/database/reset', {}, auth(:admin)
-    assert_response 404
+  test "reset fails when Rails.env != 'test'" do
+    rails_env_was = Rails.env
+    begin
+      Rails.env = 'production'
+      Rails.application.reload_routes!
+      post '/database/reset', {}, auth(:admin)
+      assert_response 404
+    ensure
+      Rails.env = rails_env_was
+    end
   end
 
   test "reset fails with non-admin token" do

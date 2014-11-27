@@ -46,7 +46,6 @@ test:
   user_profile_notification_address: arvados@example.com
   workbench_address: https://localhost:3001/
   websocket_address: ws://127.0.0.1:3333/websocket
-  enable_remote_database_reset: true
 
 common:
   uuid_prefix: <%= Digest::MD5.hexdigest(`hostname`).to_i(16).to_s(36)[0..4] %>

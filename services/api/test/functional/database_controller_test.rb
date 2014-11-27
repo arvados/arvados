@@ -3,37 +3,35 @@ require 'test_helper'
 class DatabaseControllerTest < ActionController::TestCase
   include CurrentApiClient
 
-  teardown do
-    restore_configuration
-    # We made configuration changes here that affect routing.
-    Rails.application.reload_routes!
-  end
-
   test "reset fails with non-admin token" do
     authorize_with :active
     post :reset
     assert_response 403
   end
 
-  test "reset fails when not in test mode" do
+  test "route not found when not in test mode" do
     authorize_with :admin
     env_was = Rails.env
+    Rails.application.reload_routes!
     begin
-      Rails.env = 'development'
-      post :reset
-      assert_response 403
+      assert_raises ActionController::RoutingError do
+        Rails.env = 'production'
+        Rails.application.reload_routes!
+        post :reset
+      end
     ensure
       Rails.env = env_was
+      Rails.application.reload_routes!
     end
   end
 
-  test "reset fails when not configured" do
-    Rails.configuration.enable_remote_database_reset = false
-    Rails.application.reload_routes!
-    authorize_with :admin
-    assert_raise ActionController::RoutingError do
-      post :reset
+  test "reset fails when a non-test-fixture user exists" do
+    act_as_system_user do
+      User.create!(uuid: 'abcde-tpzed-123451234512345', email: 'bar@example.net')
     end
+    authorize_with :admin
+    post :reset
+    assert_response 403
   end
 
   test "reset succeeds with admin token" do
