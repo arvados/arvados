@@ -182,7 +182,34 @@ do
         eval $tmpdir=$(mktemp -d)
     fi
 done
-PATH="$GEMHOME/.gem/ruby/2.1.0/bin:$PATH"
+
+# When our "bundle install"s need to install new gems to satisfy
+# dependencies, we want them to go where "gem install --user-install"
+# would put them. This could be ~/.gem/..., or something rvm has set
+# up. We don't want to install them to our GEMHOME tmpdir, though:
+# that would mean re-downloading all dependencies each time we run
+# tests with clean tmpdirs. The first dir in `gem env gempath` seems
+# to give us this dir. (Note: this is a no-op if rvm is in use.)
+user_gempath="$(gem env gempath)"
+export GEM_HOME="${user_gempath%%:*}"
+PATH="$(gem env gemdir)/bin:$PATH"
+
+# Wherever "HOME=$GEMHOME gem install --user-install" installs stuff
+# to, we want its bin to be in our PATH. (Normally, this gempath is
+# inside our nice clean $GEMHOME, which means we can install the
+# current version there and expect integration tests to find it before
+# finding any other versions that happen to be installed
+# somewhere. But if rvm is enforcing its own idea where gempath should
+# go, we'll just assume rvm has been set up correctly rather than
+# fight it.)
+tmpdir_gempath="$(HOME="$GEMHOME" gem env gempath)"
+PATH="${tmpdir_gempath%%:*}/bin:$PATH"
+
+if ! which bundler >/dev/null
+then
+    gem install --user-install bundler || fatal 'Could not install bundler'
+fi
+
 export GOPATH
 mkdir -p "$GOPATH/src/git.curoverse.com"
 ln -sfn "$WORKSPACE" "$GOPATH/src/git.curoverse.com/arvados.git" \
@@ -280,14 +307,15 @@ do_install docs
 install_ruby_sdk() {
     cd "$WORKSPACE/sdk/ruby" \
         && HOME="$GEMHOME" bundle install --no-deployment \
-        && gem build arvados.gemspec \
+        && HOME="$GEMHOME" gem build arvados.gemspec \
         && HOME="$GEMHOME" gem install --user-install --no-ri --no-rdoc `ls -t arvados-*.gem|head -n1`
 }
 do_install ruby_sdk
 
 install_cli() {
     cd "$WORKSPACE/sdk/cli" \
-        && gem build arvados-cli.gemspec \
+        && HOME="$GEMHOME" bundle install --no-deployment \
+        && HOME="$GEMHOME" gem build arvados-cli.gemspec \
         && HOME="$GEMHOME" gem install --user-install --no-ri --no-rdoc `ls -t arvados-cli-*.gem|head -n1`
 }
 do_install cli
