@@ -1,6 +1,10 @@
 require 'test_helper'
 
 class ApplicationControllerTest < ActionController::TestCase
+  # These tests don't do state-changing API calls. Save some time by
+  # skipping the database reset.
+  reset_api_fixtures :after_each_test, false
+  reset_api_fixtures :after_suite, true
 
   setup do
     @user_dataclass = ArvadosBase.resource_class_for_uuid(api_fixture('users')['active']['uuid'])

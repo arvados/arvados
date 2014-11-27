@@ -1,6 +1,11 @@
 require 'test_helper'
 
 class CollectionsControllerTest < ActionController::TestCase
+  # These tests don't do state-changing API calls. Save some time by
+  # skipping the database reset.
+  reset_api_fixtures :after_each_test, false
+  reset_api_fixtures :after_suite, true
+
   NONEXISTENT_COLLECTION = "ffffffffffffffffffffffffffffffff+0"
 
   def stub_file_content
