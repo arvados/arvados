@@ -106,6 +106,22 @@ class CollectionsControllerTest < ActionController::TestCase
     assert_no_session
   end
 
+  test "sharing auths available to admin" do
+    show_collection("collection_owned_by_active", "admin_trustedclient")
+    assert_not_nil assigns(:search_sharing)
+  end
+
+  test "sharing auths available to owner" do
+    show_collection("collection_owned_by_active", "active_trustedclient")
+    assert_not_nil assigns(:search_sharing)
+  end
+
+  test "sharing auths available to reader" do
+    show_collection("foo_collection_in_aproject",
+                    "project_viewer_trustedclient")
+    assert_not_nil assigns(:search_sharing)
+  end
+
   test "reader token Collection links end with trailing slash" do
     # Testing the fix for #2937.
     session = session_for(:active_trustedclient)
