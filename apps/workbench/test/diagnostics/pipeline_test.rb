@@ -3,10 +3,6 @@ require 'selenium-webdriver'
 require 'headless'
 
 class PipelineTest < DiagnosticsTest
-  reset_api_fixtures :after_each_test, false
-  reset_api_fixtures :after_suite, false
-  reset_api_fixtures :before_suite, false
-
   pipelines_to_test = Rails.configuration.pipelines_to_test.andand.keys
 
   setup do
