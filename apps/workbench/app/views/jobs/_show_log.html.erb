@@ -1,11 +1,13 @@
 <% if !@object.log %>
 
-<% log_history = stderr_log_history([@object.uuid]) %>
+<div id="log_graph_div"
+     class="arv-log-event-listener"
+     data-object-uuid="<%= @object.uuid %>"></div>
 
 <div id="event_log_div"
      class="arv-log-event-listener arv-log-event-handler-append-logs arv-job-log-window"
      data-object-uuid="<%= @object.uuid %>"
-     ><%= log_history.join("\n") %></div>
+     ></div>
 
 <%# Applying a long throttle suppresses the auto-refresh of this
     partial that would normally be triggered by arv-log-event. %>

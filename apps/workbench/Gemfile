@@ -87,3 +87,6 @@ gem 'httpclient', '~> 2.5.0'
 gem 'themes_for_rails', git: 'https://github.com/holtkampw/themes_for_rails', ref: '1fd2d7897d75ae0d6375f4c390df87b8e91ad417'
 
 gem "deep_merge", :require => 'deep_merge/rails_compat'
+
+gem 'morrisjs-rails'
+gem 'raphael-rails'
