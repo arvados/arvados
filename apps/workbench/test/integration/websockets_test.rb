@@ -175,7 +175,8 @@ class WebsocketTest < ActionDispatch::IntegrationTest
                 properties: {"text" => text}}})
     wait_for_ajax
 
-    cpu_stat = page.evaluate_script("jobGraphData[0]['cpu-1']")
+    # using datapoint 1 instead of datapoint 0 because there will be a "dummy" datapoint with no actual stats 10 minutes previous to the one we're looking for, for the sake of making the x-axis of the graph show a full 10 minutes of time even though there is only a single real datapoint
+    cpu_stat = page.evaluate_script("jobGraphData[1]['T1-cpu']")
 
     assert_equal 45.3, (cpu_stat.to_f*100).round(1)
 
@@ -188,10 +189,11 @@ class WebsocketTest < ActionDispatch::IntegrationTest
     visit page_with_token "admin", "/jobs/#{uuid}"
     click_link "Log"
 
-    ApiServerForTests.new.run_rake_task("replay_job_log", "test/job_logs/crunchstatshort.log,#{uuid}")
+    ApiServerForTests.new.run_rake_task("replay_job_log", "test/job_logs/crunchstatshort.log,1.0,#{uuid}")
     wait_for_ajax
 
-    cpu_stat = page.evaluate_script("jobGraphData[0]['cpu-1']")
+    # see above comment as to why we use datapoint 1 rather than 0
+    cpu_stat = page.evaluate_script("jobGraphData[1]['T1-cpu']")
 
     assert_equal 45.3, (cpu_stat.to_f*100).round(1)
   end
