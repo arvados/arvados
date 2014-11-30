@@ -14,12 +14,15 @@
   <link rel="shortcut icon" href="/favicon.ico" type="image/x-icon">
   <meta name="description" content="">
   <meta name="author" content="">
+  <meta name="arvados-api-token" content="<%=Thread.current[:arvados_api_token]%>">
+  <meta name="arvados-discovery-uri" content="<%= Rails.configuration.arvados_v1_base.sub '/arvados/v1', '/discovery/v1/apis/arvados/v1/rest' %>">
   <% if current_user and $arvados_api_client.discovery[:websocketUrl] %>
   <meta name="arv-websocket-url" content="<%=$arvados_api_client.discovery[:websocketUrl]%>?api_token=<%=Thread.current[:arvados_api_token]%>">
   <% end %>
   <meta name="robots" content="NOINDEX, NOFOLLOW">
   <%= stylesheet_link_tag    "application", :media => "all" %>
   <%= javascript_include_tag "application" %>
+  <%= javascript_include_tag "templates/all" %>
   <%= csrf_meta_tags %>
   <%= yield :head %>
   <%= javascript_tag do %>

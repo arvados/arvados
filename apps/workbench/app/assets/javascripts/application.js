@@ -23,15 +23,17 @@
 //= require bootstrap3-editable/bootstrap-editable
 //= require bootstrap-tab-history
 //= require wiselinks
-//= require_tree .
+//= require handlebars
+//= require ember
+//= require ember-data
+//= require_self
+//= require workbench-ember
+//= require_directory .
+
+// for more details see: http://emberjs.com/guides/application/
+window.App = Ember.Application.create()
 
 jQuery(function($){
-    $.ajaxSetup({
-        headers: {
-            'X-CSRF-Token': $('meta[name="csrf-token"]').attr('content')
-        }
-    });
-
     $(document).ajaxStart(function(){
       $('.modal-with-loading-spinner .spinner').show();
     }).ajaxStop(function(){

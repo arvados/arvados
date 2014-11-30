@@ -1,0 +1,45 @@
+<div class="container">
+  <table class="table table-condensed">
+    <colgroup>
+      <col width="10%" />
+      <col width="20%" />
+      <col width="20%" />
+      <col width="20%" />
+      <col width="30%" />
+    </colgroup>
+    <thead>
+      <tr>
+        <th>alloc</th>
+        <th>uuid</th>
+        <th>job</th>
+        <th>hostname</th>
+        <th>lastPingAt</th>
+      </tr>
+    </thead>
+    <tbody>
+      {{#each node in model itemController="node"}}
+        <tr>
+          <td>
+            <span {{bind-attr class=":label :label-default node.stateClass"}}>
+              {{node.model.crunchWorkerState}}
+            </span>
+          </td>
+          <td>
+            <a class="arvados-uuid" {{bind-attr href=node.model.href}}>{{node.model.id}}</a>
+          </td>
+          <td>
+            <span class="arvados-uuid">{{node.job_uuid}}</span>
+          </td>
+          <td>
+            {{node.model.hostname}}{{node.dotDomain}}
+          </td>
+          <td>{{node.model.lastPingAt}}</td>
+        </tr>
+      {{else}}
+        <tr>
+          <td colspan="*">No nodes.</td>
+        </tr>
+      {{/each}}
+    </tbody>
+  </table>
+</div>
