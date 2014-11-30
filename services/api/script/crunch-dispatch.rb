@@ -44,6 +44,12 @@ require File.dirname(__FILE__) + '/../config/boot'
 require File.dirname(__FILE__) + '/../config/environment'
 require 'open3'
 
+class LogTime < Time
+  def to_s
+    self.utc.strftime "%Y-%m-%d_%H:%M:%S"
+  end
+end
+
 class Dispatcher
   include ApplicationHelper
 
@@ -373,7 +379,7 @@ class Dispatcher
       end
 
       $stderr.puts "dispatch: job #{job.uuid}"
-      start_banner = "dispatch: child #{t.pid} start #{Time.now.ctime.to_s}"
+      start_banner = "dispatch: child #{t.pid} start #{LogTime.now}"
       $stderr.puts start_banner
 
       @running[job.uuid] = {
@@ -458,7 +464,7 @@ class Dispatcher
         if j[:log_throttle_bytes_skipped] > 0
           message = "#{job_uuid} ! Skipped #{j[:log_throttle_bytes_skipped]} bytes of log"
           $stderr.puts message
-          j[:stderr_buf_to_flush] << "#{Time.now.ctime.to_s} #{message}\n"
+          j[:stderr_buf_to_flush] << "#{LogTime.now} #{message}\n"
         end
 
         j[:log_throttle_reset_time] = now + Rails.configuration.crunch_log_throttle_period
@@ -526,7 +532,7 @@ class Dispatcher
           if rate_limit j, line
             $stderr.print "#{job_uuid} ! " unless line.index(job_uuid)
             $stderr.puts line
-            pub_msg = "#{Time.now.ctime.to_s} #{line.strip}\n"
+            pub_msg = "#{LogTime.now} #{line.strip}\n"
             j[:stderr_buf_to_flush] << pub_msg
           end
         end

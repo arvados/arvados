@@ -23,12 +23,16 @@
 //= require bootstrap3-editable/bootstrap-editable
 //= require bootstrap-tab-history
 //= require wiselinks
+//= require raphael
+//= require morris
+//= require jquery.number.min
 //= require handlebars
 //= require ember
 //= require ember-data
 //= require_self
 //= require workbench-ember
 //= require_directory .
+//= require_tree .
 
 // for more details see: http://emberjs.com/guides/application/
 window.App = Ember.Application.create()

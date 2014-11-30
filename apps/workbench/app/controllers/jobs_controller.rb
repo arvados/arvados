@@ -1,4 +1,5 @@
 class JobsController < ApplicationController
+  include JobsHelper
 
   def generate_provenance(jobs)
     return if params['tab_pane'] != "Provenance"
@@ -54,6 +55,20 @@ class JobsController < ApplicationController
   def show
     generate_provenance([@object])
     super
+  end
+
+  def logs
+    @logs = Log.select(%w(event_type object_uuid event_at properties))
+               .order('event_at DESC')
+               .filter([["event_type",  "=", "stderr"],
+                        ["object_uuid", "in", [@object.uuid]]])
+               .limit(500)
+               .results
+               .to_a
+               .map{ |e| e.serializable_hash.merge({ 'prepend' => true }) }
+    respond_to do |format|
+      format.json { render json: @logs }
+    end
   end
 
   def index_pane_list
