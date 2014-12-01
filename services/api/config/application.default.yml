@@ -241,7 +241,3 @@ common:
 
   # Default lifetime for ephemeral collections: 2 weeks.
   default_trash_lifetime: 1209600
-
-  # Allow resetting the database to fixtures via API call. This only
-  # makes sense if RAILS_ENV=test. It requires an admin token.
-  enable_remote_database_reset: false
