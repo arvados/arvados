@@ -47,8 +47,10 @@ empty_lonely_group:
 
 all_users:
   uuid: zzzzz-j7d0g-fffffffffffffff
-  owner_uuid: zzzzz-tpzed-d9tiejq69daie8f
+  owner_uuid: zzzzz-tpzed-000000000000000
   name: All users
+  description: All users
+  group_class: role
 
 testusergroup_admins:
   uuid: zzzzz-j7d0g-48foin4vonvc2at

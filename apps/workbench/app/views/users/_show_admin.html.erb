@@ -83,7 +83,7 @@
                 <small>group&rarr;user</small>
               </label>
               <label class="checkbox-inline">
-                <%= group.name || '(unnamed)' %> <span class="deemphasize">(owned by <%= User.find(group.owner_uuid).andand.full_name %>)</span>
+                <%= group.name || '(unnamed)' %> <span class="deemphasize">(owned by <%= User.find?(group.owner_uuid).andand.full_name %>)</span>
               </label>
             </div>
           <% end.empty? and begin %>
