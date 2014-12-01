@@ -1890,6 +1890,16 @@ if (-d $sdk_root) {
   }
 }
 
+my $python_dir = "$install_dir/python";
+if ((-d $python_dir) and can_run("python2.7") and
+    (system("python2.7 \Q$python_dir/setup.py\E egg_info 2>/dev/null") != 0)) {
+  # egg_info failed, probably when it asked git for a build tag.
+  # Specify no build tag.
+  open(my $pysdk_cfg, ">>", "$python_dir/setup.cfg");
+  print $pysdk_cfg "\n[egg_info]\ntag_build =\n";
+  close($pysdk_cfg);
+}
+
 if (-e "$destdir/crunch_scripts/install") {
     shell_or_die ("$destdir/crunch_scripts/install", $install_dir);
 } elsif (!-e "./install.sh" && -e "./tests/autotests.sh") {
