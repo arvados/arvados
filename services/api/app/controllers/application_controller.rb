@@ -27,6 +27,7 @@ class ApplicationController < ActionController::Base
 
   ERROR_ACTIONS = [:render_error, :render_not_found]
 
+  before_filter :set_cors_headers
   before_filter :respond_with_json_by_default
   before_filter :remote_ip
   before_filter :load_read_auths
@@ -344,6 +345,13 @@ class ApplicationController < ActionController::Base
       end
       false
     end
+  end
+
+  def set_cors_headers
+    response.headers['Access-Control-Allow-Origin'] = '*'
+    response.headers['Access-Control-Allow-Methods'] = 'GET, HEAD, PUT, POST, DELETE'
+    response.headers['Access-Control-Allow-Headers'] = 'Authorization'
+    response.headers['Access-Control-Max-Age'] = '86486400'
   end
 
   def respond_with_json_by_default
