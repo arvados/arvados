@@ -12,11 +12,10 @@ class DatabaseControllerTest < ActionController::TestCase
   test "route not found when not in test mode" do
     authorize_with :admin
     env_was = Rails.env
-    Rails.application.reload_routes!
     begin
+      Rails.env = 'production'
+      Rails.application.reload_routes!
       assert_raises ActionController::RoutingError do
-        Rails.env = 'production'
-        Rails.application.reload_routes!
         post :reset
       end
     ensure
