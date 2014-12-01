@@ -107,12 +107,12 @@ function unselect_all_files() {
           <% end %>
       <% if CollectionsHelper::is_image(filename) %>
           <i class="fa fa-fw fa-bar-chart-o"></i> <%= filename %></div>
-       </div>
         <div class="collection_files_inline">
           <%= link_to(image_tag("#{url_for @object}/#{file_path}"),
                       link_params.merge(disposition: 'inline'),
                       {title: file_path}) %>
         </div>
+       </div>
       <% else %>
           <i class="fa fa-fw fa-file" href="<%=@object.uuid%>/<%=file_path%>" ></i> <%= filename %></div>
        </div>

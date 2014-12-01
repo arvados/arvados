@@ -1,7 +1,7 @@
 require 'test_helper'
 
 class UsersControllerTest < ActionController::TestCase
-  test "valid token works in functional test" do
+  test "valid token works in controller test" do
     get :index, {}, session_for(:active)
     assert_response :success
   end
