@@ -74,7 +74,7 @@ function unselect_all_files() {
     <li>
     <% if size.nil?  # This is a subdirectory. %>
       <% dirstack.push(File.join(dirname, filename)) %>
-      <div class="collection_files_row filterable">
+      <div class="collection_files_row">
        <div class="collection_files_name><i class="fa fa-fw fa-folder-open"></i> <%= filename %></div>
       </div>
       <ul class="collection_files">
