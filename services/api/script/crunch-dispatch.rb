@@ -238,8 +238,14 @@ class Dispatcher
     end
   end
 
-  def git_cmd(cmd_s)
-    "git --git-dir=#{@arvados_internal.shellescape} #{cmd_s}"
+  def stdout_s(cmd_a, opts={})
+    IO.popen(cmd_a, "r", opts) do |pipe|
+      return pipe.read.chomp
+    end
+  end
+
+  def git_cmd(*cmd_a)
+    ["git", "--git-dir=#{@arvados_internal.shellescape}"] + cmd_a
   end
 
   def get_authorization(job)
@@ -268,7 +274,7 @@ class Dispatcher
     # @fetched_commits[V]==true if we know commit V exists in the
     # arvados_internal git repository.
     if !@fetched_commits[commit_hash]
-      src_repo = File.join(@repo_root, repo_name + '.git')
+      src_repo = File.join(@repo_root, "#{repo_name}.git")
       if not File.exists? src_repo
         src_repo = File.join(@repo_root, repo_name, '.git')
         if not File.exists? src_repo
@@ -278,12 +284,13 @@ class Dispatcher
       end
 
       # check if the commit needs to be fetched or not
-      commit_rev = `#{git_cmd("rev-list -n1 #{commit_hash.shellescape} 2>/dev/null")}`.chomp
+      commit_rev = stdout_s(git_cmd("rev-list", "-n1", commit_hash),
+                            err: "/dev/null")
       unless $? == 0 and commit_rev == commit_hash
         # commit does not exist in internal repository, so import the source repository using git fetch-pack
-        cmd = git_cmd("fetch-pack --no-progress --all #{src_repo.shellescape}")
+        cmd = git_cmd("fetch-pack", "--no-progress", "--all", src_repo)
         $stderr.puts "dispatch: #{cmd}"
-        $stderr.puts `#{cmd}`
+        $stderr.puts(stdout_s(cmd))
         unless $? == 0
           fail_job job, "git fetch-pack failed"
           return nil
@@ -298,12 +305,12 @@ class Dispatcher
     # @git_tags[T]==V if we know commit V has been tagged T in the
     # arvados_internal repository.
     if not @git_tags[tag_name]
-      cmd = git_cmd("tag #{tag_name.shellescape} #{commit_hash.shellescape} 2>/dev/null")
+      cmd = git_cmd("tag", tag_name, commit_hash)
       $stderr.puts "dispatch: #{cmd}"
-      $stderr.puts `#{cmd}`
+      $stderr.puts(stdout_s(cmd, err: "/dev/null"))
       unless $? == 0
         # git tag failed.  This may be because the tag already exists, so check for that.
-        tag_rev = `#{git_cmd("rev-list -n1 #{tag_name.shellescape}")}`.chomp
+        tag_rev = stdout_s(git_cmd("rev-list", "-n1", tag_name))
         if $? == 0
           # We got a revision back
           if tag_rev != commit_hash

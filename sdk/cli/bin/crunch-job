@@ -1788,10 +1788,12 @@ __DATA__
 # * No arguments: Installation mode.  Read a tar archive from the DATA
 #   file handle; it includes the Crunch script's source code, and
 #   maybe SDKs as well.  Those should be installed in the proper
-#   locations.
+#   locations.  This runs outside of any Docker container, so don't try to
+#   introspect Crunch's runtime environment.
 #
 # * With arguments: Crunch script run mode.  This script should set up the
-#   environment, then run the command specified in the arguments.
+#   environment, then run the command specified in the arguments.  This runs
+#   inside any Docker container.
 
 use Fcntl ':flock';
 use File::Path qw( make_path remove_tree );
@@ -1818,12 +1820,24 @@ if ($task_work) {
   remove_tree($task_work, {keep_root => 1});
 }
 
+### Crunch script run mode
 if (@ARGV) {
-  if (-e "$install_dir/bin/activate") {
+  my $python_src = "$install_dir/python";
+  my $venv_dir = "$job_work/.arvados.venv";
+  my $venv_built = -e "$venv_dir/bin/activate";
+  if ((!$venv_built) and (-d $python_src) and can_run("virtualenv")) {
+    shell_or_die("virtualenv", "--python=python2.7", "--system-site-packages",
+                 $venv_dir);
+    shell_or_die("$venv_dir/bin/pip", "install", $python_src);
+    $venv_built = 1;
+  }
+
+  if ($venv_built) {
     my $orig_argv = join(" ", map { quotemeta($_); } @ARGV);
     @ARGV = ("/bin/sh", "-ec",
-             ". \Q$install_dir/bin/activate\E; exec $orig_argv");
+             ". \Q$venv_dir/bin/activate\E; exec $orig_argv");
   }
+
   while (my ($sdk_dir, $sdk_envkey) = each(%SDK_ENVVARS)) {
     my $sdk_path = "$install_dir/$sdk_dir";
     if (-d $sdk_path) {
@@ -1834,10 +1848,12 @@ if (@ARGV) {
       }
     }
   }
+
   exec(@ARGV);
   die "Cannot exec `@ARGV`: $!";
 }
 
+### Installation mode
 open L, ">", "$destdir.lock" or die "$destdir.lock: $!";
 flock L, LOCK_EX;
 if (readlink ("$destdir.commit") eq $commit && -d $destdir) {
@@ -1864,13 +1880,8 @@ mkdir $install_dir;
 
 my $sdk_root = "$destdir/.arvados.sdk/sdk";
 if (-d $sdk_root) {
-  if (can_run("virtualenv")) {
-    shell_or_die("virtualenv", "--python=python2.7", "--system-site-packages",
-                 $install_dir);
-    shell_or_die("$install_dir/bin/pip", "install", "$sdk_root/python");
-  }
-
-  foreach my $sdk_lang (map { (split /\//, $_, 2)[0]; } keys(%SDK_ENVVARS)) {
+  foreach my $sdk_lang (("python",
+                         map { (split /\//, $_, 2)[0]; } keys(%SDK_ENVVARS))) {
     if (-d "$sdk_root/$sdk_lang") {
       if (!rename("$sdk_root/$sdk_lang", "$install_dir/$sdk_lang")) {
         die "Failed to install $sdk_lang SDK: $!";
