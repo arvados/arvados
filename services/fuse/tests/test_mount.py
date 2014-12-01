@@ -148,7 +148,12 @@ class FuseMagicTest(MountTestBase):
         operations.initlock.wait()
 
         # now check some stuff
-        self.assertIn('README', os.listdir(self.mounttmp))
+        mount_ls = os.listdir(self.mounttmp)
+        self.assertIn('README', mount_ls)
+        self.assertFalse(any(arvados.util.keep_locator_pattern.match(fn) or
+                             arvados.util.uuid_pattern.match(fn)
+                             for fn in mount_ls),
+                         "new FUSE MagicDirectory lists Collection")
         self.assertDirContents(self.testcollection, ['thing1.txt'])
         self.assertDirContents(os.path.join('by_id', self.testcollection),
                                ['thing1.txt'])
