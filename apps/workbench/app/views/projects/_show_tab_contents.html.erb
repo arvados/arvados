@@ -52,7 +52,7 @@
                   'data-selection-param-name' => 'selection[]',
                   'data-selection-action' => 'move'
             %></li>
-          <% if (ArvadosBase.find(@object.owner_uuid).writable_by.include?(current_user.uuid) rescue nil) %>
+          <% if @object.editable? %>
           <li><%= link_to "Remove selected", '#',
                   'data-href' => url_for(action: :remove_items),
                   'data-selection-param-name' => 'item_uuids[]',
