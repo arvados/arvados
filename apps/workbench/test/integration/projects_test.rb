@@ -327,7 +327,7 @@ class ProjectsTest < ActionDispatch::IntegrationTest
       find('input[type=checkbox]').click
     end
 
-    click_button 'Selection...'
+    click_button 'Selection'
 
     within('.selection-action-container') do
       assert page.has_text?("Compare selected"), "Compare selected link text not found"
@@ -359,7 +359,7 @@ class ProjectsTest < ActionDispatch::IntegrationTest
     find("#projects-menu").click
     find(".dropdown-menu a", text: my_project['name']).click
 
-    click_button 'Selection...'
+    click_button 'Selection'
     within('.selection-action-container') do
       page.assert_selector 'li.disabled', text: 'Create new collection with selected collections'
       page.assert_selector 'li.disabled', text: 'Compare selected'
@@ -378,7 +378,7 @@ class ProjectsTest < ActionDispatch::IntegrationTest
       find('input[type=checkbox]').click
     end
 
-    click_button 'Selection...'
+    click_button 'Selection'
     within('.selection-action-container') do
       page.assert_no_selector 'li.disabled', text: 'Create new collection with selected collections'
       page.assert_selector 'li', text: 'Create new collection with selected collections'
@@ -403,7 +403,7 @@ class ProjectsTest < ActionDispatch::IntegrationTest
       find('input[type=checkbox]').click
     end
 
-    click_button 'Selection...'
+    click_button 'Selection'
     within('.selection-action-container') do
       page.assert_selector 'li.disabled', text: 'Create new collection with selected collections'
       page.assert_selector 'li.disabled', text: 'Compare selected'
@@ -433,7 +433,7 @@ class ProjectsTest < ActionDispatch::IntegrationTest
       find('input[type=checkbox]').click
     end
 
-    click_button 'Selection...'
+    click_button 'Selection'
     within('.selection-action-container') do
       page.assert_selector 'li.disabled', text: 'Create new collection with selected collections'
       page.assert_selector 'li.disabled', text: 'Compare selected'
@@ -442,6 +442,21 @@ class ProjectsTest < ActionDispatch::IntegrationTest
       page.assert_selector 'li', text: 'Move selected'
       page.assert_no_selector 'li.disabled', text: 'Remove selected'
       page.assert_selector 'li', text: 'Remove selected'
+    end
+  end
+
+  # "Remove selected" selection option should not be available when current user cannot write to the project
+  test "remove selected action is not available when current user cannot write to project" do
+    my_project = api_fixture('groups')['anonymously_accessible_project']
+    visit page_with_token 'active', "/projects/#{my_project['uuid']}"
+
+    click_button 'Selection'
+    within('.selection-action-container') do
+      assert_selector 'li', text: 'Create new collection with selected collections'
+      assert_selector 'li', text: 'Compare selected'
+      assert_selector 'li', text: 'Copy selected'
+      assert_selector 'li', text: 'Move selected'
+      assert_no_selector 'li', text: 'Remove selected'
     end
   end
 
@@ -462,7 +477,7 @@ class ProjectsTest < ActionDispatch::IntegrationTest
         find('input[type=checkbox]').click
       end
 
-      click_button 'Selection...'
+      click_button 'Selection'
       within('.selection-action-container') do
         click_link 'Create new collection with selected collections'
       end
@@ -649,7 +664,7 @@ class ProjectsTest < ActionDispatch::IntegrationTest
       Rails.configuration.arvados_v1_base = original_arvados_v1_base
       click_link 'Reload tab'
       assert_no_selector('a', text: 'Reload tab')
-      assert_selector('button', text: 'Selection...')
+      assert_selector('button', text: 'Selection')
       within '.selection-action-container' do
         assert_selector 'tr[data-kind="arvados#trait"]'
       end
