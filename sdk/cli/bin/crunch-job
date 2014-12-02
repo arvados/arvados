@@ -305,7 +305,6 @@ my @jobstep_tomerge = ();
 my $jobstep_tomerge_level = 0;
 my $squeue_checked;
 my $squeue_kill_checked;
-my $output_in_keep = 0;
 my $latest_refresh = scalar time;
 
 
@@ -1286,12 +1285,10 @@ sub create_output_collection
     my $output = $_->{'arvados_task'}->{output};
     if ($output !~ /^[0-9a-f]{32}(\+\S+)*$/)
     {
-      $output_in_keep ||= $output =~ / [0-9a-f]{32}\S*\+K/;
       print $child_in $output;
     }
     elsif (defined (my $outblock = fetch_block ($output)))
     {
-      $output_in_keep ||= $outblock =~ / [0-9a-f]{32}\S*\+K/;
       print $child_in $outblock;
     }
     else
