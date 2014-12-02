@@ -2,19 +2,5 @@
     <div>
       Hi, I noticed that you have not yet set up an SSH public key for use with Arvados.  
       <%= link_to "Click here to learn about SSH keys in Arvados.",
-	  "#{Rails.configuration.arvados_docsite}/user/getting_started/ssh-access-unix.html", 
-	  style: "font-weight: bold",
-	  target: "_blank" %>
-      When you have an SSH key you would like to use, paste the SSH public key
-      in the text box.
+ 	    "/manage_account", style: "font-weight: bold" %>
     </div>
-    <%= form_for AuthorizedKey.new, remote: true do |f| %>
-      <div class="row-fluid">
-          <%= hidden_field_tag :return_to, request.original_url %>
-          <%= hidden_field_tag :disable_element, 'input[type=submit]' %>
-          <%= f.text_area :public_key, rows: 4, placeholder: "Paste your public key here", style: "width: 100%" %>
-      </div>
-      <div class="row-fluid" style="padding-top: 0; padding-bottom: 15px">
-          <%= f.submit :Save, value: raw("&check;"), class: "btn btn-primary pull-right" %>
-      </div>
-<% end %>

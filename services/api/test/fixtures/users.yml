@@ -160,7 +160,10 @@ inactive_but_signed_user_agreement:
   identity_url: https://inactive-but-agreeable-user.openid.local
   is_active: false
   is_admin: false
-  prefs: {}
+  prefs:
+    profile:
+      organization: example.com
+      role: Computational biologist
 
 anonymous:
   owner_uuid: zzzzz-tpzed-000000000000000
