@@ -116,7 +116,7 @@ class EventBus
 
         # Execute query and actually send the matching log rows
         count = 0
-        limit = 100
+        limit = 20
 
         logs.limit(limit).each do |l|
           ws.send(l.as_api_response.to_json)
