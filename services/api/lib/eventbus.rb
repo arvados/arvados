@@ -1,3 +1,7 @@
+# If any threads raise an unhandled exception, make them all die.
+# We trust a supervisor like runit to restart the server in this case.
+Thread.abort_on_exception = true
+
 require 'eventmachine'
 require 'oj'
 require 'faye/websocket'
