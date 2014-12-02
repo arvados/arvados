@@ -823,7 +823,7 @@ for (my $todo_ptr = 0; $todo_ptr <= $#jobstep_todo; $todo_ptr ++)
     {
       $main::please_info = 0;
       freeze();
-      collate_output();
+      create_output_collection();
       save_meta(1);
       update_progress_stats();
     }
@@ -885,7 +885,7 @@ while (%proc)
     $main::please_continue = 0;
     goto THISROUND;
   }
-  $main::please_info = 0, freeze(), collate_output(), save_meta(1) if $main::please_info;
+  $main::please_info = 0, freeze(), create_output_collection(), save_meta(1) if $main::please_info;
   readfrompipes ();
   if (!reapchildren())
   {
@@ -922,28 +922,14 @@ goto ONELEVEL if !defined $main::success;
 
 release_allocation();
 freeze();
-my $collated_output = &collate_output();
+my $collated_output = &create_output_collection();
 
 if (!$collated_output) {
-  Log(undef, "output undef");
+  Log (undef, "Failed to write output collection");
 }
 else {
-  eval {
-    open(my $orig_manifest, '-|', 'arv-get', $collated_output)
-        or die "failed to get collated manifest: $!";
-    my $orig_manifest_text = '';
-    while (my $manifest_line = <$orig_manifest>) {
-      $orig_manifest_text .= $manifest_line;
-    }
-    my $output = api_call("collections/create", collection => {
-      'manifest_text' => $orig_manifest_text});
-    Log(undef, "output uuid " . $output->{uuid});
-    Log(undef, "output hash " . $output->{portable_data_hash});
-    $Job->update_attributes('output' => $output->{portable_data_hash});
-  };
-  if ($@) {
-    Log (undef, "Failed to register output manifest: $@");
-  }
+  Log(undef, "output hash " . $collated_output);
+  $Job->update_attributes('output' => $collated_output);
 }
 
 Log (undef, "finish");
@@ -1275,13 +1261,24 @@ sub fetch_block
   return $output_block;
 }
 
-sub collate_output
+# create_output_collections generates a new collection containing the
+# output of each successfully completed task, and returns the
+# portable_data_hash for the new collection.
+#
+sub create_output_collection
 {
   Log (undef, "collate");
 
   my ($child_out, $child_in);
-  my $pid = open2($child_out, $child_in, 'arv-put', '--raw',
-                  '--retries', retry_count());
+  my $pid = open2($child_out, $child_in, 'python', '-c',
+                  'import arvados; ' .
+                  'import sys; ' .
+                  'print arvados.api()' .
+                  '.collections()' .
+                  '.create(body={"manifest_text":sys.stdin.read()})' .
+                  '.execute()["portable_data_hash"]'
+      );
+
   my $joboutput;
   for (@jobstep)
   {
@@ -1318,7 +1315,7 @@ sub collate_output
       chomp($joboutput);
       # TODO: Ensure exit status == 0.
     } else {
-      Log (undef, "timed out reading from 'arv-put'");
+      Log (undef, "timed out reading portable_data_hash");
     }
   }
   # TODO: kill $pid instead of waiting, now that we've decided to
@@ -1469,7 +1466,7 @@ sub croak
   my $message = "@_ at $file line $line\n";
   Log (undef, $message);
   freeze() if @jobstep_todo;
-  collate_output() if @jobstep_todo;
+  create_output_collection() if @jobstep_todo;
   cleanup();
   save_meta();
   die;
@@ -1521,7 +1518,7 @@ sub freeze_if_want_freeze
       }
     }
     freeze();
-    collate_output();
+    create_output_collection();
     cleanup();
     save_meta();
     exit 1;
@@ -1702,7 +1699,7 @@ sub api_call {
     if ($next_try_at < time) {
       $retry_msg = "Retrying.";
     } else {
-      my $next_try_fmt = strftime("%Y-%m-%d %H:%M:%S", localtime($next_try_at));
+      my $next_try_fmt = strftime "%Y-%m-%dT%H:%M:%SZ", gmtime($next_try_at);
       $retry_msg = "Retrying at $next_try_fmt.";
     }
     Log(undef, "API method $method_name failed: $errmsg. $retry_msg");
