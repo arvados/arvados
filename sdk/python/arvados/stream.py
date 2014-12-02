@@ -319,15 +319,21 @@ class StreamReader(object):
             data.append(self._keep.get(locator, num_retries=num_retries)[segmentoffset:segmentoffset+segmentsize])
         return ''.join(data)
 
-    def manifest_text(self, strip=False):
-        manifest_text = [self.name().replace(' ', '\\040')]
+    def tokens(self, strip=False):
+        tokens = [self.name().replace(' ', '\\040')]
         if strip:
             for d in self._data_locators:
                 m = re.match(r'^[0-9a-f]{32}\+\d+', d[LOCATOR])
-                manifest_text.append(m.group(0))
+                tokens.append(m.group(0))
         else:
-            manifest_text.extend([d[LOCATOR] for d in self._data_locators])
-        manifest_text.extend([' '.join(["{}:{}:{}".format(seg[LOCATOR], seg[BLOCKSIZE], f.name().replace(' ', '\\040'))
-                                        for seg in f.segments])
-                              for f in self._files.values()])
-        return ' '.join(manifest_text) + '\n'
+            tokens.extend([d[LOCATOR] for d in self._data_locators])
+        for f in self._files.values():
+            for seg in f.segments:
+                tokens.append("{}:{}:{}".format(
+                    seg[LOCATOR],
+                    seg[BLOCKSIZE],
+                    f.name().replace(' ', '\\040')))
+        return tokens
+
+    def manifest_text(self, strip=False):
+        return ' '.join(self.tokens(strip=strip)) + '\n'

@@ -243,6 +243,12 @@ class StreamReaderTestCase(unittest.TestCase, StreamRetryTestMixin):
             reader = StreamReader(line.split())
             self.assertEqual(line + '\n', reader.manifest_text())
 
+    def test_stream_tokens_without_keep_client(self):
+        mtext = self.manifest_for('multilevel_collection_1')
+        for line in mtext.rstrip('\n').split('\n'):
+            reader = StreamReader(line.split())
+            self.assertEqual(line.split(), reader.tokens())
+
 
 class StreamFileReadTestCase(unittest.TestCase, StreamRetryTestMixin):
     def reader_for(self, coll_name, **kwargs):
