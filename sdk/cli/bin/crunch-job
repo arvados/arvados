@@ -1279,7 +1279,6 @@ sub create_output_collection
                   '.execute()["portable_data_hash"]'
       );
 
-  my $joboutput;
   for (@jobstep)
   {
     next if (!exists $_->{'arvados_task'}->{'output'} ||
@@ -1289,11 +1288,6 @@ sub create_output_collection
     {
       $output_in_keep ||= $output =~ / [0-9a-f]{32}\S*\+K/;
       print $child_in $output;
-    }
-    elsif (@jobstep == 1)
-    {
-      $joboutput = $output;
-      last;
     }
     elsif (defined (my $outblock = fetch_block ($output)))
     {
@@ -1308,15 +1302,14 @@ sub create_output_collection
   }
   $child_in->close;
 
-  if (!defined $joboutput) {
-    my $s = IO::Select->new($child_out);
-    if ($s->can_read(120)) {
-      sysread($child_out, $joboutput, 64 * 1024 * 1024);
-      chomp($joboutput);
-      # TODO: Ensure exit status == 0.
-    } else {
-      Log (undef, "timed out reading portable_data_hash");
-    }
+  my $joboutput;
+  my $s = IO::Select->new($child_out);
+  if ($s->can_read(120)) {
+    sysread($child_out, $joboutput, 64 * 1024 * 1024);
+    chomp($joboutput);
+    # TODO: Ensure exit status == 0.
+  } else {
+    Log (undef, "timed out while creating output collection");
   }
   # TODO: kill $pid instead of waiting, now that we've decided to
   # ignore further output.
