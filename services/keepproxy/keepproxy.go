@@ -7,6 +7,7 @@ import (
 	"fmt"
 	"github.com/gorilla/mux"
 	"io"
+	"io/ioutil"
 	"log"
 	"net"
 	"net/http"
@@ -222,6 +223,8 @@ type PutBlockHandler struct {
 
 type InvalidPathHandler struct{}
 
+type OptionsHandler struct{}
+
 // MakeRESTRouter
 //     Returns a mux.Router that passes GET and PUT requests to the
 //     appropriate handlers.
@@ -244,6 +247,9 @@ func MakeRESTRouter(
 	if enable_put {
 		rest.Handle(`/{hash:[0-9a-f]{32}}+{hints}`, PutBlockHandler{kc, t}).Methods("PUT")
 		rest.Handle(`/{hash:[0-9a-f]{32}}`, PutBlockHandler{kc, t}).Methods("PUT")
+		rest.Handle(`/`, PutBlockHandler{kc, t}).Methods("POST")
+		rest.Handle(`/{any}`, OptionsHandler{}).Methods("OPTIONS")
+		rest.Handle(`/`, OptionsHandler{}).Methods("OPTIONS")
 	}
 
 	rest.NotFoundHandler = InvalidPathHandler{}
@@ -251,12 +257,25 @@ func MakeRESTRouter(
 	return rest
 }
 
+func SetCorsHeaders(resp http.ResponseWriter) {
+	resp.Header().Set("Access-Control-Allow-Methods", "GET, HEAD, POST, PUT, OPTIONS")
+	resp.Header().Set("Access-Control-Allow-Origin", "*")
+	resp.Header().Set("Access-Control-Allow-Headers", "Authorization, Content-Length, Content-Type, X-Keep-Desired-Replicas")
+	resp.Header().Set("Access-Control-Max-Age", "86486400")
+}
+
 func (this InvalidPathHandler) ServeHTTP(resp http.ResponseWriter, req *http.Request) {
 	log.Printf("%s: %s %s unroutable", GetRemoteAddress(req), req.Method, req.URL.Path)
 	http.Error(resp, "Bad request", http.StatusBadRequest)
 }
 
+func (this OptionsHandler) ServeHTTP(resp http.ResponseWriter, req *http.Request) {
+	log.Printf("%s: %s %s", GetRemoteAddress(req), req.Method, req.URL.Path)
+	SetCorsHeaders(resp)
+}
+
 func (this GetBlockHandler) ServeHTTP(resp http.ResponseWriter, req *http.Request) {
+	SetCorsHeaders(resp)
 
 	kc := *this.KeepClient
 
@@ -320,6 +339,7 @@ func (this GetBlockHandler) ServeHTTP(resp http.ResponseWriter, req *http.Reques
 }
 
 func (this PutBlockHandler) ServeHTTP(resp http.ResponseWriter, req *http.Request) {
+	SetCorsHeaders(resp)
 
 	kc := *this.KeepClient
 
@@ -371,12 +391,25 @@ func (this PutBlockHandler) ServeHTTP(resp http.ResponseWriter, req *http.Reques
 	}
 
 	// Now try to put the block through
-	hash, replicas, err := kc.PutHR(hash, req.Body, contentLength)
+	var replicas int
+	var put_err error
+	if hash == "" {
+		if bytes, err := ioutil.ReadAll(req.Body); err != nil {
+			msg := fmt.Sprintf("Error reading request body: %s", err)
+			log.Printf(msg)
+			http.Error(resp, msg, http.StatusInternalServerError)
+			return
+		} else {
+			hash, replicas, put_err = kc.PutB(bytes)
+		}
+	} else {
+		hash, replicas, put_err = kc.PutHR(hash, req.Body, contentLength)
+	}
 
 	// Tell the client how many successful PUTs we accomplished
 	resp.Header().Set(keepclient.X_Keep_Replicas_Stored, fmt.Sprintf("%d", replicas))
 
-	switch err {
+	switch put_err {
 	case nil:
 		// Default will return http.StatusOK
 		log.Printf("%s: %s %s finished, stored %v replicas (desired %v)", GetRemoteAddress(req), req.Method, hash, replicas, kc.Want_replicas)
@@ -400,15 +433,15 @@ func (this PutBlockHandler) ServeHTTP(resp http.ResponseWriter, req *http.Reques
 				log.Printf("%s: wrote %v bytes to response body and got error %v", n, err2.Error())
 			}
 		} else {
-			http.Error(resp, "", http.StatusServiceUnavailable)
+			http.Error(resp, put_err.Error(), http.StatusServiceUnavailable)
 		}
 
 	default:
-		http.Error(resp, err.Error(), http.StatusBadGateway)
+		http.Error(resp, put_err.Error(), http.StatusBadGateway)
 	}
 
-	if err != nil {
-		log.Printf("%s: %s %s stored %v replicas (desired %v) got error %v", GetRemoteAddress(req), req.Method, hash, replicas, kc.Want_replicas, err.Error())
+	if put_err != nil {
+		log.Printf("%s: %s %s stored %v replicas (desired %v) got error %v", GetRemoteAddress(req), req.Method, hash, replicas, kc.Want_replicas, put_err.Error())
 	}
 
 }
