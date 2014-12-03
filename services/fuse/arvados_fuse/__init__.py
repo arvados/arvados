@@ -304,18 +304,14 @@ class CollectionDirectory(Directory):
     def same(self, i):
         return i['uuid'] == self.collection_locator or i['portable_data_hash'] == self.collection_locator
 
-    def new_collection(self, new_collection_object):
+    def new_collection(self, new_collection_object, coll_reader):
         self.collection_object = new_collection_object
 
         if self.collection_object_file is not None:
             self.collection_object_file.update(self.collection_object)
 
         self.clear()
-        collection = arvados.CollectionReader(
-            self.collection_object["manifest_text"], self.api,
-            self.api.localkeep(), num_retries=self.num_retries)
-        collection.normalize()
-        for s in collection.all_streams():
+        for s in coll_reader.all_streams():
             cwd = self
             for part in s.name().split('/'):
                 if part != '' and part != '.':
@@ -332,23 +328,28 @@ class CollectionDirectory(Directory):
                 return True
 
             with llfuse.lock_released:
-                new_collection_object = self.api.collections().get(
-                    uuid=self.collection_locator
-                    ).execute(num_retries=self.num_retries)
+                coll_reader = arvados.CollectionReader(
+                    self.collection_locator, self.api, self.api.localkeep(),
+                    num_retries=self.num_retries)
+                new_collection_object = coll_reader.api_response() or {}
+                # If the Collection only exists in Keep, there will be no API
+                # response.  Fill in the fields we need.
+                if 'uuid' not in new_collection_object:
+                    new_collection_object['uuid'] = self.collection_locator
                 if "portable_data_hash" not in new_collection_object:
                     new_collection_object["portable_data_hash"] = new_collection_object["uuid"]
+                if 'manifest_text' not in new_collection_object:
+                    new_collection_object['manifest_text'] = coll_reader.manifest_text()
+                coll_reader.normalize()
             # end with llfuse.lock_released, re-acquire lock
 
             if self.collection_object is None or self.collection_object["portable_data_hash"] != new_collection_object["portable_data_hash"]:
-                self.new_collection(new_collection_object)
+                self.new_collection(new_collection_object, coll_reader)
 
             self.fresh()
             return True
-        except apiclient.errors.HttpError as e:
-            if e.resp.status == 404:
-                _logger.warn("arv-mount %s: not found", self.collection_locator)
-            else:
-                _logger.exception("arv-mount %s: error", self.collection_locator)
+        except apiclient.errors.NotFoundError:
+            _logger.exception("arv-mount %s: error", self.collection_locator)
         except arvados.errors.ArgumentError as detail:
             _logger.warning("arv-mount %s: error %s", self.collection_locator, detail)
             if self.collection_object is not None and "manifest_text" in self.collection_object:
