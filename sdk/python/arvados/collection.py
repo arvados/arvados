@@ -1,3 +1,4 @@
+import functools
 import logging
 import os
 import re
@@ -124,6 +125,7 @@ class CollectionReader(CollectionBase):
         else:
             raise errors.ArgumentError(
                 "Argument to CollectionReader must be a manifest or a collection UUID")
+        self._api_response = None
         self._streams = None
 
     def _populate_from_api_server(self):
@@ -138,10 +140,10 @@ class CollectionReader(CollectionBase):
             if self._api_client is None:
                 self._api_client = arvados.api('v1')
                 self._keep_client = None  # Make a new one with the new api.
-            c = self._api_client.collections().get(
+            self._api_response = self._api_client.collections().get(
                 uuid=self._manifest_locator).execute(
                 num_retries=self.num_retries)
-            self._manifest_text = c['manifest_text']
+            self._manifest_text = self._api_response['manifest_text']
             return None
         except Exception as e:
             return e
@@ -158,8 +160,6 @@ class CollectionReader(CollectionBase):
             return e
 
     def _populate(self):
-        if self._streams is not None:
-            return
         error_via_api = None
         error_via_keep = None
         should_try_keep = ((self._manifest_text is None) and
@@ -190,9 +190,27 @@ class CollectionReader(CollectionBase):
                          for sline in self._manifest_text.split("\n")
                          if sline]
 
-    def normalize(self):
-        self._populate()
+    def _populate_first(orig_func):
+        # Decorator for methods that read actual Collection data.
+        @functools.wraps(orig_func)
+        def wrapper(self, *args, **kwargs):
+            if self._streams is None:
+                self._populate()
+            return orig_func(self, *args, **kwargs)
+        return wrapper
 
+    @_populate_first
+    def api_response(self):
+        """api_response() -> dict or None
+
+        Returns information about this Collection fetched from the API server.
+        If the Collection exists in Keep but not the API server, currently
+        returns None.  Future versions may provide a synthetic response.
+        """
+        return self._api_response
+
+    @_populate_first
+    def normalize(self):
         # Rearrange streams
         streams = {}
         for s in self.all_streams():
@@ -213,6 +231,7 @@ class CollectionReader(CollectionBase):
             [StreamReader(stream, keep=self._my_keep()).manifest_text()
              for stream in self._streams])
 
+    @_populate_first
     def open(self, streampath, filename=None):
         """open(streampath[, filename]) -> file-like object
 
@@ -220,7 +239,6 @@ class CollectionReader(CollectionBase):
         single string or as two separate stream name and file name arguments.
         This method returns a file-like object to read that file.
         """
-        self._populate()
         if filename is None:
             streampath, filename = split(streampath)
         keep_client = self._my_keep()
@@ -238,8 +256,8 @@ class CollectionReader(CollectionBase):
             raise ValueError("file '{}' not found in Collection stream '{}'".
                              format(filename, streampath))
 
+    @_populate_first
     def all_streams(self):
-        self._populate()
         return [StreamReader(s, self._my_keep(), num_retries=self.num_retries)
                 for s in self._streams]
 
@@ -248,6 +266,7 @@ class CollectionReader(CollectionBase):
             for f in s.all_files():
                 yield f
 
+    @_populate_first
     def manifest_text(self, strip=False, normalize=False):
         if normalize:
             cr = CollectionReader(self.manifest_text())
@@ -256,7 +275,6 @@ class CollectionReader(CollectionBase):
         elif strip:
             return self.stripped_manifest()
         else:
-            self._populate()
             return self._manifest_text
 
 
