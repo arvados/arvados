@@ -4,7 +4,7 @@
      method: :post,
    } %>
 <% if @search_sharing.nil? %>
-  <%# API token can't manage other tokens.  Disable this feature. %>
+  <p>Your API token is not authorized to manage collection sharing links.</p>
 <% elsif @search_sharing.empty? %>
   <%= button_to("Create sharing link", {action: "share"}, button_attrs) %>
 <% else %>
