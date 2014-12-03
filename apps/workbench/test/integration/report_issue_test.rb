@@ -1,8 +1,11 @@
 require 'integration_helper'
 require 'selenium-webdriver'
 require 'headless'
+require_relative '../../app/helpers/version_helper'
 
 class ReportIssueTest < ActionDispatch::IntegrationTest
+  include VersionHelper
+
   setup do
     headless = Headless.new
     headless.start
@@ -35,6 +38,8 @@ class ReportIssueTest < ActionDispatch::IntegrationTest
       assert page.has_text?('Version / debugging info'), 'No text - Version / debugging info'
       assert page.has_no_text?('Report a problem'), 'Found text - Report a problem'
       assert page.has_no_text?('Describe the problem?'), 'Found text - Describe the problem'
+      assert page.has_link?(api_version), 'No link for API version'
+      assert page.has_link?(wb_version_text), 'No link for Workbench version'
       assert page.has_button?('Close'), 'No button - Close'
       assert page.has_no_button?('Send problem report'), 'Found button - Send problem report'
       click_button 'Close'
