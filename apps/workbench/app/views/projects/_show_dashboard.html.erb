@@ -11,7 +11,7 @@
 	    action_href: pipeline_instances_path,
 	    action_method: 'post',
 	    action_data: {'selection_param' => 'pipeline_instance[pipeline_template_uuid]', 'pipeline_instance[owner_uuid]' => current_user.uuid, 'success' => 'redirect-to-created-object'}.to_json),
-	  { class: "btn btn-primary btn-xs", remote: true, method: 'get' }) do %>
+	  { class: "btn btn-primary btn-xs", remote: true }) do %>
       <i class="fa fa-fw fa-gear"></i> Run a pipeline...
     <% end %>
     </span>
