@@ -2,6 +2,7 @@
 
 // Fire when a tab is selected/clicked.
 $(document).on('shown.bs.tab', '[data-toggle="tab"]', function(event) {
+    update_selection_actions();
     // reload the pane (unless it's already loaded)
     $($(event.target).attr('href')).
         not('.pane-loaded').
