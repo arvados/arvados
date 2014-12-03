@@ -643,6 +643,20 @@ class CollectionReaderTestCase(unittest.TestCase, CollectionTestMixin):
                                           api_client=client)
         self.assertEqual('', reader.manifest_text())
 
+    def test_api_response(self):
+        client = self.api_client_mock()
+        reader = arvados.CollectionReader(self.DEFAULT_UUID, api_client=client)
+        self.assertEqual(self.DEFAULT_COLLECTION, reader.api_response())
+
+    def test_api_response_with_collection_from_keep(self):
+        client = self.api_client_mock()
+        self.mock_get_collection(client, 404, 'foo')
+        with tutil.mock_get_responses(self.DEFAULT_MANIFEST, 200):
+            reader = arvados.CollectionReader(self.DEFAULT_DATA_HASH,
+                                              api_client=client)
+            api_response = reader.api_response()
+        self.assertIsNone(api_response)
+
     def check_open_file(self, coll_file, stream_name, file_name, file_size):
         self.assertFalse(coll_file.closed, "returned file is not open")
         self.assertEqual(stream_name, coll_file.stream_name())

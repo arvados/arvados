@@ -14,7 +14,7 @@
 	    action_href: actions_path(id: @object.uuid),
 	    action_method: 'post',
 	    action_data: {selection_param: 'selection[]', copy_selections_into_project: @object.uuid, success: 'page-refresh'}.to_json),
-	  { class: "btn btn-primary btn-sm", remote: true, method: 'get', title: "Add data to this project", data: {'event-after-select' => 'page-refresh'} }) do %>
+	  { class: "btn btn-primary btn-sm", remote: true, title: "Add data to this project", data: {'event-after-select' => 'page-refresh'} }) do %>
       <i class="fa fa-fw fa-plus"></i> Add data...
     <% end %>
     <%= link_to(
@@ -24,10 +24,10 @@
 	    action_href: pipeline_instances_path,
 	    action_method: 'post',
 	    action_data: {'selection_param' => 'pipeline_instance[pipeline_template_uuid]', 'pipeline_instance[owner_uuid]' => @object.uuid, 'success' => 'redirect-to-created-object'}.to_json),
-	  { class: "btn btn-primary btn-sm", remote: true, method: 'get', title: "Run a pipeline in this project" }) do %>
+	  { class: "btn btn-primary btn-sm", remote: true, title: "Run a pipeline in this project" }) do %>
       <i class="fa fa-fw fa-gear"></i> Run a pipeline...
     <% end %>
-    <%= link_to projects_path({'project[owner_uuid]' => @object.uuid, 'options' => {'ensure_unique_name' => true}}), method: 'post', title: "Add a subproject to this project", class: 'btn btn-sm btn-primary' do %>
+    <%= link_to projects_path({'project[owner_uuid]' => @object.uuid, 'options' => {'ensure_unique_name' => true}}), method: :post, title: "Add a subproject to this project", class: 'btn btn-sm btn-primary' do %>
       <i class="fa fa-fw fa-plus"></i>
       Add a subproject
     <% end %>

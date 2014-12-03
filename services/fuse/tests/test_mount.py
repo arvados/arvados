@@ -21,6 +21,15 @@ class MountTestBase(unittest.TestCase):
         run_test_server.authorize_with("admin")
         self.api = api = fuse.SafeApi(arvados.config)
 
+    def make_mount(self, root_class, *root_args):
+        operations = fuse.Operations(os.getuid(), os.getgid())
+        operations.inodes.add_entry(root_class(
+                llfuse.ROOT_INODE, operations.inodes, self.api, 0, *root_args))
+        llfuse.init(operations, self.mounttmp, [])
+        threading.Thread(None, llfuse.main).start()
+        # wait until the driver is finished initializing
+        operations.initlock.wait()
+
     def tearDown(self):
         run_test_server.stop()
 
@@ -87,18 +96,8 @@ class FuseMountTest(MountTestBase):
         self.api.collections().create(body={"manifest_text":cw.manifest_text()}).execute()
 
     def runTest(self):
-        # Create the request handler
-        operations = fuse.Operations(os.getuid(), os.getgid())
-        e = operations.inodes.add_entry(fuse.CollectionDirectory(llfuse.ROOT_INODE, operations.inodes, self.api, 0, self.testcollection))
+        self.make_mount(fuse.CollectionDirectory, self.testcollection)
 
-        llfuse.init(operations, self.mounttmp, [])
-        t = threading.Thread(None, lambda: llfuse.main())
-        t.start()
-
-        # wait until the driver is finished initializing
-        operations.initlock.wait()
-
-        # now check some stuff
         self.assertDirContents(None, ['thing1.txt', 'thing2.txt',
                                       'edgecases', 'dir1', 'dir2'])
         self.assertDirContents('dir1', ['thing3.txt', 'thing4.txt'])
@@ -123,6 +122,24 @@ class FuseMountTest(MountTestBase):
                 self.assertEqual(v, f.read())
 
 
+class FuseNoAPITest(MountTestBase):
+    def setUp(self):
+        super(FuseNoAPITest, self).setUp()
+        keep = arvados.keep.KeepClient(local_store=self.keeptmp)
+        self.file_data = "API-free text\n"
+        self.file_loc = keep.put(self.file_data)
+        self.coll_loc = keep.put(". {} 0:{}:api-free.txt\n".format(
+                self.file_loc, len(self.file_data)))
+
+    def runTest(self):
+        self.make_mount(fuse.MagicDirectory)
+        self.assertDirContents(self.coll_loc, ['api-free.txt'])
+        with open(os.path.join(
+                self.mounttmp, self.coll_loc, 'api-free.txt')) as keep_file:
+            actual = keep_file.read(-1)
+        self.assertEqual(self.file_data, actual)
+
+
 class FuseMagicTest(MountTestBase):
     def setUp(self):
         super(FuseMagicTest, self).setUp()
@@ -136,18 +153,8 @@ class FuseMagicTest(MountTestBase):
         self.api.collections().create(body={"manifest_text":cw.manifest_text()}).execute()
 
     def runTest(self):
-        # Create the request handler
-        operations = fuse.Operations(os.getuid(), os.getgid())
-        e = operations.inodes.add_entry(fuse.MagicDirectory(llfuse.ROOT_INODE, operations.inodes, self.api, 0))
+        self.make_mount(fuse.MagicDirectory)
 
-        llfuse.init(operations, self.mounttmp, [])
-        t = threading.Thread(None, lambda: llfuse.main())
-        t.start()
-
-        # wait until the driver is finished initializing
-        operations.initlock.wait()
-
-        # now check some stuff
         mount_ls = os.listdir(self.mounttmp)
         self.assertIn('README', mount_ls)
         self.assertFalse(any(arvados.util.keep_locator_pattern.match(fn) or
@@ -173,15 +180,7 @@ class FuseMagicTest(MountTestBase):
 
 class FuseTagsTest(MountTestBase):
     def runTest(self):
-        operations = fuse.Operations(os.getuid(), os.getgid())
-        e = operations.inodes.add_entry(fuse.TagsDirectory(llfuse.ROOT_INODE, operations.inodes, self.api, 0))
-
-        llfuse.init(operations, self.mounttmp, [])
-        t = threading.Thread(None, lambda: llfuse.main())
-        t.start()
-
-        # wait until the driver is finished initializing
-        operations.initlock.wait()
+        self.make_mount(fuse.TagsDirectory)
 
         d1 = os.listdir(self.mounttmp)
         d1.sort()
@@ -234,15 +233,8 @@ class FuseTagsUpdateTest(MountTestBase):
 
 class FuseSharedTest(MountTestBase):
     def runTest(self):
-        operations = fuse.Operations(os.getuid(), os.getgid())
-        e = operations.inodes.add_entry(fuse.SharedDirectory(llfuse.ROOT_INODE, operations.inodes, self.api, 0, self.api.users().current().execute()['uuid']))
-
-        llfuse.init(operations, self.mounttmp, [])
-        t = threading.Thread(None, lambda: llfuse.main())
-        t.start()
-
-        # wait until the driver is finished initializing
-        operations.initlock.wait()
+        self.make_mount(fuse.SharedDirectory,
+                        self.api.users().current().execute()['uuid'])
 
         # shared_dirs is a list of the directories exposed
         # by fuse.SharedDirectory (i.e. any object visible
@@ -284,26 +276,16 @@ class FuseSharedTest(MountTestBase):
 
 class FuseHomeTest(MountTestBase):
     def runTest(self):
-        operations = fuse.Operations(os.getuid(), os.getgid())
-        e = operations.inodes.add_entry(fuse.ProjectDirectory(llfuse.ROOT_INODE, operations.inodes, self.api, 0, self.api.users().current().execute()))
-
-        llfuse.init(operations, self.mounttmp, [])
-        t = threading.Thread(None, lambda: llfuse.main())
-        t.start()
-
-        # wait until the driver is finished initializing
-        operations.initlock.wait()
+        self.make_mount(fuse.ProjectDirectory,
+                        self.api.users().current().execute())
 
         d1 = os.listdir(self.mounttmp)
-        d1.sort()
         self.assertIn('Unrestricted public data', d1)
 
         d2 = os.listdir(os.path.join(self.mounttmp, 'Unrestricted public data'))
-        d2.sort()
         self.assertEqual(['GNU General Public License, version 3'], d2)
 
         d3 = os.listdir(os.path.join(self.mounttmp, 'Unrestricted public data', 'GNU General Public License, version 3'))
-        d3.sort()
         self.assertEqual(["GNU_General_Public_License,_version_3.pdf"], d3)
 
 

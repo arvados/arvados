@@ -12,7 +12,7 @@ RUN apt-get install -qqy \
         libapr1-dev libaprutil1-dev
 
 RUN cd /usr/src/arvados/services/api && \
-    /usr/local/rvm/bin/rvm-exec default bundle exec passenger-install-apache2-module --auto
+    /usr/local/rvm/bin/rvm-exec default bundle exec passenger-install-apache2-module --auto --languages ruby
 
 RUN cd /usr/src/arvados/services/api && \
     /usr/local/rvm/bin/rvm-exec default bundle exec passenger-install-apache2-module --snippet > /etc/apache2/conf.d/passenger

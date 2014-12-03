@@ -44,6 +44,35 @@ class CollectionsTest < ActionDispatch::IntegrationTest
     assert(page.has_link?('foo'), "Collection page did not include file link")
   end
 
+  def check_sharing(want_state, link_regexp)
+    # We specifically want to click buttons.  See #4291.
+    if want_state == :off
+      click_button "Unshare"
+      text_assertion = :assert_no_text
+      link_assertion = :assert_empty
+    else
+      click_button "Create sharing link"
+      text_assertion = :assert_text
+      link_assertion = :refute_empty
+    end
+    using_wait_time(Capybara.default_wait_time * 3) do
+      send(text_assertion, "Shared at:")
+    end
+    send(link_assertion, all("a").select { |a| a[:href] =~ link_regexp })
+  end
+
+  test "creating and uncreating a sharing link" do
+    Capybara.current_driver = Capybara.javascript_driver
+    coll_uuid = api_fixture("collections", "collection_owned_by_active", "uuid")
+    download_link_re =
+      Regexp.new(Regexp.escape("/collections/download/#{coll_uuid}/"))
+    visit page_with_token("active_trustedclient", "/collections/#{coll_uuid}")
+    within "#sharing-button" do
+      check_sharing(:on, download_link_re)
+      check_sharing(:off, download_link_re)
+    end
+  end
+
   test "can download an entire collection with a reader token" do
     CollectionsController.any_instance.
       stubs(:file_enumerator).returns(["foo\n", "file\n"])
@@ -282,7 +311,7 @@ class CollectionsTest < ActionDispatch::IntegrationTest
     assert_checkboxes_state('[value*="file1"]', true, 'checkboxes for file1 should be selected after filtering')
     assert_checkboxes_state('[value*="file2"]', true, 'checkboxes for file2 should be selected after filtering')
     assert_checkboxes_state('[value*="file3"]', false, 'checkboxes for file3 should be clear after filtering')
- 
+
     # Select all files, then filter, then "unselect all", then unfilter
     page.find_field('file_regex').set("\b") # backspace
     find('button#select-all').click
