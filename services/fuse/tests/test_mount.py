@@ -122,6 +122,24 @@ class FuseMountTest(MountTestBase):
                 self.assertEqual(v, f.read())
 
 
+class FuseNoAPITest(MountTestBase):
+    def setUp(self):
+        super(FuseNoAPITest, self).setUp()
+        keep = arvados.keep.KeepClient(local_store=self.keeptmp)
+        self.file_data = "API-free text\n"
+        self.file_loc = keep.put(self.file_data)
+        self.coll_loc = keep.put(". {} 0:{}:api-free.txt\n".format(
+                self.file_loc, len(self.file_data)))
+
+    def runTest(self):
+        self.make_mount(fuse.MagicDirectory)
+        self.assertDirContents(self.coll_loc, ['api-free.txt'])
+        with open(os.path.join(
+                self.mounttmp, self.coll_loc, 'api-free.txt')) as keep_file:
+            actual = keep_file.read(-1)
+        self.assertEqual(self.file_data, actual)
+
+
 class FuseMagicTest(MountTestBase):
     def setUp(self):
         super(FuseMagicTest, self).setUp()
