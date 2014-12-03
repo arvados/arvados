@@ -1,88 +1,13 @@
 //= require jquery
 //= require jquery_ujs
 
-/** Javascript for local persistent selection. */
-
-get_selection_list = null;
+/** Javascript for selection. */
 
 jQuery(function($){
-    var storage = localStorage; // sessionStorage
-
-    get_selection_list = function() {
-        if (!storage.persistentSelection) {
-            storage.persistentSelection = JSON.stringify([]);
-        }
-        return JSON.parse(storage.persistentSelection);
-    }
-
-    var put_storage = function(lst) {
-        storage.persistentSelection = JSON.stringify(lst);
-    }
-
-    var add_selection = function(uuid, name, href, type) {
-        var lst = get_selection_list();
-        lst.push({"uuid": uuid, "name": name, "href": href, "type": type});
-        put_storage(lst);
-        update_count();
-    };
-
-    var remove_selection = function(uuid) {
-        var lst = get_selection_list();
-        for (var i = 0; i < lst.length; i++) {
-            if (lst[i].uuid == uuid) {
-                lst.splice(i, 1);
-                i--;
-            }
-        }
-        put_storage(lst);
-        update_count();
-    };
-
-    var remove_selection_click = function(e) {
-        remove_selection($(this).val());
-    };
-
-    var clear_selections = function() {
-        put_storage([]);
-        update_count();
-    }
-
-    var update_count = function(e) {
-        var this_object_uuid = $('#selection-form-content').
-            closest('form').
-            find('input[name=uuid]').val();
-        var lst = get_selection_list();
-
-        var checkboxes = $('.persistent-selection:checkbox');
-        for (i = 0; i < checkboxes.length; i++) {
-            for (var j = 0; j < lst.length; j++) {
-                if (lst[j].uuid == $(checkboxes[i]).val()) {
-                    checkboxes[i].checked = true;
-                    break;
-                }
-            }
-            if (j == lst.length) {
-                checkboxes[i].checked = false;
-            }
-        }
-
-        $('.remove-selection').on('click', remove_selection_click);
-        $(document).trigger('selections-updated', [lst]);
-    };
-
     $(document).
         on('change', '.persistent-selection:checkbox', function(e) {
-            var inc = 0;
-            if ($(this).is(":checked")) {
-                add_selection($(this).val(), $(this).attr('friendly_name'), $(this).attr('href'), $(this).attr('friendly_type'));
-            }
-            else {
-                remove_selection($(this).val());
-            }
+          $(document).trigger('selections-updated');
         });
-
-    $(window).on('load', clear_selections);
-    $(window).on('storage', update_count);
 
     $('#selection-form-content').on("click", function(e) {
         e.stopPropagation();
