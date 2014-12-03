@@ -348,17 +348,15 @@ class CollectionDirectory(Directory):
             if e.resp.status == 404:
                 _logger.warn("arv-mount %s: not found", self.collection_locator)
             else:
-                _logger.error("arv-mount %s: error", self.collection_locator)
-                _logger.exception(detail)
+                _logger.exception("arv-mount %s: error", self.collection_locator)
         except arvados.errors.ArgumentError as detail:
             _logger.warning("arv-mount %s: error %s", self.collection_locator, detail)
             if self.collection_object is not None and "manifest_text" in self.collection_object:
                 _logger.warning("arv-mount manifest_text is: %s", self.collection_object["manifest_text"])
-        except Exception as detail:
-            _logger.error("arv-mount %s: error", self.collection_locator)
+        except Exception:
+            _logger.exception("arv-mount %s: error", self.collection_locator)
             if self.collection_object is not None and "manifest_text" in self.collection_object:
                 _logger.error("arv-mount manifest_text is: %s", self.collection_object["manifest_text"])
-            _logger.exception(detail)
         return False
 
     def __getitem__(self, item):
@@ -455,8 +453,8 @@ class RecursiveInvalidateDirectory(Directory):
             super(RecursiveInvalidateDirectory, self).invalidate()
             for a in self._entries:
                 self._entries[a].invalidate()
-        except Exception as e:
-            _logger.exception(e)
+        except Exception:
+            _logger.exception()
         finally:
             if self.inode == llfuse.ROOT_INODE:
                 llfuse.lock.release()
@@ -674,8 +672,8 @@ class SharedDirectory(Directory):
                        lambda i: i[0],
                        lambda a, i: a.uuid == i[1]['uuid'],
                        lambda i: ProjectDirectory(self.inode, self.inodes, self.api, self.num_retries, i[1], poll=self._poll, poll_time=self._poll_time))
-        except Exception as e:
-            _logger.exception(e)
+        except Exception:
+            _logger.exception()
 
 
 class FileHandle(object):
@@ -839,8 +837,8 @@ class Operations(llfuse.Operations):
         except arvados.errors.NotFoundError as e:
             _logger.warning("Block not found: " + str(e))
             raise llfuse.FUSEError(errno.EIO)
-        except Exception as e:
-            _logger.exception(e)
+        except Exception:
+            _logger.exception()
             raise llfuse.FUSEError(errno.EIO)
 
     def release(self, fh):
