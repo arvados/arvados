@@ -91,6 +91,22 @@ class CollectionsControllerTest < ActionController::TestCase
                     "controller did not find related log")
   end
 
+  test "sharing auths available to admin" do
+    show_collection("collection_owned_by_active", "admin_trustedclient")
+    assert_not_nil assigns(:search_sharing)
+  end
+
+  test "sharing auths available to owner" do
+    show_collection("collection_owned_by_active", "active_trustedclient")
+    assert_not_nil assigns(:search_sharing)
+  end
+
+  test "sharing auths available to reader" do
+    show_collection("foo_collection_in_aproject",
+                    "project_viewer_trustedclient")
+    assert_not_nil assigns(:search_sharing)
+  end
+
   test "viewing collection files with a reader token" do
     params = collection_params(:foo_file)
     params[:reader_token] = api_fixture("api_client_authorizations",
