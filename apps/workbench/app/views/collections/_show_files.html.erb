@@ -1,21 +1,10 @@
 <script>
-// The "each" loop in select_all_files() and unselect_all_files()
-// is needed because .trigger("change") does not play well with clippy.
-// Once clippy has been retired, we should be able to compress this
-// into .filter(":visible").prop("checked", true).trigger("change").
-//
 function select_all_files() {
-  $("#collection_files :checkbox").filter(":visible").each(
-    function() {
-      $(this).prop("checked", true).trigger("change");
-    });
+  $("#collection_files :checkbox").filter(":visible").prop("checked", true).trigger("change");
 }
 
 function unselect_all_files() {
-  $("#collection_files :checkbox").filter(":visible").each(
-    function() {
-      $(this).prop("checked", false).trigger("change");
-    });
+  $("#collection_files :checkbox").filter(":visible").prop("checked", false).trigger("change");
 }
 </script>
 
