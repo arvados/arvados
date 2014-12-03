@@ -8,9 +8,10 @@
 <% elsif @search_sharing.empty? %>
   <%= button_to("Create sharing link", {action: "share"}, button_attrs) %>
 <% else %>
-  <div>Shared at:
+  <div>
     <% button_attrs[:class] += " pull-right" %>
     <%= button_to("Unshare", {action: "unshare"}, button_attrs) %>
-    <div class="smaller-text" style="word-break: break-all"><%= link_to download_link, download_link %></div>
+    Shared at:
+    <div class="smaller-text" style="clear: both; word-break: break-all"><%= link_to download_link, download_link %></div>
   </div>
 <% end %>
