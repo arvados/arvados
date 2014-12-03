@@ -385,8 +385,6 @@ module ApplicationHelper
       lt += raw("add_form_selection_sources(#{selectables.to_json});\n")
     end
 
-    lt += raw("$('[data-name=\"#{dn}\"]').editable({source: function() { return select_form_sources('#{dataclass}'); } });\n")
-
     lt += raw("</script>")
 
     lt
