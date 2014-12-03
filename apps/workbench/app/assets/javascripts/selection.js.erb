@@ -96,40 +96,38 @@ function dispatch_selection_action() {
 }
 
 function enable_disable_selection_actions() {
-    var $container = $(this).closest('.selection-action-container');
-    var $checked = $('.persistent-selection:checkbox:checked:visible', $container);
-    $('[data-selection-action]').
+    var $container = $(this);
+    var $checked = $('.persistent-selection:checkbox:checked', $container);
+    $('[data-selection-action]', $container).
         closest('div.btn-group-sm').
         find('ul li').
         toggleClass('disabled', ($checked.length == 0));
-    $('[data-selection-action=compare]').
+    $('[data-selection-action=compare]', $container).
         closest('li').
         toggleClass('disabled',
                     ($checked.filter('[value*=-d1hrv-]').length < 2) ||
                     ($checked.not('[value*=-d1hrv-]').length > 0));
     <% unless Group.copies_to_projects? %>
-        $('[data-selection-action=copy]').
+        $('[data-selection-action=copy]', $container).
             closest('li').
             toggleClass('disabled',
                         ($checked.filter('[value*=-j7d0g-]').length > 0) ||
                         ($checked.length < 1));
     <% end %>
-    $('[data-selection-action=combine-project-contents]').
+    $('[data-selection-action=combine-project-contents]', $container).
         closest('li').
         toggleClass('disabled',
                     ($checked.filter('[value*=-4zz18-]').length < 1) ||
                     ($checked.length != $checked.filter('[value*=-4zz18-]').length));
 }
 
-function update_selection_actions() {
-    var $btn = $('[data-selection-action]');
-    $btn.click(dispatch_selection_action);
-    enable_disable_selection_actions.call($btn);
-}
-
 $(document).
-    on('selections-updated ready ajax:complete', function() {
-        var $btn = $('[data-selection-action]');
-        $btn.click(dispatch_selection_action);
-        enable_disable_selection_actions.call($btn);
+    on('selections-updated', function() {
+        $('.selection-action-container').each(enable_disable_selection_actions);
+    }).
+    on('ready ajax:complete', function() {
+        $('[data-selection-action]').
+            off('click', dispatch_selection_action).
+            on('click', dispatch_selection_action);
+        $(this).trigger('selections-updated');
     });
