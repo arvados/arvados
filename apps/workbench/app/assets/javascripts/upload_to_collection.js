@@ -26,7 +26,7 @@ function UploadToCollection($scope, $filter, $q, $timeout,
                 var i;
                 var insertAt;
                 for (insertAt=0; (insertAt<$scope.uploadQueue.length &&
-                                  $scope.uploadQueue[insertAt].state != 'Done');
+                                  $scope.uploadQueue[insertAt].state !== 'Done');
                      insertAt++);
                 for (i=0; i<files.length; i++) {
                     $scope.uploadQueue.splice(insertAt+i, 0,
@@ -81,7 +81,7 @@ function UploadToCollection($scope, $filter, $q, $timeout,
             return _deferred.promise();
         }
         function resolve() {
-            if (that._reader.result.length != that._slice.size) {
+            if (that._reader.result.length !== that._slice.size) {
                 // Sometimes we get an onload event even if the read
                 // did not return the desired number of bytes. We
                 // treat that as a fail.
@@ -237,7 +237,7 @@ function UploadToCollection($scope, $filter, $q, $timeout,
         }
         function onUploaderResolve(locator, dataSize) {
             var sizeHint = (''+locator).split('+')[1];
-            if (!locator || parseInt(sizeHint) != dataSize) {
+            if (!locator || parseInt(sizeHint) !== dataSize) {
                 console.log("onUploaderResolve, but locator '" + locator +
                             "' with size hint '" + sizeHint +
                             "' does not look right for dataSize=" + dataSize);
@@ -265,7 +265,7 @@ function UploadToCollection($scope, $filter, $q, $timeout,
                 _maxBlobSize,
                 that.file.size - _readPos);
             setProgress(_readPos);
-            if (size == 0) {
+            if (size === 0) {
                 return false;
             }
             var blob = that.file.slice(
@@ -282,9 +282,9 @@ function UploadToCollection($scope, $filter, $q, $timeout,
                 that.statistics = (
                     '' + $filter('number')(bytesDone/1024, '0') + ' KiB ' +
                         'at ~' + $filter('number')(kBps, '0') + ' KiB/s')
-                if (that.state == 'Paused') {
+                if (that.state === 'Paused') {
                     that.statistics += ', paused';
-                } else if (that.state == 'Uploading') {
+                } else if (that.state === 'Uploading') {
                     that.statistics += ', ETA ' +
                         $filter('date')(
                             new Date(
@@ -314,7 +314,7 @@ function UploadToCollection($scope, $filter, $q, $timeout,
         var that = this;
         var _deferred;
         function go() {
-            if (that.state == 'Running') return _deferred.promise;
+            if (that.state === 'Running') return _deferred.promise;
             _deferred = $.Deferred();
             that.state = 'Running';
             ArvadosClient.apiPromise(
@@ -345,12 +345,12 @@ function UploadToCollection($scope, $filter, $q, $timeout,
             that.stateReason = null;
             // Push the done things to the bottom of the queue.
             for (i=0; (i<$scope.uploadQueue.length &&
-                       $scope.uploadQueue[i].state == 'Done'); i++);
+                       $scope.uploadQueue[i].state === 'Done'); i++);
             if (i>0)
                 $scope.uploadQueue.push.apply($scope.uploadQueue, $scope.uploadQueue.splice(0, i));
             // If anything is not-done, do it.
             if ($scope.uploadQueue.length > 0 &&
-                $scope.uploadQueue[0].state != 'Done') {
+                $scope.uploadQueue[0].state !== 'Done') {
                 return $scope.uploadQueue[0].go().
                     then(appendToCollection, null, onQueueProgress).
                     then(doQueueWork, onQueueReject);
