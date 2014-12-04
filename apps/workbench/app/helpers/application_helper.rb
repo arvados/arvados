@@ -322,49 +322,22 @@ module ApplicationHelper
       datatype = 'text'
     end
 
-    # preload data
-    preload_uuids = []
-    items = []
-    selectables = []
+    lt = link_to attrtext, '#', {
+      "data-emptytext" => "none",
+      "data-placement" => "bottom",
+      "data-type" => datatype,
+      "data-url" => url_for(action: "update", id: object.uuid, controller: object.class.to_s.pluralize.underscore, merge: true),
+      "data-title" => "Set value for #{subattr[-1].to_s}",
+      "data-name" => dn,
+      "data-pk" => "{id: \"#{object.uuid}\", key: \"#{object.class.to_s.underscore}\"}",
+      "data-value" => attrvalue,
+      # "clear" button interferes with form-control's up/down arrows
+      "data-clear" => false,
+      :class => "editable #{'required' if required} form-control",
+      :id => id
+    }.merge(htmloptions)
 
-    attrtext = attrvalue
-    if dataclass.is_a? Class and dataclass < ArvadosBase
-      objects = get_n_objects_of_class dataclass, 10
-      objects.each do |item|
-        items << item
-        preload_uuids << item.uuid
-      end
-      if attrvalue and !attrvalue.empty?
-        preload_uuids << attrvalue
-      end
-      preload_links_for_objects preload_uuids
-
-      if attrvalue and !attrvalue.empty?
-        links_for_object(attrvalue).each do |link|
-          if link.link_class.in? ["tag", "identifier"]
-            attrtext += " [#{link.name}]"
-          end
-        end
-        selectables.append({name: attrtext, uuid: attrvalue, type: dataclass.to_s})
-      end
-      itemuuids = []
-      items.each do |item|
-        itemuuids << item.uuid
-        selectables.append({name: item.uuid, uuid: item.uuid, type: dataclass.to_s})
-      end
-
-      itemuuids.each do |itemuuid|
-        links_for_object(itemuuid).each do |link|
-          if link.link_class.in? ["tag", "identifier"]
-            selectables.each do |selectable|
-              if selectable['uuid'] == link.head_uuid
-                selectable['name'] += ' [' + link.name + ']'
-              end
-            end
-          end
-        end
-      end
-    end
+    lt
   end
 
   def render_arvados_object_list_start(list, button_text, button_href,
