@@ -15,6 +15,7 @@ class Job < ArvadosModel
   validate :find_docker_image_locator
   validate :validate_status
   validate :validate_state_change
+  validate :no_collection_uuids
   before_save :update_timestamps_when_state_changes
 
   has_many :commit_ancestors, :foreign_key => :descendant, :primary_key => :script_version
@@ -373,5 +374,35 @@ class Job < ArvadosModel
       end
     end
     ok
+  end
+
+  def no_collection_uuids
+    # recursive_hash_search searches recursively through hashes and
+    # arrays in 'thing' for string fields matching regular expression
+    # 'pattern'.  Returns true if pattern is found, false otherwise.
+    def recursive_hash_search thing, pattern
+      if thing.is_a? Hash
+        thing.each do |k, v|
+          return true if recursive_hash_search v, pattern
+        end
+      elsif thing.is_a? Array
+        thing.each do |k|
+          return true if recursive_hash_search k, pattern
+        end
+      elsif thing.is_a? String
+        return true if thing.match pattern
+      end
+      false
+    end
+
+    # Fail validation if any script_parameters field includes a string containing a
+    # collection uuid pattern.
+    if self.script_parameters_changed?
+      if recursive_hash_search(self.script_parameters, /[a-z0-9]{5}-4zz18-[a-z0-9]{15}/)
+        self.errors.add :script_parameters, "must use portable_data_hash instead of collection uuid"
+        return false
+      end
+    end
+    true
   end
 end
