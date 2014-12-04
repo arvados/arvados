@@ -44,38 +44,45 @@ function ArvadosClient(arvadosApiToken, arvadosDiscoveryUri) {
         });
     }
 
-    function uniqueNameForManifest(manifest, streamName, origName) {
+    function uniqueNameForManifest(manifest, newStreamName, origName) {
         // Return an (escaped) filename starting with (unescaped)
-        // origName that won't conflict with any existing names in
-        // the manifest if saved under streamName. streamName must
-        // be exactly as given in the manifest, e.g., "." or
-        // "./foo" or "./foo/bar".
+        // origName that won't conflict with any existing names in the
+        // manifest if saved under newStreamName. newStreamName must
+        // be exactly as given in the manifest, e.g., "." or "./foo"
+        // or "./foo/bar".
         //
         // Example:
         //
-        // unique('./foo [...] 0:0:bar\040baz\n', '.', 'foo/bar baz')
+        // uniqueNameForManifest('./foo [...] 0:0:bar\\040baz.txt\n', '.',
+        //                       'foo/bar baz.txt')
         // =>
-        // 'foo/bar\\040baz\\040(1)'
+        // 'foo/bar\\040baz\\040(1).txt'
         var newName;
         var nameStub = origName;
         var suffixInt = null;
         var ok = false;
+        var lineMatch, linesRe = /[^\n]+/g;
+        var streamNameMatch, streamNameRe = /^\S+/;
+        var fileTokenMatch, fileTokensRe = / \d+:\d+:(\S+)/g;
         while (!ok) {
             ok = true;
             // Add ' (N)' before the filename extension, if any.
             newName = (!suffixInt ? nameStub :
                        nameStub.replace(/(\.[^.]*)?$/, ' ('+suffixInt+')$1')).
                 replace(/ /g, '\\040');
-            $.each(manifest.split('\n'), function(_, line) {
-                var i, match, foundName;
-                var toks = line.split(' ');
-                for (var i=1; i<toks.length && ok; i++)
-                    if (match = toks[i].match(/^\d+:\d+:(\S+)/))
-                        if (toks[0] + '/' + match[1] === streamName + '/' + newName) {
-                            suffixInt = (suffixInt || 0) + 1;
-                            ok = false;
-                        }
-            });
+            while (ok && null !==
+                   (lineMatch = linesRe.exec(manifest))) {
+                streamNameMatch = streamNameRe.exec(lineMatch[0]);
+                while (ok && null !==
+                       (fileTokenMatch = fileTokensRe.exec(lineMatch[0]))) {
+                    if (streamNameMatch[0] + '/' + fileTokenMatch[1]
+                        ===
+                        newStreamName + '/' + newName) {
+                        ok = false;
+                    }
+                }
+            }
+            suffixInt = (suffixInt || 0) + 1;
         }
         return newName;
     }
