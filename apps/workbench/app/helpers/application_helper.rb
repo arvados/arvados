@@ -309,17 +309,13 @@ module ApplicationHelper
       end
     end
 
-    if dataclass.andand.is_a?(Class)
-      datatype = 'select'
-    elsif dataclass == 'number'
-      datatype = 'number'
-    elsif attrvalue.is_a? Array
-      # TODO: find a way to edit arrays with x-editable
-      return attrvalue
-    elsif attrvalue.is_a? Fixnum or attrvalue.is_a? Float
+    if dataclass == 'number' or attrvalue.is_a? Fixnum or attrvalue.is_a? Float
       datatype = 'number'
     elsif attrvalue.is_a? String
       datatype = 'text'
+    elsif attrvalue.is_a?(Array) or dataclass.andand.is_a?(Class)
+      # TODO: find a way to edit with x-editable
+      return attrvalue
     end
 
     # When datatype is a String or Fixnum, link_to the attrvalue
