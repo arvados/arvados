@@ -9,7 +9,7 @@
           <input type="file" multiple ng-model="incoming" onchange="angular.element(this).scope().addFilesToQueue(this.files); $(this).val('');">
           <div class="btn-group btn-group-sm" role="group" style="margin-top: 1.5em">
             <button type="button" class="btn btn-default" ng-click="stop()" ng-disabled="uploader.state != 'Running'"><i class="fa fa-fw fa-pause"></i> Pause</button>
-            <button type="button" class="btn btn-primary" ng-click="go()" ng-disabled="uploader.state == 'Running' || uploadQueue.length == 0"><i class="fa fa-fw fa-play"></i> Start</button>
+            <button type="button" class="btn btn-primary" ng-click="go()" ng-disabled="uploader.state == 'Running' || countInStates(['Paused', 'Queued']) == 0"><i class="fa fa-fw fa-play"></i> Start</button>
           </div>
         </div>
         <div class="col-sm-8">
@@ -17,8 +17,8 @@
                class="alert alert-info"
                ><i class="fa fa-gear"></i>
             Upload in progress.
-            <span ng-show="countDone() > 0">
-              {{countDone()}} file{{countDone()>1?'s':''}} finished.
+            <span ng-show="countInStates(['Done']) > 0">
+              {{countInStates(['Done'])}} file{{countInStates(['Done'])>1?'s':''}} finished.
             </span>
           </div>
           <div ng-show="uploader.state == 'Idle' && uploader.stateReason"

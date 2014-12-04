@@ -47,14 +47,14 @@ function UploadToCollection($scope, $filter, $q, $timeout,
             if (wasRunning)
                 $scope.go();
         },
-        countDone: function() {
-            var done=0;
-            for (var i=0; i<$scope.uploadQueue.length; i++) {
-                if ($scope.uploadQueue[i].state == 'Done') {
-                    ++done;
+        countInStates: function(want_states) {
+            var found = 0;
+            $.each($scope.uploadQueue, function() {
+                if (want_states.indexOf(this.state) >= 0) {
+                    ++found;
                 }
-            }
-            return done;
+            });
+            return found;
         }
     });
     // TODO: watch uploadQueue, abort uploads if entries disappear
