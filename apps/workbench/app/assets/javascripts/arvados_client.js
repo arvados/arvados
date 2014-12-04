@@ -61,8 +61,7 @@ function ArvadosClient(arvadosApiToken, arvadosDiscoveryUri) {
         var nameStub = origName;
         var suffixInt = null;
         var ok = false;
-        var lineMatch, linesRe = /[^\n]+/g;
-        var streamNameMatch, streamNameRe = /^\S+/;
+        var lineMatch, linesRe = /(\S+).*/gm;
         var fileTokenMatch, fileTokensRe = / \d+:\d+:(\S+)/g;
         while (!ok) {
             ok = true;
@@ -72,10 +71,11 @@ function ArvadosClient(arvadosApiToken, arvadosDiscoveryUri) {
                 replace(/ /g, '\\040');
             while (ok && null !==
                    (lineMatch = linesRe.exec(manifest))) {
-                streamNameMatch = streamNameRe.exec(lineMatch[0]);
+                // lineMatch is [theEntireLine, streamName]
                 while (ok && null !==
                        (fileTokenMatch = fileTokensRe.exec(lineMatch[0]))) {
-                    if (streamNameMatch[0] + '/' + fileTokenMatch[1]
+                    // fileTokenMatch is [theEntireToken, fileName]
+                    if (lineMatch[1] + '/' + fileTokenMatch[1]
                         ===
                         newStreamName + '/' + newName) {
                         ok = false;
