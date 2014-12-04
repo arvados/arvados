@@ -322,7 +322,8 @@ module ApplicationHelper
       datatype = 'text'
     end
 
-    lt = link_to attrtext, '#', {
+    # When datatype is a String or Fixnum, link_to the attrvalue
+    lt = link_to attrvalue, '#', {
       "data-emptytext" => "none",
       "data-placement" => "bottom",
       "data-type" => datatype,
