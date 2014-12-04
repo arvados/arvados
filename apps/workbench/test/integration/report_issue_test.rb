@@ -37,8 +37,8 @@ class ReportIssueTest < ActionDispatch::IntegrationTest
       assert page.has_no_text?('Describe the problem?'), 'Found text - Describe the problem'
       assert page.has_button?('Close'), 'No button - Close'
       assert page.has_no_button?('Send problem report'), 'Found button - Send problem report'
-      api_version_rgx = %r!^https://github.com/curoverse/arvados/tree/[0-9a-f]+/services/api$!
-      wb_version_rgx = %r!^https://github.com/curoverse/arvados/tree/[0-9a-f]+/apps/workbench$!
+      api_version_rgx = %r!^https://github.com/curoverse/arvados/tree/[0-9a-f]+/services/api/?$!
+      wb_version_rgx = %r!^https://github.com/curoverse/arvados/tree/[0-9a-f]+/apps/workbench/?$!
       assert_not_empty(all("a").select { |a| a[:href] =~ wb_version_rgx })
       assert_not_empty(all("a").select { |a| a[:href] =~ api_version_rgx })
       click_button 'Close'
