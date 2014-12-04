@@ -8,10 +8,6 @@ jQuery(function($){
         on('change', '.persistent-selection:checkbox', function(e) {
             $(document).trigger('selections-updated');
         });
-
-    $('#selection-form-content').on("click", function(e) {
-        e.stopPropagation();
-    });
 });
 
 function dispatch_selection_action() {
