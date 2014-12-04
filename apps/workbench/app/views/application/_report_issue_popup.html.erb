@@ -3,7 +3,7 @@
   arvados_base = Rails.configuration.arvados_v1_base
   support_email = Rails.configuration.support_email_address
 
-  api_version_link = link_to api_version, "https://github.com/curoverse/arvados/tree/#{api_version}/services/api"
+  api_version_link = link_to api_version_text, "https://github.com/curoverse/arvados/tree/#{api_version}/services/api"
   wb_version_link = link_to wb_version_text, "https://github.com/curoverse/arvados/tree/#{wb_version}/apps/workbench"
 
   additional_info = {}
@@ -12,7 +12,7 @@
 
   additional_info_str = additional_info.map {|k,v| "#{k}=#{v}"}.join("\n")
 
-  additional_info['api_version'] = api_version
+  additional_info['api_version'] = api_version_text
   additional_info['generated_at'] = generated_at
   additional_info['workbench_version'] = wb_version_text
   additional_info['arvados_base'] = arvados_base
