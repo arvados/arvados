@@ -1824,7 +1824,7 @@ if ($task_work) {
 
 open(STDOUT_ORIG, ">&", STDOUT);
 open(STDERR_ORIG, ">&", STDERR);
-open(STDOUT, ">", "$destdir.log");
+open(STDOUT, ">>", "$destdir.log");
 open(STDERR, ">&", STDOUT);
 
 ### Crunch script run mode
