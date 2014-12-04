@@ -34,7 +34,7 @@ class DatabaseController < ApplicationController
       # drastic.
       table_names = '"' + fixturesets.sort.join('","') + '"'
       ActiveRecord::Base.connection.execute \
-      "LOCK TABLE #{table_names} IN SHARE ROW EXCLUSIVE MODE"
+      "LOCK TABLE #{table_names} IN ACCESS EXCLUSIVE MODE"
 
       # Delete existing fixtures (and everything else) from fixture
       # tables
