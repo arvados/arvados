@@ -236,7 +236,7 @@ common:
   auto_setup_name_blacklist: [arvados, git, gitolite, gitolite-admin, root, syslog]
 
   # source_version
-  source_version: "<%= `git log -n 1 --format=%h` %>"
+  source_version: "<%= `git log -n 1 --format=%h`.strip %>"
   local_modified: false
 
   # Default lifetime for ephemeral collections: 2 weeks.
