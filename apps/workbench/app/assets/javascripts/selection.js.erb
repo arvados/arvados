@@ -2,7 +2,6 @@
 //= require jquery_ujs
 
 /** Javascript for selection. */
-form_selection_sources = {};
 
 jQuery(function($){
     $(document).
@@ -14,23 +13,6 @@ jQuery(function($){
         e.stopPropagation();
     });
 });
-
-add_form_selection_sources = null;
-
-(function() {
-    var form_selection_sources = {};
-    add_form_selection_sources = function (src) {
-        for (var i = 0; i < src.length; i++) {
-            var t = form_selection_sources[src[i].type];
-            if (!t) {
-                t = form_selection_sources[src[i].type] = {};
-            }
-            if (!t[src[i].uuid]) {
-                t[src[i].uuid] = src[i];
-            }
-        }
-    };
-})();
 
 function dispatch_selection_action() {
     // Build a new "href" attribute for this link by starting with the

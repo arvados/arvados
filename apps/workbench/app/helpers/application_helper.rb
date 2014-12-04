@@ -365,31 +365,6 @@ module ApplicationHelper
         end
       end
     end
-
-    lt = link_to attrtext, '#', {
-      "data-emptytext" => "none",
-      "data-placement" => "bottom",
-      "data-type" => datatype,
-      "data-url" => url_for(action: "update", id: object.uuid, controller: object.class.to_s.pluralize.underscore, merge: true),
-      "data-title" => "Set value for #{subattr[-1].to_s}",
-      "data-name" => dn,
-      "data-pk" => "{id: \"#{object.uuid}\", key: \"#{object.class.to_s.underscore}\"}",
-      "data-value" => attrvalue,
-      # "clear" button interferes with form-control's up/down arrows
-      "data-clear" => false,
-      :class => "editable #{'required' if required} form-control",
-      :id => id
-    }.merge(htmloptions)
-
-    lt += raw("\n<script>")
-
-    if selectables.any?
-      lt += raw("add_form_selection_sources(#{selectables.to_json});\n")
-    end
-
-    lt += raw("</script>")
-
-    lt
   end
 
   def render_arvados_object_list_start(list, button_text, button_href,
