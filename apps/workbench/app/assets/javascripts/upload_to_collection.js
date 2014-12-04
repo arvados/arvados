@@ -345,29 +345,16 @@ function UploadToCollection($scope, $filter, $q, $timeout,
             return doQueueWork();
         }
         function doQueueWork() {
-            var nItemsDone;
             that.state = 'Running';
             that.stateReason = null;
-            // Are there any Done things at the top of the queue?
-            for (nItemsDone = 0;
-                 (nItemsDone < $scope.uploadQueue.length &&
-                  $scope.uploadQueue[nItemsDone].state === 'Done'); ) {
-                nItemsDone++;
-            }
-            // If so, push them down to the bottom of the queue.
-            if (nItemsDone > 0) {
-                $scope.uploadQueue.push.apply(
-                    $scope.uploadQueue,
-                    $scope.uploadQueue.splice(0, nItemsDone));
-            }
-            // If anything is not-done, do it.
+            // If anything is not Done, do it.
             if ($scope.uploadQueue.length > 0 &&
                 $scope.uploadQueue[0].state !== 'Done') {
                 return $scope.uploadQueue[0].go().
                     then(appendToCollection, null, onQueueProgress).
                     then(doQueueWork, onQueueReject);
             }
-            // If everything is done, resolve the promise and clean up.
+            // If everything is Done, resolve the promise and clean up.
             return onQueueResolve();
         }
         function onQueueReject(reason) {
@@ -420,9 +407,18 @@ function UploadToCollection($scope, $filter, $q, $timeout,
                         }).
                         then(deferred.resolve);
                 }, onQueueReject).then(function() {
-                    $.each(uploads, function(_, upload) {
-                        upload.committed = true;
-                    });
+                    // Push the completed upload(s) to the bottom of the queue.
+                    var i, qLen = $scope.uploadQueue.length;
+                    for (i=0; i<qLen; i++) {
+                        if (uploads.indexOf($scope.uploadQueue[i]) >= 0) {
+                            $scope.uploadQueue[i].committed = true;
+                            $scope.uploadQueue.push.apply(
+                                $scope.uploadQueue,
+                                $scope.uploadQueue.splice(i, 1));
+                            --i;
+                            --qLen;
+                        }
+                    }
                 });
             return deferred.promise.then(doQueueWork);
         }
