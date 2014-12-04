@@ -278,8 +278,8 @@ function UploadToCollection($scope, $filter, $q, $timeout,
                 kBps = (bytesDone - _startByte) /
                     (Date.now() - _startTime);
                 that.statistics = (
-                    '' + $filter('number')(bytesDone/1024, '0') + 'K ' +
-                        'at ~' + $filter('number')(kBps, '0') + 'K/s')
+                    '' + $filter('number')(bytesDone/1024, '0') + ' KiB ' +
+                        'at ~' + $filter('number')(kBps, '0') + ' KiB/s')
                 if (that.state == 'Paused') {
                     that.statistics += ', paused';
                 } else if (that.state == 'Uploading') {
