@@ -245,7 +245,7 @@ class Dispatcher
   end
 
   def git_cmd(*cmd_a)
-    ["git", "--git-dir=#{@arvados_internal.shellescape}"] + cmd_a
+    ["git", "--git-dir=#{@arvados_internal}"] + cmd_a
   end
 
   def get_authorization(job)
