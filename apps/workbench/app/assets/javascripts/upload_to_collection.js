@@ -401,9 +401,7 @@ function UploadToCollection($scope, $filter, $q, $timeout,
                 { uuid: $scope.uuid }).
                 then(function(collection) {
                     var manifestText = '';
-                    var upload, i;
-                    for (i=0; i<uploads.length; i++) {
-                        upload = uploads[i];
+                    $.each(uploads, function(_, upload) {
                         filename = ArvadosClient.uniqueNameForManifest(
                             collection.manifest_text,
                             '.', upload.file.name);
@@ -412,7 +410,7 @@ function UploadToCollection($scope, $filter, $q, $timeout,
                             ' 0:' + upload.file.size.toString() + ':' +
                             filename +
                             '\n';
-                    }
+                    });
                     return ArvadosClient.apiPromise(
                         'collections', 'update',
                         { uuid: $scope.uuid,
@@ -422,10 +420,9 @@ function UploadToCollection($scope, $filter, $q, $timeout,
                         }).
                         then(deferred.resolve);
                 }, onQueueReject).then(function() {
-                    var i;
-                    for(i=0; i<uploads.length; i++) {
-                        uploads[i].committed = true;
-                    }
+                    $.each(uploads, function(_, upload) {
+                        upload.committed = true;
+                    });
                 });
             return deferred.promise.then(doQueueWork);
         }
