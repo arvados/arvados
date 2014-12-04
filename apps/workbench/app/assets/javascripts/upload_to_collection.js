@@ -23,13 +23,18 @@ function UploadToCollection($scope, $filter, $q, $timeout,
             // Angular binding doesn't work its usual magic for file
             // inputs, so we need to $scope.$apply() this update.
             $scope.$apply(function(){
-                var i;
-                var insertAt;
-                for (insertAt=0; (insertAt<$scope.uploadQueue.length &&
-                                  $scope.uploadQueue[insertAt].state !== 'Done');
-                     insertAt++);
+                var i, nItemsTodo;
+                // Add these new files after the items already waiting
+                // in the queue -- but before the items that are
+                // 'Done' and have therefore been pushed to the
+                // bottom.
+                for (nItemsTodo = 0;
+                     (nItemsTodo < $scope.uploadQueue.length &&
+                      $scope.uploadQueue[nItemsTodo].state !== 'Done'); ) {
+                    nItemsTodo++;
+                }
                 for (i=0; i<files.length; i++) {
-                    $scope.uploadQueue.splice(insertAt+i, 0,
+                    $scope.uploadQueue.splice(nItemsTodo+i, 0,
                         new FileUploader(files[i]));
                 }
             });
@@ -340,14 +345,21 @@ function UploadToCollection($scope, $filter, $q, $timeout,
             return doQueueWork();
         }
         function doQueueWork() {
-            var i;
+            var nItemsDone;
             that.state = 'Running';
             that.stateReason = null;
-            // Push the done things to the bottom of the queue.
-            for (i=0; (i<$scope.uploadQueue.length &&
-                       $scope.uploadQueue[i].state === 'Done'); i++);
-            if (i>0)
-                $scope.uploadQueue.push.apply($scope.uploadQueue, $scope.uploadQueue.splice(0, i));
+            // Are there any Done things at the top of the queue?
+            for (nItemsDone = 0;
+                 (nItemsDone < $scope.uploadQueue.length &&
+                  $scope.uploadQueue[nItemsDone].state === 'Done'); ) {
+                nItemsDone++;
+            }
+            // If so, push them down to the bottom of the queue.
+            if (nItemsDone > 0) {
+                $scope.uploadQueue.push.apply(
+                    $scope.uploadQueue,
+                    $scope.uploadQueue.splice(0, nItemsDone));
+            }
             // If anything is not-done, do it.
             if ($scope.uploadQueue.length > 0 &&
                 $scope.uploadQueue[0].state !== 'Done') {
