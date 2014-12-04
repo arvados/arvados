@@ -26,4 +26,9 @@ class DiagnosticsTest < ActionDispatch::IntegrationTest
     end
   end
 
+  # Diagnostics tests never want to reset the database fixtures.
+  protected
+  def self.reset_api_fixtures_now
+  end
+
 end

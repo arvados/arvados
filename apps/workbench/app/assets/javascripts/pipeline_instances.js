@@ -98,7 +98,11 @@ $(document).on('arv-log-event', '.arv-log-event-handler-append-logs', function(e
     var wasatbottom = ($(this).scrollTop() + $(this).height() >= this.scrollHeight);
 
     if (eventData.event_type == "stderr" || eventData.event_type == "stdout") {
-        $(this).append(eventData.properties.text);
+        if( eventData.prepend ) {
+            $(this).prepend(eventData.properties.text);
+        } else {
+            $(this).append(eventData.properties.text);
+        }
     }
 
     if (wasatbottom) {
@@ -106,23 +110,20 @@ $(document).on('arv-log-event', '.arv-log-event-handler-append-logs', function(e
     }
 });
 
-var showhide_compare = function() {
-    var form = $('form#compare')[0];
-    $('input[type=hidden][name="uuids[]"]', form).remove();
-    $('input[type=submit]', form).prop('disabled',true).show();
-    var checked_inputs = $('[data-object-uuid*=-d1hrv-] input[name="uuids[]"]:checked');
-    if (checked_inputs.length >= 2 && checked_inputs.length <= 3) {
-        checked_inputs.each(function(){
-            if(this.checked) {
-                $('input[type=submit]', form).prop('disabled',false).show();
-                $(form).append($('<input type="hidden" name="uuids[]"/>').val(this.value));
-            }
-        });
-    }
-};
-$(document).on('change', '[data-object-uuid*=-d1hrv-] input[name="uuids[]"]', function(e) {
-    if(e.target == this) {
-        showhide_compare();
-    }
-});
-$(document).on('ready ajax:success', showhide_compare);
+// Set up all events for the pipeline instances compare button.
+(function() {
+    var compare_form = '#compare';
+    var compare_inputs = '#comparedInstances :checkbox[name="uuids[]"]';
+    var update_button = function(event) {
+        var $form = $(compare_form);
+        var $checked_inputs = $(compare_inputs).filter(':checked');
+        $(':submit', $form).prop('disabled', (($checked_inputs.length < 2) ||
+                                              ($checked_inputs.length > 3)));
+        $('input[name="uuids[]"]', $form).remove();
+        $form.append($checked_inputs.clone()
+                     .removeAttr('id').attr('type', 'hidden'));
+    };
+    $(document)
+        .on('ready ajax:success', compare_form, update_button)
+        .on('change', compare_inputs, update_button);
+})();

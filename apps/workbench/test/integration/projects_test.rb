@@ -54,8 +54,7 @@ class ProjectsTest < ActionDispatch::IntegrationTest
 
     # visit project page
     visit current_path
-    assert(has_no_text?('.container-fluid', text: '*Textile description for A project*'),
-           "Description is not rendered properly")
+    assert_no_text '*Textile description for A project*'
     assert(find?('.container-fluid', text: 'Textile description for A project'),
            "Description update did not survive page refresh")
     assert(find?('.container-fluid', text: 'And a new paragraph in description'),
@@ -286,7 +285,7 @@ class ProjectsTest < ActionDispatch::IntegrationTest
     ['Remove',api_fixture('collections')['collection_in_aproject_with_same_name_as_in_home_project'],
       api_fixture('groups')['aproject'],nil,true],
   ].each do |action, my_collection, src, dest=nil, expect_name_change=nil|
-    test "selection #{action} #{expect_name_change} for project" do
+    test "selection #{action} -> #{expect_name_change.inspect} for project" do
       perform_selection_action src, dest, my_collection, action
 
       case action
@@ -297,8 +296,6 @@ class ProjectsTest < ActionDispatch::IntegrationTest
         find(".dropdown-menu a", text: dest['name']).click
         assert page.has_text?(my_collection['name']), 'Collection not found in dest project after copy'
 
-        # now remove it from destination project to restore to original state
-        perform_selection_action dest, nil, my_collection, 'Remove'
       when 'Move'
         assert page.has_no_text?(my_collection['name']), 'Collection still found in src project after move'
         visit page_with_token 'active', '/'
@@ -306,8 +303,6 @@ class ProjectsTest < ActionDispatch::IntegrationTest
         find(".dropdown-menu a", text: dest['name']).click
         assert page.has_text?(my_collection['name']), 'Collection not found in dest project after move'
 
-        # move it back to src project to restore to original state
-        perform_selection_action dest, src, my_collection, action
       when 'Remove'
         assert page.has_no_text?(my_collection['name']), 'Collection still found in src project after remove'
         visit page_with_token 'active', '/'
@@ -332,7 +327,7 @@ class ProjectsTest < ActionDispatch::IntegrationTest
       find('input[type=checkbox]').click
     end
 
-    click_button 'Selection...'
+    click_button 'Selection'
 
     within('.selection-action-container') do
       assert page.has_text?("Compare selected"), "Compare selected link text not found"
@@ -364,7 +359,7 @@ class ProjectsTest < ActionDispatch::IntegrationTest
     find("#projects-menu").click
     find(".dropdown-menu a", text: my_project['name']).click
 
-    click_button 'Selection...'
+    click_button 'Selection'
     within('.selection-action-container') do
       page.assert_selector 'li.disabled', text: 'Create new collection with selected collections'
       page.assert_selector 'li.disabled', text: 'Compare selected'
@@ -383,7 +378,7 @@ class ProjectsTest < ActionDispatch::IntegrationTest
       find('input[type=checkbox]').click
     end
 
-    click_button 'Selection...'
+    click_button 'Selection'
     within('.selection-action-container') do
       page.assert_no_selector 'li.disabled', text: 'Create new collection with selected collections'
       page.assert_selector 'li', text: 'Create new collection with selected collections'
@@ -408,7 +403,7 @@ class ProjectsTest < ActionDispatch::IntegrationTest
       find('input[type=checkbox]').click
     end
 
-    click_button 'Selection...'
+    click_button 'Selection'
     within('.selection-action-container') do
       page.assert_selector 'li.disabled', text: 'Create new collection with selected collections'
       page.assert_selector 'li.disabled', text: 'Compare selected'
@@ -438,7 +433,7 @@ class ProjectsTest < ActionDispatch::IntegrationTest
       find('input[type=checkbox]').click
     end
 
-    click_button 'Selection...'
+    click_button 'Selection'
     within('.selection-action-container') do
       page.assert_selector 'li.disabled', text: 'Create new collection with selected collections'
       page.assert_selector 'li.disabled', text: 'Compare selected'
@@ -447,6 +442,21 @@ class ProjectsTest < ActionDispatch::IntegrationTest
       page.assert_selector 'li', text: 'Move selected'
       page.assert_no_selector 'li.disabled', text: 'Remove selected'
       page.assert_selector 'li', text: 'Remove selected'
+    end
+  end
+
+  # "Remove selected" selection option should not be available when current user cannot write to the project
+  test "remove selected action is not available when current user cannot write to project" do
+    my_project = api_fixture('groups')['anonymously_accessible_project']
+    visit page_with_token 'active', "/projects/#{my_project['uuid']}"
+
+    click_button 'Selection'
+    within('.selection-action-container') do
+      assert_selector 'li', text: 'Create new collection with selected collections'
+      assert_selector 'li', text: 'Compare selected'
+      assert_selector 'li', text: 'Copy selected'
+      assert_selector 'li', text: 'Move selected'
+      assert_no_selector 'li', text: 'Remove selected'
     end
   end
 
@@ -467,7 +477,7 @@ class ProjectsTest < ActionDispatch::IntegrationTest
         find('input[type=checkbox]').click
       end
 
-      click_button 'Selection...'
+      click_button 'Selection'
       within('.selection-action-container') do
         click_link 'Create new collection with selected collections'
       end
@@ -654,7 +664,7 @@ class ProjectsTest < ActionDispatch::IntegrationTest
       Rails.configuration.arvados_v1_base = original_arvados_v1_base
       click_link 'Reload tab'
       assert_no_selector('a', text: 'Reload tab')
-      assert_selector('button', text: 'Selection...')
+      assert_selector('button', text: 'Selection')
       within '.selection-action-container' do
         assert_selector 'tr[data-kind="arvados#trait"]'
       end

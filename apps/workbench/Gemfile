@@ -24,7 +24,7 @@ gem 'coffee-rails'
 # Gems used only for assets and not required
 # in production environments by default.
 group :assets do
-  gem 'sass-rails'
+  gem 'sass-rails', '~> 4.0.4'
 
   # See https://github.com/sstephenson/execjs#readme for more supported runtimes
   gem 'therubyracer', :platforms => :ruby
@@ -89,3 +89,6 @@ gem 'httpclient', '~> 2.5.0'
 gem 'themes_for_rails', git: 'https://github.com/holtkampw/themes_for_rails', ref: '1fd2d7897d75ae0d6375f4c390df87b8e91ad417'
 
 gem "deep_merge", :require => 'deep_merge/rails_compat'
+
+gem 'morrisjs-rails'
+gem 'raphael-rails'

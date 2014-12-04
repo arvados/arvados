@@ -19,7 +19,7 @@ class ErrorsTest < ActionDispatch::IntegrationTest
       # Generally, new routes should appear under /arvados/v1/. If
       # they appear elsewhere, that might have been caused by default
       # rails generator behavior that we don't want.
-      assert_match(/^\/(|\*a|arvados\/v1\/.*|auth\/.*|login|logout|discovery\/.*|static\/.*|themes\/.*)(\(\.:format\))?$/,
+      assert_match(/^\/(|\*a|arvados\/v1\/.*|auth\/.*|login|logout|database\/reset|discovery\/.*|static\/.*|themes\/.*)(\(\.:format\))?$/,
                    route.path.spec.to_s,
                    "Unexpected new route: #{route.path.spec}")
     end

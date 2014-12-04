@@ -71,9 +71,15 @@ Server::Application.routes.draw do
     end
   end
 
+  if Rails.env == 'test'
+    post '/database/reset', to: 'database#reset'
+  end
+
   # omniauth
   match '/auth/:provider/callback', :to => 'user_sessions#create'
   match '/auth/failure', :to => 'user_sessions#failure'
+  # not handled by omniauth provider -> 403 with no CORS headers.
+  get '/auth/*a', :to => 'user_sessions#cross_origin_forbidden'
 
   # Custom logout
   match '/login', :to => 'user_sessions#login'

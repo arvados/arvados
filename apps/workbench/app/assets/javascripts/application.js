@@ -24,6 +24,9 @@
 //= require bootstrap-tab-history
 //= require wiselinks
 //= require angular
+//= require raphael
+//= require morris
+//= require jquery.number.min
 //= require_tree .
 
 jQuery(function($){

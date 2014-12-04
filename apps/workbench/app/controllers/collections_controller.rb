@@ -235,10 +235,7 @@ class CollectionsController < ApplicationController
 
   def sharing_popup
     @search_sharing = search_scopes
-    respond_to do |format|
-      format.html
-      format.js
-    end
+    render("sharing_popup.js", content_type: "text/javascript")
   end
 
   helper_method :download_link
@@ -248,18 +245,15 @@ class CollectionsController < ApplicationController
   end
 
   def share
-    a = ApiClientAuthorization.create(scopes: sharing_scopes)
-    @search_sharing = search_scopes
-    render 'sharing_popup'
+    ApiClientAuthorization.create(scopes: sharing_scopes)
+    sharing_popup
   end
 
   def unshare
-    @search_sharing = search_scopes
-    @search_sharing.each do |s|
+    search_scopes.each do |s|
       s.destroy
     end
-    @search_sharing = search_scopes
-    render 'sharing_popup'
+    sharing_popup
   end
 
   protected
