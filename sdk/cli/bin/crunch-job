@@ -396,6 +396,8 @@ fi
   if ($Job->{arvados_sdk_version}) {
     # The job also specifies an Arvados SDK version.  Add the SDKs to the
     # tar file for the build script to install.
+    Log(undef, sprintf("Packing Arvados SDK version %s for installation",
+                       $Job->{arvados_sdk_version}));
     add_git_archive("git", "--git-dir=$git_dir", "archive",
                     "--prefix=.arvados.sdk/",
                     $Job->{arvados_sdk_version}, "sdk");
@@ -1820,22 +1822,44 @@ if ($task_work) {
   remove_tree($task_work, {keep_root => 1});
 }
 
+open(STDOUT_ORIG, ">&", STDOUT);
+open(STDERR_ORIG, ">&", STDERR);
+open(STDOUT, ">", "$destdir.log");
+open(STDERR, ">&", STDOUT);
+
 ### Crunch script run mode
 if (@ARGV) {
+  # We want to do routine logging during task 0 only.  This gives the user
+  # the information they need, but avoids repeating the information for every
+  # task.
+  my $Log;
+  if ($ENV{TASK_SEQUENCE} eq "0") {
+    $Log = sub {
+      my $msg = shift;
+      printf STDERR_ORIG "[Crunch] $msg\n", @_;
+    };
+  } else {
+    $Log = sub { };
+  }
+
   my $python_src = "$install_dir/python";
   my $venv_dir = "$job_work/.arvados.venv";
   my $venv_built = -e "$venv_dir/bin/activate";
   if ((!$venv_built) and (-d $python_src) and can_run("virtualenv")) {
-    shell_or_die("virtualenv", "--python=python2.7", "--system-site-packages",
-                 $venv_dir);
-    shell_or_die("$venv_dir/bin/pip", "install", $python_src);
+    shell_or_die("virtualenv", "--quiet", "--system-site-packages",
+                 "--python=python2.7", $venv_dir);
+    shell_or_die("$venv_dir/bin/pip", "--quiet", "install", $python_src);
     $venv_built = 1;
+    $Log->("Built Python SDK virtualenv");
   }
 
   if ($venv_built) {
+    $Log->("Running in Python SDK virtualenv");
     my $orig_argv = join(" ", map { quotemeta($_); } @ARGV);
     @ARGV = ("/bin/sh", "-ec",
              ". \Q$venv_dir/bin/activate\E; exec $orig_argv");
+  } elsif (-d $python_src) {
+    $Log->("Warning: Python SDK installed, but can't build virtualenv");
   }
 
   while (my ($sdk_dir, $sdk_envkey) = each(%SDK_ENVVARS)) {
@@ -1846,9 +1870,14 @@ if (@ARGV) {
       } else {
         $ENV{$sdk_envkey} = $sdk_path;
       }
+      $Log->("Arvados SDK added to %s", $sdk_envkey);
     }
   }
 
+  close(STDOUT);
+  close(STDERR);
+  open(STDOUT, ">&", STDOUT_ORIG);
+  open(STDERR, ">&", STDERR_ORIG);
   exec(@ARGV);
   die "Cannot exec `@ARGV`: $!";
 }
@@ -1862,10 +1891,6 @@ if (readlink ("$destdir.commit") eq $commit && -d $destdir) {
 }
 
 unlink "$destdir.commit";
-open STDERR_ORIG, ">&STDERR";
-open STDOUT, ">", "$destdir.log";
-open STDERR, ">&STDOUT";
-
 mkdir $destdir;
 open TARX, "|-", "tar", "-xC", $destdir;
 {
@@ -1892,7 +1917,7 @@ if (-d $sdk_root) {
 
 my $python_dir = "$install_dir/python";
 if ((-d $python_dir) and can_run("python2.7") and
-    (system("python2.7 \Q$python_dir/setup.py\E egg_info 2>/dev/null") != 0)) {
+    (system("python2.7", "$python_dir/setup.py", "--quiet", "egg_info") != 0)) {
   # egg_info failed, probably when it asked git for a build tag.
   # Specify no build tag.
   open(my $pysdk_cfg, ">>", "$python_dir/setup.cfg");
