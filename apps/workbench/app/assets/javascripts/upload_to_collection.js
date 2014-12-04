@@ -57,7 +57,7 @@ function UploadToCollection($scope, $filter, $q, $timeout,
             return found;
         }
     });
-    // TODO: watch uploadQueue, abort uploads if entries disappear
+    ////////////////////////////////
 
     var keepProxy;
 
