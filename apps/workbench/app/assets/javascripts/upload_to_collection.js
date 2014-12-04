@@ -236,9 +236,11 @@ function UploadToCollection($scope, $filter, $q, $timeout,
                 onUploaderProgress);
         }
         function onUploaderResolve(locator, dataSize) {
-            if (!locator || _currentSlice.size != dataSize) {
-                console.log("onUploaderResolve but locator=" + locator +
-                            " and " + _currentSlice.size + " != " + dataSize);
+            var sizeHint = (''+locator).split('+')[1];
+            if (!locator || parseInt(sizeHint) != dataSize) {
+                console.log("onUploaderResolve, but locator '" + locator +
+                            "' with size hint '" + sizeHint +
+                            "' does not look right for dataSize=" + dataSize);
                 return onUploaderReject({
                     textStatus: "error",
                     err: "Bad response from slice upload"
