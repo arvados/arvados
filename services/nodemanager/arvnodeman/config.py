@@ -6,6 +6,7 @@ import ConfigParser
 import importlib
 import logging
 import ssl
+import sys
 
 import arvados
 import httplib2
@@ -42,6 +43,7 @@ class NodeManagerConfig(ConfigParser.SafeConfigParser):
                        'poll_time': '60',
                        'max_poll_time': '300',
                        'poll_stale_after': '600',
+                       'boot_fail_after': str(sys.maxint),
                        'node_stale_after': str(60 * 60 * 2)},
             'Logging': {'file': '/dev/stderr',
                         'level': 'WARNING'},

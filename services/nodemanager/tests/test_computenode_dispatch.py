@@ -106,14 +106,14 @@ class ComputeNodeShutdownActorMixin(testutil.ActorTestMixin):
         self.cloud_node = cloud_node
         self.arvados_node = arvados_node
 
-    def make_actor(self):
+    def make_actor(self, cancellable=True):
         if not hasattr(self, 'timer'):
             self.make_mocks()
         monitor_actor = dispatch.ComputeNodeMonitorActor.start(
             self.cloud_node, time.time(), self.shutdowns, self.timer,
             self.updates, self.arvados_node)
         self.shutdown_actor = self.ACTOR_CLASS.start(
-            self.timer, self.cloud_client, monitor_actor).proxy()
+            self.timer, self.cloud_client, monitor_actor, cancellable).proxy()
         self.monitor_actor = monitor_actor.proxy()
 
     def check_success_flag(self, expected, allow_msg_count=1):
@@ -125,6 +125,15 @@ class ComputeNodeShutdownActorMixin(testutil.ActorTestMixin):
                 break
         else:
             self.fail("success flag {} is not {}".format(last_flag, expected))
+
+    def test_uncancellable_shutdown(self, *mocks):
+        self.make_mocks(shutdown_open=False)
+        self.cloud_client.destroy_node.return_value = False
+        self.make_actor(cancellable=False)
+        self.check_success_flag(None, 0)
+        self.shutdowns._set_state(True, 600)
+        self.cloud_client.destroy_node.return_value = True
+        self.check_success_flag(True)
 
 
 class ComputeNodeShutdownActorTestCase(ComputeNodeShutdownActorMixin,

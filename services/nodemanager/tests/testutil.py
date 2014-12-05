@@ -2,6 +2,7 @@
 
 from __future__ import absolute_import, print_function
 
+import threading
 import time
 
 import mock
@@ -62,8 +63,23 @@ class MockSize(object):
 
 
 class MockTimer(object):
+    def __init__(self, deliver_immediately=True):
+        self.deliver_immediately = deliver_immediately
+        self.messages = []
+        self.lock = threading.Lock()
+
+    def deliver(self):
+        with self.lock:
+            to_deliver = self.messages
+            self.messages = []
+        for callback, args, kwargs in to_deliver:
+            callback(*args, **kwargs)
+
     def schedule(self, want_time, callback, *args, **kwargs):
-        return callback(*args, **kwargs)
+        with self.lock:
+            self.messages.append((callback, args, kwargs))
+        if self.deliver_immediately:
+            self.deliver()
 
 
 class ActorTestMixin(object):
