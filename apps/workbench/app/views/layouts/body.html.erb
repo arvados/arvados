@@ -161,7 +161,7 @@
                       &block)
                   end,
                   :top_button => Proc.new do %>
-                    <% link_to projects_path, method: 'post', class: 'btn btn-xs btn-default pull-right' do %>
+                    <% link_to projects_path, method: :post, class: 'btn btn-xs btn-default pull-right' do %>
                       <i class="fa fa-plus"></i> New project
                     <% end %>
                   <% end %>

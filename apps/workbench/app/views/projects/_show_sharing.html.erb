@@ -45,7 +45,7 @@
       action_href: share_with_project_path,
       action_name: 'Add',
       action_data: {selection_param: 'uuids[]', success: 'tab-refresh'}.to_json),
-      class: "btn btn-primary btn-sm", remote: true, method: 'get') do %>
+      class: "btn btn-primary btn-sm", remote: true) do %>
   <i class="fa fa-fw fa-plus"></i> Share with <%= share_class %>&hellip;
   <% end %>
 

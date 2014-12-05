@@ -137,7 +137,7 @@ class ProjectsTest < ActionDispatch::IntegrationTest
     click_link 'Other objects'
     within '.selection-action-container' do
       find '.editable', text: 'Now I have a new name.'
-      page.assert_no_selector '.editable', text: 'Now I have a name.'
+      assert_no_selector '.editable', text: 'Now I have a name.'
     end
   end
 
@@ -361,11 +361,11 @@ class ProjectsTest < ActionDispatch::IntegrationTest
 
     click_button 'Selection'
     within('.selection-action-container') do
-      page.assert_selector 'li.disabled', text: 'Create new collection with selected collections'
-      page.assert_selector 'li.disabled', text: 'Compare selected'
-      page.assert_selector 'li.disabled', text: 'Copy selected'
-      page.assert_selector 'li.disabled', text: 'Move selected'
-      page.assert_selector 'li.disabled', text: 'Remove selected'
+      assert_selector 'li.disabled', text: 'Create new collection with selected collections'
+      assert_selector 'li.disabled', text: 'Compare selected'
+      assert_selector 'li.disabled', text: 'Copy selected'
+      assert_selector 'li.disabled', text: 'Move selected'
+      assert_selector 'li.disabled', text: 'Remove selected'
     end
 
     # select collection and verify links are enabled
@@ -380,15 +380,15 @@ class ProjectsTest < ActionDispatch::IntegrationTest
 
     click_button 'Selection'
     within('.selection-action-container') do
-      page.assert_no_selector 'li.disabled', text: 'Create new collection with selected collections'
-      page.assert_selector 'li', text: 'Create new collection with selected collections'
-      page.assert_selector 'li.disabled', text: 'Compare selected'
-      page.assert_no_selector 'li.disabled', text: 'Copy selected'
-      page.assert_selector 'li', text: 'Copy selected'
-      page.assert_no_selector 'li.disabled', text: 'Move selected'
-      page.assert_selector 'li', text: 'Move selected'
-      page.assert_no_selector 'li.disabled', text: 'Remove selected'
-      page.assert_selector 'li', text: 'Remove selected'
+      assert_no_selector 'li.disabled', text: 'Create new collection with selected collections'
+      assert_selector 'li', text: 'Create new collection with selected collections'
+      assert_selector 'li.disabled', text: 'Compare selected'
+      assert_no_selector 'li.disabled', text: 'Copy selected'
+      assert_selector 'li', text: 'Copy selected'
+      assert_no_selector 'li.disabled', text: 'Move selected'
+      assert_selector 'li', text: 'Move selected'
+      assert_no_selector 'li.disabled', text: 'Remove selected'
+      assert_selector 'li', text: 'Remove selected'
     end
 
     # select subproject and verify that copy action is disabled
@@ -405,13 +405,13 @@ class ProjectsTest < ActionDispatch::IntegrationTest
 
     click_button 'Selection'
     within('.selection-action-container') do
-      page.assert_selector 'li.disabled', text: 'Create new collection with selected collections'
-      page.assert_selector 'li.disabled', text: 'Compare selected'
-      page.assert_selector 'li.disabled', text: 'Copy selected'
-      page.assert_no_selector 'li.disabled', text: 'Move selected'
-      page.assert_selector 'li', text: 'Move selected'
-      page.assert_no_selector 'li.disabled', text: 'Remove selected'
-      page.assert_selector 'li', text: 'Remove selected'
+      assert_selector 'li.disabled', text: 'Create new collection with selected collections'
+      assert_selector 'li.disabled', text: 'Compare selected'
+      assert_selector 'li.disabled', text: 'Copy selected'
+      assert_no_selector 'li.disabled', text: 'Move selected'
+      assert_selector 'li', text: 'Move selected'
+      assert_no_selector 'li.disabled', text: 'Remove selected'
+      assert_selector 'li', text: 'Remove selected'
     end
 
     # select subproject and a collection and verify that copy action is still disabled
@@ -433,15 +433,72 @@ class ProjectsTest < ActionDispatch::IntegrationTest
       find('input[type=checkbox]').click
     end
 
+    click_link 'Subprojects'
     click_button 'Selection'
     within('.selection-action-container') do
-      page.assert_selector 'li.disabled', text: 'Create new collection with selected collections'
-      page.assert_selector 'li.disabled', text: 'Compare selected'
-      page.assert_selector 'li.disabled', text: 'Copy selected'
-      page.assert_no_selector 'li.disabled', text: 'Move selected'
-      page.assert_selector 'li', text: 'Move selected'
-      page.assert_no_selector 'li.disabled', text: 'Remove selected'
-      page.assert_selector 'li', text: 'Remove selected'
+      assert_selector 'li.disabled', text: 'Create new collection with selected collections'
+      assert_selector 'li.disabled', text: 'Compare selected'
+      assert_selector 'li.disabled', text: 'Copy selected'
+      assert_no_selector 'li.disabled', text: 'Move selected'
+      assert_selector 'li', text: 'Move selected'
+      assert_no_selector 'li.disabled', text: 'Remove selected'
+      assert_selector 'li', text: 'Remove selected'
+    end
+  end
+
+  # When project tabs are switched, only options applicable to the current tab's selections are enabled.
+  test "verify selection options when tabs are switched" do
+    my_project = api_fixture('groups')['aproject']
+    my_collection = api_fixture('collections')['collection_to_move_around_in_aproject']
+    my_subproject = api_fixture('groups')['asubproject']
+
+    # select subproject and a collection and verify that copy action is still disabled
+    visit page_with_token 'active', '/'
+    find("#projects-menu").click
+    find(".dropdown-menu a", text: my_project['name']).click
+
+    # Select a sub-project
+    click_link 'Subprojects'
+    assert page.has_text?(my_subproject['name']), 'Subproject not found in project'
+
+    within('tr', text: my_subproject['name']) do
+      find('input[type=checkbox]').click
+    end
+
+    # Select a collection
+    click_link 'Data collections'
+    assert page.has_text?(my_collection['name']), 'Collection not found in project'
+
+    within('tr', text: my_collection['name']) do
+      find('input[type=checkbox]').click
+    end
+
+    # Go back to Subprojects tab
+    click_link 'Subprojects'
+    click_button 'Selection'
+    within('.selection-action-container') do
+      assert_selector 'li.disabled', text: 'Create new collection with selected collections'
+      assert_selector 'li.disabled', text: 'Compare selected'
+      assert_selector 'li.disabled', text: 'Copy selected'
+      assert_no_selector 'li.disabled', text: 'Move selected'
+      assert_selector 'li', text: 'Move selected'
+      assert_no_selector 'li.disabled', text: 'Remove selected'
+      assert_selector 'li', text: 'Remove selected'
+    end
+
+    # Go back to Data collections tab
+    click_link 'Data collections'
+    click_button 'Selection'
+    within('.selection-action-container') do
+      assert_no_selector 'li.disabled', text: 'Create new collection with selected collections'
+      assert_selector 'li', text: 'Create new collection with selected collections'
+      assert_selector 'li.disabled', text: 'Compare selected'
+      assert_no_selector 'li.disabled', text: 'Copy selected'
+      assert_selector 'li', text: 'Copy selected'
+      assert_no_selector 'li.disabled', text: 'Move selected'
+      assert_selector 'li', text: 'Move selected'
+      assert_no_selector 'li.disabled', text: 'Remove selected'
+      assert_selector 'li', text: 'Remove selected'
     end
   end
 
