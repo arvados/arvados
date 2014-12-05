@@ -330,6 +330,7 @@ function UploadToCollection($scope, $filter, $q, $timeout,
             return _deferred.promise();
         }
         function stop() {
+            that.state = 'Stopped';
             for (var i=0; i<$scope.uploadQueue.length; i++)
                 $scope.uploadQueue[i].stop();
         }
@@ -358,7 +359,11 @@ function UploadToCollection($scope, $filter, $q, $timeout,
             return onQueueResolve();
         }
         function onQueueReject(reason) {
-            that.state = 'Failed';
+            if (that.state !== 'Stopped') {
+                that.state = 'Error';
+            }
+            // (else it's not really an error, just a consequence of stop())
+
             that.stateReason = (
                 (reason.textStatus || 'Error') +
                     (reason.xhr && reason.xhr.options

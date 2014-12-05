@@ -23,11 +23,15 @@
           </div>
           <div ng-show="uploader.state === 'Idle' && uploader.stateReason"
                class="alert alert-success"
-               ><i class="fa fa-flag-checkered"></i> {{uploader.stateReason}}
+               ><i class="fa fa-fw fa-flag-checkered"></i> &nbsp; {{uploader.stateReason}}
           </div>
           <div ng-show="uploader.state === 'Failed'"
                class="alert alert-danger"
-               ><i class="fa fa-warning"></i> {{uploader.stateReason}}
+               ><i class="fa fa-fw fa-warning"></i> &nbsp; {{uploader.stateReason}}
+          </div>
+          <div ng-show="uploader.state === 'Stopped'"
+               class="alert alert-info"
+               ><i class="fa fa-fw fa-info"></i> &nbsp; Paused. Click the Start button to resume uploading.
           </div>
         </div>
       </div>
