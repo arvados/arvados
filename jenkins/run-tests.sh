@@ -218,6 +218,9 @@ ln -sfn "$WORKSPACE" "$GOPATH/src/git.curoverse.com/arvados.git" \
 virtualenv --setuptools "$VENVDIR" || fatal "virtualenv $VENVDIR failed"
 . "$VENVDIR/bin/activate"
 
+# Needed for run_test_server.py which is used by certain (non-Python) tests.
+pip install PyYAML
+
 checkexit() {
     if [[ "$?" != "0" ]]; then
         title "!!!!!! $1 FAILED !!!!!!"
