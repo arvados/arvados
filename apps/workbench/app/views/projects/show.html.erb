@@ -18,14 +18,13 @@
                   action_href: actions_path(id: @object.uuid),
                   action_method: 'post',
                   action_data: {selection_param: 'selection[]', copy_selections_into_project: @object.uuid, success: 'page-refresh'}.to_json),
-                { remote: true, title: "Copy a collection from another project into this one", data: {'event-after-select' => 'page-refresh', 'toggle' => 'dropdown'} }) do %>
-            <i class="fa fa-fw fa-clipboard"></i> Copy data from a different project
+                { remote: true, data: {'event-after-select' => 'page-refresh', 'toggle' => 'dropdown'} }) do %>
+            <i class="fa fa-fw fa-clipboard"></i> Copy data from another project
           <% end %>
         </li>
         <li>
           <%= link_to(collections_path(options: {ensure_unique_name: true}, collection: {manifest_text: "", name: "New collection", owner_uuid: @object.uuid}, redirect_to_anchor: 'Upload'), {
               method: 'post',
-              title: "Upload files into a new collection",
               data: {toggle: 'dropdown'}}) do %>
             <i class="fa fa-fw fa-upload"></i> Upload files from my computer
           <% end %>
