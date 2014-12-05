@@ -22,7 +22,7 @@ function ArvadosClient(arvadosApiToken, arvadosDiscoveryUri) {
             var meth = discoveryDoc.resources[controller].methods[action];
             var data = $.extend({}, params, {_method: meth.httpMethod});
             $.each(data, function(k, v) {
-                if (typeof(v) == 'object') {
+                if (typeof(v) === 'object') {
                     data[k] = JSON.stringify(v);
                 }
             });
