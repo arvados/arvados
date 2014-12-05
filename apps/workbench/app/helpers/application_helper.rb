@@ -1,6 +1,4 @@
 module ApplicationHelper
-  include VersionHelper
-
   def current_user
     controller.current_user
   end

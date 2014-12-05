@@ -38,7 +38,7 @@ development:
   assets.debug: true
   profiling_enabled: true
   site_name: Arvados Workbench (dev)
-  local_modified: <%= '-modified' if `git status -s` %>
+  local_modified: "<%= '-modified' if `git status -s` != '' %>"
 
   # API server configuration
   arvados_login_base: ~

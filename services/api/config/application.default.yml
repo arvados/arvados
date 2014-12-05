@@ -15,7 +15,7 @@ development:
   active_record.auto_explain_threshold_in_seconds: 0.5
   assets.compress: false
   assets.debug: true
-  local_modified: <%= '-modified' if `git status -s` %>
+  local_modified: "<%= '-modified' if `git status -s` != '' %>"
 
 production:
   force_ssl: true
