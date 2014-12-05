@@ -1,5 +1,5 @@
 class DatabaseSeeds
-  include CurrentApiClient
+  extend CurrentApiClient
   def self.install
     system_user
     system_group

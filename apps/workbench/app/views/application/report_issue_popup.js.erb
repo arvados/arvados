@@ -3,14 +3,10 @@ $("#report-issue-modal-window .modal").modal('show');
 
 // Disable the submit button on modal loading
 $submit = $('#report-issue-submit');
-$submit.attr('disabled', true);
+$submit.prop('disabled', true);
 
 // capture events to enable submit button when applicable
 $('#report_issue_text').bind('input propertychange', function() {
   var problem_desc = document.forms["report-issue-form"]["report_issue_text"].value;
-  if (problem_desc === null || problem_desc === "") {
-    $submit.attr('disabled', true)
-  } else {
-    $submit.removeAttr('disabled');
-  }
+  $submit.prop('disabled', (problem_desc === null) || (problem_desc === ""));
 });

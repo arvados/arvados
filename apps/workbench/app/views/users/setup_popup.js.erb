@@ -9,7 +9,7 @@ var email_value = document.forms["setup_form"]["email"].value;
 var prefix_value = document.forms["setup_form"]["openid_prefix"].value;
 if ((email_disabled == false) && (email_value == null || email_value == "" ||
         prefix_value == null || prefix_value == "")) {
-  $register.attr('disabled', true);
+  $register.prop('disabled', true);
 }
 
 // capture events to enable submit button when applicable
@@ -22,7 +22,7 @@ $input.on('keyup paste mouseleave', function() {
 
   var emailRegExp = /^([\w-\.]+@([\w-]+\.)+[\w-]{2,4})?$/;
   var validEmail = false;
- 
+
   if (emailRegExp.test(email_value )) {
     validEmail = true;
   }
@@ -32,7 +32,7 @@ $input.on('keyup paste mouseleave', function() {
     trigger = true;
   }
 
-  trigger ? $register.attr('disabled', true) : $register.removeAttr('disabled');
+  $register.prop('disabled', trigger);
 });
 
 // reset form input fields, for the next time around

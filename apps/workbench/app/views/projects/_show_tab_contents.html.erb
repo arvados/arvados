@@ -10,9 +10,9 @@
                     action_data: {current_project_uuid: @object.uuid}.to_json
                   ),
                   'id' => 'combine_selections_button',
+                  method: :post,
                   'data-selection-param-name' => 'selection[]',
                   'data-selection-action' => 'combine-project-contents',
-                  'method' => 'post',
                   'data-toggle' => 'dropdown'
             %></li>
           <li><%= link_to "Compare selected", 'action',
@@ -54,11 +54,11 @@
             %></li>
           <% if @object.editable? %>
           <li><%= link_to "Remove selected", '#',
+                  method: :delete,
                   'data-href' => url_for(action: :remove_items),
                   'data-selection-param-name' => 'item_uuids[]',
                   'data-selection-action' => 'remove',
                   'data-remote' => true,
-                  'method' => 'delete',
                   'data-toggle' => 'dropdown'
             %></li>
           <% end %>

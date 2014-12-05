@@ -9,8 +9,7 @@
   </div>
 
   <%= form_tag({action: 'compare', controller: params[:controller], method: 'get'}, {method: 'get', id: 'compare', class: 'pull-right small-form-margin'}) do |f| %>
-  <%= submit_tag 'Compare 2 or 3 selected', {class: 'btn btn-primary', disabled: true, style: 'display: none'} %>
-  &nbsp;
+    <%= submit_tag 'Compare 2 or 3 selected', {class: 'btn btn-primary', disabled: true} %>
   <% end rescue nil %>
 
 <% end %>

@@ -133,7 +133,10 @@ module ProvenanceHelper
         gr += edge(uuid, job[:output], {label: "output" })
       end
 
-      gr += edge(uuid, job[:log], {label: "log"}) if job[:log] and !edge_opts[:no_log]
+      if job[:log] and !edge_opts[:no_log]
+        gr += describe_node(job[:log])
+        gr += edge(uuid, job[:log], {label: "log"})
+      end
 
       gr
     end

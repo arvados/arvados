@@ -90,20 +90,8 @@ class Collection < ArvadosBase
     end
   end
 
-  def portable_data_hash
-    if self[:portable_data_hash].nil?
-      return self[:uuid]
-    else
-      super
-    end
-  end
-
   def friendly_link_name lookup=nil
-    if self.respond_to? :name
-      self.name
-    else
-      self.portable_data_hash
-    end
+    name || portable_data_hash
   end
 
   def textile_attributes
