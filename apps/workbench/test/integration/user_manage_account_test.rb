@@ -84,19 +84,19 @@ class UserManageAccountTest < ActionDispatch::IntegrationTest
       visit page_with_token(user)
       click_link 'notifications-menu'
       if notifications
-        assert_selector('a', text: 'Click here to learn about SSH keys')
+        assert_selector('a', text: 'Click here to set up an SSH public key for use with Arvados')
         assert_selector('a', text: 'Click here to learn how to run an Arvados Crunch pipeline')
-        click_link('Click here to learn about SSH keys')
+        click_link('Click here to set up an SSH public key for use with Arvados')
         assert_selector('a', text: 'Add new SSH key')
 
         add_and_verify_ssh_key
 
         # No more SSH notification
         click_link 'notifications-menu'
-        assert_no_selector('a', text: 'Click here to learn about SSH keys')
+        assert_no_selector('a', text: 'Click here to set up an SSH public key for use with Arvados')
         assert_selector('a', text: 'Click here to learn how to run an Arvados Crunch pipeline')
       else
-        assert_no_selector('a', text: 'Click here to learn about SSH keys')
+        assert_no_selector('a', text: 'Click here to set up an SSH public key for use with Arvados')
         assert_no_selector('a', text: 'Click here to learn how to run an Arvados Crunch pipeline')
       end
     end
