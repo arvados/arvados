@@ -310,6 +310,8 @@ class Job < ArvadosModel
     end
     self.running ||= false # Default to false instead of nil.
 
+    @need_crunch_dispatch_trigger = true
+
     true
   end
 

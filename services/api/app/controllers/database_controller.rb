@@ -32,7 +32,7 @@ class DatabaseController < ApplicationController
     ActiveRecord::Base.transaction do
       # Avoid deadlock by locking all tables before doing anything
       # drastic.
-      table_names = '"' + fixturesets.sort.join('","') + '"'
+      table_names = '"' + ActiveRecord::Base.connection.tables.join('","') + '"'
       ActiveRecord::Base.connection.execute \
       "LOCK TABLE #{table_names} IN ACCESS EXCLUSIVE MODE"
 
