@@ -271,3 +271,7 @@ span.editable-textile {
 .arv-log-refresh-control {
   display: none;
 }
+
+[ng\:cloak], [ng-cloak], .ng-cloak {
+    display: none !important;
+}
