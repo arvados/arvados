@@ -34,7 +34,7 @@ class PipelineInstancesTest < ActionDispatch::IntegrationTest
     find("#projects-menu").click
     find('.dropdown-menu a,button', text: 'A Project').click
     find('.btn', text: 'Add data').click
-    find('.dropdown-menu a,button', text: '...from a different project').click
+    find('.dropdown-menu a,button', text: 'Copy data from another project').click
     within('.modal-dialog') do
       wait_for_ajax
       first('span', text: 'foo_tag').click
@@ -125,7 +125,7 @@ class PipelineInstancesTest < ActionDispatch::IntegrationTest
     find("#projects-menu").click
     find('.dropdown-menu a,button', text: 'A Project').click
     find('.btn', text: 'Add data').click
-    find('.dropdown-menu a,button', text: '...from a different project').click
+    find('.dropdown-menu a,button', text: 'Copy data from another project').click
     within('.modal-dialog') do
       wait_for_ajax
       first('span', text: 'foo_tag').click
