@@ -177,11 +177,10 @@ function UploadToCollection($scope, $filter, $q, $timeout,
 
     function FileUploader(file) {
         $.extend(this, {
-            committed: false,
             file: file,
             locators: [],
             progress: 0.0,
-            state: 'Queued',    // Queued, Uploading, Paused, Done
+            state: 'Queued',    // Queued, Uploading, Paused, Uploaded, Done
             statistics: null,
             go: go,
             stop: stop          // User wants to stop.
@@ -201,13 +200,13 @@ function UploadToCollection($scope, $filter, $q, $timeout,
         function go() {
             if (_deferred)
                 _deferred.reject({textStatus: 'restarted'});
-            _deferred = $q.defer();
+            _deferred = $.Deferred();
             that.state = 'Uploading';
             _startTime = Date.now();
             _startByte = _readPos;
             setProgress();
             goSlice();
-            return _deferred.promise;
+            return _deferred.promise().always(function() { _deferred = null; });
         }
         function stop() {
             if (_deferred) {
@@ -225,7 +224,10 @@ function UploadToCollection($scope, $filter, $q, $timeout,
             // here is fulfilled.
             _currentSlice = nextSlice();
             if (!_currentSlice) {
-                that.state = 'Done';
+                // All slices have been uploaded, but the work won't
+                // be truly Done until the target collection has been
+                // updated by the QueueUploader. This state is called:
+                that.state = 'Uploaded';
                 setProgress(_readPos);
                 _currentUploader = null;
                 _deferred.resolve([that]);
@@ -295,13 +297,19 @@ function UploadToCollection($scope, $filter, $q, $timeout,
                             new Date(
                                 Date.now() + (that.file.size - bytesDone) / kBps),
                             'shortTime')
-                } else {
-                    that.statistics += ', finished ' +
-                        $filter('date')(Date.now(), 'shortTime');
-                    _finishTime = Date.now();
                 }
             } else {
                 that.statistics = that.state;
+            }
+            if (that.state === 'Uploading' || that.state === 'Uploaded') {
+                // 'Uploaded' gets reported as 'finished', which is a
+                // little misleading because the collection hasn't
+                // been updated yet. But FileUploader's portion of the
+                // work (and the time when it makes sense to show
+                // speed and ETA) is finished.
+                that.statistics += ', finished ' +
+                    $filter('date')(Date.now(), 'shortTime');
+                _finishTime = Date.now();
             }
             _deferred.notify();
         }
@@ -317,9 +325,11 @@ function UploadToCollection($scope, $filter, $q, $timeout,
         });
         ////////////////////////////////
         var that = this;
-        var _deferred;
+        var _deferred;          // the one we promise to go()'s caller
+        var _deferredAppend;    // tracks current appendToCollection
         function go() {
-            if (that.state === 'Running') return _deferred.promise;
+            if (_deferred) return _deferred.promise();
+            if (_deferredAppend) return _deferredAppend.promise();
             _deferred = $.Deferred();
             that.state = 'Running';
             ArvadosClient.apiPromise(
@@ -327,12 +337,19 @@ function UploadToCollection($scope, $filter, $q, $timeout,
                 {filters: [['service_type','=','proxy']]}).
                 then(doQueueWithProxy);
             onQueueProgress();
-            return _deferred.promise();
+            return _deferred.promise().always(function() { _deferred = null; });
         }
         function stop() {
             that.state = 'Stopped';
+            if (_deferred) {
+                _deferred.reject({});
+            }
+            if (_deferredAppend) {
+                _deferredAppend.reject({});
+            }
             for (var i=0; i<$scope.uploadQueue.length; i++)
                 $scope.uploadQueue[i].stop();
+            onQueueProgress();
         }
         function doQueueWithProxy(data) {
             keepProxy = data.items[0];
@@ -346,7 +363,10 @@ function UploadToCollection($scope, $filter, $q, $timeout,
             return doQueueWork();
         }
         function doQueueWork() {
-            that.state = 'Running';
+            if (!_deferred) {
+                // Queue work has been stopped.
+                return;
+            }
             that.stateReason = null;
             // If anything is not Done, do it.
             if ($scope.uploadQueue.length > 0 &&
@@ -359,10 +379,10 @@ function UploadToCollection($scope, $filter, $q, $timeout,
             return onQueueResolve();
         }
         function onQueueReject(reason) {
-            if (that.state !== 'Stopped') {
-                that.state = 'Error';
+            if (!_deferred) {
+                // Outcome has already been decided (by stop()).
+                return;
             }
-            // (else it's not really an error, just a consequence of stop())
 
             that.stateReason = (
                 (reason.textStatus || 'Error') +
@@ -387,8 +407,8 @@ function UploadToCollection($scope, $filter, $q, $timeout,
             $timeout(function(){$scope.$apply();});
         }
         function appendToCollection(uploads) {
-            var deferred = $q.defer();
-            return ArvadosClient.apiPromise(
+            _deferredAppend = $.Deferred();
+            ArvadosClient.apiPromise(
                 'collections', 'get',
                 { uuid: $scope.uuid }).
                 then(function(collection) {
@@ -409,14 +429,15 @@ function UploadToCollection($scope, $filter, $q, $timeout,
                           collection:
                           { manifest_text:
                             collection.manifest_text }
-                        }).
-                        then(deferred.resolve);
-                }, onQueueReject).then(function() {
-                    // Push the completed upload(s) to the bottom of the queue.
+                        });
+                }).
+                then(function() {
+                    // Mark the completed upload(s) as Done and push
+                    // them to the bottom of the queue.
                     var i, qLen = $scope.uploadQueue.length;
                     for (i=0; i<qLen; i++) {
                         if (uploads.indexOf($scope.uploadQueue[i]) >= 0) {
-                            $scope.uploadQueue[i].committed = true;
+                            $scope.uploadQueue[i].state = 'Done';
                             $scope.uploadQueue.push.apply(
                                 $scope.uploadQueue,
                                 $scope.uploadQueue.splice(i, 1));
@@ -424,8 +445,13 @@ function UploadToCollection($scope, $filter, $q, $timeout,
                             --qLen;
                         }
                     }
+                }).
+                then(_deferredAppend.resolve,
+                     _deferredAppend.reject).
+                always(function() {
+                    _deferredAppend = null;
                 });
-            return deferred.promise.then(doQueueWork);
+            return _deferredAppend.promise();
         }
     }
 }
