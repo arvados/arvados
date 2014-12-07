@@ -105,7 +105,6 @@ func main() {
 		s := <-sig
 		log.Println("caught signal:", s)
 		listener.Close()
-		listener = nil
 	}(term)
 	signal.Notify(term, syscall.SIGTERM)
 	signal.Notify(term, syscall.SIGINT)
