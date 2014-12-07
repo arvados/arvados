@@ -29,31 +29,42 @@ class DatabaseController < ApplicationController
     fixturesets = Dir.glob(Rails.root.join('test', 'fixtures', '*.yml')).
       collect { |yml| yml.match(/([^\/]*)\.yml$/)[1] }
 
-    ActiveRecord::Base.transaction do
-      # Avoid deadlock by locking all tables before doing anything
-      # drastic.
-      table_names = '"' + ActiveRecord::Base.connection.tables.join('","') + '"'
-      ActiveRecord::Base.connection.execute \
-      "LOCK TABLE #{table_names} IN ACCESS EXCLUSIVE MODE"
+    table_names = '"' + ActiveRecord::Base.connection.tables.join('","') + '"'
 
-      # Delete existing fixtures (and everything else) from fixture
-      # tables
-      fixturesets.each do |x|
-        x.classify.constantize.unscoped.delete_all
+    attempts_left = 20
+    begin
+      ActiveRecord::Base.transaction do
+        # Avoid deadlock by locking all tables before doing anything
+        # drastic.
+        ActiveRecord::Base.connection.execute \
+        "LOCK TABLE #{table_names} IN ACCESS EXCLUSIVE MODE"
+
+        # Delete existing fixtures (and everything else) from fixture
+        # tables
+        fixturesets.each do |x|
+          x.classify.constantize.unscoped.delete_all
+        end
+
+        # create_fixtures() is a no-op for cached fixture sets, so
+        # uncache them all.
+        ActiveRecord::Fixtures.reset_cache
+        ActiveRecord::Fixtures.
+          create_fixtures(Rails.root.join('test', 'fixtures'), fixturesets)
+
+        # Dump cache of permissions etc.
+        Rails.cache.clear
+        ActiveRecord::Base.connection.clear_query_cache
+
+        # Reload database seeds
+        DatabaseSeeds.install
       end
-
-      # create_fixtures() is a no-op for cached fixture sets, so
-      # uncache them all.
-      ActiveRecord::Fixtures.reset_cache
-      ActiveRecord::Fixtures.
-        create_fixtures(Rails.root.join('test', 'fixtures'), fixturesets)
-
-      # Dump cache of permissions etc.
-      Rails.cache.clear
-      ActiveRecord::Base.connection.clear_query_cache
-
-      # Reload database seeds
-      DatabaseSeeds.install
+    rescue ActiveRecord::StatementInvalid => e
+      if "#{e.inspect}" =~ /deadlock detected/i and (attempts_left -= 1) > 0
+        logger.info "Waiting for lock -- #{e.inspect}"
+        sleep 0.5
+        retry
+      end
+      raise
     end
 
     # Done.
