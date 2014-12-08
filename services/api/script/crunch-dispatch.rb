@@ -386,7 +386,7 @@ class Dispatcher
       end
       next unless ready
 
-      cmd_args += [@crunch_job_bin,
+      cmd_args += ['bundle', 'exec', @crunch_job_bin,
                    '--job-api-token', @authorizations[job.uuid].api_token,
                    '--job', job.uuid,
                    '--git-dir', @arvados_internal]
