@@ -140,7 +140,7 @@ class ArvadosModelTest < ActiveSupport::TestCase
         search_index = indexes.select do |index|
           index.columns == search_index_columns
         end
-        assert !search_index.empty?, "#{table} does not have search index with all searchable columns"
+        assert !search_index.empty?, "#{table} does not have search index with all searchable columns #{search_index_columns}"
       end
     end
   end
