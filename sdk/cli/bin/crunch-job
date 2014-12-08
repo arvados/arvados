@@ -86,6 +86,7 @@ use POSIX ':sys_wait_h';
 use POSIX qw(strftime);
 use Fcntl qw(F_GETFL F_SETFL O_NONBLOCK);
 use Arvados;
+use Cwd qw(realpath);
 use Data::Dumper;
 use Digest::MD5 qw(md5_hex);
 use Getopt::Long;
@@ -197,6 +198,16 @@ $Job->{'runtime_constraints'} ||= {};
 $Job->{'runtime_constraints'}->{'max_tasks_per_node'} ||= 0;
 my $max_ncpus = $Job->{'runtime_constraints'}->{'max_tasks_per_node'};
 
+my $gem_versions = `gem list --quiet arvados-cli 2>/dev/null`;
+if ($? == 0) {
+  $gem_versions =~ s/^arvados-cli \(/ with arvados-cli Gem version(s) /;
+  chomp($gem_versions);
+  chop($gem_versions);  # Closing parentheses
+} else {
+  $gem_versions = "";
+}
+Log(undef,
+    "running from " . ((-e $0) ? realpath($0) : "stdin") . $gem_versions);
 
 Log (undef, "check slurm allocation");
 my @slot;
