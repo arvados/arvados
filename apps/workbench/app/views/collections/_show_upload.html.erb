@@ -37,14 +37,14 @@
       </div>
     </div>
   </div>
-  <div ng-repeat="upload in uploadQueue" class="row" ng-class="{lighten: upload.committed}">
+  <div ng-repeat="upload in uploadQueue" class="row" ng-class="{lighten: upload.state==='Done'}">
     <div class="col-sm-1">
       <button class="btn btn-xs btn-default"
-              ng-show="!upload.committed"
+              ng-show="upload.state!=='Done'"
               ng-click="removeFileFromQueue($index)"
               title="cancel"><i class="fa fa-fw fa-times"></i></button>
       <span class="label label-success label-info"
-            ng-show="upload.committed">finished</span>
+            ng-show="upload.state==='Done'">finished</span>
     </div>
     <div class="col-sm-4 nowrap" style="overflow-x:hidden;text-overflow:ellipsis">
       <span title="{{upload.file.name}}">
