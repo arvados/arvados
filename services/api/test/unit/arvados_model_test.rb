@@ -126,4 +126,22 @@ class ArvadosModelTest < ActiveSupport::TestCase
       end
     end
   end
+
+  test "search index exists on models that go into projects" do
+    all_tables =  ActiveRecord::Base.connection.tables
+    all_tables.delete 'schema_migrations'
+
+    all_tables.each do |table|
+      table_class = table.classify.constantize
+      if table_class.respond_to?('searchable_columns')
+        search_index_columns = table_class.searchable_columns('ilike')
+
+        indexes = ActiveRecord::Base.connection.indexes(table)
+        search_index = indexes.select do |index|
+          index.columns == search_index_columns
+        end
+        assert !search_index.empty?, "#{table} does not have search index with all searchable columns"
+      end
+    end
+  end
 end

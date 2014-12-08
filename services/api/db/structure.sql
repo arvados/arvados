@@ -1279,6 +1279,27 @@ ALTER TABLE ONLY virtual_machines
 
 
 --
+-- Name: api_client_authorizations_search_index; Type: INDEX; Schema: public; Owner: -; Tablespace: 
+--
+
+CREATE INDEX api_client_authorizations_search_index ON api_client_authorizations USING btree (api_token, created_by_ip_address, last_used_by_ip_address, default_owner_uuid, scopes);
+
+
+--
+-- Name: api_clients_search_index; Type: INDEX; Schema: public; Owner: -; Tablespace: 
+--
+
+CREATE INDEX api_clients_search_index ON api_clients USING btree (uuid, owner_uuid, modified_by_client_uuid, modified_by_user_uuid, name, url_prefix);
+
+
+--
+-- Name: authorized_keys_search_index; Type: INDEX; Schema: public; Owner: -; Tablespace: 
+--
+
+CREATE INDEX authorized_keys_search_index ON authorized_keys USING btree (uuid, owner_uuid, modified_by_client_uuid, modified_by_user_uuid, name, key_type, authorized_user_uuid, public_key);
+
+
+--
 -- Name: collection_owner_uuid_name_unique; Type: INDEX; Schema: public; Owner: -; Tablespace: 
 --
 
@@ -1286,10 +1307,31 @@ CREATE UNIQUE INDEX collection_owner_uuid_name_unique ON collections USING btree
 
 
 --
+-- Name: collections_search_index; Type: INDEX; Schema: public; Owner: -; Tablespace: 
+--
+
+CREATE INDEX collections_search_index ON collections USING btree (owner_uuid, modified_by_client_uuid, modified_by_user_uuid, portable_data_hash, redundancy_confirmed_by_client_uuid, uuid, manifest_text, name, description, properties);
+
+
+--
 -- Name: groups_owner_uuid_name_unique; Type: INDEX; Schema: public; Owner: -; Tablespace: 
 --
 
 CREATE UNIQUE INDEX groups_owner_uuid_name_unique ON groups USING btree (owner_uuid, name);
+
+
+--
+-- Name: groups_search_index; Type: INDEX; Schema: public; Owner: -; Tablespace: 
+--
+
+CREATE INDEX groups_search_index ON groups USING btree (uuid, owner_uuid, modified_by_client_uuid, modified_by_user_uuid, name, description, group_class);
+
+
+--
+-- Name: humans_search_index; Type: INDEX; Schema: public; Owner: -; Tablespace: 
+--
+
+CREATE INDEX humans_search_index ON humans USING btree (uuid, owner_uuid, modified_by_client_uuid, modified_by_user_uuid, properties);
 
 
 --
@@ -1937,10 +1979,59 @@ CREATE UNIQUE INDEX index_virtual_machines_on_uuid ON virtual_machines USING btr
 
 
 --
+-- Name: job_tasks_search_index; Type: INDEX; Schema: public; Owner: -; Tablespace: 
+--
+
+CREATE INDEX job_tasks_search_index ON job_tasks USING btree (uuid, owner_uuid, modified_by_client_uuid, modified_by_user_uuid, job_uuid, parameters, output, created_by_job_task_uuid);
+
+
+--
+-- Name: keep_disks_search_index; Type: INDEX; Schema: public; Owner: -; Tablespace: 
+--
+
+CREATE INDEX keep_disks_search_index ON keep_disks USING btree (uuid, owner_uuid, modified_by_client_uuid, modified_by_user_uuid, ping_secret, node_uuid, filesystem_uuid, keep_service_uuid);
+
+
+--
+-- Name: keep_services_search_index; Type: INDEX; Schema: public; Owner: -; Tablespace: 
+--
+
+CREATE INDEX keep_services_search_index ON keep_services USING btree (uuid, owner_uuid, modified_by_client_uuid, modified_by_user_uuid, service_host, service_type);
+
+
+--
+-- Name: links_search_index; Type: INDEX; Schema: public; Owner: -; Tablespace: 
+--
+
+CREATE INDEX links_search_index ON links USING btree (uuid, owner_uuid, modified_by_client_uuid, modified_by_user_uuid, tail_uuid, link_class, name, head_uuid, properties);
+
+
+--
 -- Name: links_tail_name_unique_if_link_class_name; Type: INDEX; Schema: public; Owner: -; Tablespace: 
 --
 
 CREATE UNIQUE INDEX links_tail_name_unique_if_link_class_name ON links USING btree (tail_uuid, name) WHERE ((link_class)::text = 'name'::text);
+
+
+--
+-- Name: logs_search_index; Type: INDEX; Schema: public; Owner: -; Tablespace: 
+--
+
+CREATE INDEX logs_search_index ON logs USING btree (uuid, owner_uuid, modified_by_client_uuid, modified_by_user_uuid, object_uuid, event_type, summary, properties, object_owner_uuid);
+
+
+--
+-- Name: nodes_search_index; Type: INDEX; Schema: public; Owner: -; Tablespace: 
+--
+
+CREATE INDEX nodes_search_index ON nodes USING btree (uuid, owner_uuid, modified_by_client_uuid, modified_by_user_uuid, hostname, domain, ip_address, info, properties, job_uuid);
+
+
+--
+-- Name: pipeline_instances_search_index; Type: INDEX; Schema: public; Owner: -; Tablespace: 
+--
+
+CREATE INDEX pipeline_instances_search_index ON pipeline_instances USING btree (uuid, owner_uuid, modified_by_client_uuid, modified_by_user_uuid, pipeline_template_uuid, name, components, properties, state, components_summary, description);
 
 
 --
@@ -1951,10 +2042,52 @@ CREATE UNIQUE INDEX pipeline_template_owner_uuid_name_unique ON pipeline_templat
 
 
 --
+-- Name: pipeline_templates_search_index; Type: INDEX; Schema: public; Owner: -; Tablespace: 
+--
+
+CREATE INDEX pipeline_templates_search_index ON pipeline_templates USING btree (uuid, owner_uuid, modified_by_client_uuid, modified_by_user_uuid, name, components, description);
+
+
+--
+-- Name: repositories_search_index; Type: INDEX; Schema: public; Owner: -; Tablespace: 
+--
+
+CREATE INDEX repositories_search_index ON repositories USING btree (uuid, owner_uuid, modified_by_client_uuid, modified_by_user_uuid, name, fetch_url, push_url);
+
+
+--
+-- Name: specimens_search_index; Type: INDEX; Schema: public; Owner: -; Tablespace: 
+--
+
+CREATE INDEX specimens_search_index ON specimens USING btree (uuid, owner_uuid, modified_by_client_uuid, modified_by_user_uuid, material, properties);
+
+
+--
+-- Name: traits_search_index; Type: INDEX; Schema: public; Owner: -; Tablespace: 
+--
+
+CREATE INDEX traits_search_index ON traits USING btree (uuid, owner_uuid, modified_by_client_uuid, modified_by_user_uuid, name, properties);
+
+
+--
 -- Name: unique_schema_migrations; Type: INDEX; Schema: public; Owner: -; Tablespace: 
 --
 
 CREATE UNIQUE INDEX unique_schema_migrations ON schema_migrations USING btree (version);
+
+
+--
+-- Name: users_search_index; Type: INDEX; Schema: public; Owner: -; Tablespace: 
+--
+
+CREATE INDEX users_search_index ON users USING btree (uuid, owner_uuid, modified_by_client_uuid, modified_by_user_uuid, email, first_name, last_name, identity_url, prefs, default_owner_uuid);
+
+
+--
+-- Name: virtual_machines_search_index; Type: INDEX; Schema: public; Owner: -; Tablespace: 
+--
+
+CREATE INDEX virtual_machines_search_index ON virtual_machines USING btree (uuid, owner_uuid, modified_by_client_uuid, modified_by_user_uuid, hostname);
 
 
 --
