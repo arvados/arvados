@@ -3,7 +3,8 @@ MAINTAINER Brett Smith <brett@curoverse.com>
 
 # Install dependencies and set up system.
 # The FUSE packages help ensure that we can install the Python SDK (arv-mount).
-RUN /usr/bin/apt-get install -q -y python-dev python-llfuse python-pip \
+RUN /usr/bin/apt-get install -q -y \
+      python-dev python-llfuse python-pip python-virtualenv \
       libio-socket-ssl-perl libjson-perl liburi-perl libwww-perl dtrx \
       fuse libattr1-dev libfuse-dev && \
     /usr/sbin/adduser --disabled-password \
