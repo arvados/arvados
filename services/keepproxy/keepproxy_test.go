@@ -138,6 +138,7 @@ func runProxy(c *C, args []string, token string, port int) keepclient.KeepClient
 	os.Args = append(args, fmt.Sprintf("-listen=:%v", port))
 	os.Setenv("ARVADOS_API_TOKEN", "4axaw8zxe0qm22wa6urpp5nskcne8z88cvbupv653y1njyi05h")
 
+	listener = nil
 	go main()
 	time.Sleep(100 * time.Millisecond)
 
@@ -162,6 +163,7 @@ func (s *ServerRequiredSuite) TestPutAskGet(c *C) {
 
 	os.Args = []string{"keepproxy", "-listen=:29950"}
 	os.Setenv("ARVADOS_API_TOKEN", "4axaw8zxe0qm22wa6urpp5nskcne8z88cvbupv653y1njyi05h")
+	listener = nil
 	go main()
 	time.Sleep(100 * time.Millisecond)
 
