@@ -301,7 +301,7 @@ function UploadToCollection($scope, $filter, $q, $timeout,
             } else {
                 that.statistics = that.state;
             }
-            if (that.state === 'Uploading' || that.state === 'Uploaded') {
+            if (that.state === 'Uploaded') {
                 // 'Uploaded' gets reported as 'finished', which is a
                 // little misleading because the collection hasn't
                 // been updated yet. But FileUploader's portion of the
