@@ -1859,7 +1859,8 @@ if (@ARGV) {
     @ARGV = ("/bin/sh", "-ec",
              ". \Q$venv_dir/bin/activate\E; exec $orig_argv");
   } elsif (-d $python_src) {
-    $Log->("Warning: Python SDK installed, but can't build virtualenv");
+    $Log->("Warning: can't run virtualenv inside Docker container - " +
+           "can't install Python SDK");
   }
 
   while (my ($sdk_dir, $sdk_envkey) = each(%SDK_ENVVARS)) {
