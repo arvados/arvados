@@ -22,7 +22,7 @@ class SearchIndex < ActiveRecord::Migration
   end
 
   def down
-    tables_with_searchable_columns.each do |table, indices|
+    tables_with_searchable_columns.each do |table|
       remove_index(table.to_sym, name: "#{table}_search_index")
     end
   end
