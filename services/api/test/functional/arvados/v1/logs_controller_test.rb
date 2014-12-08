@@ -29,7 +29,7 @@ class Arvados::V1::LogsControllerTest < ActionController::TestCase
     assert_response :success
     found = assigns(:objects)
     assert_not_equal 0, found.count
-    assert_equal found.count, (found.select { |f| f.object_uuid.match /[a-z0-9]{5}-tpzed-[a-z0-9]{15}/}).count
+    assert_equal found.count, (found.select { |f| f.object_uuid.match User.uuid_regex }).count
     l = JSON.parse(@response.body)
     assert_equal 'arvados#user', l['items'][0]['object_kind']
   end
@@ -42,7 +42,7 @@ class Arvados::V1::LogsControllerTest < ActionController::TestCase
     assert_response :success
     found = assigns(:objects)
     assert_not_equal 0, found.count
-    assert_equal found.count, (found.select { |f| f.object_uuid.match /[a-z0-9]{5}-tpzed-[a-z0-9]{15}/}).count
+    assert_equal found.count, (found.select { |f| f.object_uuid.match User.uuid_regex }).count
   end
 
 end

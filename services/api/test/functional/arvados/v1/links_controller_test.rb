@@ -137,7 +137,7 @@ class Arvados::V1::LinksControllerTest < ActionController::TestCase
     assert_response :success
     found = assigns(:objects)
     assert_not_equal 0, found.count
-    assert_equal found.count, (found.select { |f| f.tail_uuid.match /[a-z0-9]{5}-tpzed-[a-z0-9]{15}/}).count
+    assert_equal found.count, (found.select { |f| f.tail_uuid.match User.uuid_regex }).count
   end
 
   test "filter links with 'is_a' operator with more than one" do
@@ -148,7 +148,10 @@ class Arvados::V1::LinksControllerTest < ActionController::TestCase
     assert_response :success
     found = assigns(:objects)
     assert_not_equal 0, found.count
-    assert_equal found.count, (found.select { |f| f.tail_uuid.match /[a-z0-9]{5}-(tpzed|j7d0g)-[a-z0-9]{15}/}).count
+    assert_equal found.count, (found.select { |f|
+                                 f.tail_uuid.match User.uuid_regex or
+                                 f.tail_uuid.match Group.uuid_regex
+                               }).count
   end
 
   test "filter links with 'is_a' operator with bogus type" do
@@ -169,7 +172,7 @@ class Arvados::V1::LinksControllerTest < ActionController::TestCase
     assert_response :success
     found = assigns(:objects)
     assert_not_equal 0, found.count
-    assert_equal found.count, (found.select { |f| f.head_uuid.match /.....-4zz18-.............../}).count
+    assert_equal found.count, (found.select { |f| f.head_uuid.match Collection.uuid_regex}).count
   end
 
   test "test can still use where tail_kind" do
@@ -180,7 +183,7 @@ class Arvados::V1::LinksControllerTest < ActionController::TestCase
     assert_response :success
     found = assigns(:objects)
     assert_not_equal 0, found.count
-    assert_equal found.count, (found.select { |f| f.tail_uuid.match /[a-z0-9]{5}-tpzed-[a-z0-9]{15}/}).count
+    assert_equal found.count, (found.select { |f| f.tail_uuid.match User.uuid_regex }).count
   end
 
   test "test can still use where head_kind" do
@@ -191,7 +194,7 @@ class Arvados::V1::LinksControllerTest < ActionController::TestCase
     assert_response :success
     found = assigns(:objects)
     assert_not_equal 0, found.count
-    assert_equal found.count, (found.select { |f| f.head_uuid.match /[a-z0-9]{5}-tpzed-[a-z0-9]{15}/}).count
+    assert_equal found.count, (found.select { |f| f.head_uuid.match User.uuid_regex }).count
   end
 
   test "test can still use filter tail_kind" do
@@ -202,7 +205,7 @@ class Arvados::V1::LinksControllerTest < ActionController::TestCase
     assert_response :success
     found = assigns(:objects)
     assert_not_equal 0, found.count
-    assert_equal found.count, (found.select { |f| f.tail_uuid.match /[a-z0-9]{5}-tpzed-[a-z0-9]{15}/}).count
+    assert_equal found.count, (found.select { |f| f.tail_uuid.match User.uuid_regex }).count
   end
 
   test "test can still use filter head_kind" do
@@ -213,7 +216,7 @@ class Arvados::V1::LinksControllerTest < ActionController::TestCase
     assert_response :success
     found = assigns(:objects)
     assert_not_equal 0, found.count
-    assert_equal found.count, (found.select { |f| f.head_uuid.match /[a-z0-9]{5}-tpzed-[a-z0-9]{15}/}).count
+    assert_equal found.count, (found.select { |f| f.head_uuid.match User.uuid_regex }).count
   end
 
   test "head_kind matches head_uuid" do
