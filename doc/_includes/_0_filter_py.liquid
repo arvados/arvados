@@ -14,17 +14,12 @@ collection = arvados.CollectionReader(this_task_input)
 # Create an object to write a new collection as output
 out = arvados.CollectionWriter()
 
-# Set the name of output file within the collection
-out.set_current_file_name("0-filter.txt")
-
-# Get an iterator over the files listed in the collection
-all_files = collection.all_files()
-
-# Iterate over each file
-for input_file in all_files:
-    for ln in input_file.readlines():
-        if ln[0] == '0':
-            out.write(ln)
+# Create a new file in the output collection
+with out.open('0-filter.txt') as out_file:
+    # Iterate over every input file in the input collection
+    for input_file in collection.all_files():
+        # Output every line in the file that starts with '0'
+        out_file.writelines(line for line in input_file if line.startswith('0'))
 
 # Commit the output to keep.  This returns a Keep id.
 output_id = out.finish()

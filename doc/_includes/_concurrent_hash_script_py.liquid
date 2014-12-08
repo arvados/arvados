@@ -1,6 +1,7 @@
 #!/usr/bin/env python
 
 import hashlib
+import os
 import arvados
 
 # Jobs consist of one or more tasks.  A task is a single invocation of
@@ -11,7 +12,7 @@ this_task = arvados.current_task()
 
 # Tasks have a sequence number for ordering.  All tasks
 # with the current sequence number must finish successfully
-# before tasks in the next sequence are started. 
+# before tasks in the next sequence are started.
 # The first task has sequence number 0
 if this_task['sequence'] == 0:
     # Get the "input" field from "script_parameters" on the task object
@@ -21,7 +22,7 @@ if this_task['sequence'] == 0:
     cr = arvados.CollectionReader(job_input)
 
     # Loop over each stream in the collection (a stream is a subset of
-    # files that logically represents a directory
+    # files that logically represents a directory)
     for s in cr.all_streams():
 
         # Loop over each file in the stream
@@ -62,29 +63,21 @@ else:
 
     collection = arvados.CollectionReader(this_task_input)
 
-    out = arvados.CollectionWriter()
-    out.set_current_file_name("md5sum.txt")
-
     # There should only be one file in the collection, so get the
-    # first one.  collection.all_files() returns an iterator so we
-    # need to make it into a list for indexed access.
-    input_file = list(collection.all_files())[0]
+    # first one from the all files iterator.
+    input_file = next(collection.all_files())
+    output_path = os.path.normpath(os.path.join(input_file.stream_name(),
+                                                input_file.name))
 
     # Everything after this is the same as the first tutorial.
     digestor = hashlib.new('md5')
-
-    while True:
-        buf = input_file.read(2**20)
-        if len(buf) == 0:
-            break
+    for buf in input_file.readall():
         digestor.update(buf)
 
-    hexdigest = digestor.hexdigest()
-    file_name = input_file.name()
-    if input_file.stream_name() != '.':
-        file_name = os.join(input_file.stream_name(), file_name)
-    out.write("%s %s\n" % (hexdigest, file_name))
-    output_id = out.finish()
-    this_task.set_output(output_id)
+    out = arvados.CollectionWriter()
+    with out.open('md5sum.txt') as out_file:
+        out_file.write("{} {}\n".format(digestor.hexdigest(), output_path))
+
+    this_task.set_output(out.finish())
 
 # Done!
