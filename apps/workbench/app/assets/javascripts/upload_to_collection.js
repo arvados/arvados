@@ -262,7 +262,8 @@ function UploadToCollection($scope, $filter, $q, $timeout,
             that.state = 'Paused';
             setProgress(_readPos);
             _currentUploader = null;
-            _deferred.reject(reason);
+            if (_deferred)
+                _deferred.reject(reason);
         }
         function onUploaderProgress(sliceDone, sliceSize) {
             setProgress(_readPos + sliceDone);
@@ -311,13 +312,14 @@ function UploadToCollection($scope, $filter, $q, $timeout,
                     $filter('date')(Date.now(), 'shortTime');
                 _finishTime = Date.now();
             }
-            _deferred.notify();
+            if (_deferred)
+                _deferred.notify();
         }
     }
 
     function QueueUploader() {
         $.extend(this, {
-            state: 'Idle',
+            state: 'Idle',      // Idle, Running, Stopped, Failed
             stateReason: null,
             statusSuccess: null,
             go: go,
@@ -344,9 +346,6 @@ function UploadToCollection($scope, $filter, $q, $timeout,
             if (_deferred) {
                 _deferred.reject({});
             }
-            if (_deferredAppend) {
-                _deferredAppend.reject({});
-            }
             for (var i=0; i<$scope.uploadQueue.length; i++)
                 $scope.uploadQueue[i].stop();
             onQueueProgress();
@@ -363,20 +362,28 @@ function UploadToCollection($scope, $filter, $q, $timeout,
             return doQueueWork();
         }
         function doQueueWork() {
-            if (!_deferred) {
-                // Queue work has been stopped.
-                return;
-            }
-            that.stateReason = null;
             // If anything is not Done, do it.
             if ($scope.uploadQueue.length > 0 &&
                 $scope.uploadQueue[0].state !== 'Done') {
-                return $scope.uploadQueue[0].go().
-                    then(appendToCollection, null, onQueueProgress).
-                    then(doQueueWork, onQueueReject);
+                if (_deferred) {
+                    that.stateReason = null;
+                    return $scope.uploadQueue[0].go().
+                        then(appendToCollection, null, onQueueProgress).
+                        then(doQueueWork, onQueueReject);
+                } else {
+                    // Queue work has been stopped. Just update the
+                    // view.
+                    onQueueProgress();
+                    return;
+                }
             }
-            // If everything is Done, resolve the promise and clean up.
-            return onQueueResolve();
+            // If everything is Done, resolve the promise and clean
+            // up. Note this can happen even after the _deferred
+            // promise has been rejected: specifically, when stop() is
+            // called too late to prevent completion of the last
+            // upload. In that case we want to update state to "Idle",
+            // rather than leave it at "Stopped".
+            onQueueResolve();
         }
         function onQueueReject(reason) {
             if (!_deferred) {
@@ -399,7 +406,8 @@ function UploadToCollection($scope, $filter, $q, $timeout,
         function onQueueResolve() {
             that.state = 'Idle';
             that.stateReason = 'Done!';
-            _deferred.resolve();
+            if (_deferred)
+                _deferred.resolve();
             onQueueProgress();
         }
         function onQueueProgress() {
