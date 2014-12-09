@@ -27,8 +27,11 @@ class SearchTest < ActionDispatch::PerformanceTest
       page.find('.glyphicon-search').click
     end
 
-    # We should now be in the search dialog. Expect at least one collection in the result display. 
-    assert_text 'Search'
-    assert_text '-8i9sb-'
+    # We should now be in the search dialog. Expect at least one item in the result display.
+    within '.modal-content' do
+      assert_text 'All projects'
+      assert_text 'Search'
+      assert_selector('div', text: 'zzzzz-')
+    end
   end
 end
