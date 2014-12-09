@@ -1,6 +1,5 @@
 #!/bin/bash
 
-ENABLE_SSH=false
 DOCKER=`which docker.io`
 
 if [[ "$DOCKER" == "" ]]; then
@@ -22,7 +21,6 @@ function usage {
     echo >&2 "  -v, --vm                      Shell server"
     echo >&2 "  -n, --nameserver              Nameserver"
     echo >&2 "  -k, --keep                    Keep servers"
-    echo >&2 "  --ssh                         Enable SSH access to server containers"
     echo >&2 "  -h, --help                    Display this help and exit"
     echo >&2
     echo >&2 "  If no options are given, the action is applied to all servers."
@@ -65,11 +63,6 @@ function start_container {
     fi
     local image=$5
 
-    if $ENABLE_SSH
-    then
-      args="$args -e ENABLE_SSH=$ENABLE_SSH"
-    fi
-
     `$DOCKER ps |grep -P "$name[^/]" -q`
     if [[ "$?" == "0" ]]; then
       echo "You have a running container with name $name -- skipping."
@@ -86,15 +79,6 @@ function start_container {
     if [ "$?" != "0" -o "$container" = "" ]; then
       echo "Unable to start container"
       exit 1
-    fi
-    if [ "$name" == "compute" -o "$ENABLE_SSH" != "false" ];
-    then
-      ip=$(ip_address $container )
-      echo
-      echo "You can ssh into the container with:"
-      echo
-      echo "    ssh root@$ip"
-      echo
     else
       echo "Started container: $container"
     fi
@@ -155,7 +139,7 @@ function do_start {
 
     # NOTE: This requires GNU getopt (part of the util-linux package on Debian-based distros).
     local TEMP=`getopt -o d::s::a::cw::nkvh \
-                  --long doc::,sso::,api::,compute,workbench::,nameserver,keep,vm,help,ssh \
+                  --long doc::,sso::,api::,compute,workbench::,nameserver,keep,vm,help \
                   -n "$0" -- "$@"`
 
     if [ $? != 0 ] ; then echo "Use -h for help"; exit 1 ; fi
@@ -204,11 +188,6 @@ function do_start {
                 ;;
             -k | --keep)
                 start_keep=true
-                shift
-                ;;
-            --ssh)
-                # ENABLE_SSH is a global variable
-                ENABLE_SSH=true
                 shift
                 ;;
             --)
