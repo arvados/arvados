@@ -394,6 +394,7 @@ function UploadToCollection($scope, $filter, $q, $timeout,
                 return;
             }
 
+            that.state = 'Failed';
             that.stateReason = (
                 (reason.textStatus || 'Error') +
                     (reason.xhr && reason.xhr.options
@@ -465,11 +466,11 @@ function UploadToCollection($scope, $filter, $q, $timeout,
                     }
                 }).
                 then(_deferredAppend.resolve,
-                     _deferredAppend.reject).
+                     _deferredAppend.reject);
+            return _deferredAppend.promise().
                 always(function() {
                     _deferredAppend = null;
                 });
-            return _deferredAppend.promise();
         }
     }
 }

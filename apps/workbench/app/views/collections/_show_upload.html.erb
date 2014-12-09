@@ -6,7 +6,7 @@
     <div class="panel-body">
       <div class="row">
         <div class="col-sm-4">
-          <input type="file" multiple ng-model="incoming" onchange="angular.element(this).scope().addFilesToQueue(this.files); $(this).val('');">
+          <input type="file" multiple id="file_selector" ng-model="incoming" onchange="angular.element(this).scope().addFilesToQueue(this.files); $(this).val('');">
           <div class="btn-group btn-group-sm" role="group" style="margin-top: 1.5em">
             <button type="button" class="btn btn-default" ng-click="stop()" ng-disabled="uploader.state !== 'Running'"><i class="fa fa-fw fa-pause"></i> Pause</button>
             <button type="button" class="btn btn-primary" ng-click="go()" ng-disabled="uploader.state === 'Running' || countInStates(['Paused', 'Queued']) === 0"><i class="fa fa-fw fa-play"></i> Start</button>
