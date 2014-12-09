@@ -283,7 +283,10 @@ function UploadToCollection($scope, $filter, $q, $timeout,
         }
         function setProgress(bytesDone) {
             var kBps;
-            that.progress = Math.min(100, 100 * bytesDone / that.file.size)
+            if (that.file.size == 0)
+                that.progress = 100;
+            else
+                that.progress = Math.min(100, 100 * bytesDone / that.file.size);
             if (bytesDone > _startByte) {
                 kBps = (bytesDone - _startByte) /
                     (Date.now() - _startTime);
@@ -422,11 +425,18 @@ function UploadToCollection($scope, $filter, $q, $timeout,
                 then(function(collection) {
                     var manifestText = '';
                     $.each(uploads, function(_, upload) {
+                        var locators = upload.locators;
+                        if (locators.length === 0) {
+                            // Every stream must have at least one
+                            // data locator, even if it is zero bytes
+                            // long:
+                            locators = ['d41d8cd98f00b204e9800998ecf8427e+0'];
+                        }
                         filename = ArvadosClient.uniqueNameForManifest(
                             collection.manifest_text,
                             '.', upload.file.name);
                         collection.manifest_text += '. ' +
-                            upload.locators.join(' ') +
+                            locators.join(' ') +
                             ' 0:' + upload.file.size.toString() + ':' +
                             filename +
                             '\n';
