@@ -6,11 +6,7 @@ require 'integration_helper'
 require 'selenium-webdriver'
 require 'headless'
 
-class BrowsingTest < ActionDispatch::PerformanceTest
-  # Refer to the documentation for all available options
-  # self.profile_options = { :runs => 5, :metrics => [:wall_time, :memory]
-  #                          :output => 'tmp/performance', :formats => [:flat] }
-
+class SearchTest < ActionDispatch::PerformanceTest
   self.profile_options = { :runs => 10,
                            :metrics => [:wall_time],
                            :output => 'tmp/performance',
@@ -23,9 +19,16 @@ class BrowsingTest < ActionDispatch::PerformanceTest
     Capybara.current_session.driver.browser.manage.window.resize_to(1024, 768)
   end
 
-  def test_homepage
+  def test_search
     visit page_with_token('active')
-    assert_text 'Dashboard'
-    assert_selector 'a', text: 'Run a pipeline'
+
+    within('.navbar-fixed-top') do
+      page.find_field('search').set('hash')
+      page.find('.glyphicon-search').click
+    end
+
+    # We should now be in the search dialog. Expect at least one collection in the result display. 
+    assert_text 'Search'
+    assert_text '-8i9sb-'
   end
 end

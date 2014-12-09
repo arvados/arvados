@@ -90,3 +90,6 @@ gem "deep_merge", :require => 'deep_merge/rails_compat'
 
 gem 'morrisjs-rails'
 gem 'raphael-rails'
+
+gem 'rails-perftest'
+gem 'ruby-prof'
