@@ -119,6 +119,7 @@ def main(args=None):
         config.getint('Daemon', 'min_nodes'),
         config.getint('Daemon', 'max_nodes'),
         config.getint('Daemon', 'poll_stale_after'),
+        config.getint('Daemon', 'boot_fail_after'),
         config.getint('Daemon', 'node_stale_after'),
         node_setup, node_shutdown, node_monitor).proxy()
 
