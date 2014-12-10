@@ -315,7 +315,7 @@ install_ruby_sdk() {
     cd "$WORKSPACE/sdk/ruby" \
         && bundle install --no-deployment \
         && gem build arvados.gemspec \
-        && GEM_HOME="$tmpdir_gem_home" gem install --user-install --no-ri --no-rdoc `ls -t arvados-*.gem|head -n1`
+        && GEM_HOME="$tmpdir_gem_home" gem install --no-ri --no-rdoc `ls -t arvados-*.gem|head -n1`
 }
 do_install ruby_sdk
 
@@ -323,7 +323,7 @@ install_cli() {
     cd "$WORKSPACE/sdk/cli" \
         && bundle install --no-deployment \
         && gem build arvados-cli.gemspec \
-        && GEM_HOME="$tmpdir_gem_home" gem install --user-install --no-ri --no-rdoc `ls -t arvados-cli-*.gem|head -n1`
+        && GEM_HOME="$tmpdir_gem_home" gem install --no-ri --no-rdoc `ls -t arvados-cli-*.gem|head -n1`
 }
 do_install cli
 
