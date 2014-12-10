@@ -2,11 +2,11 @@
 
 require 'test_helper'
 require 'rails/performance_test_help'
-require 'integration_helper'
+require 'performance_test_helper'
 require 'selenium-webdriver'
 require 'headless'
 
-class BrowsingTest < ActionDispatch::PerformanceTest
+class BrowsingTest < WorkbenchPerformanceTest
   self.profile_options = { :runs => 10,
                            :metrics => [:wall_time],
                            :output => 'tmp/performance',
@@ -19,25 +19,31 @@ class BrowsingTest < ActionDispatch::PerformanceTest
     Capybara.current_session.driver.browser.manage.window.resize_to(1024, 768)
   end
 
-  test "visit home page" do
-    visit page_with_token('active')
+  test "home page" do
+    visit_page_with_token
+    wait_for_ajax
     assert_text 'Dashboard'
     assert_selector 'a', text: 'Run a pipeline'
   end
 
   test "search for hash" do
-    visit page_with_token('active')
+    visit_page_with_token
+    wait_for_ajax
+    assert_text 'Dashboard'
 
     within('.navbar-fixed-top') do
       page.find_field('search').set('hash')
+      wait_for_ajax
       page.find('.glyphicon-search').click
     end
 
     # In the search dialog now. Expect at least one item in the result display.
     within '.modal-content' do
+      wait_for_ajax
       assert_text 'All projects'
       assert_text 'Search'
       assert_selector('div', text: 'zzzzz-')
+      click_button 'Cancel'
     end
   end
 end

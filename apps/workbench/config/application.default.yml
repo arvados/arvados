@@ -27,6 +27,13 @@ diagnostics:
       template_uuid: zzzzz-p5p6p-1xbobfobk94ppbv
       input_paths: [zzzzz-4zz18-nz98douzhaa3jh2, zzzzz-4zz18-gpw9o5wpcti3nib]
 
+# Below is a sample setting for performance testing.
+# Configure workbench URL as "arvados_workbench_url"
+# Configure test user token as "user_token".
+performance:
+  arvados_workbench_url: https://localhost:3031
+  user_token: eu33jurqntstmwo05h1jr3eblmi961e802703y6657s8zb14r
+
 development:
   cache_classes: false
   eager_load: true
