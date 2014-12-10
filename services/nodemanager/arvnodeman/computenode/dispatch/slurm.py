@@ -10,6 +10,8 @@ from . import \
 from . import ComputeNodeShutdownActor as ShutdownActorBase
 
 class ComputeNodeShutdownActor(ShutdownActorBase):
+    SLURM_END_STATES = frozenset(['down\n', 'down*\n', 'drain\n', 'fail\n'])
+
     def on_start(self):
         arv_node = self._monitor.arvados_node.get()
         if arv_node is None:
@@ -42,7 +44,7 @@ class ComputeNodeShutdownActor(ShutdownActorBase):
     def await_slurm_drain(self):
         output = subprocess.check_output(
             ['sinfo', '--noheader', '-o', '%t', '-n', self._nodename])
-        if output == 'drain\n':
+        if output in self.SLURM_END_STATES:
             self._later.shutdown_node()
         else:
             self._timer.schedule(time.time() + 10,
