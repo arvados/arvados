@@ -23,18 +23,13 @@
 //= require bootstrap3-editable/bootstrap-editable
 //= require bootstrap-tab-history
 //= require wiselinks
+//= require angular
 //= require raphael
 //= require morris
 //= require jquery.number.min
 //= require_tree .
 
 jQuery(function($){
-    $.ajaxSetup({
-        headers: {
-            'X-CSRF-Token': $('meta[name="csrf-token"]').attr('content')
-        }
-    });
-
     $(document).ajaxStart(function(){
       $('.modal-with-loading-spinner .spinner').show();
     }).ajaxStop(function(){
