@@ -420,6 +420,13 @@ test_workbench() {
 }
 do_test workbench
 
+test_workbench_performance() {
+    cd "$WORKSPACE/apps/workbench" \
+        && HOME="$GEMHOME" bundle install --no-deployment \
+        && HOME="$GEMHOME" bundle exec rake test:benchmark
+}
+do_test workbench_performance
+
 report_outcomes
 clear_temp
 
