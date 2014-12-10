@@ -61,7 +61,9 @@ class CollectionUploadTest < ActionDispatch::IntegrationTest
     assert_selector 'button:not([disabled])', text: 'Start'
     click_button 'Start'
     if "test environment does not have a keepproxy yet, see #4534"
-      assert_text :visible, 'error'
+      using_wait_time 20 do
+        assert_text :visible, 'error'
+      end
     else
       assert_text :visible, 'Done!'
       visit sandbox_path+'.json'
