@@ -371,4 +371,33 @@ class JobTest < ActiveSupport::TestCase
   test "can't modify job to assign SDK version directly" do
     check_modification_prohibited(arvados_sdk_version: SDK_MASTER)
   end
+
+  test "job validation fails when collection uuid found in script_parameters" do
+    bad_params = {
+      script_parameters: {
+        'input' => {
+          'param1' => 'the collection uuid zzzzz-4zz18-012345678901234'
+        }
+      }
+    }
+    assert_raises(ActiveRecord::RecordInvalid,
+                  "created job with a collection uuid in script_parameters") do
+      job = Job.create!(job_attrs(bad_params))
+    end
+  end
+
+  test "job validation succeeds when no collection uuid in script_parameters" do
+    good_params = {
+      script_parameters: {
+        'arg1' => 'foo',
+        'arg2' => [ 'bar', 'baz' ],
+        'arg3' => {
+          'a' => 1,
+          'b' => [2, 3, 4],
+        }
+      }
+    }
+    job = Job.create!(job_attrs(good_params))
+    assert job.valid?
+  end
 end

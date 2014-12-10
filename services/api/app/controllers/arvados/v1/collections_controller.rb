@@ -54,7 +54,7 @@ class Arvados::V1::CollectionsController < ApplicationController
     when String
       if m = /[a-f0-9]{32}\+\d+/.match(sp)
         yield m[0], nil
-      elsif m = /[0-9a-z]{5}-4zz18-[0-9a-z]{15}/.match(sp)
+      elsif m = Collection.uuid_regex.match(sp)
         yield nil, m[0]
       end
     end

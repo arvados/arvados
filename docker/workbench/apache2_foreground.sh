@@ -3,13 +3,8 @@
 read pid cmd state ppid pgrp session tty_nr tpgid rest < /proc/self/stat
 trap "kill -TERM -$pgrp; exit" EXIT TERM KILL SIGKILL SIGTERM SIGQUIT
 
-# Start ssh daemon if requested via the ENABLE_SSH env variable
-if [[ ! "$ENABLE_SSH" =~ (0|false|no|f|^$) ]]; then
-  /etc/init.d/ssh start
-fi
-
 # Override the default API server address if necessary.
-if [[ "$API_PORT_443_TCP_ADDR" != "" ]]; then 
+if [[ "$API_PORT_443_TCP_ADDR" != "" ]]; then
   sed -i "s/localhost:9900/$API_PORT_443_TCP_ADDR/" /usr/src/arvados/apps/workbench/config/application.yml
 fi
 
