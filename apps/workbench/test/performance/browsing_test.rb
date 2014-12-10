@@ -7,7 +7,7 @@ require 'selenium-webdriver'
 require 'headless'
 
 class BrowsingTest < WorkbenchPerformanceTest
-  self.profile_options = { :runs => 10,
+  self.profile_options = { :runs => 5,
                            :metrics => [:wall_time],
                            :output => 'tmp/performance',
                            :formats => [:flat] }
@@ -42,7 +42,7 @@ class BrowsingTest < WorkbenchPerformanceTest
       wait_for_ajax
       assert_text 'All projects'
       assert_text 'Search'
-      assert_selector('div', text: 'zzzzz-')
+      assert(page.has_selector?(".selectable[data-object-uuid]"))
       click_button 'Cancel'
     end
   end
