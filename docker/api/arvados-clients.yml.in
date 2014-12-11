@@ -3,3 +3,4 @@ production:
   gitolite_tmp: 'gitolite-tmp'
   arvados_api_host: 'api'
   arvados_api_token: '@@API_SUPERUSER_SECRET@@'
+  arvados_api_host_insecure: true

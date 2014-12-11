@@ -289,6 +289,20 @@ class RequestDuck
   end
 end
 
+# Example:
+#
+# apps/workbench$ RAILS_ENV=test bundle exec irb -Ilib:test
+# > load 'test/test_helper.rb'
+# > singletest 'integration/collection_upload_test.rb', 'Upload two empty files'
+#
+def singletest test_class_file, test_name
+  load File.join('test', test_class_file)
+  Minitest.run ['-v', '-n', "test_#{test_name.gsub ' ', '_'}"]
+  Object.send(:remove_const,
+              test_class_file.gsub(/.*\/|\.rb$/, '').camelize.to_sym)
+  ::Minitest::Runnable.runnables.reject! { true }
+end
+
 if ENV["RAILS_ENV"].eql? 'test'
   ApiServerForTests.new.run
   ApiServerForTests.new.run ["--websockets"]

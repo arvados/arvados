@@ -48,6 +48,9 @@ table.table-justforlayout {
     font-size: .8em;
     color: #888;
 }
+.lighten {
+    color: #888;
+}
 .arvados-filename,
 .arvados-uuid {
     font-size: .8em;
@@ -201,14 +204,6 @@ table.table-fixed-header-row tbody {
     top:1.5em;
 }
 
-/* Setting the height needs to be fixed with javascript. */
-.dropdown-menu {
-    padding-right: 20px;
-    max-height: 440px;
-    width: 400px;
-    overflow-y: auto;
-}
-
 .row-fill-height, .row-fill-height>div[class*='col-'] {
     display: flex;
 }
@@ -275,4 +270,8 @@ span.editable-textile {
 
 .arv-log-refresh-control {
   display: none;
+}
+
+[ng\:cloak], [ng-cloak], .ng-cloak {
+    display: none !important;
 }

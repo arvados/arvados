@@ -58,7 +58,7 @@ var makeFilter = function() {
   });
 }
 
-<% if @object.log %>
+<% if @object.log and !@object.log.empty? %>
   <% logcollection = Collection.find @object.log %>
   <% if logcollection %>
     log_size = <%= logcollection.files[0][2] %>

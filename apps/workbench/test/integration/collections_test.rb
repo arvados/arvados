@@ -107,7 +107,7 @@ class CollectionsTest < ActionDispatch::IntegrationTest
   test "can view empty collection" do
     uuid = 'd41d8cd98f00b204e9800998ecf8427e+0'
     visit page_with_token('active', "/collections/#{uuid}")
-    assert page.has_text?('This collection is empty')
+    assert page.has_text?(/This collection is empty|The following collections have this content/)
   end
 
   test "combine selected collections into new collection" do
