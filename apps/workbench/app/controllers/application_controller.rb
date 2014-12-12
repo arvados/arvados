@@ -322,6 +322,7 @@ class ApplicationController < ActionController::Base
     @new_resource_attrs ||= {}
     @new_resource_attrs.reject! { |k,v| k.to_s == 'uuid' }
     @object ||= model_class.new @new_resource_attrs, params["options"]
+
     if @object.save
       show
     else

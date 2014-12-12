@@ -1,4 +1,9 @@
               <li>
+                <%= link_to projects_path(options: {ensure_unique_name: true}), method: :post, class: 'btn btn-xs btn-default pull-right' do %>
+                  <i class="fa fa-plus"></i> Add a new project
+                <% end %>
+              </li>
+              <li>
                 <%= project_link_to.call({object: current_user, depth: 0}) do %>
                   <span style="padding-left: 0"></span>Home
                 <% end %>
