@@ -14,7 +14,13 @@ class OwnerUuidIndex < ActiveRecord::Migration
 
   def down
     tables_with_owner_uuid.each do |table|
-      remove_index table.to_sym, :owner_uuid
+      indexes = ActiveRecord::Base.connection.indexes(table)
+      owner_uuid_index = indexes.select do |index|
+        index.columns == ['owner_uuid']
+      end
+      if !owner_uuid_index.empty?
+        remove_index table.to_sym, :owner_uuid
+      end
     end
   end
 end
