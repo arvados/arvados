@@ -153,19 +153,14 @@
               <span class="caret"></span>
             </a>
             <ul class="dropdown-menu" role="menu">
-            <%= render partial: "projects_tree_menu", locals: {
+              <%= render partial: "projects_tree_menu", locals: {
                   :project_link_to => Proc.new do |pnode, &block|
                     link_to(project_path(pnode[:object].uuid),
                       data: { 'object-uuid' => pnode[:object].uuid,
                               'name' => 'name' },
                       &block)
                   end,
-                  :top_button => Proc.new do %>
-                    <% link_to projects_path, method: :post, class: 'btn btn-xs btn-default pull-right' do %>
-                      <i class="fa fa-plus"></i> New project
-                    <% end %>
-                  <% end %>
-            <% } %>
+              } %>
             </ul>
           </li>
           <% if @name_link or @object %>
