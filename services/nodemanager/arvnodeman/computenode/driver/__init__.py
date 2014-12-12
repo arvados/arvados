@@ -58,6 +58,12 @@ class BaseComputeNodeDriver(object):
         kwargs['size'] = size
         return self.real.create_node(**kwargs)
 
+    def post_create_node(self, cloud_node):
+        # ComputeNodeSetupActor calls this method after the cloud node is
+        # created.  Any setup tasks that need to happen afterward (e.g.,
+        # tagging) should be done in this method.
+        pass
+
     def sync_node(self, cloud_node, arvados_node):
         # When a compute node first pings the API server, the API server
         # will automatically assign some attributes on the corresponding
