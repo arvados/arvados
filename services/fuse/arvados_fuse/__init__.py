@@ -582,11 +582,6 @@ class ProjectDirectory(Directory):
 
             contents = arvados.util.list_all(self.api.groups().contents,
                                              self.num_retries, uuid=self.uuid)
-            # Name links will be obsolete soon, take this out when there are no more pre-#3036 in use.
-            contents += arvados.util.list_all(
-                self.api.links().list, self.num_retries,
-                filters=[['tail_uuid', '=', self.uuid],
-                         ['link_class', '=', 'name']])
 
         # end with llfuse.lock_released, re-acquire lock
 
@@ -914,5 +909,5 @@ class Operations(llfuse.Operations):
     # arv-mount.
     # The workaround is to implement it with the proper number of parameters,
     # and then everything works out.
-    def create(self, p1, p2, p3, p4, p5):
+    def create(self, inode_parent, name, mode, flags, ctx):
         raise llfuse.FUSEError(errno.EROFS)

@@ -16,20 +16,7 @@ BLOCKSIZE = 1
 OFFSET = 2
 SEGMENTSIZE = 3
 
-def locators_and_ranges(data_locators, range_start, range_size, debug=False):
-    '''
-    Get blocks that are covered by the range
-    data_locators: list of [locator, block_size, block_start], assumes that blocks are in order and contigous
-    range_start: start of range
-    range_size: size of range
-    returns list of [block locator, blocksize, segment offset, segment size] that satisfies the range
-    '''
-    if range_size == 0:
-        return []
-    resp = []
-    range_start = long(range_start)
-    range_size = long(range_size)
-    range_end = range_start + range_size
+def first_block(data_locators, range_start, range_size, debug=False):
     block_start = 0L
 
     # range_start/block_start is the inclusive lower bound
@@ -49,7 +36,7 @@ def locators_and_ranges(data_locators, range_start, range_size, debug=False):
     while not (range_start >= block_start and range_start < block_end):
         if lo == i:
             # must be out of range, fail
-            return []
+            return None
         if range_start > block_start:
             lo = i
         else:
@@ -59,6 +46,27 @@ def locators_and_ranges(data_locators, range_start, range_size, debug=False):
         block_size = data_locators[i][BLOCKSIZE]
         block_start = data_locators[i][OFFSET]
         block_end = block_start + block_size
+
+    return i
+
+def locators_and_ranges(data_locators, range_start, range_size, debug=False):
+    '''
+    Get blocks that are covered by the range
+    data_locators: list of [locator, block_size, block_start], assumes that blocks are in order and contigous
+    range_start: start of range
+    range_size: size of range
+    returns list of [block locator, blocksize, segment offset, segment size] that satisfies the range
+    '''
+    if range_size == 0:
+        return []
+    resp = []
+    range_start = long(range_start)
+    range_size = long(range_size)
+    range_end = range_start + range_size
+
+    i = first_block(data_locators, range_start, range_size, debug)
+    if i is None:
+        return []
 
     while i < len(data_locators):
         locator, block_size, block_start = data_locators[i]
