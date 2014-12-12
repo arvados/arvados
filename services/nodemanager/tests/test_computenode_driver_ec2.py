@@ -57,30 +57,41 @@ class EC2ComputeNodeDriverTestCase(unittest.TestCase):
                       create_method.call_args[1].get('ex_userdata',
                                                      'arg missing'))
 
-    def test_tags_created_from_arvados_node(self):
+    def test_hostname_from_arvados_node(self):
         arv_node = testutil.arvados_node_mock(8)
-        cloud_node = testutil.cloud_node_mock(8)
-        driver = self.new_driver(list_kwargs={'tag:list': 'test'})
-        self.assertEqual({'ex_metadata': {'list': 'test'},
-                          'name': 'compute8.zzzzz.arvadosapi.com'},
-                         driver.arvados_create_kwargs(arv_node))
+        driver = self.new_driver()
+        self.assertEqual('compute8.zzzzz.arvadosapi.com',
+                         driver.arvados_create_kwargs(arv_node)['name'])
 
-    def test_tags_set_default_hostname_from_new_arvados_node(self):
+    def test_default_hostname_from_new_arvados_node(self):
         arv_node = testutil.arvados_node_mock(hostname=None)
         driver = self.new_driver()
-        actual = driver.arvados_create_kwargs(arv_node)
         self.assertEqual('dynamic.compute.zzzzz.arvadosapi.com',
-                         actual['name'])
+                         driver.arvados_create_kwargs(arv_node)['name'])
+
+    def check_node_tagged(self, cloud_node, expected_tags):
+        tag_mock = self.driver_mock().ex_create_tags
+        self.assertTrue(tag_mock.called)
+        self.assertIs(cloud_node, tag_mock.call_args[0][0])
+        self.assertEqual(expected_tags, tag_mock.call_args[0][1])
+
+    def test_post_create_node_tags_from_list_kwargs(self):
+        expect_tags = {'key1': 'test value 1', 'key2': 'test value 2'}
+        list_kwargs = {('tag_' + key): value
+                       for key, value in expect_tags.iteritems()}
+        list_kwargs['instance-state-name'] = 'running'
+        cloud_node = testutil.cloud_node_mock()
+        driver = self.new_driver(list_kwargs=list_kwargs)
+        driver.post_create_node(cloud_node)
+        self.check_node_tagged(cloud_node, expect_tags)
 
     def test_sync_node(self):
         arv_node = testutil.arvados_node_mock(1)
         cloud_node = testutil.cloud_node_mock(2)
         driver = self.new_driver()
         driver.sync_node(cloud_node, arv_node)
-        tag_mock = self.driver_mock().ex_create_tags
-        self.assertTrue(tag_mock.called)
-        self.assertEqual('compute1.zzzzz.arvadosapi.com',
-                         tag_mock.call_args[0][1].get('Name', 'no name'))
+        self.check_node_tagged(cloud_node,
+                               {'Name': 'compute1.zzzzz.arvadosapi.com'})
 
     def test_node_create_time(self):
         refsecs = int(time.time())
