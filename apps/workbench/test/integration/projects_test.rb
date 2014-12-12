@@ -740,7 +740,8 @@ class ProjectsTest < ActionDispatch::IntegrationTest
     # Add one more new project
     find("#projects-menu").click
     click_link 'Add a new project'
-    assert_text 'New project created at'
+    match = /New project \(\d\)/.match page.text
+    assert match, 'Expected project name not found'
     assert_text 'No description provided'
   end
 end

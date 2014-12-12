@@ -1,5 +1,5 @@
               <li>
-                <%= link_to projects_path, method: :post, class: 'btn btn-xs btn-default pull-right' do %>
+                <%= link_to projects_path(options: {ensure_unique_name: true}), method: :post, class: 'btn btn-xs btn-default pull-right' do %>
                   <i class="fa fa-plus"></i> Add a new project
                 <% end %>
               </li>

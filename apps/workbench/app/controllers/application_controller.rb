@@ -323,19 +323,7 @@ class ApplicationController < ActionController::Base
     @new_resource_attrs.reject! { |k,v| k.to_s == 'uuid' }
     @object ||= model_class.new @new_resource_attrs, params["options"]
 
-    begin
-      object_saved = @object.save
-    rescue ArvadosApiClient::ApiErrorResponseException => e
-      if e.message.include? 'groups_owner_uuid_name_unique'
-        rename_to = @object.name + ' created at ' + Time.now.to_s
-        @object.name = rename_to
-        object_saved = @object.save
-      else
-        raise
-      end
-    end
-
-    if object_saved
+    if @object.save
       show
     else
       render_error status: 422
