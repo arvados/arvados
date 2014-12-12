@@ -5,6 +5,9 @@ require 'yaml'
 # When "RAILS_ENV=test" is used, tests in the "diagnostics" directory
 # will not be executed.
 
+# Command to run diagnostics tests:
+#   RAILS_ENV=diagnostics bundle exec rake TEST=test/diagnostics/*.rb
+
 class DiagnosticsTest < ActionDispatch::IntegrationTest
 
   # Prepends workbench URL to the path provided and visits that page

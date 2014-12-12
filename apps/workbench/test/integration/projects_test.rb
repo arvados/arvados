@@ -147,7 +147,6 @@ class ProjectsTest < ActionDispatch::IntegrationTest
     find(".dropdown-menu a", text: "Home").click
     find('.btn', text: "Add a subproject").click
 
-    # within('.editable', text: 'New project') do
     within('h2') do
       find('.fa-pencil').click
       find('.editable-input input').set('Project 1234')
@@ -502,8 +501,8 @@ class ProjectsTest < ActionDispatch::IntegrationTest
     end
   end
 
-  # "Remove selected" selection option should not be available when current user cannot write to the project
-  test "remove selected action is not available when current user cannot write to project" do
+  # "Move selected" and "Remove selected" options should not be available when current user cannot write to the project
+  test "move selected and remove selected actions not available when current user cannot write to project" do
     my_project = api_fixture('groups')['anonymously_accessible_project']
     visit page_with_token 'active', "/projects/#{my_project['uuid']}"
 
@@ -512,7 +511,7 @@ class ProjectsTest < ActionDispatch::IntegrationTest
       assert_selector 'li', text: 'Create new collection with selected collections'
       assert_selector 'li', text: 'Compare selected'
       assert_selector 'li', text: 'Copy selected'
-      assert_selector 'li', text: 'Move selected'
+      assert_no_selector 'li', text: 'Move selected'
       assert_no_selector 'li', text: 'Remove selected'
     end
   end
@@ -728,4 +727,21 @@ class ProjectsTest < ActionDispatch::IntegrationTest
     end
   end
 
+  test "add new project using projects dropdown" do
+    # verify that selection options are disabled on the project until an item is selected
+    visit page_with_token 'active', '/'
+
+    # Add a new project
+    find("#projects-menu").click
+    click_link 'Add a new project'
+    assert_text 'New project'
+    assert_text 'No description provided'
+
+    # Add one more new project
+    find("#projects-menu").click
+    click_link 'Add a new project'
+    match = /New project \(\d\)/.match page.text
+    assert match, 'Expected project name not found'
+    assert_text 'No description provided'
+  end
 end

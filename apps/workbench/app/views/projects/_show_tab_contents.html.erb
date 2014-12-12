@@ -36,6 +36,7 @@
                   'data-selection-param-name' => 'selection[]',
                   'data-selection-action' => 'copy'
             %></li>
+          <% if @object.editable? %>
           <li><%= link_to "Move selected...", '#',
                   'data-href' => choose_projects_path(
                     title: 'Move selected items to...',
@@ -52,7 +53,6 @@
                   'data-selection-param-name' => 'selection[]',
                   'data-selection-action' => 'move'
             %></li>
-          <% if @object.editable? %>
           <li><%= link_to "Remove selected", '#',
                   method: :delete,
                   'data-href' => url_for(action: :remove_items),
