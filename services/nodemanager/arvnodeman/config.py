@@ -10,7 +10,6 @@ import sys
 
 import arvados
 import httplib2
-import libcloud.common.types as cloud_types
 import pykka
 from apiclient import errors as apierror
 
@@ -19,7 +18,6 @@ from apiclient import errors as apierror
 # it's low-level, but unlikely to catch code bugs.
 NETWORK_ERRORS = (IOError, ssl.SSLError)
 ARVADOS_ERRORS = NETWORK_ERRORS + (apierror.Error,)
-CLOUD_ERRORS = NETWORK_ERRORS + (cloud_types.LibcloudError,)
 
 actor_class = pykka.ThreadingActor
 

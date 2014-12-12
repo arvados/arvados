@@ -30,12 +30,10 @@ class RemotePollLoopActor(actor_class):
     response to subscribers.  It takes care of error handling, and retrying
     requests with exponential backoff.
 
-    To use this actor, define CLIENT_ERRORS and the _send_request method.
-    If you also define an _item_key method, this class will support
-    subscribing to a specific item by key in responses.
+    To use this actor, define the _send_request method.  If you also
+    define an _item_key method, this class will support subscribing to
+    a specific item by key in responses.
     """
-    CLIENT_ERRORS = ()
-
     def __init__(self, client, timer_actor, poll_wait=60, max_poll_wait=180):
         super(RemotePollLoopActor, self).__init__()
         self._client = client
@@ -87,6 +85,9 @@ class RemotePollLoopActor(actor_class):
         return "{} got error: {} - waiting {} seconds".format(
             self.log_prefix, error, self.poll_wait)
 
+    def is_common_error(self, exception):
+        return False
+
     def poll(self, scheduled_start=None):
         self._logger.debug("%s sending poll", self.log_prefix)
         start_time = time.time()
@@ -96,7 +97,7 @@ class RemotePollLoopActor(actor_class):
             response = self._send_request()
         except Exception as error:
             errmsg = self._got_error(error)
-            if isinstance(error, self.CLIENT_ERRORS):
+            if self.is_common_error(error):
                 self._logger.warning(errmsg)
             else:
                 self._logger.exception(errmsg)

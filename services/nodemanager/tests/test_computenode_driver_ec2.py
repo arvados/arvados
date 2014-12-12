@@ -2,9 +2,11 @@
 
 from __future__ import absolute_import, print_function
 
+import ssl
 import time
 import unittest
 
+import libcloud.common.types as cloud_types
 import mock
 
 import arvnodeman.computenode.driver.ec2 as ec2
@@ -87,3 +89,16 @@ class EC2ComputeNodeDriverTestCase(unittest.TestCase):
         node.extra = {'launch_time': time.strftime('%Y-%m-%dT%H:%M:%S.000Z',
                                                    reftuple)}
         self.assertEqual(refsecs, ec2.ComputeNodeDriver.node_start_time(node))
+
+    def test_cloud_exceptions(self):
+        for error in [Exception("test exception"),
+                      IOError("test exception"),
+                      ssl.SSLError("test exception"),
+                      cloud_types.LibcloudError("test exception")]:
+            self.assertTrue(ec2.ComputeNodeDriver.is_cloud_exception(error),
+                            "{} not flagged as cloud exception".format(error))
+
+    def test_noncloud_exceptions(self):
+        self.assertFalse(
+            ec2.ComputeNodeDriver.is_cloud_exception(ValueError("test error")),
+            "ValueError flagged as cloud exception")
