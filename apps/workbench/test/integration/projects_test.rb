@@ -502,8 +502,8 @@ class ProjectsTest < ActionDispatch::IntegrationTest
     end
   end
 
-  # "Remove selected" selection option should not be available when current user cannot write to the project
-  test "remove selected action is not available when current user cannot write to project" do
+  # "Move selected" and "Remove selected" options should not be available when current user cannot write to the project
+  test "move selected and remove selected actions not available when current user cannot write to project" do
     my_project = api_fixture('groups')['anonymously_accessible_project']
     visit page_with_token 'active', "/projects/#{my_project['uuid']}"
 
@@ -512,7 +512,7 @@ class ProjectsTest < ActionDispatch::IntegrationTest
       assert_selector 'li', text: 'Create new collection with selected collections'
       assert_selector 'li', text: 'Compare selected'
       assert_selector 'li', text: 'Copy selected'
-      assert_selector 'li', text: 'Move selected'
+      assert_no_selector 'li', text: 'Move selected'
       assert_no_selector 'li', text: 'Remove selected'
     end
   end
