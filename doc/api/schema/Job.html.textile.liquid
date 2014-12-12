@@ -53,7 +53,7 @@ h3. Runtime constraints
 
 table(table table-bordered table-condensed).
 |_. Key|_. Type|_. Description|_. Implemented|
-|arvados_sdk_version|string|The Git version of the SDKs to use from the Arvados git repository.  See "Specifying Git versions":#script_version for more detail about acceptable ways to specify a commit.  If you use this, you must also specify a @docker_image@ constraint (see below).|&#10003;|
+|arvados_sdk_version|string|The Git version of the SDKs to use from the Arvados git repository.  See "Specifying Git versions":#script_version for more detail about acceptable ways to specify a commit.  If you use this, you must also specify a @docker_image@ constraint (see below).  In order to install the Python SDK successfully, Crunch must be able to find and run virtualenv inside the container.|&#10003;|
 |docker_image|string|The Docker image that this Job needs to run.  If specified, Crunch will create a Docker container from this image, and run the Job's script inside that.  The Keep mount and work directories will be available as volumes inside this container.  The image must be uploaded to Arvados using @arv keep docker@.  You may specify the image in any format that Docker accepts, such as @arvados/jobs@, @debian:latest@, or the Docker image id.  Alternatively, you may specify the UUID or portable data hash of the image Collection, returned by @arv keep docker@.|&#10003;|
 |min_nodes|integer||&#10003;|
 |max_nodes|integer|||
