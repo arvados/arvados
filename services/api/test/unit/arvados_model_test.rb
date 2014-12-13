@@ -137,10 +137,13 @@ class ArvadosModelTest < ActiveSupport::TestCase
         search_index_columns = table_class.searchable_columns('ilike')
 
         indexes = ActiveRecord::Base.connection.indexes(table)
-        search_index = indexes.select do |index|
+        search_index_by_columns = indexes.select do |index|
           index.columns == search_index_columns
         end
-        assert !search_index.empty?, "#{table} does not have search index with all searchable columns #{search_index_columns}"
+        search_index_by_name = indexes.select do |index|
+          index.name == "#{table}_search_index"
+        end
+        assert !search_index_by_columns.empty?, "#{table} has no search index with columns #{search_index_columns}. Instead found search index with columns #{search_index_by_name.first.andand.columns}"
       end
     end
   end

@@ -167,7 +167,7 @@ CREATE TABLE collections (
     uuid character varying(255),
     manifest_text text,
     name character varying(255),
-    description character varying(255),
+    description character varying(10000),
     properties text,
     expires_at date
 );
@@ -272,7 +272,7 @@ CREATE TABLE groups (
     modified_by_user_uuid character varying(255),
     modified_at timestamp without time zone,
     name character varying(255) NOT NULL,
-    description text,
+    description character varying(10000),
     updated_at timestamp without time zone NOT NULL,
     group_class character varying(255)
 );
@@ -431,7 +431,7 @@ CREATE TABLE jobs (
     supplied_script_version character varying(255),
     docker_image_locator character varying(255),
     priority integer DEFAULT 0 NOT NULL,
-    description text,
+    description character varying(10000),
     state character varying(255),
     arvados_sdk_version character varying(255)
 );
@@ -685,7 +685,7 @@ CREATE TABLE pipeline_instances (
     properties text,
     state character varying(255),
     components_summary text,
-    description text,
+    description character varying(10000),
     started_at timestamp without time zone,
     finished_at timestamp without time zone
 );
@@ -725,7 +725,7 @@ CREATE TABLE pipeline_templates (
     name character varying(255),
     components text,
     updated_at timestamp without time zone NOT NULL,
-    description text
+    description character varying(10000)
 );
 
 
@@ -1324,7 +1324,7 @@ CREATE UNIQUE INDEX groups_owner_uuid_name_unique ON groups USING btree (owner_u
 -- Name: groups_search_index; Type: INDEX; Schema: public; Owner: -; Tablespace: 
 --
 
-CREATE INDEX groups_search_index ON groups USING btree (uuid, owner_uuid, modified_by_client_uuid, modified_by_user_uuid, name, group_class);
+CREATE INDEX groups_search_index ON groups USING btree (uuid, owner_uuid, modified_by_client_uuid, modified_by_user_uuid, name, description, group_class);
 
 
 --
@@ -1989,7 +1989,7 @@ CREATE INDEX job_tasks_search_index ON job_tasks USING btree (uuid, owner_uuid, 
 -- Name: jobs_search_index; Type: INDEX; Schema: public; Owner: -; Tablespace: 
 --
 
-CREATE INDEX jobs_search_index ON jobs USING btree (uuid, owner_uuid, modified_by_client_uuid, modified_by_user_uuid, submit_id, script, script_version, cancelled_by_client_uuid, cancelled_by_user_uuid, output, is_locked_by_uuid, log, repository, supplied_script_version, docker_image_locator, state, arvados_sdk_version);
+CREATE INDEX jobs_search_index ON jobs USING btree (uuid, owner_uuid, modified_by_client_uuid, modified_by_user_uuid, submit_id, script, script_version, cancelled_by_client_uuid, cancelled_by_user_uuid, output, is_locked_by_uuid, log, repository, supplied_script_version, docker_image_locator, description, state, arvados_sdk_version);
 
 
 --
@@ -2038,7 +2038,7 @@ CREATE INDEX nodes_search_index ON nodes USING btree (uuid, owner_uuid, modified
 -- Name: pipeline_instances_search_index; Type: INDEX; Schema: public; Owner: -; Tablespace: 
 --
 
-CREATE INDEX pipeline_instances_search_index ON pipeline_instances USING btree (uuid, owner_uuid, modified_by_client_uuid, modified_by_user_uuid, pipeline_template_uuid, name, state);
+CREATE INDEX pipeline_instances_search_index ON pipeline_instances USING btree (uuid, owner_uuid, modified_by_client_uuid, modified_by_user_uuid, pipeline_template_uuid, name, state, description);
 
 
 --
@@ -2052,7 +2052,7 @@ CREATE UNIQUE INDEX pipeline_template_owner_uuid_name_unique ON pipeline_templat
 -- Name: pipeline_templates_search_index; Type: INDEX; Schema: public; Owner: -; Tablespace: 
 --
 
-CREATE INDEX pipeline_templates_search_index ON pipeline_templates USING btree (uuid, owner_uuid, modified_by_client_uuid, modified_by_user_uuid, name);
+CREATE INDEX pipeline_templates_search_index ON pipeline_templates USING btree (uuid, owner_uuid, modified_by_client_uuid, modified_by_user_uuid, name, description);
 
 
 --
@@ -2308,5 +2308,7 @@ INSERT INTO schema_migrations (version) VALUES ('20140924091559');
 INSERT INTO schema_migrations (version) VALUES ('20141111133038');
 
 INSERT INTO schema_migrations (version) VALUES ('20141208164553');
+
+INSERT INTO schema_migrations (version) VALUES ('20141208174553');
 
 INSERT INTO schema_migrations (version) VALUES ('20141208185217');
