@@ -188,6 +188,9 @@ module ApplicationHelper
     @unique_id ||= (Time.now.to_f*1000000).to_i
     span_id = object.uuid.to_s + '-' + attr.to_s + '-' + (@unique_id += 1).to_s
 
+    if attr == 'description'
+      input_type = 'textarea'
+    end
     span_tag = content_tag 'span', rendervalue, {
       "data-emptytext" => '(none)',
       "data-placement" => "bottom",
