@@ -179,6 +179,7 @@ class NodeManagerDaemonActor(actor_class):
                     break
         for key, record in self.cloud_nodes.orphans.iteritems():
             record.actor.stop()
+            record.cloud_node = None
             self.shutdowns.pop(key, None)
 
     def update_arvados_nodes(self, nodelist):
