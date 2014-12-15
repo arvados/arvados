@@ -212,16 +212,7 @@ setup_ruby_environment() {
             || fatal 'rvm gemset setup'
 
         rvm env
-
-        # Remove previously installed versions of our own gems. This
-        # ensures the test suites only have access to [a] published
-        # gems and [b] the gems we build and install right now --
-        # never unpublished gems left over from previous builds.
-        gem uninstall --all --executables arvados arvados-cli \
-            || fatal 'clean arvados gems'
     else
-        echo "RVM not found. Will install gems-under-test into \"$GEM_HOME\"."
-
         # When our "bundle install"s need to install new gems to
         # satisfy dependencies, we want them to go where "gem install
         # --user-install" would put them. (However, if the caller has
@@ -366,7 +357,8 @@ install_docs() {
 do_install docs
 
 install_ruby_sdk() {
-    cd "$WORKSPACE/sdk/ruby" \
+    with_test_gemset gem uninstall --all --executables arvados \
+        && cd "$WORKSPACE/sdk/ruby" \
         && bundle install --no-deployment \
         && gem build arvados.gemspec \
         && with_test_gemset gem install --no-ri --no-rdoc `ls -t arvados-*.gem|head -n1`
@@ -374,7 +366,8 @@ install_ruby_sdk() {
 do_install ruby_sdk
 
 install_cli() {
-    cd "$WORKSPACE/sdk/cli" \
+    with_test_gemset gem uninstall --all --executables arvados-cli \
+        && cd "$WORKSPACE/sdk/cli" \
         && bundle install --no-deployment \
         && gem build arvados-cli.gemspec \
         && with_test_gemset gem install --no-ri --no-rdoc `ls -t arvados-cli-*.gem|head -n1`
