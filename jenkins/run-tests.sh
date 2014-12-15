@@ -62,11 +62,6 @@ COLUMNS=80
 leave_temp=
 skip_install=
 
-if [[ -f /etc/profile.d/rvm.sh ]]
-then
-    source /etc/profile.d/rvm.sh
-fi
-
 declare -A leave_temp
 clear_temp() {
     leaving=""
@@ -183,36 +178,83 @@ do
     fi
 done
 
-# When our "bundle install"s need to install new gems to satisfy
-# dependencies, we want them to go where "gem install --user-install"
-# would put them. If rvm is in use (or something else has set
-# GEM_HOME) we assume "bundle install" already does something
-# reasonable.
+setup_ruby_environment() {
+    if [[ -s "$HOME/.rvm/scripts/rvm" ]] ; then
+      source "$HOME/.rvm/scripts/rvm"
+      using_rvm=true
+    elif [[ -s "/usr/local/rvm/scripts/rvm" ]] ; then
+      source "/usr/local/rvm/scripts/rvm"
+      using_rvm=true
+    else
+      using_rvm=false
+    fi
 
-if [ -z "$GEM_HOME" ]; then
-    user_gempath="$(gem env gempath)"
-    export GEM_HOME="${user_gempath%%:*}"
-fi
-PATH="$(gem env gemdir)/bin:$PATH"
+    if [[ "$using_rvm" == true ]]; then
+        # If rvm is in use, we can't just put separate "dependencies"
+        # and "gems-under-test" paths to GEM_PATH: passenger resets
+        # the environment to the "current gemset", which would lose
+        # our GEM_PATH and prevent our test suites from running ruby
+        # programs (for example, the Workbench test suite could not
+        # boot an API server or run arv). Instead, we have to make an
+        # rvm gemset and use it for everything.
 
-# When we build and install our own gems, we install them in our
-# $GEMHOME tmpdir, and we want them to be at the front of GEM_PATH and
-# PATH so integration tests prefer them over other versions that
-# happen to be installed in $user_gempath, system dirs, etc.
+        [[ `type rvm | head -n1` == "rvm is a function" ]] \
+            || fatal 'rvm check'
 
-tmpdir_gem_home="$(env - PATH="$PATH" HOME="$GEMHOME" gem env gempath | cut -f1 -d:)"
-PATH="${tmpdir_gem_home%%:*}/bin:$PATH"
-export GEM_PATH="$tmpdir_gem_home:$(gem env gempath)"
+        # Put rvm's favorite path back in first place (overriding
+        # virtualenv, which just put itself there). Ignore rvm's
+        # complaint about not being in first place already.
+        rvm use @default 2>/dev/null
 
-echo "PATH=$PATH"
-echo "Will install dependencies to $GEM_HOME"
-echo "Will install arvados gems to $tmpdir_gem_home"
-echo "Gem search path is GEM_PATH=$GEM_PATH"
+        # Create (if needed) and switch to an @arvados-tests
+        # gemset. (Leave the choice of ruby to the caller.)
+        rvm use @arvados-tests --create \
+            || fatal 'rvm gemset setup'
 
-if ! which bundler >/dev/null
-then
-    gem install --user-install bundler || fatal 'Could not install bundler'
-fi
+        rvm env
+
+        # Remove previously installed versions of our own gems. This
+        # ensures the test suites only have access to [a] published
+        # gems and [b] the gems we build and install right now --
+        # never unpublished gems left over from previous builds.
+        gem uninstall --all --executables arvados arvados-cli \
+            || fatal 'clean arvados gems'
+    else
+        echo "RVM not found. Will install gems-under-test into \"$GEM_HOME\"."
+
+        # When our "bundle install"s need to install new gems to satisfy
+        # dependencies, we want them to go where "gem install --user-install"
+        # would put them. If rvm is in use (or something else has set
+        # GEM_HOME) we assume "bundle install" already does something
+        # reasonable.
+
+        if [ -z "$GEM_HOME" ]; then
+            user_gempath="$(gem env gempath)"
+            export GEM_HOME="${user_gempath%%:*}"
+        fi
+        PATH="$(gem env gemdir)/bin:$PATH"
+
+        # When we build and install our own gems, we install them in our
+        # $GEMHOME tmpdir, and we want them to be at the front of GEM_PATH and
+        # PATH so integration tests prefer them over other versions that
+        # happen to be installed in $user_gempath, system dirs, etc.
+
+        tmpdir_gem_home="$(env - PATH="$PATH" HOME="$GEMHOME" gem env gempath | cut -f1 -d:)"
+        PATH="${tmpdir_gem_home%%:*}/bin:$PATH"
+        export GEM_PATH="$tmpdir_gem_home:$(gem env gempath)"
+
+        echo "Will install dependencies to $GEM_HOME"
+        echo "Will install arvados gems to $tmpdir_gem_home"
+        echo "Gem search path is GEM_PATH=$GEM_PATH"
+    fi
+}
+with_test_gemset() {
+    if [[ "$using_rvm" == true ]]; then
+        "$@"
+    else
+        GEM_HOME="$tmpdir_gem_home" "$@"
+    fi
+}
 
 export GOPATH
 mkdir -p "$GOPATH/src/git.curoverse.com"
@@ -221,6 +263,17 @@ ln -sfn "$WORKSPACE" "$GOPATH/src/git.curoverse.com/arvados.git" \
 
 virtualenv --setuptools "$VENVDIR" || fatal "virtualenv $VENVDIR failed"
 . "$VENVDIR/bin/activate"
+
+# Note: this must be the last time we change PATH, otherwise rvm will
+# whine a lot.
+setup_ruby_environment
+
+echo "PATH is $PATH"
+
+if ! which bundler >/dev/null
+then
+    gem install --user-install bundler || fatal 'Could not install bundler'
+fi
 
 # Needed for run_test_server.py which is used by certain (non-Python) tests.
 pip install PyYAML
@@ -315,7 +368,7 @@ install_ruby_sdk() {
     cd "$WORKSPACE/sdk/ruby" \
         && bundle install --no-deployment \
         && gem build arvados.gemspec \
-        && GEM_HOME="$tmpdir_gem_home" gem install --no-ri --no-rdoc `ls -t arvados-*.gem|head -n1`
+        && with_test_gemset gem install --no-ri --no-rdoc `ls -t arvados-*.gem|head -n1`
 }
 do_install ruby_sdk
 
@@ -323,7 +376,7 @@ install_cli() {
     cd "$WORKSPACE/sdk/cli" \
         && bundle install --no-deployment \
         && gem build arvados-cli.gemspec \
-        && GEM_HOME="$tmpdir_gem_home" gem install --no-ri --no-rdoc `ls -t arvados-cli-*.gem|head -n1`
+        && with_test_gemset gem install --no-ri --no-rdoc `ls -t arvados-cli-*.gem|head -n1`
 }
 do_install cli
 
