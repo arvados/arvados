@@ -8,7 +8,7 @@ import os
 import unittest
 
 import arvados
-from arvados import StreamReader, StreamFileReader
+from arvados import StreamReader, StreamFileReader, StreamWriter
 
 import arvados_testutil as tutil
 import run_test_server
@@ -272,6 +272,24 @@ class StreamFileReadlinesTestCase(StreamFileReadTestCase):
     def read_for_test(self, reader, byte_count, **kwargs):
         return ''.join(reader.readlines(**kwargs))
 
+class StreamWriterTestCase(unittest.TestCase):
+    class MockKeep(object):
+        def __init__(self, blocks):
+            self.blocks = blocks
+        def get(self, locator, num_retries=0):
+            return self.blocks[locator]
+
+    def test_init(self):
+        stream = StreamWriter(['.', '781e5e245d69b566979b86e28d23f2c7+10', '0:10:count.txt'],
+                              keep=StreamWriterTestCase.MockKeep({"781e5e245d69b566979b86e28d23f2c7+10": "0123456789"}))
+        self.assertEqual(stream.readfrom(0, 5), "01234")
+
+    def test_append(self):
+        stream = StreamWriter(['.', '781e5e245d69b566979b86e28d23f2c7+10', '0:10:count.txt'],
+                              keep=StreamWriterTestCase.MockKeep({"781e5e245d69b566979b86e28d23f2c7+10": "0123456789"}))
+        self.assertEqual(stream.readfrom(5, 8), "56789")
+        stream.append("foo")
+        self.assertEqual(stream.readfrom(5, 8), "56789foo")
 
 if __name__ == '__main__':
     unittest.main()

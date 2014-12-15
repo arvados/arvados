@@ -302,8 +302,6 @@ class _WriterFile(ArvadosFileBase):
 
 
 class CollectionWriter(CollectionBase):
-    KEEP_BLOCK_SIZE = 2**26
-
     def __init__(self, api_client=None, num_retries=0):
         """Instantiate a CollectionWriter.
 
@@ -369,7 +367,7 @@ class CollectionWriter(CollectionBase):
 
     def _work_file(self):
         while True:
-            buf = self._queued_file.read(self.KEEP_BLOCK_SIZE)
+            buf = self._queued_file.read(config.KEEP_BLOCK_SIZE)
             if not buf:
                 break
             self.write(buf)
@@ -441,7 +439,7 @@ class CollectionWriter(CollectionBase):
         self._data_buffer.append(newdata)
         self._data_buffer_len += len(newdata)
         self._current_stream_length += len(newdata)
-        while self._data_buffer_len >= self.KEEP_BLOCK_SIZE:
+        while self._data_buffer_len >= config.KEEP_BLOCK_SIZE:
             self.flush_data()
 
     def open(self, streampath, filename=None):
@@ -477,8 +475,8 @@ class CollectionWriter(CollectionBase):
         data_buffer = ''.join(self._data_buffer)
         if data_buffer:
             self._current_stream_locators.append(
-                self._my_keep().put(data_buffer[0:self.KEEP_BLOCK_SIZE]))
-            self._data_buffer = [data_buffer[self.KEEP_BLOCK_SIZE:]]
+                self._my_keep().put(data_buffer[0:config.KEEP_BLOCK_SIZE]))
+            self._data_buffer = [data_buffer[config.KEEP_BLOCK_SIZE:]]
             self._data_buffer_len = len(self._data_buffer[0])
 
     def start_new_file(self, newfilename=None):

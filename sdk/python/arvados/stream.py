@@ -4,6 +4,8 @@ import hashlib
 import os
 import re
 import zlib
+import threading
+import functools
 
 from .arvfile import ArvadosFileBase
 from arvados.retry import retry_method
@@ -315,6 +317,9 @@ class StreamReader(object):
     def locators_and_ranges(self, range_start, range_size):
         return locators_and_ranges(self._data_locators, range_start, range_size)
 
+    def _keepget(self, locator, num_retries=None):
+        self._keep.get(locator, num_retries=num_retries)
+
     @retry_method
     def readfrom(self, start, size, num_retries=None):
         """Read up to 'size' bytes from the stream, starting at 'start'"""
@@ -324,7 +329,7 @@ class StreamReader(object):
             self._keep = KeepClient(num_retries=self.num_retries)
         data = []
         for locator, blocksize, segmentoffset, segmentsize in locators_and_ranges(self._data_locators, start, size):
-            data.append(self._keep.get(locator, num_retries=num_retries)[segmentoffset:segmentoffset+segmentsize])
+            data.append(self._keepget(locator, num_retries=num_retries)[segmentoffset:segmentoffset+segmentsize])
         return ''.join(data)
 
     def manifest_text(self, strip=False):
@@ -339,3 +344,69 @@ class StreamReader(object):
                                         for seg in f.segments])
                               for f in self._files.values()])
         return ' '.join(manifest_text) + '\n'
+
+class BufferBlock(object):
+    def __init__(self, locator, streamoffset):
+        self.locator = locator
+        self.buffer_block = bytearray(config.KEEP_BLOCK_SIZE)
+        self.buffer_view = memoryview(self.buffer_block)
+        self.write_pointer = 0
+        self.locator_list_entry = [locator, 0, streamoffset]
+
+    def append(self, data):
+        self.buffer_view[self.write_pointer:self.write_pointer+len(data)] = data
+        self.write_pointer += len(data)
+        self.locator_list_entry[1] = self.write_pointer
+
+class StreamWriter(StreamReader):
+    def __init__(self, tokens, keep=None, debug=False, _empty=False,
+                 num_retries=0):
+        super(StreamWriter, self).__init__(tokens, keep, debug, _empty, num_retries)
+        self.mutex = threading.Lock()
+        self.current_bblock = None
+        self.bufferblocks = {}
+
+    # Proxy the methods listed below to self.nodes.
+    def _proxy_method(name):
+        method = getattr(StreamReader, name)
+        @functools.wraps(method, ('__name__', '__doc__'))
+        def wrapper(self, *args, **kwargs):
+            with self.mutex:
+                return method(self, *args, **kwargs)
+        return wrapper
+
+    for _method_name in ['name', 'files', 'all_files', 'size', 'locators_and_ranges', 'readfrom', 'manifest_text']:
+        locals()[_method_name] = _proxy_method(_method_name)
+
+    def _keepget(self, locator, num_retries=None):
+        if locator in self.bufferblocks:
+            bb = self.bufferblocks[locator]
+            return str(bb.buffer_block[0:bb.write_pointer])
+        else:
+            return self._keep.get(locator, num_retries=num_retries)
+
+    def append(self, data):
+        with self.mutex:
+            if self.current_bblock is None:
+                streamoffset = sum([x[1] for x in self._data_locators])
+                self.current_bblock = BufferBlock("bufferblock%i" % len(self.bufferblocks), streamoffset)
+                self.bufferblocks[self.current_bblock.locator] = self.current_bblock
+                self._data_locators.append(self.current_bblock.locator_list_entry)
+            self.current_bblock.append(data)
+
+class StreamFileWriter(StreamFileReader):
+    def __init__(self, name, mode):
+        super(StreamFileWriter, self).__init__(name, mode)
+        self.mutex = threading.Lock()
+
+    # Proxy the methods listed below to self.nodes.
+    def _proxy_method(name):
+        method = getattr(StreamFileReader, name)
+        @functools.wraps(method, ('__name__', '__doc__'))
+        def wrapper(self, *args, **kwargs):
+            with self.mutex:
+                return method(self, *args, **kwargs)
+        return wrapper
+
+    for _method_name in ['__iter__', 'seek', 'tell', 'size', 'read', 'readfrom', 'readall', 'readline', 'decompress', 'readall_decompressed', 'readlines', 'as_manifest']:
+        locals()[_method_name] = _proxy_method(_method_name)
