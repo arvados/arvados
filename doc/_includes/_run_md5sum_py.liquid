@@ -3,7 +3,8 @@
 import arvados
 
 # Automatically parallelize this job by running one task per file.
-arvados.job_setup.one_task_per_input_file(if_sequence=0, and_end_task=True, input_as_path=True)
+arvados.job_setup.one_task_per_input_file(if_sequence=0, and_end_task=True,
+                                          input_as_path=True)
 
 # Get the input file for the task
 input_file = arvados.get_task_param_mount('input')
@@ -13,6 +14,6 @@ stdoutdata, stderrdata = arvados.util.run_command(['md5sum', input_file])
 
 # Save the standard output (stdoutdata) to "md5sum.txt" in the output collection
 out = arvados.CollectionWriter()
-out.set_current_file_name("md5sum.txt")
-out.write(stdoutdata)
+with out.open('md5sum.txt') as out_file:
+    out_file.write(stdoutdata)
 arvados.current_task().set_output(out.finish())
