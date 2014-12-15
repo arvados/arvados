@@ -62,11 +62,6 @@ COLUMNS=80
 leave_temp=
 skip_install=
 
-if [[ -f /etc/profile.d/rvm.sh ]]
-then
-    source /etc/profile.d/rvm.sh
-fi
-
 declare -A leave_temp
 clear_temp() {
     leaving=""
@@ -182,7 +177,77 @@ do
         eval $tmpdir=$(mktemp -d)
     fi
 done
-PATH="$GEMHOME/.gem/ruby/2.1.0/bin:$PATH"
+
+setup_ruby_environment() {
+    if [[ -s "$HOME/.rvm/scripts/rvm" ]] ; then
+      source "$HOME/.rvm/scripts/rvm"
+      using_rvm=true
+    elif [[ -s "/usr/local/rvm/scripts/rvm" ]] ; then
+      source "/usr/local/rvm/scripts/rvm"
+      using_rvm=true
+    else
+      using_rvm=false
+    fi
+
+    if [[ "$using_rvm" == true ]]; then
+        # If rvm is in use, we can't just put separate "dependencies"
+        # and "gems-under-test" paths to GEM_PATH: passenger resets
+        # the environment to the "current gemset", which would lose
+        # our GEM_PATH and prevent our test suites from running ruby
+        # programs (for example, the Workbench test suite could not
+        # boot an API server or run arv). Instead, we have to make an
+        # rvm gemset and use it for everything.
+
+        [[ `type rvm | head -n1` == "rvm is a function" ]] \
+            || fatal 'rvm check'
+
+        # Put rvm's favorite path back in first place (overriding
+        # virtualenv, which just put itself there). Ignore rvm's
+        # complaint about not being in first place already.
+        rvm use @default 2>/dev/null
+
+        # Create (if needed) and switch to an @arvados-tests
+        # gemset. (Leave the choice of ruby to the caller.)
+        rvm use @arvados-tests --create \
+            || fatal 'rvm gemset setup'
+
+        rvm env
+    else
+        # When our "bundle install"s need to install new gems to
+        # satisfy dependencies, we want them to go where "gem install
+        # --user-install" would put them. (However, if the caller has
+        # already set GEM_HOME, we assume that's where dependencies
+        # should be installed, and we should leave it alone.)
+
+        if [ -z "$GEM_HOME" ]; then
+            user_gempath="$(gem env gempath)"
+            export GEM_HOME="${user_gempath%%:*}"
+        fi
+        PATH="$(gem env gemdir)/bin:$PATH"
+
+        # When we build and install our own gems, we install them in our
+        # $GEMHOME tmpdir, and we want them to be at the front of GEM_PATH and
+        # PATH so integration tests prefer them over other versions that
+        # happen to be installed in $user_gempath, system dirs, etc.
+
+        tmpdir_gem_home="$(env - PATH="$PATH" HOME="$GEMHOME" gem env gempath | cut -f1 -d:)"
+        PATH="$tmpdir_gem_home/bin:$PATH"
+        export GEM_PATH="$tmpdir_gem_home:$(gem env gempath)"
+
+        echo "Will install dependencies to $(gem env gemdir)"
+        echo "Will install arvados gems to $tmpdir_gem_home"
+        echo "Gem search path is GEM_PATH=$GEM_PATH"
+    fi
+}
+
+with_test_gemset() {
+    if [[ "$using_rvm" == true ]]; then
+        "$@"
+    else
+        GEM_HOME="$tmpdir_gem_home" "$@"
+    fi
+}
+
 export GOPATH
 mkdir -p "$GOPATH/src/git.curoverse.com"
 ln -sfn "$WORKSPACE" "$GOPATH/src/git.curoverse.com/arvados.git" \
@@ -190,6 +255,17 @@ ln -sfn "$WORKSPACE" "$GOPATH/src/git.curoverse.com/arvados.git" \
 
 virtualenv --setuptools "$VENVDIR" || fatal "virtualenv $VENVDIR failed"
 . "$VENVDIR/bin/activate"
+
+# Note: this must be the last time we change PATH, otherwise rvm will
+# whine a lot.
+setup_ruby_environment
+
+echo "PATH is $PATH"
+
+if ! which bundler >/dev/null
+then
+    gem install --user-install bundler || fatal 'Could not install bundler'
+fi
 
 # Needed for run_test_server.py which is used by certain (non-Python) tests.
 pip install PyYAML
@@ -229,7 +305,7 @@ do_test() {
            # setuptools until we run "setup.py test" *and* install the
            # .egg files that setup.py downloads.
            cd "$WORKSPACE/$1" \
-                && HOME="$GEMHOME" python setup.py test ${testargs[$1]} \
+                && python setup.py test ${testargs[$1]} \
                 && (easy_install *.egg || true)
         else
             "test_$1"
@@ -271,27 +347,30 @@ title () {
 
 install_docs() {
     cd "$WORKSPACE/doc"
-    HOME="$GEMHOME" bundle install --no-deployment
+    bundle install --no-deployment
     rm -rf .site
     # Make sure python-epydoc is installed or the next line won't do much good!
     ARVADOS_API_HOST=qr1hi.arvadosapi.com
-    PYTHONPATH=$WORKSPACE/sdk/python/ HOME="$GEMHOME" bundle exec rake generate baseurl=file://$WORKSPACE/doc/.site/ arvados_workbench_host=workbench.$ARVADOS_API_HOST arvados_api_host=$ARVADOS_API_HOST
+    PYTHONPATH=$WORKSPACE/sdk/python/ bundle exec rake generate baseurl=file://$WORKSPACE/doc/.site/ arvados_workbench_host=workbench.$ARVADOS_API_HOST arvados_api_host=$ARVADOS_API_HOST
     unset ARVADOS_API_HOST
 }
 do_install docs
 
 install_ruby_sdk() {
-    cd "$WORKSPACE/sdk/ruby" \
-        && HOME="$GEMHOME" bundle install --no-deployment \
+    with_test_gemset gem uninstall --all --executables arvados \
+        && cd "$WORKSPACE/sdk/ruby" \
+        && bundle install --no-deployment \
         && gem build arvados.gemspec \
-        && HOME="$GEMHOME" gem install --user-install --no-ri --no-rdoc `ls -t arvados-*.gem|head -n1`
+        && with_test_gemset gem install --no-ri --no-rdoc `ls -t arvados-*.gem|head -n1`
 }
 do_install ruby_sdk
 
 install_cli() {
-    cd "$WORKSPACE/sdk/cli" \
+    with_test_gemset gem uninstall --all --executables arvados-cli \
+        && cd "$WORKSPACE/sdk/cli" \
+        && bundle install --no-deployment \
         && gem build arvados-cli.gemspec \
-        && HOME="$GEMHOME" gem install --user-install --no-ri --no-rdoc `ls -t arvados-cli-*.gem|head -n1`
+        && with_test_gemset gem install --no-ri --no-rdoc `ls -t arvados-cli-*.gem|head -n1`
 }
 do_install cli
 
@@ -314,7 +393,7 @@ done
 install_apiserver() {
     cd "$WORKSPACE/services/api"
     export RAILS_ENV=test
-    HOME="$GEMHOME" bundle install --no-deployment
+    bundle install --no-deployment
 
     rm -f config/environments/test.rb
     cp config/environments/test.rb.example config/environments/test.rb
@@ -353,9 +432,9 @@ install_apiserver() {
     psql arvados_test -c "SELECT pg_terminate_backend (pg_stat_activity.procpid::int) FROM pg_stat_activity WHERE pg_stat_activity.datname = 'arvados_test';" 2>/dev/null
 
     cd "$WORKSPACE/services/api" \
-        && HOME="$GEMHOME" bundle exec rake db:drop \
-        && HOME="$GEMHOME" bundle exec rake db:create \
-        && HOME="$GEMHOME" bundle exec rake db:setup
+        && bundle exec rake db:drop \
+        && bundle exec rake db:create \
+        && bundle exec rake db:setup
 }
 do_install apiserver
 
@@ -373,31 +452,37 @@ do
     do_install "$g" go
 done
 
+install_workbench() {
+    cd "$WORKSPACE/apps/workbench" \
+        && RAILS_ENV=test bundle install --no-deployment
+}
+do_install workbench
+
 test_doclinkchecker() {
     cd "$WORKSPACE/doc"
-    HOME="$GEMHOME" bundle exec rake linkchecker baseurl=file://$WORKSPACE/doc/.site/
+    bundle exec rake linkchecker baseurl=file://$WORKSPACE/doc/.site/
 }
 do_test doclinkchecker
 
 test_ruby_sdk() {
     cd "$WORKSPACE/sdk/ruby" \
-        && HOME="$GEMHOME" bundle install --no-deployment \
-        && HOME="$GEMHOME" bundle exec rake test ${testargs[sdk/ruby]}
+        && bundle install --no-deployment \
+        && bundle exec rake test ${testargs[sdk/ruby]}
 }
 do_test ruby_sdk
 
 test_cli() {
     title "Starting SDK CLI tests"
     cd "$WORKSPACE/sdk/cli" \
-        && HOME="$GEMHOME" bundle install --no-deployment \
+        && bundle install --no-deployment \
         && mkdir -p /tmp/keep \
-        && KEEP_LOCAL_STORE=/tmp/keep HOME="$GEMHOME" bundle exec rake test ${testargs[sdk/cli]}
+        && KEEP_LOCAL_STORE=/tmp/keep bundle exec rake test ${testargs[sdk/cli]}
 }
 do_test cli
 
 test_apiserver() {
     cd "$WORKSPACE/services/api"
-    HOME="$GEMHOME" bundle exec rake test ${testargs[apiserver]}
+    bundle exec rake test ${testargs[apiserver]}
 }
 do_test apiserver
 
@@ -415,15 +500,13 @@ done
 
 test_workbench() {
     cd "$WORKSPACE/apps/workbench" \
-        && HOME="$GEMHOME" bundle install --no-deployment \
-        && HOME="$GEMHOME" bundle exec rake test ${testargs[workbench]}
+        && bundle exec rake test ${testargs[workbench]}
 }
 do_test workbench
 
 test_workbench_performance() {
     cd "$WORKSPACE/apps/workbench" \
-        && HOME="$GEMHOME" bundle install --no-deployment \
-        && HOME="$GEMHOME" bundle exec rake test:benchmark
+        && bundle exec rake test:benchmark
 }
 do_test workbench_performance
 
