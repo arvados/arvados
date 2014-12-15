@@ -222,11 +222,11 @@ setup_ruby_environment() {
     else
         echo "RVM not found. Will install gems-under-test into \"$GEM_HOME\"."
 
-        # When our "bundle install"s need to install new gems to satisfy
-        # dependencies, we want them to go where "gem install --user-install"
-        # would put them. If rvm is in use (or something else has set
-        # GEM_HOME) we assume "bundle install" already does something
-        # reasonable.
+        # When our "bundle install"s need to install new gems to
+        # satisfy dependencies, we want them to go where "gem install
+        # --user-install" would put them. (However, if the caller has
+        # already set GEM_HOME, we assume that's where dependencies
+        # should be installed, and we should leave it alone.)
 
         if [ -z "$GEM_HOME" ]; then
             user_gempath="$(gem env gempath)"
@@ -240,14 +240,15 @@ setup_ruby_environment() {
         # happen to be installed in $user_gempath, system dirs, etc.
 
         tmpdir_gem_home="$(env - PATH="$PATH" HOME="$GEMHOME" gem env gempath | cut -f1 -d:)"
-        PATH="${tmpdir_gem_home%%:*}/bin:$PATH"
+        PATH="$tmpdir_gem_home/bin:$PATH"
         export GEM_PATH="$tmpdir_gem_home:$(gem env gempath)"
 
-        echo "Will install dependencies to $GEM_HOME"
+        echo "Will install dependencies to $(gem env gemdir)"
         echo "Will install arvados gems to $tmpdir_gem_home"
         echo "Gem search path is GEM_PATH=$GEM_PATH"
     fi
 }
+
 with_test_gemset() {
     if [[ "$using_rvm" == true ]]; then
         "$@"
