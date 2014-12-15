@@ -36,10 +36,10 @@ with out.open('md5sum.txt') as out_file:
     out_file.write("{} {}/{}\n".format(digestor.hexdigest(), input_id,
                                        os.path.normpath(input_path)))
 
-# Commit the output to keep.  This returns a Keep id.
-output_id = out.finish()
+# Commit the output to Keep.
+output_locator = out.finish()
 
-# Set the output for this task to the Keep id
-this_task.set_output(output_id)
+# Use the resulting locator as the output for this task.
+this_task.set_output(output_locator)
 
 # Done!

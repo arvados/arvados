@@ -21,10 +21,10 @@ with out.open('0-filter.txt') as out_file:
         # Output every line in the file that starts with '0'
         out_file.writelines(line for line in input_file if line.startswith('0'))
 
-# Commit the output to keep.  This returns a Keep id.
-output_id = out.finish()
+# Commit the output to Keep.
+output_locator = out.finish()
 
-# Set the output for this task to the Keep id
-this_task.set_output(output_id)
+# Use the resulting locator as the output for this task.
+this_task.set_output(output_locator)
 
 # Done!
