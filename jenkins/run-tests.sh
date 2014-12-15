@@ -458,6 +458,12 @@ do
     do_install "$g" go
 done
 
+install_workbench() {
+    cd "$WORKSPACE/apps/workbench" \
+        && RAILS_ENV=test bundle install --no-deployment
+}
+do_install workbench
+
 test_doclinkchecker() {
     cd "$WORKSPACE/doc"
     bundle exec rake linkchecker baseurl=file://$WORKSPACE/doc/.site/
@@ -500,15 +506,13 @@ done
 
 test_workbench() {
     cd "$WORKSPACE/apps/workbench" \
-        && bundle install --no-deployment \
         && bundle exec rake test ${testargs[workbench]}
 }
 do_test workbench
 
 test_workbench_performance() {
     cd "$WORKSPACE/apps/workbench" \
-        && HOME="$GEMHOME" bundle install --no-deployment \
-        && HOME="$GEMHOME" bundle exec rake test:benchmark
+        && bundle exec rake test:benchmark
 }
 do_test workbench_performance
 
