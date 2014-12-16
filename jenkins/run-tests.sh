@@ -357,7 +357,7 @@ install_docs() {
 do_install docs
 
 install_ruby_sdk() {
-    with_test_gemset gem uninstall --all --executables arvados \
+    with_test_gemset gem uninstall --force --all --executables arvados \
         && cd "$WORKSPACE/sdk/ruby" \
         && bundle install --no-deployment \
         && gem build arvados.gemspec \
@@ -366,7 +366,7 @@ install_ruby_sdk() {
 do_install ruby_sdk
 
 install_cli() {
-    with_test_gemset gem uninstall --all --executables arvados-cli \
+    with_test_gemset gem uninstall --force --all --executables arvados-cli \
         && cd "$WORKSPACE/sdk/cli" \
         && bundle install --no-deployment \
         && gem build arvados-cli.gemspec \
