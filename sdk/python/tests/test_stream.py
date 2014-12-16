@@ -307,5 +307,15 @@ class StreamFileWriterTestCase(unittest.TestCase):
         writer.truncate(8)
         self.assertEqual("567", writer.readfrom(5, 8))
 
+    def test_append(self):
+        stream = StreamWriter(['.', '781e5e245d69b566979b86e28d23f2c7+10', '0:10:count.txt'],
+                              keep=StreamWriterTestCase.MockKeep({"781e5e245d69b566979b86e28d23f2c7+10": "0123456789"}))
+        writer = stream.files()["count.txt"]
+        self.assertEqual("56789", writer.readfrom(5, 8))
+        writer.seek(10)
+        writer.write("foo")
+        self.assertEqual("56789foo", writer.readfrom(5, 8))
+        #print stream.manifest_text()
+
 if __name__ == '__main__':
     unittest.main()
