@@ -168,7 +168,7 @@ class StreamFileReader(ArvadosFileBase):
         available_chunks = locators_and_ranges(self.segments, self._filepos, size)
         if available_chunks:
             locator, blocksize, segmentoffset, segmentsize = available_chunks[0]
-            data = self._stream.readfrom(locator+segmentoffset, segmentsize,
+            data = self._stream._readfrom(locator+segmentoffset, segmentsize,
                                          num_retries=num_retries)
 
         self._filepos += len(data)
@@ -183,7 +183,7 @@ class StreamFileReader(ArvadosFileBase):
 
         data = []
         for locator, blocksize, segmentoffset, segmentsize in locators_and_ranges(self.segments, start, size):
-            data.append(self._stream.readfrom(locator+segmentoffset, segmentsize,
+            data.append(self._stream._readfrom(locator+segmentoffset, segmentsize,
                                               num_retries=num_retries))
         return ''.join(data)
 
@@ -295,8 +295,8 @@ class StreamReader(object):
                 if name not in self._files:
                     self._files[name] = StreamFileReader(self, [[pos, size, 0]], name)
                 else:
-                    n = self._files[name]
-                    n.segments.append([pos, size, n.size()])
+                    filereader = self._files[name]
+                    filereader.segments.append([pos, size, filereader.size()])
                 continue
 
             raise errors.SyntaxError("Invalid manifest format")
@@ -318,10 +318,13 @@ class StreamReader(object):
         return locators_and_ranges(self._data_locators, range_start, range_size)
 
     def _keepget(self, locator, num_retries=None):
-        self._keep.get(locator, num_retries=num_retries)
+        return self._keep.get(locator, num_retries=num_retries)
 
     @retry_method
     def readfrom(self, start, size, num_retries=None):
+        self._readfrom(start, size, num_retries=num_retries)
+
+    def _readfrom(self, start, size, num_retries=None):
         """Read up to 'size' bytes from the stream, starting at 'start'"""
         if size == 0:
             return ''
@@ -362,11 +365,17 @@ class StreamWriter(StreamReader):
     def __init__(self, tokens, keep=None, debug=False, _empty=False,
                  num_retries=0):
         super(StreamWriter, self).__init__(tokens, keep, debug, _empty, num_retries)
+
+        if len(self._files) != 1:
+            raise AssertionError("StreamWriter can only have one file at a time")
+        sr = self._files.popitem()[1]
+        self._files[sr.name] = StreamFileWriter(self, sr.segments, sr.name)
+
         self.mutex = threading.Lock()
         self.current_bblock = None
         self.bufferblocks = {}
 
-    # Proxy the methods listed below to self.nodes.
+    # wrap superclass methods in mutex
     def _proxy_method(name):
         method = getattr(StreamReader, name)
         @functools.wraps(method, ('__name__', '__doc__'))
@@ -385,28 +394,75 @@ class StreamWriter(StreamReader):
         else:
             return self._keep.get(locator, num_retries=num_retries)
 
+    def _append(self, data):
+        if self.current_bblock is None:
+            streamoffset = sum([x[1] for x in self._data_locators])
+            self.current_bblock = BufferBlock("bufferblock%i" % len(self.bufferblocks), streamoffset)
+            self.bufferblocks[self.current_bblock.locator] = self.current_bblock
+            self._data_locators.append(self.current_bblock.locator_list_entry)
+        self.current_bblock.append(data)
+
     def append(self, data):
         with self.mutex:
-            if self.current_bblock is None:
-                streamoffset = sum([x[1] for x in self._data_locators])
-                self.current_bblock = BufferBlock("bufferblock%i" % len(self.bufferblocks), streamoffset)
-                self.bufferblocks[self.current_bblock.locator] = self.current_bblock
-                self._data_locators.append(self.current_bblock.locator_list_entry)
-            self.current_bblock.append(data)
+            self._append(data)
 
 class StreamFileWriter(StreamFileReader):
-    def __init__(self, name, mode):
-        super(StreamFileWriter, self).__init__(name, mode)
-        self.mutex = threading.Lock()
+    def __init__(self, stream, segments, name):
+        super(StreamFileWriter, self).__init__(stream, segments, name)
+        self.mode = 'wb'
 
-    # Proxy the methods listed below to self.nodes.
+    # wrap superclass methods in mutex
     def _proxy_method(name):
         method = getattr(StreamFileReader, name)
         @functools.wraps(method, ('__name__', '__doc__'))
         def wrapper(self, *args, **kwargs):
-            with self.mutex:
+            with self._stream.mutex:
                 return method(self, *args, **kwargs)
         return wrapper
 
     for _method_name in ['__iter__', 'seek', 'tell', 'size', 'read', 'readfrom', 'readall', 'readline', 'decompress', 'readall_decompressed', 'readlines', 'as_manifest']:
         locals()[_method_name] = _proxy_method(_method_name)
+
+    def truncate(self, size=None):
+        with self._stream.mutex:
+            if size is None:
+                size = self._filepos
+
+            segs = locators_and_ranges(self.segments, 0, size)
+
+            newstream = []
+            self.segments = []
+            streamoffset = 0L
+            fileoffset = 0L
+
+            for seg in segs:
+                for locator, blocksize, segmentoffset, segmentsize in locators_and_ranges(self._stream._data_locators, seg[LOCATOR]+seg[OFFSET], seg[SEGMENTSIZE]):
+                    newstream.append([locator, blocksize, streamoffset])
+                    self.segments.append([streamoffset+segmentoffset, segmentsize, fileoffset])
+                    streamoffset += blocksize
+                    fileoffset += segmentsize
+            self._stream._data_locators = newstream
+            if self._filepos > fileoffset:
+                self._filepos = fileoffset
+
+    def _writeto(self, offset, data):
+        # TODO
+        pass
+
+    def writeto(self, offset, data):
+        with self._stream.mutex:
+            self._writeto(offset, data)
+
+    def write(self, data):
+        with self._stream.mutex:
+            self._writeto(self._filepos, data)
+            self._filepos += len(data)
+
+    def writelines(self, seq):
+        with self._stream.mutex:
+            for s in seq:
+                self._writeto(self._filepos, s)
+                self._filepos += len(s)
+
+    def flush(self):
+        pass

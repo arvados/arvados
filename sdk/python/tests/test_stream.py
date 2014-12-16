@@ -8,7 +8,7 @@ import os
 import unittest
 
 import arvados
-from arvados import StreamReader, StreamFileReader, StreamWriter
+from arvados import StreamReader, StreamFileReader, StreamWriter, StreamFileWriter
 
 import arvados_testutil as tutil
 import run_test_server
@@ -282,14 +282,30 @@ class StreamWriterTestCase(unittest.TestCase):
     def test_init(self):
         stream = StreamWriter(['.', '781e5e245d69b566979b86e28d23f2c7+10', '0:10:count.txt'],
                               keep=StreamWriterTestCase.MockKeep({"781e5e245d69b566979b86e28d23f2c7+10": "0123456789"}))
-        self.assertEqual(stream.readfrom(0, 5), "01234")
+        self.assertEqual("01234", stream.readfrom(0, 5))
 
     def test_append(self):
         stream = StreamWriter(['.', '781e5e245d69b566979b86e28d23f2c7+10', '0:10:count.txt'],
                               keep=StreamWriterTestCase.MockKeep({"781e5e245d69b566979b86e28d23f2c7+10": "0123456789"}))
-        self.assertEqual(stream.readfrom(5, 8), "56789")
+        self.assertEqual("56789", stream.readfrom(5, 8))
         stream.append("foo")
-        self.assertEqual(stream.readfrom(5, 8), "56789foo")
+        self.assertEqual("56789foo", stream.readfrom(5, 8))
+
+
+class StreamFileWriterTestCase(unittest.TestCase):
+    class MockKeep(object):
+        def __init__(self, blocks):
+            self.blocks = blocks
+        def get(self, locator, num_retries=0):
+            return self.blocks[locator]
+
+    def test_truncate(self):
+        stream = StreamWriter(['.', '781e5e245d69b566979b86e28d23f2c7+10', '0:10:count.txt'],
+                              keep=StreamWriterTestCase.MockKeep({"781e5e245d69b566979b86e28d23f2c7+10": "0123456789"}))
+        writer = stream.files()["count.txt"]
+        self.assertEqual("56789", writer.readfrom(5, 8))
+        writer.truncate(8)
+        self.assertEqual("567", writer.readfrom(5, 8))
 
 if __name__ == '__main__':
     unittest.main()
