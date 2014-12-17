@@ -315,7 +315,7 @@ class StreamFileWriterTestCase(unittest.TestCase):
         writer.seek(10)
         writer.write("foo")
         self.assertEqual("56789foo", writer.readfrom(5, 8))
-        #print stream.manifest_text()
+        #print arvados.normalize_stream(".", {"count.txt": stream.locators_and_ranges(0, stream.size())})
 
 if __name__ == '__main__':
     unittest.main()

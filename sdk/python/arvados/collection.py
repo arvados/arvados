@@ -6,54 +6,14 @@ import re
 from collections import deque
 from stat import *
 
-from .arvfile import ArvadosFileBase
+from .arvfile import ArvadosFileBase, split
 from keep import *
-from .stream import StreamReader, split
+from .stream import StreamReader, normalize_stream
 import config
 import errors
 import util
 
 _logger = logging.getLogger('arvados.collection')
-
-def normalize_stream(s, stream):
-    stream_tokens = [s]
-    sortedfiles = list(stream.keys())
-    sortedfiles.sort()
-
-    blocks = {}
-    streamoffset = 0L
-    for f in sortedfiles:
-        for b in stream[f]:
-            if b[arvados.LOCATOR] not in blocks:
-                stream_tokens.append(b[arvados.LOCATOR])
-                blocks[b[arvados.LOCATOR]] = streamoffset
-                streamoffset += b[arvados.BLOCKSIZE]
-
-    if len(stream_tokens) == 1:
-        stream_tokens.append(config.EMPTY_BLOCK_LOCATOR)
-
-    for f in sortedfiles:
-        current_span = None
-        fout = f.replace(' ', '\\040')
-        for segment in stream[f]:
-            segmentoffset = blocks[segment[arvados.LOCATOR]] + segment[arvados.OFFSET]
-            if current_span is None:
-                current_span = [segmentoffset, segmentoffset + segment[arvados.SEGMENTSIZE]]
-            else:
-                if segmentoffset == current_span[1]:
-                    current_span[1] += segment[arvados.SEGMENTSIZE]
-                else:
-                    stream_tokens.append("{0}:{1}:{2}".format(current_span[0], current_span[1] - current_span[0], fout))
-                    current_span = [segmentoffset, segmentoffset + segment[arvados.SEGMENTSIZE]]
-
-        if current_span is not None:
-            stream_tokens.append("{0}:{1}:{2}".format(current_span[0], current_span[1] - current_span[0], fout))
-
-        if not stream[f]:
-            stream_tokens.append("0:0:{0}".format(fout))
-
-    return stream_tokens
-
 
 class CollectionBase(object):
     def __enter__(self):

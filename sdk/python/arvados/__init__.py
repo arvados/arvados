@@ -22,6 +22,7 @@ from api import *
 from collection import *
 from keep import *
 from stream import *
+from arvfile import *
 import errors
 import util
 
@@ -131,5 +132,3 @@ class job_setup:
                                        body={'success':True}
                                        ).execute()
             exit(0)
-
-
