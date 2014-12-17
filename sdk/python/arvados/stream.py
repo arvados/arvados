@@ -149,14 +149,19 @@ class StreamReader(object):
 
 
 class BufferBlock(object):
-    def __init__(self, locator, streamoffset):
+    def __init__(self, locator, streamoffset, starting_size=2**16):
         self.locator = locator
-        self.buffer_block = bytearray(config.KEEP_BLOCK_SIZE)
+        self.buffer_block = bytearray(starting_size)
         self.buffer_view = memoryview(self.buffer_block)
         self.write_pointer = 0
         self.locator_list_entry = [locator, 0, streamoffset]
 
     def append(self, data):
+        while (self.write_pointer+len(data)) > len(self.buffer_block):
+            new_buffer_block = bytearray(len(self.buffer_block) * 2)
+            new_buffer_block[0:self.write_pointer] = self.buffer_block[0:self.write_pointer]
+            self.buffer_block = new_buffer_block
+            self.buffer_view = memoryview(self.buffer_block)
         self.buffer_view[self.write_pointer:self.write_pointer+len(data)] = data
         self.write_pointer += len(data)
         self.locator_list_entry[1] = self.write_pointer
@@ -196,13 +201,44 @@ class StreamWriter(StreamReader):
         else:
             return self._keep.get(locator, num_retries=num_retries)
 
+    def _init_bufferblock(self):
+        last = self._data_locators[-1]
+        streamoffset = last[OFFSET] + last[BLOCKSIZE]
+        if last[BLOCKSIZE] == 0:
+            del self._data_locators[-1]
+        self.current_bblock = BufferBlock("bufferblock%i" % len(self.bufferblocks), streamoffset)
+        self.bufferblocks[self.current_bblock.locator] = self.current_bblock
+        self._data_locators.append(self.current_bblock.locator_list_entry)
+
+    def _commit(self):
+        # commit buffer block
+
+        segs = self._files.values()[0].segments
+        print "segs %s bb %s" % (segs, self.current_bblock.locator_list_entry)
+        final_writes = [s for s in segs if s[LOCATOR] >= self.current_bblock.locator_list_entry[OFFSET]]
+        print "final_writes %s" % final_writes
+        # if size of final_writes < size of buffer block ...
+
+        # TODO: do 'put' in the background?
+        pdh = self._keep.put(self.current_bblock.buffer_block[0:self.current_bblock.write_pointer])
+        self._data_locators[-1][0] = pdh
+        self.current_bblock = None
+
+    def commit(self):
+        with self.mutex:
+            self._commit()
+
     def _append(self, data):
+        if len(data) > config.KEEP_BLOCK_SIZE:
+            raise ArgumentError("Please append data chunks smaller than config.KEEP_BLOCK_SIZE")
+
         if self.current_bblock is None:
-            last = self._data_locators[-1]
-            streamoffset = last[OFFSET] + last[BLOCKSIZE]
-            self.current_bblock = BufferBlock("bufferblock%i" % len(self.bufferblocks), streamoffset)
-            self.bufferblocks[self.current_bblock.locator] = self.current_bblock
-            self._data_locators.append(self.current_bblock.locator_list_entry)
+            self._init_bufferblock()
+
+        if (self.current_bblock.write_pointer + len(data)) > config.KEEP_BLOCK_SIZE:
+            self._commit()
+            self._init_bufferblock()
+
         self.current_bblock.append(data)
 
     def append(self, data):

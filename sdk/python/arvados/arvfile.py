@@ -244,7 +244,6 @@ class StreamFileWriter(StreamFileReader):
     def _writeto(self, offset, data):
         self._stream._append(data)
         replace_range(self.segments, self._filepos, len(data), self._stream._size()-len(data))
-        self._filepos += len(data)
 
     def writeto(self, offset, data):
         with self._stream.mutex:
