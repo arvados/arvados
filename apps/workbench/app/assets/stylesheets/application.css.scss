@@ -204,6 +204,11 @@ table.table-fixed-header-row tbody {
     top:1.5em;
 }
 
+.dropdown-menu {
+    max-height: 30em;
+    overflow-y: auto;
+}
+
 .row-fill-height, .row-fill-height>div[class*='col-'] {
     display: flex;
 }
