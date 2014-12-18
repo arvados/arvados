@@ -4,6 +4,7 @@ import os
 import re
 import threading
 import functools
+import copy
 
 from .ranges import *
 from .arvfile import ArvadosFileBase, StreamFileReader, StreamFileWriter
@@ -210,14 +211,57 @@ class StreamWriter(StreamReader):
         self.bufferblocks[self.current_bblock.locator] = self.current_bblock
         self._data_locators.append(self.current_bblock.locator_list_entry)
 
+    def _repack_writes(self):
+        '''Test if the buffer block has more data than is referenced by actual segments
+        (this happens when a buffered write over-writes a file range written in
+        a previous buffered write).  Re-pack the buffer block for efficiency
+        and to avoid leaking information.
+        '''
+        segs = self._files.values()[0].segments
+
+        bufferblock_segs = []
+        i = 0
+        tmp_segs = copy.copy(segs)
+        while i < len(tmp_segs):
+            # Go through each segment and identify segments that include the buffer block
+            s = tmp_segs[i]
+            if s[LOCATOR] < self.current_bblock.locator_list_entry[OFFSET] and (s[LOCATOR] + s[BLOCKSIZE]) > self.current_bblock.locator_list_entry[OFFSET]:
+                # The segment straddles the previous block and the current buffer block.  Split the segment.
+                b1 = self.current_bblock.locator_list_entry[OFFSET] - s[LOCATOR]
+                b2 = (s[LOCATOR] + s[BLOCKSIZE]) - self.current_bblock.locator_list_entry[OFFSET]
+                bb_seg = [self.current_bblock.locator_list_entry[OFFSET], b2, s[OFFSET]+b1]
+                tmp_segs[i] = [s[LOCATOR], b1, s[OFFSET]]
+                tmp_segs.insert(i+1, bb_seg)
+                bufferblock_segs.append(bb_seg)
+                i += 1
+            elif s[LOCATOR] >= self.current_bblock.locator_list_entry[OFFSET]:
+                # The segment's data is in the buffer block.
+                bufferblock_segs.append(s)
+            i += 1
+
+        # Now sum up the segments to get the total bytes
+        # of the file referencing into the buffer block.
+        write_total = sum([s[BLOCKSIZE] for s in bufferblock_segs])
+
+        if write_total < self.current_bblock.locator_list_entry[BLOCKSIZE]:
+            # There is more data in the buffer block than is actually accounted for by segments, so
+            # re-pack into a new buffer by copying over to a new buffer block.
+            new_bb = BufferBlock(self.current_bblock.locator,
+                                 self.current_bblock.locator_list_entry[OFFSET],
+                                 starting_size=write_total)
+            for t in bufferblock_segs:
+                t_start = t[LOCATOR] - self.current_bblock.locator_list_entry[OFFSET]
+                t_end = t_start + t[BLOCKSIZE]
+                t[0] = self.current_bblock.locator_list_entry[OFFSET] + new_bb.write_pointer
+                new_bb.append(self.current_bblock.buffer_block[t_start:t_end])
+
+            self.current_bblock = new_bb
+            self.bufferblocks[self.current_bblock.locator] = self.current_bblock
+            self._data_locators[-1] = self.current_bblock.locator_list_entry
+            self._files.values()[0].segments = tmp_segs
+
     def _commit(self):
         # commit buffer block
-
-        segs = self._files.values()[0].segments
-        print "segs %s bb %s" % (segs, self.current_bblock.locator_list_entry)
-        final_writes = [s for s in segs if s[LOCATOR] >= self.current_bblock.locator_list_entry[OFFSET]]
-        print "final_writes %s" % final_writes
-        # if size of final_writes < size of buffer block ...
 
         # TODO: do 'put' in the background?
         pdh = self._keep.put(self.current_bblock.buffer_block[0:self.current_bblock.write_pointer])
@@ -226,6 +270,7 @@ class StreamWriter(StreamReader):
 
     def commit(self):
         with self.mutex:
+            self._repack_writes()
             self._commit()
 
     def _append(self, data):
@@ -236,8 +281,10 @@ class StreamWriter(StreamReader):
             self._init_bufferblock()
 
         if (self.current_bblock.write_pointer + len(data)) > config.KEEP_BLOCK_SIZE:
-            self._commit()
-            self._init_bufferblock()
+            self._repack_writes()
+            if (self.current_bblock.write_pointer + len(data)) > config.KEEP_BLOCK_SIZE:
+                self._commit()
+                self._init_bufferblock()
 
         self.current_bblock.append(data)
 

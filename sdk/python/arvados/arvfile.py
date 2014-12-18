@@ -242,6 +242,8 @@ class StreamFileWriter(StreamFileReader):
                 self._filepos = fileoffset
 
     def _writeto(self, offset, data):
+        if offset > self._size():
+            raise ArgumentError("Offset is past the end of the file")
         self._stream._append(data)
         replace_range(self.segments, self._filepos, len(data), self._stream._size()-len(data))
 

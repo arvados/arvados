@@ -281,7 +281,7 @@ class StreamWriterTestCase(unittest.TestCase):
             return self.blocks[locator]
         def put(self, data):
             pdh = "%s+%i" % (hashlib.md5(data).hexdigest(), len(data))
-            self.blocks[pdh] = data
+            self.blocks[pdh] = str(data)
             return pdh
 
     def test_init(self):
@@ -382,7 +382,7 @@ class StreamFileWriterTestCase(unittest.TestCase):
         stream.commit()
         self.assertEqual(". a5de24f4417cfba9d5825eadc2f4ca49+67108000 598cc1a4ccaef8ab6e4724d87e675d78+32892000 0:100000000:count.txt\n", stream.manifest_text())
 
-    def test_write_rewrite(self):
+    def test_write_rewrite0(self):
         stream = StreamWriter(['.', arvados.config.EMPTY_BLOCK_LOCATOR, '0:0:count.txt'],
                               keep=StreamWriterTestCase.MockKeep({}))
         writer = stream.files()["count.txt"]
@@ -391,7 +391,32 @@ class StreamFileWriterTestCase(unittest.TestCase):
             writer.write("0123456789")
         stream.commit()
         self.assertEqual(writer.size(), 10)
+        self.assertEqual("0123456789", writer.readfrom(0, 20))
         self.assertEqual(". 781e5e245d69b566979b86e28d23f2c7+10 0:10:count.txt\n", stream.manifest_text())
+
+    def test_write_rewrite1(self):
+        stream = StreamWriter(['.', '781e5e245d69b566979b86e28d23f2c7+10', '0:10:count.txt'],
+                              keep=StreamWriterTestCase.MockKeep({"781e5e245d69b566979b86e28d23f2c7+10": "0123456789"}))
+        writer = stream.files()["count.txt"]
+        for b in xrange(0, 10):
+            writer.seek(10, os.SEEK_SET)
+            writer.write("abcdefghij")
+        stream.commit()
+        self.assertEqual(writer.size(), 20)
+        self.assertEqual("0123456789abcdefghij", writer.readfrom(0, 20))
+        self.assertEqual(". 781e5e245d69b566979b86e28d23f2c7+10 a925576942e94b2ef57a066101b48876+10 0:10:count.txt 10:10:count.txt\n", stream.manifest_text())
+
+    def test_write_rewrite2(self):
+        stream = StreamWriter(['.', '781e5e245d69b566979b86e28d23f2c7+10', '0:10:count.txt'],
+                              keep=StreamWriterTestCase.MockKeep({"781e5e245d69b566979b86e28d23f2c7+10": "0123456789"}))
+        writer = stream.files()["count.txt"]
+        for b in xrange(0, 10):
+            writer.seek(5, os.SEEK_SET)
+            writer.write("abcdefghij")
+        stream.commit()
+        self.assertEqual(writer.size(), 15)
+        self.assertEqual("01234abcdefghij", writer.readfrom(0, 20))
+        self.assertEqual(". 781e5e245d69b566979b86e28d23f2c7+10 a925576942e94b2ef57a066101b48876+10 0:5:count.txt 10:10:count.txt\n", stream.manifest_text())
 
 if __name__ == '__main__':
     unittest.main()
