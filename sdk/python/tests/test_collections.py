@@ -806,5 +806,13 @@ class CollectionWriterTestCase(unittest.TestCase, CollectionTestMixin):
         self.assertRaises(arvados.errors.AssertionError, writer.open, 'two')
 
 
+class NewCollectionTestCase(unittest.TestCase, CollectionTestMixin):
+    def test_import_manifest(self):
+        m1 = """. 5348b82a029fd9e971a811ce1f71360b+43 0:43:md5sum.txt
+. 085c37f02916da1cad16f93c54d899b7+41 0:41:md5sum.txt
+. 8b22da26f9f433dea0a10e5ec66d73ba+43 0:43:md5sum.txt
+"""
+        print arvados.export_manifest(arvados.import_manifest(m1))
+
 if __name__ == '__main__':
     unittest.main()

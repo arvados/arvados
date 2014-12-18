@@ -46,7 +46,7 @@ class ArvadosFileBase(object):
         self.closed = True
 
 
-class StreamFileReader(ArvadosFileBase):
+class ArvadosFileReaderBase(ArvadosFileBase):
     class _NameAttribute(str):
         # The Python file API provides a plain .name attribute.
         # Older SDK provided a name() method.
@@ -54,13 +54,11 @@ class StreamFileReader(ArvadosFileBase):
         def __call__(self):
             return self
 
-
-    def __init__(self, stream, segments, name):
-        super(StreamFileReader, self).__init__(self._NameAttribute(name), 'rb')
-        self._stream = stream
-        self.segments = segments
+    def __init__(self, name, mode, num_retries=None):
+        super(ArvadosFileReaderBase, self).__init__(self._NameAttribute(name), mode)
         self._filepos = 0L
-        self.num_retries = stream.num_retries
+        self.num_retries = num_retries
+        self.need_lock = False
         self._readline_cache = (None, None)
 
     def __iter__(self):
@@ -73,9 +71,6 @@ class StreamFileReader(ArvadosFileBase):
     def decompressed_name(self):
         return re.sub('\.(bz2|gz)$', '', self.name)
 
-    def stream_name(self):
-        return self._stream.name()
-
     @ArvadosFileBase._before_close
     def seek(self, pos, whence=os.SEEK_CUR):
         if whence == os.SEEK_CUR:
@@ -87,42 +82,8 @@ class StreamFileReader(ArvadosFileBase):
     def tell(self):
         return self._filepos
 
-    def _size(self):
-        n = self.segments[-1]
-        return n[OFFSET] + n[BLOCKSIZE]
-
     def size(self):
         return self._size()
-
-    @ArvadosFileBase._before_close
-    @retry_method
-    def read(self, size, num_retries=None):
-        """Read up to 'size' bytes from the stream, starting at the current file position"""
-        if size == 0:
-            return ''
-
-        data = ''
-        available_chunks = locators_and_ranges(self.segments, self._filepos, size)
-        if available_chunks:
-            locator, blocksize, segmentoffset, segmentsize = available_chunks[0]
-            data = self._stream._readfrom(locator+segmentoffset, segmentsize,
-                                         num_retries=num_retries)
-
-        self._filepos += len(data)
-        return data
-
-    @ArvadosFileBase._before_close
-    @retry_method
-    def readfrom(self, start, size, num_retries=None):
-        """Read up to 'size' bytes from the stream, starting at 'start'"""
-        if size == 0:
-            return ''
-
-        data = []
-        for locator, blocksize, segmentoffset, segmentsize in locators_and_ranges(self.segments, start, size):
-            data.append(self._stream._readfrom(locator+segmentoffset, segmentsize,
-                                              num_retries=num_retries))
-        return ''.join(data)
 
     @ArvadosFileBase._before_close
     @retry_method
@@ -192,54 +153,89 @@ class StreamFileReader(ArvadosFileBase):
                 break
         return ''.join(data).splitlines(True)
 
+
+class StreamFileReader(ArvadosFileReaderBase):
+    def __init__(self, stream, segments, name):
+        super(StreamFileReader, self).__init__(name, 'rb')
+        self._stream = stream
+        self.segments = segments
+        self.num_retries = stream.num_retries
+        self._filepos = 0L
+        self.num_retries = stream.num_retries
+        self._readline_cache = (None, None)
+
+    def stream_name(self):
+        return self._stream.name()
+
+    def _size(self):
+        n = self.segments[-1]
+        return n[OFFSET] + n[BLOCKSIZE]
+
+    @ArvadosFileBase._before_close
+    @retry_method
+    def read(self, size, num_retries=None):
+        """Read up to 'size' bytes from the stream, starting at the current file position"""
+        if size == 0:
+            return ''
+
+        data = ''
+        available_chunks = locators_and_ranges(self.segments, self._filepos, size)
+        if available_chunks:
+            locator, blocksize, segmentoffset, segmentsize = available_chunks[0]
+            data = self._stream._readfrom(locator+segmentoffset, segmentsize,
+                                         num_retries=num_retries)
+
+        self._filepos += len(data)
+        return data
+
+    @ArvadosFileBase._before_close
+    @retry_method
+    def readfrom(self, start, size, num_retries=None):
+        """Read up to 'size' bytes from the stream, starting at 'start'"""
+        if size == 0:
+            return ''
+
+        data = []
+        for locator, blocksize, segmentoffset, segmentsize in locators_and_ranges(self.segments, start, size):
+            data.append(self._stream._readfrom(locator+segmentoffset, segmentsize,
+                                              num_retries=num_retries))
+        return ''.join(data)
+
     def as_manifest(self):
         manifest_text = ['.']
         manifest_text.extend([d[LOCATOR] for d in self._stream._data_locators])
         manifest_text.extend(["{}:{}:{}".format(seg[LOCATOR], seg[BLOCKSIZE], self.name().replace(' ', '\\040')) for seg in self.segments])
-        return arvados.CollectionReader(' '.join(manifest_text) + '\n').manifest_text(normalize=True)
+        return CollectionReader(' '.join(manifest_text) + '\n').manifest_text(normalize=True)
 
 
-class StreamFileWriter(StreamFileReader):
-    def __init__(self, stream, segments, name):
-        super(StreamFileWriter, self).__init__(stream, segments, name)
-        self.mode = 'wb'
-
-    # wrap superclass methods in mutex
-    def _proxy_method(name):
-        method = getattr(StreamFileReader, name)
-        @functools.wraps(method, ('__name__', '__doc__'))
-        def wrapper(self, *args, **kwargs):
-            with self._stream.mutex:
-                return method(self, *args, **kwargs)
-        return wrapper
-
-    for _method_name in ['__iter__', 'seek', 'tell', 'size', 'read', 'readfrom', 'readall', 'readline', 'decompress', 'readall_decompressed', 'readlines', 'as_manifest']:
-        locals()[_method_name] = _proxy_method(_method_name)
+class ArvadosFile(ArvadosFileReaderBase):
+    def __init__(self, name, mode, stream, segments):
+        super(ArvadosFile, self).__init__(name, mode)
+        self.segments = []
 
     def truncate(self, size=None):
-        with self._stream.mutex:
-            if size is None:
-                size = self._filepos
+        if size is None:
+            size = self._filepos
 
-            segs = locators_and_ranges(self.segments, 0, size)
+        segs = locators_and_ranges(self.segments, 0, size)
 
-            newstream = []
-            self.segments = []
-            streamoffset = 0L
-            fileoffset = 0L
+        newstream = []
+        self.segments = []
+        streamoffset = 0L
+        fileoffset = 0L
 
-            for seg in segs:
-                for locator, blocksize, segmentoffset, segmentsize in locators_and_ranges(self._stream._data_locators, seg[LOCATOR]+seg[OFFSET], seg[SEGMENTSIZE]):
-                    newstream.append([locator, blocksize, streamoffset])
-                    self.segments.append([streamoffset+segmentoffset, segmentsize, fileoffset])
-                    streamoffset += blocksize
-                    fileoffset += segmentsize
-            if len(newstream) == 0:
-                newstream.append(config.EMPTY_BLOCK_LOCATOR)
-                self.segments.append([0, 0, 0])
-            self._stream._data_locators = newstream
-            if self._filepos > fileoffset:
-                self._filepos = fileoffset
+        for seg in segs:
+            for locator, blocksize, segmentoffset, segmentsize in locators_and_ranges(self._stream._data_locators, seg[LOCATOR]+seg[OFFSET], seg[SEGMENTSIZE]):
+                newstream.append([locator, blocksize, streamoffset])
+                self.segments.append([streamoffset+segmentoffset, segmentsize, fileoffset])
+                streamoffset += blocksize
+                fileoffset += segmentsize
+        if len(newstream) == 0:
+            newstream.append(config.EMPTY_BLOCK_LOCATOR)
+            self.segments.append([0, 0, 0])
+        self._stream._data_locators = newstream
+        if self._filepos > fileoffset:
+            self._filepos = fileoffset
 
     def _writeto(self, offset, data):
         if offset > self._size():
@@ -248,19 +244,21 @@ class StreamFileWriter(StreamFileReader):
         replace_range(self.segments, self._filepos, len(data), self._stream._size()-len(data))
 
     def writeto(self, offset, data):
-        with self._stream.mutex:
-            self._writeto(offset, data)
+        self._writeto(offset, data)
 
     def write(self, data):
-        with self._stream.mutex:
-            self._writeto(self._filepos, data)
-            self._filepos += len(data)
+        self._writeto(self._filepos, data)
+        self._filepos += len(data)
 
     def writelines(self, seq):
-        with self._stream.mutex:
-            for s in seq:
-                self._writeto(self._filepos, s)
-                self._filepos += len(s)
+        for s in seq:
+            self._writeto(self._filepos, s)
+            self._filepos += len(s)
 
     def flush(self):
         pass
+
+    def add_segment(self, blocks, pos, size):
+        for locator, blocksize, segmentoffset, segmentsize in locators_and_ranges(blocks, pos, size):
+            last = self.segments[-1] if self.segments else [0, 0, 0]
+            self.segments.append([locator, segmentsize, last[OFFSET]+last[BLOCKSIZE], segmentoffset])

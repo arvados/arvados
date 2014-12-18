@@ -6,7 +6,7 @@ import re
 from collections import deque
 from stat import *
 
-from .arvfile import ArvadosFileBase, split
+from .arvfile import ArvadosFileBase, split, ArvadosFile
 from keep import *
 from .stream import StreamReader, normalize_stream
 import config
@@ -636,3 +636,94 @@ class ResumableCollectionWriter(CollectionWriter):
             raise errors.AssertionError(
                 "resumable writer can't accept unsourced data")
         return super(ResumableCollectionWriter, self).write(data)
+
+
+class Collection(object):
+    def __init__(self):
+        self.items = {}
+
+    def find_or_create(self, path):
+        p = path.split("/")
+        if p[0] == '.':
+            del p[0]
+
+        if len(p) > 0:
+            item = self.items.get(p[0])
+            if len(p) == 1:
+                # item must be a file
+                if item is None:
+                    # create new file
+                    item = ArvadosFile(p[0], 'wb', [], [])
+                    self.items[p[0]] = item
+                return item
+            else:
+                if item is None:
+                    # create new collection
+                    item = Collection()
+                    self.items[p[0]] = item
+                del p[0]
+                return item.find_or_create("/".join(p))
+        else:
+            return self
+
+
+def import_manifest(manifest_text):
+    c = Collection()
+
+    STREAM_NAME = 0
+    BLOCKS = 1
+    SEGMENTS = 2
+
+    stream_name = None
+    state = STREAM_NAME
+
+    for n in re.finditer(r'([^ \n]+)([ \n])', manifest_text):
+        tok = n.group(1)
+        sep = n.group(2)
+        if state == STREAM_NAME:
+            # starting a new stream
+            stream_name = tok.replace('\\040', ' ')
+            blocks = []
+            segments = []
+            streamoffset = 0L
+            state = BLOCKS
+            continue
+
+        if state == BLOCKS:
+            s = re.match(r'[0-9a-f]{32}\+(\d)+(\+\S+)*', tok)
+            if s:
+                blocksize = long(s.group(1))
+                blocks.append([tok, blocksize, streamoffset])
+                streamoffset += blocksize
+            else:
+                state = SEGMENTS
+
+        if state == SEGMENTS:
+            s = re.search(r'^(\d+):(\d+):(\S+)', tok)
+            if s:
+                pos = long(s.group(1))
+                size = long(s.group(2))
+                name = s.group(3).replace('\\040', ' ')
+                f = c.find_or_create("%s/%s" % (stream_name, name))
+                f.add_segment(blocks, pos, size)
+            else:
+                # error!
+                raise errors.SyntaxError("Invalid manifest format")
+
+        if sep == "\n":
+            stream_name = None
+            state = STREAM_NAME
+
+    return c
+
+def export_manifest(item, stream_name="."):
+    buf = ""
+    print item
+    if isinstance(item, Collection):
+        for i, j in item.items.values():
+            buf += export_manifest(j, stream_name)
+    else:
+        buf += stream_name
+        buf += " "
+        buf += item.segments
+    return buf
