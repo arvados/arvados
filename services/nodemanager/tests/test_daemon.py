@@ -57,9 +57,9 @@ class NodeManagerDaemonActorTestCase(testutil.ActorTestMixin,
         self.assertTrue(self.node_setup.start.called)
 
     def check_monitors_arvados_nodes(self, *arv_nodes):
-        self.assertItemsEqual(arv_nodes, pykka.get_all(
-                monitor.proxy().arvados_node
-                for monitor in self.monitor_list() if monitor.is_alive()))
+        pairings = [monitor.proxy().arvados_node
+                    for monitor in self.monitor_list() if monitor.is_alive()]
+        self.assertItemsEqual(arv_nodes, pykka.get_all(pairings, self.TIMEOUT))
 
     def test_node_pairing(self):
         cloud_node = testutil.cloud_node_mock(1)
