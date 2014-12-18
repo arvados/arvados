@@ -139,6 +139,18 @@ group_for_sharing_tests:
   description: Users who can share objects with each other
   group_class: role
 
+empty_project:
+  uuid: zzzzz-j7d0g-9otoxmrksam74q6
+  owner_uuid: zzzzz-tpzed-xurymjxw79nv3jz
+  created_at: 2014-12-16 15:56:27.967534940 Z
+  modified_by_client_uuid: ~
+  modified_by_user_uuid: zzzzz-tpzed-xurymjxw79nv3jz
+  modified_at: 2014-12-16 15:56:27.967358199 Z
+  name: Empty project
+  description: ~
+  updated_at: 2014-12-16 15:56:27.967242142 Z
+  group_class: project
+
 project_with_10_collections:
   uuid: zzzzz-j7d0g-0010collections
   owner_uuid: zzzzz-tpzed-user1withloadab
