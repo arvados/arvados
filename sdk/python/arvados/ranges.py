@@ -1,7 +1,11 @@
-LOCATOR = 0
-BLOCKSIZE = 1
-OFFSET = 2
-SEGMENTSIZE = 3
+class Range(object):
+    def __init__(self, locator, range_start, range_size):
+        self.locator = locator
+        self.range_start = range_start
+        self.range_size = range_size
+
+    def __repr__(self):
+        return "[\"%s\", %i, %i]" % (self.locator, self.range_size, self.range_start)
 
 def first_block(data_locators, range_start, range_size, debug=False):
     block_start = 0L
@@ -12,8 +16,8 @@ def first_block(data_locators, range_start, range_size, debug=False):
     hi = len(data_locators)
     lo = 0
     i = int((hi + lo) / 2)
-    block_size = data_locators[i][BLOCKSIZE]
-    block_start = data_locators[i][OFFSET]
+    block_size = data_locators[i].range_size
+    block_start = data_locators[i].range_start
     block_end = block_start + block_size
     if debug: print '---'
 
@@ -30,19 +34,35 @@ def first_block(data_locators, range_start, range_size, debug=False):
             hi = i
         i = int((hi + lo) / 2)
         if debug: print lo, i, hi
-        block_size = data_locators[i][BLOCKSIZE]
-        block_start = data_locators[i][OFFSET]
+        block_size = data_locators[i].range_size
+        block_start = data_locators[i].range_start
         block_end = block_start + block_size
 
     return i
 
+class LocatorAndRange(object):
+    def __init__(self, locator, block_size, segment_offset, segment_size):
+        self.locator = locator
+        self.block_size = block_size
+        self.segment_offset = segment_offset
+        self.segment_size = segment_size
+
+    def __eq__(self, other):
+        return  (self.locator == other.locator and
+                 self.block_size == other.block_size and
+                 self.segment_offset == other.segment_offset and
+                 self.segment_size == other.segment_size)
+
+    def __repr__(self):
+        return "[\"%s\", %i, %i, %i]" % (self.locator, self.block_size, self.segment_offset, self.segment_size)
+
 def locators_and_ranges(data_locators, range_start, range_size, debug=False):
     '''
     Get blocks that are covered by the range
-    data_locators: list of [locator, block_size, block_start], assumes that blocks are in order and contigous
+    data_locators: list of Range objects, assumes that blocks are in order and contigous
     range_start: start of range
     range_size: size of range
-    returns list of [block locator, blocksize, segment offset, segment size] that satisfies the range
+    returns list of LocatorAndRange objects
     '''
     if range_size == 0:
         return []
@@ -56,10 +76,12 @@ def locators_and_ranges(data_locators, range_start, range_size, debug=False):
         return []
 
     while i < len(data_locators):
-        locator, block_size, block_start = data_locators[i]
+        dl = data_locators[i]
+        block_start = dl.range_start
+        block_size = dl.range_size
         block_end = block_start + block_size
         if debug:
-            print locator, "range_start", range_start, "block_start", block_start, "range_end", range_end, "block_end", block_end
+            print dl.locator, "range_start", range_start, "block_start", block_start, "range_end", range_end, "block_end", block_end
         if range_end <= block_start:
             # range ends before this block starts, so don't look at any more locators
             break
@@ -71,16 +93,16 @@ def locators_and_ranges(data_locators, range_start, range_size, debug=False):
 
         if range_start >= block_start and range_end <= block_end:
             # range starts and ends in this block
-            resp.append([locator, block_size, range_start - block_start, range_size])
+            resp.append(LocatorAndRange(dl.locator, block_size, range_start - block_start, range_size))
         elif range_start >= block_start and range_end > block_end:
             # range starts in this block
-            resp.append([locator, block_size, range_start - block_start, block_end - range_start])
+            resp.append(LocatorAndRange(dl.locator, block_size, range_start - block_start, block_end - range_start))
         elif range_start < block_start and range_end > block_end:
             # range starts in a previous block and extends to further blocks
-            resp.append([locator, block_size, 0L, block_size])
+            resp.append(LocatorAndRange(dl.locator, block_size, 0L, block_size))
         elif range_start < block_start and range_end <= block_end:
             # range starts in a previous block and ends in this block
-            resp.append([locator, block_size, 0L, range_end - block_start])
+            resp.append(LocatorAndRange(dl.locator, block_size, 0L, range_end - block_start))
         block_start = block_end
         i += 1
     return resp
@@ -88,7 +110,7 @@ def locators_and_ranges(data_locators, range_start, range_size, debug=False):
 def replace_range(data_locators, range_start, range_size, new_locator, debug=False):
     '''
     Replace a file segment range with a new segment.
-    data_locators: list of [locator, segment_size, segment_start], assumes that segments are in order and contigous
+    data_locators: list of Range objects, assumes that segments are in order and contigous
     range_start: start of range
     range_size: size of range
     new_locator: locator for new segment to be inserted
@@ -102,9 +124,9 @@ def replace_range(data_locators, range_start, range_size, new_locator, debug=Fal
     range_end = range_start + range_size
 
     last = data_locators[-1]
-    if (last[OFFSET]+last[BLOCKSIZE]) == range_start:
+    if (last.range_start+last.range_size) == range_start:
         # extend last segment
-        last[BLOCKSIZE] += range_size
+        last.range_size += range_size
         return
 
     i = first_block(data_locators, range_start, range_size, debug)

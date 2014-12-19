@@ -14,6 +14,7 @@ import unittest
 
 import run_test_server
 import arvados_testutil as tutil
+from arvados.ranges import Range, LocatorAndRange
 
 class TestResumableWriter(arvados.ResumableCollectionWriter):
     KEEP_BLOCK_SIZE = 1024  # PUT to Keep every 1K.
@@ -210,97 +211,97 @@ class ArvadosCollectionsTest(run_test_server.TestCaseWithServers,
         self.assertEqual(arvados.CollectionReader(m8, self.api_client).manifest_text(normalize=True), m8)
 
     def test_locators_and_ranges(self):
-        blocks2 = [['a', 10, 0],
-                  ['b', 10, 10],
-                  ['c', 10, 20],
-                  ['d', 10, 30],
-                  ['e', 10, 40],
-                  ['f', 10, 50]]
+        blocks2 = [Range('a', 0, 10),
+                   Range('b', 10, 10),
+                   Range('c', 20, 10),
+                   Range('d', 30, 10),
+                   Range('e', 40, 10),
+                   Range('f', 50, 10)]
 
-        self.assertEqual(arvados.locators_and_ranges(blocks2,  2,  2), [['a', 10, 2, 2]])
-        self.assertEqual(arvados.locators_and_ranges(blocks2, 12, 2), [['b', 10, 2, 2]])
-        self.assertEqual(arvados.locators_and_ranges(blocks2, 22, 2), [['c', 10, 2, 2]])
-        self.assertEqual(arvados.locators_and_ranges(blocks2, 32, 2), [['d', 10, 2, 2]])
-        self.assertEqual(arvados.locators_and_ranges(blocks2, 42, 2), [['e', 10, 2, 2]])
-        self.assertEqual(arvados.locators_and_ranges(blocks2, 52, 2), [['f', 10, 2, 2]])
+        self.assertEqual(arvados.locators_and_ranges(blocks2,  2,  2), [LocatorAndRange('a', 10, 2, 2)])
+        self.assertEqual(arvados.locators_and_ranges(blocks2, 12, 2), [LocatorAndRange('b', 10, 2, 2)])
+        self.assertEqual(arvados.locators_and_ranges(blocks2, 22, 2), [LocatorAndRange('c', 10, 2, 2)])
+        self.assertEqual(arvados.locators_and_ranges(blocks2, 32, 2), [LocatorAndRange('d', 10, 2, 2)])
+        self.assertEqual(arvados.locators_and_ranges(blocks2, 42, 2), [LocatorAndRange('e', 10, 2, 2)])
+        self.assertEqual(arvados.locators_and_ranges(blocks2, 52, 2), [LocatorAndRange('f', 10, 2, 2)])
         self.assertEqual(arvados.locators_and_ranges(blocks2, 62, 2), [])
         self.assertEqual(arvados.locators_and_ranges(blocks2, -2, 2), [])
 
-        self.assertEqual(arvados.locators_and_ranges(blocks2,  0,  2), [['a', 10, 0, 2]])
-        self.assertEqual(arvados.locators_and_ranges(blocks2, 10, 2), [['b', 10, 0, 2]])
-        self.assertEqual(arvados.locators_and_ranges(blocks2, 20, 2), [['c', 10, 0, 2]])
-        self.assertEqual(arvados.locators_and_ranges(blocks2, 30, 2), [['d', 10, 0, 2]])
-        self.assertEqual(arvados.locators_and_ranges(blocks2, 40, 2), [['e', 10, 0, 2]])
-        self.assertEqual(arvados.locators_and_ranges(blocks2, 50, 2), [['f', 10, 0, 2]])
+        self.assertEqual(arvados.locators_and_ranges(blocks2,  0,  2), [LocatorAndRange('a', 10, 0, 2)])
+        self.assertEqual(arvados.locators_and_ranges(blocks2, 10, 2), [LocatorAndRange('b', 10, 0, 2)])
+        self.assertEqual(arvados.locators_and_ranges(blocks2, 20, 2), [LocatorAndRange('c', 10, 0, 2)])
+        self.assertEqual(arvados.locators_and_ranges(blocks2, 30, 2), [LocatorAndRange('d', 10, 0, 2)])
+        self.assertEqual(arvados.locators_and_ranges(blocks2, 40, 2), [LocatorAndRange('e', 10, 0, 2)])
+        self.assertEqual(arvados.locators_and_ranges(blocks2, 50, 2), [LocatorAndRange('f', 10, 0, 2)])
         self.assertEqual(arvados.locators_and_ranges(blocks2, 60, 2), [])
         self.assertEqual(arvados.locators_and_ranges(blocks2, -2, 2), [])
 
-        self.assertEqual(arvados.locators_and_ranges(blocks2,  9,  2), [['a', 10, 9, 1], ['b', 10, 0, 1]])
-        self.assertEqual(arvados.locators_and_ranges(blocks2, 19, 2), [['b', 10, 9, 1], ['c', 10, 0, 1]])
-        self.assertEqual(arvados.locators_and_ranges(blocks2, 29, 2), [['c', 10, 9, 1], ['d', 10, 0, 1]])
-        self.assertEqual(arvados.locators_and_ranges(blocks2, 39, 2), [['d', 10, 9, 1], ['e', 10, 0, 1]])
-        self.assertEqual(arvados.locators_and_ranges(blocks2, 49, 2), [['e', 10, 9, 1], ['f', 10, 0, 1]])
-        self.assertEqual(arvados.locators_and_ranges(blocks2, 59, 2), [['f', 10, 9, 1]])
+        self.assertEqual(arvados.locators_and_ranges(blocks2,  9,  2), [LocatorAndRange('a', 10, 9, 1), LocatorAndRange('b', 10, 0, 1)])
+        self.assertEqual(arvados.locators_and_ranges(blocks2, 19, 2), [LocatorAndRange('b', 10, 9, 1), LocatorAndRange('c', 10, 0, 1)])
+        self.assertEqual(arvados.locators_and_ranges(blocks2, 29, 2), [LocatorAndRange('c', 10, 9, 1), LocatorAndRange('d', 10, 0, 1)])
+        self.assertEqual(arvados.locators_and_ranges(blocks2, 39, 2), [LocatorAndRange('d', 10, 9, 1), LocatorAndRange('e', 10, 0, 1)])
+        self.assertEqual(arvados.locators_and_ranges(blocks2, 49, 2), [LocatorAndRange('e', 10, 9, 1), LocatorAndRange('f', 10, 0, 1)])
+        self.assertEqual(arvados.locators_and_ranges(blocks2, 59, 2), [LocatorAndRange('f', 10, 9, 1)])
 
 
-        blocks3 = [['a', 10, 0],
-                  ['b', 10, 10],
-                  ['c', 10, 20],
-                  ['d', 10, 30],
-                  ['e', 10, 40],
-                  ['f', 10, 50],
-                  ['g', 10, 60]]
+        blocks3 = [Range('a', 0, 10),
+                  Range('b', 10, 10),
+                  Range('c', 20, 10),
+                  Range('d', 30, 10),
+                  Range('e', 40, 10),
+                  Range('f', 50, 10),
+                   Range('g', 60, 10)]
 
-        self.assertEqual(arvados.locators_and_ranges(blocks3,  2,  2), [['a', 10, 2, 2]])
-        self.assertEqual(arvados.locators_and_ranges(blocks3, 12, 2), [['b', 10, 2, 2]])
-        self.assertEqual(arvados.locators_and_ranges(blocks3, 22, 2), [['c', 10, 2, 2]])
-        self.assertEqual(arvados.locators_and_ranges(blocks3, 32, 2), [['d', 10, 2, 2]])
-        self.assertEqual(arvados.locators_and_ranges(blocks3, 42, 2), [['e', 10, 2, 2]])
-        self.assertEqual(arvados.locators_and_ranges(blocks3, 52, 2), [['f', 10, 2, 2]])
-        self.assertEqual(arvados.locators_and_ranges(blocks3, 62, 2), [['g', 10, 2, 2]])
+        self.assertEqual(arvados.locators_and_ranges(blocks3,  2,  2), [LocatorAndRange('a', 10, 2, 2)])
+        self.assertEqual(arvados.locators_and_ranges(blocks3, 12, 2), [LocatorAndRange('b', 10, 2, 2)])
+        self.assertEqual(arvados.locators_and_ranges(blocks3, 22, 2), [LocatorAndRange('c', 10, 2, 2)])
+        self.assertEqual(arvados.locators_and_ranges(blocks3, 32, 2), [LocatorAndRange('d', 10, 2, 2)])
+        self.assertEqual(arvados.locators_and_ranges(blocks3, 42, 2), [LocatorAndRange('e', 10, 2, 2)])
+        self.assertEqual(arvados.locators_and_ranges(blocks3, 52, 2), [LocatorAndRange('f', 10, 2, 2)])
+        self.assertEqual(arvados.locators_and_ranges(blocks3, 62, 2), [LocatorAndRange('g', 10, 2, 2)])
 
 
-        blocks = [['a', 10, 0],
-                  ['b', 15, 10],
-                  ['c', 5, 25]]
+        blocks = [Range('a', 0, 10),
+                  Range('b', 10, 15),
+                  Range('c', 25, 5)]
         self.assertEqual(arvados.locators_and_ranges(blocks, 1, 0), [])
-        self.assertEqual(arvados.locators_and_ranges(blocks, 0, 5), [['a', 10, 0, 5]])
-        self.assertEqual(arvados.locators_and_ranges(blocks, 3, 5), [['a', 10, 3, 5]])
-        self.assertEqual(arvados.locators_and_ranges(blocks, 0, 10), [['a', 10, 0, 10]])
+        self.assertEqual(arvados.locators_and_ranges(blocks, 0, 5), [LocatorAndRange('a', 10, 0, 5)])
+        self.assertEqual(arvados.locators_and_ranges(blocks, 3, 5), [LocatorAndRange('a', 10, 3, 5)])
+        self.assertEqual(arvados.locators_and_ranges(blocks, 0, 10), [LocatorAndRange('a', 10, 0, 10)])
 
-        self.assertEqual(arvados.locators_and_ranges(blocks, 0, 11), [['a', 10, 0, 10],
-                                                                      ['b', 15, 0, 1]])
-        self.assertEqual(arvados.locators_and_ranges(blocks, 1, 11), [['a', 10, 1, 9],
-                                                                      ['b', 15, 0, 2]])
-        self.assertEqual(arvados.locators_and_ranges(blocks, 0, 25), [['a', 10, 0, 10],
-                                                                      ['b', 15, 0, 15]])
+        self.assertEqual(arvados.locators_and_ranges(blocks, 0, 11), [LocatorAndRange('a', 10, 0, 10),
+                                                                      LocatorAndRange('b', 15, 0, 1)])
+        self.assertEqual(arvados.locators_and_ranges(blocks, 1, 11), [LocatorAndRange('a', 10, 1, 9),
+                                                                      LocatorAndRange('b', 15, 0, 2)])
+        self.assertEqual(arvados.locators_and_ranges(blocks, 0, 25), [LocatorAndRange('a', 10, 0, 10),
+                                                                      LocatorAndRange('b', 15, 0, 15)])
 
-        self.assertEqual(arvados.locators_and_ranges(blocks, 0, 30), [['a', 10, 0, 10],
-                                                                      ['b', 15, 0, 15],
-                                                                      ['c', 5, 0, 5]])
-        self.assertEqual(arvados.locators_and_ranges(blocks, 1, 30), [['a', 10, 1, 9],
-                                                                      ['b', 15, 0, 15],
-                                                                      ['c', 5, 0, 5]])
-        self.assertEqual(arvados.locators_and_ranges(blocks, 0, 31), [['a', 10, 0, 10],
-                                                                      ['b', 15, 0, 15],
-                                                                      ['c', 5, 0, 5]])
+        self.assertEqual(arvados.locators_and_ranges(blocks, 0, 30), [LocatorAndRange('a', 10, 0, 10),
+                                                                      LocatorAndRange('b', 15, 0, 15),
+                                                                      LocatorAndRange('c', 5, 0, 5)])
+        self.assertEqual(arvados.locators_and_ranges(blocks, 1, 30), [LocatorAndRange('a', 10, 1, 9),
+                                                                      LocatorAndRange('b', 15, 0, 15),
+                                                                      LocatorAndRange('c', 5, 0, 5)])
+        self.assertEqual(arvados.locators_and_ranges(blocks, 0, 31), [LocatorAndRange('a', 10, 0, 10),
+                                                                      LocatorAndRange('b', 15, 0, 15),
+                                                                      LocatorAndRange('c', 5, 0, 5)])
 
-        self.assertEqual(arvados.locators_and_ranges(blocks, 15, 5), [['b', 15, 5, 5]])
+        self.assertEqual(arvados.locators_and_ranges(blocks, 15, 5), [LocatorAndRange('b', 15, 5, 5)])
 
-        self.assertEqual(arvados.locators_and_ranges(blocks, 8, 17), [['a', 10, 8, 2],
-                                                                      ['b', 15, 0, 15]])
+        self.assertEqual(arvados.locators_and_ranges(blocks, 8, 17), [LocatorAndRange('a', 10, 8, 2),
+                                                                      LocatorAndRange('b', 15, 0, 15)])
 
-        self.assertEqual(arvados.locators_and_ranges(blocks, 8, 20), [['a', 10, 8, 2],
-                                                                      ['b', 15, 0, 15],
-                                                                      ['c', 5, 0, 3]])
+        self.assertEqual(arvados.locators_and_ranges(blocks, 8, 20), [LocatorAndRange('a', 10, 8, 2),
+                                                                      LocatorAndRange('b', 15, 0, 15),
+                                                                      LocatorAndRange('c', 5, 0, 3)])
 
-        self.assertEqual(arvados.locators_and_ranges(blocks, 26, 2), [['c', 5, 1, 2]])
+        self.assertEqual(arvados.locators_and_ranges(blocks, 26, 2), [LocatorAndRange('c', 5, 1, 2)])
 
-        self.assertEqual(arvados.locators_and_ranges(blocks, 9, 15), [['a', 10, 9, 1],
-                                                                      ['b', 15, 0, 14]])
-        self.assertEqual(arvados.locators_and_ranges(blocks, 10, 15), [['b', 15, 0, 15]])
-        self.assertEqual(arvados.locators_and_ranges(blocks, 11, 15), [['b', 15, 1, 14],
-                                                                       ['c', 5, 0, 1]])
+        self.assertEqual(arvados.locators_and_ranges(blocks, 9, 15), [LocatorAndRange('a', 10, 9, 1),
+                                                                      LocatorAndRange('b', 15, 0, 14)])
+        self.assertEqual(arvados.locators_and_ranges(blocks, 10, 15), [LocatorAndRange('b', 15, 0, 15)])
+        self.assertEqual(arvados.locators_and_ranges(blocks, 11, 15), [LocatorAndRange('b', 15, 1, 14),
+                                                                       LocatorAndRange('c', 5, 0, 1)])
 
     class MockKeep(object):
         def __init__(self, content, num_retries=0):

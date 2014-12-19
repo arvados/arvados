@@ -169,7 +169,7 @@ class StreamFileReader(ArvadosFileReaderBase):
 
     def _size(self):
         n = self.segments[-1]
-        return n[OFFSET] + n[BLOCKSIZE]
+        return n.range_start + n.range_size
 
     @ArvadosFileBase._before_close
     @retry_method
@@ -181,9 +181,10 @@ class StreamFileReader(ArvadosFileReaderBase):
         data = ''
         available_chunks = locators_and_ranges(self.segments, self._filepos, size)
         if available_chunks:
-            locator, blocksize, segmentoffset, segmentsize = available_chunks[0]
-            data = self._stream._readfrom(locator+segmentoffset, segmentsize,
-                                         num_retries=num_retries)
+            lr = available_chunks[0]
+            data = self._stream._readfrom(lr.locator+lr.segment_offset,
+                                          lr.segment_size,
+                                          num_retries=num_retries)
 
         self._filepos += len(data)
         return data
@@ -203,9 +204,9 @@ class StreamFileReader(ArvadosFileReaderBase):
 
     def as_manifest(self):
         manifest_text = ['.']
-        manifest_text.extend([d[LOCATOR] for d in self._stream._data_locators])
-        manifest_text.extend(["{}:{}:{}".format(seg[LOCATOR], seg[BLOCKSIZE], self.name().replace(' ', '\\040')) for seg in self.segments])
-        return CollectionReader(' '.join(manifest_text) + '\n').manifest_text(normalize=True)
+        manifest_text.extend([d.locator for d in self._stream._data_locators])
+        manifest_text.extend(["{}:{}:{}".format(seg.locator, seg.range_size, self.name().replace(' ', '\\040')) for seg in self.segments])
+        return manifest_text #arvados.CollectionReader(' '.join(manifest_text) + '\n').manifest_text(normalize=True)
 
 
 class ArvadosFile(ArvadosFileReaderBase):
@@ -225,7 +226,7 @@ class ArvadosFile(ArvadosFileReaderBase):
         fileoffset = 0L
 
         for seg in segs:
-            for locator, blocksize, segmentoffset, segmentsize in locators_and_ranges(self._stream._data_locators, seg[LOCATOR]+seg[OFFSET], seg[SEGMENTSIZE]):
+            for locator, blocksize, segmentoffset, segmentsize in locators_and_ranges(self._stream._data_locators, seg.locator+seg.range_start, seg[SEGMENTSIZE]):
                 newstream.append([locator, blocksize, streamoffset])
                 self.segments.append([streamoffset+segmentoffset, segmentsize, fileoffset])
                 streamoffset += blocksize
@@ -259,6 +260,9 @@ class ArvadosFile(ArvadosFileReaderBase):
         pass
 
     def add_segment(self, blocks, pos, size):
-        for locator, blocksize, segmentoffset, segmentsize in locators_and_ranges(blocks, pos, size):
-            last = self.segments[-1] if self.segments else [0, 0, 0]
-            self.segments.append([locator, segmentsize, last[OFFSET]+last[BLOCKSIZE], segmentoffset])
+        for lr in locators_and_ranges(blocks, pos, size):
+            last = self.segments[-1] if self.segments else Range(0, 0, 0)
+            r = Range(lr.locator, last.range_start+last.range_size, lr.segment_size)
+            r.block_size = lr.block_size
+            r.segment_offset = lr.segment_offset
+            self.segments.append(r)

@@ -9,6 +9,7 @@ from stat import *
 from .arvfile import ArvadosFileBase, split, ArvadosFile
 from keep import *
 from .stream import StreamReader, normalize_stream
+from .ranges import Range
 import config
 import errors
 import util
@@ -181,7 +182,7 @@ class CollectionReader(CollectionBase):
                 if filename not in streams[streamname]:
                     streams[streamname][filename] = []
                 for r in f.segments:
-                    streams[streamname][filename].extend(s.locators_and_ranges(r[0], r[1]))
+                    streams[streamname][filename].extend(s.locators_and_ranges(r.locator, r.range_size))
 
         self._streams = [normalize_stream(s, streams[s])
                          for s in sorted(streams)]
@@ -690,10 +691,10 @@ def import_manifest(manifest_text):
             continue
 
         if state == BLOCKS:
-            s = re.match(r'[0-9a-f]{32}\+(\d)+(\+\S+)*', tok)
+            s = re.match(r'[0-9a-f]{32}\+(\d+)(\+\S+)*', tok)
             if s:
                 blocksize = long(s.group(1))
-                blocks.append([tok, blocksize, streamoffset])
+                blocks.append(Range(tok, streamoffset, blocksize))
                 streamoffset += blocksize
             else:
                 state = SEGMENTS
@@ -718,12 +719,18 @@ def import_manifest(manifest_text):
 
 def export_manifest(item, stream_name="."):
     buf = ""
-    print item
     if isinstance(item, Collection):
-        for i, j in item.items.values():
-            buf += export_manifest(j, stream_name)
+        stream = {}
+        for k,v in item.items.items():
+            if isinstance(item, Collection):
+                buf += export_manifest(v, stream_name)
+            else:
+                if isinstance(item, ArvadosFile):
+                    buf += str(item.segments)
+                    #stream[k] = [[s.locator, s[4], s[], s[]] for s in item.segments]
     else:
         buf += stream_name
         buf += " "
-        buf += item.segments
+        buf += str(item.segments)
+        buf += "\n"
     return buf
