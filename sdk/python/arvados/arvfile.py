@@ -220,8 +220,11 @@ class BufferBlock(object):
         self.buffer_view[self.write_pointer:self.write_pointer+len(data)] = data
         self.write_pointer += len(data)
 
+    def size(self):
+        return self.write_pointer
+
     def calculate_locator(self):
-        return "%s+%i" % (hashlib.md5(self.buffer_view[0:self.write_pointer]).hexdigest(), self.write_pointer)
+        return "%s+%i" % (hashlib.md5(self.buffer_view[0:self.write_pointer]).hexdigest(), self.size())
 
 
 class ArvadosFile(object):
@@ -292,53 +295,28 @@ class ArvadosFile(object):
     def _repack_writes(self):
         pass
          # TODO: fixme
-#         '''Test if the buffer block has more data than is referenced by actual segments
-#         (this happens when a buffered write over-writes a file range written in
-#         a previous buffered write).  Re-pack the buffer block for efficiency
-#         and to avoid leaking information.
-#         '''
-#         segs = self._files.values()[0].segments
+        '''Test if the buffer block has more data than is referenced by actual segments
+        (this happens when a buffered write over-writes a file range written in
+        a previous buffered write).  Re-pack the buffer block for efficiency
+        and to avoid leaking information.
+        '''
+        segs = self._segments
 
-#         bufferblock_segs = []
-#         i = 0
-#         tmp_segs = copy.copy(segs)
-#         while i < len(tmp_segs):
-#             # Go through each segment and identify segments that include the buffer block
-#             s = tmp_segs[i]
-#             if s[LOCATOR] < self.current_bblock.locator_list_entry.range_start and (s[LOCATOR] + s.range_size) > self.current_bblock.locator_list_entry.range_start:
-#                 # The segment straddles the previous block and the current buffer block.  Split the segment.
-#                 b1 = self.current_bblock.locator_list_entry.range_start - s[LOCATOR]
-#                 b2 = (s[LOCATOR] + s.range_size) - self.current_bblock.locator_list_entry.range_start
-#                 bb_seg = [self.current_bblock.locator_list_entry.range_start, b2, s.range_start+b1]
-#                 tmp_segs[i] = [s[LOCATOR], b1, s.range_start]
-#                 tmp_segs.insert(i+1, bb_seg)
-#                 bufferblock_segs.append(bb_seg)
-#                 i += 1
-#             elif s[LOCATOR] >= self.current_bblock.locator_list_entry.range_start:
-#                 # The segment's data is in the buffer block.
-#                 bufferblock_segs.append(s)
-#             i += 1
+        # Sum up the segments to get the total bytes of the file referencing
+        # into the buffer block.
+        bufferblock_segs = [s for s in segs if s.locator == self._current_bblock.locator]
+        write_total = sum([s.range_size for s in bufferblock_segs])
 
-#         # Now sum up the segments to get the total bytes
-#         # of the file referencing into the buffer block.
-#         write_total = sum([s.range_size for s in bufferblock_segs])
+        if write_total < self._current_bblock.size():
+            # There is more data in the buffer block than is actually accounted for by segments, so
+            # re-pack into a new buffer by copying over to a new buffer block.
+            new_bb = BufferBlock(self._current_bblock.locator, starting_size=write_total)
+            for t in bufferblock_segs:
+                new_bb.append(self._current_bblock.buffer_view[t.segment_offset:t.segment_offset+t.range_size].tobytes())
+                t.segment_offset = new_bb.size() - t.range_size
 
-#         if write_total < self.current_bblock.locator_list_entry.range_size:
-#             # There is more data in the buffer block than is actually accounted for by segments, so
-#             # re-pack into a new buffer by copying over to a new buffer block.
-#             new_bb = BufferBlock(self.current_bblock.locator,
-#                                  self.current_bblock.locator_list_entry.range_start,
-#                                  starting_size=write_total)
-#             for t in bufferblock_segs:
-#                 t_start = t[LOCATOR] - self.current_bblock.locator_list_entry.range_start
-#                 t_end = t_start + t.range_size
-#                 t[0] = self.current_bblock.locator_list_entry.range_start + new_bb.write_pointer
-#                 new_bb.append(self.current_bblock.buffer_block[t_start:t_end])
-
-#             self.current_bblock = new_bb
-#             self.bufferblocks[self.current_bblock.locator] = self.current_bblock
-#             self._data_locators[-1] = self.current_bblock.locator_list_entry
-#             self._files.values()[0].segments = tmp_segs
+            self._current_bblock = new_bb
+            self._bufferblocks[self._current_bblock.locator] = self._current_bblock
 
 
     def writeto(self, offset, data, num_retries):
