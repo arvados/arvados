@@ -18,7 +18,7 @@ function maybe_load_more_content(event) {
                             $container.attr('data-infinite-content-href'));
         }
         src = $container.attr('data-infinite-content-href');
-        if (!src || !$container.is(':visible'))
+        if (!src)
             // Finished
             return;
 

@@ -744,4 +744,15 @@ class ProjectsTest < ActionDispatch::IntegrationTest
     assert match, 'Expected project name not found'
     assert_text 'No description provided'
   end
+
+  test "first tab loads data when visiting other tab directly" do
+    # As of 2014-12-19, the first tab of project#show uses infinite scrolling.
+    # Make sure that it loads data even if we visit another tab directly.
+    project = api_fixture("groups", "aproject")
+    visit(page_with_token("active_trustedclient",
+                          "/projects/#{project['uuid']}#Advanced"))
+    assert_text("API response")
+    find("#page-wrapper .nav-tabs :first-child a").click
+    assert_text("bytes Collection")
+  end
 end
