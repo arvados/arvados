@@ -4,6 +4,8 @@ import zlib
 import bz2
 from .ranges import *
 from arvados.retry import retry_method
+import config
+import hashlib
 
 def split(path):
     """split(path) -> streamname, filename
@@ -202,87 +204,222 @@ class StreamFileReader(ArvadosFileReaderBase):
         return " ".join(normalize_stream(".", {self.name: segs})) + "\n"
 
 
+class BufferBlock(object):
+    def __init__(self, locator, starting_size=2**16):
+        self.locator = locator
+        self.buffer_block = bytearray(starting_size)
+        self.buffer_view = memoryview(self.buffer_block)
+        self.write_pointer = 0
+
+    def append(self, data):
+        while (self.write_pointer+len(data)) > len(self.buffer_block):
+            new_buffer_block = bytearray(len(self.buffer_block) * 2)
+            new_buffer_block[0:self.write_pointer] = self.buffer_block[0:self.write_pointer]
+            self.buffer_block = new_buffer_block
+            self.buffer_view = memoryview(self.buffer_block)
+        self.buffer_view[self.write_pointer:self.write_pointer+len(data)] = data
+        self.write_pointer += len(data)
+
+    def calculate_locator(self):
+        return "%s+%i" % (hashlib.md5(self.buffer_view[0:self.write_pointer]).hexdigest(), self.write_pointer)
+
+
 class ArvadosFile(object):
-    def __init__(self, stream, segments):
-        # TODO: build segments list
-        self.segments = []
+    def __init__(self, stream=[], segments=[], keep=None):
+        '''
+        stream: a list of Range objects representing a block stream
+        segments: a list of Range objects representing segments
+        '''
+        self._modified = True
+        self._segments = []
+        for s in segments:
+            self.add_segment(stream, s.range_start, s.range_size)
+        self._current_bblock = None
+        self._bufferblocks = None
+        self._keep = keep
+
+    def set_unmodified(self):
+        self._modified = False
+
+    def modified(self):
+        return self._modified
 
     def truncate(self, size):
+        new_segs = []
+        for r in self._segments:
+            range_end = r.range_start+r.range_size
+            if r.range_start >= size:
+                # segment is past the trucate size, all done
+                break
+            elif size < range_end:
+                nr = Range(r.locator, r.range_start, size - r.range_start)
+                nr.segment_offset = r.segment_offset
+                new_segs.append(nr)
+                break
+            else:
+                new_segs.append(r)
+
+        self._segments = new_segs
+        self._modified = True
+
+    def _keepget(self, locator, num_retries):
+        if self._bufferblocks and locator in self._bufferblocks:
+            bb = self._bufferblocks[locator]
+            return bb.buffer_view[0:bb.write_pointer].tobytes()
+        else:
+            return self._keep.get(locator, num_retries=num_retries)
+
+    def readfrom(self, offset, size, num_retries):
+        if size == 0 or offset >= self.size():
+            return ''
+        if self._keep is None:
+            self._keep = KeepClient(num_retries=num_retries)
+        data = []
+        # TODO: initiate prefetch on all blocks in the range (offset, offset + size + config.KEEP_BLOCK_SIZE)
+
+        for lr in locators_and_ranges(self._segments, offset, size):
+            # TODO: if data is empty, wait on block get, otherwise only
+            # get more data if the block is already in the cache.
+            data.append(self._keepget(lr.locator, num_retries=num_retries)[lr.segment_offset:lr.segment_offset+lr.segment_size])
+        return ''.join(data)
+
+    def _init_bufferblock(self):
+        if self._bufferblocks is None:
+            self._bufferblocks = {}
+        self._current_bblock = BufferBlock("bufferblock%i" % len(self._bufferblocks))
+        self._bufferblocks[self._current_bblock.locator] = self._current_bblock
+
+    def _repack_writes(self):
         pass
-        # TODO: fixme
+         # TODO: fixme
+#         '''Test if the buffer block has more data than is referenced by actual segments
+#         (this happens when a buffered write over-writes a file range written in
+#         a previous buffered write).  Re-pack the buffer block for efficiency
+#         and to avoid leaking information.
+#         '''
+#         segs = self._files.values()[0].segments
 
-        # segs = locators_and_ranges(self.segments, 0, size)
+#         bufferblock_segs = []
+#         i = 0
+#         tmp_segs = copy.copy(segs)
+#         while i < len(tmp_segs):
+#             # Go through each segment and identify segments that include the buffer block
+#             s = tmp_segs[i]
+#             if s[LOCATOR] < self.current_bblock.locator_list_entry.range_start and (s[LOCATOR] + s.range_size) > self.current_bblock.locator_list_entry.range_start:
+#                 # The segment straddles the previous block and the current buffer block.  Split the segment.
+#                 b1 = self.current_bblock.locator_list_entry.range_start - s[LOCATOR]
+#                 b2 = (s[LOCATOR] + s.range_size) - self.current_bblock.locator_list_entry.range_start
+#                 bb_seg = [self.current_bblock.locator_list_entry.range_start, b2, s.range_start+b1]
+#                 tmp_segs[i] = [s[LOCATOR], b1, s.range_start]
+#                 tmp_segs.insert(i+1, bb_seg)
+#                 bufferblock_segs.append(bb_seg)
+#                 i += 1
+#             elif s[LOCATOR] >= self.current_bblock.locator_list_entry.range_start:
+#                 # The segment's data is in the buffer block.
+#                 bufferblock_segs.append(s)
+#             i += 1
 
-        # newstream = []
-        # self.segments = []
-        # streamoffset = 0L
-        # fileoffset = 0L
+#         # Now sum up the segments to get the total bytes
+#         # of the file referencing into the buffer block.
+#         write_total = sum([s.range_size for s in bufferblock_segs])
 
-        # for seg in segs:
-        #     for locator, blocksize, segmentoffset, segmentsize in locators_and_ranges(self._stream._data_locators, seg.locator+seg.range_start, seg[SEGMENTSIZE]):
-        #         newstream.append([locator, blocksize, streamoffset])
-        #         self.segments.append([streamoffset+segmentoffset, segmentsize, fileoffset])
-        #         streamoffset += blocksize
-        #         fileoffset += segmentsize
-        # if len(newstream) == 0:
-        #     newstream.append(config.EMPTY_BLOCK_LOCATOR)
-        #     self.segments.append([0, 0, 0])
-        # self._stream._data_locators = newstream
-        # if self._filepos > fileoffset:
-        #     self._filepos = fileoffset
+#         if write_total < self.current_bblock.locator_list_entry.range_size:
+#             # There is more data in the buffer block than is actually accounted for by segments, so
+#             # re-pack into a new buffer by copying over to a new buffer block.
+#             new_bb = BufferBlock(self.current_bblock.locator,
+#                                  self.current_bblock.locator_list_entry.range_start,
+#                                  starting_size=write_total)
+#             for t in bufferblock_segs:
+#                 t_start = t[LOCATOR] - self.current_bblock.locator_list_entry.range_start
+#                 t_end = t_start + t.range_size
+#                 t[0] = self.current_bblock.locator_list_entry.range_start + new_bb.write_pointer
+#                 new_bb.append(self.current_bblock.buffer_block[t_start:t_end])
 
-    def readfrom(self, offset, data):
-        pass
+#             self.current_bblock = new_bb
+#             self.bufferblocks[self.current_bblock.locator] = self.current_bblock
+#             self._data_locators[-1] = self.current_bblock.locator_list_entry
+#             self._files.values()[0].segments = tmp_segs
 
-    def writeto(self, offset, data):
-        if offset > self._size():
+
+    def writeto(self, offset, data, num_retries):
+        if len(data) == 0:
+            return
+
+        if offset > self.size():
             raise ArgumentError("Offset is past the end of the file")
-        # TODO: fixme
-        # self._stream._append(data)
-        # replace_range(self.segments, self._filepos, len(data), self._stream._size()-len(data))
 
-    def flush(self):
-        pass
+        if len(data) > config.KEEP_BLOCK_SIZE:
+            raise ArgumentError("Please append data in chunks smaller than %i bytes (config.KEEP_BLOCK_SIZE)" % (config.KEEP_BLOCK_SIZE))
+
+        self._modified = True
+
+        if self._current_bblock is None:
+            self._init_bufferblock()
+
+        if (self._current_bblock.write_pointer + len(data)) > config.KEEP_BLOCK_SIZE:
+            self._repack_writes()
+            if (self._current_bblock.write_pointer + len(data)) > config.KEEP_BLOCK_SIZE:
+                self._init_bufferblock()
+
+        self._current_bblock.append(data)
+        replace_range(self._segments, offset, len(data), self._current_bblock.locator, self._current_bblock.write_pointer - len(data))
 
     def add_segment(self, blocks, pos, size):
+        self._modified = True
         for lr in locators_and_ranges(blocks, pos, size):
-            last = self.segments[-1] if self.segments else Range(0, 0, 0)
-            r = Range(lr.locator, last.range_start+last.range_size, lr.segment_size)
-            r.block_size = lr.block_size
-            r.segment_offset = lr.segment_offset
-            self.segments.append(r)
+            last = self._segments[-1] if self._segments else Range(0, 0, 0)
+            r = Range(lr.locator, last.range_start+last.range_size, lr.segment_size, lr.segment_offset)
+            self._segments.append(r)
+
+    def size(self):
+        if self._segments:
+            n = self._segments[-1]
+            return n.range_start + n.range_size
+        else:
+            return 0
 
 
 class ArvadosFileReader(ArvadosFileReaderBase):
-    def __init__(self, arvadosfile, name, mode='rb'):
-        super(ArvadosFileReader, self).__init__(name)
+    def __init__(self, arvadosfile, name, mode="r", num_retries=None):
+        super(ArvadosFileReader, self).__init__(name, mode, num_retries=num_retries)
         self.arvadosfile = arvadosfile
 
     def size(self):
-        n = self.segments[-1]
-        return n.range_start + n.range_size
+        return self.arvadosfile.size()
 
     @ArvadosFileBase._before_close
     @retry_method
     def read(self, size, num_retries=None):
         """Read up to 'size' bytes from the stream, starting at the current file position"""
-        if size == 0:
-            return ''
-
-        data = self.arvadosfile.readfrom(self._filepos, size)
+        data = self.arvadosfile.readfrom(self._filepos, size, num_retries=num_retries)
         self._filepos += len(data)
         return data
 
+    @ArvadosFileBase._before_close
+    @retry_method
+    def readfrom(self, offset, size, num_retries=None):
+        """Read up to 'size' bytes from the stream, starting at the current file position"""
+        return self.arvadosfile.readfrom(offset, size, num_retries)
+
+    def flush(self):
+        pass
 
 class ArvadosFileWriter(ArvadosFileReader):
-    def __init__(self, arvadosfile, name):
-        super(ArvadosFileWriter, self).__init__(arvadosfile, name, mode='wb')
+    def __init__(self, arvadosfile, name, mode, num_retries=None):
+        super(ArvadosFileWriter, self).__init__(arvadosfile, name, mode, num_retries=num_retries)
 
-    def write(self, data):
-        self.arvadosfile.writeto(self._filepos, data)
-        self._filepos += len(data)
+    @ArvadosFileBase._before_close
+    @retry_method
+    def write(self, data, num_retries=None):
+        if self.mode[0] == "a":
+            self.arvadosfile.writeto(self.size(), data)
+        else:
+            self.arvadosfile.writeto(self._filepos, data, num_retries)
+            self._filepos += len(data)
 
-    def writelines(self, seq):
+    @ArvadosFileBase._before_close
+    @retry_method
+    def writelines(self, seq, num_retries=None):
         for s in seq:
             self.write(s)
 
@@ -290,3 +427,5 @@ class ArvadosFileWriter(ArvadosFileReader):
         if size is None:
             size = self._filepos
         self.arvadosfile.truncate(size)
+        if self._filepos > self.size():
+            self._filepos = self.size()

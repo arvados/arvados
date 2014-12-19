@@ -1,11 +1,12 @@
 class Range(object):
-    def __init__(self, locator, range_start, range_size):
+    def __init__(self, locator, range_start, range_size, segment_offset=0):
         self.locator = locator
         self.range_start = range_start
         self.range_size = range_size
+        self.segment_offset = segment_offset
 
     def __repr__(self):
-        return "[\"%s\", %i, %i]" % (self.locator, self.range_size, self.range_start)
+        return "[\"%s\", %i, %i, %i]" % (self.locator, self.range_start, self.range_size, self.segment_offset)
 
 def first_block(data_locators, range_start, range_size, debug=False):
     block_start = 0L
@@ -93,21 +94,21 @@ def locators_and_ranges(data_locators, range_start, range_size, debug=False):
 
         if range_start >= block_start and range_end <= block_end:
             # range starts and ends in this block
-            resp.append(LocatorAndRange(dl.locator, block_size, range_start - block_start, range_size))
+            resp.append(LocatorAndRange(dl.locator, block_size, dl.segment_offset + (range_start - block_start), range_size))
         elif range_start >= block_start and range_end > block_end:
             # range starts in this block
-            resp.append(LocatorAndRange(dl.locator, block_size, range_start - block_start, block_end - range_start))
+            resp.append(LocatorAndRange(dl.locator, block_size, dl.segment_offset + (range_start - block_start), block_end - range_start))
         elif range_start < block_start and range_end > block_end:
             # range starts in a previous block and extends to further blocks
-            resp.append(LocatorAndRange(dl.locator, block_size, 0L, block_size))
+            resp.append(LocatorAndRange(dl.locator, block_size, dl.segment_offset, block_size))
         elif range_start < block_start and range_end <= block_end:
             # range starts in a previous block and ends in this block
-            resp.append(LocatorAndRange(dl.locator, block_size, 0L, range_end - block_start))
+            resp.append(LocatorAndRange(dl.locator, block_size, dl.segment_offset, range_end - block_start))
         block_start = block_end
         i += 1
     return resp
 
-def replace_range(data_locators, range_start, range_size, new_locator, debug=False):
+def replace_range(data_locators, new_range_start, new_range_size, new_locator, new_segment_offset, debug=False):
     '''
     Replace a file segment range with a new segment.
     data_locators: list of Range objects, assumes that segments are in order and contigous
@@ -116,64 +117,71 @@ def replace_range(data_locators, range_start, range_size, new_locator, debug=Fal
     new_locator: locator for new segment to be inserted
     !!! data_locators will be updated in place !!!
     '''
-    if range_size == 0:
+    if new_range_size == 0:
         return
 
-    range_start = long(range_start)
-    range_size = long(range_size)
-    range_end = range_start + range_size
+    new_range_start = long(new_range_start)
+    new_range_size = long(new_range_size)
+    new_range_end = new_range_start + new_range_size
+
+    if len(data_locators) == 0:
+        data_locators.append(Range(new_locator, new_range_start, new_range_size, new_segment_offset))
+        return
 
     last = data_locators[-1]
-    if (last.range_start+last.range_size) == range_start:
-        # extend last segment
-        last.range_size += range_size
+    if (last.range_start+last.range_size) == new_range_start:
+        if last.locator == new_locator:
+            # extend last segment
+            last.range_size += new_range_size
+        else:
+            data_locators.append(Range(new_locator, new_range_start, new_range_size, new_segment_offset))
         return
 
-    i = first_block(data_locators, range_start, range_size, debug)
+    i = first_block(data_locators, new_range_start, new_range_size, debug)
     if i is None:
         return
 
     while i < len(data_locators):
-        locator, segment_size, segment_start = data_locators[i]
-        segment_end = segment_start + segment_size
+        dl = data_locators[i]
+        old_segment_start = dl.range_start
+        old_segment_end = old_segment_start + dl.range_size
         if debug:
-            print locator, "range_start", range_start, "segment_start", segment_start, "range_end", range_end, "segment_end", segment_end
-        if range_end <= segment_start:
+            print locator, "range_start", new_range_start, "segment_start", old_segment_start, "range_end", new_range_end, "segment_end", old_segment_end
+        if new_range_end <= old_segment_start:
             # range ends before this segment starts, so don't look at any more locators
             break
 
-        #if range_start >= segment_end:
+        #if range_start >= old_segment_end:
             # range starts after this segment ends, so go to next segment
             # we should always start at the first segment due to the binary above, so this test is redundant
             #next
 
-        if range_start >= segment_start and range_end <= segment_end:
-            # range starts and ends in this segment
-            # split segment into 3 pieces
-            if (range_start-segment_start) > 0:
-                data_locators[i] = [locator, (range_start-segment_start), segment_start]
-                data_locators.insert(i+1, [new_locator, range_size, range_start])
+        if  old_segment_start <= new_range_start and new_range_end <= old_segment_end:
+            # new range starts and ends in old segment
+            # split segment into up to 3 pieces
+            if (new_range_start-old_segment_start) > 0:
+                data_locators[i] = Range(dl.locator, old_segment_start, (new_range_start-old_segment_start), dl.segment_offset)
+                data_locators.insert(i+1, Range(new_locator, new_range_start, new_range_size, new_segment_offset))
             else:
-                data_locators[i] = [new_locator, range_size, range_start]
+                data_locators[i] = Range(new_locator, new_range_start, new_range_size, new_segment_offset)
                 i -= 1
-            if (segment_end-range_end) > 0:
-                data_locators.insert(i+2, [(locator + (range_start-segment_start) + range_size), (segment_end-range_end), range_end])
+            if (old_segment_end-new_range_end) > 0:
+                data_locators.insert(i+2, Range(dl.locator, new_range_end, (old_segment_end-new_range_end), dl.segment_offset + (new_range_start-old_segment_start) + new_range_size))
             return
-        elif range_start >= segment_start and range_end > segment_end:
+        elif old_segment_start <= new_range_start and new_range_end > old_segment_end:
             # range starts in this segment
             # split segment into 2 pieces
-            data_locators[i] = [locator, (range_start-segment_start), segment_start]
-            data_locators.insert(i+1, [new_locator, range_size, range_start])
+            data_locators[i] = Range(dl.locator, old_segment_start, (new_range_start-old_segment_start), dl.segment_offset)
+            data_locators.insert(i+1, Range(new_locator, new_range_start, new_range_size, new_segment_offset))
             i += 1
-        elif range_start < segment_start and range_end > segment_end:
+        elif new_range_start < old_segment_start and new_range_end >= old_segment_end:
             # range starts in a previous segment and extends to further segments
             # delete this segment
             del data_locators[i]
             i -= 1
-        elif range_start < segment_start and range_end <= segment_end:
+        elif new_range_start < old_segment_start and new_range_end < old_segment_end:
             # range starts in a previous segment and ends in this segment
             # move the starting point of this segment up, and shrink it.
-            data_locators[i] = [locator+(range_end-segment_start), (segment_end-range_end), range_end]
+            data_locators[i] = Range(dl.locator, new_range_end, (old_segment_end-new_range_end), dl.segment_offset + (new_range_end-old_segment_start))
             return
-        segment_start = segment_end
         i += 1

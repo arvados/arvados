@@ -6,10 +6,10 @@ import re
 from collections import deque
 from stat import *
 
-from .arvfile import ArvadosFileBase, split, ArvadosFile
+from .arvfile import ArvadosFileBase, split, ArvadosFile, ArvadosFileWriter, ArvadosFileReader
 from keep import *
-from .stream import StreamReader, normalize_stream
-from .ranges import Range
+from .stream import StreamReader, normalize_stream, locator_block_size
+from .ranges import Range, LocatorAndRange
 import config
 import errors
 import util
@@ -640,10 +640,11 @@ class ResumableCollectionWriter(CollectionWriter):
 
 
 class Collection(object):
-    def __init__(self):
+    def __init__(self, keep=None):
         self.items = {}
+        self.keep = keep
 
-    def find_or_create(self, path):
+    def find(self, path, create=False):
         p = path.split("/")
         if p[0] == '.':
             del p[0]
@@ -652,24 +653,56 @@ class Collection(object):
             item = self.items.get(p[0])
             if len(p) == 1:
                 # item must be a file
-                if item is None:
+                if item is None and create:
                     # create new file
-                    item = ArvadosFile(p[0], 'wb', [], [])
+                    item = ArvadosFile(keep=self.keep)
                     self.items[p[0]] = item
                 return item
             else:
-                if item is None:
+                if item is None and create:
                     # create new collection
                     item = Collection()
                     self.items[p[0]] = item
                 del p[0]
-                return item.find_or_create("/".join(p))
+                return item.find("/".join(p), create=create)
         else:
             return self
 
+    def open(self, path, mode):
+        mode = mode.replace("b", "")
+        if len(mode) == 0 or mode[0] not in ("r", "w", "a"):
+            raise ArgumentError("Bad mode '%s'" % mode)
+        create = (mode != "r")
 
-def import_manifest(manifest_text):
-    c = Collection()
+        f = self.find(path, create=create)
+        if f is None:
+            raise ArgumentError("File not found")
+        if not isinstance(f, ArvadosFile):
+            raise ArgumentError("Path must refer to a file.")
+
+        if mode[0] == "w":
+            f.truncate(0)
+
+        if mode == "r":
+            return ArvadosFileReader(f, path, mode)
+        else:
+            return ArvadosFileWriter(f, path, mode)
+
+    def modified(self):
+        for k,v in self.items.items():
+            if v.modified():
+                return True
+        return False
+
+    def set_unmodified(self):
+        for k,v in self.items.items():
+            v.set_unmodified()
+
+def import_manifest(manifest_text, keep=None):
+    c = Collection(keep=keep)
+
+    if manifest_text[-1] != "\n":
+        manifest_text += "\n"
 
     STREAM_NAME = 0
     BLOCKS = 1
@@ -681,6 +714,7 @@ def import_manifest(manifest_text):
     for n in re.finditer(r'([^ \n]+)([ \n])', manifest_text):
         tok = n.group(1)
         sep = n.group(2)
+
         if state == STREAM_NAME:
             # starting a new stream
             stream_name = tok.replace('\\040', ' ')
@@ -705,7 +739,7 @@ def import_manifest(manifest_text):
                 pos = long(s.group(1))
                 size = long(s.group(2))
                 name = s.group(3).replace('\\040', ' ')
-                f = c.find_or_create("%s/%s" % (stream_name, name))
+                f = c.find("%s/%s" % (stream_name, name), create=True)
                 f.add_segment(blocks, pos, size)
             else:
                 # error!
@@ -715,6 +749,7 @@ def import_manifest(manifest_text):
             stream_name = None
             state = STREAM_NAME
 
+    c.set_unmodified()
     return c
 
 def export_manifest(item, stream_name="."):
@@ -722,15 +757,16 @@ def export_manifest(item, stream_name="."):
     if isinstance(item, Collection):
         stream = {}
         for k,v in item.items.items():
-            if isinstance(item, Collection):
+            if isinstance(v, Collection):
                 buf += export_manifest(v, stream_name)
-            else:
-                if isinstance(item, ArvadosFile):
-                    buf += str(item.segments)
-                    #stream[k] = [[s.locator, s[4], s[], s[]] for s in item.segments]
-    else:
-        buf += stream_name
-        buf += " "
-        buf += str(item.segments)
-        buf += "\n"
+            elif isinstance(v, ArvadosFile):
+                st = []
+                for s in v._segments:
+                    loc = s.locator
+                    if loc.startswith("bufferblock"):
+                        loc = v._bufferblocks[loc].calculate_locator()
+                    st.append(LocatorAndRange(loc, locator_block_size(loc),
+                                         s.segment_offset, s.range_size))
+                stream[k] = st
+        buf += ' '.join(normalize_stream(stream_name, stream)) + "\n"
     return buf

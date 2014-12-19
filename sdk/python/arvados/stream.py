@@ -13,6 +13,10 @@ from keep import *
 import config
 import errors
 
+def locator_block_size(loc):
+    s = re.match(r'[0-9a-f]{32}\+(\d+)(\+\S+)*', loc)
+    return long(s.group(1))
+
 def normalize_stream(s, stream):
     '''
     s is the stream name
@@ -31,7 +35,7 @@ def normalize_stream(s, stream):
             if b.locator not in blocks:
                 stream_tokens.append(b.locator)
                 blocks[b.locator] = streamoffset
-                streamoffset += b.block_size
+                streamoffset += locator_block_size(b.locator)
 
     # Add the empty block if the stream is otherwise empty.
     if len(stream_tokens) == 1:
@@ -154,23 +158,6 @@ class StreamReader(object):
         return ' '.join(manifest_text) + '\n'
 
 
-class BufferBlock(object):
-    def __init__(self, locator, streamoffset, starting_size=2**16):
-        self.locator = locator
-        self.buffer_block = bytearray(starting_size)
-        self.buffer_view = memoryview(self.buffer_block)
-        self.write_pointer = 0
-        self.locator_list_entry = [locator, 0, streamoffset]
-
-    def append(self, data):
-        while (self.write_pointer+len(data)) > len(self.buffer_block):
-            new_buffer_block = bytearray(len(self.buffer_block) * 2)
-            new_buffer_block[0:self.write_pointer] = self.buffer_block[0:self.write_pointer]
-            self.buffer_block = new_buffer_block
-            self.buffer_view = memoryview(self.buffer_block)
-        self.buffer_view[self.write_pointer:self.write_pointer+len(data)] = data
-        self.write_pointer += len(data)
-        self.locator_list_entry[1] = self.write_pointer
 
 
 # class StreamWriter(StreamReader):
