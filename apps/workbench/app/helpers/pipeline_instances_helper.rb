@@ -89,9 +89,9 @@ module PipelineInstancesHelper
       c[:job][:uuid] if c.is_a?(Hash) and c[:job].is_a?(Hash)
     }.compact
     job = {}
-    Job.where(uuid: jobuuids).each do |j|
-      job[j[:uuid]] = j
-    end
+    jobuuids.each do |jobuuid|
+      job[jobuuid] = Job.find?(jobuuid)
+    end.compact
 
     object.components.each do |cname, c|
       i += 1
