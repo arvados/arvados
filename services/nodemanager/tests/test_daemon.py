@@ -56,15 +56,17 @@ class NodeManagerDaemonActorTestCase(testutil.ActorTestMixin,
         self.stop_proxy(self.daemon)
         self.assertTrue(self.node_setup.start.called)
 
+    def check_monitors_arvados_nodes(self, *arv_nodes):
+        pairings = [monitor.proxy().arvados_node
+                    for monitor in self.monitor_list() if monitor.is_alive()]
+        self.assertItemsEqual(arv_nodes, pykka.get_all(pairings, self.TIMEOUT))
+
     def test_node_pairing(self):
         cloud_node = testutil.cloud_node_mock(1)
         arv_node = testutil.arvados_node_mock(1)
         self.make_daemon([cloud_node], [arv_node])
         self.stop_proxy(self.daemon)
-        self.assertEqual(1, self.alive_monitor_count())
-        self.assertIs(
-            self.monitor_list()[0].proxy().arvados_node.get(self.TIMEOUT),
-            arv_node)
+        self.check_monitors_arvados_nodes(arv_node)
 
     def test_node_pairing_after_arvados_update(self):
         cloud_node = testutil.cloud_node_mock(2)
@@ -73,10 +75,17 @@ class NodeManagerDaemonActorTestCase(testutil.ActorTestMixin,
         arv_node = testutil.arvados_node_mock(2)
         self.daemon.update_arvados_nodes([arv_node]).get(self.TIMEOUT)
         self.stop_proxy(self.daemon)
-        self.assertEqual(1, self.alive_monitor_count())
-        self.assertIs(
-            self.monitor_list()[0].proxy().arvados_node.get(self.TIMEOUT),
-            arv_node)
+        self.check_monitors_arvados_nodes(arv_node)
+
+    def test_arvados_node_un_and_re_paired(self):
+        arv_node = testutil.arvados_node_mock(3)
+        self.make_daemon([testutil.cloud_node_mock(3)], [arv_node])
+        self.check_monitors_arvados_nodes(arv_node)
+        self.daemon.update_cloud_nodes([]).get(self.TIMEOUT)
+        self.assertEqual(0, self.alive_monitor_count())
+        self.daemon.update_cloud_nodes([testutil.cloud_node_mock(3)])
+        self.stop_proxy(self.daemon)
+        self.check_monitors_arvados_nodes(arv_node)
 
     def test_old_arvados_node_not_double_assigned(self):
         arv_node = testutil.arvados_node_mock(3, age=9000)
