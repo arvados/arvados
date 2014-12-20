@@ -272,9 +272,9 @@ func (s *StandaloneSuite) TestPutB(c *C) {
 
 	ks := RunSomeFakeKeepServers(st, 5, 2990)
 
-	for i := 0; i < len(ks); i += 1 {
-		service_roots[fmt.Sprintf("zzzzz-bi6l4-fakefakefake%03d", i)] = ks[i].url
-		defer ks[i].listener.Close()
+	for i, k := range ks {
+		service_roots[fmt.Sprintf("zzzzz-bi6l4-fakefakefake%03d", i)] = k.url
+		defer k.listener.Close()
 	}
 
 	kc.SetServiceRoots(service_roots)
@@ -315,9 +315,9 @@ func (s *StandaloneSuite) TestPutHR(c *C) {
 
 	ks := RunSomeFakeKeepServers(st, 5, 2990)
 
-	for i := 0; i < len(ks); i += 1 {
-		service_roots[fmt.Sprintf("zzzzz-bi6l4-fakefakefake%03d", i)] = ks[i].url
-		defer ks[i].listener.Close()
+	for i, k := range ks {
+		service_roots[fmt.Sprintf("zzzzz-bi6l4-fakefakefake%03d", i)] = k.url
+		defer k.listener.Close()
 	}
 
 	kc.SetServiceRoots(service_roots)
