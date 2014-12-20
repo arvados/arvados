@@ -43,7 +43,7 @@ class Job < ArvadosModel
     t.add :log
     t.add :runtime_constraints
     t.add :tasks_summary
-    t.add :dependencies
+#    t.add :dependencies
     t.add :nondeterministic
     t.add :repository
     t.add :supplied_script_version
@@ -194,23 +194,23 @@ class Job < ArvadosModel
     end
   end
 
-  def dependencies
-    deps = {}
-    queue = self.script_parameters.values
-    while not queue.empty?
-      queue = queue.flatten.compact.collect do |v|
-        if v.is_a? Hash
-          v.values
-        elsif v.is_a? String
-          v.match(/^(([0-9a-f]{32})\b(\+[^,]+)?,?)*$/) do |locator|
-            deps[locator.to_s] = true
-          end
-          nil
-        end
-      end
-    end
-    deps.keys
-  end
+  # def dependencies
+  #   deps = {}
+  #   queue = self.script_parameters.values
+  #   while not queue.empty?
+  #     queue = queue.flatten.compact.collect do |v|
+  #       if v.is_a? Hash
+  #         v.values
+  #       elsif v.is_a? String
+  #         v.match(/^(([0-9a-f]{32})\b(\+[^,]+)?,?)*$/) do |locator|
+  #           deps[locator.to_s] = true
+  #         end
+  #         nil
+  #       end
+  #     end
+  #   end
+  #   deps.keys
+  # end
 
   def permission_to_update
     if is_locked_by_uuid_was and !(current_user and
