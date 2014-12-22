@@ -205,7 +205,7 @@ class StreamFileReader(ArvadosFileReaderBase):
 
 
 class BufferBlock(object):
-    def __init__(self, locator, starting_size=2**16):
+    def __init__(self, locator, starting_size=2**14):
         self.locator = locator
         self.buffer_block = bytearray(starting_size)
         self.buffer_view = memoryview(self.buffer_block)

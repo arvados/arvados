@@ -639,34 +639,142 @@ class ResumableCollectionWriter(CollectionWriter):
         return super(ResumableCollectionWriter, self).write(data)
 
 
-class Collection(object):
-    def __init__(self, keep=None):
-        self.items = {}
-        self.keep = keep
+class Collection(CollectionBase):
+    def __init__(self, manifest_locator_or_text=None, api_client=None,
+                 keep_client=None, num_retries=0):
 
+        self._items = None
+        self._api_client = api_client
+        self._keep_client = keep_client
+        self.num_retries = num_retries
+        self._manifest_locator = None
+        self._manifest_text = None
+        self._api_response = None
+
+        if manifest_locator_or_text:
+            if re.match(util.keep_locator_pattern, manifest_locator_or_text):
+                self._manifest_locator = manifest_locator_or_text
+            elif re.match(util.collection_uuid_pattern, manifest_locator_or_text):
+                self._manifest_locator = manifest_locator_or_text
+            elif re.match(util.manifest_pattern, manifest_locator_or_text):
+                self._manifest_text = manifest_locator_or_text
+            else:
+                raise errors.ArgumentError(
+                    "Argument to CollectionReader must be a manifest or a collection UUID")
+
+    def _populate_from_api_server(self):
+        # As in KeepClient itself, we must wait until the last
+        # possible moment to instantiate an API client, in order to
+        # avoid tripping up clients that don't have access to an API
+        # server.  If we do build one, make sure our Keep client uses
+        # it.  If instantiation fails, we'll fall back to the except
+        # clause, just like any other Collection lookup
+        # failure. Return an exception, or None if successful.
+        try:
+            if self._api_client is None:
+                self._api_client = arvados.api('v1')
+                self._keep_client = None  # Make a new one with the new api.
+            self._api_response = self._api_client.collections().get(
+                uuid=self._manifest_locator).execute(
+                    num_retries=self.num_retries)
+            self._manifest_text = self._api_response['manifest_text']
+            return None
+        except Exception as e:
+            return e
+
+    def _populate_from_keep(self):
+        # Retrieve a manifest directly from Keep. This has a chance of
+        # working if [a] the locator includes a permission signature
+        # or [b] the Keep services are operating in world-readable
+        # mode. Return an exception, or None if successful.
+        try:
+            self._manifest_text = self._my_keep().get(
+                self._manifest_locator, num_retries=self.num_retries)
+        except Exception as e:
+            return e
+
+    def _populate(self):
+        self._items = {}
+        if self._manifest_locator is None and self._manifest_text is None:
+            return
+        error_via_api = None
+        error_via_keep = None
+        should_try_keep = ((self._manifest_text is None) and
+                           util.keep_locator_pattern.match(
+                self._manifest_locator))
+        if ((self._manifest_text is None) and
+            util.signed_locator_pattern.match(self._manifest_locator)):
+            error_via_keep = self._populate_from_keep()
+        if self._manifest_text is None:
+            error_via_api = self._populate_from_api_server()
+            if error_via_api is not None and not should_try_keep:
+                raise error_via_api
+        if ((self._manifest_text is None) and
+            not error_via_keep and
+            should_try_keep):
+            # Looks like a keep locator, and we didn't already try keep above
+            error_via_keep = self._populate_from_keep()
+        if self._manifest_text is None:
+            # Nothing worked!
+            raise arvados.errors.NotFoundError(
+                ("Failed to retrieve collection '{}' " +
+                 "from either API server ({}) or Keep ({})."
+                 ).format(
+                    self._manifest_locator,
+                    error_via_api,
+                    error_via_keep))
+        # populate
+        import_manifest(self._manifest_text, self)
+
+    def _populate_first(orig_func):
+        # Decorator for methods that read actual Collection data.
+        @functools.wraps(orig_func)
+        def wrapper(self, *args, **kwargs):
+            if self._items is None:
+                self._populate()
+            return orig_func(self, *args, **kwargs)
+        return wrapper
+
+    def __enter__(self):
+        return self
+
+    def __exit__(self, exc_type, exc_value, traceback):
+        self.save()
+
+    @_populate_first
     def find(self, path, create=False):
         p = path.split("/")
         if p[0] == '.':
             del p[0]
 
         if len(p) > 0:
-            item = self.items.get(p[0])
+            item = self._items.get(p[0])
             if len(p) == 1:
                 # item must be a file
                 if item is None and create:
                     # create new file
-                    item = ArvadosFile(keep=self.keep)
-                    self.items[p[0]] = item
+                    item = ArvadosFile(keep=self._keep_client)
+                    self._items[p[0]] = item
                 return item
             else:
                 if item is None and create:
                     # create new collection
-                    item = Collection()
-                    self.items[p[0]] = item
+                    item = Collection(api_client=self._api_client, keep=self._keep_client, num_retries=self.num_retries)
+                    self._items[p[0]] = item
                 del p[0]
                 return item.find("/".join(p), create=create)
         else:
             return self
+
+    @_populate_first
+    def api_response(self):
+        """api_response() -> dict or None
+
+        Returns information about this Collection fetched from the API server.
+        If the Collection exists in Keep but not the API server, currently
+        returns None.  Future versions may provide a synthetic response.
+        """
+        return self._api_response
 
     def open(self, path, mode):
         mode = mode.replace("b", "")
@@ -688,21 +796,82 @@ class Collection(object):
         else:
             return ArvadosFileWriter(f, path, mode)
 
+    @_populate_first
     def modified(self):
-        for k,v in self.items.items():
+        for k,v in self._items.items():
             if v.modified():
                 return True
         return False
 
+    @_populate_first
     def set_unmodified(self):
-        for k,v in self.items.items():
+        for k,v in self._items.items():
             v.set_unmodified()
 
-def import_manifest(manifest_text, keep=None):
-    c = Collection(keep=keep)
+    @_populate_first
+    def __iter__(self):
+        for k in self._items.keys():
+            yield k
 
-    if manifest_text[-1] != "\n":
-        manifest_text += "\n"
+    @_populate_first
+    def __getitem__(self, k):
+        r = self.find(k)
+        if r:
+            return r
+        else:
+            raise KeyError(k)
+
+    @_populate_first
+    def __contains__(self, k):
+        return self.find(k) is not None
+
+    @_populate_first
+    def __len__(self):
+       return len(self._items)
+
+    @_populate_first
+    def __delitem__(self, p):
+        p = path.split("/")
+        if p[0] == '.':
+            del p[0]
+
+        if len(p) > 0:
+            item = self._items.get(p[0])
+            if item is None:
+                raise NotFoundError()
+            if len(p) == 1:
+                del self._items[p[0]]
+            else:
+                del p[0]
+                del item["/".join(p)]
+        else:
+            raise NotFoundError()
+
+    @_populate_first
+    def keys(self):
+        return self._items.keys()
+
+    @_populate_first
+    def values(self):
+        return self._items.values()
+
+    @_populate_first
+    def items(self):
+        return self._items.items()
+
+    @_populate_first
+    def save(self):
+        self._my_keep().put(self.portable_manifest_text())
+
+
+
+def import_manifest(manifest_text, into_collection=None, api_client=None, keep=None, num_retries=None):
+    if into_collection is not None:
+        if len(into_collection) > 0:
+            raise ArgumentError("Can only import manifest into an empty collection")
+        c = into_collection
+    else:
+        c = Collection(api_client=api_client, keep_client=keep, num_retries=num_retries)
 
     STREAM_NAME = 0
     BLOCKS = 1
@@ -711,7 +880,7 @@ def import_manifest(manifest_text, keep=None):
     stream_name = None
     state = STREAM_NAME
 
-    for n in re.finditer(r'([^ \n]+)([ \n])', manifest_text):
+    for n in re.finditer(r'(\S+)(\s+|$)', manifest_text):
         tok = n.group(1)
         sep = n.group(2)
 
@@ -752,21 +921,34 @@ def import_manifest(manifest_text, keep=None):
     c.set_unmodified()
     return c
 
-def export_manifest(item, stream_name="."):
+def export_manifest(item, stream_name=".", portable_locators=False):
     buf = ""
     if isinstance(item, Collection):
         stream = {}
-        for k,v in item.items.items():
-            if isinstance(v, Collection):
-                buf += export_manifest(v, stream_name)
-            elif isinstance(v, ArvadosFile):
-                st = []
-                for s in v._segments:
-                    loc = s.locator
-                    if loc.startswith("bufferblock"):
-                        loc = v._bufferblocks[loc].calculate_locator()
-                    st.append(LocatorAndRange(loc, locator_block_size(loc),
-                                         s.segment_offset, s.range_size))
-                stream[k] = st
-        buf += ' '.join(normalize_stream(stream_name, stream)) + "\n"
+        sorted_keys = sorted(item.keys())
+        for k in [s for s in sorted_keys if isinstance(item[s], ArvadosFile)]:
+            v = item[k]
+            st = []
+            for s in v._segments:
+                loc = s.locator
+                if loc.startswith("bufferblock"):
+                    loc = v._bufferblocks[loc].calculate_locator()
+                st.append(LocatorAndRange(loc, locator_block_size(loc),
+                                     s.segment_offset, s.range_size))
+            stream[k] = st
+        buf += ' '.join(normalize_stream(stream_name, stream))
+        buf += "\n"
+        for k in [s for s in sorted_keys if isinstance(item[s], Collection)]:
+            buf += export_manifest(item[k], stream_name=os.path.join(stream_name, k))
+    elif isinstance(item, ArvadosFile):
+        st = []
+        for s in item._segments:
+            loc = s.locator
+            if loc.startswith("bufferblock"):
+                loc = item._bufferblocks[loc].calculate_locator()
+            st.append(LocatorAndRange(loc, locator_block_size(loc),
+                                 s.segment_offset, s.range_size))
+        stream[stream_name] = st
+        buf += ' '.join(normalize_stream(stream_name, stream))
+        buf += "\n"
     return buf
