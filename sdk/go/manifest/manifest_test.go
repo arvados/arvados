@@ -115,7 +115,7 @@ func TestParseManifestLineSimple(t *testing.T) {
 }
 
 func TestParseBlockLocatorSimple(t *testing.T) {
-	b, err := parseBlockLocator("365f83f5f808896ec834c8b595288735+2310+K@qr1hi+Af0c9a66381f3b028677411926f0be1c6282fe67c@542b5ddf")
+	b, err := ParseBlockLocator("365f83f5f808896ec834c8b595288735+2310+K@qr1hi+Af0c9a66381f3b028677411926f0be1c6282fe67c@542b5ddf")
 	if err != nil {
 		t.Fatalf("Unexpected error parsing block locator: %v", err)
 	}
