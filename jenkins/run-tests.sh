@@ -21,11 +21,11 @@ Options:
 WORKSPACE=path Arvados source tree to test.
 CONFIGSRC=path Dir with api server config files to copy into source tree.
                (If none given, leave config files alone in source tree.)
-apiserver_test="TEST=test/functional/arvados/v1/collections_controller_test.rb"
+services/api_test="TEST=test/functional/arvados/v1/collections_controller_test.rb"
                Restrict apiserver tests to the given file
 sdk/python_test="--test-suite test.test_keep_locator"
                Restrict Python SDK tests to the given class
-workbench_test="TEST=test/integration/pipeline_instances_test.rb"
+apps/workbench_test="TEST=test/integration/pipeline_instances_test.rb"
                Restrict Workbench tests to the given file
 ARVADOS_DEBUG=1
                Print more debug messages
@@ -43,6 +43,25 @@ defaults to $HOME/arvados-api-server if that directory exists.
 More information and background:
 
 https://arvados.org/projects/arvados/wiki/Running_tests
+
+Available tests:
+
+apps/workbench
+apps/workbench_performance
+doc
+services/api
+services/crunchstat
+services/fuse
+services/keepproxy
+services/keepstore
+services/nodemanager
+sdk/cli
+sdk/python
+sdk/ruby
+sdk/go/arvadosclient
+sdk/go/keepclient
+sdk/go/streamer
+
 EOF
 
 # First make sure to remove any ARVADOS_ variables from the calling
@@ -307,6 +326,9 @@ do_test() {
            cd "$WORKSPACE/$1" \
                 && python setup.py test ${testargs[$1]} \
                 && (easy_install *.egg || true)
+        elif [[ "$2" != "" ]]
+        then
+            "test_$2"
         else
             "test_$1"
         fi
@@ -330,6 +352,9 @@ do_install() {
             cd "$WORKSPACE/$1" \
                 && python setup.py sdist rotate --keep=1 --match .tar.gz \
                 && pip install --upgrade dist/*.tar.gz
+        elif [[ "$2" != "" ]]
+        then
+            "install_$2"
         else
             "install_$1"
         fi
@@ -345,16 +370,12 @@ title () {
     printf "\n%*s%s\n\n" $((($COLUMNS-${#txt})/2)) "" "$txt"
 }
 
-install_docs() {
+install_doc() {
     cd "$WORKSPACE/doc"
     bundle install --no-deployment
     rm -rf .site
-    # Make sure python-epydoc is installed or the next line won't do much good!
-    ARVADOS_API_HOST=qr1hi.arvadosapi.com
-    PYTHONPATH=$WORKSPACE/sdk/python/ bundle exec rake generate baseurl=file://$WORKSPACE/doc/.site/ arvados_workbench_host=workbench.$ARVADOS_API_HOST arvados_api_host=$ARVADOS_API_HOST
-    unset ARVADOS_API_HOST
 }
-do_install docs
+do_install doc
 
 install_ruby_sdk() {
     with_test_gemset gem uninstall --force --all --executables arvados \
@@ -363,7 +384,7 @@ install_ruby_sdk() {
         && gem build arvados.gemspec \
         && with_test_gemset gem install --no-ri --no-rdoc `ls -t arvados-*.gem|head -n1`
 }
-do_install ruby_sdk
+do_install sdk/ruby ruby_sdk
 
 install_cli() {
     with_test_gemset gem uninstall --force --all --executables arvados-cli \
@@ -372,7 +393,7 @@ install_cli() {
         && gem build arvados-cli.gemspec \
         && with_test_gemset gem install --no-ri --no-rdoc `ls -t arvados-cli-*.gem|head -n1`
 }
-do_install cli
+do_install sdk/cli cli
 
 # Install the Python SDK early. Various other test suites (like
 # keepproxy) bring up run_test_server.py, which imports the arvados
@@ -436,7 +457,7 @@ install_apiserver() {
         && bundle exec rake db:create \
         && bundle exec rake db:setup
 }
-do_install apiserver
+do_install services/api apiserver
 
 declare -a gostuff
 gostuff=(
@@ -456,20 +477,23 @@ install_workbench() {
     cd "$WORKSPACE/apps/workbench" \
         && RAILS_ENV=test bundle install --no-deployment
 }
-do_install workbench
+do_install apps/workbench workbench
 
 test_doclinkchecker() {
     cd "$WORKSPACE/doc"
-    bundle exec rake linkchecker baseurl=file://$WORKSPACE/doc/.site/
+    # Make sure python-epydoc is installed or the next line won't do much good!
+    ARVADOS_API_HOST=qr1hi.arvadosapi.com
+    PYTHONPATH=$WORKSPACE/sdk/python/ bundle exec rake linkchecker baseurl=file://$WORKSPACE/doc/.site/ arvados_workbench_host=workbench.$ARVADOS_API_HOST arvados_api_host=$ARVADOS_API_HOST
+    unset ARVADOS_API_HOST
 }
-do_test doclinkchecker
+do_test doc doclinkchecker
 
 test_ruby_sdk() {
     cd "$WORKSPACE/sdk/ruby" \
         && bundle install --no-deployment \
         && bundle exec rake test ${testargs[sdk/ruby]}
 }
-do_test ruby_sdk
+do_test sdk/ruby ruby_sdk
 
 test_cli() {
     title "Starting SDK CLI tests"
@@ -478,13 +502,13 @@ test_cli() {
         && mkdir -p /tmp/keep \
         && KEEP_LOCAL_STORE=/tmp/keep bundle exec rake test ${testargs[sdk/cli]}
 }
-do_test cli
+do_test sdk/cli cli
 
 test_apiserver() {
     cd "$WORKSPACE/services/api"
     bundle exec rake test ${testargs[apiserver]}
 }
-do_test apiserver
+do_test services/api apiserver
 
 # We must test sdk/python before testing services/keepproxy, because
 # keepproxy depends on sdk/python's test dependencies.
@@ -502,13 +526,13 @@ test_workbench() {
     cd "$WORKSPACE/apps/workbench" \
         && bundle exec rake test ${testargs[workbench]}
 }
-do_test workbench
+do_test apps/workbench workbench
 
 test_workbench_performance() {
     cd "$WORKSPACE/apps/workbench" \
         && bundle exec rake test:benchmark
 }
-do_test workbench_performance
+do_test apps/workbench_performance workbench_performance
 
 report_outcomes
 clear_temp
