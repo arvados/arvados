@@ -810,8 +810,11 @@ class Collection(CollectionBase):
 
     @_populate_first
     def __iter__(self):
-        for k in self._items.keys():
-            yield k
+        self._items.iterkeys()
+
+    @_populate_first
+    def iterkeys(self):
+        self._items.iterkeys()
 
     @_populate_first
     def __getitem__(self, k):
@@ -860,9 +863,47 @@ class Collection(CollectionBase):
         return self._items.items()
 
     @_populate_first
-    def save(self):
-        self._my_keep().put(self.portable_manifest_text())
+    def manifest_text(self, strip=False, normalize=False):
+        if self.modified() or self._manifest_text is None or normalize:
+            return export_manifest(self, stream_name=".", portable_locators=strip)
+        else:
+            if strip:
+                return self.stripped_manifest()
+            else:
+                return self._manifest_text
 
+    def portable_data_hash(self):
+        stripped = self.manifest_text(strip=True)
+        return hashlib.md5(stripped).hexdigest() + '+' + str(len(stripped))
+
+    @_populate_first
+    def commit_bufferblocks(self):
+        pass
+
+    @_populate_first
+    def save(self):
+        if self.modified():
+            self._my_keep().put(self.manifest_text(strip=True))
+            if re.match(util.collection_uuid_pattern, self._manifest_locator):
+                self._api_response = self._api_client.collections().update(
+                    uuid=self._manifest_locator,
+                    body={'manifest_text': self.manifest_text(strip=False)}
+                    }).execute(
+                        num_retries=self.num_retries)
+            else:
+                raise AssertionError("Collection manifest_locator must be a collection uuid.  Use save_as() for new collections.")
+            self.set_unmodified()
+
+    @_populate_first
+    def save_as(self, name, owner_uuid=None):
+        self._my_keep().put(self.manifest_text(strip=True))
+        body = {"manifest_text": self.manifest_text(strip=False),
+                "name": name}
+        if owner_uuid:
+            body["owner_uuid"] = owner_uuid
+        self._api_response = self._api_client.collections().create(body=body}).execute(num_retries=self.num_retries)
+        self._manifest_locator = self._api_response["uuid"]
+        self.set_unmodified()
 
 
 def import_manifest(manifest_text, into_collection=None, api_client=None, keep=None, num_retries=None):

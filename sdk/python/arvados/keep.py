@@ -171,8 +171,7 @@ class KeepBlockCache(object):
 
     def cap_cache(self):
         '''Cap the cache size to self.cache_max'''
-        self._cache_lock.acquire()
-        try:
+        with self._cache_lock:
             # Select all slots except those where ready.is_set() and content is
             # None (that means there was an error reading the block).
             self._cache = [c for c in self._cache if not (c.ready.is_set() and c.content is None)]
@@ -183,14 +182,11 @@ class KeepBlockCache(object):
                         del self._cache[i]
                         break
                 sm = sum([slot.size() for slot in self._cache])
-        finally:
-            self._cache_lock.release()
 
     def reserve_cache(self, locator):
         '''Reserve a cache slot for the specified locator,
         or return the existing slot.'''
-        self._cache_lock.acquire()
-        try:
+        with self._cache_lock:
             # Test if the locator is already in the cache
             for i in xrange(0, len(self._cache)):
                 if self._cache[i].locator == locator:
@@ -205,8 +201,6 @@ class KeepBlockCache(object):
             n = KeepBlockCache.CacheSlot(locator)
             self._cache.insert(0, n)
             return n, True
-        finally:
-            self._cache_lock.release()
 
 class KeepClient(object):
 
