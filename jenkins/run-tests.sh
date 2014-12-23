@@ -496,7 +496,6 @@ test_ruby_sdk() {
 do_test sdk/ruby ruby_sdk
 
 test_cli() {
-    title "Starting SDK CLI tests"
     cd "$WORKSPACE/sdk/cli" \
         && bundle install --no-deployment \
         && mkdir -p /tmp/keep \
