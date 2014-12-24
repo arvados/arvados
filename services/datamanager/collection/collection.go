@@ -11,6 +11,7 @@ import (
 	"log"
 	"os"
 	"runtime/pprof"
+	"time"
 )
 
 var (
@@ -37,11 +38,11 @@ type GetCollectionsParams struct {
 }
 
 type SdkCollectionInfo struct {
-	Uuid           string   `json:"uuid"`
-	OwnerUuid      string   `json:"owner_uuid"`
-	Redundancy     int      `json:"redundancy"`
-	ModifiedAt     string   `json:"modified_at"`
-	ManifestText   string   `json:"manifest_text"`
+	Uuid           string     `json:"uuid"`
+	OwnerUuid      string     `json:"owner_uuid"`
+	Redundancy     int        `json:"redundancy"`
+	ModifiedAt     time.Time  `json:"modified_at"`
+	ManifestText   string     `json:"manifest_text"`
 }
 
 type SdkCollectionList struct {
@@ -147,7 +148,8 @@ func GetCollections(params GetCollectionsParams) (results ReadCollections) {
 		}
 
 		// Process collection and update our date filter.
-		sdkParams["filters"].([][]string)[0][2] = ProcessCollections(collections.Items, results.UuidToCollection)
+		sdkParams["filters"].([][]string)[0][2] =
+			ProcessCollections(collections.Items, results.UuidToCollection).Format(time.RFC3339)
 		log.Printf("Latest date seen %s", sdkParams["filters"].([][]string)[0][2])
 	}
 	log.Printf("previous, current: %d %d", previousTotalCollections, len(results.UuidToCollection))
@@ -165,16 +167,22 @@ func GetCollections(params GetCollectionsParams) (results ReadCollections) {
 
 
 func ProcessCollections(receivedCollections []SdkCollectionInfo,
-	uuidToCollection map[string]Collection) (latestModificationDate string) {
+	uuidToCollection map[string]Collection) (latestModificationDate time.Time) {
 	for _, sdkCollection := range receivedCollections {
 		collection := Collection{Uuid: sdkCollection.Uuid,
 			OwnerUuid: sdkCollection.OwnerUuid,
 			ReplicationLevel: sdkCollection.Redundancy,
 			BlockDigestToSize: make(map[blockdigest.BlockDigest]int)}
-		// log.Printf("Seeing modification date, owner_uuid: %s %s",
-		// 	sdkCollection.ModifiedAt,
-		// 	sdkCollection.OwnerUuid)
-		if sdkCollection.ModifiedAt > latestModificationDate {
+
+		if sdkCollection.ModifiedAt.IsZero() {
+			log.Fatalf(
+				"Arvados SDK collection returned with unexpected zero modifcation " +
+					"date. This probably means that either we failed to parse the " +
+					"modification date or the API server has changed how it returns " +
+					"modification dates: %v",
+				collection)
+		}
+		if sdkCollection.ModifiedAt.After(latestModificationDate) {
 			latestModificationDate = sdkCollection.ModifiedAt
 		}
 		manifest := manifest.Manifest{sdkCollection.ManifestText}
