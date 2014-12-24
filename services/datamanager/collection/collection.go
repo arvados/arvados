@@ -5,6 +5,7 @@ package collection
 import (
 	"flag"
 	"git.curoverse.com/arvados.git/sdk/go/arvadosclient"
+	"git.curoverse.com/arvados.git/sdk/go/blockdigest"
 	"git.curoverse.com/arvados.git/sdk/go/manifest"
 	//"git.curoverse.com/arvados.git/sdk/go/util"
 	"log"
@@ -21,7 +22,7 @@ type Collection struct {
 	Uuid string
 	OwnerUuid string
 	ReplicationLevel int
-	BlockDigestToSize map[string]int
+	BlockDigestToSize map[blockdigest.BlockDigest]int
 	TotalSize int
 }
 
@@ -80,10 +81,6 @@ func GetCollections(params GetCollectionsParams) (results ReadCollections) {
 		}
 	}
 
-
-
-
-
 	fieldsWanted := []string{"manifest_text",
 		"owner_uuid",
 		"uuid",
@@ -134,7 +131,7 @@ func GetCollections(params GetCollectionsParams) (results ReadCollections) {
 		previousTotalCollections = len(results.UuidToCollection)
 
 		// Write the heap profile for examining memory usage
-		{
+		if heap_profile != nil {
 			err := pprof.WriteHeapProfile(heap_profile)
 			if err != nil {
 				log.Fatal(err)
@@ -155,6 +152,14 @@ func GetCollections(params GetCollectionsParams) (results ReadCollections) {
 	}
 	log.Printf("previous, current: %d %d", previousTotalCollections, len(results.UuidToCollection))
 
+	// Write the heap profile for examining memory usage
+	if heap_profile != nil {
+		err := pprof.WriteHeapProfile(heap_profile)
+		if err != nil {
+			log.Fatal(err)
+		}
+	}
+
 	return
 }
 
@@ -165,7 +170,7 @@ func ProcessCollections(receivedCollections []SdkCollectionInfo,
 		collection := Collection{Uuid: sdkCollection.Uuid,
 			OwnerUuid: sdkCollection.OwnerUuid,
 			ReplicationLevel: sdkCollection.Redundancy,
-			BlockDigestToSize: make(map[string]int)}
+			BlockDigestToSize: make(map[blockdigest.BlockDigest]int)}
 		// log.Printf("Seeing modification date, owner_uuid: %s %s",
 		// 	sdkCollection.ModifiedAt,
 		// 	sdkCollection.OwnerUuid)
@@ -191,6 +196,11 @@ func ProcessCollections(receivedCollections []SdkCollectionInfo,
 			collection.TotalSize += size
 		}
 		uuidToCollection[collection.Uuid] = collection
+
+		// Clear out all the manifest strings that we don't need anymore.
+		// These hopefully form the bulk of our memory usage.
+		manifest.Text = ""
+		sdkCollection.ManifestText = ""
 	}
 
 	return
