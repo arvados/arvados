@@ -6,6 +6,7 @@ package manifest
 
 import (
 	"fmt"
+	"git.curoverse.com/arvados.git/sdk/go/blockdigest"
 	"log"
 	"regexp"
 	"strconv"
@@ -20,7 +21,7 @@ type Manifest struct {
 }
 
 type BlockLocator struct {
-	Digest  string
+	Digest  blockdigest.BlockDigest
 	Size    int
 	Hints   []string
 }
@@ -40,14 +41,16 @@ func ParseBlockLocator(s string) (b BlockLocator, err error) {
 	} else {
 		tokens := strings.Split(s, "+")
 		var blockSize int64
-		// We expect ParseInt to succeed since LocatorPattern restricts
-		// tokens[1] to contain exclusively digits.
+		var blockDigest blockdigest.BlockDigest
+		// We expect both of the following to succeed since LocatorPattern
+		// restricts the strings appropriately.
+		blockDigest, err = blockdigest.FromString(tokens[0])
+		if err != nil {return}
 		blockSize, err = strconv.ParseInt(tokens[1], 10, 0)
-		if err == nil {
-			b.Digest = tokens[0]
-			b.Size = int(blockSize)
-			b.Hints = tokens[2:]
-		}
+		if err != nil {return}
+		b.Digest = blockDigest
+		b.Size = int(blockSize)
+		b.Hints = tokens[2:]
 	}
 	return
 }

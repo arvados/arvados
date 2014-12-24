@@ -1,6 +1,7 @@
 package manifest
 
 import (
+	"git.curoverse.com/arvados.git/sdk/go/blockdigest"
 	"io/ioutil"
 	"runtime"
 	"testing"
@@ -119,7 +120,7 @@ func TestParseBlockLocatorSimple(t *testing.T) {
 	if err != nil {
 		t.Fatalf("Unexpected error parsing block locator: %v", err)
 	}
-	expectBlockLocator(t, b, BlockLocator{Digest: "365f83f5f808896ec834c8b595288735",
+	expectBlockLocator(t, b, BlockLocator{Digest: blockdigest.AssertFromString("365f83f5f808896ec834c8b595288735"),
 		Size: 2310,
 		Hints: []string{"K@qr1hi",
 			"Af0c9a66381f3b028677411926f0be1c6282fe67c@542b5ddf"}})
@@ -158,7 +159,7 @@ func TestBlockIterLongManifest(t *testing.T) {
 	firstBlock := <-blockChannel
 	expectBlockLocator(t,
 		firstBlock,
-		BlockLocator{Digest: "b746e3d2104645f2f64cd3cc69dd895d",
+		BlockLocator{Digest: blockdigest.AssertFromString("b746e3d2104645f2f64cd3cc69dd895d"),
 			Size: 15693477,
 			Hints: []string{"E2866e643690156651c03d876e638e674dcd79475@5441920c"}})
 	blocksRead := 1
@@ -171,7 +172,7 @@ func TestBlockIterLongManifest(t *testing.T) {
 
 	expectBlockLocator(t,
 		lastBlock,
-		BlockLocator{Digest: "f9ce82f59e5908d2d70e18df9679b469",
+		BlockLocator{Digest: blockdigest.AssertFromString("f9ce82f59e5908d2d70e18df9679b469"),
 			Size: 31367794,
 			Hints: []string{"E53f903684239bcc114f7bf8ff9bd6089f33058db@5441920c"}})
 }
