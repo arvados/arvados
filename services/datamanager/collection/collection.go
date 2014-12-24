@@ -93,8 +93,6 @@ func GetCollections(params GetCollectionsParams) (results ReadCollections) {
 		"select": fieldsWanted,
 		"order": []string{"modified_at ASC"},
 		"filters": [][]string{[]string{"modified_at", ">=", "1900-01-01T00:00:00Z"}}}
-		// MISHA UNDO THIS TEMPORARY HACK TO FIND BUG!
-		//"filters": [][]string{[]string{"modified_at", ">=", "2014-11-05T20:44:50Z"}}}
 
 	if params.BatchSize > 0 {
 		sdkParams["limit"] = params.BatchSize
@@ -123,13 +121,12 @@ func GetCollections(params GetCollectionsParams) (results ReadCollections) {
 		float64(initialNumberOfCollectionsAvailable) * 1.01)
 	results.UuidToCollection = make(map[string]Collection, maxExpectedCollections)
 
+	// These values are just for getting the loop to run the first time,
+	// afterwards they'll be set to real values.
 	previousTotalCollections := -1
-	for len(results.UuidToCollection) > previousTotalCollections {
+	totalCollections := 0
+	for totalCollections > previousTotalCollections {
 		// We're still finding new collections
-		log.Printf("previous, current: %d %d", previousTotalCollections, len(results.UuidToCollection))
-
-		// update count
-		previousTotalCollections = len(results.UuidToCollection)
 
 		// Write the heap profile for examining memory usage
 		if heap_profile != nil {
@@ -141,7 +138,6 @@ func GetCollections(params GetCollectionsParams) (results ReadCollections) {
 
 		// Get next batch of collections.
 		var collections SdkCollectionList
-		log.Printf("Running with SDK Params: %v", sdkParams)
 		err := params.Client.List("collections", sdkParams, &collections)
 		if err != nil {
 			log.Fatalf("error querying collections: %+v", err)
@@ -150,9 +146,17 @@ func GetCollections(params GetCollectionsParams) (results ReadCollections) {
 		// Process collection and update our date filter.
 		sdkParams["filters"].([][]string)[0][2] =
 			ProcessCollections(collections.Items, results.UuidToCollection).Format(time.RFC3339)
-		log.Printf("Latest date seen %s", sdkParams["filters"].([][]string)[0][2])
+
+		// update counts
+		previousTotalCollections = totalCollections
+		totalCollections = len(results.UuidToCollection)
+
+		log.Printf("%d collections read, %d new in last batch, " +
+			"%s latest modified date",
+			totalCollections,
+			totalCollections - previousTotalCollections,
+			sdkParams["filters"].([][]string)[0][2])
 	}
-	log.Printf("previous, current: %d %d", previousTotalCollections, len(results.UuidToCollection))
 
 	// Write the heap profile for examining memory usage
 	if heap_profile != nil {
@@ -166,11 +170,19 @@ func GetCollections(params GetCollectionsParams) (results ReadCollections) {
 }
 
 
+// StrCopy returns a newly allocated string.
+// It is useful to copy slices so that the garbage collector can reuse
+// the memory of the longer strings they came from.
+func StrCopy(s string) string {
+	return string([]byte(s))
+}
+
+
 func ProcessCollections(receivedCollections []SdkCollectionInfo,
 	uuidToCollection map[string]Collection) (latestModificationDate time.Time) {
 	for _, sdkCollection := range receivedCollections {
-		collection := Collection{Uuid: sdkCollection.Uuid,
-			OwnerUuid: sdkCollection.OwnerUuid,
+		collection := Collection{Uuid: StrCopy(sdkCollection.Uuid),
+			OwnerUuid: StrCopy(sdkCollection.OwnerUuid),
 			ReplicationLevel: sdkCollection.Redundancy,
 			BlockDigestToSize: make(map[blockdigest.BlockDigest]int)}
 
