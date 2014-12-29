@@ -87,6 +87,17 @@ class ArvadosModelTest < ActiveSupport::TestCase
     end
   end
 
+  test "store long string" do
+    set_user_from_auth :active
+    longstring = "a"
+    while longstring.length < 2**28
+      longstring = longstring + longstring
+    end
+    g = Group.create! name: 'Has a long description', description: longstring
+    g = Group.find_by_uuid g.uuid
+    assert_equal g.description, longstring
+  end
+
   test "unique uuid index exists on all models with the column uuid" do
     tables = ActiveRecord::Base.connection.tables
     tables.each do |table|
