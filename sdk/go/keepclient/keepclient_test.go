@@ -110,24 +110,22 @@ func (this StubPutHandler) ServeHTTP(resp http.ResponseWriter, req *http.Request
 	this.handled <- fmt.Sprintf("http://%s", req.Host)
 }
 
-func RunBogusKeepServer(st http.Handler, port int) (listener net.Listener, url string) {
+func RunFakeKeepServer(st http.Handler) (ks KeepServer) {
 	var err error
-	listener, err = net.ListenTCP("tcp", &net.TCPAddr{Port: port})
+	ks.listener, err = net.ListenTCP("tcp", &net.TCPAddr{Port: 0})
 	if err != nil {
-		panic(fmt.Sprintf("Could not listen on tcp port %v", port))
+		panic(fmt.Sprintf("Could not listen on any port"))
 	}
-
-	url = fmt.Sprintf("http://localhost:%d", port)
-
-	go http.Serve(listener, st)
-	return listener, url
+	ks.url = fmt.Sprintf("http://%s", ks.listener.Addr().String())
+	go http.Serve(ks.listener, st)
+	return
 }
 
 func UploadToStubHelper(c *C, st http.Handler, f func(KeepClient, string,
 	io.ReadCloser, io.WriteCloser, chan uploadStatus)) {
 
-	listener, url := RunBogusKeepServer(st, 2990)
-	defer listener.Close()
+	ks := RunFakeKeepServer(st)
+	defer ks.listener.Close()
 
 	arv, _ := arvadosclient.MakeArvadosClient()
 	arv.ApiToken = "abc123"
@@ -137,7 +135,7 @@ func UploadToStubHelper(c *C, st http.Handler, f func(KeepClient, string,
 	reader, writer := io.Pipe()
 	upload_status := make(chan uploadStatus)
 
-	f(kc, url, reader, writer, upload_status)
+	f(kc, ks.url, reader, writer, upload_status)
 }
 
 func (s *StandaloneSuite) TestUploadToStubKeepServer(c *C) {
@@ -240,12 +238,11 @@ type KeepServer struct {
 	url      string
 }
 
-func RunSomeFakeKeepServers(st http.Handler, n int, port int) (ks []KeepServer) {
+func RunSomeFakeKeepServers(st http.Handler, n int) (ks []KeepServer) {
 	ks = make([]KeepServer, n)
 
 	for i := 0; i < n; i += 1 {
-		boguslistener, bogusurl := RunBogusKeepServer(st, port+i)
-		ks[i] = KeepServer{boguslistener, bogusurl}
+		ks[i] = RunFakeKeepServer(st)
 	}
 
 	return ks
@@ -270,11 +267,11 @@ func (s *StandaloneSuite) TestPutB(c *C) {
 	arv.ApiToken = "abc123"
 	service_roots := make(map[string]string)
 
-	ks := RunSomeFakeKeepServers(st, 5, 2990)
+	ks := RunSomeFakeKeepServers(st, 5)
 
-	for i := 0; i < len(ks); i += 1 {
-		service_roots[fmt.Sprintf("zzzzz-bi6l4-fakefakefake%03d", i)] = ks[i].url
-		defer ks[i].listener.Close()
+	for i, k := range ks {
+		service_roots[fmt.Sprintf("zzzzz-bi6l4-fakefakefake%03d", i)] = k.url
+		defer k.listener.Close()
 	}
 
 	kc.SetServiceRoots(service_roots)
@@ -313,11 +310,11 @@ func (s *StandaloneSuite) TestPutHR(c *C) {
 	arv.ApiToken = "abc123"
 	service_roots := make(map[string]string)
 
-	ks := RunSomeFakeKeepServers(st, 5, 2990)
+	ks := RunSomeFakeKeepServers(st, 5)
 
-	for i := 0; i < len(ks); i += 1 {
-		service_roots[fmt.Sprintf("zzzzz-bi6l4-fakefakefake%03d", i)] = ks[i].url
-		defer ks[i].listener.Close()
+	for i, k := range ks {
+		service_roots[fmt.Sprintf("zzzzz-bi6l4-fakefakefake%03d", i)] = k.url
+		defer k.listener.Close()
 	}
 
 	kc.SetServiceRoots(service_roots)
@@ -367,8 +364,8 @@ func (s *StandaloneSuite) TestPutWithFail(c *C) {
 	arv.ApiToken = "abc123"
 	service_roots := make(map[string]string)
 
-	ks1 := RunSomeFakeKeepServers(st, 4, 2990)
-	ks2 := RunSomeFakeKeepServers(fh, 1, 2995)
+	ks1 := RunSomeFakeKeepServers(st, 4)
+	ks2 := RunSomeFakeKeepServers(fh, 1)
 
 	for i, k := range ks1 {
 		service_roots[fmt.Sprintf("zzzzz-bi6l4-fakefakefake%03d", i)] = k.url
@@ -423,8 +420,8 @@ func (s *StandaloneSuite) TestPutWithTooManyFail(c *C) {
 	arv.ApiToken = "abc123"
 	service_roots := make(map[string]string)
 
-	ks1 := RunSomeFakeKeepServers(st, 1, 2990)
-	ks2 := RunSomeFakeKeepServers(fh, 4, 2991)
+	ks1 := RunSomeFakeKeepServers(st, 1)
+	ks2 := RunSomeFakeKeepServers(fh, 4)
 
 	for i, k := range ks1 {
 		service_roots[fmt.Sprintf("zzzzz-bi6l4-fakefakefake%03d", i)] = k.url
@@ -441,7 +438,7 @@ func (s *StandaloneSuite) TestPutWithTooManyFail(c *C) {
 
 	c.Check(err, Equals, InsufficientReplicasError)
 	c.Check(replicas, Equals, 1)
-	c.Check(<-st.handled, Matches, ".*2990")
+	c.Check(<-st.handled, Equals, ks1[0].url)
 
 	log.Printf("TestPutWithTooManyFail done")
 }
@@ -471,19 +468,19 @@ func (s *StandaloneSuite) TestGet(c *C) {
 		"abc123",
 		[]byte("foo")}
 
-	listener, url := RunBogusKeepServer(st, 2990)
-	defer listener.Close()
+	ks := RunFakeKeepServer(st)
+	defer ks.listener.Close()
 
 	arv, err := arvadosclient.MakeArvadosClient()
 	kc, _ := MakeKeepClient(&arv)
 	arv.ApiToken = "abc123"
-	kc.SetServiceRoots(map[string]string{"x": url})
+	kc.SetServiceRoots(map[string]string{"x":ks.url})
 
 	r, n, url2, err := kc.Get(hash)
 	defer r.Close()
 	c.Check(err, Equals, nil)
 	c.Check(n, Equals, int64(3))
-	c.Check(url2, Equals, fmt.Sprintf("%s/%s", url, hash))
+	c.Check(url2, Equals, fmt.Sprintf("%s/%s", ks.url, hash))
 
 	content, err2 := ioutil.ReadAll(r)
 	c.Check(err2, Equals, nil)
@@ -497,13 +494,13 @@ func (s *StandaloneSuite) TestGetFail(c *C) {
 
 	st := FailHandler{make(chan string, 1)}
 
-	listener, url := RunBogusKeepServer(st, 2990)
-	defer listener.Close()
+	ks := RunFakeKeepServer(st)
+	defer ks.listener.Close()
 
 	arv, err := arvadosclient.MakeArvadosClient()
 	kc, _ := MakeKeepClient(&arv)
 	arv.ApiToken = "abc123"
-	kc.SetServiceRoots(map[string]string{"x": url})
+	kc.SetServiceRoots(map[string]string{"x":ks.url})
 
 	r, n, url2, err := kc.Get(hash)
 	c.Check(err, Equals, BlockNotFound)
@@ -527,13 +524,13 @@ func (s *StandaloneSuite) TestChecksum(c *C) {
 
 	st := BarHandler{make(chan string, 1)}
 
-	listener, url := RunBogusKeepServer(st, 2990)
-	defer listener.Close()
+	ks := RunFakeKeepServer(st)
+	defer ks.listener.Close()
 
 	arv, err := arvadosclient.MakeArvadosClient()
 	kc, _ := MakeKeepClient(&arv)
 	arv.ApiToken = "abc123"
-	kc.SetServiceRoots(map[string]string{"x": url})
+	kc.SetServiceRoots(map[string]string{"x":ks.url})
 
 	r, n, _, err := kc.Get(barhash)
 	_, err = ioutil.ReadAll(r)
@@ -568,8 +565,8 @@ func (s *StandaloneSuite) TestGetWithFailures(c *C) {
 	arv.ApiToken = "abc123"
 	service_roots := make(map[string]string)
 
-	ks1 := RunSomeFakeKeepServers(st, 1, 2990)
-	ks2 := RunSomeFakeKeepServers(fh, 4, 2991)
+	ks1 := RunSomeFakeKeepServers(st, 1)
+	ks2 := RunSomeFakeKeepServers(fh, 4)
 
 	for i, k := range ks1 {
 		service_roots[fmt.Sprintf("zzzzz-bi6l4-fakefakefake%03d", i)] = k.url
@@ -588,7 +585,7 @@ func (s *StandaloneSuite) TestGetWithFailures(c *C) {
 	// the choice of block content "waz" and the UUIDs of the fake
 	// servers, so we just tried different strings until we found
 	// an example that passes this Assert.)
-	c.Assert(NewRootSorter(service_roots, hash).GetSortedRoots()[0], Matches, ".*299[1-4]")
+	c.Assert(NewRootSorter(service_roots, hash).GetSortedRoots()[0], Not(Equals), ks1[0].url)
 
 	r, n, url2, err := kc.Get(hash)
 
@@ -665,7 +662,7 @@ func (s *StandaloneSuite) TestPutProxy(c *C) {
 	arv.ApiToken = "abc123"
 	service_roots := make(map[string]string)
 
-	ks1 := RunSomeFakeKeepServers(st, 1, 2990)
+	ks1 := RunSomeFakeKeepServers(st, 1)
 
 	for i, k := range ks1 {
 		service_roots[fmt.Sprintf("zzzzz-bi6l4-fakefakefake%03d", i)] = k.url
@@ -696,7 +693,7 @@ func (s *StandaloneSuite) TestPutProxyInsufficientReplicas(c *C) {
 	arv.ApiToken = "abc123"
 	service_roots := make(map[string]string)
 
-	ks1 := RunSomeFakeKeepServers(st, 1, 2990)
+	ks1 := RunSomeFakeKeepServers(st, 1)
 
 	for i, k := range ks1 {
 		service_roots[fmt.Sprintf("zzzzz-bi6l4-fakefakefake%03d", i)] = k.url
