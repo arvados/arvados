@@ -11,7 +11,9 @@ class DescriptionsAreStrings < ActiveRecord::Migration
 
   def down
     tables_with_description_column.each do |table|
-      if table != 'collections'
+      if table == 'collections'
+        change_column table.to_sym, :description, :string # implicit limit 255
+      else
         change_column table.to_sym, :description, :text
       end
     end
