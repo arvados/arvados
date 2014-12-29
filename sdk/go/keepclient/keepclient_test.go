@@ -1,11 +1,11 @@
 package keepclient
 
 import (
-	"git.curoverse.com/arvados.git/sdk/go/arvadosclient"
-	"git.curoverse.com/arvados.git/sdk/go/streamer"
 	"crypto/md5"
 	"flag"
 	"fmt"
+	"git.curoverse.com/arvados.git/sdk/go/arvadosclient"
+	"git.curoverse.com/arvados.git/sdk/go/streamer"
 	. "gopkg.in/check.v1"
 	"io"
 	"io/ioutil"
@@ -154,7 +154,7 @@ func (s *StandaloneSuite) TestUploadToStubKeepServer(c *C) {
 		func(kc KeepClient, url string, reader io.ReadCloser,
 			writer io.WriteCloser, upload_status chan uploadStatus) {
 
-			go kc.uploadToKeepServer(url, st.expectPath, reader, upload_status, int64(len("foo")))
+			go kc.uploadToKeepServer(url, st.expectPath, reader, upload_status, int64(len("foo")), "TestUploadToStubKeepServer")
 
 			writer.Write([]byte("foo"))
 			writer.Close()
@@ -186,7 +186,7 @@ func (s *StandaloneSuite) TestUploadToStubKeepServerBufferReader(c *C) {
 
 			br1 := tr.MakeStreamReader()
 
-			go kc.uploadToKeepServer(url, st.expectPath, br1, upload_status, 3)
+			go kc.uploadToKeepServer(url, st.expectPath, br1, upload_status, 3, "TestUploadToStubKeepServerBufferReader")
 
 			writer.Write([]byte("foo"))
 			writer.Close()
@@ -221,7 +221,7 @@ func (s *StandaloneSuite) TestFailedUploadToStubKeepServer(c *C) {
 		func(kc KeepClient, url string, reader io.ReadCloser,
 			writer io.WriteCloser, upload_status chan uploadStatus) {
 
-			go kc.uploadToKeepServer(url, hash, reader, upload_status, 3)
+			go kc.uploadToKeepServer(url, hash, reader, upload_status, 3, "TestFailedUploadToStubKeepServer")
 
 			writer.Write([]byte("foo"))
 			writer.Close()
@@ -477,7 +477,7 @@ func (s *StandaloneSuite) TestGet(c *C) {
 	arv, err := arvadosclient.MakeArvadosClient()
 	kc, _ := MakeKeepClient(&arv)
 	arv.ApiToken = "abc123"
-	kc.SetServiceRoots(map[string]string{"x":url})
+	kc.SetServiceRoots(map[string]string{"x": url})
 
 	r, n, url2, err := kc.Get(hash)
 	defer r.Close()
@@ -503,7 +503,7 @@ func (s *StandaloneSuite) TestGetFail(c *C) {
 	arv, err := arvadosclient.MakeArvadosClient()
 	kc, _ := MakeKeepClient(&arv)
 	arv.ApiToken = "abc123"
-	kc.SetServiceRoots(map[string]string{"x":url})
+	kc.SetServiceRoots(map[string]string{"x": url})
 
 	r, n, url2, err := kc.Get(hash)
 	c.Check(err, Equals, BlockNotFound)
@@ -533,7 +533,7 @@ func (s *StandaloneSuite) TestChecksum(c *C) {
 	arv, err := arvadosclient.MakeArvadosClient()
 	kc, _ := MakeKeepClient(&arv)
 	arv.ApiToken = "abc123"
-	kc.SetServiceRoots(map[string]string{"x":url})
+	kc.SetServiceRoots(map[string]string{"x": url})
 
 	r, n, _, err := kc.Get(barhash)
 	_, err = ioutil.ReadAll(r)
