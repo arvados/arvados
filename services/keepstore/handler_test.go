@@ -81,6 +81,13 @@ func TestGetHandler(t *testing.T) {
 		"Unauthenticated request, unsigned locator",
 		string(TEST_BLOCK),
 		response)
+
+	received_cl := response.Header().Get("Content-Length")
+	expected_cl := fmt.Sprintf("%d", len(TEST_BLOCK))
+	if received_cl != expected_cl {
+		t.Errorf("expected Content-Length %s, got %s", expected_cl, received_cl)
+	}
+
 	received_xbs := response.Header().Get("X-Block-Size")
 	expected_xbs := fmt.Sprintf("%d", len(TEST_BLOCK))
 	if received_xbs != expected_xbs {
@@ -102,10 +109,17 @@ func TestGetHandler(t *testing.T) {
 		"Authenticated request, signed locator", http.StatusOK, response)
 	ExpectBody(t,
 		"Authenticated request, signed locator", string(TEST_BLOCK), response)
+
 	received_xbs = response.Header().Get("X-Block-Size")
 	expected_xbs = fmt.Sprintf("%d", len(TEST_BLOCK))
 	if received_xbs != expected_xbs {
 		t.Errorf("expected X-Block-Size %s, got %s", expected_xbs, received_xbs)
+	}
+
+	received_cl = response.Header().Get("Content-Length")
+	expected_cl = fmt.Sprintf("%d", len(TEST_BLOCK))
+	if received_cl != expected_cl {
+		t.Errorf("expected Content-Length %s, got %s", expected_cl, received_cl)
 	}
 
 	// Authenticated request, unsigned locator

@@ -175,6 +175,10 @@ func GetBlockHandler(resp http.ResponseWriter, req *http.Request) {
 		return
 	}
 
+	resp.Header().Set("Content-Length", fmt.Sprintf("%d", len(block)))
+
+	// If/when we support HTTP Range header (#3734), then Content-Length
+	// could be smaller than Block size
 	resp.Header().Set("X-Block-Size", fmt.Sprintf("%d", len(block)))
 
 	_, err = resp.Write(block)
