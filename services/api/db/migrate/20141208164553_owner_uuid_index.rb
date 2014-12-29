@@ -1,15 +1,9 @@
 class OwnerUuidIndex < ActiveRecord::Migration
   def tables_with_owner_uuid
-    all_tables = ActiveRecord::Base.connection.tables
-    my_tables = []
-    all_tables.each do |table|
+    ActiveRecord::Base.connection.tables.select do |table|
       columns = ActiveRecord::Base.connection.columns(table)
-      uuid_column = columns.select do |column|
-        column.name == 'owner_uuid'
-      end
-      my_tables << table if !uuid_column.empty?
+      columns.collect(&:name).include? 'owner_uuid'
     end
-    my_tables
   end
 
   def up
