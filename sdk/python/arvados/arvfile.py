@@ -212,7 +212,7 @@ class BufferBlock(object):
     PENDING = 1
     COMMITTED = 2
 
-    def __init__(self, blockid, starting_size=2**14):
+    def __init__(self, blockid, starting_size):
         self.blockid = blockid
         self.buffer_block = bytearray(starting_size)
         self.buffer_view = memoryview(self.buffer_block)
@@ -256,8 +256,10 @@ class BlockManager(object):
         self._prefetch_queue = None
         self._prefetch_thread = None
 
-    def alloc_bufferblock(self):
-        bb = BufferBlock("bufferblock%i" % len(self._bufferblocks))
+    def alloc_bufferblock(self, blockid=None, starting_size=2**14):
+        if blockid is None:
+            blockid = "bufferblock%i" % len(self._bufferblocks)
+        bb = BufferBlock(blockid, starting_size=starting_size)
         self._bufferblocks[bb.blockid] = bb
         return bb
 
@@ -282,7 +284,7 @@ class BlockManager(object):
                              threading.Thread(target=worker, args=(self,))]
 
         block.state = BufferBlock.PENDING
-        self._queue.put(block)
+        self._put_queue.put(block)
 
     def get_block(self, locator, num_retries):
         if locator in self._bufferblocks:
@@ -297,7 +299,7 @@ class BlockManager(object):
         for k,v in self._bufferblocks:
             if v.state == BufferBlock.WRITABLE:
                 self.commit_bufferblock(v)
-        self._queue.join()
+        self._put_queue.join()
         if not self._errors.empty():
             e = []
             try:
@@ -324,11 +326,12 @@ class BlockManager(object):
         self._prefetch_queue.put(locator)
 
 class ArvadosFile(object):
-    def __init__(self, stream=[], segments=[], keep=None):
+    def __init__(self, block_manager, stream=[], segments=[], keep=None):
         '''
         stream: a list of Range objects representing a block stream
         segments: a list of Range objects representing segments
         '''
+        self.bbm = block_manager
         self._modified = True
         self._segments = []
         for s in segments:
@@ -392,13 +395,12 @@ class ArvadosFile(object):
         if write_total < self._current_bblock.size():
             # There is more data in the buffer block than is actually accounted for by segments, so
             # re-pack into a new buffer by copying over to a new buffer block.
-            new_bb = BufferBlock(self._current_bblock.blockid, starting_size=write_total)
+            new_bb = self.bbm.alloc_bufferblock(self._current_bblock.blockid, starting_size=write_total)
             for t in bufferblock_segs:
                 new_bb.append(self._current_bblock.buffer_view[t.segment_offset:t.segment_offset+t.range_size].tobytes())
                 t.segment_offset = new_bb.size() - t.range_size
 
             self._current_bblock = new_bb
-            self.bbm[self._current_bblock.blockid] = self._current_bblock
 
     def writeto(self, offset, data, num_retries):
         if len(data) == 0:

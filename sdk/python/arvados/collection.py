@@ -6,7 +6,7 @@ import re
 from collections import deque
 from stat import *
 
-from .arvfile import ArvadosFileBase, split, ArvadosFile, ArvadosFileWriter, ArvadosFileReader
+from .arvfile import ArvadosFileBase, split, ArvadosFile, ArvadosFileWriter, ArvadosFileReader, BlockManager
 from keep import *
 from .stream import StreamReader, normalize_stream, locator_block_size
 from .ranges import Range, LocatorAndRange
@@ -641,7 +641,7 @@ class ResumableCollectionWriter(CollectionWriter):
 
 class Collection(CollectionBase):
     def __init__(self, manifest_locator_or_text=None, api_client=None,
-                 keep_client=None, num_retries=0):
+                 keep_client=None, num_retries=0, block_manager=None):
 
         self._items = None
         self._api_client = api_client
@@ -650,6 +650,9 @@ class Collection(CollectionBase):
         self._manifest_locator = None
         self._manifest_text = None
         self._api_response = None
+
+        if block_manager is None:
+            self.block_manager = BlockManager(keep_client)
 
         if manifest_locator_or_text:
             if re.match(util.keep_locator_pattern, manifest_locator_or_text):
@@ -753,13 +756,13 @@ class Collection(CollectionBase):
                 # item must be a file
                 if item is None and create:
                     # create new file
-                    item = ArvadosFile(keep=self._keep_client)
+                    item = ArvadosFile(self.block_manager, keep=self._keep_client)
                     self._items[p[0]] = item
                 return item
             else:
                 if item is None and create:
                     # create new collection
-                    item = Collection(api_client=self._api_client, keep=self._keep_client, num_retries=self.num_retries)
+                    item = Collection(api_client=self._api_client, keep=self._keep_client, num_retries=self.num_retries, block_manager=self.block_manager)
                     self._items[p[0]] = item
                 del p[0]
                 return item.find("/".join(p), create=create)
@@ -973,7 +976,7 @@ def export_manifest(item, stream_name=".", portable_locators=False):
             for s in v._segments:
                 loc = s.locator
                 if loc.startswith("bufferblock"):
-                    loc = v._bufferblocks[loc].calculate_locator()
+                    loc = v.bbm._bufferblocks[loc].locator()
                 st.append(LocatorAndRange(loc, locator_block_size(loc),
                                      s.segment_offset, s.range_size))
             stream[k] = st
