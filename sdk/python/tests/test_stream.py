@@ -272,6 +272,6 @@ class StreamFileReadAllDecompressedTestCase(StreamFileReadTestCase):
 class StreamFileReadlinesTestCase(StreamFileReadTestCase):
     def read_for_test(self, reader, byte_count, **kwargs):
         return ''.join(reader.readlines(**kwargs))
-o
+
 if __name__ == '__main__':
     unittest.main()

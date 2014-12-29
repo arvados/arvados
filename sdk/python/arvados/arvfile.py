@@ -237,7 +237,7 @@ class BufferBlock(object):
         return self.write_pointer
 
     def locator(self):
-        if self._locator is None
+        if self._locator is None:
             self._locator = "%s+%i" % (hashlib.md5(self.buffer_view[0:self.write_pointer]).hexdigest(), self.size())
         return self._locator
 
@@ -412,7 +412,7 @@ class ArvadosFile(object):
 
         self._modified = True
 
-        if self._current_bblock is None or self._current_bblock.state != BufferBlock.WRITABLE::
+        if self._current_bblock is None or self._current_bblock.state != BufferBlock.WRITABLE:
             self._current_bblock = self.bbm.alloc_bufferblock()
 
         if (self._current_bblock.size() + len(data)) > config.KEEP_BLOCK_SIZE:

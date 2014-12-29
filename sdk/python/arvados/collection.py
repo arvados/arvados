@@ -888,7 +888,7 @@ class Collection(CollectionBase):
                 self._api_response = self._api_client.collections().update(
                     uuid=self._manifest_locator,
                     body={'manifest_text': self.manifest_text(strip=False)}
-                    }).execute(
+                    ).execute(
                         num_retries=self.num_retries)
             else:
                 raise AssertionError("Collection manifest_locator must be a collection uuid.  Use save_as() for new collections.")
@@ -901,7 +901,7 @@ class Collection(CollectionBase):
                 "name": name}
         if owner_uuid:
             body["owner_uuid"] = owner_uuid
-        self._api_response = self._api_client.collections().create(body=body}).execute(num_retries=self.num_retries)
+        self._api_response = self._api_client.collections().create(body=body).execute(num_retries=self.num_retries)
         self._manifest_locator = self._api_response["uuid"]
         self.set_unmodified()
 
