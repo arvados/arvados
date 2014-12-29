@@ -313,7 +313,7 @@ do_test() {
         timer_reset
         if [[ "$2" == "go" ]]
         then
-            go test "git.curoverse.com/arvados.git/$1"
+            go test "${testargs[$1]}" "git.curoverse.com/arvados.git/$1"
         elif [[ "$2" == "pip" ]]
         then
            # Other test suites can depend on tests_require
@@ -413,8 +413,7 @@ done
 
 install_apiserver() {
     cd "$WORKSPACE/services/api"
-    export RAILS_ENV=test
-    bundle install --no-deployment
+    RAILS_ENV=test bundle install --no-deployment
 
     rm -f config/environments/test.rb
     cp config/environments/test.rb.example config/environments/test.rb
@@ -453,9 +452,9 @@ install_apiserver() {
     psql arvados_test -c "SELECT pg_terminate_backend (pg_stat_activity.procpid::int) FROM pg_stat_activity WHERE pg_stat_activity.datname = 'arvados_test';" 2>/dev/null
 
     cd "$WORKSPACE/services/api" \
-        && bundle exec rake db:drop \
-        && bundle exec rake db:create \
-        && bundle exec rake db:setup
+        && RAILS_ENV=test bundle exec rake db:drop \
+        && RAILS_ENV=test bundle exec rake db:create \
+        && RAILS_ENV=test bundle exec rake db:setup
 }
 do_install services/api apiserver
 
@@ -505,7 +504,7 @@ do_test sdk/cli cli
 
 test_apiserver() {
     cd "$WORKSPACE/services/api"
-    bundle exec rake test ${testargs[apiserver]}
+    RAILS_ENV=test bundle exec rake test ${testargs[apiserver]}
 }
 do_test services/api apiserver
 
@@ -523,13 +522,13 @@ done
 
 test_workbench() {
     cd "$WORKSPACE/apps/workbench" \
-        && bundle exec rake test ${testargs[workbench]}
+        && RAILS_ENV=test bundle exec rake test ${testargs[workbench]}
 }
 do_test apps/workbench workbench
 
 test_workbench_performance() {
     cd "$WORKSPACE/apps/workbench" \
-        && bundle exec rake test:benchmark
+        && RAILS_ENV=test bundle exec rake test:benchmark
 }
 do_test apps/workbench_performance workbench_performance
 
