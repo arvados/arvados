@@ -48,7 +48,7 @@ func MakeKeepClient(arv *arvadosclient.ArvadosClient) (kc KeepClient, err error)
 		Arvados:       arv,
 		Want_replicas: 2,
 		Using_proxy:   false,
-		Client:        &http.Client{Transport: &http.Transport{}, Timeout: 10 * time.Minute}}
+		Client:        &http.Client{Transport: &http.Transport{}}}
 
 	err = (&kc).DiscoverKeepServers()
 
@@ -134,7 +134,7 @@ func (this KeepClient) AuthorizedGet(hash string,
 
 	// Take the hash of locator and timestamp in order to identify this
 	// specific transaction in log statements.
-	tag := fmt.Sprintf("%x", md5.Sum([]byte(hash+time.Now().String())))[0:8]
+	requestId := fmt.Sprintf("%x", md5.Sum([]byte(hash+time.Now().String())))[0:8]
 
 	// Calculate the ordering for asking servers
 	sv := NewRootSorter(this.ServiceRoots(), hash).GetSortedRoots()
@@ -155,19 +155,19 @@ func (this KeepClient) AuthorizedGet(hash string,
 
 		req.Header.Add("Authorization", fmt.Sprintf("OAuth2 %s", this.Arvados.ApiToken))
 
-		log.Printf("[%v] Begin download %s", tag, url)
+		log.Printf("[%v] Begin download %s", requestId, url)
 
 		var resp *http.Response
 		if resp, err = this.Client.Do(req); err != nil || resp.StatusCode != http.StatusOK {
 			respbody, _ := ioutil.ReadAll(&io.LimitedReader{resp.Body, 4096})
 			response := strings.TrimSpace(string(respbody))
-			log.Printf("[%v] Download %v status code: %v error: '%v' response: '%v'",
-				tag, url, resp.StatusCode, err, response)
+			log.Printf("[%v] Download %v status code: %v error: \"%v\" response: \"%v\"",
+				requestId, url, resp.StatusCode, err, response)
 			continue
 		}
 
 		if resp.StatusCode == http.StatusOK {
-			log.Printf("[%v] Download %v status code: %v", tag, url, resp.StatusCode)
+			log.Printf("[%v] Download %v status code: %v", requestId, url, resp.StatusCode)
 			return HashCheckingReader{resp.Body, md5.New(), hash}, resp.ContentLength, url, nil
 		}
 	}

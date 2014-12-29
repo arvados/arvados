@@ -32,7 +32,14 @@ func (this *KeepClient) DiscoverKeepServers() error {
 		sr := map[string]string{"proxy": prx}
 		this.SetServiceRoots(sr)
 		this.Using_proxy = true
+		if this.Client.Timeout == 0 {
+			this.Client.Timeout = 10 * time.Minute
+		}
 		return nil
+	}
+
+	if this.Client.Timeout == 0 {
+		this.Client.Timeout = 15 * time.Second
 	}
 
 	type svcList struct {
@@ -85,20 +92,23 @@ type uploadStatus struct {
 }
 
 func (this KeepClient) uploadToKeepServer(host string, hash string, body io.ReadCloser,
-	upload_status chan<- uploadStatus, expectedLength int64, tag string) {
+	upload_status chan<- uploadStatus, expectedLength int64, requestId string) {
 
 	var req *http.Request
 	var err error
 	var url = fmt.Sprintf("%s/%s", host, hash)
 	if req, err = http.NewRequest("PUT", url, nil); err != nil {
-		log.Printf("[%v] Error creating request PUT %v error: %v", tag, url, err.Error())
+		log.Printf("[%v] Error creating request PUT %v error: %v", requestId, url, err.Error())
 		upload_status <- uploadStatus{err, url, 0, 0, ""}
 		body.Close()
 		return
 	}
 
-	if expectedLength > 0 {
+	if expectedLength > -1 {
 		req.ContentLength = expectedLength
+	}
+	if expectedLength == 0 {
+		defer body.Close()
 	}
 
 	req.Header.Add("Authorization", fmt.Sprintf("OAuth2 %s", this.Arvados.ApiToken))
@@ -112,7 +122,7 @@ func (this KeepClient) uploadToKeepServer(host string, hash string, body io.Read
 
 	var resp *http.Response
 	if resp, err = this.Client.Do(req); err != nil {
-		log.Printf("[%v] Upload failed %v error: %v", tag, url, err.Error())
+		log.Printf("[%v] Upload failed %v error: %v", requestId, url, err.Error())
 		upload_status <- uploadStatus{err, url, 0, 0, ""}
 		return
 	}
@@ -128,13 +138,13 @@ func (this KeepClient) uploadToKeepServer(host string, hash string, body io.Read
 	respbody, err2 := ioutil.ReadAll(&io.LimitedReader{resp.Body, 4096})
 	response := strings.TrimSpace(string(respbody))
 	if err2 != nil && err2 != io.EOF {
-		log.Printf("[%v] Upload %v error: %v response: %v", tag, url, err2.Error(), response)
+		log.Printf("[%v] Upload %v error: %v response: %v", requestId, url, err2.Error(), response)
 		upload_status <- uploadStatus{err2, url, resp.StatusCode, rep, response}
 	} else if resp.StatusCode == http.StatusOK {
-		log.Printf("[%v] Upload %v success", tag, url)
+		log.Printf("[%v] Upload %v success", requestId, url)
 		upload_status <- uploadStatus{nil, url, resp.StatusCode, rep, response}
 	} else {
-		log.Printf("[%v] Upload %v error: %v response: %v", tag, url, resp.StatusCode, response)
+		log.Printf("[%v] Upload %v error: %v response: %v", requestId, url, resp.StatusCode, response)
 		upload_status <- uploadStatus{errors.New(resp.Status), url, resp.StatusCode, rep, response}
 	}
 }
@@ -146,7 +156,7 @@ func (this KeepClient) putReplicas(
 
 	// Take the hash of locator and timestamp in order to identify this
 	// specific transaction in log statements.
-	tag := fmt.Sprintf("%x", md5.Sum([]byte(locator+time.Now().String())))[0:8]
+	requestId := fmt.Sprintf("%x", md5.Sum([]byte(locator+time.Now().String())))[0:8]
 
 	// Calculate the ordering for uploading to servers
 	sv := NewRootSorter(this.ServiceRoots(), hash).GetSortedRoots()
@@ -168,8 +178,8 @@ func (this KeepClient) putReplicas(
 		for active < remaining_replicas {
 			// Start some upload requests
 			if next_server < len(sv) {
-				log.Printf("[%v] Begin upload %s to %s", tag, hash, sv[next_server])
-				go this.uploadToKeepServer(sv[next_server], hash, tr.MakeStreamReader(), upload_status, expectedLength, tag)
+				log.Printf("[%v] Begin upload %s to %s", requestId, hash, sv[next_server])
+				go this.uploadToKeepServer(sv[next_server], hash, tr.MakeStreamReader(), upload_status, expectedLength, requestId)
 				next_server += 1
 				active += 1
 			} else {
@@ -181,11 +191,12 @@ func (this KeepClient) putReplicas(
 			}
 		}
 		log.Printf("[%v] Replicas remaining to write: %v active uploads: %v",
-			tag, remaining_replicas, active)
+			requestId, remaining_replicas, active)
 
 		// Now wait for something to happen.
 		status := <-upload_status
 		active -= 1
+
 		if status.statusCode == 200 {
 			// good news!
 			remaining_replicas -= status.replicas_stored

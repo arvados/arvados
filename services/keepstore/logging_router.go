@@ -43,8 +43,8 @@ func (loggingRouter *LoggingRESTRouter) ServeHTTP(resp http.ResponseWriter, req 
 	loggingWriter := LoggingResponseWriter{200, 0, resp, ""}
 	loggingRouter.router.ServeHTTP(&loggingWriter, req)
 	if loggingWriter.Status >= 400 {
-		log.Printf("[%s] %s %s %d %d '%s'", req.RemoteAddr, req.Method, req.URL.Path[1:], loggingWriter.Status, loggingWriter.Length, strings.TrimSpace(loggingWriter.Response))
+		log.Printf("[%s] %s %s %d %d \"%s\"", req.RemoteAddr, req.Method, req.URL.Path[1:], loggingWriter.Status, loggingWriter.Length, strings.TrimSpace(loggingWriter.Response))
 	} else {
-		log.Printf("[%s] %s %s %d %d", req.RemoteAddr, req.Method, req.URL.Path[1:], loggingWriter.Status, loggingWriter.Length)
+		log.Printf("[%s] %s %s %d %d \"OK\"", req.RemoteAddr, req.Method, req.URL.Path[1:], loggingWriter.Status, loggingWriter.Length)
 	}
 }

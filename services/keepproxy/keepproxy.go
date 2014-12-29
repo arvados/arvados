@@ -30,7 +30,7 @@ func main() {
 		no_get           bool
 		no_put           bool
 		default_replicas int
-		timeout          int
+		timeout          int64
 		pidfile          string
 	)
 
@@ -62,11 +62,11 @@ func main() {
 		2,
 		"Default number of replicas to write if not specified by the client.")
 
-	flagset.IntVar(
+	flagset.Int64Var(
 		&timeout,
 		"timeout",
-		20,
-		"Timeout on requests to internal Keep services")
+		15,
+		"Timeout on requests to internal Keep services (default 15 seconds)")
 
 	flagset.StringVar(
 		&pidfile,
@@ -97,7 +97,8 @@ func main() {
 	}
 
 	kc.Want_replicas = default_replicas
-	kc.Client.Timeout = 20 * time.Second
+
+	kc.Client.Timeout = time.Duration(timeout) * time.Second
 
 	listener, err = net.Listen("tcp", listen)
 	if err != nil {
@@ -377,7 +378,7 @@ func (this PutBlockHandler) ServeHTTP(resp http.ResponseWriter, req *http.Reques
 
 	log.Printf("%s: %s %s Content-Length %v", GetRemoteAddress(req), req.Method, hash, contentLength)
 
-	if contentLength < 1 {
+	if contentLength < 0 {
 		http.Error(resp, "Must include Content-Length header", http.StatusLengthRequired)
 		return
 	}
