@@ -1,10 +1,10 @@
 package main
 
 import (
-	"git.curoverse.com/arvados.git/sdk/go/keepclient"
-	"git.curoverse.com/arvados.git/sdk/go/arvadosclient"
 	"flag"
 	"fmt"
+	"git.curoverse.com/arvados.git/sdk/go/arvadosclient"
+	"git.curoverse.com/arvados.git/sdk/go/keepclient"
 	"github.com/gorilla/mux"
 	"io"
 	"io/ioutil"
@@ -30,6 +30,7 @@ func main() {
 		no_get           bool
 		no_put           bool
 		default_replicas int
+		timeout          int
 		pidfile          string
 	)
 
@@ -61,6 +62,12 @@ func main() {
 		2,
 		"Default number of replicas to write if not specified by the client.")
 
+	flagset.IntVar(
+		&timeout,
+		"timeout",
+		20,
+		"Timeout on requests to internal Keep services")
+
 	flagset.StringVar(
 		&pidfile,
 		"pid",
@@ -90,6 +97,7 @@ func main() {
 	}
 
 	kc.Want_replicas = default_replicas
+	kc.Client.Timeout = 20 * time.Second
 
 	listener, err = net.Listen("tcp", listen)
 	if err != nil {
@@ -283,7 +291,7 @@ func (this GetBlockHandler) ServeHTTP(resp http.ResponseWriter, req *http.Reques
 
 	locator := keepclient.MakeLocator2(hash, hints)
 
-	log.Printf("%s: %s %s", GetRemoteAddress(req), req.Method, hash)
+	log.Printf("%s: %s %s begin", GetRemoteAddress(req), req.Method, hash)
 
 	var pass bool
 	var tok string
@@ -308,32 +316,43 @@ func (this GetBlockHandler) ServeHTTP(resp http.ResponseWriter, req *http.Reques
 		blocklen, _, err = kc.AuthorizedAsk(hash, locator.Signature, locator.Timestamp)
 	}
 
-	if blocklen > 0 {
+	if blocklen > -1 {
 		resp.Header().Set("Content-Length", fmt.Sprint(blocklen))
+	} else {
+		log.Printf("%s: %s %s Keep server did not return Content-Length",
+			GetRemoteAddress(req), req.Method, hash)
 	}
 
+	var status = 0
 	switch err {
 	case nil:
+		status = http.StatusOK
 		if reader != nil {
 			n, err2 := io.Copy(resp, reader)
-			if n != blocklen {
-				log.Printf("%s: %s %s mismatched return %v with Content-Length %v error %v", GetRemoteAddress(req), req.Method, hash, n, blocklen, err2)
+			if blocklen > -1 && n != blocklen {
+				log.Printf("%s: %s %s %v %v mismatched copy size expected Content-Length: %v",
+					GetRemoteAddress(req), req.Method, hash, status, n, blocklen)
 			} else if err2 == nil {
-				log.Printf("%s: %s %s success returned %v bytes", GetRemoteAddress(req), req.Method, hash, n)
+				log.Printf("%s: %s %s %v %v",
+					GetRemoteAddress(req), req.Method, hash, status, n)
 			} else {
-				log.Printf("%s: %s %s returned %v bytes error %v", GetRemoteAddress(req), req.Method, hash, n, err.Error())
+				log.Printf("%s: %s %s %v %v copy error: %v",
+					GetRemoteAddress(req), req.Method, hash, status, n, err2.Error())
 			}
 		} else {
-			log.Printf("%s: %s %s success", GetRemoteAddress(req), req.Method, hash)
+			log.Printf("%s: %s %s %v 0", GetRemoteAddress(req), req.Method, hash, status)
 		}
 	case keepclient.BlockNotFound:
+		status = http.StatusNotFound
 		http.Error(resp, "Not found", http.StatusNotFound)
 	default:
+		status = http.StatusBadGateway
 		http.Error(resp, err.Error(), http.StatusBadGateway)
 	}
 
 	if err != nil {
-		log.Printf("%s: %s %s error %s", GetRemoteAddress(req), req.Method, hash, err.Error())
+		log.Printf("%s: %s %s %v error: %v",
+			GetRemoteAddress(req), req.Method, hash, status, err.Error())
 	}
 }
 

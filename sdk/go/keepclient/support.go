@@ -87,12 +87,11 @@ type uploadStatus struct {
 func (this KeepClient) uploadToKeepServer(host string, hash string, body io.ReadCloser,
 	upload_status chan<- uploadStatus, expectedLength int64, tag string) {
 
-	log.Printf("[%v] Begin upload %s to %s", tag, hash, host)
-
 	var req *http.Request
 	var err error
 	var url = fmt.Sprintf("%s/%s", host, hash)
 	if req, err = http.NewRequest("PUT", url, nil); err != nil {
+		log.Printf("[%v] Error creating request PUT %v error: %v", tag, url, err.Error())
 		upload_status <- uploadStatus{err, url, 0, 0, ""}
 		body.Close()
 		return
@@ -113,8 +112,8 @@ func (this KeepClient) uploadToKeepServer(host string, hash string, body io.Read
 
 	var resp *http.Response
 	if resp, err = this.Client.Do(req); err != nil {
+		log.Printf("[%v] Upload failed %v error: %v", tag, url, err.Error())
 		upload_status <- uploadStatus{err, url, 0, 0, ""}
-		body.Close()
 		return
 	}
 
@@ -127,17 +126,16 @@ func (this KeepClient) uploadToKeepServer(host string, hash string, body io.Read
 	defer io.Copy(ioutil.Discard, resp.Body)
 
 	respbody, err2 := ioutil.ReadAll(&io.LimitedReader{resp.Body, 4096})
+	response := strings.TrimSpace(string(respbody))
 	if err2 != nil && err2 != io.EOF {
-		upload_status <- uploadStatus{err2, url, resp.StatusCode, rep, string(respbody)}
-		return
-	}
-
-	locator := strings.TrimSpace(string(respbody))
-
-	if resp.StatusCode == http.StatusOK {
-		upload_status <- uploadStatus{nil, url, resp.StatusCode, rep, locator}
+		log.Printf("[%v] Upload %v error: %v response: %v", tag, url, err2.Error(), response)
+		upload_status <- uploadStatus{err2, url, resp.StatusCode, rep, response}
+	} else if resp.StatusCode == http.StatusOK {
+		log.Printf("[%v] Upload %v success", tag, url)
+		upload_status <- uploadStatus{nil, url, resp.StatusCode, rep, response}
 	} else {
-		upload_status <- uploadStatus{errors.New(resp.Status), url, resp.StatusCode, rep, string(respbody)}
+		log.Printf("[%v] Upload %v error: %v response: %v", tag, url, resp.StatusCode, response)
+		upload_status <- uploadStatus{errors.New(resp.Status), url, resp.StatusCode, rep, response}
 	}
 }
 
@@ -170,6 +168,7 @@ func (this KeepClient) putReplicas(
 		for active < remaining_replicas {
 			// Start some upload requests
 			if next_server < len(sv) {
+				log.Printf("[%v] Begin upload %s to %s", tag, hash, sv[next_server])
 				go this.uploadToKeepServer(sv[next_server], hash, tr.MakeStreamReader(), upload_status, expectedLength, tag)
 				next_server += 1
 				active += 1
@@ -181,22 +180,17 @@ func (this KeepClient) putReplicas(
 				}
 			}
 		}
+		log.Printf("[%v] Replicas remaining to write: %v active uploads: %v",
+			tag, remaining_replicas, active)
 
 		// Now wait for something to happen.
 		status := <-upload_status
-		log.Printf("[%v] Upload to %v status code: %v remaining replicas: %v active: %v",
-			tag, status.url, status.statusCode, remaining_replicas, active)
+		active -= 1
 		if status.statusCode == 200 {
 			// good news!
 			remaining_replicas -= status.replicas_stored
 			locator = status.response
-		} else {
-			// writing to keep server failed for some reason
-			log.Printf("[%v] Upload to %v failed with error '%v', response '%v'",
-				tag, status.url, status.statusCode, status.err, status.response)
 		}
-		active -= 1
-
 	}
 
 	return locator, this.Want_replicas, nil
