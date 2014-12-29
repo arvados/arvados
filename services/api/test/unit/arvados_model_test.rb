@@ -87,7 +87,7 @@ class ArvadosModelTest < ActiveSupport::TestCase
     end
   end
 
-  test "unique uuid index exists on all models with the column uuid" do 
+  test "unique uuid index exists on all models with the column uuid" do
     tables = ActiveRecord::Base.connection.tables
     tables.each do |table|
       columns = ActiveRecord::Base.connection.columns(table)
