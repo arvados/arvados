@@ -1,11 +1,11 @@
 package keepclient
 
 import (
-	"git.curoverse.com/arvados.git/sdk/go/arvadosclient"
-	"git.curoverse.com/arvados.git/sdk/go/streamer"
 	"crypto/md5"
 	"flag"
 	"fmt"
+	"git.curoverse.com/arvados.git/sdk/go/arvadosclient"
+	"git.curoverse.com/arvados.git/sdk/go/streamer"
 	. "gopkg.in/check.v1"
 	"io"
 	"io/ioutil"
@@ -152,7 +152,7 @@ func (s *StandaloneSuite) TestUploadToStubKeepServer(c *C) {
 		func(kc KeepClient, url string, reader io.ReadCloser,
 			writer io.WriteCloser, upload_status chan uploadStatus) {
 
-			go kc.uploadToKeepServer(url, st.expectPath, reader, upload_status, int64(len("foo")))
+			go kc.uploadToKeepServer(url, st.expectPath, reader, upload_status, int64(len("foo")), "TestUploadToStubKeepServer")
 
 			writer.Write([]byte("foo"))
 			writer.Close()
@@ -184,7 +184,7 @@ func (s *StandaloneSuite) TestUploadToStubKeepServerBufferReader(c *C) {
 
 			br1 := tr.MakeStreamReader()
 
-			go kc.uploadToKeepServer(url, st.expectPath, br1, upload_status, 3)
+			go kc.uploadToKeepServer(url, st.expectPath, br1, upload_status, 3, "TestUploadToStubKeepServerBufferReader")
 
 			writer.Write([]byte("foo"))
 			writer.Close()
@@ -219,7 +219,7 @@ func (s *StandaloneSuite) TestFailedUploadToStubKeepServer(c *C) {
 		func(kc KeepClient, url string, reader io.ReadCloser,
 			writer io.WriteCloser, upload_status chan uploadStatus) {
 
-			go kc.uploadToKeepServer(url, hash, reader, upload_status, 3)
+			go kc.uploadToKeepServer(url, hash, reader, upload_status, 3, "TestFailedUploadToStubKeepServer")
 
 			writer.Write([]byte("foo"))
 			writer.Close()

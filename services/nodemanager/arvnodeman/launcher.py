@@ -57,25 +57,22 @@ def setup_logging(path, level, **sublevels):
         sublogger = logging.getLogger(logger_name)
         sublogger.setLevel(sublevel)
 
-def launch_pollers(config):
-    cloud_client = config.new_cloud_client()
-    arvados_client = config.new_arvados_client()
-    cloud_size_list = config.node_sizes(cloud_client.list_sizes())
+def build_server_calculator(config):
+    cloud_size_list = config.node_sizes(config.new_cloud_client().list_sizes())
     if not cloud_size_list:
         abort("No valid node sizes configured")
+    return ServerCalculator(cloud_size_list,
+                            config.getint('Daemon', 'max_nodes'))
 
-    server_calculator = ServerCalculator(
-        cloud_size_list,
-        config.getint('Daemon', 'min_nodes'),
-        config.getint('Daemon', 'max_nodes'))
+def launch_pollers(config, server_calculator):
     poll_time = config.getint('Daemon', 'poll_time')
     max_poll_time = config.getint('Daemon', 'max_poll_time')
 
     timer = TimedCallBackActor.start(poll_time / 10.0).proxy()
     cloud_node_poller = CloudNodeListMonitorActor.start(
-        cloud_client, timer, poll_time, max_poll_time).proxy()
+        config.new_cloud_client(), timer, poll_time, max_poll_time).proxy()
     arvados_node_poller = ArvadosNodeListMonitorActor.start(
-        arvados_client, timer, poll_time, max_poll_time).proxy()
+        config.new_arvados_client(), timer, poll_time, max_poll_time).proxy()
     job_queue_poller = JobQueueMonitorActor.start(
         config.new_arvados_client(), timer, server_calculator,
         poll_time, max_poll_time).proxy()
@@ -108,14 +105,16 @@ def main(args=None):
     setup_logging(config.get('Logging', 'file'), **config.log_levels())
     node_setup, node_shutdown, node_update, node_monitor = \
         config.dispatch_classes()
+    server_calculator = build_server_calculator(config)
     timer, cloud_node_poller, arvados_node_poller, job_queue_poller = \
-        launch_pollers(config)
+        launch_pollers(config, server_calculator)
     cloud_node_updater = node_update.start(config.new_cloud_client).proxy()
     node_daemon = NodeManagerDaemonActor.start(
         job_queue_poller, arvados_node_poller, cloud_node_poller,
         cloud_node_updater, timer,
         config.new_arvados_client, config.new_cloud_client,
         config.shutdown_windows(),
+        server_calculator.cheapest_size(),
         config.getint('Daemon', 'min_nodes'),
         config.getint('Daemon', 'max_nodes'),
         config.getint('Daemon', 'poll_stale_after'),

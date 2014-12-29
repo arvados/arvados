@@ -14,8 +14,14 @@ from . import testutil
 
 class NodeManagerDaemonActorTestCase(testutil.ActorTestMixin,
                                      unittest.TestCase):
+    def new_setup_proxy(self):
+        # Make sure that every time the daemon starts a setup actor,
+        # it gets a new mock object back.
+        self.last_setup = mock.MagicMock(name='setup_proxy_mock')
+        return self.last_setup
+
     def make_daemon(self, cloud_nodes=[], arvados_nodes=[], want_sizes=[],
-                    min_nodes=0, max_nodes=8):
+                    min_size=testutil.MockSize(1), min_nodes=0, max_nodes=8):
         for name in ['cloud_nodes', 'arvados_nodes', 'server_wishlist']:
             setattr(self, name + '_poller', mock.MagicMock(name=name + '_mock'))
         self.arv_factory = mock.MagicMock(name='arvados_mock')
@@ -24,12 +30,14 @@ class NodeManagerDaemonActorTestCase(testutil.ActorTestMixin,
         self.cloud_updates = mock.MagicMock(name='updates_mock')
         self.timer = testutil.MockTimer(deliver_immediately=False)
         self.node_setup = mock.MagicMock(name='setup_mock')
+        self.node_setup.start().proxy.side_effect = self.new_setup_proxy
+        self.node_setup.reset_mock()
         self.node_shutdown = mock.MagicMock(name='shutdown_mock')
         self.daemon = nmdaemon.NodeManagerDaemonActor.start(
             self.server_wishlist_poller, self.arvados_nodes_poller,
             self.cloud_nodes_poller, self.cloud_updates, self.timer,
             self.arv_factory, self.cloud_factory,
-            [54, 5, 1], min_nodes, max_nodes, 600, 1800, 3600,
+            [54, 5, 1], min_size, min_nodes, max_nodes, 600, 1800, 3600,
             self.node_setup, self.node_shutdown).proxy()
         if cloud_nodes is not None:
             self.daemon.update_cloud_nodes(cloud_nodes).get(self.TIMEOUT)
@@ -91,12 +99,7 @@ class NodeManagerDaemonActorTestCase(testutil.ActorTestMixin,
         arv_node = testutil.arvados_node_mock(3, age=9000)
         size = testutil.MockSize(3)
         self.make_daemon(arvados_nodes=[arv_node])
-        setup_ref = self.node_setup.start().proxy().actor_ref
-        setup_ref.actor_urn = 0
-        self.node_setup.start.reset_mock()
         self.daemon.update_server_wishlist([size]).get(self.TIMEOUT)
-        self.daemon.max_nodes.get(self.TIMEOUT)
-        setup_ref.actor_urn += 1
         self.daemon.update_server_wishlist([size, size]).get(self.TIMEOUT)
         self.stop_proxy(self.daemon)
         used_nodes = [call[1].get('arvados_node')
@@ -129,6 +132,26 @@ class NodeManagerDaemonActorTestCase(testutil.ActorTestMixin,
         self.stop_proxy(self.daemon)
         self.assertTrue(self.node_setup.start.called)
 
+    def test_boot_new_node_below_min_nodes(self):
+        min_size = testutil.MockSize(1)
+        wish_size = testutil.MockSize(3)
+        self.make_daemon([], [], None, min_size=min_size, min_nodes=2)
+        self.daemon.update_server_wishlist([wish_size]).get(self.TIMEOUT)
+        self.daemon.update_cloud_nodes([]).get(self.TIMEOUT)
+        self.daemon.update_server_wishlist([wish_size]).get(self.TIMEOUT)
+        self.stop_proxy(self.daemon)
+        self.assertEqual([wish_size, min_size],
+                         [call[1].get('cloud_size')
+                          for call in self.node_setup.start.call_args_list])
+
+    def test_no_new_node_when_ge_min_nodes_busy(self):
+        cloud_nodes = [testutil.cloud_node_mock(n) for n in range(1, 4)]
+        arv_nodes = [testutil.arvados_node_mock(n, job_uuid=True)
+                     for n in range(1, 4)]
+        self.make_daemon(cloud_nodes, arv_nodes, [], min_nodes=2)
+        self.stop_proxy(self.daemon)
+        self.assertEqual(0, self.node_setup.start.call_count)
+
     def test_no_new_node_when_max_nodes_busy(self):
         self.make_daemon([testutil.cloud_node_mock(3)],
                          [testutil.arvados_node_mock(3, job_uuid=True)],
@@ -136,14 +159,6 @@ class NodeManagerDaemonActorTestCase(testutil.ActorTestMixin,
                          max_nodes=1)
         self.stop_proxy(self.daemon)
         self.assertFalse(self.node_setup.start.called)
-
-    def mock_setup_actor(self, cloud_node, arv_node):
-        setup = self.node_setup.start().proxy()
-        self.node_setup.reset_mock()
-        setup.actor_urn = cloud_node.id
-        setup.cloud_node.get.return_value = cloud_node
-        setup.arvados_node.get.return_value = arv_node
-        return setup
 
     def start_node_boot(self, cloud_node=None, arv_node=None, id_num=1):
         if cloud_node is None:
@@ -153,7 +168,9 @@ class NodeManagerDaemonActorTestCase(testutil.ActorTestMixin,
         self.make_daemon(want_sizes=[testutil.MockSize(id_num)])
         self.daemon.max_nodes.get(self.TIMEOUT)
         self.assertEqual(1, self.node_setup.start.call_count)
-        return self.mock_setup_actor(cloud_node, arv_node)
+        self.last_setup.cloud_node.get.return_value = cloud_node
+        self.last_setup.arvados_node.get.return_value = arv_node
+        return self.last_setup
 
     def test_no_duplication_when_booting_node_listed_fast(self):
         # Test that we don't start two ComputeNodeMonitorActors when
@@ -188,8 +205,7 @@ class NodeManagerDaemonActorTestCase(testutil.ActorTestMixin,
         self.daemon.update_server_wishlist(
             [testutil.MockSize(1)]).get(self.TIMEOUT)
         self.stop_proxy(self.daemon)
-        self.assertFalse(self.node_setup.start.called,
-                         "daemon did not count booted node toward wishlist")
+        self.assertEqual(1, self.node_setup.start.call_count)
 
     def test_booted_node_can_shutdown(self):
         setup = self.start_node_boot()
@@ -259,8 +275,7 @@ class NodeManagerDaemonActorTestCase(testutil.ActorTestMixin,
         self.make_daemon(want_sizes=[testutil.MockSize(1)])
         self.daemon.update_server_wishlist([]).get(self.TIMEOUT)
         self.stop_proxy(self.daemon)
-        self.assertTrue(
-            self.node_setup.start().proxy().stop_if_no_cloud_node.called)
+        self.assertTrue(self.last_setup.stop_if_no_cloud_node.called)
 
     def test_shutdown_declined_at_wishlist_capacity(self):
         cloud_node = testutil.cloud_node_mock(1)
