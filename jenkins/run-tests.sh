@@ -313,7 +313,7 @@ do_test() {
         timer_reset
         if [[ "$2" == "go" ]]
         then
-            go test "${testargs[$1]}" "git.curoverse.com/arvados.git/$1"
+            go test ${testargs[$1]} "git.curoverse.com/arvados.git/$1"
         elif [[ "$2" == "pip" ]]
         then
            # Other test suites can depend on tests_require
