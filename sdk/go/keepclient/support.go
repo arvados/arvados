@@ -104,11 +104,17 @@ func (this KeepClient) uploadToKeepServer(host string, hash string, body io.Read
 		return
 	}
 
-	if expectedLength > -1 {
-		req.ContentLength = expectedLength
-	}
-	if expectedLength == 0 {
-		defer body.Close()
+	req.ContentLength = expectedLength
+	if expectedLength > 0 {
+		// http.Client.Do will close the body ReadCloser when it is
+		// done with it.
+		req.Body = body
+	} else {
+		// "For client requests, a value of 0 means unknown if Body is
+		// not nil."  In this case we do want the body to be empty, so
+		// don't set req.Body.  However, we still need to close the
+		// body ReadCloser.
+		body.Close()
 	}
 
 	req.Header.Add("Authorization", fmt.Sprintf("OAuth2 %s", this.Arvados.ApiToken))
@@ -117,8 +123,6 @@ func (this KeepClient) uploadToKeepServer(host string, hash string, body io.Read
 	if this.Using_proxy {
 		req.Header.Add(X_Keep_Desired_Replicas, fmt.Sprint(this.Want_replicas))
 	}
-
-	req.Body = body
 
 	var resp *http.Response
 	if resp, err = this.Client.Do(req); err != nil {
