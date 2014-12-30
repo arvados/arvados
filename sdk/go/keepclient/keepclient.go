@@ -10,6 +10,7 @@ import (
 	"io"
 	"io/ioutil"
 	"log"
+	"net"
 	"net/http"
 	"regexp"
 	"strings"
@@ -48,7 +49,22 @@ func MakeKeepClient(arv *arvadosclient.ArvadosClient) (kc KeepClient, err error)
 		Arvados:       arv,
 		Want_replicas: 2,
 		Using_proxy:   false,
-		Client:        &http.Client{Transport: &http.Transport{}}}
+		Client: &http.Client{
+			// The maximum duration of the connection, will be
+			// closed if exceeded.
+			Timeout: 5 * time.Minute,
+			Transport: &http.Transport{
+				Dial: (&net.Dialer{
+					// The maximum time to wait to set up
+					// the initial TCP connection.
+					Timeout: 60 * time.Second,
+
+					// The TCP keep alive heartbeat
+					// interval.
+					KeepAlive: 60 * time.Second,
+				}).Dial,
+				TLSHandshakeTimeout: 10 * time.Second,
+			}}}
 
 	err = (&kc).DiscoverKeepServers()
 

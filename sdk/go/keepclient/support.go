@@ -9,6 +9,7 @@ import (
 	"io"
 	"io/ioutil"
 	"log"
+	"net"
 	"net/http"
 	"os"
 	"strings"
@@ -33,13 +34,29 @@ func (this *KeepClient) DiscoverKeepServers() error {
 		this.SetServiceRoots(sr)
 		this.Using_proxy = true
 		if this.Client.Timeout == 0 {
-			this.Client.Timeout = 10 * time.Minute
+			// See MakeKeepClient for notes on meaning of timeouts.
+			this.Client.Timeout = 300 * time.Second
+			this.Client.Transport = &http.Transport{
+				Dial: (&net.Dialer{
+					Timeout:   30 * time.Second,
+					KeepAlive: 60 * time.Second,
+				}).Dial,
+				TLSHandshakeTimeout: 10 * time.Second,
+			}
 		}
 		return nil
 	}
 
 	if this.Client.Timeout == 0 {
-		this.Client.Timeout = 15 * time.Second
+		// See MakeKeepClient for notes on meaning of timeouts.
+		this.Client.Timeout = 20 * time.Second
+		this.Client.Transport = &http.Transport{
+			Dial: (&net.Dialer{
+				Timeout:   2 * time.Second,
+				KeepAlive: 60 * time.Second,
+			}).Dial,
+			TLSHandshakeTimeout: 10 * time.Second,
+		}
 	}
 
 	type svcList struct {
