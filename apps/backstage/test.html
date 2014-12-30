@@ -1,0 +1,22 @@
+<!doctype html>
+<html lang="en">
+  <head>
+    <meta charset="utf-8">
+    <title>arvados backstage tests</title>
+    <link href="node_modules/mocha/mocha.css" rel="stylesheet">
+  </head>
+  <body>
+    <div id="mocha"></div>
+    <script src="node_modules/mocha/mocha.js"></script>
+    <script src="dist/test.js"></script>
+    <script>
+        var global = (function() { return this })();
+        if (global.mochaPhantomJS) {
+            global.mochaPhantomJS.run();
+        }
+        else {
+            mocha.run();
+        }
+    </script>
+  </body>
+</html>
