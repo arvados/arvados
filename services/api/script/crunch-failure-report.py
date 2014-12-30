@@ -16,9 +16,6 @@ LOG_CONTEXT_LINES = 10
 # Regex that signifies a failed task.
 FAILED_TASK_REGEX = re.compile(' \d+ failure (.*permanent)')
 
-# Regex that signifies a successful job.
-SUCCESSFUL_JOB_REGEX = re.compile('finished')
-
 # List of regexes by which to classify failures.
 JOB_FAILURE_TYPES = [ 'User not found on host' ]
 
@@ -73,12 +70,6 @@ def job_logs(api, job):
 def is_failed_task(logline):
     return FAILED_TASK_REGEX.search(logline) != None
 
-
-def is_successful_job(logline):
-    return SUCCESSFUL_JOB_REGEX.search(logline) != None
-
-def log(s):
-    print >>sys.stderr, "{}: {}".format(datetime.datetime.utcnow(), s)
 
 def main(arguments=None, stdout=sys.stdout, stderr=sys.stderr):
     args = parse_arguments(arguments)
