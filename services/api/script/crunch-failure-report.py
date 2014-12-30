@@ -16,8 +16,11 @@ LOG_CONTEXT_LINES = 10
 # Regex that signifies a failed task.
 FAILED_TASK_REGEX = re.compile(' \d+ failure (.*permanent)')
 
-# List of regexes by which to classify failures.
-JOB_FAILURE_TYPES = [ 'User not found on host' ]
+# Regular expressions used to classify failure types.
+JOB_FAILURE_TYPES = {
+    'sys/docker': 'Cannot destroy container',
+    'crunch/node': 'User not found on host'
+}
 
 def parse_arguments(arguments):
     arg_parser = argparse.ArgumentParser(
@@ -87,7 +90,10 @@ def main(arguments=None, stdout=sys.stdout, stderr=sys.stderr):
     jobs_successful = [job for job in jobs_created if job['state'] == 'Complete']
 
     # Find failed jobs and record the job failure text.
-    jobs_failed_types = {}
+
+    # failure_stats maps failure types (e.g. "sys/docker") to
+    # a set of job UUIDs that failed for that reason.
+    failure_stats = {}
     for job in jobs_failed:
         job_uuid = job['uuid']
         logs = job_logs(api, job)
@@ -100,18 +106,18 @@ def main(arguments=None, stdout=sys.stdout, stderr=sys.stderr):
                 log_end = i + 1
                 lastlogs = ''.join(logs[log_start:log_end])
                 # try to identify the type of failure.
-                fail_reason = 'unknown'
-                for rgx in JOB_FAILURE_TYPES:
+                failure_type = 'unknown'
+                for key, rgx in JOB_FAILURE_TYPES.iteritems():
                     if re.search(rgx, lastlogs):
-                        fail_reason = rgx
+                        failure_type = key
                         break
-                jobs_failed_types.setdefault(fail_reason, set())
-                jobs_failed_types[fail_reason].add(job_uuid)
+                failure_stats.setdefault(failure_type, set())
+                failure_stats[failure_type].add(job_uuid)
                 break
             # If we got here, the job is recorded as "failed" but we
             # could not find the failure of any specific task.
-            jobs_failed_types.setdefault('unknown', set())
-            jobs_failed_types['unknown'].add(job_uuid)
+            failure_stats.setdefault('unknown', set())
+            failure_stats['unknown'].add(job_uuid)
 
     # Report percentages of successful, failed and unfinished jobs.
     print "Start: {:20s}".format(start_time)
@@ -139,7 +145,7 @@ def main(arguments=None, stdout=sys.stdout, stderr=sys.stderr):
     failure_summary = ""
     failure_detail = ""
 
-    for failtype, job_uuids in jobs_failed_types.iteritems():
+    for failtype, job_uuids in failure_stats.iteritems():
         failstat = "  {:s} {:4d} ({:3.0%})\n".format(
             failtype, len(job_uuids), len(job_uuids) / float(job_fail_count))
         failure_summary = failure_summary + failstat
