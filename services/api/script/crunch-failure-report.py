@@ -10,12 +10,11 @@ import arvados
 
 # Useful configuration variables:
 
-# The number of log lines preceding a job failure message that should
-# be collected.
-FAILED_JOB_LOG_LINES = 10
+# Number of log lines to use as context in diagnosing failure.
+LOG_CONTEXT_LINES = 10
 
-# Regex that signifies a failed job.
-FAILED_JOB_REGEX = re.compile('fail')
+# Regex that signifies a failed task.
+FAILED_TASK_REGEX = re.compile(' \d+ failure (.*permanent)')
 
 # Regex that signifies a successful job.
 SUCCESSFUL_JOB_REGEX = re.compile('finished')
@@ -38,7 +37,15 @@ def parse_arguments(arguments):
         default='fail',
         help='Regular expression to match on Crunch error output lines.')
 
-    return arg_parser.parse_args(arguments)
+    args = arg_parser.parse_args(arguments)
+
+    if args.start and not is_valid_timestamp(args.start):
+        raise ValueError(args.start)
+    if args.end and not is_valid_timestamp(args.end):
+        raise ValueError(args.end)
+
+    return args
+
 
 def api_timestamp(when=None):
     """Returns a string representing the timestamp 'when' in a format
@@ -50,6 +57,9 @@ def api_timestamp(when=None):
     return when.strftime("%Y-%m-%dT%H:%M:%SZ")
 
 
+def is_valid_timestamp(ts):
+    return re.match(r'\d{4}-\d{2}-\d{2}T\d{2}:\d{2}:\d{2}Z', ts)
+
 def jobs_created_between_dates(api, start, end):
     return arvados.util.list_all(
         api.jobs().list,
@@ -57,15 +67,15 @@ def jobs_created_between_dates(api, start, end):
                              ['created_at', '<=', end] ]))
 
 
-def job_error_logs(api, job_uuid):
-    return arvados.util.list_all(
-        api.logs().list,
-        filters=json.dumps([ ['object_uuid', '=', job_uuid],
-                             ['event_type', '=', 'stderr'] ]))
+def job_logs(api, job):
+    # Returns the contents of the log for this job (as an array of lines).
+    log_filename = "{}.log.txt".format(job['uuid'])
+    log_collection = arvados.CollectionReader(job['log'], api)
+    return log_collection.open(log_filename).readlines()
 
 
-def is_failed_job(logline):
-    return FAILED_JOB_REGEX.search(logline) != None
+def is_failed_task(logline):
+    return FAILED_TASK_REGEX.search(logline) != None
 
 
 def is_successful_job(logline):
@@ -85,60 +95,85 @@ def main(arguments=None, stdout=sys.stdout, stderr=sys.stderr):
 
     # Find all jobs created within the specified window,
     # and their corresponding job logs.
-    log("fetching jobs between {} and {}".format(start_time, end_time))
     jobs_created = jobs_created_between_dates(api, start_time, end_time)
+    jobs_failed     = [job for job in jobs_created if job['state'] == 'Failed']
+    jobs_successful = [job for job in jobs_created if job['state'] == 'Complete']
     log("jobs created: {}".format(len(jobs_created)))
 
-
     # Find failed jobs and record the job failure text.
-    jobs_successful = set()
-    jobs_failed = set()
     jobs_failed_types = {}
-    for j in jobs_created:
-        # Skip this log entry if we've already recorded
-        # the job failure.
-        job_uuid = j['uuid']
-        if job_uuid in jobs_failed:
-            continue
-        logs = job_error_logs(api, job_uuid)
-        log("fetched {} job error logs for {}".format(len(logs), job_uuid))
-        # If this line marks a failed job, record it and
-        # the preceding log lines.
+    for job in jobs_failed:
+        job_uuid = job['uuid']
+        log("fetching job {} log from keep".format(job_uuid))
+        logs = job_logs(api, job)
+        # Find the first permanent task failure, and collect the
+        # preceding log lines.
         for i, lg in enumerate(logs):
-            if is_failed_job(lg['properties']['text']):
-                jobs_failed.add(job_uuid)
-                # Classify this job failure.
-                lastlogs = "\n".join(
-                    [ l['properties']['text'] for l in logs[i-FAILED_JOB_LOG_LINES:i] ])
-                log("searching job {} lastlogs: {}".format(job_uuid, lastlogs))
-                for failtype in JOB_FAILURE_TYPES:
-                    if re.search(failtype, lastlogs):
-                        jobs_failed_types.setdefault(failtype, set())
-                        jobs_failed_types[failtype].add(job_uuid)
-                        continue
-                    # no specific reason found
-                    jobs_failed_types.setdefault('unknown', set())
-                    jobs_failed_types['unknown'].add(job_uuid)
+            if is_failed_task(lg):
+                # Get preceding log record to provide context.
+                log_start = i - LOG_CONTEXT_LINES if i >= LOG_CONTEXT_LINES else 0
+                log_end = i + 1
+                lastlogs = ''.join(logs[log_start:log_end])
+                # try to identify the type of failure.
+                fail_reason = 'unknown'
+                for rgx in JOB_FAILURE_TYPES:
+                    if re.search(rgx, lastlogs):
+                        fail_reason = rgx
+                        log("job {} failed for reason {}".format(job_uuid, fail_reason))
+                        break
+                jobs_failed_types.setdefault(fail_reason, set())
+                jobs_failed_types[fail_reason].add(job_uuid)
                 break
-            elif is_successful_job(lg['properties']['text']):
-                jobs_successful.add(job_uuid)
-                break
+            # If we got here, the job is recorded as "failed" but we
+            # could not find the failure of any given task.
+            jobs_failed_types.setdefault('unknown', set())
+            jobs_failed_types['unknown'].add(job_uuid)
 
     # Report percentages of successful, failed and unfinished jobs.
+    print "Start: {:20s}".format(start_time)
+    print "End:   {:20s}".format(end_time)
+    print ""
+
+    print "Overview"
+    print ""
+
     job_start_count = len(jobs_created)
     job_success_count = len(jobs_successful)
     job_fail_count = len(jobs_failed)
     job_unfinished_count = job_start_count - job_success_count - job_fail_count
 
-    print "Started:     {0:4d}".format(job_start_count)
-    print "Successful:  {0:4d} ({1:3.0%})".format(job_success_count, job_success_count / float(job_start_count))
-    print "Failed:      {0:4d} ({1:3.0%})".format(job_fail_count, job_fail_count / float(job_start_count))
-    print "In progress: {0:4d} ({1:3.0%})".format(job_unfinished_count, job_unfinished_count / float(job_start_count))
+    print "  Started:     {:4d}".format(job_start_count)
+    print "  Successful:  {:4d} ({:3.0%})".format(
+        job_success_count, job_success_count / float(job_start_count))
+    print "  Failed:      {:4d} ({:3.0%})".format(
+        job_fail_count, job_fail_count / float(job_start_count))
+    print "  In progress: {:4d} ({:3.0%})".format(
+        job_unfinished_count, job_unfinished_count / float(job_start_count))
+    print ""
 
     # Report failure types.
-    for failtype in jobs_failed_types:
-        print "{0:20s}: {1:4d} ({2:3.0%})".format(
-            failtype, len(jobs_failed_types), len(jobs_failed_types) / float(job_fail_count))
+    failure_summary = ""
+    failure_detail = ""
+
+    for failtype, job_uuids in jobs_failed_types.iteritems():
+        failstat = "  {:s} {:4d} ({:3.0%})\n".format(
+            failtype, len(job_uuids), len(job_uuids) / float(job_fail_count))
+        failure_summary = failure_summary + failstat
+        failure_detail = failure_detail + failstat
+        for j in job_uuids:
+            failure_detail = failure_detail + "    http://crvr.se/{}\n".format(j)
+        failure_detail = failure_detail + "\n"
+
+    print "Failures by class"
+    print ""
+    print failure_summary
+
+    print "Failures by class (detail):"
+    print ""
+    print failure_detail
+
+    return 0
+
 
 if __name__ == "__main__":
     sys.exit(main())
