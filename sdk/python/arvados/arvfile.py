@@ -348,8 +348,10 @@ class BlockManager(object):
             return
         if self._prefetch_threads is None:
             self._prefetch_queue = Queue.Queue()
-            self._prefetch_threads = [threading.Thread(target=worker, args=(self,))]
+            self._prefetch_threads = [threading.Thread(target=worker, args=(self,)),
+                                      threading.Thread(target=worker, args=(self,))]
             self._prefetch_threads[0].start()
+            self._prefetch_threads[1].start()
         self._prefetch_queue.put(locator)
 
 class ArvadosFile(object):
@@ -393,8 +395,6 @@ class ArvadosFile(object):
     def readfrom(self, offset, size, num_retries):
         if size == 0 or offset >= self.size():
             return ''
-        if self._keep is None:
-            self._keep = KeepClient(num_retries=num_retries)
         data = []
 
         for lr in locators_and_ranges(self._segments, offset, size + config.KEEP_BLOCK_SIZE):

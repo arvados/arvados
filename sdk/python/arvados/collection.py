@@ -641,7 +641,7 @@ class ResumableCollectionWriter(CollectionWriter):
 
 
 class Collection(CollectionBase):
-    def __init__(self, parent=None, manifest_locator_or_text=None, api_client=None,
+    def __init__(self, manifest_locator_or_text=None, parent=None, api_client=None,
                  keep_client=None, num_retries=0, block_manager=None):
 
         self._parent = parent
@@ -836,11 +836,11 @@ class Collection(CollectionBase):
 
     @_populate_first
     def __iter__(self):
-        self._items.iterkeys()
+        return self._items.iterkeys()
 
     @_populate_first
     def iterkeys(self):
-        self._items.iterkeys()
+        return self._items.iterkeys()
 
     @_populate_first
     def __getitem__(self, k):
