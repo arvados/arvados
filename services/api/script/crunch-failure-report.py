@@ -32,10 +32,6 @@ def parse_arguments(arguments):
     arg_parser.add_argument(
         '--end',
         help='End date and time')
-    arg_parser.add_argument(
-        '--match',
-        default='fail',
-        help='Regular expression to match on Crunch error output lines.')
 
     args = arg_parser.parse_args(arguments)
 
@@ -98,13 +94,11 @@ def main(arguments=None, stdout=sys.stdout, stderr=sys.stderr):
     jobs_created = jobs_created_between_dates(api, start_time, end_time)
     jobs_failed     = [job for job in jobs_created if job['state'] == 'Failed']
     jobs_successful = [job for job in jobs_created if job['state'] == 'Complete']
-    log("jobs created: {}".format(len(jobs_created)))
 
     # Find failed jobs and record the job failure text.
     jobs_failed_types = {}
     for job in jobs_failed:
         job_uuid = job['uuid']
-        log("fetching job {} log from keep".format(job_uuid))
         logs = job_logs(api, job)
         # Find the first permanent task failure, and collect the
         # preceding log lines.
@@ -119,13 +113,12 @@ def main(arguments=None, stdout=sys.stdout, stderr=sys.stderr):
                 for rgx in JOB_FAILURE_TYPES:
                     if re.search(rgx, lastlogs):
                         fail_reason = rgx
-                        log("job {} failed for reason {}".format(job_uuid, fail_reason))
                         break
                 jobs_failed_types.setdefault(fail_reason, set())
                 jobs_failed_types[fail_reason].add(job_uuid)
                 break
             # If we got here, the job is recorded as "failed" but we
-            # could not find the failure of any given task.
+            # could not find the failure of any specific task.
             jobs_failed_types.setdefault('unknown', set())
             jobs_failed_types['unknown'].add(job_uuid)
 
