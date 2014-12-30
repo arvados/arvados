@@ -251,10 +251,9 @@ class BlockManager(object):
         self._bufferblocks = {}
         self._put_queue = None
         self._put_errors = None
-        self._threads = None
-        self._continue_worker = True
+        self._put_threads = None
         self._prefetch_queue = None
-        self._prefetch_thread = None
+        self._prefetch_threads = None
 
     def alloc_bufferblock(self, blockid=None, starting_size=2**14):
         if blockid is None:
@@ -263,25 +262,49 @@ class BlockManager(object):
         self._bufferblocks[bb.blockid] = bb
         return bb
 
+    def stop_threads(self):
+        if self._put_threads is not None:
+            for t in self._put_threads:
+                self._put_queue.put(None)
+            for t in self._put_threads:
+                t.join()
+        self._put_threads = None
+        self._put_queue = None
+        self._put_errors = None
+
+        if self._prefetch_threads is not None:
+            for t in self._prefetch_threads:
+                self._prefetch_queue.put(None)
+            for t in self._prefetch_threads:
+                t.join()
+        self._prefetch_threads = None
+        self._prefetch_queue = None
+
     def commit_bufferblock(self, block):
         def worker(self):
-            while self._continue_worker:
+            while True:
                 try:
                     b = self._put_queue.get()
-                    b._locator = self._keep.put(item)
+                    if b is None:
+                        return
+                    b._locator = self._keep.put(b.buffer_view[0:b.write_pointer].tobytes())
                     b.state = BufferBlock.COMMITTED
                     b.buffer_view = None
                     b.buffer_block = None
                 except Exception as e:
-                    self._error.put(e)
+                    print e
+                    self._put_errors.put(e)
                 finally:
-                    self._queue.task_done()
+                    if self._put_queue is not None:
+                        self._put_queue.task_done()
 
-        if self._threads is None:
+        if self._put_threads is None:
             self._put_queue = Queue.Queue()
             self._put_errors = Queue.Queue()
-            self._threads = [threading.Thread(target=worker, args=(self,)),
-                             threading.Thread(target=worker, args=(self,))]
+            self._put_threads = [threading.Thread(target=worker, args=(self,)),
+                                threading.Thread(target=worker, args=(self,))]
+            self._put_threads[0].start()
+            self._put_threads[1].start()
 
         block.state = BufferBlock.PENDING
         self._put_queue.put(block)
@@ -296,42 +319,46 @@ class BlockManager(object):
         return self._keep.get(locator, num_retries=num_retries)
 
     def commit_all(self):
-        for k,v in self._bufferblocks:
+        for k,v in self._bufferblocks.items():
             if v.state == BufferBlock.WRITABLE:
                 self.commit_bufferblock(v)
-        self._put_queue.join()
-        if not self._errors.empty():
-            e = []
-            try:
-                while True:
-                    e.append(self._errors.get(False))
-            except Queue.Empty:
-                pass
-            raise AsyncKeepWriteErrors(e)
+        if self._put_queue is not None:
+            self._put_queue.join()
+            if not self._put_errors.empty():
+                e = []
+                try:
+                    while True:
+                        e.append(self._put_errors.get(False))
+                except Queue.Empty:
+                    pass
+                raise AsyncKeepWriteErrors(e)
 
     def block_prefetch(self, locator):
-        def worker(keep, loc):
-            while self._continue_worker:
+        def worker(self):
+            while True:
                 try:
                     b = self._prefetch_queue.get()
-                    keep.get(loc)
+                    if b is None:
+                        return
+                    self._keep.get(b)
                 except:
                     pass
 
         if locator in self._bufferblocks:
             return
-        if self._prefetch_thread is None:
+        if self._prefetch_threads is None:
             self._prefetch_queue = Queue.Queue()
-            self._prefetch_thread = threading.Thread(target=worker, args=(self,))
+            self._prefetch_threads = [threading.Thread(target=worker, args=(self,))]
+            self._prefetch_threads[0].start()
         self._prefetch_queue.put(locator)
 
 class ArvadosFile(object):
-    def __init__(self, block_manager, stream=[], segments=[], keep=None):
+    def __init__(self, parent, stream=[], segments=[], keep=None):
         '''
         stream: a list of Range objects representing a block stream
         segments: a list of Range objects representing segments
         '''
-        self.bbm = block_manager
+        self.parent = parent
         self._modified = True
         self._segments = []
         for s in segments:
@@ -371,12 +398,12 @@ class ArvadosFile(object):
         data = []
 
         for lr in locators_and_ranges(self._segments, offset, size + config.KEEP_BLOCK_SIZE):
-            self.bbm.block_prefetch(lr.locator)
+            self.parent._my_block_manager().block_prefetch(lr.locator)
 
         for lr in locators_and_ranges(self._segments, offset, size):
             # TODO: if data is empty, wait on block get, otherwise only
             # get more data if the block is already in the cache.
-            data.append(self.bbm.get_block(lr.locator, num_retries=num_retries)[lr.segment_offset:lr.segment_offset+lr.segment_size])
+            data.append(self.parent._my_block_manager().get_block(lr.locator, num_retries=num_retries)[lr.segment_offset:lr.segment_offset+lr.segment_size])
         return ''.join(data)
 
     def _repack_writes(self):
@@ -395,7 +422,7 @@ class ArvadosFile(object):
         if write_total < self._current_bblock.size():
             # There is more data in the buffer block than is actually accounted for by segments, so
             # re-pack into a new buffer by copying over to a new buffer block.
-            new_bb = self.bbm.alloc_bufferblock(self._current_bblock.blockid, starting_size=write_total)
+            new_bb = self.parent._my_block_manager().alloc_bufferblock(self._current_bblock.blockid, starting_size=write_total)
             for t in bufferblock_segs:
                 new_bb.append(self._current_bblock.buffer_view[t.segment_offset:t.segment_offset+t.range_size].tobytes())
                 t.segment_offset = new_bb.size() - t.range_size
@@ -415,13 +442,13 @@ class ArvadosFile(object):
         self._modified = True
 
         if self._current_bblock is None or self._current_bblock.state != BufferBlock.WRITABLE:
-            self._current_bblock = self.bbm.alloc_bufferblock()
+            self._current_bblock = self.parent._my_block_manager().alloc_bufferblock()
 
         if (self._current_bblock.size() + len(data)) > config.KEEP_BLOCK_SIZE:
             self._repack_writes()
             if (self._current_bblock.size() + len(data)) > config.KEEP_BLOCK_SIZE:
-                self.bbm.commit_bufferblock(self._current_bblock)
-                self._current_bblock = self.bbm.alloc_bufferblock()
+                self.parent._my_block_manager().commit_bufferblock(self._current_bblock)
+                self._current_bblock = self.parent._my_block_manager().alloc_bufferblock()
 
         self._current_bblock.append(data)
         replace_range(self._segments, offset, len(data), self._current_bblock.blockid, self._current_bblock.write_pointer - len(data))
