@@ -124,6 +124,49 @@ report_outcomes() {
         done
     fi
 }
+
+sanity_checks() {
+  # Make sure WORKSPACE is set
+  if ! [[ -n "$WORKSPACE" ]]; then
+    echo >&2 "$helpmessage"
+    echo >&2
+    echo >&2 "Error: WORKSPACE environment variable not set"
+    echo >&2
+    exit 1
+  fi
+
+  # Make sure virtualenv is installed
+  `virtualenv --help >/dev/null 2>&1`
+
+  if [[ "$?" != "0" ]]; then
+    echo >&2
+    echo >&2 "Error: virtualenv could not be found"
+    echo >&2
+    exit 1
+  fi
+
+  # Make sure go is installed
+  `go env >/dev/null 2>&1`
+
+  if [[ "$?" != "0" ]]; then
+    echo >&2
+    echo >&2 "Error: go could not be found"
+    echo >&2
+    exit 1
+  fi
+
+  # Make sure gcc is installed
+  `gcc --help >/dev/null 2>&1`
+
+  if [[ "$?" != "0" ]]; then
+    echo >&2
+    echo >&2 "Error: gcc could not be found"
+    echo >&2
+    exit 1
+  fi
+
+}
+
 declare -a failures
 declare -A skip
 declare -A testargs
@@ -167,14 +210,7 @@ do
     esac
 done
 
-# Sanity check
-if ! [[ -n "$WORKSPACE" ]]; then
-  echo >&2 "$helpmessage"
-  echo >&2
-  echo >&2 "Error: WORKSPACE environment variable not set"
-  echo >&2
-  exit 1
-fi
+sanity_checks
 
 echo "WORKSPACE=$WORKSPACE"
 
