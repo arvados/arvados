@@ -34,12 +34,12 @@ suite('Filter', function() {
     suite('ObjectType', function() {
         test("uses existing filter value as initial label", function() {
             f = prep(Filter.ObjectType, ['fakeAttr','is_a','arvados#collection']);
-            c.assert.lengthOf(m$('.dropdown-toggle:contains(Type)', f.vdom), 0);
+            c.assert.lengthOf(m$('.dropdown-toggle:contains(Any type)', f.vdom), 0);
             c.assert.lengthOf(m$('.dropdown-toggle:contains(collection)', f.vdom), 1);
         });
-        test("uses 'Type' as initial label if no current filter", function() {
+        test("uses 'Any type' as initial label if no current filter", function() {
             f = prep(Filter.ObjectType, undefined);
-            c.assert.lengthOf(m$('.dropdown-toggle:contains(Type)', f.vdom), 1);
+            c.assert.lengthOf(m$('.dropdown-toggle:contains(Any type)', f.vdom), 1);
         });
         test("calls currentFilter when selection clicked", function() {
             f = prep(Filter.ObjectType);

@@ -27,7 +27,7 @@ function FilterObjectType(opts) {
             m('.input-group.input-group-sm', [
                 m('.input-group-btn', [
                     m('button.btn.btn-default.dropdown-toggle[type="button"][data-toggle="dropdown"]', [
-                        ctrl.currentFilter() ? ctrl.currentFilter()[2].replace(/^.*#/,'') : 'Type',
+                        ctrl.currentFilter() ? ctrl.currentFilter()[2].replace(/^.*#/,'') : 'Any type',
                         ' ',
                         m('span.caret'),
                     ]),
