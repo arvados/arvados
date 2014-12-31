@@ -9,5 +9,6 @@ var client = webdriverjs.remote({
     // However, if anything goes wrong, remove this to see more details
     // logLevel: 'silent'
 });
-client.init();
+// client.init();
+
 module.exports = client;

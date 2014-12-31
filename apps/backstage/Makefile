@@ -6,17 +6,18 @@ clean:
 	rm -rvf dist
 
 npmdeps:
-	for x in bootstrap bower browserify chai chai-jquery jquery mithril mithril-query mocha mocha-phantomjs sinon; do [ -d "$(NPMBIN)/../$$x" ] || npm install $$x --save-dev; done
+	ulimit -n 4000; for x in bootstrap bower browserify chai chai-jquery jquery jsdom mithril mithril-query mocha mocha-phantomjs sinon; do [ -d "$(NPMBIN)/../$$x" ] || npm install $$x --save-dev; done
 
 # This uses --debug to enable source maps.
-build: build-app build-test build-css
+build: build-app build-test build-assets
 build-app:
 	mkdir -p dist
-	$(NPMBIN)/browserify --debug -o dist/app.js app/app.js
+	ulimit -n 4000; $(NPMBIN)/browserify --debug -o dist/app.js app/app.js
 build-test:
 	mkdir -p dist
-	$(NPMBIN)/browserify --debug -o dist/test.js test/runner.js
-build-css:
+	ulimit -n 4000; $(NPMBIN)/browserify --debug -o dist/test.js test/runner.js
+build-assets: dist/bootstrap
+dist/bootstrap:
 	mkdir -p dist
 	rsync -a $(NPMBIN)/../bootstrap/dist/ dist/bootstrap/
 
@@ -24,5 +25,5 @@ server: build
 	[ -e $(NPMBIN)/harp ] || npm install harp
 	$(NPMBIN)/harp server --port 9000
 
-test: build-test build-css
+test: build-test build-assets
 	$(NPMBIN)/mocha-phantomjs test.html
