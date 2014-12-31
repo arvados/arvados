@@ -21,6 +21,10 @@ function ArvListComponent(connection, arvModelName, contentModule) {
         function getMoreItems() {
             return this.vm.getMoreItems.apply(this.vm, arguments);
         }
+    Controller.prototype.eof =
+        function eof() {
+            return this.vm.eof();
+        }
     Controller.prototype.currentFilter =
         function currentFilter(key, attr, operator, operand) {
             if (arguments.length > 1) {
