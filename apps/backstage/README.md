@@ -1,20 +1,57 @@
-Prerequisites
-=============
+# Install
 
-    sudo apt-get install nodejs
+## Prerequisites
 
-Install dependencies and build dist files
-=========================================
+```
+sudo apt-get install nodejs
+```
 
-    make
+## Install dependencies and build dist files
 
-Update dist files and run a dev server
-======================================
+```
+make
+```
 
-    make server
+# Develop
 
-Update dependencies
-===================
+## Update dist files and run a dev server
 
-    npm update
-    make
+```
+make server
+```
+
+## Update dependencies
+
+```
+npm update && make
+```
+
+# Test
+
+## Run test suite
+
+This uses mocha, node.js, and jsdom.
+
+```
+make test
+```
+
+Run mocha in "watch" mode to re-run tests whenever you change a source file.
+
+```
+make test-watch
+```
+
+## Run test suite using phantomjs
+
+```
+make test-phantomjs
+```
+
+## Run test suite using a real browser
+
+```
+make server
+```
+
+Point your browser at http://localhost:9000/test.html

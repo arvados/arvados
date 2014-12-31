@@ -25,5 +25,10 @@ server: build
 	[ -e $(NPMBIN)/harp ] || npm install harp
 	$(NPMBIN)/harp server --port 9000
 
-test: build-test build-assets
+test-phantomjs: build-test build-assets
 	$(NPMBIN)/mocha-phantomjs test.html
+test-watch:
+	$(NPMBIN)/mocha --watch
+.PHONY: test
+test:
+	$(NPMBIN)/mocha
