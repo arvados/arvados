@@ -9,8 +9,12 @@ function FilterAnyText() {
     this.view = function(ctrl) {
         return m('.input-group.input-group-sm', [
             m('input.form-control[type="text"][placeholder="Search"]',
-              {oninput: m.withAttr('value', setFilter)}),
+              {value: getFilter(),
+               oninput: m.withAttr('value', setFilter)}),
         ]);
+        function getFilter() {
+            return ctrl.currentFilter() ? ctrl.currentFilter()[2].replace(/^%(.*)%$/, '$1') : ''
+        }
         function setFilter(value) {
             ctrl.currentFilter('any', 'ilike', '%'+value+'%')
         }
@@ -29,10 +33,10 @@ function FilterObjectType(opts) {
                     ]),
                     m('ul.dropdown-menu[role="menu"]', [
                         m('li', [
-                            m('a[href="#"]', {onclick: ctrl.currentFilter.bind(ctrl, opts.attr, 'is_a', 'arvados#collection')}, 'Collection'),
+                            m('a[href="#"][data-value="arvados#collection"]', {onclick: ctrl.currentFilter.bind(ctrl, opts.attr, 'is_a', 'arvados#collection')}, 'Collection'),
                         ]),
                         m('li', [
-                            m('a[href="#"]', {onclick: ctrl.currentFilter.bind(ctrl, opts.attr, 'is_a', 'arvados#pipelineInstance')}, 'Pipeline instance'),
+                            m('a[href="#"][data-value="arvados#pipelineInstance"]', {onclick: ctrl.currentFilter.bind(ctrl, opts.attr, 'is_a', 'arvados#pipelineInstance')}, 'Pipeline instance'),
                         ]),
                     ]),
                 ]),
