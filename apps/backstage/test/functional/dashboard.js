@@ -1,11 +1,12 @@
-require(['chai', 'test/webdriver-client'], function(chai, c) {
-    var assert = chai.assert;
-    describe('Dashboard page', function() {
-        before(function() {
-            c.init().url('http://localhost:5555');
-        });
-        it('has a nav', function() {
-            assert(c.isVisible('nav'));
-        });
+var chai = require('chai')
+, wd = require('webdriver-client')
+, c = chai;
+
+suite('Dashboard page', function() {
+    setup(function() {
+        wd.url('http://localhost:5555');
+    });
+    test('has a nav', function() {
+        c.assert(wd.isVisible('nav'));
     });
 });
