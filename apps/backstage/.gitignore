@@ -2,4 +2,5 @@ dist
 node_modules
 !node_modules/app
 !node_modules/arvados
+!node_modules/mithril-jquery
 !node_modules/test

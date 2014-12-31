@@ -1,7 +1,7 @@
 var Filter = require('app/filter')
 , chai = require('chai')
 , m = require('mithril')
-, md = require('test/mithril-dom')
+, m$ = require('mithril-jquery')
 , mq = require('mithril-query')
 , sinon = require('sinon')
 , $ = require('jquery')
@@ -9,53 +9,41 @@ var Filter = require('app/filter')
 , s = sinon;
 
 suite('Filter', function() {
-    setup(function(done) {
-        md.ready(function(jQuery) {
-            $ = jQuery;
-            done();
-        });
-    });
+    setup(m$.ready);
     function prep(filterClass, initialFilter) {
         var f = {};
         f.tested = new filterClass({attr: 'fakeAttr'});
         f.cfSpy = sinon.stub();
         f.cfSpy.withArgs().returns(initialFilter);
         f.ctrl = {currentFilter: f.cfSpy};
-        f.rendered = f.tested.view(f.ctrl);
-        f.domfrag = mq(f.rendered);
+        f.vdom = f.tested.view(f.ctrl);
         return f;
     }
     suite('AnyText', function() {
-        test("default is existing filter value", function() {
+        test("uses existing filter as initial input value", function() {
             f = prep(Filter.AnyText, ['any','ilike','%quux%']);
-            f.rendered = f.tested.view(f.ctrl);
-            f.domfrag = mq(f.rendered);
-            c.assert.equal(f.domfrag.first('input').attrs.value, "quux");
+            c.assert.equal(mq(f.vdom).first('input').attrs.value, "quux");
         });
-        test("fires currentFilter on input change", function() {
+        test("calls currentFilter when input changes", function() {
             f = prep(Filter.AnyText);
-            f.domfrag.setValue('input', 'qux');
+            mq(f.vdom).setValue('input', 'qux');
             // Should call again to set new filter value
             s.assert.calledWith(f.cfSpy, 'any', 'ilike', '%qux%');
         });
     });
     suite('ObjectType', function() {
-        test("default is existing filter value", function() {
+        test("uses existing filter value as initial label", function() {
             f = prep(Filter.ObjectType, ['fakeAttr','is_a','arvados#collection']);
-            f.rendered = f.tested.view(f.ctrl);
-            f.md = md(f.rendered);
-            c.assert.lengthOf($('.dropdown-toggle:contains(Type)', f.md), 0);
-            c.assert.lengthOf($('.dropdown-toggle:contains(collection)', f.md), 1);
+            c.assert.lengthOf(m$('.dropdown-toggle:contains(Type)', f.vdom), 0);
+            c.assert.lengthOf(m$('.dropdown-toggle:contains(collection)', f.vdom), 1);
         });
-        test("show generic label if no existing filter value", function() {
+        test("uses 'Type' as initial label if no current filter", function() {
             f = prep(Filter.ObjectType, undefined);
-            f.rendered = f.tested.view(f.ctrl);
-            f.md = md(f.rendered);
-            c.assert.lengthOf($('.dropdown-toggle:contains(Type)', f.md), 1);
+            c.assert.lengthOf(m$('.dropdown-toggle:contains(Type)', f.vdom), 1);
         });
-        test("fires currentFilter on selection", function() {
+        test("calls currentFilter when selection clicked", function() {
             f = prep(Filter.ObjectType);
-            f.domfrag.click('li a[data-value="arvados#pipelineInstance"]');
+            mq(f.vdom).click('li a[data-value="arvados#pipelineInstance"]');
             s.assert.calledOn(f.cfSpy, f.ctrl);
             s.assert.calledWith(f.cfSpy, 'fakeAttr', 'is_a', 'arvados#pipelineInstance');
         });
