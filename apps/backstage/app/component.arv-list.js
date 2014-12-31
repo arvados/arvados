@@ -96,7 +96,9 @@ function ArvListComponent(connection, arvModelName, contentModule) {
                     // new one. Ignore.
                     return;
                 }
-                vm.eof(newItems.length === 0);
+                vm.eof(newItems.length === 0 ||
+                       (typeof newItems.offset === 'number' &&
+                        newItems.items_available === newItems.offset + newItems.length));
                 vm.items(vm.items().concat(newItems));
             }, vm.eof).then(vm.makeItemViews).then(function() {
                 // Give the new items a chance to render before
