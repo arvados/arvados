@@ -644,7 +644,7 @@ class Collection(CollectionBase):
     def __init__(self, manifest_locator_or_text=None, parent=None, api_client=None,
                  keep_client=None, num_retries=0, block_manager=None):
 
-        self._parent = parent
+        self.parent = parent
         self._items = None
         self._api_client = api_client
         self._keep_client = keep_client
@@ -668,24 +668,24 @@ class Collection(CollectionBase):
 
     def _my_api(self):
         if self._api_client is None:
-            if self._parent is not None:
-                return self._parent._my_api()
+            if self.parent is not None:
+                return self.parent._my_api()
             self._api_client = arvados.api('v1')
             self._keep_client = None  # Make a new one with the new api.
         return self._api_client
 
     def _my_keep(self):
         if self._keep_client is None:
-            if self._parent is not None:
-                return self._parent._my_keep()
+            if self.parent is not None:
+                return self.parent._my_keep()
             self._keep_client = KeepClient(api_client=self._my_api(),
                                            num_retries=self.num_retries)
         return self._keep_client
 
     def _my_block_manager(self):
         if self._block_manager is None:
-            if self._parent is not None:
-                return self._parent._my_block_manager()
+            if self.parent is not None:
+                return self.parent._my_block_manager()
             self._block_manager = BlockManager(self._my_keep())
         return self._block_manager
 
@@ -768,7 +768,7 @@ class Collection(CollectionBase):
             self._block_manager.stop_threads()
 
     @_populate_first
-    def find(self, path, create=False):
+    def find(self, path, create=False, create_collection=False):
         p = path.split("/")
         if p[0] == '.':
             del p[0]
@@ -779,7 +779,10 @@ class Collection(CollectionBase):
                 # item must be a file
                 if item is None and create:
                     # create new file
-                    item = ArvadosFile(self, keep=self._keep_client)
+                    if create_collection:
+                        item = Collection(parent=self, num_retries=self.num_retries)
+                    else:
+                        item = ArvadosFile(self)
                     self._items[p[0]] = item
                 return item
             else:
@@ -933,6 +936,25 @@ class Collection(CollectionBase):
         self._manifest_locator = self._api_response["uuid"]
         self.set_unmodified()
 
+    @_populate_first
+    def rename(self, old, new):
+        old_path, old_fn = os.path.split(old)
+        old_col = self.find(path)
+        if old_col is None:
+            raise IOError((errno.ENOENT, "File not found"))
+        if not isinstance(old_p, Collection):
+            raise IOError((errno.ENOTDIR, "Parent in path is a file, not a directory"))
+        if old_fn in old_col:
+            new_path, new_fn = os.path.split(new)
+            new_col = self.find(new_path, create=True, create_collection=True)
+            if not isinstance(new_col, Collection):
+                raise IOError((errno.ENOTDIR, "Destination is a file, not a directory"))
+            ent = old_col[old_fn]
+            del old_col[old_fn]
+            ent.parent = new_col
+            new_col[new_fn] = ent
+        else:
+            raise IOError((errno.ENOENT, "File not found"))
 
 def import_manifest(manifest_text, into_collection=None, api_client=None, keep=None, num_retries=None):
     if into_collection is not None:
@@ -998,7 +1020,7 @@ def export_manifest(item, stream_name=".", portable_locators=False):
         for k in [s for s in sorted_keys if isinstance(item[s], ArvadosFile)]:
             v = item[k]
             st = []
-            for s in v._segments:
+            for s in v.segments:
                 loc = s.locator
                 if loc.startswith("bufferblock"):
                     loc = v.parent._my_block_manager()._bufferblocks[loc].locator()
@@ -1014,7 +1036,7 @@ def export_manifest(item, stream_name=".", portable_locators=False):
             buf += export_manifest(item[k], stream_name=os.path.join(stream_name, k), portable_locators=portable_locators)
     elif isinstance(item, ArvadosFile):
         st = []
-        for s in item._segments:
+        for s in item.segments:
             loc = s.locator
             if loc.startswith("bufferblock"):
                 loc = item._bufferblocks[loc].calculate_locator()

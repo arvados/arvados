@@ -404,7 +404,7 @@ class KeepClient(object):
     def __init__(self, api_client=None, proxy=None,
                  timeout=DEFAULT_TIMEOUT, proxy_timeout=DEFAULT_PROXY_TIMEOUT,
                  api_token=None, local_store=None, block_cache=None,
-                 num_retries=0):
+                 num_retries=0, session=None):
         """Initialize a new KeepClient.
 
         Arguments:
@@ -462,7 +462,7 @@ class KeepClient(object):
             self.put = self.local_store_put
         else:
             self.num_retries = num_retries
-            self.session = requests.Session()
+            self.session = session if session is not None else requests.Session()
             if proxy:
                 if not proxy.endswith('/'):
                     proxy += '/'
@@ -614,7 +614,7 @@ class KeepClient(object):
         hint_roots = ['http://keep.{}.arvadosapi.com/'.format(hint[2:])
                       for hint in locator.hints if hint.startswith('K@')]
         # Map root URLs their KeepService objects.
-        roots_map = {root: self.KeepService(root) for root in hint_roots}
+        roots_map = {root: self.KeepService(root, self.session) for root in hint_roots}
         blob = None
         loop = retry.RetryLoop(num_retries, self._check_loop_result,
                                backoff_start=2)
