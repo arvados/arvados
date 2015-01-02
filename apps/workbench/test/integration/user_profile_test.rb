@@ -68,10 +68,10 @@ class UserProfileTest < ActionDispatch::IntegrationTest
     assert page.has_no_text?('Projects shared with me'), 'Found text - Projects shared with me'
 
     assert page.has_text?('Profile'), 'No text - Profile'
-    assert page.has_text?('First name'), 'No text - First name'
-    assert page.has_text?('Last name'), 'No text - Last name'
+    assert page.has_text?('First Name'), 'No text - First Name'
+    assert page.has_text?('Last Name'), 'No text - Last Name'
     assert page.has_text?('Identity URL'), 'No text - Identity URL'
-    assert page.has_text?('Email'), 'No text - Email'
+    assert page.has_text?('E-mail'), 'No text - E-mail'
     assert page.has_text?(user['email']), 'No text - user email'
 
     # Using the default profile which has message and one required field
@@ -79,8 +79,8 @@ class UserProfileTest < ActionDispatch::IntegrationTest
     # Save profile without filling in the required field. Expect to be back in this profile page again
     click_button "Save profile"
     assert page.has_text?('Profile'), 'No text - Profile'
-    assert page.has_text?('First name'), 'No text - First name'
-    assert page.has_text?('Last name'), 'No text - Last name'
+    assert page.has_text?('First Name'), 'No text - First Name'
+    assert page.has_text?('Last Name'), 'No text - Last Name'
     assert page.has_text?('Save profile'), 'No text - Save profile'
 
     # This time fill in required field and then save. Expect to go to requested page after that.
