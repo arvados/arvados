@@ -922,14 +922,14 @@ class Collection(CollectionBase):
             self.set_unmodified()
 
     @_populate_first
-    def save_as(self, name, owner_uuid=None):
+    def save_as(self, name, owner_uuid=None, ensure_unique_name=False):
         self._my_block_manager().commit_all()
         self._my_keep().put(self.manifest_text(strip=True))
         body = {"manifest_text": self.manifest_text(strip=False),
                 "name": name}
         if owner_uuid:
             body["owner_uuid"] = owner_uuid
-        self._api_response = self._my_api().collections().create(body=body).execute(num_retries=self.num_retries)
+        self._api_response = self._my_api().collections().create(ensure_unique_name=ensure_unique_name, body=body).execute(num_retries=self.num_retries)
         self._manifest_locator = self._api_response["uuid"]
         self.set_unmodified()
 
@@ -1002,6 +1002,8 @@ def export_manifest(item, stream_name=".", portable_locators=False):
                 loc = s.locator
                 if loc.startswith("bufferblock"):
                     loc = v.parent._my_block_manager()._bufferblocks[loc].locator()
+                if portable_locators:
+                    loc = KeepLocator(loc).stripped()
                 st.append(LocatorAndRange(loc, locator_block_size(loc),
                                      s.segment_offset, s.range_size))
             stream[k] = st
@@ -1009,13 +1011,15 @@ def export_manifest(item, stream_name=".", portable_locators=False):
             buf += ' '.join(normalize_stream(stream_name, stream))
             buf += "\n"
         for k in [s for s in sorted_keys if isinstance(item[s], Collection)]:
-            buf += export_manifest(item[k], stream_name=os.path.join(stream_name, k))
+            buf += export_manifest(item[k], stream_name=os.path.join(stream_name, k), portable_locators=portable_locators)
     elif isinstance(item, ArvadosFile):
         st = []
         for s in item._segments:
             loc = s.locator
             if loc.startswith("bufferblock"):
                 loc = item._bufferblocks[loc].calculate_locator()
+            if portable_locators:
+                loc = KeepLocator(loc).stripped()
             st.append(LocatorAndRange(loc, locator_block_size(loc),
                                  s.segment_offset, s.range_size))
         stream[stream_name] = st

@@ -245,6 +245,9 @@ class AsyncKeepWriteErrors(Exception):
     def __init__(self, errors):
         self.errors = errors
 
+    def __repr__(self):
+        return "\n".join(self.errors)
+
 class BlockManager(object):
     def __init__(self, keep):
         self._keep = keep
@@ -299,12 +302,11 @@ class BlockManager(object):
                         self._put_queue.task_done()
 
         if self._put_threads is None:
-            self._put_queue = Queue.Queue()
+            self._put_queue = Queue.Queue(maxsize=2)
             self._put_errors = Queue.Queue()
-            self._put_threads = [threading.Thread(target=worker, args=(self,)),
-                                threading.Thread(target=worker, args=(self,))]
-            self._put_threads[0].start()
-            self._put_threads[1].start()
+            self._put_threads = [threading.Thread(target=worker, args=(self,)), threading.Thread(target=worker, args=(self,))]
+            for t in self._put_threads:
+                t.start()
 
         block.state = BufferBlock.PENDING
         self._put_queue.put(block)

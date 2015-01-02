@@ -58,6 +58,9 @@ class KeepLocator(object):
                              self.permission_hint()] + self.hints
             if s is not None)
 
+    def stripped(self):
+        return "%s+%i" % (self.md5sum, self.size)
+
     def _make_hex_prop(name, length):
         # Build and return a new property with the given name that
         # must be a hex string of the given length.
@@ -273,10 +276,11 @@ class KeepClient(object):
         HTTP_ERRORS = (requests.exceptions.RequestException,
                        socket.error, ssl.SSLError)
 
-        def __init__(self, root, **headers):
+        def __init__(self, root, session, **headers):
             self.root = root
             self.last_result = None
             self.success_flag = None
+            self.session = session
             self.get_headers = {'Accept': 'application/octet-stream'}
             self.get_headers.update(headers)
             self.put_headers = headers
@@ -299,7 +303,7 @@ class KeepClient(object):
             _logger.debug("Request: GET %s", url)
             try:
                 with timer.Timer() as t:
-                    result = requests.get(url.encode('utf-8'),
+                    result = self.session.get(url.encode('utf-8'),
                                           headers=self.get_headers,
                                           timeout=timeout)
             except self.HTTP_ERRORS as e:
@@ -325,7 +329,7 @@ class KeepClient(object):
             url = self.root + hash_s
             _logger.debug("Request: PUT %s", url)
             try:
-                result = requests.put(url.encode('utf-8'),
+                result = self.session.put(url.encode('utf-8'),
                                       data=body,
                                       headers=self.put_headers,
                                       timeout=timeout)
@@ -365,9 +369,10 @@ class KeepClient(object):
         def run_with_limiter(self, limiter):
             if self.service.finished():
                 return
-            _logger.debug("KeepWriterThread %s proceeding %s %s",
+            _logger.debug("KeepWriterThread %s proceeding %s+%i %s",
                           str(threading.current_thread()),
                           self.args['data_hash'],
+                          len(self.args['data']),
                           self.args['service_root'])
             self._success = bool(self.service.put(
                 self.args['data_hash'],
@@ -376,9 +381,10 @@ class KeepClient(object):
             status = self.service.last_status()
             if self._success:
                 result = self.service.last_result
-                _logger.debug("KeepWriterThread %s succeeded %s %s",
+                _logger.debug("KeepWriterThread %s succeeded %s+%i %s",
                               str(threading.current_thread()),
                               self.args['data_hash'],
+                              len(self.args['data']),
                               self.args['service_root'])
                 # Tick the 'done' counter for the number of replica
                 # reported stored by the server, for the case that
@@ -456,6 +462,7 @@ class KeepClient(object):
             self.put = self.local_store_put
         else:
             self.num_retries = num_retries
+            self.session = requests.Session()
             if proxy:
                 if not proxy.endswith('/'):
                     proxy += '/'
@@ -547,7 +554,7 @@ class KeepClient(object):
         local_roots = self.weighted_service_roots(md5_s, force_rebuild)
         for root in local_roots:
             if root not in roots_map:
-                roots_map[root] = self.KeepService(root, **headers)
+                roots_map[root] = self.KeepService(root, self.session, **headers)
         return local_roots
 
     @staticmethod
