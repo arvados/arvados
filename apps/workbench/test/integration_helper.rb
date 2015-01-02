@@ -4,6 +4,16 @@ require 'capybara/poltergeist'
 require 'uri'
 require 'yaml'
 
+Capybara.register_driver :poltergeist do |app|
+  Capybara::Poltergeist::Driver.new app, {
+    window_size: [1200, 800],
+    phantomjs_options: ['--ignore-ssl-errors=true'],
+    inspector: true,
+  }
+end
+
+Headless.new.start
+
 module WaitForAjax
   Capybara.default_wait_time = 5
   def wait_for_ajax

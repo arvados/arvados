@@ -1,13 +1,8 @@
 require 'integration_helper'
-require 'selenium-webdriver'
-require 'headless'
 
 class ReportIssueTest < ActionDispatch::IntegrationTest
   setup do
-    headless = Headless.new
-    headless.start
-    Capybara.current_driver = :selenium
-
+    Capybara.current_driver = Capybara.javascript_driver
     @user_profile_form_fields = Rails.configuration.user_profile_form_fields
   end
 
@@ -17,9 +12,9 @@ class ReportIssueTest < ActionDispatch::IntegrationTest
 
   # test version info and report issue from help menu
   def check_version_info_and_report_issue_from_help_menu
-    within('.navbar-fixed-top') do
-      page.find("#arv-help").click
-      within('.dropdown-menu') do
+    within '.navbar-fixed-top' do
+      find('.help-menu > a').click
+      within '.help-menu .dropdown-menu' do
         assert page.has_link?('Tutorials and User guide'), 'No link - Tutorials and User guide'
         assert page.has_link?('API Reference'), 'No link - API Reference'
         assert page.has_link?('SDK Reference'), 'No link - SDK Reference'
@@ -47,11 +42,9 @@ class ReportIssueTest < ActionDispatch::IntegrationTest
     end
 
     # check report issue link
-    within('.navbar-fixed-top') do
-      page.find("#arv-help").click
-      within('.dropdown-menu') do
-        click_link 'Report a problem ...'
-      end
+    within '.navbar-fixed-top' do
+      find('.help-menu > a').click
+      find('.help-menu .dropdown-menu a', text: 'Report a problem ...').click
     end
 
     within '.modal-content' do

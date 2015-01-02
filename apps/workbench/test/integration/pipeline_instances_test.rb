@@ -1,13 +1,8 @@
 require 'integration_helper'
-require 'selenium-webdriver'
-require 'headless'
 
 class PipelineInstancesTest < ActionDispatch::IntegrationTest
   setup do
-    # Selecting collections requiresLocalStorage
-    headless = Headless.new
-    headless.start
-    Capybara.current_driver = :selenium
+    Capybara.current_driver = Capybara.javascript_driver
   end
 
   test 'Create and run a pipeline' do
@@ -69,8 +64,7 @@ class PipelineInstancesTest < ActionDispatch::IntegrationTest
 
     # The input, after being specified, should still be editable (#3382)
     find('div.form-group', text: 'Foo/bar pair').
-      find('.btn', text: 'Choose').
-      click
+      find('.btn', text: 'Choose').click
 
     within('.modal-dialog') do
       assert(has_text?("Foo/bar pair"),
@@ -79,7 +73,6 @@ class PipelineInstancesTest < ActionDispatch::IntegrationTest
       first('span', text: 'foo_tag').click
       find('button', text: 'OK').click
     end
-    wait_for_ajax
 
     # For good measure, check one last time that the input, after being specified twice, is still be displayed (#3382)
     assert find('div.form-group', text: 'Foo/bar pair')
@@ -230,14 +223,16 @@ class PipelineInstancesTest < ActionDispatch::IntegrationTest
     [true, 'Two Part Pipeline Template', 'collection_with_no_name_in_aproject', false],
   ].each do |in_aproject, template_name, collection, choose_file|
     test "Run pipeline instance in #{in_aproject} with #{template_name} with #{collection} file #{choose_file}" do
-      visit page_with_token('active')
+      if in_aproject
+        visit page_with_token 'active', \
+        '/projects/'+api_fixture('groups')['aproject']['uuid']
+      else
+        visit page_with_token 'active', '/'
+      end
 
       # need bigger modal size when choosing a file from collection
-      Capybara.current_session.driver.browser.manage.window.resize_to(1024, 768)
-
-      if in_aproject
-        find("#projects-menu").click
-        find('.dropdown-menu a,button', text: 'A Project').click
+      if Capybara.current_driver == :selenium
+        Capybara.current_session.driver.browser.manage.window.resize_to(1200, 800)
       end
 
       create_and_run_pipeline_in_aproject in_aproject, template_name, collection, choose_file
@@ -271,14 +266,16 @@ class PipelineInstancesTest < ActionDispatch::IntegrationTest
     ['project_viewer', true, true, true],
   ].each do |user, with_options, choose_options, in_aproject|
     test "Rerun pipeline instance as #{user} using options #{with_options} #{choose_options} in #{in_aproject}" do
-      visit page_with_token('active')
+      if in_aproject
+        visit page_with_token 'active', \
+        '/projects/'+api_fixture('groups')['aproject']['uuid']
+      else
+        visit page_with_token 'active', '/'
+      end
 
       # need bigger modal size when choosing a file from collection
-      Capybara.current_session.driver.browser.manage.window.resize_to(1024, 768)
-
-      if in_aproject
-        find("#projects-menu").click
-        find('.dropdown-menu a,button', text: 'A Project').click
+      if Capybara.current_driver == :selenium
+        Capybara.current_session.driver.browser.manage.window.resize_to(1200, 800)
       end
 
       create_and_run_pipeline_in_aproject in_aproject, 'Two Part Pipeline Template', 'foo_collection_in_aproject'
@@ -374,7 +371,6 @@ class PipelineInstancesTest < ActionDispatch::IntegrationTest
       end
       find('button', text: 'OK').click
     end
-    wait_for_ajax
 
     # The input, after being specified, should still be displayed (#3382)
     assert find('div.form-group', text: 'Foo/bar pair')
@@ -383,6 +379,7 @@ class PipelineInstancesTest < ActionDispatch::IntegrationTest
     # are saved in the desired places. (#4015)
     click_link 'Advanced'
     click_link 'API response'
+
     api_response = JSON.parse(find('div#advanced_api_response pre').text)
     input_params = api_response['components']['part-one']['script_parameters']['input']
     assert_equal(input_params['selection_uuid'], collection['uuid'], "Not found expected input param uuid")
@@ -462,7 +459,7 @@ class PipelineInstancesTest < ActionDispatch::IntegrationTest
       page_scrolls = expected_max/20 + 2    # scroll num_pages+2 times to test scrolling is disabled when it should be
       within('.arv-recent-pipeline-instances') do
         (0..page_scrolls).each do |i|
-          page.execute_script "window.scrollBy(0,999000)"
+          page.driver.scroll_to 0, 999000
           begin
             wait_for_ajax
           rescue

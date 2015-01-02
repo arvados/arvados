@@ -20,7 +20,7 @@ class CollectionUploadTest < ActionDispatch::IntegrationTest
   end
 
   test "Create new collection using upload button" do
-    Capybara.current_driver = :poltergeist
+    Capybara.current_driver = Capybara.javascript_driver
     visit page_with_token 'active', aproject_path
     find('.btn', text: 'Add data').click
     click_link 'Upload files from my computer'
@@ -32,13 +32,14 @@ class CollectionUploadTest < ActionDispatch::IntegrationTest
   end
 
   test "No Upload tab on non-writable collection" do
-    Capybara.current_driver = :poltergeist
+    Capybara.current_driver = Capybara.javascript_driver
     visit(page_with_token 'active',
           '/collections/'+api_fixture('collections')['user_agreement']['uuid'])
     assert_no_selector '.nav-tabs Upload'
   end
 
   test "Upload two empty files with the same name" do
+    # Selenium is needed because poltergeist/phantomjs can't do file uploads.
     Capybara.current_driver = :selenium
     visit page_with_token 'active', sandbox_path
     find('.nav-tabs a', text: 'Upload').click
@@ -53,6 +54,7 @@ class CollectionUploadTest < ActionDispatch::IntegrationTest
   end
 
   test "Upload non-empty files, report errors" do
+    # Selenium is needed because poltergeist/phantomjs can't do file uploads.
     Capybara.current_driver = :selenium
     visit page_with_token 'active', sandbox_path
     find('.nav-tabs a', text: 'Upload').click
@@ -60,7 +62,7 @@ class CollectionUploadTest < ActionDispatch::IntegrationTest
     attach_file 'file_selector', testfile_path('foo.txt')
     assert_selector 'button:not([disabled])', text: 'Start'
     click_button 'Start'
-    if "test environment does not have a keepproxy yet, see #4534"
+    if "test environment does not have a keepproxy yet, see #4534" != "fixed"
       using_wait_time 20 do
         assert_text :visible, 'error'
       end

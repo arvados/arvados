@@ -1,6 +1,4 @@
 require 'integration_helper'
-require 'selenium-webdriver'
-require 'headless'
 
 class UsersTest < ActionDispatch::IntegrationTest
 
@@ -44,10 +42,7 @@ class UsersTest < ActionDispatch::IntegrationTest
   end
 
   test "create a new user" do
-    headless = Headless.new
-    headless.start
-
-    Capybara.current_driver = :selenium
+    Capybara.current_driver = Capybara.javascript_driver
 
     visit page_with_token('admin_trustedclient')
 
@@ -88,15 +83,10 @@ class UsersTest < ActionDispatch::IntegrationTest
     click_link 'Metadata'
     assert page.has_text? 'Repository: test_repo'
     assert !(page.has_text? 'VirtualMachine:')
-
-    headless.stop
   end
 
   test "setup the active user" do
-    headless = Headless.new
-    headless.start
-
-    Capybara.current_driver = :selenium
+    Capybara.current_driver = Capybara.javascript_driver
     visit page_with_token('admin_trustedclient')
 
     find('#system-menu').click
@@ -145,15 +135,10 @@ class UsersTest < ActionDispatch::IntegrationTest
     click_link 'Metadata'
     assert page.has_text? 'Repository: second_test_repo'
     assert page.has_text? 'VirtualMachine: testvm.shell'
-
-    headless.stop
   end
 
   test "unsetup active user" do
-    headless = Headless.new
-    headless.start
-
-    Capybara.current_driver = :selenium
+    Capybara.current_driver = Capybara.javascript_driver
 
     visit page_with_token('admin_trustedclient')
 
@@ -180,11 +165,15 @@ class UsersTest < ActionDispatch::IntegrationTest
     # unsetup user and verify all the above links are deleted
     click_link 'Admin'
     click_button 'Deactivate Active User'
-    sleep(0.1)
+
+    if Capybara.current_driver == :selenium
+      sleep(0.1)
+      page.driver.browser.switch_to.alert.accept
+    else
+      # poltergeist returns true for confirm(), so we don't need to accept.
+    end
 
     # Should now be back in the Attributes tab for the user
-    page.driver.browser.switch_to.alert.accept
-
     assert page.has_text? 'modified_by_user_uuid'
     page.within(:xpath, '//span[@data-name="is_active"]') do
       assert_equal "false", text, "Expected user's is_active to be false after unsetup"
@@ -213,8 +202,6 @@ class UsersTest < ActionDispatch::IntegrationTest
     click_link 'Metadata'
     assert page.has_text? 'Repository: second_test_repo'
     assert page.has_text? 'VirtualMachine: testvm.shell'
-
-    headless.stop
   end
 
 end

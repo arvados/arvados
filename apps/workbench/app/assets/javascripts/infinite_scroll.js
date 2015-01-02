@@ -241,8 +241,8 @@ $(document).
         // put it in the browser history state if browser allows it
         if( hasHTML5History() ) {
             var tabId = $(this).closest('div.tab-pane').attr('id');
-            var state =  history.state;
-            if( state.order === undefined) {
+            var state =  history.state || {};
+            if( state.order === undefined ) {
                 state.order = {};
             }
             state.order[tabId] = order;

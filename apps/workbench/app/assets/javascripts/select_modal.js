@@ -49,6 +49,7 @@ $(document).on('click', '.selectable', function() {
     var selection = [];
     var data = [];
     var $modal = $(this).closest('.modal');
+    var http_method = $(this).attr('data-method').toUpperCase();
     var action_data = $(this).data('action-data');
     var action_data_from_params = $(this).data('action-data-from-params');
     var selection_param = action_data.selection_param;
@@ -75,9 +76,17 @@ $(document).on('click', '.selectable', function() {
                    data.push({name: key, value: value});
                }
            });
+    if (http_method === 'PATCH') {
+        // Some user agents do not support HTTP PATCH (notably,
+        // phantomjs silently ignores our "data" and sends an empty
+        // request body) so we use POST instead, and supply a
+        // _method=PATCH param to tell Rails what we really want.
+        data.push({name: '_method', value: http_method});
+        http_method = 'POST';
+    }
     $.ajax($(this).attr('data-action-href'),
            {dataType: 'json',
-            type: $(this).attr('data-method'),
+            type: http_method,
             data: data,
             traditional: false,
             context: {modal: $modal, action_data: action_data}}).
