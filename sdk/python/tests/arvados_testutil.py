@@ -39,35 +39,19 @@ def fake_requests_response(code, body, **headers):
     r.raw = io.BytesIO(body)
     return r
 
-class MockSession(object):
-    def __init__(self, body, codes, headers):
-        if isinstance(body, list):
-            self.body = body
-        else:
-            self.body = [body for c in codes]
-        self.codes = codes
-        self.headers = headers
-        self.n = -1
+def mock_put_responses(body, *codes, **headers):
+    m = mock.MagicMock()
+    m.return_value.put.side_effect = (fake_requests_response(code, body, **headers) for code in codes)
+    return mock.patch('requests.Session', m)
 
-    def get(self, url, **kwargs):
-        self.n += 1
-        return fake_requests_response(self.codes[self.n], self.body[self.n], **self.headers)
+def mock_get_responses(body, *codes, **headers):
+    m = mock.MagicMock()
+    m.return_value.get.side_effect = (fake_requests_response(code, body, **headers) for code in codes)
+    return mock.patch('requests.Session', m)
 
-    def put(self, url, **kwargs):
-        self.n += 1
-        return fake_requests_response(self.codes[self.n], self.body[self.n], **self.headers)
-
-# def mock_get_responses(body, *codes, **headers):
-#     return mock.patch('requests.get', side_effect=(
-#         fake_requests_response(code, body, **headers) for code in codes))
-
-# def mock_put_responses(body, *codes, **headers):
-#     return mock.patch('requests.put', side_effect=(
-#         fake_requests_response(code, body, **headers) for code in codes))
-
-def mock_requestslib_responses(method, body, *codes, **headers):
-    return mock.patch(method, side_effect=(
-        fake_requests_response(code, body, **headers) for code in codes))
+#def mock_requestslib_responses(method, body, *codes, **headers):
+#    return mock.patch(method, side_effect=(
+#        fake_requests_response(code, body, **headers) for code in codes))
 
 class MockStreamReader(object):
     def __init__(self, name='.', *data):
