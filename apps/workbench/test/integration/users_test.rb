@@ -3,14 +3,14 @@ require 'integration_helper'
 class UsersTest < ActionDispatch::IntegrationTest
 
   test "login as active user but not admin" do
-    Capybara.current_driver = Capybara.javascript_driver
+    need_javascript
     visit page_with_token('active_trustedclient')
 
     assert page.has_no_link? 'Users' 'Found Users link for non-admin user'
   end
 
   test "login as admin user and verify active user data" do
-    Capybara.current_driver = Capybara.javascript_driver
+    need_javascript
     visit page_with_token('admin_trustedclient')
 
     # go to Users list page
@@ -42,7 +42,7 @@ class UsersTest < ActionDispatch::IntegrationTest
   end
 
   test "create a new user" do
-    Capybara.current_driver = Capybara.javascript_driver
+    need_javascript
 
     visit page_with_token('admin_trustedclient')
 
@@ -86,7 +86,7 @@ class UsersTest < ActionDispatch::IntegrationTest
   end
 
   test "setup the active user" do
-    Capybara.current_driver = Capybara.javascript_driver
+    need_javascript
     visit page_with_token('admin_trustedclient')
 
     find('#system-menu').click
@@ -138,7 +138,7 @@ class UsersTest < ActionDispatch::IntegrationTest
   end
 
   test "unsetup active user" do
-    Capybara.current_driver = Capybara.javascript_driver
+    need_javascript
 
     visit page_with_token('admin_trustedclient')
 

@@ -7,7 +7,7 @@ class ApplicationLayoutTest < ActionDispatch::IntegrationTest
   reset_api_fixtures :after_suite, true
 
   setup do
-    Capybara.current_driver = Capybara.javascript_driver
+    need_javascript
   end
 
   def verify_homepage user, invited, has_profile

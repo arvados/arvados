@@ -2,7 +2,7 @@ require 'integration_helper'
 
 class ReportIssueTest < ActionDispatch::IntegrationTest
   setup do
-    Capybara.current_driver = Capybara.javascript_driver
+    need_javascript
     @user_profile_form_fields = Rails.configuration.user_profile_form_fields
   end
 

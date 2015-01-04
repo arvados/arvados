@@ -2,7 +2,7 @@ require 'integration_helper'
 
 class PipelineInstancesTest < ActionDispatch::IntegrationTest
   setup do
-    Capybara.current_driver = Capybara.javascript_driver
+    need_javascript
   end
 
   test 'Create and run a pipeline' do

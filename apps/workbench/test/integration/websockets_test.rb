@@ -2,7 +2,7 @@ require 'integration_helper'
 
 class WebsocketTest < ActionDispatch::IntegrationTest
   setup do
-    Capybara.current_driver = :selenium
+    need_selenium "to make websockets work"
   end
 
   test "test page" do

@@ -2,10 +2,6 @@ require 'integration_helper'
 
 class CollectionUploadTest < ActionDispatch::IntegrationTest
   setup do
-    Headless.new.start
-  end
-
-  setup do
     testfiles.each do |filename, content|
       open(testfile_path(filename), 'w') do |io|
         io.write content
@@ -20,7 +16,7 @@ class CollectionUploadTest < ActionDispatch::IntegrationTest
   end
 
   test "Create new collection using upload button" do
-    Capybara.current_driver = Capybara.javascript_driver
+    need_javascript
     visit page_with_token 'active', aproject_path
     find('.btn', text: 'Add data').click
     click_link 'Upload files from my computer'
@@ -32,15 +28,14 @@ class CollectionUploadTest < ActionDispatch::IntegrationTest
   end
 
   test "No Upload tab on non-writable collection" do
-    Capybara.current_driver = Capybara.javascript_driver
+    need_javascript
     visit(page_with_token 'active',
           '/collections/'+api_fixture('collections')['user_agreement']['uuid'])
     assert_no_selector '.nav-tabs Upload'
   end
 
   test "Upload two empty files with the same name" do
-    # Selenium is needed because poltergeist/phantomjs can't do file uploads.
-    Capybara.current_driver = :selenium
+    need_selenium "to make file uploads work"
     visit page_with_token 'active', sandbox_path
     find('.nav-tabs a', text: 'Upload').click
     attach_file 'file_selector', testfile_path('empty.txt')
@@ -54,8 +49,7 @@ class CollectionUploadTest < ActionDispatch::IntegrationTest
   end
 
   test "Upload non-empty files, report errors" do
-    # Selenium is needed because poltergeist/phantomjs can't do file uploads.
-    Capybara.current_driver = :selenium
+    need_selenium "to make file uploads work"
     visit page_with_token 'active', sandbox_path
     find('.nav-tabs a', text: 'Upload').click
     attach_file 'file_selector', testfile_path('a')

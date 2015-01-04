@@ -2,7 +2,7 @@ require 'integration_helper'
 
 class CollectionsTest < ActionDispatch::IntegrationTest
   setup do
-    Capybara.current_driver = Capybara.javascript_driver
+    need_javascript
   end
 
   # check_checkboxes_state asserts that the page holds at least one

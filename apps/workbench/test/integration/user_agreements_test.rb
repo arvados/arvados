@@ -3,7 +3,7 @@ require 'integration_helper'
 class UserAgreementsTest < ActionDispatch::IntegrationTest
 
   setup do
-    Capybara.current_driver = Capybara.javascript_driver
+    need_javascript
   end
 
   def continuebutton_selector

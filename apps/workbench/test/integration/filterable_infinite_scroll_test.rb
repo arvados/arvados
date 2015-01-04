@@ -2,7 +2,7 @@ require 'integration_helper'
 
 class FilterableInfiniteScrollTest < ActionDispatch::IntegrationTest
   setup do
-    Capybara.current_driver = Capybara.javascript_driver
+    need_javascript
   end
 
   # Chrome remembers what you had in the text field when you hit

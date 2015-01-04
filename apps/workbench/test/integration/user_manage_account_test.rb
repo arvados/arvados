@@ -2,7 +2,7 @@ require 'integration_helper'
 
 class UserManageAccountTest < ActionDispatch::IntegrationTest
   setup do
-    Capybara.current_driver = Capybara.javascript_driver
+    need_javascript
   end
 
   # test manage_account page

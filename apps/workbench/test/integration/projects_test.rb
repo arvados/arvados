@@ -2,7 +2,7 @@ require 'integration_helper'
 
 class ProjectsTest < ActionDispatch::IntegrationTest
   setup do
-    Capybara.current_driver = Capybara.javascript_driver
+    need_javascript
   end
 
   test 'Check collection count for A Project in the tab pane titles' do

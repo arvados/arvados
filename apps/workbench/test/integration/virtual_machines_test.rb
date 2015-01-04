@@ -2,7 +2,7 @@ require 'integration_helper'
 
 class VirtualMachinesTest < ActionDispatch::IntegrationTest
   test "make and name a new virtual machine" do
-    Capybara.current_driver = Capybara.javascript_driver
+    need_javascript
     visit page_with_token('admin_trustedclient')
     find('#system-menu').click
     click_link 'Virtual machines'

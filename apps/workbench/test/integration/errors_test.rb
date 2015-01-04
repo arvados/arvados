@@ -2,7 +2,7 @@ require 'integration_helper'
 
 class ErrorsTest < ActionDispatch::IntegrationTest
   setup do
-    Capybara.current_driver = Capybara.javascript_driver
+    need_javascript
   end
 
   BAD_UUID = "ffffffffffffffffffffffffffffffff+0"
