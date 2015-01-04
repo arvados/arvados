@@ -9,17 +9,17 @@ import unittest
 import hashlib
 
 import arvados
-from arvados import StreamReader, StreamFileReader, Range, import_manifest, export_manifest
+from arvados import ArvadosFile, ArvadosFileReader, Range, import_manifest, export_manifest
 
 import arvados_testutil as tutil
-
+from test_stream import StreamFileReaderTestCase
 
 class ArvadosFileWriterTestCase(unittest.TestCase):
     class MockKeep(object):
         def __init__(self, blocks):
             self.blocks = blocks
             self.requests = []
-        def get(self, locator, num_retries=0):
+        def get(self, locator, num_retries=0, cache_only=False):
             self.requests.append(locator)
             return self.blocks.get(locator)
         def put(self, data):
@@ -337,3 +337,96 @@ class ArvadosFileWriterTestCase(unittest.TestCase):
             r = c.open("count.txt", "r")
             self.assertEqual("0123", r.read(4))
         self.assertEqual(["2e9ec317e197819358fbc43afca7d837+8", "2e9ec317e197819358fbc43afca7d837+8", "e8dc4081b13434b45189a720b77b6818+8"], keep.requests)
+
+
+class ArvadosFileReaderTestCase(StreamFileReaderTestCase):
+    class MockParent(object):
+        class MockBlockMgr(object):
+            def __init__(self, blocks, nocache):
+                self.blocks = blocks
+                self.nocache = nocache
+
+            def block_prefetch(self, loc):
+                pass
+
+            def get_block(self, loc, num_retries=0, cache_only=False):
+                if self.nocache and cache_only:
+                    return None
+                return self.blocks[loc]
+
+        def __init__(self, blocks, nocache):
+            self.blocks = blocks
+            self.nocache = nocache
+
+        def _my_block_manager(self):
+            return ArvadosFileReaderTestCase.MockParent.MockBlockMgr(self.blocks, self.nocache)
+
+    def make_count_reader(self, nocache=False):
+        stream = []
+        n = 0
+        blocks = {}
+        for d in ['01234', '34567', '67890']:
+            loc = '{}+{}'.format(hashlib.md5(d).hexdigest(), len(d))
+            blocks[loc] = d
+            stream.append(Range(loc, n, len(d)))
+            n += len(d)
+        af = ArvadosFile(ArvadosFileReaderTestCase.MockParent(blocks, nocache), stream=stream, segments=[Range(1, 0, 3), Range(6, 3, 3), Range(11, 6, 3)])
+        return ArvadosFileReader(af, "count.txt")
+
+    def test_read_returns_first_block(self):
+        # read() calls will be aligned on block boundaries - see #3663.
+        sfile = self.make_count_reader(nocache=True)
+        self.assertEqual('123', sfile.read(10))
+
+    def test_successive_reads(self):
+        sfile = self.make_count_reader(nocache=True)
+        for expect in ['123', '456', '789', '']:
+            self.assertEqual(expect, sfile.read(10))
+
+    def test_tell_after_block_read(self):
+        sfile = self.make_count_reader(nocache=True)
+        sfile.read(5)
+        self.assertEqual(3, sfile.tell())
+
+# class StreamReaderTestCase(unittest.TestCase, StreamRetryTestMixin):
+#     def reader_for(self, coll_name, **kwargs):
+#         return StreamReader(self.manifest_for(coll_name).split(),
+#                             self.keep_client(), **kwargs)
+
+#     def read_for_test(self, reader, byte_count, **kwargs):
+#         return reader.readfrom(0, byte_count, **kwargs)
+
+#     def test_manifest_text_without_keep_client(self):
+#         mtext = self.manifest_for('multilevel_collection_1')
+#         for line in mtext.rstrip('\n').split('\n'):
+#             reader = StreamReader(line.split())
+#             self.assertEqual(line + '\n', reader.manifest_text())
+
+
+# class StreamFileReadTestCase(unittest.TestCase, StreamRetryTestMixin):
+#     def reader_for(self, coll_name, **kwargs):
+#         return StreamReader(self.manifest_for(coll_name).split(),
+#                             self.keep_client(), **kwargs).all_files()[0]
+
+#     def read_for_test(self, reader, byte_count, **kwargs):
+#         return reader.read(byte_count, **kwargs)
+
+
+# class StreamFileReadFromTestCase(StreamFileReadTestCase):
+#     def read_for_test(self, reader, byte_count, **kwargs):
+#         return reader.readfrom(0, byte_count, **kwargs)
+
+
+# class StreamFileReadAllTestCase(StreamFileReadTestCase):
+#     def read_for_test(self, reader, byte_count, **kwargs):
+#         return ''.join(reader.readall(**kwargs))
+
+
+# class StreamFileReadAllDecompressedTestCase(StreamFileReadTestCase):
+#     def read_for_test(self, reader, byte_count, **kwargs):
+#         return ''.join(reader.readall_decompressed(**kwargs))
+
+
+# class StreamFileReadlinesTestCase(StreamFileReadTestCase):
+#     def read_for_test(self, reader, byte_count, **kwargs):
+#         return ''.join(reader.readlines(**kwargs))

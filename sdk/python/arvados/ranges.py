@@ -6,7 +6,7 @@ class Range(object):
         self.segment_offset = segment_offset
 
     def __repr__(self):
-        return "[\"%s\", %i, %i, %i]" % (self.locator, self.range_start, self.range_size, self.segment_offset)
+        return "Range(\"%s\", %i, %i, %i)" % (self.locator, self.range_start, self.range_size, self.segment_offset)
 
 def first_block(data_locators, range_start, range_size, debug=False):
     block_start = 0L
@@ -55,7 +55,7 @@ class LocatorAndRange(object):
                  self.segment_size == other.segment_size)
 
     def __repr__(self):
-        return "[\"%s\", %i, %i, %i]" % (self.locator, self.block_size, self.segment_offset, self.segment_size)
+        return "LocatorAndRange(\"%s\", %i, %i, %i)" % (self.locator, self.block_size, self.segment_offset, self.segment_size)
 
 def locators_and_ranges(data_locators, range_start, range_size, debug=False):
     '''
