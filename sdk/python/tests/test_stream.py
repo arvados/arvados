@@ -184,48 +184,48 @@ class StreamRetryTestMixin(object):
 
     @tutil.skip_sleep
     def test_success_without_retries(self):
-        reader = self.reader_for('bar_file')
         with tutil.mock_get_responses('bar', 200):
+            reader = self.reader_for('bar_file')
             self.assertEqual('bar', self.read_for_test(reader, 3))
 
     @tutil.skip_sleep
     def test_read_no_default_retry(self):
-        reader = self.reader_for('user_agreement')
         with tutil.mock_get_responses('', 500):
+            reader = self.reader_for('user_agreement')
             with self.assertRaises(arvados.errors.KeepReadError):
                 self.read_for_test(reader, 10)
 
     @tutil.skip_sleep
     def test_read_with_instance_retries(self):
-        reader = self.reader_for('foo_file', num_retries=3)
         with tutil.mock_get_responses('foo', 500, 200):
+            reader = self.reader_for('foo_file', num_retries=3)
             self.assertEqual('foo', self.read_for_test(reader, 3))
 
     @tutil.skip_sleep
     def test_read_with_method_retries(self):
-        reader = self.reader_for('foo_file')
         with tutil.mock_get_responses('foo', 500, 200):
+            reader = self.reader_for('foo_file')
             self.assertEqual('foo',
                              self.read_for_test(reader, 3, num_retries=3))
 
     @tutil.skip_sleep
     def test_read_instance_retries_exhausted(self):
-        reader = self.reader_for('bar_file', num_retries=3)
         with tutil.mock_get_responses('bar', 500, 500, 500, 500, 200):
+            reader = self.reader_for('bar_file', num_retries=3)
             with self.assertRaises(arvados.errors.KeepReadError):
                 self.read_for_test(reader, 3)
 
     @tutil.skip_sleep
     def test_read_method_retries_exhausted(self):
-        reader = self.reader_for('bar_file')
         with tutil.mock_get_responses('bar', 500, 500, 500, 500, 200):
+            reader = self.reader_for('bar_file')
             with self.assertRaises(arvados.errors.KeepReadError):
                 self.read_for_test(reader, 3, num_retries=3)
 
     @tutil.skip_sleep
     def test_method_retries_take_precedence(self):
-        reader = self.reader_for('user_agreement', num_retries=10)
         with tutil.mock_get_responses('', 500, 500, 500, 200):
+            reader = self.reader_for('user_agreement', num_retries=10)
             with self.assertRaises(arvados.errors.KeepReadError):
                 self.read_for_test(reader, 10, num_retries=1)
 

@@ -40,7 +40,7 @@ class ArvadosFileWriterTestCase(unittest.TestCase):
                     self.r = r
                 def execute(self, num_retries=None):
                     return self.r
-            def create(self, body=None):
+            def create(self, ensure_unique_name=False, body=None):
                 if body != self.b:
                     raise Exception("Body %s does not match expectation %s" % (body, self.b))
                 return ArvadosFileWriterTestCase.MockApi.MockCollections.Execute(self.r)

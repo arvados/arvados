@@ -760,15 +760,14 @@ class CollectionWriterTestCase(unittest.TestCase, CollectionTestMixin):
 
     def test_open_flush(self):
         client = self.api_client_mock()
-        writer = arvados.CollectionWriter(client)
-        with writer.open('flush_test') as out_file:
-            out_file.write('flush1')
-            data_loc1 = hashlib.md5('flush1').hexdigest() + '+6'
-            with self.mock_keep(data_loc1, 200) as keep_mock:
+        data_loc1 = hashlib.md5('flush1').hexdigest() + '+6'
+        data_loc2 = hashlib.md5('flush2').hexdigest() + '+6'
+        with self.mock_keep((data_loc1, 200), (data_loc2, 200)) as keep_mock:
+            writer = arvados.CollectionWriter(client)
+            with writer.open('flush_test') as out_file:
+                out_file.write('flush1')
                 out_file.flush()
-            out_file.write('flush2')
-            data_loc2 = hashlib.md5('flush2').hexdigest() + '+6'
-        with self.mock_keep(data_loc2, 200) as keep_mock:
+                out_file.write('flush2')
             self.assertEqual(". {} {} 0:12:flush_test\n".format(data_loc1,
                                                                 data_loc2),
                              writer.manifest_text())
@@ -787,15 +786,14 @@ class CollectionWriterTestCase(unittest.TestCase, CollectionTestMixin):
 
     def test_two_opens_two_streams(self):
         client = self.api_client_mock()
-        writer = arvados.CollectionWriter(client)
-        with writer.open('file') as out_file:
-            out_file.write('file')
-            data_loc1 = hashlib.md5('file').hexdigest() + '+4'
-        with self.mock_keep(data_loc1, 200) as keep_mock:
+        data_loc1 = hashlib.md5('file').hexdigest() + '+4'
+        data_loc2 = hashlib.md5('indir').hexdigest() + '+5'
+        with self.mock_keep((data_loc1, 200), (data_loc2, 200)) as keep_mock:
+            writer = arvados.CollectionWriter(client)
+            with writer.open('file') as out_file:
+                out_file.write('file')
             with writer.open('./dir', 'indir') as out_file:
                 out_file.write('indir')
-                data_loc2 = hashlib.md5('indir').hexdigest() + '+5'
-        with self.mock_keep(data_loc2, 200) as keep_mock:
             expected = ". {} 0:4:file\n./dir {} 0:5:indir\n".format(
                 data_loc1, data_loc2)
             self.assertEqual(expected, writer.manifest_text())

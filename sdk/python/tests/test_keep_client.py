@@ -278,57 +278,57 @@ class KeepClientServiceTestCase(unittest.TestCase):
 
     def test_get_timeout(self):
         api_client = self.mock_keep_services(('keep', 10, False, 'disk'))
-        keep_client = arvados.KeepClient(api_client=api_client)
         force_timeout = [socket.timeout("timed out")]
-        with mock.patch('requests.get', side_effect=force_timeout) as mock_request:
+        with tutil.mock_get(force_timeout) as mock_session:
+            keep_client = arvados.KeepClient(api_client=api_client)
             with self.assertRaises(arvados.errors.KeepReadError):
                 keep_client.get('ffffffffffffffffffffffffffffffff')
-            self.assertTrue(mock_request.called)
+            self.assertTrue(mock_session.return_value.get.called)
             self.assertEqual(
                 arvados.KeepClient.DEFAULT_TIMEOUT,
-                mock_request.call_args[1]['timeout'])
+                mock_session.return_value.get.call_args[1]['timeout'])
 
     def test_put_timeout(self):
         api_client = self.mock_keep_services(('keep', 10, False, 'disk'))
-        keep_client = arvados.KeepClient(api_client=api_client)
         force_timeout = [socket.timeout("timed out")]
-        with mock.patch('requests.put', side_effect=force_timeout) as mock_request:
+        with tutil.mock_put(force_timeout) as mock_session:
+            keep_client = arvados.KeepClient(api_client=api_client)
             with self.assertRaises(arvados.errors.KeepWriteError):
                 keep_client.put('foo')
-            self.assertTrue(mock_request.called)
+            self.assertTrue(mock_session.return_value.put.called)
             self.assertEqual(
                 arvados.KeepClient.DEFAULT_TIMEOUT,
-                mock_request.call_args[1]['timeout'])
+                mock_session.return_value.put.call_args[1]['timeout'])
 
     def test_proxy_get_timeout(self):
         # Force a timeout, verifying that the requests.get or
         # requests.put method was called with the proxy_timeout
         # setting rather than the default timeout.
         api_client = self.mock_keep_services(('keep', 10, False, 'proxy'))
-        keep_client = arvados.KeepClient(api_client=api_client)
         force_timeout = [socket.timeout("timed out")]
-        with mock.patch('requests.get', side_effect=force_timeout) as mock_request:
+        with tutil.mock_get(force_timeout) as mock_session:
+            keep_client = arvados.KeepClient(api_client=api_client)
             with self.assertRaises(arvados.errors.KeepReadError):
                 keep_client.get('ffffffffffffffffffffffffffffffff')
-            self.assertTrue(mock_request.called)
+            self.assertTrue(mock_session.return_value.get.called)
             self.assertEqual(
                 arvados.KeepClient.DEFAULT_PROXY_TIMEOUT,
-                mock_request.call_args[1]['timeout'])
+                mock_session.return_value.get.call_args[1]['timeout'])
 
     def test_proxy_put_timeout(self):
         # Force a timeout, verifying that the requests.get or
         # requests.put method was called with the proxy_timeout
         # setting rather than the default timeout.
         api_client = self.mock_keep_services(('keep', 10, False, 'proxy'))
-        keep_client = arvados.KeepClient(api_client=api_client)
         force_timeout = [socket.timeout("timed out")]
-        with mock.patch('requests.put', side_effect=force_timeout) as mock_request:
+        with tutil.mock_put(force_timeout) as mock_session:
+            keep_client = arvados.KeepClient(api_client=api_client)
             with self.assertRaises(arvados.errors.KeepWriteError):
                 keep_client.put('foo')
-            self.assertTrue(mock_request.called)
+            self.assertTrue(mock_session.return_value.put.called)
             self.assertEqual(
                 arvados.KeepClient.DEFAULT_PROXY_TIMEOUT,
-                mock_request.call_args[1]['timeout'])
+                mock_session.return_value.put.call_args[1]['timeout'])
 
     def test_probe_order_reference_set(self):
         # expected_order[i] is the probe order for
@@ -494,18 +494,13 @@ class KeepClientRetryGetTestCase(KeepClientRetryTestMixin, unittest.TestCase):
             self.check_success(locator=self.HINTED_LOCATOR)
 
     def test_try_next_server_after_timeout(self):
-        m = mock.MagicMock()
-        m.return_value.get.side_effect = [
-            socket.timeout("timed out"),
-            tutil.fake_requests_response(200, self.DEFAULT_EXPECT)]
-        with mock.patch('requests.Session', m):
+        with tutil.mock_get([
+                socket.timeout("timed out"),
+                tutil.fake_requests_response(200, self.DEFAULT_EXPECT)]):
             self.check_success(locator=self.HINTED_LOCATOR)
 
     def test_retry_data_with_wrong_checksum(self):
-        m = mock.MagicMock()
-        m.return_value.get.side_effect = (tutil.fake_requests_response(200, s)
-                        for s in ['baddata', self.TEST_DATA])
-        with mock.patch('requests.Session', m):
+        with tutil.mock_get((tutil.fake_requests_response(200, s) for s in ['baddata', self.TEST_DATA])):
             self.check_success(locator=self.HINTED_LOCATOR)
 
 

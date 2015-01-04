@@ -41,7 +41,12 @@ def fake_requests_response(code, body, **headers):
 
 def mock_put_responses(body, *codes, **headers):
     m = mock.MagicMock()
-    m.return_value.put.side_effect = (fake_requests_response(code, body, **headers) for code in codes)
+    if isinstance(body, tuple):
+        codes = list(codes)
+        codes.insert(0, body)
+        m.return_value.put.side_effect = (fake_requests_response(code, b, **headers) for b, code in codes)
+    else:
+        m.return_value.put.side_effect = (fake_requests_response(code, body, **headers) for code in codes)
     return mock.patch('requests.Session', m)
 
 def mock_get_responses(body, *codes, **headers):
@@ -49,9 +54,15 @@ def mock_get_responses(body, *codes, **headers):
     m.return_value.get.side_effect = (fake_requests_response(code, body, **headers) for code in codes)
     return mock.patch('requests.Session', m)
 
-#def mock_requestslib_responses(method, body, *codes, **headers):
-#    return mock.patch(method, side_effect=(
-#        fake_requests_response(code, body, **headers) for code in codes))
+def mock_get(side_effect):
+    m = mock.MagicMock()
+    m.return_value.get.side_effect = side_effect
+    return mock.patch('requests.Session', m)
+
+def mock_put(side_effect):
+    m = mock.MagicMock()
+    m.return_value.put.side_effect = side_effect
+    return mock.patch('requests.Session', m)
 
 class MockStreamReader(object):
     def __init__(self, name='.', *data):
