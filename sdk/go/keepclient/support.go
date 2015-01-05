@@ -9,6 +9,7 @@ import (
 	"io"
 	"io/ioutil"
 	"log"
+	"net"
 	"net/http"
 	"os"
 	"strings"
@@ -27,19 +28,62 @@ func Md5String(s string) string {
 	return fmt.Sprintf("%x", md5.Sum([]byte(s)))
 }
 
+// Set timeouts apply when connecting to keepproxy services (assumed to be over
+// the Internet).
+func (this *KeepClient) setClientSettingsProxy() {
+	if this.Client.Timeout == 0 {
+		// Maximum time to wait for a complete response
+		this.Client.Timeout = 300 * time.Second
+
+		// TCP and TLS connection settings
+		this.Client.Transport = &http.Transport{
+			Dial: (&net.Dialer{
+				// The maximum time to wait to set up
+				// the initial TCP connection.
+				Timeout: 30 * time.Second,
+
+				// The TCP keep alive heartbeat
+				// interval.
+				KeepAlive: 120 * time.Second,
+			}).Dial,
+
+			TLSHandshakeTimeout: 10 * time.Second,
+		}
+	}
+
+}
+
+// Set timeouts apply when connecting to keepstore services directly (assumed
+// to be on the local network).
+func (this *KeepClient) setClientSettingsStore() {
+	if this.Client.Timeout == 0 {
+		// Maximum time to wait for a complete response
+		this.Client.Timeout = 20 * time.Second
+
+		// TCP and TLS connection timeouts
+		this.Client.Transport = &http.Transport{
+			Dial: (&net.Dialer{
+				// The maximum time to wait to set up
+				// the initial TCP connection.
+				Timeout: 2 * time.Second,
+
+				// The TCP keep alive heartbeat
+				// interval.
+				KeepAlive: 180 * time.Second,
+			}).Dial,
+
+			TLSHandshakeTimeout: 4 * time.Second,
+		}
+	}
+}
+
 func (this *KeepClient) DiscoverKeepServers() error {
 	if prx := os.Getenv("ARVADOS_KEEP_PROXY"); prx != "" {
 		sr := map[string]string{"proxy": prx}
 		this.SetServiceRoots(sr)
 		this.Using_proxy = true
-		if this.Client.Timeout == 0 {
-			this.Client.Timeout = 10 * time.Minute
-		}
+		this.setClientSettingsProxy()
 		return nil
-	}
-
-	if this.Client.Timeout == 0 {
-		this.Client.Timeout = 15 * time.Second
 	}
 
 	type svcList struct {
@@ -76,6 +120,12 @@ func (this *KeepClient) DiscoverKeepServers() error {
 		if element.SvcType == "proxy" {
 			this.Using_proxy = true
 		}
+	}
+
+	if this.Using_proxy {
+		this.setClientSettingsProxy()
+	} else {
+		this.setClientSettingsStore()
 	}
 
 	this.SetServiceRoots(service_roots)
