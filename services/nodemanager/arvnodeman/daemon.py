@@ -97,7 +97,7 @@ class NodeManagerDaemonActor(actor_class):
     def __init__(self, server_wishlist_actor, arvados_nodes_actor,
                  cloud_nodes_actor, cloud_update_actor, timer_actor,
                  arvados_factory, cloud_factory,
-                 shutdown_windows, min_nodes, max_nodes,
+                 shutdown_windows, min_size, min_nodes, max_nodes,
                  poll_stale_after=600,
                  boot_fail_after=1800,
                  node_stale_after=7200,
@@ -116,6 +116,7 @@ class NodeManagerDaemonActor(actor_class):
         self._logger = logging.getLogger('arvnodeman.daemon')
         self._later = self.actor_ref.proxy()
         self.shutdown_windows = shutdown_windows
+        self.min_cloud_size = min_size
         self.min_nodes = min_nodes
         self.max_nodes = max_nodes
         self.poll_stale_after = poll_stale_after
@@ -179,6 +180,7 @@ class NodeManagerDaemonActor(actor_class):
                     break
         for key, record in self.cloud_nodes.orphans.iteritems():
             record.actor.stop()
+            record.cloud_node = None
             self.shutdowns.pop(key, None)
 
     def update_arvados_nodes(self, nodelist):
@@ -206,9 +208,12 @@ class NodeManagerDaemonActor(actor_class):
 
     def _nodes_wanted(self):
         up_count = self._nodes_up()
+        under_min = self.min_nodes - up_count
         over_max = up_count - self.max_nodes
         if over_max >= 0:
             return -over_max
+        elif under_min > 0:
+            return under_min
         else:
             up_count -= len(self.shutdowns) + self._nodes_busy()
             return len(self.last_wishlist) - up_count
@@ -253,7 +258,10 @@ class NodeManagerDaemonActor(actor_class):
         if nodes_wanted < 1:
             return None
         arvados_node = self.arvados_nodes.find_stale_node(self.node_stale_after)
-        cloud_size = self.last_wishlist[nodes_wanted - 1]
+        try:
+            cloud_size = self.last_wishlist[self._nodes_up()]
+        except IndexError:
+            cloud_size = self.min_cloud_size
         self._logger.info("Want %s more nodes.  Booting a %s node.",
                           nodes_wanted, cloud_size.name)
         new_setup = self._node_setup.start(

@@ -37,12 +37,20 @@ group :development do
   gem 'ruby-debug-passenger'
 end
 
-group :test do
-  gem 'rvm-capistrano'
+group :test, :diagnostics do
   gem 'selenium-webdriver'
   gem 'capybara'
   gem 'poltergeist'
   gem 'headless'
+end
+
+group :test, :performance do
+  gem 'rails-perftest'
+  gem 'ruby-prof'
+end
+
+group :test do
+  gem 'rvm-capistrano'
   # Note: "require: false" here tells bunder not to automatically
   # 'require' the packages during application startup. Installation is
   # still mandatory.
@@ -92,6 +100,3 @@ gem "deep_merge", :require => 'deep_merge/rails_compat'
 
 gem 'morrisjs-rails'
 gem 'raphael-rails'
-
-gem 'rails-perftest'
-gem 'ruby-prof'

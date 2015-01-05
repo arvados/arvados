@@ -434,8 +434,8 @@ if "task.vwd" in taskp:
 else:
     outcollection = robust_put.upload(outdir, logger)
 
-# Success if no non-zero return codes
-success = any(rcode) and not any([status != 0 for status in rcode.values()])
+# Success if we ran any subprocess, and they all exited 0.
+success = rcode and all(status == 0 for status in rcode.itervalues())
 
 api.job_tasks().update(uuid=arvados.current_task()['uuid'],
                                      body={
@@ -444,4 +444,4 @@ api.job_tasks().update(uuid=arvados.current_task()['uuid'],
                                          'progress':1.0
                                      }).execute()
 
-sys.exit(rcode)
+sys.exit(0 if success else 1)

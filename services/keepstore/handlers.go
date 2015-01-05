@@ -175,7 +175,7 @@ func GetBlockHandler(resp http.ResponseWriter, req *http.Request) {
 		return
 	}
 
-	resp.Header().Set("X-Block-Size", fmt.Sprintf("%d", len(block)))
+	resp.Header().Set("Content-Length", fmt.Sprintf("%d", len(block)))
 
 	_, err = resp.Write(block)
 
