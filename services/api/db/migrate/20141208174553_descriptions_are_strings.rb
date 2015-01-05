@@ -5,7 +5,7 @@ class DescriptionsAreStrings < ActiveRecord::Migration
 
   def up
     tables_with_description_column.each do |table|
-      change_column table.to_sym, :description, :string, :limit => 10000
+      change_column table.to_sym, :description, :string, :limit => 2**19
     end
   end
 
