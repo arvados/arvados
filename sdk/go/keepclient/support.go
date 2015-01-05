@@ -3,15 +3,16 @@ package keepclient
 
 import (
 	"crypto/md5"
-	"git.curoverse.com/arvados.git/sdk/go/streamer"
 	"errors"
 	"fmt"
+	"git.curoverse.com/arvados.git/sdk/go/streamer"
 	"io"
 	"io/ioutil"
 	"log"
 	"net/http"
 	"os"
 	"strings"
+	"time"
 )
 
 type keepDisk struct {
@@ -22,16 +23,23 @@ type keepDisk struct {
 	SvcType  string `json:"service_type"`
 }
 
-func Md5String(s string) (string) {
+func Md5String(s string) string {
 	return fmt.Sprintf("%x", md5.Sum([]byte(s)))
 }
 
 func (this *KeepClient) DiscoverKeepServers() error {
 	if prx := os.Getenv("ARVADOS_KEEP_PROXY"); prx != "" {
-		sr := map[string]string{"proxy":prx}
+		sr := map[string]string{"proxy": prx}
 		this.SetServiceRoots(sr)
 		this.Using_proxy = true
+		if this.Client.Timeout == 0 {
+			this.Client.Timeout = 10 * time.Minute
+		}
 		return nil
+	}
+
+	if this.Client.Timeout == 0 {
+		this.Client.Timeout = 15 * time.Second
 	}
 
 	type svcList struct {
@@ -84,21 +92,29 @@ type uploadStatus struct {
 }
 
 func (this KeepClient) uploadToKeepServer(host string, hash string, body io.ReadCloser,
-	upload_status chan<- uploadStatus, expectedLength int64) {
-
-	log.Printf("Uploading %s to %s", hash, host)
+	upload_status chan<- uploadStatus, expectedLength int64, requestId string) {
 
 	var req *http.Request
 	var err error
 	var url = fmt.Sprintf("%s/%s", host, hash)
 	if req, err = http.NewRequest("PUT", url, nil); err != nil {
+		log.Printf("[%v] Error creating request PUT %v error: %v", requestId, url, err.Error())
 		upload_status <- uploadStatus{err, url, 0, 0, ""}
 		body.Close()
 		return
 	}
 
+	req.ContentLength = expectedLength
 	if expectedLength > 0 {
-		req.ContentLength = expectedLength
+		// http.Client.Do will close the body ReadCloser when it is
+		// done with it.
+		req.Body = body
+	} else {
+		// "For client requests, a value of 0 means unknown if Body is
+		// not nil."  In this case we do want the body to be empty, so
+		// don't set req.Body.  However, we still need to close the
+		// body ReadCloser.
+		body.Close()
 	}
 
 	req.Header.Add("Authorization", fmt.Sprintf("OAuth2 %s", this.Arvados.ApiToken))
@@ -108,12 +124,10 @@ func (this KeepClient) uploadToKeepServer(host string, hash string, body io.Read
 		req.Header.Add(X_Keep_Desired_Replicas, fmt.Sprint(this.Want_replicas))
 	}
 
-	req.Body = body
-
 	var resp *http.Response
 	if resp, err = this.Client.Do(req); err != nil {
+		log.Printf("[%v] Upload failed %v error: %v", requestId, url, err.Error())
 		upload_status <- uploadStatus{err, url, 0, 0, ""}
-		body.Close()
 		return
 	}
 
@@ -126,17 +140,16 @@ func (this KeepClient) uploadToKeepServer(host string, hash string, body io.Read
 	defer io.Copy(ioutil.Discard, resp.Body)
 
 	respbody, err2 := ioutil.ReadAll(&io.LimitedReader{resp.Body, 4096})
+	response := strings.TrimSpace(string(respbody))
 	if err2 != nil && err2 != io.EOF {
-		upload_status <- uploadStatus{err2, url, resp.StatusCode, rep, string(respbody)}
-		return
-	}
-
-	locator := strings.TrimSpace(string(respbody))
-
-	if resp.StatusCode == http.StatusOK {
-		upload_status <- uploadStatus{nil, url, resp.StatusCode, rep, locator}
+		log.Printf("[%v] Upload %v error: %v response: %v", requestId, url, err2.Error(), response)
+		upload_status <- uploadStatus{err2, url, resp.StatusCode, rep, response}
+	} else if resp.StatusCode == http.StatusOK {
+		log.Printf("[%v] Upload %v success", requestId, url)
+		upload_status <- uploadStatus{nil, url, resp.StatusCode, rep, response}
 	} else {
-		upload_status <- uploadStatus{errors.New(resp.Status), url, resp.StatusCode, rep, locator}
+		log.Printf("[%v] Upload %v error: %v response: %v", requestId, url, resp.StatusCode, response)
+		upload_status <- uploadStatus{errors.New(resp.Status), url, resp.StatusCode, rep, response}
 	}
 }
 
@@ -144,6 +157,10 @@ func (this KeepClient) putReplicas(
 	hash string,
 	tr *streamer.AsyncStream,
 	expectedLength int64) (locator string, replicas int, err error) {
+
+	// Take the hash of locator and timestamp in order to identify this
+	// specific transaction in log statements.
+	requestId := fmt.Sprintf("%x", md5.Sum([]byte(locator+time.Now().String())))[0:8]
 
 	// Calculate the ordering for uploading to servers
 	sv := NewRootSorter(this.ServiceRoots(), hash).GetSortedRoots()
@@ -159,14 +176,14 @@ func (this KeepClient) putReplicas(
 	defer close(upload_status)
 
 	// Desired number of replicas
-
 	remaining_replicas := this.Want_replicas
 
 	for remaining_replicas > 0 {
 		for active < remaining_replicas {
 			// Start some upload requests
 			if next_server < len(sv) {
-				go this.uploadToKeepServer(sv[next_server], hash, tr.MakeStreamReader(), upload_status, expectedLength)
+				log.Printf("[%v] Begin upload %s to %s", requestId, hash, sv[next_server])
+				go this.uploadToKeepServer(sv[next_server], hash, tr.MakeStreamReader(), upload_status, expectedLength, requestId)
 				next_server += 1
 				active += 1
 			} else {
@@ -177,20 +194,18 @@ func (this KeepClient) putReplicas(
 				}
 			}
 		}
+		log.Printf("[%v] Replicas remaining to write: %v active uploads: %v",
+			requestId, remaining_replicas, active)
 
 		// Now wait for something to happen.
 		status := <-upload_status
+		active -= 1
+
 		if status.statusCode == 200 {
 			// good news!
 			remaining_replicas -= status.replicas_stored
 			locator = status.response
-		} else {
-			// writing to keep server failed for some reason
-			log.Printf("Keep server put to %v failed with '%v'",
-				status.url, status.err)
 		}
-		active -= 1
-		log.Printf("Upload to %v status code: %v remaining replicas: %v active: %v", status.url, status.statusCode, remaining_replicas, active)
 	}
 
 	return locator, this.Want_replicas, nil

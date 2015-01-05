@@ -1,11 +1,11 @@
 package main
 
 import (
-	"git.curoverse.com/arvados.git/sdk/go/keepclient"
-	"git.curoverse.com/arvados.git/sdk/go/arvadosclient"
 	"crypto/md5"
 	"crypto/tls"
 	"fmt"
+	"git.curoverse.com/arvados.git/sdk/go/arvadosclient"
+	"git.curoverse.com/arvados.git/sdk/go/keepclient"
 	. "gopkg.in/check.v1"
 	"io"
 	"io/ioutil"
@@ -39,7 +39,9 @@ func pythonDir() string {
 // avoids a race condition where we hit a "connection refused" error
 // because we start testing the proxy too soon.
 func waitForListener() {
-	const (ms = 5)
+	const (
+		ms = 5
+	)
 	for i := 0; listener == nil && i < 1000; i += ms {
 		time.Sleep(ms * time.Millisecond)
 	}
@@ -150,7 +152,7 @@ func runProxy(c *C, args []string, token string, port int) keepclient.KeepClient
 	c.Assert(err, Equals, nil)
 	c.Check(kc.Using_proxy, Equals, true)
 	c.Check(len(kc.ServiceRoots()), Equals, 1)
-	for _, root := range(kc.ServiceRoots()) {
+	for _, root := range kc.ServiceRoots() {
 		c.Check(root, Equals, fmt.Sprintf("http://localhost:%v", port))
 	}
 	os.Setenv("ARVADOS_KEEP_PROXY", "")
@@ -219,6 +221,25 @@ func (s *ServerRequiredSuite) TestPutAskGet(c *C) {
 		c.Check(all, DeepEquals, []byte("foo"))
 		c.Check(blocklen, Equals, int64(3))
 		log.Print("Get")
+	}
+
+	{
+		var rep int
+		var err error
+		hash2, rep, err = kc.PutB([]byte(""))
+		c.Check(hash2, Matches, `^d41d8cd98f00b204e9800998ecf8427e\+0(\+.+)?$`)
+		c.Check(rep, Equals, 2)
+		c.Check(err, Equals, nil)
+		log.Print("PutB zero block")
+	}
+
+	{
+		reader, blocklen, _, err := kc.Get("d41d8cd98f00b204e9800998ecf8427e")
+		c.Assert(err, Equals, nil)
+		all, err := ioutil.ReadAll(reader)
+		c.Check(all, DeepEquals, []byte(""))
+		c.Check(blocklen, Equals, int64(0))
+		log.Print("Get zero block")
 	}
 
 	log.Print("TestPutAndGet done")

@@ -24,7 +24,7 @@ class TagBuildWithCommit(egg_info):
             assert len(git_tags) == 2
             git_tags[0] = time.strftime(
                 '%Y%m%d%H%M%S', time.gmtime(int(git_tags[0])))
-            self.tag_build = '.{}.{}'.format(*git_tags)
+            self.tag_build = '.{}+{}'.format(*git_tags)
         return egg_info.tags(self)
 
 
