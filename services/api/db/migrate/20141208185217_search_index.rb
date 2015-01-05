@@ -24,21 +24,9 @@ class SearchIndex < ActiveRecord::Migration
     }
   end
 
-  def up
+  def change
     tables_with_searchable_columns.each do |table, columns|
-      add_index(table.to_sym, columns, name: "#{table}_search_index")
-    end
-  end
-
-  def down
-    tables_with_searchable_columns.each do |table, columns|
-      indexes = ActiveRecord::Base.connection.indexes(table)
-      search_index = indexes.select do |index|
-        index.name == "#{table}_search_index"
-      end
-      if !search_index.empty?
-        remove_index(table.to_sym, name: "#{table}_search_index")
-      end
+      add_index table.to_sym, columns, name: "#{table}_search_index"
     end
   end
 end
