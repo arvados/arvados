@@ -19,7 +19,8 @@ FAILED_TASK_REGEX = re.compile(' \d+ failure (.*permanent)')
 # Regular expressions used to classify failure types.
 JOB_FAILURE_TYPES = {
     'sys/docker': 'Cannot destroy container',
-    'crunch/node': 'User not found on host'
+    'crunch/node': 'User not found on host',
+    'slurm/comm':  'Communication connection failure'
 }
 
 def parse_arguments(arguments):
@@ -56,6 +57,7 @@ def api_timestamp(when=None):
 def is_valid_timestamp(ts):
     return re.match(r'\d{4}-\d{2}-\d{2}T\d{2}:\d{2}:\d{2}Z', ts)
 
+
 def jobs_created_between_dates(api, start, end):
     return arvados.util.list_all(
         api.jobs().list,
@@ -65,9 +67,45 @@ def jobs_created_between_dates(api, start, end):
 
 def job_logs(api, job):
     # Returns the contents of the log for this job (as an array of lines).
-    log_filename = "{}.log.txt".format(job['uuid'])
-    log_collection = arvados.CollectionReader(job['log'], api)
-    return log_collection.open(log_filename).readlines()
+    if job['log']:
+        log_collection = arvados.CollectionReader(job['log'], api)
+        log_filename = "{}.log.txt".format(job['uuid'])
+        return log_collection.open(log_filename).readlines()
+    return []
+
+
+user_names = {}
+def job_user_name(api, user_uuid):
+    def _lookup_user_name(api, user_uuid):
+        try:
+            return api.users().get(uuid=user_uuid).execute()['full_name']
+        except arvados.errors.ApiError:
+            return user_uuid
+
+    if user_uuid not in user_names:
+        user_names[user_uuid] = _lookup_user_name(api, user_uuid)
+    return user_names[user_uuid]
+
+
+job_pipeline_names = {}
+def job_pipeline_name(api, job_uuid):
+    def _lookup_pipeline_name(api, job_uuid):
+        pipelines = api.pipeline_instances().list(
+            filters='[["components", "like", "%{}%"]]'.format(job_uuid)).execute()
+        if pipelines['items']:
+            pi = pipelines['items'][0]
+            if pi['name']:
+                return pi['name']
+            else:
+                # Use the pipeline template name
+                pt = api.pipeline_templates().get(uuid=pi['pipeline_template_uuid']).execute()
+                if pt:
+                    return pt['name']
+        return ""
+
+    if job_uuid not in job_pipeline_names:
+        job_pipeline_names[job_uuid] = _lookup_pipeline_name(api, job_uuid)
+    return job_pipeline_names[job_uuid]
 
 
 def is_failed_task(logline):
@@ -99,6 +137,7 @@ def main(arguments=None, stdout=sys.stdout, stderr=sys.stderr):
         logs = job_logs(api, job)
         # Find the first permanent task failure, and collect the
         # preceding log lines.
+        failure_type = None
         for i, lg in enumerate(logs):
             if is_failed_task(lg):
                 # Get preceding log record to provide context.
@@ -106,18 +145,16 @@ def main(arguments=None, stdout=sys.stdout, stderr=sys.stderr):
                 log_end = i + 1
                 lastlogs = ''.join(logs[log_start:log_end])
                 # try to identify the type of failure.
-                failure_type = 'unknown'
                 for key, rgx in JOB_FAILURE_TYPES.iteritems():
                     if re.search(rgx, lastlogs):
                         failure_type = key
                         break
-                failure_stats.setdefault(failure_type, set())
-                failure_stats[failure_type].add(job_uuid)
+            if failure_type is not None:
                 break
-            # If we got here, the job is recorded as "failed" but we
-            # could not find the failure of any specific task.
-            failure_stats.setdefault('unknown', set())
-            failure_stats['unknown'].add(job_uuid)
+        if failure_type is None:
+            failure_type = 'unknown'
+        failure_stats.setdefault(failure_type, set())
+        failure_stats[failure_type].add(job_uuid)
 
     # Report percentages of successful, failed and unfinished jobs.
     print "Start: {:20s}".format(start_time)
@@ -132,33 +169,50 @@ def main(arguments=None, stdout=sys.stdout, stderr=sys.stderr):
     job_fail_count = len(jobs_failed)
     job_unfinished_count = job_start_count - job_success_count - job_fail_count
 
-    print "  Started:     {:4d}".format(job_start_count)
-    print "  Successful:  {:4d} ({:3.0%})".format(
-        job_success_count, job_success_count / float(job_start_count))
-    print "  Failed:      {:4d} ({:3.0%})".format(
-        job_fail_count, job_fail_count / float(job_start_count))
-    print "  In progress: {:4d} ({:3.0%})".format(
-        job_unfinished_count, job_unfinished_count / float(job_start_count))
+    print "  {: <25s} {:4d}".format('Started',
+                                    job_start_count)
+    print "  {: <25s} {:4d} ({: >4.0%})".format('Successful',
+                                                job_success_count,
+                                                job_success_count / float(job_start_count))
+    print "  {: <25s} {:4d} ({: >4.0%})".format('Failed',
+                                                job_fail_count,
+                                                job_fail_count / float(job_start_count))
+    print "  {: <25s} {:4d} ({: >4.0%})".format('In progress',
+                                                job_unfinished_count,
+                                                job_unfinished_count / float(job_start_count))
     print ""
 
     # Report failure types.
     failure_summary = ""
     failure_detail = ""
 
-    for failtype, job_uuids in failure_stats.iteritems():
-        failstat = "  {:s} {:4d} ({:3.0%})\n".format(
-            failtype, len(job_uuids), len(job_uuids) / float(job_fail_count))
+    # Generate a mapping from failed job uuids to job records, to assist
+    # in generating detailed statistics for job failures.
+    jobs_failed_map = { job['uuid']: job for job in jobs_failed }
+
+    # sort the failure stats in descending order by occurrence.
+    sorted_failures = sorted(failure_stats.items(),
+                             reverse=True,
+                             key=lambda failed_job_list: len(failed_job_list))
+    for failtype, job_uuids in sorted_failures:
+        failstat = "  {: <25s} {:4d} ({: >4.0%})\n".format(
+            failtype,
+            len(job_uuids),
+            len(job_uuids) / float(job_fail_count))
         failure_summary = failure_summary + failstat
         failure_detail = failure_detail + failstat
         for j in job_uuids:
-            failure_detail = failure_detail + "    http://crvr.se/{}\n".format(j)
+            job_info = jobs_failed_map[j]
+            job_owner = job_user_name(api, job_info['modified_by_user_uuid'])
+            job_name = job_pipeline_name(api, job_info['uuid'])
+            failure_detail = failure_detail + "    {}  {: <15.15s}  {:29.29s}\n".format(j, job_owner, job_name)
         failure_detail = failure_detail + "\n"
 
     print "Failures by class"
     print ""
     print failure_summary
 
-    print "Failures by class (detail):"
+    print "Failures by class (detail)"
     print ""
     print failure_detail
 
