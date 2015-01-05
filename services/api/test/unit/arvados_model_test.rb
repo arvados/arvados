@@ -87,43 +87,26 @@ class ArvadosModelTest < ActiveSupport::TestCase
     end
   end
 
-  test "unique uuid index exists on all models with the column uuid" do
-    tables = ActiveRecord::Base.connection.tables
-    tables.each do |table|
-      columns = ActiveRecord::Base.connection.columns(table)
+  [['uuid', {unique: true}],
+   ['owner_uuid', {}]].each do |the_column, requires|
+    test "unique index on all models with #{the_column}" do
+      checked = 0
+      ActiveRecord::Base.connection.tables.each do |table|
+        columns = ActiveRecord::Base.connection.columns(table)
 
-      uuid_column = columns.select do |column|
-        column.name == 'uuid'
-      end
+        next unless columns.collect(&:name).include? the_column
 
-      if !uuid_column.empty?
-        indexes = ActiveRecord::Base.connection.indexes(table)
-        uuid_index = indexes.select do |index|
-          index.columns == ['uuid'] and index.unique == true
+        indexes = ActiveRecord::Base.connection.indexes(table).reject do |index|
+          requires.map do |key, val|
+            index.send(key) == val
+          end.include? false
         end
-
-        assert !uuid_index.empty?, "#{table} does not have unique uuid index"
+        assert_includes indexes.collect(&:columns), [the_column], 'no index'
+        checked += 1
       end
-    end
-  end
-
-  test "owner uuid index exists on all models with the owner_uuid column" do
-    all_tables = ActiveRecord::Base.connection.tables
-
-    all_tables.each do |table|
-      columns = ActiveRecord::Base.connection.columns(table)
-
-      uuid_column = columns.select do |column|
-        column.name == 'owner_uuid'
-      end
-
-      if !uuid_column.empty?
-        indexes = ActiveRecord::Base.connection.indexes(table)
-        owner_uuid_index = indexes.select do |index|
-          index.columns == ['owner_uuid']
-        end
-        assert !owner_uuid_index.empty?, "#{table} does not have owner_uuid index"
-      end
+      # Sanity check: make sure we didn't just systematically miss everything.
+      assert_operator(10, :<, checked,
+                      "Only #{checked} tables have a #{the_column}?!")
     end
   end
 

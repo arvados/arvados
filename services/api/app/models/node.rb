@@ -137,6 +137,17 @@ class Node < ArvadosModel
 
   def dns_server_update
     if self.hostname_changed? or self.ip_address_changed?
+      if not self.ip_address.nil?
+        stale_conflicting_nodes = Node.where('id != ? and ip_address = ? and last_ping_at < ?',self.id,self.ip_address,10.minutes.ago)
+        if not stale_conflicting_nodes.empty?
+          # One or more stale compute node records have the same IP address as the new node.
+          # Clear the ip_address field on the stale nodes.
+          stale_conflicting_nodes.each do |stale_node|
+            stale_node.ip_address = nil
+            stale_node.save!
+          end
+        end
+      end
       if self.hostname and self.ip_address
         self.class.dns_server_update(self.hostname, self.ip_address)
       end
@@ -166,10 +177,6 @@ class Node < ArvadosModel
       STDERR.puts "Unable to write #{hostfile}: #{e.message}"
       return
     end
-    #  f.puts "address=/#{hostname}/#{ip_address}"
-    #  f.puts "address=/#{hostname}.#{@@domain}/#{ip_address}" if @@domain
-    #  f.puts "ptr-record=#{ptr_domain},#{hostname}"
-    #end
     File.open(File.join(@@dns_server_conf_dir, 'restart.txt'), 'w') do |f|
       # this will trigger a dns server restart
       f.puts @@dns_server_reload_command
@@ -182,8 +189,7 @@ class Node < ArvadosModel
 
   # At startup, make sure all DNS entries exist.  Otherwise, slurmctld
   # will refuse to start.
-  if @@dns_server_conf_dir and @@dns_server_conf_template and
-      !File.exists? (File.join(@@dns_server_conf_dir, "#{hostname_for_slot(MAX_SLOTS-1)}.conf"))
+  if @@dns_server_conf_dir and @@dns_server_conf_template
     (0..MAX_SLOTS-1).each do |slot_number|
       hostname = hostname_for_slot(slot_number)
       hostfile = File.join @@dns_server_conf_dir, "#{hostname}.conf"

@@ -267,6 +267,10 @@ class ActiveSupport::TestCase
 
   protected
   def self.reset_api_fixtures_now
+    # Never try to reset fixtures when we're just using test
+    # infrastructure to run performance/diagnostics suites.
+    return unless Rails.env == 'test'
+
     auth = api_fixture('api_client_authorizations')['admin_trustedclient']
     Thread.current[:arvados_api_token] = auth['api_token']
     ArvadosApiClient.new.api(nil, '../../database/reset', {})
