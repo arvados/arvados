@@ -62,12 +62,6 @@ class ArvadosModel < ActiveRecord::Base
       case col.type
       when :string
         true
-      when :text
-        if operator == 'ilike'
-          false
-        else
-          true
-        end
       when :datetime, :integer, :boolean
         !textonly_operator
       else
