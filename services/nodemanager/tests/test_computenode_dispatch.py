@@ -14,7 +14,7 @@ import arvnodeman.computenode.dispatch as dispatch
 from . import testutil
 
 class ComputeNodeSetupActorTestCase(testutil.ActorTestMixin, unittest.TestCase):
-    def make_mocks(self, arvados_effect=None, cloud_effect=None):
+    def make_mocks(self, arvados_effect=None):
         if arvados_effect is None:
             arvados_effect = [testutil.arvados_node_mock()]
         self.arvados_effect = arvados_effect
@@ -48,13 +48,32 @@ class ComputeNodeSetupActorTestCase(testutil.ActorTestMixin, unittest.TestCase):
         self.assertEqual(self.cloud_client.create_node(),
                          self.setup_actor.cloud_node.get(self.TIMEOUT))
 
-    def test_failed_calls_retried(self):
+    def test_failed_arvados_calls_retried(self):
         self.make_mocks([
                 arverror.ApiError(httplib2.Response({'status': '500'}), ""),
                 testutil.arvados_node_mock(),
                 ])
         self.make_actor()
+        self.wait_for_assignment(self.setup_actor, 'arvados_node')
+
+    def test_failed_cloud_calls_retried(self):
+        self.make_mocks()
+        self.cloud_client.create_node.side_effect = [
+            Exception("test cloud creation error"),
+            self.cloud_client.create_node.return_value,
+            ]
+        self.make_actor()
         self.wait_for_assignment(self.setup_actor, 'cloud_node')
+
+    def test_failed_post_create_retried(self):
+        self.make_mocks()
+        self.cloud_client.post_create_node.side_effect = [
+            Exception("test cloud post-create error"), None]
+        self.make_actor()
+        done = self.FUTURE_CLASS()
+        self.setup_actor.subscribe(done.set)
+        done.get(self.TIMEOUT)
+        self.assertEqual(2, self.cloud_client.post_create_node.call_count)
 
     def test_stop_when_no_cloud_node(self):
         self.make_mocks(
@@ -106,14 +125,14 @@ class ComputeNodeShutdownActorMixin(testutil.ActorTestMixin):
         self.cloud_node = cloud_node
         self.arvados_node = arvados_node
 
-    def make_actor(self):
+    def make_actor(self, cancellable=True):
         if not hasattr(self, 'timer'):
             self.make_mocks()
         monitor_actor = dispatch.ComputeNodeMonitorActor.start(
             self.cloud_node, time.time(), self.shutdowns, self.timer,
             self.updates, self.arvados_node)
         self.shutdown_actor = self.ACTOR_CLASS.start(
-            self.timer, self.cloud_client, monitor_actor).proxy()
+            self.timer, self.cloud_client, monitor_actor, cancellable).proxy()
         self.monitor_actor = monitor_actor.proxy()
 
     def check_success_flag(self, expected, allow_msg_count=1):
@@ -125,6 +144,15 @@ class ComputeNodeShutdownActorMixin(testutil.ActorTestMixin):
                 break
         else:
             self.fail("success flag {} is not {}".format(last_flag, expected))
+
+    def test_uncancellable_shutdown(self, *mocks):
+        self.make_mocks(shutdown_open=False)
+        self.cloud_client.destroy_node.return_value = False
+        self.make_actor(cancellable=False)
+        self.check_success_flag(None, 0)
+        self.shutdowns._set_state(True, 600)
+        self.cloud_client.destroy_node.return_value = True
+        self.check_success_flag(True)
 
 
 class ComputeNodeShutdownActorTestCase(ComputeNodeShutdownActorMixin,

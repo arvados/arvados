@@ -1,5 +1,21 @@
 # Read about fixtures at http://api.rubyonrails.org/classes/ActiveRecord/Fixtures.html
 
+system_user:
+  uuid: zzzzz-tpzed-000000000000000
+  owner_uuid: zzzzz-tpzed-000000000000000
+  created_at: 2014-11-27 06:38:21.215463000 Z
+  modified_by_client_uuid: zzzzz-ozdt8-teyxzyd8qllg11h
+  modified_by_user_uuid: zzzzz-tpzed-000000000000000
+  modified_at: 2014-11-27 06:38:21.208036000 Z
+  email: root
+  first_name: root
+  last_name: ''
+  identity_url:
+  is_admin: true
+  prefs: {}
+  updated_at: 2014-11-27 06:38:21.207873000 Z
+  is_active: true
+
 admin:
   owner_uuid: zzzzz-tpzed-000000000000000
   uuid: zzzzz-tpzed-d9tiejq69daie8f
@@ -144,7 +160,10 @@ inactive_but_signed_user_agreement:
   identity_url: https://inactive-but-agreeable-user.openid.local
   is_active: false
   is_admin: false
-  prefs: {}
+  prefs:
+    profile:
+      organization: example.com
+      role: Computational biologist
 
 anonymous:
   owner_uuid: zzzzz-tpzed-000000000000000

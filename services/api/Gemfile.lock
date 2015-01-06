@@ -35,18 +35,18 @@ GEM
     addressable (2.3.6)
     andand (1.3.3)
     arel (3.0.3)
-    arvados (0.1.20140919104705)
+    arvados (0.1.20141114230720)
       activesupport (>= 3.2.13)
-      andand
-      google-api-client (~> 0.6.3)
-      json (>= 1.7.7)
+      andand (~> 1.3, >= 1.3.3)
+      google-api-client (~> 0.6.3, >= 0.6.3)
+      json (~> 1.7, >= 1.7.7)
       jwt (>= 0.1.5, < 1.0.0)
-    arvados-cli (0.1.20141014201516)
+    arvados-cli (0.1.20141209151444)
       activesupport (~> 3.2, >= 3.2.13)
       andand (~> 1.3, >= 1.3.3)
       arvados (~> 0.1, >= 0.1.0)
       curb (~> 0.8)
-      google-api-client (~> 0.6, >= 0.6.3)
+      google-api-client (~> 0.6.3, >= 0.6.3)
       json (~> 1.7, >= 1.7.7)
       jwt (>= 0.1.5, < 1.0.0)
       oj (~> 2.0, >= 2.0.3)
@@ -108,7 +108,7 @@ GEM
     json (1.8.1)
     jwt (0.1.13)
       multi_json (>= 1.5)
-    launchy (2.4.2)
+    launchy (2.4.3)
       addressable (~> 2.3)
     libv8 (3.16.14.3)
     mail (2.5.4)
@@ -130,7 +130,7 @@ GEM
       jwt (~> 0.1.4)
       multi_json (~> 1.0)
       rack (~> 1.2)
-    oj (2.10.2)
+    oj (2.11.1)
     omniauth (1.1.1)
       hashie (~> 1.2)
       rack
@@ -224,7 +224,7 @@ DEPENDENCIES
   acts_as_api
   andand
   arvados (>= 0.1.20140919104705)
-  arvados-cli (>= 0.1.20141014201516)
+  arvados-cli (>= 0.1.20141202211726)
   coffee-rails (~> 3.2.0)
   database_cleaner
   factory_girl_rails

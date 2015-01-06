@@ -98,6 +98,28 @@ module CurrentApiClient
     $system_group
   end
 
+  def all_users_group_uuid
+    [Server::Application.config.uuid_prefix,
+     Group.uuid_prefix,
+     'fffffffffffffff'].join('-')
+  end
+
+  def all_users_group
+    if not $all_users_group
+      act_as_system_user do
+        ActiveRecord::Base.transaction do
+          $all_users_group = Group.
+            where(uuid: all_users_group_uuid).first_or_create do |g|
+            g.update_attributes(name: "All users",
+                                description: "All users",
+                                group_class: "role")
+          end
+        end
+      end
+    end
+    $all_users_group
+  end
+
   def act_as_system_user
     if block_given?
       act_as_user system_user do

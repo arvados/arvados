@@ -72,12 +72,3 @@ Dir.glob(globdir + '/*.in') do |template_file|
     end
   end
 end
-
-# Copy the ssh public key file to base/generated (if a path is given)
-generated_dir = File.join('base/generated')
-Dir.mkdir(generated_dir) unless Dir.exists? generated_dir
-if (!config['PUBLIC_KEY_PATH'].nil? and
-    File.readable? config['PUBLIC_KEY_PATH'])
-  FileUtils.cp(config['PUBLIC_KEY_PATH'],
-               File.join(generated_dir, 'id_rsa.pub'))
-end

@@ -6,10 +6,10 @@ import ConfigParser
 import importlib
 import logging
 import ssl
+import sys
 
 import arvados
 import httplib2
-import libcloud.common.types as cloud_types
 import pykka
 from apiclient import errors as apierror
 
@@ -18,7 +18,6 @@ from apiclient import errors as apierror
 # it's low-level, but unlikely to catch code bugs.
 NETWORK_ERRORS = (IOError, ssl.SSLError)
 ARVADOS_ERRORS = NETWORK_ERRORS + (apierror.Error,)
-CLOUD_ERRORS = NETWORK_ERRORS + (cloud_types.LibcloudError,)
 
 actor_class = pykka.ThreadingActor
 
@@ -42,6 +41,7 @@ class NodeManagerConfig(ConfigParser.SafeConfigParser):
                        'poll_time': '60',
                        'max_poll_time': '300',
                        'poll_stale_after': '600',
+                       'boot_fail_after': str(sys.maxint),
                        'node_stale_after': str(60 * 60 * 2)},
             'Logging': {'file': '/dev/stderr',
                         'level': 'WARNING'},

@@ -18,7 +18,6 @@ RUN addgroup --gid 4005 crunch && mkdir /home/crunch && useradd --uid 4005 --gid
 
 # Supervisor.
 ADD supervisor.conf /etc/supervisor/conf.d/arvados.conf
-ADD ssh.sh /usr/local/bin/ssh.sh
 ADD generated/setup.sh /usr/local/bin/setup.sh
 ADD wrapdocker /usr/local/bin/wrapdocker.sh
 

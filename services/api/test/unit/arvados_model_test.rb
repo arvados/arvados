@@ -86,4 +86,27 @@ class ArvadosModelTest < ActiveSupport::TestCase
                    properties: {'foo' => 'bar'}.with_indifferent_access)
     end
   end
+
+  [['uuid', {unique: true}],
+   ['owner_uuid', {}]].each do |the_column, requires|
+    test "unique index on all models with #{the_column}" do
+      checked = 0
+      ActiveRecord::Base.connection.tables.each do |table|
+        columns = ActiveRecord::Base.connection.columns(table)
+
+        next unless columns.collect(&:name).include? the_column
+
+        indexes = ActiveRecord::Base.connection.indexes(table).reject do |index|
+          requires.map do |key, val|
+            index.send(key) == val
+          end.include? false
+        end
+        assert_includes indexes.collect(&:columns), [the_column], 'no index'
+        checked += 1
+      end
+      # Sanity check: make sure we didn't just systematically miss everything.
+      assert_operator(10, :<, checked,
+                      "Only #{checked} tables have a #{the_column}?!")
+    end
+  end
 end

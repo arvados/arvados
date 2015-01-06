@@ -47,8 +47,10 @@ empty_lonely_group:
 
 all_users:
   uuid: zzzzz-j7d0g-fffffffffffffff
-  owner_uuid: zzzzz-tpzed-d9tiejq69daie8f
+  owner_uuid: zzzzz-tpzed-000000000000000
   name: All users
+  description: All users
+  group_class: role
 
 testusergroup_admins:
   uuid: zzzzz-j7d0g-48foin4vonvc2at
@@ -136,6 +138,18 @@ group_for_sharing_tests:
   name: Group for sharing tests
   description: Users who can share objects with each other
   group_class: role
+
+empty_project:
+  uuid: zzzzz-j7d0g-9otoxmrksam74q6
+  owner_uuid: zzzzz-tpzed-xurymjxw79nv3jz
+  created_at: 2014-12-16 15:56:27.967534940 Z
+  modified_by_client_uuid: ~
+  modified_by_user_uuid: zzzzz-tpzed-xurymjxw79nv3jz
+  modified_at: 2014-12-16 15:56:27.967358199 Z
+  name: Empty project
+  description: ~
+  updated_at: 2014-12-16 15:56:27.967242142 Z
+  group_class: project
 
 project_with_10_collections:
   uuid: zzzzz-j7d0g-0010collections

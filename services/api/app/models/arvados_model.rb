@@ -445,6 +445,10 @@ class ArvadosModel < ActiveRecord::Base
     "_____-#{uuid_prefix}-_______________"
   end
 
+  def self.uuid_regex
+    %r/[a-z0-9]{5}-#{uuid_prefix}-[a-z0-9]{15}/
+  end
+
   def ensure_valid_uuids
     specials = [system_user_uuid]
 

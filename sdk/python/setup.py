@@ -5,23 +5,27 @@ import subprocess
 import time
 
 from setuptools import setup, find_packages
+from setuptools.command.egg_info import egg_info
 
 SETUP_DIR = os.path.dirname(__file__)
 README = os.path.join(SETUP_DIR, 'README.rst')
 
-cmd_opts = {'egg_info': {}}
-try:
-    git_tags = subprocess.check_output(
-        ['git', 'log', '--first-parent', '--max-count=1',
-         '--format=format:%ct %h', SETUP_DIR],
-        stderr=open('/dev/null','w')
-        ).split()
-    assert len(git_tags) == 2
-except (AssertionError, OSError, subprocess.CalledProcessError):
-    pass
-else:
-    git_tags[0] = time.strftime('%Y%m%d%H%M%S', time.gmtime(int(git_tags[0])))
-    cmd_opts['egg_info']['tag_build'] = '.{}.{}'.format(*git_tags)
+class TagBuildWithCommit(egg_info):
+    """Tag the build with the sha1 and date of the last git commit.
+
+    If a build tag has already been set (e.g., "egg_info -b", building
+    from source package), leave it alone.
+    """
+    def tags(self):
+        if self.tag_build is None:
+            git_tags = subprocess.check_output(
+                ['git', 'log', '--first-parent', '--max-count=1',
+                 '--format=format:%ct %h', SETUP_DIR]).split()
+            assert len(git_tags) == 2
+            git_tags[0] = time.strftime(
+                '%Y%m%d%H%M%S', time.gmtime(int(git_tags[0])))
+            self.tag_build = '.{}+{}'.format(*git_tags)
+        return egg_info.tags(self)
 
 
 setup(name='arvados-python-client',
@@ -55,5 +59,5 @@ setup(name='arvados-python-client',
       test_suite='tests',
       tests_require=['mock>=1.0', 'PyYAML'],
       zip_safe=False,
-      options=cmd_opts,
+      cmdclass={'egg_info': TagBuildWithCommit},
       )

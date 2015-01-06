@@ -34,10 +34,11 @@ class PipelineInstancesTest < ActionDispatch::IntegrationTest
     find("#projects-menu").click
     find('.dropdown-menu a,button', text: 'A Project').click
     find('.btn', text: 'Add data').click
+    find('.dropdown-menu a,button', text: 'Copy data from another project').click
     within('.modal-dialog') do
       wait_for_ajax
       first('span', text: 'foo_tag').click
-      find('.btn', text: 'Add').click
+      find('.btn', text: 'Copy').click
     end
     using_wait_time(Capybara.default_wait_time * 3) do
       wait_for_ajax
@@ -87,14 +88,14 @@ class PipelineInstancesTest < ActionDispatch::IntegrationTest
     # are saved in the desired places. (#4015)
 
     # foo_collection_in_aproject is the collection tagged with foo_tag.
-    col = api_fixture('collections', 'foo_collection_in_aproject')
+    collection = api_fixture('collections', 'foo_collection_in_aproject')
     click_link 'Advanced'
     click_link 'API response'
     api_response = JSON.parse(find('div#advanced_api_response pre').text)
     input_params = api_response['components']['part-one']['script_parameters']['input']
-    assert_equal input_params['value'], col['portable_data_hash']
-    assert_equal input_params['selection_name'], col['name']
-    assert_equal input_params['selection_uuid'], col['uuid']
+    assert_equal input_params['value'], collection['portable_data_hash']
+    assert_equal input_params['selection_name'], collection['name']
+    assert_equal input_params['selection_uuid'], collection['uuid']
 
     # "Run" button is now enabled
     page.assert_no_selector 'a.disabled,button.disabled', text: 'Run'
@@ -124,22 +125,23 @@ class PipelineInstancesTest < ActionDispatch::IntegrationTest
     find("#projects-menu").click
     find('.dropdown-menu a,button', text: 'A Project').click
     find('.btn', text: 'Add data').click
+    find('.dropdown-menu a,button', text: 'Copy data from another project').click
     within('.modal-dialog') do
       wait_for_ajax
       first('span', text: 'foo_tag').click
-      find('.btn', text: 'Add').click
+      find('.btn', text: 'Copy').click
     end
     using_wait_time(Capybara.default_wait_time * 3) do
       wait_for_ajax
     end
 
-    create_and_run_pipeline_in_aproject true, 'Two Part Pipeline Template', false
+    create_and_run_pipeline_in_aproject true, 'Two Part Pipeline Template', 'foo_collection_in_aproject', false
   end
 
   # Create a pipeline instance from outside of a project
   test 'Run a pipeline from dashboard' do
     visit page_with_token('active_trustedclient')
-    create_and_run_pipeline_in_aproject false, 'Two Part Pipeline Template', false
+    create_and_run_pipeline_in_aproject false, 'Two Part Pipeline Template', 'foo_collection_in_aproject', false
   end
 
   test 'view pipeline with job and see graph' do
@@ -221,20 +223,13 @@ class PipelineInstancesTest < ActionDispatch::IntegrationTest
   end
 
   [
-    ['active', false, false, false, 'Two Part Pipeline Template', false],
-    ['active', false, false, true, 'Two Part Pipeline Template', false],
-    ['active', true, false, false, 'Two Part Pipeline Template', false],
-    ['active', true, true, false, 'Two Part Pipeline Template', false],
-    ['active', true, false, true, 'Two Part Pipeline Template', false],
-    ['active', true, true, true, 'Two Part Pipeline Template', false],
-    ['project_viewer', false, false, true, 'Two Part Pipeline Template', false],
-    ['project_viewer', true, false, true, 'Two Part Pipeline Template', false],
-    ['project_viewer', true, true, true, 'Two Part Pipeline Template', false],
-    ['active', false, false, false, 'Two Part Template with dataclass File', true],
-    ['active', false, false, true, 'Two Part Template with dataclass File', true],
-  ].each do |user, with_options, choose_options, in_aproject, template_name, choose_file|
-    test "Rerun pipeline instance as #{user} using options #{with_options} #{choose_options}
-          in #{in_aproject} with #{template_name} with file #{choose_file}" do
+    [true, 'Two Part Pipeline Template', 'foo_collection_in_aproject', false],
+    [false, 'Two Part Pipeline Template', 'foo_collection_in_aproject', false],
+    [true, 'Two Part Template with dataclass File', 'foo_collection_in_aproject', true],
+    [false, 'Two Part Template with dataclass File', 'foo_collection_in_aproject', true],
+    [true, 'Two Part Pipeline Template', 'collection_with_no_name_in_aproject', false],
+  ].each do |in_aproject, template_name, collection, choose_file|
+    test "Run pipeline instance in #{in_aproject} with #{template_name} with #{collection} file #{choose_file}" do
       visit page_with_token('active')
 
       # need bigger modal size when choosing a file from collection
@@ -245,7 +240,48 @@ class PipelineInstancesTest < ActionDispatch::IntegrationTest
         find('.dropdown-menu a,button', text: 'A Project').click
       end
 
-      create_and_run_pipeline_in_aproject in_aproject, template_name, choose_file
+      create_and_run_pipeline_in_aproject in_aproject, template_name, collection, choose_file
+      instance_path = current_path
+
+      # Pause the pipeline
+      find('a,button', text: 'Pause').click
+      assert page.has_text? 'Paused'
+      page.assert_no_selector 'a.disabled,button.disabled', text: 'Resume'
+      page.assert_selector 'a,button', text: 'Re-run with latest'
+      page.assert_selector 'a,button', text: 'Re-run options'
+
+      # Verify that the newly created instance is created in the right project.
+      assert page.has_text? 'Home'
+      if in_aproject
+        assert page.has_text? 'A Project'
+      else
+        assert page.has_no_text? 'A Project'
+      end
+    end
+  end
+
+  [
+    ['active', false, false, false],
+    ['active', false, false, true],
+    ['active', true, false, false],
+    ['active', true, true, false],
+    ['active', true, false, true],
+    ['active', true, true, true],
+    ['project_viewer', false, false, true],
+    ['project_viewer', true, true, true],
+  ].each do |user, with_options, choose_options, in_aproject|
+    test "Rerun pipeline instance as #{user} using options #{with_options} #{choose_options} in #{in_aproject}" do
+      visit page_with_token('active')
+
+      # need bigger modal size when choosing a file from collection
+      Capybara.current_session.driver.browser.manage.window.resize_to(1024, 768)
+
+      if in_aproject
+        find("#projects-menu").click
+        find('.dropdown-menu a,button', text: 'A Project').click
+      end
+
+      create_and_run_pipeline_in_aproject in_aproject, 'Two Part Pipeline Template', 'foo_collection_in_aproject'
       instance_path = current_path
 
       # Pause the pipeline
@@ -283,8 +319,7 @@ class PipelineInstancesTest < ActionDispatch::IntegrationTest
       # Verify that the newly created instance is created in the right project.
       # In case of project_viewer user, since the use cannot write to the project,
       # the pipeline should have been created in the user's Home project.
-      rerun_instance_path = current_path
-      assert_not_equal instance_path, rerun_instance_path, 'Rerun instance path expected to be different'
+      assert_not_equal instance_path, current_path, 'Rerun instance path expected to be different'
       assert page.has_text? 'Home'
       if in_aproject && (user != 'project_viewer')
         assert page.has_text? 'A Project'
@@ -295,7 +330,10 @@ class PipelineInstancesTest < ActionDispatch::IntegrationTest
   end
 
   # Create and run a pipeline for 'Two Part Pipeline Template' in 'A Project'
-  def create_and_run_pipeline_in_aproject in_aproject, template_name, choose_file
+  def create_and_run_pipeline_in_aproject in_aproject, template_name, collection_fixture, choose_file=false
+    # collection in aproject to be used as input
+    collection = api_fixture('collections', collection_fixture)
+
     # create a pipeline instance
     find('.btn', text: 'Run a pipeline').click
     within('.modal-dialog') do
@@ -320,7 +358,16 @@ class PipelineInstancesTest < ActionDispatch::IntegrationTest
         click_link "A Project"
         wait_for_ajax
       end
-      first('span', text: 'foo_tag').click
+
+      if collection_fixture == 'foo_collection_in_aproject'
+        first('span', text: 'foo_tag').click
+      elsif collection['name']
+        first('span', text: "#{collection['name']}").click
+      else
+        collection_uuid = collection['uuid']
+        find("div[data-object-uuid=#{collection_uuid}]").click
+      end
+
       if choose_file
         wait_for_ajax
         find('.preview-selectable', text: 'foo').click
@@ -334,20 +381,17 @@ class PipelineInstancesTest < ActionDispatch::IntegrationTest
 
     # Ensure that the collection's portable_data_hash, uuid and name
     # are saved in the desired places. (#4015)
-
-    # foo_collection_in_aproject is the collection tagged with foo_tag.
-    col = api_fixture('collections', 'foo_collection_in_aproject')
     click_link 'Advanced'
     click_link 'API response'
     api_response = JSON.parse(find('div#advanced_api_response pre').text)
     input_params = api_response['components']['part-one']['script_parameters']['input']
-    assert_equal(input_params['selection_uuid'], col['uuid'], "Not found expected input param uuid")
+    assert_equal(input_params['selection_uuid'], collection['uuid'], "Not found expected input param uuid")
     if choose_file
-      assert_equal(input_params['value'], col['portable_data_hash']+'/foo', "Not found expected input file param value")
-      assert_equal(input_params['selection_name'], col['name']+'/foo', "Not found expected input file param name")
+      assert_equal(input_params['value'], collection['portable_data_hash']+'/foo', "Not found expected input file param value")
+      assert_equal(input_params['selection_name'], collection['name']+'/foo', "Not found expected input file param name")
     else
-      assert_equal(input_params['value'], col['portable_data_hash'], "Not found expected input param value")
-      assert_equal(input_params['selection_name'], col['name'], "Not found expected input param name")
+      assert_equal(input_params['value'], collection['portable_data_hash'], "Not found expected input param value")
+      assert_equal(input_params['selection_name'], collection['name'], "Not found expected input selection name")
     end
 
     # "Run" button present and enabled
