@@ -86,7 +86,7 @@ class PipelineInstancesController < ApplicationController
                 obj = Collection.find value_info_value
                 if value_info_partitioned
                   value_info[:value] = obj.portable_data_hash + value_info_partitioned[1] + value_info_partitioned[2]
-                  value_info[:selection_name] = obj.name + value_info_partitioned[1] + value_info_partitioned[2]
+                  value_info[:selection_name] = obj.name ? obj.name + value_info_partitioned[1] + value_info_partitioned[2] : obj.name
                 else
                   value_info[:value] = obj.portable_data_hash
                   value_info[:selection_name] = obj.name
@@ -174,12 +174,9 @@ class PipelineInstancesController < ApplicationController
   end
 
   def show
-    @pipelines = [@object]
-
-    if params[:compare]
-      PipelineInstance.where(uuid: params[:compare]).each do |p|
-        @pipelines << p
-      end
+    # the #show action can also be called by #compare, which does its own work to set up @pipelines
+    unless defined? @pipelines
+      @pipelines = [@object]
     end
 
     provenance, pips = graph(@pipelines)
@@ -259,18 +256,7 @@ class PipelineInstancesController < ApplicationController
     end
 
     if params['tab_pane'] == "Graph"
-      provenance, pips = graph(@objects)
-
       @pipelines = @objects
-
-      if provenance
-        @prov_svg = ProvenanceHelper::create_provenance_graph provenance, "provenance_svg", {
-          :request => request,
-          :all_script_parameters => true,
-          :combine_jobs => :script_and_version,
-          :script_version_nodes => true,
-          :pips => pips }
-      end
     end
 
     @object = @objects.first

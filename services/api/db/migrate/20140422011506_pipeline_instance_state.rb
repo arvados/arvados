@@ -2,13 +2,8 @@ class PipelineInstanceState < ActiveRecord::Migration
   include CurrentApiClient
 
   def up
-    if !column_exists?(:pipeline_instances, :state)
-      add_column :pipeline_instances, :state, :string
-    end
-
-    if !column_exists?(:pipeline_instances, :components_summary)
-      add_column :pipeline_instances, :components_summary, :text
-    end
+    add_column :pipeline_instances, :state, :string
+    add_column :pipeline_instances, :components_summary, :text
 
     PipelineInstance.reset_column_information
 

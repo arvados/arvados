@@ -1,6 +1,7 @@
 class UserSessionsController < ApplicationController
   before_filter :require_auth_scope, :only => [ :destroy ]
 
+  skip_before_filter :set_cors_headers
   skip_before_filter :find_object_by_uuid
   skip_before_filter :render_404_if_no_object
 
@@ -138,5 +139,9 @@ class UserSessionsController < ApplicationController
     end
     callback_url += 'api_token=' + api_client_auth.api_token
     redirect_to callback_url
+  end
+
+  def cross_origin_forbidden
+    send_error 'Forbidden', status: 403
   end
 end

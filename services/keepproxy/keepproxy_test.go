@@ -1,11 +1,11 @@
 package main
 
 import (
-	"git.curoverse.com/arvados.git/sdk/go/keepclient"
-	"git.curoverse.com/arvados.git/sdk/go/arvadosclient"
 	"crypto/md5"
 	"crypto/tls"
 	"fmt"
+	"git.curoverse.com/arvados.git/sdk/go/arvadosclient"
+	"git.curoverse.com/arvados.git/sdk/go/keepclient"
 	. "gopkg.in/check.v1"
 	"io"
 	"io/ioutil"
@@ -14,6 +14,7 @@ import (
 	"net/url"
 	"os"
 	"os/exec"
+	"strings"
 	"testing"
 	"time"
 )
@@ -38,7 +39,9 @@ func pythonDir() string {
 // avoids a race condition where we hit a "connection refused" error
 // because we start testing the proxy too soon.
 func waitForListener() {
-	const (ms = 5)
+	const (
+		ms = 5
+	)
 	for i := 0; listener == nil && i < 1000; i += ms {
 		time.Sleep(ms * time.Millisecond)
 	}
@@ -137,6 +140,7 @@ func runProxy(c *C, args []string, token string, port int) keepclient.KeepClient
 	os.Args = append(args, fmt.Sprintf("-listen=:%v", port))
 	os.Setenv("ARVADOS_API_TOKEN", "4axaw8zxe0qm22wa6urpp5nskcne8z88cvbupv653y1njyi05h")
 
+	listener = nil
 	go main()
 	time.Sleep(100 * time.Millisecond)
 
@@ -148,7 +152,7 @@ func runProxy(c *C, args []string, token string, port int) keepclient.KeepClient
 	c.Assert(err, Equals, nil)
 	c.Check(kc.Using_proxy, Equals, true)
 	c.Check(len(kc.ServiceRoots()), Equals, 1)
-	for _, root := range(kc.ServiceRoots()) {
+	for _, root := range kc.ServiceRoots() {
 		c.Check(root, Equals, fmt.Sprintf("http://localhost:%v", port))
 	}
 	os.Setenv("ARVADOS_KEEP_PROXY", "")
@@ -161,6 +165,7 @@ func (s *ServerRequiredSuite) TestPutAskGet(c *C) {
 
 	os.Args = []string{"keepproxy", "-listen=:29950"}
 	os.Setenv("ARVADOS_API_TOKEN", "4axaw8zxe0qm22wa6urpp5nskcne8z88cvbupv653y1njyi05h")
+	listener = nil
 	go main()
 	time.Sleep(100 * time.Millisecond)
 
@@ -218,11 +223,30 @@ func (s *ServerRequiredSuite) TestPutAskGet(c *C) {
 		log.Print("Get")
 	}
 
+	{
+		var rep int
+		var err error
+		hash2, rep, err = kc.PutB([]byte(""))
+		c.Check(hash2, Matches, `^d41d8cd98f00b204e9800998ecf8427e\+0(\+.+)?$`)
+		c.Check(rep, Equals, 2)
+		c.Check(err, Equals, nil)
+		log.Print("PutB zero block")
+	}
+
+	{
+		reader, blocklen, _, err := kc.Get("d41d8cd98f00b204e9800998ecf8427e")
+		c.Assert(err, Equals, nil)
+		all, err := ioutil.ReadAll(reader)
+		c.Check(all, DeepEquals, []byte(""))
+		c.Check(blocklen, Equals, int64(0))
+		log.Print("Get zero block")
+	}
+
 	log.Print("TestPutAndGet done")
 }
 
 func (s *ServerRequiredSuite) TestPutAskGetForbidden(c *C) {
-	log.Print("TestPutAndGet start")
+	log.Print("TestPutAskGetForbidden start")
 
 	kc := runProxy(c, []string{"keepproxy"}, "123abc", 29951)
 	waitForListener()
@@ -260,7 +284,7 @@ func (s *ServerRequiredSuite) TestPutAskGetForbidden(c *C) {
 		log.Print("Get")
 	}
 
-	log.Print("TestPutAndGetForbidden done")
+	log.Print("TestPutAskGetForbidden done")
 }
 
 func (s *ServerRequiredSuite) TestGetDisabled(c *C) {
@@ -319,4 +343,57 @@ func (s *ServerRequiredSuite) TestPutDisabled(c *C) {
 	}
 
 	log.Print("TestPutDisabled done")
+}
+
+func (s *ServerRequiredSuite) TestCorsHeaders(c *C) {
+	runProxy(c, []string{"keepproxy"}, "4axaw8zxe0qm22wa6urpp5nskcne8z88cvbupv653y1njyi05h", 29954)
+	waitForListener()
+	defer closeListener()
+
+	{
+		client := http.Client{}
+		req, err := http.NewRequest("OPTIONS",
+			fmt.Sprintf("http://localhost:29954/%x+3",
+				md5.Sum([]byte("foo"))),
+			nil)
+		req.Header.Add("Access-Control-Request-Method", "PUT")
+		req.Header.Add("Access-Control-Request-Headers", "Authorization, X-Keep-Desired-Replicas")
+		resp, err := client.Do(req)
+		c.Check(err, Equals, nil)
+		c.Check(resp.StatusCode, Equals, 200)
+		body, err := ioutil.ReadAll(resp.Body)
+		c.Check(string(body), Equals, "")
+		c.Check(resp.Header.Get("Access-Control-Allow-Methods"), Equals, "GET, HEAD, POST, PUT, OPTIONS")
+		c.Check(resp.Header.Get("Access-Control-Allow-Origin"), Equals, "*")
+	}
+
+	{
+		resp, err := http.Get(
+			fmt.Sprintf("http://localhost:29954/%x+3",
+				md5.Sum([]byte("foo"))))
+		c.Check(err, Equals, nil)
+		c.Check(resp.Header.Get("Access-Control-Allow-Headers"), Equals, "Authorization, Content-Length, Content-Type, X-Keep-Desired-Replicas")
+		c.Check(resp.Header.Get("Access-Control-Allow-Origin"), Equals, "*")
+	}
+}
+
+func (s *ServerRequiredSuite) TestPostWithoutHash(c *C) {
+	runProxy(c, []string{"keepproxy"}, "4axaw8zxe0qm22wa6urpp5nskcne8z88cvbupv653y1njyi05h", 29955)
+	waitForListener()
+	defer closeListener()
+
+	{
+		client := http.Client{}
+		req, err := http.NewRequest("POST",
+			"http://localhost:29955/",
+			strings.NewReader("qux"))
+		req.Header.Add("Authorization", "OAuth2 4axaw8zxe0qm22wa6urpp5nskcne8z88cvbupv653y1njyi05h")
+		req.Header.Add("Content-Type", "application/octet-stream")
+		resp, err := client.Do(req)
+		c.Check(err, Equals, nil)
+		body, err := ioutil.ReadAll(resp.Body)
+		c.Check(err, Equals, nil)
+		c.Check(string(body), Equals,
+			fmt.Sprintf("%x+%d", md5.Sum([]byte("qux")), 3))
+	}
 }

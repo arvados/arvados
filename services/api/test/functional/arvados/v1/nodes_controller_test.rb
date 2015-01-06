@@ -108,6 +108,14 @@ class Arvados::V1::NodesControllerTest < ActionController::TestCase
     assert_nil(json_response["job"], "spectator can see node's assigned job")
   end
 
+  [:admin, :spectator].each do |user|
+    test "select param does not break node list for #{user}" do
+      authorize_with user
+      get :index, {select: ['domain']}
+      assert_response :success
+    end
+  end
+
   test "admin can associate a job with a node" do
     changed_node = nodes(:idle)
     assigned_job = jobs(:queued)

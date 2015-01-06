@@ -8,15 +8,6 @@ export ARVADOS_API_HOST=api
 export ARVADOS_API_HOST_INSECURE=yes
 export ARVADOS_API_TOKEN=@@API_SUPERUSER_SECRET@@
 
-# All users group
-prefix=`arv --format=uuid user current | cut -d- -f1`
-read -rd $'\000' newgroup <<EOF; arv group create --group "$newgroup"
-{
- "uuid":"$prefix-j7d0g-fffffffffffffff",
- "name":"All users"
-}
-EOF
-
 # Arvados repository object
 all_users_group_uuid="$prefix-j7d0g-fffffffffffffff"
 repo_uuid=`arv --format=uuid repository create --repository '{"name":"arvados","fetch_url":"git@api:arvados.git","push_url":"git@api:arvados.git"}'`

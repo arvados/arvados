@@ -38,11 +38,10 @@ class ServerCalculator(object):
             return True
 
 
-    def __init__(self, server_list, min_nodes=0, max_nodes=None):
+    def __init__(self, server_list, max_nodes=None):
         self.cloud_sizes = [self.CloudSizeWrapper(s, **kws)
                             for s, kws in server_list]
         self.cloud_sizes.sort(key=lambda s: s.price)
-        self.min_nodes = min_nodes
         self.max_nodes = max_nodes or float('inf')
         self.logger = logging.getLogger('arvnodeman.jobqueue')
         self.logged_jobs = set()
@@ -79,14 +78,10 @@ class ServerCalculator(object):
             elif (want_count <= self.max_nodes):
                 servers.extend([cloud_size.real] * max(1, want_count))
         self.logged_jobs.intersection_update(seen_jobs)
-
-        # Make sure the server queue has at least enough entries to
-        # satisfy min_nodes.
-        node_shortfall = self.min_nodes - len(servers)
-        if node_shortfall > 0:
-            basic_node = self.cloud_size_for_constraints({})
-            servers.extend([basic_node.real] * node_shortfall)
         return servers
+
+    def cheapest_size(self):
+        return self.cloud_sizes[0]
 
 
 class JobQueueMonitorActor(clientactor.RemotePollLoopActor):

@@ -48,28 +48,14 @@ class ServerCalculatorTestCase(unittest.TestCase):
                                   {'min_scratch_mb_per_node': 200})
         self.assertEqual(6, len(servlist))
 
-    def test_server_calc_min_nodes_0_jobs(self):
-        servcalc = self.make_calculator([1], min_nodes=3, max_nodes=9)
-        servlist = self.calculate(servcalc, {})
-        self.assertEqual(3, len(servlist))
-
-    def test_server_calc_min_nodes_1_job(self):
-        servcalc = self.make_calculator([1], min_nodes=3, max_nodes=9)
-        servlist = self.calculate(servcalc, {'min_nodes': 1})
-        self.assertEqual(3, len(servlist))
-
-    def test_server_calc_more_jobs_than_min_nodes(self):
-        servcalc = self.make_calculator([1], min_nodes=2, max_nodes=9)
-        servlist = self.calculate(servcalc,
-                                  {'min_nodes': 1},
-                                  {'min_nodes': 1},
-                                  {'min_nodes': 1})
-        self.assertEqual(3, len(servlist))
-
     def test_job_requesting_max_nodes_accepted(self):
         servcalc = self.make_calculator([1], max_nodes=4)
         servlist = self.calculate(servcalc, {'min_nodes': 4})
         self.assertEqual(4, len(servlist))
+
+    def test_cheapest_size(self):
+        servcalc = self.make_calculator([2, 4, 1, 3])
+        self.assertEqual(testutil.MockSize(1), servcalc.cheapest_size())
 
 
 class JobQueueMonitorActorTestCase(testutil.RemotePollLoopActorTestMixin,

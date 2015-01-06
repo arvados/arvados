@@ -87,6 +87,7 @@ class job_setup:
             return
         job_input = current_job()['script_parameters']['input']
         cr = CollectionReader(job_input)
+        cr.normalize()
         for s in cr.all_streams():
             for f in s.all_files():
                 if input_as_path:

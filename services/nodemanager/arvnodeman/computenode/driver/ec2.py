@@ -79,8 +79,7 @@ class ComputeNodeDriver(BaseComputeNodeDriver):
         return 'auth', key
 
     def arvados_create_kwargs(self, arvados_node):
-        result = {'ex_metadata': self.tags.copy(),
-                  'name': arvados_node_fqdn(arvados_node)}
+        result = {'name': arvados_node_fqdn(arvados_node)}
         ping_secret = arvados_node['info'].get('ping_secret')
         if ping_secret is not None:
             ping_url = ('https://{}/arvados/v1/nodes/{}/ping?ping_secret={}'.
@@ -89,11 +88,12 @@ class ComputeNodeDriver(BaseComputeNodeDriver):
             result['ex_userdata'] = ping_url
         return result
 
+    def post_create_node(self, cloud_node):
+        self.real.ex_create_tags(cloud_node, self.tags)
+
     def sync_node(self, cloud_node, arvados_node):
-        metadata = self.arvados_create_kwargs(arvados_node)
-        tags = metadata['ex_metadata']
-        tags['Name'] = metadata['name']
-        self.real.ex_create_tags(cloud_node, tags)
+        self.real.ex_create_tags(cloud_node,
+                                 {'Name': arvados_node_fqdn(arvados_node)})
 
     @classmethod
     def node_start_time(cls, node):

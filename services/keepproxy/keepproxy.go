@@ -1,12 +1,13 @@
 package main
 
 import (
-	"git.curoverse.com/arvados.git/sdk/go/keepclient"
-	"git.curoverse.com/arvados.git/sdk/go/arvadosclient"
 	"flag"
 	"fmt"
+	"git.curoverse.com/arvados.git/sdk/go/arvadosclient"
+	"git.curoverse.com/arvados.git/sdk/go/keepclient"
 	"github.com/gorilla/mux"
 	"io"
+	"io/ioutil"
 	"log"
 	"net"
 	"net/http"
@@ -29,6 +30,7 @@ func main() {
 		no_get           bool
 		no_put           bool
 		default_replicas int
+		timeout          int64
 		pidfile          string
 	)
 
@@ -60,6 +62,12 @@ func main() {
 		2,
 		"Default number of replicas to write if not specified by the client.")
 
+	flagset.Int64Var(
+		&timeout,
+		"timeout",
+		15,
+		"Timeout on requests to internal Keep services (default 15 seconds)")
+
 	flagset.StringVar(
 		&pidfile,
 		"pid",
@@ -90,6 +98,8 @@ func main() {
 
 	kc.Want_replicas = default_replicas
 
+	kc.Client.Timeout = time.Duration(timeout) * time.Second
+
 	listener, err = net.Listen("tcp", listen)
 	if err != nil {
 		log.Fatalf("Could not listen on %v", listen)
@@ -104,7 +114,6 @@ func main() {
 		s := <-sig
 		log.Println("caught signal:", s)
 		listener.Close()
-		listener = nil
 	}(term)
 	signal.Notify(term, syscall.SIGTERM)
 	signal.Notify(term, syscall.SIGINT)
@@ -222,6 +231,8 @@ type PutBlockHandler struct {
 
 type InvalidPathHandler struct{}
 
+type OptionsHandler struct{}
+
 // MakeRESTRouter
 //     Returns a mux.Router that passes GET and PUT requests to the
 //     appropriate handlers.
@@ -244,6 +255,9 @@ func MakeRESTRouter(
 	if enable_put {
 		rest.Handle(`/{hash:[0-9a-f]{32}}+{hints}`, PutBlockHandler{kc, t}).Methods("PUT")
 		rest.Handle(`/{hash:[0-9a-f]{32}}`, PutBlockHandler{kc, t}).Methods("PUT")
+		rest.Handle(`/`, PutBlockHandler{kc, t}).Methods("POST")
+		rest.Handle(`/{any}`, OptionsHandler{}).Methods("OPTIONS")
+		rest.Handle(`/`, OptionsHandler{}).Methods("OPTIONS")
 	}
 
 	rest.NotFoundHandler = InvalidPathHandler{}
@@ -251,12 +265,25 @@ func MakeRESTRouter(
 	return rest
 }
 
+func SetCorsHeaders(resp http.ResponseWriter) {
+	resp.Header().Set("Access-Control-Allow-Methods", "GET, HEAD, POST, PUT, OPTIONS")
+	resp.Header().Set("Access-Control-Allow-Origin", "*")
+	resp.Header().Set("Access-Control-Allow-Headers", "Authorization, Content-Length, Content-Type, X-Keep-Desired-Replicas")
+	resp.Header().Set("Access-Control-Max-Age", "86486400")
+}
+
 func (this InvalidPathHandler) ServeHTTP(resp http.ResponseWriter, req *http.Request) {
 	log.Printf("%s: %s %s unroutable", GetRemoteAddress(req), req.Method, req.URL.Path)
 	http.Error(resp, "Bad request", http.StatusBadRequest)
 }
 
+func (this OptionsHandler) ServeHTTP(resp http.ResponseWriter, req *http.Request) {
+	log.Printf("%s: %s %s", GetRemoteAddress(req), req.Method, req.URL.Path)
+	SetCorsHeaders(resp)
+}
+
 func (this GetBlockHandler) ServeHTTP(resp http.ResponseWriter, req *http.Request) {
+	SetCorsHeaders(resp)
 
 	kc := *this.KeepClient
 
@@ -265,7 +292,7 @@ func (this GetBlockHandler) ServeHTTP(resp http.ResponseWriter, req *http.Reques
 
 	locator := keepclient.MakeLocator2(hash, hints)
 
-	log.Printf("%s: %s %s", GetRemoteAddress(req), req.Method, hash)
+	log.Printf("%s: %s %s begin", GetRemoteAddress(req), req.Method, hash)
 
 	var pass bool
 	var tok string
@@ -290,36 +317,48 @@ func (this GetBlockHandler) ServeHTTP(resp http.ResponseWriter, req *http.Reques
 		blocklen, _, err = kc.AuthorizedAsk(hash, locator.Signature, locator.Timestamp)
 	}
 
-	if blocklen > 0 {
+	if blocklen > -1 {
 		resp.Header().Set("Content-Length", fmt.Sprint(blocklen))
+	} else {
+		log.Printf("%s: %s %s Keep server did not return Content-Length",
+			GetRemoteAddress(req), req.Method, hash)
 	}
 
+	var status = 0
 	switch err {
 	case nil:
+		status = http.StatusOK
 		if reader != nil {
 			n, err2 := io.Copy(resp, reader)
-			if n != blocklen {
-				log.Printf("%s: %s %s mismatched return %v with Content-Length %v error %v", GetRemoteAddress(req), req.Method, hash, n, blocklen, err2)
+			if blocklen > -1 && n != blocklen {
+				log.Printf("%s: %s %s %v %v mismatched copy size expected Content-Length: %v",
+					GetRemoteAddress(req), req.Method, hash, status, n, blocklen)
 			} else if err2 == nil {
-				log.Printf("%s: %s %s success returned %v bytes", GetRemoteAddress(req), req.Method, hash, n)
+				log.Printf("%s: %s %s %v %v",
+					GetRemoteAddress(req), req.Method, hash, status, n)
 			} else {
-				log.Printf("%s: %s %s returned %v bytes error %v", GetRemoteAddress(req), req.Method, hash, n, err.Error())
+				log.Printf("%s: %s %s %v %v copy error: %v",
+					GetRemoteAddress(req), req.Method, hash, status, n, err2.Error())
 			}
 		} else {
-			log.Printf("%s: %s %s success", GetRemoteAddress(req), req.Method, hash)
+			log.Printf("%s: %s %s %v 0", GetRemoteAddress(req), req.Method, hash, status)
 		}
 	case keepclient.BlockNotFound:
+		status = http.StatusNotFound
 		http.Error(resp, "Not found", http.StatusNotFound)
 	default:
+		status = http.StatusBadGateway
 		http.Error(resp, err.Error(), http.StatusBadGateway)
 	}
 
 	if err != nil {
-		log.Printf("%s: %s %s error %s", GetRemoteAddress(req), req.Method, hash, err.Error())
+		log.Printf("%s: %s %s %v error: %v",
+			GetRemoteAddress(req), req.Method, hash, status, err.Error())
 	}
 }
 
 func (this PutBlockHandler) ServeHTTP(resp http.ResponseWriter, req *http.Request) {
+	SetCorsHeaders(resp)
 
 	kc := *this.KeepClient
 
@@ -339,7 +378,7 @@ func (this PutBlockHandler) ServeHTTP(resp http.ResponseWriter, req *http.Reques
 
 	log.Printf("%s: %s %s Content-Length %v", GetRemoteAddress(req), req.Method, hash, contentLength)
 
-	if contentLength < 1 {
+	if contentLength < 0 {
 		http.Error(resp, "Must include Content-Length header", http.StatusLengthRequired)
 		return
 	}
@@ -371,12 +410,25 @@ func (this PutBlockHandler) ServeHTTP(resp http.ResponseWriter, req *http.Reques
 	}
 
 	// Now try to put the block through
-	hash, replicas, err := kc.PutHR(hash, req.Body, contentLength)
+	var replicas int
+	var put_err error
+	if hash == "" {
+		if bytes, err := ioutil.ReadAll(req.Body); err != nil {
+			msg := fmt.Sprintf("Error reading request body: %s", err)
+			log.Printf(msg)
+			http.Error(resp, msg, http.StatusInternalServerError)
+			return
+		} else {
+			hash, replicas, put_err = kc.PutB(bytes)
+		}
+	} else {
+		hash, replicas, put_err = kc.PutHR(hash, req.Body, contentLength)
+	}
 
 	// Tell the client how many successful PUTs we accomplished
 	resp.Header().Set(keepclient.X_Keep_Replicas_Stored, fmt.Sprintf("%d", replicas))
 
-	switch err {
+	switch put_err {
 	case nil:
 		// Default will return http.StatusOK
 		log.Printf("%s: %s %s finished, stored %v replicas (desired %v)", GetRemoteAddress(req), req.Method, hash, replicas, kc.Want_replicas)
@@ -400,15 +452,15 @@ func (this PutBlockHandler) ServeHTTP(resp http.ResponseWriter, req *http.Reques
 				log.Printf("%s: wrote %v bytes to response body and got error %v", n, err2.Error())
 			}
 		} else {
-			http.Error(resp, "", http.StatusServiceUnavailable)
+			http.Error(resp, put_err.Error(), http.StatusServiceUnavailable)
 		}
 
 	default:
-		http.Error(resp, err.Error(), http.StatusBadGateway)
+		http.Error(resp, put_err.Error(), http.StatusBadGateway)
 	}
 
-	if err != nil {
-		log.Printf("%s: %s %s stored %v replicas (desired %v) got error %v", GetRemoteAddress(req), req.Method, hash, replicas, kc.Want_replicas, err.Error())
+	if put_err != nil {
+		log.Printf("%s: %s %s stored %v replicas (desired %v) got error %v", GetRemoteAddress(req), req.Method, hash, replicas, kc.Want_replicas, put_err.Error())
 	}
 
 }

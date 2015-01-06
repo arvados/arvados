@@ -14,12 +14,11 @@ ADD apt.arvados.org.list /etc/apt/sources.list.d/
 RUN apt-key adv --keyserver pool.sks-keyservers.net --recv 1078ECD7
 RUN apt-get update -qq
 
-RUN apt-get install -qqy openssh-server apt-utils git curl \
+RUN apt-get install -qqy apt-utils git curl \
              libcurl3 libcurl3-gnutls libcurl4-openssl-dev locales \
              postgresql-server-dev-9.1 python-arvados-python-client
 
 RUN gpg --keyserver pool.sks-keyservers.net --recv-keys D39DC0E3 && \
-    /bin/mkdir -p /root/.ssh && \
     /bin/sed -ri 's/# en_US.UTF-8 UTF-8/en_US.UTF-8 UTF-8/' /etc/locale.gen && \
     /usr/sbin/locale-gen && \
     curl -L https://get.rvm.io | bash -s stable && \
@@ -36,6 +35,3 @@ RUN /usr/local/rvm/bin/rvm-exec default gem update --system && \
     /usr/local/rvm/bin/rvm-exec default bundle install --gemfile=/usr/src/arvados/apps/workbench/Gemfile && \
     /usr/local/rvm/bin/rvm-exec default bundle install --gemfile=/usr/src/arvados/services/api/Gemfile && \
     /usr/local/rvm/bin/rvm-exec default bundle install --gemfile=/usr/src/arvados/doc/Gemfile
-
-ADD generated/id_rsa.pub /root/.ssh/authorized_keys
-RUN chown root:root /root/.ssh/authorized_keys

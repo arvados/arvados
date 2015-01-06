@@ -2,12 +2,14 @@ require 'test_helper'
 
 class Arvados::V1::KeepDisksControllerTest < ActionController::TestCase
 
+  def default_ping_opts
+    {ping_secret: '', service_ssl_flag: false, service_port: 1234}
+  end
+
   test "add keep disk with admin token" do
     authorize_with :admin
-    post :ping, {
-      ping_secret: '',          # required by discovery doc, but ignored
-      filesystem_uuid: 'eb1e77a1-db84-4193-b6e6-ca2894f67d5f'
-    }
+    post :ping, default_ping_opts.
+      merge(filesystem_uuid: 'eb1e77a1-db84-4193-b6e6-ca2894f67d5f')
     assert_response :success
     assert_not_nil assigns(:object)
     new_keep_disk = JSON.parse(@response.body)
@@ -17,30 +19,27 @@ class Arvados::V1::KeepDisksControllerTest < ActionController::TestCase
   end
 
   [
-    {ping_secret: ''},
-    {ping_secret: '', filesystem_uuid: ''},
+    {},
+    {filesystem_uuid: ''},
   ].each do |opts|
-    test "add keep disk with no filesystem_uuid #{opts}" do
+    test "add keep disk with[out] filesystem_uuid #{opts}" do
       authorize_with :admin
-      post :ping, opts
+      post :ping, default_ping_opts.merge(opts)
       assert_response :success
       assert_not_nil JSON.parse(@response.body)['uuid']
     end
   end
 
   test "refuse to add keep disk without admin token" do
-    post :ping, {
-      ping_secret: '',
-    }
+    post :ping, default_ping_opts
     assert_response 404
   end
 
   test "ping keep disk" do
-    post :ping, {
-      id: keep_disks(:nonfull).uuid,
-      ping_secret: keep_disks(:nonfull).ping_secret,
-      filesystem_uuid: keep_disks(:nonfull).filesystem_uuid
-    }
+    post :ping, default_ping_opts.
+      merge(id: keep_disks(:nonfull).uuid,
+            ping_secret: keep_disks(:nonfull).ping_secret,
+            filesystem_uuid: keep_disks(:nonfull).filesystem_uuid)
     assert_response :success
     assert_not_nil assigns(:object)
     keep_disk = JSON.parse(@response.body)

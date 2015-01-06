@@ -21,6 +21,8 @@ class SearchController < ApplicationController
   end
 
   def next_page_href with_params={}
-    super with_params.merge(last_object_class: @objects.last.class.to_s)
+    super with_params.merge(last_object_class: @objects.last.class.to_s,
+                            project_uuid: params[:project_uuid],
+                            filters: @filters.to_json)
   end
 end

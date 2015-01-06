@@ -2,6 +2,10 @@
 
 from __future__ import absolute_import, print_function
 
+import libcloud.common.types as cloud_types
+
+from ...config import NETWORK_ERRORS
+
 class BaseComputeNodeDriver(object):
     """Abstract base class for compute node drivers.
 
@@ -15,6 +19,8 @@ class BaseComputeNodeDriver(object):
     creation kwargs with information about the specific Arvados node
     record), sync_node, and node_start_time.
     """
+    CLOUD_ERRORS = NETWORK_ERRORS + (cloud_types.LibcloudError,)
+
     def __init__(self, auth_kwargs, list_kwargs, create_kwargs, driver_class):
         self.real = driver_class(**auth_kwargs)
         self.list_kwargs = list_kwargs
@@ -52,6 +58,12 @@ class BaseComputeNodeDriver(object):
         kwargs['size'] = size
         return self.real.create_node(**kwargs)
 
+    def post_create_node(self, cloud_node):
+        # ComputeNodeSetupActor calls this method after the cloud node is
+        # created.  Any setup tasks that need to happen afterward (e.g.,
+        # tagging) should be done in this method.
+        pass
+
     def sync_node(self, cloud_node, arvados_node):
         # When a compute node first pings the API server, the API server
         # will automatically assign some attributes on the corresponding
@@ -62,3 +74,11 @@ class BaseComputeNodeDriver(object):
     @classmethod
     def node_start_time(cls, node):
         raise NotImplementedError("BaseComputeNodeDriver.node_start_time")
+
+    @classmethod
+    def is_cloud_exception(cls, exception):
+        # libcloud compute drivers typically raise bare Exceptions to
+        # represent API errors.  Return True for any exception that is
+        # exactly an Exception, or a better-known higher-level exception.
+        return (isinstance(exception, cls.CLOUD_ERRORS) or
+                getattr(exception, '__class__', None) is Exception)

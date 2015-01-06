@@ -3,7 +3,7 @@ class StaticController < ApplicationController
 
   skip_before_filter :find_object_by_uuid
   skip_before_filter :render_404_if_no_object
-  skip_before_filter :require_auth_scope, :only => [ :home, :login_failure ]
+  skip_before_filter :require_auth_scope, only: [:home, :empty, :login_failure]
 
   def home
     respond_to do |f|
@@ -18,6 +18,10 @@ class StaticController < ApplicationController
         render_not_found "Path not found."
       end
     end
+  end
+
+  def empty
+    render text: "-"
   end
 
 end

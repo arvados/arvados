@@ -22,21 +22,31 @@ class SLURMComputeNodeShutdownActorTestCase(ComputeNodeShutdownActorMixin,
         for s in args:
             self.assertIn(s, slurm_cmd)
 
-    def check_success_after_reset(self, proc_mock):
+    def check_success_after_reset(self, proc_mock, end_state='drain\n'):
         self.make_mocks(arvados_node=testutil.arvados_node_mock(63))
         self.make_actor()
         self.check_success_flag(None, 0)
         self.check_success_flag(None, 0)
         # Order is critical here: if the mock gets called when no return value
         # or side effect is set, we may invoke a real subprocess.
-        proc_mock.return_value = 'drain\n'
+        proc_mock.return_value = end_state
         proc_mock.side_effect = None
         self.check_success_flag(True, 3)
         self.check_slurm_got_args(proc_mock, 'compute63')
 
-    def test_wait_for_drained_state(self, proc_mock):
-        proc_mock.return_value = 'drng\n'
-        self.check_success_after_reset(proc_mock)
+    def make_wait_state_test(start_state='drng\n', end_state='drain\n'):
+        def test(self, proc_mock):
+            proc_mock.return_value = start_state
+            self.check_success_after_reset(proc_mock, end_state)
+        return test
+
+    for wait_state in ['alloc\n', 'drng\n', 'idle*\n']:
+        locals()['test_wait_while_' + wait_state.strip()
+                 ] = make_wait_state_test(start_state=wait_state)
+
+    for end_state in ['down\n', 'down*\n', 'drain\n', 'fail\n']:
+        locals()['test_wait_until_' + end_state.strip()
+                 ] = make_wait_state_test(end_state=end_state)
 
     def test_retry_failed_slurm_calls(self, proc_mock):
         proc_mock.side_effect = subprocess.CalledProcessError(1, ["mock"])

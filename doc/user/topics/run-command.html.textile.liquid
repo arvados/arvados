@@ -18,7 +18,8 @@ The basic @run-command@ process evaluates its inputs and builds a command line, 
 In the following examples, you can use "dry run mode" to determine the command line that @run-command@ will use without actually running the command.  For example:
 
 <notextile>
-<pre><code>~$ <span class="userinput">./run-command --dry-run --script-parameters '{
+<pre><code>~$ <span class="userinput">cd $HOME/arvados/crunch_scripts</span>
+~$ <span class="userinput">./run-command --dry-run --script-parameters '{
   "command": ["echo", "hello world"]
 }'</span>
 run-command: echo hello world

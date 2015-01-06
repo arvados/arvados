@@ -49,6 +49,12 @@ project_viewer:
   api_token: projectviewertoken1234567890abcdefghijklmnopqrstuv
   expires_at: 2038-01-01 00:00:00
 
+project_viewer_trustedclient:
+  api_client: trusted_workbench
+  user: project_viewer
+  api_token: projectviewertrustedtoken1234567890abcdefghijklmno
+  expires_at: 2038-01-01 00:00:00
+
 subproject_admin:
   api_client: untrusted
   user: subproject_admin

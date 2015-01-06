@@ -9,6 +9,8 @@ end
 class TestArvTag < Minitest::Test
 
   def test_no_args
+    skip "Waiting unitl #4534 is implemented"
+
     # arv-tag exits with failure if run with no args
     out, err = capture_subprocess_io do
       assert_equal false, arv_tag
@@ -19,6 +21,8 @@ class TestArvTag < Minitest::Test
 
   # Test adding and removing a single tag on a single object.
   def test_single_tag_single_obj
+    skip "TBD"
+
     # Add a single tag.
     tag_uuid, err = capture_subprocess_io do
       assert arv_tag '--short', 'add', 'test_tag1', '--object', 'uuid1'
@@ -53,6 +57,8 @@ class TestArvTag < Minitest::Test
 
   # Test adding and removing a single tag with multiple objects.
   def test_single_tag_multi_objects
+    skip "TBD"
+
     out, err = capture_subprocess_io do
       assert arv_tag('add', 'test_tag1',
                      '--object', 'uuid1',

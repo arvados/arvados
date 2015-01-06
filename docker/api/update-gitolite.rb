@@ -4,6 +4,7 @@ require 'rubygems'
 require 'pp'
 require 'arvados'
 require 'active_support/all'
+require 'yaml'
 
 # This script does the actual gitolite config management on disk.
 #
@@ -34,6 +35,11 @@ gitolite_admin = File.join(File.expand_path(File.dirname(__FILE__)) + '/' + gito
 
 ENV['ARVADOS_API_HOST'] = cp_config['arvados_api_host']
 ENV['ARVADOS_API_TOKEN'] = cp_config['arvados_api_token']
+if cp_config['arvados_api_host_insecure']
+  ENV['ARVADOS_API_HOST_INSECURE'] = 'true'
+else
+  ENV.delete('ARVADOS_API_HOST_INSECURE')
+end
 
 keys = ''
 

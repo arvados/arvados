@@ -37,7 +37,26 @@ $ <code class="userinput">sudo pip install --pre arvados-python-client</code>
 </pre>
 </notextile>
 
-h4. Option 2: build and install from source
+h4. Option 2: install from distribution packages (Debian/Ubuntu only)
+
+First add @http://apt.arvados.org@ to your list of apt repositories:
+
+<notextile>
+<pre>
+$ <code class="userinput">echo "deb http://apt.arvados.org/ wheezy main" | sudo tee /etc/apt/sources.list.d/apt.arvados.org.list</code>
+</pre>
+</notextile>
+
+Then install the package:
+
+<notextile>
+<pre>
+$ <code class="userinput">sudo apt-get update</code>
+$ <code class="userinput">sudo apt-get install python-arvados-python-client</code>
+</pre>
+</notextile>
+
+h4. Option 3: build and install from source
 
 <notextile>
 <pre>

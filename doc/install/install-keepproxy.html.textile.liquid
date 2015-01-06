@@ -23,11 +23,10 @@ h2. Install Keepproxy
 First add the Arvados apt repository, and then install the Keepproxy package.
 
 <notextile>
-<pre><code>~$ <span class="userinput">echo "# apt.arvados.org" > /etc/apt/sources.list.d/apt.arvados.org.list</span>
-~$ <span class="userinput">echo "deb http://apt.arvados.org/ wheezy main" >> /etc/apt/sources.list.d/apt.arvados.org.list</span>
-~$ <span class="userinput">/usr/bin/apt-key adv --keyserver pool.sks-keyservers.net --recv 1078ECD7</span>
-~$ <span class="userinput">/usr/bin/apt-get update</span>
-~$ <span class="userinput">/usr/bin/apt-get install keepproxy</span>
+<pre><code>~$ <span class="userinput">echo "deb http://apt.arvados.org/ wheezy main" | sudo tee /etc/apt/sources.list.d/apt.arvados.org.list</span>
+~$ <span class="userinput">sudo /usr/bin/apt-key adv --keyserver pool.sks-keyservers.net --recv 1078ECD7</span>
+~$ <span class="userinput">sudo /usr/bin/apt-get update</span>
+~$ <span class="userinput">sudo /usr/bin/apt-get install keepproxy</span>
 </code></pre>
 </notextile>
 

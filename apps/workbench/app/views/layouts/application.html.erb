@@ -1,5 +1,5 @@
 <!DOCTYPE html>
-<html>
+<html ng-app="Workbench">
 <head>
   <meta charset="utf-8">
   <title>
@@ -23,6 +23,8 @@
   <%= csrf_meta_tags %>
   <%= yield :head %>
   <%= javascript_tag do %>
+    angular.module('Arvados').value('arvadosApiToken', '<%=Thread.current[:arvados_api_token]%>');
+    angular.module('Arvados').value('arvadosDiscoveryUri', '<%= Rails.configuration.arvados_v1_base.sub '/arvados/v1', '/discovery/v1/apis/arvados/v1/rest' %>');
   <%= yield :js %>
   <% end %>
   <style>

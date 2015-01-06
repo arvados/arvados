@@ -9,7 +9,7 @@ User agreements
 <% end %>
 <% end %>
 
-<%= form_for(unsigned_user_agreements.first, {url: {action: 'sign', controller: 'user_agreements'}, method: 'post'}) do |f| %>
+<%= form_for(unsigned_user_agreements.first, {url: {action: 'sign', controller: 'user_agreements'}, method: :post}) do |f| %>
 <%= hidden_field_tag :return_to, request.url %>
 <div id="open_user_agreement">
   <div class="alert alert-info">

@@ -46,4 +46,48 @@ class ApplicationControllerTest < ActionController::TestCase
     assert_response 422
     check_error_token
   end
+
+  ['foo', '', 'FALSE', 'TRUE', nil, [true], {a:true}, '"true"'].each do |bogus|
+    test "bogus boolean parameter #{bogus.inspect} returns error" do
+      @controller = Arvados::V1::GroupsController.new
+      authorize_with :active
+      post :create, {
+        group: {},
+        ensure_unique_name: bogus
+      }
+      assert_response 422
+      assert_match(/parameter must be a boolean/, json_response['errors'].first,
+                   'Helpful error message not found')
+    end
+  end
+
+  [[true, [true, 'true', 1, '1']],
+   [false, [false, 'false', 0, '0']]].each do |bool, boolparams|
+    boolparams.each do |boolparam|
+      # Ensure boolparam is acceptable as a boolean
+      test "boolean parameter #{boolparam.inspect} acceptable" do
+        @controller = Arvados::V1::GroupsController.new
+        authorize_with :active
+        post :create, {
+          group: {},
+          ensure_unique_name: boolparam
+        }
+        assert_response :success
+      end
+
+      # Ensure boolparam is acceptable as the _intended_ boolean
+      test "boolean parameter #{boolparam.inspect} accepted as #{bool.inspect}" do
+        @controller = Arvados::V1::GroupsController.new
+        authorize_with :active
+        post :create, {
+          group: {
+            name: groups(:aproject).name,
+            owner_uuid: groups(:aproject).owner_uuid
+          },
+          ensure_unique_name: boolparam
+        }
+        assert_response (bool ? :success : 422)
+      end
+    end
+  end
 end

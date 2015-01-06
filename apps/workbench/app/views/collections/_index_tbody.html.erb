@@ -2,11 +2,16 @@
 
 <tr class="collection" data-object-uuid="<%= c.uuid %>">
   <td>
-    <% friendly_name = c.friendly_link_name  %>
-    <% @collection_info[c.uuid][:tag_links].each do |tag_link| %>
-      <% friendly_name += raw(" <span class='label label-info'>#{tag_link.name}</span>") %>
-    <% end %>
-    <%= render :partial => "selection_checkbox", :locals => {:object => c, :friendly_name => friendly_name} %>
+    <%=
+       friendly_name = c.friendly_link_name
+       @collection_info[c.uuid][:tag_links].each do |tag_link|
+         friendly_name += raw(" <span class='label label-info'>#{tag_link.name}</span>")
+       end
+       render partial: "selection_checkbox", locals: {
+         object: c,
+         friendly_name: friendly_name
+       }
+    %>
 
     <%= render :partial => "show_object_button", :locals => {object: c, size: 'xs'} %>
   </td>
