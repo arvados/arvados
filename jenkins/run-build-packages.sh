@@ -94,6 +94,15 @@ version_from_git() {
   echo "0.1.$(date -ud "@$git_ts" +%Y%m%d%H%M%S).$git_hash"
 }
 
+timestamp_from_git() {
+  # Generates a version number from the git log for the current working
+  # directory, and writes it to stdout.
+  local git_ts git_hash
+  declare $(TZ=UTC git log -n1 --first-parent --max-count=1 \
+      --format=format:"git_ts=%ct git_hash=%h" .)
+  echo "$git_ts"
+}
+
 handle_python_package () {
   # This function assumes the current working directory is the python package directory
   if [[ "$UPLOAD" != 0 ]]; then
@@ -368,8 +377,20 @@ cd $WORKSPACE/debs
 build_and_scp_deb $GOPATH/bin/keepstore=/usr/bin/keepstore keepstore 'Curoverse, Inc.' 'dir' "$PKG_VERSION" "--url=https://arvados.org" "--license=GNU Affero General Public License, version 3.0" "--description=Keepstore is the Keep storage daemon, accessible to clients on the LAN"
 
 # keepproxy
+cd "$GOPATH/src/git.curoverse.com/arvados.git/sdk/go"
+GO_SDK_VERSION=$(version_from_git)
+GO_SDK_TIMESTAMP=$(timestamp_from_git)
+
 cd "$GOPATH/src/git.curoverse.com/arvados.git/services/keepproxy"
-PKG_VERSION=$(version_from_git)
+KEEPPROXY_VERSION=$(version_from_git)
+KEEPPROXY_TIMESTAMP=$(timestamp_from_git)
+
+if [[ "$GO_SDK_TIMESTAMP" -gt "$KEEPPROXY_TIMESTAMP" ]]; then
+  PKG_VERSION=$GO_SDK_VERSION
+else
+  PKG_VERSION=$KEEPPROXY_VERSION
+fi
+
 go get "git.curoverse.com/arvados.git/services/keepproxy"
 cd $WORKSPACE/debs
 build_and_scp_deb $GOPATH/bin/keepproxy=/usr/bin/keepproxy keepproxy 'Curoverse, Inc.' 'dir' "$PKG_VERSION" "--url=https://arvados.org" "--license=GNU Affero General Public License, version 3.0" "--description=Keepproxy makes a Keep cluster accessible to clients that are not on the LAN"
