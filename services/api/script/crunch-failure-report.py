@@ -90,18 +90,18 @@ def job_user_name(api, user_uuid):
 job_pipeline_names = {}
 def job_pipeline_name(api, job_uuid):
     def _lookup_pipeline_name(api, job_uuid):
-        pipelines = api.pipeline_instances().list(
-            filters='[["components", "like", "%{}%"]]'.format(job_uuid)).execute()
-        if pipelines['items']:
+        try:
+            pipelines = api.pipeline_instances().list(
+                filters='[["components", "like", "%{}%"]]'.format(job_uuid)).execute()
             pi = pipelines['items'][0]
             if pi['name']:
                 return pi['name']
             else:
                 # Use the pipeline template name
                 pt = api.pipeline_templates().get(uuid=pi['pipeline_template_uuid']).execute()
-                if pt:
-                    return pt['name']
-        return ""
+                return pt['name']
+        except (TypeError, ValueError, IndexError):
+            return ""
 
     if job_uuid not in job_pipeline_names:
         job_pipeline_names[job_uuid] = _lookup_pipeline_name(api, job_uuid)
