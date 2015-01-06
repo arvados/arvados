@@ -4,7 +4,7 @@ class SearchIndex < ActiveRecord::Migration
       "api_client_authorizations" => ["api_token", "created_by_ip_address", "last_used_by_ip_address", "default_owner_uuid"],
       "api_clients" => ["uuid", "owner_uuid", "modified_by_client_uuid", "modified_by_user_uuid", "name", "url_prefix"],
       "authorized_keys" => ["uuid", "owner_uuid", "modified_by_client_uuid", "modified_by_user_uuid", "name", "key_type", "authorized_user_uuid"],
-      "collections" => ["owner_uuid", "modified_by_client_uuid", "modified_by_user_uuid", "portable_data_hash", "redundancy_confirmed_by_client_uuid", "uuid", "name", "description"],
+      "collections" => ["owner_uuid", "modified_by_client_uuid", "modified_by_user_uuid", "portable_data_hash", "redundancy_confirmed_by_client_uuid", "uuid", "name", "description", "file_names"],
       "groups" => ["uuid", "owner_uuid", "modified_by_client_uuid", "modified_by_user_uuid", "name", "description", "group_class"],
       "humans" => ["uuid", "owner_uuid", "modified_by_client_uuid", "modified_by_user_uuid"],
       "job_tasks" => ["uuid", "owner_uuid", "modified_by_client_uuid", "modified_by_user_uuid", "job_uuid", "created_by_job_task_uuid"],

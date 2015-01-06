@@ -169,7 +169,8 @@ CREATE TABLE collections (
     name character varying(255),
     description character varying(524288),
     properties text,
-    expires_at date
+    expires_at date,
+    file_names character varying(65536)
 );
 
 
@@ -1310,7 +1311,7 @@ CREATE UNIQUE INDEX collection_owner_uuid_name_unique ON collections USING btree
 -- Name: collections_search_index; Type: INDEX; Schema: public; Owner: -; Tablespace: 
 --
 
-CREATE INDEX collections_search_index ON collections USING btree (owner_uuid, modified_by_client_uuid, modified_by_user_uuid, portable_data_hash, redundancy_confirmed_by_client_uuid, uuid, name, description);
+CREATE INDEX collections_search_index ON collections USING btree (owner_uuid, modified_by_client_uuid, modified_by_user_uuid, portable_data_hash, redundancy_confirmed_by_client_uuid, uuid, name, description, file_names);
 
 
 --
@@ -2310,5 +2311,7 @@ INSERT INTO schema_migrations (version) VALUES ('20141111133038');
 INSERT INTO schema_migrations (version) VALUES ('20141208164553');
 
 INSERT INTO schema_migrations (version) VALUES ('20141208174553');
+
+INSERT INTO schema_migrations (version) VALUES ('20141208174653');
 
 INSERT INTO schema_migrations (version) VALUES ('20141208185217');
