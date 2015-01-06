@@ -540,7 +540,7 @@ do_test sdk/cli cli
 
 test_apiserver() {
     cd "$WORKSPACE/services/api"
-    RAILS_ENV=test bundle exec rake test ${testargs[apiserver]}
+    RAILS_ENV=test bundle exec rake test ${testargs[services/api]}
 }
 do_test services/api apiserver
 
@@ -558,7 +558,7 @@ done
 
 test_workbench() {
     cd "$WORKSPACE/apps/workbench" \
-        && RAILS_ENV=test bundle exec rake test ${testargs[workbench]}
+        && RAILS_ENV=test bundle exec rake test ${testargs[apps/workbench]}
 }
 do_test apps/workbench workbench
 
