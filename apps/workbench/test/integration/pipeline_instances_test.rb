@@ -313,15 +313,21 @@ class PipelineInstancesTest < ActionDispatch::IntegrationTest
         find('a,button', text: 'Re-run with latest').click
       end
 
-      # Verify that the newly created instance is created in the right project.
-      # In case of project_viewer user, since the use cannot write to the project,
-      # the pipeline should have been created in the user's Home project.
+      # Wait for the dialog to close. (Otherwise, the next assertion
+      # could fail while we're still looking at the source instance
+      # page, even if the correct behavior is about to happen.)
+      assert_no_selector 'body.modal-open'
+
+      # Verify that the newly created instance is created in the right
+      # project. In case of project_viewer user, since the user cannot
+      # write to the project, the pipeline should have been created in
+      # the user's Home project.
       assert_not_equal instance_path, current_path, 'Rerun instance path expected to be different'
-      assert page.has_text? 'Home'
+      assert_text 'Home'
       if in_aproject && (user != 'project_viewer')
-        assert page.has_text? 'A Project'
+        assert_text 'A Project'
       else
-        assert page.has_no_text? 'A Project'
+        assert_no_text? 'A Project'
       end
     end
   end
