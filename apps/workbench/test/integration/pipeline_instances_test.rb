@@ -327,7 +327,7 @@ class PipelineInstancesTest < ActionDispatch::IntegrationTest
       if in_aproject && (user != 'project_viewer')
         assert_text 'A Project'
       else
-        assert_no_text? 'A Project'
+        assert_no_text 'A Project'
       end
     end
   end
