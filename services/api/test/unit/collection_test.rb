@@ -38,4 +38,17 @@ class CollectionTest < ActiveSupport::TestCase
       assert_match /UTF-8/, c.errors.messages[:manifest_text].first
     end
   end
+
+  test 'create and update collection and verify file_names' do
+    act_as_system_user do
+      c = create_collection 'foo', Encoding::US_ASCII
+      assert c.valid?
+      created_file_names = c.file_names
+      assert created_file_names
+
+      c.update_attribute 'manifest_text', ". d41d8cd98f00b204e9800998ecf8427e+0 0:0:foo2.txt\n"
+      assert_not_equal created_file_names, c.file_names
+    end
+  end
+
 end

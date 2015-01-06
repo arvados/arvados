@@ -128,9 +128,15 @@ class Collection < ArvadosModel
   end
 
   def set_file_names
-    if self.manifest_text_changed? and self.manifest_text
-      # set file_names to the first 2^16 bytes of manifest_text
-      self['file_names'] = self[:manifest_text][0,2**16]
+    if self.manifest_text_changed?
+      file_names = []
+      if self.manifest_text
+        self.manifest_text.split.each do |part|
+          file_name = part.rpartition(':')[-1]
+          file_names << file_name if file_name != '.'
+        end
+      end
+      self.file_names = file_names.uniq.join(" ")[0,2**16]
     end
     true
   end
