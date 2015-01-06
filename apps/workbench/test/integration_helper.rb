@@ -32,9 +32,11 @@ class ActionDispatch::IntegrationTest
     # fixture, or passed as a raw string.
     api_token = ((@@API_AUTHS.include? token) ?
                  @@API_AUTHS[token]['api_token'] : token)
-    sep = (path.include? '?') ? '&' : '?'
+    path_parts = path.partition("#")
+    sep = (path_parts.first.include? '?') ? '&' : '?'
     q_string = URI.encode_www_form('api_token' => api_token)
-    "#{path}#{sep}#{q_string}"
+    path_parts.insert(1, "#{sep}#{q_string}")
+    path_parts.join("")
   end
 
   # Find a page element, but return false instead of raising an
