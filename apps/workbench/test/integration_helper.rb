@@ -27,11 +27,52 @@ module WaitForAjax
   end
 end
 
+module HeadlessHelper
+  class HeadlessSingleton
+    def self.get
+      @headless ||= Headless.new reuse: false
+    end
+  end
+
+  Capybara.default_driver = :rack_test
+
+  def self.included base
+    base.class_eval do
+      setup do
+        Capybara.use_default_driver
+        @headless = false
+      end
+
+      teardown do
+        if @headless
+          @headless.stop
+          @headless = false
+        end
+      end
+    end
+  end
+
+  def need_selenium reason=nil
+    Capybara.current_driver = :selenium
+    unless ENV['ARVADOS_TEST_HEADFUL'] or @headless
+      @headless = HeadlessSingleton.get
+      @headless.start
+    end
+  end
+
+  def need_javascript reason=nil
+    unless Capybara.current_driver == :selenium
+      Capybara.current_driver = :poltergeist
+    end
+  end
+end
+
 class ActionDispatch::IntegrationTest
   # Make the Capybara DSL available in all integration tests
   include Capybara::DSL
   include ApiFixtureLoader
   include WaitForAjax
+  include HeadlessHelper
 
   @@API_AUTHS = self.api_fixture('api_client_authorizations')
 
@@ -80,25 +121,5 @@ class ActionDispatch::IntegrationTest
       page.execute_script("window.localStorage.clear()")
     end
     Capybara.reset_sessions!
-  end
-
-  Capybara.default_driver = :rack_test
-
-  setup do
-    Capybara.use_default_driver
-  end
-
-  def need_selenium reason=nil
-    Capybara.current_driver = :selenium
-    unless ENV['ARVADOS_TEST_HEADFUL'] or @headless
-      @headless = Headless.new(display: 101, reuse: true)
-      @headless.start
-    end
-  end
-
-  def need_javascript reason=nil
-    unless Capybara.current_driver == :selenium
-      Capybara.current_driver = :poltergeist
-    end
   end
 end
