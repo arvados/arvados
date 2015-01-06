@@ -167,7 +167,7 @@ CREATE TABLE collections (
     uuid character varying(255),
     manifest_text text,
     name character varying(255),
-    description character varying(131072),
+    description character varying(524288),
     properties text,
     expires_at date
 );
@@ -272,7 +272,7 @@ CREATE TABLE groups (
     modified_by_user_uuid character varying(255),
     modified_at timestamp without time zone,
     name character varying(255) NOT NULL,
-    description character varying(131072),
+    description character varying(524288),
     updated_at timestamp without time zone NOT NULL,
     group_class character varying(255)
 );
@@ -431,7 +431,7 @@ CREATE TABLE jobs (
     supplied_script_version character varying(255),
     docker_image_locator character varying(255),
     priority integer DEFAULT 0 NOT NULL,
-    description character varying(131072),
+    description character varying(524288),
     state character varying(255),
     arvados_sdk_version character varying(255)
 );
@@ -685,7 +685,7 @@ CREATE TABLE pipeline_instances (
     properties text,
     state character varying(255),
     components_summary text,
-    description character varying(131072),
+    description character varying(524288),
     started_at timestamp without time zone,
     finished_at timestamp without time zone
 );
@@ -725,7 +725,7 @@ CREATE TABLE pipeline_templates (
     name character varying(255),
     components text,
     updated_at timestamp without time zone NOT NULL,
-    description character varying(131072)
+    description character varying(524288)
 );
 
 
