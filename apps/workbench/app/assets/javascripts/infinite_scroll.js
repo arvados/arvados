@@ -18,7 +18,7 @@ function maybe_load_more_content(event) {
                             $container.attr('data-infinite-content-href'));
         }
         src = $container.attr('data-infinite-content-href');
-        if (!src)
+        if (!src || !$container.is(':visible'))
             // Finished
             return;
 
@@ -224,6 +224,10 @@ $(document).
                 on('scroll resize', { container: this }, maybe_load_more_content).
                 trigger('scroll');
         });
+    }).
+    on('shown.bs.tab', 'a[data-toggle="tab"]', function(event) {
+        $(event.target.getAttribute('href') + ' [data-infinite-scroller]').
+            trigger('scroll');
     }).
     on('click', 'th[data-sort-order]', function() {
         var direction = $(this).data('sort-order-direction');
