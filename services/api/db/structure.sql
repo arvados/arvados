@@ -170,7 +170,7 @@ CREATE TABLE collections (
     description character varying(524288),
     properties text,
     expires_at date,
-    file_names character varying(65536)
+    file_names character varying(4096)
 );
 
 

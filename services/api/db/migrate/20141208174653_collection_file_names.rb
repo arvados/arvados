@@ -2,7 +2,7 @@ class CollectionFileNames < ActiveRecord::Migration
   include CurrentApiClient
 
   def up
-    add_column :collections, :file_names, :string, :limit => 2**16
+    add_column :collections, :file_names, :string, :limit => 2**12
 
     act_as_system_user do
       Collection.all.each do |c|
@@ -13,7 +13,7 @@ class CollectionFileNames < ActiveRecord::Migration
             file_names << file_name if file_name != '.'
           end
 
-          c.file_names = file_names.uniq.join(" ")[0,2**16]
+          c.file_names = file_names.uniq.join(" ")[0,2**12]
           c.save!
         end
       end

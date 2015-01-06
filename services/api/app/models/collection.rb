@@ -136,7 +136,7 @@ class Collection < ArvadosModel
           file_names << file_name if file_name != '.'
         end
       end
-      self.file_names = file_names.uniq.join(" ")[0,2**16]
+      self.file_names = file_names.uniq.join(" ")[0,2**12]
     end
     true
   end

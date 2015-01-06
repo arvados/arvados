@@ -51,4 +51,22 @@ class CollectionTest < ActiveSupport::TestCase
     end
   end
 
+  test 'create collection with large manifest text and verify file_names' do
+    act_as_system_user do
+      manifest_text = ". d41d8cd98f00b204e9800998ecf8427e+0"
+      index = 0
+      while manifest_text.length < 2**15
+        manifest_text += ' ' + "0:0:foo#{index}.txt"
+        index += 1
+      end
+      manifest_text += "\n"
+
+      c = Collection.create(manifest_text: manifest_text)
+
+      assert c.valid?
+      created_file_names = c.file_names
+      assert created_file_names
+    end
+  end
+
 end
