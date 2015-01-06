@@ -124,15 +124,17 @@ def main(arguments=None, stdout=sys.stdout, stderr=sys.stderr):
     # Find all jobs created within the specified window,
     # and their corresponding job logs.
     jobs_created = jobs_created_between_dates(api, start_time, end_time)
-    jobs_failed     = [job for job in jobs_created if job['state'] == 'Failed']
-    jobs_successful = [job for job in jobs_created if job['state'] == 'Complete']
+    jobs_by_state = {}
+    for job in jobs_created:
+        jobs_by_state.setdefault(job['state'], [])
+        jobs_by_state[job['state']].append(job)
 
     # Find failed jobs and record the job failure text.
 
     # failure_stats maps failure types (e.g. "sys/docker") to
     # a set of job UUIDs that failed for that reason.
     failure_stats = {}
-    for job in jobs_failed:
+    for job in jobs_by_state['Failed']:
         job_uuid = job['uuid']
         logs = job_logs(api, job)
         # Find the first permanent task failure, and collect the
@@ -165,21 +167,14 @@ def main(arguments=None, stdout=sys.stdout, stderr=sys.stderr):
     print ""
 
     job_start_count = len(jobs_created)
-    job_success_count = len(jobs_successful)
-    job_fail_count = len(jobs_failed)
-    job_unfinished_count = job_start_count - job_success_count - job_fail_count
-
-    print "  {: <25s} {:4d}".format('Started',
-                                    job_start_count)
-    print "  {: <25s} {:4d} ({: >4.0%})".format('Successful',
-                                                job_success_count,
-                                                job_success_count / float(job_start_count))
-    print "  {: <25s} {:4d} ({: >4.0%})".format('Failed',
-                                                job_fail_count,
-                                                job_fail_count / float(job_start_count))
-    print "  {: <25s} {:4d} ({: >4.0%})".format('In progress',
-                                                job_unfinished_count,
-                                                job_unfinished_count / float(job_start_count))
+    print "  {: <25s} {:4d}".format('Started', job_start_count)
+    for state in ['Complete', 'Failed', 'Queued', 'Cancelled', 'Running']:
+        if state in jobs_by_state:
+            job_count = len(jobs_by_state[state])
+            job_percentage = job_count / float(job_start_count)
+            print "  {: <25s} {:4d} ({: >4.0%})".format(state,
+                                                        job_count,
+                                                        job_percentage)
     print ""
 
     # Report failure types.
@@ -188,17 +183,18 @@ def main(arguments=None, stdout=sys.stdout, stderr=sys.stderr):
 
     # Generate a mapping from failed job uuids to job records, to assist
     # in generating detailed statistics for job failures.
-    jobs_failed_map = { job['uuid']: job for job in jobs_failed }
+    jobs_failed_map = { job['uuid']: job for job in jobs_by_state.get('Failed', []) }
 
     # sort the failure stats in descending order by occurrence.
-    sorted_failures = sorted(failure_stats.items(),
+    sorted_failures = sorted(failure_stats,
                              reverse=True,
-                             key=lambda failed_job_list: len(failed_job_list))
-    for failtype, job_uuids in sorted_failures:
+                             key=lambda failure_type: len(failure_stats[failure_type]))
+    for failtype in sorted_failures:
+        job_uuids = failure_stats[failtype]
         failstat = "  {: <25s} {:4d} ({: >4.0%})\n".format(
             failtype,
             len(job_uuids),
-            len(job_uuids) / float(job_fail_count))
+            len(job_uuids) / float(len(jobs_by_state['Failed'])))
         failure_summary = failure_summary + failstat
         failure_detail = failure_detail + failstat
         for j in job_uuids:
