@@ -388,45 +388,40 @@ class ArvadosFileReaderTestCase(StreamFileReaderTestCase):
         sfile.read(5)
         self.assertEqual(3, sfile.tell())
 
-# class StreamReaderTestCase(unittest.TestCase, StreamRetryTestMixin):
-#     def reader_for(self, coll_name, **kwargs):
-#         return StreamReader(self.manifest_for(coll_name).split(),
-#                             self.keep_client(), **kwargs)
 
-#     def read_for_test(self, reader, byte_count, **kwargs):
-#         return reader.readfrom(0, byte_count, **kwargs)
+class ArvadosFileReadTestCase(unittest.TestCase, StreamRetryTestMixin):
+    def reader_for(self, coll_name, **kwargs):
+        segments = []
+        n = 0
+        for d in self.manifest_for(coll_name).split():
+            k = KeepLocator(loc)
+            segments.append(Range(d, n, k.size))
+            n += k.size
+        af = ArvadosFile(Collection(keep_client=self.keep_client()),
+                         stream=self.manifest_for(coll_name).split(),
+                         segments=segments,
+                         **kwargs)
+        return ArvadosFileReader(af, "test")
 
-#     def test_manifest_text_without_keep_client(self):
-#         mtext = self.manifest_for('multilevel_collection_1')
-#         for line in mtext.rstrip('\n').split('\n'):
-#             reader = StreamReader(line.split())
-#             self.assertEqual(line + '\n', reader.manifest_text())
-
-
-# class StreamFileReadTestCase(unittest.TestCase, StreamRetryTestMixin):
-#     def reader_for(self, coll_name, **kwargs):
-#         return StreamReader(self.manifest_for(coll_name).split(),
-#                             self.keep_client(), **kwargs).all_files()[0]
-
-#     def read_for_test(self, reader, byte_count, **kwargs):
-#         return reader.read(byte_count, **kwargs)
+    def read_for_test(self, reader, byte_count, **kwargs):
+        return reader.read(byte_count, **kwargs)
 
 
-# class StreamFileReadFromTestCase(StreamFileReadTestCase):
-#     def read_for_test(self, reader, byte_count, **kwargs):
-#         return reader.readfrom(0, byte_count, **kwargs)
+class ArvadosFileReadFromTestCase(ArvadosFileReadTestCase):
+    def read_for_test(self, reader, byte_count, **kwargs):
+        return reader.readfrom(0, byte_count, **kwargs)
 
 
-# class StreamFileReadAllTestCase(StreamFileReadTestCase):
-#     def read_for_test(self, reader, byte_count, **kwargs):
-#         return ''.join(reader.readall(**kwargs))
+class ArvadosFileReadAllTestCase(ArvadosFileReadTestCase):
+    def read_for_test(self, reader, byte_count, **kwargs):
+        return ''.join(reader.readall(**kwargs))
 
 
-# class StreamFileReadAllDecompressedTestCase(StreamFileReadTestCase):
-#     def read_for_test(self, reader, byte_count, **kwargs):
-#         return ''.join(reader.readall_decompressed(**kwargs))
+class ArvadosFileReadAllDecompressedTestCase(ArvadosFileReadTestCase):
+    def read_for_test(self, reader, byte_count, **kwargs):
+        return ''.join(reader.readall_decompressed(**kwargs))
 
 
-# class StreamFileReadlinesTestCase(StreamFileReadTestCase):
-#     def read_for_test(self, reader, byte_count, **kwargs):
-#         return ''.join(reader.readlines(**kwargs))
+class ArvadosFileReadlinesTestCase(ArvadosFileReadTestCase):
+    def read_for_test(self, reader, byte_count, **kwargs):
+        return ''.join(reader.readlines(**kwargs))
