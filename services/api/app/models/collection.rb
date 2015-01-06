@@ -10,6 +10,7 @@ class Collection < ArvadosModel
   before_validation :strip_manifest_text
   before_validation :set_portable_data_hash
   validate :ensure_hash_matches_manifest_text
+  before_save :set_file_names
 
   # Query only undeleted collections by default.
   default_scope where("expires_at IS NULL or expires_at > CURRENT_TIMESTAMP")
@@ -124,6 +125,14 @@ class Collection < ArvadosModel
                  "does not match computed hash #{expect_pdh}")
       return false
     end
+  end
+
+  def set_file_names
+    if self.manifest_text_changed? and self.manifest_text
+      # set file_names to the first 2^16 bytes of manifest_text
+      self['file_names'] = self[:manifest_text][0,2**16]
+    end
+    true
   end
 
   def check_encoding
