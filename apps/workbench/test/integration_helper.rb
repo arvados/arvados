@@ -12,8 +12,6 @@ Capybara.register_driver :poltergeist do |app|
   }
 end
 
-Headless.new.start
-
 module WaitForAjax
   Capybara.default_wait_time = 5
   def wait_for_ajax
@@ -24,6 +22,22 @@ module WaitForAjax
 
   def finished_all_ajax_requests?
     page.evaluate_script('jQuery.active').zero?
+  end
+end
+
+module AssertDomEvent
+  # Yield the supplied block, then wait for an event to arrive at a
+  # DOM element.
+  def assert_triggers_dom_event events, target='body'
+    magic = 'RXC0lObcVwEXwSvA'
+    page.evaluate_script <<eos
+      $('#{target}').one('#{events}', function() {
+        $('body').append('<div id="#{magic}"></div>');
+      });
+eos
+    yield
+    assert_selector "##{magic}"
+    page.evaluate_script "$('##{magic}').remove();";
   end
 end
 
@@ -72,6 +86,7 @@ class ActionDispatch::IntegrationTest
   include Capybara::DSL
   include ApiFixtureLoader
   include WaitForAjax
+  include AssertDomEvent
   include HeadlessHelper
 
   @@API_AUTHS = self.api_fixture('api_client_authorizations')

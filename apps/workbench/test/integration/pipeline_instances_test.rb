@@ -299,7 +299,9 @@ class PipelineInstancesTest < ActionDispatch::IntegrationTest
 
       # Now re-run the pipeline
       if with_options
-        find('a,button', text: 'Re-run options').click
+        assert_triggers_dom_event 'shown.bs.modal' do
+          find('a,button', text: 'Re-run options').click
+        end
         within('.modal-dialog') do
           page.assert_selector 'a,button', text: 'Copy and edit inputs'
           page.assert_selector 'a,button', text: 'Run now'
@@ -312,11 +314,6 @@ class PipelineInstancesTest < ActionDispatch::IntegrationTest
       else
         find('a,button', text: 'Re-run with latest').click
       end
-
-      # Wait for the dialog to close. (Otherwise, the next assertion
-      # could fail while we're still looking at the source instance
-      # page, even if the correct behavior is about to happen.)
-      assert_no_selector 'body.modal-open'
 
       # Verify that the newly created instance is created in the right
       # project. In case of project_viewer user, since the user cannot
