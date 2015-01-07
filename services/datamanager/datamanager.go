@@ -7,7 +7,7 @@ import (
 	"git.curoverse.com/arvados.git/sdk/go/arvadosclient"
 	"git.curoverse.com/arvados.git/sdk/go/util"
 	"git.curoverse.com/arvados.git/services/datamanager/collection"
-//	"git.curoverse.com/arvados.git/services/datamanager/keep"
+	"git.curoverse.com/arvados.git/services/datamanager/keep"
 	"log"
 )
 
@@ -27,29 +27,35 @@ func main() {
 
 	// TODO(misha): Read Collections and Keep Contents concurrently as goroutines.
 
-	readCollections := collection.GetCollections(
-		collection.GetCollectionsParams{
-			Client: arv, BatchSize: 500})
+	// readCollections := collection.GetCollections(
+	// 	collection.GetCollectionsParams{
+	// 		Client: arv, BatchSize: 500})
 
-	//log.Printf("Read Collections: %v", readCollections)
+	// UserUsage := ComputeSizeOfOwnedCollections(readCollections)
+	// log.Printf("Uuid to Size used: %v", UserUsage)
 
-	UserUsage := ComputeSizeOfOwnedCollections(readCollections)
-	log.Printf("Uuid to Size used: %v", UserUsage)
+	// // TODO(misha): Add a "readonly" flag. If we're in readonly mode,
+	// // lots of behaviors can become warnings (and obviously we can't
+	// // write anything).
+	// // if !readCollections.ReadAllCollections {
+	// // 	log.Fatalf("Did not read all collections")
+	// // }
 
-	// TODO(misha): Add a "readonly" flag. If we're in readonly mode,
-	// lots of behaviors can become warnings (and obviously we can't
-	// write anything).
-	// if !readCollections.ReadAllCollections {
-	// 	log.Fatalf("Did not read all collections")
-	// }
+	// log.Printf("Read and processed %d collections",
+	// 	len(readCollections.UuidToCollection))
 
-	log.Printf("Read and processed %d collections",
-		len(readCollections.UuidToCollection))
+	readServers := keep.GetKeepServers(
+		keep.GetKeepServersParams{Client: arv, Limit: 1000})
 
-	// readServers := keep.GetKeepServers(
-	// 	keep.GetKeepServersParams{Client: arv, Limit: 1000})
+	log.Printf("Returned %d keep disks", len(readServers.ServerToContents))
 
-	// log.Printf("Returned %d keep disks", len(readServers.AddressToContents))
+	blockReplicationCounts := make(map[int]int)
+	for _, infos := range readServers.BlockToServers {
+		replication := len(infos)
+		blockReplicationCounts[replication] += 1
+	}
+
+	log.Printf("Replication level distribution: %v", blockReplicationCounts)
 }
 
 func ComputeSizeOfOwnedCollections(readCollections collection.ReadCollections) (
