@@ -1,15 +1,8 @@
 require 'integration_helper'
-require 'selenium-webdriver'
-require 'headless'
 
 class ProjectsTest < ActionDispatch::IntegrationTest
   setup do
-    headless = Headless.new
-    headless.start
-    Capybara.current_driver = :selenium
-
-    # project tests need bigger page size to be able to see all the buttons
-    Capybara.current_session.driver.browser.manage.window.resize_to(1152, 768)
+    need_javascript
   end
 
   test 'Check collection count for A Project in the tab pane titles' do
@@ -226,7 +219,11 @@ class ProjectsTest < ActionDispatch::IntegrationTest
       assert(has_link?("Write"),
              "failed to change access level on new share")
       click_on "Revoke"
-      page.driver.browser.switch_to.alert.accept
+      if Capybara.current_driver == :selenium
+        page.driver.browser.switch_to.alert.accept
+      else
+        # poltergeist returns true for confirm(), so we don't need to accept.
+      end
     end
     wait_for_ajax
     using_wait_time(Capybara.default_wait_time * 3) do
@@ -485,8 +482,11 @@ class ProjectsTest < ActionDispatch::IntegrationTest
       assert_selector 'li', text: 'Remove selected'
     end
 
+    # Close the dropdown by clicking outside it.
+    find('.dropdown-toggle', text: 'Selection').find(:xpath, '..').click
+
     # Go back to Data collections tab
-    click_link 'Data collections'
+    find('.nav-tabs a', text: 'Data collections').click
     click_button 'Selection'
     within('.selection-action-container') do
       assert_no_selector 'li.disabled', text: 'Create new collection with selected collections'
@@ -748,6 +748,7 @@ class ProjectsTest < ActionDispatch::IntegrationTest
   test "first tab loads data when visiting other tab directly" do
     # As of 2014-12-19, the first tab of project#show uses infinite scrolling.
     # Make sure that it loads data even if we visit another tab directly.
+    need_selenium 'to land on specified tab using {url}#Advanced'
     project = api_fixture("groups", "aproject")
     visit(page_with_token("active_trustedclient",
                           "/projects/#{project['uuid']}#Advanced"))

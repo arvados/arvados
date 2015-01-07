@@ -1,13 +1,8 @@
 require 'integration_helper'
-require 'selenium-webdriver'
-require 'headless'
 
 class UserProfileTest < ActionDispatch::IntegrationTest
   setup do
-    headless = Headless.new
-    headless.start
-    Capybara.current_driver = :selenium
-
+    need_javascript
     @user_profile_form_fields = Rails.configuration.user_profile_form_fields
   end
 

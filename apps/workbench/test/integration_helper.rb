@@ -4,6 +4,14 @@ require 'capybara/poltergeist'
 require 'uri'
 require 'yaml'
 
+Capybara.register_driver :poltergeist do |app|
+  Capybara::Poltergeist::Driver.new app, {
+    window_size: [1200, 800],
+    phantomjs_options: ['--ignore-ssl-errors=true'],
+    inspector: true,
+  }
+end
+
 module WaitForAjax
   Capybara.default_wait_time = 5
   def wait_for_ajax
@@ -17,11 +25,69 @@ module WaitForAjax
   end
 end
 
+module AssertDomEvent
+  # Yield the supplied block, then wait for an event to arrive at a
+  # DOM element.
+  def assert_triggers_dom_event events, target='body'
+    magic = 'RXC0lObcVwEXwSvA-' + rand(2**20).to_s(36)
+    page.evaluate_script <<eos
+      $('#{target}').one('#{events}', function() {
+        $('body').append('<div id="#{magic}"></div>');
+      });
+eos
+    yield
+    assert_selector "##{magic}"
+    page.evaluate_script "$('##{magic}').remove();";
+  end
+end
+
+module HeadlessHelper
+  class HeadlessSingleton
+    def self.get
+      @headless ||= Headless.new reuse: false
+    end
+  end
+
+  Capybara.default_driver = :rack_test
+
+  def self.included base
+    base.class_eval do
+      setup do
+        Capybara.use_default_driver
+        @headless = false
+      end
+
+      teardown do
+        if @headless
+          @headless.stop
+          @headless = false
+        end
+      end
+    end
+  end
+
+  def need_selenium reason=nil
+    Capybara.current_driver = :selenium
+    unless ENV['ARVADOS_TEST_HEADFUL'] or @headless
+      @headless = HeadlessSingleton.get
+      @headless.start
+    end
+  end
+
+  def need_javascript reason=nil
+    unless Capybara.current_driver == :selenium
+      Capybara.current_driver = :poltergeist
+    end
+  end
+end
+
 class ActionDispatch::IntegrationTest
   # Make the Capybara DSL available in all integration tests
   include Capybara::DSL
   include ApiFixtureLoader
   include WaitForAjax
+  include AssertDomEvent
+  include HeadlessHelper
 
   @@API_AUTHS = self.api_fixture('api_client_authorizations')
 
