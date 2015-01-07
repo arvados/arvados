@@ -133,5 +133,63 @@ class CollectionsApiTest < ActionDispatch::IntegrationTest
     assert_equal 'a name', json_response['name']
   end
 
+  test "create collection, verify file_names not returned, and search with filename" do
+    signing_opts = {
+      key: Rails.configuration.blob_signing_key,
+      api_token: api_token(:active),
+    }
+    signed_locator = Blob.sign_locator('bad42fa702ae3ea7d999fef11b46f450+44', signing_opts)
 
+    post "/arvados/v1/collections", {
+      format: :json,
+      collection: "{\"manifest_text\":\". #{signed_locator} 0:44:my_test_file.txt\\n\"}"
+    }, auth(:active)
+    assert_response 200
+    assert_equal '0f99f4087beb13dec46d36db9fa6cebf+60', json_response['portable_data_hash']
+    assert_nil json_response['description']
+    assert_nil json_response['file_names']
+
+    put "/arvados/v1/collections/#{json_response['uuid']}", {
+      format: :json,
+      collection: { description: "my test collection description" }
+    }, auth(:active)
+    assert_response :success
+    assert_equal 'my test collection description', json_response['description']
+    assert_equal '0f99f4087beb13dec46d36db9fa6cebf+60', json_response['portable_data_hash']
+    assert_nil json_response['file_names']
+
+    get '/arvados/v1/collections', {
+      where: { any: ['contains', '87beb13dec46d36db9fa'] }
+    }, auth(:active)
+    assert_response :success
+    response_items = json_response['items']
+    assert_not_nil response_items
+    first_item = json_response['items'].first
+    assert_not_nil first_item
+    assert_equal 'my test collection description', first_item['description']
+    assert_equal '0f99f4087beb13dec46d36db9fa6cebf+60', first_item['portable_data_hash']
+    assert_nil first_item['file_names']
+
+    get '/arvados/v1/collections', {
+      where: { any: ['contains', 'my_test_file.txt'] }
+    }, auth(:active)
+    assert_response :success
+    response_items = json_response['items']
+    assert_not_nil response_items
+    assert_equal 1, response_items.size
+    first_item = response_items.first
+    assert_not_nil first_item
+    assert_equal 'my test collection description', first_item['description']
+    assert_equal '0f99f4087beb13dec46d36db9fa6cebf+60', first_item['portable_data_hash']
+    assert_nil first_item['file_names']
+
+    get '/arvados/v1/collections', {
+      where: { any: ['contains', 'there_is_no_such_file.txt'] }
+    }, auth(:active)
+    assert_response :success
+    assert_equal 0, json_response['items_available']
+    response_items = json_response['items']
+    assert_not_nil response_items
+    assert_equal 0, response_items.size
+  end
 end
