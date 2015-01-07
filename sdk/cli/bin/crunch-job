@@ -1854,7 +1854,7 @@ if (@ARGV) {
   my $pkgs;
   if ($venv_built) {
     $Log->("Running in Python SDK virtualenv");
-    $pkgs = `. \Q$venv_dir/bin/activate\E && ((pip freeze 2>/dev/null | grep arvados) || dpkg --show '*arvados*')`;
+    $pkgs = `((\Q$venv_dir/bin/pip\E freeze 2>/dev/null | grep arvados) || dpkg --show '*arvados*')`;
     my $orig_argv = join(" ", map { quotemeta($_); } @ARGV);
     @ARGV = ("/bin/sh", "-ec",
              ". \Q$venv_dir/bin/activate\E; exec $orig_argv");
