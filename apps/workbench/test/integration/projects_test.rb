@@ -748,6 +748,7 @@ class ProjectsTest < ActionDispatch::IntegrationTest
   test "first tab loads data when visiting other tab directly" do
     # As of 2014-12-19, the first tab of project#show uses infinite scrolling.
     # Make sure that it loads data even if we visit another tab directly.
+    need_selenium 'to land on specified tab using {url}#Advanced'
     project = api_fixture("groups", "aproject")
     visit(page_with_token("active_trustedclient",
                           "/projects/#{project['uuid']}#Advanced"))
