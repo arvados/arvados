@@ -225,6 +225,10 @@ $(document).
                 trigger('scroll');
         });
     }).
+    on('shown.bs.tab', 'a[data-toggle="tab"]', function(event) {
+        $(event.target.getAttribute('href') + ' [data-infinite-scroller]').
+            trigger('scroll');
+    }).
     on('click', 'th[data-sort-order]', function() {
         var direction = $(this).data('sort-order-direction');
         // reverse the current direction, or do ascending if none
