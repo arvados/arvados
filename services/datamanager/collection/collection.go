@@ -10,13 +10,16 @@ import (
 	//"git.curoverse.com/arvados.git/sdk/go/util"
 	"log"
 	"os"
+	"runtime"
 	"runtime/pprof"
 	"time"
 )
 
 var (
 	heap_profile_filename string
-	heap_profile *os.File
+	// globals for debugging
+	totalManifestSize uint64
+	maxManifestSize uint64
 )
 
 type Collection struct {
@@ -66,20 +69,34 @@ func init() {
 // 	return len(s.Items), nil
 // }
 
+// Write the heap profile to a file for later review.
+// Since a file is expected to only contain a single heap profile this
+// function overwrites the previously written profile, so it is safe
+// to call multiple times in a single run.
+// Otherwise we would see cumulative numbers as explained here:
+// https://groups.google.com/d/msg/golang-nuts/ZyHciRglQYc/2nh4Ndu2fZcJ
+func WriteHeapProfile() {
+	if heap_profile_filename != "" {
+
+		heap_profile, err := os.Create(heap_profile_filename)
+		if err != nil {
+			log.Fatal(err)
+		}
+
+		defer heap_profile.Close()
+
+		err = pprof.WriteHeapProfile(heap_profile)
+		if err != nil {
+			log.Fatal(err)
+		}
+	}
+}
+
+
 func GetCollections(params GetCollectionsParams) (results ReadCollections) {
 	if &params.Client == nil {
 		log.Fatalf("params.Client passed to GetCollections() should " +
 			"contain a valid ArvadosClient, but instead it is nil.")
-	}
-
-	// TODO(misha): move this code somewhere better and make sure it's
-	// only run once
-	if heap_profile_filename != "" {
-		var err error
-		heap_profile, err = os.Create(heap_profile_filename)
-		if err != nil {
-			log.Fatal(err)
-		}
 	}
 
 	fieldsWanted := []string{"manifest_text",
@@ -101,19 +118,6 @@ func GetCollections(params GetCollectionsParams) (results ReadCollections) {
 	// MISHA UNDO THIS TEMPORARY HACK TO FIND BUG!
 	sdkParams["limit"] = 50
 
-	// {
-	// 	var numReceived, numAvailable int
-	// 	results.ReadAllCollections, numReceived, numAvailable =
-	// 		util.ContainsAllAvailableItems(collections)
-
-	// 	if (!results.ReadAllCollections) {
-	// 		log.Printf("ERROR: Did not receive all collections.")
-	// 	}
-	// 	log.Printf("Received %d of %d available collections.",
-	// 		numReceived,
-	// 		numAvailable)
-	// }
-
 	initialNumberOfCollectionsAvailable := NumberCollectionsAvailable(params.Client)
 	// Include a 1% margin for collections added while we're reading so
 	// that we don't have to grow the map in most cases.
@@ -129,12 +133,7 @@ func GetCollections(params GetCollectionsParams) (results ReadCollections) {
 		// We're still finding new collections
 
 		// Write the heap profile for examining memory usage
-		if heap_profile != nil {
-			err := pprof.WriteHeapProfile(heap_profile)
-			if err != nil {
-				log.Fatal(err)
-			}
-		}
+		WriteHeapProfile()
 
 		// Get next batch of collections.
 		var collections SdkCollectionList
@@ -152,19 +151,19 @@ func GetCollections(params GetCollectionsParams) (results ReadCollections) {
 		totalCollections = len(results.UuidToCollection)
 
 		log.Printf("%d collections read, %d new in last batch, " +
-			"%s latest modified date",
+			"%s latest modified date, %.0f %d %d avg,max,total manifest size",
 			totalCollections,
 			totalCollections - previousTotalCollections,
-			sdkParams["filters"].([][]string)[0][2])
+			sdkParams["filters"].([][]string)[0][2],
+			float32(totalManifestSize)/float32(totalCollections),
+			maxManifestSize, totalManifestSize)
 	}
 
+	// Just in case this lowers the numbers reported in the heap profile.
+	runtime.GC()
+
 	// Write the heap profile for examining memory usage
-	if heap_profile != nil {
-		err := pprof.WriteHeapProfile(heap_profile)
-		if err != nil {
-			log.Fatal(err)
-		}
-	}
+	WriteHeapProfile()
 
 	return
 }
@@ -198,6 +197,13 @@ func ProcessCollections(receivedCollections []SdkCollectionInfo,
 			latestModificationDate = sdkCollection.ModifiedAt
 		}
 		manifest := manifest.Manifest{sdkCollection.ManifestText}
+		manifestSize := uint64(len(sdkCollection.ManifestText))
+
+		totalManifestSize += manifestSize
+		if manifestSize > maxManifestSize {
+			maxManifestSize = manifestSize
+		}
+		
 		blockChannel := manifest.BlockIterWithDuplicates()
 		for block := range blockChannel {
 			if stored_size, stored := collection.BlockDigestToSize[block.Digest];
