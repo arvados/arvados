@@ -1,14 +1,10 @@
 require 'diagnostics_test_helper'
-require 'selenium-webdriver'
-require 'headless'
 
 class PipelineTest < DiagnosticsTest
   pipelines_to_test = Rails.configuration.pipelines_to_test.andand.keys
 
   setup do
-    headless = Headless.new
-    headless.start
-    Capybara.current_driver = :selenium
+    need_javascript
   end
 
   pipelines_to_test.andand.each do |pipeline_to_test|
