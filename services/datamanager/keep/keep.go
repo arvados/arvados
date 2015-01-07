@@ -8,6 +8,7 @@ import (
 	"fmt"
 	//"git.curoverse.com/arvados.git/sdk/go/keepclient"
 	"git.curoverse.com/arvados.git/sdk/go/arvadosclient"
+	"git.curoverse.com/arvados.git/sdk/go/blockdigest"
 	"git.curoverse.com/arvados.git/sdk/go/manifest"
 	"git.curoverse.com/arvados.git/sdk/go/util"
 	"log"
@@ -23,14 +24,22 @@ type ServerAddress struct {
 	Port int `json:"service_port"`
 }
 
+// Info about a particular block returned by the server
 type BlockInfo struct {
-	Digest     string
+	Digest     blockdigest.BlockDigest
 	Size       int
 	Mtime      int  // TODO(misha): Replace this with a timestamp.
 }
 
+// Info about a specified block given by a server
+type BlockServerInfo struct {
+	ServerIndex int
+	Size        int
+	Mtime       int  // TODO(misha): Replace this with a timestamp.
+}
+
 type ServerContents struct {
-	BlockDigestToInfo map[string]BlockInfo
+	BlockDigestToInfo map[blockdigest.BlockDigest]BlockInfo
 }
 
 type ServerResponse struct {
@@ -40,7 +49,10 @@ type ServerResponse struct {
 
 type ReadServers struct {
 	ReadAllServers bool
-	AddressToContents map[ServerAddress]ServerContents
+	KeepServerIndexToAddress []ServerAddress
+	KeepServerAddressToIndex map[ServerAddress]int
+	ServerToContents map[ServerAddress]ServerContents
+	BlockToServers map[blockdigest.BlockDigest][]BlockServerInfo
 }
 
 type GetKeepServersParams struct {
@@ -130,6 +142,14 @@ func GetKeepServers(params GetKeepServersParams) (results ReadServers) {
 			numAvailable)
 	}
 
+	results.KeepServerIndexToAddress = sdkResponse.KeepServers
+	results.KeepServerAddressToIndex = make(map[ServerAddress]int)
+	for i, address := range results.KeepServerIndexToAddress {
+		results.KeepServerAddressToIndex[address] = i
+	}
+
+	log.Printf("Got Server Addresses: %v", results)
+
 	// This is safe for concurrent use
 	client := http.Client{}
 
@@ -139,7 +159,8 @@ func GetKeepServers(params GetKeepServersParams) (results ReadServers) {
 		go GetServerContents(keepServer, client, responseChan)
 	}
 
-	results.AddressToContents = make(map[ServerAddress]ServerContents)
+	results.ServerToContents = make(map[ServerAddress]ServerContents)
+	results.BlockToServers = make(map[blockdigest.BlockDigest][]BlockServerInfo)
 
 	// Read all the responses
 	for i := range sdkResponse.KeepServers {
@@ -148,7 +169,15 @@ func GetKeepServers(params GetKeepServersParams) (results ReadServers) {
 		log.Printf("Received channel response from %v containing %d files",
 			response.Address,
 			len(response.Contents.BlockDigestToInfo))
-		results.AddressToContents[response.Address] = response.Contents
+		results.ServerToContents[response.Address] = response.Contents
+		serverIndex := results.KeepServerAddressToIndex[response.Address]
+		for _, blockInfo := range response.Contents.BlockDigestToInfo {
+			results.BlockToServers[blockInfo.Digest] = append(
+				results.BlockToServers[blockInfo.Digest],
+				BlockServerInfo{ServerIndex: serverIndex,
+					Size: blockInfo.Size,
+					Mtime: blockInfo.Mtime})
+		}
 	}
 	return
 }
@@ -183,7 +212,8 @@ func GetServerContents(keepServer ServerAddress,
 
 	response := ServerResponse{}
 	response.Address = keepServer
-	response.Contents.BlockDigestToInfo = make(map[string]BlockInfo)
+	response.Contents.BlockDigestToInfo =
+		make(map[blockdigest.BlockDigest]BlockInfo)
 	scanner := bufio.NewScanner(resp.Body)
 	numLines, numDuplicates, numSizeDisagreements := 0, 0, 0
 	for scanner.Scan() {
