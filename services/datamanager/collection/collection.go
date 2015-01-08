@@ -125,7 +125,9 @@ func GetCollections(params GetCollectionsParams) (results ReadCollections) {
 
 	if params.Logger != nil {
 		properties,_ := params.Logger.Edit()
-		properties["num_collections_at_start"] = initialNumberOfCollectionsAvailable
+		collectionInfo := make(map[string]interface{})
+		collectionInfo["num_collections_at_start"] = initialNumberOfCollectionsAvailable
+		properties["collection_info"] = collectionInfo
 		params.Logger.Record()
 	}
 
@@ -164,10 +166,11 @@ func GetCollections(params GetCollectionsParams) (results ReadCollections) {
 
 		if params.Logger != nil {
 			properties,_ := params.Logger.Edit()
-			properties["collections_read"] = totalCollections
-			properties["latest_modified_date"] = sdkParams["filters"].([][]string)[0][2]
-			properties["total_manifest_size"] = totalManifestSize
-			properties["max_manifest_size"] = maxManifestSize
+			collectionInfo := properties["collection_info"].(map[string]interface{})
+			collectionInfo["collections_read"] = totalCollections
+			collectionInfo["latest_modified_date"] = sdkParams["filters"].([][]string)[0][2]
+			collectionInfo["total_manifest_size"] = totalManifestSize
+			collectionInfo["max_manifest_size"] = maxManifestSize
 			params.Logger.Record()
 		}
 	}
