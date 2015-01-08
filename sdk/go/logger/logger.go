@@ -1,4 +1,4 @@
-// Periodically writes a log to the Arvados SDK.
+// Logger periodically writes a log to the Arvados SDK.
 //
 // This package is useful for maintaining a log object that is built
 // up over time. Every time the object is modified, it will be written
@@ -22,7 +22,6 @@
 //   // entry will only take the fields listed at http://doc.arvados.org/api/schema/Log.html
 // }
 // arvLogger.Record()  // This triggers the actual log write
-
 package logger
 
 import (
@@ -41,11 +40,16 @@ type LoggerParams struct {
 // A Logger is used to build up a log entry over time and write every
 // version of it.
 type Logger struct {
+	// The Data we write
 	data        map[string]interface{}  // The entire map that we give to the api
-	entry       map[string]interface{}  // convenience shortcut into data
-	properties  map[string]interface{}  // convenience shortcut into data
-	lock        sync.Locker             // Synchronizes editing and writing
-	params      LoggerParams            // parameters we were given
+	entry       map[string]interface{}  // Convenience shortcut into data
+	properties  map[string]interface{}  // Convenience shortcut into data
+
+	lock        sync.Locker   // Synchronizes editing and writing
+	params      LoggerParams  // Parameters we were given
+
+	lastWrite   time.Time  // The last time we wrote a log entry
+	modified    bool       // Has this data been modified since the last write
 }
 
 // Create a new logger based on the specified parameters.
@@ -53,8 +57,6 @@ func NewLogger(params LoggerParams) *Logger {
 	// TODO(misha): Add some params checking here.
 	l := &Logger{data: make(map[string]interface{}),
 		lock: &sync.Mutex{},
-		// TODO(misha): Consider copying the params so they're not
-		// modified after creation.
 		params: params}
 	l.entry = make(map[string]interface{})
 	l.data["log"] = l.entry
@@ -72,17 +74,35 @@ func NewLogger(params LoggerParams) *Logger {
 // properties is a shortcut for entry["properties"].(map[string]interface{})
 func (l *Logger) Edit() (properties map[string]interface{}, entry map[string]interface{}) {
 	l.lock.Lock()
+	l.modified = true  // We don't actually know the caller will modifiy the data, but we assume they will.
 	return l.properties, l.entry
 }
 
-// Write the log entry you've built up so far. Do not edit the maps returned by Edit() after calling this method.
+// Write the log entry you've built up so far. Do not edit the maps
+// returned by Edit() after calling this method.
+// If you have already written within MinimumWriteInterval, then this
+// will schedule a future write instead.
+// In either case, the lock will be released before Record() returns.
 func (l *Logger) Record() {
-	// TODO(misha): Add a check (and storage) to make sure we respect MinimumWriteInterval
-	l.write()
+	if l.writeAllowedNow() {
+		// We haven't written in the allowed interval yet, try to write.
+		l.write()
+	} else {
+		nextTimeToWrite := l.lastWrite.Add(l.params.MinimumWriteInterval)
+		writeAfter := nextTimeToWrite.Sub(time.Now())
+		time.AfterFunc(writeAfter, l.acquireLockConsiderWriting)
+	}
 	l.lock.Unlock()
 }
 
-// Actually writes the log entry.
+
+// Whether enough time has elapsed since the last write.
+func (l *Logger) writeAllowedNow() bool {
+	return l.lastWrite.Add(l.params.MinimumWriteInterval).Before(time.Now())
+}
+
+
+// Actually writes the log entry. This method assumes we're holding the lock.
 func (l *Logger) write() {
 	// Update the event type in case it was modified or is missing.
 	l.entry["event_type"] = l.params.EventType
@@ -91,4 +111,16 @@ func (l *Logger) write() {
 		log.Printf("Attempted to log: %v", l.data)
 		log.Fatalf("Received error writing log: %v", err)
 	}
+	l.lastWrite = time.Now()
+	l.modified = false
+}
+
+
+func (l *Logger) acquireLockConsiderWriting() {
+	l.lock.Lock()
+	if l.modified && l.writeAllowedNow() {
+		// We have something new to write and we're allowed to write.
+		l.write()
+	}
+	l.lock.Unlock()
 }
