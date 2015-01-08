@@ -50,6 +50,8 @@ type Logger struct {
 
 	lastWrite   time.Time  // The last time we wrote a log entry
 	modified    bool       // Has this data been modified since the last write
+
+	editHooks   []func(map[string]interface{},map[string]interface{})
 }
 
 // Create a new logger based on the specified parameters.
@@ -75,7 +77,24 @@ func NewLogger(params LoggerParams) *Logger {
 func (l *Logger) Edit() (properties map[string]interface{}, entry map[string]interface{}) {
 	l.lock.Lock()
 	l.modified = true  // We don't actually know the caller will modifiy the data, but we assume they will.
+
+	// Run all our hooks
+	for _, hook := range l.editHooks {
+		hook(l.properties, l.entry)
+	}
+
 	return l.properties, l.entry
+}
+
+// Adds a hook which will be called everytime Edit() is called.
+// The hook takes properties and entry as arguments, in that order.
+// This is useful for stuff like memory profiling.
+// This must be called between Edit() and Record().
+// For convenience AddEditHook will call hook when it is added as well.
+func (l *Logger) AddEditHook(hook func(map[string]interface{},
+	map[string]interface{})) {
+	l.editHooks = append(l.editHooks, hook)
+	hook(l.properties, l.entry)
 }
 
 // Write the log entry you've built up so far. Do not edit the maps
