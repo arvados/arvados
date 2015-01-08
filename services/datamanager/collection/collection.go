@@ -123,11 +123,11 @@ func GetCollections(params GetCollectionsParams) (results ReadCollections) {
 		float64(initialNumberOfCollectionsAvailable) * 1.01)
 	results.UuidToCollection = make(map[string]Collection, maxExpectedCollections)
 
-	{
+	if params.Logger != nil {
 		properties,_ := params.Logger.Edit()
 		properties["num_collections_at_start"] = initialNumberOfCollectionsAvailable
+		params.Logger.Record()
 	}
-	params.Logger.Record()
 
 	// These values are just for getting the loop to run the first time,
 	// afterwards they'll be set to real values.
@@ -162,14 +162,14 @@ func GetCollections(params GetCollectionsParams) (results ReadCollections) {
 			float32(totalManifestSize)/float32(totalCollections),
 			maxManifestSize, totalManifestSize)
 
-		{
+		if params.Logger != nil {
 			properties,_ := params.Logger.Edit()
 			properties["collections_read"] = totalCollections
 			properties["latest_modified_date"] = sdkParams["filters"].([][]string)[0][2]
 			properties["total_manifest_size"] = totalManifestSize
 			properties["max_manifest_size"] = maxManifestSize
+			params.Logger.Record()
 		}
-		params.Logger.Record()
 	}
 
 	// Just in case this lowers the numbers reported in the heap profile.
