@@ -127,6 +127,7 @@ func GetCollections(params GetCollectionsParams) (results ReadCollections) {
 		properties,_ := params.Logger.Edit()
 		collectionInfo := make(map[string]interface{})
 		collectionInfo["num_collections_at_start"] = initialNumberOfCollectionsAvailable
+		collectionInfo["batch_size"] = params.BatchSize
 		properties["collection_info"] = collectionInfo
 		params.Logger.Record()
 	}

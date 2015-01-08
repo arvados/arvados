@@ -75,7 +75,7 @@ func main() {
 	// This requires waiting on them to finish before you let main() exit.
 
 	RunCollections(collection.GetCollectionsParams{
-		Client: arv, Logger: arvLogger, BatchSize: 100})
+		Client: arv, Logger: arvLogger, BatchSize: 50})
 
 	RunKeep(keep.GetKeepServersParams{Client: arv, Limit: 1000})
 }
