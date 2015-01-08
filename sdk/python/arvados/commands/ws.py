@@ -7,6 +7,7 @@ import arvados
 import json
 from arvados.events import subscribe
 import signal
+import subprocess
 
 def main(arguments=None):
     logger = logging.getLogger('arvados.arv-ws')
@@ -22,6 +23,9 @@ def main(arguments=None):
     group = parser.add_mutually_exclusive_group()
     group.add_argument('-p', '--pipeline', type=str, default="", help="Supply pipeline uuid, print log output from pipeline and its jobs")
     group.add_argument('-j', '--job', type=str, default="", help="Supply job uuid, print log output from jobs")
+    group.add_argument('--project', type=str, default="", help="Monitor change events for a specific project")
+
+    parser.add_argument('--command', type=str, default="", help="Command to run when project event occurs")
 
     args = parser.parse_args(arguments)
 
@@ -79,9 +83,29 @@ def main(arguments=None):
                 if ev["object_kind"] == "arvados#job" and args.job:
                     if ev["properties"]["new_attributes"]["state"] in ("Complete", "Failed", "Cancelled"):
                         ws.close()
-        elif 'status' in ev and ev['status'] == 200:
-            pass
-        else:
+            return
+
+        if 'status' in ev and ev['status'] == 200:
+            return
+
+        if args.project:
+            old_attr = None
+            if 'old_attributes' in ev['properties'] and ev['properties']['old_attributes']:
+                old_attr = ev['properties']['old_attributes']
+            if args.project not in (ev['properties']['new_attributes']['owner_uuid'],
+                                    old_attr['owner_uuid'] if old_attr else None):
+                return
+
+            if args.command:
+                et = ev['event_type']
+                if ev['event_type'] == 'update' and ev['properties']['new_attributes']['owner_uuid'] != ev['properties']['old_attributes']['owner_uuid']:
+                    if args.project == ev['properties']['new_attributes']['owner_uuid']:
+                        et = 'add'
+                    else:
+                        et = 'remove'
+                subprocess.call([args.command, args.project, et, ev['object_uuid']])
+                return
+
             print json.dumps(ev)
 
     try:

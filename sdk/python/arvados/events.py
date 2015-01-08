@@ -48,6 +48,7 @@ class EventClient(WebSocketClient):
 class PollClient(threading.Thread):
     def __init__(self, api, filters, on_event, poll_time):
         super(PollClient, self).__init__()
+        self.daemon = True
         self.api = api
         if filters:
             self.filters = [filters]
@@ -79,7 +80,8 @@ class PollClient(threading.Thread):
             self.stop.wait(self.poll_time)
 
     def run_forever(self):
-        self.stop.wait()
+        while not self.stop.is_set():
+            self.stop.wait(1)
 
     def close(self):
         self.stop.set()
