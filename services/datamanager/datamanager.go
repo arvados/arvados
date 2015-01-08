@@ -11,6 +11,7 @@ import (
 	"git.curoverse.com/arvados.git/services/datamanager/keep"
 	"log"
 	"os"
+	"runtime"
 	"time"
 )
 
@@ -64,6 +65,9 @@ func main() {
 		}
 		runInfo["pid"] = os.Getpid()
 		properties["run_info"] = runInfo
+
+		arvLogger.AddEditHook(LogMemoryAlloc)
+
 		arvLogger.Record()
 	}
 
@@ -71,7 +75,7 @@ func main() {
 	// This requires waiting on them to finish before you let main() exit.
 
 	RunCollections(collection.GetCollectionsParams{
-		Client: arv, Logger: arvLogger, BatchSize: 500})
+		Client: arv, Logger: arvLogger, BatchSize: 100})
 
 	RunKeep(keep.GetKeepServersParams{Client: arv, Limit: 1000})
 }
@@ -114,4 +118,12 @@ func ComputeSizeOfOwnedCollections(readCollections collection.ReadCollections) (
 		results[coll.OwnerUuid] = results[coll.OwnerUuid] + coll.TotalSize
 	}
 	return
+}
+
+func LogMemoryAlloc(properties map[string]interface{}, entry map[string]interface{}) {
+	_ = entry  // keep the compiler from complaining
+	runInfo := properties["run_info"].(map[string]interface{})
+	var memStats runtime.MemStats
+	runtime.ReadMemStats(&memStats)
+	runInfo["alloc_bytes_in_use"] = memStats.Alloc
 }

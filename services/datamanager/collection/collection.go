@@ -168,7 +168,7 @@ func GetCollections(params GetCollectionsParams) (results ReadCollections) {
 			properties,_ := params.Logger.Edit()
 			collectionInfo := properties["collection_info"].(map[string]interface{})
 			collectionInfo["collections_read"] = totalCollections
-			collectionInfo["latest_modified_date"] = sdkParams["filters"].([][]string)[0][2]
+			collectionInfo["latest_modified_date_seen"] = sdkParams["filters"].([][]string)[0][2]
 			collectionInfo["total_manifest_size"] = totalManifestSize
 			collectionInfo["max_manifest_size"] = maxManifestSize
 			params.Logger.Record()
