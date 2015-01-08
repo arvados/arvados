@@ -5,11 +5,30 @@ package main
 import (
 	"flag"
 	"git.curoverse.com/arvados.git/sdk/go/arvadosclient"
+	"git.curoverse.com/arvados.git/sdk/go/logger"
 	"git.curoverse.com/arvados.git/sdk/go/util"
 	"git.curoverse.com/arvados.git/services/datamanager/collection"
 	"git.curoverse.com/arvados.git/services/datamanager/keep"
 	"log"
+	"os"
+	"time"
 )
+
+var (
+	logEventType string
+	logFrequencySeconds int
+)
+
+func init() {
+	flag.StringVar(&logEventType, 
+		"log-event-type",
+		"experimental-data-manager-report",
+		"event_type to use in our arvados log entries.")
+	flag.IntVar(&logFrequencySeconds, 
+		"log-frequency-seconds",
+		20,
+		"How frequently we'll write log entries in seconds.")
+}
 
 func main() {
 	flag.Parse()
@@ -25,27 +44,51 @@ func main() {
 		log.Fatalf("Current user is not an admin. Datamanager can only be run by admins.")
 	}
 
+	arvLogger := logger.NewLogger(logger.LoggerParams{Client: arv,
+		EventType: logEventType,
+		MinimumWriteInterval: time.Second * time.Duration(logFrequencySeconds)})
+
+	{
+		properties, _ := arvLogger.Edit()
+		properties["start_time"] = time.Now()
+		properties["args"] = os.Args
+		hostname, err := os.Hostname()
+		if err != nil {
+			properties["hostname_error"] = err.Error()
+		} else {
+			properties["hostname"] = hostname
+		}
+	}
+	arvLogger.Record()
+
 	// TODO(misha): Read Collections and Keep Contents concurrently as goroutines.
+	// This requires waiting on them to finish before you let main() exit.
 
-	// readCollections := collection.GetCollections(
-	// 	collection.GetCollectionsParams{
-	// 		Client: arv, BatchSize: 500})
+	RunCollections(collection.GetCollectionsParams{
+		Client: arv, Logger: arvLogger, BatchSize: 500})
 
-	// UserUsage := ComputeSizeOfOwnedCollections(readCollections)
-	// log.Printf("Uuid to Size used: %v", UserUsage)
+	RunKeep(keep.GetKeepServersParams{Client: arv, Limit: 1000})
+}
 
-	// // TODO(misha): Add a "readonly" flag. If we're in readonly mode,
-	// // lots of behaviors can become warnings (and obviously we can't
-	// // write anything).
-	// // if !readCollections.ReadAllCollections {
-	// // 	log.Fatalf("Did not read all collections")
-	// // }
+func RunCollections(params collection.GetCollectionsParams) {
+	readCollections := collection.GetCollections(params)
 
-	// log.Printf("Read and processed %d collections",
-	// 	len(readCollections.UuidToCollection))
+	UserUsage := ComputeSizeOfOwnedCollections(readCollections)
+	log.Printf("Uuid to Size used: %v", UserUsage)
 
-	readServers := keep.GetKeepServers(
-		keep.GetKeepServersParams{Client: arv, Limit: 1000})
+	// TODO(misha): Add a "readonly" flag. If we're in readonly mode,
+	// lots of behaviors can become warnings (and obviously we can't
+	// write anything).
+	// if !readCollections.ReadAllCollections {
+	// 	log.Fatalf("Did not read all collections")
+	// }
+
+	log.Printf("Read and processed %d collections",
+		len(readCollections.UuidToCollection))
+}
+
+func RunKeep(params keep.GetKeepServersParams) {
+	readServers := keep.GetKeepServers(params)
 
 	log.Printf("Returned %d keep disks", len(readServers.ServerToContents))
 
