@@ -52,16 +52,12 @@ class CollectionTest < ActiveSupport::TestCase
   end
 
   [
-    [2**15, 0, false],
-    [2**15, 100, false],
-    [2**15, 2**13, false],
-    [2**15, 2**18, true],
-    [100, 2**18, true],
-    [2**18, 100, false],  # file_names has a max size, hence no error even on large manifest
-  ].each do |manifest_size, description_size, expect_exception|
-    test "create collection with manifest size #{manifest_size},
-          description size #{description_size},
-          expect exception #{expect_exception}" do
+    2**8,
+    2**18,
+  ].each do |manifest_size|
+    test "create collection with manifest size #{manifest_size} and
+          not expect exceptions even on very large manifest texts" do
+      # file_names has a max size, hence there will be no errors even on large manifests
       act_as_system_user do
         manifest_text = '. d41d8cd98f00b204e9800998ecf8427e+0'
         index = 0
@@ -71,26 +67,12 @@ class CollectionTest < ActiveSupport::TestCase
         end
         manifest_text += "\n"
 
-        description = ''
-        while description.length < description_size
-          description += 'a'
-        end
+        c = Collection.create(manifest_text: manifest_text)
 
-        begin
-          c = Collection.create(manifest_text: manifest_text, description: description)
-        rescue Exception => e
-        end
-
-        if !expect_exception
-          assert c.valid?
-          created_file_names = c.file_names
-          assert created_file_names
-        else
-          assert e
-          assert e.message.include? 'exceeds maximum'
-        end
+        assert c.valid?
+        created_file_names = c.file_names
+        assert created_file_names
       end
     end
   end
-
 end

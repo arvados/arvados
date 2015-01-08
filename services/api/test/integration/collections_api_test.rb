@@ -177,7 +177,6 @@ class CollectionsApiTest < ActionDispatch::IntegrationTest
     assert_response :success
     assert_equal true, json_response['manifest_text'].include?('my_test_file.txt')
     assert_equal '0f99f4087beb13dec46d36db9fa6cebf+60', json_response['portable_data_hash']
-    assert_nil json_response['file_names']
 
     created = json_response
 
@@ -193,7 +192,6 @@ class CollectionsApiTest < ActionDispatch::IntegrationTest
     assert_equal created['uuid'], json_response['uuid']
     assert_equal true, json_response['manifest_text'].include?('my_updated_test_file.txt')
     assert_equal false, json_response['manifest_text'].include?('my_test_file.txt')
-    assert_nil json_response['file_names']
 
     # search using the new filename
     search_using_filter 'my_updated_test_file.txt', 1, '17d7d7e6f09ae17e3b580143586a1a3f+68'
@@ -216,7 +214,6 @@ class CollectionsApiTest < ActionDispatch::IntegrationTest
       first_item = response_items.first
       assert_not_nil first_item
       assert_equal pdh, first_item['portable_data_hash']
-      assert_nil first_item['file_names']
     end
   end
 end
