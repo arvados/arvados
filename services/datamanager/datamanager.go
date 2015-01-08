@@ -23,7 +23,7 @@ func init() {
 	flag.StringVar(&logEventType, 
 		"log-event-type",
 		"experimental-data-manager-report",
-		"event_type to use in our arvados log entries.")
+		"event_type to use in our arvados log entries. Set to empty to turn off logging")
 	flag.IntVar(&logFrequencySeconds, 
 		"log-frequency-seconds",
 		20,
@@ -44,11 +44,14 @@ func main() {
 		log.Fatalf("Current user is not an admin. Datamanager can only be run by admins.")
 	}
 
-	arvLogger := logger.NewLogger(logger.LoggerParams{Client: arv,
-		EventType: logEventType,
-		MinimumWriteInterval: time.Second * time.Duration(logFrequencySeconds)})
+	var arvLogger *logger.Logger
+	if logEventType != "" {
+		arvLogger = logger.NewLogger(logger.LoggerParams{Client: arv,
+			EventType: logEventType,
+			MinimumWriteInterval: time.Second * time.Duration(logFrequencySeconds)})
+	}
 
-	{
+	if arvLogger != nil {
 		properties, _ := arvLogger.Edit()
 		properties["start_time"] = time.Now()
 		properties["args"] = os.Args
@@ -58,8 +61,8 @@ func main() {
 		} else {
 			properties["hostname"] = hostname
 		}
+		arvLogger.Record()
 	}
-	arvLogger.Record()
 
 	// TODO(misha): Read Collections and Keep Contents concurrently as goroutines.
 	// This requires waiting on them to finish before you let main() exit.
