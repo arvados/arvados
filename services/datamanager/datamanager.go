@@ -53,14 +53,17 @@ func main() {
 
 	if arvLogger != nil {
 		properties, _ := arvLogger.Edit()
-		properties["start_time"] = time.Now()
-		properties["args"] = os.Args
+		runInfo := make(map[string]interface{})
+		runInfo["start_time"] = time.Now()
+		runInfo["args"] = os.Args
 		hostname, err := os.Hostname()
 		if err != nil {
-			properties["hostname_error"] = err.Error()
+			runInfo["hostname_error"] = err.Error()
 		} else {
-			properties["hostname"] = hostname
+			runInfo["hostname"] = hostname
 		}
+		runInfo["pid"] = os.Getpid()
+		properties["run_info"] = runInfo
 		arvLogger.Record()
 	}
 
