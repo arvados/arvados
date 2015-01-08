@@ -62,7 +62,7 @@ class CollectionTest < ActiveSupport::TestCase
         manifest_text = '. d41d8cd98f00b204e9800998ecf8427e+0'
         index = 0
         while manifest_text.length < manifest_size
-          manifest_text += ' ' + "0:0:longlongfile#{index}.txt"
+          manifest_text += ' ' + "0:0:veryverylongfilename000000000000#{index}.txt"
           index += 1
         end
         manifest_text += "\n"

@@ -679,9 +679,9 @@ EOS
           and expect response #{expected_response}" do
       authorize_with :active
 
-      description = ''
+      description = 'here is a collection with a very large description'
       while description.length < description_size
-        description += 'a'
+        description = description + description
       end
 
       post :create, collection: {
