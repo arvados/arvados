@@ -6,8 +6,8 @@ import (
 	"flag"
 	"git.curoverse.com/arvados.git/sdk/go/arvadosclient"
 	"git.curoverse.com/arvados.git/sdk/go/blockdigest"
+	"git.curoverse.com/arvados.git/sdk/go/logger"
 	"git.curoverse.com/arvados.git/sdk/go/manifest"
-	//"git.curoverse.com/arvados.git/sdk/go/util"
 	"log"
 	"os"
 	"runtime"
@@ -37,6 +37,7 @@ type ReadCollections struct {
 
 type GetCollectionsParams struct {
 	Client arvadosclient.ArvadosClient
+	Logger *logger.Logger
 	BatchSize int
 }
 
@@ -115,15 +116,18 @@ func GetCollections(params GetCollectionsParams) (results ReadCollections) {
 		sdkParams["limit"] = params.BatchSize
 	}
 
-	// MISHA UNDO THIS TEMPORARY HACK TO FIND BUG!
-	sdkParams["limit"] = 50
-
 	initialNumberOfCollectionsAvailable := NumberCollectionsAvailable(params.Client)
 	// Include a 1% margin for collections added while we're reading so
 	// that we don't have to grow the map in most cases.
 	maxExpectedCollections := int(
 		float64(initialNumberOfCollectionsAvailable) * 1.01)
 	results.UuidToCollection = make(map[string]Collection, maxExpectedCollections)
+
+	{
+		properties,_ := params.Logger.Edit()
+		properties["num_collections_at_start"] = initialNumberOfCollectionsAvailable
+	}
+	params.Logger.Record()
 
 	// These values are just for getting the loop to run the first time,
 	// afterwards they'll be set to real values.
@@ -157,6 +161,15 @@ func GetCollections(params GetCollectionsParams) (results ReadCollections) {
 			sdkParams["filters"].([][]string)[0][2],
 			float32(totalManifestSize)/float32(totalCollections),
 			maxManifestSize, totalManifestSize)
+
+		{
+			properties,_ := params.Logger.Edit()
+			properties["collections_read"] = totalCollections
+			properties["latest_modified_date"] = sdkParams["filters"].([][]string)[0][2]
+			properties["total_manifest_size"] = totalManifestSize
+			properties["max_manifest_size"] = maxManifestSize
+		}
+		params.Logger.Record()
 	}
 
 	// Just in case this lowers the numbers reported in the heap profile.
@@ -199,7 +212,9 @@ func ProcessCollections(receivedCollections []SdkCollectionInfo,
 		manifest := manifest.Manifest{sdkCollection.ManifestText}
 		manifestSize := uint64(len(sdkCollection.ManifestText))
 
-		totalManifestSize += manifestSize
+		if _, alreadySeen := uuidToCollection[collection.Uuid]; !alreadySeen {
+			totalManifestSize += manifestSize
+		}
 		if manifestSize > maxManifestSize {
 			maxManifestSize = manifestSize
 		}
