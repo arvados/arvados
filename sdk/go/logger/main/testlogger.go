@@ -10,11 +10,6 @@ import (
 	"log"
 )
 
-const (
-	eventType string = "experimental-logger-testing"
-)
-
-
 func main() {
 	arv, err := arvadosclient.MakeArvadosClient()
 	if err != nil {
@@ -22,11 +17,13 @@ func main() {
 	}
 
 	l := logger.NewLogger(logger.LoggerParams{Client: arv,
-		EventType: eventType,
+		EventType: "experimental-logger-testing",
 		// No minimum write interval
 	})
 
-	logData := l.Acquire()
-	logData["Ninja"] = "Misha"
-	logData = l.Release()
+	{
+		properties, _ := l.Edit()
+		properties["Ninja"] = "Misha"
+	}
+	l.Record()
 }
