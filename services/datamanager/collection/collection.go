@@ -4,6 +4,7 @@ package collection
 
 import (
 	"flag"
+	"fmt"
 	"git.curoverse.com/arvados.git/sdk/go/arvadosclient"
 	"git.curoverse.com/arvados.git/sdk/go/blockdigest"
 	"git.curoverse.com/arvados.git/sdk/go/logger"
@@ -146,17 +147,15 @@ func GetCollections(params GetCollectionsParams) (results ReadCollections) {
 		var collections SdkCollectionList
 		err := params.Client.List("collections", sdkParams, &collections)
 		if err != nil {
-			if params.Logger != nil {
-				properties,_ := params.Logger.Edit()
-				properties["FATAL"] = err.Error()
-				params.Logger.Record()
-			}
-			log.Fatalf("error querying collections: %+v", err)
+			fatalWithMessage(params.Logger,
+				fmt.Sprintf("Error querying collections: %v", err))
 		}
 
 		// Process collection and update our date filter.
 		sdkParams["filters"].([][]string)[0][2] =
-			ProcessCollections(collections.Items, results.UuidToCollection).Format(time.RFC3339)
+			ProcessCollections(params.Logger,
+			collections.Items,
+			results.UuidToCollection).Format(time.RFC3339)
 
 		// update counts
 		previousTotalCollections = totalCollections
@@ -199,7 +198,8 @@ func StrCopy(s string) string {
 }
 
 
-func ProcessCollections(receivedCollections []SdkCollectionInfo,
+func ProcessCollections(arvLogger *logger.Logger,
+	receivedCollections []SdkCollectionInfo,
 	uuidToCollection map[string]Collection) (latestModificationDate time.Time) {
 	for _, sdkCollection := range receivedCollections {
 		collection := Collection{Uuid: StrCopy(sdkCollection.Uuid),
@@ -208,13 +208,15 @@ func ProcessCollections(receivedCollections []SdkCollectionInfo,
 			BlockDigestToSize: make(map[blockdigest.BlockDigest]int)}
 
 		if sdkCollection.ModifiedAt.IsZero() {
-			log.Fatalf(
-				"Arvados SDK collection returned with unexpected zero modifcation " +
-					"date. This probably means that either we failed to parse the " +
-					"modification date or the API server has changed how it returns " +
-					"modification dates: %v",
-				collection)
+			fatalWithMessage(arvLogger,
+				fmt.Sprintf(
+					"Arvados SDK collection returned with unexpected zero " +
+						"modifcation date. This probably means that either we failed to " +
+						"parse the modification date or the API server has changed how " +
+						"it returns modification dates: %v",
+					collection))
 		}
+
 		if sdkCollection.ModifiedAt.After(latestModificationDate) {
 			latestModificationDate = sdkCollection.ModifiedAt
 		}
@@ -232,12 +234,13 @@ func ProcessCollections(receivedCollections []SdkCollectionInfo,
 		for block := range blockChannel {
 			if stored_size, stored := collection.BlockDigestToSize[block.Digest];
 			stored && stored_size != block.Size {
-				log.Fatalf(
+				message := fmt.Sprintf(
 					"Collection %s contains multiple sizes (%d and %d) for block %s",
 					collection.Uuid,
 					stored_size,
 					block.Size,
 					block.Digest)
+				fatalWithMessage(arvLogger, message)
 			}
 			collection.BlockDigestToSize[block.Digest] = block.Size
 		}
@@ -266,4 +269,19 @@ func NumberCollectionsAvailable(client arvadosclient.ArvadosClient) (int) {
 	}
 
 	return collections.ItemsAvailable
+}
+
+
+// Assumes you haven't already called arvLogger.Edit()!
+// If you have called arvLogger.Edit() this method will hang waiting
+// for the lock you're already holding.
+func fatalWithMessage(arvLogger *logger.Logger, message string) {
+	if arvLogger != nil {
+		properties,_ := arvLogger.Edit()
+		properties["FATAL"] = message
+		properties["run_info"].(map[string]interface{})["end_time"] = time.Now()
+		arvLogger.ForceRecord()
+	}
+
+	log.Fatalf(message)
 }
