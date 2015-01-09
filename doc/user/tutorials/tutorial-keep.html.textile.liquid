@@ -10,7 +10,7 @@ notextile. <div class="spaced-out">
 
 {% include 'tutorial_expectations' %}
 
-h3. Upload
+h2. Upload using command prompt
 
 To upload a file to Keep using @arv keep put@:
 <notextile>
@@ -41,7 +41,7 @@ qr1hi-4zz18-yyyyyyyyyyyyyyy
 
 In both examples, the @arv keep put@ command created a collection. The first collection contains the single uploaded file. The second collection contains the entire uploaded directory.
 
-@arv keep put@ accepts quite a few optional command line arguments, which are described "on the arv subcommands":{{site.baseurl}}/sdk/cli/subcommands.html#arv-keep-put page.
+@arv keep put@ accepts quite a few optional command line arguments, which are described on the "arv subcommands":{{site.baseurl}}/sdk/cli/subcommands.html#arv-keep-put page.
 
 h3. Locate your collection in Workbench
 
@@ -54,3 +54,23 @@ To move the collection to a different project, check the box at the left of the 
 Click on the *<i class="fa fa-fw fa-archive"></i> Show* button next to the collection's listing on a project page to go to the Workbench page for your collection.  On this page, you can see the collection's contents, download individual files, and set sharing options.
 
 notextile. </div>
+
+h2. Upload using Workbench
+
+To upload using Workbench, visit the Workbench *Dashboard*. Click on *Projects*<span class="caret"></span> dropdown menu in the top navigation menu and select your *Home* project or any other project of your choosing.  You will see the *Data collections* tab for this project, which lists the collections in this project.
+
+To upload a file, click on *Add data*<span class="caret"></span> dropdown menu and select *Upload files from my computer*.
+
+!{{ site.baseurl }}/images/upload-using-workbench.png!
+
+<br/>This will create a new empty collection in your chosen project and will take you to the *Upload* tab for that collection. 
+
+!{{ site.baseurl }}/images/upload-tab-in-new-collection.png!
+
+Click on the *Browse...* button and select the files you would like to upload. You can select multiple files. You will be able to click on the "Browse..." button multiple times and select files. After you are done selecting files to upload, click on the *<i class="fa fa-fw fa-play"></i> Start* button to start upload. This will start uploading files to Arvados and Workbench will show you the progress bar. When upload is completed, you will see an indication to that effect. 
+
+!{{ site.baseurl }}/images/files-uploaded.png!
+
+*Note:* If you were to leave the collection page during the upload, the upload action will be aborted and you would need to upload again.
+
+*Note:* You will be able to use the *Add data*<span class="caret"></span> dropdown menu to add additional files to a previously collection as well. 
