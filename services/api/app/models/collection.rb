@@ -288,6 +288,10 @@ class Collection < ArvadosModel
     find_all_for_docker_image(search_term, search_tag, readers).first
   end
 
+  def self.searchable_columns operator
+    super - ["manifest_text"]
+  end
+
   protected
   def portable_manifest_text
     portable_manifest = self[:manifest_text].dup

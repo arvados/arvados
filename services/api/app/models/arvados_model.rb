@@ -60,14 +60,8 @@ class ArvadosModel < ActiveRecord::Base
     textonly_operator = !operator.match(/[<=>]/)
     self.columns.select do |col|
       case col.type
-      when :string
+      when :string, :text
         true
-      when :text
-        if operator == 'ilike'
-          false
-        else
-          true
-        end
       when :datetime, :integer, :boolean
         !textonly_operator
       else
