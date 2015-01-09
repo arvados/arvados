@@ -51,7 +51,7 @@ type Logger struct {
 	lastWrite   time.Time  // The last time we wrote a log entry
 	modified    bool       // Has this data been modified since the last write
 
-	editHooks   []func(map[string]interface{},map[string]interface{})
+	writeHooks  []func(map[string]interface{},map[string]interface{})
 }
 
 // Create a new logger based on the specified parameters.
@@ -78,23 +78,16 @@ func (l *Logger) Edit() (properties map[string]interface{}, entry map[string]int
 	l.lock.Lock()
 	l.modified = true  // We don't actually know the caller will modifiy the data, but we assume they will.
 
-	// Run all our hooks
-	for _, hook := range l.editHooks {
-		hook(l.properties, l.entry)
-	}
-
 	return l.properties, l.entry
 }
 
-// Adds a hook which will be called everytime Edit() is called.
+// Adds a hook which will be called every time this logger writes an entry.
 // The hook takes properties and entry as arguments, in that order.
 // This is useful for stuff like memory profiling.
-// This must be called between Edit() and Record().
-// For convenience AddEditHook will call hook when it is added as well.
-func (l *Logger) AddEditHook(hook func(map[string]interface{},
+// This must be called between Edit() and Record() (e.g. while holding the lock)
+func (l *Logger) AddWriteHook(hook func(map[string]interface{},
 	map[string]interface{})) {
-	l.editHooks = append(l.editHooks, hook)
-	hook(l.properties, l.entry)
+	l.writeHooks = append(l.writeHooks, hook)
 }
 
 // Write the log entry you've built up so far. Do not edit the maps
@@ -123,13 +116,23 @@ func (l *Logger) writeAllowedNow() bool {
 
 // Actually writes the log entry. This method assumes we're holding the lock.
 func (l *Logger) write() {
+
+	// Run all our hooks
+	for _, hook := range l.writeHooks {
+		hook(l.properties, l.entry)
+	}
+
 	// Update the event type in case it was modified or is missing.
 	l.entry["event_type"] = l.params.EventType
+
+	// Write the log entry.
 	err := l.params.Client.Create("logs", l.data, nil)
 	if err != nil {
 		log.Printf("Attempted to log: %v", l.data)
 		log.Fatalf("Received error writing log: %v", err)
 	}
+
+	// Update stats.
 	l.lastWrite = time.Now()
 	l.modified = false
 }

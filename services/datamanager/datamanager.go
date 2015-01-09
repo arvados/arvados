@@ -66,7 +66,7 @@ func main() {
 		runInfo["pid"] = os.Getpid()
 		properties["run_info"] = runInfo
 
-		arvLogger.AddEditHook(LogMemoryAlloc)
+		arvLogger.AddWriteHook(LogMemoryAlloc)
 
 		arvLogger.Record()
 	}
