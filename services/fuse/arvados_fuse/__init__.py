@@ -129,6 +129,8 @@ class File(FreshBase):
     def mtime(self):
         return self._mtime
 
+    def opening(self):
+        pass
 
 class StreamReaderFile(File):
     '''Wraps a StreamFileReader as a file.'''
@@ -172,6 +174,13 @@ class ObjectFile(StringFile):
         self._mtime = convertTime(obj['modified_at']) if 'modified_at' in obj else 0
         self.contents = json.dumps(obj, indent=4, sort_keys=True) + "\n"
 
+class UpdateOnOpenFile(ObjectFile):
+    def __init__(self, parent_inode, obj, parent_dir):
+        super(UpdateOnOpenFile, self).__init__(parent_inode, obj)
+        self.parent_dir = parent_dir
+
+    def opening(self):
+        self.parent_dir.update()
 
 class Directory(FreshBase):
     '''Generic directory object, backed by a dict.
@@ -546,7 +555,7 @@ class ProjectDirectory(Directory):
 
     def update(self):
         if self.project_object_file == None:
-            self.project_object_file = ObjectFile(self.inode, self.project_object)
+            self.project_object_file = UpdateOnOpenFile(self.inode, self.project_object, self)
             self.inodes.add_entry(self.project_object_file)
 
         def namefn(i):
@@ -818,6 +827,8 @@ class Operations(llfuse.Operations):
 
         if isinstance(p, Directory):
             raise llfuse.FUSEError(errno.EISDIR)
+
+        p.opening()
 
         fh = self._filehandles_counter
         self._filehandles_counter += 1
