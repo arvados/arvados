@@ -4,11 +4,11 @@ class PipelineTest < DiagnosticsTest
   pipelines_to_test = Rails.configuration.pipelines_to_test.andand.keys
 
   setup do
-    need_javascript
+    need_selenium 'to make websockets work'
   end
 
   pipelines_to_test.andand.each do |pipeline_to_test|
-    test "visit home page for user #{pipeline_to_test}" do
+    test "run pipeline: #{pipeline_to_test}" do
       visit_page_with_token 'active'
       pipeline_config = Rails.configuration.pipelines_to_test[pipeline_to_test]
 
