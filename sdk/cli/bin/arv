@@ -154,7 +154,7 @@ def check_subcommands client, arvados, subcommand, global_opts, remaining_opts
 end
 
 def command_exists?(command)
-  File.executable?(command) || ENV['PATH'].split(':').select {|folder| File.executable?(File.join(folder, command))}.any?
+  File.executable?(command) || ENV['PATH'].split(':').any? {|folder| File.executable?(File.join(folder, command))}
 end
 
 def run_editor path
@@ -217,19 +217,31 @@ def edit_and_commit_object initial_obj, tmp_stem, global_opts, &block
 
         break
       rescue => e
-        puts "Error: #{e}"
+        can_retry = true
+        if e.is_a? Psych::SyntaxError
+          this_error = "YAML error parsing your input: #{e}"
+        elsif e.is_a? JSON::ParserError
+          this_error = "JSON error parsing your input: #{e}"
+        elsif e.is_a? HttpResponse
+          this_error = "API responded with error #{e.status}"
+        else
+          this_error = "#{e.class}: #{e}"
+          can_retry = false
+        end
+        puts this_error
+
         tmp_file.open
         newcontent = tmp_file.read()
         tmp_file.close
 
-        if newcontent == error_text
+        if newcontent == error_text or not can_retry
           FileUtils::cp tmp_file.path, tmp_file.path + ".saved"
-          puts "File is unchanged, edit aborted."
+          puts "File is unchanged, edit aborted." if can_retry
           abort "Saved contents to " + tmp_file.path + ".saved"
         else
           tmp_file.open
           tmp_file.truncate 0
-          error_text = e.to_s.lines.map {|l| '# ' + l}.join + "\n"
+          error_text = this_error.to_s.lines.map {|l| '# ' + l}.join + "\n"
           error_text += "# Please fix the error and try again.\n"
           error_text += newcontent.lines.select {|l| !l.start_with? '#'}.join
           tmp_file.write error_text
@@ -244,6 +256,13 @@ def edit_and_commit_object initial_obj, tmp_stem, global_opts, &block
   nil
 end
 
+class HttpResponse < RuntimeError
+  attr_reader :status
+  def initialize status
+    @status = status
+  end
+end
+
 def check_response result
   begin
     results = JSON.parse result.body
@@ -252,7 +271,7 @@ def check_response result
   end
 
   if result.response.status != 200
-    raise "#{result.response.status}: " + (results['errors'] && results['errors'].join('\n') || "")
+    raise HttpResponse.new "#{result.response.status}: " + (results['errors'] && results['errors'].join('\n') || "")
   end
 
   results
@@ -282,7 +301,7 @@ def arv_edit client, arvados, global_opts, remaining_opts
     if /^[a-f0-9]{32}/.match uuid
       abort "Arvados collections are not editable."
     else
-      abort "#{uuid} does not appear to be an Arvados uuid"
+      abort "'#{uuid}' does not appear to be an Arvados uuid"
     end
   end
 
@@ -326,6 +345,7 @@ def arv_edit client, arvados, global_opts, remaining_opts
                        authorization: 'OAuth2 '+ENV['ARVADOS_API_TOKEN']
                      })
       check_response result
+      puts "Updated object #{uuid}"
     else
       puts "Object is unchanged, did not update."
     end
