@@ -394,6 +394,71 @@ class KeepClientServiceTestCase(unittest.TestCase):
                     min_penalty,
                     max_penalty))
 
+    def check_64_zeros_error_order(self, verb, exc_class):
+        data = '0' * 64
+        if verb == 'get':
+            data = hashlib.md5(data).hexdigest() + '+1234'
+        api_client = self.mock_n_keep_disks(16)
+        keep_client = arvados.KeepClient(api_client=api_client)
+        with mock.patch('requests.' + verb,
+                        side_effect=socket.timeout) as req_mock, \
+                self.assertRaises(exc_class) as err_check:
+            getattr(keep_client, verb)(data)
+        urls = [urlparse.urlparse(url)
+                for url in err_check.exception.service_errors()]
+        self.assertEqual([('keep0x' + c, 80) for c in '3eab2d5fc9681074'],
+                         [(url.hostname, url.port) for url in urls])
+
+    def test_get_error_shows_probe_order(self):
+        self.check_64_zeros_error_order('get', arvados.errors.KeepReadError)
+
+    def test_put_error_shows_probe_order(self):
+        self.check_64_zeros_error_order('put', arvados.errors.KeepWriteError)
+
+    def check_no_services_error(self, verb, exc_class):
+        api_client = mock.MagicMock(name='api_client')
+        api_client.keep_services().accessible().execute.side_effect = (
+            arvados.errors.ApiError)
+        keep_client = arvados.KeepClient(api_client=api_client)
+        with self.assertRaises(exc_class) as err_check:
+            getattr(keep_client, verb)('d41d8cd98f00b204e9800998ecf8427e+0')
+        self.assertEqual(0, len(err_check.exception.service_errors()))
+
+    def test_get_error_with_no_services(self):
+        self.check_no_services_error('get', arvados.errors.KeepReadError)
+
+    def test_put_error_with_no_services(self):
+        self.check_no_services_error('put', arvados.errors.KeepWriteError)
+
+    def check_errors_from_last_retry(self, verb, exc_class):
+        api_client = self.mock_n_keep_disks(2)
+        keep_client = arvados.KeepClient(api_client=api_client)
+        req_mock = getattr(tutil, 'mock_{}_responses'.format(verb))(
+            "retry error reporting test", 500, 500, 403, 403)
+        with req_mock, tutil.skip_sleep, \
+                self.assertRaises(exc_class) as err_check:
+            getattr(keep_client, verb)('d41d8cd98f00b204e9800998ecf8427e+0',
+                                       num_retries=3)
+        self.assertEqual([403, 403], [
+                getattr(error, 'status_code', None)
+                for error in err_check.exception.service_errors().itervalues()])
+
+    def test_get_error_reflects_last_retry(self):
+        self.check_errors_from_last_retry('get', arvados.errors.KeepReadError)
+
+    def test_put_error_reflects_last_retry(self):
+        self.check_errors_from_last_retry('put', arvados.errors.KeepWriteError)
+
+    def test_put_error_does_not_include_successful_puts(self):
+        data = 'partial failure test'
+        data_loc = '{}+{}'.format(hashlib.md5(data).hexdigest(), len(data))
+        api_client = self.mock_n_keep_disks(3)
+        keep_client = arvados.KeepClient(api_client=api_client)
+        with tutil.mock_put_responses(data_loc, 200, 500, 500) as req_mock, \
+                self.assertRaises(arvados.errors.KeepWriteError) as exc_check:
+            keep_client.put(data)
+        self.assertEqual(2, len(exc_check.exception.service_errors()))
+
 
 class KeepClientRetryTestMixin(object):
     # Testing with a local Keep store won't exercise the retry behavior.
