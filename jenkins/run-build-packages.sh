@@ -409,18 +409,24 @@ build_and_scp_deb $GOPATH/bin/crunchstat=/usr/bin/crunchstat crunchstat 'Curover
 # prefix from only one of the dependencies of a package...  Maybe I could
 # whip up a patch and send it upstream, but that will be for another day. Ward,
 # 2014-05-15
-cd $WORKSPACE/debs
-build_and_scp_deb $WORKSPACE/sdk/python python-arvados-python-client 'Curoverse, Inc.' 'python' "$(awk '($1 == "Version:"){print $2}' $WORKSPACE/sdk/python/arvados_python_client.egg-info/PKG-INFO)" "--url=https://arvados.org" "--description=The Arvados Python SDK"
+cd $WORKSPACE/debs2
+# Python version numbering is obscure. Strip dashes and replace them with dots
+# to match our other version numbers. Cf. commit 4afcb8c, compliance with PEP-440.
+build_and_scp_deb $WORKSPACE/sdk/python python-arvados-python-client 'Curoverse, Inc.' 'python' "$(awk '($1 == "Version:"){ gsub(/-/,".",$2); print $2 }' $WORKSPACE/sdk/python/arvados_python_client.egg-info/PKG-INFO)" "--url=https://arvados.org" "--description=The Arvados Python SDK"
 
 # The FUSE driver
 # Please seem comment about --no-python-fix-name above; we stay consistent and do
 # not omit the python- prefix first.
 cd $WORKSPACE/debs
-build_and_scp_deb $WORKSPACE/services/fuse python-arvados-fuse 'Curoverse, Inc.' 'python' "$(awk '($1 == "Version:"){print $2}' $WORKSPACE/services/fuse/arvados_fuse.egg-info/PKG-INFO)" "--url=https://arvados.org" "--description=The Keep FUSE driver"
+# Python version numbering is obscure. Strip dashes and replace them with dots
+# to match our other version numbers. Cf. commit 4afcb8c, compliance with PEP-440.
+build_and_scp_deb $WORKSPACE/services/fuse python-arvados-fuse 'Curoverse, Inc.' 'python' "$(awk '($1 == "Version:"){ gsub(/-/,".",$2); print $2 }' $WORKSPACE/services/fuse/arvados_fuse.egg-info/PKG-INFO)" "--url=https://arvados.org" "--description=The Keep FUSE driver"
 
 # The node manager
 cd $WORKSPACE/debs
-build_and_scp_deb $WORKSPACE/services/nodemanager arvados-node-manager 'Curoverse, Inc.' 'python' "$(awk '($1 == "Version:"){print $2}' $WORKSPACE/services/nodemanager/arvados_node_manager.egg-info/PKG-INFO)" "--url=https://arvados.org" "--description=The Arvados node manager"
+# Python version numbering is obscure. Strip dashes and replace them with dots
+# to match our other version numbers. Cf. commit 4afcb8c, compliance with PEP-440.
+build_and_scp_deb $WORKSPACE/services/nodemanager arvados-node-manager 'Curoverse, Inc.' 'python' "$(awk '($1 == "Version:"){ gsub(/-/,".",$2); print $2}' $WORKSPACE/services/nodemanager/arvados_node_manager.egg-info/PKG-INFO)" "--url=https://arvados.org" "--description=The Arvados node manager"
 
 # A few dependencies
 for deppkg in python-gflags pyvcf google-api-python-client oauth2client \
@@ -456,8 +462,9 @@ CWLTOOL_VERSION=`git log --first-parent --max-count=1 --format='format:0.1.%ct.%
 
 # Build cwltool package
 cd $WORKSPACE/debs
-
-build_and_scp_deb $WORKSPACE/common-workflow-language/reference cwltool 'Common Workflow Language Working Group' 'python' "$(awk '($1 == "Version:"){print $2}' $WORKSPACE/common-workflow-language/reference/cwltool.egg-info/PKG-INFO)"
+# Python version numbering is obscure. Strip dashes and replace them with dots
+# to match our other version numbers. Cf. commit 4afcb8c, compliance with PEP-440.
+build_and_scp_deb $WORKSPACE/common-workflow-language/reference cwltool 'Common Workflow Language Working Group' 'python' "$(awk '($1 == "Version:"){ gsub(/-/,".",$2); print $2 }' $WORKSPACE/common-workflow-language/reference/cwltool.egg-info/PKG-INFO)"
 
 # Finally, publish the packages, if necessary
 if [[ "$UPLOAD" != 0 && "$CALL_FREIGHT" != 0 ]]; then
