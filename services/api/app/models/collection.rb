@@ -129,16 +129,20 @@ class Collection < ArvadosModel
 
   def set_file_names
     if self.manifest_text_changed?
-      file_names = []
-      if self.manifest_text
-        self.manifest_text.split.each do |part|
-          file_name = part.rpartition(':')[-1]
-          file_names << file_name if file_name != '.'
-        end
-      end
-      self.file_names = file_names.uniq.join(" ")[0,2**13]
+      self.file_names = Collection.manifest_files self.manifest_text
     end
     true
+  end
+
+  def self.manifest_files manifest_text
+    names = ''
+    if manifest_text
+      manifest_text.scan(/ \d+:\d+:(\S+)/) do |name|
+        names << name.first.gsub('\040',' ') + "\n" 
+        break if names.length > 2**13
+      end
+    end
+    names[0,2**13]
   end
 
   def check_encoding
