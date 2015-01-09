@@ -107,6 +107,13 @@ func (l *Logger) Record() {
 	l.lock.Unlock()
 }
 
+// Similar to Record, but forces a write without respecting the
+// MinimumWriteInterval. This is useful if you know that you're about
+// to quit (e.g. if you discovered a fatal error).
+func (l *Logger) ForceRecord() {
+	l.write()
+	l.lock.Unlock()
+}
 
 // Whether enough time has elapsed since the last write.
 func (l *Logger) writeAllowedNow() bool {

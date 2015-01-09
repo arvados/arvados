@@ -58,7 +58,7 @@ func init() {
 	flag.StringVar(&heap_profile_filename, 
 		"heap-profile",
 		"",
-		"File to write the heap profiles to.")
+		"File to write the heap profiles to. Leave blank to skip profiling.")
 }
 
 // // Methods to implement util.SdkListResponse Interface
@@ -146,6 +146,11 @@ func GetCollections(params GetCollectionsParams) (results ReadCollections) {
 		var collections SdkCollectionList
 		err := params.Client.List("collections", sdkParams, &collections)
 		if err != nil {
+			if params.Logger != nil {
+				properties,_ := params.Logger.Edit()
+				properties["FATAL"] = err.Error()
+				params.Logger.Record()
+			}
 			log.Fatalf("error querying collections: %+v", err)
 		}
 
