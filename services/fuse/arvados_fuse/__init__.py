@@ -526,6 +526,8 @@ class ProjectDirectory(Directory):
         self.project_object = project_object
         self.project_object_file = None
         self.uuid = project_object['uuid']
+        self._poll = poll
+        self._poll_time = poll_time
 
     def createDirectory(self, i):
         if collection_uuid_pattern.match(i['uuid']):
