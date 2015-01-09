@@ -142,6 +142,14 @@ class Collection < ArvadosModel
         break if names.length > 2**13
       end
     end
+
+    if manifest_text and names.length < 2**13
+      manifest_text.scan(/^\.\/(\S+)/m) do |stream_name|
+        names << stream_name.first.gsub('\040',' ') + "\n" 
+        break if names.length > 2**13
+      end
+    end
+
     names[0,2**13]
   end
 
