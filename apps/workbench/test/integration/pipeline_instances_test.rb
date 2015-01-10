@@ -443,7 +443,7 @@ class PipelineInstancesTest < ActionDispatch::IntegrationTest
     ['admin', nil, 40, 200],
     ['admin', 'FUSE project', 1, 1],
     ['admin', 'pipeline_10', 2, 2],
-    ['active', 'containing at least two', 0, 100],  # components column (of type text) is currently not searchable
+    ['active', 'containing at least two', 2, 100],
     ['active', nil, 10, 100],
     ['active', 'no such match', 0, 0],
   ].each do |user, search_filter, expected_min, expected_max|
