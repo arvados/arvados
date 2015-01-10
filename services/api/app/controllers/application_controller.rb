@@ -77,7 +77,9 @@ class ApplicationController < ActionController::Base
   end
 
   def show
-    render json: @object.as_api_response(nil, select: @select)
+    render(text: Oj.dump(@object.as_api_response(nil, select: @select),
+                         mode: :compat).html_safe,
+           content_type: 'application/json')
   end
 
   def create
@@ -441,7 +443,8 @@ class ApplicationController < ActionController::Base
         except(:limit).except(:offset).
         count(:id, distinct: true)
     end
-    render json: @object_list
+    render(text: Oj.dump(@object_list, mode: :compat).html_safe,
+           content_type: 'application/json')
   end
 
   def remote_ip
