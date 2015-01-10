@@ -432,6 +432,7 @@ class ArvadosModel < ActiveRecord::Base
   def self.uuid_prefixes
     unless @@prefixes_hash
       @@prefixes_hash = {}
+      Rails.application.eager_load!
       ActiveRecord::Base.descendants.reject(&:abstract_class?).each do |k|
         if k.respond_to?(:uuid_prefix)
           @@prefixes_hash[k.uuid_prefix] = k
@@ -498,7 +499,6 @@ class ArvadosModel < ActiveRecord::Base
     end
     resource_class = nil
 
-    Rails.application.eager_load!
     uuid.match HasUuid::UUID_REGEX do |re|
       return uuid_prefixes[re[1]] if uuid_prefixes[re[1]]
     end
