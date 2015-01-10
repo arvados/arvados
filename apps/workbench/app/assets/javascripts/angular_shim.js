@@ -4,9 +4,10 @@
 
 $(document).on('arv:pane:loaded', function(event, $updatedElement) {
     if (angular && $updatedElement) {
-        angular.element($updatedElement).injector().invoke(function($compile) {
-            var scope = angular.element($updatedElement).scope();
-            $compile($updatedElement)(scope);
-        });
+        angular.element($updatedElement).injector().invoke([
+            '$compile', function($compile) {
+                var scope = angular.element($updatedElement).scope();
+                $compile($updatedElement)(scope);
+            }]);
     }
 });

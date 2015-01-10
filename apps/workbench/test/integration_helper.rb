@@ -29,15 +29,15 @@ module AssertDomEvent
   # Yield the supplied block, then wait for an event to arrive at a
   # DOM element.
   def assert_triggers_dom_event events, target='body'
-    magic = 'RXC0lObcVwEXwSvA-' + rand(2**20).to_s(36)
+    magic = 'received-dom-event-' + rand(2**30).to_s(36)
     page.evaluate_script <<eos
       $('#{target}').one('#{events}', function() {
-        $('body').append('<div id="#{magic}"></div>');
+        $('body').addClass('#{magic}');
       });
 eos
     yield
-    assert_selector "##{magic}"
-    page.evaluate_script "$('##{magic}').remove();";
+    assert_selector "body.#{magic}"
+    page.evaluate_script "$('body').removeClass('#{magic}');";
   end
 end
 
