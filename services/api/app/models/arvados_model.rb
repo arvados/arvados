@@ -523,8 +523,8 @@ class ArvadosModel < ActiveRecord::Base
   end
 
   def log_start_state
-    @old_etag = etag
-    @old_attributes = logged_attributes
+    @old_attributes = attributes
+    @old_logged_attributes = logged_attributes
   end
 
   def log_change(event_type)
@@ -543,14 +543,14 @@ class ArvadosModel < ActiveRecord::Base
 
   def log_update
     log_change('update') do |log|
-      log.fill_properties('old', @old_etag, @old_attributes)
+      log.fill_properties('old', etag(@old_attributes), @old_logged_attributes)
       log.update_to self
     end
   end
 
   def log_destroy
     log_change('destroy') do |log|
-      log.fill_properties('old', @old_etag, @old_attributes)
+      log.fill_properties('old', etag(@old_attributes), @old_logged_attributes)
       log.update_to nil
     end
   end
