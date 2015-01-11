@@ -1,12 +1,7 @@
 source 'https://rubygems.org'
 
 gem 'rails', '~> 4.1.0'
-gem 'minitest', '>= 5.0.0'
-
 gem 'arvados', '>= 0.1.20141114230720'
-
-# Bundle edge Rails instead:
-# gem 'rails', :git => 'git://github.com/rails/rails.git'
 
 gem 'sqlite3'
 
@@ -24,12 +19,11 @@ gem 'coffee-rails'
 # Gems used only for assets and not required
 # in production environments by default.
 group :assets do
-  gem 'sass-rails', '~> 4.0.4'
+  gem 'sass-rails'
+  gem 'uglifier', '>= 1.0.3'
 
   # See https://github.com/sstephenson/execjs#readme for more supported runtimes
   gem 'therubyracer', :platforms => :ruby
-
-  gem 'uglifier', '>= 1.0.3'
 end
 
 group :development do
@@ -38,23 +32,21 @@ group :development do
 end
 
 group :test, :diagnostics do
+  gem 'minitest', '>= 5.0.0'
   gem 'selenium-webdriver'
   gem 'capybara'
   gem 'poltergeist'
   gem 'headless'
 end
 
-group :test, :performance do
+group :test do
   gem 'rails-perftest'
   gem 'ruby-prof'
-end
-
-group :test do
   gem 'rvm-capistrano'
   # Note: "require: false" here tells bunder not to automatically
   # 'require' the packages during application startup. Installation is
   # still mandatory.
-  gem 'simplecov', '~> 0.7.1', require: false
+  gem 'simplecov', '~> 0.7', require: false
   gem 'simplecov-rcov', require: false
   gem 'mocha', require: false
 end
@@ -91,7 +83,7 @@ gem 'andand'
 gem 'RedCloth'
 
 gem 'piwik_analytics'
-gem 'httpclient', '~> 2.5.0'
+gem 'httpclient', '~> 2.5'
 
 # This fork has Rails 4 compatible routes
 gem 'themes_for_rails', git: 'https://github.com/holtkampw/themes_for_rails', ref: '1fd2d7897d75ae0d6375f4c390df87b8e91ad417'
