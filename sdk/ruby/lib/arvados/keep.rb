@@ -18,10 +18,16 @@ module Keep
     #   sign-timestamp ::= <8 lowercase hex digits>
     attr_reader :hash, :hints, :size
 
+    LOCATOR_REGEXP = /^([[:xdigit:]]{32})(\+([[:digit:]]+))?(\+([[:upper:]][[:alnum:]+@_-]*))?$/
+
     def initialize(hasharg, sizearg, hintarg)
       @hash = hasharg
       @size = sizearg
       @hints = hintarg
+    end
+
+    def self.valid? tok
+      !!(LOCATOR_REGEXP.match tok)
     end
 
     # Locator.parse returns a Locator object parsed from the string tok.
@@ -41,7 +47,7 @@ module Keep
         raise ArgumentError.new "locator is nil or empty"
       end
 
-      m = /^([[:xdigit:]]{32})(\+([[:digit:]]+))?(\+([[:upper:]][[:alnum:]+@_-]*))?$/.match(tok.strip)
+      m = LOCATOR_REGEXP.match(tok.strip)
       unless m
         raise ArgumentError.new "not a valid locator #{tok}"
       end
@@ -100,15 +106,21 @@ module Keep
     def each_line
       return to_enum(__method__) unless block_given?
       @text.each_line do |line|
-        tokens = line.split
-        next if tokens.empty?
-        stream_name = unescape(tokens.shift)
-        blocks = []
-        while loc = Locator.parse(tokens.first)
-          blocks << loc
-          tokens.shift
+        stream_name = nil
+        block_tokens = []
+        file_tokens = []
+        line.scan /\S+/ do |token|
+          if stream_name.nil?
+            stream_name = unescape token
+          elsif file_tokens.empty? and Locator.valid? token
+            block_tokens << token
+          else
+            file_tokens << unescape(token)
+          end
         end
-        yield [stream_name, blocks, tokens.map { |s| unescape(s) }]
+        # Ignore blank lines
+        next if stream_name.nil?
+        yield [stream_name, block_tokens, file_tokens]
       end
     end
 
@@ -124,21 +136,33 @@ module Keep
       end
     end
 
-    def each_file_spec(speclist)
+    def split_file_token token
+      start_pos, filesize, filename = token.split(':', 3)
+      [start_pos.to_i, filesize.to_i, filename]
+    end
+
+    def each_file_spec
       return to_enum(__method__, speclist) unless block_given?
-      speclist.each do |filespec|
-        start_pos, filesize, filename = filespec.split(':', 3)
-        yield [start_pos.to_i, filesize.to_i, filename]
+      @text.each_line do |line|
+        stream_name = nil
+        in_file_tokens = false
+        line.scan /\S+/ do |token|
+          if stream_name.nil?
+            stream_name = unescape token
+          elsif in_file_tokens or not Locator.valid? token
+            in_file_tokens = true
+            yield [stream_name] + split_file_token(token)
+          end
+        end
       end
+      true
     end
 
     def files
       if @files.nil?
         file_sizes = Hash.new(0)
-        each_line do |streamname, blocklist, filelist|
-          each_file_spec(filelist) do |_, filesize, filename|
-            file_sizes[[streamname, filename]] += filesize
-          end
+        each_file_spec do |streamname, _, filesize, filename|
+          file_sizes[[streamname, filename]] += filesize
         end
         @files = file_sizes.each_pair.map do |(streamname, filename), size|
           [streamname, filename, size]
@@ -157,11 +181,9 @@ module Keep
         return files.size
       end
       seen_files = {}
-      each_line do |streamname, blocklist, filelist|
-        each_file_spec(filelist) do |_, _, filename|
-          seen_files[[streamname, filename]] = true
-          return stop_after if (seen_files.size >= stop_after)
-        end
+      each_file_spec do |streamname, _, _, filename|
+        seen_files[[streamname, filename]] = true
+        return stop_after if (seen_files.size >= stop_after)
       end
       seen_files.size
     end
@@ -178,9 +200,8 @@ module Keep
       if want_file.nil?
         want_stream, want_file = File.split(want_stream)
       end
-      each_line do |stream_name, _, filelist|
-        if (stream_name == want_stream) and
-            each_file_spec(filelist).any? { |_, _, name| name == want_file }
+      each_file_spec do |streamname, _, _, name|
+        if streamname == want_stream and name == want_file
           return true
         end
       end
