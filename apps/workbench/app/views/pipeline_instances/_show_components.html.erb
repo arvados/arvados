@@ -1,14 +1,13 @@
 <% if !@object.state.in? ['New', 'Ready'] %>
 
-  <div class="pull-right" style="padding-left: 1em">
-    Current state: <span class="badge badge-info" data-pipeline-state="<%= @object.state %>">
-      <% if @object.state == "RunningOnServer" %>
-        Active
-      <% else %>
-        <%= @object.state %>
-      <% end %>
-    </span>&nbsp;
-  </div>
+  <%
+     job_uuids = @object.components.map { |k,j| j.is_a? Hash and j[:job].andand[:uuid] }.compact
+     throttle = @object.state.start_with?('Running') ? 5000 : 15000
+     %>
+  <div class="arv-log-refresh-control"
+       data-load-throttle="<%= throttle %>"
+       data-object-uuids="<%= @object.uuid %> <%= job_uuids.join(' ') %>"
+       ></div>
 
   <%= render_pipeline_components("running", :json) %>
 

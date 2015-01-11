@@ -14,7 +14,7 @@ class JobsTest < ActionDispatch::IntegrationTest
   end
 
   test "add job description" do
-    Capybara.current_driver = Capybara.javascript_driver
+    need_javascript
     visit page_with_token("active", "/jobs")
 
     # go to job running the script "doesnotexist"
@@ -39,7 +39,7 @@ class JobsTest < ActionDispatch::IntegrationTest
   end
 
   test "view job log" do
-    Capybara.current_driver = Capybara.javascript_driver
+    need_javascript
     job = api_fixture('jobs')['job_with_real_log']
 
     IO.expects(:popen).returns(fakepipe_with_log_data)
@@ -54,11 +54,11 @@ class JobsTest < ActionDispatch::IntegrationTest
     assert page.has_text? 'log message 1'
     assert page.has_text? 'log message 2'
     assert page.has_text? 'log message 3'
-    refute page.has_text? 'Showing only 100 bytes of this log'
+    assert page.has_no_text? 'Showing only 100 bytes of this log'
   end
 
   test 'view partial job log' do
-    Capybara.current_driver = Capybara.javascript_driver
+    need_javascript
     # This config will be restored during teardown by ../test_helper.rb:
     Rails.configuration.log_viewer_max_bytes = 100
 

@@ -3,7 +3,7 @@ module PipelineComponentsHelper
     begin
       render(partial: "pipeline_instances/show_components_#{template_suffix}",
              locals: locals)
-    rescue Exception => e
+    rescue => e
       logger.error "#{e.inspect}"
       logger.error "#{e.backtrace.join("\n\t")}"
       case fallback

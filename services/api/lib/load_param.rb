@@ -6,8 +6,11 @@
 #   @where, @filters, @limit, @offset, @orders
 module LoadParam
 
-  # Default limit on number of rows to return in a single query.
+  # Default number of rows to return in a single query.
   DEFAULT_LIMIT = 100
+
+  # Maximum number of rows to return in a single query, even if the client asks for more.
+  MAX_LIMIT = 1000
 
   # Load params[:where] into @where
   def load_where_param
@@ -55,7 +58,7 @@ module LoadParam
       unless params[:limit].to_s.match(/^\d+$/)
         raise ArgumentError.new("Invalid value for limit parameter")
       end
-      @limit = params[:limit].to_i
+      @limit = [params[:limit].to_i, MAX_LIMIT].min
     else
       @limit = DEFAULT_LIMIT
     end
@@ -70,7 +73,7 @@ module LoadParam
     end
 
     @orders = []
-    if params[:order]
+    if (params[:order].is_a?(Array) && !params[:order].empty?) || !params[:order].blank?
       od = []
       (case params[:order]
        when String
@@ -89,10 +92,23 @@ module LoadParam
         order = order.to_s
         attr, direction = order.strip.split " "
         direction ||= 'asc'
+        # The attr can have its table unspecified if it happens to be for the current "model_class" (the first case)
+        # or it can be fully specified with the database tablename (the second case) (e.g. "collections.name").
+        # NB that the security check for the second case table_name will not work if the model
+        # has used set_table_name to use an alternate table name from the Rails standard.
+        # I could not find a perfect way to handle this well, but ActiveRecord::Base.send(:descendants)
+        # would be a place to start if this ever becomes necessary.
         if attr.match /^[a-z][_a-z0-9]+$/ and
             model_class.columns.collect(&:name).index(attr) and
             ['asc','desc'].index direction.downcase
           @orders << "#{table_name}.#{attr} #{direction.downcase}"
+        elsif attr.match /^([a-z][_a-z0-9]+)\.([a-z][_a-z0-9]+)$/ and
+            ['asc','desc'].index(direction.downcase) and
+            ActiveRecord::Base.connection.tables.include?($1) and
+            $1.classify.constantize.columns.collect(&:name).index($2)
+          # $1 in the above checks references the first match from the regular expression, which is expected to be the database table name
+          # $2 is of course the actual database column name
+          @orders << "#{attr} #{direction.downcase}"
         end
       end
     end
@@ -125,6 +141,5 @@ module LoadParam
     @distinct = true if (params[:distinct] == true || params[:distinct] == "true")
     @distinct = false if (params[:distinct] == false || params[:distinct] == "false")
   end
-
 
 end

@@ -43,7 +43,7 @@ def find_server_pid(PID_PATH, wait=10):
         try:
             with open(PID_PATH, 'r') as f:
                 server_pid = int(f.read())
-            good_pid = (os.kill(server_pid, 0) == None)
+            good_pid = (os.kill(server_pid, 0) is None)
         except IOError:
             good_pid = False
         except OSError:
@@ -62,7 +62,7 @@ def kill_server_pid(PID_PATH, wait=10):
         with open(PID_PATH, 'r') as f:
             server_pid = int(f.read())
         while now <= timeout:
-            os.kill(server_pid, signal.SIGTERM) == None
+            os.kill(server_pid, signal.SIGTERM)
             os.getpgid(server_pid) # throw OSError if no such pid
             now = time.time()
             time.sleep(0.1)
@@ -82,7 +82,7 @@ def run(websockets=False, reuse_server=False):
 
     test_pid = find_server_pid(pid_file, 0)
 
-    if test_pid == None or not reuse_server:
+    if test_pid is None or not reuse_server:
         # do not try to run both server variants at once
         stop()
 
@@ -95,27 +95,19 @@ def run(websockets=False, reuse_server=False):
         subprocess.call(['bundle', 'exec', 'rake', 'db:test:load'])
         subprocess.call(['bundle', 'exec', 'rake', 'db:fixtures:load'])
 
+        subprocess.call(['bundle', 'exec', 'rails', 'server', '-d',
+                         '--pid',
+                         os.path.join(os.getcwd(), SERVER_PID_PATH),
+                         '-p3000'])
+        os.environ["ARVADOS_API_HOST"] = "127.0.0.1:3000"
+
         if websockets:
-            os.environ["ARVADOS_WEBSOCKETS"] = "true"
-            subprocess.call(['openssl', 'req', '-new', '-x509', '-nodes',
-                             '-out', './self-signed.pem',
-                             '-keyout', './self-signed.key',
-                             '-days', '3650',
-                             '-subj', '/CN=localhost'])
+            os.environ["ARVADOS_WEBSOCKETS"] = "ws-only"
             subprocess.call(['bundle', 'exec',
                              'passenger', 'start', '-d', '-p3333',
                              '--pid-file',
-                             os.path.join(os.getcwd(), WEBSOCKETS_SERVER_PID_PATH),
-                             '--ssl',
-                             '--ssl-certificate', 'self-signed.pem',
-                             '--ssl-certificate-key', 'self-signed.key'])
-            os.environ["ARVADOS_API_HOST"] = "127.0.0.1:3333"
-        else:
-            subprocess.call(['bundle', 'exec', 'rails', 'server', '-d',
-                             '--pid',
-                             os.path.join(os.getcwd(), SERVER_PID_PATH),
-                             '-p3000'])
-            os.environ["ARVADOS_API_HOST"] = "127.0.0.1:3000"
+                             os.path.join(os.getcwd(), WEBSOCKETS_SERVER_PID_PATH)
+                         ])
 
         pid = find_server_pid(SERVER_PID_PATH)
 
@@ -186,8 +178,18 @@ def run_keep(blob_signing_key=None, enforce_permissions=False):
     for d in api.keep_disks().list().execute()['items']:
         api.keep_disks().delete(uuid=d['uuid']).execute()
 
-    s1 = api.keep_services().create(body={"keep_service": {"service_host": "localhost",  "service_port": 25107, "service_type": "disk"} }).execute()
-    s2 = api.keep_services().create(body={"keep_service": {"service_host": "localhost",  "service_port": 25108, "service_type": "disk"} }).execute()
+    s1 = api.keep_services().create(body={"keep_service": {
+                "uuid": "zzzzz-bi6l4-5bo5n1iekkjyz6b",
+                "service_host": "localhost",
+                "service_port": 25107,
+                "service_type": "disk"
+                }}).execute()
+    s2 = api.keep_services().create(body={"keep_service": {
+                "uuid": "zzzzz-bi6l4-2nz60e0ksj7vr3s",
+                "service_host": "localhost",
+                "service_port": 25108,
+                "service_type": "disk"
+                }}).execute()
     api.keep_disks().create(body={"keep_disk": {"keep_service_uuid": s1["uuid"] } }).execute()
     api.keep_disks().create(body={"keep_disk": {"keep_service_uuid": s2["uuid"] } }).execute()
 
@@ -231,7 +233,13 @@ def fixture(fix):
     '''load a fixture yaml file'''
     with open(os.path.join(SERVICES_SRC_DIR, 'api', "test", "fixtures",
                            fix + ".yml")) as f:
-        return yaml.load(f.read())
+        yaml_file = f.read()
+        try:
+          trim_index = yaml_file.index("# Test Helper trims the rest of the file")
+          yaml_file = yaml_file[0:trim_index]
+        except ValueError:
+          pass
+        return yaml.load(yaml_file)
 
 def authorize_with(token):
     '''token is the symbolic name of the token from the api_client_authorizations fixture'''
@@ -308,7 +316,7 @@ if __name__ == "__main__":
 
     if args.action == 'start':
         run(websockets=args.websockets, reuse_server=args.reuse)
-        if args.auth != None:
+        if args.auth is not None:
             authorize_with(args.auth)
             print("export ARVADOS_API_HOST={}".format(arvados.config.settings()["ARVADOS_API_HOST"]))
             print("export ARVADOS_API_TOKEN={}".format(arvados.config.settings()["ARVADOS_API_TOKEN"]))

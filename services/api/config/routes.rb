@@ -3,6 +3,14 @@ Server::Application.routes.draw do
 
   # See http://guides.rubyonrails.org/routing.html
 
+  # OPTIONS requests are not allowed at routes that use cookies.
+  ['/auth/*a', '/login', '/logout'].each do |nono|
+    match nono, :to => 'user_sessions#cross_origin_forbidden', :via => 'OPTIONS'
+  end
+  # OPTIONS at discovery and API paths get an empty response with CORS headers.
+  match '/discovery/v1/*a', :to => 'static#empty', :via => 'OPTIONS'
+  match '/arvados/v1/*a', :to => 'static#empty', :via => 'OPTIONS'
+
   namespace :arvados do
     namespace :v1 do
       resources :api_client_authorizations do
@@ -63,9 +71,15 @@ Server::Application.routes.draw do
     end
   end
 
+  if Rails.env == 'test'
+    post '/database/reset', to: 'database#reset'
+  end
+
   # omniauth
   match '/auth/:provider/callback', :to => 'user_sessions#create'
   match '/auth/failure', :to => 'user_sessions#failure'
+  # not handled by omniauth provider -> 403 with no CORS headers.
+  get '/auth/*a', :to => 'user_sessions#cross_origin_forbidden'
 
   # Custom logout
   match '/login', :to => 'user_sessions#login'

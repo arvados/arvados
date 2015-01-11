@@ -1,3 +1,4 @@
 <%= render_pane 'tab_contents', to_string: true, locals: {
-    filters: [['uuid', 'is_a', ["arvados#human", "arvados#specimen", "arvados#trait"]]]
+    filters: [['uuid', 'is_a', ["arvados#human", "arvados#specimen", "arvados#trait"]]],
+	sortable_columns: { 'name' => 'humans.uuid, specimens.uuid, traits.name' }
     }.merge(local_assigns) %>

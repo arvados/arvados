@@ -5,7 +5,6 @@
 import os
 import sys
 import llfuse
-from llfuse import FUSEError
 import errno
 import stat
 import threading
@@ -17,11 +16,19 @@ import apiclient
 import json
 import logging
 import time
+import _strptime
 import calendar
 import threading
+import itertools
+
 from arvados.util import portable_data_hash_pattern, uuid_pattern, collection_uuid_pattern, group_uuid_pattern, user_uuid_pattern, link_uuid_pattern
 
 _logger = logging.getLogger('arvados.arvados_fuse')
+
+# Match any character which FUSE or Linux cannot accommodate as part
+# of a filename. (If present in a collection filename, they will
+# appear as underscores in the fuse mount.)
+_disallowed_filename_characters = re.compile('[\x00/]')
 
 class SafeApi(object):
     '''Threadsafe wrapper for API object.  This stores and returns a different api
@@ -63,24 +70,17 @@ def convertTime(t):
         return 0
 
 def sanitize_filename(dirty):
-    '''Remove troublesome characters from filenames.'''
-    # http://www.dwheeler.com/essays/fixing-unix-linux-filenames.html
+    '''Replace disallowed filename characters with harmless "_".'''
     if dirty is None:
         return None
-
-    fn = ""
-    for c in dirty:
-        if (c >= '\x00' and c <= '\x1f') or c == '\x7f' or c == '/':
-            # skip control characters and /
-            continue
-        fn += c
-
-    # strip leading - or ~ and leading/trailing whitespace
-    stripped = fn.lstrip("-~ ").rstrip()
-    if len(stripped) > 0:
-        return stripped
+    elif dirty == '':
+        return '_'
+    elif dirty == '.':
+        return '_'
+    elif dirty == '..':
+        return '__'
     else:
-        return None
+        return _disallowed_filename_characters.sub('_', dirty)
 
 
 class FreshBase(object):
@@ -304,17 +304,14 @@ class CollectionDirectory(Directory):
     def same(self, i):
         return i['uuid'] == self.collection_locator or i['portable_data_hash'] == self.collection_locator
 
-    def new_collection(self, new_collection_object):
+    def new_collection(self, new_collection_object, coll_reader):
         self.collection_object = new_collection_object
 
         if self.collection_object_file is not None:
             self.collection_object_file.update(self.collection_object)
 
         self.clear()
-        collection = arvados.CollectionReader(
-            self.collection_object["manifest_text"], self.api,
-            self.api.localkeep(), num_retries=self.num_retries)
-        for s in collection.all_streams():
+        for s in coll_reader.all_streams():
             cwd = self
             for part in s.name().split('/'):
                 if part != '' and part != '.':
@@ -331,33 +328,36 @@ class CollectionDirectory(Directory):
                 return True
 
             with llfuse.lock_released:
-                new_collection_object = self.api.collections().get(
-                    uuid=self.collection_locator
-                    ).execute(num_retries=self.num_retries)
+                coll_reader = arvados.CollectionReader(
+                    self.collection_locator, self.api, self.api.localkeep(),
+                    num_retries=self.num_retries)
+                new_collection_object = coll_reader.api_response() or {}
+                # If the Collection only exists in Keep, there will be no API
+                # response.  Fill in the fields we need.
+                if 'uuid' not in new_collection_object:
+                    new_collection_object['uuid'] = self.collection_locator
                 if "portable_data_hash" not in new_collection_object:
                     new_collection_object["portable_data_hash"] = new_collection_object["uuid"]
+                if 'manifest_text' not in new_collection_object:
+                    new_collection_object['manifest_text'] = coll_reader.manifest_text()
+                coll_reader.normalize()
             # end with llfuse.lock_released, re-acquire lock
 
             if self.collection_object is None or self.collection_object["portable_data_hash"] != new_collection_object["portable_data_hash"]:
-                self.new_collection(new_collection_object)
+                self.new_collection(new_collection_object, coll_reader)
 
             self.fresh()
             return True
-        except apiclient.errors.HttpError as e:
-            if e.resp.status == 404:
-                _logger.warn("arv-mount %s: not found", self.collection_locator)
-            else:
-                _logger.error("arv-mount %s: error", self.collection_locator)
-                _logger.exception(detail)
+        except apiclient.errors.NotFoundError:
+            _logger.exception("arv-mount %s: error", self.collection_locator)
         except arvados.errors.ArgumentError as detail:
             _logger.warning("arv-mount %s: error %s", self.collection_locator, detail)
             if self.collection_object is not None and "manifest_text" in self.collection_object:
                 _logger.warning("arv-mount manifest_text is: %s", self.collection_object["manifest_text"])
-        except Exception as detail:
-            _logger.error("arv-mount %s: error", self.collection_locator)
+        except Exception:
+            _logger.exception("arv-mount %s: error", self.collection_locator)
             if self.collection_object is not None and "manifest_text" in self.collection_object:
                 _logger.error("arv-mount manifest_text is: %s", self.collection_object["manifest_text"])
-            _logger.exception(detail)
         return False
 
     def __getitem__(self, item):
@@ -391,18 +391,8 @@ class MagicDirectory(Directory):
     to readdir().
     '''
 
-    def __init__(self, parent_inode, inodes, api, num_retries):
-        super(MagicDirectory, self).__init__(parent_inode)
-        self.inodes = inodes
-        self.api = api
-        self.num_retries = num_retries
-        # Have to defer creating readme_file because at this point we don't
-        # yet have an inode assigned.
-        self.readme_file = None
-
-    def create_readme(self):
-        if self.readme_file is None:
-            text = '''This directory provides access to Arvados collections as subdirectories listed
+    README_TEXT = '''
+This directory provides access to Arvados collections as subdirectories listed
 by uuid (in the form 'zzzzz-4zz18-1234567890abcde') or portable data hash (in
 the form '1234567890abcdefghijklmnopqrstuv+123').
 
@@ -410,13 +400,27 @@ Note that this directory will appear empty until you attempt to access a
 specific collection subdirectory (such as trying to 'cd' into it), at which
 point the collection will actually be looked up on the server and the directory
 will appear if it exists.
-'''
-            self.readme_file = self.inodes.add_entry(StringFile(self.inode, text, time.time()))
-            self._entries["README"] = self.readme_file
+'''.lstrip()
+
+    def __init__(self, parent_inode, inodes, api, num_retries):
+        super(MagicDirectory, self).__init__(parent_inode)
+        self.inodes = inodes
+        self.api = api
+        self.num_retries = num_retries
+
+    def __setattr__(self, name, value):
+        super(MagicDirectory, self).__setattr__(name, value)
+        # When we're assigned an inode, add a README.
+        if ((name == 'inode') and (self.inode is not None) and
+              (not self._entries)):
+            self._entries['README'] = self.inodes.add_entry(
+                StringFile(self.inode, self.README_TEXT, time.time()))
+            # If we're the root directory, add an identical by_id subdirectory.
+            if self.inode == llfuse.ROOT_INODE:
+                self._entries['by_id'] = self.inodes.add_entry(MagicDirectory(
+                        self.inode, self.inodes, self.api, self.num_retries))
 
     def __contains__(self, k):
-        self.create_readme()
-
         if k in self._entries:
             return True
 
@@ -435,10 +439,6 @@ will appear if it exists.
             _logger.debug('arv-mount exception keep %s', e)
             return False
 
-    def items(self):
-        self.create_readme()
-        return self._entries.items()
-
     def __getitem__(self, item):
         if item in self:
             return self._entries[item]
@@ -454,8 +454,8 @@ class RecursiveInvalidateDirectory(Directory):
             super(RecursiveInvalidateDirectory, self).invalidate()
             for a in self._entries:
                 self._entries[a].invalidate()
-        except Exception as e:
-            _logger.exception(e)
+        except Exception:
+            _logger.exception()
         finally:
             if self.inode == llfuse.ROOT_INODE:
                 llfuse.lock.release()
@@ -673,8 +673,8 @@ class SharedDirectory(Directory):
                        lambda i: i[0],
                        lambda a, i: a.uuid == i[1]['uuid'],
                        lambda i: ProjectDirectory(self.inode, self.inodes, self.api, self.num_retries, i[1], poll=self._poll, poll_time=self._poll_time))
-        except Exception as e:
-            _logger.exception(e)
+        except Exception:
+            _logger.exception()
 
 
 class FileHandle(object):
@@ -692,7 +692,7 @@ class Inodes(object):
 
     def __init__(self):
         self._entries = {}
-        self._counter = llfuse.ROOT_INODE
+        self._counter = itertools.count(llfuse.ROOT_INODE)
 
     def __getitem__(self, item):
         return self._entries[item]
@@ -710,9 +710,8 @@ class Inodes(object):
         return k in self._entries
 
     def add_entry(self, entry):
-        entry.inode = self._counter
+        entry.inode = next(self._counter)
         self._entries[entry.inode] = entry
-        self._counter += 1
         return entry
 
     def del_entry(self, entry):
@@ -839,8 +838,8 @@ class Operations(llfuse.Operations):
         except arvados.errors.NotFoundError as e:
             _logger.warning("Block not found: " + str(e))
             raise llfuse.FUSEError(errno.EIO)
-        except Exception as e:
-            _logger.exception(e)
+        except Exception:
+            _logger.exception()
             raise llfuse.FUSEError(errno.EIO)
 
     def release(self, fh):

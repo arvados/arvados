@@ -1,9 +1,11 @@
 module ApiTemplateOverride
   def allowed_to_render?(fieldset, field, model, options)
+    return false if !super
     if options[:select]
-      return options[:select].include? field.to_s
+      options[:select].include? field.to_s
+    else
+      true
     end
-    super
   end
 end
 
@@ -25,6 +27,7 @@ class ApplicationController < ActionController::Base
 
   ERROR_ACTIONS = [:render_error, :render_not_found]
 
+  before_filter :set_cors_headers
   before_filter :respond_with_json_by_default
   before_filter :remote_ip
   before_filter :load_read_auths
@@ -33,6 +36,7 @@ class ApplicationController < ActionController::Base
   before_filter :catch_redirect_hint
   before_filter(:find_object_by_uuid,
                 except: [:index, :create] + ERROR_ACTIONS)
+  before_filter :load_required_parameters
   before_filter :load_limit_offset_order_params, only: [:index, :contents]
   before_filter :load_where_param, only: [:index, :contents]
   before_filter :load_filters_param, only: [:index, :contents]
@@ -56,6 +60,14 @@ class ApplicationController < ActionController::Base
                 :with => :render_not_found)
   end
 
+  def default_url_options
+    if Rails.configuration.host
+      {:host => Rails.configuration.host}
+    else
+      {}
+    end
+  end
+
   def index
     @objects.uniq!(&:id) if @select.nil? or @select.include? "id"
     if params[:eager] and params[:eager] != '0' and params[:eager] != 0 and params[:eager] != ''
@@ -70,7 +82,6 @@ class ApplicationController < ActionController::Base
 
   def create
     @object = model_class.new resource_attrs
-    retry_save = true
 
     if @object.respond_to? :name and params[:ensure_unique_name]
       # Record the original name.  See below.
@@ -78,40 +89,35 @@ class ApplicationController < ActionController::Base
       counter = 1
     end
 
-    while retry_save
-      begin
-        retry_save = false
-        @object.save!
-      rescue ActiveRecord::RecordNotUnique => rn
-        # Dig into the error to determine if it is specifically calling out a
-        # (owner_uuid, name) uniqueness violation.  In this specific case, and
-        # the client requested a unique name with ensure_unique_name==true,
-        # update the name field and try to save again.  Loop as necessary to
-        # discover a unique name.  It is necessary to handle name choosing at
-        # this level (as opposed to the client) to ensure that record creation
-        # never fails due to a race condition.
-        if rn.original_exception.is_a? PG::UniqueViolation
-          # Unfortunately ActiveRecord doesn't abstract out any of the
-          # necessary information to figure out if this the error is actually
-          # the specific case where we want to apply the ensure_unique_name
-          # behavior, so the following code is specialized to Postgres.
-          err = rn.original_exception
-          detail = err.result.error_field(PG::Result::PG_DIAG_MESSAGE_DETAIL)
-          if /^Key \(owner_uuid, name\)=\([a-z0-9]{5}-[a-z0-9]{5}-[a-z0-9]{15}, .*?\) already exists\./.match detail
-            logger.error "params[:ensure_unique_name] is #{params[:ensure_unique_name]}"
-            if params[:ensure_unique_name]
-              counter += 1
-              @object.uuid = nil
-              @object.name = "#{name_stem} (#{counter})"
-              retry_save = true
-            end
-          end
-        end
-        if not retry_save
-          raise
-        end
-      end
-    end
+    begin
+      @object.save!
+    rescue ActiveRecord::RecordNotUnique => rn
+      raise unless params[:ensure_unique_name]
+
+      # Dig into the error to determine if it is specifically calling out a
+      # (owner_uuid, name) uniqueness violation.  In this specific case, and
+      # the client requested a unique name with ensure_unique_name==true,
+      # update the name field and try to save again.  Loop as necessary to
+      # discover a unique name.  It is necessary to handle name choosing at
+      # this level (as opposed to the client) to ensure that record creation
+      # never fails due to a race condition.
+      raise unless rn.original_exception.is_a? PG::UniqueViolation
+
+      # Unfortunately ActiveRecord doesn't abstract out any of the
+      # necessary information to figure out if this the error is actually
+      # the specific case where we want to apply the ensure_unique_name
+      # behavior, so the following code is specialized to Postgres.
+      err = rn.original_exception
+      detail = err.result.error_field(PG::Result::PG_DIAG_MESSAGE_DETAIL)
+      raise unless /^Key \(owner_uuid, name\)=\([a-z0-9]{5}-[a-z0-9]{5}-[a-z0-9]{15}, .*?\) already exists\./.match detail
+
+      # OK, this exception really is just a unique name constraint
+      # violation, and we've been asked to ensure_unique_name.
+      counter += 1
+      @object.uuid = nil
+      @object.name = "#{name_stem} (#{counter})"
+      redo
+    end while false
     show
   end
 
@@ -341,6 +347,13 @@ class ApplicationController < ActionController::Base
     end
   end
 
+  def set_cors_headers
+    response.headers['Access-Control-Allow-Origin'] = '*'
+    response.headers['Access-Control-Allow-Methods'] = 'GET, HEAD, PUT, POST, DELETE'
+    response.headers['Access-Control-Allow-Headers'] = 'Authorization'
+    response.headers['Access-Control-Max-Age'] = '86486400'
+  end
+
   def respond_with_json_by_default
     html_index = request.accepts.index(Mime::HTML)
     if html_index.nil? or request.accepts[0...html_index].include?(Mime::JSON)
@@ -440,6 +453,40 @@ class ApplicationController < ActionController::Base
       # Hopefully, we are not!
       @remote_ip = request.env['REMOTE_ADDR']
     end
+  end
+
+  def load_required_parameters
+    (self.class.send "_#{params[:action]}_requires_parameters" rescue {}).
+      each do |key, info|
+      if info[:required] and not params.include?(key)
+        raise ArgumentError.new("#{key} parameter is required")
+      elsif info[:type] == 'boolean'
+        # Make sure params[key] is either true or false -- not a
+        # string, not nil, etc.
+        if not params.include?(key)
+          params[key] = info[:default]
+        elsif [false, 'false', '0', 0].include? params[key]
+          params[key] = false
+        elsif [true, 'true', '1', 1].include? params[key]
+          params[key] = true
+        else
+          raise TypeError.new("#{key} parameter must be a boolean, true or false")
+        end
+      end
+    end
+    true
+  end
+
+  def self._create_requires_parameters
+    {
+      ensure_unique_name: {
+        type: "boolean",
+        description: "Adjust name to ensure uniqueness instead of returning an error on (owner_uuid, name) collision.",
+        location: "query",
+        required: false,
+        default: false
+      }
+    }
   end
 
   def self._index_requires_parameters

@@ -176,9 +176,28 @@ previous_docker_job_run:
   script_parameters:
     input: fa7aeb5140e2848d39b416daeef4ffc5+45
     an_integer: "1"
+  runtime_constraints:
+    docker_image: arvados/test
   success: true
   output: ea10d51bcf88862dbcc36eb292017dfd+45
   docker_image_locator: fa3c1a9cb6783f85f2ecda037e07b8c3+167
+  state: Complete
+
+previous_job_run_with_arvados_sdk_version:
+  uuid: zzzzz-8i9sb-eoo0321or2dw2jg
+  created_at: <%= 14.minute.ago.to_s(:db) %>
+  owner_uuid: zzzzz-tpzed-xurymjxw79nv3jz
+  repository: foo
+  script: hash
+  script_version: 31ce37fe365b3dc204300a3e4c396ad333ed0556
+  script_parameters:
+    input: fa7aeb5140e2848d39b416daeef4ffc5+45
+    an_integer: "1"
+  runtime_constraints:
+    arvados_sdk_version: commit2
+  arvados_sdk_version: 00634b2b8a492d6f121e3cf1d6587b821136a9a7
+  success: true
+  output: ea10d51bcf88862dbcc36eb292017dfd+45
   state: Complete
 
 previous_job_run_no_output:
@@ -284,3 +303,87 @@ cancelled:
     done: 1
   runtime_constraints: {}
   state: Cancelled
+
+job_in_subproject:
+  uuid: zzzzz-8i9sb-subprojectjob01
+  created_at: 2014-10-15 12:00:00
+  owner_uuid: zzzzz-j7d0g-axqo7eu9pwvna1x
+  log: ~
+  repository: foo
+  script: hash
+  script_version: 4fe459abe02d9b365932b8f5dc419439ab4e2577
+  state: Complete
+
+running_will_be_completed:
+  uuid: zzzzz-8i9sb-rshmckwoma9pjh8
+  owner_uuid: zzzzz-j7d0g-v955i6s2oi1cbso
+  cancelled_at: ~
+  cancelled_by_user_uuid: ~
+  cancelled_by_client_uuid: ~
+  created_at: <%= 3.minute.ago.to_s(:db) %>
+  started_at: <%= 3.minute.ago.to_s(:db) %>
+  finished_at: ~
+  script_version: 1de84a854e2b440dc53bf42f8548afa4c17da332
+  running: true
+  success: ~
+  output: ~
+  priority: 0
+  log: ~
+  is_locked_by_uuid: zzzzz-tpzed-d9tiejq69daie8f
+  tasks_summary:
+    failed: 0
+    todo: 3
+    running: 1
+    done: 1
+  runtime_constraints: {}
+  state: Running
+
+graph_stage1:
+  uuid: zzzzz-8i9sb-graphstage10000
+  owner_uuid: zzzzz-j7d0g-v955i6s2oi1cbso
+  repository: foo
+  script: hash
+  script_version: 4fe459abe02d9b365932b8f5dc419439ab4e2577
+  state: Complete
+  output: fa7aeb5140e2848d39b416daeef4ffc5+45
+
+graph_stage2:
+  uuid: zzzzz-8i9sb-graphstage20000
+  owner_uuid: zzzzz-j7d0g-v955i6s2oi1cbso
+  repository: foo
+  script: hash2
+  script_version: 4fe459abe02d9b365932b8f5dc419439ab4e2577
+  state: Complete
+  script_parameters:
+    input: fa7aeb5140e2848d39b416daeef4ffc5+45
+    input2: "stuff"
+  output: 65b17c95fdbc9800fc48acda4e9dcd0b+93
+
+graph_stage3:
+  uuid: zzzzz-8i9sb-graphstage30000
+  owner_uuid: zzzzz-j7d0g-v955i6s2oi1cbso
+  repository: foo
+  script: hash2
+  script_version: 4fe459abe02d9b365932b8f5dc419439ab4e2577
+  state: Complete
+  script_parameters:
+    input: fa7aeb5140e2848d39b416daeef4ffc5+45
+    input2: "stuff2"
+  output: ea10d51bcf88862dbcc36eb292017dfd+45
+
+
+# Test Helper trims the rest of the file
+
+# Do not add your fixtures below this line as the rest of this file will be trimmed by test_helper
+
+# jobs in project_with_2_pipelines_and_60_jobs
+<% for i in 1..60 do %>
+job_<%=i%>_of_60:
+  uuid: zzzzz-8i9sb-oneof100jobs<%= i.to_s.rjust(3, '0') %>
+  created_at: <%= ((i+5)/5).minute.ago.to_s(:db) %>
+  owner_uuid: zzzzz-j7d0g-nnjobspipelines
+  script_version: 7def43a4d3f20789dda4700f703b5514cc3ed250
+  state: Complete
+<% end %>
+
+# Do not add your fixtures below this line as the rest of this file will be trimmed by test_helper

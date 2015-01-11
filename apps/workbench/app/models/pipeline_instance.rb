@@ -47,10 +47,16 @@ class PipelineInstance < ArvadosBase
     end
   end
 
-  def attribute_editable? attr, *args
-    super && (attr.to_sym == :name || attr.to_sym == :description ||
-              (attr.to_sym == :components and
-               (self.state == 'New' || self.state == 'Ready')))
+  def editable_attributes
+    %w(name description components)
+  end
+
+  def attribute_editable?(name, ever=nil)
+    if name.to_s == "components"
+      (ever or %w(New Ready).include?(state)) and super
+    else
+      super
+    end
   end
 
   def attributes_for_display

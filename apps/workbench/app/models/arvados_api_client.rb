@@ -78,7 +78,8 @@ class ArvadosApiClient
     @client_mtx = Mutex.new
   end
 
-  def api(resources_kind, action, data=nil)
+  def api(resources_kind, action, data=nil, tokens={})
+
     profile_checkpoint
 
     if not @api_client
@@ -100,8 +101,8 @@ class ArvadosApiClient
     url.sub! '/arvados/v1/../../', '/'
 
     query = {
-      'api_token' => Thread.current[:arvados_api_token] || '',
-      'reader_tokens' => (Thread.current[:reader_tokens] || []).to_json,
+      'api_token' => tokens[:arvados_api_token] || Thread.current[:arvados_api_token] || '',
+      'reader_tokens' => (tokens[:reader_tokens] || Thread.current[:reader_tokens] || []).to_json,
     }
     if !data.nil?
       data.each do |k,v|
@@ -124,7 +125,7 @@ class ArvadosApiClient
 
     header = {"Accept" => "application/json"}
 
-    profile_checkpoint { "Prepare request #{url} #{query[:uuid]} #{query[:where]} #{query[:filters]}" }
+    profile_checkpoint { "Prepare request #{url} #{query[:uuid]} #{query[:where]} #{query[:filters]} #{query[:order]}" }
     msg = @client_mtx.synchronize do
       begin
         @api_client.post(url, query, header: header)
@@ -212,6 +213,7 @@ class ArvadosApiClient
         CGI.escape(k.to_s) + '=' + CGI.escape(v.to_s)
       }.join('&')
     end
+    uri
   end
 
   def arvados_logout_url(params={})

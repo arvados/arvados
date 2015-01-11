@@ -45,15 +45,11 @@
                 <%= current_user.email %> <span class="caret"></span>
               </a>
               <ul class="dropdown-menu" role="menu">
-                <li role="presentation" class="dropdown-header">
-                  My account
-                </li>
                 <% if current_user.is_active %>
                 <li role="menuitem"><a href="/manage_account" role="menuitem"><i class="fa fa-key fa-fw"></i> Manage account</a></li>
                 <% if Rails.configuration.user_profile_form_fields %>
                   <li role="menuitem"><a href="/users/<%=current_user.uuid%>/profile" role="menuitem"><i class="fa fa-key fa-fw"></i> Manage profile</a></li>
                 <% end %>
-                <li role="presentation" class="divider"></li>
                 <% end %>
                 <li role="menuitem"><a href="<%= logout_path %>" role="menuitem"><i class="fa fa-sign-out fa-fw"></i> Log out</a></li>
                 <% if current_user.is_active and
@@ -63,19 +59,6 @@
                     <% if i > 0 %><li class="divider"></li><% end %>
                     <li class="notification"><%= n.call(self) %></li>
                   <% end %>
-                <% end %>
-              </ul>
-            </li>
-
-            <li class="dropdown selection-menu">
-              <a href="#" class="dropdown-toggle" data-toggle="dropdown">
-                <span class="fa fa-lg fa-paperclip"></span>
-                <span class="badge" id="persistent-selection-count"></span>
-              </a>
-              <ul class="dropdown-menu" role="menu" id="persistent-selection-list">
-                <%= form_tag '/actions' do %>
-                  <%= hidden_field_tag 'uuid', @object.andand.uuid %>
-                  <div id="selection-form-content"></div>
                 <% end %>
               </ul>
             </li>
@@ -136,12 +119,12 @@
               <li><%= link_to raw('<i class="fa fa-book fa-fw"></i> SDK Reference'), "#{Rails.configuration.arvados_docsite}/sdk", target: "_blank" %></li>
               <li role="presentation" class="divider"></li>
               <li> <%= link_to report_issue_popup_path(popup_type: 'version', current_location: request.url, current_path: request.fullpath, action_method: 'post'),
-                      {class: 'report-issue-modal-window',  :remote => true, return_to: request.url} do %>
+                      {class: 'report-issue-modal-window', remote: true, return_to: request.url} do %>
                        <i class="fa fa-fw fa-support"></i> Show version / debugging info ...
                       <% end %>
               </li>
               <li> <%= link_to report_issue_popup_path(popup_type: 'report', current_location: request.url, current_path: request.fullpath, action_method: 'post'),
-                      {class: 'report-issue-modal-window', :remote => true, return_to: request.url} do %>
+                      {class: 'report-issue-modal-window', remote: true, return_to: request.url} do %>
                        <i class="fa fa-fw fa-support"></i> Report a problem ...
                       <% end %>
               </li>
@@ -165,20 +148,20 @@
               Projects
               <span class="caret"></span>
             </a>
-            <ul class="dropdown-menu" role="menu">
-            <%= render partial: "projects_tree_menu", locals: {
+            <ul class="dropdown-menu" style="min-width: 20em" role="menu">
+              <li>
+                <%= link_to projects_path(options: {ensure_unique_name: true}), method: :post, class: 'btn btn-xs btn-default pull-right' do %>
+                  <i class="fa fa-plus"></i> Add a new project
+                <% end %>
+              </li>
+              <%= render partial: "projects_tree_menu", locals: {
                   :project_link_to => Proc.new do |pnode, &block|
                     link_to(project_path(pnode[:object].uuid),
                       data: { 'object-uuid' => pnode[:object].uuid,
                               'name' => 'name' },
                       &block)
                   end,
-                  :top_button => Proc.new do %>
-                    <% link_to projects_path, method: 'post', class: 'btn btn-xs btn-default pull-right' do %>
-                      <i class="fa fa-plus"></i> New project
-                    <% end %>
-                  <% end %>
-            <% } %>
+              } %>
             </ul>
           </li>
           <% if @name_link or @object %>

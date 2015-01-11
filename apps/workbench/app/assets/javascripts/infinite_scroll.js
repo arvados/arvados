@@ -1,7 +1,7 @@
 function maybe_load_more_content(event) {
-    var scroller = this;        // element with scroll bars
-    var $container;             // element that receives new content
-    var src;                    // url for retrieving content
+    var scroller = this;
+    var $container = $(event.data.container);
+    var src;                     // url for retrieving content
     var scrollHeight;
     var spinner, colspan;
     var serial = Date.now();
@@ -11,7 +11,6 @@ function maybe_load_more_content(event) {
         >
         scrollHeight - 50)
     {
-        $container = $(event.data.container);
         if (!$container.attr('data-infinite-content-href0')) {
             // Remember the first page source url, so we can refresh
             // from page 1 later.
@@ -41,45 +40,26 @@ function maybe_load_more_content(event) {
         $container.append(spinner);
         $container.attr('data-infinite-serial', serial);
 
-        // Combine infiniteContentParams from multiple sources. This
-        // mechanism allows each of several components to set and
-        // update its own set of filters, without having to worry
-        // about stomping on some other component's filters.
-        //
-        // For example, filterable.js writes filters in
-        // infiniteContentParamsFilterable ("search for text foo")
-        // without worrying about clobbering the filters set up by the
-        // tab pane ("only show jobs and pipelines in this tab").
-        params = {};
-        $.each($container.data(), function(datakey, datavalue) {
-            // Note: We attach these data to DOM elements using
-            // <element data-foo-bar="baz">. We store/retrieve them
-            // using $('element').data('foo-bar'), although
-            // .data('fooBar') would also work. The "all data" hash
-            // returned by $('element').data(), however, always has
-            // keys like 'fooBar'. In other words, where we have a
-            // choice, we stick with the 'foo-bar' style to be
-            // consistent with HTML. Here, our only option is
-            // 'fooBar'.
-            if (/^infiniteContentParams/.exec(datakey)) {
-                if (datavalue instanceof Object) {
-                    $.each(datavalue, function(hkey, hvalue) {
-                        if (hvalue instanceof Array) {
-                            params[hkey] = (params[hkey] || []).concat(hvalue);
-                        } else if (hvalue instanceof Object) {
-                            $.extend(params[hkey], hvalue);
-                        } else {
-                            params[hkey] = hvalue;
-                        }
-                    });
+        if (src == $container.attr('data-infinite-content-href0')) {
+            // If we're loading the first page, collect filters from
+            // various sources.
+            params = mergeInfiniteContentParams($container);
+            $.each(params, function(k,v) {
+                if (v instanceof Object) {
+                    params[k] = JSON.stringify(v);
                 }
-            }
-        });
-        $.each(params, function(k,v) {
-            if (v instanceof Object) {
-                params[k] = JSON.stringify(v);
-            }
-        });
+            });
+        } else {
+            // If we're loading page >1, ignore other filtering
+            // mechanisms and just use the "next page" URI from the
+            // previous page's response. Aside from avoiding race
+            // conditions (where page 2 could have different filters
+            // than page 1), this allows the server to use filters in
+            // the "next page" URI to achieve paging. (To apply any
+            // new filters effectively, we need to load page 1 again
+            // anyway.)
+            params = {};
+        }
 
         $.ajax(src,
                {dataType: 'json',
@@ -127,6 +107,66 @@ function ping_all_scrollers() {
     $('.infinite-scroller').add(window).trigger('scroll');
 }
 
+function mergeInfiniteContentParams($container) {
+    var params = {};
+    // Combine infiniteContentParams from multiple sources. This
+    // mechanism allows each of several components to set and
+    // update its own set of filters, without having to worry
+    // about stomping on some other component's filters.
+    //
+    // For example, filterable.js writes filters in
+    // infiniteContentParamsFilterable ("search for text foo")
+    // without worrying about clobbering the filters set up by the
+    // tab pane ("only show jobs and pipelines in this tab").
+    $.each($container.data(), function(datakey, datavalue) {
+        // Note: We attach these data to DOM elements using
+        // <element data-foo-bar="baz">. We store/retrieve them
+        // using $('element').data('foo-bar'), although
+        // .data('fooBar') would also work. The "all data" hash
+        // returned by $('element').data(), however, always has
+        // keys like 'fooBar'. In other words, where we have a
+        // choice, we stick with the 'foo-bar' style to be
+        // consistent with HTML. Here, our only option is
+        // 'fooBar'.
+        if (/^infiniteContentParams/.exec(datakey)) {
+            if (datavalue instanceof Object) {
+                $.each(datavalue, function(hkey, hvalue) {
+                    if (hvalue instanceof Array) {
+                        params[hkey] = (params[hkey] || []).
+                            concat(hvalue);
+                    } else if (hvalue instanceof Object) {
+                        $.extend(params[hkey], hvalue);
+                    } else {
+                        params[hkey] = hvalue;
+                    }
+                });
+            }
+        }
+    });
+    return params;
+}
+
+function setColumnSort( $container, $header, direction ) {
+    // $container should be the tbody or whatever has all the infinite table data attributes
+    // $header should be the th with a preset data-sort-order attribute
+    // direction should be "asc" or "desc"
+    // This function returns the order by clause for this column header as a string
+
+    // First reset all sort directions
+    $('th[data-sort-order]').removeData('sort-order-direction');
+    // set the current one
+    $header.data('sort-order-direction', direction);
+    // change the ordering parameter
+    var paramsAttr = 'infinite-content-params-' + $container.data('infinite-content-params-attr');
+    var params = $container.data(paramsAttr) || {};
+    params.order = $header.data('sort-order').split(",").join( ' ' + direction + ', ' ) + ' ' + direction;
+    $container.data(paramsAttr, params);
+    // show the correct icon next to the column header
+    $container.trigger('sort-icons');
+
+    return params.order;
+}
+
 $(document).
     on('click', 'div.infinite-retry button', function() {
         var $retry_div = $(this).closest('.infinite-retry');
@@ -154,6 +194,22 @@ $(document).
                 return;
             $(this).addClass('infinite-scroller-ready');
 
+            // deal with sorting if there is any, and if it was set on this page for this tab already
+            if( $('th[data-sort-order]').length ) {
+                var tabId = $(this).closest('div.tab-pane').attr('id');
+                if( hasHTML5History() && history.state !== undefined && history.state !== null && history.state.order !== undefined && history.state.order[tabId] !== undefined ) {
+                    // we will use the list of one or more table columns associated with this header to find the right element
+                    // see sortable_columns as it is passed to render_pane in the various tab .erbs (e.g. _show_jobs_and_pipelines.html.erb)
+                    var strippedColumns = history.state.order[tabId].replace(/\s|\basc\b|\bdesc\b/g,'');
+                    var sortDirection = history.state.order[tabId].split(" ")[1].replace(/,/,'');
+                    $columnHeader = $(this).closest('table').find('[data-sort-order="'+ strippedColumns +'"]');
+                    setColumnSort( $(this), $columnHeader, sortDirection );
+                } else {
+                    // otherwise just reset the sort icons
+                    $(this).trigger('sort-icons');
+                }
+            }
+
             // $scroller is the DOM element that hears "scroll"
             // events: sometimes it's a div, sometimes it's
             // window. Here, "this" is the DOM element containing the
@@ -167,5 +223,47 @@ $(document).
                 addClass('infinite-scroller').
                 on('scroll resize', { container: this }, maybe_load_more_content).
                 trigger('scroll');
+        });
+    }).
+    on('shown.bs.tab', 'a[data-toggle="tab"]', function(event) {
+        $(event.target.getAttribute('href') + ' [data-infinite-scroller]').
+            trigger('scroll');
+    }).
+    on('click', 'th[data-sort-order]', function() {
+        var direction = $(this).data('sort-order-direction');
+        // reverse the current direction, or do ascending if none
+        if( direction === undefined || direction === 'desc' ) {
+            direction = 'asc';
+        } else {
+            direction = 'desc';
+        }
+
+        var $container = $(this).closest('table').find('[data-infinite-content-params-attr]');
+
+        var order = setColumnSort( $container, $(this), direction );
+
+        // put it in the browser history state if browser allows it
+        if( hasHTML5History() ) {
+            var tabId = $(this).closest('div.tab-pane').attr('id');
+            var state =  history.state || {};
+            if( state.order === undefined ) {
+                state.order = {};
+            }
+            state.order[tabId] = order;
+            history.replaceState( state, null, null );
+        }
+
+        $container.trigger('refresh-content');
+    }).
+    on('sort-icons', function() {
+        // set or reset the icon next to each sortable column header according to the current direction attribute
+        $('th[data-sort-order]').each(function() {
+            $(this).find('i').remove();
+            var direction = $(this).data('sort-order-direction');
+            if( direction !== undefined ) {
+                $(this).append('<i class="fa fa-sort-' + direction + '"/>');
+            } else {
+                $(this).append('<i class="fa fa-sort"/>');
+            }
         });
     });

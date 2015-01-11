@@ -6,8 +6,8 @@ import re
 import types
 
 import apiclient
-import apiclient.discovery
-import apiclient.errors
+from apiclient import discovery as apiclient_discovery
+from apiclient import errors as apiclient_errors
 import config
 import errors
 import util
@@ -47,7 +47,7 @@ class CredentialsFromToken(object):
 
 # Monkey patch discovery._cast() so objects and arrays get serialized
 # with json.dumps() instead of str().
-_cast_orig = apiclient.discovery._cast
+_cast_orig = apiclient_discovery._cast
 def _cast_objects_too(value, schema_type):
     global _cast_orig
     if (type(value) != type('') and
@@ -55,16 +55,16 @@ def _cast_objects_too(value, schema_type):
         return json.dumps(value)
     else:
         return _cast_orig(value, schema_type)
-apiclient.discovery._cast = _cast_objects_too
+apiclient_discovery._cast = _cast_objects_too
 
 # Convert apiclient's HttpErrors into our own API error subclass for better
 # error reporting.
-# Reassigning apiclient.errors.HttpError is not sufficient because most of the
+# Reassigning apiclient_errors.HttpError is not sufficient because most of the
 # apiclient submodules import the class into their own namespace.
 def _new_http_error(cls, *args, **kwargs):
-    return super(apiclient.errors.HttpError, cls).__new__(
+    return super(apiclient_errors.HttpError, cls).__new__(
         errors.ApiError, *args, **kwargs)
-apiclient.errors.HttpError.__new__ = staticmethod(_new_http_error)
+apiclient_errors.HttpError.__new__ = staticmethod(_new_http_error)
 
 def http_cache(data_type):
     path = os.environ['HOME'] + '/.cache/arvados/' + data_type
@@ -90,7 +90,7 @@ def api(version=None, cache=True, host=None, token=None, insecure=False, **kwarg
     * insecure: If True, ignore SSL certificate validation errors.
 
     Additional keyword arguments will be passed directly to
-    `apiclient.discovery.build` if a new Resource object is created.
+    `apiclient_discovery.build` if a new Resource object is created.
     If the `discoveryServiceUrl` or `http` keyword arguments are
     missing, this function will set default values for them, based on
     the current Arvados configuration settings.
@@ -153,7 +153,7 @@ def api(version=None, cache=True, host=None, token=None, insecure=False, **kwarg
     credentials = CredentialsFromToken(api_token=token)
     kwargs['http'] = credentials.authorize(kwargs['http'])
 
-    svc = apiclient.discovery.build('arvados', version, **kwargs)
+    svc = apiclient_discovery.build('arvados', version, **kwargs)
     svc.api_token = token
     kwargs['http'].cache = None
     if cache:

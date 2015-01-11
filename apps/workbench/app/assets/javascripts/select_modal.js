@@ -8,14 +8,19 @@ $(document).on('click', '.selectable', function() {
             removeClass('active');
     }
     $this.toggleClass('active');
-    any = ($container.
+
+    if (!$this.hasClass('use-preview-selection')) {
+      any = ($container.
            find('.selectable.active').length > 0)
-    $this.
+    }
+
+    if (!$container.hasClass('preview-selectable-container')) {
+      $this.
         closest('.modal').
         find('[data-enable-if-selection]').
         prop('disabled', !any);
 
-    if ($this.hasClass('active')) {
+      if ($this.hasClass('active')) {
         var no_preview_available = '<div class="spinner-h-center spinner-v-center"><center>(No preview available)</center></div>';
         if (!$this.attr('data-preview-href')) {
             $(".modal-dialog-preview-pane").html(no_preview_available);
@@ -30,20 +35,37 @@ $(document).on('click', '.selectable', function() {
             fail(function(data, status, jqxhr) {
                 $(".modal-dialog-preview-pane").html(no_preview_available);
             });
+      }
+    } else {
+      any = ($container.
+           find('.preview-selectable.active').length > 0)
+      $(this).
+          closest('.modal').
+          find('[data-enable-if-selection]').
+          prop('disabled', !any);
     }
 
 }).on('click', '.modal button[data-action-href]', function() {
     var selection = [];
     var data = [];
     var $modal = $(this).closest('.modal');
+    var http_method = $(this).attr('data-method').toUpperCase();
     var action_data = $(this).data('action-data');
     var action_data_from_params = $(this).data('action-data-from-params');
     var selection_param = action_data.selection_param;
     $modal.find('.modal-error').removeClass('hide').hide();
-    $modal.find('.selectable.active[data-object-uuid]').each(function() {
+
+    var $preview_selections = $modal.find('.preview-selectable.active');
+    if ($preview_selections.length > 0) {
+      data.push({name: selection_param, value: $preview_selections.first().attr('href')});
+    }
+
+    if (data.length == 0) {   // not using preview selection option
+      $modal.find('.selectable.active[data-object-uuid]').each(function() {
         var val = $(this).attr('data-object-uuid');
         data.push({name: selection_param, value: val});
-    });
+      });
+    }
     $.each($.extend({}, action_data, action_data_from_params),
            function(key, value) {
                if (value instanceof Array && key[-1] != ']') {
@@ -54,9 +76,17 @@ $(document).on('click', '.selectable', function() {
                    data.push({name: key, value: value});
                }
            });
+    if (http_method === 'PATCH') {
+        // Some user agents do not support HTTP PATCH (notably,
+        // phantomjs silently ignores our "data" and sends an empty
+        // request body) so we use POST instead, and supply a
+        // _method=PATCH param to tell Rails what we really want.
+        data.push({name: '_method', value: http_method});
+        http_method = 'POST';
+    }
     $.ajax($(this).attr('data-action-href'),
            {dataType: 'json',
-            type: $(this).attr('data-method'),
+            type: http_method,
             data: data,
             traditional: false,
             context: {modal: $modal, action_data: action_data}}).

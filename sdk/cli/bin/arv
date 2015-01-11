@@ -113,7 +113,8 @@ def init_config
   end
 end
 
-subcommands = %w(create edit keep pipeline tag ws)
+
+subcommands = %w(copy create edit keep pipeline run tag ws)
 
 def check_subcommands client, arvados, subcommand, global_opts, remaining_opts
   case subcommand
@@ -121,6 +122,8 @@ def check_subcommands client, arvados, subcommand, global_opts, remaining_opts
     arv_create client, arvados, global_opts, remaining_opts
   when 'edit'
     arv_edit client, arvados, global_opts, remaining_opts
+  when 'copy', 'tag', 'ws', 'run'
+    exec `which arv-#{subcommand}`.strip, *remaining_opts
   when 'keep'
     @sub = remaining_opts.shift
     if ['get', 'put', 'ls', 'normalize'].index @sub then
@@ -147,10 +150,6 @@ def check_subcommands client, arvados, subcommand, global_opts, remaining_opts
       puts "Available methods: run"
     end
     abort
-  when 'tag'
-    exec `which arv-tag`.strip, *remaining_opts
-  when 'ws'
-    exec `which arv-ws`.strip, *remaining_opts
   end
 end
 
@@ -302,7 +301,7 @@ def arv_edit client, arvados, global_opts, remaining_opts
       begin
         result = client.execute(:api_method => eval(api_method),
                                 :parameters => {"uuid" => uuid},
-                                :body => { rsc.singularize => dumped },
+                                :body_object => { rsc.singularize => dumped },
                                 :authenticated => false,
                                 :headers => {
                                   authorization: 'OAuth2 '+ENV['ARVADOS_API_TOKEN']
@@ -673,7 +672,7 @@ when
 else
   result = client.execute(:api_method => eval(api_method),
                           :parameters => request_parameters,
-                          :body => request_body,
+                          :body_object => request_body,
                           :authenticated => false,
                           :headers => {
                             authorization: 'OAuth2 '+ENV['ARVADOS_API_TOKEN']

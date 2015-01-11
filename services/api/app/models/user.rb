@@ -29,6 +29,7 @@ class User < ArvadosModel
     t.add :is_admin
     t.add :is_invited
     t.add :prefs
+    t.add :writable_by
   end
 
   ALL_PERMISSIONS = {read: true, write: true, manage: true}
@@ -233,11 +234,13 @@ class User < ArvadosModel
   end
 
   def check_auto_admin
-    if User.where("uuid not like '%-000000000000000'").where(:is_admin => true).count == 0 and Rails.configuration.auto_admin_user
-      if self.email == Rails.configuration.auto_admin_user
-        self.is_admin = true
-        self.is_active = true
-      end
+    return if self.uuid.end_with?('anonymouspublic')
+    if (User.where("email = ?",self.email).where(:is_admin => true).count == 0 and
+        Rails.configuration.auto_admin_user and self.email == Rails.configuration.auto_admin_user) or
+       (User.where("uuid not like '%-000000000000000'").where(:is_admin => true).count == 0 and 
+        Rails.configuration.auto_admin_first_user)
+      self.is_admin = true
+      self.is_active = true
     end
   end
 
@@ -396,34 +399,14 @@ class User < ArvadosModel
 
   # add the user to the 'All users' group
   def create_user_group_link
-    # Look up the "All users" group (we expect uuid *-*-fffffffffffffff).
-    group = Group.where(name: 'All users').select do |g|
-      g[:uuid].match /-f+$/
-    end.first
-
-    if not group
-      logger.warn "No 'All users' group with uuid '*-*-fffffffffffffff'."
-      raise "No 'All users' group with uuid '*-*-fffffffffffffff' is found"
-    else
-      logger.info { "\"All users\" group uuid: " + group[:uuid] }
-
-      group_perms = Link.where(tail_uuid: self.uuid,
-                              head_uuid: group[:uuid],
-                              link_class: 'permission',
-                              name: 'can_read')
-
-      if !group_perms.any?
-        group_perm = Link.create(tail_uuid: self.uuid,
-                                 head_uuid: group[:uuid],
-                                 link_class: 'permission',
-                                 name: 'can_read')
-        logger.info { "group permission: " + group_perm[:uuid] }
-      else
-        group_perm = group_perms.first
-      end
-
-      return group_perm
-    end
+    return (Link.where(tail_uuid: self.uuid,
+                       head_uuid: all_users_group[:uuid],
+                       link_class: 'permission',
+                       name: 'can_read').first or
+            Link.create(tail_uuid: self.uuid,
+                        head_uuid: all_users_group[:uuid],
+                        link_class: 'permission',
+                        name: 'can_read'))
   end
 
   # Give the special "System group" permission to manage this user and
@@ -450,6 +433,8 @@ class User < ArvadosModel
   def auto_setup_new_user
     return true if !Rails.configuration.auto_setup_new_users
     return true if !self.email
+    return true if self.uuid == system_user_uuid
+    return true if self.uuid == anonymous_user_uuid
 
     if Rails.configuration.auto_setup_new_users_with_vm_uuid ||
        Rails.configuration.auto_setup_new_users_with_repository

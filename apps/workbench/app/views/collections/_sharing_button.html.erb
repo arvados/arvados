@@ -1,21 +1,17 @@
-<%# a nil @search_sharing means we got an AccessForbiddenException and should
-disable this feature entirely. %>
-<% if @search_sharing != nil %>
-  <% if @search_sharing.any? %>
-    <div>Shared at:
-      <span class="pull-right">
-        <%= link_to "Unshare", unshare_collection_url, {
-              class: 'btn-xs btn-info',
-              remote: true,
-              method: 'post'
-            } %></span>
-      <div class="smaller-text" style="word-break: break-all"><%= link_to download_link, download_link %></div>
-    </div>
-  <% else %>
-    <%= link_to "Create sharing link", share_collection_url, {
-          class: 'btn-xs btn-info',
-          remote: true,
-          method: 'post'
-        } %>
-  <% end %>
+<% button_attrs = {
+     class: 'btn btn-xs btn-info',
+     remote: true,
+     method: :post,
+   } %>
+<% if @search_sharing.nil? %>
+  <p>Your API token is not authorized to manage collection sharing links.</p>
+<% elsif @search_sharing.empty? %>
+  <%= button_to("Create sharing link", {action: "share"}, button_attrs) %>
+<% else %>
+  <div>
+    <% button_attrs[:class] += " pull-right" %>
+    <%= button_to("Unshare", {action: "unshare"}, button_attrs) %>
+    Shared at:
+    <div class="smaller-text" style="clear: both; word-break: break-all"><%= link_to download_link, download_link %></div>
+  </div>
 <% end %>

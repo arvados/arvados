@@ -9,6 +9,7 @@ import time
 import pykka
 
 from . import computenode as cnode
+from .computenode import dispatch
 from .config import actor_class
 
 class _ComputeNodeRecord(object):
@@ -25,14 +26,16 @@ class _BaseNodeTracker(object):
         self.nodes = {}
         self.orphans = {}
 
-    def __getitem__(self, key):
-        return self.nodes[key]
+    # Proxy the methods listed below to self.nodes.
+    def _proxy_method(name):
+        method = getattr(dict, name)
+        @functools.wraps(method, ('__name__', '__doc__'))
+        def wrapper(self, *args, **kwargs):
+            return method(self.nodes, *args, **kwargs)
+        return wrapper
 
-    def __len__(self):
-        return len(self.nodes)
-
-    def get(self, key, default=None):
-        return self.nodes.get(key, default)
+    for _method_name in ['__contains__', '__getitem__', '__len__', 'get']:
+        locals()[_method_name] = _proxy_method(_method_name)
 
     def record_key(self, record):
         return self.item_key(getattr(record, self.RECORD_ATTR))
@@ -94,11 +97,13 @@ class NodeManagerDaemonActor(actor_class):
     def __init__(self, server_wishlist_actor, arvados_nodes_actor,
                  cloud_nodes_actor, cloud_update_actor, timer_actor,
                  arvados_factory, cloud_factory,
-                 shutdown_windows, max_nodes,
-                 poll_stale_after=600, node_stale_after=7200,
-                 node_setup_class=cnode.ComputeNodeSetupActor,
-                 node_shutdown_class=cnode.ComputeNodeShutdownActor,
-                 node_actor_class=cnode.ComputeNodeMonitorActor):
+                 shutdown_windows, min_size, min_nodes, max_nodes,
+                 poll_stale_after=600,
+                 boot_fail_after=1800,
+                 node_stale_after=7200,
+                 node_setup_class=dispatch.ComputeNodeSetupActor,
+                 node_shutdown_class=dispatch.ComputeNodeShutdownActor,
+                 node_actor_class=dispatch.ComputeNodeMonitorActor):
         super(NodeManagerDaemonActor, self).__init__()
         self._node_setup = node_setup_class
         self._node_shutdown = node_shutdown_class
@@ -111,8 +116,11 @@ class NodeManagerDaemonActor(actor_class):
         self._logger = logging.getLogger('arvnodeman.daemon')
         self._later = self.actor_ref.proxy()
         self.shutdown_windows = shutdown_windows
+        self.min_cloud_size = min_size
+        self.min_nodes = min_nodes
         self.max_nodes = max_nodes
         self.poll_stale_after = poll_stale_after
+        self.boot_fail_after = boot_fail_after
         self.node_stale_after = node_stale_after
         self.last_polls = {}
         for poll_name in ['server_wishlist', 'arvados_nodes', 'cloud_nodes']:
@@ -123,6 +131,7 @@ class NodeManagerDaemonActor(actor_class):
         self.cloud_nodes = _CloudNodeTracker()
         self.arvados_nodes = _ArvadosNodeTracker()
         self.booting = {}       # Actor IDs to ComputeNodeSetupActors
+        self.booted = {}        # Cloud node IDs to _ComputeNodeRecords
         self.shutdowns = {}     # Cloud node IDs to ComputeNodeShutdownActors
         self._logger.debug("Daemon initialized")
 
@@ -154,22 +163,25 @@ class NodeManagerDaemonActor(actor_class):
         self._cloud_nodes_actor.subscribe_to(cloud_node.id,
                                              actor.update_cloud_node)
         record = _ComputeNodeRecord(actor, cloud_node)
-        self.cloud_nodes.add(record)
         return record
 
     def update_cloud_nodes(self, nodelist):
         self._update_poll_time('cloud_nodes')
         for key, node in self.cloud_nodes.update_from(nodelist):
             self._logger.info("Registering new cloud node %s", key)
-            record = self._new_node(node)
+            if key in self.booted:
+                record = self.booted.pop(key)
+            else:
+                record = self._new_node(node)
+            self.cloud_nodes.add(record)
             for arv_rec in self.arvados_nodes.unpaired():
                 if record.actor.offer_arvados_pair(arv_rec.arvados_node).get():
                     self._pair_nodes(record, arv_rec.arvados_node)
                     break
         for key, record in self.cloud_nodes.orphans.iteritems():
             record.actor.stop()
-            if key in self.shutdowns:
-                self.shutdowns.pop(key).stop()
+            record.cloud_node = None
+            self.shutdowns.pop(key, None)
 
     def update_arvados_nodes(self, nodelist):
         self._update_poll_time('arvados_nodes')
@@ -184,19 +196,39 @@ class NodeManagerDaemonActor(actor_class):
                     self._pair_nodes(cloud_rec, arv_node)
                     break
 
-    def _node_count(self):
-        up = sum(len(nodelist) for nodelist in [self.cloud_nodes, self.booting])
-        return up - len(self.shutdowns)
+    def _nodes_up(self):
+        return sum(len(nodelist) for nodelist in
+                   [self.cloud_nodes, self.booted, self.booting])
+
+    def _nodes_busy(self):
+        return sum(1 for idle in
+                   pykka.get_all(rec.actor.in_state('idle') for rec in
+                                 self.cloud_nodes.nodes.itervalues())
+                   if idle is False)
 
     def _nodes_wanted(self):
-        return len(self.last_wishlist) - self._node_count()
+        up_count = self._nodes_up()
+        under_min = self.min_nodes - up_count
+        over_max = up_count - self.max_nodes
+        if over_max >= 0:
+            return -over_max
+        elif under_min > 0:
+            return under_min
+        else:
+            up_count -= len(self.shutdowns) + self._nodes_busy()
+            return len(self.last_wishlist) - up_count
 
     def _nodes_excess(self):
-        return -self._nodes_wanted()
+        up_count = self._nodes_up() - len(self.shutdowns)
+        over_min = up_count - self.min_nodes
+        if over_min <= 0:
+            return over_min
+        else:
+            return up_count - self._nodes_busy() - len(self.last_wishlist)
 
     def update_server_wishlist(self, wishlist):
         self._update_poll_time('server_wishlist')
-        self.last_wishlist = wishlist[:self.max_nodes]
+        self.last_wishlist = wishlist
         nodes_wanted = self._nodes_wanted()
         if nodes_wanted > 0:
             self._later.start_node()
@@ -226,7 +258,10 @@ class NodeManagerDaemonActor(actor_class):
         if nodes_wanted < 1:
             return None
         arvados_node = self.arvados_nodes.find_stale_node(self.node_stale_after)
-        cloud_size = self.last_wishlist[nodes_wanted - 1]
+        try:
+            cloud_size = self.last_wishlist[self._nodes_up()]
+        except IndexError:
+            cloud_size = self.min_cloud_size
         self._logger.info("Want %s more nodes.  Booting a %s node.",
                           nodes_wanted, cloud_size.name)
         new_setup = self._node_setup.start(
@@ -243,17 +278,19 @@ class NodeManagerDaemonActor(actor_class):
         if nodes_wanted > 1:
             self._later.start_node()
 
-    def _actor_nodes(self, node_actor):
-        return pykka.get_all([node_actor.cloud_node, node_actor.arvados_node])
+    def _get_actor_attrs(self, actor, *attr_names):
+        return pykka.get_all([getattr(actor, name) for name in attr_names])
 
     def node_up(self, setup_proxy):
-        cloud_node, arvados_node = self._actor_nodes(setup_proxy)
+        cloud_node = setup_proxy.cloud_node.get()
         del self.booting[setup_proxy.actor_ref.actor_urn]
         setup_proxy.stop()
         record = self.cloud_nodes.get(cloud_node.id)
         if record is None:
             record = self._new_node(cloud_node)
-        self._pair_nodes(record, arvados_node)
+            self.booted[cloud_node.id] = record
+        self._timer.schedule(time.time() + self.boot_fail_after,
+                             self._later.shutdown_unpaired_node, cloud_node.id)
 
     @_check_poll_freshness
     def stop_booting_node(self):
@@ -268,17 +305,41 @@ class NodeManagerDaemonActor(actor_class):
                     self._later.stop_booting_node()
                 break
 
+    def _begin_node_shutdown(self, node_actor, cancellable):
+        cloud_node_id = node_actor.cloud_node.get().id
+        if cloud_node_id in self.shutdowns:
+            return None
+        shutdown = self._node_shutdown.start(
+            timer_actor=self._timer, cloud_client=self._new_cloud(),
+            node_monitor=node_actor.actor_ref, cancellable=cancellable).proxy()
+        self.shutdowns[cloud_node_id] = shutdown
+        shutdown.subscribe(self._later.node_finished_shutdown)
+
     @_check_poll_freshness
     def node_can_shutdown(self, node_actor):
-        if self._nodes_excess() < 1:
+        if self._nodes_excess() > 0:
+            self._begin_node_shutdown(node_actor, cancellable=True)
+
+    def shutdown_unpaired_node(self, cloud_node_id):
+        for record_dict in [self.cloud_nodes, self.booted]:
+            if cloud_node_id in record_dict:
+                record = record_dict[cloud_node_id]
+                break
+        else:
             return None
-        cloud_node, arvados_node = self._actor_nodes(node_actor)
-        if cloud_node.id in self.shutdowns:
-            return None
-        shutdown = self._node_shutdown.start(timer_actor=self._timer,
-                                             cloud_client=self._new_cloud(),
-                                             cloud_node=cloud_node).proxy()
-        self.shutdowns[cloud_node.id] = shutdown
+        if record.arvados_node is None:
+            self._begin_node_shutdown(record.actor, cancellable=False)
+
+    def node_finished_shutdown(self, shutdown_actor):
+        success, cloud_node = self._get_actor_attrs(shutdown_actor, 'success',
+                                                    'cloud_node')
+        shutdown_actor.stop()
+        cloud_node_id = cloud_node.id
+        if not success:
+            del self.shutdowns[cloud_node_id]
+        elif cloud_node_id in self.booted:
+            self.booted.pop(cloud_node_id).actor.stop()
+            del self.shutdowns[cloud_node_id]
 
     def shutdown(self):
         self._logger.info("Shutting down after signal.")

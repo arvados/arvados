@@ -101,6 +101,7 @@ module Keep
       return to_enum(__method__) unless block_given?
       @text.each_line do |line|
         tokens = line.split
+        next if tokens.empty?
         stream_name = unescape(tokens.shift)
         blocks = []
         while loc = Locator.parse(tokens.first)

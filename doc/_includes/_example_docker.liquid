@@ -1,0 +1,28 @@
+{
+    "name": "Example using R in a custom Docker image",
+    "components": {
+        "Rscript": {
+            "script": "run-command",
+            "script_version": "master",
+            "repository": "arvados",
+            "script_parameters": {
+                "command": [
+                    "Rscript",
+                    "$(glob $(file $(myscript))/*.r)",
+                    "$(glob $(dir $(mydata))/*.csv)"
+                ],
+                "myscript": {
+                    "required": true,
+                    "dataclass": "Collection"
+                },
+                "mydata": {
+                    "required": true,
+                    "dataclass": "Collection"
+                }
+            },
+            "runtime_constraints": {
+                "docker_image": "arvados/jobs-with-r"
+            }
+        }
+    }
+}

@@ -1,71 +1,27 @@
 ---
 layout: default
 navsection: installguide
-title: Create standard objects
+title: Add an Arvados repository
 
 ...
 
-
-
-h3. "All users" group
-
-The convention is to add every active user to this group. We give it a distinctive UUID that looks like an IP broadcast address.
-
-<pre>
-prefix=`arv --format=uuid user current | cut -d- -f1`
-
-echo "Site prefix is '$prefix'"
-# (Make sure it matches your configured 5-character site prefix.)
-
-read -rd $'\000' newgroup <<EOF; arv group create --group "$newgroup"
-{
- "uuid":"$prefix-j7d0g-fffffffffffffff",
- "name":"All users"
-}
-EOF
-</pre>
-
-h3. "arvados" repository
+Next, we're going to use the Arvados CLI tools on the <strong>shell server</strong> to create a few Arvados objects. These objects set up a hosted clone of the arvados repository on this cluster.
 
 This will be readable by the "All users" group, and therefore by every active user. This makes it possible for users to run the bundled Crunch scripts by specifying @"script_version":"master","repository":"arvados"@ rather than pulling the Arvados source tree into their own repositories.
 
-<pre>
-prefix=`arv --format=uuid user current | cut -d- -f1`
-
-echo "Site prefix is '$prefix'"
-# (Make sure it matches your configured 5-character site prefix.)
-
-all_users_group_uuid="$prefix-j7d0g-fffffffffffffff"
-repo_uuid=`arv --format=uuid repository create --repository '{"name":"arvados"}'`
-echo "Arvados repository uuid is '$repo_uuid'"
-
-read -rd $'\000' newlink <<EOF; arv link create --link "$newlink" 
-{
+<notextile>
+<pre><code>~$ <span class="userinput">prefix=`arv --format=uuid user current | cut -d- -f1`</span>
+~$ <span class="userinput">echo "Site prefix is '$prefix'"</span>
+~$ <span class="userinput">all_users_group_uuid="$prefix-j7d0g-fffffffffffffff"</span>
+~$ <span class="userinput">repo_uuid=`arv --format=uuid repository create --repository '{"name":"arvados"}'`</span>
+~$ <span class="userinput">echo "Arvados repository uuid is '$repo_uuid'"</span>
+~$ <span class="userinput">read -rd $'\000' newlink &lt;&lt;EOF; arv link create --link "$newlink"</span>
+<span class="userinput">{
  "tail_uuid":"$all_users_group_uuid",
  "head_uuid":"$repo_uuid",
  "link_class":"permission",
  "name":"can_read" 
 }                                         
-EOF
-</pre>
+EOF</span>
+</code></pre></notextile>
 
-h3. Keep disks
-
-Currently, you need to tell Arvados about Keep services manually. You'll need at least two "disk" services.
-
-Example:
-
-<pre>
-prefix=`arv --format=uuid user current | cut -d- -f1`
-echo "Site prefix is '$prefix'"
-# (Make sure it matches your configured 5-character site prefix.)
-
-read -rd $'\000' keepservice <<EOF; arv keep_service create --keep-service "$keepservice"
-{
- "service_host":"keep0.$prefix.arvadosapi.com",
- "service_port":25107,
- "service_ssl_flag":false,
- "service_type":"disk"
-}
-EOF
-</pre>

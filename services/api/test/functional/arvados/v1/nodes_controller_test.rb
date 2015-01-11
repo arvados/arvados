@@ -68,7 +68,7 @@ class Arvados::V1::NodesControllerTest < ActionController::TestCase
 
   test "create node" do
     authorize_with :admin
-    post :create
+    post :create, {node: {}}
     assert_response :success
     assert_not_nil json_response['uuid']
     assert_not_nil json_response['info'].is_a? Hash
@@ -106,6 +106,14 @@ class Arvados::V1::NodesControllerTest < ActionController::TestCase
     get :show, {id: nodes(:busy).uuid}
     assert_response :success
     assert_nil(json_response["job"], "spectator can see node's assigned job")
+  end
+
+  [:admin, :spectator].each do |user|
+    test "select param does not break node list for #{user}" do
+      authorize_with user
+      get :index, {select: ['domain']}
+      assert_response :success
+    end
   end
 
   test "admin can associate a job with a node" do

@@ -3,7 +3,7 @@ source 'https://rubygems.org'
 gem 'rails', '~> 4.1.0'
 gem 'minitest', '>= 5.0.0'
 
-gem 'arvados', '>= 0.1.20140917180103'
+gem 'arvados', '>= 0.1.20141114230720'
 
 # Bundle edge Rails instead:
 # gem 'rails', :git => 'git://github.com/rails/rails.git'
@@ -24,7 +24,7 @@ gem 'coffee-rails'
 # Gems used only for assets and not required
 # in production environments by default.
 group :assets do
-  gem 'sass-rails'
+  gem 'sass-rails', '~> 4.0.4'
 
   # See https://github.com/sstephenson/execjs#readme for more supported runtimes
   gem 'therubyracer', :platforms => :ruby
@@ -32,12 +32,25 @@ group :assets do
   gem 'uglifier', '>= 1.0.3'
 end
 
-group :test do
-  gem 'rvm-capistrano'
+group :development do
+  gem 'byebug'
+  gem 'ruby-debug-passenger'
+end
+
+group :test, :diagnostics do
   gem 'selenium-webdriver'
   gem 'capybara'
   gem 'poltergeist'
   gem 'headless'
+end
+
+group :test, :performance do
+  gem 'rails-perftest'
+  gem 'ruby-prof'
+end
+
+group :test do
+  gem 'rvm-capistrano'
   # Note: "require: false" here tells bunder not to automatically
   # 'require' the packages during application startup. Installation is
   # still mandatory.
@@ -50,6 +63,8 @@ gem 'jquery-rails'
 gem 'bootstrap-sass', '~> 3.1.0'
 gem 'bootstrap-x-editable-rails'
 gem 'bootstrap-tab-history-rails'
+
+gem 'angularjs-rails'
 
 gem 'less'
 gem 'less-rails'
@@ -76,9 +91,12 @@ gem 'andand'
 gem 'RedCloth'
 
 gem 'piwik_analytics'
-gem 'httpclient'
+gem 'httpclient', '~> 2.5.0'
 
 # This fork has Rails 4 compatible routes
 gem 'themes_for_rails', git: 'https://github.com/holtkampw/themes_for_rails', ref: '1fd2d7897d75ae0d6375f4c390df87b8e91ad417'
 
 gem "deep_merge", :require => 'deep_merge/rails_compat'
+
+gem 'morrisjs-rails'
+gem 'raphael-rails'

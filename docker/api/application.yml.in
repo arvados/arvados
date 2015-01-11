@@ -58,6 +58,10 @@ production:
 
   workbench_address: @@API_WORKBENCH_ADDRESS@@
 
+  auto_setup_new_users: true
+
+  auto_admin_first_user: true
+
 test:
   uuid_prefix: zzzzz
   secret_token: <%= rand(2**512).to_s(36) %>

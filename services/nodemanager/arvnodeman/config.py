@@ -6,19 +6,18 @@ import ConfigParser
 import importlib
 import logging
 import ssl
+import sys
 
-import apiclient.errors as apierror
 import arvados
 import httplib2
-import libcloud.common.types as cloud_types
 import pykka
+from apiclient import errors as apierror
 
 # IOError is the base class for socket.error and friends.
 # It seems like it hits the sweet spot for operations we want to retry:
 # it's low-level, but unlikely to catch code bugs.
 NETWORK_ERRORS = (IOError, ssl.SSLError)
 ARVADOS_ERRORS = NETWORK_ERRORS + (apierror.Error,)
-CLOUD_ERRORS = NETWORK_ERRORS + (cloud_types.LibcloudError,)
 
 actor_class = pykka.ThreadingActor
 
@@ -37,10 +36,12 @@ class NodeManagerConfig(ConfigParser.SafeConfigParser):
         for sec_name, settings in {
             'Arvados': {'insecure': 'no',
                         'timeout': '15'},
-            'Daemon': {'max_nodes': '1',
+            'Daemon': {'min_nodes': '0',
+                       'max_nodes': '1',
                        'poll_time': '60',
                        'max_poll_time': '300',
                        'poll_stale_after': '600',
+                       'boot_fail_after': str(sys.maxint),
                        'node_stale_after': str(60 * 60 * 2)},
             'Logging': {'file': '/dev/stderr',
                         'level': 'WARNING'},
@@ -67,6 +68,17 @@ class NodeManagerConfig(ConfigParser.SafeConfigParser):
                 for key in self.options('Logging')
                 if key not in self.LOGGING_NONLEVELS}
 
+    def dispatch_classes(self):
+        mod_name = 'arvnodeman.computenode.dispatch'
+        if self.has_option('Daemon', 'dispatcher'):
+            mod_name = '{}.{}'.format(mod_name,
+                                      self.get('Daemon', 'dispatcher'))
+        module = importlib.import_module(mod_name)
+        return (module.ComputeNodeSetupActor,
+                module.ComputeNodeShutdownActor,
+                module.ComputeNodeUpdateActor,
+                module.ComputeNodeMonitorActor)
+
     def new_arvados_client(self):
         if self.has_option('Daemon', 'certs_file'):
             certs_file = self.get('Daemon', 'certs_file')
@@ -84,7 +96,7 @@ class NodeManagerConfig(ConfigParser.SafeConfigParser):
                            http=http)
 
     def new_cloud_client(self):
-        module = importlib.import_module('arvnodeman.computenode.' +
+        module = importlib.import_module('arvnodeman.computenode.driver.' +
                                          self.get('Cloud', 'provider'))
         auth_kwargs = self.get_section('Cloud Credentials')
         if 'timeout' in auth_kwargs:

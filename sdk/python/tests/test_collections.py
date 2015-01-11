@@ -3,12 +3,12 @@
 # ARVADOS_API_TOKEN=abc ARVADOS_API_HOST=arvados.local python -m unittest discover
 
 import arvados
-import bz2
 import copy
+import hashlib
 import mock
 import os
 import pprint
-import subprocess
+import re
 import tempfile
 import unittest
 
@@ -47,7 +47,12 @@ class ArvadosCollectionsTest(run_test_server.TestCaseWithServers,
         cw.start_new_stream('baz')
         cw.write('baz')
         cw.set_current_file_name('baz.txt')
-        return cw.finish()
+        self.assertEqual(cw.manifest_text(),
+                         ". 3858f62230ac3c915f300c664312c63f+6 0:3:foo.txt 3:3:bar.txt\n" +
+                         "./baz 73feffa4b7f6bb68e44cf984c85f6e88+3 0:3:baz.txt\n",
+                         "wrong manifest: got {}".format(cw.manifest_text()))
+        cw.finish()
+        return cw.portable_data_hash()
 
     def test_keep_local_store(self):
         self.assertEqual(self.keep_client.put('foo'), 'acbd18db4cc2f85cedef654fccc4a4d8+3', 'wrong md5 hash from Keep.put')
@@ -55,19 +60,19 @@ class ArvadosCollectionsTest(run_test_server.TestCaseWithServers,
 
     def test_local_collection_writer(self):
         self.assertEqual(self.write_foo_bar_baz(),
-                         'd6c3b8e571f1b81ebb150a45ed06c884+114',
-                         "wrong locator hash for files foo, bar, baz")
+                         '23ca013983d6239e98931cc779e68426+114',
+                         'wrong locator hash: ' + self.write_foo_bar_baz())
 
     def test_local_collection_reader(self):
-        self.write_foo_bar_baz()
+        foobarbaz = self.write_foo_bar_baz()
         cr = arvados.CollectionReader(
-            'd6c3b8e571f1b81ebb150a45ed06c884+114+Xzizzle', self.api_client)
+            foobarbaz + '+Xzizzle', self.api_client)
         got = []
         for s in cr.all_streams():
             for f in s.all_files():
                 got += [[f.size(), f.stream_name(), f.name(), f.read(2**26)]]
-        expected = [[3, '.', 'bar.txt', 'bar'],
-                    [3, '.', 'foo.txt', 'foo'],
+        expected = [[3, '.', 'foo.txt', 'foo'],
+                    [3, '.', 'bar.txt', 'bar'],
                     [3, './baz', 'baz.txt', 'baz']]
         self.assertEqual(got,
                          expected)
@@ -94,8 +99,8 @@ class ArvadosCollectionsTest(run_test_server.TestCaseWithServers,
                                      'all_files|as_manifest did not preserve manifest contents: got %s expected %s' % (got, ex))
 
     def test_collection_manifest_subset(self):
-        self.write_foo_bar_baz()
-        self._test_subset('d6c3b8e571f1b81ebb150a45ed06c884+114',
+        foobarbaz = self.write_foo_bar_baz()
+        self._test_subset(foobarbaz,
                           [[3, '.',     'bar.txt', 'bar'],
                            [3, '.',     'foo.txt', 'foo'],
                            [3, './baz', 'baz.txt', 'baz']])
@@ -117,25 +122,6 @@ class ArvadosCollectionsTest(run_test_server.TestCaseWithServers,
                            [2, '.', 'ob.txt', 'ob'],
                            [0, '.', 'zero.txt', '']])
 
-    def _test_readline(self, what_in, what_out):
-        cw = arvados.CollectionWriter(self.api_client)
-        cw.start_new_file('test.txt')
-        cw.write(what_in)
-        test1 = cw.finish()
-        cr = arvados.CollectionReader(test1, self.api_client)
-        got = []
-        for x in list(cr.all_files())[0].readlines():
-            got += [x]
-        self.assertEqual(got,
-                         what_out,
-                         "readlines did not split lines correctly: %s" % got)
-
-    def test_collection_readline(self):
-        self._test_readline("\na\nbcd\n\nefg\nz",
-                            ["\n", "a\n", "bcd\n", "\n", "efg\n", "z"])
-        self._test_readline("ab\ncd\n",
-                            ["ab\n", "cd\n"])
-
     def test_collection_empty_file(self):
         cw = arvados.CollectionWriter(self.api_client)
         cw.start_new_file('zero.txt')
@@ -151,7 +137,19 @@ class ArvadosCollectionsTest(run_test_server.TestCaseWithServers,
         cw.start_new_stream('foo')
         cw.start_new_file('zero.txt')
         cw.write('')
-        self.check_manifest_file_sizes(cw.manifest_text(), [1,0,0])
+        self.check_manifest_file_sizes(cw.manifest_text(), [0,1,0])
+
+    def test_no_implicit_normalize(self):
+        cw = arvados.CollectionWriter(self.api_client)
+        cw.start_new_file('b')
+        cw.write('b')
+        cw.start_new_file('a')
+        cw.write('')
+        self.check_manifest_file_sizes(cw.manifest_text(), [1,0])
+        self.check_manifest_file_sizes(
+            arvados.CollectionReader(
+                cw.manifest_text()).manifest_text(normalize=True),
+            [0,1])
 
     def check_manifest_file_sizes(self, manifest_text, expect_sizes):
         cr = arvados.CollectionReader(manifest_text, self.api_client)
@@ -160,99 +158,56 @@ class ArvadosCollectionsTest(run_test_server.TestCaseWithServers,
             got_sizes += [f.size()]
         self.assertEqual(got_sizes, expect_sizes, "got wrong file sizes %s, expected %s" % (got_sizes, expect_sizes))
 
-    def test_collection_bz2_decompression(self):
-        n_lines_in = 2**18
-        data_in = "abc\n"
-        for x in xrange(0, 18):
-            data_in += data_in
-        compressed_data_in = bz2.compress(data_in)
-        cw = arvados.CollectionWriter(self.api_client)
-        cw.start_new_file('test.bz2')
-        cw.write(compressed_data_in)
-        bz2_manifest = cw.manifest_text()
-
-        cr = arvados.CollectionReader(bz2_manifest, self.api_client)
-
-        got = 0
-        for x in list(cr.all_files())[0].readlines():
-            self.assertEqual(x, "abc\n", "decompression returned wrong data: %s" % x)
-            got += 1
-        self.assertEqual(got,
-                         n_lines_in,
-                         "decompression returned %d lines instead of %d" % (got, n_lines_in))
-
-    def test_collection_gzip_decompression(self):
-        n_lines_in = 2**18
-        data_in = "abc\n"
-        for x in xrange(0, 18):
-            data_in += data_in
-        p = subprocess.Popen(["gzip", "-1cn"],
-                             stdout=subprocess.PIPE,
-                             stdin=subprocess.PIPE,
-                             stderr=subprocess.PIPE,
-                             shell=False, close_fds=True)
-        compressed_data_in, stderrdata = p.communicate(data_in)
-
-        cw = arvados.CollectionWriter(self.api_client)
-        cw.start_new_file('test.gz')
-        cw.write(compressed_data_in)
-        gzip_manifest = cw.manifest_text()
-
-        cr = arvados.CollectionReader(gzip_manifest, self.api_client)
-        got = 0
-        for x in list(cr.all_files())[0].readlines():
-            self.assertEqual(x, "abc\n", "decompression returned wrong data: %s" % x)
-            got += 1
-        self.assertEqual(got,
-                         n_lines_in,
-                         "decompression returned %d lines instead of %d" % (got, n_lines_in))
-
     def test_normalized_collection(self):
         m1 = """. 5348b82a029fd9e971a811ce1f71360b+43 0:43:md5sum.txt
 . 085c37f02916da1cad16f93c54d899b7+41 0:41:md5sum.txt
-. 8b22da26f9f433dea0a10e5ec66d73ba+43 0:43:md5sum.txt"""
-        self.assertEqual(arvados.CollectionReader(m1, self.api_client).manifest_text(),
+. 8b22da26f9f433dea0a10e5ec66d73ba+43 0:43:md5sum.txt
+"""
+        self.assertEqual(arvados.CollectionReader(m1, self.api_client).manifest_text(normalize=True),
                          """. 5348b82a029fd9e971a811ce1f71360b+43 085c37f02916da1cad16f93c54d899b7+41 8b22da26f9f433dea0a10e5ec66d73ba+43 0:127:md5sum.txt
 """)
 
         m2 = """. 204e43b8a1185621ca55a94839582e6f+67108864 b9677abbac956bd3e86b1deb28dfac03+67108864 fc15aff2a762b13f521baf042140acec+67108864 323d2a3ce20370c4ca1d3462a344f8fd+25885655 0:227212247:var-GS000016015-ASM.tsv.bz2
 """
-        self.assertEqual(arvados.CollectionReader(m2, self.api_client).manifest_text(), m2)
+        self.assertEqual(arvados.CollectionReader(m2, self.api_client).manifest_text(normalize=True), m2)
 
         m3 = """. 5348b82a029fd9e971a811ce1f71360b+43 3:40:md5sum.txt
 . 085c37f02916da1cad16f93c54d899b7+41 0:41:md5sum.txt
-. 8b22da26f9f433dea0a10e5ec66d73ba+43 0:43:md5sum.txt"""
-        self.assertEqual(arvados.CollectionReader(m3, self.api_client).manifest_text(),
+. 8b22da26f9f433dea0a10e5ec66d73ba+43 0:43:md5sum.txt
+"""
+        self.assertEqual(arvados.CollectionReader(m3, self.api_client).manifest_text(normalize=True),
                          """. 5348b82a029fd9e971a811ce1f71360b+43 085c37f02916da1cad16f93c54d899b7+41 8b22da26f9f433dea0a10e5ec66d73ba+43 3:124:md5sum.txt
 """)
 
         m4 = """. 204e43b8a1185621ca55a94839582e6f+67108864 0:3:foo/bar
 ./zzz 204e43b8a1185621ca55a94839582e6f+67108864 0:999:zzz
-./foo 323d2a3ce20370c4ca1d3462a344f8fd+25885655 0:3:bar"""
-        self.assertEqual(arvados.CollectionReader(m4, self.api_client).manifest_text(),
+./foo 323d2a3ce20370c4ca1d3462a344f8fd+25885655 0:3:bar
+"""
+        self.assertEqual(arvados.CollectionReader(m4, self.api_client).manifest_text(normalize=True),
                          """./foo 204e43b8a1185621ca55a94839582e6f+67108864 323d2a3ce20370c4ca1d3462a344f8fd+25885655 0:3:bar 67108864:3:bar
 ./zzz 204e43b8a1185621ca55a94839582e6f+67108864 0:999:zzz
 """)
 
         m5 = """. 204e43b8a1185621ca55a94839582e6f+67108864 0:3:foo/bar
 ./zzz 204e43b8a1185621ca55a94839582e6f+67108864 0:999:zzz
-./foo 204e43b8a1185621ca55a94839582e6f+67108864 3:3:bar"""
-        self.assertEqual(arvados.CollectionReader(m5, self.api_client).manifest_text(),
+./foo 204e43b8a1185621ca55a94839582e6f+67108864 3:3:bar
+"""
+        self.assertEqual(arvados.CollectionReader(m5, self.api_client).manifest_text(normalize=True),
                          """./foo 204e43b8a1185621ca55a94839582e6f+67108864 0:6:bar
 ./zzz 204e43b8a1185621ca55a94839582e6f+67108864 0:999:zzz
 """)
 
         with self.data_file('1000G_ref_manifest') as f6:
             m6 = f6.read()
-            self.assertEqual(arvados.CollectionReader(m6, self.api_client).manifest_text(), m6)
+            self.assertEqual(arvados.CollectionReader(m6, self.api_client).manifest_text(normalize=True), m6)
 
         with self.data_file('jlake_manifest') as f7:
             m7 = f7.read()
-            self.assertEqual(arvados.CollectionReader(m7, self.api_client).manifest_text(), m7)
+            self.assertEqual(arvados.CollectionReader(m7, self.api_client).manifest_text(normalize=True), m7)
 
         m8 = """./a\\040b\\040c 59ca0efa9f5633cb0371bbc0355478d8+13 0:13:hello\\040world.txt
 """
-        self.assertEqual(arvados.CollectionReader(m8, self.api_client).manifest_text(), m8)
+        self.assertEqual(arvados.CollectionReader(m8, self.api_client).manifest_text(normalize=True), m8)
 
     def test_locators_and_ranges(self):
         blocks2 = [['a', 10, 0],
@@ -347,79 +302,6 @@ class ArvadosCollectionsTest(run_test_server.TestCaseWithServers,
         self.assertEqual(arvados.locators_and_ranges(blocks, 11, 15), [['b', 15, 1, 14],
                                                                        ['c', 5, 0, 1]])
 
-    class MockStreamReader(object):
-        def __init__(self, content):
-            self.content = content
-            self.num_retries = 0
-
-        def readfrom(self, start, size, num_retries=0):
-            return self.content[start:start+size]
-
-    def test_file_stream(self):
-        content = 'abcdefghijklmnopqrstuvwxyz0123456789'
-        msr = self.MockStreamReader(content)
-        segments = [[0, 10, 0],
-                    [10, 15, 10],
-                    [25, 5, 25]]
-
-        sfr = arvados.StreamFileReader(msr, segments, "test")
-
-        self.assertEqual(sfr.name(), "test")
-        self.assertEqual(sfr.size(), 30)
-
-        self.assertEqual(sfr.readfrom(0, 30), content[0:30])
-        self.assertEqual(sfr.readfrom(2, 30), content[2:30])
-
-        self.assertEqual(sfr.readfrom(2, 8), content[2:10])
-        self.assertEqual(sfr.readfrom(0, 10), content[0:10])
-
-        self.assertEqual(sfr.tell(), 0)
-        self.assertEqual(sfr.read(5), content[0:5])
-        self.assertEqual(sfr.tell(), 5)
-        self.assertEqual(sfr.read(5), content[5:10])
-        self.assertEqual(sfr.tell(), 10)
-        self.assertEqual(sfr.read(5), content[10:15])
-        self.assertEqual(sfr.tell(), 15)
-        self.assertEqual(sfr.read(5), content[15:20])
-        self.assertEqual(sfr.tell(), 20)
-        self.assertEqual(sfr.read(5), content[20:25])
-        self.assertEqual(sfr.tell(), 25)
-        self.assertEqual(sfr.read(5), content[25:30])
-        self.assertEqual(sfr.tell(), 30)
-        self.assertEqual(sfr.read(5), '')
-        self.assertEqual(sfr.tell(), 30)
-
-        segments = [[26, 10, 0],
-                    [0, 15, 10],
-                    [15, 5, 25]]
-
-        sfr = arvados.StreamFileReader(msr, segments, "test")
-
-        self.assertEqual(sfr.size(), 30)
-
-        self.assertEqual(sfr.readfrom(0, 30), content[26:36] + content[0:20])
-        self.assertEqual(sfr.readfrom(2, 30), content[28:36] + content[0:20])
-
-        self.assertEqual(sfr.readfrom(2, 8), content[28:36])
-        self.assertEqual(sfr.readfrom(0, 10), content[26:36])
-
-        self.assertEqual(sfr.tell(), 0)
-        self.assertEqual(sfr.read(5), content[26:31])
-        self.assertEqual(sfr.tell(), 5)
-        self.assertEqual(sfr.read(5), content[31:36])
-        self.assertEqual(sfr.tell(), 10)
-        self.assertEqual(sfr.read(5), content[0:5])
-        self.assertEqual(sfr.tell(), 15)
-        self.assertEqual(sfr.read(5), content[5:10])
-        self.assertEqual(sfr.tell(), 20)
-        self.assertEqual(sfr.read(5), content[10:15])
-        self.assertEqual(sfr.tell(), 25)
-        self.assertEqual(sfr.read(5), content[15:20])
-        self.assertEqual(sfr.tell(), 30)
-        self.assertEqual(sfr.read(5), '')
-        self.assertEqual(sfr.tell(), 30)
-
-
     class MockKeep(object):
         def __init__(self, content, num_retries=0):
             self.content = content
@@ -451,49 +333,28 @@ class ArvadosCollectionsTest(run_test_server.TestCaseWithServers,
         self.assertEqual(sr.readfrom(25, 5), content[25:30])
         self.assertEqual(sr.readfrom(30, 5), '')
 
-    def test_file_reader(self):
-        keepblocks = {'aaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaa+10': 'abcdefghij',
-                      'bbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbb+15': 'klmnopqrstuvwxy',
-                      'cccccccccccccccccccccccccccccccc+5': 'z0123'}
-        mk = self.MockKeep(keepblocks)
-
-        sr = arvados.StreamReader([".", "aaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaa+10", "bbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbb+15", "cccccccccccccccccccccccccccccccc+5", "0:10:foo", "15:10:foo"], mk)
-
-        content = 'abcdefghijpqrstuvwxy'
-
-        f = sr.files()["foo"]
-
-        # f.read() calls will be aligned on block boundaries (as a
-        # result of ticket #3663).
-
-        f.seek(0)
-        self.assertEqual(f.read(20), content[0:10])
-
-        f.seek(0)
-        self.assertEqual(f.read(6), content[0:6])
-        self.assertEqual(f.read(6), content[6:10])
-        self.assertEqual(f.read(6), content[10:16])
-        self.assertEqual(f.read(6), content[16:20])
-
     def test_extract_file(self):
         m1 = """. 5348b82a029fd9e971a811ce1f71360b+43 0:43:md5sum.txt
 . 085c37f02916da1cad16f93c54d899b7+41 0:41:md6sum.txt
 . 8b22da26f9f433dea0a10e5ec66d73ba+43 0:43:md7sum.txt
 . 085c37f02916da1cad16f93c54d899b7+41 5348b82a029fd9e971a811ce1f71360b+43 8b22da26f9f433dea0a10e5ec66d73ba+43 47:80:md8sum.txt
-. 085c37f02916da1cad16f93c54d899b7+41 5348b82a029fd9e971a811ce1f71360b+43 8b22da26f9f433dea0a10e5ec66d73ba+43 40:80:md9sum.txt"""
+. 085c37f02916da1cad16f93c54d899b7+41 5348b82a029fd9e971a811ce1f71360b+43 8b22da26f9f433dea0a10e5ec66d73ba+43 40:80:md9sum.txt
+"""
 
-        m2 = arvados.CollectionReader(m1, self.api_client)
+        m2 = arvados.CollectionReader(m1, self.api_client).manifest_text(normalize=True)
 
-        self.assertEqual(m2.manifest_text(),
+        self.assertEqual(m2,
                          ". 5348b82a029fd9e971a811ce1f71360b+43 085c37f02916da1cad16f93c54d899b7+41 8b22da26f9f433dea0a10e5ec66d73ba+43 0:43:md5sum.txt 43:41:md6sum.txt 84:43:md7sum.txt 6:37:md8sum.txt 84:43:md8sum.txt 83:1:md9sum.txt 0:43:md9sum.txt 84:36:md9sum.txt\n")
+        files = arvados.CollectionReader(
+            m2, self.api_client).all_streams()[0].files()
 
-        self.assertEqual(arvados.CollectionReader(m1, self.api_client).all_streams()[0].files()['md5sum.txt'].as_manifest(),
+        self.assertEqual(files['md5sum.txt'].as_manifest(),
                          ". 5348b82a029fd9e971a811ce1f71360b+43 0:43:md5sum.txt\n")
-        self.assertEqual(arvados.CollectionReader(m1, self.api_client).all_streams()[0].files()['md6sum.txt'].as_manifest(),
+        self.assertEqual(files['md6sum.txt'].as_manifest(),
                          ". 085c37f02916da1cad16f93c54d899b7+41 0:41:md6sum.txt\n")
-        self.assertEqual(arvados.CollectionReader(m1, self.api_client).all_streams()[0].files()['md7sum.txt'].as_manifest(),
+        self.assertEqual(files['md7sum.txt'].as_manifest(),
                          ". 8b22da26f9f433dea0a10e5ec66d73ba+43 0:43:md7sum.txt\n")
-        self.assertEqual(arvados.CollectionReader(m1, self.api_client).all_streams()[0].files()['md9sum.txt'].as_manifest(),
+        self.assertEqual(files['md9sum.txt'].as_manifest(),
                          ". 085c37f02916da1cad16f93c54d899b7+41 5348b82a029fd9e971a811ce1f71360b+43 8b22da26f9f433dea0a10e5ec66d73ba+43 40:80:md9sum.txt\n")
 
     def test_write_directory_tree(self):
@@ -518,8 +379,7 @@ class ArvadosCollectionsTest(run_test_server.TestCaseWithServers,
         cwriter.write_directory_tree(self.build_directory_tree(
                 ['basefile', 'subdir/subfile']), max_manifest_depth=0)
         self.assertEqual(cwriter.manifest_text(),
-                         """. 4ace875ffdc6824a04950f06858f4465+22 0:8:basefile
-./subdir 4ace875ffdc6824a04950f06858f4465+22 8:14:subfile\n""")
+                         """. 4ace875ffdc6824a04950f06858f4465+22 0:8:basefile 8:14:subdir/subfile\n""")
 
     def test_write_directory_tree_with_limited_recursion(self):
         cwriter = arvados.CollectionWriter(self.api_client)
@@ -528,8 +388,18 @@ class ArvadosCollectionsTest(run_test_server.TestCaseWithServers,
             max_manifest_depth=1)
         self.assertEqual(cwriter.manifest_text(),
                          """. bd19836ddb62c11c55ab251ccaca5645+2 0:2:f1
-./d1 50170217e5b04312024aa5cd42934494+13 8:5:f2
-./d1/d2 50170217e5b04312024aa5cd42934494+13 0:8:f3\n""")
+./d1 50170217e5b04312024aa5cd42934494+13 0:8:d2/f3 8:5:f2\n""")
+
+    def test_write_directory_tree_with_zero_recursion(self):
+        cwriter = arvados.CollectionWriter(self.api_client)
+        content = 'd1/d2/f3d1/f2f1'
+        blockhash = hashlib.md5(content).hexdigest() + '+' + str(len(content))
+        cwriter.write_directory_tree(
+            self.build_directory_tree(['f1', 'd1/f2', 'd1/d2/f3']),
+            max_manifest_depth=0)
+        self.assertEqual(
+            cwriter.manifest_text(),
+            ". {} 0:8:d1/d2/f3 8:5:d1/f2 13:2:f1\n".format(blockhash))
 
     def test_write_one_file(self):
         cwriter = arvados.CollectionWriter(self.api_client)
@@ -620,6 +490,15 @@ class ArvadosCollectionsTest(run_test_server.TestCaseWithServers,
         self.assertRaises(arvados.errors.AssertionError,
                           cwriter.write, "badtext")
 
+    def test_read_arbitrary_data_with_collection_reader(self):
+        # arv-get relies on this to do "arv-get {keep-locator} -".
+        self.write_foo_bar_baz()
+        self.assertEqual(
+            'foobar',
+            arvados.CollectionReader(
+                '3858f62230ac3c915f300c664312c63f+6'
+                ).manifest_text())
+
 
 class CollectionTestMixin(object):
     PROXY_RESPONSE = {
@@ -637,6 +516,9 @@ class CollectionTestMixin(object):
     DEFAULT_DATA_HASH = DEFAULT_COLLECTION['portable_data_hash']
     DEFAULT_MANIFEST = DEFAULT_COLLECTION['manifest_text']
     DEFAULT_UUID = DEFAULT_COLLECTION['uuid']
+    ALT_COLLECTION = API_COLLECTIONS['bar_file']
+    ALT_DATA_HASH = ALT_COLLECTION['portable_data_hash']
+    ALT_MANIFEST = ALT_COLLECTION['manifest_text']
 
     def _mock_api_call(self, mock_method, code, body):
         mock_method = mock_method().execute
@@ -689,36 +571,136 @@ class CollectionReaderTestCase(unittest.TestCase, CollectionTestMixin):
     def test_locator_init(self):
         client = self.api_client_mock(200)
         # Ensure Keep will not return anything if asked.
-        with tutil.mock_responses(None, 404):
+        with tutil.mock_get_responses(None, 404):
             reader = arvados.CollectionReader(self.DEFAULT_DATA_HASH,
                                               api_client=client)
             self.assertEqual(self.DEFAULT_MANIFEST, reader.manifest_text())
 
-    def test_locator_init_falls_back_to_keep(self):
-        # Reading manifests from Keep is deprecated.  Feel free to
-        # remove this test when we remove the fallback.
+    def test_locator_init_fallback_to_keep(self):
+        # crunch-job needs this to read manifests that have only ever
+        # been written to Keep.
         client = self.api_client_mock(200)
         self.mock_get_collection(client, 404, None)
-        with tutil.mock_responses(self.DEFAULT_MANIFEST, 200):
+        with tutil.mock_get_responses(self.DEFAULT_MANIFEST, 200):
             reader = arvados.CollectionReader(self.DEFAULT_DATA_HASH,
-                                              api_client=client, num_retries=3)
+                                              api_client=client)
             self.assertEqual(self.DEFAULT_MANIFEST, reader.manifest_text())
+
+    def test_uuid_init_no_fallback_to_keep(self):
+        # Do not look up a collection UUID in Keep.
+        client = self.api_client_mock(404)
+        reader = arvados.CollectionReader(self.DEFAULT_UUID,
+                                          api_client=client)
+        with tutil.mock_get_responses(self.DEFAULT_MANIFEST, 200):
+            with self.assertRaises(arvados.errors.ApiError):
+                reader.manifest_text()
+
+    def test_try_keep_first_if_permission_hint(self):
+        # To verify that CollectionReader tries Keep first here, we
+        # mock API server to return the wrong data.
+        client = self.api_client_mock(200)
+        with tutil.mock_get_responses(self.ALT_MANIFEST, 200):
+            self.assertEqual(
+                self.ALT_MANIFEST,
+                arvados.CollectionReader(
+                    self.ALT_DATA_HASH + '+Affffffffffffffffffffffffffffffffffffffff@fedcba98',
+                    api_client=client).manifest_text())
 
     def test_init_num_retries_propagated(self):
         # More of an integration test...
         client = self.api_client_mock(200)
         reader = arvados.CollectionReader(self.DEFAULT_UUID, api_client=client,
                                           num_retries=3)
-        with tutil.mock_responses('foo', 500, 500, 200):
+        with tutil.mock_get_responses('foo', 500, 500, 200):
             self.assertEqual('foo',
                              ''.join(f.read(9) for f in reader.all_files()))
+
+    def test_read_nonnormalized_manifest_with_collection_reader(self):
+        # client should be able to use CollectionReader on a manifest without normalizing it
+        client = self.api_client_mock(500)
+        nonnormal = ". acbd18db4cc2f85cedef654fccc4a4d8+3+Aabadbadbee@abeebdee 0:3:foo.txt 1:0:bar.txt 0:3:foo.txt\n"
+        reader = arvados.CollectionReader(
+            nonnormal,
+            api_client=client, num_retries=0)
+        # Ensure stripped_manifest() doesn't mangle our manifest in
+        # any way other than stripping hints.
+        self.assertEqual(
+            re.sub('\+[^\d\s\+]+', '', nonnormal),
+            reader.stripped_manifest())
+        # Ensure stripped_manifest() didn't mutate our reader.
+        self.assertEqual(nonnormal, reader.manifest_text())
+        # Ensure the files appear in the order given in the manifest.
+        self.assertEqual(
+            [[6, '.', 'foo.txt'],
+             [0, '.', 'bar.txt']],
+            [[f.size(), f.stream_name(), f.name()]
+             for f in reader.all_streams()[0].all_files()])
+
+    def test_read_empty_collection(self):
+        client = self.api_client_mock(200)
+        self.mock_get_collection(client, 200, 'empty')
+        reader = arvados.CollectionReader('d41d8cd98f00b204e9800998ecf8427e+0',
+                                          api_client=client)
+        self.assertEqual('', reader.manifest_text())
+
+    def test_api_response(self):
+        client = self.api_client_mock()
+        reader = arvados.CollectionReader(self.DEFAULT_UUID, api_client=client)
+        self.assertEqual(self.DEFAULT_COLLECTION, reader.api_response())
+
+    def test_api_response_with_collection_from_keep(self):
+        client = self.api_client_mock()
+        self.mock_get_collection(client, 404, 'foo')
+        with tutil.mock_get_responses(self.DEFAULT_MANIFEST, 200):
+            reader = arvados.CollectionReader(self.DEFAULT_DATA_HASH,
+                                              api_client=client)
+            api_response = reader.api_response()
+        self.assertIsNone(api_response)
+
+    def check_open_file(self, coll_file, stream_name, file_name, file_size):
+        self.assertFalse(coll_file.closed, "returned file is not open")
+        self.assertEqual(stream_name, coll_file.stream_name())
+        self.assertEqual(file_name, coll_file.name())
+        self.assertEqual(file_size, coll_file.size())
+
+    def test_open_collection_file_one_argument(self):
+        client = self.api_client_mock(200)
+        reader = arvados.CollectionReader(self.DEFAULT_UUID, api_client=client)
+        cfile = reader.open('./foo')
+        self.check_open_file(cfile, '.', 'foo', 3)
+
+    def test_open_collection_file_two_arguments(self):
+        client = self.api_client_mock(200)
+        reader = arvados.CollectionReader(self.DEFAULT_UUID, api_client=client)
+        cfile = reader.open('.', 'foo')
+        self.check_open_file(cfile, '.', 'foo', 3)
+
+    def test_open_deep_file(self):
+        coll_name = 'collection_with_files_in_subdir'
+        client = self.api_client_mock(200)
+        self.mock_get_collection(client, 200, coll_name)
+        reader = arvados.CollectionReader(
+            self.API_COLLECTIONS[coll_name]['uuid'], api_client=client)
+        cfile = reader.open('./subdir2/subdir3/file2_in_subdir3.txt')
+        self.check_open_file(cfile, './subdir2/subdir3', 'file2_in_subdir3.txt',
+                             32)
+
+    def test_open_nonexistent_stream(self):
+        client = self.api_client_mock(200)
+        reader = arvados.CollectionReader(self.DEFAULT_UUID, api_client=client)
+        self.assertRaises(ValueError, reader.open, './nonexistent', 'foo')
+
+    def test_open_nonexistent_file(self):
+        client = self.api_client_mock(200)
+        reader = arvados.CollectionReader(self.DEFAULT_UUID, api_client=client)
+        self.assertRaises(ValueError, reader.open, '.', 'nonexistent')
 
 
 @tutil.skip_sleep
 class CollectionWriterTestCase(unittest.TestCase, CollectionTestMixin):
     def mock_keep(self, body, *codes, **headers):
         headers.setdefault('x-keep-replicas-stored', 2)
-        return tutil.mock_responses(body, *codes, **headers)
+        return tutil.mock_put_responses(body, *codes, **headers)
 
     def foo_writer(self, **kwargs):
         api_client = self.api_client_mock()
@@ -750,6 +732,78 @@ class CollectionWriterTestCase(unittest.TestCase, CollectionTestMixin):
         with self.mock_keep(foo_hash, 500, 200):
             writer.flush_data()
         self.assertEqual(self.DEFAULT_MANIFEST, writer.manifest_text())
+
+    def test_one_open(self):
+        client = self.api_client_mock()
+        writer = arvados.CollectionWriter(client)
+        with writer.open('out') as out_file:
+            self.assertEqual('.', writer.current_stream_name())
+            self.assertEqual('out', writer.current_file_name())
+            out_file.write('test data')
+            data_loc = hashlib.md5('test data').hexdigest() + '+9'
+        self.assertTrue(out_file.closed, "writer file not closed after context")
+        self.assertRaises(ValueError, out_file.write, 'extra text')
+        with self.mock_keep(data_loc, 200) as keep_mock:
+            self.assertEqual(". {} 0:9:out\n".format(data_loc),
+                             writer.manifest_text())
+
+    def test_open_writelines(self):
+        client = self.api_client_mock()
+        writer = arvados.CollectionWriter(client)
+        with writer.open('six') as out_file:
+            out_file.writelines(['12', '34', '56'])
+            data_loc = hashlib.md5('123456').hexdigest() + '+6'
+        with self.mock_keep(data_loc, 200) as keep_mock:
+            self.assertEqual(". {} 0:6:six\n".format(data_loc),
+                             writer.manifest_text())
+
+    def test_open_flush(self):
+        client = self.api_client_mock()
+        writer = arvados.CollectionWriter(client)
+        with writer.open('flush_test') as out_file:
+            out_file.write('flush1')
+            data_loc1 = hashlib.md5('flush1').hexdigest() + '+6'
+            with self.mock_keep(data_loc1, 200) as keep_mock:
+                out_file.flush()
+            out_file.write('flush2')
+            data_loc2 = hashlib.md5('flush2').hexdigest() + '+6'
+        with self.mock_keep(data_loc2, 200) as keep_mock:
+            self.assertEqual(". {} {} 0:12:flush_test\n".format(data_loc1,
+                                                                data_loc2),
+                             writer.manifest_text())
+
+    def test_two_opens_same_stream(self):
+        client = self.api_client_mock()
+        writer = arvados.CollectionWriter(client)
+        with writer.open('.', '1') as out_file:
+            out_file.write('1st')
+        with writer.open('.', '2') as out_file:
+            out_file.write('2nd')
+        data_loc = hashlib.md5('1st2nd').hexdigest() + '+6'
+        with self.mock_keep(data_loc, 200) as keep_mock:
+            self.assertEqual(". {} 0:3:1 3:3:2\n".format(data_loc),
+                             writer.manifest_text())
+
+    def test_two_opens_two_streams(self):
+        client = self.api_client_mock()
+        writer = arvados.CollectionWriter(client)
+        with writer.open('file') as out_file:
+            out_file.write('file')
+            data_loc1 = hashlib.md5('file').hexdigest() + '+4'
+        with self.mock_keep(data_loc1, 200) as keep_mock:
+            with writer.open('./dir', 'indir') as out_file:
+                out_file.write('indir')
+                data_loc2 = hashlib.md5('indir').hexdigest() + '+5'
+        with self.mock_keep(data_loc2, 200) as keep_mock:
+            expected = ". {} 0:4:file\n./dir {} 0:5:indir\n".format(
+                data_loc1, data_loc2)
+            self.assertEqual(expected, writer.manifest_text())
+
+    def test_dup_open_fails(self):
+        client = self.api_client_mock()
+        writer = arvados.CollectionWriter(client)
+        file1 = writer.open('one')
+        self.assertRaises(arvados.errors.AssertionError, writer.open, 'two')
 
 
 if __name__ == '__main__':

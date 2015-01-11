@@ -3,7 +3,7 @@ require 'websocket_runner'
 require 'oj'
 require 'database_cleaner'
 
-DatabaseCleaner.strategy = :truncation
+DatabaseCleaner.strategy = :deletion
 
 class WebsocketTest < ActionDispatch::IntegrationTest
   self.use_transactional_fixtures = false
@@ -602,5 +602,48 @@ class WebsocketTest < ActionDispatch::IntegrationTest
     assert_equal 17, state
 
   end
+
+  test "connect, subscribe, lots of events" do
+    state = 1
+    event_count = 0
+    log_start = Log.order(:id).last.id
+
+    authorize_with :admin
+
+    ws_helper :admin, false do |ws|
+      EM::Timer.new 45 do
+        # Needs a longer timeout than the default
+        ws.close
+      end
+
+      ws.on :open do |event|
+        ws.send ({method: 'subscribe'}.to_json)
+      end
+
+      ws.on :message do |event|
+        d = Oj.load event.data
+        case state
+        when 1
+          assert_equal 200, d["status"]
+          ActiveRecord::Base.transaction do
+            (1..202).each do
+              spec = Specimen.create
+            end
+          end
+          state = 2
+        when 2
+          event_count += 1
+          assert_equal d['id'], event_count+log_start
+          if event_count == 202
+            ws.close
+          end
+        end
+      end
+
+    end
+
+    assert_equal 202, event_count
+  end
+
 
 end

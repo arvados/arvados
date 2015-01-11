@@ -136,7 +136,6 @@ func GetBlockHandler(resp http.ResponseWriter, req *http.Request) {
 				// presumed to be valid and ignored, to permit forward compatibility.
 			} else {
 				// Unknown format; not a valid locator.
-				log.Printf("%s %s %d %s", req.Method, hash, BadRequestError.HTTPCode, "-")
 				http.Error(resp, BadRequestError.Error(), BadRequestError.HTTPCode)
 				return
 			}
@@ -147,17 +146,14 @@ func GetBlockHandler(resp http.ResponseWriter, req *http.Request) {
 	// request's permission signature.
 	if enforce_permissions {
 		if signature == "" || timestamp == "" {
-			log.Printf("%s %s %d %s", req.Method, hash, PermissionError.HTTPCode, "-")
 			http.Error(resp, PermissionError.Error(), PermissionError.HTTPCode)
 			return
 		} else if IsExpired(timestamp) {
-			log.Printf("%s %s %d %s", req.Method, hash, ExpiredError.HTTPCode, "-")
 			http.Error(resp, ExpiredError.Error(), ExpiredError.HTTPCode)
 			return
 		} else {
 			req_locator := req.URL.Path[1:] // strip leading slash
 			if !VerifySignature(req_locator, GetApiToken(req)) {
-				log.Printf("%s %s %d %s", req.Method, hash, PermissionError.HTTPCode, "-")
 				http.Error(resp, PermissionError.Error(), PermissionError.HTTPCode)
 				return
 			}
@@ -175,22 +171,13 @@ func GetBlockHandler(resp http.ResponseWriter, req *http.Request) {
 	if err != nil {
 		// This type assertion is safe because the only errors
 		// GetBlock can return are DiskHashError or NotFoundError.
-		if err == NotFoundError {
-			log.Printf("%s: not found, giving up\n", hash)
-		}
-		log.Printf("%s %s %d %s", req.Method, hash, err.(*KeepError).HTTPCode, "-")
 		http.Error(resp, err.Error(), err.(*KeepError).HTTPCode)
 		return
 	}
 
-	resp.Header().Set("X-Block-Size", fmt.Sprintf("%d", len(block)))
+	resp.Header().Set("Content-Length", fmt.Sprintf("%d", len(block)))
 
 	_, err = resp.Write(block)
-	if err != nil {
-		log.Printf("%s %s %d %s", req.Method, hash, err.(*KeepError).HTTPCode, len(block), "-")
-	} else {
-		log.Printf("%s %s %d %d", req.Method, hash, 200, len(block))
-	}
 
 	return
 }
@@ -206,7 +193,6 @@ func PutBlockHandler(resp http.ResponseWriter, req *http.Request) {
 	// If the request exceeds BLOCKSIZE bytes, issue a HTTP 500 error.
 	//
 	if req.ContentLength > BLOCKSIZE {
-		log.Printf("%s %s %d %d", req.Method, hash, TooLongError.HTTPCode, req.ContentLength)
 		http.Error(resp, TooLongError.Error(), TooLongError.HTTPCode)
 		return
 	}
@@ -214,10 +200,8 @@ func PutBlockHandler(resp http.ResponseWriter, req *http.Request) {
 	buf := make([]byte, req.ContentLength)
 	nread, err := io.ReadFull(req.Body, buf)
 	if err != nil {
-		log.Printf("%s %s %d %d", req.Method, hash, 500, req.ContentLength)
 		http.Error(resp, err.Error(), 500)
 	} else if int64(nread) < req.ContentLength {
-		log.Printf("%s %s %d %d", req.Method, hash, 500, req.ContentLength)
 		http.Error(resp, "request truncated", 500)
 	} else {
 		if err := PutBlock(buf, hash); err == nil {
@@ -229,11 +213,9 @@ func PutBlockHandler(resp http.ResponseWriter, req *http.Request) {
 				expiry := time.Now().Add(permission_ttl)
 				return_hash = SignLocator(return_hash, api_token, expiry)
 			}
-			log.Printf("%s %s %d %d", req.Method, hash, 200, req.ContentLength)
 			resp.Write([]byte(return_hash + "\n"))
 		} else {
 			ke := err.(*KeepError)
-			log.Printf("%s %s %d %d", req.Method, hash, ke.HTTPCode, req.ContentLength)
 			http.Error(resp, ke.Error(), ke.HTTPCode)
 		}
 	}
@@ -244,18 +226,14 @@ func PutBlockHandler(resp http.ResponseWriter, req *http.Request) {
 //     A HandleFunc to address /index and /index/{prefix} requests.
 //
 func IndexHandler(resp http.ResponseWriter, req *http.Request) {
-	prefix := mux.Vars(req)["prefix"]
-
-	// Only the data manager may issue /index requests,
-	// and only if enforce_permissions is enabled.
-	// All other requests return 403 Forbidden.
-	api_token := GetApiToken(req)
-	if !enforce_permissions ||
-		api_token == "" ||
-		data_manager_token != api_token {
-		http.Error(resp, PermissionError.Error(), PermissionError.HTTPCode)
+	// Reject unauthorized requests.
+	if !IsDataManagerToken(GetApiToken(req)) {
+		http.Error(resp, UnauthorizedError.Error(), UnauthorizedError.HTTPCode)
 		return
 	}
+
+	prefix := mux.Vars(req)["prefix"]
+
 	var index string
 	for _, vol := range KeepVM.Volumes() {
 		index = index + vol.Index(prefix)
@@ -367,7 +345,6 @@ func GetVolumeStatus(volume string) *VolumeStatus {
 //
 func DeleteHandler(resp http.ResponseWriter, req *http.Request) {
 	hash := mux.Vars(req)["hash"]
-	log.Printf("%s %s", req.Method, hash)
 
 	// Confirm that this user is an admin and has a token with unlimited scope.
 	var tok = GetApiToken(req)
@@ -461,7 +438,6 @@ func PullHandler(resp http.ResponseWriter, req *http.Request) {
 	// Reject unauthorized requests.
 	if !IsDataManagerToken(GetApiToken(req)) {
 		http.Error(resp, UnauthorizedError.Error(), UnauthorizedError.HTTPCode)
-		log.Printf("%s %s: %s\n", req.Method, req.URL, UnauthorizedError.Error())
 		return
 	}
 
@@ -470,14 +446,12 @@ func PullHandler(resp http.ResponseWriter, req *http.Request) {
 	r := json.NewDecoder(req.Body)
 	if err := r.Decode(&pr); err != nil {
 		http.Error(resp, BadRequestError.Error(), BadRequestError.HTTPCode)
-		log.Printf("%s %s: %s\n", req.Method, req.URL, err.Error())
 		return
 	}
 
 	// We have a properly formatted pull list sent from the data
 	// manager.  Report success and send the list to the pull list
 	// manager for further handling.
-	log.Printf("%s %s: received %v\n", req.Method, req.URL, pr)
 	resp.WriteHeader(http.StatusOK)
 	resp.Write([]byte(
 		fmt.Sprintf("Received %d pull requests\n", len(pr))))
@@ -502,7 +476,6 @@ func TrashHandler(resp http.ResponseWriter, req *http.Request) {
 	// Reject unauthorized requests.
 	if !IsDataManagerToken(GetApiToken(req)) {
 		http.Error(resp, UnauthorizedError.Error(), UnauthorizedError.HTTPCode)
-		log.Printf("%s %s: %s\n", req.Method, req.URL, UnauthorizedError.Error())
 		return
 	}
 
@@ -511,14 +484,12 @@ func TrashHandler(resp http.ResponseWriter, req *http.Request) {
 	r := json.NewDecoder(req.Body)
 	if err := r.Decode(&trash); err != nil {
 		http.Error(resp, BadRequestError.Error(), BadRequestError.HTTPCode)
-		log.Printf("%s %s: %s\n", req.Method, req.URL, err.Error())
 		return
 	}
 
 	// We have a properly formatted trash list sent from the data
 	// manager.  Report success and send the list to the trash work
 	// queue for further handling.
-	log.Printf("%s %s: received %v\n", req.Method, req.URL, trash)
 	resp.WriteHeader(http.StatusOK)
 	resp.Write([]byte(
 		fmt.Sprintf("Received %d trash requests\n", len(trash))))

@@ -1,3 +1,5 @@
+require "arvados/keep"
+
 class CollectionsController < ApplicationController
   include ActionController::Live
 
@@ -12,7 +14,9 @@ class CollectionsController < ApplicationController
   RELATION_LIMIT = 5
 
   def show_pane_list
-    %w(Files Provenance_graph Used_by Advanced)
+    panes = %w(Files Upload Provenance_graph Used_by Advanced)
+    panes = panes - %w(Upload) unless (@object.editable? rescue false)
+    panes
   end
 
   def set_persistent
@@ -45,34 +49,6 @@ class CollectionsController < ApplicationController
     end
   end
 
-  def choose
-    # Find collections using default find_objects logic, then search for name
-    # links, and preload any other links connected to the collections that are
-    # found.
-    # Name links will be obsolete when issue #3036 is merged,
-    # at which point this entire custom #choose function can probably be
-    # eliminated.
-
-    params[:limit] ||= 40
-
-    find_objects_for_index
-    @collections = @objects
-
-    @filters += [['link_class','=','name'],
-                 ['head_uuid','is_a','arvados#collection']]
-
-    @objects = Link
-    find_objects_for_index
-
-    @name_links = @objects
-
-    @objects = Collection.
-      filter([['uuid','in',@name_links.collect(&:head_uuid)]])
-
-    preload_links_for_objects (@collections.to_a + @objects.to_a)
-    super
-  end
-
   def index
     # API server index doesn't return manifest_text by default, but our
     # callers want it unless otherwise specified.
@@ -80,7 +56,7 @@ class CollectionsController < ApplicationController
     base_search = Collection.select(@select)
     if params[:search].andand.length.andand > 0
       tags = Link.where(any: ['contains', params[:search]])
-      @collections = (base_search.where(uuid: tags.collect(&:head_uuid)) |
+      @objects = (base_search.where(uuid: tags.collect(&:head_uuid)) |
                       base_search.where(any: ['contains', params[:search]])).
         uniq { |c| c.uuid }
     else
@@ -96,12 +72,11 @@ class CollectionsController < ApplicationController
         offset = 0
       end
 
-      @collections = base_search.limit(limit).offset(offset)
+      @objects = base_search.limit(limit).offset(offset)
     end
-    @links = Link.limit(1000).
-      where(head_uuid: @collections.collect(&:uuid))
+    @links = Link.where(head_uuid: @objects.collect(&:uuid))
     @collection_info = {}
-    @collections.each do |c|
+    @objects.each do |c|
       @collection_info[c.uuid] = {
         tag_links: [],
         wanted: false,
@@ -145,9 +120,11 @@ class CollectionsController < ApplicationController
     usable_token = find_usable_token(tokens) do
       coll = Collection.find(params[:uuid])
     end
+
+    file_name = params[:file].andand.sub(/^(\.\/|\/|)/, './')
     if usable_token.nil?
       return  # Response already rendered.
-    elsif params[:file].nil? or not coll.manifest.has_file?(params[:file])
+    elsif file_name.nil? or not coll.manifest.has_file?(file_name)
       return render_not_found
     end
 
@@ -195,61 +172,70 @@ class CollectionsController < ApplicationController
     end
   end
 
+  def find_object_by_uuid
+    if not Keep::Locator.parse params[:id]
+      super
+    end
+  end
+
   def show
     return super if !@object
     if current_user
-      jobs_with = lambda do |conds|
-        Job.limit(RELATION_LIMIT).where(conds)
-          .results.sort_by { |j| j.finished_at || j.created_at }
-      end
-      @output_of = jobs_with.call(output: @object.portable_data_hash)
-      @log_of = jobs_with.call(log: @object.portable_data_hash)
-      @project_links = Link.limit(RELATION_LIMIT).order("modified_at DESC")
-        .where(head_uuid: @object.uuid, link_class: 'name').results
-      project_hash = Group.where(uuid: @project_links.map(&:tail_uuid)).to_hash
-      @projects = project_hash.values
-
-      if @object.uuid.match /[0-9a-f]{32}/
+      if Keep::Locator.parse params["uuid"]
         @same_pdh = Collection.filter([["portable_data_hash", "=", @object.portable_data_hash]])
-        owners = @same_pdh.map {|s| s.owner_uuid}.to_a
+        if @same_pdh.results.size == 1
+          redirect_to collection_path(@same_pdh[0]["uuid"])
+          return
+        end
+        owners = @same_pdh.map(&:owner_uuid).to_a.uniq
         preload_objects_for_dataclass Group, owners
         preload_objects_for_dataclass User, owners
+        render 'hash_matches'
+        return
+      else
+        jobs_with = lambda do |conds|
+          Job.limit(RELATION_LIMIT).where(conds)
+            .results.sort_by { |j| j.finished_at || j.created_at }
+        end
+        @output_of = jobs_with.call(output: @object.portable_data_hash)
+        @log_of = jobs_with.call(log: @object.portable_data_hash)
+        @project_links = Link.limit(RELATION_LIMIT).order("modified_at DESC")
+          .where(head_uuid: @object.uuid, link_class: 'name').results
+        project_hash = Group.where(uuid: @project_links.map(&:tail_uuid)).to_hash
+        @projects = project_hash.values
+
+        @permissions = Link.limit(RELATION_LIMIT).order("modified_at DESC")
+          .where(head_uuid: @object.uuid, link_class: 'permission',
+                 name: 'can_read').results
+        @logs = Log.limit(RELATION_LIMIT).order("created_at DESC")
+          .where(object_uuid: @object.uuid).results
+        @is_persistent = Link.limit(1)
+          .where(head_uuid: @object.uuid, tail_uuid: current_user.uuid,
+                 link_class: 'resources', name: 'wants')
+          .results.any?
+        @search_sharing = search_scopes
+
+        if params["tab_pane"] == "Provenance_graph"
+          @prov_svg = ProvenanceHelper::create_provenance_graph(@object.provenance, "provenance_svg",
+                                                                {:request => request,
+                                                                  :direction => :bottom_up,
+                                                                  :combine_jobs => :script_only}) rescue nil
+        end
+        if params["tab_pane"] == "Used_by"
+          @used_by_svg = ProvenanceHelper::create_provenance_graph(@object.used_by, "used_by_svg",
+                                                                   {:request => request,
+                                                                     :direction => :top_down,
+                                                                     :combine_jobs => :script_only,
+                                                                     :pdata_only => true}) rescue nil
+        end
       end
-
-      @permissions = Link.limit(RELATION_LIMIT).order("modified_at DESC")
-        .where(head_uuid: @object.uuid, link_class: 'permission',
-               name: 'can_read').results
-      @logs = Log.limit(RELATION_LIMIT).order("created_at DESC")
-        .where(object_uuid: @object.uuid).results
-      @is_persistent = Link.limit(1)
-        .where(head_uuid: @object.uuid, tail_uuid: current_user.uuid,
-               link_class: 'resources', name: 'wants')
-        .results.any?
-      @search_sharing = search_scopes
-    end
-
-    if params["tab_pane"] == "Provenance_graph"
-      @prov_svg = ProvenanceHelper::create_provenance_graph(@object.provenance, "provenance_svg",
-                                                            {:request => request,
-                                                              :direction => :bottom_up,
-                                                              :combine_jobs => :script_only}) rescue nil
-    end
-    if params["tab_pane"] == "Used_by"
-      @used_by_svg = ProvenanceHelper::create_provenance_graph(@object.used_by, "used_by_svg",
-                                                               {:request => request,
-                                                                 :direction => :top_down,
-                                                                 :combine_jobs => :script_only,
-                                                                 :pdata_only => true}) rescue nil
     end
     super
   end
 
   def sharing_popup
     @search_sharing = search_scopes
-    respond_to do |format|
-      format.html
-      format.js
-    end
+    render("sharing_popup.js", content_type: "text/javascript")
   end
 
   helper_method :download_link
@@ -259,18 +245,15 @@ class CollectionsController < ApplicationController
   end
 
   def share
-    a = ApiClientAuthorization.create(scopes: sharing_scopes)
-    @search_sharing = search_scopes
-    render 'sharing_popup'
+    ApiClientAuthorization.create(scopes: sharing_scopes)
+    sharing_popup
   end
 
   def unshare
-    @search_sharing = search_scopes
-    @search_sharing.each do |s|
+    search_scopes.each do |s|
       s.destroy
     end
-    @search_sharing = search_scopes
-    render 'sharing_popup'
+    sharing_popup
   end
 
   protected
@@ -284,7 +267,9 @@ class CollectionsController < ApplicationController
     most_specific_error = [401]
     token_list.each do |api_token|
       begin
-        using_specific_api_token(api_token) do
+        # We can't load the corresponding user, because the token may not
+        # be scoped for that.
+        using_specific_api_token(api_token, load_user: false) do
           yield
           return api_token
         end

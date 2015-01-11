@@ -17,8 +17,8 @@ Gem::Specification.new do |s|
   s.licenses    = ['Apache License, Version 2.0']
   s.files       = ["lib/arvados.rb", "lib/arvados/keep.rb"]
   s.required_ruby_version = '>= 2.1.0'
-  s.add_dependency('google-api-client', '~> 0.6', '>= 0.6.3')
-  s.add_dependency('activesupport', '~> 3.2', '>= 3.2.13')
+  s.add_dependency('google-api-client', '~> 0.6.3', '>= 0.6.3')
+  s.add_dependency('activesupport', '>= 3.2.13')
   s.add_dependency('json', '~> 1.7', '>= 1.7.7')
   s.add_dependency('andand', '~> 1.3', '>= 1.3.3')
   s.add_runtime_dependency('jwt', '>= 0.1.5', '< 1.0.0')

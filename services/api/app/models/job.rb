@@ -2,7 +2,7 @@ class Job < ArvadosModel
   include HasUuid
   include KindAndEtag
   include CommonApiTemplate
-  attr_protected :docker_image_locator
+  attr_protected :arvados_sdk_version, :docker_image_locator
   serialize :script_parameters, Hash
   serialize :runtime_constraints, Hash
   serialize :tasks_summary, Hash
@@ -11,9 +11,11 @@ class Job < ArvadosModel
   before_validation :set_priority
   before_validation :update_state_from_old_state_attrs
   validate :ensure_script_version_is_commit
+  validate :find_arvados_sdk_version
   validate :find_docker_image_locator
   validate :validate_status
   validate :validate_state_change
+  validate :ensure_no_collection_uuids_in_script_params
   before_save :update_timestamps_when_state_changes
 
   has_many :commit_ancestors, :foreign_key => :descendant, :primary_key => :script_version
@@ -45,6 +47,7 @@ class Job < ArvadosModel
     t.add :nondeterministic
     t.add :repository
     t.add :supplied_script_version
+    t.add :arvados_sdk_version
     t.add :docker_image_locator
     t.add :queue_position
     t.add :node_uuids
@@ -149,28 +152,45 @@ class Job < ArvadosModel
     true
   end
 
-  def find_docker_image_locator
-    # Find the Collection that holds the Docker image specified in the
-    # runtime constraints, and store its locator in docker_image_locator.
-    unless runtime_constraints.is_a? Hash
-      # We're still in validation stage, so we can't assume
-      # runtime_constraints isn't something horrible like an array or
-      # a string. Treat those cases as "no docker image supplied";
-      # other validations will fail anyway.
-      self.docker_image_locator = nil
-      return true
-    end
-    image_search = runtime_constraints['docker_image']
-    image_tag = runtime_constraints['docker_image_tag']
-    if image_search.nil?
-      self.docker_image_locator = nil
-      true
-    elsif coll = Collection.for_latest_docker_image(image_search, image_tag)
-      self.docker_image_locator = coll.portable_data_hash
-      true
+  def resolve_runtime_constraint(key, attr_sym)
+    if ((runtime_constraints.is_a? Hash) and
+        (search = runtime_constraints[key]))
+      ok, result = yield search
     else
-      errors.add(:docker_image_locator, "not found for #{image_search}")
-      false
+      ok, result = true, nil
+    end
+    if ok
+      send("#{attr_sym}=".to_sym, result)
+    else
+      errors.add(attr_sym, result)
+    end
+    ok
+  end
+
+  def find_arvados_sdk_version
+    resolve_runtime_constraint("arvados_sdk_version",
+                               :arvados_sdk_version) do |git_search|
+      commits = Commit.find_commit_range(current_user, "arvados",
+                                         nil, git_search, nil)
+      if commits.nil? or commits.empty?
+        [false, "#{git_search} does not resolve to a commit"]
+      elsif not runtime_constraints["docker_image"]
+        [false, "cannot be specified without a Docker image constraint"]
+      else
+        [true, commits.first]
+      end
+    end
+  end
+
+  def find_docker_image_locator
+    resolve_runtime_constraint("docker_image",
+                               :docker_image_locator) do |image_search|
+      image_tag = runtime_constraints['docker_image_tag']
+      if coll = Collection.for_latest_docker_image(image_search, image_tag)
+        [true, coll.portable_data_hash]
+      else
+        [false, "not found for #{image_search}"]
+      end
     end
   end
 
@@ -291,6 +311,8 @@ class Job < ArvadosModel
     end
     self.running ||= false # Default to false instead of nil.
 
+    @need_crunch_dispatch_trigger = true
+
     true
   end
 
@@ -354,5 +376,35 @@ class Job < ArvadosModel
       end
     end
     ok
+  end
+
+  def ensure_no_collection_uuids_in_script_params
+    # recursive_hash_search searches recursively through hashes and
+    # arrays in 'thing' for string fields matching regular expression
+    # 'pattern'.  Returns true if pattern is found, false otherwise.
+    def recursive_hash_search thing, pattern
+      if thing.is_a? Hash
+        thing.each do |k, v|
+          return true if recursive_hash_search v, pattern
+        end
+      elsif thing.is_a? Array
+        thing.each do |k|
+          return true if recursive_hash_search k, pattern
+        end
+      elsif thing.is_a? String
+        return true if thing.match pattern
+      end
+      false
+    end
+
+    # Fail validation if any script_parameters field includes a string containing a
+    # collection uuid pattern.
+    if self.script_parameters_changed?
+      if recursive_hash_search(self.script_parameters, Collection.uuid_regex)
+        self.errors.add :script_parameters, "must use portable_data_hash instead of collection uuid"
+        return false
+      end
+    end
+    true
   end
 end

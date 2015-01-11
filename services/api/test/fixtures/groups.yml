@@ -47,8 +47,10 @@ empty_lonely_group:
 
 all_users:
   uuid: zzzzz-j7d0g-fffffffffffffff
-  owner_uuid: zzzzz-tpzed-d9tiejq69daie8f
+  owner_uuid: zzzzz-tpzed-000000000000000
   name: All users
+  description: All users
+  group_class: role
 
 testusergroup_admins:
   uuid: zzzzz-j7d0g-48foin4vonvc2at
@@ -130,10 +132,107 @@ active_user_has_can_manage:
   name: Active user has can_manage
 
 # Group for testing granting permission between users who share a group.
-#
 group_for_sharing_tests:
   uuid: zzzzz-j7d0g-t4ucgncwteul7zt
   owner_uuid: zzzzz-tpzed-000000000000000
   name: Group for sharing tests
   description: Users who can share objects with each other
   group_class: role
+
+empty_project:
+  uuid: zzzzz-j7d0g-9otoxmrksam74q6
+  owner_uuid: zzzzz-tpzed-xurymjxw79nv3jz
+  created_at: 2014-12-16 15:56:27.967534940 Z
+  modified_by_client_uuid: ~
+  modified_by_user_uuid: zzzzz-tpzed-xurymjxw79nv3jz
+  modified_at: 2014-12-16 15:56:27.967358199 Z
+  name: Empty project
+  description: ~
+  updated_at: 2014-12-16 15:56:27.967242142 Z
+  group_class: project
+
+project_with_10_collections:
+  uuid: zzzzz-j7d0g-0010collections
+  owner_uuid: zzzzz-tpzed-user1withloadab
+  created_at: 2014-04-21 15:37:48 -0400
+  modified_by_client_uuid: zzzzz-ozdt8-brczlopd8u8d0jr
+  modified_by_user_uuid: zzzzz-tpzed-user1withloadab
+  modified_at: 2014-04-21 15:37:48 -0400
+  updated_at: 2014-04-21 15:37:48 -0400
+  name: project with 10 collections
+  description: This will result in one page in the display
+  group_class: project
+
+project_with_201_collections:
+  uuid: zzzzz-j7d0g-0201collections
+  owner_uuid: zzzzz-tpzed-user1withloadab
+  created_at: 2014-04-21 15:37:48 -0400
+  modified_by_client_uuid: zzzzz-ozdt8-brczlopd8u8d0jr
+  modified_by_user_uuid: zzzzz-tpzed-user1withloadab
+  modified_at: 2014-04-21 15:37:48 -0400
+  updated_at: 2014-04-21 15:37:48 -0400
+  name: project with 201 collections
+  description: This will result in two pages in the display
+  group_class: project
+
+project_with_10_pipelines:
+  uuid: zzzzz-j7d0g-000010pipelines
+  owner_uuid: zzzzz-tpzed-user1withloadab
+  created_at: 2014-04-21 15:37:48 -0400
+  modified_by_client_uuid: zzzzz-ozdt8-brczlopd8u8d0jr
+  modified_by_user_uuid: zzzzz-tpzed-user1withloadab
+  modified_at: 2014-04-21 15:37:48 -0400
+  updated_at: 2014-04-21 15:37:48 -0400
+  name: project with 10 pipelines
+  description: project with 10 pipelines
+  group_class: project
+
+project_with_2_pipelines_and_60_jobs:
+  uuid: zzzzz-j7d0g-nnjobspipelines
+  owner_uuid: zzzzz-tpzed-user1withloadab
+  created_at: 2014-04-21 15:37:48 -0400
+  modified_by_client_uuid: zzzzz-ozdt8-brczlopd8u8d0jr
+  modified_by_user_uuid: zzzzz-tpzed-user1withloadab
+  modified_at: 2014-04-21 15:37:48 -0400
+  updated_at: 2014-04-21 15:37:48 -0400
+  name: project with 2 pipelines and 60 jobs
+  description: This will result in two pages in the display
+  group_class: project
+
+project_with_25_pipelines:
+  uuid: zzzzz-j7d0g-000025pipelines
+  owner_uuid: zzzzz-tpzed-user1withloadab
+  created_at: 2014-04-21 15:37:48 -0400
+  modified_by_client_uuid: zzzzz-ozdt8-brczlopd8u8d0jr
+  modified_by_user_uuid: zzzzz-tpzed-user1withloadab
+  modified_at: 2014-04-21 15:37:48 -0400
+  updated_at: 2014-04-21 15:37:48 -0400
+  name: project with 25 pipelines
+  description: project with 25 pipelines
+  group_class: project
+
+fuse_owned_project:
+  uuid: zzzzz-j7d0g-0000ownedbyfuse
+  owner_uuid: zzzzz-tpzed-0fusedrivertest
+  created_at: 2014-04-21 15:37:48 -0400
+  modified_by_client_uuid: zzzzz-ozdt8-brczlopd8u8d0jr
+  modified_by_user_uuid: zzzzz-tpzed-0fusedrivertest
+  modified_at: 2014-04-21 15:37:48 -0400
+  updated_at: 2014-04-21 15:37:48 -0400
+  name: FUSE Test Project
+  description: Test project belonging to FUSE test user
+  group_class: project
+
+# This wouldn't pass model validation, but it enables a workbench
+# infinite-loop test. See #4389
+project_owns_itself:
+  uuid: zzzzz-j7d0g-7rqh7hdshd5yp5t
+  owner_uuid: zzzzz-j7d0g-7rqh7hdshd5yp5t
+  created_at: 2014-11-05 22:31:24.258424340 Z
+  modified_by_client_uuid: zzzzz-ozdt8-brczlopd8u8d0jr
+  modified_by_user_uuid: 6pbr1-tpzed-000000000000000
+  modified_at: 2014-11-05 22:31:24.258242890 Z
+  name: zzzzz-j7d0g-7rqh7hdshd5yp5t
+  description: ~
+  updated_at: 2014-11-05 22:31:24.258093171 Z
+  group_class: project

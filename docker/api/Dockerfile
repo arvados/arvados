@@ -4,10 +4,11 @@ FROM arvados/passenger
 MAINTAINER Tim Pierce <twp@curoverse.com>
 
 # Install postgres and apache.
-RUN apt-get update && \
-    apt-get -q -y install procps postgresql postgresql-server-dev-9.1 apache2 slurm-llnl munge \
-                          supervisor sudo libwww-perl libio-socket-ssl-perl libcrypt-ssleay-perl \
-                          libjson-perl cron
+RUN apt-get update -qq
+RUN apt-get install -qqy \
+    procps postgresql postgresql-server-dev-9.1 apache2 slurm-llnl munge \
+    supervisor sudo libwww-perl libio-socket-ssl-perl libcrypt-ssleay-perl \
+    libjson-perl cron openssh-server
 
 ADD munge.key /etc/munge/
 RUN chown munge:munge /etc/munge/munge.key && chmod 600 /etc/munge/munge.key
@@ -70,7 +71,6 @@ ADD update-gitolite.rb /usr/local/arvados/
 
 # Supervisor.
 ADD supervisor.conf /etc/supervisor/conf.d/arvados.conf
-ADD ssh.sh /usr/local/bin/ssh.sh
 ADD generated/setup.sh /usr/local/bin/setup.sh
 ADD generated/setup-gitolite.sh /usr/local/bin/setup-gitolite.sh
 ADD crunch-dispatch-run.sh /usr/local/bin/crunch-dispatch-run.sh
