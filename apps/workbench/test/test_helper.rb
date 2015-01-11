@@ -160,8 +160,6 @@ class ApiServerForTests
                 '--pid-file', @pidfile)
       else
         make_ssl_cert
-        _system('bundle', 'exec', 'rake', 'db:test:load')
-        _system('bundle', 'exec', 'rake', 'db:fixtures:load')
         _system('bundle', 'exec', 'passenger', 'start', '-d', '-p3000',
                 '--pid-file', @pidfile,
                 '--ssl',
