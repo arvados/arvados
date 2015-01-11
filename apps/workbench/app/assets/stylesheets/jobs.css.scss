@@ -1,10 +1,15 @@
 .arv-job-log-window {
     height: 40em;
-    white-space: nowrap;
+    white-space: pre;
     overflow: scroll;
     background: black;
     color: white;
     font-family: monospace;
     font-size: .8em;
     border: 2px solid black;
+}
+
+.morris-hover-point {
+    text-align: left;
+    width: 100%;
 }

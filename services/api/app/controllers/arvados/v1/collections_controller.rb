@@ -16,7 +16,7 @@ class Arvados::V1::CollectionsController < ApplicationController
         @object = {
           uuid: c.portable_data_hash,
           portable_data_hash: c.portable_data_hash,
-          manifest_text: c.manifest_text,
+          manifest_text: c.signed_manifest_text,
         }
       end
     else
@@ -26,33 +26,36 @@ class Arvados::V1::CollectionsController < ApplicationController
   end
 
   def show
-    sign_manifests(@object[:manifest_text])
     if @object.is_a? Collection
-      render json: @object.as_api_response
+      super
     else
       render json: @object
     end
   end
 
   def index
-    sign_manifests(*@objects.map { |c| c[:manifest_text] })
     super
   end
 
-  def script_param_edges(visited, sp)
+  def find_collections(visited, sp, &b)
     case sp
+    when ArvadosModel
+      sp.class.columns.each do |c|
+        find_collections(visited, sp[c.name.to_sym], &b) if c.name != "log"
+      end
     when Hash
       sp.each do |k, v|
-        script_param_edges(visited, v)
+        find_collections(visited, v, &b)
       end
     when Array
       sp.each do |v|
-        script_param_edges(visited, v)
+        find_collections(visited, v, &b)
       end
     when String
-      return if sp.empty?
-      if loc = Keep::Locator.parse(sp)
-        search_edges(visited, loc.to_s, :search_up)
+      if m = /[a-f0-9]{32}\+\d+/.match(sp)
+        yield m[0], nil
+      elsif m = Collection.uuid_regex.match(sp)
+        yield nil, m[0]
       end
     end
   end
@@ -71,10 +74,23 @@ class Arvados::V1::CollectionsController < ApplicationController
 
     if loc
       # uuid is a portable_data_hash
-      if c = Collection.readable_by(*@read_users).where(portable_data_hash: loc.to_s).limit(1).first
-        visited[loc.to_s] = {
-          portable_data_hash: c.portable_data_hash,
-        }
+      collections = Collection.readable_by(*@read_users).where(portable_data_hash: loc.to_s)
+      c = collections.limit(2).all
+      if c.size == 1
+        visited[loc.to_s] = c[0]
+      elsif c.size > 1
+        name = collections.limit(1).where("name <> ''").first
+        if name
+          visited[loc.to_s] = {
+            portable_data_hash: c[0].portable_data_hash,
+            name: "#{name.name} + #{collections.count-1} more"
+          }
+        else
+          visited[loc.to_s] = {
+            portable_data_hash: c[0].portable_data_hash,
+            name: loc.to_s
+          }
+        end
       end
 
       if direction == :search_up
@@ -96,6 +112,10 @@ class Arvados::V1::CollectionsController < ApplicationController
         Job.readable_by(*@read_users).where(["jobs.script_parameters like ?", "%#{loc.to_s}%"]).each do |job|
           search_edges(visited, job.uuid, :search_down)
         end
+
+        Job.readable_by(*@read_users).where(["jobs.docker_image_locator = ?", "#{loc.to_s}"]).each do |job|
+          search_edges(visited, job.uuid, :search_down)
+        end
       end
     else
       # uuid is a regular Arvados UUID
@@ -105,7 +125,10 @@ class Arvados::V1::CollectionsController < ApplicationController
           visited[uuid] = job.as_api_response
           if direction == :search_up
             # Follow upstream collections referenced in the script parameters
-            script_param_edges(visited, job.script_parameters)
+            find_collections(visited, job) do |hash, uuid|
+              search_edges(visited, hash, :search_up) if hash
+              search_edges(visited, uuid, :search_up) if uuid
+            end
           elsif direction == :search_down
             # Follow downstream job output
             search_edges(visited, job.output, direction)
@@ -144,39 +167,26 @@ class Arvados::V1::CollectionsController < ApplicationController
 
   def provenance
     visited = {}
-    search_edges(visited, @object[:uuid] || @object[:portable_data_hash], :search_up)
+    search_edges(visited, @object[:portable_data_hash], :search_up)
+    search_edges(visited, @object[:uuid], :search_up)
     render json: visited
   end
 
   def used_by
     visited = {}
-    search_edges(visited, @object[:uuid] || @object[:portable_data_hash], :search_down)
+    search_edges(visited, @object[:uuid], :search_down)
+    search_edges(visited, @object[:portable_data_hash], :search_down)
     render json: visited
   end
 
   protected
 
-  def apply_filters
+  def load_limit_offset_order_params *args
     if action_name == 'index'
       # Omit manifest_text from index results unless expressly selected.
       @select ||= model_class.api_accessible_attributes(:user).
         map { |attr_spec| attr_spec.first.to_s } - ["manifest_text"]
     end
     super
-  end
-
-  def sign_manifests(*manifests)
-    if current_api_client_authorization
-      signing_opts = {
-        key: Rails.configuration.blob_signing_key,
-        api_token: current_api_client_authorization.api_token,
-        ttl: Rails.configuration.blob_signing_ttl,
-      }
-      manifests.each do |text|
-        Collection.munge_manifest_locators(text) do |loc|
-          Blob.sign_locator(loc.to_s, signing_opts)
-        end
-      end
-    end
   end
 end

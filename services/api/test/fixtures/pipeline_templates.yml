@@ -16,7 +16,6 @@ two_part:
           required: true
           dataclass: Collection
           title: "Foo/bar pair"
-          description: "Provide a collection containing at least two files."
     part-two:
       script: bar
       script_version: master
@@ -88,6 +87,7 @@ new_pipeline_template:
   owner_uuid: zzzzz-tpzed-xurymjxw79nv3jz
   created_at: 2014-09-14 12:00:00
   modified_at: 2014-09-16 12:00:00
+  name: Pipeline Template Newer Than Instance
   components:
     foo:
       script: foo
@@ -105,3 +105,62 @@ new_pipeline_template:
           required: true
           dataclass: Collection
           title: bar template input
+
+pipeline_template_in_fuse_project:
+  uuid: zzzzz-p5p6p-templinfuseproj
+  owner_uuid: zzzzz-j7d0g-0000ownedbyfuse
+  created_at: 2014-04-14 12:35:04 -0400
+  updated_at: 2014-04-14 12:35:04 -0400
+  modified_at: 2014-04-14 12:35:04 -0400
+  modified_by_client_uuid: zzzzz-ozdt8-brczlopd8u8d0jr
+  modified_by_user_uuid: zzzzz-tpzed-0fusedrivertest
+  name: pipeline template in FUSE project
+  components:
+    foo_component:
+      script: foo
+      script_version: master
+      script_parameters:
+        input:
+          required: true
+          dataclass: Collection
+          title: "default input"
+          description: "input collection"
+
+template_with_dataclass_file:
+  uuid: zzzzz-p5p6p-k0xoa0ofxrystgw
+  owner_uuid: zzzzz-j7d0g-v955i6s2oi1cbso
+  created_at: 2014-04-14 12:35:04 -0400
+  updated_at: 2014-04-14 12:35:04 -0400
+  modified_at: 2014-04-14 12:35:04 -0400
+  modified_by_client_uuid: zzzzz-ozdt8-brczlopd8u8d0jr
+  modified_by_user_uuid: zzzzz-tpzed-xurymjxw79nv3jz
+  name: Two Part Template with dataclass File
+  components:
+    part-one:
+      script: foo
+      script_version: master
+      script_parameters:
+        input:
+          required: true
+          dataclass: File
+          title: "Foo/bar pair"
+          description: "Provide an input file"
+    part-two:
+      script: bar
+      script_version: master
+      script_parameters:
+        input:
+          output_of: part-one
+        integer_with_default:
+          default: 123
+        integer_with_value:
+          value: 123
+        string_with_default:
+          default: baz
+        string_with_value:
+          value: baz
+        plain_string: qux
+        array_with_default: # important to test repeating values in the array!
+          default: [1,1,2,3,5]
+        array_with_value: # important to test repeating values in the array!
+          value: [1,1,2,3,5]

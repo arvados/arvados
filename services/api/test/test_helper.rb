@@ -49,6 +49,10 @@ class ActiveSupport::TestCase
     Thread.current[:api_client_uuid] = nil
     Thread.current[:api_client] = nil
     Thread.current[:user] = nil
+    restore_configuration
+  end
+
+  def restore_configuration
     # Restore configuration settings changed during tests
     $application_config.each do |k,v|
       if k.match /^[^.]*$/

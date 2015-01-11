@@ -1,6 +1,7 @@
 class UserSessionsController < ApplicationController
   before_filter :require_auth_scope, :only => [ :destroy ]
 
+  skip_before_filter :set_cors_headers
   skip_before_filter :find_object_by_uuid
   skip_before_filter :render_404_if_no_object
 
@@ -99,6 +100,8 @@ class UserSessionsController < ApplicationController
   # to save the return_to parameter (if it exists; see the application
   # controller). /auth/joshid bypasses the application controller.
   def login
+    auth_provider = if params[:auth_provider] then "auth_provider=#{CGI.escape(params[:auth_provider])}" else "" end
+
     if current_user and params[:return_to]
       # Already logged in; just need to send a token to the requesting
       # API client.
@@ -108,9 +111,9 @@ class UserSessionsController < ApplicationController
 
       send_api_token_to(params[:return_to], current_user)
     elsif params[:return_to]
-      redirect_to "/auth/joshid?return_to=#{CGI.escape(params[:return_to])}"
+      redirect_to "/auth/joshid?return_to=#{CGI.escape(params[:return_to])}&#{auth_provider}"
     else
-      redirect_to "/auth/joshid"
+      redirect_to "/auth/joshid?#{auth_provider}"
     end
   end
 
@@ -138,5 +141,9 @@ class UserSessionsController < ApplicationController
     end
     callback_url += 'api_token=' + api_client_auth.api_token
     redirect_to callback_url
+  end
+
+  def cross_origin_forbidden
+    send_error 'Forbidden', status: 403
   end
 end

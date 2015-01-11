@@ -150,9 +150,7 @@ module ApplicationHelper
 
   def render_editable_attribute(object, attr, attrvalue=nil, htmloptions={})
     attrvalue = object.send(attr) if attrvalue.nil?
-    if !object.attribute_editable?(attr, :ever) or
-        (!object.editable? and
-         !object.owner_uuid.in?(my_projects.collect(&:uuid)))
+    if not object.attribute_editable?(attr)
       if attrvalue && attrvalue.length > 0
         return render_attribute_as_textile( object, attr, attrvalue, false )
       else
@@ -241,10 +239,7 @@ module ApplicationHelper
       preconfigured_search_str = value_info[:search_for]
     end
 
-    if !object or
-        !object.attribute_editable?(attr, :ever) or
-        (!object.editable? and
-         !object.owner_uuid.in?(my_projects.collect(&:uuid)))
+    if not object.andand.attribute_editable?(attr)
       return link_to_if_arvados_object attrvalue
     end
 
@@ -266,7 +261,7 @@ module ApplicationHelper
       dn += '[value]'
     end
 
-    if dataclass == Collection
+    if (dataclass == Collection) or (dataclass == File)
       selection_param = object.class.to_s.underscore + dn
       display_value = attrvalue
       if value_info.is_a?(Hash)
@@ -274,12 +269,14 @@ module ApplicationHelper
           display_value = link.name
         elsif value_info[:link_name]
           display_value = value_info[:link_name]
+        elsif value_info[:selection_name]
+          display_value = value_info[:selection_name]
         end
       end
       if (attr == :components) and (subattr.size > 2)
-        chooser_title = "Choose a dataset for #{object.component_input_title(subattr[0], subattr[2])}:"
+        chooser_title = "Choose a #{dataclass == Collection ? 'dataset' : 'file'} for #{object.component_input_title(subattr[0], subattr[2])}:"
       else
-        chooser_title = "Choose a dataset:"
+        chooser_title = "Choose a #{dataclass == Collection ? 'dataset' : 'file'}:"
       end
       modal_path = choose_collections_path \
       ({ title: chooser_title,
@@ -290,6 +287,7 @@ module ApplicationHelper
          preconfigured_search_str: (preconfigured_search_str || ""),
          action_data: {
            merge: true,
+           use_preview_selection: dataclass == File ? true : nil,
            selection_param: selection_param,
            success: 'page-refresh'
          }.to_json,
@@ -309,64 +307,17 @@ module ApplicationHelper
       end
     end
 
-    if dataclass.andand.is_a?(Class)
-      datatype = 'select'
-    elsif dataclass == 'number'
-      datatype = 'number'
-    elsif attrvalue.is_a? Array
-      # TODO: find a way to edit arrays with x-editable
-      return attrvalue
-    elsif attrvalue.is_a? Fixnum or attrvalue.is_a? Float
+    if dataclass == 'number' or attrvalue.is_a? Fixnum or attrvalue.is_a? Float
       datatype = 'number'
     elsif attrvalue.is_a? String
       datatype = 'text'
+    elsif attrvalue.is_a?(Array) or dataclass.andand.is_a?(Class)
+      # TODO: find a way to edit with x-editable
+      return attrvalue
     end
 
-    # preload data
-    preload_uuids = []
-    items = []
-    selectables = []
-
-    attrtext = attrvalue
-    if dataclass.is_a? Class and dataclass < ArvadosBase
-      objects = get_n_objects_of_class dataclass, 10
-      objects.each do |item|
-        items << item
-        preload_uuids << item.uuid
-      end
-      if attrvalue and !attrvalue.empty?
-        preload_uuids << attrvalue
-      end
-      preload_links_for_objects preload_uuids
-
-      if attrvalue and !attrvalue.empty?
-        links_for_object(attrvalue).each do |link|
-          if link.link_class.in? ["tag", "identifier"]
-            attrtext += " [#{link.name}]"
-          end
-        end
-        selectables.append({name: attrtext, uuid: attrvalue, type: dataclass.to_s})
-      end
-      itemuuids = []
-      items.each do |item|
-        itemuuids << item.uuid
-        selectables.append({name: item.uuid, uuid: item.uuid, type: dataclass.to_s})
-      end
-
-      itemuuids.each do |itemuuid|
-        links_for_object(itemuuid).each do |link|
-          if link.link_class.in? ["tag", "identifier"]
-            selectables.each do |selectable|
-              if selectable['uuid'] == link.head_uuid
-                selectable['name'] += ' [' + link.name + ']'
-              end
-            end
-          end
-        end
-      end
-    end
-
-    lt = link_to attrtext, '#', {
+    # When datatype is a String or Fixnum, link_to the attrvalue
+    lt = link_to attrvalue, '#', {
       "data-emptytext" => "none",
       "data-placement" => "bottom",
       "data-type" => datatype,
@@ -380,16 +331,6 @@ module ApplicationHelper
       :class => "editable #{'required' if required} form-control",
       :id => id
     }.merge(htmloptions)
-
-    lt += raw("\n<script>")
-
-    if selectables.any?
-      lt += raw("add_form_selection_sources(#{selectables.to_json});\n")
-    end
-
-    lt += raw("$('[data-name=\"#{dn}\"]').editable({source: function() { return select_form_sources('#{dataclass}'); } });\n")
-
-    lt += raw("</script>")
 
     lt
   end
@@ -451,10 +392,10 @@ module ApplicationHelper
     end
   end
 
-  def chooser_preview_url_for object
+  def chooser_preview_url_for object, use_preview_selection=false
     case object.class.to_s
     when 'Collection'
-      polymorphic_path(object, tab_pane: 'chooser_preview')
+      polymorphic_path(object, tab_pane: 'chooser_preview', use_preview_selection: use_preview_selection)
     else
       nil
     end

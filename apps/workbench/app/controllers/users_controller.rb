@@ -35,7 +35,7 @@ class UsersController < ApplicationController
 
   def activity
     @breadcrumb_page_name = nil
-    @users = User.limit(params[:limit] || 1000).all
+    @users = User.limit(params[:limit])
     @user_activity = {}
     @activity = {
       logins: {},
@@ -88,7 +88,7 @@ class UsersController < ApplicationController
 
   def storage
     @breadcrumb_page_name = nil
-    @users = User.limit(params[:limit] || 1000).all
+    @users = User.limit(params[:limit])
     @user_storage = {}
     total_storage = {}
     @log_date = {}
@@ -159,7 +159,7 @@ class UsersController < ApplicationController
       @persist_state[uuid] = 'cache'
     end
 
-    Link.limit(1000).filter([['head_uuid', 'in', collection_uuids],
+    Link.filter([['head_uuid', 'in', collection_uuids],
                              ['link_class', 'in', ['tag', 'resources']]]).
       each do |link|
       case link.link_class

@@ -28,6 +28,7 @@ import crunchutil.vwd as vwd
 import argparse
 import json
 import tempfile
+import errno
 
 parser = argparse.ArgumentParser()
 parser.add_argument('--dry-run', action='store_true')
@@ -53,7 +54,7 @@ if not args.dry_run:
         taskp = arvados.current_task()['parameters']
 else:
     outdir = "/tmp"
-    jobp = json.loads(args.job_parameters)
+    jobp = json.loads(args.script_parameters)
     os.environ['JOB_UUID'] = 'zzzzz-8i9sb-1234567890abcde'
     os.environ['TASK_UUID'] = 'zzzzz-ot0gb-1234567890abcde'
     os.environ['CRUNCH_SRC'] = '/tmp/crunche-src'
@@ -91,9 +92,26 @@ class SigHandler(object):
     def __init__(self):
         self.sig = None
 
-    def send_signal(self, sp, signum):
-        sp.send_signal(signum)
+    def send_signal(self, subprocesses, signum):
+        for sp in subprocesses:
+            sp.send_signal(signum)
         self.sig = signum
+
+# http://rightfootin.blogspot.com/2006/09/more-on-python-flatten.html
+def flatten(l, ltypes=(list, tuple)):
+    ltype = type(l)
+    l = list(l)
+    i = 0
+    while i < len(l):
+        while isinstance(l[i], ltypes):
+            if not l[i]:
+                l.pop(i)
+                i -= 1
+                break
+            else:
+                l[i:i + 1] = l[i]
+        i += 1
+    return ltype(l)
 
 def add_to_group(gr, match):
     m = match.groups()
@@ -101,30 +119,73 @@ def add_to_group(gr, match):
         gr[m] = []
     gr[m].append(match.group(0))
 
+class EvaluationError(Exception):
+    pass
+
+# Return the name of variable ('var') that will take on each value in 'items'
+# when performing an inner substitution
+def var_items(p, c, key):
+    if key not in c:
+        raise EvaluationError("'%s' was expected in 'p' but is missing" % key)
+
+    if "var" in c:
+        if not isinstance(c["var"], basestring):
+            raise EvaluationError("Value of 'var' must be a string")
+        # Var specifies the variable name for inner parameter substitution
+        return (c["var"], get_items(p, c[key]))
+    else:
+        # The component function ('key') value is a list, so return the list
+        # directly with no parameter selected.
+        if isinstance(c[key], list):
+            return (None, get_items(p, c[key]))
+        elif isinstance(c[key], basestring):
+            # check if c[key] is a string that looks like a parameter
+            m = re.match("^\$\((.*)\)$", c[key])
+            if m and m.group(1) in p:
+                return (m.group(1), get_items(p, c[key]))
+            else:
+                # backwards compatible, foreach specifies bare parameter name to use
+                return (c[key], get_items(p, p[c[key]]))
+        else:
+            raise EvaluationError("Value of '%s' must be a string or list" % key)
+
+# "p" is the parameter scope, "c" is the item to be expanded.
+# If "c" is a dict, apply function expansion.
+# If "c" is a list, recursively expand each item and return a new list.
+# If "c" is a string, apply parameter substitution
 def expand_item(p, c):
     if isinstance(c, dict):
         if "foreach" in c and "command" in c:
-            var = c["foreach"]
-            items = get_items(p, p[var])
+            # Expand a command template for each item in the specified user
+            # parameter
+            var, items = var_items(p, c, "foreach")
+            if var is None:
+                raise EvaluationError("Must specify 'var' in foreach")
             r = []
             for i in items:
                 params = copy.copy(p)
                 params[var] = i
-                r.extend(expand_list(params, c["command"]))
+                r.append(expand_item(params, c["command"]))
             return r
-        if "list" in c and "index" in c and "command" in c:
-            var = c["list"]
-            items = get_items(p, p[var])
+        elif "list" in c and "index" in c and "command" in c:
+            # extract a single item from a list
+            var, items = var_items(p, c, "list")
+            if var is None:
+                raise EvaluationError("Must specify 'var' in list")
             params = copy.copy(p)
             params[var] = items[int(c["index"])]
-            return expand_list(params, c["command"])
-        if "regex" in c:
+            return expand_item(params, c["command"])
+        elif "regex" in c:
             pattern = re.compile(c["regex"])
             if "filter" in c:
-                items = get_items(p, p[c["filter"]])
+                # filter list so that it only includes items that match a
+                # regular expression
+                _, items = var_items(p, c, "filter")
                 return [i for i in items if pattern.match(i)]
             elif "group" in c:
-                items = get_items(p, p[c["group"]])
+                # generate a list of lists, where items are grouped on common
+                # subexpression match
+                _, items = var_items(p, c, "group")
                 groups = {}
                 for i in items:
                     match = pattern.match(i)
@@ -132,52 +193,62 @@ def expand_item(p, c):
                         add_to_group(groups, match)
                 return [groups[k] for k in groups]
             elif "extract" in c:
-                items = get_items(p, p[c["extract"]])
+                # generate a list of lists, where items are split by
+                # subexpression match
+                _, items = var_items(p, c, "extract")
                 r = []
                 for i in items:
                     match = pattern.match(i)
                     if match:
                         r.append(list(match.groups()))
                 return r
+        elif "batch" in c and "size" in c:
+            # generate a list of lists, where items are split into a batch size
+            _, items = var_items(p, c, "batch")
+            sz = int(c["size"])
+            r = []
+            for j in xrange(0, len(items), sz):
+                r.append(items[j:j+sz])
+            return r
+        raise EvaluationError("Missing valid list context function")
     elif isinstance(c, list):
-        return expand_list(p, c)
+        return [expand_item(p, arg) for arg in c]
     elif isinstance(c, basestring):
-        return [subst.do_substitution(p, c)]
-
-    return []
-
-def expand_list(p, l):
-    if isinstance(l, basestring):
-        return expand_item(p, l)
+        m = re.match("^\$\((.*)\)$", c)
+        if m and m.group(1) in p:
+            return expand_item(p, p[m.group(1)])
+        else:
+            return subst.do_substitution(p, c)
     else:
-        return [exp for arg in l for exp in expand_item(p, arg)]
+        raise EvaluationError("expand_item() unexpected parameter type %s" % type(c))
 
+# Evaluate in a list context
+# "p" is the parameter scope, "value" will be evaluated
+# if "value" is a list after expansion, return that
+# if "value" is a path to a directory, return a list consisting of each entry in the directory
+# if "value" is a path to a file, return a list consisting of each line of the file
 def get_items(p, value):
-    if isinstance(value, dict):
-        return expand_item(p, value)
-
+    value = expand_item(p, value)
     if isinstance(value, list):
-        return expand_list(p, value)
-
-    fn = subst.do_substitution(p, value)
-    mode = os.stat(fn).st_mode
-    prefix = fn[len(os.environ['TASK_KEEPMOUNT'])+1:]
-    if mode is not None:
-        if stat.S_ISDIR(mode):
-            items = [os.path.join(fn, l) for l in os.listdir(fn)]
-        elif stat.S_ISREG(mode):
-            with open(fn) as f:
-                items = [line.rstrip("\r\n") for line in f]
-        return items
-    else:
-        return None
+        return value
+    elif isinstance(value, basestring):
+        mode = os.stat(value).st_mode
+        prefix = value[len(os.environ['TASK_KEEPMOUNT'])+1:]
+        if mode is not None:
+            if stat.S_ISDIR(mode):
+                items = [os.path.join(value, l) for l in os.listdir(value)]
+            elif stat.S_ISREG(mode):
+                with open(value) as f:
+                    items = [line.rstrip("\r\n") for line in f]
+            return items
+    raise EvaluationError("get_items did not yield a list")
 
 stdoutname = None
 stdoutfile = None
 stdinname = None
 stdinfile = None
-rcode = 1
 
+# Construct the cross product of all values of each variable listed in fvars
 def recursive_foreach(params, fvars):
     var = fvars[0]
     fvars = fvars[1:]
@@ -198,7 +269,11 @@ def recursive_foreach(params, fvars):
                         'parameters': params
                     }).execute()
                 else:
-                    logger.info(expand_list(params, params["command"]))
+                    if isinstance(params["command"][0], list):
+                        for c in params["command"]:
+                            logger.info(flatten(expand_item(params, c)))
+                    else:
+                        logger.info(flatten(expand_item(params, params["command"])))
     else:
         logger.error("parameter %s with value %s in task.foreach yielded no items" % (var, params[var]))
         sys.exit(1)
@@ -226,7 +301,13 @@ try:
     else:
         # This is the only task so taskp/jobp are the same
         taskp = jobp
+except Exception as e:
+    logger.exception("caught exception")
+    logger.error("job parameters were:")
+    logger.error(pprint.pformat(jobp))
+    sys.exit(1)
 
+try:
     if not args.dry_run:
         if "task.vwd" in taskp:
             # Populate output directory with symlinks to files in collection
@@ -235,18 +316,24 @@ try:
         if "task.cwd" in taskp:
             os.chdir(subst.do_substitution(taskp, taskp["task.cwd"]))
 
-    cmd = expand_list(taskp, taskp["command"])
+    cmd = []
+    if isinstance(taskp["command"][0], list):
+        for c in taskp["command"]:
+            cmd.append(flatten(expand_item(taskp, c)))
+    else:
+        cmd.append(flatten(expand_item(taskp, taskp["command"])))
 
-    if not args.dry_run:
-        if "task.stdin" in taskp:
-            stdinname = subst.do_substitution(taskp, taskp["task.stdin"])
+    if "task.stdin" in taskp:
+        stdinname = subst.do_substitution(taskp, taskp["task.stdin"])
+        if not args.dry_run:
             stdinfile = open(stdinname, "rb")
 
-        if "task.stdout" in taskp:
-            stdoutname = subst.do_substitution(taskp, taskp["task.stdout"])
+    if "task.stdout" in taskp:
+        stdoutname = subst.do_substitution(taskp, taskp["task.stdout"])
+        if not args.dry_run:
             stdoutfile = open(stdoutname, "wb")
 
-    logger.info("{}{}{}".format(' '.join(cmd), (" < " + stdinname) if stdinname is not None else "", (" > " + stdoutname) if stdoutname is not None else ""))
+    logger.info("{}{}{}".format(' | '.join([' '.join(c) for c in cmd]), (" < " + stdinname) if stdinname is not None else "", (" > " + stdoutname) if stdoutname is not None else ""))
 
     if args.dry_run:
         sys.exit(0)
@@ -261,23 +348,64 @@ except Exception as e:
     logger.error(pprint.pformat(taskp))
     sys.exit(1)
 
+# rcode holds the return codes produced by each subprocess
+rcode = {}
 try:
-    sp = subprocess.Popen(cmd, shell=False, stdin=stdinfile, stdout=stdoutfile)
+    subprocesses = []
+    close_streams = []
+    if stdinfile:
+        close_streams.append(stdinfile)
+    next_stdin = stdinfile
+
+    for i in xrange(len(cmd)):
+        if i == len(cmd)-1:
+            # this is the last command in the pipeline, so its stdout should go to stdoutfile
+            next_stdout = stdoutfile
+        else:
+            # this is an intermediate command in the pipeline, so its stdout should go to a pipe
+            next_stdout = subprocess.PIPE
+
+        sp = subprocess.Popen(cmd[i], shell=False, stdin=next_stdin, stdout=next_stdout)
+
+        # Need to close the FDs on our side so that subcommands will get SIGPIPE if the
+        # consuming process ends prematurely.
+        if sp.stdout:
+            close_streams.append(sp.stdout)
+
+        # Send this processes's stdout to to the next process's stdin
+        next_stdin = sp.stdout
+
+        subprocesses.append(sp)
+
+    # File descriptors have been handed off to the subprocesses, so close them here.
+    for s in close_streams:
+        s.close()
+
+    # Set up signal handling
     sig = SigHandler()
 
-    # forward signals to the process.
-    signal.signal(signal.SIGINT, lambda signum, frame: sig.send_signal(sp, signum))
-    signal.signal(signal.SIGTERM, lambda signum, frame: sig.send_signal(sp, signum))
-    signal.signal(signal.SIGQUIT, lambda signum, frame: sig.send_signal(sp, signum))
+    # Forward terminate signals to the subprocesses.
+    signal.signal(signal.SIGINT, lambda signum, frame: sig.send_signal(subprocesses, signum))
+    signal.signal(signal.SIGTERM, lambda signum, frame: sig.send_signal(subprocesses, signum))
+    signal.signal(signal.SIGQUIT, lambda signum, frame: sig.send_signal(subprocesses, signum))
 
-    # wait for process to complete.
-    rcode = sp.wait()
+    active = 1
+    pids = set([s.pid for s in subprocesses])
+    while len(pids) > 0:
+        (pid, status) = os.wait()
+        pids.discard(pid)
+        if not taskp.get("task.ignore_rcode"):
+            rcode[pid] = (status >> 8)
+        else:
+            rcode[pid] = 0
 
     if sig.sig is not None:
         logger.critical("terminating on signal %s" % sig.sig)
         sys.exit(2)
     else:
-        logger.info("completed with exit code %i (%s)" % (rcode, "success" if rcode == 0 else "failed"))
+        for i in xrange(len(cmd)):
+            r = rcode[subprocesses[i].pid]
+            logger.info("%s completed with exit code %i (%s)" % (cmd[i][0], r, "success" if r == 0 else "failed"))
 
 except Exception as e:
     logger.exception("caught exception")
@@ -306,11 +434,14 @@ if "task.vwd" in taskp:
 else:
     outcollection = robust_put.upload(outdir, logger)
 
+# Success if we ran any subprocess, and they all exited 0.
+success = rcode and all(status == 0 for status in rcode.itervalues())
+
 api.job_tasks().update(uuid=arvados.current_task()['uuid'],
                                      body={
                                          'output': outcollection,
-                                         'success': (rcode == 0),
+                                         'success': success,
                                          'progress':1.0
                                      }).execute()
 
-sys.exit(rcode)
+sys.exit(0 if success else 1)

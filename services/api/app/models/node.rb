@@ -5,7 +5,7 @@ class Node < ArvadosModel
   serialize :info, Hash
   serialize :properties, Hash
   before_validation :ensure_ping_secret
-  after_update :dnsmasq_update
+  after_update :dns_server_update
 
   # Only a controller can figure out whether or not the current API tokens
   # have access to the associated Job.  They're expected to set
@@ -15,7 +15,10 @@ class Node < ArvadosModel
 
   MAX_SLOTS = 64
 
-  @@confdir = Rails.configuration.dnsmasq_conf_dir
+  @@dns_server_conf_dir = Rails.configuration.dns_server_conf_dir
+  @@dns_server_conf_template = Rails.configuration.dns_server_conf_template
+  @@dns_server_reload_command = Rails.configuration.dns_server_reload_command
+  @@uuid_prefix = Rails.configuration.uuid_prefix
   @@domain = Rails.configuration.compute_node_domain rescue `hostname --domain`.strip
   @@nameservers = Rails.configuration.compute_node_nameservers
 
@@ -92,11 +95,6 @@ class Node < ArvadosModel
     if o[:ec2_instance_id]
       if !self.info['ec2_instance_id']
         self.info['ec2_instance_id'] = o[:ec2_instance_id]
-        if (Rails.configuration.compute_node_ec2_tag_enable rescue true)
-          tag_cmd = ("ec2-create-tags #{o[:ec2_instance_id]} " +
-                     "--tag 'Name=#{self.uuid}'")
-          `#{tag_cmd}`
-        end
       elsif self.info['ec2_instance_id'] != o[:ec2_instance_id]
         logger.debug "Multiple nodes have credentials for #{self.uuid}"
         raise "#{self.uuid} is already running at #{self.info['ec2_instance_id']} so rejecting ping from #{o[:ec2_instance_id]}"
@@ -117,11 +115,6 @@ class Node < ArvadosModel
         raise "No available node slots" if try_slot == MAX_SLOTS
       end while true
       self.hostname = self.class.hostname_for_slot(self.slot_number)
-      if info['ec2_instance_id']
-        if (Rails.configuration.compute_node_ec2_tag_enable rescue true)
-          `ec2-create-tags #{self.info['ec2_instance_id']} --tag 'hostname=#{self.hostname}'`
-        end
-      end
     end
 
     # Record other basic stats
@@ -136,76 +129,57 @@ class Node < ArvadosModel
     save!
   end
 
-  def start!(ping_url_method)
-    ensure_permission_to_save
-    ping_url = ping_url_method.call({ id: self.uuid, ping_secret: self.info['ping_secret'] })
-    if (Rails.configuration.compute_node_ec2run_args and
-        Rails.configuration.compute_node_ami)
-      ec2_args = ["--user-data '#{ping_url}'",
-                  "-t c1.xlarge -n 1",
-                  Rails.configuration.compute_node_ec2run_args,
-                  Rails.configuration.compute_node_ami
-                 ]
-      ec2run_cmd = ["ec2-run-instances",
-                    "--client-token", self.uuid,
-                    ec2_args].flatten.join(' ')
-      ec2spot_cmd = ["ec2-request-spot-instances",
-                     "-p #{Rails.configuration.compute_node_spot_bid} --type one-time",
-                     ec2_args].flatten.join(' ')
-    else
-      ec2run_cmd = ''
-      ec2spot_cmd = ''
-    end
-    self.info['ec2_run_command'] = ec2run_cmd
-    self.info['ec2_spot_command'] = ec2spot_cmd
-    self.info['ec2_start_command'] = ec2spot_cmd
-    logger.info "#{self.uuid} ec2_start_command= #{ec2spot_cmd.inspect}"
-    result = `#{ec2spot_cmd} 2>&1`
-    self.info['ec2_start_result'] = result
-    logger.info "#{self.uuid} ec2_start_result= #{result.inspect}"
-    result.match(/INSTANCE\s*(i-[0-9a-f]+)/) do |m|
-      instance_id = m[1]
-      self.info['ec2_instance_id'] = instance_id
-      if (Rails.configuration.compute_node_ec2_tag_enable rescue true)
-        `ec2-create-tags #{instance_id} --tag 'Name=#{self.uuid}'`
-      end
-    end
-    result.match(/SPOTINSTANCEREQUEST\s*(sir-[0-9a-f]+)/) do |m|
-      sir_id = m[1]
-      self.info['ec2_sir_id'] = sir_id
-      if (Rails.configuration.compute_node_ec2_tag_enable rescue true)
-        `ec2-create-tags #{sir_id} --tag 'Name=#{self.uuid}'`
-      end
-    end
-    self.save!
-  end
-
   protected
 
   def ensure_ping_secret
     self.info['ping_secret'] ||= rand(2**256).to_s(36)
   end
 
-  def dnsmasq_update
+  def dns_server_update
     if self.hostname_changed? or self.ip_address_changed?
+      if not self.ip_address.nil?
+        stale_conflicting_nodes = Node.where('id != ? and ip_address = ? and last_ping_at < ?',self.id,self.ip_address,10.minutes.ago)
+        if not stale_conflicting_nodes.empty?
+          # One or more stale compute node records have the same IP address as the new node.
+          # Clear the ip_address field on the stale nodes.
+          stale_conflicting_nodes.each do |stale_node|
+            stale_node.ip_address = nil
+            stale_node.save!
+          end
+        end
+      end
       if self.hostname and self.ip_address
-        self.class.dnsmasq_update(self.hostname, self.ip_address)
+        self.class.dns_server_update(self.hostname, self.ip_address)
       end
     end
   end
 
-  def self.dnsmasq_update(hostname, ip_address)
-    return unless @@confdir
+  def self.dns_server_update(hostname, ip_address)
+    return unless @@dns_server_conf_dir and @@dns_server_conf_template
     ptr_domain = ip_address.
       split('.').reverse.join('.').concat('.in-addr.arpa')
-    hostfile = File.join @@confdir, hostname
-    File.open hostfile, 'w' do |f|
-      f.puts "address=/#{hostname}/#{ip_address}"
-      f.puts "address=/#{hostname}.#{@@domain}/#{ip_address}" if @@domain
-      f.puts "ptr-record=#{ptr_domain},#{hostname}"
+    hostfile = File.join @@dns_server_conf_dir, "#{hostname}.conf"
+
+    begin
+      template = IO.read(@@dns_server_conf_template)
+    rescue => e
+      STDERR.puts "Unable to read dns_server_conf_template #{@@dns_server_conf_template}: #{e.message}"
+      return
     end
-    File.open(File.join(@@confdir, 'restart.txt'), 'w') do |f|
-      # this should trigger a dnsmasq restart
+
+    populated = template % {hostname:hostname, uuid_prefix:@@uuid_prefix, ip_address:ip_address, ptr_domain:ptr_domain}
+
+    begin
+      File.open hostfile, 'w' do |f|
+        f.puts populated
+      end
+    rescue => e
+      STDERR.puts "Unable to write #{hostfile}: #{e.message}"
+      return
+    end
+    File.open(File.join(@@dns_server_conf_dir, 'restart.txt'), 'w') do |f|
+      # this will trigger a dns server restart
+      f.puts @@dns_server_reload_command
     end
   end
 
@@ -215,13 +189,17 @@ class Node < ArvadosModel
 
   # At startup, make sure all DNS entries exist.  Otherwise, slurmctld
   # will refuse to start.
-  if @@confdir and
-      !File.exists? (File.join(@@confdir, hostname_for_slot(MAX_SLOTS-1)))
+  if @@dns_server_conf_dir and @@dns_server_conf_template
     (0..MAX_SLOTS-1).each do |slot_number|
       hostname = hostname_for_slot(slot_number)
-      hostfile = File.join @@confdir, hostname
+      hostfile = File.join @@dns_server_conf_dir, "#{hostname}.conf"
       if !File.exists? hostfile
-        dnsmasq_update(hostname, '127.40.4.0')
+        n = Node.where(:slot_number => slot_number).first
+        if n.nil? or n.ip_address.nil?
+          dns_server_update(hostname, '127.40.4.0')
+        else
+          dns_server_update(hostname, n.ip_address)
+        end
       end
     end
   end

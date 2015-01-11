@@ -183,7 +183,13 @@ class ProjectsController < ApplicationController
       # page, and use the last item on this page as a filter for
       # retrieving the next page. Ideally the API would do this for
       # us, but it doesn't (yet).
-      nextpage_operator = /\bdesc$/i =~ @order[0] ? '<' : '>'
+
+      # To avoid losing items that have the same created_at as the
+      # last item on this page, we retrieve an overlapping page with a
+      # "created_at <= last_created_at" filter, then remove duplicates
+      # with a "uuid not in [...]" filter (see below).
+      nextpage_operator = /\bdesc$/i =~ @order[0] ? '<=' : '>='
+
       @objects = []
       @name_link_for = {}
       kind_filters.each do |attr,op,val|
@@ -192,7 +198,7 @@ class ProjectsController < ApplicationController
                                      limit: @limit,
                                      include_linked: true,
                                      filters: (@filters - kind_filters + [['uuid', 'is_a', type]]),
-                                     offset: @offset)
+                                    )
           objects.each do |object|
             @name_link_for[object.andand.uuid] = objects.links_for(object, 'name').first
           end
@@ -200,16 +206,27 @@ class ProjectsController < ApplicationController
         end
       end
       @objects = @objects.to_a.sort_by(&:created_at)
-      @objects.reverse! if nextpage_operator == '<'
+      @objects.reverse! if nextpage_operator == '<='
       @objects = @objects[0..@limit-1]
       @next_page_filters = @filters.reject do |attr,op,val|
-        attr == 'created_at' and op == nextpage_operator
+        (attr == 'created_at' and op == nextpage_operator) or
+          (attr == 'uuid' and op == 'not in')
       end
+
       if @objects.any?
+        last_created_at = @objects.last.created_at
+
+        last_uuids = []
+        @objects.each do |obj|
+          last_uuids << obj.uuid if obj.created_at.eql?(last_created_at)
+        end
+
         @next_page_filters += [['created_at',
                                 nextpage_operator,
-                                @objects.last.created_at]]
+                                last_created_at]]
+        @next_page_filters += [['uuid', 'not in', last_uuids]]
         @next_page_href = url_for(partial: :contents_rows,
+                                  limit: @limit,
                                   filters: @next_page_filters.to_json)
       else
         @next_page_href = nil
@@ -220,7 +237,9 @@ class ProjectsController < ApplicationController
                                   include_linked: true,
                                   filters: @filters,
                                   offset: @offset)
-      @next_page_href = next_page_href(partial: :contents_rows)
+      @next_page_href = next_page_href(partial: :contents_rows,
+                                       filters: @filters.to_json,
+                                       order: @order.to_json)
     end
 
     preload_links_for_objects(@objects.to_a)

@@ -1,12 +1,6 @@
 # Configuration for the Rails databases (database names,
 # usernames and passwords).
 
-# Path to a public ssh key you would like to have installed in the
-# root account of the generated images. This is useful for debugging.
-# To enable the SSH server, set the ENABLE_SSH environment variable to
-# true when starting the container.
-PUBLIC_KEY_PATH:
-
 # Username for your Arvados user. This will be used as your shell login name
 # as well as the name for your git repository.
 ARVADOS_USER_NAME:

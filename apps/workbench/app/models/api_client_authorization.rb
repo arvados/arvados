@@ -1,6 +1,6 @@
 class ApiClientAuthorization < ArvadosBase
-  def attribute_editable? attr, *args
-    ['expires_at', 'default_owner_uuid'].index attr
+  def editable_attributes
+    %w(expires_at default_owner_uuid)
   end
   def self.creatable?
     false

@@ -13,7 +13,6 @@ import (
 	"bytes"
 	"encoding/json"
 	"fmt"
-	"github.com/gorilla/mux"
 	"net/http"
 	"net/http/httptest"
 	"os"
@@ -51,9 +50,6 @@ func TestGetHandler(t *testing.T) {
 		t.Error(err)
 	}
 
-	// Set up a REST router for testing the handlers.
-	rest := MakeRESTRouter()
-
 	// Create locators for testing.
 	// Turn on permission settings so we can generate signed locators.
 	enforce_permissions = true
@@ -74,7 +70,7 @@ func TestGetHandler(t *testing.T) {
 
 	// Unauthenticated request, unsigned locator
 	// => OK
-	response := IssueRequest(rest,
+	response := IssueRequest(
 		&RequestTester{
 			method: "GET",
 			uri:    unsigned_locator,
@@ -85,10 +81,11 @@ func TestGetHandler(t *testing.T) {
 		"Unauthenticated request, unsigned locator",
 		string(TEST_BLOCK),
 		response)
-	received_xbs := response.Header().Get("X-Block-Size")
-	expected_xbs := fmt.Sprintf("%d", len(TEST_BLOCK))
-	if received_xbs != expected_xbs {
-		t.Errorf("expected X-Block-Size %s, got %s", expected_xbs, received_xbs)
+
+	received_cl := response.Header().Get("Content-Length")
+	expected_cl := fmt.Sprintf("%d", len(TEST_BLOCK))
+	if received_cl != expected_cl {
+		t.Errorf("expected Content-Length %s, got %s", expected_cl, received_cl)
 	}
 
 	// ----------------
@@ -97,7 +94,7 @@ func TestGetHandler(t *testing.T) {
 
 	// Authenticated request, signed locator
 	// => OK
-	response = IssueRequest(rest, &RequestTester{
+	response = IssueRequest(&RequestTester{
 		method:    "GET",
 		uri:       signed_locator,
 		api_token: known_token,
@@ -106,15 +103,16 @@ func TestGetHandler(t *testing.T) {
 		"Authenticated request, signed locator", http.StatusOK, response)
 	ExpectBody(t,
 		"Authenticated request, signed locator", string(TEST_BLOCK), response)
-	received_xbs = response.Header().Get("X-Block-Size")
-	expected_xbs = fmt.Sprintf("%d", len(TEST_BLOCK))
-	if received_xbs != expected_xbs {
-		t.Errorf("expected X-Block-Size %s, got %s", expected_xbs, received_xbs)
+
+	received_cl = response.Header().Get("Content-Length")
+	expected_cl = fmt.Sprintf("%d", len(TEST_BLOCK))
+	if received_cl != expected_cl {
+		t.Errorf("expected Content-Length %s, got %s", expected_cl, received_cl)
 	}
 
 	// Authenticated request, unsigned locator
 	// => PermissionError
-	response = IssueRequest(rest, &RequestTester{
+	response = IssueRequest(&RequestTester{
 		method:    "GET",
 		uri:       unsigned_locator,
 		api_token: known_token,
@@ -123,7 +121,7 @@ func TestGetHandler(t *testing.T) {
 
 	// Unauthenticated request, signed locator
 	// => PermissionError
-	response = IssueRequest(rest, &RequestTester{
+	response = IssueRequest(&RequestTester{
 		method: "GET",
 		uri:    signed_locator,
 	})
@@ -133,7 +131,7 @@ func TestGetHandler(t *testing.T) {
 
 	// Authenticated request, expired locator
 	// => ExpiredError
-	response = IssueRequest(rest, &RequestTester{
+	response = IssueRequest(&RequestTester{
 		method:    "GET",
 		uri:       expired_locator,
 		api_token: known_token,
@@ -155,16 +153,13 @@ func TestPutHandler(t *testing.T) {
 	KeepVM = MakeTestVolumeManager(2)
 	defer KeepVM.Quit()
 
-	// Set up a REST router for testing the handlers.
-	rest := MakeRESTRouter()
-
 	// --------------
 	// No server key.
 
 	// Unauthenticated request, no server key
 	// => OK (unsigned response)
 	unsigned_locator := "/" + TEST_HASH
-	response := IssueRequest(rest,
+	response := IssueRequest(
 		&RequestTester{
 			method:       "PUT",
 			uri:          unsigned_locator,
@@ -188,7 +183,7 @@ func TestPutHandler(t *testing.T) {
 
 	// Authenticated PUT, signed locator
 	// => OK (signed response)
-	response = IssueRequest(rest,
+	response = IssueRequest(
 		&RequestTester{
 			method:       "PUT",
 			uri:          unsigned_locator,
@@ -208,7 +203,7 @@ func TestPutHandler(t *testing.T) {
 
 	// Unauthenticated PUT, unsigned locator
 	// => OK
-	response = IssueRequest(rest,
+	response = IssueRequest(
 		&RequestTester{
 			method:       "PUT",
 			uri:          unsigned_locator,
@@ -224,21 +219,15 @@ func TestPutHandler(t *testing.T) {
 }
 
 // Test /index requests:
-//   - enforce_permissions off | unauthenticated /index request
-//   - enforce_permissions off | unauthenticated /index/prefix request
-//   - enforce_permissions off | authenticated /index request        | non-superuser
-//   - enforce_permissions off | authenticated /index/prefix request | non-superuser
-//   - enforce_permissions off | authenticated /index request        | superuser
-//   - enforce_permissions off | authenticated /index/prefix request | superuser
-//   - enforce_permissions on  | unauthenticated /index request
-//   - enforce_permissions on  | unauthenticated /index/prefix request
-//   - enforce_permissions on  | authenticated /index request        | non-superuser
-//   - enforce_permissions on  | authenticated /index/prefix request | non-superuser
-//   - enforce_permissions on  | authenticated /index request        | superuser
-//   - enforce_permissions on  | authenticated /index/prefix request | superuser
+//   - unauthenticated /index request
+//   - unauthenticated /index/prefix request
+//   - authenticated   /index request        | non-superuser
+//   - authenticated   /index/prefix request | non-superuser
+//   - authenticated   /index request        | superuser
+//   - authenticated   /index/prefix request | superuser
 //
 // The only /index requests that should succeed are those issued by the
-// superuser when enforce_permissions = true.
+// superuser. They should pass regardless of the value of enforce_permissions.
 //
 func TestIndexHandler(t *testing.T) {
 	defer teardown()
@@ -254,9 +243,6 @@ func TestIndexHandler(t *testing.T) {
 	vols[1].Put(TEST_HASH_2, TEST_BLOCK_2)
 	vols[0].Put(TEST_HASH+".meta", []byte("metadata"))
 	vols[1].Put(TEST_HASH_2+".meta", []byte("metadata"))
-
-	// Set up a REST router for testing the handlers.
-	rest := MakeRESTRouter()
 
 	data_manager_token = "DATA MANAGER TOKEN"
 
@@ -289,99 +275,62 @@ func TestIndexHandler(t *testing.T) {
 		api_token: data_manager_token,
 	}
 
-	// ----------------------------
-	// enforce_permissions disabled
-	// All /index requests should fail.
-	enforce_permissions = false
-
-	// unauthenticated /index request
-	// => PermissionError
-	response := IssueRequest(rest, unauthenticated_req)
-	ExpectStatusCode(t,
-		"enforce_permissions off, unauthenticated request",
-		PermissionError.HTTPCode,
-		response)
-
-	// unauthenticated /index/prefix request
-	// => PermissionError
-	response = IssueRequest(rest, unauth_prefix_req)
-	ExpectStatusCode(t,
-		"enforce_permissions off, unauthenticated /index/prefix request",
-		PermissionError.HTTPCode,
-		response)
-
-	// authenticated /index request, non-superuser
-	// => PermissionError
-	response = IssueRequest(rest, authenticated_req)
-	ExpectStatusCode(t,
-		"enforce_permissions off, authenticated request, non-superuser",
-		PermissionError.HTTPCode,
-		response)
-
-	// authenticated /index/prefix request, non-superuser
-	// => PermissionError
-	response = IssueRequest(rest, auth_prefix_req)
-	ExpectStatusCode(t,
-		"enforce_permissions off, authenticated /index/prefix request, non-superuser",
-		PermissionError.HTTPCode,
-		response)
-
-	// authenticated /index request, superuser
-	// => PermissionError
-	response = IssueRequest(rest, superuser_req)
-	ExpectStatusCode(t,
-		"enforce_permissions off, superuser request",
-		PermissionError.HTTPCode,
-		response)
-
-	// superuser /index/prefix request
-	// => PermissionError
-	response = IssueRequest(rest, superuser_prefix_req)
-	ExpectStatusCode(t,
-		"enforce_permissions off, superuser /index/prefix request",
-		PermissionError.HTTPCode,
-		response)
+	// -------------------------------------------------------------
+	// Only the superuser should be allowed to issue /index requests.
 
 	// ---------------------------
 	// enforce_permissions enabled
-	// Only the superuser should be allowed to issue /index requests.
+	// This setting should not affect tests passing.
 	enforce_permissions = true
 
 	// unauthenticated /index request
-	// => PermissionError
-	response = IssueRequest(rest, unauthenticated_req)
+	// => UnauthorizedError
+	response := IssueRequest(unauthenticated_req)
 	ExpectStatusCode(t,
 		"enforce_permissions on, unauthenticated request",
-		PermissionError.HTTPCode,
+		UnauthorizedError.HTTPCode,
 		response)
 
 	// unauthenticated /index/prefix request
-	// => PermissionError
-	response = IssueRequest(rest, unauth_prefix_req)
+	// => UnauthorizedError
+	response = IssueRequest(unauth_prefix_req)
 	ExpectStatusCode(t,
 		"permissions on, unauthenticated /index/prefix request",
-		PermissionError.HTTPCode,
+		UnauthorizedError.HTTPCode,
 		response)
 
 	// authenticated /index request, non-superuser
-	// => PermissionError
-	response = IssueRequest(rest, authenticated_req)
+	// => UnauthorizedError
+	response = IssueRequest(authenticated_req)
 	ExpectStatusCode(t,
 		"permissions on, authenticated request, non-superuser",
-		PermissionError.HTTPCode,
+		UnauthorizedError.HTTPCode,
 		response)
 
 	// authenticated /index/prefix request, non-superuser
-	// => PermissionError
-	response = IssueRequest(rest, auth_prefix_req)
+	// => UnauthorizedError
+	response = IssueRequest(auth_prefix_req)
 	ExpectStatusCode(t,
 		"permissions on, authenticated /index/prefix request, non-superuser",
-		PermissionError.HTTPCode,
+		UnauthorizedError.HTTPCode,
 		response)
 
 	// superuser /index request
 	// => OK
-	response = IssueRequest(rest, superuser_req)
+	response = IssueRequest(superuser_req)
+	ExpectStatusCode(t,
+		"permissions on, superuser request",
+		http.StatusOK,
+		response)
+
+	// ----------------------------
+	// enforce_permissions disabled
+	// Valid Request should still pass.
+	enforce_permissions = false
+
+	// superuser /index request
+	// => OK
+	response = IssueRequest(superuser_req)
 	ExpectStatusCode(t,
 		"permissions on, superuser request",
 		http.StatusOK,
@@ -398,7 +347,7 @@ func TestIndexHandler(t *testing.T) {
 
 	// superuser /index/prefix request
 	// => OK
-	response = IssueRequest(rest, superuser_prefix_req)
+	response = IssueRequest(superuser_prefix_req)
 	ExpectStatusCode(t,
 		"permissions on, superuser request",
 		http.StatusOK,
@@ -456,9 +405,6 @@ func TestDeleteHandler(t *testing.T) {
 	// even though they have just been created.
 	permission_ttl = time.Duration(0)
 
-	// Set up a REST router for testing the handlers.
-	rest := MakeRESTRouter()
-
 	var user_token = "NOT DATA MANAGER TOKEN"
 	data_manager_token = "DATA MANAGER TOKEN"
 
@@ -487,14 +433,14 @@ func TestDeleteHandler(t *testing.T) {
 
 	// Unauthenticated request returns PermissionError.
 	var response *httptest.ResponseRecorder
-	response = IssueRequest(rest, unauth_req)
+	response = IssueRequest(unauth_req)
 	ExpectStatusCode(t,
 		"unauthenticated request",
 		PermissionError.HTTPCode,
 		response)
 
 	// Authenticated non-admin request returns PermissionError.
-	response = IssueRequest(rest, user_req)
+	response = IssueRequest(user_req)
 	ExpectStatusCode(t,
 		"authenticated non-admin request",
 		PermissionError.HTTPCode,
@@ -507,7 +453,7 @@ func TestDeleteHandler(t *testing.T) {
 	}
 	var response_dc, expected_dc deletecounter
 
-	response = IssueRequest(rest, superuser_nonexistent_block_req)
+	response = IssueRequest(superuser_nonexistent_block_req)
 	ExpectStatusCode(t,
 		"data manager request, nonexistent block",
 		http.StatusNotFound,
@@ -515,7 +461,7 @@ func TestDeleteHandler(t *testing.T) {
 
 	// Authenticated admin request for existing block while never_delete is set.
 	never_delete = true
-	response = IssueRequest(rest, superuser_existing_block_req)
+	response = IssueRequest(superuser_existing_block_req)
 	ExpectStatusCode(t,
 		"authenticated request, existing block, method disabled",
 		MethodDisabledError.HTTPCode,
@@ -523,7 +469,7 @@ func TestDeleteHandler(t *testing.T) {
 	never_delete = false
 
 	// Authenticated admin request for existing block.
-	response = IssueRequest(rest, superuser_existing_block_req)
+	response = IssueRequest(superuser_existing_block_req)
 	ExpectStatusCode(t,
 		"data manager request, existing block",
 		http.StatusOK,
@@ -547,7 +493,7 @@ func TestDeleteHandler(t *testing.T) {
 	vols[0].Put(TEST_HASH, TEST_BLOCK)
 	permission_ttl = time.Duration(1) * time.Hour
 
-	response = IssueRequest(rest, superuser_existing_block_req)
+	response = IssueRequest(superuser_existing_block_req)
 	ExpectStatusCode(t,
 		"data manager request, existing block",
 		http.StatusOK,
@@ -595,9 +541,6 @@ func TestDeleteHandler(t *testing.T) {
 //
 func TestPullHandler(t *testing.T) {
 	defer teardown()
-
-	// Set up a REST router for testing the handlers.
-	rest := MakeRESTRouter()
 
 	var user_token = "USER TOKEN"
 	data_manager_token = "DATA MANAGER TOKEN"
@@ -656,7 +599,7 @@ func TestPullHandler(t *testing.T) {
 	}
 
 	for _, tst := range testcases {
-		response := IssueRequest(rest, &tst.req)
+		response := IssueRequest(&tst.req)
 		ExpectStatusCode(t, tst.name, tst.response_code, response)
 		ExpectBody(t, tst.name, tst.response_body, response)
 	}
@@ -702,9 +645,6 @@ func TestPullHandler(t *testing.T) {
 //
 func TestTrashHandler(t *testing.T) {
 	defer teardown()
-
-	// Set up a REST router for testing the handlers.
-	rest := MakeRESTRouter()
 
 	var user_token = "USER TOKEN"
 	data_manager_token = "DATA MANAGER TOKEN"
@@ -761,7 +701,7 @@ func TestTrashHandler(t *testing.T) {
 	}
 
 	for _, tst := range testcases {
-		response := IssueRequest(rest, &tst.req)
+		response := IssueRequest(&tst.req)
 		ExpectStatusCode(t, tst.name, tst.response_code, response)
 		ExpectBody(t, tst.name, tst.response_body, response)
 	}
@@ -783,15 +723,16 @@ func TestTrashHandler(t *testing.T) {
 // ====================
 
 // IssueTestRequest executes an HTTP request described by rt, to a
-// specified REST router.  It returns the HTTP response to the request.
-func IssueRequest(router *mux.Router, rt *RequestTester) *httptest.ResponseRecorder {
+// REST router.  It returns the HTTP response to the request.
+func IssueRequest(rt *RequestTester) *httptest.ResponseRecorder {
 	response := httptest.NewRecorder()
 	body := bytes.NewReader(rt.request_body)
 	req, _ := http.NewRequest(rt.method, rt.uri, body)
 	if rt.api_token != "" {
 		req.Header.Set("Authorization", "OAuth2 "+rt.api_token)
 	}
-	router.ServeHTTP(response, req)
+	loggingRouter := MakeLoggingRESTRouter()
+	loggingRouter.ServeHTTP(response, req)
 	return response
 }
 

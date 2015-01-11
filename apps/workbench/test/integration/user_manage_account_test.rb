@@ -1,12 +1,8 @@
 require 'integration_helper'
-require 'selenium-webdriver'
-require 'headless'
 
 class UserManageAccountTest < ActionDispatch::IntegrationTest
   setup do
-    headless = Headless.new
-    headless.start
-    Capybara.current_driver = :selenium
+    need_javascript
   end
 
   # test manage_account page
@@ -24,9 +20,19 @@ class UserManageAccountTest < ActionDispatch::IntegrationTest
       assert page.has_text?('Repositories'), 'No text - Repositories'
       assert page.has_text?('SSH Keys'), 'No text - SSH Keys'
       assert page.has_text?('Current Token'), 'No text - Current Token'
-
       assert page.has_text?('The Arvados API token is a secret key that enables the Arvados SDKs to access Arvados'), 'No text - Arvados API token'
+      add_and_verify_ssh_key
+    else  # inactive user
+      within('.navbar-fixed-top') do
+        find('a', text: "#{user['email']}").click
+        within('.dropdown-menu') do
+          assert page.has_no_link?('Manage profile'), 'Found link - Manage profile'
+        end
+      end
+    end
+  end
 
+  def add_and_verify_ssh_key
       click_link 'Add new SSH key'
 
       within '.modal-content' do
@@ -52,14 +58,6 @@ class UserManageAccountTest < ActionDispatch::IntegrationTest
 
       # key must be added. look for it in the refreshed page
       assert page.has_text?('added_in_test'), 'No text - added_in_test'
-    else  # inactive user
-      within('.navbar-fixed-top') do
-        find('a', text: "#{user['email']}").click
-        within('.dropdown-menu') do
-          assert page.has_no_link?('Manage profile'), 'Found link - Manage profile'
-        end
-      end
-    end
   end
 
   [
@@ -71,6 +69,32 @@ class UserManageAccountTest < ActionDispatch::IntegrationTest
     test "test manage account for user #{token}" do
       visit page_with_token(token)
       verify_manage_account user
+    end
+  end
+
+  [
+    ['inactive_but_signed_user_agreement', true],
+    ['active', false],
+  ].each do |user, notifications|
+    test "test manage account for #{user} with notifications #{notifications}" do
+      visit page_with_token(user)
+      click_link 'notifications-menu'
+      if notifications
+        assert_selector('a', text: 'Click here to set up an SSH public key for use with Arvados')
+        assert_selector('a', text: 'Click here to learn how to run an Arvados Crunch pipeline')
+        click_link('Click here to set up an SSH public key for use with Arvados')
+        assert_selector('a', text: 'Add new SSH key')
+
+        add_and_verify_ssh_key
+
+        # No more SSH notification
+        click_link 'notifications-menu'
+        assert_no_selector('a', text: 'Click here to set up an SSH public key for use with Arvados')
+        assert_selector('a', text: 'Click here to learn how to run an Arvados Crunch pipeline')
+      else
+        assert_no_selector('a', text: 'Click here to set up an SSH public key for use with Arvados')
+        assert_no_selector('a', text: 'Click here to learn how to run an Arvados Crunch pipeline')
+      end
     end
   end
 end

@@ -1,12 +1,13 @@
 require 'integration_helper'
-require 'selenium-webdriver'
-require 'headless'
 
 class ApplicationLayoutTest < ActionDispatch::IntegrationTest
+  # These tests don't do state-changing API calls. Save some time by
+  # skipping the database reset.
+  reset_api_fixtures :after_each_test, false
+  reset_api_fixtures :after_suite, true
+
   setup do
-    headless = Headless.new
-    headless.start
-    Capybara.current_driver = :selenium
+    need_javascript
   end
 
   def verify_homepage user, invited, has_profile

@@ -148,10 +148,7 @@ $(SSO_GENERATED): $(SSO_GENERATED_IN)
 $(KEEP_GENERATED): $(KEEP_GENERATED_IN)
 	$(CONFIG_RB) keep
 
-# The docker build -q option suppresses verbose build output.
-# Necessary to prevent failure on building warehouse; see
-# https://github.com/dotcloud/docker/issues/3172
-DOCKER_BUILD = $(DOCKER) build -q --rm=true
+DOCKER_BUILD = $(DOCKER) build --rm=true
 
 # ============================================================
 # The main Arvados servers: api, doc, workbench, compute

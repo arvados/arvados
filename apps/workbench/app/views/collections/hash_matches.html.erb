@@ -1,0 +1,23 @@
+<div class="row">
+  <div class="col-md-10 col-md-offset-1">
+    <div class="panel panel-info">
+      <div class="panel-heading">
+        <h3 class="panel-title"><%= params["uuid"] %></h3>
+      </div>
+      <div class="panel-body">
+        <p><i>The following collections have this content:</i></p>
+        <% @same_pdh.sort { |a,b| b.created_at <=> a.created_at }.each do |c| %>
+          <div class="row">
+            <div class="col-md-8">
+              <% owner = object_for_dataclass(Group, c.owner_uuid) || object_for_dataclass(User, c.owner_uuid) %>
+              <%= link_to_if_arvados_object owner, {:friendly_name => true} %> / <%= link_to_if_arvados_object c, {:friendly_name => true} %><br>
+            </div>
+            <div class="col-md-4">
+              <%= render_localized_date c.created_at %>
+            </div>
+          </div>
+        <% end %>
+      </div>
+    </div>
+  </div>
+</div>

@@ -4,9 +4,9 @@
     <div class="container-fluid">
       <div class="row-fluid">
         <%# column offset 0 %>
-        <div class="col-md-3">
+        <div class="col-md-3" style="word-break:break-all;">
           <h4 class="panel-title">
-            <a data-toggle="collapse" href="#collapse<%= i %>" style="white-space: nowrap;">
+            <a data-toggle="collapse" href="#collapse<%= i %>">
               <%= pj[:name] %> <span class="caret"></span>
             </a>
           </h4>
@@ -46,7 +46,7 @@
                   This job is next in the queue to run.
                 <% elsif current_job[:queue_position] == 1 %>
                   There is 1 job in the queue ahead of this one.
-                <% else %>
+                <% elsif current_job[:queue_position] %>
                   There are <%= current_job[:queue_position] %> jobs in the queue ahead of this one.
                 <% end %>
               <% rescue %>
@@ -78,7 +78,7 @@
           <% if current_job[:state].in? ["Queued", "Running"] %>
             <%# column offset 11 %>
             <div class="col-md-1 pipeline-instance-spacing">
-              <%= form_tag "/jobs/#{current_job[:uuid]}/cancel", style: "display:inline; padding-left: 1em" do |f| %>
+              <%= form_tag "/jobs/#{current_job[:uuid]}/cancel", remote: true, style: "display:inline; padding-left: 1em" do |f| %>
                 <%= hidden_field_tag :return_to, url_for(@object) %>
                 <%= button_tag "Cancel", {class: 'btn btn-xs btn-danger', id: "cancel-job-button"} %>
               <% end %>

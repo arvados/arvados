@@ -131,6 +131,47 @@ class Arvados::V1::GroupsControllerTest < ActionController::TestCase
     assert_includes ids, collections(:baz_file_in_asubproject).uuid
   end
 
+  [['asc', :<=],
+   ['desc', :>=]].each do |order, operator|
+    test "user with project read permission can sort project collections #{order}" do
+      authorize_with :project_viewer
+      get :contents, {
+        id: groups(:asubproject).uuid,
+        format: :json,
+        filters: [['uuid', 'is_a', "arvados#collection"]],
+        order: "collections.name #{order}"
+      }
+      sorted_names = json_response['items'].collect { |item| item["name"] }
+      # Here we avoid assuming too much about the database
+      # collation. Both "alice"<"Bob" and "alice">"Bob" can be
+      # correct. Hopefully it _is_ safe to assume that if "a" comes
+      # before "b" in the ascii alphabet, "aX">"bY" is never true for
+      # any strings X and Y.
+      reliably_sortable_names = sorted_names.select do |name|
+        name[0] >= 'a' and name[0] <= 'z'
+      end.uniq do |name|
+        name[0]
+      end
+      # Preserve order of sorted_names. But do not use &=. If
+      # sorted_names has out-of-order duplicates, we want to preserve
+      # them here, so we can detect them and fail the test below.
+      sorted_names.select! do |name|
+        reliably_sortable_names.include? name
+      end
+      actually_checked_anything = false
+      previous = nil
+      sorted_names.each do |entry|
+        if previous
+          assert_operator(previous, operator, entry,
+                          "Entries sorted incorrectly.")
+          actually_checked_anything = true
+        end
+        previous = entry
+      end
+      assert actually_checked_anything, "Didn't even find two names to compare."
+    end
+  end
+
   test 'list objects across multiple projects' do
     authorize_with :project_viewer
     get :contents, {

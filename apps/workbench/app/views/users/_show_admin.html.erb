@@ -47,7 +47,7 @@
         </div>
         <form>
           <% permitted_group_perms = {}
-             Link.limit(10000).filter([
+             Link.filter([
              ['tail_uuid', '=', @object.uuid],
              ['head_uuid', 'is_a', 'arvados#group'],
              ['link_class', '=', 'permission'],
@@ -83,7 +83,7 @@
                 <small>group&rarr;user</small>
               </label>
               <label class="checkbox-inline">
-                <%= group.name || '(unnamed)' %> <span class="deemphasize">(owned by <%= User.find(group.owner_uuid).andand.full_name %>)</span>
+                <%= group.name || '(unnamed)' %> <span class="deemphasize">(owned by <%= User.find?(group.owner_uuid).andand.full_name %>)</span>
               </label>
             </div>
           <% end.empty? and begin %>

@@ -23,9 +23,9 @@ table(table table-bordered table-condensed).
 |_. Attribute|_. Type|_. Description|_. Notes|
 |script|string|The filename of the job script.|This program will be invoked by Crunch for each job task. It is given as a path to an executable file, relative to the @/crunch_scripts@ directory in the Git tree specified by the _repository_ and _script_version_ attributes.|
 |script_parameters|hash|The input parameters for the job.|Conventionally, one of the parameters is called @"input"@. Typically, some parameter values are collection UUIDs. Ultimately, though, the significance of parameters is left entirely up to the script itself.|
-|repository|string|Git repository|Given as the name of a locally hosted git repository.|
+|repository|string|Git repository|Given as the name of a locally hosted Git repository.|
 |script_version|string|Git commit|During a **create** transaction, this is the Git branch, tag, or hash supplied by the client. Before the job starts, Arvados updates it to the full 40-character SHA-1 hash of the commit used by the job.
-See "Script versions":#script_version below for more detail about acceptable ways to specify a commit.|
+See "Specifying Git versions":#script_version below for more detail about acceptable ways to specify a commit.|
 |cancelled_by_client_uuid|string|API client ID|Is null if job has not been cancelled|
 |cancelled_by_user_uuid|string|Authenticated user ID|Is null if job has not been cancelled|
 |cancelled_at|datetime|When job was cancelled|Is null if job has not been cancelled|
@@ -41,17 +41,20 @@ See "Script versions":#script_version below for more detail about acceptable way
 |nondeterministic|boolean|The job is expected to produce different results if run more than once.|If true, this job will not be considered as a candidate for automatic re-use when submitting subsequent identical jobs.|
 |submit_id|string|Unique ID provided by client when job was submitted|Optional. This can be used by a client to make the "jobs.create":{{site.baseurl}}/api/methods/jobs.html#create method idempotent.|
 |priority|string|||
+|arvados_sdk_version|string|Git commit hash that specifies the SDK version to use from the Arvados repository|This is set by searching the Arvados repository for a match for the arvados_sdk_version runtime constraint.|
+|docker_image_locator|string|Portable data hash of the collection that contains the Docker image to use|This is set by searching readable collections for a match for the docker_image runtime constraint.|
 |runtime_constraints|hash|Constraints that must be satisfied by the job/task scheduler in order to run the job.|See below.|
 
-h3(#script_version). Script versions
+h3(#script_version). Specifying Git versions
 
-The @script_version@ attribute is typically given as a branch, tag, or commit hash, but there are many more ways to specify a Git commit. The "specifying revisions" section of the "gitrevisions manual page":http://git-scm.com/docs/gitrevisions.html has a definitive list. Arvados accepts @script_version@ in any format listed there that names a single commit (not a tree, a blob, or a range of commits). However, some kinds of names can be expected to resolve differently in Arvados than they do in your local repository. For example, <code>HEAD@{1}</code> refers to the local reflog, and @origin/master@ typically refers to a remote branch: neither is likely to work as desired if given as a @script_version@.
+The script_version attribute and arvados_sdk_version runtime constraint are typically given as a branch, tag, or commit hash, but there are many more ways to specify a Git commit. The "specifying revisions" section of the "gitrevisions manual page":http://git-scm.com/docs/gitrevisions.html has a definitive list. Arvados accepts Git versions in any format listed there that names a single commit (not a tree, a blob, or a range of commits). However, some kinds of names can be expected to resolve differently in Arvados than they do in your local repository. For example, <code>HEAD@{1}</code> refers to the local reflog, and @origin/master@ typically refers to a remote branch: neither is likely to work as desired if given as a Git version.
 
 h3. Runtime constraints
 
 table(table table-bordered table-condensed).
 |_. Key|_. Type|_. Description|_. Implemented|
-|docker_image|string|The Docker image that this Job needs to run.  If specified, Crunch will create a Docker container from this image, and run the Job's script inside that.  The Keep mount and work directories will be available as volumes inside this container.  The image must be uploaded to Arvados using @arv keep docker@.  You may specify the image in any format that Docker accepts, such as @arvados/jobs@, @debian:latest@, or the Docker image id.  Alternatively, you may specify the UUID of the image Collection, returned by @arv keep docker@.|&#10003;|
+|arvados_sdk_version|string|The Git version of the SDKs to use from the Arvados git repository.  See "Specifying Git versions":#script_version for more detail about acceptable ways to specify a commit.  If you use this, you must also specify a @docker_image@ constraint (see below).  In order to install the Python SDK successfully, Crunch must be able to find and run virtualenv inside the container.|&#10003;|
+|docker_image|string|The Docker image that this Job needs to run.  If specified, Crunch will create a Docker container from this image, and run the Job's script inside that.  The Keep mount and work directories will be available as volumes inside this container.  The image must be uploaded to Arvados using @arv keep docker@.  You may specify the image in any format that Docker accepts, such as @arvados/jobs@, @debian:latest@, or the Docker image id.  Alternatively, you may specify the UUID or portable data hash of the image Collection, returned by @arv keep docker@.|&#10003;|
 |min_nodes|integer||&#10003;|
 |max_nodes|integer|||
 |min_cores_per_node|integer|Require that each node assigned to this Job have the specified number of CPU cores|&#10003;|

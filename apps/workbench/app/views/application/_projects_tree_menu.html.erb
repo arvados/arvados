@@ -1,25 +1,25 @@
-              <li>
-                <%= project_link_to.call({object: current_user, depth: 0}) do %>
-                  <span style="padding-left: 0"></span>Home
-                <% end %>
-              </li>
-              <% my_project_tree.each do |pnode| %>
-                <% next if pnode[:object].class != Group %>
-                <li>
-                  <%= project_link_to.call pnode do %>
-                    <span style="padding-left: <%= pnode[:depth] %>em"></span><%= pnode[:object].name %>
-                  <% end %>
-                </li>
-              <% end %>
-              <li class="divider" />
-              <li role="presentation" class="dropdown-header">
-                Projects shared with me
-              </li>
-              <% shared_project_tree.each do |pnode| %>
-                <% next if pnode[:object].class != Group %>
-                <li>
-                  <%= project_link_to.call pnode do %>
-                    <span style="padding-left: <%= pnode[:depth]-1 %>em"></span><i class="fa fa-fw fa-share-alt" style="color:#aaa"></i> <%= pnode[:object].name %>
-                  <% end %>
-                </li>
-              <% end %>
+<li>
+  <%= project_link_to.call({object: current_user, depth: 0}) do %>
+    <span style="padding-left: 0">Home</span>
+  <% end %>
+</li>
+<% my_project_tree.each do |pnode| %>
+  <% next if pnode[:object].class != Group %>
+  <li>
+    <%= project_link_to.call pnode do %>
+      <span style="padding-left: <%= pnode[:depth] %>em"></span><%= pnode[:object].name %>
+    <% end %>
+  </li>
+<% end %>
+<li class="divider" />
+<li role="presentation" class="dropdown-header">
+  Projects shared with me
+</li>
+<% shared_project_tree.each do |pnode| %>
+  <% next if pnode[:object].class != Group %>
+  <li>
+    <%= project_link_to.call pnode do %>
+      <span style="padding-left: <%= pnode[:depth]-1 %>em"></span><i class="fa fa-fw fa-share-alt" style="color:#aaa"></i> <%= pnode[:object].name %>
+    <% end %>
+  </li>
+<% end %>

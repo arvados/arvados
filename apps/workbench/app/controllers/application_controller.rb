@@ -105,8 +105,28 @@ class ApplicationController < ActionController::Base
     end
   end
 
+  # params[:order]:
+  #
+  # The order can be left empty to allow it to default.
+  # Or it can be a comma separated list of real database column names, one per model.
+  # Column names should always be qualified by a table name and a direction is optional, defaulting to asc
+  # (e.g. "collections.name" or "collections.name desc").
+  # If a column name is specified, that table will be sorted by that column.
+  # If there are objects from different models that will be shown (such as in Jobs and Pipelines tab),
+  # then a sort column name can optionally be specified for each model, passed as an comma-separated list (e.g. "jobs.script, pipeline_instances.name")
+  # Currently only one sort column name and direction can be specified for each model.
   def load_filters_and_paging_params
-    @order = params[:order] || 'created_at desc'
+    if params[:order].blank?
+      @order = 'created_at desc'
+    elsif params[:order].is_a? Array
+      @order = params[:order]
+    else
+      begin
+        @order = JSON.load(params[:order])
+      rescue
+        @order = params[:order].split(',')
+      end
+    end
     @order = [@order] unless @order.is_a? Array
 
     @limit ||= 200
@@ -144,11 +164,23 @@ class ApplicationController < ActionController::Base
   def find_objects_for_index
     @objects ||= model_class
     @objects = @objects.filter(@filters).limit(@limit).offset(@offset)
+    @objects.fetch_multiple_pages(false)
   end
 
   def render_index
     respond_to do |f|
-      f.json { render json: @objects }
+      f.json {
+        if params[:partial]
+          @next_page_href = next_page_href(partial: params[:partial], filters: @filters.to_json)
+          render json: {
+            content: render_to_string(partial: "show_#{params[:partial]}",
+                                      formats: [:html]),
+            next_page_href: @next_page_href
+          }
+        else
+          render json: @objects
+        end
+      }
       f.html {
         if params[:tab_pane]
           render_pane params[:tab_pane]
@@ -224,7 +256,9 @@ class ApplicationController < ActionController::Base
         elsif request.method.in? ['GET', 'HEAD']
           render
         else
-          redirect_to params[:return_to] || @object
+          redirect_to (params[:return_to] ||
+                       polymorphic_url(@object,
+                                       anchor: params[:redirect_to_anchor]))
         end
       }
       f.js { render }
@@ -288,16 +322,11 @@ class ApplicationController < ActionController::Base
     @new_resource_attrs ||= {}
     @new_resource_attrs.reject! { |k,v| k.to_s == 'uuid' }
     @object ||= model_class.new @new_resource_attrs, params["options"]
+
     if @object.save
-      respond_to do |f|
-        f.json { render json: @object.attributes.merge(href: url_for(action: :show, id: @object)) }
-        f.html {
-          redirect_to @object
-        }
-        f.js { render }
-      end
+      show
     else
-      self.render_error status: 422
+      render_error status: 422
     end
   end
 
@@ -379,12 +408,17 @@ class ApplicationController < ActionController::Base
     false  # For convenience to return from callbacks
   end
 
-  def using_specific_api_token(api_token)
+  def using_specific_api_token(api_token, opts={})
     start_values = {}
     [:arvados_api_token, :user].each do |key|
       start_values[key] = Thread.current[key]
     end
-    load_api_token(api_token)
+    if opts.fetch(:load_user, true)
+      load_api_token(api_token)
+    else
+      Thread.current[:arvados_api_token] = api_token
+      Thread.current[:user] = nil
+    end
     begin
       yield
     ensure
@@ -810,6 +844,12 @@ class ApplicationController < ActionController::Base
     crumbs = []
     current = @name_link || @object
     while current
+      # Halt if a group ownership loop is detected. API should refuse
+      # to produce this state, but it could still arise from a race
+      # condition when group ownership changes between our find()
+      # queries.
+      break if crumbs.collect(&:uuid).include? current.uuid
+
       if current.is_a?(Group) and current.group_class == 'project'
         crumbs.prepend current
       end

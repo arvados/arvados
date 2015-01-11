@@ -1,8 +1,6 @@
-<%= render partial: "paging", locals: {results: @objects, object: @object} %>
+<%= form_tag({}, {id: "comparedInstances"}) do |f| %>
 
-<%= form_tag do |f| %>
-
-<table class="table table-condensed table-fixedlayout">
+<table class="table table-condensed table-fixedlayout arv-recent-pipeline-instances">
   <colgroup>
     <col width="5%" />
     <col width="15%" />
@@ -29,45 +27,11 @@
       </th>
     </tr>
   </thead>
-  <tbody>
 
-    <% @objects.sort_by { |ob| ob.created_at }.reverse.each do |ob| %>
-
-    <tr data-object-uuid="<%= ob.uuid %>">
-      <td>
-        <%= check_box_tag 'uuids[]', ob.uuid, false, :class => 'persistent-selection' %>
-      </td><td>
-        <%= render partial: 'pipeline_status_label', locals: {:p => ob} %>
-      </td><td colspan="1">
-        <%= link_to_if_arvados_object ob, friendly_name: true %>
-      </td><td>
-        <%= link_to_if_arvados_object ob.pipeline_template_uuid, friendly_name: true %>
-      </td><td>
-        <%= link_to_if_arvados_object ob.owner_uuid, friendly_name: true %>
-      </td><td>
-        <%= ob.created_at.to_s %>
-      </td><td>
-        <%= render partial: 'delete_object_button', locals: {object:ob} %>
-      </td>
-    </tr>
-    <tr data-object-uuid="<%= ob.uuid %>">
-      <td style="border-top: 0;" colspan="2">
-      </td>
-      <td style="border-top: 0; opacity: 0.5;" colspan="6">
-        <% ob.components.each do |cname, c| %>
-          <% if c.is_a?(Hash) and c[:job] %>
-            <%= render partial: "job_progress", locals: {:j => c[:job], :title => cname.to_s, :show_progress_bar => false } %>
-          <% else %>
-            <span class="label label-default"><%= cname.to_s %></span>
-          <% end %>
-        <% end %>
-      </td>
-    </tr>
-    <% end %>
-
+  <tbody data-infinite-scroller="#recent-pipeline-instances" id="recent-pipeline-instances"
+         data-infinite-content-href="<%= url_for partial: :recent_rows %>" >
   </tbody>
+
 </table>
 
 <% end %>
-
-<%= render partial: "paging", locals: {results: @objects, object: @object} %>

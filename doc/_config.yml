@@ -32,14 +32,17 @@ navbar:
       - user/topics/keep.html.textile.liquid
     - Run a pipeline on the command line:
       - user/topics/running-pipeline-command-line.html.textile.liquid
-      - user/reference/sdk-cli.html.textile.liquid
+      - user/topics/arv-run.html.textile.liquid
     - Develop a new pipeline:
       - user/tutorials/intro-crunch.html.textile.liquid
       - user/tutorials/running-external-program.html.textile.liquid
       - user/tutorials/tutorial-firstscript.html.textile.liquid
       - user/tutorials/tutorial-submit-job.html.textile.liquid
       - user/topics/tutorial-parallel.html.textile.liquid
+      - user/topics/arv-docker.html.textile.liquid
+    - Reference:
       - user/topics/run-command.html.textile.liquid
+      - user/reference/job-pipeline-ref.html.textile.liquid
       - user/examples/crunch-examples.html.textile.liquid
     - Query the metadata database:
       - user/topics/tutorial-trait-search.html.textile.liquid
@@ -65,6 +68,9 @@ navbar:
       - sdk/go/index.html.textile.liquid
     - CLI:
       - sdk/cli/index.html.textile.liquid
+      - sdk/cli/install.html.textile.liquid
+      - sdk/cli/reference.html.textile.liquid
+      - sdk/cli/subcommands.html.textile.liquid
   api:
     - Concepts:
       - api/index.html.textile.liquid
@@ -125,9 +131,16 @@ navbar:
     - Docker:
       - install/install-docker.html.textile.liquid
     - Manual installation:
-      - install/install-keep.html.textile.liquid
-      - install/install-sso.html.textile.liquid
+      - install/install-manual-overview.html.textile.liquid
+      - install/install-manual-prerequisites.html.textile.liquid
       - install/install-api-server.html.textile.liquid
       - install/install-workbench-app.html.textile.liquid
+      - install/install-shell-server.html.textile.liquid
       - install/create-standard-objects.html.textile.liquid
+      - install/install-keepstore.html.textile.liquid
+      - install/install-keepproxy.html.textile.liquid
       - install/install-crunch-dispatch.html.textile.liquid
+      - install/install-compute-node.html.textile.liquid
+    - Software prerequisites:
+      - install/install-manual-prerequisites-ruby.html.textile.liquid
+      - install/install-sso.html.textile.liquid

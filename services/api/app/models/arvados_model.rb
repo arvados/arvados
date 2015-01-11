@@ -110,7 +110,8 @@ class ArvadosModel < ActiveRecord::Base
     unless (owner_uuid == current_user.uuid or
             current_user.is_admin or
             (current_user.groups_i_can(:manage) & [uuid, owner_uuid]).any?)
-      if current_user.groups_i_can(:write).index(uuid)
+      if ((current_user.groups_i_can(:write) + [current_user.uuid]) &
+          [uuid, owner_uuid]).any?
         return [owner_uuid, current_user.uuid]
       else
         return [owner_uuid]
@@ -442,6 +443,10 @@ class ArvadosModel < ActiveRecord::Base
 
   def self.uuid_like_pattern
     "_____-#{uuid_prefix}-_______________"
+  end
+
+  def self.uuid_regex
+    %r/[a-z0-9]{5}-#{uuid_prefix}-[a-z0-9]{15}/
   end
 
   def ensure_valid_uuids

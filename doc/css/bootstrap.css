@@ -4473,7 +4473,7 @@ a.thumbnail.active {
 }
 .alert-info {
   color: #31708f;
-  background-color: #d9edf7;
+  background-color: #edf6fa;
   border-color: #bce8f1;
 }
 .alert-info hr {
@@ -4481,6 +4481,10 @@ a.thumbnail.active {
 }
 .alert-info .alert-link {
   color: #245269;
+  font-weight: bold;
+}
+.alert-info a {
+  font-weight: bold;
 }
 .alert-warning {
   color: #8a6d3b;
