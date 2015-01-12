@@ -489,8 +489,8 @@ install_apiserver() {
 
     cd "$WORKSPACE/services/api" \
         && RAILS_ENV=test bundle exec rake db:drop \
-        && RAILS_ENV=test bundle exec rake db:create \
-        && RAILS_ENV=test bundle exec rake db:setup
+        && RAILS_ENV=test bundle exec rake db:setup \
+        && RAILS_ENV=test bundle exec rake db:fixtures:load
 }
 do_install services/api apiserver
 
