@@ -24,6 +24,7 @@ begin
   require 'active_support/inflector'
   require 'yaml'
   require 'tempfile'
+  require 'net/http'
 rescue LoadError
   abort <<-EOS
 
@@ -220,7 +221,7 @@ def edit_and_commit_object initial_obj, tmp_stem, global_opts, &block
         can_retry = true
         if e.is_a? Psych::SyntaxError
           this_error = "YAML error parsing your input: #{e}"
-        elsif e.is_a? JSON::ParserError
+        elsif e.is_a? JSON::ParserError or e.is_a? Oj::ParseError
           this_error = "JSON error parsing your input: #{e}"
         elsif e.is_a? ArvadosAPIError
           this_error = "API responded with error #{e}"
@@ -264,13 +265,14 @@ def check_response result
     results = JSON.parse result.body
   rescue JSON::ParserError => e
     raise "Failed to parse server response:\n" + e.to_s
+  rescue Oj::ParseError => e
+    raise "Failed to parse server response:\n" + e.to_s
   end
 
   if result.response.status != 200
-    require 'net/http'
     raise ArvadosAPIError.new("#{result.response.status}: #{
                               ((results['errors'] && results['errors'].join('\n')) ||
-                                Net::HTTPResponse::CODE_TO_OBJ[status.to_s].to_s.sub(/^Net::HTTP/, '')).titleize}")
+                                Net::HTTPResponse::CODE_TO_OBJ[status.to_s].to_s.sub(/^Net::HTTP/, '').titleize)}")
   end
 
   results
@@ -343,8 +345,8 @@ def arv_edit client, arvados, global_opts, remaining_opts
                      :headers => {
                        authorization: 'OAuth2 '+ENV['ARVADOS_API_TOKEN']
                      })
-      check_response result
-      puts "Updated object #{uuid}"
+      results = check_response result
+      puts "Updated object #{results['uuid']}"
     else
       puts "Object is unchanged, did not update."
     end
