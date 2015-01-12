@@ -34,6 +34,7 @@ type Collection struct {
 type ReadCollections struct {
 	ReadAllCollections bool
 	UuidToCollection map[string]Collection
+	OwnerToCollectionSize map[string]int
 }
 
 type GetCollectionsParams struct {
@@ -94,6 +95,31 @@ func WriteHeapProfile() {
 	}
 }
 
+
+func GetCollectionsAndSummarize(params GetCollectionsParams) (results ReadCollections) {
+	results = GetCollections(params)
+	ComputeSizeOfOwnedCollections(&results)
+
+	if params.Logger != nil {
+		properties,_ := params.Logger.Edit()
+		collectionInfo := properties["collection_info"].(map[string]interface{})
+		collectionInfo["owner_to_collection_size"] = results.OwnerToCollectionSize
+		params.Logger.Record()
+	}
+
+	log.Printf("Uuid to Size used: %v", results.OwnerToCollectionSize)
+	log.Printf("Read and processed %d collections",
+		len(results.UuidToCollection))
+
+	// TODO(misha): Add a "readonly" flag. If we're in readonly mode,
+	// lots of behaviors can become warnings (and obviously we can't
+	// write anything).
+	// if !readCollections.ReadAllCollections {
+	// 	log.Fatalf("Did not read all collections")
+	// }
+
+	return
+}
 
 func GetCollections(params GetCollectionsParams) (results ReadCollections) {
 	if &params.Client == nil {
@@ -269,6 +295,17 @@ func NumberCollectionsAvailable(client arvadosclient.ArvadosClient) (int) {
 	}
 
 	return collections.ItemsAvailable
+}
+
+
+func ComputeSizeOfOwnedCollections(readCollections *ReadCollections) {
+	readCollections.OwnerToCollectionSize = make(map[string]int)
+	for _, coll := range readCollections.UuidToCollection {
+		readCollections.OwnerToCollectionSize[coll.OwnerUuid] =
+			readCollections.OwnerToCollectionSize[coll.OwnerUuid] + coll.TotalSize
+	}
+
+	return
 }
 
 

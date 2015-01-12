@@ -71,30 +71,24 @@ func main() {
 		arvLogger.Record()
 	}
 
-	// TODO(misha): Read Collections and Keep Contents concurrently as goroutines.
-	// This requires waiting on them to finish before you let main() exit.
+	collectionChannel := make(chan collection.ReadCollections)
 
-	RunCollections(collection.GetCollectionsParams{
-		Client: arv, Logger: arvLogger, BatchSize: 50})
+	go func() { collectionChannel <- collection.GetCollectionsAndSummarize(
+		collection.GetCollectionsParams{
+			Client: arv, Logger: arvLogger, BatchSize: 50}) }()
 
 	RunKeep(keep.GetKeepServersParams{Client: arv, Limit: 1000})
-}
 
-func RunCollections(params collection.GetCollectionsParams) {
-	readCollections := collection.GetCollections(params)
+	readCollections := <-collectionChannel
+	_ = readCollections  // Make compiler happy.
 
-	UserUsage := ComputeSizeOfOwnedCollections(readCollections)
-	log.Printf("Uuid to Size used: %v", UserUsage)
-
-	// TODO(misha): Add a "readonly" flag. If we're in readonly mode,
-	// lots of behaviors can become warnings (and obviously we can't
-	// write anything).
-	// if !readCollections.ReadAllCollections {
-	// 	log.Fatalf("Did not read all collections")
-	// }
-
-	log.Printf("Read and processed %d collections",
-		len(readCollections.UuidToCollection))
+	// Log that we're finished
+	if arvLogger != nil {
+		properties,_ := arvLogger.Edit()
+		properties["run_info"].(map[string]interface{})["end_time"] = time.Now()
+		// Force the recording, since go will not wait for the timer before exiting.
+		arvLogger.ForceRecord()
+	}
 }
 
 func RunKeep(params keep.GetKeepServersParams) {
@@ -109,15 +103,6 @@ func RunKeep(params keep.GetKeepServersParams) {
 	}
 
 	log.Printf("Replication level distribution: %v", blockReplicationCounts)
-}
-
-func ComputeSizeOfOwnedCollections(readCollections collection.ReadCollections) (
-	results map[string]int) {
-	results = make(map[string]int)
-	for _, coll := range readCollections.UuidToCollection {
-		results[coll.OwnerUuid] = results[coll.OwnerUuid] + coll.TotalSize
-	}
-	return
 }
 
 func LogMemoryAlloc(properties map[string]interface{}, entry map[string]interface{}) {
