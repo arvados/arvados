@@ -187,7 +187,7 @@ do
             skip[$skipwhat]=1
             ;;
         --only)
-            only="$1"; shift
+            only="$1"; skip[$1]=""; shift
             ;;
         --skip-install)
             skip_install=1
