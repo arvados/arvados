@@ -263,9 +263,7 @@ end
 def check_response result
   begin
     results = JSON.parse result.body
-  rescue JSON::ParserError => e
-    raise "Failed to parse server response:\n" + e.to_s
-  rescue Oj::ParseError => e
+  rescue JSON::ParserError, Oj::ParseError => e
     raise "Failed to parse server response:\n" + e.to_s
   end
 
