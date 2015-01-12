@@ -47,7 +47,8 @@ https://arvados.org/projects/arvados/wiki/Running_tests
 Available tests:
 
 apps/workbench
-apps/workbench_performance
+apps/workbench_benchmark
+apps/workbench_profile
 doc
 services/api
 services/crunchstat
@@ -170,6 +171,7 @@ sanity_checks() {
 declare -a failures
 declare -A skip
 declare -A testargs
+skip[apps/workbench_profile]=1
 
 while [[ -n "$1" ]]
 do
@@ -562,11 +564,17 @@ test_workbench() {
 }
 do_test apps/workbench workbench
 
-test_workbench_performance() {
+test_workbench_benchmark() {
     cd "$WORKSPACE/apps/workbench" \
-        && RAILS_ENV=test bundle exec rake test:benchmark
+        && RAILS_ENV=test bundle exec rake test:benchmark ${testargs[apps/workbench_benchmark]}
 }
-do_test apps/workbench_performance workbench_performance
+do_test apps/workbench_benchmark workbench_benchmark
+
+test_workbench_profile() {
+    cd "$WORKSPACE/apps/workbench" \
+        && RAILS_ENV=test bundle exec rake test:profile ${testargs[apps/workbench_profile]}
+}
+do_test apps/workbench_profile workbench_profile
 
 report_outcomes
 clear_temp
