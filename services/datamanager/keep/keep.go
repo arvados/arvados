@@ -48,11 +48,12 @@ type ServerResponse struct {
 }
 
 type ReadServers struct {
-	ReadAllServers bool
-	KeepServerIndexToAddress []ServerAddress
-	KeepServerAddressToIndex map[ServerAddress]int
-	ServerToContents map[ServerAddress]ServerContents
-	BlockToServers map[blockdigest.BlockDigest][]BlockServerInfo
+	ReadAllServers            bool
+	KeepServerIndexToAddress  []ServerAddress
+	KeepServerAddressToIndex  map[ServerAddress]int
+	ServerToContents          map[ServerAddress]ServerContents
+	BlockToServers            map[blockdigest.BlockDigest][]BlockServerInfo
+	BlockReplicationCounts    map[int]int
 }
 
 type GetKeepServersParams struct {
@@ -107,6 +108,17 @@ func getDataManagerToken() (string) {
 
 	dataManagerTokenFileReadOnce.Do(readDataManagerToken)
 	return dataManagerToken
+}
+
+func GetKeepServersAndSummarize(params GetKeepServersParams) (results ReadServers) {
+	results = GetKeepServers(params)
+	log.Printf("Returned %d keep disks", len(results.ServerToContents))
+
+	ComputeBlockReplicationCounts(&results)
+	log.Printf("Replication level distribution: %v",
+		results.BlockReplicationCounts)
+
+	return
 }
 
 func GetKeepServers(params GetKeepServersParams) (results ReadServers) {
@@ -287,4 +299,12 @@ func parseBlockInfoFromIndexLine(indexLine string) (blockInfo BlockInfo, err err
 	blockInfo.Digest = locator.Digest
 	blockInfo.Size = locator.Size
 	return
+}
+
+func ComputeBlockReplicationCounts(readServers *ReadServers) {
+	readServers.BlockReplicationCounts = make(map[int]int)
+	for _, infos := range readServers.BlockToServers {
+		replication := len(infos)
+		readServers.BlockReplicationCounts[replication] += 1
+	}
 }
