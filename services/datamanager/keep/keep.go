@@ -9,8 +9,10 @@ import (
 	//"git.curoverse.com/arvados.git/sdk/go/keepclient"
 	"git.curoverse.com/arvados.git/sdk/go/arvadosclient"
 	"git.curoverse.com/arvados.git/sdk/go/blockdigest"
+	"git.curoverse.com/arvados.git/sdk/go/logger"
 	"git.curoverse.com/arvados.git/sdk/go/manifest"
 	"git.curoverse.com/arvados.git/sdk/go/util"
+	"git.curoverse.com/arvados.git/services/datamanager/loggerutil"
 	"log"
 	"io/ioutil"
 	"net/http"
@@ -58,6 +60,7 @@ type ReadServers struct {
 
 type GetKeepServersParams struct {
 	Client arvadosclient.ArvadosClient
+	Logger *logger.Logger
 	Limit int
 }
 
@@ -90,17 +93,19 @@ func init() {
 		"File with the API token we should use to contact keep servers.")
 }
 
-func getDataManagerToken() (string) {
+func getDataManagerToken(arvLogger *logger.Logger) (string) {
 	readDataManagerToken := func () {
 		if dataManagerTokenFile == "" {
 			flag.Usage()
-			log.Fatalf("Data Manager Token needed, but data manager token file not specified.")
+			loggerutil.FatalWithMessage(arvLogger,
+				"Data Manager Token needed, but data manager token file not specified.")
 		} else {
 			rawRead, err := ioutil.ReadFile(dataManagerTokenFile)
 			if err != nil {
-				log.Fatalf("Unexpected error reading token file %s: %v",
-					dataManagerTokenFile,
-					err)
+				loggerutil.FatalWithMessage(arvLogger,
+					fmt.Sprintf("Unexpected error reading token file %s: %v",
+						dataManagerTokenFile,
+						err))
 			}
 			dataManagerToken = strings.TrimSpace(string(rawRead))
 		}
@@ -136,11 +141,11 @@ func GetKeepServers(params GetKeepServersParams) (results ReadServers) {
 	err := params.Client.Call("GET", "keep_services", "", "accessible", sdkParams, &sdkResponse)
 
 	if err != nil {
-		log.Fatalf("Error requesting keep disks from API server: %v", err)
+		loggerutil.FatalWithMessage(params.Logger,
+			fmt.Sprintf("Error requesting keep disks from API server: %v", err))
 	}
 
-	log.Printf("Received keep services list: %v", sdkResponse)
-
+	// TODO(misha): Rewrite this block, stop using ContainsAllAvailableItems()
 	{
 		var numReceived, numAvailable int
 		results.ReadAllServers, numReceived, numAvailable =
@@ -153,6 +158,21 @@ func GetKeepServers(params GetKeepServersParams) (results ReadServers) {
 			numReceived,
 			numAvailable)
 	}
+
+	if params.Logger != nil {
+		properties,_ := params.Logger.Edit()
+		keepInfo := make(map[string]interface{})
+
+		keepInfo["num_keep_servers_available"] = sdkResponse.ItemsAvailable
+		keepInfo["num_keep_servers_received"] = len(sdkResponse.KeepServers)
+		keepInfo["keep_servers"] = sdkResponse.KeepServers
+
+		properties["keep_info"] = keepInfo
+
+		params.Logger.Record()
+	}
+
+	log.Printf("Received keep services list: %v", sdkResponse)
 
 	results.KeepServerIndexToAddress = sdkResponse.KeepServers
 	results.KeepServerAddressToIndex = make(map[ServerAddress]int)
@@ -168,7 +188,7 @@ func GetKeepServers(params GetKeepServersParams) (results ReadServers) {
 	// Send off all the index requests concurrently
 	responseChan := make(chan ServerResponse)
 	for _, keepServer := range sdkResponse.KeepServers {
-		go GetServerContents(keepServer, client, responseChan)
+		go GetServerContents(params.Logger, keepServer, client, responseChan)
 	}
 
 	results.ServerToContents = make(map[ServerAddress]ServerContents)
@@ -196,7 +216,8 @@ func GetKeepServers(params GetKeepServersParams) (results ReadServers) {
 
 // TODO(misha): Break this function apart into smaller, easier to
 // understand functions.
-func GetServerContents(keepServer ServerAddress,
+func GetServerContents(arvLogger *logger.Logger,
+	keepServer ServerAddress,
 	client http.Client,
 	responseChan chan<- ServerResponse) () {
 	// Create and send request.
@@ -209,7 +230,7 @@ func GetServerContents(keepServer ServerAddress,
 	}
 
 	req.Header.Add("Authorization",
-		fmt.Sprintf("OAuth2 %s", getDataManagerToken()))
+		fmt.Sprintf("OAuth2 %s", getDataManagerToken(arvLogger)))
 
 	resp, err := client.Do(req)
 	if err != nil {

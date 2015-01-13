@@ -78,7 +78,7 @@ func main() {
 			Client: arv, Logger: arvLogger, BatchSize: 50}) }()
 
 	keepServerInfo := keep.GetKeepServersAndSummarize(
-		keep.GetKeepServersParams{Client: arv, Limit: 1000})
+		keep.GetKeepServersParams{Client: arv, Logger: arvLogger, Limit: 1000})
 
 	readCollections := <-collectionChannel
 
