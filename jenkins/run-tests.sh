@@ -354,16 +354,8 @@ do_test() {
             go test ${testargs[$1]} "git.curoverse.com/arvados.git/$1"
         elif [[ "$2" == "pip" ]]
         then
-           # Other test suites can depend on tests_require
-           # dependencies of this package. For example, keepproxy runs
-           # run_test_server.py, which depends on the yaml package,
-           # which is in sdk/python's tests_require but not
-           # install_requires, and therefore does not get installed by
-           # setuptools until we run "setup.py test" *and* install the
-           # .egg files that setup.py downloads.
            cd "$WORKSPACE/$1" \
-                && python setup.py test ${testargs[$1]} \
-                && (easy_install *.egg || true)
+                && python setup.py test ${testargs[$1]}
         elif [[ "$2" != "" ]]
         then
             "test_$2"
@@ -546,8 +538,6 @@ test_apiserver() {
 }
 do_test services/api apiserver
 
-# We must test sdk/python before testing services/keepproxy, because
-# keepproxy depends on sdk/python's test dependencies.
 for p in "${pythonstuff[@]}"
 do
     do_test "$p" pip
