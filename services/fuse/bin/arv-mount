@@ -98,6 +98,7 @@ with "--".
         elif args.home:
             dir_class = ProjectDirectory
             dir_args.append(usr)
+            dir_args.append(True)
         elif args.collection is not None:
             # Set up the request handler with the collection at the root
             dir_class = CollectionDirectory
@@ -117,6 +118,7 @@ with "--".
             e._entries['by_tag'] = operations.inodes.add_entry(TagsDirectory(*dir_args))
 
             dir_args.append(usr)
+            dir_args.append(True)
             e._entries['home'] = operations.inodes.add_entry(ProjectDirectory(*dir_args))
             e._entries['shared'] = operations.inodes.add_entry(SharedDirectory(*dir_args))
 

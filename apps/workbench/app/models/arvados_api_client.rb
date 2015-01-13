@@ -213,6 +213,7 @@ class ArvadosApiClient
         CGI.escape(k.to_s) + '=' + CGI.escape(v.to_s)
       }.join('&')
     end
+    uri
   end
 
   def arvados_logout_url(params={})
