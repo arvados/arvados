@@ -77,10 +77,14 @@ func main() {
 		collection.GetCollectionsParams{
 			Client: arv, Logger: arvLogger, BatchSize: 50}) }()
 
-	RunKeep(keep.GetKeepServersParams{Client: arv, Limit: 1000})
+	keepServerInfo := keep.GetKeepServersAndSummarize(
+		keep.GetKeepServersParams{Client: arv, Limit: 1000})
 
 	readCollections := <-collectionChannel
-	_ = readCollections  // Make compiler happy.
+
+  // Make compiler happy.
+	_ = readCollections
+	_ = keepServerInfo
 
 	// Log that we're finished
 	if arvLogger != nil {
@@ -89,20 +93,6 @@ func main() {
 		// Force the recording, since go will not wait for the timer before exiting.
 		arvLogger.ForceRecord()
 	}
-}
-
-func RunKeep(params keep.GetKeepServersParams) {
-	readServers := keep.GetKeepServers(params)
-
-	log.Printf("Returned %d keep disks", len(readServers.ServerToContents))
-
-	blockReplicationCounts := make(map[int]int)
-	for _, infos := range readServers.BlockToServers {
-		replication := len(infos)
-		blockReplicationCounts[replication] += 1
-	}
-
-	log.Printf("Replication level distribution: %v", blockReplicationCounts)
 }
 
 func LogMemoryAlloc(properties map[string]interface{}, entry map[string]interface{}) {
