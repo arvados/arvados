@@ -9,6 +9,7 @@ import (
 	"git.curoverse.com/arvados.git/sdk/go/blockdigest"
 	"git.curoverse.com/arvados.git/sdk/go/logger"
 	"git.curoverse.com/arvados.git/sdk/go/manifest"
+	"git.curoverse.com/arvados.git/services/datamanager/loggerutil"
 	"log"
 	"os"
 	"runtime"
@@ -173,7 +174,7 @@ func GetCollections(params GetCollectionsParams) (results ReadCollections) {
 		var collections SdkCollectionList
 		err := params.Client.List("collections", sdkParams, &collections)
 		if err != nil {
-			fatalWithMessage(params.Logger,
+			loggerutil.FatalWithMessage(params.Logger,
 				fmt.Sprintf("Error querying collections: %v", err))
 		}
 
@@ -234,7 +235,7 @@ func ProcessCollections(arvLogger *logger.Logger,
 			BlockDigestToSize: make(map[blockdigest.BlockDigest]int)}
 
 		if sdkCollection.ModifiedAt.IsZero() {
-			fatalWithMessage(arvLogger,
+			loggerutil.FatalWithMessage(arvLogger,
 				fmt.Sprintf(
 					"Arvados SDK collection returned with unexpected zero " +
 						"modifcation date. This probably means that either we failed to " +
@@ -266,7 +267,7 @@ func ProcessCollections(arvLogger *logger.Logger,
 					stored_size,
 					block.Size,
 					block.Digest)
-				fatalWithMessage(arvLogger, message)
+				loggerutil.FatalWithMessage(arvLogger, message)
 			}
 			collection.BlockDigestToSize[block.Digest] = block.Size
 		}
@@ -306,19 +307,4 @@ func ComputeSizeOfOwnedCollections(readCollections *ReadCollections) {
 	}
 
 	return
-}
-
-
-// Assumes you haven't already called arvLogger.Edit()!
-// If you have called arvLogger.Edit() this method will hang waiting
-// for the lock you're already holding.
-func fatalWithMessage(arvLogger *logger.Logger, message string) {
-	if arvLogger != nil {
-		properties,_ := arvLogger.Edit()
-		properties["FATAL"] = message
-		properties["run_info"].(map[string]interface{})["end_time"] = time.Now()
-		arvLogger.ForceRecord()
-	}
-
-	log.Fatalf(message)
 }
