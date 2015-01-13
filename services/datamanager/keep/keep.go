@@ -13,8 +13,8 @@ import (
 	"git.curoverse.com/arvados.git/sdk/go/manifest"
 	"git.curoverse.com/arvados.git/sdk/go/util"
 	"git.curoverse.com/arvados.git/services/datamanager/loggerutil"
-	"log"
 	"io/ioutil"
+	"log"
 	"net/http"
 	"strconv"
 	"strings"
@@ -23,21 +23,21 @@ import (
 
 type ServerAddress struct {
 	Host string `json:"service_host"`
-	Port int `json:"service_port"`
+	Port int    `json:"service_port"`
 }
 
 // Info about a particular block returned by the server
 type BlockInfo struct {
-	Digest     blockdigest.BlockDigest
-	Size       int
-	Mtime      int  // TODO(misha): Replace this with a timestamp.
+	Digest blockdigest.BlockDigest
+	Size   int
+	Mtime  int // TODO(misha): Replace this with a timestamp.
 }
 
 // Info about a specified block given by a server
 type BlockServerInfo struct {
 	ServerIndex int
 	Size        int
-	Mtime       int  // TODO(misha): Replace this with a timestamp.
+	Mtime       int // TODO(misha): Replace this with a timestamp.
 }
 
 type ServerContents struct {
@@ -45,28 +45,28 @@ type ServerContents struct {
 }
 
 type ServerResponse struct {
-	Address ServerAddress
+	Address  ServerAddress
 	Contents ServerContents
 }
 
 type ReadServers struct {
-	ReadAllServers            bool
-	KeepServerIndexToAddress  []ServerAddress
-	KeepServerAddressToIndex  map[ServerAddress]int
-	ServerToContents          map[ServerAddress]ServerContents
-	BlockToServers            map[blockdigest.BlockDigest][]BlockServerInfo
-	BlockReplicationCounts    map[int]int
+	ReadAllServers           bool
+	KeepServerIndexToAddress []ServerAddress
+	KeepServerAddressToIndex map[ServerAddress]int
+	ServerToContents         map[ServerAddress]ServerContents
+	BlockToServers           map[blockdigest.BlockDigest][]BlockServerInfo
+	BlockReplicationCounts   map[int]int
 }
 
 type GetKeepServersParams struct {
 	Client arvadosclient.ArvadosClient
 	Logger *logger.Logger
-	Limit int
+	Limit  int
 }
 
 type KeepServiceList struct {
-	ItemsAvailable int `json:"items_available"`
-	KeepServers []ServerAddress `json:"items"`
+	ItemsAvailable int             `json:"items_available"`
+	KeepServers    []ServerAddress `json:"items"`
 }
 
 // Methods to implement util.SdkListResponse Interface
@@ -81,20 +81,20 @@ func (k KeepServiceList) NumItemsContained() (numContained int, err error) {
 var (
 	// Don't access the token directly, use getDataManagerToken() to
 	// make sure it's been read.
-	dataManagerToken                string
-	dataManagerTokenFile            string
-	dataManagerTokenFileReadOnce    sync.Once
+	dataManagerToken             string
+	dataManagerTokenFile         string
+	dataManagerTokenFileReadOnce sync.Once
 )
 
 func init() {
-	flag.StringVar(&dataManagerTokenFile, 
+	flag.StringVar(&dataManagerTokenFile,
 		"data-manager-token-file",
 		"",
 		"File with the API token we should use to contact keep servers.")
 }
 
-func getDataManagerToken(arvLogger *logger.Logger) (string) {
-	readDataManagerToken := func () {
+func getDataManagerToken(arvLogger *logger.Logger) string {
+	readDataManagerToken := func() {
 		if dataManagerTokenFile == "" {
 			flag.Usage()
 			loggerutil.FatalWithMessage(arvLogger,
@@ -151,7 +151,7 @@ func GetKeepServers(params GetKeepServersParams) (results ReadServers) {
 		results.ReadAllServers, numReceived, numAvailable =
 			util.ContainsAllAvailableItems(sdkResponse)
 
-		if (!results.ReadAllServers) {
+		if !results.ReadAllServers {
 			log.Printf("ERROR: Did not receive all keep server addresses.")
 		}
 		log.Printf("Received %d of %d available keep server addresses.",
@@ -160,7 +160,7 @@ func GetKeepServers(params GetKeepServersParams) (results ReadServers) {
 	}
 
 	if params.Logger != nil {
-		properties,_ := params.Logger.Edit()
+		properties, _ := params.Logger.Edit()
 		keepInfo := make(map[string]interface{})
 
 		keepInfo["num_keep_servers_available"] = sdkResponse.ItemsAvailable
@@ -196,8 +196,8 @@ func GetKeepServers(params GetKeepServersParams) (results ReadServers) {
 
 	// Read all the responses
 	for i := range sdkResponse.KeepServers {
-		_ = i  // Here to prevent go from complaining.
-		response := <- responseChan
+		_ = i // Here to prevent go from complaining.
+		response := <-responseChan
 		log.Printf("Received channel response from %v containing %d files",
 			response.Address,
 			len(response.Contents.BlockDigestToInfo))
@@ -207,7 +207,7 @@ func GetKeepServers(params GetKeepServersParams) (results ReadServers) {
 			results.BlockToServers[blockInfo.Digest] = append(
 				results.BlockToServers[blockInfo.Digest],
 				BlockServerInfo{ServerIndex: serverIndex,
-					Size: blockInfo.Size,
+					Size:  blockInfo.Size,
 					Mtime: blockInfo.Mtime})
 		}
 	}
@@ -219,7 +219,7 @@ func GetKeepServers(params GetKeepServersParams) (results ReadServers) {
 func GetServerContents(arvLogger *logger.Logger,
 	keepServer ServerAddress,
 	client http.Client,
-	responseChan chan<- ServerResponse) () {
+	responseChan chan<- ServerResponse) {
 	// Create and send request.
 	url := fmt.Sprintf("http://%s:%d/index", keepServer.Host, keepServer.Port)
 	log.Println("About to fetch keep server contents from " + url)
@@ -273,7 +273,7 @@ func GetServerContents(arvLogger *logger.Logger,
 			// the case of a size tie.
 			if storedBlock.Size < blockInfo.Size ||
 				(storedBlock.Size == blockInfo.Size &&
-				storedBlock.Mtime < blockInfo.Mtime) {
+					storedBlock.Mtime < blockInfo.Mtime) {
 				response.Contents.BlockDigestToInfo[blockInfo.Digest] = blockInfo
 			}
 		} else {
@@ -283,7 +283,7 @@ func GetServerContents(arvLogger *logger.Logger,
 	if err := scanner.Err(); err != nil {
 		log.Fatalf("Received error scanning response from %s: %v", url, err)
 	} else {
-		log.Printf("%s contained %d lines with %d duplicates with " +
+		log.Printf("%s contained %d lines with %d duplicates with "+
 			"%d size disagreements",
 			url,
 			numLines,
@@ -297,7 +297,7 @@ func GetServerContents(arvLogger *logger.Logger,
 func parseBlockInfoFromIndexLine(indexLine string) (blockInfo BlockInfo, err error) {
 	tokens := strings.Fields(indexLine)
 	if len(tokens) != 2 {
-		err = fmt.Errorf("Expected 2 tokens per line but received a " + 
+		err = fmt.Errorf("Expected 2 tokens per line but received a "+
 			"line containing %v instead.",
 			tokens)
 	}
@@ -307,7 +307,7 @@ func parseBlockInfoFromIndexLine(indexLine string) (blockInfo BlockInfo, err err
 		return
 	}
 	if len(locator.Hints) > 0 {
-		err = fmt.Errorf("Block locator in index line should not contain hints " +
+		err = fmt.Errorf("Block locator in index line should not contain hints "+
 			"but it does: %v",
 			locator)
 		return

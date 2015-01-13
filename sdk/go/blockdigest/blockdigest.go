@@ -28,9 +28,13 @@ func FromString(s string) (dig BlockDigest, err error) {
 
 	var d BlockDigest
 	d.h, err = strconv.ParseUint(s[:16], 16, 64)
-	if err != nil {return}
+	if err != nil {
+		return
+	}
 	d.l, err = strconv.ParseUint(s[16:], 16, 64)
-	if err != nil {return}
+	if err != nil {
+		return
+	}
 	dig = d
 	return
 }

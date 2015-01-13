@@ -16,16 +16,16 @@ import (
 )
 
 var (
-	logEventType string
+	logEventType        string
 	logFrequencySeconds int
 )
 
 func init() {
-	flag.StringVar(&logEventType, 
+	flag.StringVar(&logEventType,
 		"log-event-type",
 		"experimental-data-manager-report",
 		"event_type to use in our arvados log entries. Set to empty to turn off logging")
-	flag.IntVar(&logFrequencySeconds, 
+	flag.IntVar(&logFrequencySeconds,
 		"log-frequency-seconds",
 		20,
 		"How frequently we'll write log entries in seconds.")
@@ -48,7 +48,7 @@ func main() {
 	var arvLogger *logger.Logger
 	if logEventType != "" {
 		arvLogger = logger.NewLogger(logger.LoggerParams{Client: arv,
-			EventType: logEventType,
+			EventType:            logEventType,
 			MinimumWriteInterval: time.Second * time.Duration(logFrequencySeconds)})
 	}
 
@@ -73,22 +73,24 @@ func main() {
 
 	collectionChannel := make(chan collection.ReadCollections)
 
-	go func() { collectionChannel <- collection.GetCollectionsAndSummarize(
-		collection.GetCollectionsParams{
-			Client: arv, Logger: arvLogger, BatchSize: 50}) }()
+	go func() {
+		collectionChannel <- collection.GetCollectionsAndSummarize(
+			collection.GetCollectionsParams{
+				Client: arv, Logger: arvLogger, BatchSize: 50})
+	}()
 
 	keepServerInfo := keep.GetKeepServersAndSummarize(
 		keep.GetKeepServersParams{Client: arv, Logger: arvLogger, Limit: 1000})
 
 	readCollections := <-collectionChannel
 
-  // Make compiler happy.
+	// Make compiler happy.
 	_ = readCollections
 	_ = keepServerInfo
 
 	// Log that we're finished
 	if arvLogger != nil {
-		properties,_ := arvLogger.Edit()
+		properties, _ := arvLogger.Edit()
 		properties["run_info"].(map[string]interface{})["end_time"] = time.Now()
 		// Force the recording, since go will not wait for the timer before exiting.
 		arvLogger.ForceRecord()
@@ -96,7 +98,7 @@ func main() {
 }
 
 func LogMemoryAlloc(properties map[string]interface{}, entry map[string]interface{}) {
-	_ = entry  // keep the compiler from complaining
+	_ = entry // keep the compiler from complaining
 	runInfo := properties["run_info"].(map[string]interface{})
 	var memStats runtime.MemStats
 	runtime.ReadMemStats(&memStats)

@@ -21,44 +21,44 @@ var (
 	heap_profile_filename string
 	// globals for debugging
 	totalManifestSize uint64
-	maxManifestSize uint64
+	maxManifestSize   uint64
 )
 
 type Collection struct {
-	Uuid string
-	OwnerUuid string
-	ReplicationLevel int
+	Uuid              string
+	OwnerUuid         string
+	ReplicationLevel  int
 	BlockDigestToSize map[blockdigest.BlockDigest]int
-	TotalSize int
+	TotalSize         int
 }
 
 type ReadCollections struct {
-	ReadAllCollections bool
-	UuidToCollection map[string]Collection
+	ReadAllCollections    bool
+	UuidToCollection      map[string]Collection
 	OwnerToCollectionSize map[string]int
 }
 
 type GetCollectionsParams struct {
-	Client arvadosclient.ArvadosClient
-	Logger *logger.Logger
+	Client    arvadosclient.ArvadosClient
+	Logger    *logger.Logger
 	BatchSize int
 }
 
 type SdkCollectionInfo struct {
-	Uuid           string     `json:"uuid"`
-	OwnerUuid      string     `json:"owner_uuid"`
-	Redundancy     int        `json:"redundancy"`
-	ModifiedAt     time.Time  `json:"modified_at"`
-	ManifestText   string     `json:"manifest_text"`
+	Uuid         string    `json:"uuid"`
+	OwnerUuid    string    `json:"owner_uuid"`
+	Redundancy   int       `json:"redundancy"`
+	ModifiedAt   time.Time `json:"modified_at"`
+	ManifestText string    `json:"manifest_text"`
 }
 
 type SdkCollectionList struct {
-	ItemsAvailable   int                   `json:"items_available"`
-	Items            []SdkCollectionInfo   `json:"items"`
+	ItemsAvailable int                 `json:"items_available"`
+	Items          []SdkCollectionInfo `json:"items"`
 }
 
 func init() {
-	flag.StringVar(&heap_profile_filename, 
+	flag.StringVar(&heap_profile_filename,
 		"heap-profile",
 		"",
 		"File to write the heap profiles to. Leave blank to skip profiling.")
@@ -96,13 +96,12 @@ func WriteHeapProfile() {
 	}
 }
 
-
 func GetCollectionsAndSummarize(params GetCollectionsParams) (results ReadCollections) {
 	results = GetCollections(params)
 	ComputeSizeOfOwnedCollections(&results)
 
 	if params.Logger != nil {
-		properties,_ := params.Logger.Edit()
+		properties, _ := params.Logger.Edit()
 		collectionInfo := properties["collection_info"].(map[string]interface{})
 		collectionInfo["owner_to_collection_size"] = results.OwnerToCollectionSize
 		params.Logger.Record()
@@ -136,8 +135,8 @@ func GetCollections(params GetCollectionsParams) (results ReadCollections) {
 		"modified_at"}
 
 	sdkParams := arvadosclient.Dict{
-		"select": fieldsWanted,
-		"order": []string{"modified_at ASC"},
+		"select":  fieldsWanted,
+		"order":   []string{"modified_at ASC"},
 		"filters": [][]string{[]string{"modified_at", ">=", "1900-01-01T00:00:00Z"}}}
 
 	if params.BatchSize > 0 {
@@ -152,7 +151,7 @@ func GetCollections(params GetCollectionsParams) (results ReadCollections) {
 	results.UuidToCollection = make(map[string]Collection, maxExpectedCollections)
 
 	if params.Logger != nil {
-		properties,_ := params.Logger.Edit()
+		properties, _ := params.Logger.Edit()
 		collectionInfo := make(map[string]interface{})
 		collectionInfo["num_collections_at_start"] = initialNumberOfCollectionsAvailable
 		collectionInfo["batch_size"] = params.BatchSize
@@ -181,23 +180,23 @@ func GetCollections(params GetCollectionsParams) (results ReadCollections) {
 		// Process collection and update our date filter.
 		sdkParams["filters"].([][]string)[0][2] =
 			ProcessCollections(params.Logger,
-			collections.Items,
-			results.UuidToCollection).Format(time.RFC3339)
+				collections.Items,
+				results.UuidToCollection).Format(time.RFC3339)
 
 		// update counts
 		previousTotalCollections = totalCollections
 		totalCollections = len(results.UuidToCollection)
 
-		log.Printf("%d collections read, %d new in last batch, " +
+		log.Printf("%d collections read, %d new in last batch, "+
 			"%s latest modified date, %.0f %d %d avg,max,total manifest size",
 			totalCollections,
-			totalCollections - previousTotalCollections,
+			totalCollections-previousTotalCollections,
 			sdkParams["filters"].([][]string)[0][2],
 			float32(totalManifestSize)/float32(totalCollections),
 			maxManifestSize, totalManifestSize)
 
 		if params.Logger != nil {
-			properties,_ := params.Logger.Edit()
+			properties, _ := params.Logger.Edit()
 			collectionInfo := properties["collection_info"].(map[string]interface{})
 			collectionInfo["collections_read"] = totalCollections
 			collectionInfo["latest_modified_date_seen"] = sdkParams["filters"].([][]string)[0][2]
@@ -216,7 +215,6 @@ func GetCollections(params GetCollectionsParams) (results ReadCollections) {
 	return
 }
 
-
 // StrCopy returns a newly allocated string.
 // It is useful to copy slices so that the garbage collector can reuse
 // the memory of the longer strings they came from.
@@ -224,22 +222,21 @@ func StrCopy(s string) string {
 	return string([]byte(s))
 }
 
-
 func ProcessCollections(arvLogger *logger.Logger,
 	receivedCollections []SdkCollectionInfo,
 	uuidToCollection map[string]Collection) (latestModificationDate time.Time) {
 	for _, sdkCollection := range receivedCollections {
 		collection := Collection{Uuid: StrCopy(sdkCollection.Uuid),
-			OwnerUuid: StrCopy(sdkCollection.OwnerUuid),
-			ReplicationLevel: sdkCollection.Redundancy,
+			OwnerUuid:         StrCopy(sdkCollection.OwnerUuid),
+			ReplicationLevel:  sdkCollection.Redundancy,
 			BlockDigestToSize: make(map[blockdigest.BlockDigest]int)}
 
 		if sdkCollection.ModifiedAt.IsZero() {
 			loggerutil.FatalWithMessage(arvLogger,
 				fmt.Sprintf(
-					"Arvados SDK collection returned with unexpected zero " +
-						"modifcation date. This probably means that either we failed to " +
-						"parse the modification date or the API server has changed how " +
+					"Arvados SDK collection returned with unexpected zero "+
+						"modifcation date. This probably means that either we failed to "+
+						"parse the modification date or the API server has changed how "+
 						"it returns modification dates: %v",
 					collection))
 		}
@@ -256,11 +253,10 @@ func ProcessCollections(arvLogger *logger.Logger,
 		if manifestSize > maxManifestSize {
 			maxManifestSize = manifestSize
 		}
-		
+
 		blockChannel := manifest.BlockIterWithDuplicates()
 		for block := range blockChannel {
-			if stored_size, stored := collection.BlockDigestToSize[block.Digest];
-			stored && stored_size != block.Size {
+			if stored_size, stored := collection.BlockDigestToSize[block.Digest]; stored && stored_size != block.Size {
 				message := fmt.Sprintf(
 					"Collection %s contains multiple sizes (%d and %d) for block %s",
 					collection.Uuid,
@@ -286,8 +282,7 @@ func ProcessCollections(arvLogger *logger.Logger,
 	return
 }
 
-
-func NumberCollectionsAvailable(client arvadosclient.ArvadosClient) (int) {
+func NumberCollectionsAvailable(client arvadosclient.ArvadosClient) int {
 	var collections SdkCollectionList
 	sdkParams := arvadosclient.Dict{"limit": 0}
 	err := client.List("collections", sdkParams, &collections)
@@ -297,7 +292,6 @@ func NumberCollectionsAvailable(client arvadosclient.ArvadosClient) (int) {
 
 	return collections.ItemsAvailable
 }
-
 
 func ComputeSizeOfOwnedCollections(readCollections *ReadCollections) {
 	readCollections.OwnerToCollectionSize = make(map[string]int)

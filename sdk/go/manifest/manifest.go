@@ -21,20 +21,20 @@ type Manifest struct {
 }
 
 type BlockLocator struct {
-	Digest  blockdigest.BlockDigest
-	Size    int
-	Hints   []string
+	Digest blockdigest.BlockDigest
+	Size   int
+	Hints  []string
 }
 
 type ManifestLine struct {
-	StreamName  string
-	Blocks       []string
-	Files        []string
+	StreamName string
+	Blocks     []string
+	Files      []string
 }
 
 func ParseBlockLocator(s string) (b BlockLocator, err error) {
 	if !LocatorPattern.MatchString(s) {
-		err = fmt.Errorf("String \"%s\" does not match BlockLocator pattern " +
+		err = fmt.Errorf("String \"%s\" does not match BlockLocator pattern "+
 			"\"%s\".",
 			s,
 			LocatorPattern.String())
@@ -45,9 +45,13 @@ func ParseBlockLocator(s string) (b BlockLocator, err error) {
 		// We expect both of the following to succeed since LocatorPattern
 		// restricts the strings appropriately.
 		blockDigest, err = blockdigest.FromString(tokens[0])
-		if err != nil {return}
+		if err != nil {
+			return
+		}
 		blockSize, err = strconv.ParseInt(tokens[1], 10, 0)
-		if err != nil {return}
+		if err != nil {
+			return
+		}
 		b.Digest = blockDigest
 		b.Size = int(blockSize)
 		b.Hints = tokens[2:]
@@ -91,7 +95,6 @@ func (m *Manifest) LineIter() <-chan ManifestLine {
 	}(m.Text)
 	return ch
 }
-
 
 // Blocks may appear mulitple times within the same manifest if they
 // are used by multiple files. In that case this Iterator will output

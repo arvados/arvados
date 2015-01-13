@@ -56,7 +56,7 @@ func ContainsAllAvailableItems(response SdkListResponse) (containsAll bool, numC
 	}
 	numAvailable, err = response.NumItemsAvailable()
 	if err != nil {
-		log.Fatalf("Error retrieving number of items available from " +
+		log.Fatalf("Error retrieving number of items available from "+
 			"SDK response: %v",
 			err)
 	}
