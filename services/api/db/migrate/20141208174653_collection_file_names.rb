@@ -5,11 +5,11 @@ class CollectionFileNames < ActiveRecord::Migration
     add_column :collections, :file_names, :string, :limit => 2**13
 
     act_as_system_user do
-      Collection.all.each do |c|
-        if c.manifest_text
-          file_names = Collection.manifest_files c.manifest_text
-          update_sql "UPDATE collections SET file_names = '#{file_names}' WHERE uuid = '#{c.uuid}'"
-        end
+      Collection.find_each(batch_size: 20) do |c|
+        file_names = c.manifest_files
+        update_sql "UPDATE collections
+                    SET file_names = #{ActiveRecord::Base.connection.quote(file_names)}
+                    WHERE uuid = '#{c.uuid}'"
       end
     end
   end

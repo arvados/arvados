@@ -129,23 +129,23 @@ class Collection < ArvadosModel
 
   def set_file_names
     if self.manifest_text_changed?
-      self.file_names = Collection.manifest_files self.manifest_text
+      self.file_names = manifest_files
     end
     true
   end
 
-  def self.manifest_files manifest_text
+  def manifest_files
     names = ''
-    if manifest_text
-      manifest_text.scan(/ \d+:\d+:(\S+)/) do |name|
-        names << name.first.gsub('\040',' ') + "\n" 
+    if self.manifest_text
+      self.manifest_text.scan(/ \d+:\d+:(\S+)/) do |name|
+        names << name.first.gsub('\040',' ') + "\n"
         break if names.length > 2**13
       end
     end
 
-    if manifest_text and names.length < 2**13
-      manifest_text.scan(/^\.\/(\S+)/m) do |stream_name|
-        names << stream_name.first.gsub('\040',' ') + "\n" 
+    if self.manifest_text and names.length < 2**13
+      self.manifest_text.scan(/^\.\/(\S+)/m) do |stream_name|
+        names << stream_name.first.gsub('\040',' ') + "\n"
         break if names.length > 2**13
       end
     end
