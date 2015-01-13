@@ -188,7 +188,17 @@ func GetKeepServers(params GetKeepServersParams) (results ReadServers) {
 	// Send off all the index requests concurrently
 	responseChan := make(chan ServerResponse)
 	for _, keepServer := range sdkResponse.KeepServers {
-		go GetServerContents(params.Logger, keepServer, client, responseChan)
+		// The above keepsServer variable is reused for each iteration, so
+		// it would be shared across all goroutines. This would result in
+		// us querying one server n times instead of n different servers
+		// as we intended. To avoid this we add it as an explicit
+		// parameter which gets copied. This bug and solution is described
+		// in https://golang.org/doc/effective_go.html#channels
+		go func(keepServer ServerAddress) {
+			responseChan <- GetServerContents(params.Logger,
+				keepServer,
+				client)
+		}(keepServer)
 	}
 
 	results.ServerToContents = make(map[ServerAddress]ServerContents)
@@ -218,8 +228,7 @@ func GetKeepServers(params GetKeepServersParams) (results ReadServers) {
 // understand functions.
 func GetServerContents(arvLogger *logger.Logger,
 	keepServer ServerAddress,
-	client http.Client,
-	responseChan chan<- ServerResponse) {
+	client http.Client) (response ServerResponse) {
 	// Create and send request.
 	url := fmt.Sprintf("http://%s:%d/index", keepServer.Host, keepServer.Port)
 	log.Println("About to fetch keep server contents from " + url)
@@ -243,7 +252,6 @@ func GetServerContents(arvLogger *logger.Logger,
 			resp.StatusCode, url, resp.Status)
 	}
 
-	response := ServerResponse{}
 	response.Address = keepServer
 	response.Contents.BlockDigestToInfo =
 		make(map[blockdigest.BlockDigest]BlockInfo)
@@ -291,7 +299,7 @@ func GetServerContents(arvLogger *logger.Logger,
 			numSizeDisagreements)
 	}
 	resp.Body.Close()
-	responseChan <- response
+	return
 }
 
 func parseBlockInfoFromIndexLine(indexLine string) (blockInfo BlockInfo, err error) {
