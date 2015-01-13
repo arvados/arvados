@@ -32,33 +32,33 @@ import (
 )
 
 type LoggerParams struct {
-	Client arvadosclient.ArvadosClient  // The client we use to write log entries
-	EventType string  // The event type to assign to the log entry.
-	MinimumWriteInterval time.Duration  // Wait at least this long between log writes
+	Client               arvadosclient.ArvadosClient // The client we use to write log entries
+	EventType            string                      // The event type to assign to the log entry.
+	MinimumWriteInterval time.Duration               // Wait at least this long between log writes
 }
 
 // A Logger is used to build up a log entry over time and write every
 // version of it.
 type Logger struct {
 	// The Data we write
-	data        map[string]interface{}  // The entire map that we give to the api
-	entry       map[string]interface{}  // Convenience shortcut into data
-	properties  map[string]interface{}  // Convenience shortcut into data
+	data       map[string]interface{} // The entire map that we give to the api
+	entry      map[string]interface{} // Convenience shortcut into data
+	properties map[string]interface{} // Convenience shortcut into data
 
-	lock        sync.Locker   // Synchronizes editing and writing
-	params      LoggerParams  // Parameters we were given
+	lock   sync.Locker  // Synchronizes editing and writing
+	params LoggerParams // Parameters we were given
 
-	lastWrite   time.Time  // The last time we wrote a log entry
-	modified    bool       // Has this data been modified since the last write
+	lastWrite time.Time // The last time we wrote a log entry
+	modified  bool      // Has this data been modified since the last write
 
-	writeHooks  []func(map[string]interface{},map[string]interface{})
+	writeHooks []func(map[string]interface{}, map[string]interface{})
 }
 
 // Create a new logger based on the specified parameters.
 func NewLogger(params LoggerParams) *Logger {
 	// TODO(misha): Add some params checking here.
 	l := &Logger{data: make(map[string]interface{}),
-		lock: &sync.Mutex{},
+		lock:   &sync.Mutex{},
 		params: params}
 	l.entry = make(map[string]interface{})
 	l.data["log"] = l.entry
@@ -70,13 +70,13 @@ func NewLogger(params LoggerParams) *Logger {
 // Get access to the maps you can edit. This will hold a lock until
 // you call Record. Do not edit the maps in any other goroutines or
 // after calling Record.
-// You don't need to edit both maps, 
+// You don't need to edit both maps,
 // properties can take any values you want to give it,
 // entry will only take the fields listed at http://doc.arvados.org/api/schema/Log.html
 // properties is a shortcut for entry["properties"].(map[string]interface{})
 func (l *Logger) Edit() (properties map[string]interface{}, entry map[string]interface{}) {
 	l.lock.Lock()
-	l.modified = true  // We don't actually know the caller will modifiy the data, but we assume they will.
+	l.modified = true // We don't actually know the caller will modifiy the data, but we assume they will.
 
 	return l.properties, l.entry
 }
@@ -120,7 +120,6 @@ func (l *Logger) writeAllowedNow() bool {
 	return l.lastWrite.Add(l.params.MinimumWriteInterval).Before(time.Now())
 }
 
-
 // Actually writes the log entry. This method assumes we're holding the lock.
 func (l *Logger) write() {
 
@@ -143,7 +142,6 @@ func (l *Logger) write() {
 	l.lastWrite = time.Now()
 	l.modified = false
 }
-
 
 func (l *Logger) acquireLockConsiderWriting() {
 	l.lock.Lock()
