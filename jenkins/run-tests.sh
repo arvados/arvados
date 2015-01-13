@@ -327,6 +327,10 @@ fi
 # Needed for run_test_server.py which is used by certain (non-Python) tests.
 pip install PyYAML || fatal "pip install PyYAML failed"
 
+# Needed for python-daemon 2.0.2, which breaks otherwise with
+# "ImportError: No module named docutils.core"
+pip install docutils || fatal "pip install docutils failed"
+
 checkexit() {
     if [[ "$?" != "0" ]]; then
         title "!!!!!! $1 FAILED !!!!!!"
