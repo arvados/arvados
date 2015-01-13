@@ -16,7 +16,6 @@ class ApplicationController < ActionController::Base
   before_filter :accept_uuid_as_id_param, except: ERROR_ACTIONS
   before_filter :check_user_agreements, except: ERROR_ACTIONS
   before_filter :check_user_profile, except: ERROR_ACTIONS
-  before_filter :check_user_notifications, except: ERROR_ACTIONS
   before_filter :load_filters_and_paging_params, except: ERROR_ACTIONS
   before_filter :find_object_by_uuid, except: [:create, :index, :choose] + ERROR_ACTIONS
   theme :select_theme
@@ -664,26 +663,12 @@ class ApplicationController < ActionController::Base
     }
   }
 
-  def check_user_notifications
-    return if params['tab_pane']
-
-    @notification_count = 0
-    @notifications = []
-
-    if current_user.andand.is_active
-      @showallalerts = false
-      @@notification_tests.each do |t|
-        a = t.call(self, current_user)
-        if a
-          @notification_count += 1
-          @notifications.push a
-        end
-      end
-    end
-
-    if @notification_count == 0
-      @notification_count = ''
-    end
+  helper_method :user_notifications
+  def user_notifications
+    return [] unless current_user.andand.is_active
+    @notifications ||= @@notification_tests.map do |t|
+      t.call(self, current_user)
+    end.compact
   end
 
   helper_method :all_projects
