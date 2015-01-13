@@ -39,15 +39,20 @@ setup(name='arvados_fuse',
       license='GNU Affero General Public License, version 3.0',
       packages=['arvados_fuse'],
       scripts=[
-        'bin/arv-mount'
-        ],
+          'bin/arv-mount'
+      ],
       install_requires=[
-        'arvados-python-client>=0.1.20141203150737.277b3c7',
-        'llfuse',
-        'python-daemon'
-        ],
+          'arvados-python-client>=0.1.20141203150737.277b3c7',
+          'llfuse',
+          'python-daemon'
+      ],
+      setup_requires=[
+          'docutils',
+      ],
+      tests_require=[
+          'PyYAML',
+      ],
       test_suite='tests',
-      tests_require=['PyYAML'],
       zip_safe=False,
       cmdclass={'egg_info': TagBuildWithCommit},
       )
