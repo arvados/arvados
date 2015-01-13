@@ -47,7 +47,8 @@ https://arvados.org/projects/arvados/wiki/Running_tests
 Available tests:
 
 apps/workbench
-apps/workbench_performance
+apps/workbench_benchmark
+apps/workbench_profile
 doc
 services/api
 services/crunchstat
@@ -170,6 +171,7 @@ sanity_checks() {
 declare -a failures
 declare -A skip
 declare -A testargs
+skip[apps/workbench_profile]=1
 
 while [[ -n "$1" ]]
 do
@@ -185,7 +187,7 @@ do
             skip[$skipwhat]=1
             ;;
         --only)
-            only="$1"; shift
+            only="$1"; skip[$1]=""; shift
             ;;
         --skip-install)
             skip_install=1
@@ -323,7 +325,11 @@ then
 fi
 
 # Needed for run_test_server.py which is used by certain (non-Python) tests.
-pip install PyYAML
+pip install PyYAML || fatal "pip install PyYAML failed"
+
+# Needed for python-daemon 2.0.2, which breaks otherwise with
+# "ImportError: No module named docutils.core"
+pip install docutils || fatal "pip install docutils failed"
 
 checkexit() {
     if [[ "$?" != "0" ]]; then
@@ -352,16 +358,8 @@ do_test() {
             go test ${testargs[$1]} "git.curoverse.com/arvados.git/$1"
         elif [[ "$2" == "pip" ]]
         then
-           # Other test suites can depend on tests_require
-           # dependencies of this package. For example, keepproxy runs
-           # run_test_server.py, which depends on the yaml package,
-           # which is in sdk/python's tests_require but not
-           # install_requires, and therefore does not get installed by
-           # setuptools until we run "setup.py test" *and* install the
-           # .egg files that setup.py downloads.
            cd "$WORKSPACE/$1" \
-                && python setup.py test ${testargs[$1]} \
-                && (easy_install *.egg || true)
+                && python setup.py test ${testargs[$1]}
         elif [[ "$2" != "" ]]
         then
             "test_$2"
@@ -489,8 +487,8 @@ install_apiserver() {
 
     cd "$WORKSPACE/services/api" \
         && RAILS_ENV=test bundle exec rake db:drop \
-        && RAILS_ENV=test bundle exec rake db:create \
-        && RAILS_ENV=test bundle exec rake db:setup
+        && RAILS_ENV=test bundle exec rake db:setup \
+        && RAILS_ENV=test bundle exec rake db:fixtures:load
 }
 do_install services/api apiserver
 
@@ -544,8 +542,6 @@ test_apiserver() {
 }
 do_test services/api apiserver
 
-# We must test sdk/python before testing services/keepproxy, because
-# keepproxy depends on sdk/python's test dependencies.
 for p in "${pythonstuff[@]}"
 do
     do_test "$p" pip
@@ -562,11 +558,17 @@ test_workbench() {
 }
 do_test apps/workbench workbench
 
-test_workbench_performance() {
+test_workbench_benchmark() {
     cd "$WORKSPACE/apps/workbench" \
-        && RAILS_ENV=test bundle exec rake test:benchmark
+        && RAILS_ENV=test bundle exec rake test:benchmark ${testargs[apps/workbench_benchmark]}
 }
-do_test apps/workbench_performance workbench_performance
+do_test apps/workbench_benchmark workbench_benchmark
+
+test_workbench_profile() {
+    cd "$WORKSPACE/apps/workbench" \
+        && RAILS_ENV=test bundle exec rake test:profile ${testargs[apps/workbench_profile]}
+}
+do_test apps/workbench_profile workbench_profile
 
 report_outcomes
 clear_temp
