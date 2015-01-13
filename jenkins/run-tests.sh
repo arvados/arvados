@@ -325,7 +325,7 @@ then
 fi
 
 # Needed for run_test_server.py which is used by certain (non-Python) tests.
-pip install PyYAML
+pip install PyYAML || fatal "pip install PyYAML failed"
 
 checkexit() {
     if [[ "$?" != "0" ]]; then
