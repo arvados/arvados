@@ -1,7 +1,7 @@
 source 'https://rubygems.org'
 
 gem 'rails', '~> 4.1.0'
-gem 'arvados', '>= 0.1.20141114230720'
+gem 'arvados', '>= 0.1.20150111195521'
 
 gem 'sqlite3'
 
@@ -29,6 +29,8 @@ end
 group :development do
   gem 'byebug'
   gem 'ruby-debug-passenger'
+  gem 'rack-mini-profiler', require: false
+  gem 'flamegraph', require: false
 end
 
 group :test, :diagnostics do
