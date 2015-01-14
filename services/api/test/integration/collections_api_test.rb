@@ -158,7 +158,12 @@ class CollectionsApiTest < ActionDispatch::IntegrationTest
 
   test "create collection, update manifest, and search with filename" do
     # create collection
-    signed_locator = Collection.sign_manifest("0:44:my_test_file.txt\n", api_token(:active))
+    signing_opts = {
+      key: Rails.configuration.blob_signing_key,
+      api_token: api_token(:active),
+    }
+    signed_locator = Blob.sign_locator('bad42fa702ae3ea7d888fef11b46f450+44', signing_opts)
+
     post "/arvados/v1/collections", {
       format: :json,
       collection: "{\"manifest_text\":\". #{signed_locator} 0:44:my_test_file.txt\\n\"}"
@@ -172,7 +177,6 @@ class CollectionsApiTest < ActionDispatch::IntegrationTest
     search_using_filter 'my_test_file.txt', 1
 
     # update the collection's manifest text
-    signed_locator = Collection.sign_manifest("0:44:my_updated_test_file.txt\n", api_token(:active))
     put "/arvados/v1/collections/#{created['uuid']}", {
       format: :json,
       collection: "{\"manifest_text\":\". #{signed_locator} 0:44:my_updated_test_file.txt\\n\"}"
