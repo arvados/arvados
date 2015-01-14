@@ -190,7 +190,7 @@ class CollectionsApiTest < ActionDispatch::IntegrationTest
 
   def search_using_filter search_filter, expected_items
     get '/arvados/v1/collections', {
-      where: { any: ['contains', search_filter] }
+      :filters => [['any', 'ilike', "%#{search_filter}%"]].to_json
     }, auth(:active)
     assert_response :success
     response_items = json_response['items']
