@@ -686,9 +686,9 @@ CREATE TABLE pipeline_instances (
     properties text,
     state character varying(255),
     components_summary text,
-    description character varying(524288),
     started_at timestamp without time zone,
-    finished_at timestamp without time zone
+    finished_at timestamp without time zone,
+    description character varying(524288)
 );
 
 
