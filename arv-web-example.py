@@ -86,6 +86,8 @@ while loop:
                                        "--publish=%i:80" % (port),
                                        "--volume=%s:/mnt:ro" % mountdir,
                                        docker_image])
+        cid = cid.rstrip()
+        logging.info("Container id is %s" % cid)
 
         logging.info("Waiting for events")
         running = True
@@ -111,7 +113,7 @@ while loop:
     finally:
         if cid:
             logging.info("Stopping docker container")
-            cid = subprocess.call(["docker", "stop", cid.rstrip()])
+            cid = subprocess.call(["docker", "stop", cid])
 
         logging.info("Unmounting")
         subprocess.call(["fusermount", "-u", "-z", mountdir])
