@@ -1,6 +1,5 @@
 #!/usr/bin/env python
 
-import collections
 import traceback
 import unittest
 
