@@ -100,6 +100,7 @@ func (l *Logger) Record() {
 		// We haven't written in the allowed interval yet, try to write.
 		l.write()
 	} else {
+		// TODO(misha): Only allow one outstanding write to be scheduled.
 		nextTimeToWrite := l.lastWrite.Add(l.params.MinimumWriteInterval)
 		writeAfter := nextTimeToWrite.Sub(time.Now())
 		time.AfterFunc(writeAfter, l.acquireLockConsiderWriting)
