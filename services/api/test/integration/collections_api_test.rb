@@ -133,57 +133,46 @@ class CollectionsApiTest < ActionDispatch::IntegrationTest
     assert_equal 'a name', json_response['name']
   end
 
-  test "create collection, update description, and search for description" do
-    signing_opts = {
-      key: Rails.configuration.blob_signing_key,
-      api_token: api_token(:active),
-    }
-    signed_locator = Blob.sign_locator('bad42fa702ae1234d999fef11b46f450+44', signing_opts)
-
-    # create collection
-    post "/arvados/v1/collections", {
-      format: :json,
-      collection: "{\"manifest_text\":\". #{signed_locator} 0:44:foo.txt\\n\"}"
-    }, auth(:active)
-    assert_response :success
-    assert_equal '087e2f211aba2881c08fd8d1646522a3+51', json_response['portable_data_hash']
+  test "update description for a collection, and search for that description" do
+    collection = collections(:multilevel_collection_1)
 
     # update collection's description
-    put "/arvados/v1/collections/#{json_response['uuid']}", {
+    put "/arvados/v1/collections/#{collection['uuid']}", {
       format: :json,
       collection: { description: "something specific" }
     }, auth(:active)
     assert_response :success
     assert_equal 'something specific', json_response['description']
-    assert_equal '087e2f211aba2881c08fd8d1646522a3+51', json_response['portable_data_hash']
+
+    # get the collection and verify newly added description
+    get "/arvados/v1/collections/#{collection['uuid']}", {
+      format: :json,
+    }, auth(:active)
+    assert_response 200
+    assert_equal 'something specific', json_response['description']
 
     # search
-    search_using_filter 'specific', 1, '087e2f211aba2881c08fd8d1646522a3+51'
-    search_using_filter 'not specific enough', 0, nil
+    search_using_filter 'specific', 1
+    search_using_filter 'not specific enough', 0
   end
 
   test "create collection, update manifest, and search with filename" do
-    signing_opts = {
-      key: Rails.configuration.blob_signing_key,
-      api_token: api_token(:active),
-    }
-    signed_locator = Blob.sign_locator('bad42fa702ae3ea7d999fef11b46f450+44', signing_opts)
-
     # create collection
+    signed_locator = Collection.sign_manifest("0:44:my_test_file.txt\n", api_token(:active))
     post "/arvados/v1/collections", {
       format: :json,
       collection: "{\"manifest_text\":\". #{signed_locator} 0:44:my_test_file.txt\\n\"}"
     }, auth(:active)
     assert_response :success
     assert_equal true, json_response['manifest_text'].include?('my_test_file.txt')
-    assert_equal '0f99f4087beb13dec46d36db9fa6cebf+60', json_response['portable_data_hash']
 
     created = json_response
 
     # search using the filename
-    search_using_filter 'my_test_file.txt', 1, '0f99f4087beb13dec46d36db9fa6cebf+60'
+    search_using_filter 'my_test_file.txt', 1
 
     # update the collection's manifest text
+    signed_locator = Collection.sign_manifest("0:44:my_updated_test_file.txt\n", api_token(:active))
     put "/arvados/v1/collections/#{created['uuid']}", {
       format: :json,
       collection: "{\"manifest_text\":\". #{signed_locator} 0:44:my_updated_test_file.txt\\n\"}"
@@ -194,12 +183,12 @@ class CollectionsApiTest < ActionDispatch::IntegrationTest
     assert_equal false, json_response['manifest_text'].include?('my_test_file.txt')
 
     # search using the new filename
-    search_using_filter 'my_updated_test_file.txt', 1, '17d7d7e6f09ae17e3b580143586a1a3f+68'
-    search_using_filter 'my_test_file.txt', 0, nil
-    search_using_filter 'there_is_no_such_file.txt', 0, nil
+    search_using_filter 'my_updated_test_file.txt', 1
+    search_using_filter 'my_test_file.txt', 0
+    search_using_filter 'there_is_no_such_file.txt', 0
   end
 
-  def search_using_filter search_filter, expected_items, pdh
+  def search_using_filter search_filter, expected_items
     get '/arvados/v1/collections', {
       where: { any: ['contains', search_filter] }
     }, auth(:active)
@@ -213,7 +202,6 @@ class CollectionsApiTest < ActionDispatch::IntegrationTest
       assert_equal expected_items, response_items.size
       first_item = response_items.first
       assert_not_nil first_item
-      assert_equal pdh, first_item['portable_data_hash']
     end
   end
 end
