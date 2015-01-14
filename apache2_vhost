@@ -1,0 +1,21 @@
+<VirtualHost *:80>
+
+  ServerName arv-web
+  ServerAdmin sysadmin@curoverse.com
+
+  # Index file and Document Root (where the public files are located)
+  DirectoryIndex index.html
+  DocumentRoot /mnt
+
+  LogLevel warn
+  ErrorLog  ${APACHE_LOG_DIR}/error.log
+  CustomLog ${APACHE_LOG_DIR}/access.log combined
+
+  <Directory /mnt>
+    Options Indexes FollowSymLinks MultiViews IncludesNoExec
+    AllowOverride None
+    Order allow,deny
+    allow from all
+  </Directory>
+
+</VirtualHost>

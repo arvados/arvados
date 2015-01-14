@@ -1,6 +1,6 @@
 import arvados
 import subprocess
-from arvados_fuse import Operations, SafeApi, MagicDirectory
+from arvados_fuse import Operations, SafeApi, CollectionDirectory
 import tempfile
 import os
 import llfuse
@@ -42,21 +42,25 @@ def on_message(ev):
     global project
     global evqueue
 
-    old_attr = None
-    if 'old_attributes' in ev['properties'] and ev['properties']['old_attributes']:
-        old_attr = ev['properties']['old_attributes']
-    if project not in (ev['properties']['new_attributes']['owner_uuid'],
-                            old_attr['owner_uuid'] if old_attr else None):
-        return
+    import pprint
+    pprint.pprint(ev)
 
-    et = ev['event_type']
-    if ev['event_type'] == 'update' and ev['properties']['new_attributes']['owner_uuid'] != ev['properties']['old_attributes']['owner_uuid']:
-        if args.project == ev['properties']['new_attributes']['owner_uuid']:
-            et = 'add'
-        else:
-            et = 'remove'
+    if 'event_type' in ev:
+        old_attr = None
+        if 'old_attributes' in ev['properties'] and ev['properties']['old_attributes']:
+            old_attr = ev['properties']['old_attributes']
+        if project not in (ev['properties']['new_attributes']['owner_uuid'],
+                                old_attr['owner_uuid'] if old_attr else None):
+            return
 
-    evqueue.put((project, et, ev['object_uuid']))
+        et = ev['event_type']
+        if ev['event_type'] == 'update' and ev['properties']['new_attributes']['owner_uuid'] != ev['properties']['old_attributes']['owner_uuid']:
+            if args.project == ev['properties']['new_attributes']['owner_uuid']:
+                et = 'add'
+            else:
+                et = 'remove'
+
+        evqueue.put((project, et, ev['object_uuid']))
 
 filters = [['owner_uuid', '=', project],
            ['uuid', 'is_a', 'arvados#collection']]
