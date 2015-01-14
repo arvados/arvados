@@ -93,6 +93,10 @@ func init() {
 		"File with the API token we should use to contact keep servers.")
 }
 
+func (s ServerAddress) String() (string) {
+	return fmt.Sprintf("%s:%d", s.Host, s.Port)
+}
+
 func getDataManagerToken(arvLogger *logger.Logger) string {
 	readDataManagerToken := func() {
 		if dataManagerTokenFile == "" {
@@ -224,11 +228,21 @@ func GetKeepServers(params GetKeepServersParams) (results ReadServers) {
 	return
 }
 
-// TODO(misha): Break this function apart into smaller, easier to
-// understand functions.
 func GetServerContents(arvLogger *logger.Logger,
 	keepServer ServerAddress,
 	client http.Client) (response ServerResponse) {
+
+	req := CreateIndexRequest(arvLogger, keepServer)
+	resp, err := client.Do(req)
+	if err != nil {
+		log.Fatalf("Error fetching %s: %v", req.URL.String(), err)
+	}
+
+	return ReadServerResponse(arvLogger, keepServer, resp)
+}
+
+func CreateIndexRequest(arvLogger *logger.Logger,
+	keepServer ServerAddress) (req *http.Request) {
 	// Create and send request.
 	url := fmt.Sprintf("http://%s:%d/index", keepServer.Host, keepServer.Port)
 	log.Println("About to fetch keep server contents from " + url)
@@ -240,16 +254,16 @@ func GetServerContents(arvLogger *logger.Logger,
 
 	req.Header.Add("Authorization",
 		fmt.Sprintf("OAuth2 %s", getDataManagerToken(arvLogger)))
+	return
+}
 
-	resp, err := client.Do(req)
-	if err != nil {
-		log.Fatalf("Error fetching %s: %v", url, err)
-	}
+func ReadServerResponse(arvLogger *logger.Logger,
+	keepServer ServerAddress,
+	resp *http.Response) (response ServerResponse) {
 
-	// Process response.
 	if resp.StatusCode != 200 {
-		log.Fatalf("Received error code %d in response to request for %s: %s",
-			resp.StatusCode, url, resp.Status)
+		log.Fatalf("Received error code %d in response to request for %s index: %s",
+			resp.StatusCode, keepServer.String(), resp.Status)
 	}
 
 	response.Address = keepServer
@@ -262,7 +276,7 @@ func GetServerContents(arvLogger *logger.Logger,
 		blockInfo, err := parseBlockInfoFromIndexLine(scanner.Text())
 		if err != nil {
 			log.Fatalf("Error parsing BlockInfo from index line received from %s: %v",
-				url,
+				keepServer.String(),
 				err)
 		}
 
@@ -273,7 +287,7 @@ func GetServerContents(arvLogger *logger.Logger,
 				numSizeDisagreements += 1
 				// TODO(misha): Consider failing here.
 				log.Printf("Saw different sizes for the same block on %s: %v %v",
-					url,
+					keepServer.String(),
 					storedBlock,
 					blockInfo)
 			}
@@ -289,11 +303,13 @@ func GetServerContents(arvLogger *logger.Logger,
 		}
 	}
 	if err := scanner.Err(); err != nil {
-		log.Fatalf("Received error scanning response from %s: %v", url, err)
+		log.Fatalf("Received error scanning index response from %s: %v",
+			keepServer.String(),
+			err)
 	} else {
-		log.Printf("%s contained %d lines with %d duplicates with "+
+		log.Printf("%s index contained %d lines with %d duplicates with "+
 			"%d size disagreements",
-			url,
+			keepServer.String(),
 			numLines,
 			numDuplicates,
 			numSizeDisagreements)
