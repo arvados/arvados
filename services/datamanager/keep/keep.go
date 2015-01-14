@@ -93,7 +93,7 @@ func init() {
 		"File with the API token we should use to contact keep servers.")
 }
 
-func (s ServerAddress) String() (string) {
+func (s ServerAddress) String() string {
 	return fmt.Sprintf("%s:%d", s.Host, s.Port)
 }
 
