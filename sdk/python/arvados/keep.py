@@ -643,25 +643,22 @@ class KeepClient(object):
         if loop.success():
             return blob
 
-        # No servers fulfilled the request.  Count how many responded
-        # "not found;" if the ratio is high enough (currently 75%), report
-        # Not Found; otherwise a generic error.
-        # Q: Including 403 is necessary for the Keep tests to continue
-        # passing, but maybe they should expect KeepReadError instead?
-        not_founds = sum(1 for ks in roots_map.values()
-                         if ks.last_status() in set([403, 404, 410]))
         try:
             all_roots = local_roots + hint_roots
         except NameError:
             # We never successfully fetched local_roots.
             all_roots = hint_roots
+        # Q: Including 403 is necessary for the Keep tests to continue
+        # passing, but maybe they should expect KeepReadError instead?
+        not_founds = sum(1 for key in all_roots
+                         if roots_map[key].last_status() in {403, 404, 410})
         service_errors = ((key, roots_map[key].last_result)
                           for key in all_roots)
         if not roots_map:
             raise arvados.errors.KeepReadError(
                 "failed to read {}: no Keep services available ({})".format(
                     loc_s, loop.last_result()))
-        elif ((float(not_founds) / len(roots_map)) >= .75):
+        elif not_founds == len(all_roots):
             raise arvados.errors.NotFoundError(
                 "{} not found".format(loc_s), service_errors)
         else:
