@@ -19,6 +19,7 @@ import (
 	"strconv"
 	"strings"
 	"sync"
+	"time"
 )
 
 type ServerAddress struct {
@@ -235,7 +236,8 @@ func GetServerContents(arvLogger *logger.Logger,
 	req := CreateIndexRequest(arvLogger, keepServer)
 	resp, err := client.Do(req)
 	if err != nil {
-		log.Fatalf("Error fetching %s: %v", req.URL.String(), err)
+		loggerutil.FatalWithMessage(arvLogger,
+			fmt.Sprintf("Error fetching %s: %v", req.URL.String(), err))
 	}
 
 	return ReadServerResponse(arvLogger, keepServer, resp)
@@ -243,13 +245,24 @@ func GetServerContents(arvLogger *logger.Logger,
 
 func CreateIndexRequest(arvLogger *logger.Logger,
 	keepServer ServerAddress) (req *http.Request) {
-	// Create and send request.
 	url := fmt.Sprintf("http://%s:%d/index", keepServer.Host, keepServer.Port)
 	log.Println("About to fetch keep server contents from " + url)
 
+	if arvLogger != nil {
+		properties, _ := arvLogger.Edit()
+		keepInfo := properties["keep_info"].(map[string]interface{})
+		serverInfo := make(map[string]interface{})
+		serverInfo["request_sent"] = time.Now()
+
+		keepInfo[keepServer.String()] = serverInfo
+
+		arvLogger.Record()
+	}
+
 	req, err := http.NewRequest("GET", url, nil)
 	if err != nil {
-		log.Fatalf("Error building http request for %s: %v", url, err)
+		loggerutil.FatalWithMessage(arvLogger,
+			fmt.Sprintf("Error building http request for %s: %v", url, err))
 	}
 
 	req.Header.Add("Authorization",
@@ -262,8 +275,20 @@ func ReadServerResponse(arvLogger *logger.Logger,
 	resp *http.Response) (response ServerResponse) {
 
 	if resp.StatusCode != 200 {
-		log.Fatalf("Received error code %d in response to request for %s index: %s",
-			resp.StatusCode, keepServer.String(), resp.Status)
+		loggerutil.FatalWithMessage(arvLogger,
+			fmt.Sprintf("Received error code %d in response to request "+
+				"for %s index: %s",
+				resp.StatusCode, keepServer.String(), resp.Status))
+	}
+
+	if arvLogger != nil {
+		properties, _ := arvLogger.Edit()
+		keepInfo := properties["keep_info"].(map[string]interface{})
+		serverInfo := keepInfo[keepServer.String()].(map[string]interface{})
+
+		serverInfo["response_received"] = time.Now()
+
+		arvLogger.Record()
 	}
 
 	response.Address = keepServer
@@ -275,9 +300,11 @@ func ReadServerResponse(arvLogger *logger.Logger,
 		numLines++
 		blockInfo, err := parseBlockInfoFromIndexLine(scanner.Text())
 		if err != nil {
-			log.Fatalf("Error parsing BlockInfo from index line received from %s: %v",
-				keepServer.String(),
-				err)
+			loggerutil.FatalWithMessage(arvLogger,
+				fmt.Sprintf("Error parsing BlockInfo from index line "+
+					"received from %s: %v",
+					keepServer.String(),
+					err))
 		}
 
 		if storedBlock, ok := response.Contents.BlockDigestToInfo[blockInfo.Digest]; ok {
@@ -286,10 +313,24 @@ func ReadServerResponse(arvLogger *logger.Logger,
 			if storedBlock.Size != blockInfo.Size {
 				numSizeDisagreements += 1
 				// TODO(misha): Consider failing here.
-				log.Printf("Saw different sizes for the same block on %s: %v %v",
+				message := fmt.Sprintf("Saw different sizes for the same block "+
+					"on %s: %v %v",
 					keepServer.String(),
 					storedBlock,
 					blockInfo)
+				log.Println(message)
+				if arvLogger != nil {
+					properties, _ := arvLogger.Edit()
+					keepInfo := properties["keep_info"].(map[string]interface{})
+					serverInfo := keepInfo[keepServer.String()].(map[string]interface{})
+					var error_list []string
+					read_error_list, has_list := serverInfo["error_list"]
+					if has_list {
+						error_list = read_error_list.([]string)
+					} // If we didn't have the list, error_list is already an empty list
+					serverInfo["error_list"] = append(error_list, message)
+					arvLogger.Record()
+				}
 			}
 			// Keep the block that is bigger, or the block that's newer in
 			// the case of a size tie.
@@ -303,9 +344,10 @@ func ReadServerResponse(arvLogger *logger.Logger,
 		}
 	}
 	if err := scanner.Err(); err != nil {
-		log.Fatalf("Received error scanning index response from %s: %v",
-			keepServer.String(),
-			err)
+		loggerutil.FatalWithMessage(arvLogger,
+			fmt.Sprintf("Received error scanning index response from %s: %v",
+				keepServer.String(),
+				err))
 	} else {
 		log.Printf("%s index contained %d lines with %d duplicates with "+
 			"%d size disagreements",
@@ -313,6 +355,19 @@ func ReadServerResponse(arvLogger *logger.Logger,
 			numLines,
 			numDuplicates,
 			numSizeDisagreements)
+
+		if arvLogger != nil {
+			properties, _ := arvLogger.Edit()
+			keepInfo := properties["keep_info"].(map[string]interface{})
+			serverInfo := keepInfo[keepServer.String()].(map[string]interface{})
+
+			serverInfo["processing_finished"] = time.Now()
+			serverInfo["lines_received"] = numLines
+			serverInfo["dupicates_seen"] = numDuplicates
+			serverInfo["size_disagreements_seen"] = numSizeDisagreements
+
+			arvLogger.Record()
+		}
 	}
 	resp.Body.Close()
 	return
