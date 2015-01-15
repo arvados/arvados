@@ -142,7 +142,7 @@ module Keep
     end
 
     def each_file_spec
-      return to_enum(__method__, speclist) unless block_given?
+      return to_enum(__method__) unless block_given?
       @text.each_line do |line|
         stream_name = nil
         in_file_tokens = false
