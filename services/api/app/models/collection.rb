@@ -139,18 +139,18 @@ class Collection < ArvadosModel
     if self.manifest_text
       self.manifest_text.scan(/ \d+:\d+:(\S+)/) do |name|
         names << name.first.gsub('\040',' ') + "\n"
-        break if names.length > 2**13
+        break if names.length > 2**12
       end
     end
 
-    if self.manifest_text and names.length < 2**13
+    if self.manifest_text and names.length < 2**12
       self.manifest_text.scan(/^\.\/(\S+)/m) do |stream_name|
         names << stream_name.first.gsub('\040',' ') + "\n"
-        break if names.length > 2**13
+        break if names.length > 2**12
       end
     end
 
-    names[0,2**13]
+    names[0,2**12]
   end
 
   def check_encoding
