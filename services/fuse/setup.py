@@ -44,7 +44,7 @@ setup(name='arvados_fuse',
       install_requires=[
         'arvados-python-client>=0.1.20141203150737.277b3c7',
         'llfuse',
-        'python-daemon'
+        'python-daemon<2',
         ],
       test_suite='tests',
       tests_require=['PyYAML'],
