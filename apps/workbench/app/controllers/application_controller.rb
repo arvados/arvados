@@ -45,6 +45,9 @@ class ApplicationController < ActionController::Base
   end
 
   def render_error(opts={})
+    # Helpers can rely on the presence of @errors to know they're
+    # being used in an error page.
+    @errors ||= []
     opts[:status] ||= 500
     respond_to do |f|
       # json must come before html here, so it gets used as the
@@ -665,7 +668,7 @@ class ApplicationController < ActionController::Base
 
   helper_method :user_notifications
   def user_notifications
-    return [] unless current_user.andand.is_active
+    return [] if @errors or not current_user.andand.is_active
     @notifications ||= @@notification_tests.map do |t|
       t.call(self, current_user)
     end.compact
