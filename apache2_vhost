@@ -13,10 +13,9 @@
   CustomLog ${APACHE_LOG_DIR}/access.log combined
 
   <Directory /mnt/public>
-    Options Indexes IncludesNoExec ExecCGI
-    AddHandler cgi-script .cgi
+    Options Indexes IncludesNoExec
     Options -MultiViews
-    AllowOverride None
+    AllowOverride All
     Order allow,deny
     Allow from all
   </Directory>

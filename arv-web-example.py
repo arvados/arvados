@@ -31,7 +31,7 @@ def run_fuse_mount(collection):
 
     mountdir = tempfile.mkdtemp()
 
-    operations = Operations(os.getuid(), os.getgid(), "utf-8")
+    operations = Operations(os.getuid(), os.getgid(), "utf-8", True)
     operations.inodes.add_entry(CollectionDirectory(llfuse.ROOT_INODE, operations.inodes, api, 2, collection))
 
     # Initialize the fuse connection
