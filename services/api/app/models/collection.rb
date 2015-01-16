@@ -10,6 +10,7 @@ class Collection < ArvadosModel
   before_validation :strip_manifest_text
   before_validation :set_portable_data_hash
   validate :ensure_hash_matches_manifest_text
+  before_save :set_file_names
 
   # Query only undeleted collections by default.
   default_scope where("expires_at IS NULL or expires_at > CURRENT_TIMESTAMP")
@@ -124,6 +125,32 @@ class Collection < ArvadosModel
                  "does not match computed hash #{expect_pdh}")
       return false
     end
+  end
+
+  def set_file_names
+    if self.manifest_text_changed?
+      self.file_names = manifest_files
+    end
+    true
+  end
+
+  def manifest_files
+    names = ''
+    if self.manifest_text
+      self.manifest_text.scan(/ \d+:\d+:(\S+)/) do |name|
+        names << name.first.gsub('\040',' ') + "\n"
+        break if names.length > 2**12
+      end
+    end
+
+    if self.manifest_text and names.length < 2**12
+      self.manifest_text.scan(/^\.\/(\S+)/m) do |stream_name|
+        names << stream_name.first.gsub('\040',' ') + "\n"
+        break if names.length > 2**12
+      end
+    end
+
+    names[0,2**12]
   end
 
   def check_encoding
@@ -267,6 +294,10 @@ class Collection < ArvadosModel
 
   def self.for_latest_docker_image(search_term, search_tag=nil, readers=nil)
     find_all_for_docker_image(search_term, search_tag, readers).first
+  end
+
+  def self.searchable_columns operator
+    super - ["manifest_text"]
   end
 
   protected

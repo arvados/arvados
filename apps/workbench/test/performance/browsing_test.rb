@@ -13,10 +13,7 @@ class BrowsingTest < WorkbenchPerformanceTest
                            :formats => [:flat] }
 
   setup do
-    headless = Headless.new
-    headless.start
-    Capybara.current_driver = :selenium
-    Capybara.current_session.driver.browser.manage.window.resize_to(1024, 768)
+    need_javascript
   end
 
   test "home page" do

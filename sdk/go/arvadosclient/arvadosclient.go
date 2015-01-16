@@ -12,15 +12,20 @@ import (
 	"net/http"
 	"net/url"
 	"os"
+	"strings"
 )
 
 // Errors
 var MissingArvadosApiHost = errors.New("Missing required environment variable ARVADOS_API_HOST")
 var MissingArvadosApiToken = errors.New("Missing required environment variable ARVADOS_API_TOKEN")
-var ArvadosErrorForbidden = errors.New("Forbidden")
-var ArvadosErrorNotFound = errors.New("Not found")
-var ArvadosErrorBadRequest = errors.New("Bad request")
-var ArvadosErrorServerError = errors.New("Server error")
+
+type ArvadosApiError struct {
+	error
+	HttpStatusCode int
+	HttpStatus string
+}
+
+func (e ArvadosApiError) Error() string { return e.error.Error() }
 
 // Helper type so we don't have to write out 'map[string]interface{}' every time.
 type Dict map[string]interface{}
@@ -137,23 +142,35 @@ func (this ArvadosClient) CallRaw(method string, resource string, uuid string, a
 		return nil, err
 	}
 
-	switch resp.StatusCode {
-	case http.StatusOK:
+	if resp.StatusCode == http.StatusOK {
 		return resp.Body, nil
-	case http.StatusForbidden:
-		resp.Body.Close()
-		return nil, ArvadosErrorForbidden
-	case http.StatusNotFound:
-		resp.Body.Close()
-		return nil, ArvadosErrorNotFound
-	default:
-		resp.Body.Close()
-		if resp.StatusCode >= 400 && resp.StatusCode <= 499 {
-			return nil, ArvadosErrorBadRequest
-		} else {
-			return nil, ArvadosErrorServerError
+	}
+
+	defer resp.Body.Close()
+	errorText := fmt.Sprintf("API response: %s", resp.Status)
+
+	// If the response body has {"errors":["reason1","reason2"]}
+	// then return those reasons.
+	var errInfo = Dict{}
+	if err := json.NewDecoder(resp.Body).Decode(&errInfo); err == nil {
+		if errorList, ok := errInfo["errors"]; ok {
+			var errorStrings []string
+			if errArray, ok := errorList.([]interface{}); ok {
+				for _, errItem := range errArray {
+					// We expect an array of strings here.
+					// Non-strings will be passed along
+					// JSON-encoded.
+					if s, ok := errItem.(string); ok {
+						errorStrings = append(errorStrings, s)
+					} else if j, err := json.Marshal(errItem); err == nil {
+						errorStrings = append(errorStrings, string(j))
+					}
+				}
+				errorText = strings.Join(errorStrings, "; ")
+			}
 		}
 	}
+	return nil, ArvadosApiError{errors.New(errorText), resp.StatusCode, resp.Status}
 }
 
 // Access to a resource.

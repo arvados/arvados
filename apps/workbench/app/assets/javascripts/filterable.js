@@ -83,6 +83,7 @@ $(document).
         });
     }).
     on('paste keyup input', 'input[type=text].filterable-control', function(e) {
+        var regexp;
         if (this != e.target) return;
         var $target = $($(this).attr('data-filterable-target'));
         var currentquery = $target.data('filterable-query');
@@ -113,9 +114,20 @@ $(document).
         } else {
             // Target does not have infinite-scroll capability. Just
             // filter the rows in the browser using a RegExp.
+            regexp = undefined;
+            try {
+                regexp = new RegExp($(this).val(), 'i');
+            } catch(e) {
+                if (e instanceof SyntaxError) {
+                    // Invalid/partial regexp. See 'has-error' below.
+                } else {
+                    throw e;
+                }
+            }
             $target.
+                toggleClass('has-error', regexp === undefined).
                 addClass('filterable-container').
-                data('q', new RegExp($(this).val(), 'i')).
+                data('q', regexp).
                 trigger('refresh');
         }
     }).on('refresh', '.filterable-container', function() {
