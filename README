@@ -1,6 +1,6 @@
-Sample Arvados web service.
+Run a web service from Arvados.
 
-usage: arv-web-example.py [-h] --project PROJECT [--port PORT] --image IMAGE
+usage: arv-web.py [-h] --project PROJECT [--port PORT] --image IMAGE
 
 optional arguments:
   -h, --help         show this help message and exit
@@ -19,12 +19,10 @@ unmount the old collection, mount the new most recently modified collection,
 and restart the Docker container with the new mount.
 
 The supplied Dockerfile builds a Docker image that runs Apache with /mnt as the
-DocumentRoot.  This allows you to browse the mounted collection with Apache's
-default index page.
+DocumentRoot.  It is configured to run web applications based on Python WSGI,
+Ruby Rack, CGI, to serve static HTML, or simply browse the contents of the
+/public subdirectory of the collection using Apache's default index pages.
 
+To build the Docker image:
 
-Suggestions for extension:
-
-Configure the container to use mod_passenger (for an example,
-arvados/docker/passenger/Dockerfile) and include both your web app and your
-data in your collection.
+$ docker build -t arvados/arv-web .
