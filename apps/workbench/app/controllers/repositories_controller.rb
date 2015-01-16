@@ -7,7 +7,9 @@ class RepositoriesController < ApplicationController
 
   def show_pane_list
     if @user_is_manager
-      super | %w(Sharing)
+      panes = super | %w(Sharing)
+      panes.insert(panes.length-1, panes.delete_at(panes.index('Advanced'))) if panes.index('Advanced')
+      panes
     else
       super
     end

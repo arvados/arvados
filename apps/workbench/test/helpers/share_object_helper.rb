@@ -1,14 +1,8 @@
 module ShareObjectHelper
-  def show_repository_using(auth_key, repo_key='arvados')
-    repo_uuid = api_fixture('repositories')[repo_key]['uuid']
-    visit(page_with_token(auth_key, "/repositories/#{repo_uuid}"))
-    assert(page.has_text?("push_url"), "not on expected repository page")
-  end
-
-  def show_project_using(auth_key, proj_key='aproject')
-    project_uuid = api_fixture('groups')[proj_key]['uuid']
-    visit(page_with_token(auth_key, "/projects/#{project_uuid}"))
-    assert(page.has_text?("A Project"), "not on expected project page")
+  def show_object_using(auth_key, type, key, expect)
+    obj_uuid = api_fixture(type)[key]['uuid']
+    visit(page_with_token(auth_key, "/#{type}/#{obj_uuid}"))
+    assert(page.has_text?(expect), "expected string not found: #{expect}")
   end
 
   def share_rows

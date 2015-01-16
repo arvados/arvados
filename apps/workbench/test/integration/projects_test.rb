@@ -173,7 +173,7 @@ class ProjectsTest < ActionDispatch::IntegrationTest
   end
 
   test "project viewer can't see project sharing tab" do
-    show_project_using("project_viewer")
+    show_object_using('project_viewer', 'groups', 'aproject', 'A Project')
     assert(page.has_no_link?("Sharing"),
            "read-only project user sees sharing tab")
   end
@@ -182,7 +182,7 @@ class ProjectsTest < ActionDispatch::IntegrationTest
     add_user = api_fixture('users')['future_project_user']
     new_name = ["first_name", "last_name"].map { |k| add_user[k] }.join(" ")
 
-    show_project_using("active")
+    show_object_using('active', 'groups', 'aproject', 'A Project')
     click_on "Sharing"
     add_share_and_check("users", new_name, add_user)
     modify_share_and_check(new_name)
@@ -191,14 +191,14 @@ class ProjectsTest < ActionDispatch::IntegrationTest
   test "project owner can manage sharing for another group" do
     new_name = api_fixture('groups')['future_project_viewing_group']['name']
 
-    show_project_using("active")
+    show_object_using('active', 'groups', 'aproject', 'A Project')
     click_on "Sharing"
     add_share_and_check("groups", new_name)
     modify_share_and_check(new_name)
   end
 
   test "'share with group' listing does not offer projects" do
-    show_project_using("active")
+    show_object_using('active', 'groups', 'aproject', 'A Project')
     click_on "Sharing"
     click_on "Share with groups"
     good_uuid = api_fixture("groups")["private"]["uuid"]
