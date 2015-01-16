@@ -47,6 +47,7 @@ with "--".
     parser.add_argument('--exec', type=str, nargs=argparse.REMAINDER,
                         dest="exec_args", metavar=('command', 'args', '...', '--'),
                         help="""Mount, run a command, then unmount and exit""")
+    parser.add_argument('--set-executable-bit', action='store_true', help="""Set executable bit on collection files""")
 
     args = parser.parse_args()
     args.mountpoint = os.path.realpath(args.mountpoint)
@@ -80,7 +81,7 @@ with "--".
 
     try:
         # Create the request handler
-        operations = Operations(os.getuid(), os.getgid(), args.encoding)
+        operations = Operations(os.getuid(), os.getgid(), args.encoding, args.set_executable_bit)
         api = SafeApi(arvados.config)
 
         usr = api.users().current().execute(num_retries=args.retries)
