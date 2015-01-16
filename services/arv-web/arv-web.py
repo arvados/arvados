@@ -1,3 +1,5 @@
+#!/usr/bin/env python
+
 import arvados
 import subprocess
 from arvados_fuse import Operations, SafeApi, CollectionDirectory
@@ -16,7 +18,7 @@ logging.basicConfig(level=logging.INFO)
 parser = argparse.ArgumentParser()
 parser.add_argument('--project', type=str, required=True, help="Project to watch")
 parser.add_argument('--port', type=int, default=8080, help="Local bind port")
-parser.add_argument('--image', type=str, required=True, help="Docker image to run")
+parser.add_argument('--image', type=str, help="Docker image to run")
 
 args = parser.parse_args()
 
@@ -77,9 +79,19 @@ signal.signal(signal.SIGTERM, lambda signal, frame: sys.exit(0))
 loop = True
 cid = None
 while loop:
+    loop = False
     logging.info("Mounting %s" % collection)
     mountdir = run_fuse_mount(collection)
+
     try:
+        if not args.image:
+            if os.path.exists(os.path.join(mountdir, "docker_image")):
+                with open(os.path.join(mountdir, "docker_image")) as di:
+                    docker_image = di.read().strip()
+            else:
+                logging.error("Collection must contain a file 'docker_image' or must specify --image on the command line.")
+                sys.exit(1)
+
         logging.info("Starting docker container")
         cid = subprocess.check_output(["docker", "run",
                                        "--detach=true",
@@ -91,6 +103,7 @@ while loop:
 
         logging.info("Waiting for events")
         running = True
+        loop = True
         while running:
             try:
                 eq = evqueue.get(True, 1)

@@ -40,6 +40,8 @@ navbar:
       - user/tutorials/tutorial-submit-job.html.textile.liquid
       - user/topics/tutorial-parallel.html.textile.liquid
       - user/topics/arv-docker.html.textile.liquid
+    - Develop a web service:
+      - user/topics/arv-web.html.textile.liquid
     - Reference:
       - user/topics/run-command.html.textile.liquid
       - user/reference/job-pipeline-ref.html.textile.liquid

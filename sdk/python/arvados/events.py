@@ -121,6 +121,7 @@ def subscribe(api, filters, on_event, poll_fallback=15):
     if poll_fallback:
         _logger.warn("Websockets not available, falling back to log table polling")
         p = PollClient(api, filters, on_event, poll_fallback)
+        p.daemon = True
         p.start()
         return p
     else:

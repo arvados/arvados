@@ -1,0 +1,6 @@
+arv-web enables you to run a custom web service using the contents of an
+Arvados collection.
+
+See "Using arv-web" in the Arvados user guide:
+
+http://doc.arvados.org/user/topics/arv-web.html
