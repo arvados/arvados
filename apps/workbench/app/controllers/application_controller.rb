@@ -386,6 +386,53 @@ class ApplicationController < ActionController::Base
     %w(Attributes Advanced)
   end
 
+  def set_share_links
+    @user_is_manager = false
+    @share_links = []
+
+    if @object.uuid != current_user.uuid
+      begin
+        @share_links = Link.permissions_for(@object)
+        @user_is_manager = true
+      rescue ArvadosApiClient::AccessForbiddenException,
+        ArvadosApiClient::NotFoundException
+      end
+    end
+  end
+
+  def share_with
+    if not params[:uuids].andand.any?
+      @errors = ["No user/group UUIDs specified to share with."]
+      return render_error(status: 422)
+    end
+    results = {"success" => [], "errors" => []}
+    params[:uuids].each do |shared_uuid|
+      begin
+        Link.create(tail_uuid: shared_uuid, link_class: "permission",
+                    name: "can_read", head_uuid: @object.uuid)
+      rescue ArvadosApiClient::ApiError => error
+        error_list = error.api_response.andand[:errors]
+        if error_list.andand.any?
+          results["errors"] += error_list.map { |e| "#{shared_uuid}: #{e}" }
+        else
+          error_code = error.api_status || "Bad status"
+          results["errors"] << "#{shared_uuid}: #{error_code} response"
+        end
+      else
+        results["success"] << shared_uuid
+      end
+    end
+    if results["errors"].empty?
+      results.delete("errors")
+      status = 200
+    else
+      status = 422
+    end
+    respond_to do |f|
+      f.json { render(json: results, status: status) }
+    end
+  end
+
   protected
 
   def strip_token_from_path(path)
