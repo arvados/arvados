@@ -9,10 +9,10 @@ import unittest
 import hashlib
 
 import arvados
-from arvados import ArvadosFile, ArvadosFileReader, Range, import_manifest, export_manifest
+from arvados import ArvadosFile, ArvadosFileReader, Range, import_manifest, export_manifest, KeepLocator
 
 import arvados_testutil as tutil
-from test_stream import StreamFileReaderTestCase
+from test_stream import StreamFileReaderTestCase, StreamRetryTestMixin
 
 class ArvadosFileWriterTestCase(unittest.TestCase):
     class MockKeep(object):
@@ -391,17 +391,21 @@ class ArvadosFileReaderTestCase(StreamFileReaderTestCase):
 
 class ArvadosFileReadTestCase(unittest.TestCase, StreamRetryTestMixin):
     def reader_for(self, coll_name, **kwargs):
+        stream = []
         segments = []
         n = 0
         for d in self.manifest_for(coll_name).split():
-            k = KeepLocator(loc)
-            segments.append(Range(d, n, k.size))
-            n += k.size
-        af = ArvadosFile(Collection(keep_client=self.keep_client()),
-                         stream=self.manifest_for(coll_name).split(),
-                         segments=segments,
-                         **kwargs)
-        return ArvadosFileReader(af, "test")
+            try:
+                k = KeepLocator(d)
+                segments.append(Range(n, n, k.size))
+                stream.append(Range(d, n, k.size))
+                n += k.size
+            except ValueError:
+                pass
+        af = ArvadosFile(arvados.Collection(keep_client=self.keep_client()),
+                         stream=stream,
+                         segments=segments)
+        return ArvadosFileReader(af, "test", **kwargs)
 
     def read_for_test(self, reader, byte_count, **kwargs):
         return reader.read(byte_count, **kwargs)
