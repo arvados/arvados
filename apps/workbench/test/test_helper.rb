@@ -313,3 +313,6 @@ if ENV["RAILS_ENV"].eql? 'test'
   ApiServerForTests.new.run
   ApiServerForTests.new.run ["--websockets"]
 end
+
+# Reset fixtures now (i.e., before any tests run).
+ActiveSupport::TestCase.reset_api_fixtures_now
