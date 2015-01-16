@@ -94,20 +94,26 @@ while loop:
         while running:
             try:
                 eq = evqueue.get(True, 1)
-                logging.info("%s %s, restarting web service" % (eq[1], eq[2]))
-                if eq[1] == 'add' or eq[1] == 'update':
-                    collection = eq[2]
-                    running = False
-                if eq[1] == 'remove':
-                    collection = api.collections().list(filters=[["owner_uuid", "=", project]],
+                logging.info("%s %s" % (eq[1], eq[2]))
+                newcollection = collection
+                if eq[1] in ('add', 'update', 'create'):
+                    newcollection = eq[2]
+                elif eq[1] == 'remove':
+                    newcollection = api.collections().list(filters=[["owner_uuid", "=", project]],
                                                         limit=1,
                                                         order='modified_at desc').execute()['items'][0]['uuid']
+                if newcollection != collection:
+                    logging.info("restarting web service")
+                    collection = newcollection
                     running = False
-
             except Queue.Empty:
                 pass
-    except KeyboardInterrupt:
+    except (KeyboardInterrupt):
         logging.info("Got keyboard interrupt")
+        ws.close()
+        loop = False
+    except Exception as e:
+        logging.exception(str(e))
         ws.close()
         loop = False
     finally:

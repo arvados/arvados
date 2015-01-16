@@ -1,0 +1,30 @@
+Sample Arvados web service.
+
+usage: arv-web-example.py [-h] --project PROJECT [--port PORT] --image IMAGE
+
+optional arguments:
+  -h, --help         show this help message and exit
+  --project PROJECT  Project to watch
+  --port PORT        Local bind port
+  --image IMAGE      Docker image to run
+
+
+This queries an Arvados project and FUSE mounts the most recently modified
+collection into a temporary directory.  It then runs the supplied Docker image
+with the collection bind mounted to /mnt inside the container.
+
+When a new collection is added to the project, or an existing project is
+updated, it will detect the change, it will stop the running Docker container,
+unmount the old collection, mount the new most recently modified collection,
+and restart the Docker container with the new mount.
+
+The supplied Dockerfile builds a Docker image that runs Apache with /mnt as the
+DocumentRoot.  This allows you to browse the mounted collection with Apache's
+default index page.
+
+
+Suggestions for extension:
+
+Configure the container to use mod_passenger (for an example,
+arvados/docker/passenger/Dockerfile) and include both your web app and your
+data in your collection.

@@ -7,14 +7,21 @@ RUN apt-get install -qqy \
         libcurl4-openssl-dev apache2-threaded-dev \
         libapr1-dev libaprutil1-dev
 
-# Install apache configuration...
+RUN cd /usr/src/arvados/services/api && \
+    /usr/local/rvm/bin/rvm-exec default bundle exec passenger-install-apache2-module --auto --languages ruby,python
+
+RUN cd /usr/src/arvados/services/api && \
+    /usr/local/rvm/bin/rvm-exec default bundle exec passenger-install-apache2-module --snippet > /etc/apache2/conf.d/passenger
+
+ADD apache2_foreground.sh /etc/apache2/foreground.sh
 
 ADD apache2_vhost /etc/apache2/sites-available/arv-web
 RUN \
+  mkdir /var/run/apache2 && \
   a2dissite default && \
   a2ensite arv-web && \
   a2enmod rewrite
 
-ADD apache2_foreground.sh /etc/apache2/foreground.sh
+EXPOSE 80
 
 CMD ["/etc/apache2/foreground.sh"]
