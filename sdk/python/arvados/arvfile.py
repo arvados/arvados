@@ -371,6 +371,15 @@ class ArvadosFile(object):
         for s in segments:
             self.add_segment(stream, s.locator, s.range_size)
         self._current_bblock = None
+        self.lock = threading.Lock()
+
+    def clone(self):
+        with self.lock:
+            cp = ArvadosFile()
+            cp.parent = self.parent
+            cp._modified = False
+            cp.segments = [Range(r.locator, r.range_start, r.range_size, r.segment_offset) for r in self.segments]
+            return cp
 
     def set_unmodified(self):
         self._modified = False
@@ -477,7 +486,7 @@ class ArvadosFile(object):
 class ArvadosFileReader(ArvadosFileReaderBase):
     def __init__(self, arvadosfile, name, mode="r", num_retries=None):
         super(ArvadosFileReader, self).__init__(name, mode, num_retries=num_retries)
-        self.arvadosfile = arvadosfile
+        self.arvadosfile = arvadosfile.clone()
 
     def size(self):
         return self.arvadosfile.size()
@@ -499,9 +508,23 @@ class ArvadosFileReader(ArvadosFileReaderBase):
     def flush(self):
         pass
 
+
+class SynchronizedArvadosFile(object):
+    def __init__(self, arvadosfile):
+        self.arvadosfile = arvadosfile
+
+    def clone(self):
+        return self
+
+    def __getattr__(self, name):
+        with self.arvadosfile.lock:
+            return getattr(self.arvadosfile, name)
+
+
 class ArvadosFileWriter(ArvadosFileReader):
     def __init__(self, arvadosfile, name, mode, num_retries=None):
-        super(ArvadosFileWriter, self).__init__(arvadosfile, name, mode, num_retries=num_retries)
+        self.arvadosfile = SynchronizedArvadosFile(arvadosfile)
+        super(ArvadosFileWriter, self).__init__(self.arvadosfile, name, mode, num_retries=num_retries)
 
     @ArvadosFileBase._before_close
     @retry_method
