@@ -168,6 +168,15 @@ sanity_checks() {
 
 }
 
+rotate_logfile() {
+  # $BUILD_NUMBER is set by Jenkins if this script is being called as part of a Jenkins run
+  if [[ -f "$1/$2" ]]; then
+    THEDATE=`date +%Y%m%d%H%M%S`
+    mv "$1/$2" "$1/$THEDATE-$BUILD_NUMBER-$2"
+    gzip "$1/$THEDATE-$2"
+  fi
+}
+
 declare -a failures
 declare -A skip
 declare -A testargs
@@ -542,6 +551,8 @@ test_apiserver() {
 }
 do_test services/api apiserver
 
+rotate_logfile "$WORKSPACE/services/api/log/" "test.log"
+
 for p in "${pythonstuff[@]}"
 do
     do_test "$p" pip
@@ -569,6 +580,8 @@ test_workbench_profile() {
         && RAILS_ENV=test bundle exec rake test:profile ${testargs[apps/workbench_profile]}
 }
 do_test apps/workbench_profile workbench_profile
+
+rotate_logfile "$WORKSPACE/apps/workbench/log/" "test.log"
 
 report_outcomes
 clear_temp
