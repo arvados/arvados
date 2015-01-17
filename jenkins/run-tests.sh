@@ -173,7 +173,7 @@ rotate_logfile() {
   if [[ -f "$1/$2" ]]; then
     THEDATE=`date +%Y%m%d%H%M%S`
     mv "$1/$2" "$1/$THEDATE-$BUILD_NUMBER-$2"
-    gzip "$1/$THEDATE-$2"
+    gzip "$1/$THEDATE-$BUILD_NUMBER-$2"
   fi
 }
 
