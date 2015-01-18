@@ -81,4 +81,23 @@ class CollectionTest < ActiveSupport::TestCase
       end
     end
   end
+
+  [
+    ['foo', true],
+    ['foo bar', true],
+    ['subdir', true],
+    ['6a4ff0499484c6c79c95cd8c566bd25f+249025', true],
+    ['no-such-str', false],
+  ].each do |search_filter, expect_results|
+    test "full text search collection for #{search_filter} and expect results #{expect_results}" do
+      search_filters = search_filter.split.each {|s| s.concat(':*')}
+      results = Collection.where("to_tsvector('english', translate(manifest_text, '/.', '  ')) @@ to_tsquery(?)",
+                    "#{search_filters.join('|')}")
+      if expect_results
+        assert_equal true, results.length>0
+      else
+        assert_equal 0, results.length
+      end
+    end
+  end
 end
