@@ -92,7 +92,7 @@ while loop:
                 logging.error("Collection must contain a file 'docker_image' or must specify --image on the command line.")
                 sys.exit(1)
 
-        logging.info("Starting docker container")
+        logging.info("Starting docker container %s" % docker_image)
         cid = subprocess.check_output(["docker", "run",
                                        "--detach=true",
                                        "--publish=%i:80" % (port),
