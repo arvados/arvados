@@ -36,7 +36,7 @@ h2. Running sample applications
 
 First, in Arvados Workbench, create a new project.  Copy the project uuid from the URL bar (this is part section of the URL after @projects/...@)
 
-Next, to run a Python WSGI web app:
+Now upload a collection containing a "Python WSGI web app:":http://wsgi.readthedocs.org/en/latest/
 
 <notextile>
 <pre><code>~$ <span class="userinput">cd arvados/services/arv-web</span>
@@ -54,7 +54,7 @@ INFO:root:Waiting for events
 
 The sample application will be available at @http://hostcomputer:8888@.
 
-If you upload a new collection to the same project, arv-web will restart the web service and serve the new collection.  For example,
+If you upload a new collection to the same project, arv-web will restart the web service and serve the new collection.  For example, uploading a collection containing a "Ruby Rack web app:":https://github.com/rack/rack/wiki
 
 <notextile>
 <pre><code>~$ <span class="userinput">cd arvados/services/arv-web</span>
@@ -69,7 +69,7 @@ zzzzz-4zz18-dhhm0ay8k8cqkvg
 
 <pre>
 INFO:root:Waiting for events
-INFO:root:create 4n8aq-4zz18-dhhm0ay8k8cqkvg
+INFO:root:create zzzzz-4zz18-dhhm0ay8k8cqkvg
 INFO:root:restarting web service
 INFO:root:Stopping docker container
 e79e70558d585a3e038e4bfbc97e5c511f21b6101443b29a8017bdf3d84689a3
@@ -82,9 +82,8 @@ INFO:root:Waiting for events
 
 h2. Writing your own applications
 
-Python and Ruby applications are served using Phusion Passenger and Apache @mod_passenger@.  See https://www.phusionpassenger.com/documentation/Users%20guide%20Apache.html for details, and look at the sample apps @arvados/services/arv-web/sample-wsgi-app@ and @arvados/services/arv-web/sample-rack-app@.
+Python and Ruby applications are served using Phusion Passenger and Apache @mod_passenger@.  See "Phusion Passenger users guide for Apache":https://www.phusionpassenger.com/documentation/Users%20guide%20Apache.html for details, and look at the sample apps @arvados/services/arv-web/sample-wsgi-app@ and @arvados/services/arv-web/sample-rack-app@.
 
-You can serve CGI applications using standard Apache CGI support.  See
-https://httpd.apache.org/docs/current/howto/cgi.html for details, and look at the sample app @arvados/services/arv-web/sample-cgi-app@
+You can serve CGI applications using standard Apache CGI support.  See "Apache Tutorial: Dynamic Content with CGI":https://httpd.apache.org/docs/current/howto/cgi.html for details, and look at the sample app @arvados/services/arv-web/sample-cgi-app@
 
-You can also just serve static content.  Look at @arvados/services/arv-web/sample-static-page@ for an example.
+You can also just serve static content from the @public@ directory of the collection.  Look at @arvados/services/arv-web/sample-static-page@ for an example.
