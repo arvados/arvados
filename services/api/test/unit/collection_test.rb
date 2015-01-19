@@ -85,14 +85,23 @@ class CollectionTest < ActiveSupport::TestCase
   [
     ['foo', true],
     ['foo bar', true],
-    ['subdir', true],
+    ['foox barx', false],                               # no match for both
+    ['foox bar', true],                                 # bar matches
+    ['foo barx', true],
+    ['file2_in_subdir4', true],                         # whole string match
+    ['filex_in_subdir4', false],                        # looks for the whole string and fails
+    ['filex in subdir4', true],                         # matches subdir4
     ['6a4ff0499484c6c79c95cd8c566bd25f+249025', true],
-    ['no-such-str', false],
+    ['6a4ff0499484c6c79c95cd8c566bd25f+249024', false], # matches the whole string and fails
+    ['6a4ff0499484c6c79c95cd8', true],                  # prefix matches    
+    ['499484c6c79c95cd8c566bd', false],                 # not a prefix match
+    ['no-such-file', false],                            # looks for whole string and fails
+    ['no such file', true],                             # matches "file"
   ].each do |search_filter, expect_results|
     test "full text search collection for #{search_filter} and expect results #{expect_results}" do
       search_filters = search_filter.split.each {|s| s.concat(':*')}
       results = Collection.where("to_tsvector('english', translate(manifest_text, '/.', '  ')) @@ to_tsquery(?)",
-                    "#{search_filters.join('|')}")
+                                 "#{search_filters.join('|')}")
       if expect_results
         assert_equal true, results.length>0
       else
