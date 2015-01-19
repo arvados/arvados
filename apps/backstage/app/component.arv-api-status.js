@@ -1,7 +1,8 @@
 module.exports = ArvApiStatusComponent;
 
 var m = require('mithril')
-, util = require('app/util');
+, util = require('app/util')
+, DataManagerGraph = require('./component.dmgraph');
 
 function ArvApiStatusComponent(connection) {
     var apistatus = {};
@@ -43,6 +44,9 @@ function ArvApiStatusComponent(connection) {
                                  vm.dd().websocketUrl)}, ['none'])
             }
         };
+        vm.dmGraphCtrl = new DataManagerGraph.controller({
+            connection: connection,
+        });
         return vm;
     })();
     apistatus.controller = function() {
@@ -128,6 +132,11 @@ function ArvApiStatusComponent(connection) {
                         }, arvModelName+'s'),
                     ]);
                 })),
+                m('.row', [
+                  m('.col-sm-12', [
+                      DataManagerGraph.view(vm.dmGraphCtrl)
+                  ]),
+                ]),
             ]),
         ]);
     };

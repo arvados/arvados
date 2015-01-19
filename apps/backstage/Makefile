@@ -6,7 +6,7 @@ clean:
 	rm -rvf dist
 
 npmdeps:
-	ulimit -n 4000; for x in bootstrap bower browserify chai chai-jquery jquery jsdom mithril mithril-query mocha mocha-phantomjs sinon; do [ -d "$(NPMBIN)/../$$x" ] || npm install $$x --save-dev; done
+	ulimit -n 4000; for x in bootstrap bower browserify chai chai-jquery jquery jsdom lodash mithril mithril-query mocha mocha-phantomjs sinon; do [ -d "$(NPMBIN)/../$$x" ] || npm install $$x --save-dev; done
 
 # This uses --debug to enable source maps.
 build: build-app build-test build-assets
