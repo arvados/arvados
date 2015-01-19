@@ -13,7 +13,7 @@ var m = require('mithril')
 ArvObjectRowComponent.prototype = new BaseComponent();
 function ArvObjectRowComponent() {
     this.view = function(ctrl) {
-        var _item = ctrl.vm.item();
+        var _item = ctrl.vm.item;
         var _owner = _item.owner_uuid ? _item._conn.find(_item.owner_uuid)() : '';
         return m('.row', [
             m('.col-sm-3', [

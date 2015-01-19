@@ -181,7 +181,7 @@ function ArvadosConnection(apiPrefix) {
             store[response.uuid](response);
             store[response.uuid]()._cacheTime = new Date();
             store[response.uuid]()._conn = connection;
-            return store[response.uuid];
+            return store[response.uuid]();
         } else {
             return response;
         }

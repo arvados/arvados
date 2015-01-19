@@ -9,6 +9,7 @@ function ArvApiStatusComponent(connection) {
     apistatus.vm = (function() {
         var vm = {};
         vm.connection = connection;
+        vm.currentUser = m.prop({});
         vm.dd = connection.discoveryDoc;
         vm.dirty = true;
         vm.init = function() {
@@ -16,13 +17,15 @@ function ArvApiStatusComponent(connection) {
                 vm.refresh();
             vm.dirty = false;
         };
-        vm.keepServices = m.prop();
-        vm.nodes = m.prop();
+        vm.keepServices = m.prop([]);
+        vm.nodes = m.prop([]);
         vm.refresh = function() {
             vm.connection.api(
-                'KeepService', 'list', {}).then(vm.keepServices);
+                'KeepService', 'list', {}).then(vm.keepServices).then(m.redraw);
             vm.connection.api(
-                'Node', 'list', {}).then(vm.nodes);
+                'Node', 'list', {}).then(vm.nodes).then(m.redraw);
+            vm.connection.api(
+                'User', 'current', {}).then(vm.currentUser).then(m.redraw);
         };
         vm.logout = function() {
             vm.connection.token(undefined);
@@ -61,8 +64,10 @@ function ArvApiStatusComponent(connection) {
                 !vm.dd() ? '' : m('.pull-right', [
                     util.choose(!!vm.connection.token(), {
                         true: [function() {
-                            return m('a.btn.btn-xs.btn-default',
-                                     {onclick: vm.logout}, 'Log out');
+                            return [vm.currentUser().email,
+                                    " ",
+                                    m('a.btn.btn-xs.btn-default',
+                                      {onclick: vm.logout}, 'Log out')];
                         }],
                         false: [function() {
                             return m('a.btn.btn-xs.btn-primary',
@@ -81,41 +86,41 @@ function ArvApiStatusComponent(connection) {
                           ]);
                       })),
                     m('.col-md-4', [
-                        !vm.keepServices() ? '' : m('ul', [
+                        m('ul', [
                             '' + vm.keepServices().length + ' Keep services',
                             vm.keepServices().map(function(keepService) {
                                 return m('li', [
                                     m('span.label.label-default',
-                                      keepService().service_type),
+                                      keepService.service_type),
                                     ' ',
                                     m('a',
-                                      {href: '/show/'+keepService().uuid,
+                                      {href: '/show/'+keepService.uuid,
                                        config: m.route}, [
-                                           keepService().service_host,
+                                           keepService.service_host,
                                            ':',
-                                           keepService().service_port,
+                                           keepService.service_port,
                                        ]),
                                 ]);
                             }),
                         ]),
                     ]),
                     m('.col-md-4', [
-                        !vm.nodes() ? '' : m('ul', [
+                        m('ul', [
                             '' + vm.nodes().length + ' worker nodes',
                             vm.nodes().filter(function(node) {
-                                return node().crunch_worker_state != 'down';
+                                return node.crunch_worker_state != 'down';
                             }).map(function(node) {
                                 return m('li', [
                                     m('span.label.label-default', [
-                                        node().crunch_worker_state,
+                                        node.crunch_worker_state,
                                     ]),
                                     ' ',
-                                    m('a', {href: '/show/'+node().uuid,
+                                    m('a', {href: '/show/'+node.uuid,
                                             config: m.route},
-                                      node().hostname),
+                                      node.hostname),
                                     ' ',
                                     m('span.label.label-info', {title: 'time since last ping'}, [
-                                        ((new Date() - Date.parse(node().last_ping_at))/1000).toFixed(),
+                                        ((new Date() - Date.parse(node.last_ping_at))/1000).toFixed(),
                                         's'
                                     ]),
                                 ]);

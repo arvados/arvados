@@ -14,12 +14,12 @@ DataManagerGraph.controller = function(opts) {
         var seriesLabel = {};
         var data = _.compact(this.logs().map(function(item){
             try {
-                var p = item().properties;
+                var p = item.properties;
                 var runId = '' + p.run_info.pid + '/' + p.run_info.start_time;
                 var pt = {
                     seriesLabel: '' + p.run_info.pid,
                     collectionsRead: p.collection_info.collections_read,
-                    logCreatedAt: toDate(item().created_at),
+                    logCreatedAt: toDate(item.created_at),
                     runStartTime: toDate(p.run_info.start_time),
                 };
                 pt[runId] = pt.collectionsRead;
