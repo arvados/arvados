@@ -48,3 +48,13 @@ function debounce(ms, key) {
     }, ms);
     return newpending.deferred.promise;
 }
+
+// Override mithril's default deferred.onerror, with more error checking
+var m = require('mithril');
+m.deferred.onerror = function(e) {
+    if ({}.toString.call(e) === "[object Error]" &&
+        !(e.constructor &&
+          e.constructor.toString() &&
+          e.constructor.toString().match(/ Error/)))
+        throw e;
+};
