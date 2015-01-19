@@ -6,9 +6,10 @@ import json
 
 # 'ev' is a dict containing the log table record describing the change.
 def on_message(ev):
-    # Your code here.
-    print json.dumps(ev)
-
+    if ('event_type' in ev and
+        ev['event_type'] == 'create' and
+        ev["object_kind"] == "arvados#collection"):
+        print "A new collection was created %s" % ev['object_uuid']
 
 api = arvados.api('v1', cache=False)
 ws = arvados.events.subscribe(api, [], on_message)
