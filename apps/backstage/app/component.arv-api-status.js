@@ -15,11 +15,13 @@ function ArvApiStatusComponent(connection) {
                 vm.refresh();
             vm.dirty = false;
         };
+        vm.keepServices = m.prop();
+        vm.nodes = m.prop();
         vm.refresh = function() {
-            vm.nodes = vm.connection.api(
-                'Node', 'list', {});
-            vm.keepServices = vm.connection.api(
-                'KeepService', 'list', {});
+            vm.connection.api(
+                'KeepService', 'list', {}).then(vm.keepServices);
+            vm.connection.api(
+                'Node', 'list', {}).then(vm.nodes);
         };
         vm.logout = function() {
             vm.connection.token(undefined);
