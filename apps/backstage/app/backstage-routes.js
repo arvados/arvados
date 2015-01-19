@@ -2,12 +2,12 @@ module.exports = true;
 
 var m = require('mithril')
 , ArvadosConnection = require('arvados/client')
-, Layout = require('app/base-layout')
-, BackstageLayoutView = require('app/backstage-layout')
-, BackstageLoginComponent = require('app/backstage-login')
-, ArvApiDirectoryComponent = require('app/component.arv-api-directory')
-, ArvIndexComponent = require('app/component.arv-index')
-, ArvShowComponent = require('app/component.arv-show');
+, Layout = require('./base-layout')
+, BackstageLayout = require('./backstage-layout')
+, BackstageLoginComponent = require('./backstage-login')
+, ArvApiDirectoryComponent = require('./component.arv-api-directory')
+, ArvIndexComponent = require('./component.arv-index')
+, ArvShowComponent = require('./component.arv-show');
 
 window.jQuery = require('jquery');
 require('bootstrap');
@@ -19,13 +19,13 @@ var connections = m.prop('4xphq qr1hi 9tee4 su92l tb05z'.split(' ').map(
 
 m.route(document.body, '/', {
     '/login-callback': new BackstageLoginComponent(),
-    '/': new Layout(BackstageLayoutView, {
+    '/': new BackstageLayout({
         content: new ArvApiDirectoryComponent(connections)
     }),
-    '/list/:connection/:modelName': new Layout(BackstageLayoutView, {
+    '/list/:connection/:modelName': new BackstageLayout({
         content: ArvIndexComponent
     }),
-    '/show/:uuid': new Layout(BackstageLayoutView, {
+    '/show/:uuid': new BackstageLayout({
         content: ArvShowComponent
     }),
 });

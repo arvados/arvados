@@ -14,24 +14,24 @@
 
 module.exports = Layout;
 
-var BaseComponent = require('app/base-component')
-, BaseController = require('app/base-ctrl');
+var BaseController = require('app/base-ctrl');
+var _ = require('lodash');
 
-Layout.prototype = BaseComponent;
-function Layout(layoutView, innerModules) {
-    var layout = this;
-    this.views = {};
-    this.controller = function controller() {
-        this.controllers = [];
-        Object.keys(innerModules).map(function(key) {
-            var module = innerModules[key];
-            var component = (module.controller instanceof Function) ? module : new module();
-            var ctrl = new component.controller();
-            var view = component.view.bind(component.view, ctrl);
-            this.controllers.push(ctrl);
-            layout.views[key] = view;
-        }, this);
-    };
-    this.controller.prototype = new BaseController();
-    this.view = layoutView.bind(this, this.controller);
+function Layout(innerModules) {
+    return _.extend(this, {
+        controller: Layout.controller.bind(this, innerModules),
+    });
 }
+Layout.controller = function controller(innerModules) {
+    this.views = {};
+    this.controllers = [];
+    Object.keys(innerModules).map(function(key) {
+        var module = innerModules[key];
+        var component = (module.controller instanceof Function) ? module : new module();
+        var ctrl = new component.controller();
+        var view = component.view.bind(component.view, ctrl);
+        this.controllers.push(ctrl);
+        this.views[key] = view;
+    }, this);
+};
+Layout.controller.prototype = new BaseController();

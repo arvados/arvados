@@ -1,11 +1,9 @@
 module.exports = ArvApiDirectoryComponent;
 
 var m = require('mithril')
-, BaseComponent = require('app/base-component')
 , BaseController = require('app/base-ctrl')
 , ArvApiStatusComponent = require('app/component.arv-api-status');
 
-ArvApiDirectoryComponent.prototype = new BaseComponent();
 function ArvApiDirectoryComponent(connections) {
     this.controller = Controller;
     Controller.prototype = new BaseController();
@@ -18,7 +16,7 @@ function ArvApiDirectoryComponent(connections) {
                 controller: new component.controller(),
             };
         });
-        // Give BaseComponent a list of components to unload.
+        // Give BaseController a list of components to unload.
         this.controllers = function() {
             return this.vm.widgets.map(function(widget) {
                 return widget.controller;

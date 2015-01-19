@@ -2,6 +2,7 @@ module.exports = BaseController;
 
 var m = require('mithril');
 
+function BaseController() {}
 BaseController.prototype.selectUuid =
     function selectUuid(uuid) {
         m.route('/show/' + uuid);
@@ -19,6 +20,3 @@ BaseController.prototype.onunload =
                 ctrl.onunload();
         });
     }
-function BaseController(vm) {
-    this.vm = vm;
-}
