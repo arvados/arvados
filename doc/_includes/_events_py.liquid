@@ -1,0 +1,15 @@
+#!/usr/bin/env python
+
+import arvados
+import arvados.events
+import json
+
+# 'ev' is a dict containing the log table record describing the change.
+def on_message(ev):
+    # Your code here.
+    print json.dumps(ev)
+
+
+api = arvados.api('v1', cache=False)
+ws = arvados.events.subscribe(api, [], on_message)
+ws.run_forever()

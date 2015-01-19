@@ -60,6 +60,7 @@ navbar:
       - sdk/python/sdk-python.html.textile.liquid
       - sdk/python/python.html.textile.liquid
       - sdk/python/crunch-utility-libraries.html.textile.liquid
+      - sdk/python/events.html.textile.liquid
     - Perl:
       - sdk/perl/index.html.textile.liquid
     - Ruby:
