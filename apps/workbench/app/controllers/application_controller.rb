@@ -16,7 +16,6 @@ class ApplicationController < ActionController::Base
   before_filter :accept_uuid_as_id_param, except: ERROR_ACTIONS
   before_filter :check_user_agreements, except: ERROR_ACTIONS
   before_filter :check_user_profile, except: ERROR_ACTIONS
-  before_filter :check_user_notifications, except: ERROR_ACTIONS
   before_filter :load_filters_and_paging_params, except: ERROR_ACTIONS
   before_filter :find_object_by_uuid, except: [:create, :index, :choose] + ERROR_ACTIONS
   theme :select_theme
@@ -46,6 +45,9 @@ class ApplicationController < ActionController::Base
   end
 
   def render_error(opts={})
+    # Helpers can rely on the presence of @errors to know they're
+    # being used in an error page.
+    @errors ||= []
     opts[:status] ||= 500
     respond_to do |f|
       # json must come before html here, so it gets used as the
@@ -384,6 +386,53 @@ class ApplicationController < ActionController::Base
     %w(Attributes Advanced)
   end
 
+  def set_share_links
+    @user_is_manager = false
+    @share_links = []
+
+    if @object.uuid != current_user.uuid
+      begin
+        @share_links = Link.permissions_for(@object)
+        @user_is_manager = true
+      rescue ArvadosApiClient::AccessForbiddenException,
+        ArvadosApiClient::NotFoundException
+      end
+    end
+  end
+
+  def share_with
+    if not params[:uuids].andand.any?
+      @errors = ["No user/group UUIDs specified to share with."]
+      return render_error(status: 422)
+    end
+    results = {"success" => [], "errors" => []}
+    params[:uuids].each do |shared_uuid|
+      begin
+        Link.create(tail_uuid: shared_uuid, link_class: "permission",
+                    name: "can_read", head_uuid: @object.uuid)
+      rescue ArvadosApiClient::ApiError => error
+        error_list = error.api_response.andand[:errors]
+        if error_list.andand.any?
+          results["errors"] += error_list.map { |e| "#{shared_uuid}: #{e}" }
+        else
+          error_code = error.api_status || "Bad status"
+          results["errors"] << "#{shared_uuid}: #{error_code} response"
+        end
+      else
+        results["success"] << shared_uuid
+      end
+    end
+    if results["errors"].empty?
+      results.delete("errors")
+      status = 200
+    else
+      status = 422
+    end
+    respond_to do |f|
+      f.json { render(json: results, status: status) }
+    end
+  end
+
   protected
 
   def strip_token_from_path(path)
@@ -664,26 +713,12 @@ class ApplicationController < ActionController::Base
     }
   }
 
-  def check_user_notifications
-    return if params['tab_pane']
-
-    @notification_count = 0
-    @notifications = []
-
-    if current_user.andand.is_active
-      @showallalerts = false
-      @@notification_tests.each do |t|
-        a = t.call(self, current_user)
-        if a
-          @notification_count += 1
-          @notifications.push a
-        end
-      end
-    end
-
-    if @notification_count == 0
-      @notification_count = ''
-    end
+  helper_method :user_notifications
+  def user_notifications
+    return [] if @errors or not current_user.andand.is_active
+    @notifications ||= @@notification_tests.map do |t|
+      t.call(self, current_user)
+    end.compact
   end
 
   helper_method :all_projects
