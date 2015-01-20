@@ -77,9 +77,7 @@ class ApplicationController < ActionController::Base
   end
 
   def show
-    render(text: Oj.dump(@object.as_api_response(nil, select: @select),
-                         mode: :compat).html_safe,
-           content_type: 'application/json')
+    send_json @object.as_api_response(nil, select: @select)
   end
 
   def create
@@ -181,7 +179,16 @@ class ApplicationController < ActionController::Base
     err[:error_token] = [Time.now.utc.to_i, "%08x" % rand(16 ** 8)].join("+")
     status = err.delete(:status) || 422
     logger.error "Error #{err[:error_token]}: #{status}"
-    render json: err, status: status
+    send_json err, status: status
+  end
+
+  def send_json response, opts={}
+    # The obvious render(json: ...) forces a slow JSON encoder. See
+    # #3021 and commit logs. Might be fixed in Rails 4.1.
+    render({
+             text: Oj.dump(response, mode: :compat).html_safe,
+             content_type: 'application/json'
+           }.merge opts)
   end
 
   def find_objects_for_index
@@ -443,8 +450,7 @@ class ApplicationController < ActionController::Base
         except(:limit).except(:offset).
         count(:id, distinct: true)
     end
-    render(text: Oj.dump(@object_list, mode: :compat).html_safe,
-           content_type: 'application/json')
+    send_json @object_list
   end
 
   def remote_ip
