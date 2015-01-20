@@ -133,5 +133,75 @@ class CollectionsApiTest < ActionDispatch::IntegrationTest
     assert_equal 'a name', json_response['name']
   end
 
+  test "update description for a collection, and search for that description" do
+    collection = collections(:multilevel_collection_1)
 
+    # update collection's description
+    put "/arvados/v1/collections/#{collection['uuid']}", {
+      format: :json,
+      collection: { description: "something specific" }
+    }, auth(:active)
+    assert_response :success
+    assert_equal 'something specific', json_response['description']
+
+    # get the collection and verify newly added description
+    get "/arvados/v1/collections/#{collection['uuid']}", {
+      format: :json,
+    }, auth(:active)
+    assert_response 200
+    assert_equal 'something specific', json_response['description']
+
+    # search
+    search_using_filter 'specific', 1
+    search_using_filter 'not specific enough', 0
+  end
+
+  test "create collection, update manifest, and search with filename" do
+    # create collection
+    signed_manifest = Collection.sign_manifest(". bad42fa702ae3ea7d888fef11b46f450+44 0:44:my_test_file.txt\n", api_token(:active))
+    post "/arvados/v1/collections", {
+      format: :json,
+      collection: {manifest_text: signed_manifest}.to_json,
+    }, auth(:active)
+    assert_response :success
+    assert_equal true, json_response['manifest_text'].include?('my_test_file.txt')
+
+    created = json_response
+
+    # search using the filename
+    search_using_filter 'my_test_file.txt', 1
+
+    # update the collection's manifest text
+    signed_manifest = Collection.sign_manifest(". bad42fa702ae3ea7d888fef11b46f450+44 0:44:my_updated_test_file.txt\n", api_token(:active))
+    put "/arvados/v1/collections/#{created['uuid']}", {
+      format: :json,
+      collection: {manifest_text: signed_manifest}.to_json,
+    }, auth(:active)
+    assert_response :success
+    assert_equal created['uuid'], json_response['uuid']
+    assert_equal true, json_response['manifest_text'].include?('my_updated_test_file.txt')
+    assert_equal false, json_response['manifest_text'].include?('my_test_file.txt')
+
+    # search using the new filename
+    search_using_filter 'my_updated_test_file.txt', 1
+    search_using_filter 'my_test_file.txt', 0
+    search_using_filter 'there_is_no_such_file.txt', 0
+  end
+
+  def search_using_filter search_filter, expected_items
+    get '/arvados/v1/collections', {
+      :filters => [['any', 'ilike', "%#{search_filter}%"]].to_json
+    }, auth(:active)
+    assert_response :success
+    response_items = json_response['items']
+    assert_not_nil response_items
+    if expected_items == 0
+      assert_equal 0, json_response['items_available']
+      assert_equal 0, response_items.size
+    else
+      assert_equal expected_items, response_items.size
+      first_item = response_items.first
+      assert_not_nil first_item
+    end
+  end
 end

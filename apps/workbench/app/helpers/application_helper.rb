@@ -160,10 +160,10 @@ module ApplicationHelper
     end
 
     input_type = 'text'
-    case object.class.attribute_info[attr.to_sym].andand[:type]
-    when 'text'
+    attrtype = object.class.attribute_info[attr.to_sym].andand[:type]
+    if attrtype == 'text' or attr == 'description'
       input_type = 'textarea'
-    when 'datetime'
+    elsif attrtype == 'datetime'
       input_type = 'date'
     else
       input_type = 'text'

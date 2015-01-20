@@ -2,7 +2,7 @@ require 'integration_helper'
 
 class LoginsTest < ActionDispatch::IntegrationTest
   setup do
-    Capybara.current_driver = Capybara.javascript_driver
+    need_javascript
   end
 
   test "login with api_token works after redirect" do

@@ -89,7 +89,7 @@ If you want access control on your "Keepstore":install-keepstore.html server(s),
 
 h3. workbench_address
 
-Fill in the url of your workbench application in in @workbench_address@, for example 
+Fill in the url of your workbench application in @workbench_address@, for example
 
 &nbsp;&nbsp;https://workbench.@prefix_uuid@.your.domain
 
@@ -146,7 +146,7 @@ You can safely ignore the following error message you may see when loading the d
 <pre><code>ERROR:  must be owner of extension plpgsql</code></pre></notextile>
 </div>
 
-h2. Set up omniauth
+h2(#omniauth). Set up omniauth
 
 First copy the omniauth configuration file:
 
@@ -154,20 +154,14 @@ First copy the omniauth configuration file:
 <pre><code>~/arvados/services/api$ <span class="userinput">cp -i config/initializers/omniauth.rb.example config/initializers/omniauth.rb
 </code></pre></notextile>
 
-Edit @config/initializers/omniauth.rb@, and tell your api server to use the Curoverse SSO server for authentication. Use the @APP_SECRET@ specified in the snippet below.
+Edit @config/initializers/omniauth.rb@ to configure the SSO server for authentication.  @APP_ID@ and @APP_SECRET@ correspond to the @app_id@ and @app_secret@ set in "Create arvados-server client for Single Sign On (SSO)":install-sso.html#client and @CUSTOM_PROVIDER_URL@ is the address of your SSO server.
 
 <notextile>
-<pre><code>APP_ID = 'local_docker_installation'
-APP_SECRET = 'yohbai4eecohshoo1Yoot7tea9zoca9Eiz3Tajahweo9eePaeshaegh9meiye2ph'
-CUSTOM_PROVIDER_URL = 'https://auth.curoverse.com'
-</code></pre></notextile>
-</pre>
-
-<div class="alert alert-block alert-info">
-  <button type="button" class="close" data-dismiss="alert">&times;</button>
-  <h4>Note!</h4>
-  <p>You can also run your own SSO server. However, the SSO server codebase currently uses OpenID 2.0 to talk to Google's authentication service. Google <a href="https://developers.google.com/accounts/docs/OpenID2">has deprecated that protocol</a>. This means that new clients will not be allowed to talk to Google's authentication services anymore over OpenID 2.0, and they will phase out the use of OpenID 2.0 completely in the coming monts. We are working on upgrading the SSO server codebase to a newer protocol. That work should be complete by the end of November 2014. In the mean time, anyone is free to use the existing Curoverse SSO server for any local Arvados installation.</p>
-</div>
+<pre><code>APP_ID = 'arvados-server'
+APP_SECRET = 'xxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxx'
+CUSTOM_PROVIDER_URL = 'https://sso.example.com/'
+</code></pre>
+</notextile>
 
 h2. Start the API server
 
@@ -181,7 +175,7 @@ If you plan to run in development mode, you can now run the development server t
 
 h3. Production environment
 
-We recommend "Passenger":https://www.phusionpassenger.com/ to run the API server in production. 
+We recommend "Passenger":https://www.phusionpassenger.com/ to run the API server in production.
 
 Point it to the services/api directory in the source tree.
 

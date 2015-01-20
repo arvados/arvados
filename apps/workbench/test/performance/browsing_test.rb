@@ -13,36 +13,32 @@ class BrowsingTest < WorkbenchPerformanceTest
                            :formats => [:flat] }
 
   setup do
-    headless = Headless.new
-    headless.start
-    Capybara.current_driver = :selenium
-    Capybara.current_session.driver.browser.manage.window.resize_to(1024, 768)
+    need_javascript
   end
 
   test "home page" do
     visit_page_with_token
-    wait_for_ajax
     assert_text 'Dashboard'
     assert_selector 'a', text: 'Run a pipeline'
   end
 
   test "search for hash" do
     visit_page_with_token
-    wait_for_ajax
     assert_text 'Dashboard'
 
-    within('.navbar-fixed-top') do
-      page.find_field('search').set('hash')
-      wait_for_ajax
-      page.find('.glyphicon-search').click
+    assert_selector '.navbar-fixed-top'
+    assert_triggers_dom_event 'shown.bs.modal' do
+      within '.navbar-fixed-top' do
+        find_field('search').set 'hash'
+        find('.glyphicon-search').click
+      end
     end
 
     # In the search dialog now. Expect at least one item in the result display.
     within '.modal-content' do
-      wait_for_ajax
       assert_text 'All projects'
       assert_text 'Search'
-      assert(page.has_selector?(".selectable[data-object-uuid]"))
+      assert_selector '.selectable[data-object-uuid]'
       click_button 'Cancel'
     end
   end

@@ -100,6 +100,8 @@ class UserSessionsController < ApplicationController
   # to save the return_to parameter (if it exists; see the application
   # controller). /auth/joshid bypasses the application controller.
   def login
+    auth_provider = if params[:auth_provider] then "auth_provider=#{CGI.escape(params[:auth_provider])}" else "" end
+
     if current_user and params[:return_to]
       # Already logged in; just need to send a token to the requesting
       # API client.
@@ -109,9 +111,9 @@ class UserSessionsController < ApplicationController
 
       send_api_token_to(params[:return_to], current_user)
     elsif params[:return_to]
-      redirect_to "/auth/joshid?return_to=#{CGI.escape(params[:return_to])}"
+      redirect_to "/auth/joshid?return_to=#{CGI.escape(params[:return_to])}&#{auth_provider}"
     else
-      redirect_to "/auth/joshid"
+      redirect_to "/auth/joshid?#{auth_provider}"
     end
   end
 

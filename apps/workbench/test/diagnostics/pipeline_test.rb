@@ -1,29 +1,28 @@
 require 'diagnostics_test_helper'
-require 'selenium-webdriver'
-require 'headless'
 
 class PipelineTest < DiagnosticsTest
   pipelines_to_test = Rails.configuration.pipelines_to_test.andand.keys
 
   setup do
-    headless = Headless.new
-    headless.start
-    Capybara.current_driver = :selenium
+    need_selenium 'to make websockets work'
   end
 
   pipelines_to_test.andand.each do |pipeline_to_test|
-    test "visit home page for user #{pipeline_to_test}" do
+    test "run pipeline: #{pipeline_to_test}" do
       visit_page_with_token 'active'
       pipeline_config = Rails.configuration.pipelines_to_test[pipeline_to_test]
 
       # Search for tutorial template
+      find '.navbar-fixed-top'
       within('.navbar-fixed-top') do
         page.find_field('search').set pipeline_config['template_uuid']
         page.find('.glyphicon-search').click
       end
 
       # Run the pipeline
-      find('a,button', text: 'Run').click
+      assert_triggers_dom_event 'shown.bs.modal' do
+        find('a,button', text: 'Run').click
+      end
 
       # Choose project
       within('.modal-dialog') do
@@ -65,7 +64,9 @@ class PipelineTest < DiagnosticsTest
       look_for_file = nil
     end
 
-    inputs_needed[0].click
+    assert_triggers_dom_event 'shown.bs.modal' do
+      inputs_needed[0].click
+    end
 
     within('.modal-dialog') do
       if look_for_uuid

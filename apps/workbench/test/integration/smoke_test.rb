@@ -3,7 +3,7 @@ require 'uri'
 
 class SmokeTest < ActionDispatch::IntegrationTest
   setup do
-    Capybara.current_driver = Capybara.javascript_driver
+    need_javascript
   end
 
   def assert_visit_success(allowed=[200])

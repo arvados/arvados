@@ -4,13 +4,16 @@ navsection: userguide
 title: "Uploading data"
 ...
 
-This tutorial describes how to to upload new Arvados data collections using the command line tool @arv keep put@.
+Arvados Data collections can be uploaded using either the @*arv keep put*@ command line tool or using Workbench.
+
+# "*Upload using command line tool*":#upload-using-command
+# "*Upload using Workbench*":#upload-using-workbench
 
 notextile. <div class="spaced-out">
 
-{% include 'tutorial_expectations' %}
+h2(#upload-using-command). Upload using command line tool
 
-h3. Upload
+{% include 'tutorial_expectations' %}
 
 To upload a file to Keep using @arv keep put@:
 <notextile>
@@ -41,7 +44,7 @@ qr1hi-4zz18-yyyyyyyyyyyyyyy
 
 In both examples, the @arv keep put@ command created a collection. The first collection contains the single uploaded file. The second collection contains the entire uploaded directory.
 
-@arv keep put@ accepts quite a few optional command line arguments, which are described "on the arv subcommands":{{site.baseurl}}/sdk/cli/subcommands.html#arv-keep-put page.
+@arv keep put@ accepts quite a few optional command line arguments, which are described on the "arv subcommands":{{site.baseurl}}/sdk/cli/subcommands.html#arv-keep-put page.
 
 h3. Locate your collection in Workbench
 
@@ -49,8 +52,28 @@ Visit the Workbench *Dashboard*.  Click on *Projects*<span class="caret"></span>
 
 To move the collection to a different project, check the box at the left of the collection row.  Pull down the *Selection...*<span class="caret"></span> menu near the top of the page tab, and select *Move selected*. This will open a dialog box where you can select a destination project for the collection.  Click a project, then finally the <span class="btn btn-sm btn-primary">Move</span> button.
 
-!{{ site.baseurl }}/images/workbench-move-selected.png!
+!{display: block;margin-left: 25px;margin-right: auto;}{{ site.baseurl }}/images/workbench-move-selected.png!
 
 Click on the *<i class="fa fa-fw fa-archive"></i> Show* button next to the collection's listing on a project page to go to the Workbench page for your collection.  On this page, you can see the collection's contents, download individual files, and set sharing options.
 
 notextile. </div>
+
+h2(#upload-using-workbench). Upload using Workbench
+
+To upload using Workbench, visit the Workbench *Dashboard*. Click on *Projects*<span class="caret"></span> dropdown menu in the top navigation menu and select your *Home* project or any other project of your choosing.  You will see the *Data collections* tab for this project, which lists the collections in this project.
+
+To upload files into a new collection, click on *Add data*<span class="caret"></span> dropdown menu and select *Upload files from my computer*.
+
+!{display: block;margin-left: 25px;margin-right: auto;border:1px solid lightgray;}{{ site.baseurl }}/images/upload-using-workbench.png!
+
+<br/>This will create a new empty collection in your chosen project and will take you to the *Upload* tab for that collection.
+
+!{display: block;margin-left: 25px;margin-right: auto;border:1px solid lightgray;}{{ site.baseurl }}/images/upload-tab-in-new-collection.png!
+
+Click on the *Browse...* button and select the files you would like to upload. Selected files will be added to a list of files to be uploaded. After you are done selecting files to upload, click on the *<i class="fa fa-fw fa-play"></i> Start* button to start upload. This will start uploading files to Arvados and Workbench will show you the progress bar. When upload is completed, you will see an indication to that effect.
+
+!{display: block;margin-left: 25px;margin-right: auto;border:1px solid lightgray;}{{ site.baseurl }}/images/files-uploaded.png!
+
+*Note:* If you leave the collection page during the upload, the upload process will be aborted and you will need to upload the files again.
+
+*Note:* You can also use the Upload tab to add files to an existing collection.

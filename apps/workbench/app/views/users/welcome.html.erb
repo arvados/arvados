@@ -10,29 +10,32 @@
       <p>
 
         The "Log in" button below will show you a Google sign-in page.
-	After you assure Google that you want to log in here with your
-	Google account, you will be redirected back here to
-	<%= Rails.configuration.site_name %>.
+        After you assure Google that you want to log in here with your
+        Google account, you will be redirected back here to
+        <%= Rails.configuration.site_name %>.
 
       </p><p>
 
-	If you have never used <%= Rails.configuration.site_name %>
-	before, logging in for the first time will automatically
-	create a new account.
+        If you have never used <%= Rails.configuration.site_name %>
+        before, logging in for the first time will automatically
+        create a new account.
 
       </p><p>
 
         <i><%= Rails.configuration.site_name %> uses your name and
-	email address only for identification, and does not retrieve
-	any other personal information from Google.</i>
+          email address only for identification, and does not retrieve
+          any other personal information from Google.</i>
 
       </p>
-      <p>
-	<%= link_to arvados_api_client.arvados_login_url(return_to: request.url), class: "pull-right btn btn-primary" do %>
+        <%# Todo: add list of external authentications providers to
+            discovery document, then generate the option list here. Right
+            now, don't provide 'auth_provider' to get the default one. %>
+        <div class="pull-right">
+          <%= link_to arvados_api_client.arvados_login_url(return_to: request.url), class: "btn btn-primary" do %>
           Log in to <%= Rails.configuration.site_name %>
           <i class="fa fa-fw fa-arrow-circle-right"></i>
-        <% end %>
-      </p>
+          <% end %>
+        </div>
     </div>
   </div>
 </div>

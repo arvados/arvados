@@ -89,3 +89,31 @@ func (s *ServerRequiredSuite) TestCreatePipelineTemplate(c *C) {
 	c.Assert(err, Equals, nil)
 	c.Assert(getback["name"], Equals, "tmp2")
 }
+
+func (s *ServerRequiredSuite) TestErrorResponse(c *C) {
+	os.Setenv("ARVADOS_API_HOST", "localhost:3000")
+	os.Setenv("ARVADOS_API_TOKEN", "4axaw8zxe0qm22wa6urpp5nskcne8z88cvbupv653y1njyi05h")
+	os.Setenv("ARVADOS_API_HOST_INSECURE", "true")
+
+	arv, _ := MakeArvadosClient()
+
+	getback := make(Dict)
+
+	{
+		err := arv.Create("logs",
+			Dict{"log": Dict{"bogus_attr": "foo"}},
+			&getback)
+		c.Assert(err, ErrorMatches, ".*unknown attribute: bogus_attr.*")
+		c.Assert(err, FitsTypeOf, ArvadosApiError{})
+		c.Assert(err.(ArvadosApiError).HttpStatusCode, Equals, 422)
+	}
+
+	{
+		err := arv.Create("bogus",
+			Dict{"bogus": Dict{}},
+			&getback)
+		c.Assert(err, ErrorMatches, "Path not found")
+		c.Assert(err, FitsTypeOf, ArvadosApiError{})
+		c.Assert(err.(ArvadosApiError).HttpStatusCode, Equals, 404)
+	}
+}

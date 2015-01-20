@@ -41,7 +41,7 @@
 
             <li class="dropdown notification-menu">
               <a href="#" class="dropdown-toggle" data-toggle="dropdown" id="notifications-menu">
-                <span class="badge badge-alert notification-count"><%= @notification_count %></span>
+                <span class="badge badge-alert notification-count"><%= user_notifications.length if user_notifications.any? %></span>
                 <%= current_user.email %> <span class="caret"></span>
               </a>
               <ul class="dropdown-menu" role="menu">
@@ -52,10 +52,9 @@
                 <% end %>
                 <% end %>
                 <li role="menuitem"><a href="<%= logout_path %>" role="menuitem"><i class="fa fa-sign-out fa-fw"></i> Log out</a></li>
-                <% if current_user.is_active and
-                      (@notifications || []).length > 0 %>
+                <% if user_notifications.any? %>
                   <li role="presentation" class="divider"></li>
-                  <% @notifications.each_with_index do |n, i| %>
+                  <% user_notifications.each_with_index do |n, i| %>
                     <% if i > 0 %><li class="divider"></li><% end %>
                     <li class="notification"><%= n.call(self) %></li>
                   <% end %>
@@ -119,12 +118,12 @@
               <li><%= link_to raw('<i class="fa fa-book fa-fw"></i> SDK Reference'), "#{Rails.configuration.arvados_docsite}/sdk", target: "_blank" %></li>
               <li role="presentation" class="divider"></li>
               <li> <%= link_to report_issue_popup_path(popup_type: 'version', current_location: request.url, current_path: request.fullpath, action_method: 'post'),
-                      {class: 'report-issue-modal-window',  :remote => true, return_to: request.url} do %>
+                      {class: 'report-issue-modal-window', remote: true, return_to: request.url} do %>
                        <i class="fa fa-fw fa-support"></i> Show version / debugging info ...
                       <% end %>
               </li>
               <li> <%= link_to report_issue_popup_path(popup_type: 'report', current_location: request.url, current_path: request.fullpath, action_method: 'post'),
-                      {class: 'report-issue-modal-window', :remote => true, return_to: request.url} do %>
+                      {class: 'report-issue-modal-window', remote: true, return_to: request.url} do %>
                        <i class="fa fa-fw fa-support"></i> Report a problem ...
                       <% end %>
               </li>

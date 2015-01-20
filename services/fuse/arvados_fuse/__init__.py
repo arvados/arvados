@@ -526,6 +526,8 @@ class ProjectDirectory(Directory):
         self.project_object = project_object
         self.project_object_file = None
         self.uuid = project_object['uuid']
+        self._poll = poll
+        self._poll_time = poll_time
 
     def createDirectory(self, i):
         if collection_uuid_pattern.match(i['uuid']):
@@ -766,6 +768,8 @@ class Operations(llfuse.Operations):
         entry.st_mode = stat.S_IRUSR | stat.S_IRGRP | stat.S_IROTH
         if isinstance(e, Directory):
             entry.st_mode |= stat.S_IXUSR | stat.S_IXGRP | stat.S_IXOTH | stat.S_IFDIR
+        elif isinstance(e, StreamReaderFile):
+            entry.st_mode |= stat.S_IXUSR | stat.S_IXGRP | stat.S_IXOTH | stat.S_IFREG
         else:
             entry.st_mode |= stat.S_IFREG
 

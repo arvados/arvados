@@ -2,7 +2,7 @@ require 'integration_helper'
 
 class PipelineTemplatesTest < ActionDispatch::IntegrationTest
   test "JSON popup available for strange components" do
-    Capybara.current_driver = Capybara.javascript_driver
+    need_javascript
     uuid = api_fixture("pipeline_templates")["components_is_jobspec"]["uuid"]
     visit page_with_token("active", "/pipeline_templates/#{uuid}")
     click_on "Components"
@@ -14,7 +14,7 @@ class PipelineTemplatesTest < ActionDispatch::IntegrationTest
   end
 
   test "pipeline template description" do
-    Capybara.current_driver = Capybara.javascript_driver
+    need_javascript
     visit page_with_token("active", "/pipeline_templates")
 
     # go to Two Part pipeline template

@@ -24,6 +24,7 @@ begin
   require 'active_support/inflector'
   require 'yaml'
   require 'tempfile'
+  require 'net/http'
 rescue LoadError
   abort <<-EOS
 
@@ -153,70 +154,126 @@ def check_subcommands client, arvados, subcommand, global_opts, remaining_opts
   end
 end
 
-def arv_edit_save_tmp tmp
-  FileUtils::cp tmp.path, tmp.path + ".saved"
-  puts "Saved contents to " + tmp.path + ".saved"
-end
-
 def command_exists?(command)
-  ENV['PATH'].split(':').each {|folder| File.executable?(File.join(folder, command))}
+  File.executable?(command) || ENV['PATH'].split(':').any? {|folder| File.executable?(File.join(folder, command))}
 end
 
-def run_editor tmp_file, global_opts
-  need_edit = true
-  while need_edit
-    pid = Process::fork
-    if pid.nil?
-      editor = nil
-      [ENV["VISUAL"], ENV["EDITOR"], "nano", "vi"].each do |e|
-        editor ||= e if e and command_exists? e
-      end
-      if editor.nil?
-        puts "Could not find any editor to use, please set $VISUAL or $EDITOR to your desired editor."
-        exit 1
-      end
-      exec editor, tmp_file.path
-    else
-      Process.wait pid
+def run_editor path
+  pid = Process::fork
+  if pid.nil?
+    editor = nil
+    [ENV["VISUAL"], ENV["EDITOR"], "nano", "vi"].each do |e|
+      editor ||= e if e and command_exists? e
     end
-
-    if $?.exitstatus == 0
-      tmp_file.open
-      newcontent = tmp_file.read()
-
-      newobj = {}
-      begin
-        case global_opts[:format]
-        when 'json'
-          newobj = Oj.load(newcontent)
-        when 'yaml'
-          newobj = YAML.load(newcontent)
-        end
-        need_edit = false
-      rescue Exception => e
-        n = 1
-        newcontent.each_line do |line|
-          puts "#{n.to_s.rjust 4}  #{line}"
-          n += 1
-        end
-        puts "Parse error! " + e.to_s
-        puts "\nTry again (y/n)? "
-        yn = "X"
-        while not ["y", "Y", "n", "N"].include?(yn)
-          yn = $stdin.read 1
-        end
-        if yn == 'n' or yn == 'N'
-          arv_edit_save_tmp tmp_file
-          abort
-        end
-      end
-    else
-      puts "Editor exited with status #{$?.exitstatus}"
-      exit $?.exitstatus
+    if editor.nil?
+      abort "Could not find any editor to use, please set $VISUAL or $EDITOR to your desired editor."
     end
+    exec editor, path
+  else
+    Process.wait pid
   end
 
-  newobj
+  if $?.exitstatus != 0
+    raise "Editor exited with status #{$?.exitstatus}"
+  end
+end
+
+def edit_and_commit_object initial_obj, tmp_stem, global_opts, &block
+
+  content = case global_opts[:format]
+            when 'json'
+              Oj.dump(initial_obj, :indent => 1)
+            when 'yaml'
+              initial_obj.to_yaml
+            else
+              abort "Unrecognized format #{global_opts[:format]}"
+            end
+
+  tmp_file = Tempfile.new([tmp_stem, ".#{global_opts[:format]}"])
+  tmp_file.write(content)
+  tmp_file.close
+
+  begin
+    error_text = ''
+    while true
+      begin
+        run_editor tmp_file.path
+
+        tmp_file.open
+        newcontent = tmp_file.read()
+        tmp_file.close
+
+        # Strip lines starting with '#'
+        newcontent = newcontent.lines.select {|l| !l.start_with? '#'}.join
+
+        # Load the new object
+        newobj = case global_opts[:format]
+                 when 'json'
+                   Oj.load(newcontent)
+                 when 'yaml'
+                   YAML.load(newcontent)
+                 end
+
+        yield newobj
+
+        break
+      rescue => e
+        can_retry = true
+        if e.is_a? Psych::SyntaxError
+          this_error = "YAML error parsing your input: #{e}"
+        elsif e.is_a? JSON::ParserError or e.is_a? Oj::ParseError
+          this_error = "JSON error parsing your input: #{e}"
+        elsif e.is_a? ArvadosAPIError
+          this_error = "API responded with error #{e}"
+        else
+          this_error = "#{e.class}: #{e}"
+          can_retry = false
+        end
+        puts this_error
+
+        tmp_file.open
+        newcontent = tmp_file.read()
+        tmp_file.close
+
+        if newcontent == error_text or not can_retry
+          FileUtils::cp tmp_file.path, tmp_file.path + ".saved"
+          puts "File is unchanged, edit aborted." if can_retry
+          abort "Saved contents to " + tmp_file.path + ".saved"
+        else
+          tmp_file.open
+          tmp_file.truncate 0
+          error_text = this_error.to_s.lines.map {|l| '# ' + l}.join + "\n"
+          error_text += "# Please fix the error and try again.\n"
+          error_text += newcontent.lines.select {|l| !l.start_with? '#'}.join
+          tmp_file.write error_text
+          tmp_file.close
+        end
+      end
+    end
+  ensure
+    tmp_file.close(true)
+  end
+
+  nil
+end
+
+class ArvadosAPIError < RuntimeError
+end
+
+def check_response result
+  begin
+    results = JSON.parse result.body
+  rescue JSON::ParserError, Oj::ParseError => e
+    raise "Failed to parse server response:\n" + e.to_s
+  end
+
+  if result.response.status != 200
+    raise ArvadosAPIError.new("#{result.response.status}: #{
+                              ((results['errors'] && results['errors'].join('\n')) ||
+                                Net::HTTPResponse::CODE_TO_OBJ[status.to_s].to_s.sub(/^Net::HTTP/, '').titleize)}")
+  end
+
+  results
 end
 
 def arv_edit client, arvados, global_opts, remaining_opts
@@ -243,7 +300,7 @@ def arv_edit client, arvados, global_opts, remaining_opts
     if /^[a-f0-9]{32}/.match uuid
       abort "Arvados collections are not editable."
     else
-      abort "#{n} does not appear to be an Arvados uuid"
+      abort "'#{uuid}' does not appear to be an Arvados uuid"
     end
   end
 
@@ -260,79 +317,37 @@ def arv_edit client, arvados, global_opts, remaining_opts
     abort "Could not determine resource type #{m[2]}"
   end
 
-  api_method = 'arvados.' + rsc + '.get'
-
-  result = client.execute(:api_method => eval(api_method),
-                          :parameters => {"uuid" => uuid},
-                          :authenticated => false,
-                          :headers => {
-                            authorization: 'OAuth2 '+ENV['ARVADOS_API_TOKEN']
-                          })
   begin
-    results = JSON.parse result.body
-  rescue JSON::ParserError => e
-    abort "Failed to parse server response:\n" + e.to_s
+    result = client.execute(:api_method => eval('arvados.' + rsc + '.get'),
+                            :parameters => {"uuid" => uuid},
+                            :authenticated => false,
+                            :headers => {
+                              authorization: 'OAuth2 '+ENV['ARVADOS_API_TOKEN']
+                            })
+    oldobj = check_response result
+  rescue => e
+    abort "Server error: #{e}"
   end
 
   if remaining_opts.length > 0
-    results.select! { |k, v| remaining_opts.include? k }
+    oldobj.select! { |k, v| remaining_opts.include? k }
   end
 
-  content = ""
-
-  case global_opts[:format]
-  when 'json'
-    content = Oj.dump(results, :indent => 1)
-  when 'yaml'
-    content = results.to_yaml
-  end
-
-  tmp_file = Tempfile.new([uuid, "." + global_opts[:format]])
-  tmp_file.write(content)
-  tmp_file.close
-
-  newobj = run_editor tmp_file, global_opts
-
-  begin
-    if newobj != results
-      api_method = 'arvados.' + rsc + '.update'
-      dumped = Oj.dump(newobj)
-
-      begin
-        result = client.execute(:api_method => eval(api_method),
-                                :parameters => {"uuid" => uuid},
-                                :body_object => { rsc.singularize => dumped },
-                                :authenticated => false,
-                                :headers => {
-                                  authorization: 'OAuth2 '+ENV['ARVADOS_API_TOKEN']
-                                })
-      rescue Exception => e
-        puts "Error communicating with server, error was #{e}"
-        puts "Update body was:"
-        puts dumped
-        arv_edit_save_tmp tmp_file
-        abort
-      end
-
-      begin
-        results = JSON.parse result.body
-      rescue JSON::ParserError => e
-        arv_edit_save_tmp tmp_file
-        abort "Failed to parse server response:\n" + e.to_s
-      end
-
-      if result.response.status != 200
-        puts "Update failed.  Server responded #{result.response.status}: #{results['errors']} "
-        puts "Update body was:"
-        puts dumped
-        arv_edit_save_tmp tmp_file
-        abort
-      end
+  edit_and_commit_object oldobj, uuid, global_opts do |newobj|
+    newobj.select! {|k| newobj[k] != oldobj[k]}
+    if !newobj.empty?
+      result = client.execute(:api_method => eval('arvados.' + rsc + '.update'),
+                     :parameters => {"uuid" => uuid},
+                     :body_object => { rsc.singularize => newobj },
+                     :authenticated => false,
+                     :headers => {
+                       authorization: 'OAuth2 '+ENV['ARVADOS_API_TOKEN']
+                     })
+      results = check_response result
+      puts "Updated object #{results['uuid']}"
     else
       puts "Object is unchanged, did not update."
     end
-  ensure
-    tmp_file.close(true)
   end
 
   exit 0
@@ -379,60 +394,21 @@ def arv_create client, arvados, global_opts, remaining_opts
     end
   end
 
-
-  newobj = {}
+  initial_obj = {}
   if create_opts[:project_uuid]
-    newobj["owner_uuid"] = create_opts[:project_uuid]
+    initial_obj["owner_uuid"] = create_opts[:project_uuid]
   end
 
-  case global_opts[:format]
-  when 'json'
-    content = Oj.dump(newobj, :indent => 1)
-  when 'yaml'
-    content = newobj.to_yaml
-  end
-
-  tmp_file = Tempfile.new(["", ".#{global_opts[:format]}"])
-  tmp_file.write(content)
-  tmp_file.close
-
-  newobj = run_editor tmp_file, global_opts
-
-  begin
-    api_method = 'arvados.' + rsc + '.create'
-    dumped = Oj.dump(newobj)
-
-    result = client.execute(:api_method => eval(api_method),
-                            :parameters => method_opts,
-                            :body_object => {object_type => newobj},
-                            :authenticated => false,
-                            :headers => {
-                              authorization: 'OAuth2 '+ENV['ARVADOS_API_TOKEN']
-                            })
-
-    begin
-      results = JSON.parse result.body
-    rescue JSON::ParserError => e
-      arv_edit_save_tmp tmp_file
-      abort "Failed to parse server response:\n" + e.to_s
-    end
-
-    if result.response.status != 200
-      puts "Create failed.  Server responded #{result.response.status}: #{results['errors']} "
-      puts "Create body was:"
-      puts dumped
-      arv_edit_save_tmp tmp_file
-      abort
-    end
-
-    begin
-      puts "Created object #{results['uuid']}"
-    rescue
-      arv_edit_save_tmp tmp_file
-      abort "Unexpected response:\n#{results}"
-    end
-  ensure
-    tmp_file.close(true)
+  edit_and_commit_object initial_obj, "", global_opts do |newobj|
+    result = client.execute(:api_method => eval('arvados.' + rsc + '.create'),
+                   :parameters => method_opts,
+                   :body_object => {object_type => newobj},
+                   :authenticated => false,
+                   :headers => {
+                     authorization: 'OAuth2 '+ENV['ARVADOS_API_TOKEN']
+                   })
+    results = check_response result
+    puts "Created object #{results['uuid']}"
   end
 
   exit 0

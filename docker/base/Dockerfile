@@ -23,7 +23,7 @@ RUN gpg --keyserver pool.sks-keyservers.net --recv-keys D39DC0E3 && \
     /usr/sbin/locale-gen && \
     curl -L https://get.rvm.io | bash -s stable && \
     /usr/local/rvm/bin/rvm install 2.1 && \
-    /usr/local/rvm/bin/rvm alias create default ruby && \
+    /usr/local/rvm/bin/rvm alias create default ruby-2.1 && \
     /bin/mkdir -p /usr/src/arvados
 
 ADD generated/arvados.tar.gz /usr/src/arvados/
