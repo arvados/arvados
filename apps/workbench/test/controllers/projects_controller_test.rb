@@ -1,6 +1,9 @@
 require 'test_helper'
+require 'helpers/share_object_helper'
 
 class ProjectsControllerTest < ActionController::TestCase
+  include ShareObjectHelper
+
   test "invited user is asked to sign user agreements on front page" do
     get :index, {}, session_for(:inactive)
     assert_response :redirect
@@ -61,40 +64,28 @@ class ProjectsControllerTest < ActionController::TestCase
            "JSON response missing properly formatted sharing error")
   end
 
-  def user_can_manage(user_sym, group_key)
-    get(:show, {id: api_fixture("groups")[group_key]["uuid"]},
-        session_for(user_sym))
-    is_manager = assigns(:user_is_manager)
-    assert_not_nil(is_manager, "user_is_manager flag not set")
-    if not is_manager
-      assert_empty(assigns(:share_links),
-                   "non-manager has share links set")
-    end
-    is_manager
-  end
-
   test "admin can_manage aproject" do
-    assert user_can_manage(:admin, "aproject")
+    assert user_can_manage(:admin, api_fixture("groups")["aproject"])
   end
 
   test "owner can_manage aproject" do
-    assert user_can_manage(:active, "aproject")
+    assert user_can_manage(:active, api_fixture("groups")["aproject"])
   end
 
   test "owner can_manage asubproject" do
-    assert user_can_manage(:active, "asubproject")
+    assert user_can_manage(:active, api_fixture("groups")["asubproject"])
   end
 
   test "viewer can't manage aproject" do
-    refute user_can_manage(:project_viewer, "aproject")
+    refute user_can_manage(:project_viewer, api_fixture("groups")["aproject"])
   end
 
   test "viewer can't manage asubproject" do
-    refute user_can_manage(:project_viewer, "asubproject")
+    refute user_can_manage(:project_viewer, api_fixture("groups")["asubproject"])
   end
 
   test "subproject_admin can_manage asubproject" do
-    assert user_can_manage(:subproject_admin, "asubproject")
+    assert user_can_manage(:subproject_admin, api_fixture("groups")["asubproject"])
   end
 
   test "detect ownership loop in project breadcrumbs" do

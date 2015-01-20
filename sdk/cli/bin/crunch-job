@@ -1846,7 +1846,7 @@ if (@ARGV) {
   if ((!$venv_built) and (-d $python_src) and can_run("virtualenv")) {
     shell_or_die("virtualenv", "--quiet", "--system-site-packages",
                  "--python=python2.7", $venv_dir);
-    shell_or_die("$venv_dir/bin/pip", "--quiet", "install", $python_src);
+    shell_or_die("$venv_dir/bin/pip", "--quiet", "install", "-I", $python_src);
     $venv_built = 1;
     $Log->("Built Python SDK virtualenv");
   }
