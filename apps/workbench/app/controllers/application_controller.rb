@@ -255,7 +255,7 @@ class ApplicationController < ActionController::Base
       f.html {
         if params['tab_pane']
           render_pane(if params['tab_pane'].is_a? Hash then params['tab_pane']["name"] else params['tab_pane'] end)
-        elsif request.method.in? ['GET', 'HEAD']
+        elsif request.request_method.in? ['GET', 'HEAD']
           render
         else
           redirect_to (params[:return_to] ||

@@ -1851,20 +1851,19 @@ if (@ARGV) {
     $Log->("Built Python SDK virtualenv");
   }
 
-  my $pkgs;
+  my $pip_bin = "pip";
   if ($venv_built) {
     $Log->("Running in Python SDK virtualenv");
-    $pkgs = `(\Q$venv_dir/bin/pip\E freeze 2>/dev/null | grep arvados) || dpkg-query --show '*arvados*'`;
+    $pip_bin = "$venv_dir/bin/pip";
     my $orig_argv = join(" ", map { quotemeta($_); } @ARGV);
     @ARGV = ("/bin/sh", "-ec",
              ". \Q$venv_dir/bin/activate\E; exec $orig_argv");
   } elsif (-d $python_src) {
-    $Log->("Warning: virtualenv not found inside Docker container default " +
+    $Log->("Warning: virtualenv not found inside Docker container default " .
            "\$PATH. Can't install Python SDK.");
-  } else {
-    $pkgs = `(pip freeze 2>/dev/null | grep arvados) || dpkg-query --show '*arvados*'`;
   }
 
+  my $pkgs = `(\Q$pip_bin\E freeze 2>/dev/null | grep arvados) || dpkg-query --show '*arvados*'`;
   if ($pkgs) {
     $Log->("Using Arvados SDK:");
     foreach my $line (split /\n/, $pkgs) {
