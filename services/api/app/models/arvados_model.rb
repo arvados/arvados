@@ -523,8 +523,8 @@ class ArvadosModel < ActiveRecord::Base
   end
 
   def log_start_state
-    @old_attributes = attributes
-    @old_logged_attributes = logged_attributes
+    @old_attributes = Marshal.load(Marshal.dump(attributes))
+    @old_logged_attributes = Marshal.load(Marshal.dump(logged_attributes))
   end
 
   def log_change(event_type)
