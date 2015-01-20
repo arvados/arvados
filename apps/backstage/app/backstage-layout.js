@@ -4,15 +4,15 @@ var m = require('mithril');
 var _ = require('lodash');
 var Layout = require('./base-layout');
 
-function BackstageLayout(innerModules) {
-    return _.extend(this, {
-        controller: BackstageLayout.controller.bind(this, innerModules),
-        view: BackstageLayout.view,
+function BackstageLayout(opts) {
+    _.extend(this, {
+        controller: this.controller.bind(this, opts),
     });
 }
-BackstageLayout.prototype = new Layout();
-BackstageLayout.controller = Layout.controller;
-BackstageLayout.view = function view(ctrl) {
+_.extend(BackstageLayout.prototype, Layout.prototype, {
+    view: view
+});
+function view(ctrl) {
     return [
         m('.navbar.navbar-default', {role: 'navigation'}, [
             m('.container-fluid', [

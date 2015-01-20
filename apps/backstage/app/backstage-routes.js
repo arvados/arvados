@@ -20,12 +20,18 @@ var connections = m.prop('4xphq qr1hi 9tee4 su92l tb05z'.split(' ').map(
 m.route(document.body, '/', {
     '/login-callback': new BackstageLoginComponent(),
     '/': new BackstageLayout({
-        content: new ArvApiDirectoryComponent(connections)
+        modules: {
+            content: new ArvApiDirectoryComponent({connections: connections}),
+        },
     }),
     '/list/:connection/:modelName': new BackstageLayout({
-        content: ArvIndexComponent
+        modules: {
+            content: ArvIndexComponent
+        },
     }),
     '/show/:uuid': new BackstageLayout({
-        content: ArvShowComponent
+        modules: {
+            content: ArvShowComponent
+        },
     }),
 });
