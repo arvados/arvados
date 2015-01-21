@@ -154,6 +154,15 @@ class ArvadosFileReaderBase(ArvadosFileBase):
                 break
         return ''.join(data).splitlines(True)
 
+    def size(self):
+        raise NotImplementedError()
+
+    def read(self, size, num_retries=None):
+        raise NotImplementedError()
+
+    def readfrom(self, start, size, num_retries=None):
+        raise NotImplementedError()
+
 
 class StreamFileReader(ArvadosFileReaderBase):
     def __init__(self, stream, segments, name):
@@ -265,6 +274,7 @@ block through normal Keep means.
         if self._locator is None:
             self._locator = "%s+%i" % (hashlib.md5(self.buffer_view[0:self.write_pointer]).hexdigest(), self.size())
         return self._locator
+
 
 class AsyncKeepWriteErrors(Exception):
     '''
@@ -438,10 +448,11 @@ class BlockManager(object):
                 t.start()
         self._prefetch_queue.put(locator)
 
+
 class ArvadosFile(object):
     '''
-    Manages the underyling representation of a file in Keep as a sequence of
-    segments over a set of blocks, supporting random read/write access.
+    ArvadosFile manages the underlying representation of a file in Keep as a sequence of
+    segments spanning a set of blocks, and implements random read/write access.
     '''
 
     def __init__(self, parent, stream=[], segments=[]):
@@ -458,10 +469,8 @@ class ArvadosFile(object):
         self.lock = threading.Lock()
 
     def clone(self):
-        '''
-        Make a copy of this file.
-        '''
-        # TODO: copy bufferblocks.
+        '''Make a copy of this file.'''
+        # TODO: copy bufferblocks?
         with self.lock:
             cp = ArvadosFile()
             cp.parent = self.parent
@@ -470,30 +479,44 @@ class ArvadosFile(object):
             return cp
 
     def set_unmodified(self):
+        '''Clear the modified flag'''
         self._modified = False
 
     def modified(self):
+        '''Test the modified flag'''
         return self._modified
 
     def truncate(self, size):
-        new_segs = []
-        for r in self.segments:
-            range_end = r.range_start+r.range_size
-            if r.range_start >= size:
-                # segment is past the trucate size, all done
-                break
-            elif size < range_end:
-                nr = Range(r.locator, r.range_start, size - r.range_start)
-                nr.segment_offset = r.segment_offset
-                new_segs.append(nr)
-                break
-            else:
-                new_segs.append(r)
+        '''
+        Adjust the size of the file.  If "size" is less than the size of the file,
+        the file contents after "size" will be discarded.  If "size" is greater
+        than the current size of the file, an IOError will be raised.
+        '''
+        if size < self.size():
+            new_segs = []
+            for r in self.segments:
+                range_end = r.range_start+r.range_size
+                if r.range_start >= size:
+                    # segment is past the trucate size, all done
+                    break
+                elif size < range_end:
+                    nr = Range(r.locator, r.range_start, size - r.range_start)
+                    nr.segment_offset = r.segment_offset
+                    new_segs.append(nr)
+                    break
+                else:
+                    new_segs.append(r)
 
-        self.segments = new_segs
-        self._modified = True
+            self.segments = new_segs
+            self._modified = True
+        elif size > self.size():
+            raise IOError("truncate() does not support extending the file size")
+
 
     def readfrom(self, offset, size, num_retries):
+        '''
+        read upto "size" bytes from the file starting at "offset".
+        '''
         if size == 0 or offset >= self.size():
             return ''
         data = []
@@ -510,7 +533,8 @@ class ArvadosFile(object):
         return ''.join(data)
 
     def _repack_writes(self):
-        '''Test if the buffer block has more data than is referenced by actual segments
+        '''
+        Test if the buffer block has more data than is referenced by actual segments
         (this happens when a buffered write over-writes a file range written in
         a previous buffered write).  Re-pack the buffer block for efficiency
         and to avoid leaking information.
@@ -533,6 +557,10 @@ class ArvadosFile(object):
             self._current_bblock = new_bb
 
     def writeto(self, offset, data, num_retries):
+        '''
+        Write "data" to the file starting at "offset".  This will update
+        existing bytes and/or extend the size of the file as necessary.
+        '''
         if len(data) == 0:
             return
 
@@ -557,6 +585,10 @@ class ArvadosFile(object):
         replace_range(self.segments, offset, len(data), self._current_bblock.blockid, self._current_bblock.write_pointer - len(data))
 
     def add_segment(self, blocks, pos, size):
+        '''
+        Add a segment to the end of the file, with "pos" and "offset" referencing a
+        section of the stream described by "blocks" (a list of Range objects)
+        '''
         self._modified = True
         for lr in locators_and_ranges(blocks, pos, size):
             last = self.segments[-1] if self.segments else Range(0, 0, 0)
@@ -564,6 +596,7 @@ class ArvadosFile(object):
             self.segments.append(r)
 
     def size(self):
+        '''Get the file size'''
         if self.segments:
             n = self.segments[-1]
             return n.range_start + n.range_size

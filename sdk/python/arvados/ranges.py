@@ -111,10 +111,19 @@ def locators_and_ranges(data_locators, range_start, range_size, debug=False):
 def replace_range(data_locators, new_range_start, new_range_size, new_locator, new_segment_offset, debug=False):
     '''
     Replace a file segment range with a new segment.
+
     data_locators: list of Range objects, assumes that segments are in order and contigous
-    range_start: start of range
-    range_size: size of range
+
+    new_range_start: start of range to replace in data_locators
+
+    new_range_size: size of range to replace in data_locators
+
     new_locator: locator for new segment to be inserted
+
+    new_segment_offset: segment offset within the locator
+
+    debug: print debugging details.
+
     !!! data_locators will be updated in place !!!
     '''
     if new_range_size == 0:
