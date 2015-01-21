@@ -38,7 +38,7 @@ class ComputeNodeDriver(BaseComputeNodeDriver):
                     self.create_kwargs[new_pair[0]] = new_pair[1]
 
     def _init_image_id(self, image_id):
-        return 'image', self.search_for(image_id, 'list_images')
+        return 'image', image_id
 
     def _init_ping_host(self, ping_host):
         self.ping_host = ping_host
@@ -47,7 +47,7 @@ class ComputeNodeDriver(BaseComputeNodeDriver):
         self.service_accounts = json.loads(service_accounts_str)
 
     def _init_network_id(self, subnet_id):
-        return 'ex_network', self.search_for(subnet_id, 'ex_list_networks')
+        return 'ex_network', subnet_id
 
     def _init_ssh_key(self, filename):
         with open(filename) as ssh_file:
