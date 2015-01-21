@@ -1311,7 +1311,7 @@ CREATE UNIQUE INDEX collection_owner_uuid_name_unique ON collections USING btree
 -- Name: collections_manifest_full_text_search_idx; Type: INDEX; Schema: public; Owner: -; Tablespace: 
 --
 
-CREATE INDEX collections_manifest_full_text_search_idx ON collections USING gin (to_tsvector('english'::regconfig, translate(manifest_text, '/.'::text, '  '::text)));
+CREATE INDEX collections_manifest_full_text_search_idx ON collections USING gin (to_tsvector('english'::regconfig, (file_names)::text));
 
 
 --
@@ -2046,7 +2046,7 @@ CREATE INDEX nodes_search_index ON nodes USING btree (uuid, owner_uuid, modified
 -- Name: pipeline_instances_components_full_text_search_idx; Type: INDEX; Schema: public; Owner: -; Tablespace: 
 --
 
-CREATE INDEX pipeline_instances_components_full_text_search_idx ON pipeline_instances USING gin (to_tsvector('english'::regconfig, translate(components, '/.'::text, '  '::text)));
+CREATE INDEX pipeline_instances_components_full_text_search_idx ON pipeline_instances USING gin (to_tsvector('english'::regconfig, components));
 
 
 --

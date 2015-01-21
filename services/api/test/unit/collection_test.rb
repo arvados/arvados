@@ -82,30 +82,37 @@ class CollectionTest < ActiveSupport::TestCase
     end
   end
 
-  [
-    ['foo', true],
-    ['foo bar', true],
-    ['foox barx', false],                               # no match for both
-    ['foox bar', true],                                 # bar matches
-    ['foo barx', true],
-    ['file2_in_subdir4', true],                         # whole string match
-    ['filex_in_subdir4', false],                        # looks for the whole string and fails
-    ['filex in subdir4', true],                         # matches subdir4
-    ['6a4ff0499484c6c79c95cd8c566bd25f+249025', true],
-    ['6a4ff0499484c6c79c95cd8c566bd25f+249024', false], # matches the whole string and fails
-    ['6a4ff0499484c6c79c95cd8', true],                  # prefix matches    
-    ['499484c6c79c95cd8c566bd', false],                 # not a prefix match
-    ['no-such-file', false],                            # looks for whole string and fails
-    ['no such file', true],                             # matches "file"
-  ].each do |search_filter, expect_results|
-    test "full text search collection for #{search_filter} and expect results #{expect_results}" do
+  test "full text search for collections" do
+    # file_names column does not get populated when fixtures are loaded, hence setup test data
+    act_as_system_user do
+      Collection.create(manifest_text: ". acbd18db4cc2f85cedef654fccc4a4d8+3 0:3:foo\n")
+      Collection.create(manifest_text: ". 37b51d194a7513e45b56f6524f2d51f2+3 0:3:bar\n")
+      Collection.create(manifest_text: ". 85877ca2d7e05498dd3d109baf2df106+95+A3a4e26a366ee7e4ed3e476ccf05354761be2e4ae@545a9920 0:95:file_in_subdir1\n./subdir2/subdir3 2bbc341c702df4d8f42ec31f16c10120+64+A315d7e7bad2ce937e711fc454fae2d1194d14d64@545a9920 0:32:file1.txt 32:32:file2.txt\n./subdir2/subdir3/subdir4 2bbc341c702df4d8f42ec31f16c10120+64+A315d7e7bad2ce937e711fc454fae2d1194d14d64@545a9920 0:32:file3.txt 32:32:file4.txt")
+    end
+
+    [
+      ['foo', true],
+      ['foo bar', true],
+      ['foox barx', false],                   # no match for either
+      ['foo barx', true],
+      ['file4', true],                        # whole string match
+      ['file4.txt', true],                    # whole string match
+      ['filex', false],                       # looks for the whole string and fails
+      ['subdir2', true],
+      ['subdir2/', true],
+      ['subdir2/subdir3', true],
+      ['subdir2/subdir3/subdir4', true],
+      ['subdir', true],                       # prefix matches
+      ['no-such-file', false],                # looks for whole string and fails
+      ['no such file', true],                 # matches "file"
+    ].each do |search_filter, expect_results|
       search_filters = search_filter.split.each {|s| s.concat(':*')}
-      results = Collection.where("to_tsvector('english', translate(manifest_text, '/.', '  ')) @@ to_tsquery(?)",
+      results = Collection.where("to_tsvector('english', file_names) @@ to_tsquery(?)",
                                  "#{search_filters.join('|')}")
       if expect_results
-        assert_equal true, results.length>0
+        assert_equal true, results.length>0, "No results found for '#{search_filter}'"
       else
-        assert_equal 0, results.length
+        assert_equal 0, results.length, "Found #{results.length} results for '#{search_filter}'"
       end
     end
   end
