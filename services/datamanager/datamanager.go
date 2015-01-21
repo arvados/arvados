@@ -53,21 +53,23 @@ func main() {
 	}
 
 	if arvLogger != nil {
-		properties, _ := arvLogger.Edit()
-		runInfo := make(map[string]interface{})
-		runInfo["start_time"] = time.Now()
-		runInfo["args"] = os.Args
-		hostname, err := os.Hostname()
-		if err != nil {
-			runInfo["hostname_error"] = err.Error()
-		} else {
-			runInfo["hostname"] = hostname
-		}
-		runInfo["pid"] = os.Getpid()
-		properties["run_info"] = runInfo
+		arvLogger.MutateLog(func(properties map[string]interface{},
+			entry map[string]interface{}) {
+				runInfo := make(map[string]interface{})
+				runInfo["start_time"] = time.Now()
+				runInfo["args"] = os.Args
+				hostname, err := os.Hostname()
+				if err != nil {
+					runInfo["hostname_error"] = err.Error()
+				} else {
+					runInfo["hostname"] = hostname
+				}
+				runInfo["pid"] = os.Getpid()
+				properties["run_info"] = runInfo
+			})
 
+		arvLogger.Edit()
 		arvLogger.AddWriteHook(LogMemoryAlloc)
-
 		arvLogger.Record()
 	}
 
@@ -98,7 +100,6 @@ func main() {
 }
 
 func LogMemoryAlloc(properties map[string]interface{}, entry map[string]interface{}) {
-	_ = entry // keep the compiler from complaining
 	runInfo := properties["run_info"].(map[string]interface{})
 	var memStats runtime.MemStats
 	runtime.ReadMemStats(&memStats)

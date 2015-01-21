@@ -37,6 +37,17 @@ type LoggerParams struct {
 	MinimumWriteInterval time.Duration               // Wait at least this long between log writes
 }
 
+// A LogMutator is a function which modifies the log entry.
+// It takes two maps as arguments, properties is the first and entry
+// is the second
+// properties is a shortcut for entry["properties"].(map[string]interface{})
+// properties can take any values you want to give it.
+// entry will only take the fields listed at http://doc.arvados.org/api/schema/Log.html
+// properties and entry are only safe to access inside the LogMutator,
+// they should not be stored anywhere, otherwise you'll risk
+// concurrent access.
+type LogMutator func(map[string]interface{}, map[string]interface{})
+
 // A Logger is used to build up a log entry over time and write every
 // version of it.
 type Logger struct {
@@ -51,7 +62,7 @@ type Logger struct {
 	lastWrite time.Time // The last time we wrote a log entry
 	modified  bool      // Has this data been modified since the last write
 
-	writeHooks []func(map[string]interface{}, map[string]interface{})
+	writeHooks []LogMutator
 }
 
 // Create a new logger based on the specified parameters.
@@ -81,13 +92,20 @@ func (l *Logger) Edit() (properties map[string]interface{}, entry map[string]int
 	return l.properties, l.entry
 }
 
+// function to test new api, replacing Edit() and Record()
+func (l *Logger) MutateLog(mutator LogMutator) {
+	mutator(l.Edit())
+	l.Record()
+}
+
 // Adds a hook which will be called every time this logger writes an entry.
 // The hook takes properties and entry as arguments, in that order.
 // This is useful for stuff like memory profiling.
 // This must be called between Edit() and Record() (e.g. while holding the lock)
-func (l *Logger) AddWriteHook(hook func(map[string]interface{},
-	map[string]interface{})) {
+func (l *Logger) AddWriteHook(hook LogMutator) {
+	// TODO(misha): Acquire lock here! and erase comment about edit.
 	l.writeHooks = append(l.writeHooks, hook)
+	// TODO(misha): consider flipping the dirty bit here.
 }
 
 // Write the log entry you've built up so far. Do not edit the maps
