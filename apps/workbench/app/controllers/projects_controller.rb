@@ -111,7 +111,13 @@ class ProjectsController < ApplicationController
         @removed_uuids << link.uuid
         link.destroy
       end
-      if item.owner_uuid == @object.uuid
+
+      # If this object has the 'expires_at' attribute, then simply mark it
+      # expired.
+      if item.attributes.include?("expires_at")
+        item.update_attributes expires_at: Time.now
+        @removed_uuids << item.uuid
+      elsif item.owner_uuid == @object.uuid
         # Object is owned by this project. Remove it from the project by
         # changing owner to the current user.
         begin
