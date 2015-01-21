@@ -1,0 +1,50 @@
+---
+layout: default
+navsection: start 
+title: Welcome to Arvados!
+...
+
+This guide provides an introduction to using Arvados to solve big data bioinformatics problems.
+
+
+h2. Typographic conventions
+
+This manual uses the following typographic conventions:
+
+<notextile>
+<ul>
+<li>Code blocks which are set aside from the text indicate user input to the system.  Commands that should be entered into a Unix shell are indicated by the directory where you should  enter the command ('~' indicates your home directory) followed by '$', followed by the highlighted <span class="userinput">command to enter</span> (do not enter the '$'), and possibly followed by example command output in black.  For example, the following block indicates that you should type <code>ls foo.*</code> while in your home directory and the expected output will be "foo.input" and "foo.output".
+</notextile>
+
+<div class="custom-container key-features">
+<a class="prev" href="#">‹</a>
+
+<div class="carousel">
+    <ul>
+        <li><img class="hascaption" src="{{ site.baseurl }}/images/keyfeatures/dashboard2.png" style="width:909px; height:503px;" title="[START] After logging in, you see Workbench's dashboard."></li>
+        <li><img class="hascaption" src="{{ site.baseurl }}/images/keyfeatures/running2.png" style="width:909px; height:503px;" title="Pipelines describe a set of computational tasks (jobs)."></li>
+        <li><img class="hascaption" src="{{ site.baseurl }}/images/keyfeatures/log.png" style="width:909px; height:503px;" title="The output of all jobs is logged and stored automatically."></li>
+        <li><img class="hascaption" src="{{ site.baseurl }}/images/keyfeatures/graph.png" style="width:909px; height:503px;" title="Pipelines can be also viewed in auto-generated graph form."></li>
+        <li><img class="hascaption" src="{{ site.baseurl }}/images/keyfeatures/rerun.png" style="width:909px; height:503px;" title="Pipelines can easily be re-run..."></li>
+        <li><img class="hascaption" src="{{ site.baseurl }}/images/keyfeatures/chooseinputs.png" style="width:909px; height:503px;" title="...by changing parameters or picking new datasets..."></li>
+        <li><img class="hascaption" src="{{ site.baseurl }}/images/keyfeatures/webupload.png" style="width:909px; height:503px;" title="...which can be uploaded right in Workbench."></li>
+        <li><img class="hascaption" src="{{ site.baseurl }}/images/keyfeatures/collectionpage.png" style="width:909px; height:503px;" title="Collections allow sharing datasets and job outputs easily."></li>
+        <li><img class="hascaption" src="{{ site.baseurl }}/images/keyfeatures/provenance.png" style="width:909px; height:503px;" title="Data provenance is tracked automatically. [END]"></li>
+    </ul>
+</div>
+<a class="next" href="#">›</a>
+<div class="clear"></div>
+</div>
+
+<script type="text/javascript">
+(function() {
+    $(".key-features .carousel").jCarouselLite({
+        btnNext: ".key-features .next",
+        btnPrev: ".key-features .prev",
+        visible: 1,
+    });
+});
+('.hascaption').each(function() {
+    $(this).after( "<div style='background: rgba(0,0,0,0.6); color: white; padding: 1.4em;'>" + $(this).attr('title') + "</div>" ); 
+});
+</script>
