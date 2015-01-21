@@ -34,10 +34,18 @@ type Cgroup struct {
 	cid    string
 }
 
-func CopyPipeToChan(in io.Reader, out chan string, done chan<- bool) {
+func CopyPipeToChan(in io.ReadCloser, out chan string, done chan<- bool) {
+	defer in.Close()
+
+	// TODO(twp): handle long input records gracefully, if possible
+	// without killing the child task (#4889)
+	//
 	s := bufio.NewScanner(in)
 	for s.Scan() {
 		out <- s.Text()
+	}
+	if s.Err() != nil {
+		out <- fmt.Sprintf("CopyPipeToChan: %s", s.Err())
 	}
 	done <- true
 }
@@ -49,11 +57,12 @@ func CopyChanToPipe(in <-chan string, out io.Writer) {
 }
 
 var logChan chan string
+
 func LogPrintf(format string, args ...interface{}) {
 	if logChan == nil {
 		return
 	}
-	logChan <- fmt.Sprintf("crunchstat: " + format, args...)
+	logChan <- fmt.Sprintf("crunchstat: "+format, args...)
 }
 
 func ReadAllOrWarn(in *os.File) ([]byte, error) {
