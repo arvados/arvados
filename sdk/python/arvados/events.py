@@ -79,7 +79,9 @@ class PollClient(threading.Thread):
             self.stop.wait(self.poll_time)
 
     def run_forever(self):
-        self.stop.wait()
+        # Have to poll here, otherwise KeyboardInterrupt will never get processed.
+        while not self.stop.is_set():
+            self.stop.wait(1)
 
     def close(self):
         self.stop.set()
