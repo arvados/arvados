@@ -59,6 +59,7 @@ type Logger struct {
 	lock   sync.Locker  // Synchronizes editing and writing
 	params LoggerParams // Parameters we were given
 
+	// TODO(misha): replace lastWrite with nextWriteAllowed
 	lastWrite time.Time // The last time we wrote a log entry
 	modified  bool      // Has this data been modified since the last write
 
