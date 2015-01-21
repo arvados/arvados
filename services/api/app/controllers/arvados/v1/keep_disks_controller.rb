@@ -22,7 +22,7 @@ class Arvados::V1::KeepDisksController < ApplicationController
       # Render the :superuser view (i.e., include the ping_secret) even
       # if !current_user.is_admin. This is safe because @object.ping's
       # success implies the ping_secret was already known by the client.
-      render json: @object.as_api_response(:superuser)
+      send_json @object.as_api_response(:superuser)
     end
   end
 
