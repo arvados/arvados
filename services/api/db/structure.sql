@@ -1311,7 +1311,7 @@ CREATE UNIQUE INDEX collection_owner_uuid_name_unique ON collections USING btree
 -- Name: collections_search_index; Type: INDEX; Schema: public; Owner: -; Tablespace: 
 --
 
-CREATE INDEX collections_search_index ON collections USING btree (owner_uuid, modified_by_client_uuid, modified_by_user_uuid, portable_data_hash, redundancy_confirmed_by_client_uuid, uuid, name, description, file_names);
+CREATE INDEX collections_search_index ON collections USING btree (owner_uuid, modified_by_client_uuid, modified_by_user_uuid, portable_data_hash, redundancy_confirmed_by_client_uuid, uuid, name, file_names);
 
 
 --
@@ -1325,7 +1325,7 @@ CREATE UNIQUE INDEX groups_owner_uuid_name_unique ON groups USING btree (owner_u
 -- Name: groups_search_index; Type: INDEX; Schema: public; Owner: -; Tablespace: 
 --
 
-CREATE INDEX groups_search_index ON groups USING btree (uuid, owner_uuid, modified_by_client_uuid, modified_by_user_uuid, name, description, group_class);
+CREATE INDEX groups_search_index ON groups USING btree (uuid, owner_uuid, modified_by_client_uuid, modified_by_user_uuid, name, group_class);
 
 
 --
@@ -1990,7 +1990,7 @@ CREATE INDEX job_tasks_search_index ON job_tasks USING btree (uuid, owner_uuid, 
 -- Name: jobs_search_index; Type: INDEX; Schema: public; Owner: -; Tablespace: 
 --
 
-CREATE INDEX jobs_search_index ON jobs USING btree (uuid, owner_uuid, modified_by_client_uuid, modified_by_user_uuid, submit_id, script, script_version, cancelled_by_client_uuid, cancelled_by_user_uuid, output, is_locked_by_uuid, log, repository, supplied_script_version, docker_image_locator, description, state, arvados_sdk_version);
+CREATE INDEX jobs_search_index ON jobs USING btree (uuid, owner_uuid, modified_by_client_uuid, modified_by_user_uuid, submit_id, script, script_version, cancelled_by_client_uuid, cancelled_by_user_uuid, output, is_locked_by_uuid, log, repository, supplied_script_version, docker_image_locator, state, arvados_sdk_version);
 
 
 --
@@ -2039,7 +2039,7 @@ CREATE INDEX nodes_search_index ON nodes USING btree (uuid, owner_uuid, modified
 -- Name: pipeline_instances_search_index; Type: INDEX; Schema: public; Owner: -; Tablespace: 
 --
 
-CREATE INDEX pipeline_instances_search_index ON pipeline_instances USING btree (uuid, owner_uuid, modified_by_client_uuid, modified_by_user_uuid, pipeline_template_uuid, name, state, description);
+CREATE INDEX pipeline_instances_search_index ON pipeline_instances USING btree (uuid, owner_uuid, modified_by_client_uuid, modified_by_user_uuid, pipeline_template_uuid, name, state);
 
 
 --
@@ -2053,7 +2053,7 @@ CREATE UNIQUE INDEX pipeline_template_owner_uuid_name_unique ON pipeline_templat
 -- Name: pipeline_templates_search_index; Type: INDEX; Schema: public; Owner: -; Tablespace: 
 --
 
-CREATE INDEX pipeline_templates_search_index ON pipeline_templates USING btree (uuid, owner_uuid, modified_by_client_uuid, modified_by_user_uuid, name, description);
+CREATE INDEX pipeline_templates_search_index ON pipeline_templates USING btree (uuid, owner_uuid, modified_by_client_uuid, modified_by_user_uuid, name);
 
 
 --
