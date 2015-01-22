@@ -38,7 +38,6 @@ module RecordFilters
 
       if operator == '@@' # full-text-search
         cond_out << model_class.full_text_tsvector+" @@ to_tsquery(?)"
-        operand = '-' if (!operand or operand.empty?)
         param_out << operand.split.each {|s| s.concat(':*')}.join(' & ')
       else
        attrs.each do |attr|

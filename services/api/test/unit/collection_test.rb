@@ -93,7 +93,10 @@ class CollectionTest < ActiveSupport::TestCase
     [
       ['foo', true],
       ['foo bar', false],                     # no collection matching both
+      ['foo&bar', false],                     # no collection matching both
+      ['foo|bar', true],                      # works only no spaces between the words
       ['Gnu public', true],                   # both prefixes found, though not consecutively
+      ['Gnu&public', true],                   # both prefixes found, though not consecutively
       ['file4', true],                        # prefix match
       ['file4.txt', true],                    # whole string match
       ['filex', false],                       # no such prefix
