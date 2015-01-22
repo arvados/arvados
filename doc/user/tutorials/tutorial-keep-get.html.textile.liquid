@@ -4,11 +4,19 @@ navsection: userguide
 title: "Downloading data"
 ...
 
-This tutorial describes how to list and download Arvados data collections using the command line tools @arv-ls@ and @arv-get@.  It is also possible to download files from a collection from the Workbench page for the collection, covered in "running a pipeline using Workbench":{{site.baseurl}}/user/tutorials/tutorial-pipeline-workbench.html
+Arvados Data collections can be downloaded using either the arv commands or using Workbench.
+
+# "*Downloading using arv commands*":#download-using-arv
+# "*Downloading using Workbench*":#download-using-workbench
+# "*Downloading a shared collection using Workbench*":#download-shared-collection
+
+h2(#download-using-arv). Downloading using arv commands
 
 {% include 'tutorial_expectations' %}
 
-You can view the contents of a collection using @arv-ls@:
+You can download Arvados data collections using the command line tools @arv-ls@ and @arv-get@.
+
+Use @arv-ls@ to view the contents of a collection:
 
 <notextile>
 <pre><code>~$ <span class="userinput">arv-ls c1bad4b39ca5a924e481008009d94e32+210</span>
@@ -45,3 +53,27 @@ You can also download individual files:
 <pre><code>~$ <span class="userinput">arv-get 887cd41e9c613463eab2f0d885c6dd96+83/alice.txt .</span>
 </code></pre>
 </notextile>
+
+h2(#download-using-workbench). Downloading using Workbench
+
+You can also download Arvados data collections using the Workbench.
+
+Visit the Workbench *Dashboard*. Click on *Projects*<span class="caret"></span> dropdown menu in the top navigation menu, select your *Home* project. You will see the *Data collections* tab, which lists the collections in this project.
+
+You can access the contents of a collection by clicking on the *<i class="fa fa-fw fa-archive"></i> Show* button next to the collection. This will take you to the collection's page. Using this page you can see the collection's contents, download individual files, and set sharing options.
+
+You can now download the collection files by clicking on the <span class="btn btn-sm btn-info"><i class="fa fa-download"></i></span> button(s).
+
+h2(#download-shared-collection). Downloading a shared collection using Workbench
+
+Collections can be shared to allow downloads by anonymous users.
+
+To share a collection with anonymous users, visit the collection page using Workbench as described in the above section. Once on this page, click on the <span class="btn btn-sm btn-primary" >Create sharing link</span> button.
+
+This will create a sharing link for the collection as shown below. You can copy the sharing link in this page and share it with other users.
+
+!{display: block;margin-left: 25px;margin-right: auto;border:1px solid lightgray;}{{ site.baseurl }}/images/shared-collection.png!
+
+A user with this url can download this collection by simply accessing this url. It will present a downloadable version of the collection as shown below.
+
+!{display: block;margin-left: 25px;margin-right: auto;border:1px solid lightgray;}{{ site.baseurl }}/images/download-shared-collection.png!
