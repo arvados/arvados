@@ -30,7 +30,7 @@ class Arvados::V1::NodesController < ApplicationController
       end
       @object.ping(ping_data)
       if @object.info['ping_secret'] == params[:ping_secret]
-        render json: @object.as_api_response(:superuser)
+        send_json @object.as_api_response(:superuser)
       else
         raise "Invalid ping_secret after ping"
       end

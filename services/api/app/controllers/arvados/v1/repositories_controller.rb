@@ -71,10 +71,8 @@ class Arvados::V1::RepositoriesController < ApplicationController
         end
       end
     end
-    render json: {
-      kind: 'arvados#RepositoryPermissionSnapshot',
-      repositories: @repo_info.values,
-      user_keys: @user_aks
-    }
+    send_json(kind: 'arvados#RepositoryPermissionSnapshot',
+              repositories: @repo_info.values,
+              user_keys: @user_aks)
   end
 end

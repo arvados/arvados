@@ -14,7 +14,7 @@ module KindAndEtag
     self.class.kind
   end
 
-  def etag
-    Digest::MD5.hexdigest(self.inspect).to_i(16).to_s(36)
+  def etag attrs=nil
+    Digest::MD5.hexdigest((attrs || self.attributes).inspect).to_i(16).to_s(36)
   end
 end

@@ -29,7 +29,7 @@ class Arvados::V1::CollectionsController < ApplicationController
     if @object.is_a? Collection
       super
     else
-      render json: @object
+      send_json @object
     end
   end
 
@@ -169,14 +169,14 @@ class Arvados::V1::CollectionsController < ApplicationController
     visited = {}
     search_edges(visited, @object[:portable_data_hash], :search_up)
     search_edges(visited, @object[:uuid], :search_up)
-    render json: visited
+    send_json visited
   end
 
   def used_by
     visited = {}
     search_edges(visited, @object[:uuid], :search_down)
     search_edges(visited, @object[:portable_data_hash], :search_down)
-    render json: visited
+    send_json visited
   end
 
   protected

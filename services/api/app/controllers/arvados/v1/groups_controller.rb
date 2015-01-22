@@ -57,7 +57,7 @@ class Arvados::V1::GroupsController < ApplicationController
       :items_available => @items_available,
       :items => @objects.as_api_response(nil)
     }
-    render json: @object_list
+    send_json @object_list
   end
 
   protected

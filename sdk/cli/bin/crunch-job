@@ -356,8 +356,12 @@ if (!defined $no_clear_tmp) {
   my $cleanpid = fork();
   if ($cleanpid == 0)
   {
+    # Find FUSE mounts that look like Keep mounts (the mount path has the
+    # word "keep") and unmount them.  Then clean up work directories.
+    # TODO: When #5036 is done and widely deployed, we can get rid of the
+    # regular expression and just unmount everything with type fuse.keep.
     srun (["srun", "--nodelist=$nodelist", "-D", $ENV{'TMPDIR'}],
-          ['bash', '-c', 'if mount | grep -q $JOB_WORK/; then for i in $JOB_WORK/*keep $CRUNCH_TMP/task/*.keep; do /bin/fusermount -z -u $i; done; fi; sleep 1; rm -rf $JOB_WORK $CRUNCH_INSTALL $CRUNCH_TMP/task $CRUNCH_TMP/src*']);
+          ['bash', '-ec', 'mount -t fuse,fuse.keep | awk \'($3 ~ /\ykeep\y/){print $3}\' | xargs -r -n 1 fusermount -u -z; sleep 1; rm -rf $JOB_WORK $CRUNCH_INSTALL $CRUNCH_TMP/task $CRUNCH_TMP/src*']);
     exit (1);
   }
   while (1)
