@@ -8,6 +8,7 @@ gem 'rails', '~> 3.2.0'
 group :test, :development do
   gem 'factory_girl_rails'
   gem 'database_cleaner'
+  gem 'ruby-prof'
   # Note: "require: false" here tells bunder not to automatically
   # 'require' the packages during application startup. Installation is
   # still mandatory.
@@ -72,7 +73,7 @@ gem 'faye-websocket'
 gem 'themes_for_rails'
 
 gem 'arvados', '>= 0.1.20140919104705'
-gem 'arvados-cli', '>= 0.1.20150120194251'
+gem 'arvados-cli', '>= 0.1.20150121183928'
 
 # pg_power lets us use partial indexes in schema.rb in Rails 3
 gem 'pg_power'

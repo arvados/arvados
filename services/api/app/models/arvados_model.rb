@@ -451,6 +451,7 @@ class ArvadosModel < ActiveRecord::Base
   def self.uuid_prefixes
     unless @@prefixes_hash
       @@prefixes_hash = {}
+      Rails.application.eager_load!
       ActiveRecord::Base.descendants.reject(&:abstract_class?).each do |k|
         if k.respond_to?(:uuid_prefix)
           @@prefixes_hash[k.uuid_prefix] = k
@@ -517,7 +518,6 @@ class ArvadosModel < ActiveRecord::Base
     end
     resource_class = nil
 
-    Rails.application.eager_load!
     uuid.match HasUuid::UUID_REGEX do |re|
       return uuid_prefixes[re[1]] if uuid_prefixes[re[1]]
     end
@@ -542,8 +542,8 @@ class ArvadosModel < ActiveRecord::Base
   end
 
   def log_start_state
-    @old_etag = etag
-    @old_attributes = logged_attributes
+    @old_attributes = Marshal.load(Marshal.dump(attributes))
+    @old_logged_attributes = Marshal.load(Marshal.dump(logged_attributes))
   end
 
   def log_change(event_type)
@@ -562,14 +562,14 @@ class ArvadosModel < ActiveRecord::Base
 
   def log_update
     log_change('update') do |log|
-      log.fill_properties('old', @old_etag, @old_attributes)
+      log.fill_properties('old', etag(@old_attributes), @old_logged_attributes)
       log.update_to self
     end
   end
 
   def log_destroy
     log_change('destroy') do |log|
-      log.fill_properties('old', @old_etag, @old_attributes)
+      log.fill_properties('old', etag(@old_attributes), @old_logged_attributes)
       log.update_to nil
     end
   end
