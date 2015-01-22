@@ -45,7 +45,7 @@ func CopyPipeToChan(in io.ReadCloser, out chan string, done chan<- bool) {
 		out <- s.Text()
 	}
 	if s.Err() != nil {
-		out <- fmt.Sprintf("CopyPipeToChan: %s", s.Err())
+		out <- fmt.Sprintf("crunchstat: line buffering error: %s", s.Err())
 	}
 	done <- true
 }

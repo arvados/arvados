@@ -66,13 +66,12 @@ func TestCopyPipeToChanLongLines(t *testing.T) {
 			long_line[i] = byte('x')
 		}
 		pipeOut.Write(long_line)
-		pipeOut.Close()
 	}()
 
 	// Expect error message from logChan.
 
 	errmsg := <-logChan
-	if matched, err := regexp.MatchString("^CopyPipeToChan:.*token too long", errmsg); err != nil || !matched {
+	if matched, err := regexp.MatchString("^crunchstat: line buffering error:.*token too long", errmsg); err != nil || !matched {
 		t.Fatalf("expected CopyPipeToChan error, got %s", errmsg)
 	}
 
