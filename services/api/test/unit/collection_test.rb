@@ -92,23 +92,22 @@ class CollectionTest < ActiveSupport::TestCase
 
     [
       ['foo', true],
-      ['foo bar', true],
-      ['foox barx', false],                   # no match for either
-      ['foo barx', true],
-      ['file4', true],                        # whole string match
+      ['foo bar', false],                     # no collection matching both
+      ['Gnu public', true],                   # both prefixes found, though not consecutively
+      ['file4', true],                        # prefix match
       ['file4.txt', true],                    # whole string match
-      ['filex', false],                       # looks for the whole string and fails
+      ['filex', false],                       # no such prefix
+      ['subdir', true],                       # prefix matches
       ['subdir2', true],
       ['subdir2/', true],
       ['subdir2/subdir3', true],
       ['subdir2/subdir3/subdir4', true],
-      ['subdir', true],                       # prefix matches
-      ['no-such-file', false],                # looks for whole string and fails
-      ['no such file', true],                 # matches "file"
+      ['subdir2 file4', true],                # look for both prefixes
+      ['subdir4', false],                     # not a prefix match
     ].each do |search_filter, expect_results|
-      search_filters = search_filter.split.each {|s| s.concat(':*')}
-      results = Collection.where("to_tsvector('english', file_names) @@ to_tsquery(?)",
-                                 "#{search_filters.join('|')}")
+      search_filters = search_filter.split.each {|s| s.concat(':*')}.join('&')
+      results = Collection.where("#{Collection.full_text_tsvector} @@ to_tsquery(?)",
+                                 "#{search_filters}")
       if expect_results
         assert_equal true, results.length>0, "No results found for '#{search_filter}'"
       else

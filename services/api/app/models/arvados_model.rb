@@ -205,6 +205,25 @@ class ArvadosModel < ActiveRecord::Base
     attributes
   end
 
+  def self.full_text_searchable_columns
+    self.columns.select do |col|
+      if col.type == :string or col.type == :text
+        true
+      end
+    end.map(&:name)
+  end
+
+  def self.full_text_tsvector
+    tsvector_str = "to_tsvector('english', "
+    first = true
+    self.full_text_searchable_columns.each do |column|
+      tsvector_str += " || ' ' || " if not first
+      tsvector_str += "coalesce(#{column},'')"
+      first = false
+    end
+    tsvector_str += ")"
+  end
+
   protected
 
   def ensure_ownership_path_leads_to_user

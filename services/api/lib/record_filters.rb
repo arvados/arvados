@@ -22,7 +22,7 @@ module RecordFilters
     ar_table_name = model_class.table_name
     filters.each do |filter|
       attrs_in, operator, operand = filter
-      if attrs_in == 'any'
+      if attrs_in == 'any' && operator != '@@'
         attrs = model_class.searchable_columns(operator)
       elsif attrs_in.is_a? Array
         attrs = attrs_in
@@ -35,7 +35,13 @@ module RecordFilters
         raise ArgumentError.new("Invalid operator '#{operator}' (#{operator.class}) in filter")
       end
       cond_out = []
-      attrs.each do |attr|
+
+      if operator == '@@' # full-text-search
+        cond_out << model_class.full_text_tsvector+" @@ to_tsquery(?)"
+        operand = '-' if (!operand or operand.empty?)
+        param_out << operand.split.each {|s| s.concat(':*')}.join(' & ')
+      else
+       attrs.each do |attr|
         if !model_class.searchable_columns(operator).index attr.to_s
           raise ArgumentError.new("Invalid attribute '#{attr}' in filter")
         end
@@ -104,6 +110,7 @@ module RecordFilters
           end
           cond_out << cond.join(' OR ')
         end
+       end
       end
       conds_out << cond_out.join(' OR ') if cond_out.any?
     end

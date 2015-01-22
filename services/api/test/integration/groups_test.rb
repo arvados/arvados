@@ -39,4 +39,31 @@ class GroupsTest < ActionDispatch::IntegrationTest
     end
   end
 
+  [
+    ['Collection_', true],           # collections and pipelines templates
+    ['hash', true],                  # pipeline templates
+    ['fa7aeb5140e2848d39b', true],   # script_parameter of pipeline instances
+    ['no-such-thing', false],        # script_parameter of pipeline instances
+  ].each do |search_filter, expect_results|
+    test "full text search of group-owned objects for #{search_filter}" do
+      get "/arvados/v1/groups/contents", {
+        id: groups(:aproject).uuid,
+        limit: 5,
+        :filters => [['any', '@@', search_filter]].to_json
+      }, auth(:active)
+      assert_response :success
+      if expect_results
+        assert_operator(0, :<, json_response['items'].count,
+                        "expected results but received 0")
+        json_response['items'].each do |item|
+          assert item['uuid']
+          assert_equal groups(:aproject).uuid, item['owner_uuid']
+        end
+      else
+        assert_operator(0, :==, json_response['items'].count,
+                        "expected no results but received #{json_response['items'].length}")
+      end
+    end
+  end
+
 end

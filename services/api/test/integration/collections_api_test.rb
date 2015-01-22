@@ -204,4 +204,44 @@ class CollectionsApiTest < ActionDispatch::IntegrationTest
       assert_not_nil first_item
     end
   end
+
+  test "search collection using full text search" do
+    # create collection to be searched for
+    signed_manifest = Collection.sign_manifest(". 85877ca2d7e05498dd3d109baf2df106+95+A3a4e26a366ee7e4ed3e476ccf05354761be2e4ae@545a9920 0:95:file_in_subdir1\n./subdir2/subdir3 2bbc341c702df4d8f42ec31f16c10120+64+A315d7e7bad2ce937e711fc454fae2d1194d14d64@545a9920 0:32:file1_in_subdir3.txt 32:32:file2_in_subdir3.txt\n./subdir2/subdir3/subdir4 2bbc341c702df4d8f42ec31f16c10120+64+A315d7e7bad2ce937e711fc454fae2d1194d14d64@545a9920 0:32:file3_in_subdir4.txt 32:32:file4_in_subdir4.txt\n", api_token(:active))
+    post "/arvados/v1/collections", {
+      format: :json,
+      collection: {description: 'specific collection description', manifest_text: signed_manifest}.to_json,
+    }, auth(:active)
+    assert_response :success
+    assert_equal true, json_response['manifest_text'].include?('file4_in_subdir4.txt')
+
+    created = json_response
+
+    # search using the filename
+    search_using_full_text_search 'subdir2', 1
+    search_using_full_text_search 'subdir2/subdir', 1
+    search_using_full_text_search 'subdir2/subdir3/subdir4', 1
+    search_using_full_text_search 'file4', 1
+    search_using_full_text_search 'file4_in_subdir', 1
+    search_using_full_text_search 'subdir2 file4', 1      # look for prefixes subdir2 and file4
+    search_using_full_text_search 'subdir2 ile4', 0
+    search_using_full_text_search 'subdir2/subdir3/subdir4 file4_in_subdir4.txt', 1
+  end
+
+  def search_using_full_text_search search_filter, expected_items
+    get '/arvados/v1/collections', {
+      :filters => [['any', '@@', search_filter]].to_json
+    }, auth(:active)
+    assert_response :success
+    response_items = json_response['items']
+    assert_not_nil response_items
+    if expected_items == 0
+      assert_equal 0, json_response['items_available']
+      assert_equal 0, response_items.size
+    else
+      assert_equal expected_items, response_items.size, "Did not find results for #{search_filter}"
+      first_item = response_items.first
+      assert_not_nil first_item
+    end
+  end
 end
