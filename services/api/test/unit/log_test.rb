@@ -94,6 +94,20 @@ class LogTest < ActiveSupport::TestCase
     end
   end
 
+  test "old_attributes preserves values deep inside a hash" do
+    set_user_from_auth :active
+    it = specimens(:owned_by_active_user)
+    it.properties = {'foo' => {'bar' => ['baz', 'qux', {'quux' => 'bleat'}]}}
+    it.save!
+    @log_count += 1
+    it.properties['foo']['bar'][2]['quux'] = 'blert'
+    it.save!
+    assert_logged it, :update do |props|
+      assert_equal 'bleat', props['old_attributes']['properties']['foo']['bar'][2]['quux']
+      assert_equal 'blert', props['new_attributes']['properties']['foo']['bar'][2]['quux']
+    end
+  end
+
   test "destroying an authorization makes a log" do
     set_user_from_auth :admin_trustedclient
     auth = api_client_authorizations(:spectator)
