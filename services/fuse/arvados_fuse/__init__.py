@@ -729,14 +729,13 @@ class Operations(llfuse.Operations):
     so request handlers do not run concurrently unless the lock is explicitly released
     using "with llfuse.lock_released:"'''
 
-    def __init__(self, uid, gid, encoding="utf-8", set_executable_bit=False):
+    def __init__(self, uid, gid, encoding="utf-8"):
         super(Operations, self).__init__()
 
         self.inodes = Inodes()
         self.uid = uid
         self.gid = gid
         self.encoding = encoding
-        self.set_executable_bit = set_executable_bit
 
         # dict of inode to filehandle
         self._filehandles = {}
@@ -769,8 +768,6 @@ class Operations(llfuse.Operations):
         entry.st_mode = stat.S_IRUSR | stat.S_IRGRP | stat.S_IROTH
         if isinstance(e, Directory):
             entry.st_mode |= stat.S_IXUSR | stat.S_IXGRP | stat.S_IXOTH | stat.S_IFDIR
-        elif isinstance(e, StreamReaderFile) and self.set_executable_bit:
-            entry.st_mode |= stat.S_IXUSR | stat.S_IXGRP | stat.S_IXOTH | stat.S_IFREG
         else:
             entry.st_mode |= stat.S_IFREG
 
