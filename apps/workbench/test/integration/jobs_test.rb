@@ -81,6 +81,8 @@ class JobsTest < ActionDispatch::IntegrationTest
   ].each do |job_name, expect_options, use_options, click_option|
     test "Rerun #{job_name} job, expect options #{expect_options},
           use options #{use_options} and click option #{click_option}" do
+      need_javascript
+
       job = api_fixture('jobs')[job_name]
       visit page_with_token 'active', '/jobs/'+job['uuid']
 
