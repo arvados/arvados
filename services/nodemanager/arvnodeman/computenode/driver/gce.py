@@ -37,17 +37,17 @@ class ComputeNodeDriver(BaseComputeNodeDriver):
                 if new_pair is not None:
                     self.create_kwargs[new_pair[0]] = new_pair[1]
 
-    def _init_image_id(self, image_id):
-        return 'image', image_id
+    def _init_image(self, image_name):
+        return 'image', image_name
+
+    def _init_location(self, location):
+        return 'location', location
 
     def _init_ping_host(self, ping_host):
         self.ping_host = ping_host
 
     def _init_service_accounts(self, service_accounts_str):
         self.service_accounts = json.loads(service_accounts_str)
-
-    def _init_network_id(self, subnet_id):
-        return 'ex_network', subnet_id
 
     def _init_ssh_key(self, filename):
         with open(filename) as ssh_file:
@@ -60,7 +60,7 @@ class ComputeNodeDriver(BaseComputeNodeDriver):
             ping_url = ('https://{}/arvados/v1/nodes/{}/ping?ping_secret={}'.
                         format(self.ping_host, arvados_node['uuid'],
                                ping_secret))
-            result['ex_userdata'] = ping_url
+            result['ex_metadata']['pingUrl'] = ping_url
         if self.service_accounts is not None:
             result['ex_service_accounts'] = self.service_accounts
 
@@ -69,6 +69,13 @@ class ComputeNodeDriver(BaseComputeNodeDriver):
         if self.ssh_key is not None:
             result['ex_metadata']['sshKeys'] = 'root:{}'.format(self.ssh_key)
         return result
+
+    def create_node(self, size, arvados_node):
+        kwargs = self.create_kwargs.copy()
+        kwargs.update(self.arvados_create_kwargs(arvados_node))
+        kwargs.setdefault('name', 'arv-{}'.format(arvados_node['uuid']))
+        kwargs['size'] = size
+        return self.real.create_node(**kwargs)
 
     # When an Arvados node is synced with a GCE node, the Arvados hostname
     # is forwarded in a GCE tag 'hostname-foo'.
