@@ -235,10 +235,11 @@ block through normal Keep means.
     PENDING = 1
     COMMITTED = 2
 
-    def __init__(self, blockid, starting_capacity):
+    def __init__(self, blockid, starting_capacity, owner):
         '''
         blockid: the identifier for this block
         starting_capacity: the initial buffer capacity
+        owner: ArvadosFile that owns this block
         '''
         self.blockid = blockid
         self.buffer_block = bytearray(starting_capacity)
@@ -246,6 +247,7 @@ block through normal Keep means.
         self.write_pointer = 0
         self.state = BufferBlock.WRITABLE
         self._locator = None
+        self.owner = owner
 
     def append(self, data):
         '''
@@ -302,17 +304,34 @@ class BlockManager(object):
         self._prefetch_queue = None
         self._prefetch_threads = None
 
-    def alloc_bufferblock(self, blockid=None, starting_capacity=2**14):
+    def alloc_bufferblock(self, blockid=None, starting_capacity=2**14, owner=None):
         '''
         Allocate a new, empty bufferblock in WRITABLE state and return it.
         blockid: optional block identifier, otherwise one will be automatically assigned
         starting_capacity: optional capacity, otherwise will use default capacity
+        owner: ArvadosFile that owns this block
         '''
         if blockid is None:
             blockid = "bufferblock%i" % len(self._bufferblocks)
-        bb = BufferBlock(blockid, starting_capacity=starting_capacity)
+        bb = BufferBlock(blockid, starting_capacity=starting_capacity, owner=owner)
         self._bufferblocks[bb.blockid] = bb
         return bb
+
+    def dup_block(self, blockid, owner):
+        '''
+        Create a new bufferblock in WRITABLE state, initialized with the content of an existing bufferblock.
+        blockid: the block to copy.  May be an existing buffer block id.
+        owner: ArvadosFile that owns the new block
+        '''
+        new_blockid = "bufferblock%i" % len(self._bufferblocks)
+        block = self._bufferblocks[blockid]
+        bb = BufferBlock(new_blockid, len(block), owner)
+        bb.append(block)
+        self._bufferblocks[bb.blockid] = bb
+        return bb
+
+    def is_bufferblock(self, id):
+        return id in self._bufferblocks
 
     def stop_threads(self):
         '''
@@ -468,14 +487,23 @@ class ArvadosFile(object):
         self._current_bblock = None
         self.lock = threading.Lock()
 
-    def clone(self):
+    def clone(self, num_retries):
         '''Make a copy of this file.'''
-        # TODO: copy bufferblocks?
         with self.lock:
             cp = ArvadosFile()
             cp.parent = self.parent
             cp._modified = False
-            cp.segments = [Range(r.locator, r.range_start, r.range_size, r.segment_offset) for r in self.segments]
+
+            map_loc = {}
+            for r in self.segments:
+                new_loc = r.locator
+                if self.parent._my_block_manager().is_bufferblock(r.locator):
+                    if r.locator not in map_loc:
+                        map_loc[r.locator] = self.parent._my_block_manager().dup_block(r.locator, cp).blockid
+                    new_loc = map_loc[r.locator]
+
+                cp.segments.append(Range(new_loc, r.range_start, r.range_size, r.segment_offset))
+
             return cp
 
     def set_unmodified(self):
@@ -549,7 +577,7 @@ class ArvadosFile(object):
         if write_total < self._current_bblock.size():
             # There is more data in the buffer block than is actually accounted for by segments, so
             # re-pack into a new buffer by copying over to a new buffer block.
-            new_bb = self.parent._my_block_manager().alloc_bufferblock(self._current_bblock.blockid, starting_size=write_total)
+            new_bb = self.parent._my_block_manager().alloc_bufferblock(self._current_bblock.blockid, starting_size=write_total, owner=self)
             for t in bufferblock_segs:
                 new_bb.append(self._current_bblock.buffer_view[t.segment_offset:t.segment_offset+t.range_size].tobytes())
                 t.segment_offset = new_bb.size() - t.range_size
@@ -573,13 +601,13 @@ class ArvadosFile(object):
         self._modified = True
 
         if self._current_bblock is None or self._current_bblock.state != BufferBlock.WRITABLE:
-            self._current_bblock = self.parent._my_block_manager().alloc_bufferblock()
+            self._current_bblock = self.parent._my_block_manager().alloc_bufferblock(owner=self)
 
         if (self._current_bblock.size() + len(data)) > config.KEEP_BLOCK_SIZE:
             self._repack_writes()
             if (self._current_bblock.size() + len(data)) > config.KEEP_BLOCK_SIZE:
                 self.parent._my_block_manager().commit_bufferblock(self._current_bblock)
-                self._current_bblock = self.parent._my_block_manager().alloc_bufferblock()
+                self._current_bblock = self.parent._my_block_manager().alloc_bufferblock(owner=self)
 
         self._current_bblock.append(data)
         replace_range(self.segments, offset, len(data), self._current_bblock.blockid, self._current_bblock.write_pointer - len(data))
