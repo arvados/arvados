@@ -18,7 +18,8 @@ class EventClient(WebSocketClient):
                     config.get('ARVADOS_API_HOST_INSECURE', 'no')):
             ssl_options={'cert_reqs': ssl.CERT_NONE}
         else:
-            ssl_options={'cert_reqs': ssl.CERT_REQUIRED}
+            # Prefer system's CA certificates (if available)
+            ssl_options={'cert_reqs': ssl.CERT_REQUIRED, 'ca_certs': '/etc/ssl/certs/ca-certificates.crt' }
         super(EventClient, self).__init__(url, ssl_options=ssl_options)
         self.filters = filters
         self.on_event = on_event
