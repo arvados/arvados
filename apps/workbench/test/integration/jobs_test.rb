@@ -72,4 +72,48 @@ class JobsTest < ActionDispatch::IntegrationTest
     wait_for_ajax
     assert page.has_text? 'Showing only 100 bytes of this log'
   end
+
+  [
+    ['foobar', false, false, false],
+    ['job_with_latest_version', true, false, false],
+    ['job_with_latest_version', true, true, false],
+    ['job_with_latest_version', true, true, true],
+  ].each do |job_name, expect_options, use_options, click_option|
+    test "Rerun #{job_name} job, expect options #{expect_options},
+          use options #{use_options} and click option #{click_option}" do
+      job = api_fixture('jobs')[job_name]
+      visit page_with_token 'active', '/jobs/'+job['uuid']
+
+      assert_selector 'a,button', text: 'Re-run same version'
+      if expect_options
+        assert_text 'supplied_script_version: master'
+        assert_selector 'a,button', text: 'Re-run with options'
+      else
+        assert_text 'supplied_script_version: (none)'
+        assert_no_selector 'a,button', text: 'Re-run with options'
+      end
+
+      # Now re-run the job
+      if use_options
+        assert_triggers_dom_event 'shown.bs.modal' do
+          find('a,button', text: 'Re-run with options...').click
+        end
+        within('.modal-dialog') do
+          assert_selector 'a,button', text: 'Run now'
+          assert_selector 'a,button', text: 'Cancel'
+          page.choose('use_script_same') if click_option
+          find('button', text: 'Run now').click
+        end
+      else
+        find('a,button', text: 'Re-run same version').click
+      end
+
+      # We see Fiddlesticks, but let's make sure the correct script version is sought.
+      if use_options && !click_option
+        assert_text "Script version #{job['supplied_script_version']} does not resolve to a commit"
+      else
+        assert_text "Script version #{job['script_version']} does not resolve to a commit"
+      end
+    end
+  end
 end
