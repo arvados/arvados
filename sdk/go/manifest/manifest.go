@@ -26,7 +26,8 @@ type BlockLocator struct {
 	Hints  []string
 }
 
-type ManifestLine struct {
+// Represents a single line from a manifest.
+type ManifestStream struct {
 	StreamName string
 	Blocks     []string
 	Files      []string
@@ -59,7 +60,7 @@ func ParseBlockLocator(s string) (b BlockLocator, err error) {
 	return
 }
 
-func parseManifestLine(s string) (m ManifestLine) {
+func parseManifestStream(s string) (m ManifestStream) {
 	tokens := strings.Split(s, " ")
 	m.StreamName = tokens[0]
 	tokens = tokens[1:]
@@ -74,8 +75,8 @@ func parseManifestLine(s string) (m ManifestLine) {
 	return
 }
 
-func (m *Manifest) LineIter() <-chan ManifestLine {
-	ch := make(chan ManifestLine)
+func (m *Manifest) StreamIter() <-chan ManifestStream {
+	ch := make(chan ManifestStream)
 	go func(input string) {
 		// This slice holds the current line and the remainder of the
 		// manifest.  We parse one line at a time, to save effort if we
@@ -85,7 +86,7 @@ func (m *Manifest) LineIter() <-chan ManifestLine {
 			lines = strings.SplitN(lines[1], "\n", 2)
 			if len(lines[0]) > 0 {
 				// Only parse non-blank lines
-				ch <- parseManifestLine(lines[0])
+				ch <- parseManifestStream(lines[0])
 			}
 			if len(lines) == 1 {
 				break
@@ -101,8 +102,8 @@ func (m *Manifest) LineIter() <-chan ManifestLine {
 // the same block multiple times.
 func (m *Manifest) BlockIterWithDuplicates() <-chan BlockLocator {
 	blockChannel := make(chan BlockLocator)
-	go func(lineChannel <-chan ManifestLine) {
-		for m := range lineChannel {
+	go func(streamChannel <-chan ManifestStream) {
+		for m := range streamChannel {
 			for _, block := range m.Blocks {
 				if b, err := ParseBlockLocator(block); err == nil {
 					blockChannel <- b
@@ -112,6 +113,6 @@ func (m *Manifest) BlockIterWithDuplicates() <-chan BlockLocator {
 			}
 		}
 		close(blockChannel)
-	}(m.LineIter())
+	}(m.StreamIter())
 	return blockChannel
 }

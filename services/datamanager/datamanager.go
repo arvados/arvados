@@ -53,8 +53,7 @@ func main() {
 	}
 
 	if arvLogger != nil {
-		arvLogger.MutateLog(func(properties map[string]interface{},
-			entry map[string]interface{}) {
+		arvLogger.Update(func(p map[string]interface{}, e map[string]interface{}) {
 			runInfo := make(map[string]interface{})
 			runInfo["start_time"] = time.Now()
 			runInfo["args"] = os.Args
@@ -65,12 +64,10 @@ func main() {
 				runInfo["hostname"] = hostname
 			}
 			runInfo["pid"] = os.Getpid()
-			properties["run_info"] = runInfo
+			p["run_info"] = runInfo
 		})
 
-		arvLogger.Edit()
 		arvLogger.AddWriteHook(LogMemoryAlloc)
-		arvLogger.Record()
 	}
 
 	collectionChannel := make(chan collection.ReadCollections)
@@ -86,19 +83,20 @@ func main() {
 
 	readCollections := <-collectionChannel
 
-	// Make compiler happy.
+	// TODO(misha): Use these together to verify replication.
 	_ = readCollections
 	_ = keepServerInfo
 
-	// Log that we're finished
+	// Log that we're finished. We force the recording, since go will
+	// not wait for the timer before exiting.
 	if arvLogger != nil {
-		properties, _ := arvLogger.Edit()
-		properties["run_info"].(map[string]interface{})["end_time"] = time.Now()
-		// Force the recording, since go will not wait for the timer before exiting.
-		arvLogger.ForceRecord()
+		arvLogger.ForceUpdate(func(p map[string]interface{}, e map[string]interface{}) {
+			p["run_info"].(map[string]interface{})["end_time"] = time.Now()
+		})
 	}
 }
 
+// TODO(misha): Consider moving this to loggerutil
 func LogMemoryAlloc(properties map[string]interface{}, entry map[string]interface{}) {
 	runInfo := properties["run_info"].(map[string]interface{})
 	var memStats runtime.MemStats

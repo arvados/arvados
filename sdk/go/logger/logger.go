@@ -1,27 +1,23 @@
 // Logger periodically writes a log to the Arvados SDK.
 //
-// This package is useful for maintaining a log object that is built
-// up over time. Every time the object is modified, it will be written
-// to the log. Writes will be throttled to no more than one every
+// This package is useful for maintaining a log object that is updated
+// over time. Every time the object is updated, it will be written to
+// the log. Writes will be throttled to no more than one every
 // WriteFrequencySeconds
 //
 // This package is safe for concurrent use as long as:
-// 1. The maps returned by Edit() are only edited in the same routine
-//    that called Edit()
-// 2. Those maps not edited after calling Record()
-// An easy way to assure this is true is to place the call to Edit()
-// within a short block as shown below in the Usage Example:
+// The maps passed to a LogMutator are not accessed outside of the
+// LogMutator
 //
 // Usage:
 // arvLogger := logger.NewLogger(params)
-// {
-//   properties, entry := arvLogger.Edit()  // This will block if others are using the logger
+// arvLogger.Update(func(properties map[string]interface{},
+// 	entry map[string]interface{}) {
 //   // Modifiy properties and entry however you want
 //   // properties is a shortcut for entry["properties"].(map[string]interface{})
 //   // properties can take any values you want to give it,
 //   // entry will only take the fields listed at http://doc.arvados.org/api/schema/Log.html
-// }
-// arvLogger.Record()  // This triggers the actual log write
+// })
 package logger
 
 import (
@@ -51,24 +47,32 @@ type LogMutator func(map[string]interface{}, map[string]interface{})
 // A Logger is used to build up a log entry over time and write every
 // version of it.
 type Logger struct {
-	// The Data we write
+	// The data we write
 	data       map[string]interface{} // The entire map that we give to the api
 	entry      map[string]interface{} // Convenience shortcut into data
 	properties map[string]interface{} // Convenience shortcut into data
 
-	lock   sync.Locker  // Synchronizes editing and writing
+	lock   sync.Locker  // Synchronizes access to this struct
 	params LoggerParams // Parameters we were given
 
-	// TODO(misha): replace lastWrite with nextWriteAllowed
-	lastWrite time.Time // The last time we wrote a log entry
-	modified  bool      // Has this data been modified since the last write
+	// Variables used to determine when and if we write to the log.
+	nextWriteAllowed time.Time // The next time we can write, respecting MinimumWriteInterval
+	modified         bool      // Has this data been modified since the last write?
+	writeScheduled   bool      // Is a write been scheduled for the future?
 
-	writeHooks []LogMutator
+	writeHooks []LogMutator // Mutators we call before each write.
 }
 
 // Create a new logger based on the specified parameters.
 func NewLogger(params LoggerParams) *Logger {
-	// TODO(misha): Add some params checking here.
+	// sanity check parameters
+	if &params.Client == nil {
+		log.Fatal("Nil arvados client in LoggerParams passed in to NewLogger()")
+	}
+	if params.EventType == "" {
+		log.Fatal("Empty event type in LoggerParams passed in to NewLogger()")
+	}
+
 	l := &Logger{data: make(map[string]interface{}),
 		lock:   &sync.Mutex{},
 		params: params}
@@ -79,68 +83,85 @@ func NewLogger(params LoggerParams) *Logger {
 	return l
 }
 
-// Get access to the maps you can edit. This will hold a lock until
-// you call Record. Do not edit the maps in any other goroutines or
-// after calling Record.
-// You don't need to edit both maps,
-// properties can take any values you want to give it,
-// entry will only take the fields listed at http://doc.arvados.org/api/schema/Log.html
-// properties is a shortcut for entry["properties"].(map[string]interface{})
-func (l *Logger) Edit() (properties map[string]interface{}, entry map[string]interface{}) {
+// Updates the log data and then writes it to the api server. If the
+// log has been recently written then the write will be postponed to
+// respect MinimumWriteInterval and this function will return before
+// the write occurs.
+func (l *Logger) Update(mutator LogMutator) {
 	l.lock.Lock()
-	l.modified = true // We don't actually know the caller will modifiy the data, but we assume they will.
 
-	return l.properties, l.entry
-}
+	mutator(l.properties, l.entry)
+	l.modified = true // We assume the mutator modified the log, even though we don't know for sure.
 
-// function to test new api, replacing Edit() and Record()
-func (l *Logger) MutateLog(mutator LogMutator) {
-	mutator(l.Edit())
-	l.Record()
-}
+	l.considerWriting()
 
-// Adds a hook which will be called every time this logger writes an entry.
-// The hook takes properties and entry as arguments, in that order.
-// This is useful for stuff like memory profiling.
-// This must be called between Edit() and Record() (e.g. while holding the lock)
-func (l *Logger) AddWriteHook(hook LogMutator) {
-	// TODO(misha): Acquire lock here! and erase comment about edit.
-	l.writeHooks = append(l.writeHooks, hook)
-	// TODO(misha): consider flipping the dirty bit here.
-}
-
-// Write the log entry you've built up so far. Do not edit the maps
-// returned by Edit() after calling this method.
-// If you have already written within MinimumWriteInterval, then this
-// will schedule a future write instead.
-// In either case, the lock will be released before Record() returns.
-func (l *Logger) Record() {
-	if l.writeAllowedNow() {
-		// We haven't written in the allowed interval yet, try to write.
-		l.write()
-	} else {
-		// TODO(misha): Only allow one outstanding write to be scheduled.
-		nextTimeToWrite := l.lastWrite.Add(l.params.MinimumWriteInterval)
-		writeAfter := nextTimeToWrite.Sub(time.Now())
-		time.AfterFunc(writeAfter, l.acquireLockConsiderWriting)
-	}
 	l.lock.Unlock()
 }
 
-// Similar to Record, but forces a write without respecting the
+// Similar to Update(), but forces a write without respecting the
 // MinimumWriteInterval. This is useful if you know that you're about
-// to quit (e.g. if you discovered a fatal error).
-func (l *Logger) ForceRecord() {
+// to quit (e.g. if you discovered a fatal error, or you're finished),
+// since go will not wait for timers (including the pending write
+// timer) to go off before exiting.
+func (l *Logger) ForceUpdate(mutator LogMutator) {
+	l.lock.Lock()
+
+	mutator(l.properties, l.entry)
+	l.modified = true // We assume the mutator modified the log, even though we don't know for sure.
+
 	l.write()
 	l.lock.Unlock()
 }
 
-// Whether enough time has elapsed since the last write.
-func (l *Logger) writeAllowedNow() bool {
-	return l.lastWrite.Add(l.params.MinimumWriteInterval).Before(time.Now())
+// Adds a hook which will be called every time this logger writes an entry.
+func (l *Logger) AddWriteHook(hook LogMutator) {
+	l.lock.Lock()
+	l.writeHooks = append(l.writeHooks, hook)
+	// TODO(misha): Consider setting modified and attempting a write.
+	l.lock.Unlock()
 }
 
-// Actually writes the log entry. This method assumes we're holding the lock.
+// This function is called on a timer when we have something to write,
+// but need to schedule the write for the future to respect
+// MinimumWriteInterval.
+func (l *Logger) acquireLockConsiderWriting() {
+	l.lock.Lock()
+
+	// We are the scheduled write, so there are no longer future writes
+	// scheduled.
+	l.writeScheduled = false
+
+	l.considerWriting()
+
+	l.lock.Unlock()
+}
+
+// The above methods each acquire the lock and release it.
+// =======================================================
+// The below methods all assume we're holding a lock.
+
+// Check whether we have anything to write. If we do, then either
+// write it now or later, based on what we're allowed.
+func (l *Logger) considerWriting() {
+	if !l.modified {
+		// Nothing to write
+	} else if l.writeAllowedNow() {
+		l.write()
+	} else if l.writeScheduled {
+		// A future write is already scheduled, we don't need to do anything.
+	} else {
+		writeAfter := l.nextWriteAllowed.Sub(time.Now())
+		time.AfterFunc(writeAfter, l.acquireLockConsiderWriting)
+		l.writeScheduled = true
+	}
+}
+
+// Whether writing now would respect MinimumWriteInterval
+func (l *Logger) writeAllowedNow() bool {
+	return l.nextWriteAllowed.Before(time.Now())
+}
+
+// Actually writes the log entry.
 func (l *Logger) write() {
 
 	// Run all our hooks
@@ -159,15 +180,6 @@ func (l *Logger) write() {
 	}
 
 	// Update stats.
-	l.lastWrite = time.Now()
+	l.nextWriteAllowed = time.Now().Add(l.params.MinimumWriteInterval)
 	l.modified = false
-}
-
-func (l *Logger) acquireLockConsiderWriting() {
-	l.lock.Lock()
-	if l.modified && l.writeAllowedNow() {
-		// We have something new to write and we're allowed to write.
-		l.write()
-	}
-	l.lock.Unlock()
 }

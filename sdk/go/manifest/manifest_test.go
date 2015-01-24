@@ -57,7 +57,7 @@ func expectStringSlicesEqual(t *testing.T, actual []string, expected []string) {
 	}
 }
 
-func expectManifestLine(t *testing.T, actual ManifestLine, expected ManifestLine) {
+func expectManifestStream(t *testing.T, actual ManifestStream, expected ManifestStream) {
 	expectEqual(t, actual.StreamName, expected.StreamName)
 	expectStringSlicesEqual(t, actual.Blocks, expected.Blocks)
 	expectStringSlicesEqual(t, actual.Files, expected.Files)
@@ -108,9 +108,9 @@ func TestLocatorPatternBasic(t *testing.T) {
 	expectLocatorPatternFail(t,  "12345678901234567890123456789012+12345+A+B2")
 }
 
-func TestParseManifestLineSimple(t *testing.T) {
-	m := parseManifestLine(". 365f83f5f808896ec834c8b595288735+2310+K@qr1hi+Af0c9a66381f3b028677411926f0be1c6282fe67c@542b5ddf 0:2310:qr1hi-8i9sb-ienvmpve1a0vpoi.log.txt")
-	expectManifestLine(t, m, ManifestLine{StreamName: ".",
+func TestParseManifestStreamSimple(t *testing.T) {
+	m := parseManifestStream(". 365f83f5f808896ec834c8b595288735+2310+K@qr1hi+Af0c9a66381f3b028677411926f0be1c6282fe67c@542b5ddf 0:2310:qr1hi-8i9sb-ienvmpve1a0vpoi.log.txt")
+	expectManifestStream(t, m, ManifestStream{StreamName: ".",
 		Blocks: []string{"365f83f5f808896ec834c8b595288735+2310+K@qr1hi+Af0c9a66381f3b028677411926f0be1c6282fe67c@542b5ddf"},
 		Files: []string{"0:2310:qr1hi-8i9sb-ienvmpve1a0vpoi.log.txt"}})
 }
@@ -126,24 +126,24 @@ func TestParseBlockLocatorSimple(t *testing.T) {
 			"Af0c9a66381f3b028677411926f0be1c6282fe67c@542b5ddf"}})
 }
 
-func TestLineIterShortManifestWithBlankLines(t *testing.T) {
+func TestStreamIterShortManifestWithBlankStreams(t *testing.T) {
 	content, err := ioutil.ReadFile("testdata/short_manifest")
 	if err != nil {
 		t.Fatalf("Unexpected error reading manifest from file: %v", err)
 	}
 	manifest := Manifest{string(content)}
-	lineIter := manifest.LineIter()
+	streamIter := manifest.StreamIter()
 
-	firstLine := <-lineIter
-	expectManifestLine(t,
-		firstLine,
-		ManifestLine{StreamName: ".",
+	firstStream := <-streamIter
+	expectManifestStream(t,
+		firstStream,
+		ManifestStream{StreamName: ".",
 			Blocks: []string{"b746e3d2104645f2f64cd3cc69dd895d+15693477+E2866e643690156651c03d876e638e674dcd79475@5441920c"},
 			Files: []string{"0:15893477:chr10_band0_s0_e3000000.fj"}})
 
-	received, ok := <- lineIter
+	received, ok := <- streamIter
 	if ok {
-		t.Fatalf("Expected lineIter to be closed, but received %v instead.",
+		t.Fatalf("Expected streamIter to be closed, but received %v instead.",
 			received)
 	}
 }

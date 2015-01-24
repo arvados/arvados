@@ -6,12 +6,10 @@ import (
 	"bufio"
 	"flag"
 	"fmt"
-	//"git.curoverse.com/arvados.git/sdk/go/keepclient"
 	"git.curoverse.com/arvados.git/sdk/go/arvadosclient"
 	"git.curoverse.com/arvados.git/sdk/go/blockdigest"
 	"git.curoverse.com/arvados.git/sdk/go/logger"
 	"git.curoverse.com/arvados.git/sdk/go/manifest"
-	"git.curoverse.com/arvados.git/sdk/go/util"
 	"git.curoverse.com/arvados.git/services/datamanager/loggerutil"
 	"io/ioutil"
 	"log"
@@ -31,14 +29,14 @@ type ServerAddress struct {
 type BlockInfo struct {
 	Digest blockdigest.BlockDigest
 	Size   int
-	Mtime  int // TODO(misha): Replace this with a timestamp.
+	Mtime  int64 // TODO(misha): Replace this with a timestamp.
 }
 
 // Info about a specified block given by a server
 type BlockServerInfo struct {
 	ServerIndex int
 	Size        int
-	Mtime       int // TODO(misha): Replace this with a timestamp.
+	Mtime       int64 // TODO(misha): Replace this with a timestamp.
 }
 
 type ServerContents struct {
@@ -137,47 +135,39 @@ func GetKeepServers(params GetKeepServersParams) (results ReadServers) {
 			"contain a valid ArvadosClient, but instead it is nil.")
 	}
 
-	sdkParams := arvadosclient.Dict{}
+	sdkParams := arvadosclient.Dict{
+		"filters": [][]string{[]string{"service_type", "=", "disk"}},
+	}
 	if params.Limit > 0 {
 		sdkParams["limit"] = params.Limit
 	}
 
 	var sdkResponse KeepServiceList
-	err := params.Client.Call("GET", "keep_services", "", "accessible", sdkParams, &sdkResponse)
+	err := params.Client.List("keep_services", sdkParams, &sdkResponse)
 
 	if err != nil {
 		loggerutil.FatalWithMessage(params.Logger,
 			fmt.Sprintf("Error requesting keep disks from API server: %v", err))
 	}
 
-	// TODO(misha): Rewrite this block, stop using ContainsAllAvailableItems()
-	{
-		var numReceived, numAvailable int
-		results.ReadAllServers, numReceived, numAvailable =
-			util.ContainsAllAvailableItems(sdkResponse)
-
-		if !results.ReadAllServers {
-			log.Printf("ERROR: Did not receive all keep server addresses.")
-		}
-		log.Printf("Received %d of %d available keep server addresses.",
-			numReceived,
-			numAvailable)
-	}
-
 	if params.Logger != nil {
-		properties, _ := params.Logger.Edit()
-		keepInfo := make(map[string]interface{})
+		params.Logger.Update(func(p map[string]interface{}, e map[string]interface{}) {
+			keepInfo := make(map[string]interface{})
 
-		keepInfo["num_keep_servers_available"] = sdkResponse.ItemsAvailable
-		keepInfo["num_keep_servers_received"] = len(sdkResponse.KeepServers)
-		keepInfo["keep_servers"] = sdkResponse.KeepServers
+			keepInfo["num_keep_servers_available"] = sdkResponse.ItemsAvailable
+			keepInfo["num_keep_servers_received"] = len(sdkResponse.KeepServers)
+			keepInfo["keep_servers"] = sdkResponse.KeepServers
 
-		properties["keep_info"] = keepInfo
-
-		params.Logger.Record()
+			p["keep_info"] = keepInfo
+		})
 	}
 
-	log.Printf("Received keep services list: %v", sdkResponse)
+	log.Printf("Received keep services list: %+v", sdkResponse)
+
+	if len(sdkResponse.KeepServers) < sdkResponse.ItemsAvailable {
+		loggerutil.FatalWithMessage(params.Logger,
+			fmt.Sprintf("Did not receive all available keep servers: %+v", sdkResponse))
+	}
 
 	results.KeepServerIndexToAddress = sdkResponse.KeepServers
 	results.KeepServerAddressToIndex = make(map[ServerAddress]int)
@@ -249,14 +239,13 @@ func CreateIndexRequest(arvLogger *logger.Logger,
 	log.Println("About to fetch keep server contents from " + url)
 
 	if arvLogger != nil {
-		properties, _ := arvLogger.Edit()
-		keepInfo := properties["keep_info"].(map[string]interface{})
-		serverInfo := make(map[string]interface{})
-		serverInfo["request_sent"] = time.Now()
+		arvLogger.Update(func(p map[string]interface{}, e map[string]interface{}) {
+			keepInfo := p["keep_info"].(map[string]interface{})
+			serverInfo := make(map[string]interface{})
+			serverInfo["request_sent"] = time.Now()
 
-		keepInfo[keepServer.String()] = serverInfo
-
-		arvLogger.Record()
+			keepInfo[keepServer.String()] = serverInfo
+		})
 	}
 
 	req, err := http.NewRequest("GET", url, nil)
@@ -282,13 +271,12 @@ func ReadServerResponse(arvLogger *logger.Logger,
 	}
 
 	if arvLogger != nil {
-		properties, _ := arvLogger.Edit()
-		keepInfo := properties["keep_info"].(map[string]interface{})
-		serverInfo := keepInfo[keepServer.String()].(map[string]interface{})
+		arvLogger.Update(func(p map[string]interface{}, e map[string]interface{}) {
+			keepInfo := p["keep_info"].(map[string]interface{})
+			serverInfo := keepInfo[keepServer.String()].(map[string]interface{})
 
-		serverInfo["response_received"] = time.Now()
-
-		arvLogger.Record()
+			serverInfo["response_received"] = time.Now()
+		})
 	}
 
 	response.Address = keepServer
@@ -320,16 +308,16 @@ func ReadServerResponse(arvLogger *logger.Logger,
 					blockInfo)
 				log.Println(message)
 				if arvLogger != nil {
-					properties, _ := arvLogger.Edit()
-					keepInfo := properties["keep_info"].(map[string]interface{})
-					serverInfo := keepInfo[keepServer.String()].(map[string]interface{})
-					var error_list []string
-					read_error_list, has_list := serverInfo["error_list"]
-					if has_list {
-						error_list = read_error_list.([]string)
-					} // If we didn't have the list, error_list is already an empty list
-					serverInfo["error_list"] = append(error_list, message)
-					arvLogger.Record()
+					arvLogger.Update(func(p map[string]interface{}, e map[string]interface{}) {
+						keepInfo := p["keep_info"].(map[string]interface{})
+						serverInfo := keepInfo[keepServer.String()].(map[string]interface{})
+						var error_list []string
+						read_error_list, has_list := serverInfo["error_list"]
+						if has_list {
+							error_list = read_error_list.([]string)
+						} // If we didn't have the list, error_list is already an empty list
+						serverInfo["error_list"] = append(error_list, message)
+					})
 				}
 			}
 			// Keep the block that is bigger, or the block that's newer in
@@ -357,16 +345,15 @@ func ReadServerResponse(arvLogger *logger.Logger,
 			numSizeDisagreements)
 
 		if arvLogger != nil {
-			properties, _ := arvLogger.Edit()
-			keepInfo := properties["keep_info"].(map[string]interface{})
-			serverInfo := keepInfo[keepServer.String()].(map[string]interface{})
+			arvLogger.Update(func(p map[string]interface{}, e map[string]interface{}) {
+				keepInfo := p["keep_info"].(map[string]interface{})
+				serverInfo := keepInfo[keepServer.String()].(map[string]interface{})
 
-			serverInfo["processing_finished"] = time.Now()
-			serverInfo["lines_received"] = numLines
-			serverInfo["dupicates_seen"] = numDuplicates
-			serverInfo["size_disagreements_seen"] = numSizeDisagreements
-
-			arvLogger.Record()
+				serverInfo["processing_finished"] = time.Now()
+				serverInfo["lines_received"] = numLines
+				serverInfo["duplicates_seen"] = numDuplicates
+				serverInfo["size_disagreements_seen"] = numSizeDisagreements
+			})
 		}
 	}
 	resp.Body.Close()
@@ -392,7 +379,7 @@ func parseBlockInfoFromIndexLine(indexLine string) (blockInfo BlockInfo, err err
 		return
 	}
 
-	blockInfo.Mtime, err = strconv.Atoi(tokens[1])
+	blockInfo.Mtime, err = strconv.ParseInt(tokens[1], 10, 64)
 	if err != nil {
 		return
 	}

@@ -13,10 +13,10 @@ import (
 // for the lock you're already holding.
 func FatalWithMessage(arvLogger *logger.Logger, message string) {
 	if arvLogger != nil {
-		properties, _ := arvLogger.Edit()
-		properties["FATAL"] = message
-		properties["run_info"].(map[string]interface{})["end_time"] = time.Now()
-		arvLogger.ForceRecord()
+		arvLogger.ForceUpdate(func(p map[string]interface{}, e map[string]interface{}) {
+			p["FATAL"] = message
+			p["run_info"].(map[string]interface{})["end_time"] = time.Now()
+		})
 	}
 
 	log.Fatalf(message)
