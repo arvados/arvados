@@ -25,7 +25,11 @@
           <% writable = @repo_writable[repo.uuid] %>
           <tr>
             <td style="word-break:break-all;">
-              <%= repo[:name] %>
+              <% if writable == 'can_manage' %>
+                <%= link_to raw("#{repo[:name]}"), "/repositories/#{repo[:uuid]}" %>
+              <% else %>
+                <%= repo[:name] %>
+              <% end %>
             </td>
             <td>
               <%= writable ? 'writable' : 'read-only' %>

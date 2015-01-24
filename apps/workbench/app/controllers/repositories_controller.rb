@@ -11,7 +11,9 @@ class RepositoriesController < ApplicationController
       panes.insert(panes.length-1, panes.delete_at(panes.index('Advanced'))) if panes.index('Advanced')
       panes
     else
-      super
+      panes = super
     end
+    panes.delete('Attributes') if !current_user.is_admin
+    panes
   end
 end
