@@ -89,7 +89,11 @@ class UserManageAccountTest < ActionDispatch::IntegrationTest
         assert_no_selector 'a', text: repositories[link.head_uuid]['name']
         assert_text repositories[link.head_uuid]['name']
         within('tr', text: repositories[link.head_uuid]['fetch_url']) do
-          assert_text 'read-only'
+          if repo_writables[link.head_uuid] == 'can_write'
+            assert_text 'writable'
+          else
+            assert_text 'read-only'
+          end
         end
       end
     end
