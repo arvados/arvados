@@ -79,12 +79,16 @@ class UserManageAccountTest < ActionDispatch::IntegrationTest
       end
     end
 
+    current_page = current_path
     repo_links.each do |link|
       if repo_writables[link.head_uuid] == 'can_manage'
         assert_selector 'a', text: repositories[link.head_uuid]['name']
         within('tr', text: repositories[link.head_uuid]['fetch_url']) do
           assert_text 'writable'
+          click_link repositories[link.head_uuid]['name']
         end
+        assert_text 'Repository Access'
+        visit current_page
       else
         assert_no_selector 'a', text: repositories[link.head_uuid]['name']
         assert_text repositories[link.head_uuid]['name']
