@@ -43,7 +43,6 @@ class Job < ArvadosModel
     t.add :log
     t.add :runtime_constraints
     t.add :tasks_summary
-#    t.add :dependencies
     t.add :nondeterministic
     t.add :repository
     t.add :supplied_script_version

@@ -91,7 +91,7 @@ module PipelineInstancesHelper
     job = {}
     jobuuids.each do |jobuuid|
       job[jobuuid] = Job.find?(jobuuid)
-    end.compact
+    end
 
     object.components.each do |cname, c|
       i += 1

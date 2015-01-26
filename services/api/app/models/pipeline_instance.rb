@@ -15,10 +15,8 @@ class PipelineInstance < ArvadosModel
 
   api_accessible :user, extend: :common do |t|
     t.add :pipeline_template_uuid
-    # t.add :pipeline_template, :if => :pipeline_template
     t.add :name
     t.add :components
-    # t.add :dependencies
     t.add :properties
     t.add :state
     t.add :components_summary
@@ -38,10 +36,6 @@ class PipelineInstance < ArvadosModel
      (Failed = 'Failed'),
      (Complete = 'Complete'),
     ]
-
-  # def dependencies
-  #   dependency_search(self.components).keys
-  # end
 
   # if all components have input, the pipeline is Ready
   def components_look_ready?
