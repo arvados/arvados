@@ -100,7 +100,9 @@ class ProjectsControllerTest < ActionController::TestCase
     assert_response :success
   end
 
-  test "project admin can remove items from the project" do
+  test "project admin can remove collections from the project" do
+    # Deleting an object that supports 'expires_at' should make it
+    # completely inaccessible to API queries, not simply moved out of the project.
     coll_key = "collection_to_remove_from_subproject"
     coll_uuid = api_fixture("collections")[coll_key]["uuid"]
     delete(:remove_item,
@@ -111,6 +113,29 @@ class ProjectsControllerTest < ActionController::TestCase
     assert_response :success
     assert_match(/\b#{coll_uuid}\b/, @response.body,
                  "removed object not named in response")
+
+    use_token :subproject_admin
+    assert_raise ArvadosApiClient::NotFoundException do
+      Collection.find(coll_uuid)
+    end
+  end
+
+  test "project admin can remove items from project other than collections" do
+    # An object which does not have an expired_at field (e.g. Specimen)
+    # should be implicitly moved to the user's Home project when removed.
+    specimen_uuid = api_fixture('specimens', 'in_asubproject')['uuid']
+    delete(:remove_item,
+           { id: api_fixture('groups', 'asubproject')['uuid'],
+             item_uuid: specimen_uuid,
+             format: 'js' },
+           session_for(:subproject_admin))
+    assert_response :success
+    assert_match(/\b#{specimen_uuid}\b/, @response.body,
+                 "removed object not named in response")
+
+    use_token :subproject_admin
+    new_specimen = Specimen.find(specimen_uuid)
+    assert_equal api_fixture('users', 'subproject_admin')['uuid'], new_specimen.owner_uuid
   end
 
   test 'projects#show tab infinite scroll partial obeys limit' do
