@@ -1907,10 +1907,13 @@ if (readlink ("$destdir.commit") eq $commit && -d $destdir) {
 
 unlink "$destdir.commit";
 mkdir $destdir;
-open TARX, "|-", "tar", "-xC", $destdir;
-{
-  local $/ = undef;
-  print TARX <DATA>;
+
+if (!open(TARX, "|-", "tar", "-xC", $destdir)) {
+  die "Error launching 'tar -xC $destdir': $!";
+}
+my $tar_input;
+while (read(DATA, $tar_input, 65536)) {
+  print TARX $tar_input;
 }
 if(!close(TARX)) {
   die "'tar -xC $destdir' exited $?: $!";
