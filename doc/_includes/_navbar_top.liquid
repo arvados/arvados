@@ -11,6 +11,7 @@
     </div>
     <div class="collapse navbar-collapse" id="bs-navbar-collapse">
       <ul class="nav navbar-nav">
+        <li {% if page.navsection == 'start' %} class="active" {% endif %}><a href="{{ site.baseurl }}/start/index.html">Getting&nbsp;Started</a></li>
         <li {% if page.navsection == 'userguide' %} class="active" {% endif %}><a href="{{ site.baseurl }}/user/index.html">User&nbsp;Guide</a></li>
         <li {% if page.navsection == 'sdk' %} class="active" {% endif %}><a href="{{ site.baseurl }}/sdk/index.html">SDK&nbsp;Reference</a></li>
         <li {% if page.navsection == 'api' %} class="active" {% endif %}><a href="{{ site.baseurl }}/api/index.html">API&nbsp;Reference</a></li>

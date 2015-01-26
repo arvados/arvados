@@ -6,15 +6,16 @@ require 'integration_helper'
 #     RAILS_ENV=test bundle exec rake test:benchmark
 #
 # 2. Against a configured workbench url using "RAILS_ENV=performance".
-#     RAILS_ENV=performance bundle exec rake TEST=test/performance/*.rb
+#     RAILS_ENV=performance bundle exec rake test:benchmark
 
 class WorkbenchPerformanceTest < ActionDispatch::PerformanceTest
 
-  # When running in "RAILS_ENV=performance" mode, uses performance config params.
-  # In this mode, prepends workbench URL to the given path provided,
-  # and visits that page using the configured "user_token".
+  # When running in "RAILS_ENV=performance" mode, uses performance
+  # config params.  In this mode, prepends workbench URL to the given
+  # path provided, and visits that page using the configured
+  # "user_token".
   def visit_page_with_token path='/'
-    if ENV["RAILS_ENV"].eql? 'performance'
+    if Rails.env == 'performance'
       token = Rails.configuration.user_token
       workbench_url = Rails.configuration.arvados_workbench_url
       if workbench_url.end_with? '/'
@@ -26,11 +27,6 @@ class WorkbenchPerformanceTest < ActionDispatch::PerformanceTest
     end
 
     visit page_with_token(token, (workbench_url + path))
-  end
-
-  # We do not want to reset the database fixtures in "RAILS_ENV=performance" mode.
-  protected
-  def self.reset_api_fixtures_now
   end
 
 end

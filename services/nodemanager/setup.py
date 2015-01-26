@@ -23,7 +23,7 @@ class TagBuildWithCommit(egg_info):
             assert len(git_tags) == 2
             git_tags[0] = time.strftime(
                 '%Y%m%d%H%M%S', time.gmtime(int(git_tags[0])))
-            self.tag_build = '.{}.{}'.format(*git_tags)
+            self.tag_build = '.{}+{}'.format(*git_tags)
         return egg_info.tags(self)
 
 
@@ -40,7 +40,7 @@ setup(name='arvados-node-manager',
         'apache-libcloud',
         'arvados-python-client',
         'pykka',
-        'python-daemon',
+        'python-daemon<2',
         ],
       scripts=['bin/arvados-node-manager'],
       test_suite='tests',

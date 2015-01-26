@@ -661,4 +661,38 @@ EOS
     }
     assert_response :success
   end
+
+  test "get collection and verify that file_names is not included" do
+    authorize_with :active
+    get :show, {id: collections(:foo_file).uuid}
+    assert_response :success
+    assert_equal collections(:foo_file).uuid, json_response['uuid']
+    assert_nil json_response['file_names']
+    assert json_response['manifest_text']
+  end
+
+  [
+    [2**8, :success],
+    [2**18, 422],
+  ].each do |description_size, expected_response|
+    test "create collection with description size #{description_size}
+          and expect response #{expected_response}" do
+      skip "(Descriptions are not part of search indexes. Skip until full-text search
+            is implemented, at which point replace with a search in description.)"
+
+      authorize_with :active
+
+      description = 'here is a collection with a very large description'
+      while description.length < description_size
+        description = description + description
+      end
+
+      post :create, collection: {
+        manifest_text: ". d41d8cd98f00b204e9800998ecf8427e+0 0:0:foo.txt\n",
+        description: description,
+      }
+
+      assert_response expected_response
+    end
+  end
 end

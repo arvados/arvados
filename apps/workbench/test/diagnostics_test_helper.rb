@@ -6,7 +6,7 @@ require 'yaml'
 # will not be executed.
 
 # Command to run diagnostics tests:
-#   RAILS_ENV=diagnostics bundle exec rake TEST=test/diagnostics/*.rb
+#   RAILS_ENV=diagnostics bundle exec rake TEST=test/diagnostics/**/*.rb
 
 class DiagnosticsTest < ActionDispatch::IntegrationTest
 
@@ -27,11 +27,6 @@ class DiagnosticsTest < ActionDispatch::IntegrationTest
     Timeout.timeout(max_time) do
       loop until page.has_text?(text_to_look_for)
     end
-  end
-
-  # Diagnostics tests never want to reset the database fixtures.
-  protected
-  def self.reset_api_fixtures_now
   end
 
 end

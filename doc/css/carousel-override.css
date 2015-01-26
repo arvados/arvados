@@ -1,0 +1,25 @@
+.carousel-control {
+  width: 5%;
+}
+
+.carousel-caption {
+  position: static;
+  background: rgba(0,0,0,0.6);
+  color: white;
+  padding-bottom: 35px;
+  padding-left: 1em;
+  padding-right: 1em;
+  padding-top: 15px;
+}
+
+.carousel {
+  overflow: hidden;
+  border-radius: 5px;
+  max-width: 900px;
+  margin: 1em;
+}
+
+.carousel-indicators {
+  bottom: 0px;
+}
+

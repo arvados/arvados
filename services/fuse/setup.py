@@ -24,7 +24,7 @@ class TagBuildWithCommit(egg_info):
             assert len(git_tags) == 2
             git_tags[0] = time.strftime(
                 '%Y%m%d%H%M%S', time.gmtime(int(git_tags[0])))
-            self.tag_build = '.{}.{}'.format(*git_tags)
+            self.tag_build = '.{}+{}'.format(*git_tags)
         return egg_info.tags(self)
 
 
@@ -44,7 +44,7 @@ setup(name='arvados_fuse',
       install_requires=[
         'arvados-python-client>=0.1.20141203150737.277b3c7',
         'llfuse',
-        'python-daemon'
+        'python-daemon<2',
         ],
       test_suite='tests',
       tests_require=['PyYAML'],

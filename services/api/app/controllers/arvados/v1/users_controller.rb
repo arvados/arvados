@@ -104,7 +104,7 @@ class Arvados::V1::UsersController < ApplicationController
       UserNotifier.account_is_setup(@object).deliver
     end
 
-    render json: { kind: "arvados#HashList", items: @response.as_api_response(nil) }
+    send_json kind: "arvados#HashList", items: @response.as_api_response(nil)
   end
 
   # delete user agreements, vm, repository, login links; set state to inactive

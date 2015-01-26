@@ -11,29 +11,43 @@ jQuery(function($){
 });
 
 function dispatch_selection_action() {
-    // Build a new "href" attribute for this link by starting with the
-    // "data-href" attribute and appending ?foo[]=bar&foo[]=baz (or
-    // &foo=... as appropriate) to reflect the current object
-    // selections.
-    var data = [];
-    var param_name = $(this).attr('data-selection-param-name');
-    var href = $(this).attr('data-href');
-    if ($(this).closest('.disabled').length > 0) {
+    /* When the user clicks a selection action link, build a form to perform
+       the action on the selected data, and submit it.
+       This is based on handleMethod from rails-ujs, extended to add the
+       selections to the submitted form.
+       Copyright (c) 2007-2010 Contributors at http://github.com/rails/jquery-ujs/contributors
+       */
+    var $container = $(this);
+    if ($container.closest('.disabled').length) {
         return false;
     }
-    $(this).
+    $container.closest('.dropdown-menu').dropdown('toggle');
+
+    var href = $container.data('href'),
+    method = $container.data('method') || 'GET',
+    paramName = $container.data('selection-param-name'),
+    csrfToken = $('meta[name=csrf-token]').attr('content'),
+    csrfParam = $('meta[name=csrf-param]').attr('content'),
+    form = $('<form method="post" action="' + href + '"></form>'),
+    metadataInput = ('<input name="_method" value="' + method +
+                     '" type="hidden" />');
+
+    if (csrfParam !== undefined && csrfToken !== undefined) {
+        metadataInput += ('<input type="hidden" name="' + csrfParam +
+                          '" value="' + csrfToken + '" />');
+    }
+    $container.
         closest('.selection-action-container').
         find(':checkbox:checked:visible').
-        each(function() {
-            data.push({name: param_name, value: $(this).val()});
+        each(function(index, elem) {
+            metadataInput += ('<input type="hidden" name="' + paramName +
+                              '" value="' + elem.value + '" />');
         });
-    if (href.indexOf('?') >= 0)
-        href += '&';
-    else
-        href += '?';
-    href += $.param(data, true);
-    $(this).attr('href', href);
-    return true;
+
+    form.data('remote', $container.data('remote'));
+    form.hide().append(metadataInput).appendTo('body');
+    form.submit();
+    return false;
 }
 
 function enable_disable_selection_actions() {

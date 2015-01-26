@@ -139,7 +139,6 @@ class UsersController < ApplicationController
   end
 
   def home
-    @showallalerts = false
     @my_ssh_keys = AuthorizedKey.where(authorized_user_uuid: current_user.uuid)
     @my_tag_links = {}
 
