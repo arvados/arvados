@@ -239,14 +239,6 @@ class ProjectsTest < ActionDispatch::IntegrationTest
 
       when 'Remove'
         assert page.has_no_text?(my_collection['name']), 'Collection still found in src project after remove'
-        visit page_with_token 'active', '/'
-        find("#projects-menu").click
-        find(".dropdown-menu a", text: "Home").click
-        assert page.has_text?(my_collection['name']), 'Collection not found in home project after remove'
-        if expect_name_change
-          assert page.has_text?(my_collection['name']+' removed from ' + src['name']),
-            'Collection with update name is not found in home project after remove'
-        end
       end
     end
   end
