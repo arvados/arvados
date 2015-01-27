@@ -13,12 +13,15 @@ _logger = logging.getLogger('arvados.events')
 
 class EventClient(WebSocketClient):
     def __init__(self, url, filters, on_event):
-        ssl_options = None
-        if re.match(r'(?i)^(true|1|yes)$',
-                    config.get('ARVADOS_API_HOST_INSECURE', 'no')):
-            ssl_options={'cert_reqs': ssl.CERT_NONE}
+        # Prefer system's CA certificates (if available)
+        ssl_options = {}
+        certs_path = '/etc/ssl/certs/ca-certificates.crt'
+        if os.path.exists(certs_path):
+            ssl_options['ca_certs'] = certs_path
+        if config.flag_is_true('ARVADOS_API_HOST_INSECURE'):
+            ssl_options['cert_reqs'] = ssl.CERT_NONE
         else:
-            ssl_options={'cert_reqs': ssl.CERT_REQUIRED}
+            ssl_options['cert_reqs'] = ssl.CERT_REQUIRED
         super(EventClient, self).__init__(url, ssl_options=ssl_options)
         self.filters = filters
         self.on_event = on_event
