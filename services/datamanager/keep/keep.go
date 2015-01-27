@@ -302,7 +302,7 @@ func ReadServerResponse(arvLogger *logger.Logger,
 				numSizeDisagreements += 1
 				// TODO(misha): Consider failing here.
 				message := fmt.Sprintf("Saw different sizes for the same block "+
-					"on %s: %v %v",
+					"on %s: %+v %+v",
 					keepServer.String(),
 					storedBlock,
 					blockInfo)
