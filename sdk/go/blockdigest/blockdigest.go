@@ -15,7 +15,7 @@ type BlockDigest struct {
 	l uint64
 }
 
-func (d *BlockDigest) ToString() (s string) {
+func (d BlockDigest) String() string {
 	return fmt.Sprintf("%016x%016x", d.h, d.l)
 }
 
