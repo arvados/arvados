@@ -122,13 +122,13 @@ class WebsocketTest < ActionDispatch::IntegrationTest
     visit(page_with_token("admin", "/jobs/#{p.uuid}"))
 
     assert_no_text 'complete'
-    assert_no_text 'Re-run same version'
+    assert_no_text 'Re-run job'
 
     p.state = "Complete"
     p.save!
 
     assert_text 'complete'
-    assert_text 'Re-run same version'
+    assert_text 'Re-run job'
 
     Thread.current[:arvados_api_token] = nil
   end
