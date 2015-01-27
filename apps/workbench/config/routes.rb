@@ -12,8 +12,6 @@ ArvadosWorkbench::Application.routes.draw do
   get "users/setup" => 'users#setup', :as => :setup_user
   get "report_issue_popup" => 'actions#report_issue_popup', :as => :report_issue_popup
   post "report_issue" => 'actions#report_issue', :as => :report_issue
-  get "rerun-job-with-options-popup" => 'jobs#rerun_job_with_options_popup', :as => :rerun_job_with_options_popup
-  post "rerun-job-with-options" => 'jobs#rerun_job_with_options', :as => :rerun_job_with_options
   resources :nodes
   resources :humans
   resources :traits

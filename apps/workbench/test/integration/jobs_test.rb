@@ -95,14 +95,17 @@ class JobsTest < ActionDispatch::IntegrationTest
         find('a,button', text: 'Re-run job...').click
       end
       within('.modal-dialog') do
-        assert_selector 'a,button', text: 'Run now'
         assert_selector 'a,button', text: 'Cancel'
-        page.choose('script_use_latest') if use_latest
-        find('button', text: 'Run now').click
+        if use_latest
+          page.choose("job_script_version_#{job['supplied_script_version']}")
+        end
+        click_on "Run now"
       end
 
-      # Re-run job does not actually work and we see Fiddlesticks.
-      # So, let's make sure the correct script version is sought.
+      # Re-running jobs doesn't currently work because the test API
+      # server has no git repository to check against.  For now, check
+      # that the correct script version is mentioned in the
+      # Fiddlesticks error message.
       if expect_options && use_latest
         assert_text "Script version #{job['supplied_script_version']} does not resolve to a commit"
       else

@@ -82,33 +82,4 @@ class JobsController < ApplicationController
   def show_pane_list
     %w(Status Log Details Provenance Advanced)
   end
-
-  def rerun_job_with_options_popup
-    respond_to do |format|
-      format.js
-      format.html
-    end
-  end
-
-  def rerun_job_with_options
-    job_info = JSON.parse params['job_info']
-
-    @object = Job.new
-
-    @object.script = job_info['script']
-    @object.repository = job_info['repository']
-    @object.nondeterministic = job_info['nondeterministic']
-    @object.script_parameters = job_info['script_parameters']
-    @object.runtime_constraints = job_info['runtime_constraints']
-    @object.supplied_script_version = job_info['supplied_script_version']
-
-    if 'use_latest' == params['script']
-      @object.script_version = job_info['supplied_script_version']
-    else
-      @object.script_version = job_info['script_version']
-    end
-
-    @object.save!
-    show
-  end
 end

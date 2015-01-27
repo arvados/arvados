@@ -1,21 +1,17 @@
-<%
-  job_info = {}
-  job_info['script'] = params[:script]
-  job_info['script_version'] = params[:script_version]
-  job_info['repository'] = params[:repository]
-  job_info['supplied_script_version'] = params[:supplied_script_version]
-  job_info['nondeterministic'] = params[:nondeterministic]
-  job_info['script_parameters'] = params[:script_parameters]
-  job_info['runtime_constraints'] = params[:runtime_constraints]
-%>
-
-<div class="modal fade" role="dialog" aria-labelledby="myModalLabel" aria-hidden="true">
+<% @job = @object %>
+<div id="jobRerunModal" class="modal fade" role="dialog" aria-labelledby="jobRerunTitle" aria-hidden="true">
   <div class="modal-dialog">
     <div class="modal-content">
-      <%= form_tag rerun_job_with_options_path do |f| %>
+      <%= form_for(@job, method: :post, url: {controller: 'jobs', action: 'create'}) do |f| %>
+        <% [:script, :repository, :supplied_script_version, :nondeterministic].each do |field_sym| %>
+          <%= f.hidden_field(field_sym) %>
+        <% end %>
+        <% [:script_parameters, :runtime_constraints].each do |field_sym| %>
+          <%= f.hidden_field(field_sym, value: @job.send(field_sym).to_json) %>
+        <% end %>
         <div class="modal-header">
           <button type="button" class="close" onClick="reset_form()" data-dismiss="modal" aria-hidden="true">&times;</button>
-          <div>
+          <div id="jobRerunTitle">
             <div class="col-sm-6"> <h4 class="modal-title">Re-run job</h4> </div>
           </div>
           <br/>
@@ -27,24 +23,23 @@
           <p> The inputs and parameters will be the same as the current job.
               Thus, the new job will not reflect any changes made to the pipeline that initiated this job. </p>
           <div style="padding-left: 1em">
-            <% if !job_info['supplied_script_version'].nil? and
-                  !job_info['supplied_script_version'].empty? and
-                   job_info['supplied_script_version'] != job_info['script_version'] %>
-              <%= radio_button_tag(:script, "use_same", true) %>
-              <%= label_tag(:script_use_same, "Use same script version as this run") %>
+            <% if (@job.supplied_script_version.blank? or
+                   (@job.supplied_script_version == @job.script_version)) %>
+              <%= f.hidden_field(:script_version) %>
+            <% else %>
+              <%= f.radio_button("script_version", @job.script_version) %>
+              <%= f.label(:script_version, "Use same script version as this run", value: @job.script_version) %>
               <p style="padding-left: 1em"> Use the same script version as the current job.</p>
 
-              <%= radio_button_tag(:script, "use_latest") %>
-              <%= label_tag(:script_use_latest, "Use latest script version") %>
-              <p style="padding-left: 1em"> Use the current commit indicated by '<%=job_info['supplied_script_version']%>' in the '<%=job_info['repository']%>' repository.</p>
+              <%= f.radio_button(:script_version, @job.supplied_script_version) %>
+              <%= f.label(:script_version, "Use latest script version", value: @job.supplied_script_version) %>
+              <p style="padding-left: 1em"> Use the current commit indicated by '<%= @job.supplied_script_version %>' in the '<%= @job.repository %>' repository.</p>
             <% end %>
-
-            <input type="hidden" name="job_info" value="<%=job_info.to_json%>">
           </div>
         </div>
 
         <div class="modal-footer">
-          <button type="submit" class="btn btn-primary" name="rerun-with-options" value="RunningOnServer">Run now</button>
+          <%= f.submit(value: "Run now", class: "btn btn-primary") %>
           <button class="btn btn-default" onClick="reset_form()" data-dismiss="modal" aria-hidden="true">Cancel</button>
         </div>
       <% end %>
