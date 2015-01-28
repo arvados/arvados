@@ -3,9 +3,10 @@
        data-pane-content-url="<%= url_for(params.merge(tab_pane: "job_buttons")) %>"
        data-object-uuid="<%= @object.uuid %>"
        style="display: inline">
-    <%= render partial: 'show_job_buttons', locals: {object: @object}%>
+  <%= render partial: 'show_job_buttons', locals: {object: @object}%>
   </div>
 <% end %>
 
 <%= render partial: 'title_and_buttons' %>
 <%= render partial: 'content', layout: 'content_layout', locals: {pane_list: controller.show_pane_list }%>
+<%= render partial: 'rerun_job_with_options_popup' %>
