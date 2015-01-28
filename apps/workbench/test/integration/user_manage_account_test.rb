@@ -22,7 +22,6 @@ class UserManageAccountTest < ActionDispatch::IntegrationTest
       assert page.has_text?('Current Token'), 'No text - Current Token'
       assert page.has_text?('The Arvados API token is a secret key that enables the Arvados SDKs to access Arvados'), 'No text - Arvados API token'
       add_and_verify_ssh_key
-      verify_repositories user
     else  # inactive user
       within('.navbar-fixed-top') do
         find('a', text: "#{user['email']}").click
@@ -61,39 +60,16 @@ class UserManageAccountTest < ActionDispatch::IntegrationTest
       assert page.has_text?('added_in_test'), 'No text - added_in_test'
   end
 
-  def verify_repositories user
-    Thread.current[:arvados_api_token] = @@API_AUTHS["admin"]['api_token']
-    repo_links = Link.filter([['head_uuid', 'is_a', 'arvados#repository'],
-                              ['tail_uuid', '=', user['uuid']],
-                              ['link_class', '=', 'permission']])
-    repos = Repository.where uuid: repo_links.collect(&:head_uuid)
-    repositories = {}
-    repos.each do |repo|
-      repositories[repo.uuid] = repo
-    end
-
-    repo_writables = {}
-    repo_links.each do |link|
-      if link.name.in? ['can_write','can_manage']
-        repo_writables[link.head_uuid] = link.name
-      end
-    end
-
-    current_page = current_path
-    repo_links.each do |link|
-      if repo_writables[link.head_uuid] == 'can_manage'
-        assert_selector 'a', text: repositories[link.head_uuid]['name']
-        within('tr', text: repositories[link.head_uuid]['fetch_url']) do
+  def verify_repositories user, repos
+    repos.each do |repo_wribable_sharable|
+      within('tr', text: repo_wribable_sharable[0]['name']+'.git') do
+        if repo_wribable_sharable[2]
+          assert_selector 'a', text:repo_wribable_sharable[0]['name']
           assert_text 'writable'
-          click_link repositories[link.head_uuid]['name']
-        end
-        assert_text 'Repository Access'
-        visit current_page
-      else
-        assert_no_selector 'a', text: repositories[link.head_uuid]['name']
-        assert_text repositories[link.head_uuid]['name']
-        within('tr', text: repositories[link.head_uuid]['fetch_url']) do
-          if repo_writables[link.head_uuid] == 'can_write'
+        else
+          assert_text repo_wribable_sharable[0]['name']
+          assert_no_selector 'a', text:repo_wribable_sharable[0]['name']
+          if repo_wribable_sharable[1]
             assert_text 'writable'
           else
             assert_text 'read-only'
@@ -138,6 +114,18 @@ class UserManageAccountTest < ActionDispatch::IntegrationTest
         assert_no_selector('a', text: 'Click here to set up an SSH public key for use with Arvados')
         assert_no_selector('a', text: 'Click here to learn how to run an Arvados Crunch pipeline')
       end
+    end
+  end
+
+  [
+    ['active', api_fixture('users')['active'], [[api_fixture('repositories')['foo'], true, true],
+                                                [api_fixture('repositories')['repository3'], false, false],
+                                                [api_fixture('repositories')['repository4'], true, false]],],
+    ['admin', api_fixture('users')['admin'], []]
+  ].each do |token, user, repos|
+    test "verify repositories for user #{token}" do
+      visit page_with_token(token, '/manage_account')
+      verify_repositories user, repos
     end
   end
 end

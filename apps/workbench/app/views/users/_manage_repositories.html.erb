@@ -26,7 +26,7 @@
           <tr>
             <td style="word-break:break-all;">
               <% if writable == 'can_manage' %>
-                <%= link_to raw("#{repo[:name]}"), "/repositories/#{repo[:uuid]}" %>
+                <%= link_to "#{repo[:name]}", "/repositories/#{repo[:uuid]}#Sharing" %>
               <% else %>
                 <%= repo[:name] %>
               <% end %>
