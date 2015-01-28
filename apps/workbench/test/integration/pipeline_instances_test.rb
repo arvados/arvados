@@ -267,34 +267,18 @@ class PipelineInstancesTest < ActionDispatch::IntegrationTest
   ].each do |user, with_options, choose_options, in_aproject|
     test "Rerun pipeline instance as #{user} using options #{with_options} #{choose_options} in #{in_aproject}" do
       if in_aproject
-        visit page_with_token 'active', \
-        '/projects/'+api_fixture('groups')['aproject']['uuid']
+        path = '/pipeline_instances/'+api_fixture('pipeline_instances')['pipeline_owned_by_active_in_aproject']['uuid']
       else
-        visit page_with_token 'active', '/'
+        path = '/pipeline_instances/'+api_fixture('pipeline_instances')['pipeline_owned_by_active_in_home']['uuid']
       end
 
-      # need bigger modal size when choosing a file from collection
-      if Capybara.current_driver == :selenium
-        Capybara.current_session.driver.browser.manage.window.resize_to(1200, 800)
-      end
+      visit page_with_token(user, path)
 
-      create_and_run_pipeline_in_aproject in_aproject, 'Two Part Pipeline Template', 'foo_collection_in_aproject'
-      instance_path = current_path
-
-      # Pause the pipeline
-      find('a,button', text: 'Pause').click
-      assert page.has_text? 'Paused'
-      page.assert_no_selector 'a.disabled,button.disabled', text: 'Resume'
       page.assert_selector 'a,button', text: 'Re-run with latest'
       page.assert_selector 'a,button', text: 'Re-run options'
 
-      # Pipeline can be re-run now. Access it as the specified user, and re-run
-      if user == 'project_viewer'
-        visit page_with_token(user, instance_path)
+      if user == 'project_viewer' && in_aproject
         assert page.has_text? 'A Project'
-        page.assert_no_selector 'a.disabled,button.disabled', text: 'Resume'
-        page.assert_selector 'a,button', text: 'Re-run with latest'
-        page.assert_selector 'a,button', text: 'Re-run options'
       end
 
       # Now re-run the pipeline
@@ -319,7 +303,7 @@ class PipelineInstancesTest < ActionDispatch::IntegrationTest
       # project. In case of project_viewer user, since the user cannot
       # write to the project, the pipeline should have been created in
       # the user's Home project.
-      assert_not_equal instance_path, current_path, 'Rerun instance path expected to be different'
+      assert_not_equal path, current_path, 'Rerun instance path expected to be different'
       assert_text 'Home'
       if in_aproject && (user != 'project_viewer')
         assert_text 'A Project'
@@ -484,5 +468,4 @@ class PipelineInstancesTest < ActionDispatch::IntegrationTest
       end
     end
   end
-
 end
