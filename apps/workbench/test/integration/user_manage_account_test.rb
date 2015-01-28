@@ -64,11 +64,11 @@ class UserManageAccountTest < ActionDispatch::IntegrationTest
     repos.each do |repo_wribable_sharable|
       within('tr', text: repo_wribable_sharable[0]['name']+'.git') do
         if repo_wribable_sharable[2]
-          assert_selector 'a', text:repo_wribable_sharable[0]['name']
+          assert_selector 'a', text:'Share'
           assert_text 'writable'
         else
           assert_text repo_wribable_sharable[0]['name']
-          assert_no_selector 'a', text:repo_wribable_sharable[0]['name']
+          assert_no_selector 'a', text:'Share'
           if repo_wribable_sharable[1]
             assert_text 'writable'
           else

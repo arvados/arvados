@@ -18,6 +18,7 @@
           <th> Name </th>
           <th> Read/Write </th>
           <th> URL </th>
+          <th> </th>
         </tr>
       </thead>
       <tbody>
@@ -25,17 +26,18 @@
           <% writable = @repo_writable[repo.uuid] %>
           <tr>
             <td style="word-break:break-all;">
-              <% if writable == 'can_manage' %>
-                <%= link_to "#{repo[:name]}", "/repositories/#{repo[:uuid]}#Sharing" %>
-              <% else %>
-                <%= repo[:name] %>
-              <% end %>
+              <%= repo[:name] %>
             </td>
             <td>
               <%= writable ? 'writable' : 'read-only' %>
             </td>
             <td style="word-break:break-all;">
               <code><%= writable ? repo[:push_url] : repo[:fetch_url] %></code>
+            </td>
+            <td>
+              <% if writable == 'can_manage' %>
+                <%= link_to "Share", "/repositories/#{repo[:uuid]}#Sharing" %>
+              <% end %>
             </td>
           </tr>
         <% end %>
