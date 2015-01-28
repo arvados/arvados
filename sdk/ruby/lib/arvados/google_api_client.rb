@@ -23,11 +23,8 @@ class Google::APIClient
           return JSON.load(cache_file)
         end
       end
-    rescue Errno::ENOENT
-      # Very common occurrence.  Don't warn, just return nil.
-    rescue IOError, SystemCallError, JSON::JSONError => error
-      warn("Warning: error reading cached discovery document " +
-           "#{cache_path}: #{error}")
+    rescue IOError, SystemCallError, JSON::JSONError
+      # Error reading the cache.  Act like it doesn't exist.
     end
     nil
   end
