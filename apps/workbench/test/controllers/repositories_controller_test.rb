@@ -45,4 +45,22 @@ class RepositoriesControllerTest < ActionController::TestCase
   test "viewer cannot manage repository" do
     refute user_can_manage(:spectator, api_fixture("repositories")["arvados"])
   end
+
+  [
+    [:active, ['#Sharing', '#Advanced']],
+    [:admin,  ['#Attributes', '#Sharing', '#Advanced']],
+  ].each do |user, panes|
+    test "#{user} sees panes #{panes}" do
+      get :show, {
+        id: api_fixture('repositories')['foo']['uuid']
+      }, session_for(user)
+      assert_response :success
+
+      panes = css_select('[data-toggle=tab]').select do |pane|
+        pane_name = pane.attributes['href']
+        assert_equal true, (panes.include? pane_name),
+                     "Did not find pane #{pane_name}"
+      end
+    end
+  end
 end
