@@ -3,11 +3,7 @@
        data-pane-content-url="<%= url_for(params.merge(tab_pane: "job_buttons")) %>"
        data-object-uuid="<%= @object.uuid %>"
        style="display: inline">
-    <% if @object.state != "Running" %>
-      <button type="button" class="btn btn-sm btn-primary" data-toggle="modal" data-target="#jobRerunModal">
-        <i class="fa fa-fw fa-gear"></i> Re-run job...
-      </button>
-    <% end %>
+  <%= render partial: 'show_job_buttons', locals: {object: @object}%>
   </div>
 <% end %>
 
