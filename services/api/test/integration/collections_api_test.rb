@@ -165,6 +165,7 @@ class CollectionsApiTest < ActionDispatch::IntegrationTest
     }, auth(:active)
     assert_response :success
     assert_equal true, json_response['manifest_text'].include?('my_test_file.txt')
+    assert_includes json_response['manifest_text'], 'my_test_file.txt'
 
     created = json_response
 
@@ -179,8 +180,8 @@ class CollectionsApiTest < ActionDispatch::IntegrationTest
     }, auth(:active)
     assert_response :success
     assert_equal created['uuid'], json_response['uuid']
-    assert_equal true, json_response['manifest_text'].include?('my_updated_test_file.txt')
-    assert_equal false, json_response['manifest_text'].include?('my_test_file.txt')
+    assert_includes json_response['manifest_text'], 'my_updated_test_file.txt'
+    assert_not_includes json_response['manifest_text'], 'my_test_file.txt'
 
     # search using the new filename
     search_using_filter 'my_updated_test_file.txt', 1
@@ -196,10 +197,9 @@ class CollectionsApiTest < ActionDispatch::IntegrationTest
     response_items = json_response['items']
     assert_not_nil response_items
     if expected_items == 0
-      assert_equal 0, json_response['items_available']
-      assert_equal 0, response_items.size
+      assert_empty response_items
     else
-      assert_equal expected_items, response_items.size
+      refute_empty response_items
       first_item = response_items.first
       assert_not_nil first_item
     end
@@ -236,12 +236,19 @@ class CollectionsApiTest < ActionDispatch::IntegrationTest
     response_items = json_response['items']
     assert_not_nil response_items
     if expected_items == 0
-      assert_equal 0, json_response['items_available']
-      assert_equal 0, response_items.size
+      assert_empty response_items
     else
-      assert_equal expected_items, response_items.size, "Did not find results for #{search_filter}"
+      refute_empty response_items
       first_item = response_items.first
       assert_not_nil first_item
     end
+  end
+
+  # search for the filename in the file_names column and expect error
+  test "full text search not supported for individual columns" do
+    get '/arvados/v1/collections', {
+      :filters => [['name', '@@', 'General']].to_json
+    }, auth(:active)
+    assert_response 422
   end
 end

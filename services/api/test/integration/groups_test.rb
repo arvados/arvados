@@ -53,17 +53,22 @@ class GroupsTest < ActionDispatch::IntegrationTest
       }, auth(:active)
       assert_response :success
       if expect_results
-        assert_operator(0, :<, json_response['items'].count,
-                        "expected results but received 0")
+        refute_empty json_response['items']
         json_response['items'].each do |item|
           assert item['uuid']
           assert_equal groups(:aproject).uuid, item['owner_uuid']
         end
       else
-        assert_operator(0, :==, json_response['items'].count,
-                        "expected no results but received #{json_response['items'].length}")
+        assert_empty json_response['items']
       end
     end
   end
+
+  test "full text search is not supported for individual columns" do
+    get "/arvados/v1/groups/contents", {
+      :filters => [['name', '@@', 'Private']].to_json
+    }, auth(:active)
+    assert_response 422
+    end
 
 end

@@ -34,9 +34,14 @@ module RecordFilters
       elsif !operator.is_a? String
         raise ArgumentError.new("Invalid operator '#{operator}' (#{operator.class}) in filter")
       end
+
       cond_out = []
 
       if operator == '@@' # full-text-search
+        if attrs_in != 'any'
+          raise ArgumentError.new("Full text search on individual columns is not supported")
+        end
+        attrs = [] #  skip the generic per-column operator loop below
         cond_out << model_class.full_text_tsvector+" @@ to_tsquery(?)"
         param_out << operand.split.each {|s| s.concat(':*')}.join(' & ')
       else

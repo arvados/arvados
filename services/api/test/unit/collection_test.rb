@@ -112,9 +112,9 @@ class CollectionTest < ActiveSupport::TestCase
       results = Collection.where("#{Collection.full_text_tsvector} @@ to_tsquery(?)",
                                  "#{search_filters}")
       if expect_results
-        assert_equal true, results.length>0, "No results found for '#{search_filter}'"
+        refute_empty results
       else
-        assert_equal 0, results.length, "Found #{results.length} results for '#{search_filter}'"
+        assert_empty results
       end
     end
   end
