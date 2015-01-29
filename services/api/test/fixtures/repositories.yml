@@ -23,6 +23,11 @@ repository3:
   owner_uuid: zzzzz-tpzed-d9tiejq69daie8f # admin user
   name: foo3
 
+repository4:
+  uuid: zzzzz-s0uqq-38oru8hnk57ht34
+  owner_uuid: zzzzz-tpzed-d9tiejq69daie8f # admin user
+  name: foo4
+
 auto_setup_repository:
   uuid: zzzzz-s0uqq-382brabc8rp3667
   owner_uuid: zzzzz-tpzed-xurymjxw79nv3jz # active user
