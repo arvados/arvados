@@ -280,6 +280,7 @@ class Directory(FreshBase):
                 n.clear()
             llfuse.invalidate_entry(self.inode, str(n))
             self.inodes.del_entry(oldentries[n])
+        llfuse.invalidate_inode(self.inode)
         self.invalidate()
 
     def mtime(self):
