@@ -43,22 +43,4 @@ class RepositoriesTest < ActionDispatch::IntegrationTest
     assert(page.has_no_link?("Sharing"),
            "read-only repository user sees sharing tab")
   end
-
-  [
-    'active',
-    'admin',
-  ].each do |user_key|
-    test "#{user_key} user is presented with attributes tab" do
-      user = api_fixture('users')[user_key]
-      show_object_using(user_key, 'repositories', 'foo',
-                        api_fixture('repositories')['foo']['name'])
-      if user['is_admin']
-        assert_selector 'li', text: 'Attributes'
-      else
-        assert_no_selector 'li', text: 'Attributes'
-      end
-      assert_selector 'li', text: 'Advanced'
-    end
-  end
-
 end

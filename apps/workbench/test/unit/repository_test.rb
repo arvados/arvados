@@ -9,9 +9,9 @@ class RepositoryTest < ActiveSupport::TestCase
       use_token user
       attrs = Repository.new.editable_attributes
       if can_edit
-        assert true, !attrs.empty?
+        refute_empty attrs
       else
-        assert true, attrs.empty?
+        assert_empty attrs
       end
     end
   end

@@ -60,25 +60,6 @@ class UserManageAccountTest < ActionDispatch::IntegrationTest
       assert page.has_text?('added_in_test'), 'No text - added_in_test'
   end
 
-  def verify_repositories user, repos
-    repos.each do |repo_wribable_sharable|
-      within('tr', text: repo_wribable_sharable[0]['name']+'.git') do
-        if repo_wribable_sharable[2]
-          assert_selector 'a', text:'Share'
-          assert_text 'writable'
-        else
-          assert_text repo_wribable_sharable[0]['name']
-          assert_no_selector 'a', text:'Share'
-          if repo_wribable_sharable[1]
-            assert_text 'writable'
-          else
-            assert_text 'read-only'
-          end
-        end
-      end
-    end
-  end
-
   [
     ['inactive', api_fixture('users')['inactive']],
     ['inactive_uninvited', api_fixture('users')['inactive_uninvited']],
@@ -117,15 +98,28 @@ class UserManageAccountTest < ActionDispatch::IntegrationTest
     end
   end
 
-  [
-    ['active', api_fixture('users')['active'], [[api_fixture('repositories')['foo'], true, true],
-                                                [api_fixture('repositories')['repository3'], false, false],
-                                                [api_fixture('repositories')['repository4'], true, false]],],
-    ['admin', api_fixture('users')['admin'], []]
-  ].each do |token, user, repos|
-    test "verify repositories for user #{token}" do
-      visit page_with_token(token, '/manage_account')
-      verify_repositories user, repos
+  test "verify repositories for active user" do
+    visit page_with_token('active', '/manage_account')
+
+    repos = [[api_fixture('repositories')['foo'], true, true],
+             [api_fixture('repositories')['repository3'], false, false],
+             [api_fixture('repositories')['repository4'], true, false]]
+
+    repos.each do |(repo, writable, sharable)|
+      within('tr', text: repo['name']+'.git') do
+        if sharable
+          assert_selector 'a', text:'Share'
+          assert_text 'writable'
+        else
+          assert_text repo['name']
+          assert_no_selector 'a', text:'Share'
+          if writable
+            assert_text 'writable'
+          else
+            assert_text 'read-only'
+          end
+        end
+      end
     end
   end
 end
