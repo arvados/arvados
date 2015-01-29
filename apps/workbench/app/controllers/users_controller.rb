@@ -244,7 +244,7 @@ class UsersController < ApplicationController
     @repo_writable = {}
     repo_links.each do |link|
       if link.name.in? ['can_write', 'can_manage']
-        @repo_writable[link.head_uuid] = true
+        @repo_writable[link.head_uuid] = link.name
       end
     end
 

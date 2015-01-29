@@ -391,6 +391,6 @@ class Arvados::V1::SchemaController < ApplicationController
       end
       discovery
     end
-    render json: discovery
+    send_json discovery
   end
 end

@@ -97,4 +97,29 @@ class UserManageAccountTest < ActionDispatch::IntegrationTest
       end
     end
   end
+
+  test "verify repositories for active user" do
+    visit page_with_token('active', '/manage_account')
+
+    repos = [[api_fixture('repositories')['foo'], true, true],
+             [api_fixture('repositories')['repository3'], false, false],
+             [api_fixture('repositories')['repository4'], true, false]]
+
+    repos.each do |(repo, writable, sharable)|
+      within('tr', text: repo['name']+'.git') do
+        if sharable
+          assert_selector 'a', text:'Share'
+          assert_text 'writable'
+        else
+          assert_text repo['name']
+          assert_no_selector 'a', text:'Share'
+          if writable
+            assert_text 'writable'
+          else
+            assert_text 'read-only'
+          end
+        end
+      end
+    end
+  end
 end
