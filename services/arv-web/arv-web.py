@@ -82,6 +82,7 @@ def main(argv):
 
     loop = True
     cid = None
+    docker_proc = None
     prev_docker_image = None
     mountdir = None
 
@@ -99,7 +100,7 @@ def main(argv):
                         logger.info("Mounting %s", collection)
                         cdir.collection_locator = collection
                         cdir.collection_object = None
-                        cdir.clear()
+                        cdir.update()
 
             try:
                 try:
@@ -116,29 +117,42 @@ def main(argv):
                         if not docker_image:
                             logger.error("Collection must contain a file 'docker_image' or must specify --image on the command line.")
 
-                        if docker_image != prev_docker_image:
+                        if docker_image and ((docker_image != prev_docker_image) or cid is None):
                             if cid:
                                 logger.info("Stopping docker container")
                                 subprocess.check_call(["docker", "stop", cid])
+                                cid = None
+                                docker_proc = None
 
                             if docker_image:
                                 logger.info("Starting docker container %s", docker_image)
-                                cid = subprocess.check_output(["docker", "run",
-                                                               "--detach=true",
-                                                               "--publish=%i:80" % (port),
-                                                               "--volume=%s:/mnt:ro" % mountdir,
-                                                               docker_image])
-                                cid = cid.rstrip()
+                                ciddir = tempfile.mkdtemp()
+                                cidfilepath = os.path.join(ciddir, "cidfile")
+                                docker_proc = subprocess.Popen(["docker", "run",
+                                                                "--cidfile=%s" % (cidfilepath),
+                                                                "--publish=%i:80" % (port),
+                                                                "--volume=%s:/mnt:ro" % mountdir,
+                                                                docker_image])
+                                cid = None
+                                while not cid and docker_proc.poll() is None:
+                                    try:
+                                        with open(cidfilepath) as cidfile:
+                                            cid = cidfile.read().strip()
+                                    except IOError:
+                                        pass
+                                os.unlink(cidfilepath)
+                                os.rmdir(ciddir)
+
                                 prev_docker_image = docker_image
-                                logger.info("Container id is %s", cid)
+                                logger.info("Container id %s", cid)
                         elif cid:
-                            subprocess.check_call(["docker", "kill", "--signal=HUP", cid])
+                            logger.info("Sending refresh signal to container")
+                            subprocess.check_call(["docker", "exec", cid, "killall", "--regexp", ".*", "--signal", "HUP"])
                     elif cid:
                         logger.info("Stopping docker container")
-                        subprocess.call(["docker", "stop", cid])
+                        subprocess.check_call(["docker", "stop", cid])
                 except subprocess.CalledProcessError:
                     cid = None
-
                 if not cid:
                     logger.warning("No service running!  Will wait for a new collection to appear in the project.")
                 else:
@@ -160,6 +174,11 @@ def main(argv):
                         running = False
                     except Queue.Empty:
                         pass
+                    if docker_proc and docker_proc.poll() is not None:
+                        logger.warning("Service has terminated unexpectedly, restarting.")
+                        cid = None
+                        docker_proc = None
+                        running = False
 
             except (KeyboardInterrupt):
                 logger.info("Got keyboard interrupt")
@@ -172,7 +191,7 @@ def main(argv):
     finally:
         if cid:
             logger.info("Stopping docker container")
-            cid = subprocess.call(["docker", "stop", cid])
+            subprocess.check_call(["docker", "stop", cid])
 
         if mountdir:
             logger.info("Unmounting")
