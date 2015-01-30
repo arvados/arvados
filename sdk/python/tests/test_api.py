@@ -42,7 +42,7 @@ class ArvadosApiClientTest(unittest.TestCase):
                     {'items_available': 0, 'items': []})),
             }
         req_builder = apiclient_http.RequestMockBuilder(mock_responses)
-        cls.api = arvados.api('v1', cache=False,
+        cls.api = arvados.api('v1',
                               host=os.environ['ARVADOS_API_HOST'],
                               token='discovery-doc-only-no-token-needed',
                               insecure=True,

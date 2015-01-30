@@ -24,11 +24,10 @@ class EventTestBase(object):
         self.done = threading.Event()
 
         run_test_server.authorize_with("admin")
-        api = arvados.api('v1', cache=False)
-        self.ws = arvados.events.subscribe(arvados.api('v1', cache=False), [['object_uuid', 'is_a', 'arvados#human']], self.on_event, poll_fallback=2)
+        self.ws = arvados.events.subscribe(arvados.api('v1'), [['object_uuid', 'is_a', 'arvados#human']], self.on_event, poll_fallback=2)
         self.assertIsInstance(self.ws, self.WS_TYPE)
         self.subscribed.wait(10)
-        self.h = api.humans().create(body={}).execute()
+        self.h = arvados.api('v1').humans().create(body={}).execute()
         self.done.wait(10)
         self.assertEqual(3, self.state)
 

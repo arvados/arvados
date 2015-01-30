@@ -433,7 +433,7 @@ class ArvPutIntegrationTest(run_test_server.TestCaseWithServers,
                   "ARVADOS_API_HOST_INSECURE",
                   "ARVADOS_API_TOKEN"]:
             self.ENVIRON[v] = arvados.config.settings()[v]
-        arv_put.api_client = arvados.api('v1', cache=False)
+        arv_put.api_client = arvados.api('v1')
 
     def current_user(self):
         return arv_put.api_client.users().current().execute()
@@ -523,7 +523,7 @@ class ArvPutIntegrationTest(run_test_server.TestCaseWithServers,
             stdin=subprocess.PIPE, stdout=subprocess.PIPE,
             stderr=subprocess.PIPE, env=self.ENVIRON)
         stdout, stderr = pipe.communicate(text)
-        collection_list = arvados.api('v1', cache=False).collections().list(
+        collection_list = arvados.api('v1').collections().list(
             filters=[['portable_data_hash', '=', stdout.strip()]]).execute().get('items', [])
         self.assertEqual(1, len(collection_list))
         return collection_list[0]

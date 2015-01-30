@@ -107,9 +107,9 @@ class PollClient(threading.Thread):
 
 def subscribe(api, filters, on_event, poll_fallback=15):
     '''
-    api: Must be a newly created from arvados.api(cache=False), not shared with the caller, as it may be used by a background thread.
+    api: a client object retrieved from arvados.api(). The caller should not use this client object for anything else after calling subscribe().
     filters: Initial subscription filters.
-    on_event: The callback when a message is received
+    on_event: The callback when a message is received.
     poll_fallback: If websockets are not available, fall back to polling every N seconds.  If poll_fallback=False, this will return None if websockets are not available.
     '''
     ws = None

@@ -13,7 +13,7 @@ class PipelineTemplateTest(unittest.TestCase):
 
     def runTest(self):
         run_test_server.authorize_with("admin")
-        pt_uuid = arvados.api('v1', cache=False).pipeline_templates().create(
+        pt_uuid = arvados.api('v1').pipeline_templates().create(
             body={'name':__file__}
             ).execute()['uuid']
         self.assertEqual(len(pt_uuid), 27,
@@ -27,7 +27,7 @@ class PipelineTemplateTest(unittest.TestCase):
             'spass_box': False,
             'spass-box': [True, 'Maybe', False]
             }
-        update_response = arvados.api('v1', cache=False).pipeline_templates().update(
+        update_response = arvados.api('v1').pipeline_templates().update(
             uuid=pt_uuid,
             body={'components':components}
             ).execute()
@@ -39,20 +39,20 @@ class PipelineTemplateTest(unittest.TestCase):
         self.assertEqual(update_response['name'], __file__,
                          'update() response has a different name (%s, not %s)'
                          % (update_response['name'], __file__))
-        get_response = arvados.api('v1', cache=False).pipeline_templates().get(
+        get_response = arvados.api('v1').pipeline_templates().get(
             uuid=pt_uuid
             ).execute()
         self.assertEqual(get_response['components'], components,
                          'components got munged by server (%s -> %s)'
                          % (components, update_response['components']))
-        delete_response = arvados.api('v1', cache=False).pipeline_templates().delete(
+        delete_response = arvados.api('v1').pipeline_templates().delete(
             uuid=pt_uuid
             ).execute()
         self.assertEqual(delete_response['uuid'], pt_uuid,
                          'delete() response has wrong uuid (%s, not %s)'
                          % (delete_response['uuid'], pt_uuid))
         with self.assertRaises(apiclient.errors.HttpError):
-            geterror_response = arvados.api('v1', cache=False).pipeline_templates().get(
+            geterror_response = arvados.api('v1').pipeline_templates().get(
                 uuid=pt_uuid
                 ).execute()
 
