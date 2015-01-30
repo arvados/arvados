@@ -52,6 +52,14 @@ class ArvadosApiClientTest(unittest.TestCase):
     def tearDownClass(cls):
         run_test_server.stop()
 
+    def test_new_api_objects_with_cache(self):
+        clients = [arvados.api('v1', cache=True,
+                               host=os.environ['ARVADOS_API_HOST'],
+                               token='discovery-doc-only-no-token-needed',
+                               insecure=True)
+                   for index in [0, 1]]
+        self.assertIsNot(*clients)
+
     def test_basic_list(self):
         answer = self.api.humans().list(
             filters=[['uuid', 'is', None]]).execute()
