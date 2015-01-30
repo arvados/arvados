@@ -55,7 +55,7 @@ func main() {
 	if arvLogger != nil {
 		arvLogger.Update(func(p map[string]interface{}, e map[string]interface{}) {
 			runInfo := make(map[string]interface{})
-			runInfo["start_time"] = time.Now()
+			runInfo["time_started"] = time.Now()
 			runInfo["args"] = os.Args
 			hostname, err := os.Hostname()
 			if err != nil {
@@ -91,7 +91,7 @@ func main() {
 	// not wait for the timer before exiting.
 	if arvLogger != nil {
 		arvLogger.ForceUpdate(func(p map[string]interface{}, e map[string]interface{}) {
-			p["run_info"].(map[string]interface{})["end_time"] = time.Now()
+			p["run_info"].(map[string]interface{})["time_finished"] = time.Now()
 		})
 	}
 }

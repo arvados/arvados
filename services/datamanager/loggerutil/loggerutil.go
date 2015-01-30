@@ -15,7 +15,7 @@ func FatalWithMessage(arvLogger *logger.Logger, message string) {
 	if arvLogger != nil {
 		arvLogger.ForceUpdate(func(p map[string]interface{}, e map[string]interface{}) {
 			p["FATAL"] = message
-			p["run_info"].(map[string]interface{})["end_time"] = time.Now()
+			p["run_info"].(map[string]interface{})["time_finished"] = time.Now()
 		})
 	}
 
