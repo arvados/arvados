@@ -43,8 +43,8 @@ navbar:
       - user/topics/arv-run.html.textile.liquid
     - Develop a new pipeline:
       - user/tutorials/intro-crunch.html.textile.liquid
-      - user/topics/crunch-tools-overview.html.textile.liquid
       - user/tutorials/running-external-program.html.textile.liquid
+      - user/topics/crunch-tools-overview.html.textile.liquid
       - user/tutorials/tutorial-firstscript.html.textile.liquid
       - user/tutorials/tutorial-submit-job.html.textile.liquid
       - user/topics/tutorial-parallel.html.textile.liquid

@@ -6,7 +6,7 @@ title: "Tools for writing Crunch pipelines"
 
 Arvados includes a number of tools to help you develop pipelines and jobs for Crunch.  This overview explains each tool's intended use to help you choose the right one.
 
-h2. Use the arv-run command-line utility
+h2. Use the "arv-run command-line utility":/user/topics/arv-run.html
 
 arv-run is an interactive command-line tool.  You run it as the first command of a traditional Unix shell command line, and it converts that work into an Arvados pipeline.  It automatically uploads any required data to Arvados, and dispatches work in parallel when possible.  This lets you easily migrate analysis work that you're doing on the command line to Arvados compute nodes.
 
@@ -18,15 +18,15 @@ arv-run does not generate pipeline templates, or implement higher-level shell co
 
 Refer to the "arv-run documentation":/user/topics/arv-run.html for details.
 
-h2. Write a pipeline template
+h2. Write a "pipeline template":/user/tutorials/running-external-program.html
 
 Pipeline templates describe a set of analysis programs that should be run, and the inputs they require.  You can provide a high-level description of how data flows through the pipeline—for example, the outputs of programs A and B are provided as input to program C—and let Crunch take care of the details of starting the individual programs at the right time with the inputs you specified.
 
 Pipeline templates are written in JSON.  Once you save a pipeline template in Arvados, you run it by creating a pipeline instance that lists the specific inputs you'd like to use.  Arvados Workbench and the @arv pipeline run@ command-line tool both provide high-level interfaces to do this easily.  The pipeline's final output(s) will be saved in a project you specify.
 
-Another section of this User Guide details how to "write and run your own pipelines":/user/tutorials/running-external-program.html.  The rest of this page suggests specific tools to use in your templates.
+See the User Guide topic to learn how to "write and run your own pipelines":/user/tutorials/running-external-program.html.  The rest of this page suggests specific tools to use in your templates.
 
-h3. The run-command Crunch script
+h3. The "run-command Crunch script":/user/topics/run-command.html
 
 run-command is a Crunch script that is included with Arvados.  It builds a command line from its input parameters.  It runs that command on files in Collections using the Keep mount provided by Crunch.  Output files created by the command are saved in a new collection, which is considered the program's final output.  It can run the command in parallel on a list of inputs, and introspect arguments so you can, for example, generate output filenames based on input filenames.
 
@@ -38,9 +38,9 @@ run-command is limited to manipulating the tool's command-line arguments, and ca
 
 Refer to the "run-command reference":/user/topics/run-command.html for details.
 
-h3. Writing your own Crunch script with the Python SDK
+h3. Writing "your own Crunch script":/user/tutorials/tutorial-firstscript.html with the Python SDK
 
-Arvados includes a Python SDK designed to help you write your own Crunch scripts.  It includes a native Arvados API client; Collection classes that provide file-like objects to interact with data in Keep; and utility functions to work within Crunch's execution environment.  Using the Python SDK, you can efficiently dispatch work with however much sophistication you require.
+Arvados includes a Python SDK designed to help you write your own Crunch scripts.  It provides a native Arvados API client; Collection classes that provide file-like objects to interact with data in Keep; and utility functions to work within Crunch's execution environment.  Using the Python SDK, you can efficiently dispatch work with however much sophistication you require.
 
 Writing your own Crunch script is the best way to do analysis in Arvados when an existing tool does not meet your needs.  By interacting directly with Arvados objects, you'll have full power to introspect and adapt to your input, introduce minimal overhead, and get very direct error messages in case there's any trouble.  As a simple example, here's a Crunch script that checksums each file in a collection in parallel, saving the results in Keep:
 
@@ -48,7 +48,7 @@ Writing your own Crunch script is the best way to do analysis in Arvados when an
 
 There's no limit to what you can do with your own Crunch script.  The downside is the amount of time and effort you're required to invest to write and debug new code.  If you have to do that anyway, writing a Crunch script will give you the most benefit from using Arvados.
 
-Refer to the "Python SDK reference":/sdk/python/python.html for details.
+Refer to the "User Guide topic on writing Crunch scripts":/user/tutorials/tutorial-firstscript.html and the "Python SDK reference":/sdk/python/python.html for details.
 
 h3. Combining run-command and custom Crunch scripts in a pipeline
 
