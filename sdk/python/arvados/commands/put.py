@@ -408,6 +408,11 @@ def main(arguments=None, stdout=sys.stdout, stderr=sys.stderr):
         print >>stderr, error
         sys.exit(1)
 
+    # Apply default replication, if none specified. TODO (#3410): Use
+    # default replication given by discovery document.
+    if args.replication <= 0:
+        args.replication = 2
+
     if args.progress:
         reporter = progress_writer(human_progress)
     elif args.batch_progress:
@@ -480,7 +485,7 @@ def main(arguments=None, stdout=sys.stdout, stderr=sys.stderr):
                     'owner_uuid': project_uuid,
                     'name': collection_name,
                     'manifest_text': manifest_text,
-                    'redundancy': replication,
+                    'redundancy': args.replication,
                     },
                 ensure_unique_name=True
                 ).execute(num_retries=args.retries)
