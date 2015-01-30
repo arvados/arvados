@@ -46,7 +46,7 @@ def main(arguments=None):
             ws.subscribe([['object_uuid', 'in', [args.pipeline] + list(pipeline_jobs)]])
             known_component_jobs = pipeline_jobs
 
-    api = arvados.api('v1', cache=False)
+    api = arvados.api('v1')
 
     if args.uuid:
         filters += [ ['object_uuid', '=', args.uuid] ]
@@ -85,7 +85,7 @@ def main(arguments=None):
             print json.dumps(ev)
 
     try:
-        ws = subscribe(arvados.api('v1', cache=False), filters, on_message, poll_fallback=args.poll_interval)
+        ws = subscribe(arvados.api('v1'), filters, on_message, poll_fallback=args.poll_interval)
         if ws:
             if args.pipeline:
                 c = api.pipeline_instances().get(uuid=args.pipeline).execute()
