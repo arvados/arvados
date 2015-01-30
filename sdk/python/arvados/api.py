@@ -79,8 +79,8 @@ def api(version=None, cache=True, host=None, token=None, insecure=False, **kwarg
     Arguments:
     * version: A string naming the version of the Arvados API to use (for
       example, 'v1').
-    * cache: Use (if available and recent) or create/update a cached copy
-      of the discovery document.
+    * cache: Use a cache (~/.cache/arvados/discovery) for the discovery
+      document.
     * host: The Arvados API server host (and optional :port) to connect to.
     * token: The authentication token to send with each API call.
     * insecure: If True, ignore SSL certificate validation errors.
