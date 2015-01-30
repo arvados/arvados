@@ -140,8 +140,11 @@ def main(argv):
                                             cid = cidfile.read().strip()
                                     except IOError:
                                         pass
-                                os.unlink(cidfilepath)
-                                os.rmdir(ciddir)
+                                try:
+                                    os.unlink(cidfilepath)
+                                    os.rmdir(ciddir)
+                                except OSError:
+                                    pass
 
                                 prev_docker_image = docker_image
                                 logger.info("Container id %s", cid)
