@@ -160,8 +160,10 @@ class ApiServerForTests
                 '--pid-file', @pidfile)
       else
         make_ssl_cert
-        _system('bundle', 'exec', 'rake', 'db:test:load')
-        _system('bundle', 'exec', 'rake', 'db:fixtures:load')
+        if ENV['ARVADOS_TEST_API_INSTALLED'].blank?
+          _system('bundle', 'exec', 'rake', 'db:test:load')
+          _system('bundle', 'exec', 'rake', 'db:fixtures:load')
+        end
         _system('bundle', 'exec', 'passenger', 'start', '-d', '-p3000',
                 '--pid-file', @pidfile,
                 '--ssl',
@@ -311,3 +313,6 @@ if ENV["RAILS_ENV"].eql? 'test'
   ApiServerForTests.new.run
   ApiServerForTests.new.run ["--websockets"]
 end
+
+# Reset fixtures now (i.e., before any tests run).
+ActiveSupport::TestCase.reset_api_fixtures_now

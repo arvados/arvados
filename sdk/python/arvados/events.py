@@ -13,12 +13,15 @@ _logger = logging.getLogger('arvados.events')
 
 class EventClient(WebSocketClient):
     def __init__(self, url, filters, on_event):
-        ssl_options = None
-        if re.match(r'(?i)^(true|1|yes)$',
-                    config.get('ARVADOS_API_HOST_INSECURE', 'no')):
-            ssl_options={'cert_reqs': ssl.CERT_NONE}
+        # Prefer system's CA certificates (if available)
+        ssl_options = {}
+        certs_path = '/etc/ssl/certs/ca-certificates.crt'
+        if os.path.exists(certs_path):
+            ssl_options['ca_certs'] = certs_path
+        if config.flag_is_true('ARVADOS_API_HOST_INSECURE'):
+            ssl_options['cert_reqs'] = ssl.CERT_NONE
         else:
-            ssl_options={'cert_reqs': ssl.CERT_REQUIRED}
+            ssl_options['cert_reqs'] = ssl.CERT_REQUIRED
         super(EventClient, self).__init__(url, ssl_options=ssl_options)
         self.filters = filters
         self.on_event = on_event
@@ -79,7 +82,9 @@ class PollClient(threading.Thread):
             self.stop.wait(self.poll_time)
 
     def run_forever(self):
-        self.stop.wait()
+        # Have to poll here, otherwise KeyboardInterrupt will never get processed.
+        while not self.stop.is_set():
+            self.stop.wait(1)
 
     def close(self):
         self.stop.set()
@@ -102,9 +107,9 @@ class PollClient(threading.Thread):
 
 def subscribe(api, filters, on_event, poll_fallback=15):
     '''
-    api: Must be a newly created from arvados.api(cache=False), not shared with the caller, as it may be used by a background thread.
+    api: a client object retrieved from arvados.api(). The caller should not use this client object for anything else after calling subscribe().
     filters: Initial subscription filters.
-    on_event: The callback when a message is received
+    on_event: The callback when a message is received.
     poll_fallback: If websockets are not available, fall back to polling every N seconds.  If poll_fallback=False, this will return None if websockets are not available.
     '''
     ws = None

@@ -184,6 +184,37 @@ pipeline_instance_in_fuse_project:
           dataclass: Collection
           title: foo instance input
 
+pipeline_owned_by_active_in_aproject:
+  name: Completed pipeline in A Project
+  state: Complete
+  uuid: zzzzz-d1hrv-ju5ghi0i9z2kqc6
+  owner_uuid: zzzzz-j7d0g-v955i6s2oi1cbso
+  created_at: 2014-09-15 12:00:00
+  components:
+    foo:
+      script: foo
+      script_version: master
+      script_parameters:
+        input:
+          required: true
+          dataclass: Collection
+          title: foo instance input
+
+pipeline_owned_by_active_in_home:
+  name: Completed pipeline in active user home
+  state: Complete
+  uuid: zzzzz-d1hrv-lihrbd0i9z2kqc6
+  owner_uuid: zzzzz-tpzed-xurymjxw79nv3jz
+  created_at: 2014-09-15 12:00:00
+  components:
+    foo:
+      script: foo
+      script_version: master
+      script_parameters:
+        input:
+          required: true
+          dataclass: Collection
+          title: foo instance input
 
 # Test Helper trims the rest of the file
 

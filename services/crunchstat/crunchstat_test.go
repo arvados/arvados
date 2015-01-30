@@ -1,6 +1,8 @@
 package main
 
 import (
+	"bufio"
+	"io"
 	"os"
 	"regexp"
 	"testing"
@@ -47,4 +49,31 @@ func TestReadAllOrWarnSuccess(t *testing.T) {
 	if msg, ok := <-logChan; ok {
 		t.Fatalf("Expected channel to close, got %s", msg)
 	}
+}
+
+// Test that if CopyPipeToChan reads a line longer than
+// bufio.MaxScanTokenSize, it emits an error to the output channel.
+func TestCopyPipeToChanLongLines(t *testing.T) {
+	logChan := make(chan string)
+	control := make(chan bool)
+
+	pipeIn, pipeOut := io.Pipe()
+	go CopyPipeToChan(pipeIn, logChan, control)
+
+	go func() {
+		long_line := make([]byte, bufio.MaxScanTokenSize+1)
+		for i := range long_line {
+			long_line[i] = byte('x')
+		}
+		pipeOut.Write(long_line)
+	}()
+
+	// Expect error message from logChan.
+
+	errmsg := <-logChan
+	if matched, err := regexp.MatchString("^crunchstat: line buffering error:.*token too long", errmsg); err != nil || !matched {
+		t.Fatalf("expected CopyPipeToChan error, got %s", errmsg)
+	}
+
+	<-control
 }

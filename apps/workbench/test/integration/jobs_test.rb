@@ -72,4 +72,45 @@ class JobsTest < ActionDispatch::IntegrationTest
     wait_for_ajax
     assert page.has_text? 'Showing only 100 bytes of this log'
   end
+
+  [
+    ['foobar', false, false],
+    ['job_with_latest_version', true, false],
+    ['job_with_latest_version', true, true],
+  ].each do |job_name, expect_options, use_latest|
+    test "Rerun #{job_name} job, expect options #{expect_options},
+          and use latest version option #{use_latest}" do
+      need_javascript
+
+      job = api_fixture('jobs')[job_name]
+      visit page_with_token 'active', '/jobs/'+job['uuid']
+
+      if expect_options
+        assert_text 'supplied_script_version: master'
+      else
+        assert_text 'supplied_script_version: (none)'
+      end
+
+      assert_triggers_dom_event 'shown.bs.modal' do
+        find('a,button', text: 'Re-run job...').click
+      end
+      within('.modal-dialog') do
+        assert_selector 'a,button', text: 'Cancel'
+        if use_latest
+          page.choose("job_script_version_#{job['supplied_script_version']}")
+        end
+        click_on "Run now"
+      end
+
+      # Re-running jobs doesn't currently work because the test API
+      # server has no git repository to check against.  For now, check
+      # that the correct script version is mentioned in the
+      # Fiddlesticks error message.
+      if expect_options && use_latest
+        assert_text "Script version #{job['supplied_script_version']} does not resolve to a commit"
+      else
+        assert_text "Script version #{job['script_version']} does not resolve to a commit"
+      end
+    end
+  end
 end

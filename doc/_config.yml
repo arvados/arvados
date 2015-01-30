@@ -13,6 +13,14 @@ arvados_workbench_host: localhost
 exclude: ["Rakefile", "tmp", "vendor"]
 
 navbar:
+  start:
+    - Getting Started:
+      - start/index.html.textile.liquid
+    - Quickstart:
+      - start/getting_started/firstpipeline.html.textile.liquid
+    - Common Use Cases:
+      - start/getting_started/sharedata.html.textile.liquid
+
   userguide:
     - Getting Started:
       - user/index.html.textile.liquid
@@ -36,6 +44,7 @@ navbar:
     - Develop a new pipeline:
       - user/tutorials/intro-crunch.html.textile.liquid
       - user/tutorials/running-external-program.html.textile.liquid
+      - user/topics/crunch-tools-overview.html.textile.liquid
       - user/tutorials/tutorial-firstscript.html.textile.liquid
       - user/tutorials/tutorial-submit-job.html.textile.liquid
       - user/topics/tutorial-parallel.html.textile.liquid

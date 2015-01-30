@@ -1,6 +1,9 @@
 require 'test_helper'
+require 'helpers/share_object_helper'
 
 class ProjectsControllerTest < ActionController::TestCase
+  include ShareObjectHelper
+
   test "invited user is asked to sign user agreements on front page" do
     get :index, {}, session_for(:inactive)
     assert_response :redirect
@@ -61,40 +64,28 @@ class ProjectsControllerTest < ActionController::TestCase
            "JSON response missing properly formatted sharing error")
   end
 
-  def user_can_manage(user_sym, group_key)
-    get(:show, {id: api_fixture("groups")[group_key]["uuid"]},
-        session_for(user_sym))
-    is_manager = assigns(:user_is_manager)
-    assert_not_nil(is_manager, "user_is_manager flag not set")
-    if not is_manager
-      assert_empty(assigns(:share_links),
-                   "non-manager has share links set")
-    end
-    is_manager
-  end
-
   test "admin can_manage aproject" do
-    assert user_can_manage(:admin, "aproject")
+    assert user_can_manage(:admin, api_fixture("groups")["aproject"])
   end
 
   test "owner can_manage aproject" do
-    assert user_can_manage(:active, "aproject")
+    assert user_can_manage(:active, api_fixture("groups")["aproject"])
   end
 
   test "owner can_manage asubproject" do
-    assert user_can_manage(:active, "asubproject")
+    assert user_can_manage(:active, api_fixture("groups")["asubproject"])
   end
 
   test "viewer can't manage aproject" do
-    refute user_can_manage(:project_viewer, "aproject")
+    refute user_can_manage(:project_viewer, api_fixture("groups")["aproject"])
   end
 
   test "viewer can't manage asubproject" do
-    refute user_can_manage(:project_viewer, "asubproject")
+    refute user_can_manage(:project_viewer, api_fixture("groups")["asubproject"])
   end
 
   test "subproject_admin can_manage asubproject" do
-    assert user_can_manage(:subproject_admin, "asubproject")
+    assert user_can_manage(:subproject_admin, api_fixture("groups")["asubproject"])
   end
 
   test "detect ownership loop in project breadcrumbs" do
@@ -109,7 +100,9 @@ class ProjectsControllerTest < ActionController::TestCase
     assert_response :success
   end
 
-  test "project admin can remove items from the project" do
+  test "project admin can remove collections from the project" do
+    # Deleting an object that supports 'expires_at' should make it
+    # completely inaccessible to API queries, not simply moved out of the project.
     coll_key = "collection_to_remove_from_subproject"
     coll_uuid = api_fixture("collections")[coll_key]["uuid"]
     delete(:remove_item,
@@ -120,6 +113,29 @@ class ProjectsControllerTest < ActionController::TestCase
     assert_response :success
     assert_match(/\b#{coll_uuid}\b/, @response.body,
                  "removed object not named in response")
+
+    use_token :subproject_admin
+    assert_raise ArvadosApiClient::NotFoundException do
+      Collection.find(coll_uuid)
+    end
+  end
+
+  test "project admin can remove items from project other than collections" do
+    # An object which does not have an expired_at field (e.g. Specimen)
+    # should be implicitly moved to the user's Home project when removed.
+    specimen_uuid = api_fixture('specimens', 'in_asubproject')['uuid']
+    delete(:remove_item,
+           { id: api_fixture('groups', 'asubproject')['uuid'],
+             item_uuid: specimen_uuid,
+             format: 'js' },
+           session_for(:subproject_admin))
+    assert_response :success
+    assert_match(/\b#{specimen_uuid}\b/, @response.body,
+                 "removed object not named in response")
+
+    use_token :subproject_admin
+    new_specimen = Specimen.find(specimen_uuid)
+    assert_equal api_fixture('users', 'subproject_admin')['uuid'], new_specimen.owner_uuid
   end
 
   test 'projects#show tab infinite scroll partial obeys limit' do

@@ -139,7 +139,6 @@ class UsersController < ApplicationController
   end
 
   def home
-    @showallalerts = false
     @my_ssh_keys = AuthorizedKey.where(authorized_user_uuid: current_user.uuid)
     @my_tag_links = {}
 
@@ -245,7 +244,7 @@ class UsersController < ApplicationController
     @repo_writable = {}
     repo_links.each do |link|
       if link.name.in? ['can_write', 'can_manage']
-        @repo_writable[link.head_uuid] = true
+        @repo_writable[link.head_uuid] = link.name
       end
     end
 
