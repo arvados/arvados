@@ -1,8 +1,4 @@
 <VirtualHost *:80>
-
-  ServerName arv-web
-  ServerAdmin sysadmin@curoverse.com
-
   # Index file and Document Root (where the public files are located)
   DirectoryIndex index.html
   DocumentRoot /mnt/public

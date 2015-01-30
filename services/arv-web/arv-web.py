@@ -1,5 +1,9 @@
 #!/usr/bin/env python
 
+# arv-web enables you to run a custom web service from the contents of an Arvados collection.
+#
+# See http://doc.arvados.org/user/topics/arv-web.html
+
 import arvados
 import subprocess
 from arvados_fuse import Operations, SafeApi, CollectionDirectory
@@ -14,6 +18,9 @@ import signal
 import sys
 import functools
 
+# Run an arvados_fuse mount under the control of the local process.  This lets
+# us switch out the contents of the directory without having to unmount and
+# remount.
 def run_fuse_mount(api, collection):
     mountdir = tempfile.mkdtemp()
 
@@ -32,6 +39,7 @@ def run_fuse_mount(api, collection):
 
     return (mountdir, cdir)
 
+# Handle messages from Arvados event bus.
 def on_message(project, evqueue, ev):
     if 'event_type' in ev:
         old_attr = None
@@ -59,7 +67,7 @@ def main(argv):
 
     parser = argparse.ArgumentParser()
     parser.add_argument('--project-uuid', type=str, required=True, help="Project uuid to watch")
-    parser.add_argument('--port', type=int, default=8080, help="Port to listen on (default 8080)")
+    parser.add_argument('--port', type=int, default=8080, help="Host port to listen on (default 8080)")
     parser.add_argument('--image', type=str, help="Docker image to run")
 
     args = parser.parse_args(argv)
@@ -97,6 +105,8 @@ def main(argv):
                 with llfuse.lock:
                     cdir.clear()
                     if collection:
+                        # Switch the FUSE directory object so that it stores
+                        # the newly selected collection
                         logger.info("Mounting %s", collection)
                         cdir.collection_locator = collection
                         cdir.collection_object = None
@@ -107,6 +117,14 @@ def main(argv):
                     if collection:
                         if not args.image:
                             docker_image = None
+
+                            # FUSE is asynchronous, so there is a race between
+                            # the directory being updated above and the kernel
+                            # cache being refreshed.  This manifests as the
+                            # bizare behavior where os.path.exists() returns
+                            # True, but open() raises "file not found".  The
+                            # workaround is to keep trying until the kernel
+                            # catches up.
                             while not docker_image and os.path.exists(os.path.join(mountdir, "docker_image")):
                                 try:
                                     with open(os.path.join(mountdir, "docker_image")) as di:
@@ -119,13 +137,13 @@ def main(argv):
 
                         if docker_image and ((docker_image != prev_docker_image) or cid is None):
                             if cid:
-                                logger.info("Stopping docker container")
+                                logger.info("Stopping Docker container")
                                 subprocess.check_call(["docker", "stop", cid])
                                 cid = None
                                 docker_proc = None
 
                             if docker_image:
-                                logger.info("Starting docker container %s", docker_image)
+                                logger.info("Starting Docker container %s", docker_image)
                                 ciddir = tempfile.mkdtemp()
                                 cidfilepath = os.path.join(ciddir, "cidfile")
                                 docker_proc = subprocess.Popen(["docker", "run",
@@ -150,20 +168,44 @@ def main(argv):
                                 logger.info("Container id %s", cid)
                         elif cid:
                             logger.info("Sending refresh signal to container")
+                            # Send SIGHUP to all the processes inside the
+                            # container.  By convention, services are expected
+                            # to reload their configuration.  If they die
+                            # instead, that's okay, because then we'll just
+                            # start a new container.
+                            #
+                            # Getting the services inside the container to
+                            # refresh turned out to be really hard.  Here are
+                            # some of the other things I tried:
+                            #
+                            # docker kill --signal=HUP               # no effect
+                            # docker_proc.send_signal(signal.SIGHUP) # no effect
+                            # os.killpg(os.getpgid(docker_proc.pid), signal.SIGHUP) # docker-proxy dies as collatoral damage
+                            # docker exec apache2ctl restart         # only works if service is using apache.
+                            # Sending HUP directly to the processes inside the container: permission denied
+
                             subprocess.check_call(["docker", "exec", cid, "killall", "--regexp", ".*", "--signal", "HUP"])
                     elif cid:
                         logger.info("Stopping docker container")
                         subprocess.check_call(["docker", "stop", cid])
                 except subprocess.CalledProcessError:
                     cid = None
+
                 if not cid:
                     logger.warning("No service running!  Will wait for a new collection to appear in the project.")
                 else:
                     logger.info("Waiting for events")
+
                 running = True
                 loop = True
                 while running:
+                    # Main run loop.  Wait on project events, signals, or the
+                    # Docker container stopping.
+
                     try:
+                        # Poll the queue with a 1 second timeout, if we have no
+                        # timeout the Python runtime doesn't have a chance to
+                        # process SIGINT or SIGTERM.
                         eq = evqueue.get(True, 1)
                         logger.info("%s %s", eq[1], eq[2])
                         newcollection = collection
@@ -177,8 +219,9 @@ def main(argv):
                         running = False
                     except Queue.Empty:
                         pass
+
                     if docker_proc and docker_proc.poll() is not None:
-                        logger.warning("Service has terminated unexpectedly, restarting.")
+                        logger.warning("Service has terminated.  Will try to restart.")
                         cid = None
                         docker_proc = None
                         running = False
