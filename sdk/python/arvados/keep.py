@@ -739,7 +739,7 @@ class KeepClient(object):
     # Local storage methods need no-op num_retries arguments to keep
     # integration tests happy.  With better isolation they could
     # probably be removed again.
-    def local_store_put(self, data, num_retries=0):
+    def local_store_put(self, data, num_retries=0, copies=1):
         md5 = hashlib.md5(data).hexdigest()
         locator = '%s+%d' % (md5, len(data))
         with open(os.path.join(self.local_store, md5 + '.tmp'), 'w') as f:
@@ -748,7 +748,7 @@ class KeepClient(object):
                   os.path.join(self.local_store, md5))
         return locator
 
-    def local_store_get(self, loc_s, num_retries=0):
+    def local_store_get(self, loc_s, num_retries=0, copies=1):
         try:
             locator = KeepLocator(loc_s)
         except ValueError:

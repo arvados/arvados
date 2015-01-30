@@ -536,6 +536,19 @@ class CollectionTestMixin(object):
         self.mock_keep_services(client, code, self.PROXY_RESPONSE)
         return client
 
+    def disk_services_available(self, number_of_disks):
+        return {
+            'items_available': number_of_disks,
+            'items': [{
+                'uuid': 'zzzzz-bi6l4-mockdisk%07d' % i,
+                'owner_uuid': 'zzzzz-tpzed-000000000000000',
+                'service_host': tutil.TEST_HOST,
+                'service_port': 65535-i,
+                'service_ssl_flag': True,
+                'service_type': 'disk',
+            } for i in range(0, number_of_disks)]
+        }
+
 
 @tutil.skip_sleep
 class CollectionReaderTestCase(unittest.TestCase, CollectionTestMixin):
@@ -703,8 +716,8 @@ class CollectionWriterTestCase(unittest.TestCase, CollectionTestMixin):
         return tutil.mock_put_responses(body, *codes, **headers)
 
     def foo_writer(self, **kwargs):
-        api_client = self.api_client_mock()
-        writer = arvados.CollectionWriter(api_client, **kwargs)
+        kwargs.setdefault('api_client', self.api_client_mock())
+        writer = arvados.CollectionWriter(**kwargs)
         writer.start_new_file('foo')
         writer.write('foo')
         return writer
@@ -719,6 +732,32 @@ class CollectionWriterTestCase(unittest.TestCase, CollectionTestMixin):
         with self.mock_keep(None, 500):
             with self.assertRaises(arvados.errors.KeepWriteError):
                 writer.finish()
+
+    def test_write_insufficient_replicas_via_proxy(self):
+        writer = self.foo_writer(replication=3)
+        with self.mock_keep(None, 200, headers={'x-keep-replicas-stored': 2}):
+            with self.assertRaises(arvados.errors.KeepWriteError):
+                writer.manifest_text()
+
+    def test_write_insufficient_replicas_via_disks(self):
+        client = mock.MagicMock(name='api_client')
+        self.mock_keep_services(client, 200, self.disk_services_available(2))
+        writer = self.foo_writer(api_client=client, replication=3)
+        with self.mock_keep(
+                None, 200, 200,
+                **{'x-keep-replicas-stored': 1}) as keepmock:
+            with self.assertRaises(arvados.errors.KeepWriteError):
+                writer.manifest_text()
+
+    def test_write_three_replicas(self):
+        client = mock.MagicMock(name='api_client')
+        self.mock_keep_services(client, 200, self.disk_services_available(6))
+        writer = self.foo_writer(api_client=client, replication=3)
+        with self.mock_keep(
+                None, 200, 500, 200, 500, 200, 200,
+                **{'x-keep-replicas-stored': 1}) as keepmock:
+            writer.manifest_text()
+            self.assertEqual(5, keepmock.call_count)
 
     def test_write_whole_collection_through_retries(self):
         writer = self.foo_writer(num_retries=2)
