@@ -173,6 +173,14 @@ func (l *Logger) write() {
 	l.entry["event_type"] = l.params.EventType
 
 	// Write the log entry.
+	// This is a network write and will take a while, which is bad
+	// because we're holding a lock and all other goroutines will back
+	// up behind it.
+	//
+	// TODO(misha): Consider rewriting this so that we can encode l.data
+	// into a string, release the lock, write the string, and then
+	// acquire the lock again to note that we succeeded in writing. This
+	// will be tricky and will require support in the client.
 	err := l.params.Client.Create("logs", l.data, nil)
 	if err != nil {
 		log.Printf("Attempted to log: %v", l.data)
