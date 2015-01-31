@@ -53,7 +53,11 @@
                   <li role="menuitem"><a href="/users/<%=current_user.uuid%>/profile" role="menuitem"><i class="fa fa-key fa-fw"></i> Manage profile</a></li>
                 <% end %>
                 <% end %>
-                <li role="menuitem"><a href="<%= logout_path %>" role="menuitem"><i class="fa fa-sign-out fa-fw"></i> Log out</a></li>
+                <% if !is_anonymous %>
+                  <li role="menuitem"><a href="<%= logout_path %>" role="menuitem"><i class="fa fa-sign-out fa-fw"></i> Log out</a></li>
+                <% else %>
+                  <li><a href="<%= arvados_api_client.arvados_login_url(return_to: root_url) %>">Log in</a></li>
+                <% end %>
                 <% if user_notifications.any? %>
                   <li role="presentation" class="divider"></li>
                   <% user_notifications.each_with_index do |n, i| %>

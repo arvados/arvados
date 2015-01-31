@@ -38,8 +38,8 @@ class AnonymousAccessTest < ActionDispatch::IntegrationTest
         assert_selector 'a', "#{anonymous_user['email']}"
         find('a', text: "#{anonymous_user['email']}").click
         within('.dropdown-menu') do
-          assert_selector 'a', text: 'Log out'
-          #assert_selector 'a', 'Log in'
+          assert_selector 'a', text: 'Log in'
+          assert_no_selector 'a', text: 'Log out'
         end
       end
     end
