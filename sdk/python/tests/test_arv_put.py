@@ -535,11 +535,11 @@ class ArvPutIntegrationTest(run_test_server.TestCaseWithServers,
         # making sure collections.create tells the API server what our
         # desired replication level is.
         collection = self.run_and_find_collection("", ['--replication', '4'])
-        self.assertEqual(4, collection['redundancy'])
+        self.assertEqual(4, collection['replication_desired'])
 
     def test_put_collection_with_default_redundancy(self):
         collection = self.run_and_find_collection("")
-        self.assertEqual(2, collection['redundancy'])
+        self.assertEqual(2, collection['replication_desired'])
 
     def test_put_collection_with_unnamed_project_link(self):
         link = self.run_and_find_collection(

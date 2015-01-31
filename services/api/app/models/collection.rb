@@ -21,6 +21,7 @@ class Collection < ArvadosModel
     t.add :properties
     t.add :portable_data_hash
     t.add :signed_manifest_text, as: :manifest_text
+    t.add :replication_desired
   end
 
   def self.attributes_required_columns
@@ -28,7 +29,8 @@ class Collection < ArvadosModel
     # confused by the way we expose signed_manifest_text as
     # manifest_text in the API response, and never let clients select
     # the manifest_text column.
-    super.merge('manifest_text' => ['manifest_text'])
+    super.merge('manifest_text' => ['manifest_text'],
+                'replication_desired' => ['redundancy'])
   end
 
   def check_signatures
@@ -173,6 +175,11 @@ class Collection < ArvadosModel
       errors.add :manifest_text, "must use UTF-8 encoding"
       false
     end
+  end
+
+  def replication_desired
+    # Shim until database columns get fixed up in #3410.
+    redundancy or 2
   end
 
   def redundancy_status
