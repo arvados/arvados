@@ -8,6 +8,7 @@ class ApplicationController < ActionController::Base
   ERROR_ACTIONS = [:render_error, :render_not_found]
 
   around_filter :thread_clear
+  before_filter :permit_anonymous_browsing_for_public_data
   around_filter :set_thread_api_token
   # Methods that don't require login should
   #   skip_around_filter :require_thread_api_token
@@ -564,6 +565,17 @@ class ApplicationController < ActionController::Base
     end
   end
 
+  # Anonymous allowed paths:
+  #   /projects/#{uuid}?public_data=true
+  def permit_anonymous_browsing_for_public_data
+    if !Thread.current[:arvados_api_token] && !params[:api_token] && !session[:arvados_api_token]
+      public_project_accessed = /\/projects\/([0-9a-z]{5}-j7d0g-[0-9a-z]{15})(.*)public_data\=true/.match(request.fullpath)
+      if public_project_accessed
+        params[:api_token] = Rails.configuration.anonymous_user_token
+      end
+    end
+  end
+
   # Save the session API token in thread-local storage, and yield.
   # This method also takes care of session setup if the request
   # provides a valid api_token parameter.
@@ -627,6 +639,8 @@ class ApplicationController < ActionController::Base
 
   def check_user_agreements
     if current_user && !current_user.is_active
+      return true if is_anonymous
+
       if not current_user.is_invited
         return redirect_to inactive_users_path(return_to: request.fullpath)
       end
@@ -648,7 +662,7 @@ class ApplicationController < ActionController::Base
   def check_user_profile
     if request.method.downcase != 'get' || params[:partial] ||
        params[:tab_pane] || params[:action_method] ||
-       params[:action] == 'setup_popup'
+       params[:action] == 'setup_popup' || is_anonymous
       return true
     end
 
@@ -1079,5 +1093,11 @@ class ApplicationController < ActionController::Base
 
   def wiselinks_layout
     'body'
+  end
+
+  helper_method :is_anonymous
+  def is_anonymous
+    return Rails.configuration.anonymous_user_token &&
+          (Thread.current[:arvados_api_token] == Rails.configuration.anonymous_user_token)
   end
 end
