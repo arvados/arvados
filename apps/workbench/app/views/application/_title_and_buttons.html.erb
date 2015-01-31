@@ -13,7 +13,7 @@
 
 <% if @object.class.goes_in_projects? && @object.uuid != current_user.uuid # Not the "Home" project %>
   <% content_for :tab_line_buttons do %>
-    <% if @object.class.copies_to_projects? %>
+    <% if current_user.is_active && @object.class.copies_to_projects? %>
       <%= link_to(
           choose_projects_path(
            title: "Copy this #{object_class} to:",

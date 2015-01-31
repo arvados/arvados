@@ -5,6 +5,7 @@
       <div class="btn-group btn-group-sm">
         <button type="button" class="btn btn-default dropdown-toggle" data-toggle="dropdown">Selection <span class="caret"></span></button>
         <ul class="dropdown-menu" role="menu">
+          <% if current_user.is_active %>
           <li><%= link_to "Create new collection with selected collections", '#',
                   'data-href' => combine_selected_path(
                     action_data: {current_project_uuid: @object.uuid}.to_json
@@ -15,12 +16,14 @@
                   'data-selection-action' => 'combine-project-contents',
                   'data-toggle' => 'dropdown'
             %></li>
+          <% end %>
           <li><%= link_to "Compare selected", '#',
                   'data-href' => compare_pipeline_instances_path,
                   'data-selection-param-name' => 'uuids[]',
                   'data-selection-action' => 'compare',
                   'data-toggle' => 'dropdown'
             %></li>
+          <% if current_user.is_active %>
           <li><%= link_to "Copy selected...", '#',
                   'data-href' => choose_projects_path(
                     title: 'Copy selected items to...',
@@ -38,6 +41,7 @@
                   'data-selection-action' => 'copy',
                   'data-toggle' => 'dropdown'
             %></li>
+          <% end %>
           <% if @object.editable? %>
           <li><%= link_to "Move selected...", '#',
                   'data-href' => choose_projects_path(

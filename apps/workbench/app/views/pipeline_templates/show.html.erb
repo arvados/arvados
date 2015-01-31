@@ -1,3 +1,4 @@
+<% if current_user.is_active %>
 <% content_for :tab_line_buttons do %>
   <%= link_to(choose_projects_path(id: "run-pipeline-button",
                                      title: 'Choose project',
@@ -14,6 +15,7 @@
                ) do %>
                    <i class="fa fa-gear"></i> Run this pipeline
                  <% end %>
+<% end %>
 <% end %>
 
 <%= render file: 'application/show.html.erb', locals: local_assigns %>
