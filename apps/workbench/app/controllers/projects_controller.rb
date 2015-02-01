@@ -45,22 +45,22 @@ class ProjectsController < ApplicationController
         :filters => [%w(uuid is_a arvados#collection)]
       }
     pane_list <<
-      { 
+      {
         :name => 'Jobs_and_pipelines',
         :filters => [%w(uuid is_a) + [%w(arvados#job arvados#pipelineInstance)]]
       }
     pane_list <<
-      { 
+      {
         :name => 'Pipeline_templates',
         :filters => [%w(uuid is_a arvados#pipelineTemplate)]
       }
     pane_list <<
-      { 
+      {
         :name => 'Subprojects',
         :filters => [%w(uuid is_a arvados#group)]
       } if current_user.is_active
     pane_list <<
-      { 
+      {
         :name => 'Other_objects',
         :filters => [%w(uuid is_a) + [%w(arvados#human arvados#specimen arvados#trait)]]
       } if current_user.is_active
