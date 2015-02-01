@@ -121,6 +121,18 @@ class AnonymousAccessTest < ActionDispatch::IntegrationTest
     visit "/projects/#{api_fixture('groups')['anonymously_accessible_project']['uuid']}/?public_data=true"
   end
 
+  test "verify dashboard when anonymous user accesses shared project" do
+    visit_publicly_accessible_project
+    assert_selector 'a', text: 'You are viewing public data'
+
+    # go to dashboard
+    click_link 'You are viewing public data'
+    assert_no_selector 'a', text: 'Run a pipeline'
+    assert_selector 'a', text: 'All pipelines'
+    assert_selector 'a', text: 'All jobs'
+    assert_selector 'a', text: 'All collections'
+  end
+
   test "anonymous user accesses data collections tab in shared project" do
     visit_publicly_accessible_project
 
@@ -134,6 +146,7 @@ class AnonymousAccessTest < ActionDispatch::IntegrationTest
     # in collection page
     assert_no_selector 'input', text: 'Create sharing link'
     assert_no_selector 'a', text: 'Upload'
+    assert_no_selector 'button', 'Selection'
 
     within ('#collection_files') do
       assert_text 'GNU_General_Public_License,_version_3.pdf'

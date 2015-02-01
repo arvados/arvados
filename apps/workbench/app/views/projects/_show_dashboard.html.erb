@@ -3,8 +3,9 @@
     <div class="col-md-6">
       <div class="panel panel-default" style="min-height: 10.5em">
         <div class="panel-heading"><span class="panel-title">Active pipelines</span>
+          <% if current_user.is_active %>
           <span class="pull-right">
-    <%= link_to(
+          <%= link_to(
           choose_pipeline_templates_path(
             title: 'Choose a pipeline to run:',
             action_name: 'Next: choose inputs <i class="fa fa-fw fa-arrow-circle-right"></i>',
@@ -12,9 +13,10 @@
             action_method: 'post',
             action_data: {'selection_param' => 'pipeline_instance[pipeline_template_uuid]', 'pipeline_instance[owner_uuid]' => current_user.uuid, 'success' => 'redirect-to-created-object'}.to_json),
           { class: "btn btn-primary btn-xs", remote: true }) do %>
-      <i class="fa fa-fw fa-gear"></i> Run a pipeline...
-    <% end %>
-    </span>
+            <i class="fa fa-fw fa-gear"></i> Run a pipeline...
+          <% end %>
+          </span>
+          <% end %>
         </div>
 
         <% _running_pipelines = running_pipelines %>
