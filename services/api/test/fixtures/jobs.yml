@@ -408,7 +408,7 @@ job_in_publicly_accessible_project:
   repository: foo
   script: hash
   script_version: 4fe459abe02d9b365932b8f5dc419439ab4e2577
-  state: Complete
+  state: Running
   script_parameters:
     input: fa7aeb5140e2848d39b416daeef4ffc5+45
     input2: "stuff2"

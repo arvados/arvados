@@ -75,6 +75,7 @@
             </div>
           <% end %>
 
+          <% if current_user.is_active %>
           <% if current_job[:state].in? ["Queued", "Running"] %>
             <%# column offset 11 %>
             <div class="col-md-1 pipeline-instance-spacing">
@@ -83,6 +84,7 @@
                 <%= button_tag "Cancel", {class: 'btn btn-xs btn-danger', id: "cancel-job-button"} %>
               <% end %>
             </div>
+          <% end %>
           <% end %>
         <% end %>
       </div>

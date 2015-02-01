@@ -170,6 +170,7 @@ class AnonymousAccessTest < ActionDispatch::IntegrationTest
     # in job page
     assert_no_selector 'button', text: 'Re-run job'
     assert_text 'script_version'
+    assert_no_selector 'button', text: 'Cancel'
   end
 
   def verify_pipeline_instance_row
