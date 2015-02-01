@@ -18,22 +18,19 @@ class EventTestBase(object):
         self.assertEqual(human['uuid'], events.get(True, 10)['object_uuid'])
         self.assertTrue(events.empty(), "got more events than expected")
 
+    def tearDown(self):
+        try:
+            self.ws.close()
+        except AttributeError:
+            pass
+        super(EventTestBase, self).tearDown()
 
-class WebsocketTest(run_test_server.TestCaseWithServers, EventTestBase):
+
+class WebsocketTest(EventTestBase, run_test_server.TestCaseWithServers):
     MAIN_SERVER = {'websockets': True}
     WS_TYPE = arvados.events.EventClient
 
-    def tearDown(self):
-        if self.ws:
-            self.ws.close()
-        super(WebsocketTest, self).tearDown()
 
-
-class PollClientTest(run_test_server.TestCaseWithServers, EventTestBase):
+class PollClientTest(EventTestBase, run_test_server.TestCaseWithServers):
     MAIN_SERVER = {}
     WS_TYPE = arvados.events.PollClient
-
-    def tearDown(self):
-        if self.ws:
-            self.ws.close()
-        super(PollClientTest, self).tearDown()
