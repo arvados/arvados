@@ -50,7 +50,6 @@ class AnonymousAccessTest < ActionDispatch::IntegrationTest
     ['inactive', api_fixture('users')['inactive'], false, false],
     ['active', api_fixture('users')['active'], true, true],
     ['active_no_prefs_profile', api_fixture('users')['active_no_prefs_profile'], true, false],
-    ['admin', api_fixture('users')['admin'], true, true],
   ].each do |token, user, is_active, has_profile|
     test "visit public project as user #{token} when anonymous browsing is enabled" do
       Rails.configuration.anonymous_user_token = api_fixture('api_client_authorizations')['anonymous']['api_token']
@@ -66,26 +65,10 @@ class AnonymousAccessTest < ActionDispatch::IntegrationTest
     end
   end
 
-  [
-    [nil, nil],
-    ['active', api_fixture('users')['active']],
-  ].each do |token, user, is_active|
-    test "visit public project as user #{token} when anonymous browsing is not enabled" do
-      Rails.configuration.anonymous_user_token = false
-
-      path = "/projects/#{api_fixture('groups')['anonymously_accessible_project']['uuid']}/?public_data=true"
-      if !token
-        visit path
-      else
-        visit page_with_token(token, path)
-      end
-
-      if user
-        assert_text 'Unrestricted public data'
-      else
-        assert_text 'Please log in'
-      end
-    end
+  test "anonymous user visit public project when anonymous browsing not enabled and expect to see login page" do
+    Rails.configuration.anonymous_user_token = false
+    visit "/projects/#{api_fixture('groups')['anonymously_accessible_project']['uuid']}/?public_data=true"
+    assert_text 'Please log in'
   end
 
   test "visit non-public project as anonymous when anonymous browsing is enabled and expect page not found" do
@@ -121,16 +104,22 @@ class AnonymousAccessTest < ActionDispatch::IntegrationTest
     visit "/projects/#{api_fixture('groups')['anonymously_accessible_project']['uuid']}/?public_data=true"
   end
 
-  test "verify dashboard when anonymous user accesses shared project" do
-    visit_publicly_accessible_project
-    assert_selector 'a', text: 'You are viewing public data'
+  [
+    ['All pipelines', 'Pipeline in publicly accessible project'],
+    ['All jobs', 'job submitted'],
+    ['All collections', 'GNU_General_Public_License,_version_3.pdf'],
+  ].each do |selector, expectation|
+    test "verify dashboard when anonymous user accesses shared project and click #{selector}" do
+      visit_publicly_accessible_project
 
-    # go to dashboard
-    click_link 'You are viewing public data'
-    assert_no_selector 'a', text: 'Run a pipeline'
-    assert_selector 'a', text: 'All pipelines'
-    assert_selector 'a', text: 'All jobs'
-    assert_selector 'a', text: 'All collections'
+      # go to dashboard
+      click_link 'You are viewing public data'
+
+      assert_no_selector 'a', text: 'Run a pipeline'
+      assert_selector 'a', text: selector
+      click_link selector
+      assert_text expectation
+    end
   end
 
   test "anonymous user accesses data collections tab in shared project" do
