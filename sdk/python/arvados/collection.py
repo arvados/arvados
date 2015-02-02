@@ -641,25 +641,30 @@ class ResumableCollectionWriter(CollectionWriter):
 
 
 class Collection(CollectionBase):
-    '''An abstract Arvados collection, consisting of a set of files and
+    """An abstract Arvados collection, consisting of a set of files and
     sub-collections.
-    '''
+    """
 
     def __init__(self, manifest_locator_or_text=None, parent=None, api_client=None,
                  keep_client=None, num_retries=0, block_manager=None):
-        '''manifest_locator_or_text: One of Arvados collection UUID, block locator of
-        a manifest, raw manifest text, or None (to create an empty collection).
+        """
+        :manifest_locator_or_text:
+          One of Arvados collection UUID, block locator of
+          a manifest, raw manifest text, or None (to create an empty collection).
+        :parent:
+          the parent Collection, may be None.
+        :api_client:
+          The API client object to use for requests.  If None, use default.
+        :keep_client:
+          the Keep client to use for requests.  If None, use default.
+        :num_retries:
+          the number of retries for API and Keep requests.
+        :block_manager:
+          the block manager to use.  If None, use parent's block
+          manager or create one.
 
-        parent: the parent Collection, may be None.
+        """
 
-        api_client: The API client object to use for requests.  If None, use default.
-
-        keep_client: the Keep client to use for requests.  If None, use default.
-
-        num_retries: the number of retries for API and Keep requests.
-
-        block_manager: the block manager to use.  If None, create one.
-        '''
         self.parent = parent
         self._items = None
         self._api_client = api_client
@@ -779,25 +784,29 @@ class Collection(CollectionBase):
         return self
 
     def __exit__(self, exc_type, exc_value, traceback):
-        '''Support scoped auto-commit in a with: block'''
+        """Support scoped auto-commit in a with: block"""
         self.save(no_locator=True)
         if self._block_manager is not None:
             self._block_manager.stop_threads()
 
     @_populate_first
     def find(self, path, create=False, create_collection=False):
-        '''Recursively search the specified file path.  May return either a Collection
+        """Recursively search the specified file path.  May return either a Collection
         or ArvadosFile.
 
-        create: If true, create path components (i.e. Collections) that are
-        missing.  If "create" is False, return None if a path component is not
-        found.
+        :create:
+          If true, create path components (i.e. Collections) that are
+          missing.  If "create" is False, return None if a path component is
+          not found.
 
-        create_collection: If the path is not found, "create" is True, and
-        "create_collection" is False, then create and return a new ArvadosFile
-        for the last path component.  If "create_collection" is True, then
-        create and return a new Collection for the last path component.
-        '''
+        :create_collection:
+          If the path is not found, "create" is True, and
+          "create_collection" is False, then create and return a new
+          ArvadosFile for the last path component.  If "create_collection" is
+          True, then create and return a new Collection for the last path
+          component.
+
+        """
         p = path.split("/")
         if p[0] == '.':
             del p[0]
@@ -826,7 +835,8 @@ class Collection(CollectionBase):
 
     @_populate_first
     def api_response(self):
-        """api_response() -> dict or None
+        """
+        api_response() -> dict or None
 
         Returns information about this Collection fetched from the API server.
         If the Collection exists in Keep but not the API server, currently
@@ -835,19 +845,23 @@ class Collection(CollectionBase):
         return self._api_response
 
     def open(self, path, mode):
-        '''Open a file-like object for access.
+        """Open a file-like object for access.
 
-        path: path to a file in the collection
-
-        mode: one of "r", "r+", "w", "w+", "a", "a+"
-        "r" opens for reading
-
-        "r+" opens for reading and writing.  Reads/writes share a file pointer.
-
-        "w", "w+" truncates to 0 and opens for reading and writing.  Reads/writes share a file pointer.
-
-        "a", "a+" opens for reading and writing.  All writes are appended to the end of the file.  Writing does not affect the file pointer for reading.
-        '''
+        :path:
+          path to a file in the collection
+        :mode:
+          one of "r", "r+", "w", "w+", "a", "a+"
+          :"r":
+            opens for reading
+          :"r+":
+            opens for reading and writing.  Reads/writes share a file pointer.
+          :"w", "w+":
+            truncates to 0 and opens for reading and writing.  Reads/writes share a file pointer.
+          :"a", "a+":
+            opens for reading and writing.  All writes are appended to
+            the end of the file.  Writing does not affect the file pointer for
+            reading.
+        """
         mode = mode.replace("b", "")
         if len(mode) == 0 or mode[0] not in ("r", "w", "a"):
             raise ArgumentError("Bad mode '%s'" % mode)
@@ -869,8 +883,8 @@ class Collection(CollectionBase):
 
     @_populate_first
     def modified(self):
-        '''Test if the collection (or any subcollection or file) has been modified
-        since it was created.'''
+        """Test if the collection (or any subcollection or file) has been modified
+        since it was created."""
         for k,v in self._items.items():
             if v.modified():
                 return True
@@ -878,65 +892,65 @@ class Collection(CollectionBase):
 
     @_populate_first
     def set_unmodified(self):
-        '''Recursively clear modified flag'''
+        """Recursively clear modified flag"""
         for k,v in self._items.items():
             v.set_unmodified()
 
     @_populate_first
     def __iter__(self):
-        '''Iterate over names of files and collections contained in this collection.'''
+        """Iterate over names of files and collections contained in this collection."""
         return self._items.iterkeys()
 
     @_populate_first
     def iterkeys(self):
-        '''Iterate over names of files and collections directly contained in this collection.'''
+        """Iterate over names of files and collections directly contained in this collection."""
         return self._items.iterkeys()
 
     @_populate_first
     def __getitem__(self, k):
-        '''Get a file or collection that is directly contained by this collection.  Use
-        find() for path serach.'''
+        """Get a file or collection that is directly contained by this collection.  Use
+        find() for path serach."""
         return self._items[k]
 
     @_populate_first
     def __contains__(self, k):
-        '''If there is a file or collection a directly contained by this collection
-        with name "k".'''
+        """If there is a file or collection a directly contained by this collection
+        with name "k"."""
         return k in self._items
 
     @_populate_first
     def __len__(self):
-        '''Get the number of items directly contained in this collection'''
+        """Get the number of items directly contained in this collection"""
         return len(self._items)
 
     @_populate_first
     def __delitem__(self, p):
-        '''Delete an item by name which is directly contained by this collection.'''
+        """Delete an item by name which is directly contained by this collection."""
         del self._items[p]
 
     @_populate_first
     def keys(self):
-        '''Get a list of names of files and collections directly contained in this collection.'''
+        """Get a list of names of files and collections directly contained in this collection."""
         return self._items.keys()
 
     @_populate_first
     def values(self):
-        '''Get a list of files and collection objects directly contained in this collection.'''
+        """Get a list of files and collection objects directly contained in this collection."""
         return self._items.values()
 
     @_populate_first
     def items(self):
-        '''Get a list of (name, object) tuples directly contained in this collection.'''
+        """Get a list of (name, object) tuples directly contained in this collection."""
         return self._items.items()
 
     @_populate_first
     def exists(self, path):
-        '''Test if there is a file or collection at "path"'''
+        """Test if there is a file or collection at "path" """
         return self.find(path) != None
 
     @_populate_first
     def remove(self, path):
-        '''Test if there is a file or collection at "path"'''
+        """Test if there is a file or collection at "path" """
         p = path.split("/")
         if p[0] == '.':
             del p[0]
@@ -955,16 +969,19 @@ class Collection(CollectionBase):
 
     @_populate_first
     def manifest_text(self, strip=False, normalize=False):
-        '''Get the manifest text for this collection, sub collections and files.
+        """Get the manifest text for this collection, sub collections and files.
 
-        strip: If True, remove signing tokens from block locators if present.
-        If False, block locators are left unchanged.
+        :strip:
+          If True, remove signing tokens from block locators if present.
+          If False, block locators are left unchanged.
 
-        normalize: If True, always export the manifest text in normalized form
-        even if the Collection is not modified.  If False and the collection is
-        not modified, return the original manifest text even if it is not in
-        normalized form.
-        '''
+        :normalize:
+          If True, always export the manifest text in normalized form
+          even if the Collection is not modified.  If False and the collection
+          is not modified, return the original manifest text even if it is not
+          in normalized form.
+
+        """
         if self.modified() or self._manifest_text is None or normalize:
             return export_manifest(self, stream_name=".", portable_locators=strip)
         else:
@@ -974,18 +991,19 @@ class Collection(CollectionBase):
                 return self._manifest_text
 
     def portable_data_hash(self):
-        '''Get the portable data hash for this collection's manifest.'''
+        """Get the portable data hash for this collection's manifest."""
         stripped = self.manifest_text(strip=True)
         return hashlib.md5(stripped).hexdigest() + '+' + str(len(stripped))
 
     @_populate_first
     def save(self, no_locator=False):
-        '''Commit pending buffer blocks to Keep, write the manifest to Keep, and
+        """Commit pending buffer blocks to Keep, write the manifest to Keep, and
         update the collection record to Keep.
 
-        no_locator: If False and there is no collection uuid associated with
-        this Collection, raise an error.  If True, do not raise an error.
-        '''
+        :no_locator:
+          If False and there is no collection uuid associated with
+          this Collection, raise an error.  If True, do not raise an error.
+        """
         if self.modified():
             self._my_block_manager().commit_all()
             self._my_keep().put(self.manifest_text(strip=True))
@@ -1001,17 +1019,21 @@ class Collection(CollectionBase):
 
     @_populate_first
     def save_as(self, name, owner_uuid=None, ensure_unique_name=False):
-        '''Save a new collection record.
+        """Save a new collection record.
 
-        name: The collection name.
+        :name:
+          The collection name.
 
-        owner_uuid: the user, or project uuid that will own this collection.
-        If None, defaults to the current user.
+        :owner_uuid:
+          the user, or project uuid that will own this collection.
+          If None, defaults to the current user.
 
-        ensure_unique_name: If True, ask the API server to rename the
-        collection if it conflicts with a collection with the same name and
-        owner.  If False, a name conflict will result in an error.
-        '''
+        :ensure_unique_name:
+          If True, ask the API server to rename the collection
+          if it conflicts with a collection with the same name and owner.  If
+          False, a name conflict will result in an error.
+
+        """
         self._my_block_manager().commit_all()
         self._my_keep().put(self.manifest_text(strip=True))
         body = {"manifest_text": self.manifest_text(strip=False),
@@ -1024,19 +1046,24 @@ class Collection(CollectionBase):
 
 
 def import_manifest(manifest_text, into_collection=None, api_client=None, keep=None, num_retries=None):
-    '''Import a manifest into a Collection.
+    """Import a manifest into a `Collection`.
 
-    manifest_text: The manifest text to import from.
+    :manifest_text:
+      The manifest text to import from.
 
-    into_collection: The Collection that will be initialized (must be empty).
-    If None, create a new Collection object.
+    :into_collection:
+      The `Collection` that will be initialized (must be empty).
+      If None, create a new `Collection` object.
 
-    api_client: The API client object that will be used when creating a new Collection object.
+    :api_client:
+      The API client object that will be used when creating a new `Collection` object.
 
-    keep: The keep client object that will be used when creating a new Collection object.
+    :keep:
+      The keep client object that will be used when creating a new `Collection` object.
 
-    num_retries: the default number of api client and keep retries on error.
-    '''
+    num_retries
+      the default number of api client and keep retries on error.
+    """
     if into_collection is not None:
         if len(into_collection) > 0:
             raise ArgumentError("Can only import manifest into an empty collection")
@@ -1093,14 +1120,18 @@ def import_manifest(manifest_text, into_collection=None, api_client=None, keep=N
     return c
 
 def export_manifest(item, stream_name=".", portable_locators=False):
-    '''Create a manifest for "item" (must be a Collection or ArvadosFile).  If
-    "item" is a is a Collection, this will also export subcollections.
+    """
+    :item:
+      Create a manifest for `item` (must be a `Collection` or `ArvadosFile`).  If
+      `item` is a is a `Collection`, this will also export subcollections.
 
-    stream_name: the name of the stream when exporting "item".
+    :stream_name:
+      the name of the stream when exporting `item`.
 
-    portable_locators: If True, strip any permission hints on block locators.
-    If False, use block locators as-is.
-    '''
+    :portable_locators:
+      If True, strip any permission hints on block locators.
+      If False, use block locators as-is.
+    """
     buf = ""
     if isinstance(item, Collection):
         stream = {}
