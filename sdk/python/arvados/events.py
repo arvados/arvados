@@ -22,6 +22,11 @@ class EventClient(WebSocketClient):
             ssl_options['cert_reqs'] = ssl.CERT_NONE
         else:
             ssl_options['cert_reqs'] = ssl.CERT_REQUIRED
+
+        # Warning: If the host part of url resolves to both IPv6 and
+        # IPv4 addresses (common with "localhost"), only one of them
+        # will be attempted -- and it might not be the right one. See
+        # ws4py's WebSocketBaseClient.__init__.
         super(EventClient, self).__init__(url, ssl_options=ssl_options)
         self.filters = filters
         self.on_event = on_event
