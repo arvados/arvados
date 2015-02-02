@@ -1,6 +1,6 @@
 class ProjectsController < ApplicationController
   before_filter :set_share_links, if: -> { defined? @object }
-  skip_around_filter :require_thread_api_token, only: :show
+  skip_around_filter :require_thread_api_token, only: [:show, :tab_counts]
 
   def model_class
     Group

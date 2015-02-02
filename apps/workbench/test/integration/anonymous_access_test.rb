@@ -178,21 +178,4 @@ class AnonymousAccessTest < ActionDispatch::IntegrationTest
     assert_text 'script version'
     assert_no_selector 'a', text: 'Run this pipeline'
   end
-
-  [
-    '/users',
-    '/groups',
-  ].each do |page|
-    test "anonymous user accesses publicly accessible project and then traverses to #{page}" do
-      # when anonymous, first visit publicly accessible project
-      visit_publicly_accessible_project
-      visit page
-
-      if page == '/users'
-      assert_no_selector 'a', text: 'Add a new user'
-      elsif page == '/groups'
-        assert_no_selector 'button', text: 'Add a new group'
-      end
-    end
-  end
 end
