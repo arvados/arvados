@@ -1,6 +1,8 @@
 class PipelineInstancesController < ApplicationController
   skip_before_filter :find_object_by_uuid, only: :compare
   before_filter :find_objects_by_uuid, only: :compare
+  skip_around_filter :require_thread_api_token, only: :show
+
   include PipelineInstancesHelper
   include PipelineComponentsHelper
 

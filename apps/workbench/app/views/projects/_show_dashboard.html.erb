@@ -3,7 +3,7 @@
     <div class="col-md-6">
       <div class="panel panel-default" style="min-height: 10.5em">
         <div class="panel-heading"><span class="panel-title">Active pipelines</span>
-          <% if current_user.is_active %>
+          <% if current_user.andand.is_active %>
           <span class="pull-right">
           <%= link_to(
           choose_pipeline_templates_path(

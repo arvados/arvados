@@ -1,4 +1,6 @@
 class PipelineTemplatesController < ApplicationController
+  skip_around_filter :require_thread_api_token, only: :show
+
   include PipelineComponentsHelper
 
   def show

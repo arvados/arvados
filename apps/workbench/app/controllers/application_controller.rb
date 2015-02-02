@@ -391,7 +391,7 @@ class ApplicationController < ActionController::Base
     @user_is_manager = false
     @share_links = []
 
-    if @object.uuid != current_user.uuid
+    if @object.uuid != current_user.andand.uuid
       begin
         @share_links = Link.permissions_for(@object)
         @user_is_manager = true
@@ -530,6 +530,7 @@ class ApplicationController < ActionController::Base
   def setup_user_session
     return false unless params[:api_token]
     Thread.current[:arvados_api_token] = params[:api_token]
+    Thread.current[:arvados_anonymous_api_token] = nil
     begin
       user = User.current
     rescue ArvadosApiClient::NotLoggedInException
@@ -565,14 +566,9 @@ class ApplicationController < ActionController::Base
     end
   end
 
-  # Anonymous allowed paths:
-  #   /projects/#{uuid}?public_data=true
   def permit_anonymous_browsing_for_public_data
     if !Thread.current[:arvados_api_token] && !params[:api_token] && !session[:arvados_api_token]
-      public_project_accessed = /\/projects\/([0-9a-z]{5}-j7d0g-[0-9a-z]{15})(.*)public_data\=true/.match(request.fullpath)
-      if public_project_accessed
-        params[:api_token] = Rails.configuration.anonymous_user_token
-      end
+      Thread.current[:arvados_anonymous_api_token] = Rails.configuration.anonymous_user_token
     end
   end
 
@@ -639,8 +635,6 @@ class ApplicationController < ActionController::Base
 
   def check_user_agreements
     if current_user && !current_user.is_active
-      return true if is_anonymous
-
       if not current_user.is_invited
         return redirect_to inactive_users_path(return_to: request.fullpath)
       end
@@ -660,9 +654,10 @@ class ApplicationController < ActionController::Base
   end
 
   def check_user_profile
+    return true if !current_user
     if request.method.downcase != 'get' || params[:partial] ||
        params[:tab_pane] || params[:action_method] ||
-       params[:action] == 'setup_popup' || is_anonymous
+       params[:action] == 'setup_popup'
       return true
     end
 
@@ -1097,7 +1092,6 @@ class ApplicationController < ActionController::Base
 
   helper_method :is_anonymous
   def is_anonymous
-    return Rails.configuration.anonymous_user_token &&
-          (Thread.current[:arvados_api_token] == Rails.configuration.anonymous_user_token)
+    return Thread.current[:arvados_anonymous_api_token]
   end
 end

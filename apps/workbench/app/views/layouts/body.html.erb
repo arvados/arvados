@@ -8,7 +8,7 @@
           <span class="icon-bar"></span>
         </button>
         <a class="navbar-brand" href="/" data-push=true><%= Rails.configuration.site_name.downcase rescue Rails.application.class.parent_name %>
-          <% if current_user && is_anonymous %>  You are viewing public data. <% end %>
+          <% if is_anonymous %>  You are viewing public data. <% end %>
         </a>
       </div>
 

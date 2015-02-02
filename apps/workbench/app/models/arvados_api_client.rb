@@ -119,6 +119,14 @@ class ArvadosApiClient
     else
       query["_method"] = "GET"
     end
+
+    # Use anonymous token if available when it is a GET request
+    if ((query["_method"] == "GET") or (query[:_method] == "GET")) && !Thread.current[:user]
+      if Thread.current[:arvados_anonymous_api_token]
+        query["api_token"] = Thread.current[:arvados_anonymous_api_token]
+      end
+    end
+
     if @@profiling_enabled
       query["_profile"] = "true"
     end
@@ -140,6 +148,7 @@ class ArvadosApiClient
     rescue Oj::ParseError
       resp = nil
     end
+
     if not resp.is_a? Hash
       raise InvalidApiResponseException.new(url, msg)
     elsif msg.status_code != 200

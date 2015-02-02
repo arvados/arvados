@@ -1,5 +1,6 @@
 class ProjectsController < ApplicationController
   before_filter :set_share_links, if: -> { defined? @object }
+  skip_around_filter :require_thread_api_token, only: :show
 
   def model_class
     Group
@@ -58,12 +59,12 @@ class ProjectsController < ApplicationController
       {
         :name => 'Subprojects',
         :filters => [%w(uuid is_a arvados#group)]
-      } if current_user.is_active
+      } if current_user
     pane_list <<
       {
         :name => 'Other_objects',
         :filters => [%w(uuid is_a) + [%w(arvados#human arvados#specimen arvados#trait)]]
-      } if current_user.is_active
+      } if current_user
     pane_list << { :name => 'Sharing',
                    :count => @share_links.count } if @user_is_manager
     pane_list << { :name => 'Advanced' }

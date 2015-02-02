@@ -35,7 +35,7 @@
   <p><i>Provide <%= n_inputs > 1 ? 'values' : 'a value' %> for the following <%= n_inputs > 1 ? 'parameters' : 'parameter' %>, then click the "Run" button to start the pipeline.</i></p>
   <%= content_for :pi_input_form %>
 
-  <% if current_user.is_active %>
+  <% if current_user.andand.is_active %>
   <%= link_to(url_for('pipeline_instance[state]' => 'RunningOnServer'),
       class: 'btn btn-primary run-pipeline-button',
       method: :patch
