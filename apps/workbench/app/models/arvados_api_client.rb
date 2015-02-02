@@ -120,11 +120,9 @@ class ArvadosApiClient
       query["_method"] = "GET"
     end
 
-    # Use anonymous token if available when it is a GET request
-    if ((query["_method"] == "GET") or (query[:_method] == "GET")) && !Thread.current[:user]
-      if Rails.configuration.respond_to? :anonymous_user_token
-        query["api_token"] = Rails.configuration.anonymous_user_token
-      end
+    # Use anonymous token for GET requests when no api_token is available
+    if ((query["_method"] == "GET") or (query[:_method] == "GET")) && query["api_token"].empty?
+      query['api_token'] = Rails.configuration.anonymous_user_token
     end
 
     if @@profiling_enabled
