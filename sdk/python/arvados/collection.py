@@ -645,10 +645,18 @@ class Collection(CollectionBase):
     sub-collections.
     """
 
-    def __init__(self, manifest_locator_or_text=None, parent=None, api_client=None,
-                 keep_client=None, num_retries=0, block_manager=None):
-        """
-        :manifest_locator_or_text:
+    SYNC_READONLY = 1
+    SYNC_EXPLICIT = 2
+    SYNC_LIVE = 3
+
+    def __init__(self, manifest_locator_or_text=None,
+                 parent=None,
+                 api_client=None,
+                 keep_client=None,
+                 num_retries=0,
+                 block_manager=None,
+                 sync=Collection.SYNC_READONLY):
+        """:manifest_locator_or_text:
           One of Arvados collection UUID, block locator of
           a manifest, raw manifest text, or None (to create an empty collection).
         :parent:
@@ -662,7 +670,16 @@ class Collection(CollectionBase):
         :block_manager:
           the block manager to use.  If None, use parent's block
           manager or create one.
-
+        :sync:
+          Desired synchronization policy with API server collection record.
+          :SYNC_READONLY:
+            Collection is read only.  No synchronization.  This mode will
+            also forego locking, which gives better performance.
+          :SYNC_EXPLICIT:
+            Synchronize on explicit request via `merge()` or `save()`
+          :SYNC_LIVE:
+            Synchronize with server in response to background websocket events,
+            on block write, or on file close.
         """
 
         self.parent = parent
