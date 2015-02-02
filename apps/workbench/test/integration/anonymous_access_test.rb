@@ -32,7 +32,6 @@ class AnonymousAccessTest < ActionDispatch::IntegrationTest
         assert_text 'indicate that you have read and accepted the user agreement'
       end
       within('.navbar-fixed-top') do
-        assert_no_text 'You are viewing public data'
         assert_selector 'a', text: "#{user['email']}"
         find('a', text: "#{user['email']}").click
         within('.dropdown-menu') do
@@ -42,7 +41,6 @@ class AnonymousAccessTest < ActionDispatch::IntegrationTest
     else  # anonymous
       assert_text 'Unrestricted public data'
       within('.navbar-fixed-top') do
-        assert_text 'You are viewing public data'
         assert_selector 'a', text: 'Log in'
       end
     end
@@ -65,6 +63,14 @@ class AnonymousAccessTest < ActionDispatch::IntegrationTest
     assert_text 'Not Found'
   end
 
+  test "anonymous user clicking on topnav sees login page" do
+    visit_publicly_accessible_project
+
+    # click on topnav
+    click_link 'workbench:test'
+    assert_text 'Please log in'
+  end
+
   test "selection actions when anonymous user accesses shared project" do
     visit_publicly_accessible_project
 
@@ -83,26 +89,6 @@ class AnonymousAccessTest < ActionDispatch::IntegrationTest
       assert_no_selector 'li', text: 'Copy selected'
       assert_no_selector 'li', text: 'Move selected'
       assert_no_selector 'li', text: 'Remove selected'
-    end
-  end
-
-  [
-    ['All pipelines', 'Pipeline in publicly accessible project'],
-    ['All jobs', 'job submitted'],
-    ['All collections', 'GNU_General_Public_License,_version_3.pdf'],
-  ].each do |selector, expectation|
-    test "verify dashboard when anonymous user accesses shared project and click #{selector}" do
-      skip 'for now'
-      visit_publicly_accessible_project
-
-      # go to dashboard
-      click_link 'You are viewing public data'
-      assert_text 'Active pipelines'
-
-      assert_no_selector 'a', text: 'Run a pipeline'
-      assert_selector 'a', text: selector
-      click_link selector
-      assert_text expectation
     end
   end
 
