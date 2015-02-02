@@ -306,6 +306,29 @@ def _synchronized(orig_func):
             return orig_func(self, *args, **kwargs)
     return wrapper
 
+class NoopLock(object):
+    def __enter__(self):
+        return self
+
+    def __exit__(self, exc_type, exc_value, traceback):
+        pass
+
+    def acquire(self, blocking=False):
+        pass
+
+    def release(self):
+        pass
+
+def _must_be_writable(orig_func):
+    # Decorator for methods that read actual Collection data.
+    @functools.wraps(orig_func)
+    def wrapper(self, *args, **kwargs):
+        if self.sync_mode() == SynchronizedCollectionBase.SYNC_READONLY:
+            raise IOError((errno.EROFS, "Collection is read only"))
+        return orig_func(self, *args, **kwargs)
+    return wrapper
+
+
 class BlockManager(object):
     """
     BlockManager handles buffer blocks, background block uploads, and
@@ -528,17 +551,23 @@ class ArvadosFile(object):
         for s in segments:
             self._add_segment(stream, s.locator, s.range_size)
         self._current_bblock = None
-        self.lock = threading.Lock()
+        if parent.sync_mode() == SYNC_READONLY:
+            self.lock = NoopLock()
+        else:
+            self.lock = threading.Lock()
+
+    def sync_mode(self):
+        return self.parent.sync_mode()
 
     @_synchronized
     def segments(self):
         return copy.copy(self._segments)
 
     @_synchronized
-    def clone(self, num_retries):
+    def clone(self, new_parent):
         """Make a copy of this file."""
         cp = ArvadosFile()
-        cp.parent = self.parent
+        cp.parent = new_parent
         cp._modified = False
 
         map_loc = {}
@@ -563,6 +592,7 @@ class ArvadosFile(object):
         """Test the modified flag"""
         return self._modified
 
+    @_must_be_writable
     @_synchronized
     def truncate(self, size):
         """
@@ -634,6 +664,7 @@ class ArvadosFile(object):
 
             self._current_bblock = new_bb
 
+    @_must_be_writable
     @_synchronized
     def writeto(self, offset, data, num_retries):
         """
@@ -663,6 +694,7 @@ class ArvadosFile(object):
         self._current_bblock.append(data)
         replace_range(self._segments, offset, len(data), self._current_bblock.blockid, self._current_bblock.write_pointer - len(data))
 
+    @_must_be_writable
     @_synchronized
     def add_segment(self, blocks, pos, size):
         # Synchronized public api, see _add_segment

@@ -152,6 +152,7 @@ class CollectionReader(CollectionBase):
                          for sline in self._manifest_text.split("\n")
                          if sline]
 
+    @staticmethod
     def _populate_first(orig_func):
         # Decorator for methods that read actual Collection data.
         @functools.wraps(orig_func)
@@ -640,17 +641,282 @@ class ResumableCollectionWriter(CollectionWriter):
         return super(ResumableCollectionWriter, self).write(data)
 
 
-class Collection(CollectionBase):
-    """An abstract Arvados collection, consisting of a set of files and
-    sub-collections.
-    """
-
+class SynchronizedCollectionBase(CollectionBase):
     SYNC_READONLY = 1
     SYNC_EXPLICIT = 2
     SYNC_LIVE = 3
 
+    def __init__(self, parent=None):
+        self.parent = parent
+        self._items = None
+
+    def _my_api(self):
+        raise NotImplementedError()
+
+    def _my_keep(self):
+        raise NotImplementedError()
+
+    def _my_block_manager(self):
+        raise NotImplementedError()
+
+    def _root_lock(self):
+        raise NotImplementedError()
+
+    def _populate(self):
+        raise NotImplementedError()
+
+    def _sync_mode(self):
+        raise NotImplementedError()
+
+    @staticmethod
+    def _populate_first(orig_func):
+        # Decorator for methods that read actual Collection data.
+        @functools.wraps(orig_func)
+        def wrapper(self, *args, **kwargs):
+            if self._items is None:
+                self._populate()
+            return orig_func(self, *args, **kwargs)
+        return wrapper
+
+    @arvfile._synchronized
+    @_populate_first
+    def find(self, path, create=False, create_collection=False):
+        """Recursively search the specified file path.  May return either a Collection
+        or ArvadosFile.
+
+        :create:
+          If true, create path components (i.e. Collections) that are
+          missing.  If "create" is False, return None if a path component is
+          not found.
+
+        :create_collection:
+          If the path is not found, "create" is True, and
+          "create_collection" is False, then create and return a new
+          ArvadosFile for the last path component.  If "create_collection" is
+          True, then create and return a new Collection for the last path
+          component.
+
+        """
+        if create and self._sync_mode() == SynchronizedCollectionBase.SYNC_READONLY:
+            raise IOError((errno.EROFS, "Collection is read only"))
+
+        p = path.split("/")
+        if p[0] == '.':
+            del p[0]
+
+        if len(p) > 0:
+            item = self._items.get(p[0])
+            if len(p) == 1:
+                # item must be a file
+                if item is None and create:
+                    # create new file
+                    if create_collection:
+                        item = Subcollection(self)
+                    else:
+                        item = ArvadosFile(self)
+                    self._items[p[0]] = item
+                return item
+            else:
+                if item is None and create:
+                    # create new collection
+                    item = Subcollection(self)
+                    self._items[p[0]] = item
+                del p[0]
+                return item.find("/".join(p), create=create)
+        else:
+            return self
+
+    def open(self, path, mode):
+        """Open a file-like object for access.
+
+        :path:
+          path to a file in the collection
+        :mode:
+          one of "r", "r+", "w", "w+", "a", "a+"
+          :"r":
+            opens for reading
+          :"r+":
+            opens for reading and writing.  Reads/writes share a file pointer.
+          :"w", "w+":
+            truncates to 0 and opens for reading and writing.  Reads/writes share a file pointer.
+          :"a", "a+":
+            opens for reading and writing.  All writes are appended to
+            the end of the file.  Writing does not affect the file pointer for
+            reading.
+        """
+        mode = mode.replace("b", "")
+        if len(mode) == 0 or mode[0] not in ("r", "w", "a"):
+            raise ArgumentError("Bad mode '%s'" % mode)
+        create = (mode != "r")
+
+        if create and self._sync_mode() == SynchronizedCollectionBase.SYNC_READONLY:
+            raise IOError((errno.EROFS, "Collection is read only"))
+
+        f = self.find(path, create=create)
+        if f is None:
+            raise IOError((errno.ENOENT, "File not found"))
+        if not isinstance(f, ArvadosFile):
+            raise IOError((errno.EISDIR, "Path must refer to a file."))
+
+        if mode[0] == "w":
+            f.truncate(0)
+
+        if mode == "r":
+            return ArvadosFileReader(f, path, mode)
+        else:
+            return ArvadosFileWriter(f, path, mode)
+
+    @arvfile._synchronized
+    @_populate_first
+    def modified(self):
+        """Test if the collection (or any subcollection or file) has been modified
+        since it was created."""
+        for k,v in self._items.items():
+            if v.modified():
+                return True
+        return False
+
+    @arvfile._synchronized
+    @_populate_first
+    def set_unmodified(self):
+        """Recursively clear modified flag"""
+        for k,v in self._items.items():
+            v.set_unmodified()
+
+    @arvfile._synchronized
+    @_populate_first
+    def __iter__(self):
+        """Iterate over names of files and collections contained in this collection."""
+        return self._items.keys()
+
+    @arvfile._synchronized
+    @_populate_first
+    def iterkeys(self):
+        """Iterate over names of files and collections directly contained in this collection."""
+        return self._items.keys()
+
+    @arvfile._synchronized
+    @_populate_first
+    def __getitem__(self, k):
+        """Get a file or collection that is directly contained by this collection.  If
+        you want to search a path, use `find()` instead.
+        """
+        return self._items[k]
+
+    @arvfile._synchronized
+    @_populate_first
+    def __contains__(self, k):
+        """If there is a file or collection a directly contained by this collection
+        with name "k"."""
+        return k in self._items
+
+    @arvfile._synchronized
+    @_populate_first
+    def __len__(self):
+        """Get the number of items directly contained in this collection"""
+        return len(self._items)
+
+    @_must_be_writable
+    @arvfile._synchronized
+    @_populate_first
+    def __delitem__(self, p):
+        """Delete an item by name which is directly contained by this collection."""
+        del self._items[p]
+
+    @arvfile._synchronized
+    @_populate_first
+    def keys(self):
+        """Get a list of names of files and collections directly contained in this collection."""
+        return self._items.keys()
+
+    @arvfile._synchronized
+    @_populate_first
+    def values(self):
+        """Get a list of files and collection objects directly contained in this collection."""
+        return self._items.values()
+
+    @arvfile._synchronized
+    @_populate_first
+    def items(self):
+        """Get a list of (name, object) tuples directly contained in this collection."""
+        return self._items.items()
+
+    def exists(self, path):
+        """Test if there is a file or collection at "path" """
+        return self.find(path) != None
+
+    @_must_be_writable
+    @arvfile._synchronized
+    @_populate_first
+    def remove(self, path, rm_r=False):
+        """Remove the file or subcollection (directory) at `path`.
+        :rm_r:
+          Specify whether to remove non-empty subcollections (True), or raise an error (False).
+        """
+        p = path.split("/")
+        if p[0] == '.':
+            # Remove '.' from the front of the path
+            del p[0]
+
+        if len(p) > 0:
+            item = self._items.get(p[0])
+            if item is None:
+                raise IOError((errno.ENOENT, "File not found"))
+            if len(p) == 1:
+                if isinstance(SynchronizedCollection, self._items[p[0]]) and len(self._items[p[0]]) > 0 and not rm_r:
+                    raise IOError((errno.ENOTEMPTY, "Subcollection not empty"))
+                del self._items[p[0]]
+            else:
+                del p[0]
+                item.remove("/".join(p))
+        else:
+            raise IOError((errno.ENOENT, "File not found"))
+
+    def _cloneinto(self, target):
+        for k,v in self._items:
+            target._items[k] = v.clone(new_parent=target)
+
+    def clone(self):
+        raise NotImplementedError()
+
+    @arvfile._synchronized
+    @_populate_first
+    def manifest_text(self, strip=False, normalize=False):
+        """Get the manifest text for this collection, sub collections and files.
+
+        :strip:
+          If True, remove signing tokens from block locators if present.
+          If False, block locators are left unchanged.
+
+        :normalize:
+          If True, always export the manifest text in normalized form
+          even if the Collection is not modified.  If False and the collection
+          is not modified, return the original manifest text even if it is not
+          in normalized form.
+
+        """
+        if self.modified() or self._manifest_text is None or normalize:
+            return export_manifest(self, stream_name=".", portable_locators=strip)
+        else:
+            if strip:
+                return self.stripped_manifest()
+            else:
+                return self._manifest_text
+
+    def portable_data_hash(self):
+        """Get the portable data hash for this collection's manifest."""
+        stripped = self.manifest_text(strip=True)
+        return hashlib.md5(stripped).hexdigest() + '+' + str(len(stripped))
+
+
+class Collection(SynchronizedCollectionBase):
+    """Store an Arvados collection, consisting of a set of files and
+    sub-collections.
+    """
+
     def __init__(self, manifest_locator_or_text=None,
                  parent=None,
+                 config=None,
                  api_client=None,
                  keep_client=None,
                  num_retries=0,
@@ -661,17 +927,20 @@ class Collection(CollectionBase):
           a manifest, raw manifest text, or None (to create an empty collection).
         :parent:
           the parent Collection, may be None.
+        :config:
+          the arvados configuration to get the hostname and api token.
+          Prefer this over supplying your own api_client and keep_client (except in testing).
+          Will use default config settings if not specified.
         :api_client:
-          The API client object to use for requests.  If None, use default.
+          The API client object to use for requests.  If not specified, create one using `config`.
         :keep_client:
-          the Keep client to use for requests.  If None, use default.
+          the Keep client to use for requests.  If not specified, create one using `config`.
         :num_retries:
           the number of retries for API and Keep requests.
         :block_manager:
-          the block manager to use.  If None, use parent's block
-          manager or create one.
+          the block manager to use.  If not specified, create one.
         :sync:
-          Desired synchronization policy with API server collection record.
+          Set synchronization policy with API server collection record.
           :SYNC_READONLY:
             Collection is read only.  No synchronization.  This mode will
             also forego locking, which gives better performance.
@@ -680,6 +949,7 @@ class Collection(CollectionBase):
           :SYNC_LIVE:
             Synchronize with server in response to background websocket events,
             on block write, or on file close.
+
         """
 
         self.parent = parent
@@ -687,11 +957,13 @@ class Collection(CollectionBase):
         self._api_client = api_client
         self._keep_client = keep_client
         self._block_manager = block_manager
-
+        self._config = config
         self.num_retries = num_retries
         self._manifest_locator = None
         self._manifest_text = None
         self._api_response = None
+        self._sync = sync
+        self.lock = threading.RLock()
 
         if manifest_locator_or_text:
             if re.match(util.keep_locator_pattern, manifest_locator_or_text):
@@ -704,26 +976,31 @@ class Collection(CollectionBase):
                 raise errors.ArgumentError(
                     "Argument to CollectionReader must be a manifest or a collection UUID")
 
+    def _root_lock(self):
+        return self.lock
+
+    def sync_mode(self):
+        return self._sync
+
+    @arvfile._synchronized
     def _my_api(self):
         if self._api_client is None:
-            if self.parent is not None:
-                return self.parent._my_api()
-            self._api_client = arvados.api('v1')
-            self._keep_client = None  # Make a new one with the new api.
+            self._api_client = arvados.api.SafeApi(self._config)
+            self._keep_client = self._api_client.keep
         return self._api_client
 
+    @arvfile._synchronized
     def _my_keep(self):
         if self._keep_client is None:
-            if self.parent is not None:
-                return self.parent._my_keep()
-            self._keep_client = KeepClient(api_client=self._my_api(),
-                                           num_retries=self.num_retries)
+            if self._api_client is None:
+                self._my_api()
+            else:
+                self._keep_client = KeepClient(api=self._api_client)
         return self._keep_client
 
+    @arvfile._synchronized
     def _my_block_manager(self):
         if self._block_manager is None:
-            if self.parent is not None:
-                return self.parent._my_block_manager()
             self._block_manager = BlockManager(self._my_keep())
         return self._block_manager
 
@@ -788,68 +1065,31 @@ class Collection(CollectionBase):
         # populate
         import_manifest(self._manifest_text, self)
 
-    def _populate_first(orig_func):
-        # Decorator for methods that read actual Collection data.
-        @functools.wraps(orig_func)
-        def wrapper(self, *args, **kwargs):
-            if self._items is None:
-                self._populate()
-            return orig_func(self, *args, **kwargs)
-        return wrapper
+        if self._sync == SYNC_READONLY:
+            # Now that we're populated, knowing that this will be readonly,
+            # forego any further locking.
+            self.lock = NoopLock()
 
     def __enter__(self):
         return self
 
     def __exit__(self, exc_type, exc_value, traceback):
         """Support scoped auto-commit in a with: block"""
-        self.save(no_locator=True)
+        self.save(allow_no_locator=True)
         if self._block_manager is not None:
             self._block_manager.stop_threads()
 
+    @arvfile._synchronized
     @_populate_first
-    def find(self, path, create=False, create_collection=False):
-        """Recursively search the specified file path.  May return either a Collection
-        or ArvadosFile.
+    def clone(self, new_parent=None, new_sync=Collection.SYNC_READONLY, new_config=self.config):
+        c = Collection(parent=new_parent, config=new_config, sync=new_sync)
+        if new_sync == Collection.SYNC_READONLY:
+            c.lock = NoopLock()
+        c._items = {}
+        self._cloneinto(c)
+        return c
 
-        :create:
-          If true, create path components (i.e. Collections) that are
-          missing.  If "create" is False, return None if a path component is
-          not found.
-
-        :create_collection:
-          If the path is not found, "create" is True, and
-          "create_collection" is False, then create and return a new
-          ArvadosFile for the last path component.  If "create_collection" is
-          True, then create and return a new Collection for the last path
-          component.
-
-        """
-        p = path.split("/")
-        if p[0] == '.':
-            del p[0]
-
-        if len(p) > 0:
-            item = self._items.get(p[0])
-            if len(p) == 1:
-                # item must be a file
-                if item is None and create:
-                    # create new file
-                    if create_collection:
-                        item = Collection(parent=self, num_retries=self.num_retries)
-                    else:
-                        item = ArvadosFile(self)
-                    self._items[p[0]] = item
-                return item
-            else:
-                if item is None and create:
-                    # create new collection
-                    item = Collection(parent=self, num_retries=self.num_retries)
-                    self._items[p[0]] = item
-                del p[0]
-                return item.find("/".join(p), create=create)
-        else:
-            return self
-
+    @arvfile._synchronized
     @_populate_first
     def api_response(self):
         """
@@ -861,165 +1101,17 @@ class Collection(CollectionBase):
         """
         return self._api_response
 
-    def open(self, path, mode):
-        """Open a file-like object for access.
-
-        :path:
-          path to a file in the collection
-        :mode:
-          one of "r", "r+", "w", "w+", "a", "a+"
-          :"r":
-            opens for reading
-          :"r+":
-            opens for reading and writing.  Reads/writes share a file pointer.
-          :"w", "w+":
-            truncates to 0 and opens for reading and writing.  Reads/writes share a file pointer.
-          :"a", "a+":
-            opens for reading and writing.  All writes are appended to
-            the end of the file.  Writing does not affect the file pointer for
-            reading.
-        """
-        mode = mode.replace("b", "")
-        if len(mode) == 0 or mode[0] not in ("r", "w", "a"):
-            raise ArgumentError("Bad mode '%s'" % mode)
-        create = (mode != "r")
-
-        f = self.find(path, create=create)
-        if f is None:
-            raise IOError((errno.ENOENT, "File not found"))
-        if not isinstance(f, ArvadosFile):
-            raise IOError((errno.EISDIR, "Path must refer to a file."))
-
-        if mode[0] == "w":
-            f.truncate(0)
-
-        if mode == "r":
-            return ArvadosFileReader(f, path, mode)
-        else:
-            return ArvadosFileWriter(f, path, mode)
-
+    @_must_be_writable
+    @arvfile._synchronized
     @_populate_first
-    def modified(self):
-        """Test if the collection (or any subcollection or file) has been modified
-        since it was created."""
-        for k,v in self._items.items():
-            if v.modified():
-                return True
-        return False
-
-    @_populate_first
-    def set_unmodified(self):
-        """Recursively clear modified flag"""
-        for k,v in self._items.items():
-            v.set_unmodified()
-
-    @_populate_first
-    def __iter__(self):
-        """Iterate over names of files and collections contained in this collection."""
-        return self._items.iterkeys()
-
-    @_populate_first
-    def iterkeys(self):
-        """Iterate over names of files and collections directly contained in this collection."""
-        return self._items.iterkeys()
-
-    @_populate_first
-    def __getitem__(self, k):
-        """Get a file or collection that is directly contained by this collection.  Use
-        find() for path serach."""
-        return self._items[k]
-
-    @_populate_first
-    def __contains__(self, k):
-        """If there is a file or collection a directly contained by this collection
-        with name "k"."""
-        return k in self._items
-
-    @_populate_first
-    def __len__(self):
-        """Get the number of items directly contained in this collection"""
-        return len(self._items)
-
-    @_populate_first
-    def __delitem__(self, p):
-        """Delete an item by name which is directly contained by this collection."""
-        del self._items[p]
-
-    @_populate_first
-    def keys(self):
-        """Get a list of names of files and collections directly contained in this collection."""
-        return self._items.keys()
-
-    @_populate_first
-    def values(self):
-        """Get a list of files and collection objects directly contained in this collection."""
-        return self._items.values()
-
-    @_populate_first
-    def items(self):
-        """Get a list of (name, object) tuples directly contained in this collection."""
-        return self._items.items()
-
-    @_populate_first
-    def exists(self, path):
-        """Test if there is a file or collection at "path" """
-        return self.find(path) != None
-
-    @_populate_first
-    def remove(self, path):
-        """Test if there is a file or collection at "path" """
-        p = path.split("/")
-        if p[0] == '.':
-            del p[0]
-
-        if len(p) > 0:
-            item = self._items.get(p[0])
-            if item is None:
-                raise IOError((errno.ENOENT, "File not found"))
-            if len(p) == 1:
-                del self._items[p[0]]
-            else:
-                del p[0]
-                item.remove("/".join(p))
-        else:
-            raise IOError((errno.ENOENT, "File not found"))
-
-    @_populate_first
-    def manifest_text(self, strip=False, normalize=False):
-        """Get the manifest text for this collection, sub collections and files.
-
-        :strip:
-          If True, remove signing tokens from block locators if present.
-          If False, block locators are left unchanged.
-
-        :normalize:
-          If True, always export the manifest text in normalized form
-          even if the Collection is not modified.  If False and the collection
-          is not modified, return the original manifest text even if it is not
-          in normalized form.
-
-        """
-        if self.modified() or self._manifest_text is None or normalize:
-            return export_manifest(self, stream_name=".", portable_locators=strip)
-        else:
-            if strip:
-                return self.stripped_manifest()
-            else:
-                return self._manifest_text
-
-    def portable_data_hash(self):
-        """Get the portable data hash for this collection's manifest."""
-        stripped = self.manifest_text(strip=True)
-        return hashlib.md5(stripped).hexdigest() + '+' + str(len(stripped))
-
-    @_populate_first
-    def save(self, no_locator=False):
+    def save(self, allow_no_locator=False):
         """Commit pending buffer blocks to Keep, write the manifest to Keep, and
         update the collection record to Keep.
 
-        :no_locator:
-          If False and there is no collection uuid associated with
-          this Collection, raise an error.  If True, do not raise an error.
+        :allow_no_locator:
+          If there is no collection uuid associated with this
+          Collection and `allow_no_locator` is False, raise an error.  If True,
+          do not raise an error.
         """
         if self.modified():
             self._my_block_manager().commit_all()
@@ -1030,10 +1122,12 @@ class Collection(CollectionBase):
                     body={'manifest_text': self.manifest_text(strip=False)}
                     ).execute(
                         num_retries=self.num_retries)
-            elif not no_locator:
+            elif not allow_no_locator:
                 raise AssertionError("Collection manifest_locator must be a collection uuid.  Use save_as() for new collections.")
             self.set_unmodified()
 
+    @_must_be_writable
+    @arvfile._synchronized
     @_populate_first
     def save_as(self, name, owner_uuid=None, ensure_unique_name=False):
         """Save a new collection record.
@@ -1061,6 +1155,40 @@ class Collection(CollectionBase):
         self._manifest_locator = self._api_response["uuid"]
         self.set_unmodified()
 
+
+class Subcollection(SynchronizedCollectionBase):
+    """This is a subdirectory within a collection that doesn't have its own API
+    server record.  It falls under the umbrella of the root collection."""
+
+    def __init__(self, parent):
+        super(Subcollection, self).__init__(parent)
+        self.lock = parent._root_lock()
+
+    def _root_lock():
+        return self.parent._root_lock()
+
+    def sync_mode(self):
+        return self.parent.sync_mode()
+
+    def _my_api(self):
+        return self.parent._my_api()
+
+    def _my_keep(self):
+        return self.parent._my_keep()
+
+    def _my_block_manager(self):
+        return self.parent._my_block_manager()
+
+    def _populate(self):
+        self.parent._populate()
+
+    @arvfile._synchronized
+    @_populate_first
+    def clone(self, new_parent):
+        c = Subcollection(parent=new_parent)
+        c._items = {}
+        self._cloneinto(c)
+        return c
 
 def import_manifest(manifest_text, into_collection=None, api_client=None, keep=None, num_retries=None):
     """Import a manifest into a `Collection`.
@@ -1150,7 +1278,7 @@ def export_manifest(item, stream_name=".", portable_locators=False):
       If False, use block locators as-is.
     """
     buf = ""
-    if isinstance(item, Collection):
+    if isinstance(item, SynchronizedCollectionBase):
         stream = {}
         sorted_keys = sorted(item.keys())
         for k in [s for s in sorted_keys if isinstance(item[s], ArvadosFile)]:
@@ -1168,7 +1296,7 @@ def export_manifest(item, stream_name=".", portable_locators=False):
         if stream:
             buf += ' '.join(normalize_stream(stream_name, stream))
             buf += "\n"
-        for k in [s for s in sorted_keys if isinstance(item[s], Collection)]:
+        for k in [s for s in sorted_keys if isinstance(item[s], SynchronizedCollectionBase)]:
             buf += export_manifest(item[k], stream_name=os.path.join(stream_name, k), portable_locators=portable_locators)
     elif isinstance(item, ArvadosFile):
         st = []
