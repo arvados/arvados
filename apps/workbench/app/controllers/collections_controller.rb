@@ -180,6 +180,7 @@ class CollectionsController < ApplicationController
 
   def show
     return super if !@object
+    @logs = []
     if current_user
       if Keep::Locator.parse params["uuid"]
         @same_pdh = Collection.filter([["portable_data_hash", "=", @object.portable_data_hash]])
