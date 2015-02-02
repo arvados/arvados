@@ -533,17 +533,17 @@ do_install apps/workbench workbench
 
 start_api() {
     echo 'Starting API server...'
-    cd "$WORKSPACE" && \
-        eval $(python sdk/python/tests/run_test_server.py start --auth admin) && \
-        export ARVADOS_TEST_API_HOST="$ARVADOS_API_HOST" && \
-        export ARVADOS_TEST_API_INSTALLED="$$" && \
-        (env | egrep ^ARVADOS)
+    cd "$WORKSPACE" \
+        && eval $(python sdk/python/tests/run_test_server.py start --auth admin) \
+        && export ARVADOS_TEST_API_HOST="$ARVADOS_API_HOST" \
+        && export ARVADOS_TEST_API_INSTALLED="$$" \
+        && (env | egrep ^ARVADOS)
 }
 
 stop_api() {
     unset ARVADOS_TEST_API_HOST
-    cd "$WORKSPACE" && \
-        python sdk/python/tests/run_test_server.py stop
+    cd "$WORKSPACE" \
+        && python sdk/python/tests/run_test_server.py stop
 }
 
 test_doclinkchecker() {
@@ -561,8 +561,8 @@ do_test doc doclinkchecker
 stop_api
 
 test_apiserver() {
-    cd "$WORKSPACE/services/api"
-    RAILS_ENV=test bundle exec rake test ${testargs[services/api]}
+    cd "$WORKSPACE/services/api" \
+        && RAILS_ENV=test bundle exec rake test ${testargs[services/api]}
 }
 do_test services/api apiserver
 
