@@ -180,7 +180,16 @@ class CollectionsController < ApplicationController
 
   def show
     return super if !@object
+
     @logs = []
+
+    if params["tab_pane"] == "Provenance_graph"
+      @prov_svg = ProvenanceHelper::create_provenance_graph(@object.provenance, "provenance_svg",
+                                                            {:request => request,
+                                                             :direction => :bottom_up,
+                                                             :combine_jobs => :script_only}) rescue nil
+    end
+
     if current_user
       if Keep::Locator.parse params["uuid"]
         @same_pdh = Collection.filter([["portable_data_hash", "=", @object.portable_data_hash]])
@@ -216,12 +225,6 @@ class CollectionsController < ApplicationController
           .results.any?
         @search_sharing = search_scopes
 
-        if params["tab_pane"] == "Provenance_graph"
-          @prov_svg = ProvenanceHelper::create_provenance_graph(@object.provenance, "provenance_svg",
-                                                                {:request => request,
-                                                                  :direction => :bottom_up,
-                                                                  :combine_jobs => :script_only}) rescue nil
-        end
         if params["tab_pane"] == "Used_by"
           @used_by_svg = ProvenanceHelper::create_provenance_graph(@object.used_by, "used_by_svg",
                                                                    {:request => request,
