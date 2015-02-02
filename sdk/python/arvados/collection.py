@@ -879,6 +879,36 @@ class SynchronizedCollectionBase(CollectionBase):
     def clone(self):
         raise NotImplementedError()
 
+    @_must_be_writable
+    @arvfile._synchronized
+    @_populate_first
+    def copyto(self, target_path, source_path, source_collection=None, overwrite=False):
+        """
+        copyto('/foo', '/bar') will overwrite 'foo' if it exists.
+        copyto('/foo/', '/bar') will place 'bar' in subcollection 'foo'
+        """
+        if source_collection is None:
+            source_collection = self
+
+        # Find the object to copy
+        sp = source_path.split("/")
+        source_obj = source_collection.find(source_path)
+        if source_obj is None:
+            raise IOError((errno.ENOENT, "File not found"))
+
+        # Find parent collection the target path
+        tp = target_path.split("/")
+        target_dir = self.find(tp[0:-1].join("/"), create=True, create_collection=True)
+
+        # Determine the name to use.
+        target_name = tp[-1] if tp[-1] else sp[-1]
+
+        if target_name in target_dir and not overwrite:
+            raise IOError((errno.EEXIST, "File already exists"))
+
+        # Actually make the copy.
+        target_dir[target_name]._items = source_obj.clone(target_dir)
+
     @arvfile._synchronized
     @_populate_first
     def manifest_text(self, strip=False, normalize=False):
@@ -1185,7 +1215,7 @@ class Subcollection(SynchronizedCollectionBase):
     @arvfile._synchronized
     @_populate_first
     def clone(self, new_parent):
-        c = Subcollection(parent=new_parent)
+        c = Subcollection(new_parent)
         c._items = {}
         self._cloneinto(c)
         return c
