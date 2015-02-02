@@ -417,6 +417,7 @@ install_doc() {
     cd "$WORKSPACE/doc" \
         && (bundle install --local --no-deployment \
         || bundle install --no-deployment) \
+        && bundle package --all \
         && rm -rf .site
 }
 do_install doc
@@ -426,6 +427,7 @@ install_ruby_sdk() {
         && cd "$WORKSPACE/sdk/ruby" \
         && (bundle install --local --no-deployment \
         || bundle install --no-deployment) \
+        && bundle package --all \
         && gem build arvados.gemspec \
         && with_test_gemset gem install --no-ri --no-rdoc `ls -t arvados-*.gem|head -n1`
 }
@@ -436,6 +438,7 @@ install_cli() {
         && cd "$WORKSPACE/sdk/cli" \
         && (bundle install --local --no-deployment \
         || bundle install --no-deployment) \
+        && bundle package --all \
         && gem build arvados-cli.gemspec \
         && with_test_gemset gem install --no-ri --no-rdoc `ls -t arvados-cli-*.gem|head -n1`
 }
@@ -460,7 +463,8 @@ done
 install_apiserver() {
     cd "$WORKSPACE/services/api" \
         && (RAILS_ENV=test bundle install --local --no-deployment \
-        || RAILS_ENV=test bundle install --no-deployment)
+        || RAILS_ENV=test bundle install --no-deployment) \
+        && bundle package --all
 
     rm -f config/environments/test.rb
     cp config/environments/test.rb.example config/environments/test.rb
@@ -522,7 +526,8 @@ done
 install_workbench() {
     cd "$WORKSPACE/apps/workbench" \
         && (RAILS_ENV=test bundle install --local --no-deployment \
-        || RAILS_ENV=test bundle install --no-deployment)
+        || RAILS_ENV=test bundle install --no-deployment) \
+        && bundle package --all
 }
 do_install apps/workbench workbench
 
