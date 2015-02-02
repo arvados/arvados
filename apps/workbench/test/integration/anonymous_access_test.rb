@@ -147,33 +147,39 @@ class AnonymousAccessTest < ActionDispatch::IntegrationTest
   [
     [nil, 'running_job'],
     [nil, 'completed_job'],
-    ['admin', 'running_job'],
-    ['admin', 'completed_job'],
+    ['admin', 'running_job', api_fixture('jobs')['running_job_in_publicly_accessible_project']['uuid']],
+    ['admin', 'completed_job', api_fixture('jobs')['completed_job_in_publicly_accessible_project']['uuid']],
     [nil, 'pipelineInstance'],
-    ['admin', 'pipelineInstance'],
-  ].each do |token, type|
+    ['admin', 'pipelineInstance', api_fixture('pipeline_instances')['pipeline_in_publicly_accessible_project']['uuid']],
+  ].each do |token, type, uuid=nil|
     test "user #{token.inspect} accesses jobs and pipelines tab in shared project and clicks on #{type}" do
-      visit_publicly_accessible_project token
-
-      assert_selector 'a', 'Jobs and pipelines (2)'
-
-      click_link 'Jobs and pipelines'
-      assert_text 'Pipeline in publicly accessible project'
+      if !token 
+        visit_publicly_accessible_project
+        click_link 'Jobs and pipelines'
+        assert_text 'Pipeline in publicly accessible project'
+      else
+        # directly go to the job or pipeline instance page to save test run time; see below
+      end
 
       # click on type specified collection
       if type.include? 'job'
-        verify_job_row token, type
+        verify_job_row token, type, uuid
       else
-        verify_pipeline_instance_row token
+        verify_pipeline_instance_row token, uuid
       end
     end
   end
 
-  def verify_job_row user, look_for
-    within first('tr', text: look_for) do
-      click_link 'Show'
+  def verify_job_row user, look_for, uuid
+    if user
+      visit page_with_token user, "/jobs/#{uuid}"
+    else
+      within first('tr', text: look_for) do
+        click_link 'Show'
+      end
     end
     assert_text 'script_version'
+
     if user
       assert_selector 'a', text: 'Active User'  # modified by user
       assert_selector 'a', text: 'Log'
@@ -195,10 +201,14 @@ class AnonymousAccessTest < ActionDispatch::IntegrationTest
     end
   end
 
-  def verify_pipeline_instance_row user
-    within first('tr[data-kind="arvados#pipelineInstance"]') do
-      assert_text 'Pipeline in publicly accessible project'
-      click_link 'Show'
+  def verify_pipeline_instance_row user, uuid
+    if user
+      visit page_with_token user, "/pipeline_instances/#{uuid}"
+    else
+      within first('tr[data-kind="arvados#pipelineInstance"]') do
+        assert_text 'Pipeline in publicly accessible project'
+        click_link 'Show'
+      end
     end
 
     # in pipeline instance page
