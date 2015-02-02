@@ -122,8 +122,8 @@ class ArvadosApiClient
 
     # Use anonymous token if available when it is a GET request
     if ((query["_method"] == "GET") or (query[:_method] == "GET")) && !Thread.current[:user]
-      if Thread.current[:arvados_anonymous_api_token]
-        query["api_token"] = Thread.current[:arvados_anonymous_api_token]
+      if Rails.configuration.respond_to? :anonymous_user_token
+        query["api_token"] = Rails.configuration.anonymous_user_token
       end
     end
 

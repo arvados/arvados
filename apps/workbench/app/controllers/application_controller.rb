@@ -8,7 +8,6 @@ class ApplicationController < ActionController::Base
   ERROR_ACTIONS = [:render_error, :render_not_found]
 
   around_filter :thread_clear
-  before_filter :permit_anonymous_browsing_for_public_data
   around_filter :set_thread_api_token
   # Methods that don't require login should
   #   skip_around_filter :require_thread_api_token
@@ -530,7 +529,6 @@ class ApplicationController < ActionController::Base
   def setup_user_session
     return false unless params[:api_token]
     Thread.current[:arvados_api_token] = params[:api_token]
-    Thread.current[:arvados_anonymous_api_token] = nil
     begin
       user = User.current
     rescue ArvadosApiClient::NotLoggedInException
@@ -563,12 +561,6 @@ class ApplicationController < ActionController::Base
       end
     ensure
       Thread.current[:arvados_api_token] = nil
-    end
-  end
-
-  def permit_anonymous_browsing_for_public_data
-    if !Thread.current[:arvados_api_token] && !params[:api_token] && !session[:arvados_api_token]
-      Thread.current[:arvados_anonymous_api_token] = Rails.configuration.anonymous_user_token
     end
   end
 
