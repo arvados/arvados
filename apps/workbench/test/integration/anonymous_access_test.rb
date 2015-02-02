@@ -45,41 +45,47 @@ class AnonymousAccessTest < ActionDispatch::IntegrationTest
     end
   end
 
+  def visit_publicly_accessible_project token=nil, use_config=true, path=nil
+    if use_config
+      Rails.configuration.anonymous_user_token = api_fixture('api_client_authorizations')['anonymous']['api_token']
+    else
+      Rails.configuration.anonymous_user_token = false
+    end
+
+    path = "/projects/#{api_fixture('groups')['anonymously_accessible_project']['uuid']}/?public_data=true" if !path
+
+    if token
+        visit page_with_token(token, path)
+    else
+      visit path
+    end
+  end
+
   [
     [nil, nil, false, false],
     ['inactive', api_fixture('users')['inactive'], false, false],
     ['active', api_fixture('users')['active'], true, true],
     ['active_no_prefs_profile', api_fixture('users')['active_no_prefs_profile'], true, false],
   ].each do |token, user, is_active, has_profile|
-    test "visit public project as user #{token} when anonymous browsing is enabled" do
-      Rails.configuration.anonymous_user_token = api_fixture('api_client_authorizations')['anonymous']['api_token']
-
-      path = "/projects/#{api_fixture('groups')['anonymously_accessible_project']['uuid']}/?public_data=true"
-
-      if !token
-        visit path
-      else
-        visit page_with_token(token, path)
-      end
+    test "visit public project as user #{token.inspect} when anonymous browsing is enabled" do
+      visit_publicly_accessible_project token
       verify_homepage_anonymous_enabled user, is_active, has_profile
     end
   end
 
   test "anonymous user visit public project when anonymous browsing not enabled and expect to see login page" do
-    Rails.configuration.anonymous_user_token = false
-    visit "/projects/#{api_fixture('groups')['anonymously_accessible_project']['uuid']}/?public_data=true"
+    visit_publicly_accessible_project nil, false
     assert_text 'Please log in'
   end
 
   test "visit non-public project as anonymous when anonymous browsing is enabled and expect page not found" do
-    Rails.configuration.anonymous_user_token = api_fixture('api_client_authorizations')['anonymous']['api_token']
-    visit "/projects/#{api_fixture('groups')['aproject']['uuid']}/?public_data=true"
+    visit_publicly_accessible_project nil, true,
+        "/projects/#{api_fixture('groups')['aproject']['uuid']}/?public_data=true"
     assert_text 'Not Found'
   end
 
   test "selection actions when anonymous user accesses shared project" do
-    Rails.configuration.anonymous_user_token = api_fixture('api_client_authorizations')['anonymous']['api_token']
-    visit "/projects/#{api_fixture('groups')['anonymously_accessible_project']['uuid']}/?public_data=true"
+    visit_publicly_accessible_project
 
     assert_selector 'a', text: 'Data collections'
     assert_selector 'a', text: 'Jobs and pipelines'
@@ -97,11 +103,6 @@ class AnonymousAccessTest < ActionDispatch::IntegrationTest
       assert_no_selector 'li', text: 'Move selected'
       assert_no_selector 'li', text: 'Remove selected'
     end
-  end
-
-  def visit_publicly_accessible_project
-    Rails.configuration.anonymous_user_token = api_fixture('api_client_authorizations')['anonymous']['api_token']
-    visit "/projects/#{api_fixture('groups')['anonymously_accessible_project']['uuid']}/?public_data=true"
   end
 
   [
@@ -139,51 +140,67 @@ class AnonymousAccessTest < ActionDispatch::IntegrationTest
 
     within ('#collection_files') do
       assert_text 'GNU_General_Public_License,_version_3.pdf'
-      # how do i assert the view and download links?
+      # how do i assert the view and download link existence?
     end
   end
 
-  [ 'job', 'pipelineInstance' ].each do |type|
-    test "anonymous user accesses jobs and pipelines tab in shared project and clicks on #{type}" do
-      visit_publicly_accessible_project
+  [
+    [nil, 'job'],
+    [nil, 'pipelineInstance'],
+    ['admin', 'job'],
+    ['admin', 'pipelineInstance'],
+  ].each do |token, type|
+    test "user #{token.inspect} accesses jobs and pipelines tab in shared project and clicks on #{type}" do
+      visit_publicly_accessible_project token
 
       assert_selector 'a', 'Jobs and pipelines (2)'
 
       click_link 'Jobs and pipelines'
-      assert_text 'hash job'
+      assert_text 'Pipeline in publicly accessible project'
 
       # click on type specified collection
       if type == 'job'
-        verify_job_row
+        verify_job_row token
       else
-        verify_pipeline_instance_row
+        verify_pipeline_instance_row token
       end
     end
   end
 
-  def verify_job_row
+  def verify_job_row user
     within first('tr[data-kind="arvados#job"]') do
-      assert_text 'hash job using'
       click_link 'Show'
     end
-
-    # in job page
-    assert_no_selector 'button', text: 'Re-run job'
     assert_text 'script_version'
-    assert_no_selector 'button', text: 'Cancel'
-    assert_no_selector 'a', text: 'Log'
+    if user
+      assert_selector 'a', text: 'Active User'  # modified by user
+      assert_selector 'a', text: 'Log'
+      assert_selector 'a', text: 'Move job'
+      assert_selector 'button', text: 'Cancel'
+    else
+      assert_text 'zzzzz-tpzed-xurymjxw79nv3jz' # modified by user
+      assert_no_selector 'a', text: 'zzzzz-tpzed-xurymjxw79nv3jz'
+      assert_no_selector 'a', text: 'Log'
+      assert_no_selector 'a', text: 'Move job'
+      assert_no_selector 'a', text: 'Re-run job'
+    end
   end
 
-  def verify_pipeline_instance_row
+  def verify_pipeline_instance_row user
     within first('tr[data-kind="arvados#pipelineInstance"]') do
       assert_text 'Pipeline in publicly accessible project'
       click_link 'Show'
     end
 
     # in pipeline instance page
-    assert_no_selector 'a', text: 'Re-run with latest'
-    assert_no_selector 'a', text: 'Re-run options'
     assert_text 'This pipeline is complete'
+    if user
+      assert_selector 'a', text: 'Re-run with latest'
+      assert_selector 'a', text: 'Re-run options'
+    else
+      assert_no_selector 'a', text: 'Re-run with latest'
+      assert_no_selector 'a', text: 'Re-run options'
+    end
   end
 
   test "anonymous user accesses pipeline templates tab in shared project" do
@@ -201,5 +218,47 @@ class AnonymousAccessTest < ActionDispatch::IntegrationTest
     # in template page
     assert_text 'script version'
     assert_no_selector 'a', text: 'Run this pipeline'
+  end
+
+  [
+    [nil, '/users'],
+    [nil, '/groups'],
+    ['admin', '/users'],
+    ['admin', '/groups'],
+  ].each do |token, page|
+    test "user #{token.inspect} accesses publicly accessible project and then traverses to #{page}" do
+      # go to the page
+      if token
+        visit page_with_token(token, page)
+      else
+        # when anonymous, first visit publicly accessible project
+        visit_publicly_accessible_project token if !token
+        visit page
+      end
+
+      if page == '/users'
+        verify_users_page token
+      elsif page == '/groups'
+        verify_groups_page token
+      end
+    end
+  end
+
+  def verify_users_page user
+    assert_text 'user'
+    if user
+      assert_selector 'a', text: 'Add a new user'
+    else
+      assert_no_selector 'a', text: 'Add a new user'
+    end
+  end
+
+  def verify_groups_page user
+    assert_text 'Group'
+    if user
+      assert_selector 'button', text: 'Add a new group'
+    else
+      assert_no_selector 'button', text: 'Add a new group'
+    end
   end
 end

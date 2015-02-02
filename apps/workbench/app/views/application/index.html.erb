@@ -4,7 +4,7 @@
 
 <% content_for :tab_line_buttons do %>
 
-  <% if controller.model_class.creatable? %>
+  <% if controller.model_class.creatable? and current_user.is_active %>
 
     <% if controller.model_class.name == 'User' %>
       <%= link_to setup_user_popup_path,
