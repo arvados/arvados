@@ -521,14 +521,44 @@ install_workbench() {
 }
 do_install apps/workbench workbench
 
+start_api() {
+    echo 'Starting API server...'
+    cd "$WORKSPACE" && \
+        eval $(python sdk/python/tests/run_test_server.py start --auth admin) && \
+        export ARVADOS_TEST_API_HOST="$ARVADOS_API_HOST" && \
+        export ARVADOS_TEST_API_INSTALLED="$$" && \
+        (env | egrep ^ARVADOS)
+}
+
+stop_api() {
+    unset ARVADOS_TEST_API_HOST
+    cd "$WORKSPACE" && \
+        python sdk/python/tests/run_test_server.py stop
+}
+
 test_doclinkchecker() {
-    cd "$WORKSPACE/doc"
-    # Make sure python-epydoc is installed or the next line won't do much good!
-    ARVADOS_API_HOST=qr1hi.arvadosapi.com
-    PYTHONPATH=$WORKSPACE/sdk/python/ bundle exec rake linkchecker baseurl=file://$WORKSPACE/doc/.site/ arvados_workbench_host=workbench.$ARVADOS_API_HOST arvados_api_host=$ARVADOS_API_HOST
-    unset ARVADOS_API_HOST
+    (
+        set -e
+        cd "$WORKSPACE/doc"
+        ARVADOS_API_HOST=qr1hi.arvadosapi.com
+        # Make sure python-epydoc is installed or the next line won't
+        # do much good!
+        PYTHONPATH=$WORKSPACE/sdk/python/ bundle exec rake linkchecker baseurl=file://$WORKSPACE/doc/.site/ arvados_workbench_host=workbench.$ARVADOS_API_HOST arvados_api_host=$ARVADOS_API_HOST
+    )
 }
 do_test doc doclinkchecker
+
+stop_api
+
+test_apiserver() {
+    cd "$WORKSPACE/services/api"
+    RAILS_ENV=test bundle exec rake test ${testargs[services/api]}
+}
+do_test services/api apiserver
+
+rotate_logfile "$WORKSPACE/services/api/log/" "test.log"
+
+start_api
 
 test_ruby_sdk() {
     cd "$WORKSPACE/sdk/ruby" \
@@ -544,14 +574,6 @@ test_cli() {
         && KEEP_LOCAL_STORE=/tmp/keep bundle exec rake test ${testargs[sdk/cli]}
 }
 do_test sdk/cli cli
-
-test_apiserver() {
-    cd "$WORKSPACE/services/api"
-    RAILS_ENV=test bundle exec rake test ${testargs[services/api]}
-}
-do_test services/api apiserver
-
-rotate_logfile "$WORKSPACE/services/api/log/" "test.log"
 
 for p in "${pythonstuff[@]}"
 do
@@ -582,6 +604,8 @@ test_workbench_profile() {
 do_test apps/workbench_profile workbench_profile
 
 rotate_logfile "$WORKSPACE/apps/workbench/log/" "test.log"
+
+stop_api
 
 report_outcomes
 clear_temp
