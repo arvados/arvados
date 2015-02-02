@@ -1089,9 +1089,4 @@ class ApplicationController < ActionController::Base
   def wiselinks_layout
     'body'
   end
-
-  helper_method :is_anonymous
-  def is_anonymous
-    return Thread.current[:arvados_anonymous_api_token]
-  end
 end
