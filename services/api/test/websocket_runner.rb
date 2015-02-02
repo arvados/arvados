@@ -7,7 +7,7 @@ class WebsocketTestRunner < MiniTest::Unit
   def _system(*cmd)
     Bundler.with_clean_env do
       if not system({'ARVADOS_WEBSOCKETS' => 'ws-only', 'RAILS_ENV' => 'test'}, *cmd)
-        raise RuntimeError, "#{cmd[0]} returned exit code #{$?.exitstatus}"
+        raise RuntimeError, "Command failed with exit status #{$?}: #{cmd.inspect}"
       end
     end
   end
@@ -34,7 +34,13 @@ class WebsocketTestRunner < MiniTest::Unit
     begin
       super(args)
     ensure
-      Process.kill('TERM', server_pid)
+      Dir.chdir($ARV_API_SERVER_DIR) do
+        _system('passenger', 'stop', '-p3002')
+      end
+      # DatabaseCleaner leaves the database empty. Prefer to leave it full.
+      dc = DatabaseController.new
+      dc.define_singleton_method :render do |*args| end
+      dc.reset
     end
   end
 end
