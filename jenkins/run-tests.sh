@@ -414,16 +414,18 @@ title () {
 }
 
 install_doc() {
-    cd "$WORKSPACE/doc"
-    bundle install --no-deployment
-    rm -rf .site
+    cd "$WORKSPACE/doc" \
+        && (bundle install --local --no-deployment \
+        || bundle install --no-deployment) \
+        && rm -rf .site
 }
 do_install doc
 
 install_ruby_sdk() {
     with_test_gemset gem uninstall --force --all --executables arvados \
         && cd "$WORKSPACE/sdk/ruby" \
-        && bundle install --no-deployment \
+        && (bundle install --local --no-deployment \
+        || bundle install --no-deployment) \
         && gem build arvados.gemspec \
         && with_test_gemset gem install --no-ri --no-rdoc `ls -t arvados-*.gem|head -n1`
 }
@@ -432,7 +434,8 @@ do_install sdk/ruby ruby_sdk
 install_cli() {
     with_test_gemset gem uninstall --force --all --executables arvados-cli \
         && cd "$WORKSPACE/sdk/cli" \
-        && bundle install --no-deployment \
+        && (bundle install --local --no-deployment \
+        || bundle install --no-deployment) \
         && gem build arvados-cli.gemspec \
         && with_test_gemset gem install --no-ri --no-rdoc `ls -t arvados-cli-*.gem|head -n1`
 }
@@ -455,8 +458,9 @@ do
 done
 
 install_apiserver() {
-    cd "$WORKSPACE/services/api"
-    RAILS_ENV=test bundle install --no-deployment
+    cd "$WORKSPACE/services/api" \
+        && (RAILS_ENV=test bundle install --local --no-deployment \
+        || RAILS_ENV=test bundle install --no-deployment)
 
     rm -f config/environments/test.rb
     cp config/environments/test.rb.example config/environments/test.rb
@@ -517,7 +521,8 @@ done
 
 install_workbench() {
     cd "$WORKSPACE/apps/workbench" \
-        && RAILS_ENV=test bundle install --no-deployment
+        && (RAILS_ENV=test bundle install --local --no-deployment \
+        || RAILS_ENV=test bundle install --no-deployment)
 }
 do_install apps/workbench workbench
 
@@ -562,14 +567,12 @@ start_api
 
 test_ruby_sdk() {
     cd "$WORKSPACE/sdk/ruby" \
-        && bundle install --no-deployment \
         && bundle exec rake test ${testargs[sdk/ruby]}
 }
 do_test sdk/ruby ruby_sdk
 
 test_cli() {
     cd "$WORKSPACE/sdk/cli" \
-        && bundle install --no-deployment \
         && mkdir -p /tmp/keep \
         && KEEP_LOCAL_STORE=/tmp/keep bundle exec rake test ${testargs[sdk/cli]}
 }
