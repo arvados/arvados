@@ -145,9 +145,11 @@ class AnonymousAccessTest < ActionDispatch::IntegrationTest
   end
 
   [
-    [nil, 'job'],
+    [nil, 'running_job'],
+    [nil, 'completed_job'],
+    ['admin', 'running_job'],
+    ['admin', 'completed_job'],
     [nil, 'pipelineInstance'],
-    ['admin', 'job'],
     ['admin', 'pipelineInstance'],
   ].each do |token, type|
     test "user #{token.inspect} accesses jobs and pipelines tab in shared project and clicks on #{type}" do
@@ -159,16 +161,16 @@ class AnonymousAccessTest < ActionDispatch::IntegrationTest
       assert_text 'Pipeline in publicly accessible project'
 
       # click on type specified collection
-      if type == 'job'
-        verify_job_row token
+      if type.include? 'job'
+        verify_job_row token, type
       else
         verify_pipeline_instance_row token
       end
     end
   end
 
-  def verify_job_row user
-    within first('tr[data-kind="arvados#job"]') do
+  def verify_job_row user, look_for
+    within first('tr', text: look_for) do
       click_link 'Show'
     end
     assert_text 'script_version'
@@ -176,13 +178,20 @@ class AnonymousAccessTest < ActionDispatch::IntegrationTest
       assert_selector 'a', text: 'Active User'  # modified by user
       assert_selector 'a', text: 'Log'
       assert_selector 'a', text: 'Move job'
-      assert_selector 'button', text: 'Cancel'
+      if look_for.include? 'running'
+        assert_selector 'button', text: 'Cancel'
+        assert_no_selector 'button', text: 'Re-run job'
+      else
+        assert_selector 'button', text: 'Re-run job'
+        assert_no_selector 'button', text: 'Cancel'
+      end
     else
       assert_text 'zzzzz-tpzed-xurymjxw79nv3jz' # modified by user
       assert_no_selector 'a', text: 'zzzzz-tpzed-xurymjxw79nv3jz'
       assert_no_selector 'a', text: 'Log'
       assert_no_selector 'a', text: 'Move job'
-      assert_no_selector 'a', text: 'Re-run job'
+      assert_no_selector 'button', text: 'Cancel'
+      assert_no_selector 'button', text: 'Re-run job'
     end
   end
 
