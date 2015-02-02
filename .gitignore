@@ -17,3 +17,4 @@ apps/workbench/vendor/bundle
 services/api/vendor/bundle
 sdk/java/log
 sdk/cli/vendor
+/tmp

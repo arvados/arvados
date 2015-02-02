@@ -17,7 +17,7 @@ class MountTestBase(unittest.TestCase):
         self.keeptmp = tempfile.mkdtemp()
         os.environ['KEEP_LOCAL_STORE'] = self.keeptmp
         self.mounttmp = tempfile.mkdtemp()
-        run_test_server.run(False)
+        run_test_server.run()
         run_test_server.authorize_with("admin")
         self.api = api = fuse.SafeApi(arvados.config)
 
@@ -31,7 +31,7 @@ class MountTestBase(unittest.TestCase):
         operations.initlock.wait()
 
     def tearDown(self):
-        run_test_server.stop()
+        run_test_server.reset()
 
         # llfuse.close is buggy, so use fusermount instead.
         #llfuse.close(unmount=True)
