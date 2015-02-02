@@ -561,8 +561,6 @@ test_apiserver() {
 }
 do_test services/api apiserver
 
-rotate_logfile "$WORKSPACE/services/api/log/" "test.log"
-
 start_api
 
 test_ruby_sdk() {
@@ -609,6 +607,7 @@ do_test apps/workbench_profile workbench_profile
 rotate_logfile "$WORKSPACE/apps/workbench/log/" "test.log"
 
 stop_api
+rotate_logfile "$WORKSPACE/services/api/log/" "test.log"
 
 report_outcomes
 clear_temp
