@@ -23,6 +23,7 @@ class AnonymousAccessTest < ActionDispatch::IntegrationTest
       visit page_with_token(token, path)
     else
       visit path
+      assert_text 'Unrestricted public data' if path.include? 'anonymously_accessible_project'
     end
   end
 
@@ -110,6 +111,7 @@ class AnonymousAccessTest < ActionDispatch::IntegrationTest
 
       # go to dashboard
       click_link 'You are viewing public data'
+      assert_text 'Active pipelines'
 
       assert_no_selector 'a', text: 'Run a pipeline'
       assert_selector 'a', text: selector
@@ -120,6 +122,7 @@ class AnonymousAccessTest < ActionDispatch::IntegrationTest
 
   test "anonymous user accesses data collections tab in shared project" do
     visit_publicly_accessible_project
+    assert_text 'GNU General Public License'
 
     assert_selector 'a', text: 'Data collections (1)'
 
@@ -146,6 +149,8 @@ class AnonymousAccessTest < ActionDispatch::IntegrationTest
   ].each do |type|
     test "anonymous user accesses jobs and pipelines tab in shared project and clicks on #{type}" do
       visit_publicly_accessible_project
+      assert_text 'GNU General Public License'
+
       click_link 'Jobs and pipelines'
       assert_text 'Pipeline in publicly accessible project'
 
@@ -186,6 +191,7 @@ class AnonymousAccessTest < ActionDispatch::IntegrationTest
 
   test "anonymous user accesses pipeline templates tab in shared project" do
     visit_publicly_accessible_project
+    assert_text 'GNU General Public License'
 
     assert_selector 'a', 'Pipeline templates (1)'
 
