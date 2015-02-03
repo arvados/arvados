@@ -21,99 +21,98 @@ function unselect_all_files() {
 
 <div class="selection-action-container" style="padding-left: <%=padding_left%>">
   <% if Collection.creatable? and (!defined? no_checkboxes or !no_checkboxes) %>
-  <div class="row">
-    <div class="pull-left">
-      <div class="btn-group btn-group-sm">
-        <button type="button" class="btn btn-default dropdown-toggle" data-toggle="dropdown">Selection... <span class="caret"></span></button>
-        <ul class="dropdown-menu" role="menu">
-          <li><%= link_to "Create new collection with selected files", '#',
-                  method: :post,
-                  'data-href' => combine_selected_path(
-                    action_data: {current_project_uuid: @object.owner_uuid}.to_json
-                  ),
-                  'data-selection-param-name' => 'selection[]',
-                  'data-selection-action' => 'combine-collections',
-                  'data-toggle' => 'dropdown'
-            %></li>
-        </ul>
+    <div class="row">
+      <div class="pull-left">
+        <div class="btn-group btn-group-sm">
+          <button type="button" class="btn btn-default dropdown-toggle" data-toggle="dropdown">Selection... <span class="caret"></span></button>
+          <ul class="dropdown-menu" role="menu">
+            <li><%= link_to "Create new collection with selected files", '#',
+                    method: :post,
+                    'data-href' => combine_selected_path(
+                      action_data: {current_project_uuid: @object.owner_uuid}.to_json
+                    ),
+                    'data-selection-param-name' => 'selection[]',
+                    'data-selection-action' => 'combine-collections',
+                    'data-toggle' => 'dropdown'
+              %></li>
+          </ul>
+        </div>
+        <div class="btn-group btn-group-sm">
+          <button id="select-all" type="button" class="btn btn-default" onClick="select_all_files()">Select all</button>
+          <button id="unselect-all" type="button" class="btn btn-default" onClick="unselect_all_files()">Unselect all</button>
+        </div>
       </div>
-      <div class="btn-group btn-group-sm">
-	<button id="select-all" type="button" class="btn btn-default" onClick="select_all_files()">Select all</button>
-	<button id="unselect-all" type="button" class="btn btn-default" onClick="unselect_all_files()">Unselect all</button>
+      <div class="pull-right">
+        <input class="form-control filterable-control" data-filterable-target="ul#collection_files" id="file_regex" name="file_regex" placeholder="filename regex" type="text"/>
       </div>
     </div>
-    <div class="pull-right">
-      <input class="form-control filterable-control" data-filterable-target="ul#collection_files" id="file_regex" name="file_regex" placeholder="filename regex" type="text"/>
-    </div>
-  </div>
-  <p/>
+    <p/>
   <% end %>
 
-<% file_tree = @object.andand.files_tree %>
-<% if file_tree.nil? or file_tree.empty? %>
-  <p>This collection is empty.</p>
-<% else %>
-  <ul id="collection_files" class="collection_files <%=preview_selectable_container%>">
-  <% dirstack = [file_tree.first.first] %>
-  <% file_tree.take(10000).each_with_index do |(dirname, filename, size), index| %>
-    <% file_path = CollectionsHelper::file_path([dirname, filename]) %>
-    <% while dirstack.any? and (dirstack.last != dirname) %>
-      <% dirstack.pop %></ul></li>
-    <% end %>
-    <li>
-    <% if size.nil?  # This is a subdirectory. %>
-      <% dirstack.push(File.join(dirname, filename)) %>
-      <div class="collection_files_row">
-       <div class="collection_files_name"><i class="fa fa-fw fa-folder-open"></i> <%= filename %></div>
-      </div>
-      <ul class="collection_files">
-    <% else %>
-      <% link_params = {controller: 'collections', action: 'show_file',
-                        uuid: @object.portable_data_hash, file: file_path, size: size} %>
-       <div class="collection_files_row filterable <%=preview_selectable%>" href="<%=@object.uuid%>/<%=file_path%>">
-        <div class="collection_files_buttons pull-right">
-          <%= raw(human_readable_bytes_html(size)) %>
-          <% disable_search = (Rails.configuration.filename_suffixes_with_view_icon.include? file_path.split('.')[-1]) ? false : true %>
-          <%= link_to(raw('<i class="fa fa-search"></i>'),
-                      link_params.merge(disposition: 'inline'),
-                      {title: "View #{file_path}", class: "btn btn-info btn-sm", disabled: disable_search}) %>
-          <%= link_to(raw('<i class="fa fa-download"></i>'),
-                      link_params.merge(disposition: 'attachment'),
-                      {title: "Download #{file_path}", class: "btn btn-info btn-sm"}) %>
-        </div>
-
-        <div class="collection_files_name">
-          <% if !defined? no_checkboxes or !no_checkboxes %>
-          <%= check_box_tag 'uuids[]', "#{@object.uuid}/#{file_path}", false, {
-                :class => "persistent-selection",
-                :friendly_type => "File",
-                :friendly_name => "#{@object.uuid}/#{file_path}",
-                :href => url_for(controller: 'collections', action: 'show_file',
-                                 uuid: @object.portable_data_hash, file: file_path),
-                :title => "Include #{file_path} in your selections",
-              } %>
-          <span>&nbsp;</span>
-          <% end %>
-      <% if CollectionsHelper::is_image(filename) %>
-          <i class="fa fa-fw fa-bar-chart-o"></i> <%= filename %></div>
-        <div class="collection_files_inline">
-          <%= link_to(image_tag("#{url_for @object}/#{file_path}"),
-                      link_params.merge(disposition: 'inline'),
-                      {title: file_path}) %>
-        </div>
-       </div>
-      <% else %>
-          <i class="fa fa-fw fa-file" href="<%=@object.uuid%>/<%=file_path%>" ></i> <%= filename %></div>
-       </div>
+  <% file_tree = @object.andand.files_tree %>
+  <% if file_tree.nil? or file_tree.empty? %>
+    <p>This collection is empty.</p>
+  <% else %>
+    <ul id="collection_files" class="collection_files <%=preview_selectable_container%>">
+    <% dirstack = [file_tree.first.first] %>
+    <% file_tree.take(10000).each_with_index do |(dirname, filename, size), index| %>
+      <% file_path = CollectionsHelper::file_path([dirname, filename]) %>
+      <% while dirstack.any? and (dirstack.last != dirname) %>
+        <% dirstack.pop %></ul></li>
       <% end %>
-      </li>
-    <% end  # if file or directory %>
-  <% end  # file_tree.each %>
-  <%= raw(dirstack.map { |_| "</ul>" }.join("</li>")) %>
-<% end  # if file_tree %>
+      <li>
+      <% if size.nil?  # This is a subdirectory. %>
+        <% dirstack.push(File.join(dirname, filename)) %>
+        <div class="collection_files_row">
+         <div class="collection_files_name"><i class="fa fa-fw fa-folder-open"></i> <%= filename %></div>
+        </div>
+        <ul class="collection_files">
+      <% else %>
+        <% link_params = {controller: 'collections', action: 'show_file',
+                          uuid: @object.portable_data_hash, file: file_path, size: size} %>
+         <div class="collection_files_row filterable <%=preview_selectable%>" href="<%=@object.uuid%>/<%=file_path%>">
+          <div class="collection_files_buttons pull-right">
+            <%= raw(human_readable_bytes_html(size)) %>
+            <% disable_search = (Rails.configuration.filename_suffixes_with_view_icon.include? file_path.split('.')[-1]) ? false : true %>
+            <%= link_to(raw('<i class="fa fa-search"></i>'),
+                        link_params.merge(disposition: 'inline'),
+                        {title: "View #{file_path}", class: "btn btn-info btn-sm", disabled: disable_search}) %>
+            <%= link_to(raw('<i class="fa fa-download"></i>'),
+                        link_params.merge(disposition: 'attachment'),
+                        {title: "Download #{file_path}", class: "btn btn-info btn-sm"}) %>
+          </div>
+
+          <div class="collection_files_name">
+            <% if !defined? no_checkboxes or !no_checkboxes %>
+            <%= check_box_tag 'uuids[]', "#{@object.uuid}/#{file_path}", false, {
+                  :class => "persistent-selection",
+                  :friendly_type => "File",
+                  :friendly_name => "#{@object.uuid}/#{file_path}",
+                  :href => url_for(controller: 'collections', action: 'show_file',
+                                   uuid: @object.portable_data_hash, file: file_path),
+                  :title => "Include #{file_path} in your selections",
+                } %>
+            <span>&nbsp;</span>
+            <% end %>
+        <% if CollectionsHelper::is_image(filename) %>
+            <i class="fa fa-fw fa-bar-chart-o"></i> <%= filename %></div>
+          <div class="collection_files_inline">
+            <%= link_to(image_tag("#{url_for @object}/#{file_path}"),
+                        link_params.merge(disposition: 'inline'),
+                        {title: file_path}) %>
+          </div>
+         </div>
+        <% else %>
+            <i class="fa fa-fw fa-file" href="<%=@object.uuid%>/<%=file_path%>" ></i> <%= filename %></div>
+         </div>
+        <% end %>
+        </li>
+      <% end  # if file or directory %>
+    <% end  # file_tree.each %>
+    <%= raw(dirstack.map { |_| "</ul>" }.join("</li>")) %>
+  <% end  # if file_tree %>
+</div>
 
 <% content_for :footer_html do %>
 <div id="collection-sharing-modal-window" class="modal fade" role="dialog" aria-labelledby="myModalLabel" aria-hidden="true"></div>
 <% end %>
-
-</div>
