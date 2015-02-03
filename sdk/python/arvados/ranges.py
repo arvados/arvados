@@ -8,6 +8,12 @@ class Range(object):
     def __repr__(self):
         return "Range(\"%s\", %i, %i, %i)" % (self.locator, self.range_start, self.range_size, self.segment_offset)
 
+    def __eq__(self, other):
+        return (self.locator == other.locator and
+                self.range_start == other.range_start and
+                self.range_size == other.range_size and
+                self.segment_offset == other.segment_offset)
+
 def first_block(data_locators, range_start, range_size, debug=False):
     block_start = 0L
 

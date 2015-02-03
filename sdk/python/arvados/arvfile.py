@@ -583,6 +583,15 @@ class ArvadosFile(object):
         return cp
 
     @_synchronized
+    def __eq__(self, other):
+        if type(other) != ArvadosFile:
+            return False
+        return self._segments == other.segments()
+
+    def __neq__(self, other):
+        return not self.__eq__(other)
+
+    @_synchronized
     def set_unmodified(self):
         """Clear the modified flag"""
         self._modified = False
