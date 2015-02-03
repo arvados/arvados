@@ -325,4 +325,38 @@ class ApplicationControllerTest < ActionController::TestCase
       Rails.configuration.arvados_v1_base = orig_api_server
     end
   end
+
+  [
+    ['collections', false, api_fixture('collections')['user_agreement_in_anonymously_accessible_project']],
+    ['jobs', false, api_fixture('jobs')['running_job_in_publicly_accessible_project']],
+    ['pipeline_instances', false, api_fixture('pipeline_instances')['pipeline_in_publicly_accessible_project']],
+    ['pipeline_templates', false, api_fixture('pipeline_templates')['pipeline_template_in_publicly_accessible_project']],
+    ['projects', false, api_fixture('groups')['anonymously_accessible_project']],
+  ].each do |controller, use_config, fixture|
+    test "#{controller} show method with anonymous config enabled #{use_config}" do
+      if use_config
+        Rails.configuration.anonymous_user_token = api_fixture('api_client_authorizations')['anonymous']['api_token']
+      else
+        Rails.configuration.anonymous_user_token = false
+      end
+
+      case controller
+      when 'collections'
+        @controller = CollectionsController.new
+      when 'jobs'
+        @controller = JobsController.new
+      when 'pipeline_instances'
+        @controller = PipelineInstancesController.new
+      when 'pipeline_templates'
+        @controller = PipelineTemplatesController.new
+      when 'projects'
+        @controller = ProjectsController.new
+      end
+
+      get(:show, {id: fixture['uuid']})
+
+      assert_response :redirect
+      assert_match /welcome/, @response.redirect_url
+    end
+  end
 end

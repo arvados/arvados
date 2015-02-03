@@ -3,8 +3,13 @@ require "arvados/keep"
 class CollectionsController < ApplicationController
   include ActionController::Live
 
-  skip_around_filter(:require_thread_api_token,
-                     only: [:show_file, :show_file_links, :show])
+  if Rails.configuration.anonymous_user_token
+    skip_around_filter(:require_thread_api_token,
+                       only: [:show_file, :show_file_links, :show])
+  else
+    skip_around_filter(:require_thread_api_token,
+                       only: [:show_file, :show_file_links])
+  end
   skip_before_filter(:find_object_by_uuid,
                      only: [:provenance, :show_file, :show_file_links])
   # We depend on show_file to display the user agreement:

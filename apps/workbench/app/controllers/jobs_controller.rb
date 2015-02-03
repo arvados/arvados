@@ -1,5 +1,7 @@
 class JobsController < ApplicationController
-  skip_around_filter :require_thread_api_token, only: :show
+  if Rails.configuration.anonymous_user_token
+    skip_around_filter :require_thread_api_token, only: :show
+  end
 
   include JobsHelper
 
