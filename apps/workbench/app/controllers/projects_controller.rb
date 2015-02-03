@@ -1,8 +1,9 @@
 class ProjectsController < ApplicationController
   before_filter :set_share_links, if: -> { defined? @object }
-  if Rails.configuration.anonymous_user_token
-    skip_around_filter :require_thread_api_token, only: [:show, :tab_counts]
-  end
+  skip_around_filter :require_thread_api_token, if: proc { |ctrl|
+    Rails.configuration.anonymous_user_token and
+    %w(show tab_counts).include? ctrl.action_name
+  }
 
   def model_class
     Group

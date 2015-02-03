@@ -1,9 +1,10 @@
 class PipelineInstancesController < ApplicationController
   skip_before_filter :find_object_by_uuid, only: :compare
   before_filter :find_objects_by_uuid, only: :compare
-  if Rails.configuration.anonymous_user_token
-    skip_around_filter :require_thread_api_token, only: :show
-  end
+  skip_around_filter :require_thread_api_token, if: proc { |ctrl|
+    Rails.configuration.anonymous_user_token and
+    'show' == ctrl.action_name
+  }
 
   include PipelineInstancesHelper
   include PipelineComponentsHelper
