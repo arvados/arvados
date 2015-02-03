@@ -12,6 +12,7 @@ from .arvfile import ArvadosFileBase, split, ArvadosFile, ArvadosFileWriter, Arv
 from keep import *
 from .stream import StreamReader, normalize_stream, locator_block_size
 from .ranges import Range, LocatorAndRange
+from .safeapi import SafeApi
 import config
 import errors
 import util
@@ -695,7 +696,7 @@ class SynchronizedCollectionBase(CollectionBase):
         if p[0] == '.':
             del p[0]
 
-        if len(p) > 0:
+        if p and p[0]:
             item = self._items.get(p[0])
             if len(p) == 1:
                 # item must be a file
@@ -865,7 +866,7 @@ class SynchronizedCollectionBase(CollectionBase):
 
     @_must_be_writable
     @_synchronized
-    def copyto(self, target_path, source_path, source_collection=None, overwrite=False):
+    def copy(self, source_path, target_path, source_collection=None, overwrite=False):
         """
         copyto('/foo', '/bar') will overwrite 'foo' if it exists.
         copyto('/foo/', '/bar') will place 'bar' in subcollection 'foo'
@@ -881,13 +882,17 @@ class SynchronizedCollectionBase(CollectionBase):
 
         # Find parent collection the target path
         tp = target_path.split("/")
-        target_dir = self.find(tp[0:-1].join("/"), create=True, create_collection=True)
+        target_dir = self.find("/".join(tp[0:-1]), create=True, create_collection=True)
 
         # Determine the name to use.
         target_name = tp[-1] if tp[-1] else sp[-1]
 
-        if target_name in target_dir and not overwrite:
-            raise IOError((errno.EEXIST, "File already exists"))
+        if target_name in target_dir:
+            if isinstance(target_dir[target_name], SynchronizedCollectionBase):
+                target_dir = target_dir[target_name]
+                target_name = sp[-1]
+            elif not overwrite:
+                raise IOError((errno.EEXIST, "File already exists"))
 
         # Actually make the copy.
         dup = source_obj.clone(target_dir)
@@ -929,7 +934,7 @@ class SynchronizedCollectionBase(CollectionBase):
                     self[k].merge(other[k])
                 else:
                     if self[k] != other[k]:
-                        name = "%s~conflict-%s~" % (k, time.strftime("%Y-%m-%d~%H:%M%:%S",
+                        name = "%s~conflict-%s~" % (k, time.strftime("%Y-%m-%d_%H:%M%:%S",
                                                                      time.gmtime()))
                         self[name] = other[k].clone(self)
                         self.notify(self, name, ADD, self[name])
@@ -1041,7 +1046,7 @@ class Collection(SynchronizedCollectionBase):
     @_synchronized
     def _my_api(self):
         if self._api_client is None:
-            self._api_client = arvados.api.SafeApi(self._config)
+            self._api_client = arvados.SafeApi(self._config)
             self._keep_client = self._api_client.keep
         return self._api_client
 

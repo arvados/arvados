@@ -11,6 +11,7 @@ import time
 
 import arvados.commands._util as arv_cmd
 from arvados_fuse import *
+from arvados.api import SafeApi
 
 logger = logging.getLogger('arvados.arv-mount')
 

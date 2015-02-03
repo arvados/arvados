@@ -314,39 +314,6 @@ class ArvadosFileWriterTestCase(unittest.TestCase):
             self.assertEqual(False, c.modified())
             self.assertEqual("01234567", keep.get("2e9ec317e197819358fbc43afca7d837+8"))
 
-    def test_remove(self):
-        with import_manifest('. 781e5e245d69b566979b86e28d23f2c7+10 0:10:count1.txt 0:10:count2.txt\n', sync=SYNC_EXPLICIT) as c:
-            self.assertEqual(". 781e5e245d69b566979b86e28d23f2c7+10 0:10:count1.txt 0:10:count2.txt\n", export_manifest(c))
-            self.assertTrue("count1.txt" in c)
-            c.remove("count1.txt")
-            self.assertFalse("count1.txt" in c)
-            self.assertEqual(". 781e5e245d69b566979b86e28d23f2c7+10 0:10:count2.txt\n", export_manifest(c))
-
-    def test_remove_in_subdir(self):
-        with import_manifest('. 781e5e245d69b566979b86e28d23f2c7+10 0:10:count1.txt\n./foo 781e5e245d69b566979b86e28d23f2c7+10 0:10:count2.txt\n', sync=SYNC_EXPLICIT) as c:
-            c.remove("foo/count2.txt")
-            self.assertEqual(". 781e5e245d69b566979b86e28d23f2c7+10 0:10:count1.txt\n", export_manifest(c))
-
-    def test_remove_empty_subdir(self):
-        with import_manifest('. 781e5e245d69b566979b86e28d23f2c7+10 0:10:count1.txt\n./foo 781e5e245d69b566979b86e28d23f2c7+10 0:10:count2.txt\n', sync=SYNC_EXPLICIT) as c:
-            c.remove("foo/count2.txt")
-            c.remove("foo")
-            self.assertEqual(". 781e5e245d69b566979b86e28d23f2c7+10 0:10:count1.txt\n", export_manifest(c))
-
-    def test_remove_empty_subdir(self):
-        with import_manifest('. 781e5e245d69b566979b86e28d23f2c7+10 0:10:count1.txt\n./foo 781e5e245d69b566979b86e28d23f2c7+10 0:10:count2.txt\n', sync=SYNC_EXPLICIT) as c:
-            with self.assertRaises(IOError):
-                c.remove("foo")
-            c.remove("foo", rm_r=True)
-            self.assertEqual(". 781e5e245d69b566979b86e28d23f2c7+10 0:10:count1.txt\n", export_manifest(c))
-
-    def test_prefetch(self):
-        keep = ArvadosFileWriterTestCase.MockKeep({"2e9ec317e197819358fbc43afca7d837+8": "01234567", "e8dc4081b13434b45189a720b77b6818+8": "abcdefgh"})
-        with import_manifest(". 2e9ec317e197819358fbc43afca7d837+8 e8dc4081b13434b45189a720b77b6818+8 0:16:count.txt\n", keep=keep) as c:
-            r = c.open("count.txt", "r")
-            self.assertEqual("0123", r.read(4))
-        self.assertTrue("2e9ec317e197819358fbc43afca7d837+8" in keep.requests)
-        self.assertTrue("e8dc4081b13434b45189a720b77b6818+8" in keep.requests)
 
 class ArvadosFileReaderTestCase(StreamFileReaderTestCase):
     class MockParent(object):
@@ -399,6 +366,14 @@ class ArvadosFileReaderTestCase(StreamFileReaderTestCase):
         sfile = self.make_count_reader(nocache=True)
         sfile.read(5)
         self.assertEqual(3, sfile.tell())
+
+    def test_prefetch(self):
+        keep = ArvadosFileWriterTestCase.MockKeep({"2e9ec317e197819358fbc43afca7d837+8": "01234567", "e8dc4081b13434b45189a720b77b6818+8": "abcdefgh"})
+        with import_manifest(". 2e9ec317e197819358fbc43afca7d837+8 e8dc4081b13434b45189a720b77b6818+8 0:16:count.txt\n", keep=keep) as c:
+            r = c.open("count.txt", "r")
+            self.assertEqual("0123", r.read(4))
+        self.assertTrue("2e9ec317e197819358fbc43afca7d837+8" in keep.requests)
+        self.assertTrue("e8dc4081b13434b45189a720b77b6818+8" in keep.requests)
 
 
 class ArvadosFileReadTestCase(unittest.TestCase, StreamRetryTestMixin):

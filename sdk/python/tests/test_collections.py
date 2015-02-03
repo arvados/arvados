@@ -15,6 +15,8 @@ import unittest
 import run_test_server
 import arvados_testutil as tutil
 from arvados.ranges import Range, LocatorAndRange
+from arvados import import_manifest, export_manifest
+from arvados.arvfile import SYNC_EXPLICIT
 
 class TestResumableWriter(arvados.ResumableCollectionWriter):
     KEEP_BLOCK_SIZE = 1024  # PUT to Keep every 1K.
@@ -819,6 +821,54 @@ class NewCollectionTestCase(unittest.TestCase, CollectionTestMixin):
 . 8b22da26f9f433dea0a10e5ec66d73ba+43 0:43:md5sum.txt
 """
         self.assertEqual(". 5348b82a029fd9e971a811ce1f71360b+43 085c37f02916da1cad16f93c54d899b7+41 8b22da26f9f433dea0a10e5ec66d73ba+43 0:127:md5sum.txt\n", arvados.export_manifest(arvados.Collection(m1)))
+
+
+    def test_remove(self):
+        with arvados.import_manifest('. 781e5e245d69b566979b86e28d23f2c7+10 0:10:count1.txt 0:10:count2.txt\n', sync=SYNC_EXPLICIT) as c:
+            self.assertEqual(". 781e5e245d69b566979b86e28d23f2c7+10 0:10:count1.txt 0:10:count2.txt\n", export_manifest(c))
+            self.assertTrue("count1.txt" in c)
+            c.remove("count1.txt")
+            self.assertFalse("count1.txt" in c)
+            self.assertEqual(". 781e5e245d69b566979b86e28d23f2c7+10 0:10:count2.txt\n", export_manifest(c))
+
+    def test_remove_in_subdir(self):
+        with arvados.import_manifest('. 781e5e245d69b566979b86e28d23f2c7+10 0:10:count1.txt\n./foo 781e5e245d69b566979b86e28d23f2c7+10 0:10:count2.txt\n', sync=SYNC_EXPLICIT) as c:
+            c.remove("foo/count2.txt")
+            self.assertEqual(". 781e5e245d69b566979b86e28d23f2c7+10 0:10:count1.txt\n", export_manifest(c))
+
+    def test_remove_empty_subdir(self):
+        with arvados.import_manifest('. 781e5e245d69b566979b86e28d23f2c7+10 0:10:count1.txt\n./foo 781e5e245d69b566979b86e28d23f2c7+10 0:10:count2.txt\n', sync=SYNC_EXPLICIT) as c:
+            c.remove("foo/count2.txt")
+            c.remove("foo")
+            self.assertEqual(". 781e5e245d69b566979b86e28d23f2c7+10 0:10:count1.txt\n", export_manifest(c))
+
+    def test_remove_nonempty_subdir(self):
+        with arvados.import_manifest('. 781e5e245d69b566979b86e28d23f2c7+10 0:10:count1.txt\n./foo 781e5e245d69b566979b86e28d23f2c7+10 0:10:count2.txt\n', sync=SYNC_EXPLICIT) as c:
+            with self.assertRaises(IOError):
+                c.remove("foo")
+            c.remove("foo", rm_r=True)
+            self.assertEqual(". 781e5e245d69b566979b86e28d23f2c7+10 0:10:count1.txt\n", export_manifest(c))
+
+    def test_copy_to_dir1(self):
+        with arvados.import_manifest('. 781e5e245d69b566979b86e28d23f2c7+10 0:10:count1.txt\n', sync=SYNC_EXPLICIT) as c:
+            c.copy("count1.txt", "foo/count2.txt")
+            self.assertEqual(". 781e5e245d69b566979b86e28d23f2c7+10 0:10:count1.txt\n./foo 781e5e245d69b566979b86e28d23f2c7+10 0:10:count2.txt\n", export_manifest(c))
+
+    def test_copy_to_dir2(self):
+        with arvados.import_manifest('. 781e5e245d69b566979b86e28d23f2c7+10 0:10:count1.txt\n', sync=SYNC_EXPLICIT) as c:
+            c.copy("count1.txt", "foo")
+            self.assertEqual(". 781e5e245d69b566979b86e28d23f2c7+10 0:10:count1.txt\n./foo 781e5e245d69b566979b86e28d23f2c7+10 0:10:count1.txt\n", export_manifest(c))
+
+    def test_copy_to_dir2(self):
+        with arvados.import_manifest('. 781e5e245d69b566979b86e28d23f2c7+10 0:10:count1.txt\n', sync=SYNC_EXPLICIT) as c:
+            c.copy("count1.txt", "foo/")
+            self.assertEqual(". 781e5e245d69b566979b86e28d23f2c7+10 0:10:count1.txt\n./foo 781e5e245d69b566979b86e28d23f2c7+10 0:10:count1.txt\n", export_manifest(c))
+
+    def test_copy_file(self):
+        with arvados.import_manifest('. 781e5e245d69b566979b86e28d23f2c7+10 0:10:count1.txt\n', sync=SYNC_EXPLICIT) as c:
+            c.copy("count1.txt", "count2.txt")
+            self.assertEqual(". 781e5e245d69b566979b86e28d23f2c7+10 0:10:count1.txt 0:10:count2.txt\n", export_manifest(c))
+
 
 if __name__ == '__main__':
     unittest.main()

@@ -581,8 +581,7 @@ class ArvadosFile(object):
     @_synchronized
     def clone(self, new_parent):
         """Make a copy of this file."""
-        cp = ArvadosFile()
-        cp.parent = new_parent
+        cp = ArvadosFile(new_parent)
         cp._modified = False
 
         map_loc = {}
@@ -593,7 +592,7 @@ class ArvadosFile(object):
                     map_loc[r.locator] = self.parent._my_block_manager().dup_block(r.locator, cp).blockid
                 new_loc = map_loc[r.locator]
 
-            cp.segments.append(Range(new_loc, r.range_start, r.range_size, r.segment_offset))
+            cp._segments.append(Range(new_loc, r.range_start, r.range_size, r.segment_offset))
 
         return cp
 
