@@ -435,6 +435,7 @@ class ApplicationController < ActionController::Base
 
   protected
 
+  helper_method :strip_token_from_path
   def strip_token_from_path(path)
     path.sub(/([\?&;])api_token=[^&;]*[&;]?/, '\1')
   end
@@ -497,7 +498,7 @@ class ApplicationController < ActionController::Base
       else
         @object = model_class.find(params[:uuid])
       end
-    rescue ArvadosApiClient::NotFoundException, RuntimeError => error
+    rescue ArvadosApiClient::NotFoundException, ArvadosApiClient::NotLoggedInException, RuntimeError => error
       if error.is_a?(RuntimeError) and (error.message !~ /^argument to find\(/)
         raise
       end
