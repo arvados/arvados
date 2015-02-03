@@ -13,6 +13,10 @@
 
 <h2>Not Found</h2>
 
+<% if !current_user %>
+<p>You are not logged into Arvados. Please retry after log in.</p><br/>
+<% end %>
+
 <p>The <%= req_item %> was not found.
 
 <% if class_name %>
