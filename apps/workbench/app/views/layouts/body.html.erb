@@ -7,7 +7,7 @@
           <span class="icon-bar"></span>
           <span class="icon-bar"></span>
         </button>
-        <a class="navbar-brand" href="/" data-push=true><%= Rails.configuration.site_name.downcase rescue Rails.application.class.parent_name %> </a>
+        <a class="navbar-brand" href="/" data-push=true><%= Rails.configuration.site_name.downcase rescue Rails.application.class.parent_name %></a>
       </div>
 
       <div class="collapse navbar-collapse">
@@ -51,11 +51,7 @@
                   <li role="menuitem"><a href="/users/<%=current_user.uuid%>/profile" role="menuitem"><i class="fa fa-key fa-fw"></i> Manage profile</a></li>
                 <% end %>
                 <% end %>
-                <% if current_user %>
-                  <li role="menuitem"><a href="<%= logout_path %>" role="menuitem"><i class="fa fa-sign-out fa-fw"></i> Log out</a></li>
-                <% else %>
-                  <li><a href="<%= arvados_api_client.arvados_login_url(return_to: root_url) %>">Log in</a></li>
-                <% end %>
+                <li role="menuitem"><a href="<%= logout_path %>" role="menuitem"><i class="fa fa-sign-out fa-fw"></i> Log out</a></li>
                 <% if user_notifications.any? %>
                   <li role="presentation" class="divider"></li>
                   <% user_notifications.each_with_index do |n, i| %>
