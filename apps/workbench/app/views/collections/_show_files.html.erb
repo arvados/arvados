@@ -20,9 +20,8 @@ function unselect_all_files() {
 %>
 
 <div class="selection-action-container" style="padding-left: <%=padding_left%>">
-  <% if !defined? no_checkboxes or !no_checkboxes %>
+  <% if Collection.creatable? and (!defined? no_checkboxes or !no_checkboxes) %>
   <div class="row">
-    <% if current_user %>
     <div class="pull-left">
       <div class="btn-group btn-group-sm">
         <button type="button" class="btn btn-default dropdown-toggle" data-toggle="dropdown">Selection... <span class="caret"></span></button>
@@ -46,7 +45,6 @@ function unselect_all_files() {
     <div class="pull-right">
       <input class="form-control filterable-control" data-filterable-target="ul#collection_files" id="file_regex" name="file_regex" placeholder="filename regex" type="text"/>
     </div>
-    <% end %>
   </div>
   <p/>
   <% end %>
