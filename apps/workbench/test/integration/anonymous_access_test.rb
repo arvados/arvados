@@ -10,18 +10,7 @@ class AnonymousAccessTest < ActionDispatch::IntegrationTest
     need_javascript
   end
 
-  def visit_publicly_accessible_project token=nil, path=nil
-    Rails.configuration.anonymous_user_token = api_fixture('api_client_authorizations')['anonymous']['api_token']
-
-    path = "/projects/#{api_fixture('groups')['anonymously_accessible_project']['uuid']}" if !path
-
-    if token
-      visit page_with_token(token, path)
-    else
-      visit path
-      assert_text 'Unrestricted public data' if path.include? 'anonymously_accessible_project'
-    end
-  end
+  PUBLIC_PROJECT = "/projects/#{api_fixture('groups')['anonymously_accessible_project']['uuid']}"
 
   def verify_site_navigation_anonymous_enabled user, is_active
     if user
@@ -52,19 +41,23 @@ class AnonymousAccessTest < ActionDispatch::IntegrationTest
     ['active', api_fixture('users')['active'], true, true],
   ].each do |token, user, is_active|
     test "visit public project as user #{token.inspect} when anonymous browsing is enabled" do
-      visit_publicly_accessible_project token
+      if !token
+        visit PUBLIC_PROJECT
+      else
+        visit page_with_token(token, PUBLIC_PROJECT)
+      end
+
       verify_site_navigation_anonymous_enabled user, is_active
     end
   end
 
   test "visit non-public project as anonymous when anonymous browsing is enabled and expect page not found" do
-    visit_publicly_accessible_project nil,
-        "/projects/#{api_fixture('groups')['aproject']['uuid']}"
+    visit "/projects/#{api_fixture('groups')['aproject']['uuid']}"
     assert_text 'Not Found'
   end
 
   test "anonymous user clicking on topnav sees login page" do
-    visit_publicly_accessible_project
+    visit PUBLIC_PROJECT
 
     # click on topnav
     click_link 'workbench:test'
@@ -72,7 +65,7 @@ class AnonymousAccessTest < ActionDispatch::IntegrationTest
   end
 
   test "selection actions when anonymous user accesses shared project" do
-    visit_publicly_accessible_project
+    visit PUBLIC_PROJECT
 
     assert_selector 'a', text: 'Data collections'
     assert_selector 'a', text: 'Jobs and pipelines'
@@ -93,7 +86,7 @@ class AnonymousAccessTest < ActionDispatch::IntegrationTest
   end
 
   test "anonymous user accesses data collections tab in shared project" do
-    visit_publicly_accessible_project
+    visit PUBLIC_PROJECT
     assert_text 'GNU General Public License'
 
     assert_selector 'a', text: 'Data collections'
@@ -120,13 +113,13 @@ class AnonymousAccessTest < ActionDispatch::IntegrationTest
     'pipelineInstance'
   ].each do |type|
     test "anonymous user accesses jobs and pipelines tab in shared project and clicks on #{type}" do
-      visit_publicly_accessible_project
+      visit PUBLIC_PROJECT
       assert_text 'GNU General Public License'
 
       click_link 'Jobs and pipelines'
       assert_text 'Pipeline in publicly accessible project'
 
-      # click on type specified collection
+      # click on the specified job
       if type.include? 'job'
         verify_job_row type
       else
@@ -143,7 +136,6 @@ class AnonymousAccessTest < ActionDispatch::IntegrationTest
 
     assert_text 'zzzzz-tpzed-xurymjxw79nv3jz' # modified by user
     assert_no_selector 'a', text: 'zzzzz-tpzed-xurymjxw79nv3jz'
-    #assert_no_selector 'a', text: 'Log'  # this is finding 'Log in'
     assert_no_selector 'a', text: 'Move job'
     assert_no_selector 'button', text: 'Cancel'
     assert_no_selector 'button', text: 'Re-run job'
@@ -162,7 +154,7 @@ class AnonymousAccessTest < ActionDispatch::IntegrationTest
   end
 
   test "anonymous user accesses pipeline templates tab in shared project" do
-    visit_publicly_accessible_project
+    visit PUBLIC_PROJECT
     assert_text 'GNU General Public License'
 
     assert_selector 'a', text: 'Pipeline templates'

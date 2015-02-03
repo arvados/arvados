@@ -120,6 +120,7 @@ test:
         - Software developer
         - IT
         - Other
+  anonymous_user_token: 4kg6k6lzmp9kj4cpkcoxie964cmvjahbt4fod9zru44k4jqdmi
 
 common:
   assets.js_compressor: false
