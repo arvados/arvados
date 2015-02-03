@@ -328,21 +328,35 @@ class ApplicationControllerTest < ActionController::TestCase
 
   [
     [CollectionsController.new, api_fixture('collections')['user_agreement_in_anonymously_accessible_project']],
+    [CollectionsController.new, api_fixture('collections')['user_agreement_in_anonymously_accessible_project'], false],
     [JobsController.new, api_fixture('jobs')['running_job_in_publicly_accessible_project']],
+    [JobsController.new, api_fixture('jobs')['running_job_in_publicly_accessible_project'], false],
     [PipelineInstancesController.new, api_fixture('pipeline_instances')['pipeline_in_publicly_accessible_project']],
+    [PipelineInstancesController.new, api_fixture('pipeline_instances')['pipeline_in_publicly_accessible_project'], false],
     [PipelineTemplatesController.new, api_fixture('pipeline_templates')['pipeline_template_in_publicly_accessible_project']],
+    [PipelineTemplatesController.new, api_fixture('pipeline_templates')['pipeline_template_in_publicly_accessible_project'], false],
     [ProjectsController.new, api_fixture('groups')['anonymously_accessible_project']],
-  ].each do |controller, fixture|
+    [ProjectsController.new, api_fixture('groups')['anonymously_accessible_project'], false],
+  ].each do |controller, fixture, anon_config=true|
     test "#{controller} show method with anonymous config enabled" do
+      if !anon_config
+        Rails.configuration.anonymous_user_token = false
+      end
+
       @controller = controller
 
       get(:show, {id: fixture['uuid']})
 
-      assert_response 200
-      if controller.class == JobsController
-        assert_includes @response.inspect, fixture['script']
+      if anon_config
+        assert_response 200
+        if controller.class == JobsController
+          assert_includes @response.inspect, fixture['script']
+        else
+          assert_includes @response.inspect, fixture['name']
+        end
       else
-        assert_includes @response.inspect, fixture['name']
+        assert_response :redirect
+        assert_match /\/users\/welcome/, @response.redirect_url
       end
     end
   end
