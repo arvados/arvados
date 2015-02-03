@@ -174,7 +174,8 @@ class CollectionsControllerTest < ActionController::TestCase
                      "using a reader token set the session's API token")
   end
 
-  [false, true].each do |anon_conf|
+  [false, api_fixture('api_client_authorizations')['anonymous']['api_token']].
+    each do |anon_conf|
     test "trying to get from Keep with an unscoped reader token prompts login (anon_configured=#{anon_conf})" do
       Rails.configuration.anonymous_user_token = anon_conf
       params = collection_params(:foo_file, 'foo')
