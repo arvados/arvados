@@ -9,21 +9,12 @@ _In order to use the @arv@ command, make sure that you have a "working environme
 
 h3. Usage
 
-@arv [global_options] resource_type resource_method [method_parameters]@
-
-h4. Global options
-
-- @--format=json@ := Output response as JSON. This is the default format.
-
-- @--format=yaml@ := Output response as YAML
-
-- @--format=uuid@ := Output only the UUIDs of object(s) in the API response, one per line.
-
+See the "CLI overview":{{site.baseurl}}/sdk/cli/index.html page.
 
 h3. Resource types and methods
 
 Get list of resource types
-@arv --resources@
+@arv --help@
 
 Get list of resource methods for the "user" resource type
 @arv user --help@
