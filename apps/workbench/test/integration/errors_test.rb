@@ -128,8 +128,7 @@ class ErrorsTest < ActionDispatch::IntegrationTest
 
   test "404 page checks if user not logged in and makes suggestion" do
     visit "/collections/#{BAD_UUID}"
-    assert_includes page.text, 'You are not logged into Arvados',
-                'Not found: You are not logged into Arvados'
+    assert_text 'you are not logged in'
   end
 
 end
