@@ -338,16 +338,11 @@ class ApplicationControllerTest < ActionController::TestCase
 
       get(:show, {id: fixture['uuid']})
 
-      if Rails.configuration.anonymous_user_token
-        assert_response 200
-        if controller.class == JobsController
-          assert_includes @response.inspect, fixture['script']
-        else
-          assert_includes @response.inspect, fixture['name']
-        end
+      assert_response 200
+      if controller.class == JobsController
+        assert_includes @response.inspect, fixture['script']
       else
-        assert_response :redirect
-        assert_match /\/users\/welcome/, @response.redirect_url
+        assert_includes @response.inspect, fixture['name']
       end
     end
   end
