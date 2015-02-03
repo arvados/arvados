@@ -4,11 +4,10 @@ class CollectionsController < ApplicationController
   include ActionController::Live
 
   skip_around_filter :require_thread_api_token, if: proc { |ctrl|
-    Rails.configuration.anonymous_user_token and
-    'show' == ctrl.action_name
+    (Rails.configuration.anonymous_user_token and
+     'show' == ctrl.action_name) or
+    %w(show_file show_file_links).include? ctrl.action_name
   }
-  skip_around_filter(:require_thread_api_token,
-                     only: [:show_file, :show_file_links])
   skip_before_filter(:find_object_by_uuid,
                      only: [:provenance, :show_file, :show_file_links])
   # We depend on show_file to display the user agreement:

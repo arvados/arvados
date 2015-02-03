@@ -174,12 +174,15 @@ class CollectionsControllerTest < ActionController::TestCase
                      "using a reader token set the session's API token")
   end
 
-  test "trying to get from Keep with an unscoped reader token prompts login" do
-    params = collection_params(:foo_file, 'foo')
-    params[:reader_token] =
-      api_fixture('api_client_authorizations')['active_noscope']['api_token']
-    get(:show_file, params)
-    assert_response :redirect
+  [false, true].each do |anon_conf|
+    test "trying to get from Keep with an unscoped reader token prompts login (anon_configured=#{anon_conf})" do
+      Rails.configuration.anonymous_user_token = anon_conf
+      params = collection_params(:foo_file, 'foo')
+      params[:reader_token] =
+        api_fixture('api_client_authorizations')['active_noscope']['api_token']
+      get(:show_file, params)
+      assert_response :redirect
+    end
   end
 
   test "can get a file with an unpermissioned auth but in-scope reader token" do
