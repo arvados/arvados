@@ -101,8 +101,13 @@ class ArvadosApiClient
     url.sub! '/arvados/v1/../../', '/'
 
     query = {
-      'api_token' => tokens[:arvados_api_token] || Thread.current[:arvados_api_token] || '',
-      'reader_tokens' => (tokens[:reader_tokens] || Thread.current[:reader_tokens] || []).to_json,
+      'api_token' => (tokens[:arvados_api_token] ||
+                      Thread.current[:arvados_api_token] ||
+                      ''),
+      'reader_tokens' => ((tokens[:reader_tokens] ||
+                           Thread.current[:reader_tokens] ||
+                           []) +
+                          [Rails.configuration.anonymous_user_token]).to_json,
     }
     if !data.nil?
       data.each do |k,v|
@@ -118,11 +123,6 @@ class ArvadosApiClient
       end
     else
       query["_method"] = "GET"
-    end
-
-    # Use anonymous token for GET requests when no api_token is available
-    if ((query["_method"] == "GET") or (query[:_method] == "GET")) && query["api_token"].empty?
-      query['api_token'] = Rails.configuration.anonymous_user_token
     end
 
     if @@profiling_enabled
