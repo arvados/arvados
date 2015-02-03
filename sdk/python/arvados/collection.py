@@ -858,8 +858,8 @@ class SynchronizedCollectionBase(CollectionBase):
             raise IOError((errno.ENOENT, "File not found"))
 
     def _cloneinto(self, target):
-        for k,v in self._items:
-            target._items[k] = v.clone(new_parent=target)
+        for k,v in self._items.items():
+            target._items[k] = v.clone(target)
 
     def clone(self):
         raise NotImplementedError()
@@ -867,9 +867,22 @@ class SynchronizedCollectionBase(CollectionBase):
     @_must_be_writable
     @_synchronized
     def copy(self, source_path, target_path, source_collection=None, overwrite=False):
-        """
-        copyto('/foo', '/bar') will overwrite 'foo' if it exists.
-        copyto('/foo/', '/bar') will place 'bar' in subcollection 'foo'
+        """Copy a file or subcollection to a new path in this collection.
+
+        :source_path:
+          Source file or subcollection
+
+        :target_path:
+          Destination file or path.  If the target path already exists and is a
+          subcollection, the item will be placed inside the subcollection.  If
+          the target path already exists and is a file, this will raise an error
+          unless you specify `overwrite=True`.
+
+        :source_collection:
+          Collection to copy `source_path` from (default `self`)
+
+        :overwrite:
+          Whether to overwrite target file if it already exists.
         """
         if source_collection is None:
             source_collection = self
@@ -934,12 +947,12 @@ class SynchronizedCollectionBase(CollectionBase):
                     self[k].merge(other[k])
                 else:
                     if self[k] != other[k]:
-                        name = "%s~conflict-%s~" % (k, time.strftime("%Y-%m-%d_%H:%M%:%S",
+                        name = "%s~conflict-%s~" % (k, time.strftime("%Y-%m-%d_%H:%M:%S",
                                                                      time.gmtime()))
-                        self[name] = other[k].clone(self)
+                        self._items[name] = other[k].clone(self)
                         self.notify(self, name, ADD, self[name])
             else:
-                self[k] = other[k].clone(self)
+                self._items[k] = other[k].clone(self)
                 self.notify(self, k, ADD, self[k])
 
     def portable_data_hash(self):
@@ -1143,7 +1156,7 @@ class Collection(SynchronizedCollectionBase):
     @_synchronized
     def clone(self, new_parent=None, new_sync=SYNC_READONLY, new_config=None):
         if new_config is None:
-            new_config = self.config
+            new_config = self._config
         c = Collection(parent=new_parent, config=new_config, sync=new_sync)
         if new_sync == SYNC_READONLY:
             c.lock = NoopLock()

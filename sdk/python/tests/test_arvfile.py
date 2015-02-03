@@ -372,8 +372,14 @@ class ArvadosFileReaderTestCase(StreamFileReaderTestCase):
         with import_manifest(". 2e9ec317e197819358fbc43afca7d837+8 e8dc4081b13434b45189a720b77b6818+8 0:16:count.txt\n", keep=keep) as c:
             r = c.open("count.txt", "r")
             self.assertEqual("0123", r.read(4))
-        self.assertTrue("2e9ec317e197819358fbc43afca7d837+8" in keep.requests)
-        self.assertTrue("e8dc4081b13434b45189a720b77b6818+8" in keep.requests)
+        self.assertIn("2e9ec317e197819358fbc43afca7d837+8", keep.requests)
+        self.assertIn("e8dc4081b13434b45189a720b77b6818+8", keep.requests)
+
+    def test__eq__(self):
+        with arvados.import_manifest('. 781e5e245d69b566979b86e28d23f2c7+10 0:10:count1.txt') as c1:
+            with arvados.import_manifest('. 781e5e245d69b566979b86e28d23f2c7+10 0:10:count1.txt') as c2:
+                self.assertTrue(c1["count1.txt"] == c2["count1.txt"])
+                self.assertFalse(c1["count1.txt"] != c2["count1.txt"])
 
 
 class ArvadosFileReadTestCase(unittest.TestCase, StreamRetryTestMixin):

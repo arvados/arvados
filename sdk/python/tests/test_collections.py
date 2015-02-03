@@ -826,9 +826,9 @@ class NewCollectionTestCase(unittest.TestCase, CollectionTestMixin):
     def test_remove(self):
         with arvados.import_manifest('. 781e5e245d69b566979b86e28d23f2c7+10 0:10:count1.txt 0:10:count2.txt\n', sync=SYNC_EXPLICIT) as c:
             self.assertEqual(". 781e5e245d69b566979b86e28d23f2c7+10 0:10:count1.txt 0:10:count2.txt\n", export_manifest(c))
-            self.assertTrue("count1.txt" in c)
+            self.assertIn("count1.txt", c)
             c.remove("count1.txt")
-            self.assertFalse("count1.txt" in c)
+            self.assertNotIn("count1.txt", c)
             self.assertEqual(". 781e5e245d69b566979b86e28d23f2c7+10 0:10:count2.txt\n", export_manifest(c))
 
     def test_remove_in_subdir(self):
@@ -868,6 +868,31 @@ class NewCollectionTestCase(unittest.TestCase, CollectionTestMixin):
         with arvados.import_manifest('. 781e5e245d69b566979b86e28d23f2c7+10 0:10:count1.txt\n', sync=SYNC_EXPLICIT) as c:
             c.copy("count1.txt", "count2.txt")
             self.assertEqual(". 781e5e245d69b566979b86e28d23f2c7+10 0:10:count1.txt 0:10:count2.txt\n", export_manifest(c))
+
+    def test_clone(self):
+        with arvados.import_manifest('. 781e5e245d69b566979b86e28d23f2c7+10 0:10:count1.txt\n./foo 781e5e245d69b566979b86e28d23f2c7+10 0:10:count2.txt\n', sync=SYNC_EXPLICIT) as c:
+            cl = c.clone()
+            self.assertEqual(". 781e5e245d69b566979b86e28d23f2c7+10 0:10:count1.txt\n./foo 781e5e245d69b566979b86e28d23f2c7+10 0:10:count2.txt\n", export_manifest(cl))
+
+    def test_merge1(self):
+        with arvados.import_manifest('. 781e5e245d69b566979b86e28d23f2c7+10 0:10:count1.txt', sync=SYNC_EXPLICIT) as c1:
+            with arvados.import_manifest('. 781e5e245d69b566979b86e28d23f2c7+10 0:10:count2.txt') as c2:
+                c1.merge(c2)
+                self.assertEqual(". 781e5e245d69b566979b86e28d23f2c7+10 0:10:count1.txt 0:10:count2.txt\n", export_manifest(c1))
+
+    def test_merge2(self):
+        with arvados.import_manifest('. 781e5e245d69b566979b86e28d23f2c7+10 0:10:count1.txt', sync=SYNC_EXPLICIT) as c1:
+            with arvados.import_manifest('. 781e5e245d69b566979b86e28d23f2c7+10 0:10:count1.txt') as c2:
+                c1.merge(c2)
+                self.assertEqual(". 781e5e245d69b566979b86e28d23f2c7+10 0:10:count1.txt\n", export_manifest(c1))
+
+    def test_merge3(self):
+        with arvados.import_manifest('. 781e5e245d69b566979b86e28d23f2c7+10 0:10:count1.txt', sync=SYNC_EXPLICIT) as c1:
+            with arvados.import_manifest('. 5348b82a029fd9e971a811ce1f71360b+43 0:10:count1.txt') as c2:
+                c1.merge(c2)
+                self.assertTrue(re.match(r". 781e5e245d69b566979b86e28d23f2c7\+10 5348b82a029fd9e971a811ce1f71360b\+43 0:10:count1.txt 10:10:count1.txt~conflict-\d\d\d\d-\d\d-\d\d_\d\d:\d\d:\d\d~\n", export_manifest(c1)))
+
+
 
 
 if __name__ == '__main__':

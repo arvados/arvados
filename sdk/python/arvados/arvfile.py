@@ -602,7 +602,7 @@ class ArvadosFile(object):
             return False
         return self._segments == other.segments()
 
-    def __neq__(self, other):
+    def __ne__(self, other):
         return not self.__eq__(other)
 
     @_synchronized
