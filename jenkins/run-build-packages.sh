@@ -208,7 +208,9 @@ build_and_scp_deb () {
   fi
 }
 
-source /etc/profile.d/rvm.sh
+if [[ -f /etc/profile.d/rvm.sh ]]; then
+  source /etc/profile.d/rvm.sh
+fi
 
 # Make all files world-readable -- jenkins runs with umask 027, and has checked
 # out our git tree here
@@ -409,7 +411,7 @@ build_and_scp_deb $GOPATH/bin/crunchstat=/usr/bin/crunchstat crunchstat 'Curover
 # prefix from only one of the dependencies of a package...  Maybe I could
 # whip up a patch and send it upstream, but that will be for another day. Ward,
 # 2014-05-15
-cd $WORKSPACE/debs2
+cd $WORKSPACE/debs
 # Python version numbering is obscure. Strip dashes and replace them with dots
 # to match our other version numbers. Cf. commit 4afcb8c, compliance with PEP-440.
 build_and_scp_deb $WORKSPACE/sdk/python python-arvados-python-client 'Curoverse, Inc.' 'python' "$(awk '($1 == "Version:"){ gsub(/-/,".",$2); print $2 }' $WORKSPACE/sdk/python/arvados_python_client.egg-info/PKG-INFO)" "--url=https://arvados.org" "--description=The Arvados Python SDK"
