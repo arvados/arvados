@@ -1,4 +1,4 @@
-<% if @object.state != "Running" && current_user.andand.is_active %>
+<% if @object.state != "Running" and Job.creatable? %>
   <button type="button" class="btn btn-sm btn-primary" data-toggle="modal" data-target="#jobRerunModal">
     <i class="fa fa-fw fa-gear"></i> Re-run job...
   </button>
