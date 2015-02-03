@@ -432,11 +432,11 @@ class KeepClientServiceTestCase(unittest.TestCase):
 
     def check_errors_from_last_retry(self, verb, exc_class):
         api_client = self.mock_n_keep_disks(2)
-        keep_client = arvados.KeepClient(api_client=api_client)
         req_mock = getattr(tutil, 'mock_{}_responses'.format(verb))(
             "retry error reporting test", 500, 500, 403, 403)
         with req_mock, tutil.skip_sleep, \
                 self.assertRaises(exc_class) as err_check:
+            keep_client = arvados.KeepClient(api_client=api_client)
             getattr(keep_client, verb)('d41d8cd98f00b204e9800998ecf8427e+0',
                                        num_retries=3)
         self.assertEqual([403, 403], [
@@ -453,9 +453,9 @@ class KeepClientServiceTestCase(unittest.TestCase):
         data = 'partial failure test'
         data_loc = '{}+{}'.format(hashlib.md5(data).hexdigest(), len(data))
         api_client = self.mock_n_keep_disks(3)
-        keep_client = arvados.KeepClient(api_client=api_client)
         with tutil.mock_put_responses(data_loc, 200, 500, 500) as req_mock, \
                 self.assertRaises(arvados.errors.KeepWriteError) as exc_check:
+            keep_client = arvados.KeepClient(api_client=api_client)
             keep_client.put(data)
         self.assertEqual(2, len(exc_check.exception.service_errors()))
 

@@ -8,7 +8,7 @@ import time
 from collections import deque
 from stat import *
 
-from .arvfile import ArvadosFileBase, split, ArvadosFile, ArvadosFileWriter, ArvadosFileReader, BlockManager, _synchronized, _must_be_writable
+from .arvfile import ArvadosFileBase, split, ArvadosFile, ArvadosFileWriter, ArvadosFileReader, BlockManager, _synchronized, _must_be_writable, SYNC_READONLY, SYNC_EXPLICIT, SYNC_LIVE, NoopLock
 from keep import *
 from .stream import StreamReader, normalize_stream, locator_block_size
 from .ranges import Range, LocatorAndRange
@@ -154,7 +154,6 @@ class CollectionReader(CollectionBase):
                          for sline in self._manifest_text.split("\n")
                          if sline]
 
-    @staticmethod
     def _populate_first(orig_func):
         # Decorator for methods that read actual Collection data.
         @functools.wraps(orig_func)
@@ -642,18 +641,13 @@ class ResumableCollectionWriter(CollectionWriter):
                 "resumable writer can't accept unsourced data")
         return super(ResumableCollectionWriter, self).write(data)
 
+ADD = "add"
+DEL = "del"
 
 class SynchronizedCollectionBase(CollectionBase):
-    SYNC_READONLY = 1
-    SYNC_EXPLICIT = 2
-    SYNC_LIVE = 3
-
-    ADD = "add"
-    DEL = "del"
-
     def __init__(self, parent=None):
         self.parent = parent
-        self._items = None
+        self._items = {}
 
     def _my_api(self):
         raise NotImplementedError()
@@ -694,7 +688,7 @@ class SynchronizedCollectionBase(CollectionBase):
           component.
 
         """
-        if create and self._sync_mode() == SynchronizedCollectionBase.SYNC_READONLY:
+        if create and self.sync_mode() == SYNC_READONLY:
             raise IOError((errno.EROFS, "Collection is read only"))
 
         p = path.split("/")
@@ -748,10 +742,11 @@ class SynchronizedCollectionBase(CollectionBase):
             raise ArgumentError("Bad mode '%s'" % mode)
         create = (mode != "r")
 
-        if create and self._sync_mode() == SynchronizedCollectionBase.SYNC_READONLY:
+        if create and self.sync_mode() == SYNC_READONLY:
             raise IOError((errno.EROFS, "Collection is read only"))
 
         f = self.find(path, create=create)
+
         if f is None:
             raise IOError((errno.ENOENT, "File not found"))
         if not isinstance(f, ArvadosFile):
@@ -761,9 +756,9 @@ class SynchronizedCollectionBase(CollectionBase):
             f.truncate(0)
 
         if mode == "r":
-            return ArvadosFileReader(f, path, mode)
+            return ArvadosFileReader(f, path, mode, num_retries=self.num_retries)
         else:
-            return ArvadosFileWriter(f, path, mode)
+            return ArvadosFileWriter(f, path, mode, num_retries=self.num_retries)
 
     @_synchronized
     def modified(self):
@@ -851,7 +846,7 @@ class SynchronizedCollectionBase(CollectionBase):
             if item is None:
                 raise IOError((errno.ENOENT, "File not found"))
             if len(p) == 1:
-                if isinstance(SynchronizedCollection, self._items[p[0]]) and len(self._items[p[0]]) > 0 and not rm_r:
+                if isinstance(self._items[p[0]], SynchronizedCollectionBase) and len(self._items[p[0]]) > 0 and not rm_r:
                     raise IOError((errno.ENOTEMPTY, "Subcollection not empty"))
                 del self._items[p[0]]
                 self.notify(self, DEL, p[0], None)
@@ -958,9 +953,9 @@ class Collection(SynchronizedCollectionBase):
                  config=None,
                  api_client=None,
                  keep_client=None,
-                 num_retries=0,
+                 num_retries=None,
                  block_manager=None,
-                 sync=Collection.SYNC_READONLY):
+                 sync=SYNC_READONLY):
         """:manifest_locator_or_text:
           One of Arvados collection UUID, block locator of
           a manifest, raw manifest text, or None (to create an empty collection).
@@ -984,15 +979,13 @@ class Collection(SynchronizedCollectionBase):
             Collection is read only.  No synchronization.  This mode will
             also forego locking, which gives better performance.
           :SYNC_EXPLICIT:
-            Synchronize on explicit request via `merge()` or `save()`
+            Synchronize on explicit request via `update()` or `save()`
           :SYNC_LIVE:
             Synchronize with server in response to background websocket events,
             on block write, or on file close.
 
         """
-
-        self.parent = parent
-        self._items = None
+        super(Collection, self).__init__(parent)
         self._api_client = api_client
         self._keep_client = keep_client
         self._block_manager = block_manager
@@ -1004,6 +997,7 @@ class Collection(SynchronizedCollectionBase):
         self._sync = sync
         self.lock = threading.RLock()
         self.callbacks = []
+        self.events = None
 
         if manifest_locator_or_text:
             if re.match(util.keep_locator_pattern, manifest_locator_or_text):
@@ -1021,11 +1015,11 @@ class Collection(SynchronizedCollectionBase):
             if self._sync == SYNC_LIVE:
                 if not self._manifest_locator or not re.match(util.collection_uuid_pattern, self._manifest_locator):
                     raise errors.ArgumentError("Cannot SYNC_LIVE unless a collection uuid is specified")
-                self.events = events.subscribe(arvados.api(), filters=[["object_uuid", "=", self._manifest_locator]], self.on_message)
+                self.events = events.subscribe(arvados.api(), [["object_uuid", "=", self._manifest_locator]], self.on_message)
 
     @staticmethod
     def create(name, owner_uuid=None, sync=SYNC_EXPLICIT):
-        c = Collection(sync=SYNC_EXPLICIT)
+        c = Collection(sync=sync)
         c.save_as(name, owner_uuid=owner_uuid, ensure_unique_name=True)
         return c
 
@@ -1035,9 +1029,12 @@ class Collection(SynchronizedCollectionBase):
     def sync_mode(self):
         return self._sync
 
+    def on_message(self):
+        self.update()
+
     @_synchronized
-    def on_message():
-        n = self._my_api().collections().get(uuid=self._manifest_locator, select=[["manifest_text"])).execute()
+    def update(self):
+        n = self._my_api().collections().get(uuid=self._manifest_locator, select=["manifest_text"]).execute()
         other = import_collection(n["manifest_text"])
         self.merge(other)
 
@@ -1092,7 +1089,6 @@ class Collection(SynchronizedCollectionBase):
             return e
 
     def _populate(self):
-        self._items = {}
         if self._manifest_locator is None and self._manifest_text is None:
             return
         error_via_api = None
@@ -1134,14 +1130,17 @@ class Collection(SynchronizedCollectionBase):
 
     def __exit__(self, exc_type, exc_value, traceback):
         """Support scoped auto-commit in a with: block"""
-        self.save(allow_no_locator=True)
+        if self._sync != SYNC_READONLY:
+            self.save(allow_no_locator=True)
         if self._block_manager is not None:
             self._block_manager.stop_threads()
 
     @_synchronized
-    def clone(self, new_parent=None, new_sync=Collection.SYNC_READONLY, new_config=self.config):
+    def clone(self, new_parent=None, new_sync=SYNC_READONLY, new_config=None):
+        if new_config is None:
+            new_config = self.config
         c = Collection(parent=new_parent, config=new_config, sync=new_sync)
-        if new_sync == Collection.SYNC_READONLY:
+        if new_sync == SYNC_READONLY:
             c.lock = NoopLock()
         c._items = {}
         self._cloneinto(c)
@@ -1227,9 +1226,9 @@ class Collection(SynchronizedCollectionBase):
         self.callbacks.remove(callback)
 
     @_synchronized
-    def notify(self, event):
+    def notify(self, collection, event, name, item):
         for c in self.callbacks:
-            c(event)
+            c(collection, event, name, item)
 
 class Subcollection(SynchronizedCollectionBase):
     """This is a subdirectory within a collection that doesn't have its own API
@@ -1239,7 +1238,7 @@ class Subcollection(SynchronizedCollectionBase):
         super(Subcollection, self).__init__(parent)
         self.lock = parent._root_lock()
 
-    def _root_lock():
+    def _root_lock(self):
         return self.parent._root_lock()
 
     def sync_mode(self):
@@ -1257,8 +1256,8 @@ class Subcollection(SynchronizedCollectionBase):
     def _populate(self):
         self.parent._populate()
 
-    def notify(self, event):
-        self.parent.notify(event)
+    def notify(self, collection, event, name, item):
+        self.parent.notify(collection, event, name, item)
 
     @_synchronized
     def clone(self, new_parent):
@@ -1267,7 +1266,12 @@ class Subcollection(SynchronizedCollectionBase):
         self._cloneinto(c)
         return c
 
-def import_manifest(manifest_text, into_collection=None, api_client=None, keep=None, num_retries=None):
+def import_manifest(manifest_text,
+                    into_collection=None,
+                    api_client=None,
+                    keep=None,
+                    num_retries=None,
+                    sync=SYNC_READONLY):
     """Import a manifest into a `Collection`.
 
     :manifest_text:
@@ -1283,15 +1287,21 @@ def import_manifest(manifest_text, into_collection=None, api_client=None, keep=N
     :keep:
       The keep client object that will be used when creating a new `Collection` object.
 
-    num_retries
+    :num_retries:
       the default number of api client and keep retries on error.
+
+    :sync:
+      Collection sync mode (only if into_collection is None)
     """
     if into_collection is not None:
         if len(into_collection) > 0:
             raise ArgumentError("Can only import manifest into an empty collection")
         c = into_collection
     else:
-        c = Collection(api_client=api_client, keep_client=keep, num_retries=num_retries)
+        c = Collection(api_client=api_client, keep_client=keep, num_retries=num_retries, sync=sync)
+
+    save_sync = c.sync_mode()
+    c._sync = None
 
     STREAM_NAME = 0
     BLOCKS = 1
@@ -1339,6 +1349,7 @@ def import_manifest(manifest_text, into_collection=None, api_client=None, keep=N
             state = STREAM_NAME
 
     c.set_unmodified()
+    c._sync = save_sync
     return c
 
 def export_manifest(item, stream_name=".", portable_locators=False):
@@ -1361,7 +1372,7 @@ def export_manifest(item, stream_name=".", portable_locators=False):
         for k in [s for s in sorted_keys if isinstance(item[s], ArvadosFile)]:
             v = item[k]
             st = []
-            for s in v.segments:
+            for s in v.segments():
                 loc = s.locator
                 if loc.startswith("bufferblock"):
                     loc = v.parent._my_block_manager()._bufferblocks[loc].locator()

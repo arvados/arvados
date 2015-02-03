@@ -10,6 +10,7 @@ import hashlib
 import threading
 import Queue
 import copy
+import errno
 
 def split(path):
     """split(path) -> streamname, filename
@@ -218,24 +219,24 @@ class StreamFileReader(ArvadosFileReaderBase):
 
 
 class BufferBlock(object):
-"""
-A BufferBlock is a stand-in for a Keep block that is in the process of being
-written.  Writers can append to it, get the size, and compute the Keep locator.
+    """
+    A BufferBlock is a stand-in for a Keep block that is in the process of being
+    written.  Writers can append to it, get the size, and compute the Keep locator.
 
-There are three valid states:
+    There are three valid states:
 
-WRITABLE
-  Can append to block.
+    WRITABLE
+      Can append to block.
 
-PENDING
-  Block is in the process of being uploaded to Keep, append is an error.
+    PENDING
+      Block is in the process of being uploaded to Keep, append is an error.
 
-COMMITTED
-  The block has been written to Keep, its internal buffer has been
-  released, fetching the block will fetch it via keep client (since we
-  discarded the internal copy), and identifiers referring to the BufferBlock
-  can be replaced with the block locator.
-"""
+    COMMITTED
+      The block has been written to Keep, its internal buffer has been
+      released, fetching the block will fetch it via keep client (since we
+      discarded the internal copy), and identifiers referring to the BufferBlock
+      can be replaced with the block locator.
+    """
     WRITABLE = 0
     PENDING = 1
     COMMITTED = 2
@@ -319,11 +320,15 @@ class NoopLock(object):
     def release(self):
         pass
 
+SYNC_READONLY = 1
+SYNC_EXPLICIT = 2
+SYNC_LIVE = 3
+
 def _must_be_writable(orig_func):
     # Decorator for methods that read actual Collection data.
     @functools.wraps(orig_func)
     def wrapper(self, *args, **kwargs):
-        if self.sync_mode() == SynchronizedCollectionBase.SYNC_READONLY:
+        if self.sync_mode() == SYNC_READONLY:
             raise IOError((errno.EROFS, "Collection is read only"))
         return orig_func(self, *args, **kwargs)
     return wrapper
@@ -344,6 +349,9 @@ class BlockManager(object):
         self._prefetch_queue = None
         self._prefetch_threads = None
         self.lock = threading.Lock()
+        self.prefetch_enabled = True
+        self.num_put_threads = 2
+        self.num_get_threads = 2
 
     @_synchronized
     def alloc_bufferblock(self, blockid=None, starting_capacity=2**14, owner=None):
@@ -450,9 +458,11 @@ class BlockManager(object):
                 # default download block cache in KeepClient.
                 self._put_queue = Queue.Queue(maxsize=2)
                 self._put_errors = Queue.Queue()
-                self._put_threads = [threading.Thread(target=worker, args=(self,)),
-                                     threading.Thread(target=worker, args=(self,))]
-                for t in self._put_threads:
+
+                self._put_threads = []
+                for i in xrange(0, self.num_put_threads):
+                    t = threading.Thread(target=worker, args=(self,))
+                    self._put_threads.append(t)
                     t.daemon = True
                     t.start()
 
@@ -507,6 +517,10 @@ class BlockManager(object):
         for the same block will not result in repeated downloads (unless the
         block is evicted from the cache.)  This method does not block.
         """
+
+        if not self.prefetch_enabled:
+            return
+
         def worker(self):
             """Background downloader thread."""
             while True:
@@ -523,9 +537,10 @@ class BlockManager(object):
                 return
             if self._prefetch_threads is None:
                 self._prefetch_queue = Queue.Queue()
-                self._prefetch_threads = [threading.Thread(target=worker, args=(self,)),
-                                          threading.Thread(target=worker, args=(self,))]
-                for t in self._prefetch_threads:
+                self._prefetch_threads = []
+                for i in xrange(0, self.num_get_threads):
+                    t = threading.Thread(target=worker, args=(self,))
+                    self._prefetch_threads.append(t)
                     t.daemon = True
                     t.start()
         self._prefetch_queue.put(locator)
@@ -609,7 +624,7 @@ class ArvadosFile(object):
         the file contents after `size` will be discarded.  If `size` is greater
         than the current size of the file, an IOError will be raised.
         """
-        if size < self.size():
+        if size < self._size():
             new_segs = []
             for r in self._segments:
                 range_end = r.range_start+r.range_size
@@ -626,7 +641,7 @@ class ArvadosFile(object):
 
             self._segments = new_segs
             self._modified = True
-        elif size > self.size():
+        elif size > self._size():
             raise IOError("truncate() does not support extending the file size")
 
     @_synchronized
@@ -634,7 +649,7 @@ class ArvadosFile(object):
         """
         read upto `size` bytes from the file starting at `offset`.
         """
-        if size == 0 or offset >= self.size():
+        if size == 0 or offset >= self._size():
             return ''
         data = []
 
@@ -666,7 +681,7 @@ class ArvadosFile(object):
         if write_total < self._current_bblock.size():
             # There is more data in the buffer block than is actually accounted for by segments, so
             # re-pack into a new buffer by copying over to a new buffer block.
-            new_bb = self.parent._my_block_manager().alloc_bufferblock(self._current_bblock.blockid, starting_size=write_total, owner=self)
+            new_bb = self.parent._my_block_manager().alloc_bufferblock(self._current_bblock.blockid, starting_capacity=write_total, owner=self)
             for t in bufferblock_segs:
                 new_bb.append(self._current_bblock.buffer_view[t.segment_offset:t.segment_offset+t.range_size].tobytes())
                 t.segment_offset = new_bb.size() - t.range_size
@@ -683,7 +698,7 @@ class ArvadosFile(object):
         if len(data) == 0:
             return
 
-        if offset > self.size():
+        if offset > self._size():
             raise ArgumentError("Offset is past the end of the file")
 
         if len(data) > config.KEEP_BLOCK_SIZE:
@@ -701,6 +716,7 @@ class ArvadosFile(object):
                 self._current_bblock = self.parent._my_block_manager().alloc_bufferblock(owner=self)
 
         self._current_bblock.append(data)
+
         replace_range(self._segments, offset, len(data), self._current_bblock.blockid, self._current_bblock.write_pointer - len(data))
 
     @_must_be_writable
@@ -720,9 +736,7 @@ class ArvadosFile(object):
             r = Range(lr.locator, last.range_start+last.range_size, lr.segment_size, lr.segment_offset)
             self._segments.append(r)
 
-
-    @_synchronized
-    def size(self):
+    def _size(self):
         """Get the file size"""
         if self._segments:
             n = self._segments[-1]
@@ -730,6 +744,10 @@ class ArvadosFile(object):
         else:
             return 0
 
+    @_synchronized
+    def size(self):
+        """Get the file size"""
+        return self._size()
 
 class ArvadosFileReader(ArvadosFileReaderBase):
     def __init__(self, arvadosfile, name, mode="r", num_retries=None):
