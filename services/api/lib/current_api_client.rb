@@ -146,8 +146,9 @@ module CurrentApiClient
         ActiveRecord::Base.transaction do
           $anonymous_group = Group.
           where(uuid: anonymous_group_uuid).first_or_create do |g|
-            g.update_attributes(name: "Anonymous group",
-                                description: "Anonymous group")
+            g.update_attributes(group_class: "role",
+                                name: "Anonymous users",
+                                description: "Anonymous users")
           end
         end
       end
