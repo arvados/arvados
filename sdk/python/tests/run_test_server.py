@@ -154,7 +154,7 @@ def run(leave_running_atexit=False):
         env=env)
 
     if not leave_running_atexit:
-        atexit.register(kill_server_pid, pidfile, passenger=True)
+        atexit.register(kill_server_pid, pid_file, passenger=True)
 
     match = re.search(r'Accessible via: https://(.*?)/', start_msg)
     if not match:
