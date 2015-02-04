@@ -75,7 +75,6 @@ class Arvados::V1::GroupsControllerTest < ActionController::TestCase
     get :contents, {
       id: groups(:aproject).uuid,
       format: :json,
-      include_linked: true,
     }
     check_project_contents_response
   end
@@ -85,7 +84,6 @@ class Arvados::V1::GroupsControllerTest < ActionController::TestCase
     get :contents, {
       id: groups(:aproject).uuid,
       format: :json,
-      include_linked: true,
     }
     check_project_contents_response
   end
@@ -176,7 +174,6 @@ class Arvados::V1::GroupsControllerTest < ActionController::TestCase
     authorize_with :project_viewer
     get :contents, {
       format: :json,
-      include_linked: false,
       filters: [['uuid', 'is_a', 'arvados#specimen']]
     }
     assert_response :success

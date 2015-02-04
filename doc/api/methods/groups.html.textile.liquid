@@ -16,17 +16,13 @@ Required arguments are displayed in %{background:#ccffcc}green%.
 
 h2. contents
 
-Retrieve a list of items which are associated with the given group by ownership (i.e., the group owns the item) or a "name" link (i.e., a "name" link referencing the item).
+Retrieve a list of items which are associated with the given group by ownership (i.e., the group owns the item).
 
 Arguments:
 
 table(table table-bordered table-condensed).
 |_. Argument |_. Type |_. Description |_. Location |_. Example |
 {background:#ccffcc}.|uuid|string|The UUID of the group in question.|path||
-|include_linked|boolean|If false, results will only include items whose @owner_uuid@ attribute is the specified group. If true, results will additionally include items for which a "name" link exists.|path|{white-space:nowrap}. @false@ (default)
-@true@|
-
-If @include_linked@ is @true@, the @"links"@ field in the response will contain the "name" links referencing the objects in the @"items"@ field.
 
 h2. create
 
