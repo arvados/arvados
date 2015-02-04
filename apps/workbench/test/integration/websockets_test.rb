@@ -65,7 +65,8 @@ class WebsocketTest < ActionDispatch::IntegrationTest
       assert_text '1001 hello'
 
       # Check that new value of scrollTop is greater than the old one
-      assert page.evaluate_script("$('#event_log_div').scrollTop()") > old_top
+      new_top = page.evaluate_script("$('#event_log_div').scrollTop()")
+      assert_operator new_top, :>, old_top
 
       # Now scroll to 30 pixels from the top
       page.execute_script "$('#event_log_div').scrollTop(30)"

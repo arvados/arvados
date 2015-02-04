@@ -133,7 +133,7 @@ module ApplicationHelper
         end
       end
       style_opts[:class] = (style_opts[:class] || '') + ' nowrap'
-      if opts[:no_link]
+      if opts[:no_link] or (resource_class == User && !current_user)
         raw(link_name)
       else
         (link_to raw(link_name), { controller: resource_class.to_s.tableize, action: 'show', id: ((opts[:name_link].andand.uuid) || link_uuid) }, style_opts) + raw(tags)
