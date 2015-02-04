@@ -6,11 +6,6 @@ class Arvados::V1::GroupsController < ApplicationController
               uuid: {
                 type: 'string', required: false, default: nil
               },
-              # include_linked returns name links, which are obsolete, so
-              # remove it when clients have been migrated.
-              include_linked: {
-                type: 'boolean', required: false, default: false
-              },
             })
   end
 
@@ -35,23 +30,11 @@ class Arvados::V1::GroupsController < ApplicationController
   end
 
   def contents
-    # Set @objects:
-    # include_linked returns name links, which are obsolete, so
-    # remove it when clients have been migrated.
-    load_searchable_objects(owner_uuid: @object.andand.uuid,
-                            include_linked: params[:include_linked])
-    sql = 'link_class=? and head_uuid in (?)'
-    sql_params = ['name', @objects.collect(&:uuid)]
-    if @object
-      sql += ' and tail_uuid=?'
-      sql_params << @object.uuid
-    end
-    @links = Link.where sql, *sql_params
+    load_searchable_objects(owner_uuid: @object.andand.uuid)
     @object_list = {
       :kind  => "arvados#objectList",
       :etag => "",
       :self_link => "",
-      :links => @links.as_api_response(nil),
       :offset => @offset,
       :limit => @limit,
       :items_available => @items_available,
