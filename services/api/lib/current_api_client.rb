@@ -60,7 +60,7 @@ module CurrentApiClient
         Thread.current[:user] = User.new(is_admin: true,
                                          is_active: true,
                                          uuid: system_user_uuid)
-        User.where('uuid=?', system_user_uuid).
+        User.where(uuid: system_user_uuid).
           first_or_create!(is_active: true,
                            is_admin: true,
                            email: 'root',
@@ -79,6 +79,7 @@ module CurrentApiClient
           Group.where(uuid: system_group_uuid).
             first_or_create!(name: "System group",
                              description: "System group") do |g|
+            g.save!
             User.all.collect(&:uuid).each do |user_uuid|
               Link.create!(link_class: 'permission',
                            name: 'can_manage',
@@ -148,18 +149,19 @@ module CurrentApiClient
   def anonymous_user
     $anonymous_user = check_cache $anonymous_user do
       act_as_system_user do
-        anon = User.where('uuid=?', anonymous_user_uuid).
+        User.where(uuid: anonymous_user_uuid).
           first_or_create!(is_active: false,
                            is_admin: false,
                            email: 'anonymous',
                            first_name: 'Anonymous',
-                           last_name: '')
-        Link.where(tail_uuid: anonymous_user_uuid,
-                   head_uuid: anonymous_group_uuid,
-                   link_class: 'permission',
-                   name: 'can_read').
-          first_or_create!
-        anon
+                           last_name: '') do |u|
+          u.save!
+          Link.where(tail_uuid: anonymous_user_uuid,
+                     head_uuid: anonymous_group.uuid,
+                     link_class: 'permission',
+                     name: 'can_read').
+            first_or_create!
+        end
       end
     end
   end
@@ -172,7 +174,7 @@ module CurrentApiClient
     $empty_collection = check_cache $empty_collection do
       act_as_system_user do
         ActiveRecord::Base.transaction do
-          $empty_collection = Collection.
+          Collection.
             where(portable_data_hash: empty_collection_uuid).
             first_or_create!(manifest_text: '', owner_uuid: anonymous_group.uuid)
         end
