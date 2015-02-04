@@ -402,6 +402,30 @@ job_with_latest_version:
   runtime_constraints: {}
   state: Complete
 
+running_job_in_publicly_accessible_project:
+  uuid: zzzzz-8i9sb-n7omg50bvt0m1nf
+  owner_uuid: zzzzz-j7d0g-zhxawtyetzwc5f0
+  modified_by_user_uuid: zzzzz-tpzed-xurymjxw79nv3jz
+  repository: foo
+  script: running_job_script
+  script_version: 4fe459abe02d9b365932b8f5dc419439ab4e2577
+  state: Running
+  script_parameters:
+    input: fa7aeb5140e2848d39b416daeef4ffc5+45
+    input2: "stuff2"
+
+completed_job_in_publicly_accessible_project:
+  uuid: zzzzz-8i9sb-jyq01m7in1jlofj
+  owner_uuid: zzzzz-j7d0g-zhxawtyetzwc5f0
+  modified_by_user_uuid: zzzzz-tpzed-xurymjxw79nv3jz
+  repository: foo
+  script: completed_job_script
+  script_version: 4fe459abe02d9b365932b8f5dc419439ab4e2577
+  state: Complete
+  script_parameters:
+    input: fa7aeb5140e2848d39b416daeef4ffc5+45
+    input2: "stuff2"
+
 # Test Helper trims the rest of the file
 
 # Do not add your fixtures below this line as the rest of this file will be trimmed by test_helper

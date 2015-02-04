@@ -1,4 +1,9 @@
 class JobsController < ApplicationController
+  skip_around_filter :require_thread_api_token, if: proc { |ctrl|
+    Rails.configuration.anonymous_user_token and
+    'show' == ctrl.action_name
+  }
+
   include JobsHelper
 
   def generate_provenance(jobs)
@@ -80,6 +85,8 @@ class JobsController < ApplicationController
   end
 
   def show_pane_list
-    %w(Status Log Details Provenance Advanced)
+    panes = %w(Status Log Details Provenance Advanced)
+    panes.delete 'Log' if !current_user
+    panes
   end
 end

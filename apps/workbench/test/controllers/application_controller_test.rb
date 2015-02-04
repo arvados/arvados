@@ -325,4 +325,41 @@ class ApplicationControllerTest < ActionController::TestCase
       Rails.configuration.arvados_v1_base = orig_api_server
     end
   end
+
+  [
+    [CollectionsController.new, api_fixture('collections')['user_agreement_in_anonymously_accessible_project']],
+    [CollectionsController.new, api_fixture('collections')['user_agreement_in_anonymously_accessible_project'], false],
+    [JobsController.new, api_fixture('jobs')['running_job_in_publicly_accessible_project']],
+    [JobsController.new, api_fixture('jobs')['running_job_in_publicly_accessible_project'], false],
+    [PipelineInstancesController.new, api_fixture('pipeline_instances')['pipeline_in_publicly_accessible_project']],
+    [PipelineInstancesController.new, api_fixture('pipeline_instances')['pipeline_in_publicly_accessible_project'], false],
+    [PipelineTemplatesController.new, api_fixture('pipeline_templates')['pipeline_template_in_publicly_accessible_project']],
+    [PipelineTemplatesController.new, api_fixture('pipeline_templates')['pipeline_template_in_publicly_accessible_project'], false],
+    [ProjectsController.new, api_fixture('groups')['anonymously_accessible_project']],
+    [ProjectsController.new, api_fixture('groups')['anonymously_accessible_project'], false],
+  ].each do |controller, fixture, anon_config=true|
+    test "#{controller} show method with anonymous config enabled" do
+      if anon_config
+        Rails.configuration.anonymous_user_token = api_fixture('api_client_authorizations')['anonymous']['api_token']
+      else
+        Rails.configuration.anonymous_user_token = false
+      end
+
+      @controller = controller
+
+      get(:show, {id: fixture['uuid']})
+
+      if anon_config
+        assert_response 200
+        if controller.class == JobsController
+          assert_includes @response.inspect, fixture['script']
+        else
+          assert_includes @response.inspect, fixture['name']
+        end
+      else
+        assert_response :redirect
+        assert_match /\/users\/welcome/, @response.redirect_url
+      end
+    end
+  end
 end
