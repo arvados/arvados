@@ -339,7 +339,9 @@ class ApplicationControllerTest < ActionController::TestCase
     [ProjectsController.new, api_fixture('groups')['anonymously_accessible_project'], false],
   ].each do |controller, fixture, anon_config=true|
     test "#{controller} show method with anonymous config enabled" do
-      if !anon_config
+      if anon_config
+        Rails.configuration.anonymous_user_token = api_fixture('api_client_authorizations')['anonymous']['api_token']
+      else
         Rails.configuration.anonymous_user_token = false
       end
 

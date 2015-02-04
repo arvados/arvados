@@ -8,6 +8,7 @@ class AnonymousAccessTest < ActionDispatch::IntegrationTest
 
   setup do
     need_javascript
+    Rails.configuration.anonymous_user_token = api_fixture('api_client_authorizations')['anonymous']['api_token']
   end
 
   PUBLIC_PROJECT = "/projects/#{api_fixture('groups')['anonymously_accessible_project']['uuid']}"
@@ -169,5 +170,11 @@ class AnonymousAccessTest < ActionDispatch::IntegrationTest
     # in template page
     assert_text 'script version'
     assert_no_selector 'a', text: 'Run this pipeline'
+  end
+
+  test "visit public project as anonymous when anonymous browsing is not enabled and expect login page" do
+    Rails.configuration.anonymous_user_token = false
+    visit "/projects/#{api_fixture('groups')['aproject']['uuid']}"
+    assert_text 'Please log in'
   end
 end
