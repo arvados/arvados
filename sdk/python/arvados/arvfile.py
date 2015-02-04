@@ -596,6 +596,13 @@ class ArvadosFile(object):
 
         return cp
 
+    @_must_be_writable
+    @_synchronized
+    def replace_contents(self, other):
+        """Replace segments of this file with segments from another `ArvadosFile` object."""
+        self._segments = other.segments()
+        self._modified = True
+
     @_synchronized
     def __eq__(self, other):
         if type(other) != ArvadosFile:
