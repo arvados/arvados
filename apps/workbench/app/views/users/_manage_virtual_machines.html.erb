@@ -6,7 +6,9 @@
   </p>
 
   <% if !@my_virtual_machines.any? %>
-    You do not seem to have access to any virtual machines. If you would like to request access, please contact your system admin.
+    You do not have access to any virtual machines. Many of the Arvados features depend on having shell access to a hosted VM.
+    &nbsp; <%= link_to 'Request shell access', request_shell_access_user_url(id: current_user.uuid),
+                        {class: 'btn btn-xs btn-primary', :remote => true}  %>
   <% else %>
     <table class="table virtual-machines-table">
       <colgroup>

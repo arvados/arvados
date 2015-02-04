@@ -302,6 +302,15 @@ class UsersController < ApplicationController
     end
   end
 
+  def request_shell_access
+    logger.warn "request_access: #{params.inspect}"
+    params['request_url'] = request.url
+    respond_to do |format|
+      RequestShellAccessReporter.send_request(current_user, params).deliver
+      format.js {render nothing: true}
+    end
+  end
+
   protected
 
   def find_current_links user

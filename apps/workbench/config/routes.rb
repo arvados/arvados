@@ -39,6 +39,7 @@ ArvadosWorkbench::Application.routes.draw do
     post 'unsetup', :on => :member
     get 'setup_popup', :on => :member
     get 'profile', :on => :member
+    get 'request_shell_access', :on => :member
   end
   get '/manage_account' => 'users#manage_account'
   get "/add_ssh_key_popup" => 'users#add_ssh_key_popup', :as => :add_ssh_key_popup
