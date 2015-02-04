@@ -23,6 +23,9 @@ Arguments:
 table(table table-bordered table-condensed).
 |_. Argument |_. Type |_. Description |_. Location |_. Example |
 {background:#ccffcc}.|uuid|string|The UUID of the group in question.|path||
+|limit|integer (default 100)|Maximum number of items to return.|query||
+|order|string|Order in which to return matching items.  Sort within a resource type by prefixing the attribute with the resource name and a dot.|query|@"collections.modified_at desc"@|
+|filters|array|Conditions for filtering items.|query|@[["uuid", "is_a", "arvados#job"]]@|
 
 h2. create
 
