@@ -608,8 +608,10 @@ class ArvadosFile(object):
             return True
         if type(other) != ArvadosFile:
             return False
+
+        s = other.segments()
         with self.lock:
-            return self._segments == other.segments()
+            return self._segments == s
 
     def __ne__(self, other):
         return not self.__eq__(other)

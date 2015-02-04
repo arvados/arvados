@@ -877,10 +877,10 @@ class NewCollectionTestCase(unittest.TestCase, CollectionTestMixin):
     def test_diff1(self):
         c1 = arvados.import_manifest('. 781e5e245d69b566979b86e28d23f2c7+10 0:10:count1.txt', sync=SYNC_EXPLICIT)
         c2 = arvados.import_manifest('. 5348b82a029fd9e971a811ce1f71360b+43 0:10:count2.txt')
-        d = c1.diff(c2)
+        d = c2.diff(c1)
         self.assertEqual(d, [('del', './count2.txt', c2["count2.txt"]),
                              ('add', './count1.txt', c1["count1.txt"])])
-        d = c2.diff(c1)
+        d = c1.diff(c2)
         self.assertEqual(d, [('del', './count1.txt', c1["count1.txt"]),
                              ('add', './count2.txt', c2["count2.txt"])])
         self.assertNotEqual(c1.manifest_text(), c2.manifest_text())
@@ -890,9 +890,9 @@ class NewCollectionTestCase(unittest.TestCase, CollectionTestMixin):
     def test_diff2(self):
         c1 = arvados.import_manifest('. 781e5e245d69b566979b86e28d23f2c7+10 0:10:count1.txt', sync=SYNC_EXPLICIT)
         c2 = arvados.import_manifest('. 781e5e245d69b566979b86e28d23f2c7+10 0:10:count1.txt')
-        d = c1.diff(c2)
-        self.assertEqual(d, [])
         d = c2.diff(c1)
+        self.assertEqual(d, [])
+        d = c1.diff(c2)
         self.assertEqual(d, [])
 
         self.assertEqual(c1.manifest_text(), c2.manifest_text())
@@ -902,9 +902,9 @@ class NewCollectionTestCase(unittest.TestCase, CollectionTestMixin):
     def test_diff3(self):
         c1 = arvados.import_manifest('. 781e5e245d69b566979b86e28d23f2c7+10 0:10:count1.txt', sync=SYNC_EXPLICIT)
         c2 = arvados.import_manifest('. 5348b82a029fd9e971a811ce1f71360b+43 0:10:count1.txt')
-        d = c1.diff(c2)
-        self.assertEqual(d, [('mod', './count1.txt', c2["count1.txt"], c1["count1.txt"])])
         d = c2.diff(c1)
+        self.assertEqual(d, [('mod', './count1.txt', c2["count1.txt"], c1["count1.txt"])])
+        d = c1.diff(c2)
         self.assertEqual(d, [('mod', './count1.txt', c1["count1.txt"], c2["count1.txt"])])
 
         self.assertNotEqual(c1.manifest_text(), c2.manifest_text())
@@ -914,9 +914,9 @@ class NewCollectionTestCase(unittest.TestCase, CollectionTestMixin):
     def test_diff4(self):
         c1 = arvados.import_manifest('. 781e5e245d69b566979b86e28d23f2c7+10 0:10:count1.txt', sync=SYNC_EXPLICIT)
         c2 = arvados.import_manifest('. 781e5e245d69b566979b86e28d23f2c7+10 5348b82a029fd9e971a811ce1f71360b+43 0:10:count1.txt 10:20:count2.txt')
-        d = c1.diff(c2)
-        self.assertEqual(d, [('del', './count2.txt', c2["count2.txt"])])
         d = c2.diff(c1)
+        self.assertEqual(d, [('del', './count2.txt', c2["count2.txt"])])
+        d = c1.diff(c2)
         self.assertEqual(d, [('add', './count2.txt', c2["count2.txt"])])
 
         self.assertNotEqual(c1.manifest_text(), c2.manifest_text())
@@ -926,9 +926,9 @@ class NewCollectionTestCase(unittest.TestCase, CollectionTestMixin):
     def test_diff5(self):
         c1 = arvados.import_manifest('. 781e5e245d69b566979b86e28d23f2c7+10 0:10:count1.txt\n', sync=SYNC_EXPLICIT)
         c2 = arvados.import_manifest('. 781e5e245d69b566979b86e28d23f2c7+10 0:10:count1.txt\n./foo 5348b82a029fd9e971a811ce1f71360b+43 0:10:count2.txt')
-        d = c1.diff(c2)
-        self.assertEqual(d, [('del', './foo', c2["foo"])])
         d = c2.diff(c1)
+        self.assertEqual(d, [('del', './foo', c2["foo"])])
+        d = c1.diff(c2)
         self.assertEqual(d, [('add', './foo', c2["foo"])])
 
         self.assertNotEqual(c1.manifest_text(), c2.manifest_text())
@@ -938,10 +938,10 @@ class NewCollectionTestCase(unittest.TestCase, CollectionTestMixin):
     def test_diff6(self):
         c1 = arvados.import_manifest('. 781e5e245d69b566979b86e28d23f2c7+10 0:10:count1.txt\n./foo 5348b82a029fd9e971a811ce1f71360b+43 0:10:count2.txt', sync=SYNC_EXPLICIT)
         c2 = arvados.import_manifest('. 781e5e245d69b566979b86e28d23f2c7+10 0:10:count1.txt\n./foo 5348b82a029fd9e971a811ce1f71360b+43 0:3:count3.txt')
-        d = c1.diff(c2)
+        d = c2.diff(c1)
         self.assertEqual(d, [('del', './foo/count3.txt', c2.find("foo/count3.txt")),
                              ('add', './foo/count2.txt', c1.find("foo/count2.txt"))])
-        d = c2.diff(c1)
+        d = c1.diff(c2)
         self.assertEqual(d, [('del', './foo/count2.txt', c1.find("foo/count2.txt")),
                              ('add', './foo/count3.txt', c2.find("foo/count3.txt"))])
 
@@ -952,9 +952,9 @@ class NewCollectionTestCase(unittest.TestCase, CollectionTestMixin):
     def test_diff7(self):
         c1 = arvados.import_manifest('. 781e5e245d69b566979b86e28d23f2c7+10 0:10:count1.txt\n./foo 5348b82a029fd9e971a811ce1f71360b+43 0:10:count2.txt', sync=SYNC_EXPLICIT)
         c2 = arvados.import_manifest('. 781e5e245d69b566979b86e28d23f2c7+10 0:10:count1.txt 0:3:foo')
-        d = c1.diff(c2)
-        self.assertEqual(d, [('mod', './foo', c2["foo"], c1["foo"])])
         d = c2.diff(c1)
+        self.assertEqual(d, [('mod', './foo', c2["foo"], c1["foo"])])
+        d = c1.diff(c2)
         self.assertEqual(d, [('mod', './foo', c1["foo"], c2["foo"])])
 
         self.assertNotEqual(c1.manifest_text(), c2.manifest_text())

@@ -951,22 +951,23 @@ class SynchronizedCollectionBase(CollectionBase):
                 return self._manifest_text
 
     @_synchronized
-    def diff(self, start_collection, prefix="."):
+    def diff(self, end_collection, prefix="."):
         """
-        Generate list of add/delete actions which change `start_collection` to result in `self`
+        Generate list of add/modify/delete actions which, when given to `apply`, will
+        change `self` to match `end_collection`
         """
         changes = []
-        for k in start_collection:
-            if k not in self:
-               changes.append((DEL, os.path.join(prefix, k), start_collection[k]))
         for k in self:
-            if k in start_collection:
-                if isinstance(self[k], Subcollection) and isinstance(start_collection[k], Subcollection):
-                    changes.extend(self[k].diff(start_collection[k], os.path.join(prefix, k)))
-                elif self[k] != start_collection[k]:
-                    changes.append((MOD, os.path.join(prefix, k), start_collection[k], self[k]))
+            if k not in end_collection:
+               changes.append((DEL, os.path.join(prefix, k), self[k]))
+        for k in end_collection:
+            if k in self:
+                if isinstance(end_collection[k], Subcollection) and isinstance(self[k], Subcollection):
+                    changes.extend(self[k].diff(end_collection[k], os.path.join(prefix, k)))
+                elif end_collection[k] != self[k]:
+                    changes.append((MOD, os.path.join(prefix, k), self[k], end_collection[k]))
             else:
-                changes.append((ADD, os.path.join(prefix, k), self[k]))
+                changes.append((ADD, os.path.join(prefix, k), end_collection[k]))
         return changes
 
     @_must_be_writable
