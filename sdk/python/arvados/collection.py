@@ -558,12 +558,14 @@ class CollectionWriter(CollectionBase):
         self._current_file_name = None
 
     def finish(self):
-        # Store the manifest in Keep and return its locator. Beware,
-        # this is only useful in special cases like storing manifest
-        # fragments temporarily in Keep during a Crunch job. In most
-        # cases you should make a collection instead, by sending
-        # manifest_text() to the API server's "create collection"
-        # endpoint.
+        """Store the manifest in Keep and return its locator.
+
+        Beware, this is only useful in special cases like storing
+        manifest fragments temporarily in Keep during a Crunch job. In
+        most cases you should make a collection instead, by sending
+        manifest_text() to the API server's "create collection"
+        endpoint.
+        """
         return self._my_keep().put(self.manifest_text(), copies=self.replication)
 
     def portable_data_hash(self):
