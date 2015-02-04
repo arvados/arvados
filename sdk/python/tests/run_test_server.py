@@ -95,6 +95,17 @@ def kill_server_pid(pidfile, wait=10, passenger=False):
 def run(leave_running_atexit=False):
     """Ensure an API server is running, and ARVADOS_API_* env vars have
     admin credentials for it.
+
+    If ARVADOS_TEST_API_HOST is set, a parent process has started a
+    test server for us to use: we just need to reset() it using the
+    admin token fixture.
+
+    If a previous call to run() started a new server process, and it
+    is still running, we just need to reset() it to fixture state and
+    return.
+
+    If neither of those options work out, we'll really start a new
+    server.
     """
     global my_api_host
 
@@ -107,8 +118,10 @@ def run(leave_running_atexit=False):
     pid_file = os.path.join(SERVICES_SRC_DIR, 'api', SERVER_PID_PATH)
     pid_file_ok = find_server_pid(pid_file, 0)
 
-    if pid_file_ok:
+    existing_api_host = os.environ.get('ARVADOS_TEST_API_HOST', my_api_host)
+    if existing_api_host and pid_file_ok:
         try:
+            os.environ['ARVADOS_API_HOST'] = existing_api_host
             reset()
             return
         except:
@@ -170,17 +183,33 @@ def run(leave_running_atexit=False):
     os.chdir(restore_cwd)
 
 def reset():
+    """Reset the test server to fixture state.
+
+    This resets the ARVADOS_TEST_API_HOST provided by a parent process
+    if any, otherwise the server started by run().
+    """
+    existing_api_host = os.environ.get('ARVADOS_TEST_API_HOST', my_api_host)
     token = auth_token('admin')
     httpclient = httplib2.Http(ca_certs=os.path.join(
         SERVICES_SRC_DIR, 'api', 'tmp', 'self-signed.pem'))
     httpclient.request(
-        'https://{}/database/reset'.format(os.environ['ARVADOS_API_HOST']),
+        'https://{}/database/reset'.format(existing_api_host),
         'POST',
         headers={'Authorization': 'OAuth2 {}'.format(token)})
 
 def stop(force=False):
-    """Stop the API server, if one is running. If force==True, kill it
-    even if we didn't start it ourselves.
+    """Stop the API server, if one is running.
+
+    If force==False, kill it only if we started it ourselves. (This
+    supports the use case where a Python test suite calls run(), but
+    run() just uses the ARVADOS_TEST_API_HOST provided by the parent
+    process, and the test suite cleans up after itself by calling
+    stop(). In this case the test server provided by the parent
+    process should be left alone.)
+
+    If force==True, kill it even if we didn't start it
+    ourselves. (This supports the use case in __main__, where "run"
+    and "stop" happen in different processes.)
     """
     global my_api_host
     if force or my_api_host is not None:
