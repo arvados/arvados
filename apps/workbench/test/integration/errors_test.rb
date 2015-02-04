@@ -125,10 +125,4 @@ class ErrorsTest < ActionDispatch::IntegrationTest
       Rails.configuration.arvados_v1_base = original_arvados_v1_base
     end
   end
-
-  test "404 page checks if user not logged in and makes suggestion" do
-    visit "/collections/#{BAD_UUID}"
-    assert_text 'you are not logged in'
-  end
-
 end

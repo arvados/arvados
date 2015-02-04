@@ -52,19 +52,6 @@ class AnonymousAccessTest < ActionDispatch::IntegrationTest
     end
   end
 
-  test "visit non-public project as anonymous when anonymous browsing is enabled and expect page not found" do
-    visit "/projects/#{api_fixture('groups')['aproject']['uuid']}"
-    assert_text 'Not Found'
-  end
-
-  test "anonymous user clicking on topnav sees login page" do
-    visit PUBLIC_PROJECT
-
-    # click on topnav
-    click_link 'workbench:test'
-    assert_text 'Please log in'
-  end
-
   test "selection actions when anonymous user accesses shared project" do
     visit PUBLIC_PROJECT
 
@@ -170,11 +157,5 @@ class AnonymousAccessTest < ActionDispatch::IntegrationTest
     # in template page
     assert_text 'script version'
     assert_no_selector 'a', text: 'Run this pipeline'
-  end
-
-  test "visit public project as anonymous when anonymous browsing is not enabled and expect login page" do
-    Rails.configuration.anonymous_user_token = false
-    visit "/projects/#{api_fixture('groups')['aproject']['uuid']}"
-    assert_text 'Please log in'
   end
 end
