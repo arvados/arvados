@@ -61,17 +61,17 @@ def find_server_pid(PID_PATH, wait=10):
 
     return server_pid
 
-def kill_server_pid(pidfile, wait=10, passenger=False):
+def kill_server_pid(pidfile, wait=10, passenger_root=False):
     # Must re-import modules in order to work during atexit
     import os
     import signal
     import subprocess
     import time
     try:
-        if passenger:
+        if passenger_root:
             # First try to shut down nicely
             restore_cwd = os.getcwd()
-            os.chdir(os.path.join(SERVICES_SRC_DIR, 'api'))
+            os.chdir(passenger_root)
             subprocess.call([
                 'bundle', 'exec', 'passenger', 'stop', '--pid-file', pidfile])
             os.chdir(restore_cwd)
@@ -80,7 +80,7 @@ def kill_server_pid(pidfile, wait=10, passenger=False):
         with open(pidfile, 'r') as f:
             server_pid = int(f.read())
         while now <= timeout:
-            if not passenger or timeout - now < wait / 2:
+            if not passenger_root or timeout - now < wait / 2:
                 # Half timeout has elapsed. Start sending SIGTERM
                 os.kill(server_pid, signal.SIGTERM)
             # Raise OSError if process has disappeared
@@ -128,7 +128,8 @@ def run(leave_running_atexit=False):
             pass
 
     restore_cwd = os.getcwd()
-    os.chdir(os.path.join(SERVICES_SRC_DIR, 'api'))
+    api_src_dir = os.path.join(SERVICES_SRC_DIR, 'api')
+    os.chdir(api_src_dir)
 
     # Either we haven't started a server of our own yet, or it has
     # died, or we have lost our credentials, or something else is
@@ -167,7 +168,7 @@ def run(leave_running_atexit=False):
         env=env)
 
     if not leave_running_atexit:
-        atexit.register(kill_server_pid, pid_file, passenger=True)
+        atexit.register(kill_server_pid, pid_file, passenger_root=api_src_dir)
 
     match = re.search(r'Accessible via: https://(.*?)/', start_msg)
     if not match:
