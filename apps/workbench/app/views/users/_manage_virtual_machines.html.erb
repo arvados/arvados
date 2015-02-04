@@ -6,9 +6,16 @@
   </p>
 
   <% if !@my_virtual_machines.any? %>
-    You do not have access to any virtual machines. Many of the Arvados features depend on having shell access to a hosted VM.
-    &nbsp; <%= link_to 'Request shell access', request_shell_access_user_url(id: current_user.uuid),
-                        {class: 'btn btn-xs btn-primary', :remote => true}  %>
+    <div id='no_shell_access' class='no_shell_access'>
+      <div id='no_shell_access_msg' class='no_shell_access_msg'>
+        You do not have access to any virtual machines. Many of the Arvados features depend on having shell access to a hosted VM.
+        &nbsp;&nbsp;&nbsp;
+        <div style='display:inline-block'>
+          <%= button_to('Request shell access', request_shell_access_user_url(id: current_user.uuid),
+                         id: 'request_shell_submit', class: 'btn btn-xs btn-primary', remote: true) %>
+        </div>
+      </div>
+    </div>
   <% else %>
     <table class="table virtual-machines-table">
       <colgroup>
