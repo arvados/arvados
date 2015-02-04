@@ -304,7 +304,7 @@ class _WriterFile(ArvadosFileBase):
 class CollectionWriter(CollectionBase):
     KEEP_BLOCK_SIZE = 2**26
 
-    def __init__(self, api_client=None, num_retries=0, replication=0):
+    def __init__(self, api_client=None, num_retries=0, replication=None):
         """Instantiate a CollectionWriter.
 
         CollectionWriter lets you build a new Arvados Collection from scratch.
@@ -321,12 +321,12 @@ class CollectionWriter(CollectionBase):
           after instantiation, but note those changes may not
           propagate to related objects like the Keep client.
         * replication: The number of copies of each block to store.
-          If this argument is 0 or not supplied, replication is
+          If this argument is None or not supplied, replication is
           the server-provided default if available, otherwise 2.
         """
         self._api_client = api_client
         self.num_retries = num_retries
-        self.replication = (replication if replication>0 else 2)
+        self.replication = (2 if replication is None else replication)
         self._keep_client = None
         self._data_buffer = []
         self._data_buffer_len = 0

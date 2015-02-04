@@ -110,7 +110,7 @@ Print the portable data hash instead of the Arvados UUID for the collection
 created by the upload.
 """)
 
-upload_opts.add_argument('--replication', type=int, metavar='N', default=0,
+upload_opts.add_argument('--replication', type=int, metavar='N', default=None,
                          help="""
 Set the replication level for the new collection: how many different
 physical storage devices (e.g., disks) should have a copy of each data
