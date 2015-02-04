@@ -783,7 +783,7 @@ class SynchronizedCollectionBase(CollectionBase):
     @_synchronized
     def __iter__(self):
         """Iterate over names of files and collections contained in this collection."""
-        return self._items.keys()
+        return self._items.keys().__iter__()
 
     @_synchronized
     def iterkeys(self):
@@ -990,7 +990,7 @@ class SynchronizedCollectionBase(CollectionBase):
                     # There is already local file and it is different:
                     # save change to conflict file.
                     self.copy(initial, conflictpath)
-            elif c[1] == MOD:
+            elif c[0] == MOD:
                 if local == initial:
                     # Local matches the "initial" item so assume it hasn't
                     # changed locally and is safe to update.
@@ -1005,8 +1005,8 @@ class SynchronizedCollectionBase(CollectionBase):
                     # Local is missing (presumably deleted) or local doesn't
                     # match the "start" value, so save change to conflict file
                     self.copy(c[3], conflictpath)
-            elif c[1] == DEL:
-                if local == initial
+            elif c[0] == DEL:
+                if local == initial:
                     # Local item matches "initial" value, so it is safe to remove.
                     self.remove(path, rm_r=True)
                 # else, the file is modified or already removed, in either
@@ -1073,7 +1073,6 @@ class Collection(SynchronizedCollectionBase):
         self.lock = threading.RLock()
         self.callbacks = []
         self.events = None
-        self._baseline_manifest
 
         if manifest_locator_or_text:
             if re.match(util.keep_locator_pattern, manifest_locator_or_text):
@@ -1109,10 +1108,11 @@ class Collection(SynchronizedCollectionBase):
         self.update()
 
     @_synchronized
-    def update(self):
-        n = self._my_api().collections().get(uuid=self._manifest_locator).execute()
-        other = import_collection(n["manifest_text"])
-        baseline = import_collection(self._baseline_manifest)
+    def update(self, other=None):
+        if other is None:
+            n = self._my_api().collections().get(uuid=self._manifest_locator).execute()
+            other = import_collection(n["manifest_text"])
+        baseline = import_collection(self._manifest_text)
         self.apply(other.diff(baseline))
 
     @_synchronized

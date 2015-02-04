@@ -603,11 +603,13 @@ class ArvadosFile(object):
         self._segments = other.segments()
         self._modified = True
 
-    @_synchronized
     def __eq__(self, other):
+        if other is self:
+            return True
         if type(other) != ArvadosFile:
             return False
-        return self._segments == other.segments()
+        with self.lock:
+            return self._segments == other.segments()
 
     def __ne__(self, other):
         return not self.__eq__(other)
