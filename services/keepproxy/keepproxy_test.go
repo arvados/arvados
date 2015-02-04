@@ -107,17 +107,22 @@ func runProxy(c *C, args []string, port int, bogusClientToken bool) keepclient.K
 	if bogusClientToken {
 		os.Setenv("ARVADOS_API_TOKEN", "bogus-token")
 	}
-	os.Setenv("ARVADOS_KEEP_PROXY", fmt.Sprintf("http://localhost:%v", port))
 	arv, err := arvadosclient.MakeArvadosClient()
 	c.Assert(err, Equals, nil)
-	kc, err := keepclient.MakeKeepClient(&arv)
-	c.Assert(err, Equals, nil)
+	kc := keepclient.KeepClient{
+		Arvados: &arv,
+		Want_replicas: 2,
+		Using_proxy: true,
+		Client: &http.Client{},
+	}
+	kc.SetServiceRoots(map[string]string{
+		"proxy": fmt.Sprintf("http://localhost:%v", port),
+	})
 	c.Check(kc.Using_proxy, Equals, true)
 	c.Check(len(kc.ServiceRoots()), Equals, 1)
 	for _, root := range kc.ServiceRoots() {
 		c.Check(root, Equals, fmt.Sprintf("http://localhost:%v", port))
 	}
-	os.Unsetenv("ARVADOS_KEEP_PROXY")
 	log.Print("keepclient created")
 	if bogusClientToken {
 		arvadostest.ResetEnv()
