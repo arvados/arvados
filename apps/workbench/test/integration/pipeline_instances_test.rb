@@ -182,17 +182,27 @@ class PipelineInstancesTest < ActionDispatch::IntegrationTest
            "components JSON not found")
   end
 
-  PROJECT_WITH_SEARCH_COLLECTION = "A Subproject"
-  def check_parameter_search(proj_name)
-    template = api_fixture("pipeline_templates")["parameter_with_search"]
-    search_text = template["components"]["with-search"]["script_parameters"]["input"]["search_for"]
-    visit page_with_token("active", "/pipeline_templates/#{template['uuid']}")
+  def create_pipeline_from(template_name, project_name="Home")
+    # Visit the named pipeline template and create a pipeline instance from it.
+    # The instance will be created under the named project.
+    template_uuid = api_fixture("pipeline_templates", template_name, "uuid")
+    visit page_with_token("active", "/pipeline_templates/#{template_uuid}")
     click_on "Run this pipeline"
-    within(".modal-dialog") do  # Set project for the new pipeline instance
-      find(".selectable", text: proj_name).click
+    within(".modal-dialog") do
+      # Set project for the new pipeline instance
+      find(".selectable", text: project_name).click
       click_on "Choose"
     end
-    assert(has_text?("This pipeline was created from the template"), "did not land on pipeline instance page")
+    assert(has_text?("This pipeline was created from the template"),
+           "did not land on pipeline instance page")
+  end
+
+  PROJECT_WITH_SEARCH_COLLECTION = "A Subproject"
+  def check_parameter_search(proj_name)
+    create_pipeline_from("parameter_with_search", proj_name)
+    search_text = api_fixture("pipeline_templates", "parameter_with_search",
+                              "components", "with-search",
+                              "script_parameters", "input", "search_for")
     first("a.btn,button", text: "Choose").click
     within(".modal-body") do
       if (proj_name != PROJECT_WITH_SEARCH_COLLECTION)
@@ -213,6 +223,23 @@ class PipelineInstancesTest < ActionDispatch::IntegrationTest
 
   test "Workbench preserves search_for parameter after project switch" do
     check_parameter_search("A Project")
+  end
+
+  test "enter a float for a number pipeline input" do
+    # Poltergeist either does not support the HTML 5 <input
+    # type="number">, or interferes with the associated X-Editable
+    # validation code.  If the input field has type=number (forcing an
+    # integer), this test will yield a false positive under
+    # Poltergeist.  --Brett, 2015-02-05
+    need_selenium "for strict X-Editable input validation"
+    create_pipeline_from("template_with_dataclass_number")
+    INPUT_SELECTOR =
+      ".editable[data-name='[components][work][script_parameters][input][value]']"
+    find(INPUT_SELECTOR).click
+    find(".editable-input input").set("12.34")
+    find("#editable-submit").click
+    assert_no_selector(".editable-popup")
+    assert_selector(INPUT_SELECTOR, text: "12.34")
   end
 
   [
