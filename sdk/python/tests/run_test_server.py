@@ -138,16 +138,12 @@ def run(leave_running_atexit=False):
     # Delete cached discovery document.
     shutil.rmtree(arvados.http_cache('discovery'))
 
-    os.environ['ARVADOS_API_TOKEN'] = auth_token('admin')
-    os.environ['ARVADOS_API_HOST_INSECURE'] = 'true'
-
     pid_file = os.path.join(SERVICES_SRC_DIR, 'api', SERVER_PID_PATH)
     pid_file_ok = find_server_pid(pid_file, 0)
 
     existing_api_host = os.environ.get('ARVADOS_TEST_API_HOST', my_api_host)
     if existing_api_host and pid_file_ok:
         try:
-            os.environ['ARVADOS_API_HOST'] = existing_api_host
             reset()
             return
         except:
@@ -222,6 +218,9 @@ def reset():
 
     This resets the ARVADOS_TEST_API_HOST provided by a parent process
     if any, otherwise the server started by run().
+
+    It also resets ARVADOS_* environment vars to point to the test
+    server with admin credentials.
     """
     existing_api_host = os.environ.get('ARVADOS_TEST_API_HOST', my_api_host)
     token = auth_token('admin')
@@ -231,6 +230,9 @@ def reset():
         'https://{}/database/reset'.format(existing_api_host),
         'POST',
         headers={'Authorization': 'OAuth2 {}'.format(token)})
+    os.environ['ARVADOS_API_HOST_INSECURE'] = 'true'
+    os.environ['ARVADOS_API_HOST'] = existing_api_host
+    os.environ['ARVADOS_API_TOKEN'] = token
 
 def stop(force=False):
     """Stop the API server, if one is running.
