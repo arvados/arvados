@@ -133,4 +133,11 @@ class UserManageAccountTest < ActionDispatch::IntegrationTest
       end
     end
   end
+
+  test "request shell access" do
+    visit page_with_token('spectator', '/manage_account')
+    assert_text 'You do not have access to any virtual machines'
+    click_button 'Request shell access'
+    assert_text 'Request sent for shell access'
+  end
 end
