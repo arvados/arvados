@@ -648,6 +648,9 @@ DEL = "del"
 MOD = "mod"
 
 class SynchronizedCollectionBase(CollectionBase):
+    """Base class for Collections and Subcollections.  Implements the majority of
+    functionality relating to accessing items in the Collection."""
+
     def __init__(self, parent=None):
         self.parent = parent
         self._modified = True
@@ -975,7 +978,7 @@ class SynchronizedCollectionBase(CollectionBase):
         """
         changes = []
         if holding_collection is None:
-            holding_collection = Collection()
+            holding_collection = CollectionRoot(api_client=self._my_api(), keep_client=self._my_keep(), sync=SYNC_READONLY)
         for k in self:
             if k not in end_collection:
                changes.append((DEL, os.path.join(prefix, k), self[k].clone(holding_collection)))
@@ -1055,32 +1058,63 @@ class SynchronizedCollectionBase(CollectionBase):
     def __ne__(self, other):
         return not self.__eq__(other)
 
-class Collection(SynchronizedCollectionBase):
-    """Store an Arvados collection, consisting of a set of files and
-    sub-collections.  This object
+class CollectionRoot(SynchronizedCollectionBase):
+    """Represents the root of an Arvados Collection, which may be associated with
+    an API server Collection record.
+
+    Brief summary of useful methods:
+
+    :To read an existing file:
+      `c.open("myfile", "r")`
+
+    :To write a new file:
+      `c.open("myfile", "w")`
+
+    :To determine if a file exists:
+      `c.find("myfile") is not None`
+
+    :To copy a file:
+      `c.copy("source", "dest")`
+
+    :To delete a file:
+      `c.remove("myfile")`
+
+    :To save to an existing collection record:
+      `c.save()`
+
+    :To save a new collection record:
+    `c.save_new()`
+
+    :To merge remote changes into this object:
+      `c.update()`
+
+    This class is threadsafe.  The root collection object, all subcollections
+    and files are protected by a single lock (i.e. each access locks the entire
+    collection).
+
     """
 
     def __init__(self, manifest_locator_or_text=None,
                  parent=None,
-                 config=None,
+                 apiconfig=None,
                  api_client=None,
                  keep_client=None,
                  num_retries=None,
                  block_manager=None,
-                 sync=SYNC_READONLY):
+                 sync=None):
         """:manifest_locator_or_text:
           One of Arvados collection UUID, block locator of
           a manifest, raw manifest text, or None (to create an empty collection).
         :parent:
           the parent Collection, may be None.
-        :config:
-          the arvados configuration to get the hostname and api token.
+        :apiconfig:
+          A dict containing keys for ARVADOS_API_HOST and ARVADOS_API_TOKEN.
           Prefer this over supplying your own api_client and keep_client (except in testing).
           Will use default config settings if not specified.
         :api_client:
-          The API client object to use for requests.  If not specified, create one using `config`.
+          The API client object to use for requests.  If not specified, create one using `apiconfig`.
         :keep_client:
-          the Keep client to use for requests.  If not specified, create one using `config`.
+          the Keep client to use for requests.  If not specified, create one using `apiconfig`.
         :num_retries:
           the number of retries for API and Keep requests.
         :block_manager:
@@ -1097,15 +1131,24 @@ class Collection(SynchronizedCollectionBase):
             background websocket events, on block write, or on file close.
 
         """
-        super(Collection, self).__init__(parent)
+        super(CollectionRoot, self).__init__(parent)
         self._api_client = api_client
         self._keep_client = keep_client
         self._block_manager = block_manager
-        self._config = config
+
+        if apiconfig:
+            self._config = apiconfig
+        else:
+            self._config = config.settings()
+
         self.num_retries = num_retries
         self._manifest_locator = None
         self._manifest_text = None
         self._api_response = None
+
+        if sync is None:
+            raise errors.ArgumentError("Must specify sync mode")
+
         self._sync = sync
         self.lock = threading.RLock()
         self.callbacks = []
@@ -1127,13 +1170,10 @@ class Collection(SynchronizedCollectionBase):
             if self._sync == SYNC_LIVE:
                 if not self._has_collection_uuid():
                     raise errors.ArgumentError("Cannot SYNC_LIVE associated with a collection uuid")
-                self.events = events.subscribe(arvados.api(), [["object_uuid", "=", self._manifest_locator]], self.on_message)
+                self.events = events.subscribe(arvados.api(apiconfig=self._config),
+                                               [["object_uuid", "=", self._manifest_locator]],
+                                               self.on_message)
 
-    @staticmethod
-    def create(name, owner_uuid=None, sync=SYNC_EXPLICIT):
-        c = Collection(sync=sync)
-        c.save_as(name, owner_uuid=owner_uuid, ensure_unique_name=True)
-        return c
 
     def root_collection(self):
         return self
@@ -1141,8 +1181,18 @@ class Collection(SynchronizedCollectionBase):
     def sync_mode(self):
         return self._sync
 
-    def on_message(self):
-        self.update()
+    def on_message(self, event):
+        if event.get("object_uuid") == self._manifest_locator:
+            self.update()
+
+    @staticmethod
+    def create(name, owner_uuid=None, sync=SYNC_EXPLICIT, apiconfig=None):
+        """Create a new empty Collection with associated collection record."""
+        c = Collection(sync=SYNC_EXPLICIT, apiconfig=apiconfig)
+        c.save_new(name, owner_uuid=owner_uuid, ensure_unique_name=True)
+        if sync == SYNC_LIVE:
+            c.events = events.subscribe(arvados.api(apiconfig=self._config), [["object_uuid", "=", c._manifest_locator]], c.on_message)
+        return c
 
     @synchronized
     @retry_method
@@ -1260,7 +1310,7 @@ class Collection(SynchronizedCollectionBase):
     def clone(self, new_parent=None, new_sync=SYNC_READONLY, new_config=None):
         if new_config is None:
             new_config = self._config
-        c = Collection(parent=new_parent, config=new_config, sync=new_sync)
+        c = CollectionRoot(parent=new_parent, apiconfig=new_config, sync=new_sync)
         if new_sync == SYNC_READONLY:
             c.lock = NoopLock()
         c._items = {}
@@ -1373,6 +1423,19 @@ class Collection(SynchronizedCollectionBase):
     def notify(self, event, collection, name, item):
         for c in self.callbacks:
             c(event, collection, name, item)
+
+def ReadOnlyCollection(*args, **kwargs):
+    kwargs["sync"] = SYNC_READONLY
+    return CollectionRoot(*args, **kwargs)
+
+def WritableCollection(*args, **kwargs):
+    kwargs["sync"] = SYNC_EXPLICIT
+    return CollectionRoot(*args, **kwargs)
+
+def LiveCollection(*args, **kwargs):
+    kwargs["sync"] = SYNC_LIVE
+    return CollectionRoot(*args, **kwargs)
+
 
 class Subcollection(SynchronizedCollectionBase):
     """This is a subdirectory within a collection that doesn't have its own API

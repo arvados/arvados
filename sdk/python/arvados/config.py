@@ -42,8 +42,10 @@ def load(config_file):
             cfg[var] = val
     return cfg
 
-def flag_is_true(key):
-    return get(key, '').lower() in set(['1', 't', 'true', 'y', 'yes'])
+def flag_is_true(key, d=None):
+    if d is None:
+        d = settings()
+    return d.get(key, '').lower() in set(['1', 't', 'true', 'y', 'yes'])
 
 def get(key, default_val=None):
     return settings().get(key, default_val)

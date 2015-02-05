@@ -2,6 +2,7 @@ import threading
 import api
 import keep
 import config
+import copy
 
 class SafeApi(object):
     """Threadsafe wrapper for API object.  This stores and returns a different api
@@ -10,22 +11,21 @@ class SafeApi(object):
     """
 
     def __init__(self, apiconfig=None, keep_params={}):
-        if not apiconfig:
-            apiconfig = config
-        self.host = apiconfig.get('ARVADOS_API_HOST')
-        self.api_token = apiconfig.get('ARVADOS_API_TOKEN')
-        self.insecure = apiconfig.flag_is_true('ARVADOS_API_HOST_INSECURE')
+        if apiconfig is None:
+            apiconfig = config.settings()
+        self.apiconfig = copy.copy(apiconfig)
         self.local = threading.local()
         self.keep = keep.KeepClient(api_client=self, **keep_params)
 
     def localapi(self):
         if 'api' not in self.local.__dict__:
-            self.local.api = api.api('v1', False, self.host,
-                                         self.api_token, self.insecure)
+            self.local.api = api.api('v1', False, apiconfig=self.apiconfig)
         return self.local.api
 
     def __getattr__(self, name):
         # Proxy nonexistent attributes to the thread-local API client.
+        if name == "api_token":
+            return self.apiconfig['ARVADOS_API_TOKEN']
         try:
             return getattr(self.localapi(), name)
         except AttributeError:

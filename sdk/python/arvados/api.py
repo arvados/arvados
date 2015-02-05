@@ -73,7 +73,7 @@ def http_cache(data_type):
         path = None
     return path
 
-def api(version=None, cache=True, host=None, token=None, insecure=False, **kwargs):
+def api(version=None, cache=True, host=None, token=None, insecure=False, apiconfig=None, **kwargs):
     """Return an apiclient Resources object for an Arvados instance.
 
     Arguments:
@@ -84,6 +84,7 @@ def api(version=None, cache=True, host=None, token=None, insecure=False, **kwarg
     * host: The Arvados API server host (and optional :port) to connect to.
     * token: The authentication token to send with each API call.
     * insecure: If True, ignore SSL certificate validation errors.
+    * apiconfig: If provided, this should be a dict containing with entries for ARVADOS_API_HOST, ARVADOS_API_TOKEN, and optionally ARVADOS_API_HOST_INSECURE
 
     Additional keyword arguments will be passed directly to
     `apiclient_discovery.build` if a new Resource object is created.
@@ -110,12 +111,14 @@ def api(version=None, cache=True, host=None, token=None, insecure=False, **kwarg
         pass
     elif not host and not token:
         # Load from user configuration or environment
+        if apiconfig is None:
+            apiconfig = config.settings()
         for x in ['ARVADOS_API_HOST', 'ARVADOS_API_TOKEN']:
-            if x not in config.settings():
+            if x not in apiconfig:
                 raise ValueError("%s is not set. Aborting." % x)
-        host = config.get('ARVADOS_API_HOST')
-        token = config.get('ARVADOS_API_TOKEN')
-        insecure = config.flag_is_true('ARVADOS_API_HOST_INSECURE')
+        host = apiconfig.get('ARVADOS_API_HOST')
+        token = apiconfig.get('ARVADOS_API_TOKEN')
+        insecure = config.flag_is_true('ARVADOS_API_HOST_INSECURE', apiconfig)
     else:
         # Caller provided one but not the other
         if not host:
