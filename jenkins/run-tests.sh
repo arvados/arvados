@@ -413,11 +413,21 @@ title () {
     printf "\n%*s%s\n\n" $((($COLUMNS-${#txt})/2)) "" "$txt"
 }
 
+bundle_install_trylocal() {
+    (
+        set -e
+        echo "(Running bundle install --local. 'could not find package' messages are OK.)"
+        if ! bundle install --local --no-deployment; then
+            echo "(Running bundle install again, without --local.)"
+            bundle install --no-deployment
+        fi
+        bundle package --all
+    )
+}
+
 install_doc() {
     cd "$WORKSPACE/doc" \
-        && (bundle install --local --no-deployment \
-        || bundle install --no-deployment) \
-        && bundle package --all \
+        && bundle_install_trylocal \
         && rm -rf .site
 }
 do_install doc
@@ -425,9 +435,7 @@ do_install doc
 install_ruby_sdk() {
     with_test_gemset gem uninstall --force --all --executables arvados \
         && cd "$WORKSPACE/sdk/ruby" \
-        && (bundle install --local --no-deployment \
-        || bundle install --no-deployment) \
-        && bundle package --all \
+        && bundle_install_trylocal \
         && gem build arvados.gemspec \
         && with_test_gemset gem install --no-ri --no-rdoc `ls -t arvados-*.gem|head -n1`
 }
@@ -436,9 +444,7 @@ do_install sdk/ruby ruby_sdk
 install_cli() {
     with_test_gemset gem uninstall --force --all --executables arvados-cli \
         && cd "$WORKSPACE/sdk/cli" \
-        && (bundle install --local --no-deployment \
-        || bundle install --no-deployment) \
-        && bundle package --all \
+        && bundle_install_trylocal \
         && gem build arvados-cli.gemspec \
         && with_test_gemset gem install --no-ri --no-rdoc `ls -t arvados-cli-*.gem|head -n1`
 }
@@ -462,9 +468,7 @@ done
 
 install_apiserver() {
     cd "$WORKSPACE/services/api" \
-        && (RAILS_ENV=test bundle install --local --no-deployment \
-        || RAILS_ENV=test bundle install --no-deployment) \
-        && bundle package --all
+        && RAILS_ENV=test bundle_install_trylocal
 
     rm -f config/environments/test.rb
     cp config/environments/test.rb.example config/environments/test.rb
@@ -525,9 +529,7 @@ done
 
 install_workbench() {
     cd "$WORKSPACE/apps/workbench" \
-        && (RAILS_ENV=test bundle install --local --no-deployment \
-        || RAILS_ENV=test bundle install --no-deployment) \
-        && bundle package --all
+        && RAILS_ENV=test bundle_install_trylocal
 }
 do_install apps/workbench workbench
 
