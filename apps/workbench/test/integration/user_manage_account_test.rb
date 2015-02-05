@@ -72,16 +72,24 @@ class UserManageAccountTest < ActionDispatch::IntegrationTest
     end
   end
 
+  test "pipeline notification shown even though public pipelines exist" do
+    skip "created_by doesn't work that way"
+    Rails.configuration.anonymous_user_token = api_fixture('api_client_authorizations')['anonymous']['api_token']
+    visit page_with_token 'job_reader'
+    click_link 'notifications-menu'
+    assert_selector 'a', text: 'Click here to learn how to run an Arvados Crunch pipeline'
+  end
+
   [
-    ['inactive_but_signed_user_agreement', true],
-    ['active', false],
-  ].each do |user, notifications|
-    test "test manage account for #{user} with notifications #{notifications}" do
+    ['job_reader', :ssh, :pipeline],
+    ['active'],
+  ].each do |user, *expect|
+    test "manage account for #{user} with notifications #{expect.inspect}" do
+      Rails.configuration.anonymous_user_token = false
       visit page_with_token(user)
       click_link 'notifications-menu'
-      if notifications
+      if expect.include? :ssh
         assert_selector('a', text: 'Click here to set up an SSH public key for use with Arvados')
-        assert_selector('a', text: 'Click here to learn how to run an Arvados Crunch pipeline')
         click_link('Click here to set up an SSH public key for use with Arvados')
         assert_selector('a', text: 'Add new SSH key')
 
@@ -90,10 +98,13 @@ class UserManageAccountTest < ActionDispatch::IntegrationTest
         # No more SSH notification
         click_link 'notifications-menu'
         assert_no_selector('a', text: 'Click here to set up an SSH public key for use with Arvados')
-        assert_selector('a', text: 'Click here to learn how to run an Arvados Crunch pipeline')
       else
         assert_no_selector('a', text: 'Click here to set up an SSH public key for use with Arvados')
         assert_no_selector('a', text: 'Click here to learn how to run an Arvados Crunch pipeline')
+      end
+
+      if expect.include? :pipeline
+        assert_selector('a', text: 'Click here to learn how to run an Arvados Crunch pipeline')
       end
     end
   end

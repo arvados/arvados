@@ -101,8 +101,13 @@ class ArvadosApiClient
     url.sub! '/arvados/v1/../../', '/'
 
     query = {
-      'api_token' => tokens[:arvados_api_token] || Thread.current[:arvados_api_token] || '',
-      'reader_tokens' => (tokens[:reader_tokens] || Thread.current[:reader_tokens] || []).to_json,
+      'api_token' => (tokens[:arvados_api_token] ||
+                      Thread.current[:arvados_api_token] ||
+                      ''),
+      'reader_tokens' => ((tokens[:reader_tokens] ||
+                           Thread.current[:reader_tokens] ||
+                           []) +
+                          [Rails.configuration.anonymous_user_token]).to_json,
     }
     if !data.nil?
       data.each do |k,v|
@@ -119,6 +124,7 @@ class ArvadosApiClient
     else
       query["_method"] = "GET"
     end
+
     if @@profiling_enabled
       query["_profile"] = "true"
     end
@@ -140,6 +146,7 @@ class ArvadosApiClient
     rescue Oj::ParseError
       resp = nil
     end
+
     if not resp.is_a? Hash
       raise InvalidApiResponseException.new(url, msg)
     elsif msg.status_code != 200
