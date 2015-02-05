@@ -737,14 +737,16 @@ class KeepClient(object):
                     data_hash, copies, thread_limiter.done()), service_errors)
 
     def local_store_put(self, data, copies=1, num_retries=None):
-        """A stub for put(), for use in test cases.
+        """A stub for put().
+
+        This method is used in place of the real put() method in a
+        KeepClient constructed with local_store=True.
 
         copies and num_retries arguments are ignored: they are here
         only for the sake of offering the same call signature as
         put().
 
         Data stored this way can be retrieved via local_store_get().
-
         """
         md5 = hashlib.md5(data).hexdigest()
         locator = '%s+%d' % (md5, len(data))
@@ -755,8 +757,7 @@ class KeepClient(object):
         return locator
 
     def local_store_get(self, loc_s, num_retries=None):
-        """Companion to local_store_put(), for use in test cases.
-        """
+        """Companion to local_store_put()."""
         try:
             locator = KeepLocator(loc_s)
         except ValueError:
