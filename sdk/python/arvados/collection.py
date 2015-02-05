@@ -1015,13 +1015,13 @@ class SynchronizedCollectionBase(CollectionBase):
                     self.copy(initial, conflictpath)
             elif c[0] == MOD:
                 if local == initial:
-                    # Local matches the "initial" item so assume it hasn't
+                    # Local matches the "initial" item so it has not
                     # changed locally and is safe to update.
                     if isinstance(local, ArvadosFile) and isinstance(c[3], ArvadosFile):
                         # Replace contents of local file with new contents
                         local.replace_contents(c[3])
                     else:
-                        # Overwrite path with new item; this can happen if if
+                        # Overwrite path with new item; this can happen if
                         # path was a file and is now a collection or vice versa
                         self.copy(c[3], path, overwrite=True)
                 else:
@@ -1504,7 +1504,7 @@ def import_manifest(manifest_text,
             raise ArgumentError("Can only import manifest into an empty collection")
         c = into_collection
     else:
-        c = Collection(api_client=api_client, keep_client=keep, num_retries=num_retries, sync=sync)
+        c = CollectionRoot(api_client=api_client, keep_client=keep, num_retries=num_retries, sync=sync)
 
     save_sync = c.sync_mode()
     c._sync = None
