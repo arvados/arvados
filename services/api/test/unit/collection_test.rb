@@ -81,4 +81,14 @@ class CollectionTest < ActiveSupport::TestCase
       end
     end
   end
+
+  [0, 2, 4, nil].each do |ask|
+    test "replication_desired reports #{ask or 2} if redundancy is #{ask}" do
+      act_as_user users(:active) do
+        c = collections(:collection_owned_by_active)
+        c.update_attributes redundancy: ask
+        assert_equal (ask or 2), c.replication_desired
+      end
+    end
+  end
 end
