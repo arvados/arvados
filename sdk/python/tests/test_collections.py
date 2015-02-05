@@ -1003,6 +1003,18 @@ class NewCollectionTestCase(unittest.TestCase, CollectionTestMixin):
         self.assertTrue(re.match(r"\. 95ebc3c7b3b9f1d2c40fec14415d3cb8\+5 5348b82a029fd9e971a811ce1f71360b\+43 0:5:count1.txt 5:10:count1.txt~conflict-\d\d\d\d-\d\d-\d\d-\d\d:\d\d:\d\d~$",
                                  c1.manifest_text()))
 
+    def test_conflict4(self):
+        c1 = Collection('. 781e5e245d69b566979b86e28d23f2c7+10 0:10:count1.txt', sync=SYNC_EXPLICIT)
+        c2 = Collection('. 5348b82a029fd9e971a811ce1f71360b+43 0:10:count1.txt')
+        d = c1.diff(c2)
+        self.assertEqual(d, [('mod', './count1.txt', c1["count1.txt"], c2["count1.txt"])])
+        c1.remove("count1.txt")
+
+        # c1 deleted, so c2 mod will go to a conflict file
+        c1.apply(d)
+        self.assertTrue(re.match(r"\. 5348b82a029fd9e971a811ce1f71360b\+43 0:10:count1.txt~conflict-\d\d\d\d-\d\d-\d\d-\d\d:\d\d:\d\d~$",
+                                 c1.manifest_text()))
+
 
 if __name__ == '__main__':
     unittest.main()
