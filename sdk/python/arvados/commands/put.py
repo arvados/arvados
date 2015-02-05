@@ -479,13 +479,17 @@ def main(arguments=None, stdout=sys.stdout, stderr=sys.stderr):
             manifest_text = writer.manifest_text()
             if args.normalize:
                 manifest_text = CollectionReader(manifest_text).manifest_text(normalize=True)
+            replication_attr = 'replication_desired'
+            if api_client._schema.schemas['Collection']['properties'].get(replication_attr, None) is None:
+                # API calls it 'redundancy' until #3410.
+                replication_attr = 'redundancy'
             # Register the resulting collection in Arvados.
             collection = api_client.collections().create(
                 body={
                     'owner_uuid': project_uuid,
                     'name': collection_name,
                     'manifest_text': manifest_text,
-                    'redundancy': args.replication,
+                    replication_attr: args.replication,
                     },
                 ensure_unique_name=True
                 ).execute(num_retries=args.retries)
