@@ -125,5 +125,4 @@ class ErrorsTest < ActionDispatch::IntegrationTest
       Rails.configuration.arvados_v1_base = original_arvados_v1_base
     end
   end
-
 end

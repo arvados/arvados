@@ -33,13 +33,14 @@
   <p>This pipeline does not need any further inputs specified. You can start it by clicking the "Run" button whenever you're ready. (It's not too late to change existing settings, though.)</p>
 <% else %>
   <p><i>Provide <%= n_inputs > 1 ? 'values' : 'a value' %> for the following <%= n_inputs > 1 ? 'parameters' : 'parameter' %>, then click the "Run" button to start the pipeline.</i></p>
-  <%= content_for :pi_input_form %>
-
-  <%= link_to(url_for('pipeline_instance[state]' => 'RunningOnServer'),
-      class: 'btn btn-primary run-pipeline-button',
-      method: :patch
-      ) do %>
-    Run <i class="fa fa-fw fa-play"></i>
+  <% if @object.editable? %>
+    <%= content_for :pi_input_form %>
+      <%= link_to(url_for('pipeline_instance[state]' => 'RunningOnServer'),
+          class: 'btn btn-primary run-pipeline-button',
+          method: :patch
+          ) do %>
+        Run <i class="fa fa-fw fa-play"></i>
+    <% end %>
   <% end %>
 
 <% end %>

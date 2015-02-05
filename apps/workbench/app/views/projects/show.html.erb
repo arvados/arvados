@@ -1,4 +1,4 @@
-<% if @object.uuid != current_user.uuid # Not the "Home" project %>
+<% if @object.uuid != current_user.andand.uuid # Not the "Home" project %>
 <% content_for :content_top do %>
   <%= render partial: 'name_and_description' %>
 <% end %>

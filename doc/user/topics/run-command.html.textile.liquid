@@ -74,6 +74,16 @@ table(table table-bordered table-condensed).
 |$(basename&nbsp;...)   | Strip leading directory and trailing file extension from the path provided.  For example, $(basename /foo/bar.baz.txt) will evaluate to "bar.baz".|
 |$(glob ...)       | Take a Unix shell path pattern (supports @*@ @?@ and @[]@) and search the local filesystem, returning the first match found.  Use together with $(dir ...) to get a local filesystem path for Arvados collections.  For example: $(glob $(dir $(mycollection)/*.bam)) will find the first .bam file in the collection specified by the user parameter "mycollection".  If there is more than one match, which one is returned is undefined.  Will raise an error if no matches are found.|
 
+h3. Escape sequences
+
+If your command includes a @$()@ sequence that shouldn't be interpreted by run-command&mdash;for example, because you're writing shell code that calls a subcommand&mdash;you can prevent run-command from interpreting it by placing a backslash in front of the @$@ character.  Note that JSON also uses backslash to escape characters, so you'll need to write two backslashes for run-command to see one after parsing the parameter.  This example uppercases all alphabetic characters in the "pattern" parameter before using it as a regular expression in grep:
+
+<pre>{"command": ["bash", "-c", "grep \\$(echo '$(pattern)' | tr a-z A-Z) '$(input)'"]}</pre>
+
+You can put a literal backslash in your command by escaping it with another backslash.  Ultimately this means that where the primary Unix command includes a single backslash, you'll need to write four backslashes: double the backslashes for run-command escaping, then double them again for JSON escaping.
+
+<pre>{"command": ["grep", "\\\\bword\\\\b", "$(input)"]}</pre>
+
 h2. List context
 
 Where specified by the documentation, parameters may be evaluated in a "list context".  That means the value will evaluate to a list instead of a string.  Parameter values can be a static list, a path to a file, a path to a directory, or a JSON object describing a list context function.
