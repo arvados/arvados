@@ -31,8 +31,6 @@ class MountTestBase(unittest.TestCase):
         operations.initlock.wait()
 
     def tearDown(self):
-        run_test_server.reset()
-
         # llfuse.close is buggy, so use fusermount instead.
         #llfuse.close(unmount=True)
         count = 0
@@ -44,6 +42,7 @@ class MountTestBase(unittest.TestCase):
 
         os.rmdir(self.mounttmp)
         shutil.rmtree(self.keeptmp)
+        run_test_server.reset()
 
     def assertDirContents(self, subdir, expect_content):
         path = self.mounttmp
