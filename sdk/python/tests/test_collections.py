@@ -1015,6 +1015,11 @@ class NewCollectionTestCase(unittest.TestCase, CollectionTestMixin):
         self.assertTrue(re.match(r"\. 5348b82a029fd9e971a811ce1f71360b\+43 0:10:count1.txt~conflict-\d\d\d\d-\d\d-\d\d-\d\d:\d\d:\d\d~$",
                                  c1.manifest_text()))
 
+    def test_notify1(self):
+        c1 = Collection(sync=SYNC_EXPLICIT)
+        events = []
+        c1.subscribe(lambda event, collection, name, item: events.append((event, collection, name, item)))
+        c1.find("")
 
 if __name__ == '__main__':
     unittest.main()

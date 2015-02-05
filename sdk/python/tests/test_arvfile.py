@@ -23,7 +23,7 @@ class ArvadosFileWriterTestCase(unittest.TestCase):
         def get(self, locator, num_retries=0, cache_only=False):
             self.requests.append(locator)
             return self.blocks.get(locator)
-        def put(self, data):
+        def put(self, data, num_retries=None):
             pdh = "%s+%i" % (hashlib.md5(data).hexdigest(), len(data))
             self.blocks[pdh] = str(data)
             return pdh
@@ -339,6 +339,9 @@ class ArvadosFileReaderTestCase(StreamFileReaderTestCase):
 
         def sync_mode(self):
             return SYNC_READONLY
+
+        def _root_lock(self):
+            return arvados.arvfile.NoopLock()
 
     def make_count_reader(self, nocache=False):
         stream = []

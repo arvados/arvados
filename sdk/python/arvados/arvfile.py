@@ -300,7 +300,7 @@ class AsyncKeepWriteErrors(Exception):
     def __repr__(self):
         return "\n".join(self.errors)
 
-def _synchronized(orig_func):
+def synchronized(orig_func):
     @functools.wraps(orig_func)
     def wrapper(self, *args, **kwargs):
         with self.lock:
@@ -324,8 +324,7 @@ SYNC_READONLY = 1
 SYNC_EXPLICIT = 2
 SYNC_LIVE = 3
 
-def _must_be_writable(orig_func):
-    # Decorator for methods that read actual Collection data.
+def must_be_writable(orig_func):
     @functools.wraps(orig_func)
     def wrapper(self, *args, **kwargs):
         if self.sync_mode() == SYNC_READONLY:
@@ -353,7 +352,7 @@ class BlockManager(object):
         self.num_put_threads = 2
         self.num_get_threads = 2
 
-    @_synchronized
+    @synchronized
     def alloc_bufferblock(self, blockid=None, starting_capacity=2**14, owner=None):
         """
         Allocate a new, empty bufferblock in WRITABLE state and return it.
@@ -373,7 +372,7 @@ class BlockManager(object):
         self._bufferblocks[bb.blockid] = bb
         return bb
 
-    @_synchronized
+    @synchronized
     def dup_block(self, blockid, owner):
         """
         Create a new bufferblock in WRITABLE state, initialized with the content of an existing bufferblock.
@@ -391,11 +390,11 @@ class BlockManager(object):
         self._bufferblocks[bb.blockid] = bb
         return bb
 
-    @_synchronized
+    @synchronized
     def is_bufferblock(self, id):
         return id in self._bufferblocks
 
-    @_synchronized
+    @synchronized
     def stop_threads(self):
         """
         Shut down and wait for background upload and download threads to finish.
@@ -563,19 +562,19 @@ class ArvadosFile(object):
         self.parent = parent
         self._modified = True
         self._segments = []
+        self.lock = parent._root_lock()
         for s in segments:
             self._add_segment(stream, s.locator, s.range_size)
         self._current_bblock = None
-        self.lock = parent._root_lock()
 
     def sync_mode(self):
         return self.parent.sync_mode()
 
-    @_synchronized
+    @synchronized
     def segments(self):
         return copy.copy(self._segments)
 
-    @_synchronized
+    @synchronized
     def clone(self, new_parent):
         """Make a copy of this file."""
         cp = ArvadosFile(new_parent)
@@ -592,8 +591,8 @@ class ArvadosFile(object):
 
         return cp
 
-    @_must_be_writable
-    @_synchronized
+    @must_be_writable
+    @synchronized
     def replace_contents(self, other):
         """Replace segments of this file with segments from another `ArvadosFile` object."""
         self._segments = other.segments()
@@ -612,18 +611,18 @@ class ArvadosFile(object):
     def __ne__(self, other):
         return not self.__eq__(other)
 
-    @_synchronized
+    @synchronized
     def set_unmodified(self):
         """Clear the modified flag"""
         self._modified = False
 
-    @_synchronized
+    @synchronized
     def modified(self):
         """Test the modified flag"""
         return self._modified
 
-    @_must_be_writable
-    @_synchronized
+    @must_be_writable
+    @synchronized
     def truncate(self, size):
         """
         Adjust the size of the file.  If `size` is less than the size of the file,
@@ -650,7 +649,7 @@ class ArvadosFile(object):
         elif size > self.size():
             raise IOError("truncate() does not support extending the file size")
 
-    @_synchronized
+    @synchronized
     def readfrom(self, offset, size, num_retries):
         """
         read upto `size` bytes from the file starting at `offset`.
@@ -694,8 +693,8 @@ class ArvadosFile(object):
 
             self._current_bblock = new_bb
 
-    @_must_be_writable
-    @_synchronized
+    @must_be_writable
+    @synchronized
     def writeto(self, offset, data, num_retries):
         """
         Write `data` to the file starting at `offset`.  This will update
@@ -725,12 +724,18 @@ class ArvadosFile(object):
 
         replace_range(self._segments, offset, len(data), self._current_bblock.blockid, self._current_bblock.write_pointer - len(data))
 
-    @_must_be_writable
-    @_synchronized
+    @must_be_writable
+    @synchronized
     def add_segment(self, blocks, pos, size):
         """
         Add a segment to the end of the file, with `pos` and `offset` referencing a
         section of the stream described by `blocks` (a list of Range objects)
+        """
+        self._add_segment(blocks, pos, size)
+
+    def _add_segment(self, blocks, pos, size):
+        """
+        (Internal version.)
         """
         self._modified = True
         for lr in locators_and_ranges(blocks, pos, size):
@@ -738,7 +743,7 @@ class ArvadosFile(object):
             r = Range(lr.locator, last.range_start+last.range_size, lr.segment_size, lr.segment_offset)
             self._segments.append(r)
 
-    @_synchronized
+    @synchronized
     def size(self):
         """Get the file size"""
         if self._segments:

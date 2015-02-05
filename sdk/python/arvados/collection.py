@@ -8,7 +8,7 @@ import time
 from collections import deque
 from stat import *
 
-from .arvfile import ArvadosFileBase, split, ArvadosFile, ArvadosFileWriter, ArvadosFileReader, BlockManager, _synchronized, _must_be_writable, SYNC_READONLY, SYNC_EXPLICIT, SYNC_LIVE, NoopLock
+from .arvfile import ArvadosFileBase, split, ArvadosFile, ArvadosFileWriter, ArvadosFileReader, BlockManager, synchronized, must_be_writable, SYNC_READONLY, SYNC_EXPLICIT, SYNC_LIVE, NoopLock
 from keep import *
 from .stream import StreamReader, normalize_stream, locator_block_size
 from .ranges import Range, LocatorAndRange
@@ -17,6 +17,7 @@ import config
 import errors
 import util
 import events
+from arvados.retry import retry_method
 
 _logger = logging.getLogger('arvados.collection')
 
@@ -673,7 +674,7 @@ class SynchronizedCollectionBase(CollectionBase):
     def notify(self, event, collection, name, item):
         raise NotImplementedError()
 
-    @_synchronized
+    @synchronized
     def find(self, path, create=False, create_collection=False):
         """Recursively search the specified file path.  May return either a Collection
         or ArvadosFile.
@@ -768,7 +769,7 @@ class SynchronizedCollectionBase(CollectionBase):
         else:
             return ArvadosFileWriter(f, path, mode, num_retries=self.num_retries)
 
-    @_synchronized
+    @synchronized
     def modified(self):
         """Test if the collection (or any subcollection or file) has been modified
         since it was created."""
@@ -779,60 +780,60 @@ class SynchronizedCollectionBase(CollectionBase):
                 return True
         return False
 
-    @_synchronized
+    @synchronized
     def set_unmodified(self):
         """Recursively clear modified flag"""
         self._modified = False
         for k,v in self._items.items():
             v.set_unmodified()
 
-    @_synchronized
+    @synchronized
     def __iter__(self):
         """Iterate over names of files and collections contained in this collection."""
         return self._items.keys().__iter__()
 
-    @_synchronized
+    @synchronized
     def iterkeys(self):
         """Iterate over names of files and collections directly contained in this collection."""
         return self._items.keys()
 
-    @_synchronized
+    @synchronized
     def __getitem__(self, k):
         """Get a file or collection that is directly contained by this collection.  If
         you want to search a path, use `find()` instead.
         """
         return self._items[k]
 
-    @_synchronized
+    @synchronized
     def __contains__(self, k):
         """If there is a file or collection a directly contained by this collection
         with name "k"."""
         return k in self._items
 
-    @_synchronized
+    @synchronized
     def __len__(self):
         """Get the number of items directly contained in this collection"""
         return len(self._items)
 
-    @_must_be_writable
-    @_synchronized
+    @must_be_writable
+    @synchronized
     def __delitem__(self, p):
         """Delete an item by name which is directly contained by this collection."""
         del self._items[p]
         self._modified = True
         self.notify(DEL, self, p, None)
 
-    @_synchronized
+    @synchronized
     def keys(self):
         """Get a list of names of files and collections directly contained in this collection."""
         return self._items.keys()
 
-    @_synchronized
+    @synchronized
     def values(self):
         """Get a list of files and collection objects directly contained in this collection."""
         return self._items.values()
 
-    @_synchronized
+    @synchronized
     def items(self):
         """Get a list of (name, object) tuples directly contained in this collection."""
         return self._items.items()
@@ -841,8 +842,8 @@ class SynchronizedCollectionBase(CollectionBase):
         """Test if there is a file or collection at "path" """
         return self.find(path) != None
 
-    @_must_be_writable
-    @_synchronized
+    @must_be_writable
+    @synchronized
     def remove(self, path, rm_r=False):
         """Remove the file or subcollection (directory) at `path`.
         :rm_r:
@@ -877,8 +878,8 @@ class SynchronizedCollectionBase(CollectionBase):
     def clone(self):
         raise NotImplementedError()
 
-    @_must_be_writable
-    @_synchronized
+    @must_be_writable
+    @synchronized
     def copy(self, source, target_path, source_collection=None, overwrite=False):
         """Copy a file or subcollection to a new path in this collection.
 
@@ -943,7 +944,7 @@ class SynchronizedCollectionBase(CollectionBase):
         else:
             self.notify(ADD, target_dir, target_name, dup)
 
-    @_synchronized
+    @synchronized
     def manifest_text(self, strip=False, normalize=False):
         """Get the manifest text for this collection, sub collections and files.
 
@@ -966,7 +967,7 @@ class SynchronizedCollectionBase(CollectionBase):
             else:
                 return self._manifest_text
 
-    @_synchronized
+    @synchronized
     def diff(self, end_collection, prefix=".", holding_collection=None):
         """
         Generate list of add/modify/delete actions which, when given to `apply`, will
@@ -988,8 +989,8 @@ class SynchronizedCollectionBase(CollectionBase):
                 changes.append((ADD, os.path.join(prefix, k), end_collection[k].clone(holding_collection)))
         return changes
 
-    @_must_be_writable
-    @_synchronized
+    @must_be_writable
+    @synchronized
     def apply(self, changes):
         """
         Apply changes from `diff`.  If a change conflicts with a local change, it
@@ -1036,7 +1037,7 @@ class SynchronizedCollectionBase(CollectionBase):
         stripped = self.manifest_text(strip=True)
         return hashlib.md5(stripped).hexdigest() + '+' + str(len(stripped))
 
-    @_synchronized
+    @synchronized
     def __eq__(self, other):
         if other is self:
             return True
@@ -1090,10 +1091,10 @@ class Collection(SynchronizedCollectionBase):
             Collection is read only.  No synchronization.  This mode will
             also forego locking, which gives better performance.
           :SYNC_EXPLICIT:
-            Synchronize on explicit request via `update()` or `save()`
+            Collection is writable.  Synchronize on explicit request via `update()` or `save()`
           :SYNC_LIVE:
-            Synchronize with server in response to background websocket events,
-            on block write, or on file close.
+            Collection is writable.  Synchronize with server in response to
+            background websocket events, on block write, or on file close.
 
         """
         super(Collection, self).__init__(parent)
@@ -1143,22 +1144,25 @@ class Collection(SynchronizedCollectionBase):
     def on_message(self):
         self.update()
 
-    @_synchronized
-    def update(self, other=None):
+    @synchronized
+    @retry_method
+    def update(self, other=None, num_retries=None):
         if other is None:
-            n = self._my_api().collections().get(uuid=self._manifest_locator).execute()
+            if self._manifest_locator is None:
+                raise errors.ArgumentError("`other` is None but collection does not have a manifest_locator uuid")
+            n = self._my_api().collections().get(uuid=self._manifest_locator).execute(num_retries=num_retries)
             other = import_collection(n["manifest_text"])
         baseline = import_collection(self._manifest_text)
         self.apply(other.diff(baseline))
 
-    @_synchronized
+    @synchronized
     def _my_api(self):
         if self._api_client is None:
             self._api_client = arvados.SafeApi(self._config)
             self._keep_client = self._api_client.keep
         return self._api_client
 
-    @_synchronized
+    @synchronized
     def _my_keep(self):
         if self._keep_client is None:
             if self._api_client is None:
@@ -1167,7 +1171,7 @@ class Collection(SynchronizedCollectionBase):
                 self._keep_client = KeepClient(api=self._api_client)
         return self._keep_client
 
-    @_synchronized
+    @synchronized
     def _my_block_manager(self):
         if self._block_manager is None:
             self._block_manager = BlockManager(self._my_keep())
@@ -1249,7 +1253,7 @@ class Collection(SynchronizedCollectionBase):
         if self._block_manager is not None:
             self._block_manager.stop_threads()
 
-    @_synchronized
+    @synchronized
     def clone(self, new_parent=None, new_sync=SYNC_READONLY, new_config=None):
         if new_config is None:
             new_config = self._config
@@ -1260,7 +1264,7 @@ class Collection(SynchronizedCollectionBase):
         self._cloneinto(c)
         return c
 
-    @_synchronized
+    @synchronized
     def api_response(self):
         """
         api_response() -> dict or None
@@ -1271,11 +1275,15 @@ class Collection(SynchronizedCollectionBase):
         """
         return self._api_response
 
-    @_must_be_writable
-    @_synchronized
-    def save(self, allow_no_locator=False):
+    @must_be_writable
+    @synchronized
+    @retry_method
+    def save(self, update=True, allow_no_locator=False, num_retries=None):
         """Commit pending buffer blocks to Keep, write the manifest to Keep, and
         update the collection record to Keep.
+
+        :update:
+          Update and merge remote changes before saving back.
 
         :allow_no_locator:
           If there is no collection uuid associated with this
@@ -1284,20 +1292,23 @@ class Collection(SynchronizedCollectionBase):
         """
         if self.modified():
             self._my_block_manager().commit_all()
-            self._my_keep().put(self.manifest_text(strip=True))
+            if update and self._manifest_locator is not None and re.match(util.collection_uuid_pattern, self._manifest_locator):
+                self.update()
+            self._my_keep().put(self.manifest_text(strip=True), num_retries=num_retries)
             if self._manifest_locator is not None and re.match(util.collection_uuid_pattern, self._manifest_locator):
                 self._api_response = self._my_api().collections().update(
                     uuid=self._manifest_locator,
                     body={'manifest_text': self.manifest_text(strip=False)}
                     ).execute(
-                        num_retries=self.num_retries)
+                        num_retries=num_retries)
             elif not allow_no_locator:
                 raise AssertionError("Collection manifest_locator must be a collection uuid.  Use save_as() for new collections.")
             self.set_unmodified()
 
-    @_must_be_writable
-    @_synchronized
-    def save_as(self, name, owner_uuid=None, ensure_unique_name=False):
+    @must_be_writable
+    @synchronized
+    @retry_method
+    def save_as(self, name, owner_uuid=None, ensure_unique_name=False, num_retries=None):
         """Save a new collection record.
 
         :name:
@@ -1314,12 +1325,12 @@ class Collection(SynchronizedCollectionBase):
 
         """
         self._my_block_manager().commit_all()
-        self._my_keep().put(self.manifest_text(strip=True))
+        self._my_keep().put(self.manifest_text(strip=True), num_retries=num_retries)
         body = {"manifest_text": self.manifest_text(strip=False),
                 "name": name}
         if owner_uuid:
             body["owner_uuid"] = owner_uuid
-        self._api_response = self._my_api().collections().create(ensure_unique_name=ensure_unique_name, body=body).execute(num_retries=self.num_retries)
+        self._api_response = self._my_api().collections().create(ensure_unique_name=ensure_unique_name, body=body).execute(num_retries=num_retries)
 
         if self.events:
             self.events.unsubscribe(filters=[["object_uuid", "=", self._manifest_locator]])
@@ -1331,15 +1342,15 @@ class Collection(SynchronizedCollectionBase):
 
         self.set_unmodified()
 
-    @_synchronized
+    @synchronized
     def subscribe(self, callback):
         self.callbacks.append(callback)
 
-    @_synchronized
+    @synchronized
     def unsubscribe(self, callback):
         self.callbacks.remove(callback)
 
-    @_synchronized
+    @synchronized
     def notify(self, event, collection, name, item):
         for c in self.callbacks:
             c(event, collection, name, item)
@@ -1373,7 +1384,7 @@ class Subcollection(SynchronizedCollectionBase):
     def notify(self, event, collection, name, item):
         self.parent.notify(event, collection, name, item)
 
-    @_synchronized
+    @synchronized
     def clone(self, new_parent):
         c = Subcollection(new_parent)
         c._items = {}
