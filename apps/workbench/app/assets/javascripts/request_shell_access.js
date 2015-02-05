@@ -8,6 +8,7 @@ $(document).
       success(function(data, status, jqxhr) {
         $('div').remove('.no_shell_access_msg');
         $('.no_shell_access').append('<div class="alert alert-success"><p class="contain-align-left">Request sent for shell access.</p></div>');
+        localStorage.setItem("request_shell_access", "sent");
       }).
       fail(function(jqxhr, status, error) {
         var $sendButton = $('#request_shell_submit');

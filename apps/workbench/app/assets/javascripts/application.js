@@ -238,3 +238,16 @@ function hideLoadingModal() {
 function hasHTML5History() {
     return !!(window.history && window.history.pushState);
 }
+
+function invokeUrlWithLocalStorageValue(url, alias, item) {
+    value = localStorage.getItem(item);
+    if (value) {
+      window.location = alias;
+    } else {
+      window.location = url;
+    }
+}
+
+function clearLocalStorageValue(item) {
+    localStorage.removeItem(item);
+}

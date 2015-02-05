@@ -264,6 +264,9 @@ class UsersController < ApplicationController
     # current user's ssh keys
     @my_ssh_keys = AuthorizedKey.where(key_type: 'SSH', owner_uuid: current_user.uuid)
 
+    # when localStorage indicating previous shell access request, the url used is "manage_acct"
+    @local_storage_request_shell_access = true if request.url.include?('/manage_acct')
+
     respond_to do |f|
       f.html { render template: 'users/manage_account' }
     end
