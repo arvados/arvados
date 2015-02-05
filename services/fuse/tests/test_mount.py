@@ -19,7 +19,7 @@ class MountTestBase(unittest.TestCase):
         self.mounttmp = tempfile.mkdtemp()
         run_test_server.run()
         run_test_server.authorize_with("admin")
-        self.api = api = fuse.SafeApi(arvados.config)
+        self.api = fuse.SafeApi(arvados.config)
 
     def make_mount(self, root_class, **root_kwargs):
         operations = fuse.Operations(os.getuid(), os.getgid())
