@@ -122,12 +122,7 @@ class ApiServerForTests
   def run_test_server
     env_script = nil
     Dir.chdir PYTHON_TESTS_DIR do
-      env = {
-        'RAILS_ENV' => 'test',
-        'ARVADOS_WEBSOCKETS' => 'yes'
-      }
-      cmd = ['python', './run_test_server.py', 'start', '--auth', 'admin']
-      env_script = check_call({}.merge(ENV).merge(env), cmd)
+      env_script = check_call %w(python ./run_test_server.py start --auth admin)
     end
     test_env = {}
     env_script.each_line do |line|
@@ -144,7 +139,7 @@ class ApiServerForTests
   def stop_test_server
     Dir.chdir PYTHON_TESTS_DIR do
       # This is a no-op if we're running within run-tests.sh
-      check_call ['python', './run_test_server.py', 'stop']
+      check_call %w(python ./run_test_server.py stop)
     end
     @@server_is_running = false
   end
