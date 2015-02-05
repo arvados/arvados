@@ -143,19 +143,22 @@ def run(leave_running_atexit=False):
 
     existing_api_host = os.environ.get('ARVADOS_TEST_API_HOST', my_api_host)
     if existing_api_host and pid_file_ok:
-        try:
-            reset()
-            return
-        except:
-            pass
+        if existing_api_host == my_api_host:
+            try:
+                return reset()
+            except:
+                # Fall through to shutdown-and-start case.
+                pass
+        else:
+            # Server was provided by parent. Can't recover if it's
+            # unresettable.
+            return reset()
 
     # Before trying to start up our own server, call stop() to avoid
     # "Phusion Passenger Standalone is already running on PID 12345".
-    # We want to kill it if it's our own _or_ it's some stale
-    # left-over server. But if it's been deliberately provided to us
-    # by a parent process, we don't want to force-kill it. That'll
-    # just wreck things for the next test suite that tries to use it.
-    stop(force=('ARVADOS_TEST_API_HOST' not in os.environ))
+    # (If we've gotten this far, ARVADOS_TEST_API_HOST isn't set, so
+    # we know the server is ours to kill.)
+    stop(force=True)
 
     restore_cwd = os.getcwd()
     api_src_dir = os.path.join(SERVICES_SRC_DIR, 'api')
