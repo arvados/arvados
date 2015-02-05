@@ -68,7 +68,7 @@ class ArvadosFileWriterTestCase(unittest.TestCase):
 
             self.assertEqual(None, c._manifest_locator)
             self.assertEqual(True, c.modified())
-            c.save_as("test_truncate")
+            c.save_new("test_truncate")
             self.assertEqual("zzzzz-4zz18-mockcollection0", c._manifest_locator)
             self.assertEqual(False, c.modified())
 
@@ -91,7 +91,7 @@ class ArvadosFileWriterTestCase(unittest.TestCase):
             self.assertEqual(None, c._manifest_locator)
             self.assertEqual(True, c.modified())
             self.assertEqual(None, keep.get("acbd18db4cc2f85cedef654fccc4a4d8+3"))
-            c.save_as("test_append")
+            c.save_new("test_append")
             self.assertEqual("zzzzz-4zz18-mockcollection0", c._manifest_locator)
             self.assertEqual(False, c.modified())
             self.assertEqual("foo", keep.get("acbd18db4cc2f85cedef654fccc4a4d8+3"))
@@ -171,7 +171,7 @@ class ArvadosFileWriterTestCase(unittest.TestCase):
 
             self.assertEqual(None, c._manifest_locator)
             self.assertEqual(True, c.modified())
-            c.save_as("test_write_large")
+            c.save_new("test_write_large")
             self.assertEqual("zzzzz-4zz18-mockcollection0", c._manifest_locator)
             self.assertEqual(False, c.modified())
 
@@ -231,7 +231,7 @@ class ArvadosFileWriterTestCase(unittest.TestCase):
 
             self.assertEqual(None, c._manifest_locator)
             self.assertEqual(True, c.modified())
-            c.save_as("test_write_large")
+            c.save_new("test_write_large")
             self.assertEqual("zzzzz-4zz18-mockcollection0", c._manifest_locator)
             self.assertEqual(False, c.modified())
 
@@ -249,7 +249,7 @@ class ArvadosFileWriterTestCase(unittest.TestCase):
             self.assertEqual(None, c._manifest_locator)
             self.assertEqual(True, c.modified())
             self.assertEqual(None, keep.get("2e9ec317e197819358fbc43afca7d837+8"))
-            c.save_as("test_create")
+            c.save_new("test_create")
             self.assertEqual("zzzzz-4zz18-mockcollection0", c._manifest_locator)
             self.assertEqual(False, c.modified())
             self.assertEqual("01234567", keep.get("2e9ec317e197819358fbc43afca7d837+8"))
@@ -263,7 +263,7 @@ class ArvadosFileWriterTestCase(unittest.TestCase):
         with arvados.Collection(api_client=api, keep_client=keep, sync=SYNC_EXPLICIT) as c:
             writer = c.open("foo/bar/count.txt", "w+")
             writer.write("01234567")
-            c.save_as("test_create")
+            c.save_new("test_create")
 
     def test_overwrite(self):
         keep = ArvadosFileWriterTestCase.MockKeep({"781e5e245d69b566979b86e28d23f2c7+10": "0123456789"})
@@ -279,7 +279,7 @@ class ArvadosFileWriterTestCase(unittest.TestCase):
 
             self.assertEqual(None, c._manifest_locator)
             self.assertEqual(True, c.modified())
-            c.save_as("test_overwrite")
+            c.save_new("test_overwrite")
             self.assertEqual("zzzzz-4zz18-mockcollection0", c._manifest_locator)
             self.assertEqual(False, c.modified())
 
@@ -309,7 +309,7 @@ class ArvadosFileWriterTestCase(unittest.TestCase):
             self.assertEqual(None, c._manifest_locator)
             self.assertEqual(True, c.modified())
             self.assertEqual(None, keep.get("2e9ec317e197819358fbc43afca7d837+8"))
-            c.save_as("test_create_multiple")
+            c.save_new("test_create_multiple")
             self.assertEqual("zzzzz-4zz18-mockcollection0", c._manifest_locator)
             self.assertEqual(False, c.modified())
             self.assertEqual("01234567", keep.get("2e9ec317e197819358fbc43afca7d837+8"))
@@ -333,6 +333,10 @@ class ArvadosFileReaderTestCase(StreamFileReaderTestCase):
         def __init__(self, blocks, nocache):
             self.blocks = blocks
             self.nocache = nocache
+            self.lock = arvados.arvfile.NoopLock()
+
+        def root_collection(self):
+            return self
 
         def _my_block_manager(self):
             return ArvadosFileReaderTestCase.MockParent.MockBlockMgr(self.blocks, self.nocache)
@@ -340,8 +344,6 @@ class ArvadosFileReaderTestCase(StreamFileReaderTestCase):
         def sync_mode(self):
             return SYNC_READONLY
 
-        def _root_lock(self):
-            return arvados.arvfile.NoopLock()
 
     def make_count_reader(self, nocache=False):
         stream = []

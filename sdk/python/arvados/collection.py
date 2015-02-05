@@ -662,13 +662,13 @@ class SynchronizedCollectionBase(CollectionBase):
     def _my_block_manager(self):
         raise NotImplementedError()
 
-    def _root_lock(self):
-        raise NotImplementedError()
-
     def _populate(self):
         raise NotImplementedError()
 
     def sync_mode(self):
+        raise NotImplementedError()
+
+    def root_collection(self):
         raise NotImplementedError()
 
     def notify(self, event, collection, name, item):
@@ -1057,7 +1057,7 @@ class SynchronizedCollectionBase(CollectionBase):
 
 class Collection(SynchronizedCollectionBase):
     """Store an Arvados collection, consisting of a set of files and
-    sub-collections.
+    sub-collections.  This object
     """
 
     def __init__(self, manifest_locator_or_text=None,
@@ -1125,8 +1125,8 @@ class Collection(SynchronizedCollectionBase):
             self._populate()
 
             if self._sync == SYNC_LIVE:
-                if not self._manifest_locator or not re.match(util.collection_uuid_pattern, self._manifest_locator):
-                    raise errors.ArgumentError("Cannot SYNC_LIVE unless a collection uuid is specified")
+                if not self._has_collection_uuid():
+                    raise errors.ArgumentError("Cannot SYNC_LIVE associated with a collection uuid")
                 self.events = events.subscribe(arvados.api(), [["object_uuid", "=", self._manifest_locator]], self.on_message)
 
     @staticmethod
@@ -1135,8 +1135,8 @@ class Collection(SynchronizedCollectionBase):
         c.save_as(name, owner_uuid=owner_uuid, ensure_unique_name=True)
         return c
 
-    def _root_lock(self):
-        return self.lock
+    def root_collection(self):
+        return self
 
     def sync_mode(self):
         return self._sync
@@ -1243,13 +1243,16 @@ class Collection(SynchronizedCollectionBase):
             # forego any further locking.
             self.lock = NoopLock()
 
+    def _has_collection_uuid(self):
+        return self._manifest_locator is not None and re.match(util.collection_uuid_pattern, self._manifest_locator)
+
     def __enter__(self):
         return self
 
     def __exit__(self, exc_type, exc_value, traceback):
         """Support scoped auto-commit in a with: block"""
-        if self._sync != SYNC_READONLY:
-            self.save(allow_no_locator=True)
+        if self._sync != SYNC_READONLY and self._has_collection_uuid():
+            self.save()
         if self._block_manager is not None:
             self._block_manager.stop_threads()
 
@@ -1278,41 +1281,49 @@ class Collection(SynchronizedCollectionBase):
     @must_be_writable
     @synchronized
     @retry_method
-    def save(self, update=True, allow_no_locator=False, num_retries=None):
-        """Commit pending buffer blocks to Keep, write the manifest to Keep, and
-        update the collection record to Keep.
+    def save(self, merge=True, num_retries=None):
+        """Commit pending buffer blocks to Keep, merge with remote record (if
+        update=True), write the manifest to Keep, and update the collection
+        record.  Will raise AssertionError if not associated with a collection
+        record on the API server.  If you want to save a manifest to Keep only,
+        see `save_new()`.
 
         :update:
-          Update and merge remote changes before saving back.
+          Update and merge remote changes before saving.  Otherwise, any
+          remote changes will be ignored and overwritten.
 
-        :allow_no_locator:
-          If there is no collection uuid associated with this
-          Collection and `allow_no_locator` is False, raise an error.  If True,
-          do not raise an error.
         """
         if self.modified():
+            if not self._has_collection_uuid():
+                raise AssertionError("Collection manifest_locator must be a collection uuid.  Use save_as() for new collections.")
             self._my_block_manager().commit_all()
-            if update and self._manifest_locator is not None and re.match(util.collection_uuid_pattern, self._manifest_locator):
+            if merge:
                 self.update()
             self._my_keep().put(self.manifest_text(strip=True), num_retries=num_retries)
-            if self._manifest_locator is not None and re.match(util.collection_uuid_pattern, self._manifest_locator):
-                self._api_response = self._my_api().collections().update(
-                    uuid=self._manifest_locator,
-                    body={'manifest_text': self.manifest_text(strip=False)}
-                    ).execute(
-                        num_retries=num_retries)
-            elif not allow_no_locator:
-                raise AssertionError("Collection manifest_locator must be a collection uuid.  Use save_as() for new collections.")
+
+            mt = self.manifest_text(strip=False)
+            self._api_response = self._my_api().collections().update(
+                uuid=self._manifest_locator,
+                body={'manifest_text': mt}
+                ).execute(
+                    num_retries=num_retries)
+            self._manifest_text = mt
             self.set_unmodified()
 
     @must_be_writable
     @synchronized
     @retry_method
-    def save_as(self, name, owner_uuid=None, ensure_unique_name=False, num_retries=None):
-        """Save a new collection record.
+    def save_new(self, name=None, create_collection_record=True, owner_uuid=None, ensure_unique_name=False, num_retries=None):
+        """Commit pending buffer blocks to Keep, write the manifest to Keep, and create
+        a new collection record (if create_collection_record True).  After
+        creating a new collection record, this Collection object will be
+        associated with the new record for `save()` and SYNC_LIVE updates.
 
         :name:
           The collection name.
+
+        :keep_only:
+          Only save the manifest to keep, do not create a collection record.
 
         :owner_uuid:
           the user, or project uuid that will own this collection.
@@ -1326,20 +1337,28 @@ class Collection(SynchronizedCollectionBase):
         """
         self._my_block_manager().commit_all()
         self._my_keep().put(self.manifest_text(strip=True), num_retries=num_retries)
-        body = {"manifest_text": self.manifest_text(strip=False),
-                "name": name}
-        if owner_uuid:
-            body["owner_uuid"] = owner_uuid
-        self._api_response = self._my_api().collections().create(ensure_unique_name=ensure_unique_name, body=body).execute(num_retries=num_retries)
+        mt = self.manifest_text(strip=False)
 
-        if self.events:
-            self.events.unsubscribe(filters=[["object_uuid", "=", self._manifest_locator]])
+        if create_collection_record:
+            if name is None:
+                name = "Collection created %s" % (time.strftime("%Y-%m-%d %H:%M:%S %Z", time.localtime()))
 
-        self._manifest_locator = self._api_response["uuid"]
+            body = {"manifest_text": mt,
+                    "name": name}
+            if owner_uuid:
+                body["owner_uuid"] = owner_uuid
 
-        if self.events:
-            self.events.subscribe(filters=[["object_uuid", "=", self._manifest_locator]])
+            self._api_response = self._my_api().collections().create(ensure_unique_name=ensure_unique_name, body=body).execute(num_retries=num_retries)
 
+            if self.events:
+                self.events.unsubscribe(filters=[["object_uuid", "=", self._manifest_locator]])
+
+            self._manifest_locator = self._api_response["uuid"]
+
+            if self.events:
+                self.events.subscribe(filters=[["object_uuid", "=", self._manifest_locator]])
+
+        self._manifest_text = mt
         self.set_unmodified()
 
     @synchronized
@@ -1361,33 +1380,32 @@ class Subcollection(SynchronizedCollectionBase):
 
     def __init__(self, parent):
         super(Subcollection, self).__init__(parent)
-        self.lock = parent._root_lock()
+        self.lock = self.root_collection().lock
 
-    def _root_lock(self):
-        return self.parent._root_lock()
+    def root_collection(self):
+        return self.parent.root_collection()
 
     def sync_mode(self):
-        return self.parent.sync_mode()
+        return self.root_collection().sync_mode()
 
     def _my_api(self):
-        return self.parent._my_api()
+        return self.root_collection()._my_api()
 
     def _my_keep(self):
-        return self.parent._my_keep()
+        return self.root_collection()._my_keep()
 
     def _my_block_manager(self):
-        return self.parent._my_block_manager()
+        return self.root_collection()._my_block_manager()
 
     def _populate(self):
-        self.parent._populate()
+        self.root_collection()._populate()
 
     def notify(self, event, collection, name, item):
-        self.parent.notify(event, collection, name, item)
+        return self.root_collection().notify(event, collection, name, item)
 
     @synchronized
     def clone(self, new_parent):
         c = Subcollection(new_parent)
-        c._items = {}
         self._cloneinto(c)
         return c
 

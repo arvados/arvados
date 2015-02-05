@@ -546,9 +546,10 @@ class BlockManager(object):
 
 
 class ArvadosFile(object):
-    """
-    ArvadosFile manages the underlying representation of a file in Keep as a sequence of
-    segments spanning a set of blocks, and implements random read/write access.
+    """ArvadosFile manages the underlying representation of a file in Keep as a
+    sequence of segments spanning a set of blocks, and implements random
+    read/write access.  This object may be accessed from multiple threads.
+
     """
 
     def __init__(self, parent, stream=[], segments=[]):
@@ -562,7 +563,7 @@ class ArvadosFile(object):
         self.parent = parent
         self._modified = True
         self._segments = []
-        self.lock = parent._root_lock()
+        self.lock = parent.root_collection().lock
         for s in segments:
             self._add_segment(stream, s.locator, s.range_size)
         self._current_bblock = None
@@ -649,19 +650,21 @@ class ArvadosFile(object):
         elif size > self.size():
             raise IOError("truncate() does not support extending the file size")
 
-    @synchronized
     def readfrom(self, offset, size, num_retries):
         """
         read upto `size` bytes from the file starting at `offset`.
         """
-        if size == 0 or offset >= self.size():
-            return ''
-        data = []
+        with self.lock:
+            if size == 0 or offset >= self.size():
+                return ''
+            prefetch = locators_and_ranges(self._segments, offset, size + config.KEEP_BLOCK_SIZE)
+            readsegs = locators_and_ranges(self._segments, offset, size)
 
-        for lr in locators_and_ranges(self._segments, offset, size + config.KEEP_BLOCK_SIZE):
+        for lr in prefetch:
             self.parent._my_block_manager().block_prefetch(lr.locator)
 
-        for lr in locators_and_ranges(self._segments, offset, size):
+        data = []
+        for lr in readsegs:
             d = self.parent._my_block_manager().get_block(lr.locator, num_retries=num_retries, cache_only=bool(data))
             if d:
                 data.append(d[lr.segment_offset:lr.segment_offset+lr.segment_size])
@@ -753,6 +756,11 @@ class ArvadosFile(object):
             return 0
 
 class ArvadosFileReader(ArvadosFileReaderBase):
+    """Wraps ArvadosFile in a file-like object supporting reading only.  Be aware
+    that this class is NOT thread safe as there is no locking around updating file
+    pointer.
+    """
+
     def __init__(self, arvadosfile, name, mode="r", num_retries=None):
         super(ArvadosFileReader, self).__init__(name, mode, num_retries=num_retries)
         self.arvadosfile = arvadosfile
@@ -764,7 +772,7 @@ class ArvadosFileReader(ArvadosFileReaderBase):
     @retry_method
     def read(self, size, num_retries=None):
         """Read up to `size` bytes from the stream, starting at the current file position"""
-        data = self.arvadosfile.readfrom(self._filepos, size, num_retries=num_retries)
+        data = self.arvadosfile.readfrom(self._filepos, size, num_retries)
         self._filepos += len(data)
         return data
 
@@ -779,6 +787,12 @@ class ArvadosFileReader(ArvadosFileReaderBase):
 
 
 class ArvadosFileWriter(ArvadosFileReader):
+    """Wraps ArvadosFile in a file-like object supporting both reading and writing.
+    Be aware that this class is NOT thread safe as there is no locking around
+    updating file pointer.
+
+    """
+
     def __init__(self, arvadosfile, name, mode, num_retries=None):
         super(ArvadosFileWriter, self).__init__(arvadosfile, name, mode, num_retries=num_retries)
 
@@ -786,7 +800,7 @@ class ArvadosFileWriter(ArvadosFileReader):
     @retry_method
     def write(self, data, num_retries=None):
         if self.mode[0] == "a":
-            self.arvadosfile.writeto(self.size(), data)
+            self.arvadosfile.writeto(self.size(), data, num_retries)
         else:
             self.arvadosfile.writeto(self._filepos, data, num_retries)
             self._filepos += len(data)
@@ -795,7 +809,7 @@ class ArvadosFileWriter(ArvadosFileReader):
     @retry_method
     def writelines(self, seq, num_retries=None):
         for s in seq:
-            self.write(s)
+            self.write(s, num_retries)
 
     def truncate(self, size=None):
         if size is None:
@@ -803,3 +817,7 @@ class ArvadosFileWriter(ArvadosFileReader):
         self.arvadosfile.truncate(size)
         if self._filepos > self.size():
             self._filepos = self.size()
+
+    def close(self):
+        if self.arvadosfile.parent.sync_mode() == SYNC_LIVE:
+            self.arvadosfile.parent.root_collection().save()
