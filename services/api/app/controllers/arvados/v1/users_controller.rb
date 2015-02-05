@@ -141,7 +141,7 @@ class Arvados::V1::UsersController < ApplicationController
     }
   end
 
-  def apply_filters
+  def apply_filters(model_class=nil)
     return super if @read_users.any? &:is_admin
     if params[:uuid] != current_user.andand.uuid
       # Non-admin index/show returns very basic information about readable users.
