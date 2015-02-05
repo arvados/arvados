@@ -649,6 +649,7 @@ MOD = "mod"
 class SynchronizedCollectionBase(CollectionBase):
     def __init__(self, parent=None):
         self.parent = parent
+        self._modified = True
         self._items = {}
 
     def _my_api(self):
@@ -669,7 +670,7 @@ class SynchronizedCollectionBase(CollectionBase):
     def sync_mode(self):
         raise NotImplementedError()
 
-    def notify(self, collection, event, name, item):
+    def notify(self, event, collection, name, item):
         raise NotImplementedError()
 
     @_synchronized
@@ -708,14 +709,16 @@ class SynchronizedCollectionBase(CollectionBase):
                     else:
                         item = ArvadosFile(self)
                     self._items[p[0]] = item
-                    self.notify(self, ADD, p[0], item)
+                    self._modified = True
+                    self.notify(ADD, self, p[0], item)
                 return item
             else:
                 if item is None and create:
                     # create new collection
                     item = Subcollection(self)
                     self._items[p[0]] = item
-                    self.notify(self, ADD, p[0], item)
+                    self._modified = True
+                    self.notify(ADD, self, p[0], item)
                 del p[0]
                 if isinstance(item, SynchronizedCollectionBase):
                     return item.find("/".join(p), create=create)
@@ -769,6 +772,8 @@ class SynchronizedCollectionBase(CollectionBase):
     def modified(self):
         """Test if the collection (or any subcollection or file) has been modified
         since it was created."""
+        if self._modified:
+            return True
         for k,v in self._items.items():
             if v.modified():
                 return True
@@ -777,6 +782,7 @@ class SynchronizedCollectionBase(CollectionBase):
     @_synchronized
     def set_unmodified(self):
         """Recursively clear modified flag"""
+        self._modified = False
         for k,v in self._items.items():
             v.set_unmodified()
 
@@ -813,7 +819,8 @@ class SynchronizedCollectionBase(CollectionBase):
     def __delitem__(self, p):
         """Delete an item by name which is directly contained by this collection."""
         del self._items[p]
-        self.notify(self, DEL, p, None)
+        self._modified = True
+        self.notify(DEL, self, p, None)
 
     @_synchronized
     def keys(self):
@@ -853,8 +860,10 @@ class SynchronizedCollectionBase(CollectionBase):
             if len(p) == 1:
                 if isinstance(self._items[p[0]], SynchronizedCollectionBase) and len(self._items[p[0]]) > 0 and not rm_r:
                     raise IOError((errno.ENOTEMPTY, "Subcollection not empty"))
+                d = self._items[p[0]]
                 del self._items[p[0]]
-                self.notify(self, DEL, p[0], None)
+                self._modified = True
+                self.notify(DEL, self, p[0], d)
             else:
                 del p[0]
                 item.remove("/".join(p))
@@ -912,20 +921,27 @@ class SynchronizedCollectionBase(CollectionBase):
 
         target_dir = self.find("/".join(tp[0:-1]), create=True, create_collection=True)
 
-        if target_name in target_dir:
-            if isinstance(target_dir[target_name], SynchronizedCollectionBase) and sp:
-                target_dir = target_dir[target_name]
-                target_name = sp[-1]
-            elif not overwrite:
-                raise IOError((errno.EEXIST, "File already exists"))
-
-        # Actually make the copy.
-        dup = source_obj.clone(target_dir)
         with target_dir.lock:
+            if target_name in target_dir:
+                if isinstance(target_dir[target_name], SynchronizedCollectionBase) and sp:
+                    target_dir = target_dir[target_name]
+                    target_name = sp[-1]
+                elif not overwrite:
+                    raise IOError((errno.EEXIST, "File already exists"))
+
+            mod = None
+            if target_name in target_dir:
+                mod = target_dir[target_name]
+
+            # Actually make the copy.
+            dup = source_obj.clone(target_dir)
             target_dir._items[target_name] = dup
+            target_dir._modified = True
 
-        self.notify(target_dir, ADD, target_name, dup)
-
+        if mod:
+            self.notify(MOD, target_dir, target_name, (mod, dup))
+        else:
+            self.notify(ADD, target_dir, target_name, dup)
 
     @_synchronized
     def manifest_text(self, strip=False, normalize=False):
@@ -951,23 +967,25 @@ class SynchronizedCollectionBase(CollectionBase):
                 return self._manifest_text
 
     @_synchronized
-    def diff(self, end_collection, prefix="."):
+    def diff(self, end_collection, prefix=".", holding_collection=None):
         """
         Generate list of add/modify/delete actions which, when given to `apply`, will
         change `self` to match `end_collection`
         """
         changes = []
+        if holding_collection is None:
+            holding_collection = Collection()
         for k in self:
             if k not in end_collection:
-               changes.append((DEL, os.path.join(prefix, k), self[k]))
+               changes.append((DEL, os.path.join(prefix, k), self[k].clone(holding_collection)))
         for k in end_collection:
             if k in self:
                 if isinstance(end_collection[k], Subcollection) and isinstance(self[k], Subcollection):
-                    changes.extend(self[k].diff(end_collection[k], os.path.join(prefix, k)))
+                    changes.extend(self[k].diff(end_collection[k], os.path.join(prefix, k), holding_collection))
                 elif end_collection[k] != self[k]:
-                    changes.append((MOD, os.path.join(prefix, k), self[k], end_collection[k]))
+                    changes.append((MOD, os.path.join(prefix, k), self[k].clone(holding_collection), end_collection[k].clone(holding_collection)))
             else:
-                changes.append((ADD, os.path.join(prefix, k), end_collection[k]))
+                changes.append((ADD, os.path.join(prefix, k), end_collection[k].clone(holding_collection)))
         return changes
 
     @_must_be_writable
@@ -1018,6 +1036,23 @@ class SynchronizedCollectionBase(CollectionBase):
         stripped = self.manifest_text(strip=True)
         return hashlib.md5(stripped).hexdigest() + '+' + str(len(stripped))
 
+    @_synchronized
+    def __eq__(self, other):
+        if other is self:
+            return True
+        if not isinstance(other, SynchronizedCollectionBase):
+            return False
+        if len(self._items) != len(other):
+            return False
+        for k in self._items:
+            if k not in other:
+                return False
+            if self._items[k] != other[k]:
+                return False
+        return True
+
+    def __ne__(self, other):
+        return not self.__eq__(other)
 
 class Collection(SynchronizedCollectionBase):
     """Store an Arvados collection, consisting of a set of files and
@@ -1305,9 +1340,9 @@ class Collection(SynchronizedCollectionBase):
         self.callbacks.remove(callback)
 
     @_synchronized
-    def notify(self, collection, event, name, item):
+    def notify(self, event, collection, name, item):
         for c in self.callbacks:
-            c(collection, event, name, item)
+            c(event, collection, name, item)
 
 class Subcollection(SynchronizedCollectionBase):
     """This is a subdirectory within a collection that doesn't have its own API
@@ -1335,8 +1370,8 @@ class Subcollection(SynchronizedCollectionBase):
     def _populate(self):
         self.parent._populate()
 
-    def notify(self, collection, event, name, item):
-        self.parent.notify(collection, event, name, item)
+    def notify(self, event, collection, name, item):
+        self.parent.notify(event, collection, name, item)
 
     @_synchronized
     def clone(self, new_parent):

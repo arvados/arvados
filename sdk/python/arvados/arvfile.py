@@ -566,10 +566,7 @@ class ArvadosFile(object):
         for s in segments:
             self._add_segment(stream, s.locator, s.range_size)
         self._current_bblock = None
-        if parent.sync_mode() == SYNC_READONLY:
-            self.lock = NoopLock()
-        else:
-            self.lock = threading.Lock()
+        self.lock = parent._root_lock()
 
     def sync_mode(self):
         return self.parent.sync_mode()
@@ -582,7 +579,6 @@ class ArvadosFile(object):
     def clone(self, new_parent):
         """Make a copy of this file."""
         cp = ArvadosFile(new_parent)
-        cp._modified = False
 
         map_loc = {}
         for r in self._segments:
@@ -606,7 +602,7 @@ class ArvadosFile(object):
     def __eq__(self, other):
         if other is self:
             return True
-        if type(other) != ArvadosFile:
+        if not isinstance(other, ArvadosFile):
             return False
 
         s = other.segments()
@@ -634,7 +630,7 @@ class ArvadosFile(object):
         the file contents after `size` will be discarded.  If `size` is greater
         than the current size of the file, an IOError will be raised.
         """
-        if size < self._size():
+        if size < self.size():
             new_segs = []
             for r in self._segments:
                 range_end = r.range_start+r.range_size
@@ -651,7 +647,7 @@ class ArvadosFile(object):
 
             self._segments = new_segs
             self._modified = True
-        elif size > self._size():
+        elif size > self.size():
             raise IOError("truncate() does not support extending the file size")
 
     @_synchronized
@@ -659,7 +655,7 @@ class ArvadosFile(object):
         """
         read upto `size` bytes from the file starting at `offset`.
         """
-        if size == 0 or offset >= self._size():
+        if size == 0 or offset >= self.size():
             return ''
         data = []
 
@@ -708,7 +704,7 @@ class ArvadosFile(object):
         if len(data) == 0:
             return
 
-        if offset > self._size():
+        if offset > self.size():
             raise ArgumentError("Offset is past the end of the file")
 
         if len(data) > config.KEEP_BLOCK_SIZE:
@@ -732,10 +728,6 @@ class ArvadosFile(object):
     @_must_be_writable
     @_synchronized
     def add_segment(self, blocks, pos, size):
-        # Synchronized public api, see _add_segment
-        self._add_segment(blocks, pos, size)
-
-    def _add_segment(self, blocks, pos, size):
         """
         Add a segment to the end of the file, with `pos` and `offset` referencing a
         section of the stream described by `blocks` (a list of Range objects)
@@ -746,18 +738,14 @@ class ArvadosFile(object):
             r = Range(lr.locator, last.range_start+last.range_size, lr.segment_size, lr.segment_offset)
             self._segments.append(r)
 
-    def _size(self):
+    @_synchronized
+    def size(self):
         """Get the file size"""
         if self._segments:
             n = self._segments[-1]
             return n.range_start + n.range_size
         else:
             return 0
-
-    @_synchronized
-    def size(self):
-        """Get the file size"""
-        return self._size()
 
 class ArvadosFileReader(ArvadosFileReaderBase):
     def __init__(self, arvadosfile, name, mode="r", num_retries=None):
