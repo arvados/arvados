@@ -411,8 +411,8 @@ class User < ArvadosModel
 
   # Give the special "System group" permission to manage this user and
   # all of this user's stuff.
-  #
   def add_system_group_permission_link
+    return true if uuid == system_user_uuid
     act_as_system_user do
       Link.create(link_class: 'permission',
                   name: 'can_manage',

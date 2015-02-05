@@ -107,6 +107,7 @@ class ArvadosModel < ActiveRecord::Base
   # If current user cannot write this object, just return
   # [self.owner_uuid].
   def writable_by
+    return [owner_uuid] if not current_user
     unless (owner_uuid == current_user.uuid or
             current_user.is_admin or
             (current_user.groups_i_can(:manage) & [uuid, owner_uuid]).any?)

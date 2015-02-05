@@ -11,10 +11,6 @@ class Job < ArvadosBase
     %w(description)
   end
 
-  def self.creatable?
-    false
-  end
-
   def default_name
     if script
       x = "\"#{script}\" job"
