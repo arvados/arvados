@@ -28,7 +28,7 @@ func (s *ServerRequiredSuite) SetUpTest(c *C) {
 }
 
 func (s *ServerRequiredSuite) TestMakeArvadosClientSecure(c *C) {
-	os.Unsetenv("ARVADOS_API_HOST_INSECURE")
+	os.Setenv("ARVADOS_API_HOST_INSECURE", "")
 	kc, err := MakeArvadosClient()
 	c.Assert(err, Equals, nil)
 	c.Check(kc.ApiServer, Equals, os.Getenv("ARVADOS_API_HOST"))
