@@ -10,6 +10,7 @@ import re
 import shutil
 import signal
 import subprocess
+import string
 import sys
 import tempfile
 import time
@@ -92,6 +93,31 @@ def kill_server_pid(pidfile, wait=10, passenger_root=False):
     except OSError:
         pass
 
+def find_available_port():
+    """Return a port number that is not in use right now.
+
+    Some opportunity for races here, but it's better than choosing
+    something at random and not checking at all. If all of our servers
+    (hey Passenger) knew that listening on port 0 was a thing, the OS
+    would take care of the races, and this wouldn't be needed at all.
+    """
+    port = None
+    while port is None:
+        port = random.randint(20000, 40000)
+        port_hex = ':%04x ' % port
+        try:
+            with open('/proc/net/tcp', 'r') as f:
+                for line in f:
+                    if 0 <= string.find(line, port_hex):
+                        port = None
+                        break
+        except OSError:
+            # This isn't going so well. Just use the random port.
+            pass
+        except IOError:
+            pass
+    return port
+
 def run(leave_running_atexit=False):
     """Ensure an API server is running, and ARVADOS_API_* env vars have
     admin credentials for it.
@@ -149,7 +175,7 @@ def run(leave_running_atexit=False):
             '-days', '3650',
             '-subj', '/CN=0.0.0.0'])
 
-    port = random.randint(20000, 40000)
+    port = find_available_port()
     env = os.environ.copy()
     env['RAILS_ENV'] = 'test'
     env['ARVADOS_WEBSOCKETS'] = 'yes'
@@ -219,7 +245,7 @@ def stop(force=False):
 
 def _start_keep(n, keep_args):
     keep0 = tempfile.mkdtemp()
-    port = random.randint(20000, 40000)
+    port = find_available_port()
     keep_cmd = ["keepstore",
                 "-volumes={}".format(keep0),
                 "-listen=:{}".format(port),
@@ -288,7 +314,7 @@ def run_keep_proxy():
     stop_keep_proxy()
 
     admin_token = auth_token('admin')
-    port = random.randint(20000,40000)
+    port = find_available_port()
     env = os.environ.copy()
     env['ARVADOS_API_TOKEN'] = admin_token
     kp = subprocess.Popen(
