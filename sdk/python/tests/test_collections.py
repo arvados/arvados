@@ -500,17 +500,7 @@ class ArvadosCollectionsTest(run_test_server.TestCaseWithServers,
                 ).manifest_text())
 
 
-class CollectionTestMixin(object):
-    PROXY_RESPONSE = {
-        'items_available': 1,
-        'items': [{
-                'uuid': 'zzzzz-bi6l4-mockproxy012345',
-                'owner_uuid': 'zzzzz-tpzed-mockowner012345',
-                'service_host': tutil.TEST_HOST,
-                'service_port': 65535,
-                'service_ssl_flag': True,
-                'service_type': 'proxy',
-                }]}
+class CollectionTestMixin(tutil.ApiClientMock):
     API_COLLECTIONS = run_test_server.fixture('collections')
     DEFAULT_COLLECTION = API_COLLECTIONS['foo_file']
     DEFAULT_DATA_HASH = DEFAULT_COLLECTION['portable_data_hash']
@@ -520,34 +510,10 @@ class CollectionTestMixin(object):
     ALT_DATA_HASH = ALT_COLLECTION['portable_data_hash']
     ALT_MANIFEST = ALT_COLLECTION['manifest_text']
 
-    def _mock_api_call(self, mock_method, code, body):
-        mock_method = mock_method().execute
-        if code == 200:
-            mock_method.return_value = body
-        else:
-            mock_method.side_effect = arvados.errors.ApiError(
-                tutil.fake_httplib2_response(code), "{}")
-
-    def mock_keep_services(self, api_mock, code, body):
-        self._mock_api_call(api_mock.keep_services().accessible, code, body)
-
-    def api_client_mock(self, code=200):
-        client = mock.MagicMock(name='api_client')
-        self.mock_keep_services(client, code, self.PROXY_RESPONSE)
+    def api_client_mock(self, status=200):
+        client = super(CollectionTestMixin, self).api_client_mock()
+        self.mock_keep_services(client, status=status, service_type='proxy', count=1)
         return client
-
-    def disk_services_available(self, number_of_disks):
-        return {
-            'items_available': number_of_disks,
-            'items': [{
-                'uuid': 'zzzzz-bi6l4-mockdisk%07d' % i,
-                'owner_uuid': 'zzzzz-tpzed-000000000000000',
-                'service_host': tutil.TEST_HOST,
-                'service_port': 65535-i,
-                'service_ssl_flag': True,
-                'service_type': 'disk',
-            } for i in range(0, number_of_disks)]
-        }
 
 
 @tutil.skip_sleep
@@ -556,9 +522,9 @@ class CollectionReaderTestCase(unittest.TestCase, CollectionTestMixin):
         body = self.API_COLLECTIONS.get(body)
         self._mock_api_call(api_mock.collections().get, code, body)
 
-    def api_client_mock(self, code=200):
-        client = super(CollectionReaderTestCase, self).api_client_mock(code)
-        self.mock_get_collection(client, code, 'foo_file')
+    def api_client_mock(self, status=200):
+        client = super(CollectionReaderTestCase, self).api_client_mock()
+        self.mock_get_collection(client, status, 'foo_file')
         return client
 
     def test_init_no_default_retries(self):
@@ -741,7 +707,7 @@ class CollectionWriterTestCase(unittest.TestCase, CollectionTestMixin):
 
     def test_write_insufficient_replicas_via_disks(self):
         client = mock.MagicMock(name='api_client')
-        self.mock_keep_services(client, 200, self.disk_services_available(2))
+        self.mock_keep_services(client, status=200, service_type='disk', count=2)
         writer = self.foo_writer(api_client=client, replication=3)
         with self.mock_keep(
                 None, 200, 200,
@@ -751,7 +717,7 @@ class CollectionWriterTestCase(unittest.TestCase, CollectionTestMixin):
 
     def test_write_three_replicas(self):
         client = mock.MagicMock(name='api_client')
-        self.mock_keep_services(client, 200, self.disk_services_available(6))
+        self.mock_keep_services(client, status=200, service_type='disk', count=6)
         writer = self.foo_writer(api_client=client, replication=3)
         with self.mock_keep(
                 None, 200, 500, 200, 500, 200, 200,

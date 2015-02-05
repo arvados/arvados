@@ -1,5 +1,6 @@
 #!/usr/bin/env python
 
+import arvados
 import errno
 import hashlib
 import httplib
@@ -64,6 +65,40 @@ class MockStreamReader(object):
 
     def readfrom(self, start, size, num_retries=None):
         return self._data[start:start + size]
+
+
+class ApiClientMock(object):
+    def api_client_mock(self):
+        return mock.MagicMock(name='api_client_mock')
+
+    def mock_keep_services(self, api_mock=None, status=200, count=12,
+                           service_type='disk',
+                           service_host=None,
+                           service_port=None,
+                           service_ssl_flag=False):
+        if api_mock is None:
+            api_mock = self.api_client_mock()
+        body = {
+            'items_available': count,
+            'items': [{
+                'uuid': 'zzzzz-bi6l4-{:015x}'.format(i),
+                'owner_uuid': 'zzzzz-tpzed-000000000000000',
+                'service_host': service_host or 'keep0x{:x}'.format(i),
+                'service_port': service_port or 65535-i,
+                'service_ssl_flag': service_ssl_flag,
+                'service_type': service_type,
+            } for i in range(0, count)]
+        }
+        self._mock_api_call(api_mock.keep_services().accessible, status, body)
+        return api_mock
+
+    def _mock_api_call(self, mock_method, code, body):
+        mock_method = mock_method().execute
+        if code == 200:
+            mock_method.return_value = body
+        else:
+            mock_method.side_effect = arvados.errors.ApiError(
+                fake_httplib2_response(code), "{}")
 
 
 class ArvadosBaseTestCase(unittest.TestCase):
