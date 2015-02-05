@@ -27,6 +27,8 @@ table(table table-bordered table-condensed).
 |order|string|Order in which to return matching items.  Sort within a resource type by prefixing the attribute with the resource name and a dot.|query|@"collections.modified_at desc"@|
 |filters|array|Conditions for filtering items.|query|@[["uuid", "is_a", "arvados#job"]]@|
 
+N.B.: Because adding access tokens to manifests can be computationally expensive, the @manifest_text@ field is not included in listed collections.  If you need it, request a "list of collections":{{site.baseurl}}/api/methods/collections.html with the filter @["owner_uuid", "=", GROUP_UUID]@, and @"manifest_text"@ listed in the select parameter.
+
 h2. create
 
 Create a new Group.

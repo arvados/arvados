@@ -205,8 +205,9 @@ class ApplicationController < ActionController::Base
     end
   end
 
-  def apply_where_limit_order_params *args
-    apply_filters *args
+  def apply_where_limit_order_params model_class=nil
+    model_class ||= self.model_class
+    apply_filters model_class
 
     ar_table_name = @objects.table_name
     if @where.is_a? Hash and @where.any?
@@ -271,7 +272,7 @@ class ApplicationController < ActionController::Base
         columns_list = @select.
           flat_map { |attr| api_column_map[attr] }.
           uniq.
-          map { |s| "#{table_name}.#{ActiveRecord::Base.connection.quote_column_name s}" }
+          map { |s| "#{ar_table_name}.#{ActiveRecord::Base.connection.quote_column_name s}" }
         @objects = @objects.select(columns_list.join(", "))
       end
 
@@ -436,8 +437,8 @@ class ApplicationController < ActionController::Base
   end
   accept_param_as_json :reader_tokens, Array
 
-  def render_list
-    @object_list = {
+  def object_list
+    list = {
       :kind  => "arvados##{(@response_resource_name || resource_name).camelize(:lower)}List",
       :etag => "",
       :self_link => "",
@@ -446,11 +447,15 @@ class ApplicationController < ActionController::Base
       :items => @objects.as_api_response(nil, {select: @select})
     }
     if @objects.respond_to? :except
-      @object_list[:items_available] = @objects.
+      list[:items_available] = @objects.
         except(:limit).except(:offset).
         count(:id, distinct: true)
     end
-    send_json @object_list
+    list
+  end
+
+  def render_list
+    send_json object_list
   end
 
   def remote_ip

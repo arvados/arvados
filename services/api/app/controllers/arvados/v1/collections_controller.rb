@@ -33,10 +33,6 @@ class Arvados::V1::CollectionsController < ApplicationController
     end
   end
 
-  def index
-    super
-  end
-
   def find_collections(visited, sp, &b)
     case sp
     when ArvadosModel
@@ -184,8 +180,7 @@ class Arvados::V1::CollectionsController < ApplicationController
   def load_limit_offset_order_params *args
     if action_name == 'index'
       # Omit manifest_text from index results unless expressly selected.
-      @select ||= model_class.api_accessible_attributes(:user).
-        map { |attr_spec| attr_spec.first.to_s } - ["manifest_text"]
+      @select ||= model_class.selectable_attributes - ["manifest_text"]
     end
     super
   end
