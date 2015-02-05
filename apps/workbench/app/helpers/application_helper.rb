@@ -307,9 +307,7 @@ module ApplicationHelper
       end
     end
 
-    if dataclass == 'number' or attrvalue.is_a? Fixnum or attrvalue.is_a? Float
-      datatype = 'number'
-    elsif attrvalue.is_a? String
+    if attrvalue.is_a? String
       datatype = 'text'
     elsif attrvalue.is_a?(Array) or dataclass.andand.is_a?(Class)
       # TODO: find a way to edit with x-editable
