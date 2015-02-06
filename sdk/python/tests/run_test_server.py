@@ -180,7 +180,8 @@ def run(leave_running_atexit=False):
             '-out', 'tmp/self-signed.pem',
             '-keyout', 'tmp/self-signed.key',
             '-days', '3650',
-            '-subj', '/CN=0.0.0.0'])
+            '-subj', '/CN=0.0.0.0'],
+        stdout=sys.stderr)
 
     port = find_available_port()
     env = os.environ.copy()
