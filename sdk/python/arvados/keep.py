@@ -739,8 +739,8 @@ class KeepClient(object):
     def local_store_put(self, data, copies=1, num_retries=None):
         """A stub for put().
 
-        This method is used in place of the real put() method in a
-        KeepClient constructed with local_store=True.
+        This method is used in place of the real put() method when
+        using local storage (see constructor's local_store argument).
 
         copies and num_retries arguments are ignored: they are here
         only for the sake of offering the same call signature as
