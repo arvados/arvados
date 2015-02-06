@@ -32,10 +32,6 @@ class Collection < ArvadosModel
                 # API response, and never let clients select the
                 # manifest_text column.
                 'manifest_text' => ['manifest_text'],
-
-                # This is a shim until the database column gets
-                # renamed to replication_desired in #3410.
-                'replication_desired' => ['redundancy'],
                 )
   end
 
