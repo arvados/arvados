@@ -139,5 +139,14 @@ class UserManageAccountTest < ActionDispatch::IntegrationTest
     assert_text 'You do not have access to any virtual machines'
     click_button 'Request shell access'
     assert_text 'Request sent for shell access'
+
+    # revisit the page and verify that the Request button is no longer shown
+    within('.navbar-fixed-top') do
+      find('a', text: 'spectator').click
+      within('.dropdown-menu') do
+        find('a', text: 'Manage account').click
+      end
+    end
+    assert_text 'You do not have access to any virtual machines. A request was sent on your behalf.'
   end
 end
