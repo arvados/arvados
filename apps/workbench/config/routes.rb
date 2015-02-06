@@ -42,7 +42,6 @@ ArvadosWorkbench::Application.routes.draw do
     post 'request_shell_access', :on => :member
   end
   get '/manage_account' => 'users#manage_account'
-  get '/manage_acct' => 'users#manage_account', :as => :manage_acct
   get "/add_ssh_key_popup" => 'users#add_ssh_key_popup', :as => :add_ssh_key_popup
   get "/add_ssh_key" => 'users#add_ssh_key', :as => :add_ssh_key
   resources :logs

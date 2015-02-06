@@ -46,9 +46,7 @@
               </a>
               <ul class="dropdown-menu" role="menu">
                 <% if current_user.is_active %>
-                <li id='manage_account_link' role="menuitem"><a href="#"
-                    onClick="invokeUrlWithLocalStorageValue('/manage_account', '/manage_acct', 'request_shell_access');"
-                    role="menuitem"><i class="fa fa-key fa-fw"></i> Manage account</a></li>
+                <li id='manage_account_link' role="menuitem"><a href="/manage_account" role="menuitem"><i class="fa fa-key fa-fw"></i> Manage account</a></li>
                 <% if Rails.configuration.user_profile_form_fields %>
                   <li role="menuitem"><a href="/users/<%=current_user.uuid%>/profile" role="menuitem"><i class="fa fa-key fa-fw"></i> Manage profile</a></li>
                 <% end %>

@@ -1,3 +1,14 @@
+$(document).ready(function(){
+    var $noShellAccessDiv = $('#no_shell_access');
+    if ($noShellAccessDiv.length) {
+      if (getLocalStorageValue('request_shell_access') == 'sent') {
+        $('div').remove('.no_shell_access_msg');
+      } else {
+        $('div').remove('.shell_access_requested');
+      }
+    }
+  });
+
 $(document).
   on('click', "#request_shell_submit", function(e){
     $(this).html('Sending request ...');

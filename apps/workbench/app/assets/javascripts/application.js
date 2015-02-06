@@ -239,13 +239,8 @@ function hasHTML5History() {
     return !!(window.history && window.history.pushState);
 }
 
-function invokeUrlWithLocalStorageValue(url, alias, item) {
-    value = localStorage.getItem(item);
-    if (value) {
-      window.location = alias;
-    } else {
-      window.location = url;
-    }
+function getLocalStorageValue(item) {
+    return localStorage.getItem(item);
 }
 
 function clearLocalStorageValue(item) {
