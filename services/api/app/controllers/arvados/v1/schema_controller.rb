@@ -20,6 +20,7 @@ class Arvados::V1::SchemaController < ApplicationController
         title: "Arvados API",
         description: "The API to interact with Arvados.",
         documentationLink: "http://doc.arvados.org/api/index.html",
+        defaultCollectionReplication: Rails.configuration.default_collection_replication,
         protocol: "rest",
         baseUrl: root_url + "arvados/v1/",
         basePath: "/arvados/v1/",
