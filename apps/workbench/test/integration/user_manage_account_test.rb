@@ -147,6 +147,7 @@ class UserManageAccountTest < ActionDispatch::IntegrationTest
         find('a', text: 'Manage account').click
       end
     end
+    assert_no_selector 'a', text: 'Request shell access'
     assert_text 'You do not have access to any virtual machines. A request was sent on your behalf.'
   end
 end
