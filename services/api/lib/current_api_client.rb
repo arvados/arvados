@@ -187,9 +187,24 @@ module CurrentApiClient
   # If the given value is nil, or the cache has been cleared since it
   # was set, yield. Otherwise, return the given value.
   def check_cache value
-    Rails.cache.fetch "CurrentApiClient.$globals" do
-      value = nil
-      true
+    if not Rails.env.test? and
+        ActionController::Base.cache_store.is_a? ActiveSupport::Cache::FileStore and
+        not File.owned? ActionController::Base.cache_store.cache_path
+      # If we don't own the cache dir, we're probably
+      # crunch-dispatch. Whoever we are, using this cache is likely to
+      # either fail or screw up the cache for someone else. So we'll
+      # just assume the $globals are OK to live forever.
+      #
+      # The reason for making the globals expire with the cache in the
+      # first place is to avoid leaking state between test cases: in
+      # production, we don't expect the database seeds to ever go away
+      # even when the cache is cleared, so there's no particular
+      # reason to expire our global variables.
+    else
+      Rails.cache.fetch "CurrentApiClient.$globals" do
+        value = nil
+        true
+      end
     end
     return value unless value.nil?
     yield
