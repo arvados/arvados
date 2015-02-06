@@ -408,10 +408,14 @@ def main(arguments=None, stdout=sys.stdout, stderr=sys.stderr):
         print >>stderr, error
         sys.exit(1)
 
-    # Apply default replication, if none specified. TODO (#3410): Use
-    # default replication given by discovery document.
-    if args.replication <= 0:
-        args.replication = 2
+    # write_copies is how many copies of each data block we write to
+    # Keep. args.replication is how many copies we instruct Arvados to
+    # maintain (by passing it in collections().create() after all data
+    # is written).  If args.replication is given as None, it should
+    # stay None, but we still need to write a suitable number of
+    # copies to Keep.
+    write_copies = (args.replication or
+                    api_client._rootDesc.get('defaultCollectionReplication', 2))
 
     if args.progress:
         reporter = progress_writer(human_progress)
@@ -437,12 +441,12 @@ def main(arguments=None, stdout=sys.stdout, stderr=sys.stderr):
         writer = ArvPutCollectionWriter(
             resume_cache, reporter, bytes_expected,
             num_retries=args.retries,
-            replication=args.replication)
+            replication=write_copies)
     else:
         writer = ArvPutCollectionWriter.from_cache(
             resume_cache, reporter, bytes_expected,
             num_retries=args.retries,
-            replication=args.replication)
+            replication=write_copies)
 
     # Install our signal handler for each code in CAUGHT_SIGNALS, and save
     # the originals.
