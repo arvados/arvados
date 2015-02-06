@@ -34,6 +34,11 @@ class LinkTest < ActiveSupport::TestCase
     end
   end
 
+  test "non-admin project owner can make it public" do
+    assert(new_active_link_valid?(tail_uuid: groups(:anonymous_group).uuid),
+           "non-admin project owner can't make their project public")
+  end
+
   test "link granting permission to nonexistent user is invalid" do
     refute new_active_link_valid?(tail_uuid:
                                   users(:active).uuid.sub(/-\w+$/, "-#{'z' * 15}"))
