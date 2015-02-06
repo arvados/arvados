@@ -8,9 +8,14 @@ class Arvados::V1::UsersController < ApplicationController
   before_filter :admin_required, only: [:setup, :unsetup]
 
   def current
-    @object = current_user
-    show
+    if current_user
+      @object = current_user
+      show
+    else
+      send_error("Not logged in", status: 401)
+    end
   end
+
   def system
     @object = system_user
     show

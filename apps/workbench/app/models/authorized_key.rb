@@ -6,4 +6,8 @@ class AuthorizedKey < ArvadosBase
       super
     end
   end
+
+  def self.creatable?
+    current_user
+  end
 end

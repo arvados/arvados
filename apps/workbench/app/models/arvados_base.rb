@@ -311,7 +311,7 @@ class ArvadosBase < ActiveRecord::Base
   end
 
   def self.creatable?
-    current_user
+    current_user.andand.is_active
   end
 
   def self.goes_in_projects?

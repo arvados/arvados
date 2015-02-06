@@ -275,7 +275,9 @@ class FuseHomeTest(MountTestBase):
         self.assertIn('Unrestricted public data', d1)
 
         d2 = os.listdir(os.path.join(self.mounttmp, 'Unrestricted public data'))
-        self.assertEqual(['GNU General Public License, version 3'], d2)
+        self.assertEqual(['GNU General Public License, version 3',
+                          'Pipeline in publicly accessible project.pipelineInstance',
+                          'Pipeline template in publicly accessible project.pipelineTemplate'], d2)
 
         d3 = os.listdir(os.path.join(self.mounttmp, 'Unrestricted public data', 'GNU General Public License, version 3'))
         self.assertEqual(["GNU_General_Public_License,_version_3.pdf"], d3)

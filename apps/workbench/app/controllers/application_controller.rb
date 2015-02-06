@@ -390,7 +390,7 @@ class ApplicationController < ActionController::Base
     @user_is_manager = false
     @share_links = []
 
-    if @object.uuid != current_user.uuid
+    if @object.uuid != current_user.andand.uuid
       begin
         @share_links = Link.permissions_for(@object)
         @user_is_manager = true
@@ -435,6 +435,7 @@ class ApplicationController < ActionController::Base
 
   protected
 
+  helper_method :strip_token_from_path
   def strip_token_from_path(path)
     path.sub(/([\?&;])api_token=[^&;]*[&;]?/, '\1')
   end
@@ -497,7 +498,7 @@ class ApplicationController < ActionController::Base
       else
         @object = model_class.find(params[:uuid])
       end
-    rescue ArvadosApiClient::NotFoundException, RuntimeError => error
+    rescue ArvadosApiClient::NotFoundException, ArvadosApiClient::NotLoggedInException, RuntimeError => error
       if error.is_a?(RuntimeError) and (error.message !~ /^argument to find\(/)
         raise
       end
@@ -646,6 +647,7 @@ class ApplicationController < ActionController::Base
   end
 
   def check_user_profile
+    return true if !current_user
     if request.method.downcase != 'get' || params[:partial] ||
        params[:tab_pane] || params[:action_method] ||
        params[:action] == 'setup_popup'

@@ -1,6 +1,9 @@
-import os
 import glob
+import os
+import re
 import stat
+
+BACKSLASH_ESCAPE_RE = re.compile(r'\\(.)')
 
 class SubstitutionError(Exception):
     pass
@@ -73,7 +76,7 @@ def do_substitution(p, c, subs=default_subs):
     while True:
         m = search(c)
         if m is None:
-            return c
+            return BACKSLASH_ESCAPE_RE.sub(r'\1', c)
 
         v = do_substitution(p, c[m[0]+2 : m[1]])
         var = True

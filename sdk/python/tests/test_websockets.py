@@ -15,6 +15,7 @@ class WebsocketTest(run_test_server.TestCaseWithServers):
     def tearDown(self):
         if self.ws:
             self.ws.close()
+        super(WebsocketTest, self).tearDown()
 
     def _test_subscribe(self, poll_fallback, expect_type):
         run_test_server.authorize_with('active')
