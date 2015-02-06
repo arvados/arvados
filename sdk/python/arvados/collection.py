@@ -560,11 +560,12 @@ class CollectionWriter(CollectionBase):
     def finish(self):
         """Store the manifest in Keep and return its locator.
 
-        Beware, this is only useful in special cases like storing
-        manifest fragments temporarily in Keep during a Crunch job. In
-        most cases you should make a collection instead, by sending
-        manifest_text() to the API server's "create collection"
-        endpoint.
+        This is useful for storing manifest fragments (task outputs)
+        temporarily in Keep during a Crunch job.
+
+        In other cases you should make a collection instead, by
+        sending manifest_text() to the API server's "create
+        collection" endpoint.
         """
         return self._my_keep().put(self.manifest_text(), copies=self.replication)
 
