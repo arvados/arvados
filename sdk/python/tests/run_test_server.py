@@ -9,6 +9,7 @@ import random
 import re
 import shutil
 import signal
+import socket
 import subprocess
 import string
 import sys
@@ -94,28 +95,22 @@ def kill_server_pid(pidfile, wait=10, passenger_root=False):
         pass
 
 def find_available_port():
-    """Return a port number that is not in use right now.
+    """Return an IPv4 port number that is not in use right now.
+
+    We assume whoever needs to use the returned port is able to reuse
+    a recently used port without waiting for TIME_WAIT (see
+    SO_REUSEADDR / SO_REUSEPORT).
 
     Some opportunity for races here, but it's better than choosing
     something at random and not checking at all. If all of our servers
     (hey Passenger) knew that listening on port 0 was a thing, the OS
     would take care of the races, and this wouldn't be needed at all.
     """
-    port = None
-    while port is None:
-        port = random.randint(20000, 40000)
-        port_hex = ':%04x ' % port
-        try:
-            with open('/proc/net/tcp', 'r') as f:
-                for line in f:
-                    if 0 <= string.find(line, port_hex):
-                        port = None
-                        break
-        except OSError:
-            # This isn't going so well. Just use the random port.
-            pass
-        except IOError:
-            pass
+
+    sock = socket.socket()
+    sock.bind(('0.0.0.0', 0))
+    port = sock.getsockname()[1]
+    sock.close()
     return port
 
 def run(leave_running_atexit=False):
