@@ -36,13 +36,17 @@ class ActiveSupport::TestCase
     Thread.current[:arvados_api_token] = auth['api_token']
   end
 
-  teardown do
+  setup do
     Thread.current[:arvados_api_token] = nil
     Thread.current[:user] = nil
     Thread.current[:reader_tokens] = nil
     # Diagnostics suite doesn't run a server, so there's no cache to clear.
     Rails.cache.clear unless (Rails.env == "diagnostics")
     # Restore configuration settings changed during tests
+    self.class.reset_application_config
+  end
+
+  def self.reset_application_config
     $application_config.each do |k,v|
       if k.match /^[^.]*$/
         Rails.configuration.send (k + '='), v
@@ -95,99 +99,73 @@ class ActiveSupport::TestCase
 end
 
 class ApiServerForTests
+  PYTHON_TESTS_DIR = File.expand_path('../../../../sdk/python/tests', __FILE__)
   ARV_API_SERVER_DIR = File.expand_path('../../../../services/api', __FILE__)
-  SERVER_PID_PATH = File.expand_path('tmp/pids/wbtest-server.pid', ARV_API_SERVER_DIR)
-  WEBSOCKET_PID_PATH = File.expand_path('tmp/pids/wstest-server.pid', ARV_API_SERVER_DIR)
+  SERVER_PID_PATH = File.expand_path('tmp/pids/test-server.pid', ARV_API_SERVER_DIR)
+  WEBSOCKET_PID_PATH = File.expand_path('tmp/pids/test-server.pid', ARV_API_SERVER_DIR)
   @main_process_pid = $$
+  @@server_is_running = false
 
-  def _system(*cmd)
-    $stderr.puts "_system #{cmd.inspect}"
+  def check_call *args
+    output = nil
     Bundler.with_clean_env do
-      if not system({'RAILS_ENV' => 'test', "ARVADOS_WEBSOCKETS" => (if @websocket then "ws-only" end)}, *cmd)
-        raise RuntimeError, "#{cmd[0]} returned exit code #{$?.exitstatus}"
+      output = IO.popen *args do |io|
+        io.read
+      end
+      if not $?.success?
+        raise RuntimeError, "Command failed (#{$?}): #{args.inspect}"
       end
     end
+    output
   end
 
-  def make_ssl_cert
-    unless File.exists? './self-signed.key'
-      _system('openssl', 'req', '-new', '-x509', '-nodes',
-              '-out', './self-signed.pem',
-              '-keyout', './self-signed.key',
-              '-days', '3650',
-              '-subj', '/CN=localhost')
+  def run_test_server
+    env_script = nil
+    Dir.chdir PYTHON_TESTS_DIR do
+      env_script = check_call %w(python ./run_test_server.py start --auth admin)
     end
-  end
-
-  def kill_server
-    if (pid = find_server_pid)
-      $stderr.puts "Sending TERM to API server, pid #{pid}"
-      Process.kill 'TERM', pid
+    test_env = {}
+    env_script.each_line do |line|
+      line = line.chomp
+      if 0 == line.index('export ')
+        toks = line.sub('export ', '').split '=', 2
+        $stderr.puts "run_test_server.py: #{toks[0]}=#{toks[1]}"
+        test_env[toks[0]] = toks[1]
+      end
     end
+    test_env
   end
 
-  def find_server_pid
-    pid = nil
-    begin
-      pid = IO.read(@pidfile).to_i
-      $stderr.puts "API server is running, pid #{pid.inspect}"
-    rescue Errno::ENOENT
+  def stop_test_server
+    Dir.chdir PYTHON_TESTS_DIR do
+      # This is a no-op if we're running within run-tests.sh
+      check_call %w(python ./run_test_server.py stop)
     end
-    return pid
+    @@server_is_running = false
   end
 
-  def run(args=[])
+  def run args=[]
+    return if @@server_is_running
+
+    # Stop server left over from interrupted previous run
+    stop_test_server
+
     ::MiniTest.after_run do
-      self.kill_server
+      stop_test_server
     end
 
-    @websocket = args.include?("--websockets")
+    test_env = run_test_server
+    $application_config['arvados_login_base'] = "https://#{test_env['ARVADOS_API_HOST']}/login"
+    $application_config['arvados_v1_base'] = "https://#{test_env['ARVADOS_API_HOST']}/arvados/v1"
+    $application_config['arvados_insecure_host'] = true
+    ActiveSupport::TestCase.reset_application_config
 
-    @pidfile = if @websocket
-                 WEBSOCKET_PID_PATH
-               else
-                 SERVER_PID_PATH
-               end
-
-    # Kill server left over from previous test run
-    self.kill_server
-
-    Capybara.javascript_driver = :poltergeist
-    Dir.chdir(ARV_API_SERVER_DIR) do |apidir|
-      ENV["NO_COVERAGE_TEST"] = "1"
-      if @websocket
-        _system('bundle', 'exec', 'passenger', 'start', '-d', '-p3333',
-                '--pid-file', @pidfile)
-      else
-        make_ssl_cert
-        if ENV['ARVADOS_TEST_API_INSTALLED'].blank?
-          _system('bundle', 'exec', 'rake', 'db:test:load')
-          _system('bundle', 'exec', 'rake', 'db:fixtures:load')
-        end
-        _system('bundle', 'exec', 'passenger', 'start', '-d', '-p3000',
-                '--pid-file', @pidfile,
-                '--ssl',
-                '--ssl-certificate', 'self-signed.pem',
-                '--ssl-certificate-key', 'self-signed.key')
-      end
-      timeout = Time.now.tv_sec + 10
-      good_pid = false
-      while (not good_pid) and (Time.now.tv_sec < timeout)
-        sleep 0.2
-        server_pid = find_server_pid
-        good_pid = (server_pid and
-                    (server_pid > 0) and
-                    (Process.kill(0, server_pid) rescue false))
-      end
-      if not good_pid
-        raise RuntimeError, "could not find API server Rails pid"
-      end
-    end
+    @@server_is_running = true
   end
 
-  def run_rake_task(task_name, arg_string)
-    Dir.chdir(ARV_API_SERVER_DIR) do
-      _system('bundle', 'exec', 'rake', "#{task_name}[#{arg_string}]")
+  def run_rake_task task_name, arg_string
+    Dir.chdir ARV_API_SERVER_DIR do
+      check_call ['bundle', 'exec', 'rake', "#{task_name}[#{arg_string}]"]
     end
   end
 end

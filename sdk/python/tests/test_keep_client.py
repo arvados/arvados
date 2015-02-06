@@ -188,11 +188,12 @@ class KeepOptionalPermission(run_test_server.TestCaseWithServers):
 class KeepProxyTestCase(run_test_server.TestCaseWithServers):
     MAIN_SERVER = {}
     KEEP_SERVER = {}
-    KEEP_PROXY_SERVER = {'auth': 'admin'}
+    KEEP_PROXY_SERVER = {}
 
     @classmethod
     def setUpClass(cls):
         super(KeepProxyTestCase, cls).setUpClass()
+        run_test_server.authorize_with('active')
         cls.api_client = arvados.api('v1')
 
     def tearDown(self):
