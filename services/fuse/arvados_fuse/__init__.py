@@ -31,10 +31,11 @@ _logger = logging.getLogger('arvados.arvados_fuse')
 _disallowed_filename_characters = re.compile('[\x00/]')
 
 class SafeApi(object):
-    '''Threadsafe wrapper for API object.  This stores and returns a different api
-    object per thread, because httplib2 which underlies apiclient is not
-    threadsafe.
-    '''
+    """Threadsafe wrapper for API object.
+
+    This stores and returns a different api object per thread, because
+    httplib2 which underlies apiclient is not threadsafe.
+    """
 
     def __init__(self, config):
         self.host = config.get('ARVADOS_API_HOST')
@@ -45,8 +46,9 @@ class SafeApi(object):
 
     def localapi(self):
         if 'api' not in self.local.__dict__:
-            self.local.api = arvados.api('v1', False, self.host,
-                                         self.api_token, self.insecure)
+            self.local.api = arvados.api(
+                version='v1',
+                host=self.host, token=self.api_token, insecure=self.insecure)
         return self.local.api
 
     def localkeep(self):
