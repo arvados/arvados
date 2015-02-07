@@ -216,8 +216,8 @@ class Collection < ArvadosModel
 
   def self.each_manifest_locator manifest
     # Given a manifest text and a block, yield each locator.
-    manifest.andand.scan(/ ([[:xdigit:]]{32}(\+[[:digit:]]+)?(\+\S+))/) do |word|
-      if loc = Keep::Locator.parse(word[1])
+    manifest.andand.scan(/ ([[:xdigit:]]{32}(\+\S+)?)/) do |word, _|
+      if loc = Keep::Locator.parse(word)
         yield loc
       end
     end
@@ -331,8 +331,8 @@ class Collection < ArvadosModel
       end
       self.class.each_manifest_locator(manifest_text) do |loc|
         if not in_old_manifest[loc.hash]
-          replication_confirmed_at = nil
-          replication_confirmed = nil
+          self.replication_confirmed_at = nil
+          self.replication_confirmed = nil
           break
         end
       end

@@ -120,12 +120,91 @@ class CollectionTest < ActiveSupport::TestCase
   end
 
   [0, 2, 4, nil].each do |ask|
-    test "replication_desired reports #{ask or 2} if redundancy is #{ask}" do
+    test "set replication_desired to #{ask.inspect}" do
+      Rails.configuration.default_collection_replication = 2
       act_as_user users(:active) do
-        c = collections(:collection_owned_by_active)
-        c.update_attributes redundancy: ask
-        assert_equal (ask or 2), c.replication_desired
+        c = collections(:replication_undesired_unconfirmed)
+        c.update_attributes replication_desired: ask
+        assert_equal ask, c.replication_desired
       end
+    end
+  end
+
+  test "replication_confirmed* can be set by admin user" do
+    c = collections(:replication_desired_2_unconfirmed)
+    act_as_user users(:admin) do
+      assert c.update_attributes(replication_confirmed: 2,
+                                 replication_confirmed_at: Time.now)
+    end
+  end
+
+  test "replication_confirmed* cannot be set by non-admin user" do
+    act_as_user users(:active) do
+      c = collections(:replication_desired_2_unconfirmed)
+      # Cannot set just one at a time.
+      assert_raise ArvadosModel::PermissionDeniedError do
+        c.update_attributes replication_confirmed: 1
+      end
+      assert_raise ArvadosModel::PermissionDeniedError do
+        c.update_attributes replication_confirmed_at: Time.now
+      end
+      # Cannot set both at once.
+      assert_raise ArvadosModel::PermissionDeniedError do
+        c.update_attributes(replication_confirmed: 1,
+                            replication_confirmed_at: Time.now)
+      end
+    end
+  end
+
+  test "replication_confirmed* can be cleared (but only together) by non-admin user" do
+    act_as_user users(:active) do
+      c = collections(:replication_desired_2_confirmed_2)
+      # Cannot clear just one at a time.
+      assert_raise ArvadosModel::PermissionDeniedError do
+        c.update_attributes replication_confirmed: nil
+      end
+      c.reload
+      assert_raise ArvadosModel::PermissionDeniedError do
+        c.update_attributes replication_confirmed_at: nil
+      end
+      # Can clear both at once.
+      c.reload
+      assert c.update_attributes(replication_confirmed: nil,
+                                 replication_confirmed_at: nil)
+    end
+  end
+
+  test "clear replication_confirmed* when introducing a new block in manifest" do
+    c = collections(:replication_desired_2_confirmed_2)
+    act_as_user users(:active) do
+      assert c.update_attributes(manifest_text: collections(:user_agreement).signed_manifest_text)
+      assert_nil c.replication_confirmed
+      assert_nil c.replication_confirmed_at
+    end
+  end
+
+  test "don't clear replication_confirmed* when just renaming a file" do
+    c = collections(:replication_desired_2_confirmed_2)
+    act_as_user users(:active) do
+      new_manifest = c.signed_manifest_text.sub(':bar', ':foo')
+      assert c.update_attributes(manifest_text: new_manifest)
+      assert_equal 2, c.replication_confirmed
+      assert_not_nil c.replication_confirmed_at
+    end
+  end
+
+  test "don't clear replication_confirmed* when just deleting a data block" do
+    c = collections(:replication_desired_2_confirmed_2)
+    act_as_user users(:active) do
+      new_manifest = c.signed_manifest_text
+      new_manifest.sub!(/ \S+:bar/, '')
+      new_manifest.sub!(/ acbd\S+/, '')
+      # We really deleted a block there, right?
+      assert_operator new_manifest.length+40, :<, c.signed_manifest_text.length
+
+      assert c.update_attributes(manifest_text: new_manifest)
+      assert_equal 2, c.replication_confirmed
+      assert_not_nil c.replication_confirmed_at
     end
   end
 end
