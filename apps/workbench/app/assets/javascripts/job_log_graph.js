@@ -181,8 +181,9 @@ function createJobGraph(elementName) {
     var emptyGraph = false;
     if( jobGraphData.length === 0 ) {
         // If there is no data we still want to show an empty graph,
-        // so add an empty datum and placeholder series to fool it into displaying itself.
-        // Note that when finally a new series is added, the graph will be recreated anyway.
+        // so add an empty datum and placeholder series to fool it
+        // into displaying itself.  Note that when finally a new
+        // series is added, the graph will be recreated anyway.
         jobGraphData.push( {} );
         jobGraphSeries.push( '' );
         emptyGraph = true;
@@ -296,15 +297,16 @@ $(document).on('ready ajax:complete', function() {
         });
 
         setInterval( function() {
-            if( recreate ) {
+            if (window.recreate || window.redraw) {
+                if (window.recreate) {
+                    // series have changed, draw entirely new graph.
+                    $(graph_div).html('').show(500);
+                    createJobGraph($(graph_div).attr('id'));
+                } else {
+                    jobGraph.setData(jobGraphData);
+                }
                 window.recreate = false;
                 window.redraw = false;
-                // series have changed, draw entirely new graph
-                $(graph_div).html('');
-                createJobGraph($(graph_div).attr('id'));
-            } else if( redraw ) {
-                window.redraw = false;
-                jobGraph.setData( jobGraphData );
             }
         }, 5000);
     });
