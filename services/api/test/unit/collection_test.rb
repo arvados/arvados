@@ -119,6 +119,21 @@ class CollectionTest < ActiveSupport::TestCase
     end
   end
 
+  test 'portable data hash with missing size hints' do
+    [[". d41d8cd98f00b204e9800998ecf8427e+0+Bar 0:0:x",
+      ". d41d8cd98f00b204e9800998ecf8427e+0 0:0:x"],
+     [". d41d8cd98f00b204e9800998ecf8427e+Foo 0:0:x",
+      ". d41d8cd98f00b204e9800998ecf8427e 0:0:x"],
+     [". d41d8cd98f00b204e9800998ecf8427e 0:0:x",
+      ". d41d8cd98f00b204e9800998ecf8427e 0:0:x"],
+    ].each do |unportable, portable|
+      c = Collection.new(manifest_text: unportable)
+      assert c.valid?
+      assert_equal(Digest::MD5.hexdigest(portable)+"+#{portable.length}",
+                   c.portable_data_hash)
+    end
+  end
+
   [0, 2, 4, nil].each do |ask|
     test "set replication_desired to #{ask.inspect}" do
       Rails.configuration.default_collection_replication = 2

@@ -205,7 +205,7 @@ class Collection < ArvadosModel
   def self.munge_manifest_locators! manifest
     # Given a manifest text and a block, yield each locator,
     # and replace it with whatever the block returns.
-    manifest.andand.gsub!(/ [[:xdigit:]]{32}(\+[[:digit:]]+)?(\+\S+)/) do |word|
+    manifest.andand.gsub!(/ [[:xdigit:]]{32}(\+\S+)?/) do |word|
       if loc = Keep::Locator.parse(word.strip)
         " " + yield(loc)
       else
@@ -308,7 +308,11 @@ class Collection < ArvadosModel
   def portable_manifest_text
     portable_manifest = self[:manifest_text].dup
     self.class.munge_manifest_locators!(portable_manifest) do |loc|
-      loc.hash + '+' + loc.size.to_s
+      if loc.size
+        loc.hash + '+' + loc.size.to_s
+      else
+        loc.hash
+      end
     end
     portable_manifest
   end
