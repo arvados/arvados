@@ -126,6 +126,16 @@ report_outcomes() {
     fi
 }
 
+exit_cleanly() {
+    trap - INT
+    rotate_logfile "$WORKSPACE/apps/workbench/log/" "test.log"
+    stop_api
+    rotate_logfile "$WORKSPACE/services/api/log/" "test.log"
+    report_outcomes
+    clear_temp
+    exit ${#failures}
+}
+
 sanity_checks() {
   # Make sure WORKSPACE is set
   if ! [[ -n "$WORKSPACE" ]]; then
@@ -165,7 +175,6 @@ sanity_checks() {
     echo >&2
     exit 1
   fi
-
 }
 
 rotate_logfile() {
@@ -220,6 +229,29 @@ do
             ;;
     esac
 done
+
+start_api() {
+    echo 'Starting API server...'
+    cd "$WORKSPACE" \
+        && eval $(python sdk/python/tests/run_test_server.py start --auth admin) \
+        && export ARVADOS_TEST_API_HOST="$ARVADOS_API_HOST" \
+        && export ARVADOS_TEST_API_INSTALLED="$$" \
+        && (env | egrep ^ARVADOS)
+}
+
+stop_api() {
+    if [[ -n "$ARVADOS_TEST_API_HOST" ]]; then
+        unset ARVADOS_TEST_API_HOST
+        cd "$WORKSPACE" \
+            && python sdk/python/tests/run_test_server.py stop
+    fi
+}
+
+interrupt() {
+    failures+=("($(basename $0) interrupted)")
+    exit_cleanly
+}
+trap interrupt INT
 
 sanity_checks
 
@@ -530,21 +562,6 @@ install_workbench() {
 }
 do_install apps/workbench workbench
 
-start_api() {
-    echo 'Starting API server...'
-    cd "$WORKSPACE" \
-        && eval $(python sdk/python/tests/run_test_server.py start --auth admin) \
-        && export ARVADOS_TEST_API_HOST="$ARVADOS_API_HOST" \
-        && export ARVADOS_TEST_API_INSTALLED="$$" \
-        && (env | egrep ^ARVADOS)
-}
-
-stop_api() {
-    unset ARVADOS_TEST_API_HOST
-    cd "$WORKSPACE" \
-        && python sdk/python/tests/run_test_server.py stop
-}
-
 test_doclinkchecker() {
     (
         set -e
@@ -608,12 +625,4 @@ test_workbench_profile() {
 }
 do_test apps/workbench_profile workbench_profile
 
-rotate_logfile "$WORKSPACE/apps/workbench/log/" "test.log"
-
-stop_api
-rotate_logfile "$WORKSPACE/services/api/log/" "test.log"
-
-report_outcomes
-clear_temp
-
-exit ${#failures}
+exit_cleanly
