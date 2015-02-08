@@ -43,11 +43,9 @@ module RecordFilters
         end
         attrs = [] #  skip the generic per-column operator loop below
         # Use to_tsquery since plainto_tsquery does not support prefix search.
-        # Instead split operand and join the words with ' & ' and add ':*' to the last word
-        # Thus when searched for "some str", objects containing "some" and "str:*" are found.
+        # Instead split operand, add ':*' to each word and join the words with ' & '
         cond_out << model_class.full_text_tsvector+" @@ to_tsquery(?)"
-        operand << ':*'
-        param_out << operand.split.join(' & ')
+        param_out << operand.split.each {|s| s.concat(':*')}.join(' & ')
       else
        attrs.each do |attr|
         if !model_class.searchable_columns(operator).index attr.to_s
