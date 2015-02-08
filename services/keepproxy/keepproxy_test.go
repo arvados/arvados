@@ -5,6 +5,7 @@ import (
 	"crypto/tls"
 	"fmt"
 	"git.curoverse.com/arvados.git/sdk/go/arvadosclient"
+	"git.curoverse.com/arvados.git/sdk/go/arvadostest"
 	"git.curoverse.com/arvados.git/sdk/go/keepclient"
 	. "gopkg.in/check.v1"
 	"io"
@@ -13,7 +14,6 @@ import (
 	"net/http"
 	"net/url"
 	"os"
-	"os/exec"
 	"strings"
 	"testing"
 	"time"
@@ -29,11 +29,6 @@ var _ = Suite(&ServerRequiredSuite{})
 
 // Tests that require the Keep server running
 type ServerRequiredSuite struct{}
-
-func pythonDir() string {
-	cwd, _ := os.Getwd()
-	return fmt.Sprintf("%s/../../sdk/python/tests", cwd)
-}
 
 // Wait (up to 1 second) for keepproxy to listen on a port. This
 // avoids a race condition where we hit a "connection refused" error
@@ -57,45 +52,17 @@ func closeListener() {
 }
 
 func (s *ServerRequiredSuite) SetUpSuite(c *C) {
-	cwd, _ := os.Getwd()
-	defer os.Chdir(cwd)
+	arvadostest.StartAPI()
+	arvadostest.StartKeep()
+}
 
-	os.Chdir(pythonDir())
-	{
-		cmd := exec.Command("python", "run_test_server.py", "start")
-		stderr, err := cmd.StderrPipe()
-		if err != nil {
-			log.Fatalf("Setting up stderr pipe: %s", err)
-		}
-		go io.Copy(os.Stderr, stderr)
-		if err := cmd.Run(); err != nil {
-			panic(fmt.Sprintf("'python run_test_server.py start' returned error %s", err))
-		}
-	}
-	{
-		cmd := exec.Command("python", "run_test_server.py", "start_keep")
-		stderr, err := cmd.StderrPipe()
-		if err != nil {
-			log.Fatalf("Setting up stderr pipe: %s", err)
-		}
-		go io.Copy(os.Stderr, stderr)
-		if err := cmd.Run(); err != nil {
-			panic(fmt.Sprintf("'python run_test_server.py start_keep' returned error %s", err))
-		}
-	}
-
-	os.Setenv("ARVADOS_API_HOST", "localhost:3000")
-	os.Setenv("ARVADOS_API_TOKEN", "4axaw8zxe0qm22wa6urpp5nskcne8z88cvbupv653y1njyi05h")
-	os.Setenv("ARVADOS_API_HOST_INSECURE", "true")
+func (s *ServerRequiredSuite) SetUpTest(c *C) {
+	arvadostest.ResetEnv()
 }
 
 func (s *ServerRequiredSuite) TearDownSuite(c *C) {
-	cwd, _ := os.Getwd()
-	defer os.Chdir(cwd)
-
-	os.Chdir(pythonDir())
-	exec.Command("python", "run_test_server.py", "stop_keep").Run()
-	exec.Command("python", "run_test_server.py", "stop").Run()
+	arvadostest.StopKeep()
+	arvadostest.StopAPI()
 }
 
 func setupProxyService() {
@@ -136,27 +103,37 @@ func setupProxyService() {
 	}
 }
 
-func runProxy(c *C, args []string, token string, port int) keepclient.KeepClient {
-	os.Args = append(args, fmt.Sprintf("-listen=:%v", port))
-	os.Setenv("ARVADOS_API_TOKEN", "4axaw8zxe0qm22wa6urpp5nskcne8z88cvbupv653y1njyi05h")
-
-	listener = nil
-	go main()
-	time.Sleep(100 * time.Millisecond)
-
-	os.Setenv("ARVADOS_KEEP_PROXY", fmt.Sprintf("http://localhost:%v", port))
-	os.Setenv("ARVADOS_API_TOKEN", token)
+func runProxy(c *C, args []string, port int, bogusClientToken bool) keepclient.KeepClient {
+	if bogusClientToken {
+		os.Setenv("ARVADOS_API_TOKEN", "bogus-token")
+	}
 	arv, err := arvadosclient.MakeArvadosClient()
 	c.Assert(err, Equals, nil)
-	kc, err := keepclient.MakeKeepClient(&arv)
-	c.Assert(err, Equals, nil)
+	kc := keepclient.KeepClient{
+		Arvados: &arv,
+		Want_replicas: 2,
+		Using_proxy: true,
+		Client: &http.Client{},
+	}
+	kc.SetServiceRoots(map[string]string{
+		"proxy": fmt.Sprintf("http://localhost:%v", port),
+	})
 	c.Check(kc.Using_proxy, Equals, true)
 	c.Check(len(kc.ServiceRoots()), Equals, 1)
 	for _, root := range kc.ServiceRoots() {
 		c.Check(root, Equals, fmt.Sprintf("http://localhost:%v", port))
 	}
-	os.Setenv("ARVADOS_KEEP_PROXY", "")
 	log.Print("keepclient created")
+	if bogusClientToken {
+		arvadostest.ResetEnv()
+	}
+
+	{
+		os.Args = append(args, fmt.Sprintf("-listen=:%v", port))
+		listener = nil
+		go main()
+	}
+
 	return kc
 }
 
@@ -164,7 +141,6 @@ func (s *ServerRequiredSuite) TestPutAskGet(c *C) {
 	log.Print("TestPutAndGet start")
 
 	os.Args = []string{"keepproxy", "-listen=:29950"}
-	os.Setenv("ARVADOS_API_TOKEN", "4axaw8zxe0qm22wa6urpp5nskcne8z88cvbupv653y1njyi05h")
 	listener = nil
 	go main()
 	time.Sleep(100 * time.Millisecond)
@@ -183,7 +159,6 @@ func (s *ServerRequiredSuite) TestPutAskGet(c *C) {
 		c.Check(root, Equals, "http://localhost:29950")
 	}
 	os.Setenv("ARVADOS_EXTERNAL_CLIENT", "")
-	log.Print("keepclient created")
 
 	waitForListener()
 	defer closeListener()
@@ -248,11 +223,9 @@ func (s *ServerRequiredSuite) TestPutAskGet(c *C) {
 func (s *ServerRequiredSuite) TestPutAskGetForbidden(c *C) {
 	log.Print("TestPutAskGetForbidden start")
 
-	kc := runProxy(c, []string{"keepproxy"}, "123abc", 29951)
+	kc := runProxy(c, []string{"keepproxy"}, 29951, true)
 	waitForListener()
 	defer closeListener()
-
-	log.Print("keepclient created")
 
 	hash := fmt.Sprintf("%x", md5.Sum([]byte("bar")))
 
@@ -290,7 +263,7 @@ func (s *ServerRequiredSuite) TestPutAskGetForbidden(c *C) {
 func (s *ServerRequiredSuite) TestGetDisabled(c *C) {
 	log.Print("TestGetDisabled start")
 
-	kc := runProxy(c, []string{"keepproxy", "-no-get"}, "4axaw8zxe0qm22wa6urpp5nskcne8z88cvbupv653y1njyi05h", 29952)
+	kc := runProxy(c, []string{"keepproxy", "-no-get"}, 29952, false)
 	waitForListener()
 	defer closeListener()
 
@@ -330,7 +303,7 @@ func (s *ServerRequiredSuite) TestGetDisabled(c *C) {
 func (s *ServerRequiredSuite) TestPutDisabled(c *C) {
 	log.Print("TestPutDisabled start")
 
-	kc := runProxy(c, []string{"keepproxy", "-no-put"}, "4axaw8zxe0qm22wa6urpp5nskcne8z88cvbupv653y1njyi05h", 29953)
+	kc := runProxy(c, []string{"keepproxy", "-no-put"}, 29953, false)
 	waitForListener()
 	defer closeListener()
 
@@ -346,7 +319,7 @@ func (s *ServerRequiredSuite) TestPutDisabled(c *C) {
 }
 
 func (s *ServerRequiredSuite) TestCorsHeaders(c *C) {
-	runProxy(c, []string{"keepproxy"}, "4axaw8zxe0qm22wa6urpp5nskcne8z88cvbupv653y1njyi05h", 29954)
+	runProxy(c, []string{"keepproxy"}, 29954, false)
 	waitForListener()
 	defer closeListener()
 
@@ -378,7 +351,7 @@ func (s *ServerRequiredSuite) TestCorsHeaders(c *C) {
 }
 
 func (s *ServerRequiredSuite) TestPostWithoutHash(c *C) {
-	runProxy(c, []string{"keepproxy"}, "4axaw8zxe0qm22wa6urpp5nskcne8z88cvbupv653y1njyi05h", 29955)
+	runProxy(c, []string{"keepproxy"}, 29955, false)
 	waitForListener()
 	defer closeListener()
 

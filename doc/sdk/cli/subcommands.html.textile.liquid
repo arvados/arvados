@@ -243,7 +243,8 @@ $ <code class="userinput">arv keep put --help</code>
 usage: arv-put [-h] [--max-manifest-depth N | --normalize]
                [--as-stream | --stream | --as-manifest | --in-manifest | --manifest | --as-raw | --raw]
                [--use-filename FILENAME] [--filename FILENAME]
-               [--portable-data-hash] [--project-uuid UUID] [--name NAME]
+               [--portable-data-hash] [--replication N]
+               [--project-uuid UUID] [--name NAME]
                [--progress | --no-progress | --batch-progress]
                [--resume | --no-resume] [--retries RETRIES]
                [path [path ...]]
@@ -289,6 +290,10 @@ optional arguments:
                         a directory. Implies --manifest.
   --portable-data-hash  Print the portable data hash instead of the Arvados
                         UUID for the collection created by the upload.
+  --replication N       Set the replication level for the new collection: how
+                        many different physical storage devices (e.g., disks)
+                        should have a copy of each data block. Default is to
+                        use the server-provided default (if any) or 2.
   --project-uuid UUID   Store the collection in the specified project, instead
                         of your Home project.
   --name NAME           Save the collection with the specified name.

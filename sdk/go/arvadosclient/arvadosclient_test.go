@@ -1,11 +1,10 @@
 package arvadosclient
 
 import (
-	"fmt"
 	. "gopkg.in/check.v1"
+	"git.curoverse.com/arvados.git/sdk/go/arvadostest"
 	"net/http"
 	"os"
-	"os/exec"
 	"testing"
 )
 
@@ -19,47 +18,35 @@ var _ = Suite(&ServerRequiredSuite{})
 // Tests that require the Keep server running
 type ServerRequiredSuite struct{}
 
-func pythonDir() string {
-	cwd, _ := os.Getwd()
-	return fmt.Sprintf("%s/../../python/tests", cwd)
-}
-
 func (s *ServerRequiredSuite) SetUpSuite(c *C) {
-	os.Chdir(pythonDir())
-	if err := exec.Command("python", "run_test_server.py", "start").Run(); err != nil {
-		panic("'python run_test_server.py start' returned error")
-	}
-	if err := exec.Command("python", "run_test_server.py", "start_keep").Run(); err != nil {
-		panic("'python run_test_server.py start_keep' returned error")
-	}
+	arvadostest.StartAPI()
+	arvadostest.StartKeep()
 }
 
-func (s *ServerRequiredSuite) TestMakeArvadosClient(c *C) {
-	os.Setenv("ARVADOS_API_HOST", "localhost:3000")
-	os.Setenv("ARVADOS_API_TOKEN", "4axaw8zxe0qm22wa6urpp5nskcne8z88cvbupv653y1njyi05h")
+func (s *ServerRequiredSuite) SetUpTest(c *C) {
+	arvadostest.ResetEnv()
+}
+
+func (s *ServerRequiredSuite) TestMakeArvadosClientSecure(c *C) {
 	os.Setenv("ARVADOS_API_HOST_INSECURE", "")
-
 	kc, err := MakeArvadosClient()
-	c.Check(kc.ApiServer, Equals, "localhost:3000")
-	c.Check(kc.ApiToken, Equals, "4axaw8zxe0qm22wa6urpp5nskcne8z88cvbupv653y1njyi05h")
-	c.Check(kc.ApiInsecure, Equals, false)
-
-	os.Setenv("ARVADOS_API_HOST_INSECURE", "true")
-
-	kc, err = MakeArvadosClient()
-	c.Check(kc.ApiServer, Equals, "localhost:3000")
-	c.Check(kc.ApiToken, Equals, "4axaw8zxe0qm22wa6urpp5nskcne8z88cvbupv653y1njyi05h")
-	c.Check(kc.ApiInsecure, Equals, true)
-	c.Check(kc.Client.Transport.(*http.Transport).TLSClientConfig.InsecureSkipVerify, Equals, true)
-
 	c.Assert(err, Equals, nil)
+	c.Check(kc.ApiServer, Equals, os.Getenv("ARVADOS_API_HOST"))
+	c.Check(kc.ApiToken, Equals, os.Getenv("ARVADOS_API_TOKEN"))
+	c.Check(kc.ApiInsecure, Equals, false)
+}
+
+func (s *ServerRequiredSuite) TestMakeArvadosClientInsecure(c *C) {
+	os.Setenv("ARVADOS_API_HOST_INSECURE", "true")
+	kc, err := MakeArvadosClient()
+	c.Assert(err, Equals, nil)
+	c.Check(kc.ApiInsecure, Equals, true)
+	c.Check(kc.ApiServer, Equals, os.Getenv("ARVADOS_API_HOST"))
+	c.Check(kc.ApiToken, Equals, os.Getenv("ARVADOS_API_TOKEN"))
+	c.Check(kc.Client.Transport.(*http.Transport).TLSClientConfig.InsecureSkipVerify, Equals, true)
 }
 
 func (s *ServerRequiredSuite) TestCreatePipelineTemplate(c *C) {
-	os.Setenv("ARVADOS_API_HOST", "localhost:3000")
-	os.Setenv("ARVADOS_API_TOKEN", "4axaw8zxe0qm22wa6urpp5nskcne8z88cvbupv653y1njyi05h")
-	os.Setenv("ARVADOS_API_HOST_INSECURE", "true")
-
 	arv, err := MakeArvadosClient()
 
 	getback := make(Dict)
@@ -91,10 +78,6 @@ func (s *ServerRequiredSuite) TestCreatePipelineTemplate(c *C) {
 }
 
 func (s *ServerRequiredSuite) TestErrorResponse(c *C) {
-	os.Setenv("ARVADOS_API_HOST", "localhost:3000")
-	os.Setenv("ARVADOS_API_TOKEN", "4axaw8zxe0qm22wa6urpp5nskcne8z88cvbupv653y1njyi05h")
-	os.Setenv("ARVADOS_API_HOST_INSECURE", "true")
-
 	arv, _ := MakeArvadosClient()
 
 	getback := make(Dict)
