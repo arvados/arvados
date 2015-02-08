@@ -695,4 +695,23 @@ EOS
       assert_response expected_response
     end
   end
+
+  [1, 5, nil].each do |ask|
+    test "Set replication_desired=#{ask} using redundancy attr" do
+      # The Python SDK checks the Collection schema in the discovery
+      # doc, then asks for 'redundancy' or 'replication_desired'
+      # accordingly, so it isn't necessary to maintain backward
+      # compatibility here when the attribute changes to
+      # replication_desired.
+      authorize_with :active
+      put :update, {
+        id: collections(:collection_owned_by_active).uuid,
+        collection: {
+          redundancy: ask,
+        },
+      }
+      assert_response :success
+      assert_equal (ask or 2), json_response['replication_desired']
+    end
+  end
 end

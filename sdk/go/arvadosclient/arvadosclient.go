@@ -64,10 +64,10 @@ func MakeArvadosClient() (kc ArvadosClient, err error) {
 			TLSClientConfig: &tls.Config{InsecureSkipVerify: insecure}}},
 		External: external}
 
-	if os.Getenv("ARVADOS_API_HOST") == "" {
+	if kc.ApiServer == "" {
 		return kc, MissingArvadosApiHost
 	}
-	if os.Getenv("ARVADOS_API_TOKEN") == "" {
+	if kc.ApiToken == "" {
 		return kc, MissingArvadosApiToken
 	}
 

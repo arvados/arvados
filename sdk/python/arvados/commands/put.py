@@ -110,6 +110,13 @@ Print the portable data hash instead of the Arvados UUID for the collection
 created by the upload.
 """)
 
+upload_opts.add_argument('--replication', type=int, metavar='N', default=None,
+                         help="""
+Set the replication level for the new collection: how many different
+physical storage devices (e.g., disks) should have a copy of each data
+block. Default is to use the server-provided default (if any) or 2.
+""")
+
 run_opts = argparse.ArgumentParser(add_help=False)
 
 run_opts.add_argument('--project-uuid', metavar='UUID', help="""
@@ -253,24 +260,23 @@ class ArvPutCollectionWriter(arvados.ResumableCollectionWriter):
     STATE_PROPS = (arvados.ResumableCollectionWriter.STATE_PROPS +
                    ['bytes_written', '_seen_inputs'])
 
-    def __init__(self, cache=None, reporter=None, bytes_expected=None,
-                 api_client=None, num_retries=0):
+    def __init__(self, cache=None, reporter=None, bytes_expected=None, **kwargs):
         self.bytes_written = 0
         self._seen_inputs = []
         self.cache = cache
         self.reporter = reporter
         self.bytes_expected = bytes_expected
-        super(ArvPutCollectionWriter, self).__init__(
-            api_client, num_retries=num_retries)
+        super(ArvPutCollectionWriter, self).__init__(**kwargs)
 
     @classmethod
     def from_cache(cls, cache, reporter=None, bytes_expected=None,
-                   num_retries=0):
+                   num_retries=0, replication=0):
         try:
             state = cache.load()
             state['_data_buffer'] = [base64.decodestring(state['_data_buffer'])]
             writer = cls.from_state(state, cache, reporter, bytes_expected,
-                                    num_retries=num_retries)
+                                    num_retries=num_retries,
+                                    replication=replication)
         except (TypeError, ValueError,
                 arvados.errors.StaleWriterStateError) as error:
             return cls(cache, reporter, bytes_expected, num_retries=num_retries)
@@ -402,6 +408,11 @@ def main(arguments=None, stdout=sys.stdout, stderr=sys.stderr):
         print >>stderr, error
         sys.exit(1)
 
+    # Apply default replication, if none specified. TODO (#3410): Use
+    # default replication given by discovery document.
+    if args.replication <= 0:
+        args.replication = 2
+
     if args.progress:
         reporter = progress_writer(human_progress)
     elif args.batch_progress:
@@ -423,11 +434,15 @@ def main(arguments=None, stdout=sys.stdout, stderr=sys.stderr):
             sys.exit(1)
 
     if resume_cache is None:
-        writer = ArvPutCollectionWriter(resume_cache, reporter, bytes_expected,
-                                        num_retries=args.retries)
+        writer = ArvPutCollectionWriter(
+            resume_cache, reporter, bytes_expected,
+            num_retries=args.retries,
+            replication=args.replication)
     else:
         writer = ArvPutCollectionWriter.from_cache(
-            resume_cache, reporter, bytes_expected, num_retries=args.retries)
+            resume_cache, reporter, bytes_expected,
+            num_retries=args.retries,
+            replication=args.replication)
 
     # Install our signal handler for each code in CAUGHT_SIGNALS, and save
     # the originals.
@@ -464,12 +479,17 @@ def main(arguments=None, stdout=sys.stdout, stderr=sys.stderr):
             manifest_text = writer.manifest_text()
             if args.normalize:
                 manifest_text = CollectionReader(manifest_text).manifest_text(normalize=True)
+            replication_attr = 'replication_desired'
+            if api_client._schema.schemas['Collection']['properties'].get(replication_attr, None) is None:
+                # API calls it 'redundancy' until #3410.
+                replication_attr = 'redundancy'
             # Register the resulting collection in Arvados.
             collection = api_client.collections().create(
                 body={
                     'owner_uuid': project_uuid,
                     'name': collection_name,
-                    'manifest_text': manifest_text
+                    'manifest_text': manifest_text,
+                    replication_attr: args.replication,
                     },
                 ensure_unique_name=True
                 ).execute(num_retries=args.retries)
