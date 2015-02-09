@@ -9,16 +9,11 @@ from setuptools.command.egg_info import egg_info
 SETUP_DIR = os.path.dirname(__file__) or '.'
 README = os.path.join(SETUP_DIR, 'README.rst')
 
-if '--sha1-tag' in sys.argv:
+try:
     import gittaggers
-    tagger = gittaggers.TagBuildWithCommitDateAndSha1
-    sys.argv.remove('--sha1-tag')
-else:
-    try:
-        import gittaggers
-        tagger = gittaggers.TagBuildWithCommitDate
-    except ImportError:
-        tagger = egg_info
+    tagger = gittaggers.EggInfoFromGit
+except ImportError:
+    tagger = egg_info
 
 setup(name='arvados_fuse',
       version='0.1',
