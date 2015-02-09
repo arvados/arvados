@@ -105,6 +105,11 @@ class ManifestTest < Minitest::Test
     assert_equal([[".", "file:test.txt", 9]], manifest.files)
   end
 
+  def test_files_with_escape_sequence_in_filename
+    manifest = Keep::Manifest.new(". #{random_block(9)} 0:9:a\\040\\141.txt\n")
+    assert_equal([[".", "a a.txt", 9]], manifest.files)
+  end
+
   def test_files_spanning_multiple_blocks
     manifest = Keep::Manifest.new(MULTIBLOCK_FILE_MANIFEST)
     assert_equal([[".", "repfile", 5],
@@ -152,5 +157,13 @@ class ManifestTest < Minitest::Test
     refute(manifest.has_file?("./s1", "uniqfile2"), "two-arg missing file found")
     refute(manifest.has_file?("./s2/repfile"), "one-arg missing stream found")
     refute(manifest.has_file?("./s2", "repfile"), "two-arg missing stream found")
+  end
+
+  def test_has_file_with_spaces
+    manifest = Keep::Manifest.new(". #{random_block(3)} 0:3:a\\040b\\040c\n")
+    assert(manifest.has_file?("./a b c"), "one-arg 'a b c' not found")
+    assert(manifest.has_file?(".", "a b c"), "two-arg 'a b c' not found")
+    refute(manifest.has_file?("a\\040b\\040c"), "one-arg unescaped found")
+    refute(manifest.has_file?(".", "a\\040b\\040c"), "two-arg unescaped found")
   end
 end

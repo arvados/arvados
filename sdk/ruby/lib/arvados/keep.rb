@@ -138,7 +138,7 @@ module Keep
 
     def split_file_token token
       start_pos, filesize, filename = token.split(':', 3)
-      [start_pos.to_i, filesize.to_i, filename]
+      [start_pos.to_i, filesize.to_i, unescape(filename)]
     end
 
     def each_file_spec
