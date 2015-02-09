@@ -1,16 +1,18 @@
-import unittest
 import arvados
 import arvados_fuse as fuse
-import threading
-import time
-import os
+import glob
+import json
 import llfuse
-import tempfile
+import os
 import shutil
 import subprocess
-import glob
+import sys
+import tempfile
+import threading
+import time
+import unittest
+
 import run_test_server
-import json
 
 class MountTestBase(unittest.TestCase):
     def setUp(self):
