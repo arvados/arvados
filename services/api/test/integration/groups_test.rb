@@ -40,10 +40,14 @@ class GroupsTest < ActionDispatch::IntegrationTest
   end
 
   [
-    ['Collection_', true],           # collections and pipelines templates
-    ['hash', true],                  # pipeline templates
-    ['fa7aeb5140e2848d39b', true],   # script_parameter of pipeline instances
-    ['no-such-thing', false],        # script_parameter of pipeline instances
+    ['Collection_', true],            # collections and pipelines templates
+    ['hash', true],                   # pipeline templates
+    ['fa7aeb5140e2848d39b', false],   # script_parameter of pipeline instances
+    ['fa7aeb5140e2848d39b:*', true],  # script_parameter of pipeline instances
+    ['project pipeline', true],       # finds "Completed pipeline in A Project"
+    ['project pipeli:*', true],       # finds "Completed pipeline in A Project"
+    ['proje pipeli:*', false],        # first word is incomplete, so no prefix match
+    ['no-such-thing', false],         # script_parameter of pipeline instances
   ].each do |search_filter, expect_results|
     test "full text search of group-owned objects for #{search_filter}" do
       get "/arvados/v1/groups/contents", {
@@ -69,6 +73,5 @@ class GroupsTest < ActionDispatch::IntegrationTest
       :filters => [['name', '@@', 'Private']].to_json
     }, auth(:active)
     assert_response 422
-    end
-
+  end
 end

@@ -218,14 +218,15 @@ class CollectionsApiTest < ActionDispatch::IntegrationTest
     created = json_response
 
     # search using the filename
-    search_using_full_text_search 'subdir2', 1
-    search_using_full_text_search 'subdir2/subdir', 1
+    search_using_full_text_search 'subdir2', 0
+    search_using_full_text_search 'subdir2:*', 1
     search_using_full_text_search 'subdir2/subdir3/subdir4', 1
-    search_using_full_text_search 'file4', 1
-    search_using_full_text_search 'file4_in_subdir', 1
-    search_using_full_text_search 'subdir2 file4', 1      # look for prefixes subdir2 and file4
-    search_using_full_text_search 'subdir2 ile4', 0
+    search_using_full_text_search 'file4:*', 1
+    search_using_full_text_search 'file4_in_subdir4.txt', 1
+    search_using_full_text_search 'subdir2 file4:*', 0      # first word is incomplete
+    search_using_full_text_search 'subdir2/subdir3/subdir4 file4:*', 1
     search_using_full_text_search 'subdir2/subdir3/subdir4 file4_in_subdir4.txt', 1
+    search_using_full_text_search 'ile4', 0                 # not a prefix match
   end
 
   def search_using_full_text_search search_filter, expected_items
