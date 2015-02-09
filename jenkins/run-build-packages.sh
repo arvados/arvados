@@ -85,14 +85,6 @@ if [[ "$DEBUG" != 0 ]]; then
   echo "Workspace is $WORKSPACE"
 fi
 
-# We need a recent setuptools. Older ones replace + with - in our
-# version numbers, making them non-PEP-440-compliant and
-# non-uploadable.
-VENV=$(mktemp -d)
-echo "Using virtualenv $VENV"
-virtualenv "$VENV"
-. "$VENV/bin/activate"
-
 version_from_git() {
   # Generates a version number from the git log for the current working
   # directory, and writes it to stdout.
@@ -485,8 +477,7 @@ else
   fi
 fi
 
-# clean up temporary GOPATH and VENV
+# clean up temporary GOPATH
 rm -rf "$GOPATH"
-rm -rf "$VENV"
 
 exit $EXITCODE
