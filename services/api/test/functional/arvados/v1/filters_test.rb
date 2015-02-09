@@ -51,7 +51,7 @@ class Arvados::V1::FiltersTest < ActionController::TestCase
     get :index, {
       filters: [['any', '@@', ['abc', 'def']]],
     }
-    assert_response :success
-    # (Doesn't matter so much which results are returned.)
+    assert_response 422
+    assert_match /not supported/, json_response['errors'].join(' ')
   end
 end
