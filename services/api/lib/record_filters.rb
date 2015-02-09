@@ -37,7 +37,8 @@ module RecordFilters
 
       cond_out = []
 
-      if operator == '@@' # full-text-search
+      if operator == '@@'
+        # Full-text search
         if attrs_in != 'any'
           raise ArgumentError.new("Full text search on individual columns is not supported")
         end
@@ -46,8 +47,8 @@ module RecordFilters
         # Instead split operand, add ':*' to each word and join the words with ' & '
         cond_out << model_class.full_text_tsvector+" @@ to_tsquery(?)"
         param_out << operand.split.each {|s| s.concat(':*')}.join(' & ')
-      else
-       attrs.each do |attr|
+      end
+      attrs.each do |attr|
         if !model_class.searchable_columns(operator).index attr.to_s
           raise ArgumentError.new("Invalid attribute '#{attr}' in filter")
         end
@@ -116,7 +117,6 @@ module RecordFilters
           end
           cond_out << cond.join(' OR ')
         end
-       end
       end
       conds_out << cond_out.join(' OR ') if cond_out.any?
     end
