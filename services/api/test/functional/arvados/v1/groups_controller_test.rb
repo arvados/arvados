@@ -75,7 +75,6 @@ class Arvados::V1::GroupsControllerTest < ActionController::TestCase
     get :contents, {
       id: groups(:aproject).uuid,
       format: :json,
-      include_linked: true,
     }
     check_project_contents_response
   end
@@ -85,7 +84,6 @@ class Arvados::V1::GroupsControllerTest < ActionController::TestCase
     get :contents, {
       id: groups(:aproject).uuid,
       format: :json,
-      include_linked: true,
     }
     check_project_contents_response
   end
@@ -176,7 +174,6 @@ class Arvados::V1::GroupsControllerTest < ActionController::TestCase
     authorize_with :project_viewer
     get :contents, {
       format: :json,
-      include_linked: false,
       filters: [['uuid', 'is_a', 'arvados#specimen']]
     }
     assert_response :success
@@ -292,6 +289,20 @@ class Arvados::V1::GroupsControllerTest < ActionController::TestCase
         assert_response 422
       end
     end
+  end
+
+  test "Collection contents don't include manifest_text" do
+    authorize_with :active
+    get :contents, {
+      id: groups(:aproject).uuid,
+      filters: [["uuid", "is_a", "arvados#collection"]],
+      format: :json,
+    }
+    assert_response :success
+    refute(json_response["items"].any? { |c| not c["portable_data_hash"] },
+           "response included an item without a portable data hash")
+    refute(json_response["items"].any? { |c| c.include?("manifest_text") },
+           "response included an item with a manifest text")
   end
 
   test 'get writable_by list for owned group' do
