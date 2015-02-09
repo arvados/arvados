@@ -24,7 +24,7 @@ setup(name='arvados_fuse',
       url="https://arvados.org",
       download_url="https://github.com/curoverse/arvados.git",
       license='GNU Affero General Public License, version 3.0',
-      packages=find_packages(),
+      packages=['arvados_fuse'],
       scripts=[
         'bin/arv-mount'
         ],
