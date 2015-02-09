@@ -42,9 +42,11 @@ module RecordFilters
         if attrs_in != 'any'
           raise ArgumentError.new("Full text search on individual columns is not supported")
         end
-        attrs = [] #  skip the generic per-column operator loop below
-        # Use to_tsquery since plainto_tsquery does not support prefix search.
-        # Instead split operand, add ':*' to each word and join the words with ' & '
+        # Skip the generic per-column operator loop below
+        attrs = []
+        # Use to_tsquery since plainto_tsquery does not support prefix
+        # search.  Instead split operand, add ':*' to each word and
+        # join the words with ' & '
         cond_out << model_class.full_text_tsvector+" @@ to_tsquery(?)"
         param_out << operand.split.each {|s| s.concat(':*')}.join(' & ')
       end
