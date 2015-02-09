@@ -57,6 +57,22 @@ class ManifestTest < Minitest::Test
     assert_empty(Keep::Manifest.new("").each_line.to_a)
   end
 
+  def test_empty_each_file_spec
+    assert_empty(Keep::Manifest.new("").each_file_spec.to_a)
+  end
+
+  def test_empty_files
+    assert_empty(Keep::Manifest.new("").files)
+  end
+
+  def test_empty_files_count
+    assert_equal(0, Keep::Manifest.new("").files_count)
+  end
+
+  def test_empty_has_file?
+    refute(Keep::Manifest.new("").has_file?(""))
+  end
+
   def test_empty_line_within_manifest
     block_s = random_block
     manifest = Keep::Manifest.
