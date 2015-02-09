@@ -138,6 +138,9 @@ module Keep
 
     def split_file_token token
       start_pos, filesize, filename = token.split(':', 3)
+      if filename.nil?
+        raise ArgumentError.new "Invalid file token '#{token}'"
+      end
       [start_pos.to_i, filesize.to_i, unescape(filename)]
     end
 
