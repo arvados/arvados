@@ -29,7 +29,7 @@ setup(name='arvados_fuse',
         'bin/arv-mount'
         ],
       install_requires=[
-        'arvados-python-client>=0.1.20150206225333.64c7093',
+        'arvados-python-client>=0.1.20150206225333',
         'llfuse',
         'python-daemon',
         ],
