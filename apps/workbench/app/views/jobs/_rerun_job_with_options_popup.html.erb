@@ -1,5 +1,5 @@
 <% @job = @object %>
-<div id="jobRerunModal" class="modal fade" role="dialog" aria-labelledby="jobRerunTitle" aria-hidden="true">
+<div id="jobRerunModal" class="modal" role="dialog" aria-labelledby="jobRerunTitle" aria-hidden="true">
   <div class="modal-dialog">
     <div class="modal-content">
       <%= form_for(@job, method: :post, url: {controller: 'jobs', action: 'create'}) do |f| %>
