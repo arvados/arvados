@@ -1,9 +1,6 @@
 require 'integration_helper'
 
-# We need tmp/cache to exist before we can run tests
-Rake::Task["tmp:create"].invoke
-
-# Performance test can run in two two different ways:
+# Performance test can run in two different ways:
 #
 # 1. Similar to other integration tests using the command:
 #     RAILS_ENV=test bundle exec rake test:benchmark

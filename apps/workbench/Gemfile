@@ -33,7 +33,7 @@ group :development do
   gem 'flamegraph', require: false
 end
 
-group :test, :diagnostics do
+group :test, :diagnostics, :performance do
   gem 'minitest', '>= 5.0.0'
   gem 'selenium-webdriver'
   gem 'capybara'
