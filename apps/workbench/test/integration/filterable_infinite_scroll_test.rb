@@ -20,8 +20,8 @@ class FilterableInfiniteScrollTest < ActionDispatch::IntegrationTest
     assert_text 'pipeline_with_tagged_collection_input'
     # Make sure the results are filtered.
     assert_no_text 'pipeline_with_job'
-    # Make sure pipeline_2 didn't disappear merely because the results
-    # were replaced with an error message.
+    # Make sure pipeline_with_job didn't disappear merely because
+    # the results were replaced with an error message.
     assert_text 'pipeline_with_tagged_collection_input'
   end
 end
