@@ -80,7 +80,7 @@ class JobsTest < ActionDispatch::IntegrationTest
   ].each do |job_name, expect_options, use_latest|
     test "Rerun #{job_name} job, expect options #{expect_options},
           and use latest version option #{use_latest}" do
-      need_javascript
+      need_selenium
 
       job = api_fixture('jobs')[job_name]
       visit page_with_token 'active', '/jobs/'+job['uuid']
@@ -98,6 +98,8 @@ class JobsTest < ActionDispatch::IntegrationTest
         assert_selector 'a,button', text: 'Cancel'
         if use_latest
           page.choose("job_script_version_#{job['supplied_script_version']}")
+          latest = all(:xpath, '//input[@id="job_script_version_master"]')[0]
+          assert_equal true, latest.selected?
         end
         click_on "Run now"
       end
@@ -106,7 +108,11 @@ class JobsTest < ActionDispatch::IntegrationTest
       # server has no git repository to check against.  For now, check
       # that the correct script version is mentioned in the
       # Fiddlesticks error message.
-      assert_text "does not resolve to a commit"
+      if expect_options && use_latest
+        assert_text "Script version #{job['supplied_script_version']} does not resolve to a commit"
+      else
+        assert_text "Script version #{job['script_version']} does not resolve to a commit"
+      end
     end
   end
 end
