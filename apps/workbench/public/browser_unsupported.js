@@ -3,7 +3,8 @@
     try {
         if (window.Blob &&
             window.File &&
-            window.FileReader) {
+            window.FileReader &&
+            window.WebSocket) {
             ok = true;
         }
     } catch(err) {}
