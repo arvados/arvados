@@ -69,15 +69,6 @@ type KeepServiceList struct {
 	KeepServers    []ServerAddress `json:"items"`
 }
 
-// Methods to implement util.SdkListResponse Interface
-func (k KeepServiceList) NumItemsAvailable() (numAvailable int, err error) {
-	return k.ItemsAvailable, nil
-}
-
-func (k KeepServiceList) NumItemsContained() (numContained int, err error) {
-	return len(k.KeepServers), nil
-}
-
 var (
 	// Don't access the token directly, use getDataManagerToken() to
 	// make sure it's been read.
@@ -244,10 +235,11 @@ func GetServerStatus(arvLogger *logger.Logger,
 		keepServer.Port)
 
 	if arvLogger != nil {
+		now := time.Now()
 		arvLogger.Update(func(p map[string]interface{}, e map[string]interface{}) {
 			keepInfo := p["keep_info"].(map[string]interface{})
 			serverInfo := make(map[string]interface{})
-			serverInfo["time_status_request_sent"] = time.Now()
+			serverInfo["time_status_request_sent"] = now
 
 			keepInfo[keepServer.String()] = serverInfo
 		})
@@ -274,10 +266,11 @@ func GetServerStatus(arvLogger *logger.Logger,
 	}
 
 	if arvLogger != nil {
+		now := time.Now()
 		arvLogger.Update(func(p map[string]interface{}, e map[string]interface{}) {
 			keepInfo := p["keep_info"].(map[string]interface{})
 			serverInfo := keepInfo[keepServer.String()].(map[string]interface{})
-			serverInfo["time_status_response_processed"] = time.Now()
+			serverInfo["time_status_response_processed"] = now
 			serverInfo["status"] = keepStatus
 		})
 	}
@@ -289,10 +282,11 @@ func CreateIndexRequest(arvLogger *logger.Logger,
 	log.Println("About to fetch keep server contents from " + url)
 
 	if arvLogger != nil {
+		now := time.Now()
 		arvLogger.Update(func(p map[string]interface{}, e map[string]interface{}) {
 			keepInfo := p["keep_info"].(map[string]interface{})
 			serverInfo := keepInfo[keepServer.String()].(map[string]interface{})
-			serverInfo["time_index_request_sent"] = time.Now()
+			serverInfo["time_index_request_sent"] = now
 		})
 	}
 
@@ -319,11 +313,11 @@ func ReadServerResponse(arvLogger *logger.Logger,
 	}
 
 	if arvLogger != nil {
+		now := time.Now()
 		arvLogger.Update(func(p map[string]interface{}, e map[string]interface{}) {
 			keepInfo := p["keep_info"].(map[string]interface{})
 			serverInfo := keepInfo[keepServer.String()].(map[string]interface{})
-
-			serverInfo["time_index_response_received"] = time.Now()
+			serverInfo["time_index_response_received"] = now
 		})
 	}
 
@@ -393,11 +387,12 @@ func ReadServerResponse(arvLogger *logger.Logger,
 			numSizeDisagreements)
 
 		if arvLogger != nil {
+			now := time.Now()
 			arvLogger.Update(func(p map[string]interface{}, e map[string]interface{}) {
 				keepInfo := p["keep_info"].(map[string]interface{})
 				serverInfo := keepInfo[keepServer.String()].(map[string]interface{})
 
-				serverInfo["time_processing_finished"] = time.Now()
+				serverInfo["time_processing_finished"] = now
 				serverInfo["lines_received"] = numLines
 				serverInfo["duplicates_seen"] = numDuplicates
 				serverInfo["size_disagreements_seen"] = numSizeDisagreements

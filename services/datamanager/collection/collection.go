@@ -65,15 +65,6 @@ func init() {
 		"File to write the heap profiles to. Leave blank to skip profiling.")
 }
 
-// // Methods to implement util.SdkListResponse Interface
-// func (s SdkCollectionList) NumItemsAvailable() (numAvailable int, err error) {
-// 	return s.ItemsAvailable, nil
-// }
-
-// func (s SdkCollectionList) NumItemsContained() (numContained int, err error) {
-// 	return len(s.Items), nil
-// }
-
 // Write the heap profile to a file for later review.
 // Since a file is expected to only contain a single heap profile this
 // function overwrites the previously written profile, so it is safe

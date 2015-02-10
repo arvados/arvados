@@ -8,12 +8,9 @@ import (
 	"time"
 )
 
-// Assumes you haven't already called arvLogger.Edit()!
-// If you have called arvLogger.Edit() this method will hang waiting
-// for the lock you're already holding.
 func FatalWithMessage(arvLogger *logger.Logger, message string) {
 	if arvLogger != nil {
-		arvLogger.ForceUpdate(func(p map[string]interface{}, e map[string]interface{}) {
+		arvLogger.FinalUpdate(func(p map[string]interface{}, e map[string]interface{}) {
 			p["FATAL"] = message
 			p["run_info"].(map[string]interface{})["time_finished"] = time.Now()
 		})
