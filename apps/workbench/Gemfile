@@ -41,7 +41,7 @@ group :test, :diagnostics do
   gem 'headless'
 end
 
-group :test do
+group :test, :performance do
   gem 'rails-perftest'
   gem 'ruby-prof'
   gem 'rvm-capistrano'
