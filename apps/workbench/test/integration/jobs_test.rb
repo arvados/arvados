@@ -97,9 +97,16 @@ class JobsTest < ActionDispatch::IntegrationTest
       within('.modal-dialog') do
         assert_selector 'a,button', text: 'Cancel'
         if use_latest
-          page.choose("job_script_version_#{job['supplied_script_version']}")
-          latest = all(:xpath, '//input[@id="job_script_version_master"]')[0]
-          assert_equal true, latest.selected?
+          (0..4).each do |i|
+            page.choose("job_script_version_#{job['supplied_script_version']}")
+            latest = all(:xpath, '//input[@id="job_script_version_master"]')[0]
+            if !latest.selected?
+              sleep 0.1
+            else
+              break
+            end
+          end
+          assert_equal true, all(:xpath, '//input[@id="job_script_version_master"]')[0].selected?
         end
         click_on "Run now"
       end
