@@ -106,11 +106,7 @@ class JobsTest < ActionDispatch::IntegrationTest
       # server has no git repository to check against.  For now, check
       # that the correct script version is mentioned in the
       # Fiddlesticks error message.
-      if expect_options && use_latest
-        assert_text "Script version #{job['supplied_script_version']} does not resolve to a commit"
-      else
-        assert_text "Script version #{job['script_version']} does not resolve to a commit"
-      end
+      assert_text "does not resolve to a commit"
     end
   end
 end
