@@ -116,8 +116,9 @@ bad_group_has_ownership_cycle_b:
 anonymous_group:
   uuid: zzzzz-j7d0g-anonymouspublic
   owner_uuid: zzzzz-tpzed-000000000000000
-  name: Anonymous group
-  description: Anonymous group
+  name: Anonymous users
+  group_class: role
+  description: Anonymous users
 
 anonymously_accessible_project:
   uuid: zzzzz-j7d0g-zhxawtyetzwc5f0
