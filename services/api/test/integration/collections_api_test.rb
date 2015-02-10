@@ -252,4 +252,25 @@ class CollectionsApiTest < ActionDispatch::IntegrationTest
     }, auth(:active)
     assert_response 422
   end
+
+  [
+    'quick fox',
+    'quick_brown fox',
+    'brown_ fox',
+    'fox dogs',
+  ].each do |search_filter|
+    test "full text search ignores special characters and finds with filter #{search_filter}" do
+      # description: The quick_brown_fox jumps over the lazy_dog
+      # full text search treats '_' as space apparently
+      get '/arvados/v1/collections', {
+        :filters => [['any', '@@', search_filter]].to_json
+      }, auth(:active)
+      assert_response 200
+      response_items = json_response['items']
+      assert_not_nil response_items
+      first_item = response_items.first
+      refute_empty first_item
+      assert_equal first_item['description'], 'The quick_brown_fox jumps over the lazy_dog'
+    end
+  end
 end
