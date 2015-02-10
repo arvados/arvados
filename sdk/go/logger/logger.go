@@ -1,9 +1,8 @@
 // Logger periodically writes a log to the Arvados SDK.
 //
 // This package is useful for maintaining a log object that is updated
-// over time. Every time the object is updated, it will be written to
-// the log. Writes will be throttled to no more frequent than
-// WriteInterval.
+// over time. This log object will be periodically written to the log,
+// as specified by WriteInterval in the Params.
 //
 // This package is safe for concurrent use as long as:
 // The maps passed to a LogMutator are not accessed outside of the
@@ -26,10 +25,16 @@ import (
 	"time"
 )
 
+const (
+	startSuffix   = "-start"
+	partialSuffix = "-partial"
+	finalSuffix   = "-final"
+)
+
 type LoggerParams struct {
-	Client        arvadosclient.ArvadosClient // The client we use to write log entries
-	EventType     string                      // The event type to assign to the log entry.
-	WriteInterval time.Duration               // Wait at least this long between log writes
+	Client          arvadosclient.ArvadosClient // The client we use to write log entries
+	EventTypePrefix string                      // The prefix we use for the event type in the log entry
+	WriteInterval   time.Duration               // Wait at least this long between log writes
 }
 
 // A LogMutator is a function which modifies the log entry.
@@ -57,6 +62,7 @@ type Logger struct {
 	modified    bool            // Has this data been modified since the last write?
 	workToDo    chan LogMutator // Work to do in the worker thread.
 	writeTicker *time.Ticker    // On each tick we write the log data to arvados, if it has been modified.
+	hasWritten  bool            // Whether we've written at all yet.
 
 	writeHooks []LogMutator // Mutators we call before each write.
 }
@@ -67,8 +73,8 @@ func NewLogger(params LoggerParams) *Logger {
 	if &params.Client == nil {
 		log.Fatal("Nil arvados client in LoggerParams passed in to NewLogger()")
 	}
-	if params.EventType == "" {
-		log.Fatal("Empty event type in LoggerParams passed in to NewLogger()")
+	if params.EventTypePrefix == "" {
+		log.Fatal("Empty event type prefix in LoggerParams passed in to NewLogger()")
 	}
 
 	l := &Logger{data: make(map[string]interface{}),
@@ -119,11 +125,9 @@ func (l *Logger) FinalUpdate(mutator LogMutator) {
 	// Apply the final update
 	l.workToDo <- mutator
 
-	// Perform the write and signal that we can return.
+	// Perform the final write and signal that we can return.
 	l.workToDo <- func(p map[string]interface{}, e map[string]interface{}) {
-		// TODO(misha): Add a boolean arg to write() to indicate that it's
-		// final so that we can set the appropriate event type.
-		l.write()
+		l.write(true)
 		done <- true
 	}
 
@@ -146,7 +150,7 @@ func (l *Logger) work() {
 		select {
 		case <-l.writeTicker.C:
 			if l.modified {
-				l.write()
+				l.write(false)
 				l.modified = false
 			}
 		case mutator := <-l.workToDo:
@@ -157,16 +161,22 @@ func (l *Logger) work() {
 }
 
 // Actually writes the log entry.
-func (l *Logger) write() {
+func (l *Logger) write(isFinal bool) {
 
 	// Run all our hooks
 	for _, hook := range l.writeHooks {
 		hook(l.properties, l.entry)
 	}
 
-	// Update the event type in case it was modified or is missing.
-	// TODO(misha): Fix this to write different event types.
-	l.entry["event_type"] = l.params.EventType
+	// Update the event type.
+	if isFinal {
+		l.entry["event_type"] = l.params.EventTypePrefix + finalSuffix
+	} else if l.hasWritten {
+		l.entry["event_type"] = l.params.EventTypePrefix + partialSuffix
+	} else {
+		l.entry["event_type"] = l.params.EventTypePrefix + startSuffix
+	}
+	l.hasWritten = true
 
 	// Write the log entry.
 	// This is a network write and will take a while, which is bad

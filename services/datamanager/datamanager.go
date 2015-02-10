@@ -15,15 +15,15 @@ import (
 )
 
 var (
-	logEventType        string
+	logEventTypePrefix        string
 	logFrequencySeconds int
 )
 
 func init() {
-	flag.StringVar(&logEventType,
-		"log-event-type",
-		"experimental-data-manager-report",
-		"event_type to use in our arvados log entries. Set to empty to turn off logging")
+	flag.StringVar(&logEventTypePrefix,
+		"log-event-type-prefix",
+		"experimental-data-manager",
+		"Prefix to use in the event_type of our arvados log entries. Set to empty to turn off logging")
 	flag.IntVar(&logFrequencySeconds,
 		"log-frequency-seconds",
 		20,
@@ -45,9 +45,9 @@ func main() {
 	}
 
 	var arvLogger *logger.Logger
-	if logEventType != "" {
+	if logEventTypePrefix != "" {
 		arvLogger = logger.NewLogger(logger.LoggerParams{Client: arv,
-			EventType:     logEventType,
+			EventTypePrefix:     logEventTypePrefix,
 			WriteInterval: time.Second * time.Duration(logFrequencySeconds)})
 	}
 
