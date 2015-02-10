@@ -146,6 +146,18 @@ module CurrentApiClient
     end
   end
 
+  def anonymous_group_read_permission
+    $anonymous_group_read_permission =
+        check_cache $anonymous_group_read_permission do
+      act_as_system_user do
+        Link.where(tail_uuid: all_users_group.uuid,
+                   head_uuid: anonymous_group.uuid,
+                   link_class: "permission",
+                   name: "can_read").first_or_create!
+      end
+    end
+  end
+
   def anonymous_user
     $anonymous_user = check_cache $anonymous_user do
       act_as_system_user do
