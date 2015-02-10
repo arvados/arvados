@@ -145,4 +145,26 @@ class ArvadosModelTest < ActiveSupport::TestCase
       end
     end
   end
+
+  test "selectable_attributes includes database attributes" do
+    assert_includes(Job.selectable_attributes, "success")
+  end
+
+  test "selectable_attributes includes non-database attributes" do
+    assert_includes(Job.selectable_attributes, "node_uuids")
+  end
+
+  test "selectable_attributes includes common attributes in extensions" do
+    assert_includes(Job.selectable_attributes, "uuid")
+  end
+
+  test "selectable_attributes does not include unexposed attributes" do
+    refute_includes(Job.selectable_attributes, "nodes")
+  end
+
+  test "selectable_attributes on a non-default template" do
+    attr_a = Job.selectable_attributes(:common)
+    assert_includes(attr_a, "uuid")
+    refute_includes(attr_a, "success")
+  end
 end

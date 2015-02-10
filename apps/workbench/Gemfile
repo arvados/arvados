@@ -1,7 +1,7 @@
 source 'https://rubygems.org'
 
 gem 'rails', '~> 4.1.0'
-gem 'arvados', '>= 0.1.20150116063758'
+gem 'arvados', '>= 0.1.20150210011250'
 
 gem 'sqlite3'
 
@@ -33,7 +33,7 @@ group :development do
   gem 'flamegraph', require: false
 end
 
-group :test, :diagnostics do
+group :test, :diagnostics, :performance do
   gem 'minitest', '>= 5.0.0'
   gem 'selenium-webdriver'
   gem 'capybara'
@@ -41,7 +41,7 @@ group :test, :diagnostics do
   gem 'headless'
 end
 
-group :test do
+group :test, :performance do
   gem 'rails-perftest'
   gem 'ruby-prof'
   gem 'rvm-capistrano'

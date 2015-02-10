@@ -72,7 +72,7 @@ gem 'faye-websocket'
 
 gem 'themes_for_rails'
 
-gem 'arvados', '>= 0.1.20140919104705'
+gem 'arvados', '>= 0.1.20150210011250'
 gem 'arvados-cli', '>= 0.1.20150128223752'
 
 # pg_power lets us use partial indexes in schema.rb in Rails 3

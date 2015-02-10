@@ -56,6 +56,12 @@ class ArvadosModel < ActiveRecord::Base
     "#{current_api_base}/#{self.class.to_s.pluralize.underscore}/#{self.uuid}"
   end
 
+  def self.selectable_attributes(template=:user)
+    # Return an array of attribute name strings that can be selected
+    # in the given template.
+    api_accessible_attributes(template).map { |attr_spec| attr_spec.first.to_s }
+  end
+
   def self.searchable_columns operator
     textonly_operator = !operator.match(/[<=>]/)
     self.columns.select do |col|
