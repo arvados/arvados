@@ -9,9 +9,8 @@ import (
 	"git.curoverse.com/arvados.git/sdk/go/util"
 	"git.curoverse.com/arvados.git/services/datamanager/collection"
 	"git.curoverse.com/arvados.git/services/datamanager/keep"
+	"git.curoverse.com/arvados.git/services/datamanager/loggerutil"
 	"log"
-	"os"
-	"runtime"
 	"time"
 )
 
@@ -52,23 +51,9 @@ func main() {
 			WriteInterval: time.Second * time.Duration(logFrequencySeconds)})
 	}
 
+	loggerutil.LogRunInfo(arvLogger)
 	if arvLogger != nil {
-		now := time.Now()
-		arvLogger.Update(func(p map[string]interface{}, e map[string]interface{}) {
-			runInfo := make(map[string]interface{})
-			runInfo["time_started"] = now
-			runInfo["args"] = os.Args
-			hostname, err := os.Hostname()
-			if err != nil {
-				runInfo["hostname_error"] = err.Error()
-			} else {
-				runInfo["hostname"] = hostname
-			}
-			runInfo["pid"] = os.Getpid()
-			p["run_info"] = runInfo
-		})
-
-		arvLogger.AddWriteHook(LogMemoryAlloc)
+		arvLogger.AddWriteHook(loggerutil.LogMemoryAlloc)
 	}
 
 	collectionChannel := make(chan collection.ReadCollections)
@@ -95,12 +80,4 @@ func main() {
 			p["run_info"].(map[string]interface{})["time_finished"] = time.Now()
 		})
 	}
-}
-
-// TODO(misha): Consider moving this to loggerutil
-func LogMemoryAlloc(properties map[string]interface{}, entry map[string]interface{}) {
-	runInfo := properties["run_info"].(map[string]interface{})
-	var memStats runtime.MemStats
-	runtime.ReadMemStats(&memStats)
-	runInfo["alloc_bytes_in_use"] = memStats.Alloc
 }
