@@ -313,6 +313,10 @@ class Collection < ArvadosModel
     super - ["manifest_text"]
   end
 
+  def self.full_text_searchable_columns
+    super - ["manifest_text"]
+  end
+
   protected
   def portable_manifest_text
     portable_manifest = self[:manifest_text].dup

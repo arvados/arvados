@@ -157,7 +157,7 @@ class ProjectsController < ApplicationController
         object.destroy
       end
     end
-    while (objects = @object.contents(include_linked: false)).any?
+    while (objects = @object.contents).any?
       objects.each do |object|
         object.update_attributes! owner_uuid: current_user.uuid
       end
@@ -198,7 +198,6 @@ class ProjectsController < ApplicationController
         (val.is_a?(Array) ? val : [val]).each do |type|
           objects = @object.contents(order: @order,
                                      limit: @limit,
-                                     include_linked: true,
                                      filters: (@filters - kind_filters + [['uuid', 'is_a', type]]),
                                     )
           objects.each do |object|
@@ -236,7 +235,6 @@ class ProjectsController < ApplicationController
     else
       @objects = @object.contents(order: @order,
                                   limit: @limit,
-                                  include_linked: true,
                                   filters: @filters,
                                   offset: @offset)
       @next_page_href = next_page_href(partial: :contents_rows,

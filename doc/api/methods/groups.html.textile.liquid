@@ -16,17 +16,18 @@ Required arguments are displayed in %{background:#ccffcc}green%.
 
 h2. contents
 
-Retrieve a list of items which are associated with the given group by ownership (i.e., the group owns the item) or a "name" link (i.e., a "name" link referencing the item).
+Retrieve a list of items owned by the group.
 
 Arguments:
 
 table(table table-bordered table-condensed).
 |_. Argument |_. Type |_. Description |_. Location |_. Example |
 {background:#ccffcc}.|uuid|string|The UUID of the group in question.|path||
-|include_linked|boolean|If false, results will only include items whose @owner_uuid@ attribute is the specified group. If true, results will additionally include items for which a "name" link exists.|path|{white-space:nowrap}. @false@ (default)
-@true@|
+|limit|integer (default 100)|Maximum number of items to return.|query||
+|order|string|Order in which to return matching items.  Sort within a resource type by prefixing the attribute with the resource name and a dot.|query|@"collections.modified_at desc"@|
+|filters|array|Conditions for filtering items.|query|@[["uuid", "is_a", "arvados#job"]]@|
 
-If @include_linked@ is @true@, the @"links"@ field in the response will contain the "name" links referencing the objects in the @"items"@ field.
+Note: Because adding access tokens to manifests can be computationally expensive, the @manifest_text@ field is not included in listed collections.  If you need it, request a "list of collections":{{site.baseurl}}/api/methods/collections.html with the filter @["owner_uuid", "=", GROUP_UUID]@, and @"manifest_text"@ listed in the select parameter.
 
 h2. create
 
