@@ -67,6 +67,8 @@ if [[ ! -d tmp ]]; then
   mkdir tmp
 fi
 
+mkdir -p tmp/cache
+
 RAILS_ENV=performance bundle exec rake test:benchmark
 
 ECODE=$?
