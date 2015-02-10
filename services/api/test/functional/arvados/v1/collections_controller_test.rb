@@ -345,14 +345,15 @@ EOS
   end
 
   test "search collections with 'any' operator" do
+    expect_pdh = collections(:docker_image).portable_data_hash
     authorize_with :active
     get :index, {
-      where: { any: ['contains', 'd0bc8c7f34be170a7b7b'] }
+      where: { any: ['contains', expect_pdh[5..25]] }
     }
     assert_response :success
-    found = assigns(:objects).collect(&:portable_data_hash)
+    found = assigns(:objects)
     assert_equal 1, found.count
-    assert_equal true, !!found.index('5bd9c1ad0bc8c7f34be170a7b7b39089+45')
+    assert_equal expect_pdh, found.first.portable_data_hash
   end
 
   [false, true].each do |permit_unsigned|
