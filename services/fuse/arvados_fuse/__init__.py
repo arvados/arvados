@@ -305,6 +305,11 @@ class CollectionDirectory(Directory):
     def same(self, i):
         return i['uuid'] == self.collection_locator or i['portable_data_hash'] == self.collection_locator
 
+    def change_collection(self, new_locator):
+        self.collection_locator = new_locator
+        self.collection_object = None
+        self.update()
+
     def new_collection(self, new_collection_object, coll_reader):
         self.collection_object = new_collection_object
 
