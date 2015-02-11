@@ -6,8 +6,23 @@
   </p>
 
   <% if !@my_virtual_machines.any? %>
-    You do not seem to have access to any virtual machines. If you would like to request access, please contact your system admin.
+    <div id='no_shell_access' class='no_shell_access'>
+      <div class='no_shell_access_msg'>
+        You do not have access to any virtual machines.
+        Some Arvados features require using the command line.
+        You may request access to a hosted virtual machine with the command line shell.
+        &nbsp;&nbsp;&nbsp;
+        <div style='display:inline-block'>
+          <%= button_to('Send request for shell access', request_shell_access_user_url(id: current_user.uuid),
+                         id: 'request_shell_submit', class: 'btn btn-xs btn-primary', remote: true) %>
+        </div>
+      </div><br/>
+      <div class='shell_access_requested alert alert-info'>
+        <p id='shell_access_requested_msg' class="contain-align-left">A request for shell access was sent eariler.</p>
+      </div>
+    </div>
   <% else %>
+    <script> localStorage.removeItem('request_shell_access'); </script>
     <table class="table virtual-machines-table">
       <colgroup>
         <col style="width: 25%" />
