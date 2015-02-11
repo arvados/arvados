@@ -1,0 +1,63 @@
+---
+layout: default
+navsection: userguide
+title: "Tools for writing Crunch pipelines"
+...
+
+Arvados includes a number of tools to help you develop pipelines and jobs for Crunch.  This overview explains each tool's intended use to help you choose the right one.
+
+h2. Use the "arv-run command-line utility":arv-run.html
+
+arv-run is an interactive command-line tool.  You run it as the first command of a traditional Unix shell command line, and it converts that work into an Arvados pipeline.  It automatically uploads any required data to Arvados, and dispatches work in parallel when possible.  This lets you easily migrate analysis work that you're doing on the command line to Arvados compute nodes.
+
+arv-run is best suited to complement work you already do on the command line.  If you write a shell one-liner that generates useful data, you can then call it with arv-run to parallelize it across a larger data set and save the results in Arvados.  For example, this run searches multiple FASTQ files in parallel, and saves the results to Keep through shell redirection:
+
+{% include 'arv_run_redirection' %}
+
+arv-run does not generate pipeline templates, or implement higher-level shell constructs like flow control.  If you want to make it easy to rerun your pipeline with different data later, or adapt to different inputs, it's best to write your own template.
+
+Refer to the "arv-run documentation":arv-run.html for details.
+
+h2. Write a "pipeline template":{{site.baseurl}}/user/tutorials/running-external-program.html
+
+Pipeline templates describe a set of analysis programs that should be run, and the inputs they require.  You can provide a high-level description of how data flows through the pipeline—for example, the outputs of programs A and B are provided as input to program C—and let Crunch take care of the details of starting the individual programs at the right time with the inputs you specified.
+
+Pipeline templates are written in JSON.  Once you save a pipeline template in Arvados, you run it by creating a pipeline instance that lists the specific inputs you'd like to use.  Arvados Workbench and the @arv pipeline run@ command-line tool both provide high-level interfaces to do this easily.  The pipeline's final output(s) will be saved in a project you specify.
+
+See the User Guide topic to learn how to "write and run your own pipelines":{{site.baseurl}}/user/tutorials/running-external-program.html.  The rest of this page suggests specific tools to use in your templates.
+
+h3. The "run-command Crunch script":run-command.html
+
+run-command is a Crunch script that is included with Arvados.  It builds a command line from its input parameters.  It runs that command on files in Collections using the Keep mount provided by Crunch.  Output files created by the command are saved in a new collection, which is considered the program's final output.  It can run the command in parallel on a list of inputs, and introspect arguments so you can, for example, generate output filenames based on input filenames.
+
+run-command is a great way to use an existing analysis tool inside an Arvados pipeline.  You might use one or two tools in a larger pipeline, or convert a simple series of tool invocations into a pipeline to benefit from Arvados' provenance tracking and job reuse.  For example, here's a one-step pipeline that uses run-command with bwa to align a single paired-end read FASTQ sample:
+
+<notextile>{% code 'run_command_simple_example' as javascript %}</notextile>
+
+run-command is limited to manipulating the tool's command-line arguments, and can only parallelize on simple lists of inputs.  If you need to preprocess input, or dispatch work differently based on those inputs, consider writing your own Crunch script.
+
+Refer to the "run-command reference":run-command.html for details.
+
+h3. Writing "your own Crunch script":{{site.baseurl}}/user/tutorials/tutorial-firstscript.html with the Python SDK
+
+Arvados includes a Python SDK designed to help you write your own Crunch scripts.  It provides a native Arvados API client; Collection classes that provide file-like objects to interact with data in Keep; and utility functions to work within Crunch's execution environment.  Using the Python SDK, you can efficiently dispatch work with however much sophistication you require.
+
+Writing your own Crunch script is the best way to do analysis in Arvados when an existing tool does not meet your needs.  By interacting directly with Arvados objects, you'll have full power to introspect and adapt to your input, introduce minimal overhead, and get very direct error messages in case there's any trouble.  As a simple example, here's a Crunch script that checksums each file in a collection in parallel, saving the results in Keep:
+
+<notextile>{% code 'tutorial_hash_script_py' as python %}</notextile>
+
+There's no limit to what you can do with your own Crunch script.  The downside is the amount of time and effort you're required to invest to write and debug new code.  If you have to do that anyway, writing a Crunch script will give you the most benefit from using Arvados.
+
+Refer to the "User Guide topic on writing Crunch scripts":{{site.baseurl}}/user/tutorials/tutorial-firstscript.html and the "Python SDK reference":{{site.baseurl}}/sdk/python/python.html for details.
+
+h3. Combining run-command and custom Crunch scripts in a pipeline
+
+Just because you need to write some new code to do some work doesn't mean that you have to do all the work in your own Crunch script.  You can combine your custom steps with existing tools in a pipeline, passing data between them.  For example, maybe there's a third-party tool that does most of the analysis work you need, but you often need to massage the tool's data.  You could write your own preprocessing script that creates a new collection to use as the input of a run-command job, or a postprocessing script to create a final output after the tool is done, and tie them all together in a pipeline.  Just like Unix pipes, Arvados pipelines let you combine smaller tools to maximize utility.
+
+h3. Using run-command with your legacy scripts
+
+Perhaps you've already written your own analysis program that you want to run inside Arvados.  Currently, the easiest way to do that is to copy run-command from the Arvados source code to your own Arvados git repository, along with your internal tool.  Then your pipeline can call run-command from your own repository to execute the internal tool alongside it.
+
+This approach has the downside that you'll have to copy and push run-command again any time there's an update you'd like to use.  Future Arvados development will make it possible to get code from multiple git repositories, so your job can use the latest run-command in the Arvados source, as well as the latest tool in your own git repository.  Follow "Arvados issue #4561":https://arvados.org/issues/4561 for updates.
+
+Alternatively, you can "build a Docker image that includes your program, add it to Arvados":arv-docker.html, then run the Arvados run-command script inside that Docker image.

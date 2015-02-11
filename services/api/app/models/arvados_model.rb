@@ -56,6 +56,12 @@ class ArvadosModel < ActiveRecord::Base
     "#{current_api_base}/#{self.class.to_s.pluralize.underscore}/#{self.uuid}"
   end
 
+  def self.selectable_attributes(template=:user)
+    # Return an array of attribute name strings that can be selected
+    # in the given template.
+    api_accessible_attributes(template).map { |attr_spec| attr_spec.first.to_s }
+  end
+
   def self.searchable_columns operator
     textonly_operator = !operator.match(/[<=>]/)
     self.columns.select do |col|
@@ -107,6 +113,7 @@ class ArvadosModel < ActiveRecord::Base
   # If current user cannot write this object, just return
   # [self.owner_uuid].
   def writable_by
+    return [owner_uuid] if not current_user
     unless (owner_uuid == current_user.uuid or
             current_user.is_admin or
             (current_user.groups_i_can(:manage) & [uuid, owner_uuid]).any?)
@@ -203,6 +210,25 @@ class ArvadosModel < ActiveRecord::Base
 
   def logged_attributes
     attributes
+  end
+
+  def self.full_text_searchable_columns
+    self.columns.select do |col|
+      if col.type == :string or col.type == :text
+        true
+      end
+    end.map(&:name)
+  end
+
+  def self.full_text_tsvector
+    tsvector_str = "to_tsvector('english', "
+    first = true
+    self.full_text_searchable_columns.each do |column|
+      tsvector_str += " || ' ' || " if not first
+      tsvector_str += "coalesce(#{column},'')"
+      first = false
+    end
+    tsvector_str += ")"
   end
 
   protected

@@ -42,15 +42,22 @@ class ArvadosApiClientTest(unittest.TestCase):
                     {'items_available': 0, 'items': []})),
             }
         req_builder = apiclient_http.RequestMockBuilder(mock_responses)
-        cls.api = arvados.api('v1', cache=False,
+        cls.api = arvados.api('v1',
                               host=os.environ['ARVADOS_API_HOST'],
                               token='discovery-doc-only-no-token-needed',
                               insecure=True,
                               requestBuilder=req_builder)
 
-    @classmethod
-    def tearDownClass(cls):
-        run_test_server.stop()
+    def tearDown(cls):
+        run_test_server.reset()
+
+    def test_new_api_objects_with_cache(self):
+        clients = [arvados.api('v1', cache=True,
+                               host=os.environ['ARVADOS_API_HOST'],
+                               token='discovery-doc-only-no-token-needed',
+                               insecure=True)
+                   for index in [0, 1]]
+        self.assertIsNot(*clients)
 
     def test_basic_list(self):
         answer = self.api.humans().list(

@@ -1,0 +1,7 @@
+<div style="display:inline-block">
+  <%= button_to({action: 'create'}, {class: 'btn btn-sm btn-primary'}) do %>
+    <i class="fa fa-fw fa-plus"></i>
+    Add a new
+    <%= controller.controller_name.singularize.humanize.downcase %>
+  <% end %>
+</div>

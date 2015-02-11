@@ -10,10 +10,9 @@ sdk/perl/MYMETA.*
 sdk/perl/Makefile
 sdk/perl/blib
 sdk/perl/pm_to_blib
-*/vendor/bundle
+*/vendor
+*/*/vendor
 sdk/java/target
 *.class
-apps/workbench/vendor/bundle
-services/api/vendor/bundle
 sdk/java/log
-sdk/cli/vendor
+/tmp

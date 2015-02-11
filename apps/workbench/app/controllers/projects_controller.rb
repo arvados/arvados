@@ -1,5 +1,9 @@
 class ProjectsController < ApplicationController
   before_filter :set_share_links, if: -> { defined? @object }
+  skip_around_filter :require_thread_api_token, if: proc { |ctrl|
+    Rails.configuration.anonymous_user_token and
+    %w(show tab_counts).include? ctrl.action_name
+  }
 
   def model_class
     Group
@@ -38,27 +42,32 @@ class ProjectsController < ApplicationController
   # us to tell the interface to get counts for each pane (using :filters).
   # It also seems to me that something like these could be used to configure the contents of the panes.
   def show_pane_list
-    pane_list = [
+    pane_list = []
+    pane_list <<
       {
         :name => 'Data_collections',
         :filters => [%w(uuid is_a arvados#collection)]
-      },
+      }
+    pane_list <<
       {
         :name => 'Jobs_and_pipelines',
         :filters => [%w(uuid is_a) + [%w(arvados#job arvados#pipelineInstance)]]
-      },
+      }
+    pane_list <<
       {
         :name => 'Pipeline_templates',
         :filters => [%w(uuid is_a arvados#pipelineTemplate)]
-      },
+      }
+    pane_list <<
       {
         :name => 'Subprojects',
         :filters => [%w(uuid is_a arvados#group)]
-      },
-      { :name => 'Other_objects',
+      } if current_user
+    pane_list <<
+      {
+        :name => 'Other_objects',
         :filters => [%w(uuid is_a) + [%w(arvados#human arvados#specimen arvados#trait)]]
-      }
-    ]
+      } if current_user
     pane_list << { :name => 'Sharing',
                    :count => @share_links.count } if @user_is_manager
     pane_list << { :name => 'Advanced' }
@@ -148,7 +157,7 @@ class ProjectsController < ApplicationController
         object.destroy
       end
     end
-    while (objects = @object.contents(include_linked: false)).any?
+    while (objects = @object.contents).any?
       objects.each do |object|
         object.update_attributes! owner_uuid: current_user.uuid
       end
@@ -189,7 +198,6 @@ class ProjectsController < ApplicationController
         (val.is_a?(Array) ? val : [val]).each do |type|
           objects = @object.contents(order: @order,
                                      limit: @limit,
-                                     include_linked: true,
                                      filters: (@filters - kind_filters + [['uuid', 'is_a', type]]),
                                     )
           objects.each do |object|
@@ -227,7 +235,6 @@ class ProjectsController < ApplicationController
     else
       @objects = @object.contents(order: @order,
                                   limit: @limit,
-                                  include_linked: true,
                                   filters: @filters,
                                   offset: @offset)
       @next_page_href = next_page_href(partial: :contents_rows,

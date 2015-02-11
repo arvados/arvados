@@ -20,7 +20,7 @@ class Arvados::V1::LinksController < ApplicationController
   end
 
   def get_permissions
-    if current_user.can?(manage: @object)
+    if current_user.andand.can?(manage: @object)
       # find all links and return them
       @objects = Link.where(link_class: "permission",
                             head_uuid: params[:uuid])

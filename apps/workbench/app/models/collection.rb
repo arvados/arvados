@@ -70,10 +70,6 @@ class Collection < ArvadosBase
     %w(name description manifest_text)
   end
 
-  def self.creatable?
-    false
-  end
-
   def provenance
     arvados_api_client.api "collections/#{self.uuid}/", "provenance"
   end

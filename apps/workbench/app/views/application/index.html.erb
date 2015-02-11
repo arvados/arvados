@@ -5,24 +5,7 @@
 <% content_for :tab_line_buttons do %>
 
   <% if controller.model_class.creatable? %>
-
-    <% if controller.model_class.name == 'User' %>
-      <%= link_to setup_user_popup_path,
-        {class: 'btn btn-sm btn-primary', :remote => true, 'data-toggle' =>  "modal",
-          'data-target' => '#user-setup-modal-window', return_to: request.url} do %>
-        <i class="fa fa-fw fa-plus"></i> Add a new user
-      <% end %>
-      <div id="user-setup-modal-window" class="modal fade" role="dialog" aria-labelledby="myModalLabel" aria-hidden="true"></div>
-    <% elsif controller.controller_name == 'manage_account' %>
-      <%# No add button is needed %>
-    <% else %>
-      <%= button_to({action: 'create'}, {class: 'btn btn-sm btn-primary'}) do %>
-        <i class="fa fa-fw fa-plus"></i>
-        Add a new
-        <%= controller.controller_name.singularize.humanize.downcase %>
-      <% end %>
-    <% end %>
-
+    <%= render partial: 'create_new_object_button' %>
   <% end %>
 
 <% end %>

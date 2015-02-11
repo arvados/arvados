@@ -81,4 +81,51 @@ class CollectionTest < ActiveSupport::TestCase
       end
     end
   end
+
+  test "full text search for collections" do
+    # file_names column does not get populated when fixtures are loaded, hence setup test data
+    act_as_system_user do
+      Collection.create(manifest_text: ". acbd18db4cc2f85cedef654fccc4a4d8+3 0:3:foo\n")
+      Collection.create(manifest_text: ". 37b51d194a7513e45b56f6524f2d51f2+3 0:3:bar\n")
+      Collection.create(manifest_text: ". 85877ca2d7e05498dd3d109baf2df106+95+A3a4e26a366ee7e4ed3e476ccf05354761be2e4ae@545a9920 0:95:file_in_subdir1\n./subdir2/subdir3 2bbc341c702df4d8f42ec31f16c10120+64+A315d7e7bad2ce937e711fc454fae2d1194d14d64@545a9920 0:32:file1.txt 32:32:file2.txt\n./subdir2/subdir3/subdir4 2bbc341c702df4d8f42ec31f16c10120+64+A315d7e7bad2ce937e711fc454fae2d1194d14d64@545a9920 0:32:file3.txt 32:32:file4.txt")
+    end
+
+    [
+      ['foo', true],
+      ['foo bar', false],                     # no collection matching both
+      ['foo&bar', false],                     # no collection matching both
+      ['foo|bar', true],                      # works only no spaces between the words
+      ['Gnu public', true],                   # both prefixes found, though not consecutively
+      ['Gnu&public', true],                   # both prefixes found, though not consecutively
+      ['file4', true],                        # prefix match
+      ['file4.txt', true],                    # whole string match
+      ['filex', false],                       # no such prefix
+      ['subdir', true],                       # prefix matches
+      ['subdir2', true],
+      ['subdir2/', true],
+      ['subdir2/subdir3', true],
+      ['subdir2/subdir3/subdir4', true],
+      ['subdir2 file4', true],                # look for both prefixes
+      ['subdir4', false],                     # not a prefix match
+    ].each do |search_filter, expect_results|
+      search_filters = search_filter.split.each {|s| s.concat(':*')}.join('&')
+      results = Collection.where("#{Collection.full_text_tsvector} @@ to_tsquery(?)",
+                                 "#{search_filters}")
+      if expect_results
+        refute_empty results
+      else
+        assert_empty results
+      end
+    end
+  end
+
+  [0, 2, 4, nil].each do |ask|
+    test "replication_desired reports #{ask or 2} if redundancy is #{ask}" do
+      act_as_user users(:active) do
+        c = collections(:collection_owned_by_active)
+        c.update_attributes redundancy: ask
+        assert_equal (ask or 2), c.replication_desired
+      end
+    end
+  end
 end
