@@ -185,6 +185,8 @@
       </nav>
     <% end %>
 
+    <%= render partial: 'browser_unsupported' %><%# requires JS support below %>
+
     <div id="page-wrapper">
       <%= yield %>
     </div>
@@ -194,3 +196,4 @@
 
 <div class="modal-container"></div>
 <div id="report-issue-modal-window"></div>
+<script src="/browser_unsupported.js"></script>

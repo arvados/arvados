@@ -172,6 +172,34 @@ class ProjectsTest < ActionDispatch::IntegrationTest
            "Project 5678 should now be inside project 1234")
   end
 
+  def open_groups_sharing(project_name="aproject", token_name="active")
+    project = api_fixture("groups", project_name)
+    visit(page_with_token(token_name, "/projects/#{project['uuid']}"))
+    click_on "Sharing"
+    click_on "Share with groups"
+  end
+
+  def group_name(group_key)
+    api_fixture("groups", group_key, "name")
+  end
+
+  test "projects not publicly sharable when anonymous browsing disabled" do
+    Rails.configuration.anonymous_user_token = false
+    open_groups_sharing
+    # Check for a group we do expect first, to make sure the modal's loaded.
+    assert_selector(".modal-container .selectable",
+                    text: group_name("all_users"))
+    assert_no_selector(".modal-container .selectable",
+                       text: group_name("anonymous_group"))
+  end
+
+  test "projects publicly sharable when anonymous browsing enabled" do
+    Rails.configuration.anonymous_user_token = "testonlytoken"
+    open_groups_sharing
+    assert_selector(".modal-container .selectable",
+                    text: group_name("anonymous_group"))
+  end
+
   test "project viewer can't see project sharing tab" do
     show_object_using('project_viewer', 'groups', 'aproject', 'A Project')
     assert(page.has_no_link?("Sharing"),
