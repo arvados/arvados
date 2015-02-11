@@ -238,11 +238,3 @@ function hideLoadingModal() {
 function hasHTML5History() {
     return !!(window.history && window.history.pushState);
 }
-
-function getLocalStorageValue(item) {
-    return localStorage.getItem(item);
-}
-
-function clearLocalStorageValue(item) {
-    localStorage.removeItem(item);
-}

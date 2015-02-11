@@ -7,23 +7,22 @@
 
   <% if !@my_virtual_machines.any? %>
     <div id='no_shell_access' class='no_shell_access'>
-      <div id='shell_access_requested' class='shell_access_requested'>
-        <div class="alert alert-info">
-          <p class="contain-align-left">You do not have access to any virtual machines. A request was sent on your behalf.</p>
-        </div>
-      </div>
-
-      <div id='no_shell_access_msg' class='no_shell_access_msg'>
-        You do not have access to any virtual machines. Many of the Arvados features depend on having shell access to a hosted VM.
+      <div class='no_shell_access_msg'>
+        You do not have access to any virtual machines.
+        Some Arvados features require using the command line.
+        You may request access to a hosted virtual machine with the command line shell.
         &nbsp;&nbsp;&nbsp;
         <div style='display:inline-block'>
-          <%= button_to('Request shell access', request_shell_access_user_url(id: current_user.uuid),
+          <%= button_to('Send request for shell access', request_shell_access_user_url(id: current_user.uuid),
                          id: 'request_shell_submit', class: 'btn btn-xs btn-primary', remote: true) %>
         </div>
+      </div><br/>
+      <div class='shell_access_requested alert alert-info'>
+        <p id='shell_access_requested_msg' class="contain-align-left">A request for shell access was sent eariler.</p>
       </div>
     </div>
   <% else %>
-    <script> clearLocalStorageValue('request_shell_access'); </script>
+    <script> localStorage.removeItem('request_shell_access'); </script>
     <table class="table virtual-machines-table">
       <colgroup>
         <col style="width: 25%" />

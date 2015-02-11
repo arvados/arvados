@@ -1,8 +1,9 @@
 $(document).ready(function(){
     var $noShellAccessDiv = $('#no_shell_access');
     if ($noShellAccessDiv.length) {
-      if (getLocalStorageValue('request_shell_access') == 'sent') {
-        $('div').remove('.no_shell_access_msg');
+      requestSent = localStorage.getItem('request_shell_access');
+      if (requestSent != null) {
+        $("#shell_access_requested_msg").html(requestSent)
       } else {
         $('div').remove('.shell_access_requested');
       }
@@ -18,8 +19,13 @@ $(document).
     $.ajax('/').
       success(function(data, status, jqxhr) {
         $('div').remove('.no_shell_access_msg');
-        $('.no_shell_access').append('<div class="alert alert-success"><p class="contain-align-left">Request sent for shell access.</p></div>');
-        localStorage.setItem("request_shell_access", "sent");
+        $('div').remove('.shell_access_requested');
+
+        $('.no_shell_access').append('<div class="alert alert-success"><p class="contain-align-left">A request for shell access was sent.</p></div>');
+        var timestamp = new Date();
+        localStorage.setItem("request_shell_access", "A request for shell access was sent on " +
+                                                      timestamp.toLocaleDateString() +
+                                                      " at " + timestamp.toLocaleTimeString());
       }).
       fail(function(jqxhr, status, error) {
         var $sendButton = $('#request_shell_submit');
