@@ -6,9 +6,7 @@ class PipelineInstancesTest < ActionDispatch::IntegrationTest
   end
 
   test 'Create and run a pipeline' do
-    visit page_with_token('active')
-
-    visit '/pipeline_templates'
+    visit page_with_token('active_trustedclient', '/pipeline_templates')
     within('tr', text: 'Two Part Pipeline Template') do
       find('a,button', text: 'Run').click
     end
@@ -111,10 +109,9 @@ class PipelineInstancesTest < ActionDispatch::IntegrationTest
 
   # Create a pipeline instance from within a project and run
   test 'Create pipeline inside a project and run' do
-    visit page_with_token('active')
+    visit page_with_token('active_trustedclient', '/projects')
 
-    # Add this collection to the project using collections menu from top nav
-    visit '/projects'
+    # Add collection to the project using collections menu from top nav
     find("#projects-menu").click
     find('.dropdown-menu a,button', text: 'A Project').click
     find('.btn', text: 'Add data').click
