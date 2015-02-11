@@ -714,10 +714,4 @@ class ProjectsTest < ActionDispatch::IntegrationTest
     find("#page-wrapper .nav-tabs :first-child a").click
     assert_text("Collection modified at")
   end
-
-  test "verify description column in data collections tab" do
-    project = api_fixture('groups')['aproject']
-    visit(page_with_token('active_trustedclient', "/projects/#{project['uuid']}"))
-    assert_text 'Collection modified at' # there are collections with no descriptions
-  end
 end
