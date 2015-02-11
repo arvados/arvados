@@ -712,6 +712,16 @@ class ProjectsTest < ActionDispatch::IntegrationTest
                           "/projects/#{project['uuid']}#Advanced"))
     assert_text("API response")
     find("#page-wrapper .nav-tabs :first-child a").click
-    assert_text("bytes Collection")
+    assert_text("Collection modified at")
+  end
+
+  test "verify description column in data collections tab" do
+    project = api_fixture('groups')['aproject']
+    visit(page_with_token('active_trustedclient', "/projects/#{project['uuid']}"))
+
+    collection = api_fixture('collections')['collection_to_move_around_in_aproject']
+    assert_text collection['name']
+    assert_text collection['description']
+    assert_text 'Collection modified at' # there are collections with no descriptions
   end
 end

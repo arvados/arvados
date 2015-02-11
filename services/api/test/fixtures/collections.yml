@@ -197,6 +197,7 @@ collection_to_move_around_in_aproject:
   updated_at: 2014-02-03T17:22:54Z
   manifest_text: ". 73feffa4b7f6bb68e44cf984c85f6e88+3 0:3:baz\n"
   name: collection_to_move_around
+  description: description for the collection to move around
 
 expired_collection:
   uuid: zzzzz-4zz18-mto52zx1s7sn3ih
