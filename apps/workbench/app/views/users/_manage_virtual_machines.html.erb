@@ -13,8 +13,11 @@
         You may request access to a hosted virtual machine with the command line shell.
         &nbsp;&nbsp;&nbsp;
         <div style='display:inline-block'>
-          <%= button_to('Send request for shell access', request_shell_access_user_url(id: current_user.uuid),
-                         id: 'request_shell_submit', class: 'btn btn-xs btn-primary', remote: true) %>
+          <%= link_to({action: 'request_shell_access', controller: 'users', id: current_user.uuid},
+                       method: :post, remote: true, class: 'btn btn-xs btn-primary',
+                       id: 'request_shell_submit', data: {disable_with: "Sending request..."}) do %>
+              Send request for shell access
+          <% end %>
         </div>
       </div><br/>
       <div class='shell_access_requested alert alert-info'>

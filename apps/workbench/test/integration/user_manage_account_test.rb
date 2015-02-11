@@ -137,9 +137,10 @@ class UserManageAccountTest < ActionDispatch::IntegrationTest
   test "request shell access" do
     visit page_with_token('spectator', '/manage_account')
     assert_text 'You do not have access to any virtual machines'
-    click_button 'Send request for shell access'
+    click_link 'Send request for shell access'
     assert_text 'A request for shell access was sent.'
     assert_no_text 'You do not have access to any virtual machines.'
+    assert_no_selector 'a', text: 'Send request for shell access'
 
     # revisit the page and verify that the Request button is no longer shown
     within('.navbar-fixed-top') do
@@ -150,5 +151,6 @@ class UserManageAccountTest < ActionDispatch::IntegrationTest
     end
     assert_text 'You do not have access to any virtual machines.'
     assert_text 'A request for shell access was sent on '
+    assert_selector 'a', text: 'Send request for shell access'
   end
 end
