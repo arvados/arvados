@@ -4,7 +4,6 @@ from __future__ import absolute_import, print_function
 
 import ConfigParser
 import importlib
-import json
 import logging
 import ssl
 import sys
@@ -99,13 +98,6 @@ class NodeManagerConfig(ConfigParser.SafeConfigParser):
         module = importlib.import_module('arvnodeman.computenode.driver.' +
                                          self.get('Cloud', 'provider'))
         auth_kwargs = self.get_section('Cloud Credentials')
-        # GCE credentials are delivered in a JSON file.
-        if 'json_credential_file' in auth_kwargs:
-            with open(auth_kwargs['json_credential_file']) as jf:
-                json_creds = json.load(jf)
-            auth_kwargs['user_id'] = json_creds['client_email']
-            auth_kwargs['key'] = json_creds['private_key']
-
         if 'timeout' in auth_kwargs:
             auth_kwargs['timeout'] = int(auth_kwargs['timeout'])
         return module.ComputeNodeDriver(auth_kwargs,
