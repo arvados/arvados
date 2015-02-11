@@ -11,7 +11,6 @@ import (
 	"log"
 	"net"
 	"net/http"
-	"os"
 	"strings"
 	"time"
 )
@@ -78,14 +77,6 @@ func (this *KeepClient) setClientSettingsStore() {
 }
 
 func (this *KeepClient) DiscoverKeepServers() error {
-	if prx := os.Getenv("ARVADOS_KEEP_PROXY"); prx != "" {
-		sr := map[string]string{"proxy": prx}
-		this.SetServiceRoots(sr)
-		this.Using_proxy = true
-		this.setClientSettingsProxy()
-		return nil
-	}
-
 	type svcList struct {
 		Items []keepDisk `json:"items"`
 	}

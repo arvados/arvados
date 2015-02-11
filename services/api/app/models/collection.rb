@@ -21,14 +21,22 @@ class Collection < ArvadosModel
     t.add :properties
     t.add :portable_data_hash
     t.add :signed_manifest_text, as: :manifest_text
+    t.add :replication_desired
   end
 
   def self.attributes_required_columns
-    # If we don't list this explicitly, the params[:select] code gets
-    # confused by the way we expose signed_manifest_text as
-    # manifest_text in the API response, and never let clients select
-    # the manifest_text column.
-    super.merge('manifest_text' => ['manifest_text'])
+    super.merge(
+                # If we don't list manifest_text explicitly, the
+                # params[:select] code gets confused by the way we
+                # expose signed_manifest_text as manifest_text in the
+                # API response, and never let clients select the
+                # manifest_text column.
+                'manifest_text' => ['manifest_text'],
+
+                # This is a shim until the database column gets
+                # renamed to replication_desired in #3410.
+                'replication_desired' => ['redundancy'],
+                )
   end
 
   def check_signatures
@@ -175,6 +183,11 @@ class Collection < ArvadosModel
     end
   end
 
+  def replication_desired
+    # Shim until database columns get fixed up in #3410.
+    redundancy or 2
+  end
+
   def redundancy_status
     if redundancy_confirmed_as.nil?
       'unconfirmed'
@@ -297,6 +310,10 @@ class Collection < ArvadosModel
   end
 
   def self.searchable_columns operator
+    super - ["manifest_text"]
+  end
+
+  def self.full_text_searchable_columns
     super - ["manifest_text"]
   end
 

@@ -194,7 +194,7 @@ common:
   # the maximum number of bytes to load in the log viewer
   log_viewer_max_bytes: 1000000
 
-  # Set anonymous user token to enable anonymous user access. You can get
+  # Set anonymous_user_token to enable anonymous user access. You can get
   # the token by running "bundle exec ./script/get_anonymous_user_token.rb"
-  # in the directory where you API server is running.
+  # in the directory where your API server is running.
   anonymous_user_token: false

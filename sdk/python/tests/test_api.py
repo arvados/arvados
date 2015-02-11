@@ -48,9 +48,8 @@ class ArvadosApiClientTest(unittest.TestCase):
                               insecure=True,
                               requestBuilder=req_builder)
 
-    @classmethod
-    def tearDownClass(cls):
-        run_test_server.stop()
+    def tearDown(cls):
+        run_test_server.reset()
 
     def test_new_api_objects_with_cache(self):
         clients = [arvados.api('v1', cache=True,

@@ -1,5 +1,5 @@
 <% @job = @object %>
-<div id="jobRerunModal" class="modal fade" role="dialog" aria-labelledby="jobRerunTitle" aria-hidden="true">
+<div id="jobRerunModal" class="modal" role="dialog" aria-labelledby="jobRerunTitle" aria-hidden="true">
   <div class="modal-dialog">
     <div class="modal-content">
       <%= form_for(@job, method: :post, url: {controller: 'jobs', action: 'create'}) do |f| %>
@@ -10,7 +10,7 @@
           <%= f.hidden_field(field_sym, value: @job.send(field_sym).to_json) %>
         <% end %>
         <div class="modal-header">
-          <button type="button" class="close" onClick="reset_form()" data-dismiss="modal" aria-hidden="true">&times;</button>
+          <button type="button" class="close" data-dismiss="modal" aria-hidden="true">&times;</button>
           <div id="jobRerunTitle">
             <div class="col-sm-6"> <h4 class="modal-title">Re-run job</h4> </div>
           </div>
@@ -39,7 +39,7 @@
         </div>
 
         <div class="modal-footer">
-          <button class="btn btn-default" onClick="reset_form()" data-dismiss="modal" aria-hidden="true">Cancel</button>
+          <button class="btn btn-default" data-dismiss="modal" aria-hidden="true">Cancel</button>
           <%= f.submit(value: "Run now", class: "btn btn-primary") %>
         </div>
       <% end %>
