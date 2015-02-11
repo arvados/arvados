@@ -305,7 +305,9 @@ class CollectionDirectory(Directory):
     def same(self, i):
         return i['uuid'] == self.collection_locator or i['portable_data_hash'] == self.collection_locator
 
+    # Used by arv-web.py to switch the contents of the CollectionDirectory
     def change_collection(self, new_locator):
+        """Switch the contents of the CollectionDirectory.  Must be called with llfuse.lock held."""
         self.collection_locator = new_locator
         self.collection_object = None
         self.update()
@@ -333,6 +335,10 @@ class CollectionDirectory(Directory):
             if self.collection_object is not None and portable_data_hash_pattern.match(self.collection_locator):
                 return True
 
+            if self.collection_locator is None:
+                self.fresh()
+                return True
+
             with llfuse.lock_released:
                 coll_reader = arvados.CollectionReader(
                     self.collection_locator, self.api, self.api.localkeep(),
@@ -354,7 +360,7 @@ class CollectionDirectory(Directory):
 
             self.fresh()
             return True
-        except apiclient.errors.NotFoundError:
+        except arvados.errors.NotFoundError:
             _logger.exception("arv-mount %s: error", self.collection_locator)
         except arvados.errors.ArgumentError as detail:
             _logger.warning("arv-mount %s: error %s", self.collection_locator, detail)
