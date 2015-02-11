@@ -6,9 +6,7 @@ class PipelineInstancesTest < ActionDispatch::IntegrationTest
   end
 
   test 'Create and run a pipeline' do
-    visit page_with_token('active_trustedclient')
-
-    visit '/pipeline_templates'
+    visit page_with_token('active_trustedclient', '/pipeline_templates')
     within('tr', text: 'Two Part Pipeline Template') do
       find('a,button', text: 'Run').click
     end
@@ -111,10 +109,9 @@ class PipelineInstancesTest < ActionDispatch::IntegrationTest
 
   # Create a pipeline instance from within a project and run
   test 'Create pipeline inside a project and run' do
-    visit page_with_token('active_trustedclient')
+    visit page_with_token('active_trustedclient', '/projects')
 
-    # Add this collection to the project using collections menu from top nav
-    visit '/projects'
+    # Add collection to the project using Add data button
     find("#projects-menu").click
     find('.dropdown-menu a,button', text: 'A Project').click
     find('.btn', text: 'Add data').click
@@ -138,9 +135,7 @@ class PipelineInstancesTest < ActionDispatch::IntegrationTest
   end
 
   test 'view pipeline with job and see graph' do
-    visit page_with_token('active_trustedclient')
-
-    visit '/pipeline_instances'
+    visit page_with_token('active_trustedclient', '/pipeline_instances')
     assert page.has_text? 'pipeline_with_job'
 
     find('a', text: 'pipeline_with_job').click
@@ -152,9 +147,7 @@ class PipelineInstancesTest < ActionDispatch::IntegrationTest
   end
 
   test 'pipeline description' do
-    visit page_with_token('active_trustedclient')
-
-    visit '/pipeline_instances'
+    visit page_with_token('active_trustedclient', '/pipeline_instances')
     assert page.has_text? 'pipeline_with_job'
 
     find('a', text: 'pipeline_with_job').click
@@ -446,16 +439,8 @@ class PipelineInstancesTest < ActionDispatch::IntegrationTest
 
   [
     ['fuse', nil, 2, 20],                           # has 2 as of 11-07-2014
-    ['fuse', 'FUSE project', 1, 1],                 # 1 with this name
-    ['user1_with_load', nil, 30, 100],              # has 37 as of 11-07-2014
-    ['user1_with_load', 'pipeline_10', 2, 2],       # 2 with this name
-    ['user1_with_load', '000010pipelines', 10, 10], # owned_by the project zzzzz-j7d0g-000010pipelines
     ['user1_with_load', '000025pipelines', 25, 25], # owned_by the project zzzzz-j7d0g-000025pipelines, two pages
-    ['admin', nil, 40, 200],
-    ['admin', 'FUSE project', 1, 1],
-    ['admin', 'pipeline_10', 2, 2],
-    ['active', 'containing at least two', 2, 100],
-    ['active', nil, 10, 100],
+    ['admin', 'pipeline_20', 1, 1],
     ['active', 'no such match', 0, 0],
   ].each do |user, search_filter, expected_min, expected_max|
     test "scroll pipeline instances page for #{user} with search filter #{search_filter}
