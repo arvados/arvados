@@ -37,8 +37,6 @@ class Collection < ArvadosBase
   def content_summary
     if total_bytes > 0
       ApplicationController.helpers.human_readable_bytes_html(total_bytes) + " " + super
-    elsif description
-      description
     else
       super + " modified at " + modified_at.to_s
     end
