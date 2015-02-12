@@ -135,13 +135,32 @@ class UserManageAccountTest < ActionDispatch::IntegrationTest
   end
 
   test "request shell access" do
+    ActionMailer::Base.deliveries = []
     visit page_with_token('spectator', '/manage_account')
     assert_text 'You do not have access to any virtual machines'
-    click_button 'Send request for shell access'
-    assert_text 'A request for shell access was sent.'
-    assert_no_text 'You do not have access to any virtual machines.'
+    click_link 'Send request for shell access'
 
-    # revisit the page and verify that the Request button is no longer shown
+    # Button text changes to "sending...", then back to normal. In the
+    # test suite we can't depend on confirming the "sending..." state
+    # before it goes back to normal, though.
+    ## assert_selector 'a', text: 'Sending request...'
+    assert_selector 'a', text: 'Send request for shell access'
+    assert_text 'A request for shell access was sent'
+
+    # verify that the email was sent
+    user = api_fixture('users')['spectator']
+    full_name = "#{user['first_name']} #{user['last_name']}"
+    expected = "Shell account request from #{full_name} (#{user['email']}, #{user['uuid']})"
+    found_email = 0
+    ActionMailer::Base.deliveries.each do |email|
+      if email.subject.include?(expected)
+        found_email += 1
+      end
+    end
+    assert_equal 1, found_email, "Expected email after requesting shell access"
+
+    # Revisit the page and verify the request sent message along with
+    # the request button.
     within('.navbar-fixed-top') do
       find('a', text: 'spectator').click
       within('.dropdown-menu') do
@@ -150,5 +169,6 @@ class UserManageAccountTest < ActionDispatch::IntegrationTest
     end
     assert_text 'You do not have access to any virtual machines.'
     assert_text 'A request for shell access was sent on '
+    assert_selector 'a', text: 'Send request for shell access'
   end
 end

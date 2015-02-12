@@ -2,23 +2,46 @@
   <p>
     For more information see <%= link_to raw('Arvados Docs &rarr; User Guide &rarr; SSH access'),
   "#{Rails.configuration.arvados_docsite}/user/getting_started/ssh-access-unix.html",
-  target: "_blank"%>.  A sample <i>~/.ssh/config</i> entry is provided below.
+  target: "_blank"%>.
+    <% if @my_virtual_machines.any? or true %>
+      A sample <code>~/.ssh/config</code> entry is provided below.
+    <% end %>
   </p>
 
   <% if !@my_virtual_machines.any? %>
-    <div id='no_shell_access' class='no_shell_access'>
-      <div class='no_shell_access_msg'>
-        You do not have access to any virtual machines.
-        Some Arvados features require using the command line.
-        You may request access to a hosted virtual machine with the command line shell.
-        &nbsp;&nbsp;&nbsp;
-        <div style='display:inline-block'>
-          <%= button_to('Send request for shell access', request_shell_access_user_url(id: current_user.uuid),
-                         id: 'request_shell_submit', class: 'btn btn-xs btn-primary', remote: true) %>
+    <div id="no_shell_access" class="no_shell_access">
+      <div class="alert alert-warning clearfix">
+        <p>
+          You do not have access to any virtual machines.  Some
+          Arvados features require using the command line.  You may
+          request access to a hosted virtual machine with the command
+          line shell.
+        </p>
+        <div class="pull-right">
+          <%= link_to({
+              action: 'request_shell_access',
+              controller: 'users',
+              id: current_user.uuid
+              },
+              method: :post,
+              remote: true,
+              class: 'btn btn-xs btn-primary',
+              data: {
+              disable_with: "Sending request...",
+              on_error_hide: '.no_shell_access .alert-success',
+              on_error_show: '.no_shell_access .alert-danger',
+              on_error_write: '.no_shell_access .alert-danger .error-text',
+              on_success_hide: '.no_shell_access .alert-danger',
+              }) do %>
+            Send request for shell access
+          <% end %>
         </div>
-      </div><br/>
-      <div class='shell_access_requested alert alert-info'>
-        <p id='shell_access_requested_msg' class="contain-align-left">A request for shell access was sent eariler.</p>
+      </div>
+      <div class="alert alert-success" style="display:none">
+        <p class="contain-align-left"><%# (see javascripts/request_shell_access.js) %></p>
+      </div>
+      <div class="alert alert-danger" style="display:none">
+        <p class="contain-align-left">Sorry, something went wrong. Please try again. (<span class="error-text"></span>)</p>
       </div>
     </div>
   <% else %>
