@@ -115,6 +115,21 @@ class ActorTestMixin(object):
                 return result
 
 
+class DriverTestMixin(object):
+    def setUp(self):
+        self.driver_mock = mock.MagicMock(name='driver_mock')
+        super(DriverTestMixin, self).setUp()
+
+    def new_driver(self, auth_kwargs={}, list_kwargs={}, create_kwargs={}):
+        create_kwargs.setdefault('ping_host', '100::')
+        return self.TEST_CLASS(
+            auth_kwargs, list_kwargs, create_kwargs,
+            driver_class=self.driver_mock)
+
+    def driver_method_args(self, method_name):
+        return getattr(self.driver_mock(), method_name).call_args
+
+
 class RemotePollLoopActorTestMixin(ActorTestMixin):
     def build_monitor(self, *args, **kwargs):
         self.timer = mock.MagicMock(name='timer_mock')

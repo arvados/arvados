@@ -10,15 +10,8 @@ import mock
 import arvnodeman.computenode.driver.gce as gce
 from . import testutil
 
-class GCEComputeNodeDriverTestCase(unittest.TestCase):
-    def setUp(self):
-        self.driver_mock = mock.MagicMock(name='driver_mock')
-
-    def new_driver(self, auth_kwargs={}, list_kwargs={}, create_kwargs={}):
-        create_kwargs.setdefault('ping_host', '100::')
-        return gce.ComputeNodeDriver(
-            auth_kwargs, list_kwargs, create_kwargs,
-            driver_class=self.driver_mock)
+class GCEComputeNodeDriverTestCase(testutil.DriverTestMixin, unittest.TestCase):
+    TEST_CLASS = gce.ComputeNodeDriver
 
     def test_driver_instantiation(self):
         kwargs = {'user_id': 'foo'}
