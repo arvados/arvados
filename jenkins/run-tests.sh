@@ -525,6 +525,7 @@ done
 
 install_workbench() {
     cd "$WORKSPACE/apps/workbench" \
+        && mkdir -p tmp/cache \
         && RAILS_ENV=test bundle_install_trylocal
 }
 do_install apps/workbench workbench
