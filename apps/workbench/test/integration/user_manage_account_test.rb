@@ -155,7 +155,7 @@ class UserManageAccountTest < ActionDispatch::IntegrationTest
     end
     assert_equal true, found_email, "Expected email after requesting shell access"
 
-    # revisit the page and verify that the Request button is no longer shown
+    # revisit the page and verify the request sent message along with the request button.
     within('.navbar-fixed-top') do
       find('a', text: 'spectator').click
       within('.dropdown-menu') do
