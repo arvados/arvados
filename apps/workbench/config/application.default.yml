@@ -185,6 +185,9 @@ common:
   issue_reporter_email_to: arvados@example.com
   support_email_address: arvados@example.com
 
+  # generic issue email from
+  email_from: arvados@example.com
+
   # filename suffixes for which view icon would be shown in collection show page
   filename_suffixes_with_view_icon: [txt, gif, jpeg, jpg, png, html, htm, pdf]
 

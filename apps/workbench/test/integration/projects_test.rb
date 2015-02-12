@@ -712,6 +712,6 @@ class ProjectsTest < ActionDispatch::IntegrationTest
                           "/projects/#{project['uuid']}#Advanced"))
     assert_text("API response")
     find("#page-wrapper .nav-tabs :first-child a").click
-    assert_text("bytes Collection")
+    assert_text("Collection modified at")
   end
 end

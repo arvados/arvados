@@ -49,8 +49,18 @@ class NodeManagerDaemonActorTestCase(testutil.ActorTestMixin,
     def monitor_list(self):
         return pykka.ActorRegistry.get_by_class(ComputeNodeMonitorActor)
 
+    def monitored_arvados_nodes(self):
+        pairings = []
+        for future in [actor.proxy().arvados_node
+                       for actor in self.monitor_list()]:
+            try:
+                pairings.append(future.get(self.TIMEOUT))
+            except pykka.ActorDeadError:
+                pass
+        return pairings
+
     def alive_monitor_count(self):
-        return sum(1 for actor in self.monitor_list() if actor.is_alive())
+        return len(self.monitored_arvados_nodes())
 
     def assertShutdownCancellable(self, expected=True):
         self.assertTrue(self.node_shutdown.start.called)
@@ -65,9 +75,7 @@ class NodeManagerDaemonActorTestCase(testutil.ActorTestMixin,
         self.assertTrue(self.node_setup.start.called)
 
     def check_monitors_arvados_nodes(self, *arv_nodes):
-        pairings = [monitor.proxy().arvados_node
-                    for monitor in self.monitor_list() if monitor.is_alive()]
-        self.assertItemsEqual(arv_nodes, pykka.get_all(pairings, self.TIMEOUT))
+        self.assertItemsEqual(arv_nodes, self.monitored_arvados_nodes())
 
     def test_node_pairing(self):
         cloud_node = testutil.cloud_node_mock(1)
