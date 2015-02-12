@@ -142,6 +142,19 @@ class UserManageAccountTest < ActionDispatch::IntegrationTest
     assert_no_text 'You do not have access to any virtual machines.'
     assert_no_selector 'a', text: 'Send request for shell access'
 
+    # verify that the email was sent
+    user = api_fixture('users')['spectator']
+    found_email = false
+    ActionMailer::Base.deliveries.andand.each do |email|
+      full_name = (user['first_name'] || "") + " " + (user['last_name'] || "")
+      expected = "Shell account request from #{full_name} (#{user['email']}, #{user['uuid']})"
+      if email.subject.include?(expected)
+        found_email = true
+        break
+      end
+    end
+    assert_equal true, found_email, "Expected email after requesting shell access"
+
     # revisit the page and verify that the Request button is no longer shown
     within('.navbar-fixed-top') do
       find('a', text: 'spectator').click
