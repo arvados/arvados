@@ -288,7 +288,7 @@ class ComputeNodeMonitorActor(config.actor_class):
         if (self.arvados_node is None) or not timestamp_fresh(
               arvados_node_mtime(self.arvados_node), self.node_stale_after):
             return None
-        state = self.arvados_node['info'].get('slurm_state')
+        state = self.arvados_node['crunch_worker_state']
         if not state:
             return None
         result = state in states

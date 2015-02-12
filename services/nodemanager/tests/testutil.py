@@ -15,16 +15,18 @@ no_sleep = mock.patch('time.sleep', lambda n: None)
 def arvados_node_mock(node_num=99, job_uuid=None, age=0, **kwargs):
     if job_uuid is True:
         job_uuid = 'zzzzz-jjjjj-jobjobjobjobjob'
-    slurm_state = 'idle' if (job_uuid is None) else 'alloc'
+    crunch_worker_state = 'idle' if (job_uuid is None) else 'busy'
     node = {'uuid': 'zzzzz-yyyyy-{:015x}'.format(node_num),
             'created_at': '2014-01-01T01:02:03Z',
             'modified_at': time.strftime('%Y-%m-%dT%H:%M:%SZ',
                                          time.gmtime(time.time() - age)),
+            'slot_number': node_num,
             'hostname': 'compute{}'.format(node_num),
             'domain': 'zzzzz.arvadosapi.com',
             'ip_address': ip_address_mock(node_num),
             'job_uuid': job_uuid,
-            'info': {'slurm_state': slurm_state}}
+            'crunch_worker_state': crunch_worker_state,
+            'info': {}}
     node.update(kwargs)
     return node
 
