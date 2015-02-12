@@ -12,15 +12,8 @@ import mock
 import arvnodeman.computenode.driver.ec2 as ec2
 from . import testutil
 
-class EC2ComputeNodeDriverTestCase(unittest.TestCase):
-    def setUp(self):
-        self.driver_mock = mock.MagicMock(name='driver_mock')
-
-    def new_driver(self, auth_kwargs={}, list_kwargs={}, create_kwargs={}):
-        create_kwargs.setdefault('ping_host', '100::')
-        return ec2.ComputeNodeDriver(
-            auth_kwargs, list_kwargs, create_kwargs,
-            driver_class=self.driver_mock)
+class EC2ComputeNodeDriverTestCase(testutil.DriverTestMixin, unittest.TestCase):
+    TEST_CLASS = ec2.ComputeNodeDriver
 
     def test_driver_instantiation(self):
         kwargs = {'key': 'testkey'}
