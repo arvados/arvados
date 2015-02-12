@@ -4,6 +4,7 @@
         if (window.Blob &&
             window.File &&
             window.FileReader &&
+            window.localStorage &&
             window.WebSocket) {
             ok = true;
         }
