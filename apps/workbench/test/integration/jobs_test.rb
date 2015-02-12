@@ -4,6 +4,9 @@ require 'tmpdir'
 require 'integration_helper'
 
 class JobsTest < ActionDispatch::IntegrationTest
+  setup do
+      need_javascript
+  end
 
   def fakepipe_with_log_data
     content =
@@ -14,13 +17,8 @@ class JobsTest < ActionDispatch::IntegrationTest
   end
 
   test "add job description" do
-    need_javascript
-    visit page_with_token("active", "/jobs")
-
-    # go to job running the script "doesnotexist"
-    within first('tr', text: 'doesnotexist') do
-      find("a").click
-    end
+    job = api_fixture('jobs')['nearly_finished_job']
+    visit page_with_token("active", "/jobs/#{job['uuid']}")
 
     # edit job description
     within('.arv-description-as-subtitle') do
@@ -28,18 +26,14 @@ class JobsTest < ActionDispatch::IntegrationTest
       find('.editable-input textarea').set('*Textile description for job* - "Go to dashboard":/')
       find('.editable-submit').click
     end
-    wait_for_ajax
 
     # Verify edited description
-    assert page.has_no_text? '*Textile description for job*'
-    assert page.has_text? 'Textile description for job'
-    assert page.has_link? 'Go to dashboard'
-    click_link 'Go to dashboard'
-    assert page.has_text? 'Active pipelines'
+    assert_no_text '*Textile description for job*'
+    assert_text 'Textile description for job'
+    assert_selector 'a[href="/"]', text: 'Go to dashboard'
   end
 
   test "view job log" do
-    need_javascript
     job = api_fixture('jobs')['job_with_real_log']
 
     IO.expects(:popen).returns(fakepipe_with_log_data)
@@ -58,7 +52,6 @@ class JobsTest < ActionDispatch::IntegrationTest
   end
 
   test 'view partial job log' do
-    need_javascript
     # This config will be restored during teardown by ../test_helper.rb:
     Rails.configuration.log_viewer_max_bytes = 100
 
@@ -80,8 +73,6 @@ class JobsTest < ActionDispatch::IntegrationTest
   ].each do |job_name, expect_options, use_latest|
     test "Rerun #{job_name} job, expect options #{expect_options},
           and use latest version option #{use_latest}" do
-      need_javascript
-
       job = api_fixture('jobs')[job_name]
       visit page_with_token 'active', '/jobs/'+job['uuid']
 
