@@ -166,6 +166,18 @@ class CollectionsControllerTest < ActionController::TestCase
                  "failed to get a correct file from Keep")
   end
 
+  test 'anonymous download' do
+    Rails.configuration.anonymous_user_token =
+      api_fixture('api_client_authorizations')['anonymous']['api_token']
+    expect_content = stub_file_content
+    get :show_file, {
+      uuid: api_fixture('collections')['user_agreement_in_anonymously_accessible_project']['uuid'],
+      file: 'GNU_General_Public_License,_version_3.pdf',
+    }
+    assert_response :success
+    assert_equal expect_content, response.body
+  end
+
   test "can't get a file from Keep without permission" do
     params = collection_params(:foo_file, 'foo')
     sess = session_for(:spectator)
