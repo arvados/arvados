@@ -1,5 +1,6 @@
 require "minitest/autorun"
 require "arvados/keep"
+require "yaml"
 
 def random_block(size=nil)
   sprintf("%032x+%d", rand(16 ** 32), size || rand(64 * 1024 * 1024))
@@ -57,6 +58,22 @@ class ManifestTest < Minitest::Test
     assert_empty(Keep::Manifest.new("").each_line.to_a)
   end
 
+  def test_empty_each_file_spec
+    assert_empty(Keep::Manifest.new("").each_file_spec.to_a)
+  end
+
+  def test_empty_files
+    assert_empty(Keep::Manifest.new("").files)
+  end
+
+  def test_empty_files_count
+    assert_equal(0, Keep::Manifest.new("").files_count)
+  end
+
+  def test_empty_has_file?
+    refute(Keep::Manifest.new("").has_file?(""))
+  end
+
   def test_empty_line_within_manifest
     block_s = random_block
     manifest = Keep::Manifest.
@@ -103,6 +120,11 @@ class ManifestTest < Minitest::Test
   def test_files_with_colons_in_names
     manifest = Keep::Manifest.new(". #{random_block(9)} 0:9:file:test.txt\n")
     assert_equal([[".", "file:test.txt", 9]], manifest.files)
+  end
+
+  def test_files_with_escape_sequence_in_filename
+    manifest = Keep::Manifest.new(". #{random_block(9)} 0:9:a\\040\\141.txt\n")
+    assert_equal([[".", "a a.txt", 9]], manifest.files)
   end
 
   def test_files_spanning_multiple_blocks
@@ -152,5 +174,49 @@ class ManifestTest < Minitest::Test
     refute(manifest.has_file?("./s1", "uniqfile2"), "two-arg missing file found")
     refute(manifest.has_file?("./s2/repfile"), "one-arg missing stream found")
     refute(manifest.has_file?("./s2", "repfile"), "two-arg missing stream found")
+  end
+
+  def test_has_file_with_spaces
+    manifest = Keep::Manifest.new(". #{random_block(3)} 0:3:a\\040b\\040c\n")
+    assert(manifest.has_file?("./a b c"), "one-arg 'a b c' not found")
+    assert(manifest.has_file?(".", "a b c"), "two-arg 'a b c' not found")
+    refute(manifest.has_file?("a\\040b\\040c"), "one-arg unescaped found")
+    refute(manifest.has_file?(".", "a\\040b\\040c"), "two-arg unescaped found")
+  end
+
+  def test_parse_all_fixtures
+    fixtures('collections').each do |name, collection|
+      parse_collection_manifest name, collection
+    end
+  end
+
+  def test_raise_on_bogus_fixture
+    assert_raises ArgumentError do
+      parse_collection_manifest('bogus collection',
+                                {'manifest_text' => ". zzz 0:\n"})
+    end
+  end
+
+  def parse_collection_manifest name, collection
+    manifest = Keep::Manifest.new(collection['manifest_text'])
+    manifest.each_file_spec do |stream_name, start_pos, file_size, file_name|
+      assert_kind_of String, stream_name
+      assert_kind_of Integer, start_pos
+      assert_kind_of Integer, file_size
+      assert_kind_of String, file_name
+      assert !stream_name.empty?, "empty stream_name in #{name} fixture"
+      assert !file_name.empty?, "empty file_name in #{name} fixture"
+    end
+  end
+
+  @@fixtures = nil
+  def fixtures name
+    return @@fixtures if @@fixtures
+    path = File.expand_path("../../../../services/api/test/fixtures/#{name}.yml",
+                            __FILE__)
+    file = IO.read(path)
+    trim_index = file.index('# Test Helper trims the rest of the file')
+    file = file[0, trim_index] if trim_index
+    @@fixtures = YAML.load(file)
   end
 end

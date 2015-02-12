@@ -4,12 +4,19 @@ require 'capybara/poltergeist'
 require 'uri'
 require 'yaml'
 
+POLTERGEIST_OPTS = {
+  window_size: [1200, 800],
+  phantomjs_options: ['--ignore-ssl-errors=true'],
+  inspector: true,
+}
+
 Capybara.register_driver :poltergeist do |app|
-  Capybara::Poltergeist::Driver.new app, {
-    window_size: [1200, 800],
-    phantomjs_options: ['--ignore-ssl-errors=true'],
-    inspector: true,
-  }
+  Capybara::Poltergeist::Driver.new app, POLTERGEIST_OPTS
+end
+
+Capybara.register_driver :poltergeist_without_file_api do |app|
+  js = File.expand_path '../support/remove_file_api.js', __FILE__
+  Capybara::Poltergeist::Driver.new app, POLTERGEIST_OPTS.merge(extensions: [js])
 end
 
 module WaitForAjax

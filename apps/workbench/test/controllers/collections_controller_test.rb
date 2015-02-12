@@ -56,6 +56,25 @@ class CollectionsControllerTest < ActionController::TestCase
     assert_equal([['.', 'foo', 3]], assigns(:object).files)
   end
 
+  test "viewing a collection with spaces in filename" do
+    show_collection(:w_a_z_file, :active)
+    assert_equal([['.', 'w a z', 5]], assigns(:object).files)
+  end
+
+  test "download a file with spaces in filename" do
+    collection = api_fixture('collections')['w_a_z_file']
+    fakepipe = IO.popen(['echo', '-n', 'w a z'], 'rb')
+    IO.expects(:popen).with { |cmd, mode|
+      cmd.include? "#{collection['uuid']}/w a z"
+    }.returns(fakepipe)
+    get :show_file, {
+      uuid: collection['uuid'],
+      file: 'w a z'
+    }, session_for(:active)
+    assert_response :success
+    assert_equal 'w a z', response.body
+  end
+
   test "viewing a collection fetches related projects" do
     show_collection({id: api_fixture('collections')["foo_file"]['portable_data_hash']}, :active)
     assert_includes(assigns(:same_pdh).map(&:owner_uuid),

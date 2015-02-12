@@ -448,8 +448,8 @@ class TagsDirectory(RecursiveInvalidateDirectory):
                 ).execute(num_retries=self.num_retries)
         if "items" in tags:
             self.merge(tags['items'],
-                       lambda i: i['name'] if 'name' in i else i['uuid'],
-                       lambda a, i: a.tag == i,
+                       lambda i: i['name'],
+                       lambda a, i: a.tag == i['name'],
                        lambda i: TagDirectory(self.inode, self.inodes, self.api, self.num_retries, i['name'], poll=self._poll, poll_time=self._poll_time))
 
 
