@@ -135,6 +135,7 @@ class UserManageAccountTest < ActionDispatch::IntegrationTest
   end
 
   test "request shell access" do
+    ActionMailer::Base.deliveries = []
     visit page_with_token('spectator', '/manage_account')
     assert_text 'You do not have access to any virtual machines'
     click_link 'Send request for shell access'
@@ -151,7 +152,7 @@ class UserManageAccountTest < ActionDispatch::IntegrationTest
     full_name = "#{user['first_name']} #{user['last_name']}"
     expected = "Shell account request from #{full_name} (#{user['email']}, #{user['uuid']})"
     found_email = 0
-    ActionMailer::Base.deliveries.andand.each do |email|
+    ActionMailer::Base.deliveries.each do |email|
       if email.subject.include?(expected)
         found_email += 1
       end
