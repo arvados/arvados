@@ -560,7 +560,7 @@ stop_api
 
 test_apiserver() {
     cd "$WORKSPACE/services/api" \
-        && RAILS_ENV=test bundle exec rake test ${testargs[services/api]}
+        && RAILS_ENV=test bundle exec rake test TESTOPTS=-v ${testargs[services/api]}
 }
 do_test services/api apiserver
 
@@ -568,14 +568,14 @@ start_api
 
 test_ruby_sdk() {
     cd "$WORKSPACE/sdk/ruby" \
-        && bundle exec rake test ${testargs[sdk/ruby]}
+        && bundle exec rake test TESTOPTS=-v ${testargs[sdk/ruby]}
 }
 do_test sdk/ruby ruby_sdk
 
 test_cli() {
     cd "$WORKSPACE/sdk/cli" \
         && mkdir -p /tmp/keep \
-        && KEEP_LOCAL_STORE=/tmp/keep bundle exec rake test ${testargs[sdk/cli]}
+        && KEEP_LOCAL_STORE=/tmp/keep bundle exec rake test TESTOPTS=-v ${testargs[sdk/cli]}
 }
 do_test sdk/cli cli
 
@@ -591,7 +591,7 @@ done
 
 test_workbench() {
     cd "$WORKSPACE/apps/workbench" \
-        && RAILS_ENV=test bundle exec rake test ${testargs[apps/workbench]}
+        && RAILS_ENV=test bundle exec rake test TESTOPTS=-v ${testargs[apps/workbench]}
 }
 do_test apps/workbench workbench
 
