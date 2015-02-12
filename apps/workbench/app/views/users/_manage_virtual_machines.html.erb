@@ -1,3 +1,17 @@
+<script>
+  $(document).ready(function(){
+    var $noShellAccessDiv = $('#no_shell_access');
+    if ($noShellAccessDiv.length) {
+      requestSent = localStorage.getItem('request_shell_access');
+      if (requestSent != null) {
+        $("#shell_access_requested_msg").html(requestSent)
+      } else {
+        $('div').remove('.shell_access_requested');
+      }
+    }
+  });
+</script>
+
 <div>
   <p>
     For more information see <%= link_to raw('Arvados Docs &rarr; User Guide &rarr; SSH access'),

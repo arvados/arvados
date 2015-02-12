@@ -307,7 +307,7 @@ class UsersController < ApplicationController
     params['request_url'] = request.url
     respond_to do |format|
       RequestShellAccessReporter.send_request(current_user, params).deliver
-      format.js {render nothing: true}
+      format.js {render}
     end
   end
 
