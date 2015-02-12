@@ -1,0 +1,19 @@
+<VirtualHost *:80>
+  # Index file and Document Root (where the public files are located)
+  DirectoryIndex index.html
+  DocumentRoot /mnt/public
+  RackBaseURI /
+
+  LogLevel warn
+  ErrorLog  ${APACHE_LOG_DIR}/error.log
+  CustomLog ${APACHE_LOG_DIR}/access.log combined
+
+  <Directory /mnt/public>
+    Options Indexes IncludesNoExec
+    Options -MultiViews
+    AllowOverride All
+    Order allow,deny
+    Allow from all
+  </Directory>
+
+</VirtualHost>

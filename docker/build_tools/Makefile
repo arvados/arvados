@@ -60,6 +60,8 @@ SLURM_DEPS = slurm/Dockerfile config.yml $(SLURM_GENERATED)
 
 JOBS_DEPS = jobs/Dockerfile
 
+ARV_WEB_DEPS = arv-web/Dockerfile arv-web/apache2_foreground.sh arv-web/apache2_vhost
+
 JAVA_BWA_SAMTOOLS_DEPS = java-bwa-samtools/Dockerfile
 
 API_DEPS = api/* config.yml $(API_GENERATED)
@@ -208,6 +210,10 @@ sso-image: passenger-image $(SSO_DEPS)
 	@echo "Building sso-image"
 	$(DOCKER_BUILD) -t arvados/sso sso
 	date >sso-image
+
+arv-web-image: passenger-image $(ARV_WEB_DEPS)
+	$(DOCKER_BUILD) -t arvados/arv-web arv-web
+	date >arv-web-image
 
 # ============================================================
 # The arvados/base image is the base Debian image plus packages
