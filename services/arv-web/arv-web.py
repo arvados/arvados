@@ -156,8 +156,6 @@ class ArvWeb(object):
             self.stop_docker()
 
             logger.info("Starting Docker container %s", docker_image)
-            ciddir = tempfile.mkdtemp()
-            cidfilepath = os.path.join(ciddir, "cidfile")
             self.cid = subprocess.check_output(["docker", "run",
                                                 "--detach=true",
                                                 "--publish=%i:80" % (self.port),
@@ -246,6 +244,9 @@ def main(argv):
         arvweb.run()
     except arvados.errors.ArgumentError as e:
         logger.error(e)
+        return 1
+
+    return 0
 
 if __name__ == '__main__':
-    main(sys.argv[1:])
+    sys.exit(main(sys.argv[1:]))
