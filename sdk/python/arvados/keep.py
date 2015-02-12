@@ -585,8 +585,16 @@ class KeepClient(object):
         else:
             return None
 
+    def get_from_cache(self, loc):
+        """Fetch a block only if is in the cache, otherwise return None."""
+        slot = self.block_cache.get(loc)
+        if slot.ready.is_set():
+            return slot.get()
+        else:
+            return None
+
     @retry.retry_method
-    def get(self, loc_s, num_retries=None, cache_only=False):
+    def get(self, loc_s, num_retries=None):
         """Get data from Keep.
 
         This method fetches one or more blocks of data from Keep.  It
@@ -605,21 +613,11 @@ class KeepClient(object):
           to fetch data from every available Keep service, along with any
           that are named in location hints in the locator.  The default value
           is set when the KeepClient is initialized.
-        * cache_only: If true, return the block data only if already present in
-          cache, otherwise return None.
         """
         if ',' in loc_s:
             return ''.join(self.get(x) for x in loc_s.split(','))
         locator = KeepLocator(loc_s)
         expect_hash = locator.md5sum
-
-        if cache_only:
-            slot = self.block_cache.get(expect_hash)
-            if slot.ready.is_set():
-                return slot.get()
-            else:
-                return None
-
         slot, first = self.block_cache.reserve_cache(expect_hash)
         if not first:
             v = slot.get()

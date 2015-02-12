@@ -4,8 +4,8 @@ import keep
 import config
 import copy
 
-class SafeApi(object):
-    """Threadsafe wrapper for API object.  This stores and returns a different api
+class ThreadSafeApiCache(object):
+    """Threadsafe wrapper for API objects.  This stores and returns a different api
     object per thread, because httplib2 which underlies apiclient is not
     threadsafe.
     """
@@ -29,4 +29,4 @@ class SafeApi(object):
         try:
             return getattr(self.localapi(), name)
         except AttributeError:
-            return super(SafeApi, self).__getattr__(name)
+            return super(ThreadSafeApiCache, self).__getattr__(name)

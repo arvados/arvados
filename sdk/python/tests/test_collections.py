@@ -721,10 +721,10 @@ class CollectionWriterTestCase(unittest.TestCase, CollectionTestMixin):
     def test_write_three_replicas(self):
         client = mock.MagicMock(name='api_client')
         self.mock_keep_services(client, status=200, service_type='disk', count=6)
-        writer = self.foo_writer(api_client=client, replication=3)
         with self.mock_keep(
                 None, 200, 500, 200, 500, 200, 200,
                 **{'x-keep-replicas-stored': 1}) as keepmock:
+            writer = self.foo_writer(api_client=client, replication=3)
             writer.manifest_text()
             self.assertEqual(5, keepmock.call_count)
 
@@ -851,7 +851,7 @@ class NewCollectionTestCase(unittest.TestCase, CollectionTestMixin):
         c = arvados.WritableCollection('. 781e5e245d69b566979b86e28d23f2c7+10 0:10:count1.txt\n./foo 781e5e245d69b566979b86e28d23f2c7+10 0:10:count2.txt\n')
         with self.assertRaises(IOError):
             c.remove("foo")
-        c.remove("foo", rm_r=True)
+        c.remove("foo", recursive=True)
         self.assertEqual(". 781e5e245d69b566979b86e28d23f2c7+10 0:10:count1.txt\n", export_manifest(c))
 
     def test_copy_to_dir1(self):

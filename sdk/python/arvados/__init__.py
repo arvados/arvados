@@ -22,7 +22,7 @@ from api import *
 from collection import *
 from keep import *
 from stream import *
-from arvfile import *
+from arvfile import StreamFileReader
 import errors
 import util
 

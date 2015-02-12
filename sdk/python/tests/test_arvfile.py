@@ -20,7 +20,10 @@ class ArvadosFileWriterTestCase(unittest.TestCase):
         def __init__(self, blocks):
             self.blocks = blocks
             self.requests = []
-        def get(self, locator, num_retries=0, cache_only=False):
+        def get(self, locator, num_retries=0):
+            self.requests.append(locator)
+            return self.blocks.get(locator)
+        def get_from_cache(self, locator):
             self.requests.append(locator)
             return self.blocks.get(locator)
         def put(self, data, num_retries=None):
