@@ -305,10 +305,7 @@ class UsersController < ApplicationController
   def request_shell_access
     logger.warn "request_access: #{params.inspect}"
     params['request_url'] = request.url
-    respond_to do |format|
-      RequestShellAccessReporter.send_request(current_user, params).deliver
-      format.js {render nothing: true}
-    end
+    RequestShellAccessReporter.send_request(current_user, params).deliver
   end
 
   protected
