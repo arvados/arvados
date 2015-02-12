@@ -32,8 +32,3 @@ common:
   # Settings in this section will be used in all environments
   # (development, production, test) except when overridden in the
   # environment-specific sections above.
-  auto_admin_user: peter.amstutz@curoverse.com
-  git_repositories_dir: /home/tetron/work/git
-  git_internal_dir: /home/tetron/work/internal.git
-  secret_token: 5520a2018819190aa4abe42c0807049cf85504a162570592acc9214f4b14914f2e610a40b58e97c57fb5a8e96ec3a00bcef56c1f747766537e6e5022bb3f3764
-  blob_signing_key: 5eef1e322b2bfa28f8adb748c6244a66d4eef0cbb5bb45108d7b364e91faf28a73eede086fb0d3670ce2e7822a8d8149af129ab57f9be4fec98bb0be482ee69a
