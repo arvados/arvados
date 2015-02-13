@@ -1,0 +1,40 @@
+{
+    "name":"run-command example pipeline",
+    "components":{
+        "bwa-mem": {
+            "script": "run-command",
+            "script_version": "master",
+            "repository": "arvados",
+            "script_parameters": {
+                "command": [
+                    "bwa",
+                    "mem",
+                    "-t",
+                    "$(node.cores)",
+                    "$(glob $(dir $(reference_collection))/*.fasta)",
+                    {
+                        "foreach": "read_pair",
+                        "command": "$(read_pair)"
+                    }
+                ],
+                "task.stdout": "$(basename $(glob $(dir $(sample))/*_1.fastq)).sam",
+                "task.foreach": ["sample_subdir", "read_pair"],
+                "reference_collection": {
+                    "required": true,
+                    "dataclass": "Collection"
+                },
+                "sample": {
+                    "required": true,
+                    "dataclass": "Collection"
+                },
+                "sample_subdir": "$(dir $(samples))",
+                "read_pair": {
+                    "value": {
+                        "group": "sample_subdir",
+                        "regex": "(.*)_[12]\\.fastq(\\.gz)?$"
+                    }
+                }
+            }
+        }
+    }
+}

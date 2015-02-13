@@ -34,6 +34,25 @@ func pythonDir() string {
 	return fmt.Sprintf("%s/../../sdk/python/tests", cwd)
 }
 
+// Wait (up to 1 second) for keepproxy to listen on a port. This
+// avoids a race condition where we hit a "connection refused" error
+// because we start testing the proxy too soon.
+func waitForListener() {
+	const (ms = 5)
+	for i := 0; listener == nil && i < 1000; i += ms {
+		time.Sleep(ms * time.Millisecond)
+	}
+	if listener == nil {
+		log.Fatalf("Timed out waiting for listener to start")
+	}
+}
+
+func closeListener() {
+	if listener != nil {
+		listener.Close()
+	}
+}
+
 func (s *ServerRequiredSuite) SetUpSuite(c *C) {
 	cwd, _ := os.Getwd()
 	defer os.Chdir(cwd)
@@ -155,7 +174,8 @@ func (s *ServerRequiredSuite) TestPutAskGet(c *C) {
 	os.Setenv("ARVADOS_EXTERNAL_CLIENT", "")
 	log.Print("keepclient created")
 
-	defer listener.Close()
+	waitForListener()
+	defer closeListener()
 
 	hash := fmt.Sprintf("%x", md5.Sum([]byte("foo")))
 	var hash2 string
@@ -199,7 +219,8 @@ func (s *ServerRequiredSuite) TestPutAskGetForbidden(c *C) {
 	log.Print("TestPutAndGet start")
 
 	kc := runProxy(c, []string{"keepproxy"}, "123abc", 29951)
-	defer listener.Close()
+	waitForListener()
+	defer closeListener()
 
 	log.Print("keepclient created")
 
@@ -240,7 +261,8 @@ func (s *ServerRequiredSuite) TestGetDisabled(c *C) {
 	log.Print("TestGetDisabled start")
 
 	kc := runProxy(c, []string{"keepproxy", "-no-get"}, "4axaw8zxe0qm22wa6urpp5nskcne8z88cvbupv653y1njyi05h", 29952)
-	defer listener.Close()
+	waitForListener()
+	defer closeListener()
 
 	hash := fmt.Sprintf("%x", md5.Sum([]byte("baz")))
 
@@ -279,7 +301,8 @@ func (s *ServerRequiredSuite) TestPutDisabled(c *C) {
 	log.Print("TestPutDisabled start")
 
 	kc := runProxy(c, []string{"keepproxy", "-no-put"}, "4axaw8zxe0qm22wa6urpp5nskcne8z88cvbupv653y1njyi05h", 29953)
-	defer listener.Close()
+	waitForListener()
+	defer closeListener()
 
 	{
 		hash2, rep, err := kc.PutB([]byte("quux"))

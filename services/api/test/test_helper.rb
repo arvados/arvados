@@ -88,7 +88,7 @@ class ActionController::TestCase
   def check_counter action
     @counter += 1
     if @counter == 2
-     # assert_equal 1, 2, "Multiple actions in functional test"
+      assert_equal 1, 2, "Multiple actions in functional test"
     end
   end
 

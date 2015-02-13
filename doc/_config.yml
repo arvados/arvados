@@ -39,6 +39,7 @@ navbar:
       - user/tutorials/tutorial-firstscript.html.textile.liquid
       - user/tutorials/tutorial-submit-job.html.textile.liquid
       - user/topics/tutorial-parallel.html.textile.liquid
+      - user/topics/run-command.html.textile.liquid
       - user/examples/crunch-examples.html.textile.liquid
     - Query the metadata database:
       - user/topics/tutorial-trait-search.html.textile.liquid

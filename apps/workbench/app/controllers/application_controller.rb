@@ -12,6 +12,7 @@ class ApplicationController < ActionController::Base
   # Methods that don't require login should
   #   skip_around_filter :require_thread_api_token
   around_filter :require_thread_api_token, except: ERROR_ACTIONS
+  before_filter :set_cache_buster
   before_filter :accept_uuid_as_id_param, except: ERROR_ACTIONS
   before_filter :check_user_agreements, except: ERROR_ACTIONS
   before_filter :check_user_profile, except: ERROR_ACTIONS
@@ -29,6 +30,12 @@ class ApplicationController < ActionController::Base
     rescue_from(Exception,
                 ActionController::UrlGenerationError,
                 with: :render_exception)
+  end
+
+  def set_cache_buster
+    response.headers["Cache-Control"] = "no-cache, no-store, max-age=0, must-revalidate"
+    response.headers["Pragma"] = "no-cache"
+    response.headers["Expires"] = "Fri, 01 Jan 1990 00:00:00 GMT"
   end
 
   def unprocessable(message=nil)
