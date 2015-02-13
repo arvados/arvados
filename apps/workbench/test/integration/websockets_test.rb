@@ -159,6 +159,10 @@ class WebsocketTest < ActionDispatch::IntegrationTest
     visit page_with_token "admin", "/jobs/#{uuid}"
     click_link "Log"
 
+    # Until graphable data arrives, we should see the text log but not the graph.
+    assert_selector '#event_log_div', visible: true
+    assert_no_selector '#log_graph_div', visible: true
+
     api = ArvadosApiClient.new
 
     # should give 45.3% or (((36.39+0.86)/10.0002)/8)*100 rounded to 1 decimal place
@@ -169,9 +173,15 @@ class WebsocketTest < ActionDispatch::IntegrationTest
                 object_uuid: uuid,
                 event_type: "stderr",
                 properties: {"text" => text}}})
-    wait_for_ajax
 
-    # using datapoint 1 instead of datapoint 0 because there will be a "dummy" datapoint with no actual stats 10 minutes previous to the one we're looking for, for the sake of making the x-axis of the graph show a full 10 minutes of time even though there is only a single real datapoint
+    # Log div should appear when the first data point arrives by websocket.
+    assert_selector '#log_graph_div', visible: true
+
+    # Using datapoint 1 instead of datapoint 0 because there will be a
+    # "dummy" datapoint with no actual stats 10 minutes previous to
+    # the one we're looking for, for the sake of making the x-axis of
+    # the graph show a full 10 minutes of time even though there is
+    # only a single real datapoint.
     cpu_stat = page.evaluate_script("jobGraphData[1]['T1-cpu']")
 
     assert_equal 45.3, (cpu_stat.to_f*100).round(1)
