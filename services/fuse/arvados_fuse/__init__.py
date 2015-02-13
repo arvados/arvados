@@ -301,6 +301,7 @@ class CollectionDirectory(Directory):
         self.collection_object = None
         if isinstance(collection, dict):
             self.collection_locator = collection['uuid']
+            self._mtime = convertTime(collection['modified_at']) if 'modified_at' in collection else 0
         else:
             self.collection_locator = collection
 
@@ -391,7 +392,7 @@ class CollectionDirectory(Directory):
             return super(CollectionDirectory, self).__contains__(k)
 
     def mtime(self):
-        return convertTime(self.collection_object["modified_at"]) if self.collection_object is not None and 'modified_at' in self.collection_object else 0
+        return convertTime(self.collection_object["modified_at"]) if self.collection_object is not None and 'modified_at' in self.collection_object else self._mtime
 
 
 class MagicDirectory(Directory):
