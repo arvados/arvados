@@ -56,6 +56,12 @@ class ArvadosModel < ActiveRecord::Base
     "#{current_api_base}/#{self.class.to_s.pluralize.underscore}/#{self.uuid}"
   end
 
+  def self.selectable_attributes(template=:user)
+    # Return an array of attribute name strings that can be selected
+    # in the given template.
+    api_accessible_attributes(template).map { |attr_spec| attr_spec.first.to_s }
+  end
+
   def self.searchable_columns operator
     textonly_operator = !operator.match(/[<=>]/)
     self.columns.select do |col|
@@ -107,6 +113,7 @@ class ArvadosModel < ActiveRecord::Base
   # If current user cannot write this object, just return
   # [self.owner_uuid].
   def writable_by
+    return [owner_uuid] if not current_user
     unless (owner_uuid == current_user.uuid or
             current_user.is_admin or
             (current_user.groups_i_can(:manage) & [uuid, owner_uuid]).any?)
@@ -203,6 +210,25 @@ class ArvadosModel < ActiveRecord::Base
 
   def logged_attributes
     attributes
+  end
+
+  def self.full_text_searchable_columns
+    self.columns.select do |col|
+      if col.type == :string or col.type == :text
+        true
+      end
+    end.map(&:name)
+  end
+
+  def self.full_text_tsvector
+    tsvector_str = "to_tsvector('english', "
+    first = true
+    self.full_text_searchable_columns.each do |column|
+      tsvector_str += " || ' ' || " if not first
+      tsvector_str += "coalesce(#{column},'')"
+      first = false
+    end
+    tsvector_str += ")"
   end
 
   protected
@@ -432,6 +458,7 @@ class ArvadosModel < ActiveRecord::Base
   def self.uuid_prefixes
     unless @@prefixes_hash
       @@prefixes_hash = {}
+      Rails.application.eager_load!
       ActiveRecord::Base.descendants.reject(&:abstract_class?).each do |k|
         if k.respond_to?(:uuid_prefix)
           @@prefixes_hash[k.uuid_prefix] = k
@@ -498,7 +525,6 @@ class ArvadosModel < ActiveRecord::Base
     end
     resource_class = nil
 
-    Rails.application.eager_load!
     uuid.match HasUuid::UUID_REGEX do |re|
       return uuid_prefixes[re[1]] if uuid_prefixes[re[1]]
     end
@@ -523,8 +549,8 @@ class ArvadosModel < ActiveRecord::Base
   end
 
   def log_start_state
-    @old_etag = etag
-    @old_attributes = logged_attributes
+    @old_attributes = Marshal.load(Marshal.dump(attributes))
+    @old_logged_attributes = Marshal.load(Marshal.dump(logged_attributes))
   end
 
   def log_change(event_type)
@@ -543,14 +569,14 @@ class ArvadosModel < ActiveRecord::Base
 
   def log_update
     log_change('update') do |log|
-      log.fill_properties('old', @old_etag, @old_attributes)
+      log.fill_properties('old', etag(@old_attributes), @old_logged_attributes)
       log.update_to self
     end
   end
 
   def log_destroy
     log_change('destroy') do |log|
-      log.fill_properties('old', @old_etag, @old_attributes)
+      log.fill_properties('old', etag(@old_attributes), @old_logged_attributes)
       log.update_to nil
     end
   end

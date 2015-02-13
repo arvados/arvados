@@ -56,6 +56,25 @@ class CollectionsControllerTest < ActionController::TestCase
     assert_equal([['.', 'foo', 3]], assigns(:object).files)
   end
 
+  test "viewing a collection with spaces in filename" do
+    show_collection(:w_a_z_file, :active)
+    assert_equal([['.', 'w a z', 5]], assigns(:object).files)
+  end
+
+  test "download a file with spaces in filename" do
+    collection = api_fixture('collections')['w_a_z_file']
+    fakepipe = IO.popen(['echo', '-n', 'w a z'], 'rb')
+    IO.expects(:popen).with { |cmd, mode|
+      cmd.include? "#{collection['uuid']}/w a z"
+    }.returns(fakepipe)
+    get :show_file, {
+      uuid: collection['uuid'],
+      file: 'w a z'
+    }, session_for(:active)
+    assert_response :success
+    assert_equal 'w a z', response.body
+  end
+
   test "viewing a collection fetches related projects" do
     show_collection({id: api_fixture('collections')["foo_file"]['portable_data_hash']}, :active)
     assert_includes(assigns(:same_pdh).map(&:owner_uuid),
@@ -174,12 +193,23 @@ class CollectionsControllerTest < ActionController::TestCase
                      "using a reader token set the session's API token")
   end
 
-  test "trying to get from Keep with an unscoped reader token prompts login" do
-    params = collection_params(:foo_file, 'foo')
-    params[:reader_token] =
-      api_fixture('api_client_authorizations')['active_noscope']['api_token']
-    get(:show_file, params)
-    assert_response :redirect
+  [false, api_fixture('api_client_authorizations')['anonymous']['api_token']].
+    each do |anon_conf|
+    test "download a file using a reader token with insufficient scope (anon_conf=#{!!anon_conf})" do
+      Rails.configuration.anonymous_user_token = anon_conf
+      params = collection_params(:foo_file, 'foo')
+      params[:reader_token] =
+        api_fixture('api_client_authorizations')['active_noscope']['api_token']
+      get(:show_file, params)
+      if anon_conf
+        # Some files can be shown without a valid token, but not this one.
+        assert_response 404
+      else
+        # No files will ever be shown without a valid token. You
+        # should log in and try again.
+        assert_response :redirect
+      end
+    end
   end
 
   test "can get a file with an unpermissioned auth but in-scope reader token" do

@@ -31,10 +31,11 @@ _logger = logging.getLogger('arvados.arvados_fuse')
 _disallowed_filename_characters = re.compile('[\x00/]')
 
 class SafeApi(object):
-    '''Threadsafe wrapper for API object.  This stores and returns a different api
-    object per thread, because httplib2 which underlies apiclient is not
-    threadsafe.
-    '''
+    """Threadsafe wrapper for API object.
+
+    This stores and returns a different api object per thread, because
+    httplib2 which underlies apiclient is not threadsafe.
+    """
 
     def __init__(self, config):
         self.host = config.get('ARVADOS_API_HOST')
@@ -45,8 +46,9 @@ class SafeApi(object):
 
     def localapi(self):
         if 'api' not in self.local.__dict__:
-            self.local.api = arvados.api('v1', False, self.host,
-                                         self.api_token, self.insecure)
+            self.local.api = arvados.api(
+                version='v1',
+                host=self.host, token=self.api_token, insecure=self.insecure)
         return self.local.api
 
     def localkeep(self):
@@ -280,6 +282,7 @@ class Directory(FreshBase):
                 n.clear()
             llfuse.invalidate_entry(self.inode, str(n))
             self.inodes.del_entry(oldentries[n])
+        llfuse.invalidate_inode(self.inode)
         self.invalidate()
 
     def mtime(self):
@@ -304,6 +307,13 @@ class CollectionDirectory(Directory):
     def same(self, i):
         return i['uuid'] == self.collection_locator or i['portable_data_hash'] == self.collection_locator
 
+    # Used by arv-web.py to switch the contents of the CollectionDirectory
+    def change_collection(self, new_locator):
+        """Switch the contents of the CollectionDirectory.  Must be called with llfuse.lock held."""
+        self.collection_locator = new_locator
+        self.collection_object = None
+        self.update()
+
     def new_collection(self, new_collection_object, coll_reader):
         self.collection_object = new_collection_object
 
@@ -327,6 +337,10 @@ class CollectionDirectory(Directory):
             if self.collection_object is not None and portable_data_hash_pattern.match(self.collection_locator):
                 return True
 
+            if self.collection_locator is None:
+                self.fresh()
+                return True
+
             with llfuse.lock_released:
                 coll_reader = arvados.CollectionReader(
                     self.collection_locator, self.api, self.api.localkeep(),
@@ -348,7 +362,7 @@ class CollectionDirectory(Directory):
 
             self.fresh()
             return True
-        except apiclient.errors.NotFoundError:
+        except arvados.errors.NotFoundError:
             _logger.exception("arv-mount %s: error", self.collection_locator)
         except arvados.errors.ArgumentError as detail:
             _logger.warning("arv-mount %s: error %s", self.collection_locator, detail)
@@ -480,8 +494,8 @@ class TagsDirectory(RecursiveInvalidateDirectory):
                 ).execute(num_retries=self.num_retries)
         if "items" in tags:
             self.merge(tags['items'],
-                       lambda i: i['name'] if 'name' in i else i['uuid'],
-                       lambda a, i: a.tag == i,
+                       lambda i: i['name'],
+                       lambda a, i: a.tag == i['name'],
                        lambda i: TagDirectory(self.inode, self.inodes, self.api, self.num_retries, i['name'], poll=self._poll, poll_time=self._poll_time))
 
 
@@ -526,6 +540,8 @@ class ProjectDirectory(Directory):
         self.project_object = project_object
         self.project_object_file = None
         self.uuid = project_object['uuid']
+        self._poll = poll
+        self._poll_time = poll_time
 
     def createDirectory(self, i):
         if collection_uuid_pattern.match(i['uuid']):
@@ -766,6 +782,8 @@ class Operations(llfuse.Operations):
         entry.st_mode = stat.S_IRUSR | stat.S_IRGRP | stat.S_IROTH
         if isinstance(e, Directory):
             entry.st_mode |= stat.S_IXUSR | stat.S_IXGRP | stat.S_IXOTH | stat.S_IFDIR
+        elif isinstance(e, StreamReaderFile):
+            entry.st_mode |= stat.S_IXUSR | stat.S_IXGRP | stat.S_IXOTH | stat.S_IFREG
         else:
             entry.st_mode |= stat.S_IFREG
 

@@ -5,6 +5,7 @@ import (
 	"flag"
 	"fmt"
 	"git.curoverse.com/arvados.git/sdk/go/arvadosclient"
+	"git.curoverse.com/arvados.git/sdk/go/arvadostest"
 	"git.curoverse.com/arvados.git/sdk/go/streamer"
 	. "gopkg.in/check.v1"
 	"io"
@@ -13,7 +14,6 @@ import (
 	"net"
 	"net/http"
 	"os"
-	"os/exec"
 	"testing"
 )
 
@@ -44,42 +44,19 @@ func (s *ServerRequiredSuite) SetUpSuite(c *C) {
 		c.Skip("Skipping tests that require server")
 		return
 	}
-	os.Chdir(pythonDir())
-	{
-		cmd := exec.Command("python", "run_test_server.py", "start")
-		stderr, err := cmd.StderrPipe()
-		if err != nil {
-			log.Fatalf("Setting up stderr pipe: %s", err)
-		}
-		go io.Copy(os.Stderr, stderr)
-		if err := cmd.Run(); err != nil {
-			panic(fmt.Sprintf("'python run_test_server.py start' returned error %s", err))
-		}
-	}
-	{
-		cmd := exec.Command("python", "run_test_server.py", "start_keep")
-		stderr, err := cmd.StderrPipe()
-		if err != nil {
-			log.Fatalf("Setting up stderr pipe: %s", err)
-		}
-		go io.Copy(os.Stderr, stderr)
-		if err := cmd.Run(); err != nil {
-			panic(fmt.Sprintf("'python run_test_server.py start_keep' returned error %s", err))
-		}
-	}
+	arvadostest.StartAPI()
+	arvadostest.StartKeep()
 }
 
 func (s *ServerRequiredSuite) TearDownSuite(c *C) {
-	os.Chdir(pythonDir())
-	exec.Command("python", "run_test_server.py", "stop_keep").Run()
-	exec.Command("python", "run_test_server.py", "stop").Run()
+	if *no_server {
+		return
+	}
+	arvadostest.StopKeep()
+	arvadostest.StopAPI()
 }
 
 func (s *ServerRequiredSuite) TestMakeKeepClient(c *C) {
-	os.Setenv("ARVADOS_API_HOST", "localhost:3000")
-	os.Setenv("ARVADOS_API_TOKEN", "4axaw8zxe0qm22wa6urpp5nskcne8z88cvbupv653y1njyi05h")
-	os.Setenv("ARVADOS_API_HOST_INSECURE", "true")
-
 	arv, err := arvadosclient.MakeArvadosClient()
 	c.Assert(err, Equals, nil)
 
@@ -88,7 +65,7 @@ func (s *ServerRequiredSuite) TestMakeKeepClient(c *C) {
 	c.Assert(err, Equals, nil)
 	c.Check(len(kc.ServiceRoots()), Equals, 2)
 	for _, root := range kc.ServiceRoots() {
-		c.Check(root, Matches, "http://localhost:2510[\\d]")
+		c.Check(root, Matches, "http://localhost:\\d+")
 	}
 }
 
@@ -600,9 +577,6 @@ func (s *StandaloneSuite) TestGetWithFailures(c *C) {
 }
 
 func (s *ServerRequiredSuite) TestPutGetHead(c *C) {
-	os.Setenv("ARVADOS_API_HOST", "localhost:3000")
-	os.Setenv("ARVADOS_API_TOKEN", "4axaw8zxe0qm22wa6urpp5nskcne8z88cvbupv653y1njyi05h")
-	os.Setenv("ARVADOS_API_HOST_INSECURE", "true")
 	content := []byte("TestPutGetHead")
 
 	arv, err := arvadosclient.MakeArvadosClient()
@@ -626,7 +600,7 @@ func (s *ServerRequiredSuite) TestPutGetHead(c *C) {
 		r, n, url2, err := kc.Get(hash)
 		c.Check(err, Equals, nil)
 		c.Check(n, Equals, int64(len(content)))
-		c.Check(url2, Equals, fmt.Sprintf("http://localhost:25108/%s", hash))
+		c.Check(url2, Matches, fmt.Sprintf("http://localhost:\\d+/%s", hash))
 
 		read_content, err2 := ioutil.ReadAll(r)
 		c.Check(err2, Equals, nil)
@@ -636,7 +610,7 @@ func (s *ServerRequiredSuite) TestPutGetHead(c *C) {
 		n, url2, err := kc.Ask(hash)
 		c.Check(err, Equals, nil)
 		c.Check(n, Equals, int64(len(content)))
-		c.Check(url2, Equals, fmt.Sprintf("http://localhost:25108/%s", hash))
+		c.Check(url2, Matches, fmt.Sprintf("http://localhost:\\d+/%s", hash))
 	}
 }
 

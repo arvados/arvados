@@ -16,13 +16,15 @@ ArvadosWorkbench::Application.routes.draw do
   resources :humans
   resources :traits
   resources :api_client_authorizations
-  resources :repositories
   resources :virtual_machines
   resources :authorized_keys
   resources :job_tasks
   resources :jobs do
     post 'cancel', :on => :member
     get 'logs', :on => :member
+  end
+  resources :repositories do
+    post 'share_with', on: :member
   end
   match '/logout' => 'sessions#destroy', via: [:get, :post]
   get '/logged_out' => 'sessions#index'
@@ -37,6 +39,7 @@ ArvadosWorkbench::Application.routes.draw do
     post 'unsetup', :on => :member
     get 'setup_popup', :on => :member
     get 'profile', :on => :member
+    post 'request_shell_access', :on => :member
   end
   get '/manage_account' => 'users#manage_account'
   get "/add_ssh_key_popup" => 'users#add_ssh_key_popup', :as => :add_ssh_key_popup

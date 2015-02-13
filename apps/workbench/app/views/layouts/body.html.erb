@@ -41,7 +41,7 @@
 
             <li class="dropdown notification-menu">
               <a href="#" class="dropdown-toggle" data-toggle="dropdown" id="notifications-menu">
-                <span class="badge badge-alert notification-count"><%= @notification_count %></span>
+                <span class="badge badge-alert notification-count"><%= user_notifications.length if user_notifications.any? %></span>
                 <%= current_user.email %> <span class="caret"></span>
               </a>
               <ul class="dropdown-menu" role="menu">
@@ -52,10 +52,9 @@
                 <% end %>
                 <% end %>
                 <li role="menuitem"><a href="<%= logout_path %>" role="menuitem"><i class="fa fa-sign-out fa-fw"></i> Log out</a></li>
-                <% if current_user.is_active and
-                      (@notifications || []).length > 0 %>
+                <% if user_notifications.any? %>
                   <li role="presentation" class="divider"></li>
-                  <% @notifications.each_with_index do |n, i| %>
+                  <% user_notifications.each_with_index do |n, i| %>
                     <% if i > 0 %><li class="divider"></li><% end %>
                     <li class="notification"><%= n.call(self) %></li>
                   <% end %>
@@ -186,6 +185,8 @@
       </nav>
     <% end %>
 
+    <%= render partial: 'browser_unsupported' %><%# requires JS support below %>
+
     <div id="page-wrapper">
       <%= yield %>
     </div>
@@ -195,3 +196,4 @@
 
 <div class="modal-container"></div>
 <div id="report-issue-modal-window"></div>
+<script src="/browser_unsupported.js"></script>

@@ -68,6 +68,6 @@ class DatabaseController < ApplicationController
     end
 
     # Done.
-    render json: {success: true}
+    send_json success: true
   end
 end

@@ -10,6 +10,7 @@ class Collection < ArvadosModel
   before_validation :strip_manifest_text
   before_validation :set_portable_data_hash
   validate :ensure_hash_matches_manifest_text
+  before_save :set_file_names
 
   # Query only undeleted collections by default.
   default_scope where("expires_at IS NULL or expires_at > CURRENT_TIMESTAMP")
@@ -20,14 +21,22 @@ class Collection < ArvadosModel
     t.add :properties
     t.add :portable_data_hash
     t.add :signed_manifest_text, as: :manifest_text
+    t.add :replication_desired
   end
 
   def self.attributes_required_columns
-    # If we don't list this explicitly, the params[:select] code gets
-    # confused by the way we expose signed_manifest_text as
-    # manifest_text in the API response, and never let clients select
-    # the manifest_text column.
-    super.merge('manifest_text' => ['manifest_text'])
+    super.merge(
+                # If we don't list manifest_text explicitly, the
+                # params[:select] code gets confused by the way we
+                # expose signed_manifest_text as manifest_text in the
+                # API response, and never let clients select the
+                # manifest_text column.
+                'manifest_text' => ['manifest_text'],
+
+                # This is a shim until the database column gets
+                # renamed to replication_desired in #3410.
+                'replication_desired' => ['redundancy'],
+                )
   end
 
   def check_signatures
@@ -126,6 +135,32 @@ class Collection < ArvadosModel
     end
   end
 
+  def set_file_names
+    if self.manifest_text_changed?
+      self.file_names = manifest_files
+    end
+    true
+  end
+
+  def manifest_files
+    names = ''
+    if self.manifest_text
+      self.manifest_text.scan(/ \d+:\d+:(\S+)/) do |name|
+        names << name.first.gsub('\040',' ') + "\n"
+        break if names.length > 2**12
+      end
+    end
+
+    if self.manifest_text and names.length < 2**12
+      self.manifest_text.scan(/^\.\/(\S+)/m) do |stream_name|
+        names << stream_name.first.gsub('\040',' ') + "\n"
+        break if names.length > 2**12
+      end
+    end
+
+    names[0,2**12]
+  end
+
   def check_encoding
     if manifest_text.encoding.name == 'UTF-8' and manifest_text.valid_encoding?
       true
@@ -146,6 +181,11 @@ class Collection < ArvadosModel
       errors.add :manifest_text, "must use UTF-8 encoding"
       false
     end
+  end
+
+  def replication_desired
+    # Shim until database columns get fixed up in #3410.
+    redundancy or 2
   end
 
   def redundancy_status
@@ -267,6 +307,14 @@ class Collection < ArvadosModel
 
   def self.for_latest_docker_image(search_term, search_tag=nil, readers=nil)
     find_all_for_docker_image(search_term, search_tag, readers).first
+  end
+
+  def self.searchable_columns operator
+    super - ["manifest_text"]
+  end
+
+  def self.full_text_searchable_columns
+    super - ["manifest_text"]
   end
 
   protected

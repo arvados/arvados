@@ -72,16 +72,24 @@ class UserManageAccountTest < ActionDispatch::IntegrationTest
     end
   end
 
+  test "pipeline notification shown even though public pipelines exist" do
+    skip "created_by doesn't work that way"
+    Rails.configuration.anonymous_user_token = api_fixture('api_client_authorizations')['anonymous']['api_token']
+    visit page_with_token 'job_reader'
+    click_link 'notifications-menu'
+    assert_selector 'a', text: 'Click here to learn how to run an Arvados Crunch pipeline'
+  end
+
   [
-    ['inactive_but_signed_user_agreement', true],
-    ['active', false],
-  ].each do |user, notifications|
-    test "test manage account for #{user} with notifications #{notifications}" do
+    ['job_reader', :ssh, :pipeline],
+    ['active'],
+  ].each do |user, *expect|
+    test "manage account for #{user} with notifications #{expect.inspect}" do
+      Rails.configuration.anonymous_user_token = false
       visit page_with_token(user)
       click_link 'notifications-menu'
-      if notifications
+      if expect.include? :ssh
         assert_selector('a', text: 'Click here to set up an SSH public key for use with Arvados')
-        assert_selector('a', text: 'Click here to learn how to run an Arvados Crunch pipeline')
         click_link('Click here to set up an SSH public key for use with Arvados')
         assert_selector('a', text: 'Add new SSH key')
 
@@ -90,11 +98,77 @@ class UserManageAccountTest < ActionDispatch::IntegrationTest
         # No more SSH notification
         click_link 'notifications-menu'
         assert_no_selector('a', text: 'Click here to set up an SSH public key for use with Arvados')
-        assert_selector('a', text: 'Click here to learn how to run an Arvados Crunch pipeline')
       else
         assert_no_selector('a', text: 'Click here to set up an SSH public key for use with Arvados')
         assert_no_selector('a', text: 'Click here to learn how to run an Arvados Crunch pipeline')
       end
+
+      if expect.include? :pipeline
+        assert_selector('a', text: 'Click here to learn how to run an Arvados Crunch pipeline')
+      end
     end
+  end
+
+  test "verify repositories for active user" do
+    visit page_with_token('active', '/manage_account')
+
+    repos = [[api_fixture('repositories')['foo'], true, true],
+             [api_fixture('repositories')['repository3'], false, false],
+             [api_fixture('repositories')['repository4'], true, false]]
+
+    repos.each do |(repo, writable, sharable)|
+      within('tr', text: repo['name']+'.git') do
+        if sharable
+          assert_selector 'a', text:'Share'
+          assert_text 'writable'
+        else
+          assert_text repo['name']
+          assert_no_selector 'a', text:'Share'
+          if writable
+            assert_text 'writable'
+          else
+            assert_text 'read-only'
+          end
+        end
+      end
+    end
+  end
+
+  test "request shell access" do
+    ActionMailer::Base.deliveries = []
+    visit page_with_token('spectator', '/manage_account')
+    assert_text 'You do not have access to any virtual machines'
+    click_link 'Send request for shell access'
+
+    # Button text changes to "sending...", then back to normal. In the
+    # test suite we can't depend on confirming the "sending..." state
+    # before it goes back to normal, though.
+    ## assert_selector 'a', text: 'Sending request...'
+    assert_selector 'a', text: 'Send request for shell access'
+    assert_text 'A request for shell access was sent'
+
+    # verify that the email was sent
+    user = api_fixture('users')['spectator']
+    full_name = "#{user['first_name']} #{user['last_name']}"
+    expected = "Shell account request from #{full_name} (#{user['email']}, #{user['uuid']})"
+    found_email = 0
+    ActionMailer::Base.deliveries.each do |email|
+      if email.subject.include?(expected)
+        found_email += 1
+      end
+    end
+    assert_equal 1, found_email, "Expected email after requesting shell access"
+
+    # Revisit the page and verify the request sent message along with
+    # the request button.
+    within('.navbar-fixed-top') do
+      find('a', text: 'spectator').click
+      within('.dropdown-menu') do
+        find('a', text: 'Manage account').click
+      end
+    end
+    assert_text 'You do not have access to any virtual machines.'
+    assert_text 'A request for shell access was sent on '
+    assert_selector 'a', text: 'Send request for shell access'
   end
 end

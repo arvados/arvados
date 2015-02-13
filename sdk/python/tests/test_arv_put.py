@@ -433,7 +433,7 @@ class ArvPutIntegrationTest(run_test_server.TestCaseWithServers,
                   "ARVADOS_API_HOST_INSECURE",
                   "ARVADOS_API_TOKEN"]:
             self.ENVIRON[v] = arvados.config.settings()[v]
-        arv_put.api_client = arvados.api('v1', cache=False)
+        arv_put.api_client = arvados.api('v1')
 
     def current_user(self):
         return arv_put.api_client.users().current().execute()
@@ -523,14 +523,28 @@ class ArvPutIntegrationTest(run_test_server.TestCaseWithServers,
             stdin=subprocess.PIPE, stdout=subprocess.PIPE,
             stderr=subprocess.PIPE, env=self.ENVIRON)
         stdout, stderr = pipe.communicate(text)
-        collection_list = arvados.api('v1', cache=False).collections().list(
-            filters=[['portable_data_hash', '=', stdout.strip()]]).execute().get('items', [])
+        search_key = ('portable_data_hash'
+                      if '--portable-data-hash' in extra_args else 'uuid')
+        collection_list = arvados.api('v1').collections().list(
+            filters=[[search_key, '=', stdout.strip()]]).execute().get('items', [])
         self.assertEqual(1, len(collection_list))
         return collection_list[0]
 
+    def test_put_collection_with_high_redundancy(self):
+        # Write empty data: we're not testing CollectionWriter, just
+        # making sure collections.create tells the API server what our
+        # desired replication level is.
+        collection = self.run_and_find_collection("", ['--replication', '4'])
+        self.assertEqual(4, collection['replication_desired'])
+
+    def test_put_collection_with_default_redundancy(self):
+        collection = self.run_and_find_collection("")
+        self.assertEqual(2, collection['replication_desired'])
+
     def test_put_collection_with_unnamed_project_link(self):
-        link = self.run_and_find_collection("Test unnamed collection",
-                                      ['--portable-data-hash', '--project-uuid', self.PROJECT_UUID])
+        link = self.run_and_find_collection(
+            "Test unnamed collection",
+            ['--portable-data-hash', '--project-uuid', self.PROJECT_UUID])
         username = pwd.getpwuid(os.getuid()).pw_name
         self.assertRegexpMatches(
             link['name'],
@@ -538,8 +552,9 @@ class ArvPutIntegrationTest(run_test_server.TestCaseWithServers,
 
     def test_put_collection_with_name_and_no_project(self):
         link_name = 'Test Collection Link in home project'
-        collection = self.run_and_find_collection("Test named collection in home project",
-                                      ['--portable-data-hash', '--name', link_name])
+        collection = self.run_and_find_collection(
+            "Test named collection in home project",
+            ['--portable-data-hash', '--name', link_name])
         self.assertEqual(link_name, collection['name'])
         my_user_uuid = self.current_user()['uuid']
         self.assertEqual(my_user_uuid, collection['owner_uuid'])

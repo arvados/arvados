@@ -5,62 +5,69 @@
       <div class="btn-group btn-group-sm">
         <button type="button" class="btn btn-default dropdown-toggle" data-toggle="dropdown">Selection <span class="caret"></span></button>
         <ul class="dropdown-menu" role="menu">
-          <li><%= link_to "Create new collection with selected collections", '#',
-                  'data-href' => combine_selected_path(
-                    action_data: {current_project_uuid: @object.uuid}.to_json
-                  ),
-                  'id' => 'combine_selections_button',
-                  method: :post,
-                  'data-selection-param-name' => 'selection[]',
-                  'data-selection-action' => 'combine-project-contents',
-                  'data-toggle' => 'dropdown'
-            %></li>
-          <li><%= link_to "Compare selected", 'action',
+          <% if Collection.creatable? %>
+            <li><%= link_to "Create new collection with selected collections", '#',
+                    'data-href' => combine_selected_path(
+                      action_data: {current_project_uuid: @object.uuid}.to_json
+                    ),
+                    'id' => 'combine_selections_button',
+                    method: :post,
+                    'data-selection-param-name' => 'selection[]',
+                    'data-selection-action' => 'combine-project-contents',
+                    'data-toggle' => 'dropdown'
+              %></li>
+          <% end %>
+          <li><%= link_to "Compare selected", '#',
                   'data-href' => compare_pipeline_instances_path,
                   'data-selection-param-name' => 'uuids[]',
-                  'data-selection-action' => 'compare'
-            %></li>
-          <li><%= link_to "Copy selected...", '#',
-                  'data-href' => choose_projects_path(
-                    title: 'Copy selected items to...',
-                    editable: true,
-                    action_name: 'Copy',
-                    action_href: actions_path,
-                    action_method: 'post',
-                    action_data_from_params: ['selection'],
-                    action_data: {
-                      copy_selections_into_project: true,
-                      selection_param: 'uuid',
-                      success: 'page-refresh'}.to_json),
-                  'data-remote' => true,
-                  'data-selection-param-name' => 'selection[]',
-                  'data-selection-action' => 'copy'
-            %></li>
-          <% if @object.editable? %>
-          <li><%= link_to "Move selected...", '#',
-                  'data-href' => choose_projects_path(
-                    title: 'Move selected items to...',
-                    editable: true,
-                    action_name: 'Move',
-                    action_href: actions_path,
-                    action_method: 'post',
-                    action_data_from_params: ['selection'],
-                    action_data: {
-                      move_selections_into_project: true,
-                      selection_param: 'uuid',
-                      success: 'page-refresh'}.to_json),
-                  'data-remote' => true,
-                  'data-selection-param-name' => 'selection[]',
-                  'data-selection-action' => 'move'
-            %></li>
-          <li><%= link_to "Remove selected", '#',
-                  method: :delete,
-                  'data-href' => url_for(action: :remove_items),
-                  'data-selection-param-name' => 'item_uuids[]',
-                  'data-selection-action' => 'remove',
-                  'data-remote' => true,
+                  'data-selection-action' => 'compare',
                   'data-toggle' => 'dropdown'
             %></li>
+          <% if Collection.creatable? %>
+            <li><%= link_to "Copy selected...", '#',
+                    'data-href' => choose_projects_path(
+                      title: 'Copy selected items to...',
+                      editable: true,
+                      action_name: 'Copy',
+                      action_href: actions_path,
+                      action_method: 'post',
+                      action_data_from_params: ['selection'],
+                      action_data: {
+                        copy_selections_into_project: true,
+                        selection_param: 'uuid',
+                        success: 'page-refresh'}.to_json),
+                    'data-remote' => true,
+                    'data-selection-param-name' => 'selection[]',
+                    'data-selection-action' => 'copy',
+                    'data-toggle' => 'dropdown'
+              %></li>
+          <% end %>
+          <% if @object.editable? %>
+            <li><%= link_to "Move selected...", '#',
+                    'data-href' => choose_projects_path(
+                      title: 'Move selected items to...',
+                      editable: true,
+                      action_name: 'Move',
+                      action_href: actions_path,
+                      action_method: 'post',
+                      action_data_from_params: ['selection'],
+                      action_data: {
+                        move_selections_into_project: true,
+                        selection_param: 'uuid',
+                        success: 'page-refresh'}.to_json),
+                    'data-remote' => true,
+                    'data-selection-param-name' => 'selection[]',
+                    'data-selection-action' => 'move',
+                    'data-toggle' => 'dropdown'
+              %></li>
+            <li><%= link_to "Remove selected", '#',
+                    method: :delete,
+                    'data-href' => url_for(action: :remove_items),
+                    'data-selection-param-name' => 'item_uuids[]',
+                    'data-selection-action' => 'remove',
+                    'data-remote' => true,
+                    'data-toggle' => 'dropdown'
+              %></li>
           <% end %>
         </ul>
       </div>

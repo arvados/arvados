@@ -22,6 +22,15 @@
    choose_filters = {
      "groups" => [["group_class", "=", "role"]],
    }
+   if not Rails.configuration.anonymous_user_token
+     # It would be ideal to filter out the anonymous group by UUID,
+     # but that's not readily doable.  Workbench can't generate the
+     # UUID for a != filter, because it can't introspect the API
+     # server's UUID prefix.  And we can't say "uuid not like
+     # %-anonymouspublic", because the API server doesn't support a
+     # "not like" filter.
+     choose_filters["groups"] << ["name", "!=", "Anonymous users"]
+   end
    choose_filters.default = []
    owner_icon = fa_icon_class_for_uuid(@object.owner_uuid)
    if owner_icon == "fa-users"
@@ -30,6 +39,8 @@
    else
      owner_type = "owning user"
    end
+
+   sharing_path = url_for(:controller => params['controller'], :action => 'share_with')
 %>
 
 <div class="pull-right">
@@ -42,7 +53,7 @@
       multiple: true,
       filters: choose_filters[share_class].to_json,
       action_method: 'post',
-      action_href: share_with_project_path,
+      action_href: sharing_path,
       action_name: 'Add',
       action_data: {selection_param: 'uuids[]', success: 'tab-refresh'}.to_json),
       class: "btn btn-primary btn-sm", remote: true) do %>
@@ -52,16 +63,16 @@
   <% end %>
 </div>
 
-<p>Permissions for this project are inherited from the <%= owner_type %>
+<p>Permissions for this <%=@object.class_for_display.downcase%> are inherited from the <%= owner_type %>
   <i class="fa fa-fw <%= owner_icon %>"></i>
   <%= link_to_if_arvados_object @object.owner_uuid, friendly_name: true %>.
 </p>
 
-<table id="project_sharing" class="topalign table" style="clear: both; margin-top: 1em;">
+<table id="object_sharing" class="topalign table" style="clear: both; margin-top: 1em;">
   <tr>
     <th>User/Group Name</th>
     <th>Email Address</th>
-    <th colspan="2">Project Access</th>
+    <th colspan="2"><%=@object.class_for_display%> Access</th>
   </tr>
 
   <% @share_links.andand.each do |link|
@@ -104,7 +115,7 @@
       <%= link_to(
           {action: 'destroy', id: link.uuid, controller: "links"},
           {title: 'Revoke', class: 'btn btn-default btn-nodecorate', method: :delete,
-           data: {confirm: "Revoke #{link_name}'s access to this project?",
+           data: {confirm: "Revoke #{link_name}'s access to this #{@object.class_for_display.downcase}?",
                   remote: true}}) do %>
       <i class="fa fa-fw fa-trash-o"></i>
       <% end %>

@@ -8,9 +8,14 @@ class Arvados::V1::UsersController < ApplicationController
   before_filter :admin_required, only: [:setup, :unsetup]
 
   def current
-    @object = current_user
-    show
+    if current_user
+      @object = current_user
+      show
+    else
+      send_error("Not logged in", status: 401)
+    end
   end
+
   def system
     @object = system_user
     show
@@ -104,7 +109,7 @@ class Arvados::V1::UsersController < ApplicationController
       UserNotifier.account_is_setup(@object).deliver
     end
 
-    render json: { kind: "arvados#HashList", items: @response.as_api_response(nil) }
+    send_json kind: "arvados#HashList", items: @response.as_api_response(nil)
   end
 
   # delete user agreements, vm, repository, login links; set state to inactive
@@ -136,7 +141,7 @@ class Arvados::V1::UsersController < ApplicationController
     }
   end
 
-  def apply_filters
+  def apply_filters(model_class=nil)
     return super if @read_users.any? &:is_admin
     if params[:uuid] != current_user.andand.uuid
       # Non-admin index/show returns very basic information about readable users.

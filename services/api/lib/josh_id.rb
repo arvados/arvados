@@ -42,7 +42,7 @@ module OmniAuth
       end
 
       def callback_url
-        full_host + script_name + callback_path + "?return_to=" + CGI.escape(request.params['return_to'])
+        full_host + script_name + callback_path + "?return_to=" + CGI.escape(request.params['return_to'] || '')
       end
 
       def raw_info

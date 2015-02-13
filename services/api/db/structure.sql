@@ -167,9 +167,10 @@ CREATE TABLE collections (
     uuid character varying(255),
     manifest_text text,
     name character varying(255),
-    description character varying(255),
+    description character varying(524288),
     properties text,
-    expires_at date
+    expires_at date,
+    file_names character varying(8192)
 );
 
 
@@ -272,7 +273,7 @@ CREATE TABLE groups (
     modified_by_user_uuid character varying(255),
     modified_at timestamp without time zone,
     name character varying(255) NOT NULL,
-    description text,
+    description character varying(524288),
     updated_at timestamp without time zone NOT NULL,
     group_class character varying(255)
 );
@@ -431,7 +432,7 @@ CREATE TABLE jobs (
     supplied_script_version character varying(255),
     docker_image_locator character varying(255),
     priority integer DEFAULT 0 NOT NULL,
-    description text,
+    description character varying(524288),
     state character varying(255),
     arvados_sdk_version character varying(255)
 );
@@ -687,7 +688,7 @@ CREATE TABLE pipeline_instances (
     components_summary text,
     started_at timestamp without time zone,
     finished_at timestamp without time zone,
-    description text
+    description character varying(524288)
 );
 
 
@@ -725,7 +726,7 @@ CREATE TABLE pipeline_templates (
     name character varying(255),
     components text,
     updated_at timestamp without time zone NOT NULL,
-    description text
+    description character varying(524288)
 );
 
 
@@ -1279,6 +1280,27 @@ ALTER TABLE ONLY virtual_machines
 
 
 --
+-- Name: api_client_authorizations_search_index; Type: INDEX; Schema: public; Owner: -; Tablespace: 
+--
+
+CREATE INDEX api_client_authorizations_search_index ON api_client_authorizations USING btree (api_token, created_by_ip_address, last_used_by_ip_address, default_owner_uuid);
+
+
+--
+-- Name: api_clients_search_index; Type: INDEX; Schema: public; Owner: -; Tablespace: 
+--
+
+CREATE INDEX api_clients_search_index ON api_clients USING btree (uuid, owner_uuid, modified_by_client_uuid, modified_by_user_uuid, name, url_prefix);
+
+
+--
+-- Name: authorized_keys_search_index; Type: INDEX; Schema: public; Owner: -; Tablespace: 
+--
+
+CREATE INDEX authorized_keys_search_index ON authorized_keys USING btree (uuid, owner_uuid, modified_by_client_uuid, modified_by_user_uuid, name, key_type, authorized_user_uuid);
+
+
+--
 -- Name: collection_owner_uuid_name_unique; Type: INDEX; Schema: public; Owner: -; Tablespace: 
 --
 
@@ -1286,10 +1308,45 @@ CREATE UNIQUE INDEX collection_owner_uuid_name_unique ON collections USING btree
 
 
 --
+-- Name: collections_full_text_search_idx; Type: INDEX; Schema: public; Owner: -; Tablespace: 
+--
+
+CREATE INDEX collections_full_text_search_idx ON collections USING gin (to_tsvector('english'::regconfig, (((((((((((((((((((COALESCE(owner_uuid, ''::character varying))::text || ' '::text) || (COALESCE(modified_by_client_uuid, ''::character varying))::text) || ' '::text) || (COALESCE(modified_by_user_uuid, ''::character varying))::text) || ' '::text) || (COALESCE(portable_data_hash, ''::character varying))::text) || ' '::text) || (COALESCE(redundancy_confirmed_by_client_uuid, ''::character varying))::text) || ' '::text) || (COALESCE(uuid, ''::character varying))::text) || ' '::text) || (COALESCE(name, ''::character varying))::text) || ' '::text) || (COALESCE(description, ''::character varying))::text) || ' '::text) || COALESCE(properties, ''::text)) || ' '::text) || (COALESCE(file_names, ''::character varying))::text)));
+
+
+--
+-- Name: collections_search_index; Type: INDEX; Schema: public; Owner: -; Tablespace: 
+--
+
+CREATE INDEX collections_search_index ON collections USING btree (owner_uuid, modified_by_client_uuid, modified_by_user_uuid, portable_data_hash, redundancy_confirmed_by_client_uuid, uuid, name, file_names);
+
+
+--
+-- Name: groups_full_text_search_idx; Type: INDEX; Schema: public; Owner: -; Tablespace: 
+--
+
+CREATE INDEX groups_full_text_search_idx ON groups USING gin (to_tsvector('english'::regconfig, (((((((((((((COALESCE(uuid, ''::character varying))::text || ' '::text) || (COALESCE(owner_uuid, ''::character varying))::text) || ' '::text) || (COALESCE(modified_by_client_uuid, ''::character varying))::text) || ' '::text) || (COALESCE(modified_by_user_uuid, ''::character varying))::text) || ' '::text) || (COALESCE(name, ''::character varying))::text) || ' '::text) || (COALESCE(description, ''::character varying))::text) || ' '::text) || (COALESCE(group_class, ''::character varying))::text)));
+
+
+--
 -- Name: groups_owner_uuid_name_unique; Type: INDEX; Schema: public; Owner: -; Tablespace: 
 --
 
 CREATE UNIQUE INDEX groups_owner_uuid_name_unique ON groups USING btree (owner_uuid, name);
+
+
+--
+-- Name: groups_search_index; Type: INDEX; Schema: public; Owner: -; Tablespace: 
+--
+
+CREATE INDEX groups_search_index ON groups USING btree (uuid, owner_uuid, modified_by_client_uuid, modified_by_user_uuid, name, group_class);
+
+
+--
+-- Name: humans_search_index; Type: INDEX; Schema: public; Owner: -; Tablespace: 
+--
+
+CREATE INDEX humans_search_index ON humans USING btree (uuid, owner_uuid, modified_by_client_uuid, modified_by_user_uuid);
 
 
 --
@@ -1937,10 +1994,80 @@ CREATE UNIQUE INDEX index_virtual_machines_on_uuid ON virtual_machines USING btr
 
 
 --
+-- Name: job_tasks_search_index; Type: INDEX; Schema: public; Owner: -; Tablespace: 
+--
+
+CREATE INDEX job_tasks_search_index ON job_tasks USING btree (uuid, owner_uuid, modified_by_client_uuid, modified_by_user_uuid, job_uuid, created_by_job_task_uuid);
+
+
+--
+-- Name: jobs_full_text_search_idx; Type: INDEX; Schema: public; Owner: -; Tablespace: 
+--
+
+CREATE INDEX jobs_full_text_search_idx ON jobs USING gin (to_tsvector('english'::regconfig, (((((((((((((((((((((((((((((((((((((((((COALESCE(uuid, ''::character varying))::text || ' '::text) || (COALESCE(owner_uuid, ''::character varying))::text) || ' '::text) || (COALESCE(modified_by_client_uuid, ''::character varying))::text) || ' '::text) || (COALESCE(modified_by_user_uuid, ''::character varying))::text) || ' '::text) || (COALESCE(submit_id, ''::character varying))::text) || ' '::text) || (COALESCE(script, ''::character varying))::text) || ' '::text) || (COALESCE(script_version, ''::character varying))::text) || ' '::text) || COALESCE(script_parameters, ''::text)) || ' '::text) || (COALESCE(cancelled_by_client_uuid, ''::character varying))::text) || ' '::text) || (COALESCE(cancelled_by_user_uuid, ''::character varying))::text) || ' '::text) || (COALESCE(output, ''::character varying))::text) || ' '::text) || (COALESCE(is_locked_by_uuid, ''::character varying))::text) || ' '::text) || (COALESCE(log, ''::character varying))::text) || ' '::text) || COALESCE(tasks_summary, ''::text)) || ' '::text) || COALESCE(runtime_constraints, ''::text)) || ' '::text) || (COALESCE(repository, ''::character varying))::text) || ' '::text) || (COALESCE(supplied_script_version, ''::character varying))::text) || ' '::text) || (COALESCE(docker_image_locator, ''::character varying))::text) || ' '::text) || (COALESCE(description, ''::character varying))::text) || ' '::text) || (COALESCE(state, ''::character varying))::text) || ' '::text) || (COALESCE(arvados_sdk_version, ''::character varying))::text)));
+
+
+--
+-- Name: jobs_search_index; Type: INDEX; Schema: public; Owner: -; Tablespace: 
+--
+
+CREATE INDEX jobs_search_index ON jobs USING btree (uuid, owner_uuid, modified_by_client_uuid, modified_by_user_uuid, submit_id, script, script_version, cancelled_by_client_uuid, cancelled_by_user_uuid, output, is_locked_by_uuid, log, repository, supplied_script_version, docker_image_locator, state, arvados_sdk_version);
+
+
+--
+-- Name: keep_disks_search_index; Type: INDEX; Schema: public; Owner: -; Tablespace: 
+--
+
+CREATE INDEX keep_disks_search_index ON keep_disks USING btree (uuid, owner_uuid, modified_by_client_uuid, modified_by_user_uuid, ping_secret, node_uuid, filesystem_uuid, keep_service_uuid);
+
+
+--
+-- Name: keep_services_search_index; Type: INDEX; Schema: public; Owner: -; Tablespace: 
+--
+
+CREATE INDEX keep_services_search_index ON keep_services USING btree (uuid, owner_uuid, modified_by_client_uuid, modified_by_user_uuid, service_host, service_type);
+
+
+--
+-- Name: links_search_index; Type: INDEX; Schema: public; Owner: -; Tablespace: 
+--
+
+CREATE INDEX links_search_index ON links USING btree (uuid, owner_uuid, modified_by_client_uuid, modified_by_user_uuid, tail_uuid, link_class, name, head_uuid);
+
+
+--
 -- Name: links_tail_name_unique_if_link_class_name; Type: INDEX; Schema: public; Owner: -; Tablespace: 
 --
 
 CREATE UNIQUE INDEX links_tail_name_unique_if_link_class_name ON links USING btree (tail_uuid, name) WHERE ((link_class)::text = 'name'::text);
+
+
+--
+-- Name: logs_search_index; Type: INDEX; Schema: public; Owner: -; Tablespace: 
+--
+
+CREATE INDEX logs_search_index ON logs USING btree (uuid, owner_uuid, modified_by_client_uuid, modified_by_user_uuid, object_uuid, event_type, object_owner_uuid);
+
+
+--
+-- Name: nodes_search_index; Type: INDEX; Schema: public; Owner: -; Tablespace: 
+--
+
+CREATE INDEX nodes_search_index ON nodes USING btree (uuid, owner_uuid, modified_by_client_uuid, modified_by_user_uuid, hostname, domain, ip_address, job_uuid);
+
+
+--
+-- Name: pipeline_instances_full_text_search_idx; Type: INDEX; Schema: public; Owner: -; Tablespace: 
+--
+
+CREATE INDEX pipeline_instances_full_text_search_idx ON pipeline_instances USING gin (to_tsvector('english'::regconfig, (((((((((((((((((((((COALESCE(uuid, ''::character varying))::text || ' '::text) || (COALESCE(owner_uuid, ''::character varying))::text) || ' '::text) || (COALESCE(modified_by_client_uuid, ''::character varying))::text) || ' '::text) || (COALESCE(modified_by_user_uuid, ''::character varying))::text) || ' '::text) || (COALESCE(pipeline_template_uuid, ''::character varying))::text) || ' '::text) || (COALESCE(name, ''::character varying))::text) || ' '::text) || COALESCE(components, ''::text)) || ' '::text) || COALESCE(properties, ''::text)) || ' '::text) || (COALESCE(state, ''::character varying))::text) || ' '::text) || COALESCE(components_summary, ''::text)) || ' '::text) || (COALESCE(description, ''::character varying))::text)));
+
+
+--
+-- Name: pipeline_instances_search_index; Type: INDEX; Schema: public; Owner: -; Tablespace: 
+--
+
+CREATE INDEX pipeline_instances_search_index ON pipeline_instances USING btree (uuid, owner_uuid, modified_by_client_uuid, modified_by_user_uuid, pipeline_template_uuid, name, state);
 
 
 --
@@ -1951,10 +2078,59 @@ CREATE UNIQUE INDEX pipeline_template_owner_uuid_name_unique ON pipeline_templat
 
 
 --
+-- Name: pipeline_templates_full_text_search_idx; Type: INDEX; Schema: public; Owner: -; Tablespace: 
+--
+
+CREATE INDEX pipeline_templates_full_text_search_idx ON pipeline_templates USING gin (to_tsvector('english'::regconfig, (((((((((((((COALESCE(uuid, ''::character varying))::text || ' '::text) || (COALESCE(owner_uuid, ''::character varying))::text) || ' '::text) || (COALESCE(modified_by_client_uuid, ''::character varying))::text) || ' '::text) || (COALESCE(modified_by_user_uuid, ''::character varying))::text) || ' '::text) || (COALESCE(name, ''::character varying))::text) || ' '::text) || COALESCE(components, ''::text)) || ' '::text) || (COALESCE(description, ''::character varying))::text)));
+
+
+--
+-- Name: pipeline_templates_search_index; Type: INDEX; Schema: public; Owner: -; Tablespace: 
+--
+
+CREATE INDEX pipeline_templates_search_index ON pipeline_templates USING btree (uuid, owner_uuid, modified_by_client_uuid, modified_by_user_uuid, name);
+
+
+--
+-- Name: repositories_search_index; Type: INDEX; Schema: public; Owner: -; Tablespace: 
+--
+
+CREATE INDEX repositories_search_index ON repositories USING btree (uuid, owner_uuid, modified_by_client_uuid, modified_by_user_uuid, name, fetch_url, push_url);
+
+
+--
+-- Name: specimens_search_index; Type: INDEX; Schema: public; Owner: -; Tablespace: 
+--
+
+CREATE INDEX specimens_search_index ON specimens USING btree (uuid, owner_uuid, modified_by_client_uuid, modified_by_user_uuid, material);
+
+
+--
+-- Name: traits_search_index; Type: INDEX; Schema: public; Owner: -; Tablespace: 
+--
+
+CREATE INDEX traits_search_index ON traits USING btree (uuid, owner_uuid, modified_by_client_uuid, modified_by_user_uuid, name);
+
+
+--
 -- Name: unique_schema_migrations; Type: INDEX; Schema: public; Owner: -; Tablespace: 
 --
 
 CREATE UNIQUE INDEX unique_schema_migrations ON schema_migrations USING btree (version);
+
+
+--
+-- Name: users_search_index; Type: INDEX; Schema: public; Owner: -; Tablespace: 
+--
+
+CREATE INDEX users_search_index ON users USING btree (uuid, owner_uuid, modified_by_client_uuid, modified_by_user_uuid, email, first_name, last_name, identity_url, default_owner_uuid);
+
+
+--
+-- Name: virtual_machines_search_index; Type: INDEX; Schema: public; Owner: -; Tablespace: 
+--
+
+CREATE INDEX virtual_machines_search_index ON virtual_machines USING btree (uuid, owner_uuid, modified_by_client_uuid, modified_by_user_uuid, hostname);
 
 
 --
@@ -2168,3 +2344,17 @@ INSERT INTO schema_migrations (version) VALUES ('20140924091559');
 INSERT INTO schema_migrations (version) VALUES ('20141111133038');
 
 INSERT INTO schema_migrations (version) VALUES ('20141208164553');
+
+INSERT INTO schema_migrations (version) VALUES ('20141208174553');
+
+INSERT INTO schema_migrations (version) VALUES ('20141208174653');
+
+INSERT INTO schema_migrations (version) VALUES ('20141208185217');
+
+INSERT INTO schema_migrations (version) VALUES ('20150122175935');
+
+INSERT INTO schema_migrations (version) VALUES ('20150123142953');
+
+INSERT INTO schema_migrations (version) VALUES ('20150203180223');
+
+INSERT INTO schema_migrations (version) VALUES ('20150206210804');

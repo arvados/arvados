@@ -345,14 +345,15 @@ EOS
   end
 
   test "search collections with 'any' operator" do
+    expect_pdh = collections(:docker_image).portable_data_hash
     authorize_with :active
     get :index, {
-      where: { any: ['contains', 'd0bc8c7f34be170a7b7b'] }
+      where: { any: ['contains', expect_pdh[5..25]] }
     }
     assert_response :success
-    found = assigns(:objects).collect(&:portable_data_hash)
+    found = assigns(:objects)
     assert_equal 1, found.count
-    assert_equal true, !!found.index('5bd9c1ad0bc8c7f34be170a7b7b39089+45')
+    assert_equal expect_pdh, found.first.portable_data_hash
   end
 
   [false, true].each do |permit_unsigned|
@@ -660,5 +661,58 @@ EOS
       }
     }
     assert_response :success
+  end
+
+  test "get collection and verify that file_names is not included" do
+    authorize_with :active
+    get :show, {id: collections(:foo_file).uuid}
+    assert_response :success
+    assert_equal collections(:foo_file).uuid, json_response['uuid']
+    assert_nil json_response['file_names']
+    assert json_response['manifest_text']
+  end
+
+  [
+    [2**8, :success],
+    [2**18, 422],
+  ].each do |description_size, expected_response|
+    test "create collection with description size #{description_size}
+          and expect response #{expected_response}" do
+      skip "(Descriptions are not part of search indexes. Skip until full-text search
+            is implemented, at which point replace with a search in description.)"
+
+      authorize_with :active
+
+      description = 'here is a collection with a very large description'
+      while description.length < description_size
+        description = description + description
+      end
+
+      post :create, collection: {
+        manifest_text: ". d41d8cd98f00b204e9800998ecf8427e+0 0:0:foo.txt\n",
+        description: description,
+      }
+
+      assert_response expected_response
+    end
+  end
+
+  [1, 5, nil].each do |ask|
+    test "Set replication_desired=#{ask} using redundancy attr" do
+      # The Python SDK checks the Collection schema in the discovery
+      # doc, then asks for 'redundancy' or 'replication_desired'
+      # accordingly, so it isn't necessary to maintain backward
+      # compatibility here when the attribute changes to
+      # replication_desired.
+      authorize_with :active
+      put :update, {
+        id: collections(:collection_owned_by_active).uuid,
+        collection: {
+          redundancy: ask,
+        },
+      }
+      assert_response :success
+      assert_equal (ask or 2), json_response['replication_desired']
+    end
   end
 end

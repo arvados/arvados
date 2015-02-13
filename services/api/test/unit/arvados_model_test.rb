@@ -87,6 +87,17 @@ class ArvadosModelTest < ActiveSupport::TestCase
     end
   end
 
+  test "store long string" do
+    set_user_from_auth :active
+    longstring = "a"
+    while longstring.length < 2**16
+      longstring = longstring + longstring
+    end
+    g = Group.create! name: 'Has a long description', description: longstring
+    g = Group.find_by_uuid g.uuid
+    assert_equal g.description, longstring
+  end
+
   [['uuid', {unique: true}],
    ['owner_uuid', {}]].each do |the_column, requires|
     test "unique index on all models with #{the_column}" do
@@ -108,5 +119,52 @@ class ArvadosModelTest < ActiveSupport::TestCase
       assert_operator(10, :<, checked,
                       "Only #{checked} tables have a #{the_column}?!")
     end
+  end
+
+  test "search index exists on models that go into projects" do
+    all_tables =  ActiveRecord::Base.connection.tables
+    all_tables.delete 'schema_migrations'
+
+    all_tables.each do |table|
+      table_class = table.classify.constantize
+      if table_class.respond_to?('searchable_columns')
+        search_index_columns = table_class.searchable_columns('ilike')
+        # Disappointing, but text columns aren't indexed yet.
+        search_index_columns -= table_class.columns.select { |c|
+          c.type == :text or c.name == 'description'
+        }.collect(&:name)
+
+        indexes = ActiveRecord::Base.connection.indexes(table)
+        search_index_by_columns = indexes.select do |index|
+          index.columns == search_index_columns
+        end
+        search_index_by_name = indexes.select do |index|
+          index.name == "#{table}_search_index"
+        end
+        assert !search_index_by_columns.empty?, "#{table} has no search index with columns #{search_index_columns}. Instead found search index with columns #{search_index_by_name.first.andand.columns}"
+      end
+    end
+  end
+
+  test "selectable_attributes includes database attributes" do
+    assert_includes(Job.selectable_attributes, "success")
+  end
+
+  test "selectable_attributes includes non-database attributes" do
+    assert_includes(Job.selectable_attributes, "node_uuids")
+  end
+
+  test "selectable_attributes includes common attributes in extensions" do
+    assert_includes(Job.selectable_attributes, "uuid")
+  end
+
+  test "selectable_attributes does not include unexposed attributes" do
+    refute_includes(Job.selectable_attributes, "nodes")
+  end
+
+  test "selectable_attributes on a non-default template" do
+    attr_a = Job.selectable_attributes(:common)
+    assert_includes(attr_a, "uuid")
+    refute_includes(attr_a, "success")
   end
 end

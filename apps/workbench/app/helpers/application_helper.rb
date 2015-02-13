@@ -133,7 +133,7 @@ module ApplicationHelper
         end
       end
       style_opts[:class] = (style_opts[:class] || '') + ' nowrap'
-      if opts[:no_link]
+      if opts[:no_link] or (resource_class == User && !current_user)
         raw(link_name)
       else
         (link_to raw(link_name), { controller: resource_class.to_s.tableize, action: 'show', id: ((opts[:name_link].andand.uuid) || link_uuid) }, style_opts) + raw(tags)
@@ -160,10 +160,10 @@ module ApplicationHelper
     end
 
     input_type = 'text'
-    case object.class.attribute_info[attr.to_sym].andand[:type]
-    when 'text'
+    attrtype = object.class.attribute_info[attr.to_sym].andand[:type]
+    if attrtype == 'text' or attr == 'description'
       input_type = 'textarea'
-    when 'datetime'
+    elsif attrtype == 'datetime'
       input_type = 'date'
     else
       input_type = 'text'
@@ -307,9 +307,7 @@ module ApplicationHelper
       end
     end
 
-    if dataclass == 'number' or attrvalue.is_a? Fixnum or attrvalue.is_a? Float
-      datatype = 'number'
-    elsif attrvalue.is_a? String
+    if attrvalue.is_a? String
       datatype = 'text'
     elsif attrvalue.is_a?(Array) or dataclass.andand.is_a?(Class)
       # TODO: find a way to edit with x-editable

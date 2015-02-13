@@ -77,7 +77,7 @@ class ApplicationController < ActionController::Base
   end
 
   def show
-    render json: @object.as_api_response(nil, select: @select)
+    send_json @object.as_api_response(nil, select: @select)
   end
 
   def create
@@ -179,7 +179,16 @@ class ApplicationController < ActionController::Base
     err[:error_token] = [Time.now.utc.to_i, "%08x" % rand(16 ** 8)].join("+")
     status = err.delete(:status) || 422
     logger.error "Error #{err[:error_token]}: #{status}"
-    render json: err, status: status
+    send_json err, status: status
+  end
+
+  def send_json response, opts={}
+    # The obvious render(json: ...) forces a slow JSON encoder. See
+    # #3021 and commit logs. Might be fixed in Rails 4.1.
+    render({
+             text: Oj.dump(response, mode: :compat).html_safe,
+             content_type: 'application/json'
+           }.merge opts)
   end
 
   def find_objects_for_index
@@ -196,8 +205,9 @@ class ApplicationController < ActionController::Base
     end
   end
 
-  def apply_where_limit_order_params *args
-    apply_filters *args
+  def apply_where_limit_order_params model_class=nil
+    model_class ||= self.model_class
+    apply_filters model_class
 
     ar_table_name = @objects.table_name
     if @where.is_a? Hash and @where.any?
@@ -262,7 +272,7 @@ class ApplicationController < ActionController::Base
         columns_list = @select.
           flat_map { |attr| api_column_map[attr] }.
           uniq.
-          map { |s| "#{table_name}.#{ActiveRecord::Base.connection.quote_column_name s}" }
+          map { |s| "#{ar_table_name}.#{ActiveRecord::Base.connection.quote_column_name s}" }
         @objects = @objects.select(columns_list.join(", "))
       end
 
@@ -427,8 +437,8 @@ class ApplicationController < ActionController::Base
   end
   accept_param_as_json :reader_tokens, Array
 
-  def render_list
-    @object_list = {
+  def object_list
+    list = {
       :kind  => "arvados##{(@response_resource_name || resource_name).camelize(:lower)}List",
       :etag => "",
       :self_link => "",
@@ -437,11 +447,15 @@ class ApplicationController < ActionController::Base
       :items => @objects.as_api_response(nil, {select: @select})
     }
     if @objects.respond_to? :except
-      @object_list[:items_available] = @objects.
+      list[:items_available] = @objects.
         except(:limit).except(:offset).
         count(:id, distinct: true)
     end
-    render json: @object_list
+    list
+  end
+
+  def render_list
+    send_json object_list
   end
 
   def remote_ip

@@ -227,28 +227,29 @@ class ComputeNodeMonitorActorTestCase(testutil.ActorTestMixin,
 
     def test_in_state_when_unpaired(self):
         self.make_actor()
-        self.assertIsNone(self.node_state('idle', 'alloc'))
+        self.assertIsNone(self.node_state('idle', 'busy'))
 
     def test_in_state_when_pairing_stale(self):
         self.make_actor(arv_node=testutil.arvados_node_mock(
                 job_uuid=None, age=90000))
-        self.assertIsNone(self.node_state('idle', 'alloc'))
+        self.assertIsNone(self.node_state('idle', 'busy'))
 
     def test_in_state_when_no_state_available(self):
-        self.make_actor(arv_node=testutil.arvados_node_mock(info={}))
-        self.assertIsNone(self.node_state('idle', 'alloc'))
+        self.make_actor(arv_node=testutil.arvados_node_mock(
+                crunch_worker_state=None))
+        self.assertIsNone(self.node_state('idle', 'busy'))
 
     def test_in_idle_state(self):
         self.make_actor(2, arv_node=testutil.arvados_node_mock(job_uuid=None))
         self.assertTrue(self.node_state('idle'))
-        self.assertFalse(self.node_state('alloc'))
-        self.assertTrue(self.node_state('idle', 'alloc'))
+        self.assertFalse(self.node_state('busy'))
+        self.assertTrue(self.node_state('idle', 'busy'))
 
-    def test_in_alloc_state(self):
+    def test_in_busy_state(self):
         self.make_actor(3, arv_node=testutil.arvados_node_mock(job_uuid=True))
         self.assertFalse(self.node_state('idle'))
-        self.assertTrue(self.node_state('alloc'))
-        self.assertTrue(self.node_state('idle', 'alloc'))
+        self.assertTrue(self.node_state('busy'))
+        self.assertTrue(self.node_state('idle', 'busy'))
 
     def test_init_shutdown_scheduling(self):
         self.make_actor()
@@ -293,7 +294,8 @@ class ComputeNodeMonitorActorTestCase(testutil.ActorTestMixin,
         self.assertFalse(self.node_actor.shutdown_eligible().get(self.TIMEOUT))
 
     def test_no_shutdown_when_node_state_unknown(self):
-        self.make_actor(5, testutil.arvados_node_mock(5, info={}))
+        self.make_actor(5, testutil.arvados_node_mock(
+            5, crunch_worker_state=None))
         self.shutdowns._set_state(True, 600)
         self.assertFalse(self.node_actor.shutdown_eligible().get(self.TIMEOUT))
 

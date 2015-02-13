@@ -28,19 +28,19 @@
               <%= hidden_field_tag :offer_return_to, params[:offer_return_to] %>
               <%= hidden_field_tag :return_to, profile_user_path(current_user.uuid, offer_return_to: params[:offer_return_to]) %>
               <div class="form-group">
-                  <label for="email" class="col-sm-3 control-label"> Email </label>
+                  <label for="email" class="col-sm-3 control-label"> E-mail </label>
                   <div class="col-sm-8">
                     <p class="form-control-static" id="email" name="email"><%=current_user.email%></p>
                   </div>
               </div>
               <div class="form-group">
-                  <label for="first_name" class="col-sm-3 control-label"> First name </label>
+                  <label for="first_name" class="col-sm-3 control-label"> First Name </label>
                   <div class="col-sm-8">
                     <p class="form-control-static" id="first_name" name="first_name"><%=current_user.first_name%></p>
                   </div>
               </div>
               <div class="form-group">
-                  <label for="last_name" class="col-sm-3 control-label"> Last name </label>
+                  <label for="last_name" class="col-sm-3 control-label"> Last Name </label>
                   <div class="col-sm-8">
                     <p class="form-control-static" id="last_name" name="last_name"><%=current_user.last_name%></p>
                   </div>

@@ -4,6 +4,9 @@ require 'tmpdir'
 require 'integration_helper'
 
 class JobsTest < ActionDispatch::IntegrationTest
+  setup do
+      need_javascript
+  end
 
   def fakepipe_with_log_data
     content =
@@ -14,13 +17,8 @@ class JobsTest < ActionDispatch::IntegrationTest
   end
 
   test "add job description" do
-    need_javascript
-    visit page_with_token("active", "/jobs")
-
-    # go to job running the script "doesnotexist"
-    within first('tr', text: 'doesnotexist') do
-      find("a").click
-    end
+    job = api_fixture('jobs')['nearly_finished_job']
+    visit page_with_token("active", "/jobs/#{job['uuid']}")
 
     # edit job description
     within('.arv-description-as-subtitle') do
@@ -28,18 +26,14 @@ class JobsTest < ActionDispatch::IntegrationTest
       find('.editable-input textarea').set('*Textile description for job* - "Go to dashboard":/')
       find('.editable-submit').click
     end
-    wait_for_ajax
 
     # Verify edited description
-    assert page.has_no_text? '*Textile description for job*'
-    assert page.has_text? 'Textile description for job'
-    assert page.has_link? 'Go to dashboard'
-    click_link 'Go to dashboard'
-    assert page.has_text? 'Active pipelines'
+    assert_no_text '*Textile description for job*'
+    assert_text 'Textile description for job'
+    assert_selector 'a[href="/"]', text: 'Go to dashboard'
   end
 
   test "view job log" do
-    need_javascript
     job = api_fixture('jobs')['job_with_real_log']
 
     IO.expects(:popen).returns(fakepipe_with_log_data)
@@ -58,7 +52,6 @@ class JobsTest < ActionDispatch::IntegrationTest
   end
 
   test 'view partial job log' do
-    need_javascript
     # This config will be restored during teardown by ../test_helper.rb:
     Rails.configuration.log_viewer_max_bytes = 100
 
@@ -71,5 +64,44 @@ class JobsTest < ActionDispatch::IntegrationTest
     click_link 'Log'
     wait_for_ajax
     assert page.has_text? 'Showing only 100 bytes of this log'
+  end
+
+  [
+    ['foobar', false, false],
+    ['job_with_latest_version', true, false],
+    ['job_with_latest_version', true, true],
+  ].each do |job_name, expect_options, use_latest|
+    test "Rerun #{job_name} job, expect options #{expect_options},
+          and use latest version option #{use_latest}" do
+      job = api_fixture('jobs')[job_name]
+      visit page_with_token 'active', '/jobs/'+job['uuid']
+
+      if expect_options
+        assert_text 'supplied_script_version: master'
+      else
+        assert_text 'supplied_script_version: (none)'
+      end
+
+      assert_triggers_dom_event 'shown.bs.modal' do
+        find('a,button', text: 'Re-run job...').click
+      end
+      within('.modal-dialog') do
+        assert_selector 'a,button', text: 'Cancel'
+        if use_latest
+          page.choose("job_script_version_#{job['supplied_script_version']}")
+        end
+        click_on "Run now"
+      end
+
+      # Re-running jobs doesn't currently work because the test API
+      # server has no git repository to check against.  For now, check
+      # that the correct script version is mentioned in the
+      # Fiddlesticks error message.
+      if expect_options && use_latest
+        assert_text "Script version #{job['supplied_script_version']} does not resolve to a commit"
+      else
+        assert_text "Script version #{job['script_version']} does not resolve to a commit"
+      end
+    end
   end
 end

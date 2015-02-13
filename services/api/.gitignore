@@ -3,6 +3,7 @@
 
 # Ignore all logfiles and tempfiles.
 /log/*.log
+/log/*.log.gz
 /tmp
 
 # Sensitive files and local configuration

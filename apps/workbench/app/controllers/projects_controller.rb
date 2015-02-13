@@ -1,5 +1,9 @@
 class ProjectsController < ApplicationController
   before_filter :set_share_links, if: -> { defined? @object }
+  skip_around_filter :require_thread_api_token, if: proc { |ctrl|
+    Rails.configuration.anonymous_user_token and
+    %w(show tab_counts).include? ctrl.action_name
+  }
 
   def model_class
     Group
@@ -30,19 +34,6 @@ class ProjectsController < ApplicationController
     end
   end
 
-  def set_share_links
-    @user_is_manager = false
-    @share_links = []
-    if @object.uuid != current_user.uuid
-      begin
-        @share_links = Link.permissions_for(@object)
-        @user_is_manager = true
-      rescue ArvadosApiClient::AccessForbiddenException,
-        ArvadosApiClient::NotFoundException
-      end
-    end
-  end
-
   def index_pane_list
     %w(Projects)
   end
@@ -51,27 +42,32 @@ class ProjectsController < ApplicationController
   # us to tell the interface to get counts for each pane (using :filters).
   # It also seems to me that something like these could be used to configure the contents of the panes.
   def show_pane_list
-    pane_list = [
+    pane_list = []
+    pane_list <<
       {
         :name => 'Data_collections',
         :filters => [%w(uuid is_a arvados#collection)]
-      },
+      }
+    pane_list <<
       {
         :name => 'Jobs_and_pipelines',
         :filters => [%w(uuid is_a) + [%w(arvados#job arvados#pipelineInstance)]]
-      },
+      }
+    pane_list <<
       {
         :name => 'Pipeline_templates',
         :filters => [%w(uuid is_a arvados#pipelineTemplate)]
-      },
+      }
+    pane_list <<
       {
         :name => 'Subprojects',
         :filters => [%w(uuid is_a arvados#group)]
-      },
-      { :name => 'Other_objects',
+      } if current_user
+    pane_list <<
+      {
+        :name => 'Other_objects',
         :filters => [%w(uuid is_a) + [%w(arvados#human arvados#specimen arvados#trait)]]
-      }
-    ]
+      } if current_user
     pane_list << { :name => 'Sharing',
                    :count => @share_links.count } if @user_is_manager
     pane_list << { :name => 'Advanced' }
@@ -124,7 +120,13 @@ class ProjectsController < ApplicationController
         @removed_uuids << link.uuid
         link.destroy
       end
-      if item.owner_uuid == @object.uuid
+
+      # If this object has the 'expires_at' attribute, then simply mark it
+      # expired.
+      if item.attributes.include?("expires_at")
+        item.update_attributes expires_at: Time.now
+        @removed_uuids << item.uuid
+      elsif item.owner_uuid == @object.uuid
         # Object is owned by this project. Remove it from the project by
         # changing owner to the current user.
         begin
@@ -155,7 +157,7 @@ class ProjectsController < ApplicationController
         object.destroy
       end
     end
-    while (objects = @object.contents(include_linked: false)).any?
+    while (objects = @object.contents).any?
       objects.each do |object|
         object.update_attributes! owner_uuid: current_user.uuid
       end
@@ -196,7 +198,6 @@ class ProjectsController < ApplicationController
         (val.is_a?(Array) ? val : [val]).each do |type|
           objects = @object.contents(order: @order,
                                      limit: @limit,
-                                     include_linked: true,
                                      filters: (@filters - kind_filters + [['uuid', 'is_a', type]]),
                                     )
           objects.each do |object|
@@ -234,7 +235,6 @@ class ProjectsController < ApplicationController
     else
       @objects = @object.contents(order: @order,
                                   limit: @limit,
-                                  include_linked: true,
                                   filters: @filters,
                                   offset: @offset)
       @next_page_href = next_page_href(partial: :contents_rows,
@@ -303,38 +303,5 @@ class ProjectsController < ApplicationController
       end
     end
     objects_and_names
-  end
-
-  def share_with
-    if not params[:uuids].andand.any?
-      @errors = ["No user/group UUIDs specified to share with."]
-      return render_error(status: 422)
-    end
-    results = {"success" => [], "errors" => []}
-    params[:uuids].each do |shared_uuid|
-      begin
-        Link.create(tail_uuid: shared_uuid, link_class: "permission",
-                    name: "can_read", head_uuid: @object.uuid)
-      rescue ArvadosApiClient::ApiError => error
-        error_list = error.api_response.andand[:errors]
-        if error_list.andand.any?
-          results["errors"] += error_list.map { |e| "#{shared_uuid}: #{e}" }
-        else
-          error_code = error.api_status || "Bad status"
-          results["errors"] << "#{shared_uuid}: #{error_code} response"
-        end
-      else
-        results["success"] << shared_uuid
-      end
-    end
-    if results["errors"].empty?
-      results.delete("errors")
-      status = 200
-    else
-      status = 422
-    end
-    respond_to do |f|
-      f.json { render(json: results, status: status) }
-    end
   end
 end

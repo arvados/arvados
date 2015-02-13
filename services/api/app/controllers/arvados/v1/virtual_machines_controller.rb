@@ -38,6 +38,6 @@ class Arvados::V1::VirtualMachinesController < ApplicationController
         end
       end
     end
-    render json: { kind: "arvados#HashList", items: @response }
+    send_json kind: "arvados#HashList", items: @response
   end
 end

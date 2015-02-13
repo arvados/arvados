@@ -29,12 +29,8 @@ class Arvados::V1::CollectionsController < ApplicationController
     if @object.is_a? Collection
       super
     else
-      render json: @object
+      send_json @object
     end
-  end
-
-  def index
-    super
   end
 
   def find_collections(visited, sp, &b)
@@ -169,14 +165,14 @@ class Arvados::V1::CollectionsController < ApplicationController
     visited = {}
     search_edges(visited, @object[:portable_data_hash], :search_up)
     search_edges(visited, @object[:uuid], :search_up)
-    render json: visited
+    send_json visited
   end
 
   def used_by
     visited = {}
     search_edges(visited, @object[:uuid], :search_down)
     search_edges(visited, @object[:portable_data_hash], :search_down)
-    render json: visited
+    send_json visited
   end
 
   protected
@@ -184,8 +180,7 @@ class Arvados::V1::CollectionsController < ApplicationController
   def load_limit_offset_order_params *args
     if action_name == 'index'
       # Omit manifest_text from index results unless expressly selected.
-      @select ||= model_class.api_accessible_attributes(:user).
-        map { |attr_spec| attr_spec.first.to_s } - ["manifest_text"]
+      @select ||= model_class.selectable_attributes - ["manifest_text"]
     end
     super
   end
