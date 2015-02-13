@@ -26,7 +26,7 @@ def arvados_node_mock(node_num=99, job_uuid=None, age=0, **kwargs):
             'ip_address': ip_address_mock(node_num),
             'job_uuid': job_uuid,
             'crunch_worker_state': crunch_worker_state,
-            'info': {}}
+            'info': {'ping_secret': 'defaulttestsecret'}}
     node.update(kwargs)
     return node
 
