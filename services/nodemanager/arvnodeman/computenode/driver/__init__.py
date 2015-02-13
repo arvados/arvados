@@ -25,6 +25,15 @@ class BaseComputeNodeDriver(object):
         self.real = driver_class(**auth_kwargs)
         self.list_kwargs = list_kwargs
         self.create_kwargs = create_kwargs
+        for key in self.create_kwargs.keys():
+            init_method = getattr(self, '_init_' + key, None)
+            if init_method is not None:
+                new_pair = init_method(self.create_kwargs.pop(key))
+                if new_pair is not None:
+                    self.create_kwargs[new_pair[0]] = new_pair[1]
+
+    def _init_ping_host(self, ping_host):
+        self.ping_host = ping_host
 
     def __getattr__(self, name):
         # Proxy non-extension methods to the real driver.
@@ -51,6 +60,11 @@ class BaseComputeNodeDriver(object):
 
     def arvados_create_kwargs(self, arvados_node):
         raise NotImplementedError("BaseComputeNodeDriver.arvados_create_kwargs")
+
+    def _make_ping_url(self, arvados_node):
+        return 'https://{}/arvados/v1/nodes/{}/ping?ping_secret={}'.format(
+            self.ping_host, arvados_node['uuid'],
+            arvados_node['info']['ping_secret'])
 
     def create_node(self, size, arvados_node):
         kwargs = self.create_kwargs.copy()
