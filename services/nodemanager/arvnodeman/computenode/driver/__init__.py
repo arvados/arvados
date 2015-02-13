@@ -3,6 +3,7 @@
 from __future__ import absolute_import, print_function
 
 import libcloud.common.types as cloud_types
+from libcloud.compute.base import NodeDriver
 
 from ...config import NETWORK_ERRORS
 
@@ -34,14 +35,6 @@ class BaseComputeNodeDriver(object):
 
     def _init_ping_host(self, ping_host):
         self.ping_host = ping_host
-
-    def __getattr__(self, name):
-        # Proxy non-extension methods to the real driver.
-        if (not name.startswith('_') and not name.startswith('ex_')
-              and hasattr(self.real, name)):
-            return getattr(self.real, name)
-        else:
-            return super(BaseComputeNodeDriver, self).__getattr__(name)
 
     def search_for(self, term, list_method, key=lambda item: item.id):
         cache_key = (list_method, term)
@@ -96,3 +89,16 @@ class BaseComputeNodeDriver(object):
         # exactly an Exception, or a better-known higher-level exception.
         return (isinstance(exception, cls.CLOUD_ERRORS) or
                 getattr(exception, '__class__', None) is Exception)
+
+    # Now that we've defined all our own methods, delegate generic, public
+    # attributes of libcloud drivers that we haven't defined ourselves.
+    def _delegate_to_real(attr_name):
+        return property(
+            lambda self: getattr(self.real, attr_name),
+            lambda self, value: setattr(self.real, attr_name, value),
+            doc=getattr(getattr(NodeDriver, attr_name), '__doc__', None))
+
+    _locals = locals()
+    for _attr_name in dir(NodeDriver):
+        if (not _attr_name.startswith('_')) and (_attr_name not in _locals):
+            _locals[_attr_name] = _delegate_to_real(_attr_name)
