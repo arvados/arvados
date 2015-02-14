@@ -88,8 +88,7 @@ class NodeManagerConfig(ConfigParser.SafeConfigParser):
         http = httplib2.Http(timeout=self.getint('Arvados', 'timeout'),
                              ca_certs=certs_file,
                              disable_ssl_certificate_validation=insecure)
-        return arvados.api('v1',
-                           cache=False,  # Don't reuse an existing client.
+        return arvados.api(version='v1',
                            host=self.get('Arvados', 'host'),
                            token=self.get('Arvados', 'token'),
                            insecure=insecure,
