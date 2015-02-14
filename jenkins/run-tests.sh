@@ -334,7 +334,8 @@ then
 fi
 
 # Needed for run_test_server.py which is used by certain (non-Python) tests.
-pip install PyYAML || fatal "pip install PyYAML failed"
+echo "pip install -q PyYAML"
+pip install -q PyYAML || fatal "pip install PyYAML failed"
 
 checkexit() {
     if [[ "$?" != "0" ]]; then
@@ -390,7 +391,7 @@ do_install() {
         then
             cd "$WORKSPACE/$1" \
                 && python setup.py sdist rotate --keep=1 --match .tar.gz \
-                && pip install --upgrade dist/*.tar.gz
+                && pip install -q --upgrade dist/*.tar.gz
         elif [[ "$2" != "" ]]
         then
             "install_$2"
