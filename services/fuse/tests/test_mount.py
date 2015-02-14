@@ -277,9 +277,24 @@ class FuseHomeTest(MountTestBase):
         self.assertIn('Unrestricted public data', d1)
 
         d2 = os.listdir(os.path.join(self.mounttmp, 'Unrestricted public data'))
-        self.assertEqual(['GNU General Public License, version 3',
-                          'Pipeline in publicly accessible project.pipelineInstance',
-                          'Pipeline template in publicly accessible project.pipelineTemplate'], d2)
+        public_project = run_test_server.fixture('groups')[
+            'anonymously_accessible_project']
+        found_in = 0
+        found_not_in = 0
+        for name, item in run_test_server.fixture('collections').iteritems():
+            if 'name' not in item:
+                pass
+            elif item['owner_uuid'] == public_project['uuid']:
+                self.assertIn(item['name'], d2)
+                found_in += 1
+            else:
+                # Artificial assumption here: there is no public
+                # collection fixture with the same name as a
+                # non-public collection.
+                self.assertNotIn(item['name'], d2)
+                found_not_in += 1
+        self.assertNotEqual(0, found_in)
+        self.assertNotEqual(0, found_not_in)
 
         d3 = os.listdir(os.path.join(self.mounttmp, 'Unrestricted public data', 'GNU General Public License, version 3'))
         self.assertEqual(["GNU_General_Public_License,_version_3.pdf"], d3)

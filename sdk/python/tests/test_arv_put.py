@@ -399,9 +399,13 @@ class ArvadosPutTest(run_test_server.TestCaseWithServers, ArvadosBaseTestCase):
 class ArvPutIntegrationTest(run_test_server.TestCaseWithServers,
                             ArvadosBaseTestCase):
     def _getKeepServerConfig():
-        for config_file in ['application.yml', 'application.default.yml']:
-            with open(os.path.join(run_test_server.SERVICES_SRC_DIR,
-                                   "api", "config", config_file)) as f:
+        for config_file, mandatory in [
+                ['application.yml', True], ['application.default.yml', False]]:
+            path = os.path.join(run_test_server.SERVICES_SRC_DIR,
+                                "api", "config", config_file)
+            if not mandatory and not os.path.exists(path):
+                continue
+            with open(path) as f:
                 rails_config = yaml.load(f.read())
                 for config_section in ['test', 'common']:
                     try:
