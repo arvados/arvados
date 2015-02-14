@@ -266,6 +266,21 @@ class CollectionsController < ApplicationController
     sharing_popup
   end
 
+  def update
+    @updates ||= params[@object.resource_param_name.to_sym]
+    if @updates && (@updates.keys - ["name", "description"]).empty?
+      # exclude manifest_text since only name or description is being updated
+      @object.manifest_text = nil
+      if @object.update_attributes @updates
+        show
+      else
+        self.render_error status: 422
+      end
+    else
+      super
+    end
+  end
+
   protected
 
   def find_usable_token(token_list)
