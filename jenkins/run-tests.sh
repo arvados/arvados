@@ -546,6 +546,13 @@ stop_api() {
         && python sdk/python/tests/run_test_server.py stop
 }
 
+clean_up() {
+  report_outcomes
+  clear_temp
+
+  exit ${#failures}
+}
+
 test_doclinkchecker() {
     (
         set -e
@@ -565,6 +572,14 @@ test_apiserver() {
         && RAILS_ENV=test bundle exec rake test TESTOPTS=-v ${testargs[services/api]}
 }
 do_test services/api apiserver
+
+# Shortcut for when we're only running apiserver tests. This saves a bit of time,
+# because we don't need to start up the api server for subsequent tests.
+if [ ! -z "$only" ] && [ "$only" == "services/api" ]; then
+  rotate_logfile "$WORKSPACE/services/api/log/" "test.log"
+
+  clean_up
+fi
 
 start_api
 
@@ -612,9 +627,6 @@ do_test apps/workbench_profile workbench_profile
 rotate_logfile "$WORKSPACE/apps/workbench/log/" "test.log"
 
 stop_api
+
 rotate_logfile "$WORKSPACE/services/api/log/" "test.log"
-
-report_outcomes
-clear_temp
-
-exit ${#failures}
+clean_up
