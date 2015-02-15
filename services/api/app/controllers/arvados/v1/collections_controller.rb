@@ -1,6 +1,8 @@
 require "arvados/keep"
 
 class Arvados::V1::CollectionsController < ApplicationController
+  accept_attribute_as_json :properties, Hash
+
   def create
     if resource_attrs[:uuid] and (loc = Keep::Locator.parse(resource_attrs[:uuid]))
       resource_attrs[:portable_data_hash] = loc.to_s
