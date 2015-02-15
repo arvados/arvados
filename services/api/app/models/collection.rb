@@ -9,7 +9,7 @@ class Collection < ArvadosModel
   before_validation :check_signatures
   before_validation :strip_manifest_text
   before_validation :set_portable_data_hash
-  before_validation :maybe_clear_redundancy_confirmed
+  before_validation :maybe_clear_replication_confirmed
   validate :ensure_hash_matches_manifest_text
   before_save :set_file_names
 
@@ -324,7 +324,7 @@ class Collection < ArvadosModel
      portable_manifest.bytesize.to_s)
   end
 
-  def maybe_clear_redundancy_confirmed
+  def maybe_clear_replication_confirmed
     if manifest_text_changed?
       # If the new manifest_text contains locators whose hashes
       # weren't in the old manifest_text, storage replication is no
