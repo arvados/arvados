@@ -163,7 +163,7 @@ class CollectionTest < ActiveSupport::TestCase
       assert_raise ArvadosModel::PermissionDeniedError do
         c.update_attributes replication_confirmed_at: Time.now
       end
-      # Cannot set both at once.
+      # Cannot set both at once, either.
       assert_raise ArvadosModel::PermissionDeniedError do
         c.update_attributes(replication_confirmed: 1,
                             replication_confirmed_at: Time.now)

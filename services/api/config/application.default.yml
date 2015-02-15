@@ -246,6 +246,6 @@ common:
   # server is using a self-signed cert.
   sso_insecure: false
 
-  # Set replication level for collections whose replication_desired
-  # attribute is nil.
+  # Default replication level for collections. This is used when a
+  # collection's replication_desired attribute is nil.
   default_collection_replication: 2

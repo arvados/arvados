@@ -10,7 +10,7 @@ class RenameReplicationAttributes < ActiveRecord::Migration
     remove_column :collections, :redundancy_confirmed_by_client_uuid
     Collection.reset_column_information
 
-    # Removing that column dropped some indexes. Let's put them back.
+    # Removing that column dropped some search indexes. Let's put them back.
     add_index :collections, ["owner_uuid", "modified_by_client_uuid", "modified_by_user_uuid", "portable_data_hash", "uuid", "name", "file_names"], name: 'collections_search_index'
     execute "CREATE INDEX collections_full_text_search_idx ON collections USING gin(#{Collection.full_text_tsvector});"
   end

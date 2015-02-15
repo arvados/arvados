@@ -403,7 +403,7 @@ replication_undesired_unconfirmed:
   updated_at: 2015-02-07 00:19:28.596236608 Z
   uuid: zzzzz-4zz18-wjxq7uzx2m9jj4a
   manifest_text: ". 37b51d194a7513e45b56f6524f2d51f2+3 0:3:bar\n"
-  name: replication wantnull havenull
+  name: replication want=null have=null
 
 replication_desired_2_unconfirmed:
   owner_uuid: zzzzz-tpzed-xurymjxw79nv3jz
@@ -417,7 +417,7 @@ replication_desired_2_unconfirmed:
   updated_at: 2015-02-07 00:21:35.050126576 Z
   uuid: zzzzz-4zz18-3t236wrz4769h7x
   manifest_text: ". 37b51d194a7513e45b56f6524f2d51f2+3 0:3:bar\n"
-  name: replication want2 havenull
+  name: replication want=2 have=null
 
 replication_desired_2_confirmed_2:
   owner_uuid: zzzzz-tpzed-xurymjxw79nv3jz
@@ -431,7 +431,7 @@ replication_desired_2_confirmed_2:
   updated_at: 2015-02-07 00:24:52.983381227 Z
   uuid: zzzzz-4zz18-434zv1tnnf2rygp
   manifest_text: ". acbd18db4cc2f85cedef654fccc4a4d8+3 37b51d194a7513e45b56f6524f2d51f2+3 0:3:foo 3:6:bar\n"
-  name: replication want2 have2
+  name: replication want=2 have=2
 
 # Test Helper trims the rest of the file
 
