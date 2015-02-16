@@ -716,6 +716,14 @@ EOS
     end
   end
 
+  test "get collection with properties" do
+    authorize_with :active
+    get :show, {id: collections(:collection_with_one_property).uuid}
+    assert_response :success
+    assert_not_nil json_response['uuid']
+    assert_equal 'value1', json_response['properties']['property1']
+  end
+
   test "create collection with properties" do
     authorize_with :active
     manifest_text = ". d41d8cd98f00b204e9800998ecf8427e 0:0:foo.txt\n"
