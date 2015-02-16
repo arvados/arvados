@@ -408,10 +408,18 @@ def main(arguments=None, stdout=sys.stdout, stderr=sys.stderr):
         print >>stderr, error
         sys.exit(1)
 
-    # Apply default replication, if none specified. TODO (#3410): Use
-    # default replication given by discovery document.
-    if args.replication <= 0:
-        args.replication = 2
+    # write_copies diverges from args.replication here.
+    # args.replication is how many copies we will instruct Arvados to
+    # maintain (by passing it in collections().create()) after all
+    # data is written -- and if None was given, we'll use None there.
+    # Meanwhile, write_copies is how many copies of each data block we
+    # write to Keep, which has to be a number.
+    #
+    # If we simply changed args.replication from None to a default
+    # here, we'd end up erroneously passing the default replication
+    # level (instead of None) to collections().create().
+    write_copies = (args.replication or
+                    api_client._rootDesc.get('defaultCollectionReplication', 2))
 
     if args.progress:
         reporter = progress_writer(human_progress)
@@ -437,12 +445,12 @@ def main(arguments=None, stdout=sys.stdout, stderr=sys.stderr):
         writer = ArvPutCollectionWriter(
             resume_cache, reporter, bytes_expected,
             num_retries=args.retries,
-            replication=args.replication)
+            replication=write_copies)
     else:
         writer = ArvPutCollectionWriter.from_cache(
             resume_cache, reporter, bytes_expected,
             num_retries=args.retries,
-            replication=args.replication)
+            replication=write_copies)
 
     # Install our signal handler for each code in CAUGHT_SIGNALS, and save
     # the originals.
@@ -481,7 +489,7 @@ def main(arguments=None, stdout=sys.stdout, stderr=sys.stderr):
                 manifest_text = CollectionReader(manifest_text).manifest_text(normalize=True)
             replication_attr = 'replication_desired'
             if api_client._schema.schemas['Collection']['properties'].get(replication_attr, None) is None:
-                # API calls it 'redundancy' until #3410.
+                # API called it 'redundancy' before #3410.
                 replication_attr = 'redundancy'
             # Register the resulting collection in Arvados.
             collection = api_client.collections().create(

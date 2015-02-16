@@ -159,9 +159,9 @@ CREATE TABLE collections (
     modified_by_user_uuid character varying(255),
     modified_at timestamp without time zone,
     portable_data_hash character varying(255),
-    redundancy integer,
-    redundancy_confirmed_at timestamp without time zone,
-    redundancy_confirmed_as integer,
+    replication_desired integer,
+    replication_confirmed_at timestamp without time zone,
+    replication_confirmed integer,
     updated_at timestamp without time zone NOT NULL,
     uuid character varying(255),
     manifest_text text,
@@ -1311,14 +1311,14 @@ CREATE UNIQUE INDEX collection_owner_uuid_name_unique ON collections USING btree
 -- Name: collections_full_text_search_idx; Type: INDEX; Schema: public; Owner: -; Tablespace: 
 --
 
-CREATE INDEX collections_full_text_search_idx ON collections USING gin (to_tsvector('english'::regconfig, (((((((((((((((((COALESCE(owner_uuid, ''::character varying))::text || ' '::text) || (COALESCE(modified_by_client_uuid, ''::character varying))::text) || ' '::text) || (COALESCE(modified_by_user_uuid, ''::character varying))::text) || ' '::text) || (COALESCE(portable_data_hash, ''::character varying))::text) || ' '::text) || (COALESCE(uuid, ''::character varying))::text) || ' '::text) || (COALESCE(name, ''::character varying))::text) || ' '::text) || (COALESCE(description, ''::character varying))::text) || ' '::text) || COALESCE(properties, ''::text)) || ' '::text) || (COALESCE(redundancy_confirmed_by_client_uuid, ''::character varying))::text)));
+CREATE INDEX collections_full_text_search_idx ON collections USING gin (to_tsvector('english'::regconfig, (((((((((((((((((COALESCE(owner_uuid, ''::character varying))::text || ' '::text) || (COALESCE(modified_by_client_uuid, ''::character varying))::text) || ' '::text) || (COALESCE(modified_by_user_uuid, ''::character varying))::text) || ' '::text) || (COALESCE(portable_data_hash, ''::character varying))::text) || ' '::text) || (COALESCE(uuid, ''::character varying))::text) || ' '::text) || (COALESCE(name, ''::character varying))::text) || ' '::text) || (COALESCE(description, ''::character varying))::text) || ' '::text) || COALESCE(properties, ''::text)) || ' '::text) || (COALESCE(file_names, ''::character varying))::text)));
 
 
 --
 -- Name: collections_search_index; Type: INDEX; Schema: public; Owner: -; Tablespace: 
 --
 
-CREATE INDEX collections_search_index ON collections USING btree (owner_uuid, modified_by_client_uuid, modified_by_user_uuid, portable_data_hash, redundancy_confirmed_by_client_uuid, uuid, name, file_names);
+CREATE INDEX collections_search_index ON collections USING btree (owner_uuid, modified_by_client_uuid, modified_by_user_uuid, portable_data_hash, uuid, name, file_names);
 
 
 --
@@ -2358,5 +2358,7 @@ INSERT INTO schema_migrations (version) VALUES ('20150123142953');
 INSERT INTO schema_migrations (version) VALUES ('20150203180223');
 
 INSERT INTO schema_migrations (version) VALUES ('20150206210804');
+
+INSERT INTO schema_migrations (version) VALUES ('20150206230342');
 
 INSERT INTO schema_migrations (version) VALUES ('20150216193428');
