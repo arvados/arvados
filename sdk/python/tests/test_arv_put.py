@@ -543,7 +543,7 @@ class ArvPutIntegrationTest(run_test_server.TestCaseWithServers,
 
     def test_put_collection_with_default_redundancy(self):
         collection = self.run_and_find_collection("")
-        self.assertEqual(2, collection['replication_desired'])
+        self.assertEqual(None, collection['replication_desired'])
 
     def test_put_collection_with_unnamed_project_link(self):
         link = self.run_and_find_collection(
