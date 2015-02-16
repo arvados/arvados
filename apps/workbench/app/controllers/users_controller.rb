@@ -241,11 +241,12 @@ class UsersController < ApplicationController
               ['link_class', '=', 'permission'],
              ])
 
+    owned_repositories = Repository.where(owner_uuid: current_user.uuid)
+
     @my_repositories = (Repository.where(uuid: repo_links.collect(&:head_uuid)) |
-                        Repository.where(owner_uuid: current_user.uuid)).
+                        owned_repositories).
                        uniq { |repo| repo.uuid }
 
-    owned_repositories = Repository.where(owner_uuid: current_user.uuid).collect(&:uuid)
 
     @repo_writable = {}
     repo_links.each do |link|
@@ -255,7 +256,7 @@ class UsersController < ApplicationController
     end
 
     owned_repositories.each do |repo|
-      @repo_writable[repo] = 'can_manage'
+      @repo_writable[repo.uuid] = 'can_manage'
     end
 
     # virtual machines the current user can login into
