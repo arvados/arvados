@@ -87,6 +87,7 @@ class AnonymousAccessTest < ActionDispatch::IntegrationTest
 
     # in collection page
     assert_no_selector 'input', text: 'Create sharing link'
+    assert_no_text 'Sharing and permissions'
     assert_no_selector 'a', text: 'Upload'
     assert_no_selector 'button', 'Selection'
 
