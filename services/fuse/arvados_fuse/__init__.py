@@ -65,7 +65,9 @@ class SafeApi(object):
 
 
 def convertTime(t):
-    '''Parse Arvados timestamp to unix time.'''
+    """Parse Arvados timestamp to unix time."""
+    if not t:
+        return 0
     try:
         return calendar.timegm(time.strptime(t, "%Y-%m-%dT%H:%M:%SZ"))
     except (TypeError, ValueError):
@@ -301,7 +303,7 @@ class CollectionDirectory(Directory):
         self.collection_object = None
         if isinstance(collection, dict):
             self.collection_locator = collection['uuid']
-            self._mtime = convertTime(collection['modified_at']) if 'modified_at' in collection else 0
+            self._mtime = convertTime(collection.get('modified_at'))
         else:
             self.collection_locator = collection
 
@@ -317,6 +319,8 @@ class CollectionDirectory(Directory):
 
     def new_collection(self, new_collection_object, coll_reader):
         self.collection_object = new_collection_object
+
+        self._mtime = convertTime(self.collection_object.get('modified_at'))
 
         if self.collection_object_file is not None:
             self.collection_object_file.update(self.collection_object)
@@ -390,9 +394,6 @@ class CollectionDirectory(Directory):
             return True
         else:
             return super(CollectionDirectory, self).__contains__(k)
-
-    def mtime(self):
-        return convertTime(self.collection_object["modified_at"]) if self.collection_object is not None and 'modified_at' in self.collection_object else self._mtime
 
 
 class MagicDirectory(Directory):
