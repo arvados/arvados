@@ -39,7 +39,7 @@ def cloud_object_mock(name_id):
     cloud_object.name = cloud_object.id.upper()
     return cloud_object
 
-def cloud_node_mock(node_num=99):
+def cloud_node_mock(node_num=99, **extra):
     node = mock.NonCallableMagicMock(
         ['id', 'name', 'state', 'public_ips', 'private_ips', 'driver', 'size',
          'image', 'extra'],
@@ -48,6 +48,7 @@ def cloud_node_mock(node_num=99):
     node.name = node.id
     node.public_ips = []
     node.private_ips = [ip_address_mock(node_num)]
+    node.extra = extra
     return node
 
 def ip_address_mock(last_octet):
