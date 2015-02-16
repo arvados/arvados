@@ -11,7 +11,7 @@ import threading
 import Queue
 import copy
 import errno
-from .errors import KeepWriteError
+from .errors import KeepWriteError, AssertionError
 
 def split(path):
     """Separate the stream name and file name in a /-separated stream path and
@@ -26,7 +26,7 @@ def split(path):
         stream_name, file_name = '.', path
     return stream_name, file_name
 
-class ArvadosFileBase(object):
+class FileLikeObjectBase(object):
     def __init__(self, name, mode):
         self.name = name
         self.mode = mode
@@ -55,7 +55,7 @@ class ArvadosFileBase(object):
         self.closed = True
 
 
-class ArvadosFileReaderBase(ArvadosFileBase):
+class ArvadosFileReaderBase(FileLikeObjectBase):
     class _NameAttribute(str):
         # The Python file API provides a plain .name attribute.
         # Older SDK provided a name() method.
@@ -79,7 +79,7 @@ class ArvadosFileReaderBase(ArvadosFileBase):
     def decompressed_name(self):
         return re.sub('\.(bz2|gz)$', '', self.name)
 
-    @ArvadosFileBase._before_close
+    @FileLikeObjectBase._before_close
     def seek(self, pos, whence=os.SEEK_CUR):
         if whence == os.SEEK_CUR:
             pos += self._filepos
@@ -90,7 +90,7 @@ class ArvadosFileReaderBase(ArvadosFileBase):
     def tell(self):
         return self._filepos
 
-    @ArvadosFileBase._before_close
+    @FileLikeObjectBase._before_close
     @retry_method
     def readall(self, size=2**20, num_retries=None):
         while True:
@@ -99,7 +99,7 @@ class ArvadosFileReaderBase(ArvadosFileBase):
                 break
             yield data
 
-    @ArvadosFileBase._before_close
+    @FileLikeObjectBase._before_close
     @retry_method
     def readline(self, size=float('inf'), num_retries=None):
         cache_pos, cache_data = self._readline_cache
@@ -123,7 +123,7 @@ class ArvadosFileReaderBase(ArvadosFileBase):
         self._readline_cache = (self.tell(), data[nextline_index:])
         return data[:nextline_index]
 
-    @ArvadosFileBase._before_close
+    @FileLikeObjectBase._before_close
     @retry_method
     def decompress(self, decompress, size, num_retries=None):
         for segment in self.readall(size, num_retries):
@@ -131,7 +131,7 @@ class ArvadosFileReaderBase(ArvadosFileBase):
             if data:
                 yield data
 
-    @ArvadosFileBase._before_close
+    @FileLikeObjectBase._before_close
     @retry_method
     def readall_decompressed(self, size=2**20, num_retries=None):
         self.seek(0)
@@ -146,7 +146,7 @@ class ArvadosFileReaderBase(ArvadosFileBase):
         else:
             return self.readall(size, num_retries=num_retries)
 
-    @ArvadosFileBase._before_close
+    @FileLikeObjectBase._before_close
     @retry_method
     def readlines(self, sizehint=float('inf'), num_retries=None):
         data = []
@@ -181,7 +181,7 @@ class StreamFileReader(ArvadosFileReaderBase):
         n = self.segments[-1]
         return n.range_start + n.range_size
 
-    @ArvadosFileBase._before_close
+    @FileLikeObjectBase._before_close
     @retry_method
     def read(self, size, num_retries=None):
         """Read up to 'size' bytes from the stream, starting at the current file position"""
@@ -199,7 +199,7 @@ class StreamFileReader(ArvadosFileReaderBase):
         self._filepos += len(data)
         return data
 
-    @ArvadosFileBase._before_close
+    @FileLikeObjectBase._before_close
     @retry_method
     def readfrom(self, start, size, num_retries=None):
         """Read up to 'size' bytes from the stream, starting at 'start'"""
@@ -381,8 +381,11 @@ class BlockManager(object):
         """
         new_blockid = "bufferblock%i" % len(self._bufferblocks)
         block = self._bufferblocks[blockid]
-        bufferblock = BufferBlock(new_blockid, len(block), owner)
-        bufferblock.append(block)
+        if block.state != BufferBlock.WRITABLE:
+            raise AssertionError("Can only duplicate a writable buffer block")
+
+        bufferblock = BufferBlock(new_blockid, block.size(), owner)
+        bufferblock.append(block.buffer_view[0:block.size()])
         self._bufferblocks[bufferblock.blockid] = bufferblock
         return bufferblock
 
@@ -465,7 +468,11 @@ class BlockManager(object):
         block.state = BufferBlock.PENDING
         self._put_queue.put(block)
 
-    def get_block(self, locator, num_retries, cache_only=False):
+    def get_bufferblock(self, locator):
+        with self.lock:
+            return self._bufferblocks.get(locator)
+
+    def get_block_contents(self, locator, num_retries, cache_only=False):
         """Fetch a block.
 
         First checks to see if the locator is a BufferBlock and return that, if
@@ -593,7 +600,11 @@ class ArvadosFile(object):
             new_loc = r.locator
             if self.parent._my_block_manager().is_bufferblock(r.locator):
                 if r.locator not in map_loc:
-                    map_loc[r.locator] = self.parent._my_block_manager().dup_block(r.locator, cp).blockid
+                    bufferblock = get_bufferblock(r.locator)
+                    if bufferblock.state == BufferBlock.COMITTED:
+                        map_loc[r.locator] = bufferblock.locator()
+                    else:
+                        map_loc[r.locator] = self.parent._my_block_manager().dup_block(r.locator, cp)
                 new_loc = map_loc[r.locator]
 
             cp._segments.append(Range(new_loc, r.range_start, r.range_size, r.segment_offset))
@@ -674,7 +685,7 @@ class ArvadosFile(object):
 
         data = []
         for lr in readsegs:
-            block = self.parent._my_block_manager().get_block(lr.locator, num_retries=num_retries, cache_only=bool(data))
+            block = self.parent._my_block_manager().get_block_contents(lr.locator, num_retries=num_retries, cache_only=bool(data))
             if block:
                 data.append(block[lr.segment_offset:lr.segment_offset+lr.segment_size])
             else:
@@ -781,7 +792,7 @@ class ArvadosFileReader(ArvadosFileReaderBase):
     def size(self):
         return self.arvadosfile.size()
 
-    @ArvadosFileBase._before_close
+    @FileLikeObjectBase._before_close
     @retry_method
     def read(self, size, num_retries=None):
         """Read up to `size` bytes from the stream, starting at the current file position."""
@@ -789,7 +800,7 @@ class ArvadosFileReader(ArvadosFileReaderBase):
         self._filepos += len(data)
         return data
 
-    @ArvadosFileBase._before_close
+    @FileLikeObjectBase._before_close
     @retry_method
     def readfrom(self, offset, size, num_retries=None):
         """Read up to `size` bytes from the stream, starting at the current file position."""
@@ -810,7 +821,7 @@ class ArvadosFileWriter(ArvadosFileReader):
     def __init__(self, arvadosfile, name, mode, num_retries=None):
         super(ArvadosFileWriter, self).__init__(arvadosfile, name, mode, num_retries=num_retries)
 
-    @ArvadosFileBase._before_close
+    @FileLikeObjectBase._before_close
     @retry_method
     def write(self, data, num_retries=None):
         if self.mode[0] == "a":
@@ -819,7 +830,7 @@ class ArvadosFileWriter(ArvadosFileReader):
             self.arvadosfile.writeto(self._filepos, data, num_retries)
             self._filepos += len(data)
 
-    @ArvadosFileBase._before_close
+    @FileLikeObjectBase._before_close
     @retry_method
     def writelines(self, seq, num_retries=None):
         for s in seq:

@@ -7,7 +7,7 @@ import functools
 import copy
 
 from .ranges import *
-from .arvfile import ArvadosFileBase, StreamFileReader
+from .arvfile import StreamFileReader
 from arvados.retry import retry_method
 from keep import *
 import config

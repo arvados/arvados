@@ -8,7 +8,7 @@ import time
 from collections import deque
 from stat import *
 
-from .arvfile import ArvadosFileBase, split, ArvadosFile, ArvadosFileWriter, ArvadosFileReader, BlockManager, synchronized, must_be_writable, SYNC_READONLY, SYNC_EXPLICIT, SYNC_LIVE, NoopLock
+from .arvfile import split, FileLikeObjectBase, ArvadosFile, ArvadosFileWriter, ArvadosFileReader, BlockManager, synchronized, must_be_writable, SYNC_READONLY, SYNC_EXPLICIT, SYNC_LIVE, NoopLock
 from keep import *
 from .stream import StreamReader, normalize_stream, locator_block_size
 from .ranges import Range, LocatorAndRange
@@ -244,7 +244,7 @@ class CollectionReader(CollectionBase):
             return self._manifest_text
 
 
-class _WriterFile(ArvadosFileBase):
+class _WriterFile(FileLikeObjectBase):
     def __init__(self, coll_writer, name):
         super(_WriterFile, self).__init__(name, 'wb')
         self.dest = coll_writer
@@ -253,16 +253,16 @@ class _WriterFile(ArvadosFileBase):
         super(_WriterFile, self).close()
         self.dest.finish_current_file()
 
-    @ArvadosFileBase._before_close
+    @FileLikeObjectBase._before_close
     def write(self, data):
         self.dest.write(data)
 
-    @ArvadosFileBase._before_close
+    @FileLikeObjectBase._before_close
     def writelines(self, seq):
         for data in seq:
             self.write(data)
 
-    @ArvadosFileBase._before_close
+    @FileLikeObjectBase._before_close
     def flush(self):
         self.dest.flush_data()
 
@@ -696,79 +696,15 @@ class SynchronizedCollectionBase(CollectionBase):
     def notify(self, event, collection, name, item):
         raise NotImplementedError()
 
+    @must_be_writable
     @synchronized
-    def _find(self, path, create, create_collection):
-        """Internal method.  Don't use this.  Use `find()` or `find_or_create()`
-        instead.
-
-        Recursively search the specified file path.  May return either a
-        Collection or ArvadosFile.  Return None if not found and create=False.
-        Will create a new item if create=True.
-
-        :create:
-          If true, create path components (i.e. Collections) that are
-          missing.  If "create" is False, return None if a path component is
-          not found.
-
-        :create_collection:
-          If the path is not found, "create" is True, and
-          "create_collection" is False, then create and return a new
-          ArvadosFile for the last path component.  If "create_collection" is
-          True, then create and return a new Collection for the last path
-          component.
-
-        """
-
-        if create and self.sync_mode() == SYNC_READONLY:
-            raise IOError((errno.EROFS, "Collection is read only"))
-
-        p = path.split("/")
-        if p[0] == '.':
-            del p[0]
-
-        if p and p[0]:
-            item = self._items.get(p[0])
-            if len(p) == 1:
-                # item must be a file
-                if item is None and create:
-                    # create new file
-                    if create_collection:
-                        item = Subcollection(self)
-                    else:
-                        item = ArvadosFile(self)
-                    self._items[p[0]] = item
-                    self._modified = True
-                    self.notify(ADD, self, p[0], item)
-                return item
-            else:
-                if item is None and create:
-                    # create new collection
-                    item = Subcollection(self)
-                    self._items[p[0]] = item
-                    self._modified = True
-                    self.notify(ADD, self, p[0], item)
-                del p[0]
-                if isinstance(item, SynchronizedCollectionBase):
-                    return item._find("/".join(p), create, create_collection)
-                else:
-                    raise errors.ArgumentError("Interior path components must be subcollection")
-        else:
-            return self
-
-    def find(self, path):
-        """Recursively search the specified file path.
-
-        May return either a Collection or ArvadosFile.  Return None if not
-        found.
-
-        """
-        return self._find(path, False, False)
-
     def find_or_create(self, path, create_type):
         """Recursively search the specified file path.
 
-        May return either a Collection or ArvadosFile.  Will create a new item
-        at the specified path if none exists.
+        May return either a `Collection` or `ArvadosFile`.  If not found, will
+        create a new item at the specified path based on `create_type`.  Will
+        create intermediate subcollections needed to contain the final item in
+        the path.
 
         :create_type:
           One of `arvado.collection.FILE` or
@@ -778,7 +714,77 @@ class SynchronizedCollectionBase(CollectionBase):
           Collection for the last path component.
 
         """
-        return self._find(path, True, (create_type == COLLECTION))
+
+        if self.sync_mode() == SYNC_READONLY:
+            raise IOError((errno.EROFS, "Collection is read only"))
+
+        pathcomponents = path.split("/")
+        if pathcomponents[0] == '.':
+            del pathcomponents[0]
+
+        if pathcomponents and pathcomponents[0]:
+            item = self._items.get(pathcomponents[0])
+            if len(pathcomponents) == 1:
+                # item must be a file
+                if item is None:
+                    # create new file
+                    if create_type == COLLECTION:
+                        item = Subcollection(self)
+                    else:
+                        item = ArvadosFile(self)
+                    self._items[pathcomponents[0]] = item
+                    self._modified = True
+                    self.notify(ADD, self, pathcomponents[0], item)
+                return item
+            else:
+                if item is None:
+                    # create new collection
+                    item = Subcollection(self)
+                    self._items[pathcomponents[0]] = item
+                    self._modified = True
+                    self.notify(ADD, self, pathcomponents[0], item)
+                del pathcomponents[0]
+                if isinstance(item, SynchronizedCollectionBase):
+                    return item.find_or_create("/".join(pathcomponents), create_type)
+                else:
+                    raise errors.ArgumentError("Interior path components must be subcollection")
+        else:
+            return self
+
+    @synchronized
+    def find(self, path):
+        """Recursively search the specified file path.
+
+        May return either a Collection or ArvadosFile.  Return None if not
+        found.
+
+        """
+        pathcomponents = path.split("/")
+        if pathcomponents[0] == '.':
+            del pathcomponents[0]
+
+        if pathcomponents and pathcomponents[0]:
+            item = self._items.get(pathcomponents[0])
+            if len(pathcomponents) == 1:
+                # item must be a file
+                return item
+            else:
+                del pathcomponents[0]
+                if isinstance(item, SynchronizedCollectionBase):
+                    return item.find("/".join(pathcomponents))
+                else:
+                    raise errors.ArgumentError("Interior path components must be subcollection")
+        else:
+            return self
+
+    def mkdirs(path):
+        """Recursive subcollection create.
+
+        Like `os.mkdirs()`.  Will create intermediate subcollections needed to
+        contain the leaf subcollection path.
+
+        """
+        return self.find_or_create(path, COLLECTION)
 
     def open(self, path, mode):
         """Open a file-like object for access.
@@ -806,20 +812,23 @@ class SynchronizedCollectionBase(CollectionBase):
         if create and self.sync_mode() == SYNC_READONLY:
             raise IOError((errno.EROFS, "Collection is read only"))
 
-        f = self._find(path, create, False)
+        if create:
+            arvfile = self.find_or_create(path, FILE)
+        else:
+            arvfile = self.find(path)
 
-        if f is None:
+        if arvfile is None:
             raise IOError((errno.ENOENT, "File not found"))
-        if not isinstance(f, ArvadosFile):
+        if not isinstance(arvfile, ArvadosFile):
             raise IOError((errno.EISDIR, "Path must refer to a file."))
 
         if mode[0] == "w":
-            f.truncate(0)
+            arvfile.truncate(0)
 
         if mode == "r":
-            return ArvadosFileReader(f, path, mode, num_retries=self.num_retries)
+            return ArvadosFileReader(arvfile, path, mode, num_retries=self.num_retries)
         else:
-            return ArvadosFileWriter(f, path, mode, num_retries=self.num_retries)
+            return ArvadosFileWriter(arvfile, path, mode, num_retries=self.num_retries)
 
     @synchronized
     def modified(self):
@@ -902,25 +911,25 @@ class SynchronizedCollectionBase(CollectionBase):
         :recursive:
           Specify whether to remove non-empty subcollections (True), or raise an error (False).
         """
-        p = path.split("/")
-        if p[0] == '.':
+        pathcomponents = path.split("/")
+        if pathcomponents[0] == '.':
             # Remove '.' from the front of the path
-            del p[0]
+            del pathcomponents[0]
 
-        if len(p) > 0:
-            item = self._items.get(p[0])
+        if len(pathcomponents) > 0:
+            item = self._items.get(pathcomponents[0])
             if item is None:
                 raise IOError((errno.ENOENT, "File not found"))
-            if len(p) == 1:
-                if isinstance(self._items[p[0]], SynchronizedCollectionBase) and len(self._items[p[0]]) > 0 and not recursive:
+            if len(pathcomponents) == 1:
+                if isinstance(self._items[pathcomponents[0]], SynchronizedCollectionBase) and len(self._items[pathcomponents[0]]) > 0 and not recursive:
                     raise IOError((errno.ENOTEMPTY, "Subcollection not empty"))
-                d = self._items[p[0]]
-                del self._items[p[0]]
+                deleteditem = self._items[pathcomponents[0]]
+                del self._items[pathcomponents[0]]
                 self._modified = True
-                self.notify(DEL, self, p[0], d)
+                self.notify(DEL, self, pathcomponents[0], deleteditem)
             else:
-                del p[0]
-                item.remove("/".join(p))
+                del pathcomponents[0]
+                item.remove("/".join(pathcomponents))
         else:
             raise IOError((errno.ENOENT, "File not found"))
 
@@ -959,41 +968,41 @@ class SynchronizedCollectionBase(CollectionBase):
             source_obj = source_collection.find(source)
             if source_obj is None:
                 raise IOError((errno.ENOENT, "File not found"))
-            sp = source.split("/")
+            sourcecomponents = source.split("/")
         else:
             source_obj = source
-            sp = None
+            sourcecomponents = None
 
         # Find parent collection the target path
-        tp = target_path.split("/")
+        targetcomponents = target_path.split("/")
 
         # Determine the name to use.
-        target_name = tp[-1] if tp[-1] else (sp[-1] if sp else None)
+        target_name = targetcomponents[-1] if targetcomponents[-1] else (sourcecomponents[-1] if sourcecomponents else None)
 
         if not target_name:
             raise errors.ArgumentError("Target path is empty and source is an object.  Cannot determine destination filename to use.")
 
-        target_dir = self.find_or_create("/".join(tp[0:-1]), COLLECTION)
+        target_dir = self.find_or_create("/".join(targetcomponents[0:-1]), COLLECTION)
 
         with target_dir.lock:
             if target_name in target_dir:
-                if isinstance(target_dir[target_name], SynchronizedCollectionBase) and sp:
+                if isinstance(target_dir[target_name], SynchronizedCollectionBase) and sourcecomponents:
                     target_dir = target_dir[target_name]
-                    target_name = sp[-1]
+                    target_name = sourcecomponents[-1]
                 elif not overwrite:
                     raise IOError((errno.EEXIST, "File already exists"))
 
-            mod = None
+            modified_from = None
             if target_name in target_dir:
-                mod = target_dir[target_name]
+                modified_from = target_dir[target_name]
 
             # Actually make the copy.
             dup = source_obj.clone(target_dir)
             target_dir._items[target_name] = dup
             target_dir._modified = True
 
-        if mod:
-            self.notify(MOD, target_dir, target_name, (mod, dup))
+        if modified_from:
+            self.notify(MOD, target_dir, target_name, (modified_from, dup))
         else:
             self.notify(ADD, target_dir, target_name, dup)
 
@@ -1028,7 +1037,7 @@ class SynchronizedCollectionBase(CollectionBase):
         """
         changes = []
         if holding_collection is None:
-            holding_collection = CollectionRoot(api_client=self._my_api(), keep_client=self._my_keep(), sync=SYNC_READONLY)
+            holding_collection = Collection(api_client=self._my_api(), keep_client=self._my_keep(), sync=SYNC_READONLY)
         for k in self:
             if k not in end_collection:
                changes.append((DEL, os.path.join(prefix, k), self[k].clone(holding_collection)))
@@ -1051,13 +1060,14 @@ class SynchronizedCollectionBase(CollectionBase):
         alternate path indicating the conflict.
 
         """
-        for c in changes:
-            path = c[1]
-            initial = c[2]
+        for change in changes:
+            event_type = change[0]
+            path = change[1]
+            initial = change[2]
             local = self.find(path)
             conflictpath = "%s~conflict-%s~" % (path, time.strftime("%Y-%m-%d-%H:%M:%S",
                                                                     time.gmtime()))
-            if c[0] == ADD:
+            if event_type == ADD:
                 if local is None:
                     # No local file at path, safe to copy over new file
                     self.copy(initial, path)
@@ -1065,22 +1075,23 @@ class SynchronizedCollectionBase(CollectionBase):
                     # There is already local file and it is different:
                     # save change to conflict file.
                     self.copy(initial, conflictpath)
-            elif c[0] == MOD:
+            elif event_type == MOD:
+                final = change[3]
                 if local == initial:
                     # Local matches the "initial" item so it has not
                     # changed locally and is safe to update.
-                    if isinstance(local, ArvadosFile) and isinstance(c[3], ArvadosFile):
+                    if isinstance(local, ArvadosFile) and isinstance(final, ArvadosFile):
                         # Replace contents of local file with new contents
-                        local.replace_contents(c[3])
+                        local.replace_contents(final)
                     else:
                         # Overwrite path with new item; this can happen if
                         # path was a file and is now a collection or vice versa
-                        self.copy(c[3], path, overwrite=True)
+                        self.copy(final, path, overwrite=True)
                 else:
                     # Local is missing (presumably deleted) or local doesn't
                     # match the "start" value, so save change to conflict file
-                    self.copy(c[3], conflictpath)
-            elif c[0] == DEL:
+                    self.copy(final, conflictpath)
+            elif event_type == DEL:
                 if local == initial:
                     # Local item matches "initial" value, so it is safe to remove.
                     self.remove(path, recursive=True)
@@ -1110,7 +1121,7 @@ class SynchronizedCollectionBase(CollectionBase):
     def __ne__(self, other):
         return not self.__eq__(other)
 
-class CollectionRoot(SynchronizedCollectionBase):
+class Collection(SynchronizedCollectionBase):
     """Represents the root of an Arvados Collection, which may be associated with
     an API server Collection record.
 
@@ -1154,7 +1165,7 @@ class CollectionRoot(SynchronizedCollectionBase):
                  num_retries=None,
                  block_manager=None,
                  sync=None):
-        """CollectionRoot constructor.
+        """Collection constructor.
 
         :manifest_locator_or_text:
           One of Arvados collection UUID, block locator of
@@ -1185,7 +1196,7 @@ class CollectionRoot(SynchronizedCollectionBase):
             background websocket events, on block write, or on file close.
 
         """
-        super(CollectionRoot, self).__init__(parent)
+        super(Collection, self).__init__(parent)
         self._api_client = api_client
         self._keep_client = keep_client
         self._block_manager = block_manager
@@ -1195,7 +1206,7 @@ class CollectionRoot(SynchronizedCollectionBase):
         else:
             self._config = config.settings()
 
-        self.num_retries = num_retries
+        self.num_retries = num_retries if num_retries is not None else 2
         self._manifest_locator = None
         self._manifest_text = None
         self._api_response = None
@@ -1220,13 +1231,7 @@ class CollectionRoot(SynchronizedCollectionBase):
                     "Argument to CollectionReader must be a manifest or a collection UUID")
 
             self._populate()
-
-            if self._sync == SYNC_LIVE:
-                if not self._has_collection_uuid():
-                    raise errors.ArgumentError("Cannot SYNC_LIVE associated with a collection uuid")
-                self.events = events.subscribe(arvados.api(apiconfig=self._config),
-                                               [["object_uuid", "=", self._manifest_locator]],
-                                               self.on_message)
+            self._subscribe_events()
 
 
     def root_collection(self):
@@ -1235,18 +1240,17 @@ class CollectionRoot(SynchronizedCollectionBase):
     def sync_mode(self):
         return self._sync
 
+    def _subscribe_events(self):
+        if self._sync == SYNC_LIVE and self.events is None:
+            if not self._has_collection_uuid():
+                raise errors.ArgumentError("Cannot SYNC_LIVE associated with a collection uuid")
+            self.events = events.subscribe(arvados.api(apiconfig=self._config),
+                                           [["object_uuid", "=", self._manifest_locator]],
+                                           self.on_message)
+
     def on_message(self, event):
         if event.get("object_uuid") == self._manifest_locator:
             self.update()
-
-    @staticmethod
-    def create(name, owner_uuid=None, sync=SYNC_EXPLICIT, apiconfig=None):
-        """Create a new empty Collection with associated collection record."""
-        c = Collection(sync=SYNC_EXPLICIT, apiconfig=apiconfig)
-        c.save_new(name, owner_uuid=owner_uuid, ensure_unique_name=True)
-        if sync == SYNC_LIVE:
-            c.events = events.subscribe(arvados.api(apiconfig=self._config), [["object_uuid", "=", c._manifest_locator]], c.on_message)
-        return c
 
     @synchronized
     @retry_method
@@ -1258,9 +1262,9 @@ class CollectionRoot(SynchronizedCollectionBase):
         if other is None:
             if self._manifest_locator is None:
                 raise errors.ArgumentError("`other` is None but collection does not have a manifest_locator uuid")
-            n = self._my_api().collections().get(uuid=self._manifest_locator).execute(num_retries=num_retries)
-            other = import_collection(n["manifest_text"])
-        baseline = import_collection(self._manifest_text)
+            response = self._my_api().collections().get(uuid=self._manifest_locator).execute(num_retries=num_retries)
+            other = import_manifest(response["manifest_text"])
+        baseline = import_manifest(self._manifest_text)
         self.apply(other.diff(baseline))
 
     @synchronized
@@ -1368,12 +1372,12 @@ class CollectionRoot(SynchronizedCollectionBase):
     def clone(self, new_parent=None, new_sync=SYNC_READONLY, new_config=None):
         if new_config is None:
             new_config = self._config
-        c = CollectionRoot(parent=new_parent, apiconfig=new_config, sync=new_sync)
+        newcollection = Collection(parent=new_parent, apiconfig=new_config, sync=new_sync)
         if new_sync == SYNC_READONLY:
-            c.lock = NoopLock()
-        c._items = {}
-        self._cloneinto(c)
-        return c
+            newcollection.lock = NoopLock()
+        newcollection._items = {}
+        self._cloneinto(newcollection)
+        return newcollection
 
     @synchronized
     def api_response(self):
@@ -1410,13 +1414,13 @@ class CollectionRoot(SynchronizedCollectionBase):
                 self.update()
             self._my_keep().put(self.manifest_text(strip=True), num_retries=num_retries)
 
-            mt = self.manifest_text(strip=False)
+            text = self.manifest_text(strip=False)
             self._api_response = self._my_api().collections().update(
                 uuid=self._manifest_locator,
-                body={'manifest_text': mt}
+                body={'manifest_text': text}
                 ).execute(
                     num_retries=num_retries)
-            self._manifest_text = mt
+            self._manifest_text = text
             self.set_unmodified()
 
     @must_be_writable
@@ -1447,13 +1451,13 @@ class CollectionRoot(SynchronizedCollectionBase):
         """
         self._my_block_manager().commit_all()
         self._my_keep().put(self.manifest_text(strip=True), num_retries=num_retries)
-        mt = self.manifest_text(strip=False)
+        text = self.manifest_text(strip=False)
 
         if create_collection_record:
             if name is None:
                 name = "Collection created %s" % (time.strftime("%Y-%m-%d %H:%M:%S %Z", time.localtime()))
 
-            body = {"manifest_text": mt,
+            body = {"manifest_text": text,
                     "name": name}
             if owner_uuid:
                 body["owner_uuid"] = owner_uuid
@@ -1468,7 +1472,7 @@ class CollectionRoot(SynchronizedCollectionBase):
             if self.events:
                 self.events.subscribe(filters=[["object_uuid", "=", self._manifest_locator]])
 
-        self._manifest_text = mt
+        self._manifest_text = text
         self.set_unmodified()
 
     @synchronized
@@ -1485,17 +1489,75 @@ class CollectionRoot(SynchronizedCollectionBase):
             c(event, collection, name, item)
 
 def ReadOnlyCollection(*args, **kwargs):
+    """Create a read-only collection object from an api collection record locator,
+    a portable data hash of a manifest, or raw manifest text.
+
+    See `Collection` constructor for detailed options.
+
+    """
     kwargs["sync"] = SYNC_READONLY
-    return CollectionRoot(*args, **kwargs)
+    return Collection(*args, **kwargs)
 
 def WritableCollection(*args, **kwargs):
+    """Create a writable collection object from an api collection record locator,
+    a portable data hash of a manifest, or raw manifest text.
+
+    See `Collection` constructor for detailed options.
+
+    """
+
     kwargs["sync"] = SYNC_EXPLICIT
-    return CollectionRoot(*args, **kwargs)
+    return Collection(*args, **kwargs)
 
 def LiveCollection(*args, **kwargs):
-    kwargs["sync"] = SYNC_LIVE
-    return CollectionRoot(*args, **kwargs)
+    """Create a writable, live updating collection object representing an existing
+    collection record on the API server.
 
+    See `Collection` constructor for detailed options.
+
+    """
+    kwargs["sync"] = SYNC_LIVE
+    return Collection(*args, **kwargs)
+
+def createWritableCollection(name, owner_uuid=None, apiconfig=None):
+    """Create an empty, writable collection object and create an associated api
+    collection record.
+
+    :name:
+      The collection name
+
+    :owner_uuid:
+      The parent project.
+
+    :apiconfig:
+      Optional alternate api configuration to use (to specify alternate API
+      host or token than the default.)
+
+    """
+    newcollection = Collection(sync=SYNC_EXPLICIT, apiconfig=apiconfig)
+    newcollection.save_new(name, owner_uuid=owner_uuid, ensure_unique_name=True)
+    return newcollection
+
+def createLiveCollection(name, owner_uuid=None, apiconfig=None):
+    """Create an empty, writable, live updating Collection object and create an
+    associated collection record on the API server.
+
+    :name:
+      The collection name
+
+    :owner_uuid:
+      The parent project.
+
+    :apiconfig:
+      Optional alternate api configuration to use (to specify alternate API
+      host or token than the default.)
+
+    """
+    newcollection = Collection(sync=SYNC_EXPLICIT, apiconfig=apiconfig)
+    newcollection.save_new(name, owner_uuid=owner_uuid, ensure_unique_name=True)
+    newcollection._sync = SYNC_LIVE
+    newcollection._subscribe_events()
+    return newcollection
 
 class Subcollection(SynchronizedCollectionBase):
     """This is a subdirectory within a collection that doesn't have its own API
@@ -1542,7 +1604,7 @@ def import_manifest(manifest_text,
                     keep=None,
                     num_retries=None,
                     sync=SYNC_READONLY):
-    """Import a manifest into a `CollectionRoot`.
+    """Import a manifest into a `Collection`.
 
     :manifest_text:
       The manifest text to import from.
@@ -1566,12 +1628,11 @@ def import_manifest(manifest_text,
     if into_collection is not None:
         if len(into_collection) > 0:
             raise ArgumentError("Can only import manifest into an empty collection")
-        c = into_collection
     else:
-        c = CollectionRoot(api_client=api_client, keep_client=keep, num_retries=num_retries, sync=sync)
+        into_collection = Collection(api_client=api_client, keep_client=keep, num_retries=num_retries, sync=sync)
 
-    save_sync = c.sync_mode()
-    c._sync = None
+    save_sync = into_collection.sync_mode()
+    into_collection._sync = None
 
     STREAM_NAME = 0
     BLOCKS = 1
@@ -1608,7 +1669,7 @@ def import_manifest(manifest_text,
                 pos = long(s.group(1))
                 size = long(s.group(2))
                 name = s.group(3).replace('\\040', ' ')
-                f = c.find_or_create("%s/%s" % (stream_name, name), FILE)
+                f = into_collection.find_or_create("%s/%s" % (stream_name, name), FILE)
                 f.add_segment(blocks, pos, size)
             else:
                 # error!
@@ -1618,9 +1679,9 @@ def import_manifest(manifest_text,
             stream_name = None
             state = STREAM_NAME
 
-    c.set_unmodified()
-    c._sync = save_sync
-    return c
+    into_collection.set_unmodified()
+    into_collection._sync = save_sync
+    return into_collection
 
 def export_manifest(item, stream_name=".", portable_locators=False):
     """Export a manifest from the contents of a SynchronizedCollectionBase.
@@ -1641,34 +1702,35 @@ def export_manifest(item, stream_name=".", portable_locators=False):
     if isinstance(item, SynchronizedCollectionBase):
         stream = {}
         sorted_keys = sorted(item.keys())
-        for k in [s for s in sorted_keys if isinstance(item[s], ArvadosFile)]:
-            v = item[k]
-            st = []
-            for s in v.segments():
-                loc = s.locator
+        for filename in [s for s in sorted_keys if isinstance(item[s], ArvadosFile)]:
+            # Create a stream per file `k`
+            arvfile = item[filename]
+            filestream = []
+            for segment in arvfile.segments():
+                loc = segment.locator
                 if loc.startswith("bufferblock"):
-                    loc = v.parent._my_block_manager()._bufferblocks[loc].locator()
+                    loc = arvfile.parent._my_block_manager()._bufferblocks[loc].locator()
                 if portable_locators:
                     loc = KeepLocator(loc).stripped()
-                st.append(LocatorAndRange(loc, locator_block_size(loc),
-                                     s.segment_offset, s.range_size))
-            stream[k] = st
+                filestream.append(LocatorAndRange(loc, locator_block_size(loc),
+                                     segment.segment_offset, segment.range_size))
+            stream[filename] = filestream
         if stream:
             buf += ' '.join(normalize_stream(stream_name, stream))
             buf += "\n"
-        for k in [s for s in sorted_keys if isinstance(item[s], SynchronizedCollectionBase)]:
-            buf += export_manifest(item[k], stream_name=os.path.join(stream_name, k), portable_locators=portable_locators)
+        for dirname in [s for s in sorted_keys if isinstance(item[s], SynchronizedCollectionBase)]:
+            buf += export_manifest(item[dirname], stream_name=os.path.join(stream_name, dirname), portable_locators=portable_locators)
     elif isinstance(item, ArvadosFile):
-        st = []
-        for s in item.segments:
-            loc = s.locator
+        filestream = []
+        for segment in item.segments:
+            loc = segment.locator
             if loc.startswith("bufferblock"):
                 loc = item._bufferblocks[loc].calculate_locator()
             if portable_locators:
                 loc = KeepLocator(loc).stripped()
-            st.append(LocatorAndRange(loc, locator_block_size(loc),
-                                 s.segment_offset, s.range_size))
-        stream[stream_name] = st
+            filestream.append(LocatorAndRange(loc, locator_block_size(loc),
+                                 segment.segment_offset, segment.range_size))
+        stream[stream_name] = filestream
         buf += ' '.join(normalize_stream(stream_name, stream))
         buf += "\n"
     return buf

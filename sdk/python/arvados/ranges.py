@@ -1,3 +1,7 @@
+import logging
+
+_logger = logging.getLogger('arvados.ranges')
+
 class Range(object):
     def __init__(self, locator, range_start, range_size, segment_offset=0):
         self.locator = locator
@@ -14,7 +18,7 @@ class Range(object):
                 self.range_size == other.range_size and
                 self.segment_offset == other.segment_offset)
 
-def first_block(data_locators, range_start, range_size, debug=False):
+def first_block(data_locators, range_start, range_size):
     block_start = 0L
 
     # range_start/block_start is the inclusive lower bound
@@ -26,7 +30,6 @@ def first_block(data_locators, range_start, range_size, debug=False):
     block_size = data_locators[i].range_size
     block_start = data_locators[i].range_start
     block_end = block_start + block_size
-    if debug: print '---'
 
     # perform a binary search for the first block
     # assumes that all of the blocks are contigious, so range_start is guaranteed
@@ -40,7 +43,6 @@ def first_block(data_locators, range_start, range_size, debug=False):
         else:
             hi = i
         i = int((hi + lo) / 2)
-        if debug: print lo, i, hi
         block_size = data_locators[i].range_size
         block_start = data_locators[i].range_start
         block_end = block_start + block_size
@@ -63,13 +65,19 @@ class LocatorAndRange(object):
     def __repr__(self):
         return "LocatorAndRange(\"%s\", %i, %i, %i)" % (self.locator, self.block_size, self.segment_offset, self.segment_size)
 
-def locators_and_ranges(data_locators, range_start, range_size, debug=False):
-    '''
-    Get blocks that are covered by the range
-    data_locators: list of Range objects, assumes that blocks are in order and contigous
-    range_start: start of range
-    range_size: size of range
-    returns list of LocatorAndRange objects
+def locators_and_ranges(data_locators, range_start, range_size):
+    '''Get blocks that are covered by the range and return list of LocatorAndRange
+    objects.
+
+    :data_locators:
+      list of Range objects, assumes that blocks are in order and contigous
+
+    :range_start:
+      start of range
+
+    :range_size:
+      size of range
+
     '''
     if range_size == 0:
         return []
@@ -78,7 +86,7 @@ def locators_and_ranges(data_locators, range_start, range_size, debug=False):
     range_size = long(range_size)
     range_end = range_start + range_size
 
-    i = first_block(data_locators, range_start, range_size, debug)
+    i = first_block(data_locators, range_start, range_size)
     if i is None:
         return []
 
@@ -87,15 +95,16 @@ def locators_and_ranges(data_locators, range_start, range_size, debug=False):
         block_start = dl.range_start
         block_size = dl.range_size
         block_end = block_start + block_size
-        if debug:
-            print dl.locator, "range_start", range_start, "block_start", block_start, "range_end", range_end, "block_end", block_end
+        _logger.debug(dl.locator, "range_start", range_start, "block_start", block_start, "range_end", range_end, "block_end", block_end)
         if range_end <= block_start:
             # range ends before this block starts, so don't look at any more locators
             break
 
         #if range_start >= block_end:
-            # range starts after this block ends, so go to next block
-            # we should always start at the first block due to the binary above, so this test is redundant
+            # Range starts after this block ends, so go to next block.
+            # We should always start at the first block due to the binary
+            # search above, so this test is unnecessary but useful to help
+            # document the algorithm.
             #next
 
         if range_start >= block_start and range_end <= block_end:
@@ -114,23 +123,28 @@ def locators_and_ranges(data_locators, range_start, range_size, debug=False):
         i += 1
     return resp
 
-def replace_range(data_locators, new_range_start, new_range_size, new_locator, new_segment_offset, debug=False):
+def replace_range(data_locators, new_range_start, new_range_size, new_locator, new_segment_offset):
     '''
     Replace a file segment range with a new segment.
 
-    data_locators: list of Range objects, assumes that segments are in order and contigous
+    NOTE::
+    data_locators will be updated in place
 
-    new_range_start: start of range to replace in data_locators
+    :data_locators:
+      list of Range objects, assumes that segments are in order and contigous
 
-    new_range_size: size of range to replace in data_locators
+    :new_range_start:
+      start of range to replace in data_locators
 
-    new_locator: locator for new segment to be inserted
+    :new_range_size:
+      size of range to replace in data_locators
 
-    new_segment_offset: segment offset within the locator
+    :new_locator:
+      locator for new segment to be inserted
 
-    debug: print debugging details.
+    :new_segment_offset:
+      segment offset within the locator
 
-    !!! data_locators will be updated in place !!!
     '''
     if new_range_size == 0:
         return
@@ -152,7 +166,7 @@ def replace_range(data_locators, new_range_start, new_range_size, new_locator, n
             data_locators.append(Range(new_locator, new_range_start, new_range_size, new_segment_offset))
         return
 
-    i = first_block(data_locators, new_range_start, new_range_size, debug)
+    i = first_block(data_locators, new_range_start, new_range_size)
     if i is None:
         return
 
@@ -160,15 +174,16 @@ def replace_range(data_locators, new_range_start, new_range_size, new_locator, n
         dl = data_locators[i]
         old_segment_start = dl.range_start
         old_segment_end = old_segment_start + dl.range_size
-        if debug:
-            print locator, "range_start", new_range_start, "segment_start", old_segment_start, "range_end", new_range_end, "segment_end", old_segment_end
+        _logger.debug(dl, "range_start", new_range_start, "segment_start", old_segment_start, "range_end", new_range_end, "segment_end", old_segment_end)
         if new_range_end <= old_segment_start:
             # range ends before this segment starts, so don't look at any more locators
             break
 
         #if range_start >= old_segment_end:
-            # range starts after this segment ends, so go to next segment
-            # we should always start at the first segment due to the binary above, so this test is redundant
+            # Range starts after this segment ends, so go to next segment.
+            # We should always start at the first segment due to the binary
+            # search above, so this test is unnecessary but useful to help
+            # document the algorithm.
             #next
 
         if  old_segment_start <= new_range_start and new_range_end <= old_segment_end:

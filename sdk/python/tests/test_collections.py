@@ -816,12 +816,12 @@ class CollectionWriterTestCase(unittest.TestCase, CollectionTestMixin):
 
 
 class NewCollectionTestCase(unittest.TestCase, CollectionTestMixin):
-    def test_import_manifest(self):
+    def test_import_export_manifest(self):
         m1 = """. 5348b82a029fd9e971a811ce1f71360b+43 0:43:md5sum.txt
 . 085c37f02916da1cad16f93c54d899b7+41 0:41:md5sum.txt
 . 8b22da26f9f433dea0a10e5ec66d73ba+43 0:43:md5sum.txt
 """
-        self.assertEqual(". 5348b82a029fd9e971a811ce1f71360b+43 085c37f02916da1cad16f93c54d899b7+41 8b22da26f9f433dea0a10e5ec66d73ba+43 0:127:md5sum.txt\n", arvados.export_manifest(arvados.ReadOnlyCollection(m1)))
+        self.assertEqual(". 5348b82a029fd9e971a811ce1f71360b+43 085c37f02916da1cad16f93c54d899b7+41 8b22da26f9f433dea0a10e5ec66d73ba+43 0:127:md5sum.txt\n", arvados.export_manifest(arvados.import_manifest(m1)))
 
     def test_init_manifest(self):
         m1 = """. 5348b82a029fd9e971a811ce1f71360b+43 0:43:md5sum.txt
@@ -1023,10 +1023,67 @@ class NewCollectionTestCase(unittest.TestCase, CollectionTestMixin):
                                  c1.manifest_text()))
 
     def test_notify1(self):
-        c1 = arvados.WritableCollection(sync=SYNC_EXPLICIT)
+        c1 = arvados.WritableCollection()
         events = []
         c1.subscribe(lambda event, collection, name, item: events.append((event, collection, name, item)))
-        c1.find("")
+        f = c1.open("foo.txt", "w")
+        self.assertEqual(events[0], (arvados.collection.ADD, c1, "foo.txt", f.arvadosfile))
+
+    def test_open_w(self):
+        c1 = arvados.WritableCollection('. 781e5e245d69b566979b86e28d23f2c7+10 0:10:count1.txt')
+        self.assertEqual(c1["count.txt"].size(), 10)
+        c1.open("count.txt", "w").close()
+        self.assertEqual(c1["count.txt"].size(), 0)
+
+
+class CollectionCreateUpdateTest(run_test_server.TestCaseWithServers):
+    MAIN_SERVER = {}
+    KEEP_SERVER = {}
+
+    def test_create_and_save(self):
+        c = arvados.collection.createWritableCollection("hello world")
+        self.assertEquals(c.portable_data_hash(), "d41d8cd98f00b204e9800998ecf8427e+0")
+        self.assertEquals(c.api_response()["portable_data_hash"], "d41d8cd98f00b204e9800998ecf8427e+0" )
+
+        with c.open("count.txt", "w") as f:
+            f.write("0123456789")
+
+        self.assertEquals(c.manifest_text(), ". 781e5e245d69b566979b86e28d23f2c7+10 0:10:count.txt\n")
+
+        c.save()
+
+        c2 = arvados.api().collections().get(uuid=c._manifest_locator).execute()
+        self.assertTrue(re.match(r"^\. 781e5e245d69b566979b86e28d23f2c7\+10\+A[a-f0-9]{40}@[a-f0-9]{8} 0:10:count.txt$",
+                                 c2["manifest_text"]))
+
+
+    def test_create_and_update(self):
+        c1 = arvados.collection.createWritableCollection("hello world")
+        self.assertEquals(c1.portable_data_hash(), "d41d8cd98f00b204e9800998ecf8427e+0")
+        self.assertEquals(c1.api_response()["portable_data_hash"], "d41d8cd98f00b204e9800998ecf8427e+0" )
+        with c1.open("count.txt", "w") as f:
+            f.write("0123456789")
+
+        self.assertEquals(c1.manifest_text(), ". 781e5e245d69b566979b86e28d23f2c7+10 0:10:count.txt\n")
+
+        print c1.manifest_text()
+        c1.save()
+        print c1.manifest_text()
+
+        c2 = arvados.collection.WritableCollection(c1._manifest_locator)
+        with c2.open("count.txt", "w") as f:
+            f.write("abcdefg")
+
+        c2.save()
+
+        self.assertNotEqual(c1.portable_data_hash(), c2.portable_data_hash())
+
+        print c1.manifest_text()
+        c1.update()
+        print c1.manifest_text()
+
+        self.assertEqual(c1.portable_data_hash(), c2.portable_data_hash())
+
 
 if __name__ == '__main__':
     unittest.main()
