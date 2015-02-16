@@ -273,4 +273,25 @@ class CollectionsApiTest < ActionDispatch::IntegrationTest
       assert_equal first_item['description'], 'The quick_brown_fox jumps over the lazy_dog'
     end
   end
+
+  test "create and get collection with properties" do
+    # create collection to be searched for
+    signed_manifest = Collection.sign_manifest(". bad42fa702ae3ea7d888fef11b46f450+44 0:44:my_test_file.txt\n", api_token(:active))
+    post "/arvados/v1/collections", {
+      format: :json,
+      collection: {manifest_text: signed_manifest}.to_json,
+    }, auth(:active)
+    assert_response 200
+    assert_not_nil json_response['uuid']
+    assert_not_nil json_response['properties']
+    assert_empty json_response['properties']
+
+    # update collection's description
+    put "/arvados/v1/collections/#{json_response['uuid']}", {
+      format: :json,
+      collection: { properties: {'property_1' => 'value_1'} }
+    }, auth(:active)
+    assert_response :success
+    assert_equal 'value_1', json_response['properties']['property_1']
+  end
 end

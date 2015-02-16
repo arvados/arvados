@@ -715,4 +715,27 @@ EOS
       assert_equal (ask or 2), json_response['replication_desired']
     end
   end
+
+  test "get collection with properties" do
+    authorize_with :active
+    get :show, {id: collections(:collection_with_one_property).uuid}
+    assert_response :success
+    assert_not_nil json_response['uuid']
+    assert_equal 'value1', json_response['properties']['property1']
+  end
+
+  test "create collection with properties" do
+    authorize_with :active
+    manifest_text = ". d41d8cd98f00b204e9800998ecf8427e 0:0:foo.txt\n"
+    post :create, {
+      collection: {
+        manifest_text: manifest_text,
+        portable_data_hash: "d30fe8ae534397864cb96c544f4cf102+47",
+        properties: {'property_1' => 'value_1'}
+      }
+    }
+    assert_response :success
+    assert_not_nil json_response['uuid']
+    assert_equal 'value_1', json_response['properties']['property_1']
+  end
 end
