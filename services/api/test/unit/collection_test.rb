@@ -224,4 +224,13 @@ class CollectionTest < ActiveSupport::TestCase
       assert_not_nil c.replication_confirmed_at
     end
   end
+
+  test "create collection with properties" do
+    act_as_system_user do
+      c = Collection.create(manifest_text: ". acbd18db4cc2f85cedef654fccc4a4d8+3 0:3:foo\n",
+                            properties: {'property_1' => 'value_1'})
+      assert c.valid?
+      assert_equal 'value_1', c.properties['property_1']
+    end
+  end
 end

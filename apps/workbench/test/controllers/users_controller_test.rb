@@ -40,4 +40,27 @@ class UsersControllerTest < ActionController::TestCase
     assert_includes editables, true, "should have a writable repository"
     assert_includes editables, false, "should have a readonly repository"
   end
+
+  test "request shell access" do
+    user = api_fixture('users')['spectator']
+
+    ActionMailer::Base.deliveries = []
+
+    post :request_shell_access, {
+      id: user['uuid'],
+      format: 'js'
+    }, session_for(:spectator)
+    assert_response :success
+
+    full_name = "#{user['first_name']} #{user['last_name']}"
+    expected = "Shell account request from #{full_name} (#{user['email']}, #{user['uuid']})"
+    found_email = 0
+    ActionMailer::Base.deliveries.each do |email|
+      if email.subject.include?(expected)
+        found_email += 1
+        break
+      end
+    end
+    assert_equal 1, found_email, "Expected 1 email after requesting shell access"
+  end
 end

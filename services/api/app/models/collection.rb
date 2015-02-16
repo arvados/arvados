@@ -5,6 +5,8 @@ class Collection < ArvadosModel
   include KindAndEtag
   include CommonApiTemplate
 
+  serialize :properties, Hash
+
   before_validation :check_encoding
   before_validation :check_signatures
   before_validation :strip_manifest_text

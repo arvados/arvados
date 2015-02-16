@@ -284,7 +284,7 @@ def run_keep(blob_signing_key=None, enforce_permissions=False):
         keep_args['--enforce-permissions'] = 'true'
 
     api = arvados.api(
-        'v1', cache=False,
+        version='v1',
         host=os.environ['ARVADOS_API_HOST'],
         token=os.environ['ARVADOS_API_TOKEN'],
         insecure=True)
@@ -333,7 +333,7 @@ def run_keep_proxy():
         env=env)
 
     api = arvados.api(
-        'v1', cache=False,
+        version='v1',
         host=os.environ['ARVADOS_API_HOST'],
         token=admin_token,
         insecure=True)

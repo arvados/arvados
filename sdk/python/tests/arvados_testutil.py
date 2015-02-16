@@ -8,6 +8,7 @@ import httplib2
 import io
 import mock
 import os
+import Queue
 import requests
 import shutil
 import tempfile
@@ -19,6 +20,18 @@ TEST_HOST = '100::'
 
 skip_sleep = mock.patch('time.sleep', lambda n: None)  # clown'll eat me
 
+def queue_with(items):
+    """Return a thread-safe iterator that yields the given items.
+
+    +items+ can be given as an array or an iterator. If an iterator is
+    given, it will be consumed to fill the queue before queue_with()
+    returns.
+    """
+    queue = Queue.Queue()
+    for val in items:
+        queue.put(val)
+    return lambda *args, **kwargs: queue.get(block=False)
+
 # fake_httplib2_response and mock_responses
 # mock calls to httplib2.Http.request()
 def fake_httplib2_response(code, **headers):
@@ -27,8 +40,8 @@ def fake_httplib2_response(code, **headers):
     return httplib2.Response(headers)
 
 def mock_responses(body, *codes, **headers):
-    return mock.patch('httplib2.Http.request', side_effect=(
-            (fake_httplib2_response(code, **headers), body) for code in codes))
+    return mock.patch('httplib2.Http.request', side_effect=queue_with((
+        (fake_httplib2_response(code, **headers), body) for code in codes)))
 
 # fake_requests_response, mock_get_responses and mock_put_responses
 # mock calls to requests.get() and requests.put()
@@ -41,16 +54,16 @@ def fake_requests_response(code, body, **headers):
     return r
 
 def mock_get_responses(body, *codes, **headers):
-    return mock.patch('requests.get', side_effect=(
-        fake_requests_response(code, body, **headers) for code in codes))
+    return mock.patch('requests.get', side_effect=queue_with((
+        fake_requests_response(code, body, **headers) for code in codes)))
 
 def mock_put_responses(body, *codes, **headers):
-    return mock.patch('requests.put', side_effect=(
-        fake_requests_response(code, body, **headers) for code in codes))
+    return mock.patch('requests.put', side_effect=queue_with((
+        fake_requests_response(code, body, **headers) for code in codes)))
 
 def mock_requestslib_responses(method, body, *codes, **headers):
-    return mock.patch(method, side_effect=(
-        fake_requests_response(code, body, **headers) for code in codes))
+    return mock.patch(method, side_effect=queue_with((
+        fake_requests_response(code, body, **headers) for code in codes)))
 
 class MockStreamReader(object):
     def __init__(self, name='.', *data):
