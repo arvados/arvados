@@ -120,7 +120,9 @@ class CollectionsController < ApplicationController
     # purposes: it lets us return a useful status code for common errors, and
     # helps us figure out which token to provide to arv-get.
     coll = nil
-    tokens = [Thread.current[:arvados_api_token], params[:reader_token]].compact
+    tokens = [Thread.current[:arvados_api_token],
+              params[:reader_token],
+              (Rails.configuration.anonymous_user_token || nil)].compact
     usable_token = find_usable_token(tokens) do
       coll = Collection.find(params[:uuid])
     end
@@ -296,7 +298,9 @@ class CollectionsController < ApplicationController
     return nil
   end
 
-  def file_enumerator(opts)
+  # Note: several controller and integration tests rely on stubbing
+  # file_enumerator to return fake file content.
+  def file_enumerator opts
     FileStreamer.new opts
   end
 

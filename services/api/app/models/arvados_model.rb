@@ -102,6 +102,10 @@ class ArvadosModel < ActiveRecord::Base
     api_column_map
   end
 
+  def self.default_orders
+    ["#{table_name}.modified_at desc", "#{table_name}.uuid"]
+  end
+
   # If current user can manage the object, return an array of uuids of
   # users and groups that have permission to write the object. The
   # first two elements are always [self.owner_uuid, current user's

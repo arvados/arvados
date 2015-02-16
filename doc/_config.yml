@@ -49,6 +49,8 @@ navbar:
       - user/tutorials/tutorial-submit-job.html.textile.liquid
       - user/topics/tutorial-parallel.html.textile.liquid
       - user/topics/arv-docker.html.textile.liquid
+    - Develop a web service:
+      - user/topics/arv-web.html.textile.liquid
     - Reference:
       - user/topics/run-command.html.textile.liquid
       - user/reference/job-pipeline-ref.html.textile.liquid
@@ -67,6 +69,7 @@ navbar:
       - sdk/python/sdk-python.html.textile.liquid
       - sdk/python/python.html.textile.liquid
       - sdk/python/crunch-utility-libraries.html.textile.liquid
+      - sdk/python/events.html.textile.liquid
     - Perl:
       - sdk/perl/index.html.textile.liquid
     - Ruby:

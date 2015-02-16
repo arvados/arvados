@@ -47,10 +47,6 @@ module LoadParam
     end
   end
 
-  def default_orders
-    ["#{table_name}.modified_at desc"]
-  end
-
   # Load params[:limit], params[:offset] and params[:order]
   # into @limit, @offset, @orders
   def load_limit_offset_order_params
@@ -113,9 +109,11 @@ module LoadParam
       end
     end
 
-    if @orders.empty?
-      @orders = default_orders
-    end
+    # If the client-specified orders don't amount to a full ordering
+    # (e.g., [] or ['owner_uuid desc']), fall back on the default
+    # orders to ensure repeating the same request (possibly with
+    # different limit/offset) will return records in the same order.
+    @orders += model_class.default_orders
 
     case params[:select]
     when Array

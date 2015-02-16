@@ -166,6 +166,18 @@ class CollectionsControllerTest < ActionController::TestCase
                  "failed to get a correct file from Keep")
   end
 
+  test 'anonymous download' do
+    Rails.configuration.anonymous_user_token =
+      api_fixture('api_client_authorizations')['anonymous']['api_token']
+    expect_content = stub_file_content
+    get :show_file, {
+      uuid: api_fixture('collections')['user_agreement_in_anonymously_accessible_project']['uuid'],
+      file: 'GNU_General_Public_License,_version_3.pdf',
+    }
+    assert_response :success
+    assert_equal expect_content, response.body
+  end
+
   test "can't get a file from Keep without permission" do
     params = collection_params(:foo_file, 'foo')
     sess = session_for(:spectator)
@@ -342,5 +354,38 @@ class CollectionsControllerTest < ActionController::TestCase
 
     assert /#{stage3_id}&#45;&gt;#{stage3_out}/.match(used_by_svg)
 
+  end
+
+  test "view collection with empty properties" do
+    fixture_name = :collection_with_empty_properties
+    show_collection(fixture_name, :active)
+    assert_equal(api_fixture('collections')[fixture_name.to_s]['name'], assigns(:object).name)
+    assert_not_nil(assigns(:object).properties)
+    assert_empty(assigns(:object).properties)
+  end
+
+  test "view collection with one property" do
+    fixture_name = :collection_with_one_property
+    show_collection(fixture_name, :active)
+    fixture = api_fixture('collections')[fixture_name.to_s]
+    assert_equal(fixture['name'], assigns(:object).name)
+    assert_equal(fixture['properties'][0], assigns(:object).properties[0])
+  end
+
+  test "create collection with properties" do
+    post :create, {
+      collection: {
+        name: 'collection created with properties',
+        manifest_text: '',
+        properties: {
+          property_1: 'value_1'
+        },
+      },
+      format: :json
+    }, session_for(:active)
+    assert_response :success
+    assert_not_nil assigns(:object).uuid
+    assert_equal 'collection created with properties', assigns(:object).name
+    assert_equal 'value_1', assigns(:object).properties[:property_1]
   end
 end
