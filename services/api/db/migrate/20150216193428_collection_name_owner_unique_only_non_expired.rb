@@ -17,8 +17,7 @@ class CollectionNameOwnerUniqueOnlyNonExpired < ActiveRecord::Migration
   def down
     # it failed during up. is it going to pass now? should we do nothing?
     remove_index :collections, :name => 'collection_owner_uuid_name_unique' if !find_index.empty?
-    # and this is failing ...
-    # add_index(:collections, [:owner_uuid, :name], unique: true,
-    #          name: 'collection_owner_uuid_name_unique')
+    add_index(:collections, [:owner_uuid, :name], unique: true,
+              name: 'collection_owner_uuid_name_unique')
   end
 end
