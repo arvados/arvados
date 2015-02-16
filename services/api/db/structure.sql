@@ -169,7 +169,6 @@ CREATE TABLE collections (
     description character varying(524288),
     properties text,
     expires_at date,
-    redundancy_confirmed_by_client_uuid character varying(255),
     file_names character varying(8192)
 );
 
