@@ -271,14 +271,8 @@ class CollectionsController < ApplicationController
     if @updates && (@updates.keys - ["name", "description"]).empty?
       # exclude manifest_text since only name or description is being updated
       @object.manifest_text = nil
-      if @object.update_attributes @updates
-        show
-      else
-        self.render_error status: 422
-      end
-    else
-      super
     end
+    super
   end
 
   protected
