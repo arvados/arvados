@@ -710,23 +710,26 @@ class CollectionWriterTestCase(unittest.TestCase, CollectionTestMixin):
 
     def test_write_insufficient_replicas_via_disks(self):
         client = mock.MagicMock(name='api_client')
-        self.mock_keep_services(client, status=200, service_type='disk', count=2)
-        writer = self.foo_writer(api_client=client, replication=3)
         with self.mock_keep(
                 None, 200, 200,
                 **{'x-keep-replicas-stored': 1}) as keepmock:
+            self.mock_keep_services(client, status=200, service_type='disk', count=2)
+            writer = self.foo_writer(api_client=client, replication=3)
             with self.assertRaises(arvados.errors.KeepWriteError):
                 writer.manifest_text()
 
     def test_write_three_replicas(self):
         client = mock.MagicMock(name='api_client')
-        self.mock_keep_services(client, status=200, service_type='disk', count=6)
         with self.mock_keep(
                 None, 500, 500, 500, 200, 200, 200,
                 **{'x-keep-replicas-stored': 1}) as keepmock:
+            self.mock_keep_services(client, status=200, service_type='disk', count=6)
             writer = self.foo_writer(api_client=client, replication=3)
             writer.manifest_text()
-            self.assertEqual(6, keepmock.call_count)
+            # keepmock is the mock session constructor; keepmock.return_value
+            # is the mock session object, and keepmock.return_value.put is the
+            # actual mock method of interest.
+            self.assertEqual(6, keepmock.return_value.put.call_count)
 
     def test_write_whole_collection_through_retries(self):
         writer = self.foo_writer(num_retries=2)

@@ -53,6 +53,10 @@ def fake_requests_response(code, body, **headers):
     r.raw = io.BytesIO(body)
     return r
 
+# The following methods patch requests.Session(), where return_value is a mock
+# Session object.  The put/get attributes are set on mock Session, and the
+# desired put/get behavior is set on the put/get mocks.
+
 def mock_put_responses(body, *codes, **headers):
     m = mock.MagicMock()
     if isinstance(body, tuple):
