@@ -356,6 +356,39 @@ class CollectionsControllerTest < ActionController::TestCase
 
   end
 
+  test "view collection with empty properties" do
+    fixture_name = :collection_with_empty_properties
+    show_collection(fixture_name, :active)
+    assert_equal(api_fixture('collections')[fixture_name.to_s]['name'], assigns(:object).name)
+    assert_not_nil(assigns(:object).properties)
+    assert_empty(assigns(:object).properties)
+  end
+
+  test "view collection with one property" do
+    fixture_name = :collection_with_one_property
+    show_collection(fixture_name, :active)
+    fixture = api_fixture('collections')[fixture_name.to_s]
+    assert_equal(fixture['name'], assigns(:object).name)
+    assert_equal(fixture['properties'][0], assigns(:object).properties[0])
+  end
+
+  test "create collection with properties" do
+    post :create, {
+      collection: {
+        name: 'collection created with properties',
+        manifest_text: '',
+        properties: {
+          property_1: 'value_1'
+        },
+      },
+      format: :json
+    }, session_for(:active)
+    assert_response :success
+    assert_not_nil assigns(:object).uuid
+    assert_equal 'collection created with properties', assigns(:object).name
+    assert_equal 'value_1', assigns(:object).properties[:property_1]
+  end
+
   test "update description and check manifest_text is not lost" do
     collection = api_fixture("collections")["multilevel_collection_1"]
     post :update, {
