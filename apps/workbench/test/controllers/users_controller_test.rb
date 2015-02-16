@@ -41,6 +41,17 @@ class UsersControllerTest < ActionController::TestCase
     assert_includes editables, false, "should have a readonly repository"
   end
 
+  test "show repositories lists linked as well as owned repositories" do
+    get :manage_account, {}, session_for(:active)
+    assert_response :success
+    repos = assigns(:my_repositories)
+    assert repos
+    repo_writables = assigns(:repo_writable)
+    assert_not_empty repo_writables, "repo_writables should not be empty"
+    assert_includes repo_writables, api_fixture('repositories')['repository4']['uuid']  # writable by active
+    assert_includes repo_writables, api_fixture('repositories')['repository2']['uuid']  # owned by active
+  end
+
   test "request shell access" do
     user = api_fixture('users')['spectator']
 
