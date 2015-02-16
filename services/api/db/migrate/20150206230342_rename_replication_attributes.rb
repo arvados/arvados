@@ -25,6 +25,6 @@ class RenameReplicationAttributes < ActiveRecord::Migration
     Collection.reset_column_information
 
     execute "CREATE INDEX collections_full_text_search_idx ON collections USING gin(#{Collection.full_text_tsvector});"
-    add_index :collections, ["owner_uuid", "modified_by_client_uuid", "modified_by_user_uuid", "portable_data_hash", "redundancy_confirmed_by_client_uuid", "uuid", "name", "file_names"], name: 'collections_search_index'
+    add_index :collections, ["owner_uuid", "modified_by_client_uuid", "modified_by_user_uuid", "portable_data_hash", "uuid", "name", "file_names", "redundancy_confirmed_by_client_uuid"], name: 'collections_search_index'
   end
 end
