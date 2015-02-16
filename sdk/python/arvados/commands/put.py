@@ -408,12 +408,16 @@ def main(arguments=None, stdout=sys.stdout, stderr=sys.stderr):
         print >>stderr, error
         sys.exit(1)
 
-    # write_copies is how many copies of each data block we write to
-    # Keep. args.replication is how many copies we instruct Arvados to
-    # maintain (by passing it in collections().create() after all data
-    # is written).  If args.replication is given as None, it should
-    # stay None, but we still need to write a suitable number of
-    # copies to Keep.
+    # write_copies diverges from args.replication here.
+    # args.replication is how many copies we will instruct Arvados to
+    # maintain (by passing it in collections().create()) after all
+    # data is written -- and if None was given, we'll use None there.
+    # Meanwhile, write_copies is how many copies of each data block we
+    # write to Keep, which has to be a number.
+    #
+    # If we simply changed args.replication from None to a default
+    # here, we'd end up erroneously passing the default replication
+    # level (instead of None) to collections().create().
     write_copies = (args.replication or
                     api_client._rootDesc.get('defaultCollectionReplication', 2))
 
@@ -485,7 +489,7 @@ def main(arguments=None, stdout=sys.stdout, stderr=sys.stderr):
                 manifest_text = CollectionReader(manifest_text).manifest_text(normalize=True)
             replication_attr = 'replication_desired'
             if api_client._schema.schemas['Collection']['properties'].get(replication_attr, None) is None:
-                # API calls it 'redundancy' until #3410.
+                # API called it 'redundancy' before #3410.
                 replication_attr = 'redundancy'
             # Register the resulting collection in Arvados.
             collection = api_client.collections().create(

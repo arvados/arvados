@@ -214,7 +214,9 @@ class CollectionTest < ActiveSupport::TestCase
       new_manifest = c.signed_manifest_text
       new_manifest.sub!(/ \S+:bar/, '')
       new_manifest.sub!(/ acbd\S+/, '')
-      # We really deleted a block there, right?
+
+      # Confirm that we did just remove a block from the manifest (if
+      # not, this test would pass without testing the relevant case):
       assert_operator new_manifest.length+40, :<, c.signed_manifest_text.length
 
       assert c.update_attributes(manifest_text: new_manifest)
