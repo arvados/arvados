@@ -306,6 +306,7 @@ class CollectionDirectory(Directory):
             self._mtime = convertTime(collection.get('modified_at'))
         else:
             self.collection_locator = collection
+            self._mtime = 0
 
     def same(self, i):
         return i['uuid'] == self.collection_locator or i['portable_data_hash'] == self.collection_locator
