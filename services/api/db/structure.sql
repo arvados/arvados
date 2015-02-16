@@ -160,7 +160,6 @@ CREATE TABLE collections (
     modified_at timestamp without time zone,
     portable_data_hash character varying(255),
     redundancy integer,
-    redundancy_confirmed_by_client_uuid character varying(255),
     redundancy_confirmed_at timestamp without time zone,
     redundancy_confirmed_as integer,
     updated_at timestamp without time zone NOT NULL,
@@ -170,6 +169,7 @@ CREATE TABLE collections (
     description character varying(524288),
     properties text,
     expires_at date,
+    redundancy_confirmed_by_client_uuid character varying(255),
     file_names character varying(8192)
 );
 
@@ -1304,14 +1304,14 @@ CREATE INDEX authorized_keys_search_index ON authorized_keys USING btree (uuid, 
 -- Name: collection_owner_uuid_name_unique; Type: INDEX; Schema: public; Owner: -; Tablespace: 
 --
 
-CREATE UNIQUE INDEX collection_owner_uuid_name_unique ON collections USING btree (owner_uuid, name);
+CREATE UNIQUE INDEX collection_owner_uuid_name_unique ON collections USING btree (owner_uuid, name) WHERE (expires_at IS NULL);
 
 
 --
 -- Name: collections_full_text_search_idx; Type: INDEX; Schema: public; Owner: -; Tablespace: 
 --
 
-CREATE INDEX collections_full_text_search_idx ON collections USING gin (to_tsvector('english'::regconfig, (((((((((((((((((((COALESCE(owner_uuid, ''::character varying))::text || ' '::text) || (COALESCE(modified_by_client_uuid, ''::character varying))::text) || ' '::text) || (COALESCE(modified_by_user_uuid, ''::character varying))::text) || ' '::text) || (COALESCE(portable_data_hash, ''::character varying))::text) || ' '::text) || (COALESCE(redundancy_confirmed_by_client_uuid, ''::character varying))::text) || ' '::text) || (COALESCE(uuid, ''::character varying))::text) || ' '::text) || (COALESCE(name, ''::character varying))::text) || ' '::text) || (COALESCE(description, ''::character varying))::text) || ' '::text) || COALESCE(properties, ''::text)) || ' '::text) || (COALESCE(file_names, ''::character varying))::text)));
+CREATE INDEX collections_full_text_search_idx ON collections USING gin (to_tsvector('english'::regconfig, (((((((((((((((((COALESCE(owner_uuid, ''::character varying))::text || ' '::text) || (COALESCE(modified_by_client_uuid, ''::character varying))::text) || ' '::text) || (COALESCE(modified_by_user_uuid, ''::character varying))::text) || ' '::text) || (COALESCE(portable_data_hash, ''::character varying))::text) || ' '::text) || (COALESCE(uuid, ''::character varying))::text) || ' '::text) || (COALESCE(name, ''::character varying))::text) || ' '::text) || (COALESCE(description, ''::character varying))::text) || ' '::text) || COALESCE(properties, ''::text)) || ' '::text) || (COALESCE(redundancy_confirmed_by_client_uuid, ''::character varying))::text)));
 
 
 --
@@ -2358,3 +2358,5 @@ INSERT INTO schema_migrations (version) VALUES ('20150123142953');
 INSERT INTO schema_migrations (version) VALUES ('20150203180223');
 
 INSERT INTO schema_migrations (version) VALUES ('20150206210804');
+
+INSERT INTO schema_migrations (version) VALUES ('20150216193428');
