@@ -17,7 +17,7 @@ func LogRunInfo(arvLogger *logger.Logger) {
 		now := time.Now()
 		arvLogger.Update(func(p map[string]interface{}, e map[string]interface{}) {
 			runInfo := make(map[string]interface{})
-			runInfo["time_started"] = now
+			runInfo["started_at"] = now
 			runInfo["args"] = os.Args
 			hostname, err := os.Hostname()
 			if err != nil {
@@ -45,7 +45,7 @@ func FatalWithMessage(arvLogger *logger.Logger, message string) {
 	if arvLogger != nil {
 		arvLogger.FinalUpdate(func(p map[string]interface{}, e map[string]interface{}) {
 			p["FATAL"] = message
-			p["run_info"].(map[string]interface{})["time_finished"] = time.Now()
+			p["run_info"].(map[string]interface{})["finished_at"] = time.Now()
 		})
 	}
 

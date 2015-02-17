@@ -77,7 +77,7 @@ func main() {
 	// not wait for the timer before exiting.
 	if arvLogger != nil {
 		arvLogger.FinalUpdate(func(p map[string]interface{}, e map[string]interface{}) {
-			p["run_info"].(map[string]interface{})["time_finished"] = time.Now()
+			p["run_info"].(map[string]interface{})["finished_at"] = time.Now()
 		})
 	}
 }

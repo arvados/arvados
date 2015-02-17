@@ -77,15 +77,16 @@ func NewLogger(params LoggerParams) *Logger {
 		log.Fatal("Empty event type prefix in LoggerParams passed in to NewLogger()")
 	}
 
-	l := &Logger{data: make(map[string]interface{}),
-		params: params}
-	l.entry = make(map[string]interface{})
-	l.data["log"] = l.entry
-	l.properties = make(map[string]interface{})
-	l.entry["properties"] = l.properties
+	l := &Logger{
+		data: make(map[string]interface{}),
+		entry: make(map[string]interface{}),
+		properties: make(map[string]interface{}),
+		params: params,
+		workToDo: make(chan LogMutator, 10),
+		writeTicker: time.NewTicker(params.WriteInterval)}
 
-	l.workToDo = make(chan LogMutator, 10)
-	l.writeTicker = time.NewTicker(params.WriteInterval)
+	l.data["log"] = l.entry
+	l.entry["properties"] = l.properties
 
 	// Start the worker goroutine.
 	go l.work()

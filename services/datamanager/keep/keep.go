@@ -24,6 +24,7 @@ import (
 type ServerAddress struct {
 	Host string `json:"service_host"`
 	Port int    `json:"service_port"`
+	Uuid string `json:"uuid"`
 }
 
 // Info about a particular block returned by the server
@@ -84,6 +85,7 @@ func init() {
 		"File with the API token we should use to contact keep servers.")
 }
 
+// TODO(misha): Change this to include the UUID as well.
 func (s ServerAddress) String() string {
 	return fmt.Sprintf("%s:%d", s.Host, s.Port)
 }
@@ -239,9 +241,11 @@ func GetServerStatus(arvLogger *logger.Logger,
 		arvLogger.Update(func(p map[string]interface{}, e map[string]interface{}) {
 			keepInfo := p["keep_info"].(map[string]interface{})
 			serverInfo := make(map[string]interface{})
-			serverInfo["time_status_request_sent"] = now
+			serverInfo["status_request_sent_at"] = now
+			serverInfo["host"] = keepServer.Host
+			serverInfo["port"] = keepServer.Port
 
-			keepInfo[keepServer.String()] = serverInfo
+			keepInfo[keepServer.Uuid] = serverInfo
 		})
 	}
 
@@ -269,8 +273,8 @@ func GetServerStatus(arvLogger *logger.Logger,
 		now := time.Now()
 		arvLogger.Update(func(p map[string]interface{}, e map[string]interface{}) {
 			keepInfo := p["keep_info"].(map[string]interface{})
-			serverInfo := keepInfo[keepServer.String()].(map[string]interface{})
-			serverInfo["time_status_response_processed"] = now
+			serverInfo := keepInfo[keepServer.Uuid].(map[string]interface{})
+			serverInfo["status_response_processed_at"] = now
 			serverInfo["status"] = keepStatus
 		})
 	}
@@ -285,8 +289,8 @@ func CreateIndexRequest(arvLogger *logger.Logger,
 		now := time.Now()
 		arvLogger.Update(func(p map[string]interface{}, e map[string]interface{}) {
 			keepInfo := p["keep_info"].(map[string]interface{})
-			serverInfo := keepInfo[keepServer.String()].(map[string]interface{})
-			serverInfo["time_index_request_sent"] = now
+			serverInfo := keepInfo[keepServer.Uuid].(map[string]interface{})
+			serverInfo["index_request_sent_at"] = now
 		})
 	}
 
@@ -316,8 +320,8 @@ func ReadServerResponse(arvLogger *logger.Logger,
 		now := time.Now()
 		arvLogger.Update(func(p map[string]interface{}, e map[string]interface{}) {
 			keepInfo := p["keep_info"].(map[string]interface{})
-			serverInfo := keepInfo[keepServer.String()].(map[string]interface{})
-			serverInfo["time_index_response_received"] = now
+			serverInfo := keepInfo[keepServer.Uuid].(map[string]interface{})
+			serverInfo["index_response_received_at"] = now
 		})
 	}
 
@@ -352,7 +356,7 @@ func ReadServerResponse(arvLogger *logger.Logger,
 				if arvLogger != nil {
 					arvLogger.Update(func(p map[string]interface{}, e map[string]interface{}) {
 						keepInfo := p["keep_info"].(map[string]interface{})
-						serverInfo := keepInfo[keepServer.String()].(map[string]interface{})
+						serverInfo := keepInfo[keepServer.Uuid].(map[string]interface{})
 						var error_list []string
 						read_error_list, has_list := serverInfo["error_list"]
 						if has_list {
@@ -390,9 +394,9 @@ func ReadServerResponse(arvLogger *logger.Logger,
 			now := time.Now()
 			arvLogger.Update(func(p map[string]interface{}, e map[string]interface{}) {
 				keepInfo := p["keep_info"].(map[string]interface{})
-				serverInfo := keepInfo[keepServer.String()].(map[string]interface{})
+				serverInfo := keepInfo[keepServer.Uuid].(map[string]interface{})
 
-				serverInfo["time_processing_finished"] = now
+				serverInfo["processing_finished_at"] = now
 				serverInfo["lines_received"] = numLines
 				serverInfo["duplicates_seen"] = numDuplicates
 				serverInfo["size_disagreements_seen"] = numSizeDisagreements
