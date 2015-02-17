@@ -15,7 +15,7 @@ import unittest
 import run_test_server
 import arvados_testutil as tutil
 from arvados.ranges import Range, LocatorAndRange
-from arvados import import_manifest, export_manifest
+from arvados.collection import import_manifest, export_manifest, ReadOnlyCollection, WritableCollection
 from arvados.arvfile import SYNC_EXPLICIT
 
 class TestResumableWriter(arvados.ResumableCollectionWriter):
@@ -821,18 +821,18 @@ class NewCollectionTestCase(unittest.TestCase, CollectionTestMixin):
 . 085c37f02916da1cad16f93c54d899b7+41 0:41:md5sum.txt
 . 8b22da26f9f433dea0a10e5ec66d73ba+43 0:43:md5sum.txt
 """
-        self.assertEqual(". 5348b82a029fd9e971a811ce1f71360b+43 085c37f02916da1cad16f93c54d899b7+41 8b22da26f9f433dea0a10e5ec66d73ba+43 0:127:md5sum.txt\n", arvados.export_manifest(arvados.import_manifest(m1)))
+        self.assertEqual(". 5348b82a029fd9e971a811ce1f71360b+43 085c37f02916da1cad16f93c54d899b7+41 8b22da26f9f433dea0a10e5ec66d73ba+43 0:127:md5sum.txt\n", export_manifest(import_manifest(m1)))
 
     def test_init_manifest(self):
         m1 = """. 5348b82a029fd9e971a811ce1f71360b+43 0:43:md5sum.txt
 . 085c37f02916da1cad16f93c54d899b7+41 0:41:md5sum.txt
 . 8b22da26f9f433dea0a10e5ec66d73ba+43 0:43:md5sum.txt
 """
-        self.assertEqual(". 5348b82a029fd9e971a811ce1f71360b+43 085c37f02916da1cad16f93c54d899b7+41 8b22da26f9f433dea0a10e5ec66d73ba+43 0:127:md5sum.txt\n", arvados.export_manifest(arvados.ReadOnlyCollection(m1)))
+        self.assertEqual(". 5348b82a029fd9e971a811ce1f71360b+43 085c37f02916da1cad16f93c54d899b7+41 8b22da26f9f433dea0a10e5ec66d73ba+43 0:127:md5sum.txt\n", export_manifest(ReadOnlyCollection(m1)))
 
 
     def test_remove(self):
-        c = arvados.WritableCollection('. 781e5e245d69b566979b86e28d23f2c7+10 0:10:count1.txt 0:10:count2.txt\n')
+        c = WritableCollection('. 781e5e245d69b566979b86e28d23f2c7+10 0:10:count1.txt 0:10:count2.txt\n')
         self.assertEqual(". 781e5e245d69b566979b86e28d23f2c7+10 0:10:count1.txt 0:10:count2.txt\n", export_manifest(c))
         self.assertIn("count1.txt", c)
         c.remove("count1.txt")
@@ -840,51 +840,51 @@ class NewCollectionTestCase(unittest.TestCase, CollectionTestMixin):
         self.assertEqual(". 781e5e245d69b566979b86e28d23f2c7+10 0:10:count2.txt\n", export_manifest(c))
 
     def test_remove_in_subdir(self):
-        c = arvados.WritableCollection('. 781e5e245d69b566979b86e28d23f2c7+10 0:10:count1.txt\n./foo 781e5e245d69b566979b86e28d23f2c7+10 0:10:count2.txt\n')
+        c = WritableCollection('. 781e5e245d69b566979b86e28d23f2c7+10 0:10:count1.txt\n./foo 781e5e245d69b566979b86e28d23f2c7+10 0:10:count2.txt\n')
         c.remove("foo/count2.txt")
         self.assertEqual(". 781e5e245d69b566979b86e28d23f2c7+10 0:10:count1.txt\n", export_manifest(c))
 
     def test_remove_empty_subdir(self):
-        c = arvados.WritableCollection('. 781e5e245d69b566979b86e28d23f2c7+10 0:10:count1.txt\n./foo 781e5e245d69b566979b86e28d23f2c7+10 0:10:count2.txt\n')
+        c = WritableCollection('. 781e5e245d69b566979b86e28d23f2c7+10 0:10:count1.txt\n./foo 781e5e245d69b566979b86e28d23f2c7+10 0:10:count2.txt\n')
         c.remove("foo/count2.txt")
         c.remove("foo")
         self.assertEqual(". 781e5e245d69b566979b86e28d23f2c7+10 0:10:count1.txt\n", export_manifest(c))
 
     def test_remove_nonempty_subdir(self):
-        c = arvados.WritableCollection('. 781e5e245d69b566979b86e28d23f2c7+10 0:10:count1.txt\n./foo 781e5e245d69b566979b86e28d23f2c7+10 0:10:count2.txt\n')
+        c = WritableCollection('. 781e5e245d69b566979b86e28d23f2c7+10 0:10:count1.txt\n./foo 781e5e245d69b566979b86e28d23f2c7+10 0:10:count2.txt\n')
         with self.assertRaises(IOError):
             c.remove("foo")
         c.remove("foo", recursive=True)
         self.assertEqual(". 781e5e245d69b566979b86e28d23f2c7+10 0:10:count1.txt\n", export_manifest(c))
 
     def test_copy_to_dir1(self):
-        c = arvados.WritableCollection('. 781e5e245d69b566979b86e28d23f2c7+10 0:10:count1.txt\n')
+        c = WritableCollection('. 781e5e245d69b566979b86e28d23f2c7+10 0:10:count1.txt\n')
         c.copy("count1.txt", "foo/count2.txt")
         self.assertEqual(". 781e5e245d69b566979b86e28d23f2c7+10 0:10:count1.txt\n./foo 781e5e245d69b566979b86e28d23f2c7+10 0:10:count2.txt\n", export_manifest(c))
 
     def test_copy_to_dir2(self):
-        c = arvados.WritableCollection('. 781e5e245d69b566979b86e28d23f2c7+10 0:10:count1.txt\n')
+        c = WritableCollection('. 781e5e245d69b566979b86e28d23f2c7+10 0:10:count1.txt\n')
         c.copy("count1.txt", "foo")
         self.assertEqual(". 781e5e245d69b566979b86e28d23f2c7+10 0:10:count1.txt\n./foo 781e5e245d69b566979b86e28d23f2c7+10 0:10:count1.txt\n", export_manifest(c))
 
     def test_copy_to_dir2(self):
-        c = arvados.WritableCollection('. 781e5e245d69b566979b86e28d23f2c7+10 0:10:count1.txt\n')
+        c = WritableCollection('. 781e5e245d69b566979b86e28d23f2c7+10 0:10:count1.txt\n')
         c.copy("count1.txt", "foo/")
         self.assertEqual(". 781e5e245d69b566979b86e28d23f2c7+10 0:10:count1.txt\n./foo 781e5e245d69b566979b86e28d23f2c7+10 0:10:count1.txt\n", export_manifest(c))
 
     def test_copy_file(self):
-        c = arvados.WritableCollection('. 781e5e245d69b566979b86e28d23f2c7+10 0:10:count1.txt\n')
+        c = WritableCollection('. 781e5e245d69b566979b86e28d23f2c7+10 0:10:count1.txt\n')
         c.copy("count1.txt", "count2.txt")
         self.assertEqual(". 781e5e245d69b566979b86e28d23f2c7+10 0:10:count1.txt 0:10:count2.txt\n", c.manifest_text())
 
     def test_clone(self):
-        c = arvados.WritableCollection('. 781e5e245d69b566979b86e28d23f2c7+10 0:10:count1.txt\n./foo 781e5e245d69b566979b86e28d23f2c7+10 0:10:count2.txt\n')
+        c = WritableCollection('. 781e5e245d69b566979b86e28d23f2c7+10 0:10:count1.txt\n./foo 781e5e245d69b566979b86e28d23f2c7+10 0:10:count2.txt\n')
         cl = c.clone()
         self.assertEqual(". 781e5e245d69b566979b86e28d23f2c7+10 0:10:count1.txt\n./foo 781e5e245d69b566979b86e28d23f2c7+10 0:10:count2.txt\n", export_manifest(cl))
 
     def test_diff1(self):
-        c1 = arvados.WritableCollection('. 781e5e245d69b566979b86e28d23f2c7+10 0:10:count1.txt\n')
-        c2 = arvados.WritableCollection('. 5348b82a029fd9e971a811ce1f71360b+43 0:10:count2.txt\n')
+        c1 = WritableCollection('. 781e5e245d69b566979b86e28d23f2c7+10 0:10:count1.txt\n')
+        c2 = WritableCollection('. 5348b82a029fd9e971a811ce1f71360b+43 0:10:count2.txt\n')
         d = c2.diff(c1)
         self.assertEqual(d, [('del', './count2.txt', c2["count2.txt"]),
                              ('add', './count1.txt', c1["count1.txt"])])
@@ -896,8 +896,8 @@ class NewCollectionTestCase(unittest.TestCase, CollectionTestMixin):
         self.assertEqual(c1.manifest_text(), c2.manifest_text())
 
     def test_diff2(self):
-        c1 = arvados.WritableCollection('. 781e5e245d69b566979b86e28d23f2c7+10 0:10:count1.txt\n')
-        c2 = arvados.WritableCollection('. 781e5e245d69b566979b86e28d23f2c7+10 0:10:count1.txt\n')
+        c1 = WritableCollection('. 781e5e245d69b566979b86e28d23f2c7+10 0:10:count1.txt\n')
+        c2 = WritableCollection('. 781e5e245d69b566979b86e28d23f2c7+10 0:10:count1.txt\n')
         d = c2.diff(c1)
         self.assertEqual(d, [])
         d = c1.diff(c2)
@@ -908,8 +908,8 @@ class NewCollectionTestCase(unittest.TestCase, CollectionTestMixin):
         self.assertEqual(c1.manifest_text(), c2.manifest_text())
 
     def test_diff3(self):
-        c1 = arvados.WritableCollection('. 781e5e245d69b566979b86e28d23f2c7+10 0:10:count1.txt\n')
-        c2 = arvados.WritableCollection('. 5348b82a029fd9e971a811ce1f71360b+43 0:10:count1.txt\n')
+        c1 = WritableCollection('. 781e5e245d69b566979b86e28d23f2c7+10 0:10:count1.txt\n')
+        c2 = WritableCollection('. 5348b82a029fd9e971a811ce1f71360b+43 0:10:count1.txt\n')
         d = c2.diff(c1)
         self.assertEqual(d, [('mod', './count1.txt', c2["count1.txt"], c1["count1.txt"])])
         d = c1.diff(c2)
@@ -920,8 +920,8 @@ class NewCollectionTestCase(unittest.TestCase, CollectionTestMixin):
         self.assertEqual(c1.manifest_text(), c2.manifest_text())
 
     def test_diff4(self):
-        c1 = arvados.WritableCollection('. 781e5e245d69b566979b86e28d23f2c7+10 0:10:count1.txt\n')
-        c2 = arvados.WritableCollection('. 781e5e245d69b566979b86e28d23f2c7+10 5348b82a029fd9e971a811ce1f71360b+43 0:10:count1.txt 10:20:count2.txt\n')
+        c1 = WritableCollection('. 781e5e245d69b566979b86e28d23f2c7+10 0:10:count1.txt\n')
+        c2 = WritableCollection('. 781e5e245d69b566979b86e28d23f2c7+10 5348b82a029fd9e971a811ce1f71360b+43 0:10:count1.txt 10:20:count2.txt\n')
         d = c2.diff(c1)
         self.assertEqual(d, [('del', './count2.txt', c2["count2.txt"])])
         d = c1.diff(c2)
@@ -932,8 +932,8 @@ class NewCollectionTestCase(unittest.TestCase, CollectionTestMixin):
         self.assertEqual(c1.manifest_text(), c2.manifest_text())
 
     def test_diff5(self):
-        c1 = arvados.WritableCollection('. 781e5e245d69b566979b86e28d23f2c7+10 0:10:count1.txt\n')
-        c2 = arvados.WritableCollection('. 781e5e245d69b566979b86e28d23f2c7+10 0:10:count1.txt\n./foo 5348b82a029fd9e971a811ce1f71360b+43 0:10:count2.txt\n')
+        c1 = WritableCollection('. 781e5e245d69b566979b86e28d23f2c7+10 0:10:count1.txt\n')
+        c2 = WritableCollection('. 781e5e245d69b566979b86e28d23f2c7+10 0:10:count1.txt\n./foo 5348b82a029fd9e971a811ce1f71360b+43 0:10:count2.txt\n')
         d = c2.diff(c1)
         self.assertEqual(d, [('del', './foo', c2["foo"])])
         d = c1.diff(c2)
@@ -944,8 +944,8 @@ class NewCollectionTestCase(unittest.TestCase, CollectionTestMixin):
         self.assertEqual(c1.manifest_text(), c2.manifest_text())
 
     def test_diff6(self):
-        c1 = arvados.WritableCollection('. 781e5e245d69b566979b86e28d23f2c7+10 0:10:count1.txt\n./foo 5348b82a029fd9e971a811ce1f71360b+43 0:10:count2.txt\n')
-        c2 = arvados.WritableCollection('. 781e5e245d69b566979b86e28d23f2c7+10 0:10:count1.txt\n./foo 5348b82a029fd9e971a811ce1f71360b+43 0:3:count3.txt\n')
+        c1 = WritableCollection('. 781e5e245d69b566979b86e28d23f2c7+10 0:10:count1.txt\n./foo 5348b82a029fd9e971a811ce1f71360b+43 0:10:count2.txt\n')
+        c2 = WritableCollection('. 781e5e245d69b566979b86e28d23f2c7+10 0:10:count1.txt\n./foo 5348b82a029fd9e971a811ce1f71360b+43 0:3:count3.txt\n')
 
         d = c2.diff(c1)
         self.assertEqual(d, [('del', './foo/count3.txt', c2.find("foo/count3.txt")),
@@ -959,8 +959,8 @@ class NewCollectionTestCase(unittest.TestCase, CollectionTestMixin):
         self.assertEqual(c1.manifest_text(), c2.manifest_text())
 
     def test_diff7(self):
-        c1 = arvados.WritableCollection('. 781e5e245d69b566979b86e28d23f2c7+10 0:10:count1.txt\n./foo 5348b82a029fd9e971a811ce1f71360b+43 0:10:count2.txt\n')
-        c2 = arvados.WritableCollection('. 781e5e245d69b566979b86e28d23f2c7+10 0:10:count1.txt 0:3:foo\n')
+        c1 = WritableCollection('. 781e5e245d69b566979b86e28d23f2c7+10 0:10:count1.txt\n./foo 5348b82a029fd9e971a811ce1f71360b+43 0:10:count2.txt\n')
+        c2 = WritableCollection('. 781e5e245d69b566979b86e28d23f2c7+10 0:10:count1.txt 0:3:foo\n')
         d = c2.diff(c1)
         self.assertEqual(d, [('mod', './foo', c2["foo"], c1["foo"])])
         d = c1.diff(c2)
@@ -971,8 +971,8 @@ class NewCollectionTestCase(unittest.TestCase, CollectionTestMixin):
         self.assertEqual(c1.manifest_text(), c2.manifest_text())
 
     def test_conflict1(self):
-        c1 = arvados.WritableCollection('. 781e5e245d69b566979b86e28d23f2c7+10 0:10:count1.txt\n')
-        c2 = arvados.WritableCollection('. 5348b82a029fd9e971a811ce1f71360b+43 0:10:count2.txt\n')
+        c1 = WritableCollection('. 781e5e245d69b566979b86e28d23f2c7+10 0:10:count1.txt\n')
+        c2 = WritableCollection('. 5348b82a029fd9e971a811ce1f71360b+43 0:10:count2.txt\n')
         d = c1.diff(c2)
         self.assertEqual(d, [('del', './count1.txt', c1["count1.txt"]),
                              ('add', './count2.txt', c2["count2.txt"])])
@@ -984,8 +984,8 @@ class NewCollectionTestCase(unittest.TestCase, CollectionTestMixin):
         self.assertEqual(c1.manifest_text(), ". 95ebc3c7b3b9f1d2c40fec14415d3cb8+5 5348b82a029fd9e971a811ce1f71360b+43 0:5:count1.txt 5:10:count2.txt\n")
 
     def test_conflict2(self):
-        c1 = arvados.WritableCollection('. 781e5e245d69b566979b86e28d23f2c7+10 0:10:count1.txt')
-        c2 = arvados.WritableCollection('. 5348b82a029fd9e971a811ce1f71360b+43 0:10:count1.txt')
+        c1 = WritableCollection('. 781e5e245d69b566979b86e28d23f2c7+10 0:10:count1.txt')
+        c2 = WritableCollection('. 5348b82a029fd9e971a811ce1f71360b+43 0:10:count1.txt')
         d = c1.diff(c2)
         self.assertEqual(d, [('mod', './count1.txt', c1["count1.txt"], c2["count1.txt"])])
         with c1.open("count1.txt", "w") as f:
@@ -997,8 +997,8 @@ class NewCollectionTestCase(unittest.TestCase, CollectionTestMixin):
                                  c1.manifest_text()))
 
     def test_conflict3(self):
-        c1 = arvados.WritableCollection('. 781e5e245d69b566979b86e28d23f2c7+10 0:10:count2.txt\n')
-        c2 = arvados.WritableCollection('. 5348b82a029fd9e971a811ce1f71360b+43 0:10:count1.txt\n')
+        c1 = WritableCollection('. 781e5e245d69b566979b86e28d23f2c7+10 0:10:count2.txt\n')
+        c2 = WritableCollection('. 5348b82a029fd9e971a811ce1f71360b+43 0:10:count1.txt\n')
         d = c1.diff(c2)
         self.assertEqual(d, [('del', './count2.txt', c1["count2.txt"]),
                              ('add', './count1.txt', c2["count1.txt"])])
@@ -1011,8 +1011,8 @@ class NewCollectionTestCase(unittest.TestCase, CollectionTestMixin):
                                  c1.manifest_text()))
 
     def test_conflict4(self):
-        c1 = arvados.WritableCollection('. 781e5e245d69b566979b86e28d23f2c7+10 0:10:count1.txt')
-        c2 = arvados.WritableCollection('. 5348b82a029fd9e971a811ce1f71360b+43 0:10:count1.txt')
+        c1 = WritableCollection('. 781e5e245d69b566979b86e28d23f2c7+10 0:10:count1.txt')
+        c2 = WritableCollection('. 5348b82a029fd9e971a811ce1f71360b+43 0:10:count1.txt')
         d = c1.diff(c2)
         self.assertEqual(d, [('mod', './count1.txt', c1["count1.txt"], c2["count1.txt"])])
         c1.remove("count1.txt")
@@ -1023,17 +1023,17 @@ class NewCollectionTestCase(unittest.TestCase, CollectionTestMixin):
                                  c1.manifest_text()))
 
     def test_notify1(self):
-        c1 = arvados.WritableCollection()
+        c1 = WritableCollection()
         events = []
         c1.subscribe(lambda event, collection, name, item: events.append((event, collection, name, item)))
         f = c1.open("foo.txt", "w")
         self.assertEqual(events[0], (arvados.collection.ADD, c1, "foo.txt", f.arvadosfile))
 
     def test_open_w(self):
-        c1 = arvados.WritableCollection('. 781e5e245d69b566979b86e28d23f2c7+10 0:10:count1.txt')
-        self.assertEqual(c1["count.txt"].size(), 10)
-        c1.open("count.txt", "w").close()
-        self.assertEqual(c1["count.txt"].size(), 0)
+        c1 = WritableCollection(". 781e5e245d69b566979b86e28d23f2c7+10 0:10:count1.txt\n")
+        self.assertEqual(c1["count1.txt"].size(), 10)
+        c1.open("count1.txt", "w").close()
+        self.assertEqual(c1["count1.txt"].size(), 0)
 
 
 class CollectionCreateUpdateTest(run_test_server.TestCaseWithServers):
@@ -1056,6 +1056,40 @@ class CollectionCreateUpdateTest(run_test_server.TestCaseWithServers):
         self.assertTrue(re.match(r"^\. 781e5e245d69b566979b86e28d23f2c7\+10\+A[a-f0-9]{40}@[a-f0-9]{8} 0:10:count.txt$",
                                  c2["manifest_text"]))
 
+    def test_create_diff_apply(self):
+        c1 = arvados.collection.createWritableCollection("hello world")
+        self.assertEquals(c1.portable_data_hash(), "d41d8cd98f00b204e9800998ecf8427e+0")
+        self.assertEquals(c1.api_response()["portable_data_hash"], "d41d8cd98f00b204e9800998ecf8427e+0" )
+        with c1.open("count.txt", "w") as f:
+            f.write("0123456789")
+
+        self.assertEquals(c1.manifest_text(), ". 781e5e245d69b566979b86e28d23f2c7+10 0:10:count.txt\n")
+
+        c1.save()
+
+        c2 = WritableCollection(c1._manifest_locator)
+        with c2.open("count.txt", "w") as f:
+            f.write("abcdefg")
+
+        diff = c1.diff(c2)
+
+        self.assertEqual(diff[0], (arvados.collection.MOD, u'./count.txt', c1["count.txt"], c2["count.txt"]))
+
+        c1.apply(diff)
+        self.assertEqual(c1.portable_data_hash(), c2.portable_data_hash())
+
+    def test_diff_apply_with_token(self):
+        baseline = ReadOnlyCollection(". 781e5e245d69b566979b86e28d23f2c7+10+A715fd31f8111894f717eb1003c1b0216799dd9ec@54f5dd1a 0:10:count.txt\n")
+        c = WritableCollection(". 781e5e245d69b566979b86e28d23f2c7+10 0:10:count.txt\n")
+        other = ReadOnlyCollection(". 7ac66c0f148de9519b8bd264312c4d64+7+A715fd31f8111894f717eb1003c1b0216799dd9ec@54f5dd1a 0:7:count.txt\n")
+
+        diff = baseline.diff(other)
+        self.assertEqual(diff, [('mod', u'./count.txt', c["count.txt"], other["count.txt"])])
+
+        c.apply(diff)
+
+        self.assertEqual(c.manifest_text(), ". 7ac66c0f148de9519b8bd264312c4d64+7+A715fd31f8111894f717eb1003c1b0216799dd9ec@54f5dd1a 0:7:count.txt\n")
+
 
     def test_create_and_update(self):
         c1 = arvados.collection.createWritableCollection("hello world")
@@ -1066,9 +1100,7 @@ class CollectionCreateUpdateTest(run_test_server.TestCaseWithServers):
 
         self.assertEquals(c1.manifest_text(), ". 781e5e245d69b566979b86e28d23f2c7+10 0:10:count.txt\n")
 
-        print c1.manifest_text()
         c1.save()
-        print c1.manifest_text()
 
         c2 = arvados.collection.WritableCollection(c1._manifest_locator)
         with c2.open("count.txt", "w") as f:
@@ -1077,12 +1109,31 @@ class CollectionCreateUpdateTest(run_test_server.TestCaseWithServers):
         c2.save()
 
         self.assertNotEqual(c1.portable_data_hash(), c2.portable_data_hash())
-
-        print c1.manifest_text()
         c1.update()
-        print c1.manifest_text()
-
         self.assertEqual(c1.portable_data_hash(), c2.portable_data_hash())
+
+
+    def test_create_and_update_with_conflict(self):
+        c1 = arvados.collection.createWritableCollection("hello world")
+        self.assertEquals(c1.portable_data_hash(), "d41d8cd98f00b204e9800998ecf8427e+0")
+        self.assertEquals(c1.api_response()["portable_data_hash"], "d41d8cd98f00b204e9800998ecf8427e+0" )
+        with c1.open("count.txt", "w") as f:
+            f.write("0123456789")
+
+        self.assertEquals(c1.manifest_text(), ". 781e5e245d69b566979b86e28d23f2c7+10 0:10:count.txt\n")
+
+        c1.save()
+        with c1.open("count.txt", "w") as f:
+            f.write("XYZ")
+
+        c2 = arvados.collection.WritableCollection(c1._manifest_locator)
+        with c2.open("count.txt", "w") as f:
+            f.write("abcdefg")
+
+        c2.save()
+
+        c1.update()
+        self.assertTrue(re.match(r"\. e65075d550f9b5bf9992fa1d71a131be\+3 7ac66c0f148de9519b8bd264312c4d64\+7\+A[a-f0-9]{40}@[a-f0-9]{8} 0:3:count.txt 3:7:count.txt~conflict-\d\d\d\d-\d\d-\d\d-\d\d:\d\d:\d\d~$", c1.manifest_text()))
 
 
 if __name__ == '__main__':

@@ -1037,7 +1037,7 @@ class SynchronizedCollectionBase(CollectionBase):
         """
         changes = []
         if holding_collection is None:
-            holding_collection = Collection(api_client=self._my_api(), keep_client=self._my_keep(), sync=SYNC_READONLY)
+            holding_collection = Collection(api_client=self._my_api(), keep_client=self._my_keep(), sync=SYNC_EXPLICIT)
         for k in self:
             if k not in end_collection:
                changes.append((DEL, os.path.join(prefix, k), self[k].clone(holding_collection)))
@@ -1265,7 +1265,7 @@ class Collection(SynchronizedCollectionBase):
             response = self._my_api().collections().get(uuid=self._manifest_locator).execute(num_retries=num_retries)
             other = import_manifest(response["manifest_text"])
         baseline = import_manifest(self._manifest_text)
-        self.apply(other.diff(baseline))
+        self.apply(baseline.diff(other))
 
     @synchronized
     def _my_api(self):
@@ -1372,11 +1372,11 @@ class Collection(SynchronizedCollectionBase):
     def clone(self, new_parent=None, new_sync=SYNC_READONLY, new_config=None):
         if new_config is None:
             new_config = self._config
-        newcollection = Collection(parent=new_parent, apiconfig=new_config, sync=new_sync)
+        newcollection = Collection(parent=new_parent, apiconfig=new_config, sync=SYNC_EXPLICIT)
         if new_sync == SYNC_READONLY:
             newcollection.lock = NoopLock()
-        newcollection._items = {}
         self._cloneinto(newcollection)
+        newcollection._sync = new_sync
         return newcollection
 
     @synchronized
