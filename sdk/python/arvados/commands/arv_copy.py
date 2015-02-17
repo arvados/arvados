@@ -220,10 +220,12 @@ def copy_pipeline_instance(pi_uuid, src, dst, args):
     pi['description'] = "Pipeline copied from {}\n\n{}".format(
         pi_uuid,
         pi['description'] if pi.get('description', None) else '')
+
     if args.project_uuid:
         pi['owner_uuid'] = args.project_uuid
     else:
         del pi['owner_uuid']
+
     del pi['uuid']
 
     new_pi = dst.pipeline_instances().create(body=pi, ensure_unique_name=True).execute()
@@ -258,7 +260,11 @@ def copy_pipeline_template(pt_uuid, src, dst, args):
         pt['description'] if pt.get('description', None) else '')
     pt['name'] = "{} copied from {}".format(pt.get('name', ''), pt_uuid)
     del pt['uuid']
-    del pt['owner_uuid']
+
+    if args.project_uuid:
+        pt['owner_uuid'] = args.project_uuid
+    elif 'owner_uuid' in pt:
+        del pt['owner_uuid']
 
     return dst.pipeline_templates().create(body=pt, ensure_unique_name=True).execute()
 
@@ -463,9 +469,14 @@ def copy_collection(obj_uuid, src, dst, args):
 
     if 'uuid' in c:
         del c['uuid']
-    if 'owner_uuid' in c:
+
+    if args.project_uuid:
+        c['owner_uuid'] = args.project_uuid
+    elif 'owner_uuid' in c:
         del c['owner_uuid']
+
     c['manifest_text'] = dst_manifest
+
     return dst.collections().create(body=c, ensure_unique_name=True).execute()
 
 # copy_git_repo(src_git_repo, src, dst, dst_git_repo, script_version)
@@ -565,22 +576,26 @@ def copy_docker_image(docker_image, docker_image_tag, src, dst, args):
 
     # Create docker_image_repo+tag and docker_image_hash links
     # at the destination.
-    lk = dst.links().create(
-        body={
-            'head_uuid': dst_image_col['uuid'],
-            'link_class': 'docker_image_repo+tag',
-            'name': "{}:{}".format(docker_image, docker_image_tag),
-        }
-    ).execute(num_retries=args.retries)
+    body={
+        'head_uuid': dst_image_col['uuid'],
+        'link_class': 'docker_image_repo+tag',
+        'name': "{}:{}".format(docker_image, docker_image_tag),
+    }
+    if args.project_uuid:
+        body['owner_uuid'] = args.project_uuid
+
+    lk = dst.links().create(body=body).execute(num_retries=args.retries)
     logger.debug('created dst link {}'.format(lk))
 
-    lk = dst.links().create(
-        body={
-            'head_uuid': dst_image_col['uuid'],
-            'link_class': 'docker_image_hash',
-            'name': dst_image_col['portable_data_hash'],
-        }
-    ).execute(num_retries=args.retries)
+    body={
+        'head_uuid': dst_image_col['uuid'],
+        'link_class': 'docker_image_hash',
+        'name': dst_image_col['portable_data_hash'],
+    }
+    if args.project_uuid:
+        body['owner_uuid'] = args.project_uuid
+
+    lk = dst.links().create(body=body).execute(num_retries=args.retries)
     logger.debug('created dst link {}'.format(lk))
 
 
