@@ -1408,7 +1408,7 @@ class Collection(SynchronizedCollectionBase):
         """
         if self.modified():
             if not self._has_collection_uuid():
-                raise AssertionError("Collection manifest_locator must be a collection uuid.  Use save_as() for new collections.")
+                raise AssertionError("Collection manifest_locator must be a collection uuid.  Use save_new() for new collections.")
             self._my_block_manager().commit_all()
             if merge:
                 self.update()
@@ -1420,7 +1420,7 @@ class Collection(SynchronizedCollectionBase):
                 body={'manifest_text': text}
                 ).execute(
                     num_retries=num_retries)
-            self._manifest_text = text
+            self._manifest_text = self._api_response["manifest_text"]
             self.set_unmodified()
 
     @must_be_writable
@@ -1463,6 +1463,7 @@ class Collection(SynchronizedCollectionBase):
                 body["owner_uuid"] = owner_uuid
 
             self._api_response = self._my_api().collections().create(ensure_unique_name=ensure_unique_name, body=body).execute(num_retries=num_retries)
+            text = self._api_response["manifest_text"]
 
             if self.events:
                 self.events.unsubscribe(filters=[["object_uuid", "=", self._manifest_locator]])
