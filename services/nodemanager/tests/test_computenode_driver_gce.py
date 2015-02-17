@@ -73,13 +73,17 @@ class GCEComputeNodeDriverTestCase(testutil.DriverTestMixin, unittest.TestCase):
         driver = self.new_driver(list_kwargs={'tags': 'good, great'})
         self.assertItemsEqual(['5', '6'], [n.id for n in driver.list_nodes()])
 
-    def check_sync_node_updates_hostname_tag(self, plain_metadata):
-        start_metadata = {
+    def build_gce_metadata(self, metadata_dict):
+        # Convert a plain metadata dictionary to the GCE data structure.
+        return {
             'kind': 'compute#metadata',
             'fingerprint': 'testprint',
-            'items': [{'key': key, 'value': plain_metadata[key]}
-                      for key in plain_metadata],
+            'items': [{'key': key, 'value': metadata_dict[key]}
+                      for key in metadata_dict],
             }
+
+    def check_sync_node_updates_hostname_tag(self, plain_metadata):
+        start_metadata = self.build_gce_metadata(plain_metadata)
         arv_node = testutil.arvados_node_mock(1)
         cloud_node = testutil.cloud_node_mock(
             2, metadata=start_metadata.copy(),
@@ -115,32 +119,22 @@ class GCEComputeNodeDriverTestCase(testutil.DriverTestMixin, unittest.TestCase):
         self.assertIs(err_check.exception.__class__, Exception)
         self.assertIn('sync error test', str(err_check.exception))
 
-    def test_node_create_time_static(self):
+    def test_node_create_time_zero_for_unknown_nodes(self):
         node = testutil.cloud_node_mock()
-        with mock.patch('time.time', return_value=1) as time_mock:
-            result1 = gce.ComputeNodeDriver.node_start_time(node)
-            time_mock.return_value += 1
-            self.assertEqual(result1,
-                             gce.ComputeNodeDriver.node_start_time(node))
+        self.assertEqual(0, gce.ComputeNodeDriver.node_start_time(node))
 
-    def test_node_create_time_varies_by_node(self):
-        node1 = testutil.cloud_node_mock(1)
-        node2 = testutil.cloud_node_mock(2)
-        with mock.patch('time.time', return_value=1) as time_mock:
-            start_time1 = gce.ComputeNodeDriver.node_start_time(node1)
-            time_mock.return_value += 1
-            self.assertNotEqual(start_time1,
-                                gce.ComputeNodeDriver.node_start_time(node2))
+    def test_node_create_time_for_known_node(self):
+        node = testutil.cloud_node_mock(metadata=self.build_gce_metadata(
+                {'booted_at': '1970-01-01T00:01:05Z'}))
+        self.assertEqual(65, gce.ComputeNodeDriver.node_start_time(node))
 
-    def test_node_create_time_not_remembered_after_delete(self):
-        node = testutil.cloud_node_mock()
+    def test_node_create_time_recorded_when_node_boots(self):
+        start_time = time.strftime('%Y-%m-%dT%H:%M:%SZ', time.gmtime())
+        arv_node = testutil.arvados_node_mock()
         driver = self.new_driver()
-        with mock.patch('time.time', return_value=1) as time_mock:
-            result1 = gce.ComputeNodeDriver.node_start_time(node)
-            driver.destroy_node(node)
-            time_mock.return_value += 1
-            self.assertNotEqual(result1,
-                                gce.ComputeNodeDriver.node_start_time(node))
+        driver.create_node(testutil.MockSize(1), arv_node)
+        metadata = self.driver_mock().create_node.call_args[1]['ex_metadata']
+        self.assertLessEqual(start_time, metadata.get('booted_at'))
 
     def test_deliver_ssh_key_in_metadata(self):
         test_ssh_key = 'ssh-rsa-foo'

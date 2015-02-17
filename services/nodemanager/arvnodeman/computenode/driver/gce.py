@@ -10,7 +10,7 @@ import libcloud.compute.providers as cloud_provider
 import libcloud.compute.types as cloud_types
 
 from . import BaseComputeNodeDriver
-from .. import arvados_node_fqdn
+from .. import arvados_node_fqdn, arvados_timestamp, ARVADOS_TIMEFMT
 
 class ComputeNodeDriver(BaseComputeNodeDriver):
     """Compute node driver wrapper for GCE
@@ -19,7 +19,6 @@ class ComputeNodeDriver(BaseComputeNodeDriver):
     """
     DEFAULT_DRIVER = cloud_provider.get_driver(cloud_types.Provider.GCE)
     SEARCH_CACHE = {}
-    node_start_times = {}
 
     def __init__(self, auth_kwargs, list_kwargs, create_kwargs,
                  driver_class=DEFAULT_DRIVER):
@@ -71,6 +70,8 @@ class ComputeNodeDriver(BaseComputeNodeDriver):
         result = {'name': 'compute-{}-{}'.format(node_id, cluster_id),
                   'ex_metadata': self.create_kwargs['ex_metadata'].copy(),
                   'ex_tags': list(self.node_tags)}
+        result['ex_metadata']['booted_at'] = time.strftime(ARVADOS_TIMEFMT,
+                                                           time.gmtime())
         result['ex_metadata']['hostname'] = arvados_node_fqdn(arvados_node)
         result['ex_metadata']['user-data'] = self._make_ping_url(arvados_node)
         return result
@@ -82,15 +83,33 @@ class ComputeNodeDriver(BaseComputeNodeDriver):
                 super(ComputeNodeDriver, self).list_nodes()
                 if self.node_tags.issubset(node.extra.get('tags', []))]
 
+    @classmethod
+    def _find_metadata(cls, metadata_items, key):
+        # Given a list of two-item metadata dictonaries, return the one with
+        # the named key.  Raise KeyError if not found.
+        try:
+            return next(data_dict for data_dict in metadata_items
+                        if data_dict.get('key') == key)
+        except StopIteration:
+            raise KeyError(key)
+
+    @classmethod
+    def _get_metadata(cls, metadata_items, key, *default):
+        try:
+            return cls._find_metadata(metadata_items, key)['value']
+        except KeyError:
+            if default:
+                return default[0]
+            raise
+
     def sync_node(self, cloud_node, arvados_node):
         hostname = arvados_node_fqdn(arvados_node)
         metadata_req = cloud_node.extra['metadata'].copy()
-        for data_dict in metadata_req.setdefault('items', []):
-            if data_dict['key'] == 'hostname':
-                data_dict['value'] = hostname
-                break
-        else:
-            metadata_req['items'].append({'key': 'hostname', 'value': hostname})
+        metadata_items = metadata_req.setdefault('items', [])
+        try:
+            self._find_metadata(metadata_items, 'hostname')['value'] = hostname
+        except KeyError:
+            metadata_items.append({'key': 'hostname', 'value': hostname})
         response = self.real.connection.async_request(
             '/zones/{}/instances/{}/setMetadata'.format(
                 cloud_node.extra['zone'].name, cloud_node.name),
@@ -98,15 +117,10 @@ class ComputeNodeDriver(BaseComputeNodeDriver):
         if not response.success():
             raise Exception("setMetadata error: {}".format(response.error))
 
-    def destroy_node(self, node):
-        success = super(ComputeNodeDriver, self).destroy_node(node)
-        if success:
-            self.node_start_times.pop(node.id, None)
-        return success
-
     @classmethod
     def node_start_time(cls, node):
-        # Launch time isn't available on GCE node records.  Thankfully that's
-        # not too big a deal because they have by-minute billing.
-        # Fake an answer based on the first time we see it.
-        return cls.node_start_times.setdefault(node.id, time.time())
+        try:
+            return arvados_timestamp(cls._get_metadata(
+                    node.extra['metadata']['items'], 'booted_at'))
+        except KeyError:
+            return 0

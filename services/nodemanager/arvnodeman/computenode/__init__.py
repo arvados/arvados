@@ -5,13 +5,18 @@ from __future__ import absolute_import, print_function
 import itertools
 import time
 
+ARVADOS_TIMEFMT = '%Y-%m-%dT%H:%M:%SZ'
+
 def arvados_node_fqdn(arvados_node, default_hostname='dynamic.compute'):
     hostname = arvados_node.get('hostname') or default_hostname
     return '{}.{}'.format(hostname, arvados_node['domain'])
 
 def arvados_node_mtime(node):
-    return time.mktime(time.strptime(node['modified_at'] + 'UTC',
-                                     '%Y-%m-%dT%H:%M:%SZ%Z')) - time.timezone
+    return arvados_timestamp(node['modified_at'])
+
+def arvados_timestamp(timestr):
+    return time.mktime(time.strptime(timestr + 'UTC',
+                                     ARVADOS_TIMEFMT + '%Z')) - time.timezone
 
 def timestamp_fresh(timestamp, fresh_time):
     return (time.time() - timestamp) < fresh_time
