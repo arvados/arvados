@@ -412,7 +412,14 @@ def copy_collection(obj_uuid, src, dst, args):
             filters=[['portable_data_hash', '=', colhash]]
         ).execute()
         if dstcol['items_available'] > 0:
-            logger.debug("Skipping collection %s (already at dst)", obj_uuid)
+            if args.project_uuid:
+                c['owner_uuid'] = args.project_uuid
+                del c['uuid']
+                if 'properties' in c:
+                    del c['properties']
+                return dst.collections().create(body=c, ensure_unique_name=True).execute()
+            else:
+                logger.info("Skipping collection %s (already at dst)", obj_uuid)
             return dstcol['items'][0]
 
     # Fetch the collection's manifest.
@@ -467,8 +474,9 @@ def copy_collection(obj_uuid, src, dst, args):
     logger.debug('saving %s with manifest: <%s>', obj_uuid, dst_manifest)
     dst_keep.put(dst_manifest)
 
-    if 'uuid' in c:
-        del c['uuid']
+    del c['uuid']
+    if 'properties' in c:
+        del c['properties']
 
     if args.project_uuid:
         c['owner_uuid'] = args.project_uuid
