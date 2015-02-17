@@ -26,11 +26,20 @@ def arvados_node_mock(node_num=99, job_uuid=None, age=0, **kwargs):
             'ip_address': ip_address_mock(node_num),
             'job_uuid': job_uuid,
             'crunch_worker_state': crunch_worker_state,
-            'info': {}}
+            'info': {'ping_secret': 'defaulttestsecret'}}
     node.update(kwargs)
     return node
 
-def cloud_node_mock(node_num=99):
+def cloud_object_mock(name_id):
+    # A very generic mock, useful for stubbing libcloud objects we
+    # only search for and pass around, like locations, subnets, etc.
+    cloud_object = mock.NonCallableMagicMock(['id', 'name'],
+                                             name='cloud_object')
+    cloud_object.id = str(name_id)
+    cloud_object.name = cloud_object.id.upper()
+    return cloud_object
+
+def cloud_node_mock(node_num=99, **extra):
     node = mock.NonCallableMagicMock(
         ['id', 'name', 'state', 'public_ips', 'private_ips', 'driver', 'size',
          'image', 'extra'],
@@ -39,6 +48,7 @@ def cloud_node_mock(node_num=99):
     node.name = node.id
     node.public_ips = []
     node.private_ips = [ip_address_mock(node_num)]
+    node.extra = extra
     return node
 
 def ip_address_mock(last_octet):
@@ -104,6 +114,21 @@ class ActorTestMixin(object):
             result = getattr(proxy, attr_name).get(loop_timeout)
             if result is not unassigned:
                 return result
+
+
+class DriverTestMixin(object):
+    def setUp(self):
+        self.driver_mock = mock.MagicMock(name='driver_mock')
+        super(DriverTestMixin, self).setUp()
+
+    def new_driver(self, auth_kwargs={}, list_kwargs={}, create_kwargs={}):
+        create_kwargs.setdefault('ping_host', '100::')
+        return self.TEST_CLASS(
+            auth_kwargs, list_kwargs, create_kwargs,
+            driver_class=self.driver_mock)
+
+    def driver_method_args(self, method_name):
+        return getattr(self.driver_mock(), method_name).call_args
 
 
 class RemotePollLoopActorTestMixin(ActorTestMixin):

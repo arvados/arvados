@@ -12,15 +12,8 @@ import mock
 import arvnodeman.computenode.driver.ec2 as ec2
 from . import testutil
 
-class EC2ComputeNodeDriverTestCase(unittest.TestCase):
-    def setUp(self):
-        self.driver_mock = mock.MagicMock(name='driver_mock')
-
-    def new_driver(self, auth_kwargs={}, list_kwargs={}, create_kwargs={}):
-        create_kwargs.setdefault('ping_host', '100::')
-        return ec2.ComputeNodeDriver(
-            auth_kwargs, list_kwargs, create_kwargs,
-            driver_class=self.driver_mock)
+class EC2ComputeNodeDriverTestCase(testutil.DriverTestMixin, unittest.TestCase):
+    TEST_CLASS = ec2.ComputeNodeDriver
 
     def test_driver_instantiation(self):
         kwargs = {'key': 'testkey'}
@@ -37,15 +30,12 @@ class EC2ComputeNodeDriverTestCase(unittest.TestCase):
         self.assertEqual({'tag:test': 'true'},
                           list_method.call_args[1].get('ex_filters'))
 
-    def test_create_location_loaded_at_initialization(self):
-        kwargs = {'location': 'testregion'}
-        driver = self.new_driver(create_kwargs=kwargs)
-        self.assertTrue(self.driver_mock().list_locations)
-
     def test_create_image_loaded_at_initialization(self):
-        kwargs = {'image': 'testimage'}
-        driver = self.new_driver(create_kwargs=kwargs)
-        self.assertTrue(self.driver_mock().list_images)
+        list_method = self.driver_mock().list_images
+        list_method.return_value = [testutil.cloud_object_mock(c)
+                                    for c in 'abc']
+        driver = self.new_driver(create_kwargs={'image_id': 'b'})
+        self.assertEqual(1, list_method.call_count)
 
     def test_create_includes_ping_secret(self):
         arv_node = testutil.arvados_node_mock(info={'ping_secret': 'ssshh'})
