@@ -20,9 +20,11 @@ navbar:
       - start/getting_started/firstpipeline.html.textile.liquid
     - Common Use Cases:
       - start/getting_started/sharedata.html.textile.liquid
+    - Next Steps:
+      - start/getting_started/nextsteps.html.textile.liquid
 
   userguide:
-    - Getting Started:
+    - Welcome:
       - user/index.html.textile.liquid
       - user/getting_started/community.html.textile.liquid
     - Run a pipeline using Workbench:
