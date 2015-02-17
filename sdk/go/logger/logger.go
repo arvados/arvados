@@ -26,9 +26,10 @@ import (
 )
 
 const (
-	startSuffix   = "-start"
-	partialSuffix = "-partial"
-	finalSuffix   = "-final"
+	startSuffix              = "-start"
+	partialSuffix            = "-partial"
+	finalSuffix              = "-final"
+	numberNoMoreWorkMessages = 2 // To return from FinalUpdate() & Work().
 )
 
 type LoggerParams struct {
@@ -63,6 +64,7 @@ type Logger struct {
 	workToDo    chan LogMutator // Work to do in the worker thread.
 	writeTicker *time.Ticker    // On each tick we write the log data to arvados, if it has been modified.
 	hasWritten  bool            // Whether we've written at all yet.
+	noMoreWork  chan bool       // Signals that we're done writing.
 
 	writeHooks []LogMutator // Mutators we call before each write.
 }
@@ -78,12 +80,13 @@ func NewLogger(params LoggerParams) *Logger {
 	}
 
 	l := &Logger{
-		data: make(map[string]interface{}),
-		entry: make(map[string]interface{}),
-		properties: make(map[string]interface{}),
-		params: params,
-		workToDo: make(chan LogMutator, 10),
-		writeTicker: time.NewTicker(params.WriteInterval)}
+		data:        make(map[string]interface{}),
+		entry:       make(map[string]interface{}),
+		properties:  make(map[string]interface{}),
+		params:      params,
+		workToDo:    make(chan LogMutator, 10),
+		writeTicker: time.NewTicker(params.WriteInterval),
+		noMoreWork:  make(chan bool, numberNoMoreWorkMessages)}
 
 	l.data["log"] = l.entry
 	l.entry["properties"] = l.properties
@@ -111,9 +114,6 @@ func (l *Logger) Update(mutator LogMutator) {
 // go will not wait for timers (including the pending write timer) to
 // go off before exiting.
 func (l *Logger) FinalUpdate(mutator LogMutator) {
-	// Block on this channel until everything finishes
-	done := make(chan bool)
-
 	// TODO(misha): Consider not accepting any future updates somehow,
 	// since they won't get written if they come in after this.
 
@@ -129,11 +129,13 @@ func (l *Logger) FinalUpdate(mutator LogMutator) {
 	// Perform the final write and signal that we can return.
 	l.workToDo <- func(p map[string]interface{}, e map[string]interface{}) {
 		l.write(true)
-		done <- true
+		for i := 0; i < numberNoMoreWorkMessages; {
+			l.noMoreWork <- true
+		}
 	}
 
 	// Wait until we've performed the write.
-	<-done
+	<-l.noMoreWork
 }
 
 // Adds a hook which will be called every time this logger writes an entry.
@@ -157,6 +159,8 @@ func (l *Logger) work() {
 		case mutator := <-l.workToDo:
 			mutator(l.properties, l.entry)
 			l.modified = true
+		case <-l.noMoreWork:
+			return
 		}
 	}
 }

@@ -15,8 +15,9 @@ import (
 )
 
 var (
-	logEventTypePrefix        string
+	logEventTypePrefix  string
 	logFrequencySeconds int
+	minutesBetweenRuns  int
 )
 
 func init() {
@@ -28,11 +29,28 @@ func init() {
 		"log-frequency-seconds",
 		20,
 		"How frequently we'll write log entries in seconds.")
+	flag.IntVar(&minutesBetweenRuns,
+		"minutes-between-runs",
+		0,
+		"How many minutes we wait betwen data manager runs. 0 means run once and exit.")
 }
 
 func main() {
 	flag.Parse()
+	if minutesBetweenRuns == 0 {
+		singlerun()
+	} else {
+		waitTime := time.Minute * time.Duration(minutesBetweenRuns)
+		for {
+			log.Println("Beginning Run")
+			singlerun()
+			log.Printf("Sleeping for %d minutes", minutesBetweenRuns)
+			time.Sleep(waitTime)
+		}
+	}
+}
 
+func singlerun() {
 	arv, err := arvadosclient.MakeArvadosClient()
 	if err != nil {
 		log.Fatalf("Error setting up arvados client %s", err.Error())
@@ -47,8 +65,8 @@ func main() {
 	var arvLogger *logger.Logger
 	if logEventTypePrefix != "" {
 		arvLogger = logger.NewLogger(logger.LoggerParams{Client: arv,
-			EventTypePrefix:     logEventTypePrefix,
-			WriteInterval: time.Second * time.Duration(logFrequencySeconds)})
+			EventTypePrefix: logEventTypePrefix,
+			WriteInterval:   time.Second * time.Duration(logFrequencySeconds)})
 	}
 
 	loggerutil.LogRunInfo(arvLogger)
