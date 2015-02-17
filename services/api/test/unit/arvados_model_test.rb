@@ -136,7 +136,7 @@ class ArvadosModelTest < ActiveSupport::TestCase
 
         indexes = ActiveRecord::Base.connection.indexes(table)
         search_index_by_columns = indexes.select do |index|
-          index.columns == search_index_columns
+          index.columns.sort == search_index_columns.sort
         end
         search_index_by_name = indexes.select do |index|
           index.name == "#{table}_search_index"

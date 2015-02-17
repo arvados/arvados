@@ -388,4 +388,19 @@ class CollectionsControllerTest < ActionController::TestCase
     assert_equal 'collection created with properties', assigns(:object).name
     assert_equal 'value_1', assigns(:object).properties[:property_1]
   end
+
+  test "update description and check manifest_text is not lost" do
+    collection = api_fixture("collections")["multilevel_collection_1"]
+    post :update, {
+      id: collection["uuid"],
+      collection: {
+        description: 'test description update'
+      },
+      format: :json
+    }, session_for(:active)
+    assert_response :success
+    assert_not_nil assigns(:object)
+    assert_equal 'test description update', assigns(:object).description
+    assert_equal collection['manifest_text'], assigns(:object).manifest_text
+  end
 end
