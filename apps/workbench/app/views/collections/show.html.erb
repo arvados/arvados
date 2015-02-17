@@ -2,25 +2,25 @@
   <div class="col-md-6">
     <div class="panel panel-info">
       <div class="panel-heading">
-	<h3 class="panel-title">
+        <h3 class="panel-title">
           <% if @name_link.nil? and @object.uuid.match /[0-9a-f]{32}/ %>
             Content hash <%= @object.portable_data_hash %>
           <% else %>
-	    <%= if @object.respond_to? :name
+            <%= if @object.respond_to? :name
                   render_editable_attribute @object, :name
                 else
                   @name_link.andand.name || @object.uuid
                 end %>
             <% end %>
-	</h3>
+        </h3>
       </div>
       <div class="panel-body">
         <div class="arv-description-as-subtitle">
           <%= render_editable_attribute @object, 'description', nil, { 'data-emptytext' => "(No description provided)", 'data-toggle' => 'manual' } %>
         </div>
         <img src="/favicon.ico" class="pull-right" alt="" style="opacity: 0.3"/>
-	<p><i>Content hash:</i><br />
-	  <span class="arvados-uuid"><%= link_to @object.portable_data_hash, collection_path(@object.portable_data_hash) %></span>
+        <p><i>Content hash:</i><br />
+          <span class="arvados-uuid"><%= link_to @object.portable_data_hash, collection_path(@object.portable_data_hash) %></span>
         </p>
         <%= render partial: "show_source_summary" %>
       </div>
@@ -29,15 +29,15 @@
   <div class="col-md-3">
     <div class="panel panel-default">
       <div class="panel-heading">
-	<h3 class="panel-title">
-	  Activity
-	</h3>
+        <h3 class="panel-title">
+          Activity
+        </h3>
       </div>
       <div class="panel-body smaller-text">
         <!--
-	<input type="text" class="form-control" placeholder="Search"/>
+        <input type="text" class="form-control" placeholder="Search"/>
         -->
-	<div style="height:0.5em;"></div>
+        <div style="height:0.5em;"></div>
         <% name_or_object = @name_link.andand.uuid ? @name_link : @object %>
         <% if name_or_object.created_at and not @logs.andand.any? %>
           <p>
@@ -60,23 +60,24 @@
       </div>
     </div>
   </div>
+  <% if current_user %>
   <div class="col-md-3">
     <div class="panel panel-default">
       <div class="panel-heading">
-	<h3 class="panel-title">
-	  Sharing and permissions
-	</h3>
+        <h3 class="panel-title">
+          Sharing and permissions
+        </h3>
       </div>
       <div class="panel-body">
         <!--
-	<input type="text" class="form-control" placeholder="Search"/>
+        <input type="text" class="form-control" placeholder="Search"/>
         -->
 
         <div id="sharing-button">
           <%= render partial: 'sharing_button' %>
         </div>
 
-	<div style="height:0.5em;"></div>
+        <div style="height:0.5em;"></div>
         <% if @projects.andand.any? %>
           <p>Included in projects:<br />
           <%= render_arvados_object_list_start(@projects, 'Show all projects',
@@ -99,6 +100,20 @@
       </div>
     </div>
   </div>
+  <% else %>
+  <div class="col-md-3">
+    <div class="panel panel-default">
+      <div class="panel-heading">
+        <h3 class="panel-title">
+          Welcome to Arvados
+        </h3>
+      </div>
+      <div class="panel-body">
+        You are accessing public data.
+      </div>
+    </div>
+  </div>
+  <% end %>
 </div>
 
 <%= render file: 'application/show.html.erb', locals: local_assigns %>

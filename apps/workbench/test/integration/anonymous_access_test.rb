@@ -75,24 +75,36 @@ class AnonymousAccessTest < ActionDispatch::IntegrationTest
 
   test "anonymous user accesses data collections tab in shared project" do
     visit PUBLIC_PROJECT
+    collection = api_fixture('collections')['user_agreement_in_anonymously_accessible_project']
     assert_text 'GNU General Public License'
 
     assert_selector 'a', text: 'Data collections'
 
     # click on show collection
-    within first('tr[data-kind="arvados#collection"]') do
+    within "tr[data-object-uuid=\"#{collection['uuid']}\"]" do
       click_link 'Show'
     end
 
     # in collection page
     assert_no_selector 'input', text: 'Create sharing link'
+    assert_no_text 'Sharing and permissions'
     assert_no_selector 'a', text: 'Upload'
     assert_no_selector 'button', 'Selection'
 
-    within ('#collection_files') do
-      assert_text 'GNU_General_Public_License,_version_3.pdf'
-      # how do i assert the view and download link existence?
+    within '#collection_files tr,li', text: 'GNU_General_Public_License,_version_3.pdf' do
+      find 'a[title~=View]'
+      find 'a[title~=Download]'
     end
+  end
+
+  test 'view file' do
+    magic = rand(2**512).to_s 36
+    CollectionsController.any_instance.stubs(:file_enumerator).returns([magic])
+    collection = api_fixture('collections')['public_text_file']
+    visit '/collections/' + collection['uuid']
+    find('tr,li', text: 'Hello world.txt').
+      find('a[title~=View]').click
+    assert_text magic
   end
 
   [

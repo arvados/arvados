@@ -5,10 +5,13 @@ class Collection < ArvadosModel
   include KindAndEtag
   include CommonApiTemplate
 
+  serialize :properties, Hash
+
   before_validation :check_encoding
   before_validation :check_signatures
   before_validation :strip_manifest_text
   before_validation :set_portable_data_hash
+  before_validation :maybe_clear_replication_confirmed
   validate :ensure_hash_matches_manifest_text
   before_save :set_file_names
 
@@ -22,6 +25,8 @@ class Collection < ArvadosModel
     t.add :portable_data_hash
     t.add :signed_manifest_text, as: :manifest_text
     t.add :replication_desired
+    t.add :replication_confirmed
+    t.add :replication_confirmed_at
   end
 
   def self.attributes_required_columns
@@ -32,10 +37,6 @@ class Collection < ArvadosModel
                 # API response, and never let clients select the
                 # manifest_text column.
                 'manifest_text' => ['manifest_text'],
-
-                # This is a shim until the database column gets
-                # renamed to replication_desired in #3410.
-                'replication_desired' => ['redundancy'],
                 )
   end
 
@@ -183,27 +184,6 @@ class Collection < ArvadosModel
     end
   end
 
-  def replication_desired
-    # Shim until database columns get fixed up in #3410.
-    redundancy or 2
-  end
-
-  def redundancy_status
-    if redundancy_confirmed_as.nil?
-      'unconfirmed'
-    elsif redundancy_confirmed_as < redundancy
-      'degraded'
-    else
-      if redundancy_confirmed_at.nil?
-        'unconfirmed'
-      elsif Time.now - redundancy_confirmed_at < 7.days
-        'OK'
-      else
-        'stale'
-      end
-    end
-  end
-
   def signed_manifest_text
     if has_attribute? :manifest_text
       token = current_api_client_authorization.andand.api_token
@@ -227,11 +207,20 @@ class Collection < ArvadosModel
   def self.munge_manifest_locators! manifest
     # Given a manifest text and a block, yield each locator,
     # and replace it with whatever the block returns.
-    manifest.andand.gsub!(/ [[:xdigit:]]{32}(\+[[:digit:]]+)?(\+\S+)/) do |word|
+    manifest.andand.gsub!(/ [[:xdigit:]]{32}(\+\S+)?/) do |word|
       if loc = Keep::Locator.parse(word.strip)
         " " + yield(loc)
       else
         " " + word
+      end
+    end
+  end
+
+  def self.each_manifest_locator manifest
+    # Given a manifest text and a block, yield each locator.
+    manifest.andand.scan(/ ([[:xdigit:]]{32}(\+\S+)?)/) do |word, _|
+      if loc = Keep::Locator.parse(word)
+        yield loc
       end
     end
   end
@@ -321,7 +310,11 @@ class Collection < ArvadosModel
   def portable_manifest_text
     portable_manifest = self[:manifest_text].dup
     self.class.munge_manifest_locators!(portable_manifest) do |loc|
-      loc.hash + '+' + loc.size.to_s
+      if loc.size
+        loc.hash + '+' + loc.size.to_s
+      else
+        loc.hash
+      end
     end
     portable_manifest
   end
@@ -331,5 +324,33 @@ class Collection < ArvadosModel
     (Digest::MD5.hexdigest(portable_manifest) +
      '+' +
      portable_manifest.bytesize.to_s)
+  end
+
+  def maybe_clear_replication_confirmed
+    if manifest_text_changed?
+      # If the new manifest_text contains locators whose hashes
+      # weren't in the old manifest_text, storage replication is no
+      # longer confirmed.
+      in_old_manifest = {}
+      self.class.each_manifest_locator(manifest_text_was) do |loc|
+        in_old_manifest[loc.hash] = true
+      end
+      self.class.each_manifest_locator(manifest_text) do |loc|
+        if not in_old_manifest[loc.hash]
+          self.replication_confirmed_at = nil
+          self.replication_confirmed = nil
+          break
+        end
+      end
+    end
+  end
+
+  def ensure_permission_to_save
+    if (not current_user.andand.is_admin and
+        (replication_confirmed_at_changed? or replication_confirmed_changed?) and
+        not (replication_confirmed_at.nil? and replication_confirmed.nil?))
+      raise ArvadosModel::PermissionDeniedError.new("replication_confirmed and replication_confirmed_at attributes cannot be changed, except by setting both to nil")
+    end
+    super
   end
 end

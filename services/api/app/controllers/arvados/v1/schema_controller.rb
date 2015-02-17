@@ -1,6 +1,11 @@
 class Arvados::V1::SchemaController < ApplicationController
+  skip_before_filter :catch_redirect_hint
   skip_before_filter :find_objects_for_index
   skip_before_filter :find_object_by_uuid
+  skip_before_filter :load_filters_param
+  skip_before_filter :load_limit_offset_order_params
+  skip_before_filter :load_read_auths
+  skip_before_filter :load_where_param
   skip_before_filter :render_404_if_no_object
   skip_before_filter :require_auth_scope
 
@@ -20,6 +25,7 @@ class Arvados::V1::SchemaController < ApplicationController
         title: "Arvados API",
         description: "The API to interact with Arvados.",
         documentationLink: "http://doc.arvados.org/api/index.html",
+        defaultCollectionReplication: Rails.configuration.default_collection_replication,
         protocol: "rest",
         baseUrl: root_url + "arvados/v1/",
         basePath: "/arvados/v1/",

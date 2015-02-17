@@ -1,6 +1,25 @@
 require 'test_helper'
 
 class GroupsTest < ActionDispatch::IntegrationTest
+  [[], ['replication_confirmed']].each do |orders|
+    test "results are consistent when provided orders #{orders} is incomplete" do
+      last = nil
+      (0..20).each do
+        get '/arvados/v1/groups/contents', {
+          id: groups(:aproject).uuid,
+          filters: [["uuid", "is_a", "arvados#collection"]].to_json,
+          orders: orders.to_json,
+          format: :json,
+        }, auth(:active)
+        assert_response :success
+        if last.nil?
+          last = json_response['items']
+        else
+          assert_equal last, json_response['items']
+        end
+      end
+    end
+  end
 
   test "get all pages of group-owned objects" do
     limit = 5
@@ -9,8 +28,6 @@ class GroupsTest < ActionDispatch::IntegrationTest
     uuid_received = {}
     owner_received = {}
     while true
-      @json_response = nil
-
       get "/arvados/v1/groups/contents", {
         id: groups(:aproject).uuid,
         limit: limit,

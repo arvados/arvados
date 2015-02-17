@@ -70,7 +70,7 @@ class Arvados::V1::GroupsController < ApplicationController
       # Otherwise, order by recency.
       request_order =
         request_orders.andand.find { |r| r =~ /^#{klass.table_name}\./i } ||
-        "created_at desc"
+        klass.default_orders.join(", ")
 
       @select = nil
       where_conds = {}
