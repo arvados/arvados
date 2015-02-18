@@ -2,10 +2,13 @@
 
 from __future__ import absolute_import, print_function
 
+import calendar
 import itertools
+import re
 import time
 
 ARVADOS_TIMEFMT = '%Y-%m-%dT%H:%M:%SZ'
+ARVADOS_TIMESUBSEC_RE = re.compile(r'(\.\d+)Z$')
 
 def arvados_node_fqdn(arvados_node, default_hostname='dynamic.compute'):
     hostname = arvados_node.get('hostname') or default_hostname
@@ -15,8 +18,14 @@ def arvados_node_mtime(node):
     return arvados_timestamp(node['modified_at'])
 
 def arvados_timestamp(timestr):
-    return time.mktime(time.strptime(timestr + 'UTC',
-                                     ARVADOS_TIMEFMT + '%Z')) - time.timezone
+    subsec_match = ARVADOS_TIMESUBSEC_RE.search(timestr)
+    if subsec_match is None:
+        subsecs = .0
+    else:
+        subsecs = float(subsec_match.group(1))
+        timestr = timestr[:subsec_match.start()] + 'Z'
+    return calendar.timegm(time.strptime(timestr + 'UTC',
+                                         ARVADOS_TIMEFMT + '%Z'))
 
 def timestamp_fresh(timestamp, fresh_time):
     return (time.time() - timestamp) < fresh_time

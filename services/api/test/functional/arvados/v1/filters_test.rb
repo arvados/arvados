@@ -72,6 +72,9 @@ class Arvados::V1::FiltersTest < ActionController::TestCase
 
   %w(< > <= >= =).each do |operator|
     test "timestamp #{operator} filters work with nanosecond precision" do
+      # Python clients like Node Manager rely on this exact format.
+      # If you must change this format for some reason, make sure you
+      # coordinate the change with them.
       expect_match = !!operator.index('=')
       mine = act_as_user users(:active) do
         Collection.create!(manifest_text: '')
