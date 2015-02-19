@@ -1303,7 +1303,7 @@ CREATE INDEX authorized_keys_search_index ON authorized_keys USING btree (uuid, 
 -- Name: collection_owner_uuid_name_unique; Type: INDEX; Schema: public; Owner: -; Tablespace: 
 --
 
-CREATE UNIQUE INDEX collection_owner_uuid_name_unique ON collections USING btree (owner_uuid, name);
+CREATE UNIQUE INDEX collection_owner_uuid_name_unique ON collections USING btree (owner_uuid, name) WHERE (expires_at IS NULL);
 
 
 --
@@ -2359,3 +2359,5 @@ INSERT INTO schema_migrations (version) VALUES ('20150203180223');
 INSERT INTO schema_migrations (version) VALUES ('20150206210804');
 
 INSERT INTO schema_migrations (version) VALUES ('20150206230342');
+
+INSERT INTO schema_migrations (version) VALUES ('20150216193428');

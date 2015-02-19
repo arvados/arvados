@@ -31,6 +31,9 @@ func main() {
 	//
 
 	type user struct {
+		// Remember to start each field name with a capital letter,
+		// otherwise it won't get populated by the arvados client because
+		// the field will be invisible to it.
 		Uuid     string `json:"uuid"`
 		FullName string `json:"full_name"`
 	}

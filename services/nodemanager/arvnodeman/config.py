@@ -105,14 +105,26 @@ class NodeManagerConfig(ConfigParser.SafeConfigParser):
                                         self.get_section('Cloud Create'))
 
     def node_sizes(self, all_sizes):
+        """Finds all acceptable NodeSizes for our installation.
+
+        Returns a list of (NodeSize, kwargs) pairs for each NodeSize object
+        returned by libcloud that matches a size listed in our config file.
+        """
+
         size_kwargs = {}
         for sec_name in self.sections():
             sec_words = sec_name.split(None, 2)
             if sec_words[0] != 'Size':
                 continue
             size_kwargs[sec_words[1]] = self.get_section(sec_name, int)
-        return [(size, size_kwargs[size.id]) for size in all_sizes
-                if size.id in size_kwargs]
+        # EC2 node sizes are identified by id. GCE sizes are identified by name.
+        matching_sizes = []
+        for size in all_sizes:
+            if size.id in size_kwargs:
+                matching_sizes.append((size, size_kwargs[size.id]))
+            elif size.name in size_kwargs:
+                matching_sizes.append((size, size_kwargs[size.name]))
+        return matching_sizes
 
     def shutdown_windows(self):
         return [int(n)
