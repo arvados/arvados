@@ -315,7 +315,7 @@ class CollectionDirectory(Directory):
 
             with llfuse.lock_released:
                 coll_reader = arvados.CollectionReader(
-                    self.collection_locator, self.api, self.api.localkeep(),
+                    self.collection_locator, self.api, self.api.keep,
                     num_retries=self.num_retries)
                 new_collection_object = coll_reader.api_response() or {}
                 # If the Collection only exists in Keep, there will be no API

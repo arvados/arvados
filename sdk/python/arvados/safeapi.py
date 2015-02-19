@@ -26,7 +26,4 @@ class ThreadSafeApiCache(object):
         # Proxy nonexistent attributes to the thread-local API client.
         if name == "api_token":
             return self.apiconfig['ARVADOS_API_TOKEN']
-        try:
-            return getattr(self.localapi(), name)
-        except AttributeError:
-            return super(ThreadSafeApiCache, self).__getattr__(name)
+        return getattr(self.localapi(), name)
