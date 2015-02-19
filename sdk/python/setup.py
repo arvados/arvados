@@ -40,7 +40,7 @@ setup(name='arvados-python-client',
         'google-api-python-client',
         'httplib2',
         'requests>=2.4',
-        'urllib3',
+        'urllib3>=1.10',
         'ws4py'
         ],
       test_suite='tests',
