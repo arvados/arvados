@@ -566,6 +566,11 @@ class ProjectDirectory(Directory):
 
             contents = arvados.util.list_all(self.api.groups().contents,
                                              self.num_retries, uuid=self.uuid)
+            # Name links will be obsolete soon, take this out when there are no more pre-#3036 in use.
+            contents += arvados.util.list_all(
+                self.api.links().list, self.num_retries,
+                filters=[['tail_uuid', '=', self.uuid],
+                         ['link_class', '=', 'name']])
 
         # end with llfuse.lock_released, re-acquire lock
 

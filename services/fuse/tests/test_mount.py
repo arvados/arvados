@@ -242,7 +242,8 @@ class FuseSharedTest(MountTestBase):
         # directory)
         fuse_user_objs = os.listdir(os.path.join(self.mounttmp, 'FUSE User'))
         fuse_user_objs.sort()
-        self.assertEqual(['FUSE Test Project',                    # project owned by user
+        self.assertEqual(['Empty collection.link',                # permission link on collection
+                          'FUSE Test Project',                    # project owned by user
                           'collection #1 owned by FUSE',          # collection owned by user
                           'collection #2 owned by FUSE',          # collection owned by user
                           'pipeline instance owned by FUSE.pipelineInstance',  # pipeline instance owned by user
@@ -258,25 +259,13 @@ class FuseSharedTest(MountTestBase):
 
         # Double check that we can open and read objects in this folder as a file,
         # and that its contents are what we expect.
-        pipeline_template_path = os.path.join(
+        with open(os.path.join(
                 self.mounttmp,
                 'FUSE User',
                 'FUSE Test Project',
-                'pipeline template in FUSE project.pipelineTemplate')
-        with open(pipeline_template_path) as f:
+                'pipeline template in FUSE project.pipelineTemplate')) as f:
             j = json.load(f)
             self.assertEqual("pipeline template in FUSE project", j['name'])
-
-        # check mtime on template
-        st = os.stat(pipeline_template_path)
-        self.assertEqual(st.st_mtime, 1397493304)
-
-        # check mtime on collection
-        st = os.stat(os.path.join(
-                self.mounttmp,
-                'FUSE User',
-                'collection #1 owned by FUSE'))
-        self.assertEqual(st.st_mtime, 1391448174)
 
 
 class FuseHomeTest(MountTestBase):
