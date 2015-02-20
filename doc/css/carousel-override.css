@@ -1,5 +1,6 @@
 .carousel-control {
   width: 5%;
+  font-size: 2em;
 }
 
 .carousel-caption {
@@ -23,3 +24,8 @@
   bottom: 0px;
 }
 
+.carousel-control .glyphicon-chevron-right,.glyphicon-chevron-left {
+  background-color: black;
+  padding: 0.5em;
+  border-radius: 0.5em;
+}
