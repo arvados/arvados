@@ -6,65 +6,13 @@ import threading
 import functools
 import copy
 
-from .ranges import *
+from ._ranges import locators_and_ranges
 from .arvfile import StreamFileReader
 from arvados.retry import retry_method
 from keep import *
 import config
 import errors
-
-def locator_block_size(loc):
-    s = re.match(r'[0-9a-f]{32}\+(\d+)(\+\S+)*', loc)
-    return long(s.group(1))
-
-def normalize_stream(s, stream):
-    '''
-    s is the stream name
-    stream is a dict mapping each filename to a list in the form [block locator, block size, segment offset (from beginning of block), segment size]
-    returns the stream as a list of tokens
-    '''
-    stream_tokens = [s]
-    sortedfiles = list(stream.keys())
-    sortedfiles.sort()
-
-    blocks = {}
-    streamoffset = 0L
-    # Go through each file and add each referenced block exactly once.
-    for f in sortedfiles:
-        for b in stream[f]:
-            if b.locator not in blocks:
-                stream_tokens.append(b.locator)
-                blocks[b.locator] = streamoffset
-                streamoffset += locator_block_size(b.locator)
-
-    # Add the empty block if the stream is otherwise empty.
-    if len(stream_tokens) == 1:
-        stream_tokens.append(config.EMPTY_BLOCK_LOCATOR)
-
-    for f in sortedfiles:
-        # Add in file segments
-        current_span = None
-        fout = f.replace(' ', '\\040')
-        for segment in stream[f]:
-            # Collapse adjacent segments
-            streamoffset = blocks[segment.locator] + segment.segment_offset
-            if current_span is None:
-                current_span = [streamoffset, streamoffset + segment.segment_size]
-            else:
-                if streamoffset == current_span[1]:
-                    current_span[1] += segment.segment_size
-                else:
-                    stream_tokens.append("{0}:{1}:{2}".format(current_span[0], current_span[1] - current_span[0], fout))
-                    current_span = [streamoffset, streamoffset + segment.segment_size]
-
-        if current_span is not None:
-            stream_tokens.append("{0}:{1}:{2}".format(current_span[0], current_span[1] - current_span[0], fout))
-
-        if not stream[f]:
-            stream_tokens.append("0:0:{0}".format(fout))
-
-    return stream_tokens
-
+from _normalize_stream import normalize_stream
 
 class StreamReader(object):
     def __init__(self, tokens, keep=None, debug=False, _empty=False,

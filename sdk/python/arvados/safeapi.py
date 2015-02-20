@@ -5,9 +5,11 @@ import config
 import copy
 
 class ThreadSafeApiCache(object):
-    """Threadsafe wrapper for API objects.  This stores and returns a different api
-    object per thread, because httplib2 which underlies apiclient is not
-    threadsafe.
+    """Threadsafe wrapper for API objects.
+
+    This stores and returns a different api object per thread, because httplib2
+    which underlies apiclient is not threadsafe.
+
     """
 
     def __init__(self, apiconfig=None, keep_params={}):
@@ -19,7 +21,7 @@ class ThreadSafeApiCache(object):
 
     def localapi(self):
         if 'api' not in self.local.__dict__:
-            self.local.api = api.api('v1', False, apiconfig=self.apiconfig)
+            self.local.api = api.api_from_config('v1', apiconfig=self.apiconfig)
         return self.local.api
 
     def __getattr__(self, name):

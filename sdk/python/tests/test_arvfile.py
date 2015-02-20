@@ -34,25 +34,25 @@ class ArvadosFileWriterTestCase(unittest.TestCase):
 
     class MockApi(object):
         def __init__(self, b, r):
-            self.b = b
-            self.r = r
+            self.body = b
+            self.response = r
         class MockCollections(object):
             def __init__(self, b, r):
-                self.b = b
-                self.r = r
+                self.body = b
+                self.response = r
             class Execute(object):
                 def __init__(self, r):
-                    self.r = r
+                    self.response = r
                 def execute(self, num_retries=None):
-                    return self.r
+                    return self.response
             def create(self, ensure_unique_name=False, body=None):
-                if body != self.b:
-                    raise Exception("Body %s does not match expectation %s" % (body, self.b))
-                return ArvadosFileWriterTestCase.MockApi.MockCollections.Execute(self.r)
+                if body != self.body:
+                    raise Exception("Body %s does not match expectation %s" % (body, self.body))
+                return ArvadosFileWriterTestCase.MockApi.MockCollections.Execute(self.response)
             def update(self, uuid=None, body=None):
-                return ArvadosFileWriterTestCase.MockApi.MockCollections.Execute(self.r)
+                return ArvadosFileWriterTestCase.MockApi.MockCollections.Execute(self.response)
         def collections(self):
-            return ArvadosFileWriterTestCase.MockApi.MockCollections(self.b, self.r)
+            return ArvadosFileWriterTestCase.MockApi.MockCollections(self.body, self.response)
 
 
     def test_truncate(self):
@@ -293,9 +293,11 @@ class ArvadosFileWriterTestCase(unittest.TestCase):
                                                 {"uuid":"zzzzz-4zz18-mockcollection0",
                                                  "manifest_text":"./foo/bar 2e9ec317e197819358fbc43afca7d837+8 0:8:count.txt\n"})
         with WritableCollection(api_client=api, keep_client=keep) as c:
+            self.assertIsNone(c.api_response())
             writer = c.open("foo/bar/count.txt", "w+")
             writer.write("01234567")
             c.save_new("test_create")
+            self.assertEqual(c.api_response(), api.response)
 
     def test_overwrite(self):
         keep = ArvadosFileWriterTestCase.MockKeep({"781e5e245d69b566979b86e28d23f2c7+10": "0123456789"})

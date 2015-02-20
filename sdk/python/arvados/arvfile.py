@@ -2,7 +2,7 @@ import functools
 import os
 import zlib
 import bz2
-from .ranges import *
+from ._ranges import locators_and_ranges, replace_range
 from arvados.retry import retry_method
 import config
 import hashlib
@@ -13,6 +13,7 @@ import copy
 import errno
 from .errors import KeepWriteError, AssertionError
 from .keep import KeepLocator
+from _normalize_stream import normalize_stream
 
 def split(path):
     """Separate the stream name and file name in a /-separated stream path and
@@ -27,7 +28,7 @@ def split(path):
         stream_name, file_name = '.', path
     return stream_name, file_name
 
-class FileLikeObjectBase(object):
+class _FileLikeObjectBase(object):
     def __init__(self, name, mode):
         self.name = name
         self.mode = mode
@@ -56,7 +57,7 @@ class FileLikeObjectBase(object):
         self.closed = True
 
 
-class ArvadosFileReaderBase(FileLikeObjectBase):
+class ArvadosFileReaderBase(_FileLikeObjectBase):
     class _NameAttribute(str):
         # The Python file API provides a plain .name attribute.
         # Older SDK provided a name() method.
@@ -214,7 +215,6 @@ class StreamFileReader(ArvadosFileReaderBase):
         return ''.join(data)
 
     def as_manifest(self):
-        from stream import normalize_stream
         segs = []
         for r in self.segments:
             segs.extend(self._stream.locators_and_ranges(r.locator, r.range_size))
@@ -228,7 +228,7 @@ def synchronized(orig_func):
             return orig_func(self, *args, **kwargs)
     return synchronized_wrapper
 
-class BufferBlock(object):
+class _BufferBlock(object):
     """A BufferBlock is a stand-in for a Keep block that is in the process of being
     written.
 
@@ -269,7 +269,7 @@ class BufferBlock(object):
         self.buffer_block = bytearray(starting_capacity)
         self.buffer_view = memoryview(self.buffer_block)
         self.write_pointer = 0
-        self._state = BufferBlock.WRITABLE
+        self._state = _BufferBlock.WRITABLE
         self._locator = None
         self.owner = owner
         self.lock = threading.Lock()
@@ -282,7 +282,7 @@ class BufferBlock(object):
         buffer, doubling capacity as needed to accomdate all the data.
 
         """
-        if self._state == BufferBlock.WRITABLE:
+        if self._state == _BufferBlock.WRITABLE:
             while (self.write_pointer+len(data)) > len(self.buffer_block):
                 new_buffer_block = bytearray(len(self.buffer_block) * 2)
                 new_buffer_block[0:self.write_pointer] = self.buffer_block[0:self.write_pointer]
@@ -294,10 +294,15 @@ class BufferBlock(object):
         else:
             raise AssertionError("Buffer block is not writable")
 
-    def set_state(self, nextstate):
-        if ((self._state == BufferBlock.WRITABLE and nextstate == BufferBlock.PENDING) or
-            (self._state == BufferBlock.PENDING and nextstate == BufferBlock.COMMITTED)):
+    @synchronized
+    def set_state(self, nextstate, loc=None):
+        if ((self._state == _BufferBlock.WRITABLE and nextstate == _BufferBlock.PENDING) or
+            (self._state == _BufferBlock.PENDING and nextstate == _BufferBlock.COMMITTED)):
             self._state = nextstate
+            if self._state == _BufferBlock.COMMITTED:
+                    bufferblock._locator = loc
+                    bufferblock.buffer_view = None
+                    bufferblock.buffer_block = None
         else:
             raise AssertionError("Invalid state change from %s to %s" % (self.state, state))
 
@@ -343,7 +348,7 @@ def must_be_writable(orig_func):
     return must_be_writable_wrapper
 
 
-class BlockManager(object):
+class _BlockManager(object):
     """BlockManager handles buffer blocks, background block uploads, and background
     block prefetch for a Collection of ArvadosFiles.
 
@@ -378,7 +383,7 @@ class BlockManager(object):
         """
         if blockid is None:
             blockid = "bufferblock%i" % len(self._bufferblocks)
-        bufferblock = BufferBlock(blockid, starting_capacity=starting_capacity, owner=owner)
+        bufferblock = _BufferBlock(blockid, starting_capacity=starting_capacity, owner=owner)
         self._bufferblocks[bufferblock.blockid] = bufferblock
         return bufferblock
 
@@ -396,10 +401,10 @@ class BlockManager(object):
         """
         new_blockid = "bufferblock%i" % len(self._bufferblocks)
         with block.lock:
-            if block._state == BufferBlock.COMMITTED:
+            if block._state == _BufferBlock.COMMITTED:
                 raise AssertionError("Can only duplicate a writable or pending buffer block")
 
-            bufferblock = BufferBlock(new_blockid, block.size(), owner)
+            bufferblock = _BufferBlock(new_blockid, block.size(), owner)
             bufferblock.append(block.buffer_view[0:block.size()])
         self._bufferblocks[bufferblock.blockid] = bufferblock
         return bufferblock
@@ -446,11 +451,7 @@ class BlockManager(object):
                     if bufferblock is None:
                         return
                     loc = self._keep.put(bufferblock.buffer_view[0:bufferblock.write_pointer].tobytes())
-                    with bufferblock.lock:
-                        bufferblock._locator = loc
-                        bufferblock.buffer_view = None
-                        bufferblock.buffer_block = None
-                        bufferblock.set_state(BufferBlock.COMMITTED)
+                    bufferblock.set_state(_BufferBlock.COMMITTED, loc)
 
                 except Exception as e:
                     print e
@@ -483,8 +484,7 @@ class BlockManager(object):
                     thread.start()
 
         # Mark the block as PENDING so to disallow any more appends.
-        with block.lock:
-            block.set_state(BufferBlock.PENDING)
+        block.set_state(_BufferBlock.PENDING)
         self._put_queue.put(block)
 
     @synchronized
@@ -501,7 +501,7 @@ class BlockManager(object):
         with self.lock:
             if locator in self._bufferblocks:
                 bufferblock = self._bufferblocks[locator]
-                if bufferblock.state() != BufferBlock.COMMITTED:
+                if bufferblock.state() != _BufferBlock.COMMITTED:
                     return bufferblock.buffer_view[0:bufferblock.write_pointer].tobytes()
                 else:
                     locator = bufferblock._locator
@@ -522,7 +522,7 @@ class BlockManager(object):
             items = self._bufferblocks.items()
 
         for k,v in items:
-            if v.state() == BufferBlock.WRITABLE:
+            if v.state() == _BufferBlock.WRITABLE:
                 self.commit_bufferblock(v)
 
         with self.lock:
@@ -624,18 +624,18 @@ class ArvadosFile(object):
 
         map_loc = {}
         self._segments = []
-        for r in other.segments():
-            new_loc = r.locator
-            if other.parent._my_block_manager().is_bufferblock(r.locator):
-                if r.locator not in map_loc:
-                    bufferblock = other.parent._my_block_manager().get_bufferblock(r.locator)
-                    if bufferblock.state() != BufferBlock.WRITABLE:
-                        map_loc[r.locator] = bufferblock.locator()
+        for other_segment in other.segments():
+            new_loc = other_segment.locator
+            if other.parent._my_block_manager().is_bufferblock(other_segment.locator):
+                if other_segment.locator not in map_loc:
+                    bufferblock = other.parent._my_block_manager().get_bufferblock(other_segment.locator)
+                    if bufferblock.state() != _BufferBlock.WRITABLE:
+                        map_loc[other_segment.locator] = bufferblock.locator()
                     else:
-                        map_loc[r.locator] = self.parent._my_block_manager().dup_block(bufferblock, self).blockid
-                new_loc = map_loc[r.locator]
+                        map_loc[other_segment.locator] = self.parent._my_block_manager().dup_block(bufferblock, self).blockid
+                new_loc = map_loc[other_segment.locator]
 
-            self._segments.append(Range(new_loc, r.range_start, r.range_size, r.segment_offset))
+            self._segments.append(Range(new_loc, other_segment.range_start, other_segment.range_size, other_segment.segment_offset))
 
         self._modified = True
 
@@ -779,7 +779,7 @@ class ArvadosFile(object):
 
         self._modified = True
 
-        if self._current_bblock is None or self._current_bblock.state() != BufferBlock.WRITABLE:
+        if self._current_bblock is None or self._current_bblock.state() != _BufferBlock.WRITABLE:
             self._current_bblock = self.parent._my_block_manager().alloc_bufferblock(owner=self)
 
         if (self._current_bblock.size() + len(data)) > config.KEEP_BLOCK_SIZE:
@@ -817,6 +817,25 @@ class ArvadosFile(object):
             return n.range_start + n.range_size
         else:
             return 0
+
+
+    @synchronized
+    def manifest_text(self, stream_name=".", portable_locators=False, normalize=False):
+        item = self
+        filestream = []
+        for segment in item.segments:
+            loc = segment.locator
+            if loc.startswith("bufferblock"):
+                loc = item._bufferblocks[loc].calculate_locator()
+            if portable_locators:
+                loc = KeepLocator(loc).stripped()
+            filestream.append(LocatorAndRange(loc, locator_block_size(loc),
+                                 segment.segment_offset, segment.range_size))
+        stream[stream_name] = filestream
+        buf += ' '.join(normalize_stream(stream_name, stream))
+        buf += "\n"
+        return buf
+
 
 class ArvadosFileReader(ArvadosFileReaderBase):
     """Wraps ArvadosFile in a file-like object supporting reading only.

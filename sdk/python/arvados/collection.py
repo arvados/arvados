@@ -8,7 +8,7 @@ import time
 from collections import deque
 from stat import *
 
-from .arvfile import split, FileLikeObjectBase, ArvadosFile, ArvadosFileWriter, ArvadosFileReader, BlockManager, synchronized, must_be_writable, SYNC_READONLY, SYNC_EXPLICIT, SYNC_LIVE, NoopLock
+from .arvfile import split, FileLikeObjectBase, ArvadosFile, ArvadosFileWriter, ArvadosFileReader, _BlockManager, synchronized, must_be_writable, SYNC_READONLY, SYNC_EXPLICIT, NoopLock
 from keep import *
 from .stream import StreamReader, normalize_stream, locator_block_size
 from .ranges import Range, LocatorAndRange
@@ -52,196 +52,6 @@ class CollectionBase(object):
                     for x in fields[1:]]
                 clean += [' '.join(clean_fields), "\n"]
         return ''.join(clean)
-
-
-class CollectionReader(CollectionBase):
-    def __init__(self, manifest_locator_or_text, api_client=None,
-                 keep_client=None, num_retries=0):
-        """Instantiate a CollectionReader.
-
-        This class parses Collection manifests to provide a simple interface
-        to read its underlying files.
-
-        Arguments:
-        * manifest_locator_or_text: One of a Collection UUID, portable data
-          hash, or full manifest text.
-        * api_client: The API client to use to look up Collections.  If not
-          provided, CollectionReader will build one from available Arvados
-          configuration.
-        * keep_client: The KeepClient to use to download Collection data.
-          If not provided, CollectionReader will build one from available
-          Arvados configuration.
-        * num_retries: The default number of times to retry failed
-          service requests.  Default 0.  You may change this value
-          after instantiation, but note those changes may not
-          propagate to related objects like the Keep client.
-        """
-        self._api_client = api_client
-        self._keep_client = keep_client
-        self.num_retries = num_retries
-        if re.match(util.keep_locator_pattern, manifest_locator_or_text):
-            self._manifest_locator = manifest_locator_or_text
-            self._manifest_text = None
-        elif re.match(util.collection_uuid_pattern, manifest_locator_or_text):
-            self._manifest_locator = manifest_locator_or_text
-            self._manifest_text = None
-        elif re.match(util.manifest_pattern, manifest_locator_or_text):
-            self._manifest_text = manifest_locator_or_text
-            self._manifest_locator = None
-        else:
-            raise errors.ArgumentError(
-                "Argument to CollectionReader must be a manifest or a collection UUID")
-        self._api_response = None
-        self._streams = None
-
-    def _populate_from_api_server(self):
-        # As in KeepClient itself, we must wait until the last
-        # possible moment to instantiate an API client, in order to
-        # avoid tripping up clients that don't have access to an API
-        # server.  If we do build one, make sure our Keep client uses
-        # it.  If instantiation fails, we'll fall back to the except
-        # clause, just like any other Collection lookup
-        # failure. Return an exception, or None if successful.
-        try:
-            if self._api_client is None:
-                self._api_client = arvados.api('v1')
-                self._keep_client = None  # Make a new one with the new api.
-            self._api_response = self._api_client.collections().get(
-                uuid=self._manifest_locator).execute(
-                num_retries=self.num_retries)
-            self._manifest_text = self._api_response['manifest_text']
-            return None
-        except Exception as e:
-            return e
-
-    def _populate_from_keep(self):
-        # Retrieve a manifest directly from Keep. This has a chance of
-        # working if [a] the locator includes a permission signature
-        # or [b] the Keep services are operating in world-readable
-        # mode. Return an exception, or None if successful.
-        try:
-            self._manifest_text = self._my_keep().get(
-                self._manifest_locator, num_retries=self.num_retries)
-        except Exception as e:
-            return e
-
-    def _populate(self):
-        error_via_api = None
-        error_via_keep = None
-        should_try_keep = ((self._manifest_text is None) and
-                           util.keep_locator_pattern.match(
-                self._manifest_locator))
-        if ((self._manifest_text is None) and
-            util.signed_locator_pattern.match(self._manifest_locator)):
-            error_via_keep = self._populate_from_keep()
-        if self._manifest_text is None:
-            error_via_api = self._populate_from_api_server()
-            if error_via_api is not None and not should_try_keep:
-                raise error_via_api
-        if ((self._manifest_text is None) and
-            not error_via_keep and
-            should_try_keep):
-            # Looks like a keep locator, and we didn't already try keep above
-            error_via_keep = self._populate_from_keep()
-        if self._manifest_text is None:
-            # Nothing worked!
-            raise arvados.errors.NotFoundError(
-                ("Failed to retrieve collection '{}' " +
-                 "from either API server ({}) or Keep ({})."
-                 ).format(
-                    self._manifest_locator,
-                    error_via_api,
-                    error_via_keep))
-        self._streams = [sline.split()
-                         for sline in self._manifest_text.split("\n")
-                         if sline]
-
-    def _populate_first(orig_func):
-        # Decorator for methods that read actual Collection data.
-        @functools.wraps(orig_func)
-        def populate_first_wrapper(self, *args, **kwargs):
-            if self._streams is None:
-                self._populate()
-            return orig_func(self, *args, **kwargs)
-        return populate_first_wrapper
-
-    @_populate_first
-    def api_response(self):
-        """api_response() -> dict or None
-
-        Returns information about this Collection fetched from the API server.
-        If the Collection exists in Keep but not the API server, currently
-        returns None.  Future versions may provide a synthetic response.
-        """
-        return self._api_response
-
-    @_populate_first
-    def normalize(self):
-        # Rearrange streams
-        streams = {}
-        for s in self.all_streams():
-            for f in s.all_files():
-                streamname, filename = split(s.name() + "/" + f.name())
-                if streamname not in streams:
-                    streams[streamname] = {}
-                if filename not in streams[streamname]:
-                    streams[streamname][filename] = []
-                for r in f.segments:
-                    streams[streamname][filename].extend(s.locators_and_ranges(r.locator, r.range_size))
-
-        self._streams = [normalize_stream(s, streams[s])
-                         for s in sorted(streams)]
-
-        # Regenerate the manifest text based on the normalized streams
-        self._manifest_text = ''.join(
-            [StreamReader(stream, keep=self._my_keep()).manifest_text()
-             for stream in self._streams])
-
-    @_populate_first
-    def open(self, streampath, filename=None):
-        """open(streampath[, filename]) -> file-like object
-
-        Pass in the path of a file to read from the Collection, either as a
-        single string or as two separate stream name and file name arguments.
-        This method returns a file-like object to read that file.
-        """
-        if filename is None:
-            streampath, filename = split(streampath)
-        keep_client = self._my_keep()
-        for stream_s in self._streams:
-            stream = StreamReader(stream_s, keep_client,
-                                  num_retries=self.num_retries)
-            if stream.name() == streampath:
-                break
-        else:
-            raise ValueError("stream '{}' not found in Collection".
-                             format(streampath))
-        try:
-            return stream.files()[filename]
-        except KeyError:
-            raise ValueError("file '{}' not found in Collection stream '{}'".
-                             format(filename, streampath))
-
-    @_populate_first
-    def all_streams(self):
-        return [StreamReader(s, self._my_keep(), num_retries=self.num_retries)
-                for s in self._streams]
-
-    def all_files(self):
-        for s in self.all_streams():
-            for f in s.all_files():
-                yield f
-
-    @_populate_first
-    def manifest_text(self, strip=False, normalize=False):
-        if normalize:
-            cr = CollectionReader(self.manifest_text())
-            cr.normalize()
-            return cr.manifest_text(strip=strip, normalize=False)
-        elif strip:
-            return self.stripped_manifest()
-        else:
-            return self._manifest_text
 
 
 class _WriterFile(FileLikeObjectBase):
@@ -715,9 +525,6 @@ class SynchronizedCollectionBase(CollectionBase):
 
         """
 
-        if self.sync_mode() == SYNC_READONLY:
-            raise IOError((errno.EROFS, "Collection is read only"))
-
         pathcomponents = path.split("/")
         if pathcomponents[0] == '.':
             del pathcomponents[0]
@@ -1007,24 +814,50 @@ class SynchronizedCollectionBase(CollectionBase):
             self.notify(ADD, target_dir, target_name, dup)
 
     @synchronized
-    def manifest_text(self, strip=False, normalize=False):
+    def manifest_text(self, stream_name=".", strip=False, normalize=False):
         """Get the manifest text for this collection, sub collections and files.
+
+        :stream_name:
+          Name of the stream (directory)
 
         :strip:
           If True, remove signing tokens from block locators if present.
-          If False, block locators are left unchanged.
+          If False (default), block locators are left unchanged.
 
         :normalize:
           If True, always export the manifest text in normalized form
-          even if the Collection is not modified.  If False and the collection
+          even if the Collection is not modified.  If False (default) and the collection
           is not modified, return the original manifest text even if it is not
           in normalized form.
 
         """
+
+        portable_locators = strip
         if self.modified() or self._manifest_text is None or normalize:
-            return export_manifest(self, stream_name=".", portable_locators=strip)
+            item  = self
+            stream = {}
+            sorted_keys = sorted(item.keys())
+            for filename in [s for s in sorted_keys if isinstance(item[s], ArvadosFile)]:
+                # Create a stream per file `k`
+                arvfile = item[filename]
+                filestream = []
+                for segment in arvfile.segments():
+                    loc = segment.locator
+                    if arvfile.parent._my_block_manager().is_bufferblock(loc):
+                        loc = arvfile.parent._my_block_manager().get_bufferblock(loc).locator()
+                    if portable_locators:
+                        loc = KeepLocator(loc).stripped()
+                    filestream.append(LocatorAndRange(loc, locator_block_size(loc),
+                                         segment.segment_offset, segment.range_size))
+                stream[filename] = filestream
+            if stream:
+                buf += ' '.join(normalize_stream(stream_name, stream))
+                buf += "\n"
+            for dirname in [s for s in sorted_keys if isinstance(item[s], SynchronizedCollectionBase)]:
+                buf += item[dirname].manifest_text(stream_name=os.path.join(stream_name, dirname), portable_locators=portable_locators)
+            return buf
         else:
-            if strip:
+            if portable_locators:
                 return self.stripped_manifest()
             else:
                 return self._manifest_text
@@ -1121,6 +954,7 @@ class SynchronizedCollectionBase(CollectionBase):
     def __ne__(self, other):
         return not self.__eq__(other)
 
+
 class Collection(SynchronizedCollectionBase):
     """Represents the root of an Arvados Collection, which may be associated with
     an API server Collection record.
@@ -1163,8 +997,7 @@ class Collection(SynchronizedCollectionBase):
                  api_client=None,
                  keep_client=None,
                  num_retries=None,
-                 block_manager=None,
-                 sync=None):
+                 block_manager=None):
         """Collection constructor.
 
         :manifest_locator_or_text:
@@ -1184,16 +1017,6 @@ class Collection(SynchronizedCollectionBase):
           the number of retries for API and Keep requests.
         :block_manager:
           the block manager to use.  If not specified, create one.
-        :sync:
-          Set synchronization policy with API server collection record.
-          :SYNC_READONLY:
-            Collection is read only.  No synchronization.  This mode will
-            also forego locking, which gives better performance.
-          :SYNC_EXPLICIT:
-            Collection is writable.  Synchronize on explicit request via `update()` or `save()`
-          :SYNC_LIVE:
-            Collection is writable.  Synchronize with server in response to
-            background websocket events, on block write, or on file close.
 
         """
         super(Collection, self).__init__(parent)
@@ -1211,11 +1034,9 @@ class Collection(SynchronizedCollectionBase):
         self._manifest_text = None
         self._api_response = None
 
-        if sync is None:
-            raise errors.ArgumentError("Must specify sync mode")
-
-        self._sync = sync
-        self.lock = threading.RLock()
+        self._sync = SYNC_EXPLICIT
+        if not self.lock:
+            self.lock = threading.RLock()
         self.callbacks = []
         self.events = None
 
@@ -1231,7 +1052,6 @@ class Collection(SynchronizedCollectionBase):
                     "Argument to CollectionReader must be a manifest or a collection UUID")
 
             self._populate()
-            self._subscribe_events()
 
 
     def root_collection(self):
@@ -1239,18 +1059,6 @@ class Collection(SynchronizedCollectionBase):
 
     def sync_mode(self):
         return self._sync
-
-    def _subscribe_events(self):
-        if self._sync == SYNC_LIVE and self.events is None:
-            if not self._has_collection_uuid():
-                raise errors.ArgumentError("Cannot SYNC_LIVE associated with a collection uuid")
-            self.events = events.subscribe(arvados.api(apiconfig=self._config),
-                                           [["object_uuid", "=", self._manifest_locator]],
-                                           self.on_message)
-
-    def on_message(self, event):
-        if event.get("object_uuid") == self._manifest_locator:
-            self.update()
 
     @synchronized
     @retry_method
@@ -1286,7 +1094,7 @@ class Collection(SynchronizedCollectionBase):
     @synchronized
     def _my_block_manager(self):
         if self._block_manager is None:
-            self._block_manager = BlockManager(self._my_keep())
+            self._block_manager = _BlockManager(self._my_keep())
         return self._block_manager
 
     def _populate_from_api_server(self):
@@ -1350,10 +1158,6 @@ class Collection(SynchronizedCollectionBase):
         self._baseline_manifest = self._manifest_text
         import_manifest(self._manifest_text, self)
 
-        if self._sync == SYNC_READONLY:
-            # Now that we're populated, knowing that this will be readonly,
-            # forego any further locking.
-            self.lock = NoopLock()
 
     def _has_collection_uuid(self):
         return self._manifest_locator is not None and re.match(util.collection_uuid_pattern, self._manifest_locator)
@@ -1423,6 +1227,7 @@ class Collection(SynchronizedCollectionBase):
             self._manifest_text = self._api_response["manifest_text"]
             self.set_unmodified()
 
+
     @must_be_writable
     @synchronized
     @retry_method
@@ -1431,7 +1236,7 @@ class Collection(SynchronizedCollectionBase):
         a new collection record (if create_collection_record True).
 
         After creating a new collection record, this Collection object will be
-        associated with the new record for `save()` and SYNC_LIVE updates.
+        associated with the new record used by `save()`.
 
         :name:
           The collection name.
@@ -1465,13 +1270,7 @@ class Collection(SynchronizedCollectionBase):
             self._api_response = self._my_api().collections().create(ensure_unique_name=ensure_unique_name, body=body).execute(num_retries=num_retries)
             text = self._api_response["manifest_text"]
 
-            if self.events:
-                self.events.unsubscribe(filters=[["object_uuid", "=", self._manifest_locator]])
-
             self._manifest_locator = self._api_response["uuid"]
-
-            if self.events:
-                self.events.subscribe(filters=[["object_uuid", "=", self._manifest_locator]])
 
         self._manifest_text = text
         self.set_unmodified()
@@ -1489,76 +1288,69 @@ class Collection(SynchronizedCollectionBase):
         for c in self.callbacks:
             c(event, collection, name, item)
 
-def ReadOnlyCollection(*args, **kwargs):
-    """Create a read-only collection object from an api collection record locator,
-    a portable data hash of a manifest, or raw manifest text.
+    @synchronized
+    def _import_manifest(self, manifest_text):
+        """Import a manifest into a `Collection`.
 
-    See `Collection` constructor for detailed options.
+        :manifest_text:
+          The manifest text to import from.
 
-    """
-    kwargs["sync"] = SYNC_READONLY
-    return Collection(*args, **kwargs)
+        """
+        if len(self) > 0:
+            raise ArgumentError("Can only import manifest into an empty collection")
 
-def WritableCollection(*args, **kwargs):
-    """Create a writable collection object from an api collection record locator,
-    a portable data hash of a manifest, or raw manifest text.
+        into_collection = self
+        save_sync = into_collection.sync_mode()
+        into_collection._sync = None
 
-    See `Collection` constructor for detailed options.
+        STREAM_NAME = 0
+        BLOCKS = 1
+        SEGMENTS = 2
 
-    """
+        stream_name = None
+        state = STREAM_NAME
 
-    kwargs["sync"] = SYNC_EXPLICIT
-    return Collection(*args, **kwargs)
+        for n in re.finditer(r'(\S+)(\s+|$)', manifest_text):
+            tok = n.group(1)
+            sep = n.group(2)
 
-def LiveCollection(*args, **kwargs):
-    """Create a writable, live updating collection object representing an existing
-    collection record on the API server.
+            if state == STREAM_NAME:
+                # starting a new stream
+                stream_name = tok.replace('\\040', ' ')
+                blocks = []
+                segments = []
+                streamoffset = 0L
+                state = BLOCKS
+                continue
 
-    See `Collection` constructor for detailed options.
+            if state == BLOCKS:
+                s = re.match(r'[0-9a-f]{32}\+(\d+)(\+\S+)*', tok)
+                if s:
+                    blocksize = long(s.group(1))
+                    blocks.append(Range(tok, streamoffset, blocksize))
+                    streamoffset += blocksize
+                else:
+                    state = SEGMENTS
 
-    """
-    kwargs["sync"] = SYNC_LIVE
-    return Collection(*args, **kwargs)
+            if state == SEGMENTS:
+                s = re.search(r'^(\d+):(\d+):(\S+)', tok)
+                if s:
+                    pos = long(s.group(1))
+                    size = long(s.group(2))
+                    name = s.group(3).replace('\\040', ' ')
+                    f = into_collection.find_or_create("%s/%s" % (stream_name, name), FILE)
+                    f.add_segment(blocks, pos, size)
+                else:
+                    # error!
+                    raise errors.SyntaxError("Invalid manifest format")
 
-def createWritableCollection(name, owner_uuid=None, apiconfig=None):
-    """Create an empty, writable collection object and create an associated api
-    collection record.
+            if sep == "\n":
+                stream_name = None
+                state = STREAM_NAME
 
-    :name:
-      The collection name
+        into_collection.set_unmodified()
+        into_collection._sync = save_sync
 
-    :owner_uuid:
-      The parent project.
-
-    :apiconfig:
-      Optional alternate api configuration to use (to specify alternate API
-      host or token than the default.)
-
-    """
-    newcollection = Collection(sync=SYNC_EXPLICIT, apiconfig=apiconfig)
-    newcollection.save_new(name, owner_uuid=owner_uuid, ensure_unique_name=True)
-    return newcollection
-
-def createLiveCollection(name, owner_uuid=None, apiconfig=None):
-    """Create an empty, writable, live updating Collection object and create an
-    associated collection record on the API server.
-
-    :name:
-      The collection name
-
-    :owner_uuid:
-      The parent project.
-
-    :apiconfig:
-      Optional alternate api configuration to use (to specify alternate API
-      host or token than the default.)
-
-    """
-    newcollection = Collection(sync=SYNC_EXPLICIT, apiconfig=apiconfig)
-    newcollection.save_new(name, owner_uuid=owner_uuid, ensure_unique_name=True)
-    newcollection._sync = SYNC_LIVE
-    newcollection._subscribe_events()
-    return newcollection
 
 class Subcollection(SynchronizedCollectionBase):
     """This is a subdirectory within a collection that doesn't have its own API
@@ -1599,139 +1391,50 @@ class Subcollection(SynchronizedCollectionBase):
         self._cloneinto(c)
         return c
 
-def import_manifest(manifest_text,
-                    into_collection=None,
-                    api_client=None,
-                    keep=None,
-                    num_retries=None,
-                    sync=SYNC_READONLY):
-    """Import a manifest into a `Collection`.
 
-    :manifest_text:
-      The manifest text to import from.
+class CollectionReader(Collection):
+    """A read-only collection object from an api collection record locator,
+    a portable data hash of a manifest, or raw manifest text.
 
-    :into_collection:
-      The `Collection` that will be initialized (must be empty).
-      If None, create a new `Collection` object.
-
-    :api_client:
-      The API client object that will be used when creating a new `Collection` object.
-
-    :keep:
-      The keep client object that will be used when creating a new `Collection` object.
-
-    :num_retries:
-      the default number of api client and keep retries on error.
-
-    :sync:
-      Collection sync mode (only if into_collection is None)
-    """
-    if into_collection is not None:
-        if len(into_collection) > 0:
-            raise ArgumentError("Can only import manifest into an empty collection")
-    else:
-        into_collection = Collection(api_client=api_client, keep_client=keep, num_retries=num_retries, sync=sync)
-
-    save_sync = into_collection.sync_mode()
-    into_collection._sync = None
-
-    STREAM_NAME = 0
-    BLOCKS = 1
-    SEGMENTS = 2
-
-    stream_name = None
-    state = STREAM_NAME
-
-    for n in re.finditer(r'(\S+)(\s+|$)', manifest_text):
-        tok = n.group(1)
-        sep = n.group(2)
-
-        if state == STREAM_NAME:
-            # starting a new stream
-            stream_name = tok.replace('\\040', ' ')
-            blocks = []
-            segments = []
-            streamoffset = 0L
-            state = BLOCKS
-            continue
-
-        if state == BLOCKS:
-            s = re.match(r'[0-9a-f]{32}\+(\d+)(\+\S+)*', tok)
-            if s:
-                blocksize = long(s.group(1))
-                blocks.append(Range(tok, streamoffset, blocksize))
-                streamoffset += blocksize
-            else:
-                state = SEGMENTS
-
-        if state == SEGMENTS:
-            s = re.search(r'^(\d+):(\d+):(\S+)', tok)
-            if s:
-                pos = long(s.group(1))
-                size = long(s.group(2))
-                name = s.group(3).replace('\\040', ' ')
-                f = into_collection.find_or_create("%s/%s" % (stream_name, name), FILE)
-                f.add_segment(blocks, pos, size)
-            else:
-                # error!
-                raise errors.SyntaxError("Invalid manifest format")
-
-        if sep == "\n":
-            stream_name = None
-            state = STREAM_NAME
-
-    into_collection.set_unmodified()
-    into_collection._sync = save_sync
-    return into_collection
-
-def export_manifest(item, stream_name=".", portable_locators=False):
-    """Export a manifest from the contents of a SynchronizedCollectionBase.
-
-    :item:
-      Create a manifest for `item` (must be a `SynchronizedCollectionBase` or `ArvadosFile`).  If
-      `item` is a is a `Collection`, this will also export subcollections.
-
-    :stream_name:
-      the name of the stream when exporting `item`.
-
-    :portable_locators:
-      If True, strip any permission hints on block locators.
-      If False, use block locators as-is.
+    See `Collection` constructor for detailed options.
 
     """
-    buf = ""
-    if isinstance(item, SynchronizedCollectionBase):
-        stream = {}
-        sorted_keys = sorted(item.keys())
-        for filename in [s for s in sorted_keys if isinstance(item[s], ArvadosFile)]:
-            # Create a stream per file `k`
-            arvfile = item[filename]
-            filestream = []
-            for segment in arvfile.segments():
-                loc = segment.locator
-                if loc.startswith("bufferblock"):
-                    loc = arvfile.parent._my_block_manager()._bufferblocks[loc].locator()
-                if portable_locators:
-                    loc = KeepLocator(loc).stripped()
-                filestream.append(LocatorAndRange(loc, locator_block_size(loc),
-                                     segment.segment_offset, segment.range_size))
-            stream[filename] = filestream
-        if stream:
-            buf += ' '.join(normalize_stream(stream_name, stream))
-            buf += "\n"
-        for dirname in [s for s in sorted_keys if isinstance(item[s], SynchronizedCollectionBase)]:
-            buf += export_manifest(item[dirname], stream_name=os.path.join(stream_name, dirname), portable_locators=portable_locators)
-    elif isinstance(item, ArvadosFile):
-        filestream = []
-        for segment in item.segments:
-            loc = segment.locator
-            if loc.startswith("bufferblock"):
-                loc = item._bufferblocks[loc].calculate_locator()
-            if portable_locators:
-                loc = KeepLocator(loc).stripped()
-            filestream.append(LocatorAndRange(loc, locator_block_size(loc),
-                                 segment.segment_offset, segment.range_size))
-        stream[stream_name] = filestream
-        buf += ' '.join(normalize_stream(stream_name, stream))
-        buf += "\n"
-    return buf
+    def __init__(self, *args, **kwargs):
+        if not args and not kwargs.get("manifest_locator_or_text"):
+            raise errors.ArgumentError("Must provide manifest locator or text to initialize ReadOnlyCollection")
+
+        # Forego any locking since it should never change once initialized.
+        self.lock = NoopLock()
+
+        super(ReadOnlyCollection, self).__init__(*args, **kwargs)
+
+        self._sync = SYNC_READONLY
+
+        self._streams = [sline.split()
+                         for sline in self._manifest_text.split("\n")
+                         if sline]
+
+    def normalize(self):
+        # Rearrange streams
+        streams = {}
+        for s in self.all_streams():
+            for f in s.all_files():
+                streamname, filename = split(s.name() + "/" + f.name())
+                if streamname not in streams:
+                    streams[streamname] = {}
+                if filename not in streams[streamname]:
+                    streams[streamname][filename] = []
+                for r in f.segments:
+                    streams[streamname][filename].extend(s.locators_and_ranges(r.locator, r.range_size))
+
+        self._streams = [normalize_stream(s, streams[s])
+                         for s in sorted(streams)]
+
+    def all_streams(self):
+        return [StreamReader(s, self._my_keep(), num_retries=self.num_retries)
+                for s in self._streams]
+
+    def all_files(self):
+        for s in self.all_streams():
+            for f in s.all_files():
+                yield f

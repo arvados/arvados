@@ -66,7 +66,7 @@ class LocatorAndRange(object):
         return "LocatorAndRange(\"%s\", %i, %i, %i)" % (self.locator, self.block_size, self.segment_offset, self.segment_size)
 
 def locators_and_ranges(data_locators, range_start, range_size):
-    '''Get blocks that are covered by the range and return list of LocatorAndRange
+    """Get blocks that are covered by the range and return list of LocatorAndRange
     objects.
 
     :data_locators:
@@ -78,7 +78,7 @@ def locators_and_ranges(data_locators, range_start, range_size):
     :range_size:
       size of range
 
-    '''
+    """
     if range_size == 0:
         return []
     resp = []
@@ -124,7 +124,7 @@ def locators_and_ranges(data_locators, range_start, range_size):
     return resp
 
 def replace_range(data_locators, new_range_start, new_range_size, new_locator, new_segment_offset):
-    '''
+    """
     Replace a file segment range with a new segment.
 
     NOTE::
@@ -145,7 +145,7 @@ def replace_range(data_locators, new_range_start, new_range_size, new_locator, n
     :new_segment_offset:
       segment offset within the locator
 
-    '''
+    """
     if new_range_size == 0:
         return
 
