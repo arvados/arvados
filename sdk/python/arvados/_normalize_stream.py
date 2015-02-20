@@ -9,6 +9,7 @@ def normalize_stream(stream_name, stream):
 
     """
 
+    stream_name = stream_name.replace(' ', '\\040')
     stream_tokens = [stream_name]
     sortedfiles = list(stream.keys())
     sortedfiles.sort()

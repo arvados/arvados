@@ -1,5 +1,5 @@
 import threading
-import api
+import apisetup
 import keep
 import config
 import copy
@@ -21,7 +21,7 @@ class ThreadSafeApiCache(object):
 
     def localapi(self):
         if 'api' not in self.local.__dict__:
-            self.local.api = api.api_from_config('v1', apiconfig=self.apiconfig)
+            self.local.api = apisetup.api_from_config('v1', apiconfig=self.apiconfig)
         return self.local.api
 
     def __getattr__(self, name):

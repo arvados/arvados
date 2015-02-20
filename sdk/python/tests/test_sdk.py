@@ -7,7 +7,7 @@ import arvados.collection
 
 class TestSDK(unittest.TestCase):
 
-    @mock.patch('arvados.api')
+    @mock.patch('arvados.apisetup.api_from_config')
     @mock.patch('arvados.current_task')
     @mock.patch('arvados.current_job')
     def test_one_task_per_input_file_normalize(self, mock_job, mock_task, mock_api):
@@ -40,4 +40,3 @@ class TestSDK(unittest.TestCase):
         # it should now create only one job task and not three.
         arvados.job_setup.one_task_per_input_file(and_end_task=False)
         mock_api('v1').job_tasks().create().execute.assert_called_once_with()
-

@@ -6,7 +6,7 @@ import threading
 import functools
 import copy
 
-from ._ranges import locators_and_ranges
+from ._ranges import locators_and_ranges, Range
 from .arvfile import StreamFileReader
 from arvados.retry import retry_method
 from keep import *

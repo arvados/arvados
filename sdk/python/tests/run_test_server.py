@@ -25,7 +25,7 @@ if __name__ == '__main__' and os.path.exists(
     # Add the Python SDK source to the library path.
     sys.path.insert(1, os.path.dirname(MY_DIRNAME))
 
-import arvados.api
+import arvados
 import arvados.config
 
 ARVADOS_DIR = os.path.realpath(os.path.join(MY_DIRNAME, '../../..'))

@@ -2,7 +2,7 @@ import functools
 import os
 import zlib
 import bz2
-from ._ranges import locators_and_ranges, replace_range
+from ._ranges import locators_and_ranges, replace_range, Range
 from arvados.retry import retry_method
 import config
 import hashlib
@@ -81,7 +81,7 @@ class ArvadosFileReaderBase(_FileLikeObjectBase):
     def decompressed_name(self):
         return re.sub('\.(bz2|gz)$', '', self.name)
 
-    @FileLikeObjectBase._before_close
+    @_FileLikeObjectBase._before_close
     def seek(self, pos, whence=os.SEEK_CUR):
         if whence == os.SEEK_CUR:
             pos += self._filepos
@@ -92,7 +92,7 @@ class ArvadosFileReaderBase(_FileLikeObjectBase):
     def tell(self):
         return self._filepos
 
-    @FileLikeObjectBase._before_close
+    @_FileLikeObjectBase._before_close
     @retry_method
     def readall(self, size=2**20, num_retries=None):
         while True:
@@ -101,7 +101,7 @@ class ArvadosFileReaderBase(_FileLikeObjectBase):
                 break
             yield data
 
-    @FileLikeObjectBase._before_close
+    @_FileLikeObjectBase._before_close
     @retry_method
     def readline(self, size=float('inf'), num_retries=None):
         cache_pos, cache_data = self._readline_cache
@@ -125,7 +125,7 @@ class ArvadosFileReaderBase(_FileLikeObjectBase):
         self._readline_cache = (self.tell(), data[nextline_index:])
         return data[:nextline_index]
 
-    @FileLikeObjectBase._before_close
+    @_FileLikeObjectBase._before_close
     @retry_method
     def decompress(self, decompress, size, num_retries=None):
         for segment in self.readall(size, num_retries):
@@ -133,7 +133,7 @@ class ArvadosFileReaderBase(_FileLikeObjectBase):
             if data:
                 yield data
 
-    @FileLikeObjectBase._before_close
+    @_FileLikeObjectBase._before_close
     @retry_method
     def readall_decompressed(self, size=2**20, num_retries=None):
         self.seek(0)
@@ -148,7 +148,7 @@ class ArvadosFileReaderBase(_FileLikeObjectBase):
         else:
             return self.readall(size, num_retries=num_retries)
 
-    @FileLikeObjectBase._before_close
+    @_FileLikeObjectBase._before_close
     @retry_method
     def readlines(self, sizehint=float('inf'), num_retries=None):
         data = []
@@ -183,7 +183,7 @@ class StreamFileReader(ArvadosFileReaderBase):
         n = self.segments[-1]
         return n.range_start + n.range_size
 
-    @FileLikeObjectBase._before_close
+    @_FileLikeObjectBase._before_close
     @retry_method
     def read(self, size, num_retries=None):
         """Read up to 'size' bytes from the stream, starting at the current file position"""
@@ -201,7 +201,7 @@ class StreamFileReader(ArvadosFileReaderBase):
         self._filepos += len(data)
         return data
 
-    @FileLikeObjectBase._before_close
+    @_FileLikeObjectBase._before_close
     @retry_method
     def readfrom(self, start, size, num_retries=None):
         """Read up to 'size' bytes from the stream, starting at 'start'"""
@@ -300,9 +300,9 @@ class _BufferBlock(object):
             (self._state == _BufferBlock.PENDING and nextstate == _BufferBlock.COMMITTED)):
             self._state = nextstate
             if self._state == _BufferBlock.COMMITTED:
-                    bufferblock._locator = loc
-                    bufferblock.buffer_view = None
-                    bufferblock.buffer_block = None
+                self._locator = loc
+                self.buffer_view = None
+                self.buffer_block = None
         else:
             raise AssertionError("Invalid state change from %s to %s" % (self.state, state))
 
@@ -821,6 +821,7 @@ class ArvadosFile(object):
 
     @synchronized
     def manifest_text(self, stream_name=".", portable_locators=False, normalize=False):
+        buf = ""
         item = self
         filestream = []
         for segment in item.segments:
@@ -852,7 +853,10 @@ class ArvadosFileReader(ArvadosFileReaderBase):
     def size(self):
         return self.arvadosfile.size()
 
-    @FileLikeObjectBase._before_close
+    def stream_name(self):
+        return self.arvadosfile.parent.stream_name()
+
+    @_FileLikeObjectBase._before_close
     @retry_method
     def read(self, size, num_retries=None):
         """Read up to `size` bytes from the stream, starting at the current file position."""
@@ -860,7 +864,7 @@ class ArvadosFileReader(ArvadosFileReaderBase):
         self._filepos += len(data)
         return data
 
-    @FileLikeObjectBase._before_close
+    @_FileLikeObjectBase._before_close
     @retry_method
     def readfrom(self, offset, size, num_retries=None):
         """Read up to `size` bytes from the stream, starting at the current file position."""
@@ -881,7 +885,7 @@ class ArvadosFileWriter(ArvadosFileReader):
     def __init__(self, arvadosfile, name, mode, num_retries=None):
         super(ArvadosFileWriter, self).__init__(arvadosfile, name, mode, num_retries=num_retries)
 
-    @FileLikeObjectBase._before_close
+    @_FileLikeObjectBase._before_close
     @retry_method
     def write(self, data, num_retries=None):
         if self.mode[0] == "a":
@@ -890,7 +894,7 @@ class ArvadosFileWriter(ArvadosFileReader):
             self.arvadosfile.writeto(self._filepos, data, num_retries)
             self._filepos += len(data)
 
-    @FileLikeObjectBase._before_close
+    @_FileLikeObjectBase._before_close
     @retry_method
     def writelines(self, seq, num_retries=None):
         for s in seq:

@@ -76,14 +76,22 @@ def http_cache(data_type):
 def api(version=None, cache=True, host=None, token=None, insecure=False, **kwargs):
     """Return an apiclient Resources object for an Arvados instance.
 
-    Arguments:
-    * version: A string naming the version of the Arvados API to use (for
+    :version:
+      A string naming the version of the Arvados API to use (for
       example, 'v1').
-    * cache: Use a cache (~/.cache/arvados/discovery) for the discovery
+
+    :cache:
+      Use a cache (~/.cache/arvados/discovery) for the discovery
       document.
-    * host: The Arvados API server host (and optional :port) to connect to.
-    * token: The authentication token to send with each API call.
-    * insecure: If True, ignore SSL certificate validation errors.
+
+    :host:
+      The Arvados API server host (and optional :port) to connect to.
+
+    :token:
+      The authentication token to send with each API call.
+
+    :insecure:
+      If True, ignore SSL certificate validation errors.
 
     Additional keyword arguments will be passed directly to
     `apiclient_discovery.build` if a new Resource object is created.

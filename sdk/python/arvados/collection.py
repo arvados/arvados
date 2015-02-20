@@ -8,10 +8,10 @@ import time
 from collections import deque
 from stat import *
 
-from .arvfile import split, FileLikeObjectBase, ArvadosFile, ArvadosFileWriter, ArvadosFileReader, _BlockManager, synchronized, must_be_writable, SYNC_READONLY, SYNC_EXPLICIT, NoopLock
+from .arvfile import split, _FileLikeObjectBase, ArvadosFile, ArvadosFileWriter, ArvadosFileReader, _BlockManager, synchronized, must_be_writable, SYNC_READONLY, SYNC_EXPLICIT, NoopLock
 from keep import *
-from .stream import StreamReader, normalize_stream, locator_block_size
-from .ranges import Range, LocatorAndRange
+from .stream import StreamReader, normalize_stream
+from ._ranges import Range, LocatorAndRange
 from .safeapi import ThreadSafeApiCache
 import config
 import errors
@@ -54,7 +54,7 @@ class CollectionBase(object):
         return ''.join(clean)
 
 
-class _WriterFile(FileLikeObjectBase):
+class _WriterFile(_FileLikeObjectBase):
     def __init__(self, coll_writer, name):
         super(_WriterFile, self).__init__(name, 'wb')
         self.dest = coll_writer
@@ -63,16 +63,16 @@ class _WriterFile(FileLikeObjectBase):
         super(_WriterFile, self).close()
         self.dest.finish_current_file()
 
-    @FileLikeObjectBase._before_close
+    @_FileLikeObjectBase._before_close
     def write(self, data):
         self.dest.write(data)
 
-    @FileLikeObjectBase._before_close
+    @_FileLikeObjectBase._before_close
     def writelines(self, seq):
         for data in seq:
             self.write(data)
 
-    @FileLikeObjectBase._before_close
+    @_FileLikeObjectBase._before_close
     def flush(self):
         self.dest.flush_data()
 
@@ -494,9 +494,6 @@ class SynchronizedCollectionBase(CollectionBase):
     def _my_block_manager(self):
         raise NotImplementedError()
 
-    def _populate(self):
-        raise NotImplementedError()
-
     def sync_mode(self):
         raise NotImplementedError()
 
@@ -504,6 +501,9 @@ class SynchronizedCollectionBase(CollectionBase):
         raise NotImplementedError()
 
     def notify(self, event, collection, name, item):
+        raise NotImplementedError()
+
+    def stream_name(self):
         raise NotImplementedError()
 
     @must_be_writable
@@ -554,7 +554,7 @@ class SynchronizedCollectionBase(CollectionBase):
                 if isinstance(item, SynchronizedCollectionBase):
                     return item.find_or_create("/".join(pathcomponents), create_type)
                 else:
-                    raise errors.ArgumentError("Interior path components must be subcollection")
+                    raise IOError((errno.ENOTDIR, "Interior path components must be subcollection"))
         else:
             return self
 
@@ -580,7 +580,7 @@ class SynchronizedCollectionBase(CollectionBase):
                 if isinstance(item, SynchronizedCollectionBase):
                     return item.find("/".join(pathcomponents))
                 else:
-                    raise errors.ArgumentError("Interior path components must be subcollection")
+                    raise IOError((errno.ENOTDIR, "Interior path components must be subcollection"))
         else:
             return self
 
@@ -593,7 +593,7 @@ class SynchronizedCollectionBase(CollectionBase):
         """
         return self.find_or_create(path, COLLECTION)
 
-    def open(self, path, mode):
+    def open(self, path, mode="r"):
         """Open a file-like object for access.
 
         :path:
@@ -613,7 +613,7 @@ class SynchronizedCollectionBase(CollectionBase):
         """
         mode = mode.replace("b", "")
         if len(mode) == 0 or mode[0] not in ("r", "w", "a"):
-            raise ArgumentError("Bad mode '%s'" % mode)
+            raise errors.ArgumentError("Bad mode '%s'" % mode)
         create = (mode != "r")
 
         if create and self.sync_mode() == SYNC_READONLY:
@@ -632,10 +632,12 @@ class SynchronizedCollectionBase(CollectionBase):
         if mode[0] == "w":
             arvfile.truncate(0)
 
+        name = os.path.basename(path)
+
         if mode == "r":
-            return ArvadosFileReader(arvfile, path, mode, num_retries=self.num_retries)
+            return ArvadosFileReader(arvfile, name, mode, num_retries=self.num_retries)
         else:
-            return ArvadosFileWriter(arvfile, path, mode, num_retries=self.num_retries)
+            return ArvadosFileWriter(arvfile, name, mode, num_retries=self.num_retries)
 
     @synchronized
     def modified(self):
@@ -832,10 +834,10 @@ class SynchronizedCollectionBase(CollectionBase):
 
         """
 
-        portable_locators = strip
         if self.modified() or self._manifest_text is None or normalize:
             item  = self
             stream = {}
+            buf = ""
             sorted_keys = sorted(item.keys())
             for filename in [s for s in sorted_keys if isinstance(item[s], ArvadosFile)]:
                 # Create a stream per file `k`
@@ -845,19 +847,19 @@ class SynchronizedCollectionBase(CollectionBase):
                     loc = segment.locator
                     if arvfile.parent._my_block_manager().is_bufferblock(loc):
                         loc = arvfile.parent._my_block_manager().get_bufferblock(loc).locator()
-                    if portable_locators:
+                    if strip:
                         loc = KeepLocator(loc).stripped()
-                    filestream.append(LocatorAndRange(loc, locator_block_size(loc),
+                    filestream.append(LocatorAndRange(loc, KeepLocator(loc).size,
                                          segment.segment_offset, segment.range_size))
                 stream[filename] = filestream
             if stream:
                 buf += ' '.join(normalize_stream(stream_name, stream))
                 buf += "\n"
             for dirname in [s for s in sorted_keys if isinstance(item[s], SynchronizedCollectionBase)]:
-                buf += item[dirname].manifest_text(stream_name=os.path.join(stream_name, dirname), portable_locators=portable_locators)
+                buf += item[dirname].manifest_text(stream_name=os.path.join(stream_name, dirname), strip=strip)
             return buf
         else:
-            if portable_locators:
+            if strip:
                 return self.stripped_manifest()
             else:
                 return self._manifest_text
@@ -870,7 +872,7 @@ class SynchronizedCollectionBase(CollectionBase):
         """
         changes = []
         if holding_collection is None:
-            holding_collection = Collection(api_client=self._my_api(), keep_client=self._my_keep(), sync=SYNC_EXPLICIT)
+            holding_collection = Collection(api_client=self._my_api(), keep_client=self._my_keep())
         for k in self:
             if k not in end_collection:
                changes.append((DEL, os.path.join(prefix, k), self[k].clone(holding_collection)))
@@ -1029,14 +1031,13 @@ class Collection(SynchronizedCollectionBase):
         else:
             self._config = config.settings()
 
-        self.num_retries = num_retries if num_retries is not None else 2
+        self.num_retries = num_retries if num_retries is not None else 0
         self._manifest_locator = None
         self._manifest_text = None
         self._api_response = None
 
         self._sync = SYNC_EXPLICIT
-        if not self.lock:
-            self.lock = threading.RLock()
+        self.lock = threading.RLock()
         self.callbacks = []
         self.events = None
 
@@ -1057,6 +1058,9 @@ class Collection(SynchronizedCollectionBase):
     def root_collection(self):
         return self
 
+    def stream_name(self):
+        return "."
+
     def sync_mode(self):
         return self._sync
 
@@ -1071,8 +1075,8 @@ class Collection(SynchronizedCollectionBase):
             if self._manifest_locator is None:
                 raise errors.ArgumentError("`other` is None but collection does not have a manifest_locator uuid")
             response = self._my_api().collections().get(uuid=self._manifest_locator).execute(num_retries=num_retries)
-            other = import_manifest(response["manifest_text"])
-        baseline = import_manifest(self._manifest_text)
+            other = CollectionReader(response["manifest_text"])
+        baseline = CollectionReader(self._manifest_text)
         self.apply(baseline.diff(other))
 
     @synchronized
@@ -1088,7 +1092,7 @@ class Collection(SynchronizedCollectionBase):
             if self._api_client is None:
                 self._my_api()
             else:
-                self._keep_client = KeepClient(api=self._api_client)
+                self._keep_client = KeepClient(api_client=self._api_client)
         return self._keep_client
 
     @synchronized
@@ -1156,7 +1160,7 @@ class Collection(SynchronizedCollectionBase):
                     error_via_keep))
         # populate
         self._baseline_manifest = self._manifest_text
-        import_manifest(self._manifest_text, self)
+        self._import_manifest(self._manifest_text)
 
 
     def _has_collection_uuid(self):
@@ -1173,14 +1177,17 @@ class Collection(SynchronizedCollectionBase):
             self._block_manager.stop_threads()
 
     @synchronized
-    def clone(self, new_parent=None, new_sync=SYNC_READONLY, new_config=None):
+    def clone(self, new_parent=None, readonly=False, new_config=None):
         if new_config is None:
             new_config = self._config
-        newcollection = Collection(parent=new_parent, apiconfig=new_config, sync=SYNC_EXPLICIT)
-        if new_sync == SYNC_READONLY:
-            newcollection.lock = NoopLock()
+        if readonly:
+            newcollection = CollectionReader(parent=new_parent, apiconfig=new_config)
+        else:
+            newcollection = Collection(parent=new_parent, apiconfig=new_config)
+
+        newcollection._sync = None
         self._cloneinto(newcollection)
-        newcollection._sync = new_sync
+        newcollection._sync = SYNC_READONLY if readonly else SYNC_EXPLICIT
         return newcollection
 
     @synchronized
@@ -1363,6 +1370,7 @@ class Subcollection(SynchronizedCollectionBase):
     def __init__(self, parent):
         super(Subcollection, self).__init__(parent)
         self.lock = self.root_collection().lock
+        self._manifest_text = None
 
     def root_collection(self):
         return self.parent.root_collection()
@@ -1379,11 +1387,14 @@ class Subcollection(SynchronizedCollectionBase):
     def _my_block_manager(self):
         return self.root_collection()._my_block_manager()
 
-    def _populate(self):
-        self.root_collection()._populate()
-
     def notify(self, event, collection, name, item):
         return self.root_collection().notify(event, collection, name, item)
+
+    def stream_name(self):
+        for k, v in self.parent.items():
+            if v is self:
+                return os.path.join(self.parent.stream_name(), k)
+        return '.'
 
     @synchronized
     def clone(self, new_parent):
@@ -1403,16 +1414,20 @@ class CollectionReader(Collection):
         if not args and not kwargs.get("manifest_locator_or_text"):
             raise errors.ArgumentError("Must provide manifest locator or text to initialize ReadOnlyCollection")
 
+        super(CollectionReader, self).__init__(*args, **kwargs)
+
         # Forego any locking since it should never change once initialized.
         self.lock = NoopLock()
-
-        super(ReadOnlyCollection, self).__init__(*args, **kwargs)
-
         self._sync = SYNC_READONLY
 
-        self._streams = [sline.split()
-                         for sline in self._manifest_text.split("\n")
-                         if sline]
+        # Backwards compatability with old CollectionReader
+        # all_streams() and all_files()
+        if self._manifest_text:
+            self._streams = [sline.split()
+                             for sline in self._manifest_text.split("\n")
+                             if sline]
+        else:
+            self._streams = []
 
     def normalize(self):
         # Rearrange streams

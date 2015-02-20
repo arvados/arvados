@@ -9,7 +9,8 @@ import unittest
 import hashlib
 
 import arvados
-from arvados import StreamReader, StreamFileReader, Range
+from arvados import StreamReader, StreamFileReader
+from arvados._ranges import Range
 
 import arvados_testutil as tutil
 import run_test_server
