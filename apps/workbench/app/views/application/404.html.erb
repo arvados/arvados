@@ -13,14 +13,24 @@
 
 <h2>Not Found</h2>
 
-<p>The <%= req_item %> was not found.
+<p>The <%= req_item %> was not found.</p>
 
-<% if class_name %>
-Perhaps you'd like to
-<%= link_to("browse all #{class_name_h.pluralize}", action: :index, controller: class_name.tableize) %>?
+<% if !current_user %>
+
+  <p>
+    (I notice you are not logged in. If you're looking for a private
+    page, you'll need to <%=link_to 'log in', arvados_api_client.arvados_login_url(return_to: strip_token_from_path(request.url))%> first.)
+  </p>
+
+<% elsif class_name %>
+
+  <p>
+    Perhaps you'd like to <%= link_to("browse all
+    #{class_name_h.pluralize}", action: :index, controller:
+    class_name.tableize) %>?
+  </p>
+
 <% end %>
-
-</p>
 
 <% error_message = "The #{req_item_plain_text} was not found." %>
 <%= render :partial => "report_error", :locals => {error_message: error_message, error_type: '404'} %>

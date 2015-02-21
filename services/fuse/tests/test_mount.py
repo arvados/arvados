@@ -1,38 +1,38 @@
-import unittest
 import arvados
 import arvados_fuse as fuse
-import threading
-import time
-import os
+import glob
+import json
 import llfuse
-import tempfile
+import os
 import shutil
 import subprocess
-import glob
+import sys
+import tempfile
+import threading
+import time
+import unittest
+
 import run_test_server
-import json
 
 class MountTestBase(unittest.TestCase):
     def setUp(self):
         self.keeptmp = tempfile.mkdtemp()
         os.environ['KEEP_LOCAL_STORE'] = self.keeptmp
         self.mounttmp = tempfile.mkdtemp()
-        run_test_server.run(False)
+        run_test_server.run()
         run_test_server.authorize_with("admin")
-        self.api = api = fuse.SafeApi(arvados.config)
+        self.api = fuse.SafeApi(arvados.config)
 
-    def make_mount(self, root_class, *root_args):
+    def make_mount(self, root_class, **root_kwargs):
         operations = fuse.Operations(os.getuid(), os.getgid())
         operations.inodes.add_entry(root_class(
-                llfuse.ROOT_INODE, operations.inodes, self.api, 0, *root_args))
+            llfuse.ROOT_INODE, operations.inodes, self.api, 0, **root_kwargs))
         llfuse.init(operations, self.mounttmp, [])
         threading.Thread(None, llfuse.main).start()
         # wait until the driver is finished initializing
         operations.initlock.wait()
 
     def tearDown(self):
-        run_test_server.stop()
-
         # llfuse.close is buggy, so use fusermount instead.
         #llfuse.close(unmount=True)
         count = 0
@@ -44,6 +44,7 @@ class MountTestBase(unittest.TestCase):
 
         os.rmdir(self.mounttmp)
         shutil.rmtree(self.keeptmp)
+        run_test_server.reset()
 
     def assertDirContents(self, subdir, expect_content):
         path = self.mounttmp
@@ -96,7 +97,7 @@ class FuseMountTest(MountTestBase):
         self.api.collections().create(body={"manifest_text":cw.manifest_text()}).execute()
 
     def runTest(self):
-        self.make_mount(fuse.CollectionDirectory, self.testcollection)
+        self.make_mount(fuse.CollectionDirectory, collection=self.testcollection)
 
         self.assertDirContents(None, ['thing1.txt', 'thing2.txt',
                                       'edgecases', 'dir1', 'dir2'])
@@ -204,15 +205,8 @@ class FuseTagsUpdateTest(MountTestBase):
         }}).execute()
 
     def runTest(self):
-        operations = fuse.Operations(os.getuid(), os.getgid())
-        e = operations.inodes.add_entry(fuse.TagsDirectory(llfuse.ROOT_INODE, operations.inodes, self.api, 0, poll_time=1))
+        self.make_mount(fuse.TagsDirectory, poll_time=1)
 
-        llfuse.init(operations, self.mounttmp, [])
-        t = threading.Thread(None, lambda: llfuse.main())
-        t.start()
-
-        # wait until the driver is finished initializing
-        operations.initlock.wait()
         self.assertIn('foo_tag', os.listdir(self.mounttmp))
 
         bar_uuid = run_test_server.fixture('collections')['bar_file']['uuid']
@@ -234,7 +228,7 @@ class FuseTagsUpdateTest(MountTestBase):
 class FuseSharedTest(MountTestBase):
     def runTest(self):
         self.make_mount(fuse.SharedDirectory,
-                        self.api.users().current().execute()['uuid'])
+                        exclude=self.api.users().current().execute()['uuid'])
 
         # shared_dirs is a list of the directories exposed
         # by fuse.SharedDirectory (i.e. any object visible
@@ -277,13 +271,30 @@ class FuseSharedTest(MountTestBase):
 class FuseHomeTest(MountTestBase):
     def runTest(self):
         self.make_mount(fuse.ProjectDirectory,
-                        self.api.users().current().execute())
+                        project_object=self.api.users().current().execute())
 
         d1 = os.listdir(self.mounttmp)
         self.assertIn('Unrestricted public data', d1)
 
         d2 = os.listdir(os.path.join(self.mounttmp, 'Unrestricted public data'))
-        self.assertEqual(['GNU General Public License, version 3'], d2)
+        public_project = run_test_server.fixture('groups')[
+            'anonymously_accessible_project']
+        found_in = 0
+        found_not_in = 0
+        for name, item in run_test_server.fixture('collections').iteritems():
+            if 'name' not in item:
+                pass
+            elif item['owner_uuid'] == public_project['uuid']:
+                self.assertIn(item['name'], d2)
+                found_in += 1
+            else:
+                # Artificial assumption here: there is no public
+                # collection fixture with the same name as a
+                # non-public collection.
+                self.assertNotIn(item['name'], d2)
+                found_not_in += 1
+        self.assertNotEqual(0, found_in)
+        self.assertNotEqual(0, found_not_in)
 
         d3 = os.listdir(os.path.join(self.mounttmp, 'Unrestricted public data', 'GNU General Public License, version 3'))
         self.assertEqual(["GNU_General_Public_License,_version_3.pdf"], d3)

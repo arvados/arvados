@@ -345,14 +345,15 @@ EOS
   end
 
   test "search collections with 'any' operator" do
+    expect_pdh = collections(:docker_image).portable_data_hash
     authorize_with :active
     get :index, {
-      where: { any: ['contains', 'd0bc8c7f34be170a7b7b'] }
+      where: { any: ['contains', expect_pdh[5..25]] }
     }
     assert_response :success
-    found = assigns(:objects).collect(&:portable_data_hash)
+    found = assigns(:objects)
     assert_equal 1, found.count
-    assert_equal true, !!found.index('5bd9c1ad0bc8c7f34be170a7b7b39089+45')
+    assert_equal expect_pdh, found.first.portable_data_hash
   end
 
   [false, true].each do |permit_unsigned|
@@ -694,5 +695,43 @@ EOS
 
       assert_response expected_response
     end
+  end
+
+  [1, 5, nil].each do |ask|
+    test "Set replication_desired=#{ask.inspect}" do
+      Rails.configuration.default_collection_replication = 2
+      authorize_with :active
+      put :update, {
+        id: collections(:replication_undesired_unconfirmed).uuid,
+        collection: {
+          replication_desired: ask,
+        },
+      }
+      assert_response :success
+      assert_equal ask, json_response['replication_desired']
+    end
+  end
+
+  test "get collection with properties" do
+    authorize_with :active
+    get :show, {id: collections(:collection_with_one_property).uuid}
+    assert_response :success
+    assert_not_nil json_response['uuid']
+    assert_equal 'value1', json_response['properties']['property1']
+  end
+
+  test "create collection with properties" do
+    authorize_with :active
+    manifest_text = ". d41d8cd98f00b204e9800998ecf8427e 0:0:foo.txt\n"
+    post :create, {
+      collection: {
+        manifest_text: manifest_text,
+        portable_data_hash: "d30fe8ae534397864cb96c544f4cf102+47",
+        properties: {'property_1' => 'value_1'}
+      }
+    }
+    assert_response :success
+    assert_not_nil json_response['uuid']
+    assert_equal 'value_1', json_response['properties']['property_1']
   end
 end

@@ -1,0 +1,98 @@
+---
+layout: default
+navsection: userguide
+title: "Using arv-web"
+...
+
+@arv-web@ enables you to run a custom web service from the contents of an Arvados collection.
+
+h2. Usage
+
+@arv-web@ enables you to set up a web service based on the most recent collection in a project.  An arv-web application is a reproducible, immutable application bundle where the web app is packaged with both the code to run and the data to serve.  Because Arvados Collections can be updated with minimum duplication, it is efficient to produce a new application bundle when the code or data needs to be updated; retaining old application bundles makes it easy to go back and run older versions of your web app.
+
+<pre>
+usage: arv-web.py [-h] --project-uuid PROJECT_UUID [--port PORT]
+                  [--image IMAGE]
+
+optional arguments:
+  -h, --help            show this help message and exit
+  --project-uuid PROJECT_UUID
+                        Project uuid to watch
+  --port PORT           Host port to listen on (default 8080)
+  --image IMAGE         Docker image to run
+</pre>
+
+At startup, @arv-web@ queries an Arvados project and mounts the most recently modified collection into a temporary directory.  It then runs a Docker image with the collection bound to @/mnt@ inside the container.  When a new collection is added to the project, or an existing project is updated, it will stop the running Docker container, unmount the old collection, mount the new most recently modified collection, and restart the Docker container with the new mount.
+
+h2. Docker container
+
+The @Dockerfile@ in @arvados/docker/arv-web@ builds a Docker image that runs Apache with @/mnt@ as the DocumentRoot.  It is configured to run web applications which use Python WSGI, Ruby Rack, or CGI; to serve static HTML; or browse the contents of the @public@ subdirectory of the collection using default Apache index pages.
+
+To build the Docker image:
+
+<notextile>
+<pre><code>~$ <span class="userinput">cd arvados/docker</span>
+~/arvados/docker$ <span class="userinput">docker build -t arvados/arv-web arv-web</span>
+</code></pre>
+</notextile>
+
+h2. Running sample applications
+
+First, in Arvados Workbench, create a new project.  Copy the project UUID from the URL bar (this is the part of the URL after @projects/...@).
+
+Now upload a collection containing a "Python WSGI web app:":http://wsgi.readthedocs.org/en/latest/
+
+<notextile>
+<pre><code>~$ <span class="userinput">cd arvados/services/arv-web</span>
+~/arvados/services/arv-web$ <span class="userinput">arv-put --project [zzzzz-j7d0g-yourprojectuuid] --name sample-wsgi-app sample-wsgi-app</span>
+0M / 0M 100.0%
+Collection saved as 'sample-wsgi-app'
+zzzzz-4zz18-ebohzfbzh82qmqy
+~/arvados/services/arv-web$ <span class="userinput">./arv-web.py --project [zzzzz-j7d0g-yourprojectuuid] --port 8888</span>
+2015-01-30 11:21:00 arvados.arv-web[4897] INFO: Mounting zzzzz-4zz18-ebohzfbzh82qmqy
+2015-01-30 11:21:01 arvados.arv-web[4897] INFO: Starting Docker container arvados/arv-web
+2015-01-30 11:21:02 arvados.arv-web[4897] INFO: Container id e79e70558d585a3e038e4bfbc97e5c511f21b6101443b29a8017bdf3d84689a3
+2015-01-30 11:21:03 arvados.arv-web[4897] INFO: Waiting for events
+</code></pre>
+</notextile>
+
+The sample application will be available at @http://localhost:8888@.
+
+h3. Updating the application
+
+If you upload a new collection to the same project, arv-web will restart the web service and serve the new collection.  For example, uploading a collection containing a "Ruby Rack web app:":https://github.com/rack/rack/wiki
+
+<notextile>
+<pre><code>~$ <span class="userinput">cd arvados/services/arv-web</span>
+~/arvados/services/arv-web$ <span class="userinput">arv-put --project [zzzzz-j7d0g-yourprojectuuid] --name sample-rack-app sample-rack-app</span>
+0M / 0M 100.0%
+Collection saved as 'sample-rack-app'
+zzzzz-4zz18-dhhm0ay8k8cqkvg
+</code></pre>
+</notextile>
+
+@arv-web@ will automatically notice the change, load a new container, and send an update signal (SIGHUP) to the service:
+
+<pre>
+2015-01-30 11:21:03 arvados.arv-web[4897] INFO:Waiting for events
+2015-01-30 11:21:04 arvados.arv-web[4897] INFO:create zzzzz-4zz18-dhhm0ay8k8cqkvg
+2015-01-30 11:21:05 arvados.arv-web[4897] INFO:Mounting zzzzz-4zz18-dhhm0ay8k8cqkvg
+2015-01-30 11:21:06 arvados.arv-web[4897] INFO:Sending refresh signal to container
+2015-01-30 11:21:07 arvados.arv-web[4897] INFO:Waiting for events
+</pre>
+
+h2. Writing your own applications
+
+The @arvados/arv-web@ image serves Python and Ruby applications using Phusion Passenger and Apache @mod_passenger@.  See "Phusion Passenger users guide for Apache":https://www.phusionpassenger.com/documentation/Users%20guide%20Apache.html for details, and look at the sample apps @arvados/services/arv-web/sample-wsgi-app@ and @arvados/services/arv-web/sample-rack-app@.
+
+You can serve CGI applications using standard Apache CGI support.  See "Apache Tutorial: Dynamic Content with CGI":https://httpd.apache.org/docs/current/howto/cgi.html for details, and look at the sample app @arvados/services/arv-web/sample-cgi-app@.
+
+You can also serve static content from the @public@ directory of the collection.  Look at @arvados/services/arv-web/sample-static-page@ for an example.  If no @index.html@ is found in @public/@, it will render default Apache index pages, permitting simple browsing of the collection contents.
+
+h3. Custom images
+
+You can provide your own Docker image.  The Docker image that will be used create the web application container is specified in the @docker_image@ file in the root of the collection.  You can also specify @--image@ on the command @arv-web@ line to choose the docker image (this will override the contents of @docker_image@).
+
+h3. Reloading the web service
+
+Stopping the Docker container and starting it again can result in a small amount of downtime.  When the collection containing a new or updated web application uses the same Docker image as the currently running web application, it is possible to avoid this downtime by keeping the existing container and only reloading the web server.  This is accomplished by providing a file called @reload@ in the root of the collection, which should contain the commands necessary to reload the web server inside the container.

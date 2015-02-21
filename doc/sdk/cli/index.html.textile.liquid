@@ -6,9 +6,49 @@ title: "Overview"
 
 ...
 
-The @arv@ CLI tool provides a set of wrappers to make API calls. Additionally, it provides access to a number of subcommands.
+The @arv@ CLI tool provide provides a convenient interface to manipulate API resources. Additionally, it provides access to a number of subcommands.
 
-h3. Wrappers for API calls
+h3. Syntax
+
+The @arv@ command takes the following arguments:
+
+<pre>
+Arvados command line client
+Usage: arv [--flags] subcommand|resource [method] [--parameters]
+
+Available flags:
+  -n, --dry-run       Don't actually do anything
+  -v, --verbose       Print some things on stderr
+  -f, --format=<s>    Set the output format. Must be one of json (default),
+                      yaml or uuid. (Default: json)
+  -s, --short         Return only UUIDs (equivalent to --format=uuid)
+
+Use 'arv subcommand|resource --help' to get more information about a particular
+command or resource.
+
+Available subcommands: copy, create, edit, keep, pipeline, run, tag, ws
+
+Available resources: api_client_authorization, api_client, authorized_key,
+collection, user_agreement, group, job_task, link, log, keep_disk,
+pipeline_instance, node, repository, specimen, pipeline_template, user,
+virtual_machine, trait, human, job, keep_service
+
+Additional options:
+  -e, --version       Print version and exit
+  -h, --help          Show this message
+</pre>
+
+h4. Flags: @--format@
+
+- @--format=json@ := Output response as JSON. This is the default format.
+
+- @--format=yaml@ := Output response as YAML
+
+- @--format=uuid@ := Output only the UUIDs of object(s) in the API response, one per line.
+
+
+
+h3. Resources
 
 See the "arv reference":{{site.baseurl}}/sdk/cli/reference.html page.
 

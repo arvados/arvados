@@ -6,9 +6,7 @@ class PipelineInstancesTest < ActionDispatch::IntegrationTest
   end
 
   test 'Create and run a pipeline' do
-    visit page_with_token('active_trustedclient')
-
-    visit '/pipeline_templates'
+    visit page_with_token('active_trustedclient', '/pipeline_templates')
     within('tr', text: 'Two Part Pipeline Template') do
       find('a,button', text: 'Run').click
     end
@@ -111,10 +109,9 @@ class PipelineInstancesTest < ActionDispatch::IntegrationTest
 
   # Create a pipeline instance from within a project and run
   test 'Create pipeline inside a project and run' do
-    visit page_with_token('active_trustedclient')
+    visit page_with_token('active_trustedclient', '/projects')
 
-    # Add this collection to the project using collections menu from top nav
-    visit '/projects'
+    # Add collection to the project using Add data button
     find("#projects-menu").click
     find('.dropdown-menu a,button', text: 'A Project').click
     find('.btn', text: 'Add data').click
@@ -138,9 +135,7 @@ class PipelineInstancesTest < ActionDispatch::IntegrationTest
   end
 
   test 'view pipeline with job and see graph' do
-    visit page_with_token('active_trustedclient')
-
-    visit '/pipeline_instances'
+    visit page_with_token('active_trustedclient', '/pipeline_instances')
     assert page.has_text? 'pipeline_with_job'
 
     find('a', text: 'pipeline_with_job').click
@@ -152,9 +147,7 @@ class PipelineInstancesTest < ActionDispatch::IntegrationTest
   end
 
   test 'pipeline description' do
-    visit page_with_token('active_trustedclient')
-
-    visit '/pipeline_instances'
+    visit page_with_token('active_trustedclient', '/pipeline_instances')
     assert page.has_text? 'pipeline_with_job'
 
     find('a', text: 'pipeline_with_job').click
@@ -182,17 +175,27 @@ class PipelineInstancesTest < ActionDispatch::IntegrationTest
            "components JSON not found")
   end
 
-  PROJECT_WITH_SEARCH_COLLECTION = "A Subproject"
-  def check_parameter_search(proj_name)
-    template = api_fixture("pipeline_templates")["parameter_with_search"]
-    search_text = template["components"]["with-search"]["script_parameters"]["input"]["search_for"]
-    visit page_with_token("active", "/pipeline_templates/#{template['uuid']}")
+  def create_pipeline_from(template_name, project_name="Home")
+    # Visit the named pipeline template and create a pipeline instance from it.
+    # The instance will be created under the named project.
+    template_uuid = api_fixture("pipeline_templates", template_name, "uuid")
+    visit page_with_token("active", "/pipeline_templates/#{template_uuid}")
     click_on "Run this pipeline"
-    within(".modal-dialog") do  # Set project for the new pipeline instance
-      find(".selectable", text: proj_name).click
+    within(".modal-dialog") do
+      # Set project for the new pipeline instance
+      find(".selectable", text: project_name).click
       click_on "Choose"
     end
-    assert(has_text?("This pipeline was created from the template"), "did not land on pipeline instance page")
+    assert(has_text?("This pipeline was created from the template"),
+           "did not land on pipeline instance page")
+  end
+
+  PROJECT_WITH_SEARCH_COLLECTION = "A Subproject"
+  def check_parameter_search(proj_name)
+    create_pipeline_from("parameter_with_search", proj_name)
+    search_text = api_fixture("pipeline_templates", "parameter_with_search",
+                              "components", "with-search",
+                              "script_parameters", "input", "search_for")
     first("a.btn,button", text: "Choose").click
     within(".modal-body") do
       if (proj_name != PROJECT_WITH_SEARCH_COLLECTION)
@@ -213,6 +216,23 @@ class PipelineInstancesTest < ActionDispatch::IntegrationTest
 
   test "Workbench preserves search_for parameter after project switch" do
     check_parameter_search("A Project")
+  end
+
+  test "enter a float for a number pipeline input" do
+    # Poltergeist either does not support the HTML 5 <input
+    # type="number">, or interferes with the associated X-Editable
+    # validation code.  If the input field has type=number (forcing an
+    # integer), this test will yield a false positive under
+    # Poltergeist.  --Brett, 2015-02-05
+    need_selenium "for strict X-Editable input validation"
+    create_pipeline_from("template_with_dataclass_number")
+    INPUT_SELECTOR =
+      ".editable[data-name='[components][work][script_parameters][input][value]']"
+    find(INPUT_SELECTOR).click
+    find(".editable-input input").set("12.34")
+    find("#editable-submit").click
+    assert_no_selector(".editable-popup")
+    assert_selector(INPUT_SELECTOR, text: "12.34")
   end
 
   [
@@ -267,34 +287,18 @@ class PipelineInstancesTest < ActionDispatch::IntegrationTest
   ].each do |user, with_options, choose_options, in_aproject|
     test "Rerun pipeline instance as #{user} using options #{with_options} #{choose_options} in #{in_aproject}" do
       if in_aproject
-        visit page_with_token 'active', \
-        '/projects/'+api_fixture('groups')['aproject']['uuid']
+        path = '/pipeline_instances/'+api_fixture('pipeline_instances')['pipeline_owned_by_active_in_aproject']['uuid']
       else
-        visit page_with_token 'active', '/'
+        path = '/pipeline_instances/'+api_fixture('pipeline_instances')['pipeline_owned_by_active_in_home']['uuid']
       end
 
-      # need bigger modal size when choosing a file from collection
-      if Capybara.current_driver == :selenium
-        Capybara.current_session.driver.browser.manage.window.resize_to(1200, 800)
-      end
+      visit page_with_token(user, path)
 
-      create_and_run_pipeline_in_aproject in_aproject, 'Two Part Pipeline Template', 'foo_collection_in_aproject'
-      instance_path = current_path
-
-      # Pause the pipeline
-      find('a,button', text: 'Pause').click
-      assert page.has_text? 'Paused'
-      page.assert_no_selector 'a.disabled,button.disabled', text: 'Resume'
       page.assert_selector 'a,button', text: 'Re-run with latest'
       page.assert_selector 'a,button', text: 'Re-run options'
 
-      # Pipeline can be re-run now. Access it as the specified user, and re-run
-      if user == 'project_viewer'
-        visit page_with_token(user, instance_path)
+      if user == 'project_viewer' && in_aproject
         assert page.has_text? 'A Project'
-        page.assert_no_selector 'a.disabled,button.disabled', text: 'Resume'
-        page.assert_selector 'a,button', text: 'Re-run with latest'
-        page.assert_selector 'a,button', text: 'Re-run options'
       end
 
       # Now re-run the pipeline
@@ -319,7 +323,7 @@ class PipelineInstancesTest < ActionDispatch::IntegrationTest
       # project. In case of project_viewer user, since the user cannot
       # write to the project, the pipeline should have been created in
       # the user's Home project.
-      assert_not_equal instance_path, current_path, 'Rerun instance path expected to be different'
+      assert_not_equal path, current_path, 'Rerun instance path expected to be different'
       assert_text 'Home'
       if in_aproject && (user != 'project_viewer')
         assert_text 'A Project'
@@ -435,16 +439,8 @@ class PipelineInstancesTest < ActionDispatch::IntegrationTest
 
   [
     ['fuse', nil, 2, 20],                           # has 2 as of 11-07-2014
-    ['fuse', 'FUSE project', 1, 1],                 # 1 with this name
-    ['user1_with_load', nil, 30, 100],              # has 37 as of 11-07-2014
-    ['user1_with_load', 'pipeline_10', 2, 2],       # 2 with this name
-    ['user1_with_load', '000010pipelines', 10, 10], # owned_by the project zzzzz-j7d0g-000010pipelines
     ['user1_with_load', '000025pipelines', 25, 25], # owned_by the project zzzzz-j7d0g-000025pipelines, two pages
-    ['admin', nil, 40, 200],
-    ['admin', 'FUSE project', 1, 1],
-    ['admin', 'pipeline_10', 2, 2],
-    ['active', 'containing at least two', 2, 100],
-    ['active', nil, 10, 100],
+    ['admin', 'pipeline_20', 1, 1],
     ['active', 'no such match', 0, 0],
   ].each do |user, search_filter, expected_min, expected_max|
     test "scroll pipeline instances page for #{user} with search filter #{search_filter}
@@ -484,5 +480,4 @@ class PipelineInstancesTest < ActionDispatch::IntegrationTest
       end
     end
   end
-
 end

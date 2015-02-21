@@ -35,7 +35,11 @@ class Collection < ArvadosBase
   end
 
   def content_summary
-    ApplicationController.helpers.human_readable_bytes_html(total_bytes) + " " + super
+    if total_bytes > 0
+      ApplicationController.helpers.human_readable_bytes_html(total_bytes) + " " + super
+    else
+      super + " modified at " + modified_at.to_s
+    end
   end
 
   def total_bytes
@@ -68,10 +72,6 @@ class Collection < ArvadosBase
 
   def editable_attributes
     %w(name description manifest_text)
-  end
-
-  def self.creatable?
-    false
   end
 
   def provenance

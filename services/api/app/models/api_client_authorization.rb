@@ -80,6 +80,10 @@ class ApiClientAuthorization < ArvadosModel
     attrs
   end
 
+  def self.default_orders
+    ["#{table_name}.id desc"]
+  end
+
   protected
 
   def permission_to_create

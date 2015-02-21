@@ -74,3 +74,5 @@ class NoKeepServersError(Exception):
     pass
 class StaleWriterStateError(Exception):
     pass
+class FeatureNotEnabledError(Exception):
+    pass

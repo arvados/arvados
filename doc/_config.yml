@@ -20,9 +20,11 @@ navbar:
       - start/getting_started/firstpipeline.html.textile.liquid
     - Common Use Cases:
       - start/getting_started/sharedata.html.textile.liquid
+    - Next Steps:
+      - start/getting_started/nextsteps.html.textile.liquid
 
   userguide:
-    - Getting Started:
+    - Welcome:
       - user/index.html.textile.liquid
       - user/getting_started/community.html.textile.liquid
     - Run a pipeline using Workbench:
@@ -44,10 +46,13 @@ navbar:
     - Develop a new pipeline:
       - user/tutorials/intro-crunch.html.textile.liquid
       - user/tutorials/running-external-program.html.textile.liquid
+      - user/topics/crunch-tools-overview.html.textile.liquid
       - user/tutorials/tutorial-firstscript.html.textile.liquid
       - user/tutorials/tutorial-submit-job.html.textile.liquid
       - user/topics/tutorial-parallel.html.textile.liquid
       - user/topics/arv-docker.html.textile.liquid
+    - Develop a web service:
+      - user/topics/arv-web.html.textile.liquid
     - Reference:
       - user/topics/run-command.html.textile.liquid
       - user/reference/job-pipeline-ref.html.textile.liquid
@@ -66,6 +71,7 @@ navbar:
       - sdk/python/sdk-python.html.textile.liquid
       - sdk/python/python.html.textile.liquid
       - sdk/python/crunch-utility-libraries.html.textile.liquid
+      - sdk/python/events.html.textile.liquid
     - Perl:
       - sdk/perl/index.html.textile.liquid
     - Ruby:

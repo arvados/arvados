@@ -54,48 +54,44 @@ module CurrentApiClient
   end
 
   def system_user
-    if not $system_user
+    $system_user = check_cache $system_user do
       real_current_user = Thread.current[:user]
-      Thread.current[:user] = User.new(is_admin: true,
-                                       is_active: true,
-                                       uuid: system_user_uuid)
-      $system_user = User.where('uuid=?', system_user_uuid).first
-      if !$system_user
-        $system_user = User.new(uuid: system_user_uuid,
-                                is_active: true,
-                                is_admin: true,
-                                email: 'root',
-                                first_name: 'root',
-                                last_name: '')
-        $system_user.save!
-        $system_user.reload
+      begin
+        Thread.current[:user] = User.new(is_admin: true,
+                                         is_active: true,
+                                         uuid: system_user_uuid)
+        User.where(uuid: system_user_uuid).
+          first_or_create!(is_active: true,
+                           is_admin: true,
+                           email: 'root',
+                           first_name: 'root',
+                           last_name: '')
+      ensure
+        Thread.current[:user] = real_current_user
       end
-      Thread.current[:user] = real_current_user
     end
-    $system_user
   end
 
   def system_group
-    if not $system_group
+    $system_group = check_cache $system_group do
       act_as_system_user do
         ActiveRecord::Base.transaction do
-          $system_group = Group.
-            where(uuid: system_group_uuid).first_or_create do |g|
-            g.update_attributes(name: "System group",
-                                description: "System group")
+          Group.where(uuid: system_group_uuid).
+            first_or_create!(name: "System group",
+                             description: "System group") do |g|
+            g.save!
             User.all.collect(&:uuid).each do |user_uuid|
-              Link.create(link_class: 'permission',
-                          name: 'can_manage',
-                          tail_kind: 'arvados#group',
-                          tail_uuid: system_group_uuid,
-                          head_kind: 'arvados#user',
-                          head_uuid: user_uuid)
+              Link.create!(link_class: 'permission',
+                           name: 'can_manage',
+                           tail_kind: 'arvados#group',
+                           tail_uuid: system_group_uuid,
+                           head_kind: 'arvados#user',
+                           head_uuid: user_uuid)
             end
           end
         end
       end
     end
-    $system_group
   end
 
   def all_users_group_uuid
@@ -105,19 +101,16 @@ module CurrentApiClient
   end
 
   def all_users_group
-    if not $all_users_group
+    $all_users_group = check_cache $all_users_group do
       act_as_system_user do
         ActiveRecord::Base.transaction do
-          $all_users_group = Group.
-            where(uuid: all_users_group_uuid).first_or_create do |g|
-            g.update_attributes(name: "All users",
-                                description: "All users",
-                                group_class: "role")
-          end
+          Group.where(uuid: all_users_group_uuid).
+            first_or_create!(name: "All users",
+                             description: "All users",
+                             group_class: "role")
         end
       end
     end
-    $all_users_group
   end
 
   def act_as_system_user
@@ -141,49 +134,48 @@ module CurrentApiClient
   end
 
   def anonymous_group
-    if not $anonymous_group
+    $anonymous_group = check_cache $anonymous_group do
       act_as_system_user do
         ActiveRecord::Base.transaction do
-          $anonymous_group = Group.
-          where(uuid: anonymous_group_uuid).first_or_create do |g|
-            g.update_attributes(name: "Anonymous group",
-                                description: "Anonymous group")
-          end
+          Group.where(uuid: anonymous_group_uuid).
+            first_or_create!(group_class: "role",
+                             name: "Anonymous users",
+                             description: "Anonymous users")
         end
       end
     end
-    $anonymous_group
+  end
+
+  def anonymous_group_read_permission
+    $anonymous_group_read_permission =
+        check_cache $anonymous_group_read_permission do
+      act_as_system_user do
+        Link.where(tail_uuid: all_users_group.uuid,
+                   head_uuid: anonymous_group.uuid,
+                   link_class: "permission",
+                   name: "can_read").first_or_create!
+      end
+    end
   end
 
   def anonymous_user
-    if not $anonymous_user
+    $anonymous_user = check_cache $anonymous_user do
       act_as_system_user do
-        $anonymous_user = User.where('uuid=?', anonymous_user_uuid).first
-        if !$anonymous_user
-          $anonymous_user = User.new(uuid: anonymous_user_uuid,
-                                     is_active: false,
-                                     is_admin: false,
-                                     email: 'anonymouspublic',
-                                     first_name: 'anonymouspublic',
-                                     last_name: 'anonymouspublic')
-          $anonymous_user.save!
-          $anonymous_user.reload
-        end
-
-        group_perms = Link.where(tail_uuid: anonymous_user_uuid,
-                                 head_uuid: anonymous_group_uuid,
-                                 link_class: 'permission',
-                                 name: 'can_read')
-
-        if !group_perms.any?
-          group_perm = Link.create!(tail_uuid: anonymous_user_uuid,
-                                    head_uuid: anonymous_group_uuid,
-                                    link_class: 'permission',
-                                    name: 'can_read')
+        User.where(uuid: anonymous_user_uuid).
+          first_or_create!(is_active: false,
+                           is_admin: false,
+                           email: 'anonymous',
+                           first_name: 'Anonymous',
+                           last_name: '') do |u|
+          u.save!
+          Link.where(tail_uuid: anonymous_user_uuid,
+                     head_uuid: anonymous_group.uuid,
+                     link_class: 'permission',
+                     name: 'can_read').
+            first_or_create!
         end
       end
     end
-    $anonymous_user
   end
 
   def empty_collection_uuid
@@ -191,15 +183,42 @@ module CurrentApiClient
   end
 
   def empty_collection
-    if not $empty_collection
+    $empty_collection = check_cache $empty_collection do
       act_as_system_user do
         ActiveRecord::Base.transaction do
-          $empty_collection = Collection.
+          Collection.
             where(portable_data_hash: empty_collection_uuid).
             first_or_create!(manifest_text: '', owner_uuid: anonymous_group.uuid)
         end
       end
     end
-    $empty_collection
+  end
+
+  private
+
+  # If the given value is nil, or the cache has been cleared since it
+  # was set, yield. Otherwise, return the given value.
+  def check_cache value
+    if not Rails.env.test? and
+        ActionController::Base.cache_store.is_a? ActiveSupport::Cache::FileStore and
+        not File.owned? ActionController::Base.cache_store.cache_path
+      # If we don't own the cache dir, we're probably
+      # crunch-dispatch. Whoever we are, using this cache is likely to
+      # either fail or screw up the cache for someone else. So we'll
+      # just assume the $globals are OK to live forever.
+      #
+      # The reason for making the globals expire with the cache in the
+      # first place is to avoid leaking state between test cases: in
+      # production, we don't expect the database seeds to ever go away
+      # even when the cache is cleared, so there's no particular
+      # reason to expire our global variables.
+    else
+      Rails.cache.fetch "CurrentApiClient.$globals" do
+        value = nil
+        true
+      end
+    end
+    return value unless value.nil?
+    yield
   end
 end

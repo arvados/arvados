@@ -736,10 +736,18 @@ class KeepClient(object):
                 "failed to write {} (wanted {} copies but wrote {})".format(
                     data_hash, copies, thread_limiter.done()), service_errors)
 
-    # Local storage methods need no-op num_retries arguments to keep
-    # integration tests happy.  With better isolation they could
-    # probably be removed again.
-    def local_store_put(self, data, num_retries=0):
+    def local_store_put(self, data, copies=1, num_retries=None):
+        """A stub for put().
+
+        This method is used in place of the real put() method when
+        using local storage (see constructor's local_store argument).
+
+        copies and num_retries arguments are ignored: they are here
+        only for the sake of offering the same call signature as
+        put().
+
+        Data stored this way can be retrieved via local_store_get().
+        """
         md5 = hashlib.md5(data).hexdigest()
         locator = '%s+%d' % (md5, len(data))
         with open(os.path.join(self.local_store, md5 + '.tmp'), 'w') as f:
@@ -748,7 +756,8 @@ class KeepClient(object):
                   os.path.join(self.local_store, md5))
         return locator
 
-    def local_store_get(self, loc_s, num_retries=0):
+    def local_store_get(self, loc_s, num_retries=None):
+        """Companion to local_store_put()."""
         try:
             locator = KeepLocator(loc_s)
         except ValueError:

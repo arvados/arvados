@@ -15,8 +15,7 @@ class SearchController < ApplicationController
     end
     @objects = search_what.contents(limit: @limit,
                                     offset: @offset,
-                                    filters: @filters,
-                                    include_linked: true)
+                                    filters: @filters)
     super
   end
 

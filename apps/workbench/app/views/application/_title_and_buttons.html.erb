@@ -11,9 +11,9 @@
   <% end %>
 <% end %>
 
-<% if @object.class.goes_in_projects? && @object.uuid != current_user.uuid # Not the "Home" project %>
+<% if @object.class.goes_in_projects? && @object.uuid != current_user.andand.uuid # Not the "Home" project %>
   <% content_for :tab_line_buttons do %>
-    <% if @object.class.copies_to_projects? %>
+    <% if current_user.andand.is_active && @object.class.copies_to_projects? %>
       <%= link_to(
           choose_projects_path(
            title: "Copy this #{object_class} to:",
@@ -31,7 +31,7 @@
         <i class="fa fa-fw fa-copy"></i> Copy to project...
       <% end %>
     <% end %>
-    <% if (ArvadosBase.find(@object.owner_uuid).writable_by.include?(current_user.uuid) rescue nil) %>
+    <% if (ArvadosBase.find(@object.owner_uuid).writable_by.include?(current_user.andand.uuid) rescue nil) %>
       <%= link_to(
           choose_projects_path(
            title: "Move this #{object_class} to:",

@@ -58,6 +58,18 @@ baz_file:
   manifest_text: ". 73feffa4b7f6bb68e44cf984c85f6e88+3 0:3:baz\n"
   name: baz_file
 
+w_a_z_file:
+  uuid: zzzzz-4zz18-25k12570yk134b3
+  portable_data_hash: 8706aadd12a0ebc07d74cae88762ba9e+56
+  owner_uuid: zzzzz-tpzed-xurymjxw79nv3jz
+  created_at: 2015-02-09T10:53:38Z
+  modified_by_client_uuid: zzzzz-ozdt8-brczlopd8u8d0jr
+  modified_by_user_uuid: zzzzz-tpzed-d9tiejq69daie8f
+  modified_at: 2015-02-09T10:53:38Z
+  updated_at: 2015-02-09T10:53:38Z
+  manifest_text: ". 4c6c2c0ac8aa0696edd7316a3be5ca3c+5 0:5:w\\040\\141\\040z\n"
+  name: "\"w a z\" file"
+
 multilevel_collection_1:
   uuid: zzzzz-4zz18-pyw8yp9g3pr7irn
   portable_data_hash: 1fd08fc162a5c6413070a8bd0bffc818+150
@@ -142,6 +154,16 @@ user_agreement_in_anonymously_accessible_project:
   updated_at: 2014-06-13 20:42:26 -0800
   manifest_text: ". 6a4ff0499484c6c79c95cd8c566bd25f+249025 0:249025:GNU_General_Public_License,_version_3.pdf\n"
   name: GNU General Public License, version 3
+
+public_text_file:
+  uuid: zzzzz-4zz18-4en62shvi99lxd4
+  portable_data_hash: 55713e6a34081eb03609e7ad5fcad129+62
+  owner_uuid: zzzzz-j7d0g-zhxawtyetzwc5f0
+  created_at: 2015-02-12 16:58:03 -0500
+  modified_at: 2015-02-12 16:58:03 -0500
+  updated_at: 2015-02-12 16:58:03 -0500
+  manifest_text: ". f0ef7081e1539ac00ef5b761b4fb01b3+12 0:12:Hello\\040world.txt\n"
+  name: Hello world
 
 baz_collection_name_in_asubproject:
   uuid: zzzzz-4zz18-lsitwcf548ui4oe
@@ -347,12 +369,12 @@ collection_with_no_name_in_aproject:
 
 collection_to_search_for_in_aproject:
   uuid: zzzzz-4zz18-abcd6fx123409f7
-  portable_data_hash: 5bd9c1ad0bc8c7f34be170a7b7b39089+45
+  portable_data_hash: 1f4b0bc7583c2a7f9102c395f4ffc5e3+45
   owner_uuid: zzzzz-j7d0g-v955i6s2oi1cbso
   created_at: 2014-04-21 15:37:48 -0400
   modified_at: 2014-04-21 15:37:48 -0400
   updated_at: 2014-04-21 15:37:48 -0400
-  manifest_text: ". juku76584cc2f85cedef654fjyhtgimh+3 0:3:foo\n"
+  manifest_text: ". acbd18db4cc2f85cedef654fccc4a4d8+3 0:3:foo\n"
   name: "zzzzz-4zz18-abcd6fx123409f7 used to search with any"
 
 upload_sandbox:
@@ -365,6 +387,88 @@ upload_sandbox:
   updated_at: 2014-12-09 15:03:16
   manifest_text: ''
   name: upload sandbox
+
+collection_with_unique_words_to_test_full_text_search:
+  uuid: zzzzz-4zz18-mnt690klmb51aud
+  portable_data_hash: fa7aeb5140e2848d39b416daeef4ffc5+45
+  owner_uuid: zzzzz-tpzed-xurymjxw79nv3jz
+  created_at: 2014-02-03T17:22:54Z
+  modified_by_client_uuid: zzzzz-ozdt8-brczlopd8u8d0jr
+  modified_by_user_uuid: zzzzz-tpzed-d9tiejq69daie8f
+  modified_at: 2014-02-03T17:22:54Z
+  updated_at: 2014-02-03T17:22:54Z
+  manifest_text: ". 37b51d194a7513e45b56f6524f2d51f2+3 0:3:bar\n"
+  name: collection_with_some_unique_words
+  description: The quick_brown_fox jumps over the lazy_dog
+
+replication_undesired_unconfirmed:
+  owner_uuid: zzzzz-tpzed-xurymjxw79nv3jz
+  created_at: 2015-02-07 00:19:28.596506247 Z
+  modified_by_user_uuid: zzzzz-tpzed-xurymjxw79nv3jz
+  modified_at: 2015-02-07 00:19:28.596338465 Z
+  portable_data_hash: fa7aeb5140e2848d39b416daeef4ffc5+45
+  replication_desired: ~
+  replication_confirmed_at: ~
+  replication_confirmed: ~
+  updated_at: 2015-02-07 00:19:28.596236608 Z
+  uuid: zzzzz-4zz18-wjxq7uzx2m9jj4a
+  manifest_text: ". 37b51d194a7513e45b56f6524f2d51f2+3 0:3:bar\n"
+  name: replication want=null have=null
+
+replication_desired_2_unconfirmed:
+  owner_uuid: zzzzz-tpzed-xurymjxw79nv3jz
+  created_at: 2015-02-07 00:21:35.050333515 Z
+  modified_by_user_uuid: zzzzz-tpzed-xurymjxw79nv3jz
+  modified_at: 2015-02-07 00:21:35.050189104 Z
+  portable_data_hash: fa7aeb5140e2848d39b416daeef4ffc5+45
+  replication_desired: 2
+  replication_confirmed_at: ~
+  replication_confirmed: ~
+  updated_at: 2015-02-07 00:21:35.050126576 Z
+  uuid: zzzzz-4zz18-3t236wrz4769h7x
+  manifest_text: ". 37b51d194a7513e45b56f6524f2d51f2+3 0:3:bar\n"
+  name: replication want=2 have=null
+
+replication_desired_2_confirmed_2:
+  owner_uuid: zzzzz-tpzed-xurymjxw79nv3jz
+  created_at: 2015-02-07 00:19:28.596506247 Z
+  modified_by_user_uuid: zzzzz-tpzed-xurymjxw79nv3jz
+  modified_at: 2015-02-07 00:19:28.596338465 Z
+  portable_data_hash: fa7aeb5140e2848d39b416daeef4ffc5+45
+  replication_desired: 2
+  replication_confirmed_at: 2015-02-07 00:24:52.983381227 Z
+  replication_confirmed: 2
+  updated_at: 2015-02-07 00:24:52.983381227 Z
+  uuid: zzzzz-4zz18-434zv1tnnf2rygp
+  manifest_text: ". acbd18db4cc2f85cedef654fccc4a4d8+3 37b51d194a7513e45b56f6524f2d51f2+3 0:3:foo 3:6:bar\n"
+  name: replication want=2 have=2
+
+collection_with_empty_properties:
+  uuid: zzzzz-4zz18-emptyproperties
+  portable_data_hash: fa7aeb5140e2848d39b416daeef4ffc5+45
+  owner_uuid: zzzzz-tpzed-xurymjxw79nv3jz
+  created_at: 2015-02-13T17:22:54Z
+  modified_by_client_uuid: zzzzz-ozdt8-brczlopd8u8d0jr
+  modified_by_user_uuid: zzzzz-tpzed-d9tiejq69daie8f
+  modified_at: 2015-02-13T17:22:54Z
+  updated_at: 2015-02-13T17:22:54Z
+  manifest_text: ". 37b51d194a7513e45b56f6524f2d51f2+3 0:3:bar\n"
+  name: collection with empty properties
+  properties: {}
+
+collection_with_one_property:
+  uuid: zzzzz-4zz18-withoneproperty
+  portable_data_hash: fa7aeb5140e2848d39b416daeef4ffc5+45
+  owner_uuid: zzzzz-tpzed-xurymjxw79nv3jz
+  created_at: 2015-02-13T17:22:54Z
+  modified_by_client_uuid: zzzzz-ozdt8-brczlopd8u8d0jr
+  modified_by_user_uuid: zzzzz-tpzed-d9tiejq69daie8f
+  modified_at: 2015-02-13T17:22:54Z
+  updated_at: 2015-02-13T17:22:54Z
+  manifest_text: ". 37b51d194a7513e45b56f6524f2d51f2+3 0:3:bar\n"
+  name: collection with one property
+  properties:
+    property1: value1
 
 # Test Helper trims the rest of the file
 

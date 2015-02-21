@@ -240,12 +240,23 @@ class UsersController < ApplicationController
               ['tail_uuid', '=', current_user.uuid],
               ['link_class', '=', 'permission'],
              ])
-    @my_repositories = Repository.where uuid: repo_links.collect(&:head_uuid)
+
+    owned_repositories = Repository.where(owner_uuid: current_user.uuid)
+
+    @my_repositories = (Repository.where(uuid: repo_links.collect(&:head_uuid)) |
+                        owned_repositories).
+                       uniq { |repo| repo.uuid }
+
+
     @repo_writable = {}
     repo_links.each do |link|
       if link.name.in? ['can_write', 'can_manage']
-        @repo_writable[link.head_uuid] = true
+        @repo_writable[link.head_uuid] = link.name
       end
+    end
+
+    owned_repositories.each do |repo|
+      @repo_writable[repo.uuid] = 'can_manage'
     end
 
     # virtual machines the current user can login into
@@ -300,6 +311,12 @@ class UsersController < ApplicationController
         self.render_error status: 422
       end
     end
+  end
+
+  def request_shell_access
+    logger.warn "request_access: #{params.inspect}"
+    params['request_url'] = request.url
+    RequestShellAccessReporter.send_request(current_user, params).deliver
   end
 
   protected

@@ -136,7 +136,7 @@ class ArvadosModelTest < ActiveSupport::TestCase
 
         indexes = ActiveRecord::Base.connection.indexes(table)
         search_index_by_columns = indexes.select do |index|
-          index.columns == search_index_columns
+          index.columns.sort == search_index_columns.sort
         end
         search_index_by_name = indexes.select do |index|
           index.name == "#{table}_search_index"
@@ -144,5 +144,27 @@ class ArvadosModelTest < ActiveSupport::TestCase
         assert !search_index_by_columns.empty?, "#{table} has no search index with columns #{search_index_columns}. Instead found search index with columns #{search_index_by_name.first.andand.columns}"
       end
     end
+  end
+
+  test "selectable_attributes includes database attributes" do
+    assert_includes(Job.selectable_attributes, "success")
+  end
+
+  test "selectable_attributes includes non-database attributes" do
+    assert_includes(Job.selectable_attributes, "node_uuids")
+  end
+
+  test "selectable_attributes includes common attributes in extensions" do
+    assert_includes(Job.selectable_attributes, "uuid")
+  end
+
+  test "selectable_attributes does not include unexposed attributes" do
+    refute_includes(Job.selectable_attributes, "nodes")
+  end
+
+  test "selectable_attributes on a non-default template" do
+    attr_a = Job.selectable_attributes(:common)
+    assert_includes(attr_a, "uuid")
+    refute_includes(attr_a, "success")
   end
 end

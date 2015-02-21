@@ -13,7 +13,6 @@ import errors
 import util
 
 _logger = logging.getLogger('arvados.api')
-conncache = {}
 
 class CredentialsFromToken(object):
     def __init__(self, api_token):
@@ -80,11 +79,8 @@ def api(version=None, cache=True, host=None, token=None, insecure=False, **kwarg
     Arguments:
     * version: A string naming the version of the Arvados API to use (for
       example, 'v1').
-    * cache: If True (default), return an existing Resources object if
-      one already exists with the same endpoint and credentials. If
-      False, create a new one, and do not keep it in the cache (i.e.,
-      do not return it from subsequent api(cache=True) calls with
-      matching endpoint and credentials).
+    * cache: Use a cache (~/.cache/arvados/discovery) for the discovery
+      document.
     * host: The Arvados API server host (and optional :port) to connect to.
     * token: The authentication token to send with each API call.
     * insecure: If True, ignore SSL certificate validation errors.
@@ -132,12 +128,6 @@ def api(version=None, cache=True, host=None, token=None, insecure=False, **kwarg
         kwargs['discoveryServiceUrl'] = (
             'https://%s/discovery/v1/apis/{api}/{apiVersion}/rest' % (host,))
 
-    if cache:
-        connprofile = (version, host, token, insecure)
-        svc = conncache.get(connprofile)
-        if svc:
-            return svc
-
     if 'http' not in kwargs:
         http_kwargs = {}
         # Prefer system's CA certificates (if available) over httplib2's.
@@ -156,6 +146,4 @@ def api(version=None, cache=True, host=None, token=None, insecure=False, **kwarg
     svc = apiclient_discovery.build('arvados', version, **kwargs)
     svc.api_token = token
     kwargs['http'].cache = None
-    if cache:
-        conncache[connprofile] = svc
     return svc

@@ -3,6 +3,10 @@ require "arvados/keep"
 class CollectionsController < ApplicationController
   include ActionController::Live
 
+  skip_around_filter :require_thread_api_token, if: proc { |ctrl|
+    Rails.configuration.anonymous_user_token and
+    'show' == ctrl.action_name
+  }
   skip_around_filter(:require_thread_api_token,
                      only: [:show_file, :show_file_links])
   skip_before_filter(:find_object_by_uuid,
@@ -116,7 +120,9 @@ class CollectionsController < ApplicationController
     # purposes: it lets us return a useful status code for common errors, and
     # helps us figure out which token to provide to arv-get.
     coll = nil
-    tokens = [Thread.current[:arvados_api_token], params[:reader_token]].compact
+    tokens = [Thread.current[:arvados_api_token],
+              params[:reader_token],
+              (Rails.configuration.anonymous_user_token || nil)].compact
     usable_token = find_usable_token(tokens) do
       coll = Collection.find(params[:uuid])
     end
@@ -180,6 +186,16 @@ class CollectionsController < ApplicationController
 
   def show
     return super if !@object
+
+    @logs = []
+
+    if params["tab_pane"] == "Provenance_graph"
+      @prov_svg = ProvenanceHelper::create_provenance_graph(@object.provenance, "provenance_svg",
+                                                            {:request => request,
+                                                             :direction => :bottom_up,
+                                                             :combine_jobs => :script_only}) rescue nil
+    end
+
     if current_user
       if Keep::Locator.parse params["uuid"]
         @same_pdh = Collection.filter([["portable_data_hash", "=", @object.portable_data_hash]])
@@ -215,12 +231,6 @@ class CollectionsController < ApplicationController
           .results.any?
         @search_sharing = search_scopes
 
-        if params["tab_pane"] == "Provenance_graph"
-          @prov_svg = ProvenanceHelper::create_provenance_graph(@object.provenance, "provenance_svg",
-                                                                {:request => request,
-                                                                  :direction => :bottom_up,
-                                                                  :combine_jobs => :script_only}) rescue nil
-        end
         if params["tab_pane"] == "Used_by"
           @used_by_svg = ProvenanceHelper::create_provenance_graph(@object.used_by, "used_by_svg",
                                                                    {:request => request,
@@ -256,6 +266,15 @@ class CollectionsController < ApplicationController
     sharing_popup
   end
 
+  def update
+    @updates ||= params[@object.resource_param_name.to_sym]
+    if @updates && (@updates.keys - ["name", "description"]).empty?
+      # exclude manifest_text since only name or description is being updated
+      @object.manifest_text = nil
+    end
+    super
+  end
+
   protected
 
   def find_usable_token(token_list)
@@ -288,7 +307,9 @@ class CollectionsController < ApplicationController
     return nil
   end
 
-  def file_enumerator(opts)
+  # Note: several controller and integration tests rely on stubbing
+  # file_enumerator to return fake file content.
+  def file_enumerator opts
     FileStreamer.new opts
   end
 

@@ -42,20 +42,51 @@ class ArvadosApiClientTest(unittest.TestCase):
                     {'items_available': 0, 'items': []})),
             }
         req_builder = apiclient_http.RequestMockBuilder(mock_responses)
-        cls.api = arvados.api('v1', cache=False,
+        cls.api = arvados.api('v1',
                               host=os.environ['ARVADOS_API_HOST'],
                               token='discovery-doc-only-no-token-needed',
                               insecure=True,
                               requestBuilder=req_builder)
 
-    @classmethod
-    def tearDownClass(cls):
-        run_test_server.stop()
+    def tearDown(cls):
+        run_test_server.reset()
 
-    def test_basic_list(self):
-        answer = self.api.humans().list(
+    def test_new_api_objects_with_cache(self):
+        clients = [arvados.api('v1', cache=True,
+                               host=os.environ['ARVADOS_API_HOST'],
+                               token='discovery-doc-only-no-token-needed',
+                               insecure=True)
+                   for index in [0, 1]]
+        self.assertIsNot(*clients)
+
+    def test_empty_list(self):
+        answer = arvados.api('v1').humans().list(
             filters=[['uuid', 'is', None]]).execute()
         self.assertEqual(answer['items_available'], len(answer['items']))
+
+    def test_nonempty_list(self):
+        answer = arvados.api('v1').collections().list().execute()
+        self.assertNotEqual(0, answer['items_available'])
+        self.assertNotEqual(0, len(answer['items']))
+
+    def test_timestamp_inequality_filter(self):
+        api = arvados.api('v1')
+        new_item = api.specimens().create(body={}).execute()
+        for operator, should_include in [
+                ['<', False], ['>', False],
+                ['<=', True], ['>=', True], ['=', True]]:
+            response = api.specimens().list(filters=[
+                ['created_at', operator, new_item['created_at']],
+                # Also filter by uuid to ensure (if it matches) it's on page 0
+                ['uuid', '=', new_item['uuid']]]).execute()
+            uuids = [item['uuid'] for item in response['items']]
+            did_include = new_item['uuid'] in uuids
+            self.assertEqual(
+                did_include, should_include,
+                "'%s %s' filter should%s have matched '%s'" % (
+                    operator, new_item['created_at'],
+                    ('' if should_include else ' not'),
+                    new_item['created_at']))
 
     def test_exceptions_include_errors(self):
         with self.assertRaises(apiclient_errors.HttpError) as err_ctx:

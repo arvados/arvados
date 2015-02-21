@@ -45,7 +45,6 @@ test:
   blob_signing_key: zfhgfenhffzltr9dixws36j1yhksjoll2grmku38mi7yxd66h5j4q9w4jzanezacp8s6q0ro3hxakfye02152hncy6zml2ed0uc
   user_profile_notification_address: arvados@example.com
   workbench_address: https://localhost:3001/
-  websocket_address: ws://127.0.0.1:3333/websocket
 
 common:
   uuid_prefix: <%= Digest::MD5.hexdigest(`hostname`).to_i(16).to_s(36)[0..4] %>
@@ -246,3 +245,7 @@ common:
   # On (sso) server.  Should only be enabled during development when the SSO
   # server is using a self-signed cert.
   sso_insecure: false
+
+  # Default replication level for collections. This is used when a
+  # collection's replication_desired attribute is nil.
+  default_collection_replication: 2

@@ -75,7 +75,7 @@
             </div>
           <% end %>
 
-          <% if current_job[:state].in? ["Queued", "Running"] %>
+          <% if current_job[:state].in? ["Queued", "Running"] and @object.editable? %>
             <%# column offset 11 %>
             <div class="col-md-1 pipeline-instance-spacing">
               <%= form_tag "/jobs/#{current_job[:uuid]}/cancel", remote: true, style: "display:inline; padding-left: 1em" do |f| %>
