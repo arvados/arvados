@@ -684,6 +684,10 @@ class KeepClient(object):
           exponential backoff.  The default value is set when the
           KeepClient is initialized.
         """
+
+        if type(data) is not str:
+            raise arvados.errors.ArgumentError("Argument 'data' to KeepClient.put must be type 'str'")
+
         data_hash = hashlib.md5(data).hexdigest()
         if copies < 1:
             return data_hash
