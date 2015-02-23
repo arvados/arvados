@@ -394,11 +394,11 @@ class KeepClient(object):
                     replicas_stored = int(result.headers['x-keep-replicas-stored'])
                 except (KeyError, ValueError):
                     replicas_stored = 1
-                limiter.save_response(result.text.strip(), replicas_stored)
+                limiter.save_response(result.content.strip(), replicas_stored)
             elif status is not None:
                 _logger.debug("Request fail: PUT %s => %s %s",
                               self.args['data_hash'], status,
-                              self.service.last_result.text)
+                              self.service.last_result.content)
 
 
     def __init__(self, api_client=None, proxy=None,
@@ -684,6 +684,12 @@ class KeepClient(object):
           exponential backoff.  The default value is set when the
           KeepClient is initialized.
         """
+
+        if isinstance(data, unicode):
+            data = data.encode("ascii")
+        elif not isinstance(data, str):
+            raise arvados.errors.ArgumentError("Argument 'data' to KeepClient.put must be type 'str'")
+
         data_hash = hashlib.md5(data).hexdigest()
         if copies < 1:
             return data_hash
