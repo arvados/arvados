@@ -99,6 +99,9 @@ def main():
     src_arv = api_for_instance(args.source_arvados)
     dst_arv = api_for_instance(args.destination_arvados)
 
+    if not args.project_uuid:
+        args.project_uuid = dst_arv.users().current().execute()["uuid"]
+
     # Identify the kind of object we have been given, and begin copying.
     t = uuid_type(src_arv, args.object_uuid)
     if t == 'Collection':
@@ -221,10 +224,7 @@ def copy_pipeline_instance(pi_uuid, src, dst, args):
         pi_uuid,
         pi['description'] if pi.get('description', None) else '')
 
-    if args.project_uuid:
-        pi['owner_uuid'] = args.project_uuid
-    else:
-        del pi['owner_uuid']
+    pi['owner_uuid'] = args.project_uuid
 
     del pi['uuid']
 
@@ -261,10 +261,7 @@ def copy_pipeline_template(pt_uuid, src, dst, args):
     pt['name'] = "{} copied from {}".format(pt.get('name', ''), pt_uuid)
     del pt['uuid']
 
-    if args.project_uuid:
-        pt['owner_uuid'] = args.project_uuid
-    elif 'owner_uuid' in pt:
-        del pt['owner_uuid']
+    pt['owner_uuid'] = args.project_uuid
 
     return dst.pipeline_templates().create(body=pt, ensure_unique_name=True).execute()
 
@@ -386,10 +383,7 @@ def create_collection_from(c, src, dst, args):
     if 'properties' in c:
         del c['properties']
 
-    if args.project_uuid:
-        c['owner_uuid'] = args.project_uuid
-    elif 'owner_uuid' in c:
-        del c['owner_uuid']
+    c['owner_uuid'] = args.project_uuid
 
     dst_collection = dst.collections().create(body=c, ensure_unique_name=True).execute(num_retries=args.retries)
 
@@ -404,8 +398,7 @@ def create_collection_from(c, src, dst, args):
                 'link_class': link_class,
                 'name': d['name'],
             }
-            if args.project_uuid:
-                body['owner_uuid'] = args.project_uuid
+            body['owner_uuid'] = args.project_uuid
 
             lk = dst.links().create(body=body).execute(num_retries=args.retries)
             logger.debug('created dst link {}'.format(lk))
@@ -449,11 +442,13 @@ def copy_collection(obj_uuid, src, dst, args):
             filters=[['portable_data_hash', '=', colhash]]
         ).execute()
         if dstcol['items_available'] > 0:
-            if args.project_uuid:
-                return create_collection_from(c, src, dst, args)
-            else:
-                logger.debug("Skipping collection %s (already at dst)", obj_uuid)
-            return dstcol['items'][0]
+            for d in dstcol['items']:
+                if ((args.project_uuid == d['owner_uuid']) and
+                    (c['name'] == d['name']) and
+                    (c['portable_data_hash'] == d['portable_data_hash'])):
+                    return d
+
+            return create_collection_from(c, src, dst, args)
 
     # Fetch the collection's manifest.
     manifest = c['manifest_text']
