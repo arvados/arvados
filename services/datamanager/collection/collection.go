@@ -19,10 +19,14 @@ import (
 )
 
 var (
-	heap_profile_filename string
+	heapProfileFilename string
 	// globals for debugging
 	totalManifestSize uint64
 	maxManifestSize   uint64
+)
+
+const (
+	DefaultReplicationLevel = 2
 )
 
 type Collection struct {
@@ -37,6 +41,7 @@ type ReadCollections struct {
 	ReadAllCollections    bool
 	UuidToCollection      map[string]Collection
 	OwnerToCollectionSize map[string]int
+	BlockToReplication    map[blockdigest.BlockDigest]int
 }
 
 type GetCollectionsParams struct {
@@ -59,7 +64,7 @@ type SdkCollectionList struct {
 }
 
 func init() {
-	flag.StringVar(&heap_profile_filename,
+	flag.StringVar(&heapProfileFilename,
 		"heap-profile",
 		"",
 		"File to write the heap profiles to. Leave blank to skip profiling.")
@@ -72,9 +77,9 @@ func init() {
 // Otherwise we would see cumulative numbers as explained here:
 // https://groups.google.com/d/msg/golang-nuts/ZyHciRglQYc/2nh4Ndu2fZcJ
 func WriteHeapProfile() {
-	if heap_profile_filename != "" {
+	if heapProfileFilename != "" {
 
-		heap_profile, err := os.Create(heap_profile_filename)
+		heap_profile, err := os.Create(heapProfileFilename)
 		if err != nil {
 			log.Fatal(err)
 		}
@@ -90,7 +95,7 @@ func WriteHeapProfile() {
 
 func GetCollectionsAndSummarize(params GetCollectionsParams) (results ReadCollections) {
 	results = GetCollections(params)
-	ComputeSizeOfOwnedCollections(&results)
+	Summarize(&results)
 
 	if params.Logger != nil {
 		params.Logger.Update(func(p map[string]interface{}, e map[string]interface{}) {
@@ -237,13 +242,18 @@ func ProcessCollections(arvLogger *logger.Logger,
 					"Arvados SDK collection returned with unexpected zero "+
 						"modifcation date. This probably means that either we failed to "+
 						"parse the modification date or the API server has changed how "+
-						"it returns modification dates: %v",
+						"it returns modification dates: %+v",
 					collection))
 		}
 
 		if sdkCollection.ModifiedAt.After(latestModificationDate) {
 			latestModificationDate = sdkCollection.ModifiedAt
 		}
+
+		if collection.ReplicationLevel == 0 {
+			collection.ReplicationLevel = DefaultReplicationLevel
+		}
+
 		manifest := manifest.Manifest{sdkCollection.ManifestText}
 		manifestSize := uint64(len(sdkCollection.ManifestText))
 
@@ -282,11 +292,20 @@ func ProcessCollections(arvLogger *logger.Logger,
 	return
 }
 
-func ComputeSizeOfOwnedCollections(readCollections *ReadCollections) {
+func Summarize(readCollections *ReadCollections) {
 	readCollections.OwnerToCollectionSize = make(map[string]int)
+	readCollections.BlockToReplication = make(map[blockdigest.BlockDigest]int)
+
 	for _, coll := range readCollections.UuidToCollection {
 		readCollections.OwnerToCollectionSize[coll.OwnerUuid] =
 			readCollections.OwnerToCollectionSize[coll.OwnerUuid] + coll.TotalSize
+
+		for block, _ := range coll.BlockDigestToSize {
+			storedReplication := readCollections.BlockToReplication[block]
+			if coll.ReplicationLevel > storedReplication {
+				readCollections.BlockToReplication[block] = coll.ReplicationLevel
+			}
+		}
 	}
 
 	return

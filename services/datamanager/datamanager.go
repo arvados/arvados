@@ -64,7 +64,8 @@ func singlerun() {
 
 	var arvLogger *logger.Logger
 	if logEventTypePrefix != "" {
-		arvLogger = logger.NewLogger(logger.LoggerParams{Client: arv,
+		arvLogger = logger.NewLogger(logger.LoggerParams{
+			Client: arv,
 			EventTypePrefix: logEventTypePrefix,
 			WriteInterval:   time.Second * time.Duration(logFrequencySeconds)})
 	}
@@ -79,11 +80,16 @@ func singlerun() {
 	go func() {
 		collectionChannel <- collection.GetCollectionsAndSummarize(
 			collection.GetCollectionsParams{
-				Client: arv, Logger: arvLogger, BatchSize: 50})
+				Client: arv,
+				Logger: arvLogger,
+				BatchSize: 50})
 	}()
 
 	keepServerInfo := keep.GetKeepServersAndSummarize(
-		keep.GetKeepServersParams{Client: arv, Logger: arvLogger, Limit: 1000})
+		keep.GetKeepServersParams{
+			Client: arv,
+			Logger: arvLogger,
+			Limit: 1000})
 
 	readCollections := <-collectionChannel
 
