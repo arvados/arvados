@@ -6,6 +6,7 @@ import (
 	"encoding/gob"
 	"flag"
 	"fmt"
+	"git.curoverse.com/arvados.git/sdk/go/blockdigest"
 	"git.curoverse.com/arvados.git/sdk/go/logger"
 	"git.curoverse.com/arvados.git/services/datamanager/collection"
 	"git.curoverse.com/arvados.git/services/datamanager/keep"
@@ -14,16 +15,23 @@ import (
 	"os"
 )
 
-var (
-	// These are just used for development, to save network i/o
-	writeDataTo  string
-	readDataFrom string
-)
+type ReplicationSummary struct {
+	CollectionBlocksNotInKeep  map[blockdigest.BlockDigest]struct{}
+	UnderReplicatedBlocks      map[blockdigest.BlockDigest]struct{}
+	OverReplicatedBlocks       map[blockdigest.BlockDigest]struct{}
+	CorrectlyReplicatedBlocks  map[blockdigest.BlockDigest]struct{}
+	KeepBlocksNotInCollections map[blockdigest.BlockDigest]struct{}
+}
 
 type serializedData struct {
 	ReadCollections collection.ReadCollections
 	KeepServerInfo  keep.ReadServers
 }
+
+var (
+	writeDataTo  string
+	readDataFrom string
+)
 
 func init() {
 	flag.StringVar(&writeDataTo,
@@ -95,7 +103,40 @@ func MaybeReadData(arvLogger *logger.Logger,
 			loggerutil.FatalWithMessage(arvLogger,
 				fmt.Sprintf("Failed to read summary data: %v", err))
 		}
+		*readCollections = data.ReadCollections
+		*keepServerInfo = data.KeepServerInfo
 		log.Printf("Read summary data from: %s", readDataFrom)
 		return true
 	}
+}
+
+func SummarizeReplication(arvLogger *logger.Logger,
+	readCollections collection.ReadCollections,
+	keepServerInfo keep.ReadServers) (rs ReplicationSummary) {
+	rs.CollectionBlocksNotInKeep = make(map[blockdigest.BlockDigest]struct{})
+	rs.UnderReplicatedBlocks = make(map[blockdigest.BlockDigest]struct{})
+	rs.OverReplicatedBlocks = make(map[blockdigest.BlockDigest]struct{})
+	rs.CorrectlyReplicatedBlocks = make(map[blockdigest.BlockDigest]struct{})
+	rs.KeepBlocksNotInCollections = make(map[blockdigest.BlockDigest]struct{})
+
+	for block, requestedReplication := range readCollections.BlockToReplication {
+		actualReplication := len(keepServerInfo.BlockToServers[block])
+		if actualReplication == 0 {
+			rs.CollectionBlocksNotInKeep[block] = struct{}{}
+		} else if actualReplication < requestedReplication {
+			rs.UnderReplicatedBlocks[block] = struct{}{}
+		} else if actualReplication > requestedReplication {
+			rs.OverReplicatedBlocks[block] = struct{}{}
+		} else {
+			rs.CorrectlyReplicatedBlocks[block] = struct{}{}
+		}
+	}
+
+	for block, _ := range keepServerInfo.BlockToServers {
+		if 0 == readCollections.BlockToReplication[block] {
+			rs.KeepBlocksNotInCollections[block] = struct{}{}
+		}
+	}
+
+	return rs
 }

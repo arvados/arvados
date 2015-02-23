@@ -103,9 +103,24 @@ func singlerun() {
 
 	summary.MaybeWriteData(arvLogger, readCollections, keepServerInfo)
 
-	// TODO(misha): Use these together to verify replication.
-	_ = readCollections
-	_ = keepServerInfo
+	replicationSummary :=
+		summary.SummarizeReplication(arvLogger, readCollections, keepServerInfo)
+
+	log.Printf("Replication Counts:" +
+		"\nBlocks In Collections: %d, " +
+		"\nBlocks In Keep: %d, " +
+		"\nMissing From Keep: %d, " +
+		"\nUnder Replicated: %d, " +
+		"\nOver Replicated: %d, " +
+		"\nReplicated Just Right: %d, " +
+		"\nNot In Any Collection: %d.",
+		len(readCollections.BlockToReplication),
+		len(keepServerInfo.BlockToServers),
+		len(replicationSummary.CollectionBlocksNotInKeep),
+		len(replicationSummary.UnderReplicatedBlocks),
+		len(replicationSummary.OverReplicatedBlocks),
+		len(replicationSummary.CorrectlyReplicatedBlocks),
+		len(replicationSummary.KeepBlocksNotInCollections))
 
 	// Log that we're finished. We force the recording, since go will
 	// not wait for the timer before exiting.

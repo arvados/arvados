@@ -42,6 +42,7 @@ type ReadCollections struct {
 	UuidToCollection      map[string]Collection
 	OwnerToCollectionSize map[string]int
 	BlockToReplication    map[blockdigest.BlockDigest]int
+	// TODO(misha): add block to collection map
 }
 
 type GetCollectionsParams struct {
