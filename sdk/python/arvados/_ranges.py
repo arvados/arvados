@@ -82,8 +82,8 @@ def locators_and_ranges(data_locators, range_start, range_size):
     if range_size == 0:
         return []
     resp = []
-    range_start = long(range_start)
-    range_size = long(range_size)
+    range_start = range_start
+    range_size = range_size
     range_end = range_start + range_size
 
     i = first_block(data_locators, range_start, range_size)
@@ -149,8 +149,8 @@ def replace_range(data_locators, new_range_start, new_range_size, new_locator, n
     if new_range_size == 0:
         return
 
-    new_range_start = long(new_range_start)
-    new_range_size = long(new_range_size)
+    new_range_start = new_range_start
+    new_range_size = new_range_size
     new_range_end = new_range_start + new_range_size
 
     if len(data_locators) == 0:

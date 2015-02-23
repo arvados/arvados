@@ -817,6 +817,17 @@ class NewCollectionTestCase(unittest.TestCase, CollectionTestMixin):
         self.assertEqual(m1, CollectionReader(m1).manifest_text(normalize=False))
         self.assertEqual(". 5348b82a029fd9e971a811ce1f71360b+43 085c37f02916da1cad16f93c54d899b7+41 8b22da26f9f433dea0a10e5ec66d73ba+43 0:127:md5sum.txt\n", CollectionReader(m1).manifest_text(normalize=True))
 
+    def test_init_manifest_with_collision(self):
+        m1 = """. 5348b82a029fd9e971a811ce1f71360b+43 0:43:md5sum.txt
+./md5sum.txt 085c37f02916da1cad16f93c54d899b7+41 0:41:md5sum.txt
+"""
+        with self.assertRaises(IOError):
+            self.assertEqual(m1, CollectionReader(m1).manifest_text(normalize=False))
+
+    def test_init_manifest_with_error(self):
+        m1 = """. 0:43:md5sum.txt"""
+        with self.assertRaises(arvados.errors.ArgumentError):
+            self.assertEqual(m1, CollectionReader(m1).manifest_text(normalize=False))
 
     def test_remove(self):
         c = Collection('. 781e5e245d69b566979b86e28d23f2c7+10 0:10:count1.txt 0:10:count2.txt\n')

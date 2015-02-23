@@ -66,11 +66,16 @@ class ArvadosFileWriterTestCase(unittest.TestCase):
                              api_client=api, keep_client=keep) as c:
             writer = c.open("count.txt", "r+")
             self.assertEqual(writer.size(), 10)
-            writer.seek(5)
-            self.assertEqual("56789", writer.read(8))
+            self.assertEqual("0123456789", writer.read(12))
+
             writer.truncate(8)
-            writer.seek(5, os.SEEK_SET)
-            self.assertEqual("567", writer.read(8))
+
+            # Make sure reading off the end doesn't break
+            self.assertEqual("", writer.read(12))
+
+            self.assertEqual(writer.size(), 8)
+            writer.seek(0, os.SEEK_SET)
+            self.assertEqual("01234567", writer.read(12))
 
             self.assertEqual(None, c._manifest_locator)
             self.assertEqual(True, c.modified())

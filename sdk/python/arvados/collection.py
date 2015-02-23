@@ -526,8 +526,6 @@ class SynchronizedCollectionBase(CollectionBase):
         """
 
         pathcomponents = path.split("/")
-        if pathcomponents[0] == '.':
-            del pathcomponents[0]
 
         if pathcomponents and pathcomponents[0]:
             item = self._items.get(pathcomponents[0])
@@ -567,8 +565,6 @@ class SynchronizedCollectionBase(CollectionBase):
 
         """
         pathcomponents = path.split("/")
-        if pathcomponents[0] == '.':
-            del pathcomponents[0]
 
         if pathcomponents and pathcomponents[0]:
             item = self._items.get(pathcomponents[0])
@@ -721,9 +717,6 @@ class SynchronizedCollectionBase(CollectionBase):
           Specify whether to remove non-empty subcollections (True), or raise an error (False).
         """
         pathcomponents = path.split("/")
-        if pathcomponents[0] == '.':
-            # Remove '.' from the front of the path
-            del pathcomponents[0]
 
         if len(pathcomponents) > 0:
             item = self._items.get(pathcomponents[0])
@@ -994,11 +987,11 @@ class Collection(SynchronizedCollectionBase):
     """
 
     def __init__(self, manifest_locator_or_text=None,
-                 parent=None,
-                 apiconfig=None,
                  api_client=None,
                  keep_client=None,
                  num_retries=None,
+                 parent=None,
+                 apiconfig=None,
                  block_manager=None):
         """Collection constructor.
 
@@ -1200,6 +1193,27 @@ class Collection(SynchronizedCollectionBase):
         """
         return self._api_response
 
+    def find_or_create(self, path, create_type):
+        """See `SynchronizedCollectionBase.find_or_create`"""
+        if path == ".":
+            return self
+        else:
+            return super(Collection, self).find_or_create(path[2:] if path.startswith("./") else path, create_type)
+
+    def find(self, path):
+        """See `SynchronizedCollectionBase.find`"""
+        if path == ".":
+            return self
+        else:
+            return super(Collection, self).find(path[2:] if path.startswith("./") else path)
+
+    def remove(self, path, recursive=False):
+        """See `SynchronizedCollectionBase.remove`"""
+        if path == ".":
+            raise errors.ArgumentError("Cannot remove '.'")
+        else:
+            return super(Collection, self).remove(path[2:] if path.startswith("./") else path, recursive)
+
     @must_be_writable
     @synchronized
     @retry_method
@@ -1306,9 +1320,8 @@ class Collection(SynchronizedCollectionBase):
         if len(self) > 0:
             raise ArgumentError("Can only import manifest into an empty collection")
 
-        into_collection = self
-        save_sync = into_collection.sync_mode()
-        into_collection._sync = None
+        save_sync = self.sync_mode()
+        self._sync = None
 
         STREAM_NAME = 0
         BLOCKS = 1
@@ -1345,8 +1358,12 @@ class Collection(SynchronizedCollectionBase):
                     pos = long(s.group(1))
                     size = long(s.group(2))
                     name = s.group(3).replace('\\040', ' ')
-                    f = into_collection.find_or_create("%s/%s" % (stream_name, name), FILE)
-                    f.add_segment(blocks, pos, size)
+                    filepath = os.path.join(stream_name, name)
+                    f = self.find_or_create(filepath, FILE)
+                    if isinstance(f, ArvadosFile):
+                        f.add_segment(blocks, pos, size)
+                    else:
+                        raise errors.SyntaxError("File %s conflicts with stream of the same name.", filepath)
                 else:
                     # error!
                     raise errors.SyntaxError("Invalid manifest format")
@@ -1355,8 +1372,8 @@ class Collection(SynchronizedCollectionBase):
                 stream_name = None
                 state = STREAM_NAME
 
-        into_collection.set_unmodified()
-        into_collection._sync = save_sync
+        self.set_unmodified()
+        self._sync = save_sync
 
 
 class Subcollection(SynchronizedCollectionBase):
@@ -1422,14 +1439,31 @@ class CollectionReader(Collection):
 
         # Backwards compatability with old CollectionReader
         # all_streams() and all_files()
-        if self._manifest_text:
-            self._streams = [sline.split()
-                             for sline in self._manifest_text.split("\n")
-                             if sline]
-        else:
-            self._streams = []
+        self._streams = None
 
+    def _populate_streams(orig_func):
+        @functools.wraps(orig_func)
+        def populate_streams_wrapper(self, *args, **kwargs):
+            # Defer populating self._streams until needed since it creates a copy of the manifest.
+            if self._streams is None:
+                if self._manifest_text:
+                    self._streams = [sline.split()
+                                     for sline in self._manifest_text.split("\n")
+                                     if sline]
+                else:
+                    self._streams = []
+            return orig_func(self, *args, **kwargs)
+        return populate_streams_wrapper
+
+    @_populate_streams
     def normalize(self):
+        """Normalize the streams returned by `all_streams`.
+
+        This method is kept for backwards compatability and only affects the
+        behavior of `all_streams()` and `all_files()`
+
+        """
+
         # Rearrange streams
         streams = {}
         for s in self.all_streams():
@@ -1444,11 +1478,12 @@ class CollectionReader(Collection):
 
         self._streams = [normalize_stream(s, streams[s])
                          for s in sorted(streams)]
-
+    @_populate_streams
     def all_streams(self):
         return [StreamReader(s, self._my_keep(), num_retries=self.num_retries)
                 for s in self._streams]
 
+    @_populate_streams
     def all_files(self):
         for s in self.all_streams():
             for f in s.all_files():
