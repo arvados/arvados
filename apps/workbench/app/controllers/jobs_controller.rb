@@ -85,8 +85,6 @@ class JobsController < ApplicationController
   end
 
   def show_pane_list
-    panes = %w(Status Log Details Provenance Advanced)
-    panes.delete 'Log' if !current_user
-    panes
+    %w(Status Log Details Provenance Advanced)
   end
 end
