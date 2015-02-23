@@ -100,7 +100,7 @@ def main():
     dst_arv = api_for_instance(args.destination_arvados)
 
     if not args.project_uuid:
-        args.project_uuid = dst_arv.users().current().execute()["uuid"]
+        args.project_uuid = dst_arv.users().current().execute(num_retries=args.retries)["uuid"]
 
     # Identify the kind of object we have been given, and begin copying.
     t = uuid_type(src_arv, args.object_uuid)

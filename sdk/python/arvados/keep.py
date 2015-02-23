@@ -685,7 +685,7 @@ class KeepClient(object):
           KeepClient is initialized.
         """
 
-        if type(data) is not str:
+        if not isinstance(data, str):
             raise arvados.errors.ArgumentError("Argument 'data' to KeepClient.put must be type 'str'")
 
         data_hash = hashlib.md5(data).hexdigest()

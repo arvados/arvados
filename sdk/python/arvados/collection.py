@@ -585,7 +585,7 @@ class CollectionWriter(CollectionBase):
             manifest += ' ' + ' '.join("%d:%d:%s" % (sfile[0], sfile[1], sfile[2].replace(' ', '\\040')) for sfile in stream[2])
             manifest += "\n"
 
-        return manifest
+        return manifest.encode("utf-8")
 
     def data_locators(self):
         ret = []
