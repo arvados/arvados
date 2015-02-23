@@ -78,15 +78,19 @@ class KeepTestCase(run_test_server.TestCaseWithServers):
 
     def test_unicode_must_be_ascii(self):
         # If unicode type, must only consist of valid ASCII
-        self.keep_client.put(u'foo')
+        foo_locator = self.keep_client.put(u'foo')
+        self.assertRegexpMatches(
+            foo_locator,
+            '^acbd18db4cc2f85cedef654fccc4a4d8\+3',
+            'wrong md5 hash from Keep.put("foo"): ' + foo_locator)
 
         with self.assertRaises(UnicodeEncodeError):
             # Error if it is not ASCII
-            foo_locator = self.keep_client.put(u'\xe2')
+            self.keep_client.put(u'\xe2')
 
         with self.assertRaises(arvados.errors.ArgumentError):
             # Must be a string type
-            foo_locator = self.keep_client.put({})
+            self.keep_client.put({})
 
 class KeepPermissionTestCase(run_test_server.TestCaseWithServers):
     MAIN_SERVER = {}
