@@ -3,14 +3,17 @@ import logging
 import os
 import re
 import errno
+import hashlib
 import time
+import threading
 
 from collections import deque
 from stat import *
 
 from .arvfile import split, _FileLikeObjectBase, ArvadosFile, ArvadosFileWriter, ArvadosFileReader, _BlockManager, synchronized, must_be_writable, SYNC_READONLY, SYNC_EXPLICIT, NoopLock
-from keep import *
-from .stream import StreamReader, normalize_stream
+from keep import KeepLocator, KeepClient
+from .stream import StreamReader
+from ._normalize_stream import normalize_stream
 from ._ranges import Range, LocatorAndRange
 from .safeapi import ThreadSafeApiCache
 import config
@@ -786,22 +789,21 @@ class SynchronizedCollectionBase(CollectionBase):
 
         target_dir = self.find_or_create("/".join(targetcomponents[0:-1]), COLLECTION)
 
-        with target_dir.lock:
-            if target_name in target_dir:
-                if isinstance(target_dir[target_name], SynchronizedCollectionBase) and sourcecomponents:
-                    target_dir = target_dir[target_name]
-                    target_name = sourcecomponents[-1]
-                elif not overwrite:
-                    raise IOError((errno.EEXIST, "File already exists"))
+        if target_name in target_dir:
+            if isinstance(target_dir[target_name], SynchronizedCollectionBase) and sourcecomponents:
+                target_dir = target_dir[target_name]
+                target_name = sourcecomponents[-1]
+            elif not overwrite:
+                raise IOError((errno.EEXIST, "File already exists"))
 
-            modified_from = None
-            if target_name in target_dir:
-                modified_from = target_dir[target_name]
+        modified_from = None
+        if target_name in target_dir:
+            modified_from = target_dir[target_name]
 
-            # Actually make the copy.
-            dup = source_obj.clone(target_dir)
-            target_dir._items[target_name] = dup
-            target_dir._modified = True
+        # Actually make the copy.
+        dup = source_obj.clone(target_dir)
+        target_dir._items[target_name] = dup
+        target_dir._modified = True
 
         if modified_from:
             self.notify(MOD, target_dir, target_name, (modified_from, dup))
