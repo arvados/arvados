@@ -10,6 +10,7 @@ import (
 	"git.curoverse.com/arvados.git/services/datamanager/collection"
 	"git.curoverse.com/arvados.git/services/datamanager/keep"
 	"git.curoverse.com/arvados.git/services/datamanager/loggerutil"
+	"git.curoverse.com/arvados.git/services/datamanager/summary"
 	"log"
 	"time"
 )
@@ -75,23 +76,32 @@ func singlerun() {
 		arvLogger.AddWriteHook(loggerutil.LogMemoryAlloc)
 	}
 
-	collectionChannel := make(chan collection.ReadCollections)
+	var (
+		readCollections collection.ReadCollections
+		keepServerInfo keep.ReadServers
+	)
 
-	go func() {
-		collectionChannel <- collection.GetCollectionsAndSummarize(
-			collection.GetCollectionsParams{
+	if !summary.MaybeReadData(arvLogger, &readCollections, &keepServerInfo) {
+		collectionChannel := make(chan collection.ReadCollections)
+
+		go func() {
+			collectionChannel <- collection.GetCollectionsAndSummarize(
+				collection.GetCollectionsParams{
+					Client: arv,
+					Logger: arvLogger,
+					BatchSize: 50})
+		}()
+
+		keepServerInfo = keep.GetKeepServersAndSummarize(
+			keep.GetKeepServersParams{
 				Client: arv,
 				Logger: arvLogger,
-				BatchSize: 50})
-	}()
+				Limit: 1000})
 
-	keepServerInfo := keep.GetKeepServersAndSummarize(
-		keep.GetKeepServersParams{
-			Client: arv,
-			Logger: arvLogger,
-			Limit: 1000})
+		readCollections = <-collectionChannel
+	}
 
-	readCollections := <-collectionChannel
+	summary.MaybeWriteData(arvLogger, readCollections, keepServerInfo)
 
 	// TODO(misha): Use these together to verify replication.
 	_ = readCollections

@@ -11,12 +11,12 @@ import (
 // Stores a Block Locator Digest compactly, up to 128 bits.
 // Can be used as a map key.
 type BlockDigest struct {
-	h uint64
-	l uint64
+	H uint64
+	L uint64
 }
 
 func (d BlockDigest) String() string {
-	return fmt.Sprintf("%016x%016x", d.h, d.l)
+	return fmt.Sprintf("%016x%016x", d.H, d.L)
 }
 
 // Will create a new BlockDigest unless an error is encountered.
@@ -27,11 +27,11 @@ func FromString(s string) (dig BlockDigest, err error) {
 	}
 
 	var d BlockDigest
-	d.h, err = strconv.ParseUint(s[:16], 16, 64)
+	d.H, err = strconv.ParseUint(s[:16], 16, 64)
 	if err != nil {
 		return
 	}
-	d.l, err = strconv.ParseUint(s[16:], 16, 64)
+	d.L, err = strconv.ParseUint(s[16:], 16, 64)
 	if err != nil {
 		return
 	}
