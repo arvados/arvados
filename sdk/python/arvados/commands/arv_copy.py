@@ -375,6 +375,43 @@ def total_collection_size(manifest_text):
 
     return total_bytes
 
+def create_collection_from(c, src, dst, args):
+    """Create a new collection record on dst, and copy Docker metadata if
+    available."""
+
+    collection_uuid = c['uuid']
+
+    del c['uuid']
+
+    if 'properties' in c:
+        del c['properties']
+
+    if args.project_uuid:
+        c['owner_uuid'] = args.project_uuid
+    elif 'owner_uuid' in c:
+        del c['owner_uuid']
+
+    dst_collection = dst.collections().create(body=c, ensure_unique_name=True).execute(num_retries=args.retries)
+
+    # Create docker_image_repo+tag and docker_image_hash links
+    # at the destination.
+    for link_class in ("docker_image_repo+tag", "docker_image_hash"):
+        docker_links = src.links().list(filters=[["head_uuid", "=", collection_uuid], ["link_class", "=", link_class]]).execute(num_retries=args.retries)['items']
+
+        for d in docker_links:
+            body={
+                'head_uuid': dst_collection['uuid'],
+                'link_class': link_class,
+                'name': d['name'],
+            }
+            if args.project_uuid:
+                body['owner_uuid'] = args.project_uuid
+
+            lk = dst.links().create(body=body).execute(num_retries=args.retries)
+            logger.debug('created dst link {}'.format(lk))
+
+    return dst_collection
+
 # copy_collection(obj_uuid, src, dst, args)
 #
 #    Copies the collection identified by obj_uuid from src to dst.
@@ -413,13 +450,9 @@ def copy_collection(obj_uuid, src, dst, args):
         ).execute()
         if dstcol['items_available'] > 0:
             if args.project_uuid:
-                c['owner_uuid'] = args.project_uuid
-                del c['uuid']
-                if 'properties' in c:
-                    del c['properties']
-                return dst.collections().create(body=c, ensure_unique_name=True).execute()
+                return create_collection_from(c, src, dst, args)
             else:
-                logger.info("Skipping collection %s (already at dst)", obj_uuid)
+                logger.debug("Skipping collection %s (already at dst)", obj_uuid)
             return dstcol['items'][0]
 
     # Fetch the collection's manifest.
@@ -472,20 +505,10 @@ def copy_collection(obj_uuid, src, dst, args):
 
     # Copy the manifest and save the collection.
     logger.debug('saving %s with manifest: <%s>', obj_uuid, dst_manifest)
-    dst_keep.put(dst_manifest)
 
-    del c['uuid']
-    if 'properties' in c:
-        del c['properties']
-
-    if args.project_uuid:
-        c['owner_uuid'] = args.project_uuid
-    elif 'owner_uuid' in c:
-        del c['owner_uuid']
-
+    dst_keep.put(dst_manifest.encode('utf-8'))
     c['manifest_text'] = dst_manifest
-
-    return dst.collections().create(body=c, ensure_unique_name=True).execute()
+    return create_collection_from(c, src, dst, args)
 
 # copy_git_repo(src_git_repo, src, dst, dst_git_repo, script_version)
 #
@@ -581,30 +604,6 @@ def copy_docker_image(docker_image, docker_image_tag, src, dst, args):
 
     # Copy the collection it refers to.
     dst_image_col = copy_collection(image_uuid, src, dst, args)
-
-    # Create docker_image_repo+tag and docker_image_hash links
-    # at the destination.
-    body={
-        'head_uuid': dst_image_col['uuid'],
-        'link_class': 'docker_image_repo+tag',
-        'name': "{}:{}".format(docker_image, docker_image_tag),
-    }
-    if args.project_uuid:
-        body['owner_uuid'] = args.project_uuid
-
-    lk = dst.links().create(body=body).execute(num_retries=args.retries)
-    logger.debug('created dst link {}'.format(lk))
-
-    body={
-        'head_uuid': dst_image_col['uuid'],
-        'link_class': 'docker_image_hash',
-        'name': dst_image_col['portable_data_hash'],
-    }
-    if args.project_uuid:
-        body['owner_uuid'] = args.project_uuid
-
-    lk = dst.links().create(body=body).execute(num_retries=args.retries)
-    logger.debug('created dst link {}'.format(lk))
 
 
 # git_rev_parse(rev, repo)
