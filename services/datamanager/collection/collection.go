@@ -38,11 +38,13 @@ type Collection struct {
 }
 
 type ReadCollections struct {
-	ReadAllCollections    bool
-	UuidToCollection      map[string]Collection
-	OwnerToCollectionSize map[string]int
-	BlockToReplication    map[blockdigest.BlockDigest]int
-	// TODO(misha): add block to collection map
+	ReadAllCollections     bool
+	UuidToCollection       map[string]Collection
+	OwnerToCollectionSize  map[string]int
+	BlockToReplication     map[blockdigest.BlockDigest]int
+	CollectionUuidToIndex  map[string]int
+	CollectionIndexToUuid  []string
+	BlockToCollectionIndex map[blockdigest.BlockDigest]int
 }
 
 type GetCollectionsParams struct {
@@ -296,12 +298,22 @@ func ProcessCollections(arvLogger *logger.Logger,
 func Summarize(readCollections *ReadCollections) {
 	readCollections.OwnerToCollectionSize = make(map[string]int)
 	readCollections.BlockToReplication = make(map[blockdigest.BlockDigest]int)
+	numCollections := len(readCollections.UuidToCollection)
+	readCollections.CollectionUuidToIndex = make(map[string]int, numCollections)
+	readCollections.CollectionIndexToUuid = make([]string, 0, numCollections)
+	readCollections.BlockToCollectionIndex = make(map[blockdigest.BlockDigest]int)
 
 	for _, coll := range readCollections.UuidToCollection {
+		collectionIndex := len(readCollections.CollectionIndexToUuid)
+		readCollections.CollectionIndexToUuid =
+			append(readCollections.CollectionIndexToUuid, coll.Uuid)
+		readCollections.CollectionUuidToIndex[coll.Uuid] = collectionIndex
+
 		readCollections.OwnerToCollectionSize[coll.OwnerUuid] =
 			readCollections.OwnerToCollectionSize[coll.OwnerUuid] + coll.TotalSize
 
 		for block, _ := range coll.BlockDigestToSize {
+			readCollections.BlockToCollectionIndex[block] = collectionIndex
 			storedReplication := readCollections.BlockToReplication[block]
 			if coll.ReplicationLevel > storedReplication {
 				readCollections.BlockToReplication[block] = coll.ReplicationLevel

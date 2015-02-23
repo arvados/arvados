@@ -103,6 +103,12 @@ func MaybeReadData(arvLogger *logger.Logger,
 			loggerutil.FatalWithMessage(arvLogger,
 				fmt.Sprintf("Failed to read summary data: %v", err))
 		}
+
+		// re-summarize data, so that we can update our summarizing
+		// functions without needing to do all our network i/o
+		collection.Summarize(&data.ReadCollections)
+		keep.ComputeBlockReplicationCounts(&data.KeepServerInfo)
+
 		*readCollections = data.ReadCollections
 		*keepServerInfo = data.KeepServerInfo
 		log.Printf("Read summary data from: %s", readDataFrom)
