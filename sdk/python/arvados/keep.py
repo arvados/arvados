@@ -418,35 +418,52 @@ class KeepClient(object):
         """Initialize a new KeepClient.
 
         Arguments:
-        * api_client: The API client to use to find Keep services.  If not
+        :api_client:
+          The API client to use to find Keep services.  If not
           provided, KeepClient will build one from available Arvados
           configuration.
-        * proxy: If specified, this KeepClient will send requests to this
-          Keep proxy.  Otherwise, KeepClient will fall back to the setting
-          of the ARVADOS_KEEP_PROXY configuration setting.  If you want to
-          ensure KeepClient does not use a proxy, pass in an empty string.
-        * timeout: The timeout (in seconds) for HTTP requests to Keep
+
+        :proxy:
+          If specified, this KeepClient will send requests to this Keep
+          proxy.  Otherwise, KeepClient will fall back to the setting of the
+          ARVADOS_KEEP_PROXY configuration setting.  If you want to ensure
+          KeepClient does not use a proxy, pass in an empty string.
+
+        :timeout:
+          The timeout (in seconds) for HTTP requests to Keep
           non-proxy servers.  A tuple of two floats is interpreted as
           (connection_timeout, read_timeout): see
           http://docs.python-requests.org/en/latest/user/advanced/#timeouts.
           Default: (2, 300).
-        * proxy_timeout: The timeout (in seconds) for HTTP requests to
+
+        :proxy_timeout:
+          The timeout (in seconds) for HTTP requests to
           Keep proxies. A tuple of two floats is interpreted as
           (connection_timeout, read_timeout). Default: (20, 300).
-        * api_token: If you're not using an API client, but only talking
+
+        :api_token:
+          If you're not using an API client, but only talking
           directly to a Keep proxy, this parameter specifies an API token
           to authenticate Keep requests.  It is an error to specify both
           api_client and api_token.  If you specify neither, KeepClient
           will use one available from the Arvados configuration.
-        * local_store: If specified, this KeepClient will bypass Keep
+
+        :local_store:
+          If specified, this KeepClient will bypass Keep
           services, and save data to the named directory.  If unspecified,
           KeepClient will fall back to the setting of the $KEEP_LOCAL_STORE
           environment variable.  If you want to ensure KeepClient does not
           use local storage, pass in an empty string.  This is primarily
           intended to mock a server for testing.
-        * num_retries: The default number of times to retry failed requests.
+
+        :num_retries:
+          The default number of times to retry failed requests.
           This will be used as the default num_retries value when get() and
           put() are called.  Default 0.
+
+        :session:
+          The requests.Session object to use for get() and put() requests.
+          Will create one if not specified.
         """
         self.lock = threading.Lock()
         if proxy is None:

@@ -10,7 +10,7 @@ class Range(object):
         self.segment_offset = segment_offset
 
     def __repr__(self):
-        return "Range(\"%s\", %i, %i, %i)" % (self.locator, self.range_start, self.range_size, self.segment_offset)
+        return "Range(%r, %r, %r, %r)" % (self.locator, self.range_start, self.range_size, self.segment_offset)
 
     def __eq__(self, other):
         return (self.locator == other.locator and
@@ -63,7 +63,7 @@ class LocatorAndRange(object):
                  self.segment_size == other.segment_size)
 
     def __repr__(self):
-        return "LocatorAndRange(\"%s\", %i, %i, %i)" % (self.locator, self.block_size, self.segment_offset, self.segment_size)
+        return "LocatorAndRange(%r, %r, %r, %r)" % (self.locator, self.block_size, self.segment_offset, self.segment_size)
 
 def locators_and_ranges(data_locators, range_start, range_size):
     """Get blocks that are covered by the range and return list of LocatorAndRange
@@ -90,6 +90,8 @@ def locators_and_ranges(data_locators, range_start, range_size):
     if i is None:
         return []
 
+    # We should always start at the first segment due to the binary
+    # search.
     while i < len(data_locators):
         dl = data_locators[i]
         block_start = dl.range_start
@@ -99,13 +101,6 @@ def locators_and_ranges(data_locators, range_start, range_size):
         if range_end <= block_start:
             # range ends before this block starts, so don't look at any more locators
             break
-
-        #if range_start >= block_end:
-            # Range starts after this block ends, so go to next block.
-            # We should always start at the first block due to the binary
-            # search above, so this test is unnecessary but useful to help
-            # document the algorithm.
-            #next
 
         if range_start >= block_start and range_end <= block_end:
             # range starts and ends in this block
@@ -170,6 +165,8 @@ def replace_range(data_locators, new_range_start, new_range_size, new_locator, n
     if i is None:
         return
 
+    # We should always start at the first segment due to the binary
+    # search.
     while i < len(data_locators):
         dl = data_locators[i]
         old_segment_start = dl.range_start
@@ -178,13 +175,6 @@ def replace_range(data_locators, new_range_start, new_range_size, new_locator, n
         if new_range_end <= old_segment_start:
             # range ends before this segment starts, so don't look at any more locators
             break
-
-        #if range_start >= old_segment_end:
-            # Range starts after this segment ends, so go to next segment.
-            # We should always start at the first segment due to the binary
-            # search above, so this test is unnecessary but useful to help
-            # document the algorithm.
-            #next
 
         if  old_segment_start <= new_range_start and new_range_end <= old_segment_end:
             # new range starts and ends in old segment

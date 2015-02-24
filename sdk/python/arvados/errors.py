@@ -19,14 +19,17 @@ class KeepRequestError(Exception):
     def __init__(self, message='', service_errors=()):
         """KeepRequestError(message='', service_errors=())
 
-        Arguments:
-        * message: A human-readable message describing what Keep operation
+        :message:
+          A human-readable message describing what Keep operation
           failed.
-        * service_errors: An iterable that yields 2-tuples of Keep
+
+        :service_errors:
+          An iterable that yields 2-tuples of Keep
           service URLs to the error encountered when talking to
           it--either an exception, or an HTTP response object.  These
           will be packed into an OrderedDict, available through the
           service_errors() method.
+
         """
         self._service_errors = OrderedDict(service_errors)
         if self._service_errors:

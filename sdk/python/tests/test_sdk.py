@@ -7,7 +7,7 @@ import arvados.collection
 
 class TestSDK(unittest.TestCase):
 
-    @mock.patch('arvados.apisetup.api_from_config')
+    @mock.patch('arvados.api')
     @mock.patch('arvados.current_task')
     @mock.patch('arvados.current_job')
     def test_one_task_per_input_file_normalize(self, mock_job, mock_task, mock_api):

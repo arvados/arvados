@@ -15,7 +15,6 @@ import unittest
 import run_test_server
 from arvados._ranges import Range, LocatorAndRange
 from arvados.collection import Collection, CollectionReader
-from arvados.arvfile import SYNC_EXPLICIT
 import arvados_testutil as tutil
 
 class TestResumableWriter(arvados.ResumableCollectionWriter):
@@ -434,7 +433,7 @@ class ArvadosCollectionsTest(run_test_server.TestCaseWithServers,
         with self.make_test_file() as testfile:
             cwriter.write_file(testfile.name, 'test')
             resumed = TestResumableWriter.from_state(cwriter.current_state())
-        self.assertEquals(cwriter.manifest_text(), resumed.manifest_text(),
+        self.assertEqual(cwriter.manifest_text(), resumed.manifest_text(),
                           "resumed CollectionWriter had different manifest")
 
     def test_resume_fails_when_missing_dependency(self):
@@ -640,7 +639,7 @@ class CollectionReaderTestCase(unittest.TestCase, CollectionTestMixin):
     def check_open_file(self, coll_file, stream_name, file_name, file_size):
         self.assertFalse(coll_file.closed, "returned file is not open")
         self.assertEqual(stream_name, coll_file.stream_name())
-        self.assertEqual(file_name, coll_file.name())
+        self.assertEqual(file_name, coll_file.name)
         self.assertEqual(file_size, coll_file.size())
 
     def test_open_collection_file_one_argument(self):
@@ -821,13 +820,13 @@ class NewCollectionTestCase(unittest.TestCase, CollectionTestMixin):
         m1 = """. 5348b82a029fd9e971a811ce1f71360b+43 0:43:md5sum.txt
 ./md5sum.txt 085c37f02916da1cad16f93c54d899b7+41 0:41:md5sum.txt
 """
-        with self.assertRaises(IOError):
-            self.assertEqual(m1, CollectionReader(m1).manifest_text(normalize=False))
+        with self.assertRaises(arvados.errors.ArgumentError):
+            self.assertEqual(m1, CollectionReader(m1))
 
     def test_init_manifest_with_error(self):
         m1 = """. 0:43:md5sum.txt"""
         with self.assertRaises(arvados.errors.ArgumentError):
-            self.assertEqual(m1, CollectionReader(m1).manifest_text(normalize=False))
+            self.assertEqual(m1, CollectionReader(m1))
 
     def test_remove(self):
         c = Collection('. 781e5e245d69b566979b86e28d23f2c7+10 0:10:count1.txt 0:10:count2.txt\n')
@@ -991,8 +990,7 @@ class NewCollectionTestCase(unittest.TestCase, CollectionTestMixin):
 
         # c1 changed, so c2 mod will go to a conflict file
         c1.apply(d)
-        self.assertTrue(re.match(r"\. 95ebc3c7b3b9f1d2c40fec14415d3cb8\+5 5348b82a029fd9e971a811ce1f71360b\+43 0:5:count1.txt 5:10:count1.txt~conflict-\d\d\d\d-\d\d-\d\d-\d\d:\d\d:\d\d~$",
-                                 c1.manifest_text()))
+        self.assertRegexpMatches(c1.manifest_text(), r"\. 95ebc3c7b3b9f1d2c40fec14415d3cb8\+5 5348b82a029fd9e971a811ce1f71360b\+43 0:5:count1\.txt 5:10:count1\.txt~conflict-\d\d\d\d-\d\d-\d\d-\d\d:\d\d:\d\d~$")
 
     def test_conflict_add(self):
         c1 = Collection('. 781e5e245d69b566979b86e28d23f2c7+10 0:10:count2.txt\n')
@@ -1005,8 +1003,7 @@ class NewCollectionTestCase(unittest.TestCase, CollectionTestMixin):
 
         # c1 added count1.txt, so c2 add will go to a conflict file
         c1.apply(d)
-        self.assertTrue(re.match(r"\. 95ebc3c7b3b9f1d2c40fec14415d3cb8\+5 5348b82a029fd9e971a811ce1f71360b\+43 0:5:count1.txt 5:10:count1.txt~conflict-\d\d\d\d-\d\d-\d\d-\d\d:\d\d:\d\d~$",
-                                 c1.manifest_text()))
+        self.assertRegexpMatches(c1.manifest_text(), r"\. 95ebc3c7b3b9f1d2c40fec14415d3cb8\+5 5348b82a029fd9e971a811ce1f71360b\+43 0:5:count1\.txt 5:10:count1\.txt~conflict-\d\d\d\d-\d\d-\d\d-\d\d:\d\d:\d\d~$")
 
     def test_conflict_del(self):
         c1 = Collection('. 781e5e245d69b566979b86e28d23f2c7+10 0:10:count1.txt')
@@ -1017,8 +1014,7 @@ class NewCollectionTestCase(unittest.TestCase, CollectionTestMixin):
 
         # c1 deleted, so c2 mod will go to a conflict file
         c1.apply(d)
-        self.assertTrue(re.match(r"\. 5348b82a029fd9e971a811ce1f71360b\+43 0:10:count1.txt~conflict-\d\d\d\d-\d\d-\d\d-\d\d:\d\d:\d\d~$",
-                                 c1.manifest_text()))
+        self.assertRegexpMatches(c1.manifest_text(), r"\. 5348b82a029fd9e971a811ce1f71360b\+43 0:10:count1\.txt~conflict-\d\d\d\d-\d\d-\d\d-\d\d:\d\d:\d\d~$")
 
     def test_notify(self):
         c1 = Collection()
@@ -1044,28 +1040,26 @@ class CollectionCreateUpdateTest(run_test_server.TestCaseWithServers):
 
         c = Collection()
         c.save_new("CollectionCreateUpdateTest", ensure_unique_name=True)
-        self.assertEquals(c.portable_data_hash(), "d41d8cd98f00b204e9800998ecf8427e+0")
-        self.assertEquals(c.api_response()["portable_data_hash"], "d41d8cd98f00b204e9800998ecf8427e+0" )
+        self.assertEqual(c.portable_data_hash(), "d41d8cd98f00b204e9800998ecf8427e+0")
+        self.assertEqual(c.api_response()["portable_data_hash"], "d41d8cd98f00b204e9800998ecf8427e+0" )
 
         with c.open("count.txt", "w") as f:
             f.write("0123456789")
 
-        self.assertEquals(c.manifest_text(), ". 781e5e245d69b566979b86e28d23f2c7+10 0:10:count.txt\n")
+        self.assertEqual(c.manifest_text(), ". 781e5e245d69b566979b86e28d23f2c7+10 0:10:count.txt\n")
 
         return c
 
     def test_create_and_save(self):
         c = self.create_count_txt()
         c.save()
-        self.assertTrue(re.match(r"^\. 781e5e245d69b566979b86e28d23f2c7\+10\+A[a-f0-9]{40}@[a-f0-9]{8} 0:10:count.txt$",
-                                 c.manifest_text()))
+        self.assertRegexpMatches(c.manifest_text(), r"^\. 781e5e245d69b566979b86e28d23f2c7\+10\+A[a-f0-9]{40}@[a-f0-9]{8} 0:10:count\.txt$",)
 
 
     def test_create_and_save_new(self):
         c = self.create_count_txt()
         c.save_new()
-        self.assertTrue(re.match(r"^\. 781e5e245d69b566979b86e28d23f2c7\+10\+A[a-f0-9]{40}@[a-f0-9]{8} 0:10:count.txt$",
-                                 c.manifest_text()))
+        self.assertRegexpMatches(c.manifest_text(), r"^\. 781e5e245d69b566979b86e28d23f2c7\+10\+A[a-f0-9]{40}@[a-f0-9]{8} 0:10:count\.txt$",)
 
     def test_create_diff_apply(self):
         c1 = self.create_count_txt()
@@ -1124,7 +1118,7 @@ class CollectionCreateUpdateTest(run_test_server.TestCaseWithServers):
         c2.save()
 
         c1.update()
-        self.assertTrue(re.match(r"\. e65075d550f9b5bf9992fa1d71a131be\+3 7ac66c0f148de9519b8bd264312c4d64\+7\+A[a-f0-9]{40}@[a-f0-9]{8} 0:3:count.txt 3:7:count.txt~conflict-\d\d\d\d-\d\d-\d\d-\d\d:\d\d:\d\d~$", c1.manifest_text()))
+        self.assertRegexpMatches(c1.manifest_text(), r"\. e65075d550f9b5bf9992fa1d71a131be\+3 7ac66c0f148de9519b8bd264312c4d64\+7\+A[a-f0-9]{40}@[a-f0-9]{8} 0:3:count\.txt 3:7:count\.txt~conflict-\d\d\d\d-\d\d-\d\d-\d\d:\d\d:\d\d~$")
 
 
 if __name__ == '__main__':

@@ -18,7 +18,7 @@ import fcntl
 import time
 import threading
 
-from apisetup import api, http_cache
+from .api import api, http_cache
 from collection import CollectionReader, CollectionWriter, ResumableCollectionWriter
 from keep import *
 from stream import *

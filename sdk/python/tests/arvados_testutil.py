@@ -94,9 +94,6 @@ class MockStreamReader(object):
         return self._name
 
     def readfrom(self, start, size, num_retries=None):
-        self._readfrom(start, size, num_retries=num_retries)
-
-    def _readfrom(self, start, size, num_retries=None):
         return self._data[start:start + size]
 
 class ApiClientMock(object):

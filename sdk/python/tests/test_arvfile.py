@@ -12,7 +12,7 @@ import arvados
 from arvados._ranges import Range
 from arvados.keep import KeepLocator
 from arvados.collection import Collection, CollectionReader
-from arvados.arvfile import ArvadosFile, ArvadosFileReader, SYNC_READONLY, SYNC_EXPLICIT
+from arvados.arvfile import ArvadosFile, ArvadosFileReader
 
 import arvados_testutil as tutil
 from test_stream import StreamFileReaderTestCase, StreamRetryTestMixin
@@ -563,5 +563,5 @@ class BlockManagerTest(unittest.TestCase):
         bufferblock.append("foo")
         with self.assertRaises(arvados.errors.KeepWriteError) as err:
             blockmanager.commit_all()
-        self.assertEquals(str(err.exception), "Error writing some blocks: acbd18db4cc2f85cedef654fccc4a4d8+3 raised KeepWriteError (fail)")
+        self.assertEqual(str(err.exception), "Error writing some blocks: acbd18db4cc2f85cedef654fccc4a4d8+3 raised KeepWriteError (fail)")
         self.assertEqual(bufferblock.state(), arvados.arvfile._BufferBlock.PENDING)

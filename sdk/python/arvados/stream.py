@@ -78,10 +78,6 @@ class StreamReader(object):
 
     @retry_method
     def readfrom(self, start, size, num_retries=None):
-        return self._readfrom(start, size, num_retries=num_retries)
-
-    @retry_method
-    def _readfrom(self, start, size, num_retries=None):
         """Read up to 'size' bytes from the stream, starting at 'start'"""
         if size == 0:
             return ''
