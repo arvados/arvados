@@ -83,11 +83,15 @@ class JobTask(object):
 
 class job_setup:
     @staticmethod
-    def one_task_per_input_file(if_sequence=0, and_end_task=True, input_as_path=False):
+    def one_task_per_input_file(if_sequence=0, and_end_task=True, input_as_path=False, arvapi=None):
         if if_sequence != current_task()['sequence']:
             return
+
+        if not arvapi:
+            arvapi = api('v1')
+
         job_input = current_job()['script_parameters']['input']
-        cr = CollectionReader(job_input)
+        cr = CollectionReader(job_input, api_client=arvapi)
         cr.normalize()
         for s in cr.all_streams():
             for f in s.all_files():
@@ -103,9 +107,9 @@ class job_setup:
                         'input':task_input
                         }
                     }
-                api('v1').job_tasks().create(body=new_task_attrs).execute()
+                arvapi.job_tasks().create(body=new_task_attrs).execute()
         if and_end_task:
-            api('v1').job_tasks().update(uuid=current_task()['uuid'],
+            arvapi.job_tasks().update(uuid=current_task()['uuid'],
                                        body={'success':True}
                                        ).execute()
             exit(0)

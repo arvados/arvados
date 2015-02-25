@@ -739,11 +739,46 @@ class SynchronizedCollectionBase(CollectionBase):
 
     @must_be_writable
     @synchronized
+    def add(self, source_obj, target_name, overwrite=False):
+        """Copy a file or subcollection to this collection.
+
+        :source_obj:
+          An ArvadosFile, or Subcollection object
+
+        :target_name:
+          Destination item name.  If the target name already exists and is a
+          file, this will raise an error unless you specify `overwrite=True`.
+
+        :overwrite:
+          Whether to overwrite target file if it already exists.
+
+        """
+
+        if target_name in self and not overwrite:
+            raise IOError((errno.EEXIST, "File already exists"))
+
+        modified_from = None
+        if target_name in self:
+            modified_from = self[target_name]
+
+        # Actually make the copy.
+        dup = source_obj.clone(self)
+        self._items[target_name] = dup
+        self._modified = True
+
+        if modified_from:
+            self.notify(MOD, self, target_name, (modified_from, dup))
+        else:
+            self.notify(ADD, self, target_name, dup)
+
+
+    @must_be_writable
+    @synchronized
     def copy(self, source, target_path, source_collection=None, overwrite=False):
         """Copy a file or subcollection to a new path in this collection.
 
         :source:
-          An ArvadosFile, Subcollection, or string with a path to source file or subcollection
+          A string with a path to source file or subcollection, or an actual ArvadosFile or Subcollection object.
 
         :target_path:
           Destination file or path.  If the target path already exists and is a
@@ -781,26 +816,11 @@ class SynchronizedCollectionBase(CollectionBase):
 
         target_dir = self.find_or_create("/".join(targetcomponents[0:-1]), COLLECTION)
 
-        if target_name in target_dir:
-            if isinstance(target_dir[target_name], SynchronizedCollectionBase) and sourcecomponents:
-                target_dir = target_dir[target_name]
-                target_name = sourcecomponents[-1]
-            elif not overwrite:
-                raise IOError((errno.EEXIST, "File already exists"))
+        if target_name in target_dir and isinstance(self[target_name], SynchronizedCollectionBase) and sourcecomponents:
+            target_dir = target_dir[target_name]
+            target_name = sourcecomponents[-1]
 
-        modified_from = None
-        if target_name in target_dir:
-            modified_from = target_dir[target_name]
-
-        # Actually make the copy.
-        dup = source_obj.clone(target_dir)
-        target_dir._items[target_name] = dup
-        target_dir._modified = True
-
-        if modified_from:
-            self.notify(MOD, target_dir, target_name, (modified_from, dup))
-        else:
-            self.notify(ADD, target_dir, target_name, dup)
+        target_dir.add(source_obj, target_name, overwrite)
 
     @synchronized
     def manifest_text(self, stream_name=".", strip=False, normalize=False):
@@ -1223,9 +1243,12 @@ class Collection(SynchronizedCollectionBase):
         the API server.  If you want to save a manifest to Keep only, see
         `save_new()`.
 
-        :update:
+        :merge:
           Update and merge remote changes before saving.  Otherwise, any
           remote changes will be ignored and overwritten.
+
+        :num_retries:
+          Retry count on API calls (if None,  use the collection default)
 
         """
         if self.modified():
@@ -1260,8 +1283,8 @@ class Collection(SynchronizedCollectionBase):
         :name:
           The collection name.
 
-        :keep_only:
-          Only save the manifest to keep, do not create a collection record.
+        :create_collection_record:
+          If True, create a collection record.  If False, only save the manifest to keep.
 
         :owner_uuid:
           the user, or project uuid that will own this collection.
@@ -1271,6 +1294,9 @@ class Collection(SynchronizedCollectionBase):
           If True, ask the API server to rename the collection
           if it conflicts with a collection with the same name and owner.  If
           False, a name conflict will result in an error.
+
+        :num_retries:
+          Retry count on API calls (if None,  use the collection default)
 
         """
         self._my_block_manager().commit_all()

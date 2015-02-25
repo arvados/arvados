@@ -835,6 +835,18 @@ class NewCollectionTestCase(unittest.TestCase, CollectionTestMixin):
         c.remove("count1.txt")
         self.assertNotIn("count1.txt", c)
         self.assertEqual(". 781e5e245d69b566979b86e28d23f2c7+10 0:10:count2.txt\n", c.manifest_text())
+        with self.assertRaises(arvados.errors.ArgumentError):
+            c.remove("")
+
+    def test_find(self):
+        c = Collection('. 781e5e245d69b566979b86e28d23f2c7+10 0:10:count1.txt 0:10:count2.txt\n')
+        self.assertIs(c.find("."), c)
+        self.assertIs(c.find("./count1.txt"), c["count1.txt"])
+        self.assertIs(c.find("count1.txt"), c["count1.txt"])
+        with self.assertRaises(IOError):
+            c.find("/.")
+        with self.assertRaises(arvados.errors.ArgumentError):
+            c.find("")
 
     def test_remove_in_subdir(self):
         c = Collection('. 781e5e245d69b566979b86e28d23f2c7+10 0:10:count1.txt\n./foo 781e5e245d69b566979b86e28d23f2c7+10 0:10:count2.txt\n')
