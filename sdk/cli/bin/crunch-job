@@ -1400,8 +1400,11 @@ sub log_writer_start($)
 {
   my $logfilename = shift;
   $log_pipe_pid = open2($log_pipe_out, $log_pipe_in,
-                        'arv-put', '--portable-data-hash',
+                        'arv-put',
+                        '--portable-data-hash',
+                        '--project-uuid', $Job->{owner_uuid},
                         '--retries', '3',
+                        '--name', $logfilename,
                         '--filename', $logfilename,
                         '-');
 }

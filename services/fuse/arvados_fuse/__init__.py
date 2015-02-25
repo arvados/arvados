@@ -20,6 +20,7 @@ import _strptime
 import calendar
 import threading
 import itertools
+import ciso8601
 
 from arvados.util import portable_data_hash_pattern, uuid_pattern, collection_uuid_pattern, group_uuid_pattern, user_uuid_pattern, link_uuid_pattern
 
@@ -35,7 +36,7 @@ def convertTime(t):
     if not t:
         return 0
     try:
-        return calendar.timegm(time.strptime(t, "%Y-%m-%dT%H:%M:%SZ"))
+        return calendar.timegm(ciso8601.parse_datetime_unaware(t).timetuple())
     except (TypeError, ValueError):
         return 0
 
