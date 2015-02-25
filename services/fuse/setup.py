@@ -32,6 +32,7 @@ setup(name='arvados_fuse',
         'arvados-python-client>=0.1.20150206225333',
         'llfuse',
         'python-daemon',
+        'ciso8601'
         ],
       test_suite='tests',
       tests_require=['PyYAML'],
