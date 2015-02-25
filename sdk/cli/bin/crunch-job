@@ -1037,7 +1037,6 @@ sub reapchildren
     if (!$temporary_fail || $Jobstep->{'failures'} >= 3) {
       # Give up on this task, and the whole job
       $main::success = 0;
-      $main::please_freeze = 1;
     }
     # Put this task back on the todo queue
     push @jobstep_todo, $jobstepid;
