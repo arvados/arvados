@@ -110,10 +110,10 @@ func runProxy(c *C, args []string, port int, bogusClientToken bool) keepclient.K
 	arv, err := arvadosclient.MakeArvadosClient()
 	c.Assert(err, Equals, nil)
 	kc := keepclient.KeepClient{
-		Arvados: &arv,
+		Arvados:       &arv,
 		Want_replicas: 2,
-		Using_proxy: true,
-		Client: &http.Client{},
+		Using_proxy:   true,
+		Client:        &http.Client{},
 	}
 	kc.SetServiceRoots(map[string]string{
 		"proxy": fmt.Sprintf("http://localhost:%v", port),
@@ -170,6 +170,13 @@ func (s *ServerRequiredSuite) TestPutAskGet(c *C) {
 		_, _, err := kc.Ask(hash)
 		c.Check(err, Equals, keepclient.BlockNotFound)
 		log.Print("Ask 1")
+	}
+
+	{
+		reader, _, _, err := kc.Get(hash)
+		c.Check(reader, Equals, nil)
+		c.Check(err, Equals, keepclient.BlockNotFound)
+		log.Print("Get 1")
 	}
 
 	{
