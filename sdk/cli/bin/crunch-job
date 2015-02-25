@@ -941,7 +941,7 @@ if (!$collated_output) {
   Log (undef, "Failed to write output collection");
 }
 else {
-  Log(undef, "output hash " . $collated_output);
+  Log(undef, "job output $collated_output");
   $Job->update_attributes('output' => $collated_output);
 }
 
@@ -1055,7 +1055,7 @@ sub reapchildren
   $Jobstep->{'arvados_task'}->{finished_at} = strftime "%Y-%m-%dT%H:%M:%SZ", gmtime($Jobstep->{finishtime});
   $Jobstep->{'arvados_task'}->save;
   process_stderr ($jobstepid, $task_success);
-  Log ($jobstepid, sprintf("output (%d bytes): %s",
+  Log ($jobstepid, sprintf("task output (%d bytes): %s",
                            length($Jobstep->{'arvados_task'}->{output}),
                            $Jobstep->{'arvados_task'}->{output}));
 
@@ -1306,11 +1306,13 @@ print (arvados.api("v1").collections().
     ++$task_idx;
     next unless exists $_->{'arvados_task'}->{'output'};
     my $output = $_->{'arvados_task'}->{output};
-    my $next_write;
+    my ($next_write, $errmsg);
     if ($output =~ /^[0-9a-f]{32}(\+\S+)*$/) {
       $next_write = fetch_block($output);
+      $errmsg = "Error fetching manifest from $output";
     } else {
       $next_write = $output;
+      $errmsg = "No output set";
     }
     if (defined($next_write)) {
       if (!defined(syswrite($child_in, $next_write))) {
@@ -1322,12 +1324,12 @@ print (arvados.api("v1").collections().
       }
     } else {
       my $uuid = $_->{'arvados_task'}->{'uuid'};
-      Log (undef, "Error retrieving '$output' output by task $task_idx ($uuid)");
+      Log(undef, "$errmsg for task $task_idx ($uuid)");
       $main::success = 0;
     }
   }
   close($child_in);
-  Log(undef, "collated output manifest is $manifest_size bytes");
+  Log(undef, "collated output manifest is $manifest_size bytes, including any access tokens");
 
   my $joboutput;
   my $s = IO::Select->new($child_out);
