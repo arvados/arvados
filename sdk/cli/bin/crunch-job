@@ -1056,7 +1056,9 @@ sub reapchildren
   $Jobstep->{'arvados_task'}->{finished_at} = strftime "%Y-%m-%dT%H:%M:%SZ", gmtime($Jobstep->{finishtime});
   $Jobstep->{'arvados_task'}->save;
   process_stderr ($jobstepid, $task_success);
-  Log ($jobstepid, "output " . $Jobstep->{'arvados_task'}->{output});
+  Log ($jobstepid, sprintf("output (%d bytes): %s",
+                           length($Jobstep->{'arvados_task'}->{output}),
+                           $Jobstep->{'arvados_task'}->{output}));
 
   close $reader{$jobstepid};
   delete $reader{$jobstepid};
@@ -1299,6 +1301,7 @@ print (arvados.api("v1").collections().
 }, retry_count());
 
   my $task_idx = -1;
+  my $manifest_size = 0;
   for (@jobstep)
   {
     ++$task_idx;
@@ -1315,6 +1318,8 @@ print (arvados.api("v1").collections().
         # There's been an error writing.  Stop the loop.
         # We'll log details about the exit code later.
         last;
+      } else {
+        $manifest_size += length($next_write);
       }
     } else {
       my $uuid = $_->{'arvados_task'}->{'uuid'};
@@ -1323,11 +1328,12 @@ print (arvados.api("v1").collections().
     }
   }
   close($child_in);
+  Log(undef, "collated output manifest is $manifest_size bytes");
 
   my $joboutput;
   my $s = IO::Select->new($child_out);
   if ($s->can_read(120)) {
-    sysread($child_out, $joboutput, 64 * 1024 * 1024);
+    sysread($child_out, $joboutput, 1024 * 1024);
     waitpid($pid, 0);
     if ($?) {
       Log(undef, "output collection creation exited " . exit_status_s($?));
