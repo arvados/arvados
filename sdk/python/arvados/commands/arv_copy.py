@@ -444,7 +444,7 @@ def copy_collection(obj_uuid, src, dst, args):
         if dstcol['items_available'] > 0:
             for d in dstcol['items']:
                 if ((args.project_uuid == d['owner_uuid']) and
-                    (c['name'] == d['name']) and
+                    (c.get('name') == d['name']) and
                     (c['portable_data_hash'] == d['portable_data_hash'])):
                     return d
 
