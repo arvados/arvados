@@ -1329,7 +1329,7 @@ print (arvados.api("v1").collections().
     }
   }
   close($child_in);
-  Log(undef, "collated output manifest is $manifest_size bytes, including any access tokens");
+  Log(undef, "collated output manifest text to send to API server is $manifest_size bytes with access tokens");
 
   my $joboutput;
   my $s = IO::Select->new($child_out);
