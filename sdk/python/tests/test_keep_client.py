@@ -402,7 +402,7 @@ class KeepClientServiceTestCase(unittest.TestCase, tutil.ApiClientMock):
                 self.assertRaises(exc_class) as err_check:
             getattr(keep_client, verb)(data)
         urls = [urlparse.urlparse(url)
-                for url in err_check.exception.service_errors()]
+                for url in err_check.exception.request_errors()]
         self.assertEqual([('keep0x' + c, aport) for c in '3eab2d5fc9681074'],
                          [(url.hostname, url.port) for url in urls])
 
@@ -419,7 +419,7 @@ class KeepClientServiceTestCase(unittest.TestCase, tutil.ApiClientMock):
         keep_client = arvados.KeepClient(api_client=api_client)
         with self.assertRaises(exc_class) as err_check:
             getattr(keep_client, verb)('d41d8cd98f00b204e9800998ecf8427e+0')
-        self.assertEqual(0, len(err_check.exception.service_errors()))
+        self.assertEqual(0, len(err_check.exception.request_errors()))
 
     def test_get_error_with_no_services(self):
         self.check_no_services_error('get', arvados.errors.KeepReadError)
@@ -438,7 +438,7 @@ class KeepClientServiceTestCase(unittest.TestCase, tutil.ApiClientMock):
                                        num_retries=3)
         self.assertEqual([403, 403], [
                 getattr(error, 'status_code', None)
-                for error in err_check.exception.service_errors().itervalues()])
+                for error in err_check.exception.request_errors().itervalues()])
 
     def test_get_error_reflects_last_retry(self):
         self.check_errors_from_last_retry('get', arvados.errors.KeepReadError)
@@ -454,7 +454,7 @@ class KeepClientServiceTestCase(unittest.TestCase, tutil.ApiClientMock):
                 self.assertRaises(arvados.errors.KeepWriteError) as exc_check:
             keep_client = arvados.KeepClient(api_client=api_client)
             keep_client.put(data)
-        self.assertEqual(2, len(exc_check.exception.service_errors()))
+        self.assertEqual(2, len(exc_check.exception.request_errors()))
 
 
 class KeepClientRetryTestMixin(object):

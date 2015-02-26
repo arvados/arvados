@@ -1077,7 +1077,7 @@ class CollectionCreateUpdateTest(run_test_server.TestCaseWithServers):
         c1 = self.create_count_txt()
         c1.save()
 
-        c2 = Collection(c1._manifest_locator)
+        c2 = Collection(c1.manifest_locator())
         with c2.open("count.txt", "w") as f:
             f.write("abcdefg")
 
@@ -1105,7 +1105,7 @@ class CollectionCreateUpdateTest(run_test_server.TestCaseWithServers):
         c1 = self.create_count_txt()
         c1.save()
 
-        c2 = arvados.collection.Collection(c1._manifest_locator)
+        c2 = arvados.collection.Collection(c1.manifest_locator())
         with c2.open("count.txt", "w") as f:
             f.write("abcdefg")
 
@@ -1123,7 +1123,7 @@ class CollectionCreateUpdateTest(run_test_server.TestCaseWithServers):
         with c1.open("count.txt", "w") as f:
             f.write("XYZ")
 
-        c2 = arvados.collection.Collection(c1._manifest_locator)
+        c2 = arvados.collection.Collection(c1.manifest_locator())
         with c2.open("count.txt", "w") as f:
             f.write("abcdefg")
 

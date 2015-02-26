@@ -1,3 +1,5 @@
+import config
+
 def normalize_stream(stream_name, stream):
     """Take manifest stream and return a list of tokens in normalized format.
 

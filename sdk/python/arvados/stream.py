@@ -62,12 +62,9 @@ class StreamReader(object):
     def all_files(self):
         return self._files.values()
 
-    def _size(self):
+    def size(self):
         n = self._data_locators[-1]
         return n.range_start + n.range_size
-
-    def size(self):
-        return self._size()
 
     def locators_and_ranges(self, range_start, range_size):
         return locators_and_ranges(self._data_locators, range_start, range_size)

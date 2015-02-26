@@ -1187,6 +1187,11 @@ class Collection(SynchronizedCollectionBase):
             self._block_manager.stop_threads()
 
     @synchronized
+    def manifest_locator(self):
+        """Get the manifest locator.  May be None."""
+        return self._manifest_locator
+
+    @synchronized
     def clone(self, new_parent=None, readonly=False, new_config=None):
         if new_config is None:
             new_config = self._config
