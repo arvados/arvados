@@ -1304,8 +1304,8 @@ print (arvados.api("v1").collections().
   for (@jobstep)
   {
     ++$task_idx;
-    next unless exists $_->{'arvados_task'}->{'output'};
     my $output = $_->{'arvados_task'}->{output};
+    next if (!defined($output));
     my ($next_write, $errmsg);
     if ($output =~ /^[0-9a-f]{32}(\+\S+)*$/) {
       $next_write = fetch_block($output);
