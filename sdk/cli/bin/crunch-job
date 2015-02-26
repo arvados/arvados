@@ -1306,13 +1306,11 @@ print (arvados.api("v1").collections().
     ++$task_idx;
     my $output = $_->{'arvados_task'}->{output};
     next if (!defined($output));
-    my ($next_write, $errmsg);
+    my $next_write;
     if ($output =~ /^[0-9a-f]{32}(\+\S+)*$/) {
       $next_write = fetch_block($output);
-      $errmsg = "Error fetching manifest from $output";
     } else {
       $next_write = $output;
-      $errmsg = "No output set";
     }
     if (defined($next_write)) {
       if (!defined(syswrite($child_in, $next_write))) {
@@ -1324,7 +1322,7 @@ print (arvados.api("v1").collections().
       }
     } else {
       my $uuid = $_->{'arvados_task'}->{'uuid'};
-      Log(undef, "$errmsg for task $task_idx ($uuid)");
+      Log (undef, "Error retrieving '$output' output by task $task_idx ($uuid)");
       $main::success = 0;
     }
   }
