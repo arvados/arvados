@@ -594,12 +594,16 @@ def copy_docker_image(docker_image, docker_image_tag, src, dst, args):
     # Find the link identifying this docker image.
     docker_image_list = arvados.commands.keepdocker.list_images_in_arv(
         src, args.retries, docker_image, docker_image_tag)
-    image_uuid, image_info = docker_image_list[0]
-    logger.debug('copying collection {} {}'.format(image_uuid, image_info))
+    if docker_image_list:
+        image_uuid, image_info = docker_image_list[0]
+        logger.debug('copying collection {} {}'.format(image_uuid, image_info))
 
-    # Copy the collection it refers to.
-    dst_image_col = copy_collection(image_uuid, src, dst, args)
-
+        # Copy the collection it refers to.
+        dst_image_col = copy_collection(image_uuid, src, dst, args)
+    elif arvados.util.keep_locator_pattern.match(docker_image):
+        dst_image_col = copy_collection(docker_image, src, dst, args)
+    else:
+        logger.warning('Could not find docker image {}:{}'.format(docker_image, docker_image_tag))
 
 # git_rev_parse(rev, repo)
 #
