@@ -37,6 +37,8 @@ Edit @config/initializers/secret_token.rb@ to set @config.secret_token@ to the s
 
 h3. Configure upstream authentication provider
 
+This will enable users to log in using their existing Google accounts.  If you don't want to use Google for account services, you can also "add accounts manually.":#manual-accounts
+
 <notextile>
 <pre><code>~/sso-devise-omniauth-provider$ <span class="userinput">cp -i config/environments/production.rb.example config/environments/production.rb</span>
 </code></pre>
@@ -52,14 +54,36 @@ Use @rails console@ to create a @Client@ record that will be used by the Arvados
 <pre><code>~/sso-devise-omniauth-provider$ <span class="userinput">rake secret</span>
 xxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxx
 ~/sso-devise-omniauth-provider$ <span class="userinput">RAILS_ENV=production bundle exec rails console</span>
-irb(main):001:0&gt; <span class="userinput">c = Client.new</span>
-irb(main):002:0&gt; <span class="userinput">c.name = "joshid"</span>
-irb(main):003:0&gt; <span class="userinput">c.app_id = "arvados-server"</span>
-irb(main):004:0&gt; <span class="userinput">c.app_secret = "xxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxx"</span>
-irb(main):005:0&gt; <span class="userinput">c.save!</span>
-irb(main):006:0&gt; <span class="userinput">quit</span>
+:001 &gt; <span class="userinput">c = Client.new</span>
+:002 &gt; <span class="userinput">c.name = "joshid"</span>
+:003 &gt; <span class="userinput">c.app_id = "arvados-server"</span>
+:004 &gt; <span class="userinput">c.app_secret = "xxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxx"</span>
+:005 &gt; <span class="userinput">c.save!</span>
+:006 &gt; <span class="userinput">quit</span>
 </code></pre>
 </notextile>
+
+h2(#manual-accounts). Adding user accounts manually
+
+Instead of relying on an upstream authentication such as Google, you can create accounts on the SSO server manually.
+
+<notextile>
+<pre><code>~/sso-devise-omniauth-provider$ <span class="userinput">RAILS_ENV=production bundle exec rails console</span>
+:001 &gt; <span class="userinput">user = User.new(:email =&gt; "test@example.com")</span>
+:002 &gt; <span class="userinput">user.password = "passw0rd"</span>
+:003 &gt; <span class="userinput">user.save!</span>
+:004 &gt; <span class="userinput">quit</span>
+</code></pre>
+</notextile>
+
+To log in using a manually created account:
+
+# Go to https://your-sso-server.hostname.com/users/sign_in
+# Enter the email address and password and click on "Sign in"
+# You will arrive at a page "You are now signed in as test@example.com"
+# Go to https://workbench.your-arvados-instance.hostname.com/
+# Click on the Workbench "Log in" button.
+# You should now be logged in to Workbench.  Confirm by looking for the email address displayed in the upper right.
 
 h2. Start the SSO server
 
