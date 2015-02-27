@@ -46,6 +46,9 @@ local_repo_dir = {}
 # destination collection UUIDs.
 collections_copied = {}
 
+# The owner_uuid of the object being copied
+src_owner_uuid = None
+
 def main():
     copy_opts = argparse.ArgumentParser(add_help=False)
 
@@ -105,14 +108,17 @@ def main():
     # Identify the kind of object we have been given, and begin copying.
     t = uuid_type(src_arv, args.object_uuid)
     if t == 'Collection':
+        set_src_owner_uuid(src_arv.collections(), args.object_uuid)
         result = copy_collection(args.object_uuid,
                                  src_arv, dst_arv,
                                  args)
     elif t == 'PipelineInstance':
+        set_src_owner_uuid(src_arv.pipeline_instances(), args.object_uuid)
         result = copy_pipeline_instance(args.object_uuid,
                                         src_arv, dst_arv,
                                         args)
     elif t == 'PipelineTemplate':
+        set_src_owner_uuid(src_arv.pipeline_templates(), args.object_uuid)
         result = copy_pipeline_template(args.object_uuid,
                                         src_arv, dst_arv, args)
     else:
@@ -131,6 +137,10 @@ def main():
     logger.info("")
     logger.info("Success: created copy with uuid {}".format(result['uuid']))
     exit(0)
+
+def set_src_owner_uuid(resource, uuid):
+    c = resource.get(uuid=uuid).execute()
+    src_owner_uuid = c.get("owner_uuid")
 
 # api_for_instance(instance_name)
 #
@@ -377,8 +387,10 @@ def create_collection_from(c, src, dst, args):
     available."""
 
     collection_uuid = c['uuid']
-
     del c['uuid']
+
+    if not c["name"]:
+        c['name'] = "copied from " + collection_uuid
 
     if 'properties' in c:
         del c['properties']
@@ -428,7 +440,52 @@ def create_collection_from(c, src, dst, args):
 #    hash will not change.
 #
 def copy_collection(obj_uuid, src, dst, args):
-    c = src.collections().get(uuid=obj_uuid).execute()
+    if arvados.util.keep_locator_pattern.match(obj_uuid):
+        # If the obj_uuid is a portable data hash, it might not be uniquely
+        # identified with a particular collection.  As a result, it is
+        # ambigious as to what name to use for the copy.  Apply some heuristics
+        # to pick which collection to get the name from.
+        srccol = src.collections().list(
+            filters=[['portable_data_hash', '=', obj_uuid]],
+            order="created_at asc"
+            ).execute()
+        if srccol.get("items"):
+            if len(srccol["items"]) == 1:
+                # There's only one collection with the PDH, so use that.
+                c = srccol["items"][0]
+            else:
+                c = None
+                for i in srccol["items"]:
+                    # See if there is a collection that's in the same project
+                    # as the root item (usually a pipeline) being copied.
+                    if i.get("owner_uuid") == src_owner_uuid and i.get("name"):
+                        c = i
+                        break
+                if not c:
+                    # Didn't find any collections located in the same project, so
+                    # pick the oldest collection that has a name assigned to it.
+                    for i in srccol["items"]:
+                        # See if there is a collection that's in the same project
+                        # as the root item (usually a pipeline) being copied.
+                        if i.get("name"):
+                            c = i
+                            break
+                if not c:
+                    # None of the collections have names (?!), so just pick the
+                    # first one.
+                    c = srccol["items"][0]
+
+            # list() doesn't return manifest text (and we don't want it to,
+            # because we don't need the same maninfest text sent to us 50
+            # times) so go and retrieve the collection object directly
+            # which will include the manifest text.
+            c = src.collections().get(uuid=c["uuid"]).execute()
+        else:
+            logger.warning("Could not find collection with portable data hash %s", obj_uuid)
+            return
+    else:
+        # Assume this is an actual collection uuid, so fetch it directly.
+        c = src.collections().get(uuid=obj_uuid).execute()
 
     # If a collection with this hash already exists at the
     # destination, and 'force' is not true, just return that
