@@ -274,6 +274,10 @@ func main() {
 		log.Fatal(err)
 	}
 
+	// Initialize Pull queue and worker
+	pullq = NewWorkQueue()
+	go RunPullWorker(pullq.NextItem)
+
 	// Shut down the server gracefully (by closing the listener)
 	// if SIGTERM is received.
 	term := make(chan os.Signal, 1)
