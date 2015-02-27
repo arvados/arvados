@@ -49,6 +49,7 @@ func TestPullWorker(t *testing.T) {
 		response_body string
 		read_content  string
 		read_error    bool
+		put_error     bool
 	}
 	var testcases = []PullWorkerTestData{
 		{
@@ -58,6 +59,7 @@ func TestPullWorker(t *testing.T) {
 			"Received 2 pull requests\n",
 			"hello",
 			false,
+			false,
 		},
 		{
 			"Pull request 2 from the data manager in worker",
@@ -66,6 +68,7 @@ func TestPullWorker(t *testing.T) {
 			"Received 1 pull requests\n",
 			"hola",
 			false,
+			false,
 		},
 		{
 			"Pull request with error on get",
@@ -73,6 +76,16 @@ func TestPullWorker(t *testing.T) {
 			http.StatusOK,
 			"Received 1 pull requests\n",
 			"unused",
+			true,
+			false,
+		},
+		{
+			"Pull request with error on put",
+			RequestTester{"/pull", data_manager_token, "PUT", second_pull_list},
+			http.StatusOK,
+			"Received 1 pull requests\n",
+			"unused",
+			false,
 			true,
 		},
 	}
@@ -84,6 +97,15 @@ func TestPullWorker(t *testing.T) {
 				return nil, errors.New("Error getting data")
 			} else {
 				return []byte(testData.read_content), nil
+			}
+		}
+
+		// Override PutContent to mock PutBlock functionality
+		PutContent = func(content []byte, locator string) (err error) {
+			if testData.put_error {
+				return errors.New("Error putting data")
+			} else {
+				return nil
 			}
 		}
 
