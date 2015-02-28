@@ -1,4 +1,4 @@
-/* Deals with parsing Collection responses from API Server. */
+// Deals with parsing Collection responses from API Server.
 
 package collection
 
@@ -38,13 +38,13 @@ type Collection struct {
 }
 
 type ReadCollections struct {
-	ReadAllCollections     bool
-	UuidToCollection       map[string]Collection
-	OwnerToCollectionSize  map[string]int
-	BlockToReplication     map[blockdigest.BlockDigest]int
-	CollectionUuidToIndex  map[string]int
-	CollectionIndexToUuid  []string
-	BlockToCollectionIndex map[blockdigest.BlockDigest]int
+	ReadAllCollections       bool
+	UuidToCollection         map[string]Collection
+	OwnerToCollectionSize    map[string]int
+	BlockToReplication       map[blockdigest.BlockDigest]int
+	CollectionUuidToIndex    map[string]int
+	CollectionIndexToUuid    []string
+	BlockToCollectionIndices map[blockdigest.BlockDigest][]int
 }
 
 type GetCollectionsParams struct {
@@ -98,7 +98,7 @@ func WriteHeapProfile() {
 
 func GetCollectionsAndSummarize(params GetCollectionsParams) (results ReadCollections) {
 	results = GetCollections(params)
-	Summarize(&results)
+	results.Summarize()
 
 	if params.Logger != nil {
 		params.Logger.Update(func(p map[string]interface{}, e map[string]interface{}) {
@@ -295,13 +295,13 @@ func ProcessCollections(arvLogger *logger.Logger,
 	return
 }
 
-func Summarize(readCollections *ReadCollections) {
+func (readCollections *ReadCollections) Summarize() {
 	readCollections.OwnerToCollectionSize = make(map[string]int)
 	readCollections.BlockToReplication = make(map[blockdigest.BlockDigest]int)
 	numCollections := len(readCollections.UuidToCollection)
 	readCollections.CollectionUuidToIndex = make(map[string]int, numCollections)
 	readCollections.CollectionIndexToUuid = make([]string, 0, numCollections)
-	readCollections.BlockToCollectionIndex = make(map[blockdigest.BlockDigest]int)
+	readCollections.BlockToCollectionIndices = make(map[blockdigest.BlockDigest][]int)
 
 	for _, coll := range readCollections.UuidToCollection {
 		collectionIndex := len(readCollections.CollectionIndexToUuid)
@@ -313,7 +313,8 @@ func Summarize(readCollections *ReadCollections) {
 			readCollections.OwnerToCollectionSize[coll.OwnerUuid] + coll.TotalSize
 
 		for block, _ := range coll.BlockDigestToSize {
-			readCollections.BlockToCollectionIndex[block] = collectionIndex
+			readCollections.BlockToCollectionIndices[block] =
+				append(readCollections.BlockToCollectionIndices[block], collectionIndex)
 			storedReplication := readCollections.BlockToReplication[block]
 			if coll.ReplicationLevel > storedReplication {
 				readCollections.BlockToReplication[block] = coll.ReplicationLevel

@@ -1,5 +1,4 @@
-/* Stores a Block Locator Digest compactly. Can be used as a map key. */
-
+// Stores a Block Locator Digest compactly. Can be used as a map key.
 package blockdigest
 
 import (

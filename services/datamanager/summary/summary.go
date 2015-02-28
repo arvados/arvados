@@ -1,26 +1,80 @@
-/* Computes Summary based on data read from API server. */
-
+// Summarizes Collection Data and Keep Server Contents.
 package summary
 
+// TODO(misha): Check size of blocks as well as their digest.
+
 import (
-	"encoding/gob"
-	"flag"
 	"fmt"
 	"git.curoverse.com/arvados.git/sdk/go/blockdigest"
-	"git.curoverse.com/arvados.git/sdk/go/logger"
 	"git.curoverse.com/arvados.git/services/datamanager/collection"
 	"git.curoverse.com/arvados.git/services/datamanager/keep"
-	"git.curoverse.com/arvados.git/services/datamanager/loggerutil"
-	"log"
-	"os"
 )
 
+type BlockSet map[blockdigest.BlockDigest]struct{}
+
+func (bs BlockSet) Insert(digest blockdigest.BlockDigest) {
+	bs[digest] = struct{}{}
+}
+
+func BlockSetFromSlice(digests []blockdigest.BlockDigest) (bs BlockSet) {
+	bs = make(BlockSet)
+	for _, digest := range digests {
+		bs.Insert(digest)
+	}
+	return
+}
+
+// We use the collection index to save space. To convert to & from the
+// uuid, use collection.ReadCollections' fields CollectionIndexToUuid
+// and CollectionUuidToIndex.
+type CollectionIndexSet map[int]struct{}
+
+func (cis CollectionIndexSet) Insert(collectionIndex int) {
+	cis[collectionIndex] = struct{}{}
+}
+
+func CollectionIndexSetFromSlice(indices []int) (cis CollectionIndexSet) {
+	cis = make(CollectionIndexSet)
+	for _, index := range indices {
+		cis.Insert(index)
+	}
+	return
+}
+
+
+func (bs BlockSet) ToCollectionIndexSet(
+	readCollections collection.ReadCollections,
+	collectionIndexSet *CollectionIndexSet) {
+	for block := range bs {
+		for collectionIndex := range readCollections.BlockToCollectionIndices[block] {
+			collectionIndexSet.Insert(collectionIndex)
+		}
+	}
+}
+
 type ReplicationSummary struct {
-	CollectionBlocksNotInKeep  map[blockdigest.BlockDigest]struct{}
-	UnderReplicatedBlocks      map[blockdigest.BlockDigest]struct{}
-	OverReplicatedBlocks       map[blockdigest.BlockDigest]struct{}
-	CorrectlyReplicatedBlocks  map[blockdigest.BlockDigest]struct{}
-	KeepBlocksNotInCollections map[blockdigest.BlockDigest]struct{}
+	CollectionBlocksNotInKeep  BlockSet
+	UnderReplicatedBlocks      BlockSet
+	OverReplicatedBlocks       BlockSet
+	CorrectlyReplicatedBlocks  BlockSet
+	KeepBlocksNotInCollections BlockSet
+
+	CollectionsNotFullyInKeep      CollectionIndexSet
+	UnderReplicatedCollections     CollectionIndexSet
+	OverReplicatedCollections      CollectionIndexSet
+	CorrectlyReplicatedCollections CollectionIndexSet
+}
+
+type ReplicationSummaryCounts struct {
+	CollectionBlocksNotInKeep      int
+	UnderReplicatedBlocks          int
+	OverReplicatedBlocks           int
+	CorrectlyReplicatedBlocks      int
+	KeepBlocksNotInCollections     int
+	CollectionsNotFullyInKeep      int
+	UnderReplicatedCollections     int
+	OverReplicatedCollections      int
+	CorrectlyReplicatedCollections int
 }
 
 type serializedData struct {
@@ -28,119 +82,91 @@ type serializedData struct {
 	KeepServerInfo  keep.ReadServers
 }
 
-var (
-	writeDataTo  string
-	readDataFrom string
-)
-
-func init() {
-	flag.StringVar(&writeDataTo,
-		"write-data-to",
-		"",
-		"Write summary of data received to this file. Used for development only.")
-	flag.StringVar(&readDataFrom,
-		"read-data-from",
-		"",
-		"Avoid network i/o and read summary data from this file instead. Used for development only.")
+func (rs ReplicationSummary) ComputeCounts() (rsc ReplicationSummaryCounts) {
+	rsc.CollectionBlocksNotInKeep = len(rs.CollectionBlocksNotInKeep)
+	rsc.UnderReplicatedBlocks = len(rs.UnderReplicatedBlocks)
+	rsc.OverReplicatedBlocks = len(rs.OverReplicatedBlocks)
+	rsc.CorrectlyReplicatedBlocks = len(rs.CorrectlyReplicatedBlocks)
+	rsc.KeepBlocksNotInCollections = len(rs.KeepBlocksNotInCollections)
+	rsc.CollectionsNotFullyInKeep = len(rs.CollectionsNotFullyInKeep)
+	rsc.UnderReplicatedCollections = len(rs.UnderReplicatedCollections)
+	rsc.OverReplicatedCollections = len(rs.OverReplicatedCollections)
+	rsc.CorrectlyReplicatedCollections = len(rs.CorrectlyReplicatedCollections)
+	return rsc
 }
 
-// Writes data we've read to a file.
-//
-// This is useful for development, so that we don't need to read all our data from the network every time we tweak something.
-//
-// This should not be used outside of development, since you'll be
-// working with stale data.
-func MaybeWriteData(arvLogger *logger.Logger,
-	readCollections collection.ReadCollections,
-	keepServerInfo keep.ReadServers) bool {
-	if writeDataTo == "" {
-		return false
-	} else {
-		summaryFile, err := os.Create(writeDataTo)
-		if err != nil {
-			loggerutil.FatalWithMessage(arvLogger,
-				fmt.Sprintf("Failed to open %s: %v", writeDataTo, err))
-		}
-		defer summaryFile.Close()
-
-		enc := gob.NewEncoder(summaryFile)
-		data := serializedData{
-			ReadCollections: readCollections,
-			KeepServerInfo:  keepServerInfo}
-		err = enc.Encode(data)
-		if err != nil {
-			loggerutil.FatalWithMessage(arvLogger,
-				fmt.Sprintf("Failed to write summary data: %v", err))
-		}
-		log.Printf("Wrote summary data to: %s", writeDataTo)
-		return true
-	}
+func (rsc ReplicationSummaryCounts) PrettyPrint() string {
+	return fmt.Sprintf("Replication Block Counts:"+
+		"\n Missing From Keep: %d, "+
+		"\n Under Replicated: %d, "+
+		"\n Over Replicated: %d, "+
+		"\n Replicated Just Right: %d, "+
+		"\n Not In Any Collection: %d. "+
+		"\nReplication Collection Counts:"+
+		"\n Missing From Keep: %d, "+
+		"\n Under Replicated: %d, "+
+		"\n Over Replicated: %d, "+
+		"\n Replicated Just Right: %d.",
+		rsc.CollectionBlocksNotInKeep,
+		rsc.UnderReplicatedBlocks,
+		rsc.OverReplicatedBlocks,
+		rsc.CorrectlyReplicatedBlocks,
+		rsc.KeepBlocksNotInCollections,
+		rsc.CollectionsNotFullyInKeep,
+		rsc.UnderReplicatedCollections,
+		rsc.OverReplicatedCollections,
+		rsc.CorrectlyReplicatedCollections)
 }
 
-// Reads data that we've read to a file.
-//
-// This is useful for development, so that we don't need to read all our data from the network every time we tweak something.
-//
-// This should not be used outside of development, since you'll be
-// working with stale data.
-func MaybeReadData(arvLogger *logger.Logger,
-	readCollections *collection.ReadCollections,
-	keepServerInfo *keep.ReadServers) bool {
-	if readDataFrom == "" {
-		return false
-	} else {
-		summaryFile, err := os.Open(readDataFrom)
-		if err != nil {
-			loggerutil.FatalWithMessage(arvLogger,
-				fmt.Sprintf("Failed to open %s: %v", readDataFrom, err))
-		}
-		defer summaryFile.Close()
-
-		dec := gob.NewDecoder(summaryFile)
-		data := serializedData{}
-		err = dec.Decode(&data)
-		if err != nil {
-			loggerutil.FatalWithMessage(arvLogger,
-				fmt.Sprintf("Failed to read summary data: %v", err))
-		}
-
-		// re-summarize data, so that we can update our summarizing
-		// functions without needing to do all our network i/o
-		collection.Summarize(&data.ReadCollections)
-		keep.ComputeBlockReplicationCounts(&data.KeepServerInfo)
-
-		*readCollections = data.ReadCollections
-		*keepServerInfo = data.KeepServerInfo
-		log.Printf("Read summary data from: %s", readDataFrom)
-		return true
-	}
-}
-
-func SummarizeReplication(arvLogger *logger.Logger,
-	readCollections collection.ReadCollections,
+func SummarizeReplication(readCollections collection.ReadCollections,
 	keepServerInfo keep.ReadServers) (rs ReplicationSummary) {
-	rs.CollectionBlocksNotInKeep = make(map[blockdigest.BlockDigest]struct{})
-	rs.UnderReplicatedBlocks = make(map[blockdigest.BlockDigest]struct{})
-	rs.OverReplicatedBlocks = make(map[blockdigest.BlockDigest]struct{})
-	rs.CorrectlyReplicatedBlocks = make(map[blockdigest.BlockDigest]struct{})
-	rs.KeepBlocksNotInCollections = make(map[blockdigest.BlockDigest]struct{})
+	rs.CollectionBlocksNotInKeep = make(BlockSet)
+	rs.UnderReplicatedBlocks = make(BlockSet)
+	rs.OverReplicatedBlocks = make(BlockSet)
+	rs.CorrectlyReplicatedBlocks = make(BlockSet)
+	rs.KeepBlocksNotInCollections = make(BlockSet)
+	rs.CollectionsNotFullyInKeep = make(CollectionIndexSet)
+	rs.UnderReplicatedCollections = make(CollectionIndexSet)
+	rs.OverReplicatedCollections = make(CollectionIndexSet)
+	rs.CorrectlyReplicatedCollections = make(CollectionIndexSet)
 
 	for block, requestedReplication := range readCollections.BlockToReplication {
 		actualReplication := len(keepServerInfo.BlockToServers[block])
 		if actualReplication == 0 {
-			rs.CollectionBlocksNotInKeep[block] = struct{}{}
+			rs.CollectionBlocksNotInKeep.Insert(block)
 		} else if actualReplication < requestedReplication {
-			rs.UnderReplicatedBlocks[block] = struct{}{}
+			rs.UnderReplicatedBlocks.Insert(block)
 		} else if actualReplication > requestedReplication {
-			rs.OverReplicatedBlocks[block] = struct{}{}
+			rs.OverReplicatedBlocks.Insert(block)
 		} else {
-			rs.CorrectlyReplicatedBlocks[block] = struct{}{}
+			rs.CorrectlyReplicatedBlocks.Insert(block)
 		}
 	}
 
 	for block, _ := range keepServerInfo.BlockToServers {
 		if 0 == readCollections.BlockToReplication[block] {
-			rs.KeepBlocksNotInCollections[block] = struct{}{}
+			rs.KeepBlocksNotInCollections.Insert(block)
+		}
+	}
+
+	rs.CollectionBlocksNotInKeep.ToCollectionIndexSet(readCollections,
+		&rs.CollectionsNotFullyInKeep)
+	// Since different collections can specify different replication
+	// levels, the fact that a block is under-replicated does not imply
+	// that all collections that it belongs to are under-replicated, but
+	// we'll ignore that for now.
+	// TODO(misha): Fix this and report the correct set of collections.
+	rs.UnderReplicatedBlocks.ToCollectionIndexSet(readCollections,
+		&rs.UnderReplicatedCollections)
+	rs.OverReplicatedBlocks.ToCollectionIndexSet(readCollections,
+		&rs.OverReplicatedCollections)
+
+	for i := range readCollections.CollectionIndexToUuid {
+		if _, notInKeep := rs.CollectionsNotFullyInKeep[i]; notInKeep {
+		} else if _, underReplicated := rs.UnderReplicatedCollections[i]; underReplicated {
+		} else if _, overReplicated := rs.OverReplicatedCollections[i]; overReplicated {
+		} else {
+			rs.CorrectlyReplicatedCollections.Insert(i)
 		}
 	}
 
