@@ -35,19 +35,25 @@ type Cgroup struct {
 }
 
 func CopyPipeToChan(in io.ReadCloser, out chan string, done chan<- bool) {
-	defer in.Close()
-
-	// TODO(twp): handle long input records gracefully, if possible
-	// without killing the child task (#4889)
-	//
-	s := bufio.NewScanner(in)
-	for s.Scan() {
-		out <- s.Text()
-	}
-	if s.Err() != nil {
-		out <- fmt.Sprintf("crunchstat: line buffering error: %s", s.Err())
+	reader := bufio.NewReader(in)
+	for {
+		line, err := reader.ReadBytes('\n')
+		if len(line) > 0 {
+			if err == nil {
+				// err == nil IFF line ends in \n
+				line = line[:len(line)-1]
+			}
+			out <- string(line)
+		}
+		if err != nil {
+			if err != io.EOF {
+				out <- fmt.Sprintf("crunchstat: line buffering error: %s", err)
+			}
+			break
+		}
 	}
 	done <- true
+	in.Close()
 }
 
 func CopyChanToPipe(in <-chan string, out io.Writer) {

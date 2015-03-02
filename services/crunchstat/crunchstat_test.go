@@ -2,10 +2,13 @@ package main
 
 import (
 	"bufio"
+	"bytes"
 	"io"
+	"math/rand"
 	"os"
 	"regexp"
 	"testing"
+	"time"
 )
 
 func TestReadAllOrWarnFail(t *testing.T) {
@@ -51,8 +54,8 @@ func TestReadAllOrWarnSuccess(t *testing.T) {
 	}
 }
 
-// Test that if CopyPipeToChan reads a line longer than
-// bufio.MaxScanTokenSize, it emits an error to the output channel.
+// Test that CopyPipeToChan works even on lines longer than
+// bufio.MaxScanTokenSize.
 func TestCopyPipeToChanLongLines(t *testing.T) {
 	logChan := make(chan string)
 	control := make(chan bool)
@@ -60,20 +63,33 @@ func TestCopyPipeToChanLongLines(t *testing.T) {
 	pipeIn, pipeOut := io.Pipe()
 	go CopyPipeToChan(pipeIn, logChan, control)
 
+	sentBytes := make([]byte, bufio.MaxScanTokenSize + (1 << 22))
 	go func() {
-		long_line := make([]byte, bufio.MaxScanTokenSize+1)
-		for i := range long_line {
-			long_line[i] = byte('x')
+		for i := range sentBytes {
+			// Some bytes that aren't newlines:
+			sentBytes[i] = byte((rand.Int() & 0xff) | 0x80)
 		}
-		pipeOut.Write(long_line)
+		pipeOut.Write([]byte("before\n"))
+		pipeOut.Write(sentBytes)
+		pipeOut.Write([]byte("\nafter\n"))
+		pipeOut.Close()
 	}()
 
-	// Expect error message from logChan.
-
-	errmsg := <-logChan
-	if matched, err := regexp.MatchString("^crunchstat: line buffering error:.*token too long", errmsg); err != nil || !matched {
-		t.Fatalf("expected CopyPipeToChan error, got %s", errmsg)
+	if before := <-logChan; before != "before" {
+		t.Fatalf("\"before\" not received (got \"%s\")", before)
 	}
-
-	<-control
+	receivedString := <-logChan
+	receivedBytes := []byte(receivedString)
+	if bytes.Compare(receivedBytes, sentBytes) != 0 {
+		t.Fatalf("sent %d bytes, got %d different bytes", len(sentBytes), len(receivedBytes))
+	}
+	if after := <-logChan; after != "after" {
+		t.Fatal("\"after\" not received")
+	}
+	select {
+	case <-time.After(time.Second):
+		t.Fatal("Timeout")
+	case <-control:
+		// Done.
+	}
 }
