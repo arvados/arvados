@@ -9,7 +9,6 @@ import (
 	"io/ioutil"
 	"log"
 	"os"
-	"strconv"
 	"time"
 )
 
@@ -83,11 +82,10 @@ func Pull(addr string, locator string) (err error) {
 // Fetch the content for the given locator using keepclient.
 var GetContent = func(addr string, locator string) ([]byte, error) {
 	// Generate signature with a random token
-	expires_at := time.Now().Unix() + 60 // now + 1 min in seconds
-	hints := "+A" + GenerateRandomApiToken() + "@" + strconv.FormatInt(expires_at, 16)
-	signature := keepclient.MakeLocator2(locator, hints)
-
-	reader, blocklen, _, err := keepClient.AuthorizedGet(locator, signature.Signature, signature.Timestamp)
+	PermissionSecret = []byte(os.Getenv("ARVADOS_API_TOKEN"))
+	expires_at := time.Now().Add(60 * time.Second)
+	signedLocator := SignLocator(locator, GenerateRandomApiToken(), expires_at)
+	reader, blocklen, _, err := keepClient.Get(signedLocator)
 	defer reader.Close()
 	if err != nil {
 		return nil, err
@@ -100,7 +98,7 @@ var GetContent = func(addr string, locator string) ([]byte, error) {
 	}
 
 	if (read_content == nil) || (int64(len(read_content)) != blocklen) {
-		return nil, errors.New(fmt.Sprintf("Content not found for: %s/%s", addr, locator))
+		return nil, errors.New(fmt.Sprintf("Content not found for: %s", signedLocator))
 	}
 
 	return read_content, nil
