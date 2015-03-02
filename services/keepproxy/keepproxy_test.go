@@ -169,15 +169,24 @@ func (s *ServerRequiredSuite) TestPutAskGet(c *C) {
 	{
 		_, _, err := kc.Ask(hash)
 		c.Check(err, Equals, keepclient.BlockNotFound)
-		log.Print("Ask 1")
+		log.Print("Finished Ask (expected BlockNotFound)")
 	}
 
 	{
 		reader, _, _, err := kc.Get(hash)
 		c.Check(reader, Equals, nil)
 		c.Check(err, Equals, keepclient.BlockNotFound)
-		log.Print("Get 1")
+		log.Print("Finished Get (expected BlockNotFound)")
 	}
+
+	// Note in bug #5309 among other errors keepproxy would set
+	// Content-Length incorrectly on the 404 BlockNotFound response, this
+	// would result in a protocol violation that would prevent reuse of the
+	// connection, which would manifest by the next attempt to use the
+	// connection (in this case the PutB below) failing.  So to test for
+	// that bug it's necessary to trigger an error response (such as
+	// BlockNotFound) and then do something else with the same httpClient
+	// connection.
 
 	{
 		var rep int
@@ -186,14 +195,14 @@ func (s *ServerRequiredSuite) TestPutAskGet(c *C) {
 		c.Check(hash2, Matches, fmt.Sprintf(`^%s\+3(\+.+)?$`, hash))
 		c.Check(rep, Equals, 2)
 		c.Check(err, Equals, nil)
-		log.Print("PutB")
+		log.Print("Finished PutB (expected success)")
 	}
 
 	{
 		blocklen, _, err := kc.Ask(hash2)
 		c.Assert(err, Equals, nil)
 		c.Check(blocklen, Equals, int64(3))
-		log.Print("Ask 2")
+		log.Print("Finished Ask (expected success)")
 	}
 
 	{
@@ -202,7 +211,7 @@ func (s *ServerRequiredSuite) TestPutAskGet(c *C) {
 		all, err := ioutil.ReadAll(reader)
 		c.Check(all, DeepEquals, []byte("foo"))
 		c.Check(blocklen, Equals, int64(3))
-		log.Print("Get")
+		log.Print("Finished Get (expected success)")
 	}
 
 	{
@@ -212,7 +221,7 @@ func (s *ServerRequiredSuite) TestPutAskGet(c *C) {
 		c.Check(hash2, Matches, `^d41d8cd98f00b204e9800998ecf8427e\+0(\+.+)?$`)
 		c.Check(rep, Equals, 2)
 		c.Check(err, Equals, nil)
-		log.Print("PutB zero block")
+		log.Print("Finished PutB zero block")
 	}
 
 	{
@@ -221,7 +230,7 @@ func (s *ServerRequiredSuite) TestPutAskGet(c *C) {
 		all, err := ioutil.ReadAll(reader)
 		c.Check(all, DeepEquals, []byte(""))
 		c.Check(blocklen, Equals, int64(0))
-		log.Print("Get zero block")
+		log.Print("Finished Get zero block")
 	}
 
 	log.Print("TestPutAndGet done")
