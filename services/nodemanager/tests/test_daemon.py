@@ -94,8 +94,11 @@ class NodeManagerDaemonActorTestCase(testutil.ActorTestMixin,
         self.check_monitors_arvados_nodes(arv_node)
 
     def test_arvados_node_un_and_re_paired(self):
+        # We need to create the Arvados node mock after spinning up the daemon
+        # to make sure it's new enough to pair with the cloud node.
+        self.make_daemon([testutil.cloud_node_mock(3)], arvados_nodes=None)
         arv_node = testutil.arvados_node_mock(3)
-        self.make_daemon([testutil.cloud_node_mock(3)], [arv_node])
+        self.daemon.update_arvados_nodes([arv_node]).get(self.TIMEOUT)
         self.check_monitors_arvados_nodes(arv_node)
         self.daemon.update_cloud_nodes([]).get(self.TIMEOUT)
         self.assertEqual(0, self.alive_monitor_count())

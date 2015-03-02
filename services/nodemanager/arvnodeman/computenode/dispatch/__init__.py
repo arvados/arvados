@@ -9,7 +9,8 @@ import time
 import libcloud.common.types as cloud_types
 import pykka
 
-from .. import arvados_node_fqdn, arvados_node_mtime, timestamp_fresh
+from .. import \
+    arvados_node_fqdn, arvados_node_mtime, arvados_timestamp, timestamp_fresh
 from ...clientactor import _notify_subscribers
 from ... import config
 
@@ -322,9 +323,11 @@ class ComputeNodeMonitorActor(config.actor_class):
             self.last_shutdown_opening = next_opening
 
     def offer_arvados_pair(self, arvados_node):
-        if self.arvados_node is not None:
+        first_ping_s = arvados_node.get('first_ping_at')
+        if (self.arvados_node is not None) or (not first_ping_s):
             return None
-        elif arvados_node['ip_address'] in self.cloud_node.private_ips:
+        elif ((arvados_node['ip_address'] in self.cloud_node.private_ips) and
+              (arvados_timestamp(first_ping_s) >= self.cloud_node_start_time)):
             self._later.update_arvados_node(arvados_node)
             return self.cloud_node.id
         else:

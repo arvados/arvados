@@ -319,6 +319,13 @@ class ComputeNodeMonitorActorTestCase(testutil.ActorTestMixin,
         self.assertIsNone(
             self.node_actor.offer_arvados_pair(arv_node).get(self.TIMEOUT))
 
+    def test_arvados_node_mismatch_first_ping_too_early(self):
+        self.make_actor(4)
+        arv_node = testutil.arvados_node_mock(
+            4, first_ping_at='1971-03-02T14:15:16.1717282Z')
+        self.assertIsNone(
+            self.node_actor.offer_arvados_pair(arv_node).get(self.TIMEOUT))
+
     def test_update_cloud_node(self):
         self.make_actor(1)
         self.make_mocks(2)
