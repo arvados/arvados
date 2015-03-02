@@ -159,10 +159,17 @@ func (this KeepClient) AuthorizedGet(hash string,
 
 		var resp *http.Response
 		if resp, err = this.Client.Do(req); err != nil || resp.StatusCode != http.StatusOK {
-			respbody, _ := ioutil.ReadAll(&io.LimitedReader{resp.Body, 4096})
+			statusCode := -1
+			var respbody []byte
+			if resp != nil {
+				statusCode = resp.StatusCode
+				if resp.Body != nil {
+					respbody, _ = ioutil.ReadAll(&io.LimitedReader{resp.Body, 4096})
+				}
+			}
 			response := strings.TrimSpace(string(respbody))
 			log.Printf("[%v] Download %v status code: %v error: \"%v\" response: \"%v\"",
-				requestId, url, resp.StatusCode, err, response)
+				requestId, url, statusCode, err, response)
 			continue
 		}
 

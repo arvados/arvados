@@ -312,14 +312,14 @@ func (this GetBlockHandler) ServeHTTP(resp http.ResponseWriter, req *http.Reques
 
 	if req.Method == "GET" {
 		reader, blocklen, _, err = kc.AuthorizedGet(hash, locator.Signature, locator.Timestamp)
-		defer reader.Close()
+		if reader != nil {
+			defer reader.Close()
+		}
 	} else if req.Method == "HEAD" {
 		blocklen, _, err = kc.AuthorizedAsk(hash, locator.Signature, locator.Timestamp)
 	}
 
-	if blocklen > -1 {
-		resp.Header().Set("Content-Length", fmt.Sprint(blocklen))
-	} else {
+	if blocklen == -1 {
 		log.Printf("%s: %s %s Keep server did not return Content-Length",
 			GetRemoteAddress(req), req.Method, hash)
 	}
@@ -328,6 +328,7 @@ func (this GetBlockHandler) ServeHTTP(resp http.ResponseWriter, req *http.Reques
 	switch err {
 	case nil:
 		status = http.StatusOK
+		resp.Header().Set("Content-Length", fmt.Sprint(blocklen))
 		if reader != nil {
 			n, err2 := io.Copy(resp, reader)
 			if blocklen > -1 && n != blocklen {
@@ -345,7 +346,7 @@ func (this GetBlockHandler) ServeHTTP(resp http.ResponseWriter, req *http.Reques
 		}
 	case keepclient.BlockNotFound:
 		status = http.StatusNotFound
-		http.Error(resp, "Not found", http.StatusNotFound)
+		http.Error(resp, "Not Found", http.StatusNotFound)
 	default:
 		status = http.StatusBadGateway
 		http.Error(resp, err.Error(), http.StatusBadGateway)
