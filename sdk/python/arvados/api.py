@@ -158,16 +158,14 @@ def api_from_config(version=None, apiconfig=None, **kwargs):
       A string naming the version of the Arvados REST API to use (for
       example, 'v1').
 
-    :cache:
-      Use a cache (~/.cache/arvados/discovery) for the discovery
-      document.
-
     :apiconfig:
       If provided, this should be a dict-like object (must support the get()
       method) with entries for ARVADOS_API_HOST, ARVADOS_API_TOKEN, and
       optionally ARVADOS_API_HOST_INSECURE.  If not provided, use
       arvados.config (which gets these parameters from the environment by
       default.)
+
+    Other keyword arguments such as `cache` will be passed along `api()`
 
     """
     # Load from user configuration or environment

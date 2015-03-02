@@ -59,7 +59,10 @@ class KeepLocator(object):
             if s is not None)
 
     def stripped(self):
-        return "%s+%i" % (self.md5sum, self.size)
+        if self.size is not None:
+            return "%s+%i" % (self.md5sum, self.size)
+        else:
+            return self.md5sum
 
     def _make_hex_prop(name, length):
         # Build and return a new property with the given name that

@@ -39,5 +39,5 @@ class TestSDK(unittest.TestCase):
 
         # Because one_task_per_input_file normalizes this collection,
         # it should now create only one job task and not three.
-        arvados.job_setup.one_task_per_input_file(and_end_task=False, arvapi=mock_api)
+        arvados.job_setup.one_task_per_input_file(and_end_task=False, api_client=mock_api)
         mock_api.job_tasks().create().execute.assert_called_once_with()

@@ -17,7 +17,7 @@ class ApiError(apiclient_errors.HttpError):
 class KeepRequestError(Exception):
     """Base class for errors accessing Keep services."""
     def __init__(self, message='', request_errors=(), label=""):
-        """KeepRequestError(message='', request_errors=())
+        """KeepRequestError(message='', request_errors=(), label="")
 
         :message:
           A human-readable message describing what Keep operation

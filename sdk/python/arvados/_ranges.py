@@ -66,11 +66,12 @@ class LocatorAndRange(object):
         return "LocatorAndRange(%r, %r, %r, %r)" % (self.locator, self.block_size, self.segment_offset, self.segment_size)
 
 def locators_and_ranges(data_locators, range_start, range_size):
-    """Get blocks that are covered by the range and return list of LocatorAndRange
-    objects.
+    """Get blocks that are covered by a range.
+
+    Returns a list of LocatorAndRange objects.
 
     :data_locators:
-      list of Range objects, assumes that blocks are in order and contigous
+      list of Range objects, assumes that blocks are in order and contiguous
 
     :range_start:
       start of range
@@ -82,8 +83,6 @@ def locators_and_ranges(data_locators, range_start, range_size):
     if range_size == 0:
         return []
     resp = []
-    range_start = range_start
-    range_size = range_size
     range_end = range_start + range_size
 
     i = first_block(data_locators, range_start, range_size)
@@ -144,8 +143,6 @@ def replace_range(data_locators, new_range_start, new_range_size, new_locator, n
     if new_range_size == 0:
         return
 
-    new_range_start = new_range_start
-    new_range_size = new_range_size
     new_range_end = new_range_start + new_range_size
 
     if len(data_locators) == 0:

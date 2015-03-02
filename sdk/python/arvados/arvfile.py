@@ -342,6 +342,7 @@ class NoopLock(object):
     def release(self):
         pass
 
+
 def must_be_writable(orig_func):
     @functools.wraps(orig_func)
     def must_be_writable_wrapper(self, *args, **kwargs):
@@ -797,7 +798,6 @@ class ArvadosFile(object):
             self._repack_writes()
             self.parent._my_block_manager().commit_bufferblock(self._current_bblock)
 
-
     @must_be_writable
     @synchronized
     def add_segment(self, blocks, pos, size):
@@ -826,16 +826,14 @@ class ArvadosFile(object):
         else:
             return 0
 
-
     @synchronized
     def manifest_text(self, stream_name=".", portable_locators=False, normalize=False):
         buf = ""
-        item = self
         filestream = []
-        for segment in item.segments:
+        for segment in self.segments:
             loc = segment.locator
             if loc.startswith("bufferblock"):
-                loc = item._bufferblocks[loc].calculate_locator()
+                loc = self._bufferblocks[loc].calculate_locator()
             if portable_locators:
                 loc = KeepLocator(loc).stripped()
             filestream.append(LocatorAndRange(loc, locator_block_size(loc),
@@ -919,7 +917,7 @@ class ArvadosFileWriter(ArvadosFileReader):
     def flush(self):
         self.arvadosfile.flush()
 
-    @_FileLikeObjectBase._before_close
     def close(self):
-        self.flush()
-        super(ArvadosFileWriter, self).close()
+        if not self.closed:
+            self.flush()
+            super(ArvadosFileWriter, self).close()

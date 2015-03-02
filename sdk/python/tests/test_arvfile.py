@@ -405,9 +405,6 @@ class ArvadosFileReaderTestCase(StreamFileReaderTestCase):
         def _my_block_manager(self):
             return ArvadosFileReaderTestCase.MockParent.MockBlockMgr(self.blocks, self.nocache)
 
-        def sync_mode(self):
-            return SYNC_READONLY
-
 
     def make_count_reader(self, nocache=False):
         stream = []
