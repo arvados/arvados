@@ -70,10 +70,11 @@ class ComputeNodeDriver(BaseComputeNodeDriver):
         result = {'name': 'compute-{}-{}'.format(node_id, cluster_id),
                   'ex_metadata': self.create_kwargs['ex_metadata'].copy(),
                   'ex_tags': list(self.node_tags)}
+        result['ex_metadata']['arv-ping-url'] = self._make_ping_url(
+            arvados_node)
         result['ex_metadata']['booted_at'] = time.strftime(ARVADOS_TIMEFMT,
                                                            time.gmtime())
         result['ex_metadata']['hostname'] = arvados_node_fqdn(arvados_node)
-        result['ex_metadata']['user-data'] = self._make_ping_url(arvados_node)
         return result
 
     def list_nodes(self):
@@ -82,6 +83,10 @@ class ComputeNodeDriver(BaseComputeNodeDriver):
         return [node for node in
                 super(ComputeNodeDriver, self).list_nodes()
                 if self.node_tags.issubset(node.extra.get('tags', []))]
+
+    def destroy_node(self, cloud_node):
+        return super(ComputeNodeDriver, self).destroy_node(
+            cloud_node, destroy_boot_disk=True)
 
     @classmethod
     def _find_metadata(cls, metadata_items, key):

@@ -41,7 +41,7 @@ class GCEComputeNodeDriverTestCase(testutil.DriverTestMixin, unittest.TestCase):
         driver = self.new_driver()
         driver.create_node(testutil.MockSize(1), arv_node)
         metadata = self.driver_mock().create_node.call_args[1]['ex_metadata']
-        self.assertIn('ping_secret=ssshh', metadata.get('user-data'))
+        self.assertIn('ping_secret=ssshh', metadata.get('arv-ping-url'))
 
     def test_create_sets_default_hostname(self):
         driver = self.new_driver()
@@ -72,6 +72,12 @@ class GCEComputeNodeDriverTestCase(testutil.DriverTestMixin, unittest.TestCase):
         self.driver_mock().list_nodes.return_value = cloud_mocks
         driver = self.new_driver(list_kwargs={'tags': 'good, great'})
         self.assertItemsEqual(['5', '6'], [n.id for n in driver.list_nodes()])
+
+    def test_destroy_node_destroys_disk(self):
+        driver = self.new_driver()
+        driver.destroy_node(testutil.cloud_node_mock())
+        self.assertTrue(self.driver_mock().destroy_node.call_args[1].get(
+                'destroy_boot_disk'))
 
     def build_gce_metadata(self, metadata_dict):
         # Convert a plain metadata dictionary to the GCE data structure.
