@@ -13,14 +13,17 @@ from . import pykka_timeout
 
 no_sleep = mock.patch('time.sleep', lambda n: None)
 
-def arvados_node_mock(node_num=99, job_uuid=None, age=0, **kwargs):
+def arvados_node_mock(node_num=99, job_uuid=None, age=-1, **kwargs):
     mod_time = datetime.datetime.utcnow() - datetime.timedelta(seconds=age)
+    mod_time_s = mod_time.strftime('%Y-%m-%dT%H:%M:%S.%fZ')
     if job_uuid is True:
         job_uuid = 'zzzzz-jjjjj-jobjobjobjobjob'
     crunch_worker_state = 'idle' if (job_uuid is None) else 'busy'
     node = {'uuid': 'zzzzz-yyyyy-{:015x}'.format(node_num),
             'created_at': '2014-01-01T01:02:03.04050607Z',
-            'modified_at': mod_time.strftime('%Y-%m-%dT%H:%M:%S.%fZ'),
+            'modified_at': mod_time_s,
+            'first_ping_at': kwargs.pop('first_ping_at', mod_time_s),
+            'last_ping_at': mod_time_s,
             'slot_number': node_num,
             'hostname': 'compute{}'.format(node_num),
             'domain': 'zzzzz.arvadosapi.com',
