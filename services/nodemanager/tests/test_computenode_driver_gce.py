@@ -41,7 +41,7 @@ class GCEComputeNodeDriverTestCase(testutil.DriverTestMixin, unittest.TestCase):
         driver = self.new_driver()
         driver.create_node(testutil.MockSize(1), arv_node)
         metadata = self.driver_mock().create_node.call_args[1]['ex_metadata']
-        self.assertIn('ping_secret=ssshh', metadata.get('user-data'))
+        self.assertIn('ping_secret=ssshh', metadata.get('arv-ping-url'))
 
     def test_create_sets_default_hostname(self):
         driver = self.new_driver()
