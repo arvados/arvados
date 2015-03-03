@@ -472,8 +472,6 @@ def copy_collection(obj_uuid, src, dst, args):
             # Didn't find any collections located in the same project, so
             # pick the oldest collection that has a name assigned to it.
             for i in items:
-                # See if there is a collection that's in the same project
-                # as the root item (usually a pipeline) being copied.
                 if i.get("name"):
                     c = i
                     break
