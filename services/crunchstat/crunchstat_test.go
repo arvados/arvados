@@ -97,7 +97,7 @@ func TestCopyPipeToChildLogLongLines(t *testing.T) {
 		receivedBytes = append(receivedBytes, line...)
 	}
 	if bytes.Compare(receivedBytes, sentBytes) != 0 {
-		t.Fatalf("sent %d bytes, got %d different bytes", len(sentBytes)+1, len(receivedBytes))
+		t.Fatalf("sent %d bytes, got %d different bytes", len(sentBytes), len(receivedBytes))
 	}
 
 	if after, err := rcv.ReadBytes('\n'); err != nil || string(after) != "after\n" {
