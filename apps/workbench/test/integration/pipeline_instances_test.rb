@@ -412,12 +412,12 @@ class PipelineInstancesTest < ActionDispatch::IntegrationTest
   end
 
   [
-    ['zzzzz-d1hrv-10pipelines0001', 0], # run time 0 minutes
-    ['zzzzz-d1hrv-10pipelines0010', 17*60*60 + 51*60], # run time 17 hours and 51 minutes
-    ['zzzzz-d1hrv-10pipelines0002', nil], # state = running
-  ].each do |uuid, run_time|
+    ['user1_with_load', 'zzzzz-d1hrv-10pipelines0001', 0], # run time 0 minutes
+    ['user1_with_load', 'zzzzz-d1hrv-10pipelines0010', 17*60*60 + 51*60], # run time 17 hours and 51 minutes
+    ['active', 'zzzzz-d1hrv-runningpipeline', nil], # state = running
+  ].each do |user, uuid, run_time|
     test "pipeline start and finish time display for #{uuid}" do
-      visit page_with_token("user1_with_load", "/pipeline_instances/#{uuid}")
+      visit page_with_token(user, "/pipeline_instances/#{uuid}")
 
       assert page.has_text? 'This pipeline started at'
       page_text = page.text

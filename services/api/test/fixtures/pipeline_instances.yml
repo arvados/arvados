@@ -266,6 +266,23 @@ pipeline_in_publicly_accessible_project:
           dataclass: Collection
           title: foo instance input
 
+pipeline_in_running_state:
+  name: running_with_job
+  state: Ready
+  uuid: zzzzz-d1hrv-runningpipeline
+  owner_uuid: zzzzz-tpzed-xurymjxw79nv3jz
+  created_at: <%= 3.1.minute.ago.to_s(:db) %>
+  started_at: <%= 3.1.minute.ago.to_s(:db) %>
+  state: RunningOnServer
+  components:
+   foo:
+    script: foo
+    script_version: master
+    script_parameters: {}
+    job:
+      uuid: zzzzz-8i9sb-pshmckwoma9plh7
+      script_version: master
+
 # Test Helper trims the rest of the file
 
 # Do not add your fixtures below this line as the rest of this file will be trimmed by test_helper
@@ -278,12 +295,8 @@ pipeline_<%=i%>_of_10:
   owner_uuid: zzzzz-j7d0g-000010pipelines
   created_at: <%= (2*(i-1)).hour.ago.to_s(:db) %>
   started_at: <%= (2*(i-1)).hour.ago.to_s(:db) %>
-<% if i != 2 %>
   finished_at: <%= (i-1).minute.ago.to_s(:db) %>
   state: Failed
-<% else %>
-  state: Running
-<% end %>
   components:
     foo:
       script: foo
