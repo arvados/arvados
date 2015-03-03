@@ -27,15 +27,6 @@ class GCEComputeNodeDriverTestCase(testutil.DriverTestMixin, unittest.TestCase):
         driver = self.new_driver(create_kwargs={'image': 'B'})
         self.assertEqual(1, list_method.call_count)
 
-    def test_list_sizes_requires_location_match(self):
-        locations = [testutil.cloud_object_mock(name)
-                     for name in ['there', 'here', 'other']]
-        self.driver_mock().list_locations.return_value = locations
-        driver = self.new_driver(create_kwargs={'location': 'HERE'})
-        driver.list_sizes()
-        self.assertIs(locations[1],
-                      self.driver_mock().list_sizes.call_args[0][0])
-
     def test_create_includes_ping_secret(self):
         arv_node = testutil.arvados_node_mock(info={'ping_secret': 'ssshh'})
         driver = self.new_driver()
