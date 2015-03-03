@@ -108,17 +108,17 @@ def main():
     # Identify the kind of object we have been given, and begin copying.
     t = uuid_type(src_arv, args.object_uuid)
     if t == 'Collection':
-        set_src_owner_uuid(src_arv.collections(), args.object_uuid)
+        set_src_owner_uuid(src_arv.collections(), args.object_uuid, args)
         result = copy_collection(args.object_uuid,
                                  src_arv, dst_arv,
                                  args)
     elif t == 'PipelineInstance':
-        set_src_owner_uuid(src_arv.pipeline_instances(), args.object_uuid)
+        set_src_owner_uuid(src_arv.pipeline_instances(), args.object_uuid, args)
         result = copy_pipeline_instance(args.object_uuid,
                                         src_arv, dst_arv,
                                         args)
     elif t == 'PipelineTemplate':
-        set_src_owner_uuid(src_arv.pipeline_templates(), args.object_uuid)
+        set_src_owner_uuid(src_arv.pipeline_templates(), args.object_uuid, args)
         result = copy_pipeline_template(args.object_uuid,
                                         src_arv, dst_arv, args)
     else:
@@ -138,8 +138,8 @@ def main():
     logger.info("Success: created copy with uuid {}".format(result['uuid']))
     exit(0)
 
-def set_src_owner_uuid(resource, uuid):
-    c = resource.get(uuid=uuid).execute()
+def set_src_owner_uuid(resource, uuid, args):
+    c = resource.get(uuid=uuid).execute(num_retries=args.retries)
     src_owner_uuid = c.get("owner_uuid")
 
 # api_for_instance(instance_name)
@@ -202,7 +202,7 @@ def api_for_instance(instance_name):
 #
 def copy_pipeline_instance(pi_uuid, src, dst, args):
     # Fetch the pipeline instance record.
-    pi = src.pipeline_instances().get(uuid=pi_uuid).execute()
+    pi = src.pipeline_instances().get(uuid=pi_uuid).execute(num_retries=args.retries)
 
     if args.recursive:
         if not args.dst_git_repo:
@@ -214,7 +214,7 @@ def copy_pipeline_instance(pi_uuid, src, dst, args):
 
         # Copy input collections, docker images and git repos.
         pi = copy_collections(pi, src, dst, args)
-        copy_git_repos(pi, src, dst, args.dst_git_repo)
+        copy_git_repos(pi, src, dst, args.dst_git_repo, args)
         copy_docker_images(pi, src, dst, args)
 
         # Update the fields of the pipeline instance with the copied
@@ -238,7 +238,7 @@ def copy_pipeline_instance(pi_uuid, src, dst, args):
 
     del pi['uuid']
 
-    new_pi = dst.pipeline_instances().create(body=pi, ensure_unique_name=True).execute()
+    new_pi = dst.pipeline_instances().create(body=pi, ensure_unique_name=True).execute(num_retries=args.retries)
     return new_pi
 
 # copy_pipeline_template(pt_uuid, src, dst, args)
@@ -255,14 +255,14 @@ def copy_pipeline_instance(pi_uuid, src, dst, args):
 #
 def copy_pipeline_template(pt_uuid, src, dst, args):
     # fetch the pipeline template from the source instance
-    pt = src.pipeline_templates().get(uuid=pt_uuid).execute()
+    pt = src.pipeline_templates().get(uuid=pt_uuid).execute(num_retries=args.retries)
 
     if args.recursive:
         if not args.dst_git_repo:
             abort('--dst-git-repo is required when copying a pipeline recursively.')
         # Copy input collections, docker images and git repos.
         pt = copy_collections(pt, src, dst, args)
-        copy_git_repos(pt, src, dst, args.dst_git_repo)
+        copy_git_repos(pt, src, dst, args.dst_git_repo, args)
         copy_docker_images(pt, src, dst, args)
 
     pt['description'] = "Pipeline template copied from {}\n\n{}".format(
@@ -273,7 +273,7 @@ def copy_pipeline_template(pt_uuid, src, dst, args):
 
     pt['owner_uuid'] = args.project_uuid
 
-    return dst.pipeline_templates().create(body=pt, ensure_unique_name=True).execute()
+    return dst.pipeline_templates().create(body=pt, ensure_unique_name=True).execute(num_retries=args.retries)
 
 # copy_collections(obj, src, dst, args)
 #
@@ -317,7 +317,7 @@ def copy_collections(obj, src, dst, args):
         return [copy_collections(v, src, dst, args) for v in obj]
     return obj
 
-# copy_git_repos(p, src, dst, dst_repo)
+# copy_git_repos(p, src, dst, dst_repo, args)
 #
 #    Copies all git repositories referenced by pipeline instance or
 #    template 'p' from src to dst.
@@ -334,7 +334,7 @@ def copy_collections(obj, src, dst, args):
 #    The pipeline object is updated in place with the new repository
 #    names.  The return value is undefined.
 #
-def copy_git_repos(p, src, dst, dst_repo):
+def copy_git_repos(p, src, dst, dst_repo, args):
     copied = set()
     for c in p['components']:
         component = p['components'][c]
@@ -342,7 +342,7 @@ def copy_git_repos(p, src, dst, dst_repo):
             repo = component['repository']
             script_version = component.get('script_version', None)
             if repo not in copied:
-                copy_git_repo(repo, src, dst, dst_repo, script_version)
+                copy_git_repo(repo, src, dst, dst_repo, script_version, args)
                 copied.add(repo)
             component['repository'] = dst_repo
             if script_version:
@@ -354,7 +354,7 @@ def copy_git_repos(p, src, dst, dst_repo):
                 repo = j['repository']
                 script_version = j.get('script_version', None)
                 if repo not in copied:
-                    copy_git_repo(repo, src, dst, dst_repo, script_version)
+                    copy_git_repo(repo, src, dst, dst_repo, script_version, args)
                     copied.add(repo)
                 j['repository'] = dst_repo
                 repo_dir = local_repo_dir[repo]
@@ -448,44 +448,48 @@ def copy_collection(obj_uuid, src, dst, args):
         srccol = src.collections().list(
             filters=[['portable_data_hash', '=', obj_uuid]],
             order="created_at asc"
-            ).execute()
-        if srccol.get("items"):
-            if len(srccol["items"]) == 1:
-                # There's only one collection with the PDH, so use that.
-                c = srccol["items"][0]
-            else:
-                c = None
-                for i in srccol["items"]:
-                    # See if there is a collection that's in the same project
-                    # as the root item (usually a pipeline) being copied.
-                    if i.get("owner_uuid") == src_owner_uuid and i.get("name"):
-                        c = i
-                        break
-                if not c:
-                    # Didn't find any collections located in the same project, so
-                    # pick the oldest collection that has a name assigned to it.
-                    for i in srccol["items"]:
-                        # See if there is a collection that's in the same project
-                        # as the root item (usually a pipeline) being copied.
-                        if i.get("name"):
-                            c = i
-                            break
-                if not c:
-                    # None of the collections have names (?!), so just pick the
-                    # first one.
-                    c = srccol["items"][0]
+            ).execute(num_retries=args.retries)
 
-            # list() doesn't return manifest text (and we don't want it to,
-            # because we don't need the same maninfest text sent to us 50
-            # times) so go and retrieve the collection object directly
-            # which will include the manifest text.
-            c = src.collections().get(uuid=c["uuid"]).execute()
-        else:
+        items = srccol.get("items")
+
+        if not items:
             logger.warning("Could not find collection with portable data hash %s", obj_uuid)
             return
+
+        c = None
+
+        if len(items) == 1:
+            # There's only one collection with the PDH, so use that.
+            c = items[0]
+        if not c:
+            # See if there is a collection that's in the same project
+            # as the root item (usually a pipeline) being copied.
+            for i in items:
+                if i.get("owner_uuid") == src_owner_uuid and i.get("name"):
+                    c = i
+                    break
+        if not c:
+            # Didn't find any collections located in the same project, so
+            # pick the oldest collection that has a name assigned to it.
+            for i in items:
+                # See if there is a collection that's in the same project
+                # as the root item (usually a pipeline) being copied.
+                if i.get("name"):
+                    c = i
+                    break
+        if not c:
+            # None of the collections have names (?!), so just pick the
+            # first one.
+            c = items[0]
+
+        # list() doesn't return manifest text (and we don't want it to,
+        # because we don't need the same maninfest text sent to us 50
+        # times) so go and retrieve the collection object directly
+        # which will include the manifest text.
+        c = src.collections().get(uuid=c["uuid"]).execute(num_retries=args.retries)
     else:
         # Assume this is an actual collection uuid, so fetch it directly.
-        c = src.collections().get(uuid=obj_uuid).execute()
+        c = src.collections().get(uuid=obj_uuid).execute(num_retries=args.retries)
 
     # If a collection with this hash already exists at the
     # destination, and 'force' is not true, just return that
@@ -497,7 +501,7 @@ def copy_collection(obj_uuid, src, dst, args):
             colhash = c['uuid']
         dstcol = dst.collections().list(
             filters=[['portable_data_hash', '=', colhash]]
-        ).execute()
+        ).execute(num_retries=args.retries)
         if dstcol['items_available'] > 0:
             for d in dstcol['items']:
                 if ((args.project_uuid == d['owner_uuid']) and
@@ -562,7 +566,7 @@ def copy_collection(obj_uuid, src, dst, args):
     c['manifest_text'] = dst_manifest
     return create_collection_from(c, src, dst, args)
 
-# copy_git_repo(src_git_repo, src, dst, dst_git_repo, script_version)
+# copy_git_repo(src_git_repo, src, dst, dst_git_repo, script_version, args)
 #
 #    Copies commits from git repository 'src_git_repo' on Arvados
 #    instance 'src' to 'dst_git_repo' on 'dst'.  Both src_git_repo
@@ -578,10 +582,10 @@ def copy_collection(obj_uuid, src, dst, args):
 #    The user running this command must be authenticated
 #    to both repositories.
 #
-def copy_git_repo(src_git_repo, src, dst, dst_git_repo, script_version):
+def copy_git_repo(src_git_repo, src, dst, dst_git_repo, script_version, args):
     # Identify the fetch and push URLs for the git repositories.
     r = src.repositories().list(
-        filters=[['name', '=', src_git_repo]]).execute()
+        filters=[['name', '=', src_git_repo]]).execute(num_retries=args.retries)
     if r['items_available'] != 1:
         raise Exception('cannot identify source repo {}; {} repos found'
                         .format(src_git_repo, r['items_available']))
@@ -589,7 +593,7 @@ def copy_git_repo(src_git_repo, src, dst, dst_git_repo, script_version):
     logger.debug('src_git_url: {}'.format(src_git_url))
 
     r = dst.repositories().list(
-        filters=[['name', '=', dst_git_repo]]).execute()
+        filters=[['name', '=', dst_git_repo]]).execute(num_retries=args.retries)
     if r['items_available'] != 1:
         raise Exception('cannot identify destination repo {}; {} repos found'
                         .format(dst_git_repo, r['items_available']))
