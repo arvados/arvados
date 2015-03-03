@@ -4,6 +4,7 @@ import (
 	"bufio"
 	"bytes"
 	"io"
+	"log"
 	"math/rand"
 	"os"
 	"regexp"
@@ -12,9 +13,9 @@ import (
 )
 
 func TestReadAllOrWarnFail(t *testing.T) {
-	logChan = make(chan string)
+	rcv := captureLogs()
+	defer uncaptureLogs()
 	go func() {
-		defer close(logChan)
 		// The special file /proc/self/mem can be opened for
 		// reading, but reading from byte 0 returns an error.
 		f, err := os.Open("/proc/self/mem")
@@ -25,71 +26,86 @@ func TestReadAllOrWarnFail(t *testing.T) {
 			t.Fatalf("Expected error, got %v", x)
 		}
 	}()
-	if _, ok := <-logChan; !ok {
-		t.Fatalf("Expected error message about nonexistent file")
-	}
-	if msg, ok := <-logChan; ok {
-		t.Fatalf("Expected channel to close, got %s", msg)
+	if msg, err := rcv.ReadBytes('\n'); err != nil {
+		t.Fatal(err)
+	} else if matched, err := regexp.MatchString("^crunchstat: .*error.*", string(msg)); err != nil || !matched {
+		t.Fatalf("Expected error message about unreadable file, got \"%s\"", msg)
 	}
 }
 
 func TestReadAllOrWarnSuccess(t *testing.T) {
-	logChan = make(chan string)
-	go func() {
-		defer close(logChan)
-		f, err := os.Open("./crunchstat_test.go")
-		if err != nil {
-			t.Fatalf("Opening ./crunchstat_test.go: %s", err)
-		}
-		data, err := ReadAllOrWarn(f)
-		if err != nil {
-			t.Fatalf("got error %s", err)
-		}
-		if matched, err := regexp.MatchString("^package main\n", string(data)); err != nil || !matched {
-			t.Fatalf("data failed regexp: %s", err)
-		}
-	}()
-	if msg, ok := <-logChan; ok {
-		t.Fatalf("Expected channel to close, got %s", msg)
+	f, err := os.Open("./crunchstat_test.go")
+	if err != nil {
+		t.Fatalf("Opening ./crunchstat_test.go: %s", err)
+	}
+	data, err := ReadAllOrWarn(f)
+	if err != nil {
+		t.Fatalf("got error %s", err)
+	}
+	if matched, err := regexp.MatchString("^package main\n", string(data)); err != nil || !matched {
+		t.Fatalf("data failed regexp: %s", err)
 	}
 }
 
-// Test that CopyPipeToChan works even on lines longer than
+// Test that CopyPipeToChildLog works even on lines longer than
 // bufio.MaxScanTokenSize.
-func TestCopyPipeToChanLongLines(t *testing.T) {
-	logChan := make(chan string)
-	control := make(chan bool)
+func TestCopyPipeToChildLogLongLines(t *testing.T) {
+	rcv := captureLogs()
+	defer uncaptureLogs()
 
+	control := make(chan bool)
 	pipeIn, pipeOut := io.Pipe()
-	go CopyPipeToChan(pipeIn, logChan, control)
+	go CopyPipeToChildLog(pipeIn, control)
 
 	sentBytes := make([]byte, bufio.MaxScanTokenSize + (1 << 22))
 	go func() {
+		pipeOut.Write([]byte("before\n"))
+
 		for i := range sentBytes {
 			// Some bytes that aren't newlines:
 			sentBytes[i] = byte((rand.Int() & 0xff) | 0x80)
 		}
-		pipeOut.Write([]byte("before\n"))
+		sentBytes[len(sentBytes)-1] = '\n'
 		pipeOut.Write(sentBytes)
-		pipeOut.Write([]byte("\nafter\n"))
+
+		pipeOut.Write([]byte("after"))
 		pipeOut.Close()
 	}()
 
-	if before := <-logChan; before != "before" {
-		t.Fatalf("\"before\" not received (got \"%s\")", before)
+	if before, err := rcv.ReadBytes('\n'); err != nil || string(before) != "before\n" {
+		t.Fatalf("\"before\n\" not received (got \"%s\", %s)", before, err)
 	}
-	receivedString := <-logChan
+	
+	receivedString, err := rcv.ReadBytes('\n')
+	if err != nil {
+		t.Fatal(err)
+	}
 	receivedBytes := []byte(receivedString)
 	if bytes.Compare(receivedBytes, sentBytes) != 0 {
-		t.Fatalf("sent %d bytes, got %d different bytes", len(sentBytes), len(receivedBytes))
+		t.Fatalf("sent %d bytes, got %d different bytes", len(sentBytes)+1, len(receivedBytes))
 	}
-	if after := <-logChan; after != "after" {
-		t.Fatal("\"after\" not received")
+
+	if after, err := rcv.ReadBytes('\n'); err != nil || string(after) != "after\n" {
+		t.Fatal("\"after\n\" not received (got \"%s\", %s)", after, err)
 	}
+
 	select {
 	case <-time.After(time.Second):
 		t.Fatal("Timeout")
 	case <-control:
 		// Done.
 	}
+}
+
+func captureLogs() (*bufio.Reader) {
+	// Send childLog to our bufio reader instead of stderr
+	stderrIn, stderrOut := io.Pipe()
+	childLog = log.New(stderrOut, "", 0)
+	statLog = log.New(stderrOut, "crunchstat: ", 0)
+	return bufio.NewReader(stderrIn)
+}
+
+func uncaptureLogs() {
+	childLog = log.New(os.Stderr, "", 0)
+	statLog = log.New(os.Stderr, "crunchstat: ", 0)
 }
