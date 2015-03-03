@@ -490,4 +490,10 @@ class PipelineInstancesTest < ActionDispatch::IntegrationTest
       end
     end
   end
+
+  test 'render job run time when job record is inaccessible' do
+    pi = api_fixture('pipeline_instances', 'has_component_with_completed_jobs')
+    visit page_with_token 'active', '/pipeline_instances/' + pi['uuid']
+    assert_text 'Queued for '
+  end
 end
