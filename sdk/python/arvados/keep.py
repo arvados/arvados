@@ -27,6 +27,28 @@ import arvados.errors
 import arvados.retry as retry
 import arvados.util
 
+try:
+    # Workaround for urllib3 bug.
+    # The 'requests' library enables urllib3's SNI support by default, which uses pyopenssl.
+    # However, urllib3 prior to version 1.10 has a major bug in this feature
+    # (OpenSSL WantWriteError, https://github.com/shazow/urllib3/issues/412)
+    # Unfortunately a certain major Linux distribution is stablizing on urllib3
+    # 1.9.1 which means the following workaround is necessary to be able to use
+    # the arvados python sdk with the distribution-provided packages.
+
+    import urllib3
+    urllib3_ok = False
+    urllib3version = re.match(r'(\d+)\.(\d+)\.(\d+)', urllib3.__version__)
+    if (urllib3version and
+        int(urllib3version.group(1)) == 1 and
+        int(urllib3version.group(2)) >= 10):
+        urllib3_ok = True
+    if not urllib3_ok:
+        from urllib3.contrib import pyopenssl
+        pyopenssl.extract_from_urllib3()
+except ImportError:
+    pass
+
 _logger = logging.getLogger('arvados.keep')
 global_client_object = None
 
