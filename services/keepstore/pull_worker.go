@@ -6,6 +6,7 @@ import (
 	"fmt"
 	"git.curoverse.com/arvados.git/sdk/go/arvadosclient"
 	"git.curoverse.com/arvados.git/sdk/go/keepclient"
+	"io"
 	"io/ioutil"
 	"log"
 	"os"
@@ -29,7 +30,6 @@ func RunPullWorker(nextItem <-chan interface{}) {
 	if err != nil {
 		log.Fatalf("Error setting up arvados client %s", err.Error())
 	}
-	arv.ApiToken = os.Getenv("ARVADOS_API_TOKEN")
 
 	keepClient, err = keepclient.MakeKeepClient(&arv)
 	if err != nil {
@@ -37,13 +37,7 @@ func RunPullWorker(nextItem <-chan interface{}) {
 	}
 
 	for item := range nextItem {
-		pullReq := item.(PullRequest)
-		for _, addr := range pullReq.Servers {
-			err := Pull(addr, pullReq.Locator)
-			if err == nil {
-				break
-			}
-		}
+		Pull(item.(PullRequest))
 	}
 }
 
@@ -54,54 +48,53 @@ func RunPullWorker(nextItem <-chan interface{}) {
 		Using this token & signature, retrieve the given block.
 		Write to storage
 */
-func Pull(addr string, locator string) (err error) {
-	log.Printf("Pull %s/%s starting", addr, locator)
-
+func Pull(pullRequest PullRequest) (err error) {
 	defer func() {
 		if err == nil {
-			log.Printf("Pull %s/%s success", addr, locator)
+			log.Printf("Pull %s success", pullRequest)
 		} else {
-			log.Printf("Pull %s/%s error: %s", addr, locator, err)
+			log.Printf("Pull %s error: %s", pullRequest, err)
 		}
 	}()
 
 	service_roots := make(map[string]string)
-	service_roots[locator] = addr
+	for _, addr := range pullRequest.Servers {
+		service_roots[addr] = addr
+	}
 	keepClient.SetServiceRoots(service_roots)
 
-	read_content, err := GetContent(addr, locator)
-	log.Print(read_content, err)
+	// Generate signature with a random token
+	PermissionSecret = []byte(os.Getenv("ARVADOS_API_TOKEN"))
+	expires_at := time.Now().Add(60 * time.Second)
+	signedLocator := SignLocator(pullRequest.Locator, GenerateRandomApiToken(), expires_at)
+
+	reader, contentLen, _, err := GetContent(signedLocator)
+
 	if err != nil {
 		return
 	}
+	if reader == nil {
+		return errors.New(fmt.Sprintf("No reader found for : %s", signedLocator))
+	}
+	defer reader.Close()
 
-	err = PutContent(read_content, locator)
+	read_content, err := ioutil.ReadAll(reader)
+	if err != nil {
+		return err
+	}
+
+	if (read_content == nil) || (int64(len(read_content)) != contentLen) {
+		return errors.New(fmt.Sprintf("Content not found for: %s", signedLocator))
+	}
+
+	err = PutContent(read_content, pullRequest.Locator)
 	return
 }
 
 // Fetch the content for the given locator using keepclient.
-var GetContent = func(addr string, locator string) ([]byte, error) {
-	// Generate signature with a random token
-	PermissionSecret = []byte(os.Getenv("ARVADOS_API_TOKEN"))
-	expires_at := time.Now().Add(60 * time.Second)
-	signedLocator := SignLocator(locator, GenerateRandomApiToken(), expires_at)
-	reader, blocklen, _, err := keepClient.Get(signedLocator)
-	defer reader.Close()
-	if err != nil {
-		return nil, err
-	}
-
-	read_content, err := ioutil.ReadAll(reader)
-	log.Print(read_content, err)
-	if err != nil {
-		return nil, err
-	}
-
-	if (read_content == nil) || (int64(len(read_content)) != blocklen) {
-		return nil, errors.New(fmt.Sprintf("Content not found for: %s", signedLocator))
-	}
-
-	return read_content, nil
+var GetContent = func(signedLocator string) (reader io.ReadCloser, contentLength int64, url string, err error) {
+	reader, blocklen, url, err := keepClient.Get(signedLocator)
+	return reader, blocklen, url, err
 }
 
 const ALPHA_NUMERIC = "0123456789abcdefghijklmnopqrstuvwxyz"

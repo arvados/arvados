@@ -1,7 +1,9 @@
 package main
 
 import (
+	"bytes"
 	"errors"
+	"io"
 	"net/http"
 	"testing"
 	"time"
@@ -27,7 +29,7 @@ func TestPullWorker(t *testing.T) {
     {
 			"locator":"locator2_to_verify_first_pull_list",
 			"servers":[
-				"server_1"
+				"server_3"
 		 	]
 		}
 	]`)
@@ -92,11 +94,14 @@ func TestPullWorker(t *testing.T) {
 
 	for _, testData := range testcases {
 		// Override GetContent to mock keepclient functionality
-		GetContent = func(addr string, locator string) ([]byte, error) {
+		GetContent = func(signedLocator string) (reader io.ReadCloser, contentLength int64, url string, err error) {
 			if testData.read_error {
-				return nil, errors.New("Error getting data")
+				return nil, 0, "", errors.New("Error getting data")
 			} else {
-				return []byte(testData.read_content), nil
+				cb := &ClosingBuffer{bytes.NewBufferString("Hi!")}
+				var rc io.ReadCloser
+				rc = cb
+				return rc, 3, "", nil
 			}
 		}
 
@@ -118,4 +123,12 @@ func TestPullWorker(t *testing.T) {
 
 		expectChannelEmpty(t, pullq.NextItem)
 	}
+}
+
+type ClosingBuffer struct {
+	*bytes.Buffer
+}
+
+func (cb *ClosingBuffer) Close() (err error) {
+	return
 }
