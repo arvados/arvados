@@ -82,7 +82,7 @@ with "--".
     try:
         # Create the request handler
         operations = Operations(os.getuid(), os.getgid(), args.encoding)
-        api = ThreadSafeApiCache(arvados.config)
+        api = ThreadSafeApiCache(arvados.config.settings())
 
         usr = api.users().current().execute(num_retries=args.retries)
         now = time.time()
