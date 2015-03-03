@@ -22,7 +22,8 @@ var keepClient keepclient.KeepClient
 			Skip the rest of the servers if no errors
 		Repeat
 */
-func RunPullWorker(nextItem <-chan interface{}, kc keepclient.KeepClient) {
+func RunPullWorker(pullq *WorkQueue, kc keepclient.KeepClient) {
+	nextItem := pullq.NextItem
 	keepClient = kc
 	for item := range nextItem {
 		Pull(item.(PullRequest))

@@ -33,7 +33,7 @@ func (s *PullWorkerTestSuite) SetUpSuite(c *C) {
 	c.Assert(err, Equals, nil)
 	keepClient, err := keepclient.MakeKeepClient(&arv)
 	c.Assert(err, Equals, nil)
-	go RunPullWorker(pullq.NextItem, keepClient)
+	go RunPullWorker(pullq, keepClient)
 
 	// When a new pull request arrives, the old one will be overwritten.
 	// This behavior is simulated with delay tests below.
@@ -42,7 +42,7 @@ func (s *PullWorkerTestSuite) SetUpSuite(c *C) {
 }
 
 func (s *PullWorkerTestSuite) TearDownSuite(c *C) {
-	// give the channel enough time to read and process all pull list entries
+	// give the channel some time to read and process all pull list entries
 	time.Sleep(1000 * time.Millisecond)
 
 	expectWorkerChannelEmpty(c, pullq.NextItem)
@@ -232,7 +232,7 @@ func performTest(testData PullWorkerTestData, c *C) {
 	// We need to make sure the tests have a slight delay so that we can verify the pull list channel overwrites.
 	time.Sleep(25 * time.Millisecond)
 
-	// Override GetContent to mock keepclient functionality
+	// Override GetContent to mock keepclient Get functionality
 	GetContent = func(locator string, signedLocator string) (reader io.ReadCloser, contentLength int64, url string, err error) {
 		if strings.HasPrefix(testData.name, "TestPullWorker_pull_list_with_one_locator_with_delay") {
 			time.Sleep(100 * time.Millisecond)

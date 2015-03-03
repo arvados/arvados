@@ -288,7 +288,7 @@ func main() {
 	}
 
 	pullq = NewWorkQueue()
-	go RunPullWorker(pullq.NextItem, keepClient)
+	go RunPullWorker(pullq, keepClient)
 
 	// Shut down the server gracefully (by closing the listener)
 	// if SIGTERM is received.
