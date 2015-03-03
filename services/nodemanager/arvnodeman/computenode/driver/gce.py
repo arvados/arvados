@@ -84,10 +84,6 @@ class ComputeNodeDriver(BaseComputeNodeDriver):
                 super(ComputeNodeDriver, self).list_nodes()
                 if self.node_tags.issubset(node.extra.get('tags', []))]
 
-    def destroy_node(self, cloud_node):
-        return super(ComputeNodeDriver, self).destroy_node(
-            cloud_node, destroy_boot_disk=True)
-
     @classmethod
     def _find_metadata(cls, metadata_items, key):
         # Given a list of two-item metadata dictonaries, return the one with

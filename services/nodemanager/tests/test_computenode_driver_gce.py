@@ -73,12 +73,6 @@ class GCEComputeNodeDriverTestCase(testutil.DriverTestMixin, unittest.TestCase):
         driver = self.new_driver(list_kwargs={'tags': 'good, great'})
         self.assertItemsEqual(['5', '6'], [n.id for n in driver.list_nodes()])
 
-    def test_destroy_node_destroys_disk(self):
-        driver = self.new_driver()
-        driver.destroy_node(testutil.cloud_node_mock())
-        self.assertTrue(self.driver_mock().destroy_node.call_args[1].get(
-                'destroy_boot_disk'))
-
     def build_gce_metadata(self, metadata_dict):
         # Convert a plain metadata dictionary to the GCE data structure.
         return {
