@@ -4,7 +4,6 @@ import (
 	"crypto/rand"
 	"errors"
 	"fmt"
-	"git.curoverse.com/arvados.git/sdk/go/arvadosclient"
 	"git.curoverse.com/arvados.git/sdk/go/keepclient"
 	"io"
 	"io/ioutil"
@@ -13,7 +12,6 @@ import (
 	"time"
 )
 
-var arv arvadosclient.ArvadosClient
 var keepClient keepclient.KeepClient
 
 /*
@@ -24,18 +22,8 @@ var keepClient keepclient.KeepClient
 			Skip the rest of the servers if no errors
 		Repeat
 */
-func RunPullWorker(nextItem <-chan interface{}) {
-	var err error
-	arv, err = arvadosclient.MakeArvadosClient()
-	if err != nil {
-		log.Fatalf("Error setting up arvados client %s", err.Error())
-	}
-
-	keepClient, err = keepclient.MakeKeepClient(&arv)
-	if err != nil {
-		log.Fatalf("Error setting up keep client %s", err.Error())
-	}
-
+func RunPullWorker(nextItem <-chan interface{}, kc keepclient.KeepClient) {
+	keepClient = kc
 	for item := range nextItem {
 		Pull(item.(PullRequest))
 	}

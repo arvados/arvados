@@ -3,6 +3,8 @@ package main
 import (
 	"bytes"
 	"errors"
+	"git.curoverse.com/arvados.git/sdk/go/arvadosclient"
+	"git.curoverse.com/arvados.git/sdk/go/keepclient"
 	. "gopkg.in/check.v1"
 	"io"
 	"net/http"
@@ -27,7 +29,11 @@ var _ = Suite(&PullWorkerTestSuite{})
 func (s *PullWorkerTestSuite) SetUpSuite(c *C) {
 	// Since keepstore does not come into picture in tests,
 	// we need to explicitly start the goroutine in tests.
-	go RunPullWorker(pullq.NextItem)
+	arv, err := arvadosclient.MakeArvadosClient()
+	c.Assert(err, Equals, nil)
+	keepClient, err := keepclient.MakeKeepClient(&arv)
+	c.Assert(err, Equals, nil)
+	go RunPullWorker(pullq.NextItem, keepClient)
 
 	// When a new pull request arrives, the old one will be overwritten.
 	// This behavior is simulated with delay tests below.
