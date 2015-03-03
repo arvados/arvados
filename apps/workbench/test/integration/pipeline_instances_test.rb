@@ -412,28 +412,38 @@ class PipelineInstancesTest < ActionDispatch::IntegrationTest
   end
 
   [
-    [1, 0], # run time 0 minutes
-    [10, 17*60*60 + 51*60], # run time 17 hours and 51 minutes
-  ].each do |index, run_time|
-    test "pipeline start and finish time display #{index}" do
-      visit page_with_token("user1_with_load", "/pipeline_instances/zzzzz-d1hrv-10pipelines0#{index.to_s.rjust(3, '0')}")
+    ['user1_with_load', 'zzzzz-d1hrv-10pipelines0001', 0], # run time 0 minutes
+    ['user1_with_load', 'zzzzz-d1hrv-10pipelines0010', 17*60*60 + 51*60], # run time 17 hours and 51 minutes
+    ['active', 'zzzzz-d1hrv-runningpipeline', nil], # state = running
+  ].each do |user, uuid, run_time|
+    test "pipeline start and finish time display for #{uuid}" do
+      visit page_with_token(user, "/pipeline_instances/#{uuid}")
 
       assert page.has_text? 'This pipeline started at'
       page_text = page.text
 
-      match = /This pipeline started at (.*)\. It failed after (.*) seconds at (.*)\. Check the Log/.match page_text
+      if run_time
+        match = /This pipeline started at (.*)\. It failed after (.*) seconds at (.*)\. Check the Log/.match page_text
+      else
+        match = /This pipeline started at (.*). It has been active for(.*)/.match page_text
+      end
       assert_not_nil(match, 'Did not find text - This pipeline started at . . . ')
 
       start_at = match[1]
-      finished_at = match[3]
       assert_not_nil(start_at, 'Did not find start_at time')
-      assert_not_nil(finished_at, 'Did not find finished_at time')
 
       # start and finished time display is of the format '2:20 PM 10/20/2014'
       start_time = DateTime.strptime(start_at, '%H:%M %p %m/%d/%Y').to_time
-      finished_time = DateTime.strptime(finished_at, '%H:%M %p %m/%d/%Y').to_time
-      assert_equal(run_time, finished_time-start_time,
-        "Time difference did not match for start_at #{start_at}, finished_at #{finished_at}, ran_for #{match[2]}")
+      if run_time
+        finished_at = match[3]
+        assert_not_nil(finished_at, 'Did not find finished_at time')
+        finished_time = DateTime.strptime(finished_at, '%H:%M %p %m/%d/%Y').to_time
+        assert_equal(run_time, finished_time-start_time,
+          "Time difference did not match for start_at #{start_at}, finished_at #{finished_at}, ran_for #{match[2]}")
+      else
+        match = /\d(.*)/.match match[2]
+        assert_not_nil match, 'Did not find expected match for running component'
+      end
     end
   end
 
@@ -479,5 +489,11 @@ class PipelineInstancesTest < ActionDispatch::IntegrationTest
           "Found too many items. Expected at most #{expected_max} and found #{found_count}")
       end
     end
+  end
+
+  test 'render job run time when job record is inaccessible' do
+    pi = api_fixture('pipeline_instances', 'has_component_with_completed_jobs')
+    visit page_with_token 'active', '/pipeline_instances/' + pi['uuid']
+    assert_text 'Queued for '
   end
 end
