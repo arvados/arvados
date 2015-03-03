@@ -53,17 +53,34 @@ def fake_requests_response(code, body, **headers):
     r.raw = io.BytesIO(body)
     return r
 
-def mock_get_responses(body, *codes, **headers):
-    return mock.patch('requests.get', side_effect=queue_with((
-        fake_requests_response(code, body, **headers) for code in codes)))
+# The following methods patch requests.Session(), where return_value is a mock
+# Session object.  The put/get attributes are set on mock Session, and the
+# desired put/get behavior is set on the put/get mocks.
 
 def mock_put_responses(body, *codes, **headers):
-    return mock.patch('requests.put', side_effect=queue_with((
-        fake_requests_response(code, body, **headers) for code in codes)))
+    m = mock.MagicMock()
+    if isinstance(body, tuple):
+        codes = list(codes)
+        codes.insert(0, body)
+        m.return_value.put.side_effect = queue_with((fake_requests_response(code, b, **headers) for b, code in codes))
+    else:
+        m.return_value.put.side_effect = queue_with((fake_requests_response(code, body, **headers) for code in codes))
+    return mock.patch('requests.Session', m)
 
-def mock_requestslib_responses(method, body, *codes, **headers):
-    return mock.patch(method, side_effect=queue_with((
-        fake_requests_response(code, body, **headers) for code in codes)))
+def mock_get_responses(body, *codes, **headers):
+    m = mock.MagicMock()
+    m.return_value.get.side_effect = queue_with((fake_requests_response(code, body, **headers) for code in codes))
+    return mock.patch('requests.Session', m)
+
+def mock_get(side_effect):
+    m = mock.MagicMock()
+    m.return_value.get.side_effect = side_effect
+    return mock.patch('requests.Session', m)
+
+def mock_put(side_effect):
+    m = mock.MagicMock()
+    m.return_value.put.side_effect = side_effect
+    return mock.patch('requests.Session', m)
 
 class MockStreamReader(object):
     def __init__(self, name='.', *data):
@@ -78,7 +95,6 @@ class MockStreamReader(object):
 
     def readfrom(self, start, size, num_retries=None):
         return self._data[start:start + size]
-
 
 class ApiClientMock(object):
     def api_client_mock(self):
