@@ -7,10 +7,11 @@ import arvados.collection
 
 class TestSDK(unittest.TestCase):
 
-    @mock.patch('arvados.api')
     @mock.patch('arvados.current_task')
     @mock.patch('arvados.current_job')
-    def test_one_task_per_input_file_normalize(self, mock_job, mock_task, mock_api):
+    def test_one_task_per_input_file_normalize(self, mock_job, mock_task):
+        mock_api = mock.MagicMock()
+
         # This manifest will be reduced from three lines to one when it is
         # normalized.
         nonnormalized_manifest = """. 5348b82a029fd9e971a811ce1f71360b+43 0:43:md5sum.txt
@@ -30,7 +31,7 @@ class TestSDK(unittest.TestCase):
             'sequence': 0,
         }
         # mock the API client to return a collection with a nonnormalized manifest.
-        mock_api('v1').collections().get().execute.return_value = {
+        mock_api.collections().get().execute.return_value = {
             'uuid': 'zzzzz-4zz18-mockcollection0',
             'portable_data_hash': dummy_hash,
             'manifest_text': nonnormalized_manifest,
@@ -38,6 +39,5 @@ class TestSDK(unittest.TestCase):
 
         # Because one_task_per_input_file normalizes this collection,
         # it should now create only one job task and not three.
-        arvados.job_setup.one_task_per_input_file(and_end_task=False)
-        mock_api('v1').job_tasks().create().execute.assert_called_once_with()
-
+        arvados.job_setup.one_task_per_input_file(and_end_task=False, api_client=mock_api)
+        mock_api.job_tasks().create().execute.assert_called_once_with()

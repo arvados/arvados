@@ -11,6 +11,7 @@ import time
 
 import arvados.commands._util as arv_cmd
 from arvados_fuse import *
+from arvados.safeapi import ThreadSafeApiCache
 
 logger = logging.getLogger('arvados.arv-mount')
 
@@ -81,7 +82,7 @@ with "--".
     try:
         # Create the request handler
         operations = Operations(os.getuid(), os.getgid(), args.encoding)
-        api = SafeApi(arvados.config)
+        api = ThreadSafeApiCache(arvados.config)
 
         usr = api.users().current().execute(num_retries=args.retries)
         now = time.time()
