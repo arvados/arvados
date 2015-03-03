@@ -32,7 +32,7 @@ def first_block(data_locators, range_start, range_size):
     block_end = block_start + block_size
 
     # perform a binary search for the first block
-    # assumes that all of the blocks are contigious, so range_start is guaranteed
+    # assumes that all of the blocks are contiguous, so range_start is guaranteed
     # to either fall into the range of a block or be outside the block range entirely
     while not (range_start >= block_start and range_start < block_end):
         if lo == i:
@@ -125,7 +125,7 @@ def replace_range(data_locators, new_range_start, new_range_size, new_locator, n
     data_locators will be updated in place
 
     :data_locators:
-      list of Range objects, assumes that segments are in order and contigous
+      list of Range objects, assumes that segments are in order and contiguous
 
     :new_range_start:
       start of range to replace in data_locators

@@ -30,6 +30,9 @@ class KeepRequestError(Exception):
           These will be packed into an OrderedDict, available through the
           request_errors() method.
 
+        :label:
+          A label indicating the type of value in the 'key' position of request_errors.
+
         """
         self.label = label
         self._request_errors = OrderedDict(request_errors)
