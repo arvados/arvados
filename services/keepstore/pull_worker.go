@@ -68,8 +68,7 @@ func Pull(pullRequest PullRequest) (err error) {
 	expires_at := time.Now().Add(60 * time.Second)
 	signedLocator := SignLocator(pullRequest.Locator, GenerateRandomApiToken(), expires_at)
 
-	reader, contentLen, _, err := GetContent(signedLocator)
-
+	reader, contentLen, _, err := GetContent(pullRequest.Locator, signedLocator)
 	if err != nil {
 		return
 	}
@@ -92,7 +91,7 @@ func Pull(pullRequest PullRequest) (err error) {
 }
 
 // Fetch the content for the given locator using keepclient.
-var GetContent = func(signedLocator string) (reader io.ReadCloser, contentLength int64, url string, err error) {
+var GetContent = func(locator string, signedLocator string) (reader io.ReadCloser, contentLength int64, url string, err error) {
 	reader, blocklen, url, err := keepClient.Get(signedLocator)
 	return reader, blocklen, url, err
 }
