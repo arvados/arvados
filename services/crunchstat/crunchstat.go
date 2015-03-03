@@ -37,21 +37,30 @@ type Cgroup struct {
 var childLog = log.New(os.Stderr, "", 0)
 var statLog = log.New(os.Stderr, "crunchstat: ", 0)
 
+const (
+	MaxLogLine = 1 << 14 // Child stderr lines >16KiB will be split
+)
+
 func CopyPipeToChildLog(in io.ReadCloser, done chan<- bool) {
-	reader := bufio.NewReader(in)
+	reader := bufio.NewReaderSize(in, MaxLogLine)
+	var prefix string
 	for {
-		line, err := reader.ReadBytes('\n')
-		if len(line) > 0 {
-			if err == nil {
-				// err == nil IFF line ends in \n
-				line = line[:len(line)-1]
-			}
-			childLog.Println(string(line))
-		}
+		line, isPrefix, err := reader.ReadLine()
 		if err == io.EOF {
 			break
 		} else if err != nil {
-			statLog.Fatalln("line buffering error:", err)
+			statLog.Fatal("error reading child stderr:", err)
+		}
+		var suffix string
+		if isPrefix {
+			suffix = "[...]"
+		}
+		childLog.Print(prefix, string(line), suffix)
+		// Set up prefix for following line
+		if isPrefix {
+			prefix = "[...]"
+		} else {
+			prefix = ""
 		}
 	}
 	done <- true
@@ -61,7 +70,7 @@ func CopyPipeToChildLog(in io.ReadCloser, done chan<- bool) {
 func ReadAllOrWarn(in *os.File) ([]byte, error) {
 	content, err := ioutil.ReadAll(in)
 	if err != nil {
-		statLog.Printf("read %s: %s\n", in.Name(), err)
+		statLog.Printf("error reading %s: %s\n", in.Name(), err)
 	}
 	return content, err
 }
@@ -103,9 +112,9 @@ func OpenStatFile(cgroup Cgroup, statgroup string, stat string) (*os.File, error
 		// [b] after all contained processes have exited.
 		reportedStatFile[stat] = path
 		if path == "" {
-			statLog.Printf("did not find stats file: stat %s, statgroup %s, cid %s, parent %s, root %s\n", stat, statgroup, cgroup.cid, cgroup.parent, cgroup.root)
+			statLog.Printf("error finding stats file: stat %s, statgroup %s, cid %s, parent %s, root %s\n", stat, statgroup, cgroup.cid, cgroup.parent, cgroup.root)
 		} else {
-			statLog.Printf("reading stats from %s\n", path)
+			statLog.Printf("error reading stats from %s\n", path)
 		}
 	}
 	return file, err
@@ -364,7 +373,7 @@ func run(logger *log.Logger) error {
 	flag.Parse()
 
 	if cgroup_root == "" {
-		statLog.Fatalln("Must provide -cgroup-root")
+		statLog.Fatal("error: must provide -cgroup-root")
 	}
 
 	finish_chan := make(chan bool)
@@ -376,7 +385,7 @@ func run(logger *log.Logger) error {
 		// Set up subprocess
 		cmd = exec.Command(flag.Args()[0], flag.Args()[1:]...)
 
-		statLog.Println("Running ", flag.Args())
+		childLog.Println("Running", flag.Args())
 
 		// Child process will use our stdin and stdout pipes
 		// (we close our copies below)
@@ -398,13 +407,13 @@ func run(logger *log.Logger) error {
 		// Funnel stderr through our channel
 		stderr_pipe, err := cmd.StderrPipe()
 		if err != nil {
-			statLog.Fatalln("stderr:", err)
+			statLog.Fatalln("error in StderrPipe:", err)
 		}
 		go CopyPipeToChildLog(stderr_pipe, finish_chan)
 
 		// Run subprocess
 		if err := cmd.Start(); err != nil {
-			statLog.Fatalln("cmd.Start:", err)
+			statLog.Fatalln("error in cmd.Start:", err)
 		}
 
 		// Close stdin/stdout in this (parent) process
@@ -428,7 +437,7 @@ func run(logger *log.Logger) error {
 			time.Sleep(100 * time.Millisecond)
 		}
 		if !ok {
-			statLog.Println("Could not read cid file:", cgroup_cidfile)
+			statLog.Println("error reading cid file:", cgroup_cidfile)
 		}
 	}
 
@@ -461,7 +470,7 @@ func main() {
 				os.Exit(status.ExitStatus())
 			}
 		} else {
-			statLog.Fatalln("cmd.Wait:", err)
+			statLog.Fatalln("error in cmd.Wait:", err)
 		}
 	}
 }

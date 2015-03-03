@@ -57,7 +57,7 @@ func TestCopyPipeToChildLogLongLines(t *testing.T) {
 	pipeIn, pipeOut := io.Pipe()
 	go CopyPipeToChildLog(pipeIn, control)
 
-	sentBytes := make([]byte, bufio.MaxScanTokenSize + (1 << 22))
+	sentBytes := make([]byte, bufio.MaxScanTokenSize+MaxLogLine+(1<<22))
 	go func() {
 		pipeOut.Write([]byte("before\n"))
 
@@ -75,12 +75,27 @@ func TestCopyPipeToChildLogLongLines(t *testing.T) {
 	if before, err := rcv.ReadBytes('\n'); err != nil || string(before) != "before\n" {
 		t.Fatalf("\"before\n\" not received (got \"%s\", %s)", before, err)
 	}
-	
-	receivedString, err := rcv.ReadBytes('\n')
-	if err != nil {
-		t.Fatal(err)
+
+	var receivedBytes []byte
+	done := false
+	for !done {
+		line, err := rcv.ReadBytes('\n')
+		if err != nil {
+			t.Fatal(err)
+		}
+		if len(line) >= 5 && string(line[0:5]) == "[...]" {
+			if receivedBytes == nil {
+				t.Fatal("Beginning of line reported as continuation")
+			}
+			line = line[5:]
+		}
+		if len(line) >= 6 && string(line[len(line)-6:len(line)]) == "[...]\n" {
+			line = line[:len(line)-6]
+		} else {
+			done = true
+		}
+		receivedBytes = append(receivedBytes, line...)
 	}
-	receivedBytes := []byte(receivedString)
 	if bytes.Compare(receivedBytes, sentBytes) != 0 {
 		t.Fatalf("sent %d bytes, got %d different bytes", len(sentBytes)+1, len(receivedBytes))
 	}
@@ -97,7 +112,7 @@ func TestCopyPipeToChildLogLongLines(t *testing.T) {
 	}
 }
 
-func captureLogs() (*bufio.Reader) {
+func captureLogs() *bufio.Reader {
 	// Send childLog to our bufio reader instead of stderr
 	stderrIn, stderrOut := io.Pipe()
 	childLog = log.New(stderrOut, "", 0)
