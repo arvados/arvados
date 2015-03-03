@@ -1,4 +1,5 @@
 import arvados
+import arvados.safeapi
 import arvados_fuse as fuse
 import glob
 import json
@@ -21,7 +22,7 @@ class MountTestBase(unittest.TestCase):
         self.mounttmp = tempfile.mkdtemp()
         run_test_server.run()
         run_test_server.authorize_with("admin")
-        self.api = fuse.SafeApi(arvados.config)
+        self.api = arvados.safeapi.ThreadSafeApiCache(arvados.config.settings())
 
     def make_mount(self, root_class, **root_kwargs):
         operations = fuse.Operations(os.getuid(), os.getgid())

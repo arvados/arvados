@@ -27,15 +27,6 @@ class GCEComputeNodeDriverTestCase(testutil.DriverTestMixin, unittest.TestCase):
         driver = self.new_driver(create_kwargs={'image': 'B'})
         self.assertEqual(1, list_method.call_count)
 
-    def test_list_sizes_requires_location_match(self):
-        locations = [testutil.cloud_object_mock(name)
-                     for name in ['there', 'here', 'other']]
-        self.driver_mock().list_locations.return_value = locations
-        driver = self.new_driver(create_kwargs={'location': 'HERE'})
-        driver.list_sizes()
-        self.assertIs(locations[1],
-                      self.driver_mock().list_sizes.call_args[0][0])
-
     def test_create_includes_ping_secret(self):
         arv_node = testutil.arvados_node_mock(info={'ping_secret': 'ssshh'})
         driver = self.new_driver()
@@ -72,12 +63,6 @@ class GCEComputeNodeDriverTestCase(testutil.DriverTestMixin, unittest.TestCase):
         self.driver_mock().list_nodes.return_value = cloud_mocks
         driver = self.new_driver(list_kwargs={'tags': 'good, great'})
         self.assertItemsEqual(['5', '6'], [n.id for n in driver.list_nodes()])
-
-    def test_destroy_node_destroys_disk(self):
-        driver = self.new_driver()
-        driver.destroy_node(testutil.cloud_node_mock())
-        self.assertTrue(self.driver_mock().destroy_node.call_args[1].get(
-                'destroy_boot_disk'))
 
     def build_gce_metadata(self, metadata_dict):
         # Convert a plain metadata dictionary to the GCE data structure.

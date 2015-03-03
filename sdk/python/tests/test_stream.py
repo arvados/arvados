@@ -6,9 +6,11 @@ import io
 import mock
 import os
 import unittest
+import hashlib
 
 import arvados
 from arvados import StreamReader, StreamFileReader
+from arvados._ranges import Range
 
 import arvados_testutil as tutil
 import run_test_server
@@ -16,7 +18,7 @@ import run_test_server
 class StreamFileReaderTestCase(unittest.TestCase):
     def make_count_reader(self):
         stream = tutil.MockStreamReader('.', '01234', '34567', '67890')
-        return StreamFileReader(stream, [[1, 3, 0], [6, 3, 3], [11, 3, 6]],
+        return StreamFileReader(stream, [Range(1, 0, 3), Range(6, 3, 3), Range(11, 6, 3)],
                                 'count.txt')
 
     def test_read_returns_first_block(self):
@@ -102,7 +104,7 @@ class StreamFileReaderTestCase(unittest.TestCase):
 
     def make_newlines_reader(self):
         stream = tutil.MockStreamReader('.', 'one\ntwo\n\nth', 'ree\nfour\n\n')
-        return StreamFileReader(stream, [[0, 11, 0], [11, 10, 11]], 'count.txt')
+        return StreamFileReader(stream, [Range(0, 0, 11), Range(11, 11, 10)], 'count.txt')
 
     def check_lines(self, actual):
         self.assertEqual(['one\n', 'two\n', '\n', 'three\n', 'four\n', '\n'],
@@ -140,7 +142,7 @@ class StreamFileReaderTestCase(unittest.TestCase):
     def test_name_attribute(self):
         # Test both .name and .name() (for backward compatibility)
         stream = tutil.MockStreamReader()
-        sfile = StreamFileReader(stream, [[0, 0, 0]], 'nametest')
+        sfile = StreamFileReader(stream, [Range(0, 0, 0)], 'nametest')
         self.assertEqual('nametest', sfile.name)
         self.assertEqual('nametest', sfile.name())
 
@@ -148,7 +150,7 @@ class StreamFileReaderTestCase(unittest.TestCase):
         test_text = 'decompression\ntest\n'
         test_data = compress_func(test_text)
         stream = tutil.MockStreamReader('.', test_data)
-        reader = StreamFileReader(stream, [[0, len(test_data), 0]],
+        reader = StreamFileReader(stream, [Range(0, 0, len(test_data))],
                                   'test.' + compress_ext)
         self.assertEqual(test_text, ''.join(reader.readall_decompressed()))
 
@@ -183,48 +185,48 @@ class StreamRetryTestMixin(object):
 
     @tutil.skip_sleep
     def test_success_without_retries(self):
-        reader = self.reader_for('bar_file')
         with tutil.mock_get_responses('bar', 200):
+            reader = self.reader_for('bar_file')
             self.assertEqual('bar', self.read_for_test(reader, 3))
 
     @tutil.skip_sleep
     def test_read_no_default_retry(self):
-        reader = self.reader_for('user_agreement')
         with tutil.mock_get_responses('', 500):
+            reader = self.reader_for('user_agreement')
             with self.assertRaises(arvados.errors.KeepReadError):
                 self.read_for_test(reader, 10)
 
     @tutil.skip_sleep
     def test_read_with_instance_retries(self):
-        reader = self.reader_for('foo_file', num_retries=3)
         with tutil.mock_get_responses('foo', 500, 200):
+            reader = self.reader_for('foo_file', num_retries=3)
             self.assertEqual('foo', self.read_for_test(reader, 3))
 
     @tutil.skip_sleep
     def test_read_with_method_retries(self):
-        reader = self.reader_for('foo_file')
         with tutil.mock_get_responses('foo', 500, 200):
+            reader = self.reader_for('foo_file')
             self.assertEqual('foo',
                              self.read_for_test(reader, 3, num_retries=3))
 
     @tutil.skip_sleep
     def test_read_instance_retries_exhausted(self):
-        reader = self.reader_for('bar_file', num_retries=3)
         with tutil.mock_get_responses('bar', 500, 500, 500, 500, 200):
+            reader = self.reader_for('bar_file', num_retries=3)
             with self.assertRaises(arvados.errors.KeepReadError):
                 self.read_for_test(reader, 3)
 
     @tutil.skip_sleep
     def test_read_method_retries_exhausted(self):
-        reader = self.reader_for('bar_file')
         with tutil.mock_get_responses('bar', 500, 500, 500, 500, 200):
+            reader = self.reader_for('bar_file')
             with self.assertRaises(arvados.errors.KeepReadError):
                 self.read_for_test(reader, 3, num_retries=3)
 
     @tutil.skip_sleep
     def test_method_retries_take_precedence(self):
-        reader = self.reader_for('user_agreement', num_retries=10)
         with tutil.mock_get_responses('', 500, 500, 500, 200):
+            reader = self.reader_for('user_agreement', num_retries=10)
             with self.assertRaises(arvados.errors.KeepReadError):
                 self.read_for_test(reader, 10, num_retries=1)
 
@@ -271,7 +273,6 @@ class StreamFileReadAllDecompressedTestCase(StreamFileReadTestCase):
 class StreamFileReadlinesTestCase(StreamFileReadTestCase):
     def read_for_test(self, reader, byte_count, **kwargs):
         return ''.join(reader.readlines(**kwargs))
-
 
 if __name__ == '__main__':
     unittest.main()

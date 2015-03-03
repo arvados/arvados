@@ -36,7 +36,7 @@ class ArvadosKeepLocatorTest(unittest.TestCase):
                           (self.sizes(), self.perm_hints())]:
             for loc_data in itertools.izip(self.checksums(), *hint_gens):
                 locator = '+'.join(loc_data)
-                self.assertEquals(locator, str(KeepLocator(locator)))
+                self.assertEqual(locator, str(KeepLocator(locator)))
 
     def test_nonchecksum_rejected(self):
         for badstr in ['', 'badbadbad', '8f9e68d957b504a29ba76c526c3145dj',
@@ -48,7 +48,7 @@ class ArvadosKeepLocatorTest(unittest.TestCase):
         base = next(self.base_locators(1))
         for weirdhint in ['Zfoo', 'Ybar234', 'Xa@b_c-372', 'W99']:
             locator = '+'.join([base, weirdhint])
-            self.assertEquals(locator, str(KeepLocator(locator)))
+            self.assertEqual(locator, str(KeepLocator(locator)))
 
     def test_bad_hints_rejected(self):
         base = next(self.base_locators(1))
@@ -60,7 +60,7 @@ class ArvadosKeepLocatorTest(unittest.TestCase):
         base = next(self.base_locators(1))
         for loc_hints in itertools.permutations(['Kab1cd', 'Kef2gh', 'Kij3kl']):
             locator = '+'.join((base,) + loc_hints)
-            self.assertEquals(locator, str(KeepLocator(locator)))
+            self.assertEqual(locator, str(KeepLocator(locator)))
 
     def test_expiry_passed(self):
         base = next(self.base_locators(1))

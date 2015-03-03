@@ -12,6 +12,7 @@ if os.environ.get('HOME') is not None:
 else:
     default_config_file = ''
 
+KEEP_BLOCK_SIZE = 2**26
 EMPTY_BLOCK_LOCATOR = 'd41d8cd98f00b204e9800998ecf8427e+0'
 
 def initialize(config_file=default_config_file):
@@ -41,8 +42,10 @@ def load(config_file):
             cfg[var] = val
     return cfg
 
-def flag_is_true(key):
-    return get(key, '').lower() in set(['1', 't', 'true', 'y', 'yes'])
+def flag_is_true(key, d=None):
+    if d is None:
+        d = settings()
+    return d.get(key, '').lower() in set(['1', 't', 'true', 'y', 'yes'])
 
 def get(key, default_val=None):
     return settings().get(key, default_val)

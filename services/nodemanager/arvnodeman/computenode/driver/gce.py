@@ -43,10 +43,6 @@ class ComputeNodeDriver(BaseComputeNodeDriver):
         return 'image', self.search_for(
             image_name, 'list_images', self._name_key)
 
-    def _init_location(self, location_name):
-        return 'location', self.search_for(
-            location_name, 'list_locations', self._name_key)
-
     def _init_network(self, network_name):
         return 'ex_network', self.search_for(
             network_name, 'ex_list_networks', self._name_key)
@@ -60,10 +56,6 @@ class ComputeNodeDriver(BaseComputeNodeDriver):
         with open(filename) as ssh_file:
             self.create_kwargs['ex_metadata']['sshKeys'] = (
                 'root:' + ssh_file.read().strip())
-
-    def list_sizes(self):
-        return super(ComputeNodeDriver, self).list_sizes(
-            self.create_kwargs['location'])
 
     def arvados_create_kwargs(self, arvados_node):
         cluster_id, _, node_id = arvados_node['uuid'].split('-')
@@ -83,10 +75,6 @@ class ComputeNodeDriver(BaseComputeNodeDriver):
         return [node for node in
                 super(ComputeNodeDriver, self).list_nodes()
                 if self.node_tags.issubset(node.extra.get('tags', []))]
-
-    def destroy_node(self, cloud_node):
-        return super(ComputeNodeDriver, self).destroy_node(
-            cloud_node, destroy_boot_disk=True)
 
     @classmethod
     def _find_metadata(cls, metadata_items, key):
