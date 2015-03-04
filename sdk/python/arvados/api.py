@@ -14,43 +14,38 @@ import util
 
 _logger = logging.getLogger('arvados.api')
 
-class CredentialsFromToken(object):
-    def __init__(self, api_token):
-        self.api_token = api_token
+def intercept_http_request(self, uri, **kwargs):
+    from httplib import BadStatusLine
 
-    @staticmethod
-    def http_request(self, uri, **kwargs):
-        from httplib import BadStatusLine
+    if (self.max_request_size and
+        kwargs.get('body') and
+        self.max_request_size < len(kwargs['body'])):
+        raise apiclient_errors.MediaUploadSizeError("Request size %i bytes exceeds published limit of %i bytes" % (len(kwargs['body']), self.max_request_size))
 
-        if (self.max_request_size and
-            kwargs.get('body') and
-            self.max_request_size < len(kwargs['body'])):
-            raise apiclient_errors.MediaUploadSizeError("Request size %i bytes exceeds published limit of %i bytes" % (len(kwargs['body']), self.max_request_size))
+    if 'headers' not in kwargs:
+        kwargs['headers'] = {}
 
-        if 'headers' not in kwargs:
-            kwargs['headers'] = {}
+    if config.get("ARVADOS_EXTERNAL_CLIENT", "") == "true":
+        kwargs['headers']['X-External-Client'] = '1'
 
-        if config.get("ARVADOS_EXTERNAL_CLIENT", "") == "true":
-            kwargs['headers']['X-External-Client'] = '1'
+    kwargs['headers']['Authorization'] = 'OAuth2 %s' % self.arvados_api_token
+    try:
+        return self.orig_http_request(uri, **kwargs)
+    except BadStatusLine:
+        # This is how httplib tells us that it tried to reuse an
+        # existing connection but it was already closed by the
+        # server. In that case, yes, we would like to retry.
+        # Unfortunately, we are not absolutely certain that the
+        # previous call did not succeed, so this is slightly
+        # risky.
+        return self.orig_http_request(uri, **kwargs)
 
-        kwargs['headers']['Authorization'] = 'OAuth2 %s' % self.arvados_api_token
-        try:
-            return self.orig_http_request(uri, **kwargs)
-        except BadStatusLine:
-            # This is how httplib tells us that it tried to reuse an
-            # existing connection but it was already closed by the
-            # server. In that case, yes, we would like to retry.
-            # Unfortunately, we are not absolutely certain that the
-            # previous call did not succeed, so this is slightly
-            # risky.
-            return self.orig_http_request(uri, **kwargs)
-
-    def authorize(self, http):
-        http.arvados_api_token = self.api_token
-        http.orig_http_request = http.request
-        http.request = types.MethodType(self.http_request, http)
-        http.max_request_size = 0
-        return http
+def patch_http_request(http, api_token):
+    http.arvados_api_token = api_token
+    http.max_request_size = 0
+    http.orig_http_request = http.request
+    http.request = types.MethodType(intercept_http_request, http)
+    return http
 
 # Monkey patch discovery._cast() so objects and arrays get serialized
 # with json.dumps() instead of str().
@@ -150,8 +145,7 @@ def api(version=None, cache=True, host=None, token=None, insecure=False, **kwarg
             http_kwargs['disable_ssl_certificate_validation'] = True
         kwargs['http'] = httplib2.Http(**http_kwargs)
 
-    credentials = CredentialsFromToken(api_token=token)
-    kwargs['http'] = credentials.authorize(kwargs['http'])
+    kwargs['http'] = patch_http_request(kwargs['http'], token)
 
     svc = apiclient_discovery.build('arvados', version, **kwargs)
     svc.api_token = token
