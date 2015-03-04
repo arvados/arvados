@@ -14,7 +14,7 @@ import util
 
 _logger = logging.getLogger('arvados.api')
 
-def intercept_http_request(self, uri, **kwargs):
+def _intercept_http_request(self, uri, **kwargs):
     from httplib import BadStatusLine
 
     if (self.max_request_size and
@@ -40,11 +40,11 @@ def intercept_http_request(self, uri, **kwargs):
         # risky.
         return self.orig_http_request(uri, **kwargs)
 
-def patch_http_request(http, api_token):
+def _patch_http_request(http, api_token):
     http.arvados_api_token = api_token
     http.max_request_size = 0
     http.orig_http_request = http.request
-    http.request = types.MethodType(intercept_http_request, http)
+    http.request = types.MethodType(_intercept_http_request, http)
     return http
 
 # Monkey patch discovery._cast() so objects and arrays get serialized
@@ -145,7 +145,7 @@ def api(version=None, cache=True, host=None, token=None, insecure=False, **kwarg
             http_kwargs['disable_ssl_certificate_validation'] = True
         kwargs['http'] = httplib2.Http(**http_kwargs)
 
-    kwargs['http'] = patch_http_request(kwargs['http'], token)
+    kwargs['http'] = _patch_http_request(kwargs['http'], token)
 
     svc = apiclient_discovery.build('arvados', version, **kwargs)
     svc.api_token = token
