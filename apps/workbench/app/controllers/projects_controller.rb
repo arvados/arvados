@@ -43,6 +43,9 @@ class ProjectsController < ApplicationController
   # It also seems to me that something like these could be used to configure the contents of the panes.
   def show_pane_list
     pane_list = []
+    if @object.uuid != current_user.andand.uuid
+      pane_list << 'Summary'
+    end
     pane_list <<
       {
         :name => 'Data_collections',
