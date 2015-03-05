@@ -22,7 +22,13 @@ import (
 func RunPullWorker(pullq *WorkQueue, keepClient keepclient.KeepClient) {
 	nextItem := pullq.NextItem
 	for item := range nextItem {
-		Pull(item.(PullRequest), keepClient)
+		pullRequest := item.(PullRequest)
+		err := Pull(item.(PullRequest), keepClient)
+		if err == nil {
+			log.Printf("Pull %s success", pullRequest)
+		} else {
+			log.Printf("Pull %s error: %s", pullRequest, err)
+		}
 	}
 }
 
@@ -34,14 +40,6 @@ func RunPullWorker(pullq *WorkQueue, keepClient keepclient.KeepClient) {
 		Write to storage
 */
 func Pull(pullRequest PullRequest, keepClient keepclient.KeepClient) (err error) {
-	defer func() {
-		if err == nil {
-			log.Printf("Pull %s success", pullRequest)
-		} else {
-			log.Printf("Pull %s error: %s", pullRequest, err)
-		}
-	}()
-
 	service_roots := make(map[string]string)
 	for _, addr := range pullRequest.Servers {
 		service_roots[addr] = addr

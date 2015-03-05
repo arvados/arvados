@@ -19,7 +19,7 @@ var processedPullLists map[string]string
 type PullWorkerTestSuite struct{}
 
 // Gocheck boilerplate
-func Test(t *testing.T) {
+func TestPullWorker(t *testing.T) {
 	TestingT(t)
 }
 
