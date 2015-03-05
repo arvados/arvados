@@ -32,11 +32,13 @@ has_component_with_empty_script_parameters:
     script_version: master
 
 has_component_with_completed_jobs:
-  # Test that the job "started_at" and "finished_at" fields are
-  # parsed into Time fields when rendering. This job must *not*
-  # have its own fixture; the point is to force the
-  # pipeline_instances_controller_test in Workbench to parse
-  # the "components" field.
+  # Test that the job "started_at" and "finished_at" fields are parsed
+  # into Time fields when rendering. These jobs must *not* have their
+  # own fixtures; the point is to force the
+  # pipeline_instances_controller_test in Workbench to parse the
+  # "components" field. (The relevant code paths are also used when a
+  # user has permission to read the pipeline instance itself, but not
+  # the jobs referenced by its components hash.)
   state: Complete
   uuid: zzzzz-d1hrv-i3e77t9z5y8j9cc
   owner_uuid: zzzzz-tpzed-xurymjxw79nv3jz
@@ -48,8 +50,40 @@ has_component_with_completed_jobs:
     job:
       uuid: zzzzz-8i9sb-rft1xdewxkwgxnz
       script_version: master
+      created_at: <%= 10.minute.ago.to_s(:db) %>
       started_at: <%= 10.minute.ago.to_s(:db) %>
       finished_at: <%= 9.minute.ago.to_s(:db) %>
+      state: Complete
+      tasks_summary:
+        failed: 0
+        todo: 0
+        running: 0
+        done: 1
+   bar:
+    script: bar
+    script_version: master
+    script_parameters: {}
+    job:
+      uuid: zzzzz-8i9sb-r2dtbzr6bfread7
+      script_version: master
+      created_at: <%= 9.minute.ago.to_s(:db) %>
+      started_at: <%= 9.minute.ago.to_s(:db) %>
+      state: Running
+      tasks_summary:
+        failed: 0
+        todo: 1
+        running: 2
+        done: 3
+   baz:
+    script: baz
+    script_version: master
+    script_parameters: {}
+    job:
+      uuid: zzzzz-8i9sb-c7408rni11o7r6s
+      script_version: master
+      created_at: <%= 9.minute.ago.to_s(:db) %>
+      state: Queued
+      tasks_summary: {}
 
 has_job:
   name: pipeline_with_job
@@ -232,6 +266,23 @@ pipeline_in_publicly_accessible_project:
           dataclass: Collection
           title: foo instance input
 
+pipeline_in_running_state:
+  name: running_with_job
+  state: Ready
+  uuid: zzzzz-d1hrv-runningpipeline
+  owner_uuid: zzzzz-tpzed-xurymjxw79nv3jz
+  created_at: <%= 3.1.minute.ago.to_s(:db) %>
+  started_at: <%= 3.1.minute.ago.to_s(:db) %>
+  state: RunningOnServer
+  components:
+   foo:
+    script: foo
+    script_version: master
+    script_parameters: {}
+    job:
+      uuid: zzzzz-8i9sb-pshmckwoma9plh7
+      script_version: master
+
 # Test Helper trims the rest of the file
 
 # Do not add your fixtures below this line as the rest of this file will be trimmed by test_helper
@@ -240,12 +291,12 @@ pipeline_in_publicly_accessible_project:
 <% for i in 1..10 do %>
 pipeline_<%=i%>_of_10:
   name: pipeline_<%= i %>
-  state: Failed
   uuid: zzzzz-d1hrv-10pipelines0<%= i.to_s.rjust(3, '0') %>
   owner_uuid: zzzzz-j7d0g-000010pipelines
   created_at: <%= (2*(i-1)).hour.ago.to_s(:db) %>
   started_at: <%= (2*(i-1)).hour.ago.to_s(:db) %>
   finished_at: <%= (i-1).minute.ago.to_s(:db) %>
+  state: Failed
   components:
     foo:
       script: foo

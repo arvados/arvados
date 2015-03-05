@@ -33,6 +33,7 @@ class Arvados::V1::SchemaController < ApplicationController
         servicePath: "arvados/v1/",
         batchPath: "batch",
         defaultTrashLifetime: Rails.application.config.default_trash_lifetime,
+        maxRequestSize: Rails.application.config.max_request_size,
         parameters: {
           alt: {
             type: "string",

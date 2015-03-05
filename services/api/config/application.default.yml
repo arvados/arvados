@@ -249,3 +249,9 @@ common:
   # Default replication level for collections. This is used when a
   # collection's replication_desired attribute is nil.
   default_collection_replication: 2
+
+  # Maximum size (in bytes) allowed for a single API request that will be
+  # published in the discovery document for use by clients.
+  # Note you must separately configure the upstream web server or proxy to
+  # actually enforce the desired maximum request size on the server side.
+  max_request_size: 134217728

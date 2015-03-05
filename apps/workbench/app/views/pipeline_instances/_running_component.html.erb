@@ -39,7 +39,7 @@
           <% if current_job[:state] == "Queued" %>
             <%# column offset 5 %>
             <div class="col-md-6">
-              <% queuetime = Time.now - Time.iso8601(current_job[:created_at]) %>
+              <% queuetime = Time.now - Time.parse(current_job[:created_at].to_s) %>
               Queued for <%= render_runtime(queuetime, true) %>.
               <% begin %>
                 <% if current_job[:queue_position] == 0 %>
