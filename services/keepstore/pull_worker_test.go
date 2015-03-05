@@ -8,9 +8,7 @@ import (
 	. "gopkg.in/check.v1"
 	"io"
 	"net/http"
-	"strings"
 	"testing"
-	"time"
 )
 
 type PullWorkerTestSuite struct{}
@@ -33,18 +31,6 @@ var currentTestData PullWorkerTestData
 
 const READ_CONTENT = "Hi!"
 
-func RunTestPullWorker(c *C) {
-	// Since keepstore does not come into picture in tests,
-	// we need to explicitly start the goroutine in tests.
-	arv, err := arvadosclient.MakeArvadosClient()
-	c.Assert(err, Equals, nil)
-	keepClient, err := keepclient.MakeKeepClient(&arv)
-	c.Assert(err, Equals, nil)
-
-	pullq = NewWorkQueue()
-	go RunPullWorker(pullq, keepClient)
-}
-
 func (s *PullWorkerTestSuite) SetUpTest(c *C) {
 	readContent = ""
 	readError = nil
@@ -52,19 +38,21 @@ func (s *PullWorkerTestSuite) SetUpTest(c *C) {
 	putError = nil
 
 	// When a new pull request arrives, the old one will be overwritten.
-	// This behavior is simulated with delay tests below.
+	// This behavior is verified using these maps in the "TestPullWorker_pull_list_with_two_items_latest_replacing_old"
 	testPullLists = make(map[string]string)
 	processedPullLists = make(map[string]string)
 }
 
 func (s *PullWorkerTestSuite) TearDownTest(c *C) {
-	time.Sleep(20 * time.Millisecond)
 	expectWorkerChannelEmpty(c, pullq.NextItem)
 
-	// give the channel some time to read and process all pull list entries
-	//	time.Sleep(1000 * time.Millisecond)
-	//	expectWorkerChannelEmpty(c, pullq.NextItem)
-	//	c.Assert(len(processedPullLists), Not(Equals), len(testPullLists))
+	if currentTestData.name == "TestPullWorker_pull_list_with_two_items_latest_replacing_old" {
+		c.Assert(len(testPullLists), Equals, 2)
+		c.Assert(len(processedPullLists), Equals, 1)
+		c.Assert(testPullLists["Added_before_actual_test_item"], NotNil)
+		c.Assert(testPullLists["TestPullWorker_pull_list_with_two_items_latest_replacing_old"], NotNil)
+		c.Assert(processedPullLists["TestPullWorker_pull_list_with_two_items_latest_replacing_old"], NotNil)
+	}
 
 	if currentTestData.read_error {
 		c.Assert(readError, NotNil)
@@ -78,6 +66,18 @@ func (s *PullWorkerTestSuite) TearDownTest(c *C) {
 			c.Assert(string(putContent), Equals, READ_CONTENT)
 		}
 	}
+}
+
+// Since keepstore does not come into picture in tests,
+// we need to explicitly start the goroutine in tests.
+func RunTestPullWorker(c *C) {
+	arv, err := arvadosclient.MakeArvadosClient()
+	c.Assert(err, Equals, nil)
+	keepClient, err := keepclient.MakeKeepClient(&arv)
+	c.Assert(err, Equals, nil)
+
+	pullq = NewWorkQueue()
+	go RunPullWorker(pullq, keepClient)
 }
 
 var first_pull_list = []byte(`[
@@ -139,44 +139,6 @@ func (s *PullWorkerTestSuite) TestPullWorker_pull_list_with_one_locator(c *C) {
 	data_manager_token = "DATA MANAGER TOKEN"
 	testData := PullWorkerTestData{
 		name:          "TestPullWorker_pull_list_with_one_locator",
-		req:           RequestTester{"/pull", data_manager_token, "PUT", second_pull_list},
-		response_code: http.StatusOK,
-		response_body: "Received 1 pull requests\n",
-		read_content:  "hola",
-		read_error:    false,
-		put_error:     false,
-	}
-
-	performTest(testData, c)
-}
-
-// When a new pull request arrives, the old one will be overwritten.
-// Simulate this behavior by inducing delay in GetContent for the delay test(s).
-// To ensure this delay test is not the last one executed and
-// hence we cannot verify this behavior, let's run the delay test twice.
-func (s *PullWorkerTestSuite) TestPullWorker_pull_list_with_one_locator_with_delay_1(c *C) {
-	defer teardown()
-
-	data_manager_token = "DATA MANAGER TOKEN"
-	testData := PullWorkerTestData{
-		name:          "TestPullWorker_pull_list_with_one_locator_with_delay_1",
-		req:           RequestTester{"/pull", data_manager_token, "PUT", second_pull_list},
-		response_code: http.StatusOK,
-		response_body: "Received 1 pull requests\n",
-		read_content:  "hola",
-		read_error:    false,
-		put_error:     false,
-	}
-
-	performTest(testData, c)
-}
-
-func (s *PullWorkerTestSuite) TestPullWorker_pull_list_with_one_locator_with_delay_2(c *C) {
-	defer teardown()
-
-	data_manager_token = "DATA MANAGER TOKEN"
-	testData := PullWorkerTestData{
-		name:          "TestPullWorker_pull_list_with_one_locator_with_delay_2",
 		req:           RequestTester{"/pull", data_manager_token, "PUT", second_pull_list},
 		response_code: http.StatusOK,
 		response_body: "Received 1 pull requests\n",
@@ -256,21 +218,41 @@ func (s *PullWorkerTestSuite) TestPullWorker_error_on_put_two_locators(c *C) {
 	performTest(testData, c)
 }
 
+// When a new pull request arrives, the old one is replaced. This test
+// is used to check that behavior by first putting an item on the queue,
+// and then performing the test. Thus the "testPullLists" has two entries;
+// however, processedPullLists will see only the newest item in the list.
+func (s *PullWorkerTestSuite) TestPullWorker_pull_list_with_two_items_latest_replacing_old(c *C) {
+	defer teardown()
+
+	var firstInput = []int{1}
+	pullq = NewWorkQueue()
+	pullq.ReplaceQueue(makeTestWorkList(firstInput))
+	testPullLists["Added_before_actual_test_item"] = string(1)
+
+	data_manager_token = "DATA MANAGER TOKEN"
+	testData := PullWorkerTestData{
+		name:          "TestPullWorker_pull_list_with_two_items_latest_replacing_old",
+		req:           RequestTester{"/pull", data_manager_token, "PUT", second_pull_list},
+		response_code: http.StatusOK,
+		response_body: "Received 1 pull requests\n",
+		read_content:  "hola",
+		read_error:    false,
+		put_error:     false,
+	}
+
+	performTest(testData, c)
+}
+
 func performTest(testData PullWorkerTestData, c *C) {
 	RunTestPullWorker(c)
 
 	currentTestData = testData
 	testPullLists[testData.name] = testData.response_body
 
-	// We need to make sure the tests have a slight delay so that we can verify the pull list channel overwrites.
-	//	time.Sleep(25 * time.Millisecond)
-
 	// Override GetContent to mock keepclient Get functionality
 	GetContent = func(signedLocator string, keepClient keepclient.KeepClient) (
 		reader io.ReadCloser, contentLength int64, url string, err error) {
-		if strings.HasPrefix(testData.name, "TestPullWorker_pull_list_with_one_locator_with_delay_1") {
-			//			time.Sleep(100 * time.Millisecond)
-		}
 
 		processedPullLists[testData.name] = testData.response_body
 		if testData.read_error {
@@ -282,7 +264,7 @@ func performTest(testData PullWorkerTestData, c *C) {
 			cb := &ClosingBuffer{bytes.NewBufferString(readContent)}
 			var rc io.ReadCloser
 			rc = cb
-			return rc, 3, "", nil
+			return rc, int64(len(READ_CONTENT)), "", nil
 		}
 	}
 
@@ -312,6 +294,14 @@ func (cb *ClosingBuffer) Close() (err error) {
 }
 
 func expectWorkerChannelEmpty(c *C, workerChannel <-chan interface{}) {
+	select {
+	case item := <-workerChannel:
+		c.Fatalf("Received value (%v) from channel that was expected to be empty", item)
+	default:
+	}
+}
+
+func expectWorkerChannelNotEmpty(c *C, workerChannel <-chan interface{}) {
 	select {
 	case item := <-workerChannel:
 		c.Fatalf("Received value (%v) from channel that was expected to be empty", item)
