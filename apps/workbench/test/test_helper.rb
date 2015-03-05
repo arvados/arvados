@@ -86,6 +86,32 @@ module ApiFixtureLoader
   end
 end
 
+module ApiMockHelpers
+  def self.included base
+    base.class_eval do
+      def stub_api_calls_with_body body, status_code=200
+        resp = mock
+        stubbed_client = ArvadosApiClient.new
+        stubbed_client.instance_eval do
+          resp.responds_like_instance_of HTTP::Message
+          resp.stubs(:content).returns body
+          resp.stubs(:status_code).returns status_code
+          @api_client = HTTPClient.new
+          @api_client.stubs(:post).returns resp
+        end
+        ArvadosApiClient.stubs(:new_or_current).returns(stubbed_client)
+      end
+
+      def stub_api_calls_with_invalid_json
+        stub_api_calls_with_body ']"omg,bogus"['
+      end
+    end
+  end
+end
+class ActiveSupport::TestCase
+  include ApiMockHelpers
+end
+
 class ActiveSupport::TestCase
   include ApiFixtureLoader
   def session_for api_client_auth_name
