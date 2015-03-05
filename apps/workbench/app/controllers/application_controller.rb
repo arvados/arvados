@@ -441,19 +441,14 @@ class ApplicationController < ActionController::Base
   end
 
   def redirect_to_login
-    respond_to do |f|
-      f.html {
-        if request.method.in? ['GET', 'HEAD']
-          redirect_to arvados_api_client.arvados_login_url(return_to: strip_token_from_path(request.url))
-        else
-          flash[:error] = "Either you are not logged in, or your session has timed out. I can't automatically log you in and re-attempt this request."
-          redirect_to :back
-        end
-      }
-      f.json {
-        @errors = ['You do not seem to be logged in. You did not supply an API token with this request, and your session (if any) has timed out.']
-        self.render_error status: 422
-      }
+    if request.xhr? or request.format.json?
+      @errors = ['You are not logged in. Most likely your session has timed out and you need to log in again.']
+      render_error status: 401
+    elsif request.method.in? ['GET', 'HEAD']
+      redirect_to arvados_api_client.arvados_login_url(return_to: strip_token_from_path(request.url))
+    else
+      flash[:error] = "Either you are not logged in, or your session has timed out. I can't automatically log you in and re-attempt this request."
+      redirect_to :back
     end
     false  # For convenience to return from callbacks
   end
@@ -594,7 +589,8 @@ class ApplicationController < ActionController::Base
     end
   end
 
-  # Redirect to login/welcome if client provided expired API token (or none at all)
+  # Redirect to login/welcome if client provided expired API token (or
+  # none at all)
   def require_thread_api_token
     if Thread.current[:arvados_api_token]
       yield
@@ -604,15 +600,26 @@ class ApplicationController < ActionController::Base
       # log in" page instead of getting stuck in a redirect loop.
       session.delete :arvados_api_token
       redirect_to_login
+    elsif request.xhr?
+      # If we redirect to the welcome page, the browser will handle
+      # the 302 by itself and the client code will end up rendering
+      # the "welcome" page in some content area where it doesn't make
+      # sense. Instead, we send 401 ("authenticate and try again" or
+      # "display error", depending on how smart the client side is).
+      @errors = ['You are not logged in.']
+      render_error status: 401
     else
       redirect_to welcome_users_path(return_to: request.fullpath)
     end
   end
 
   def ensure_current_user_is_admin
-    unless current_user and current_user.is_admin
+    if not current_user
+      @errors = ['Not logged in']
+      render_error status: 401
+    elsif not current_user.is_admin
       @errors = ['Permission denied']
-      self.render_error status: 401
+      render_error status: 403
     end
   end
 

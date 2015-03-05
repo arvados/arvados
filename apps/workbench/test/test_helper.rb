@@ -32,8 +32,13 @@ class ActiveSupport::TestCase
   # in integration tests -- they do not yet inherit this setting
   fixtures :all
   def use_token token_name
+    was = Thread.current[:arvados_api_token]
     auth = api_fixture('api_client_authorizations')[token_name.to_s]
     Thread.current[:arvados_api_token] = auth['api_token']
+    if block_given?
+      yield
+      Thread.current[:arvados_api_token] = was
+    end
   end
 
   setup do
