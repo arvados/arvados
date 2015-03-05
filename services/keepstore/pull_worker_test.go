@@ -91,13 +91,13 @@ func (s *PullWorkerTestSuite) TestPullWorker_pull_list_with_two_locators(c *C) {
 
 	data_manager_token = "DATA MANAGER TOKEN"
 	testData := PullWorkerTestData{
-		"TestPullWorker_pull_list_with_two_locators",
-		RequestTester{"/pull", data_manager_token, "PUT", first_pull_list},
-		http.StatusOK,
-		"Received 2 pull requests\n",
-		"hello",
-		false,
-		false,
+		name:          "TestPullWorker_pull_list_with_two_locators",
+		req:           RequestTester{"/pull", data_manager_token, "PUT", first_pull_list},
+		response_code: http.StatusOK,
+		response_body: "Received 2 pull requests\n",
+		read_content:  "hello",
+		read_error:    false,
+		put_error:     false,
 	}
 
 	performTest(testData, c)
@@ -108,13 +108,13 @@ func (s *PullWorkerTestSuite) TestPullWorker_pull_list_with_one_locator(c *C) {
 
 	data_manager_token = "DATA MANAGER TOKEN"
 	testData := PullWorkerTestData{
-		"TestPullWorker_pull_list_with_one_locator",
-		RequestTester{"/pull", data_manager_token, "PUT", second_pull_list},
-		http.StatusOK,
-		"Received 1 pull requests\n",
-		"hola",
-		false,
-		false,
+		name:          "TestPullWorker_pull_list_with_one_locator",
+		req:           RequestTester{"/pull", data_manager_token, "PUT", second_pull_list},
+		response_code: http.StatusOK,
+		response_body: "Received 1 pull requests\n",
+		read_content:  "hola",
+		read_error:    false,
+		put_error:     false,
 	}
 
 	performTest(testData, c)
@@ -129,13 +129,13 @@ func (s *PullWorkerTestSuite) TestPullWorker_pull_list_with_one_locator_with_del
 
 	data_manager_token = "DATA MANAGER TOKEN"
 	testData := PullWorkerTestData{
-		"TestPullWorker_pull_list_with_one_locator_with_delay_1",
-		RequestTester{"/pull", data_manager_token, "PUT", second_pull_list},
-		http.StatusOK,
-		"Received 1 pull requests\n",
-		"hola",
-		false,
-		false,
+		name:          "TestPullWorker_pull_list_with_one_locator_with_delay_1",
+		req:           RequestTester{"/pull", data_manager_token, "PUT", second_pull_list},
+		response_code: http.StatusOK,
+		response_body: "Received 1 pull requests\n",
+		read_content:  "hola",
+		read_error:    false,
+		put_error:     false,
 	}
 
 	performTest(testData, c)
@@ -146,13 +146,13 @@ func (s *PullWorkerTestSuite) TestPullWorker_pull_list_with_one_locator_with_del
 
 	data_manager_token = "DATA MANAGER TOKEN"
 	testData := PullWorkerTestData{
-		"TestPullWorker_pull_list_with_one_locator_with_delay_2",
-		RequestTester{"/pull", data_manager_token, "PUT", second_pull_list},
-		http.StatusOK,
-		"Received 1 pull requests\n",
-		"hola",
-		false,
-		false,
+		name:          "TestPullWorker_pull_list_with_one_locator_with_delay_2",
+		req:           RequestTester{"/pull", data_manager_token, "PUT", second_pull_list},
+		response_code: http.StatusOK,
+		response_body: "Received 1 pull requests\n",
+		read_content:  "hola",
+		read_error:    false,
+		put_error:     false,
 	}
 
 	performTest(testData, c)
@@ -163,13 +163,13 @@ func (s *PullWorkerTestSuite) TestPullWorker_error_on_get_one_locator(c *C) {
 
 	data_manager_token = "DATA MANAGER TOKEN"
 	testData := PullWorkerTestData{
-		"TestPullWorker_error_on_get_one_locator",
-		RequestTester{"/pull", data_manager_token, "PUT", second_pull_list},
-		http.StatusOK,
-		"Received 1 pull requests\n",
-		"unused",
-		true,
-		false,
+		name:          "TestPullWorker_error_on_get_one_locator",
+		req:           RequestTester{"/pull", data_manager_token, "PUT", second_pull_list},
+		response_code: http.StatusOK,
+		response_body: "Received 1 pull requests\n",
+		read_content:  "unused",
+		read_error:    true,
+		put_error:     false,
 	}
 
 	performTest(testData, c)
@@ -180,13 +180,13 @@ func (s *PullWorkerTestSuite) TestPullWorker_error_on_get_two_locators(c *C) {
 
 	data_manager_token = "DATA MANAGER TOKEN"
 	testData := PullWorkerTestData{
-		"TestPullWorker_error_on_get_two_locators",
-		RequestTester{"/pull", data_manager_token, "PUT", first_pull_list},
-		http.StatusOK,
-		"Received 2 pull requests\n",
-		"unused",
-		true,
-		false,
+		name:          "TestPullWorker_error_on_get_two_locators",
+		req:           RequestTester{"/pull", data_manager_token, "PUT", first_pull_list},
+		response_code: http.StatusOK,
+		response_body: "Received 2 pull requests\n",
+		read_content:  "unused",
+		read_error:    true,
+		put_error:     false,
 	}
 
 	performTest(testData, c)
@@ -197,13 +197,13 @@ func (s *PullWorkerTestSuite) TestPullWorker_error_on_put_one_locator(c *C) {
 
 	data_manager_token = "DATA MANAGER TOKEN"
 	testData := PullWorkerTestData{
-		"TestPullWorker_error_on_put_one_locator",
-		RequestTester{"/pull", data_manager_token, "PUT", second_pull_list},
-		http.StatusOK,
-		"Received 1 pull requests\n",
-		"unused",
-		false,
-		true,
+		name:          "TestPullWorker_error_on_put_one_locator",
+		req:           RequestTester{"/pull", data_manager_token, "PUT", second_pull_list},
+		response_code: http.StatusOK,
+		response_body: "Received 1 pull requests\n",
+		read_content:  "unused",
+		read_error:    false,
+		put_error:     true,
 	}
 
 	performTest(testData, c)
@@ -214,13 +214,13 @@ func (s *PullWorkerTestSuite) TestPullWorker_error_on_put_two_locators(c *C) {
 
 	data_manager_token = "DATA MANAGER TOKEN"
 	testData := PullWorkerTestData{
-		"TestPullWorker_error_on_put_two_locators",
-		RequestTester{"/pull", data_manager_token, "PUT", first_pull_list},
-		http.StatusOK,
-		"Received 2 pull requests\n",
-		"unused",
-		false,
-		true,
+		name:          "TestPullWorker_error_on_put_two_locators",
+		req:           RequestTester{"/pull", data_manager_token, "PUT", first_pull_list},
+		response_code: http.StatusOK,
+		response_body: "Received 2 pull requests\n",
+		read_content:  "unused",
+		read_error:    false,
+		put_error:     true,
 	}
 
 	performTest(testData, c)
