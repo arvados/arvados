@@ -470,6 +470,43 @@ collection_with_one_property:
   properties:
     property1: value1
 
+# The following three collections are used to test combining collections with repeated filenames
+collection_with_repeated_filenames_and_contents_in_two_dirs_1:
+  uuid: zzzzz-4zz18-duplicatenames1
+  portable_data_hash: fa7aeb5140e2848d39b416daeef4ffc5+45
+  owner_uuid: zzzzz-tpzed-xurymjxw79nv3jz
+  created_at: 2014-02-03T17:22:54Z
+  modified_by_client_uuid: zzzzz-ozdt8-brczlopd8u8d0jr
+  modified_by_user_uuid: zzzzz-tpzed-d9tiejq69daie8f
+  modified_at: 2014-02-03T17:22:54Z
+  updated_at: 2014-02-03T17:22:54Z
+  name: collection_with_repeated_filenames_and_contents_in_two_dirs_1
+  manifest_text: "./dir1 92b53930db60fe94be2a73fc771ba921+34+Af966b611a1e6a7df18e0f20ac742a255c27744b7@550a3f11 0:12:alice 12:12:alice.txt 24:10:bob.txt\n./dir2 56ac2557b1ded11ccab7293dc47d1e88+44+A1780092551dadcb9c74190a793a779cea84d632d@550a3f11 0:27:alice.txt\n"
+
+collection_with_repeated_filenames_and_contents_in_two_dirs_2:
+  uuid: zzzzz-4zz18-duplicatenames2
+  portable_data_hash: fa7aeb5140e2848d39b416daeef4ffc5+45
+  owner_uuid: zzzzz-tpzed-xurymjxw79nv3jz
+  created_at: 2014-02-03T17:22:54Z
+  modified_by_client_uuid: zzzzz-ozdt8-brczlopd8u8d0jr
+  modified_by_user_uuid: zzzzz-tpzed-d9tiejq69daie8f
+  modified_at: 2014-02-03T17:22:54Z
+  updated_at: 2014-02-03T17:22:54Z
+  name: collection_with_repeated_filenames_and_contents_in_two_dirs_2
+  manifest_text: "./dir1 92b53930db60fe94be2a73fc771ba921+34+Af966b611a1e6a7df18e0f20ac742a255c27744b7@550a3f11 0:12:alice 12:12:alice.txt 24:10:carol.txt\n./dir2 56ac2557b1ded11ccab7293dc47d1e88+44+A1780092551dadcb9c74190a793a779cea84d632d@550a3f11 0:27:alice.txt\n"
+
+foo_and_bar_files_in_dir:
+  uuid: zzzzz-4zz18-foonbarfilesdir
+  portable_data_hash: 6bbac24198d09a93975f60098caf0bdf+62
+  owner_uuid: zzzzz-tpzed-xurymjxw79nv3jz
+  created_at: 2014-02-03T17:22:54Z
+  modified_by_client_uuid: zzzzz-ozdt8-brczlopd8u8d0jr
+  modified_by_user_uuid: zzzzz-tpzed-d9tiejq69daie8f
+  modified_at: 2014-02-03T17:22:54Z
+  updated_at: 2014-02-03T17:22:54Z
+  name: foo_file_in_dir
+  manifest_text: "./dir1 a84b928ebdbae3f658518c711beaec02+28+A0cff02249e70e8cd6e55dba49fef4afa3f5bfdfb@550acd28 0:3:bar 12:16:foo\n"
+
 # Test Helper trims the rest of the file
 
 # Do not add your fixtures below this line as the rest of this file will be trimmed by test_helper
