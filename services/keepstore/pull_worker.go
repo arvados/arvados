@@ -8,11 +8,8 @@ import (
 	"io"
 	"io/ioutil"
 	"log"
-	"os"
 	"time"
 )
-
-var keepClient keepclient.KeepClient
 
 /*
 	Keepstore initiates pull worker channel goroutine.
@@ -22,11 +19,10 @@ var keepClient keepclient.KeepClient
 			Skip the rest of the servers if no errors
 		Repeat
 */
-func RunPullWorker(pullq *WorkQueue, kc keepclient.KeepClient) {
+func RunPullWorker(pullq *WorkQueue, keepClient keepclient.KeepClient) {
 	nextItem := pullq.NextItem
-	keepClient = kc
 	for item := range nextItem {
-		Pull(item.(PullRequest))
+		Pull(item.(PullRequest), keepClient)
 	}
 }
 
@@ -37,7 +33,7 @@ func RunPullWorker(pullq *WorkQueue, kc keepclient.KeepClient) {
 		Using this token & signature, retrieve the given block.
 		Write to storage
 */
-func Pull(pullRequest PullRequest) (err error) {
+func Pull(pullRequest PullRequest, keepClient keepclient.KeepClient) (err error) {
 	defer func() {
 		if err == nil {
 			log.Printf("Pull %s success", pullRequest)
@@ -53,11 +49,10 @@ func Pull(pullRequest PullRequest) (err error) {
 	keepClient.SetServiceRoots(service_roots)
 
 	// Generate signature with a random token
-	PermissionSecret = []byte(os.Getenv("ARVADOS_API_TOKEN"))
 	expires_at := time.Now().Add(60 * time.Second)
 	signedLocator := SignLocator(pullRequest.Locator, GenerateRandomApiToken(), expires_at)
 
-	reader, contentLen, _, err := GetContent(pullRequest.Locator, signedLocator)
+	reader, contentLen, _, err := GetContent(signedLocator, keepClient)
 	if err != nil {
 		return
 	}
@@ -80,7 +75,8 @@ func Pull(pullRequest PullRequest) (err error) {
 }
 
 // Fetch the content for the given locator using keepclient.
-var GetContent = func(locator string, signedLocator string) (reader io.ReadCloser, contentLength int64, url string, err error) {
+var GetContent = func(signedLocator string, keepClient keepclient.KeepClient) (
+	reader io.ReadCloser, contentLength int64, url string, err error) {
 	reader, blocklen, url, err := keepClient.Get(signedLocator)
 	return reader, blocklen, url, err
 }

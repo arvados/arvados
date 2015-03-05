@@ -233,7 +233,8 @@ func performTest(testData PullWorkerTestData, c *C) {
 	time.Sleep(25 * time.Millisecond)
 
 	// Override GetContent to mock keepclient Get functionality
-	GetContent = func(locator string, signedLocator string) (reader io.ReadCloser, contentLength int64, url string, err error) {
+	GetContent = func(signedLocator string, keepClient keepclient.KeepClient) (
+		reader io.ReadCloser, contentLength int64, url string, err error) {
 		if strings.HasPrefix(testData.name, "TestPullWorker_pull_list_with_one_locator_with_delay") {
 			time.Sleep(100 * time.Millisecond)
 		}
