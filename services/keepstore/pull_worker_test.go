@@ -13,9 +13,6 @@ import (
 	"time"
 )
 
-var testPullLists map[string]string
-var processedPullLists map[string]string
-
 type PullWorkerTestSuite struct{}
 
 // Gocheck boilerplate
@@ -26,14 +23,33 @@ func TestPullWorker(t *testing.T) {
 // Gocheck boilerplate
 var _ = Suite(&PullWorkerTestSuite{})
 
-func (s *PullWorkerTestSuite) SetUpSuite(c *C) {
+var testPullLists map[string]string
+var processedPullLists map[string]string
+var readContent string
+var readError error
+var putContent []byte
+var putError error
+var currentTestData PullWorkerTestData
+
+const READ_CONTENT = "Hi!"
+
+func RunTestPullWorker(c *C) {
 	// Since keepstore does not come into picture in tests,
 	// we need to explicitly start the goroutine in tests.
 	arv, err := arvadosclient.MakeArvadosClient()
 	c.Assert(err, Equals, nil)
 	keepClient, err := keepclient.MakeKeepClient(&arv)
 	c.Assert(err, Equals, nil)
+
+	pullq = NewWorkQueue()
 	go RunPullWorker(pullq, keepClient)
+}
+
+func (s *PullWorkerTestSuite) SetUpTest(c *C) {
+	readContent = ""
+	readError = nil
+	putContent = []byte("")
+	putError = nil
 
 	// When a new pull request arrives, the old one will be overwritten.
 	// This behavior is simulated with delay tests below.
@@ -41,13 +57,27 @@ func (s *PullWorkerTestSuite) SetUpSuite(c *C) {
 	processedPullLists = make(map[string]string)
 }
 
-func (s *PullWorkerTestSuite) TearDownSuite(c *C) {
-	// give the channel some time to read and process all pull list entries
-	time.Sleep(1000 * time.Millisecond)
-
+func (s *PullWorkerTestSuite) TearDownTest(c *C) {
+	time.Sleep(20 * time.Millisecond)
 	expectWorkerChannelEmpty(c, pullq.NextItem)
 
-	c.Assert(len(processedPullLists), Not(Equals), len(testPullLists))
+	// give the channel some time to read and process all pull list entries
+	//	time.Sleep(1000 * time.Millisecond)
+	//	expectWorkerChannelEmpty(c, pullq.NextItem)
+	//	c.Assert(len(processedPullLists), Not(Equals), len(testPullLists))
+
+	if currentTestData.read_error {
+		c.Assert(readError, NotNil)
+	} else {
+		c.Assert(readError, IsNil)
+		c.Assert(readContent, Equals, READ_CONTENT)
+		if currentTestData.put_error {
+			c.Assert(putError, NotNil)
+		} else {
+			c.Assert(putError, IsNil)
+			c.Assert(string(putContent), Equals, READ_CONTENT)
+		}
+	}
 }
 
 var first_pull_list = []byte(`[
@@ -227,23 +257,29 @@ func (s *PullWorkerTestSuite) TestPullWorker_error_on_put_two_locators(c *C) {
 }
 
 func performTest(testData PullWorkerTestData, c *C) {
+	RunTestPullWorker(c)
+
+	currentTestData = testData
 	testPullLists[testData.name] = testData.response_body
 
 	// We need to make sure the tests have a slight delay so that we can verify the pull list channel overwrites.
-	time.Sleep(25 * time.Millisecond)
+	//	time.Sleep(25 * time.Millisecond)
 
 	// Override GetContent to mock keepclient Get functionality
 	GetContent = func(signedLocator string, keepClient keepclient.KeepClient) (
 		reader io.ReadCloser, contentLength int64, url string, err error) {
-		if strings.HasPrefix(testData.name, "TestPullWorker_pull_list_with_one_locator_with_delay") {
-			time.Sleep(100 * time.Millisecond)
+		if strings.HasPrefix(testData.name, "TestPullWorker_pull_list_with_one_locator_with_delay_1") {
+			//			time.Sleep(100 * time.Millisecond)
 		}
 
 		processedPullLists[testData.name] = testData.response_body
 		if testData.read_error {
-			return nil, 0, "", errors.New("Error getting data")
+			err = errors.New("Error getting data")
+			readError = err
+			return nil, 0, "", err
 		} else {
-			cb := &ClosingBuffer{bytes.NewBufferString("Hi!")}
+			readContent = READ_CONTENT
+			cb := &ClosingBuffer{bytes.NewBufferString(readContent)}
 			var rc io.ReadCloser
 			rc = cb
 			return rc, 3, "", nil
@@ -253,8 +289,11 @@ func performTest(testData PullWorkerTestData, c *C) {
 	// Override PutContent to mock PutBlock functionality
 	PutContent = func(content []byte, locator string) (err error) {
 		if testData.put_error {
-			return errors.New("Error putting data")
+			err = errors.New("Error putting data")
+			putError = err
+			return err
 		} else {
+			putContent = content
 			return nil
 		}
 	}
