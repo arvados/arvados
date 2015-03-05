@@ -106,8 +106,8 @@ $(document).on('arv:pane:reload', '[data-pane-content-url]', function(e) {
     var content_url = $pane.attr('data-pane-content-url');
     $.ajax(content_url, {dataType: 'html', type: 'GET', context: $pane}).
         done(function(data, status, jqxhr) {
-            // Preserve collapsed state
             var $pane = this;
+            // Preserve collapsed state
             var collapsable = {};
             $(".collapse", this).each(function(i, c) {
                 collapsable[c.id] = $(c).hasClass('in');
