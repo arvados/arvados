@@ -8,7 +8,7 @@ $(document).
     }
     $('div').remove('.modal-footer-status');
 
-    $.ajax('/').
+    $.ajax('/report_issue', {type: 'POST'}).
       success(function(data, status, jqxhr) {
         var $sendButton = $('#report-issue-submit');
         $sendButton.html('Report sent');

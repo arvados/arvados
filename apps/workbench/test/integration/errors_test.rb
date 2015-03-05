@@ -103,6 +103,10 @@ class ErrorsTest < ActionDispatch::IntegrationTest
         assert_no_selector 'a,button:not([disabled])', text: 'Send problem report'
         assert_selector 'a,button', text: 'Cancel'
 
+        report = mock
+        report.expects(:deliver).returns true
+        IssueReporter.expects(:send_report).returns report
+
         # enter a report text and click on report
         find_field('report_issue_text').set 'my test report text'
         click_button 'Send problem report'
