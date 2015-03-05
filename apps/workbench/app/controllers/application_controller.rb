@@ -269,6 +269,9 @@ class ApplicationController < ActionController::Base
 
   def redirect_to uri, *args
     if request.xhr?
+      if not uri.is_a? String
+        uri = polymorphic_url(uri)
+      end
       render json: {href: uri}
     else
       super
