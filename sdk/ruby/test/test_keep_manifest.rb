@@ -1,22 +1,9 @@
-require "minitest/autorun"
 require "arvados/keep"
-require "yaml"
-
-def random_block(size=nil)
-  sprintf("%032x+%d", rand(16 ** 32), size || rand(64 * 1024 * 1024))
-end
+require "minitest/autorun"
+require "sdk_fixtures"
 
 class ManifestTest < Minitest::Test
-  SIMPLEST_MANIFEST = ". #{random_block(9)} 0:9:simple.txt\n"
-  MULTIBLOCK_FILE_MANIFEST =
-    [". #{random_block(8)} 0:4:repfile 4:4:uniqfile",
-     "./s1 #{random_block(6)} 0:3:repfile 3:3:uniqfile",
-     ". #{random_block(8)} 0:7:uniqfile2 7:1:repfile\n"].join("\n")
-  MULTILEVEL_MANIFEST =
-    [". #{random_block(9)} 0:3:file1 3:3:file2 6:3:file3\n",
-     "./dir1 #{random_block(9)} 0:3:file1 3:3:file2 6:3:file3\n",
-     "./dir1/subdir #{random_block(9)} 0:3:file1 3:3:file2 6:3:file3\n",
-     "./dir2 #{random_block(9)} 0:3:file1 3:3:file2 6:3:file3\n"].join("")
+  include SDKFixtures
 
   def check_stream(stream, exp_name, exp_blocks, exp_files)
     assert_equal(exp_name, stream.first)
@@ -51,7 +38,8 @@ class ManifestTest < Minitest::Test
       seen << stream
       assert_equal(3, files.size, "wrong file count for stream #{stream}")
     end
-    assert_equal(4, seen.size, "wrong number of streams")
+    assert_equal(MULTILEVEL_MANIFEST.count("\n"), seen.size,
+                 "wrong number of streams")
   end
 
   def test_empty_each_line
@@ -87,13 +75,12 @@ class ManifestTest < Minitest::Test
   end
 
   def test_backslash_escape_parsing
-    m_text = "./dir\\040name #{random_block} 0:0:file\\\\name\\011\\here.txt\n"
-    manifest = Keep::Manifest.new(m_text)
+    manifest = Keep::Manifest.new(MANY_ESCAPES_MANIFEST)
     streams = manifest.each_line.to_a
     assert_equal(1, streams.size, "wrong number of streams with whitespace")
     assert_equal("./dir name", streams.first.first,
                  "wrong stream name with whitespace")
-    assert_equal(["0:0:file\\name\t\\here.txt"], streams.first.last,
+    assert_equal(["0:9:file\\name\t\\here.txt"], streams.first.last,
                  "wrong filename(s) with whitespace")
   end
 
@@ -118,12 +105,12 @@ class ManifestTest < Minitest::Test
   end
 
   def test_files_with_colons_in_names
-    manifest = Keep::Manifest.new(". #{random_block(9)} 0:9:file:test.txt\n")
+    manifest = Keep::Manifest.new(COLON_FILENAME_MANIFEST)
     assert_equal([[".", "file:test.txt", 9]], manifest.files)
   end
 
   def test_files_with_escape_sequence_in_filename
-    manifest = Keep::Manifest.new(". #{random_block(9)} 0:9:a\\040\\141.txt\n")
+    manifest = Keep::Manifest.new(ESCAPED_FILENAME_MANIFEST)
     assert_equal([[".", "a a.txt", 9]], manifest.files)
   end
 
@@ -177,11 +164,11 @@ class ManifestTest < Minitest::Test
   end
 
   def test_has_file_with_spaces
-    manifest = Keep::Manifest.new(". #{random_block(3)} 0:3:a\\040b\\040c\n")
-    assert(manifest.has_file?("./a b c"), "one-arg 'a b c' not found")
-    assert(manifest.has_file?(".", "a b c"), "two-arg 'a b c' not found")
-    refute(manifest.has_file?("a\\040b\\040c"), "one-arg unescaped found")
-    refute(manifest.has_file?(".", "a\\040b\\040c"), "two-arg unescaped found")
+    manifest = Keep::Manifest.new(ESCAPED_FILENAME_MANIFEST)
+    assert(manifest.has_file?("./a a.txt"), "one-arg path not found")
+    assert(manifest.has_file?(".", "a a.txt"), "two-arg path not found")
+    refute(manifest.has_file?("a\\040\\141"), "one-arg unescaped found")
+    refute(manifest.has_file?(".", "a\\040\\141"), "two-arg unescaped found")
   end
 
   def test_parse_all_fixtures
@@ -207,16 +194,5 @@ class ManifestTest < Minitest::Test
       assert !stream_name.empty?, "empty stream_name in #{name} fixture"
       assert !file_name.empty?, "empty file_name in #{name} fixture"
     end
-  end
-
-  @@fixtures = nil
-  def fixtures name
-    return @@fixtures if @@fixtures
-    path = File.expand_path("../../../../services/api/test/fixtures/#{name}.yml",
-                            __FILE__)
-    file = IO.read(path)
-    trim_index = file.index('# Test Helper trims the rest of the file')
-    file = file[0, trim_index] if trim_index
-    @@fixtures = YAML.load(file)
   end
 end
