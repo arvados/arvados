@@ -24,10 +24,9 @@ class CollectionsTest < ActionDispatch::IntegrationTest
     click_link 'Copy to project...'
     find('.selectable', text: project_name).click
     find('.modal-footer a,button', text: 'Copy').click
-    wait_for_ajax
-    # It should navigate to the project after copying...
-    assert(page.has_text?(project_name))
-    assert(page.has_text?("Copy of #{collection_name}"))
+    # Should navigate to the Data collections tab of the project after copying
+    assert_text project_name
+    assert_text "Copy of #{collection_name}"
   end
 
   test "Collection page renders name" do
