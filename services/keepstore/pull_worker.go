@@ -40,6 +40,9 @@ func RunPullWorker(pullq *WorkQueue, keepClient keepclient.KeepClient) {
 		Write to storage
 */
 func Pull(pullRequest PullRequest, keepClient keepclient.KeepClient) (err error) {
+	token := GenerateRandomApiToken()
+	keepClient.Arvados.ApiToken = token
+
 	service_roots := make(map[string]string)
 	for _, addr := range pullRequest.Servers {
 		service_roots[addr] = addr
@@ -48,7 +51,7 @@ func Pull(pullRequest PullRequest, keepClient keepclient.KeepClient) (err error)
 
 	// Generate signature with a random token
 	expires_at := time.Now().Add(60 * time.Second)
-	signedLocator := SignLocator(pullRequest.Locator, GenerateRandomApiToken(), expires_at)
+	signedLocator := SignLocator(pullRequest.Locator, token, expires_at)
 
 	reader, contentLen, _, err := GetContent(signedLocator, keepClient)
 	if err != nil {

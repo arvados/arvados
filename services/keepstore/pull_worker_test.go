@@ -43,31 +43,6 @@ func (s *PullWorkerTestSuite) SetUpTest(c *C) {
 	processedPullLists = make(map[string]string)
 }
 
-func (s *PullWorkerTestSuite) TearDownTest(c *C) {
-	expectWorkerChannelEmpty(c, pullq.NextItem)
-
-	if currentTestData.name == "TestPullWorker_pull_list_with_two_items_latest_replacing_old" {
-		c.Assert(len(testPullLists), Equals, 2)
-		c.Assert(len(processedPullLists), Equals, 1)
-		c.Assert(testPullLists["Added_before_actual_test_item"], NotNil)
-		c.Assert(testPullLists["TestPullWorker_pull_list_with_two_items_latest_replacing_old"], NotNil)
-		c.Assert(processedPullLists["TestPullWorker_pull_list_with_two_items_latest_replacing_old"], NotNil)
-	}
-
-	if currentTestData.read_error {
-		c.Assert(readError, NotNil)
-	} else {
-		c.Assert(readError, IsNil)
-		c.Assert(readContent, Equals, READ_CONTENT)
-		if currentTestData.put_error {
-			c.Assert(putError, NotNil)
-		} else {
-			c.Assert(putError, IsNil)
-			c.Assert(string(putContent), Equals, READ_CONTENT)
-		}
-	}
-}
-
 // Since keepstore does not come into picture in tests,
 // we need to explicitly start the goroutine in tests.
 func RunTestPullWorker(c *C) {
@@ -283,6 +258,36 @@ func performTest(testData PullWorkerTestData, c *C) {
 	response := IssueRequest(&testData.req)
 	c.Assert(testData.response_code, Equals, response.Code)
 	c.Assert(testData.response_body, Equals, response.Body.String())
+
+	expectWorkerChannelEmpty(c, pullq.NextItem)
+
+	pullq.Close()
+
+	if testData.name == "TestPullWorker_pull_list_with_two_items_latest_replacing_old" {
+		c.Assert(len(testPullLists), Equals, 2)
+		c.Assert(len(processedPullLists), Equals, 1)
+		c.Assert(testPullLists["Added_before_actual_test_item"], NotNil)
+		c.Assert(testPullLists["TestPullWorker_pull_list_with_two_items_latest_replacing_old"], NotNil)
+		c.Assert(processedPullLists["TestPullWorker_pull_list_with_two_items_latest_replacing_old"], NotNil)
+	} else {
+		c.Assert(len(testPullLists), Equals, 1)
+		c.Assert(len(processedPullLists), Equals, 1)
+		c.Assert(testPullLists[testData.name], NotNil)
+	}
+
+	if testData.read_error {
+		c.Assert(readError, NotNil)
+	} else {
+		c.Assert(readError, IsNil)
+		c.Assert(readContent, Equals, READ_CONTENT)
+		if testData.put_error {
+			c.Assert(putError, NotNil)
+		} else {
+			c.Assert(putError, IsNil)
+			c.Assert(string(putContent), Equals, READ_CONTENT)
+		}
+	}
+
 }
 
 type ClosingBuffer struct {
