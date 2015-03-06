@@ -29,8 +29,6 @@ var putContent []byte
 var putError error
 var currentTestData PullWorkerTestData
 
-const READ_CONTENT = "Hi!"
-
 func (s *PullWorkerTestSuite) SetUpTest(c *C) {
 	readContent = ""
 	readError = nil
@@ -38,7 +36,8 @@ func (s *PullWorkerTestSuite) SetUpTest(c *C) {
 	putError = nil
 
 	// When a new pull request arrives, the old one will be overwritten.
-	// This behavior is verified using these maps in the "TestPullWorker_pull_list_with_two_items_latest_replacing_old"
+	// This behavior is verified using these two maps in the
+	// "TestPullWorker_pull_list_with_two_items_latest_replacing_old"
 	testPullLists = make(map[string]string)
 	processedPullLists = make(map[string]string)
 }
@@ -168,7 +167,7 @@ func (s *PullWorkerTestSuite) TestPullWorker_error_on_put_one_locator(c *C) {
 		req:           RequestTester{"/pull", data_manager_token, "PUT", second_pull_list},
 		response_code: http.StatusOK,
 		response_body: "Received 1 pull requests\n",
-		read_content:  "unused",
+		read_content:  "hello hello",
 		read_error:    false,
 		put_error:     true,
 	}
@@ -185,7 +184,7 @@ func (s *PullWorkerTestSuite) TestPullWorker_error_on_put_two_locators(c *C) {
 		req:           RequestTester{"/pull", data_manager_token, "PUT", first_pull_list},
 		response_code: http.StatusOK,
 		response_body: "Received 2 pull requests\n",
-		read_content:  "unused",
+		read_content:  "hello again",
 		read_error:    false,
 		put_error:     true,
 	}
@@ -211,7 +210,7 @@ func (s *PullWorkerTestSuite) TestPullWorker_pull_list_with_two_items_latest_rep
 		req:           RequestTester{"/pull", data_manager_token, "PUT", second_pull_list},
 		response_code: http.StatusOK,
 		response_body: "Received 1 pull requests\n",
-		read_content:  "hola",
+		read_content:  "hola de nuevo",
 		read_error:    false,
 		put_error:     false,
 	}
@@ -235,11 +234,11 @@ func performTest(testData PullWorkerTestData, c *C) {
 			readError = err
 			return nil, 0, "", err
 		} else {
-			readContent = READ_CONTENT
-			cb := &ClosingBuffer{bytes.NewBufferString(readContent)}
+			readContent = testData.read_content
+			cb := &ClosingBuffer{bytes.NewBufferString(testData.read_content)}
 			var rc io.ReadCloser
 			rc = cb
-			return rc, int64(len(READ_CONTENT)), "", nil
+			return rc, int64(len(testData.read_content)), "", nil
 		}
 	}
 
@@ -279,12 +278,12 @@ func performTest(testData PullWorkerTestData, c *C) {
 		c.Assert(readError, NotNil)
 	} else {
 		c.Assert(readError, IsNil)
-		c.Assert(readContent, Equals, READ_CONTENT)
+		c.Assert(readContent, Equals, testData.read_content)
 		if testData.put_error {
 			c.Assert(putError, NotNil)
 		} else {
 			c.Assert(putError, IsNil)
-			c.Assert(string(putContent), Equals, READ_CONTENT)
+			c.Assert(string(putContent), Equals, testData.read_content)
 		}
 	}
 
