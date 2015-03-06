@@ -6,13 +6,18 @@ class FixCollectionPortableDataHashWithHintedManifest < ActiveRecord::Migration
 
   class ArvadosModel < ActiveRecord::Base
     self.abstract_class = true
-    include HasUuid::ClassMethods
+    extend HasUuid::ClassMethods
     include KindAndEtag
     before_create do |record|
-      record.uuid ||= generate_uuid
+      record.uuid ||= record.class.generate_uuid
       record.owner_uuid ||= system_user_uuid
     end
     serialize :properties, Hash
+
+    def self.to_s
+      # Clean up the name of the stub model class so we generate correct UUIDs.
+      super.sub("FixCollectionPortableDataHashWithHintedManifest::", "")
+    end
   end
 
   class Collection < ArvadosModel
