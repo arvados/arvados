@@ -1,6 +1,9 @@
 require 'test_helper'
 
 class ArvadosApiClientTest < ActiveSupport::TestCase
+  # We use a mock instead of making real API calls, so there's no need to reset.
+  reset_api_fixtures :after_each_test, false
+
   test 'successful stubbed api request' do
     stub_api_calls_with_body '{"foo":"bar","baz":0}'
     use_token :active
