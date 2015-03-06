@@ -95,7 +95,7 @@ class ActionsController < ApplicationController
       # the destination project.
       redirect_to project_url(@object.uuid, anchor: 'Data_collections')
     else
-      # Otherwise just land on the default (Summary) tab.
+      # Otherwise just land on the default (Description) tab.
       redirect_to @object
     end
   end

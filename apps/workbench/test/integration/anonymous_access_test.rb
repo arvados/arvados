@@ -55,7 +55,7 @@ class AnonymousAccessTest < ActionDispatch::IntegrationTest
   test "selection actions when anonymous user accesses shared project" do
     visit PUBLIC_PROJECT
 
-    assert_selector 'a', text: 'Summary'
+    assert_selector 'a', text: 'Description'
     assert_selector 'a', text: 'Data collections'
     assert_selector 'a', text: 'Jobs and pipelines'
     assert_selector 'a', text: 'Pipeline templates'

@@ -44,7 +44,7 @@ class ProjectsController < ApplicationController
   def show_pane_list
     pane_list = []
     if @object.uuid != current_user.andand.uuid
-      pane_list << 'Summary'
+      pane_list << 'Description'
     end
     pane_list <<
       {
