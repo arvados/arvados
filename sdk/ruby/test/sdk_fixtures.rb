@@ -7,6 +7,10 @@ module SDKFixtures
     def random_block(size=nil)
       sprintf("%032x+%d", rand(16 ** 32), size || rand(64 * 1024 * 1024))
     end
+
+    def random_blocks(count, size=nil)
+      (0...count).map { |_| random_block(size) }
+    end
   end
 
   extend StaticMethods
@@ -50,4 +54,12 @@ module SDKFixtures
   NONNORMALIZED_MANIFEST =
     ["./dir2 #{random_block} 0:0:z 0:0:y 0:0:x",
      "./dir1 #{random_block} 0:0:p 0:0:o 0:0:n\n"].join("\n")
+
+  ### Non-tree manifests
+  # These manifests follow the spec, but they express a structure that can't
+  # can't be represented by a POSIX filesystem tree.  For example, there's a
+  # name conflict between a stream and a filename.
+  NAME_CONFLICT_MANIFEST =
+    [". #{random_block(9)} 0:9:conflict",
+     "./conflict #{random_block} 0:0:name\n"].join("\n")
 end
