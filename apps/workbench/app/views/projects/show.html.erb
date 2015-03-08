@@ -3,7 +3,7 @@
     <% if @object.uuid == current_user.andand.uuid %>
       Home
     <% else %>
-      <%= render_editable_attribute @object, 'name', nil, { 'data-emptytext' => "New #{controller.model_class.to_s.underscore.gsub("_"," ")}" } %>
+      <%= render_editable_attribute @object, 'name', nil, { 'data-emptytext' => "New project" } %>
     <% end %>
   </h2>
 <% end %>
