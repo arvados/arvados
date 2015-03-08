@@ -7,32 +7,24 @@ import (
 	"git.curoverse.com/arvados.git/sdk/go/keepclient"
 	"net/http"
 	"os"
+	"strings"
 	"testing"
 )
 
+var keepClient keepclient.KeepClient
+
 type PullWorkIntegrationTestData struct {
-	Name    string
-	Locator string
-	Content string
+	Name     string
+	Locator  string
+	Content  string
+	GetError string
 }
 
-func TestPullWorkerIntegration_GetLocator(t *testing.T) {
+func SetupPullWorkerIntegrationTest(t *testing.T, testData PullWorkIntegrationTestData, wantData bool) PullRequest {
 	arvadostest.StartAPI()
 	arvadostest.StartKeep()
 
-	testData := PullWorkIntegrationTestData{
-		Name:    "TestPullWorkerIntegration_GetLocator",
-		Locator: "5d41402abc4b2a76b9719d911017c592",
-		Content: "hello",
-	}
-
-	performPullWorkerIntegrationTest(testData, t)
-}
-
-func performPullWorkerIntegrationTest(testData PullWorkIntegrationTestData, t *testing.T) {
 	os.Setenv("ARVADOS_API_HOST_INSECURE", "true")
-
-	PermissionSecret = []byte("abc123")
 
 	arv, err := arvadosclient.MakeArvadosClient()
 	if err != nil {
@@ -42,9 +34,9 @@ func performPullWorkerIntegrationTest(testData PullWorkIntegrationTestData, t *t
 	client := &http.Client{Transport: &http.Transport{
 		TLSClientConfig: &tls.Config{InsecureSkipVerify: true}}}
 
-	keepClient := keepclient.KeepClient{
+	keepClient = keepclient.KeepClient{
 		Arvados:       &arv,
-		Want_replicas: 2,
+		Want_replicas: 1,
 		Using_proxy:   true,
 		Client:        client,
 	}
@@ -56,24 +48,68 @@ func performPullWorkerIntegrationTest(testData PullWorkIntegrationTestData, t *t
 		t.Error("Error creating keepclient")
 	}
 
-	pullq = NewWorkQueue()
-	go RunPullWorker(pullq, keepClient)
-
 	servers := make([]string, 1)
-	servers[0] = "https://" + os.Getenv("ARVADOS_API_HOST") + "/arvados/v1/keep_services"
+	servers[0] = "https://" + os.Getenv("ARVADOS_API_HOST")
 	pullRequest := PullRequest{
 		Locator: testData.Locator,
 		Servers: servers,
 	}
 
-	PullItemAndProcess(pullRequest, random_token, keepClient)
+	service_roots := make(map[string]string)
+	for _, addr := range pullRequest.Servers {
+		service_roots[addr] = addr
+	}
+	keepClient.SetServiceRoots(service_roots)
+
+	if wantData {
+		locator, _, err := keepClient.PutB([]byte(testData.Content))
+		if err != nil {
+			t.Errorf("Error putting test data in setup for %s %s", testData.Content, locator)
+		}
+	}
+	return pullRequest
+}
+
+func TestPullWorkerIntegration_GetNonExistingLocator(t *testing.T) {
+	testData := PullWorkIntegrationTestData{
+		Name:     "TestPullWorkerIntegration_GetLocator",
+		Locator:  "5d41402abc4b2a76b9719d911017c592",
+		Content:  "hello",
+		GetError: "Block not found",
+	}
+
+	pullRequest := SetupPullWorkerIntegrationTest(t, testData, false)
+
+	performPullWorkerIntegrationTest(testData, pullRequest, t)
+}
+
+func TestPullWorkerIntegration_GetExistingLocator(t *testing.T) {
+	testData := PullWorkIntegrationTestData{
+		Name:     "TestPullWorkerIntegration_GetLocator",
+		Locator:  "5d41402abc4b2a76b9719d911017c592",
+		Content:  "hello",
+		GetError: "",
+	}
+
+	pullRequest := SetupPullWorkerIntegrationTest(t, testData, true)
+
+	performPullWorkerIntegrationTest(testData, pullRequest, t)
+}
+
+func performPullWorkerIntegrationTest(testData PullWorkIntegrationTestData, pullRequest PullRequest, t *testing.T) {
+	err := PullItemAndProcess(pullRequest, keepClient.Arvados.ApiToken, keepClient)
+
+	if len(testData.GetError) > 0 {
+		if (err == nil) || (!strings.Contains(err.Error(), testData.GetError)) {
+			t.Fail()
+		}
+	} else {
+		t.Fail()
+	}
 
 	// Override PutContent to mock PutBlock functionality
 	PutContent = func(content []byte, locator string) (err error) {
 		// do nothing
 		return
 	}
-
-	pullq.Close()
-	pullq = nil
 }
