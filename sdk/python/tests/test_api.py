@@ -100,6 +100,13 @@ class ArvadosApiClientTest(unittest.TestCase):
             self.api.humans().delete(uuid='xyz-xyz-abcdef').execute()
         self.assertIn("500", str(err_ctx.exception))
 
+    def test_request_too_large(self):
+        api = arvados.api('v1')
+        maxsize = api._rootDesc.get('maxRequestSize', 0)
+        with self.assertRaises(apiclient_errors.MediaUploadSizeError):
+            text = "X" * maxsize
+            arvados.api('v1').collections().create(body={"manifest_text": text}).execute()
+
 
 if __name__ == '__main__':
     unittest.main()
