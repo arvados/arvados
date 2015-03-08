@@ -23,7 +23,7 @@ func RunPullWorker(pullq *WorkQueue, keepClient keepclient.KeepClient) {
 	nextItem := pullq.NextItem
 	for item := range nextItem {
 		pullRequest := item.(PullRequest)
-		err := Pull(item.(PullRequest), keepClient)
+		err := PullItemAndProcess(item.(PullRequest), GenerateRandomApiToken(), keepClient)
 		if err == nil {
 			log.Printf("Pull %s success", pullRequest)
 		} else {
@@ -39,8 +39,7 @@ func RunPullWorker(pullq *WorkQueue, keepClient keepclient.KeepClient) {
 		Using this token & signature, retrieve the given block.
 		Write to storage
 */
-func Pull(pullRequest PullRequest, keepClient keepclient.KeepClient) (err error) {
-	token := GenerateRandomApiToken()
+func PullItemAndProcess(pullRequest PullRequest, token string, keepClient keepclient.KeepClient) (err error) {
 	keepClient.Arvados.ApiToken = token
 
 	service_roots := make(map[string]string)
