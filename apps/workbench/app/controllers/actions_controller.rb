@@ -169,10 +169,15 @@ class ActionsController < ApplicationController
         manifest_file = m[4].split('/')[-1]
         uniq_file = derive_unique_filename(manifest_file, manifest_files)
         normalized = arv_normalize mt, '--extract', ".#{m[4]}"
-        normalized = normalized.gsub(manifest_file) {|s| uniq_file}
+        index = normalized.rindex manifest_file
+        part1 = normalized[0, index]
+        part2 = normalized[index, normalized.length]
+        part2 = part2.gsub(manifest_file) {|s| uniq_file}
+        normalized = part1 + part2
         combined += normalized
         manifest_files << uniq_file
       else
+        mt = arv_normalize mt
         manifest_streams = mt.split "\n"
         adjusted_streams = []
         manifest_streams.each do |stream|
@@ -185,7 +190,7 @@ class ActionsController < ApplicationController
           end
 
           manifest_parts.each do |part|
-            part_match = /\d*:\d*:(.*)/.match(part)
+            part_match = /\d*:\d*:(\S+)/.match(part)
             if part_match
               uniq_file = derive_unique_filename(part_match[1], manifest_files)
               adjusted_parts << (part.gsub(part_match[1]) {|s| uniq_file})
