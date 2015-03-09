@@ -55,6 +55,7 @@ class AnonymousAccessTest < ActionDispatch::IntegrationTest
   test "selection actions when anonymous user accesses shared project" do
     visit PUBLIC_PROJECT
 
+    assert_selector 'a', text: 'Description'
     assert_selector 'a', text: 'Data collections'
     assert_selector 'a', text: 'Jobs and pipelines'
     assert_selector 'a', text: 'Pipeline templates'
@@ -63,6 +64,7 @@ class AnonymousAccessTest < ActionDispatch::IntegrationTest
     assert_no_selector 'a', text: 'Other objects'
     assert_no_selector 'button', text: 'Add data'
 
+    click_link 'Data collections'
     click_button 'Selection'
     within('.selection-action-container') do
       assert_selector 'li', text: 'Compare selected'
@@ -75,6 +77,7 @@ class AnonymousAccessTest < ActionDispatch::IntegrationTest
 
   test "anonymous user accesses data collections tab in shared project" do
     visit PUBLIC_PROJECT
+    click_link 'Data collections'
     collection = api_fixture('collections')['user_agreement_in_anonymously_accessible_project']
     assert_text 'GNU General Public License'
 
@@ -115,6 +118,7 @@ class AnonymousAccessTest < ActionDispatch::IntegrationTest
   ].each do |type|
     test "anonymous user accesses jobs and pipelines tab in shared project and clicks on #{type}" do
       visit PUBLIC_PROJECT
+      click_link 'Data collections'
       assert_text 'GNU General Public License'
 
       click_link 'Jobs and pipelines'
@@ -156,6 +160,7 @@ class AnonymousAccessTest < ActionDispatch::IntegrationTest
 
   test "anonymous user accesses pipeline templates tab in shared project" do
     visit PUBLIC_PROJECT
+    click_link 'Data collections'
     assert_text 'GNU General Public License'
 
     assert_selector 'a', text: 'Pipeline templates'
