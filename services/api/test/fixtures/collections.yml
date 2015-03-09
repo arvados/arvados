@@ -434,7 +434,7 @@ replication_desired_2_confirmed_2:
   created_at: 2015-02-07 00:19:28.596506247 Z
   modified_by_user_uuid: zzzzz-tpzed-xurymjxw79nv3jz
   modified_at: 2015-02-07 00:19:28.596338465 Z
-  portable_data_hash: fa7aeb5140e2848d39b416daeef4ffc5+45
+  portable_data_hash: ec53808e4c23e6aeebea24d998ae5346+88
   replication_desired: 2
   replication_confirmed_at: 2015-02-07 00:24:52.983381227 Z
   replication_confirmed: 2

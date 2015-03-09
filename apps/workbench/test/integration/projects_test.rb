@@ -11,6 +11,7 @@ class ProjectsTest < ActionDispatch::IntegrationTest
   test 'Check collection count for A Project in the tab pane titles' do
     project_uuid = api_fixture('groups')['aproject']['uuid']
     visit page_with_token 'active', '/projects/' + project_uuid
+    click_link 'Data collections'
     wait_for_ajax
     collection_count = page.all("[data-pk*='collection']").count
     assert_selector '#Data_collections-tab span', text: "(#{collection_count})"
@@ -256,6 +257,7 @@ class ProjectsTest < ActionDispatch::IntegrationTest
         visit page_with_token 'active', '/'
         find("#projects-menu").click
         find(".dropdown-menu a", text: dest['name']).click
+        click_link 'Data collections'
         assert page.has_text?(my_collection['name']), 'Collection not found in dest project after copy'
 
       when 'Move'
@@ -263,6 +265,7 @@ class ProjectsTest < ActionDispatch::IntegrationTest
         visit page_with_token 'active', '/'
         find("#projects-menu").click
         find(".dropdown-menu a", text: dest['name']).click
+        click_link 'Data collections'
         assert page.has_text?(my_collection['name']), 'Collection not found in dest project after move'
 
       when 'Remove'
@@ -275,6 +278,7 @@ class ProjectsTest < ActionDispatch::IntegrationTest
     visit page_with_token 'active', '/'
     find("#projects-menu").click
     find(".dropdown-menu a", text: src['name']).click
+    click_link 'Data collections'
     assert page.has_text?(item['name']), 'Collection not found in src project'
 
     within('tr', text: item['name']) do
@@ -313,6 +317,7 @@ class ProjectsTest < ActionDispatch::IntegrationTest
     find("#projects-menu").click
     find(".dropdown-menu a", text: my_project['name']).click
 
+    click_link 'Data collections'
     click_button 'Selection'
     within('.selection-action-container') do
       assert_selector 'li.disabled', text: 'Create new collection with selected collections'
@@ -326,6 +331,7 @@ class ProjectsTest < ActionDispatch::IntegrationTest
     visit page_with_token 'active', '/'
     find("#projects-menu").click
     find(".dropdown-menu a", text: my_project['name']).click
+    click_link 'Data collections'
     assert page.has_text?(my_collection['name']), 'Collection not found in project'
 
     within('tr', text: my_collection['name']) do
@@ -459,11 +465,13 @@ class ProjectsTest < ActionDispatch::IntegrationTest
     end
   end
 
-  # "Move selected" and "Remove selected" options should not be available when current user cannot write to the project
+  # "Move selected" and "Remove selected" options should not be
+  # available when current user cannot write to the project
   test "move selected and remove selected actions not available when current user cannot write to project" do
     my_project = api_fixture('groups')['anonymously_accessible_project']
     visit page_with_token 'active', "/projects/#{my_project['uuid']}"
 
+    click_link 'Data collections'
     click_button 'Selection'
     within('.selection-action-container') do
       assert_selector 'li', text: 'Create new collection with selected collections'
@@ -485,6 +493,7 @@ class ProjectsTest < ActionDispatch::IntegrationTest
       visit page_with_token user, '/'
       find("#projects-menu").click
       find(".dropdown-menu a", text: my_project['name']).click
+      click_link 'Data collections'
       assert page.has_text?(my_collection['name']), 'Collection not found in project'
 
       within('tr', text: my_collection['name']) do
@@ -707,9 +716,9 @@ class ProjectsTest < ActionDispatch::IntegrationTest
     # As of 2014-12-19, the first tab of project#show uses infinite scrolling.
     # Make sure that it loads data even if we visit another tab directly.
     need_selenium 'to land on specified tab using {url}#Advanced'
-    project = api_fixture("groups", "aproject")
+    user = api_fixture("users", "active")
     visit(page_with_token("active_trustedclient",
-                          "/projects/#{project['uuid']}#Advanced"))
+                          "/projects/#{user['uuid']}#Advanced"))
     assert_text("API response")
     find("#page-wrapper .nav-tabs :first-child a").click
     assert_text("Collection modified at")
