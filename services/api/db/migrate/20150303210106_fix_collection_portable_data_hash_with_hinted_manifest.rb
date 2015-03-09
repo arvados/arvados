@@ -7,6 +7,7 @@ class FixCollectionPortableDataHashWithHintedManifest < ActiveRecord::Migration
   class ArvadosModel < ActiveRecord::Base
     self.abstract_class = true
     extend HasUuid::ClassMethods
+    include CurrentApiClient
     include KindAndEtag
     before_create do |record|
       record.uuid ||= record.class.generate_uuid
