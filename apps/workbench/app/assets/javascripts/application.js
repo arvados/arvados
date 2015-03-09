@@ -27,6 +27,7 @@
 //= require raphael
 //= require morris
 //= require jquery.number.min
+//= require jquery.remotipart
 //= require_tree .
 
 jQuery(function($){

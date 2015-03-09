@@ -190,6 +190,7 @@ GEM
       rake
     raphael-rails (2.1.2)
     ref (1.0.5)
+    remotipart (1.2.1)
     ruby-debug-passenger (0.2.0)
     ruby-prof (0.15.2)
     rubyzip (1.1.6)
@@ -284,6 +285,7 @@ DEPENDENCIES
   rails (~> 4.1.0)
   rails-perftest
   raphael-rails
+  remotipart
   ruby-debug-passenger
   ruby-prof
   rvm-capistrano

@@ -60,6 +60,8 @@ gem 'bootstrap-tab-history-rails'
 
 gem 'angularjs-rails'
 
+gem 'remotipart'
+
 gem 'less'
 gem 'less-rails'
 gem 'wiselinks'

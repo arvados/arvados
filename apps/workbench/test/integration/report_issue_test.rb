@@ -12,6 +12,8 @@ class ReportIssueTest < ActionDispatch::IntegrationTest
 
   # test version info and report issue from help menu
   def check_version_info_and_report_issue_from_help_menu
+    ActionMailer::Base.deliveries = []
+
     within '.navbar-fixed-top' do
       find('.help-menu > a').click
       within '.help-menu .dropdown-menu' do
@@ -60,10 +62,6 @@ class ReportIssueTest < ActionDispatch::IntegrationTest
       page.find_field('report_issue_text').set 'my test report text'
       assert page.has_button?('Send problem report'), 'Send problem report button not enabled after entering text'
 
-      report = mock
-      report.expects(:deliver).returns true
-      IssueReporter.expects(:send_report).returns report
-
       click_button 'Send problem report'
 
       # ajax success updated button texts and added footer message
@@ -74,6 +72,15 @@ class ReportIssueTest < ActionDispatch::IntegrationTest
       assert page.has_text?('Thanks for reporting this issue'), 'No text - Thanks for reporting this issue'
 
       click_button 'Close'
+
+      # verify report email
+      found_email = 0
+      ActionMailer::Base.deliveries.each do |email|
+        if email.subject.include?("Issue reported")
+          found_email += 1
+        end
+      end
+      assert_equal 1, found_email, "Expected email after reporting issue"
     end
   end
 
@@ -86,7 +93,6 @@ class ReportIssueTest < ActionDispatch::IntegrationTest
     ['active_no_prefs', api_fixture('users')['active_no_prefs']],
     ['active_no_prefs_profile', api_fixture('users')['active_no_prefs_profile']],
   ].each do |token, user|
-
     test "check version info and report issue for user #{token}" do
       if !token
         visit ('/')
@@ -96,7 +102,5 @@ class ReportIssueTest < ActionDispatch::IntegrationTest
 
       check_version_info_and_report_issue_from_help_menu
     end
-
   end
-
 end
