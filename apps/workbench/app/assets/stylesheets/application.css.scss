@@ -277,6 +277,12 @@ span.editable-textile {
   display: none;
 }
 
+/* Hide Angular content until Angular is ready */
 [ng\:cloak], [ng-cloak], .ng-cloak {
     display: none !important;
+}
+
+/* tabs */
+ul.nav.nav-tabs {
+    font-size: 90%
 }
