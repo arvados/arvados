@@ -83,7 +83,7 @@ function unselect_all_files() {
           </div>
 
           <div class="collection_files_name">
-            <% if !defined? no_checkboxes or !no_checkboxes %>
+            <% if (!defined? no_checkboxes or !no_checkboxes) and current_user %>
             <%= check_box_tag 'uuids[]', "#{@object.uuid}/#{file_path}", false, {
                   :class => "persistent-selection",
                   :friendly_type => "File",
