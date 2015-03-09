@@ -5,6 +5,51 @@ class PipelineInstancesTest < ActionDispatch::IntegrationTest
     need_javascript
   end
 
+  def parse_browser_timestamp t
+    # Timestamps are displayed in the browser's time zone (which can
+    # differ from ours) and they come from toLocaleTimeString (which
+    # means they don't necessarily tell us which time zone they're
+    # using). In order to make sense of them, we need to ask the
+    # browser to parse them and generate a timestamp that can be
+    # parsed reliably.
+    #
+    # Note: Even with all this help, phantomjs seem to behave badly
+    # when parsing timestamps on the other side of a DST transition.
+    # See skipped tests below.
+    if /(\d+:\d+ [AP]M) (\d+\/\d+\/\d+)/ =~ t
+      # Currently dates.js renders timestamps as
+      # '{t.toLocaleTimeString()} {t.toLocaleDateString()}' which even
+      # browsers can't make sense of. First we need to flip it around
+      # so it looks like what toLocaleString() would have made.
+      t = $~[2] + ', ' + $~[1]
+    end
+    DateTime.parse(page.evaluate_script "new Date('#{t}').toUTCString()").to_time
+  end
+
+  if false
+    # No need to test (or mention) these all the time. If they start
+    # working (without need_selenium) then some real tests might not
+    # need_selenium any more.
+
+    test 'phantomjs DST' do
+      skip '^^'
+      t0s = '3/8/2015, 01:59 AM'
+      t1s = '3/8/2015, 03:01 AM'
+      t0 = parse_browser_timestamp t0s
+      t1 = parse_browser_timestamp t1s
+      assert_equal 120, t1-t0, "'#{t0s}' to '#{t1s}' was reported as #{t1-t0} seconds, should be 120"
+    end
+
+    test 'phantomjs DST 2' do
+      skip '^^'
+      t0s = '2015-03-08T10:43:00Z'
+      t1s = '2015-03-09T03:43:00Z'
+      t0 = parse_browser_timestamp page.evaluate_script("new Date('#{t0s}').toLocaleString()")
+      t1 = parse_browser_timestamp page.evaluate_script("new Date('#{t1s}').toLocaleString()")
+      assert_equal 17*3600, t1-t0, "'#{t0s}' to '#{t1s}' was reported as #{t1-t0} seconds, should be #{17*3600} (17 hours)"
+    end
+  end
+
   test 'Create and run a pipeline' do
     visit page_with_token('active_trustedclient', '/pipeline_templates')
     within('tr', text: 'Two Part Pipeline Template') do
@@ -417,6 +462,7 @@ class PipelineInstancesTest < ActionDispatch::IntegrationTest
     ['active', 'zzzzz-d1hrv-runningpipeline', nil], # state = running
   ].each do |user, uuid, run_time|
     test "pipeline start and finish time display for #{uuid}" do
+      need_selenium 'to parse timestamps correctly across DST boundaries'
       visit page_with_token(user, "/pipeline_instances/#{uuid}")
 
       assert page.has_text? 'This pipeline started at'
@@ -432,12 +478,11 @@ class PipelineInstancesTest < ActionDispatch::IntegrationTest
       start_at = match[1]
       assert_not_nil(start_at, 'Did not find start_at time')
 
-      # start and finished time display is of the format '2:20 PM 10/20/2014'
-      start_time = DateTime.strptime(start_at, '%H:%M %p %m/%d/%Y').to_time
+      start_time = parse_browser_timestamp start_at
       if run_time
         finished_at = match[3]
         assert_not_nil(finished_at, 'Did not find finished_at time')
-        finished_time = DateTime.strptime(finished_at, '%H:%M %p %m/%d/%Y').to_time
+        finished_time = parse_browser_timestamp finished_at
         assert_equal(run_time, finished_time-start_time,
           "Time difference did not match for start_at #{start_at}, finished_at #{finished_at}, ran_for #{match[2]}")
       else
