@@ -267,6 +267,17 @@ class ApplicationController < ActionController::Base
     end
   end
 
+  def redirect_to uri, *args
+    if request.xhr?
+      if not uri.is_a? String
+        uri = polymorphic_url(uri)
+      end
+      render json: {href: uri}
+    else
+      super
+    end
+  end
+
   def choose
     params[:limit] ||= 40
     respond_to do |f|

@@ -46,10 +46,10 @@ class ActionsController < ApplicationController
   def move_or_copy action
     uuids_to_add = params["selection"]
     uuids_to_add = [ uuids_to_add ] unless uuids_to_add.is_a? Array
-    uuids_to_add.
+    resource_classes = uuids_to_add.
       collect { |x| ArvadosBase::resource_class_for_uuid(x) }.
-      uniq.
-      each do |resource_class|
+      uniq
+    resource_classes.each do |resource_class|
       resource_class.filter([['uuid','in',uuids_to_add]]).each do |src|
         if resource_class == Collection and not Collection.attribute_info.include?(:name)
           dst = Link.new(owner_uuid: @object.uuid,
@@ -87,7 +87,17 @@ class ActionsController < ApplicationController
         end
       end
     end
-    redirect_to @object
+    if (resource_classes == [Collection] and
+        @object.is_a? Group and
+        @object.group_class == 'project')
+      # In the common case where only collections are copied/moved
+      # into a project, it's polite to land on the collections tab on
+      # the destination project.
+      redirect_to project_url(@object.uuid, anchor: 'Data_collections')
+    else
+      # Otherwise just land on the default (Description) tab.
+      redirect_to @object
+    end
   end
 
   def arv_normalize mt, *opts
