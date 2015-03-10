@@ -378,11 +378,12 @@ go get "git.curoverse.com/arvados.git/services/keepstore"
 cd $WORKSPACE/debs
 build_and_scp_deb $GOPATH/bin/keepstore=/usr/bin/keepstore keepstore 'Curoverse, Inc.' 'dir' "$PKG_VERSION" "--url=https://arvados.org" "--license=GNU Affero General Public License, version 3.0" "--description=Keepstore is the Keep storage daemon, accessible to clients on the LAN"
 
-# keepproxy
+# Get GO SDK version
 cd "$GOPATH/src/git.curoverse.com/arvados.git/sdk/go"
 GO_SDK_VERSION=$(version_from_git)
 GO_SDK_TIMESTAMP=$(timestamp_from_git)
 
+# keepproxy
 cd "$GOPATH/src/git.curoverse.com/arvados.git/services/keepproxy"
 KEEPPROXY_VERSION=$(version_from_git)
 KEEPPROXY_TIMESTAMP=$(timestamp_from_git)
@@ -396,6 +397,21 @@ fi
 go get "git.curoverse.com/arvados.git/services/keepproxy"
 cd $WORKSPACE/debs
 build_and_scp_deb $GOPATH/bin/keepproxy=/usr/bin/keepproxy keepproxy 'Curoverse, Inc.' 'dir' "$PKG_VERSION" "--url=https://arvados.org" "--license=GNU Affero General Public License, version 3.0" "--description=Keepproxy makes a Keep cluster accessible to clients that are not on the LAN"
+
+# datamanager
+cd "$GOPATH/src/git.curoverse.com/arvados.git/services/datamanager"
+DATAMANAGER_VERSION=$(version_from_git)
+DATAMANAGER_TIMESTAMP=$(timestamp_from_git)
+
+if [[ "$GO_SDK_TIMESTAMP" -gt "$DATAMANAGER_TIMESTAMP" ]]; then
+  PKG_VERSION=$GO_SDK_VERSION
+else
+  PKG_VERSION=$DATAMANAGER_VERSION
+fi
+
+go get "git.curoverse.com/arvados.git/services/datamanager"
+cd $WORKSPACE/debs
+build_and_scp_deb $GOPATH/bin/datamanager=/usr/bin/arvados-data-manager arvados-data-manager 'Curoverse, Inc.' 'dir' "$PKG_VERSION" "--url=https://arvados.org" "--license=GNU Affero General Public License, version 3.0" "--description=Datamanager ensures block replication levels, reports on disk usage and determines which blocks should be deleted when space is needed."
 
 # crunchstat
 cd "$GOPATH/src/git.curoverse.com/arvados.git/services/crunchstat"
@@ -433,7 +449,8 @@ build_and_scp_deb $WORKSPACE/services/nodemanager arvados-node-manager 'Curovers
 # A few dependencies
 for deppkg in python-gflags pyvcf google-api-python-client oauth2client \
       pyasn1 pyasn1-modules rsa uritemplate httplib2 ws4py virtualenv \
-      pykka apache-libcloud requests six pyexecjs jsonschema; do
+      pykka apache-libcloud requests six pyexecjs jsonschema ciso8601 \
+      pycrypto; do
     build_and_scp_deb "$deppkg"
 done
 

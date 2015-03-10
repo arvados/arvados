@@ -102,6 +102,7 @@ ensure_symlink "apps/workbench/config/deploy.workbench.$IDENTIFIER.rb"
 
 ensure_symlink "services/api/Capfile.$IDENTIFIER"
 ensure_symlink "services/api/config/deploy.common.rb"
+ensure_symlink "services/api/config/deploy.curoverse.rb"
 ensure_symlink "services/api/config/deploy.$IDENTIFIER.rb"
 
 # Deploy API server
