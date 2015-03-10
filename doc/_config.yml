@@ -143,9 +143,9 @@ navbar:
     - Overview:
       - install/index.html.textile.liquid
     - Docker:
+      - install/pre-built-docker.html.textile.liquid
       - install/install-docker.html.textile.liquid
     - Manual installation:
-      - install/install-manual-overview.html.textile.liquid
       - install/install-manual-prerequisites.html.textile.liquid
       - install/install-api-server.html.textile.liquid
       - install/install-workbench-app.html.textile.liquid

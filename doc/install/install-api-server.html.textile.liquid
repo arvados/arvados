@@ -138,13 +138,11 @@ Alternatively, if the database user you intend to use for the API server is not 
 ~/arvados/services/api$ <span class="userinput">RAILS_ENV=production bundle exec rake db:seed</span>
 </code></pre></notextile>
 
-<div class="alert alert-block alert-info">
-  <button type="button" class="close" data-dismiss="alert">&times;</button>
-  <h4>Note!</h4>
+{% include 'notebox_begin' %}
 You can safely ignore the following error message you may see when loading the database structure:
 <notextile>
 <pre><code>ERROR:  must be owner of extension plpgsql</code></pre></notextile>
-</div>
+{% include 'notebox_end' %}
 
 h2(#omniauth). Set up omniauth
 
