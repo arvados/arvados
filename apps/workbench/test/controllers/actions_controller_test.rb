@@ -21,7 +21,7 @@ class ActionsControllerTest < ActionController::TestCase
            selection: ['zzzzz-4zz18-znfnqtbbv4spc3w/foo',
                        'zzzzz-4zz18-ehbhgtheo8909or/bar',
                        'zzzzz-4zz18-y9vne9npefyxh8g/baz',
-                       '1fd08fc162a5c6413070a8bd0bffc818+150'],
+                       '7a6ef4c162a5c6413070a8bd0bffc818+150'],
            format: "json"},
          session_for(:active))
 
@@ -49,7 +49,7 @@ class ActionsControllerTest < ActionController::TestCase
                        'zzzzz-4zz18-abcd6fx123409f7/foo',
                        'zzzzz-4zz18-ehbhgtheo8909or/bar',
                        'zzzzz-4zz18-y9vne9npefyxh8g/baz',
-                       '1fd08fc162a5c6413070a8bd0bffc818+150'],
+                       '7a6ef4c162a5c6413070a8bd0bffc818+150'],
            format: "json"},
          session_for(:active))
 

@@ -79,7 +79,7 @@ multilevel_collection_1:
   modified_by_user_uuid: zzzzz-tpzed-d9tiejq69daie8f
   modified_at: 2014-02-03T17:22:54Z
   updated_at: 2014-02-03T17:22:54Z
-  manifest_text: ". 85877ca2d7e05498dd3d109baf2df106+95+A3a4e26a366ee7e4ed3e476ccf05354761be2e4ae@545a9920 0:0:file1 0:0:file2 0:0:file3\n./dir1 85877ca2d7e05498dd3d109baf2df106+95+A3a4e26a366ee7e4ed3e476ccf05354761be2e4ae@545a9920 0:0:file1 0:0:file2 0:0:file3\n./dir1/subdir 85877ca2d7e05498dd3d109baf2df106+95+A3a4e26a366ee7e4ed3e476ccf05354761be2e4ae@545a9920 0:0:file1 0:0:file2 0:0:file3\n./dir2 85877ca2d7e05498dd3d109baf2df106+95+A3a4e26a366ee7e4ed3e476ccf05354761be2e4ae@545a9920 0:0:file1 0:0:file2 0:0:file3\n"
+  manifest_text: ". 0:0:file1 0:0:file2 0:0:file3\n./dir1 0:0:file1 0:0:file2 0:0:file3\n./dir1/subdir 0:0:file1 0:0:file2 0:0:file3\n./dir2 0:0:file1 0:0:file2 0:0:file3\n"
   name: multilevel_collection_1
 
 multilevel_collection_2:
@@ -470,7 +470,7 @@ collection_with_one_property:
   properties:
     property1: value1
 
-# The following three collections are used to test combining collections with repeated filenames
+# The following four collections are used to test combining collections with repeated filenames
 collection_with_repeated_filenames_and_contents_in_two_dirs_1:
   uuid: zzzzz-4zz18-duplicatenames1
   portable_data_hash: fa7aeb5140e2848d39b416daeef4ffc5+45
@@ -506,6 +506,19 @@ foo_and_bar_files_in_dir:
   updated_at: 2014-02-03T17:22:54Z
   name: foo_file_in_dir
   manifest_text: "./dir1 a84b928ebdbae3f658518c711beaec02+28+A0cff02249e70e8cd6e55dba49fef4afa3f5bfdfb@550acd28 0:3:bar 12:16:foo\n"
+
+multi_level_to_combine:
+  uuid: zzzzz-4zz18-pyw8yp9g3ujh45f
+  portable_data_hash: 7a6ef4c162a5c6413070a8bd0bffc818+150
+  owner_uuid: zzzzz-tpzed-xurymjxw79nv3jz
+  created_at: 2014-02-03T17:22:54Z
+  modified_by_client_uuid: zzzzz-ozdt8-brczlopd8u8d0jr
+  modified_by_user_uuid: zzzzz-tpzed-d9tiejq69daie8f
+  modified_at: 2014-02-03T17:22:54Z
+  updated_at: 2014-02-03T17:22:54Z
+  manifest_text: ". 85877ca2d7e05498dd3d109baf2df106+95 0:0:file1 0:0:file2 0:0:file3\n./dir1 85877ca2d7e05498dd3d109baf2df106+95 0:0:file1 0:0:file2 0:0:file3\n./dir1/subdir 85877ca2d7e05498dd3d109baf2df106+95 0:0:file1 0:0:file2 0:0:file3\n./dir2 85877ca2d7e05498dd3d109baf2df106+95 0:0:file1 0:0:file2 0:0:file3\n"
+  name: multi_level_to_combine
+
 
 # Test Helper trims the rest of the file
 
