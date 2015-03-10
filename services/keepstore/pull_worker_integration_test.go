@@ -2,6 +2,7 @@ package main
 
 import (
 	"crypto/tls"
+	"encoding/json"
 	"fmt"
 	"git.curoverse.com/arvados.git/sdk/go/arvadosclient"
 	"git.curoverse.com/arvados.git/sdk/go/arvadostest"
@@ -10,7 +11,6 @@ import (
 	"os"
 	"strings"
 	"testing"
-	"encoding/json"
 )
 
 var keepClient keepclient.KeepClient
@@ -33,29 +33,17 @@ func SetupPullWorkerIntegrationTest(t *testing.T, testData PullWorkIntegrationTe
 		t.Error("Error creating arv")
 	}
 
-	keepClient = keepclient.KeepClient{
-		Arvados:       &arv,
-		Want_replicas: 1,
-		Using_proxy:   true,
-		Client:        &http.Client{},
-	}
-
-	random_token := GenerateRandomApiToken()
-	keepClient.Arvados.ApiToken = random_token
-	if err != nil {
-		t.Error("Error creating keepclient")
-	}
-
 	servers := GetKeepServices(t)
 
-	pullRequest := PullRequest{
-		Locator: testData.Locator,
-		Servers: servers,
-	}
+	random_token := GenerateRandomApiToken()
 
+	// Put content if the test needs it
 	if wantData {
+		CreateKeepClient(arv, random_token)
+		keepClient.Arvados.ApiToken = random_token
+
 		service_roots := make(map[string]string)
-		for _, addr := range pullRequest.Servers {
+		for _, addr := range servers {
 			service_roots[addr] = addr
 		}
 		keepClient.SetServiceRoots(service_roots)
@@ -66,7 +54,27 @@ func SetupPullWorkerIntegrationTest(t *testing.T, testData PullWorkIntegrationTe
 		}
 	}
 
+	// Create pullRequest for the test
+	CreateKeepClient(arv, random_token)
+
+	pullRequest := PullRequest{
+		Locator: testData.Locator,
+		Servers: servers,
+	}
 	return pullRequest
+}
+
+func CreateKeepClient(arv arvadosclient.ArvadosClient, random_token string) {
+	client := &http.Client{Transport: &http.Transport{
+		TLSClientConfig: &tls.Config{InsecureSkipVerify: true}}}
+
+	keepClient = keepclient.KeepClient{
+		Arvados:       &arv,
+		Want_replicas: 1,
+		Using_proxy:   true,
+		Client:        client,
+	}
+	keepClient.Arvados.ApiToken = random_token
 }
 
 func GetKeepServices(t *testing.T) []string {
