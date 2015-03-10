@@ -36,8 +36,11 @@ class ActiveSupport::TestCase
     auth = api_fixture('api_client_authorizations')[token_name.to_s]
     Thread.current[:arvados_api_token] = auth['api_token']
     if block_given?
-      yield
-      Thread.current[:arvados_api_token] = was
+      begin
+        yield
+      ensure
+        Thread.current[:arvados_api_token] = was
+      end
     end
   end
 
