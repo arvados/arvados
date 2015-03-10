@@ -48,54 +48,34 @@ class CollectionTest < Minitest::Test
     assert_equal(NONNORMALIZED_MANIFEST, coll.manifest_text)
   end
 
-  def test_no_implicit_normalization_from_first_import
-    coll = Arv::Collection.new
-    coll.import_manifest(NONNORMALIZED_MANIFEST)
-    assert_equal(NONNORMALIZED_MANIFEST, coll.manifest_text)
-  end
-
-  ### .import_manifest
+  ### .normalize
 
   def test_non_posix_path_handling
-    block = random_block(9)
-    coll = Arv::Collection.new("./.. #{block} 0:5:.\n")
-    coll.import_manifest("./.. #{block} 5:4:..\n")
-    assert_equal("./.. #{block} 0:5:. 5:4:..\n", coll.manifest_text)
+    m_text = "./.. #{random_block(9)} 0:5:. 5:4:..\n"
+    coll = Arv::Collection.new(m_text.dup)
+    coll.normalize
+    assert_equal(m_text, coll.manifest_text)
   end
 
   def test_escaping_through_normalization
     coll = Arv::Collection.new(MANY_ESCAPES_MANIFEST)
-    coll.import_manifest(MANY_ESCAPES_MANIFEST)
+    coll.normalize
     # The result should simply duplicate the file spec.
     # The source file spec has an unescaped backslash in it.
     # It's OK for the Collection class to properly escape that.
     expect_text = MANY_ESCAPES_MANIFEST.sub(/ \d+:\d+:\S+/) do |file_spec|
-      file_spec.gsub(/([^\\])(\\[^\\\d])/, '\1\\\\\2') * 2
+      file_spec.gsub(/([^\\])(\\[^\\\d])/, '\1\\\\\2')
     end
     assert_equal(expect_text, coll.manifest_text)
   end
 
-  def test_concatenation_from_multiple_imports(file_name="file.txt",
-                                               out_name=nil)
-    out_name ||= file_name
-    blocks = random_blocks(2, 9)
-    coll = Arv::Collection.new
-    blocks.each do |block|
-      coll.import_manifest(". #{block} 1:8:#{file_name}\n")
-    end
-    assert_equal(". #{blocks.join(' ')} 1:8:#{out_name} 10:8:#{out_name}\n",
-                 coll.manifest_text)
-  end
-
-  def test_concatenation_from_multiple_escaped_imports
-    test_concatenation_from_multiple_imports('a\040\141.txt', 'a\040a.txt')
-  end
-
   def test_concatenation_with_locator_overlap(over_index=0)
     blocks = random_blocks(4, 2)
-    coll = Arv::Collection.new(". #{blocks.join(' ')} 0:8:file\n")
-    coll.import_manifest(". #{blocks[over_index, 2].join(' ')} 0:4:file\n")
-    assert_equal(". #{blocks.join(' ')} 0:8:file #{over_index * 2}:4:file\n",
+    blocks_s = blocks.join(" ")
+    coll = Arv::Collection.new(". %s 0:8:file\n. %s 0:4:file\n" %
+                               [blocks_s, blocks[over_index, 2].join(" ")])
+    coll.normalize
+    assert_equal(". #{blocks_s} 0:8:file #{over_index * 2}:4:file\n",
                  coll.manifest_text)
   end
 
@@ -109,13 +89,13 @@ class CollectionTest < Minitest::Test
 
   def test_concatenation_with_partial_locator_overlap
     blocks = random_blocks(3, 3)
-    coll = Arv::Collection.new(". #{blocks[0, 2].join(' ')} 0:6:overlap\n")
-    coll.import_manifest(". #{blocks[1, 2].join(' ')} 0:6:overlap\n")
+    coll = Arv::Collection
+      .new(". %s 0:6:overlap\n. %s 0:6:overlap\n" %
+           [blocks[0, 2].join(" "), blocks[1, 2].join(" ")])
+    coll.normalize
     assert_equal(". #{blocks.join(' ')} 0:6:overlap 3:6:overlap\n",
                  coll.manifest_text)
   end
-
-  ### .normalize
 
   def test_normalize
     block = random_block
@@ -280,7 +260,8 @@ class CollectionTest < Minitest::Test
   def test_adding_to_root_after_copy
     coll = Arv::Collection.new(SIMPLEST_MANIFEST)
     coll.cp_r(".", "./root")
-    coll.import_manifest(COLON_FILENAME_MANIFEST)
+    src_coll = Arv::Collection.new(COLON_FILENAME_MANIFEST)
+    coll.cp_r("./file:test.txt", ".", src_coll)
     got_lines = coll.manifest_text.lines
     assert_equal(2, got_lines.size)
     assert_match(/^\. \S{33,} \S{33,} 0:9:file:test\.txt 9:9:simple\.txt\n/,
@@ -332,6 +313,54 @@ class CollectionTest < Minitest::Test
     dst_coll.cp_r("./s1", ".", src_coll)
     assert_equal(dst_text + src_text, dst_coll.manifest_text)
     assert_equal(src_text, src_coll.manifest_text)
+  end
+
+  def test_copy_stream_contents
+    coll = Arv::Collection.new(MULTILEVEL_MANIFEST)
+    coll.cp_r("./dir0/subdir/", "./dir1/subdir")
+    expect_lines = MULTILEVEL_MANIFEST.lines
+    expect_lines[4] = expect_lines[2].sub("./dir0/", "./dir1/")
+    assert_equal(expect_lines.join(""), coll.manifest_text)
+  end
+
+  def test_copy_stream_contents_into_root
+    coll = Arv::Collection.new(TWO_BY_TWO_MANIFEST_S)
+    coll.cp_r("./s1/", ".")
+    assert_equal(". %s 0:5:f1 14:4:f2 5:4:f3\n%s" %
+                 [TWO_BY_TWO_BLOCKS.reverse.join(" "),
+                  TWO_BY_TWO_MANIFEST_A.last],
+                 coll.manifest_text)
+  end
+
+  def test_copy_root_contents_into_stream
+    # This is especially fun, because we're copying a parent into its child.
+    # Make sure that happens depth-first.
+    coll = Arv::Collection.new(TWO_BY_TWO_MANIFEST_S)
+    coll.cp_r("./", "./s1")
+    assert_equal("%s./s1 %s 0:5:f1 5:4:f2 14:4:f3\n%s" %
+                 [TWO_BY_TWO_MANIFEST_A.first, TWO_BY_TWO_BLOCKS.join(" "),
+                  TWO_BY_TWO_MANIFEST_A.last.sub("./s1 ", "./s1/s1 ")],
+                 coll.manifest_text)
+  end
+
+  def test_copy_stream_contents_across_collections
+    block = random_block(8)
+    src_coll = Arv::Collection.new("./s1 #{block} 0:8:f1\n")
+    dst_coll = Arv::Collection.new(TWO_BY_TWO_MANIFEST_S)
+    dst_coll.cp_r("./s1/", "./s1", src_coll)
+    assert_equal("%s./s1 %s %s 0:8:f1 13:4:f3\n" %
+                 [TWO_BY_TWO_MANIFEST_A.first, block, TWO_BY_TWO_BLOCKS.last],
+                 dst_coll.manifest_text)
+  end
+
+  def test_copy_root_contents_across_collections
+    block = random_block(8)
+    src_coll = Arv::Collection.new(". #{block} 0:8:f1\n")
+    dst_coll = Arv::Collection.new(TWO_BY_TWO_MANIFEST_S)
+    dst_coll.cp_r("./", ".", src_coll)
+    assert_equal(". %s %s 0:8:f1 13:4:f2\n%s" %
+                 [block, TWO_BY_TWO_BLOCKS.first, TWO_BY_TWO_MANIFEST_A.last],
+                 dst_coll.manifest_text)
   end
 
   def test_copy_empty_source_path_raises_ArgumentError(src="", dst="./s1")
@@ -449,7 +478,8 @@ class CollectionTest < Minitest::Test
   def test_adding_to_root_after_rename
     coll = Arv::Collection.new(SIMPLEST_MANIFEST)
     coll.rename(".", "./root")
-    coll.import_manifest(SIMPLEST_MANIFEST)
+    src_coll = Arv::Collection.new(SIMPLEST_MANIFEST)
+    coll.cp_r("./simple.txt", ".", src_coll)
     assert_equal(SIMPLEST_MANIFEST + SIMPLEST_MANIFEST.sub(". ", "./root "),
                  coll.manifest_text)
   end
@@ -576,12 +606,6 @@ class CollectionTest < Minitest::Test
 
   def test_collection_unmodified_after_instantiation
     test_new_collection_unmodified(SIMPLEST_MANIFEST)
-  end
-
-  def test_collection_unmodified_after_initial_import
-    test_new_collection_unmodified do |coll|
-      coll.import_manifest(SIMPLEST_MANIFEST)
-    end
   end
 
   def test_collection_unmodified_after_mark

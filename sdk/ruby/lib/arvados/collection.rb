@@ -3,17 +3,9 @@ require "arvados/keep"
 module Arv
   class Collection
     def initialize(manifest_text="")
-      @tree = CollectionStream.new(".")
-      @manifest_text = ""
+      @manifest_text = manifest_text
       @modified = false
-      import_manifest(manifest_text)
-    end
-
-    def manifest_text
-      @manifest_text ||= @tree.manifest_text
-    end
-
-    def import_manifest(manifest_text)
+      @root = CollectionRoot.new
       manifest = Keep::Manifest.new(manifest_text)
       manifest.each_line do |stream_root, locators, file_specs|
         if stream_root.empty? or locators.empty? or file_specs.empty?
@@ -22,16 +14,14 @@ module Arv
         loc_list = LocatorList.new(locators)
         file_specs.map { |s| manifest.split_file_token(s) }.
             each do |file_start, file_len, file_path|
-          @tree.file_at(normalize_path(stream_root, file_path)).
+          @root.file_at(normalize_path(stream_root, file_path)).
             add_segment(loc_list.segment(file_start, file_len))
         end
       end
-      if @manifest_text == ""
-        @manifest_text = manifest_text
-      else
-        modified
-      end
-      self
+    end
+
+    def manifest_text
+      @manifest_text ||= @root.manifest_text
     end
 
     def modified?
@@ -44,12 +34,13 @@ module Arv
     end
 
     def normalize
-      @manifest_text = @tree.manifest_text
+      @manifest_text = @root.manifest_text
       self
     end
 
     def cp_r(source, target, source_collection=nil)
-      copy(:merge, source, target, source_collection)
+      opts = {descend_target: !source.end_with?("/")}
+      copy(:merge, source.chomp("/"), target, source_collection, opts)
     end
 
     def rename(source, target)
@@ -67,12 +58,7 @@ module Arv
     protected
 
     def find(*parts)
-      normpath = normalize_path(*parts)
-      if normpath.empty?
-        [@tree, nil]
-      else
-        @tree.find(normpath)
-      end
+      @root.find(normalize_path(*parts))
     end
 
     private
@@ -85,11 +71,16 @@ module Arv
 
     def normalize_path(*parts)
       path = File.join(*parts)
-      raise ArgumentError.new("empty path") if path.empty?
-      path.sub(/^\.(\/|$)/, "")
+      if path.empty?
+        raise ArgumentError.new("empty path")
+      elsif (path == ".") or path.start_with?("./")
+        path
+      else
+        "./#{path}"
+      end
     end
 
-    def copy(copy_method, source, target, source_collection=nil)
+    def copy(copy_method, source, target, source_collection=nil, opts={})
       # Find the item at path `source` in `source_collection`, find the
       # destination stream at path `target`, and use `copy_method` to copy
       # the found object there.  If a block is passed in, it will be called
@@ -101,28 +92,26 @@ module Arv
       if (source_collection.equal?(self) and
           (src_stream.path == dst_stream.path) and (src_tail == dst_tail))
         return self
-      elsif src_tail.nil?
-        src_item = src_stream
-        src_tail = src_stream.name
-      else
-        src_item = src_stream[src_tail]
       end
+      src_item = src_stream[src_tail]
       dst_tail ||= src_tail
       check_method = "check_can_#{copy_method}".to_sym
-      begin
-        # Find out if `target` refers to a stream we should copy into.
-        tail_stream = dst_stream[dst_tail]
-        tail_stream.send(check_method, src_item, src_tail)
-      rescue Errno::ENOENT, Errno::ENOTDIR
-        # It does not.  Check that we can copy `source` to the full
-        # path specified by `target`.
+      target_name = nil
+      if opts.fetch(:descend_target, true)
+        begin
+          # Find out if `target` refers to a stream we should copy into.
+          tail_stream = dst_stream[dst_tail]
+          tail_stream.send(check_method, src_item, src_tail)
+          # Yes it does.  Copy the item at `source` into it with the same name.
+          dst_stream = tail_stream
+          target_name = src_tail
+        rescue Errno::ENOENT, Errno::ENOTDIR
+          # It does not.  We'll fall back to writing to `target` below.
+        end
+      end
+      if target_name.nil?
         dst_stream.send(check_method, src_item, dst_tail)
         target_name = dst_tail
-      else
-        # Yes, `target` is a stream.  Copy the item at `source` into it with
-        # the same name.
-        dst_stream = tail_stream
-        target_name = src_tail
       end
       # At this point, we know the operation will work.  Call any block as
       # a pre-copy hook.
@@ -130,12 +119,7 @@ module Arv
         yield
         # Re-find the destination stream, in case the block removed
         # the original (that's how rename is implemented).
-        dst_path = normalize_path(dst_stream.path)
-        if dst_path.empty?
-          dst_stream = @tree
-        else
-          dst_stream = @tree.stream_at(dst_path)
-        end
+        dst_stream = @root.stream_at(dst_stream.path)
       end
       dst_stream.send(copy_method, src_item, target_name)
       modified
@@ -143,17 +127,7 @@ module Arv
 
     def remove(path, opts={})
       stream, name = find(path)
-      if name.nil?
-        if not opts[:recursive]
-          raise Errno::EISDIR.new(@tree.path)
-        elsif @tree.leaf?
-          return self
-        else
-          @tree = CollectionStream.new(".")
-        end
-      else
-        stream.delete(name, opts)
-      end
+      stream.delete(name, opts)
       modified
     end
 
@@ -170,24 +144,13 @@ module Arv
     end
 
     class LocatorList
-      def initialize(locators=[])
-        @ranges = []
-        @loc_ranges = {}
-        @last_loc_range = nil
-        extend(locators)
-      end
-
-      def manifest_s
-        @loc_ranges.keys.join(" ")
-      end
-
-      def extend(locators)
-        locators.each do |loc_s|
-          @ranges << new_range_after(@ranges.last, loc_s)
-          unless @loc_ranges.include?(loc_s)
-            @loc_ranges[loc_s] = new_range_after(@last_loc_range, loc_s)
-            @last_loc_range = @loc_ranges[loc_s]
-          end
+      # LocatorList efficiently builds LocatorSegments from a stream manifest.
+      def initialize(locators)
+        next_start = 0
+        @ranges = locators.map do |loc_s|
+          new_range = LocatorRange.new(loc_s, next_start)
+          next_start = new_range.end
+          new_range
         end
       end
 
@@ -205,42 +168,7 @@ module Arv
                            length)
       end
 
-      def specs_for(filename, segment)
-        # Given an escaped filename and a LocatorSegment, add the
-        # locators stored in the Segment, then return the smallest
-        # possible array of file spec strings to build the file from
-        # locators in the list.
-        extend(segment.locators)
-        start_pos = segment.start_pos
-        length = segment.length
-        start_loc = segment.locators.first
-        prev_loc = start_loc
-        result = []
-        # Build a list of file specs by iterating through the segment's
-        # locators and preparing a file spec for each contiguous range.
-        segment.locators[1..-1].each do |loc_s|
-          range = @loc_ranges[loc_s]
-          if range.begin != @loc_ranges[prev_loc].end
-            range_start, range_length =
-              start_and_length_at(start_loc, prev_loc, start_pos, length)
-            result << "#{range_start}:#{range_length}:#{filename}"
-            start_pos = 0
-            length -= range_length
-            start_loc = loc_s
-          end
-          prev_loc = loc_s
-        end
-        range_start, range_length =
-          start_and_length_at(start_loc, prev_loc, start_pos, length)
-        result << "#{range_start}:#{range_length}:#{filename}"
-        result
-      end
-
       private
-
-      def new_range_after(prev_range, loc_s)
-        LocatorRange.new(loc_s, (prev_range.nil?) ? 0 : prev_range.end)
-      end
 
       def search_for_byte(target, start_index=0)
         # Do a binary search for byte `target` in the list of locators,
@@ -261,12 +189,6 @@ module Arv
             lo = ii
           end
         end
-      end
-
-      def start_and_length_at(start_key, end_key, start_pos, length)
-        range_begin = @loc_ranges[start_key].begin + start_pos
-        range_length = [@loc_ranges[end_key].end - range_begin, length].min
-        [range_begin, range_length]
       end
     end
 
@@ -408,7 +330,7 @@ module Arv
       end
 
       def add_copy(src_item, key)
-        items[key] = src_item.copy_named("#{path}/#{key}")
+        self[key] = src_item.copy_named("#{path}/#{key}")
       end
 
       def merge(src_item, key)
@@ -423,7 +345,11 @@ module Arv
           dest = self[key]
           error = nil
           # Copy as much as possible, then raise any error encountered.
-          src_item.items.each_pair do |sub_key, sub_item|
+          # Start with streams for a depth-first merge.
+          src_items = src_item.items.each_pair.sort_by do |_, sub_item|
+            (sub_item.file?) ? 1 : 0
+          end
+          src_items.each do |sub_key, sub_item|
             begin
               dest.merge(sub_item, sub_key)
             rescue Errno::ENOTDIR => error
@@ -447,13 +373,17 @@ module Arv
 
       private
 
+      def []=(key, item)
+        items[key] = item
+      end
+
       def get_or_new(key, klass)
         # Return the collection item at `key` and ensure that it's a `klass`.
         # If `key` does not exist, create a new `klass` there.
         # If the value for `key` is not a `klass`, raise an ArgumentError.
         item = items[key]
         if item.nil?
-          items[key] = klass.new("#{path}/#{key}")
+          self[key] = klass.new("#{path}/#{key}")
         elsif not item.is_a?(klass)
           raise ArgumentError.
             new("in stream %p, %p is a %s, not a %s" %
@@ -464,6 +394,41 @@ module Arv
       end
     end
 
+    class CollectionRoot < CollectionStream
+      def initialize
+        super("")
+        setup
+      end
+
+      def delete(name, opts={})
+        super
+        # If that didn't fail, it deleted the . stream.  Recreate it.
+        setup
+      end
+
+      def check_can_merge(src_item, key)
+        if items.include?(key)
+          super
+        else
+          raise_root_write_error(key)
+        end
+      end
+
+      private
+
+      def setup
+        items["."] = CollectionStream.new(".")
+      end
+
+      def raise_root_write_error(key)
+        raise ArgumentError.new("can't write to %p at collection root" % key)
+      end
+
+      def []=(key, item)
+        raise_root_write_error(key)
+      end
+    end
+
     class StreamManifest
       # Build a manifest text for a single stream, without substreams.
       # The manifest includes files in the order they're added.  If you want
@@ -471,14 +436,15 @@ module Arv
 
       def initialize(name)
         @name = name
-        @locators = LocatorList.new
+        @loc_ranges = {}
+        @loc_range_start = 0
         @file_specs = []
       end
 
       def add_file(coll_file)
         coll_file.each_segment do |segment|
-          @file_specs += @locators.specs_for(escape_name(coll_file.name),
-                                             segment)
+          extend_locator_ranges(segment.locators)
+          extend_file_specs(coll_file.name, segment)
         end
       end
 
@@ -486,17 +452,61 @@ module Arv
         if @file_specs.empty?
           ""
         else
-          "%s %s %s\n" % [escape_name(@name), @locators.manifest_s,
+          "%s %s %s\n" % [escape_name(@name),
+                          @loc_ranges.keys.join(" "),
                           @file_specs.join(" ")]
         end
       end
 
       private
 
+      def extend_locator_ranges(locators)
+        locators.
+            select { |loc_s| not @loc_ranges.include?(loc_s) }.
+            each do |loc_s|
+          @loc_ranges[loc_s] = LocatorRange.new(loc_s, @loc_range_start)
+          @loc_range_start = @loc_ranges[loc_s].end
+        end
+      end
+
+      def extend_file_specs(filename, segment)
+        # Given a filename and a LocatorSegment, add the smallest
+        # possible array of file spec strings to @file_specs that
+        # builds the file from available locators.
+        filename = escape_name(filename)
+        start_pos = segment.start_pos
+        length = segment.length
+        start_loc = segment.locators.first
+        prev_loc = start_loc
+        # Build a list of file specs by iterating through the segment's
+        # locators and preparing a file spec for each contiguous range.
+        segment.locators[1..-1].each do |loc_s|
+          range = @loc_ranges[loc_s]
+          if range.begin != @loc_ranges[prev_loc].end
+            range_start, range_length =
+              start_and_length_at(start_loc, prev_loc, start_pos, length)
+            @file_specs << "#{range_start}:#{range_length}:#{filename}"
+            start_pos = 0
+            length -= range_length
+            start_loc = loc_s
+          end
+          prev_loc = loc_s
+        end
+        range_start, range_length =
+          start_and_length_at(start_loc, prev_loc, start_pos, length)
+        @file_specs << "#{range_start}:#{range_length}:#{filename}"
+      end
+
       def escape_name(name)
         name.gsub(/\\/, "\\\\\\\\").gsub(/\s/) do |s|
           s.each_byte.map { |c| "\\%03o" % c }.join("")
         end
+      end
+
+      def start_and_length_at(start_key, end_key, start_pos, length)
+        range_begin = @loc_ranges[start_key].begin + start_pos
+        range_length = [@loc_ranges[end_key].end - range_begin, length].min
+        [range_begin, range_length]
       end
     end
   end
