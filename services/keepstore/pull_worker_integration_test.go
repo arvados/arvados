@@ -39,7 +39,12 @@ func SetupPullWorkerIntegrationTest(t *testing.T, testData PullWorkIntegrationTe
 
 	// Put content if the test needs it
 	if wantData {
-		CreateKeepClient(arv, random_token)
+		keepClient = keepclient.KeepClient{
+			Arvados:       &arv,
+			Want_replicas: 1,
+			Using_proxy:   true,
+			Client:        &http.Client{},
+		}
 		keepClient.Arvados.ApiToken = random_token
 
 		service_roots := make(map[string]string)
@@ -52,29 +57,25 @@ func SetupPullWorkerIntegrationTest(t *testing.T, testData PullWorkIntegrationTe
 		if err != nil {
 			t.Errorf("Error putting test data in setup for %s %s %v", testData.Content, locator, err)
 		}
+		if locator == "" {
+			t.Errorf("No locator found after putting test data")
+		}
 	}
 
 	// Create pullRequest for the test
-	CreateKeepClient(arv, random_token)
+	keepClient = keepclient.KeepClient{
+		Arvados:       &arv,
+		Want_replicas: 1,
+		Using_proxy:   true,
+		Client:        &http.Client{},
+	}
+	keepClient.Arvados.ApiToken = random_token
 
 	pullRequest := PullRequest{
 		Locator: testData.Locator,
 		Servers: servers,
 	}
 	return pullRequest
-}
-
-func CreateKeepClient(arv arvadosclient.ArvadosClient, random_token string) {
-	client := &http.Client{Transport: &http.Transport{
-		TLSClientConfig: &tls.Config{InsecureSkipVerify: true}}}
-
-	keepClient = keepclient.KeepClient{
-		Arvados:       &arv,
-		Want_replicas: 1,
-		Using_proxy:   true,
-		Client:        client,
-	}
-	keepClient.Arvados.ApiToken = random_token
 }
 
 func GetKeepServices(t *testing.T) []string {
@@ -129,12 +130,14 @@ func GetKeepServices(t *testing.T) []string {
 	}
 
 	for i, port := range service_ports {
-		servers = append(servers, "https://"+service_names[i]+":"+port)
+		servers = append(servers, "http://"+service_names[i]+":"+port)
 	}
 
 	return servers
 }
 
+// Do a get on a block that is not existing in any of the keep servers.
+// Expect "block not found" error.
 func TestPullWorkerIntegration_GetNonExistingLocator(t *testing.T) {
 	testData := PullWorkIntegrationTestData{
 		Name:     "TestPullWorkerIntegration_GetLocator",
@@ -148,6 +151,8 @@ func TestPullWorkerIntegration_GetNonExistingLocator(t *testing.T) {
 	performPullWorkerIntegrationTest(testData, pullRequest, t)
 }
 
+// Do a get on a block that exists on one of the keep servers.
+// The setup method will create this block before doing the get.
 func TestPullWorkerIntegration_GetExistingLocator(t *testing.T) {
 	testData := PullWorkIntegrationTestData{
 		Name:     "TestPullWorkerIntegration_GetLocator",
@@ -161,9 +166,16 @@ func TestPullWorkerIntegration_GetExistingLocator(t *testing.T) {
 	performPullWorkerIntegrationTest(testData, pullRequest, t)
 }
 
+// Perform the test.
+// The test directly invokes the "PullItemAndProcess" rather than
+// putting an item on the pullq so that the errors can be verified.
 func performPullWorkerIntegrationTest(testData PullWorkIntegrationTestData, pullRequest PullRequest, t *testing.T) {
+
 	// Override PutContent to mock PutBlock functionality
 	PutContent = func(content []byte, locator string) (err error) {
+		if string(content) != testData.Content {
+			t.Errorf("PutContent invoked with unexpected data. Expected: %s; Found: %s", testData.Content, content)
+		}
 		return
 	}
 
@@ -171,9 +183,11 @@ func performPullWorkerIntegrationTest(testData PullWorkIntegrationTestData, pull
 
 	if len(testData.GetError) > 0 {
 		if (err == nil) || (!strings.Contains(err.Error(), testData.GetError)) {
-			t.Fail()
+			t.Errorf("Got error %v", err)
 		}
 	} else {
-		t.Fail()
+		if err != nil {
+			t.Errorf("Got error %v", err)
+		}
 	}
 }

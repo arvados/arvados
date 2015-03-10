@@ -286,7 +286,6 @@ func performTest(testData PullWorkerTestData, c *C) {
 			c.Assert(string(putContent), Equals, testData.read_content)
 		}
 	}
-
 }
 
 type ClosingBuffer struct {
