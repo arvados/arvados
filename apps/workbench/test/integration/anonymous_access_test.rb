@@ -95,6 +95,7 @@ class AnonymousAccessTest < ActionDispatch::IntegrationTest
     assert_no_selector 'button', 'Selection'
 
     within '#collection_files tr,li', text: 'GNU_General_Public_License,_version_3.pdf' do
+      assert page.has_no_selector?('[value*="GNU_General_Public_License"]')
       find 'a[title~=View]'
       find 'a[title~=Download]'
     end
