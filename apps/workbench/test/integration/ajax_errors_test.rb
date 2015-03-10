@@ -14,9 +14,8 @@ class AjaxErrorsTest < ActionDispatch::IntegrationTest
     ActionDispatch::Request::Session.any_instance.stubs(:[]).returns(nil)
     click_link "Subprojects"
     wait_for_ajax
-    assert_no_selector '.container-fluid .container-fluid'
-    assert_no_text 'If you have never used'
-    assert_text 'Reload tab'
+    assert_no_double_layout
+    assert_selector 'a,button', text: 'Reload tab'
     assert_selector '.pane-error-display'
     page.driver.browser.switch_to.frame 0
     assert_text 'You are not logged in.'
@@ -37,11 +36,21 @@ class AjaxErrorsTest < ActionDispatch::IntegrationTest
     end
     click_link "Subprojects"
     wait_for_ajax
-    assert_no_selector '.container-fluid .container-fluid'
-    assert_no_text 'If you have never used'
-    assert_text 'Reload tab'
+    assert_no_double_layout
+    assert_selector 'a,button', text: 'Reload tab'
     assert_selector '.pane-error-display'
     page.driver.browser.switch_to.frame 0
     assert_text 'You are not logged in.'
+  end
+
+  protected
+
+  def assert_no_double_layout
+    # Check we're not rendering a full page layout within a tab
+    # pane. Bootstrap responsive layouts require exactly one
+    # div.container-fluid. Checking "body body" would be more generic,
+    # but doesn't work when the browser/driver automatically collapses
+    # syntatically invalid tags.
+    assert_no_selector '.container-fluid .container-fluid'
   end
 end
