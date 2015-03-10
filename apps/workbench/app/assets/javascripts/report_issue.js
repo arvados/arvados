@@ -8,14 +8,15 @@ $(document).
     }
     $('div').remove('.modal-footer-status');
 
-    $.ajax('/').
-      success(function(data, status, jqxhr) {
+    $.ajax('/report_issue', {
+        type: 'POST',
+        data: $(this).parents('form').serialize()
+    }).success(function(data, status, jqxhr) {
         var $sendButton = $('#report-issue-submit');
         $sendButton.html('Report sent');
         $('div').remove('.modal-footer-status');
         $('.modal-footer').append('<div><br/></div><div class="modal-footer-status alert alert-success"><p class="contain-align-left">Thanks for reporting this issue!</p></div>');
-      }).
-      fail(function(jqxhr, status, error) {
+    }).fail(function(jqxhr, status, error) {
         var $sendButton = $('#report-issue-submit');
         if ($sendButton && $sendButton.prop('disabled')) {
           $('div').remove('.modal-footer-status');
@@ -25,6 +26,6 @@ $(document).
         }
         var $cancelButton = $('#report-issue-cancel');
         $cancelButton.html('Cancel');
-      });
-
+    });
+    return false;
   });
