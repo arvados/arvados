@@ -64,6 +64,21 @@ Because the Keepproxy is intended for access from anywhere on the internet, it i
 
 This is best achieved by putting a reverse proxy with SSL support in front of Keepproxy. Keepproxy itself runs on port 25107 by default; your reverse proxy can run on port 443 and pass requests to Keepproxy on port 25107.
 
+If possible, the proxy should be configured to add CORS headers to its own error responses -- otherwise in-browser applications can't report proxy errors. For example, in nginx >= 1.7.5:
+
+<notextile><pre>
+server {
+  server_name keep.example.com
+  ...
+  add_header 'Access-Control-Allow-Methods' 'GET, HEAD, POST, PUT, OPTIONS' always
+  add_header 'Access-Control-Allow-Origin' '*' always
+  add_header 'Access-Control-Allow-Headers' 'Authorization, Content-Length, Content-Type, X-Keep-Desired-Replicas' always
+  add_header 'Access-Control-Max-Age' '86486400' always
+}
+</pre></notextile>
+
+*Warning:* Make sure you don't inadvertently add CORS headers for services _other than keepproxy_ while you're doing this.
+
 h3. Tell the API server about the Keepproxy server
 
 The API server needs to be informed about the presence of your Keepproxy server. Please execute the following commands on your <strong>shell server</strong>.
