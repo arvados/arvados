@@ -35,7 +35,7 @@ func SetupPullWorkerIntegrationTest(t *testing.T, testData PullWorkIntegrationTe
 
 	keepClient = keepclient.KeepClient{
 		Arvados:       &arv,
-		Want_replicas: 0,
+		Want_replicas: 1,
 		Using_proxy:   true,
 		Client:        &http.Client{},
 	}
