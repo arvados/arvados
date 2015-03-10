@@ -148,7 +148,7 @@ $(document).on('arv:pane:reload', '[data-pane-content-url]', function(e) {
                     replace(/</g, '&lt;').
                     replace(/>/g, '&gt;');
             }
-            $pane.html('<div><p>' +
+            $pane.html('<div class="pane-error-display"><p>' +
                       '<a href="#" class="btn btn-primary tab_reload">' +
                       '<i class="fa fa-fw fa-refresh"></i> ' +
                       'Reload tab</a></p><iframe style="width: 100%"></iframe></div>');

@@ -17,6 +17,7 @@ class AjaxErrorsTest < ActionDispatch::IntegrationTest
     assert_no_selector '.container-fluid .container-fluid'
     assert_no_text 'If you have never used'
     assert_text 'Reload tab'
+    assert_selector '.pane-error-display'
     page.driver.browser.switch_to.frame 0
     assert_text 'You are not logged in.'
   end
@@ -39,6 +40,7 @@ class AjaxErrorsTest < ActionDispatch::IntegrationTest
     assert_no_selector '.container-fluid .container-fluid'
     assert_no_text 'If you have never used'
     assert_text 'Reload tab'
+    assert_selector '.pane-error-display'
     page.driver.browser.switch_to.frame 0
     assert_text 'You are not logged in.'
   end
