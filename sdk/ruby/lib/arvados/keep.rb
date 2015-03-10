@@ -191,6 +191,11 @@ module Keep
       seen_files.size
     end
 
+    def files_size
+      # Return the total size of all files in this manifest.
+      files.reduce(0) { |total, (_, _, size)| total + size }
+    end
+
     def exact_file_count?(want_count)
       files_count(want_count + 1) == want_count
     end
