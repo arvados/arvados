@@ -65,7 +65,7 @@ function UploadToCollection($scope, $filter, $q, $timeout,
     ////////////////////////////////
 
     var keepProxy;
-    var defaultErrorMessage = 'A network error occurred, or there is a CORS configuration problem. Please check your browser debug console for a more specific error message (browser security features prevent us from showing the details here).';
+    var defaultErrorMessage = 'A network error occurred: either the server was unreachable, or there is a server configuration problem. Please check your browser debug console for a more specific error message (browser security features prevent us from showing the details here).';
 
     function SliceReader(_slice) {
         var that = this;
@@ -127,7 +127,7 @@ function UploadToCollection($scope, $filter, $q, $timeout,
                 // give up now.
                 _deferred.reject({
                     textStatus: 'error',
-                    err: 'server setup problem (proxy ' + proxyUriBase() + ' cannot be used from origin ' + window.location.origin + ')'
+                    err: 'There is a server configuration problem. Proxy ' + proxyUriBase() + ' cannot be used from origin ' + window.location.origin + ' due to the browser\'s mixed-content (https/http) policy.'
                 });
             } else {
                 goSend();

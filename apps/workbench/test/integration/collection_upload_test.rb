@@ -86,7 +86,7 @@ class CollectionUploadTest < ActionDispatch::IntegrationTest
     end
   end
 
-  test "Report CORS problem or network error" do
+  test "Report network error" do
     need_selenium "to make file uploads work"
     begin
       use_token :admin
@@ -100,7 +100,6 @@ class CollectionUploadTest < ActionDispatch::IntegrationTest
     assert_selector 'button:not([disabled])', text: 'Start'
     click_button 'Start'
     using_wait_time 5 do
-      assert_text :visible, 'CORS'
       assert_text :visible, 'network error'
     end
   end
