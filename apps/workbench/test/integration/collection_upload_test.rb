@@ -67,6 +67,44 @@ class CollectionUploadTest < ActionDispatch::IntegrationTest
     end
   end
 
+  test "Report mixed-content error" do
+    skip 'Test suite does not use TLS'
+    need_selenium "to make file uploads work"
+    begin
+      use_token :admin
+      proxy = KeepService.find(api_fixture('keep_services')['proxy']['uuid'])
+      proxy.update_attributes service_ssl_flag: false
+    end
+    visit page_with_token 'active', sandbox_path
+    find('.nav-tabs a', text: 'Upload').click
+    attach_file 'file_selector', testfile_path('foo.txt')
+    assert_selector 'button:not([disabled])', text: 'Start'
+    click_button 'Start'
+    using_wait_time 5 do
+      assert_text :visible, 'server setup problem'
+      assert_text :visible, 'cannot be used from origin'
+    end
+  end
+
+  test "Report CORS problem or network error" do
+    need_selenium "to make file uploads work"
+    begin
+      use_token :admin
+      proxy = KeepService.find(api_fixture('keep_services')['proxy']['uuid'])
+      # Even if you somehow do port>2^16, surely nx.example.net won't respond
+      proxy.update_attributes service_host: 'nx.example.net', service_port: 99999
+    end
+    visit page_with_token 'active', sandbox_path
+    find('.nav-tabs a', text: 'Upload').click
+    attach_file 'file_selector', testfile_path('foo.txt')
+    assert_selector 'button:not([disabled])', text: 'Start'
+    click_button 'Start'
+    using_wait_time 5 do
+      assert_text :visible, 'CORS'
+      assert_text :visible, 'network error'
+    end
+  end
+
   protected
 
   def aproject_path
