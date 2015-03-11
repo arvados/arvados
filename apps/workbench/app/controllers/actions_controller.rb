@@ -157,12 +157,49 @@ class ActionsController < ApplicationController
     end
 
     combined = ""
+    files_in_dirs = {}
     files.each do |m|
       mt = chash[m[1]+m[2]].andand.manifest_text
       if not m[4].nil? and m[4].size > 1
-        combined += arv_normalize mt, '--extract', ".#{m[4]}"
+        manifest_files = files_in_dirs['.']
+        if !manifest_files
+          manifest_files = []
+          files_in_dirs['.'] = manifest_files
+        end
+        manifest_file = m[4].split('/')[-1]
+        uniq_file = derive_unique_filename(manifest_file, manifest_files)
+        normalized = arv_normalize mt, '--extract', ".#{m[4]}"
+        normalized = normalized.gsub(/(\d+:\d+:)(#{Regexp.quote manifest_file})/) {|s| "#{$1}#{uniq_file}" }
+        combined += normalized
+        manifest_files << uniq_file
       else
-        combined += mt
+        mt = arv_normalize mt
+        manifest_streams = mt.split "\n"
+        adjusted_streams = []
+        manifest_streams.each do |stream|
+          manifest_parts = stream.split
+          adjusted_parts = []
+          manifest_files = files_in_dirs[manifest_parts[0]]
+          if !manifest_files
+            manifest_files = []
+            files_in_dirs[manifest_parts[0]] = manifest_files
+          end
+
+          manifest_parts.each do |part|
+            part_match = /(\d+:\d+:)(\S+)/.match(part)
+            if part_match
+              uniq_file = derive_unique_filename(part_match[2], manifest_files)
+              adjusted_parts << "#{part_match[1]}#{uniq_file}" 
+              manifest_files << uniq_file
+            else
+              adjusted_parts << part
+            end
+          end
+          adjusted_streams << adjusted_parts.join(' ')
+        end
+        adjusted_streams.each do |stream|
+          combined += (stream + "\n")
+        end
       end
     end
 
@@ -213,6 +250,20 @@ class ActionsController < ApplicationController
     respond_to do |format|
       IssueReporter.send_report(current_user, params).deliver
       format.js {render nothing: true}
+    end
+  end
+
+  protected
+
+  def derive_unique_filename filename, manifest_files
+    filename_parts = filename.split('.')
+    filename_part = filename_parts[0]
+    counter = 1
+    while true
+      return filename if !manifest_files.include? filename
+      filename_parts[0] = filename_part + "(" + counter.to_s + ")"
+      filename = filename_parts.join('.')
+      counter += 1
     end
   end
 
