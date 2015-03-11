@@ -1,9 +1,6 @@
 package main
 
 import (
-	"crypto/tls"
-	"encoding/json"
-	"fmt"
 	"git.curoverse.com/arvados.git/sdk/go/arvadosclient"
 	"git.curoverse.com/arvados.git/sdk/go/arvadostest"
 	"git.curoverse.com/arvados.git/sdk/go/keepclient"
@@ -25,34 +22,37 @@ type PullWorkIntegrationTestData struct {
 func SetupPullWorkerIntegrationTest(t *testing.T, testData PullWorkIntegrationTestData, wantData bool) PullRequest {
 	os.Setenv("ARVADOS_API_HOST_INSECURE", "true")
 
+	// start api and keep servers
 	arvadostest.StartAPI()
 	arvadostest.StartKeep()
 
+	// make arvadosclient
 	arv, err := arvadosclient.MakeArvadosClient()
 	if err != nil {
 		t.Error("Error creating arv")
 	}
 
-	servers := GetKeepServices(t)
+	// keep client
+	keepClient = keepclient.KeepClient{
+		Arvados:       &arv,
+		Want_replicas: 1,
+		Using_proxy:   true,
+		Client:        &http.Client{},
+	}
 
-	random_token := GenerateRandomApiToken()
+	// discover keep services
+	var servers []string
+	service_roots, err := keepClient.DiscoverKeepServers()
+	if err != nil {
+		t.Error("Error discovering keep services")
+	}
+	for _, host := range service_roots {
+		servers = append(servers, host)
+	}
 
 	// Put content if the test needs it
 	if wantData {
-		keepClient = keepclient.KeepClient{
-			Arvados:       &arv,
-			Want_replicas: 1,
-			Using_proxy:   true,
-			Client:        &http.Client{},
-		}
-		keepClient.Arvados.ApiToken = random_token
-
-		service_roots := make(map[string]string)
-		for _, addr := range servers {
-			service_roots[addr] = addr
-		}
 		keepClient.SetServiceRoots(service_roots)
-
 		locator, _, err := keepClient.PutB([]byte(testData.Content))
 		if err != nil {
 			t.Errorf("Error putting test data in setup for %s %s %v", testData.Content, locator, err)
@@ -63,77 +63,11 @@ func SetupPullWorkerIntegrationTest(t *testing.T, testData PullWorkIntegrationTe
 	}
 
 	// Create pullRequest for the test
-	keepClient = keepclient.KeepClient{
-		Arvados:       &arv,
-		Want_replicas: 1,
-		Using_proxy:   true,
-		Client:        &http.Client{},
-	}
-	keepClient.Arvados.ApiToken = random_token
-
 	pullRequest := PullRequest{
 		Locator: testData.Locator,
 		Servers: servers,
 	}
 	return pullRequest
-}
-
-func GetKeepServices(t *testing.T) []string {
-	client := &http.Client{Transport: &http.Transport{
-		TLSClientConfig: &tls.Config{InsecureSkipVerify: true}}}
-
-	req, err := http.NewRequest("GET", fmt.Sprintf("https://%s/arvados/v1/keep_services", os.Getenv("ARVADOS_API_HOST")), nil)
-	if err != nil {
-		t.Errorf("Error getting keep services: ", err)
-	}
-	req.Header.Set("Authorization", fmt.Sprintf("OAuth2 %s", os.Getenv("ARVADOS_API_TOKEN")))
-
-	resp, err := client.Do(req)
-	if err != nil {
-		t.Errorf("Error getting keep services: ", err)
-	}
-	if resp.StatusCode != 200 {
-		t.Errorf("Error status code getting keep services", resp.StatusCode)
-	}
-
-	defer resp.Body.Close()
-	var servers []string
-
-	decoder := json.NewDecoder(resp.Body)
-
-	var respJSON map[string]interface{}
-	err = decoder.Decode(&respJSON)
-	if err != nil {
-		t.Errorf("Error decoding response for keep services: ", err)
-	}
-
-	var service_names []string
-	var service_ports []string
-	for _, v1 := range respJSON {
-		switch v1_type := v1.(type) {
-		case []interface{}:
-			for _, v2 := range v1_type {
-				switch v2_type := v2.(type) {
-				case map[string]interface{}:
-					for name, value := range v2_type {
-						if name == "service_host" {
-							service_names = append(service_names, fmt.Sprintf("%s", value))
-						} else if name == "service_port" {
-							service_ports = append(service_ports, strings.Split(fmt.Sprintf("%f", value), ".")[0])
-						}
-					}
-				default:
-				}
-			}
-		default:
-		}
-	}
-
-	for i, port := range service_ports {
-		servers = append(servers, "http://"+service_names[i]+":"+port)
-	}
-
-	return servers
 }
 
 // Do a get on a block that is not existing in any of the keep servers.
@@ -179,6 +113,7 @@ func performPullWorkerIntegrationTest(testData PullWorkIntegrationTestData, pull
 		return
 	}
 
+	keepClient.Arvados.ApiToken = GenerateRandomApiToken()
 	err := PullItemAndProcess(pullRequest, keepClient.Arvados.ApiToken, keepClient)
 
 	if len(testData.GetError) > 0 {
