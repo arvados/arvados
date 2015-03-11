@@ -2,17 +2,19 @@ import functools
 import os
 import zlib
 import bz2
-from ._ranges import locators_and_ranges, replace_range, Range
-from arvados.retry import retry_method
 import config
 import hashlib
 import threading
 import Queue
 import copy
 import errno
+import re
+
 from .errors import KeepWriteError, AssertionError
 from .keep import KeepLocator
-from _normalize_stream import normalize_stream
+from ._normalize_stream import normalize_stream
+from ._ranges import locators_and_ranges, replace_range, Range
+from .retry import retry_method
 
 def split(path):
     """split(path) -> streamname, filename

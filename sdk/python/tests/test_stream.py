@@ -146,6 +146,20 @@ class StreamFileReaderTestCase(unittest.TestCase):
         self.assertEqual('nametest', sfile.name)
         self.assertEqual('nametest', sfile.name())
 
+    def check_decompressed_name(self, filename, expect):
+        stream = tutil.MockStreamReader('.', '')
+        reader = StreamFileReader(stream, [Range(0, 0, 0)], filename)
+        self.assertEqual(expect, reader.decompressed_name())
+
+    def test_decompressed_name_uncompressed_file(self):
+        self.check_decompressed_name('test.log', 'test.log')
+
+    def test_decompressed_name_gzip_file(self):
+        self.check_decompressed_name('test.log.gz', 'test.log')
+
+    def test_decompressed_name_bz2_file(self):
+        self.check_decompressed_name('test.log.bz2', 'test.log')
+
     def check_decompression(self, compress_ext, compress_func):
         test_text = 'decompression\ntest\n'
         test_data = compress_func(test_text)
