@@ -97,19 +97,19 @@ class ActionsControllerTest < ActionController::TestCase
     streams.each do |stream|
       if stream.start_with? './dir1'
         # dir1 stream
-        assert stream.include?(':alice(1)'), 'Not found: alice(1) in dir1'
-        assert stream.include?(':alice.txt'), 'Not found: alice.txt in dir1'
-        assert stream.include?(':alice(1).txt'), 'Not found: alice(1).txt in dir1'
-        assert stream.include?(':bob.txt'), 'Not found: bob.txt in dir1'
-        assert stream.include?(':carol.txt'), 'Not found: carol.txt in dir1'
+        assert stream.include?(':alice(1)'), "Not found: alice(1) in dir1 in manifest text #{manifest_text}"
+        assert stream.include?(':alice.txt'), "Not found: alice.txt in dir1 in manifest text #{manifest_text}"
+        assert stream.include?(':alice(1).txt'), "Not found: alice(1).txt in dir1 in manifest text #{manifest_text}"
+        assert stream.include?(':bob.txt'), "Not found: bob.txt in dir1 in manifest text #{manifest_text}"
+        assert stream.include?(':carol.txt'), "Not found: carol.txt in dir1 in manifest text #{manifest_text}"
       elsif stream.start_with? './dir2'
         # dir2 stream
-        assert stream.include?(':alice.txt'), 'Not found: alice.txt in dir2'
-        assert stream.include?(':alice(1).txt'), 'Not found: alice(1).txt in dir2'
+        assert stream.include?(':alice.txt'), "Not found: alice.txt in dir2 in manifest text #{manifest_text}"
+        assert stream.include?(':alice(1).txt'), "Not found: alice(1).txt in dir2 in manifest text #{manifest_text}"
       elsif stream.start_with? '. '
         # . stream
-        assert stream.include?(':foo'), 'Not found: foo in .'
-        assert stream.include?(':foo(1)'), 'Not found: foo(1) in .'
+        assert stream.include?(':foo'), "Not found: foo in . in manifest text #{manifest_text}"
+        assert stream.include?(':foo(1)'), "Not found: foo(1) in . in manifest text #{manifest_text}"
       end
     end
   end
@@ -159,8 +159,8 @@ class ActionsControllerTest < ActionController::TestCase
     manifest_text = collection['manifest_text']
 
     streams = manifest_text.split "\n"
-    assert_equal 1, streams.length
-    assert manifest_text.include?('foo'), 'Found foo in new collection manifest text'
-    assert manifest_text.include?('foo(1)'), 'Found foo(1) in new collection manifest text'
+    assert_equal 1, streams.length, "Incorrect number of streams in #{manifest_text}"
+    assert manifest_text.include?('foo'), "Not found foo in new collection manifest text #{manifest_text}"
+    assert manifest_text.include?('foo(1)'), "Not found foo(1) in new collection manifest text #{manifest_text}"
   end
 end
