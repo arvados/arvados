@@ -50,7 +50,7 @@ func MakeKeepClient(arv *arvadosclient.ArvadosClient) (kc KeepClient, err error)
 		Using_proxy:   false,
 		Client:        &http.Client{},
 	}
-	err = (&kc).DiscoverKeepServers()
+	_, err = (&kc).DiscoverKeepServers()
 
 	return kc, err
 }
