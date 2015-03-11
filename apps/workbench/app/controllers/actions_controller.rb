@@ -169,11 +169,7 @@ class ActionsController < ApplicationController
         manifest_file = m[4].split('/')[-1]
         uniq_file = derive_unique_filename(manifest_file, manifest_files)
         normalized = arv_normalize mt, '--extract', ".#{m[4]}"
-        index = normalized.rindex manifest_file
-        part1 = normalized[0, index]
-        part2 = normalized[index, normalized.length]
-        part2 = part2.gsub(manifest_file) {|s| uniq_file}
-        normalized = part1 + part2
+        normalized = normalized.gsub(/(\d+:\d+:)(#{Regexp.quote manifest_file})/) {|s| "#{$1}#{uniq_file}" }
         combined += normalized
         manifest_files << uniq_file
       else
@@ -190,10 +186,10 @@ class ActionsController < ApplicationController
           end
 
           manifest_parts.each do |part|
-            part_match = /\d*:\d*:(\S+)/.match(part)
+            part_match = /(\d+:\d+:)(\S+)/.match(part)
             if part_match
-              uniq_file = derive_unique_filename(part_match[1], manifest_files)
-              adjusted_parts << (part.gsub(part_match[1]) {|s| uniq_file})
+              uniq_file = derive_unique_filename(part_match[2], manifest_files)
+              adjusted_parts << "#{part_match[1]}#{uniq_file}" 
               manifest_files << uniq_file
             else
               adjusted_parts << part
