@@ -1,0 +1,32 @@
+---
+layout: default
+navsection: installguide
+title: Install pre-built docker images
+...
+
+{% include 'notebox_begin' %}
+This method is easy, but is not yet suitable for production use. It is still in development: some features do not work yet.
+* Websockets service is not enabled. This means Workbench auto-refresh and web upload (and some other features) do not work.
+* The node manager is not enabled. Two worker containers are brought up at startup.
+* The automatic network configuration allows you to log in to Workbench from a browser _running on the same host as docker_. Connecting from other hosts will require additional configuration (not covered here).
+{% include 'notebox_end' %}
+
+First, make sure that @curl@ and @docker@ are installed on your system, and that you are in the docker group (see "Installing Docker":https://docs.docker.com/installation/).
+
+<notextile><pre><code>~$ <span class="userinput">which curl</span>
+/usr/bin/curl
+~$ <span class="userinput">docker.io --version</span>
+Docker version 1.2.0-dev, build dc243c8
+~$ <span class="userinput">groups</span>
+yourusername sudo fuse docker
+</code></pre></notextile>
+
+Download and install Arvados.
+
+<notextile>
+<pre><code>~$ <span class="userinput">\curl -sSL get.arvados.org | bash</span>
+</code></pre></notextile>
+
+This command will download the latest copy of the Arvados docker images. It also gets the arvdock command and saves it in the current working directory. It then uses arvdock to spin up Arvados. Depending on the speed of your internet connection, it can take a while to download the Arvados docker images.
+
+If you prefer, you can also download the installation script and inspect it before running it. @get.arvados.org@ redirects to "https://raw.githubusercontent.com/curoverse/arvados-dev/master/install/easy-docker-install.sh":https://raw.githubusercontent.com/curoverse/arvados-dev/master/install/easy-docker-install.sh, which is the installation script.

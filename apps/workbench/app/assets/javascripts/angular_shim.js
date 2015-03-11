@@ -3,7 +3,7 @@
 // arv:pane:loaded event after updating the DOM.
 
 $(document).on('arv:pane:loaded', function(event, $updatedElement) {
-    if (angular && $updatedElement) {
+    if (angular && $updatedElement && angular.element($updatedElement).injector()) {
         angular.element($updatedElement).injector().invoke([
             '$compile', function($compile) {
                 var scope = angular.element($updatedElement).scope();
