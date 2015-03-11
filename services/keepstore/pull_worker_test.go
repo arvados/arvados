@@ -218,6 +218,25 @@ func (s *PullWorkerTestSuite) TestPullWorker_pull_list_with_two_items_latest_rep
 	performTest(testData, c)
 }
 
+// In this case, the item will not be placed on pullq
+func (s *PullWorkerTestSuite) TestPullWorker_invalid_data_manager_token(c *C) {
+	defer teardown()
+
+	data_manager_token = "DATA MANAGER TOKEN"
+
+	testData := PullWorkerTestData{
+		name:          "TestPullWorker_pull_list_with_two_locators",
+		req:           RequestTester{"/pull", "invalid_data_manager_token", "PUT", first_pull_list},
+		response_code: http.StatusUnauthorized,
+		response_body: "Unauthorized\n",
+		read_content:  "hello",
+		read_error:    false,
+		put_error:     false,
+	}
+
+	performTest(testData, c)
+}
+
 func performTest(testData PullWorkerTestData, c *C) {
 	RunTestPullWorker(c)
 
@@ -269,14 +288,19 @@ func performTest(testData PullWorkerTestData, c *C) {
 		c.Assert(testPullLists["TestPullWorker_pull_list_with_two_items_latest_replacing_old"], NotNil)
 		c.Assert(processedPullLists["TestPullWorker_pull_list_with_two_items_latest_replacing_old"], NotNil)
 	} else {
-		c.Assert(len(testPullLists), Equals, 1)
-		c.Assert(len(processedPullLists), Equals, 1)
-		c.Assert(testPullLists[testData.name], NotNil)
+		if testData.response_code == http.StatusOK {
+			c.Assert(len(testPullLists), Equals, 1)
+			c.Assert(len(processedPullLists), Equals, 1)
+			c.Assert(testPullLists[testData.name], NotNil)
+		} else {
+			c.Assert(len(testPullLists), Equals, 1)
+			c.Assert(len(processedPullLists), Equals, 0)
+		}
 	}
 
 	if testData.read_error {
 		c.Assert(readError, NotNil)
-	} else {
+	} else if testData.response_code == http.StatusOK {
 		c.Assert(readError, IsNil)
 		c.Assert(readContent, Equals, testData.read_content)
 		if testData.put_error {
