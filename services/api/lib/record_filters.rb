@@ -77,7 +77,12 @@ module RecordFilters
                                     "boolean attribute '#{attr}'")
               end
             end
-            cond_out << "#{ar_table_name}.#{attr} #{operator} ?"
+            if operator == '<>'
+              # explicitly allow NULL
+              cond_out << "#{ar_table_name}.#{attr} #{operator} ? OR #{ar_table_name}.#{attr} IS NULL"
+            else
+              cond_out << "#{ar_table_name}.#{attr} #{operator} ?"
+            end
             if (# any operator that operates on value rather than
                 # representation:
                 operator.match(/[<=>]/) and (attr_type == :datetime))
