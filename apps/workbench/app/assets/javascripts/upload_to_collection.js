@@ -65,6 +65,7 @@ function UploadToCollection($scope, $filter, $q, $timeout,
     ////////////////////////////////
 
     var keepProxy;
+    var defaultErrorMessage = 'A network error occurred: either the server was unreachable, or there is a server configuration problem. Please check your browser debug console for a more specific error message (browser security features prevent us from showing the details here).';
 
     function SliceReader(_slice) {
         var that = this;
@@ -117,7 +118,20 @@ function UploadToCollection($scope, $filter, $q, $timeout,
             // resolve(locator) when the block is accepted by the
             // proxy.
             _deferred = $.Deferred();
-            goSend();
+            if (proxyUriBase().match(/^http:/) &&
+                window.location.origin.match(/^https:/)) {
+                // In this case, requests will fail, and no ajax
+                // success/fail handlers will be called (!), which
+                // will leave our status saying "uploading" and the
+                // user waiting for something to happen. Better to
+                // give up now.
+                _deferred.reject({
+                    textStatus: 'error',
+                    err: 'There is a server configuration problem. Proxy ' + proxyUriBase() + ' cannot be used from origin ' + window.location.origin + ' due to the browser\'s mixed-content (https/http) policy.'
+                });
+            } else {
+                goSend();
+            }
             return _deferred.promise();
         }
         function stop() {
@@ -401,7 +415,7 @@ function UploadToCollection($scope, $filter, $q, $timeout,
                      ? (' (from ' + reason.xhr.options.url + ')')
                      : '') +
                     ': ' +
-                    (reason.err || ''));
+                    (reason.err || defaultErrorMessage));
             if (reason.xhr && reason.xhr.responseText)
                 that.stateReason += ' -- ' + reason.xhr.responseText;
             _deferred.reject(reason);

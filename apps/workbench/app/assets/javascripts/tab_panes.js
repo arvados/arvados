@@ -106,8 +106,8 @@ $(document).on('arv:pane:reload', '[data-pane-content-url]', function(e) {
     var content_url = $pane.attr('data-pane-content-url');
     $.ajax(content_url, {dataType: 'html', type: 'GET', context: $pane}).
         done(function(data, status, jqxhr) {
-            // Preserve collapsed state
             var $pane = this;
+            // Preserve collapsed state
             var collapsable = {};
             $(".collapse", this).each(function(i, c) {
                 collapsable[c.id] = $(c).hasClass('in');
@@ -148,7 +148,7 @@ $(document).on('arv:pane:reload', '[data-pane-content-url]', function(e) {
                     replace(/</g, '&lt;').
                     replace(/>/g, '&gt;');
             }
-            $pane.html('<div><p>' +
+            $pane.html('<div class="pane-error-display"><p>' +
                       '<a href="#" class="btn btn-primary tab_reload">' +
                       '<i class="fa fa-fw fa-refresh"></i> ' +
                       'Reload tab</a></p><iframe style="width: 100%"></iframe></div>');
