@@ -224,6 +224,17 @@ fuse_owned_project:
   description: Test project belonging to FUSE test user
   group_class: project
 
+group_with_no_class:
+  uuid: zzzzz-j7d0g-groupwithnoclas
+  owner_uuid: zzzzz-tpzed-xurymjxw79nv3jz
+  created_at: 2014-04-21 15:37:48 -0400
+  modified_by_client_uuid: zzzzz-ozdt8-brczlopd8u8d0jr
+  modified_by_user_uuid: zzzzz-tpzed-xurymjxw79nv3jz
+  modified_at: 2014-04-21 15:37:48 -0400
+  updated_at: 2014-04-21 15:37:48 -0400
+  name: group_with_no_class
+  description: This group has no class at all. So rude!
+
 # This wouldn't pass model validation, but it enables a workbench
 # infinite-loop test. See #4389
 project_owns_itself:
