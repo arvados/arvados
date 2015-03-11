@@ -32,8 +32,16 @@ class ActiveSupport::TestCase
   # in integration tests -- they do not yet inherit this setting
   fixtures :all
   def use_token token_name
+    was = Thread.current[:arvados_api_token]
     auth = api_fixture('api_client_authorizations')[token_name.to_s]
     Thread.current[:arvados_api_token] = auth['api_token']
+    if block_given?
+      begin
+        yield
+      ensure
+        Thread.current[:arvados_api_token] = was
+      end
+    end
   end
 
   setup do
@@ -84,6 +92,29 @@ module ApiFixtureLoader
     object_class.find(api_fixture(object_class.to_s.pluralize.underscore,
                                   name, "uuid"))
   end
+end
+
+module ApiMockHelpers
+  def stub_api_calls_with_body body, status_code=200
+    resp = mock
+    stubbed_client = ArvadosApiClient.new
+    stubbed_client.instance_eval do
+      resp.responds_like_instance_of HTTP::Message
+      resp.stubs(:content).returns body
+      resp.stubs(:status_code).returns status_code
+      @api_client = HTTPClient.new
+      @api_client.stubs(:post).returns resp
+    end
+    ArvadosApiClient.stubs(:new_or_current).returns(stubbed_client)
+  end
+
+  def stub_api_calls_with_invalid_json
+    stub_api_calls_with_body ']"omg,bogus"['
+  end
+end
+
+class ActiveSupport::TestCase
+  include ApiMockHelpers
 end
 
 class ActiveSupport::TestCase

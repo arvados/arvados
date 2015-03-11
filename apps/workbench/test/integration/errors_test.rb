@@ -87,40 +87,40 @@ class ErrorsTest < ActionDispatch::IntegrationTest
 
       visit page_with_token("active")
 
-      assert(page.has_text?(/fiddlesticks/i), 'Expected to be in error page')
+      assert_text 'fiddlesticks'
 
       # reset api server base config to let the popup rendering to work
       Rails.configuration.arvados_v1_base = original_arvados_v1_base
 
-      # check the "Report problem" button
-      assert page.has_link? 'Report problem', 'Report problem link not found'
-
       click_link 'Report problem'
+
       within '.modal-content' do
-        assert page.has_text?('Report a problem'), 'Report a problem text not found'
-        assert page.has_no_text?('Version / debugging info'), 'Version / debugging info is not expected'
-        assert page.has_text?('Describe the problem'), 'Describe the problem text not found'
-        assert page.has_text?('Send problem report'), 'Send problem report button text is not found'
-        assert page.has_no_button?('Send problem report'), 'Send problem report button is not disabled before entering problem description'
-        assert page.has_button?('Cancel'), 'Cancel button not found'
+        assert_text 'Report a problem'
+        assert_no_text 'Version / debugging info'
+        assert_text 'Describe the problem'
+        assert_text 'Send problem report'
+        # "Send" button should be disabled until text is entered
+        assert_no_selector 'a,button:not([disabled])', text: 'Send problem report'
+        assert_selector 'a,button', text: 'Cancel'
+
+        report = mock
+        report.expects(:deliver).returns true
+        IssueReporter.expects(:send_report).returns report
 
         # enter a report text and click on report
-        page.find_field('report_issue_text').set 'my test report text'
-        assert page.has_button?('Send problem report'), 'Send problem report button not enabled after entering text'
+        find_field('report_issue_text').set 'my test report text'
         click_button 'Send problem report'
 
         # ajax success updated button texts and added footer message
-        assert page.has_no_text?('Send problem report'), 'Found button - Send problem report'
-        assert page.has_no_button?('Cancel'), 'Found button - Cancel'
-        assert page.has_text?('Report sent'), 'No text - Report sent'
-        assert page.has_button?('Close'), 'No button - Close'
-        assert page.has_text?('Thanks for reporting this issue'), 'No text - Thanks for reporting this issue'
-
+        assert_no_selector 'a,button', text: 'Send problem report'
+        assert_no_selector 'a,button', text: 'Cancel'
+        assert_text 'Report sent'
+        assert_text 'Thanks for reporting this issue'
         click_button 'Close'
       end
 
       # out of the popup now and should be back in the error page
-      assert(page.has_text?(/fiddlesticks/i), 'Expected to be in error page after closing report issue popup')
+      assert_text 'fiddlesticks'
     ensure
       Rails.configuration.arvados_v1_base = original_arvados_v1_base
     end

@@ -59,6 +59,11 @@ class ReportIssueTest < ActionDispatch::IntegrationTest
       # enter a report text and click on report
       page.find_field('report_issue_text').set 'my test report text'
       assert page.has_button?('Send problem report'), 'Send problem report button not enabled after entering text'
+
+      report = mock
+      report.expects(:deliver).returns true
+      IssueReporter.expects(:send_report).returns report
+
       click_button 'Send problem report'
 
       # ajax success updated button texts and added footer message
