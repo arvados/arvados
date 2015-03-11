@@ -41,6 +41,7 @@ class Arvados::V1::GroupsControllerTest < ActionController::TestCase
     assert_not_includes group_uuids, groups(:aproject).uuid
     assert_not_includes group_uuids, groups(:asubproject).uuid
     assert_includes group_uuids, groups(:private).uuid
+    assert_includes group_uuids, groups(:group_with_no_class).uuid
   end
 
   test "get list of groups with bogus group_class" do

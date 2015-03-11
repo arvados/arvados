@@ -76,7 +76,7 @@ func (this *KeepClient) setClientSettingsStore() {
 	}
 }
 
-func (this *KeepClient) DiscoverKeepServers() error {
+func (this *KeepClient) DiscoverKeepServers() (map[string]string, error) {
 	type svcList struct {
 		Items []keepDisk `json:"items"`
 	}
@@ -86,7 +86,7 @@ func (this *KeepClient) DiscoverKeepServers() error {
 
 	if err != nil {
 		if err := this.Arvados.List("keep_disks", nil, &m); err != nil {
-			return err
+			return nil, err
 		}
 	}
 
@@ -121,7 +121,7 @@ func (this *KeepClient) DiscoverKeepServers() error {
 
 	this.SetServiceRoots(service_roots)
 
-	return nil
+	return service_roots, nil
 }
 
 type uploadStatus struct {
