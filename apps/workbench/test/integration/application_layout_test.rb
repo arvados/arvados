@@ -34,9 +34,12 @@ class ApplicationLayoutTest < ActionDispatch::IntegrationTest
 
     within('.navbar-fixed-top') do
       if !user
+        assert_text Rails.configuration.site_name.downcase
+        assert_no_selector 'a', text:Rails.configuration.site_name.downcase
         assert page.has_link?('Log in'), 'Not found link - Log in'
       else
         # my account menu
+        assert_selector 'a', text:Rails.configuration.site_name.downcase
         assert page.has_link?("#{user['email']}"), 'Not found link - email'
         find('a', text: "#{user['email']}").click
         within('.dropdown-menu') do
