@@ -129,6 +129,9 @@ jQuery(function($){
                     this.addClass('label-danger').fadeTo('fast', '1');
                 });
             return false;
+        }).
+        on('click focusin', 'input.select-on-focus', function(event) {
+            event.target.select();
         });
 
     $(document).

@@ -1,3 +1,7 @@
+<p><i>Content size:</i><br />
+  <%= pluralize(@object.manifest.files_count, "file") %> totalling
+  <%= raw(human_readable_bytes_html(@object.manifest.files_size)) %></p>
+
 <% if not (@output_of.andand.any? or @log_of.andand.any?) %>
   <p><i>No source information available.</i></p>
 <% end %>
