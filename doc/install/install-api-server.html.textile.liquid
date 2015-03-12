@@ -109,12 +109,10 @@ Generate a new database password. Nobody ever needs to memorize it or type it, s
 Create a new database user with permission to create its own databases.
 
 <notextile>
-<pre><code>~/arvados/services/api$ <span class="userinput">sudo -u postgres createuser --createdb --encrypted --pwprompt arvados</span>
+<pre><code>~/arvados/services/api$ <span class="userinput">sudo -u postgres createuser --createdb --encrypted -R -S --pwprompt arvados</span>
 [sudo] password for <b>you</b>: <span class="userinput">yourpassword</span>
 Enter password for new role: <span class="userinput">paste-password-you-generated</span>
 Enter it again: <span class="userinput">paste-password-again</span>
-Shall the new role be a superuser? (y/n) <span class="userinput">n</span>
-Shall the new role be allowed to create more new roles? (y/n) <span class="userinput">n</span>
 </code></pre></notextile>
 
 Configure API server to connect to your database by creating and updating @config/database.yml@. Replace the @xxxxxxxx@ database password placeholders with the new password you generated above.
