@@ -93,6 +93,14 @@ form.small-form-margin {
 .nowrap {
     white-space: nowrap;
 }
+input.select-on-focus {
+    font-family: monospace;
+    background: inherit;
+    border: none;
+    border-left: thin #ddd solid;
+    border-bottom: thin #ddd solid;
+    border-radium: .2em;
+}
 
 /* top nav */
 $top-nav-bg: #3c163d;
