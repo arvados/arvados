@@ -22,7 +22,7 @@ class AnonymousAccessTest < ActionDispatch::IntegrationTest
         assert_text 'indicate that you have read and accepted the user agreement'
       end
       within('.navbar-fixed-top') do
-        assert_selector 'a', text:Rails.configuration.site_name.downcase
+        assert_selector 'a', text: Rails.configuration.site_name.downcase
         assert_selector 'a', text: "#{user['email']}"
         find('a', text: "#{user['email']}").click
         within('.dropdown-menu') do
@@ -33,7 +33,7 @@ class AnonymousAccessTest < ActionDispatch::IntegrationTest
       assert_text 'Unrestricted public data'
       within('.navbar-fixed-top') do
         assert_text Rails.configuration.site_name.downcase
-        assert_no_selector 'a', text:Rails.configuration.site_name.downcase
+        assert_no_selector 'a', text: Rails.configuration.site_name.downcase
         assert_selector 'a', text: 'Log in'
       end
     end
