@@ -96,10 +96,12 @@ form.small-form-margin {
 input.select-on-focus {
     font-family: monospace;
     background: inherit;
-    border: none;
-    border-left: thin #ddd solid;
-    border-bottom: thin #ddd solid;
+    border: thin #ccc solid;
     border-radius: .2em;
+    padding: .15em .5em;
+}
+input.select-on-focus:focus {
+    border-color: #9bf;
 }
 
 /* top nav */
