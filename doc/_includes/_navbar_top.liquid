@@ -18,6 +18,18 @@
         <li {% if page.navsection == 'installguide' %} class="active" {% endif %}><a href="{{ site.baseurl }}/install/index.html">Install</a></li>
         <li><a href="https://arvados.org/projects/arvados/" style="padding-left: 2em">Developer Site&nbsp;&raquo;</a></li>
       </ul>
+
+      <div class="pull-right" style="padding-top: 6px">
+        <form method="get" action="http://www.google.com/search">
+          <div class="input-group" style="width: 220px">
+            <input type="text" class="form-control" name="q" placeholder="search">
+            <div class="input-group-addon">
+              <button class="glyphicon glyphicon-search" style="border: 0px" type="submit"></button>
+            </div>
+            <input type="hidden" name="sitesearch" value="doc.arvados.org"/>
+          </div>
+        </form>
+      </div>
     </div>
   </div>
 </div>

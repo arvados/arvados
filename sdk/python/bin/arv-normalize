@@ -20,7 +20,6 @@ import arvados
 r = sys.stdin.read()
 
 cr = arvados.CollectionReader(r)
-cr.normalize()
 
 if args.extract:
     i = args.extract.rfind('/')
@@ -35,4 +34,4 @@ if args.extract:
             if fn in s.files():
                 sys.stdout.write(s.files()[fn].as_manifest())
 else:
-    sys.stdout.write(cr.manifest_text(args.strip))
+    sys.stdout.write(cr.manifest_text(strip=args.strip, normalize=True))
