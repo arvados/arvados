@@ -58,6 +58,10 @@ class ManifestTest < Minitest::Test
     assert_equal(0, Keep::Manifest.new("").files_count)
   end
 
+  def test_empty_files_size
+    assert_equal(0, Keep::Manifest.new("").files_size)
+  end
+
   def test_empty_has_file?
     refute(Keep::Manifest.new("").has_file?(""))
   end
@@ -149,6 +153,15 @@ class ManifestTest < Minitest::Test
     assert(manifest.exact_file_count?(5), "exact file count false")
     refute(manifest.exact_file_count?(4), "-1 file count true")
     refute(manifest.exact_file_count?(6), "+1 file count true")
+  end
+
+  def test_files_size_multiblock
+    assert_equal(22, Keep::Manifest.new(MULTIBLOCK_FILE_MANIFEST).files_size)
+  end
+
+  def test_files_size_with_skipped_overlapping_data
+    manifest = Keep::Manifest.new(". #{random_block(9)} 3:3:f1 5:3:f2\n")
+    assert_equal(6, manifest.files_size)
   end
 
   def test_has_file
