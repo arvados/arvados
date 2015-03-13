@@ -79,6 +79,10 @@ class BaseComputeNodeDriver(object):
         raise NotImplementedError("BaseComputeNodeDriver.sync_node")
 
     @classmethod
+    def node_fqdn(cls, node):
+        raise NotImplementedError("BaseComputeNodeDriver.node_fqdn")
+
+    @classmethod
     def node_start_time(cls, node):
         raise NotImplementedError("BaseComputeNodeDriver.node_start_time")
 

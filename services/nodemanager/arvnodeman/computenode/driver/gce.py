@@ -111,6 +111,11 @@ class ComputeNodeDriver(BaseComputeNodeDriver):
             raise Exception("setMetadata error: {}".format(response.error))
 
     @classmethod
+    def node_fqdn(cls, node):
+        return cls._get_metadata(node.extra['metadata'].get('items', []),
+                                 'hostname', '')
+
+    @classmethod
     def node_start_time(cls, node):
         try:
             return arvados_timestamp(cls._get_metadata(

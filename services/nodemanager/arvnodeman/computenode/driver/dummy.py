@@ -49,5 +49,9 @@ class ComputeNodeDriver(BaseComputeNodeDriver):
         cloud_node.name = arvados_node_fqdn(arvados_node)
 
     @classmethod
+    def node_fqdn(cls, node):
+        return node.name
+
+    @classmethod
     def node_start_time(cls, node):
         return cls.DUMMY_START_TIME

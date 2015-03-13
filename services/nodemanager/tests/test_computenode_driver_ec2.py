@@ -91,6 +91,12 @@ class EC2ComputeNodeDriverTestCase(testutil.DriverTestMixin, unittest.TestCase):
                                                    reftuple)}
         self.assertEqual(refsecs, ec2.ComputeNodeDriver.node_start_time(node))
 
+    def test_node_fqdn(self):
+        name = 'fqdntest.zzzzz.arvadosapi.com'
+        node = testutil.cloud_node_mock()
+        node.name = name
+        self.assertEqual(name, ec2.ComputeNodeDriver.node_fqdn(node))
+
     def test_cloud_exceptions(self):
         for error in [Exception("test exception"),
                       IOError("test exception"),

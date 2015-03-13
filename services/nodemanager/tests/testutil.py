@@ -55,6 +55,11 @@ def cloud_node_mock(node_num=99, **extra):
     node.extra = extra
     return node
 
+def cloud_node_fqdn(node):
+    # We intentionally put the FQDN somewhere goofy to make sure tested code is
+    # using this function for lookups.
+    return node.extra.get('testname', 'NoTestName')
+
 def ip_address_mock(last_octet):
     return '10.20.30.{}'.format(last_octet)
 
