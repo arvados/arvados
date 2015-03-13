@@ -4,6 +4,7 @@ import (
 	"bytes"
 	"flag"
 	"fmt"
+	"git.curoverse.com/arvados.git/sdk/go/keepclient"
 	"io/ioutil"
 	"log"
 	"net"
@@ -13,7 +14,6 @@ import (
 	"strings"
 	"syscall"
 	"time"
-	"git.curoverse.com/arvados.git/sdk/go/keepclient"
 )
 
 // ======================
@@ -276,7 +276,7 @@ func main() {
 	}
 
 	// Initialize Pull queue and worker
-	keepClient = keepclient.KeepClient{
+	keepClient := keepclient.KeepClient{
 		Arvados:       nil,
 		Want_replicas: 1,
 		Using_proxy:   true,
