@@ -249,13 +249,13 @@ class CollectionsTest < ActionDispatch::IntegrationTest
     # make sure that we actually are looking at the collections
     # page and not e.g. a fiddlesticks
     assert page.has_text?("multilevel_collection_1")
-    assert page.has_text?(col['portable_data_hash'])
+    assert page.has_text?(col["name"] || col["uuid"])
 
     # Set filename filter to a syntactically invalid regex
     # Page loads, but stops filtering after the last valid regex parse
     page.find_field('file_regex').set('file[2')
     assert page.has_text?("multilevel_collection_1")
-    assert page.has_text?(col['portable_data_hash'])
+    assert page.has_text?(col["name"] || col["uuid"])
     assert page.has_text?("file1")
     assert page.has_text?("file2")
     assert page.has_text?("file3")
@@ -328,15 +328,14 @@ class CollectionsTest < ActionDispatch::IntegrationTest
     end
 
     # now in the newly created collection page
-    assert page.has_text?('Content hash:'), 'not on new collection page'
-    assert page.has_no_text?(col['uuid']), 'new collection page has old collection uuid'
-    assert page.has_no_text?(col['portable_data_hash']), 'new collection page has old portable_data_hash'
-
     # must have files in subdir1 and subdir3 but not subdir4
     assert page.has_text?('file_in_subdir1'), 'file_in_subdir1 missing from new collection'
     assert page.has_text?('file1_in_subdir3'), 'file1_in_subdir3 missing from new collection'
     assert page.has_text?('file2_in_subdir3'), 'file2_in_subdir3 missing from new collection'
     assert page.has_no_text?('file1_in_subdir4'), 'file1_in_subdir4 found in new collection'
     assert page.has_no_text?('file2_in_subdir4'), 'file2_in_subdir4 found in new collection'
+
+    # Make sure we're not still on the old collection page.
+    refute_match(%r{/collections/#{col['uuid']}}, page.current_url)
   end
 end
