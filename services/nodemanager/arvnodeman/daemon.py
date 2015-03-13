@@ -154,6 +154,7 @@ class NodeManagerDaemonActor(actor_class):
             cloud_node=cloud_node,
             cloud_node_start_time=start_time,
             shutdown_timer=shutdown_timer,
+            cloud_fqdn_func=self._cloud_driver.node_fqdn,
             update_actor=self._cloud_updater,
             timer_actor=self._timer,
             arvados_node=None,
