@@ -14,6 +14,13 @@ import (
 	"os"
 )
 
+// Used to locally cache data read from servers to reduce execution
+// time when developing. Not for use in production.
+type serializedData struct {
+	ReadCollections collection.ReadCollections
+	KeepServerInfo  keep.ReadServers
+}
+
 var (
 	writeDataTo  string
 	readDataFrom string

@@ -16,37 +16,20 @@ func (bs BlockSet) Insert(digest blockdigest.BlockDigest) {
 	bs[digest] = struct{}{}
 }
 
-func BlockSetFromSlice(digests []blockdigest.BlockDigest) (bs BlockSet) {
-	bs = make(BlockSet)
-	for _, digest := range digests {
-		bs.Insert(digest)
-	}
-	return
-}
-
-// We use the collection index to save space. To convert to & from the
-// uuid, use collection.ReadCollections' fields CollectionIndexToUuid
-// and CollectionUuidToIndex.
+// We use the collection index to save space. To convert to and from
+// the uuid, use collection.ReadCollections' fields
+// CollectionIndexToUuid and CollectionUuidToIndex.
 type CollectionIndexSet map[int]struct{}
 
 func (cis CollectionIndexSet) Insert(collectionIndex int) {
 	cis[collectionIndex] = struct{}{}
 }
 
-func CollectionIndexSetFromSlice(indices []int) (cis CollectionIndexSet) {
-	cis = make(CollectionIndexSet)
-	for _, index := range indices {
-		cis.Insert(index)
-	}
-	return
-}
-
-
 func (bs BlockSet) ToCollectionIndexSet(
 	readCollections collection.ReadCollections,
 	collectionIndexSet *CollectionIndexSet) {
 	for block := range bs {
-		for collectionIndex := range readCollections.BlockToCollectionIndices[block] {
+		for _,collectionIndex := range readCollections.BlockToCollectionIndices[block] {
 			collectionIndexSet.Insert(collectionIndex)
 		}
 	}
@@ -65,6 +48,7 @@ type ReplicationSummary struct {
 	CorrectlyReplicatedCollections CollectionIndexSet
 }
 
+// This struct counts the elements in each set in ReplicationSummary.
 type ReplicationSummaryCounts struct {
 	CollectionBlocksNotInKeep      int
 	UnderReplicatedBlocks          int
@@ -77,12 +61,9 @@ type ReplicationSummaryCounts struct {
 	CorrectlyReplicatedCollections int
 }
 
-type serializedData struct {
-	ReadCollections collection.ReadCollections
-	KeepServerInfo  keep.ReadServers
-}
-
 func (rs ReplicationSummary) ComputeCounts() (rsc ReplicationSummaryCounts) {
+	// TODO(misha): Consider replacing this brute-force approach by
+	// iterating through the fields using reflection.
 	rsc.CollectionBlocksNotInKeep = len(rs.CollectionBlocksNotInKeep)
 	rsc.UnderReplicatedBlocks = len(rs.UnderReplicatedBlocks)
 	rsc.OverReplicatedBlocks = len(rs.OverReplicatedBlocks)
