@@ -62,13 +62,12 @@ func VerifyToCollectionIndexSet(
 }
 
 func TestToCollectionIndexSet(t *testing.T) {
-	VerifyToCollectionIndexSet(t, []int{4}, map[int][]int{4:[]int{1}}, []int{1})
-	VerifyToCollectionIndexSet(t, []int{4}, map[int][]int{4:[]int{1,9}}, []int{1,9})
-	VerifyToCollectionIndexSet(t, []int{5,6},
-		map[int][]int{5:[]int{2,3}, 6:[]int{3,4}},
-		[]int{2,3,4})
+	VerifyToCollectionIndexSet(t, []int{4}, map[int][]int{4: []int{1}}, []int{1})
+	VerifyToCollectionIndexSet(t, []int{4}, map[int][]int{4: []int{1, 9}}, []int{1, 9})
+	VerifyToCollectionIndexSet(t, []int{5, 6},
+		map[int][]int{5: []int{2, 3}, 6: []int{3, 4}},
+		[]int{2, 3, 4})
 }
-
 
 func TestSimpleSummary(t *testing.T) {
 	rc := collection.MakeTestReadCollections([]collection.TestCollectionSpec{
@@ -98,10 +97,10 @@ func TestSimpleSummary(t *testing.T) {
 	c := rc.UuidToCollection["col0"]
 
 	expectedSummary := ReplicationSummary{
-		CollectionBlocksNotInKeep: BlockSet{},
-		UnderReplicatedBlocks:     BlockSet{},
-		OverReplicatedBlocks:      BlockSet{},
-		CorrectlyReplicatedBlocks: BlockSetFromSlice([]int{1,2}),
+		CollectionBlocksNotInKeep:  BlockSet{},
+		UnderReplicatedBlocks:      BlockSet{},
+		OverReplicatedBlocks:       BlockSet{},
+		CorrectlyReplicatedBlocks:  BlockSetFromSlice([]int{1, 2}),
 		KeepBlocksNotInCollections: BlockSet{},
 
 		CollectionsNotFullyInKeep:  CollectionIndexSet{},
@@ -142,10 +141,10 @@ func TestMissingBlock(t *testing.T) {
 	c := rc.UuidToCollection["col0"]
 
 	expectedSummary := ReplicationSummary{
-		CollectionBlocksNotInKeep: BlockSetFromSlice([]int{2}),
-		UnderReplicatedBlocks: BlockSet{},
-		OverReplicatedBlocks:  BlockSet{},
-		CorrectlyReplicatedBlocks: BlockSetFromSlice([]int{1}),
+		CollectionBlocksNotInKeep:  BlockSetFromSlice([]int{2}),
+		UnderReplicatedBlocks:      BlockSet{},
+		OverReplicatedBlocks:       BlockSet{},
+		CorrectlyReplicatedBlocks:  BlockSetFromSlice([]int{1}),
 		KeepBlocksNotInCollections: BlockSet{},
 
 		CollectionsNotFullyInKeep: CollectionIndexSetFromSlice(
@@ -188,9 +187,9 @@ func TestUnderAndOverReplicatedBlocks(t *testing.T) {
 	c := rc.UuidToCollection["col0"]
 
 	expectedSummary := ReplicationSummary{
-		CollectionBlocksNotInKeep: BlockSet{},
-		UnderReplicatedBlocks: BlockSetFromSlice([]int{1}),
-		OverReplicatedBlocks: BlockSetFromSlice([]int{2}),
+		CollectionBlocksNotInKeep:  BlockSet{},
+		UnderReplicatedBlocks:      BlockSetFromSlice([]int{1}),
+		OverReplicatedBlocks:       BlockSetFromSlice([]int{2}),
 		CorrectlyReplicatedBlocks:  BlockSet{},
 		KeepBlocksNotInCollections: BlockSet{},
 
@@ -246,10 +245,10 @@ func TestMixedReplication(t *testing.T) {
 	c2 := rc.UuidToCollection["col2"]
 
 	expectedSummary := ReplicationSummary{
-		CollectionBlocksNotInKeep: BlockSetFromSlice([]int{4}),
-		UnderReplicatedBlocks: BlockSetFromSlice([]int{5}),
-		OverReplicatedBlocks: BlockSetFromSlice([]int{6}),
-		CorrectlyReplicatedBlocks: BlockSetFromSlice([]int{1,2,3}),
+		CollectionBlocksNotInKeep:  BlockSetFromSlice([]int{4}),
+		UnderReplicatedBlocks:      BlockSetFromSlice([]int{5}),
+		OverReplicatedBlocks:       BlockSetFromSlice([]int{6}),
+		CorrectlyReplicatedBlocks:  BlockSetFromSlice([]int{1, 2, 3}),
 		KeepBlocksNotInCollections: BlockSetFromSlice([]int{7}),
 
 		CollectionsNotFullyInKeep: CollectionIndexSetFromSlice(
@@ -261,12 +260,6 @@ func TestMixedReplication(t *testing.T) {
 		CorrectlyReplicatedCollections: CollectionIndexSetFromSlice(
 			[]int{rc.CollectionUuidToIndex[c0.Uuid]}),
 	}
-
-	tempCis := make(CollectionIndexSet)
-	returnedSummary.CollectionBlocksNotInKeep.ToCollectionIndexSet(rc, &tempCis)
-	t.Logf("blocks not in keep: %v, collections not fully in keep: %v",
-		returnedSummary.CollectionBlocksNotInKeep,
-		tempCis)
 
 	if !reflect.DeepEqual(returnedSummary, expectedSummary) {
 		t.Fatalf("Expected returnedSummary to look like: \n%+v but instead it is: \n%+v. Index to UUID is %v. BlockToCollectionIndices is %v.", expectedSummary, returnedSummary, rc.CollectionIndexToUuid, rc.BlockToCollectionIndices)
