@@ -13,10 +13,6 @@ import (
 )
 
 func newArvadosClient() interface{} {
-	// MakeArvadosClient returns an error if token is unset (even
-	// though we don't need to do anything requiring
-	// authentication yet).
-	os.Setenv("ARVADOS_API_TOKEN", "xxx")
 	arv, err := arvadosclient.MakeArvadosClient()
 	if err != nil {
 		log.Println("MakeArvadosClient:", err)

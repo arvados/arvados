@@ -13,7 +13,7 @@ type server struct {
 	Addr     string // host:port where the server is listening.
 	err      error
 	cond     *sync.Cond
-	done     bool
+	running  bool
 	listener *net.TCPListener
 	wantDown bool
 }
@@ -54,13 +54,14 @@ func (srv *server) Start() error {
 
 	mutex := &sync.RWMutex{}
 	srv.cond = sync.NewCond(mutex.RLocker())
+	srv.running = true
 	go func() {
 		err = srv.Serve(tcpKeepAliveListener{srv.listener})
 		if !srv.wantDown {
 			srv.err = err
 		}
 		mutex.Lock()
-		srv.done = true
+		srv.running = false
 		srv.cond.Broadcast()
 		mutex.Unlock()
 	}()
@@ -69,9 +70,12 @@ func (srv *server) Start() error {
 
 // Wait returns when the server has shut down.
 func (srv *server) Wait() error {
+	if srv.cond == nil {
+		return nil
+	}
 	srv.cond.L.Lock()
 	defer srv.cond.L.Unlock()
-	for !srv.done {
+	for srv.running {
 		srv.cond.Wait()
 	}
 	return srv.err

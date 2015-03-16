@@ -26,6 +26,14 @@ func init() {
 	}
 	flag.StringVar(&theConfig.Root, "repo-root", cwd,
 		"Path to git repositories.")
+
+	// MakeArvadosClient returns an error if token is unset (even
+	// though we don't need to do anything requiring
+	// authentication yet). We can't do this in newArvadosClient()
+	// just before calling MakeArvadosClient(), though, because
+	// that interferes with the env var needed by "run test
+	// servers".
+	os.Setenv("ARVADOS_API_TOKEN", "xxx")
 }
 
 func main() {
