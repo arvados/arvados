@@ -5,6 +5,7 @@ import (
 	"git.curoverse.com/arvados.git/services/datamanager/collection"
 	"git.curoverse.com/arvados.git/services/datamanager/keep"
 	"reflect"
+	"sort"
 	"testing"
 )
 
@@ -31,9 +32,13 @@ func (cis CollectionIndexSet) ToSlice() (ints []int) {
 		ints[i] = collectionIndex
 		i++
 	}
+	sort.Ints(ints)
 	return
 }
 
+// Verifies that
+// blocks.ToCollectionIndexSet(rc.BlockToCollectionIndices) returns
+// expectedCollections.
 func VerifyToCollectionIndexSet(
 	t *testing.T,
 	blocks []int,
@@ -62,11 +67,16 @@ func VerifyToCollectionIndexSet(
 }
 
 func TestToCollectionIndexSet(t *testing.T) {
+	VerifyToCollectionIndexSet(t, []int{6}, map[int][]int{6: []int{0}}, []int{0})
 	VerifyToCollectionIndexSet(t, []int{4}, map[int][]int{4: []int{1}}, []int{1})
 	VerifyToCollectionIndexSet(t, []int{4}, map[int][]int{4: []int{1, 9}}, []int{1, 9})
 	VerifyToCollectionIndexSet(t, []int{5, 6},
 		map[int][]int{5: []int{2, 3}, 6: []int{3, 4}},
 		[]int{2, 3, 4})
+	VerifyToCollectionIndexSet(t, []int{5, 6},
+		map[int][]int{5: []int{8}, 6: []int{4}},
+		[]int{4, 8})
+	VerifyToCollectionIndexSet(t, []int{6}, map[int][]int{5: []int{0}}, []int{})
 }
 
 func TestSimpleSummary(t *testing.T) {
