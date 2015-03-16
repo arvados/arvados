@@ -2,6 +2,7 @@ require 'test_helper'
 
 class LogTest < ActiveSupport::TestCase
   include CurrentApiClient
+  include DbCurrentTime
 
   EVENT_TEST_METHODS = {
     :create => [:created_at, :assert_nil, :assert_not_nil],
@@ -10,7 +11,7 @@ class LogTest < ActiveSupport::TestCase
   }
 
   def setup
-    @start_time = Time.now
+    @start_time = db_current_time
     @log_count = 1
   end
 
@@ -43,7 +44,7 @@ class LogTest < ActiveSupport::TestCase
     assert_equal(event_type.to_s, log.event_type, "log event type mismatch")
     time_method, old_props_test, new_props_test = EVENT_TEST_METHODS[event_type]
     if time_method.nil? or (timestamp = thing.send(time_method)).nil?
-      assert(log.event_at.utc.to_i >= @start_time.utc.to_i, "log timestamp too old")
+      assert(log.event_at >= @start_time, "log timestamp too old")
     else
       assert_in_delta(timestamp, log.event_at, 1, "log timestamp mismatch")
     end
