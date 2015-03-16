@@ -721,9 +721,9 @@ for (my $todo_ptr = 0; $todo_ptr <= $#jobstep_todo; $todo_ptr ++)
     $command .= "&& exec arv-mount --by-id --allow-other $ENV{TASK_KEEPMOUNT} --exec ";
     if ($docker_hash)
     {
-      my $cidfile = "$ENV{CRUNCH_TMP}/$ENV{TASK_UUID}.cid";
-      $command .= "crunchstat -cgroup-root=/sys/fs/cgroup -cgroup-parent=docker -cgroup-cid=$cidfile -poll=10000 ";
-      $command .= "$docker_bin run --rm=true --attach=stdout --attach=stderr --attach=stdin -i --user=crunch --cidfile=$cidfile --sig-proxy ";
+      $Jobstep->{cidfile} = "$ENV{CRUNCH_TMP}/$ENV{TASK_UUID}-$Jobstep->{failures}.cid";
+      $command .= "crunchstat -cgroup-root=/sys/fs/cgroup -cgroup-parent=docker -cgroup-cid=$Jobstep->{cidfile} -poll=10000 ";
+      $command .= "$docker_bin run --rm=true --attach=stdout --attach=stderr --attach=stdin -i --user=crunch --cidfile=$Jobstep->{cidfile} --sig-proxy ";
 
       # Dynamically configure the container to use the host system as its
       # DNS server.  Get the host's global addresses from the ip command,
@@ -831,7 +831,7 @@ for (my $todo_ptr = 0; $todo_ptr <= $#jobstep_todo; $todo_ptr ++)
 	 ||
 	 (@slot > @freeslot && $todo_ptr+1 > $#jobstep_todo))
   {
-    last THISROUND if $main::please_freeze;
+    last THISROUND if $main::please_freeze || defined($main::success);
     if ($main::please_info)
     {
       $main::please_info = 0;
@@ -1064,6 +1064,11 @@ sub reapchildren
   delete $slot[$proc{$pid}->{slot}]->{pid};
   push @freeslot, $proc{$pid}->{slot};
   delete $proc{$pid};
+
+  if (defined($Jobstep->{cidfile})) {
+    unlink $Jobstep->{cidfile};
+    delete $Jobstep->{cidfile};
+  }
 
   if ($task_success) {
     # Load new tasks
