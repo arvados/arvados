@@ -167,4 +167,14 @@ class ArvadosModelTest < ActiveSupport::TestCase
     assert_includes(attr_a, "uuid")
     refute_includes(attr_a, "success")
   end
+
+  test 'create and retrieve using created_at time' do
+    set_user_from_auth :active
+    group = Group.create! name: 'test create and retrieve group'
+    assert group.valid?, "group is not valid"
+
+    results = Group.where(created_at: group.created_at)
+    assert_equal true, results.any?, "Expected one or more groups when searched with created time"
+    assert_equal group.uuid, results.first.uuid, "Expected group uuid in results"
+  end
 end
