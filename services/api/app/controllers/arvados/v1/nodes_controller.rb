@@ -41,7 +41,7 @@ class Arvados::V1::NodesController < ApplicationController
     if !current_user.andand.is_admin && current_user.andand.is_active
       # active non-admin users can list nodes that are (or were
       # recently) working
-      @objects = model_class.where('last_ping_at >= ?', Time.now - 1.hours)
+      @objects = model_class.where('last_ping_at >= ?', db_current_time - 1.hours)
     end
     super
     job_uuids = @objects.map { |n| n[:job_uuid] }.compact

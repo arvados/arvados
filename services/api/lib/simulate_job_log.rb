@@ -1,11 +1,15 @@
+require 'db_current_time'
+
 module SimulateJobLog
+  include DbCurrentTime
+
   def replay(filename, multiplier = 1, simulated_job_uuid = nil)
     raise "Environment must be development or test" unless [ 'test', 'development' ].include? ENV['RAILS_ENV']
 
     multiplier = multiplier.to_f
     multiplier = 1.0 if multiplier <= 0
 
-    actual_start_time = Time.now
+    actual_start_time = db_current_time
     log_start_time = nil
 
     act_as_system_user do
@@ -29,7 +33,7 @@ module SimulateJobLog
         # determine when we want to simulate this log being created, based on the time multiplier
         log_start_time = cols[:timestamp] if log_start_time.nil?
         log_time = cols[:timestamp]
-        actual_elapsed_time = Time.now - actual_start_time
+        actual_elapsed_time = db_current_time - actual_start_time
         log_elapsed_time = log_time - log_start_time
         modified_elapsed_time = log_elapsed_time / multiplier
         pause_time = modified_elapsed_time - actual_elapsed_time

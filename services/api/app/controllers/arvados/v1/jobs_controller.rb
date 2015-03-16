@@ -122,8 +122,9 @@ class Arvados::V1::JobsController < ApplicationController
       while not @job.started_at
         # send a summary (job queue + available nodes) to the client
         # every few seconds while waiting for the job to start
-        last_ack_at ||= Time.now - Q_UPDATE_INTERVAL - 1
-        if Time.now - last_ack_at >= Q_UPDATE_INTERVAL
+        current_time = db_current_time
+        last_ack_at ||= current_time - Q_UPDATE_INTERVAL - 1
+        if current_time - last_ack_at >= Q_UPDATE_INTERVAL
           nodes_in_state = {idle: 0, alloc: 0}
           ActiveRecord::Base.uncached do
             Node.where('hostname is not ?', nil).collect do |n|
@@ -139,13 +140,13 @@ class Arvados::V1::JobsController < ApplicationController
             break if j.uuid == @job.uuid
             n_queued_before_me += 1
           end
-          yield "#{Time.now}" \
+          yield "#{db_current_time}" \
             " job #{@job.uuid}" \
             " queue_position #{n_queued_before_me}" \
             " queue_size #{job_queue.size}" \
             " nodes_idle #{nodes_in_state[:idle]}" \
             " nodes_alloc #{nodes_in_state[:alloc]}\n"
-          last_ack_at = Time.now
+          last_ack_at = db_current_time
         end
         sleep 3
         ActiveRecord::Base.uncached do

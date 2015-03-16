@@ -2,7 +2,10 @@
 # this in the Rack stack instead of in ApplicationController because
 # websockets needs access to authentication but doesn't use any of the rails
 # active dispatch infrastructure.
+require 'db_current_time'
+
 class ArvadosApiToken
+  include DbCurrentTime
 
   # Create a new ArvadosApiToken handler
   # +app+  The next layer of the Rack stack.
@@ -24,7 +27,7 @@ class ArvadosApiToken
     params = request.params
     remote_ip = env["action_dispatch.remote_ip"]
 
-    Thread.current[:request_starttime] = Time.now
+    Thread.current[:request_starttime] = db_current_time
     user = nil
     api_client = nil
     api_client_auth = nil
@@ -51,7 +54,7 @@ class ArvadosApiToken
     Thread.current[:api_client] = api_client
     Thread.current[:user] = user
     if api_client_auth
-      api_client_auth.last_used_at = Time.now
+      api_client_auth.last_used_at = db_current_time
       api_client_auth.last_used_by_ip_address = remote_ip.to_s
       api_client_auth.save validate: false
     end
