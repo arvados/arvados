@@ -22,7 +22,8 @@ class CollectionUploadTest < ActionDispatch::IntegrationTest
     click_link 'Upload files from my computer'
     # Should be looking at a new empty collection.
     assert_text 'New collection'
-    assert_text 'd41d8cd98f00b204e9800998ecf8427e+0'
+    assert_text ' 0 files'
+    assert_text ' 0 bytes'
     # The "Upload" tab should be active and loaded.
     assert_selector 'div#Upload.active div.panel'
   end

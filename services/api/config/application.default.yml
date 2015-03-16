@@ -47,6 +47,9 @@ test:
   workbench_address: https://localhost:3001/
 
 common:
+  # The prefix used for all database identifiers to identify the record as
+  # originating from this site.  Must be exactly 5 alphanumeric characters
+  # (lowercase ASCII letters and digits).
   uuid_prefix: <%= Digest::MD5.hexdigest(`hostname`).to_i(16).to_s(36)[0..4] %>
 
   # If not false, this is the hostname that will be used for root_url and

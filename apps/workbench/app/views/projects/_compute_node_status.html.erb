@@ -35,7 +35,7 @@
   <% if Job.queue_size > queue.size %>
     <i>Note: some items in the queue are not visible to you.</i>
   <% end %>
-  <div>    
+  <div>
   </div>
 <% else %>
   There are currently no jobs in your queue.
@@ -52,7 +52,7 @@
           <div id="detail_<%= n.hostname %>" class="collapse compute-detail">
             state: <%= n.crunch_worker_state %><br>
             <% [:total_cpu_cores, :total_ram_mb, :total_scratch_mb].each do |i| %>
-              <%= i.to_s.gsub '_', ' ' %>: <%= n.info[i] %><br>
+              <%= i.to_s.gsub '_', ' ' %>: <%= n.properties[i] %><br>
             <% end %>
           </div>
         </div>

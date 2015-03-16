@@ -513,7 +513,6 @@ class ProjectsTest < ActionDispatch::IntegrationTest
         assert page.has_text?("Created new collection in your Home project"),
                               'Not found flash message that new collection is created in Home project'
       end
-      assert page.has_text?('Content hash'), 'Not found content hash in collection page'
     end
   end
 
