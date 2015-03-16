@@ -433,7 +433,7 @@ cd $WORKSPACE/debs
 build_and_scp_deb $WORKSPACE/sdk/python python-arvados-python-client 'Curoverse, Inc.' 'python' "$(awk '($1 == "Version:"){ gsub(/-/,".",$2); print $2 }' $WORKSPACE/sdk/python/arvados_python_client.egg-info/PKG-INFO)" "--url=https://arvados.org" "--description=The Arvados Python SDK"
 
 # The FUSE driver
-# Please seem comment about --no-python-fix-name above; we stay consistent and do
+# Please see comment about --no-python-fix-name above; we stay consistent and do
 # not omit the python- prefix first.
 cd $WORKSPACE/debs
 # Python version numbering is obscure. Strip dashes and replace them with dots
@@ -450,7 +450,7 @@ build_and_scp_deb $WORKSPACE/services/nodemanager arvados-node-manager 'Curovers
 for deppkg in python-gflags pyvcf google-api-python-client oauth2client \
       pyasn1 pyasn1-modules rsa uritemplate httplib2 ws4py virtualenv \
       pykka apache-libcloud requests six pyexecjs jsonschema ciso8601 \
-      pycrypto; do
+      pycrypto backports.ssl_match_hostname; do
     build_and_scp_deb "$deppkg"
 done
 
