@@ -5,6 +5,8 @@ class Arvados::V1::JobsController < ApplicationController
   skip_before_filter :find_object_by_uuid, :only => [:queue, :queue_size]
   skip_before_filter :render_404_if_no_object, :only => [:queue, :queue_size]
 
+  include DbCurrentTime
+
   def create
     [:repository, :script, :script_version, :script_parameters].each do |r|
       if !resource_attrs[r]

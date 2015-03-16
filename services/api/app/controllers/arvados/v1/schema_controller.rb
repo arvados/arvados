@@ -9,6 +9,8 @@ class Arvados::V1::SchemaController < ApplicationController
   skip_before_filter :render_404_if_no_object
   skip_before_filter :require_auth_scope
 
+  include DbCurrentTime
+
   def index
     expires_in 24.hours, public: true
     discovery = Rails.cache.fetch 'arvados_v1_rest_discovery' do

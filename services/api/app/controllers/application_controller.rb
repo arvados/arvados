@@ -21,7 +21,6 @@ class ApplicationController < ActionController::Base
   include ThemesForRails::ActionController
   include LoadParam
   include RecordFilters
-  include DbCurrentTime
 
   respond_to :json
   protect_from_forgery
@@ -177,7 +176,7 @@ class ApplicationController < ActionController::Base
       err = {}
     end
     err[:errors] ||= args
-    err[:error_token] = [db_current_time.utc.to_i, "%08x" % rand(16 ** 8)].join("+")
+    err[:error_token] = [Time.now.utc.to_i, "%08x" % rand(16 ** 8)].join("+")
     status = err.delete(:status) || 422
     logger.error "Error #{err[:error_token]}: #{status}"
     send_json err, status: status
@@ -528,7 +527,7 @@ class ApplicationController < ActionController::Base
           params[:_profile] &&
           Thread.current[:request_starttime]
         response[:_profile] = {
-          request_time: db_current_time - Thread.current[:request_starttime]
+          request_time: Time.now - Thread.current[:request_starttime]
         }
       end
     end

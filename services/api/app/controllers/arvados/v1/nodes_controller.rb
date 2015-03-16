@@ -3,6 +3,8 @@ class Arvados::V1::NodesController < ApplicationController
   skip_before_filter :find_object_by_uuid, :only => :ping
   skip_before_filter :render_404_if_no_object, :only => :ping
 
+  include DbCurrentTime
+
   def update
     if resource_attrs[:job_uuid]
       @object.job_readable = readable_job_uuids(resource_attrs[:job_uuid]).any?
