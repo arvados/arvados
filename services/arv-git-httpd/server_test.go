@@ -21,6 +21,16 @@ type IntegrationSuite struct {
 	testServer  *server
 }
 
+func (s *IntegrationSuite) TestPathVariants(c *check.C) {
+	s.makeArvadosRepo(c)
+	// Spectator token
+	os.Setenv("ARVADOS_API_TOKEN", "zw2f4gwx8hw8cjre7yp6v1zylhrhn3m5gvjq73rtpwhmknrybu")
+	for _, repo := range []string{"foo.git", "foo/.git", "arvados.git", "arvados/.git"} {
+		err := s.runGit(c, "fetch", repo)
+		c.Assert(err, check.Equals, nil)
+	}
+}
+
 func (s *IntegrationSuite) TestReadonly(c *check.C) {
 	// Spectator token
 	os.Setenv("ARVADOS_API_TOKEN", "zw2f4gwx8hw8cjre7yp6v1zylhrhn3m5gvjq73rtpwhmknrybu")
@@ -53,7 +63,7 @@ func (s *IntegrationSuite) TestNonexistent(c *check.C) {
 func (s *IntegrationSuite) TestNoPermission(c *check.C) {
 	// Anonymous token
 	os.Setenv("ARVADOS_API_TOKEN", "4kg6k6lzmp9kj4cpkcoxie964cmvjahbt4fod9zru44k4jqdmi")
-	for _, repo := range []string{"foo.git", "foo/.git", "foo/bar.git", "foo/bar/.git"} {
+	for _, repo := range []string{"foo.git", "foo/.git"} {
 		err := s.runGit(c, "fetch", repo)
 		c.Assert(err, check.ErrorMatches, `.* not found:.*`)
 	}
@@ -70,10 +80,6 @@ func (s *IntegrationSuite) SetUpTest(c *check.C) {
 	s.tmpRepoRoot, err = ioutil.TempDir("", "arv-git-httpd")
 	c.Assert(err, check.Equals, nil)
 	s.tmpWorkdir, err = ioutil.TempDir("", "arv-git-httpd")
-	c.Assert(err, check.Equals, nil)
-	_, err = exec.Command("git", "init", "--bare", s.tmpRepoRoot + "/arvados.git").Output()
-	c.Assert(err, check.Equals, nil)
-	_, err = exec.Command("git", "--git-dir", s.tmpRepoRoot + "/arvados.git", "fetch", "../../.git", "master:master").Output()
 	c.Assert(err, check.Equals, nil)
 	_, err = exec.Command("git", "init", s.tmpRepoRoot + "/foo").Output()
 	c.Assert(err, check.Equals, nil)
@@ -144,6 +150,14 @@ func (s *IntegrationSuite) runGit(c *check.C, gitCmd, repo string, args ...strin
 		err = errors.New(strings.Replace(string(output), "\n", " // ", -1))
 	}
 	return err
+}
+
+// Make a bare arvados repo at {tmpRepoRoot}/arvados.git
+func (s *IntegrationSuite) makeArvadosRepo(c *check.C) {
+	_, err := exec.Command("git", "init", "--bare", s.tmpRepoRoot + "/arvados.git").Output()
+	c.Assert(err, check.Equals, nil)
+	_, err = exec.Command("git", "--git-dir", s.tmpRepoRoot + "/arvados.git", "fetch", "../../.git", "master:master").Output()
+	c.Assert(err, check.Equals, nil)
 }
 
 // Gocheck boilerplate
