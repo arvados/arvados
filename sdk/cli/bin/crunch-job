@@ -670,6 +670,11 @@ for (my $todo_ptr = 0; $todo_ptr <= $#jobstep_todo; $todo_ptr ++)
   my $childslotname = join (".",
 			    $slot[$childslot]->{node}->{name},
 			    $slot[$childslot]->{cpu});
+
+  if ($docker_hash) {
+      $Jobstep->{cidfile} = "$ENV{CRUNCH_TMP}/$Jobstep->{arvados_task}->{uuid}-$Jobstep->{failures}.cid";
+  }
+
   my $childpid = fork();
   if ($childpid == 0)
   {
@@ -721,7 +726,6 @@ for (my $todo_ptr = 0; $todo_ptr <= $#jobstep_todo; $todo_ptr ++)
     $command .= "&& exec arv-mount --by-id --allow-other $ENV{TASK_KEEPMOUNT} --exec ";
     if ($docker_hash)
     {
-      $Jobstep->{cidfile} = "$ENV{CRUNCH_TMP}/$ENV{TASK_UUID}-$Jobstep->{failures}.cid";
       $command .= "crunchstat -cgroup-root=/sys/fs/cgroup -cgroup-parent=docker -cgroup-cid=$Jobstep->{cidfile} -poll=10000 ";
       $command .= "$docker_bin run --rm=true --attach=stdout --attach=stderr --attach=stdin -i --user=crunch --cidfile=$Jobstep->{cidfile} --sig-proxy ";
 
