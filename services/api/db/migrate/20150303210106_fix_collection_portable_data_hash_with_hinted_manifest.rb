@@ -55,8 +55,13 @@ class FixCollectionPortableDataHashWithHintedManifest < ActiveRecord::Migration
   end
 
   def each_bad_collection
-    Collection.find_each do |coll|
-      next unless (coll.manifest_text =~ /\+[A-Z]/)
+    # It's important to make sure that this line doesn't swap.  The
+    # worst case scenario is that it finds a batch of collections that
+    # all have maximum size manifests (64MiB).  With a batch size of
+    # 50, that's about 3GiB.  Figure it will end up being 4GiB after
+    # other ActiveRecord overhead.  That's a size we're comfortable with.
+    Collection.where("manifest_text ~ '\\+[A-Z]'").
+        find_each(batch_size: 50) do |coll|
       stripped_manifest = coll.manifest_text.
         gsub(/( [0-9a-f]{32}(\+\d+)?)(\+\S+)/, '\1')
       stripped_pdh = sprintf("%s+%i",
