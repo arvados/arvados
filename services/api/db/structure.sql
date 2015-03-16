@@ -168,7 +168,7 @@ CREATE TABLE collections (
     name character varying(255),
     description character varying(524288),
     properties text,
-    expires_at date,
+    expires_at timestamp without time zone,
     file_names character varying(8192)
 );
 
@@ -2363,3 +2363,5 @@ INSERT INTO schema_migrations (version) VALUES ('20150206230342');
 INSERT INTO schema_migrations (version) VALUES ('20150216193428');
 
 INSERT INTO schema_migrations (version) VALUES ('20150303210106');
+
+INSERT INTO schema_migrations (version) VALUES ('20150312151136');
