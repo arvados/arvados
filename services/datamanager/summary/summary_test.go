@@ -36,6 +36,17 @@ func (cis CollectionIndexSet) ToSlice() (ints []int) {
 	return
 }
 
+// Takes a map from block digest to replication level and represents
+// it in a keep.ReadServers structure.
+func SpecifyReplication(digestToReplication map[int]int) (rs keep.ReadServers) {
+	rs.BlockToServers = make(map[blockdigest.BlockDigest][]keep.BlockServerInfo)
+	for digest, replication := range digestToReplication {
+		rs.BlockToServers[blockdigest.MakeTestBlockDigest(digest)] =
+			make([]keep.BlockServerInfo, replication)
+	}
+	return
+}
+
 // Verifies that
 // blocks.ToCollectionIndexSet(rc.BlockToCollectionIndices) returns
 // expectedCollections.
@@ -81,30 +92,12 @@ func TestToCollectionIndexSet(t *testing.T) {
 
 func TestSimpleSummary(t *testing.T) {
 	rc := collection.MakeTestReadCollections([]collection.TestCollectionSpec{
-		collection.TestCollectionSpec{
-			ReplicationLevel: 1,
-			Blocks:           []int{1, 2},
-		},
+		collection.TestCollectionSpec{ReplicationLevel: 1, Blocks: []int{1, 2}},
 	})
-
 	rc.Summarize()
+	cIndex := rc.CollectionIndicesForTesting()
 
-	// The internals aren't actually examined, so we can reuse the same one.
-	dummyBlockServerInfo := keep.BlockServerInfo{}
-
-	blockDigest1 := blockdigest.MakeTestBlockDigest(1)
-	blockDigest2 := blockdigest.MakeTestBlockDigest(2)
-
-	keepInfo := keep.ReadServers{
-		BlockToServers: map[blockdigest.BlockDigest][]keep.BlockServerInfo{
-			blockDigest1: []keep.BlockServerInfo{dummyBlockServerInfo},
-			blockDigest2: []keep.BlockServerInfo{dummyBlockServerInfo},
-		},
-	}
-
-	returnedSummary := SummarizeReplication(rc, keepInfo)
-
-	c := rc.UuidToCollection["col0"]
+	keepInfo := SpecifyReplication(map[int]int{1: 1, 2: 1})
 
 	expectedSummary := ReplicationSummary{
 		CollectionBlocksNotInKeep:  BlockSet{},
@@ -113,12 +106,13 @@ func TestSimpleSummary(t *testing.T) {
 		CorrectlyReplicatedBlocks:  BlockSetFromSlice([]int{1, 2}),
 		KeepBlocksNotInCollections: BlockSet{},
 
-		CollectionsNotFullyInKeep:  CollectionIndexSet{},
-		UnderReplicatedCollections: CollectionIndexSet{},
-		OverReplicatedCollections:  CollectionIndexSet{},
-		CorrectlyReplicatedCollections: CollectionIndexSetFromSlice(
-			[]int{rc.CollectionUuidToIndex[c.Uuid]}),
+		CollectionsNotFullyInKeep:      CollectionIndexSet{},
+		UnderReplicatedCollections:     CollectionIndexSet{},
+		OverReplicatedCollections:      CollectionIndexSet{},
+		CorrectlyReplicatedCollections: CollectionIndexSetFromSlice([]int{cIndex[0]}),
 	}
+
+	returnedSummary := SummarizeReplication(rc, keepInfo)
 
 	if !reflect.DeepEqual(returnedSummary, expectedSummary) {
 		t.Fatalf("Expected returnedSummary to look like %+v but instead it is %+v", expectedSummary, returnedSummary)
@@ -127,28 +121,12 @@ func TestSimpleSummary(t *testing.T) {
 
 func TestMissingBlock(t *testing.T) {
 	rc := collection.MakeTestReadCollections([]collection.TestCollectionSpec{
-		collection.TestCollectionSpec{
-			ReplicationLevel: 1,
-			Blocks:           []int{1, 2},
-		},
+		collection.TestCollectionSpec{ReplicationLevel: 1, Blocks: []int{1, 2}},
 	})
-
 	rc.Summarize()
+	cIndex := rc.CollectionIndicesForTesting()
 
-	// The internals aren't actually examined, so we can reuse the same one.
-	dummyBlockServerInfo := keep.BlockServerInfo{}
-
-	blockDigest1 := blockdigest.MakeTestBlockDigest(1)
-
-	keepInfo := keep.ReadServers{
-		BlockToServers: map[blockdigest.BlockDigest][]keep.BlockServerInfo{
-			blockDigest1: []keep.BlockServerInfo{dummyBlockServerInfo},
-		},
-	}
-
-	returnedSummary := SummarizeReplication(rc, keepInfo)
-
-	c := rc.UuidToCollection["col0"]
+	keepInfo := SpecifyReplication(map[int]int{1: 1})
 
 	expectedSummary := ReplicationSummary{
 		CollectionBlocksNotInKeep:  BlockSetFromSlice([]int{2}),
@@ -157,44 +135,29 @@ func TestMissingBlock(t *testing.T) {
 		CorrectlyReplicatedBlocks:  BlockSetFromSlice([]int{1}),
 		KeepBlocksNotInCollections: BlockSet{},
 
-		CollectionsNotFullyInKeep: CollectionIndexSetFromSlice(
-			[]int{rc.CollectionUuidToIndex[c.Uuid]}),
+		CollectionsNotFullyInKeep:      CollectionIndexSetFromSlice([]int{cIndex[0]}),
 		UnderReplicatedCollections:     CollectionIndexSet{},
 		OverReplicatedCollections:      CollectionIndexSet{},
 		CorrectlyReplicatedCollections: CollectionIndexSet{},
 	}
 
+	returnedSummary := SummarizeReplication(rc, keepInfo)
+
 	if !reflect.DeepEqual(returnedSummary, expectedSummary) {
-		t.Fatalf("Expected returnedSummary to look like %+v but instead it is %+v", expectedSummary, returnedSummary)
+		t.Fatalf("Expected returnedSummary to look like %+v but instead it is %+v",
+			expectedSummary,
+			returnedSummary)
 	}
 }
 
 func TestUnderAndOverReplicatedBlocks(t *testing.T) {
 	rc := collection.MakeTestReadCollections([]collection.TestCollectionSpec{
-		collection.TestCollectionSpec{
-			ReplicationLevel: 2,
-			Blocks:           []int{1, 2},
-		},
+		collection.TestCollectionSpec{ReplicationLevel: 2, Blocks: []int{1, 2}},
 	})
-
 	rc.Summarize()
+	cIndex := rc.CollectionIndicesForTesting()
 
-	// The internals aren't actually examined, so we can reuse the same one.
-	dummyBlockServerInfo := keep.BlockServerInfo{}
-
-	blockDigest1 := blockdigest.MakeTestBlockDigest(1)
-	blockDigest2 := blockdigest.MakeTestBlockDigest(2)
-
-	keepInfo := keep.ReadServers{
-		BlockToServers: map[blockdigest.BlockDigest][]keep.BlockServerInfo{
-			blockDigest1: []keep.BlockServerInfo{dummyBlockServerInfo},
-			blockDigest2: []keep.BlockServerInfo{dummyBlockServerInfo, dummyBlockServerInfo, dummyBlockServerInfo},
-		},
-	}
-
-	returnedSummary := SummarizeReplication(rc, keepInfo)
-
-	c := rc.UuidToCollection["col0"]
+	keepInfo := SpecifyReplication(map[int]int{1: 1, 2: 3})
 
 	expectedSummary := ReplicationSummary{
 		CollectionBlocksNotInKeep:  BlockSet{},
@@ -203,56 +166,31 @@ func TestUnderAndOverReplicatedBlocks(t *testing.T) {
 		CorrectlyReplicatedBlocks:  BlockSet{},
 		KeepBlocksNotInCollections: BlockSet{},
 
-		CollectionsNotFullyInKeep: CollectionIndexSet{},
-		UnderReplicatedCollections: CollectionIndexSetFromSlice(
-			[]int{rc.CollectionUuidToIndex[c.Uuid]}),
-		OverReplicatedCollections: CollectionIndexSetFromSlice(
-			[]int{rc.CollectionUuidToIndex[c.Uuid]}),
+		CollectionsNotFullyInKeep:      CollectionIndexSet{},
+		UnderReplicatedCollections:     CollectionIndexSetFromSlice([]int{cIndex[0]}),
+		OverReplicatedCollections:      CollectionIndexSetFromSlice([]int{cIndex[0]}),
 		CorrectlyReplicatedCollections: CollectionIndexSet{},
 	}
 
+	returnedSummary := SummarizeReplication(rc, keepInfo)
+
 	if !reflect.DeepEqual(returnedSummary, expectedSummary) {
-		t.Fatalf("Expected returnedSummary to look like %+v but instead it is %+v", expectedSummary, returnedSummary)
+		t.Fatalf("Expected returnedSummary to look like %+v but instead it is %+v",
+			expectedSummary,
+			returnedSummary)
 	}
 }
 
 func TestMixedReplication(t *testing.T) {
 	rc := collection.MakeTestReadCollections([]collection.TestCollectionSpec{
-		collection.TestCollectionSpec{
-			ReplicationLevel: 1,
-			Blocks:           []int{1, 2},
-		},
-		collection.TestCollectionSpec{
-			ReplicationLevel: 1,
-			Blocks:           []int{3, 4},
-		},
-		collection.TestCollectionSpec{
-			ReplicationLevel: 2,
-			Blocks:           []int{5, 6},
-		},
+		collection.TestCollectionSpec{ReplicationLevel: 1, Blocks: []int{1, 2}},
+		collection.TestCollectionSpec{ReplicationLevel: 1, Blocks: []int{3, 4}},
+		collection.TestCollectionSpec{ReplicationLevel: 2, Blocks: []int{5, 6}},
 	})
-
 	rc.Summarize()
+	cIndex := rc.CollectionIndicesForTesting()
 
-	// The internals aren't actually examined, so we can reuse the same one.
-	dummyBlockServerInfo := keep.BlockServerInfo{}
-
-	keepInfo := keep.ReadServers{
-		BlockToServers: map[blockdigest.BlockDigest][]keep.BlockServerInfo{
-			blockdigest.MakeTestBlockDigest(1): []keep.BlockServerInfo{dummyBlockServerInfo},
-			blockdigest.MakeTestBlockDigest(2): []keep.BlockServerInfo{dummyBlockServerInfo},
-			blockdigest.MakeTestBlockDigest(3): []keep.BlockServerInfo{dummyBlockServerInfo},
-			blockdigest.MakeTestBlockDigest(5): []keep.BlockServerInfo{dummyBlockServerInfo},
-			blockdigest.MakeTestBlockDigest(6): []keep.BlockServerInfo{dummyBlockServerInfo, dummyBlockServerInfo, dummyBlockServerInfo},
-			blockdigest.MakeTestBlockDigest(7): []keep.BlockServerInfo{dummyBlockServerInfo, dummyBlockServerInfo},
-		},
-	}
-
-	returnedSummary := SummarizeReplication(rc, keepInfo)
-
-	c0 := rc.UuidToCollection["col0"]
-	c1 := rc.UuidToCollection["col1"]
-	c2 := rc.UuidToCollection["col2"]
+	keepInfo := SpecifyReplication(map[int]int{1: 1, 2: 1, 3: 1, 5: 1, 6: 3, 7: 2})
 
 	expectedSummary := ReplicationSummary{
 		CollectionBlocksNotInKeep:  BlockSetFromSlice([]int{4}),
@@ -261,15 +199,13 @@ func TestMixedReplication(t *testing.T) {
 		CorrectlyReplicatedBlocks:  BlockSetFromSlice([]int{1, 2, 3}),
 		KeepBlocksNotInCollections: BlockSetFromSlice([]int{7}),
 
-		CollectionsNotFullyInKeep: CollectionIndexSetFromSlice(
-			[]int{rc.CollectionUuidToIndex[c1.Uuid]}),
-		UnderReplicatedCollections: CollectionIndexSetFromSlice(
-			[]int{rc.CollectionUuidToIndex[c2.Uuid]}),
-		OverReplicatedCollections: CollectionIndexSetFromSlice(
-			[]int{rc.CollectionUuidToIndex[c2.Uuid]}),
-		CorrectlyReplicatedCollections: CollectionIndexSetFromSlice(
-			[]int{rc.CollectionUuidToIndex[c0.Uuid]}),
+		CollectionsNotFullyInKeep:      CollectionIndexSetFromSlice([]int{cIndex[1]}),
+		UnderReplicatedCollections:     CollectionIndexSetFromSlice([]int{cIndex[2]}),
+		OverReplicatedCollections:      CollectionIndexSetFromSlice([]int{cIndex[2]}),
+		CorrectlyReplicatedCollections: CollectionIndexSetFromSlice([]int{cIndex[0]}),
 	}
+
+	returnedSummary := SummarizeReplication(rc, keepInfo)
 
 	if !reflect.DeepEqual(returnedSummary, expectedSummary) {
 		t.Fatalf("Expected returnedSummary to look like: \n%+v but instead it is: \n%+v. Index to UUID is %v. BlockToCollectionIndices is %v.", expectedSummary, returnedSummary, rc.CollectionIndexToUuid, rc.BlockToCollectionIndices)

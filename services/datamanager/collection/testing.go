@@ -44,3 +44,17 @@ func MakeTestReadCollections(specs []TestCollectionSpec) (rc ReadCollections) {
 	}
 	return
 }
+
+// Returns a slice giving the collection index of each collection that
+// was passed in to MakeTestReadCollections. rc.Summarize() must be
+// called before this method, since Summarize() assigns an index to
+// each collection.
+func (rc ReadCollections) CollectionIndicesForTesting() (indices []int) {
+	// TODO(misha): Assert that rc.Summarize() has been called.
+	numCollections := len(rc.CollectionIndexToUuid)
+	indices = make([]int, numCollections)
+	for i := 0; i < numCollections; i++ {
+		indices[i] = rc.CollectionUuidToIndex[fmt.Sprintf("col%d", i)]
+	}
+	return
+}
