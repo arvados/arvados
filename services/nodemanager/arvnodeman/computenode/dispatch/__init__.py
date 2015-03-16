@@ -340,6 +340,14 @@ class ComputeNodeMonitorActor(config.actor_class):
             self._later.consider_shutdown()
 
     def update_arvados_node(self, arvados_node):
+        # If the cloud node's FQDN doesn't match what's in the Arvados node
+        # record, make them match.
+        # This method is a little unusual in the way it just fires off the
+        # request without checking the result or retrying errors.  That's
+        # because this update happens every time we reload the Arvados node
+        # list: if a previous sync attempt failed, we'll see that the names
+        # are out of sync and just try again.  ComputeNodeUpdateActor has
+        # the logic to throttle those effective retries when there's trouble.
         if arvados_node is not None:
             self.arvados_node = arvados_node
             if (self._cloud_node_fqdn(self.cloud_node) !=
