@@ -174,7 +174,7 @@ class ArvadosModelTest < ActiveSupport::TestCase
     assert group.valid?, "group is not valid"
 
     results = Group.where(created_at: group.created_at)
-    assert_equal true, results.any?, "Expected one or more groups when searched with created time"
-    assert_equal group.uuid, results.first.uuid, "Expected group uuid in results"
+    assert_equal true, results.map(&:uuid).include?(group.uuid),
+      "Expected new group uuid in results when searched with its created_at timestamp"
   end
 end
