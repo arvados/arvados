@@ -66,7 +66,7 @@ func singlerun() {
 	var arvLogger *logger.Logger
 	if logEventTypePrefix != "" {
 		arvLogger = logger.NewLogger(logger.LoggerParams{
-			Client: arv,
+			Client:          arv,
 			EventTypePrefix: logEventTypePrefix,
 			WriteInterval:   time.Second * time.Duration(logFrequencySeconds)})
 	}
@@ -78,7 +78,7 @@ func singlerun() {
 
 	var (
 		readCollections collection.ReadCollections
-		keepServerInfo keep.ReadServers
+		keepServerInfo  keep.ReadServers
 	)
 
 	if !summary.MaybeReadData(arvLogger, &readCollections, &keepServerInfo) {
@@ -87,8 +87,8 @@ func singlerun() {
 		go func() {
 			collectionChannel <- collection.GetCollectionsAndSummarize(
 				collection.GetCollectionsParams{
-					Client: arv,
-					Logger: arvLogger,
+					Client:    arv,
+					Logger:    arvLogger,
 					BatchSize: 50})
 		}()
 
@@ -96,7 +96,7 @@ func singlerun() {
 			keep.GetKeepServersParams{
 				Client: arv,
 				Logger: arvLogger,
-				Limit: 1000})
+				Limit:  1000})
 
 		readCollections = <-collectionChannel
 	}
@@ -106,7 +106,7 @@ func singlerun() {
 	replicationSummary :=
 		summary.SummarizeReplication(readCollections, keepServerInfo)
 
-	log.Printf("Blocks In Collections: %d, " +
+	log.Printf("Blocks In Collections: %d, "+
 		"\nBlocks In Keep: %d.",
 		len(readCollections.BlockToReplication),
 		len(keepServerInfo.BlockToServers))
