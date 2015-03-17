@@ -185,14 +185,14 @@ class ArvadosModelTest < ActiveSupport::TestCase
 
     # update 1
     group.update_attributes!(name: "test create and update name 1")
-    results = Group.where(name: "test create and update name 1")
-    assert_equal group.uuid, results.first.uuid, "Expected group uuid in results"
+    results = Group.where(uuid: group.uuid)
+    assert_equal "test create and update name 1", results.first.name, "Expected name to be updated to 1"
     updated_at_1 = results.first.updated_at.to_f
 
     # update 2
     group.update_attributes!(name: "test create and update name 2")
-    results = Group.where(name: "test create and update name 2")
-    assert_equal group.uuid, results.first.uuid, "Expected group uuid in results"
+    results = Group.where(uuid: group.uuid)
+    assert_equal "test create and update name 2", results.first.name, "Expected name to be updated to 2"
     updated_at_2 = results.first.updated_at.to_f
 
     assert_equal true, (updated_at_2 > updated_at_1), "Expected updated time 2 to be newer than 1"
