@@ -25,6 +25,7 @@ admin:
   identity_url: https://admin.openid.local
   is_active: true
   is_admin: true
+  username: admin
   prefs:
     profile:
       organization: example.com
@@ -39,6 +40,7 @@ miniadmin:
   identity_url: https://miniadmin.openid.local
   is_active: true
   is_admin: false
+  username: miniadmin
   prefs:
     profile:
       organization: example.com
@@ -53,6 +55,7 @@ rominiadmin:
   identity_url: https://rominiadmin.openid.local
   is_active: true
   is_admin: false
+  username: rominiadmin
   prefs:
     profile:
       organization: example.com
@@ -67,6 +70,7 @@ active:
   identity_url: https://active-user.openid.local
   is_active: true
   is_admin: false
+  username: active
   prefs:
     profile:
       organization: example.com
@@ -81,6 +85,7 @@ project_viewer:
   identity_url: https://project-viewer.openid.local
   is_active: true
   is_admin: false
+  username: projectviewer
   prefs:
     profile:
       organization: example.com
@@ -96,6 +101,7 @@ future_project_user:
   identity_url: https://future-project-user.openid.local
   is_active: true
   is_admin: false
+  username: futureprojectviewer
   prefs:
     profile:
       organization: example.com
@@ -110,6 +116,7 @@ subproject_admin:
   identity_url: https://subproject-admin.openid.local
   is_active: true
   is_admin: false
+  username: subprojectadmin
   prefs:
     profile:
       organization: example.com
@@ -124,6 +131,7 @@ spectator:
   identity_url: https://spectator.openid.local
   is_active: true
   is_admin: false
+  username: spectator
   prefs:
     profile:
       organization: example.com
@@ -184,6 +192,7 @@ job_reader:
   identity_url: https://spectator.openid.local
   is_active: true
   is_admin: false
+  username: jobber
   prefs:
     profile:
       organization: example.com
@@ -223,6 +232,7 @@ user_foo_in_sharing_group:
   identity_url: https://user_foo_in_sharing_group.openid.local
   is_active: true
   is_admin: false
+  username: fooinsharing
 
 user_bar_in_sharing_group:
   owner_uuid: zzzzz-tpzed-000000000000000
@@ -233,6 +243,7 @@ user_bar_in_sharing_group:
   identity_url: https://user_bar_in_sharing_group.openid.local
   is_active: true
   is_admin: false
+  username: barinsharing
 
 user1_with_load:
   owner_uuid: zzzzz-tpzed-000000000000000
@@ -257,6 +268,7 @@ fuse:
   identity_url: https://fuse.openid.local
   is_active: true
   is_admin: false
+  username: FUSE
   prefs:
     profile:
       organization: example.com

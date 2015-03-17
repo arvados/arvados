@@ -889,7 +889,8 @@ CREATE TABLE users (
     prefs text,
     updated_at timestamp without time zone NOT NULL,
     default_owner_uuid character varying(255),
-    is_active boolean DEFAULT false
+    is_active boolean DEFAULT false,
+    username character varying(255)
 );
 
 
@@ -1965,6 +1966,13 @@ CREATE INDEX index_users_on_owner_uuid ON users USING btree (owner_uuid);
 
 
 --
+-- Name: index_users_on_username; Type: INDEX; Schema: public; Owner: -; Tablespace: 
+--
+
+CREATE UNIQUE INDEX index_users_on_username ON users USING btree (username);
+
+
+--
 -- Name: index_users_on_uuid; Type: INDEX; Schema: public; Owner: -; Tablespace: 
 --
 
@@ -2122,7 +2130,7 @@ CREATE UNIQUE INDEX unique_schema_migrations ON schema_migrations USING btree (v
 -- Name: users_search_index; Type: INDEX; Schema: public; Owner: -; Tablespace: 
 --
 
-CREATE INDEX users_search_index ON users USING btree (uuid, owner_uuid, modified_by_client_uuid, modified_by_user_uuid, email, first_name, last_name, identity_url, default_owner_uuid);
+CREATE INDEX users_search_index ON users USING btree (uuid, owner_uuid, modified_by_client_uuid, modified_by_user_uuid, email, first_name, last_name, identity_url, default_owner_uuid, username);
 
 
 --
@@ -2365,3 +2373,5 @@ INSERT INTO schema_migrations (version) VALUES ('20150216193428');
 INSERT INTO schema_migrations (version) VALUES ('20150303210106');
 
 INSERT INTO schema_migrations (version) VALUES ('20150312151136');
+
+INSERT INTO schema_migrations (version) VALUES ('20150317132720');
