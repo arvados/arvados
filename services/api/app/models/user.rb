@@ -8,19 +8,29 @@ class User < ArvadosModel
 
   serialize :prefs, Hash
   has_many :api_client_authorizations
+  validates(:username,
+            format: {
+              with: /^[A-Za-z][A-Za-z0-9]*$/,
+              message: "must begin with a letter and contain only alphanumerics",
+            },
+            uniqueness: true,
+            allow_nil: true)
   before_update :prevent_privilege_escalation
   before_update :prevent_inactive_admin
   before_create :check_auto_admin
+  before_create :set_initial_username, :if => Proc.new { |user|
+    user.username.nil? and user.email
+  }
   after_create :add_system_group_permission_link
   after_create :auto_setup_new_user
   after_create :send_admin_notifications
   after_update :send_profile_created_notification
 
-
   has_many :authorized_keys, :foreign_key => :authorized_user_uuid, :primary_key => :uuid
 
   api_accessible :user, extend: :common do |t|
     t.add :email
+    t.add :username
     t.add :full_name
     t.add :first_name
     t.add :last_name
@@ -222,9 +232,13 @@ class User < ArvadosModel
   end
 
   def permission_to_update
-    # users must be able to update themselves (even if they are
-    # inactive) in order to create sessions
-    self == current_user or super
+    if username_changed?
+      current_user.andand.is_admin
+    else
+      # users must be able to update themselves (even if they are
+      # inactive) in order to create sessions
+      self == current_user or super
+    end
   end
 
   def permission_to_create
@@ -237,10 +251,59 @@ class User < ArvadosModel
     return if self.uuid.end_with?('anonymouspublic')
     if (User.where("email = ?",self.email).where(:is_admin => true).count == 0 and
         Rails.configuration.auto_admin_user and self.email == Rails.configuration.auto_admin_user) or
-       (User.where("uuid not like '%-000000000000000'").where(:is_admin => true).count == 0 and 
+       (User.where("uuid not like '%-000000000000000'").where(:is_admin => true).count == 0 and
         Rails.configuration.auto_admin_first_user)
       self.is_admin = true
       self.is_active = true
+    end
+  end
+
+  def find_usable_username_from(basename)
+    # If "basename" is a usable username, return that.
+    # Otherwise, find a unique username "basenameN", where N is the
+    # smallest integer greater than 1, and return that.
+    # Return nil if a unique username can't be found after reasonable
+    # searching.
+    quoted_name = self.class.connection.quote_string(basename)
+    next_username = basename
+    next_suffix = 1
+    while Rails.configuration.auto_setup_name_blacklist.include?(next_username)
+      next_suffix += 1
+      next_username = "%s%i" % [basename, next_suffix]
+    end
+    0.upto(6).each do |suffix_len|
+      pattern = "%s%s" % [quoted_name, "_" * suffix_len]
+      self.class.
+          where("username like '#{pattern}'").
+          select(:username).
+          order(username: :asc).
+          find_each do |other_user|
+        if other_user.username > next_username
+          break
+        elsif other_user.username == next_username
+          next_suffix += 1
+          next_username = "%s%i" % [basename, next_suffix]
+        end
+      end
+      return next_username if (next_username.size <= pattern.size)
+    end
+    nil
+  end
+
+  def set_initial_username
+    email_parts = email.partition("@")
+    local_parts = email_parts.first.partition("+")
+    if email_parts.any?(&:empty?)
+      return
+    elsif not local_parts.first.empty?
+      base_username = local_parts.first
+    else
+      base_username = email_parts.first
+    end
+    base_username.sub!(/^[^A-Za-z]+/, "")
+    base_username.gsub!(/[^A-Za-z0-9]/, "")
+    unless base_username.empty?
+      self.username = find_usable_username_from(base_username)
     end
   end
 

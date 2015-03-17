@@ -9,6 +9,105 @@ class UserTest < ActiveSupport::TestCase
     system_user
   end
 
+  %w(a aa a0 aA Aa AA A0).each do |username|
+    test "#{username.inspect} is a valid username" do
+      user = User.new(username: username)
+      assert(user.valid?)
+    end
+  end
+
+  test "username is not required" do
+    user = User.new(username: nil)
+    assert(user.valid?)
+  end
+
+  test "username beginning with numeral is invalid" do
+    user = User.new(username: "0a")
+    refute(user.valid?)
+  end
+
+  "\\.-_/!@#$%^&*()[]{}".each_char do |bad_char|
+    test "username containing #{bad_char.inspect} is invalid" do
+      user = User.new(username: "bad#{bad_char}username")
+      refute(user.valid?)
+    end
+  end
+
+  test "username must be unique" do
+    user = User.new(username: users(:active).username)
+    refute(user.valid?)
+  end
+
+  test "non-admin can't update username" do
+    set_user_from_auth :active_trustedclient
+    user = User.find_by_uuid(users(:active).uuid)
+    user.username = "selfupdate"
+    begin
+      refute(user.save)
+    rescue ArvadosModel::PermissionDeniedError
+      # That works too.
+    end
+  end
+
+  def check_admin_username_change(fixture_name)
+    set_user_from_auth :admin_trustedclient
+    user = User.find_by_uuid(users(fixture_name).uuid)
+    user.username = "newnamefromtest"
+    assert(user.save)
+  end
+
+  test "admin can set username" do
+    check_admin_username_change(:active_no_prefs)
+  end
+
+  test "admin can update username" do
+    check_admin_username_change(:active)
+  end
+
+  test "admin can update own username" do
+    check_admin_username_change(:admin)
+  end
+
+  def check_new_username_setting(email_name, expect_name)
+    set_user_from_auth :admin
+    user = User.create!(email: "#{email_name}@example.org")
+    assert_equal(expect_name, user.username)
+  end
+
+  test "new username set from e-mail" do
+    check_new_username_setting("dakota", "dakota")
+  end
+
+  test "new username set from e-mail with leading digits" do
+    check_new_username_setting("1dakota9", "dakota9")
+  end
+
+  test "new username set from e-mail with punctuation" do
+    check_new_username_setting("dakota.9", "dakota9")
+  end
+
+  test "new username set from e-mail with leading digits and punctuation" do
+    check_new_username_setting("1.dakota.z", "dakotaz")
+  end
+
+  test "new username set from e-mail with extra part" do
+    check_new_username_setting("dakota+arvados", "dakota")
+  end
+
+  test "new username set with deduplication" do
+    name = users(:active).username
+    check_new_username_setting(name, "#{name}2")
+  end
+
+  test "new username set avoiding blacklist" do
+    Rails.configuration.auto_setup_name_blacklist = ["root"]
+    check_new_username_setting("root", "root2")
+  end
+
+  test "no username set when no base available" do
+    check_new_username_setting("_", nil)
+  end
+
   [[false, 'foo@example.com', true, nil],
    [false, 'bar@example.com', nil, true],
    [true, 'foo@example.com', true, nil],
