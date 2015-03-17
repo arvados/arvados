@@ -215,6 +215,9 @@ do
             leave_temp[GOPATH]=1
             leave_temp[GEMHOME]=1
             ;;
+        --retry)
+            retry=1
+            ;;
         *_test=*)
             suite="${arg%%_test=*}"
             args="${arg#*=}"
@@ -370,11 +373,11 @@ echo "pip install -q PyYAML"
 pip install -q PyYAML || fatal "pip install PyYAML failed"
 
 checkexit() {
-    if [[ "$?" != "0" ]]; then
-        title "!!!!!! $1 FAILED !!!!!!"
-        failures+=("$1 (`timer`)")
+    if [[ "$1" != "0" ]]; then
+        title "!!!!!! $2 FAILED !!!!!!"
+        failures+=("$2 (`timer`)")
     else
-        successes+=("$1 (`timer`)")
+        successes+=("$2 (`timer`)")
     fi
 }
 
@@ -387,6 +390,17 @@ timer() {
 }
 
 do_test() {
+    while ! do_test_once ${@} && [[ "$retry" == 1 ]]
+    do
+        read -p 'Try again? [Y/n] ' x
+        if [[ "$x" != "y" ]] && [[ "$x" != "" ]]
+        then
+            break
+        fi
+    done
+}
+
+do_test_once() {
     if [[ -z "${skip[$1]}" ]] && ( [[ -z "$only" ]] || [[ "$only" == "$1" ]] )
     then
         title "Running $1 tests"
@@ -404,8 +418,10 @@ do_test() {
         else
             "test_$1"
         fi
-        checkexit "$1 tests"
+        result="$?"
+        checkexit $result "$1 tests"
         title "End of $1 tests (`timer`)"
+        return $result
     else
         title "Skipping $1 tests"
     fi
@@ -430,7 +446,7 @@ do_install() {
         else
             "install_$1"
         fi
-        checkexit "$1 install"
+        checkexit $? "$1 install"
         title "End of $1 install (`timer`)"
     else
         title "Skipping $1 install"
