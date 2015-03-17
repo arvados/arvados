@@ -1,6 +1,8 @@
 require 'test_helper'
 
 class CollectionTest < ActiveSupport::TestCase
+  include CollectionsHelper
+
   test 'recognize empty blob locator' do
     ['d41d8cd98f00b204e9800998ecf8427e+0',
      'd41d8cd98f00b204e9800998ecf8427e',
@@ -70,5 +72,35 @@ class CollectionTest < ActiveSupport::TestCase
     refute(find_fixture(Collection, "foo_collection_in_aproject")
              .attribute_editable?("name"),
            "project viewer allowed to edit collection name")
+  end
+
+  [
+    ["filename.csv", true],
+    ["filename.fa", true],
+    ["filename.fasta", true],
+    ["filename.go", true],
+    ["filename.htm", true],
+    ["filename.html", true],
+    ["filename.json", true],
+    ["filename.md", true],
+    ["filename.pdf", true],
+    ["filename.py", true],
+    ["filename.R", true],
+    ["filename.sam", true],
+    ["filename.sh", true],
+    ["filename.txt", true],
+    ["filename.tiff", true],
+    ["filename.tsv", true],
+    ["filename.vcf", true],
+    ["filename.xml", true],
+    ["filename.xsl", true],
+    ["filename.yml", true],
+
+    ["filename.bam", false],
+    ["filename", false],
+  ].each do |file_name, preview_allowed|
+    test "verify '#{file_name}' is allowed for preview #{preview_allowed}" do
+      assert_equal preview_allowed, preview_allowed_for(file_name)
+    end
   end
 end
