@@ -544,6 +544,7 @@ do_install services/api apiserver
 
 declare -a gostuff
 gostuff=(
+    services/arv-git-httpd
     services/crunchstat
     services/keepstore
     services/keepproxy
