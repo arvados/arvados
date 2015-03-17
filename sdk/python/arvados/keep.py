@@ -449,16 +449,21 @@ class KeepClient(object):
           KeepClient does not use a proxy, pass in an empty string.
 
         :timeout:
-          The timeout (in seconds) for HTTP requests to Keep
+          The initial timeout (in seconds) for HTTP requests to Keep
           non-proxy servers.  A tuple of two floats is interpreted as
           (connection_timeout, read_timeout): see
           http://docs.python-requests.org/en/latest/user/advanced/#timeouts.
+          Because timeouts are often a result of transient server load, the
+          actual connection timeout will be increased by a factor of two on
+          each retry.
           Default: (2, 300).
 
         :proxy_timeout:
-          The timeout (in seconds) for HTTP requests to
+          The initial timeout (in seconds) for HTTP requests to
           Keep proxies. A tuple of two floats is interpreted as
-          (connection_timeout, read_timeout). Default: (20, 300).
+          (connection_timeout, read_timeout). The behavior described
+          above for adjusting connection timeouts on retry also applies.
+          Default: (20, 300).
 
         :api_token:
           If you're not using an API client, but only talking
