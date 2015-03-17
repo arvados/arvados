@@ -671,6 +671,7 @@ class KeepClient(object):
         blob = None
         loop = retry.RetryLoop(num_retries, self._check_loop_result,
                                backoff_start=2)
+        connect_timeout_scale = 1
         for tries_left in loop:
             try:
                 local_roots = self.map_new_services(
@@ -680,13 +681,16 @@ class KeepClient(object):
                 loop.save_result(error)
                 continue
 
+            reader_timeout = (self.current_timeout()[0] * connect_timeout_scale, self.current_timeout()[1])
+            connect_timeout_scale *= 2
+
             # Query KeepService objects that haven't returned
             # permanent failure, in our specified shuffle order.
             services_to_try = [roots_map[root]
                                for root in (local_roots + hint_roots)
                                if roots_map[root].usable()]
             for keep_service in services_to_try:
-                blob = keep_service.get(locator, timeout=self.current_timeout())
+                blob = keep_service.get(locator, timeout=reader_timeout)
                 if blob is not None:
                     break
             loop.save_result((blob, len(services_to_try)))
@@ -756,6 +760,7 @@ class KeepClient(object):
         thread_limiter = KeepClient.ThreadLimiter(copies)
         loop = retry.RetryLoop(num_retries, self._check_loop_result,
                                backoff_start=2)
+        connect_timeout_scale = 1
         for tries_left in loop:
             try:
                 local_roots = self.map_new_services(
@@ -764,6 +769,9 @@ class KeepClient(object):
             except Exception as error:
                 loop.save_result(error)
                 continue
+
+            writer_timeout = (self.current_timeout()[0] * connect_timeout_scale, self.current_timeout()[1])
+            connect_timeout_scale *= 2
 
             threads = []
             for service_root, ks in roots_map.iteritems():
@@ -775,7 +783,7 @@ class KeepClient(object):
                     data_hash=data_hash,
                     service_root=service_root,
                     thread_limiter=thread_limiter,
-                    timeout=self.current_timeout())
+                    timeout=writer_timeout)
                 t.start()
                 threads.append(t)
             for t in threads:
