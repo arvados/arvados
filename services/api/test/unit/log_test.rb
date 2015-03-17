@@ -2,7 +2,6 @@ require 'test_helper'
 
 class LogTest < ActiveSupport::TestCase
   include CurrentApiClient
-  include DbCurrentTime
 
   EVENT_TEST_METHODS = {
     :create => [:created_at, :assert_nil, :assert_not_nil],
