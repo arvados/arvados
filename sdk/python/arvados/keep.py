@@ -530,14 +530,20 @@ class KeepClient(object):
                 self.using_proxy = None
                 self._static_services_list = False
 
-    def current_timeout(self):
-        """Return the appropriate timeout to use for this client: the proxy
-        timeout setting if the backend service is currently a proxy,
-        the regular timeout setting otherwise.
+    def current_timeout(self, attempt_number):
+        """Return the appropriate timeout to use for this client.
+
+        The proxy timeout setting if the backend service is currently a proxy,
+        the regular timeout setting otherwise.  The `attempt_number` indicates
+        how many times the operation has been tried already (starting from 0
+        for the first try), and scales the connection timeout portion of the
+        return value accordingly.
+
         """
         # TODO(twp): the timeout should be a property of a
         # KeepService, not a KeepClient. See #4488.
-        return self.proxy_timeout if self.using_proxy else self.timeout
+        t = self.proxy_timeout if self.using_proxy else self.timeout
+        return (t[0] * (1 << attempt_number), t[1])
 
     def build_services_list(self, force_rebuild=False):
         if (self._static_services_list or
@@ -671,7 +677,6 @@ class KeepClient(object):
         blob = None
         loop = retry.RetryLoop(num_retries, self._check_loop_result,
                                backoff_start=2)
-        connect_timeout_scale = 1
         for tries_left in loop:
             try:
                 local_roots = self.map_new_services(
@@ -681,16 +686,13 @@ class KeepClient(object):
                 loop.save_result(error)
                 continue
 
-            reader_timeout = (self.current_timeout()[0] * connect_timeout_scale, self.current_timeout()[1])
-            connect_timeout_scale *= 2
-
             # Query KeepService objects that haven't returned
             # permanent failure, in our specified shuffle order.
             services_to_try = [roots_map[root]
                                for root in (local_roots + hint_roots)
                                if roots_map[root].usable()]
             for keep_service in services_to_try:
-                blob = keep_service.get(locator, timeout=reader_timeout)
+                blob = keep_service.get(locator, timeout=self.current_timeout(num_retries-tries_left))
                 if blob is not None:
                     break
             loop.save_result((blob, len(services_to_try)))
@@ -760,7 +762,6 @@ class KeepClient(object):
         thread_limiter = KeepClient.ThreadLimiter(copies)
         loop = retry.RetryLoop(num_retries, self._check_loop_result,
                                backoff_start=2)
-        connect_timeout_scale = 1
         for tries_left in loop:
             try:
                 local_roots = self.map_new_services(
@@ -769,9 +770,6 @@ class KeepClient(object):
             except Exception as error:
                 loop.save_result(error)
                 continue
-
-            writer_timeout = (self.current_timeout()[0] * connect_timeout_scale, self.current_timeout()[1])
-            connect_timeout_scale *= 2
 
             threads = []
             for service_root, ks in roots_map.iteritems():
@@ -783,7 +781,7 @@ class KeepClient(object):
                     data_hash=data_hash,
                     service_root=service_root,
                     thread_limiter=thread_limiter,
-                    timeout=writer_timeout)
+                    timeout=self.current_timeout(num_retries-tries_left))
                 t.start()
                 threads.append(t)
             for t in threads:
