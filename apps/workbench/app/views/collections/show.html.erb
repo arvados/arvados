@@ -3,15 +3,13 @@
     <div class="panel panel-info">
       <div class="panel-heading">
         <h3 class="panel-title">
-          <% if @name_link.nil? and @object.uuid.match /[0-9a-f]{32}/ %>
-            Content hash <%= @object.portable_data_hash %>
-          <% else %>
-            <%= if @object.respond_to? :name
-                  render_editable_attribute @object, :name
-                else
-                  @name_link.andand.name || @object.uuid
-                end %>
-            <% end %>
+          <%= if @object.respond_to? :name
+                render_editable_attribute @object, :name
+              elsif @name_link
+                @name_link.name
+              else
+                @object.uuid
+              end %>
         </h3>
       </div>
       <div class="panel-body">
@@ -19,8 +17,11 @@
           <%= render_editable_attribute @object, 'description', nil, { 'data-emptytext' => "(No description provided)", 'data-toggle' => 'manual' } %>
         </div>
         <img src="/favicon.ico" class="pull-right" alt="" style="opacity: 0.3"/>
-        <p><i>Content hash:</i><br />
-          <span class="arvados-uuid"><%= link_to @object.portable_data_hash, collection_path(@object.portable_data_hash) %></span>
+        <p><i>Collection UUID:</i><br />
+          <%= render partial: "show_autoselect_text", locals: {text: @object.uuid, tagclass: "arvados-uuid"} %>
+        </p>
+        <p><i>Content address:</i><br />
+          <%= render partial: "show_autoselect_text", locals: {text: @object.portable_data_hash, tagclass: "arvados-uuid"} %>
         </p>
         <%= render partial: "show_source_summary" %>
       </div>

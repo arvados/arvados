@@ -135,10 +135,6 @@ navbar:
       - api/schema/Trait.html.textile.liquid
       - api/schema/User.html.textile.liquid
       - api/schema/VirtualMachine.html.textile.liquid
-  admin:
-    - Admin:
-      - admin/index.html.md.liquid
-      - admin/cheat_sheet.html.textile.liquid
   installguide:
     - Overview:
       - install/index.html.textile.liquid
@@ -154,7 +150,7 @@ navbar:
       - install/install-keepstore.html.textile.liquid
       - install/install-keepproxy.html.textile.liquid
       - install/install-crunch-dispatch.html.textile.liquid
-      - install/install-compute-node.html.textile.liquid
+      - install/cheat_sheet.html.textile.liquid
     - Software prerequisites:
       - install/install-manual-prerequisites-ruby.html.textile.liquid
       - install/install-sso.html.textile.liquid

@@ -4,6 +4,7 @@ import (
 	"bytes"
 	"flag"
 	"fmt"
+	"git.curoverse.com/arvados.git/sdk/go/keepclient"
 	"io/ioutil"
 	"log"
 	"net"
@@ -13,8 +14,6 @@ import (
 	"strings"
 	"syscall"
 	"time"
-	"git.curoverse.com/arvados.git/sdk/go/arvadosclient"
-	"git.curoverse.com/arvados.git/sdk/go/keepclient"
 )
 
 // ======================
@@ -277,14 +276,11 @@ func main() {
 	}
 
 	// Initialize Pull queue and worker
-	arv, err := arvadosclient.MakeArvadosClient()
-	if err != nil {
-		log.Fatalf("Error setting up arvados client %s", err.Error())
-	}
-
-	keepClient, err := keepclient.MakeKeepClient(&arv)
-	if err != nil {
-		log.Fatalf("Error setting up keep client %s", err.Error())
+	keepClient := keepclient.KeepClient{
+		Arvados:       nil,
+		Want_replicas: 1,
+		Using_proxy:   true,
+		Client:        &http.Client{},
 	}
 
 	pullq = NewWorkQueue()
