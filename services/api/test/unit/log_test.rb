@@ -11,7 +11,7 @@ class LogTest < ActiveSupport::TestCase
   }
 
   def setup
-    @start_time = db_current_time
+    @start_time = Time.now
     @log_count = 1
   end
 
