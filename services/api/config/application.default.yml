@@ -69,6 +69,11 @@ common:
   # {git_repositories_dir}/arvados/.git
   git_repositories_dir: /var/lib/arvados/git
 
+  # If an arv-git-httpd service is running, advertise it in the
+  # discovery document by adding its public URI base here. Example:
+  # https://git.xxxxx.arvadosapi.com
+  git_http_base: false
+
   # This is a (bare) repository that stores commits used in jobs.  When a job
   # runs, the source commits are first fetched into this repository, then this
   # repository is used to deploy to compute nodes.  This should NOT be a
