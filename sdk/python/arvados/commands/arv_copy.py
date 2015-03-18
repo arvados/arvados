@@ -506,7 +506,9 @@ def copy_collection(obj_uuid, src, dst, args):
                     (c.get('name') == d['name']) and
                     (c['portable_data_hash'] == d['portable_data_hash'])):
                     return d
-
+            c['manifest_text'] = dst.collections().get(
+                uuid=dstcol['items'][0]['uuid']
+            ).execute(num_retries=args.retries)['manifest_text']
             return create_collection_from(c, src, dst, args)
 
     # Fetch the collection's manifest.

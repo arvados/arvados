@@ -63,7 +63,7 @@ class Job < ArvadosModel
            ]
 
   def assert_finished
-    update_attributes(finished_at: finished_at || Time.now,
+    update_attributes(finished_at: finished_at || db_current_time,
                       success: success.nil? ? false : success,
                       running: false)
   end
@@ -239,7 +239,7 @@ class Job < ArvadosModel
       # Ensure cancelled_at cannot be set to arbitrary non-now times,
       # or changed once it is set.
       if self.cancelled_at and not self.cancelled_at_was
-        self.cancelled_at = Time.now
+        self.cancelled_at = db_current_time
         self.cancelled_by_user_uuid = current_user.uuid
         self.cancelled_by_client_uuid = current_api_client.andand.uuid
         @need_crunch_dispatch_trigger = true
@@ -265,11 +265,11 @@ class Job < ArvadosModel
 
     case state
     when Running
-      self.started_at ||= Time.now
+      self.started_at ||= db_current_time
     when Failed, Complete
-      self.finished_at ||= Time.now
+      self.finished_at ||= db_current_time
     when Cancelled
-      self.cancelled_at ||= Time.now
+      self.cancelled_at ||= db_current_time
     end
 
     # TODO: Remove the following case block when old "success" and

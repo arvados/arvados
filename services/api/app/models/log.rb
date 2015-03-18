@@ -48,7 +48,7 @@ class Log < ArvadosModel
     when "update"
       self.event_at = thing.modified_at
     when "destroy"
-      self.event_at = Time.now
+      self.event_at = db_current_time
     end
     self
   end
@@ -66,7 +66,7 @@ class Log < ArvadosModel
   alias_method :permission_to_delete, :permission_to_update
 
   def set_default_event_at
-    self.event_at ||= Time.now
+    self.event_at ||= db_current_time
   end
 
   def log_start_state
