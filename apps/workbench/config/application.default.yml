@@ -191,7 +191,7 @@ common:
   # Filename suffixes of applications for which the
   # view icon would be shown in collection show page.
   # It is sufficient to list only applications here.
-  # No need to list text and image types. 
+  # No need to list text and image types.
   filename_suffixes_with_view_icon: [fa, fasta, go, json, pdf, py, r, sam, sh, xml, xsl]
 
   # the maximum number of bytes to load in the log viewer

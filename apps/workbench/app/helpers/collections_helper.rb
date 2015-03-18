@@ -54,7 +54,6 @@ module CollectionsHelper
     file_path = "#{f0}#{file[1]}"
   end
 
-
   ##
   # Check if collection preview is allowed for the given filename with extension
   #

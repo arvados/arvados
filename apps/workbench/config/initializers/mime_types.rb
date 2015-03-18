@@ -9,7 +9,7 @@
 require 'mime/types'
 include MIME
 
-# register new MIME types with MIME::Types gem
+# register and add new MIME types to MIME::Types gem
 if (MIME::Types.type_for('file.fa').first.nil?)
   Mime::Type.register "application/fa", :fa
   MIME::Types.add(MIME::Type.new(["application/fa", %(fa)]))
