@@ -384,80 +384,45 @@ class User < ArvadosModel
       return
     end
 
-    # Check for an existing repository with the same name we're about to use.
-    repo = Repository.where(name: repo_name).first
-
-    if repo
-      logger.warn "Repository exists for #{repo_name}: #{repo[:uuid]}."
-
-      # Look for existing repository access for this repo
-      repo_perms = Link.where(tail_uuid: self.uuid,
-                              head_uuid: repo[:uuid],
-                              link_class: 'permission',
-                              name: 'can_manage')
-      if repo_perms.any?
-        logger.warn "User already has repository access " +
-            repo_perms.collect { |p| p[:uuid] }.inspect
-        return repo_perms.first
-      end
-    end
-
-    # create repo, if does not already exist
-    repo ||= Repository.create(name: repo_name)
+    repo = Repository.where(name: repo_name).first_or_create!
     logger.info { "repo uuid: " + repo[:uuid] }
-
-    repo_perm = Link.create(tail_uuid: self.uuid,
-                            head_uuid: repo[:uuid],
-                            link_class: 'permission',
-                            name: 'can_manage')
+    repo_perm = Link.where(tail_uuid: uuid, head_uuid: repo.uuid,
+                           link_class: "permission",
+                           name: "can_manage").first_or_create!
     logger.info { "repo permission: " + repo_perm[:uuid] }
     return repo_perm
   end
 
   # create login permission for the given vm_uuid, if it does not already exist
   def create_vm_login_permission_link(vm_uuid, repo_name)
-    begin
+    # vm uuid is optional
+    if vm_uuid
+      vm = VirtualMachine.where(uuid: vm_uuid).first
 
-      # vm uuid is optional
-      if vm_uuid
-        vm = VirtualMachine.where(uuid: vm_uuid).first
-
-        if not vm
-          logger.warn "Could not find virtual machine for #{vm_uuid.inspect}"
-          raise "No vm found for #{vm_uuid}"
-        end
-      else
-        return
+      if not vm
+        logger.warn "Could not find virtual machine for #{vm_uuid.inspect}"
+        raise "No vm found for #{vm_uuid}"
       end
-
-      logger.info { "vm uuid: " + vm[:uuid] }
-
-      login_perms = Link.where(tail_uuid: self.uuid,
-                              head_uuid: vm[:uuid],
-                              link_class: 'permission',
-                              name: 'can_login')
-
-      perm_exists = false
-      login_perms.each do |perm|
-        if perm.properties['username'] == repo_name
-          perm_exists = perm
-          break
-        end
-      end
-
-      if perm_exists
-        login_perm = perm_exists
-      else
-        login_perm = Link.create(tail_uuid: self.uuid,
-                                 head_uuid: vm[:uuid],
-                                 link_class: 'permission',
-                                 name: 'can_login',
-                                 properties: {'username' => repo_name})
-        logger.info { "login permission: " + login_perm[:uuid] }
-      end
-
-      return login_perm
+    else
+      return
     end
+
+    logger.info { "vm uuid: " + vm[:uuid] }
+    login_attrs = {
+      tail_uuid: uuid, head_uuid: vm.uuid,
+      link_class: "permission", name: "can_login",
+    }
+
+    login_perm = Link.
+      where(login_attrs).
+      select { |link| link.properties["username"] == repo_name }.
+      first
+
+    login_perm ||= Link.
+      create(login_attrs.merge(properties: {"username" => repo_name}))
+
+    logger.info { "login permission: " + login_perm[:uuid] }
+    login_perm
   end
 
   # add the user to the 'All users' group
