@@ -34,13 +34,14 @@ You may also use a different method to pick the unique identifier. The unique id
 
 h2. SSL certificates
 
-There are five public-facing services that will require an SSL certificate. If you do not have official SSL certificates, you can use self-signed certificates. By convention, we use the following hostname pattern:
+There are six public-facing services that will require an SSL certificate. If you do not have official SSL certificates, you can use self-signed certificates. By convention, we use the following hostname pattern:
 
 <div class="offset1">
 table(table table-bordered table-condensed).
 |_Function_|_Hostname_|
 |Arvados REST API|@uuid_prefix@.your.domain|
 |Arvados Websockets endpoint|ws.@uuid_prefix@.your.domain|
+|Arvados Git server|git.@uuid_prefix@.your.domain|
 |Arvados Keepproxy server|keep.@uuid_prefix@.your.domain|
 |Arvados Workbench|workbench.@uuid_prefix@.your.domain|
 |Arvados SSO Server|auth.your.domain|
