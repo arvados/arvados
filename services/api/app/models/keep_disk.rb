@@ -44,7 +44,7 @@ class KeepDisk < ArvadosModel
                               :last_read_at,
                               :last_write_at
                              ].collect(&:to_s).index k
-                           }.merge(last_ping_at: Time.now))
+                           }.merge(last_ping_at: db_current_time))
   end
 
   def service_host

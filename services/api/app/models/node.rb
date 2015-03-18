@@ -61,12 +61,12 @@ class Node < ArvadosModel
 
   def status
     if !self.last_ping_at
-      if Time.now - self.created_at > 5.minutes
+      if db_current_time - self.created_at > 5.minutes
         'startup-fail'
       else
         'pending'
       end
-    elsif Time.now - self.last_ping_at > 1.hours
+    elsif db_current_time - self.last_ping_at > 1.hours
       'missing'
     else
       'running'
@@ -80,7 +80,9 @@ class Node < ArvadosModel
       logger.info "Ping: secret mismatch: received \"#{o[:ping_secret]}\" != \"#{self.info['ping_secret']}\""
       raise ArvadosModel::UnauthorizedError.new("Incorrect ping_secret")
     end
-    self.last_ping_at = Time.now
+
+    current_time = db_current_time
+    self.last_ping_at = current_time
 
     @bypass_arvados_authorization = true
 
@@ -88,7 +90,7 @@ class Node < ArvadosModel
     if self.ip_address.nil?
       logger.info "#{self.uuid} ip_address= #{o[:ip]}"
       self.ip_address = o[:ip]
-      self.first_ping_at = Time.now
+      self.first_ping_at = current_time
     end
 
     # Record instance ID if not already known
