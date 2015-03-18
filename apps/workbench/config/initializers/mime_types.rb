@@ -14,8 +14,8 @@ Mime::Type.register "application/sam", :sam
 # register MIME type with MIME::Type gem 
 require 'mime/types'
 include MIME
-MIME::Types.add(MIME::Type.from_array("application/fa", %(fa)))
-MIME::Types.add(MIME::Type.from_array("application/fasta", %(fasta)))
-MIME::Types.add(MIME::Type.from_array("application/go", %(go)))
-MIME::Types.add(MIME::Type.from_array("application/r", %(r)))
-MIME::Types.add(MIME::Type.from_array("application/sam", %(sam)))
+MIME::Types.add(MIME::Type.new(["application/fa", %(fa)]))
+MIME::Types.add(MIME::Type.new(["application/fasta", %(fasta)]))
+MIME::Types.add(MIME::Type.new(["application/go", %(go)]))
+MIME::Types.add(MIME::Type.new(["application/r", %(r)]))
+MIME::Types.add(MIME::Type.new(["application/sam", %(sam)]))
