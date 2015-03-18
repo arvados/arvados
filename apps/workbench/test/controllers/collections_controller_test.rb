@@ -403,4 +403,31 @@ class CollectionsControllerTest < ActionController::TestCase
     assert_equal 'test description update', assigns(:object).description
     assert_equal collection['manifest_text'], assigns(:object).manifest_text
   end
+
+  test "view collection and verify none of the file types listed are disabled" do
+    show_collection(:collection_with_several_supported_file_types, :active)
+
+    files = assigns(:object).files
+    assert_equal true, files.length>0, "Expected one or more files in collection"
+
+    disabled = css_select('[disabled="disabled"]').collect do |el|
+      el
+    end
+    assert_equal 0, disabled.length, "Expected no disabled files in collection viewables list"
+  end
+
+  test "view collection and verify file types listed are all disabled" do
+    show_collection(:collection_with_several_unsupported_file_types, :active)
+
+    files = assigns(:object).files.collect do |_, file, _|
+      file
+    end
+    assert_equal true, files.length>0, "Expected one or more files in collection"
+
+    disabled = css_select('[disabled="disabled"]').collect do |el|
+      el.attributes['title'].split[-1]
+    end
+
+    assert_equal files.sort, disabled.sort, "Expected to see all collection files in disabled list of files"
+  end
 end
