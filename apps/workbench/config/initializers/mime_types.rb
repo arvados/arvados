@@ -5,17 +5,32 @@
 # Mime::Type.register_alias "text/html", :iphone
 
 # add new mime types to register
-Mime::Type.register "application/fa", :fa
-Mime::Type.register "application/fasta", :fasta
-Mime::Type.register "application/go", :go
-Mime::Type.register "application/r", :r
-Mime::Type.register "application/sam", :sam
 
-# register MIME type with MIME::Type gem 
 require 'mime/types'
 include MIME
-MIME::Types.add(MIME::Type.new(["application/fa", %(fa)]))
-MIME::Types.add(MIME::Type.new(["application/fasta", %(fasta)]))
-MIME::Types.add(MIME::Type.new(["application/go", %(go)]))
-MIME::Types.add(MIME::Type.new(["application/r", %(r)]))
-MIME::Types.add(MIME::Type.new(["application/sam", %(sam)]))
+
+# register new MIME types with MIME::Types gem
+if (MIME::Types.type_for('file.fa').first.nil?)
+  Mime::Type.register "application/fa", :fa
+  MIME::Types.add(MIME::Type.new(["application/fa", %(fa)]))
+end
+
+if (MIME::Types.type_for('file.fasta').first.nil?)
+  Mime::Type.register "application/fasta", :fasta
+  MIME::Types.add(MIME::Type.new(["application/fasta", %(fasta)]))
+end
+
+if (MIME::Types.type_for('file.go').first.nil?)
+  Mime::Type.register "application/go", :go
+  MIME::Types.add(MIME::Type.new(["application/go", %(go)]))
+end
+
+if (MIME::Types.type_for('file.r').first.nil?)
+  Mime::Type.register "application/r", :r
+  MIME::Types.add(MIME::Type.new(["application/r", %(r)]))
+end
+
+if (MIME::Types.type_for('file.sam').first.nil?)
+  Mime::Type.register "application/sam", :sam
+  MIME::Types.add(MIME::Type.new(["application/sam", %(sam)]))
+end
