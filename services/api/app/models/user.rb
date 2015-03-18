@@ -22,7 +22,11 @@ class User < ArvadosModel
     user.username.nil? and user.email
   }
   after_create :add_system_group_permission_link
-  after_create :auto_setup_new_user
+  after_create :auto_setup_new_user, :if => Proc.new { |user|
+    Rails.configuration.auto_setup_new_users and
+    (user.uuid != system_user_uuid) and
+    (user.uuid != anonymous_user_uuid)
+  }
   after_create :send_admin_notifications
   after_update :send_profile_created_notification
 
@@ -459,44 +463,16 @@ class User < ArvadosModel
 
   # Automatically setup new user during creation
   def auto_setup_new_user
-    return true if !Rails.configuration.auto_setup_new_users
-    return true if !self.email
-    return true if self.uuid == system_user_uuid
-    return true if self.uuid == anonymous_user_uuid
-
-    if Rails.configuration.auto_setup_new_users_with_vm_uuid ||
-       Rails.configuration.auto_setup_new_users_with_repository
-      username = self.email.partition('@')[0] if self.email
-      return true if !username
-
-      blacklisted_usernames = Rails.configuration.auto_setup_name_blacklist
-      if blacklisted_usernames.include?(username)
-        return true
-      elsif !(/^[a-zA-Z][-._a-zA-Z0-9]{0,30}[a-zA-Z0-9]$/.match(username))
-        return true
-      else
-        return true if !(username = derive_unique_username username)
+    setup_repo_vm_links(nil, nil, Rails.configuration.default_openid_prefix)
+    if username
+      create_vm_login_permission_link(Rails.configuration.auto_setup_new_users_with_vm_uuid,
+                                      username)
+      if Rails.configuration.auto_setup_new_users_with_repository and
+          Repository.where(name: username).first.nil?
+        repo = Repository.create!(name: username)
+        Link.create!(tail_uuid: uuid, head_uuid: repo.uuid,
+                     link_class: "permission", name: "can_manage")
       end
-    end
-
-    # setup user
-    setup_repo_vm_links(username,
-                        Rails.configuration.auto_setup_new_users_with_vm_uuid,
-                        Rails.configuration.default_openid_prefix)
-  end
-
-  # Find a username that starts with the given string and does not collide
-  # with any existing repository name or VM login name
-  def derive_unique_username username
-    while true
-      if Repository.where(name: username).empty?
-        login_collisions = Link.where(link_class: 'permission',
-                                      name: 'can_login').select do |perm|
-          perm.properties['username'] == username
-        end
-        return username if login_collisions.empty?
-      end
-      username = username + SecureRandom.random_number(10).to_s
     end
   end
 
