@@ -127,6 +127,19 @@ class GCEComputeNodeDriverTestCase(testutil.DriverTestMixin, unittest.TestCase):
         metadata = self.driver_mock().create_node.call_args[1]['ex_metadata']
         self.assertLessEqual(start_time, metadata.get('booted_at'))
 
+    def test_known_node_fqdn(self):
+        name = 'fqdntest.zzzzz.arvadosapi.com'
+        node = testutil.cloud_node_mock(metadata=self.build_gce_metadata(
+                {'hostname': name}))
+        self.assertEqual(name, gce.ComputeNodeDriver.node_fqdn(node))
+
+    def test_unknown_node_fqdn(self):
+        # Return an empty string.  This lets fqdn be safely compared
+        # against an expected value, and ComputeNodeMonitorActor
+        # should try to update it.
+        node = testutil.cloud_node_mock(metadata=self.build_gce_metadata({}))
+        self.assertEqual('', gce.ComputeNodeDriver.node_fqdn(node))
+
     def test_deliver_ssh_key_in_metadata(self):
         test_ssh_key = 'ssh-rsa-foo'
         arv_node = testutil.arvados_node_mock(1)
