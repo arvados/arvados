@@ -96,6 +96,10 @@ class ComputeNodeDriver(BaseComputeNodeDriver):
             raise
 
     def sync_node(self, cloud_node, arvados_node):
+        # We can't store the FQDN on the name attribute or anything like it,
+        # because (a) names are static throughout the node's life (so FQDN
+        # isn't available because we don't know it at node creation time) and
+        # (b) it can't contain dots.  Instead stash it in metadata.
         hostname = arvados_node_fqdn(arvados_node)
         metadata_req = cloud_node.extra['metadata'].copy()
         metadata_items = metadata_req.setdefault('items', [])
@@ -109,6 +113,12 @@ class ComputeNodeDriver(BaseComputeNodeDriver):
             method='POST', data=metadata_req)
         if not response.success():
             raise Exception("setMetadata error: {}".format(response.error))
+
+    @classmethod
+    def node_fqdn(cls, node):
+        # See sync_node comment.
+        return cls._get_metadata(node.extra['metadata'].get('items', []),
+                                 'hostname', '')
 
     @classmethod
     def node_start_time(cls, node):

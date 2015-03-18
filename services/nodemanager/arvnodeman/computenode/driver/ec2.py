@@ -81,6 +81,10 @@ class ComputeNodeDriver(BaseComputeNodeDriver):
                                  {'Name': arvados_node_fqdn(arvados_node)})
 
     @classmethod
+    def node_fqdn(cls, node):
+        return node.name
+
+    @classmethod
     def node_start_time(cls, node):
         time_str = node.extra['launch_time'].split('.', 2)[0] + 'UTC'
         return time.mktime(time.strptime(
