@@ -44,3 +44,21 @@ log_owned_by_active:
   object_owner_uuid: zzzzz-tpzed-xurymjxw79nv3jz # active user
   event_at: <%= 2.minute.ago.to_s(:db) %>
   summary: non-admin use can read own logs
+
+crunchstat_for_running_job:
+  uuid: zzzzz-57u5n-tmymyrojrbtnxh1
+  owner_uuid: zzzzz-tpzed-xurymjxw79nv3jz
+  modified_by_client_uuid: zzzzz-ozdt8-obw7foaks3qjyej
+  modified_by_user_uuid: zzzzz-tpzed-xurymjxw79nv3jz
+  object_uuid: zzzzz-8i9sb-pshmckwoma9plh7
+  event_at: 2014-11-07 23:33:42.347455000 Z
+  event_type: stderr
+  summary: ~
+  properties:
+    text: '2014-11-07_23:33:41 zzzzz-8i9sb-pshmckwoma9plh7 31708 1 stderr crunchstat:
+      cpu 1935.4300 user 59.4100 sys 8 cpus -- interval 10.0002 seconds 12.9900 user
+      0.9900 sys'
+  created_at: 2014-11-07 23:33:42.351913000 Z
+  updated_at: 2014-11-07 23:33:42.347455000 Z
+  modified_at: 2014-11-07 23:33:42.347455000 Z
+  object_owner_uuid: zzzzz-j7d0g-v955i6s2oi1cbso
