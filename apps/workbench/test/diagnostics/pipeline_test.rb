@@ -39,7 +39,7 @@ class PipelineTest < DiagnosticsTest
       wait_for_ajax
 
       # All needed input are filled in. Run this pipeline now
-      click_link 'Components'
+      find('a,button', text: 'Components').click
       find('a,button', text: 'Run').click
 
       # Pipeline is running. We have a "Stop" button instead now.
