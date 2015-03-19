@@ -184,11 +184,13 @@ class WebsocketTest < ActionDispatch::IntegrationTest
       end
     end
 
-    # Graph should have appeared (even if it hadn't above). We don't
-    # use capybara's matcher function because we don't want to wait:
-    # we are confirming the graph is visible _immediately_ after the
-    # first data point arrives.
-    assert page.evaluate_script("$('#log_graph_div').is(':visible')")
+    # Graph should have appeared (even if it hadn't above). It's
+    # important not to wait like matchers usually do: we are
+    # confirming the graph is visible _immediately_ after the first
+    # data point arrives.
+    using_wait_time 0 do
+      assert_selector '#log_graph_div', visible: true
+    end
     assert_last_datapoint 'T1-cpu', (((35.39+0.86)/10.0002)/8)
   end
 
