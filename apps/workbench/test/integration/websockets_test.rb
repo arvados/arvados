@@ -25,7 +25,6 @@ class WebsocketTest < ActionDispatch::IntegrationTest
                 event_type: "stderr",
                 properties: {"text" => "123 hello"}}})
     assert_text '123 hello'
-    Thread.current[:arvados_api_token] = nil
   end
 
 
@@ -80,8 +79,6 @@ class WebsocketTest < ActionDispatch::IntegrationTest
 
       # Check that we haven't changed scroll position
       assert_equal 30, page.evaluate_script("$('#event_log_div').scrollTop()")
-
-      Thread.current[:arvados_api_token] = nil
     end
   end
 
@@ -111,8 +108,6 @@ class WebsocketTest < ActionDispatch::IntegrationTest
     assert page.has_no_link? 'Pause'
     assert_text 'Complete'
     assert page.has_link? 'Re-run with latest'
-
-    Thread.current[:arvados_api_token] = nil
   end
 
   test "job arv-refresh-on-log-event" do
@@ -130,8 +125,6 @@ class WebsocketTest < ActionDispatch::IntegrationTest
 
     assert_text 'complete'
     assert_text 'Re-run job'
-
-    Thread.current[:arvados_api_token] = nil
   end
 
   test "dashboard arv-refresh-on-log-event" do
@@ -150,7 +143,6 @@ class WebsocketTest < ActionDispatch::IntegrationTest
 
     assert_text 'test dashboard arv-refresh-on-log-event'
 
-    Thread.current[:arvados_api_token] = nil
   end
 
   test "live log charting" do
