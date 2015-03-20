@@ -67,12 +67,6 @@ if RUBY_VERSION < '1.9.3' then
   EOS
 end
 
-$arvados_api_version = ENV['ARVADOS_API_VERSION'] || 'v1'
-$arvados_api_host = ENV['ARVADOS_API_HOST'] or
-  abort "#{$0}: fatal: ARVADOS_API_HOST environment variable not set."
-$arvados_api_token = ENV['ARVADOS_API_TOKEN'] or
-  abort "#{$0}: fatal: ARVADOS_API_TOKEN environment variable not set."
-
 begin
   require 'arvados'
   require 'rubygems'
@@ -92,23 +86,6 @@ end
 def debuglog(message, verbosity=1)
   $stderr.puts "#{File.split($0).last} #{$$}: #{message}" if $debuglevel >= verbosity
 end
-
-module Kernel
-  def suppress_warnings
-    original_verbosity = $VERBOSE
-    $VERBOSE = nil
-    result = yield
-    $VERBOSE = original_verbosity
-    return result
-  end
-end
-
-if $arvados_api_host.match /local/
-  # You probably don't care about SSL certificate checks if you're
-  # testing with a dev server.
-  suppress_warnings { OpenSSL::SSL::VERIFY_PEER = OpenSSL::SSL::VERIFY_NONE }
-end
-
 
 # Parse command line options (the kind that control the behavior of
 # this program, that is, not the pipeline component parameters).
@@ -196,22 +173,6 @@ if $options[:run_pipeline_here] == $options[:submit]
   abort "#{$0}: error: you must supply --run-pipeline-here, --run-jobs-here, or --submit."
 end
 
-# Suppress SSL certificate checks if ARVADOS_API_HOST_INSECURE
-
-module Kernel
-  def suppress_warnings
-    original_verbosity = $VERBOSE
-    $VERBOSE = nil
-    result = yield
-    $VERBOSE = original_verbosity
-    return result
-  end
-end
-
-if ENV['ARVADOS_API_HOST_INSECURE']
-  suppress_warnings { OpenSSL::SSL::VERIFY_PEER = OpenSSL::SSL::VERIFY_NONE }
-end
-
 # Set up the API client.
 
 $arv = Arvados.new api_version: 'v1'
@@ -226,7 +187,7 @@ class PipelineInstance
                              },
                              :authenticated => false,
                              :headers => {
-                               authorization: 'OAuth2 '+ENV['ARVADOS_API_TOKEN']
+                               authorization: 'OAuth2 '+$arv.config['ARVADOS_API_TOKEN']
                              })
     j = JSON.parse result.body, :symbolize_names => true
     unless j.is_a? Hash and j[:uuid]
@@ -244,7 +205,7 @@ class PipelineInstance
                              },
                              :authenticated => false,
                              :headers => {
-                               authorization: 'OAuth2 '+ENV['ARVADOS_API_TOKEN']
+                               authorization: 'OAuth2 '+$arv.config['ARVADOS_API_TOKEN']
                              })
     j = JSON.parse result.body, :symbolize_names => true
     unless j.is_a? Hash and j[:uuid]
@@ -263,7 +224,7 @@ class PipelineInstance
                              },
                              :authenticated => false,
                              :headers => {
-                               authorization: 'OAuth2 '+ENV['ARVADOS_API_TOKEN']
+                               authorization: 'OAuth2 '+$arv.config['ARVADOS_API_TOKEN']
                              })
     j = JSON.parse result.body, :symbolize_names => true
     unless j.is_a? Hash and j[:uuid]
@@ -307,7 +268,7 @@ class JobCache
                              },
                              :authenticated => false,
                              :headers => {
-                               authorization: 'OAuth2 '+ENV['ARVADOS_API_TOKEN']
+                               authorization: 'OAuth2 '+$arv.config['ARVADOS_API_TOKEN']
                              })
     @cache[uuid] = JSON.parse result.body, :symbolize_names => true
   end
@@ -319,7 +280,7 @@ class JobCache
                              },
                              :authenticated => false,
                              :headers => {
-                               authorization: 'OAuth2 '+ENV['ARVADOS_API_TOKEN']
+                               authorization: 'OAuth2 '+$arv.config['ARVADOS_API_TOKEN']
                              })
     list = JSON.parse result.body, :symbolize_names => true
     if list and list[:items].is_a? Array
@@ -337,7 +298,7 @@ class JobCache
                              :body_object => body,
                              :authenticated => false,
                              :headers => {
-                               authorization: 'OAuth2 '+ENV['ARVADOS_API_TOKEN']
+                               authorization: 'OAuth2 '+$arv.config['ARVADOS_API_TOKEN']
                              })
     j = JSON.parse result.body, :symbolize_names => true
     if j.is_a? Hash and j[:uuid]
@@ -381,7 +342,7 @@ class WhRunPipelineInstance
                                },
                                :authenticated => false,
                                :headers => {
-                                 authorization: 'OAuth2 '+ENV['ARVADOS_API_TOKEN']
+                                 authorization: 'OAuth2 '+$arv.config['ARVADOS_API_TOKEN']
                                })
       @template = JSON.parse result.body, :symbolize_names => true
       if !@template[:uuid]
