@@ -55,9 +55,12 @@ class FixCollectionPortableDataHashWithHintedManifest < ActiveRecord::Migration
   end
 
   def each_bad_collection
+    end_coll = Collection.order("id DESC").first
+    return if end_coll.nil?
     seen_uuids = []
     ("A".."Z").each do |hint_char|
-      query = Collection.where("manifest_text LIKE '%+#{hint_char}%'")
+      query = Collection.
+        where("id <= ? AND manifest_text LIKE '%+#{hint_char}%'", end_coll.id)
       unless seen_uuids.empty?
         query = query.where("uuid NOT IN (?)", seen_uuids)
       end
