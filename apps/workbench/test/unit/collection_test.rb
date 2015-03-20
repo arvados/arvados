@@ -78,6 +78,7 @@ class CollectionTest < ActiveSupport::TestCase
     ["filename.csv", true],
     ["filename.fa", true],
     ["filename.fasta", true],
+    ["filename.seq", true],   # another fasta extension
     ["filename.go", true],
     ["filename.htm", true],
     ["filename.html", true],

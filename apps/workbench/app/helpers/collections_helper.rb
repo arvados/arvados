@@ -59,13 +59,12 @@ module CollectionsHelper
   #
   def preview_allowed_for file_name
     file_type = MIME::Types.type_for(file_name).first
-
     if file_type.nil?
       false
     elsif (file_type.raw_media_type == "text") || (file_type.raw_media_type == "image")
       true
     elsif (file_type.raw_media_type == "application") &&
-          (Rails.configuration.filename_suffixes_with_view_icon.include? ((file_name.split('.')[-1]).downcase))
+          (Rails.configuration.application_mimetypes_with_view_icon.include? (file_type.sub_type))
       true
     else
       false

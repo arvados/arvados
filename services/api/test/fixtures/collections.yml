@@ -522,26 +522,26 @@ multi_level_to_combine:
 # collection with several file types to test view icon enabled state in collection show page
 collection_with_several_supported_file_types:
   uuid: zzzzz-4zz18-supportedtypes1
-  portable_data_hash: 7a6ef4c162a5c6413070a8bd0bffc818+150
+  portable_data_hash: f7bb16c306b97974afd310749a9848d6+0
   owner_uuid: zzzzz-tpzed-xurymjxw79nv3jz
   created_at: 2014-02-03T17:22:54Z
   modified_by_client_uuid: zzzzz-ozdt8-brczlopd8u8d0jr
   modified_by_user_uuid: zzzzz-tpzed-d9tiejq69daie8f
   modified_at: 2014-02-03T17:22:54Z
   updated_at: 2014-02-03T17:22:54Z
-  manifest_text: ". 85877ca2d7e05498dd3d109baf2df106+95 0:0:file.csv 0:0:file.fa 0:0:file.fasta 0:0:file.gif 0:0:file.json 0:0:file.md 0:0:file.pdf 0:0:file.py 0:0:file.R 0:0:file.sam 0:0:file.sh 0:0:file.tiff 0:0:file.tsv 0:0:file.txt 0:0:file.vcf 0:0:file.xml 0:0:file.xsl 0:0:file.yml\n"
+  manifest_text: ". d41d8cd98f00b204e9800998ecf8427e+0 0:0:file.csv 0:0:file.fa 0:0:file.fasta 0:0:file.gif 0:0:file.json 0:0:file.md 0:0:file.pdf 0:0:file.py 0:0:file.R 0:0:file.sam 0:0:file.sh 0:0:file.tiff 0:0:file.tsv 0:0:file.txt 0:0:file.vcf 0:0:file.xml 0:0:file.xsl 0:0:file.yml\n"
   name: collection_with_several_supported_file_types
 
 collection_with_several_unsupported_file_types:
   uuid: zzzzz-4zz18-supportedtypes2
-  portable_data_hash: 7a6ef4c162a5c6413070a8bd0bffc818+150
+  portable_data_hash: 97620c05fbb3041a19471bc1e06f3f78+0
   owner_uuid: zzzzz-tpzed-xurymjxw79nv3jz
   created_at: 2014-02-03T17:22:54Z
   modified_by_client_uuid: zzzzz-ozdt8-brczlopd8u8d0jr
   modified_by_user_uuid: zzzzz-tpzed-d9tiejq69daie8f
   modified_at: 2014-02-03T17:22:54Z
   updated_at: 2014-02-03T17:22:54Z
-  manifest_text: ". 85877ca2d7e05498dd3d109baf2df106+95 0:0:file 0:0:file.bam\n"
+  manifest_text: ". d41d8cd98f00b204e9800998ecf8427e+0 0:0:file 0:0:file.bam\n"
   name: collection_with_several_unsupported_file_types
 
 # Test Helper trims the rest of the file
