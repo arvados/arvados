@@ -192,7 +192,7 @@ common:
   # would be enabled in a collection's show page.
   # It is sufficient to list only applications here.
   # No need to list text and image types.
-  application_mimetypes_with_view_icon: [fasta, go, json, pdf, python, r, sam, sh, xml, xsl]
+  application_mimetypes_with_view_icon: [fasta, go, javascript, json, pdf, python, r, rtf, sam, sh, xml, xsl]
 
   # the maximum number of bytes to load in the log viewer
   log_viewer_max_bytes: 1000000
