@@ -189,7 +189,7 @@ common:
   email_from: arvados@example.com
 
   # Mimetypes of applications for which the view icon
-  # would be shown in collection show page.
+  # would be enabled in a collection's show page.
   # It is sufficient to list only applications here.
   # No need to list text and image types.
   application_mimetypes_with_view_icon: [fasta, go, json, pdf, python, r, sam, sh, xml, xsl]

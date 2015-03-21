@@ -4,7 +4,7 @@
 # Mime::Type.register "text/richtext", :rtf
 # Mime::Type.register_alias "text/html", :iphone
 
-# add new mime types to register
+# add new mime types to MIME from mime_types gem
 
 require 'mime/types'
 include MIME
