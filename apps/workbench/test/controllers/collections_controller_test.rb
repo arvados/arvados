@@ -106,7 +106,7 @@ class CollectionsControllerTest < ActionController::TestCase
   test "viewing a collection fetches logs about it" do
     show_collection(:foo_file, :active)
     assert_includes(assigns(:logs).map(&:uuid),
-                    api_fixture('logs')['log4']['uuid'],
+                    api_fixture('logs')['system_adds_foo_file']['uuid'],
                     "controller did not find related log")
   end
 
