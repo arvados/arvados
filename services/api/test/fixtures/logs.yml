@@ -1,10 +1,10 @@
-log1:
+noop:
   id: 1
   uuid: zzzzz-xxxxx-pshmckwoma9plh7
   object_uuid: zzzzz-tpzed-l1s2piq4t4mps8r
   event_at: <%= 1.minute.ago.to_s(:db) %>
 
-log2: # admin changes repository2, which is owned by active user
+admin_changes_repository2: # admin changes repository2, which is owned by active user
   id: 2
   uuid: zzzzz-xxxxx-pshmckwoma00002
   owner_uuid: zzzzz-tpzed-d9tiejq69daie8f # admin user
@@ -12,7 +12,7 @@ log2: # admin changes repository2, which is owned by active user
   object_owner_uuid: zzzzz-tpzed-xurymjxw79nv3jz # active user
   event_at: <%= 2.minute.ago.to_s(:db) %>
 
-log3: # admin changes specimen owned_by_spectator
+admin_changes_specimen: # admin changes specimen owned_by_spectator
   id: 3
   uuid: zzzzz-xxxxx-pshmckwoma00003
   owner_uuid: zzzzz-tpzed-d9tiejq69daie8f # admin user
@@ -20,7 +20,7 @@ log3: # admin changes specimen owned_by_spectator
   object_owner_uuid: zzzzz-tpzed-l1s2piq4t4mps8r # spectator user
   event_at: <%= 3.minute.ago.to_s(:db) %>
 
-log4: # foo collection added, readable by active through link
+system_adds_foo_file: # foo collection added, readable by active through link
   id: 4
   uuid: zzzzz-xxxxx-pshmckwoma00004
   owner_uuid: zzzzz-tpzed-000000000000000 # system user
@@ -28,7 +28,7 @@ log4: # foo collection added, readable by active through link
   object_owner_uuid: zzzzz-tpzed-000000000000000 # system user
   event_at: <%= 4.minute.ago.to_s(:db) %>
 
-log5: # baz collection added, readable by active and spectator through group 'all users' group membership
+system_adds_baz: # baz collection added, readable by active and spectator through group 'all users' group membership
   id: 5
   uuid: zzzzz-xxxxx-pshmckwoma00005
   owner_uuid: zzzzz-tpzed-000000000000000 # system user
@@ -46,6 +46,7 @@ log_owned_by_active:
   summary: non-admin use can read own logs
 
 crunchstat_for_running_job:
+  id: 7
   uuid: zzzzz-57u5n-tmymyrojrbtnxh1
   owner_uuid: zzzzz-tpzed-xurymjxw79nv3jz
   modified_by_client_uuid: zzzzz-ozdt8-obw7foaks3qjyej

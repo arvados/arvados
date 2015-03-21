@@ -212,7 +212,7 @@ class ApplicationControllerTest < ActionController::TestCase
 
     ac = ApplicationController.new
 
-    uuid = api_fixture('logs')['log4']['object_uuid']
+    uuid = api_fixture('logs')['system_adds_foo_file']['object_uuid']
 
     collections = ac.send :log_collections_for_object, uuid
 
@@ -227,7 +227,7 @@ class ApplicationControllerTest < ActionController::TestCase
 
     ac = ApplicationController.new
 
-    uuid1 = api_fixture('logs')['log4']['object_uuid']
+    uuid1 = api_fixture('logs')['system_adds_foo_file']['object_uuid']
     uuid2 = api_fixture('collections')['bar_file']['uuid']
 
     uuids = [uuid1, uuid2]

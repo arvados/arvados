@@ -283,7 +283,7 @@ class WebsocketTest < ActionDispatch::IntegrationTest
 
     authorize_with :admin
 
-    lastid = logs(:log3).id
+    lastid = logs(:admin_changes_specimen).id
     l1 = nil
     l2 = nil
 
@@ -311,11 +311,11 @@ class WebsocketTest < ActionDispatch::IntegrationTest
           assert false, "Should not get any more events"
         end
       end
-
     end
 
-    assert_equal logs(:log4).object_uuid, l1
-    assert_equal logs(:log5).object_uuid, l2
+    expect_next_logs = Log.where('id > ?', lastid).order('id asc')
+    assert_equal expect_next_logs[0].object_uuid, l1
+    assert_equal expect_next_logs[1].object_uuid, l2
   end
 
   test "connect, subscribe, get event, unsubscribe" do
