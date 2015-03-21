@@ -22,7 +22,7 @@ var MissingArvadosApiToken = errors.New("Missing required environment variable A
 type ArvadosApiError struct {
 	error
 	HttpStatusCode int
-	HttpStatus string
+	HttpStatus     string
 }
 
 func (e ArvadosApiError) Error() string { return e.error.Error() }
@@ -92,7 +92,9 @@ func (this ArvadosClient) CallRaw(method string, resource string, uuid string, a
 		Scheme: "https",
 		Host:   this.ApiServer}
 
-	u.Path = "/arvados/v1"
+	if resource != API_DISCOVERY_RESOURCE {
+		u.Path = "/arvados/v1"
+	}
 
 	if resource != "" {
 		u.Path = u.Path + "/" + resource
@@ -246,4 +248,26 @@ func (this ArvadosClient) Update(resource string, uuid string, parameters Dict, 
 //   err - error accessing the resource, or nil if no error
 func (this ArvadosClient) List(resource string, parameters Dict, output interface{}) (err error) {
 	return this.Call("GET", resource, "", "", parameters, output)
+}
+
+// API Discovery
+//
+//   parameter - name of parameter to be discovered
+// return
+//   valueMap - Dict key value pair of the discovered parameter
+//   err - error accessing the resource, or nil if no error
+var API_DISCOVERY_RESOURCE string = "discovery/v1/apis/arvados/v1/rest"
+
+var DISCOVERY Dict
+
+func (this ArvadosClient) Discovery(parameter string) (valueMap Dict, err error) {
+	if len(DISCOVERY) == 0 {
+		DISCOVERY = make(Dict)
+		this.Call("GET", API_DISCOVERY_RESOURCE, "", "", nil, &DISCOVERY)
+	}
+
+	valueMap = make(Dict)
+	valueMap[parameter] = DISCOVERY[parameter]
+
+	return valueMap, err
 }

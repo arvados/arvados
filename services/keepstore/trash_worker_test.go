@@ -2,6 +2,8 @@ package main
 
 import (
 	"container/list"
+	"git.curoverse.com/arvados.git/sdk/go/arvadosclient"
+	"log"
 	"testing"
 	"time"
 )
@@ -18,6 +20,8 @@ type TrashWorkerTestData struct {
 	CreateData       bool
 	CreateInVolume1  bool
 	UseDelayToCreate bool
+
+	UseDefaultTrashTime bool
 
 	DeleteLocator string
 
@@ -154,20 +158,41 @@ func TestTrashWorkerIntegration_TwoDifferentLocatorsInVolume1(t *testing.T) {
 	performTrashWorkerTest(testData, t)
 }
 
+/* Allow defaultTrashLifetime to be used. Thus, the newly created block
+   will not be deleted becuase its Mtime is within the trash life time.
+*/
+func TestTrashWorkerIntegration_SameLocatorInTwoVolumesWithDefaultTrashLifeTime(t *testing.T) {
+	testData := TrashWorkerTestData{
+		Locator1: TEST_HASH,
+		Block1:   TEST_BLOCK,
+
+		Locator2: TEST_HASH_2,
+		Block2:   TEST_BLOCK_2,
+
+		CreateData:      true,
+		CreateInVolume1: true,
+
+		UseDefaultTrashTime: true,
+
+		DeleteLocator: TEST_HASH, // locator 1
+
+		// Since defaultTrashLifetime is in effect, block won't be deleted.
+		ExpectLocator1: true,
+		ExpectLocator2: true,
+	}
+	performTrashWorkerTest(testData, t)
+}
+
 /* Perform the test */
 func performTrashWorkerTest(testData TrashWorkerTestData, t *testing.T) {
 	// Create Keep Volumes
 	KeepVM = MakeTestVolumeManager(2)
 
-	// Set trash life time delta to 0 so that the test can delete the blocks right after create
-	DEFAULT_TRASH_LIFE_TIME = 0
-
 	// Delete from volume will not take place if the block MTime is within permission_ttl
 	permission_ttl = time.Duration(1) * time.Second
 
-	vols := KeepVM.Volumes()
-
 	// Put test content
+	vols := KeepVM.Volumes()
 	if testData.CreateData {
 		vols[0].Put(testData.Locator1, testData.Block1)
 		vols[0].Put(testData.Locator1+".meta", []byte("metadata"))
@@ -199,9 +224,21 @@ func performTrashWorkerTest(testData TrashWorkerTestData, t *testing.T) {
 	trashList := list.New()
 	trashList.PushBack(trashRequest)
 	trashq = NewWorkQueue()
-	go RunTrashWorker(trashq)
+
+	// Trash worker would not delete block if its Mtime is within defaultTrashLifetime
+	// Hence, we will have to bypass it to allow the deletion to succeed.
+	if !testData.UseDefaultTrashTime {
+		go RunTrashWorker(nil, trashq)
+	} else {
+		arv, err := arvadosclient.MakeArvadosClient()
+		if err != nil {
+			log.Fatalf("Error setting up arvados client %s", err.Error())
+		}
+		go RunTrashWorker(&arv, trashq)
+	}
+
 	trashq.ReplaceQueue(trashList)
-	time.Sleep(10 * time.Millisecond) // give it a moment to finish processing the trash list
+	time.Sleep(10 * time.Millisecond) // give a moment to finish processing the list
 
 	// Verify Locator1 to be un/deleted as expected
 	data, _ := GetBlock(testData.Locator1, false)

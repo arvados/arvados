@@ -1,8 +1,8 @@
 package arvadosclient
 
 import (
-	. "gopkg.in/check.v1"
 	"git.curoverse.com/arvados.git/sdk/go/arvadostest"
+	. "gopkg.in/check.v1"
 	"net/http"
 	"os"
 	"testing"
@@ -99,4 +99,18 @@ func (s *ServerRequiredSuite) TestErrorResponse(c *C) {
 		c.Assert(err, FitsTypeOf, ArvadosApiError{})
 		c.Assert(err.(ArvadosApiError).HttpStatusCode, Equals, 404)
 	}
+}
+
+func (s *ServerRequiredSuite) TestAPIDiscovery_Get_defaultTrashLifetime(c *C) {
+	arv, err := MakeArvadosClient()
+	valueMap, err := arv.Discovery("defaultTrashLifetime")
+	c.Assert(err, IsNil)
+	c.Assert(valueMap["defaultTrashLifetime"], NotNil)
+}
+
+func (s *ServerRequiredSuite) TestAPIDiscovery_Get_noSuchParameter(c *C) {
+	arv, err := MakeArvadosClient()
+	valueMap, err := arv.Discovery("noSuchParameter")
+	c.Assert(err, IsNil)
+	c.Assert(valueMap["noSuchParameter"], IsNil)
 }
