@@ -90,7 +90,9 @@ if [[ "$ECODE" == "0" ]]; then
   docker_push arvados/doc
   docker_push arvados/workbench
   docker_push arvados/keep
+  docker_push arvados/keepproxy
   docker_push arvados/shell
+  docker_push arvados/sso
 else
   title "upload arvados images SKIPPED because build failed"
 fi
