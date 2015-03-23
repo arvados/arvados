@@ -21,6 +21,7 @@ function usage {
     echo >&2 "  -v, --vm                      Shell server"
     echo >&2 "  -n, --nameserver              Nameserver"
     echo >&2 "  -k, --keep                    Keep servers"
+    echo >&2 "  -p, --keepproxy               Keepproxy server"
     echo >&2 "  -h, --help                    Display this help and exit"
     echo >&2
     echo >&2 "  If no options are given, the action is applied to all servers."
@@ -73,7 +74,6 @@ function start_container {
     $DOCKER rm "$name" 2>/dev/null
 
     echo "Starting container:"
-    #echo "  $DOCKER run --dns=127.0.0.1 $args $image"
     echo "  $DOCKER run $args $image"
     container=`$DOCKER run $args $image`
     if [ "$?" != "0" -o "$container" = "" ]; then
@@ -136,10 +136,11 @@ function do_start {
     local start_vm=false
     local start_nameserver=false
     local start_keep=false
+    local start_keepproxy=false
 
     # NOTE: This requires GNU getopt (part of the util-linux package on Debian-based distros).
-    local TEMP=`getopt -o d::s::a::cw::nkvh \
-                  --long doc::,sso::,api::,compute,workbench::,nameserver,keep,vm,help \
+    local TEMP=`getopt -o d::s::a::cw::nkpvh \
+                  --long doc::,sso::,api::,compute,workbench::,nameserver,keep,keepproxy,vm,help \
                   -n "$0" -- "$@"`
 
     if [ $? != 0 ] ; then echo "Use -h for help"; exit 1 ; fi
@@ -190,6 +191,10 @@ function do_start {
                 start_keep=true
                 shift
                 ;;
+            -p | --keepproxy)
+                start_keepproxy=true
+                shift
+                ;;
             --)
                 shift
                 break
@@ -209,7 +214,8 @@ function do_start {
           $start_workbench == false &&
           $start_vm == false &&
           $start_nameserver == false &&
-          $start_keep == false ]]
+          $start_keep == false &&
+          $start_keepproxy == false ]]
     then
         start_doc=9898
         #the sso server is currently not used by default so don't start it unless explicitly requested
@@ -220,20 +226,7 @@ function do_start {
         start_vm=true
         start_nameserver=true
         start_keep=true
-    fi
-
-    if [[ $start_sso != false ]]
-    then
-        start_container "$start_sso:443" "sso_server" '' '' "arvados/sso"
-    fi
-
-    if [[ $start_api != false ]]
-    then
-      if [[ $start_sso != false ]]; then
-        start_container "$start_api:443" "api_server" '' "sso_server:sso" "arvados/api"
-      else
-        start_container "$start_api:443" "api_server" '' '' "arvados/api"
-      fi
+        start_keepproxy=true
     fi
 
     if [[ $start_nameserver != false ]]
@@ -251,6 +244,20 @@ function do_start {
         echo "Starting crosbymichael/skydock container..."
         $DOCKER rm "skydock" 2>/dev/null
         $DOCKER run -d -v /var/run/docker.sock:/docker.sock --name skydock crosbymichael/skydock -ttl 30 -environment dev -s /docker.sock -domain arvados -name skydns
+      fi
+    fi
+
+    if [[ $start_sso != false ]]
+    then
+        start_container "$start_sso:443" "sso_server" '' '' "arvados/sso"
+    fi
+
+    if [[ $start_api != false ]]
+    then
+      if [[ $start_sso != false ]]; then
+        start_container "$start_api:443" "api_server" '' "sso_server:sso" "arvados/api"
+      else
+        start_container "$start_api:443" "api_server" '' '' "arvados/api"
       fi
     fi
 
@@ -278,6 +285,13 @@ function do_start {
             "${keep_volumes[1]}:/keep-data" \
             "api_server:api" \
             "arvados/keep"
+    fi
+
+    if [[ $start_keepproxy != false ]]
+    then
+        start_container "9902:9100" "keepproxy_server" '' \
+            "api_server:api" \
+            "arvados/keepproxy"
     fi
 
     if [[ $start_doc != false ]]
@@ -320,10 +334,11 @@ function do_stop {
     local stop_nameserver=""
     local stop_vm=""
     local stop_keep=""
+    local stop_keepproxy=""
 
     # NOTE: This requires GNU getopt (part of the util-linux package on Debian-based distros).
-    local TEMP=`getopt -o dsacwnkvh \
-                  --long doc,sso,api,compute,workbench,nameserver,keep,vm,help \
+    local TEMP=`getopt -o dsacwnkpvh \
+                  --long doc,sso,api,compute,workbench,nameserver,keep,keepproxy,vm,help \
                   -n "$0" -- "$@"`
 
     if [ $? != 0 ] ; then echo "Use -h for help"; exit 1 ; fi
@@ -350,6 +365,8 @@ function do_stop {
                 stop_vm="shell" ; shift ;;
             -k | --keep )
                 stop_keep="keep_server_0 keep_server_1" ; shift ;;
+            -p | --keepproxy )
+                stop_keep="keepproxy_server" ; shift ;;
             --)
                 shift
                 break
@@ -369,7 +386,8 @@ function do_stop {
           $stop_workbench == "" &&
           $stop_vm == "" &&
           $stop_nameserver == "" &&
-          $stop_keep == "" ]]
+          $stop_keep == "" &&
+          $stop_keepproxy == "" ]]
     then
         stop_doc=doc_server
         stop_sso=sso_server
@@ -379,9 +397,10 @@ function do_stop {
         stop_vm=shell
         stop_nameserver="skydock skydns"
         stop_keep="keep_server_0 keep_server_1"
+        stop_keepproxy="keepproxy_server"
     fi
 
-    $DOCKER stop $stop_doc $stop_sso $stop_api $stop_compute $stop_workbench $stop_nameserver $stop_keep $stop_vm \
+    $DOCKER stop $stop_doc $stop_sso $stop_api $stop_compute $stop_workbench $stop_nameserver $stop_keep $stop_keepproxy $stop_vm \
         2>/dev/null
 }
 
