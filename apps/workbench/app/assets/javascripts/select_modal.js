@@ -151,7 +151,7 @@ $(document).on('click', '.selectable', function() {
             return false;
         }
         $('<a />').
-            attr('href', $form.attr('data-search-modal')).
+            attr('data-remote-href', $form.attr('data-search-modal')).
             attr('data-remote', 'true').
             attr('data-method', 'GET').
             hide().
