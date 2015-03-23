@@ -52,11 +52,12 @@ module ApplicationHelper
     ArvadosBase::resource_class_for_uuid(attrvalue, opts)
   end
 
-  # When using {remote:true} or {method:...}, move the target URI from
-  # href to data-remote-href. Otherwise, browsers offer features like
-  # "open in new window" and "copy link address" which bypass Rails'
-  # click handler and therefore end up at incorrect/nonexistent routes
-  # (by ignoring data-method) and expect to receive pages rather than
+  # When using {remote:true}, or using {method:...} to use an HTTP
+  # method other than GET, move the target URI from href to
+  # data-remote-href. Otherwise, browsers offer features like "open in
+  # new window" and "copy link address" which bypass Rails' click
+  # handler and therefore end up at incorrect/nonexistent routes (by
+  # ignoring data-method) and expect to receive pages rather than
   # javascript responses.
   #
   # See assets/javascripts/link_to_remote.js for supporting code.
