@@ -35,6 +35,11 @@ if [[ "$?" != "0" ]]; then
   arv keep_service create --keep-service "$(cat /root/keep_server_1.json)"
 fi
 
+grep -q keep_proxy /tmp/keep_service.list
+if [[ "$?" != "0" ]]; then
+  arv keep_service create --keep-service "$(cat /root/keep_proxy.json)"
+fi
+
 # User repository object
 user_uuid=`arv --format=uuid user current`
 repo_uuid=`arv --format=uuid repository create --repository '{"name":"@@ARVADOS_USER_NAME@@","fetch_url":"git@api:@@ARVADOS_USER_NAME@@.git","push_url":"git@api:@@ARVADOS_USER_NAME@@.git"}'`
