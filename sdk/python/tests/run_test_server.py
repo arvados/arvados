@@ -1,13 +1,21 @@
 #!/usr/bin/env python
 
 import argparse
+import atexit
+import httplib2
 import os
+import pipes
+import random
+import re
 import shutil
 import signal
+import socket
 import subprocess
+import string
 import sys
 import tempfile
 import time
+import unittest
 import yaml
 
 MY_DIRNAME = os.path.dirname(os.path.realpath(__file__))
@@ -17,13 +25,22 @@ if __name__ == '__main__' and os.path.exists(
     # Add the Python SDK source to the library path.
     sys.path.insert(1, os.path.dirname(MY_DIRNAME))
 
-import arvados.api
+import arvados
 import arvados.config
 
-ARV_API_SERVER_DIR = '../../../services/api'
-KEEP_SERVER_DIR = '../../../services/keep'
-SERVER_PID_PATH = 'tmp/pids/webrick-test.pid'
-WEBSOCKETS_SERVER_PID_PATH = 'tmp/pids/passenger-test.pid'
+ARVADOS_DIR = os.path.realpath(os.path.join(MY_DIRNAME, '../../..'))
+SERVICES_SRC_DIR = os.path.join(ARVADOS_DIR, 'services')
+SERVER_PID_PATH = 'tmp/pids/test-server.pid'
+if 'GOPATH' in os.environ:
+    gopaths = os.environ['GOPATH'].split(':')
+    gobins = [os.path.join(path, 'bin') for path in gopaths]
+    os.environ['PATH'] = ':'.join(gobins) + ':' + os.environ['PATH']
+
+TEST_TMPDIR = os.path.join(ARVADOS_DIR, 'tmp')
+if not os.path.exists(TEST_TMPDIR):
+    os.mkdir(TEST_TMPDIR)
+
+my_api_host = None
 
 def find_server_pid(PID_PATH, wait=10):
     now = time.time()
@@ -34,7 +51,7 @@ def find_server_pid(PID_PATH, wait=10):
         try:
             with open(PID_PATH, 'r') as f:
                 server_pid = int(f.read())
-            good_pid = (os.kill(server_pid, 0) == None)
+            good_pid = (os.kill(server_pid, 0) is None)
         except IOError:
             good_pid = False
         except OSError:
@@ -46,242 +63,402 @@ def find_server_pid(PID_PATH, wait=10):
 
     return server_pid
 
-def kill_server_pid(PID_PATH, wait=10):
+def kill_server_pid(pidfile, wait=10, passenger_root=False):
+    # Must re-import modules in order to work during atexit
+    import os
+    import signal
+    import subprocess
+    import time
     try:
+        if passenger_root:
+            # First try to shut down nicely
+            restore_cwd = os.getcwd()
+            os.chdir(passenger_root)
+            subprocess.call([
+                'bundle', 'exec', 'passenger', 'stop', '--pid-file', pidfile])
+            os.chdir(restore_cwd)
         now = time.time()
         timeout = now + wait
-        with open(PID_PATH, 'r') as f:
+        with open(pidfile, 'r') as f:
             server_pid = int(f.read())
         while now <= timeout:
-            os.kill(server_pid, signal.SIGTERM) == None
-            os.getpgid(server_pid) # throw OSError if no such pid
-            now = time.time()
+            if not passenger_root or timeout - now < wait / 2:
+                # Half timeout has elapsed. Start sending SIGTERM
+                os.kill(server_pid, signal.SIGTERM)
+            # Raise OSError if process has disappeared
+            os.getpgid(server_pid)
             time.sleep(0.1)
+            now = time.time()
     except IOError:
-        good_pid = False
+        pass
     except OSError:
-        good_pid = False
+        pass
 
-def run(websockets=False, reuse_server=False):
-    cwd = os.getcwd()
-    os.chdir(os.path.join(MY_DIRNAME, ARV_API_SERVER_DIR))
+def find_available_port():
+    """Return an IPv4 port number that is not in use right now.
 
-    if websockets:
-        pid_file = WEBSOCKETS_SERVER_PID_PATH
-    else:
-        pid_file = SERVER_PID_PATH
+    We assume whoever needs to use the returned port is able to reuse
+    a recently used port without waiting for TIME_WAIT (see
+    SO_REUSEADDR / SO_REUSEPORT).
 
-    test_pid = find_server_pid(pid_file, 0)
+    Some opportunity for races here, but it's better than choosing
+    something at random and not checking at all. If all of our servers
+    (hey Passenger) knew that listening on port 0 was a thing, the OS
+    would take care of the races, and this wouldn't be needed at all.
+    """
 
-    if test_pid == None or not reuse_server:
-        # do not try to run both server variants at once
-        stop()
+    sock = socket.socket()
+    sock.bind(('0.0.0.0', 0))
+    port = sock.getsockname()[1]
+    sock.close()
+    return port
 
-        # delete cached discovery document
-        shutil.rmtree(arvados.http_cache('discovery'))
+def run(leave_running_atexit=False):
+    """Ensure an API server is running, and ARVADOS_API_* env vars have
+    admin credentials for it.
 
-        # Setup database
-        os.environ["RAILS_ENV"] = "test"
-        subprocess.call(['bundle', 'exec', 'rake', 'tmp:cache:clear'])
-        subprocess.call(['bundle', 'exec', 'rake', 'db:test:load'])
-        subprocess.call(['bundle', 'exec', 'rake', 'db:fixtures:load'])
+    If ARVADOS_TEST_API_HOST is set, a parent process has started a
+    test server for us to use: we just need to reset() it using the
+    admin token fixture.
 
-        if websockets:
-            os.environ["ARVADOS_WEBSOCKETS"] = "true"
-            subprocess.call(['openssl', 'req', '-new', '-x509', '-nodes',
-                             '-out', './self-signed.pem',
-                             '-keyout', './self-signed.key',
-                             '-days', '3650',
-                             '-subj', '/CN=localhost'])
-            subprocess.call(['bundle', 'exec',
-                             'passenger', 'start', '-d', '-p3333',
-                             '--pid-file',
-                             os.path.join(os.getcwd(), WEBSOCKETS_SERVER_PID_PATH),
-                             '--ssl',
-                             '--ssl-certificate', 'self-signed.pem',
-                             '--ssl-certificate-key', 'self-signed.key'])
-            os.environ["ARVADOS_API_HOST"] = "127.0.0.1:3333"
+    If a previous call to run() started a new server process, and it
+    is still running, we just need to reset() it to fixture state and
+    return.
+
+    If neither of those options work out, we'll really start a new
+    server.
+    """
+    global my_api_host
+
+    # Delete cached discovery document.
+    shutil.rmtree(arvados.http_cache('discovery'))
+
+    pid_file = os.path.join(SERVICES_SRC_DIR, 'api', SERVER_PID_PATH)
+    pid_file_ok = find_server_pid(pid_file, 0)
+
+    existing_api_host = os.environ.get('ARVADOS_TEST_API_HOST', my_api_host)
+    if existing_api_host and pid_file_ok:
+        if existing_api_host == my_api_host:
+            try:
+                return reset()
+            except:
+                # Fall through to shutdown-and-start case.
+                pass
         else:
-            subprocess.call(['bundle', 'exec', 'rails', 'server', '-d',
-                             '--pid',
-                             os.path.join(os.getcwd(), SERVER_PID_PATH),
-                             '-p3001'])
-            os.environ["ARVADOS_API_HOST"] = "127.0.0.1:3001"
+            # Server was provided by parent. Can't recover if it's
+            # unresettable.
+            return reset()
 
-        pid = find_server_pid(SERVER_PID_PATH)
+    # Before trying to start up our own server, call stop() to avoid
+    # "Phusion Passenger Standalone is already running on PID 12345".
+    # (If we've gotten this far, ARVADOS_TEST_API_HOST isn't set, so
+    # we know the server is ours to kill.)
+    stop(force=True)
 
-    os.environ["ARVADOS_API_HOST_INSECURE"] = "true"
-    os.environ["ARVADOS_API_TOKEN"] = ""
-    os.chdir(cwd)
+    restore_cwd = os.getcwd()
+    api_src_dir = os.path.join(SERVICES_SRC_DIR, 'api')
+    os.chdir(api_src_dir)
 
-def stop():
-    cwd = os.getcwd()
-    os.chdir(os.path.join(MY_DIRNAME, ARV_API_SERVER_DIR))
+    # Either we haven't started a server of our own yet, or it has
+    # died, or we have lost our credentials, or something else is
+    # preventing us from calling reset(). Start a new one.
 
-    kill_server_pid(WEBSOCKETS_SERVER_PID_PATH, 0)
-    kill_server_pid(SERVER_PID_PATH, 0)
+    if not os.path.exists('tmp/self-signed.pem'):
+        # We assume here that either passenger reports its listening
+        # address as https:/0.0.0.0:port/. If it reports "127.0.0.1"
+        # then the certificate won't match the host and reset() will
+        # fail certificate verification. If it reports "localhost",
+        # clients (notably Python SDK's websocket client) might
+        # resolve localhost as ::1 and then fail to connect.
+        subprocess.check_call([
+            'openssl', 'req', '-new', '-x509', '-nodes',
+            '-out', 'tmp/self-signed.pem',
+            '-keyout', 'tmp/self-signed.key',
+            '-days', '3650',
+            '-subj', '/CN=0.0.0.0'],
+        stdout=sys.stderr)
 
-    try:
-        os.unlink('self-signed.pem')
-    except:
-        pass
+    port = find_available_port()
+    env = os.environ.copy()
+    env['RAILS_ENV'] = 'test'
+    env['ARVADOS_WEBSOCKETS'] = 'yes'
+    env.pop('ARVADOS_TEST_API_HOST', None)
+    env.pop('ARVADOS_API_HOST', None)
+    env.pop('ARVADOS_API_HOST_INSECURE', None)
+    env.pop('ARVADOS_API_TOKEN', None)
+    start_msg = subprocess.check_output(
+        ['bundle', 'exec',
+         'passenger', 'start', '-d', '-p{}'.format(port),
+         '--pid-file', os.path.join(os.getcwd(), pid_file),
+         '--log-file', os.path.join(os.getcwd(), 'log/test.log'),
+         '--ssl',
+         '--ssl-certificate', 'tmp/self-signed.pem',
+         '--ssl-certificate-key', 'tmp/self-signed.key'],
+        env=env)
 
-    try:
-        os.unlink('self-signed.key')
-    except:
-        pass
+    if not leave_running_atexit:
+        atexit.register(kill_server_pid, pid_file, passenger_root=api_src_dir)
 
-    os.chdir(cwd)
+    match = re.search(r'Accessible via: https://(.*?)/', start_msg)
+    if not match:
+        raise Exception(
+            "Passenger did not report endpoint: {}".format(start_msg))
+    my_api_host = match.group(1)
+    os.environ['ARVADOS_API_HOST'] = my_api_host
+
+    # Make sure the server has written its pid file before continuing
+    find_server_pid(pid_file)
+
+    reset()
+    os.chdir(restore_cwd)
+
+def reset():
+    """Reset the test server to fixture state.
+
+    This resets the ARVADOS_TEST_API_HOST provided by a parent process
+    if any, otherwise the server started by run().
+
+    It also resets ARVADOS_* environment vars to point to the test
+    server with admin credentials.
+    """
+    existing_api_host = os.environ.get('ARVADOS_TEST_API_HOST', my_api_host)
+    token = auth_token('admin')
+    httpclient = httplib2.Http(ca_certs=os.path.join(
+        SERVICES_SRC_DIR, 'api', 'tmp', 'self-signed.pem'))
+    httpclient.request(
+        'https://{}/database/reset'.format(existing_api_host),
+        'POST',
+        headers={'Authorization': 'OAuth2 {}'.format(token)})
+    os.environ['ARVADOS_API_HOST_INSECURE'] = 'true'
+    os.environ['ARVADOS_API_HOST'] = existing_api_host
+    os.environ['ARVADOS_API_TOKEN'] = token
+
+def stop(force=False):
+    """Stop the API server, if one is running.
+
+    If force==False, kill it only if we started it ourselves. (This
+    supports the use case where a Python test suite calls run(), but
+    run() just uses the ARVADOS_TEST_API_HOST provided by the parent
+    process, and the test suite cleans up after itself by calling
+    stop(). In this case the test server provided by the parent
+    process should be left alone.)
+
+    If force==True, kill it even if we didn't start it
+    ourselves. (This supports the use case in __main__, where "run"
+    and "stop" happen in different processes.)
+    """
+    global my_api_host
+    if force or my_api_host is not None:
+        kill_server_pid(os.path.join(SERVICES_SRC_DIR, 'api', SERVER_PID_PATH))
+        my_api_host = None
 
 def _start_keep(n, keep_args):
     keep0 = tempfile.mkdtemp()
-    keep_cmd = ["bin/keep",
+    port = find_available_port()
+    keep_cmd = ["keepstore",
                 "-volumes={}".format(keep0),
-                "-listen=:{}".format(25107+n),
-                "-pid={}".format("tmp/keep{}.pid".format(n))]
+                "-listen=:{}".format(port),
+                "-pid={}".format("{}/keep{}.pid".format(TEST_TMPDIR, n))]
 
     for arg, val in keep_args.iteritems():
         keep_cmd.append("{}={}".format(arg, val))
 
     kp0 = subprocess.Popen(keep_cmd)
-    with open("tmp/keep{}.pid".format(n), 'w') as f:
+    with open("{}/keep{}.pid".format(TEST_TMPDIR, n), 'w') as f:
         f.write(str(kp0.pid))
 
-    with open("tmp/keep{}.volume".format(n), 'w') as f:
+    with open("{}/keep{}.volume".format(TEST_TMPDIR, n), 'w') as f:
         f.write(keep0)
+
+    return port
 
 def run_keep(blob_signing_key=None, enforce_permissions=False):
     stop_keep()
 
-    cwd = os.getcwd()
-    os.chdir(os.path.join(MY_DIRNAME, KEEP_SERVER_DIR))
-    if os.environ.get('GOPATH') == None:
-        os.environ["GOPATH"] = os.getcwd()
-    else:
-        os.environ["GOPATH"] = os.getcwd() + ":" + os.environ["GOPATH"]
-
-    subprocess.call(["./go.sh", "install", "keep"])
-
-    if not os.path.exists("tmp"):
-        os.mkdir("tmp")
-
     keep_args = {}
     if blob_signing_key:
-        with open("tmp/keep.blob_signing_key", "w") as f:
+        with open(os.path.join(TEST_TMPDIR, "keep.blob_signing_key"), "w") as f:
+            keep_args['--permission-key-file'] = f.name
             f.write(blob_signing_key)
-        keep_args['--permission-key-file'] = 'tmp/keep.blob_signing_key'
     if enforce_permissions:
         keep_args['--enforce-permissions'] = 'true'
 
-    _start_keep(0, keep_args)
-    _start_keep(1, keep_args)
-
-    os.environ["ARVADOS_API_HOST"] = "127.0.0.1:3001"
-    os.environ["ARVADOS_API_HOST_INSECURE"] = "true"
-
-    authorize_with("admin")
-    api = arvados.api('v1', cache=False)
+    api = arvados.api(
+        version='v1',
+        host=os.environ['ARVADOS_API_HOST'],
+        token=os.environ['ARVADOS_API_TOKEN'],
+        insecure=True)
     for d in api.keep_services().list().execute()['items']:
         api.keep_services().delete(uuid=d['uuid']).execute()
     for d in api.keep_disks().list().execute()['items']:
         api.keep_disks().delete(uuid=d['uuid']).execute()
 
-    s1 = api.keep_services().create(body={"keep_service": {"service_host": "localhost",  "service_port": 25107, "service_type": "disk"} }).execute()
-    s2 = api.keep_services().create(body={"keep_service": {"service_host": "localhost",  "service_port": 25108, "service_type": "disk"} }).execute()
-    api.keep_disks().create(body={"keep_disk": {"keep_service_uuid": s1["uuid"] } }).execute()
-    api.keep_disks().create(body={"keep_disk": {"keep_service_uuid": s2["uuid"] } }).execute()
-
-    os.chdir(cwd)
+    for d in range(0, 2):
+        port = _start_keep(d, keep_args)
+        svc = api.keep_services().create(body={'keep_service': {
+            'uuid': 'zzzzz-bi6l4-keepdisk{:07d}'.format(d),
+            'service_host': 'localhost',
+            'service_port': port,
+            'service_type': 'disk',
+            'service_ssl_flag': False,
+        }}).execute()
+        api.keep_disks().create(body={
+            'keep_disk': {'keep_service_uuid': svc['uuid'] }
+        }).execute()
 
 def _stop_keep(n):
-    kill_server_pid("tmp/keep{}.pid".format(n), 0)
-    if os.path.exists("tmp/keep{}.volume".format(n)):
-        with open("tmp/keep{}.volume".format(n), 'r') as r:
+    kill_server_pid("{}/keep{}.pid".format(TEST_TMPDIR, n), 0)
+    if os.path.exists("{}/keep{}.volume".format(TEST_TMPDIR, n)):
+        with open("{}/keep{}.volume".format(TEST_TMPDIR, n), 'r') as r:
             shutil.rmtree(r.read(), True)
-        os.unlink("tmp/keep{}.volume".format(n))
-    if os.path.exists("tmp/keep.blob_signing_key"):
-        os.remove("tmp/keep.blob_signing_key")
+        os.unlink("{}/keep{}.volume".format(TEST_TMPDIR, n))
+    if os.path.exists(os.path.join(TEST_TMPDIR, "keep.blob_signing_key")):
+        os.remove(os.path.join(TEST_TMPDIR, "keep.blob_signing_key"))
 
 def stop_keep():
-    cwd = os.getcwd()
-    os.chdir(os.path.join(MY_DIRNAME, KEEP_SERVER_DIR))
-
     _stop_keep(0)
     _stop_keep(1)
 
-    os.chdir(cwd)
-
-def run_keep_proxy(auth):
+def run_keep_proxy():
     stop_keep_proxy()
 
-    cwd = os.getcwd()
-    os.chdir(os.path.join(MY_DIRNAME, KEEP_SERVER_DIR))
-    if os.environ.get('GOPATH') == None:
-        os.environ["GOPATH"] = os.getcwd()
-    else:
-        os.environ["GOPATH"] = os.getcwd() + ":" + os.environ["GOPATH"]
+    admin_token = auth_token('admin')
+    port = find_available_port()
+    env = os.environ.copy()
+    env['ARVADOS_API_TOKEN'] = admin_token
+    kp = subprocess.Popen(
+        ['keepproxy',
+         '-pid={}/keepproxy.pid'.format(TEST_TMPDIR),
+         '-listen=:{}'.format(port)],
+        env=env)
 
-    subprocess.call(["./go.sh", "install", "arvados.org/keepproxy"])
-
-    if not os.path.exists("tmp"):
-        os.mkdir("tmp")
-
-    os.environ["ARVADOS_API_HOST"] = "127.0.0.1:3001"
-    os.environ["ARVADOS_API_HOST_INSECURE"] = "true"
-    os.environ["ARVADOS_API_TOKEN"] = fixture("api_client_authorizations")[auth]["api_token"]
-
-    kp0 = subprocess.Popen(["bin/keepproxy", "-pid=tmp/keepproxy.pid", "-listen=:{}".format(25101)])
-
-    authorize_with("admin")
-    api = arvados.api('v1', cache=False)
-    api.keep_services().create(body={"keep_service": {"service_host": "localhost",  "service_port": 25101, "service_type": "proxy"} }).execute()
-
-    arvados.config.settings()["ARVADOS_KEEP_PROXY"] = "http://localhost:25101"
-
-    os.chdir(cwd)
+    api = arvados.api(
+        version='v1',
+        host=os.environ['ARVADOS_API_HOST'],
+        token=admin_token,
+        insecure=True)
+    for d in api.keep_services().list(
+            filters=[['service_type','=','proxy']]).execute()['items']:
+        api.keep_services().delete(uuid=d['uuid']).execute()
+    api.keep_services().create(body={'keep_service': {
+        'service_host': 'localhost',
+        'service_port': port,
+        'service_type': 'proxy',
+        'service_ssl_flag': False,
+    }}).execute()
+    os.environ["ARVADOS_KEEP_PROXY"] = "http://localhost:{}".format(port)
 
 def stop_keep_proxy():
-    cwd = os.getcwd()
-    os.chdir(os.path.join(MY_DIRNAME, KEEP_SERVER_DIR))
-    kill_server_pid("tmp/keepproxy.pid", 0)
-    os.chdir(cwd)
+    kill_server_pid(os.path.join(TEST_TMPDIR, "keepproxy.pid"), 0)
 
 def fixture(fix):
     '''load a fixture yaml file'''
-    with open(os.path.join(MY_DIRNAME, ARV_API_SERVER_DIR, "test", "fixtures",
+    with open(os.path.join(SERVICES_SRC_DIR, 'api', "test", "fixtures",
                            fix + ".yml")) as f:
-        return yaml.load(f.read())
+        yaml_file = f.read()
+        try:
+          trim_index = yaml_file.index("# Test Helper trims the rest of the file")
+          yaml_file = yaml_file[0:trim_index]
+        except ValueError:
+          pass
+        return yaml.load(yaml_file)
 
-def authorize_with(token):
-    '''token is the symbolic name of the token from the api_client_authorizations fixture'''
-    arvados.config.settings()["ARVADOS_API_TOKEN"] = fixture("api_client_authorizations")[token]["api_token"]
+def auth_token(token_name):
+    return fixture("api_client_authorizations")[token_name]["api_token"]
+
+def authorize_with(token_name):
+    '''token_name is the symbolic name of the token from the api_client_authorizations fixture'''
+    arvados.config.settings()["ARVADOS_API_TOKEN"] = auth_token(token_name)
     arvados.config.settings()["ARVADOS_API_HOST"] = os.environ.get("ARVADOS_API_HOST")
     arvados.config.settings()["ARVADOS_API_HOST_INSECURE"] = "true"
 
+class TestCaseWithServers(unittest.TestCase):
+    """TestCase to start and stop supporting Arvados servers.
+
+    Define any of MAIN_SERVER, KEEP_SERVER, and/or KEEP_PROXY_SERVER
+    class variables as a dictionary of keyword arguments.  If you do,
+    setUpClass will start the corresponding servers by passing these
+    keyword arguments to the run, run_keep, and/or run_keep_server
+    functions, respectively.  It will also set Arvados environment
+    variables to point to these servers appropriately.  If you don't
+    run a Keep or Keep proxy server, setUpClass will set up a
+    temporary directory for Keep local storage, and set it as
+    KEEP_LOCAL_STORE.
+
+    tearDownClass will stop any servers started, and restore the
+    original environment.
+    """
+    MAIN_SERVER = None
+    KEEP_SERVER = None
+    KEEP_PROXY_SERVER = None
+
+    @staticmethod
+    def _restore_dict(src, dest):
+        for key in dest.keys():
+            if key not in src:
+                del dest[key]
+        dest.update(src)
+
+    @classmethod
+    def setUpClass(cls):
+        cls._orig_environ = os.environ.copy()
+        cls._orig_config = arvados.config.settings().copy()
+        cls._cleanup_funcs = []
+        os.environ.pop('ARVADOS_KEEP_PROXY', None)
+        os.environ.pop('ARVADOS_EXTERNAL_CLIENT', None)
+        for server_kwargs, start_func, stop_func in (
+                (cls.MAIN_SERVER, run, reset),
+                (cls.KEEP_SERVER, run_keep, stop_keep),
+                (cls.KEEP_PROXY_SERVER, run_keep_proxy, stop_keep_proxy)):
+            if server_kwargs is not None:
+                start_func(**server_kwargs)
+                cls._cleanup_funcs.append(stop_func)
+        if (cls.KEEP_SERVER is None) and (cls.KEEP_PROXY_SERVER is None):
+            cls.local_store = tempfile.mkdtemp()
+            os.environ['KEEP_LOCAL_STORE'] = cls.local_store
+            cls._cleanup_funcs.append(
+                lambda: shutil.rmtree(cls.local_store, ignore_errors=True))
+        else:
+            os.environ.pop('KEEP_LOCAL_STORE', None)
+        arvados.config.initialize()
+
+    @classmethod
+    def tearDownClass(cls):
+        for clean_func in cls._cleanup_funcs:
+            clean_func()
+        cls._restore_dict(cls._orig_environ, os.environ)
+        cls._restore_dict(cls._orig_config, arvados.config.settings())
+
+
 if __name__ == "__main__":
+    actions = ['start', 'stop',
+               'start_keep', 'stop_keep',
+               'start_keep_proxy', 'stop_keep_proxy']
     parser = argparse.ArgumentParser()
-    parser.add_argument('action', type=str, help='''one of "start", "stop", "start_keep", "stop_keep"''')
-    parser.add_argument('--websockets', action='store_true', default=False)
-    parser.add_argument('--reuse', action='store_true', default=False)
-    parser.add_argument('--auth', type=str, help='Print authorization info for given api_client_authorizations fixture')
+    parser.add_argument('action', type=str, help="one of {}".format(actions))
+    parser.add_argument('--auth', type=str, metavar='FIXTURE_NAME', help='Print authorization info for given api_client_authorizations fixture')
     args = parser.parse_args()
 
     if args.action == 'start':
-        run(websockets=args.websockets, reuse_server=args.reuse)
-        if args.auth != None:
-            authorize_with(args.auth)
-            print("export ARVADOS_API_HOST={}".format(arvados.config.settings()["ARVADOS_API_HOST"]))
-            print("export ARVADOS_API_TOKEN={}".format(arvados.config.settings()["ARVADOS_API_TOKEN"]))
-            print("export ARVADOS_API_HOST_INSECURE={}".format(arvados.config.settings()["ARVADOS_API_HOST_INSECURE"]))
+        stop(force=('ARVADOS_TEST_API_HOST' not in os.environ))
+        run(leave_running_atexit=True)
+        host = os.environ['ARVADOS_API_HOST']
+        if args.auth is not None:
+            token = auth_token(args.auth)
+            print("export ARVADOS_API_TOKEN={}".format(pipes.quote(token)))
+            print("export ARVADOS_API_HOST={}".format(pipes.quote(host)))
+            print("export ARVADOS_API_HOST_INSECURE=true")
+        else:
+            print(host)
     elif args.action == 'stop':
-        stop()
+        stop(force=('ARVADOS_TEST_API_HOST' not in os.environ))
     elif args.action == 'start_keep':
         run_keep()
     elif args.action == 'stop_keep':
         stop_keep()
     elif args.action == 'start_keep_proxy':
-        run_keep_proxy("admin")
+        run_keep_proxy()
     elif args.action == 'stop_keep_proxy':
         stop_keep_proxy()
     else:
-        print('Unrecognized action "{}", actions are "start", "stop", "start_keep", "stop_keep"'.format(args.action))
+        print("Unrecognized action '{}'. Actions are: {}.".format(args.action, actions))

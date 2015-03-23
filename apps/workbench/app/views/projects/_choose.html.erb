@@ -1,10 +1,14 @@
-<div class="modal">
+<div class="modal modal-with-loading-spinner">
   <div class="modal-dialog">
     <div class="modal-content">
 
       <div class="modal-header">
         <button type="button" class="close" onClick="reset_form()" data-dismiss="modal" aria-hidden="true">&times;</button>
-        <h4 class="modal-title"><%= params[:title] || 'Choose project' %></h4>
+        <div>
+          <div class="col-sm-6"> <h4 class="modal-title"><%= params[:title] || 'Choose project' %></h4> </div>
+          <div class="spinner spinner-32px spinner-h-center col-sm-1" hidden="true"></div>
+        </div>
+        <br/>
       </div>
 
       <div class="modal-body">
@@ -13,22 +17,20 @@
             <% tree.each do |projectnode| %>
               <% if projectnode[:object].is_a? String %>
                 <div class="row" style="padding-left: <%= 1 + projectnode[:depth] %>em; margin-right: 0px">
-                  <i class="fa fa-fw fa-folder-open-o"></i>
+                  <i class="fa fa-fw fa-share-alt"></i>
                   <%= projectnode[:object] %>
                 </div>
               <% else
                  row_selectable = !params[:editable] || projectnode[:object].editable?
-                 folder_class = "fa-folder-o"
                  if projectnode[:object].uuid == current_user.uuid
-                   row_name = "My Projects"
-                   row_selectable &&= params[:my_root_selectable]
-                   folder_class = "fa-folder-open-o" if not row_selectable
+                   row_name = "Home"
+                   row_selectable = true
                  else
                    row_name = projectnode[:object].friendly_link_name || 'New project'
                  end %>
                 <div class="<%= 'selectable project' if row_selectable %> row"
                      style="padding-left: <%= 1 + projectnode[:depth] %>em; margin-right: 0px" data-object-uuid="<%= projectnode[:object].uuid %>">
-                  <i class="fa fa-fw <%= folder_class %>"></i> <%= row_name %>
+                  <i class="fa fa-fw fa-folder-o"></i> <%= row_name %>
                 </div>
               <% end %>
             <% end %>
@@ -38,7 +40,7 @@
 
       <div class="modal-footer">
         <button class="btn btn-default" data-dismiss="modal" aria-hidden="true">Cancel</button>
-        <button class="btn btn-primary" aria-hidden="true"><%= params[:action_name] || 'Select' %></button>
+        <button class="btn btn-primary" aria-hidden="true" data-enable-if-selection disabled><%= params[:action_name] || 'Select' %></button>
         <div class="modal-error hide" style="text-align: left; margin-top: 1em;">
         </div>
       </div>

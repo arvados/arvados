@@ -2,6 +2,10 @@
     padding-top: 5px;
     padding-bottom: 5px;
     padding-right: 1em;
+    color: #888;
+}
+.selectable-container > .row.selectable {
+    color: #000;
 }
 .selectable.active, .selectable:hover {
     background: #d9edf7;
@@ -13,4 +17,7 @@
 .selectable.active:hover * {
     background: #428bca;
     color: #fff;
+}
+.selectable-container > .row.class-separator {
+    background: #ddd;
 }

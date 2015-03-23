@@ -1,0 +1,9 @@
+<% icon_class = fa_icon_class_for_class(User) %>
+<% @objects.each do |object| %>
+  <div class="row filterable selectable" data-object-uuid="<%= object.uuid %>">
+    <div class="col-sm-12" style="overflow-x:hidden">
+      <i class="fa fa-fw <%= icon_class %>"></i>
+      <%= object.full_name %> &lt;<%= object.email %>&gt;
+    </div>
+  </div>
+<% end %>

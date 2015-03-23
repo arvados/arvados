@@ -2,17 +2,21 @@ require 'test_helper'
 
 class Arvados::V1::LinksControllerTest < ActionController::TestCase
 
-  test "no symbol keys in serialized hash" do
-    link = {
-      properties: {username: 'testusername'},
-      link_class: 'test',
-      name: 'encoding',
-      tail_uuid: users(:admin).uuid,
-      head_uuid: virtual_machines(:testvm).uuid
-    }
-    authorize_with :admin
-    [link, link.to_json].each do |formatted_link|
-      post :create, link: formatted_link
+  ['link', 'link_json'].each do |formatted_link|
+    test "no symbol keys in serialized hash #{formatted_link}" do
+      link = {
+        properties: {username: 'testusername'},
+        link_class: 'test',
+        name: 'encoding',
+        tail_uuid: users(:admin).uuid,
+        head_uuid: virtual_machines(:testvm).uuid
+      }
+      authorize_with :admin
+      if formatted_link == 'link_json'
+        post :create, link: link.to_json
+      else
+        post :create, link: link
+      end
       assert_response :success
       assert_not_nil assigns(:object)
       assert_equal 'testusername', assigns(:object).properties['username']
@@ -118,7 +122,7 @@ class Arvados::V1::LinksControllerTest < ActionController::TestCase
       link_class: 'test',
       name: 'stuff',
       head_uuid: users(:active).uuid,
-      tail_uuid: virtual_machines(:testvm).uuid
+      tail_uuid: virtual_machines(:testvm2).uuid
     }
     authorize_with :active
     post :create, link: link
@@ -133,7 +137,7 @@ class Arvados::V1::LinksControllerTest < ActionController::TestCase
     assert_response :success
     found = assigns(:objects)
     assert_not_equal 0, found.count
-    assert_equal found.count, (found.select { |f| f.tail_uuid.match /[a-z0-9]{5}-tpzed-[a-z0-9]{15}/}).count
+    assert_equal found.count, (found.select { |f| f.tail_uuid.match User.uuid_regex }).count
   end
 
   test "filter links with 'is_a' operator with more than one" do
@@ -144,7 +148,10 @@ class Arvados::V1::LinksControllerTest < ActionController::TestCase
     assert_response :success
     found = assigns(:objects)
     assert_not_equal 0, found.count
-    assert_equal found.count, (found.select { |f| f.tail_uuid.match /[a-z0-9]{5}-(tpzed|j7d0g)-[a-z0-9]{15}/}).count
+    assert_equal found.count, (found.select { |f|
+                                 f.tail_uuid.match User.uuid_regex or
+                                 f.tail_uuid.match Group.uuid_regex
+                               }).count
   end
 
   test "filter links with 'is_a' operator with bogus type" do
@@ -165,7 +172,7 @@ class Arvados::V1::LinksControllerTest < ActionController::TestCase
     assert_response :success
     found = assigns(:objects)
     assert_not_equal 0, found.count
-    assert_equal found.count, (found.select { |f| f.head_uuid.match /[a-f0-9]{32}\+\d+/}).count
+    assert_equal found.count, (found.select { |f| f.head_uuid.match Collection.uuid_regex}).count
   end
 
   test "test can still use where tail_kind" do
@@ -176,7 +183,7 @@ class Arvados::V1::LinksControllerTest < ActionController::TestCase
     assert_response :success
     found = assigns(:objects)
     assert_not_equal 0, found.count
-    assert_equal found.count, (found.select { |f| f.tail_uuid.match /[a-z0-9]{5}-tpzed-[a-z0-9]{15}/}).count
+    assert_equal found.count, (found.select { |f| f.tail_uuid.match User.uuid_regex }).count
   end
 
   test "test can still use where head_kind" do
@@ -187,7 +194,7 @@ class Arvados::V1::LinksControllerTest < ActionController::TestCase
     assert_response :success
     found = assigns(:objects)
     assert_not_equal 0, found.count
-    assert_equal found.count, (found.select { |f| f.head_uuid.match /[a-z0-9]{5}-tpzed-[a-z0-9]{15}/}).count
+    assert_equal found.count, (found.select { |f| f.head_uuid.match User.uuid_regex }).count
   end
 
   test "test can still use filter tail_kind" do
@@ -198,7 +205,7 @@ class Arvados::V1::LinksControllerTest < ActionController::TestCase
     assert_response :success
     found = assigns(:objects)
     assert_not_equal 0, found.count
-    assert_equal found.count, (found.select { |f| f.tail_uuid.match /[a-z0-9]{5}-tpzed-[a-z0-9]{15}/}).count
+    assert_equal found.count, (found.select { |f| f.tail_uuid.match User.uuid_regex }).count
   end
 
   test "test can still use filter head_kind" do
@@ -209,7 +216,7 @@ class Arvados::V1::LinksControllerTest < ActionController::TestCase
     assert_response :success
     found = assigns(:objects)
     assert_not_equal 0, found.count
-    assert_equal found.count, (found.select { |f| f.head_uuid.match /[a-z0-9]{5}-tpzed-[a-z0-9]{15}/}).count
+    assert_equal found.count, (found.select { |f| f.head_uuid.match User.uuid_regex }).count
   end
 
   test "head_kind matches head_uuid" do
@@ -270,17 +277,88 @@ class Arvados::V1::LinksControllerTest < ActionController::TestCase
     assert_response :success
   end
 
-  test "refuse duplicate name" do
-    the_name = links(:job_name_in_aproject).name
-    the_project = links(:job_name_in_aproject).tail_uuid
+  test "project owner can show a project permission" do
+    uuid = links(:project_viewer_can_read_project).uuid
     authorize_with :active
-    post :create, link: {
-      tail_uuid: the_project,
-      head_uuid: specimens(:owned_by_active_user).uuid,
-      link_class: 'name',
-      name: the_name,
-      properties: {this_s: "a duplicate name"}
+    get :show, id: uuid
+    assert_response :success
+    assert_equal(uuid, assigns(:object).andand.uuid)
+  end
+
+  test "admin can show a project permission" do
+    uuid = links(:project_viewer_can_read_project).uuid
+    authorize_with :admin
+    get :show, id: uuid
+    assert_response :success
+    assert_equal(uuid, assigns(:object).andand.uuid)
+  end
+
+  test "project viewer can't show others' project permissions" do
+    authorize_with :project_viewer
+    get :show, id: links(:admin_can_write_aproject).uuid
+    assert_response 404
+  end
+
+  test "requesting a nonexistent link returns 404" do
+    authorize_with :active
+    get :show, id: 'zzzzz-zzzzz-zzzzzzzzzzzzzzz'
+    assert_response 404
+  end
+
+  test "retrieve all permissions using generic links index api" do
+    skip "(not implemented)"
+    # Links.readable_by() does not return the full set of permission
+    # links that are visible to a user (i.e., all permission links
+    # whose head_uuid references an object for which the user has
+    # ownership or can_manage permission). Therefore, neither does
+    # /arvados/v1/links.
+    #
+    # It is possible to retrieve the full set of permissions for a
+    # single object via /arvados/v1/permissions.
+    authorize_with :active
+    get :index, filters: [['link_class', '=', 'permission'],
+                          ['head_uuid', '=', groups(:aproject).uuid]]
+    assert_response :success
+    assert_not_nil assigns(:objects)
+    assert_includes(assigns(:objects).map(&:uuid),
+                    links(:project_viewer_can_read_project).uuid)
+  end
+
+  test "admin can index project permissions" do
+    authorize_with :admin
+    get :index, filters: [['link_class', '=', 'permission'],
+                          ['head_uuid', '=', groups(:aproject).uuid]]
+    assert_response :success
+    assert_not_nil assigns(:objects)
+    assert_includes(assigns(:objects).map(&:uuid),
+                    links(:project_viewer_can_read_project).uuid)
+  end
+
+  test "project viewer can't index others' project permissions" do
+    authorize_with :project_viewer
+    get :index, filters: [['link_class', '=', 'permission'],
+                          ['head_uuid', '=', groups(:aproject).uuid],
+                          ['tail_uuid', '!=', users(:project_viewer).uuid]]
+    assert_response :success
+    assert_not_nil assigns(:objects)
+    assert_empty assigns(:objects)
+  end
+
+  # Granting permissions.
+  test "grant can_read on project to other users in group" do
+    authorize_with :user_foo_in_sharing_group
+
+    refute users(:user_bar_in_sharing_group).can?(read: collections(:collection_owned_by_foo).uuid)
+
+    post :create, {
+      link: {
+        tail_uuid: users(:user_bar_in_sharing_group).uuid,
+        link_class: 'permission',
+        name: 'can_read',
+        head_uuid: collections(:collection_owned_by_foo).uuid,
+      }
     }
-    assert_response 422
+    assert_response :success
+    assert users(:user_bar_in_sharing_group).can?(read: collections(:collection_owned_by_foo).uuid)
   end
 end

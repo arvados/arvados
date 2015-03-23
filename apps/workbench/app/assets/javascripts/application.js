@@ -21,14 +21,21 @@
 //= require bootstrap/modal
 //= require bootstrap/button
 //= require bootstrap3-editable/bootstrap-editable
+//= require bootstrap-tab-history
+//= require wiselinks
+//= require angular
+//= require raphael
+//= require morris
+//= require jquery.number.min
 //= require_tree .
 
 jQuery(function($){
-    $.ajaxSetup({
-        headers: {
-            'X-CSRF-Token': $('meta[name="csrf-token"]').attr('content')
-        }
+    $(document).ajaxStart(function(){
+      $('.modal-with-loading-spinner .spinner').show();
+    }).ajaxStop(function(){
+      $('.modal-with-loading-spinner .spinner').hide();
     });
+
     $('[data-toggle=tooltip]').tooltip();
 
     $('.expand-collapse-row').on('click', function(event) {
@@ -99,12 +106,12 @@ jQuery(function($){
                 attr('data-tag-link-uuid', new_tag_uuid).
                 text(new_tag).
                 css('opacity', '0.2').
-                append('&nbsp;<a title="Delete tag"><i class="glyphicon glyphicon-trash"></i></a>&nbsp;');
+                append('&nbsp;<span class="removable-tag"><a title="Delete tag"><i class="fa fa-fw fa-trash-o"></i></a></span>');
             $(this).
                 parent().
                 find('>span').
                 append(new_tag_span).
-                append('&nbsp; ');
+                append(' ');
             $.ajax($(this).attr('data-remote-href'),
                            {dataType: 'json',
                             type: $(this).attr('data-remote-method'),
@@ -122,17 +129,22 @@ jQuery(function($){
                     this.addClass('label-danger').fadeTo('fast', '1');
                 });
             return false;
+        }).
+        on('click focusin', 'input.select-on-focus', function(event) {
+            event.target.select();
         });
 
     $(document).
         on('ajax:complete ready', function() {
             // See http://getbootstrap.com/javascript/#buttons
             $('.btn').button();
-        });
-
-    $(document).
+        }).
         on('ready ajax:complete', function() {
             $('[data-toggle~=tooltip]').tooltip({container:'body'});
+        }).
+        on('ready ajax:complete', function() {
+            // This makes the dialog close on Esc key, obviously.
+            $('.modal').attr('tabindex', '-1')
         });
 
     HeaderRowFixer = function(selector) {
@@ -170,4 +182,62 @@ jQuery(function($){
         fixer.duplicateTheadTr();
         fixer.fixThead();
     });
+
+    $(document).ready(function() {
+        /* When wiselinks is initialized, selection.js is not working. Since we want to stop
+           using selection.js in the near future, let's not initialize wiselinks for now. */
+
+        // window.wiselinks = new Wiselinks();
+
+        $(document).off('page:loading').on('page:loading', function(event, $target, render, url){
+            $("#page-wrapper").fadeOut(200);
+        });
+
+        $(document).off('page:redirected').on('page:redirected', function(event, $target, render, url){
+        });
+
+        $(document).off('page:always').on('page:always', function(event, xhr, settings){
+            $("#page-wrapper").fadeIn(200);
+        });
+
+        $(document).off('page:done').on('page:done', function(event, $target, status, url, data){
+        });
+
+        $(document).off('page:fail').on('page:fail', function(event, $target, status, url, error, code){
+        });
+    });
+
+    $(document).on('click', '.compute-detail', function(e) {
+        $(e.target).collapse('hide');
+    });
+
+    $(document).on('click', '.compute-node-summary', function(e) {
+        $(e.target.href).collapse('toggle');
+    });
+
+    $(document).on('click', '.force-cache-reload', function(e) {
+        history.replaceState( { nocache: true }, '' );
+    });
 });
+
+window.addEventListener("DOMContentLoaded", function(e) {
+    if(history.state) {
+        if(history.state.nocache) {
+            showLoadingModal();
+            history.replaceState( {}, '' );
+            location.reload(true);
+        }
+    }
+});
+
+function showLoadingModal() {
+    $('#loading-modal').modal('show');
+}
+
+function hideLoadingModal() {
+    $('#loading-modal').modal('hide');
+}
+
+function hasHTML5History() {
+    return !!(window.history && window.history.pushState);
+}

@@ -3,10 +3,10 @@
 
 # Ignore all logfiles and tempfiles.
 /log/*.log
+/log/*.log.gz
 /tmp
 
 # Sensitive files and local configuration
-/config/api.clinicalfuture.com.*
 /config/database.yml
 /config/initializers/omniauth.rb
 /config/application.yml

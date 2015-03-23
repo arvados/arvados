@@ -11,44 +11,24 @@
 # 5. Section in application.default.yml called "common"
 
 development:
-  # The blob_signing_key is a string of alphanumeric characters used
-  # to sign permission hints for Keep locators. It must be identical
-  # to the permission key given to Keep.  If you run both apiserver
-  # and Keep in development, change this to a hardcoded string and
-  # make sure both systems use the same value.
+  # Mandatory site secrets. See application.default.yml for more info.
+  secret_token: ~
   blob_signing_key: ~
+  uuid_prefix: bogus
+  workbench_address: https://localhost:3031
 
 production:
-  # At minimum, you need a nice long randomly generated secret_token here.
-  # Use a long string of alphanumeric characters (at least 36).
+  # Mandatory site secrets. See application.default.yml for more info.
   secret_token: ~
-
-  # blob_signing_key is required and must be identical to the
-  # permission secret provisioned to Keep.
-  # Use a long string of alphanumeric characters (at least 36).
   blob_signing_key: ~
-
   uuid_prefix: bogus
-
-  # compute_node_domain: example.org
-  # compute_node_nameservers:
-  #   - 127.0.0.1
-  #   - 192.168.1.1
-  #
-  # The version below is suitable for AWS.
-  # Uncomment and change <%# to <%= to use it.
-  # compute_node_nameservers: <%#
-  #   require 'net/http'
-  #   ['local', 'public'].collect do |iface|
-  #     Net::HTTP.get(URI("http://169.254.169.254/latest/meta-data/#{iface}-ipv4")).match(/^[\d\.]+$/)[0]
-  #   end << '172.16.0.23'
-  # %>
+  workbench_address: https://workbench.bogus.arvadosapi.com
 
 test:
-  uuid_prefix: zzzzz
-  secret_token: <%= rand(2**512).to_s(36) %>
+  # Tests should be able to run without further configuration, but if you do
+  # want to change your local test configuration, this is where to do it.
 
 common:
-  #git_repositories_dir: /var/cache/git
-  #git_internal_dir: /var/cache/arvados/internal.git
-
+  # Settings in this section will be used in all environments
+  # (development, production, test) except when overridden in the
+  # environment-specific sections above.

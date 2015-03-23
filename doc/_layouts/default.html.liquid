@@ -2,7 +2,7 @@
 <html>
   <head>
     <meta charset="utf-8">
-    <title>{% unless page.title == "Arvados | Documentation" %} Arvados | Documentation | {% endunless %}{{ page.title }}</title>
+    <title>{% unless page.title == "Arvados" %} Arvados | Documentation | {% endunless %}{{ page.title }}</title>
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
     <meta name="description" content="">
     <meta name="author" content="">
@@ -12,6 +12,8 @@
     <link href="{{ site.baseurl }}/css/nav-list.css" rel="stylesheet">
     <link href="{{ site.baseurl }}/css/badges.css" rel="stylesheet">
     <link href="{{ site.baseurl }}/css/code.css" rel="stylesheet">
+    <link href="{{ site.baseurl }}/css/font-awesome.css" rel="stylesheet">
+    <link href="{{ site.baseurl }}/css/carousel-override.css" rel="stylesheet">
     <style>
       html {
       height:100%;
@@ -58,7 +60,7 @@
       margin-top: -61px;
       }
     </style>
-    
+
     <!-- HTML5 shim, for IE6-8 support of HTML5 elements -->
     <!--[if lt IE 9]>
         <script src="../assets/js/html5shiv.js"></script>
@@ -98,14 +100,17 @@
 
     </script>
 
+{% if page.no_nav_left %}
+{% else %}
 <p style="text-align: center"><small>
 The content of this documentation is licensed under the
 <a href="{{ site.baseurl }}/user/copying/by-sa-3.0.html">Creative
   Commons Attribution-Share Alike 3.0 United States</a> licence.<br>
-Code samples in this documentation are licensed under the 
+Code samples in this documentation are licensed under the
 <a href="{{ site.baseurl }}/user/copying/LICENSE-2.0.html">Apache License, Version 2.0.</a></small>
 </p>
+{% endif %}
+
 
   </body>
 </html>
-

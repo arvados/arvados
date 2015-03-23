@@ -1,32 +1,40 @@
+import Queue
 import run_test_server
 import unittest
 import arvados
 import arvados.events
-import time
+import mock
+import threading
 
-class WebsocketTest(unittest.TestCase):
+class WebsocketTest(run_test_server.TestCaseWithServers):
+    MAIN_SERVER = {}
+
     def setUp(self):
-        run_test_server.run(websockets=True)
-
-    def on_event(self, ev):
-        if self.state == 1:
-            self.assertEqual(200, ev['status'])
-            self.state = 2
-        elif self.state == 2:
-            self.assertEqual(self.h[u'uuid'], ev[u'object_uuid'])
-            self.state = 3
-        elif self.state == 3:
-            self.fail()
-
-    def runTest(self):
-        self.state = 1
-
-        run_test_server.authorize_with("admin")
-        api = arvados.api('v1', cache=False)
-        arvados.events.subscribe(api, [['object_uuid', 'is_a', 'arvados#human']], lambda ev: self.on_event(ev))
-        time.sleep(1)
-        self.h = api.humans().create(body={}).execute()
-        time.sleep(1)
+        self.ws = None
 
     def tearDown(self):
-        run_test_server.stop()
+        if self.ws:
+            self.ws.close()
+        super(WebsocketTest, self).tearDown()
+
+    def _test_subscribe(self, poll_fallback, expect_type):
+        run_test_server.authorize_with('active')
+        events = Queue.Queue(3)
+        self.ws = arvados.events.subscribe(
+            arvados.api('v1'), [['object_uuid', 'is_a', 'arvados#human']],
+            events.put, poll_fallback=poll_fallback)
+        self.assertIsInstance(self.ws, expect_type)
+        self.assertEqual(200, events.get(True, 10)['status'])
+        human = arvados.api('v1').humans().create(body={}).execute()
+        self.assertEqual(human['uuid'], events.get(True, 10)['object_uuid'])
+        self.assertTrue(events.empty(), "got more events than expected")
+
+    def test_subscribe_websocket(self):
+        self._test_subscribe(
+            poll_fallback=False, expect_type=arvados.events.EventClient)
+
+    @mock.patch('arvados.events.EventClient.__init__')
+    def test_subscribe_poll(self, event_client_constr):
+        event_client_constr.side_effect = Exception('All is well')
+        self._test_subscribe(
+            poll_fallback=1, expect_type=arvados.events.PollClient)

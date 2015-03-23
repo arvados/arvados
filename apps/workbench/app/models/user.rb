@@ -27,15 +27,20 @@ class User < ArvadosBase
                                                {}))
   end
 
+  def contents params={}
+    Group.contents params.merge(uuid: self.uuid)
+  end
+
   def attributes_for_display
     super.reject { |k,v| %w(owner_uuid default_owner_uuid identity_url prefs).index k }
   end
 
- def attribute_editable? attr, *args
-    (not (self.uuid.andand.match(/000000000000000$/) and self.is_admin)) and super
+  def attribute_editable?(attr, ever=nil)
+    (ever or not (self.uuid.andand.match(/000000000000000$/) and
+                  self.is_admin)) and super
   end
 
-  def friendly_link_name
+  def friendly_link_name lookup=nil
     [self.first_name, self.last_name].compact.join ' '
   end
 
@@ -47,6 +52,12 @@ class User < ArvadosBase
 
   def self.setup params
     arvados_api_client.api(self, "/setup", params)
+  end
+
+  def update_profile params
+    self.private_reload(arvados_api_client.api(self.class,
+                                               "/#{self.uuid}/profile",
+                                               params))
   end
 
 end

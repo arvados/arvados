@@ -4,30 +4,20 @@ navsection: userguide
 title: Welcome to Arvados!
 ...
 
-This guide is intended to introduce new users to the Arvados system.  It covers initial configuration required to access the system and then presents several tutorials on using Arvados to do data processing.
+_If you are new to Arvados, please read the "Getting Started":{{site.baseurl}}/start/index.html guide for a quick introduction to working with Arvados._
 
-This user guide introduces how to use the major components of Arvados.  These are:
+This guide provides a reference for using Arvados to solve big data bioinformatics problems, including:
 
-* Keep: Content-addressable cluster file system designed for robust storage of very large files, such as whole genome sequences running in the hundreds of gigabytes
-* Crunch: Cluster compute engine designed for genomic analysis, such as alignment and variant calls
-* Metadata Database: Information about the genomic data stored in Keep, such as genomic traits and human subjects
-* Workbench: Arvados' Web interface
+* Robust storage of very large files, such as whole genome sequences, using the "Arvados Keep":{{site.baseurl}}/user/tutorials/tutorial-keep.html content-addressable cluster file system.
+* Running compute-intensive genomic analysis pipelines, such as alignment and variant calls using the "Arvados Crunch":{{site.baseurl}}/user/tutorials/intro-crunch.html cluster compute engine.
+* Storing and querying metadata about genome sequence files, such as human subjects and their phenotypic traits using the "Arvados Metadata Database.":{{site.baseurl}}/user/topics/tutorial-trait-search.html
+* Accessing, organizing, and sharing data, pipelines and results using the "Arvados Workbench":{{site.baseurl}}/user/getting_started/workbench.html web application.
 
-h2. Prerequisites
+This User Guide goes into more depth than the "Getting Started guide":{{site.baseurl}}/start/index.html, covers how to develop your own pipelines in addition to using pre-existing pipelines, covers the Arvados commandline tools in addition to the Workbench graphical interface to Arvados, and can be referenced in any order.
 
-To get the most value out of this guide, you should be comfortable with the following:
+The examples in this guide use the Arvados instance located at <a href="https://{{ site.arvados_workbench_host }}/" target="_blank">https://{{ site.arvados_workbench_host }}</a>.  If you are using a different Arvados instance replace @{{ site.arvados_workbench_host }}@ with your private instance in all of the examples in this guide.
 
-# Using a secure shell client such as SSH or PuTTY to log on to a remote server
-# Using the Unix command line shell, Bash
-# Viewing and editing files using a unix text editor such as vi, Emacs, or nano
-# Programming in Python
-# Revision control using Git
-
-We also recommend you read the "Arvados Platform Overview":https://arvados.org/projects/arvados/wiki#Platform-Overview for an introduction and background information about Arvados.
-
-The examples in this guide use the Arvados instance located at "https://{{ site.arvados_workbench_host }}/":https://{{ site.arvados_workbench_host }}/.  If you are using a different Arvados instance replace @{{ site.arvados_workbench_host }}@ with your private instance in all of the examples in this guide.
-
-The Arvados public beta instance is located at "https://workbench.qr1hi.arvadosapi.com/":https://workbench.qr1hi.arvadosapi.com/.  You must have an account in order to use this service.  If you would like to request an account, please send an email to "arvados@curoverse.com":mailto:arvados@curoverse.com.
+Curoverse maintains a public Arvados instance located at <a href="https://workbench.qr1hi.arvadosapi.com/" target="_blank">https://workbench.qr1hi.arvadosapi.com/</a>.  You must have an account in order to use this service.  If you would like to request an account, please send an email to "arvados@curoverse.com":mailto:arvados@curoverse.com.
 
 h2. Typographic conventions
 
@@ -47,4 +37,3 @@ foo.input foo.output
 </li>
 </ul>
 </notextile>
-

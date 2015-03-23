@@ -5,6 +5,7 @@ class Log < ArvadosModel
   serialize :properties, Hash
   before_validation :set_default_event_at
   attr_accessor :object, :object_kind
+  after_save :send_notify
 
   api_accessible :user, extend: :common do |t|
     t.add :id
@@ -47,7 +48,7 @@ class Log < ArvadosModel
     when "update"
       self.event_at = thing.modified_at
     when "destroy"
-      self.event_at = Time.now
+      self.event_at = db_current_time
     end
     self
   end
@@ -65,7 +66,7 @@ class Log < ArvadosModel
   alias_method :permission_to_delete, :permission_to_update
 
   def set_default_event_at
-    self.event_at ||= Time.now
+    self.event_at ||= db_current_time
   end
 
   def log_start_state
@@ -78,6 +79,10 @@ class Log < ArvadosModel
 
   def ensure_valid_uuids
     # logs can have references to deleted objects
+  end
+
+  def send_notify
+    connection.execute "NOTIFY logs, '#{self.id}'"
   end
 
 end

@@ -1,0 +1,19 @@
+#!/bin/bash
+
+USER_NAME="@@ARVADOS_USER_NAME@@"
+
+useradd $USER_NAME -s /bin/bash
+mkdir /home/$USER_NAME/.ssh -p
+
+# Install our token
+mkdir -p /home/$USER_NAME/.config/arvados;
+echo "ARVADOS_API_HOST=api" >> /home/$USER_NAME/.config/arvados/settings.conf
+echo "ARVADOS_API_HOST_INSECURE=yes" >> /home/$USER_NAME/.config/arvados/settings.conf
+echo "ARVADOS_API_TOKEN=$(cat /tmp/superuser_token)" >> /home/$USER_NAME/.config/arvados/settings.conf
+chmod 600 /home/$USER_NAME/.config/arvados/settings.conf
+
+chown $USER_NAME:$USER_NAME /home/$USER_NAME -R
+
+rm -f /tmp/superuser_token
+
+

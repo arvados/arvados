@@ -1,96 +1,45 @@
-<% content_for :content_top do %>
-  <% if @object and not @object.is_a?(Group) and @object.class.goes_in_projects? and @object.owner_uuid == current_user.uuid and not @name_link %>
-    <div class="pull-right" style="width: 40%">
-      <div class="alert alert-warning alert-dismissable">
-        <button type="button" class="close" data-dismiss="alert" aria-hidden="true">&times;</button>
-        <strong>Hey.</strong> This <%= @object.class_for_display.downcase %> belongs to your account, but it's not in any of your projects. If you want it to be easy to find in the future, you should move it to a project.<br />
-        <%= button_to(choose_projects_path(
-                   title: 'Move to...',
-                   editable: true,
-                   action_name: 'Move',
-                   action_href: url_for(action: :update),
-                   action_method: 'patch',
-                   action_data: {selection_param: @object.resource_param_name+'[owner_uuid]', success: 'page-refresh'}.to_json),
-                  { class: "btn btn-primary btn-sm", remote: true, method: 'get' }) do %>
-          <i class="fa fa-fw fa-folder"></i> Choose a project...
-        <% end %>
-      </div>
-    </div>
-  <% end %>
-<% end %>
-
-<% content_for :js do %>
-  tab_pane_valid_state = {};
-
-  function ajaxRefreshTabPane(pane) {
-    if (!tab_pane_valid_state[pane]) {
-      tab_pane_valid_state[pane] = true;
-      $.ajax('<%=j url_for() %>?<%= raw(controller.request.query_string) %>&tab_pane='+pane, {dataType: 'html', type: 'GET'}).
-        done(function(data, status, jqxhr) {
-          $('#' + pane + ' > div > div').html(data);
-          ajaxRefreshTabPane(pane);
-        });
-    }
-  }
-
-  $(window).on('load', smart_scroll_fixup);
-  $(document).on('shown.bs.tab', 'ul.nav-tabs > li > a', smart_scroll_fixup);
-
-  $(document).on('shown.bs.tab', function(e) {
-    ajaxRefreshTabPane(e.target.id.slice(0, -4));
-  });
-
-  $(document).on('arv-log-event', function() {
-    <% pane_list.each do |pane| %>
-    tab_pane_valid_state['<%=j pane %>'] = false;
-    <% end %>
-    ajaxRefreshTabPane($('.tab-pane.active')[0].id);
-  });
-<% end %>
-
 <% content_for :tab_panes do %>
 
-<% comparable = controller.respond_to? :compare %>
+  <% comparable = controller.respond_to? :compare %>
 
-<ul class="nav nav-tabs">
-  <% pane_list.each_with_index do |pane, i| %>
-    <li class="<%= 'active' if i==0 %>"><a href="#<%= pane %>" data-toggle="tab" id="<%= pane %>-tab"> <%= pane.gsub('_', ' ') %></a></li>
-  <% end %>
-</ul>
-<div class="tab-content">
-<% pane_list.each_with_index do |pane, i| %>
-  <div id="<%= pane %>"
-       class="tab-pane fade <%= 'in active' if i==0 %> arv-log-event-listener"
-<% if controller.action_name == "index" %>
-       data-object-kind="arvados#<%= ArvadosApiClient.class_kind controller.model_class %>"
-<% else %>
-       data-object-uuid="<%= @object.uuid %>"
-<% end %>
-  >
+  <ul class="nav nav-tabs" data-tab-counts-url="<%= url_for(action: :tab_counts) rescue '' %>">
+    <% pane_list.each_with_index do |pane, i| %>
+      <% pane_name = (pane.is_a?(Hash) ? pane[:name] : pane) %>
+      <li class="<%= 'active' if i==0 %>">
+        <a href="#<%= pane_name %>"
+           id="<%= pane_name %>-tab"
+           data-toggle="tab"
+           data-tab-history=true
+           data-tab-history-update-url=true
+           >
+          <%= pane_name.gsub('_', ' ') %> <span id="<%= pane_name %>-count"></span>
+        </a>
+      </li>
+    <% end %>
+  </ul>
 
-<% content_for :js do %>
-  <% if i == 0 %>
-    tab_pane_valid_state['<%=j pane %>'] = true;
-  <% else %>
-    tab_pane_valid_state['<%=j pane %>'] = false;
-    $(document).on('ready', function() {
-      ajaxRefreshTabPane('<%=j pane %>');
-    });
-  <% end %>
-<% end %>
-
-    <div id="<%= pane %>-scroll" style="margin-top:0.5em;">
-      <div class="pane-content">
-        <% if i == 0 %>
-          <%= render(partial: 'show_' + pane.downcase,
-                     locals: { comparable: comparable, objects: @objects }) %>
+  <div class="tab-content">
+    <% pane_list.each_with_index do |pane, i| %>
+      <% pane_name = (pane.is_a?(Hash) ? pane[:name] : pane) %>
+      <div id="<%= pane_name %>"
+           class="tab-pane fade <%= 'in active pane-loaded' if i==0 %> arv-log-event-listener arv-refresh-on-log-event arv-log-event-subscribe-to-pipeline-job-uuids"
+           <% if controller.action_name == "index" %>
+             data-object-kind="arvados#<%= ArvadosApiClient.class_kind controller.model_class %>"
+           <% else %>
+             data-object-uuid="<%= @object.uuid %>"
+           <% end %>
+           data-pane-content-url="<%= url_for(params.merge(tab_pane: pane_name)) %>"
+           style="margin-top:0.5em;"
+           >
+        <div class="pane-content">
+          <% if i == 0 %>
+            <%= render_pane pane_name, to_string: true %>
           <% else %>
             <div class="spinner spinner-32px spinner-h-center"></div>
-        <% end %>
+          <% end %>
+        </div>
       </div>
-    </div>
+    <% end %>
   </div>
-<% end %>
-</div>
 
 <% end %>

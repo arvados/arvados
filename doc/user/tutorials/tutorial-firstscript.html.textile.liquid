@@ -2,58 +2,25 @@
 layout: default
 navsection: userguide
 navmenu: Tutorials
-title: "Writing a pipeline"
+title: "Writing a Crunch script"
 ...
 
-In this tutorial, we will write the "hash" script demonstrated in the first tutorial.
+This tutorial demonstrates how to write a script using Arvados Python SDK.  The Arvados SDK supports access to advanced features not available using the @run-command@ wrapper, such as scheduling concurrent tasks across nodes.
 
 {% include 'tutorial_expectations' %}
 
-This tutorial uses *@you@* to denote your username.  Replace *@you@* with your user name in all the following examples.
+This tutorial uses @$USER@ to denote your username.  Replace @$USER@ with your user name in all the following examples.
 
-h2. Setting up Git
-
-All Crunch scripts are managed through the Git revision control system.  Before you start using Git, you should do some basic configuration (you only need to do this the first time):
+Start by creating a directory called @$USER@ .  Next, create a subdirectory called @crunch_scripts@ and change to that directory:
 
 <notextile>
-<pre><code>~$ <span class="userinput">git config --global user.name "Your Name"</span>
-~$ <span class="userinput">git config --global user.email <b>you</b>@example.com</span></code></pre>
-</notextile>
-
-On the Arvados Workbench, navigate to "Code repositories":https://{{site.arvados_workbench_host}}/repositories.  You should see a repository with your user name listed in the *name* column.  Next to *name* is the column *push_url*.  Copy the *push_url* value associated with your repository.  This should look like <notextile><code>git@git.{{ site.arvados_api_host }}:<b>you</b>.git</code></notextile>.
-
-Next, on the Arvados virtual machine, clone your Git repository:
-
-<notextile>
-<pre><code>~$ <span class="userinput">cd $HOME</span> # (or wherever you want to install)
-~$ <span class="userinput">git clone git@git.{{ site.arvados_api_host }}:<b>you</b>.git</span>
-Cloning into '<b>you</b>'...</code></pre>
-</notextile>
-
-This will create a Git repository in the directory called *@you@* in your home directory. Say yes when prompted to continue with connection.
-Ignore any warning that you are cloning an empty repository.
-
-{% include 'notebox_begin' %}
-For more information about using Git, try
-
-notextile. <pre><code>$ <span class="userinput">man gittutorial</span></code></pre>
-
-or *"search Google for Git tutorials":http://google.com/#q=git+tutorial*.
-{% include 'notebox_end' %}
-
-h2. Creating a Crunch script
-
-Start by entering the *@you@* directory created by @git clone@.  Next create a subdirectory called @crunch_scripts@ and change to that directory:
-
-<notextile>
-<pre><code>~$ <span class="userinput">cd <b>you</b></span>
-~/<b>you</b>$ <span class="userinput">mkdir crunch_scripts</span>
-~/<b>you</b>$ <span class="userinput">cd crunch_scripts</span></code></pre>
+<pre><code>~$ <span class="userinput">mkdir -p tutorial/crunch_scripts</span>
+~$ <span class="userinput">cd tutorial/crunch_scripts</span></code></pre>
 </notextile>
 
 Next, using @nano@ or your favorite Unix text editor, create a new file called @hash.py@ in the @crunch_scripts@ directory.
 
-notextile. <pre>~/<b>you</b>/crunch_scripts$ <code class="userinput">nano hash.py</code></pre>
+notextile. <pre>~/tutorial/crunch_scripts$ <code class="userinput">nano hash.py</code></pre>
 
 Add the following code to compute the MD5 hash of each file in a collection:
 
@@ -61,85 +28,77 @@ Add the following code to compute the MD5 hash of each file in a collection:
 
 Make the file executable:
 
-notextile. <pre><code>~/<b>you</b>/crunch_scripts$ <span class="userinput">chmod +x hash.py</span></code></pre>
+notextile. <pre><code>~/tutorial/crunch_scripts$ <span class="userinput">chmod +x hash.py</span></code></pre>
 
-{% include 'notebox_begin' %}
-The steps below describe how to execute the script after committing changes to Git. To run a script locally for testing, please see "debugging a crunch script":{{site.baseurl}}/user/topics/tutorial-job-debug.html.
-
-{% include 'notebox_end' %}
-
-Next, add the file to the staging area.  This tells @git@ that the file should be included on the next commit.
-
-notextile. <pre><code>~/<b>you</b>/crunch_scripts$ <span class="userinput">git add hash.py</span></code></pre>
-
-Next, commit your changes.  All staged changes are recorded into the local git repository:
+Next, create a submission job record.  This describes a specific invocation of your script:
 
 <notextile>
-<pre><code>~/<b>you</b>/crunch_scripts$ <span class="userinput">git commit -m"my first script"</span>
-[master (root-commit) 27fd88b] my first script
- 1 file changed, 45 insertions(+)
- create mode 100755 crunch_scripts/hash.py</code></pre>
-</notextile>
-
-Finally, upload your changes to the Arvados server:
-
-<notextile>
-<pre><code>~/<b>you</b>/crunch_scripts$ <span class="userinput">git push origin master</span>
-Counting objects: 4, done.
-Compressing objects: 100% (2/2), done.
-Writing objects: 100% (4/4), 682 bytes, done.
-Total 4 (delta 0), reused 0 (delta 0)
-To git@git.qr1hi.arvadosapi.com:<b>you</b>.git
- * [new branch]      master -> master</code></pre>
-</notextile>
-
-h2. Create a pipeline template
-
-Next, create a file that contains the pipeline definition:
-
-<notextile>
-<pre><code>~/<b>you</b>/crunch_scripts$ <span class="userinput">cd ~</span>
-~$ <span class="userinput">cat &gt;the_pipeline &lt;&lt;EOF
+<pre><code>~/tutorial/crunch_scripts$ <span class="userinput">cat &gt;~/the_job &lt;&lt;EOF
 {
-  "name":"My first pipeline",
-  "components":{
-    "do_hash":{
-      "script":"hash.py",
-      "script_parameters":{
-        "input":{
-          "required": true,
-          "dataclass": "Collection"
-        }
-      },
-      "repository":"$USER",
-      "script_version":"master",
-      "output_is_persistent":true
-    }
-  }
+ "repository":"",
+ "script":"hash.py",
+ "script_version":"$HOME/tutorial",
+ "script_parameters":{
+   "input":"c1bad4b39ca5a924e481008009d94e32+210"
+ }
 }
-EOF
-</span></code></pre>
-</notextile>
-
-* @cat@ is a standard Unix utility that writes a sequence of input to standard output.
-* @<<EOF@ tells the shell to direct the following lines into the standard input for @cat@ up until it sees the line @EOF@.
-* @>the_pipeline@ redirects standard output to a file called @the_pipeline@.
-* @"name"@ is a human-readable name for the pipeline.
-* @"components"@ is a set of scripts that make up the pipeline.
-* The component is listed with a human-readable name (@"do_hash"@ in this example).
-* @"repository"@ is the name of a git repository to search for the script version.  You can access a list of available git repositories on the Arvados Workbench under "Code repositories":https://{{site.arvados_workbench_host}}/repositories.  Your shell should automatically fill in @$USER@ with your login name, so that the final JSON has @"repository"@ pointed at your personal Git repository.
-* @"script_version"@ specifies the version of the script that you wish to run.  This can be in the form of an explicit Git revision hash, a tag, or a branch (in which case it will use the HEAD of the specified branch).  Arvados logs the script version that was used in the run, enabling you to go back and re-run any past job with the guarantee that the exact same code will be used as was used in the previous run.
-* @"script"@ specifies the filename of the script to run.  Crunch expects to find this in the @crunch_scripts/@ subdirectory of the Git repository.
-* @"script_parameters"@ describes the parameters for the script.  In this example, there is one parameter called @input@ which is @required@ and is a @Collection@.
-* @"output_is_persistent"@ indicates whether the output of the job is considered valuable. If this value is false (or not given), the output will be treated as intermediate data and eventually deleted to reclaim disk space.
-
-Now, use @arv pipeline_template create@ to register your pipeline template in Arvados:
-
-<notextile>
-<pre><code>~$ <span class="userinput">arv pipeline_template create --pipeline-template "$(cat the_pipeline)"</span>
+EOF</span>
 </code></pre>
 </notextile>
 
-Your new pipeline template will appear on the Workbench "Pipeline&nbsp;templates":https://{{ site.arvados_workbench_host }}/pipeline_templates page.  You can run the "pipeline using Workbench":tutorial-pipeline-workbench.html.
+You can now run your script on your local workstation or VM using @arv-crunch-job@:
 
-For more information and examples for writing pipelines, see the "pipeline template reference":{{site.baseurl}}/api/schema/PipelineTemplate.html
+<notextile>
+<pre><code>~/tutorial/crunch_scripts</span>$ <span class="userinput">arv-crunch-job --job "$(cat ~/the_job)"</span>
+2014-08-06_15:16:22 qr1hi-8i9sb-qyrat80ef927lam 14473  check slurm allocation
+2014-08-06_15:16:22 qr1hi-8i9sb-qyrat80ef927lam 14473  node localhost - 1 slots
+2014-08-06_15:16:23 qr1hi-8i9sb-qyrat80ef927lam 14473  start
+2014-08-06_15:16:23 qr1hi-8i9sb-qyrat80ef927lam 14473  script hash.py
+2014-08-06_15:16:23 qr1hi-8i9sb-qyrat80ef927lam 14473  script_version $HOME/tutorial
+2014-08-06_15:16:23 qr1hi-8i9sb-qyrat80ef927lam 14473  script_parameters {"input":"c1bad4b39ca5a924e481008009d94e32+210"}
+2014-08-06_15:16:23 qr1hi-8i9sb-qyrat80ef927lam 14473  runtime_constraints {"max_tasks_per_node":0}
+2014-08-06_15:16:23 qr1hi-8i9sb-qyrat80ef927lam 14473  start level 0
+2014-08-06_15:16:23 qr1hi-8i9sb-qyrat80ef927lam 14473  status: 0 done, 0 running, 1 todo
+2014-08-06_15:16:23 qr1hi-8i9sb-qyrat80ef927lam 14473 0 job_task qr1hi-ot0gb-lptn85mwkrn9pqo
+2014-08-06_15:16:23 qr1hi-8i9sb-qyrat80ef927lam 14473 0 child 14478 started on localhost.1
+2014-08-06_15:16:23 qr1hi-8i9sb-qyrat80ef927lam 14473  status: 0 done, 1 running, 0 todo
+2014-08-06_15:16:24 qr1hi-8i9sb-qyrat80ef927lam 14473 0 stderr crunchstat: Running [stdbuf --output=0 --error=0 /home/$USER/tutorial/crunch_scripts/hash.py]
+2014-08-06_15:16:24 qr1hi-8i9sb-qyrat80ef927lam 14473 0 child 14478 on localhost.1 exit 0 signal 0 success=true
+2014-08-06_15:16:24 qr1hi-8i9sb-qyrat80ef927lam 14473 0 success in 1 seconds
+2014-08-06_15:16:24 qr1hi-8i9sb-qyrat80ef927lam 14473 0 output
+2014-08-06_15:16:25 qr1hi-8i9sb-qyrat80ef927lam 14473  wait for last 0 children to finish
+2014-08-06_15:16:25 qr1hi-8i9sb-qyrat80ef927lam 14473  status: 1 done, 0 running, 1 todo
+2014-08-06_15:16:25 qr1hi-8i9sb-qyrat80ef927lam 14473  start level 1
+2014-08-06_15:16:25 qr1hi-8i9sb-qyrat80ef927lam 14473  status: 1 done, 0 running, 1 todo
+2014-08-06_15:16:25 qr1hi-8i9sb-qyrat80ef927lam 14473 1 job_task qr1hi-ot0gb-e3obm0lv6k6p56a
+2014-08-06_15:16:25 qr1hi-8i9sb-qyrat80ef927lam 14473 1 child 14504 started on localhost.1
+2014-08-06_15:16:25 qr1hi-8i9sb-qyrat80ef927lam 14473  status: 1 done, 1 running, 0 todo
+2014-08-06_15:16:26 qr1hi-8i9sb-qyrat80ef927lam 14473 1 stderr crunchstat: Running [stdbuf --output=0 --error=0 /home/$USER/tutorial/crunch_scripts/hash.py]
+2014-08-06_15:16:35 qr1hi-8i9sb-qyrat80ef927lam 14473 1 child 14504 on localhost.1 exit 0 signal 0 success=true
+2014-08-06_15:16:35 qr1hi-8i9sb-qyrat80ef927lam 14473 1 success in 10 seconds
+2014-08-06_15:16:35 qr1hi-8i9sb-qyrat80ef927lam 14473 1 output 8c20281b9840f624a486e4f1a78a1da8+105+A234be74ceb5ea31db6e11b6be26f3eb76d288ad0@54987018
+2014-08-06_15:16:35 qr1hi-8i9sb-qyrat80ef927lam 14473  wait for last 0 children to finish
+2014-08-06_15:16:35 qr1hi-8i9sb-qyrat80ef927lam 14473  status: 2 done, 0 running, 0 todo
+2014-08-06_15:16:35 qr1hi-8i9sb-qyrat80ef927lam 14473  release job allocation
+2014-08-06_15:16:35 qr1hi-8i9sb-qyrat80ef927lam 14473  Freeze not implemented
+2014-08-06_15:16:35 qr1hi-8i9sb-qyrat80ef927lam 14473  collate
+2014-08-06_15:16:36 qr1hi-8i9sb-qyrat80ef927lam 14473  output uuid qr1hi-4zz18-n91qrqfp3zivexo
+2014-08-06_15:16:36 qr1hi-8i9sb-qyrat80ef927lam 14473  output hash c1b44b6dc41ef334cf1136033ca950e6+54
+2014-08-06_15:16:37 qr1hi-8i9sb-qyrat80ef927lam 14473  finish
+2014-08-06_15:16:38 qr1hi-8i9sb-qyrat80ef927lam 14473  log manifest is 7fe8cf1d45d438a3ca3ac4a184b7aff4+83
+</code></pre>
+</notextile>
+
+Although the job runs locally, the output of the job has been saved to Keep, the Arvados file store.  The "output uuid" line (fourth from the bottom) provides the UUID of the Arvados collection where the script's output has been saved.  Copy the output identifier and use @arv-ls@ to list the contents of your output collection, and @arv-get@ to download it to the current directory:
+
+<notextile>
+<pre><code>~/tutorial/crunch_scripts$ <span class="userinput">arv-ls qr1hi-4zz18-n91qrqfp3zivexo</span>
+./md5sum.txt
+~/tutorial/crunch_scripts$ <span class="userinput">arv-get qr1hi-4zz18-n91qrqfp3zivexo/ .</span>
+0 MiB / 0 MiB 100.0%
+~/tutorial/crunch_scripts$ <span class="userinput">cat md5sum.txt</span>
+44b8ae3fde7a8a88d2f7ebd237625b4f c1bad4b39ca5a924e481008009d94e32+210/var-GS000016015-ASM.tsv.bz2
+</code></pre>
+</notextile>
+
+Running locally is convenient for development and debugging, as it permits a fast iterative development cycle.  Your job run is also recorded by Arvados, and will appear in the *Recent jobs and pipelines* panel on the "Workbench Dashboard":https://{{site.arvados_workbench_host}}.  This provides limited provenance, by recording the input parameters, the execution log, and the output.  However, running locally does not allow you to scale out to multiple nodes, and does not store the complete system snapshot required to achieve reproducibility; to do that you need to "submit a job to the Arvados cluster":{{site.baseurl}}/user/tutorials/tutorial-submit-job.html.

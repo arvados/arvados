@@ -1,0 +1,90 @@
+<div>
+  <p>
+    For more information see <%= link_to raw('Arvados Docs &rarr; User Guide &rarr; SSH access'),
+  "#{Rails.configuration.arvados_docsite}/user/getting_started/ssh-access-unix.html",
+  target: "_blank"%>.
+    <% if @my_virtual_machines.any? or true %>
+      A sample <code>~/.ssh/config</code> entry is provided below.
+    <% end %>
+  </p>
+
+  <% if !@my_virtual_machines.any? %>
+    <div id="no_shell_access" class="no_shell_access">
+      <div class="alert alert-warning clearfix">
+        <p>
+          You do not have access to any virtual machines.  Some
+          Arvados features require using the command line.  You may
+          request access to a hosted virtual machine with the command
+          line shell.
+        </p>
+        <div class="pull-right">
+          <%= link_to({
+              action: 'request_shell_access',
+              controller: 'users',
+              id: current_user.uuid
+              },
+              method: :post,
+              remote: true,
+              class: 'btn btn-xs btn-primary',
+              data: {
+              disable_with: "Sending request...",
+              on_error_hide: '.no_shell_access .alert-success',
+              on_error_show: '.no_shell_access .alert-danger',
+              on_error_write: '.no_shell_access .alert-danger .error-text',
+              on_success_hide: '.no_shell_access .alert-danger',
+              }) do %>
+            Send request for shell access
+          <% end %>
+        </div>
+      </div>
+      <div class="alert alert-success" style="display:none">
+        <p class="contain-align-left"><%# (see javascripts/request_shell_access.js) %></p>
+      </div>
+      <div class="alert alert-danger" style="display:none">
+        <p class="contain-align-left">Sorry, something went wrong. Please try again. (<span class="error-text"></span>)</p>
+      </div>
+    </div>
+  <% else %>
+    <script> localStorage.removeItem('request_shell_access'); </script>
+    <table class="table virtual-machines-table">
+      <colgroup>
+        <col style="width: 25%" />
+        <col style="width: 25%" />
+        <col style="width: 50%" />
+      </colgroup>
+      <thead>
+        <tr>
+          <th> Host name </th>
+          <th> Login name </th>
+          <th> Command line </th>
+        </tr>
+      </thead>
+      <tbody>
+        <% @my_virtual_machines.andand.each do |vm| %>
+          <tr>
+            <td style="word-break:break-all;">
+              <%= vm[:hostname] %>
+            </td>
+            <td style="word-break:break-all;">
+              <%= @my_vm_logins[vm[:uuid]].andand.compact.andand.join(", ") %>
+            </td>
+            <td style="word-break:break-all;">
+              <% if @my_vm_logins[vm[:uuid]] %>
+                <% @my_vm_logins[vm[:uuid]].each do |login| %>
+                  <code>ssh&nbsp;<%= login %>@<%= vm[:hostname] %>.arvados</code>
+                <% end %>
+              <% end %>
+            </td>
+          </tr>
+        <% end %>
+      </tbody>
+    </table>
+
+    <p><i>~/.ssh/config:</i></p>
+    <pre>Host *.arvados
+      TCPKeepAlive yes
+      ServerAliveInterval 60
+      ProxyCommand ssh -p2222 turnout@switchyard.<%= current_api_host || 'xyzzy.arvadosapi.com' %> -x -a $SSH_PROXY_FLAGS %h
+    </pre>
+  <% end %>
+</div>

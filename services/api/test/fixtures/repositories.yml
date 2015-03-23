@@ -3,6 +3,11 @@ crunch_dispatch_test:
   owner_uuid: zzzzz-tpzed-xurymjxw79nv3jz # active user
   name: crunch_dispatch_test
 
+arvados:
+  uuid: zzzzz-s0uqq-arvadosrepo0123
+  owner_uuid: zzzzz-tpzed-000000000000000 # root
+  name: arvados
+
 foo:
   uuid: zzzzz-s0uqq-382brsig8rp3666
   owner_uuid: zzzzz-tpzed-xurymjxw79nv3jz # active user
@@ -12,3 +17,18 @@ repository2:
   uuid: zzzzz-s0uqq-382brsig8rp3667
   owner_uuid: zzzzz-tpzed-xurymjxw79nv3jz # active user
   name: foo2
+
+repository3:
+  uuid: zzzzz-s0uqq-38orljkqpyo1j61
+  owner_uuid: zzzzz-tpzed-d9tiejq69daie8f # admin user
+  name: foo3
+
+repository4:
+  uuid: zzzzz-s0uqq-38oru8hnk57ht34
+  owner_uuid: zzzzz-tpzed-d9tiejq69daie8f # admin user
+  name: foo4
+
+auto_setup_repository:
+  uuid: zzzzz-s0uqq-382brabc8rp3667
+  owner_uuid: zzzzz-tpzed-xurymjxw79nv3jz # active user
+  name: auto_setup_repo

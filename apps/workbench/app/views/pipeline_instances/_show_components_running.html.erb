@@ -1,0 +1,86 @@
+<%# Summary %>
+
+<div class="pull-right" style="padding-left: 1em">
+  Current state: <span class="badge badge-info" data-pipeline-state="<%= @object.state %>">
+    <% if @object.state == "RunningOnServer" %>
+      Active
+    <% else %>
+      <%= @object.state %>
+    <% end %>
+  </span>&nbsp;
+</div>
+
+<% pipeline_jobs = render_pipeline_jobs %>
+<% job_uuids = pipeline_jobs.map { |j| j[:job].andand[:uuid] }.compact %>
+
+<% if @object.state == 'Paused' %>
+  <p>
+    This pipeline is paused.  Jobs that are
+    already running will continue to run, but no new jobs will be submitted.
+  </p>
+<% end %>
+
+<% tasks = JobTask.filter([['job_uuid', 'in', job_uuids]]).results %>
+<% runningtime = determine_wallclock_runtime(pipeline_jobs.map {|j| j[:job]}.compact) %>
+
+<p>
+  <% if @object.started_at %>
+    This pipeline started at <%= render_localized_date(@object.started_at) %>.
+    It
+    <% if @object.state == 'Complete' %>
+      completed in
+    <% elsif @object.state == 'Failed' %>
+      failed after
+    <% else %>
+      has been active for
+    <% end %>
+
+    <% walltime = if @object.finished_at then
+                    @object.finished_at - @object.started_at
+                  else
+                    Time.now - @object.started_at
+                  end %>
+
+    <%= if walltime > runningtime
+          render_runtime(walltime, true, false)
+        else
+          render_runtime(runningtime, true, false)
+        end %><% if @object.finished_at %> at <%= render_localized_date(@object.finished_at) %><% end %>.
+    <% else %>
+      This pipeline is <%= if @object.state.start_with? 'Running' then 'active' else @object.state.downcase end %>.
+        <% walltime = 0%>
+    <% end %>
+
+  <% if @object.state == 'Failed' %>
+    Check the Log tab for more detail about why this pipeline failed.
+  <% end %>
+</p>
+
+<p>
+    This pipeline
+    <% if @object.state.start_with? 'Running' %>
+      has run
+    <% else %>
+      ran
+    <% end %>
+    for
+    <% cputime = tasks.map { |task|
+         if task.started_at
+           (if task.finished_at then task.finished_at else Time.now() end) - task.started_at
+           else
+         0
+       end
+       }.reduce(:+) || 0 %>
+    <%= render_runtime(runningtime, true, false) %><% if (walltime - runningtime) > 0 %>
+      (<%= render_runtime(walltime - runningtime, true, false) %> queued)<% end %><% if cputime == 0 %>.<% else %>
+      and used
+    <%= render_runtime(cputime, true, false) %>
+    of CPU time (<%= (cputime/runningtime).round(1) %>&Cross; scaling).
+    <% end %>
+</p>
+
+<%# Components %>
+
+<% pipeline_jobs.each_with_index do |pj, i| %>
+  <%= render partial: 'running_component', locals: {tasks: tasks, pj: pj, i: i, expanded: false} %>
+<% end %>

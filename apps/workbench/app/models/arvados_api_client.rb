@@ -8,6 +8,10 @@ class ArvadosApiClient
     def initialize(request_url, errmsg)
       @request_url = request_url
       @api_response ||= {}
+      errors = @api_response[:errors]
+      if not errors.is_a?(Array)
+        @api_response[:errors] = [errors || errmsg]
+      end
       super(errmsg)
     end
   end
@@ -74,7 +78,8 @@ class ArvadosApiClient
     @client_mtx = Mutex.new
   end
 
-  def api(resources_kind, action, data=nil)
+  def api(resources_kind, action, data=nil, tokens={})
+
     profile_checkpoint
 
     if not @api_client
@@ -96,8 +101,13 @@ class ArvadosApiClient
     url.sub! '/arvados/v1/../../', '/'
 
     query = {
-      'api_token' => Thread.current[:arvados_api_token] || '',
-      'reader_tokens' => (Thread.current[:reader_tokens] || []).to_json,
+      'api_token' => (tokens[:arvados_api_token] ||
+                      Thread.current[:arvados_api_token] ||
+                      ''),
+      'reader_tokens' => ((tokens[:reader_tokens] ||
+                           Thread.current[:reader_tokens] ||
+                           []) +
+                          [Rails.configuration.anonymous_user_token]).to_json,
     }
     if !data.nil?
       data.each do |k,v|
@@ -114,13 +124,14 @@ class ArvadosApiClient
     else
       query["_method"] = "GET"
     end
+
     if @@profiling_enabled
       query["_profile"] = "true"
     end
 
     header = {"Accept" => "application/json"}
 
-    profile_checkpoint { "Prepare request #{url} #{query[:uuid]} #{query[:where]} #{query[:filters]}" }
+    profile_checkpoint { "Prepare request #{url} #{query[:uuid]} #{query[:where]} #{query[:filters]} #{query[:order]}" }
     msg = @client_mtx.synchronize do
       begin
         @api_client.post(url, query, header: header)
@@ -135,10 +146,12 @@ class ArvadosApiClient
     rescue Oj::ParseError
       resp = nil
     end
+
     if not resp.is_a? Hash
       raise InvalidApiResponseException.new(url, msg)
     elsif msg.status_code != 200
-      error_class = ERROR_CODE_CLASSES.fetch(msg.status_code, ApiError)
+      error_class = ERROR_CODE_CLASSES.fetch(msg.status_code,
+                                             ApiErrorResponseException)
       raise error_class.new(url, msg)
     end
 
@@ -207,6 +220,7 @@ class ArvadosApiClient
         CGI.escape(k.to_s) + '=' + CGI.escape(v.to_s)
       }.join('&')
     end
+    uri
   end
 
   def arvados_logout_url(params={})

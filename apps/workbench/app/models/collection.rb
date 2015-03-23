@@ -1,5 +1,15 @@
+require "arvados/keep"
+
 class Collection < ArvadosBase
   MD5_EMPTY = 'd41d8cd98f00b204e9800998ecf8427e'
+
+  def default_name
+    if Collection.is_empty_blob_locator? self.uuid
+      "Empty Collection"
+    else
+      super
+    end
+  end
 
   # Return true if the given string is the locator of a zero-length blob
   def self.is_empty_blob_locator? locator
@@ -10,25 +20,37 @@ class Collection < ArvadosBase
     true
   end
 
-  def content_summary
-    ApplicationController.helpers.human_readable_bytes_html(total_bytes) + " " + super
+  def manifest
+    if @manifest.nil? or manifest_text_changed?
+      @manifest = Keep::Manifest.new(manifest_text || "")
+    end
+    @manifest
   end
 
-  def total_bytes
-    if files
-      tot = 0
-      files.each do |file|
-        tot += file[2]
-      end
-      tot
+  def files
+    # This method provides backwards compatibility for code that relied on
+    # the old files field in API results.  New code should use manifest
+    # methods directly.
+    manifest.files
+  end
+
+  def content_summary
+    if total_bytes > 0
+      ApplicationController.helpers.human_readable_bytes_html(total_bytes) + " " + super
     else
-      0
+      super + " modified at " + modified_at.to_s
     end
   end
 
+  def total_bytes
+    manifest.files.inject(0) { |sum, filespec| sum + filespec.last }
+  end
+
   def files_tree
-    return [] if files.empty?
-    tree = files.group_by { |file_spec| File.split(file_spec.first) }
+    tree = manifest.files.group_by do |file_spec|
+      File.split(file_spec.first)
+    end
+    return [] if tree.empty?
     # Fill in entries for empty directories.
     tree.keys.map { |basedir, _| File.split(basedir) }.each do |splitdir|
       until tree.include?(splitdir)
@@ -48,12 +70,8 @@ class Collection < ArvadosBase
     dir_to_tree.call('.')
   end
 
-  def attribute_editable? attr, *args
-    false
-  end
-
-  def self.creatable?
-    false
+  def editable_attributes
+    %w(name description manifest_text)
   end
 
   def provenance
@@ -62,6 +80,22 @@ class Collection < ArvadosBase
 
   def used_by
     arvados_api_client.api "collections/#{self.uuid}/", "used_by"
+  end
+
+  def uuid
+    if self[:uuid].nil?
+      return self[:portable_data_hash]
+    else
+      super
+    end
+  end
+
+  def friendly_link_name lookup=nil
+    name || portable_data_hash
+  end
+
+  def textile_attributes
+    [ 'description' ]
   end
 
 end

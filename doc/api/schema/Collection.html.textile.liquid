@@ -30,11 +30,10 @@ Each collection has, in addition to the usual "attributes of Arvados resources":
 
 table(table table-bordered table-condensed).
 |_. Attribute|_. Type|_. Description|_. Example|
-|locator|string|||
-|portable_data_hash|string|||
 |name|string|||
-|redundancy|number|||
-|redundancy_confirmed_by_client_uuid|string|API client||
-|redundancy_confirmed_at|datetime|||
-|redundancy_confirmed_as|number|||
+|description|text|||
+|portable_data_hash|string|||
 |manifest_text|text|||
+|replication_desired|number|Minimum storage replication level desired for each data block referenced by this collection. A value of @null@ signifies that the site default replication level (typically 2) is desired.|@2@|
+|replication_confirmed|number|Replication level most recently confirmed by the storage system. This field is null when a collection is first created, and is reset to null when the manifest_text changes in a way that introduces a new data block. An integer value indicates the replication level of the _least replicated_ data block in the collection.|@2@, null|
+|replication_confirmed_at|datetime|When replication_confirmed was confirmed. If replication_confirmed is null, this field is also null.||

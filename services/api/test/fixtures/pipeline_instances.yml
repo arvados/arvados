@@ -2,11 +2,19 @@ new_pipeline:
   state: New
   uuid: zzzzz-d1hrv-f4gneyn6br1xize
   owner_uuid: zzzzz-tpzed-xurymjxw79nv3jz
+  created_at: <%= 1.minute.ago.to_s(:db) %>
+
+new_pipeline_in_subproject:
+  state: New
+  uuid: zzzzz-d1hrv-subprojpipeline
+  owner_uuid: zzzzz-j7d0g-axqo7eu9pwvna1x
+  created_at: <%= 1.minute.ago.to_s(:db) %>
 
 has_component_with_no_script_parameters:
   state: Ready
   uuid: zzzzz-d1hrv-1xfj6xkicf2muk2
   owner_uuid: zzzzz-tpzed-xurymjxw79nv3jz
+  created_at: <%= 10.minute.ago.to_s(:db) %>
   components:
    foo:
     script: foo
@@ -17,17 +25,72 @@ has_component_with_empty_script_parameters:
   state: Ready
   uuid: zzzzz-d1hrv-jq16l10gcsnyumo
   owner_uuid: zzzzz-tpzed-xurymjxw79nv3jz
+  created_at: <%= 3.minute.ago.to_s(:db) %>
   components:
    foo:
     script: foo
     script_version: master
+
+has_component_with_completed_jobs:
+  # Test that the job "started_at" and "finished_at" fields are parsed
+  # into Time fields when rendering. These jobs must *not* have their
+  # own fixtures; the point is to force the
+  # pipeline_instances_controller_test in Workbench to parse the
+  # "components" field. (The relevant code paths are also used when a
+  # user has permission to read the pipeline instance itself, but not
+  # the jobs referenced by its components hash.)
+  state: Complete
+  uuid: zzzzz-d1hrv-i3e77t9z5y8j9cc
+  owner_uuid: zzzzz-tpzed-xurymjxw79nv3jz
+  components:
+   foo:
+    script: foo
+    script_version: master
+    script_parameters: {}
+    job:
+      uuid: zzzzz-8i9sb-rft1xdewxkwgxnz
+      script_version: master
+      created_at: <%= 10.minute.ago.to_s(:db) %>
+      started_at: <%= 10.minute.ago.to_s(:db) %>
+      finished_at: <%= 9.minute.ago.to_s(:db) %>
+      state: Complete
+      tasks_summary:
+        failed: 0
+        todo: 0
+        running: 0
+        done: 1
+   bar:
+    script: bar
+    script_version: master
+    script_parameters: {}
+    job:
+      uuid: zzzzz-8i9sb-r2dtbzr6bfread7
+      script_version: master
+      created_at: <%= 9.minute.ago.to_s(:db) %>
+      started_at: <%= 9.minute.ago.to_s(:db) %>
+      state: Running
+      tasks_summary:
+        failed: 0
+        todo: 1
+        running: 2
+        done: 3
+   baz:
+    script: baz
+    script_version: master
+    script_parameters: {}
+    job:
+      uuid: zzzzz-8i9sb-c7408rni11o7r6s
+      script_version: master
+      created_at: <%= 9.minute.ago.to_s(:db) %>
+      state: Queued
+      tasks_summary: {}
 
 has_job:
   name: pipeline_with_job
   state: Ready
   uuid: zzzzz-d1hrv-1yfj6xkidf2muk3
   owner_uuid: zzzzz-tpzed-xurymjxw79nv3jz
-  owner_uuid: zzzzz-tpzed-xurymjxw79nv3jz
+  created_at: <%= 3.1.minute.ago.to_s(:db) %>
   components:
    foo:
     script: foo
@@ -37,3 +100,252 @@ has_job:
             uuid: zzzzz-8i9sb-pshmckwoma9plh7,
             script_version: master
          }
+
+components_is_jobspec:
+  # Helps test that clients cope with funny-shaped components.
+  # For an example, see #3321.
+  uuid: zzzzz-d1hrv-jobspeccomponts
+  created_at: <%= 30.minute.ago.to_s(:db) %>
+  owner_uuid: zzzzz-tpzed-xurymjxw79nv3jz
+  created_at: 2014-04-14 12:35:04 -0400
+  updated_at: 2014-04-14 12:35:04 -0400
+  modified_at: 2014-04-14 12:35:04 -0400
+  modified_by_client_uuid: zzzzz-ozdt8-brczlopd8u8d0jr
+  modified_by_user_uuid: zzzzz-tpzed-xurymjxw79nv3jz
+  state: RunningOnServer
+  components:
+    script: foo
+    script_version: master
+    script_parameters:
+      input:
+        required: true
+        dataclass: Collection
+        title: "Foo/bar pair"
+        description: "Provide a collection containing at least two files."
+
+pipeline_with_tagged_collection_input:
+  name: pipeline_with_tagged_collection_input
+  state: Ready
+  uuid: zzzzz-d1hrv-1yfj61234abcdk3
+  owner_uuid: zzzzz-tpzed-xurymjxw79nv3jz
+  created_at: <%= 3.1.minute.ago.to_s(:db) %>
+  components:
+    part-one:
+      script_parameters:
+        input:
+          value: zzzzz-4zz18-znfnqtbbv4spc3w
+
+pipeline_to_merge_params:
+  name: pipeline_to_merge_params
+  state: Ready
+  uuid: zzzzz-d1hrv-1yfj6dcba4321k3
+  pipeline_template_uuid: zzzzz-p5p6p-aox0k0ofxrystgw
+  owner_uuid: zzzzz-tpzed-xurymjxw79nv3jz
+  created_at: <%= 3.1.minute.ago.to_s(:db) %>
+  components:
+    part-one:
+      script_parameters:
+        input:
+          required: true
+          dataclass: Collection
+          title: "Foo/bar pair"
+          description: "Provide a collection containing at least two files."
+    part-two:
+      script_parameters:
+        input:
+          output_of: part-one
+        integer_with_default:
+          default: 123
+        integer_with_value:
+          value: 123
+        string_with_default:
+          default: baz
+        string_with_value:
+          value: baz
+        plain_string: qux
+        array_with_default:
+          default: [1,1,2,3,5]
+        array_with_value:
+          value: [1,1,2,3,5]
+
+pipeline_with_newer_template:
+  state: Complete
+  uuid: zzzzz-d1hrv-9fm8l10i9z2kqc6
+  owner_uuid: zzzzz-tpzed-xurymjxw79nv3jz
+  pipeline_template_uuid: zzzzz-p5p6p-vq4wuvy84xvaq2r
+  created_at: 2014-09-15 12:00:00
+  components:
+    foo:
+      script: foo
+      script_version: master
+      script_parameters:
+        input:
+          required: true
+          dataclass: Collection
+          title: foo instance input
+
+pipeline_instance_owned_by_fuse:
+  state: Complete
+  uuid: zzzzz-d1hrv-ri9dvgkgqs9y09j
+  owner_uuid: zzzzz-tpzed-0fusedrivertest
+  pipeline_template_uuid: zzzzz-p5p6p-vq4wuvy84xvaq2r
+  created_at: 2014-09-15 12:00:00
+  name: "pipeline instance owned by FUSE"
+  components:
+    foo:
+      script: foo
+      script_version: master
+      script_parameters:
+        input:
+          required: true
+          dataclass: Collection
+          title: foo instance input
+
+pipeline_instance_in_fuse_project:
+  state: Complete
+  uuid: zzzzz-d1hrv-scarxiyajtshq3l
+  owner_uuid: zzzzz-j7d0g-0000ownedbyfuse
+  pipeline_template_uuid: zzzzz-p5p6p-vq4wuvy84xvaq2r
+  created_at: 2014-09-15 12:00:00
+  name: "pipeline instance in FUSE project"
+  components:
+    foo:
+      script: foo
+      script_version: master
+      script_parameters:
+        input:
+          required: true
+          dataclass: Collection
+          title: foo instance input
+
+pipeline_owned_by_active_in_aproject:
+  name: Completed pipeline in A Project
+  state: Complete
+  uuid: zzzzz-d1hrv-ju5ghi0i9z2kqc6
+  owner_uuid: zzzzz-j7d0g-v955i6s2oi1cbso
+  created_at: 2014-09-15 12:00:00
+  components:
+    foo:
+      script: foo
+      script_version: master
+      script_parameters:
+        input:
+          required: true
+          dataclass: Collection
+          title: foo instance input
+
+pipeline_owned_by_active_in_home:
+  name: Completed pipeline in active user home
+  state: Complete
+  uuid: zzzzz-d1hrv-lihrbd0i9z2kqc6
+  owner_uuid: zzzzz-tpzed-xurymjxw79nv3jz
+  created_at: 2014-09-15 12:00:00
+  components:
+    foo:
+      script: foo
+      script_version: master
+      script_parameters:
+        input:
+          required: true
+          dataclass: Collection
+          title: foo instance input
+
+pipeline_in_publicly_accessible_project:
+  uuid: zzzzz-d1hrv-n68vc490mloy4fi
+  owner_uuid: zzzzz-j7d0g-zhxawtyetzwc5f0
+  name: Pipeline in publicly accessible project
+  state: Complete
+  created_at: 2014-09-15 12:00:00
+  components:
+    foo:
+      script: foo
+      script_version: master
+      script_parameters:
+        input:
+          required: true
+          dataclass: Collection
+          title: foo instance input
+
+pipeline_in_running_state:
+  name: running_with_job
+  state: Ready
+  uuid: zzzzz-d1hrv-runningpipeline
+  owner_uuid: zzzzz-tpzed-xurymjxw79nv3jz
+  created_at: <%= 3.1.minute.ago.to_s(:db) %>
+  started_at: <%= 3.1.minute.ago.to_s(:db) %>
+  state: RunningOnServer
+  components:
+   foo:
+    script: foo
+    script_version: master
+    script_parameters: {}
+    job:
+      uuid: zzzzz-8i9sb-pshmckwoma9plh7
+      script_version: master
+
+# Test Helper trims the rest of the file
+
+# Do not add your fixtures below this line as the rest of this file will be trimmed by test_helper
+
+# pipelines in project_with_10_pipelines
+<% for i in 1..10 do %>
+pipeline_<%=i%>_of_10:
+  name: pipeline_<%= i %>
+  uuid: zzzzz-d1hrv-10pipelines0<%= i.to_s.rjust(3, '0') %>
+  owner_uuid: zzzzz-j7d0g-000010pipelines
+  created_at: <%= (2*(i-1)).hour.ago.to_s(:db) %>
+  started_at: <%= (2*(i-1)).hour.ago.to_s(:db) %>
+  finished_at: <%= (i-1).minute.ago.to_s(:db) %>
+  state: Failed
+  components:
+    foo:
+      script: foo
+      script_version: master
+      script_parameters:
+        input:
+          required: true
+          dataclass: Collection
+          title: foo instance input
+<% end %>
+
+# pipelines in project_with_2_pipelines_and_100_jobs
+<% for i in 1..2 do %>
+pipeline_<%=i%>_of_2_pipelines_and_100_jobs:
+  name: pipeline_<%= i %>
+  state: New
+  uuid: zzzzz-d1hrv-abcgneyn6brx<%= i.to_s.rjust(3, '0') %>
+  owner_uuid: zzzzz-j7d0g-nnjobspipelines
+  created_at: <%= i.minute.ago.to_s(:db) %>
+  components:
+    foo:
+      script: foo
+      script_version: master
+      script_parameters:
+        input:
+          required: true
+          dataclass: Collection
+          title: foo instance input
+<% end %>
+
+# pipelines in project_with_25_pipelines
+<% for i in 1..25 do %>
+pipeline_<%=i%>_of_25:
+  name: pipeline_<%=i%>
+  state: Failed
+  uuid: zzzzz-d1hrv-25pipelines0<%= i.to_s.rjust(3, '0') %>
+  owner_uuid: zzzzz-j7d0g-000025pipelines
+  created_at: <%= i.hour.ago.to_s(:db) %>
+  started_at: <%= i.hour.ago.to_s(:db) %>
+  finished_at: <%= i.minute.ago.to_s(:db) %>
+  components:
+    foo:
+      script: foo
+      script_version: master
+      script_parameters:
+        input:
+          required: true
+          dataclass: Collection
+          title: foo instance input
+<% end %>
+
+# Do not add your fixtures below this line as the rest of this file will be trimmed by test_helper

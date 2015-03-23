@@ -4,119 +4,44 @@ navsection: userguide
 title: "Running a pipeline on the command line"
 ...
 
-In "Writing a pipeline":{{ site.baseurl }}/user/tutorials/tutorial-firstscript.html, we learned how to create a pipeline template on the command-line.  Let's create one that doesn't require any user input to start:
+This tutorial demonstrates how to use the command line to run the same pipeline as described in "running a pipeline using Workbench.":{{site.baseurl}}/user/tutorials/tutorial-pipeline-workbench.html
+
+{% include 'tutorial_expectations' %}
+
+When you use the command line, you must use Arvados unique identifiers to refer to objects.  The identifiers in this example correspond to the following Arvados objects:
+
+* <i class="fa fa-fw fa-gear"></i> "Tutorial align using bwa mem (qr1hi-p5p6p-itzkwxblfermlwv)":https://{{ site.arvados_workbench_host }}/pipeline_templates/qr1hi-p5p6p-itzkwxblfermlwv
+* <i class="fa fa-fw fa-archive"></i> "Tutorial chromosome 19 reference (2463fa9efeb75e099685528b3b9071e0+438)":https://{{ site.arvados_workbench_host }}/collections/2463fa9efeb75e099685528b3b9071e0+438
+* <i class="fa fa-fw fa-archive"></i> "Tutorial sample exome (3229739b505d2b878b62aed09895a55a+142)":https://{{ site.arvados_workbench_host }}/collections/3229739b505d2b878b62aed09895a55a+142
+
+Use @arv pipeline run@ to run the pipeline, supplying the inputs to the bwa-mem component on the command line:
 
 <notextile>
-<pre><code>~$ <span class="userinput">cat &gt;the_pipeline &lt;&lt;EOF
-{
-  "name":"Filter MD5 hash values",
-  "components":{
-    "do_hash":{
-      "script":"hash.py",
-      "script_parameters":{
-        "input": "887cd41e9c613463eab2f0d885c6dd96+83"
-      },
-      "repository":"$USER",
-      "script_version":"master"
-    },
-    "filter":{
-      "script":"0-filter.py",
-      "script_parameters":{
-        "input":{
-          "output_of":"do_hash"
-        }
-      },
-      "repository":"$USER",
-      "script_version":"master"
-    }
-  }
-}
-EOF</span>
-~$ <span class="userinput">arv pipeline_template create --pipeline-template "$(cat the_pipeline)"</span></code></pre>
-</notextile>
+<pre><code>~$ <span class="userinput">arv pipeline run --run-pipeline-here --template qr1hi-p5p6p-itzkwxblfermlwv bwa-mem::reference_collection=2463fa9efeb75e099685528b3b9071e0+438 bwa-mem::sample=3229739b505d2b878b62aed09895a55a+142</span>
 
-(Your shell should automatically fill in @$USER@ with your login name.  The JSON that gets saved should have @"repository"@ pointed at your personal Git repository.)
+2014-07-25 18:05:26 +0000 -- pipeline_instance qr1hi-d1hrv-d14trje19pna7f2
+bwa-mem qr1hi-8i9sb-67n1qvsronmd2z6 queued 2014-07-25T18:05:25Z
 
-You can run this pipeline from the command line using @arv pipeline run@, filling in the UUID that you received from @arv pipeline_template create@:
+2014-07-25 18:05:36 +0000 -- pipeline_instance qr1hi-d1hrv-d14trje19pna7f2
+bwa-mem qr1hi-8i9sb-67n1qvsronmd2z6 {:done=>0, :running=>1, :failed=>0, :todo=>0}
 
-<notextile>
-<pre><code>~$ <span class="userinput">arv pipeline run --run-here --template qr1hi-p5p6p-xxxxxxxxxxxxxxx</span>
-2013-12-16 14:08:40 +0000 -- pipeline_instance qr1hi-d1hrv-vxzkp38nlde9yyr
-do_hash qr1hi-8i9sb-hoyc2u964ecv1s6 queued 2013-12-16T14:08:40Z
-filter  -                           -
-
-2013-12-16 14:08:51 +0000 -- pipeline_instance qr1hi-d1hrv-vxzkp38nlde9yyr
-do_hash qr1hi-8i9sb-hoyc2u964ecv1s6 1ed9ed18ef31ad21bcabcfeff7777bae+162
-filter  qr1hi-8i9sb-w5k40fztqgg9i2x queued 2013-12-16T14:08:50Z
-
-2013-12-16 14:09:01 +0000 -- pipeline_instance qr1hi-d1hrv-vxzkp38nlde9yyr
-do_hash qr1hi-8i9sb-hoyc2u964ecv1s6 1ed9ed18ef31ad21bcabcfeff7777bae+162
-filter  qr1hi-8i9sb-w5k40fztqgg9i2x d3bcc2ee0f0ea31049000c721c0f3a2a+56
+2014-07-25 18:05:46 +0000 -- pipeline_instance qr1hi-d1hrv-d14trje19pna7f2
+bwa-mem qr1hi-8i9sb-67n1qvsronmd2z6 49bae1066f4ebce72e2587a3efa61c7d+88
 </code></pre>
 </notextile>
 
-This instantiates your pipeline and displays a live feed of its status.  The new pipeline instance will also show up on Workbench *Activity* %(rarr)&rarr;% *Recent&nbsp;pipeline&nbsp;instances* page.
+This instantiates your pipeline and displays periodic status reports in your terminal window. The new pipeline instance will also show up on the Workbench Dashboard.
 
-Arvados adds each pipeline component to the job queue as its dependencies are satisfied (or immediately if it has no dependencies) and finishes when all components are completed or failed and there is no more work left to do.
+@arv pipeline run@ submits a job for each pipeline component as soon as the component's inputs are known (i.e., any dependencies are satsified). It terminates when there is no work left to do: this means either all components are satisfied and all jobs have completed successfully, _or_ one or more jobs have failed and it is therefore unproductive to submit any further jobs.
 
-The Keep locators of the output of each of @"do_hash"@ and @"filter"@ component are available from the output log shown above.  The output is also available on the Workbench by navigating to *Activity* %(rarr)&rarr;% *Recent&nbsp;pipeline&nbsp;instances* %(rarr)&rarr;% pipeline UUID under the *Instance* column %(rarr)&rarr;% *output* column.
+The Keep locators of the output of of the @bwa-mem@ components are available from the last status report shown above:
 
 <notextile>
-<pre><code>~$ <span class="userinput">arv keep get 1ed9ed18ef31ad21bcabcfeff7777bae+162/md5sum.txt</span>
-0f1d6bcf55c34bed7f92a805d2d89bbf 887cd41e9c613463eab2f0d885c6dd96+83/./alice.txt
-504938460ef369cd275e4ef58994cffe 887cd41e9c613463eab2f0d885c6dd96+83/./bob.txt
-8f3b36aff310e06f3c5b9e95678ff77a 887cd41e9c613463eab2f0d885c6dd96+83/./carol.txt
-~$ <span class="userinput">arv keep get d3bcc2ee0f0ea31049000c721c0f3a2a+56/0-filter.txt</span>
-0f1d6bcf55c34bed7f92a805d2d89bbf 887cd41e9c613463eab2f0d885c6dd96+83/./alice.txt
+<pre><code>~$ <span class="userinput">arv keep ls -s 49bae1066f4ebce72e2587a3efa61c7d+88</span>
+     29226 ./HWI-ST1027_129_D0THKACXX.1_1.sam
 </code></pre>
 </notextile>
 
-Indeed, the filter has picked out just the "alice" file as having a hash that starts with 0.
+h2. Re-using existing jobs and outputs
 
-h3. Running a pipeline with different parameters
-
-Notice that the pipeline template explicitly specifies the Keep locator for the input:
-
-<notextile>
-<pre><code>...
-    "do_hash":{
-      "script_parameters":{
-        "input": "887cd41e9c613463eab2f0d885c6dd96+83"
-      },
-    }
-...
-</code></pre>
-</notextile>
-
-You can specify values for pipeline component script_parameters like this:
-
-<notextile>
-<pre><code>~$ <span class="userinput">arv pipeline run --run-here --template qr1hi-p5p6p-xxxxxxxxxxxxxxx do_hash::input=c1bad4b39ca5a924e481008009d94e32+210</span>
-2013-12-17 20:31:24 +0000 -- pipeline_instance qr1hi-d1hrv-tlkq20687akys8e
-do_hash qr1hi-8i9sb-rffhuay4jryl2n2 queued 2013-12-17T20:31:24Z
-filter  -                           -
-
-2013-12-17 20:31:34 +0000 -- pipeline_instance qr1hi-d1hrv-tlkq20687akys8e
-do_hash qr1hi-8i9sb-rffhuay4jryl2n2 {:done=>1, :running=>1, :failed=>0, :todo=>0}
-filter  -                           -
-
-2013-12-17 20:31:55 +0000 -- pipeline_instance qr1hi-d1hrv-tlkq20687akys8e
-do_hash qr1hi-8i9sb-rffhuay4jryl2n2 50cafdb29cc21dd6eaec85ba9e0c6134+56
-filter  qr1hi-8i9sb-j347g1sqovdh0op queued 2013-12-17T20:31:55Z
-
-2013-12-17 20:32:05 +0000 -- pipeline_instance qr1hi-d1hrv-tlkq20687akys8e
-do_hash qr1hi-8i9sb-rffhuay4jryl2n2 50cafdb29cc21dd6eaec85ba9e0c6134+56
-filter  qr1hi-8i9sb-j347g1sqovdh0op 490cd451c8108824b8a17e3723e1f236+19
-</code></pre>
-</notextile>
-
-Now check the output:
-
-<notextile>
-<pre><code>~$ <span class="userinput">arv keep get 50cafdb29cc21dd6eaec85ba9e0c6134+56/md5sum.txt</span>
-44b8ae3fde7a8a88d2f7ebd237625b4f c1bad4b39ca5a924e481008009d94e32+210/./var-GS000016015-ASM.tsv.bz2
-~$ <span class="userinput">arv keep get 490cd451c8108824b8a17e3723e1f236+19/0-filter.txt</span>
-</code></pre>
-</notextile>
-
-Since none of the files in the collection have hash code that start with 0, the output of the filter component is empty.
+When satisfying a pipeline component that is not marked as nondeterministic in the pipeline template, @arv pipeline run@ checks for a previously submitted job that satisfies the component's requirements. If such a job is found, @arv pipeline run@ uses the existing job rather than submitting a new one. Usually this is a safe way to conserve time and compute resources. In some cases it's desirable to re-run jobs with identical specifications (e.g., to demonstrate that a job or entire pipeline thought to be repeatable is in fact repeatable). For such cases, job re-use features can be disabled entirely by passing the @--no-reuse@ flag to the @arv pipeline run@ command.

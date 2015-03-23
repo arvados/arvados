@@ -14,7 +14,7 @@ def main options
   # Check that:
   #   * Docker is installed and can be found in the user's path
   #   * Docker can be run as a non-root user
-  #      - TODO: put the user is in the docker group if necessary
+  #      - TODO: put the user in the docker group if necessary
   #      - TODO: mount cgroup automatically
   #      - TODO: start the docker service if not started
 
@@ -64,15 +64,28 @@ def main options
       end
     end
 
+    print "Arvados needs to know the shell login name for the administrative user.\n"
+    print "This will also be used as the name for your git repository.\n"
+    print "\n"
+    user_name = ""
+    until is_valid_user_name? user_name
+      print "Enter a shell login name here: "
+      user_name = gets.strip
+      if not is_valid_user_name? user_name
+        print "That doesn't look like a valid shell login name. Please try again.\n"
+      end
+    end
+
     File.open 'config.yml', 'w' do |config_out|
+      config_out.write "# If a _PW or _SECRET variable is set to an empty string, a password\n"
+      config_out.write "# will be chosen randomly at build time. This is the\n"
+      config_out.write "# recommended setting.\n\n"
       config = YAML.load_file 'config.yml.example'
       config['API_AUTO_ADMIN_USER'] = admin_email_address
+      config['ARVADOS_USER_NAME'] = user_name
       config['API_HOSTNAME'] = generate_api_hostname
-      config['PUBLIC_KEY_PATH'] = find_or_create_ssh_key(config['API_HOSTNAME'])
+      config['API_WORKBENCH_ADDRESS'] = 'false'
       config.each_key do |var|
-        if var.end_with?('_PW') or var.end_with?('_SECRET')
-          config[var] = rand(2**256).to_s(36)
-        end
         config_out.write "#{var}: #{config[var]}\n"
       end
     end
@@ -83,8 +96,9 @@ def main options
       docker_ok? docker_path and
       debootstrap_ok? and
       File.exists? 'config.yml'
-    warn "Building Arvados."
-    system({"DOCKER" => docker_path}, '/usr/bin/make', '-f', options[:makefile], *ARGV)
+    exit 0
+  else
+    exit 6
   end
 end
 
@@ -114,6 +128,15 @@ def is_valid_email? str
   str.match /^\S+@\S+\.\S+$/
 end
 
+# is_valid_user_name?
+#   Returns true if its arg looks like a valid unix username.
+#   This is a very very loose sanity check.
+#
+def is_valid_user_name? str
+  # borrowed from Debian's adduser (version 3.110)
+  str.match /^[_.A-Za-z0-9][-\@_.A-Za-z0-9]*\$?$/
+end
+
 # generate_api_hostname
 #   Generates a 5-character randomly chosen API hostname.
 #
@@ -140,22 +163,6 @@ end
 #
 def docker_ok?(docker_path)
   return system "#{docker_path} images > /dev/null 2>&1"
-end
-
-# find_or_create_ssh_key arvados_name
-#   Returns the SSH public key appropriate for this Arvados instance,
-#   generating one if necessary.
-#
-def find_or_create_ssh_key arvados_name
-  ssh_key_file = "#{ENV['HOME']}/.ssh/arvados_#{arvados_name}_id_rsa"
-  unless File.exists? ssh_key_file
-    system 'ssh-keygen',
-           '-f', ssh_key_file,
-           '-C', "arvados@#{arvados_name}",
-           '-P', ''
-  end
-
-  return "#{ssh_key_file}.pub"
 end
 
 # install_docker
@@ -221,6 +228,5 @@ if __FILE__ == $PROGRAM_NAME
       options[:makefile] = mk
     end
   end
-
   main options
 end

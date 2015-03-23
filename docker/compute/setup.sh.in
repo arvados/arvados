@@ -1,0 +1,20 @@
+#!/bin/bash
+
+. /etc/profile.d/rvm.sh
+
+export ARVADOS_API_HOST=api
+export ARVADOS_API_HOST_INSECURE=yes
+export ARVADOS_API_TOKEN=@@API_SUPERUSER_SECRET@@
+
+arv node create --node {} > /tmp/node.json
+
+UUID=`grep \"uuid\" /tmp//node.json  |cut -f4 -d\"`
+PING_SECRET=`grep \"ping_secret\" /tmp//node.json  |cut -f4 -d\"`
+
+echo "*/5 * * * * root /usr/bin/curl -k -d ping_secret=$PING_SECRET https://api/arvados/v1/nodes/$UUID/ping" > /etc/cron.d/node_ping
+
+# Send a ping now
+/usr/bin/curl -k -d ping_secret=$PING_SECRET https://api/arvados/v1/nodes/$UUID/ping?ping_secret=$PING_SECRET
+
+# Just make sure /dev/fuse permissions are correct (the device appears after fuse is loaded)
+chmod 1660 /dev/fuse && chgrp fuse /dev/fuse

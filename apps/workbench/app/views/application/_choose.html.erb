@@ -1,45 +1,76 @@
-<div class="modal arv-choose">
+<div class="modal arv-choose modal-with-loading-spinner">
   <div class="modal-dialog" style="width:80%">
     <div class="modal-content">
       <div class="modal-header">
-        <button type="button" class="close" onClick="reset_form()" data-dismiss="modal" aria-hidden="true">&times;</button>
-        <h4 class="modal-title"><%= params[:title] || "Choose #{@objects.first.andand.class_for_display}" %></h4>
+        <button type="button" class="close" data-dismiss="modal" aria-hidden="true">&times;</button>
+        <h4 class="modal-title"><%= params[:title] || "Choose #{@objects.resource_class.andand.class_for_display}" %></h4>
       </div>
-      <div class="modal-body">
-        <nav class="navbar navbar-default breadcrumbs" role="navigation">
-          <ul class="nav navbar-nav navbar-left">
-            <li class="dropdown">
-            <%= render partial: "projects_tree_menu", locals: {
-                  :project_link_to => Proc.new do |pnode, &block|
-                    link_to "#", {"class" => "chooser-show-project", "data-project-uuid" => pnode[:object].uuid }, &block
-                   end,
-                  :top_button => Proc.new do %>
-                    <% link_to "#", {"class" => "chooser-show-project btn btn-xs btn-default pull-right" } do %>
-                      All <%= controller.model_class.class_for_display.pluralize.downcase %>
-                    <% end %>
-                  <% end %>
-             <% } %>
-            </li>
-            <li class="nav-separator">
-              <i class="fa fa-lg fa-angle-double-right"></i>
-            </li>
-            <li><p class="navbar-text" id="chooser-breadcrumb">All <%= controller.model_class.class_for_display.pluralize.downcase %></span></li>
-          </ul>
-          <div class="navbar-form navbar-right">
-            <input type="text" class="form-control filterable-control" placeholder="Search" data-filterable-target=".modal.arv-choose .selectable-container"/>
-          </div>
-        </nav>
 
+      <div class="modal-body">
+        <% project_filters, chooser_filters = (params[:filters] || []).partition do |attr, op, val|
+             attr == "owner_uuid" and op == "="
+           end %>
+        <div class="input-group">
+          <% if params[:by_project].to_s != "false" %>
+            <% if project_filters.empty?
+                 selected_project_name = 'All projects'
+               else
+                 val = project_filters.last.last
+                 if val == current_user.uuid
+                   selected_project_name = "Home"
+                 else
+                   selected_project_name = Group.find(val).name rescue val
+                 end
+               end
+               %>
+            <div class="input-group-btn" data-filterable-target=".modal.arv-choose .selectable-container">
+              <button type="button" class="btn btn-default dropdown-toggle" data-toggle="dropdown">
+                <%= selected_project_name %> <span class="caret"></span>
+              </button>
+              <ul class="dropdown-menu" role="menu">
+                <li>
+                  <%= link_to '#', class: 'chooser-show-project' do %>
+                    All projects
+                  <% end %>
+                </li>
+                <li class="divider" />
+                <%= render partial: "projects_tree_menu", locals: {
+                      :project_link_to => Proc.new do |pnode, &block|
+                        link_to "#", {
+                          class: "chooser-show-project",
+                          data: {'project_uuid' => pnode[:object].uuid},
+                        }, &block
+                      end,
+                      :top_button => nil
+                    } %>
+              </ul>
+            </div>
+          <% end %>
+          <input type="text" value="<%=params[:preconfigured_search_str] || ''%>" class="form-control filterable-control focus-on-display" placeholder="Search" data-filterable-target=".modal.arv-choose .selectable-container"/>
+        </div>
+        <div style="height: 1em" />
+
+        <% preview_pane = (params[:preview_pane].to_s != "false") %>
         <div class="row" style="height: 20em">
-          <div class="col-sm-6 container-fluid arv-filterable-list selectable-container"
+          <div class="<%= 'col-sm-6' if preview_pane %> col-xs-12 arv-filterable-list selectable-container <%= 'multiple' if multiple %>"
                style="height: 100%; overflow-y: scroll"
                data-infinite-scroller="#choose-scroll"
                id="choose-scroll"
-               data-infinite-content-href="<%= @next_page_href %>">
-            <%= render partial: 'choose_rows', locals: {multiple: multiple} %>
+               data-infinite-content-params-from-chooser="<%= {filters: chooser_filters}.to_json %>"
+               <% if project_filters.any? %>
+                 data-infinite-content-params-from-project-dropdown="<%= {filters: project_filters, project_uuid: project_filters.last.last}.to_json %>"
+               <% end %>
+               <%
+                  action_data = JSON.parse params['action_data'] if params['action_data']
+                  use_preview_sel = action_data ? action_data['use_preview_selection'] : false
+                %>
+               data-infinite-content-href="<%= url_for partial: true,
+                                                       use_preview_selection: use_preview_sel %>">
           </div>
-          <div class="col-sm-6 modal-dialog-preview-pane" style="height: 100%; overflow-y: scroll">
-          </div>
+          <% if preview_pane %>
+            <div class="col-sm-6 col-xs-12 modal-dialog-preview-pane" style="height: 100%; overflow-y: scroll">
+            </div>
+          <% end %>
         </div>
 
         <div class="modal-footer">

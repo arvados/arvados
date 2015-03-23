@@ -1,6 +1,7 @@
 require 'test_helper'
 
 class PermissionsTest < ActionDispatch::IntegrationTest
+  include CurrentApiClient  # for empty_collection
   fixtures :users, :groups, :api_client_authorizations, :collections
 
   test "adding and removing direct can_read links" do
@@ -100,7 +101,7 @@ class PermissionsTest < ActionDispatch::IntegrationTest
     # try to read collection as spectator
     get "/arvados/v1/collections/#{collections(:foo_file).uuid}", {:format => :json}, auth(:spectator)
     assert_response 404
-    
+
   end
 
 
@@ -151,7 +152,7 @@ class PermissionsTest < ActionDispatch::IntegrationTest
     # try to read collection as spectator
     get "/arvados/v1/collections/#{collections(:foo_file).uuid}", {:format => :json}, auth(:spectator)
     assert_response 404
-    
+
   end
 
   test "adding can_read links from user to group, group to group, group to collection" do
@@ -210,18 +211,6 @@ class PermissionsTest < ActionDispatch::IntegrationTest
     # try to read collection as spectator
     get "/arvados/v1/collections/#{collections(:foo_file).uuid}", {:format => :json}, auth(:spectator)
     assert_response 404
-  end
-
-  test "read-only group-admin sees correct subset of user list" do
-    get "/arvados/v1/users", {:format => :json}, auth(:rominiadmin)
-    assert_response :success
-    resp_uuids = json_response['items'].collect { |i| i['uuid'] }
-    [[true, users(:rominiadmin).uuid],
-     [true, users(:active).uuid],
-     [false, users(:miniadmin).uuid],
-     [false, users(:spectator).uuid]].each do |should_find, uuid|
-      assert_equal should_find, !resp_uuids.index(uuid).nil?, "rominiadmin should #{'not ' if !should_find}see #{uuid} in user list"
-    end
   end
 
   test "read-only group-admin cannot modify administered user" do
@@ -371,5 +360,15 @@ class PermissionsTest < ActionDispatch::IntegrationTest
 
     get "/arvados/v1/permissions/#{groups(:public).uuid}", nil, auth(:active)
     assert_response 403
+  end
+
+  test "active user can read the empty collection" do
+    # The active user should be able to read the empty collection.
+
+    get("/arvados/v1/collections/#{empty_collection_uuid}",
+        { :format => :json },
+        auth(:active))
+    assert_response :success
+    assert_empty json_response['manifest_text'], "empty collection manifest_text is not empty"
   end
 end

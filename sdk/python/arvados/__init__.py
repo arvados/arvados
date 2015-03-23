@@ -18,12 +18,24 @@ import fcntl
 import time
 import threading
 
-from api import *
-from collection import *
+from .api import api, http_cache
+from collection import CollectionReader, CollectionWriter, ResumableCollectionWriter
 from keep import *
 from stream import *
+from arvfile import StreamFileReader
 import errors
 import util
+
+# Set up Arvados logging based on the user's configuration.
+# All Arvados code should log under the arvados hierarchy.
+log_handler = logging.StreamHandler()
+log_handler.setFormatter(logging.Formatter(
+        '%(asctime)s %(name)s[%(process)d] %(levelname)s: %(message)s',
+        '%Y-%m-%d %H:%M:%S'))
+logger = logging.getLogger('arvados')
+logger.addHandler(log_handler)
+logger.setLevel(logging.DEBUG if config.get('ARVADOS_DEBUG')
+                else logging.WARNING)
 
 def task_set_output(self,s):
     api('v1').job_tasks().update(uuid=self['uuid'],
@@ -71,11 +83,16 @@ class JobTask(object):
 
 class job_setup:
     @staticmethod
-    def one_task_per_input_file(if_sequence=0, and_end_task=True, input_as_path=False):
+    def one_task_per_input_file(if_sequence=0, and_end_task=True, input_as_path=False, api_client=None):
         if if_sequence != current_task()['sequence']:
             return
+
+        if not api_client:
+            api_client = api('v1')
+
         job_input = current_job()['script_parameters']['input']
-        cr = CollectionReader(job_input)
+        cr = CollectionReader(job_input, api_client=api_client)
+        cr.normalize()
         for s in cr.all_streams():
             for f in s.all_files():
                 if input_as_path:
@@ -90,9 +107,9 @@ class job_setup:
                         'input':task_input
                         }
                     }
-                api('v1').job_tasks().create(body=new_task_attrs).execute()
+                api_client.job_tasks().create(body=new_task_attrs).execute()
         if and_end_task:
-            api('v1').job_tasks().update(uuid=current_task()['uuid'],
+            api_client.job_tasks().update(uuid=current_task()['uuid'],
                                        body={'success':True}
                                        ).execute()
             exit(0)
@@ -119,5 +136,3 @@ class job_setup:
                                        body={'success':True}
                                        ).execute()
             exit(0)
-
-

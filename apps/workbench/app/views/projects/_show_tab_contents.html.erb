@@ -1,58 +1,110 @@
+<% sortable_columns = {} if local_assigns[:sortable_columns].nil? %>
 <div class="selection-action-container">
   <div class="row">
     <div class="col-sm-5">
       <div class="btn-group btn-group-sm">
-        <button type="button" class="btn btn-default dropdown-toggle" data-toggle="dropdown">Selection... <i class="fa fa-fw fa-long-arrow-down "></i></button>
+        <button type="button" class="btn btn-default dropdown-toggle" data-toggle="dropdown">Selection <span class="caret"></span></button>
         <ul class="dropdown-menu" role="menu">
+          <% if Collection.creatable? %>
+            <li><%= link_to "Create new collection with selected collections", '#',
+                    'data-href' => combine_selected_path(
+                      action_data: {current_project_uuid: @object.uuid}.to_json
+                    ),
+                    'id' => 'combine_selections_button',
+                    method: :post,
+                    'data-selection-param-name' => 'selection[]',
+                    'data-selection-action' => 'combine-project-contents',
+                    'data-toggle' => 'dropdown'
+              %></li>
+          <% end %>
           <li><%= link_to "Compare selected", '#',
                   'data-href' => compare_pipeline_instances_path,
                   'data-selection-param-name' => 'uuids[]',
-                  'data-selection-action' => 'compare'
+                  'data-selection-action' => 'compare',
+                  'data-toggle' => 'dropdown'
             %></li>
-          <li><%= link_to "Remove selected", '#',
-                  'data-href' => url_for(action: :remove_items),
-                  'data-selection-param-name' => 'item_uuids[]',
-                  'data-selection-action' => 'remove',
-                  'data-remote' => true,
-                  'method' => 'delete'
-            %></li>
+          <% if Collection.creatable? %>
+            <li><%= link_to "Copy selected...", '#',
+                    'data-href' => choose_projects_path(
+                      title: 'Copy selected items to...',
+                      editable: true,
+                      action_name: 'Copy',
+                      action_href: actions_path,
+                      action_method: 'post',
+                      action_data_from_params: ['selection'],
+                      action_data: {
+                        copy_selections_into_project: true,
+                        selection_param: 'uuid',
+                        success: 'page-refresh'}.to_json),
+                    'data-remote' => true,
+                    'data-selection-param-name' => 'selection[]',
+                    'data-selection-action' => 'copy',
+                    'data-toggle' => 'dropdown'
+              %></li>
+          <% end %>
+          <% if @object.editable? %>
+            <li><%= link_to "Move selected...", '#',
+                    'data-href' => choose_projects_path(
+                      title: 'Move selected items to...',
+                      editable: true,
+                      action_name: 'Move',
+                      action_href: actions_path,
+                      action_method: 'post',
+                      action_data_from_params: ['selection'],
+                      action_data: {
+                        move_selections_into_project: true,
+                        selection_param: 'uuid',
+                        success: 'page-refresh'}.to_json),
+                    'data-remote' => true,
+                    'data-selection-param-name' => 'selection[]',
+                    'data-selection-action' => 'move',
+                    'data-toggle' => 'dropdown'
+              %></li>
+            <li><%= link_to "Remove selected", '#',
+                    method: :delete,
+                    'data-href' => url_for(action: :remove_items),
+                    'data-selection-param-name' => 'item_uuids[]',
+                    'data-selection-action' => 'remove',
+                    'data-remote' => true,
+                    'data-toggle' => 'dropdown'
+              %></li>
+          <% end %>
         </ul>
       </div>
     </div>
     <div class="col-sm-4 pull-right">
-      <input type="text" class="form-control filterable-control" placeholder="Search project contents" data-filterable-target="table.arv-index.arv-project-contents tbody"/>
+      <input type="text" class="form-control filterable-control" placeholder="Search project contents" data-filterable-target="table.arv-index.arv-project-<%= tab_pane %> tbody"/>
     </div>
   </div>
 
-  <%
-    selected_objects_and_names = []
-    specific_data_kinds = ['arvados#collection', 'arvados#group', 'arvados#job', 'arvados#pipelineInstance', 'arvados#pipelineTemplate']
-    @objects_and_names.each do |object, name_link|
-      if !data_kind.any? && !specific_data_kinds.include?(object.kind)
-        selected_objects_and_names << [object, name_link]
-      elsif data_kind.include?(object.kind)
-        selected_objects_and_names << [object, name_link]
-      end
-    end
-  %>
-
-  <table class="table table-condensed table-fixedlayout arv-index arv-project-contents" style="overflow-x: hidden">
+  <table class="table table-condensed arv-index arv-project-<%= tab_pane %>">
     <colgroup>
-      <col width="40%" />
-      <col width="60%" />
+      <col width="0*" style="max-width: fit-content;" />
+      <col width="0*" style="max-width: fit-content;" />
+      <col width="0*" style="max-width: fit-content;" />
+      <col width="60%" style="width: 60%;" />
+      <col width="40%" style="width: 40%;" />
     </colgroup>
-    <tbody data-infinite-scroller="#Contents-scroll" data-infinite-content-href="<%= url_for(format: :json, partial: :contents_rows, offset: next_page_offset) if next_page_offset %>">
-      <%= render partial: 'show_contents_rows', locals: {project: @object, objects_and_names: selected_objects_and_names} %>
+    <tbody data-infinite-scroller="#<%= tab_pane %>-scroll" data-infinite-content-href="<%= url_for partial: :contents_rows %>" data-infinite-content-params-projecttab="<%= local_assigns.select{|k| [:order, :limit, :filters].include? k }.to_json %>" data-infinite-content-params-attr="projecttab">
     </tbody>
     <thead>
       <tr>
-        <th>
+        <th></th>
+        <th></th>
+        <th></th>
+        <% sort_order = sortable_columns['name'].gsub(/\s/,'') if sortable_columns['name'] %>
+        <th <% if !sort_order.nil? %>
+              data-sort-order='<%= sort_order %>'
+            <% end %> >
+          name
         </th>
-        <th>
+        <% sort_order = sortable_columns['description'].gsub(/\s/,'') if sortable_columns['description'] %>
+        <th <% if !sort_order.nil? %>
+              data-sort-order='<%= sort_order %>'
+            <% end %> >
           description
         </th>
       </tr>
     </thead>
   </table>
-
 </div>

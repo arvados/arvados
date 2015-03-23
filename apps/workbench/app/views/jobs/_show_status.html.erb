@@ -1,93 +1,36 @@
+<div class="arv-log-refresh-control"
+     data-load-throttle="15000"
+     ></div>
+<%=
+   pj = {}
+   pj[:job] = @object
+   pj[:name] = @object[:name] || "this job"
+   pj[:progress_bar] = render(partial: "job_progress",
+                              locals: {:j => @object })
+   tasks = JobTask.filter([['job_uuid', '=', @object.uuid]]).results
+   render(partial: 'pipeline_instances/running_component',
+          locals: { tasks: tasks, pj: pj, i: 0, expanded: true})
+%>
 
-<div class="pull-right">
-  <% if @object.running %>
-    <%= form_tag "/jobs/#{@object.uuid}/cancel", style: "display:inline; padding-left: 1em" do |f| %>
-      <%= button_tag "Cancel running job", {class: 'btn btn-danger', id: "cancel-job-button"} %>
-    <% end %>
-  <% else %>
-    Re-run job using script version:
-    <%= form_tag '/jobs', style: "display:inline; padding-left: 1em" do |f| %>
-      <% [:script, :script_version, :repository, :output_is_persistent, :supplied_script_version, :nondeterministic].each do |d| %>
-        <%= hidden_field :job, d, :value => @object[d] %>
-      <% end %>
-      <% [:script_parameters, :runtime_constraints].each do |d| %>
-        <%= hidden_field :job, d, :value => JSON.dump(@object[d]) %>
-      <% end %>
-      <%= button_tag "Same as this run", {class: 'btn btn-primary', id: "re-run-same-job-button"} %>
-    <% end %>
-  <% if @object.respond_to? :supplied_script_version and !@object.supplied_script_version.nil? and !@object.supplied_script_version.empty? and @object.script_version != @object.supplied_script_version%>
-      <%= form_tag '/jobs', style: "display:inline" do |f| %>
-      <% [:script, :repository, :output_is_persistent, :supplied_script_version, :nondeterministic].each do |d| %>
-        <%= hidden_field :job, d, :value => @object[d] %>
-      <% end %>
-      <%= hidden_field :job, :script_version, :value => @object[:supplied_script_version] %>
-      <% [:script_parameters, :runtime_constraints].each do |d| %>
-        <%= hidden_field :job, d, :value => JSON.dump(@object[d]) %>
-      <% end %>
-      <%= button_tag "Latest (#{@object.repository}/#{@object.supplied_script_version})", {class: 'btn btn-primary', id: "re-run-latest-job-button"} %>
-    <% end %>
-  <% end %>
-<% end %>
-</div>
+<div class="panel panel-default">
+  <div class="panel-heading">
+    <span class="panel-title">Used in pipelines</span>
+  </div>
+  <div class="panel-body">
+    <% pi = PipelineInstance.order("created_at desc").filter([["components", "like", "%#{@object.uuid}%"]]) %>
 
-<table class="table pipeline-components-table">
-  <colgroup>
-    <col style="width: 20%" />
-    <col style="width: 24%" />
-    <col style="width: 12%" />
-    <col style="width: 45%" />
-  </colgroup>
-  <thead>
-    <tr><th>
-        script, version
-      </th><th>
-        progress
-        <%# format:'js' here helps browsers avoid using the cached js
-            content in html context (e.g., duplicate tab -> see
-                                     javascript) %>
-        <%= link_to '(refresh)', {format: :js}, {class: 'refresh hide', remote: true, method: 'get'} %>
-      </th>
-      <th></th>
-      <th>
-        output
-      </th>
-    </tr>
-  </thead>
-  <tbody>
-    <tr>
-      <td>
-        <%= @object[:script] %><br>
-        <span class="deemphasize"><%= @object[:script_version] %></span>
-      </td>
-      <td>
-        <%= render partial: 'job_progress', locals: {:j => @object} %>
-        <% if @object.running == false %>
-          <% if @object[:job].andand[:uuid] %>
-            <span class="deemphasize">
-              <%= link_to("..."+@object[:job][:uuid].last(15), job_url(id: @object[:job][:uuid])) %>
-            </span>
-
-            <% current_job = @object %>
-            <% if current_job.andand[:log] %>
-              <% fixup = /([a-f0-9]{32}\+\d+)(\+?.*)/.match(current_job[:log])%>
-              <% Collection.limit(1).where(uuid: fixup[1]).each do |c| %>
-                <% c.files.each do |file| %>
-                  <br/><span class="deemphasize">
-                    <a href="<%= collection_path(current_job[:log]) %>/<%= file[1] %>?disposition=inline&size=<%= file[2] %>">log</a>
-                  </span>
-                <% end %>
-              <% end %>
-            <% end %>
-          <% end %>
+    <% pi.each do |pipeline| %>
+      <% pipeline.components.each do |k, v| %>
+        <% if v[:job] and v[:job][:uuid] == @object.uuid %>
+          <div>
+            <b><%= k %></b>
+            component of
+            <%= link_to_if_arvados_object pipeline, friendly_name: true %>
+            created at
+            <%= render_localized_date(pipeline.created_at) %>.
+          </div>
         <% end %>
-      </td><td>
-        <%= render(partial: 'job_status_label',
-                   locals: { :j => @object }) %>
-      </td><td>
-        <%= link_to_if_arvados_object @object[:output], {:thumbnail => true} %>
-      </td>
-    </tr>
-    <tfoot>
-      <tr><td colspan="5"></td></tr>
-    </tfoot>
-</table>
+      <% end %>
+    <% end %>
+  </div>
+</div>

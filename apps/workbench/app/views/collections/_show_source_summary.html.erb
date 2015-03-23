@@ -1,12 +1,23 @@
+<p><i>Content size:</i><br />
+  <%= pluralize(@object.manifest.files_count, "file") %> totalling
+  <%= raw(human_readable_bytes_html(@object.manifest.files_size)) %></p>
+
 <% if not (@output_of.andand.any? or @log_of.andand.any?) %>
   <p><i>No source information available.</i></p>
 <% end %>
 
 <% if @output_of.andand.any? %>
   <p><i>This collection was the output of:</i><br />
-    <%= render_arvados_object_list_start(@output_of, 'Show all jobs',
-                                         jobs_path(filters: [['output', '=', @object.uuid]].to_json)) do |job| %>
-      <%= link_to_if_arvados_object(job, friendly_name: true) %><br />
+    <% pipelines = PipelineInstance.filter([["components", "like", "%#{@object.uuid}%"]]).each do |pipeline| %>
+      <% pipeline.components.each do |cname, c| %>
+        <% if c[:output_uuid] == @object.uuid %>
+          <b><%= cname %></b> component of <b><%= link_to_if_arvados_object(pipeline, friendly_name: true) %></b>
+          <% if c.andand[:job].andand[:finished_at] %>
+            finished at <%= render_localized_date(c[:job][:finished_at]) %>
+          <% end %>
+          <br>
+        <% end %>
+      <% end %>
     <% end %>
   </p>
 <% end %>

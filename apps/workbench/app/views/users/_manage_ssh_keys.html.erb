@@ -1,0 +1,55 @@
+<div>
+  <% if !@my_ssh_keys.any? %>
+     <p> You have not yet set up an SSH public key for use with Arvados. </p>
+     <p>  <%= link_to "Click here",
+                  "#{Rails.configuration.arvados_docsite}/user/getting_started/ssh-access-unix.html",
+                  style: "font-weight: bold",
+                  target: "_blank" %>  to learn about SSH keys in Arvados.
+     </p>
+     <p> When you have an SSH key you would like to use, add it using the <b>Add</b> button. </p>
+  <% else %>
+    <table class="table manage-ssh-keys-table">
+      <colgroup>
+        <col style="width: 35%" />
+        <col style="width: 55%" />
+        <col style="width: 10%" />
+      </colgroup>
+      <thead>
+        <tr>
+          <th> Name </th>
+          <th> Key Fingerprint </th>
+          <th> </th>
+        </tr>
+      </thead>
+      <tbody>
+        <% @my_ssh_keys.andand.each do |key| %>
+          <tr style="word-break:break-all;">
+            <td>
+              <%= key[:name] %>
+            </td>
+            <td style="word-break:break-all;">
+              <% if key[:public_key] && key[:public_key].size > 0 %>
+                <div>
+                  <span title="<%=key[:public_key]%>"> <%=
+                    begin
+                      SSHKey.fingerprint key[:public_key]
+                    rescue
+                      "INVALID KEY: " + key[:public_key]
+                    end
+                   %> </span>
+                </div>
+              <% else %>
+                  <%= key[:public_key] %>
+              <% end %>
+            </td>
+            <td>
+              <%= link_to(authorized_key_path(id: key[:uuid]), method: :delete, class: 'btn btn-sm', data: {confirm: "Really delete key?"}) do %>
+                  <i class="fa fa-fw fa-trash-o"></i>
+              <% end %>
+            </td>
+          </tr>
+        <% end %>
+      </tbody>
+    </table>
+  <% end %>
+</div>

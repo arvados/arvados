@@ -1,1 +1,4 @@
-<%= render partial: 'show_tab_contents', locals: {project: @object, objects_and_names: @objects_and_names, data_kind: ['arvados#pipelineTemplate']} %>
+<%= render_pane 'tab_contents', to_string: true, locals: {
+    filters: [['uuid', 'is_a', ["arvados#pipelineTemplate"]]],
+	sortable_columns: { 'name' => 'pipeline_templates.name', 'description' => 'pipeline_templates.description' }
+    }.merge(local_assigns) %>

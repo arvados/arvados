@@ -3,41 +3,54 @@ public:
   owner_uuid: zzzzz-tpzed-d9tiejq69daie8f
   name: Public
   description: Public Group
+  group_class: role
 
 private:
   uuid: zzzzz-j7d0g-rew6elm53kancon
   owner_uuid: zzzzz-tpzed-xurymjxw79nv3jz
   name: Private
   description: Private Group
+  group_class: role
 
 private_and_can_read_foofile:
   uuid: zzzzz-j7d0g-22xp1wpjul508rk
   owner_uuid: zzzzz-tpzed-xurymjxw79nv3jz
   name: Private and Can Read Foofile
   description: Another Private Group
+  group_class: role
 
-system_owned_group:
-  uuid: zzzzz-j7d0g-8ulrifv67tve5sx
+activeandfriends:
+  uuid: zzzzz-j7d0g-swqu6hmi4pa7bk7
   owner_uuid: zzzzz-tpzed-000000000000000
-  name: System Private
-  description: System-owned Group
+  created_at: 2014-08-22 14:02:18.481582707 Z
+  modified_by_client_uuid:
+  modified_by_user_uuid: zzzzz-tpzed-000000000000000
+  modified_at: 2014-08-22 14:02:18.481319501 Z
+  name: Active User and friends
+  description:
+  updated_at: 2014-08-22 14:02:18.481166435 Z
+  group_class: role
 
 system_group:
   uuid: zzzzz-j7d0g-000000000000000
   owner_uuid: zzzzz-tpzed-000000000000000
   name: System Private
   description: System-owned Group
+  group_class: role
 
 empty_lonely_group:
   uuid: zzzzz-j7d0g-jtp06ulmvsezgyu
   owner_uuid: zzzzz-tpzed-000000000000000
   name: Empty
   description: Empty Group
+  group_class: role
 
 all_users:
   uuid: zzzzz-j7d0g-fffffffffffffff
-  owner_uuid: zzzzz-tpzed-d9tiejq69daie8f
+  owner_uuid: zzzzz-tpzed-000000000000000
   name: All users
+  description: All users
+  group_class: role
 
 testusergroup_admins:
   uuid: zzzzz-j7d0g-48foin4vonvc2at
@@ -66,7 +79,19 @@ asubproject:
   updated_at: 2014-04-21 15:37:48 -0400
   name: A Subproject
   description: "Test project belonging to active user's first test project"
-  group_class: folder
+  group_class: project
+
+future_project_viewing_group:
+  uuid: zzzzz-j7d0g-futrprojviewgrp
+  owner_uuid: zzzzz-tpzed-xurymjxw79nv3jz
+  created_at: 2014-04-21 15:37:48 -0400
+  modified_by_client_uuid: zzzzz-ozdt8-brczlopd8u8d0jr
+  modified_by_user_uuid: zzzzz-tpzed-xurymjxw79nv3jz
+  modified_at: 2014-04-21 15:37:48 -0400
+  updated_at: 2014-04-21 15:37:48 -0400
+  name: Future Project Viewing Group
+  description: "Group used to test granting Group Project viewing"
+  group_class: role
 
 bad_group_has_ownership_cycle_a:
   uuid: zzzzz-j7d0g-cx2al9cqkmsf1hs
@@ -91,8 +116,9 @@ bad_group_has_ownership_cycle_b:
 anonymous_group:
   uuid: zzzzz-j7d0g-anonymouspublic
   owner_uuid: zzzzz-tpzed-000000000000000
-  name: Anonymous group
-  description: Anonymous group
+  name: Anonymous users
+  group_class: role
+  description: Anonymous users
 
 anonymously_accessible_project:
   uuid: zzzzz-j7d0g-zhxawtyetzwc5f0
@@ -100,3 +126,125 @@ anonymously_accessible_project:
   name: Unrestricted public data
   group_class: project
   description: An anonymously accessible project
+
+active_user_has_can_manage:
+  uuid: zzzzz-j7d0g-ptt1ou6a9lxrv07
+  owner_uuid: zzzzz-tpzed-d9tiejq69daie8f
+  name: Active user has can_manage
+
+# Group for testing granting permission between users who share a group.
+group_for_sharing_tests:
+  uuid: zzzzz-j7d0g-t4ucgncwteul7zt
+  owner_uuid: zzzzz-tpzed-000000000000000
+  name: Group for sharing tests
+  description: Users who can share objects with each other
+  group_class: role
+
+empty_project:
+  uuid: zzzzz-j7d0g-9otoxmrksam74q6
+  owner_uuid: zzzzz-tpzed-xurymjxw79nv3jz
+  created_at: 2014-12-16 15:56:27.967534940 Z
+  modified_by_client_uuid: ~
+  modified_by_user_uuid: zzzzz-tpzed-xurymjxw79nv3jz
+  modified_at: 2014-12-16 15:56:27.967358199 Z
+  name: Empty project
+  description: ~
+  updated_at: 2014-12-16 15:56:27.967242142 Z
+  group_class: project
+
+project_with_10_collections:
+  uuid: zzzzz-j7d0g-0010collections
+  owner_uuid: zzzzz-tpzed-user1withloadab
+  created_at: 2014-04-21 15:37:48 -0400
+  modified_by_client_uuid: zzzzz-ozdt8-brczlopd8u8d0jr
+  modified_by_user_uuid: zzzzz-tpzed-user1withloadab
+  modified_at: 2014-04-21 15:37:48 -0400
+  updated_at: 2014-04-21 15:37:48 -0400
+  name: project with 10 collections
+  description: This will result in one page in the display
+  group_class: project
+
+project_with_201_collections:
+  uuid: zzzzz-j7d0g-0201collections
+  owner_uuid: zzzzz-tpzed-user1withloadab
+  created_at: 2014-04-21 15:37:48 -0400
+  modified_by_client_uuid: zzzzz-ozdt8-brczlopd8u8d0jr
+  modified_by_user_uuid: zzzzz-tpzed-user1withloadab
+  modified_at: 2014-04-21 15:37:48 -0400
+  updated_at: 2014-04-21 15:37:48 -0400
+  name: project with 201 collections
+  description: This will result in two pages in the display
+  group_class: project
+
+project_with_10_pipelines:
+  uuid: zzzzz-j7d0g-000010pipelines
+  owner_uuid: zzzzz-tpzed-user1withloadab
+  created_at: 2014-04-21 15:37:48 -0400
+  modified_by_client_uuid: zzzzz-ozdt8-brczlopd8u8d0jr
+  modified_by_user_uuid: zzzzz-tpzed-user1withloadab
+  modified_at: 2014-04-21 15:37:48 -0400
+  updated_at: 2014-04-21 15:37:48 -0400
+  name: project with 10 pipelines
+  description: project with 10 pipelines
+  group_class: project
+
+project_with_2_pipelines_and_60_jobs:
+  uuid: zzzzz-j7d0g-nnjobspipelines
+  owner_uuid: zzzzz-tpzed-user1withloadab
+  created_at: 2014-04-21 15:37:48 -0400
+  modified_by_client_uuid: zzzzz-ozdt8-brczlopd8u8d0jr
+  modified_by_user_uuid: zzzzz-tpzed-user1withloadab
+  modified_at: 2014-04-21 15:37:48 -0400
+  updated_at: 2014-04-21 15:37:48 -0400
+  name: project with 2 pipelines and 60 jobs
+  description: This will result in two pages in the display
+  group_class: project
+
+project_with_25_pipelines:
+  uuid: zzzzz-j7d0g-000025pipelines
+  owner_uuid: zzzzz-tpzed-user1withloadab
+  created_at: 2014-04-21 15:37:48 -0400
+  modified_by_client_uuid: zzzzz-ozdt8-brczlopd8u8d0jr
+  modified_by_user_uuid: zzzzz-tpzed-user1withloadab
+  modified_at: 2014-04-21 15:37:48 -0400
+  updated_at: 2014-04-21 15:37:48 -0400
+  name: project with 25 pipelines
+  description: project with 25 pipelines
+  group_class: project
+
+fuse_owned_project:
+  uuid: zzzzz-j7d0g-0000ownedbyfuse
+  owner_uuid: zzzzz-tpzed-0fusedrivertest
+  created_at: 2014-04-21 15:37:48 -0400
+  modified_by_client_uuid: zzzzz-ozdt8-brczlopd8u8d0jr
+  modified_by_user_uuid: zzzzz-tpzed-0fusedrivertest
+  modified_at: 2014-04-21 15:37:48 -0400
+  updated_at: 2014-04-21 15:37:48 -0400
+  name: FUSE Test Project
+  description: Test project belonging to FUSE test user
+  group_class: project
+
+group_with_no_class:
+  uuid: zzzzz-j7d0g-groupwithnoclas
+  owner_uuid: zzzzz-tpzed-xurymjxw79nv3jz
+  created_at: 2014-04-21 15:37:48 -0400
+  modified_by_client_uuid: zzzzz-ozdt8-brczlopd8u8d0jr
+  modified_by_user_uuid: zzzzz-tpzed-xurymjxw79nv3jz
+  modified_at: 2014-04-21 15:37:48 -0400
+  updated_at: 2014-04-21 15:37:48 -0400
+  name: group_with_no_class
+  description: This group has no class at all. So rude!
+
+# This wouldn't pass model validation, but it enables a workbench
+# infinite-loop test. See #4389
+project_owns_itself:
+  uuid: zzzzz-j7d0g-7rqh7hdshd5yp5t
+  owner_uuid: zzzzz-j7d0g-7rqh7hdshd5yp5t
+  created_at: 2014-11-05 22:31:24.258424340 Z
+  modified_by_client_uuid: zzzzz-ozdt8-brczlopd8u8d0jr
+  modified_by_user_uuid: 6pbr1-tpzed-000000000000000
+  modified_at: 2014-11-05 22:31:24.258242890 Z
+  name: zzzzz-j7d0g-7rqh7hdshd5yp5t
+  description: ~
+  updated_at: 2014-11-05 22:31:24.258093171 Z
+  group_class: project

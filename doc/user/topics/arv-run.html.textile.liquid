@@ -1,0 +1,148 @@
+---
+layout: default
+navsection: userguide
+title: "Using arv-run"
+...
+
+The @arv-run@ command enables you create Arvados pipelines at the command line that fan out to multiple concurrent tasks across Arvados compute nodes.
+
+{% include 'tutorial_expectations' %}
+
+h1. Usage
+
+Using @arv-run@ you can write and test command lines interactively, then insert @arv-run@ at the beginning of the command line to run the command on Arvados.  For example:
+
+<notextile>
+<pre>
+$ <span class="userinput">cd ~/keep/by_id/3229739b505d2b878b62aed09895a55a+142</span>
+$ <span class="userinput">ls *.fastq</span>
+HWI-ST1027_129_D0THKACXX.1_1.fastq  HWI-ST1027_129_D0THKACXX.1_2.fastq
+$ <span class="userinput">grep -H -n ATTGGAGGAAAGATGAGTGAC HWI-ST1027_129_D0THKACXX.1_1.fastq</span>
+HWI-ST1027_129_D0THKACXX.1_1.fastq:14:TCTGGCCCCTGTTGTCTGCATGTAACTTAATACCACAACCAGGCATAGGGGAAAGATTGGAGGAAAGATGAGTGACAGCATCAACTTCTCTCCCAACCTA
+HWI-ST1027_129_D0THKACXX.1_1.fastq:18:AACCAGGCATAGGGGAAAGATTGGAGGAAAGATGAGTGACAGCATCAACTTCTCTCACAACCTAGGCCAGTAAGTAGTGCTTGTGCTCATCTCCTTGGCT
+HWI-ST1027_129_D0THKACXX.1_1.fastq:30:ATAGGGGAAAGATTGGAGGAAAGATGAGTGACAGCATCAACTTCTCTCACAACCTAGGCCAGTAAGTAGTGCTTGTGCTCATCTCCTTGGCTGTGATACG
+$ <span class="userinput">arv-run grep -H -n ATTGGAGGAAAGATGAGTGAC HWI-ST1027_129_D0THKACXX.1_1.fastq</span>
+Running pipeline qr1hi-d1hrv-mg3bju0u7r6w241
+[...]
+ 0 stderr run-command: grep -H -n ATTGGAGGAAAGATGAGTGAC /keep/3229739b505d2b878b62aed09895a55a+142/HWI-ST1027_129_D0THKACXX.1_1.fastq
+ 0 stderr /keep/3229739b505d2b878b62aed09895a55a+142/HWI-ST1027_129_D0THKACXX.1_1.fastq:14:TCTGGCCCCTGTTGTCTGCATGTAACTTAATACCACAACCAGGCATAGGGGAAAGATTGGAGGAAAGATGAGTGACAGCATCAACTTCTCTCCCAACCTA
+ 0 stderr /keep/3229739b505d2b878b62aed09895a55a+142/HWI-ST1027_129_D0THKACXX.1_1.fastq:18:AACCAGGCATAGGGGAAAGATTGGAGGAAAGATGAGTGACAGCATCAACTTCTCTCACAACCTAGGCCAGTAAGTAGTGCTTGTGCTCATCTCCTTGGCT
+ 0 stderr /keep/3229739b505d2b878b62aed09895a55a+142/HWI-ST1027_129_D0THKACXX.1_1.fastq:30:ATAGGGGAAAGATTGGAGGAAAGATGAGTGACAGCATCAACTTCTCTCACAACCTAGGCCAGTAAGTAGTGCTTGTGCTCATCTCCTTGGCTGTGATACG
+ 0 stderr run-command: completed with exit code 0 (success)
+[...]
+</pre>
+</notextile>
+
+A key feature of @arv-run@ is the ability to introspect the command line to determine which arguments are file inputs, and transform those paths so they are usable inside the Arvados container.  In the above example, @HWI-ST1027_129_D0THKACXX.1_2.fastq@ is transformed into @/keep/3229739b505d2b878b62aed09895a55a+142/HWI-ST1027_129_D0THKACXX.1_1.fastq@.  @arv-run@ also works together with @arv-mount@ to identify that the file is already part of an Arvados collection.  In this case, it will use the existing collection without any upload step.  If you specify a file that is only available on the local filesystem, @arv-run@ will upload a new collection.
+
+If you find that @arv-run@ is incorrectly rewriting one of your command line arguments, place a backslash @\@ at the beginning of the affected argument to quote it (suppress rewriting).
+
+h2. Parallel tasks
+
+@arv-run@ will parallelize over files listed on the command line after @--@.
+
+<notextile>
+<pre>
+HWI-ST1027_129_D0THKACXX.1_1.fastq  HWI-ST1027_129_D0THKACXX.1_2.fastq
+$ <span class="userinput">arv-run grep -H -n ATTGGAGGAAAGATGAGTGAC -- *.fastq</span>
+Running pipeline qr1hi-d1hrv-mg3bju0u7r6w241
+[...]
+ 0 stderr run-command: parallelizing on input0 with items [u'/keep/3229739b505d2b878b62aed09895a55a+142/HWI-ST1027_129_D0THKACXX.1_1.fastq', u'/keep/3229739b505d2b878b62aed09895a55a+142/HWI-ST1027_129_D0THKACXX.1_2.fastq']
+[...]
+ 1 stderr run-command: grep -H -n ATTGGAGGAAAGATGAGTGAC /keep/3229739b505d2b878b62aed09895a55a+142/HWI-ST1027_129_D0THKACXX.1_1.fastq
+ 2 stderr run-command: grep -H -n ATTGGAGGAAAGATGAGTGAC /keep/3229739b505d2b878b62aed09895a55a+142/HWI-ST1027_129_D0THKACXX.1_2.fastq
+[...]
+ 1 stderr /keep/3229739b505d2b878b62aed09895a55a+142/HWI-ST1027_129_D0THKACXX.1_1.fastq:14:TCTGGCCCCTGTTGTCTGCATGTAACTTAATACCACAACCAGGCATAGGGGAAAGATTGGAGGAAAGATGAGTGACAGCATCAACTTCTCTCCCAACCTA
+ 1 stderr /keep/3229739b505d2b878b62aed09895a55a+142/HWI-ST1027_129_D0THKACXX.1_1.fastq:18:AACCAGGCATAGGGGAAAGATTGGAGGAAAGATGAGTGACAGCATCAACTTCTCTCACAACCTAGGCCAGTAAGTAGTGCTTGTGCTCATCTCCTTGGCT
+ 1 stderr /keep/3229739b505d2b878b62aed09895a55a+142/HWI-ST1027_129_D0THKACXX.1_1.fastq:30:ATAGGGGAAAGATTGGAGGAAAGATGAGTGACAGCATCAACTTCTCTCACAACCTAGGCCAGTAAGTAGTGCTTGTGCTCATCTCCTTGGCTGTGATACG
+ 1 stderr run-command: completed with exit code 0 (success)
+ 2 stderr /keep/3229739b505d2b878b62aed09895a55a+142/HWI-ST1027_129_D0THKACXX.1_2.fastq:34:CTGGCCCCTGTTGTCTGCATGTAACTTAATACCACAACCAGGCATAGGGGAAAGATTGGAGGAAAGATGAGTGACAGCATCAACTTCTCTCACAACCTAG
+ 2 stderr run-command: completed with exit code 0 (success)
+</pre>
+</notextile>
+
+You may specify @--batch-size N@ (or the short form @-bN@) after the @--@ but before listing any files to specify how many files to provide put on the command line for each task.  See "Putting it all together" below for an example.
+
+h2. Redirection
+
+You may use standard input (@<@) and standard output (@>@) redirection.  This will create a separate task for each file listed in standard input.  You are only permitted to supply a single file name for stdout @>@ redirection.  If there are multiple tasks with their output sent to the same file, the output will be collated at the end of the pipeline.
+
+(Note: because the syntax is designed to mimic standard shell syntax, it is necessary to quote the metacharacters @<@, @>@ and @|@ as either @\<@, @\>@ and @\|@ or @'<'@, @'>'@ and @'|'@.)
+
+{% include 'arv_run_redirection' %}
+
+You may use "run-command":run-command.html parameter substitution in the output file name to generate different filenames for each task:
+
+<notextile>
+<pre>
+$ <span class="userinput">arv-run grep -H -n ATTGGAGGAAAGATGAGTGAC \< *.fastq \> '$(task.uuid).txt'</span>
+[...]
+ 1 stderr run-command: grep -H -n ATTGGAGGAAAGATGAGTGAC < /keep/3229739b505d2b878b62aed09895a55a+142/HWI-ST1027_129_D0THKACXX.1_1.fastq > qr1hi-ot0gb-hmmxf2zubfpmhfk.txt
+ 2 stderr run-command: grep -H -n ATTGGAGGAAAGATGAGTGAC < /keep/3229739b505d2b878b62aed09895a55a+142/HWI-ST1027_129_D0THKACXX.1_2.fastq > qr1hi-ot0gb-iu2xgy4hkx4mmri.txt
+ 1 stderr run-command: completed with exit code 0 (success)
+ 1 stderr run-command: the following output files will be saved to keep:
+ 1 stderr run-command:          363 ./qr1hi-ot0gb-hmmxf2zubfpmhfk.txt
+ 1 stderr run-command: start writing output to keep
+ 1 stderr upload wrote 363 total 363
+ 2 stderr run-command: completed with exit code 0 (success)
+ 2 stderr run-command: the following output files will be saved to keep:
+ 2 stderr run-command:          121 ./qr1hi-ot0gb-iu2xgy4hkx4mmri.txt
+ 2 stderr run-command: start writing output to keep
+ 2 stderr upload wrote 121 total 121
+[...]
+</pre>
+</notextile>
+
+h2. Pipes
+
+Multiple commands may be connected by pipes and execute in the same container:
+
+<notextile>
+<pre>
+$ <span class="userinput">arv-run cat -- *.fastq \| grep -H -n ATTGGAGGAAAGATGAGTGAC \> output.txt</span>
+[...]
+ 1 stderr run-command: cat /keep/3229739b505d2b878b62aed09895a55a+142/HWI-ST1027_129_D0THKACXX.1_1.fastq | grep -H -n ATTGGAGGAAAGATGAGTGAC > output.txt
+ 2 stderr run-command: cat /keep/3229739b505d2b878b62aed09895a55a+142/HWI-ST1027_129_D0THKACXX.1_2.fastq | grep -H -n ATTGGAGGAAAGATGAGTGAC > output.txt
+[...]
+</pre>
+</notextile>
+
+If you need to capture intermediate results of a pipe, use the @tee@ command.
+
+h2. Running a shell script
+
+<notextile>
+<pre>
+$ <span class="userinput">echo 'echo hello world' > hello.sh</span>
+$ <span class="userinput">arv-run /bin/sh hello.sh</span>
+Upload local files: "hello.sh"
+Uploaded to qr1hi-4zz18-23u3hxugbm71qmn
+Running pipeline qr1hi-d1hrv-slcnhq5czo764b1
+[...]
+ 0 stderr run-command: /bin/sh /keep/5d3a4131b7d8f233f2a917d8a5c3c2b2+52/hello.sh
+ 0 stderr hello world
+ 0 stderr run-command: completed with exit code 0 (success)
+[...]
+</pre>
+</notextile>
+
+h2. Additional options
+
+* @--docker-image IMG@ : By default, commands run inside a Docker container created from the latest "arvados/jobs" Docker image.  Use this option to specify a different image to use.  Note: the Docker image must be uploaded to Arvados using @arv keep docker@.
+* @--dry-run@ : Print out the final Arvados pipeline generated by @arv-run@ without submitting it.
+* @--local@ : By default, the pipeline will be submitted to your configured Arvados instance.  Use this option to run the command locally using @arv-run-pipeline-instance --run-jobs-here@.
+* @--ignore-rcode@ : Some commands use non-zero exit codes to indicate nonfatal conditions (e.g. @grep@ returns 1 when no match is found).  Set this to indicate that commands that return non-zero return codes should not be considered failed.
+* @--no-wait@ : Do not wait and display logs after submitting command, just exit.
+
+h2. Putting it all together: bwa mem
+
+<notextile>
+<pre>
+$ <span class="userinput">cd ~/keep/by_id/d0136bc494c21f79fc1b6a390561e6cb+2778</span>
+$ <span class="userinput">arv-run --docker-image arvados/jobs-java-bwa-samtools bwa mem ../3514b8e5da0e8d109946bc809b20a78a+5698/human_g1k_v37.fasta -- --batch-size 2 *.fastq.gz \> '$(task.uuid).sam'</span>
+ 0 stderr run-command: parallelizing on input0 with items [[u'/keep/d0136bc494c21f79fc1b6a390561e6cb+2778/HWI-ST1027_129_D0THKACXX.1_1.fastq.gz', u'/keep/d0136bc494c21f79fc1b6a390561e6cb+2778/HWI-ST1027_129_D0THKACXX.1_2.fastq.gz'], [u'/keep/d0136bc494c21f79fc1b6a390561e6cb+2778/HWI-ST1027_129_D0THKACXX.2_1.fastq.gz', u'/keep/d0136bc494c21f79fc1b6a390561e6cb+2778/HWI-ST1027_129_D0THKACXX.2_2.fastq.gz']]
+[...]
+ 1 stderr run-command: bwa mem /keep/3514b8e5da0e8d109946bc809b20a78a+5698/human_g1k_v37.fasta /keep/d0136bc494c21f79fc1b6a390561e6cb+2778/HWI-ST1027_129_D0THKACXX.1_1.fastq.gz /keep/d0136bc494c21f79fc1b6a390561e6cb+2778/HWI-ST1027_129_D0THKACXX.1_2.fastq.gz > qr1hi-ot0gb-a4bzzyqqz4ubair.sam
+ 2 stderr run-command: bwa mem /keep/3514b8e5da0e8d109946bc809b20a78a+5698/human_g1k_v37.fasta /keep/d0136bc494c21f79fc1b6a390561e6cb+2778/HWI-ST1027_129_D0THKACXX.2_1.fastq.gz /keep/d0136bc494c21f79fc1b6a390561e6cb+2778/HWI-ST1027_129_D0THKACXX.2_2.fastq.gz > qr1hi-ot0gb-14j9ncw0ymkxq0v.sam
+</pre>
+</notextile>

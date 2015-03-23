@@ -1,0 +1,6 @@
+production:
+  gitolite_url: 'git@api:gitolite-admin.git'
+  gitolite_tmp: 'gitolite-tmp'
+  arvados_api_host: 'api'
+  arvados_api_token: '@@API_SUPERUSER_SECRET@@'
+  arvados_api_host_insecure: true

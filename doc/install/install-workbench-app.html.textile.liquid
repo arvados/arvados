@@ -1,27 +1,23 @@
 ---
 layout: default
 navsection: installguide
-title: Install the Arvados Workbench application
+title: Install Workbench
 ...
 
-h2. Prerequisites
+This installation guide assumes you are on a 64 bit Debian or Ubuntu system.
 
-# A GNU/linux (virtual) machine (can be shared with the API server)
-# A hostname for your Workbench application
-
-h2. Install dependencies
-
-If you haven't already installed the API server on the same host:
-
-* Install Ruby 2.1 and Bundler: see the "dependencies" and "Ruby" sections on the "API server installation page":install-api-server.html#dependencies for details.
-* Omit postgresql. Workbench doesn't need its own database.
-
-Install graphviz.
+h2. Install prerequisites
 
 <notextile>
-<pre><code>~$ <span class="userinput">sudo apt-get install graphviz</span>
-</code></pre>
-</notextile>
+<pre><code>~$ <span class="userinput">sudo apt-get install \
+    bison build-essential gettext libcurl3 libcurl3-gnutls \
+    libcurl4-openssl-dev libpcre3-dev libpq-dev libreadline-dev \
+    libssl-dev libxslt1.1 git wget zlib1g-dev graphviz libsqlite3-dev
+</span></code></pre></notextile>
+
+Also make sure you have "Ruby and bundler":install-manual-prerequisites-ruby.html installed.
+
+Workbench doesn't need its own database, so it does not need to have PostgreSQL installed.
 
 h2. Download the source tree
 
@@ -60,7 +56,29 @@ The validation message from Rubygems was:
 Using themes_for_rails (0.5.1) from https://github.com/holtkampw/themes_for_rails (at 1fd2d78)
 </code></pre></notextile>
 
+h2. Choose your environment
+
+The Workbench application can be run in @development@ or in @production@ mode. Unless this installation is going to be used for development on the Workbench applicatoin itself, you should run it in @production@ mode.
+
+Copy the example environment file for your environment. For example, if you choose @production@:
+
+<notextile>
+<pre><code>~/arvados/apps/workbench$ <span class="userinput">cp -i config/environments/production.rb.example config/environments/production.rb</span>
+</code></pre></notextile>
+
 h2. Configure the Workbench application
+
+First, copy the example configuration file:
+
+<notextile>
+<pre><code>~/arvados/apps/workbench$ <span class="userinput">cp -i config/application.yml.example config/application.yml</span>
+</code></pre></notextile>
+
+The Workbench application reads the @config/application.yml@ file, as well as the @config/application.defaults.yml@ file. Values in @config/application.yml@ take precedence over the defaults that are defined in @config/application.defaults.yml@. The @config/application.yml.example@ file is not read by the Workbench application and is provided for installation convenience, only.
+
+Consult @config/application.default.yml@ for a full list of configuration options. Always put your local configuration in @config/application.yml@, never edit @config/application.default.yml@.
+
+h3. secret_token
 
 This application needs a secret token. Generate a new secret:
 
@@ -70,33 +88,55 @@ aaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaa
 </code></pre>
 </notextile>
 
-Copy @config/application.yml.example@ to @config/application.yml@ and edit it appropriately for your environment.
+Then put that value in the @secret_token@ field.
 
-* Set @secret_token@ to the string you generated with @rake secret@.
-* Point @arvados_login_base@ and @arvados_v1_base@ at your "API server":install-api-server.html
-* @site_name@ can be any string to identify this Workbench.
-* If the SSL certificate you use for development isn't signed by a CA, make sure @arvados_insecure_https@ is @true@.
+h3. arvados_login_base and arvados_v1_base
 
-Copy @config/piwik.yml.example@ to @config/piwik.yml@ and edit to suit.
-
-h2. Start a standalone server
-
-For testing and development, the easiest way to get started is to run the web server that comes with Rails.
+Point @arvados_login_base@ and @arvados_v1_base@ at your "API server":install-api-server.html. For example like this:
 
 <notextile>
-<pre><code>~/arvados/apps/workbench$ <span class="userinput">bundle exec rails server --port=3031</span>
+<pre><code>arvados_login_base: https://prefix_uuid.your.domain/login
+arvados_v1_base: https://prefix_uuid.your.domain/arvados/v1
 </code></pre>
 </notextile>
 
-Point your browser to <notextile><code>http://<b>your.host</b>:3031/</code></notextile>.
+h3. site_name
+
+@site_name@ can be set to any arbitrary string. It is used to identify this Workbench to people visiting it.
+
+h3. arvados_insecure_https
+
+If the SSL certificate you use for your API server isn't an official certificate signed by a CA, make sure @arvados_insecure_https@ is @true@.
+
+h3. other options
+
+Consult @application.default.yml@ for a full list of configuration options. Always put your local configuration in @application.yml@ instead of editing @application.default.yml@.
+
+Copy @config/piwik.yml.example@ to @config/piwik.yml@ and edit to suit.
+
+h2. Start the Workbench application
+
+h3. Development environment
+
+If you plan to run in development mode, you can now run the development server this way:
+
+<notextile>
+<pre><code>~/arvados/apps/workbench$ <span class="userinput">bundle exec rails server --port=3031</span>
+</code></pre></notextile>
+
+h3. Production environment
+
+We recommend "Passenger":https://www.phusionpassenger.com/ to run the API server in production.
+
+Point it to the apps/workbench directory in the source tree.
 
 h2. Trusted client setting
 
 Log in to Workbench once to ensure that the Arvados API server has a record of the Workbench client. (It's OK if Workbench says your account hasn't been activated yet. We'll deal with that next.)
 
-In the API server project root, start the rails console.  Locate the ApiClient record for your Workbench installation (typically, while you're setting this up, the @last@ one in the database is the one you want), then set the @is_trusted@ flag for the appropriate client record:
+In the <strong>API server</strong> project root, start the rails console.  Locate the ApiClient record for your Workbench installation (typically, while you're setting this up, the @last@ one in the database is the one you want), then set the @is_trusted@ flag for the appropriate client record:
 
-<notextile><pre><code>~/arvados/services/api$ <span class="userinput">bundle exec rails console</span>
+<notextile><pre><code>~/arvados/services/api$ <span class="userinput">RAILS_ENV=production bundle exec rails console</span>
 irb(main):001:0&gt; <span class="userinput">wb = ApiClient.all.last; [wb.url_prefix, wb.created_at]</span>
 =&gt; ["https://workbench.example.com/", Sat, 19 Apr 2014 03:35:12 UTC +00:00]
 irb(main):002:0&gt; <span class="userinput">include CurrentApiClient</span>
@@ -106,8 +146,17 @@ irb(main):003:0&gt; <span class="userinput">act_as_system_user do wb.update_attr
 </code></pre>
 </notextile>
 
-h2. Activate your own account
+h2(#admin-user). Add an admin user
 
-Unless you already activated your account when installing the API server, the first time you log in to Workbench you will see a message that your account is awaiting activation.
+Next, we're going to use the rails console on the <strong>API server</strong> to activate our own account and give yourself admin privileges:
 
-Activate your own account and give yourself administrator privileges by following the instructions in the "'Add an admin user' section of the API server install page":install-api-server.html#admin-user.
+<notextile>
+<pre><code>~/arvados/services/api$ <span class="userinput">RAILS_ENV=production bundle exec rails console</span>
+irb(main):001:0&gt; <span class="userinput">Thread.current[:user] = User.all.select(&:identity_url).last</span>
+irb(main):002:0&gt; <span class="userinput">Thread.current[:user].is_admin = true</span>
+irb(main):003:0&gt; <span class="userinput">Thread.current[:user].update_attributes is_admin: true, is_active: true</span>
+irb(main):004:0&gt; <span class="userinput">User.where(is_admin: true).collect &:email</span>
+=&gt; ["root", "<b>your_address@example.com</b>"]
+</code></pre></notextile>
+
+At this point, you should have a working Workbench login with administrator privileges. Revisit your Workbench URL in a browser and reload the page to access it.

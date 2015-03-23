@@ -1,9 +1,11 @@
 module ApiTemplateOverride
   def allowed_to_render?(fieldset, field, model, options)
+    return false if !super
     if options[:select]
-      return options[:select].include? field.to_s
+      options[:select].include? field.to_s
+    else
+      true
     end
-    super
   end
 end
 
@@ -25,6 +27,7 @@ class ApplicationController < ActionController::Base
 
   ERROR_ACTIONS = [:render_error, :render_not_found]
 
+  before_filter :set_cors_headers
   before_filter :respond_with_json_by_default
   before_filter :remote_ip
   before_filter :load_read_auths
@@ -33,6 +36,7 @@ class ApplicationController < ActionController::Base
   before_filter :catch_redirect_hint
   before_filter(:find_object_by_uuid,
                 except: [:index, :create] + ERROR_ACTIONS)
+  before_filter :load_required_parameters
   before_filter :load_limit_offset_order_params, only: [:index, :contents]
   before_filter :load_where_param, only: [:index, :contents]
   before_filter :load_filters_param, only: [:index, :contents]
@@ -56,6 +60,14 @@ class ApplicationController < ActionController::Base
                 :with => :render_not_found)
   end
 
+  def default_url_options
+    if Rails.configuration.host
+      {:host => Rails.configuration.host}
+    else
+      {}
+    end
+  end
+
   def index
     @objects.uniq!(&:id) if @select.nil? or @select.include? "id"
     if params[:eager] and params[:eager] != '0' and params[:eager] != 0 and params[:eager] != ''
@@ -65,12 +77,47 @@ class ApplicationController < ActionController::Base
   end
 
   def show
-    render json: @object.as_api_response
+    send_json @object.as_api_response(nil, select: @select)
   end
 
   def create
     @object = model_class.new resource_attrs
-    @object.save!
+
+    if @object.respond_to? :name and params[:ensure_unique_name]
+      # Record the original name.  See below.
+      name_stem = @object.name
+      counter = 1
+    end
+
+    begin
+      @object.save!
+    rescue ActiveRecord::RecordNotUnique => rn
+      raise unless params[:ensure_unique_name]
+
+      # Dig into the error to determine if it is specifically calling out a
+      # (owner_uuid, name) uniqueness violation.  In this specific case, and
+      # the client requested a unique name with ensure_unique_name==true,
+      # update the name field and try to save again.  Loop as necessary to
+      # discover a unique name.  It is necessary to handle name choosing at
+      # this level (as opposed to the client) to ensure that record creation
+      # never fails due to a race condition.
+      raise unless rn.original_exception.is_a? PG::UniqueViolation
+
+      # Unfortunately ActiveRecord doesn't abstract out any of the
+      # necessary information to figure out if this the error is actually
+      # the specific case where we want to apply the ensure_unique_name
+      # behavior, so the following code is specialized to Postgres.
+      err = rn.original_exception
+      detail = err.result.error_field(PG::Result::PG_DIAG_MESSAGE_DETAIL)
+      raise unless /^Key \(owner_uuid, name\)=\([a-z0-9]{5}-[a-z0-9]{5}-[a-z0-9]{15}, .*?\) already exists\./.match detail
+
+      # OK, this exception really is just a unique name constraint
+      # violation, and we've been asked to ensure_unique_name.
+      counter += 1
+      @object.uuid = nil
+      @object.name = "#{name_stem} (#{counter})"
+      redo
+    end while false
     show
   end
 
@@ -104,8 +151,10 @@ class ApplicationController < ActionController::Base
     if e.respond_to? :backtrace and e.backtrace
       logger.error e.backtrace.collect { |x| x + "\n" }.join('')
     end
-    if @object and @object.errors and @object.errors.full_messages and not @object.errors.full_messages.empty?
+    if (@object.respond_to? :errors and
+        @object.errors.andand.full_messages.andand.any?)
       errors = @object.errors.full_messages
+      logger.error errors.inspect
     else
       errors = [e.inspect]
     end
@@ -130,7 +179,16 @@ class ApplicationController < ActionController::Base
     err[:error_token] = [Time.now.utc.to_i, "%08x" % rand(16 ** 8)].join("+")
     status = err.delete(:status) || 422
     logger.error "Error #{err[:error_token]}: #{status}"
-    render json: err, status: status
+    send_json err, status: status
+  end
+
+  def send_json response, opts={}
+    # The obvious render(json: ...) forces a slow JSON encoder. See
+    # #3021 and commit logs. Might be fixed in Rails 4.1.
+    render({
+             text: Oj.dump(response, mode: :compat).html_safe,
+             content_type: 'application/json'
+           }.merge opts)
   end
 
   def find_objects_for_index
@@ -138,15 +196,18 @@ class ApplicationController < ActionController::Base
     apply_where_limit_order_params
   end
 
-  def apply_filters
-    ft = record_filters @filters, @objects.table_name
+  def apply_filters model_class=nil
+    model_class ||= self.model_class
+    ft = record_filters @filters, model_class
     if ft[:cond_out].any?
-      @objects = @objects.where(ft[:cond_out].join(' AND '), *ft[:param_out])
+      @objects = @objects.where('(' + ft[:cond_out].join(') AND (') + ')',
+                                *ft[:param_out])
     end
   end
 
-  def apply_where_limit_order_params
-    apply_filters
+  def apply_where_limit_order_params model_class=nil
+    model_class ||= self.model_class
+    apply_filters model_class
 
     ar_table_name = @objects.table_name
     if @where.is_a? Hash and @where.any?
@@ -202,7 +263,26 @@ class ApplicationController < ActionController::Base
       end
     end
 
-    @objects = @objects.select(@select.map { |s| "#{table_name}.#{ActiveRecord::Base.connection.quote_column_name s.to_s}" }.join ", ") if @select
+    if @select
+      unless action_name.in? %w(create update destroy)
+        # Map attribute names in @select to real column names, resolve
+        # those to fully-qualified SQL column names, and pass the
+        # resulting string to the select method.
+        api_column_map = model_class.attributes_required_columns
+        columns_list = @select.
+          flat_map { |attr| api_column_map[attr] }.
+          uniq.
+          map { |s| "#{ar_table_name}.#{ActiveRecord::Base.connection.quote_column_name s}" }
+        @objects = @objects.select(columns_list.join(", "))
+      end
+
+      # This information helps clients understand what they're seeing
+      # (Workbench always expects it), but they can't select it explicitly
+      # because it's not an SQL column.  Always add it.
+      # (This is harmless, given that clients can deduce what they're
+      # looking at by the returned UUID anyway.)
+      @select |= ["kind"]
+    end
     @objects = @objects.order(@orders.join ", ") if @orders.any?
     @objects = @objects.limit(@limit)
     @objects = @objects.offset(@offset)
@@ -275,6 +355,13 @@ class ApplicationController < ActionController::Base
       end
       false
     end
+  end
+
+  def set_cors_headers
+    response.headers['Access-Control-Allow-Origin'] = '*'
+    response.headers['Access-Control-Allow-Methods'] = 'GET, HEAD, PUT, POST, DELETE'
+    response.headers['Access-Control-Allow-Headers'] = 'Authorization'
+    response.headers['Access-Control-Max-Age'] = '86486400'
   end
 
   def respond_with_json_by_default
@@ -350,8 +437,8 @@ class ApplicationController < ActionController::Base
   end
   accept_param_as_json :reader_tokens, Array
 
-  def render_list
-    @object_list = {
+  def object_list
+    list = {
       :kind  => "arvados##{(@response_resource_name || resource_name).camelize(:lower)}List",
       :etag => "",
       :self_link => "",
@@ -360,11 +447,15 @@ class ApplicationController < ActionController::Base
       :items => @objects.as_api_response(nil, {select: @select})
     }
     if @objects.respond_to? :except
-      @object_list[:items_available] = @objects.
+      list[:items_available] = @objects.
         except(:limit).except(:offset).
         count(:id, distinct: true)
     end
-    render json: @object_list
+    list
+  end
+
+  def render_list
+    send_json object_list
   end
 
   def remote_ip
@@ -376,6 +467,40 @@ class ApplicationController < ActionController::Base
       # Hopefully, we are not!
       @remote_ip = request.env['REMOTE_ADDR']
     end
+  end
+
+  def load_required_parameters
+    (self.class.send "_#{params[:action]}_requires_parameters" rescue {}).
+      each do |key, info|
+      if info[:required] and not params.include?(key)
+        raise ArgumentError.new("#{key} parameter is required")
+      elsif info[:type] == 'boolean'
+        # Make sure params[key] is either true or false -- not a
+        # string, not nil, etc.
+        if not params.include?(key)
+          params[key] = info[:default]
+        elsif [false, 'false', '0', 0].include? params[key]
+          params[key] = false
+        elsif [true, 'true', '1', 1].include? params[key]
+          params[key] = true
+        else
+          raise TypeError.new("#{key} parameter must be a boolean, true or false")
+        end
+      end
+    end
+    true
+  end
+
+  def self._create_requires_parameters
+    {
+      ensure_unique_name: {
+        type: "boolean",
+        description: "Adjust name to ensure uniqueness instead of returning an error on (owner_uuid, name) collision.",
+        location: "query",
+        required: false,
+        default: false
+      }
+    }
   end
 
   def self._index_requires_parameters

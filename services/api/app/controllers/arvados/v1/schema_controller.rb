@@ -1,8 +1,15 @@
 class Arvados::V1::SchemaController < ApplicationController
+  skip_before_filter :catch_redirect_hint
   skip_before_filter :find_objects_for_index
   skip_before_filter :find_object_by_uuid
+  skip_before_filter :load_filters_param
+  skip_before_filter :load_limit_offset_order_params
+  skip_before_filter :load_read_auths
+  skip_before_filter :load_where_param
   skip_before_filter :render_404_if_no_object
   skip_before_filter :require_auth_scope
+
+  include DbCurrentTime
 
   def index
     expires_in 24.hours, public: true
@@ -15,16 +22,20 @@ class Arvados::V1::SchemaController < ApplicationController
         name: "arvados",
         version: "v1",
         revision: "20131114",
-        generatedAt: Time.now.iso8601,
+        source_version: (Rails.application.config.source_version ? Rails.application.config.source_version : "No version information available") + (Rails.application.config.local_modified ? Rails.application.config.local_modified.to_s : ''),
+        generatedAt: db_current_time.iso8601,
         title: "Arvados API",
         description: "The API to interact with Arvados.",
         documentationLink: "http://doc.arvados.org/api/index.html",
+        defaultCollectionReplication: Rails.configuration.default_collection_replication,
         protocol: "rest",
         baseUrl: root_url + "arvados/v1/",
         basePath: "/arvados/v1/",
         rootUrl: root_url,
         servicePath: "arvados/v1/",
         batchPath: "batch",
+        defaultTrashLifetime: Rails.application.config.default_trash_lifetime,
+        maxRequestSize: Rails.application.config.max_request_size,
         parameters: {
           alt: {
             type: "string",
@@ -57,10 +68,10 @@ class Arvados::V1::SchemaController < ApplicationController
         auth: {
           oauth2: {
             scopes: {
-              "https://api.clinicalfuture.com/auth/arvados" => {
+              "https://api.curoverse.com/auth/arvados" => {
                 description: "View and manage objects"
               },
-              "https://api.clinicalfuture.com/auth/arvados.readonly" => {
+              "https://api.curoverse.com/auth/arvados.readonly" => {
                 description: "View objects"
               }
             }
@@ -170,8 +181,8 @@ class Arvados::V1::SchemaController < ApplicationController
                 "$ref" => k.to_s
               },
               scopes: [
-                       "https://api.clinicalfuture.com/auth/arvados",
-                       "https://api.clinicalfuture.com/auth/arvados.readonly"
+                       "https://api.curoverse.com/auth/arvados",
+                       "https://api.curoverse.com/auth/arvados.readonly"
                       ]
             },
             list: {
@@ -247,8 +258,8 @@ class Arvados::V1::SchemaController < ApplicationController
                 "$ref" => "#{k.to_s}List"
               },
               scopes: [
-                       "https://api.clinicalfuture.com/auth/arvados",
-                       "https://api.clinicalfuture.com/auth/arvados.readonly"
+                       "https://api.curoverse.com/auth/arvados",
+                       "https://api.curoverse.com/auth/arvados.readonly"
                       ]
             },
             create: {
@@ -269,7 +280,7 @@ class Arvados::V1::SchemaController < ApplicationController
                 "$ref" => k.to_s
               },
               scopes: [
-                       "https://api.clinicalfuture.com/auth/arvados"
+                       "https://api.curoverse.com/auth/arvados"
                       ]
             },
             update: {
@@ -297,7 +308,7 @@ class Arvados::V1::SchemaController < ApplicationController
                 "$ref" => k.to_s
               },
               scopes: [
-                       "https://api.clinicalfuture.com/auth/arvados"
+                       "https://api.curoverse.com/auth/arvados"
                       ]
             },
             delete: {
@@ -317,7 +328,7 @@ class Arvados::V1::SchemaController < ApplicationController
                 "$ref" => k.to_s
               },
               scopes: [
-                       "https://api.clinicalfuture.com/auth/arvados"
+                       "https://api.curoverse.com/auth/arvados"
                       ]
             }
           }
@@ -332,32 +343,37 @@ class Arvados::V1::SchemaController < ApplicationController
           }.compact.first
           if httpMethod and
               route.defaults[:controller] == 'arvados/v1/' + k.to_s.underscore.pluralize and
-              !d_methods[action.to_sym] and
-              ctl_class.action_methods.include? action and
-              ![:show, :index, :destroy].include?(action.to_sym)
-            method = {
-              id: "arvados.#{k.to_s.underscore.pluralize}.#{action}",
-              path: route.path.spec.to_s.sub('/arvados/v1/','').sub('(.:format)','').sub(/:(uu)?id/,'{uuid}'),
-              httpMethod: httpMethod,
-              description: "#{route.defaults[:action]} #{k.to_s.underscore.pluralize}",
-              parameters: {},
-              response: {
-                "$ref" => (action == 'index' ? "#{k.to_s}List" : k.to_s)
-              },
-              scopes: [
-                       "https://api.clinicalfuture.com/auth/arvados"
-                      ]
-            }
-            route.segment_keys.each do |key|
-              if key != :format
-                key = :uuid if key == :id
-                method[:parameters][key] = {
-                  type: "string",
-                  description: "",
-                  required: true,
-                  location: "path"
-                }
+              ctl_class.action_methods.include? action
+            if !d_methods[action.to_sym]
+              method = {
+                id: "arvados.#{k.to_s.underscore.pluralize}.#{action}",
+                path: route.path.spec.to_s.sub('/arvados/v1/','').sub('(.:format)','').sub(/:(uu)?id/,'{uuid}'),
+                httpMethod: httpMethod,
+                description: "#{action} #{k.to_s.underscore.pluralize}",
+                parameters: {},
+                response: {
+                  "$ref" => (action == 'index' ? "#{k.to_s}List" : k.to_s)
+                },
+                scopes: [
+                         "https://api.curoverse.com/auth/arvados"
+                        ]
+              }
+              route.segment_keys.each do |key|
+                if key != :format
+                  key = :uuid if key == :id
+                  method[:parameters][key] = {
+                    type: "string",
+                    description: "",
+                    required: true,
+                    location: "path"
+                  }
+                end
               end
+            else
+              # We already built a generic method description, but we
+              # might find some more required parameters through
+              # introspection.
+              method = d_methods[action.to_sym]
             end
             if ctl_class.respond_to? "_#{action}_requires_parameters".to_sym
               ctl_class.send("_#{action}_requires_parameters".to_sym).each do |k, v|
@@ -378,12 +394,12 @@ class Arvados::V1::SchemaController < ApplicationController
                 end
               end
             end
-            d_methods[route.defaults[:action].to_sym] = method
+            d_methods[action.to_sym] = method
           end
         end
       end
       discovery
     end
-    render json: discovery
+    send_json discovery
   end
 end

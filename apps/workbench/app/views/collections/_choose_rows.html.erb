@@ -1,13 +1,24 @@
-<% @name_links.each do |name_link| %>
-  <% if (object = get_object(name_link.head_uuid)) %>
-    <div class="row filterable selectable <%= 'multiple' if multiple %>" data-object-uuid="<%= name_link.uuid %>"
-         data-preview-href="<%= url_for object %>?tab_pane=chooser_preview"
+<% @objects.each do |object| %>
+    <div class="row filterable selectable <%= 'use-preview-selection' if params['use_preview_selection']%>" data-object-uuid="<%= object.uuid %>"
+         data-preview-href="<%= chooser_preview_url_for object, params['use_preview_selection'] %>"
          style="margin-left: 1em; border-bottom-style: solid; border-bottom-width: 1px; border-bottom-color: #DDDDDD">
-        <i class="fa fa-fw fa-archive"></i>
-        <%= name_link.name %>
-    <% Link.filter([['link_class','=','tag'],['head_uuid','=',object.uuid]]).collect(&:name).each do |tagname| %>
-      <span class="label label-info"><%= tagname %></span>
-    <% end %>
+      <i class="fa fa-fw fa-archive"></i>
+      <% if object.respond_to? :name %>
+        <% if not (object.name.nil? or object.name.empty?) %>
+          <%= object.name %>
+        <% elsif object.is_a? Collection and object.files.length > 0 %>
+          <%= object.files[0][1] %>
+          <%= "+ #{object.files.length-1} more" if object.files.length > 1 %>
+        <% else %>
+          <%= object.uuid %>
+        <% end %>
+      <% else %>
+        <%= object.uuid %>
+      <% end %>
+      <% links_for_object(object).each do |tag| %>
+        <% if tag.link_class == 'tag' %>
+          <span class="label label-info"><%= tag.name %></span>
+        <% end %>
+      <% end %>
     </div>
-  <% end %>
 <% end %>

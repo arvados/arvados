@@ -1,0 +1,17 @@
+<% content_for :tab_line_buttons do %>
+  <div class="input-group">
+    <input type="text" class="form-control filterable-control recent-pipeline-instances-filterable-control"
+           placeholder="Search pipeline instances"
+           data-filterable-target="#recent-pipeline-instances"
+           <%# Just for the double-load test in FilterableInfiniteScrollTest: %>
+           value="<%= params[:search] %>"
+           />
+  </div>
+
+  <%= form_tag({action: 'compare', controller: params[:controller], method: 'get'}, {method: 'get', id: 'compare', class: 'pull-right small-form-margin'}) do |f| %>
+    <%= submit_tag 'Compare 2 or 3 selected', {class: 'btn btn-primary', disabled: true} %>
+  <% end rescue nil %>
+
+<% end %>
+
+<%= render file: 'application/index.html.erb', locals: local_assigns %>

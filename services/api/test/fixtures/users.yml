@@ -1,6 +1,23 @@
 # Read about fixtures at http://api.rubyonrails.org/classes/ActiveRecord/Fixtures.html
 
+system_user:
+  uuid: zzzzz-tpzed-000000000000000
+  owner_uuid: zzzzz-tpzed-000000000000000
+  created_at: 2014-11-27 06:38:21.215463000 Z
+  modified_by_client_uuid: zzzzz-ozdt8-teyxzyd8qllg11h
+  modified_by_user_uuid: zzzzz-tpzed-000000000000000
+  modified_at: 2014-11-27 06:38:21.208036000 Z
+  email: root
+  first_name: root
+  last_name: ''
+  identity_url:
+  is_admin: true
+  prefs: {}
+  updated_at: 2014-11-27 06:38:21.207873000 Z
+  is_active: true
+
 admin:
+  owner_uuid: zzzzz-tpzed-000000000000000
   uuid: zzzzz-tpzed-d9tiejq69daie8f
   email: admin@arvados.local
   first_name: TestCase
@@ -8,9 +25,13 @@ admin:
   identity_url: https://admin.openid.local
   is_active: true
   is_admin: true
-  prefs: {}
+  prefs:
+    profile:
+      organization: example.com
+      role: IT
 
 miniadmin:
+  owner_uuid: zzzzz-tpzed-000000000000000
   uuid: zzzzz-tpzed-2bg9x0oeydcw5hm
   email: miniadmin@arvados.local
   first_name: TestCase
@@ -18,9 +39,13 @@ miniadmin:
   identity_url: https://miniadmin.openid.local
   is_active: true
   is_admin: false
-  prefs: {}
+  prefs:
+    profile:
+      organization: example.com
+      role: IT
 
 rominiadmin:
+  owner_uuid: zzzzz-tpzed-000000000000000
   uuid: zzzzz-tpzed-4hvxm4n25emegis
   email: rominiadmin@arvados.local
   first_name: TestCase
@@ -28,9 +53,13 @@ rominiadmin:
   identity_url: https://rominiadmin.openid.local
   is_active: true
   is_admin: false
-  prefs: {}
+  prefs:
+    profile:
+      organization: example.com
+      role: IT
 
 active:
+  owner_uuid: zzzzz-tpzed-000000000000000
   uuid: zzzzz-tpzed-xurymjxw79nv3jz
   email: active-user@arvados.local
   first_name: Active
@@ -38,9 +67,56 @@ active:
   identity_url: https://active-user.openid.local
   is_active: true
   is_admin: false
-  prefs: {}
+  prefs:
+    profile:
+      organization: example.com
+      role: Computational biologist
+
+project_viewer:
+  owner_uuid: zzzzz-tpzed-000000000000000
+  uuid: zzzzz-tpzed-projectviewer1a
+  email: project-viewer@arvados.local
+  first_name: Project
+  last_name: Viewer
+  identity_url: https://project-viewer.openid.local
+  is_active: true
+  is_admin: false
+  prefs:
+    profile:
+      organization: example.com
+      role: Computational biologist
+
+future_project_user:
+  # Workbench tests give this user permission on aproject.
+  owner_uuid: zzzzz-tpzed-000000000000000
+  uuid: zzzzz-tpzed-futureprojview2
+  email: future-project-user@arvados.local
+  first_name: Future Project
+  last_name: User
+  identity_url: https://future-project-user.openid.local
+  is_active: true
+  is_admin: false
+  prefs:
+    profile:
+      organization: example.com
+      role: Computational biologist
+
+subproject_admin:
+  owner_uuid: zzzzz-tpzed-000000000000000
+  uuid: zzzzz-tpzed-subprojectadmin
+  email: subproject-admin@arvados.local
+  first_name: Subproject
+  last_name: Admin
+  identity_url: https://subproject-admin.openid.local
+  is_active: true
+  is_admin: false
+  prefs:
+    profile:
+      organization: example.com
+      role: Computational biologist
 
 spectator:
+  owner_uuid: zzzzz-tpzed-000000000000000
   uuid: zzzzz-tpzed-l1s2piq4t4mps8r
   email: spectator@arvados.local
   first_name: Spect
@@ -48,9 +124,13 @@ spectator:
   identity_url: https://spectator.openid.local
   is_active: true
   is_admin: false
-  prefs: {}
+  prefs:
+    profile:
+      organization: example.com
+      role: Computational biologist
 
 inactive_uninvited:
+  owner_uuid: zzzzz-tpzed-000000000000000
   uuid: zzzzz-tpzed-rf2ec3ryh4vb5ma
   email: inactive-uninvited-user@arvados.local
   first_name: Inactive and Uninvited
@@ -61,6 +141,7 @@ inactive_uninvited:
   prefs: {}
 
 inactive:
+  owner_uuid: zzzzz-tpzed-000000000000000
   uuid: zzzzz-tpzed-x9kqpd79egh49c7
   email: inactive-user@arvados.local
   first_name: Inactive
@@ -71,6 +152,7 @@ inactive:
   prefs: {}
 
 inactive_but_signed_user_agreement:
+  owner_uuid: zzzzz-tpzed-000000000000000
   uuid: zzzzz-tpzed-7sg468ezxwnodxs
   email: inactive-user-signed-ua@arvados.local
   first_name: Inactive But Agreeable
@@ -78,9 +160,13 @@ inactive_but_signed_user_agreement:
   identity_url: https://inactive-but-agreeable-user.openid.local
   is_active: false
   is_admin: false
-  prefs: {}
+  prefs:
+    profile:
+      organization: example.com
+      role: Computational biologist
 
 anonymous:
+  owner_uuid: zzzzz-tpzed-000000000000000
   uuid: zzzzz-tpzed-anonymouspublic
   email: anonymouspublic
   first_name: anonymouspublic
@@ -88,3 +174,90 @@ anonymous:
   is_active: false
   is_admin: false
   prefs: {}
+
+job_reader:
+  owner_uuid: zzzzz-tpzed-000000000000000
+  uuid: zzzzz-tpzed-905b42d1dd4a354
+  email: jobber@arvados.local
+  first_name: Job
+  last_name: Er
+  identity_url: https://spectator.openid.local
+  is_active: true
+  is_admin: false
+  prefs:
+    profile:
+      organization: example.com
+      role: Computational biologist
+
+active_no_prefs:
+  owner_uuid: zzzzz-tpzed-000000000000000
+  uuid: zzzzz-tpzed-a46c42d1td4aoj4
+  email: active_no_prefs@arvados.local
+  first_name: NoPrefs
+  last_name: NoProfile
+  identity_url: https://active_no_prefs.openid.local
+  is_active: true
+  is_admin: false
+  prefs: {}
+
+active_no_prefs_profile:
+  owner_uuid: zzzzz-tpzed-000000000000000
+  uuid: zzzzz-tpzed-a46c98d1td4aoj4
+  email: active_no_prefs_profile@arvados.local
+  first_name: HasPrefs
+  last_name: NoProfile
+  identity_url: https://active_no_prefs_profile.openid.local
+  is_active: true
+  is_admin: false
+  prefs:
+    test: abc
+
+# Fixtures to test granting and removing permissions.
+
+user_foo_in_sharing_group:
+  owner_uuid: zzzzz-tpzed-000000000000000
+  uuid: zzzzz-tpzed-81hsbo6mk8nl05c
+  email: user_foo_in_sharing_group@arvados.local
+  first_name: Foo
+  last_name: Sharing
+  identity_url: https://user_foo_in_sharing_group.openid.local
+  is_active: true
+  is_admin: false
+
+user_bar_in_sharing_group:
+  owner_uuid: zzzzz-tpzed-000000000000000
+  uuid: zzzzz-tpzed-n3oaj4sm5fcnwib
+  email: user_bar_in_sharing_group@arvados.local
+  first_name: Bar
+  last_name: Sharing
+  identity_url: https://user_bar_in_sharing_group.openid.local
+  is_active: true
+  is_admin: false
+
+user1_with_load:
+  owner_uuid: zzzzz-tpzed-000000000000000
+  uuid: zzzzz-tpzed-user1withloadab
+  email: user1_with_load@arvados.local
+  first_name: user1_with_load
+  last_name: User
+  identity_url: https://user1_with_load.openid.local
+  is_active: true
+  is_admin: false
+  prefs:
+    profile:
+      organization: example.com
+      role: IT
+
+fuse:
+  owner_uuid: zzzzz-tpzed-000000000000000
+  uuid: zzzzz-tpzed-0fusedrivertest
+  email: fuse@arvados.local
+  first_name: FUSE
+  last_name: User
+  identity_url: https://fuse.openid.local
+  is_active: true
+  is_admin: false
+  prefs:
+    profile:
+      organization: example.com
+      role: IT

@@ -1,0 +1,53 @@
+#!/bin/bash
+
+set -x
+
+. /etc/profile.d/rvm.sh
+
+export ARVADOS_API_HOST=api
+export ARVADOS_API_HOST_INSECURE=yes
+export ARVADOS_API_TOKEN=@@API_SUPERUSER_SECRET@@
+
+# Arvados repository object
+all_users_group_uuid="$prefix-j7d0g-fffffffffffffff"
+repo_uuid=`arv --format=uuid repository create --repository '{"name":"arvados","fetch_url":"git@api:arvados.git","push_url":"git@api:arvados.git"}'`
+echo "Arvados repository uuid is $repo_uuid"
+
+read -rd $'\000' newlink <<EOF; arv link create --link "$newlink"
+{
+ "tail_uuid":"$all_users_group_uuid",
+ "head_uuid":"$repo_uuid",
+ "link_class":"permission",
+ "name":"can_read"
+}
+EOF
+
+# Make sure the necessary keep_service objects exist
+arv keep_service list > /tmp/keep_service.list
+
+grep -q keep_server_0 /tmp/keep_service.list
+if [[ "$?" != "0" ]]; then
+  arv keep_service create --keep-service "$(cat /root/keep_server_0.json)"
+fi
+
+grep -q keep_server_1 /tmp/keep_service.list
+if [[ "$?" != "0" ]]; then
+  arv keep_service create --keep-service "$(cat /root/keep_server_1.json)"
+fi
+
+# User repository object
+user_uuid=`arv --format=uuid user current`
+repo_uuid=`arv --format=uuid repository create --repository '{"name":"@@ARVADOS_USER_NAME@@","fetch_url":"git@api:@@ARVADOS_USER_NAME@@.git","push_url":"git@api:@@ARVADOS_USER_NAME@@.git"}'`
+echo "User repository uuid is $repo_uuid"
+
+read -rd $'\000' newlink <<EOF; arv link create --link "$newlink"
+{
+ "tail_uuid":"$user_uuid",
+ "head_uuid":"$repo_uuid",
+ "link_class":"permission",
+ "name":"can_write"
+}
+EOF
+
+# Shell machine object
+arv virtual_machine create --virtual-machine '{"hostname":"shell"}'

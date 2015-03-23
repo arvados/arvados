@@ -18,8 +18,7 @@ class Arvados::V1::JobsControllerTest < ActionController::TestCase
     new_job = JSON.parse(@response.body)
     assert_not_nil new_job['uuid']
     assert_not_nil new_job['script_version'].match(/^[0-9a-f]{40}$/)
-    # Default: not persistent
-    assert_equal false, new_job['output_is_persistent']
+    assert_equal 0, new_job['priority']
   end
 
   test "normalize output and log uuids when creating job" do
@@ -38,20 +37,38 @@ class Arvados::V1::JobsControllerTest < ActionController::TestCase
     }
     assert_response :success
     assert_not_nil assigns(:object)
-    new_job = JSON.parse(@response.body)
+    new_job = assigns(:object)
     assert_equal 'd41d8cd98f00b204e9800998ecf8427e+0', new_job['log']
     assert_equal 'd41d8cd98f00b204e9800998ecf8427e+0', new_job['output']
     version = new_job['script_version']
 
     # Make sure version doesn't get mangled by normalize
     assert_not_nil version.match(/^[0-9a-f]{40}$/)
+    assert_equal 'master', json_response['supplied_script_version']
+  end
+
+  test "normalize output and log uuids when updating job" do
+    authorize_with :active
+
+    foobar_job = jobs(:foobar)
+
+    new_output = 'd41d8cd98f00b204e9800998ecf8427e+0+K@xyzzy'
+    new_log = 'd41d8cd98f00b204e9800998ecf8427e+0+K@xyzzy'
     put :update, {
-      id: new_job['uuid'],
+      id: foobar_job['uuid'],
       job: {
-        log: new_job['log']
+        output: new_output,
+        log: new_log
       }
     }
-    assert_equal version, JSON.parse(@response.body)['script_version']
+
+    updated_job = json_response
+    assert_not_equal foobar_job['log'], updated_job['log']
+    assert_not_equal new_log, updated_job['log']  # normalized during update
+    assert_equal new_log[0,new_log.rindex('+')], updated_job['log']
+    assert_not_equal foobar_job['output'], updated_job['output']
+    assert_not_equal new_output, updated_job['output']  # normalized during update
+    assert_equal new_output[0,new_output.rindex('+')], updated_job['output']
   end
 
   test "cancel a running job" do
@@ -82,33 +99,70 @@ class Arvados::V1::JobsControllerTest < ActionController::TestCase
     assert_equal(true,
                  File.exists?(Rails.configuration.crunch_refresh_trigger),
                  'trigger file should be created when job is cancelled')
+  end
 
+  [
+   [:put, :update, {job:{cancelled_at: Time.now}}, :success],
+   [:put, :update, {job:{cancelled_at: nil}}, :unprocessable_entity],
+   [:put, :update, {job:{state: 'Cancelled'}}, :success],
+   [:put, :update, {job:{state: 'Queued'}}, :unprocessable_entity],
+   [:put, :update, {job:{state: 'Running'}}, :unprocessable_entity],
+   [:put, :update, {job:{state: 'Failed'}}, :unprocessable_entity],
+   [:put, :update, {job:{state: 'Complete'}}, :unprocessable_entity],
+   [:post, :cancel, {}, :success],
+  ].each do |http_method, action, params, expected_response|
+    test "cancelled job stays cancelled after #{[http_method, action, params].inspect}" do
+      # We need to verify that "cancel" creates a trigger file, so first
+      # let's make sure there is no stale trigger file.
+      begin
+        File.unlink(Rails.configuration.crunch_refresh_trigger)
+      rescue Errno::ENOENT
+      end
+
+      authorize_with :active
+      self.send http_method, action, { id: jobs(:cancelled).uuid }.merge(params)
+      assert_response expected_response
+      if expected_response == :success
+        job = json_response
+        assert_not_nil job['cancelled_at'], 'job cancelled again using #{attribute}=#{value} did not have cancelled_at value'
+        assert_equal job['state'], 'Cancelled', 'cancelled again job state changed when updated using using #{attribute}=#{value}'
+      end
+      # Verify database record still says Cancelled
+      assert_equal 'Cancelled', Job.find(jobs(:cancelled).id).state, 'job was un-cancelled'
+    end
+  end
+
+  test "cancelled job updated to any other state change results in error" do
+    # We need to verify that "cancel" creates a trigger file, so first
+    # let's make sure there is no stale trigger file.
+    begin
+      File.unlink(Rails.configuration.crunch_refresh_trigger)
+    rescue Errno::ENOENT
+    end
+
+    authorize_with :active
     put :update, {
-      id: jobs(:running).uuid,
+      id: jobs(:running_cancelled).uuid,
       job: {
         cancelled_at: nil
       }
     }
-    job = JSON.parse(@response.body)
-    assert_not_nil job['cancelled_at'], 'un-cancelled job stays cancelled'
+    assert_response 422
   end
 
-  test "update a job without failing script_version check" do
-    authorize_with :admin
-    put :update, {
-      id: jobs(:uses_nonexistent_script_version).uuid,
-      job: {
-        owner_uuid: users(:admin).uuid
+  ['abc.py', 'hash.py'].each do |script|
+    test "update job script attribute to #{script} without failing script_version check" do
+      authorize_with :admin
+      put :update, {
+        id: jobs(:uses_nonexistent_script_version).uuid,
+        job: {
+          script: script
+        }
       }
-    }
-    assert_response :success
-    put :update, {
-      id: jobs(:uses_nonexistent_script_version).uuid,
-      job: {
-        owner_uuid: users(:active).uuid
-      }
-    }
-    assert_response :success
+      assert_response :success
+      resp = assigns(:object)
+      assert_equal jobs(:uses_nonexistent_script_version).script_version, resp['script_version']
+    end
   end
 
   test "search jobs by uuid with >= query" do
@@ -285,19 +339,57 @@ class Arvados::V1::JobsControllerTest < ActionController::TestCase
     assert_response :success
   end
 
-  [:active, :admin].each do |which_token|
+  [:spectator, :admin].each_with_index do |which_token, i|
     test "get job queue as #{which_token} user" do
       authorize_with which_token
       get :queue
       assert_response :success
-      assert_operator 1, :<=, assigns(:objects).count
-    end
-    test "get job queue as #{which_token} user, with a filter" do
-      authorize_with which_token
-      get :queue, { filters: [['script','=','foo']] }
-      assert_response :success
-      assert_equal ['foo'], assigns(:objects).collect(&:script).uniq
+      assert_equal i, assigns(:objects).count
     end
   end
 
+  test "get job queue as with a = filter" do
+    authorize_with :admin
+    get :queue, { filters: [['script','=','foo']] }
+    assert_response :success
+    assert_equal ['foo'], assigns(:objects).collect(&:script).uniq
+    assert_equal 0, assigns(:objects)[0].queue_position
+  end
+
+  test "get job queue as with a != filter" do
+    authorize_with :admin
+    get :queue, { filters: [['script','!=','foo']] }
+    assert_response :success
+    assert_equal 0, assigns(:objects).count
+  end
+
+  [:spectator, :admin].each do |which_token|
+    test "get queue_size as #{which_token} user" do
+      authorize_with which_token
+      get :queue_size
+      assert_response :success
+      assert_equal 1, JSON.parse(@response.body)["queue_size"]
+    end
+  end
+
+  test "job includes assigned nodes" do
+    authorize_with :active
+    get :show, {id: jobs(:nearly_finished_job).uuid}
+    assert_response :success
+    assert_equal([nodes(:busy).uuid], json_response["node_uuids"])
+  end
+
+  test "job lock success" do
+    authorize_with :active
+    post :lock, {id: jobs(:queued).uuid}
+    assert_response :success
+    job = Job.where(uuid: jobs(:queued).uuid).first
+    assert_equal "Running", job.state
+  end
+
+  test "job lock conflict" do
+    authorize_with :active
+    post :lock, {id: jobs(:running).uuid}
+    assert_response 403 # forbidden
+  end
 end

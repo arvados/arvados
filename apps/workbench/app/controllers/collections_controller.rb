@@ -1,15 +1,26 @@
+require "arvados/keep"
+
 class CollectionsController < ApplicationController
+  include ActionController::Live
+
+  skip_around_filter :require_thread_api_token, if: proc { |ctrl|
+    Rails.configuration.anonymous_user_token and
+    'show' == ctrl.action_name
+  }
   skip_around_filter(:require_thread_api_token,
                      only: [:show_file, :show_file_links])
   skip_before_filter(:find_object_by_uuid,
                      only: [:provenance, :show_file, :show_file_links])
   # We depend on show_file to display the user agreement:
-  skip_before_filter :check_user_agreements, only: [:show_file]
+  skip_before_filter :check_user_agreements, only: :show_file
+  skip_before_filter :check_user_profile, only: :show_file
 
   RELATION_LIMIT = 5
 
   def show_pane_list
-    %w(Files Provenance_graph Used_by Advanced)
+    panes = %w(Files Upload Provenance_graph Used_by Advanced)
+    panes = panes - %w(Upload) unless (@object.editable? rescue false)
+    panes
   end
 
   def set_persistent
@@ -42,33 +53,15 @@ class CollectionsController < ApplicationController
     end
   end
 
-  def choose
-    params[:limit] ||= 40
-
-    filter = [['link_class','=','name'],
-              ['head_uuid','is_a','arvados#collection']]
-
-    if params[:project_uuid] and !params[:project_uuid].empty?
-      filter << ['tail_uuid', '=', params[:project_uuid]]
-    end
-
-    @objects = Link.filter(filter)
-
-    find_objects_for_index
-    @next_page_href = (next_page_offset and
-                       url_for(offset: next_page_offset, partial: true))
-    @name_links = @objects
-
-    @objects = Collection.
-      filter([['uuid','in',@name_links.collect(&:head_uuid)]])
-    super
-  end
-
   def index
+    # API server index doesn't return manifest_text by default, but our
+    # callers want it unless otherwise specified.
+    @select ||= Collection.columns.map(&:name)
+    base_search = Collection.select(@select)
     if params[:search].andand.length.andand > 0
       tags = Link.where(any: ['contains', params[:search]])
-      @collections = (Collection.where(uuid: tags.collect(&:head_uuid)) |
-                      Collection.where(any: ['contains', params[:search]])).
+      @objects = (base_search.where(uuid: tags.collect(&:head_uuid)) |
+                      base_search.where(any: ['contains', params[:search]])).
         uniq { |c| c.uuid }
     else
       if params[:limit]
@@ -83,12 +76,11 @@ class CollectionsController < ApplicationController
         offset = 0
       end
 
-      @collections = Collection.limit(limit).offset(offset)
+      @objects = base_search.limit(limit).offset(offset)
     end
-    @links = Link.limit(1000).
-      where(head_uuid: @collections.collect(&:uuid))
+    @links = Link.where(head_uuid: @objects.collect(&:uuid))
     @collection_info = {}
-    @collections.each do |c|
+    @objects.each do |c|
       @collection_info[c.uuid] = {
         tag_links: [],
         wanted: false,
@@ -128,22 +120,50 @@ class CollectionsController < ApplicationController
     # purposes: it lets us return a useful status code for common errors, and
     # helps us figure out which token to provide to arv-get.
     coll = nil
-    tokens = [Thread.current[:arvados_api_token], params[:reader_token]].compact
+    tokens = [Thread.current[:arvados_api_token],
+              params[:reader_token],
+              (Rails.configuration.anonymous_user_token || nil)].compact
     usable_token = find_usable_token(tokens) do
       coll = Collection.find(params[:uuid])
     end
+
+    file_name = params[:file].andand.sub(/^(\.\/|\/|)/, './')
     if usable_token.nil?
       return  # Response already rendered.
-    elsif params[:file].nil? or not file_in_collection?(coll, params[:file])
+    elsif file_name.nil? or not coll.manifest.has_file?(file_name)
       return render_not_found
     end
+
     opts = params.merge(arvados_api_token: usable_token)
+
+    # Handle Range requests. Currently we support only 'bytes=0-....'
+    if request.headers.include? 'HTTP_RANGE'
+      if m = /^bytes=0-(\d+)/.match(request.headers['HTTP_RANGE'])
+        opts[:maxbytes] = m[1]
+        size = params[:size] || '*'
+        self.response.status = 206
+        self.response.headers['Content-Range'] = "bytes 0-#{m[1]}/#{size}"
+      end
+    end
+
     ext = File.extname(params[:file])
     self.response.headers['Content-Type'] =
       Rack::Mime::MIME_TYPES[ext] || 'application/octet-stream'
-    self.response.headers['Content-Length'] = params[:size] if params[:size]
+    if params[:size]
+      size = params[:size].to_i
+      if opts[:maxbytes]
+        size = [size, opts[:maxbytes].to_i].min
+      end
+      self.response.headers['Content-Length'] = size.to_s
+    end
     self.response.headers['Content-Disposition'] = params[:disposition] if params[:disposition]
-    self.response_body = file_enumerator opts
+    begin
+      file_enumerator(opts).each do |bytes|
+        response.stream.write bytes
+      end
+    ensure
+      response.stream.close
+    end
   end
 
   def sharing_scopes
@@ -158,53 +178,74 @@ class CollectionsController < ApplicationController
     end
   end
 
+  def find_object_by_uuid
+    if not Keep::Locator.parse params[:id]
+      super
+    end
+  end
+
   def show
     return super if !@object
-    if current_user
-      jobs_with = lambda do |conds|
-        Job.limit(RELATION_LIMIT).where(conds)
-          .results.sort_by { |j| j.finished_at || j.created_at }
-      end
-      @output_of = jobs_with.call(output: @object.uuid)
-      @log_of = jobs_with.call(log: @object.uuid)
-      @project_links = Link.limit(RELATION_LIMIT).order("modified_at DESC")
-        .where(head_uuid: @object.uuid, link_class: 'name').results
-      project_hash = Group.where(uuid: @project_links.map(&:tail_uuid)).to_hash
-      @projects = project_hash.values
-      @permissions = Link.limit(RELATION_LIMIT).order("modified_at DESC")
-        .where(head_uuid: @object.uuid, link_class: 'permission',
-               name: 'can_read').results
-      @logs = Log.limit(RELATION_LIMIT).order("created_at DESC")
-        .where(object_uuid: @object.uuid).results
-      @is_persistent = Link.limit(1)
-        .where(head_uuid: @object.uuid, tail_uuid: current_user.uuid,
-               link_class: 'resources', name: 'wants')
-        .results.any?
-      @search_sharing = search_scopes
-    end
+
+    @logs = []
 
     if params["tab_pane"] == "Provenance_graph"
       @prov_svg = ProvenanceHelper::create_provenance_graph(@object.provenance, "provenance_svg",
                                                             {:request => request,
-                                                              :direction => :bottom_up,
-                                                              :combine_jobs => :script_only}) rescue nil
+                                                             :direction => :bottom_up,
+                                                             :combine_jobs => :script_only}) rescue nil
     end
-    if params["tab_pane"] == "Used_by"
-      @used_by_svg = ProvenanceHelper::create_provenance_graph(@object.used_by, "used_by_svg",
-                                                               {:request => request,
-                                                                 :direction => :top_down,
-                                                                 :combine_jobs => :script_only,
-                                                                 :pdata_only => true}) rescue nil
+
+    if current_user
+      if Keep::Locator.parse params["uuid"]
+        @same_pdh = Collection.filter([["portable_data_hash", "=", @object.portable_data_hash]])
+        if @same_pdh.results.size == 1
+          redirect_to collection_path(@same_pdh[0]["uuid"])
+          return
+        end
+        owners = @same_pdh.map(&:owner_uuid).to_a.uniq
+        preload_objects_for_dataclass Group, owners
+        preload_objects_for_dataclass User, owners
+        render 'hash_matches'
+        return
+      else
+        jobs_with = lambda do |conds|
+          Job.limit(RELATION_LIMIT).where(conds)
+            .results.sort_by { |j| j.finished_at || j.created_at }
+        end
+        @output_of = jobs_with.call(output: @object.portable_data_hash)
+        @log_of = jobs_with.call(log: @object.portable_data_hash)
+        @project_links = Link.limit(RELATION_LIMIT).order("modified_at DESC")
+          .where(head_uuid: @object.uuid, link_class: 'name').results
+        project_hash = Group.where(uuid: @project_links.map(&:tail_uuid)).to_hash
+        @projects = project_hash.values
+
+        @permissions = Link.limit(RELATION_LIMIT).order("modified_at DESC")
+          .where(head_uuid: @object.uuid, link_class: 'permission',
+                 name: 'can_read').results
+        @logs = Log.limit(RELATION_LIMIT).order("created_at DESC")
+          .where(object_uuid: @object.uuid).results
+        @is_persistent = Link.limit(1)
+          .where(head_uuid: @object.uuid, tail_uuid: current_user.uuid,
+                 link_class: 'resources', name: 'wants')
+          .results.any?
+        @search_sharing = search_scopes
+
+        if params["tab_pane"] == "Used_by"
+          @used_by_svg = ProvenanceHelper::create_provenance_graph(@object.used_by, "used_by_svg",
+                                                                   {:request => request,
+                                                                     :direction => :top_down,
+                                                                     :combine_jobs => :script_only,
+                                                                     :pdata_only => true}) rescue nil
+        end
+      end
     end
     super
   end
 
   def sharing_popup
     @search_sharing = search_scopes
-    respond_to do |format|
-      format.html
-      format.js
-    end
+    render("sharing_popup.js", content_type: "text/javascript")
   end
 
   helper_method :download_link
@@ -214,18 +255,24 @@ class CollectionsController < ApplicationController
   end
 
   def share
-    a = ApiClientAuthorization.create(scopes: sharing_scopes)
-    @search_sharing = search_scopes
-    render 'sharing_popup'
+    ApiClientAuthorization.create(scopes: sharing_scopes)
+    sharing_popup
   end
 
   def unshare
-    @search_sharing = search_scopes
-    @search_sharing.each do |s|
+    search_scopes.each do |s|
       s.destroy
     end
-    @search_sharing = search_scopes
-    render 'sharing_popup'
+    sharing_popup
+  end
+
+  def update
+    @updates ||= params[@object.resource_param_name.to_sym]
+    if @updates && (@updates.keys - ["name", "description"]).empty?
+      # exclude manifest_text since only name or description is being updated
+      @object.manifest_text = nil
+    end
+    super
   end
 
   protected
@@ -239,7 +286,9 @@ class CollectionsController < ApplicationController
     most_specific_error = [401]
     token_list.each do |api_token|
       begin
-        using_specific_api_token(api_token) do
+        # We can't load the corresponding user, because the token may not
+        # be scoped for that.
+        using_specific_api_token(api_token, load_user: false) do
           yield
           return api_token
         end
@@ -258,15 +307,9 @@ class CollectionsController < ApplicationController
     return nil
   end
 
-  def file_in_collection?(collection, filename)
-    target = CollectionsHelper.file_path(File.split(filename))
-    collection.files.each do |file_spec|
-      return true if (CollectionsHelper.file_path(file_spec) == target)
-    end
-    false
-  end
-
-  def file_enumerator(opts)
+  # Note: several controller and integration tests rely on stubbing
+  # file_enumerator to return fake file content.
+  def file_enumerator opts
     FileStreamer.new opts
   end
 
@@ -286,12 +329,19 @@ class CollectionsController < ApplicationController
       env['ARVADOS_API_TOKEN'] = @opts[:arvados_api_token]
       env['ARVADOS_API_HOST_INSECURE'] = "true" if Rails.configuration.arvados_insecure_https
 
-      IO.popen([env, 'arv-get', "#{@opts[:uuid]}/#{@opts[:file]}"],
-               'rb') do |io|
-        while buf = io.read(2**16)
-          yield buf
+      bytesleft = @opts[:maxbytes].andand.to_i || 2**16
+      io = IO.popen([env, 'arv-get', "#{@opts[:uuid]}/#{@opts[:file]}"], 'rb')
+      while bytesleft > 0 && (buf = io.read([bytesleft, 2**16].min)) != nil
+        # shrink the bytesleft count, if we were given a maximum byte
+        # count to read
+        if @opts.include? :maxbytes
+          bytesleft = bytesleft - buf.length
         end
+        yield buf
       end
+      io.close
+      # "If ios is opened by IO.popen, close sets $?."
+      # http://www.ruby-doc.org/core-2.1.3/IO.html#method-i-close
       Rails.logger.warn("#{@opts[:uuid]}/#{@opts[:file]}: #{$?}") if $? != 0
     end
   end

@@ -20,7 +20,7 @@ class Arvados::V1::LinksController < ApplicationController
   end
 
   def get_permissions
-    if current_user.can?(manage: @object)
+    if current_user.andand.can?(manage: @object)
       # find all links and return them
       @objects = Link.where(link_class: "permission",
                             head_uuid: params[:uuid])
@@ -34,16 +34,26 @@ class Arvados::V1::LinksController < ApplicationController
 
   protected
 
-  # Override find_object_by_uuid: the get_permissions method may be
-  # called on a uuid belonging to any class.
   def find_object_by_uuid
     if action_name == 'get_permissions'
+      # get_permissions accepts a UUID for any kind of object.
       @object = ArvadosModel::resource_class_for_uuid(params[:uuid])
         .readable_by(*@read_users)
         .where(uuid: params[:uuid])
         .first
     else
       super
+      if @object.nil?
+        # Normally group permission links are not readable_by users.
+        # Make an exception for users with permission to manage the group.
+        # FIXME: Solve this more generally - see the controller tests.
+        link = Link.find_by_uuid(params[:uuid])
+        if (not link.nil?) and
+            (link.link_class == "permission") and
+            (@read_users.any? { |u| u.can?(manage: link.head_uuid) })
+          @object = link
+        end
+      end
     end
   end
 

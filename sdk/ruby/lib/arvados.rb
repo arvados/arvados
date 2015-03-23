@@ -1,9 +1,10 @@
 require 'rubygems'
-require 'google/api_client'
 require 'active_support/inflector'
 require 'json'
 require 'fileutils'
 require 'andand'
+
+require 'arvados/google_api_client'
 
 ActiveSupport::Inflector.inflections do |inflect|
   inflect.irregular 'specimen', 'specimens'
@@ -102,28 +103,6 @@ class Arvados
           klass
         end
       end
-    end
-  end
-
-  class Google::APIClient
-    def discovery_document(api, version)
-      api = api.to_s
-      return @discovery_documents["#{api}:#{version}"] ||=
-        begin
-          # fetch new API discovery doc if stale
-          cached_doc = File.expand_path '~/.cache/arvados/discovery_uri.json'
-          if not File.exist?(cached_doc) or (Time.now - File.mtime(cached_doc)) > 86400
-            response = self.execute!(:http_method => :get,
-                                     :uri => self.discovery_uri(api, version),
-                                     :authenticated => false)
-            FileUtils.makedirs(File.dirname cached_doc)
-            File.open(cached_doc, 'w') do |f|
-              f.puts response.body
-            end
-          end
-
-          File.open(cached_doc) { |f| JSON.load f }
-        end
     end
   end
 
@@ -228,7 +207,7 @@ class Arvados
         execute(:api_method => api_method,
                 :authenticated => false,
                 :parameters => parameters,
-                :body => body,
+                :body_object => body,
                 :headers => {
                   authorization: 'OAuth2 '+arvados.config['ARVADOS_API_TOKEN']
                 })

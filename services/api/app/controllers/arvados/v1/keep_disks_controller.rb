@@ -3,13 +3,13 @@ class Arvados::V1::KeepDisksController < ApplicationController
 
   def self._ping_requires_parameters
     {
-      uuid: false,
-      ping_secret: true,
-      node_uuid: false,
-      filesystem_uuid: false,
-      service_host: false,
-      service_port: true,
-      service_ssl_flag: true
+      uuid: {required: false},
+      ping_secret: {required: true},
+      node_uuid: {required: false},
+      filesystem_uuid: {required: false},
+      service_host: {required: false},
+      service_port: {required: true},
+      service_ssl_flag: {required: true}
     }
   end
 
@@ -22,7 +22,7 @@ class Arvados::V1::KeepDisksController < ApplicationController
       # Render the :superuser view (i.e., include the ping_secret) even
       # if !current_user.is_admin. This is safe because @object.ping's
       # success implies the ping_secret was already known by the client.
-      render json: @object.as_api_response(:superuser)
+      send_json @object.as_api_response(:superuser)
     end
   end
 

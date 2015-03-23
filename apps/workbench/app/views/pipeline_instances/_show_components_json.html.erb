@@ -1,0 +1,30 @@
+<p>The components of this pipeline are in a format that Workbench does not recognize.</p>
+
+<p>Error encountered: <b><%= error_name %></b></p>
+
+    <div id="components-accordion" class="panel panel-default">
+      <div class="panel-heading">
+        <h4 class="panel-title">
+          <a data-toggle="collapse" data-parent="#components-accordion" href="#components-json">
+            Show components JSON
+          </a>
+        </h4>
+      </div>
+      <div id="components-json" class="panel-collapse collapse">
+        <div class="panel-body">
+          <pre><%= Oj.dump(@object.components, indent: 2) %></pre>
+        </div>
+      </div>
+      <div class="panel-heading">
+        <h4 class="panel-title">
+          <a data-toggle="collapse" data-parent="#components-accordion" href="#components-backtrace">
+            Show backtrace
+          </a>
+        </h4>
+      </div>
+      <div id="components-backtrace" class="panel-collapse collapse">
+        <div class="panel-body">
+          <pre><%= backtrace %></pre>
+        </div>
+      </div>
+    </div>

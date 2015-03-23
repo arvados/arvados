@@ -3,7 +3,7 @@ require 'uri'
 
 class SmokeTest < ActionDispatch::IntegrationTest
   setup do
-    Capybara.current_driver = Capybara.javascript_driver
+    need_javascript
   end
 
   def assert_visit_success(allowed=[200])
@@ -15,6 +15,9 @@ class SmokeTest < ActionDispatch::IntegrationTest
   def all_links_in(find_spec, text_regexp=//)
     all(find_spec + ' a').collect { |tag|
       if tag[:href].nil? or tag[:href].empty? or (tag.text !~ text_regexp)
+        nil
+      elsif tag[:'data-remote']
+        # these don't necessarily work with format=html
         nil
       else
         url = URI(tag[:href])

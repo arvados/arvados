@@ -12,9 +12,12 @@ class ApplicationController < ActionController::Base
   # Methods that don't require login should
   #   skip_around_filter :require_thread_api_token
   around_filter :require_thread_api_token, except: ERROR_ACTIONS
+  before_filter :set_cache_buster
+  before_filter :accept_uuid_as_id_param, except: ERROR_ACTIONS
   before_filter :check_user_agreements, except: ERROR_ACTIONS
-  before_filter :check_user_notifications, except: ERROR_ACTIONS
-  before_filter :find_object_by_uuid, except: [:index, :choose] + ERROR_ACTIONS
+  before_filter :check_user_profile, except: ERROR_ACTIONS
+  before_filter :load_filters_and_paging_params, except: ERROR_ACTIONS
+  before_filter :find_object_by_uuid, except: [:create, :index, :choose] + ERROR_ACTIONS
   theme :select_theme
 
   begin
@@ -28,6 +31,12 @@ class ApplicationController < ActionController::Base
                 with: :render_exception)
   end
 
+  def set_cache_buster
+    response.headers["Cache-Control"] = "no-cache, no-store, max-age=0, must-revalidate"
+    response.headers["Pragma"] = "no-cache"
+    response.headers["Expires"] = "Fri, 01 Jan 1990 00:00:00 GMT"
+  end
+
   def unprocessable(message=nil)
     @errors ||= []
 
@@ -36,6 +45,9 @@ class ApplicationController < ActionController::Base
   end
 
   def render_error(opts={})
+    # Helpers can rely on the presence of @errors to know they're
+    # being used in an error page.
+    @errors ||= []
     opts[:status] ||= 500
     respond_to do |f|
       # json must come before html here, so it gets used as the
@@ -59,22 +71,31 @@ class ApplicationController < ActionController::Base
     else
       @errors = [e.to_s]
     end
-    # If the user has an active session, and the API server is available,
-    # make user information available on the error page.
+    # Make user information available on the error page, falling back to the
+    # session cache if the API server is unavailable.
     begin
       load_api_token(session[:arvados_api_token])
     rescue ArvadosApiClient::ApiError
-      load_api_token(nil)
+      unless session[:user].nil?
+        begin
+          Thread.current[:user] = User.new(session[:user])
+        rescue ArvadosApiClient::ApiError
+          # This can happen if User's columns are unavailable.  Nothing to do.
+        end
+      end
     end
-    # Preload projects trees for the template.  If that fails, set empty
+    # Preload projects trees for the template.  If that's not doable, set empty
     # trees so error page rendering can proceed.  (It's easier to rescue the
     # exception here than in a template.)
-    begin
-      build_project_trees
-    rescue ArvadosApiClient::ApiError
-      @my_project_tree ||= []
-      @shared_project_tree ||= []
+    unless current_user.nil?
+      begin
+        build_project_trees
+      rescue ArvadosApiClient::ApiError
+        # Fall back to the default-setting code later.
+      end
     end
+    @my_project_tree ||= []
+    @shared_project_tree ||= []
     render_error(err_opts)
   end
 
@@ -86,7 +107,30 @@ class ApplicationController < ActionController::Base
     end
   end
 
-  def find_objects_for_index
+  # params[:order]:
+  #
+  # The order can be left empty to allow it to default.
+  # Or it can be a comma separated list of real database column names, one per model.
+  # Column names should always be qualified by a table name and a direction is optional, defaulting to asc
+  # (e.g. "collections.name" or "collections.name desc").
+  # If a column name is specified, that table will be sorted by that column.
+  # If there are objects from different models that will be shown (such as in Jobs and Pipelines tab),
+  # then a sort column name can optionally be specified for each model, passed as an comma-separated list (e.g. "jobs.script, pipeline_instances.name")
+  # Currently only one sort column name and direction can be specified for each model.
+  def load_filters_and_paging_params
+    if params[:order].blank?
+      @order = 'created_at desc'
+    elsif params[:order].is_a? Array
+      @order = params[:order]
+    else
+      begin
+        @order = JSON.load(params[:order])
+      rescue
+        @order = params[:order].split(',')
+      end
+    end
+    @order = [@order] unless @order.is_a? Array
+
     @limit ||= 200
     if params[:limit]
       @limit = params[:limit].to_i
@@ -102,27 +146,68 @@ class ApplicationController < ActionController::Base
       filters = params[:filters]
       if filters.is_a? String
         filters = Oj.load filters
+      elsif filters.is_a? Array
+        filters = filters.collect do |filter|
+          if filter.is_a? String
+            # Accept filters[]=["foo","=","bar"]
+            Oj.load filter
+          else
+            # Accept filters=[["foo","=","bar"]]
+            filter
+          end
+        end
       end
+      # After this, params[:filters] can be trusted to be an array of arrays:
+      params[:filters] = filters
       @filters += filters
     end
+  end
 
+  def find_objects_for_index
     @objects ||= model_class
     @objects = @objects.filter(@filters).limit(@limit).offset(@offset)
+    @objects.fetch_multiple_pages(false)
   end
 
   def render_index
     respond_to do |f|
-      f.json { render json: @objects }
+      f.json {
+        if params[:partial]
+          @next_page_href = next_page_href(partial: params[:partial], filters: @filters.to_json)
+          render json: {
+            content: render_to_string(partial: "show_#{params[:partial]}",
+                                      formats: [:html]),
+            next_page_href: @next_page_href
+          }
+        else
+          render json: @objects
+        end
+      }
       f.html {
-        if params['tab_pane']
-          comparable = self.respond_to? :compare
-          render(partial: 'show_' + params['tab_pane'].downcase,
-                 locals: { comparable: comparable, objects: @objects })
+        if params[:tab_pane]
+          render_pane params[:tab_pane]
         else
           render
         end
       }
       f.js { render }
+    end
+  end
+
+  helper_method :render_pane
+  def render_pane tab_pane, opts={}
+    render_opts = {
+      partial: 'show_' + tab_pane.downcase,
+      locals: {
+        comparable: self.respond_to?(:compare),
+        objects: @objects,
+        tab_pane: tab_pane
+      }.merge(opts[:locals] || {})
+    }
+    if opts[:to_string]
+      render_to_string render_opts
+    else
+      render render_opts
     end
   end
 
@@ -132,16 +217,26 @@ class ApplicationController < ActionController::Base
   end
 
   helper_method :next_page_offset
-  def next_page_offset
-    if @objects.respond_to?(:result_offset) and
-        @objects.respond_to?(:result_limit) and
-        @objects.respond_to?(:items_available)
-      next_offset = @objects.result_offset + @objects.result_limit
-      if next_offset < @objects.items_available
+  def next_page_offset objects=nil
+    if !objects
+      objects = @objects
+    end
+    if objects.respond_to?(:result_offset) and
+        objects.respond_to?(:result_limit) and
+        objects.respond_to?(:items_available)
+      next_offset = objects.result_offset + objects.result_limit
+      if next_offset < objects.items_available
         next_offset
       else
         nil
       end
+    end
+  end
+
+  helper_method :next_page_href
+  def next_page_href with_params={}
+    if next_page_offset
+      url_for with_params.merge(offset: next_page_offset)
     end
   end
 
@@ -150,48 +245,54 @@ class ApplicationController < ActionController::Base
       return render_not_found("object not found")
     end
     respond_to do |f|
-      f.json { render json: @object.attributes.merge(href: url_for(@object)) }
+      f.json do
+        extra_attrs = { href: url_for(action: :show, id: @object) }
+        @object.textile_attributes.each do |textile_attr|
+          extra_attrs.merge!({ "#{textile_attr}Textile" => view_context.render_markup(@object.attributes[textile_attr]) })
+        end
+        render json: @object.attributes.merge(extra_attrs)
+      end
       f.html {
         if params['tab_pane']
-          comparable = self.respond_to? :compare
-          render(partial: 'show_' + params['tab_pane'].downcase,
-                 locals: { comparable: comparable, objects: @objects })
-        elsif request.method.in? ['GET', 'HEAD']
+          render_pane(if params['tab_pane'].is_a? Hash then params['tab_pane']["name"] else params['tab_pane'] end)
+        elsif request.request_method.in? ['GET', 'HEAD']
           render
         else
-          redirect_to params[:return_to] || @object
+          redirect_to (params[:return_to] ||
+                       polymorphic_url(@object,
+                                       anchor: params[:redirect_to_anchor]))
         end
       }
       f.js { render }
     end
   end
 
+  def redirect_to uri, *args
+    if request.xhr?
+      if not uri.is_a? String
+        uri = polymorphic_url(uri)
+      end
+      render json: {href: uri}
+    else
+      super
+    end
+  end
+
   def choose
     params[:limit] ||= 40
-    if !@objects
-      if params[:project_uuid] and !params[:project_uuid].empty?
-        # We want the chooser to show objects of the controllers's model_class
-        # type within a specific project specified by project_uuid, so fetch the
-        # project and request the contents of the project filtered on the
-        # controllers's model_class kind.
-        @objects = Group.find(params[:project_uuid]).contents({:filters => [['uuid', 'is_a', "arvados\##{ArvadosApiClient.class_kind(model_class)}"]]})
-      end
-      find_objects_for_index if !@objects
-    end
     respond_to do |f|
       if params[:partial]
         f.json {
+          find_objects_for_index if !@objects
           render json: {
             content: render_to_string(partial: "choose_rows.html",
-                                      formats: [:html],
-                                      locals: {
-                                        multiple: params[:multiple]
-                                      }),
-            next_page_href: @next_page_href
+                                      formats: [:html]),
+            next_page_href: next_page_href(partial: params[:partial])
           }
         }
       end
       f.js {
+        find_objects_for_index if !@objects
         render partial: 'choose', locals: {multiple: params[:multiple]}
       }
     end
@@ -234,16 +335,11 @@ class ApplicationController < ActionController::Base
     @new_resource_attrs ||= {}
     @new_resource_attrs.reject! { |k,v| k.to_s == 'uuid' }
     @object ||= model_class.new @new_resource_attrs, params["options"]
+
     if @object.save
-      respond_to do |f|
-        f.json { render json: @object.attributes.merge(href: url_for(@object)) }
-        f.html {
-          redirect_to @object
-        }
-        f.js { render }
-      end
+      show
     else
-      self.render_error status: 422
+      render_error status: 422
     end
   end
 
@@ -258,7 +354,7 @@ class ApplicationController < ActionController::Base
       if @object.name and @object.name != ''
         @object.name = "Copy of #{@object.name}"
       else
-        @object.name = "Copy of unnamed #{@object.class_for_display.downcase}"
+        @object.name = ""
       end
     end
     @object.save!
@@ -301,36 +397,84 @@ class ApplicationController < ActionController::Base
     %w(Attributes Advanced)
   end
 
+  def set_share_links
+    @user_is_manager = false
+    @share_links = []
+
+    if @object.uuid != current_user.andand.uuid
+      begin
+        @share_links = Link.permissions_for(@object)
+        @user_is_manager = true
+      rescue ArvadosApiClient::AccessForbiddenException,
+        ArvadosApiClient::NotFoundException
+      end
+    end
+  end
+
+  def share_with
+    if not params[:uuids].andand.any?
+      @errors = ["No user/group UUIDs specified to share with."]
+      return render_error(status: 422)
+    end
+    results = {"success" => [], "errors" => []}
+    params[:uuids].each do |shared_uuid|
+      begin
+        Link.create(tail_uuid: shared_uuid, link_class: "permission",
+                    name: "can_read", head_uuid: @object.uuid)
+      rescue ArvadosApiClient::ApiError => error
+        error_list = error.api_response.andand[:errors]
+        if error_list.andand.any?
+          results["errors"] += error_list.map { |e| "#{shared_uuid}: #{e}" }
+        else
+          error_code = error.api_status || "Bad status"
+          results["errors"] << "#{shared_uuid}: #{error_code} response"
+        end
+      else
+        results["success"] << shared_uuid
+      end
+    end
+    if results["errors"].empty?
+      results.delete("errors")
+      status = 200
+    else
+      status = 422
+    end
+    respond_to do |f|
+      f.json { render(json: results, status: status) }
+    end
+  end
+
   protected
 
+  helper_method :strip_token_from_path
   def strip_token_from_path(path)
     path.sub(/([\?&;])api_token=[^&;]*[&;]?/, '\1')
   end
 
   def redirect_to_login
-    respond_to do |f|
-      f.html {
-        if request.method.in? ['GET', 'HEAD']
-          redirect_to arvados_api_client.arvados_login_url(return_to: strip_token_from_path(request.url))
-        else
-          flash[:error] = "Either you are not logged in, or your session has timed out. I can't automatically log you in and re-attempt this request."
-          redirect_to :back
-        end
-      }
-      f.json {
-        @errors = ['You do not seem to be logged in. You did not supply an API token with this request, and your session (if any) has timed out.']
-        self.render_error status: 422
-      }
+    if request.xhr? or request.format.json?
+      @errors = ['You are not logged in. Most likely your session has timed out and you need to log in again.']
+      render_error status: 401
+    elsif request.method.in? ['GET', 'HEAD']
+      redirect_to arvados_api_client.arvados_login_url(return_to: strip_token_from_path(request.url))
+    else
+      flash[:error] = "Either you are not logged in, or your session has timed out. I can't automatically log you in and re-attempt this request."
+      redirect_to :back
     end
     false  # For convenience to return from callbacks
   end
 
-  def using_specific_api_token(api_token)
+  def using_specific_api_token(api_token, opts={})
     start_values = {}
     [:arvados_api_token, :user].each do |key|
       start_values[key] = Thread.current[key]
     end
-    load_api_token(api_token)
+    if opts.fetch(:load_user, true)
+      load_api_token(api_token)
+    else
+      Thread.current[:arvados_api_token] = api_token
+      Thread.current[:user] = nil
+    end
     begin
       yield
     ensure
@@ -338,10 +482,14 @@ class ApplicationController < ActionController::Base
     end
   end
 
-  def find_object_by_uuid
+
+  def accept_uuid_as_id_param
     if params[:id] and params[:id].match /\D/
       params[:uuid] = params.delete :id
     end
+  end
+
+  def find_object_by_uuid
     begin
       if not model_class
         @object = nil
@@ -356,7 +504,7 @@ class ApplicationController < ActionController::Base
       else
         @object = model_class.find(params[:uuid])
       end
-    rescue ArvadosApiClient::NotFoundException, RuntimeError => error
+    rescue ArvadosApiClient::NotFoundException, ArvadosApiClient::NotLoggedInException, RuntimeError => error
       if error.is_a?(RuntimeError) and (error.message !~ /^argument to find\(/)
         raise
       end
@@ -377,9 +525,6 @@ class ApplicationController < ActionController::Base
     Thread.current[:arvados_api_token] = new_token
     if new_token.nil?
       Thread.current[:user] = nil
-    elsif (new_token == session[:arvados_api_token]) and
-        session[:user].andand[:is_active]
-      Thread.current[:user] = User.new(session[:user])
     else
       Thread.current[:user] = User.current
     end
@@ -397,6 +542,10 @@ class ApplicationController < ActionController::Base
       false  # We may redirect to login, or not, based on the current action.
     else
       session[:arvados_api_token] = params[:api_token]
+      # If we later have trouble contacting the API server, we still want
+      # to be able to render basic user information in the UI--see
+      # render_exception above.  We store that in the session here.  This is
+      # not intended to be used as a general-purpose cache.  See #2891.
       session[:user] = {
         uuid: user.uuid,
         email: user.email,
@@ -406,6 +555,7 @@ class ApplicationController < ActionController::Base
         is_admin: user.is_admin,
         prefs: user.prefs
       }
+
       if !request.format.json? and request.method.in? ['GET', 'HEAD']
         # Repeat this request with api_token in the (new) session
         # cookie instead of the query string.  This prevents API
@@ -450,7 +600,8 @@ class ApplicationController < ActionController::Base
     end
   end
 
-  # Reroute this request if an API token is unavailable.
+  # Redirect to login/welcome if client provided expired API token (or
+  # none at all)
   def require_thread_api_token
     if Thread.current[:arvados_api_token]
       yield
@@ -460,31 +611,45 @@ class ApplicationController < ActionController::Base
       # log in" page instead of getting stuck in a redirect loop.
       session.delete :arvados_api_token
       redirect_to_login
+    elsif request.xhr?
+      # If we redirect to the welcome page, the browser will handle
+      # the 302 by itself and the client code will end up rendering
+      # the "welcome" page in some content area where it doesn't make
+      # sense. Instead, we send 401 ("authenticate and try again" or
+      # "display error", depending on how smart the client side is).
+      @errors = ['You are not logged in.']
+      render_error status: 401
     else
-      render 'users/welcome'
+      redirect_to welcome_users_path(return_to: request.fullpath)
     end
   end
 
   def ensure_current_user_is_admin
-    unless current_user and current_user.is_admin
+    if not current_user
+      @errors = ['Not logged in']
+      render_error status: 401
+    elsif not current_user.is_admin
       @errors = ['Permission denied']
-      self.render_error status: 401
+      render_error status: 403
     end
+  end
+
+  helper_method :unsigned_user_agreements
+  def unsigned_user_agreements
+    @signed_ua_uuids ||= UserAgreement.signatures.map &:head_uuid
+    @unsigned_user_agreements ||= UserAgreement.all.map do |ua|
+      if not @signed_ua_uuids.index ua.uuid
+        Collection.find(ua.uuid)
+      end
+    end.compact
   end
 
   def check_user_agreements
     if current_user && !current_user.is_active
       if not current_user.is_invited
-        return render 'users/inactive'
+        return redirect_to inactive_users_path(return_to: request.fullpath)
       end
-      signatures = UserAgreement.signatures
-      @signed_ua_uuids = UserAgreement.signatures.map &:head_uuid
-      @required_user_agreements = UserAgreement.all.map do |ua|
-        if not @signed_ua_uuids.index ua.uuid
-          Collection.find(ua.uuid)
-        end
-      end.compact
-      if @required_user_agreements.empty?
+      if unsigned_user_agreements.empty?
         # No agreements to sign. Perhaps we just need to ask?
         current_user.activate
         if !current_user.is_active
@@ -493,10 +658,46 @@ class ApplicationController < ActionController::Base
         end
       end
       if !current_user.is_active
-        render 'user_agreements/index'
+        redirect_to user_agreements_path(return_to: request.fullpath)
       end
     end
     true
+  end
+
+  def check_user_profile
+    return true if !current_user
+    if request.method.downcase != 'get' || params[:partial] ||
+       params[:tab_pane] || params[:action_method] ||
+       params[:action] == 'setup_popup'
+      return true
+    end
+
+    if missing_required_profile?
+      redirect_to profile_user_path(current_user.uuid, return_to: request.fullpath)
+    end
+    true
+  end
+
+  helper_method :missing_required_profile?
+  def missing_required_profile?
+    missing_required = false
+
+    profile_config = Rails.configuration.user_profile_form_fields
+    if current_user && profile_config
+      current_user_profile = current_user.prefs[:profile]
+      profile_config.kind_of?(Array) && profile_config.andand.each do |entry|
+        if entry['required']
+          if !current_user_profile ||
+             !current_user_profile[entry['key'].to_sym] ||
+             current_user_profile[entry['key'].to_sym].empty?
+            missing_required = true
+            break
+          end
+        end
+      end
+    end
+
+    missing_required
   end
 
   def select_theme
@@ -513,15 +714,6 @@ class ApplicationController < ActionController::Base
       view.render partial: 'notifications/ssh_key_notification'
     }
   }
-
-  #@@notification_tests.push lambda { |controller, current_user|
-  #  Job.limit(1).where(created_by: current_user.uuid).each do
-  #    return nil
-  #  end
-  #  return lambda { |view|
-  #    view.render partial: 'notifications/jobs_notification'
-  #  }
-  #}
 
   @@notification_tests.push lambda { |controller, current_user|
     Collection.limit(1).where(created_by: current_user.uuid).each do
@@ -541,32 +733,18 @@ class ApplicationController < ActionController::Base
     }
   }
 
-  def check_user_notifications
-    return if params['tab_pane']
-
-    @notification_count = 0
-    @notifications = []
-
-    if current_user
-      @showallalerts = false
-      @@notification_tests.each do |t|
-        a = t.call(self, current_user)
-        if a
-          @notification_count += 1
-          @notifications.push a
-        end
-      end
-    end
-
-    if @notification_count == 0
-      @notification_count = ''
-    end
+  helper_method :user_notifications
+  def user_notifications
+    return [] if @errors or not current_user.andand.is_active
+    @notifications ||= @@notification_tests.map do |t|
+      t.call(self, current_user)
+    end.compact
   end
 
   helper_method :all_projects
   def all_projects
     @all_projects ||= Group.
-      filter([['group_class','in',['project','folder']]]).order('name')
+      filter([['group_class','=','project']]).order('name')
   end
 
   helper_method :my_projects
@@ -606,8 +784,52 @@ class ApplicationController < ActionController::Base
     (Job.limit(10) |
      PipelineInstance.limit(10)).
       sort_by do |x|
-      x.finished_at || x.started_at || x.created_at rescue x.created_at
+      (x.finished_at || x.started_at rescue nil) || x.modified_at || x.created_at
+    end.reverse
+  end
+
+  helper_method :running_pipelines
+  def running_pipelines
+    pi = PipelineInstance.order(["started_at asc", "created_at asc"]).filter([["state", "in", ["RunningOnServer", "RunningOnClient"]]])
+    jobs = {}
+    pi.each do |pl|
+      pl.components.each do |k,v|
+        if v.is_a? Hash and v[:job]
+          jobs[v[:job][:uuid]] = {}
+        end
+      end
     end
+
+    if jobs.keys.any?
+      Job.filter([["uuid", "in", jobs.keys]]).each do |j|
+        jobs[j[:uuid]] = j
+      end
+
+      pi.each do |pl|
+        pl.components.each do |k,v|
+          if v.is_a? Hash and v[:job]
+            v[:job] = jobs[v[:job][:uuid]]
+          end
+        end
+      end
+    end
+
+    pi
+  end
+
+  helper_method :finished_pipelines
+  def finished_pipelines lim
+    PipelineInstance.limit(lim).order(["finished_at desc"]).filter([["state", "in", ["Complete", "Failed", "Paused"]], ["finished_at", "!=", nil]])
+  end
+
+  helper_method :recent_collections
+  def recent_collections lim
+    c = Collection.limit(lim).order(["modified_at desc"]).filter([["owner_uuid", "is_a", "arvados#group"]])
+    own = {}
+    Group.filter([["uuid", "in", c.map(&:owner_uuid)]]).each do |g|
+      own[g[:uuid]] = g
+    end
+    {collections: c, owners: own}
   end
 
   helper_method :my_project_tree
@@ -657,7 +879,7 @@ class ApplicationController < ActionController::Base
     @my_project_tree =
       sorted_paths.call buildtree.call(children_of, 'me')
     @shared_project_tree =
-      sorted_paths.call({'Shared with me' =>
+      sorted_paths.call({'Projects shared with me' =>
                           buildtree.call(children_of, false)})
   end
 
@@ -677,7 +899,13 @@ class ApplicationController < ActionController::Base
     crumbs = []
     current = @name_link || @object
     while current
-      if current.is_a?(Group) and current.group_class.in?(['project','folder'])
+      # Halt if a group ownership loop is detected. API should refuse
+      # to produce this state, but it could still arise from a race
+      # condition when group ownership changes between our find()
+      # queries.
+      break if crumbs.collect(&:uuid).include? current.uuid
+
+      if current.is_a?(Group) and current.group_class == 'project'
         crumbs.prepend current
       end
       if current.is_a? Link
@@ -691,7 +919,7 @@ class ApplicationController < ActionController::Base
 
   helper_method :current_project_uuid
   def current_project_uuid
-    if @object.is_a? Group and @object.group_class.in?(['project','folder'])
+    if @object.is_a? Group and @object.group_class == 'project'
       @object.uuid
     elsif @name_link.andand.tail_uuid
       @name_link.tail_uuid
@@ -869,4 +1097,7 @@ class ApplicationController < ActionController::Base
     @objects_for
   end
 
+  def wiselinks_layout
+    'body'
+  end
 end

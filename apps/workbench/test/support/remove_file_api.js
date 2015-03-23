@@ -1,0 +1,1 @@
+window.FileReader = null;

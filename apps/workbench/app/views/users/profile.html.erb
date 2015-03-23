@@ -1,0 +1,95 @@
+<%
+    profile_config = Rails.configuration.user_profile_form_fields
+    current_user_profile = current_user.prefs[:profile]
+    show_save_button = false
+
+    profile_message = Rails.configuration.user_profile_form_message
+%>
+
+<div>
+    <div class="panel panel-default">
+        <div class="panel-heading">
+          <h4 class="panel-title">
+            Profile
+          </h4>
+        </div>
+        <div class="panel-body">
+          <% if !missing_required_profile? && params[:offer_return_to] %>
+            <div class="alert alert-success">
+              <p>Thank you for filling in your profile. <%= link_to 'Back to work!', params[:offer_return_to], class: 'btn btn-sm btn-primary' %></p>
+            </div>
+          <% else %>
+            <div class="alert alert-info">
+              <p><%=raw(profile_message)%></p>
+            </div>
+          <% end %>
+
+            <%= form_for current_user, html: {id: 'save_profile_form', name: 'save_profile_form', class: 'form-horizontal'} do %>
+              <%= hidden_field_tag :offer_return_to, params[:offer_return_to] %>
+              <%= hidden_field_tag :return_to, profile_user_path(current_user.uuid, offer_return_to: params[:offer_return_to]) %>
+              <div class="form-group">
+                  <label for="email" class="col-sm-3 control-label"> E-mail </label>
+                  <div class="col-sm-8">
+                    <p class="form-control-static" id="email" name="email"><%=current_user.email%></p>
+                  </div>
+              </div>
+              <div class="form-group">
+                  <label for="first_name" class="col-sm-3 control-label"> First Name </label>
+                  <div class="col-sm-8">
+                    <p class="form-control-static" id="first_name" name="first_name"><%=current_user.first_name%></p>
+                  </div>
+              </div>
+              <div class="form-group">
+                  <label for="last_name" class="col-sm-3 control-label"> Last Name </label>
+                  <div class="col-sm-8">
+                    <p class="form-control-static" id="last_name" name="last_name"><%=current_user.last_name%></p>
+                  </div>
+              </div>
+              <div class="form-group">
+                  <label for="identity_url" class="col-sm-3 control-label"> Identity URL </label>
+                  <div class="col-sm-8">
+                    <p class="form-control-static" id="identity_url" name="identity_url"><%=current_user.andand.identity_url%></p>
+                  </div>
+              </div>
+
+              <% profile_config.kind_of?(Array) && profile_config.andand.each do |entry| %>
+                <% if entry['key'] %>
+                  <%
+                      show_save_button = true
+                      label = entry['required'] ? '* ' : ''
+                      label += entry['form_field_title']
+                      value = current_user_profile[entry['key'].to_sym] if current_user_profile
+                  %>
+                  <div class="form-group">
+                    <label for="<%=entry['key']%>"
+                           class="col-sm-3 control-label"
+                           style=<%="color:red" if entry['required']&&(!value||value.empty?)%>> <%=label%>
+                    </label>
+                    <% if entry['type'] == 'select' %>
+                      <div class="col-sm-8">
+                        <select class="form-control" name="user[prefs][:profile][:<%=entry['key']%>]">
+                          <% entry['options'].each do |option| %>
+                            <option value="<%=option%>" <%='selected' if option==value%>><%=option%></option>
+                          <% end %>
+                        </select>
+                      </div>
+                    <% else %>
+                      <div class="col-sm-8">
+                        <input type="text" class="form-control" name="user[prefs][:profile][:<%=entry['key']%>]" placeholder="<%=entry['form_field_description']%>" value="<%=value%>" ></input>
+                      </div>
+                    <% end %>
+                  </div>
+                <% end %>
+              <% end %>
+
+              <% if show_save_button %>
+                <div class="form-group">
+                  <div class="col-sm-offset-3 col-sm-8">
+                    <button type="submit" class="btn btn-primary">Save profile</button>
+                  </div>
+                </div>
+              <% end %>
+            <% end %>
+        </div>
+    </div>
+</div>

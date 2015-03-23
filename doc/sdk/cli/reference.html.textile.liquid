@@ -1,0 +1,71 @@
+---
+layout: default
+navsection: sdk
+navmenu: CLI
+title: "arv reference"
+...
+
+_In order to use the @arv@ command, make sure that you have a "working environment.":{{site.baseurl}}/user/getting_started/check-environment.html_
+
+h3. Usage
+
+See the "CLI overview":{{site.baseurl}}/sdk/cli/index.html page.
+
+h3. Resource types and methods
+
+Get list of resource types
+@arv --help@
+
+Get list of resource methods for the "user" resource type
+@arv user --help@
+
+
+h3. Basic examples
+
+Get record for current user
+@arv user current@
+
+Get entire record for some specific user
+@arv user get --uuid 6dnxa-tpzed-iimd25zhzh84gbk@
+
+Update user record
+@arv user update --uuid 6dnxa-tpzed-iimd25zhzh84gbk --first-name "Bob"@
+
+Get list of groups
+@arv group list@
+
+Delete a group
+@arv group delete --uuid 6dnxa-j7d0g-iw7i6n43d37jtog@
+
+
+h3. Common commands
+
+Most @arv@ resources accept the following commands:
+
+* @get@
+* @list@
+* @create@
+* @update@
+* @delete@
+
+
+h4. @list@
+
+Arguments accepted by the @list@ subcommand include:
+
+<pre>
+    --limit, -l <i>:     Maximum number of resources to return.
+   --offset, -o <i>:     Number of users to skip before first returned record.
+  --filters, -f <s>:     Conditions for filtering users.
+    --order, -r <s>:     Order in which to return matching users.
+   --select, -s <s>:     Select which fields to return
+     --distinct, -d:     Return each distinct object
+</pre>
+
+The @--filters@ option takes a string describing a JSON list of filters on which the returned resources should be returned. Each filter is a three-element list of _[field, operator, value]_, where the _operator_ may be one of @=@, @<@, @<=@, @>@, @>=@, @!=@, @like@, or @ilike@.
+
+Example:
+
+@arv collection list --filters '[["name", "=", "PGP VAR inputs"], ["created_at", ">=", "2014-10-01"]]'@
+
+will return a list of all collections visible to the current user which are named "PGP VAR inputs" and were created on or after October 1, 2014.

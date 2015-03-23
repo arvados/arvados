@@ -11,8 +11,8 @@ module ApplicationHelper
     Rails.configuration.arvados_v1_base.gsub /https?:\/\/|\/arvados\/v1/,''
   end
 
-  def render_content_from_database(markup)
-    raw RedCloth.new(markup).to_html
+  def render_markup(markup)
+    raw RedCloth.new(markup.to_s).to_html(:refs_arvados, :textile) if markup
   end
 
   def human_readable_bytes_html(n)
@@ -52,6 +52,35 @@ module ApplicationHelper
     ArvadosBase::resource_class_for_uuid(attrvalue, opts)
   end
 
+  # When using {remote:true}, or using {method:...} to use an HTTP
+  # method other than GET, move the target URI from href to
+  # data-remote-href. Otherwise, browsers offer features like "open in
+  # new window" and "copy link address" which bypass Rails' click
+  # handler and therefore end up at incorrect/nonexistent routes (by
+  # ignoring data-method) and expect to receive pages rather than
+  # javascript responses.
+  #
+  # See assets/javascripts/link_to_remote.js for supporting code.
+  def link_to *args, &block
+    if (args.last and args.last.is_a? Hash and
+        (args.last[:remote] or
+         (args.last[:method] and
+          args.last[:method].to_s.upcase != 'GET')))
+      if Rails.env.test?
+        # Capybara/phantomjs can't click_link without an href, even if
+        # the click handler means it never gets used.
+        raw super.gsub(' href="', ' href="#" data-remote-href="')
+      else
+        # Regular browsers work as desired: users can click A elements
+        # without hrefs, and click handlers fire; but there's no "copy
+        # link address" option in the right-click menu.
+        raw super.gsub(' href="', ' data-remote-href="')
+      end
+    else
+      super
+    end
+  end
+
   ##
   # Returns HTML that links to the Arvados object specified in +attrvalue+
   # Provides various output control and styling options.
@@ -87,12 +116,13 @@ module ApplicationHelper
         link_uuid = attrvalue
       end
       link_name = opts[:link_text]
+      tags = ""
       if !link_name
         link_name = object.andand.default_name || resource_class.default_name
 
         if opts[:friendly_name]
           if attrvalue.respond_to? :friendly_link_name
-            link_name = attrvalue.friendly_link_name
+            link_name = attrvalue.friendly_link_name opts[:lookup]
           else
             begin
               if resource_class.name == 'Collection'
@@ -106,13 +136,18 @@ module ApplicationHelper
             end
           end
         end
+        if link_name.nil? or link_name.empty?
+          link_name = attrvalue
+        end
         if opts[:with_class_name]
           link_name = "#{resource_class.to_s}: #{link_name}"
         end
         if !opts[:no_tags] and resource_class == Collection
           links_for_object(link_uuid).each do |tag|
             if tag.link_class.in? ["tag", "identifier"]
-              link_name += ' <span class="label label-info">' + html_escape(tag.name) + '</span>'
+              tags += ' <span class="label label-info">'
+              tags += link_to tag.name, controller: "links", filters: [["link_class", "=", "tag"], ["name", "=", tag.name]].to_json
+              tags += '</span>'
             end
           end
         end
@@ -127,38 +162,44 @@ module ApplicationHelper
         end
       end
       style_opts[:class] = (style_opts[:class] || '') + ' nowrap'
-      if opts[:no_link]
+      if opts[:no_link] or (resource_class == User && !current_user)
         raw(link_name)
       else
-        link_to raw(link_name), { controller: resource_class.to_s.tableize, action: 'show', id: ((opts[:name_link].andand.uuid) || link_uuid) }, style_opts
+        (link_to raw(link_name), { controller: resource_class.to_s.tableize, action: 'show', id: ((opts[:name_link].andand.uuid) || link_uuid) }, style_opts) + raw(tags)
       end
     else
       # just return attrvalue if it is not recognizable as an Arvados object or uuid.
-      attrvalue
+      if attrvalue.nil? or (attrvalue.is_a? String and attrvalue.empty?)
+        "(none)"
+      else
+        attrvalue
+      end
     end
   end
 
   def render_editable_attribute(object, attr, attrvalue=nil, htmloptions={})
     attrvalue = object.send(attr) if attrvalue.nil?
-    if !object.attribute_editable?(attr, :ever) or
-        (!object.editable? and
-         !object.owner_uuid.in?(my_projects.collect(&:uuid)))
-      return ((attrvalue && attrvalue.length > 0 && attrvalue) ||
-              (attr == 'name' and object.andand.default_name) ||
-              '(none)')
+    if not object.attribute_editable?(attr)
+      if attrvalue && attrvalue.length > 0
+        return render_attribute_as_textile( object, attr, attrvalue, false )
+      else
+        return (attr == 'name' and object.andand.default_name) ||
+                '(none)'
+      end
     end
 
     input_type = 'text'
-    case object.class.attribute_info[attr.to_sym].andand[:type]
-    when 'text'
+    attrtype = object.class.attribute_info[attr.to_sym].andand[:type]
+    if attrtype == 'text' or attr == 'description'
       input_type = 'textarea'
-    when 'datetime'
+    elsif attrtype == 'datetime'
       input_type = 'date'
     else
       input_type = 'text'
     end
 
     attrvalue = attrvalue.to_json if attrvalue.is_a? Hash or attrvalue.is_a? Array
+    rendervalue = render_attribute_as_textile( object, attr, attrvalue, false )
 
     ajax_options = {
       "data-pk" => {
@@ -176,18 +217,21 @@ module ApplicationHelper
     @unique_id ||= (Time.now.to_f*1000000).to_i
     span_id = object.uuid.to_s + '-' + attr.to_s + '-' + (@unique_id += 1).to_s
 
-    span_tag = content_tag 'span', attrvalue.to_s, {
-      "data-emptytext" => (object.andand.default_name || 'none'),
+    span_tag = content_tag 'span', rendervalue, {
+      "data-emptytext" => '(none)',
       "data-placement" => "bottom",
       "data-type" => input_type,
-      "data-title" => "Edit #{attr.gsub '_', ' '}",
+      "data-title" => "Edit #{attr.to_s.gsub '_', ' '}",
       "data-name" => attr,
       "data-object-uuid" => object.uuid,
       "data-toggle" => "manual",
+      "data-value" => attrvalue,
       "id" => span_id,
-      :class => "editable"
+      :class => "editable #{is_textile?( object, attr ) ? 'editable-textile' : ''}"
     }.merge(htmloptions).merge(ajax_options)
-    edit_button = raw('<a href="#" class="btn btn-xs btn-default btn-nodecorate" data-toggle="x-editable tooltip" data-toggle-selector="#' + span_id + '" data-placement="top" title="' + (htmloptions[:tiptitle] || 'edit') + '"><i class="fa fa-fw fa-pencil"></i></a>')
+    edit_tiptitle = 'edit'
+    edit_tiptitle = 'Warning: do not use hyphens in the repository name as they will be stripped' if (object.class.to_s == 'Repository' and attr == 'name')
+    edit_button = raw('<a href="#" class="btn btn-xs btn-default btn-nodecorate" data-toggle="x-editable tooltip" data-toggle-selector="#' + span_id + '" data-placement="top" title="' + (htmloptions[:tiptitle] || edit_tiptitle) + '"><i class="fa fa-fw fa-pencil"></i></a>')
     if htmloptions[:btnplacement] == :left
       edit_button + ' ' + span_tag
     else
@@ -223,12 +267,10 @@ module ApplicationHelper
       else
         attrvalue = ''
       end
+      preconfigured_search_str = value_info[:search_for]
     end
 
-    if !object or
-        !object.attribute_editable?(attr, :ever) or
-        (!object.editable? and
-         !object.owner_uuid.in?(my_projects.collect(&:uuid)))
+    if not object.andand.attribute_editable?(attr)
       return link_to_if_arvados_object attrvalue
     end
 
@@ -250,7 +292,7 @@ module ApplicationHelper
       dn += '[value]'
     end
 
-    if dataclass == Collection
+    if (dataclass == Collection) or (dataclass == File)
       selection_param = object.class.to_s.underscore + dn
       display_value = attrvalue
       if value_info.is_a?(Hash)
@@ -258,16 +300,25 @@ module ApplicationHelper
           display_value = link.name
         elsif value_info[:link_name]
           display_value = value_info[:link_name]
+        elsif value_info[:selection_name]
+          display_value = value_info[:selection_name]
         end
       end
+      if (attr == :components) and (subattr.size > 2)
+        chooser_title = "Choose a #{dataclass == Collection ? 'dataset' : 'file'} for #{object.component_input_title(subattr[0], subattr[2])}:"
+      else
+        chooser_title = "Choose a #{dataclass == Collection ? 'dataset' : 'file'}:"
+      end
       modal_path = choose_collections_path \
-      ({ title: 'Choose a dataset:',
-         filters: [['tail_uuid', '=', object.owner_uuid]].to_json,
+      ({ title: chooser_title,
+         filters: [['owner_uuid', '=', object.owner_uuid]].to_json,
          action_name: 'OK',
          action_href: pipeline_instance_path(id: object.uuid),
          action_method: 'patch',
+         preconfigured_search_str: (preconfigured_search_str || ""),
          action_data: {
            merge: true,
+           use_preview_selection: dataclass == File ? true : nil,
            selection_param: selection_param,
            success: 'page-refresh'
          }.to_json,
@@ -287,64 +338,15 @@ module ApplicationHelper
       end
     end
 
-    if dataclass.andand.is_a?(Class)
-      datatype = 'select'
-    elsif dataclass == 'number'
-      datatype = 'number'
-    elsif attrvalue.is_a? Array
-      # TODO: find a way to edit arrays with x-editable
-      return attrvalue
-    elsif attrvalue.is_a? Fixnum or attrvalue.is_a? Float
-      datatype = 'number'
-    elsif attrvalue.is_a? String
+    if attrvalue.is_a? String
       datatype = 'text'
+    elsif attrvalue.is_a?(Array) or dataclass.andand.is_a?(Class)
+      # TODO: find a way to edit with x-editable
+      return attrvalue
     end
 
-    # preload data
-    preload_uuids = []
-    items = []
-    selectables = []
-
-    attrtext = attrvalue
-    if dataclass.is_a? Class and dataclass < ArvadosBase
-      objects = get_n_objects_of_class dataclass, 10
-      objects.each do |item|
-        items << item
-        preload_uuids << item.uuid
-      end
-      if attrvalue and !attrvalue.empty?
-        preload_uuids << attrvalue
-      end
-      preload_links_for_objects preload_uuids
-
-      if attrvalue and !attrvalue.empty?
-        links_for_object(attrvalue).each do |link|
-          if link.link_class.in? ["tag", "identifier"]
-            attrtext += " [#{link.name}]"
-          end
-        end
-        selectables.append({name: attrtext, uuid: attrvalue, type: dataclass.to_s})
-      end
-      itemuuids = []
-      items.each do |item|
-        itemuuids << item.uuid
-        selectables.append({name: item.uuid, uuid: item.uuid, type: dataclass.to_s})
-      end
-
-      itemuuids.each do |itemuuid|
-        links_for_object(itemuuid).each do |link|
-          if link.link_class.in? ["tag", "identifier"]
-            selectables.each do |selectable|
-              if selectable['uuid'] == link.head_uuid
-                selectable['name'] += ' [' + link.name + ']'
-              end
-            end
-          end
-        end
-      end
-    end
-
-    lt = link_to attrtext, '#', {
+    # When datatype is a String or Fixnum, link_to the attrvalue
+    lt = link_to attrvalue, '#', {
       "data-emptytext" => "none",
       "data-placement" => "bottom",
       "data-type" => datatype,
@@ -358,16 +360,6 @@ module ApplicationHelper
       :class => "editable #{'required' if required} form-control",
       :id => id
     }.merge(htmloptions)
-
-    lt += raw("\n<script>")
-
-    if selectables.any?
-      lt += raw("add_form_selection_sources(#{selectables.to_json});\n")
-    end
-
-    lt += raw("$('[data-name=\"#{dn}\"]').editable({source: function() { return select_form_sources('#{dataclass}'); } });\n")
-
-    lt += raw("</script>")
 
     lt
   end
@@ -393,38 +385,67 @@ module ApplicationHelper
     end
   end
 
-  def fa_icon_class_for_object object
-    case object.class.to_s.to_sym
-    when :User
-      'fa-user'
-    when :Group
+  RESOURCE_CLASS_ICONS = {
+    "Collection" => "fa-archive",
+    "Group" => "fa-users",
+    "Human" => "fa-male",  # FIXME: Use a more inclusive icon.
+    "Job" => "fa-gears",
+    "KeepDisk" => "fa-hdd-o",
+    "KeepService" => "fa-exchange",
+    "Link" => "fa-arrows-h",
+    "Node" => "fa-cloud",
+    "PipelineInstance" => "fa-gears",
+    "PipelineTemplate" => "fa-gears",
+    "Repository" => "fa-code-fork",
+    "Specimen" => "fa-flask",
+    "Trait" => "fa-clipboard",
+    "User" => "fa-user",
+    "VirtualMachine" => "fa-terminal",
+  }
+  DEFAULT_ICON_CLASS = "fa-cube"
+
+  def fa_icon_class_for_class(resource_class, default=DEFAULT_ICON_CLASS)
+    RESOURCE_CLASS_ICONS.fetch(resource_class.to_s, default)
+  end
+
+  def fa_icon_class_for_uuid(uuid, default=DEFAULT_ICON_CLASS)
+    fa_icon_class_for_class(resource_class_for_uuid(uuid), default)
+  end
+
+  def fa_icon_class_for_object(object, default=DEFAULT_ICON_CLASS)
+    case class_name = object.class.to_s
+    when "Group"
       object.group_class ? 'fa-folder' : 'fa-users'
-    when :Job, :PipelineInstance, :PipelineTemplate
-      'fa-gears'
-    when :Collection
-      'fa-archive'
-    when :Specimen
-      'fa-flask'
-    when :Trait
-      'fa-clipboard'
-    when :Human
-      'fa-male'
-    when :VirtualMachine
-      'fa-terminal'
-    when :Repository
-      'fa-code-fork'
-    when :Link
-      'fa-arrows-h'
-    when :User
-      'fa-user'
-    when :Node
-      'fa-cloud'
-    when :KeepService
-      'fa-exchange'
-    when :KeepDisk
-      'fa-hdd-o'
     else
-      'fa-cube'
+      RESOURCE_CLASS_ICONS.fetch(class_name, default)
     end
+  end
+
+  def chooser_preview_url_for object, use_preview_selection=false
+    case object.class.to_s
+    when 'Collection'
+      polymorphic_path(object, tab_pane: 'chooser_preview', use_preview_selection: use_preview_selection)
+    else
+      nil
+    end
+  end
+
+  def render_attribute_as_textile( object, attr, attrvalue, truncate )
+    if attrvalue && (is_textile? object, attr)
+      markup = render_markup attrvalue
+      markup = markup[0,markup.index('</p>')+4] if (truncate && markup.index('</p>'))
+      return markup
+    else
+      return attrvalue
+    end
+  end
+
+  def render_localized_date(date, opts="")
+    raw("<span class='utc-date' data-utc-date='#{date}' data-utc-date-opts='noseconds'>#{date}</span>")
+  end
+
+private
+  def is_textile?( object, attr )
+    is_textile = object.textile_attributes.andand.include?(attr)
   end
 end

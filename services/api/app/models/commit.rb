@@ -12,13 +12,18 @@ class Commit < ActiveRecord::Base
   end
 
   def self.find_commit_range(current_user, repository, minimum, maximum, exclude)
-    if (minimum and !git_check_ref_format(minimum)) or !git_check_ref_format(maximum)
-      logger.warn "find_commit_range called with invalid minimum or maximum: '#{minimum}', '#{maximum}'"
+    if minimum and minimum.empty?
+      minimum = nil
+    end
+
+    if minimum and !git_check_ref_format(minimum)
+      logger.warn "find_commit_range called with invalid minimum revision: '#{minimum}'"
       return nil
     end
 
-    if minimum and minimum.empty?
-        minimum = nil
+    if maximum and !git_check_ref_format(maximum)
+      logger.warn "find_commit_range called with invalid maximum revision: '#{maximum}'"
+      return nil
     end
 
     if !maximum
@@ -46,7 +51,7 @@ class Commit < ActiveRecord::Base
 
         # Get the commit hash for the upper bound
         max_hash = nil
-        IO.foreach("|git rev-list --max-count=1 #{maximum.shellescape}") do |line|
+        IO.foreach("|git rev-list --max-count=1 #{maximum.shellescape} --") do |line|
           max_hash = line.strip
         end
 
@@ -58,7 +63,7 @@ class Commit < ActiveRecord::Base
           resolved_exclude = []
           exclude.each do |e|
             if git_check_ref_format(e)
-              IO.foreach("|git rev-list --max-count=1 #{e.shellescape}") do |line|
+              IO.foreach("|git rev-list --max-count=1 #{e.shellescape} --") do |line|
                 resolved_exclude.push(line.strip)
               end
             else
@@ -71,7 +76,7 @@ class Commit < ActiveRecord::Base
         if minimum
           # Get the commit hash for the lower bound
           min_hash = nil
-          IO.foreach("|git rev-list --max-count=1 #{minimum.shellescape}") do |line|
+          IO.foreach("|git rev-list --max-count=1 #{minimum.shellescape} --") do |line|
             min_hash = line.strip
           end
 
@@ -79,7 +84,7 @@ class Commit < ActiveRecord::Base
           next if !min_hash or !git_check_ref_format(min_hash)
 
           # Now find all commits between them
-          IO.foreach("|git rev-list #{min_hash.shellescape}..#{max_hash.shellescape}") do |line|
+          IO.foreach("|git rev-list #{min_hash.shellescape}..#{max_hash.shellescape} --") do |line|
             hash = line.strip
             commits.push(hash) if !resolved_exclude or !resolved_exclude.include? hash
           end
@@ -88,6 +93,8 @@ class Commit < ActiveRecord::Base
         else
           commits.push(max_hash) if !resolved_exclude or !resolved_exclude.include? max_hash
         end
+      else
+        logger.warn "Repository #{r.name} exists in table but not found on disk"
       end
     end
 

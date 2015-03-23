@@ -6,6 +6,9 @@ gem 'rails', '~> 3.2.0'
 # gem 'rails',     :git => 'git://github.com/rails/rails.git'
 
 group :test, :development do
+  gem 'factory_girl_rails'
+  gem 'database_cleaner'
+  gem 'ruby-prof'
   # Note: "require: false" here tells bunder not to automatically
   # 'require' the packages during application startup. Installation is
   # still mandatory.
@@ -54,7 +57,7 @@ gem 'rvm-capistrano', :group => :test
 
 gem 'acts_as_api'
 
-gem 'passenger', :group => :production
+gem 'passenger'
 
 gem 'omniauth', '1.1.1'
 gem 'omniauth-oauth2', '1.1.1'
@@ -66,13 +69,14 @@ gem 'test_after_commit', :group => :test
 gem 'google-api-client', '~> 0.6.3'
 gem 'trollop'
 gem 'faye-websocket'
-gem 'database_cleaner'
 
 gem 'themes_for_rails'
 
-gem 'arvados-cli', '>= 0.1.20140708213257'
+gem 'arvados', '>= 0.1.20150210011250'
+gem 'arvados-cli', '>= 0.1.20150128223752'
 
 # pg_power lets us use partial indexes in schema.rb in Rails 3
 gem 'pg_power'
 
 gem 'puma'
+gem 'sshkey'

@@ -42,6 +42,39 @@ class Arvados::V1::RepositoriesControllerTest < ActionController::TestCase
     end
   end
 
+  test "get_all_permissions does not give any access to user without permission" do
+    viewer_uuid = users(:project_viewer).uuid
+    assert_equal(authorized_keys(:project_viewer).authorized_user_uuid,
+                 viewer_uuid,
+                 "project_viewer must have an authorized_key for this test to work")
+    authorize_with :admin
+    get :get_all_permissions
+    assert_response :success
+    readable_repos = json_response["repositories"].select do |repo|
+      repo["user_permissions"].has_key?(viewer_uuid)
+    end
+    assert_equal(["arvados"], readable_repos.map { |r| r["name"] },
+                 "project_viewer should only have permissions on public repos")
+  end
+
+  test "get_all_permissions gives gitolite R to user with read-only access" do
+    authorize_with :admin
+    get :get_all_permissions
+    assert_response :success
+    found_it = false
+    assert_equal(authorized_keys(:spectator).authorized_user_uuid,
+                 users(:spectator).uuid,
+                 "spectator must have an authorized_key for this test to work")
+    json_response['repositories'].each do |repo|
+      next unless repo['uuid'] == repositories(:foo).uuid
+      assert_equal('R',
+                   repo['user_permissions'][users(:spectator).uuid]['gitolite_permissions'],
+                   "spectator user should have just R access to #{repo['uuid']}")
+      found_it = true
+    end
+    assert_equal true, found_it, "spectator user does not have R on foo repo"
+  end
+
   test "get_all_permissions provides admin and active user keys" do
     authorize_with :admin
     get :get_all_permissions

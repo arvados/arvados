@@ -19,7 +19,7 @@ EOF
   <div class="panel-heading"><b>arv</b> command line tool</div>
   <div class="panel-body">
   <pre>
-arv --pretty <%= @object.class.to_s.underscore %> get \
+arv <%= @object.class.to_s.underscore %> get \
  --uuid <%= @object.uuid %>
 
 arv <%= @object.class.to_s.underscore %> update \

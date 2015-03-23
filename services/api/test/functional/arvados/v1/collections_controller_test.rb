@@ -2,26 +2,48 @@ require 'test_helper'
 
 class Arvados::V1::CollectionsControllerTest < ActionController::TestCase
 
-  setup do
-    # Unless otherwise specified in the test, we want normal/secure behavior.
-    permit_unsigned_manifests false
-  end
-
-  teardown do
-    # Reset to secure behavior after each test.
-    permit_unsigned_manifests false
-  end
-
   def permit_unsigned_manifests isok=true
     # Set security model for the life of a test.
     Rails.configuration.permit_create_collection_with_unsigned_manifest = isok
+  end
+
+  def assert_signed_manifest manifest_text, label=''
+    assert_not_nil manifest_text, "#{label} manifest_text was nil"
+    manifest_text.scan(/ [[:xdigit:]]{32}\S*/) do |tok|
+      assert_match(/\+A[[:xdigit:]]+@[[:xdigit:]]{8}\b/, tok,
+                   "Locator in #{label} manifest_text was not signed")
+    end
   end
 
   test "should get index" do
     authorize_with :active
     get :index
     assert_response :success
-    assert_not_nil assigns(:objects)
+    assert(assigns(:objects).andand.any?, "no Collections returned in index")
+    refute(json_response["items"].any? { |c| c.has_key?("manifest_text") },
+           "basic Collections index included manifest_text")
+  end
+
+  test "collections.get returns signed locators" do
+    permit_unsigned_manifests
+    authorize_with :active
+    get :show, {id: collections(:foo_file).uuid}
+    assert_response :success
+    assert_signed_manifest json_response['manifest_text'], 'foo_file'
+  end
+
+  test "index with manifest_text selected returns signed locators" do
+    columns = %w(uuid owner_uuid manifest_text)
+    authorize_with :active
+    get :index, select: columns
+    assert_response :success
+    assert(assigns(:objects).andand.any?,
+           "no Collections returned for index with columns selected")
+    json_response["items"].each do |coll|
+      assert_equal(columns, columns & coll.keys,
+                   "Collections index did not respect selected columns")
+      assert_signed_manifest coll['manifest_text'], coll['uuid']
+    end
   end
 
   [0,1,2].each do |limit|
@@ -46,6 +68,18 @@ class Arvados::V1::CollectionsControllerTest < ActionController::TestCase
     assert_equal unique_uuids.count, resp['items'].count
   end
 
+  test "items.count == items_available with filters" do
+    authorize_with :active
+    get :index, {
+      limit: 100,
+      filters: [['uuid','=',collections(:foo_file).uuid]]
+    }
+    assert_response :success
+    assert_equal 1, assigns(:objects).length
+    assert_equal 1, json_response['items_available']
+    assert_equal 1, json_response['items'].count
+  end
+
   test "get index with limit=2 offset=99999" do
     # Assume there are not that many test fixtures.
     authorize_with :active
@@ -57,9 +91,8 @@ class Arvados::V1::CollectionsControllerTest < ActionController::TestCase
     assert_equal 99999, resp['offset']
   end
 
-  test "create with unsigned manifest" do
-    permit_unsigned_manifests
-    authorize_with :active
+  test "admin can create collection with unsigned manifest" do
+    authorize_with :admin
     test_collection = {
       manifest_text: <<-EOS
 . d41d8cd98f00b204e9800998ecf8427e+0 0:0:foo.txt
@@ -68,7 +101,7 @@ class Arvados::V1::CollectionsControllerTest < ActionController::TestCase
 ./baz acbd18db4cc2f85cedef654fccc4a4d8+3 0:3:bar.txt
 EOS
     }
-    test_collection[:uuid] =
+    test_collection[:portable_data_hash] =
       Digest::MD5.hexdigest(test_collection[:manifest_text]) +
       '+' +
       test_collection[:manifest_text].length.to_s
@@ -83,41 +116,43 @@ EOS
     assert_response :success
     assert_nil assigns(:objects)
 
-    get :show, {
-      id: test_collection[:uuid]
-    }
-    assert_response :success
-    assert_not_nil assigns(:object)
-    resp = JSON.parse(@response.body)
-    assert_equal test_collection[:uuid], resp['uuid']
+    response_collection = assigns(:object)
+
+    stored_collection = Collection.select([:uuid, :portable_data_hash, :manifest_text]).
+      where(portable_data_hash: response_collection['portable_data_hash']).first
+
+    assert_equal test_collection[:portable_data_hash], stored_collection['portable_data_hash']
 
     # The manifest in the response will have had permission hints added.
     # Remove any permission hints in the response before comparing it to the source.
-    stripped_manifest = resp['manifest_text'].gsub(/\+A[A-Za-z0-9@_-]+/, '')
+    stripped_manifest = stored_collection['manifest_text'].gsub(/\+A[A-Za-z0-9@_-]+/, '')
     assert_equal test_collection[:manifest_text], stripped_manifest
-    assert_equal 9, resp['data_size']
-    assert_equal [['.', 'foo.txt', 0],
-                  ['.', 'bar.txt', 6],
-                  ['./baz', 'bar.txt', 3]], resp['files']
+
+    # TBD: create action should add permission signatures to manifest_text in the response,
+    # and we need to check those permission signatures here.
   end
 
-  test "list of files is correct for empty manifest" do
-    authorize_with :active
-    test_collection = {
-      manifest_text: "",
-      uuid: "d41d8cd98f00b204e9800998ecf8427e+0"
-    }
-    post :create, {
-      collection: test_collection
-    }
-    assert_response :success
+  [:admin, :active].each do |user|
+    test "#{user} can get collection using portable data hash" do
+      authorize_with user
 
-    get :show, {
-      id: "d41d8cd98f00b204e9800998ecf8427e+0"
-    }
-    assert_response :success
-    resp = JSON.parse(@response.body)
-    assert_equal [], resp['files']
+      foo_collection = collections(:foo_file)
+
+      # Get foo_file using its portable data hash
+      get :show, {
+        id: foo_collection[:portable_data_hash]
+      }
+      assert_response :success
+      assert_not_nil assigns(:object)
+      resp = assigns(:object)
+      assert_equal foo_collection[:portable_data_hash], resp['portable_data_hash']
+      assert_signed_manifest resp['manifest_text']
+
+      # The manifest in the response will have had permission hints added.
+      # Remove any permission hints in the response before comparing it to the source.
+      stripped_manifest = resp['manifest_text'].gsub(/\+A[A-Za-z0-9@_-]+/, '')
+      assert_equal foo_collection[:manifest_text], stripped_manifest
+    end
   end
 
   test "create with owner_uuid set to owned group" do
@@ -128,12 +163,52 @@ EOS
       collection: {
         owner_uuid: 'zzzzz-j7d0g-rew6elm53kancon',
         manifest_text: manifest_text,
-        uuid: "d30fe8ae534397864cb96c544f4cf102"
+        portable_data_hash: "d30fe8ae534397864cb96c544f4cf102+47"
       }
     }
     assert_response :success
     resp = JSON.parse(@response.body)
-    assert_equal 'zzzzz-tpzed-000000000000000', resp['owner_uuid']
+    assert_equal 'zzzzz-j7d0g-rew6elm53kancon', resp['owner_uuid']
+  end
+
+  test "create fails with duplicate name" do
+    permit_unsigned_manifests
+    authorize_with :admin
+    manifest_text = ". d41d8cd98f00b204e9800998ecf8427e 0:0:foo.txt\n"
+    post :create, {
+      collection: {
+        owner_uuid: 'zzzzz-tpzed-000000000000000',
+        manifest_text: manifest_text,
+        portable_data_hash: "d30fe8ae534397864cb96c544f4cf102+47",
+        name: "foo_file"
+      }
+    }
+    assert_response 422
+    response_errors = json_response['errors']
+    assert_not_nil response_errors, 'Expected error in response'
+    assert(response_errors.first.include?('duplicate key'),
+           "Expected 'duplicate key' error in #{response_errors.first}")
+  end
+
+  [false, true].each do |unsigned|
+    test "create with duplicate name, ensure_unique_name, unsigned=#{unsigned}" do
+      permit_unsigned_manifests unsigned
+      authorize_with :active
+      manifest_text = ". acbd18db4cc2f85cedef654fccc4a4d8+3 0:0:foo.txt\n"
+      if !unsigned
+        manifest_text = Collection.sign_manifest manifest_text, api_token(:active)
+      end
+      post :create, {
+        collection: {
+          owner_uuid: users(:active).uuid,
+          manifest_text: manifest_text,
+          name: "owned_by_active"
+        },
+        ensure_unique_name: true
+      }
+      assert_response :success
+      assert_equal 'owned_by_active (2)', json_response['name']
+    end
   end
 
   test "create with owner_uuid set to group i can_manage" do
@@ -142,28 +217,42 @@ EOS
     manifest_text = ". d41d8cd98f00b204e9800998ecf8427e 0:0:foo.txt\n"
     post :create, {
       collection: {
-        owner_uuid: 'zzzzz-j7d0g-8ulrifv67tve5sx',
+        owner_uuid: groups(:active_user_has_can_manage).uuid,
         manifest_text: manifest_text,
-        uuid: "d30fe8ae534397864cb96c544f4cf102"
+        portable_data_hash: "d30fe8ae534397864cb96c544f4cf102+47"
       }
     }
     assert_response :success
     resp = JSON.parse(@response.body)
-    assert_equal 'zzzzz-tpzed-000000000000000', resp['owner_uuid']
+    assert_equal groups(:active_user_has_can_manage).uuid, resp['owner_uuid']
   end
 
-  test "create with owner_uuid set to group with no can_manage permission" do
+  test "create with owner_uuid fails on group with only can_read permission" do
     permit_unsigned_manifests
     authorize_with :active
     manifest_text = ". d41d8cd98f00b204e9800998ecf8427e 0:0:foo.txt\n"
     post :create, {
       collection: {
-        owner_uuid: 'zzzzz-j7d0g-it30l961gq3t0oi',
+        owner_uuid: groups(:all_users).uuid,
         manifest_text: manifest_text,
-        uuid: "d30fe8ae534397864cb96c544f4cf102"
+        portable_data_hash: "d30fe8ae534397864cb96c544f4cf102+47"
       }
     }
     assert_response 403
+  end
+
+  test "create with owner_uuid fails on group with no permission" do
+    permit_unsigned_manifests
+    authorize_with :active
+    manifest_text = ". d41d8cd98f00b204e9800998ecf8427e 0:0:foo.txt\n"
+    post :create, {
+      collection: {
+        owner_uuid: groups(:public).uuid,
+        manifest_text: manifest_text,
+        portable_data_hash: "d30fe8ae534397864cb96c544f4cf102+47"
+      }
+    }
+    assert_response 422
   end
 
   test "admin create with owner_uuid set to group with no permission" do
@@ -174,7 +263,7 @@ EOS
       collection: {
         owner_uuid: 'zzzzz-j7d0g-it30l961gq3t0oi',
         manifest_text: manifest_text,
-        uuid: "d30fe8ae534397864cb96c544f4cf102"
+        portable_data_hash: "d30fe8ae534397864cb96c544f4cf102+47"
       }
     }
     assert_response :success
@@ -187,7 +276,7 @@ EOS
       collection: <<-EOS
       {
         "manifest_text":". d41d8cd98f00b204e9800998ecf8427e 0:0:foo.txt\n",\
-        "uuid":"d30fe8ae534397864cb96c544f4cf102"\
+        "portable_data_hash":"d30fe8ae534397864cb96c544f4cf102+47"\
       }
       EOS
     }
@@ -201,7 +290,7 @@ EOS
       collection: <<-EOS
       {
         "manifest_text":". d41d8cd98f00b204e9800998ecf8427e 0:0:bar.txt\n",\
-        "uuid":"d30fe8ae534397864cb96c544f4cf102"\
+        "portable_data_hash":"d30fe8ae534397864cb96c544f4cf102+47"\
       }
       EOS
     }
@@ -214,13 +303,13 @@ EOS
     post :create, {
       collection: {
         manifest_text: ". d41d8cd98f00b204e9800998ecf8427e 0:0:foo.txt\n",
-        uuid: "d30fe8ae534397864cb96c544f4cf102+47+Khint+Xhint+Zhint"
+        portable_data_hash: "d30fe8ae534397864cb96c544f4cf102+47+Khint+Xhint+Zhint"
       }
     }
     assert_response :success
     assert_not_nil assigns(:object)
     resp = JSON.parse(@response.body)
-    assert_equal "d30fe8ae534397864cb96c544f4cf102+47", resp['uuid']
+    assert_equal "d30fe8ae534397864cb96c544f4cf102+47", resp['portable_data_hash']
   end
 
   test "get full provenance for baz file" do
@@ -256,14 +345,15 @@ EOS
   end
 
   test "search collections with 'any' operator" do
+    expect_pdh = collections(:docker_image).portable_data_hash
     authorize_with :active
     get :index, {
-      where: { any: ['contains', '7f9102c395f4ffc5e3'] }
+      where: { any: ['contains', expect_pdh[5..25]] }
     }
     assert_response :success
-    found = assigns(:objects).collect(&:uuid)
+    found = assigns(:objects)
     assert_equal 1, found.count
-    assert_equal true, !!found.index('1f4b0bc7583c2a7f9102c395f4ffc5e3+45')
+    assert_equal expect_pdh, found.first.portable_data_hash
   end
 
   [false, true].each do |permit_unsigned|
@@ -305,14 +395,13 @@ EOS
       post :create, {
         collection: {
           manifest_text: signed_manifest,
-          uuid: manifest_uuid,
+          portable_data_hash: manifest_uuid,
         }
       }
       assert_response :success
       assert_not_nil assigns(:object)
       resp = JSON.parse(@response.body)
-      assert_equal manifest_uuid, resp['uuid']
-      assert_equal 48, resp['data_size']
+      assert_equal manifest_uuid, resp['portable_data_hash']
       # All of the locators in the output must be signed.
       resp['manifest_text'].lines.each do |entry|
         m = /([[:xdigit:]]{32}\+\S+)/.match(entry)
@@ -353,14 +442,13 @@ EOS
     post :create, {
       collection: {
         manifest_text: signed_manifest,
-        uuid: manifest_uuid,
+        portable_data_hash: manifest_uuid,
       }
     }
     assert_response :success
     assert_not_nil assigns(:object)
     resp = JSON.parse(@response.body)
-    assert_equal manifest_uuid, resp['uuid']
-    assert_equal 48, resp['data_size']
+    assert_equal manifest_uuid, resp['portable_data_hash']
     # All of the locators in the output must be signed.
     resp['manifest_text'].lines.each do |entry|
       m = /([[:xdigit:]]{32}\+\S+)/.match(entry)
@@ -393,7 +481,7 @@ EOS
     post :create, {
       collection: {
         manifest_text: bad_manifest,
-        uuid: manifest_uuid
+        portable_data_hash: manifest_uuid
       }
     }
 
@@ -417,7 +505,7 @@ EOS
     post :create, {
       collection: {
         manifest_text: signed_manifest,
-        uuid: manifest_uuid
+        portable_data_hash: manifest_uuid
       }
     }
 
@@ -439,7 +527,7 @@ EOS
 
     test_collection = {
       manifest_text: manifest_text,
-      uuid: manifest_uuid,
+      portable_data_hash: manifest_uuid,
     }
     post_collection = Marshal.load(Marshal.dump(test_collection))
     post :create, {
@@ -448,8 +536,7 @@ EOS
     assert_response :success
     assert_not_nil assigns(:object)
     resp = JSON.parse(@response.body)
-    assert_equal manifest_uuid, resp['uuid']
-    assert_equal 48, resp['data_size']
+    assert_equal manifest_uuid, resp['portable_data_hash']
 
     # The manifest in the response will have had permission hints added.
     # Remove any permission hints in the response before comparing it to the source.
@@ -481,14 +568,13 @@ EOS
     post :create, {
       collection: {
         manifest_text: signed_manifest,
-        uuid: manifest_uuid,
+        portable_data_hash: manifest_uuid,
       }
     }
     assert_response :success
     assert_not_nil assigns(:object)
     resp = JSON.parse(@response.body)
-    assert_equal manifest_uuid, resp['uuid']
-    assert_equal 48, resp['data_size']
+    assert_equal manifest_uuid, resp['portable_data_hash']
     # All of the locators in the output must be signed.
     # Each line is of the form "path locator locator ... 0:0:file.txt"
     # entry.split[1..-2] will yield just the tokens in the middle of the line
@@ -503,18 +589,149 @@ EOS
   end
 
   test 'Reject manifest with unsigned blob' do
+    permit_unsigned_manifests false
     authorize_with :active
     unsigned_manifest = ". 0cc175b9c0f1b6a831c399e269772661+1 0:1:a.txt\n"
     manifest_uuid = Digest::MD5.hexdigest(unsigned_manifest)
     post :create, {
       collection: {
         manifest_text: unsigned_manifest,
-        uuid: manifest_uuid,
+        portable_data_hash: manifest_uuid,
       }
     }
     assert_response 403,
     "Creating a collection with unsigned blobs should respond 403"
     assert_empty Collection.where('uuid like ?', manifest_uuid+'%'),
     "Collection should not exist in database after failed create"
+  end
+
+  test 'List expired collection returns empty list' do
+    authorize_with :active
+    get :index, {
+      where: {name: 'expired_collection'},
+    }
+    assert_response :success
+    found = assigns(:objects)
+    assert_equal 0, found.count
+  end
+
+  test 'Show expired collection returns 404' do
+    authorize_with :active
+    get :show, {
+      id: 'zzzzz-4zz18-mto52zx1s7sn3ih',
+    }
+    assert_response 404
+  end
+
+  test 'Update expired collection returns 404' do
+    authorize_with :active
+    post :update, {
+      id: 'zzzzz-4zz18-mto52zx1s7sn3ih',
+      collection: {
+        name: "still expired"
+      }
+    }
+    assert_response 404
+  end
+
+  test 'List collection with future expiration time succeeds' do
+    authorize_with :active
+    get :index, {
+      where: {name: 'collection_expires_in_future'},
+    }
+    found = assigns(:objects)
+    assert_equal 1, found.count
+  end
+
+
+  test 'Show collection with future expiration time succeeds' do
+    authorize_with :active
+    get :show, {
+      id: 'zzzzz-4zz18-padkqo7yb8d9i3j',
+    }
+    assert_response :success
+  end
+
+  test 'Update collection with future expiration time succeeds' do
+    authorize_with :active
+    post :update, {
+      id: 'zzzzz-4zz18-padkqo7yb8d9i3j',
+      collection: {
+        name: "still not expired"
+      }
+    }
+    assert_response :success
+  end
+
+  test "get collection and verify that file_names is not included" do
+    authorize_with :active
+    get :show, {id: collections(:foo_file).uuid}
+    assert_response :success
+    assert_equal collections(:foo_file).uuid, json_response['uuid']
+    assert_nil json_response['file_names']
+    assert json_response['manifest_text']
+  end
+
+  [
+    [2**8, :success],
+    [2**18, 422],
+  ].each do |description_size, expected_response|
+    test "create collection with description size #{description_size}
+          and expect response #{expected_response}" do
+      skip "(Descriptions are not part of search indexes. Skip until full-text search
+            is implemented, at which point replace with a search in description.)"
+
+      authorize_with :active
+
+      description = 'here is a collection with a very large description'
+      while description.length < description_size
+        description = description + description
+      end
+
+      post :create, collection: {
+        manifest_text: ". d41d8cd98f00b204e9800998ecf8427e+0 0:0:foo.txt\n",
+        description: description,
+      }
+
+      assert_response expected_response
+    end
+  end
+
+  [1, 5, nil].each do |ask|
+    test "Set replication_desired=#{ask.inspect}" do
+      Rails.configuration.default_collection_replication = 2
+      authorize_with :active
+      put :update, {
+        id: collections(:replication_undesired_unconfirmed).uuid,
+        collection: {
+          replication_desired: ask,
+        },
+      }
+      assert_response :success
+      assert_equal ask, json_response['replication_desired']
+    end
+  end
+
+  test "get collection with properties" do
+    authorize_with :active
+    get :show, {id: collections(:collection_with_one_property).uuid}
+    assert_response :success
+    assert_not_nil json_response['uuid']
+    assert_equal 'value1', json_response['properties']['property1']
+  end
+
+  test "create collection with properties" do
+    authorize_with :active
+    manifest_text = ". d41d8cd98f00b204e9800998ecf8427e 0:0:foo.txt\n"
+    post :create, {
+      collection: {
+        manifest_text: manifest_text,
+        portable_data_hash: "d30fe8ae534397864cb96c544f4cf102+47",
+        properties: {'property_1' => 'value_1'}
+      }
+    }
+    assert_response :success
+    assert_not_nil json_response['uuid']
+    assert_equal 'value_1', json_response['properties']['property_1']
   end
 end

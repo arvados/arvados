@@ -1,15 +1,16 @@
 ---
 layout: default
 navsection: installguide
-title: Installing with Docker
+title: Build and install docker images
 ...
 
-{% include 'alert_docker' %}
+This installation method is appropriate for local testing, evaluation, and development. For production use, this method is not recommended.
 
-h2. Prerequisites:
+h2. Prerequisites
 
 # A GNU/Linux (virtual) machine
-# A working Docker installation
+# A working Docker installation (see "Installing Docker":https://docs.docker.com/installation/)
+# A working Go installation (see "Install the Go tools":https://golang.org/doc/install)
 
 h2. Download the source tree
 
@@ -22,72 +23,92 @@ See also: "Downloading the source code":https://arvados.org/projects/arvados/wik
 
 h2. Building the Arvados Docker containers
 
-First of all, a suitable @config.yml@ file is needed.
+First of all, a suitable @config.yml@ file is needed. The easiest way to generate one based on the provided @config.yml.example@ file is to run the @build.sh@ script. If no @config.yml@ file exists, it will will prompt for a few inputs, write the @config.yml@ file, and then proceed to build all the Docker containers. If @config.yml@ exists, invoking @build.sh@ will simply build all Docker containers or update those that need to be updated.
 
-<notextile>
-<pre><code>~$ <span class="userinput">cd arvados/docker</span>
-~$ <span class="userinput">cp config.yml.example config.yml</span>
-</code></pre></notextile>
-
-Edit the @config.yml@ file and fill in values for at a minimum these
-parameters:
-
-<pre>
-PUBLIC_KEY_PATH
-API_HOSTNAME
-API_AUTO_ADMIN_USER
-</pre>
-
-Then build the docker containers (this will take a while):
+Run @build.sh@ without arguments to generate @config.yml@ and build all Docker containers (this will take a while!):
 
 <notextile>
 <pre><code>
 ~$ <span class="userinput">./build.sh</span>
+Generating config.yml.
+Arvados needs to know the email address of the administrative user,
+so that when that user logs in they are automatically made an admin.
+This should be an email address associated with a Google account.
+
+Enter your Google ID email address here:
+
 ...
- ---> 05f0ae429530
-Step 9 : ADD apache2_foreground.sh /etc/apache2/foreground.sh
- ---> 7292b241305a
-Step 10 : CMD ["/etc/apache2/foreground.sh"]
- ---> Running in 82d59061ead8
- ---> 72cee36a9281
-Successfully built 72cee36a9281
-Removing intermediate container 2bc8c98c83c7
-Removing intermediate container 9457483a59cf
-Removing intermediate container 7cc5723df67c
-Removing intermediate container 5cb2cede73de
-Removing intermediate container 0acc147a7f6d
-Removing intermediate container 82d59061ead8
-Removing intermediate container 9c022a467396
-Removing intermediate container 16044441463f
-Removing intermediate container cffbbddd82d1
-date >sso-image
+
+Step 7 : ADD generated/setup.sh /usr/local/bin/setup.sh
+ ---> d7c0e7fdf7ab
+Removing intermediate container f3d81180795d
+Step 8 : CMD ["/usr/bin/supervisord", "-n"]
+ ---> Running in 84c64cb9f0d5
+ ---> d6cbb5002604
+Removing intermediate container 84c64cb9f0d5
+Successfully built d6cbb5002604
+date >shell-image
 </code></pre></notextile>
 
 If all goes well, you should now have a number of docker images built:
 
 <notextile>
 <pre><code>~$ <span class="userinput">docker.io images</span>
-REPOSITORY          TAG                 IMAGE ID            CREATED              VIRTUAL SIZE
-arvados/sso         latest              72cee36a9281        11 seconds ago       1.727 GB
-arvados/keep        latest              c3842f856bcb        56 seconds ago       210.6 MB
-arvados/workbench   latest              b91aa980597c        About a minute ago   2.07 GB
-arvados/doc         latest              050e9e6b8213        About a minute ago   1.442 GB
-arvados/api         latest              79843d0a8997        About a minute ago   2.112 GB
-arvados/passenger   latest              2342a550da7f        2 minutes ago        1.658 GB
-arvados/base        latest              68caefd8ea5b        5 minutes ago        1.383 GB
-arvados/debian      7.5                 6e32119ffcd0        8 minutes ago        116.8 MB
-arvados/debian      latest              6e32119ffcd0        8 minutes ago        116.8 MB
-arvados/debian      wheezy              6e32119ffcd0        8 minutes ago        116.8 MB
+REPOSITORY              TAG                 IMAGE ID            CREATED             VIRTUAL SIZE
+arvados/shell           latest              d6cbb5002604        10 minutes ago      1.613 GB
+arvados/sso             latest              377f1fa0108e        11 minutes ago      1.807 GB
+arvados/keep            latest              ade0e0d2dd00        12 minutes ago      210.8 MB
+arvados/workbench       latest              b0e4fb6da385        12 minutes ago      2.218 GB
+arvados/doc             latest              4b64daec9454        12 minutes ago      1.524 GB
+arvados/compute         latest              7f1f5f7faf54        13 minutes ago      1.862 GB
+arvados/slurm           latest              f5bfd1008e6b        17 minutes ago      1.573 GB
+arvados/api             latest              6b93c5f5fc42        17 minutes ago      2.274 GB
+arvados/passenger       latest              add2d11fdf24        18 minutes ago      1.738 GB
+arvados/base            latest              81eaadd0c6f5        22 minutes ago      1.463 GB
+arvados/debian          7.6                 f339ce275c01        6 days ago          116.8 MB
+arvados/debian          latest              f339ce275c01        6 days ago          116.8 MB
+arvados/debian          wheezy              f339ce275c01        6 days ago          116.8 MB
+crosbymichael/skydock   latest              e985023521f6        3 months ago        510.7 MB
+crosbymichael/skydns    next                79c99a4608ed        3 months ago        525 MB
+crosbymichael/skydns    latest              1923ce648d4c        5 months ago        137.5 MB
 </code></pre></notextile>
 
 h2. Updating the Arvados Docker containers
 
-If there has been an update to the Arvados Docker building code, it is safest to rebuild the Arvados Docker images from scratch. All build information can be cleared with the '--realclean' option to build.sh.
-
-WARNING: this will remove *all* docker containers and images on your system!
+@build.sh@ takes a few optional arguments:
 
 <notextile>
-<pre><code>~$ <span class="userinput">./build.sh --realclean</span></code></pre>
+<pre><code>
+~$ <span class="userinput"> ./build.sh --help</span>
+
+usage: ./build.sh [options]
+
+Calling ./build.sh without arguments will build all Arvados docker images
+
+./build.sh options:
+  -h, --help   Print this help text
+  clean        Clear all build information
+  realclean    clean and remove all Arvados Docker images except arvados/debian
+  deepclean    realclean and remove arvados/debian, crosbymichael/skydns and
+               crosbymichael/skydns Docker images
+</code></pre></notextile>
+
+If there has been an update to the Arvados Docker building code, it is safest to rebuild the Arvados Docker images from scratch. All build information can be cleared with the 'clean' option to build.sh:
+
+<notextile>
+<pre><code>~$ <span class="userinput">./build.sh clean</span></code></pre>
+</notextile>
+
+You can also use 'realclean', which does what 'clean' does and in addition removes all Arvados Docker containers and images from your system, with the exception of the arvados/debian image.
+
+<notextile>
+<pre><code>~$ <span class="userinput">./build.sh realclean</span></code></pre>
+</notextile>
+
+Finally, the 'deepclean' option does what 'realclean' does, and also removes the arvados/debian, crosbymichael/skydns and crosbymichael/skydock images.
+
+<notextile>
+<pre><code>~$ <span class="userinput">./build.sh deepclean</span></code></pre>
 </notextile>
 
 h2. Running the Arvados Docker containers
@@ -101,13 +122,16 @@ The @arvdock@ command can be used to start and stop the docker containers. It ha
 usage: ./arvdock (start|stop|restart|test) [options]
 
 ./arvdock start/stop/restart options:
-  -d [port], --doc[=port]        Documentation server (default port 9898)
-  -w [port], --workbench[=port]  Workbench server (default port 9899)
-  -s [port], --sso[=port]        SSO server (default port 9901)
-  -a [port], --api[=port]        API server (default port 9900)
-  -k, --keep                     Keep servers
-  --ssh                          Enable SSH access to server containers
-  -h, --help                     Display this help and exit
+  -d[port], --doc[=port]        Documentation server (default port 9898)
+  -w[port], --workbench[=port]  Workbench server (default port 9899)
+  -s[port], --sso[=port]        SSO server (default port 9901)
+  -a[port], --api[=port]        API server (default port 9900)
+  -c, --compute                 Compute nodes (starts 2)
+  -v, --vm                      Shell server
+  -n, --nameserver              Nameserver
+  -k, --keep                    Keep servers
+  --ssh                         Enable SSH access to server containers
+  -h, --help                    Display this help and exit
 
   If no options are given, the action is applied to all servers.
 
@@ -162,6 +186,8 @@ Point your browser to the Dockerized workbench:
 </code></pre>
 </notextile>
 
-Now use the google account you specified as @API_AUTO_ADMIN_USER@ in @config.yml@ to log in. You will be prompted *twice* by your browser that you are accessing a site with an untrusted SSL certificate. This is normal; by default the Arvados Docker installation uses self-signed SSL certificates for the SSO and API servers, respectively.
+Now use the google account you specified as @API_AUTO_ADMIN_USER@ in @config.yml@ to log in.
+
+You will be prompted by your browser that you are accessing a site with an untrusted SSL certificate. This is normal; by default the Arvados Docker installation uses self-signed SSL certificates for the SSO and API servers, respectively. If you use a local SSO server in a Docker container, you will be prompted *twice*. The default is to use the Curoverse SSO server.
 
 

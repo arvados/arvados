@@ -42,6 +42,8 @@
 # [--status-json path] Print JSON status report to a file or
 #                      fifo. Default: /dev/null
 #
+# [--description] Description for the pipeline instance.
+#
 # == Parameters
 #
 # [param_name=param_value]
@@ -59,19 +61,11 @@
 class WhRunPipelineInstance
 end
 
-$application_version = 1.0
-
 if RUBY_VERSION < '1.9.3' then
   abort <<-EOS
 #{$0.gsub(/^\.\//,'')} requires Ruby version 1.9.3 or higher.
   EOS
 end
-
-$arvados_api_version = ENV['ARVADOS_API_VERSION'] || 'v1'
-$arvados_api_host = ENV['ARVADOS_API_HOST'] or
-  abort "#{$0}: fatal: ARVADOS_API_HOST environment variable not set."
-$arvados_api_token = ENV['ARVADOS_API_TOKEN'] or
-  abort "#{$0}: fatal: ARVADOS_API_TOKEN environment variable not set."
 
 begin
   require 'arvados'
@@ -92,38 +86,6 @@ end
 def debuglog(message, verbosity=1)
   $stderr.puts "#{File.split($0).last} #{$$}: #{message}" if $debuglevel >= verbosity
 end
-
-module Kernel
-  def suppress_warnings
-    original_verbosity = $VERBOSE
-    $VERBOSE = nil
-    result = yield
-    $VERBOSE = original_verbosity
-    return result
-  end
-end
-
-if $arvados_api_host.match /local/
-  # You probably don't care about SSL certificate checks if you're
-  # testing with a dev server.
-  suppress_warnings { OpenSSL::SSL::VERIFY_PEER = OpenSSL::SSL::VERIFY_NONE }
-end
-
-class Google::APIClient
-  def discovery_document(api, version)
-    api = api.to_s
-    return @discovery_documents["#{api}:#{version}"] ||=
-      begin
-        response = self.execute!(
-                                 :http_method => :get,
-                                 :uri => self.discovery_uri(api, version),
-                                 :authenticated => false
-                                 )
-        response.body.class == String ? JSON.parse(response.body) : response.body
-      end
-  end
-end
-
 
 # Parse command line options (the kind that control the behavior of
 # this program, that is, not the pipeline component parameters).
@@ -168,19 +130,34 @@ p = Trollop::Parser.new do
       :short => :none,
       :type => :string)
   opt(:submit,
-      "Do not try to satisfy any components. Just create a pipeline instance and output its UUID.",
+      "Submit the pipeline instance to the server, and exit. Let the Crunch dispatch service satisfy the components by finding/running jobs.",
+      :short => :none,
+      :type => :boolean)
+  opt(:run_pipeline_here,
+      "Manage the pipeline instance in-process. Submit jobs to Crunch as needed. Do not exit until the pipeline finishes (or fails).",
+      :short => :none,
+      :type => :boolean)
+  opt(:run_jobs_here,
+      "Run jobs in the local terminal session instead of submitting them to Crunch. Implies --run-pipeline-here. Note: this results in a significantly different job execution environment, and some Crunch features are not supported. It can be necessary to modify a pipeline in order to make it run this way.",
       :short => :none,
       :type => :boolean)
   opt(:run_here,
-      "Manage the pipeline in process.",
+      "Synonym for --run-jobs-here.",
       :short => :none,
       :type => :boolean)
+  opt(:description,
+      "Description for the pipeline instance.",
+      :short => :none,
+      :type => :string)
   stop_on [:'--']
 end
 $options = Trollop::with_standard_exception_handling p do
   p.parse ARGV
 end
 $debuglevel = $options[:debug_level] || ($options[:debug] && 1) || 0
+
+$options[:run_jobs_here] ||= $options[:run_here] # old flag name
+$options[:run_pipeline_here] ||= $options[:run_jobs_here] # B requires A
 
 if $options[:instance]
   if $options[:template] or $options[:submit]
@@ -192,35 +169,15 @@ elsif not $options[:template]
   abort
 end
 
-if $options[:run_here] == $options[:submit]
-  abort "#{$0}: syntax error: you must supply either --run-here or --submit."
-end
-
-# Suppress SSL certificate checks if ARVADOS_API_HOST_INSECURE
-
-module Kernel
-  def suppress_warnings
-    original_verbosity = $VERBOSE
-    $VERBOSE = nil
-    result = yield
-    $VERBOSE = original_verbosity
-    return result
-  end
-end
-
-if ENV['ARVADOS_API_HOST_INSECURE']
-  suppress_warnings { OpenSSL::SSL::VERIFY_PEER = OpenSSL::SSL::VERIFY_NONE }
+if $options[:run_pipeline_here] == $options[:submit]
+  abort "#{$0}: error: you must supply --run-pipeline-here, --run-jobs-here, or --submit."
 end
 
 # Set up the API client.
 
-$client ||= Google::APIClient.
-  new(:host => $arvados_api_host,
-      :application_name => File.split($0).last,
-      :application_version => $application_version.to_s)
-$arvados = $client.discovered_api('arvados', $arvados_api_version)
 $arv = Arvados.new api_version: 'v1'
-
+$client = $arv.client
+$arvados = $arv.arvados_api
 
 class PipelineInstance
   def self.find(uuid)
@@ -230,7 +187,7 @@ class PipelineInstance
                              },
                              :authenticated => false,
                              :headers => {
-                               authorization: 'OAuth2 '+ENV['ARVADOS_API_TOKEN']
+                               authorization: 'OAuth2 '+$arv.config['ARVADOS_API_TOKEN']
                              })
     j = JSON.parse result.body, :symbolize_names => true
     unless j.is_a? Hash and j[:uuid]
@@ -243,12 +200,12 @@ class PipelineInstance
   end
   def self.create(attributes)
     result = $client.execute(:api_method => $arvados.pipeline_instances.create,
-                             :body => {
-                               :pipeline_instance => attributes.to_json
+                             :body_object => {
+                               :pipeline_instance => attributes
                              },
                              :authenticated => false,
                              :headers => {
-                               authorization: 'OAuth2 '+ENV['ARVADOS_API_TOKEN']
+                               authorization: 'OAuth2 '+$arv.config['ARVADOS_API_TOKEN']
                              })
     j = JSON.parse result.body, :symbolize_names => true
     unless j.is_a? Hash and j[:uuid]
@@ -262,12 +219,12 @@ class PipelineInstance
                              :parameters => {
                                :uuid => @pi[:uuid]
                              },
-                             :body => {
-                               :pipeline_instance => @attributes_to_update.to_json
+                             :body_object => {
+                               :pipeline_instance => @attributes_to_update
                              },
                              :authenticated => false,
                              :headers => {
-                               authorization: 'OAuth2 '+ENV['ARVADOS_API_TOKEN']
+                               authorization: 'OAuth2 '+$arv.config['ARVADOS_API_TOKEN']
                              })
     j = JSON.parse result.body, :symbolize_names => true
     unless j.is_a? Hash and j[:uuid]
@@ -285,6 +242,16 @@ class PipelineInstance
   def [](x)
     @pi[x]
   end
+
+  def log_stderr(msg)
+    $arv.log.create log: {
+      event_type: 'stderr',
+      object_uuid: self[:uuid],
+      owner_uuid: self[:owner_uuid],
+      properties: {"text" => msg},
+    }
+  end
+
   protected
   def initialize(j)
     @attributes_to_update = {}
@@ -301,7 +268,7 @@ class JobCache
                              },
                              :authenticated => false,
                              :headers => {
-                               authorization: 'OAuth2 '+ENV['ARVADOS_API_TOKEN']
+                               authorization: 'OAuth2 '+$arv.config['ARVADOS_API_TOKEN']
                              })
     @cache[uuid] = JSON.parse result.body, :symbolize_names => true
   end
@@ -313,7 +280,7 @@ class JobCache
                              },
                              :authenticated => false,
                              :headers => {
-                               authorization: 'OAuth2 '+ENV['ARVADOS_API_TOKEN']
+                               authorization: 'OAuth2 '+$arv.config['ARVADOS_API_TOKEN']
                              })
     list = JSON.parse result.body, :symbolize_names => true
     if list and list[:items].is_a? Array
@@ -328,10 +295,10 @@ class JobCache
     body = {job: no_nil_values(job)}.merge(no_nil_values(create_params))
 
     result = $client.execute(:api_method => $arvados.jobs.create,
-                             :body => body,
+                             :body_object => body,
                              :authenticated => false,
                              :headers => {
-                               authorization: 'OAuth2 '+ENV['ARVADOS_API_TOKEN']
+                               authorization: 'OAuth2 '+$arv.config['ARVADOS_API_TOKEN']
                              })
     j = JSON.parse result.body, :symbolize_names => true
     if j.is_a? Hash and j[:uuid]
@@ -345,19 +312,7 @@ class JobCache
       end
       msg += "Job submission was: #{body.to_json}"
 
-      $client.execute(:api_method => $arvados.logs.create,
-                      :body => {
-                        :log => {
-                          :object_uuid => pipeline[:uuid],
-                          :event_type => 'stderr',
-                          :owner_uuid => pipeline[:owner_uuid],
-                          :properties => {"text" => msg}
-                        }
-                      },
-                      :authenticated => false,
-                      :headers => {
-                        authorization: 'OAuth2 '+ENV['ARVADOS_API_TOKEN']
-                      })
+      pipeline.log_stderr(msg)
       nil
     end
   end
@@ -380,10 +335,6 @@ class WhRunPipelineInstance
     if template.match /[^-0-9a-z]/
       # Doesn't look like a uuid -- use it as a filename.
       @template = JSON.parse File.read(template), :symbolize_names => true
-      if !@template[:components]
-        abort ("#{$0}: Template loaded from #{template} " +
-               "does not have a \"components\" key")
-      end
     else
       result = $client.execute(:api_method => $arvados.pipeline_templates.get,
                                :parameters => {
@@ -391,7 +342,7 @@ class WhRunPipelineInstance
                                },
                                :authenticated => false,
                                :headers => {
-                                 authorization: 'OAuth2 '+ENV['ARVADOS_API_TOKEN']
+                                 authorization: 'OAuth2 '+$arv.config['ARVADOS_API_TOKEN']
                                })
       @template = JSON.parse result.body, :symbolize_names => true
       if !@template[:uuid]
@@ -422,7 +373,24 @@ class WhRunPipelineInstance
       end
     end
 
+    if not @template[:components].is_a?(Hash)
+      abort "\n#{Time.now} -- pipeline_template #{@template[:uuid]}\nSyntax error: Template missing \"components\" hash"
+    end
     @components = @template[:components].dup
+
+    bad_components = @components.each_pair.select do |cname, cspec|
+      not cspec.is_a?(Hash)
+    end
+    if bad_components.any?
+      abort "\n#{Time.now} -- pipeline_template #{@template[:uuid]}\nSyntax error: Components not specified with hashes: #{bad_components.map(&:first).join(', ')}"
+    end
+
+    bad_components = @components.each_pair.select do |cname, cspec|
+      not cspec[:script_parameters].is_a?(Hash)
+    end
+    if bad_components.any?
+      abort "\n#{Time.now} -- pipeline_template #{@template[:uuid]}\nSyntax error: Components missing \"script_parameters\" hashes: #{bad_components.map(&:first).join(', ')}"
+    end
 
     errors = []
     @components.each do |componentname, component|
@@ -438,12 +406,17 @@ class WhRunPipelineInstance
         if value.nil? and
             ![false,'false',0,'0'].index parameter[:required]
           if parameter[:output_of]
+            if not @components[parameter[:output_of].intern]
+              errors << [componentname, parametername, "output_of refers to nonexistent component '#{parameter[:output_of]}'"]
+            end
             next
           end
           errors << [componentname, parametername, "required parameter is missing"]
         end
         debuglog "parameter #{componentname}::#{parametername} == #{value}"
-        component[:script_parameters][parametername] = value
+
+        component[:script_parameters][parametername] =
+          parameter.dup.merge(value: value)
       end
     end
     if !errors.empty?
@@ -454,16 +427,31 @@ class WhRunPipelineInstance
   end
 
   def setup_instance
-    if $options[:submit]
-      @instance ||= PipelineInstance.
-        create(:components => @components,
-              :pipeline_template_uuid => @template[:uuid],
-              :state => 'New')
+    if @instance
+      @instance[:properties][:run_options] ||= {}
+      if @options[:no_reuse]
+        # override properties of existing instance
+        @instance[:properties][:run_options][:enable_job_reuse] = false
+      else
+        # Default to "enable reuse" if not specified. (This code path
+        # can go away when old clients go away.)
+        if @instance[:properties][:run_options][:enable_job_reuse].nil?
+          @instance[:properties][:run_options][:enable_job_reuse] = true
+        end
+      end
     else
-      @instance ||= PipelineInstance.
-        create(:components => @components,
-             :pipeline_template_uuid => @template[:uuid],
-             :state => 'RunningOnClient')
+      description = $options[:description]
+      description = ("Created at #{Time.now.localtime}" + (@template[:name].andand.size.andand>0 ? " using the pipeline template *#{@template[:name]}*" : "")) if !description
+      @instance = PipelineInstance.
+        create(components: @components,
+               properties: {
+                 run_options: {
+                   enable_job_reuse: !@options[:no_reuse]
+                 }
+               },
+               pipeline_template_uuid: @template[:uuid],
+               description: description,
+               state: ($options[:submit] ? 'RunningOnServer' : 'RunningOnClient'))
     end
     self
   end
@@ -471,6 +459,10 @@ class WhRunPipelineInstance
   def run
     moretodo = true
     interrupted = false
+
+    if @instance[:started_at].nil?
+      @instance[:started_at] = Time.now
+    end
 
     job_creation_failed = 0
     while moretodo
@@ -483,53 +475,94 @@ class WhRunPipelineInstance
         # the job's current state")
         c_already_finished = (c[:job] &&
                               c[:job][:uuid] &&
-                              !c[:job][:success].nil?)
+                              ["Complete", "Failed", "Cancelled"].include?(c[:job][:state]))
         if !c[:job] and
             c[:script_parameters].select { |pname, p| p.is_a? Hash and p[:output_of]}.empty?
           # No job yet associated with this component and is component inputs
           # are fully specified (any output_of script_parameters are resolved
           # to real value)
+          my_submit_id = "instance #{@instance[:uuid]} rand #{rand(2**64).to_s(36)}"
           job = JobCache.create(@instance, cname, {
             :script => c[:script],
-            :script_parameters => c[:script_parameters],
+            :script_parameters => Hash[c[:script_parameters].map do |key, spec|
+                                         [key, spec[:value]]
+                                       end],
             :script_version => c[:script_version],
             :repository => c[:repository],
             :nondeterministic => c[:nondeterministic],
-            :output_is_persistent => c[:output_is_persistent] || false,
             :runtime_constraints => c[:runtime_constraints],
             :owner_uuid => owner_uuid,
+            :is_locked_by_uuid => (@options[:run_jobs_here] ? owner_uuid : nil),
+            :submit_id => my_submit_id,
+            :state => (if @options[:run_jobs_here] then "Running" else "Queued" end)
           }, {
             # This is the right place to put these attributes when
             # dealing with new API servers.
             :minimum_script_version => c[:minimum_script_version],
             :exclude_script_versions => c[:exclude_minimum_script_versions],
-            :find_or_create => !(@options[:no_reuse] || c[:nondeterministic]),
+            :find_or_create => (@instance[:properties][:run_options].andand[:enable_job_reuse] &&
+                                !c[:nondeterministic]),
             :filters => c[:filters]
           })
           if job
             debuglog "component #{cname} new job #{job[:uuid]}"
             c[:job] = job
+            c[:run_in_process] = (@options[:run_jobs_here] and
+                                  job[:submit_id] == my_submit_id)
           else
             debuglog "component #{cname} new job failed", 0
             job_creation_failed += 1
           end
         end
 
+        if c[:job] and c[:run_in_process] and not ["Complete", "Failed", "Cancelled"].include? c[:job][:state]
+          report_status
+          begin
+            require 'open3'
+            Open3.popen3("arv-crunch-job", "--force-unlock",
+                         "--job", c[:job][:uuid]) do |stdin, stdout, stderr, wait_thr|
+              debuglog "arv-crunch-job pid #{wait_thr.pid} started", 0
+              stdin.close
+              while true
+                rready, wready, = IO.select([stdout, stderr], [])
+                break if !rready[0]
+                begin
+                  buf = rready[0].read_nonblock(2**20)
+                rescue EOFError
+                  break
+                end
+                (rready[0] == stdout ? $stdout : $stderr).write(buf)
+              end
+              stdout.close
+              stderr.close
+              debuglog "arv-crunch-job pid #{wait_thr.pid} exit #{wait_thr.value.to_i}", 0
+            end
+            if not $arv.job.get(uuid: c[:job][:uuid])[:finished_at]
+              raise Exception.new("arv-crunch-job did not set finished_at.")
+            end
+          rescue Exception => e
+            debuglog "Interrupted (#{e}). Failing job.", 0
+            $arv.job.update(uuid: c[:job][:uuid],
+                            job: {
+                              state: "Failed"
+                            })
+          end
+        end
+
         if c[:job] and c[:job][:uuid]
-          if (c[:job][:running] or
-              not (c[:job][:finished_at] or c[:job][:cancelled_at]))
-            # Job is running so update copy of job record
+          if ["Running", "Queued"].include?(c[:job][:state])
+            # Job is running (or may be soon) so update copy of job record
             c[:job] = JobCache.get(c[:job][:uuid])
           end
 
-          if c[:job][:success]
+          if c[:job][:state] == "Complete"
             # Populate script_parameters of other components waiting for
             # this job
             @components.each do |c2name, c2|
               c2[:script_parameters].each do |pname, p|
                 if p.is_a? Hash and p[:output_of] == cname.to_s
                   debuglog "parameter #{c2name}::#{pname} == #{c[:job][:output]}"
-                  c2[:script_parameters][pname] = c[:job][:output]
+                  c2[:script_parameters][pname] = {value: c[:job][:output]}
                   moretodo = true
                 end
               end
@@ -538,46 +571,64 @@ class WhRunPipelineInstance
               # This is my first time discovering that the job
               # succeeded. (At the top of this loop, I was still
               # waiting for it to finish.)
-              if c[:output_is_persistent]
-                # I need to make sure a resources/wants link is in
-                # place to protect the output from garbage
-                # collection. (Normally Crunch does this for me, but
-                # here I might be reusing the output of someone else's
-                # job and I need to make sure it's understood that the
-                # output is valuable to me, too.)
-                wanted = c[:job][:output]
-                debuglog "checking for existing persistence link for #{wanted}"
-                @my_user_uuid ||= $arv.user.current[:uuid]
-                links = $arv.link.list(limit: 1,
-                                       filters:
-                                       [%w(link_class = resources),
-                                        %w(name = wants),
-                                        %w(tail_uuid =) + [@my_user_uuid],
-                                        %w(head_uuid =) + [wanted]
-                                       ])[:items]
-                if links.any?
-                  debuglog "link already exists, uuid #{links.first[:uuid]}"
+
+              if @instance[:name].andand.length.andand > 0
+                pipeline_name = @instance[:name]
+              elsif @template.andand[:name].andand.length.andand > 0
+                pipeline_name = @template[:name]
+              else
+                pipeline_name = @instance[:uuid]
+              end
+              if c[:output_name] != false
+                # Create a collection located in the same project as the pipeline with the contents of the output.
+                portable_data_hash = c[:job][:output]
+                collections = $arv.collection.list(limit: 1,
+                                                   filters: [['portable_data_hash', '=', portable_data_hash]],
+                                                   select: ["portable_data_hash", "manifest_text"]
+                                                   )[:items]
+                if collections.any?
+                  name = c[:output_name] || "Output #{portable_data_hash[0..7]} of #{cname} of #{pipeline_name}"
+
+                  # check if there is a name collision.
+                  name_collisions = $arv.collection.list(filters: [["owner_uuid", "=", owner_uuid],
+                                                                   ["name", "=", name]])[:items]
+
+                  newcollection_actual = nil
+                  if name_collisions.any? and name_collisions.first[:portable_data_hash] == portable_data_hash
+                    # There is already a collection with the same name and the
+                    # same contents, so just point to that.
+                    newcollection_actual = name_collisions.first
+                  end
+
+                  if newcollection_actual.nil?
+                    # Did not find a collection with the same name (or the
+                    # collection has a different portable data hash) so create
+                    # a new collection with ensure_unique_name: true.
+                    newcollection = {
+                      owner_uuid: owner_uuid,
+                      name: name,
+                      portable_data_hash: collections.first[:portable_data_hash],
+                      manifest_text: collections.first[:manifest_text]
+                    }
+                    debuglog "Creating collection #{newcollection}", 0
+                    newcollection_actual = $arv.collection.create collection: newcollection, ensure_unique_name: true
+                  end
+
+                  c[:output_uuid] = newcollection_actual[:uuid]
                 else
-                  newlink = $arv.link.create link: \
-                  {
-                    link_class: 'resources',
-                    name: 'wants',
-                    tail_kind: 'arvados#user',
-                    tail_uuid: @my_user_uuid,
-                    head_kind: 'arvados#collection',
-                    head_uuid: wanted,
-                    owner_uuid: owner_uuid
-                  }
-                  debuglog "added link, uuid #{newlink[:uuid]}"
+                  debuglog "Could not find a collection with portable data hash #{portable_data_hash}", 0
                 end
               end
             end
-          elsif c[:job][:running] ||
-              (!c[:job][:started_at] && !c[:job][:cancelled_at])
-            # Job is still running
+          elsif ["Queued", "Running"].include? c[:job][:state]
+            # Job is running or queued to run, so indicate that pipeline
+            # should continue to run
             moretodo = true
-          elsif c[:job][:cancelled_at]
+          elsif c[:job][:state] == "Cancelled"
             debuglog "component #{cname} job #{c[:job][:uuid]} cancelled."
+            moretodo = false
+          elsif c[:job][:state] == "Failed"
+            moretodo = false
           end
         end
       end
@@ -604,21 +655,12 @@ class WhRunPipelineInstance
       end
     end
 
-    ended = 0
-    succeeded = 0
-    failed = 0
-    @components.each do |cname, c|
-      if c[:job]
-        if c[:job][:finished_at] or c[:job][:cancelled_at] or (c[:job][:running] == false and c[:job][:success] == false)
-          ended += 1
-          if c[:job][:success] == true
-            succeeded += 1
-          elsif c[:job][:success] == false or c[:job][:cancelled_at]
-            failed += 1
-          end
-        end
-      end
-    end
+    c_in_state = @components.values.group_by { |c|
+      c[:job] and c[:job][:state]
+    }
+    succeeded = c_in_state["Complete"].andand.count || 0
+    failed = (c_in_state["Failed"].andand.count || 0) + (c_in_state["Cancelled"].andand.count || 0)
+    ended = succeeded + failed
 
     success = (succeeded == @components.length)
 
@@ -639,6 +681,10 @@ class WhRunPipelineInstance
       if ended == @components.length or failed > 0
         @instance[:state] = success ? 'Complete' : 'Failed'
       end
+    end
+
+    if @instance[:finished_at].nil? and ['Complete', 'Failed'].include? @instance[:state]
+      @instance[:finished_at] = Time.now
     end
 
     debuglog "pipeline instance state is #{@instance[:state]}"
@@ -680,23 +726,36 @@ class WhRunPipelineInstance
         @components.each do |cname, c|
           jstatus = if !c[:job]
                       "-"
-                    elsif c[:job][:running]
-                      "#{c[:job][:tasks_summary].inspect}"
-                    elsif c[:job][:success]
-                      c[:job][:output]
-                    elsif c[:job][:cancelled_at]
-                      "cancelled #{c[:job][:cancelled_at]}"
-                    elsif c[:job][:finished_at]
-                      "failed #{c[:job][:finished_at]}"
-                    elsif c[:job][:started_at]
-                      "started #{c[:job][:started_at]}"
-                    else
-                      "queued #{c[:job][:created_at]}"
+                    else case c[:job][:state]
+                         when "Running"
+                           "#{c[:job][:tasks_summary].inspect}"
+                         when "Complete"
+                           c[:job][:output]
+                         when "Cancelled"
+                           "cancelled #{c[:job][:cancelled_at]}"
+                         when "Failed"
+                           "failed #{c[:job][:finished_at]}"
+                         when "Queued"
+                           "queued #{c[:job][:created_at]}"
+                         end
                     end
           f.puts "#{cname.to_s.ljust namewidth} #{c[:job] ? c[:job][:uuid] : '-'.ljust(27)} #{jstatus}"
         end
       end
     end
+  end
+
+  def abort(msg)
+    if @instance
+      if ["New", "Ready", "RunningOnClient",
+          "RunningOnServer"].include?(@instance[:state])
+        @instance[:state] = "Failed"
+        @instance[:finished_at] = Time.now
+        @instance.save
+      end
+      @instance.log_stderr(msg)
+    end
+    Kernel::abort(msg)
   end
 end
 

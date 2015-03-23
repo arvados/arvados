@@ -1,3 +1,33 @@
 // Place all the styles related to the PipelineInstances controller here.
 // They will automatically be included in application.css.
 // You can use Sass (SCSS) here: http://sass-lang.com/
+
+.pipeline-compare-headrow div {
+    padding-top: .5em;
+    padding-bottom: .5em;
+}
+.pipeline-compare-headrow:first-child {
+    border-bottom: 1px solid black;
+}
+.pipeline-compare-row .notnormal {
+    background: #ffffaa;
+}
+
+.pipeline_color_legend {
+    margin-top: 0.2em;
+    padding: 0.2em 1em;
+    border: 1px solid #000;
+}
+.pipeline_color_legend a {
+    color: #000;
+}
+
+.col-md-1.pipeline-instance-spacing {
+  padding: 0px;
+  margin: 0px;
+}
+
+.col-md-3.pipeline-instance-spacing > .progress {
+  padding: 0px;
+  margin: 0px;
+}

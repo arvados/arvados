@@ -1,3 +1,23 @@
+<% if !@object.log %>
+
+<div id="log_graph_div"
+     class="arv-log-event-listener"
+     style="display:none"
+     data-object-uuid="<%= @object.uuid %>"></div>
+
+<div id="event_log_div"
+     class="arv-log-event-listener arv-log-event-handler-append-logs arv-job-log-window"
+     data-object-uuid="<%= @object.uuid %>"
+     ></div>
+
+<%# Applying a long throttle suppresses the auto-refresh of this
+    partial that would normally be triggered by arv-log-event. %>
+<div class="arv-log-refresh-control"
+     data-load-throttle="86486400000" <%# 1001 nights %>
+     ></div>
+
+<% else %>
+
 <script>
 (function() {
 var pagesize = 1000;
@@ -39,20 +59,41 @@ var makeFilter = function() {
   });
 }
 
-<% if @object.log %>
+<% if @object.log and !@object.log.empty? %>
   <% logcollection = Collection.find @object.log %>
   <% if logcollection %>
-    $.ajax('<%=j url_for logcollection %>/<%=j logcollection.files[0][1] %>').
-	done(function(data, status, jqxhr) {
-	    logViewer.filter();
-	    addToLogViewer(logViewer, data.split("\n"), taskState);
-	    logViewer.filter(makeFilter());
-	    generateJobOverview("#log-viewer-overview", logViewer, taskState);
-	    $("#log-viewer .spinner").detach();
-	}).
-	fail(function(jqxhr, status, error) {
-	    $("#log-viewer .spinner").detach();
-	});
+    log_size = <%= logcollection.files[0][2] %>
+    log_maxbytes = <%= Rails.configuration.log_viewer_max_bytes %>;
+    logcollection_url = '<%=j url_for logcollection %>/<%=j logcollection.files[0][1] %>';
+    $("#log-viewer-download-url").attr('href', logcollection_url);
+    $("#log-viewer-download-pane").show();
+    if (log_size > log_maxbytes) {
+      range_header = { 'Range': 'bytes=0-' + log_maxbytes };
+    } else {
+      range_header = null;
+    }
+    $.ajax(logcollection_url, { headers: range_header }).
+        done(function(data, status, jqxhr) {
+            logViewer.filter();
+            addToLogViewer(logViewer, data.split("\n"), taskState);
+            logViewer.filter(makeFilter());
+            content_range_hdr = jqxhr.getResponseHeader('Content-Range');
+            var v = content_range_hdr && content_range_hdr.match(/bytes \d+-(\d+)\/(.+)/);
+            short_log = v && (v[2] == '*' || parseInt(v[1]) + 1 < v[2]);
+            if (jqxhr.status == 206 && short_log) {
+              $("#log-viewer-overview").html(
+                '<p>Showing only ' + data.length + ' bytes of this log.' +
+                ' Timing information is unavailable since' +
+                ' the full log was not retrieved.</p>'
+              );
+            } else {
+              generateJobOverview("#log-viewer-overview", logViewer, taskState);
+            }
+            $("#log-viewer .spinner").detach();
+        }).
+        fail(function(jqxhr, status, error) {
+            $("#log-viewer .spinner").detach();
+        });
   <% end %>
 <% else %>
   <%# Live log loading not implemented yet. %>
@@ -103,17 +144,13 @@ $("#set-show-failed-only").on("click", function() {
 
   <h3>Summary</h3>
   <p id="log-viewer-overview">
-    <% if !@object.log %>
-      <% if @object.finished_at %>
-        This job did not produce an diagnostic log.
-      <% else %>
-        This job is still running.  The job log will be available when the job is complete.
-      <% end %>
-    <% else %>
-      <% if !logcollection %>
-        The collection containing the job log was not found.
-      <% end %>
+    <% if !logcollection %>
+      The collection containing the job log was not found.
     <% end %>
+  </p>
+
+  <p id="log-viewer-download-pane" style="display:none">
+    <a id="log-viewer-download-url" href="">Download the full log</a>
   </p>
 
   <div class="h3">Log
@@ -214,4 +251,7 @@ $("#set-show-failed-only").on("click", function() {
     <span class="log-viewer-paging"></span>
     <a href="#" class="log-viewer-page-down"><span class='glyphicon glyphicon-arrow-down'></span></a>
   </div>
+
 </div>
+
+<% end %>

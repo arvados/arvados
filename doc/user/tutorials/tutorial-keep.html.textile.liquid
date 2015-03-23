@@ -1,165 +1,79 @@
 ---
 layout: default
 navsection: userguide
-title: "Storing and Retrieving data using Keep"
+title: "Uploading data"
 ...
 
-This tutorial introduces you to the Arvados file storage system.
+Arvados Data collections can be uploaded using either the @*arv keep put*@ command line tool or using Workbench.
+
+# "*Upload using command line tool*":#upload-using-command
+# "*Upload using Workbench*":#upload-using-workbench
+
+notextile. <div class="spaced-out">
+
+h2(#upload-using-command). Upload using command line tool
 
 {% include 'tutorial_expectations' %}
 
-The Arvados distributed file system is called *Keep*.  Keep is a content-addressable file system.  This means that files are managed using special unique identifiers derived from the _contents_ of the file, rather than human-assigned file names (specifically, the MD5 hash).  This has a number of advantages:
-* Files can be stored and replicated across a cluster of servers without requiring a central name server.
-* Both the server and client systematically validate data integrity because the checksum is built into the identifier.
-* Data duplication is minimized—two files with the same contents will have in the same identifier, and will not be stored twice.
-* It avoids data race conditions, since an identifier always points to the same data.
-
-h1. Putting Data into Keep
-
-We will start by downloading a freely available VCF file from "Personal Genome Project (PGP)":http://www.personalgenomes.org subject "hu599905":https://my.personalgenomes.org/profile/hu599905 to a staging directory on the VM, and adding it to Keep.  In the following commands, replace *@you@* with your login name.
-
-First, log into your Arvados VM and set up the staging area:
-
-notextile. <pre><code>~$ <span class="userinput">mkdir /scratch/<b>you</b></span></code></pre>
-
-Next, download the file:
-
+To upload a file to Keep using @arv keep put@:
 <notextile>
-<pre><code>~$ <span class="userinput">cd /scratch/<b>you</b></span>
-/scratch/<b>you</b>$ <span class="userinput">curl -o var-GS000016015-ASM.tsv.bz2 'https://warehouse.personalgenomes.org/warehouse/f815ec01d5d2f11cb12874ab2ed50daa+234+K@ant/var-GS000016015-ASM.tsv.bz2'</span>
-  % Total    % Received % Xferd  Average Speed   Time    Time     Time  Current
-                                 Dload  Upload   Total   Spent    Left  Speed
-100  216M  100  216M    0     0  10.0M      0  0:00:21  0:00:21 --:--:-- 9361k
+<pre><code>~$ <span class="userinput">arv keep put var-GS000016015-ASM.tsv.bz2</span>
+216M / 216M 100.0%
+Collection saved as ...
+qr1hi-4zz18-xxxxxxxxxxxxxxx
 </code></pre>
 </notextile>
 
-{% include 'notebox_begin' %}
+The output value @qr1hi-4zz18-xxxxxxxxxxxxxxx@ is the uuid of the Arvados collection created.
 
-If you have your own data, for example @MyData.vcf@, you can use @scp@ or @rsync@ to copy from your local workstation to the shell VM (run this on your local workstation):
+The file used in this example is a freely available TSV file containing variant annotations from "Personal Genome Project (PGP)":http://www.pgp-hms.org participant "hu599905.":https://my.pgp-hms.org/profile/hu599905), downloadable "here":https://warehouse.pgp-hms.org/warehouse/f815ec01d5d2f11cb12874ab2ed50daa+234+K@ant/var-GS000016015-ASM.tsv.bz2.
 
-notextile. <pre><code>~$ <span class="userinput">scp MyData.vcf <b>you@shell</b>.arvados:/scratch/<b>you</b>/MyData.vcf</span></code></pre>
-
-{% include 'notebox_end' %}
-
-Now use @arv keep put@ to add your VCF data to Keep, then delete the local copy of the file:
+<notextile><a name="dir"></a></notextile>It is also possible to upload an entire directory with @arv keep put@:
 
 <notextile>
-<pre><code>/scratch/<b>you</b>$ <span class="userinput">arv keep put var-GS000016015-ASM.tsv.bz2</span>
-c1bad4b39ca5a924e481008009d94e32+210
-/scratch/<b>you</b>$ <span class="userinput">rm var-GS000016015-ASM.tsv.bz2</span>
-</code></pre>
-</notextile>
-
-The output value @c1bad4b39ca5a924e481008009d94e32+210@ from @arv keep put@ is the Keep locator.  This enables you to access the file you just uploaded, and is explained in the next section.
-
-h2(#dir). Putting a directory
-
-You can also use @arv keep put@ to add an entire directory:
-
-<notextile>
-<pre><code>/scratch/<b>you</b>$ <span class="userinput">mkdir tmp</span>
-/scratch/<b>you</b>$ <span class="userinput">echo "hello alice" > tmp/alice.txt</span>
-/scratch/<b>you</b>$ <span class="userinput">echo "hello bob" > tmp/bob.txt</span>
-/scratch/<b>you</b>$ <span class="userinput">echo "hello carol" > tmp/carol.txt</span>
-/scratch/<b>you</b>$ <span class="userinput">arv keep put tmp</span>
+<pre><code>~$ <span class="userinput">mkdir tmp</span>
+~$ <span class="userinput">echo "hello alice" > tmp/alice.txt</span>
+~$ <span class="userinput">echo "hello bob" > tmp/bob.txt</span>
+~$ <span class="userinput">echo "hello carol" > tmp/carol.txt</span>
+~$ <span class="userinput">arv keep put tmp</span>
 0M / 0M 100.0%
-887cd41e9c613463eab2f0d885c6dd96+83
+Collection saved as ...
+qr1hi-4zz18-yyyyyyyyyyyyyyy
 </code></pre>
 </notextile>
 
-The locator @887cd41e9c613463eab2f0d885c6dd96+83@ represents a collection with multiple files.
+In both examples, the @arv keep put@ command created a collection. The first collection contains the single uploaded file. The second collection contains the entire uploaded directory.
 
-h1. Getting Data from Keep
+@arv keep put@ accepts quite a few optional command line arguments, which are described on the "arv subcommands":{{site.baseurl}}/sdk/cli/subcommands.html#arv-keep-put page.
 
-h2. Using Workbench
+h3. Locate your collection in Workbench
 
-You may access collections through the "Collections section of Arvados Workbench":https://{{ site.arvados_workbench_host }}/collections at *Data* %(rarr)&rarr;% *Collections (data files)*.  You can also access individual files within a collection.  Some examples:
+Visit the Workbench *Dashboard*.  Click on *Projects*<span class="caret"></span> dropdown menu in the top navigation menu, select your *Home* project.  Your newly uploaded collection should appear near the top of the *Data collections* tab.  The collection locator printed by @arv keep put@ will appear under the *name* column.
 
-* "https://{{ site.arvados_workbench_host }}/collections/c1bad4b39ca5a924e481008009d94e32+210":https://{{ site.arvados_workbench_host }}/collections/c1bad4b39ca5a924e481008009d94e32+210
-* "https://{{ site.arvados_workbench_host }}/collections/887cd41e9c613463eab2f0d885c6dd96+83/alice.txt":https://{{ site.arvados_workbench_host }}/collections/887cd41e9c613463eab2f0d885c6dd96+83/alice.txt
+To move the collection to a different project, check the box at the left of the collection row.  Pull down the *Selection...*<span class="caret"></span> menu near the top of the page tab, and select *Move selected*. This will open a dialog box where you can select a destination project for the collection.  Click a project, then finally the <span class="btn btn-sm btn-primary">Move</span> button.
 
-h2(#arv-get). Using the command line
+!{display: block;margin-left: 25px;margin-right: auto;}{{ site.baseurl }}/images/workbench-move-selected.png!
 
-You can view the contents of a collection using @arv keep ls@:
+Click on the *<i class="fa fa-fw fa-archive"></i> Show* button next to the collection's listing on a project page to go to the Workbench page for your collection.  On this page, you can see the collection's contents, download individual files, and set sharing options.
 
-<notextile>
-<pre><code>/scratch/<b>you</b>$ <span class="userinput">arv keep ls c1bad4b39ca5a924e481008009d94e32+210</span>
-var-GS000016015-ASM.tsv.bz2
-</code></pre>
+notextile. </div>
 
-<pre><code>/scratch/<b>you</b>$ <span class="userinput">arv keep ls 887cd41e9c613463eab2f0d885c6dd96+83</span>
-alice.txt
-bob.txt
-carol.txt
-</code></pre>
-</notextile>
+h2(#upload-using-workbench). Upload using Workbench
 
-Use @-s@ to print file sizes rounded up to the nearest kilobyte:
+To upload using Workbench, visit the Workbench *Dashboard*. Click on *Projects*<span class="caret"></span> dropdown menu in the top navigation menu and select your *Home* project or any other project of your choosing.  You will see the *Data collections* tab for this project, which lists the collections in this project.
 
-<notextile>
-<pre><code>/scratch/<b>you</b>$ <span class="userinput">arv keep ls -s c1bad4b39ca5a924e481008009d94e32+210</span>
-221887 var-GS000016015-ASM.tsv.bz2
-</code></pre>
-</notextile>
+To upload files into a new collection, click on *Add data*<span class="caret"></span> dropdown menu and select *Upload files from my computer*.
 
-Use @arv keep get@ to download the contents of a collection and place it in the directory specified in the second argument (in this example, @.@ for the current directory):
+!{display: block;margin-left: 25px;margin-right: auto;border:1px solid lightgray;}{{ site.baseurl }}/images/upload-using-workbench.png!
 
-<notextile>
-<pre><code>/scratch/<b>you</b>$ <span class="userinput">arv keep get c1bad4b39ca5a924e481008009d94e32+210/ .</span>
-/scratch/<b>you</b>$ <span class="userinput">ls var-GS000016015-ASM.tsv.bz2</span>
-var-GS000016015-ASM.tsv.bz2
-</code></pre>
-</notextile>
+<br/>This will create a new empty collection in your chosen project and will take you to the *Upload* tab for that collection.
 
-You can also download individual files:
+!{display: block;margin-left: 25px;margin-right: auto;border:1px solid lightgray;}{{ site.baseurl }}/images/upload-tab-in-new-collection.png!
 
-<notextile>
-<pre><code>/scratch/<b>you</b>$ <span class="userinput">arv keep get 887cd41e9c613463eab2f0d885c6dd96+83/alice.txt .</span>
-</code></pre>
-</notextile>
+Click on the *Browse...* button and select the files you would like to upload. Selected files will be added to a list of files to be uploaded. After you are done selecting files to upload, click on the *<i class="fa fa-fw fa-play"></i> Start* button to start upload. This will start uploading files to Arvados and Workbench will show you the progress bar. When upload is completed, you will see an indication to that effect.
 
-With a local copy of the file, we can do some computation, for example computing the MD5 hash of the complete file:
+!{display: block;margin-left: 25px;margin-right: auto;border:1px solid lightgray;}{{ site.baseurl }}/images/files-uploaded.png!
 
-<notextile>
-<pre><code>/scratch/<b>you</b>$ <span class="userinput">md5sum var-GS000016015-ASM.tsv.bz2</span>
-44b8ae3fde7a8a88d2f7ebd237625b4f  var-GS000016015-ASM.tsv.bz2
-</code></pre>
-</notextile>
+*Note:* If you leave the collection page during the upload, the upload process will be aborted and you will need to upload the files again.
 
-h2. Using arv-mount
-
-Use @arv-mount@ to mount a Keep collection and access it using traditional filesystem tools.
-
-<notextile>
-<pre><code>/scratch/<b>you</b>$ <span class="userinput">mkdir -p mnt</span>
-/scratch/<b>you</b>$ <span class="userinput">arv-mount --collection c1bad4b39ca5a924e481008009d94e32+210 mnt &</span>
-/scratch/<b>you</b>$ <span class="userinput">cd mnt</span>
-/scratch/<b>you</b>/mnt$ <span class="userinput">ls</span>
-var-GS000016015-ASM.tsv.bz2
-/scratch/<b>you</b>/mnt$ <span class="userinput">md5sum var-GS000016015-ASM.tsv.bz2</span>
-44b8ae3fde7a8a88d2f7ebd237625b4f  var-GS000016015-ASM.tsv.bz2
-/scratch/<b>you</b>/mnt$ <span class="userinput">cd ..</span>
-/scratch/<b>you</b>$ <span class="userinput">fusermount -u mnt</span>
-</code></pre>
-</notextile>
-
-You can also mount the entire Keep namespace in "magic directory" mode:
-
-<notextile>
-<pre><code>/scratch/<b>you</b>$ <span class="userinput">mkdir -p mnt</span>
-/scratch/<b>you</b>$ <span class="userinput">arv-mount mnt &</span>
-/scratch/<b>you</b>$ <span class="userinput">cd mnt/c1bad4b39ca5a924e481008009d94e32+210</span>
-/scratch/<b>you</b>/mnt/c1bad4b39ca5a924e481008009d94e32+210$ <span class="userinput">ls</span>
-var-GS000016015-ASM.tsv.bz2
-/scratch/<b>you</b>/mnt/c1bad4b39ca5a924e481008009d94e32+210$ <span class="userinput">md5sum var-GS000016015-ASM.tsv.bz2</span>
-44b8ae3fde7a8a88d2f7ebd237625b4f  var-GS000016015-ASM.tsv.bz2
-/scratch/<b>you</b>/mnt/c1bad4b39ca5a924e481008009d94e32+210$ <span class="userinput">cd ../..</span>
-/scratch/<b>you</b>$ <span class="userinput">fusermount -u mnt</span>
-</code></pre>
-</notextile>
-
-@arv-mount@ provides several features:
-
-* You can browse, open and read Keep entries as if they are regular files.
-* It is easy for existing tools to access files in Keep.
-* Data is downloaded on demand.  It is not necessary to download an entire file or collection to start processing.
+*Note:* You can also use the Upload tab to add files to an existing collection.

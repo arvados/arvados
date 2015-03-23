@@ -1,0 +1,40 @@
+---
+layout: default
+navsection: sdk
+navmenu: CLI
+title: "Installation"
+
+...
+
+To use the @arv@ command, you can either install the @arvados-cli@ gem via RubyGems or build and install the package from source.
+
+h4. Prerequisites: Ruby &gt;= 2.1.0 and curl libraries
+
+Make sure you have "Ruby and bundler":{{site.baseurl}}/install/install-manual-prerequisites-ruby.html installed.
+
+Install curl libraries with your system's package manager. For example, on Debian or Ubuntu:
+
+<notextile>
+<pre>
+$ <code class="userinput">sudo apt-get install libcurl3 libcurl3-gnutls libcurl4-openssl-dev</code>
+</pre>
+</notextile>
+
+h4. Option 1: install with RubyGems
+
+<notextile>
+<pre>
+$ <code class="userinput">sudo gem install arvados-cli</code>
+</pre>
+</notextile>
+
+h4. Option 2: build and install from source
+
+<notextile>
+<pre>
+$ <code class="userinput">git clone https://github.com/curoverse/arvados.git</code>
+$ <code class="userinput">cd arvados/sdk/cli</code>
+$ <code class="userinput">gem build arvados-cli.gemspec</code>
+$ <code class="userinput">sudo gem install arvados-cli-*.gem</code>
+</pre>
+</notextile>

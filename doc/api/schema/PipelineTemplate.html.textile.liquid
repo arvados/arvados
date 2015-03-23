@@ -5,12 +5,20 @@ navmenu: Schema
 title: PipelineTemplate
 ...
 
-Pipelines consist of a set of "components".  Each component is an Arvados job submission.  "Parameters for job submissions are described on the job method page.":{{site.baseurl}}/api/methods/jobs.html#create
+The pipeline template consists of "name" and "components".
 
 table(table table-bordered table-condensed).
 |_. Attribute    |_. Type |_. Accepted values                           |_. Required|_. Description|
 |name            |string  |any                                          |yes        |The human-readable name of the pipeline template.|
 |components      |object  |JSON object containing job submission objects|yes        |The component jobs that make up the pipeline, with the component name as the key. |
+
+h3. Components
+
+The components field of the pipeline template is a JSON object which describes the individual steps that make up the pipeline.  Each component is an Arvados job submission.  "Parameters for job submissions are described on the job method page.":{{site.baseurl}}/api/methods/jobs.html#create  In addition, a component can have the following parameters:
+
+table(table table-bordered table-condensed).
+|_. Attribute    |_. Type          |_. Accepted values |_. Required|_. Description|
+|output_name     |string or boolean|string or false    |no         |If a string is provided, use this name for the output collection of this component.  If the value is false, do not create a permanent output collection (an temporary intermediate collection will still be created).  If not provided, a default name will be assigned to the output.|
 
 h3. Script parameters
 
@@ -21,11 +29,17 @@ table(table table-bordered table-condensed).
 |default         |any     |any                                              |The default value for this parameter.|
 |required        |boolean |true or false                                    |Specifies whether the parameter is required to have a value or not.|
 |dataclass       |string  |One of 'Collection', 'File' [1], 'number', or 'text' |Data type of this parameter.|
+|search_for      |string  |any string                                       |Substring to use as a default search string when choosing inputs.|
 |output_of       |string  |the name of another component in the pipeline    |Specifies that the value of this parameter should be set to the 'output' attribute of the job that corresponds to the specified component.|
+|title           |string  |any string                                       |User friendly title to display when choosing parameter values|
+|description     |string  |any string                                       |Extended text description for describing expected/valid values for the script parameter|
+|link_name       |string  |any string                                       |User friendly name to display for the parameter value instead of the actual parameter value|
 
 The 'output_of' parameter is especially important, as this is how components are actually linked together to form a pipeline.  Component jobs that depend on the output of other components do not run until the parent job completes and has produced output.  If the parent job fails, the entire pipeline fails.
 
 fn1. The 'File' type refers to a specific file within a Keep collection in the form 'collection_hash/filename', for example '887cd41e9c613463eab2f0d885c6dd96+83/bob.txt'.
+
+The 'search_for' parameter is meaningful only when input dataclass of type Collection or File is used. If a value is provided, this will be preloaded into the input data chooser dialog in Workbench. For example, if your input dataclass is a File and you are interested in a certain filename extention, you can preconfigure it in this attribute.
 
 h3. Examples
 
@@ -42,7 +56,9 @@ This is a pipeline named "Filter MD5 hash values" with two components, "do_hash"
       "script_parameters": {
         "input": {
           "required": true,
-          "dataclass": "Collection"
+          "dataclass": "Collection",
+          "search_for": ".fastq.gz",
+          "title":"Please select a fastq file"
         }
       },
     },

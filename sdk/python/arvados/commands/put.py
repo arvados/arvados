@@ -3,7 +3,6 @@
 # TODO:
 # --md5sum - display md5 of each file as read from disk
 
-import apiclient.errors
 import argparse
 import arvados
 import base64
@@ -18,19 +17,23 @@ import signal
 import socket
 import sys
 import tempfile
+from apiclient import errors as apiclient_errors
 
 import arvados.commands._util as arv_cmd
 
 CAUGHT_SIGNALS = [signal.SIGINT, signal.SIGQUIT, signal.SIGTERM]
+api_client = None
 
 upload_opts = argparse.ArgumentParser(add_help=False)
 
 upload_opts.add_argument('paths', metavar='path', type=str, nargs='*',
-                    help="""
+                         help="""
 Local file or directory. Default: read from standard input.
 """)
 
-upload_opts.add_argument('--max-manifest-depth', type=int, metavar='N',
+_group = upload_opts.add_mutually_exclusive_group()
+
+_group.add_argument('--max-manifest-depth', type=int, metavar='N',
                     default=-1, help="""
 Maximum depth of directory tree to represent in the manifest
 structure. A directory structure deeper than this will be represented
@@ -39,104 +42,125 @@ a single stream. Default: -1 (unlimited), i.e., exactly one manifest
 stream per filesystem directory that contains files.
 """)
 
-upload_opts.add_argument('--project-uuid', metavar='UUID', help="""
-When a Collection is made, make a Link to save it under the specified project.
-""")
-
-upload_opts.add_argument('--name', help="""
-When a Collection is linked to a project, use the specified name.
+_group.add_argument('--normalize', action='store_true',
+                    help="""
+Normalize the manifest by re-ordering files and streams after writing
+data.
 """)
 
 _group = upload_opts.add_mutually_exclusive_group()
 
 _group.add_argument('--as-stream', action='store_true', dest='stream',
-                   help="""
+                    help="""
 Synonym for --stream.
 """)
 
 _group.add_argument('--stream', action='store_true',
-                   help="""
+                    help="""
 Store the file content and display the resulting manifest on
 stdout. Do not write the manifest to Keep or save a Collection object
 in Arvados.
 """)
 
 _group.add_argument('--as-manifest', action='store_true', dest='manifest',
-                   help="""
+                    help="""
 Synonym for --manifest.
 """)
 
 _group.add_argument('--in-manifest', action='store_true', dest='manifest',
-                   help="""
+                    help="""
 Synonym for --manifest.
 """)
 
 _group.add_argument('--manifest', action='store_true',
-                   help="""
+                    help="""
 Store the file data and resulting manifest in Keep, save a Collection
 object in Arvados, and display the manifest locator (Collection uuid)
 on stdout. This is the default behavior.
 """)
 
 _group.add_argument('--as-raw', action='store_true', dest='raw',
-                   help="""
+                    help="""
 Synonym for --raw.
 """)
 
 _group.add_argument('--raw', action='store_true',
-                   help="""
+                    help="""
 Store the file content and display the data block locators on stdout,
 separated by commas, with a trailing newline. Do not store a
 manifest.
 """)
 
 upload_opts.add_argument('--use-filename', type=str, default=None,
-                    dest='filename', help="""
+                         dest='filename', help="""
 Synonym for --filename.
 """)
 
 upload_opts.add_argument('--filename', type=str, default=None,
-                    help="""
+                         help="""
 Use the given filename in the manifest, instead of the name of the
 local file. This is useful when "-" or "/dev/stdin" is given as an
 input file. It can be used only if there is exactly one path given and
 it is not a directory. Implies --manifest.
 """)
 
+upload_opts.add_argument('--portable-data-hash', action='store_true',
+                         help="""
+Print the portable data hash instead of the Arvados UUID for the collection
+created by the upload.
+""")
+
+upload_opts.add_argument('--replication', type=int, metavar='N', default=None,
+                         help="""
+Set the replication level for the new collection: how many different
+physical storage devices (e.g., disks) should have a copy of each data
+block. Default is to use the server-provided default (if any) or 2.
+""")
+
 run_opts = argparse.ArgumentParser(add_help=False)
+
+run_opts.add_argument('--project-uuid', metavar='UUID', help="""
+Store the collection in the specified project, instead of your Home
+project.
+""")
+
+run_opts.add_argument('--name', help="""
+Save the collection with the specified name.
+""")
+
 _group = run_opts.add_mutually_exclusive_group()
 _group.add_argument('--progress', action='store_true',
-                   help="""
+                    help="""
 Display human-readable progress on stderr (bytes and, if possible,
 percentage of total data size). This is the default behavior when
 stderr is a tty.
 """)
 
 _group.add_argument('--no-progress', action='store_true',
-                   help="""
+                    help="""
 Do not display human-readable progress on stderr, even if stderr is a
 tty.
 """)
 
 _group.add_argument('--batch-progress', action='store_true',
-                   help="""
+                    help="""
 Display machine-readable progress on stderr (bytes and, if known,
 total data size).
 """)
 
 _group = run_opts.add_mutually_exclusive_group()
 _group.add_argument('--resume', action='store_true', default=True,
-                   help="""
+                    help="""
 Continue interrupted uploads from cached state (default).
 """)
 _group.add_argument('--no-resume', action='store_false', dest='resume',
-                   help="""
+                    help="""
 Do not continue interrupted uploads from cached state.
 """)
 
 arg_parser = argparse.ArgumentParser(
     description='Copy data from the local filesystem to Keep.',
-    parents=[upload_opts, run_opts])
+    parents=[upload_opts, run_opts, arv_cmd.retry_opt])
 
 def parse_arguments(arguments):
     args = arg_parser.parse_args(arguments)
@@ -236,23 +260,26 @@ class ArvPutCollectionWriter(arvados.ResumableCollectionWriter):
     STATE_PROPS = (arvados.ResumableCollectionWriter.STATE_PROPS +
                    ['bytes_written', '_seen_inputs'])
 
-    def __init__(self, cache=None, reporter=None, bytes_expected=None):
+    def __init__(self, cache=None, reporter=None, bytes_expected=None, **kwargs):
         self.bytes_written = 0
         self._seen_inputs = []
         self.cache = cache
         self.reporter = reporter
         self.bytes_expected = bytes_expected
-        super(ArvPutCollectionWriter, self).__init__()
+        super(ArvPutCollectionWriter, self).__init__(**kwargs)
 
     @classmethod
-    def from_cache(cls, cache, reporter=None, bytes_expected=None):
+    def from_cache(cls, cache, reporter=None, bytes_expected=None,
+                   num_retries=0, replication=0):
         try:
             state = cache.load()
             state['_data_buffer'] = [base64.decodestring(state['_data_buffer'])]
-            writer = cls.from_state(state, cache, reporter, bytes_expected)
+            writer = cls.from_state(state, cache, reporter, bytes_expected,
+                                    num_retries=num_retries,
+                                    replication=replication)
         except (TypeError, ValueError,
                 arvados.errors.StaleWriterStateError) as error:
-            return cls(cache, reporter, bytes_expected)
+            return cls(cache, reporter, bytes_expected, num_retries=num_retries)
         else:
             return writer
 
@@ -274,12 +301,12 @@ class ArvPutCollectionWriter(arvados.ResumableCollectionWriter):
 
     def flush_data(self):
         start_buffer_len = self._data_buffer_len
-        start_block_count = self.bytes_written / self.KEEP_BLOCK_SIZE
+        start_block_count = self.bytes_written / arvados.config.KEEP_BLOCK_SIZE
         super(ArvPutCollectionWriter, self).flush_data()
         if self._data_buffer_len < start_buffer_len:  # We actually PUT data.
             self.bytes_written += (start_buffer_len - self._data_buffer_len)
             self.report_progress()
-            if (self.bytes_written / self.KEEP_BLOCK_SIZE) > start_block_count:
+            if (self.bytes_written / arvados.config.KEEP_BLOCK_SIZE) > start_block_count:
                 self.cache_state()
 
     def _record_new_input(self, input_type, source_name, dest_name):
@@ -338,56 +365,61 @@ def progress_writer(progress_func, outfile=sys.stderr):
 def exit_signal_handler(sigcode, frame):
     sys.exit(-sigcode)
 
-def check_project_exists(project_uuid):
-    try:
-        arvados.api('v1').groups().get(uuid=project_uuid).execute()
-    except (apiclient.errors.Error, arvados.errors.NotFoundError) as error:
-        raise ValueError("Project {} not found ({})".format(project_uuid,
-                                                            error))
+def desired_project_uuid(api_client, project_uuid, num_retries):
+    if not project_uuid:
+        query = api_client.users().current()
+    elif arvados.util.user_uuid_pattern.match(project_uuid):
+        query = api_client.users().get(uuid=project_uuid)
+    elif arvados.util.group_uuid_pattern.match(project_uuid):
+        query = api_client.groups().get(uuid=project_uuid)
     else:
-        return True
-
-def prep_project_link(args, stderr, project_exists=check_project_exists):
-    # Given the user's command line arguments, return a dictionary with data
-    # to create the desired project link for this Collection, or None.
-    # Raises ValueError if the arguments request something impossible.
-    making_collection = not (args.raw or args.stream)
-    any_link_spec = args.project_uuid or args.name
-    if not making_collection:
-        if any_link_spec:
-            raise ValueError("Requested a Link without creating a Collection")
-        return None
-    elif not any_link_spec:
-        stderr.write(
-            "arv-put: No --project-uuid or --name specified.  This data will be cached\n"
-            "in Keep.  You will need to find this upload by its locator(s) later.\n")
-        return None
-    elif not args.project_uuid:
-        raise ValueError("--name requires --project-uuid")
-    elif not project_exists(args.project_uuid):
-        raise ValueError("Project {} not found".format(args.project_uuid))
-    link = {'tail_uuid': args.project_uuid, 'link_class': 'name'}
-    if args.name:
-        link['name'] = args.name
-    return link
-
-def create_project_link(locator, link):
-    link['head_uuid'] = locator
-    link.setdefault('name', "Collection saved by {}@{} at {}".format(
-            pwd.getpwuid(os.getuid()).pw_name,
-            socket.gethostname(),
-            datetime.datetime.utcnow().strftime("%Y-%m-%d %H:%M:%S UTC")))
-    return arvados.api('v1').links().create(body=link).execute()
+        raise ValueError("Not a valid project UUID: {}".format(project_uuid))
+    return query.execute(num_retries=num_retries)['uuid']
 
 def main(arguments=None, stdout=sys.stdout, stderr=sys.stderr):
-    status = 0
+    global api_client
 
     args = parse_arguments(arguments)
+    status = 0
+    if api_client is None:
+        api_client = arvados.api('v1')
+
+    # Determine the name to use
+    if args.name:
+        if args.stream or args.raw:
+            print >>stderr, "Cannot use --name with --stream or --raw"
+            sys.exit(1)
+        collection_name = args.name
+    else:
+        collection_name = "Saved at {} by {}@{}".format(
+            datetime.datetime.utcnow().strftime("%Y-%m-%d %H:%M:%S UTC"),
+            pwd.getpwuid(os.getuid()).pw_name,
+            socket.gethostname())
+
+    if args.project_uuid and (args.stream or args.raw):
+        print >>stderr, "Cannot use --project-uuid with --stream or --raw"
+        sys.exit(1)
+
+    # Determine the parent project
     try:
-        project_link = prep_project_link(args, stderr)
-    except ValueError as error:
-        print >>stderr, "arv-put: {}.".format(error)
-        sys.exit(2)
+        project_uuid = desired_project_uuid(api_client, args.project_uuid,
+                                            args.retries)
+    except (apiclient_errors.Error, ValueError) as error:
+        print >>stderr, error
+        sys.exit(1)
+
+    # write_copies diverges from args.replication here.
+    # args.replication is how many copies we will instruct Arvados to
+    # maintain (by passing it in collections().create()) after all
+    # data is written -- and if None was given, we'll use None there.
+    # Meanwhile, write_copies is how many copies of each data block we
+    # write to Keep, which has to be a number.
+    #
+    # If we simply changed args.replication from None to a default
+    # here, we'd end up erroneously passing the default replication
+    # level (instead of None) to collections().create().
+    write_copies = (args.replication or
+                    api_client._rootDesc.get('defaultCollectionReplication', 2))
 
     if args.progress:
         reporter = progress_writer(human_progress)
@@ -398,22 +430,27 @@ def main(arguments=None, stdout=sys.stdout, stderr=sys.stderr):
     bytes_expected = expected_bytes_for(args.paths)
 
     resume_cache = None
-    try:
-        resume_cache = ResumeCache(ResumeCache.make_path(args))
-    except (IOError, OSError, ValueError):
-        pass  # Couldn't open cache directory/file.  Continue without it.
-    except ResumeCacheConflict:
-        stdout.write(
-            "arv-put: Another process is already uploading this data.\n")
-        sys.exit(1)
+    if args.resume:
+        try:
+            resume_cache = ResumeCache(ResumeCache.make_path(args))
+        except (IOError, OSError, ValueError):
+            pass  # Couldn't open cache directory/file.  Continue without it.
+        except ResumeCacheConflict:
+            print >>stderr, "\n".join([
+                "arv-put: Another process is already uploading this data.",
+                "         Use --no-resume if this is really what you want."])
+            sys.exit(1)
 
     if resume_cache is None:
-        writer = ArvPutCollectionWriter(resume_cache, reporter, bytes_expected)
+        writer = ArvPutCollectionWriter(
+            resume_cache, reporter, bytes_expected,
+            num_retries=args.retries,
+            replication=write_copies)
     else:
-        if not args.resume:
-            resume_cache.restart()
         writer = ArvPutCollectionWriter.from_cache(
-            resume_cache, reporter, bytes_expected)
+            resume_cache, reporter, bytes_expected,
+            num_retries=args.retries,
+            replication=write_copies)
 
     # Install our signal handler for each code in CAUGHT_SIGNALS, and save
     # the originals.
@@ -441,28 +478,44 @@ def main(arguments=None, stdout=sys.stdout, stderr=sys.stderr):
 
     if args.stream:
         output = writer.manifest_text()
+        if args.normalize:
+            output = CollectionReader(output).manifest_text(normalize=True)
     elif args.raw:
         output = ','.join(writer.data_locators())
     else:
-        # Register the resulting collection in Arvados.
-        collection = arvados.api().collections().create(
-            body={
-                'uuid': writer.finish(),
-                'manifest_text': writer.manifest_text(),
-                },
-            ).execute()
+        try:
+            manifest_text = writer.manifest_text()
+            if args.normalize:
+                manifest_text = CollectionReader(manifest_text).manifest_text(normalize=True)
+            replication_attr = 'replication_desired'
+            if api_client._schema.schemas['Collection']['properties'].get(replication_attr, None) is None:
+                # API called it 'redundancy' before #3410.
+                replication_attr = 'redundancy'
+            # Register the resulting collection in Arvados.
+            collection = api_client.collections().create(
+                body={
+                    'owner_uuid': project_uuid,
+                    'name': collection_name,
+                    'manifest_text': manifest_text,
+                    replication_attr: args.replication,
+                    },
+                ensure_unique_name=True
+                ).execute(num_retries=args.retries)
 
-        # Print the locator (uuid) of the new collection.
-        output = collection['uuid']
-        if project_link is not None:
-            try:
-                create_project_link(output, project_link)
-            except apiclient.errors.Error as error:
-                print >>stderr, (
-                    "arv-put: Error adding Collection to project: {}.".format(
-                        error))
-                status = 1
+            print >>stderr, "Collection saved as '%s'" % collection['name']
 
+            if args.portable_data_hash and 'portable_data_hash' in collection and collection['portable_data_hash']:
+                output = collection['portable_data_hash']
+            else:
+                output = collection['uuid']
+
+        except apiclient_errors.Error as error:
+            print >>stderr, (
+                "arv-put: Error creating Collection on project: {}.".format(
+                    error))
+            status = 1
+
+    # Print the locator (uuid) of the new collection.
     stdout.write(output)
     if not output.endswith('\n'):
         stdout.write('\n')

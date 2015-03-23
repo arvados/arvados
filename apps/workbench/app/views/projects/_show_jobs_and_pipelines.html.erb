@@ -1,1 +1,5 @@
-<%= render partial: 'show_tab_contents', locals: {project: @object, objects_and_names: @objects_and_names, data_kind: ['arvados#job', 'arvados#pipelineInstance']} %>
+<%= render_pane 'tab_contents', to_string: true, locals: {
+        limit: 50,
+	    filters: [['uuid', 'is_a', ["arvados#job", "arvados#pipelineInstance"]]],
+	    sortable_columns: { 'name' => 'jobs.script, pipeline_instances.name', 'description' => 'jobs.description, pipeline_instances.description' }
+    }.merge(local_assigns) %>

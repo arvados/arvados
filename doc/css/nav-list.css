@@ -24,5 +24,10 @@
 }
 
 .spaced-out li {
-   padding-bottom: 1em; 
+   padding-bottom: 1em;
+}
+
+.inside-list ul {
+    list-style-position: inside;
+    padding-left: 0;
 }

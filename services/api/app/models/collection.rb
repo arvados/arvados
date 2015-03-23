@@ -1,135 +1,228 @@
+require 'arvados/keep'
+
 class Collection < ArvadosModel
   include HasUuid
   include KindAndEtag
   include CommonApiTemplate
 
+  serialize :properties, Hash
+
+  before_validation :check_encoding
+  before_validation :check_signatures
+  before_validation :strip_manifest_text
+  before_validation :set_portable_data_hash
+  before_validation :maybe_clear_replication_confirmed
+  validate :ensure_hash_matches_manifest_text
+  before_save :set_file_names
+
+  # Query only undeleted collections by default.
+  default_scope where("expires_at IS NULL or expires_at > CURRENT_TIMESTAMP")
+
   api_accessible :user, extend: :common do |t|
-    t.add :data_size
-    t.add :files
+    t.add :name
+    t.add :description
+    t.add :properties
+    t.add :portable_data_hash
+    t.add :signed_manifest_text, as: :manifest_text
+    t.add :replication_desired
+    t.add :replication_confirmed
+    t.add :replication_confirmed_at
   end
 
-  api_accessible :with_data, extend: :user do |t|
-    t.add :manifest_text
+  def self.attributes_required_columns
+    super.merge(
+                # If we don't list manifest_text explicitly, the
+                # params[:select] code gets confused by the way we
+                # expose signed_manifest_text as manifest_text in the
+                # API response, and never let clients select the
+                # manifest_text column.
+                'manifest_text' => ['manifest_text'],
+                )
   end
 
-  def redundancy_status
-    if redundancy_confirmed_as.nil?
-      'unconfirmed'
-    elsif redundancy_confirmed_as < redundancy
-      'degraded'
-    else
-      if redundancy_confirmed_at.nil?
-        'unconfirmed'
-      elsif Time.now - redundancy_confirmed_at < 7.days
-        'OK'
-      else
-        'stale'
-      end
-    end
-  end
+  def check_signatures
+    return false if self.manifest_text.nil?
 
-  def assign_uuid
-    if self.manifest_text.nil? and self.uuid.nil?
-      super
-    elsif self.manifest_text and self.uuid
-      self.uuid.gsub! /\+.*/, ''
-      if self.uuid == Digest::MD5.hexdigest(self.manifest_text)
-        self.uuid.gsub! /$/, '+' + self.manifest_text.length.to_s
-        true
-      else
-        errors.add :uuid, 'does not match checksum of manifest_text'
-        false
-      end
-    elsif self.manifest_text
-      errors.add :uuid, 'not supplied (must match checksum of manifest_text)'
-      false
-    else
-      errors.add :manifest_text, 'not supplied'
-      false
-    end
-  end
+    return true if current_user.andand.is_admin
 
-  def data_size
-    inspect_manifest_text if @data_size.nil? or manifest_text_changed?
-    @data_size
-  end
+    # Provided the manifest_text hasn't changed materially since an
+    # earlier validation, it's safe to pass this validation on
+    # subsequent passes without checking any signatures. This is
+    # important because the signatures have probably been stripped off
+    # by the time we get to a second validation pass!
+    return true if @signatures_checked and @signatures_checked == compute_pdh
 
-  def files
-    inspect_manifest_text if @files.nil? or manifest_text_changed?
-    @files
-  end
-
-  def inspect_manifest_text
-    if !manifest_text
-      @data_size = false
-      @files = []
-      return
-    end
-
-    #normalized_manifest = ""
-    #IO.popen(['arv-normalize'], 'w+b') do |io|
-    #  io.write manifest_text
-    #  io.close_write
-    #  while buf = io.read(2**20)
-    #    normalized_manifest += buf
-    #  end
-    #end
-
-    @data_size = 0
-    tmp = {}
-
-    manifest_text.split("\n").each do |stream|
-      toks = stream.split(" ")
-
-      stream = toks[0].gsub /\\(\\|[0-7]{3})/ do |escape_sequence|
-        case $1
-        when '\\' '\\'
-        else $1.to_i(8).chr
+    if self.manifest_text_changed?
+      # Check permissions on the collection manifest.
+      # If any signature cannot be verified, raise PermissionDeniedError
+      # which will return 403 Permission denied to the client.
+      api_token = current_api_client_authorization.andand.api_token
+      signing_opts = {
+        key: Rails.configuration.blob_signing_key,
+        api_token: api_token,
+        ttl: Rails.configuration.blob_signing_ttl,
+      }
+      self.manifest_text.lines.each do |entry|
+        entry.split[1..-1].each do |tok|
+          if /^[[:digit:]]+:[[:digit:]]+:/.match tok
+            # This is a filename token, not a blob locator. Note that we
+            # keep checking tokens after this, even though manifest
+            # format dictates that all subsequent tokens will also be
+            # filenames. Safety first!
+          elsif Blob.verify_signature tok, signing_opts
+            # OK.
+          elsif Keep::Locator.parse(tok).andand.signature
+            # Signature provided, but verify_signature did not like it.
+            logger.warn "Invalid signature on locator #{tok}"
+            raise ArvadosModel::PermissionDeniedError
+          elsif Rails.configuration.permit_create_collection_with_unsigned_manifest
+            # No signature provided, but we are running in insecure mode.
+            logger.debug "Missing signature on locator #{tok} ignored"
+          elsif Blob.new(tok).empty?
+            # No signature provided -- but no data to protect, either.
+          else
+            logger.warn "Missing signature on locator #{tok}"
+            raise ArvadosModel::PermissionDeniedError
+          end
         end
       end
+    end
+    @signatures_checked = compute_pdh
+  end
 
-      toks[1..-1].each do |tok|
-        if (re = tok.match /^[0-9a-f]{32}/)
-          blocksize = nil
-          tok.split('+')[1..-1].each do |hint|
-            if !blocksize and hint.match /^\d+$/
-              blocksize = hint.to_i
-            end
-            if (re = hint.match /^GS(\d+)$/)
-              blocksize = re[1].to_i
-            end
-          end
-          @data_size = false if !blocksize
-          @data_size += blocksize if @data_size
+  def strip_manifest_text
+    if self.manifest_text_changed?
+      # Remove any permission signatures from the manifest.
+      self.class.munge_manifest_locators!(self[:manifest_text]) do |loc|
+        loc.without_signature.to_s
+      end
+    end
+    true
+  end
+
+  def set_portable_data_hash
+    if (portable_data_hash.nil? or
+        portable_data_hash == "" or
+        (manifest_text_changed? and !portable_data_hash_changed?))
+      @need_pdh_validation = false
+      self.portable_data_hash = compute_pdh
+    elsif portable_data_hash_changed?
+      @need_pdh_validation = true
+      begin
+        loc = Keep::Locator.parse!(self.portable_data_hash)
+        loc.strip_hints!
+        if loc.size
+          self.portable_data_hash = loc.to_s
         else
-          if (re = tok.match /^(\d+):(\d+):(\S+)$/)
-            filename = re[3].gsub /\\(\\|[0-7]{3})/ do |escape_sequence|
-              case $1
-              when '\\' '\\'
-              else $1.to_i(8).chr
-              end
-            end
-            fn = stream + '/' + filename
-            i = re[2].to_i
-            if tmp[fn]
-              tmp[fn] += i
-            else
-              tmp[fn] = i
-            end
-          end
+          self.portable_data_hash = "#{loc.hash}+#{portable_manifest_text.bytesize}"
         end
+      rescue ArgumentError => e
+        errors.add(:portable_data_hash, "#{e}")
+        return false
       end
     end
+    true
+  end
 
-    @files = []
-    tmp.each do |k, v|
-      re = k.match(/^(.+)\/(.+)/)
-      @files << [re[1], re[2], v]
+  def ensure_hash_matches_manifest_text
+    return true unless manifest_text_changed? or portable_data_hash_changed?
+    # No need verify it if :set_portable_data_hash just computed it!
+    return true if not @need_pdh_validation
+    expect_pdh = compute_pdh
+    if expect_pdh != portable_data_hash
+      errors.add(:portable_data_hash,
+                 "does not match computed hash #{expect_pdh}")
+      return false
     end
   end
 
-  def self.uuid_like_pattern
-    "________________________________+%"
+  def set_file_names
+    if self.manifest_text_changed?
+      self.file_names = manifest_files
+    end
+    true
+  end
+
+  def manifest_files
+    names = ''
+    if self.manifest_text
+      self.manifest_text.scan(/ \d+:\d+:(\S+)/) do |name|
+        names << name.first.gsub('\040',' ') + "\n"
+        break if names.length > 2**12
+      end
+    end
+
+    if self.manifest_text and names.length < 2**12
+      self.manifest_text.scan(/^\.\/(\S+)/m) do |stream_name|
+        names << stream_name.first.gsub('\040',' ') + "\n"
+        break if names.length > 2**12
+      end
+    end
+
+    names[0,2**12]
+  end
+
+  def check_encoding
+    if manifest_text.encoding.name == 'UTF-8' and manifest_text.valid_encoding?
+      true
+    else
+      begin
+        # If Ruby thinks the encoding is something else, like 7-bit
+        # ASCII, but its stored bytes are equal to the (valid) UTF-8
+        # encoding of the same string, we declare it to be a UTF-8
+        # string.
+        utf8 = manifest_text
+        utf8.force_encoding Encoding::UTF_8
+        if utf8.valid_encoding? and utf8 == manifest_text.encode(Encoding::UTF_8)
+          manifest_text = utf8
+          return true
+        end
+      rescue
+      end
+      errors.add :manifest_text, "must use UTF-8 encoding"
+      false
+    end
+  end
+
+  def signed_manifest_text
+    if has_attribute? :manifest_text
+      token = current_api_client_authorization.andand.api_token
+      @signed_manifest_text = self.class.sign_manifest manifest_text, token
+    end
+  end
+
+  def self.sign_manifest manifest, token
+    signing_opts = {
+      key: Rails.configuration.blob_signing_key,
+      api_token: token,
+      ttl: Rails.configuration.blob_signing_ttl,
+    }
+    m = manifest.dup
+    munge_manifest_locators!(m) do |loc|
+      Blob.sign_locator(loc.to_s, signing_opts)
+    end
+    return m
+  end
+
+  def self.munge_manifest_locators! manifest
+    # Given a manifest text and a block, yield each locator,
+    # and replace it with whatever the block returns.
+    manifest.andand.gsub!(/ [[:xdigit:]]{32}(\+\S+)?/) do |word|
+      if loc = Keep::Locator.parse(word.strip)
+        " " + yield(loc)
+      else
+        " " + word
+      end
+    end
+  end
+
+  def self.each_manifest_locator manifest
+    # Given a manifest text and a block, yield each locator.
+    manifest.andand.scan(/ ([[:xdigit:]]{32}(\+\S+)?)/) do |word, _|
+      if loc = Keep::Locator.parse(word)
+        yield loc
+      end
+    end
   end
 
   def self.normalize_uuid uuid
@@ -148,7 +241,8 @@ class Collection < ArvadosModel
     [hash_part, size_part].compact.join '+'
   end
 
-  def self.uuids_for_docker_image(search_term, search_tag=nil, readers=nil)
+  # Return array of Collection objects
+  def self.find_all_for_docker_image(search_term, search_tag=nil, readers=nil)
     readers ||= [Thread.current[:user]]
     base_search = Link.
       readable_by(*readers).
@@ -156,12 +250,25 @@ class Collection < ArvadosModel
       joins("JOIN collections ON links.head_uuid = collections.uuid").
       order("links.created_at DESC")
 
-    # If the search term is a Collection locator with an associated
-    # Docker image hash link, return that Collection.
-    coll_matches = base_search.
-      where(link_class: "docker_image_hash", collections: {uuid: search_term})
-    if match = coll_matches.first
-      return [match.head_uuid]
+    # If the search term is a Collection locator that contains one file
+    # that looks like a Docker image, return it.
+    if loc = Keep::Locator.parse(search_term)
+      loc.strip_hints!
+      coll_match = readable_by(*readers).where(portable_data_hash: loc.to_s).limit(1).first
+      if coll_match
+        # Check if the Collection contains exactly one file whose name
+        # looks like a saved Docker image.
+        manifest = Keep::Manifest.new(coll_match.manifest_text)
+        if manifest.exact_file_count?(1) and
+            (manifest.files[0][1] =~ /^[0-9A-Fa-f]{64}\.tar$/)
+          return [coll_match]
+        end
+      end
+    end
+
+    if search_tag.nil? and (n = search_term.index(":"))
+      search_tag = search_term[n+1..-1]
+      search_term = search_term[0..n-1]
     end
 
     # Find Collections with matching Docker image repository+tag pairs.
@@ -172,7 +279,7 @@ class Collection < ArvadosModel
     # If that didn't work, find Collections with matching Docker image hashes.
     if matches.empty?
       matches = base_search.
-        where("link_class = ? and name LIKE ?",
+        where("link_class = ? and links.name LIKE ?",
               "docker_image_hash", "#{search_term}%")
     end
 
@@ -180,20 +287,70 @@ class Collection < ArvadosModel
     # so that anything with an image timestamp is considered more recent than
     # anything without; then we use the link's created_at as a tiebreaker.
     uuid_timestamps = {}
-    matches.find_each do |link|
-      uuid_timestamps[link.head_uuid] =
-        [(-link.properties["image_timestamp"].to_datetime.to_i rescue 0),
-         -link.created_at.to_i]
+    matches.all.map do |link|
+      uuid_timestamps[link.head_uuid] = [(-link.properties["image_timestamp"].to_datetime.to_i rescue 0),
+       -link.created_at.to_i]
     end
-    uuid_timestamps.keys.sort_by { |uuid| uuid_timestamps[uuid] }
+    Collection.where('uuid in (?)', uuid_timestamps.keys).sort_by { |c| uuid_timestamps[c.uuid] }
   end
 
   def self.for_latest_docker_image(search_term, search_tag=nil, readers=nil)
-    image_uuid = uuids_for_docker_image(search_term, search_tag, readers).first
-    if image_uuid.nil?
-      nil
-    else
-      find_by_uuid(image_uuid)
+    find_all_for_docker_image(search_term, search_tag, readers).first
+  end
+
+  def self.searchable_columns operator
+    super - ["manifest_text"]
+  end
+
+  def self.full_text_searchable_columns
+    super - ["manifest_text"]
+  end
+
+  protected
+  def portable_manifest_text
+    portable_manifest = self[:manifest_text].dup
+    self.class.munge_manifest_locators!(portable_manifest) do |loc|
+      if loc.size
+        loc.hash + '+' + loc.size.to_s
+      else
+        loc.hash
+      end
     end
+    portable_manifest
+  end
+
+  def compute_pdh
+    portable_manifest = portable_manifest_text
+    (Digest::MD5.hexdigest(portable_manifest) +
+     '+' +
+     portable_manifest.bytesize.to_s)
+  end
+
+  def maybe_clear_replication_confirmed
+    if manifest_text_changed?
+      # If the new manifest_text contains locators whose hashes
+      # weren't in the old manifest_text, storage replication is no
+      # longer confirmed.
+      in_old_manifest = {}
+      self.class.each_manifest_locator(manifest_text_was) do |loc|
+        in_old_manifest[loc.hash] = true
+      end
+      self.class.each_manifest_locator(manifest_text) do |loc|
+        if not in_old_manifest[loc.hash]
+          self.replication_confirmed_at = nil
+          self.replication_confirmed = nil
+          break
+        end
+      end
+    end
+  end
+
+  def ensure_permission_to_save
+    if (not current_user.andand.is_admin and
+        (replication_confirmed_at_changed? or replication_confirmed_changed?) and
+        not (replication_confirmed_at.nil? and replication_confirmed.nil?))
+      raise ArvadosModel::PermissionDeniedError.new("replication_confirmed and replication_confirmed_at attributes cannot be changed, except by setting both to nil")
+    end
+    super
   end
 end

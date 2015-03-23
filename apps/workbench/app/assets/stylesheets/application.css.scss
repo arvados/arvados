@@ -11,6 +11,7 @@
  *= require_self
  *= require bootstrap
  *= require bootstrap3-editable/bootstrap-editable
+ *= require morris
  *= require_tree .
  */
 
@@ -45,6 +46,9 @@ table.table-justforlayout {
 }
 .deemphasize {
     font-size: .8em;
+    color: #888;
+}
+.lighten {
     color: #888;
 }
 .arvados-filename,
@@ -88,6 +92,16 @@ form.small-form-margin {
 }
 .nowrap {
     white-space: nowrap;
+}
+input.select-on-focus {
+    font-family: monospace;
+    background: inherit;
+    border: thin #ccc solid;
+    border-radius: .2em;
+    padding: .15em .5em;
+}
+input.select-on-focus:focus {
+    border-color: #9bf;
 }
 
 /* top nav */
@@ -146,6 +160,14 @@ nav.navbar-fixed-top .navbar-nav.navbar-right > li > a:hover {
     margin-bottom: -15px;
 }
 
+.infinite-scroller .fa-warning {
+    color: #800;
+}
+
+th[data-sort-order] {
+    cursor: pointer;
+}
+
 .inline-progress-container div.progress {
     margin-bottom: 0;
 }
@@ -192,11 +214,8 @@ table.table-fixed-header-row tbody {
     top:1.5em;
 }
 
-/* Setting the height needs to be fixed with javascript. */
 .dropdown-menu {
-    padding-right: 20px;
-    max-height: 440px;
-    width: 400px;
+    max-height: 30em;
     overflow-y: auto;
 }
 
@@ -234,4 +253,46 @@ div#wrapper {
 }
 svg text {
     font-size: 6pt;
+}
+
+div.pane-content iframe {
+  width: 100%;
+  border: none;
+}
+span.editable-textile {
+  display: inline-block;
+}
+.text-overflow-ellipsis {
+  white-space: nowrap;
+  overflow: hidden;
+  text-overflow: ellipsis;
+}
+.time-label-divider {
+  font-size: 80%;
+  min-width: 1em;
+  padding: 0px 2px 0px 0px;
+}
+.task-summary-status {
+  font-size: 80%;
+}
+#page-wrapper > div > h2 {
+  margin-top: 0px;
+}
+
+.compute-summary-numbers td {
+  font-size: 150%;
+}
+
+.arv-log-refresh-control {
+  display: none;
+}
+
+/* Hide Angular content until Angular is ready */
+[ng\:cloak], [ng-cloak], .ng-cloak {
+    display: none !important;
+}
+
+/* tabs */
+ul.nav.nav-tabs {
+    font-size: 90%
 }

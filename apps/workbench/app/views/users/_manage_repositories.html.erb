@@ -1,0 +1,47 @@
+<div>
+  <p>
+    For more information see <%= link_to raw('Writing a pipeline'),
+    "#{Rails.configuration.arvados_docsite}/user/tutorials/tutorial-firstscript.html", target: "_blank"%>.
+  </p>
+
+  <% if !@my_repositories.any? %>
+    You do not seem to have access to any repositories. If you would like to request access, please contact your system admin.
+  <% else %>
+    <table class="table repositories-table">
+      <colgroup>
+        <col style="width: 30%" />
+        <col style="width: 10%" />
+        <col style="width: 60%" />
+      </colgroup>
+      <thead>
+        <tr>
+          <th> Name </th>
+          <th> Read/Write </th>
+          <th> URL </th>
+          <th> </th>
+        </tr>
+      </thead>
+      <tbody>
+        <% @my_repositories.andand.each do |repo| %>
+          <% writable = @repo_writable[repo.uuid] %>
+          <tr>
+            <td style="word-break:break-all;">
+              <%= repo[:name] %>
+            </td>
+            <td>
+              <%= writable ? 'writable' : 'read-only' %>
+            </td>
+            <td style="word-break:break-all;">
+              <code><%= writable ? repo[:push_url] : repo[:fetch_url] %></code>
+            </td>
+            <td>
+              <% if writable == 'can_manage' %>
+                <%= link_to "Share", "/repositories/#{repo[:uuid]}#Sharing" %>
+              <% end %>
+            </td>
+          </tr>
+        <% end %>
+      </tbody>
+    </table>
+  <% end %>
+</div>

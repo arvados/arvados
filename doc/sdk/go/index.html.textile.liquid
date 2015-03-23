@@ -1,0 +1,25 @@
+---
+layout: default
+navsection: sdk
+navmenu: Go
+title: "Go SDK"
+
+...
+
+The Go ("Golang":http://golang.org) SDK provides a generic set of wrappers so you can make API calls easily.
+
+h3. Installation
+
+You don't need to install anything. Just import the client like this. The go tools will fetch the relevant code and dependencies for you.
+
+<notextile>{% code 'example_sdk_go_imports' as go %}</notextile>
+
+If you need pre-release client code, you can use the latest version from the repo by following "these instructions.":https://arvados.org/projects/arvados/wiki/Go#Using-Go-with-Arvados
+
+h3. Example
+
+You can save this source as a .go file and run it:
+
+<notextile>{% code 'example_sdk_go' as go %}</notextile>
+
+A few more usage examples can be found in the "services/keepproxy":https://arvados.org/projects/arvados/repository/revisions/master/show/services/keepproxy and "sdk/go/keepclient":https://arvados.org/projects/arvados/repository/revisions/master/show/sdk/go/keepclient directories in the arvados source tree.

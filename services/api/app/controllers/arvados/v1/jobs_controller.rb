@@ -2,8 +2,10 @@ class Arvados::V1::JobsController < ApplicationController
   accept_attribute_as_json :script_parameters, Hash
   accept_attribute_as_json :runtime_constraints, Hash
   accept_attribute_as_json :tasks_summary, Hash
-  skip_before_filter :find_object_by_uuid, :only => :queue
-  skip_before_filter :render_404_if_no_object, :only => :queue
+  skip_before_filter :find_object_by_uuid, :only => [:queue, :queue_size]
+  skip_before_filter :render_404_if_no_object, :only => [:queue, :queue_size]
+
+  include DbCurrentTime
 
   def create
     [:repository, :script, :script_version, :script_parameters].each do |r|
@@ -26,32 +28,38 @@ class Arvados::V1::JobsController < ApplicationController
     end
 
     if params[:find_or_create]
-      load_filters_param
+      return if false.equal?(load_filters_param)
       if @filters.empty?  # Translate older creation parameters into filters.
-        @filters = [:repository, :script].map do |attrsym|
-          [attrsym.to_s, "=", resource_attrs[attrsym]]
-        end
-        @filters.append(["script_version", "in",
-                         Commit.find_commit_range(current_user,
-                                                  resource_attrs[:repository],
-                                                  params[:minimum_script_version],
-                                                  resource_attrs[:script_version],
-                                                  params[:exclude_script_versions])])
+        @filters =
+          [["repository", "=", resource_attrs[:repository]],
+           ["script", "=", resource_attrs[:script]],
+           ["script_version", "in git",
+            params[:minimum_script_version] || resource_attrs[:script_version]],
+           ["script_version", "not in git", params[:exclude_script_versions]],
+          ].reject { |filter| filter.last.nil? or filter.last.empty? }
         if image_search = resource_attrs[:runtime_constraints].andand["docker_image"]
-          image_tag = resource_attrs[:runtime_constraints]["docker_image_tag"]
-          image_locator = Collection.
-            uuids_for_docker_image(image_search, image_tag, @read_users).first
-          return super if image_locator.nil?  # We won't find anything to reuse.
-          @filters.append(["docker_image_locator", "=", image_locator])
+          if image_tag = resource_attrs[:runtime_constraints]["docker_image_tag"]
+            image_search += ":#{image_tag}"
+          end
+          @filters.append(["docker_image_locator", "in docker", image_search])
         else
           @filters.append(["docker_image_locator", "=", nil])
         end
-      else  # Check specified filters for some reasonableness.
-        filter_names = @filters.map { |f| f.first }.uniq
-        ["repository", "script"].each do |req_filter|
-          if not filter_names.include?(req_filter)
-            raise ArgumentError.new("#{req_filter} filter required")
-          end
+        if sdk_version = resource_attrs[:runtime_constraints].andand["arvados_sdk_version"]
+          @filters.append(["arvados_sdk_version", "in git", sdk_version])
+        end
+        begin
+          load_job_specific_filters
+        rescue ArgumentError => error
+          return send_error(error.message)
+        end
+      end
+
+      # Check specified filters for some reasonableness.
+      filter_names = @filters.map { |f| f.first }.uniq
+      ["repository", "script"].each do |req_filter|
+        if not filter_names.include?(req_filter)
+          return send_error("#{req_filter} filter required")
         end
       end
 
@@ -62,20 +70,22 @@ class Arvados::V1::JobsController < ApplicationController
       incomplete_job = nil
       @objects.each do |j|
         if j.nondeterministic != true and
-            ((j.success == true and j.output != nil) or j.running == true) and
+            ["Queued", "Running", "Complete"].include?(j.state) and
             j.script_parameters == resource_attrs[:script_parameters]
-          if j.running
+          if j.state != "Complete" && j.owner_uuid == current_user.uuid
             # We'll use this if we don't find a job that has completed
             incomplete_job ||= j
           else
-            # Record the first job in the list
-            if !@object
-              @object = j
-            end
-            # Ensure that all candidate jobs actually did produce the same output
-            if @object.output != j.output
-              @object = nil
-              break
+            if Collection.readable_by(current_user).find_by_portable_data_hash(j.output)
+              # Record the first job in the list
+              if !@object
+                @object = j
+              end
+              # Ensure that all candidate jobs actually did produce the same output
+              if @object.output != j.output
+                @object = nil
+                break
+              end
             end
           end
         end
@@ -91,7 +101,12 @@ class Arvados::V1::JobsController < ApplicationController
 
   def cancel
     reload_object_before_update
-    @object.update_attributes! cancelled_at: Time.now
+    @object.update_attributes! state: Job::Cancelled
+    show
+  end
+
+  def lock
+    @object.lock current_user.uuid
     show
   end
 
@@ -109,8 +124,9 @@ class Arvados::V1::JobsController < ApplicationController
       while not @job.started_at
         # send a summary (job queue + available nodes) to the client
         # every few seconds while waiting for the job to start
-        last_ack_at ||= Time.now - Q_UPDATE_INTERVAL - 1
-        if Time.now - last_ack_at >= Q_UPDATE_INTERVAL
+        current_time = db_current_time
+        last_ack_at ||= current_time - Q_UPDATE_INTERVAL - 1
+        if current_time - last_ack_at >= Q_UPDATE_INTERVAL
           nodes_in_state = {idle: 0, alloc: 0}
           ActiveRecord::Base.uncached do
             Node.where('hostname is not ?', nil).collect do |n|
@@ -126,13 +142,13 @@ class Arvados::V1::JobsController < ApplicationController
             break if j.uuid == @job.uuid
             n_queued_before_me += 1
           end
-          yield "#{Time.now}" \
+          yield "#{db_current_time}" \
             " job #{@job.uuid}" \
             " queue_position #{n_queued_before_me}" \
             " queue_size #{job_queue.size}" \
             " nodes_idle #{nodes_in_state[:idle]}" \
             " nodes_alloc #{nodes_in_state[:alloc]}\n"
-          last_ack_at = Time.now
+          last_ack_at = db_current_time
         end
         sleep 3
         ActiveRecord::Base.uncached do
@@ -146,15 +162,35 @@ class Arvados::V1::JobsController < ApplicationController
     params[:order] ||= ['priority desc', 'created_at']
     load_limit_offset_order_params
     load_where_param
-    @where.merge!({
-                    started_at: nil,
-                    is_locked_by_uuid: nil,
-                    cancelled_at: nil,
-                    success: nil
-                  })
-    load_filters_param
+    @where.merge!({state: Job::Queued})
+    return if false.equal?(load_filters_param)
     find_objects_for_index
     index
+  end
+
+  def queue_size
+    # Users may not be allowed to see all the jobs in the queue, so provide a
+    # method to get just the queue size in order to get a gist of how busy the
+    # cluster is.
+    render :json => {:queue_size => Job.queue.size}
+  end
+
+  def self._create_requires_parameters
+    (super rescue {}).
+      merge({
+              find_or_create: {
+                type: 'boolean', required: false, default: false
+              },
+              filters: {
+                type: 'array', required: false
+              },
+              minimum_script_version: {
+                type: 'string', required: false
+              },
+              exclude_script_versions: {
+                type: 'array', required: false
+              },
+            })
   end
 
   def self._queue_requires_parameters
@@ -163,57 +199,83 @@ class Arvados::V1::JobsController < ApplicationController
 
   protected
 
-  def load_filters_param
-    # Convert Job-specific git and Docker filters into normal SQL filters.
-    super
+  def load_job_specific_filters
+    # Convert Job-specific @filters entries into general SQL filters.
     script_info = {"repository" => nil, "script" => nil}
-    script_range = {"exclude_versions" => []}
-    @filters.select! do |filter|
-      if (script_info.has_key? filter[0]) and (filter[1] == "=")
-        if script_info[filter[0]].nil?
-          script_info[filter[0]] = filter[2]
-        elsif script_info[filter[0]] != filter[2]
-          raise ArgumentError.new("incompatible #{filter[0]} filters")
+    git_filters = Hash.new do |hash, key|
+      hash[key] = {"max_version" => "HEAD", "exclude_versions" => []}
+    end
+    @filters.select! do |(attr, operator, operand)|
+      if (script_info.has_key? attr) and (operator == "=")
+        if script_info[attr].nil?
+          script_info[attr] = operand
+        elsif script_info[attr] != operand
+          raise ArgumentError.new("incompatible #{attr} filters")
         end
       end
-      case filter[0..1]
-      when ["script_version", "in git"]
-        script_range["min_version"] = filter.last
+      case operator
+      when "in git"
+        git_filters[attr]["min_version"] = operand
         false
-      when ["script_version", "not in git"]
-        begin
-          script_range["exclude_versions"] += filter.last
-        rescue TypeError
-          script_range["exclude_versions"] << filter.last
-        end
+      when "not in git"
+        git_filters[attr]["exclude_versions"] += Array.wrap(operand)
         false
-      when ["docker_image_locator", "in docker"], ["docker_image_locator", "not in docker"]
-        filter[1].sub!(/ docker$/, '')
-        search_list = filter[2].is_a?(Enumerable) ? filter[2] : [filter[2]]
-        filter[2] = search_list.flat_map do |search_term|
+      when "in docker", "not in docker"
+        image_hashes = Array.wrap(operand).flat_map do |search_term|
           image_search, image_tag = search_term.split(':', 2)
-          Collection.uuids_for_docker_image(image_search, image_tag, @read_users)
+          Collection.
+            find_all_for_docker_image(image_search, image_tag, @read_users).
+            map(&:portable_data_hash)
         end
-        true
+        @filters << [attr, operator.sub(/ docker$/, ""), image_hashes]
+        false
       else
         true
       end
     end
 
     # Build a real script_version filter from any "not? in git" filters.
-    if (script_range.size > 1) or script_range["exclude_versions"].any?
-      script_info.each_pair do |key, value|
-        if value.nil?
-          raise ArgumentError.new("script_version filter needs #{key} filter")
+    git_filters.each_pair do |attr, filter|
+      case attr
+      when "script_version"
+        script_info.each_pair do |key, value|
+          if value.nil?
+            raise ArgumentError.new("script_version filter needs #{key} filter")
+          end
         end
+        filter["repository"] = script_info["repository"]
+        begin
+          filter["max_version"] = resource_attrs[:script_version]
+        rescue
+          # Using HEAD, set earlier by the hash default, is fine.
+        end
+      when "arvados_sdk_version"
+        filter["repository"] = "arvados"
+      else
+        raise ArgumentError.new("unknown attribute for git filter: #{attr}")
       end
-      last_version = begin resource_attrs[:script_version] rescue "HEAD" end
-      @filters.append(["script_version", "in",
-                       Commit.find_commit_range(current_user,
-                                                script_info["repository"],
-                                                script_range["min_version"],
-                                                last_version,
-                                                script_range["exclude_versions"])])
+      version_range = Commit.find_commit_range(current_user,
+                                               filter["repository"],
+                                               filter["min_version"],
+                                               filter["max_version"],
+                                               filter["exclude_versions"])
+      if version_range.nil?
+        raise ArgumentError.
+          new("error searching #{filter['repository']} from " +
+              "'#{filter['min_version']}' to '#{filter['max_version']}', " +
+              "excluding #{filter['exclude_versions']}")
+      end
+      @filters.append([attr, "in", version_range])
+    end
+  end
+
+  def load_filters_param
+    begin
+      super
+      load_job_specific_filters
+    rescue ArgumentError => error
+      send_error(error.message)
+      false
     end
   end
 end

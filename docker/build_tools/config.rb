@@ -2,6 +2,7 @@
 
 require 'yaml'
 require 'fileutils'
+require 'digest'
 
 abort 'Error: Ruby >= 1.9.3 required.' if RUBY_VERSION < '1.9.3'
 
@@ -13,10 +14,13 @@ config = YAML.load_file('config.yml')
 # be suitable for any installation.
 
 # Any _PW/_SECRET config settings represent passwords/secrets. If they
-# are blank, choose a password randomly.
-config.each_key do |var|
+# are blank, choose a password. Make sure the generated password
+# doesn't change if config.yml doesn't change. Otherwise, keys won't
+# match any more if (say) keep's files get regenerated but apiserver's
+# don't.
+config.sort.map do |var,val|
   if (var.end_with?('_PW') || var.end_with?('_SECRET')) && (config[var].nil? || config[var].empty?)
-    config[var] = rand(2**256).to_s(36)
+    config[var] = Digest::SHA1.hexdigest(`hostname` + var + config.to_yaml)
   end
 end
 
@@ -30,16 +34,21 @@ end
 # the same tree structure as in the original source. Then all
 # the files can be added to the docker container with a single ADD.
 
-Dir.glob('*/generated/*') do |stale_file|
-  File.delete(stale_file)
+if ARGV[0] and ARGV[0].length > 0
+  globdir = ARGV[0]
+else
+  globdir = '*'
 end
 
+FileUtils.rm_r Dir.glob(globdir + '/generated/*')
+
 File.umask(022)
-Dir.glob('*/*.in') do |template_file|
+Dir.glob(globdir + '/*.in') do |template_file|
   generated_dir = File.join(File.dirname(template_file), 'generated')
   Dir.mkdir(generated_dir) unless Dir.exists? generated_dir
   output_path = File.join(generated_dir, File.basename(template_file, '.in'))
-  File.open(output_path, "w") do |output|
+  output_mode = (File.stat(template_file).mode & 0100) ? 0755 : 0644
+  File.open(output_path, "w", output_mode) do |output|
     File.open(template_file) do |input|
       input.each_line do |line|
 
@@ -62,13 +71,4 @@ Dir.glob('*/*.in') do |template_file|
       end
     end
   end
-end
-
-# Copy the ssh public key file to base/generated (if a path is given)
-generated_dir = File.join('base/generated')
-Dir.mkdir(generated_dir) unless Dir.exists? generated_dir
-if (!config['PUBLIC_KEY_PATH'].nil? and
-    File.readable? config['PUBLIC_KEY_PATH'])
-  FileUtils.cp(config['PUBLIC_KEY_PATH'],
-               File.join(generated_dir, 'id_rsa.pub'))
 end

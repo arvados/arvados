@@ -25,7 +25,7 @@ require 'rails/test_help'
 
 module ArvadosTestSupport
   def json_response
-    ActiveSupport::JSON.decode @response.body
+    Oj.load response.body
   end
 
   def api_token(api_client_auth_name)
@@ -38,6 +38,7 @@ module ArvadosTestSupport
 end
 
 class ActiveSupport::TestCase
+  include FactoryGirl::Syntax::Methods
   fixtures :all
 
   include ArvadosTestSupport
@@ -48,6 +49,16 @@ class ActiveSupport::TestCase
     Thread.current[:api_client_uuid] = nil
     Thread.current[:api_client] = nil
     Thread.current[:user] = nil
+    restore_configuration
+  end
+
+  def restore_configuration
+    # Restore configuration settings changed during tests
+    $application_config.each do |k,v|
+      if k.match /^[^.]*$/
+        Rails.configuration.send (k + '='), v
+      end
+    end
   end
 
   def set_user_from_auth(auth_name)
@@ -61,8 +72,35 @@ class ActiveSupport::TestCase
     self.request.headers["Accept"] = "text/json"
   end
 
-  def authorize_with(api_client_auth_name)
-    ArvadosApiToken.new.call ({"rack.input" => "", "HTTP_AUTHORIZATION" => "OAuth2 #{api_client_authorizations(api_client_auth_name).api_token}"})
+  def authorize_with api_client_auth_name
+    authorize_with_token api_client_authorizations(api_client_auth_name).api_token
+  end
+
+  def authorize_with_token token
+    t = token
+    t = t.api_token if t.respond_to? :api_token
+    ArvadosApiToken.new.call("rack.input" => "",
+                             "HTTP_AUTHORIZATION" => "OAuth2 #{t}")
+  end
+end
+
+class ActionController::TestCase
+  setup do
+    @counter = 0
+  end
+
+  def check_counter action
+    @counter += 1
+    if @counter == 2
+      assert_equal 1, 2, "Multiple actions in functional test"
+    end
+  end
+
+  [:get, :post, :put, :patch, :delete].each do |method|
+    define_method method do |action, *args|
+      check_counter action
+      super action, *args
+    end
   end
 end
 

@@ -4,6 +4,7 @@ class ArvadosModel < ActiveRecord::Base
   self.abstract_class = true
 
   include CurrentApiClient      # current_user, current_api_client, etc.
+  include DbCurrentTime
 
   attr_protected :created_at
   attr_protected :modified_by_user_uuid
@@ -21,8 +22,8 @@ class ArvadosModel < ActiveRecord::Base
   after_update :log_update
   after_destroy :log_destroy
   after_find :convert_serialized_symbols_to_strings
+  before_validation :normalize_collection_uuids
   validate :ensure_serialized_attribute_type
-  validate :normalize_collection_uuids
   validate :ensure_valid_uuids
 
   # Note: This only returns permission links. It does not account for
@@ -31,6 +32,12 @@ class ArvadosModel < ActiveRecord::Base
   has_many :permissions, :foreign_key => :head_uuid, :class_name => 'Link', :primary_key => :uuid, :conditions => "link_class = 'permission'"
 
   class PermissionDeniedError < StandardError
+    def http_status
+      403
+    end
+  end
+
+  class AlreadyLockedError < StandardError
     def http_status
       403
     end
@@ -50,31 +57,77 @@ class ArvadosModel < ActiveRecord::Base
     "#{current_api_base}/#{self.class.to_s.pluralize.underscore}/#{self.uuid}"
   end
 
+  def self.selectable_attributes(template=:user)
+    # Return an array of attribute name strings that can be selected
+    # in the given template.
+    api_accessible_attributes(template).map { |attr_spec| attr_spec.first.to_s }
+  end
+
   def self.searchable_columns operator
     textonly_operator = !operator.match(/[<=>]/)
-    self.columns.collect do |col|
-      if [:string, :text].index(col.type)
-        col.name
-      elsif !textonly_operator and [:datetime, :integer].index(col.type)
-        col.name
+    self.columns.select do |col|
+      case col.type
+      when :string, :text
+        true
+      when :datetime, :integer, :boolean
+        !textonly_operator
+      else
+        false
       end
-    end.compact
+    end.map(&:name)
   end
 
   def self.attribute_column attr
     self.columns.select { |col| col.name == attr.to_s }.first
   end
 
-  # Return nil if current user is not allowed to see the list of
-  # writers. Otherwise, return a list of user_ and group_uuids with
-  # write permission. (If not returning nil, current_user is always in
-  # the list because can_manage permission is needed to see the list
-  # of writers.)
+  def self.attributes_required_columns
+    # This method returns a hash.  Each key is the name of an API attribute,
+    # and it's mapped to a list of database columns that must be fetched
+    # to generate that attribute.
+    # This implementation generates a simple map of attributes to
+    # matching column names.  Subclasses can override this method
+    # to specify that method-backed API attributes need to fetch
+    # specific columns from the database.
+    all_columns = columns.map(&:name)
+    api_column_map = Hash.new { |hash, key| hash[key] = [] }
+    methods.grep(/^api_accessible_\w+$/).each do |method_name|
+      next if method_name == :api_accessible_attributes
+      send(method_name).each_pair do |api_attr_name, col_name|
+        col_name = col_name.to_s
+        if all_columns.include?(col_name)
+          api_column_map[api_attr_name.to_s] |= [col_name]
+        end
+      end
+    end
+    api_column_map
+  end
+
+  def self.default_orders
+    ["#{table_name}.modified_at desc", "#{table_name}.uuid"]
+  end
+
+  # If current user can manage the object, return an array of uuids of
+  # users and groups that have permission to write the object. The
+  # first two elements are always [self.owner_uuid, current user's
+  # uuid].
+  #
+  # If current user can write but not manage the object, return
+  # [self.owner_uuid, current user's uuid].
+  #
+  # If current user cannot write this object, just return
+  # [self.owner_uuid].
   def writable_by
+    return [owner_uuid] if not current_user
     unless (owner_uuid == current_user.uuid or
             current_user.is_admin or
-            current_user.groups_i_can(:manage).index(owner_uuid))
-      return nil
+            (current_user.groups_i_can(:manage) & [uuid, owner_uuid]).any?)
+      if ((current_user.groups_i_can(:write) + [current_user.uuid]) &
+          [uuid, owner_uuid]).any?
+        return [owner_uuid, current_user.uuid]
+      else
+        return [owner_uuid]
+      end
     end
     [owner_uuid, current_user.uuid] + permissions.collect do |p|
       if ['can_write', 'can_manage'].index p.name
@@ -99,72 +152,88 @@ class ArvadosModel < ActiveRecord::Base
     end
 
     # Check if any of the users are admin.  If so, we're done.
-    if users_list.select { |u| u.is_admin }.empty?
+    if users_list.select { |u| u.is_admin }.any?
+      return self
+    end
 
-      # Collect the uuids for each user and any groups readable by each user.
-      user_uuids = users_list.map { |u| u.uuid }
-      uuid_list = user_uuids + users_list.flat_map { |u| u.groups_i_can(:read) }
+    # Collect the uuids for each user and any groups readable by each user.
+    user_uuids = users_list.map { |u| u.uuid }
+    uuid_list = user_uuids + users_list.flat_map { |u| u.groups_i_can(:read) }
+    sql_conds = []
+    sql_params = []
+    sql_table = kwargs.fetch(:table_name, table_name)
+    or_object_uuid = ''
+
+    # This row is owned by a member of users_list, or owned by a group
+    # readable by a member of users_list
+    # or
+    # This row uuid is the uuid of a member of users_list
+    # or
+    # A permission link exists ('write' and 'manage' implicitly include
+    # 'read') from a member of users_list, or a group readable by users_list,
+    # to this row, or to the owner of this row (see join() below).
+    sql_conds += ["#{sql_table}.uuid in (?)"]
+    sql_params += [user_uuids]
+
+    if uuid_list.any?
+      sql_conds += ["#{sql_table}.owner_uuid in (?)"]
+      sql_params += [uuid_list]
+
       sanitized_uuid_list = uuid_list.
         collect { |uuid| sanitize(uuid) }.join(', ')
-      sql_conds = []
-      sql_params = []
-      sql_table = kwargs.fetch(:table_name, table_name)
-      or_object_uuid = ''
-
-      # This row is owned by a member of users_list, or owned by a group
-      # readable by a member of users_list
-      # or
-      # This row uuid is the uuid of a member of users_list
-      # or
-      # A permission link exists ('write' and 'manage' implicitly include
-      # 'read') from a member of users_list, or a group readable by users_list,
-      # to this row, or to the owner of this row (see join() below).
       permitted_uuids = "(SELECT head_uuid FROM links WHERE link_class='permission' AND tail_uuid IN (#{sanitized_uuid_list}))"
-
-      sql_conds += ["#{sql_table}.owner_uuid in (?)",
-                    "#{sql_table}.uuid in (?)",
-                    "#{sql_table}.uuid IN #{permitted_uuids}"]
-      sql_params += [uuid_list, user_uuids]
-
-      if sql_table == "links" and users_list.any?
-        # This row is a 'permission' or 'resources' link class
-        # The uuid for a member of users_list is referenced in either the head
-        # or tail of the link
-        sql_conds += ["(#{sql_table}.link_class in (#{sanitize 'permission'}, #{sanitize 'resources'}) AND (#{sql_table}.head_uuid IN (?) OR #{sql_table}.tail_uuid IN (?)))"]
-        sql_params += [user_uuids, user_uuids]
-      end
-
-      if sql_table == "logs" and users_list.any?
-        # Link head points to the object described by this row
-        sql_conds += ["#{sql_table}.object_uuid IN #{permitted_uuids}"]
-
-        # This object described by this row is owned by this user, or owned by a group readable by this user
-        sql_conds += ["#{sql_table}.object_owner_uuid in (?)"]
-        sql_params += [uuid_list]
-      end
-
-      # Link head points to this row, or to the owner of this row (the thing to be read)
-      #
-      # Link tail originates from this user, or a group that is readable by this
-      # user (the identity with authorization to read)
-      #
-      # Link class is 'permission' ('write' and 'manage' implicitly include 'read')
-      where(sql_conds.join(' OR '), *sql_params)
-    else
-      # At least one user is admin, so don't bother to apply any restrictions.
-      self
+      sql_conds += ["#{sql_table}.uuid IN #{permitted_uuids}"]
     end
+
+    if sql_table == "links" and users_list.any?
+      # This row is a 'permission' or 'resources' link class
+      # The uuid for a member of users_list is referenced in either the head
+      # or tail of the link
+      sql_conds += ["(#{sql_table}.link_class in (#{sanitize 'permission'}, #{sanitize 'resources'}) AND (#{sql_table}.head_uuid IN (?) OR #{sql_table}.tail_uuid IN (?)))"]
+      sql_params += [user_uuids, user_uuids]
+    end
+
+    if sql_table == "logs" and users_list.any?
+      # Link head points to the object described by this row
+      sql_conds += ["#{sql_table}.object_uuid IN #{permitted_uuids}"]
+
+      # This object described by this row is owned by this user, or owned by a group readable by this user
+      sql_conds += ["#{sql_table}.object_owner_uuid in (?)"]
+      sql_params += [uuid_list]
+    end
+
+    # Link head points to this row, or to the owner of this row (the
+    # thing to be read)
+    #
+    # Link tail originates from this user, or a group that is readable
+    # by this user (the identity with authorization to read)
+    #
+    # Link class is 'permission' ('write' and 'manage' implicitly
+    # include 'read')
+    where(sql_conds.join(' OR '), *sql_params)
   end
 
   def logged_attributes
     attributes
   end
 
-  def has_permission? perm_type, target_uuid
-    Link.where(link_class: "permission",
-               name: perm_type,
-               tail_uuid: uuid,
-               head_uuid: target_uuid).any?
+  def self.full_text_searchable_columns
+    self.columns.select do |col|
+      if col.type == :string or col.type == :text
+        true
+      end
+    end.map(&:name)
+  end
+
+  def self.full_text_tsvector
+    tsvector_str = "to_tsvector('english', "
+    first = true
+    self.full_text_searchable_columns.each do |column|
+      tsvector_str += " || ' ' || " if not first
+      tsvector_str += "coalesce(#{column},'')"
+      first = false
+    end
+    tsvector_str += ")"
   end
 
   protected
@@ -173,7 +242,7 @@ class ArvadosModel < ActiveRecord::Base
     if new_record? or owner_uuid_changed?
       uuid_in_path = {owner_uuid => true, uuid => true}
       x = owner_uuid
-      while (owner_class = self.class.resource_class_for_uuid(x)) != User
+      while (owner_class = ArvadosModel::resource_class_for_uuid(x)) != User
         begin
           if x == uuid
             # Test for cycles with the new version, not the DB contents
@@ -203,31 +272,50 @@ class ArvadosModel < ActiveRecord::Base
 
   def ensure_owner_uuid_is_permitted
     raise PermissionDeniedError if !current_user
-    if respond_to? :owner_uuid=
+
+    if new_record? and respond_to? :owner_uuid=
       self.owner_uuid ||= current_user.uuid
     end
-    if self.owner_uuid_changed?
-      if new_record?
-        return true
-      elsif current_user.uuid == self.owner_uuid or
-          current_user.can? write: self.owner_uuid
-        # current_user is, or has :write permission on, the new owner
-      else
-        logger.warn "User #{current_user.uuid} tried to change owner_uuid of #{self.class.to_s} #{self.uuid} to #{self.owner_uuid} but does not have permission to write to #{self.owner_uuid}"
-        raise PermissionDeniedError
-      end
-    end
-    if new_record?
-      return true
-    elsif current_user.uuid == self.owner_uuid_was or
-        current_user.uuid == self.uuid or
-        current_user.can? write: self.owner_uuid_was
-      # current user is, or has :write permission on, the previous owner
-      return true
-    else
-      logger.warn "User #{current_user.uuid} tried to modify #{self.class.to_s} #{self.uuid} but does not have permission to write #{self.owner_uuid_was}"
+
+    if self.owner_uuid.nil?
+      errors.add :owner_uuid, "cannot be nil"
       raise PermissionDeniedError
     end
+
+    rsc_class = ArvadosModel::resource_class_for_uuid owner_uuid
+    unless rsc_class == User or rsc_class == Group
+      errors.add :owner_uuid, "must be set to User or Group"
+      raise PermissionDeniedError
+    end
+
+    # Verify "write" permission on old owner
+    # default fail unless one of:
+    # owner_uuid did not change
+    # previous owner_uuid is nil
+    # current user is the old owner
+    # current user is this object
+    # current user can_write old owner
+    unless !owner_uuid_changed? or
+        owner_uuid_was.nil? or
+        current_user.uuid == self.owner_uuid_was or
+        current_user.uuid == self.uuid or
+        current_user.can? write: self.owner_uuid_was
+      logger.warn "User #{current_user.uuid} tried to modify #{self.class.to_s} #{uuid} but does not have permission to write old owner_uuid #{owner_uuid_was}"
+      errors.add :owner_uuid, "cannot be changed without write permission on old owner"
+      raise PermissionDeniedError
+    end
+
+    # Verify "write" permission on new owner
+    # default fail unless one of:
+    # current_user is this object
+    # current user can_write new owner
+    unless current_user == self or current_user.can? write: owner_uuid
+      logger.warn "User #{current_user.uuid} tried to modify #{self.class.to_s} #{uuid} but does not have permission to write new owner_uuid #{owner_uuid}"
+      errors.add :owner_uuid, "cannot be changed without write permission on new owner"
+      raise PermissionDeniedError
+    end
+
+    true
   end
 
   def ensure_permission_to_save
@@ -271,9 +359,10 @@ class ArvadosModel < ActiveRecord::Base
   end
 
   def update_modified_by_fields
-    self.updated_at = Time.now
+    current_time = db_current_time
+    self.updated_at = current_time
     self.owner_uuid ||= current_default_owner if self.respond_to? :owner_uuid=
-    self.modified_at = Time.now
+    self.modified_at = current_time
     self.modified_by_user_uuid = current_user ? current_user.uuid : nil
     self.modified_by_client_uuid = current_api_client ? current_api_client.uuid : nil
     true
@@ -371,12 +460,11 @@ class ArvadosModel < ActiveRecord::Base
     end
   end
 
-  @@UUID_REGEX = /^[0-9a-z]{5}-([0-9a-z]{5})-[0-9a-z]{15}$/
-
   @@prefixes_hash = nil
   def self.uuid_prefixes
     unless @@prefixes_hash
       @@prefixes_hash = {}
+      Rails.application.eager_load!
       ActiveRecord::Base.descendants.reject(&:abstract_class?).each do |k|
         if k.respond_to?(:uuid_prefix)
           @@prefixes_hash[k.uuid_prefix] = k
@@ -390,8 +478,12 @@ class ArvadosModel < ActiveRecord::Base
     "_____-#{uuid_prefix}-_______________"
   end
 
+  def self.uuid_regex
+    %r/[a-z0-9]{5}-#{uuid_prefix}-[a-z0-9]{15}/
+  end
+
   def ensure_valid_uuids
-    specials = [system_user_uuid, 'd41d8cd98f00b204e9800998ecf8427e+0']
+    specials = [system_user_uuid]
 
     foreign_key_attributes.each do |attr|
       if new_record? or send (attr + "_changed?")
@@ -437,13 +529,9 @@ class ArvadosModel < ActiveRecord::Base
     unless uuid.is_a? String
       return nil
     end
-    if uuid.match /^[0-9a-f]{32}(\+[^,]+)*(,[0-9a-f]{32}(\+[^,]+)*)*$/
-      return Collection
-    end
     resource_class = nil
 
-    Rails.application.eager_load!
-    uuid.match @@UUID_REGEX do |re|
+    uuid.match HasUuid::UUID_REGEX do |re|
       return uuid_prefixes[re[1]] if uuid_prefixes[re[1]]
     end
 
@@ -467,15 +555,14 @@ class ArvadosModel < ActiveRecord::Base
   end
 
   def log_start_state
-    @old_etag = etag
-    @old_attributes = logged_attributes
+    @old_attributes = Marshal.load(Marshal.dump(attributes))
+    @old_logged_attributes = Marshal.load(Marshal.dump(logged_attributes))
   end
 
   def log_change(event_type)
     log = Log.new(event_type: event_type).fill_object(self)
     yield log
     log.save!
-    connection.execute "NOTIFY logs, '#{log.id}'"
     log_start_state
   end
 
@@ -488,14 +575,14 @@ class ArvadosModel < ActiveRecord::Base
 
   def log_update
     log_change('update') do |log|
-      log.fill_properties('old', @old_etag, @old_attributes)
+      log.fill_properties('old', etag(@old_attributes), @old_logged_attributes)
       log.update_to self
     end
   end
 
   def log_destroy
     log_change('destroy') do |log|
-      log.fill_properties('old', @old_etag, @old_attributes)
+      log.fill_properties('old', etag(@old_attributes), @old_logged_attributes)
       log.update_to nil
     end
   end

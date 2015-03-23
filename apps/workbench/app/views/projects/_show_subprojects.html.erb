@@ -1,1 +1,4 @@
-<%= render partial: 'show_tab_contents', locals: {project: @object, objects_and_names: @objects_and_names, data_kind: ['arvados#group']} %>
+<%= render_pane 'tab_contents', to_string: true, locals: {
+    filters: [['uuid', 'is_a', ["arvados#group"]]],
+	sortable_columns: { 'name' => 'groups.name', 'description' => 'groups.description' }
+    }.merge(local_assigns) %>

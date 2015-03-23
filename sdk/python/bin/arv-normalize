@@ -6,9 +6,6 @@ import os
 import re
 import string
 import sys
-import logging
-
-logger = logging.getLogger(os.path.basename(sys.argv[0]))
 
 parser = argparse.ArgumentParser(
     description='Read manifest on standard input and put normalized manifest on standard output.')
@@ -37,4 +34,4 @@ if args.extract:
             if fn in s.files():
                 sys.stdout.write(s.files()[fn].as_manifest())
 else:
-    sys.stdout.write(cr.manifest_text(args.strip))
+    sys.stdout.write(cr.manifest_text(strip=args.strip, normalize=True))

@@ -4,7 +4,7 @@
 # workbench, use /doc here and add a symlink at
 # apps/workbench/public/doc pointing to ../../../doc/.site
 # You can also set these on the command line:
-# $ rake generate baseurl=/example arvados_api_host=example.comA
+# $ rake generate baseurl=/example arvados_api_host=example.com
 
 baseurl:
 arvados_api_host: localhost
@@ -13,34 +13,52 @@ arvados_workbench_host: localhost
 exclude: ["Rakefile", "tmp", "vendor"]
 
 navbar:
-  userguide:
+  start:
     - Getting Started:
+      - start/index.html.textile.liquid
+    - Quickstart:
+      - start/getting_started/firstpipeline.html.textile.liquid
+    - Common Use Cases:
+      - start/getting_started/sharedata.html.textile.liquid
+    - Next Steps:
+      - start/getting_started/nextsteps.html.textile.liquid
+
+  userguide:
+    - Welcome:
       - user/index.html.textile.liquid
+      - user/getting_started/community.html.textile.liquid
+    - Run a pipeline using Workbench:
       - user/getting_started/workbench.html.textile.liquid
+      - user/tutorials/tutorial-pipeline-workbench.html.textile.liquid
+    - Access an Arvados virtual machine:
       - user/getting_started/ssh-access-unix.html.textile.liquid
       - user/getting_started/ssh-access-windows.html.textile.liquid
       - user/getting_started/check-environment.html.textile.liquid
-      - user/getting_started/community.html.textile.liquid
-    - Tutorials:
-      - user/tutorials/tutorial-keep.html.textile.liquid
-      - user/tutorials/intro-crunch.html.textile.liquid
-      - user/tutorials/tutorial-pipeline-workbench.html.textile.liquid
-      - user/tutorials/tutorial-firstscript.html.textile.liquid
-      - user/tutorials/tutorial-new-pipeline.html.textile.liquid
-      - user/tutorials/running-external-program.html.textile.liquid
-    - Intermediate topics:
-      - user/topics/running-pipeline-command-line.html.textile.liquid
-      - user/topics/tutorial-job1.html.textile.liquid
-      - user/topics/tutorial-job-debug.html.textile.liquid
-      - user/topics/tutorial-parallel.html.textile.liquid
-      - user/topics/tutorial-trait-search.html.textile.liquid
-      - user/topics/tutorial-gatk-variantfiltration.html.textile.liquid
-      - user/topics/keep.html.textile.liquid
-    - Examples:
-      - user/examples/crunch-examples.html.textile.liquid
-    - Reference:
       - user/reference/api-tokens.html.textile.liquid
-      - user/reference/sdk-cli.html.textile.liquid
+    - Working with data sets:
+      - user/tutorials/tutorial-keep.html.textile.liquid
+      - user/tutorials/tutorial-keep-get.html.textile.liquid
+      - user/tutorials/tutorial-keep-mount.html.textile.liquid
+      - user/topics/keep.html.textile.liquid
+    - Run a pipeline on the command line:
+      - user/topics/running-pipeline-command-line.html.textile.liquid
+      - user/topics/arv-run.html.textile.liquid
+    - Develop a new pipeline:
+      - user/tutorials/intro-crunch.html.textile.liquid
+      - user/tutorials/running-external-program.html.textile.liquid
+      - user/topics/crunch-tools-overview.html.textile.liquid
+      - user/tutorials/tutorial-firstscript.html.textile.liquid
+      - user/tutorials/tutorial-submit-job.html.textile.liquid
+      - user/topics/tutorial-parallel.html.textile.liquid
+      - user/topics/arv-docker.html.textile.liquid
+    - Develop a web service:
+      - user/topics/arv-web.html.textile.liquid
+    - Reference:
+      - user/topics/run-command.html.textile.liquid
+      - user/reference/job-pipeline-ref.html.textile.liquid
+      - user/examples/crunch-examples.html.textile.liquid
+    - Query the metadata database:
+      - user/topics/tutorial-trait-search.html.textile.liquid
     - Arvados License:
       - user/copying/copying.html.textile.liquid
       - user/copying/agpl-3.0.html
@@ -53,14 +71,20 @@ navbar:
       - sdk/python/sdk-python.html.textile.liquid
       - sdk/python/python.html.textile.liquid
       - sdk/python/crunch-utility-libraries.html.textile.liquid
+      - sdk/python/events.html.textile.liquid
     - Perl:
       - sdk/perl/index.html.textile.liquid
     - Ruby:
       - sdk/ruby/index.html.textile.liquid
     - Java:
       - sdk/java/index.html.textile.liquid
+    - Go:
+      - sdk/go/index.html.textile.liquid
     - CLI:
       - sdk/cli/index.html.textile.liquid
+      - sdk/cli/install.html.textile.liquid
+      - sdk/cli/reference.html.textile.liquid
+      - sdk/cli/subcommands.html.textile.liquid
   api:
     - Concepts:
       - api/index.html.textile.liquid
@@ -111,18 +135,22 @@ navbar:
       - api/schema/Trait.html.textile.liquid
       - api/schema/User.html.textile.liquid
       - api/schema/VirtualMachine.html.textile.liquid
-  admin:
-    - Admin:
-      - admin/index.html.md.liquid
-      - admin/cheat_sheet.html.textile.liquid
   installguide:
     - Overview:
       - install/index.html.textile.liquid
     - Docker:
+      - install/pre-built-docker.html.textile.liquid
       - install/install-docker.html.textile.liquid
     - Manual installation:
-      - install/install-sso.html.textile.liquid
+      - install/install-manual-prerequisites.html.textile.liquid
       - install/install-api-server.html.textile.liquid
       - install/install-workbench-app.html.textile.liquid
+      - install/install-shell-server.html.textile.liquid
       - install/create-standard-objects.html.textile.liquid
+      - install/install-keepstore.html.textile.liquid
+      - install/install-keepproxy.html.textile.liquid
       - install/install-crunch-dispatch.html.textile.liquid
+      - install/cheat_sheet.html.textile.liquid
+    - Software prerequisites:
+      - install/install-manual-prerequisites-ruby.html.textile.liquid
+      - install/install-sso.html.textile.liquid

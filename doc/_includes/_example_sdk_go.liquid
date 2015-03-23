@@ -1,0 +1,112 @@
+package main
+
+
+// *******************
+// Import the modules.
+//
+// Our examples don't use keepclient, but they do use fmt and log to
+// display output.
+
+import (
+	"fmt"
+	"git.curoverse.com/arvados.git/sdk/go/arvadosclient"
+	"log"
+)
+
+func main() {
+
+
+	// ********************************
+	// Set up an API client user agent.
+	//
+
+	arv, err := arvadosclient.MakeArvadosClient()
+	if err != nil {
+		log.Fatalf("Error setting up arvados client %s", err.Error())
+	}
+
+
+	// *****************************************
+	// Print the full name of the current user.
+	//
+
+	type user struct {
+		// Remember to start each field name with a capital letter,
+		// otherwise it won't get populated by the arvados client because
+		// the field will be invisible to it.
+		Uuid     string `json:"uuid"`
+		FullName string `json:"full_name"`
+	}
+
+	var u user
+	err = arv.Call("GET", "users", "", "current", nil, &u)
+
+	if err != nil {
+		log.Fatalf("error querying current user", err.Error())
+	}
+
+	log.Printf("Logged in as %s (uuid %s)", u.FullName, u.Uuid)
+
+
+	// ********************************************************
+	// Print all fields from the first five collections returned.
+	//
+	// Note that some fields, are not returned by default and have to be
+	// requested. See below for an example.
+
+	var results map[string]interface{}
+
+	params := arvadosclient.Dict{"limit": 5}
+
+	err = arv.List("collections", params, &results)
+	if err != nil {
+		log.Fatalf("error querying collections", err.Error())
+	}
+
+	printArvadosResults(results)
+
+
+	// *********************************************************
+	// Print some fields from the first two collections returned.
+	//
+	// We also print manifest_test, which has to be explicitly requested.
+	//
+
+	collection_fields_wanted := []string{"manifest_text", "owner_uuid", "uuid"}
+	params = arvadosclient.Dict{"limit": 2, "select": collection_fields_wanted}
+
+	err = arv.List("collections", params, &results)
+	if err != nil {
+		log.Fatalf("error querying collections", err.Error())
+	}
+
+	printArvadosResults(results)
+}
+
+
+// A helper method which will print out a result map returned by
+// arvadosclient.
+func printArvadosResults(results map[string]interface{}) {
+	for key, value := range results {
+		// "items", if it exists, holds a map.
+		// So we print it prettily below.
+		if key != "items" {
+			fmt.Println(key, ":", value)
+		}
+	}
+
+	if value, ok := results["items"]; ok {
+		items := value.([]interface{})
+		for index, item := range items {
+			fmt.Println("===========  ", index, "  ===========")
+			item_map := item.(map[string]interface{})
+			if len(item_map) == 0 {
+				fmt.Println("item", index, ": empty map")
+			} else {
+				for k, v := range item_map {
+					fmt.Println(index, k, ":", v)
+				}
+			}
+		}
+	}
+}

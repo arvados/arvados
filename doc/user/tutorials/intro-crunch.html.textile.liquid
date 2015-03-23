@@ -4,14 +4,21 @@ navsection: userguide
 title: Introduction to Crunch
 ...
 
-In "getting data from Keep,":tutorial-keep.html#arv-get we downloaded a file from Keep and did some computation with it (specifically, computing the MD5 hash of the complete file).  While a straightforward way to accomplish a computational task, there are several obvious drawbacks to this approach:
-* Large files require significant time to download.
-* Very large files may exceed the scratch space of the local disk.
-* We are only able to use the local CPU to process the file.
-
 The Arvados "Crunch" framework is designed to support processing very large data batches (gigabytes to terabytes) efficiently, and provides the following benefits:
 * Increase concurrency by running tasks asynchronously, using many CPUs and network interfaces at once (especially beneficial for CPU-bound and I/O-bound tasks respectively).
 * Track inputs, outputs, and settings so you can verify that the inputs, settings, and sequence of programs you used to arrive at an output is really what you think it was.
 * Ensure that your programs and workflows are repeatable with different versions of your code, OS updates, etc.
 * Interrupt and resume long-running jobs consisting of many short tasks.
 * Maintain timing statistics automatically, so they're there when you want them.
+
+h2. Prerequisites
+
+To get the most value out of this section, you should be comfortable with the following:
+
+# Using a secure shell client such as SSH or PuTTY to log on to a remote server
+# Using the Unix command line shell, Bash
+# Viewing and editing files using a unix text editor such as vi, Emacs, or nano
+# Programming in Python
+# Revision control using Git
+
+We also recommend you read the "Arvados Platform Overview":https://arvados.org/projects/arvados/wiki#Platform-Overview for an introduction and background information about Arvados.

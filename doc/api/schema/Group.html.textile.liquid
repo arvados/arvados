@@ -19,6 +19,7 @@ Each Group has, in addition to the usual "attributes of Arvados resources":{{sit
 table(table table-bordered table-condensed).
 |_. Attribute|_. Type|_. Description|_. Example|
 |name|string|||
-|group_class|string|Type of group. This does not affect behavior, but determines how the group is presented in the user interface. For example, @folder@ indicates that the group should be displayed by Workbench and arv-mount as a folder for organizing and naming objects.|@"folder"@
+|group_class|string|Type of group. This does not affect behavior, but determines how the group is presented in the user interface. For example, @project@ indicates that the group should be displayed by Workbench and arv-mount as a project for organizing and naming objects.|@"project"@
 null|
 |description|text|||
+|writable_by|array|List of UUID strings identifying Users and other Groups that have write permission for this Group.  Only users who are allowed to administer the Group will receive a full list.  Other users will receive a partial list that includes the Group's owner_uuid and (if applicable) their own user UUID.||

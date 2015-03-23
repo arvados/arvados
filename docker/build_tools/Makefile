@@ -1,18 +1,50 @@
-all: api-image doc-image workbench-image keep-image sso-image
+# This is the 'shell hack'. Call make with DUMP=1 to see the effect.
+ifdef DUMP
+OLD_SHELL := $(SHELL)
+SHELL = $(warning [$@])$(OLD_SHELL) -x
+endif
+
+all: skydns-image skydock-image api-image compute-image doc-image workbench-image keep-image sso-image shell-image
+
+IMAGE_FILES := $(shell ls *-image 2>/dev/null |grep -v -E 'debian-arvados-image|skydns-image|skydock-image')
+GENERATED_DIRS := $(shell ls */generated 2>/dev/null)
 
 # `make clean' removes the files generated in the build directory
 # but does not remove any docker images generated in previous builds
 clean:
-	-rm -rf build
-	-rm *-image */generated/*
-	-@rmdir */generated
+	@echo "make clean"
+	-@rm -rf build
+	+@[ "$(IMAGE_FILES)" = "" ] || rm -f $(IMAGE_FILES) 2>/dev/null
+	+@[ "$(GENERATED_DIRS)" = "" ] || rm -rf */generated 2>/dev/null
 
-# `make realclean' will also remove the docker images and force
-# subsequent makes to build the entire chain from the ground up
+DEBIAN_IMAGE := $(shell $(DOCKER) images -q arvados/debian |head -n1)
+
+REALCLEAN_CONTAINERS := $(shell $(DOCKER) ps -a |grep -e arvados -e api_server -e keep_server -e doc_server -e workbench_server |cut -f 1 -d' ')
+REALCLEAN_IMAGES := $(shell $(DOCKER) images -q arvados/* |grep -v $(DEBIAN_IMAGE) 2>/dev/null)
+DEEPCLEAN_IMAGES := $(shell $(DOCKER) images -q arvados/*)
+SKYDNS_CONTAINERS := $(shell $(DOCKER) ps -a |grep -e crosbymichael/skydns -e crosbymichael/skydock |cut -f 1 -d' ')
+SKYDNS_IMAGES := $(shell $(DOCKER) images -q crosbymichael/skyd*)
+
+# `make realclean' will also remove the Arvados docker images (but not the
+# arvados/debian image) and force subsequent makes to build the entire chain
+# from the ground up
 realclean: clean
-	-[ -n "`$(DOCKER) ps -q`" ] && $(DOCKER) stop `$(DOCKER) ps -q`
-	-$(DOCKER) rm `$(DOCKER) ps -a -q`
-	-$(DOCKER) rmi `$(DOCKER) images -q`
+	@echo "make realclean"
+	+@[ "`$(DOCKER) ps -q`" = '' ] || $(DOCKER) stop `$(DOCKER) ps -q`
+	+@[ "$(REALCLEAN_CONTAINERS)" = '' ] || $(DOCKER) rm $(REALCLEAN_CONTAINERS)
+	+@[ "$(REALCLEAN_IMAGES)" = '' ] || $(DOCKER) rmi $(REALCLEAN_IMAGES)
+
+# `make deepclean' will remove all Arvados docker images and the skydns/skydock
+# images and force subsequent makes to build the entire chain from the ground up
+deepclean: clean
+	@echo "make deepclean"
+	-@rm -f debian-arvados-image 2>/dev/null
+	-@rm -f skydns-image skydock-image 2>/dev/null
+	+@[ "`$(DOCKER) ps -q`" = '' ] || $(DOCKER) stop `$(DOCKER) ps -q`
+	+@[ "$(REALCLEAN_CONTAINERS)" = '' ] || $(DOCKER) rm $(REALCLEAN_CONTAINERS)
+	+@[ "$(DEEPCLEAN_IMAGES)" = '' ] || $(DOCKER) rmi $(DEEPCLEAN_IMAGES)
+	+@[ "$(SKYDNS_CONTAINERS)" = '' ] || $(DOCKER) rm $(SKYDNS_CONTAINERS)
+	+@[ "$(SKYDNS_IMAGES)" = '' ] || $(DOCKER) rmi $(SKYDNS_IMAGES)
 
 # ============================================================
 # Dependencies for */generated files which are prerequisites
@@ -22,60 +54,63 @@ CONFIG_RB = build_tools/config.rb
 
 BUILD = build/.buildstamp
 
-BASE_DEPS = base/Dockerfile $(BASE_GENERATED)
+BASE_DEPS = base/Dockerfile config.yml $(BASE_GENERATED)
+
+SLURM_DEPS = slurm/Dockerfile config.yml $(SLURM_GENERATED)
 
 JOBS_DEPS = jobs/Dockerfile
 
+ARV_WEB_DEPS = arv-web/Dockerfile arv-web/apache2_foreground.sh arv-web/apache2_vhost
+
 JAVA_BWA_SAMTOOLS_DEPS = java-bwa-samtools/Dockerfile
 
-API_DEPS = api/Dockerfile $(API_GENERATED)
+API_DEPS = api/* config.yml $(API_GENERATED)
+
+SHELL_DEPS = shell/* config.yml $(SHELL_GENERATED)
+
+COMPUTE_DEPS = compute/* config.yml $(COMPUTE_GENERATED)
 
 DOC_DEPS = doc/Dockerfile doc/apache2_vhost
 
 WORKBENCH_DEPS = workbench/Dockerfile \
+                 config.yml \
                  $(WORKBENCH_GENERATED)
 
-KEEP_DEPS = keep/Dockerfile
+KEEP_DEPS = keep/Dockerfile config.yml $(KEEP_GENERATED)
 
-SSO_DEPS = $(SSO_GENERATED)
+SSO_DEPS = config.yml $(SSO_GENERATED)
 
 BCBIO_NEXTGEN_DEPS = bcbio-nextgen/Dockerfile
 
 BASE_GENERATED = base/generated/arvados.tar.gz
 
-API_GENERATED = \
-        api/generated/apache2_vhost \
-        api/generated/config_databases.sh \
-        api/generated/database.yml \
-        api/generated/omniauth.rb \
-        api/generated/application.yml \
-        api/generated/superuser_token
+COMPUTE_GENERATED_IN   = compute/*.in
+COMPUTE_GENERATED      = compute/generated/*
 
-API_GENERATED_IN = \
-        api/apache2_vhost.in \
-        api/config_databases.sh.in \
-        api/database.yml.in \
-        api/omniauth.rb.in \
-        api/application.yml.in \
-        api/superuser_token.in
+KEEP_GENERATED_IN      = keep/*.in
+KEEP_GENERATED         = keep/generated/*
 
-WORKBENCH_GENERATED = \
-        workbench/generated/apache2_vhost \
-        workbench/generated/application.yml
+API_GENERATED_IN       = api/*.in
+API_GENERATED          = api/generated/*
 
-WORKBENCH_GENERATED_IN = \
-        workbench/apache2_vhost.in \
-        workbench/application.yml.in
+SHELL_GENERATED_IN     = shell/*.in
+SHELL_GENERATED        = shell/generated/*
 
-SSO_GENERATED = \
-        sso/generated/apache2_vhost \
-        sso/generated/seeds.rb \
-        sso/generated/secret_token.rb
+SLURM_GENERATED_IN     = slurm/*.in
+SLURM_GENERATED        = slurm/generated/*
 
-SSO_GENERATED_IN = \
-        sso/apache2_vhost.in \
-        sso/seeds.rb.in \
-        sso/secret_token.rb.in
+WORKBENCH_GENERATED_IN = workbench/*.in
+WORKBENCH_GENERATED    = workbench/generated/*
+
+SSO_GENERATED_IN       = sso/*.in
+SSO_GENERATED          = sso/generated/*
+
+KEEP_DEPS += keep/generated/bin/keepproxy
+KEEP_DEPS += keep/generated/bin/keepstore
+keep/generated/bin/%: $(wildcard build/services/%/*.go)
+	mkdir -p keep/generated/src/git.curoverse.com
+	ln -sfn ../../../../.. keep/generated/src/git.curoverse.com/arvados.git
+	GOPATH=$(shell pwd)/keep/generated go get $(@:keep/generated/bin/%=git.curoverse.com/arvados.git/services/%)
 
 $(BUILD):
 	mkdir -p build
@@ -88,44 +123,65 @@ $(BUILD):
 	cd build/sdk/ruby && gem build arvados.gemspec
 	touch build/.buildstamp
 
-$(BASE_GENERATED): config.yml $(BUILD)
-	$(CONFIG_RB)
+$(SLURM_GENERATED): $(BUILD)
+	$(CONFIG_RB) slurm
+	mkdir -p slurm/generated
+
+$(BASE_GENERATED): $(BUILD)
+	$(CONFIG_RB) base
 	mkdir -p base/generated
 	tar -czf base/generated/arvados.tar.gz -C build .
 
-$(API_GENERATED): config.yml $(API_GENERATED_IN)
-	$(CONFIG_RB)
+$(API_GENERATED): $(API_GENERATED_IN)
+	$(CONFIG_RB) api
 
-$(WORKBENCH_GENERATED): config.yml $(WORKBENCH_GENERATED_IN)
-	$(CONFIG_RB)
+$(SHELL_GENERATED): $(SHELL_GENERATED_IN)
+	$(CONFIG_RB) shell
 
-$(WAREHOUSE_GENERATED): config.yml $(WAREHOUSE_GENERATED_IN)
-	$(CONFIG_RB)
+$(WORKBENCH_GENERATED): $(WORKBENCH_GENERATED_IN)
+	$(CONFIG_RB) workbench
 
-$(SSO_GENERATED): config.yml $(SSO_GENERATED_IN)
-	$(CONFIG_RB)
+$(COMPUTE_GENERATED): $(COMPUTE_GENERATED_IN)
+	$(CONFIG_RB) compute
 
-# The docker build -q option suppresses verbose build output.
-# Necessary to prevent failure on building warehouse; see
-# https://github.com/dotcloud/docker/issues/3172
-DOCKER_BUILD = $(DOCKER) build -q
+$(SSO_GENERATED): $(SSO_GENERATED_IN)
+	$(CONFIG_RB) sso
+
+$(KEEP_GENERATED): $(KEEP_GENERATED_IN)
+	$(CONFIG_RB) keep
+
+DOCKER_BUILD = $(DOCKER) build --rm=true
 
 # ============================================================
-# The main Arvados servers: api, doc, workbench, warehouse
+# The main Arvados servers: api, doc, workbench, compute
 
 api-image: passenger-image $(BUILD) $(API_DEPS)
+	@echo "Building api-image"
 	mkdir -p api/generated
 	tar -czf api/generated/api.tar.gz -C build/services api
 	$(DOCKER_BUILD) -t arvados/api api
 	date >api-image
 
+shell-image: base-image $(BUILD) $(SHELL_DEPS)
+	@echo "Building shell-image"
+	mkdir -p shell/generated
+	$(DOCKER_BUILD) -t arvados/shell shell
+	date >shell-image
+
+compute-image: slurm-image $(BUILD) $(COMPUTE_DEPS)
+	@echo "Building compute-image"
+	$(DOCKER_BUILD) -t arvados/compute compute
+	date >compute-image
+
 doc-image: base-image $(BUILD) $(DOC_DEPS)
+	@echo "Building doc-image"
 	mkdir -p doc/generated
 	tar -czf doc/generated/doc.tar.gz -C build doc
 	$(DOCKER_BUILD) -t arvados/doc doc
 	date >doc-image
 
-keep-image: debian-image $(BUILD) $(KEEP_DEPS)
+keep-image: debian-arvados-image $(BUILD) $(KEEP_DEPS)
+	@echo "Building keep-image"
 	$(DOCKER_BUILD) -t arvados/keep keep
 	date >keep-image
 
@@ -144,31 +200,51 @@ bcbio-nextgen-image: $(BUILD) $(BASE_GENERATED) $(BCBIO_NEXTGEN_DEPS)
 	date >bcbio-nextgen-image
 
 workbench-image: passenger-image $(BUILD) $(WORKBENCH_DEPS)
+	@echo "Building workbench-image"
 	mkdir -p workbench/generated
 	tar -czf workbench/generated/workbench.tar.gz -C build/apps workbench
 	$(DOCKER_BUILD) -t arvados/workbench workbench
 	date >workbench-image
 
-warehouse-image: base-image $(WAREHOUSE_DEPS)
-	$(DOCKER_BUILD) -t arvados/warehouse warehouse
-	date >warehouse-image
-
 sso-image: passenger-image $(SSO_DEPS)
+	@echo "Building sso-image"
 	$(DOCKER_BUILD) -t arvados/sso sso
 	date >sso-image
+
+arv-web-image: passenger-image $(ARV_WEB_DEPS)
+	$(DOCKER_BUILD) -t arvados/arv-web arv-web
+	date >arv-web-image
 
 # ============================================================
 # The arvados/base image is the base Debian image plus packages
 # that are dependencies for every Arvados service.
 
 passenger-image: base-image
+	@echo "Building passenger-image"
 	$(DOCKER_BUILD) -t arvados/passenger passenger
 	date >passenger-image
 
-base-image: debian-image $(BASE_DEPS)
+slurm-image: base-image $(SLURM_DEPS)
+	@echo "Building slurm-image"
+	$(DOCKER_BUILD) -t arvados/slurm slurm
+	date >slurm-image
+
+base-image: debian-arvados-image $(BASE_DEPS)
+	@echo "Building base-image"
 	$(DOCKER_BUILD) -t arvados/base base
 	date >base-image
 
-debian-image:
+debian-arvados-image:
+	@echo "Building debian-arvados-image"
 	./mkimage-debootstrap.sh arvados/debian wheezy ftp://ftp.us.debian.org/debian/
-	date >debian-image
+	date >debian-arvados-image
+
+skydns-image:
+	@echo "Downloading skydns-image"
+	$(DOCKER) pull crosbymichael/skydns
+	date >skydns-image
+
+skydock-image:
+	@echo "Downloading skydock-image"
+	$(DOCKER) pull crosbymichael/skydock
+	date >skydock-image

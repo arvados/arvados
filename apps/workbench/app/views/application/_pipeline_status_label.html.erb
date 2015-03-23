@@ -1,11 +1,13 @@
 <% if p.state == 'Complete' %>
-  <span class="label label-success">finished</span>
+  <span class="label label-success">complete</span>
 <% elsif p.state == 'Failed' %>
   <span class="label label-danger">failed</span>
 <% elsif p.state == 'RunningOnServer' || p.state == 'RunningOnClient' %>
   <span class="label label-info">running</span>
+<% elsif p.state == 'Paused'  %>
+  <span class="label label-default">paused</span>
 <% else %>
-  <% if (p.components.select do |k,v| v[:job] end).length == 0 %>
+  <% if not p.components.values.any? { |c| c[:job] rescue false } %>
     <span class="label label-default">not started</span>
   <% else %>
     <span class="label label-default">not running</span>

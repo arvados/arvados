@@ -1,4 +1,4 @@
-<div class="modal-dialog">
+<div class="modal-dialog modal-with-loading-spinner">
   <div class="modal-content">
 
     <%= form_tag setup_user_path, {id: 'setup_form', name: 'setup_form', method: 'get',
@@ -6,7 +6,11 @@
 
     <div class="modal-header">
       <button type="button" class="close" onClick="reset_form()" data-dismiss="modal" aria-hidden="true">&times;</button>
-      <h4 class="modal-title">Setup User</h4>
+      <div>
+        <div class="col-sm-6"> <h4 class="modal-title">Setup User</h4> </div>
+        <div class="spinner spinner-32px spinner-h-center col-sm-1" hidden="true"></div>
+      </div>
+      <br/>
     </div>
 
     <div class="modal-body">
@@ -40,7 +44,7 @@
         <% end %>
       </div>
       <div class="form-group">
-        <label for="repo_name">Repository Name</label>
+        <label for="repo_name">Repository Name and Shell Login</label>
         <input class="form-control" id="repo_name" maxlength="250" name="repo_name" type="text" value="<%=selected_repo%>">
       </div>
       <div class="form-group">
@@ -60,8 +64,8 @@
     </div>
 
     <div class="modal-footer">
-      <button type="submit" id="register" class="btn btn-primary" autofocus>Submit</button>
       <button class="btn btn-default" onClick="reset_form()" data-dismiss="modal" aria-hidden="true">Cancel</button>
+      <button type="submit" id="register" class="btn btn-primary" autofocus>Submit</button>
     </div>
 
     <% end #form %>

@@ -1,11 +1,9 @@
 # Configuration for the Rails databases (database names,
 # usernames and passwords).
 
-# Path to a public ssh key you would like to have installed in the
-# root account of the generated images. This is useful for debugging.
-# To enable the SSH server, set the ENABLE_SSH environment variable to
-# true when starting the container.
-PUBLIC_KEY_PATH:
+# Username for your Arvados user. This will be used as your shell login name
+# as well as the name for your git repository.
+ARVADOS_USER_NAME:
 
 # ARVADOS_DOMAIN: the Internet domain of this installation.
 # ARVADOS_DNS_SERVER: the authoritative nameserver for ARVADOS_DOMAIN.
@@ -27,6 +25,11 @@ API_HOSTNAME:           # e.g. qr1hi
 # server, which uses openid against Google's servers, so in that case this
 # should be an address associated with a Google account.
 API_AUTO_ADMIN_USER:
+
+# The location of the Workbench application where users should be
+# redirected if they point their browsers at the API server, e.g.,
+# https://localhost:9899
+API_WORKBENCH_ADDRESS:
 
 # If a _PW variable is set to an empty string, a password
 # will be chosen randomly at build time. This is the
@@ -62,8 +65,9 @@ API_SUPERUSER_SECRET:
 # change it and don't be dumb.
 POSTGRES_ROOT_PW: dummy_pw
 
-# The URL for this installation's Omniauth server.
-OMNIAUTH_URL: https://@@SSO_HOSTNAME@@.@@ARVADOS_DOMAIN@@
+# The URL of the SSO server that you want your API server to use. If
+# blank, use the sso docker container.
+OMNIAUTH_URL:
 
 # ==============================
 # Workbench settings
@@ -85,5 +89,11 @@ WORKBENCH_SECRET:
 SSO_HOSTNAME: sso
 SSO_SECRET:
 SSO_CLIENT_NAME: devsandbox
-SSO_CLIENT_APP_ID: devsandbox
-SSO_CLIENT_SECRET:
+# ==============================
+# Default to using auth.curoverse.com as SSO server
+# To use your a local Docker SSO server, set OMNIAUTH_URL and SSO_CLIENT_SECRET
+# to the empty string
+# ==============================
+OMNIAUTH_URL: https://auth.curoverse.com
+SSO_CLIENT_APP_ID: local_docker_installation
+SSO_CLIENT_SECRET: yohbai4eecohshoo1Yoot7tea9zoca9Eiz3Tajahweo9eePaeshaegh9meiye2ph

@@ -1,18 +1,16 @@
 require 'integration_helper'
-require 'selenium-webdriver'
-require 'headless'
 
 class UsersTest < ActionDispatch::IntegrationTest
 
   test "login as active user but not admin" do
-    Capybara.current_driver = Capybara.javascript_driver
+    need_javascript
     visit page_with_token('active_trustedclient')
 
     assert page.has_no_link? 'Users' 'Found Users link for non-admin user'
   end
 
   test "login as admin user and verify active user data" do
-    Capybara.current_driver = Capybara.javascript_driver
+    need_javascript
     visit page_with_token('admin_trustedclient')
 
     # go to Users list page
@@ -44,10 +42,7 @@ class UsersTest < ActionDispatch::IntegrationTest
   end
 
   test "create a new user" do
-    headless = Headless.new
-    headless.start
-
-    Capybara.current_driver = :selenium
+    need_javascript
 
     visit page_with_token('admin_trustedclient')
 
@@ -58,10 +53,8 @@ class UsersTest < ActionDispatch::IntegrationTest
 
     click_link 'Add a new user'
 
-    sleep(0.1)
-    popup = page.driver.browser.window_handles.last
-    page.within_window popup do
-      assert has_text? 'Virtual Machine'
+    within '.modal-content' do
+      find 'label', text: 'Virtual Machine'
       fill_in "email", :with => "foo@example.com"
       fill_in "repo_name", :with => "test_repo"
       click_button "Submit"
@@ -72,7 +65,7 @@ class UsersTest < ActionDispatch::IntegrationTest
 
     # verify that the new user showed up in the users page and find
     # the new user's UUID
-    new_user_uuid = 
+    new_user_uuid =
       find('tr[data-object-uuid]', text: 'foo@example.com')['data-object-uuid']
     assert new_user_uuid, "Expected new user uuid not found"
 
@@ -90,15 +83,10 @@ class UsersTest < ActionDispatch::IntegrationTest
     click_link 'Metadata'
     assert page.has_text? 'Repository: test_repo'
     assert !(page.has_text? 'VirtualMachine:')
-
-    headless.stop
   end
 
   test "setup the active user" do
-    headless = Headless.new
-    headless.start
-
-    Capybara.current_driver = :selenium
+    need_javascript
     visit page_with_token('admin_trustedclient')
 
     find('#system-menu').click
@@ -108,6 +96,7 @@ class UsersTest < ActionDispatch::IntegrationTest
     find('tr', text: 'zzzzz-tpzed-xurymjxw79nv3jz').
       find('a', text: 'Show').
       click
+    user_url = page.current_url
 
     # Setup user
     click_link 'Admin'
@@ -115,15 +104,13 @@ class UsersTest < ActionDispatch::IntegrationTest
 
     click_link 'Setup Active User'
 
-    sleep(0.1)
-
-    popup = page.driver.browser.window_handles.last
-    page.within_window popup do
-      assert has_text? 'Virtual Machine'
+    within '.modal-content' do
+      find 'label', text: 'Virtual Machine'
       fill_in "repo_name", :with => "test_repo"
       click_button "Submit"
     end
 
+    visit user_url
     assert page.has_text? 'modified_by_client_uuid'
 
     click_link 'Advanced'
@@ -135,29 +122,23 @@ class UsersTest < ActionDispatch::IntegrationTest
     click_link 'Admin'
     click_link 'Setup Active User'
 
-    sleep(0.1)
-    popup = page.driver.browser.window_handles.last
-    page.within_window popup do
+    within '.modal-content' do
       fill_in "repo_name", :with => "second_test_repo"
       select("testvm.shell", :from => 'vm_uuid')
       click_button "Submit"
     end
 
-    assert page.has_text? 'modified_by_client_uuid'
+    visit user_url
+    find '#Attributes', text: 'modified_by_client_uuid'
 
     click_link 'Advanced'
     click_link 'Metadata'
     assert page.has_text? 'Repository: second_test_repo'
     assert page.has_text? 'VirtualMachine: testvm.shell'
-
-    headless.stop
   end
 
   test "unsetup active user" do
-    headless = Headless.new
-    headless.start
-
-    Capybara.current_driver = :selenium
+    need_javascript
 
     visit page_with_token('admin_trustedclient')
 
@@ -168,6 +149,7 @@ class UsersTest < ActionDispatch::IntegrationTest
     find('tr', text: 'zzzzz-tpzed-xurymjxw79nv3jz').
       find('a', text: 'Show').
       click
+    user_url = page.current_url
 
     # Verify that is_active is set
     find('a,button', text: 'Attributes').click
@@ -183,10 +165,15 @@ class UsersTest < ActionDispatch::IntegrationTest
     # unsetup user and verify all the above links are deleted
     click_link 'Admin'
     click_button 'Deactivate Active User'
-    sleep(0.1)
+
+    if Capybara.current_driver == :selenium
+      sleep(0.1)
+      page.driver.browser.switch_to.alert.accept
+    else
+      # poltergeist returns true for confirm(), so we don't need to accept.
+    end
 
     # Should now be back in the Attributes tab for the user
-    page.driver.browser.switch_to.alert.accept
     assert page.has_text? 'modified_by_user_uuid'
     page.within(:xpath, '//span[@data-name="is_active"]') do
       assert_equal "false", text, "Expected user's is_active to be false after unsetup"
@@ -202,22 +189,55 @@ class UsersTest < ActionDispatch::IntegrationTest
     click_link 'Admin'
     click_link 'Setup Active User'
 
-    sleep(0.1)
-    popup = page.driver.browser.window_handles.last
-    page.within_window popup do
+    within '.modal-content' do
       fill_in "repo_name", :with => "second_test_repo"
       select("testvm.shell", :from => 'vm_uuid')
       click_button "Submit"
     end
 
+    visit user_url
     assert page.has_text? 'modified_by_client_uuid'
 
     click_link 'Advanced'
     click_link 'Metadata'
     assert page.has_text? 'Repository: second_test_repo'
     assert page.has_text? 'VirtualMachine: testvm.shell'
-
-    headless.stop
   end
 
+  [
+    ['admin', false],
+    ['active', true],
+  ].each do |username, expect_show_button|
+    test "login as #{username} and access show button #{expect_show_button}" do
+      need_javascript
+
+      user = api_fixture('users', username)
+
+      visit page_with_token(username, '/users')
+
+      if expect_show_button
+        within('tr', text: user['uuid']) do
+          assert_text user['email']
+          assert_selector 'a', text: 'Show'
+          find('a', text: 'Show').click
+        end
+        assert_selector 'a', 'Data collections'
+      else
+        # no 'Show' button in the admin user's own row
+        within('tr', text: user['uuid']) do
+          assert_text user['email']
+          assert_no_selector 'a', text: 'Show'
+        end
+
+        # but the admin user can access 'Show' button for other users
+        active_user = api_fixture('users', 'active')
+        within('tr', text: active_user['uuid']) do
+          assert_text active_user['email']
+          assert_selector 'a', text: 'Show'
+          find('a', text: 'Show').click
+          assert_selector 'a', 'Attributes'
+        end
+      end
+    end
+  end
 end

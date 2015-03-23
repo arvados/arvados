@@ -1,0 +1,88 @@
+//= require jquery
+//= require jquery_ujs
+
+/** Javascript for selection. */
+
+jQuery(function($){
+    $(document).
+        on('change', '.persistent-selection:checkbox', function(e) {
+            $(document).trigger('selections-updated');
+        });
+});
+
+function dispatch_selection_action() {
+    /* When the user clicks a selection action link, build a form to perform
+       the action on the selected data, and submit it.
+       This is based on handleMethod from rails-ujs, extended to add the
+       selections to the submitted form.
+       Copyright (c) 2007-2010 Contributors at http://github.com/rails/jquery-ujs/contributors
+       */
+    var $container = $(this);
+    if ($container.closest('.disabled').length) {
+        return false;
+    }
+    $container.closest('.dropdown-menu').dropdown('toggle');
+
+    var href = $container.data('href'),
+    method = $container.data('method') || 'GET',
+    paramName = $container.data('selection-param-name'),
+    csrfToken = $('meta[name=csrf-token]').attr('content'),
+    csrfParam = $('meta[name=csrf-param]').attr('content'),
+    form = $('<form method="post" action="' + href + '"></form>'),
+    metadataInput = ('<input name="_method" value="' + method +
+                     '" type="hidden" />');
+
+    if (csrfParam !== undefined && csrfToken !== undefined) {
+        metadataInput += ('<input type="hidden" name="' + csrfParam +
+                          '" value="' + csrfToken + '" />');
+    }
+    $container.
+        closest('.selection-action-container').
+        find(':checkbox:checked:visible').
+        each(function(index, elem) {
+            metadataInput += ('<input type="hidden" name="' + paramName +
+                              '" value="' + elem.value + '" />');
+        });
+
+    form.data('remote', $container.data('remote'));
+    form.hide().append(metadataInput).appendTo('body');
+    form.submit();
+    return false;
+}
+
+function enable_disable_selection_actions() {
+    var $container = $(this);
+    var $checked = $('.persistent-selection:checkbox:checked', $container);
+    $('[data-selection-action]', $container).
+        closest('div.btn-group-sm').
+        find('ul li').
+        toggleClass('disabled', ($checked.length == 0));
+    $('[data-selection-action=compare]', $container).
+        closest('li').
+        toggleClass('disabled',
+                    ($checked.filter('[value*=-d1hrv-]').length < 2) ||
+                    ($checked.not('[value*=-d1hrv-]').length > 0));
+    <% unless Group.copies_to_projects? %>
+        $('[data-selection-action=copy]', $container).
+            closest('li').
+            toggleClass('disabled',
+                        ($checked.filter('[value*=-j7d0g-]').length > 0) ||
+                        ($checked.length < 1));
+    <% end %>
+    $('[data-selection-action=combine-project-contents]', $container).
+        closest('li').
+        toggleClass('disabled',
+                    ($checked.filter('[value*=-4zz18-]').length < 1) ||
+                    ($checked.length != $checked.filter('[value*=-4zz18-]').length));
+}
+
+$(document).
+    on('selections-updated', function() {
+        $('.selection-action-container').each(enable_disable_selection_actions);
+    }).
+    on('ready ajax:complete', function() {
+        $('[data-selection-action]').
+            off('click', dispatch_selection_action).
+            on('click', dispatch_selection_action);
+        $(this).trigger('selections-updated');
+    });

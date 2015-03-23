@@ -8,9 +8,14 @@ class Arvados::V1::UsersController < ApplicationController
   before_filter :admin_required, only: [:setup, :unsetup]
 
   def current
-    @object = current_user
-    show
+    if current_user
+      @object = current_user
+      show
+    else
+      send_error("Not logged in", status: 401)
+    end
   end
+
   def system
     @object = system_user
     show
@@ -104,7 +109,7 @@ class Arvados::V1::UsersController < ApplicationController
       UserNotifier.account_is_setup(@object).deliver
     end
 
-    render json: { kind: "arvados#HashList", items: @response.as_api_response(nil) }
+    send_json kind: "arvados#HashList", items: @response.as_api_response(nil)
   end
 
   # delete user agreements, vm, repository, login links; set state to inactive
@@ -118,8 +123,36 @@ class Arvados::V1::UsersController < ApplicationController
 
   def self._setup_requires_parameters
     {
-      send_notification_email: { type: 'boolean', required: true },
+      user: {
+        type: 'object', required: false
+      },
+      openid_prefix: {
+        type: 'string', required: false
+      },
+      repo_name: {
+        type: 'string', required: false
+      },
+      vm_uuid: {
+        type: 'string', required: false
+      },
+      send_notification_email: {
+        type: 'boolean', required: false, default: false
+      },
     }
   end
 
+  def apply_filters(model_class=nil)
+    return super if @read_users.any? &:is_admin
+    if params[:uuid] != current_user.andand.uuid
+      # Non-admin index/show returns very basic information about readable users.
+      safe_attrs = ["uuid", "is_active", "email", "first_name", "last_name"]
+      if @select
+        @select = @select & safe_attrs
+      else
+        @select = safe_attrs
+      end
+      @filters += [['is_active', '=', true]]
+    end
+    super
+  end
 end

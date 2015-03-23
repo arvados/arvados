@@ -1,8 +1,5 @@
 <% unless @histogram_pretty_date.nil? %>
   <% content_for :tab_panes do %>
-  <%# We use protocol-relative paths here to avoid browsers refusing to load javascript over http in a page that was loaded over https. %>
-  <%= javascript_include_tag '//cdnjs.cloudflare.com/ajax/libs/raphael/2.1.2/raphael-min.js' %>
-  <%= javascript_include_tag '//cdnjs.cloudflare.com/ajax/libs/morris.js/0.4.3/morris.min.js' %>
   <script type="text/javascript">
     $(document).ready(function(){
       $.renderHistogram(<%= raw @cache_age_histogram.to_json %>);
@@ -17,5 +14,7 @@
   <% end %>
 <% end %>
 <%= content_for :content_top %>
-<%= content_for :tab_line_buttons %>
+<div class="pull-right">
+  <%= content_for :tab_line_buttons %>
+</div>
 <%= content_for :tab_panes %>

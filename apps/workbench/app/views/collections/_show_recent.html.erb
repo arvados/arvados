@@ -1,17 +1,23 @@
-<% content_for :tab_line_buttons do %>
- <%= form_tag collections_path, method: 'get', remote: true, class: 'form-search' do %>
- <div class="input-group">
-   <%= text_field_tag :search, params[:search], class: 'form-control', placeholder: 'Search collections' %>
-   <span class="input-group-btn">
-     <%= button_tag(class: 'btn btn-info') do %>
-     <span class="glyphicon glyphicon-search"></span>
-     <% end %>
-   </span>
- </div>
- <% end %>
-<% end %>
+<div class="selection-action-container" style="padding-left: 1em">
+  <div class="row">
+    <div class="pull-left">
+      <div class="btn-group btn-group-sm">
+        <button type="button" class="btn btn-default dropdown-toggle" data-toggle="dropdown">Selection... <span class="caret"></span></button>
+        <ul class="dropdown-menu" role="menu">
+          <li><%= link_to "Create new collection with selected collections", '#',
+                  method: :post,
+                  'data-href' => combine_selected_path,
+                  'data-selection-param-name' => 'selection[]',
+                  'data-selection-action' => 'combine-collections',
+                  'data-toggle' => 'dropdown'
+            %></li>
+        </ul>
+      </div>
+    </div>
+  </div>
+  <p/>
 
-<%= render partial: "paging", locals: {results: @collections, object: @object} %>
+<%= render partial: "paging", locals: {results: @objects, object: @object} %>
 
 <div style="padding-right: 1em">
 
@@ -19,12 +25,11 @@
 
 <table id="collections-index" class="topalign table table-condensed table-fixedlayout"> <!-- table-fixed-header-row -->
   <colgroup>
-    <col width="8%" />
     <col width="10%" />
-    <col width="34%" />
-    <col width="11%" />
-    <col width="12%" />
-    <col width="29%" />
+    <col width="10%" />
+    <col width="40%" />
+    <col width="10%" />
+    <col width="30%" />
   </colgroup>
   <thead>
     <tr class="contain-align-left">
@@ -32,7 +37,6 @@
       <th>uuid</th>
       <th>contents</th>
       <th>created at</th>
-      <th>storage</th>
       <th>tags</th>
     </tr>
   </thead>
@@ -45,7 +49,7 @@
 
 </div>
 
-<%= render partial: "paging", locals: {results: @collections, object: @object} %>
+<%= render partial: "paging", locals: {results: @objects, object: @object} %>
 
 <% content_for :footer_js do %>
 $(document).on('click', 'form[data-remote] input[type=submit]', function() {
@@ -53,3 +57,5 @@ $(document).on('click', 'form[data-remote] input[type=submit]', function() {
   return true;
 });
 <% end %>
+
+</div>

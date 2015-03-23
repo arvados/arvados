@@ -18,7 +18,7 @@ from cStringIO import StringIO
 import arvados
 import arvados.commands.put as arv_put
 
-from arvados_testutil import ArvadosBaseTestCase, ArvadosKeepLocalStoreTestCase
+from arvados_testutil import ArvadosBaseTestCase
 import run_test_server
 
 class ArvadosPutResumeCacheTest(ArvadosBaseTestCase):
@@ -43,7 +43,7 @@ class ArvadosPutResumeCacheTest(ArvadosBaseTestCase):
 
     def test_cache_names_stable(self):
         for argset in self.CACHE_ARGSET:
-            self.assertEquals(self.cache_path_from_arglist(argset),
+            self.assertEqual(self.cache_path_from_arglist(argset),
                               self.cache_path_from_arglist(argset),
                               "cache name changed for {}".format(argset))
 
@@ -65,10 +65,10 @@ class ArvadosPutResumeCacheTest(ArvadosBaseTestCase):
                              "path too exotic: {}".format(path))
 
     def test_cache_names_ignore_argument_order(self):
-        self.assertEquals(
+        self.assertEqual(
             self.cache_path_from_arglist(['a', 'b', 'c']),
             self.cache_path_from_arglist(['c', 'a', 'b']))
-        self.assertEquals(
+        self.assertEqual(
             self.cache_path_from_arglist(['-', '--filename', 'stdin']),
             self.cache_path_from_arglist(['--filename', 'stdin', '-']))
 
@@ -84,32 +84,32 @@ class ArvadosPutResumeCacheTest(ArvadosBaseTestCase):
         args = arv_put.parse_arguments(['/tmp'])
         args.filename = 'tmp'
         path2 = arv_put.ResumeCache.make_path(args)
-        self.assertEquals(path1, path2,
+        self.assertEqual(path1, path2,
                          "cache path considered --filename for directory")
-        self.assertEquals(
+        self.assertEqual(
             self.cache_path_from_arglist(['-']),
             self.cache_path_from_arglist(['-', '--max-manifest-depth', '1']),
             "cache path considered --max-manifest-depth for file")
 
     def test_cache_names_treat_negative_manifest_depths_identically(self):
         base_args = ['/tmp', '--max-manifest-depth']
-        self.assertEquals(
+        self.assertEqual(
             self.cache_path_from_arglist(base_args + ['-1']),
             self.cache_path_from_arglist(base_args + ['-2']))
 
     def test_cache_names_treat_stdin_consistently(self):
-        self.assertEquals(
+        self.assertEqual(
             self.cache_path_from_arglist(['-', '--filename', 'test']),
             self.cache_path_from_arglist(['/dev/stdin', '--filename', 'test']))
 
     def test_cache_names_identical_for_synonymous_names(self):
-        self.assertEquals(
+        self.assertEqual(
             self.cache_path_from_arglist(['.']),
             self.cache_path_from_arglist([os.path.realpath('.')]))
         testdir = self.make_tmpdir()
         looplink = os.path.join(testdir, 'loop')
         os.symlink(testdir, looplink)
-        self.assertEquals(
+        self.assertEqual(
             self.cache_path_from_arglist([testdir]),
             self.cache_path_from_arglist([looplink]))
 
@@ -131,7 +131,7 @@ class ArvadosPutResumeCacheTest(ArvadosBaseTestCase):
         with tempfile.NamedTemporaryFile() as cachefile:
             self.last_cache = arv_put.ResumeCache(cachefile.name)
         self.last_cache.save(thing)
-        self.assertEquals(thing, self.last_cache.load())
+        self.assertEqual(thing, self.last_cache.load())
 
     def test_empty_cache(self):
         with tempfile.NamedTemporaryFile() as cachefile:
@@ -145,7 +145,7 @@ class ArvadosPutResumeCacheTest(ArvadosBaseTestCase):
         cache.save(thing)
         cache.close()
         self.last_cache = arv_put.ResumeCache(path)
-        self.assertEquals(thing, self.last_cache.load())
+        self.assertEqual(thing, self.last_cache.load())
 
     def test_multiple_cache_writes(self):
         thing = ['short', 'list']
@@ -155,7 +155,7 @@ class ArvadosPutResumeCacheTest(ArvadosBaseTestCase):
         # sure the cache file gets truncated.
         self.last_cache.save(['long', 'long', 'list'])
         self.last_cache.save(thing)
-        self.assertEquals(thing, self.last_cache.load())
+        self.assertEqual(thing, self.last_cache.load())
 
     def test_cache_is_locked(self):
         with tempfile.NamedTemporaryFile() as cachefile:
@@ -196,9 +196,11 @@ class ArvadosPutResumeCacheTest(ArvadosBaseTestCase):
                           arv_put.ResumeCache, path)
 
 
-class ArvadosPutCollectionWriterTest(ArvadosKeepLocalStoreTestCase):
+class ArvadosPutCollectionWriterTest(run_test_server.TestCaseWithServers,
+                                     ArvadosBaseTestCase):
     def setUp(self):
         super(ArvadosPutCollectionWriterTest, self).setUp()
+        run_test_server.authorize_with('active')
         with tempfile.NamedTemporaryFile(delete=False) as cachefile:
             self.cache = arv_put.ResumeCache(cachefile.name)
             self.cache_filename = cachefile.name
@@ -214,12 +216,12 @@ class ArvadosPutCollectionWriterTest(ArvadosKeepLocalStoreTestCase):
         cwriter.write_file('/dev/null')
         cwriter.cache_state()
         self.assertTrue(self.cache.load())
-        self.assertEquals(". d41d8cd98f00b204e9800998ecf8427e+0 0:0:null\n", cwriter.manifest_text())
+        self.assertEqual(". d41d8cd98f00b204e9800998ecf8427e+0 0:0:null\n", cwriter.manifest_text())
 
     def test_writer_works_without_cache(self):
         cwriter = arv_put.ArvPutCollectionWriter()
         cwriter.write_file('/dev/null')
-        self.assertEquals(". d41d8cd98f00b204e9800998ecf8427e+0 0:0:null\n", cwriter.manifest_text())
+        self.assertEqual(". d41d8cd98f00b204e9800998ecf8427e+0 0:0:null\n", cwriter.manifest_text())
 
     def test_writer_resumes_from_cache(self):
         cwriter = arv_put.ArvPutCollectionWriter(self.cache)
@@ -228,7 +230,7 @@ class ArvadosPutCollectionWriterTest(ArvadosKeepLocalStoreTestCase):
             cwriter.cache_state()
             new_writer = arv_put.ArvPutCollectionWriter.from_cache(
                 self.cache)
-            self.assertEquals(
+            self.assertEqual(
                 ". 098f6bcd4621d373cade4e832627b4f6+4 0:4:test\n",
                 new_writer.manifest_text())
 
@@ -238,12 +240,12 @@ class ArvadosPutCollectionWriterTest(ArvadosKeepLocalStoreTestCase):
             cwriter.write_file(testfile.name, 'test')
         new_writer = arv_put.ArvPutCollectionWriter.from_cache(self.cache)
         new_writer.write_file('/dev/null')
-        self.assertEquals(". d41d8cd98f00b204e9800998ecf8427e+0 0:0:null\n", new_writer.manifest_text())
+        self.assertEqual(". d41d8cd98f00b204e9800998ecf8427e+0 0:0:null\n", new_writer.manifest_text())
 
     def test_new_writer_from_empty_cache(self):
         cwriter = arv_put.ArvPutCollectionWriter.from_cache(self.cache)
         cwriter.write_file('/dev/null')
-        self.assertEquals(". d41d8cd98f00b204e9800998ecf8427e+0 0:0:null\n", cwriter.manifest_text())
+        self.assertEqual(". d41d8cd98f00b204e9800998ecf8427e+0 0:0:null\n", cwriter.manifest_text())
 
     def test_writer_resumable_after_arbitrary_bytes(self):
         cwriter = arv_put.ArvPutCollectionWriter(self.cache)
@@ -253,7 +255,7 @@ class ArvadosPutCollectionWriterTest(ArvadosKeepLocalStoreTestCase):
             cwriter.cache_state()
             new_writer = arv_put.ArvPutCollectionWriter.from_cache(
                 self.cache)
-        self.assertEquals(cwriter.manifest_text(), new_writer.manifest_text())
+        self.assertEqual(cwriter.manifest_text(), new_writer.manifest_text())
 
     def make_progress_tester(self):
         progression = []
@@ -286,16 +288,16 @@ class ArvadosExpectedBytesTest(ArvadosBaseTestCase):
     TEST_SIZE = os.path.getsize(__file__)
 
     def test_expected_bytes_for_file(self):
-        self.assertEquals(self.TEST_SIZE,
+        self.assertEqual(self.TEST_SIZE,
                           arv_put.expected_bytes_for([__file__]))
 
     def test_expected_bytes_for_tree(self):
         tree = self.make_tmpdir()
         shutil.copyfile(__file__, os.path.join(tree, 'one'))
         shutil.copyfile(__file__, os.path.join(tree, 'two'))
-        self.assertEquals(self.TEST_SIZE * 2,
+        self.assertEqual(self.TEST_SIZE * 2,
                           arv_put.expected_bytes_for([tree]))
-        self.assertEquals(self.TEST_SIZE * 3,
+        self.assertEqual(self.TEST_SIZE * 3,
                           arv_put.expected_bytes_for([tree, __file__]))
 
     def test_expected_bytes_for_device(self):
@@ -324,78 +326,10 @@ class ArvadosPutReportTest(ArvadosBaseTestCase):
                                       arv_put.human_progress(count, None)))
 
 
-class ArvadosPutProjectLinkTest(ArvadosBaseTestCase):
+class ArvadosPutTest(run_test_server.TestCaseWithServers, ArvadosBaseTestCase):
+    MAIN_SERVER = {}
     Z_UUID = 'zzzzz-zzzzz-zzzzzzzzzzzzzzz'
 
-    def setUp(self):
-        self.stderr = StringIO()
-        super(ArvadosPutProjectLinkTest, self).setUp()
-
-    def tearDown(self):
-        self.stderr.close()
-        super(ArvadosPutProjectLinkTest, self).tearDown()
-
-    def prep_link_from_arguments(self, args, uuid_found=True):
-        try:
-            link = arv_put.prep_project_link(arv_put.parse_arguments(args),
-                                             self.stderr,
-                                             lambda uuid: uuid_found)
-        finally:
-            self.stderr.seek(0)
-        return link
-
-    def check_link(self, link, project_uuid, link_name=None):
-        self.assertEqual(project_uuid, link.get('tail_uuid'))
-        self.assertEqual('name', link.get('link_class'))
-        if link_name is None:
-            self.assertNotIn('name', link)
-        else:
-            self.assertEqual(link_name, link.get('name'))
-        self.assertNotIn('head_uuid', link)
-
-    def check_stderr_empty(self):
-        self.assertEqual('', self.stderr.getvalue())
-
-    def test_project_link_with_name(self):
-        link = self.prep_link_from_arguments(['--project-uuid', self.Z_UUID,
-                                              '--name', 'test link AAA'])
-        self.check_link(link, self.Z_UUID, 'test link AAA')
-        self.check_stderr_empty()
-
-    def test_project_link_without_name(self):
-        link = self.prep_link_from_arguments(['--project-uuid', self.Z_UUID])
-        self.check_link(link, self.Z_UUID)
-        self.check_stderr_empty()
-
-    def test_collection_without_project_warned(self):
-        self.assertIsNone(self.prep_link_from_arguments([]))
-        for line in self.stderr:
-            if "--project-uuid or --name" in line:
-                break
-        else:
-            self.fail("no warning emitted about the lack of project name")
-
-    def test_no_link_or_warning_with_no_collection(self):
-        self.assertIsNone(self.prep_link_from_arguments(['--raw']))
-        self.check_stderr_empty()
-
-    def test_error_when_project_not_found(self):
-        self.assertRaises(ValueError,
-                          self.prep_link_from_arguments,
-                          ['--project-uuid', self.Z_UUID], False)
-
-    def test_name_without_project_is_error(self):
-        self.assertRaises(ValueError,
-                          self.prep_link_from_arguments,
-                          ['--name', 'test'])
-
-    def test_link_without_collection_is_error(self):
-        self.assertRaises(ValueError,
-                          self.prep_link_from_arguments,
-                          ['--project-uuid', self.Z_UUID, '--stream'])
-
-
-class ArvadosPutTest(ArvadosKeepLocalStoreTestCase):
     def call_main_with_args(self, args):
         self.main_stdout = StringIO()
         self.main_stderr = StringIO()
@@ -409,6 +343,11 @@ class ArvadosPutTest(ArvadosKeepLocalStoreTestCase):
             os.path.exists(os.path.join(os.environ['KEEP_LOCAL_STORE'],
                                         '098f6bcd4621d373cade4e832627b4f6')),
             "did not find file stream in Keep store")
+
+    def setUp(self):
+        super(ArvadosPutTest, self).setUp()
+        run_test_server.authorize_with('active')
+        arv_put.api_client = None
 
     def tearDown(self):
         for outbuf in ['main_stdout', 'main_stderr']:
@@ -442,15 +381,99 @@ class ArvadosPutTest(ArvadosKeepLocalStoreTestCase):
             arv_put.ResumeCache.CACHE_DIR = orig_cachedir
             os.chmod(cachedir, 0o700)
 
+    def test_error_name_without_collection(self):
+        self.assertRaises(SystemExit, self.call_main_with_args,
+                          ['--name', 'test without Collection',
+                           '--stream', '/dev/null'])
+
+    def test_error_when_project_not_found(self):
+        self.assertRaises(SystemExit,
+                          self.call_main_with_args,
+                          ['--project-uuid', self.Z_UUID])
+
+    def test_error_bad_project_uuid(self):
+        self.assertRaises(SystemExit,
+                          self.call_main_with_args,
+                          ['--project-uuid', self.Z_UUID, '--stream'])
+
+class ArvPutIntegrationTest(run_test_server.TestCaseWithServers,
+                            ArvadosBaseTestCase):
+    def _getKeepServerConfig():
+        for config_file, mandatory in [
+                ['application.yml', True], ['application.default.yml', False]]:
+            path = os.path.join(run_test_server.SERVICES_SRC_DIR,
+                                "api", "config", config_file)
+            if not mandatory and not os.path.exists(path):
+                continue
+            with open(path) as f:
+                rails_config = yaml.load(f.read())
+                for config_section in ['test', 'common']:
+                    try:
+                        key = rails_config[config_section]["blob_signing_key"]
+                    except (KeyError, TypeError):
+                        pass
+                    else:
+                        return {'blob_signing_key': key,
+                                'enforce_permissions': True}
+        return {'blog_signing_key': None, 'enforce_permissions': False}
+
+    MAIN_SERVER = {}
+    KEEP_SERVER = _getKeepServerConfig()
+    PROJECT_UUID = run_test_server.fixture('groups')['aproject']['uuid']
+
+    @classmethod
+    def setUpClass(cls):
+        super(ArvPutIntegrationTest, cls).setUpClass()
+        cls.ENVIRON = os.environ.copy()
+        cls.ENVIRON['PYTHONPATH'] = ':'.join(sys.path)
+
+    def setUp(self):
+        super(ArvPutIntegrationTest, self).setUp()
+        arv_put.api_client = None
+
+    def authorize_with(self, token_name):
+        run_test_server.authorize_with(token_name)
+        for v in ["ARVADOS_API_HOST",
+                  "ARVADOS_API_HOST_INSECURE",
+                  "ARVADOS_API_TOKEN"]:
+            self.ENVIRON[v] = arvados.config.settings()[v]
+        arv_put.api_client = arvados.api('v1')
+
+    def current_user(self):
+        return arv_put.api_client.users().current().execute()
+
+    def test_check_real_project_found(self):
+        self.authorize_with('active')
+        self.assertTrue(arv_put.desired_project_uuid(arv_put.api_client, self.PROJECT_UUID, 0),
+                        "did not correctly find test fixture project")
+
+    def test_check_error_finding_nonexistent_uuid(self):
+        BAD_UUID = 'zzzzz-zzzzz-zzzzzzzzzzzzzzz'
+        self.authorize_with('active')
+        try:
+            result = arv_put.desired_project_uuid(arv_put.api_client, BAD_UUID,
+                                                  0)
+        except ValueError as error:
+            self.assertIn(BAD_UUID, error.message)
+        else:
+            self.assertFalse(result, "incorrectly found nonexistent project")
+
+    def test_check_error_finding_nonexistent_project(self):
+        BAD_UUID = 'zzzzz-tpzed-zzzzzzzzzzzzzzz'
+        self.authorize_with('active')
+        with self.assertRaises(apiclient.errors.HttpError):
+            result = arv_put.desired_project_uuid(arv_put.api_client, BAD_UUID,
+                                                  0)
+
     def test_short_put_from_stdin(self):
-        # Have to run this separately since arv-put can't read from the
-        # tests' stdin.
+        # Have to run this as an integration test since arv-put can't
+        # read from the tests' stdin.
         # arv-put usually can't stat(os.path.realpath('/dev/stdin')) in this
         # case, because the /proc entry is already gone by the time it tries.
         pipe = subprocess.Popen(
             [sys.executable, arv_put.__file__, '--stream'],
             stdin=subprocess.PIPE, stdout=subprocess.PIPE,
-            stderr=subprocess.STDOUT)
+            stderr=subprocess.STDOUT, env=self.ENVIRON)
         pipe.stdin.write('stdin test\n')
         pipe.stdin.close()
         deadline = time.time() + 5
@@ -465,65 +488,6 @@ class ArvadosPutTest(ArvadosKeepLocalStoreTestCase):
             self.fail("arv-put returned exit code {}".format(returncode))
         self.assertIn('4a9c8b735dce4b5fa3acf221a0b13628+11', pipe.stdout.read())
 
-    def test_link_without_project_uuid_aborts(self):
-        self.assertRaises(SystemExit, self.call_main_with_args,
-                          ['--name', 'test without project UUID', '/dev/null'])
-
-    def test_link_without_collection_aborts(self):
-        self.assertRaises(SystemExit, self.call_main_with_args,
-                          ['--name', 'test without Collection',
-                           '--stream', '/dev/null'])
-
-class ArvPutIntegrationTest(unittest.TestCase):
-    PROJECT_UUID = run_test_server.fixture('groups')['aproject']['uuid']
-
-    @classmethod
-    def setUpClass(cls):
-        try:
-            del os.environ['KEEP_LOCAL_STORE']
-        except KeyError:
-            pass
-
-        # Use the blob_signing_key from the Rails "test" configuration
-        # to provision the Keep server.
-        with open(os.path.join(os.path.dirname(__file__),
-                               run_test_server.ARV_API_SERVER_DIR,
-                               "config",
-                               "application.yml")) as f:
-            rails_config = yaml.load(f.read())
-        try:
-            config_blob_signing_key = rails_config["test"]["blob_signing_key"]
-        except KeyError:
-            config_blob_signing_key = rails_config["common"]["blob_signing_key"]
-        run_test_server.run()
-        run_test_server.run_keep(blob_signing_key=config_blob_signing_key,
-                                 enforce_permissions=True)
-
-    @classmethod
-    def tearDownClass(cls):
-        run_test_server.stop()
-        run_test_server.stop_keep()
-
-    def authorize_with(self, token_name):
-        run_test_server.authorize_with(token_name)
-        for v in ["ARVADOS_API_HOST",
-                  "ARVADOS_API_HOST_INSECURE",
-                  "ARVADOS_API_TOKEN"]:
-            os.environ[v] = arvados.config.settings()[v]
-
-    def test_check_real_project_found(self):
-        self.assertTrue(arv_put.check_project_exists(self.PROJECT_UUID),
-                        "did not correctly find test fixture project")
-
-    def test_check_error_finding_nonexistent_project(self):
-        BAD_UUID = 'zzzzz-zzzzz-zzzzzzzzzzzzzzz'
-        try:
-            result = arv_put.check_project_exists(BAD_UUID)
-        except ValueError as error:
-            self.assertIn(BAD_UUID, error.message)
-        else:
-            self.assertFalse(result, "incorrectly found nonexistent project")
-
     def test_ArvPutSignedManifest(self):
         # ArvPutSignedManifest runs "arv-put foo" and then attempts to get
         # the newly created manifest from the API server, testing to confirm
@@ -532,24 +496,23 @@ class ArvPutIntegrationTest(unittest.TestCase):
 
         # Before doing anything, demonstrate that the collection
         # we're about to create is not present in our test fixture.
-        api = arvados.api('v1', cache=False)
         manifest_uuid = "00b4e9f40ac4dd432ef89749f1c01e74+47"
         with self.assertRaises(apiclient.errors.HttpError):
-            notfound = api.collections().get(uuid=manifest_uuid).execute()
+            notfound = arv_put.api_client.collections().get(
+                uuid=manifest_uuid).execute()
 
-        datadir = tempfile.mkdtemp()
+        datadir = self.make_tmpdir()
         with open(os.path.join(datadir, "foo"), "w") as f:
             f.write("The quick brown fox jumped over the lazy dog")
         p = subprocess.Popen([sys.executable, arv_put.__file__, datadir],
-                             stdout=subprocess.PIPE)
+                             stdout=subprocess.PIPE, env=self.ENVIRON)
         (arvout, arverr) = p.communicate()
-        self.assertEqual(p.returncode, 0)
         self.assertEqual(arverr, None)
-        self.assertEqual(arvout.strip(), manifest_uuid)
+        self.assertEqual(p.returncode, 0)
 
         # The manifest text stored in the API server under the same
         # manifest UUID must use signed locators.
-        c = api.collections().get(uuid=manifest_uuid).execute()
+        c = arv_put.api_client.collections().get(uuid=manifest_uuid).execute()
         self.assertRegexpMatches(
             c['manifest_text'],
             r'^\. 08a008a01d498c404b0c30852b39d3b8\+44\+A[0-9a-f]+@[0-9a-f]+ 0:44:foo\n')
@@ -557,33 +520,56 @@ class ArvPutIntegrationTest(unittest.TestCase):
         os.remove(os.path.join(datadir, "foo"))
         os.rmdir(datadir)
 
-    def run_and_find_link(self, text, extra_args=[]):
+    def run_and_find_collection(self, text, extra_args=[]):
         self.authorize_with('active')
         pipe = subprocess.Popen(
-            [sys.executable, arv_put.__file__,
-             '--project-uuid', self.PROJECT_UUID] + extra_args,
-            stdin=subprocess.PIPE,
-            stdout=subprocess.PIPE, stderr=subprocess.PIPE)
+            [sys.executable, arv_put.__file__] + extra_args,
+            stdin=subprocess.PIPE, stdout=subprocess.PIPE,
+            stderr=subprocess.PIPE, env=self.ENVIRON)
         stdout, stderr = pipe.communicate(text)
-        link_list = arvados.api('v1', cache=False).links().list(
-            filters=[['head_uuid', '=', stdout.strip()],
-                     ['tail_uuid', '=', self.PROJECT_UUID],
-                     ['link_class', '=', 'name']]).execute().get('items', [])
-        self.assertEqual(1, len(link_list))
-        return link_list[0]
+        search_key = ('portable_data_hash'
+                      if '--portable-data-hash' in extra_args else 'uuid')
+        collection_list = arvados.api('v1').collections().list(
+            filters=[[search_key, '=', stdout.strip()]]).execute().get('items', [])
+        self.assertEqual(1, len(collection_list))
+        return collection_list[0]
+
+    def test_put_collection_with_high_redundancy(self):
+        # Write empty data: we're not testing CollectionWriter, just
+        # making sure collections.create tells the API server what our
+        # desired replication level is.
+        collection = self.run_and_find_collection("", ['--replication', '4'])
+        self.assertEqual(4, collection['replication_desired'])
+
+    def test_put_collection_with_default_redundancy(self):
+        collection = self.run_and_find_collection("")
+        self.assertEqual(None, collection['replication_desired'])
 
     def test_put_collection_with_unnamed_project_link(self):
-        link = self.run_and_find_link("Test unnamed collection")
+        link = self.run_and_find_collection(
+            "Test unnamed collection",
+            ['--portable-data-hash', '--project-uuid', self.PROJECT_UUID])
         username = pwd.getpwuid(os.getuid()).pw_name
         self.assertRegexpMatches(
             link['name'],
-            r'^Collection saved by {}@'.format(re.escape(username)))
+            r'^Saved at .* by {}@'.format(re.escape(username)))
+
+    def test_put_collection_with_name_and_no_project(self):
+        link_name = 'Test Collection Link in home project'
+        collection = self.run_and_find_collection(
+            "Test named collection in home project",
+            ['--portable-data-hash', '--name', link_name])
+        self.assertEqual(link_name, collection['name'])
+        my_user_uuid = self.current_user()['uuid']
+        self.assertEqual(my_user_uuid, collection['owner_uuid'])
 
     def test_put_collection_with_named_project_link(self):
         link_name = 'Test auto Collection Link'
-        link = self.run_and_find_link("Test named collection",
-                                      ['--name', link_name])
-        self.assertEqual(link_name, link['name'])
+        collection = self.run_and_find_collection("Test named collection",
+                                      ['--portable-data-hash',
+                                       '--name', link_name,
+                                       '--project-uuid', self.PROJECT_UUID])
+        self.assertEqual(link_name, collection['name'])
 
 
 if __name__ == '__main__':

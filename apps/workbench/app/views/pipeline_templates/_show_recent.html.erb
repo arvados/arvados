@@ -35,9 +35,10 @@
                                      action_method: 'post',
                                      action_data: {selection_param: 'pipeline_instance[owner_uuid]',
                                                    'pipeline_instance[pipeline_template_uuid]' => ob.uuid,
+                                                   'pipeline_instance[description]' => "Created at #{Time.now.localtime}" + (ob.name.andand.size.andand>0 ? " using the pipeline template *#{ob.name}*" : ""),
                                                    'success' => 'redirect-to-created-object'
                                                   }.to_json),
-                { class: "btn btn-default btn-xs", title: "Run #{ob.name}", remote: true, method: 'get' }
+                { class: "btn btn-default btn-xs", title: "Run #{ob.name}", remote: true, method: :get }
             ) do %>
                <i class="fa fa-fw fa-play"></i> Run
               <% end %>
@@ -48,7 +49,7 @@
         <%= render_editable_attribute ob, 'name' %>
       </td><td>
         <% if ob.respond_to?(:description) and ob.description %>
-          <%= ob.description %>
+          <%= render_attribute_as_textile(ob, "description", ob.description, false) %>
           <br />
         <% end %>
         <% ob.components.collect { |k,v| k.to_s }.each do |k| %>

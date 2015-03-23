@@ -9,8 +9,7 @@ class Link < ArvadosModel
   after_create :maybe_invalidate_permissions_cache
   after_destroy :maybe_invalidate_permissions_cache
   attr_accessor :head_kind, :tail_kind
-  validate :name_link_has_valid_name
-  validate :name_link_owner_is_tail
+  validate :name_links_are_obsolete
 
   api_accessible :user, extend: :common do |t|
     t.add :tail_uuid
@@ -71,26 +70,19 @@ class Link < ArvadosModel
     end
   end
 
-  def name_link_has_valid_name
+  def name_links_are_obsolete
     if link_class == 'name'
-      unless name.is_a? String and !name.empty?
-        errors.add('name', 'must be a non-empty string')
-      end
+      errors.add('name', 'Name links are obsolete')
+      false
     else
       true
     end
   end
 
-  def name_link_owner_is_tail
-    if link_class == 'name'
-      self.owner_uuid = tail_uuid
-      ensure_owner_uuid_is_permitted
-    end
-  end
-
   # A user is permitted to create, update or modify a permission link
-  # if and only if they have "manage" permission on the destination
-  # object.
+  # if and only if they have "manage" permission on the object
+  # indicated by the permission link's head_uuid.
+  #
   # All other links are treated as regular ArvadosModel objects.
   #
   def ensure_owner_uuid_is_permitted
@@ -104,4 +96,5 @@ class Link < ArvadosModel
       super
     end
   end
+
 end

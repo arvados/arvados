@@ -1,0 +1,204 @@
+  <div id="wrapper" class="container-fluid">
+    <nav class="navbar navbar-default navbar-fixed-top" role="navigation">
+      <div class="navbar-header">
+        <button type="button" class="navbar-toggle" data-toggle="collapse" data-target=".navbar-collapse">
+          <span class="sr-only">Toggle navigation</span>
+          <span class="icon-bar"></span>
+          <span class="icon-bar"></span>
+          <span class="icon-bar"></span>
+        </button>
+        <% site_name = Rails.configuration.site_name.downcase rescue Rails.application.class.parent_name %>
+        <% if current_user %>
+          <a class="navbar-brand" href="/" data-push=true><%= site_name %></a>
+        <% else %>
+          <span class="navbar-brand"><%= site_name %></span>
+        <% end %>
+      </div>
+
+      <div class="collapse navbar-collapse">
+        <ul class="nav navbar-nav navbar-right">
+
+          <li>
+            <a><i class="rotating loading glyphicon glyphicon-refresh"></i></a>
+          </li>
+
+          <% if current_user %>
+            <% if current_user.is_active %>
+            <li>
+              <form class="navbar-form" role="search"
+                         data-search-modal=
+                         "<%= url_for(
+                          action: 'choose',
+                          controller: 'search',
+                          title: 'Search',
+                          action_name: 'Show',
+                          action_href: url_for(controller: :actions, action: :show),
+                          action_method: 'get',
+                          action_data: {selection_param: 'uuid', success: 'redirect-to-created-object', copy_from_search_box: true}.to_json)
+                         %>">
+                <div class="input-group" style="width: 220px">
+                  <input type="text" class="form-control" placeholder="search">
+                  <a class="input-group-addon"><span class="glyphicon glyphicon-search"></span></a>
+                </div>
+              </form>
+            </li>
+            <% end %>
+
+            <li class="dropdown notification-menu">
+              <a href="#" class="dropdown-toggle" data-toggle="dropdown" id="notifications-menu">
+                <span class="badge badge-alert notification-count"><%= user_notifications.length if user_notifications.any? %></span>
+                <%= current_user.email %> <span class="caret"></span>
+              </a>
+              <ul class="dropdown-menu" role="menu">
+                <% if current_user.is_active %>
+                <li role="menuitem"><a href="/manage_account" role="menuitem"><i class="fa fa-key fa-fw"></i> Manage account</a></li>
+                <% if Rails.configuration.user_profile_form_fields %>
+                  <li role="menuitem"><a href="/users/<%=current_user.uuid%>/profile" role="menuitem"><i class="fa fa-key fa-fw"></i> Manage profile</a></li>
+                <% end %>
+                <% end %>
+                <li role="menuitem"><a href="<%= logout_path %>" role="menuitem"><i class="fa fa-sign-out fa-fw"></i> Log out</a></li>
+                <% if user_notifications.any? %>
+                  <li role="presentation" class="divider"></li>
+                  <% user_notifications.each_with_index do |n, i| %>
+                    <% if i > 0 %><li class="divider"></li><% end %>
+                    <li class="notification"><%= n.call(self) %></li>
+                  <% end %>
+                <% end %>
+              </ul>
+            </li>
+
+            <% if current_user.is_admin %>
+              <li class="dropdown">
+                <a href="#" class="dropdown-toggle" data-toggle="dropdown" id="system-menu">
+                  <span class="fa fa-lg fa-gear"></span>
+                </a>
+                <ul class="dropdown-menu" role="menu">
+                  <li role="presentation" class="dropdown-header">
+                    Settings
+                  </li>
+                  <li role="menuitem"><a href="/repositories">
+                      <i class="fa fa-lg fa-code-fork fa-fw"></i> Repositories
+                  </a></li>
+                  <li role="menuitem"><a href="/virtual_machines">
+                      <i class="fa fa-lg fa-terminal fa-fw"></i> Virtual machines
+                  </a></li>
+                  <li role="menuitem"><a href="/authorized_keys">
+                      <i class="fa fa-lg fa-key fa-fw"></i> SSH keys
+                  </a></li>
+                  <li role="menuitem"><a href="/api_client_authorizations">
+                      <i class="fa fa-lg fa-ticket fa-fw"></i> API tokens
+                  </a></li>
+                  <li role="menuitem"><a href="/links">
+                      <i class="fa fa-lg fa-arrows-h fa-fw"></i> Links
+                  </a></li>
+                  <li role="menuitem"><a href="/users">
+                      <i class="fa fa-lg fa-user fa-fw"></i> Users
+                  </a></li>
+                  <li role="menuitem"><a href="/groups">
+                      <i class="fa fa-lg fa-users fa-fw"></i> Groups
+                  </a></li>
+                  <li role="menuitem"><a href="/nodes">
+                      <i class="fa fa-lg fa-cloud fa-fw"></i> Compute nodes
+                  </a></li>
+                  <li role="menuitem"><a href="/keep_services">
+                      <i class="fa fa-lg fa-exchange fa-fw"></i> Keep services
+                  </a></li>
+                  <li role="menuitem"><a href="/keep_disks">
+                      <i class="fa fa-lg fa-hdd-o fa-fw"></i> Keep disks
+                  </a></li>
+                </ul>
+              </li>
+            <% end %>
+          <% else %>
+            <li><a href="<%= arvados_api_client.arvados_login_url(return_to: root_url) %>">Log in</a></li>
+          <% end %>
+
+          <li class="dropdown help-menu">
+            <a href="#" class="dropdown-toggle" data-toggle="dropdown" id="arv-help">
+              <span class="fa fa-lg fa-question-circle"></span>
+            </a>
+            <ul class="dropdown-menu">
+              <li><%= link_to raw('<i class="fa fa-book fa-fw"></i> Tutorials and User guide'), "#{Rails.configuration.arvados_docsite}/user", target: "_blank" %></li>
+              <li><%= link_to raw('<i class="fa fa-book fa-fw"></i> API Reference'), "#{Rails.configuration.arvados_docsite}/api", target: "_blank" %></li>
+              <li><%= link_to raw('<i class="fa fa-book fa-fw"></i> SDK Reference'), "#{Rails.configuration.arvados_docsite}/sdk", target: "_blank" %></li>
+              <li role="presentation" class="divider"></li>
+              <li> <%= link_to report_issue_popup_path(popup_type: 'version', current_location: request.url, current_path: request.fullpath, action_method: 'post'),
+                      {class: 'report-issue-modal-window', remote: true, return_to: request.url} do %>
+                       <i class="fa fa-fw fa-support"></i> Show version / debugging info ...
+                      <% end %>
+              </li>
+              <li> <%= link_to report_issue_popup_path(popup_type: 'report', current_location: request.url, current_path: request.fullpath, action_method: 'post'),
+                      {class: 'report-issue-modal-window', remote: true, return_to: request.url} do %>
+                       <i class="fa fa-fw fa-support"></i> Report a problem ...
+                      <% end %>
+              </li>
+            </ul>
+          </li>
+        </ul>
+      </div><!-- /.navbar-collapse -->
+    </nav>
+
+    <% if current_user.andand.is_active %>
+      <nav class="navbar navbar-default breadcrumbs" role="navigation">
+        <ul class="nav navbar-nav navbar-left">
+          <li>
+            <a href="/">
+              <i class="fa fa-lg fa-fw fa-dashboard"></i>
+              Dashboard
+            </a>
+          </li>
+          <li class="dropdown">
+            <a href="#" class="dropdown-toggle" data-toggle="dropdown" id="projects-menu">
+              Projects
+              <span class="caret"></span>
+            </a>
+            <ul class="dropdown-menu" style="min-width: 20em" role="menu">
+              <li>
+                <%= link_to projects_path(options: {ensure_unique_name: true}), method: :post, class: 'btn btn-xs btn-default pull-right' do %>
+                  <i class="fa fa-plus"></i> Add a new project
+                <% end %>
+              </li>
+              <%= render partial: "projects_tree_menu", locals: {
+                  :project_link_to => Proc.new do |pnode, &block|
+                    link_to(project_path(pnode[:object].uuid),
+                      data: { 'object-uuid' => pnode[:object].uuid,
+                              'name' => 'name' },
+                      &block)
+                  end,
+              } %>
+            </ul>
+          </li>
+          <% if @name_link or @object %>
+            <li class="nav-separator">
+              <i class="fa fa-lg fa-angle-double-right"></i>
+            </li>
+            <li>
+              <%= link_to project_path(current_user.uuid) do %>
+                Home
+              <% end %>
+            </li>
+            <% project_breadcrumbs.each do |p| %>
+              <li class="nav-separator">
+                <i class="fa fa-lg fa-angle-double-right"></i>
+              </li>
+              <li>
+                <%= link_to(p.name, project_path(p.uuid), data: {object_uuid: p.uuid, name: 'name'}) %>
+              </li>
+            <% end %>
+          <% end %>
+        </ul>
+      </nav>
+    <% end %>
+
+    <%= render partial: 'browser_unsupported' %><%# requires JS support below %>
+
+    <div id="page-wrapper">
+      <%= yield %>
+    </div>
+  </div>
+
+  <%= yield :footer_html %>
+
+<div class="modal-container"></div>
+<div id="report-issue-modal-window"></div>
+<script src="/browser_unsupported.js"></script>

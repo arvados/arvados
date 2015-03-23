@@ -1,6 +1,39 @@
 # Do not use this file for site configuration. Create application.yml
 # instead (see application.yml.example).
 
+# Below is a sample setting for diagnostics testing.
+# Configure workbench URL as "arvados_workbench_url"
+# Configure test user tokens as "user_tokens".
+#   At this time the tests need an "active" user token.
+# Also, configure the pipelines to be executed as "pipelines_to_test".
+# For each of the pipelines identified by the name of your choice
+#     ("pipeline_1" and "pipeline_2" in this sample), provide the following:
+#   template_uuid: is the uuid of the template to be executed
+#   input_paths: an array of inputs for the pipeline. Use either a collection's "uuid"
+#     or a file's "uuid/file_name" path in this array. If the pipeline does not require
+#     any inputs, this can be omitted. 
+#   max_wait_seconds: max time in seconds to wait for the pipeline run to complete.
+#     Default value of 30 seconds is used when this value is not provided.
+diagnostics:
+  arvados_workbench_url: https://localhost:3031
+  user_tokens:
+    active: eu33jurqntstmwo05h1jr3eblmi961e802703y6657s8zb14r
+  pipelines_to_test:
+    pipeline_1:
+      template_uuid: zzzzz-p5p6p-rxj8d71854j9idn
+      input_paths: [zzzzz-4zz18-nz98douzhaa3jh2]
+      max_wait_seconds: 10
+    pipeline_2:
+      template_uuid: zzzzz-p5p6p-1xbobfobk94ppbv
+      input_paths: [zzzzz-4zz18-nz98douzhaa3jh2, zzzzz-4zz18-gpw9o5wpcti3nib]
+
+# Below is a sample setting for performance testing.
+# Configure workbench URL as "arvados_workbench_url"
+# Configure test user token as "user_token".
+performance:
+  arvados_workbench_url: https://localhost:3031
+  user_token: eu33jurqntstmwo05h1jr3eblmi961e802703y6657s8zb14r
+
 development:
   cache_classes: false
   eager_load: true
@@ -12,6 +45,12 @@ development:
   assets.debug: true
   profiling_enabled: true
   site_name: Arvados Workbench (dev)
+  local_modified: "<%= '-modified' if `git status -s` != '' %>"
+
+  # API server configuration
+  arvados_login_base: ~
+  arvados_v1_base: ~
+  arvados_insecure_https: ~
 
 production:
   force_ssl: true
@@ -30,6 +69,11 @@ production:
 
   data_import_dir: /data/arvados-workbench-upload/data
   data_export_dir: /data/arvados-workbench-download/data
+
+  # API server configuration
+  arvados_login_base: ~
+  arvados_v1_base: ~
+  arvados_insecure_https: ~
 
   site_name: Arvados Workbench
 
@@ -52,11 +96,30 @@ test:
   # server as a dependency.  These settings should match the API
   # server's Rails defaults.  If you adjust those, change these
   # settings in application.yml to match.
-  arvados_login_base: https://localhost:3001/login
-  arvados_v1_base: https://localhost:3001/arvados/v1
+  arvados_login_base: https://localhost:3000/login
+  arvados_v1_base: https://localhost:3000/arvados/v1
   arvados_insecure_https: true
 
   site_name: Workbench:test
+
+  # Enable user profile with one required field
+  user_profile_form_fields:
+    - key: organization
+      type: text
+      form_field_title: Institution
+      form_field_description: Your organization
+      required: true
+    - key: role
+      type: select
+      form_field_title: Your role
+      form_field_description: Choose the category that best describes your role in your organization.
+      options:
+        - Bio-informatician
+        - Computational biologist
+        - Biologist or geneticist
+        - Software developer
+        - IT
+        - Other
 
 common:
   assets.js_compressor: false
@@ -74,3 +137,67 @@ common:
   secret_key_base: false
   default_openid_prefix: https://www.google.com/accounts/o8/id
   send_user_setup_notification_email: true
+
+  # Set user_profile_form_fields to enable and configure the user profile page.
+  # Default is set to false. A commented setting with full description is provided below.
+  user_profile_form_fields: false
+
+  # Below is a sample setting of user_profile_form_fields config parameter.
+  # This configuration parameter should be set to either false (to disable) or
+  # to an array as shown below. 
+  # Configure the list of input fields to be displayed in the profile page
+  # using the attribute "key" for each of the input fields.
+  # This sample shows configuration with one required and one optional form fields.
+  # For each of these input fields:
+  #   You can specify "type" as "text" or "select".
+  #   List the "options" to be displayed for each of the "select" menu.
+  #   Set "required" as "true" for any of these fields to make them required.
+  # If any of the required fields are missing in the user's profile, the user will be
+  # redirected to the profile page before they can access any Workbench features.
+  #user_profile_form_fields:
+  #  - key: organization
+  #    type: text
+  #    form_field_title: Institution/Company
+  #    form_field_description: Your organization
+  #    required: true
+  #  - key: role
+  #    type: select
+  #    form_field_title: Your role
+  #    form_field_description: Choose the category that best describes your role in your organization.
+  #    options:
+  #      - Bio-informatician
+  #      - Computational biologist
+  #      - Biologist or geneticist
+  #      - Software developer
+  #      - IT
+  #      - Other
+
+  # Use "user_profile_form_message" to configure the message you want to display on
+  # the profile page.
+  user_profile_form_message: Welcome to Arvados. All <span style="color:red">required fields</span> must be completed before you can proceed.
+
+  # source_version
+  source_version: "<%= `git log -n 1 --format=%h`.strip %>"
+  local_modified: false
+
+  # report notification to and from addresses
+  issue_reporter_email_from: arvados@example.com
+  issue_reporter_email_to: arvados@example.com
+  support_email_address: arvados@example.com
+
+  # generic issue email from
+  email_from: arvados@example.com
+
+  # Mimetypes of applications for which the view icon
+  # would be enabled in a collection's show page.
+  # It is sufficient to list only applications here.
+  # No need to list text and image types.
+  application_mimetypes_with_view_icon: [fasta, go, javascript, json, pdf, python, r, rtf, sam, sh, xml, xsl]
+
+  # the maximum number of bytes to load in the log viewer
+  log_viewer_max_bytes: 1000000
+
+  # Set anonymous_user_token to enable anonymous user access. You can get
+  # the token by running "bundle exec ./script/get_anonymous_user_token.rb"
+  # in the directory where your API server is running.
+  anonymous_user_token: false

@@ -3,7 +3,7 @@ require 'websocket_runner'
 require 'oj'
 require 'database_cleaner'
 
-DatabaseCleaner.strategy = :truncation
+DatabaseCleaner.strategy = :deletion
 
 class WebsocketTest < ActionDispatch::IntegrationTest
   self.use_transactional_fixtures = false
@@ -240,6 +240,42 @@ class WebsocketTest < ActionDispatch::IntegrationTest
     assert_equal human.uuid, human_ev_uuid
   end
 
+
+  test "connect, subscribe, compound filter" do
+    state = 1
+    t1 = nil
+
+    authorize_with :admin
+
+    ws_helper :admin do |ws|
+      ws.on :open do |event|
+        ws.send ({method: 'subscribe', filters: [['object_uuid', 'is_a', 'arvados#trait'], ['event_type', '=', 'update']]}.to_json)
+      end
+
+      ws.on :message do |event|
+        d = Oj.load event.data
+        case state
+        when 1
+          assert_equal 200, d["status"]
+          t1 = Trait.create("name" => "foo")
+          t1.name = "bar"
+          t1.save!
+          state = 2
+         when 2
+          assert_equal 'update', d['event_type']
+          state = 3
+          ws.close
+        when 3
+          assert false, "Should not get any more events"
+        end
+      end
+
+    end
+
+    assert_equal 3, state
+    assert_not_nil t1
+  end
+
   test "connect, subscribe, ask events starting at seq num" do
     state = 1
     human = nil
@@ -247,7 +283,7 @@ class WebsocketTest < ActionDispatch::IntegrationTest
 
     authorize_with :admin
 
-    lastid = logs(:log3).id
+    lastid = logs(:admin_changes_specimen).id
     l1 = nil
     l2 = nil
 
@@ -275,11 +311,11 @@ class WebsocketTest < ActionDispatch::IntegrationTest
           assert false, "Should not get any more events"
         end
       end
-
     end
 
-    assert_equal logs(:log4).object_uuid, l1
-    assert_equal logs(:log5).object_uuid, l2
+    expect_next_logs = Log.where('id > ?', lastid).order('id asc')
+    assert_equal expect_next_logs[0].object_uuid, l1
+    assert_equal expect_next_logs[1].object_uuid, l2
   end
 
   test "connect, subscribe, get event, unsubscribe" do
@@ -566,5 +602,48 @@ class WebsocketTest < ActionDispatch::IntegrationTest
     assert_equal 17, state
 
   end
+
+  test "connect, subscribe, lots of events" do
+    state = 1
+    event_count = 0
+    log_start = Log.order(:id).last.id
+
+    authorize_with :admin
+
+    ws_helper :admin, false do |ws|
+      EM::Timer.new 45 do
+        # Needs a longer timeout than the default
+        ws.close
+      end
+
+      ws.on :open do |event|
+        ws.send ({method: 'subscribe'}.to_json)
+      end
+
+      ws.on :message do |event|
+        d = Oj.load event.data
+        case state
+        when 1
+          assert_equal 200, d["status"]
+          ActiveRecord::Base.transaction do
+            (1..202).each do
+              spec = Specimen.create
+            end
+          end
+          state = 2
+        when 2
+          event_count += 1
+          assert_equal d['id'], event_count+log_start
+          if event_count == 202
+            ws.close
+          end
+        end
+      end
+
+    end
+
+    assert_equal 202, event_count
+  end
+
 
 end

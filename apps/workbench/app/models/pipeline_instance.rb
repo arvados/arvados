@@ -5,6 +5,24 @@ class PipelineInstance < ArvadosBase
     true
   end
 
+  def friendly_link_name lookup=nil
+    pipeline_name = self.name
+    if pipeline_name.nil? or pipeline_name.empty?
+      template = if lookup and lookup[self.pipeline_template_uuid]
+                   lookup[self.pipeline_template_uuid]
+                 else
+                   PipelineTemplate.where(uuid: self.pipeline_template_uuid).first
+                 end
+      if template
+        template.name
+      else
+        self.uuid
+      end
+    else
+      pipeline_name
+    end
+  end
+
   def content_summary
     begin
       PipelineTemplate.find(pipeline_template_uuid).name
@@ -28,11 +46,17 @@ class PipelineInstance < ArvadosBase
       end
     end
   end
-  
-  def attribute_editable? attr, *args
-    super && (attr.to_sym == :name ||
-              (attr.to_sym == :components and
-               (self.state == 'New' || self.state == 'Ready')))
+
+  def editable_attributes
+    %w(name description components)
+  end
+
+  def attribute_editable?(name, ever=nil)
+    if name.to_s == "components"
+      (ever or %w(New Ready).include?(state)) and super
+    else
+      super
+    end
   end
 
   def attributes_for_display
@@ -41,5 +65,20 @@ class PipelineInstance < ArvadosBase
 
   def self.creatable?
     false
+  end
+
+  def component_input_title(component_name, input_name)
+    component = components[component_name]
+    return nil if component.nil?
+    param_info = component[:script_parameters].andand[input_name.to_sym]
+    if param_info.is_a?(Hash) and param_info[:title]
+      param_info[:title]
+    else
+      "\"#{input_name.to_s}\" parameter for #{component[:script]} script in #{component_name} component"
+    end
+  end
+
+  def textile_attributes
+    [ 'description' ]
   end
 end

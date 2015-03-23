@@ -1,16 +1,17 @@
 running:
   uuid: zzzzz-8i9sb-pshmckwoma9plh7
-  owner_uuid: zzzzz-tpzed-xurymjxw79nv3jz
+  owner_uuid: zzzzz-j7d0g-v955i6s2oi1cbso
   cancelled_at: ~
   cancelled_by_user_uuid: ~
   cancelled_by_client_uuid: ~
+  created_at: <%= 3.minute.ago.to_s(:db) %>
   started_at: <%= 3.minute.ago.to_s(:db) %>
   finished_at: ~
   script_version: 1de84a854e2b440dc53bf42f8548afa4c17da332
   running: true
   success: ~
   output: ~
-  priority: ~
+  priority: 0
   log: ~
   is_locked_by_uuid: zzzzz-tpzed-xurymjxw79nv3jz
   tasks_summary:
@@ -19,6 +20,7 @@ running:
     running: 1
     done: 1
   runtime_constraints: {}
+  state: Running
 
 running_cancelled:
   uuid: zzzzz-8i9sb-4cf0nhn6xte809j
@@ -26,13 +28,14 @@ running_cancelled:
   cancelled_at: <%= 1.minute.ago.to_s(:db) %>
   cancelled_by_user_uuid: zzzzz-tpzed-xurymjxw79nv3jz
   cancelled_by_client_uuid: zzzzz-ozdt8-obw7foaks3qjyej
+  created_at: <%= 4.minute.ago.to_s(:db) %>
   started_at: <%= 3.minute.ago.to_s(:db) %>
   finished_at: ~
   script_version: 1de84a854e2b440dc53bf42f8548afa4c17da332
   running: true
   success: ~
   output: ~
-  priority: ~
+  priority: 0
   log: ~
   is_locked_by_uuid: zzzzz-tpzed-xurymjxw79nv3jz
   tasks_summary:
@@ -41,6 +44,7 @@ running_cancelled:
     running: 1
     done: 1
   runtime_constraints: {}
+  state: Cancelled
 
 uses_nonexistent_script_version:
   uuid: zzzzz-8i9sb-7m339pu0x9mla88
@@ -49,12 +53,13 @@ uses_nonexistent_script_version:
   cancelled_by_user_uuid: ~
   cancelled_by_client_uuid: ~
   script_version: 7def43a4d3f20789dda4700f703b5514cc3ed250
+  created_at: <%= 5.minute.ago.to_s(:db) %>
   started_at: <%= 3.minute.ago.to_s(:db) %>
   finished_at: <%= 2.minute.ago.to_s(:db) %>
   running: false
   success: true
   output: d41d8cd98f00b204e9800998ecf8427e+0
-  priority: ~
+  priority: 0
   log: d41d8cd98f00b204e9800998ecf8427e+0
   is_locked_by_uuid: ~
   tasks_summary:
@@ -63,6 +68,7 @@ uses_nonexistent_script_version:
     running: 0
     done: 1
   runtime_constraints: {}
+  state: Complete
 
 foobar:
   uuid: zzzzz-8i9sb-aceg2bnq7jt7kon
@@ -70,15 +76,18 @@ foobar:
   cancelled_at: ~
   cancelled_by_user_uuid: ~
   cancelled_by_client_uuid: ~
+  script: hash
+  repository: foo
   script_version: 7def43a4d3f20789dda4700f703b5514cc3ed250
   script_parameters:
     input: 1f4b0bc7583c2a7f9102c395f4ffc5e3+45
+  created_at: <%= 4.minute.ago.to_s(:db) %>
   started_at: <%= 3.minute.ago.to_s(:db) %>
   finished_at: <%= 2.minute.ago.to_s(:db) %>
   running: false
   success: true
   output: fa7aeb5140e2848d39b416daeef4ffc5+45
-  priority: ~
+  priority: 0
   log: ea10d51bcf88862dbcc36eb292017dfd+45
   is_locked_by_uuid: ~
   tasks_summary:
@@ -87,6 +96,7 @@ foobar:
     running: 0
     done: 1
   runtime_constraints: {}
+  state: Complete
 
 barbaz:
   uuid: zzzzz-8i9sb-cjs4pklxxjykyuq
@@ -98,13 +108,14 @@ barbaz:
   script_parameters:
     input: fa7aeb5140e2848d39b416daeef4ffc5+45
     an_integer: 1
+  created_at: <%= 4.minute.ago.to_s(:db) %>
   started_at: <%= 3.minute.ago.to_s(:db) %>
   finished_at: <%= 2.minute.ago.to_s(:db) %>
   running: false
   success: true
   repository: foo
   output: ea10d51bcf88862dbcc36eb292017dfd+45
-  priority: ~
+  priority: 0
   log: d41d8cd98f00b204e9800998ecf8427e+0
   is_locked_by_uuid: ~
   tasks_summary:
@@ -113,9 +124,39 @@ barbaz:
     running: 0
     done: 1
   runtime_constraints: {}
+  state: Complete
+
+runningbarbaz:
+  uuid: zzzzz-8i9sb-cjs4pklxxjykyuj
+  owner_uuid: zzzzz-tpzed-xurymjxw79nv3jz
+  cancelled_at: ~
+  cancelled_by_user_uuid: ~
+  cancelled_by_client_uuid: ~
+  script_version: 7def43a4d3f20789dda4700f703b5514cc3ed250
+  script_parameters:
+    input: fa7aeb5140e2848d39b416daeef4ffc5+45
+    an_integer: 1
+  created_at: <%= 4.minute.ago.to_s(:db) %>
+  started_at: <%= 3.minute.ago.to_s(:db) %>
+  finished_at: <%= 2.minute.ago.to_s(:db) %>
+  running: true
+  success: ~
+  repository: foo
+  output: ea10d51bcf88862dbcc36eb292017dfd+45
+  priority: 0
+  log: d41d8cd98f00b204e9800998ecf8427e+0
+  is_locked_by_uuid: ~
+  tasks_summary:
+    failed: 0
+    todo: 0
+    running: 1
+    done: 0
+  runtime_constraints: {}
+  state: Running
 
 previous_job_run:
   uuid: zzzzz-8i9sb-cjs4pklxxjykqqq
+  created_at: <%= 14.minute.ago.to_s(:db) %>
   owner_uuid: zzzzz-tpzed-xurymjxw79nv3jz
   repository: foo
   script: hash
@@ -125,9 +166,11 @@ previous_job_run:
     an_integer: "1"
   success: true
   output: ea10d51bcf88862dbcc36eb292017dfd+45
+  state: Complete
 
 previous_docker_job_run:
   uuid: zzzzz-8i9sb-k6emstgk4kw4yhi
+  created_at: <%= 14.minute.ago.to_s(:db) %>
   owner_uuid: zzzzz-tpzed-xurymjxw79nv3jz
   repository: foo
   script: hash
@@ -135,12 +178,33 @@ previous_docker_job_run:
   script_parameters:
     input: fa7aeb5140e2848d39b416daeef4ffc5+45
     an_integer: "1"
+  runtime_constraints:
+    docker_image: arvados/test
   success: true
   output: ea10d51bcf88862dbcc36eb292017dfd+45
   docker_image_locator: fa3c1a9cb6783f85f2ecda037e07b8c3+167
+  state: Complete
+
+previous_job_run_with_arvados_sdk_version:
+  uuid: zzzzz-8i9sb-eoo0321or2dw2jg
+  created_at: <%= 14.minute.ago.to_s(:db) %>
+  owner_uuid: zzzzz-tpzed-xurymjxw79nv3jz
+  repository: foo
+  script: hash
+  script_version: 31ce37fe365b3dc204300a3e4c396ad333ed0556
+  script_parameters:
+    input: fa7aeb5140e2848d39b416daeef4ffc5+45
+    an_integer: "1"
+  runtime_constraints:
+    arvados_sdk_version: commit2
+  arvados_sdk_version: 00634b2b8a492d6f121e3cf1d6587b821136a9a7
+  success: true
+  output: ea10d51bcf88862dbcc36eb292017dfd+45
+  state: Complete
 
 previous_job_run_no_output:
   uuid: zzzzz-8i9sb-cjs4pklxxjykppp
+  created_at: <%= 14.minute.ago.to_s(:db) %>
   owner_uuid: zzzzz-tpzed-xurymjxw79nv3jz
   repository: foo
   script: hash
@@ -150,9 +214,11 @@ previous_job_run_no_output:
     an_integer: "2"
   success: true
   output: ~
+  state: Complete
 
 nondeterminisic_job_run:
   uuid: zzzzz-8i9sb-cjs4pklxxjykyyy
+  created_at: <%= 14.minute.ago.to_s(:db) %>
   owner_uuid: zzzzz-tpzed-xurymjxw79nv3jz
   repository: foo
   script: hash2
@@ -162,9 +228,11 @@ nondeterminisic_job_run:
     an_integer: "1"
   success: true
   nondeterministic: true
+  state: Complete
 
 nearly_finished_job:
   uuid: zzzzz-8i9sb-2gx6rz0pjl033w3
+  created_at: <%= 14.minute.ago.to_s(:db) %>
   owner_uuid: zzzzz-tpzed-xurymjxw79nv3jz
   repository: arvados
   script: doesnotexist
@@ -181,9 +249,11 @@ nearly_finished_job:
     running: 1
     done: 0
   runtime_constraints: {}
+  state: Complete
 
 queued:
   uuid: zzzzz-8i9sb-grx15v5mjnsyxk7
+  created_at: <%= 1.minute.ago.to_s(:db) %>
   owner_uuid: zzzzz-tpzed-xurymjxw79nv3jz
   cancelled_at: ~
   cancelled_by_user_uuid: ~
@@ -196,8 +266,178 @@ queued:
   running: ~
   success: ~
   output: ~
-  priority: ~
+  priority: 0
   log: ~
   is_locked_by_uuid: ~
   tasks_summary: {}
   runtime_constraints: {}
+  state: Queued
+
+# A job with a log collection that can be parsed by the log viewer.
+job_with_real_log:
+  uuid: zzzzz-8i9sb-0vsrcqi7whchuil
+  created_at: 2014-09-01 12:00:00
+  owner_uuid: zzzzz-tpzed-xurymjxw79nv3jz
+  log: 0b9a7787660e1fce4a93f33e01376ba6+81
+  script_version: 7def43a4d3f20789dda4700f703b5514cc3ed250
+  state: Complete
+
+cancelled:
+  uuid: zzzzz-8i9sb-4cf0abc123e809j
+  owner_uuid: zzzzz-tpzed-xurymjxw79nv3jz
+  cancelled_at: <%= 1.minute.ago.to_s(:db) %>
+  cancelled_by_user_uuid: zzzzz-tpzed-xurymjxw79nv3jz
+  cancelled_by_client_uuid: zzzzz-ozdt8-obw7foaks3qjyej
+  created_at: <%= 4.minute.ago.to_s(:db) %>
+  started_at: <%= 3.minute.ago.to_s(:db) %>
+  finished_at: ~
+  script_version: 1de84a854e2b440dc53bf42f8548afa4c17da332
+  running: false
+  success: ~
+  output: ~
+  priority: 0
+  log: ~
+  is_locked_by_uuid: zzzzz-tpzed-xurymjxw79nv3jz
+  tasks_summary:
+    failed: 0
+    todo: 3
+    running: 1
+    done: 1
+  runtime_constraints: {}
+  state: Cancelled
+
+job_in_subproject:
+  uuid: zzzzz-8i9sb-subprojectjob01
+  created_at: 2014-10-15 12:00:00
+  owner_uuid: zzzzz-j7d0g-axqo7eu9pwvna1x
+  log: ~
+  repository: foo
+  script: hash
+  script_version: 4fe459abe02d9b365932b8f5dc419439ab4e2577
+  state: Complete
+
+running_will_be_completed:
+  uuid: zzzzz-8i9sb-rshmckwoma9pjh8
+  owner_uuid: zzzzz-j7d0g-v955i6s2oi1cbso
+  cancelled_at: ~
+  cancelled_by_user_uuid: ~
+  cancelled_by_client_uuid: ~
+  created_at: <%= 3.minute.ago.to_s(:db) %>
+  started_at: <%= 3.minute.ago.to_s(:db) %>
+  finished_at: ~
+  script_version: 1de84a854e2b440dc53bf42f8548afa4c17da332
+  running: true
+  success: ~
+  output: ~
+  priority: 0
+  log: ~
+  is_locked_by_uuid: zzzzz-tpzed-d9tiejq69daie8f
+  tasks_summary:
+    failed: 0
+    todo: 3
+    running: 1
+    done: 1
+  runtime_constraints: {}
+  state: Running
+
+graph_stage1:
+  uuid: zzzzz-8i9sb-graphstage10000
+  owner_uuid: zzzzz-j7d0g-v955i6s2oi1cbso
+  repository: foo
+  script: hash
+  script_version: 4fe459abe02d9b365932b8f5dc419439ab4e2577
+  state: Complete
+  output: fa7aeb5140e2848d39b416daeef4ffc5+45
+
+graph_stage2:
+  uuid: zzzzz-8i9sb-graphstage20000
+  owner_uuid: zzzzz-j7d0g-v955i6s2oi1cbso
+  repository: foo
+  script: hash2
+  script_version: 4fe459abe02d9b365932b8f5dc419439ab4e2577
+  state: Complete
+  script_parameters:
+    input: fa7aeb5140e2848d39b416daeef4ffc5+45
+    input2: "stuff"
+  output: 65b17c95fdbc9800fc48acda4e9dcd0b+93
+
+graph_stage3:
+  uuid: zzzzz-8i9sb-graphstage30000
+  owner_uuid: zzzzz-j7d0g-v955i6s2oi1cbso
+  repository: foo
+  script: hash2
+  script_version: 4fe459abe02d9b365932b8f5dc419439ab4e2577
+  state: Complete
+  script_parameters:
+    input: fa7aeb5140e2848d39b416daeef4ffc5+45
+    input2: "stuff2"
+  output: ea10d51bcf88862dbcc36eb292017dfd+45
+
+job_with_latest_version:
+  uuid: zzzzz-8i9sb-nj8ioxnrvjtyk2b
+  owner_uuid: zzzzz-tpzed-xurymjxw79nv3jz
+  cancelled_at: ~
+  cancelled_by_user_uuid: ~
+  cancelled_by_client_uuid: ~
+  script: hash
+  repository: foo
+  script_version: 7def43a4d3f20789dda4700f703b5514cc3ed250
+  supplied_script_version: master
+  script_parameters:
+    input: 1f4b0bc7583c2a7f9102c395f4ffc5e3+45
+  created_at: <%= 4.minute.ago.to_s(:db) %>
+  started_at: <%= 3.minute.ago.to_s(:db) %>
+  finished_at: <%= 2.minute.ago.to_s(:db) %>
+  running: false
+  success: true
+  output: fa7aeb5140e2848d39b416daeef4ffc5+45
+  priority: 0
+  log: ea10d51bcf88862dbcc36eb292017dfd+45
+  is_locked_by_uuid: ~
+  tasks_summary:
+    failed: 0
+    todo: 0
+    running: 0
+    done: 1
+  runtime_constraints: {}
+  state: Complete
+
+running_job_in_publicly_accessible_project:
+  uuid: zzzzz-8i9sb-n7omg50bvt0m1nf
+  owner_uuid: zzzzz-j7d0g-zhxawtyetzwc5f0
+  modified_by_user_uuid: zzzzz-tpzed-xurymjxw79nv3jz
+  repository: foo
+  script: running_job_script
+  script_version: 4fe459abe02d9b365932b8f5dc419439ab4e2577
+  state: Running
+  script_parameters:
+    input: fa7aeb5140e2848d39b416daeef4ffc5+45
+    input2: "stuff2"
+
+completed_job_in_publicly_accessible_project:
+  uuid: zzzzz-8i9sb-jyq01m7in1jlofj
+  owner_uuid: zzzzz-j7d0g-zhxawtyetzwc5f0
+  modified_by_user_uuid: zzzzz-tpzed-xurymjxw79nv3jz
+  repository: foo
+  script: completed_job_script
+  script_version: 4fe459abe02d9b365932b8f5dc419439ab4e2577
+  state: Complete
+  script_parameters:
+    input: fa7aeb5140e2848d39b416daeef4ffc5+45
+    input2: "stuff2"
+
+# Test Helper trims the rest of the file
+
+# Do not add your fixtures below this line as the rest of this file will be trimmed by test_helper
+
+# jobs in project_with_2_pipelines_and_60_jobs
+<% for i in 1..60 do %>
+job_<%=i%>_of_60:
+  uuid: zzzzz-8i9sb-oneof100jobs<%= i.to_s.rjust(3, '0') %>
+  created_at: <%= ((i+5)/5).minute.ago.to_s(:db) %>
+  owner_uuid: zzzzz-j7d0g-nnjobspipelines
+  script_version: 7def43a4d3f20789dda4700f703b5514cc3ed250
+  state: Complete
+<% end %>
+
+# Do not add your fixtures below this line as the rest of this file will be trimmed by test_helper

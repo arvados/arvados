@@ -1,7 +1,7 @@
 <% if current_user.andand.is_active %>
   <div>
     <strong>Recent jobs</strong>
-    <%= link_to '(refresh)', {format: :js}, {class: 'refresh', remote: true, method: 'get'} %>
+    <%= link_to '(refresh)', {format: :js}, {class: 'refresh', remote: true} %>
     <%= link_to raw("Show all jobs &rarr;"), jobs_path, class: 'pull-right' %>
     <% if not current_user.andand.is_active or @my_jobs.empty? %>
       <p>(None)</p>
@@ -22,7 +22,6 @@
           <th>Log</th>
           <th>Created at</th>
           <th>Status</th>
-          <th>Progress</th>
         </tr>
 
         <%# Preload collections, logs, and pipeline instance objects %>
@@ -59,7 +58,7 @@
 
             <td>
               <small>
-                <% if j.success and j.output %>
+                <% if j.state == "Complete" and j.output %>
                   <a href="<%= collection_path(j.output) %>">
                     <% collections = collections_for_object(j.output) %>
                       <% if collections && !collections.empty? %>
@@ -97,9 +96,6 @@
 </td>
 
 <td>
-  <%= render partial: 'job_status_label', locals: {:j => j} %>
-</td>
-<td>
   <div class="inline-progress-container">
   <%= render partial: 'job_progress', locals: {:j => j} %>
   </div>
@@ -113,7 +109,7 @@
 
 <div>
   <strong>Recent pipeline instances</strong>
-  <%= link_to '(refresh)', {format: :js}, {class: 'refresh', remote: true, method: 'get'} %>
+  <%= link_to '(refresh)', {format: :js}, {class: 'refresh', remote: true} %>
   <%= link_to raw("Show all pipeline instances &rarr;"), pipeline_instances_path, class: 'pull-right' %>
   <% if not current_user.andand.is_active or @my_pipelines.empty? %>
     <p>(None)</p>
@@ -172,7 +168,7 @@
 
 <div>
   <strong>Recent collections</strong>
-  <%= link_to '(refresh)', {format: :js}, {class: 'refresh', remote: true, method: 'get'} %>
+  <%= link_to '(refresh)', {format: :js}, {class: 'refresh', remote: true} %>
   <%= link_to raw("Show all collections &rarr;"), collections_path, class: 'pull-right' %>
   <div class="pull-right" style="padding-right: 1em; width: 30%;">
     <%= form_tag collections_path,

@@ -1,6 +1,4 @@
 import gflags
-import httplib
-import httplib2
 import logging
 import os
 import pprint
@@ -19,39 +17,68 @@ import time
 import threading
 import timer
 import datetime
+import ssl
+import socket
+import requests
 
-global_client_object = None
-
-from api import *
-import config
+import arvados
+import arvados.config as config
 import arvados.errors
+import arvados.retry as retry
 import arvados.util
+
+try:
+    # Workaround for urllib3 bug.
+    # The 'requests' library enables urllib3's SNI support by default, which uses pyopenssl.
+    # However, urllib3 prior to version 1.10 has a major bug in this feature
+    # (OpenSSL WantWriteError, https://github.com/shazow/urllib3/issues/412)
+    # Unfortunately Debian 8 is stabilizing on urllib3 1.9.1 which means the
+    # following workaround is necessary to be able to use
+    # the arvados python sdk with the distribution-provided packages.
+    import urllib3
+    from pkg_resources import parse_version
+    if parse_version(urllib3.__version__) < parse_version('1.10'):
+        from urllib3.contrib import pyopenssl
+        pyopenssl.extract_from_urllib3()
+except ImportError:
+    pass
+
+_logger = logging.getLogger('arvados.keep')
+global_client_object = None
 
 class KeepLocator(object):
     EPOCH_DATETIME = datetime.datetime.utcfromtimestamp(0)
+    HINT_RE = re.compile(r'^[A-Z][A-Za-z0-9@_-]+$')
 
     def __init__(self, locator_str):
-        self.size = None
-        self.loc_hint = None
+        self.hints = []
         self._perm_sig = None
         self._perm_expiry = None
         pieces = iter(locator_str.split('+'))
         self.md5sum = next(pieces)
+        try:
+            self.size = int(next(pieces))
+        except StopIteration:
+            self.size = None
         for hint in pieces:
-            if hint.startswith('A'):
-                self.parse_permission_hint(hint)
-            elif hint.startswith('K'):
-                self.loc_hint = hint  # FIXME
-            elif hint.isdigit():
-                self.size = int(hint)
-            else:
+            if self.HINT_RE.match(hint) is None:
                 raise ValueError("unrecognized hint data {}".format(hint))
+            elif hint.startswith('A'):
+                self.parse_permission_hint(hint)
+            else:
+                self.hints.append(hint)
 
     def __str__(self):
         return '+'.join(
-            str(s) for s in [self.md5sum, self.size, self.loc_hint,
-                             self.permission_hint()]
+            str(s) for s in [self.md5sum, self.size,
+                             self.permission_hint()] + self.hints
             if s is not None)
+
+    def stripped(self):
+        if self.size is not None:
+            return "%s+%i" % (self.md5sum, self.size)
+        else:
+            return self.md5sum
 
     def _make_hex_prop(name, length):
         # Build and return a new property with the given name that
@@ -102,12 +129,31 @@ class KeepLocator(object):
         return self.perm_expiry <= as_of_dt
 
 
-class Keep:
-    @staticmethod
-    def global_client_object():
+class Keep(object):
+    """Simple interface to a global KeepClient object.
+
+    THIS CLASS IS DEPRECATED.  Please instantiate your own KeepClient with your
+    own API client.  The global KeepClient will build an API client from the
+    current Arvados configuration, which may not match the one you built.
+    """
+    _last_key = None
+
+    @classmethod
+    def global_client_object(cls):
         global global_client_object
-        if global_client_object == None:
+        # Previously, KeepClient would change its behavior at runtime based
+        # on these configuration settings.  We simulate that behavior here
+        # by checking the values and returning a new KeepClient if any of
+        # them have changed.
+        key = (config.get('ARVADOS_API_HOST'),
+               config.get('ARVADOS_API_TOKEN'),
+               config.flag_is_true('ARVADOS_API_HOST_INSECURE'),
+               config.get('ARVADOS_KEEP_PROXY'),
+               config.get('ARVADOS_EXTERNAL_CLIENT') == 'true',
+               os.environ.get('KEEP_LOCAL_STORE'))
+        if (global_client_object is None) or (cls._last_key != key):
             global_client_object = KeepClient()
+            cls._last_key = key
         return global_client_object
 
     @staticmethod
@@ -118,7 +164,84 @@ class Keep:
     def put(data, **kwargs):
         return Keep.global_client_object().put(data, **kwargs)
 
+class KeepBlockCache(object):
+    # Default RAM cache is 256MiB
+    def __init__(self, cache_max=(256 * 1024 * 1024)):
+        self.cache_max = cache_max
+        self._cache = []
+        self._cache_lock = threading.Lock()
+
+    class CacheSlot(object):
+        def __init__(self, locator):
+            self.locator = locator
+            self.ready = threading.Event()
+            self.content = None
+
+        def get(self):
+            self.ready.wait()
+            return self.content
+
+        def set(self, value):
+            self.content = value
+            self.ready.set()
+
+        def size(self):
+            if self.content is None:
+                return 0
+            else:
+                return len(self.content)
+
+    def cap_cache(self):
+        '''Cap the cache size to self.cache_max'''
+        with self._cache_lock:
+            # Select all slots except those where ready.is_set() and content is
+            # None (that means there was an error reading the block).
+            self._cache = [c for c in self._cache if not (c.ready.is_set() and c.content is None)]
+            sm = sum([slot.size() for slot in self._cache])
+            while len(self._cache) > 0 and sm > self.cache_max:
+                for i in xrange(len(self._cache)-1, -1, -1):
+                    if self._cache[i].ready.is_set():
+                        del self._cache[i]
+                        break
+                sm = sum([slot.size() for slot in self._cache])
+
+    def _get(self, locator):
+        # Test if the locator is already in the cache
+        for i in xrange(0, len(self._cache)):
+            if self._cache[i].locator == locator:
+                n = self._cache[i]
+                if i != 0:
+                    # move it to the front
+                    del self._cache[i]
+                    self._cache.insert(0, n)
+                return n
+        return None
+
+    def get(self, locator):
+        with self._cache_lock:
+            return self._get(locator)
+
+    def reserve_cache(self, locator):
+        '''Reserve a cache slot for the specified locator,
+        or return the existing slot.'''
+        with self._cache_lock:
+            n = self._get(locator)
+            if n:
+                return n, False
+            else:
+                # Add a new cache slot for the locator
+                n = KeepBlockCache.CacheSlot(locator)
+                self._cache.insert(0, n)
+                return n, True
+
 class KeepClient(object):
+
+    # Default Keep server connection timeout:  2 seconds
+    # Default Keep server read timeout:      300 seconds
+    # Default Keep proxy connection timeout:  20 seconds
+    # Default Keep proxy read timeout:       300 seconds
+    DEFAULT_TIMEOUT = (2, 300)
+    DEFAULT_PROXY_TIMEOUT = (20, 300)
 
     class ThreadLimiter(object):
         """
@@ -176,15 +299,93 @@ class KeepClient(object):
             with self._done_lock:
                 return self._done
 
+
+    class KeepService(object):
+        # Make requests to a single Keep service, and track results.
+        HTTP_ERRORS = (requests.exceptions.RequestException,
+                       socket.error, ssl.SSLError)
+
+        def __init__(self, root, session, **headers):
+            self.root = root
+            self.last_result = None
+            self.success_flag = None
+            self.session = session
+            self.get_headers = {'Accept': 'application/octet-stream'}
+            self.get_headers.update(headers)
+            self.put_headers = headers
+
+        def usable(self):
+            return self.success_flag is not False
+
+        def finished(self):
+            return self.success_flag is not None
+
+        def last_status(self):
+            try:
+                return self.last_result.status_code
+            except AttributeError:
+                return None
+
+        def get(self, locator, timeout=None):
+            # locator is a KeepLocator object.
+            url = self.root + str(locator)
+            _logger.debug("Request: GET %s", url)
+            try:
+                with timer.Timer() as t:
+                    result = self.session.get(url.encode('utf-8'),
+                                          headers=self.get_headers,
+                                          timeout=timeout)
+            except self.HTTP_ERRORS as e:
+                _logger.debug("Request fail: GET %s => %s: %s",
+                              url, type(e), str(e))
+                self.last_result = e
+            else:
+                self.last_result = result
+                self.success_flag = retry.check_http_response_success(result)
+                content = result.content
+                _logger.info("%s response: %s bytes in %s msec (%.3f MiB/sec)",
+                             self.last_status(), len(content), t.msecs,
+                             (len(content)/(1024.0*1024))/t.secs if t.secs > 0 else 0)
+                if self.success_flag:
+                    resp_md5 = hashlib.md5(content).hexdigest()
+                    if resp_md5 == locator.md5sum:
+                        return content
+                    _logger.warning("Checksum fail: md5(%s) = %s",
+                                    url, resp_md5)
+            return None
+
+        def put(self, hash_s, body, timeout=None):
+            url = self.root + hash_s
+            _logger.debug("Request: PUT %s", url)
+            try:
+                result = self.session.put(url.encode('utf-8'),
+                                      data=body,
+                                      headers=self.put_headers,
+                                      timeout=timeout)
+            except self.HTTP_ERRORS as e:
+                _logger.debug("Request fail: PUT %s => %s: %s",
+                              url, type(e), str(e))
+                self.last_result = e
+            else:
+                self.last_result = result
+                self.success_flag = retry.check_http_response_success(result)
+            return self.success_flag
+
+
     class KeepWriterThread(threading.Thread):
         """
         Write a blob of data to the given Keep server. On success, call
         save_response() of the given ThreadLimiter to save the returned
         locator.
         """
-        def __init__(self, **kwargs):
+        def __init__(self, keep_service, **kwargs):
             super(KeepClient.KeepWriterThread, self).__init__()
+            self.service = keep_service
             self.args = kwargs
+            self._success = False
+
+        def success(self):
+            return self._success
 
         def run(self):
             with self.args['thread_limiter'] as limiter:
@@ -192,322 +393,451 @@ class KeepClient(object):
                     # My turn arrived, but the job has been done without
                     # me.
                     return
-                logging.debug("KeepWriterThread %s proceeding %s %s" %
-                              (str(threading.current_thread()),
-                               self.args['data_hash'],
-                               self.args['service_root']))
-                h = httplib2.Http()
-                url = self.args['service_root'] + self.args['data_hash']
-                api_token = config.get('ARVADOS_API_TOKEN')
-                headers = {'Authorization': "OAuth2 %s" % api_token}
+                self.run_with_limiter(limiter)
 
-                if self.args['using_proxy']:
-                    # We're using a proxy, so tell the proxy how many copies we
-                    # want it to store
-                    headers['X-Keep-Desired-Replication'] = str(self.args['want_copies'])
-
+        def run_with_limiter(self, limiter):
+            if self.service.finished():
+                return
+            _logger.debug("KeepWriterThread %s proceeding %s+%i %s",
+                          str(threading.current_thread()),
+                          self.args['data_hash'],
+                          len(self.args['data']),
+                          self.args['service_root'])
+            self._success = bool(self.service.put(
+                self.args['data_hash'],
+                self.args['data'],
+                timeout=self.args.get('timeout', None)))
+            status = self.service.last_status()
+            if self._success:
+                result = self.service.last_result
+                _logger.debug("KeepWriterThread %s succeeded %s+%i %s",
+                              str(threading.current_thread()),
+                              self.args['data_hash'],
+                              len(self.args['data']),
+                              self.args['service_root'])
+                # Tick the 'done' counter for the number of replica
+                # reported stored by the server, for the case that
+                # we're talking to a proxy or other backend that
+                # stores to multiple copies for us.
                 try:
-                    logging.debug("Uploading to {}".format(url))
-                    resp, content = h.request(url.encode('utf-8'), 'PUT',
-                                              headers=headers,
-                                              body=self.args['data'])
-                    if (resp['status'] == '401' and
-                        re.match(r'Timestamp verification failed', content)):
-                        body = KeepClient.sign_for_old_server(
-                            self.args['data_hash'],
-                            self.args['data'])
-                        h = httplib2.Http()
-                        resp, content = h.request(url.encode('utf-8'), 'PUT',
-                                                  headers=headers,
-                                                  body=body)
-                    if re.match(r'^2\d\d$', resp['status']):
-                        logging.debug("KeepWriterThread %s succeeded %s %s" %
-                                      (str(threading.current_thread()),
-                                       self.args['data_hash'],
-                                       self.args['service_root']))
-                        replicas_stored = 1
-                        if 'x-keep-replicas-stored' in resp:
-                            # Tick the 'done' counter for the number of replica
-                            # reported stored by the server, for the case that
-                            # we're talking to a proxy or other backend that
-                            # stores to multiple copies for us.
-                            try:
-                                replicas_stored = int(resp['x-keep-replicas-stored'])
-                            except ValueError:
-                                pass
-                        return limiter.save_response(content.strip(), replicas_stored)
+                    replicas_stored = int(result.headers['x-keep-replicas-stored'])
+                except (KeyError, ValueError):
+                    replicas_stored = 1
+                limiter.save_response(result.content.strip(), replicas_stored)
+            elif status is not None:
+                _logger.debug("Request fail: PUT %s => %s %s",
+                              self.args['data_hash'], status,
+                              self.service.last_result.content)
 
-                    logging.warning("Request fail: PUT %s => %s %s" %
-                                    (url, resp['status'], content))
-                except (httplib2.HttpLib2Error, httplib.HTTPException) as e:
-                    logging.warning("Request fail: PUT %s => %s: %s" %
-                                    (url, type(e), str(e)))
 
-    def __init__(self):
+    def __init__(self, api_client=None, proxy=None,
+                 timeout=DEFAULT_TIMEOUT, proxy_timeout=DEFAULT_PROXY_TIMEOUT,
+                 api_token=None, local_store=None, block_cache=None,
+                 num_retries=0, session=None):
+        """Initialize a new KeepClient.
+
+        Arguments:
+        :api_client:
+          The API client to use to find Keep services.  If not
+          provided, KeepClient will build one from available Arvados
+          configuration.
+
+        :proxy:
+          If specified, this KeepClient will send requests to this Keep
+          proxy.  Otherwise, KeepClient will fall back to the setting of the
+          ARVADOS_KEEP_PROXY configuration setting.  If you want to ensure
+          KeepClient does not use a proxy, pass in an empty string.
+
+        :timeout:
+          The initial timeout (in seconds) for HTTP requests to Keep
+          non-proxy servers.  A tuple of two floats is interpreted as
+          (connection_timeout, read_timeout): see
+          http://docs.python-requests.org/en/latest/user/advanced/#timeouts.
+          Because timeouts are often a result of transient server load, the
+          actual connection timeout will be increased by a factor of two on
+          each retry.
+          Default: (2, 300).
+
+        :proxy_timeout:
+          The initial timeout (in seconds) for HTTP requests to
+          Keep proxies. A tuple of two floats is interpreted as
+          (connection_timeout, read_timeout). The behavior described
+          above for adjusting connection timeouts on retry also applies.
+          Default: (20, 300).
+
+        :api_token:
+          If you're not using an API client, but only talking
+          directly to a Keep proxy, this parameter specifies an API token
+          to authenticate Keep requests.  It is an error to specify both
+          api_client and api_token.  If you specify neither, KeepClient
+          will use one available from the Arvados configuration.
+
+        :local_store:
+          If specified, this KeepClient will bypass Keep
+          services, and save data to the named directory.  If unspecified,
+          KeepClient will fall back to the setting of the $KEEP_LOCAL_STORE
+          environment variable.  If you want to ensure KeepClient does not
+          use local storage, pass in an empty string.  This is primarily
+          intended to mock a server for testing.
+
+        :num_retries:
+          The default number of times to retry failed requests.
+          This will be used as the default num_retries value when get() and
+          put() are called.  Default 0.
+
+        :session:
+          The requests.Session object to use for get() and put() requests.
+          Will create one if not specified.
+        """
         self.lock = threading.Lock()
-        self.service_roots = None
-        self._cache_lock = threading.Lock()
-        self._cache = []
-        # default 256 megabyte cache
-        self.cache_max = 256 * 1024 * 1024
-        self.using_proxy = False
+        if proxy is None:
+            proxy = config.get('ARVADOS_KEEP_PROXY')
+        if api_token is None:
+            if api_client is None:
+                api_token = config.get('ARVADOS_API_TOKEN')
+            else:
+                api_token = api_client.api_token
+        elif api_client is not None:
+            raise ValueError(
+                "can't build KeepClient with both API client and token")
+        if local_store is None:
+            local_store = os.environ.get('KEEP_LOCAL_STORE')
 
-    def shuffled_service_roots(self, hash):
-        if self.service_roots == None:
-            self.lock.acquire()
+        self.block_cache = block_cache if block_cache else KeepBlockCache()
+        self.timeout = timeout
+        self.proxy_timeout = proxy_timeout
 
-            # Override normal keep disk lookup with an explict proxy
-            # configuration.
-            keep_proxy_env = config.get("ARVADOS_KEEP_PROXY")
-            if keep_proxy_env != None and len(keep_proxy_env) > 0:
-
-                if keep_proxy_env[-1:] != '/':
-                    keep_proxy_env += "/"
-                self.service_roots = [keep_proxy_env]
+        if local_store:
+            self.local_store = local_store
+            self.get = self.local_store_get
+            self.put = self.local_store_put
+        else:
+            self.num_retries = num_retries
+            self.session = session if session is not None else requests.Session()
+            if proxy:
+                if not proxy.endswith('/'):
+                    proxy += '/'
+                self.api_token = api_token
+                self._keep_services = [{
+                    'uuid': 'proxy',
+                    '_service_root': proxy,
+                    }]
                 self.using_proxy = True
+                self._static_services_list = True
             else:
-                try:
-                    try:
-                        keep_services = arvados.api().keep_services().accessible().execute()['items']
-                    except Exception:
-                        keep_services = arvados.api().keep_disks().list().execute()['items']
+                # It's important to avoid instantiating an API client
+                # unless we actually need one, for testing's sake.
+                if api_client is None:
+                    api_client = arvados.api('v1')
+                self.api_client = api_client
+                self.api_token = api_client.api_token
+                self._keep_services = None
+                self.using_proxy = None
+                self._static_services_list = False
 
-                    if len(keep_services) == 0:
-                        raise arvados.errors.NoKeepServersError()
+    def current_timeout(self, attempt_number):
+        """Return the appropriate timeout to use for this client.
 
-                    if 'service_type' in keep_services[0] and keep_services[0]['service_type'] == 'proxy':
-                        self.using_proxy = True
+        The proxy timeout setting if the backend service is currently a proxy,
+        the regular timeout setting otherwise.  The `attempt_number` indicates
+        how many times the operation has been tried already (starting from 0
+        for the first try), and scales the connection timeout portion of the
+        return value accordingly.
 
-                    roots = (("http%s://%s:%d/" %
-                              ('s' if f['service_ssl_flag'] else '',
-                               f['service_host'],
-                               f['service_port']))
-                             for f in keep_services)
-                    self.service_roots = sorted(set(roots))
-                    logging.debug(str(self.service_roots))
-                finally:
-                    self.lock.release()
+        """
+        # TODO(twp): the timeout should be a property of a
+        # KeepService, not a KeepClient. See #4488.
+        t = self.proxy_timeout if self.using_proxy else self.timeout
+        return (t[0] * (1 << attempt_number), t[1])
 
-        # Build an ordering with which to query the Keep servers based on the
-        # contents of the hash.
-        # "hash" is a hex-encoded number at least 8 digits
-        # (32 bits) long
+    def build_services_list(self, force_rebuild=False):
+        if (self._static_services_list or
+              (self._keep_services and not force_rebuild)):
+            return
+        with self.lock:
+            try:
+                keep_services = self.api_client.keep_services().accessible()
+            except Exception:  # API server predates Keep services.
+                keep_services = self.api_client.keep_disks().list()
 
-        # seed used to calculate the next keep server from 'pool'
-        # to be added to 'pseq'
-        seed = hash
+            self._keep_services = keep_services.execute().get('items')
+            if not self._keep_services:
+                raise arvados.errors.NoKeepServersError()
 
-        # Keep servers still to be added to the ordering
-        pool = self.service_roots[:]
+            self.using_proxy = any(ks.get('service_type') == 'proxy'
+                                   for ks in self._keep_services)
 
-        # output probe sequence
-        pseq = []
+            # Precompute the base URI for each service.
+            for r in self._keep_services:
+                r['_service_root'] = "{}://[{}]:{:d}/".format(
+                    'https' if r['service_ssl_flag'] else 'http',
+                    r['service_host'],
+                    r['service_port'])
+            _logger.debug(str(self._keep_services))
 
-        # iterate while there are servers left to be assigned
-        while len(pool) > 0:
-            if len(seed) < 8:
-                # ran out of digits in the seed
-                if len(pseq) < len(hash) / 4:
-                    # the number of servers added to the probe sequence is less
-                    # than the number of 4-digit slices in 'hash' so refill the
-                    # seed with the last 4 digits and then append the contents
-                    # of 'hash'.
-                    seed = hash[-4:] + hash
-                else:
-                    # refill the seed with the contents of 'hash'
-                    seed += hash
+    def _service_weight(self, data_hash, service_uuid):
+        """Compute the weight of a Keep service endpoint for a data
+        block with a known hash.
 
-            # Take the next 8 digits (32 bytes) and interpret as an integer,
-            # then modulus with the size of the remaining pool to get the next
-            # selected server.
-            probe = int(seed[0:8], 16) % len(pool)
+        The weight is md5(h + u) where u is the last 15 characters of
+        the service endpoint's UUID.
+        """
+        return hashlib.md5(data_hash + service_uuid[-15:]).hexdigest()
 
-            # Append the selected server to the probe sequence and remove it
-            # from the pool.
-            pseq += [pool[probe]]
-            pool = pool[:probe] + pool[probe+1:]
+    def weighted_service_roots(self, data_hash, force_rebuild=False):
+        """Return an array of Keep service endpoints, in the order in
+        which they should be probed when reading or writing data with
+        the given hash.
+        """
+        self.build_services_list(force_rebuild)
 
-            # Remove the digits just used from the seed
-            seed = seed[8:]
-        logging.debug(str(pseq))
-        return pseq
+        # Sort the available services by weight (heaviest first) for
+        # this data_hash, and return their service_roots (base URIs)
+        # in that order.
+        sorted_roots = [
+            svc['_service_root'] for svc in sorted(
+                self._keep_services,
+                reverse=True,
+                key=lambda svc: self._service_weight(data_hash, svc['uuid']))]
+        _logger.debug(data_hash + ': ' + str(sorted_roots))
+        return sorted_roots
 
-    class CacheSlot(object):
-        def __init__(self, locator):
-            self.locator = locator
-            self.ready = threading.Event()
-            self.content = None
+    def map_new_services(self, roots_map, md5_s, force_rebuild, **headers):
+        # roots_map is a dictionary, mapping Keep service root strings
+        # to KeepService objects.  Poll for Keep services, and add any
+        # new ones to roots_map.  Return the current list of local
+        # root strings.
+        headers.setdefault('Authorization', "OAuth2 %s" % (self.api_token,))
+        local_roots = self.weighted_service_roots(md5_s, force_rebuild)
+        for root in local_roots:
+            if root not in roots_map:
+                roots_map[root] = self.KeepService(root, self.session, **headers)
+        return local_roots
 
-        def get(self):
-            self.ready.wait()
-            return self.content
+    @staticmethod
+    def _check_loop_result(result):
+        # KeepClient RetryLoops should save results as a 2-tuple: the
+        # actual result of the request, and the number of servers available
+        # to receive the request this round.
+        # This method returns True if there's a real result, False if
+        # there are no more servers available, otherwise None.
+        if isinstance(result, Exception):
+            return None
+        result, tried_server_count = result
+        if (result is not None) and (result is not False):
+            return True
+        elif tried_server_count < 1:
+            _logger.info("No more Keep services to try; giving up")
+            return False
+        else:
+            return None
 
-        def set(self, value):
-            self.content = value
-            self.ready.set()
+    def get_from_cache(self, loc):
+        """Fetch a block only if is in the cache, otherwise return None."""
+        slot = self.block_cache.get(loc)
+        if slot.ready.is_set():
+            return slot.get()
+        else:
+            return None
 
-        def size(self):
-            if self.content == None:
-                return 0
-            else:
-                return len(self.content)
+    @retry.retry_method
+    def get(self, loc_s, num_retries=None):
+        """Get data from Keep.
 
-    def cap_cache(self):
-        '''Cap the cache size to self.cache_max'''
-        self._cache_lock.acquire()
-        try:
-            self._cache = filter(lambda c: not (c.ready.is_set() and c.content == None), self._cache)
-            sm = sum([slot.size() for slot in self._cache])
-            while sm > self.cache_max:
-                del self._cache[-1]
-                sm = sum([slot.size() for a in self._cache])
-        finally:
-            self._cache_lock.release()
+        This method fetches one or more blocks of data from Keep.  It
+        sends a request each Keep service registered with the API
+        server (or the proxy provided when this client was
+        instantiated), then each service named in location hints, in
+        sequence.  As soon as one service provides the data, it's
+        returned.
 
-    def reserve_cache(self, locator):
-        '''Reserve a cache slot for the specified locator,
-        or return the existing slot.'''
-        self._cache_lock.acquire()
-        try:
-            # Test if the locator is already in the cache
-            for i in xrange(0, len(self._cache)):
-                if self._cache[i].locator == locator:
-                    n = self._cache[i]
-                    if i != 0:
-                        # move it to the front
-                        del self._cache[i]
-                        self._cache.insert(0, n)
-                    return n, False
-
-            # Add a new cache slot for the locator
-            n = KeepClient.CacheSlot(locator)
-            self._cache.insert(0, n)
-            return n, True
-        finally:
-            self._cache_lock.release()
-
-    def get(self, locator):
-        #logging.debug("Keep.get %s" % (locator))
-
-        if re.search(r',', locator):
-            return ''.join(self.get(x) for x in locator.split(','))
-        if 'KEEP_LOCAL_STORE' in os.environ:
-            return KeepClient.local_store_get(locator)
-        expect_hash = re.sub(r'\+.*', '', locator)
-
-        slot, first = self.reserve_cache(expect_hash)
-        #logging.debug("%s %s %s" % (slot, first, expect_hash))
-
+        Arguments:
+        * loc_s: A string of one or more comma-separated locators to fetch.
+          This method returns the concatenation of these blocks.
+        * num_retries: The number of times to retry GET requests to
+          *each* Keep server if it returns temporary failures, with
+          exponential backoff.  Note that, in each loop, the method may try
+          to fetch data from every available Keep service, along with any
+          that are named in location hints in the locator.  The default value
+          is set when the KeepClient is initialized.
+        """
+        if ',' in loc_s:
+            return ''.join(self.get(x) for x in loc_s.split(','))
+        locator = KeepLocator(loc_s)
+        expect_hash = locator.md5sum
+        slot, first = self.block_cache.reserve_cache(expect_hash)
         if not first:
             v = slot.get()
             return v
 
+        # See #3147 for a discussion of the loop implementation.  Highlights:
+        # * Refresh the list of Keep services after each failure, in case
+        #   it's being updated.
+        # * Retry until we succeed, we're out of retries, or every available
+        #   service has returned permanent failure.
+        hint_roots = ['http://keep.{}.arvadosapi.com/'.format(hint[2:])
+                      for hint in locator.hints if hint.startswith('K@')]
+        # Map root URLs their KeepService objects.
+        roots_map = {root: self.KeepService(root, self.session) for root in hint_roots}
+        blob = None
+        loop = retry.RetryLoop(num_retries, self._check_loop_result,
+                               backoff_start=2)
+        for tries_left in loop:
+            try:
+                local_roots = self.map_new_services(
+                    roots_map, expect_hash,
+                    force_rebuild=(tries_left < num_retries))
+            except Exception as error:
+                loop.save_result(error)
+                continue
+
+            # Query KeepService objects that haven't returned
+            # permanent failure, in our specified shuffle order.
+            services_to_try = [roots_map[root]
+                               for root in (local_roots + hint_roots)
+                               if roots_map[root].usable()]
+            for keep_service in services_to_try:
+                blob = keep_service.get(locator, timeout=self.current_timeout(num_retries-tries_left))
+                if blob is not None:
+                    break
+            loop.save_result((blob, len(services_to_try)))
+
+        # Always cache the result, then return it if we succeeded.
+        slot.set(blob)
+        self.block_cache.cap_cache()
+        if loop.success():
+            return blob
+
         try:
-            for service_root in self.shuffled_service_roots(expect_hash):
-                url = service_root + locator
-                api_token = config.get('ARVADOS_API_TOKEN')
-                headers = {'Authorization': "OAuth2 %s" % api_token,
-                           'Accept': 'application/octet-stream'}
-                blob = self.get_url(url, headers, expect_hash)
-                if blob:
-                    slot.set(blob)
-                    self.cap_cache()
-                    return blob
+            all_roots = local_roots + hint_roots
+        except NameError:
+            # We never successfully fetched local_roots.
+            all_roots = hint_roots
+        # Q: Including 403 is necessary for the Keep tests to continue
+        # passing, but maybe they should expect KeepReadError instead?
+        not_founds = sum(1 for key in all_roots
+                         if roots_map[key].last_status() in {403, 404, 410})
+        service_errors = ((key, roots_map[key].last_result)
+                          for key in all_roots)
+        if not roots_map:
+            raise arvados.errors.KeepReadError(
+                "failed to read {}: no Keep services available ({})".format(
+                    loc_s, loop.last_result()))
+        elif not_founds == len(all_roots):
+            raise arvados.errors.NotFoundError(
+                "{} not found".format(loc_s), service_errors)
+        else:
+            raise arvados.errors.KeepReadError(
+                "failed to read {}".format(loc_s), service_errors, label="service")
 
-            for location_hint in re.finditer(r'\+K@([a-z0-9]+)', locator):
-                instance = location_hint.group(1)
-                url = 'http://keep.' + instance + '.arvadosapi.com/' + locator
-                blob = self.get_url(url, {}, expect_hash)
-                if blob:
-                    slot.set(blob)
-                    self.cap_cache()
-                    return blob
-        except:
-            slot.set(None)
-            self.cap_cache()
-            raise
+    @retry.retry_method
+    def put(self, data, copies=2, num_retries=None):
+        """Save data in Keep.
 
-        slot.set(None)
-        self.cap_cache()
-        raise arvados.errors.NotFoundError("Block not found: %s" % expect_hash)
+        This method will get a list of Keep services from the API server, and
+        send the data to each one simultaneously in a new thread.  Once the
+        uploads are finished, if enough copies are saved, this method returns
+        the most recent HTTP response body.  If requests fail to upload
+        enough copies, this method raises KeepWriteError.
 
-    def get_url(self, url, headers, expect_hash):
-        h = httplib2.Http()
-        try:
-            logging.info("Request: GET %s" % (url))
-            with timer.Timer() as t:
-                resp, content = h.request(url.encode('utf-8'), 'GET',
-                                          headers=headers)
-            logging.info("Received %s bytes in %s msec (%s MiB/sec)" % (len(content),
-                                                                        t.msecs,
-                                                                        (len(content)/(1024*1024))/t.secs))
-            if re.match(r'^2\d\d$', resp['status']):
-                m = hashlib.new('md5')
-                m.update(content)
-                md5 = m.hexdigest()
-                if md5 == expect_hash:
-                    return content
-                logging.warning("Checksum fail: md5(%s) = %s" % (url, md5))
-        except Exception as e:
-            logging.info("Request fail: GET %s => %s: %s" %
-                         (url, type(e), str(e)))
-        return None
+        Arguments:
+        * data: The string of data to upload.
+        * copies: The number of copies that the user requires be saved.
+          Default 2.
+        * num_retries: The number of times to retry PUT requests to
+          *each* Keep server if it returns temporary failures, with
+          exponential backoff.  The default value is set when the
+          KeepClient is initialized.
+        """
 
-    def put(self, data, **kwargs):
-        if 'KEEP_LOCAL_STORE' in os.environ:
-            return KeepClient.local_store_put(data)
-        m = hashlib.new('md5')
-        m.update(data)
-        data_hash = m.hexdigest()
-        have_copies = 0
-        want_copies = kwargs.get('copies', 2)
-        if not (want_copies > 0):
+        if isinstance(data, unicode):
+            data = data.encode("ascii")
+        elif not isinstance(data, str):
+            raise arvados.errors.ArgumentError("Argument 'data' to KeepClient.put must be type 'str'")
+
+        data_hash = hashlib.md5(data).hexdigest()
+        if copies < 1:
             return data_hash
-        threads = []
-        thread_limiter = KeepClient.ThreadLimiter(want_copies)
-        for service_root in self.shuffled_service_roots(data_hash):
-            t = KeepClient.KeepWriterThread(data=data,
-                                            data_hash=data_hash,
-                                            service_root=service_root,
-                                            thread_limiter=thread_limiter,
-                                            using_proxy=self.using_proxy,
-                                            want_copies=(want_copies if self.using_proxy else 1))
-            t.start()
-            threads += [t]
-        for t in threads:
-            t.join()
-        have_copies = thread_limiter.done()
-        # If we're done, return the response from Keep
-        if have_copies >= want_copies:
+
+        headers = {}
+        if self.using_proxy:
+            # Tell the proxy how many copies we want it to store
+            headers['X-Keep-Desired-Replication'] = str(copies)
+        roots_map = {}
+        thread_limiter = KeepClient.ThreadLimiter(copies)
+        loop = retry.RetryLoop(num_retries, self._check_loop_result,
+                               backoff_start=2)
+        for tries_left in loop:
+            try:
+                local_roots = self.map_new_services(
+                    roots_map, data_hash,
+                    force_rebuild=(tries_left < num_retries), **headers)
+            except Exception as error:
+                loop.save_result(error)
+                continue
+
+            threads = []
+            for service_root, ks in roots_map.iteritems():
+                if ks.finished():
+                    continue
+                t = KeepClient.KeepWriterThread(
+                    ks,
+                    data=data,
+                    data_hash=data_hash,
+                    service_root=service_root,
+                    thread_limiter=thread_limiter,
+                    timeout=self.current_timeout(num_retries-tries_left))
+                t.start()
+                threads.append(t)
+            for t in threads:
+                t.join()
+            loop.save_result((thread_limiter.done() >= copies, len(threads)))
+
+        if loop.success():
             return thread_limiter.response()
-        raise arvados.errors.KeepWriteError(
-            "Write fail for %s: wanted %d but wrote %d" %
-            (data_hash, want_copies, have_copies))
+        if not roots_map:
+            raise arvados.errors.KeepWriteError(
+                "failed to write {}: no Keep services available ({})".format(
+                    data_hash, loop.last_result()))
+        else:
+            service_errors = ((key, roots_map[key].last_result)
+                              for key in local_roots
+                              if not roots_map[key].success_flag)
+            raise arvados.errors.KeepWriteError(
+                "failed to write {} (wanted {} copies but wrote {})".format(
+                    data_hash, copies, thread_limiter.done()), service_errors, label="service")
 
-    @staticmethod
-    def sign_for_old_server(data_hash, data):
-        return (("-----BEGIN PGP SIGNED MESSAGE-----\n\n\n%d %s\n-----BEGIN PGP SIGNATURE-----\n\n-----END PGP SIGNATURE-----\n" % (int(time.time()), data_hash)) + data)
+    def local_store_put(self, data, copies=1, num_retries=None):
+        """A stub for put().
 
+        This method is used in place of the real put() method when
+        using local storage (see constructor's local_store argument).
 
-    @staticmethod
-    def local_store_put(data):
-        m = hashlib.new('md5')
-        m.update(data)
-        md5 = m.hexdigest()
+        copies and num_retries arguments are ignored: they are here
+        only for the sake of offering the same call signature as
+        put().
+
+        Data stored this way can be retrieved via local_store_get().
+        """
+        md5 = hashlib.md5(data).hexdigest()
         locator = '%s+%d' % (md5, len(data))
-        with open(os.path.join(os.environ['KEEP_LOCAL_STORE'], md5 + '.tmp'), 'w') as f:
+        with open(os.path.join(self.local_store, md5 + '.tmp'), 'w') as f:
             f.write(data)
-        os.rename(os.path.join(os.environ['KEEP_LOCAL_STORE'], md5 + '.tmp'),
-                  os.path.join(os.environ['KEEP_LOCAL_STORE'], md5))
+        os.rename(os.path.join(self.local_store, md5 + '.tmp'),
+                  os.path.join(self.local_store, md5))
         return locator
 
-    @staticmethod
-    def local_store_get(locator):
-        r = re.search('^([0-9a-f]{32,})', locator)
-        if not r:
+    def local_store_get(self, loc_s, num_retries=None):
+        """Companion to local_store_put()."""
+        try:
+            locator = KeepLocator(loc_s)
+        except ValueError:
             raise arvados.errors.NotFoundError(
-                "Invalid data locator: '%s'" % locator)
-        if r.group(0) == config.EMPTY_BLOCK_LOCATOR.split('+')[0]:
+                "Invalid data locator: '%s'" % loc_s)
+        if locator.md5sum == config.EMPTY_BLOCK_LOCATOR.split('+')[0]:
             return ''
-        with open(os.path.join(os.environ['KEEP_LOCAL_STORE'], r.group(0)), 'r') as f:
+        with open(os.path.join(self.local_store, locator.md5sum), 'r') as f:
             return f.read()
+
+    def is_cached(self, locator):
+        return self.block_cache.reserve_cache(expect_hash)

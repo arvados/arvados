@@ -137,13 +137,13 @@ h2. Find Personal Genome Project identifiers from Arvados UUIDs
 
 These PGP IDs let us find public profiles, for example:
 
-* "https://my.personalgenomes.org/profile/huE2E371":https://my.personalgenomes.org/profile/huE2E371
-* "https://my.personalgenomes.org/profile/huDF04CC":https://my.personalgenomes.org/profile/huDF04CC
+* "https://my.pgp-hms.org/profile/huE2E371":https://my.pgp-hms.org/profile/huE2E371
+* "https://my.pgp-hms.org/profile/huDF04CC":https://my.pgp-hms.org/profile/huDF04CC
 * ...
 
 h2. Find genomic data from specific humans
 
-Now we want to find collections in Keep that were provided by these humans.  We search the "links" resource for "provenance" links that point to subjects in list of humans with the non-melanoma skin cancer trait:
+Now we want to find collections in Keep that were provided by these humans.  We search the "links" resource for "provenance" links that point to entries in the list of humans with the non-melanoma skin cancer trait:
 
 <notextile>
 <pre><code>&gt;&gt;&gt; <span class="userinput">provenance_links = arvados.api().links().list(limit=1000, filters=[
@@ -170,26 +170,26 @@ collections = arvados.api('v1').collections().list(filters=[
 # print PGP public profile links with file locators
 for c in collections['items']:
   for f in c['files']:
-    print "https://my.personalgenomes.org/profile/%s %s %s%s" % (pgpid[c['uuid']], c['uuid'], ('' if f[0] == '.' else f[0]+'/'), f[1])
+    print "https://my.pgp-hms.org/profile/%s %s %s%s" % (pgpid[c['uuid']], c['uuid'], ('' if f[0] == '.' else f[0]+'/'), f[1])
 </span>
-https://my.personalgenomes.org/profile/hu43860C a58dca7609fa84c8c38a7e926a97b2fc var-GS00253-DNA_A01_200_37-ASM.tsv.bz2
-https://my.personalgenomes.org/profile/huB1FD55 ea30eb9e46eedf7f05ed6e348c2baf5d var-GS000010320-ASM.tsv.bz2
-https://my.personalgenomes.org/profile/huDF04CC 4ab0df8f22f595d1747a22c476c05873 var-GS000010427-ASM.tsv.bz2
-https://my.personalgenomes.org/profile/hu7A2F1D 756d0ada29b376140f64e7abfe6aa0e7 var-GS000014566-ASM.tsv.bz2
-https://my.personalgenomes.org/profile/hu553620 7ed4e425bb1c7cc18387cbd9388181df var-GS000015272-ASM.tsv.bz2
-https://my.personalgenomes.org/profile/huD09534 542112e210daff30dd3cfea4801a9f2f var-GS000016374-ASM.tsv.bz2
-https://my.personalgenomes.org/profile/hu599905 33a9f3842b01ea3fdf27cc582f5ea2af var-GS000016015-ASM.tsv.bz2
-https://my.personalgenomes.org/profile/hu43860C a58dca7609fa84c8c38a7e926a97b2fc+302 var-GS00253-DNA_A01_200_37-ASM.tsv.bz2
-https://my.personalgenomes.org/profile/huB1FD55 ea30eb9e46eedf7f05ed6e348c2baf5d+291 var-GS000010320-ASM.tsv.bz2
-https://my.personalgenomes.org/profile/huDF04CC 4ab0df8f22f595d1747a22c476c05873+242 var-GS000010427-ASM.tsv.bz2
-https://my.personalgenomes.org/profile/hu7A2F1D 756d0ada29b376140f64e7abfe6aa0e7+242 var-GS000014566-ASM.tsv.bz2
-https://my.personalgenomes.org/profile/hu553620 7ed4e425bb1c7cc18387cbd9388181df+242 var-GS000015272-ASM.tsv.bz2
-https://my.personalgenomes.org/profile/huD09534 542112e210daff30dd3cfea4801a9f2f+242 var-GS000016374-ASM.tsv.bz2
-https://my.personalgenomes.org/profile/hu599905 33a9f3842b01ea3fdf27cc582f5ea2af+242 var-GS000016015-ASM.tsv.bz2
-https://my.personalgenomes.org/profile/hu599905 d6e2e57cd60ba5979006d0b03e45e726+81 Witch_results.zip
-https://my.personalgenomes.org/profile/hu553620 ea4f2d325592a1272f989d141a917fdd+85 Devenwood_results.zip
-https://my.personalgenomes.org/profile/hu7A2F1D 4580f6620bb15b25b18373766e14e4a7+85 Innkeeper_results.zip
-https://my.personalgenomes.org/profile/huD09534 fee37be9440b912eb90f5e779f272416+82 Hallet_results.zip
+https://my.pgp-hms.org/profile/hu43860C a58dca7609fa84c8c38a7e926a97b2fc var-GS00253-DNA_A01_200_37-ASM.tsv.bz2
+https://my.pgp-hms.org/profile/huB1FD55 ea30eb9e46eedf7f05ed6e348c2baf5d var-GS000010320-ASM.tsv.bz2
+https://my.pgp-hms.org/profile/huDF04CC 4ab0df8f22f595d1747a22c476c05873 var-GS000010427-ASM.tsv.bz2
+https://my.pgp-hms.org/profile/hu7A2F1D 756d0ada29b376140f64e7abfe6aa0e7 var-GS000014566-ASM.tsv.bz2
+https://my.pgp-hms.org/profile/hu553620 7ed4e425bb1c7cc18387cbd9388181df var-GS000015272-ASM.tsv.bz2
+https://my.pgp-hms.org/profile/huD09534 542112e210daff30dd3cfea4801a9f2f var-GS000016374-ASM.tsv.bz2
+https://my.pgp-hms.org/profile/hu599905 33a9f3842b01ea3fdf27cc582f5ea2af var-GS000016015-ASM.tsv.bz2
+https://my.pgp-hms.org/profile/hu43860C a58dca7609fa84c8c38a7e926a97b2fc+302 var-GS00253-DNA_A01_200_37-ASM.tsv.bz2
+https://my.pgp-hms.org/profile/huB1FD55 ea30eb9e46eedf7f05ed6e348c2baf5d+291 var-GS000010320-ASM.tsv.bz2
+https://my.pgp-hms.org/profile/huDF04CC 4ab0df8f22f595d1747a22c476c05873+242 var-GS000010427-ASM.tsv.bz2
+https://my.pgp-hms.org/profile/hu7A2F1D 756d0ada29b376140f64e7abfe6aa0e7+242 var-GS000014566-ASM.tsv.bz2
+https://my.pgp-hms.org/profile/hu553620 7ed4e425bb1c7cc18387cbd9388181df+242 var-GS000015272-ASM.tsv.bz2
+https://my.pgp-hms.org/profile/huD09534 542112e210daff30dd3cfea4801a9f2f+242 var-GS000016374-ASM.tsv.bz2
+https://my.pgp-hms.org/profile/hu599905 33a9f3842b01ea3fdf27cc582f5ea2af+242 var-GS000016015-ASM.tsv.bz2
+https://my.pgp-hms.org/profile/hu599905 d6e2e57cd60ba5979006d0b03e45e726+81 Witch_results.zip
+https://my.pgp-hms.org/profile/hu553620 ea4f2d325592a1272f989d141a917fdd+85 Devenwood_results.zip
+https://my.pgp-hms.org/profile/hu7A2F1D 4580f6620bb15b25b18373766e14e4a7+85 Innkeeper_results.zip
+https://my.pgp-hms.org/profile/huD09534 fee37be9440b912eb90f5e779f272416+82 Hallet_results.zip
 </code></pre>
 </notextile>
 

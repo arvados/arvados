@@ -15,13 +15,14 @@ class PipelineInstance < ArvadosModel
 
   api_accessible :user, extend: :common do |t|
     t.add :pipeline_template_uuid
-    t.add :pipeline_template, :if => :pipeline_template
     t.add :name
     t.add :components
-    t.add :dependencies
     t.add :properties
     t.add :state
     t.add :components_summary
+    t.add :description
+    t.add :started_at
+    t.add :finished_at
   end
 
   # Supported states for a pipeline instance
@@ -35,10 +36,6 @@ class PipelineInstance < ArvadosModel
      (Failed = 'Failed'),
      (Complete = 'Complete'),
     ]
-
-  def dependencies
-    dependency_search(self.components).keys
-  end
 
   # if all components have input, the pipeline is Ready
   def components_look_ready?
@@ -112,30 +109,6 @@ class PipelineInstance < ArvadosModel
   def update_state
     if components and progress_ratio == 1.0
       self.state = Complete
-    end
-  end
-
-  def dependency_search(haystack)
-    if haystack.is_a? String
-      if (re = haystack.match /^([0-9a-f]{32}(\+[^,]+)*)+/)
-        {re[1] => true}
-      else
-        {}
-      end
-    elsif haystack.is_a? Array
-      deps = {}
-      haystack.each do |value|
-        deps.merge! dependency_search(value)
-      end
-      deps
-    elsif haystack.respond_to? :keys
-      deps = {}
-      haystack.each do |key, value|
-        deps.merge! dependency_search(value)
-      end
-      deps
-    else
-      {}
     end
   end
 

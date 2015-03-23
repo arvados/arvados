@@ -9,18 +9,18 @@ If you have no SSH keys registered, there should be a notification asking you to
 
 h3. Alternate way to add SSH keys
 
-If you want to add more SSH keys, click on the link with your _email address_ in the upper right corner to access the user settings menu, and click on the menu item *Manage ssh keys* to go to the Authorized keys page.
+Click on the link with your _email address_ in the upper right corner to access the user settings menu, and click on the menu item *Manage account* to go to the account management page.
 
-On the *Authorized keys* page, the click on the button <span class="btn btn-primary disabled">Add a new authorized key</span> in the upper right corner.
+On the *Manage account* page, click on the button <span class="btn btn-primary">*+* Add new SSH key</span> button in the upper right corner of the page in the SSH Keys panel.
 
-A new authorized key will be added and you will be taken to the key's page. Towards the bottom of this page you will see the *public_key* attribute. Click on the cell +New authorized key+.  This will open an editing popup as shown in this screenshot:
+This will open a popup as shown in this screenshot:
 
 !{{ site.baseurl }}/images/ssh-adding-public-key.png!
 
-Paste the public key that you copied to the cliboard in the previous section into the popup text box, then click on the check mark to save it.  This should refresh the page with the public key that you just added as the *public_key* attribute value.  You are now ready to "log into an Arvados VM":#login.
+Paste the public key that you copied to the cliboard in the previous section into the popup text box labeled *Public Key* and click on the <span class="btn btn-primary">Submit</span> button to save it. This should refresh the Manage account page with the fingerprint of the public key that you just added in the SSH Keys panel.  You are now ready to "log into an Arvados VM":#login.
 
 h1(#login). Using SSH to log into an Arvados VM
 
-To see a list of virtual machines that you have access to and determine the name and login information, click on *Settings* menu in the top navigation bar and click on *Virtual machines*.  Once on the *Virtual machines* page, The *hostname* column lists the name of each available VM.  The *logins* column will have a value in the form of @["you"]@.  Your login name is the text inside the quotes.  In this guide the hostname will be *_shell_* and the login will be *_you_*.  Replace these with your hostname and login name as appropriate.
+To see a list of virtual machines that you have access to and determine the name and login information, click on the link with your _email address_ in the upper right corner and click on the menu item *Manage account* to go to the account management page. On this page, you will see a *Virtual Machines* panel, which lists the virtual machines you can access. The *hostname* column lists the name of each available VM.  The *logins* column will have a list of comma separated values of the form @you@. In this guide the hostname will be *_shell_* and the login will be *_you_*.  Replace these with your hostname and login name as appropriate.
 
 

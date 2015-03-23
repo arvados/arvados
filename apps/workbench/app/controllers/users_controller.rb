@@ -1,17 +1,41 @@
 class UsersController < ApplicationController
-  skip_before_filter :find_object_by_uuid, :only => [:welcome, :activity, :storage]
+  skip_around_filter :require_thread_api_token, only: :welcome
+  skip_before_filter :check_user_agreements, only: [:welcome, :inactive]
+  skip_before_filter :check_user_profile, only: [:welcome, :inactive, :profile]
+  skip_before_filter :find_object_by_uuid, only: [:welcome, :activity, :storage]
   before_filter :ensure_current_user_is_admin, only: [:sudo, :unsetup, :setup]
+
+  def show
+    if params[:uuid] == current_user.uuid
+      respond_to do |f|
+        f.html do
+          redirect_to(params[:return_to] || project_path(params[:uuid]))
+        end
+      end
+    else
+      super
+    end
+  end
 
   def welcome
     if current_user
-      params[:action] = 'home'
-      home
+      redirect_to (params[:return_to] || '/')
     end
+  end
+
+  def inactive
+    if current_user.andand.is_invited
+      redirect_to (params[:return_to] || '/')
+    end
+  end
+
+  def profile
+    params[:offer_return_to] ||= params[:return_to]
   end
 
   def activity
     @breadcrumb_page_name = nil
-    @users = User.limit(params[:limit] || 1000).all
+    @users = User.limit(params[:limit])
     @user_activity = {}
     @activity = {
       logins: {},
@@ -64,7 +88,7 @@ class UsersController < ApplicationController
 
   def storage
     @breadcrumb_page_name = nil
-    @users = User.limit(params[:limit] || 1000).all
+    @users = User.limit(params[:limit])
     @user_storage = {}
     total_storage = {}
     @log_date = {}
@@ -115,7 +139,6 @@ class UsersController < ApplicationController
   end
 
   def home
-    @showallalerts = false
     @my_ssh_keys = AuthorizedKey.where(authorized_user_uuid: current_user.uuid)
     @my_tag_links = {}
 
@@ -135,7 +158,7 @@ class UsersController < ApplicationController
       @persist_state[uuid] = 'cache'
     end
 
-    Link.limit(1000).filter([['head_uuid', 'in', collection_uuids],
+    Link.filter([['head_uuid', 'in', collection_uuids],
                              ['link_class', 'in', ['tag', 'resources']]]).
       each do |link|
       case link.link_class
@@ -208,6 +231,92 @@ class UsersController < ApplicationController
       format.html
       format.js
     end
+  end
+
+  def manage_account
+    # repositories current user can read / write
+    repo_links = Link.
+      filter([['head_uuid', 'is_a', 'arvados#repository'],
+              ['tail_uuid', '=', current_user.uuid],
+              ['link_class', '=', 'permission'],
+             ])
+
+    owned_repositories = Repository.where(owner_uuid: current_user.uuid)
+
+    @my_repositories = (Repository.where(uuid: repo_links.collect(&:head_uuid)) |
+                        owned_repositories).
+                       uniq { |repo| repo.uuid }
+
+
+    @repo_writable = {}
+    repo_links.each do |link|
+      if link.name.in? ['can_write', 'can_manage']
+        @repo_writable[link.head_uuid] = link.name
+      end
+    end
+
+    owned_repositories.each do |repo|
+      @repo_writable[repo.uuid] = 'can_manage'
+    end
+
+    # virtual machines the current user can login into
+    @my_vm_logins = {}
+    Link.where(tail_uuid: current_user.uuid,
+               link_class: 'permission',
+               name: 'can_login').
+          each do |perm_link|
+            if perm_link.properties.andand[:username]
+              @my_vm_logins[perm_link.head_uuid] ||= []
+              @my_vm_logins[perm_link.head_uuid] << perm_link.properties[:username]
+            end
+          end
+    @my_virtual_machines = VirtualMachine.where(uuid: @my_vm_logins.keys)
+
+    # current user's ssh keys
+    @my_ssh_keys = AuthorizedKey.where(key_type: 'SSH', owner_uuid: current_user.uuid)
+
+    respond_to do |f|
+      f.html { render template: 'users/manage_account' }
+    end
+  end
+
+  def add_ssh_key_popup
+    respond_to do |format|
+      format.html
+      format.js
+    end
+  end
+
+  def add_ssh_key
+    respond_to do |format|
+      key_params = {'key_type' => 'SSH'}
+      key_params['authorized_user_uuid'] = current_user.uuid
+
+      if params['name'] && params['name'].size>0
+        key_params['name'] = params['name'].strip
+      end
+      if params['public_key'] && params['public_key'].size>0
+        key_params['public_key'] = params['public_key'].strip
+      end
+
+      if !key_params['name'] && params['public_key'].andand.size>0
+        split_key = key_params['public_key'].split
+        key_params['name'] = split_key[-1] if (split_key.size == 3)
+      end
+
+      new_key = AuthorizedKey.create! key_params
+      if new_key
+        format.js
+      else
+        self.render_error status: 422
+      end
+    end
+  end
+
+  def request_shell_access
+    logger.warn "request_access: #{params.inspect}"
+    params['request_url'] = request.url
+    RequestShellAccessReporter.send_request(current_user, params).deliver
   end
 
   protected

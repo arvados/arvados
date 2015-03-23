@@ -16,8 +16,6 @@
       </th><th>
 	status
       </th><th>
-	progress
-      </th><th>
 	uuid
       </th><th>
 	script
@@ -35,9 +33,6 @@
     <tr class="cell-noborder">
       <td>
         <i class="icon-plus-sign expand-collapse-row" data-id="<%= j.uuid %>" style="cursor: pointer"></i>
-      </td>
-      <td>
-        <%= render partial: 'job_status_label', locals: {:j => j} %>
       </td>
       <td>
         <div class="inline-progress-container">
@@ -83,7 +78,7 @@
             <td>
               <% if j.finished_at.is_a? Time %>
 	      <%= raw('ran&nbsp;' + distance_of_time_in_words(j.finished_at, j.started_at).sub('about ','~').sub(' ','&nbsp;')) %>
-              <% elsif j.running %>
+              <% elsif j.state == "Running" %>
               <span class="badge badge-success" title="tasks finished">&#x2714;&nbsp;<%= j.tasks_summary[:done] %></span>
               <span class="badge badge-info" title="tasks running">&#x2708;&nbsp;<%= j.tasks_summary[:running] %></span>
               <span class="badge" title="tasks todo">&#x2709;&nbsp;<%= j.tasks_summary[:todo] %></span>
@@ -123,4 +118,3 @@
 
   </tbody>
 </table>
-

@@ -12,7 +12,10 @@ class User < ArvadosModel
   before_update :prevent_inactive_admin
   before_create :check_auto_admin
   after_create :add_system_group_permission_link
+  after_create :auto_setup_new_user
   after_create :send_admin_notifications
+  after_update :send_profile_created_notification
+
 
   has_many :authorized_keys, :foreign_key => :authorized_user_uuid, :primary_key => :uuid
 
@@ -26,6 +29,7 @@ class User < ArvadosModel
     t.add :is_admin
     t.add :is_invited
     t.add :prefs
+    t.add :writable_by
   end
 
   ALL_PERMISSIONS = {read: true, write: true, manage: true}
@@ -51,9 +55,13 @@ class User < ArvadosModel
   def can?(actions)
     return true if is_admin
     actions.each do |action, target|
-      target_uuid = target
-      if target.respond_to? :uuid
-        target_uuid = target.uuid
+      unless target.nil?
+        if target.respond_to? :uuid
+          target_uuid = target.uuid
+        else
+          target_uuid = target
+          target = ArvadosModel.find_by_uuid(target_uuid)
+        end
       end
       next if target_uuid == self.uuid
       next if (group_permissions[target_uuid] and
@@ -62,6 +70,30 @@ class User < ArvadosModel
         next if target.owner_uuid == self.uuid
         next if (group_permissions[target.owner_uuid] and
                  group_permissions[target.owner_uuid][action])
+      end
+      sufficient_perms = case action
+                         when :manage
+                           ['can_manage']
+                         when :write
+                           ['can_manage', 'can_write']
+                         when :read
+                           ['can_manage', 'can_write', 'can_read']
+                         else
+                           # (Skip this kind of permission opportunity
+                           # if action is an unknown permission type)
+                         end
+      if sufficient_perms
+        # Check permission links with head_uuid pointing directly at
+        # the target object. If target is a Group, this is redundant
+        # and will fail except [a] if permission caching is broken or
+        # [b] during a race condition, where a permission link has
+        # *just* been added.
+        if Link.where(link_class: 'permission',
+                      name: sufficient_perms,
+                      tail_uuid: groups_i_can(action) + [self.uuid],
+                      head_uuid: target_uuid).any?
+          next
+        end
       end
       return false
     end
@@ -97,12 +129,13 @@ class User < ArvadosModel
         Group.where('owner_uuid in (?)', lookup_uuids).each do |group|
           newgroups << [group.owner_uuid, group.uuid, 'can_manage']
         end
-        # add any permission links from the current lookup_uuids to a
-        # User or Group.
-        Link.where('tail_uuid in (?) and link_class = ? and (head_uuid like ? or head_uuid like ?)',
-                   lookup_uuids,
+        # add any permission links from the current lookup_uuids to a Group.
+        Link.where('link_class = ? and tail_uuid in (?) and ' \
+                   '(head_uuid like ? or (name = ? and head_uuid like ?))',
                    'permission',
+                   lookup_uuids,
                    Group.uuid_like_pattern,
+                   'can_manage',
                    User.uuid_like_pattern).each do |link|
           newgroups << [link.tail_uuid, link.head_uuid, link.name]
         end
@@ -147,47 +180,35 @@ class User < ArvadosModel
   # delete user signatures, login, repo, and vm perms, and mark as inactive
   def unsetup
     # delete oid_login_perms for this user
-    oid_login_perms = Link.where(tail_uuid: self.email,
-                                 link_class: 'permission',
-                                 name: 'can_login')
-    oid_login_perms.each do |perm|
-      Link.delete perm
-    end
+    Link.destroy_all(tail_uuid: self.email,
+                     link_class: 'permission',
+                     name: 'can_login')
 
     # delete repo_perms for this user
-    repo_perms = Link.where(tail_uuid: self.uuid,
-                            link_class: 'permission',
-                            name: 'can_write')
-    repo_perms.each do |perm|
-      Link.delete perm
-    end
+    Link.destroy_all(tail_uuid: self.uuid,
+                     link_class: 'permission',
+                     name: 'can_manage')
 
     # delete vm_login_perms for this user
-    vm_login_perms = Link.where(tail_uuid: self.uuid,
-                                link_class: 'permission',
-                                name: 'can_login')
-    vm_login_perms.each do |perm|
-      Link.delete perm
-    end
+    Link.destroy_all(tail_uuid: self.uuid,
+                     link_class: 'permission',
+                     name: 'can_login')
 
-    # delete "All users' group read permissions for this user
+    # delete "All users" group read permissions for this user
     group = Group.where(name: 'All users').select do |g|
       g[:uuid].match /-f+$/
     end.first
-    group_perms = Link.where(tail_uuid: self.uuid,
-                             head_uuid: group[:uuid],
-                             link_class: 'permission',
-                             name: 'can_read')
-    group_perms.each do |perm|
-      Link.delete perm
-    end
+    Link.destroy_all(tail_uuid: self.uuid,
+                     head_uuid: group[:uuid],
+                     link_class: 'permission',
+                     name: 'can_read')
 
     # delete any signatures by this user
-    signed_uuids = Link.where(link_class: 'signature',
-                              tail_uuid: self.uuid)
-    signed_uuids.each do |sign|
-      Link.delete sign
-    end
+    Link.destroy_all(link_class: 'signature',
+                     tail_uuid: self.uuid)
+
+    # delete user preferences (including profile)
+    self.prefs = {}
 
     # mark the user as inactive
     self.is_active = false
@@ -213,11 +234,13 @@ class User < ArvadosModel
   end
 
   def check_auto_admin
-    if User.where("uuid not like '%-000000000000000'").where(:is_admin => true).count == 0 and Rails.configuration.auto_admin_user
-      if current_user.email == Rails.configuration.auto_admin_user
-        self.is_admin = true
-        self.is_active = true
-      end
+    return if self.uuid.end_with?('anonymouspublic')
+    if (User.where("email = ?",self.email).where(:is_admin => true).count == 0 and
+        Rails.configuration.auto_admin_user and self.email == Rails.configuration.auto_admin_user) or
+       (User.where("uuid not like '%-000000000000000'").where(:is_admin => true).count == 0 and 
+        Rails.configuration.auto_admin_first_user)
+      self.is_admin = true
+      self.is_active = true
     end
   end
 
@@ -308,7 +331,7 @@ class User < ArvadosModel
       repo_perms = Link.where(tail_uuid: self.uuid,
                               head_uuid: repo[:uuid],
                               link_class: 'permission',
-                              name: 'can_write')
+                              name: 'can_manage')
       if repo_perms.any?
         logger.warn "User already has repository access " +
             repo_perms.collect { |p| p[:uuid] }.inspect
@@ -323,7 +346,7 @@ class User < ArvadosModel
     repo_perm = Link.create(tail_uuid: self.uuid,
                             head_uuid: repo[:uuid],
                             link_class: 'permission',
-                            name: 'can_write')
+                            name: 'can_manage')
     logger.info { "repo permission: " + repo_perm[:uuid] }
     return repo_perm
   end
@@ -376,40 +399,20 @@ class User < ArvadosModel
 
   # add the user to the 'All users' group
   def create_user_group_link
-    # Look up the "All users" group (we expect uuid *-*-fffffffffffffff).
-    group = Group.where(name: 'All users').select do |g|
-      g[:uuid].match /-f+$/
-    end.first
-
-    if not group
-      logger.warn "No 'All users' group with uuid '*-*-fffffffffffffff'."
-      raise "No 'All users' group with uuid '*-*-fffffffffffffff' is found"
-    else
-      logger.info { "\"All users\" group uuid: " + group[:uuid] }
-
-      group_perms = Link.where(tail_uuid: self.uuid,
-                              head_uuid: group[:uuid],
-                              link_class: 'permission',
-                              name: 'can_read')
-
-      if !group_perms.any?
-        group_perm = Link.create(tail_uuid: self.uuid,
-                                 head_uuid: group[:uuid],
-                                 link_class: 'permission',
-                                 name: 'can_read')
-        logger.info { "group permission: " + group_perm[:uuid] }
-      else
-        group_perm = group_perms.first
-      end
-
-      return group_perm
-    end
+    return (Link.where(tail_uuid: self.uuid,
+                       head_uuid: all_users_group[:uuid],
+                       link_class: 'permission',
+                       name: 'can_read').first or
+            Link.create(tail_uuid: self.uuid,
+                        head_uuid: all_users_group[:uuid],
+                        link_class: 'permission',
+                        name: 'can_read'))
   end
 
   # Give the special "System group" permission to manage this user and
   # all of this user's stuff.
-  #
   def add_system_group_permission_link
+    return true if uuid == system_user_uuid
     act_as_system_user do
       Link.create(link_class: 'permission',
                   name: 'can_manage',
@@ -425,4 +428,58 @@ class User < ArvadosModel
       AdminNotifier.new_inactive_user(self).deliver
     end
   end
+
+  # Automatically setup new user during creation
+  def auto_setup_new_user
+    return true if !Rails.configuration.auto_setup_new_users
+    return true if !self.email
+    return true if self.uuid == system_user_uuid
+    return true if self.uuid == anonymous_user_uuid
+
+    if Rails.configuration.auto_setup_new_users_with_vm_uuid ||
+       Rails.configuration.auto_setup_new_users_with_repository
+      username = self.email.partition('@')[0] if self.email
+      return true if !username
+
+      blacklisted_usernames = Rails.configuration.auto_setup_name_blacklist
+      if blacklisted_usernames.include?(username)
+        return true
+      elsif !(/^[a-zA-Z][-._a-zA-Z0-9]{0,30}[a-zA-Z0-9]$/.match(username))
+        return true
+      else
+        return true if !(username = derive_unique_username username)
+      end
+    end
+
+    # setup user
+    setup_repo_vm_links(username,
+                        Rails.configuration.auto_setup_new_users_with_vm_uuid,
+                        Rails.configuration.default_openid_prefix)
+  end
+
+  # Find a username that starts with the given string and does not collide
+  # with any existing repository name or VM login name
+  def derive_unique_username username
+    while true
+      if Repository.where(name: username).empty?
+        login_collisions = Link.where(link_class: 'permission',
+                                      name: 'can_login').select do |perm|
+          perm.properties['username'] == username
+        end
+        return username if login_collisions.empty?
+      end
+      username = username + SecureRandom.random_number(10).to_s
+    end
+  end
+
+  # Send notification if the user saved profile for the first time
+  def send_profile_created_notification
+    if self.prefs_changed?
+      if self.prefs_was.andand.empty? || !self.prefs_was.andand['profile']
+        profile_notification_address = Rails.configuration.user_profile_notification_address
+        ProfileNotifier.profile_created(self, profile_notification_address).deliver if profile_notification_address
+      end
+    end
+  end
+
 end

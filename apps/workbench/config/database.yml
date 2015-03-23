@@ -23,3 +23,17 @@ production:
   database: db/production.sqlite3
   pool: 5
   timeout: 5000
+
+# Note: The "diagnostics" database configuration is not actually used.
+diagnostics:
+  adapter: sqlite3
+  database: db/diagnostics.sqlite3
+  pool: 5
+  timeout: 5000
+
+# Note: The "performance" database configuration is not actually used.
+performance:
+  adapter: sqlite3
+  database: db/diagnostics.sqlite3
+  pool: 5
+  timeout: 5000

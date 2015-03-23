@@ -131,12 +131,16 @@ class ArvadosBase < ActiveRecord::Base
     ArvadosResourceList.new(self).limit(*args)
   end
 
+  def self.select(*args)
+    ArvadosResourceList.new(self).select(*args)
+  end
+
   def self.eager(*args)
     ArvadosResourceList.new(self).eager(*args)
   end
 
-  def self.all(*args)
-    ArvadosResourceList.new(self).all(*args)
+  def self.all
+    ArvadosResourceList.new(self)
   end
 
   def self.permit_attribute_params raw_params
@@ -163,7 +167,9 @@ class ArvadosBase < ActiveRecord::Base
   def save
     obdata = {}
     self.class.columns.each do |col|
-      obdata[col.name.to_sym] = self.send(col.name.to_sym)
+      unless self.send(col.name.to_sym).nil? and !self.changed.include?(col.name)
+          obdata[col.name.to_sym] = self.send(col.name.to_sym)
+      end
     end
     obdata.delete :id
     postdata = { self.class.to_s.underscore => obdata }
@@ -299,12 +305,23 @@ class ArvadosBase < ActiveRecord::Base
     self.to_s.underscore.humanize
   end
 
+  # Array of strings that are names of attributes that should be rendered as textile.
+  def textile_attributes
+    []
+  end
+
   def self.creatable?
-    current_user
+    current_user.andand.is_active
   end
 
   def self.goes_in_projects?
     false
+  end
+
+  # can this class of object be copied into a project?
+  # override to false on indivudal model classes for which this should not be true
+  def self.copies_to_projects?
+    self.goes_in_projects?
   end
 
   def editable?
@@ -312,11 +329,20 @@ class ArvadosBase < ActiveRecord::Base
      (current_user.is_admin or
       current_user.uuid == self.owner_uuid or
       new_record? or
-      (writable_by.include? current_user.uuid rescue false)))
+      (respond_to?(:writable_by) ?
+       writable_by.include?(current_user.uuid) :
+       (ArvadosBase.find(owner_uuid).writable_by.include? current_user.uuid rescue false)))) or false
+  end
+
+  # Array of strings that are the names of attributes that can be edited
+  # with X-Editable.
+  def editable_attributes
+    self.class.columns.map(&:name) -
+      %w(created_at modified_at modified_by_user_uuid modified_by_client_uuid updated_at)
   end
 
   def attribute_editable?(attr, ever=nil)
-    if "created_at modified_at modified_by_user_uuid modified_by_client_uuid updated_at".index(attr.to_s)
+    if not editable_attributes.include?(attr.to_s)
       false
     elsif not (current_user.andand.is_active)
       false
@@ -362,7 +388,7 @@ class ArvadosBase < ActiveRecord::Base
     self.class.to_s.underscore
   end
 
-  def friendly_link_name
+  def friendly_link_name lookup=nil
     (name if self.respond_to? :name) || default_name
   end
 

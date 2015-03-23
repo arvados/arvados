@@ -1,0 +1,26 @@
+<% current_class = params[:last_object_class] %>
+<% @objects.each do |object| %>
+  <% icon_class = fa_icon_class_for_class(object.class) %>
+  <% if object.class.to_s != current_class %>
+    <% current_class = object.class.to_s %>
+    <div class="row class-separator" data-section-heading="true" data-section-name="<%= object.class.to_s %>">
+      <div class="col-sm-12">
+        <%= object.class_for_display.pluralize.downcase %>
+      </div>
+    </div>
+  <% end %>
+  <div class="row filterable selectable" data-section-name="<%= object.class.to_s %>" data-object-uuid="<%= object.uuid %>" data-preview-href="<%= chooser_preview_url_for object %>">
+    <div class="col-sm-12" style="overflow-x:hidden; white-space: nowrap">
+      <i class="fa fa-fw <%= icon_class %>"></i>
+      <% if (name_link = @objects.links_for(object, 'name').first) %>
+        <%= name_link.name %>
+        <span style="display:none"><%= object.uuid %></span>
+      <% elsif object.respond_to?(:name) and object.name and object.name.length > 0 %>
+        <%= object.name %>
+        <span style="display:none"><%= object.uuid %></span>
+      <% else %>
+        <span class="arvados-uuid"><%= object.uuid %></span>
+      <% end %>
+    </div>
+  </div>
+<% end %>

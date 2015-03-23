@@ -7,12 +7,8 @@ class Job < ArvadosBase
     "#{script} job"
   end
 
-  def attribute_editable? attr, *args
-    false
-  end
-
-  def self.creatable?
-    false
+  def editable_attributes
+    %w(description)
   end
 
   def default_name
@@ -32,5 +28,17 @@ class Job < ArvadosBase
 
   def cancel
     arvados_api_client.api "jobs/#{self.uuid}/", "cancel", {}
+  end
+
+  def self.queue_size
+    arvados_api_client.api("jobs/", "queue_size", {"_method"=> "GET"})[:queue_size] rescue 0
+  end
+
+  def self.queue
+    arvados_api_client.unpack_api_response arvados_api_client.api("jobs/", "queue", {"_method"=> "GET"})
+  end
+
+  def textile_attributes
+    [ 'description' ]
   end
 end

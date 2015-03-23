@@ -3,6 +3,19 @@ class Group < ArvadosBase
     true
   end
 
+  def self.copies_to_projects?
+    false
+  end
+
+  def self.contents params={}
+    res = arvados_api_client.api self, "/contents", {
+      _method: 'GET'
+    }.merge(params)
+    ret = ArvadosResourceList.new
+    ret.results = arvados_api_client.unpack_api_response(res)
+    ret
+  end
+
   def contents params={}
     res = arvados_api_client.api self.class, "/#{self.uuid}/contents", {
       _method: 'GET'
@@ -13,12 +26,10 @@ class Group < ArvadosBase
   end
 
   def class_for_display
-    group_class.in?(['folder', 'project']) ? 'Project' : super
+    group_class == 'project' ? 'Project' : super
   end
 
-  def editable?
-    respond_to?(:writable_by) and
-      writable_by and
-      writable_by.index(current_user.uuid)
+  def textile_attributes
+    [ 'description' ]
   end
 end

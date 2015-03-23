@@ -1,5 +1,5 @@
 <% @objects.each do |object| %>
-  <div class="row filterable selectable <%= 'multiple' if multiple %>" data-object-uuid="<%= object.uuid %>" data-preview-href="<%= url_for object %>?tab_pane=chooser_preview">
+  <div class="row filterable selectable" data-object-uuid="<%= object.uuid %>" data-preview-href="<%= url_for object %>?tab_pane=chooser_preview">
     <div class="col-sm-12" style="overflow-x:hidden">
       <i class="fa fa-fw fa-gear"></i>
       <%= object.name %>

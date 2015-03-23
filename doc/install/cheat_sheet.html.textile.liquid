@@ -1,0 +1,70 @@
+---
+layout: default
+navsection: installguide
+title: Cheat Sheet
+...
+
+h3. Workbench: user management
+
+As an Admin user, use the gear icon on the top right to visit the Users page. From there, use the 'Add new user' button to create a new user. Alternatively, visit an existing user with the 'Show' button next to the user's name. Then use the 'Admin' tab and click the 'Setup' button to activate the user, and create a virtual machine login as well as git repository for them.
+
+h3. CLI setup
+
+<pre>
+ARVADOS_API_HOST={{ site.arvados_api_host }}
+ARVADOS_API_TOKEN=1234567890qwertyuiopasdfghjklzxcvbnm1234567890zzzz
+</pre>
+
+h3. CLI: Create VM
+
+<pre>
+arv virtual_machine create --virtual-machine '{"hostname":"xxxxxxxchangeme.example.com"}'
+</pre>
+
+h3. CLI: Activate user
+
+<pre>
+user_uuid=xxxxxxxchangeme
+
+arv user update --uuid "$user_uuid" --user '{"is_active":true}'
+</pre>
+
+h3. User &rarr; VM
+
+Give @$user_uuid@ permission to log in to @$vm_uuid@ as @$target_username@
+
+<pre>
+user_uuid=xxxxxxxchangeme
+vm_uuid=xxxxxxxchangeme
+target_username=xxxxxxxchangeme
+
+read -rd $'\000' newlink <<EOF; arv link create --link "$newlink"
+{
+"tail_uuid":"$user_uuid",
+"head_uuid":"$vm_uuid",
+"link_class":"permission",
+"name":"can_login",
+"properties":{"username":"$target_username"}
+}
+EOF
+</pre>
+
+h3. CLI: User &rarr; repo
+
+Give @$user_uuid@ permission to commit to @$repo_uuid@ as @$repo_username@
+
+<pre>
+user_uuid=xxxxxxxchangeme
+repo_uuid=xxxxxxxchangeme
+repo_username=xxxxxxxchangeme
+
+read -rd $'\000' newlink <<EOF; arv link create --link "$newlink"
+{
+"tail_uuid":"$user_uuid",
+"head_uuid":"$repo_uuid",
+"link_class":"permission",
+"name":"can_write",
+"properties":{"username":"$repo_username"}
+}
+EOF
+</pre>
