@@ -10,7 +10,7 @@ COMPUTE_COUNTER=0
 
 function usage {
     echo >&2
-    echo >&2 "usage: $0 (start|stop|restart|test) [options]"
+    echo >&2 "usage: $0 (start|stop|restart|test|reset) [options]"
     echo >&2
     echo >&2 "$0 start/stop/restart options:"
     echo >&2 "  -d[port], --doc[=port]        Documentation server (default port 9898)"
@@ -56,7 +56,7 @@ function start_container {
     fi
     if [[ "$3" != '' ]]; then
       local volume="$3"
-      args="$args -v $volume"
+      args="$args --volumes-from $volume"
     fi
     if [[ "$4" != '' ]]; then
       local link="$4"
@@ -70,12 +70,16 @@ function start_container {
       return
     fi
 
-    # Remove any existing container by this name.
-    $DOCKER rm "$name" 2>/dev/null
+    echo "Starting container: $name"
+    `$DOCKER ps --all |grep -P "$name[^/]" -q`
+    if [[ "$?" == "0" ]]; then
+        echo "  $DOCKER start $name"
+        container=`$DOCKER start $name`
+    else
+        echo "  $DOCKER run $args $image"
+        container=`$DOCKER run $args $image`
+    fi
 
-    echo "Starting container:"
-    echo "  $DOCKER run $args $image"
-    container=`$DOCKER run $args $image`
     if [ "$?" != "0" -o "$container" = "" ]; then
       echo "Unable to start container"
       exit 1
@@ -102,29 +106,13 @@ function start_container {
 
 }
 
-declare -a keep_volumes
-
-# Initialize the global `keep_volumes' array. If any keep volumes
-# already appear to exist (mounted volumes with a top-level "keep"
-# directory), use them; create temporary volumes if necessary.
-#
+# Create a Docker data volume
 function make_keep_volumes () {
-    # Mount a keep volume if we don't already have one
-    for mountpoint in $(cut -d ' ' -f 2 /proc/mounts); do
-      if [[ -d "$mountpoint/keep" && "$mountpoint" != "/" ]]; then
-        keep_volumes+=($mountpoint)
-      fi
-    done
-
-    # Create any keep volumes that do not yet exist.
-    while [ ${#keep_volumes[*]} -lt 2 ]
-    do
-        new_keep=$(mktemp -d)
-        echo >&2 "mounting 2G tmpfs keep volume in $new_keep"
-        sudo mount -t tmpfs -o size=2G tmpfs $new_keep
-        mkdir $new_keep/keep
-        keep_volumes+=($new_keep)
-    done
+    `$DOCKER ps --all |grep -P "keep_data[^/]" -q`
+    if [[ "$?" == "0" ]]; then
+      return
+    fi
+    docker create -v /keep-data --name keep_data arvados/keep
 }
 
 function do_start {
@@ -137,6 +125,7 @@ function do_start {
     local start_nameserver=false
     local start_keep=false
     local start_keepproxy=false
+    local
 
     # NOTE: This requires GNU getopt (part of the util-linux package on Debian-based distros).
     local TEMP=`getopt -o d::s::a::cw::nkpvh \
@@ -237,14 +226,24 @@ function do_start {
       if [[ "$?" != "0" ]]; then
         echo "Starting crosbymichael/skydns container..."
         $DOCKER rm "skydns" 2>/dev/null
+        echo $DOCKER run -d -p 172.17.42.1:53:53/udp --name skydns crosbymichael/skydns -nameserver 8.8.8.8:53 -domain arvados
         $DOCKER run -d -p 172.17.42.1:53:53/udp --name skydns crosbymichael/skydns -nameserver 8.8.8.8:53 -domain arvados
       fi
       $DOCKER ps | grep skydock >/dev/null
       if [[ "$?" != "0" ]]; then
         echo "Starting crosbymichael/skydock container..."
         $DOCKER rm "skydock" 2>/dev/null
+        echo $DOCKER run -d -v /var/run/docker.sock:/docker.sock --name skydock crosbymichael/skydock -ttl 30 -environment dev -s /docker.sock -domain arvados -name skydns
         $DOCKER run -d -v /var/run/docker.sock:/docker.sock --name skydock crosbymichael/skydock -ttl 30 -environment dev -s /docker.sock -domain arvados -name skydns
       fi
+
+      echo
+      echo "*****************************************************************"
+      echo "To access Arvados using command line tools on the host we recommend you add"
+      echo "the arvados nameserver to the top of your DNS configuration in /etc/resolv.conf:"
+      echo "nameserver 172.17.42.1"
+      echo "*****************************************************************"
+      echo
     fi
 
     if [[ $start_sso != false ]]
@@ -273,16 +272,12 @@ function do_start {
         # create `keep_volumes' array with a list of keep mount points
         # remove any stale metadata from those volumes before starting them
         make_keep_volumes
-        for v in ${keep_volumes[*]}
-        do
-            [ -f $v/keep/.metadata.yml ] && sudo rm $v/keep/.metadata.yml
-        done
         start_container "25107:25107" "keep_server_0" \
-            "${keep_volumes[0]}:/keep-data" \
+            "keep_data" \
             "api_server:api" \
             "arvados/keep"
         start_container "25108:25107" "keep_server_1" \
-            "${keep_volumes[1]}:/keep-data" \
+            "keep_data" \
             "api_server:api" \
             "arvados/keep"
     fi
@@ -435,6 +430,22 @@ function do_test {
     done
 }
 
+function do_reset {
+    for name in skydock skydns workbench_server shell doc_server keepproxy_server keep_server_0 keep_server_1 compute0 compute1 api_server keepproxy keep_data
+    do
+        `$DOCKER ps |grep -P "$name[^/]" -q`
+        if [[ "$?" == "0" ]]; then
+            echo "  $DOCKER stop $name"
+            $DOCKER stop $name
+        fi
+        `$DOCKER ps --all |grep -P "$name[^/]" -q`
+        if [[ "$?" == "0" ]]; then
+            echo "  $DOCKER rm $name"
+            $DOCKER rm $name
+        fi
+    done
+}
+
 if [ $# -lt 1 ]
 then
   usage
@@ -459,6 +470,11 @@ case $1 in
         shift
         do_test $@
         ;;
+    reset)
+        shift
+        do_reset $@
+        ;;
+
     *)
         usage
         exit 1
