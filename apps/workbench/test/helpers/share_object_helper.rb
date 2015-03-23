@@ -55,10 +55,9 @@ module ShareObjectHelper
         # poltergeist returns true for confirm(), so we don't need to accept.
       end
     end
-    wait_for_ajax
+    # Ensure revoked permission disappears from page.
     using_wait_time(Capybara.default_wait_time * 3) do
-      assert(page.has_no_text?(name),
-             "new share row still exists after being revoked")
+      assert_no_text name
       assert_equal(start_rows.size - 1, share_rows.size,
                    "revoking share did not remove row from sharing table")
     end
