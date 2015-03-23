@@ -1,7 +1,6 @@
 package main
 
 import (
-	"git.curoverse.com/arvados.git/sdk/go/arvadosclient"
 	"log"
 	"time"
 )
@@ -14,17 +13,7 @@ import (
 		Repeat
 */
 
-var defaultTrashLifetime int64 = 0
-
-func RunTrashWorker(arv *arvadosclient.ArvadosClient, trashq *WorkQueue) {
-	if arv != nil {
-		defaultTrashLifetimeMap, err := arv.Discovery("defaultTrashLifetime")
-		if err != nil {
-			log.Fatalf("Error setting up arvados client %s", err.Error())
-		}
-		defaultTrashLifetime = int64(defaultTrashLifetimeMap["defaultTrashLifetime"].(float64))
-	}
-
+func RunTrashWorker(trashq *WorkQueue) {
 	nextItem := trashq.NextItem
 	for item := range nextItem {
 		trashRequest := item.(TrashRequest)
@@ -45,7 +34,7 @@ func TrashItem(trashRequest TrashRequest) (err error) {
 		if err == nil {
 			if trashRequest.BlockMtime == mtime.Unix() {
 				currentTime := time.Now().Unix()
-				if (currentTime - trashRequest.BlockMtime) > defaultTrashLifetime {
+				if time.Duration(currentTime-trashRequest.BlockMtime)*time.Second >= permission_ttl {
 					err = volume.Delete(trashRequest.Locator)
 				}
 			}

@@ -4,7 +4,6 @@ import (
 	"bytes"
 	"flag"
 	"fmt"
-	"git.curoverse.com/arvados.git/sdk/go/arvadosclient"
 	"git.curoverse.com/arvados.git/sdk/go/keepclient"
 	"io/ioutil"
 	"log"
@@ -289,12 +288,8 @@ func main() {
 	go RunPullWorker(pullq, keepClient)
 
 	// Initialize the trashq and worker
-	arv, err := arvadosclient.MakeArvadosClient()
-	if err != nil {
-		log.Fatalf("Error setting up arvados client %s", err.Error())
-	}
 	trashq = NewWorkQueue()
-	go RunTrashWorker(&arv, trashq)
+	go RunTrashWorker(trashq)
 
 	// Shut down the server gracefully (by closing the listener)
 	// if SIGTERM is received.
