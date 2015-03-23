@@ -545,6 +545,8 @@ func TestPullHandler(t *testing.T) {
 	var user_token = "USER TOKEN"
 	data_manager_token = "DATA MANAGER TOKEN"
 
+	pullq = NewWorkQueue()
+
 	good_json := []byte(`[
 		{
 			"locator":"locator_with_two_servers",
@@ -648,6 +650,8 @@ func TestTrashHandler(t *testing.T) {
 
 	var user_token = "USER TOKEN"
 	data_manager_token = "DATA MANAGER TOKEN"
+
+	trashq = NewWorkQueue()
 
 	good_json := []byte(`[
 		{

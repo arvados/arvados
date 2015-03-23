@@ -460,10 +460,6 @@ func PullHandler(resp http.ResponseWriter, req *http.Request) {
 	for _, p := range pr {
 		plist.PushBack(p)
 	}
-
-	if pullq == nil {
-		pullq = NewWorkQueue()
-	}
 	pullq.ReplaceQueue(plist)
 }
 
@@ -497,10 +493,6 @@ func TrashHandler(resp http.ResponseWriter, req *http.Request) {
 	tlist := list.New()
 	for _, t := range trash {
 		tlist.PushBack(t)
-	}
-
-	if trashq == nil {
-		trashq = NewWorkQueue()
 	}
 	trashq.ReplaceQueue(tlist)
 }
