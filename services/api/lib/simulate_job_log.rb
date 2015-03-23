@@ -8,6 +8,12 @@ module SimulateJobLog
     actual_start_time = Time.now
     log_start_time = nil
 
+    if simulated_job_uuid and (job = Job.where(uuid: simulated_job_uuid).first)
+      job_owner_uuid = job.owner_uuid
+    else
+      job_owner_uuid = system_user_uuid
+    end
+
     act_as_system_user do
       File.open(filename).each.with_index do |line, index|
         cols = {}
@@ -34,9 +40,9 @@ module SimulateJobLog
         modified_elapsed_time = log_elapsed_time / multiplier
         pause_time = modified_elapsed_time - actual_elapsed_time
         sleep pause_time if pause_time > 0
-        # output log entry for debugging and create it in the current environment's database
-        puts "#{index} #{cols.to_yaml}\n"
+
         Log.new({
+          owner_uuid:  job_owner_uuid,
           event_at:    Time.zone.local_to_utc(cols[:timestamp]),
           object_uuid: cols[:job_uuid],
           event_type:  cols[:event_type],

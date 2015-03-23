@@ -53,4 +53,21 @@ module CollectionsHelper
     f0 += '/' if not f0.empty?
     file_path = "#{f0}#{file[1]}"
   end
+
+  ##
+  # Check if collection preview is allowed for the given filename with extension
+  #
+  def preview_allowed_for file_name
+    file_type = MIME::Types.type_for(file_name).first
+    if file_type.nil?
+      false
+    elsif (file_type.raw_media_type == "text") || (file_type.raw_media_type == "image")
+      true
+    elsif (file_type.raw_media_type == "application") &&
+          (Rails.configuration.application_mimetypes_with_view_icon.include? (file_type.sub_type))
+      true
+    else
+      false
+    end
+  end
 end

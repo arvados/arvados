@@ -63,7 +63,7 @@ class Arvados::V1::ApiTokensScopeTest < ActionController::IntegrationTest
     req_args = [{}, auth(:admin_noscope)]
     get(v1_url('logs'), *req_args)
     assert_response 403
-    get(v1_url('logs', logs(:log1).uuid), *req_args)
+    get(v1_url('logs', logs(:noop).uuid), *req_args)
     assert_response 403
     post(v1_url('logs'), *req_args)
     assert_response 403

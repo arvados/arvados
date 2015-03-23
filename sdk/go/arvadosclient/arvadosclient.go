@@ -12,6 +12,7 @@ import (
 	"net/http"
 	"net/url"
 	"os"
+	"regexp"
 	"strings"
 )
 
@@ -53,8 +54,9 @@ type ArvadosClient struct {
 // variables ARVADOS_API_HOST, ARVADOS_API_TOKEN, and (optionally)
 // ARVADOS_API_HOST_INSECURE.
 func MakeArvadosClient() (kc ArvadosClient, err error) {
-	insecure := (os.Getenv("ARVADOS_API_HOST_INSECURE") == "true")
-	external := (os.Getenv("ARVADOS_EXTERNAL_CLIENT") == "true")
+	var matchTrue = regexp.MustCompile("^(?i:1|yes|true)$")
+	insecure := matchTrue.MatchString(os.Getenv("ARVADOS_API_HOST_INSECURE"))
+	external := matchTrue.MatchString(os.Getenv("ARVADOS_EXTERNAL_CLIENT"))
 
 	kc = ArvadosClient{
 		ApiServer:   os.Getenv("ARVADOS_API_HOST"),

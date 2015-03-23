@@ -55,19 +55,29 @@ class FixCollectionPortableDataHashWithHintedManifest < ActiveRecord::Migration
   end
 
   def each_bad_collection
-    # It's important to make sure that this line doesn't swap.  The
-    # worst case scenario is that it finds a batch of collections that
-    # all have maximum size manifests (64MiB).  With a batch size of
-    # 50, that's about 3GiB.  Figure it will end up being 4GiB after
-    # other ActiveRecord overhead.  That's a size we're comfortable with.
-    Collection.where("manifest_text ~ '\\+[A-Z]'").
-        find_each(batch_size: 50) do |coll|
-      stripped_manifest = coll.manifest_text.
-        gsub(/( [0-9a-f]{32}(\+\d+)?)(\+\S+)/, '\1')
-      stripped_pdh = sprintf("%s+%i",
-                             Digest::MD5.hexdigest(stripped_manifest),
-                             stripped_manifest.bytesize)
-      yield [coll, stripped_pdh] if (coll.portable_data_hash != stripped_pdh)
+    end_coll = Collection.order("id DESC").first
+    return if end_coll.nil?
+    seen_uuids = []
+    ("A".."Z").each do |hint_char|
+      query = Collection.
+        where("id <= ? AND manifest_text LIKE '%+#{hint_char}%'", end_coll.id)
+      unless seen_uuids.empty?
+        query = query.where("uuid NOT IN (?)", seen_uuids)
+      end
+      # It's important to make sure that this line doesn't swap.  The
+      # worst case scenario is that it finds a batch of collections that
+      # all have maximum size manifests (64MiB).  With a batch size of
+      # 50, that's about 3GiB.  Figure it will end up being 4GiB after
+      # other ActiveRecord overhead.  That's a size we're comfortable with.
+      query.find_each(batch_size: 50) do |coll|
+        seen_uuids << coll.uuid
+        stripped_manifest = coll.manifest_text.
+          gsub(/( [0-9a-f]{32}(\+\d+)?)\+\S+/, '\1')
+        stripped_pdh = sprintf("%s+%i",
+                               Digest::MD5.hexdigest(stripped_manifest),
+                               stripped_manifest.bytesize)
+        yield [coll, stripped_pdh] if (coll.portable_data_hash != stripped_pdh)
+      end
     end
   end
 
