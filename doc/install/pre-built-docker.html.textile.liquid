@@ -5,13 +5,23 @@ title: Install pre-built docker images
 ...
 
 {% include 'notebox_begin' %}
-This method is easy, but is not yet suitable for production use. It is still in development: some features do not work yet.
+This method is easy, but is not suitable for production use. It is still in development: some features do not work yet.
 * Websockets service is not enabled. This means Workbench auto-refresh and web upload (and some other features) do not work.
 * The node manager is not enabled. Two worker containers are brought up at startup.
 * The automatic network configuration allows you to log in to Workbench from a browser _running on the same host as docker_. Connecting from other hosts will require additional configuration (not covered here).
 {% include 'notebox_end' %}
 
-First, make sure that @curl@ and @docker@ are installed on your system, and that you are in the docker group (see "Installing Docker":https://docs.docker.com/installation/).
+This installation method is appropriate for testing and evaluation on one computer. *For production use, this installation method is not recommended*.
+
+h2. Prerequisites
+
+# A GNU/Linux (virtual) machine
+# A working Docker installation (see "Installing Docker":https://docs.docker.com/installation/)
+# curl
+
+h2. Verify prerequisites
+
+Make sure that @curl@ and @docker@ are installed on your system, and that you are in the docker group (see "Installing Docker":https://docs.docker.com/installation/).
 
 <notextile><pre><code>~$ <span class="userinput">which curl</span>
 /usr/bin/curl
@@ -21,7 +31,7 @@ Docker version 1.2.0-dev, build dc243c8
 yourusername sudo fuse docker
 </code></pre></notextile>
 
-Download and install Arvados.
+h2. Download and install Arvados.
 
 <notextile>
 <pre><code>~$ <span class="userinput">\curl -sSL get.arvados.org | bash</span>
