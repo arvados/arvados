@@ -134,16 +134,27 @@ type ApiTokenCache struct {
 
 // Refresh the keep service list every five minutes.
 func RefreshServicesList(kc *keepclient.KeepClient) {
+	var sleeptime time.Duration
 	for {
-		time.Sleep(300 * time.Second)
 		oldservices := kc.ServiceRoots()
-		kc.DiscoverKeepServers()
-		newservices := kc.ServiceRoots()
-		s1 := fmt.Sprint(oldservices)
-		s2 := fmt.Sprint(newservices)
-		if s1 != s2 {
-			log.Printf("Updated server list to %v", s2)
+		newservices, err := kc.DiscoverKeepServers()
+		if err == nil && len(newservices) > 0 {
+			s1 := fmt.Sprint(oldservices)
+			s2 := fmt.Sprint(newservices)
+			if s1 != s2 {
+				log.Printf("Updated server list to %v", s2)
+			}
+			sleeptime = 300 * time.Second
+		} else {
+			// There was an error, or the list is empty, so wait 3 seconds and try again.
+			if err != nil {
+				log.Printf("Error retrieving server list: %v", err)
+			} else {
+				log.Printf("Retrieved an empty server list")
+			}
+			sleeptime = 3 * time.Second
 		}
+		time.Sleep(sleeptime)
 	}
 }
 

@@ -68,6 +68,12 @@
   <%= link_to_if_arvados_object @object.owner_uuid, friendly_name: true %>.
 </p>
 
+<% if @object.is_a? Repository %>
+<p>
+  Please note that changes to git repository sharing may take up to two minutes to take effect.
+</p>
+<% end %>
+
 <table id="object_sharing" class="topalign table" style="clear: both; margin-top: 1em;">
   <tr>
     <th>User/Group Name</th>

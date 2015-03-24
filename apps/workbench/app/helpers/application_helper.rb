@@ -52,6 +52,35 @@ module ApplicationHelper
     ArvadosBase::resource_class_for_uuid(attrvalue, opts)
   end
 
+  # When using {remote:true}, or using {method:...} to use an HTTP
+  # method other than GET, move the target URI from href to
+  # data-remote-href. Otherwise, browsers offer features like "open in
+  # new window" and "copy link address" which bypass Rails' click
+  # handler and therefore end up at incorrect/nonexistent routes (by
+  # ignoring data-method) and expect to receive pages rather than
+  # javascript responses.
+  #
+  # See assets/javascripts/link_to_remote.js for supporting code.
+  def link_to *args, &block
+    if (args.last and args.last.is_a? Hash and
+        (args.last[:remote] or
+         (args.last[:method] and
+          args.last[:method].to_s.upcase != 'GET')))
+      if Rails.env.test?
+        # Capybara/phantomjs can't click_link without an href, even if
+        # the click handler means it never gets used.
+        raw super.gsub(' href="', ' href="#" data-remote-href="')
+      else
+        # Regular browsers work as desired: users can click A elements
+        # without hrefs, and click handlers fire; but there's no "copy
+        # link address" option in the right-click menu.
+        raw super.gsub(' href="', ' data-remote-href="')
+      end
+    else
+      super
+    end
+  end
+
   ##
   # Returns HTML that links to the Arvados object specified in +attrvalue+
   # Provides various output control and styling options.
