@@ -57,7 +57,7 @@ func (h *authHandler) ServeHTTP(wOrig http.ResponseWriter, r *http.Request) {
 
 	// HTTP request username is logged, but unused. Password is an
 	// Arvados API token.
-	username, password, ok := r.BasicAuth()
+	username, password, ok := BasicAuth(r)
 	if !ok || username == "" || password == "" {
 		statusCode, statusText = http.StatusUnauthorized, "no credentials provided"
 		w.Header().Add("WWW-Authenticate", "basic")
