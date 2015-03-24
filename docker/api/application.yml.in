@@ -19,6 +19,8 @@ development:
   blob_signing_key: ~
 
 production:
+  host: api.dev.arvados
+
   # At minimum, you need a nice long randomly generated secret_token here.
   # Use a long string of alphanumeric characters (at least 36).
   secret_token: @@API_SECRET@@
@@ -42,14 +44,6 @@ production:
   #   - 127.0.0.1
   #   - 192.168.1.1
   #
-  # The version below is suitable for AWS.
-  # Uncomment and change <%# to <%= to use it.
-  # compute_node_nameservers: <%#
-  #   require 'net/http'
-  #   ['local', 'public'].collect do |iface|
-  #     Net::HTTP.get(URI("http://169.254.169.254/latest/meta-data/#{iface}-ipv4")).match(/^[\d\.]+$/)[0]
-  #   end << '172.16.0.23'
-  # %>
   permit_create_collection_with_unsigned_manifest: true
   git_repositories_dir: /home/git/repositories
   crunch_job_wrapper: :slurm_immediate
@@ -69,4 +63,3 @@ test:
 common:
   #git_repositories_dir: /var/cache/git
   #git_internal_dir: /var/cache/arvados/internal.git
-

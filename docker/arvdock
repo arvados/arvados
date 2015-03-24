@@ -89,17 +89,17 @@ function start_container {
 
     if [[ "$name" == "doc_server" ]]; then
       echo
-      echo "*****************************************************************"
-      echo "You can access the Arvados documentation at http://localhost:${port%:*}"
-      echo "*****************************************************************"
+      echo "******************************************************************"
+      echo "You can access the Arvados documentation at http://doc.dev.arvados"
+      echo "******************************************************************"
       echo
     fi
 
     if [[ "$name" == "workbench_server" ]]; then
       echo
-      echo "*****************************************************************"
-      echo "You can access the Arvados workbench at http://localhost:${port%:*}"
-      echo "*****************************************************************"
+      echo "********************************************************************"
+      echo "You can access the Arvados workbench at http://workbench.dev.arvados"
+      echo "********************************************************************"
       echo
    fi
 
@@ -236,14 +236,6 @@ function do_start {
         echo $DOCKER run -d -v /var/run/docker.sock:/docker.sock --name skydock crosbymichael/skydock -ttl 30 -environment dev -s /docker.sock -domain arvados -name skydns
         $DOCKER run -d -v /var/run/docker.sock:/docker.sock --name skydock crosbymichael/skydock -ttl 30 -environment dev -s /docker.sock -domain arvados -name skydns
       fi
-
-      echo
-      echo "*****************************************************************"
-      echo "To access Arvados using command line tools on the host we recommend you add"
-      echo "the arvados nameserver to the top of your DNS configuration in /etc/resolv.conf:"
-      echo "nameserver 172.17.42.1"
-      echo "*****************************************************************"
-      echo
     fi
 
     if [[ $start_sso != false ]]
@@ -317,6 +309,17 @@ ARVADOS_API_TOKEN=$(cat api/generated/superuser_token)
 EOF
           fi
         fi
+    fi
+
+    `cat /etc/resolv.conf |grep -P "nameserver 172\.17\.42\.1" -q`
+    if [[ "$?" == "1" ]]; then
+        echo
+        echo "******************************************************************"
+        echo "To access Arvados you must add the Arvados nameserver to the top"
+        echo "of your DNS configuration in /etc/resolv.conf:"
+        echo "nameserver 172.17.42.1"
+        echo "******************************************************************"
+        echo
     fi
 }
 
@@ -474,7 +477,6 @@ case $1 in
         shift
         do_reset $@
         ;;
-
     *)
         usage
         exit 1
