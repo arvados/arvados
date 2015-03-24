@@ -58,8 +58,10 @@ main () {
   docker_pull arvados/doc
   docker_pull arvados/keep
   docker_pull arvados/shell
+  docker_pull arvados/sso
   docker_pull arvados/compute
   docker_pull arvados/keep
+  docker_pull arvados/keepproxy
   docker_pull arvados/api
   docker_pull crosbymichael/skydns
   docker_pull crosbymichael/skydock
