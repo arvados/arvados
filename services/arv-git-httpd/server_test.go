@@ -8,8 +8,8 @@ import (
 	"strings"
 	"testing"
 
-	check "gopkg.in/check.v1"
 	"git.curoverse.com/arvados.git/sdk/go/arvadostest"
+	check "gopkg.in/check.v1"
 )
 
 var _ = check.Suite(&IntegrationSuite{})
@@ -81,19 +81,19 @@ func (s *IntegrationSuite) SetUpTest(c *check.C) {
 	c.Assert(err, check.Equals, nil)
 	s.tmpWorkdir, err = ioutil.TempDir("", "arv-git-httpd")
 	c.Assert(err, check.Equals, nil)
-	_, err = exec.Command("git", "init", s.tmpRepoRoot + "/foo").Output()
+	_, err = exec.Command("git", "init", s.tmpRepoRoot+"/foo").Output()
 	c.Assert(err, check.Equals, nil)
-	_, err = exec.Command("sh", "-c", "cd " + s.tmpRepoRoot + "/foo && echo test >test && git add test && git commit -am 'foo: test'").CombinedOutput()
+	_, err = exec.Command("sh", "-c", "cd "+s.tmpRepoRoot+"/foo && echo test >test && git add test && git commit -am 'foo: test'").CombinedOutput()
 	c.Assert(err, check.Equals, nil)
 	_, err = exec.Command("git", "init", s.tmpWorkdir).Output()
 	c.Assert(err, check.Equals, nil)
-	_, err = exec.Command("sh", "-c", "cd " + s.tmpWorkdir + " && echo work >work && git add work && git commit -am 'workdir: test'").CombinedOutput()
+	_, err = exec.Command("sh", "-c", "cd "+s.tmpWorkdir+" && echo work >work && git add work && git commit -am 'workdir: test'").CombinedOutput()
 	c.Assert(err, check.Equals, nil)
 
 	theConfig = &config{
-		Addr: ":",
+		Addr:       ":",
 		GitCommand: "/usr/bin/git",
-		Root: s.tmpRepoRoot,
+		Root:       s.tmpRepoRoot,
 	}
 	err = s.testServer.Start()
 	c.Assert(err, check.Equals, nil)
@@ -103,13 +103,13 @@ func (s *IntegrationSuite) SetUpTest(c *check.C) {
 	os.Setenv("ARVADOS_API_TOKEN", "")
 
 	_, err = exec.Command("git", "config",
-		"--file", s.tmpWorkdir + "/.git/config",
-		"credential.http://" + s.testServer.Addr + "/.helper",
+		"--file", s.tmpWorkdir+"/.git/config",
+		"credential.http://"+s.testServer.Addr+"/.helper",
 		"!foo(){ echo password=$ARVADOS_API_TOKEN; };foo").Output()
 	c.Assert(err, check.Equals, nil)
 	_, err = exec.Command("git", "config",
-		"--file", s.tmpWorkdir + "/.git/config",
-		"credential.http://" + s.testServer.Addr + "/.username",
+		"--file", s.tmpWorkdir+"/.git/config",
+		"credential.http://"+s.testServer.Addr+"/.username",
 		"none").Output()
 	c.Assert(err, check.Equals, nil)
 }
@@ -154,9 +154,9 @@ func (s *IntegrationSuite) runGit(c *check.C, gitCmd, repo string, args ...strin
 
 // Make a bare arvados repo at {tmpRepoRoot}/arvados.git
 func (s *IntegrationSuite) makeArvadosRepo(c *check.C) {
-	_, err := exec.Command("git", "init", "--bare", s.tmpRepoRoot + "/arvados.git").Output()
+	_, err := exec.Command("git", "init", "--bare", s.tmpRepoRoot+"/arvados.git").Output()
 	c.Assert(err, check.Equals, nil)
-	_, err = exec.Command("git", "--git-dir", s.tmpRepoRoot + "/arvados.git", "fetch", "../../.git", "master:master").Output()
+	_, err = exec.Command("git", "--git-dir", s.tmpRepoRoot+"/arvados.git", "fetch", "../../.git", "master:master").Output()
 	c.Assert(err, check.Equals, nil)
 }
 
