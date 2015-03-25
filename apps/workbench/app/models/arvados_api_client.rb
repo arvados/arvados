@@ -130,6 +130,9 @@ class ArvadosApiClient
     end
 
     header = {"Accept" => "application/json"}
+    if Rails.configuration.include_accept_encoding_header_in_api_requests
+      header["Accept-Encoding"] = "gzip, deflate"
+    end
 
     profile_checkpoint { "Prepare request #{url} #{query[:uuid]} #{query[:where]} #{query[:filters]} #{query[:order]}" }
     msg = @client_mtx.synchronize do
