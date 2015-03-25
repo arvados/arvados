@@ -43,7 +43,7 @@ function unselect_all_files() {
         </div>
       </div>
       <div class="pull-right">
-        <input class="form-control filterable-control" data-filterable-target="ul#collection_files" id="file_regex" name="file_regex" placeholder="filename regex" type="text"/>
+        <input class="form-control filterable-control" data-filterable-target="ul#collection_files" id="file_regex" name="file_regex" placeholder="filename regex" type="text" autocomplete="off"/>
       </div>
     </div>
     <p/>
@@ -90,6 +90,8 @@ function unselect_all_files() {
                   :href => url_for(controller: 'collections', action: 'show_file',
                                    uuid: @object.portable_data_hash, file: file_path),
                   :title => "Include #{file_path} in your selections",
+                  :id => index,
+                  :autocomplete => "off",
                 } %>
             <span>&nbsp;</span>
             <% end %>
