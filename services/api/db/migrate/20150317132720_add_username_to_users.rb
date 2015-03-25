@@ -107,17 +107,14 @@ class AddUsernameToUsers < ActiveRecord::Migration
     recreate_search_index(SEARCH_INDEX_COLUMNS + ["username"])
 
     [Link, Log, User].each { |m| m.reset_column_information }
+    User.validates(:username, uniqueness: true, allow_nil: true)
     User.where(is_active: true).order(created_at: :asc).find_each do |user|
       start_log = Log.log_for(user)
       each_wanted_username(user) do |username|
         user.username = username
-        begin
-          user.save!
-          break
-        rescue ActiveRecord::RecordNotUnique
-          # We'll try the next username.
-        end
+        break if user.valid?
       end
+      user.save!
       Log.log_update(user, start_log)
     end
   end
