@@ -283,8 +283,13 @@ func main() {
 		Client:        &http.Client{},
 	}
 
+	// Initialize the pullq and worker
 	pullq = NewWorkQueue()
 	go RunPullWorker(pullq, keepClient)
+
+	// Initialize the trashq and worker
+	trashq = NewWorkQueue()
+	go RunTrashWorker(trashq)
 
 	// Shut down the server gracefully (by closing the listener)
 	// if SIGTERM is received.
