@@ -57,7 +57,7 @@ func (s *IntegrationSuite) TestNonexistent(c *check.C) {
 	// Spectator token
 	os.Setenv("ARVADOS_API_TOKEN", "zw2f4gwx8hw8cjre7yp6v1zylhrhn3m5gvjq73rtpwhmknrybu")
 	err := s.runGit(c, "fetch", "thisrepodoesnotexist.git")
-	c.Assert(err, check.ErrorMatches, `.* not found:.*`)
+	c.Assert(err, check.ErrorMatches, `.* not found.*`)
 }
 
 func (s *IntegrationSuite) TestNoPermission(c *check.C) {
@@ -65,7 +65,7 @@ func (s *IntegrationSuite) TestNoPermission(c *check.C) {
 	os.Setenv("ARVADOS_API_TOKEN", "4kg6k6lzmp9kj4cpkcoxie964cmvjahbt4fod9zru44k4jqdmi")
 	for _, repo := range []string{"foo.git", "foo/.git"} {
 		err := s.runGit(c, "fetch", repo)
-		c.Assert(err, check.ErrorMatches, `.* not found:.*`)
+		c.Assert(err, check.ErrorMatches, `.* not found.*`)
 	}
 }
 
