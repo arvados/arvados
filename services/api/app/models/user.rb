@@ -8,19 +8,33 @@ class User < ArvadosModel
 
   serialize :prefs, Hash
   has_many :api_client_authorizations
+  validates(:username,
+            format: {
+              with: /^[A-Za-z][A-Za-z0-9]*$/,
+              message: "must begin with a letter and contain only alphanumerics",
+            },
+            uniqueness: true,
+            allow_nil: true)
   before_update :prevent_privilege_escalation
   before_update :prevent_inactive_admin
   before_create :check_auto_admin
+  before_create :set_initial_username, :if => Proc.new { |user|
+    user.username.nil? and user.email
+  }
   after_create :add_system_group_permission_link
-  after_create :auto_setup_new_user
+  after_create :auto_setup_new_user, :if => Proc.new { |user|
+    Rails.configuration.auto_setup_new_users and
+    (user.uuid != system_user_uuid) and
+    (user.uuid != anonymous_user_uuid)
+  }
   after_create :send_admin_notifications
   after_update :send_profile_created_notification
-
 
   has_many :authorized_keys, :foreign_key => :authorized_user_uuid, :primary_key => :uuid
 
   api_accessible :user, extend: :common do |t|
     t.add :email
+    t.add :username
     t.add :full_name
     t.add :first_name
     t.add :last_name
@@ -222,9 +236,13 @@ class User < ArvadosModel
   end
 
   def permission_to_update
-    # users must be able to update themselves (even if they are
-    # inactive) in order to create sessions
-    self == current_user or super
+    if username_changed?
+      current_user.andand.is_admin
+    else
+      # users must be able to update themselves (even if they are
+      # inactive) in order to create sessions
+      self == current_user or super
+    end
   end
 
   def permission_to_create
@@ -237,10 +255,59 @@ class User < ArvadosModel
     return if self.uuid.end_with?('anonymouspublic')
     if (User.where("email = ?",self.email).where(:is_admin => true).count == 0 and
         Rails.configuration.auto_admin_user and self.email == Rails.configuration.auto_admin_user) or
-       (User.where("uuid not like '%-000000000000000'").where(:is_admin => true).count == 0 and 
+       (User.where("uuid not like '%-000000000000000'").where(:is_admin => true).count == 0 and
         Rails.configuration.auto_admin_first_user)
       self.is_admin = true
       self.is_active = true
+    end
+  end
+
+  def find_usable_username_from(basename)
+    # If "basename" is a usable username, return that.
+    # Otherwise, find a unique username "basenameN", where N is the
+    # smallest integer greater than 1, and return that.
+    # Return nil if a unique username can't be found after reasonable
+    # searching.
+    quoted_name = self.class.connection.quote_string(basename)
+    next_username = basename
+    next_suffix = 1
+    while Rails.configuration.auto_setup_name_blacklist.include?(next_username)
+      next_suffix += 1
+      next_username = "%s%i" % [basename, next_suffix]
+    end
+    0.upto(6).each do |suffix_len|
+      pattern = "%s%s" % [quoted_name, "_" * suffix_len]
+      self.class.
+          where("username like '#{pattern}'").
+          select(:username).
+          order(username: :asc).
+          find_each do |other_user|
+        if other_user.username > next_username
+          break
+        elsif other_user.username == next_username
+          next_suffix += 1
+          next_username = "%s%i" % [basename, next_suffix]
+        end
+      end
+      return next_username if (next_username.size <= pattern.size)
+    end
+    nil
+  end
+
+  def set_initial_username
+    email_parts = email.partition("@")
+    local_parts = email_parts.first.partition("+")
+    if email_parts.any?(&:empty?)
+      return
+    elsif not local_parts.first.empty?
+      base_username = local_parts.first
+    else
+      base_username = email_parts.first
+    end
+    base_username.sub!(/^[^A-Za-z]+/, "")
+    base_username.gsub!(/[^A-Za-z0-9]/, "")
+    unless base_username.empty?
+      self.username = find_usable_username_from(base_username)
     end
   end
 
@@ -321,80 +388,45 @@ class User < ArvadosModel
       return
     end
 
-    # Check for an existing repository with the same name we're about to use.
-    repo = Repository.where(name: repo_name).first
-
-    if repo
-      logger.warn "Repository exists for #{repo_name}: #{repo[:uuid]}."
-
-      # Look for existing repository access for this repo
-      repo_perms = Link.where(tail_uuid: self.uuid,
-                              head_uuid: repo[:uuid],
-                              link_class: 'permission',
-                              name: 'can_manage')
-      if repo_perms.any?
-        logger.warn "User already has repository access " +
-            repo_perms.collect { |p| p[:uuid] }.inspect
-        return repo_perms.first
-      end
-    end
-
-    # create repo, if does not already exist
-    repo ||= Repository.create(name: repo_name)
+    repo = Repository.where(name: repo_name).first_or_create!
     logger.info { "repo uuid: " + repo[:uuid] }
-
-    repo_perm = Link.create(tail_uuid: self.uuid,
-                            head_uuid: repo[:uuid],
-                            link_class: 'permission',
-                            name: 'can_manage')
+    repo_perm = Link.where(tail_uuid: uuid, head_uuid: repo.uuid,
+                           link_class: "permission",
+                           name: "can_manage").first_or_create!
     logger.info { "repo permission: " + repo_perm[:uuid] }
     return repo_perm
   end
 
   # create login permission for the given vm_uuid, if it does not already exist
   def create_vm_login_permission_link(vm_uuid, repo_name)
-    begin
+    # vm uuid is optional
+    if vm_uuid
+      vm = VirtualMachine.where(uuid: vm_uuid).first
 
-      # vm uuid is optional
-      if vm_uuid
-        vm = VirtualMachine.where(uuid: vm_uuid).first
-
-        if not vm
-          logger.warn "Could not find virtual machine for #{vm_uuid.inspect}"
-          raise "No vm found for #{vm_uuid}"
-        end
-      else
-        return
+      if not vm
+        logger.warn "Could not find virtual machine for #{vm_uuid.inspect}"
+        raise "No vm found for #{vm_uuid}"
       end
-
-      logger.info { "vm uuid: " + vm[:uuid] }
-
-      login_perms = Link.where(tail_uuid: self.uuid,
-                              head_uuid: vm[:uuid],
-                              link_class: 'permission',
-                              name: 'can_login')
-
-      perm_exists = false
-      login_perms.each do |perm|
-        if perm.properties['username'] == repo_name
-          perm_exists = perm
-          break
-        end
-      end
-
-      if perm_exists
-        login_perm = perm_exists
-      else
-        login_perm = Link.create(tail_uuid: self.uuid,
-                                 head_uuid: vm[:uuid],
-                                 link_class: 'permission',
-                                 name: 'can_login',
-                                 properties: {'username' => repo_name})
-        logger.info { "login permission: " + login_perm[:uuid] }
-      end
-
-      return login_perm
+    else
+      return
     end
+
+    logger.info { "vm uuid: " + vm[:uuid] }
+    login_attrs = {
+      tail_uuid: uuid, head_uuid: vm.uuid,
+      link_class: "permission", name: "can_login",
+    }
+
+    login_perm = Link.
+      where(login_attrs).
+      select { |link| link.properties["username"] == repo_name }.
+      first
+
+    login_perm ||= Link.
+      create(login_attrs.merge(properties: {"username" => repo_name}))
+
+    logger.info { "login permission: " + login_perm[:uuid] }
+    login_perm
   end
 
   # add the user to the 'All users' group
@@ -431,44 +463,16 @@ class User < ArvadosModel
 
   # Automatically setup new user during creation
   def auto_setup_new_user
-    return true if !Rails.configuration.auto_setup_new_users
-    return true if !self.email
-    return true if self.uuid == system_user_uuid
-    return true if self.uuid == anonymous_user_uuid
-
-    if Rails.configuration.auto_setup_new_users_with_vm_uuid ||
-       Rails.configuration.auto_setup_new_users_with_repository
-      username = self.email.partition('@')[0] if self.email
-      return true if !username
-
-      blacklisted_usernames = Rails.configuration.auto_setup_name_blacklist
-      if blacklisted_usernames.include?(username)
-        return true
-      elsif !(/^[a-zA-Z][-._a-zA-Z0-9]{0,30}[a-zA-Z0-9]$/.match(username))
-        return true
-      else
-        return true if !(username = derive_unique_username username)
+    setup_repo_vm_links(nil, nil, Rails.configuration.default_openid_prefix)
+    if username
+      create_vm_login_permission_link(Rails.configuration.auto_setup_new_users_with_vm_uuid,
+                                      username)
+      if Rails.configuration.auto_setup_new_users_with_repository and
+          Repository.where(name: username).first.nil?
+        repo = Repository.create!(name: username)
+        Link.create!(tail_uuid: uuid, head_uuid: repo.uuid,
+                     link_class: "permission", name: "can_manage")
       end
-    end
-
-    # setup user
-    setup_repo_vm_links(username,
-                        Rails.configuration.auto_setup_new_users_with_vm_uuid,
-                        Rails.configuration.default_openid_prefix)
-  end
-
-  # Find a username that starts with the given string and does not collide
-  # with any existing repository name or VM login name
-  def derive_unique_username username
-    while true
-      if Repository.where(name: username).empty?
-        login_collisions = Link.where(link_class: 'permission',
-                                      name: 'can_login').select do |perm|
-          perm.properties['username'] == username
-        end
-        return username if login_collisions.empty?
-      end
-      username = username + SecureRandom.random_number(10).to_s
     end
   end
 
