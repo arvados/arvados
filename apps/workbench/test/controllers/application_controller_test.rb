@@ -362,4 +362,18 @@ class ApplicationControllerTest < ActionController::TestCase
       end
     end
   end
+
+  [
+    true,
+    false,
+  ].each do |config|
+    test "invoke show with include_accept_encoding_header config #{config}" do
+      Rails.configuration.include_accept_encoding_header_in_api_requests = config
+
+      @controller = CollectionsController.new
+      get(:show, {id: api_fixture('collections')['foo_file']['uuid']}, session_for(:admin))
+
+      assert_equal([['.', 'foo', 3]], assigns(:object).files)
+    end
+  end
 end
