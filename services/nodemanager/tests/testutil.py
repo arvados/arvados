@@ -39,8 +39,8 @@ def cloud_object_mock(name_id):
     # only search for and pass around, like locations, subnets, etc.
     cloud_object = mock.NonCallableMagicMock(['id', 'name'],
                                              name='cloud_object')
-    cloud_object.id = str(name_id)
-    cloud_object.name = cloud_object.id.upper()
+    cloud_object.name = str(name_id)
+    cloud_object.id = 'id_' + cloud_object.name
     return cloud_object
 
 def cloud_node_mock(node_num=99, **extra):

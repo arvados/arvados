@@ -24,7 +24,7 @@ class GCEComputeNodeDriverTestCase(testutil.DriverTestMixin, unittest.TestCase):
         image_mocks = [testutil.cloud_object_mock(c) for c in 'abc']
         list_method = self.driver_mock().list_images
         list_method.return_value = image_mocks
-        driver = self.new_driver(create_kwargs={'image': 'B'})
+        driver = self.new_driver(create_kwargs={'image': 'b'})
         self.assertEqual(1, list_method.call_count)
 
     def test_create_includes_ping_secret(self):
@@ -82,7 +82,7 @@ class GCEComputeNodeDriverTestCase(testutil.DriverTestMixin, unittest.TestCase):
         driver = self.new_driver()
         driver.sync_node(cloud_node, arv_node)
         args, kwargs = self.driver_mock().connection.async_request.call_args
-        self.assertEqual('/zones/TESTZONE/instances/2/setMetadata', args[0])
+        self.assertEqual('/zones/testzone/instances/2/setMetadata', args[0])
         for key in ['kind', 'fingerprint']:
             self.assertEqual(start_metadata[key], kwargs['data'][key])
         plain_metadata['hostname'] = 'compute1.zzzzz.arvadosapi.com'
