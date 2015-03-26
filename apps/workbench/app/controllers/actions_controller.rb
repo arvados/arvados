@@ -1,6 +1,6 @@
 class ActionsController < ApplicationController
 
-  skip_filter :require_thread_api_token, only: [:report_issue_popup, :report_issue]
+  skip_filter :require_thread_api_token, only: [:report_issue_popup, :report_issue, :getting_started_popup]
   skip_filter :check_user_agreements, only: [:report_issue_popup, :report_issue]
 
   @@exposed_actions = {}
@@ -250,6 +250,12 @@ class ActionsController < ApplicationController
     respond_to do |format|
       IssueReporter.send_report(current_user, params).deliver
       format.js {render nothing: true}
+    end
+  end
+
+  def getting_started_popup
+    respond_to do |format|
+      format.js
     end
   end
 

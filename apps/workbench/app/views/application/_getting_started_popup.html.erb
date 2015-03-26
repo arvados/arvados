@@ -1,0 +1,26 @@
+<%
+  update_getting_started_shown_user_pref() if current_user
+%>
+
+<div class="modal">
+  <div class="modal-dialog modal-with-loading-spinner">
+    <div class="modal-content">
+      <div class="modal-header">
+        <button type="button" class="close" data-dismiss="modal" aria-hidden="true">&times;</button>
+        <div>
+          <div class="col-sm-8"> <h4 class="modal-title"> Getting Started with Arvados </h4> </div>
+          <div class="spinner spinner-32px spinner-h-center col-sm-1" hidden="true"></div>
+        </div>
+        <br/>
+      </div>
+
+      <div class="modal-body" style="height: 25em; overflow-y: scroll">
+        Wait for it
+      </div>
+
+      <div class="modal-footer">
+          <button class="btn btn-default" data-dismiss="modal" aria-hidden="true">Close</button>
+      </div>
+    </div>
+  </div>
+</div>

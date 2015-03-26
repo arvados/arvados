@@ -131,6 +131,7 @@ common:
   arvados_insecure_https: true
   activation_contact_link: mailto:info@arvados.org
   arvados_docsite: http://doc.arvados.org
+  arvados_wikisite: http://arvados.org
   arvados_theme: default
   show_user_agreement_inline: false
   secret_token: ~
