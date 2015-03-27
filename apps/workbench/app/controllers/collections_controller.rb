@@ -224,6 +224,7 @@ class CollectionsController < ApplicationController
           .where(head_uuid: @object.uuid, link_class: 'permission',
                  name: 'can_read').results
         @logs = Log.limit(RELATION_LIMIT).order("created_at DESC")
+          .select(%w(uuid event_type object_uuid event_at summary))
           .where(object_uuid: @object.uuid).results
         @is_persistent = Link.limit(1)
           .where(head_uuid: @object.uuid, tail_uuid: current_user.uuid,

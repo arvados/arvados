@@ -255,6 +255,14 @@ func (v *UnixVolume) Index(prefix string) (output string) {
 }
 
 func (v *UnixVolume) Delete(loc string) error {
+	// Touch() must be called before calling Write() on a block.  Touch()
+	// also uses lockfile().  This avoids a race condition between Write()
+	// and Delete() because either (a) the file will be deleted and Touch()
+	// will signal to the caller that the file is not present (and needs to
+	// be re-written), or (b) Touch() will update the file's timestamp and
+	// Delete() will read the correct up-to-date timestamp and choose not to
+	// delete the file.
+
 	p := v.blockPath(loc)
 	f, err := os.OpenFile(p, os.O_RDWR|os.O_APPEND, 0644)
 	if err != nil {
