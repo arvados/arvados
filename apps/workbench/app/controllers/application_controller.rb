@@ -700,15 +700,6 @@ class ApplicationController < ActionController::Base
     missing_required
   end
 
-  helper_method :update_getting_started_shown_user_pref
-  def update_getting_started_shown_user_pref
-    prefs = current_user.prefs
-    if !prefs[:getting_started_shown]
-      prefs[:getting_started_shown] = Time.now
-      current_user.update_attributes prefs: prefs.to_json
-    end
-  end
-
   def select_theme
     return Rails.configuration.arvados_theme
   end
