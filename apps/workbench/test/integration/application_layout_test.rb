@@ -69,6 +69,8 @@ class ApplicationLayoutTest < ActionDispatch::IntegrationTest
     within('.navbar-fixed-top') do
       page.find("#arv-help").click
       within('.dropdown-menu') do
+        assert_selector 'a', text:'Getting Started ...'
+        assert_selector 'a', text:'Public Pipelines and Datasets'
         assert page.has_link?('Tutorials and User guide'), 'No link - Tutorials and User guide'
         assert page.has_link?('API Reference'), 'No link - API Reference'
         assert page.has_link?('SDK Reference'), 'No link - SDK Reference'
@@ -138,5 +140,25 @@ class ApplicationLayoutTest < ActionDispatch::IntegrationTest
 
       verify_system_menu user
     end
+  end
+
+  test "test getting started help menu item" do
+    visit page_with_token('active')
+    within '.navbar-fixed-top' do
+      find('.help-menu > a').click
+      find('.help-menu .dropdown-menu a', text: 'Getting Started ...').click
+    end
+
+    within '.modal-content' do
+      assert_text 'Getting Started'
+      assert_selector 'button:not([disabled])', text: 'Next'
+      assert_no_selector 'button:not([disabled])', text: 'Prev'
+      click_button 'Next'
+      assert_selector 'button:not([disabled])', text: 'Prev'  # Prev button is now enabled
+      click_button 'Prev'
+      assert_no_selector 'button:not([disabled])', text: 'Prev'  # Prev button is again disabled
+      first('button', text: 'x').click
+    end
+    assert_text 'Active pipelines' # seeing dashboard now
   end
 end
