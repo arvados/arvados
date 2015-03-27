@@ -212,7 +212,9 @@
 <div id="getting-started-modal-window"></div>
 
 <%  if current_user and !current_user.prefs[:getting_started_shown] and
-       !request.url.include?("/user_agreements") and !request.url.include?("/profile") %>
+       !request.url.include?("/profile") and
+       !request.url.include?("/user_agreements") and
+       !request.url.include?("/inactive")%>
   <script>
     $("#getting-started-modal-window").html("<%= escape_javascript(render partial: 'getting_started_popup') %>");
     $("#getting-started-modal-window .modal").modal('show');

@@ -219,13 +219,25 @@ active_no_prefs:
   is_admin: false
   prefs: {}
 
-active_no_prefs_profile:
+active_no_prefs_profile_no_getting_started_shown:
   owner_uuid: zzzzz-tpzed-000000000000000
   uuid: zzzzz-tpzed-a46c98d1td4aoj4
   email: active_no_prefs_profile@arvados.local
   first_name: HasPrefs
   last_name: NoProfile
   identity_url: https://active_no_prefs_profile.openid.local
+  is_active: true
+  is_admin: false
+  prefs:
+    test: abc
+
+active_no_prefs_profile_with_getting_started_shown:
+  owner_uuid: zzzzz-tpzed-000000000000000
+  uuid: zzzzz-tpzed-getstartnoprofl
+  email: active_no_prefs_profile@arvados.local
+  first_name: HasPrefs
+  last_name: NoProfileWithGettingStartedShown
+  identity_url: https://active_no_prefs_profile_seen_gs.openid.local
   is_active: true
   is_admin: false
   prefs:

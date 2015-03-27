@@ -10,7 +10,7 @@ class UserProfileTest < ActionDispatch::IntegrationTest
     Rails.configuration.user_profile_form_fields = @user_profile_form_fields
   end
 
-  def verify_homepage_with_profile user, invited, has_profile
+  def verify_homepage_with_profile user, invited, has_profile, getting_started_shown=false
     profile_config = Rails.configuration.user_profile_form_fields
 
     if !user
@@ -18,17 +18,28 @@ class UserProfileTest < ActionDispatch::IntegrationTest
     elsif user['is_active']
       if profile_config && !has_profile
         assert page.has_text?('Save profile'), 'No text - Save profile'
-        add_profile user
+        add_profile user, invited, has_profile, getting_started_shown
       else
         assert page.has_text?('Active pipelines'), 'Not found text - Active pipelines'
         assert page.has_no_text?('Save profile'), 'Found text - Save profile'
       end
     elsif invited
-      assert page.has_text?('Please check the box below to indicate that you have read and accepted the user agreement'), 'Not found text - Please check the box below . . .'
+      assert page.has_text?('Please check the box below to indicate that you have read and accepted the user agreement'),
+        'Not found text - Please check the box below . . .'
       assert page.has_no_text?('Save profile'), 'Found text - Save profile'
     else
       assert page.has_text?('Your account is inactive'), 'Not found text - Your account is inactive'
       assert page.has_no_text?('Save profile'), 'Found text - Save profile'
+    end
+
+    # If the user has not already seen getting_started modal, it will be shown on first visit.
+    if user and user['is_active'] and !user['prefs']['getting_started_shown']
+      within '.modal-content' do
+        assert_text 'Getting Started'
+        assert_selector 'button', text: 'Next'
+        assert_selector 'button', text: 'Prev'
+        first('button', text: 'x').click
+      end
     end
 
     within('.navbar-fixed-top') do
@@ -58,7 +69,7 @@ class UserProfileTest < ActionDispatch::IntegrationTest
   end
 
   # Check manage profile page and add missing profile to the user
-  def add_profile user
+  def add_profile user, invited, has_profile, getting_started_shown
     assert page.has_no_text?('My projects'), 'Found text - My projects'
     assert page.has_no_text?('Projects shared with me'), 'Found text - Projects shared with me'
 
@@ -98,7 +109,11 @@ class UserProfileTest < ActionDispatch::IntegrationTest
     click_button "Save profile"
     # profile saved and in profile page now with success
     assert page.has_text?('Thank you for filling in your profile'), 'No text - Thank you for filling'
-    click_link 'Back to work!'
+    if getting_started_shown
+      click_link 'Back to work!'
+    else
+      click_link 'Get started'
+    end
 
     # profile saved and in home page now
     assert page.has_text?('Active pipelines'), 'No text - Active pipelines'
@@ -112,6 +127,8 @@ class UserProfileTest < ActionDispatch::IntegrationTest
     ['admin', api_fixture('users')['admin'], true, true],
     ['active_no_prefs', api_fixture('users')['active_no_prefs'], true, false],
     ['active_no_prefs_profile', api_fixture('users')['active_no_prefs_profile'], true, false],
+    ['active_no_prefs_profile_with_getting_started_shown',
+      api_fixture('users')['active_no_prefs_profile_with_getting_started_shown'], true, false, true],
   ].each do |token, user, invited, has_profile|
 
     test "visit home page when profile is configured for user #{token}" do
