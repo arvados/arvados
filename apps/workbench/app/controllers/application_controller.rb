@@ -705,7 +705,7 @@ class ApplicationController < ActionController::Base
     prefs = current_user.prefs
     if !prefs[:getting_started_shown]
       prefs[:getting_started_shown] = Time.now
-      current_user.update_attributes prefs: prefs
+      current_user.update_attributes prefs: prefs.to_json
     end
   end
 

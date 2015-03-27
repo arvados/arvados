@@ -196,11 +196,7 @@
       </nav>
     <% end %>
 
-    <%= render partial: 'browser_unsupported' %> <%# requires JS support below %>
-
-    <% if current_user and !current_user.prefs[:getting_started_shown] %> <%# requires JS support below %>
-      <div id="getting-started-modal-window"></div>
-    <% end %>
+    <%= render partial: 'browser_unsupported' %><%# requires JS support below %>
 
     <div id="page-wrapper">
       <%= yield %>
@@ -214,7 +210,9 @@
 <script src="/browser_unsupported.js"></script>
 
 <div id="getting-started-modal-window"></div>
-<% if current_user and !current_user.prefs[:getting_started_shown] %>
+
+<%  if current_user and !current_user.prefs[:getting_started_shown] and
+       !request.url.include?("/user_agreements") and !request.url.include?("/profile") %>
   <script>
     $("#getting-started-modal-window").html("<%= escape_javascript(render partial: 'getting_started_popup') %>");
     $("#getting-started-modal-window .modal").modal('show');
