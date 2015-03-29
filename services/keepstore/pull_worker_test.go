@@ -244,7 +244,7 @@ func performTest(testData PullWorkerTestData, c *C) {
 	testPullLists[testData.name] = testData.response_body
 
 	// Override GetContent to mock keepclient Get functionality
-	GetContent = func(signedLocator string, keepClient keepclient.KeepClient) (
+	GetContent = func(signedLocator string, keepClient *keepclient.KeepClient) (
 		reader io.ReadCloser, contentLength int64, url string, err error) {
 
 		processedPullLists[testData.name] = testData.response_body

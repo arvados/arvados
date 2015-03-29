@@ -276,7 +276,7 @@ func main() {
 	}
 
 	// Initialize Pull queue and worker
-	keepClient := keepclient.KeepClient{
+	keepClient := &keepclient.KeepClient{
 		Arvados:       nil,
 		Want_replicas: 1,
 		Using_proxy:   true,

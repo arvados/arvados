@@ -10,7 +10,7 @@ import (
 	"testing"
 )
 
-var keepClient keepclient.KeepClient
+var keepClient *keepclient.KeepClient
 
 type PullWorkIntegrationTestData struct {
 	Name     string
@@ -33,7 +33,7 @@ func SetupPullWorkerIntegrationTest(t *testing.T, testData PullWorkIntegrationTe
 	}
 
 	// keep client
-	keepClient = keepclient.KeepClient{
+	keepClient = &keepclient.KeepClient{
 		Arvados:       &arv,
 		Want_replicas: 1,
 		Using_proxy:   true,
@@ -42,17 +42,15 @@ func SetupPullWorkerIntegrationTest(t *testing.T, testData PullWorkIntegrationTe
 
 	// discover keep services
 	var servers []string
-	service_roots, err := keepClient.DiscoverKeepServers()
-	if err != nil {
+	if err := keepClient.DiscoverKeepServers(); err != nil {
 		t.Error("Error discovering keep services")
 	}
-	for _, host := range service_roots {
+	for _, host := range keepClient.LocalRoots() {
 		servers = append(servers, host)
 	}
 
 	// Put content if the test needs it
 	if wantData {
-		keepClient.SetServiceRoots(service_roots)
 		locator, _, err := keepClient.PutB([]byte(testData.Content))
 		if err != nil {
 			t.Errorf("Error putting test data in setup for %s %s %v", testData.Content, locator, err)

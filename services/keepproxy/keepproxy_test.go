@@ -117,10 +117,10 @@ func runProxy(c *C, args []string, port int, bogusClientToken bool) keepclient.K
 	}
 	kc.SetServiceRoots(map[string]string{
 		"proxy": fmt.Sprintf("http://localhost:%v", port),
-	})
+	}, nil)
 	c.Check(kc.Using_proxy, Equals, true)
-	c.Check(len(kc.ServiceRoots()), Equals, 1)
-	for _, root := range kc.ServiceRoots() {
+	c.Check(len(kc.LocalRoots()), Equals, 1)
+	for _, root := range kc.LocalRoots() {
 		c.Check(root, Equals, fmt.Sprintf("http://localhost:%v", port))
 	}
 	log.Print("keepclient created")
@@ -154,8 +154,8 @@ func (s *ServerRequiredSuite) TestPutAskGet(c *C) {
 	c.Assert(err, Equals, nil)
 	c.Check(kc.Arvados.External, Equals, true)
 	c.Check(kc.Using_proxy, Equals, true)
-	c.Check(len(kc.ServiceRoots()), Equals, 1)
-	for _, root := range kc.ServiceRoots() {
+	c.Check(len(kc.LocalRoots()), Equals, 1)
+	for _, root := range kc.LocalRoots() {
 		c.Check(root, Equals, "http://localhost:29950")
 	}
 	os.Setenv("ARVADOS_EXTERNAL_CLIENT", "")

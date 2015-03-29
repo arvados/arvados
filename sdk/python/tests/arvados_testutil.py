@@ -104,7 +104,8 @@ class ApiClientMock(object):
                            service_type='disk',
                            service_host=None,
                            service_port=None,
-                           service_ssl_flag=False):
+                           service_ssl_flag=False,
+                           additional_services=[]):
         if api_mock is None:
             api_mock = self.api_client_mock()
         body = {
@@ -116,7 +117,7 @@ class ApiClientMock(object):
                 'service_port': service_port or 65535-i,
                 'service_ssl_flag': service_ssl_flag,
                 'service_type': service_type,
-            } for i in range(0, count)]
+            } for i in range(0, count)] + additional_services
         }
         self._mock_api_call(api_mock.keep_services().accessible, status, body)
         return api_mock

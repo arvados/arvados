@@ -19,7 +19,7 @@ import (
 			Skip the rest of the servers if no errors
 		Repeat
 */
-func RunPullWorker(pullq *WorkQueue, keepClient keepclient.KeepClient) {
+func RunPullWorker(pullq *WorkQueue, keepClient *keepclient.KeepClient) {
 	nextItem := pullq.NextItem
 	for item := range nextItem {
 		pullRequest := item.(PullRequest)
@@ -39,14 +39,14 @@ func RunPullWorker(pullq *WorkQueue, keepClient keepclient.KeepClient) {
 		Using this token & signature, retrieve the given block.
 		Write to storage
 */
-func PullItemAndProcess(pullRequest PullRequest, token string, keepClient keepclient.KeepClient) (err error) {
+func PullItemAndProcess(pullRequest PullRequest, token string, keepClient *keepclient.KeepClient) (err error) {
 	keepClient.Arvados.ApiToken = token
 
 	service_roots := make(map[string]string)
 	for _, addr := range pullRequest.Servers {
 		service_roots[addr] = addr
 	}
-	keepClient.SetServiceRoots(service_roots)
+	keepClient.SetServiceRoots(service_roots, nil)
 
 	// Generate signature with a random token
 	expires_at := time.Now().Add(60 * time.Second)
@@ -75,7 +75,7 @@ func PullItemAndProcess(pullRequest PullRequest, token string, keepClient keepcl
 }
 
 // Fetch the content for the given locator using keepclient.
-var GetContent = func(signedLocator string, keepClient keepclient.KeepClient) (
+var GetContent = func(signedLocator string, keepClient *keepclient.KeepClient) (
 	reader io.ReadCloser, contentLength int64, url string, err error) {
 	reader, blocklen, url, err := keepClient.Get(signedLocator)
 	return reader, blocklen, url, err
