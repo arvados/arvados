@@ -4,6 +4,9 @@
 // one with class="pager-prev".
 //
 // 2. Put multiple .modal-body sections in your modal.
+//
+// 3. Add a "pager-count" div where page count is shown.
+// For ex: "1 of 10" when showing first page of 10 pages.
 
 $(document).on('click', '.modal .pager-next', function() {
     var $modal = $(this).parents('.modal');
@@ -26,6 +29,10 @@ $(document).on('click', '.modal .pager-next', function() {
     } else if (page < 0) {
         page = 0;
     }
+
+    var $pager_count = $('.pager-count', $modal);
+    $pager_count.text((page+1) + " of " + $panes.length);
+
     var selected = $panes.hide().eq(page).show();
     enableButton($('.pager-prev', $modal), page > 0);
     enableButton($('.pager-next', $modal), page < $panes.length - 1);
