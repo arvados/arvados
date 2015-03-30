@@ -123,7 +123,9 @@
                        <i class="fa fa-fw fa-info"></i> Getting Started ...
                       <% end %>
               </li>
-              <li><%= link_to raw('<i class="fa fa-book fa-fw"></i> Public Pipelines and Datasets'), "#{Rails.configuration.arvados_wikisite}/projects/arvados/wiki/Public_Pipelines_and_Datasets", target: "_blank" %></li>
+              <% if Rails.configuration.arvados_public_data_doc_url %>
+                <li><%= link_to raw('<i class="fa fa-book fa-fw"></i> Public Pipelines and Datasets'), "#{Rails.configuration.arvados_public_data_doc_url}", target: "_blank" %></li>
+              <% end %>
               <li><%= link_to raw('<i class="fa fa-book fa-fw"></i> Tutorials and User guide'), "#{Rails.configuration.arvados_docsite}/user", target: "_blank" %></li>
               <li><%= link_to raw('<i class="fa fa-book fa-fw"></i> API Reference'), "#{Rails.configuration.arvados_docsite}/api", target: "_blank" %></li>
               <li><%= link_to raw('<i class="fa fa-book fa-fw"></i> SDK Reference'), "#{Rails.configuration.arvados_docsite}/sdk", target: "_blank" %></li>

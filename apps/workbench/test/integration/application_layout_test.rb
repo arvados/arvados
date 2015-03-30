@@ -164,4 +164,22 @@ class ApplicationLayoutTest < ActionDispatch::IntegrationTest
     end
     assert_text 'Active pipelines' # seeing dashboard now
   end
+
+  test "test arvados_public_data_doc_url config unset" do
+    Rails.configuration.arvados_public_data_doc_url = false
+
+    visit page_with_token('active')
+    within '.navbar-fixed-top' do
+      find('.help-menu > a').click
+
+      assert_no_selector 'a', text:'Public Pipelines and Datasets'
+
+      assert_selector 'a', text:'Getting Started ...'
+      assert page.has_link?('Tutorials and User guide'), 'No link - Tutorials and User guide'
+      assert page.has_link?('API Reference'), 'No link - API Reference'
+      assert page.has_link?('SDK Reference'), 'No link - SDK Reference'
+      assert page.has_link?('Show version / debugging info ...'), 'No link - Show version / debugging info'
+      assert page.has_link?('Report a problem ...'), 'No link - Report a problem'
+    end
+  end
 end
