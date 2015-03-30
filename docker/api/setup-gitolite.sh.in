@@ -13,10 +13,7 @@ su - git -c "mkdir -p ~/bin"
 su - git -c "git clone git://github.com/sitaramc/gitolite"
 su - git -c "gitolite/install -ln ~/bin"
 su - git -c "PATH=/home/git/bin:$PATH gitolite setup -pk ~git/root-authorized_keys.pub"
-
-# Make sure the repositories are created in such a way that they are readable
-# by the api server
-sed -i 's/0077/0022/g' /home/git/.gitolite.rc
+install -o git -g git -m 600 /usr/local/arvados/config/.gitolite.rc /home/git/
 
 # And make sure that the existing repos are equally readable, or the API server commit model will freak out...
 chmod 755 /home/git/repositories
