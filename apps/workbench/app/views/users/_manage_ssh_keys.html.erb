@@ -1,4 +1,18 @@
-<div>
+<div class="panel panel-default">
+  <div class="panel-heading">
+    <div class="pull-right">
+      <%= link_to raw('<i class="fa fa-plus"></i>' " Add new SSH key"), add_ssh_key_popup_url,
+                   {class: 'btn btn-xs btn-primary', :remote => true, 'data-toggle' =>  "modal",
+                    'data-target' => '#add-ssh-key-modal-window'}  %>
+    </div>
+    <h4 class="panel-title">
+      <a data-parent="#arv-adv-accordion" href="#manage_ssh_keys">
+        SSH Keys
+      </a>
+    </h4>
+  </div>
+
+<div id="manage_ssh_keys" class="panel-body">
   <% if !@my_ssh_keys.any? %>
      <p> You have not yet set up an SSH public key for use with Arvados. </p>
      <p>  <%= link_to "Click here",
@@ -52,4 +66,5 @@
       </tbody>
     </table>
   <% end %>
+</div>
 </div>

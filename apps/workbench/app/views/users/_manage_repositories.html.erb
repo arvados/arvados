@@ -1,4 +1,13 @@
-<div>
+<div class="panel panel-default">
+  <div class="panel-heading">
+    <h4 class="panel-title">
+      <a data-parent="#arv-adv-accordion" href="#manage_repositories">
+        Repositories
+      </a>
+    </h4>
+  </div>
+
+<div id="manage_repositories" class="panel-body">
   <p>
     For more information see <%= link_to raw('Writing a pipeline'),
     "#{Rails.configuration.arvados_docsite}/user/tutorials/tutorial-firstscript.html", target: "_blank"%>.
@@ -44,4 +53,5 @@
       </tbody>
     </table>
   <% end %>
+</div>
 </div>
