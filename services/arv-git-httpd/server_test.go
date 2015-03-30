@@ -145,8 +145,11 @@ func (s *IntegrationSuite) runGit(c *check.C, gitCmd, repo string, args ...strin
 	go w.Close()
 	output, err := cmd.CombinedOutput()
 	c.Log("git ", gitargs, " => ", err)
-	if err != nil {
-		// Easier to match error strings without newlines.
+	if err != nil && len(output) > 0 {
+		// If messages appeared on stderr, they are more
+		// helpful than the err returned by CombinedOutput().
+		//
+		// Easier to match error strings without newlines:
 		err = errors.New(strings.Replace(string(output), "\n", " // ", -1))
 	}
 	return err

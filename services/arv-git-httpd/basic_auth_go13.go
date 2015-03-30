@@ -9,12 +9,12 @@ import (
 )
 
 func BasicAuth(r *http.Request) (username, password string, ok bool) {
-	toks := strings.SplitN(r.Header.Get("Authorization"), " ", 2)
-	if len(toks) != 2 || toks[0] != "Basic" {
+	tokens := strings.SplitN(r.Header.Get("Authorization"), " ", 2)
+	if len(tokens) != 2 || tokens[0] != "Basic" {
 		return "", "", false
 	}
 
-	decoded, err := base64.StdEncoding.DecodeString(toks[1])
+	decoded, err := base64.StdEncoding.DecodeString(tokens[1])
 	if err != nil {
 		return "", "", false
 	}
