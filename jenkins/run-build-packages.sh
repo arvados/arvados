@@ -413,6 +413,21 @@ go get "git.curoverse.com/arvados.git/services/datamanager"
 cd $WORKSPACE/debs
 build_and_scp_deb $GOPATH/bin/datamanager=/usr/bin/arvados-data-manager arvados-data-manager 'Curoverse, Inc.' 'dir' "$PKG_VERSION" "--url=https://arvados.org" "--license=GNU Affero General Public License, version 3.0" "--description=Datamanager ensures block replication levels, reports on disk usage and determines which blocks should be deleted when space is needed."
 
+# arv-git-httpd
+cd "$GOPATH/src/git.curoverse.com/arvados.git/services/arv-git-httpd"
+ARVGITHTTPD_VERSION=$(version_from_git)
+ARVGITHTTPD_TIMESTAMP=$(timestamp_from_git)
+
+if [[ "$GO_SDK_TIMESTAMP" -gt "$ARVGITHTTPD_TIMESTAMP" ]]; then
+  PKG_VERSION=$GO_SDK_VERSION
+else
+  PKG_VERSION=$ARVGITHTTPD_VERSION
+fi
+
+go get "git.curoverse.com/arvados.git/services/arv-git-httpd"
+cd $WORKSPACE/debs
+build_and_scp_deb $GOPATH/bin/arv-git-httpd=/usr/bin/arv-git-httpd arv-git-httpd 'Curoverse, Inc.' 'dir' "$PKG_VERSION" "--url=https://arvados.org" "--license=GNU Affero General Public License, version 3.0" "--description=Provides authenticated http access to Arvados-hosted git repositories."
+
 # crunchstat
 cd "$GOPATH/src/git.curoverse.com/arvados.git/services/crunchstat"
 PKG_VERSION=$(version_from_git)
