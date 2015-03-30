@@ -108,7 +108,10 @@ class ApplicationLayoutTest < ActionDispatch::IntegrationTest
     ['active', api_fixture('users')['active'], true, true],
     ['admin', api_fixture('users')['admin'], true, true],
     ['active_no_prefs', api_fixture('users')['active_no_prefs'], true, false],
-    ['active_no_prefs_profile', api_fixture('users')['active_no_prefs_profile'], true, false],
+    ['active_no_prefs_profile_no_getting_started_shown',
+        api_fixture('users')['active_no_prefs_profile_no_getting_started_shown'], true, false],
+    ['active_no_prefs_profile_with_getting_started_shown',
+        api_fixture('users')['active_no_prefs_profile_with_getting_started_shown'], true, false],
   ].each do |token, user, invited, has_profile|
 
     test "visit home page for user #{token}" do
