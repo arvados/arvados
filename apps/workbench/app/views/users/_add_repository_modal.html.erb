@@ -1,0 +1,41 @@
+<%
+   if current_user.uuid.ends_with?("-000000000000000")
+     repo_prefix = ""
+   else
+     repo_prefix = current_user.username + "/"
+   end
+-%>
+<div class="modal" id="add-repository-modal" tabindex="-1" role="dialog" aria-labelledby="add-repository-label" aria-hidden="true">
+  <div class="modal-dialog">
+    <div class="modal-content">
+      <form id="add-repository-form">
+        <input type="hidden" id="add_repo_owner_uuid" name="add_repo_owner_uuid" value="<%= current_user.uuid %>">
+        <input type="hidden" id="add_repo_prefix" name="add_repo_prefix" value="<%= repo_prefix %>">
+        <div class="modal-header">
+          <button type="button" class="close" data-dismiss="modal" aria-label="Close"><span aria-hidden="true">&times;</span></button>
+          <h4 class="modal-title" id="add-repository-label">Add new repository</h4>
+        </div>
+        <div class="modal-body form-horizontal">
+          <div class="form-group">
+            <label for="add_repo_basename" class="col-sm-2 control-label">Name</label>
+            <div class="col-sm-10">
+              <div class="input-group arvados-uuid">
+                <% unless repo_prefix.empty? %>
+                  <span class="input-group-addon"><%= repo_prefix %></span>
+                <% end %>
+                <input type="text" class="form-control" id="add_repo_basename" name="add_repo_basename">
+                <span class="input-group-addon">.git</span>
+              </div>
+            </div>
+          </div>
+          <p class="alert alert-info">It may take a minute or two before you can clone your new repository.</p>
+          <p id="add-repository-error" class="alert alert-danger"></p>
+        </div>
+        <div class="modal-footer">
+          <button type="button" class="btn btn-default" data-dismiss="modal">Cancel</button>
+          <input type="submit" class="btn btn-primary" id="add-repository-submit" name="submit" value="Create">
+        </div>
+      </form>
+    </div>
+  </div>
+</div>
