@@ -212,7 +212,7 @@ class ApplicationControllerTest < ActionController::TestCase
 
     ac = ApplicationController.new
 
-    uuid = api_fixture('logs')['log4']['object_uuid']
+    uuid = api_fixture('logs')['system_adds_foo_file']['object_uuid']
 
     collections = ac.send :log_collections_for_object, uuid
 
@@ -227,7 +227,7 @@ class ApplicationControllerTest < ActionController::TestCase
 
     ac = ApplicationController.new
 
-    uuid1 = api_fixture('logs')['log4']['object_uuid']
+    uuid1 = api_fixture('logs')['system_adds_foo_file']['object_uuid']
     uuid2 = api_fixture('collections')['bar_file']['uuid']
 
     uuids = [uuid1, uuid2]
@@ -360,6 +360,20 @@ class ApplicationControllerTest < ActionController::TestCase
         assert_response :redirect
         assert_match /\/users\/welcome/, @response.redirect_url
       end
+    end
+  end
+
+  [
+    true,
+    false,
+  ].each do |config|
+    test "invoke show with include_accept_encoding_header config #{config}" do
+      Rails.configuration.include_accept_encoding_header_in_api_requests = config
+
+      @controller = CollectionsController.new
+      get(:show, {id: api_fixture('collections')['foo_file']['uuid']}, session_for(:admin))
+
+      assert_equal([['.', 'foo', 3]], assigns(:object).files)
     end
   end
 end

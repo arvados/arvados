@@ -34,10 +34,16 @@ class ComputeNodeDriver(BaseComputeNodeDriver):
         super(ComputeNodeDriver, self).__init__(
             auth_kwargs, list_kwargs, create_kwargs,
             driver_class)
+        self._disktype_links = {dt.name: self._object_link(dt)
+                                for dt in self.real.ex_list_disktypes()}
 
     @staticmethod
     def _name_key(cloud_object):
         return cloud_object.name
+
+    @staticmethod
+    def _object_link(cloud_object):
+        return cloud_object.extra.get('selfLink')
 
     def _init_image(self, image_name):
         return 'image', self.search_for(
@@ -59,14 +65,39 @@ class ComputeNodeDriver(BaseComputeNodeDriver):
 
     def arvados_create_kwargs(self, arvados_node):
         cluster_id, _, node_id = arvados_node['uuid'].split('-')
-        result = {'name': 'compute-{}-{}'.format(node_id, cluster_id),
+        name = 'compute-{}-{}'.format(node_id, cluster_id)
+        disks = [
+            {'autoDelete': True,
+             'boot': True,
+             'deviceName': name,
+             'initializeParams':
+                 {'diskName': name,
+                  'diskType': self._disktype_links['pd-standard'],
+                  'sourceImage': self._object_link(self.create_kwargs['image']),
+                  },
+             'type': 'PERSISTENT',
+             },
+            {'autoDelete': True,
+             'boot': False,
+             # Boot images rely on this device name to find the SSD.
+             # Any change must be coordinated in the image.
+             'deviceName': 'tmp',
+             'initializeParams':
+                 {'diskType': self._disktype_links['local-ssd'],
+                  },
+             'type': 'SCRATCH',
+             },
+            ]
+        result = {'name': name,
                   'ex_metadata': self.create_kwargs['ex_metadata'].copy(),
-                  'ex_tags': list(self.node_tags)}
-        result['ex_metadata']['arv-ping-url'] = self._make_ping_url(
-            arvados_node)
-        result['ex_metadata']['booted_at'] = time.strftime(ARVADOS_TIMEFMT,
-                                                           time.gmtime())
-        result['ex_metadata']['hostname'] = arvados_node_fqdn(arvados_node)
+                  'ex_tags': list(self.node_tags),
+                  'ex_disks_gce_struct': disks,
+                  }
+        result['ex_metadata'].update({
+                'arv-ping-url': self._make_ping_url(arvados_node),
+                'booted_at': time.strftime(ARVADOS_TIMEFMT, time.gmtime()),
+                'hostname': arvados_node_fqdn(arvados_node),
+                })
         return result
 
     def list_nodes(self):
@@ -96,6 +127,10 @@ class ComputeNodeDriver(BaseComputeNodeDriver):
             raise
 
     def sync_node(self, cloud_node, arvados_node):
+        # We can't store the FQDN on the name attribute or anything like it,
+        # because (a) names are static throughout the node's life (so FQDN
+        # isn't available because we don't know it at node creation time) and
+        # (b) it can't contain dots.  Instead stash it in metadata.
         hostname = arvados_node_fqdn(arvados_node)
         metadata_req = cloud_node.extra['metadata'].copy()
         metadata_items = metadata_req.setdefault('items', [])
@@ -109,6 +144,12 @@ class ComputeNodeDriver(BaseComputeNodeDriver):
             method='POST', data=metadata_req)
         if not response.success():
             raise Exception("setMetadata error: {}".format(response.error))
+
+    @classmethod
+    def node_fqdn(cls, node):
+        # See sync_node comment.
+        return cls._get_metadata(node.extra['metadata'].get('items', []),
+                                 'hostname', '')
 
     @classmethod
     def node_start_time(cls, node):

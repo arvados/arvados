@@ -1,4 +1,5 @@
 class Blob
+  extend DbCurrentTime
 
   def initialize locator
     @locator = locator
@@ -43,7 +44,7 @@ class Blob
       end
       timestamp = opts[:expire]
     else
-      timestamp = Time.now.to_i + (opts[:ttl] || 1209600)
+      timestamp = db_current_time.to_i + (opts[:ttl] || 1209600)
     end
     timestamp_hex = timestamp.to_s(16)
     # => "53163cb4"
@@ -90,7 +91,7 @@ class Blob
     if !timestamp.match /^[\da-f]+$/
       raise Blob::InvalidSignatureError.new 'Timestamp is not a base16 number.'
     end
-    if timestamp.to_i(16) < Time.now.to_i
+    if timestamp.to_i(16) < db_current_time.to_i
       raise Blob::InvalidSignatureError.new 'Signature expiry time has passed.'
     end
 

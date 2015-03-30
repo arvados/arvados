@@ -1,0 +1,9 @@
+#!/bin/sh
+
+export ARVADOS_API_HOST=api
+export ARVADOS_API_HOST_INSECURE=yes
+# This should be an anonymous token, but we don't have a good way
+# to get one while building the images
+export ARVADOS_API_TOKEN=@@API_SUPERUSER_SECRET@@
+
+exec keepproxy -listen=':9100'

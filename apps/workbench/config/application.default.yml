@@ -188,8 +188,11 @@ common:
   # generic issue email from
   email_from: arvados@example.com
 
-  # filename suffixes for which view icon would be shown in collection show page
-  filename_suffixes_with_view_icon: [txt, gif, jpeg, jpg, png, html, htm, pdf]
+  # Mimetypes of applications for which the view icon
+  # would be enabled in a collection's show page.
+  # It is sufficient to list only applications here.
+  # No need to list text and image types.
+  application_mimetypes_with_view_icon: [fasta, go, javascript, json, pdf, python, r, rtf, sam, sh, xml, xsl]
 
   # the maximum number of bytes to load in the log viewer
   log_viewer_max_bytes: 1000000
@@ -198,3 +201,6 @@ common:
   # the token by running "bundle exec ./script/get_anonymous_user_token.rb"
   # in the directory where your API server is running.
   anonymous_user_token: false
+
+  # Include Accept-Encoding header when making API requests
+  include_accept_encoding_header_in_api_requests: true

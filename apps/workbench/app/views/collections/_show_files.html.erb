@@ -73,10 +73,9 @@ function unselect_all_files() {
          <div class="collection_files_row filterable <%=preview_selectable%>" href="<%=@object.uuid%>/<%=file_path%>">
           <div class="collection_files_buttons pull-right">
             <%= raw(human_readable_bytes_html(size)) %>
-            <% disable_search = (Rails.configuration.filename_suffixes_with_view_icon.include? file_path.split('.')[-1]) ? false : true %>
             <%= link_to(raw('<i class="fa fa-search"></i>'),
                         link_params.merge(disposition: 'inline'),
-                        {title: "View #{file_path}", class: "btn btn-info btn-sm", disabled: disable_search}) %>
+                        {title: "View #{file_path}", class: "btn btn-info btn-sm", disabled: !preview_allowed_for(file_path)}) %>
             <%= link_to(raw('<i class="fa fa-download"></i>'),
                         link_params.merge(disposition: 'attachment'),
                         {title: "Download #{file_path}", class: "btn btn-info btn-sm"}) %>

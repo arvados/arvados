@@ -17,6 +17,7 @@ navbar:
     - Getting Started:
       - start/index.html.textile.liquid
     - Quickstart:
+      - start/getting_started/publicproject.html.textile.liquid
       - start/getting_started/firstpipeline.html.textile.liquid
     - Common Use Cases:
       - start/getting_started/sharedata.html.textile.liquid

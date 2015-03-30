@@ -3,6 +3,7 @@ package keepclient
 
 import (
 	"crypto/md5"
+	"crypto/tls"
 	"errors"
 	"fmt"
 	"git.curoverse.com/arvados.git/sdk/go/arvadosclient"
@@ -11,6 +12,7 @@ import (
 	"io/ioutil"
 	"log"
 	"net/http"
+	"os"
 	"regexp"
 	"strings"
 	"sync"
@@ -44,11 +46,14 @@ type KeepClient struct {
 // Create a new KeepClient.  This will contact the API server to discover Keep
 // servers.
 func MakeKeepClient(arv *arvadosclient.ArvadosClient) (kc KeepClient, err error) {
+	var matchTrue = regexp.MustCompile("^(?i:1|yes|true)$")
+	insecure := matchTrue.MatchString(os.Getenv("ARVADOS_API_HOST_INSECURE"))
 	kc = KeepClient{
 		Arvados:       arv,
 		Want_replicas: 2,
 		Using_proxy:   false,
-		Client:        &http.Client{},
+		Client: &http.Client{Transport: &http.Transport{
+			TLSClientConfig: &tls.Config{InsecureSkipVerify: insecure}}},
 	}
 	_, err = (&kc).DiscoverKeepServers()
 

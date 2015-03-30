@@ -34,7 +34,7 @@ class EC2ComputeNodeDriverTestCase(testutil.DriverTestMixin, unittest.TestCase):
         list_method = self.driver_mock().list_images
         list_method.return_value = [testutil.cloud_object_mock(c)
                                     for c in 'abc']
-        driver = self.new_driver(create_kwargs={'image_id': 'b'})
+        driver = self.new_driver(create_kwargs={'image_id': 'id_b'})
         self.assertEqual(1, list_method.call_count)
 
     def test_create_includes_ping_secret(self):
@@ -90,6 +90,12 @@ class EC2ComputeNodeDriverTestCase(testutil.DriverTestMixin, unittest.TestCase):
         node.extra = {'launch_time': time.strftime('%Y-%m-%dT%H:%M:%S.000Z',
                                                    reftuple)}
         self.assertEqual(refsecs, ec2.ComputeNodeDriver.node_start_time(node))
+
+    def test_node_fqdn(self):
+        name = 'fqdntest.zzzzz.arvadosapi.com'
+        node = testutil.cloud_node_mock()
+        node.name = name
+        self.assertEqual(name, ec2.ComputeNodeDriver.node_fqdn(node))
 
     def test_cloud_exceptions(self):
         for error in [Exception("test exception"),

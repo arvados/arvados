@@ -4,6 +4,7 @@ class ArvadosModel < ActiveRecord::Base
   self.abstract_class = true
 
   include CurrentApiClient      # current_user, current_api_client, etc.
+  include DbCurrentTime
 
   attr_protected :created_at
   attr_protected :modified_by_user_uuid
@@ -358,9 +359,10 @@ class ArvadosModel < ActiveRecord::Base
   end
 
   def update_modified_by_fields
-    self.updated_at = Time.now
+    current_time = db_current_time
+    self.updated_at = current_time
     self.owner_uuid ||= current_default_owner if self.respond_to? :owner_uuid=
-    self.modified_at = Time.now
+    self.modified_at = current_time
     self.modified_by_user_uuid = current_user ? current_user.uuid : nil
     self.modified_by_client_uuid = current_api_client ? current_api_client.uuid : nil
     true

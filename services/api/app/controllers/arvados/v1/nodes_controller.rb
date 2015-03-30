@@ -3,6 +3,8 @@ class Arvados::V1::NodesController < ApplicationController
   skip_before_filter :find_object_by_uuid, :only => :ping
   skip_before_filter :render_404_if_no_object, :only => :ping
 
+  include DbCurrentTime
+
   def update
     if resource_attrs[:job_uuid]
       @object.job_readable = readable_job_uuids(resource_attrs[:job_uuid]).any?
@@ -41,7 +43,7 @@ class Arvados::V1::NodesController < ApplicationController
     if !current_user.andand.is_admin && current_user.andand.is_active
       # active non-admin users can list nodes that are (or were
       # recently) working
-      @objects = model_class.where('last_ping_at >= ?', Time.now - 1.hours)
+      @objects = model_class.where('last_ping_at >= ?', db_current_time - 1.hours)
     end
     super
     job_uuids = @objects.map { |n| n[:job_uuid] }.compact

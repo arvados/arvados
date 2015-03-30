@@ -34,13 +34,14 @@ def arvados_node_mock(node_num=99, job_uuid=None, age=-1, **kwargs):
     node.update(kwargs)
     return node
 
-def cloud_object_mock(name_id):
+def cloud_object_mock(name_id, **extra):
     # A very generic mock, useful for stubbing libcloud objects we
     # only search for and pass around, like locations, subnets, etc.
     cloud_object = mock.NonCallableMagicMock(['id', 'name'],
                                              name='cloud_object')
-    cloud_object.id = str(name_id)
-    cloud_object.name = cloud_object.id.upper()
+    cloud_object.name = str(name_id)
+    cloud_object.id = 'id_' + cloud_object.name
+    cloud_object.extra = extra
     return cloud_object
 
 def cloud_node_mock(node_num=99, **extra):
@@ -54,6 +55,11 @@ def cloud_node_mock(node_num=99, **extra):
     node.private_ips = [ip_address_mock(node_num)]
     node.extra = extra
     return node
+
+def cloud_node_fqdn(node):
+    # We intentionally put the FQDN somewhere goofy to make sure tested code is
+    # using this function for lookups.
+    return node.extra.get('testname', 'NoTestName')
 
 def ip_address_mock(last_octet):
     return '10.20.30.{}'.format(last_octet)

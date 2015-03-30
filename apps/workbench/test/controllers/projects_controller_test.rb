@@ -28,7 +28,7 @@ class ProjectsControllerTest < ActionController::TestCase
         id: readonly_project_uuid
       }, session_for(which_user)
       buttons = css_select('[data-method=post]').select do |el|
-        el.attributes['href'].match /project.*owner_uuid.*#{readonly_project_uuid}/
+        el.attributes['data-remote-href'].match /project.*owner_uuid.*#{readonly_project_uuid}/
       end
       if should_show
         assert_not_empty(buttons, "did not offer to create a subproject")

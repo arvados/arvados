@@ -6,16 +6,13 @@ containers, so that they can be run easily in different environments
 (a dedicated server, a developer's laptop, a virtual machine,
 etc).
 
-This is a work in progress; instructions will almost certainly be
-incomplete and possibly out of date.
-
 Prerequisites
 -------------
 
 * Docker
 
-  Docker is a Linux container management system based on LXC. It is a
-  very young system but is being developed rapidly.
+  Docker is a Linux container management system. It is a very young system but
+  is being developed rapidly.
   [Installation packages](http://www.docker.io/gettingstarted/)
   are available for several platforms.
   
@@ -52,10 +49,13 @@ Building
 Type `./build.sh` to configure and build the following Docker images:
 
    * arvados/api       - the Arvados API server
+   * arvados/compute   - Arvados compute node image
    * arvados/doc       - Arvados documentation
-   * arvados/warehouse - Keep, the Arvados content-addressable filesystem
-   * arvados/workbench - the Arvados console
+   * arvados/keep      - Keep, the Arvados content-addressable filesystem
+   * arvados/keepproxy - Keep proxy
+   * arvados/shell     - Arvados shell node image
    * arvados/sso       - the Arvados single-signon authentication server
+   * arvados/workbench - the Arvados console
 
 `build.sh` will generate reasonable defaults for all configuration
 settings.  If you want more control over the way Arvados is

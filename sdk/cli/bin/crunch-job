@@ -96,6 +96,7 @@ use File::Temp;
 use Fcntl ':flock';
 use File::Path qw( make_path remove_tree );
 
+use constant TASK_TEMPFAIL => 111;
 use constant EX_TEMPFAIL => 75;
 
 $ENV{"TMPDIR"} ||= "/tmp";
@@ -718,13 +719,15 @@ for (my $todo_ptr = 0; $todo_ptr <= $#jobstep_todo; $todo_ptr ++)
     my $command =
 	"if [ -e $ENV{TASK_WORK} ]; then rm -rf $ENV{TASK_WORK}; fi; "
         ."mkdir -p $ENV{CRUNCH_TMP} $ENV{JOB_WORK} $ENV{TASK_WORK} $ENV{TASK_KEEPMOUNT} "
-	."&& cd $ENV{CRUNCH_TMP} ";
+	."&& cd $ENV{CRUNCH_TMP} "
+        ."&& MEM=\$(cat /proc/meminfo | grep MemTotal | sed 's/\\s\\s*/ /g' |cut -d' ' -f2) "
+        ."&& MEMLIMIT=\$(( (\$MEM * 95) / ($ENV{CRUNCH_NODE_SLOTS} * 100) )) ";
     $command .= "&& exec arv-mount --by-id --allow-other $ENV{TASK_KEEPMOUNT} --exec ";
     if ($docker_hash)
     {
       my $cidfile = "$ENV{CRUNCH_TMP}/$Jobstep->{arvados_task}->{uuid}-$Jobstep->{failures}.cid";
       $command .= "crunchstat -cgroup-root=/sys/fs/cgroup -cgroup-parent=docker -cgroup-cid=$cidfile -poll=10000 ";
-      $command .= "$docker_bin run --rm=true --attach=stdout --attach=stderr --attach=stdin -i --user=crunch --cidfile=$cidfile --sig-proxy ";
+      $command .= "$docker_bin run --rm=true --attach=stdout --attach=stderr --attach=stdin -i --user=crunch --cidfile=$cidfile --sig-proxy --memory=\${MEMLIMIT}k ";
 
       # Dynamically configure the container to use the host system as its
       # DNS server.  Get the host's global addresses from the ip command,
@@ -1011,7 +1014,7 @@ sub reapchildren
   {
     my $temporary_fail;
     $temporary_fail ||= $Jobstep->{node_fail};
-    $temporary_fail ||= ($exitvalue == 111);
+    $temporary_fail ||= ($exitvalue == TASK_TEMPFAIL);
 
     ++$thisround_failed;
     ++$thisround_failed_multiple if $Jobstep->{'failures'} >= 1;
@@ -1232,7 +1235,7 @@ sub preprocess_stderr
       # whoa.
       $main::please_freeze = 1;
     }
-    elsif ($line =~ /srun: error: (Node failure on|Unable to create job step) /) {
+    elsif ($line =~ /(srun: error: (Node failure on|Unable to create job step|.*: Communication connection failure))|arvados.errors.Keep/) {
       $jobstep[$job]->{node_fail} = 1;
       ban_node_by_slot($jobstep[$job]->{slotindex});
     }
@@ -1831,6 +1834,8 @@ use Fcntl ':flock';
 use File::Path qw( make_path remove_tree );
 use POSIX qw(getcwd);
 
+use constant TASK_TEMPFAIL => 111;
+
 # Map SDK subdirectories to the path environments they belong to.
 my %SDK_ENVVARS = ("perl/lib" => "PERLLIB", "ruby/lib" => "RUBYLIB");
 
@@ -1876,9 +1881,9 @@ if (@ARGV) {
   my $venv_dir = "$job_work/.arvados.venv";
   my $venv_built = -e "$venv_dir/bin/activate";
   if ((!$venv_built) and (-d $python_src) and can_run("virtualenv")) {
-    shell_or_die("virtualenv", "--quiet", "--system-site-packages",
+    shell_or_die(undef, "virtualenv", "--quiet", "--system-site-packages",
                  "--python=python2.7", $venv_dir);
-    shell_or_die("$venv_dir/bin/pip", "--quiet", "install", "-I", $python_src);
+    shell_or_die(TASK_TEMPFAIL, "$venv_dir/bin/pip", "--quiet", "install", "-I", $python_src);
     $venv_built = 1;
     $Log->("Built Python SDK virtualenv");
   }
@@ -1974,12 +1979,12 @@ if ((-d $python_dir) and can_run("python2.7") and
 }
 
 if (-e "$destdir/crunch_scripts/install") {
-    shell_or_die ("$destdir/crunch_scripts/install", $install_dir);
+    shell_or_die (undef, "$destdir/crunch_scripts/install", $install_dir);
 } elsif (!-e "./install.sh" && -e "./tests/autotests.sh") {
     # Old version
-    shell_or_die ("./tests/autotests.sh", $install_dir);
+    shell_or_die (undef, "./tests/autotests.sh", $install_dir);
 } elsif (-e "./install.sh") {
-    shell_or_die ("./install.sh", $install_dir);
+    shell_or_die (undef, "./install.sh", $install_dir);
 }
 
 if ($commit) {
@@ -2000,15 +2005,24 @@ sub can_run {
 
 sub shell_or_die
 {
+  my $exitcode = shift;
+
   if ($ENV{"DEBUG"}) {
     print STDERR "@_\n";
   }
   if (system (@_) != 0) {
     my $err = $!;
-    my $exitstatus = sprintf("exit %d signal %d", $? >> 8, $? & 0x7f);
+    my $code = $?;
+    my $exitstatus = sprintf("exit %d signal %d", $code >> 8, $code & 0x7f);
     open STDERR, ">&STDERR_ORIG";
     system ("cat $destdir.log >&2");
-    die "@_ failed ($err): $exitstatus";
+    warn "@_ failed ($err): $exitstatus";
+    if (defined($exitcode)) {
+      exit $exitcode;
+    }
+    else {
+      exit (($code >> 8) || 1);
+    }
   }
 }
 
