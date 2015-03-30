@@ -1,5 +1,10 @@
 <div class="panel panel-default">
   <div class="panel-heading">
+    <div class="pull-right">
+      <%= link_to raw('<i class="fa fa-plus"></i> Add new repository'), "#",
+                   {class: 'btn btn-xs btn-primary', 'data-toggle' => "modal",
+                    'data-target' => '#add-repository-modal'}  %>
+    </div>
     <h4 class="panel-title">
       <a data-parent="#arv-adv-accordion" href="#manage_repositories">
         Repositories
