@@ -106,7 +106,8 @@ class Arvados::V1::UsersController < ApplicationController
     elsif @object.username.nil?
       raise ArgumentError.
         new("cannot setup a repository because user has no username")
-    elsif params[:repo_name].include?("/")
+    elsif object_found and
+        params[:repo_name].start_with?("#{@object.username}/")
       full_repo_name = params[:repo_name]
     else
       full_repo_name = "#{@object.username}/#{params[:repo_name]}"
