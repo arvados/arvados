@@ -263,4 +263,26 @@ class RepositoryTest < ActiveSupport::TestCase
       assert_equal modtime_was, r.modified_at
     end
   end
+
+  ### Renaming
+
+  test "non-admin can rename own repo" do
+    act_as_user users(:active) do
+      assert repositories(:foo).update_attributes(name: 'active/foo12345')
+    end
+  end
+
+  test "top level repo can be touched by non-admin with can_manage" do
+    add_permission_link users(:active), repositories(:arvados), 'can_manage'
+    act_as_user users(:active) do
+      assert changed_repo(:arvados, modified_at: Time.now).save
+    end
+  end
+
+  test "top level repo cannot be renamed by non-admin with can_manage" do
+    add_permission_link users(:active), repositories(:arvados), 'can_manage'
+    act_as_user users(:active) do
+      assert_not_allowed { changed_repo(:arvados, name: 'xarvados').save }
+    end
+  end
 end

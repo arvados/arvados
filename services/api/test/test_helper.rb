@@ -62,6 +62,15 @@ class ActiveSupport::TestCase
     end
   end
 
+  def add_permission_link from_who, to_what, perm_type
+    act_as_system_user do
+      Link.create!(tail_uuid: from_who.uuid,
+                   head_uuid: to_what.uuid,
+                   link_class: 'permission',
+                   name: perm_type)
+    end
+  end
+
   def restore_configuration
     # Restore configuration settings changed during tests
     $application_config.each do |k,v|
