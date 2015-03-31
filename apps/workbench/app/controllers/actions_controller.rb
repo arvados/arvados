@@ -253,12 +253,6 @@ class ActionsController < ApplicationController
     end
   end
 
-  def getting_started_popup
-    respond_to do |format|
-      format.js
-    end
-  end
-
   protected
 
   def derive_unique_filename filename, manifest_files
