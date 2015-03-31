@@ -10,7 +10,7 @@ export ARVADOS_API_TOKEN=@@API_SUPERUSER_SECRET@@
 
 # Arvados repository object
 all_users_group_uuid="$prefix-j7d0g-fffffffffffffff"
-repo_uuid=`arv --format=uuid repository create --repository '{"name":"arvados","fetch_url":"git@api:arvados.git","push_url":"git@api:arvados.git"}'`
+repo_uuid=`arv --format=uuid repository create --repository '{"name":"arvados","fetch_url":"git@api.dev.arvados:arvados.git","push_url":"git@api.dev.arvados:arvados.git"}'`
 echo "Arvados repository uuid is $repo_uuid"
 
 read -rd $'\000' newlink <<EOF; arv link create --link "$newlink"
@@ -42,7 +42,7 @@ fi
 
 # User repository object
 user_uuid=`arv --format=uuid user current`
-repo_uuid=`arv --format=uuid repository create --repository '{"name":"@@ARVADOS_USER_NAME@@","fetch_url":"git@api:@@ARVADOS_USER_NAME@@.git","push_url":"git@api:@@ARVADOS_USER_NAME@@.git"}'`
+repo_uuid=`arv --format=uuid repository create --repository '{"name":"@@ARVADOS_USER_NAME@@","fetch_url":"git@api.dev.arvados:@@ARVADOS_USER_NAME@@.git","push_url":"git@api.dev.arvados:@@ARVADOS_USER_NAME@@.git"}'`
 echo "User repository uuid is $repo_uuid"
 
 read -rd $'\000' newlink <<EOF; arv link create --link "$newlink"
