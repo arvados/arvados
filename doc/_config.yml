@@ -150,6 +150,7 @@ navbar:
       - install/create-standard-objects.html.textile.liquid
       - install/install-keepstore.html.textile.liquid
       - install/install-keepproxy.html.textile.liquid
+      - install/install-arv-git-httpd.html.textile.liquid
       - install/install-crunch-dispatch.html.textile.liquid
       - install/cheat_sheet.html.textile.liquid
     - Software prerequisites:
