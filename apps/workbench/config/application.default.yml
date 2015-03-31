@@ -203,5 +203,5 @@ common:
   # in the directory where your API server is running.
   anonymous_user_token: false
 
-  # Include Accept-Encoding header when making API requests
+  # Enable response payload compression in Arvados API requests.
   include_accept_encoding_header_in_api_requests: true
