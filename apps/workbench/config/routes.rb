@@ -12,7 +12,6 @@ ArvadosWorkbench::Application.routes.draw do
   get "users/setup" => 'users#setup', :as => :setup_user
   get "report_issue_popup" => 'actions#report_issue_popup', :as => :report_issue_popup
   post "report_issue" => 'actions#report_issue', :as => :report_issue
-  get "getting_started_popup" => 'actions#getting_started_popup', :as => :getting_started_popup
   resources :nodes
   resources :humans
   resources :traits

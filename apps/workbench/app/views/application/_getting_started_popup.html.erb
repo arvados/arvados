@@ -1,14 +1,4 @@
-<%
-  if current_user
-    prefs = current_user.prefs
-    if !prefs[:getting_started_shown]
-      prefs[:getting_started_shown] = Time.now
-      current_user.update_attributes prefs: prefs.to_json
-    end
-  end
-%>
-
-<div class="modal">
+<div id="getting-started-modal-window" class="modal">
   <div class="modal-dialog modal-with-loading-spinner">
     <div class="modal-content">
       <div class="modal-header">

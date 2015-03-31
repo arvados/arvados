@@ -70,7 +70,7 @@ class ApplicationLayoutTest < ActionDispatch::IntegrationTest
       page.find("#arv-help").click
       within('.dropdown-menu') do
         assert_selector 'a', text:'Getting Started ...'
-        assert_selector 'a', text:'Public Pipelines and Datasets'
+        assert_selector 'a', text:'Public Pipelines and Data sets'
         assert page.has_link?('Tutorials and User guide'), 'No link - Tutorials and User guide'
         assert page.has_link?('API Reference'), 'No link - API Reference'
         assert page.has_link?('SDK Reference'), 'No link - SDK Reference'
@@ -172,7 +172,7 @@ class ApplicationLayoutTest < ActionDispatch::IntegrationTest
     within '.navbar-fixed-top' do
       find('.help-menu > a').click
 
-      assert_no_selector 'a', text:'Public Pipelines and Datasets'
+      assert_no_selector 'a', text:'Public Pipelines and Data sets'
 
       assert_selector 'a', text:'Getting Started ...'
       assert page.has_link?('Tutorials and User guide'), 'No link - Tutorials and User guide'

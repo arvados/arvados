@@ -118,13 +118,12 @@
               <span class="fa fa-lg fa-question-circle"></span>
             </a>
             <ul class="dropdown-menu">
-              <li> <%= link_to getting_started_popup_path(),
-                      {class: 'getting-started-modal-window', remote: true, return_to: request.url} do %>
-                       <i class="fa fa-fw fa-info"></i> Getting Started ...
-                      <% end %>
+              <li>
+              <%= link_to raw('<i class="fa fa-fw fa-info"></i> Getting Started ...'), "#",
+                   {'data-toggle' => "modal", 'data-target' => '#getting-started-modal-window'}  %>
               </li>
               <% if Rails.configuration.arvados_public_data_doc_url %>
-                <li><%= link_to raw('<i class="fa fa-book fa-fw"></i> Public Pipelines and Datasets'), "#{Rails.configuration.arvados_public_data_doc_url}", target: "_blank" %></li>
+                <li><%= link_to raw('<i class="fa fa-book fa-fw"></i> Public Pipelines and Data sets'), "#{Rails.configuration.arvados_public_data_doc_url}", target: "_blank" %></li>
               <% end %>
               <li><%= link_to raw('<i class="fa fa-book fa-fw"></i> Tutorials and User guide'), "#{Rails.configuration.arvados_docsite}/user", target: "_blank" %></li>
               <li><%= link_to raw('<i class="fa fa-book fa-fw"></i> API Reference'), "#{Rails.configuration.arvados_docsite}/api", target: "_blank" %></li>
@@ -199,6 +198,7 @@
     <% end %>
 
     <%= render partial: 'browser_unsupported' %><%# requires JS support below %>
+    <%= render partial: 'getting_started_popup' %><%# requires JS support below %>
 
     <div id="page-wrapper">
       <%= yield %>
@@ -211,14 +211,12 @@
 <div id="report-issue-modal-window"></div>
 <script src="/browser_unsupported.js"></script>
 
-<div id="getting-started-modal-window"></div>
-
 <%  if current_user and !current_user.prefs[:getting_started_shown] and
        !request.url.include?("/profile") and
        !request.url.include?("/user_agreements") and
        !request.url.include?("/inactive")%>
   <script>
-    $("#getting-started-modal-window").html("<%= escape_javascript(render partial: 'getting_started_popup') %>");
-    $("#getting-started-modal-window .modal").modal('show');
+    $("#getting-started-modal-window").modal('show');
   </script>
+  <%= render partial: 'getting_started_shown' %>
 <% end %>
