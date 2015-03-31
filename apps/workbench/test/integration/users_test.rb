@@ -56,7 +56,7 @@ class UsersTest < ActionDispatch::IntegrationTest
     within '.modal-content' do
       find 'label', text: 'Virtual Machine'
       fill_in "email", :with => "foo@example.com"
-      fill_in "repo_name", :with => "test_repo"
+      fill_in "repo_name", :with => "newtestrepo"
       click_button "Submit"
       wait_for_ajax
     end
@@ -81,7 +81,7 @@ class UsersTest < ActionDispatch::IntegrationTest
 
     click_link 'Advanced'
     click_link 'Metadata'
-    assert page.has_text? 'Repository: test_repo'
+    assert page.has_text? 'Repository: foo/newtestrepo'
     assert !(page.has_text? 'VirtualMachine:')
   end
 
@@ -106,7 +106,7 @@ class UsersTest < ActionDispatch::IntegrationTest
 
     within '.modal-content' do
       find 'label', text: 'Virtual Machine'
-      fill_in "repo_name", :with => "test_repo"
+      fill_in "repo_name", :with => "activetestrepo"
       click_button "Submit"
     end
 
@@ -115,7 +115,7 @@ class UsersTest < ActionDispatch::IntegrationTest
 
     click_link 'Advanced'
     click_link 'Metadata'
-    assert page.has_text? 'Repository: test_repo'
+    assert page.has_text? 'Repository: active/activetestrepo'
     assert !(page.has_text? 'VirtualMachine:')
 
     # Click on Setup button again and this time also choose a VM
@@ -123,7 +123,7 @@ class UsersTest < ActionDispatch::IntegrationTest
     click_link 'Setup Active User'
 
     within '.modal-content' do
-      fill_in "repo_name", :with => "second_test_repo"
+      fill_in "repo_name", :with => "activetestrepo2"
       select("testvm.shell", :from => 'vm_uuid')
       click_button "Submit"
     end
@@ -133,7 +133,7 @@ class UsersTest < ActionDispatch::IntegrationTest
 
     click_link 'Advanced'
     click_link 'Metadata'
-    assert page.has_text? 'Repository: second_test_repo'
+    assert page.has_text? 'Repository: active/activetestrepo2'
     assert page.has_text? 'VirtualMachine: testvm.shell'
   end
 
@@ -181,16 +181,15 @@ class UsersTest < ActionDispatch::IntegrationTest
 
     click_link 'Advanced'
     click_link 'Metadata'
-    assert !(page.has_text? 'Repository: test_repo')
-    assert !(page.has_text? 'Repository: second_test_repo')
-    assert !(page.has_text? 'VirtualMachine: testvm.shell')
+    assert page.has_no_text? 'Repository: active/'
+    assert page.has_no_text? 'VirtualMachine: testvm.shell'
 
     # setup user again and verify links present
     click_link 'Admin'
     click_link 'Setup Active User'
 
     within '.modal-content' do
-      fill_in "repo_name", :with => "second_test_repo"
+      fill_in "repo_name", :with => "activetestrepo"
       select("testvm.shell", :from => 'vm_uuid')
       click_button "Submit"
     end
@@ -200,7 +199,7 @@ class UsersTest < ActionDispatch::IntegrationTest
 
     click_link 'Advanced'
     click_link 'Metadata'
-    assert page.has_text? 'Repository: second_test_repo'
+    assert page.has_text? 'Repository: active/activetestrepo'
     assert page.has_text? 'VirtualMachine: testvm.shell'
   end
 
