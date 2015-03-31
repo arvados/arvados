@@ -1,7 +1,7 @@
 # Arvados API server Docker container.
 
 FROM arvados/passenger
-MAINTAINER Tim Pierce <twp@curoverse.com>
+MAINTAINER Ward Vandewege <ward@curoverse.com>
 
 # Install postgres and apache.
 RUN apt-get update -qq
@@ -75,6 +75,7 @@ ADD supervisor.conf /etc/supervisor/conf.d/arvados.conf
 ADD generated/setup.sh /usr/local/bin/setup.sh
 ADD generated/setup-gitolite.sh /usr/local/bin/setup-gitolite.sh
 ADD crunch-dispatch-run.sh /usr/local/bin/crunch-dispatch-run.sh
+ADD munge.sh /usr/local/bin/munge.sh
 ADD apache2_foreground.sh /etc/apache2/foreground.sh
 
 # Start the supervisor.
