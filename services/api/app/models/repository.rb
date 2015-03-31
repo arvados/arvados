@@ -47,14 +47,15 @@ class Repository < ArvadosModel
   protected
 
   def permission_to_update
-    return false if not current_user
-    return true if current_user.is_admin
-    # For normal objects, this is a way to check whether you have
-    # write permission. Repositories should be brought closer to the
-    # normal permission model during #4253. Meanwhile, we'll
-    # special-case this so arv-git-httpd can detect write permission:
-    return super if changed_attributes.keys - ['modified_at', 'updated_at'] == []
-    false
+    if not super
+      false
+    elsif current_user.is_admin
+      true
+    elsif name_changed?
+      current_user.uuid == owner_uuid
+    else
+      true
+    end
   end
 
   def owner
