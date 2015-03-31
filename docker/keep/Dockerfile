@@ -8,5 +8,7 @@ ADD generated/run-keep /usr/local/bin/
 
 ADD generated/keep_signing_secret /etc/
 
+RUN mkdir /keep-data
+
 # Start keep
 CMD ["/usr/local/bin/run-keep"]

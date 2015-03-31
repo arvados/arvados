@@ -25,9 +25,9 @@ chmod +rx /home/git/repositories/*git -R
 # Now set up the gitolite repo(s) we use
 mkdir -p /usr/local/arvados/gitolite-tmp/
 # Make ssh store the host key
-ssh -o "StrictHostKeyChecking no" git@api info
+ssh -o "StrictHostKeyChecking no" git@api.dev.arvados info
 # Now check out the tree
-git clone git@api:gitolite-admin.git /usr/local/arvados/gitolite-tmp/gitolite-admin/
+git clone git@api.dev.arvados:gitolite-admin.git /usr/local/arvados/gitolite-tmp/gitolite-admin/
 cd /usr/local/arvados/gitolite-tmp/gitolite-admin
 mkdir keydir/arvados
 mkdir conf/admin
@@ -74,4 +74,3 @@ export ARVADOS_API_TOKEN=@@API_SUPERUSER_SECRET@@
 
 echo "PATH=/usr/bin:/bin:/sbin" > /etc/cron.d/arvados-repo-update
 echo "*/5 * * * * git cd ~git/repositories/arvados.git; git fetch https://github.com/curoverse/arvados.git master:master" >> /etc/cron.d/arvados-repo-update
-
