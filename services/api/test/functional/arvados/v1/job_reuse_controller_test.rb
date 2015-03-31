@@ -17,7 +17,7 @@ class Arvados::V1::JobReuseControllerTest < ActionController::TestCase
       no_reuse: false,
       script: "hash",
       script_version: "4fe459abe02d9b365932b8f5dc419439ab4e2577",
-      repository: "foo",
+      repository: "active/foo",
       script_parameters: {
         input: 'fa7aeb5140e2848d39b416daeef4ffc5+45',
         an_integer: '1'
@@ -35,7 +35,7 @@ class Arvados::V1::JobReuseControllerTest < ActionController::TestCase
       job: {
         script: "hash",
         script_version: "4fe459abe02d9b365932b8f5dc419439ab4e2577",
-        repository: "foo",
+        repository: "active/foo",
         script_parameters: {
           input: 'fa7aeb5140e2848d39b416daeef4ffc5+45',
           an_integer: '1'
@@ -55,7 +55,7 @@ class Arvados::V1::JobReuseControllerTest < ActionController::TestCase
       job: {
         script: "hash",
         script_version: "tag1",
-        repository: "foo",
+        repository: "active/foo",
         script_parameters: {
           input: 'fa7aeb5140e2848d39b416daeef4ffc5+45',
           an_integer: '1'
@@ -76,7 +76,7 @@ class Arvados::V1::JobReuseControllerTest < ActionController::TestCase
         no_reuse: true,
         script: "hash",
         script_version: "4fe459abe02d9b365932b8f5dc419439ab4e2577",
-        repository: "foo",
+        repository: "active/foo",
         script_parameters: {
           input: 'fa7aeb5140e2848d39b416daeef4ffc5+45',
           an_integer: '1'
@@ -96,7 +96,7 @@ class Arvados::V1::JobReuseControllerTest < ActionController::TestCase
         job: {
           script: "hash",
           script_version: "4fe459abe02d9b365932b8f5dc419439ab4e2577",
-          repository: "foo",
+          repository: "active/foo",
           script_parameters: {
             input: 'fa7aeb5140e2848d39b416daeef4ffc5+45',
             an_integer: '1'
@@ -118,7 +118,7 @@ class Arvados::V1::JobReuseControllerTest < ActionController::TestCase
       job: {
         script: "hash",
         script_version: "4fe459abe02d9b365932b8f5dc419439ab4e2577",
-        repository: "foo",
+        repository: "active/foo",
         script_parameters: {
           input: 'fa7aeb5140e2848d39b416daeef4ffc5+45',
           an_integer: '1'
@@ -138,7 +138,7 @@ class Arvados::V1::JobReuseControllerTest < ActionController::TestCase
       no_reuse: false,
       script: "hash",
       script_version: "4fe459abe02d9b365932b8f5dc419439ab4e2577",
-      repository: "foo",
+      repository: "active/foo",
       script_parameters: {
         input: 'fa7aeb5140e2848d39b416daeef4ffc5+45',
         an_integer: '2'
@@ -156,7 +156,7 @@ class Arvados::V1::JobReuseControllerTest < ActionController::TestCase
       script: "hash",
       minimum_script_version: "tag1",
       script_version: "master",
-      repository: "foo",
+      repository: "active/foo",
       script_parameters: {
         input: 'fa7aeb5140e2848d39b416daeef4ffc5+45',
         an_integer: '1'
@@ -174,7 +174,7 @@ class Arvados::V1::JobReuseControllerTest < ActionController::TestCase
       no_reuse: false,
       script: "hash",
       script_version: "master",
-      repository: "foo",
+      repository: "active/foo",
       script_parameters: {
         input: 'fa7aeb5140e2848d39b416daeef4ffc5+45',
         an_integer: '1'
@@ -192,7 +192,7 @@ class Arvados::V1::JobReuseControllerTest < ActionController::TestCase
       no_reuse: false,
       script: "hash",
       script_version: "4fe459abe02d9b365932b8f5dc419439ab4e2577",
-      repository: "foo",
+      repository: "active/foo",
       script_parameters: {
         input: 'fa7aeb5140e2848d39b416daeef4ffc5+45',
         an_integer: '2'
@@ -210,7 +210,7 @@ class Arvados::V1::JobReuseControllerTest < ActionController::TestCase
       no_reuse: false,
       script: "hash",
       script_version: "master",
-      repository: "foo",
+      repository: "active/foo",
       script_parameters: {
         input: 'fa7aeb5140e2848d39b416daeef4ffc5+45',
         an_integer: '2'
@@ -228,7 +228,7 @@ class Arvados::V1::JobReuseControllerTest < ActionController::TestCase
       no_reuse: false,
       script: "hash",
       script_version: "4fe459abe02d9b365932b8f5dc419439ab4e2577",
-      repository: "foo",
+      repository: "active/foo",
       script_parameters: {
         input: 'fa7aeb5140e2848d39b416daeef4ffc5+45',
         an_integer: '1'
@@ -247,7 +247,7 @@ class Arvados::V1::JobReuseControllerTest < ActionController::TestCase
       no_reuse: false,
       script: "hash2",
       script_version: "4fe459abe02d9b365932b8f5dc419439ab4e2577",
-      repository: "foo",
+      repository: "active/foo",
       script_parameters: {
         input: 'fa7aeb5140e2848d39b416daeef4ffc5+45',
         an_integer: '1'
@@ -266,7 +266,7 @@ class Arvados::V1::JobReuseControllerTest < ActionController::TestCase
       no_reuse: false,
       script: "hash",
       script_version: "4fe459abe02d9b365932b8f5dc419439ab4e2577",
-      repository: "foo",
+      repository: "active/foo",
       script_parameters: {
         input: 'fa7aeb5140e2848d39b416daeef4ffc5+45',
         an_integer: '1'
@@ -285,7 +285,7 @@ class Arvados::V1::JobReuseControllerTest < ActionController::TestCase
       script: "hash",
       minimum_script_version: "31ce37fe365b3dc204300a3e4c396ad333ed0556",
       script_version: "master",
-      repository: "foo",
+      repository: "active/foo",
       exclude_script_versions: ["tag1"],
       script_parameters: {
         input: 'fa7aeb5140e2848d39b416daeef4ffc5+45',
@@ -305,7 +305,7 @@ class Arvados::V1::JobReuseControllerTest < ActionController::TestCase
       job: {
         script: "hash",
         script_version: "master",
-        repository: "foo",
+        repository: "active/foo",
         script_parameters: {
           input: 'fa7aeb5140e2848d39b416daeef4ffc5+45',
           an_integer: '1'
@@ -324,7 +324,7 @@ class Arvados::V1::JobReuseControllerTest < ActionController::TestCase
   end
 
   BASE_FILTERS = {
-    'repository' => ['=', 'foo'],
+    'repository' => ['=', 'active/foo'],
     'script' => ['=', 'hash'],
     'script_version' => ['in git', 'master'],
     'docker_image_locator' => ['=', nil],
@@ -342,7 +342,7 @@ class Arvados::V1::JobReuseControllerTest < ActionController::TestCase
            job: {
              script: "hash",
              script_version: "master",
-             repository: "foo",
+             repository: "active/foo",
              script_parameters: {
                input: 'fa7aeb5140e2848d39b416daeef4ffc5+45',
                an_integer: '1'
@@ -368,7 +368,7 @@ class Arvados::V1::JobReuseControllerTest < ActionController::TestCase
            job: {
              script: "hash",
              script_version: "master",
-             repository: "foo",
+             repository: "active/foo",
              script_parameters: {
                input: 'fa7aeb5140e2848d39b416daeef4ffc5+45',
                an_integer: '1'
@@ -391,7 +391,7 @@ class Arvados::V1::JobReuseControllerTest < ActionController::TestCase
            job: {
              script: "hash",
              script_version: "4fe459abe02d9b365932b8f5dc419439ab4e2577",
-             repository: "foo",
+             repository: "active/foo",
              script_parameters: {
                input: 'fa7aeb5140e2848d39b416daeef4ffc5+45',
                an_integer: '1'
@@ -412,7 +412,7 @@ class Arvados::V1::JobReuseControllerTest < ActionController::TestCase
            job: {
              script: "hash",
              script_version: "4fe459abe02d9b365932b8f5dc419439ab4e2577",
-             repository: "foo",
+             repository: "active/foo",
              script_parameters: {
                input: 'fa7aeb5140e2848d39b416daeef4ffc5+45',
                an_integer: '1'
@@ -442,7 +442,7 @@ class Arvados::V1::JobReuseControllerTest < ActionController::TestCase
            job: {
              script: "hash",
              script_version: "4fe459abe02d9b365932b8f5dc419439ab4e2577",
-             repository: "foo",
+             repository: "active/foo",
              script_parameters: {
                input: 'fa7aeb5140e2848d39b416daeef4ffc5+45',
                an_integer: '1'
@@ -470,7 +470,7 @@ class Arvados::V1::JobReuseControllerTest < ActionController::TestCase
            job: {
              script: "hash",
              script_version: "4fe459abe02d9b365932b8f5dc419439ab4e2577",
-             repository: "foo",
+             repository: "active/foo",
              script_parameters: {
                input: 'fa7aeb5140e2848d39b416daeef4ffc5+45',
                an_integer: '1'
@@ -495,7 +495,7 @@ class Arvados::V1::JobReuseControllerTest < ActionController::TestCase
            job: {
              script: "hash",
              script_version: "4fe459abe02d9b365932b8f5dc419439ab4e2577",
-             repository: "foo",
+             repository: "active/foo",
              script_parameters: {
                input: 'fa7aeb5140e2848d39b416daeef4ffc5+45',
                an_integer: '1'
@@ -517,7 +517,7 @@ class Arvados::V1::JobReuseControllerTest < ActionController::TestCase
              job: {
                script: "hash",
                script_version: "master",
-               repository: "foo",
+               repository: "active/foo",
                script_parameters: {
                  input: 'fa7aeb5140e2848d39b416daeef4ffc5+45',
                  an_integer: '1'
@@ -532,7 +532,7 @@ class Arvados::V1::JobReuseControllerTest < ActionController::TestCase
   end
 
   test "find Job with script version range" do
-    get :index, filters: [["repository", "=", "foo"],
+    get :index, filters: [["repository", "=", "active/foo"],
                           ["script", "=", "hash"],
                           ["script_version", "in git", "tag1"]]
     assert_response :success
@@ -542,7 +542,7 @@ class Arvados::V1::JobReuseControllerTest < ActionController::TestCase
   end
 
   test "find Job with script version range exclusions" do
-    get :index, filters: [["repository", "=", "foo"],
+    get :index, filters: [["repository", "=", "active/foo"],
                           ["script", "=", "hash"],
                           ["script_version", "not in git", "tag1"]]
     assert_response :success
@@ -607,7 +607,7 @@ class Arvados::V1::JobReuseControllerTest < ActionController::TestCase
     params[:job] = {
       script: "hash",
       script_version: "4fe459abe02d9b365932b8f5dc419439ab4e2577",
-      repository: "foo",
+      repository: "active/foo",
       script_parameters: {
         input: 'fa7aeb5140e2848d39b416daeef4ffc5+45',
         an_integer: '1',

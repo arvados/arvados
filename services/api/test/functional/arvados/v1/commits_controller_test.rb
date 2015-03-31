@@ -29,17 +29,17 @@ class Arvados::V1::CommitsControllerTest < ActionController::TestCase
     assert_includes(a, '077ba2ad3ea24a929091a9e6ce545c93199b8e57')
 
   #test "test_branch2" do
-    a = Commit.find_commit_range(users(:active), 'foo', nil, 'b1', nil)
+    a = Commit.find_commit_range(users(:active), 'active/foo', nil, 'b1', nil)
     assert_equal ['1de84a854e2b440dc53bf42f8548afa4c17da332'], a
 
   #test "test_branch3" do
-    a = Commit.find_commit_range(users(:active), 'foo', nil, 'HEAD', nil)
+    a = Commit.find_commit_range(users(:active), 'active/foo', nil, 'HEAD', nil)
     assert_equal ['1de84a854e2b440dc53bf42f8548afa4c17da332'], a
 
   #test "test_single_revision_repo" do
-    a = Commit.find_commit_range(users(:active), "foo", nil, '31ce37fe365b3dc204300a3e4c396ad333ed0556', nil)
+    a = Commit.find_commit_range(users(:active), "active/foo", nil, '31ce37fe365b3dc204300a3e4c396ad333ed0556', nil)
     assert_equal ['31ce37fe365b3dc204300a3e4c396ad333ed0556'], a
-    a = Commit.find_commit_range(users(:active), "bar", nil, '31ce37fe365b3dc204300a3e4c396ad333ed0556', nil)
+    a = Commit.find_commit_range(users(:active), "arvados", nil, '31ce37fe365b3dc204300a3e4c396ad333ed0556', nil)
     assert_equal nil, a
 
   #test "test_multi_revision" do

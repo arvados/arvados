@@ -760,8 +760,6 @@ CREATE TABLE repositories (
     modified_by_user_uuid character varying(255),
     modified_at timestamp without time zone,
     name character varying(255),
-    fetch_url character varying(255),
-    push_url character varying(255),
     created_at timestamp without time zone NOT NULL,
     updated_at timestamp without time zone NOT NULL
 );
@@ -2102,7 +2100,7 @@ CREATE INDEX pipeline_templates_search_index ON pipeline_templates USING btree (
 -- Name: repositories_search_index; Type: INDEX; Schema: public; Owner: -; Tablespace: 
 --
 
-CREATE INDEX repositories_search_index ON repositories USING btree (uuid, owner_uuid, modified_by_client_uuid, modified_by_user_uuid, name, fetch_url, push_url);
+CREATE INDEX repositories_search_index ON repositories USING btree (uuid, owner_uuid, modified_by_client_uuid, modified_by_user_uuid, name);
 
 
 --
@@ -2375,3 +2373,5 @@ INSERT INTO schema_migrations (version) VALUES ('20150303210106');
 INSERT INTO schema_migrations (version) VALUES ('20150312151136');
 
 INSERT INTO schema_migrations (version) VALUES ('20150317132720');
+
+INSERT INTO schema_migrations (version) VALUES ('20150324152204');

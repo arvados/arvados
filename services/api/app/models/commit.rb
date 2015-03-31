@@ -137,20 +137,16 @@ class Commit < ActiveRecord::Base
 
   protected
 
-  def self.repositories
-    return @repositories if @repositories
+ def self.repositories
+   return @repositories if @repositories
 
-    @repositories = {}
-    @gitdirbase = Rails.configuration.git_repositories_dir
-    Dir.foreach @gitdirbase do |repo|
-      next if repo.match /^\./
-      git_dir = File.join(@gitdirbase,
-                          repo.match(/\.git$/) ? repo : File.join(repo, '.git'))
-      next if git_dir == Rails.configuration.git_internal_dir
-      repo_name = repo.sub(/\.git$/, '')
-      @repositories[repo_name] = {git_dir: git_dir}
-    end
+   @repositories = {}
+   Repository.find_each do |repo|
+     if git_dir = repo.server_path
+       @repositories[repo.name] = {git_dir: git_dir}
+     end
+   end
 
-    @repositories
-  end
+   @repositories
+ end
 end

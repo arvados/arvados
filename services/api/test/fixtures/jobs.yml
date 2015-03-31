@@ -77,7 +77,7 @@ foobar:
   cancelled_by_user_uuid: ~
   cancelled_by_client_uuid: ~
   script: hash
-  repository: foo
+  repository: active/foo
   script_version: 7def43a4d3f20789dda4700f703b5514cc3ed250
   script_parameters:
     input: 1f4b0bc7583c2a7f9102c395f4ffc5e3+45
@@ -113,7 +113,7 @@ barbaz:
   finished_at: <%= 2.minute.ago.to_s(:db) %>
   running: false
   success: true
-  repository: foo
+  repository: active/foo
   output: ea10d51bcf88862dbcc36eb292017dfd+45
   priority: 0
   log: d41d8cd98f00b204e9800998ecf8427e+0
@@ -141,7 +141,7 @@ runningbarbaz:
   finished_at: <%= 2.minute.ago.to_s(:db) %>
   running: true
   success: ~
-  repository: foo
+  repository: active/foo
   output: ea10d51bcf88862dbcc36eb292017dfd+45
   priority: 0
   log: d41d8cd98f00b204e9800998ecf8427e+0
@@ -158,7 +158,7 @@ previous_job_run:
   uuid: zzzzz-8i9sb-cjs4pklxxjykqqq
   created_at: <%= 14.minute.ago.to_s(:db) %>
   owner_uuid: zzzzz-tpzed-xurymjxw79nv3jz
-  repository: foo
+  repository: active/foo
   script: hash
   script_version: 4fe459abe02d9b365932b8f5dc419439ab4e2577
   script_parameters:
@@ -172,7 +172,7 @@ previous_docker_job_run:
   uuid: zzzzz-8i9sb-k6emstgk4kw4yhi
   created_at: <%= 14.minute.ago.to_s(:db) %>
   owner_uuid: zzzzz-tpzed-xurymjxw79nv3jz
-  repository: foo
+  repository: active/foo
   script: hash
   script_version: 4fe459abe02d9b365932b8f5dc419439ab4e2577
   script_parameters:
@@ -189,7 +189,7 @@ previous_job_run_with_arvados_sdk_version:
   uuid: zzzzz-8i9sb-eoo0321or2dw2jg
   created_at: <%= 14.minute.ago.to_s(:db) %>
   owner_uuid: zzzzz-tpzed-xurymjxw79nv3jz
-  repository: foo
+  repository: active/foo
   script: hash
   script_version: 31ce37fe365b3dc204300a3e4c396ad333ed0556
   script_parameters:
@@ -206,7 +206,7 @@ previous_job_run_no_output:
   uuid: zzzzz-8i9sb-cjs4pklxxjykppp
   created_at: <%= 14.minute.ago.to_s(:db) %>
   owner_uuid: zzzzz-tpzed-xurymjxw79nv3jz
-  repository: foo
+  repository: active/foo
   script: hash
   script_version: 4fe459abe02d9b365932b8f5dc419439ab4e2577
   script_parameters:
@@ -220,7 +220,7 @@ nondeterminisic_job_run:
   uuid: zzzzz-8i9sb-cjs4pklxxjykyyy
   created_at: <%= 14.minute.ago.to_s(:db) %>
   owner_uuid: zzzzz-tpzed-xurymjxw79nv3jz
-  repository: foo
+  repository: active/foo
   script: hash2
   script_version: 4fe459abe02d9b365932b8f5dc419439ab4e2577
   script_parameters:
@@ -311,7 +311,7 @@ job_in_subproject:
   created_at: 2014-10-15 12:00:00
   owner_uuid: zzzzz-j7d0g-axqo7eu9pwvna1x
   log: ~
-  repository: foo
+  repository: active/foo
   script: hash
   script_version: 4fe459abe02d9b365932b8f5dc419439ab4e2577
   state: Complete
@@ -343,7 +343,7 @@ running_will_be_completed:
 graph_stage1:
   uuid: zzzzz-8i9sb-graphstage10000
   owner_uuid: zzzzz-j7d0g-v955i6s2oi1cbso
-  repository: foo
+  repository: active/foo
   script: hash
   script_version: 4fe459abe02d9b365932b8f5dc419439ab4e2577
   state: Complete
@@ -352,7 +352,7 @@ graph_stage1:
 graph_stage2:
   uuid: zzzzz-8i9sb-graphstage20000
   owner_uuid: zzzzz-j7d0g-v955i6s2oi1cbso
-  repository: foo
+  repository: active/foo
   script: hash2
   script_version: 4fe459abe02d9b365932b8f5dc419439ab4e2577
   state: Complete
@@ -364,7 +364,7 @@ graph_stage2:
 graph_stage3:
   uuid: zzzzz-8i9sb-graphstage30000
   owner_uuid: zzzzz-j7d0g-v955i6s2oi1cbso
-  repository: foo
+  repository: active/foo
   script: hash2
   script_version: 4fe459abe02d9b365932b8f5dc419439ab4e2577
   state: Complete
@@ -380,7 +380,7 @@ job_with_latest_version:
   cancelled_by_user_uuid: ~
   cancelled_by_client_uuid: ~
   script: hash
-  repository: foo
+  repository: active/foo
   script_version: 7def43a4d3f20789dda4700f703b5514cc3ed250
   supplied_script_version: master
   script_parameters:
@@ -406,7 +406,7 @@ running_job_in_publicly_accessible_project:
   uuid: zzzzz-8i9sb-n7omg50bvt0m1nf
   owner_uuid: zzzzz-j7d0g-zhxawtyetzwc5f0
   modified_by_user_uuid: zzzzz-tpzed-xurymjxw79nv3jz
-  repository: foo
+  repository: active/foo
   script: running_job_script
   script_version: 4fe459abe02d9b365932b8f5dc419439ab4e2577
   state: Running
@@ -418,7 +418,7 @@ completed_job_in_publicly_accessible_project:
   uuid: zzzzz-8i9sb-jyq01m7in1jlofj
   owner_uuid: zzzzz-j7d0g-zhxawtyetzwc5f0
   modified_by_user_uuid: zzzzz-tpzed-xurymjxw79nv3jz
-  repository: foo
+  repository: active/foo
   script: completed_job_script
   script_version: 4fe459abe02d9b365932b8f5dc419439ab4e2577
   state: Complete

@@ -20,13 +20,13 @@ All Crunch scripts are managed through the Git revision control system.  Before 
 ~$ <span class="userinput">git config --global user.email $USER@example.com</span></code></pre>
 </notextile>
 
-On the Arvados Workbench, navigate to "Code repositories":https://{{site.arvados_workbench_host}}/repositories.  You should see a repository with your user name listed in the *name* column.  Next to *name* is the column *push_url*.  Copy the *push_url* value associated with your repository.  This should look like <notextile><code>git@git.{{ site.arvados_api_host }}:$USER.git</code></notextile>.
+On the Arvados Workbench, navigate to "Code repositories":https://{{site.arvados_workbench_host}}/repositories.  You should see a repository with your user name listed in the *name* column.  Next to *name* is the column *push_url*.  Copy the *push_url* value associated with your repository.  This should look like <notextile><code>git@git.{{ site.arvados_api_host }}:$USER/$USER.git</code></notextile>.
 
 Next, on the Arvados virtual machine, clone your Git repository:
 
 <notextile>
 <pre><code>~$ <span class="userinput">cd $HOME</span> # (or wherever you want to install)
-~$ <span class="userinput">git clone git@git.{{ site.arvados_api_host }}:$USER.git</span>
+~$ <span class="userinput">git clone git@git.{{ site.arvados_api_host }}:$USER/$USER.git</span>
 Cloning into '$USER'...</code></pre>
 </notextile>
 
@@ -84,7 +84,7 @@ Counting objects: 4, done.
 Compressing objects: 100% (2/2), done.
 Writing objects: 100% (4/4), 682 bytes, done.
 Total 4 (delta 0), reused 0 (delta 0)
-To git@git.qr1hi.arvadosapi.com:$USER.git
+To git@git.qr1hi.arvadosapi.com:$USER/$USER.git
  * [new branch]      master -> master</code></pre>
 </notextile>
 

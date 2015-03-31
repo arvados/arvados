@@ -83,7 +83,7 @@ class Arvados::V1::UsersControllerTest < ActionController::TestCase
 
   test "create user with user, vm and repo as input" do
     authorize_with :admin
-    repo_name = 'test_repo'
+    repo_name = 'usertestrepo'
 
     post :setup, {
       repo_name: repo_name,
@@ -113,7 +113,7 @@ class Arvados::V1::UsersControllerTest < ActionController::TestCase
         created['uuid'], created['email'], 'arvados#user', false, 'User'
 
     verify_link response_items, 'arvados#repository', true, 'permission', 'can_manage',
-        repo_name, created['uuid'], 'arvados#repository', true, 'Repository'
+        "foo/#{repo_name}", created['uuid'], 'arvados#repository', true, 'Repository'
 
     verify_link response_items, 'arvados#group', true, 'permission', 'can_read',
         'All users', created['uuid'], 'arvados#group', true, 'Group'
@@ -129,7 +129,7 @@ class Arvados::V1::UsersControllerTest < ActionController::TestCase
 
     post :setup, {
       uuid: 'bogus_uuid',
-      repo_name: 'test_repo',
+      repo_name: 'usertestrepo',
       vm_uuid: @vm_uuid
     }
     response_body = JSON.parse(@response.body)
@@ -143,7 +143,7 @@ class Arvados::V1::UsersControllerTest < ActionController::TestCase
 
     post :setup, {
       user: {uuid: 'bogus_uuid'},
-      repo_name: 'test_repo',
+      repo_name: 'usertestrepo',
       vm_uuid: @vm_uuid,
       openid_prefix: 'https://www.google.com/accounts/o8/id'
     }
@@ -158,7 +158,7 @@ class Arvados::V1::UsersControllerTest < ActionController::TestCase
     authorize_with :admin
 
     post :setup, {
-      repo_name: 'test_repo',
+      repo_name: 'usertestrepo',
       vm_uuid: @vm_uuid,
       openid_prefix: 'https://www.google.com/accounts/o8/id'
     }
@@ -174,7 +174,7 @@ class Arvados::V1::UsersControllerTest < ActionController::TestCase
 
     post :setup, {
       user: {},
-      repo_name: 'test_repo',
+      repo_name: 'usertestrepo',
       vm_uuid: @vm_uuid,
       openid_prefix: 'https://www.google.com/accounts/o8/id'
     }
@@ -191,7 +191,7 @@ class Arvados::V1::UsersControllerTest < ActionController::TestCase
 
     post :setup, {
       uuid: users(:inactive).uuid,
-      repo_name: 'test_repo',
+      repo_name: 'usertestrepo',
       vm_uuid: @vm_uuid
     }
 
@@ -207,7 +207,7 @@ class Arvados::V1::UsersControllerTest < ActionController::TestCase
 
     # expect repo and vm links
     verify_link response_items, 'arvados#repository', true, 'permission', 'can_manage',
-        'test_repo', resp_obj['uuid'], 'arvados#repository', true, 'Repository'
+        'inactiveuser/usertestrepo', resp_obj['uuid'], 'arvados#repository', true, 'Repository'
 
     verify_link response_items, 'arvados#virtualMachine', true, 'permission', 'can_login',
         @vm_uuid, resp_obj['uuid'], 'arvados#virtualMachine', false, 'VirtualMachine'
@@ -257,7 +257,7 @@ class Arvados::V1::UsersControllerTest < ActionController::TestCase
     authorize_with :admin
 
     post :setup, {
-      repo_name: 'test_repo',
+      repo_name: 'usertestrepo',
       user: {email: 'foo@example.com'},
       openid_prefix: 'https://www.google.com/accounts/o8/id'
     }
@@ -276,7 +276,7 @@ class Arvados::V1::UsersControllerTest < ActionController::TestCase
     authorize_with :admin
 
     post :setup, {
-      repo_name: 'test_repo',
+      repo_name: 'usertestrepo',
       vm_uuid: 'no_such_vm',
       user: {email: 'foo@example.com'},
       openid_prefix: 'https://www.google.com/accounts/o8/id'
@@ -293,7 +293,7 @@ class Arvados::V1::UsersControllerTest < ActionController::TestCase
     authorize_with :admin
 
     post :setup, {
-      repo_name: 'test_repo',
+      repo_name: 'usertestrepo',
       openid_prefix: 'https://www.google.com/accounts/o8/id',
       vm_uuid: @vm_uuid,
       user: {email: 'foo@example.com'}
@@ -333,7 +333,7 @@ class Arvados::V1::UsersControllerTest < ActionController::TestCase
         'All users', response_object['uuid'], 'arvados#group', true, 'Group'
 
     verify_link response_items, 'arvados#repository', false, 'permission', 'can_manage',
-        'test_repo', response_object['uuid'], 'arvados#repository', true, 'Repository'
+        'foo/usertestrepo', response_object['uuid'], 'arvados#repository', true, 'Repository'
 
     verify_link response_items, 'arvados#virtualMachine', false, 'permission', 'can_login',
         nil, response_object['uuid'], 'arvados#virtualMachine', false, 'VirtualMachine'
@@ -344,7 +344,7 @@ class Arvados::V1::UsersControllerTest < ActionController::TestCase
 
     post :setup, {
       openid_prefix: 'https://www.google.com/accounts/o8/id',
-      repo_name: 'test_repo',
+      repo_name: 'usertestrepo',
       vm_uuid: @vm_uuid,
       user: {
         first_name: 'test_first_name',
@@ -370,7 +370,7 @@ class Arvados::V1::UsersControllerTest < ActionController::TestCase
 
     post :setup, {
       openid_prefix: 'https://www.google.com/accounts/o8/id',
-      repo_name: 'test_repo',
+      repo_name: 'usertestrepo',
       user: {
         email: inactive_user['email']
       }
@@ -391,7 +391,7 @@ class Arvados::V1::UsersControllerTest < ActionController::TestCase
     authorize_with :admin
 
     post :setup, {
-      repo_name: 'test_repo',
+      repo_name: 'usertestrepo',
       openid_prefix: 'http://www.example.com/account',
       user: {
         first_name: "in_create_test_first_name",
@@ -418,7 +418,7 @@ class Arvados::V1::UsersControllerTest < ActionController::TestCase
         created['uuid'], created['email'], 'arvados#user', false, 'User'
 
     verify_link response_items, 'arvados#repository', true, 'permission', 'can_manage',
-        'test_repo', created['uuid'], 'arvados#repository', true, 'Repository'
+        'foo/usertestrepo', created['uuid'], 'arvados#repository', true, 'Repository'
 
     verify_link response_items, 'arvados#group', true, 'permission', 'can_read',
         'All users', created['uuid'], 'arvados#group', true, 'Group'
@@ -431,7 +431,7 @@ class Arvados::V1::UsersControllerTest < ActionController::TestCase
     authorize_with :admin
 
     post :setup, {
-      repo_name: 'test_repo',
+      repo_name: 'usertestrepo',
       user: {
         first_name: "in_create_test_first_name",
         last_name: "test_last_name",
@@ -456,7 +456,7 @@ class Arvados::V1::UsersControllerTest < ActionController::TestCase
         email: "foo@example.com"
       },
       vm_uuid: @vm_uuid,
-      repo_name: 'test_repo',
+      repo_name: 'usertestrepo',
       openid_prefix: 'https://www.google.com/accounts/o8/id'
     }
 
@@ -478,7 +478,7 @@ class Arvados::V1::UsersControllerTest < ActionController::TestCase
         created['uuid'], created['email'], 'arvados#user', false, 'User'
 
     verify_link response_items, 'arvados#repository', true, 'permission', 'can_manage',
-        'test_repo', created['uuid'], 'arvados#repository', true, 'Repository'
+        'foo/usertestrepo', created['uuid'], 'arvados#repository', true, 'Repository'
 
     verify_link response_items, 'arvados#group', true, 'permission', 'can_read',
         'All users', created['uuid'], 'arvados#group', true, 'Group'
@@ -522,7 +522,7 @@ class Arvados::V1::UsersControllerTest < ActionController::TestCase
 
     # invoke setup with a repository
     post :setup, {
-      repo_name: 'new_repo',
+      repo_name: 'usertestrepo',
       uuid: active_user['uuid']
     }
 
@@ -538,7 +538,7 @@ class Arvados::V1::UsersControllerTest < ActionController::TestCase
         'All users', created['uuid'], 'arvados#group', true, 'Group'
 
     verify_link response_items, 'arvados#repository', true, 'permission', 'can_manage',
-        'new_repo', created['uuid'], 'arvados#repository', true, 'Repository'
+        'active/usertestrepo', created['uuid'], 'arvados#repository', true, 'Repository'
 
     verify_link response_items, 'arvados#virtualMachine', false, 'permission', 'can_login',
         nil, created['uuid'], 'arvados#virtualMachine', false, 'VirtualMachine'
@@ -547,6 +547,11 @@ class Arvados::V1::UsersControllerTest < ActionController::TestCase
   test "setup active user with vm and no repo" do
     authorize_with :admin
     active_user = users(:active)
+    repos_query = Repository.where(owner_uuid: active_user.uuid)
+    repo_link_query = Link.where(tail_uuid: active_user.uuid,
+                                 link_class: "permission", name: "can_manage")
+    repos_count = repos_query.count
+    repo_link_count = repo_link_query.count
 
     # invoke setup with a repository
     post :setup, {
@@ -566,8 +571,8 @@ class Arvados::V1::UsersControllerTest < ActionController::TestCase
     verify_link response_items, 'arvados#group', true, 'permission', 'can_read',
         'All users', created['uuid'], 'arvados#group', true, 'Group'
 
-    verify_link response_items, 'arvados#repository', false, 'permission', 'can_manage',
-        'new_repo', created['uuid'], 'arvados#repository', true, 'Repository'
+    assert_equal(repos_count, repos_query.count)
+    assert_equal(repo_link_count, repo_link_query.count)
 
     verify_link response_items, 'arvados#virtualMachine', true, 'permission', 'can_login',
         @vm_uuid, created['uuid'], 'arvados#virtualMachine', false, 'VirtualMachine'

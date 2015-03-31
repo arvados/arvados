@@ -12,7 +12,7 @@ class SerializedEncodingTest < ActionDispatch::IntegrationTest
     human: {properties: {eye_color: 'gray'}},
 
     job: {
-      repository: 'foo',
+      repository: 'active/foo',
       runtime_constraints: {docker_image: 'arvados/apitestfixture'},
       script: 'hash',
       script_version: 'master',

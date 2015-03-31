@@ -76,7 +76,7 @@ Run the script "crunch_scripts/hash.py" in the repository "you" using the "maste
 {
   "job": {
     "script": "hash.py",
-    "repository": "<b>you</b>",
+    "repository": "<b>you</b>/<b>you</b>",
     "script_version": "master",
     "script_parameters": {
       "input": "c1bad4b39ca5a924e481008009d94e32+210"
@@ -92,7 +92,7 @@ Run using exactly the version "d00220fb38d4b85ca8fc28a8151702a2b9d1dec5". Arvado
 {
   "job": {
     "script": "hash.py",
-    "repository": "<b>you</b>",
+    "repository": "<b>you</b>/<b>you</b>",
     "script_version": "d00220fb38d4b85ca8fc28a8151702a2b9d1dec5",
     "script_parameters": {
       "input": "c1bad4b39ca5a924e481008009d94e32+210"
@@ -108,7 +108,7 @@ Arvados should re-use a previous job if the "script_version" of the previous job
 {
   "job": {
     "script": "hash.py",
-    "repository": "<b>you</b>",
+    "repository": "<b>you</b>/<b>you</b>",
     "script_version": "master",
     "script_parameters": {
       "input": "c1bad4b39ca5a924e481008009d94e32+210"
@@ -126,27 +126,27 @@ The same behavior, using filters:
 {
   "job": {
     "script": "hash.py",
-    "repository": "<b>you</b>",
+    "repository": "<b>you</b>/<b>you</b>",
     "script_version": "master",
     "script_parameters": {
       "input": "c1bad4b39ca5a924e481008009d94e32+210"
     }
   },
   "filters": [["script", "=", "hash.py"],
-              ["repository", "=", "<b>you</b>"],
+              ["repository", "=", "<b>you</b>/<b>you</b>"],
               ["script_version", "in git", "earlier_version_tag"],
               ["script_version", "not in git", "blacklisted_version_tag"]],
   "find_or_create": true
 }
 </pre></notextile>
 
-Run the script "crunch_scripts/monte-carlo.py" in the repository "you" using the current "master" commit. Because it is marked as "nondeterministic", this job will not be considered as a suitable candidate for future job submissions that use the "find_or_create" feature.
+Run the script "crunch_scripts/monte-carlo.py" in the repository "you/you" using the current "master" commit. Because it is marked as "nondeterministic", this job will not be considered as a suitable candidate for future job submissions that use the "find_or_create" feature.
 
 <notextile><pre>
 {
   "job": {
     "script": "monte-carlo.py",
-    "repository": "<b>you</b>",
+    "repository": "<b>you</b>/<b>you</b>",
     "script_version": "master",
     "nondeterministic": true,
     "script_parameters": {
