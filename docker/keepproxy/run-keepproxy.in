@@ -6,4 +6,10 @@ export ARVADOS_API_HOST_INSECURE=yes
 # to get one while building the images
 export ARVADOS_API_TOKEN=@@API_SUPERUSER_SECRET@@
 
-exec keepproxy -listen=':9100'
+read pid cmd state ppid pgrp session tty_nr tpgid rest < /proc/self/stat
+trap "kill -TERM -$pgrp; exit" HUP EXIT TERM QUIT
+
+while /bin/true ; do
+    keepproxy -listen=':9100'
+    sleep 1
+done
