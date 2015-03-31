@@ -10,7 +10,7 @@ class UserProfileTest < ActionDispatch::IntegrationTest
     Rails.configuration.user_profile_form_fields = @user_profile_form_fields
   end
 
-  def verify_homepage_with_profile user, invited, has_profile, getting_started_shown=false
+  def verify_homepage_with_profile user, invited, has_profile
     profile_config = Rails.configuration.user_profile_form_fields
 
     if !user
@@ -18,7 +18,7 @@ class UserProfileTest < ActionDispatch::IntegrationTest
     elsif user['is_active']
       if profile_config && !has_profile
         assert page.has_text?('Save profile'), 'No text - Save profile'
-        add_profile user, invited, has_profile, getting_started_shown
+        add_profile user
       else
         assert page.has_text?('Active pipelines'), 'Not found text - Active pipelines'
         assert page.has_no_text?('Save profile'), 'Found text - Save profile'
@@ -69,7 +69,7 @@ class UserProfileTest < ActionDispatch::IntegrationTest
   end
 
   # Check manage profile page and add missing profile to the user
-  def add_profile user, invited, has_profile, getting_started_shown
+  def add_profile user
     assert page.has_no_text?('My projects'), 'Found text - My projects'
     assert page.has_no_text?('Projects shared with me'), 'Found text - Projects shared with me'
 
@@ -109,7 +109,7 @@ class UserProfileTest < ActionDispatch::IntegrationTest
     click_button "Save profile"
     # profile saved and in profile page now with success
     assert page.has_text?('Thank you for filling in your profile'), 'No text - Thank you for filling'
-    if getting_started_shown
+    if user['prefs']['getting_started_shown']
       click_link 'Back to work!'
     else
       click_link 'Get started'
@@ -129,7 +129,7 @@ class UserProfileTest < ActionDispatch::IntegrationTest
     ['active_no_prefs_profile_no_getting_started_shown',
       api_fixture('users')['active_no_prefs_profile_no_getting_started_shown'], true, false],
     ['active_no_prefs_profile_with_getting_started_shown',
-      api_fixture('users')['active_no_prefs_profile_with_getting_started_shown'], true, false, true],
+      api_fixture('users')['active_no_prefs_profile_with_getting_started_shown'], true, false],
   ].each do |token, user, invited, has_profile|
 
     test "visit home page when profile is configured for user #{token}" do

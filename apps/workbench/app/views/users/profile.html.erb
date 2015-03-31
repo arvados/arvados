@@ -16,7 +16,7 @@
         <div class="panel-body">
           <% if !missing_required_profile? && params[:offer_return_to] %>
             <div class="alert alert-success">
-              <% if current_user.prefs['getting_started_shown'] %>
+              <% if current_user.prefs[:getting_started_shown] %>
                 <p>Thank you for filling in your profile. <%= link_to 'Back to work!', params[:offer_return_to], class: 'btn btn-sm btn-primary' %></p>
               <% else %>
                 <p>Thank you for filling in your profile. <%= link_to 'Get started', params[:offer_return_to], class: 'btn btn-sm btn-primary' %></p>

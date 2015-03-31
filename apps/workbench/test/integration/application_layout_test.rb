@@ -110,8 +110,6 @@ class ApplicationLayoutTest < ActionDispatch::IntegrationTest
     ['active_no_prefs', api_fixture('users')['active_no_prefs'], true, false],
     ['active_no_prefs_profile_no_getting_started_shown',
         api_fixture('users')['active_no_prefs_profile_no_getting_started_shown'], true, false],
-    ['active_no_prefs_profile_with_getting_started_shown',
-        api_fixture('users')['active_no_prefs_profile_with_getting_started_shown'], true, false],
   ].each do |token, user, invited, has_profile|
 
     test "visit home page for user #{token}" do
@@ -164,13 +162,11 @@ class ApplicationLayoutTest < ActionDispatch::IntegrationTest
       assert_no_selector 'button:not([disabled])', text: 'Prev'  # Prev button is again disabled
 
       # Click Next until last page is reached and verify that it is disabled
-      foundDisabledNext = false
       (0..20).each do |i|   # currently we only have 4 pages, and don't expect to have more than 20 in future
         click_button 'Next'
         begin
           find('button:not([disabled])', text: 'Next')
         rescue => e
-          foundDisabledNext = true if e.message.include?('Unable to find')
           break
         end
       end
