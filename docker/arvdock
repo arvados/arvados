@@ -10,9 +10,15 @@ COMPUTE_COUNTER=0
 
 function usage {
     echo >&2
-    echo >&2 "usage: $0 (start|stop|restart|test|reset) [options]"
+    echo >&2 "usage: $0 (start|stop|restart|reset|test) [options]"
     echo >&2
-    echo >&2 "$0 start/stop/restart options:"
+    echo >&2 "start    run new or restart stopped arvados containers"
+    echo >&2 "stop     stop arvados containers"
+    echo >&2 "restart  stop and then start arvados containers"
+    echo >&2 "reset    stop and delete containers WARNING: this will delete the data inside Arvados!"
+    echo >&2 "test     run tests"
+    echo >&2
+    echo >&2 "$0 options:"
     echo >&2 "  -d[port], --doc[=port]        Documentation server (default port 9898)"
     echo >&2 "  -w[port], --workbench[=port]  Workbench server (default port 9899)"
     echo >&2 "  -s[port], --sso[=port]        SSO server (default port 9901)"
