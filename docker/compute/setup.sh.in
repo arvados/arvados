@@ -6,6 +6,9 @@ export ARVADOS_API_HOST=api
 export ARVADOS_API_HOST_INSECURE=yes
 export ARVADOS_API_TOKEN=@@API_SUPERUSER_SECRET@@
 
+# Wait for API server to come up.
+while ! arv user current ; do sleep 1 ; done
+
 arv node create --node {} > /tmp/node.json
 
 UUID=`grep \"uuid\" /tmp//node.json  |cut -f4 -d\"`
