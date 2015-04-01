@@ -48,7 +48,7 @@ class StreamFileReaderTestCase(unittest.TestCase):
         self.assertEqual('123456789', ''.join(sfile.readall()))
 
     def test_one_arg_seek(self):
-        self.test_relative_seek([])
+        self.test_absolute_seek([])
 
     def test_absolute_seek(self, args=[os.SEEK_SET]):
         sfile = self.make_count_reader()
