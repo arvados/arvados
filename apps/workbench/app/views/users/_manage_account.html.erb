@@ -1,52 +1,22 @@
 <div class="col-sm-6">
   <div class="panel-group" id="arv-adv-accordion">
-    <% ['Virtual Machines',
-       'Repositories'].each do |section| %>
-      <% section_id = section.gsub(" ","_").downcase %>
-      <div class="panel panel-default">
-        <div class="panel-heading">
-          <h4 class="panel-title">
-            <a data-parent="#arv-adv-accordion" href="#manage_<%=section_id%>">
-              <%= section %>
-            </a>
-          </h4>
-        </div>
-        <div id="manage_<%=section_id%>">
-          <div class="panel-body">
-            <%= render partial: "manage_#{section_id}" %>
-          </div>
-        </div>
-      </div>
-    <% end %>
+    <div class="panel panel-default">
+      <%= render partial: "manage_virtual_machines" %>
+    </div>
+    <div class="panel panel-default">
+      <%= render partial: "manage_repositories" %>
+    </div>
   </div>
 </div>
 <div class="col-sm-6">
   <div class="panel-group" id="arv-adv-accordion">
-    <% ['SSH Keys',
-      'Current Token'].each do |section| %>
-      <% section_id = section.gsub(" ","_").downcase %>
-      <div class="panel panel-default">
-        <div class="panel-heading">
-          <% if section_id == 'ssh_keys' %>
-            <div class="pull-right">
-              <%= link_to raw('<i class="fa fa-plus"></i>' " Add new SSH key"), add_ssh_key_popup_url,
-                           {class: 'btn btn-xs btn-primary', :remote => true, 'data-toggle' =>  "modal",
-                            'data-target' => '#add-ssh-key-modal-window'}  %>
-            </div>
-          <% end %>
-          <h4 class="panel-title">
-            <a data-parent="#arv-adv-accordion" href="#manage_<%=section_id%>">
-              <%= section %>
-            </a>
-          </h4>
-        </div>
-        <div id="manage_<%=section_id%>">
-          <div class="panel-body">
-            <%= render partial: "manage_#{section_id}" %>
-          </div>
-        </div>
-      </div>
-    <% end %>
+    <div class="panel panel-default">
+      <%= render partial: "manage_ssh_keys" %>
+    </div>
+    <div class="panel panel-default">
+      <%= render partial: "manage_current_token" %>
+    </div>
   </div>
   <div id="add-ssh-key-modal-window" class="modal fade" role="dialog" aria-labelledby="myModalLabel" aria-hidden="true"></div>
+  <%= render partial: "add_repository_modal" %>
 </div>

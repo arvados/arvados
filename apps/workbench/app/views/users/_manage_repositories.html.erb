@@ -1,4 +1,18 @@
-<div>
+<div class="panel panel-default">
+  <div class="panel-heading">
+    <div class="pull-right">
+      <%= link_to raw('<i class="fa fa-plus"></i> Add new repository'), "#",
+                   {class: 'btn btn-xs btn-primary', 'data-toggle' => "modal",
+                    'data-target' => '#add-repository-modal'}  %>
+    </div>
+    <h4 class="panel-title">
+      <a data-parent="#arv-adv-accordion" href="#manage_repositories">
+        Repositories
+      </a>
+    </h4>
+  </div>
+
+<div id="manage_repositories" class="panel-body">
   <p>
     For more information see <%= link_to raw('Writing a pipeline'),
     "#{Rails.configuration.arvados_docsite}/user/tutorials/tutorial-firstscript.html", target: "_blank"%>.
@@ -32,7 +46,7 @@
               <%= writable ? 'writable' : 'read-only' %>
             </td>
             <td style="word-break:break-all;">
-              <code><%= writable ? repo[:push_url] : repo[:fetch_url] %></code>
+              <code><%= writable ? repo.push_url : repo.fetch_url %></code>
             </td>
             <td>
               <% if writable == 'can_manage' %>
@@ -44,4 +58,5 @@
       </tbody>
     </table>
   <% end %>
+</div>
 </div>

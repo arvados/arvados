@@ -20,6 +20,7 @@ RUN addgroup --gid 4005 crunch && mkdir /home/crunch && useradd --uid 4005 --gid
 ADD supervisor.conf /etc/supervisor/conf.d/arvados.conf
 ADD generated/setup.sh /usr/local/bin/setup.sh
 ADD wrapdocker /usr/local/bin/wrapdocker.sh
+ADD munge.sh /usr/local/bin/munge.sh
 
 VOLUME /var/lib/docker
 # Start the supervisor.

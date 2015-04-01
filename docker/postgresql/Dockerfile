@@ -1,7 +1,7 @@
 # PostgreSQL Docker container for Arvados.
 
 FROM arvados/debian:wheezy
-MAINTAINER Tim Pierce <twp@curoverse.com>
+MAINTAINER Ward Vandewege <ward@curoverse.com>
 
 # TODO(twp): parameterize variables via autoconf or similar.
 ENV POSTGRES_ROOT_PW   dummy_pw

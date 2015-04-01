@@ -39,14 +39,10 @@ class UserTest < ActiveSupport::TestCase
   end
 
   test "non-admin can't update username" do
-    set_user_from_auth :active_trustedclient
-    user = User.find_by_uuid(users(:active).uuid)
+    set_user_from_auth :rominiadmin
+    user = User.find_by_uuid(users(:rominiadmin).uuid)
     user.username = "selfupdate"
-    begin
-      refute(user.save)
-    rescue ArvadosModel::PermissionDeniedError
-      # That works too.
-    end
+    assert_not_allowed { user.save }
   end
 
   def check_admin_username_change(fixture_name)
@@ -106,6 +102,42 @@ class UserTest < ActiveSupport::TestCase
 
   test "no username set when no base available" do
     check_new_username_setting("_", nil)
+  end
+
+  test "updating username updates repository names" do
+    set_user_from_auth :admin
+    user = users(:active)
+    user.username = "newtestname"
+    assert(user.save, "username update failed")
+    {foo: "newtestname/foo", repository2: "newtestname/foo2"}.
+        each_pair do |repo_sym, expect_name|
+      assert_equal(expect_name, repositories(repo_sym).name)
+    end
+  end
+
+  test "admin can clear username when user owns no repositories" do
+    set_user_from_auth :admin
+    user = users(:spectator)
+    user.username = nil
+    assert(user.save)
+    assert_nil(user.username)
+  end
+
+  test "admin can't clear username when user owns repositories" do
+    set_user_from_auth :admin
+    user = users(:active)
+    start_username = user.username
+    user.username = nil
+    assert_not_allowed { user.save }
+    refute_empty(user.errors[:username])
+  end
+
+  test "failed username update doesn't change repository names" do
+    set_user_from_auth :admin
+    user = users(:active)
+    user.username = users(:fuse).username
+    assert_not_allowed { user.save }
+    assert_equal("active/foo", repositories(:foo).name)
   end
 
   [[false, 'foo@example.com', true, nil],
@@ -391,14 +423,7 @@ class UserTest < ActiveSupport::TestCase
 
   test "create new user as non-admin user" do
     set_user_from_auth :active
-
-    begin
-      user = User.new
-      user.save
-    rescue ArvadosModel::PermissionDeniedError => e
-    end
-    assert (e.message.include? 'PermissionDeniedError'),
-        'Expected PermissionDeniedError'
+    assert_not_allowed { User.new.save }
   end
 
   test "setup new user" do
@@ -411,7 +436,7 @@ class UserTest < ActiveSupport::TestCase
 
     vm = VirtualMachine.create
 
-    response = User.setup user, openid_prefix, 'test_repo', vm.uuid
+    response = User.setup user, openid_prefix, 'foo/testrepo', vm.uuid
 
     resp_user = find_obj_in_resp response, 'User'
     verify_user resp_user, email
@@ -453,7 +478,7 @@ class UserTest < ActiveSupport::TestCase
 
     verify_link resp_link, 'permission', 'can_login', email, bad_uuid
 
-    response = User.setup user, openid_prefix, 'test_repo', vm.uuid
+    response = User.setup user, openid_prefix, 'foo/testrepo', vm.uuid
 
     resp_user = find_obj_in_resp response, 'User'
     verify_user resp_user, email
@@ -499,7 +524,7 @@ class UserTest < ActiveSupport::TestCase
     verify_link group_perm, 'permission', 'can_read', resp_user[:uuid], nil
 
     # invoke setup again with repo_name
-    response = User.setup user, openid_prefix, 'test_repo'
+    response = User.setup user, openid_prefix, 'foo/testrepo'
     resp_user = find_obj_in_resp response, 'User', nil
     verify_user resp_user, email
     assert_equal user.uuid, resp_user[:uuid], 'expected uuid not found'
@@ -513,7 +538,7 @@ class UserTest < ActiveSupport::TestCase
     # invoke setup again with a vm_uuid
     vm = VirtualMachine.create
 
-    response = User.setup user, openid_prefix, 'test_repo', vm.uuid
+    response = User.setup user, openid_prefix, 'foo/testrepo', vm.uuid
 
     resp_user = find_obj_in_resp response, 'User', nil
     verify_user resp_user, email
@@ -582,7 +607,8 @@ class UserTest < ActiveSupport::TestCase
 
     can_setup = (Rails.configuration.auto_setup_new_users and
                  (not expect_username.nil?))
-    prior_repo = Repository.where(name: expect_username).first
+    expect_repo_name = "#{expect_username}/#{expect_username}"
+    prior_repo = Repository.where(name: expect_repo_name).first
 
     user = User.new
     user.first_name = "first_name_for_newly_created_user"
@@ -600,7 +626,7 @@ class UserTest < ActiveSupport::TestCase
                        user.uuid, user.email, "permission", "can_login")
     # Check for repository.
     if named_repo = (prior_repo or
-                     Repository.where(name: expect_username).first)
+                     Repository.where(name: expect_repo_name).first)
       verify_link_exists((can_setup and prior_repo.nil? and
                           Rails.configuration.auto_setup_new_users_with_repository),
                          named_repo.uuid, user.uuid, "permission", "can_manage")
