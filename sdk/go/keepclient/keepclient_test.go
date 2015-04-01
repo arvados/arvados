@@ -528,6 +528,57 @@ func (s *StandaloneSuite) TestGetWithServiceHint(c *C) {
 	c.Check(content, DeepEquals, []byte("foo"))
 }
 
+// Use a service hint to fetch from a local disk service, overriding
+// rendezvous probe order.
+func (s *StandaloneSuite) TestGetWithLocalServiceHint(c *C) {
+	uuid := "zzzzz-bi6l4-zzzzzzzzzzzzzzz"
+	hash := fmt.Sprintf("%x", md5.Sum([]byte("foo")))
+
+	// This one shouldn't be used, although it appears first in
+	// rendezvous probe order:
+	ks0 := RunFakeKeepServer(StubGetHandler{
+		c,
+		"error if used",
+		"abc123",
+		http.StatusOK,
+		[]byte("foo")})
+	defer ks0.listener.Close()
+	// This one should be used:
+	ks := RunFakeKeepServer(StubGetHandler{
+		c,
+		hash+"+K@"+uuid,
+		"abc123",
+		http.StatusOK,
+		[]byte("foo")})
+	defer ks.listener.Close()
+
+	arv, err := arvadosclient.MakeArvadosClient()
+	kc, _ := MakeKeepClient(&arv)
+	arv.ApiToken = "abc123"
+	kc.SetServiceRoots(
+		map[string]string{
+			"zzzzz-bi6l4-yyyyyyyyyyyyyyy": ks0.url,
+			"zzzzz-bi6l4-xxxxxxxxxxxxxxx": ks0.url,
+			"zzzzz-bi6l4-wwwwwwwwwwwwwww": ks0.url,
+			uuid: ks.url},
+		map[string]string{
+			"zzzzz-bi6l4-yyyyyyyyyyyyyyy": ks0.url,
+			"zzzzz-bi6l4-xxxxxxxxxxxxxxx": ks0.url,
+			"zzzzz-bi6l4-wwwwwwwwwwwwwww": ks0.url,
+			uuid: ks.url},
+	)
+
+	r, n, uri, err := kc.Get(hash+"+K@"+uuid)
+	defer r.Close()
+	c.Check(err, Equals, nil)
+	c.Check(n, Equals, int64(3))
+	c.Check(uri, Equals, fmt.Sprintf("%s/%s", ks.url, hash+"+K@"+uuid))
+
+	content, err := ioutil.ReadAll(r)
+	c.Check(err, Equals, nil)
+	c.Check(content, DeepEquals, []byte("foo"))
+}
+
 func (s *StandaloneSuite) TestGetWithServiceHintFailoverToLocals(c *C) {
 	uuid := "zzzzz-bi6l4-123451234512345"
 	hash := fmt.Sprintf("%x", md5.Sum([]byte("foo")))
