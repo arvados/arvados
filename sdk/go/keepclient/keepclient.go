@@ -27,6 +27,7 @@ var InsufficientReplicasError = errors.New("Could not write sufficient replicas"
 var OversizeBlockError = errors.New("Exceeded maximum block size ("+strconv.Itoa(BLOCKSIZE)+")")
 var MissingArvadosApiHost = errors.New("Missing required environment variable ARVADOS_API_HOST")
 var MissingArvadosApiToken = errors.New("Missing required environment variable ARVADOS_API_TOKEN")
+var InvalidLocatorError = errors.New("Invalid locator")
 
 const X_Keep_Desired_Replicas = "X-Keep-Desired-Replicas"
 const X_Keep_Replicas_Stored = "X-Keep-Replicas-Stored"
@@ -244,44 +245,36 @@ func (kc *KeepClient) getSortedRoots(locator string) []string {
 }
 
 type Locator struct {
-	Hash      string
-	Size      int
-	Signature string
-	Timestamp string
+	Hash  string
+	Size  int		// -1 if data size is not known
+	Hints []string		// Including the size hint, if any
 }
 
-func MakeLocator2(hash string, hints string) (locator Locator) {
-	locator.Hash = hash
-	if hints != "" {
-		signature_pat, _ := regexp.Compile("^A([[:xdigit:]]+)@([[:xdigit:]]{8})$")
-		for _, hint := range strings.Split(hints, "+") {
-			if hint != "" {
-				if match, _ := regexp.MatchString("^[[:digit:]]+$", hint); match {
-					fmt.Sscanf(hint, "%d", &locator.Size)
-				} else if m := signature_pat.FindStringSubmatch(hint); m != nil {
-					locator.Signature = m[1]
-					locator.Timestamp = m[2]
-				} else if match, _ := regexp.MatchString("^[:upper:]", hint); match {
-					// Any unknown hint that starts with an uppercase letter is
-					// presumed to be valid and ignored, to permit forward compatibility.
-				} else {
-					// Unknown format; not a valid locator.
-					return Locator{"", 0, "", ""}
-				}
-			}
+func (loc *Locator) String() string {
+	s := loc.Hash
+	if len(loc.Hints) > 0 {
+		s = s + "+" + strings.Join(loc.Hints, "+")
+	}
+	return s
+}
+
+var locatorMatcher = regexp.MustCompile("^([0-9a-f]{32})([+](.*))?$")
+
+func MakeLocator(path string) (*Locator, error) {
+	sm := locatorMatcher.FindStringSubmatch(path)
+	if sm == nil {
+		return nil, InvalidLocatorError
+	}
+	loc := Locator{Hash: sm[1], Size: -1}
+	if sm[2] != "" {
+		loc.Hints = strings.Split(sm[3], "+")
+	} else {
+		loc.Hints = []string{}
+	}
+	if len(loc.Hints) > 0 {
+		if size, err := strconv.Atoi(loc.Hints[0]); err == nil {
+			loc.Size = size
 		}
 	}
-	return locator
-}
-
-var pathpattern = regexp.MustCompile("^([0-9a-f]{32})([+].*)?$")
-
-func MakeLocator(path string) Locator {
-	sm := pathpattern.FindStringSubmatch(path)
-	if sm == nil {
-		log.Print("Failed match ", path)
-		return Locator{"", 0, "", ""}
-	}
-
-	return MakeLocator2(sm[1], sm[2])
+	return &loc, nil
 }

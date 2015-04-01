@@ -400,10 +400,16 @@ func (this PutBlockHandler) ServeHTTP(resp http.ResponseWriter, req *http.Reques
 		return
 	}
 
-	if loc := keepclient.MakeLocator(locatorIn); loc.Size > 0 && int64(loc.Size) != expectLength {
-		err = LengthMismatchError
-		status = http.StatusBadRequest
-		return
+	if locatorIn != "" {
+		var loc *keepclient.Locator
+		if loc, err = keepclient.MakeLocator(locatorIn); err != nil {
+			status = http.StatusBadRequest
+			return
+		} else if loc.Size > 0 && int64(loc.Size) != expectLength {
+			err = LengthMismatchError
+			status = http.StatusBadRequest
+			return
+		}
 	}
 
 	var pass bool

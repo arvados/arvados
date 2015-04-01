@@ -765,10 +765,30 @@ func (s *StandaloneSuite) TestPutProxyInsufficientReplicas(c *C) {
 }
 
 func (s *StandaloneSuite) TestMakeLocator(c *C) {
-	l := MakeLocator("91f372a266fe2bf2823cb8ec7fda31ce+3+Aabcde@12345678")
-
+	l, err := MakeLocator("91f372a266fe2bf2823cb8ec7fda31ce+3+Aabcde@12345678")
+	c.Check(err, Equals, nil)
 	c.Check(l.Hash, Equals, "91f372a266fe2bf2823cb8ec7fda31ce")
 	c.Check(l.Size, Equals, 3)
-	c.Check(l.Signature, Equals, "abcde")
-	c.Check(l.Timestamp, Equals, "12345678")
+	c.Check(l.Hints, DeepEquals, []string{"3", "Aabcde@12345678"})
+}
+
+func (s *StandaloneSuite) TestMakeLocatorNoHints(c *C) {
+	l, err := MakeLocator("91f372a266fe2bf2823cb8ec7fda31ce")
+	c.Check(err, Equals, nil)
+	c.Check(l.Hash, Equals, "91f372a266fe2bf2823cb8ec7fda31ce")
+	c.Check(l.Size, Equals, -1)
+	c.Check(l.Hints, DeepEquals, []string{})
+}
+
+func (s *StandaloneSuite) TestMakeLocatorNoSizeHint(c *C) {
+	l, err := MakeLocator("91f372a266fe2bf2823cb8ec7fda31ce+Aabcde@12345678")
+	c.Check(err, Equals, nil)
+	c.Check(l.Hash, Equals, "91f372a266fe2bf2823cb8ec7fda31ce")
+	c.Check(l.Size, Equals, -1)
+	c.Check(l.Hints, DeepEquals, []string{"Aabcde@12345678"})
+}
+
+func (s *StandaloneSuite) TestMakeLocatorInvalidInput(c *C) {
+	_, err := MakeLocator("91f372a266fe2bf2823cb8ec7fda31c")
+	c.Check(err, Equals, InvalidLocatorError)
 }
