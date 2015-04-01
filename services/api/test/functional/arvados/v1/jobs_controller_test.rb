@@ -10,7 +10,7 @@ class Arvados::V1::JobsControllerTest < ActionController::TestCase
     post :create, job: {
       script: "hash",
       script_version: "master",
-      repository: "foo",
+      repository: "active/foo",
       script_parameters: {}
     }
     assert_response :success
@@ -27,7 +27,7 @@ class Arvados::V1::JobsControllerTest < ActionController::TestCase
       script: "hash",
       script_version: "master",
       script_parameters: {},
-      repository: "foo",
+      repository: "active/foo",
       started_at: Time.now,
       finished_at: Time.now,
       running: false,

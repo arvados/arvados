@@ -353,18 +353,4 @@ class PermissionTest < ActiveSupport::TestCase
       ob.update_attributes!(owner_uuid: groups(:aproject).uuid)
     end
   end
-
-  test "active user cannot write admin's repo" do
-    set_user_from_auth :active
-    assert_raises ArvadosModel::PermissionDeniedError, "pwned" do
-      repositories(:repository3).update_attributes(name: "kilroy")
-    end
-  end
-
-  test "active user cannot change repo name via can_manage permission" do
-    set_user_from_auth :active
-    assert_raises ArvadosModel::PermissionDeniedError, "pwned" do
-      repositories(:foo).update_attributes(name: "arvados")
-    end
-  end
 end

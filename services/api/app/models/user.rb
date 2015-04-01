@@ -17,6 +17,9 @@ class User < ArvadosModel
             allow_nil: true)
   before_update :prevent_privilege_escalation
   before_update :prevent_inactive_admin
+  before_update :verify_repositories_empty, :if => Proc.new { |user|
+    user.username.nil? and user.username_changed?
+  }
   before_create :check_auto_admin
   before_create :set_initial_username, :if => Proc.new { |user|
     user.username.nil? and user.email
@@ -29,8 +32,14 @@ class User < ArvadosModel
   }
   after_create :send_admin_notifications
   after_update :send_profile_created_notification
+  after_update :sync_repository_names, :if => Proc.new { |user|
+    (user.uuid != system_user_uuid) and
+    user.username_changed? and
+    (not user.username_was.nil?)
+  }
 
   has_many :authorized_keys, :foreign_key => :authorized_user_uuid, :primary_key => :uuid
+  has_many :repositories, foreign_key: :owner_uuid, primary_key: :uuid
 
   api_accessible :user, extend: :common do |t|
     t.add :email
@@ -388,7 +397,7 @@ class User < ArvadosModel
       return
     end
 
-    repo = Repository.where(name: repo_name).first_or_create!
+    repo = Repository.where(owner_uuid: uuid, name: repo_name).first_or_create!
     logger.info { "repo uuid: " + repo[:uuid] }
     repo_perm = Link.where(tail_uuid: uuid, head_uuid: repo.uuid,
                            link_class: "permission",
@@ -467,9 +476,10 @@ class User < ArvadosModel
     if username
       create_vm_login_permission_link(Rails.configuration.auto_setup_new_users_with_vm_uuid,
                                       username)
+      repo_name = "#{username}/#{username}"
       if Rails.configuration.auto_setup_new_users_with_repository and
-          Repository.where(name: username).first.nil?
-        repo = Repository.create!(name: username)
+          Repository.where(name: repo_name).first.nil?
+        repo = Repository.create!(name: repo_name, owner_uuid: uuid)
         Link.create!(tail_uuid: uuid, head_uuid: repo.uuid,
                      link_class: "permission", name: "can_manage")
       end
@@ -486,4 +496,19 @@ class User < ArvadosModel
     end
   end
 
+  def verify_repositories_empty
+    unless repositories.first.nil?
+      errors.add(:username, "can't be unset when the user owns repositories")
+      false
+    end
+  end
+
+  def sync_repository_names
+    old_name_re = /^#{Regexp.escape(username_was)}\//
+    name_sub = "#{username}/"
+    repositories.find_each do |repo|
+      repo.name = repo.name.sub(old_name_re, name_sub)
+      repo.save!
+    end
+  end
 end

@@ -87,4 +87,20 @@ class Arvados::V1::RepositoriesControllerTest < ActionController::TestCase
                    "response public_key does not match fixture #{u}.")
     end
   end
+
+  test "default index includes fetch_url" do
+    authorize_with :active
+    get(:index)
+    assert_response :success
+    assert_includes(json_response["items"].map { |r| r["fetch_url"] },
+                    "git@git.zzzzz.arvadosapi.com:active/foo.git")
+  end
+
+  test "can select push_url in index" do
+    authorize_with :active
+    get(:index, {select: ["uuid", "push_url"]})
+    assert_response :success
+    assert_includes(json_response["items"].map { |r| r["push_url"] },
+                    "git@git.zzzzz.arvadosapi.com:active/foo.git")
+  end
 end

@@ -157,6 +157,7 @@ inactive:
   identity_url: https://inactive-user.openid.local
   is_active: false
   is_admin: false
+  username: inactiveuser
   prefs: {}
 
 inactive_but_signed_user_agreement:
