@@ -171,4 +171,14 @@ class UserManageAccountTest < ActionDispatch::IntegrationTest
     assert_text 'A request for shell access was sent on '
     assert_selector 'a', text: 'Send request for shell access'
   end
+
+  test "create new repository" do
+    visit page_with_token("active_trustedclient", "/manage_account")
+    click_on "Add new repository"
+    within ".modal-dialog" do
+      fill_in "Name", with: "workbenchtest"
+      click_on "Create"
+    end
+    assert_text ":active/workbenchtest.git"
+  end
 end

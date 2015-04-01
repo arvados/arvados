@@ -60,6 +60,7 @@ ADD keep_proxy.json /root/
 # Set up update-gitolite.rb
 RUN mkdir /usr/local/arvados/config -p
 ADD generated/arvados-clients.yml /usr/local/arvados/config/
+ADD .gitolite.rc /usr/local/arvados/config/
 ADD update-gitolite.rb /usr/local/arvados/
 
 # Supervisor.

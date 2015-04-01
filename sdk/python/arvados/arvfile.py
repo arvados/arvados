@@ -77,7 +77,7 @@ class ArvadosFileReaderBase(_FileLikeObjectBase):
         return re.sub('\.(bz2|gz)$', '', self.name)
 
     @_FileLikeObjectBase._before_close
-    def seek(self, pos, whence=os.SEEK_CUR):
+    def seek(self, pos, whence=os.SEEK_SET):
         if whence == os.SEEK_CUR:
             pos += self._filepos
         elif whence == os.SEEK_END:

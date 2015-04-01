@@ -11,6 +11,7 @@
      fn = String.new fn %>
 <%= check_box_tag 'uuids[]', object.uuid, false, {
       :class => 'persistent-selection',
+      :id => object.uuid,
       :friendly_type => object.class.name,
       :friendly_name => fn,
       :href => "#{url_for controller: object.class.name.tableize, action: 'show', id: object.uuid }",

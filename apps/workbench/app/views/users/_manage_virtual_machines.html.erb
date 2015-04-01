@@ -1,4 +1,13 @@
-<div>
+<div class="panel panel-default">
+  <div class="panel-heading">
+    <h4 class="panel-title">
+      <a data-parent="#arv-adv-accordion" href="#manage_virtual_machines">
+        Virtual Machines
+      </a>
+    </h4>
+  </div>
+
+<div id="manage_virtual_machines" class="panel-body">
   <p>
     For more information see <%= link_to raw('Arvados Docs &rarr; User Guide &rarr; SSH access'),
   "#{Rails.configuration.arvados_docsite}/user/getting_started/ssh-access-unix.html",
@@ -87,4 +96,5 @@
       ProxyCommand ssh -p2222 turnout@switchyard.<%= current_api_host || 'xyzzy.arvadosapi.com' %> -x -a $SSH_PROXY_FLAGS %h
     </pre>
   <% end %>
+</div>
 </div>

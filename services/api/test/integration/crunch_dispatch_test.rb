@@ -28,7 +28,7 @@ class CrunchDispatchTest < ActionDispatch::IntegrationTest
       format: "json",
       job: {
         script: "log",
-        repository: "crunch_dispatch_test",
+        repository: "active/crunchdispatchtest",
         script_version: "f35f99b7d32bac257f5989df02b9f12ee1a9b0d6",
         script_parameters: "{}"
       }

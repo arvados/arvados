@@ -52,6 +52,25 @@ class ActiveSupport::TestCase
     restore_configuration
   end
 
+  def assert_not_allowed
+    # Provide a block that calls a Rails boolean "true or false" success value,
+    # like model.save or model.destroy.  This method will test that it either
+    # returns false, or raises a Permission Denied exception.
+    begin
+      refute(yield)
+    rescue ArvadosModel::PermissionDeniedError
+    end
+  end
+
+  def add_permission_link from_who, to_what, perm_type
+    act_as_system_user do
+      Link.create!(tail_uuid: from_who.uuid,
+                   head_uuid: to_what.uuid,
+                   link_class: 'permission',
+                   name: perm_type)
+    end
+  end
+
   def restore_configuration
     # Restore configuration settings changed during tests
     $application_config.each do |k,v|
