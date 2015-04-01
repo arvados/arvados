@@ -1,0 +1,13 @@
+<div class="pull-right">
+  <span class="deemphasize">Browsing <%= @object.name %> repository at commit</span>
+  <%= link_to(@commit, show_repository_commit_path(id: @object.uuid, commit: @commit), title: 'show commit message') %>
+</div>
+<p>
+  <%= link_to(@object.name, show_repository_tree_path(id: @object.uuid, commit: @commit, path: '/'), title: 'show root directory of source tree') %>
+  <% parents = ''
+     (@path || '').split('/').each do |pathpart|
+     parents = parents + pathpart + '/'
+     %>
+    / <%= link_to pathpart, show_repository_tree_path(id: @object.uuid, commit: @commit, path: parents) %>
+  <% end %>
+</p>

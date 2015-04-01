@@ -270,10 +270,15 @@ class ActiveSupport::TestCase
   end
 
   def after_teardown
-    if self.class.want_reset_api_fixtures[:after_each_test]
+    if self.class.want_reset_api_fixtures[:after_each_test] and
+        @want_reset_api_fixtures != false
       self.class.reset_api_fixtures_now
     end
     super
+  end
+
+  def reset_api_fixtures_after_test t=true
+    @want_reset_api_fixtures = t
   end
 
   protected
