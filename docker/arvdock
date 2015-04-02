@@ -93,23 +93,6 @@ function start_container {
       echo "Started container: $container"
     fi
 
-    if [[ "$name" == "doc_server" ]]; then
-      echo
-      echo "******************************************************************"
-      echo "You can access the Arvados documentation at http://doc.dev.arvados"
-      echo "******************************************************************"
-      echo
-    fi
-
-    if [[ "$name" == "workbench_server" ]]; then
-      echo
-      echo "********************************************************************"
-      echo "You can access the Arvados workbench at http://workbench.dev.arvados"
-      echo "********************************************************************"
-      echo
-   fi
-
-
 }
 
 # Create a Docker data volume
@@ -324,9 +307,35 @@ EOF
         echo "To access Arvados you must add the Arvados nameserver to the top"
         echo "of your DNS configuration in /etc/resolv.conf:"
         echo "nameserver 172.17.42.1"
+        echo
+        echo "Then run '$0 start' again"
         echo "******************************************************************"
         echo
+    else
+        while ! curl -L -f http://workbench.dev.arvados >/dev/null 2>/dev/null ; do
+            echo "Waiting for Arvados to be ready."
+            sleep 1
+        done
+
+        `$DOCKER ps |grep -P "doc_server[^/]" -q`
+        if [[ "$?" == "0" ]]; then
+            echo
+            echo "******************************************************************"
+            echo "You can access the Arvados documentation at http://doc.dev.arvados"
+            echo "******************************************************************"
+            echo
+        fi
+
+        `$DOCKER ps |grep -P "workbench_server[^/]" -q`
+        if [[ "$?" == "0" ]]; then
+            echo
+            echo "********************************************************************"
+            echo "You can access the Arvados workbench at http://workbench.dev.arvados"
+            echo "********************************************************************"
+            echo
+        fi
     fi
+
 }
 
 function do_stop {

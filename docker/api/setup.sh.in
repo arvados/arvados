@@ -18,7 +18,9 @@ while ! arv user current ; do sleep 1 ; done
 
 # Arvados repository object
 all_users_group_uuid="@@API_HOSTNAME@@-j7d0g-fffffffffffffff"
-repo_uuid=`arv --format=uuid repository create --repository '{"name":"arvados","fetch_url":"git@api.dev.arvados:arvados.git","push_url":"git@api.dev.arvados:arvados.git"}'`
+
+arv user update --uuid @@API_HOSTNAME@@-tpzed-000000000000000 --user '{"username":"root"}'
+repo_uuid=`arv --format=uuid repository create --repository '{"owner_uuid":"@@API_HOSTNAME@@-tpzed-000000000000000", "name":"arvados"}'`
 echo "Arvados repository uuid is $repo_uuid"
 
 read -rd $'\000' newlink <<EOF; arv link create --link "$newlink"

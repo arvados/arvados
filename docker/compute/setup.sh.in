@@ -5,19 +5,23 @@
 export ARVADOS_API_HOST=api
 export ARVADOS_API_HOST_INSECURE=yes
 export ARVADOS_API_TOKEN=@@API_SUPERUSER_SECRET@@
+export HOME=/root
 
 # Wait for API server to come up.
 while ! arv user current ; do sleep 1 ; done
 
-arv node create --node {} > /tmp/node.json
+if ! test -f /root/node.json ; then
+    arv node create --node "{\"hostname\": \"$(hostname)\"}" > /root/node.json
 
-UUID=`grep \"uuid\" /tmp//node.json  |cut -f4 -d\"`
-PING_SECRET=`grep \"ping_secret\" /tmp//node.json  |cut -f4 -d\"`
+    # Make sure /dev/fuse permissions are correct (the device appears after fuse is loaded)
+    chmod 1660 /dev/fuse && chgrp fuse /dev/fuse
+fi
 
-echo "*/5 * * * * root /usr/bin/curl -k -d ping_secret=$PING_SECRET https://api/arvados/v1/nodes/$UUID/ping" > /etc/cron.d/node_ping
+UUID=`grep \"uuid\" /root/node.json  |cut -f4 -d\"`
+PING_SECRET=`grep \"ping_secret\" /root/node.json  |cut -f4 -d\"`
 
-# Send a ping now
+if ! test -f /etc/cron.d/node_ping ; then
+    echo "*/5 * * * * root /usr/bin/curl -k -d ping_secret=$PING_SECRET https://api/arvados/v1/nodes/$UUID/ping" > /etc/cron.d/node_ping
+fi
+
 /usr/bin/curl -k -d ping_secret=$PING_SECRET https://api/arvados/v1/nodes/$UUID/ping?ping_secret=$PING_SECRET
-
-# Just make sure /dev/fuse permissions are correct (the device appears after fuse is loaded)
-chmod 1660 /dev/fuse && chgrp fuse /dev/fuse
