@@ -96,6 +96,15 @@ class Arvados::V1::RepositoriesControllerTest < ActionController::TestCase
                     "git@git.zzzzz.arvadosapi.com:active/foo.git")
   end
 
+  test "setting git_host changes fetch_url" do
+    Rails.configuration.git_host = "example.com"
+    authorize_with :active
+    get(:index)
+    assert_response :success
+    assert_includes(json_response["items"].map { |r| r["fetch_url"] },
+                    "git@example.com:active/foo.git")
+  end
+
   test "can select push_url in index" do
     authorize_with :active
     get(:index, {select: ["uuid", "push_url"]})
