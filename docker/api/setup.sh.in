@@ -2,15 +2,25 @@
 
 set -x
 
+if test -f /root/finished_arvados_setup ; then
+   exit
+fi
+
 . /etc/profile.d/rvm.sh
 
 export ARVADOS_API_HOST=api
 export ARVADOS_API_HOST_INSECURE=yes
 export ARVADOS_API_TOKEN=@@API_SUPERUSER_SECRET@@
+export HOME=/root
+
+# Wait for API server to come up.
+while ! arv user current ; do sleep 1 ; done
 
 # Arvados repository object
-all_users_group_uuid="$prefix-j7d0g-fffffffffffffff"
-repo_uuid=`arv --format=uuid repository create --repository '{"name":"arvados","fetch_url":"git@api.dev.arvados:arvados.git","push_url":"git@api.dev.arvados:arvados.git"}'`
+all_users_group_uuid="@@API_HOSTNAME@@-j7d0g-fffffffffffffff"
+
+arv user update --uuid @@API_HOSTNAME@@-tpzed-000000000000000 --user '{"username":"root"}'
+repo_uuid=`arv --format=uuid repository create --repository '{"owner_uuid":"@@API_HOSTNAME@@-tpzed-000000000000000", "name":"arvados"}'`
 echo "Arvados repository uuid is $repo_uuid"
 
 read -rd $'\000' newlink <<EOF; arv link create --link "$newlink"
@@ -41,18 +51,32 @@ if [[ "$?" != "0" ]]; then
 fi
 
 # User repository object
-user_uuid=`arv --format=uuid user current`
-repo_uuid=`arv --format=uuid repository create --repository '{"name":"@@ARVADOS_USER_NAME@@","fetch_url":"git@api.dev.arvados:@@ARVADOS_USER_NAME@@.git","push_url":"git@api.dev.arvados:@@ARVADOS_USER_NAME@@.git"}'`
-echo "User repository uuid is $repo_uuid"
+# user_uuid=`arv --format=uuid user current`
+# repo_uuid=`arv --format=uuid repository create --repository '{"name":"@@ARVADOS_USER_NAME@@","fetch_url":"git@api.dev.arvados:@@ARVADOS_USER_NAME@@.git","push_url":"git@api.dev.arvados:@@ARVADOS_USER_NAME@@.git"}'`
 
-read -rd $'\000' newlink <<EOF; arv link create --link "$newlink"
-{
- "tail_uuid":"$user_uuid",
- "head_uuid":"$repo_uuid",
- "link_class":"permission",
- "name":"can_write"
-}
-EOF
+# echo "User repository uuid is $repo_uuid"
 
-# Shell machine object
-arv virtual_machine create --virtual-machine '{"hostname":"shell"}'
+# read -rd $'\000' newlink <<EOF; arv link create --link "$newlink"
+# {
+#  "tail_uuid":"$user_uuid",
+#  "head_uuid":"$repo_uuid",
+#  "link_class":"permission",
+#  "name":"can_write"
+# }
+# EOF
+
+# # Shell machine object
+shell_uuid=`arv --format=uuid virtual_machine create --virtual-machine '{"hostname":"shell"}'`
+arv virtual_machine create --virtual-machine '{"hostname":"shell.dev", "uuid": "@@API_HOSTNAME@@-2x53u-csbtkecoa669vkz"}'
+
+# read -rd $'\000' newlink <<EOF; arv link create --link "$newlink"
+# {
+#  "tail_uuid":"$user_uuid",
+#  "head_uuid":"$shell_uuid",
+#  "link_class":"permission",
+#  "name":"can_login",
+#  "properties": {"username": "@@ARVADOS_USER_NAME@@"}
+# }
+# EOF
+
+touch /root/finished_arvados_setup

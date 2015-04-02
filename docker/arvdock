@@ -6,13 +6,21 @@ if [[ "$DOCKER" == "" ]]; then
     DOCKER=`which docker`
 fi
 
+CURL=`which curl`
+
 COMPUTE_COUNTER=0
 
 function usage {
     echo >&2
-    echo >&2 "usage: $0 (start|stop|restart|test|reset) [options]"
+    echo >&2 "usage: $0 (start|stop|restart|reset|test) [options]"
     echo >&2
-    echo >&2 "$0 start/stop/restart options:"
+    echo >&2 "start    run new or restart stopped arvados containers"
+    echo >&2 "stop     stop arvados containers"
+    echo >&2 "restart  stop and then start arvados containers"
+    echo >&2 "reset    stop and delete containers WARNING: this will delete the data inside Arvados!"
+    echo >&2 "test     run tests"
+    echo >&2
+    echo >&2 "$0 options:"
     echo >&2 "  -d[port], --doc[=port]        Documentation server (default port 9898)"
     echo >&2 "  -w[port], --workbench[=port]  Workbench server (default port 9899)"
     echo >&2 "  -s[port], --sso[=port]        SSO server (default port 9901)"
@@ -86,23 +94,6 @@ function start_container {
     else
       echo "Started container: $container"
     fi
-
-    if [[ "$name" == "doc_server" ]]; then
-      echo
-      echo "******************************************************************"
-      echo "You can access the Arvados documentation at http://doc.dev.arvados"
-      echo "******************************************************************"
-      echo
-    fi
-
-    if [[ "$name" == "workbench_server" ]]; then
-      echo
-      echo "********************************************************************"
-      echo "You can access the Arvados workbench at http://workbench.dev.arvados"
-      echo "********************************************************************"
-      echo
-   fi
-
 
 }
 
@@ -318,9 +309,35 @@ EOF
         echo "To access Arvados you must add the Arvados nameserver to the top"
         echo "of your DNS configuration in /etc/resolv.conf:"
         echo "nameserver 172.17.42.1"
+        echo
+        echo "Then run '$0 start' again"
         echo "******************************************************************"
         echo
+    else
+        while ! $CURL -L -f http://workbench.dev.arvados >/dev/null 2>/dev/null ; do
+            echo "Waiting for Arvados to be ready."
+            sleep 1
+        done
+
+        `$DOCKER ps |grep -P "doc_server[^/]" -q`
+        if [[ "$?" == "0" ]]; then
+            echo
+            echo "******************************************************************"
+            echo "You can access the Arvados documentation at http://doc.dev.arvados"
+            echo "******************************************************************"
+            echo
+        fi
+
+        `$DOCKER ps |grep -P "workbench_server[^/]" -q`
+        if [[ "$?" == "0" ]]; then
+            echo
+            echo "********************************************************************"
+            echo "You can access the Arvados workbench at http://workbench.dev.arvados"
+            echo "********************************************************************"
+            echo
+        fi
     fi
+
 }
 
 function do_stop {
@@ -448,6 +465,18 @@ function do_reset {
         fi
     done
 }
+
+if [ "$DOCKER" == '' ]
+then
+  echo "Docker not found. Please install it first."
+  exit 2
+fi
+
+if [ "$CURL" == '' ]
+then
+  echo "Curl not found. Please install it first."
+  exit 3
+fi
 
 if [ $# -lt 1 ]
 then

@@ -1,16 +1,17 @@
 ---
 layout: default
 navsection: installguide
-title: Build and install docker images
+title: Build and install Docker images
 ...
 
-This installation method is appropriate for testing, evaluation and development on one computer. *For production use, this installation method is not recommended*.
+This method is intended for evaluation and development on a local workstation. It is not suitable for production use in a cluster deployment.
 
 h2. Prerequisites
 
 # A GNU/Linux (virtual) machine
 # A working Docker installation (see "Installing Docker":https://docs.docker.com/installation/)
 # A working Go installation (see "Install the Go tools":https://golang.org/doc/install)
+# A working Ruby installation (see "Install Ruby and bundler":install-manual-prerequisites-ruby.html)
 
 h2. Download the source tree
 
@@ -50,7 +51,7 @@ Successfully built d6cbb5002604
 date >shell-image
 </code></pre></notextile>
 
-If all goes well, you should now have a number of docker images built:
+If all goes well, you should now have a number of Docker images built (the image id will be different):
 
 <notextile>
 <pre><code>~$ <span class="userinput">docker.io images</span>
@@ -58,6 +59,7 @@ REPOSITORY              TAG                 IMAGE ID            CREATED         
 arvados/shell           latest              d6cbb5002604        10 minutes ago      1.613 GB
 arvados/sso             latest              377f1fa0108e        11 minutes ago      1.807 GB
 arvados/keep            latest              ade0e0d2dd00        12 minutes ago      210.8 MB
+arvados/keepproxy       latest              b39ef0baba02        12 minutes ago      241.6 MB
 arvados/workbench       latest              b0e4fb6da385        12 minutes ago      2.218 GB
 arvados/doc             latest              4b64daec9454        12 minutes ago      1.524 GB
 arvados/compute         latest              7f1f5f7faf54        13 minutes ago      1.862 GB
@@ -119,7 +121,13 @@ The @arvdock@ command can be used to start and stop the docker containers. It ha
 <pre><code>
 ~$ <span class="userinput">./arvdock -h</span>
 
-usage: ./arvdock (start|stop|restart|test) [options]
+usage: ./arvdock (start|stop|restart|reset|test) [options]
+
+start    run new or restart stopped arvados containers
+stop     stop arvados containers
+restart  stop and then start arvados containers
+reset    stop and delete containers WARNING: this will delete the data inside Arvados!
+test     run tests
 
 ./arvdock start/stop/restart options:
   -d[port], --doc[=port]        Documentation server (default port 9898)
@@ -130,7 +138,7 @@ usage: ./arvdock (start|stop|restart|test) [options]
   -v, --vm                      Shell server
   -n, --nameserver              Nameserver
   -k, --keep                    Keep servers
-  --ssh                         Enable SSH access to server containers
+  -p, --keepproxy               Keepproxy server
   -h, --help                    Display this help and exit
 
   If no options are given, the action is applied to all servers.
@@ -141,40 +149,78 @@ usage: ./arvdock (start|stop|restart|test) [options]
 </pre>
 </notextile>
 
-The @--ssh@ option can be useful to debug issues with the Docker containers; it allows you to ssh into the running containers as the @root@ user, provided you have access to the private key that matches the public key specified in @config.yml@'s PUBLIC_KEY_PATH variable.
+To debug issues with the Docker containers use @docker exec@, for example:
 
-Start the docker containers:
+<notextile>
+<pre><code>
+~$ <span class="userinput">docker exec -t -i api_server /bin/bash</span>
+</code></pre></notextile>
+
+To start the docker containers:
 
 <notextile>
 <pre><code>
 ~$ <span class="userinput">./arvdock start</span>
-sso_server
-Starting container:
-  /usr/bin/docker.io run -d -i -t -p 9901:443 --name sso_server arvados/sso
-api_server
-Starting container:
-  /usr/bin/docker.io run -d -i -t -p 9900:443 --name api_server --link sso_server:sso arvados/api
-keep_server_0
-Starting container:
-  /usr/bin/docker.io run -d -i -t -p 25107:25107 --name keep_server_0 -v /tmp/tmp.aCSx8Pq6Wb:/dev/keep-0 --link api_server:api arvados/keep
-keep_server_1
-Starting container:
-  /usr/bin/docker.io run -d -i -t -p 25108:25107 --name keep_server_1 -v /tmp/tmp.m4OQ9WB73G:/dev/keep-0 --link api_server:api arvados/keep
-doc_server
-Starting container:
-  /usr/bin/docker.io run -d -i -t -p 9898:80 --name doc_server arvados/doc
+start_api=false
+start_compute=false
+start_doc=false
+start_keep=false
+start_keepproxy=false
+start_nameserver=false
+start_sso=false
+start_vm=false
+start_workbench=false
+Starting crosbymichael/skydns container...
+skydns
+/usr/bin/docker.io run -d -p 172.17.42.1:53:53/udp --name skydns crosbymichael/skydns -nameserver 8.8.8.8:53 -domain arvados
+89922ec786cbd2098ed6bae205468a675657cdb2db0e0bfdfe76d1e43cb2fe35
+Starting crosbymichael/skydock container...
+skydock
+/usr/bin/docker.io run -d -v /var/run/docker.sock:/docker.sock --name skydock crosbymichael/skydock -ttl 30 -environment dev -s /docker.sock -domain arvados -name skydns
+de6a35bb20fb9063fb97218ba2554974546eed969d43b1f5aa31a1ac9576e802
+Starting container: api_server
+  /usr/bin/docker.io start api_server
+Started container: api_server
+Starting container: compute0
+  /usr/bin/docker.io start compute0
+Started container: compute0
+Starting container: compute1
+  /usr/bin/docker.io start compute1
+Started container: compute1
+Starting container: keep_server_0
+  /usr/bin/docker.io start keep_server_0
+Started container: keep_server_0
+Starting container: keep_server_1
+  /usr/bin/docker.io start keep_server_1
+Started container: keep_server_1
+Starting container: keepproxy_server
+  /usr/bin/docker.io start keepproxy_server
+Started container: keepproxy_server
+Starting container: doc_server
+  /usr/bin/docker.io start doc_server
+Started container: doc_server
+
+******************************************************************
+You can access the Arvados documentation at http://doc.dev.arvados
+******************************************************************
+
+Starting container: shell
+  /usr/bin/docker.io start shell
+Started container: shell
+Starting container: workbench_server
+  /usr/bin/docker.io start workbench_server
+Started container: workbench_server
+
+********************************************************************
+You can access the Arvados workbench at http://workbench.dev.arvados
+********************************************************************
 
 *****************************************************************
-You can access the Arvados documentation at http://localhost:9898
-*****************************************************************
+To access Arvados you must add the Arvados nameserver to the top
+of your DNS configuration in /etc/resolv.conf:
+nameserver 172.17.42.1
+******************************************************************
 
-workbench_server
-Starting container:
-  /usr/bin/docker.io run -d -i -t -p 9899:80 --name workbench_server --link api_server:api arvados/workbench
-
-*****************************************************************
-You can access the Arvados workbench at http://localhost:9899
-*****************************************************************
 </code></pre></notextile>
 
 h2. Accessing workbench
@@ -182,12 +228,10 @@ h2. Accessing workbench
 Point your browser to the Dockerized workbench:
 
 <notextile>
-<pre><code><span class="userinput">https://localhost:9899</span>
+<pre><code><span class="userinput">http://workbench.dev.arvados</span>
 </code></pre>
 </notextile>
 
 Now use the google account you specified as @API_AUTO_ADMIN_USER@ in @config.yml@ to log in.
 
 You will be prompted by your browser that you are accessing a site with an untrusted SSL certificate. This is normal; by default the Arvados Docker installation uses self-signed SSL certificates for the SSO and API servers, respectively. If you use a local SSO server in a Docker container, you will be prompted *twice*. The default is to use the Curoverse SSO server.
-
-
