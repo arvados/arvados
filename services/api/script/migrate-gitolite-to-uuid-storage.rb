@@ -137,6 +137,9 @@ class Repository
                     File.join(repos_root, "#{uuid}.git"))
       rescue Errno::ENOENT
       end
+      if name == "arvados"
+        Dir.chdir(repos_root) { File.symlink("#{uuid}.git/", "arvados.git") }
+      end
     end
   end
 
