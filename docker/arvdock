@@ -6,6 +6,8 @@ if [[ "$DOCKER" == "" ]]; then
     DOCKER=`which docker`
 fi
 
+CURL=`which curl`
+
 COMPUTE_COUNTER=0
 
 function usage {
@@ -312,7 +314,7 @@ EOF
         echo "******************************************************************"
         echo
     else
-        while ! curl -L -f http://workbench.dev.arvados >/dev/null 2>/dev/null ; do
+        while ! $CURL -L -f http://workbench.dev.arvados >/dev/null 2>/dev/null ; do
             echo "Waiting for Arvados to be ready."
             sleep 1
         done
@@ -463,6 +465,18 @@ function do_reset {
         fi
     done
 }
+
+if [ "$DOCKER" == '' ]
+then
+  echo "Docker not found. Please install it first."
+  exit 2
+fi
+
+if [ "$CURL" == '' ]
+then
+  echo "Curl not found. Please install it first."
+  exit 3
+fi
 
 if [ $# -lt 1 ]
 then
