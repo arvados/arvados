@@ -426,7 +426,7 @@ fi
 
 go get "git.curoverse.com/arvados.git/services/arv-git-httpd"
 cd $WORKSPACE/debs
-build_and_scp_deb $GOPATH/bin/arv-git-httpd=/usr/bin/arv-git-httpd arv-git-httpd 'Curoverse, Inc.' 'dir' "$PKG_VERSION" "--url=https://arvados.org" "--license=GNU Affero General Public License, version 3.0" "--description=Provides authenticated http access to Arvados-hosted git repositories."
+build_and_scp_deb $GOPATH/bin/arv-git-httpd=/usr/bin/arvados-git-httpd arvados-git-httpd 'Curoverse, Inc.' 'dir' "$PKG_VERSION" "--url=https://arvados.org" "--license=GNU Affero General Public License, version 3.0" "--description=Provides authenticated http access to Arvados-hosted git repositories."
 
 # crunchstat
 cd "$GOPATH/src/git.curoverse.com/arvados.git/services/crunchstat"
