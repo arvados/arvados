@@ -267,15 +267,16 @@ pipeline_in_publicly_accessible_project:
           dataclass: Collection
           title: foo instance input
       job:
-        uuid: zzzzz-8i9sb-n7omg50bvt0m1nf
+        uuid: zzzzz-8i9sb-jyq01m7in1jlofj
         script_version: master
-        log: zzzzz-4zz18-4en62shvi99lxd4
-        output: zzzzz-4zz18-4en62shvi99lxd4
+        log: zzzzz-4zz18-uukreo9rbgwsujr
+        output: zzzzz-4zz18-uukreo9rbgwsujr
+        state: Complete
 
 pipeline_in_publicly_accessible_project_but_other_objects_elsewhere:
   uuid: zzzzz-d1hrv-pisharednotobjs
   owner_uuid: zzzzz-j7d0g-zhxawtyetzwc5f0
-  name: Pipeline in publicly accessible project with job and log elsewhere
+  name: Pipeline in public project with other objects elsewhere
   pipeline_template_uuid: zzzzz-p5p6p-aox0k0ofxrystgw
   state: Complete
   created_at: 2014-09-15 12:00:00
@@ -289,10 +290,11 @@ pipeline_in_publicly_accessible_project_but_other_objects_elsewhere:
           dataclass: Collection
           title: foo instance input
       job:
-        uuid: zzzzz-8i9sb-pshmckwoma9plh7
+        uuid: zzzzz-8i9sb-aceg2bnq7jt7kon
         script_version: master
         log: zzzzz-4zz18-bv31uwvy3neko21
         output: zzzzz-4zz18-bv31uwvy3neko21
+        state: Complete
 
 pipeline_in_running_state:
   name: running_with_job

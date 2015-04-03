@@ -179,4 +179,44 @@ class AnonymousAccessTest < ActionDispatch::IntegrationTest
     assert_text 'script version'
     assert_no_selector 'a', text: 'Run this pipeline'
   end
+
+  [
+    ['pipeline_in_publicly_accessible_project', true],
+    ['pipeline_in_publicly_accessible_project_but_other_objects_elsewhere', false],
+    ['pipeline_in_publicly_accessible_project_but_other_objects_elsewhere', false, 'admin'],
+  ].each do |pipeline_fixture, objects_readable, user=nil|
+    test "accesse #{pipeline_fixture} in public project with objects readable=#{objects_readable} with user #{user}" do
+      pipeline = api_fixture('pipeline_instances')[pipeline_fixture]
+      page = "/pipeline_instances/#{pipeline['uuid']}"
+      if user
+        visit page_with_token user, page
+      else
+        visit page
+      end
+
+      click_link 'foo'  # click job link
+
+      if objects_readable or (!objects_readable and user)
+        assert_text 'This pipeline was created from'
+        assert_no_text 'Output data not available'
+        assert_selector 'a', pipeline['components']['foo']['job']['uuid']
+        assert_selector 'a[href="#Log"]', text: 'Log'
+        assert_no_selector 'a[data-toggle="disabled"]', text: 'Log'
+      else
+        assert_no_text 'This pipeline was created from' # template not readable
+        assert_text 'Output data not available'
+        assert_no_selector 'a', text: pipeline['components']['foo']['job']['uuid']
+        assert_text pipeline['job']
+        assert_selector 'a[href="#Log"]', text: 'Log'
+        assert_selector 'a[data-toggle="disabled"]', text: 'Log'
+      end
+
+      click_link 'Log'
+      if objects_readable or (!objects_readable and user)
+        assert_no_text 'foo'  # should be in Log tab
+      else
+        assert_text 'foo'     # Log tab disabled and hence still in Components tab
+      end
+    end
+  end
 end

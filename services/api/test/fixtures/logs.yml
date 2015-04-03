@@ -63,3 +63,22 @@ crunchstat_for_running_job:
   updated_at: 2014-11-07 23:33:42.347455000 Z
   modified_at: 2014-11-07 23:33:42.347455000 Z
   object_owner_uuid: zzzzz-j7d0g-v955i6s2oi1cbso
+
+log_line_for_job_accessible_from_public_project:
+  id: 8
+  uuid: zzzzz-57u5n-tmymyrojrjyhb45
+  owner_uuid: zzzzz-j7d0g-zhxawtyetzwc5f0
+  modified_by_client_uuid: zzzzz-ozdt8-obw7foaks3qjyej
+  modified_by_user_uuid: zzzzz-tpzed-xurymjxw79nv3jz
+  object_uuid: zzzzz-8i9sb-jyq01m7in1jlofj
+  event_at: 2014-11-07 23:33:42.347455000 Z
+  event_type: stderr
+  summary: ~
+  properties:
+    text: '2014-11-07_23:33:41 zzzzz-8i9sb-jyq01m7in1jlofj 31708 1 stderr crunchstat:
+      cpu 1935.4300 user 59.4100 sys 8 cpus -- interval 10.0002 seconds 12.9900 user
+      0.9900 sys'
+  created_at: 2014-11-07 23:33:42.351913000 Z
+  updated_at: 2014-11-07 23:33:42.347455000 Z
+  modified_at: 2014-11-07 23:33:42.347455000 Z
+  object_owner_uuid: zzzzz-j7d0g-v955i6s2oi1cbso
