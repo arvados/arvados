@@ -42,6 +42,19 @@ def make_slots(nodes):
             slots["%s[%i]" % (n, c)] = {"node": n, "slot": c, "task": None}
     return slots
 
+script_header = """
+set -e
+set -v
+
+read pid cmd state ppid pgrp session tty_nr tpgid rest < /proc/self/stat
+trap "kill -TERM -$$pgrp; exit $TASK_CANCELED" INT QUIT TERM
+
+arv-keepdocker --download $docker_hash
+
+rm -rf $tmpdir
+mkdir -p $tmpdir
+"""
+
 def determine_resources(slurm_jobid=None, slurm_nodelist=None):
     have_slurm = (slurm_jobid is not None) and (slurm_nodelist is not None)
 
@@ -63,19 +76,8 @@ def determine_resources(slurm_jobid=None, slurm_nodelist=None):
             "slots": slots}
 
 def run_on_slot(resources, slot, task, task_uuid):
-    execution_script = Template("""
-set -e
-set -v
-
-read pid cmd state ppid pgrp session tty_nr tpgid rest < /proc/self/stat
-trap "kill -TERM -$$pgrp; exit $TASK_CANCELED" EXIT INT QUIT TERM
-
-if ! docker images -q --no-trunc --all | grep -qxF $docker_hash ; then
-    arv-get $docker_locator/$docker_hash.tar | docker load
-fi
-
-rm -rf $tmpdir
-mkdir -p $tmpdir/job_output $tmpdir/keep
+    execution_script = Template(script_header + """
+mkdir $tmpdir/job_output $tmpdir/keep
 
 if which crunchstat ; then
   CRUNCHSTAT="crunchstat -cgroup-root=/sys/fs/cgroup -cgroup-parent=docker -cgroup-cid=$tmpdir/cidfile -poll=10000"
@@ -129,7 +131,6 @@ exit $$code
         stdout_redirect = "> %s/job_output/%s" % (pipes.quote(tmpdir), pipes.quote(task["stdout"]))
 
     ex = execution_script.substitute(docker_hash=pipes.quote(task["docker_hash"]),
-                                     docker_locator=pipes.quote(task["docker_locator"]),
                                      tmpdir=pipes.quote(tmpdir),
                                      env=env,
                                      cmd=" ".join([pipes.quote(c) for c in task["command"]]),
@@ -198,20 +199,7 @@ class TaskEvents(object):
                     self.finish_task(ev["properties"]["new_attributes"])
 
 def run_executive(api, job, api_config):
-    execution_script = Template("""
-set -e
-set -v
-
-read pid cmd state ppid pgrp session tty_nr tpgid rest < /proc/self/stat
-trap "kill -TERM -$$pgrp; exit $TASK_CANCELED" EXIT INT QUIT TERM
-
-if ! docker images -q --no-trunc --all | grep -qxF $docker_hash ; then
-    arv-get $docker_locator/$docker_hash.tar | docker load
-fi
-
-rm -rf $tmpdir
-mkdir -p $tmpdir
-
+    execution_script = Template(script_header + """
 cd $tmpdir
 git init
 git config --local credential.$githttp/.helper '!tok(){ echo password=$ARVADOS_API_TOKEN; };tok'
@@ -233,31 +221,25 @@ docker run \
 """)
 
     tmpdir = "/tmp/%s-%i" % (job["uuid"], random.randint(1, 100000))
-    cr = arvados.CollectionReader(job["docker_image_locator"], api_client=api)
 
-    if len(cr) != 1:
-        raise arvados.errors.ArgumentError("docker_image_locator must only contain a single file")
+    docker_hash = image_hash_in_collection(arvados.CollectionReader(job["docker_image_locator"], api_client=api))
 
-    docker_image = re.match("([0-9a-f]{40})\.tar", cr.keys()[0])
-    if docker_image:
-        docker_hash = docker_image.group(1)
-    else:
-        raise arvados.errors.ArgumentError("docker_image_locator must contain a docker image")
-
-    ex = execution_script.substitute(docker_hash=docker_hash,
-                                     docker_locator=job["docker_image_locator"],
+    ex = execution_script.substitute(docker_hash=pipes.quote(docker_hash),
+                                     docker_locator=pipes.quote(job["docker_image_locator"]),
                                      tmpdir=tmpdir,
                                      ARVADOS_API_HOST=pipes.quote(api_config["ARVADOS_API_HOST"]),
                                      ARVADOS_API_TOKEN=pipes.quote(api_config["ARVADOS_API_TOKEN"]),
                                      ARVADOS_API_HOST_INSECURE=pipes.quote(api_config.get("ARVADOS_API_TOKEN", "0")),
                                      TASK_CANCELED=TASK_CANCELED,
                                      githttp=pipes.quote(api._rootDesc.get("gitHttpBase")),
-                                     gitrepo=pipes.quote(job["repository"]))
+                                     gitrepo=pipes.quote(job["repository"]),
+                                     script=pipes.quote(job["script"]),
+                                     script_version=pipes.quote(job["script_version"]))
 
     if resources["have_slurm"]:
         pass
     else:
-        subprocess.Popen(ex, shell=True)
+        return subprocess.Popen(ex, shell=True)
 
 class SigHandler(object):
     def __init__(self, ts):
