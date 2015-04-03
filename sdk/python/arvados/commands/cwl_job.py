@@ -162,7 +162,7 @@ class TaskEvents(object):
             for slot in self.slots:
                 if self.slots[slot]["task"] is None:
                     task = self.task_queue[0]
-                    run_on_slot(self.resources, slot, task, task["uuid"])
+                    run_on_slot(self.resources, slot, task["parameters"], task["uuid"])
                     del self.task_queue[0]
                     assigned = True
             if not assigned:
@@ -180,7 +180,7 @@ class TaskEvents(object):
 
     def cancel_tasks(self):
         for slot in self.slots:
-            if self.slots[slot]["task"].get("__subprocess") is not None:
+            if self.slots[slot]["task"] and self.slots[slot]["task"].get("__subprocess"):
                 self.slots[slot]["task"]["__subprocess"].terminate()
                 self.slots[slot]["task"]["__subprocess"].wait()
 
@@ -198,17 +198,17 @@ class TaskEvents(object):
                 if ev["properties"]["new_attributes"].get("success") is not None:
                     self.finish_task(ev["properties"]["new_attributes"])
 
-def run_executive(api, job, api_config):
+def run_executive(resources, api, job, api_config):
     execution_script = Template(script_header + """
 cd $tmpdir
 git init
 git config --local credential.$githttp/.helper '!tok(){ echo password=$ARVADOS_API_TOKEN; };tok'
 git config --local credential.$githttp/.username none
-ARVADOS_API_HOST=$ARVADOS_API_HOST ARVADOS_API_TOKEN=$ARVADOS_API_TOKEN ARVADOS_API_HOST_INSECURE=$ARVADOS_API_HOST_INSECURE git fetch $githttp/$gitrepo $script_version
+ARVADOS_API_HOST=$ARVADOS_API_HOST ARVADOS_API_TOKEN=$ARVADOS_API_TOKEN ARVADOS_API_HOST_INSECURE=$ARVADOS_API_HOST_INSECURE git fetch $githttp/$gitrepo
 git checkout $script_version
 
 docker run \
-    --env=CRUNCH_JOB_UUID=$job_uuid \
+    --env=JOB_UUID=$job_uuid \
     --env=ARVADOS_API_HOST=$ARVADOS_API_HOST \
     --env=ARVADOS_API_TOKEN=$ARVADOS_API_TOKEN \
     --env=ARVADOS_API_HOST_INSECURE=$ARVADOS_API_HOST_INSECURE \
@@ -222,7 +222,11 @@ docker run \
 
     tmpdir = "/tmp/%s-%i" % (job["uuid"], random.randint(1, 100000))
 
-    docker_hash = image_hash_in_collection(arvados.CollectionReader(job["docker_image_locator"], api_client=api))
+    docker_hash = arvados.commands.keepdocker.image_hash_in_collection(arvados.CollectionReader(job["docker_image_locator"], api_client=api))
+
+    repo = job["repository"]
+    if not repo.endswith(".git"):
+        repo += "/.git"
 
     ex = execution_script.substitute(docker_hash=pipes.quote(docker_hash),
                                      docker_locator=pipes.quote(job["docker_image_locator"]),
@@ -232,9 +236,10 @@ docker run \
                                      ARVADOS_API_HOST_INSECURE=pipes.quote(api_config.get("ARVADOS_API_TOKEN", "0")),
                                      TASK_CANCELED=TASK_CANCELED,
                                      githttp=pipes.quote(api._rootDesc.get("gitHttpBase")),
-                                     gitrepo=pipes.quote(job["repository"]),
+                                     gitrepo=pipes.quote(repo),
                                      script=pipes.quote(job["script"]),
-                                     script_version=pipes.quote(job["script_version"]))
+                                     script_version=pipes.quote(job["script_version"]),
+                                     job_uuid=job["uuid"])
 
     if resources["have_slurm"]:
         pass
@@ -292,15 +297,15 @@ def main(arguments=None):
 
     if job_uuid:
         ts = TaskEvents(api_config, resources, job_uuid)
-        run_executive(api, job, api_config["ARVADOS_API_TOKEN"])
+        run_executive(resources, api, job, api_config)
 
         # Set up signal handling
         sig = SigHandler(ts)
 
         # Forward terminate signals to the subprocesses.
-        signal.signal(signal.SIGINT, self.sig)
-        signal.signal(signal.SIGTERM, self.sig)
-        signal.signal(signal.SIGQUIT, self.sig)
+        signal.signal(signal.SIGINT, sig.send_signal)
+        signal.signal(signal.SIGTERM, sig.send_signal)
+        signal.signal(signal.SIGQUIT, sig.send_signal)
 
         ts.ws.run_forever()
     else:

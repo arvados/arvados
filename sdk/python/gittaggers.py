@@ -9,10 +9,13 @@ class EggInfoFromGit(egg_info):
     from source package), leave it alone.
     """
     def git_timestamp_tag(self):
-        gitinfo = subprocess.check_output(
-            ['git', 'log', '--first-parent', '--max-count=1',
-             '--format=format:%ct', '.']).strip()
-        return time.strftime('.%Y%m%d%H%M%S', time.gmtime(int(gitinfo)))
+        try:
+            gitinfo = subprocess.check_output(
+                ['git', 'log', '--first-parent', '--max-count=1',
+                 '--format=format:%ct', '.']).strip()
+            return time.strftime('.%Y%m%d%H%M%S', time.gmtime(int(gitinfo)))
+        except subprocess.CalledProcessError:
+            return time.strftime('.%Y%m%d%H%M%S', time.gmtime(0))
 
     def tags(self):
         if self.tag_build is None:

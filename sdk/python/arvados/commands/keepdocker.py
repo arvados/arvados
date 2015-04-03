@@ -239,14 +239,14 @@ def image_hash_in_collection(cr):
 
 def load_image_from_collection(api_client, docker_image_locator):
     cr = arvados.CollectionReader(docker_image_locator, api_client=api_client)
-    docker_image = image_hash_in_collection(api_client, cr)
+    docker_image = image_hash_in_collection(cr)
     if docker_image:
         for d in docker_images():
-            if d.hash == docker_image.group(1):
-                print "Docker image '%s' is already loaded" % docker_image.group(1)
-                return docker_image.group(1)
+            if d.hash == docker_image:
+                print "Docker image '%s' is already loaded" % docker_image
+                return docker_image
 
-        with cr.open(docker_image.group(0)) as img:
+        with cr.open(docker_image+".tar") as img:
             docker_load = subprocess.Popen(["docker", "load"], stdin=subprocess.PIPE)
             data = img.read(64000)
             n = len(data)
@@ -259,7 +259,7 @@ def load_image_from_collection(api_client, docker_image_locator):
         if docker_load.returncode != 0:
             raise arvados.errors.CommandFailedError("Failed to load image")
 
-        return docker_image.group(1)
+        return docker_image
     else:
         raise arvados.errors.ArgumentError("Failed to find Docker image in collection %s" % docker_image_locator)
 

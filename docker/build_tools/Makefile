@@ -234,6 +234,12 @@ arv-web-image: passenger-image $(ARV_WEB_DEPS)
 	$(DOCKER_BUILD) -t arvados/arv-web arv-web
 	date >arv-web-image
 
+cwl-runner-image: debian-arvados-image
+	rm -rf cwl-runner/sdk
+	tar -czf cwl-runner/generated/sdk.tar.gz -C ../sdk .
+	$(DOCKER_BUILD) -t arvados/cwl-runner cwl-runner
+	date >cwl-runner-image
+
 # ============================================================
 # The arvados/base image is the base Debian image plus packages
 # that are dependencies for every Arvados service.
