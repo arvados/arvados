@@ -66,9 +66,19 @@
             <%# column offset 8 %>
             <div class="col-md-4 text-overflow-ellipsis">
               <% if pj[:output_uuid] %>
-                <%= link_to_if_arvados_object pj[:output_uuid], friendly_name: true %>
+                <% output = Collection.find?(pj[:output_uuid]) %>
+                <% if output %>
+                  <%= link_to_if_arvados_object pj[:output_uuid], friendly_name: true %>
+                <% else %>
+                  Output data not available
+                <% end %>
               <% elsif current_job[:output] %>
-                <%= link_to_if_arvados_object current_job[:output], link_text: "Output of #{pj[:name]}" %>
+                <% output = Collection.find?(current_job[:output]) %>
+                <% if output %>
+                  <%= link_to_if_arvados_object current_job[:output], link_text: "Output of #{pj[:name]}" %>
+                <% else %>
+                  Output data not available
+                <% end %>
               <% else %>
                 No output.
               <% end %>
@@ -148,7 +158,13 @@
                   </td>
                   <td>
                     <% if k == :uuid %>
-                      <%= link_to_if_arvados_object current_component[k], link_text: current_component[k] %>
+                      <% if !current_user and (resource_class_for_uuid(current_component[k]).andand.to_s == 'Job') %>
+                        <% if Job.find?(current_component[k]) %>
+                          <%= link_to_if_arvados_object current_component[k], link_text: current_component[k] %>
+                        <% else %>
+                          <%= current_component[k] %>
+                        <% end %>
+                      <% end %>
                     <% elsif k.to_s.end_with? 'uuid' %>
                       <%= link_to_if_arvados_object current_component[k], friendly_name: true %>
                     <% elsif k.to_s.end_with? '_at' %>
