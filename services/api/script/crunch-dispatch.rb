@@ -53,6 +53,8 @@ end
 class Dispatcher
   include ApplicationHelper
 
+  EXIT_TEMPFAIL = 75
+
   def initialize
     @crunch_job_bin = (ENV['CRUNCH_JOB_BIN'] || `which arv-crunch-job`.strip)
     if @crunch_job_bin.empty?
@@ -632,7 +634,7 @@ class Dispatcher
     exit_status = j_done[:wait_thr].value.exitstatus
 
     jobrecord = Job.find_by_uuid(job_done.uuid)
-    if exit_status != 75 and jobrecord.state == "Running"
+    if exit_status != EXIT_TEMPFAIL and jobrecord.state == "Running"
       # crunch-job did not return exit code 75 (see below) and left the job in
       # the "Running" state, which means there was an unhandled error.  Fail
       # the job.
@@ -755,5 +757,11 @@ end
 
 # This is how crunch-job child procs know where the "refresh" trigger file is
 ENV["CRUNCH_REFRESH_TRIGGER"] = Rails.configuration.crunch_refresh_trigger
+
+# If salloc can't allocate resources immediately, make it use our temporary
+# failure exit code.  This ensures crunch-dispatch won't mark a job failed
+# because of an issue with node allocation.  This often happens when
+# another dispatcher wins the race to allocate nodes.
+ENV["SLURM_EXIT_IMMEDIATE"] = Dispatcher::EXIT_TEMPFAIL.to_s
 
 Dispatcher.new.run
