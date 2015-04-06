@@ -46,7 +46,7 @@ test:
   user_profile_notification_address: arvados@example.com
   workbench_address: https://localhost:3001/
   git_repositories_dir: <%= "#{Dir.pwd}/tmp/git" %>
-  git_host: http://localhost:3005
+  git_http_base: http://localhost:3005
 
 common:
   # The prefix used for all database identifiers to identify the record as

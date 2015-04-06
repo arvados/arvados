@@ -208,8 +208,11 @@ class TaskEvents(object):
     def cancel_tasks(self):
         for slot in self.slots:
             if self.slots[slot]["task"] and self.slots[slot]["task"].get("__subprocess"):
-                self.slots[slot]["task"]["__subprocess"].terminate()
-                self.slots[slot]["task"]["__subprocess"].wait()
+                try:
+                    self.slots[slot]["task"]["__subprocess"].terminate()
+                    self.slots[slot]["task"]["__subprocess"].wait()
+                except OSError:
+                    pass
 
     def on_event(self, ev):
         if ev.get('event_type') == "update" and ev['object_kind'] == "arvados#job":
@@ -225,7 +228,20 @@ class TaskEvents(object):
                 if ev["properties"]["new_attributes"].get("success") is not None:
                     self.finish_task(ev["properties"]["new_attributes"])
 
-def run_executive(resources, api, job, api_config):
+class JobMonitor(threading.Thread):
+    def __init__(self, sub, api_config, job):
+        super(JobMonitor, self).__init__()
+        self.sub = sub
+        self.api_config = api_config
+        self.job = job
+
+    def run(self):
+        self.sub.wait()
+        api = api_from_config("v1", self.api_config)
+        api.jobs().update(uuid=self.job["uuid"], body={"state":"Complete" if self.sub.returncode == 0 else "Failed"}).execute()
+
+
+def run_executive(resources, job, api_config):
     execution_script = Template(script_header + """
 cd $tmpdir
 git init
@@ -250,6 +266,7 @@ docker run \
 
     tmpdir = "/tmp/%s-%i" % (job["uuid"], random.randint(1, 100000))
 
+    api = api_from_config("v1", api_config)
     docker_hash = arvados.commands.keepdocker.image_hash_in_collection(arvados.CollectionReader(job["docker_image_locator"], api_client=api))
 
     repo = job["repository"]
@@ -274,15 +291,23 @@ docker run \
     if resources["have_slurm"]:
         pass
     else:
-        return subprocess.Popen(ex, shell=True)
+        sub = subprocess.Popen(ex, shell=True)
+        JobMonitor(sub, api_config, job).start()
+        return sub
+
 
 class SigHandler(object):
-    def __init__(self, ts):
+    def __init__(self, sub, ts):
+        self.sub = sub
         self.ts = ts
 
     def send_signal(self, signum, fram):
-        self.ts.ws.close()
+        try:
+            self.sub.terminate()
+        except OSError:
+            pass
         self.ts.cancel_tasks()
+        self.ts.ws.close()
 
 def main(arguments=None):
 
@@ -327,10 +352,10 @@ def main(arguments=None):
 
     if job_uuid:
         ts = TaskEvents(api_config, resources, job_uuid)
-        run_executive(resources, api, job, api_config)
+        sub = run_executive(resources, job, api_config)
 
         # Set up signal handling
-        sig = SigHandler(ts)
+        sig = SigHandler(sub, ts)
 
         # Forward terminate signals to the subprocesses.
         signal.signal(signal.SIGINT, sig.send_signal)

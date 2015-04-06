@@ -29,10 +29,12 @@ class CwlJobTestCase(run_test_server.TestCaseWithServers):
         os.mkdir(os.path.join(run_test_server.ARVADOS_DIR, "services/api/tmp/git/testrepo"))
         os.chdir(os.path.join(run_test_server.ARVADOS_DIR, "services/api/tmp/git/testrepo"))
         subprocess.check_call(["git", "init"])
-        with open("foo.cwl", "w") as f:
-            f.write("foo")
-        os.chmod("foo.cwl", stat.S_IRUSR|stat.S_IRGRP|stat.S_IROTH|stat.S_IXUSR|stat.S_IXGRP|stat.S_IXOTH)
-        subprocess.check_call(["git", "add", "foo.cwl"])
+        with open("foo", "w") as f:
+            f.write("""#!/bin/sh
+            echo foo
+            """)
+        os.chmod("foo", stat.S_IRUSR|stat.S_IRGRP|stat.S_IROTH|stat.S_IXUSR|stat.S_IXGRP|stat.S_IXOTH)
+        subprocess.check_call(["git", "add", "foo"])
         subprocess.check_call(["git", "commit", "-mTest"])
 
     def test_parse_sinfo(self):
@@ -61,7 +63,7 @@ class CwlJobTestCase(run_test_server.TestCaseWithServers):
 
     def test_run_job(self):
         job = CwlJobTestCase.api_client.jobs().create(body={"job": {
-            "script": "foo.cwl",
+            "script": "foo",
             "script_version": "master",
             "script_parameters": { },
             "repository": "testrepo",
@@ -71,3 +73,6 @@ class CwlJobTestCase(run_test_server.TestCaseWithServers):
             } } }).execute()
         cwl_job.main(["--job", job["uuid"],
                       "--job-api-token", os.environ["ARVADOS_API_TOKEN"]])
+
+        job2 = CwlJobTestCase.api_client.jobs().get(uuid=job["uuid"]).execute()
+        self.assertEqual(job2["state"], "Complete")
