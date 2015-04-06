@@ -56,6 +56,7 @@ services/fuse
 services/keepproxy
 services/keepstore
 services/nodemanager
+services/arv-git-httpd
 sdk/cli
 sdk/python
 sdk/ruby
