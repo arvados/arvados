@@ -158,12 +158,14 @@
                   </td>
                   <td>
                     <% if k == :uuid %>
-                      <% if !current_user and (resource_class_for_uuid(current_component[k]).andand.to_s == 'Job') %>
+                      <% if resource_class_for_uuid(current_component[k]).andand.to_s == 'Job' %>
                         <% if Job.find?(current_component[k]) %>
                           <%= link_to_if_arvados_object current_component[k], link_text: current_component[k] %>
                         <% else %>
                           <%= current_component[k] %>
                         <% end %>
+                      <% else %>
+                        <%= link_to_if_arvados_object current_component[k], link_text: current_component[k] %>
                       <% end %>
                     <% elsif k.to_s.end_with? 'uuid' %>
                       <%= link_to_if_arvados_object current_component[k], friendly_name: true %>

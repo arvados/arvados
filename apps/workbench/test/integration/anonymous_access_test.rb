@@ -208,7 +208,7 @@ class AnonymousAccessTest < ActionDispatch::IntegrationTest
       # click job link, if in pipeline page
       click_link 'foo' if pipeline_page
 
-      if objects_readable or (!objects_readable and user)
+      if objects_readable or user
         if pipeline_page
           assert_text 'This pipeline was created from'
           assert_selector 'a', object['components']['foo']['job']['uuid']
