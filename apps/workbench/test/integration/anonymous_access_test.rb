@@ -190,7 +190,7 @@ class AnonymousAccessTest < ActionDispatch::IntegrationTest
   ].each do |fixture, objects_readable, user=nil|
     test "access #{fixture} in public project with objects readable=#{objects_readable} with user #{user}" do
       pipeline_page = true if fixture.include?('pipeline')
-  
+
       if pipeline_page
         object = api_fixture('pipeline_instances')[fixture]
         page = "/pipeline_instances/#{object['uuid']}"
