@@ -139,6 +139,7 @@ def main():
     exit(0)
 
 def set_src_owner_uuid(resource, uuid, args):
+    global src_owner_uuid
     c = resource.get(uuid=uuid).execute(num_retries=args.retries)
     src_owner_uuid = c.get("owner_uuid")
 
