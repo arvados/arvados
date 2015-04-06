@@ -269,8 +269,8 @@ pipeline_in_publicly_accessible_project:
       job:
         uuid: zzzzz-8i9sb-jyq01m7in1jlofj
         script_version: master
-        log: zzzzz-4zz18-uukreo9rbgwsujr
-        output: zzzzz-4zz18-uukreo9rbgwsujr
+        log: zzzzz-4zz18-4en62shvi99lxd4
+        output: b519d9cb706a29fc7ea24dbea2f05851+93
         state: Complete
 
 pipeline_in_publicly_accessible_project_but_other_objects_elsewhere:

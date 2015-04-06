@@ -212,10 +212,12 @@ class AnonymousAccessTest < ActionDispatch::IntegrationTest
       end
 
       click_link 'Log'
-      if objects_readable or (!objects_readable and user)
+      if objects_readable or user
         assert_no_text 'foo'  # should be in Log tab
+        assert_text 'stderr crunchstat'  # log line
       else
         assert_text 'foo'     # Log tab disabled and hence still in Components tab
+        assert_no_text 'stderr crunchstat'  # log line shouldn't be seen
       end
     end
   end
