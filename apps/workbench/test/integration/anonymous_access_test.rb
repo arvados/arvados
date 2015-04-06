@@ -140,6 +140,7 @@ class AnonymousAccessTest < ActionDispatch::IntegrationTest
     within first('tr', text: look_for) do
       click_link 'Show'
     end
+    assert_text 'Public Projects Unrestricted public data'
     assert_text 'script_version'
 
     assert_text 'zzzzz-tpzed-xurymjxw79nv3jz' # modified by user
@@ -156,6 +157,7 @@ class AnonymousAccessTest < ActionDispatch::IntegrationTest
     end
 
     # in pipeline instance page
+    assert_text 'Public Projects Unrestricted public data'
     assert_text 'This pipeline is complete'
     assert_no_selector 'a', text: 'Re-run with latest'
     assert_no_selector 'a', text: 'Re-run options'
@@ -176,7 +178,18 @@ class AnonymousAccessTest < ActionDispatch::IntegrationTest
     end
 
     # in template page
+    assert_text 'Public Projects Unrestricted public data'
     assert_text 'script version'
     assert_no_selector 'a', text: 'Run this pipeline'
+  end
+
+  test "anonymous user accesses collection in shared project" do
+    visit "/collections/#{api_fixture('collections')['public_text_file']['uuid']}"
+
+    # in collection page
+    assert_text 'Public Projects Unrestricted public data'
+    assert_text 'Hello world'
+    assert_text 'Content address'
+    assert_selector 'a', text: 'Provenance graph'
   end
 end

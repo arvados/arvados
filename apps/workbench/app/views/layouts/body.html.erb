@@ -189,6 +189,24 @@
           <% end %>
         </ul>
       </nav>
+    <% elsif !current_user %>   <%# anonymous %>
+      <% if (@name_link or @object) and (project_breadcrumbs.any?) %>
+        <nav class="navbar navbar-default breadcrumbs" role="navigation">
+          <ul class="nav navbar-nav navbar-left">
+            <li>
+              &nbsp; Public Projects &nbsp;
+            </li>
+            <% project_breadcrumbs.each do |p| %>
+              <li class="nav-separator">
+                <i class="fa fa-lg fa-angle-double-right"></i>
+              </li>
+              <li>
+                <%= link_to(p.name, project_path(p.uuid), data: {object_uuid: p.uuid, name: 'name'}) %>
+              </li>
+            <% end %>
+          </ul>
+        </nav>
+      <% end %>
     <% end %>
 
     <%= render partial: 'browser_unsupported' %><%# requires JS support below %>
