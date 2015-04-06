@@ -20,19 +20,24 @@ EX_TEMPFAIL = 75
 TASK_TEMPFAIL = 111
 TASK_CANCELED = 112
 
+def parse_ranges(l):
+    r = []
+    for n in l.split(","):
+        rn = re.match("([^[]+)\[(\d+)-(\d+)\]", n)
+        if rn:
+            for c in range(int(rn.group(2)), int(rn.group(3))+1):
+                yield "%s%i" % (rn.group(1), c)
+        else:
+            yield n
+
 def parse_sinfo(sinfo):
     nodes = {}
     for l in sinfo.splitlines():
         m = re.match("(\d+) (.*)", l)
         if m:
             cpus = int(m.group(1))
-            for n in m.group(2).split(","):
-                rn = re.match("([^[]+)\[(\d+)-(\d+)\]", n)
-                if rn:
-                    for c in range(int(rn.group(2)), int(rn.group(3))+1):
-                        nodes["%s%i" % (rn.group(1), c)] = {"slots": cpus}
-                else:
-                    nodes[n] = {"slots": cpus}
+            for n in parse_ranges(m.group(2)):
+                nodes[n] = {"slots": cpus}
     return nodes
 
 def make_slots(nodes):
