@@ -263,56 +263,8 @@ def load_image_from_collection(api_client, docker_image_locator):
     else:
         raise arvados.errors.ArgumentError("Failed to find Docker image in collection %s" % docker_image_locator)
 
-
-def main(arguments=None):
+def upload_image(api, arguments):
     args = arg_parser.parse_args(arguments)
-    api = arvados.api('v1')
-
-    if args.image is None or args.image == 'images':
-        if args.no_trunc:
-            fmt = "{:30}  {:10}  {:64}  {:29}  {:20}"
-        else:
-            fmt = "{:30}  {:10}  {:12}  {:29}  {:20}"
-        print fmt.format("REPOSITORY", "TAG", "IMAGE ID", "COLLECTION", "CREATED")
-        for i, j in list_images_in_arv(api, args.retries):
-            print(fmt.format(j["repo"], j["tag"],
-                             j["dockerhash"] if args.no_trunc else j["dockerhash"][0:12],
-                             i, j["timestamp"].strftime("%c")))
-        sys.exit(0)
-
-    if args.download:
-        # search by name and tag
-        imgs_in_arv = list_images_in_arv(api, args.retries, image_name=args.image)
-        do_tag = True
-
-        if not imgs_in_arv:
-            # searh by image hash
-            imgs_in_arv = list_images_in_arv(api, args.retries, image_hash=args.image)
-            do_tag = False
-
-        if not imgs_in_arv and arvados.util.collection_uuid_pattern.match(args.image):
-            # search by collection uuid
-            imgs_in_arv = list_images_in_arv(api, args.retries, image_collection=args.image)
-            do_tag = True
-
-        if not imgs_in_arv and arvados.util.keep_locator_pattern.match(args.image):
-            # search by manifest portable data hash
-            imgs_in_arv = [[args.image]]
-            do_tag = False
-
-        if imgs_in_arv:
-            imghash = load_image_from_collection(api, imgs_in_arv[0][0])
-            if do_tag:
-                popen_docker(["tag", imghash, args.image], stdin=None, stdout=None).wait()
-            sys.exit(0)
-        else:
-            print >>sys.stderr, "arv-keepdocker: Docker image '%s' not found in Arvados" % args.image
-            sys.exit(1)
-
-    # Pull the image if requested, unless the image is specified as a hash
-    # that we already have.
-    if args.pull and not find_image_hashes(args.image):
-        pull_image(args.image, args.tag)
 
     try:
         image_hash = find_one_image_hash(args.image, args.tag)
@@ -433,6 +385,59 @@ def main(arguments=None):
         except OSError as error:
             if error.errno != errno.ENOENT:
                 raise
+
+
+def main(arguments=None):
+    args = arg_parser.parse_args(arguments)
+    api = arvados.api('v1')
+
+    if args.image is None or args.image == 'images':
+        if args.no_trunc:
+            fmt = "{:30}  {:10}  {:64}  {:29}  {:20}"
+        else:
+            fmt = "{:30}  {:10}  {:12}  {:29}  {:20}"
+        print fmt.format("REPOSITORY", "TAG", "IMAGE ID", "COLLECTION", "CREATED")
+        for i, j in list_images_in_arv(api, args.retries):
+            print(fmt.format(j["repo"], j["tag"],
+                             j["dockerhash"] if args.no_trunc else j["dockerhash"][0:12],
+                             i, j["timestamp"].strftime("%c")))
+        sys.exit(0)
+
+    if args.download:
+        # search by name and tag
+        imgs_in_arv = list_images_in_arv(api, args.retries, image_name=args.image)
+        do_tag = True
+
+        if not imgs_in_arv:
+            # searh by image hash
+            imgs_in_arv = list_images_in_arv(api, args.retries, image_hash=args.image)
+            do_tag = False
+
+        if not imgs_in_arv and arvados.util.collection_uuid_pattern.match(args.image):
+            # search by collection uuid
+            imgs_in_arv = list_images_in_arv(api, args.retries, image_collection=args.image)
+            do_tag = True
+
+        if not imgs_in_arv and arvados.util.keep_locator_pattern.match(args.image):
+            # search by manifest portable data hash
+            imgs_in_arv = [[args.image]]
+            do_tag = False
+
+        if imgs_in_arv:
+            imghash = load_image_from_collection(api, imgs_in_arv[0][0])
+            if do_tag:
+                popen_docker(["tag", imghash, args.image], stdin=None, stdout=None).wait()
+            sys.exit(0)
+        else:
+            print >>sys.stderr, "arv-keepdocker: Docker image '%s' not found in Arvados" % args.image
+            sys.exit(1)
+
+    # Pull the image if requested, unless the image is specified as a hash
+    # that we already have.
+    if args.pull and not find_image_hashes(args.image):
+        pull_image(args.image, args.tag)
+
+    upload_image(api, arguments)
 
 if __name__ == '__main__':
     main()
