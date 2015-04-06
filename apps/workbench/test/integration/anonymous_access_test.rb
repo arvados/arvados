@@ -184,29 +184,45 @@ class AnonymousAccessTest < ActionDispatch::IntegrationTest
     ['pipeline_in_publicly_accessible_project', true],
     ['pipeline_in_publicly_accessible_project_but_other_objects_elsewhere', false],
     ['pipeline_in_publicly_accessible_project_but_other_objects_elsewhere', false, 'admin'],
-  ].each do |pipeline_fixture, objects_readable, user=nil|
-    test "accesse #{pipeline_fixture} in public project with objects readable=#{objects_readable} with user #{user}" do
-      pipeline = api_fixture('pipeline_instances')[pipeline_fixture]
-      page = "/pipeline_instances/#{pipeline['uuid']}"
+
+    ['completed_job_in_publicly_accessible_project', true],
+    ['job_in_publicly_accessible_project_but_other_objects_elsewhere', false],
+  ].each do |fixture, objects_readable, user=nil|
+    test "access #{fixture} in public project with objects readable=#{objects_readable} with user #{user}" do
+      pipeline_page = true if fixture.include?('pipeline')
+  
+      if pipeline_page
+        object = api_fixture('pipeline_instances')[fixture]
+        page = "/pipeline_instances/#{object['uuid']}"
+      else      # job
+        object = api_fixture('jobs')[fixture]
+        page = "/jobs/#{object['uuid']}"
+      end
+
       if user
         visit page_with_token user, page
       else
         visit page
       end
 
-      click_link 'foo'  # click job link
+      # click job link, if in pipeline page
+      click_link 'foo' if pipeline_page
 
       if objects_readable or (!objects_readable and user)
-        assert_text 'This pipeline was created from'
+        if pipeline_page
+          assert_text 'This pipeline was created from'
+          assert_selector 'a', object['components']['foo']['job']['uuid']
+        end
         assert_no_text 'Output data not available'
-        assert_selector 'a', pipeline['components']['foo']['job']['uuid']
         assert_selector 'a[href="#Log"]', text: 'Log'
         assert_no_selector 'a[data-toggle="disabled"]', text: 'Log'
       else
-        assert_no_text 'This pipeline was created from' # template not readable
+        if pipeline_page
+          assert_no_text 'This pipeline was created from'  # template is not readable
+          assert_no_selector 'a', text: object['components']['foo']['job']['uuid']
+        end
         assert_text 'Output data not available'
-        assert_no_selector 'a', text: pipeline['components']['foo']['job']['uuid']
-        assert_text pipeline['job']
+        assert_text object['job']
         assert_selector 'a[href="#Log"]', text: 'Log'
         assert_selector 'a[data-toggle="disabled"]', text: 'Log'
       end
@@ -214,9 +230,9 @@ class AnonymousAccessTest < ActionDispatch::IntegrationTest
       click_link 'Log'
       if objects_readable or user
         assert_no_text 'foo'  # should be in Log tab
-        assert_text 'stderr crunchstat'  # log line
+        assert_text 'stderr crunchstat'   if pipeline_page
       else
-        assert_text 'foo'     # Log tab disabled and hence still in Components tab
+        assert_text 'foo'     # Log tab disabled and hence still in first tab
         assert_no_text 'stderr crunchstat'  # log line shouldn't be seen
       end
     end

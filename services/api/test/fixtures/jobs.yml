@@ -425,6 +425,22 @@ completed_job_in_publicly_accessible_project:
   script_parameters:
     input: fa7aeb5140e2848d39b416daeef4ffc5+45
     input2: "stuff2"
+  log: ~
+  output: b519d9cb706a29fc7ea24dbea2f05851+93
+
+job_in_publicly_accessible_project_but_other_objects_elsewhere:
+  uuid: zzzzz-8i9sb-jyq01muyhgr4ofj
+  owner_uuid: zzzzz-j7d0g-zhxawtyetzwc5f0
+  modified_by_user_uuid: zzzzz-tpzed-xurymjxw79nv3jz
+  repository: active/foo
+  script: completed_job_script
+  script_version: 4fe459abe02d9b365932b8f5dc419439ab4e2577
+  state: Complete
+  script_parameters:
+    input: fa7aeb5140e2848d39b416daeef4ffc5+45
+    input2: "stuff2"
+  log: zzzzz-4zz18-fy296fx3hot09f7
+  output: zzzzz-4zz18-bv31uwvy3neko21
 
 # Test Helper trims the rest of the file
 
