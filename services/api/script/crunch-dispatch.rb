@@ -55,6 +55,7 @@ class Dispatcher
 
   def initialize
     @crunch_job_bin = (ENV['CRUNCH_JOB_BIN'] || `which arv-crunch-job`.strip)
+    @cwl_job_bin = (ENV['CWL_JOB_BIN'] || `which arv-cwl-job`.strip)
     if @crunch_job_bin.empty?
       raise "No CRUNCH_JOB_BIN env var, and crunch-job not in path."
     end
@@ -390,10 +391,10 @@ class Dispatcher
       end
       next unless ready
 
-      cmd_args += [@crunch_job_bin,
-                   '--job-api-token', @authorizations[job.uuid].api_token,
-                   '--job', job.uuid,
-                   '--git-dir', @arvados_internal]
+      cmd_args += [(if job.runtime_constraints["cwl_job"] then @cwl_job_bin else @crunch_job_bin end),
+                    '--job-api-token', @authorizations[job.uuid].api_token,
+                    '--job', job.uuid,
+                    '--git-dir', @arvados_internal]
 
       $stderr.puts "dispatch: #{cmd_args.join ' '}"
 

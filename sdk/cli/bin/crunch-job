@@ -118,7 +118,6 @@ $ENV{"CRUNCH_INSTALL"} = "$ENV{CRUNCH_TMP}/opt";
 $ENV{"CRUNCH_WORK"} = $ENV{"JOB_WORK"}; # deprecated
 mkdir ($ENV{"JOB_WORK"});
 
-my @save_argv = @ARGV;
 my $force_unlock;
 my $git_dir;
 my $jobspec;
@@ -166,11 +165,6 @@ if ($jobspec =~ /^[-a-z\d]+$/)
 {
   # $jobspec is an Arvados UUID, not a JSON job specification
   $Job = api_call("jobs/get", uuid => $jobspec);
-
-  if ($Job->{'runtime_constraints'}->{'cwl_job'}) {
-    exec "/home/peter/work/arvados/sdk/python/bin/arv-cwl-job", @save_argv;
-  }
-
   if (!$force_unlock) {
     # Claim this job, and make sure nobody else does
     eval { api_call("jobs/lock", uuid => $Job->{uuid}); };

@@ -49,10 +49,16 @@ set -v
 read pid cmd state ppid pgrp session tty_nr tpgid rest < /proc/self/stat
 trap "kill -TERM -$$pgrp; exit $TASK_CANCELED" INT QUIT TERM
 
+export ARVADOS_API_HOST=$ARVADOS_API_HOST
+export ARVADOS_API_TOKEN=$ARVADOS_API_TOKEN
+export ARVADOS_API_HOST_INSECURE=$ARVADOS_API_HOST_INSECURE
+
 arv-keepdocker --download $docker_hash
 
 rm -rf $tmpdir
 mkdir -p $tmpdir
+
+DNS="$$(ip -o address show scope global | gawk 'match($$4, /^([0-9\.:]+)\//, x){print "--dns", x[1]}')"
 """
 
 def determine_resources(slurm_jobid=None, slurm_nodelist=None):
@@ -89,10 +95,23 @@ set +e
 
 arv-mount --by-id $tmpdir/keep --allow-other --exec \
   $$CRUNCHSTAT \
-  docker run --attach=stdout --attach=stderr -i --rm
-    --cidfile=$tmpdir/cidfile --sig-proxy \
-    --volume=$tmpdir/keep:/keep:ro --volume=$tmpdir/job_output:/tmp/job_output:rw \
-    --workdir=/tmp/job_output --user=$$UID $env $docker_hash $cmd $stdin_redirect $stdout_redirect
+  docker run \
+    $$DNS \
+    --attach=stdout \
+    --attach=stderr \
+    -i \
+    --rm \
+    --cidfile=$tmpdir/cidfile \
+    --sig-proxy \
+    --volume=$tmpdir/keep:/keep:ro \
+    --volume=$tmpdir/job_output:/tmp/job_output:rw \
+    --workdir=/tmp/job_output \
+    --user=$$UID \
+    $env \
+    $docker_hash \
+    $cmd \
+    $stdin_redirect \
+    $stdout_redirect
 
 code=$$?
 
@@ -139,7 +158,10 @@ exit $$code
                                      stdin_redirect=stdin_redirect,
                                      stdout_redirect=stdout_redirect,
                                      TASK_CANCELED=TASK_CANCELED,
-                                     TASK_TEMPFAIL=TASK_TEMPFAIL)
+                                     TASK_TEMPFAIL=TASK_TEMPFAIL,
+                                     ARVADOS_API_HOST=pipes.quote(api_config["ARVADOS_API_HOST"]),
+                                     ARVADOS_API_TOKEN=pipes.quote(api_config["ARVADOS_API_TOKEN"]),
+                                     ARVADOS_API_HOST_INSECURE=pipes.quote(api_config.get("ARVADOS_API_HOST_INSECURE", "0")))
 
     if resources["have_slurm"]:
         pass
@@ -204,10 +226,11 @@ cd $tmpdir
 git init
 git config --local credential.$githttp/.helper '!tok(){ echo password=$ARVADOS_API_TOKEN; };tok'
 git config --local credential.$githttp/.username none
-ARVADOS_API_HOST=$ARVADOS_API_HOST ARVADOS_API_TOKEN=$ARVADOS_API_TOKEN ARVADOS_API_HOST_INSECURE=$ARVADOS_API_HOST_INSECURE git fetch $githttp/$gitrepo
-git checkout $script_version
+git fetch --quiet $githttp/$gitrepo
+git checkout --quiet $script_version
 
 docker run \
+    $$DNS \
     --env=JOB_UUID=$job_uuid \
     --env=ARVADOS_API_HOST=$ARVADOS_API_HOST \
     --env=ARVADOS_API_TOKEN=$ARVADOS_API_TOKEN \
@@ -233,13 +256,15 @@ docker run \
                                      tmpdir=tmpdir,
                                      ARVADOS_API_HOST=pipes.quote(api_config["ARVADOS_API_HOST"]),
                                      ARVADOS_API_TOKEN=pipes.quote(api_config["ARVADOS_API_TOKEN"]),
-                                     ARVADOS_API_HOST_INSECURE=pipes.quote(api_config.get("ARVADOS_API_TOKEN", "0")),
+                                     ARVADOS_API_HOST_INSECURE=pipes.quote(api_config.get("ARVADOS_API_HOST_INSECURE", "0")),
                                      TASK_CANCELED=TASK_CANCELED,
                                      githttp=pipes.quote(api._rootDesc.get("gitHttpBase")),
                                      gitrepo=pipes.quote(repo),
                                      script=pipes.quote(job["script"]),
                                      script_version=pipes.quote(job["script_version"]),
                                      job_uuid=job["uuid"])
+
+    print ex
 
     if resources["have_slurm"]:
         pass
