@@ -196,13 +196,14 @@
             <li>
               &nbsp; Public Projects &nbsp;
             </li>
-            <% p = project_breadcrumbs.last %>
-            <li class="nav-separator">
-              <i class="fa fa-lg fa-angle-double-right"></i>
-            </li>
-            <li>
-              <%= link_to(p.name, project_path(p.uuid), data: {object_uuid: p.uuid, name: 'name'}) %>
-            </li>
+            <% project_breadcrumbs.each do |p| %>
+              <li class="nav-separator">
+                <i class="fa fa-lg fa-angle-double-right"></i>
+              </li>
+              <li>
+                <%= link_to(p.name, project_path(p.uuid), data: {object_uuid: p.uuid, name: 'name'}) %>
+              </li>
+            <% end %>
           </ul>
         </nav>
       <% end %>
