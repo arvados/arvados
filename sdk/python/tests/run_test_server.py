@@ -351,6 +351,26 @@ def run_keep_proxy():
 def stop_keep_proxy():
     kill_server_pid(os.path.join(TEST_TMPDIR, "keepproxy.pid"), 0)
 
+def run_arv_git():
+    stop_arv_git()
+
+    admin_token = auth_token('admin')
+    env = os.environ.copy()
+    env['ARVADOS_API_TOKEN'] = admin_token
+    shutil.rmtree(os.path.join(ARVADOS_DIR, "services/api/tmp/git"), ignore_errors=True)
+    os.mkdir(os.path.join(ARVADOS_DIR, "services/api/tmp/git"))
+    argh = subprocess.Popen(
+        ["arv-git-httpd",
+         "-address=:3005",
+         "-repo-root=%s" % os.path.join(ARVADOS_DIR, "services/api/tmp/git"),
+         "-pid={}/arv-git-httpd.pid".format(TEST_TMPDIR),
+         ],
+        env=env)
+
+def stop_arv_git():
+    kill_server_pid(os.path.join(TEST_TMPDIR, "arv-git-httpd.pid"), 0)
+
+
 def fixture(fix):
     '''load a fixture yaml file'''
     with open(os.path.join(SERVICES_SRC_DIR, 'api', "test", "fixtures",
@@ -391,6 +411,7 @@ class TestCaseWithServers(unittest.TestCase):
     MAIN_SERVER = None
     KEEP_SERVER = None
     KEEP_PROXY_SERVER = None
+    ARV_GIT_SERVER = None
 
     @staticmethod
     def _restore_dict(src, dest):
@@ -409,7 +430,8 @@ class TestCaseWithServers(unittest.TestCase):
         for server_kwargs, start_func, stop_func in (
                 (cls.MAIN_SERVER, run, reset),
                 (cls.KEEP_SERVER, run_keep, stop_keep),
-                (cls.KEEP_PROXY_SERVER, run_keep_proxy, stop_keep_proxy)):
+                (cls.KEEP_PROXY_SERVER, run_keep_proxy, stop_keep_proxy),
+                (cls.ARV_GIT_SERVER, run_arv_git, stop_arv_git)):
             if server_kwargs is not None:
                 start_func(**server_kwargs)
                 cls._cleanup_funcs.append(stop_func)

@@ -2,6 +2,7 @@ package main
 
 import (
 	"flag"
+	"fmt"
 	"log"
 	"os"
 )
@@ -10,6 +11,7 @@ type config struct {
 	Addr       string
 	GitCommand string
 	Root       string
+	Pidfile    string
 }
 
 var theConfig *config
@@ -27,6 +29,12 @@ func init() {
 	flag.StringVar(&theConfig.Root, "repo-root", cwd,
 		"Path to git repositories.")
 
+	flag.StringVar(
+		&theConfig.Pidfile,
+		"pid",
+		"",
+		"Path to write pid file")
+
 	// MakeArvadosClient returns an error if token is unset (even
 	// though we don't need to do anything requiring
 	// authentication yet). We can't do this in newArvadosClient()
@@ -42,7 +50,19 @@ func main() {
 	if err := srv.Start(); err != nil {
 		log.Fatal(err)
 	}
+
+	if theConfig.Pidfile != "" {
+		f, err := os.Create(theConfig.Pidfile)
+		if err != nil {
+			log.Fatalf("Error writing pid file (%s): %s", theConfig.Pidfile, err.Error())
+		}
+		fmt.Fprint(f, os.Getpid())
+		f.Close()
+		defer os.Remove(theConfig.Pidfile)
+	}
+
 	log.Println("Listening at", srv.Addr)
+
 	if err := srv.Wait(); err != nil {
 		log.Fatal(err)
 	}
