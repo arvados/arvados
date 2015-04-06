@@ -302,8 +302,7 @@ EOF
         fi
     fi
 
-    `cat /etc/resolv.conf |grep -P "nameserver 172\.17\.42\.1" -q`
-    if [[ "$?" == "1" ]]; then
+    if [ "$(awk '($1 == "nameserver"){print $2; exit}' </etc/resolv.conf)" != "172.17.42.1" ]; then
         echo
         echo "******************************************************************"
         echo "To access Arvados you must add the Arvados nameserver to the top"
