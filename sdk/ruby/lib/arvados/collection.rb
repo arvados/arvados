@@ -43,6 +43,10 @@ module Arv
       copy(:merge, source.chomp("/"), target, source_collection, opts)
     end
 
+    def each_file_path(&block)
+      @root.each_file_path(&block)
+    end
+
     def exist?(path)
       begin
         substream, item = find(path)
@@ -278,6 +282,17 @@ module Arv
           items.delete(name)
         else
           raise Errno::EISDIR.new(path)
+        end
+      end
+
+      def each_file_path
+        return to_enum(__method__) unless block_given?
+        items.each_value do |item|
+          if item.file?
+            yield item.path
+          else
+            item.each_file_path { |path| yield path }
+          end
         end
       end
 
