@@ -239,6 +239,7 @@ class AnonymousAccessTest < ActionDispatch::IntegrationTest
         assert_no_text 'stderr crunchstat'  # log line shouldn't be seen
       end
     end
+  end
 
   test "anonymous user accesses collection in shared project" do
     visit "/collections/#{api_fixture('collections')['public_text_file']['uuid']}"

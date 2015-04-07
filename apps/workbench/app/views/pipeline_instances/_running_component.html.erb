@@ -66,19 +66,9 @@
             <%# column offset 8 %>
             <div class="col-md-4 text-overflow-ellipsis">
               <% if pj[:output_uuid] %>
-                <% output = Collection.find?(pj[:output_uuid]) %>
-                <% if output %>
-                  <%= link_to_if_arvados_object pj[:output_uuid], friendly_name: true %>
-                <% else %>
-                  Output data not available
-                <% end %>
+                <%= link_to_arvados_object_if_readable(pj[:output_uuid], pj[:output_uuid], 'Output data not available', true) %>
               <% elsif current_job[:output] %>
-                <% output = Collection.find?(current_job[:output]) %>
-                <% if output %>
-                  <%= link_to_if_arvados_object current_job[:output], link_text: "Output of #{pj[:name]}" %>
-                <% else %>
-                  Output data not available
-                <% end %>
+                <%= link_to_arvados_object_if_readable(current_job[:output], "Output of #{pj[:name]}", 'Output data not available') %>
               <% else %>
                 No output.
               <% end %>
@@ -158,12 +148,9 @@
                   </td>
                   <td>
                     <% if k == :uuid %>
-                      <% if resource_class_for_uuid(current_component[k]).andand.to_s == 'Job' %>
-                        <% if Job.find?(current_component[k]) %>
-                          <%= link_to_if_arvados_object current_component[k], link_text: current_component[k] %>
-                        <% else %>
-                          <%= current_component[k] %>
-                        <% end %>
+                      <% resource_class = resource_class_for_uuid(current_component[k]) %>
+                      <% if resource_class.andand.to_s == 'Job' %>
+                        <%= link_to_arvados_object_if_readable(current_component[k], current_component[k], current_component[k], false, resource_class) %>
                       <% else %>
                         <%= link_to_if_arvados_object current_component[k], link_text: current_component[k] %>
                       <% end %>
