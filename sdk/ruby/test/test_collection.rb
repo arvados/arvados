@@ -374,6 +374,37 @@ class CollectionTest < Minitest::Test
     test_copy_empty_source_path_raises_ArgumentError(".", "")
   end
 
+  ### .exist?
+
+  def test_exist(test_method=:assert, path="f2")
+    coll = Arv::Collection.new(TWO_BY_TWO_MANIFEST_S)
+    send(test_method, coll.exist?(path))
+  end
+
+  def test_file_not_exist
+    test_exist(:refute, "f3")
+  end
+
+  def test_stream_exist
+    test_exist(:assert, "s1")
+  end
+
+  def test_file_inside_stream_exist
+    test_exist(:assert, "s1/f1")
+  end
+
+  def test_path_inside_stream_not_exist
+    test_exist(:refute, "s1/nonexistent")
+  end
+
+  def test_path_under_file_not_exist
+    test_exist(:refute, "f2/nonexistent")
+  end
+
+  def test_deep_substreams_not_exist
+    test_exist(:refute, "a/b/c/d/e/f/g")
+  end
+
   ### .rename
 
   def test_simple_file_rename
