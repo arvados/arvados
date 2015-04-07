@@ -86,6 +86,21 @@ def determine_resources(slurm_jobid=None, slurm_nodelist=None):
             "nodes": nodes,
             "slots": slots}
 
+class TaskMonitor(threading.Thread):
+    def __init__(self, sub, api_config, task):
+        super(TaskMonitor, self).__init__()
+        self.sub = sub
+        self.api_config = api_config
+        self.task = task
+
+    def run(self):
+        self.sub.wait()
+        api = api_from_config("v1", self.api_config)
+        check = api.job_tasks().get(uuid=self.task["uuid"]).execute()
+        if check["success"] is None:
+            # Task didn't set its own success, so mark it failed.
+            api.job_tasks().update(uuid=self.task["uuid"], body={"success": False}).execute()
+
 def run_on_slot(resources, slot, task, task_uuid):
     execution_script = Template(script_header + """
 mkdir $tmpdir/job_output $tmpdir/keep
@@ -126,7 +141,7 @@ echo "Output is $$OUT"
 
 if [[ -n "$$task_uuid" ]]; then
   if [[ "$$code" == "0" ]]; then
-    if [[ "$$?" == "0" ]]; then
+    if [[ "$$?" != "0" ]]; then
       arv job_task update --uuid $task_uuid "{\"output\":\"$$OUT\", "success": true}"
     else
       code=$TASK_TEMPFAIL
@@ -148,10 +163,10 @@ exit $$code
     stdin_redirect=""
     stdout_redirect=""
 
-    if task["stdin"]:
+    if task.get("stdin"):
         stdin_redirect = "< %s/keep/%s" % (pipes.quote(tmpdir), pipes.quote(task["stdin"]))
 
-    if task["stdout"]:
+    if task.get("stdout"):
         stdout_redirect = "> %s/job_output/%s" % (pipes.quote(tmpdir), pipes.quote(task["stdout"]))
 
     ex = execution_script.substitute(docker_hash=pipes.quote(task["docker_hash"]),
@@ -174,6 +189,7 @@ exit $$code
         slots = resources["slots"]
         slots[slot]["task"] = task
         slots[slot]["task"]["__subprocess"] = subprocess.Popen(ex, shell=True)
+        TaskMonitor(slots[slot]["task"]["__subprocess"], api_config, task).start()
 
 class TaskEvents(object):
     def __init__(self, api_config, resources, job_uuid):
