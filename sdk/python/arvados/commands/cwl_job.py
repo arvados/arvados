@@ -15,6 +15,7 @@ import threading
 import signal
 import arvados.commands.keepdocker
 import tempfile
+import pprint
 
 EX_TEMPFAIL = 75
 TASK_TEMPFAIL = 111
@@ -99,14 +100,15 @@ class TaskMonitor(threading.Thread):
         check = api.job_tasks().get(uuid=self.task["uuid"]).execute()
         if check["success"] is None:
             # Task didn't set its own success, so mark it failed.
-            api.job_tasks().update(uuid=self.task["uuid"], body={"success": False}).execute()
+            check = api.job_tasks().update(uuid=self.task["uuid"], body={"success": False}).execute()
+        print "Task %s completed with success %s" % (self.task["uuid"], check["success"])
 
-def run_on_slot(resources, slot, task, task_uuid):
+def run_on_slot(resources, api_config, slot, task):
     execution_script = Template(script_header + """
 mkdir $tmpdir/job_output $tmpdir/keep
 
 if which crunchstat ; then
-  CRUNCHSTAT="crunchstat -cgroup-root=/sys/fs/cgroup -cgroup-parent=docker -cgroup-cid=$tmpdir/cidfile -poll=10000"
+  CRUNCHSTAT="crunchstat -cgroup-root=/sys/fs/cgroup -cgroup-parent=docker -cgroup-cid=$cidfile -poll=10000"
 else
   CRUNCHSTAT=""
 fi
@@ -121,7 +123,7 @@ arv-mount --by-id $tmpdir/keep --allow-other --exec \
     --attach=stderr \
     -i \
     --rm \
-    --cidfile=$tmpdir/cidfile \
+    --cidfile=$cidfile \
     --sig-proxy \
     --volume=$tmpdir/keep:/keep:ro \
     --volume=$tmpdir/job_output:/tmp/job_output:rw \
@@ -135,19 +137,26 @@ arv-mount --by-id $tmpdir/keep --allow-other --exec \
 
 code=$$?
 
-OUT=`arv-put --portable-data-hash $tmpdir/job_output`
+echo "Docker exit code is $$code"
 
+OUT=`arv-put --portable-data-hash --batch-progress $tmpdir/job_output`
+arv_put_code=$$?
+
+echo "arv-put exit code is $$arv_put_code"
 echo "Output is $$OUT"
 
-if [[ -n "$$task_uuid" ]]; then
-  if [[ "$$code" == "0" ]]; then
-    if [[ "$$?" != "0" ]]; then
-      arv job_task update --uuid $task_uuid "{\"output\":\"$$OUT\", "success": true}"
+if test -n "$task_uuid" ; then
+  if test "$$code" = "0" ; then
+    if test "$$arv_put_code" = "0" ; then
+      echo "Task success"
+      arv job_task update --uuid $task_uuid --job-task "{\\"output\\":\\"$$OUT\\", \\"success\\": true}"
     else
+      echo "Task temporary failure"
       code=$TASK_TEMPFAIL
     fi
   else
-    arv job_task update --uuid $task_uuid "{\"output\":\"$$OUT\", "success": false}"
+    echo "Task failed"
+    arv job_task update --uuid $task_uuid --job-task "{\\"output\\":\\"$$OUT\\", \\"success\\": false}"
   fi
 fi
 
@@ -156,25 +165,29 @@ rm -rf $tmpdir
 exit $$code
 """)
 
+    pprint.pprint(task)
+
     tmpdir = "/tmp/%s-%i" % (slot, random.randint(1, 100000))
 
-    env = " ".join(["--env=%s=%s" % (pipes.quote(e), pipes.quote(task["environment"][e])) for e in task["environment"]])
+    params = task["parameters"]
+
+    env = " ".join(["--env=%s=%s" % (pipes.quote(e), pipes.quote(params["environment"][e])) for e in params.get("environment", {})])
 
     stdin_redirect=""
     stdout_redirect=""
 
-    if task.get("stdin"):
-        stdin_redirect = "< %s/keep/%s" % (pipes.quote(tmpdir), pipes.quote(task["stdin"]))
+    if params.get("stdin"):
+        stdin_redirect = "< %s/keep/%s" % (pipes.quote(tmpdir), pipes.quote(params["stdin"]))
 
-    if task.get("stdout"):
-        stdout_redirect = "> %s/job_output/%s" % (pipes.quote(tmpdir), pipes.quote(task["stdout"]))
+    if params.get("stdout"):
+        stdout_redirect = "> %s/job_output/%s" % (pipes.quote(tmpdir), pipes.quote(params["stdout"]))
 
-    ex = execution_script.substitute(docker_hash=pipes.quote(task["docker_hash"]),
+    ex = execution_script.substitute(docker_hash=pipes.quote(params["docker_hash"]),
                                      tmpdir=pipes.quote(tmpdir),
+                                     cidfile=os.path.join(tmpdir, "cidfile"),
                                      env=env,
-                                     cmd=" ".join([pipes.quote(c) for c in task["command"]]),
-                                     task_uuid=pipes.quote(task_uuid),
-                                     project_uuid=pipes.quote(project_uuid),
+                                     cmd=" ".join([pipes.quote(c) for c in params["command"]]),
+                                     task_uuid=pipes.quote(task["uuid"]),
                                      stdin_redirect=stdin_redirect,
                                      stdout_redirect=stdout_redirect,
                                      TASK_CANCELED=TASK_CANCELED,
@@ -183,13 +196,16 @@ exit $$code
                                      ARVADOS_API_TOKEN=pipes.quote(api_config["ARVADOS_API_TOKEN"]),
                                      ARVADOS_API_HOST_INSECURE=pipes.quote(api_config.get("ARVADOS_API_HOST_INSECURE", "0")))
 
+
     if resources["have_slurm"]:
         pass
     else:
         slots = resources["slots"]
         slots[slot]["task"] = task
-        slots[slot]["task"]["__subprocess"] = subprocess.Popen(ex, shell=True)
-        TaskMonitor(slots[slot]["task"]["__subprocess"], api_config, task).start()
+        sub = subprocess.Popen(ex, shell=True, stdin=subprocess.PIPE, close_fds=True)
+        sub.stdin.close()
+        slots[slot]["task"]["__subprocess"] = sub
+        TaskMonitor(sub, api_config, task).start()
 
 class TaskEvents(object):
     def __init__(self, api_config, resources, job_uuid):
@@ -198,6 +214,7 @@ class TaskEvents(object):
         self.ws = arvados.events.subscribe(api_from_config("v1", api_config), [["object_uuid", "=", job_uuid]], self.on_event)
         self.ws.subscribe([["object_uuid", "is_a", "arvados#jobTask"]])
         self.task_queue = []
+        self.api_config = api_config
 
     def next_task(self):
         while self.task_queue:
@@ -205,9 +222,17 @@ class TaskEvents(object):
             for slot in self.slots:
                 if self.slots[slot]["task"] is None:
                     task = self.task_queue[0]
-                    run_on_slot(self.resources, slot, task["parameters"], task["uuid"])
-                    del self.task_queue[0]
-                    assigned = True
+                    try:
+                        assigned = True
+                        run_on_slot(self.resources, self.api_config, slot, task)
+                        del self.task_queue[0]
+                    except:
+                        api = api_from_config("v1", self.api_config)
+                        check = api.job_tasks().get(uuid=task["uuid"]).execute()
+                        if check["success"] is None:
+                            api.job_tasks().update(uuid=task["uuid"], body={"success": False}).execute()
+                    break
+
             if not assigned:
                 break
 
@@ -217,8 +242,8 @@ class TaskEvents(object):
 
     def finish_task(self, task):
         for slot in self.slots:
-            if self.slots[slot]["task"]["uuid"] == task["uuid"]:
-                slot["task"] = None
+            if self.slots[slot]["task"] and self.slots[slot]["task"]["uuid"] == task["uuid"]:
+                self.slots[slot]["task"] = None
         self.next_task()
 
     def cancel_tasks(self):
@@ -307,7 +332,8 @@ docker run \
     if resources["have_slurm"]:
         pass
     else:
-        sub = subprocess.Popen(ex, shell=True)
+        sub = subprocess.Popen(ex, shell=True, stdin=subprocess.PIPE, close_fds=True)
+        sub.stdin.close()
         JobMonitor(sub, api_config, job).start()
         return sub
 
@@ -380,6 +406,6 @@ def main(arguments=None):
 
         ts.ws.run_forever()
     else:
-        run_on_slot(resources, resources["slots"].keys()[0], job["script_parameters"], "")
+        run_on_slot(resources, api_config, resources["slots"].keys()[0], {"parameters": job["script_parameters"]})
 
     return 0

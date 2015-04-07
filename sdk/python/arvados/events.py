@@ -32,8 +32,10 @@ class EventClient(WebSocketClient):
         super(EventClient, self).__init__(url, ssl_options=ssl_options)
         self.filters = filters
         self.on_event = on_event
+        self.ready = threading.Event()
 
     def opened(self):
+        self.ready.set()
         self.subscribe(self.filters)
 
     def received_message(self, m):
@@ -47,12 +49,14 @@ class EventClient(WebSocketClient):
             pass
 
     def subscribe(self, filters, last_log_id=None):
+        self.ready.wait()
         m = {"method": "subscribe", "filters": filters}
         if last_log_id is not None:
             m["last_log_id"] = last_log_id
         self.send(json.dumps(m))
 
     def unsubscribe(self, filters):
+        self.ready.wait()
         self.send(json.dumps({"method": "unsubscribe", "filters": filters}))
 
 class PollClient(threading.Thread):

@@ -196,12 +196,17 @@ def list_images_in_arv(api_client, num_retries, image_name=None, image_tag=None,
     if image_name:
         image_link_name = "{}:{}".format(image_name, image_tag or 'latest')
         docker_image_filters.append(['name', '=', image_link_name])
-    if image_hash:
+    elif image_hash:
         docker_image_filters.append(['name', '=', image_hash])
-    if image_collection:
+    elif image_collection:
         docker_image_filters.append(['head_uuid', '=', image_collection])
 
     existing_links = list_all(api_client.links().list, num_retries, filters=docker_image_filters)
+
+    if image_name or image_hash:
+        existing_links = list_all(api_client.links().list, num_retries,
+                              filters=[['link_class', 'in', ['docker_image_hash', 'docker_image_repo+tag']],
+                                       ['head_uuid', 'in', [u['head_uuid'] for u in existing_links]]])
     images = {}
     for link in existing_links:
         collection_uuid = link["head_uuid"]

@@ -6,6 +6,8 @@ import run_test_server
 import subprocess
 import os
 import stat
+import arvados.commands.keepdocker
+import re
 
 def chmodx(fn):
     os.chmod(fn, stat.S_IRUSR|stat.S_IRGRP|stat.S_IROTH|stat.S_IXUSR|stat.S_IXGRP|stat.S_IXOTH)
@@ -20,19 +22,25 @@ class CwlJobTestCase(run_test_server.TestCaseWithServers):
         super(CwlJobTestCase, cls).setUpClass()
         run_test_server.authorize_with("admin")
         cls.api_client = arvados.api('v1')
+
+        host = re.match("^https?://([^/]+)", cls.api_client._rootDesc.get('rootUrl'))
+        os.environ["ARVADOS_API_HOST"] = host.group(1)
+
         os.chdir(os.path.join(run_test_server.ARVADOS_DIR, "docker"))
         subprocess.check_call(["./build.sh", "cwl-runner-image"])
         arvados.commands.keepdocker.upload_image(cls.api_client, ["arvados/cwl-runner"])
+        arvados.commands.keepdocker.upload_image(cls.api_client, ["arvados/debian", "wheezy"])
 
-        imgs_in_arv = list_images_in_arv(cls.api_client, 1, image_name="arvados/cwl-runner")
+        imgs_in_arv = arvados.commands.keepdocker.list_images_in_arv(cls.api_client, 1, image_name="arvados/debian", image_tag="wheezy")
 
         repo = cls.api_client.repositories().create(body={"repository": {
             "owner_uuid": "zzzzz-tpzed-000000000000000",
             "name": "testrepo"
             }}).execute()
 
-        os.mkdir(os.path.join(run_test_server.ARVADOS_DIR, "services/api/tmp/git/testrepo"))
-        os.chdir(os.path.join(run_test_server.ARVADOS_DIR, "services/api/tmp/git/testrepo"))
+        testrepo = os.path.join(run_test_server.ARVADOS_DIR, "services/api/tmp/git/testrepo")
+        os.mkdir(testrepo)
+        os.chdir(testrepo)
         subprocess.check_call(["git", "init"])
 
         with open("foo", "w") as f:
@@ -55,24 +63,30 @@ exit 1
 """#!/usr/bin/env python
 import arvados
 import arvados.events
+import sys
 
 ws = None
+retcode = None
 
 def on_event(ev):
     global ws
+    global retcode
     if ev.get('object_kind') == "arvados#jobTask":
         if ev.get('event_type') == "update":
             if ev["properties"]["new_attributes"].get("success") is not None:
+                retcode = 0 if ev["properties"]["new_attributes"]["success"] else 1
                 ws.close()
 
-ws = arvados.events.subscribe(arvados.api(), [["object_uuid", "is_a", "arvados#jobTask"]], self.on_event)
+ws = arvados.events.subscribe(arvados.api(), [["object_uuid", "is_a", "arvados#jobTask"]], on_event)
 
-arvados.api().job_tasks().create(body={
+arvados.api().job_tasks().create(body={"parameters": {
   "environment": {},
-  "docker_hash": '""" + imgs_in_arv[0].hash + """',
-  "command": ["ls", "/"]}).execute()
+  "docker_hash": '""" + imgs_in_arv[0][1]["dockerhash"] + """',
+  "command": ["ls", "/"]} }).execute()
 
 ws.run_forever()
+
+sys.exit(retcode)
 """)
         chmodx("one_task")
 
