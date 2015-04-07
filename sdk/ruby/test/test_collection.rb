@@ -374,6 +374,40 @@ class CollectionTest < Minitest::Test
     test_copy_empty_source_path_raises_ArgumentError(".", "")
   end
 
+  ### .each_file_path
+
+  def test_each_file_path
+    coll = Arv::Collection.new(TWO_BY_TWO_MANIFEST_S)
+    if block_given?
+      result = yield(coll)
+    else
+      result = []
+      coll.each_file_path { |path| result << path }
+    end
+    assert_equal(["./f1", "./f2", "./s1/f1", "./s1/f3"], result.sort)
+  end
+
+  def test_each_file_path_without_block
+    test_each_file_path { |coll| coll.each_file_path.to_a }
+  end
+
+  def test_each_file_path_empty_collection
+    assert_empty(Arv::Collection.new.each_file_path.to_a)
+  end
+
+  def test_each_file_path_after_collection_emptied
+    coll = Arv::Collection.new(SIMPLEST_MANIFEST)
+    coll.rm("simple.txt")
+    assert_empty(coll.each_file_path.to_a)
+  end
+
+  def test_each_file_path_deduplicates_manifest_listings
+    coll = Arv::Collection.new(MULTIBLOCK_FILE_MANIFEST)
+    assert_equal(["./repfile", "./s1/repfile", "./s1/uniqfile",
+                  "./uniqfile", "./uniqfile2"],
+                 coll.each_file_path.to_a.sort)
+  end
+
   ### .exist?
 
   def test_exist(test_method=:assert, path="f2")
@@ -394,7 +428,7 @@ class CollectionTest < Minitest::Test
   end
 
   def test_path_inside_stream_not_exist
-    test_exist(:refute, "s1/nonexistent")
+    test_exist(:refute, "s1/f2")
   end
 
   def test_path_under_file_not_exist
