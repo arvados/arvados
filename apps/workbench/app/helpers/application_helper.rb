@@ -183,7 +183,12 @@ module ApplicationHelper
       return link_text_if_not_readable
     end
 
-    readable = resource_class.find?(attrvalue)
+    if resource_class.andand.to_s == 'Collection'
+      readable = resource_class.find?(attrvalue)
+    else
+      readable = object_for_dataclass(resource_class, attrvalue)
+    end
+
     if readable
       if use_friendly_name
         link_to_if_arvados_object attrvalue, friendly_name: true

@@ -80,6 +80,14 @@
 </p>
 
 <%# Components %>
+          
+<%
+  job_uuids = pipeline_jobs.collect {|j| j[:job][:uuid]}.compact
+  if job_uuids.any?
+    resource_class = resource_class_for_uuid(job_uuids.first, friendly_name: true)
+    preload_objects_for_dataclass resource_class, job_uuids
+  end
+%>
 
 <% pipeline_jobs.each_with_index do |pj, i| %>
   <%= render partial: 'running_component', locals: {tasks: tasks, pj: pj, i: i, expanded: false} %>
