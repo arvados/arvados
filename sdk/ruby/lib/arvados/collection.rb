@@ -43,6 +43,15 @@ module Arv
       copy(:merge, source.chomp("/"), target, source_collection, opts)
     end
 
+    def exist?(path)
+      begin
+        substream, item = find(path)
+        not (substream.leaf? or substream[item].nil?)
+      rescue Errno::ENOENT, Errno::ENOTDIR
+        false
+      end
+    end
+
     def rename(source, target)
       copy(:add_copy, source, target) { rm_r(source) }
     end
