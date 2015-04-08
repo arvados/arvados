@@ -60,6 +60,13 @@ func (s *IntegrationSuite) TestNonexistent(c *check.C) {
 	c.Assert(err, check.ErrorMatches, `.* not found.*`)
 }
 
+func (s *IntegrationSuite) TestMissingGitdirReadableRepository(c *check.C) {
+	// Active user token
+	os.Setenv("ARVADOS_API_TOKEN", "3kg6k6lzmp9kj5cpkcoxie963cmvjahbt2fod9zru30k1jqdmi")
+	err := s.runGit(c, "fetch", "active/foo2.git")
+	c.Assert(err, check.ErrorMatches, `.* not found.*`)
+}
+
 func (s *IntegrationSuite) TestNoPermission(c *check.C) {
 	// Anonymous token
 	os.Setenv("ARVADOS_API_TOKEN", "4kg6k6lzmp9kj4cpkcoxie964cmvjahbt4fod9zru44k4jqdmi")
@@ -142,9 +149,10 @@ func (s *IntegrationSuite) runGit(c *check.C, gitCmd, repo string, args ...strin
 	cmd := exec.Command("git", gitargs...)
 	w, err := cmd.StdinPipe()
 	c.Assert(err, check.Equals, nil)
-	go w.Close()
+	w.Close()
 	output, err := cmd.CombinedOutput()
 	c.Log("git ", gitargs, " => ", err)
+	c.Log(string(output))
 	if err != nil && len(output) > 0 {
 		// If messages appeared on stderr, they are more
 		// helpful than the err returned by CombinedOutput().
