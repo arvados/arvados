@@ -83,11 +83,11 @@ func (s *IntegrationSuite) SetUpTest(c *check.C) {
 	c.Assert(err, check.Equals, nil)
 	_, err = exec.Command("git", "init", s.tmpRepoRoot+"/zzzzz-s0uqq-382brsig8rp3666").Output()
 	c.Assert(err, check.Equals, nil)
-	_, err = exec.Command("sh", "-c", "cd "+s.tmpRepoRoot+"/zzzzz-s0uqq-382brsig8rp3666 && echo test >test && git add test && git commit -am 'foo: test'").CombinedOutput()
+	_, err = exec.Command("sh", "-c", "cd "+s.tmpRepoRoot+"/zzzzz-s0uqq-382brsig8rp3666 && echo test >test && git add test && git -c user.name=Foo -c user.email=Foo commit -am 'foo: test'").CombinedOutput()
 	c.Assert(err, check.Equals, nil)
 	_, err = exec.Command("git", "init", s.tmpWorkdir).Output()
 	c.Assert(err, check.Equals, nil)
-	_, err = exec.Command("sh", "-c", "cd "+s.tmpWorkdir+" && echo work >work && git add work && git commit -am 'workdir: test'").CombinedOutput()
+	_, err = exec.Command("sh", "-c", "cd "+s.tmpWorkdir+" && echo work >work && git add work && git -c user.name=Foo -c user.email=Foo commit -am 'workdir: test'").CombinedOutput()
 	c.Assert(err, check.Equals, nil)
 
 	theConfig = &config{
