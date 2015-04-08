@@ -108,6 +108,7 @@ class RepositoryTest < ActiveSupport::TestCase
 
   test "fetch_url" do
     repo = new_repo(:active, name: "active/fetchtest")
+    repo.save
     assert_equal(default_git_url("fetchtest", "active"), repo.fetch_url)
   end
 
@@ -115,11 +116,13 @@ class RepositoryTest < ActiveSupport::TestCase
     set_user_from_auth :admin
     repo = Repository.new(owner_uuid: users(:system_user).uuid,
                           name: "fetchtest")
+    repo.save
     assert_equal(default_git_url("fetchtest"), repo.fetch_url)
   end
 
   test "push_url" do
     repo = new_repo(:active, name: "active/pushtest")
+    repo.save
     assert_equal(default_git_url("pushtest", "active"), repo.push_url)
   end
 
@@ -127,6 +130,7 @@ class RepositoryTest < ActiveSupport::TestCase
     set_user_from_auth :admin
     repo = Repository.new(owner_uuid: users(:system_user).uuid,
                           name: "pushtest")
+    repo.save
     assert_equal(default_git_url("pushtest"), repo.push_url)
   end
 

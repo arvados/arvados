@@ -59,9 +59,9 @@ common:
   # logic for deciding on a hostname.
   host: false
 
-  # If not false, this is the hostname that will be used to generate fetch_url
-  # and push_url for git repositories.  By default, this will be
-  # git.(uuid_prefix).arvadosapi.com
+  # If not false, this is the hostname that will be used to generate
+  # fetch_url and push_url for locally hosted git repositories.  By
+  # default, this is git.(uuid_prefix).arvadosapi.com
   git_host: false
 
   # If this is not false, HTML requests at the API server's root URL

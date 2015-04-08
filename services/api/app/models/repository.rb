@@ -20,11 +20,12 @@ class Repository < ArvadosModel
   end
 
   def push_url
-    if Rails.configuration.git_host
-      "git@%s:%s.git" % [Rails.configuration.git_host, name]
-    else
-      "git@git.%s.arvadosapi.com:%s.git" % [Rails.configuration.uuid_prefix, name]
+    prefix = new_record? ? Rails.configuration.uuid_prefix : uuid[0,5]
+    if prefix == Rails.configuration.uuid_prefix
+      host = Rails.configuration.git_host
     end
+    host ||= "git.%s.arvadosapi.com" % prefix
+    "git@%s:%s.git" % [host, name]
   end
 
   def fetch_url
