@@ -223,11 +223,15 @@ class CollectionTest < Minitest::Test
     assert_equal(expected.join(""), coll.manifest_text)
   end
 
-  def test_copy_stream_over_file_raises_ENOTDIR
+  def test_copy_stream_over_file_raises_ENOTDIR(source="./s1", target="./f2")
     coll = Arv::Collection.new(TWO_BY_TWO_MANIFEST_S)
     assert_raises(Errno::ENOTDIR) do
-      coll.cp_r("./s1", "./f2")
+      coll.cp_r(source, target)
     end
+  end
+
+  def test_copy_file_under_file_raises_ENOTDIR
+    test_copy_stream_over_file_raises_ENOTDIR("./f1", "./f2/newfile")
   end
 
   def test_copy_stream_over_nonempty_stream_merges_and_overwrites
@@ -321,6 +325,20 @@ class CollectionTest < Minitest::Test
     expect_lines = MULTILEVEL_MANIFEST.lines
     expect_lines[4] = expect_lines[2].sub("./dir0/", "./dir1/")
     assert_equal(expect_lines.join(""), coll.manifest_text)
+  end
+
+  def test_copy_file_into_new_stream_with_implicit_filename
+    coll = Arv::Collection.new(SIMPLEST_MANIFEST)
+    coll.cp_r("./simple.txt", "./new/")
+    assert_equal(SIMPLEST_MANIFEST + SIMPLEST_MANIFEST.sub(". ", "./new "),
+                 coll.manifest_text)
+  end
+
+  def test_copy_file_into_new_stream_with_explicit_filename
+    coll = Arv::Collection.new(SIMPLEST_MANIFEST)
+    coll.cp_r("./simple.txt", "./new/newfile.txt")
+    new_line = SIMPLEST_MANIFEST.sub(". ", "./new ").sub(":simple", ":newfile")
+    assert_equal(SIMPLEST_MANIFEST + new_line, coll.manifest_text)
   end
 
   def test_copy_stream_contents_into_root
