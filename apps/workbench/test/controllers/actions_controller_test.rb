@@ -33,13 +33,12 @@ class ActionsControllerTest < ActionController::TestCase
     use_token :active
     collection = Collection.select([:uuid, :manifest_text]).where(uuid: new_collection_uuid).first
     manifest_text = collection['manifest_text']
-    assert manifest_text.include?('foo'), 'Not found foo in new collection manifest text'
-    assert manifest_text.include?('bar'), 'Not found bar in new collection manifest text'
-    assert manifest_text.include?('baz'), 'Not found baz in new collection manifest text'
-    assert manifest_text.include?('0:0:file1 0:0:file2 0:0:file3'),
-                'Not found 0:0:file1 0:0:file2 0:0:file3 in new collection manifest text'
-    assert manifest_text.include?('dir1/subdir'), 'Not found dir1/subdir in new collection manifest text'
-    assert manifest_text.include?('dir2'), 'Not found dir2 in new collection manifest text'
+    assert_includes(manifest_text, "foo")
+    assert_includes(manifest_text, "bar")
+    assert_includes(manifest_text, "baz")
+    assert_includes(manifest_text, "0:0:file1 0:0:file2 0:0:file3")
+    assert_includes(manifest_text, "dir1/subdir")
+    assert_includes(manifest_text, "dir2")
   end
 
   test "combine files  with repeated names into new collection" do
@@ -61,15 +60,13 @@ class ActionsControllerTest < ActionController::TestCase
     use_token :active
     collection = Collection.select([:uuid, :manifest_text]).where(uuid: new_collection_uuid).first
     manifest_text = collection['manifest_text']
-    assert manifest_text.include?('foo'), 'Not found foo in new collection manifest text'
-    assert manifest_text.include?('foo(1)'), 'Not found foo(1) in new collection manifest text'
-    assert manifest_text.include?('foo(2)'), 'Not found foo(2) in new collection manifest text'
-    assert manifest_text.include?('bar'), 'Not found bar in new collection manifest text'
-    assert manifest_text.include?('baz'), 'Not found baz in new collection manifest text'
-    assert manifest_text.include?('0:0:file1 0:0:file2 0:0:file3'),
-                'Not found 0:0:file1 0:0:file2 0:0:file3 in new collection manifest text'
-    assert manifest_text.include?('dir1/subdir'), 'Not found dir1/subdir in new collection manifest text'
-    assert manifest_text.include?('dir2'), 'Not found dir2 in new collection manifest text'
+    assert_includes(manifest_text, "foo(1)")
+    assert_includes(manifest_text, "foo(2)")
+    assert_includes(manifest_text, "bar")
+    assert_includes(manifest_text, "baz")
+    assert_includes(manifest_text, "0:0:file1 0:0:file2 0:0:file3")
+    assert_includes(manifest_text, "dir1/subdir")
+    assert_includes(manifest_text, "dir2")
   end
 
   test "combine collections with repeated filenames in almost similar directories and expect files with proper suffixes" do
