@@ -185,7 +185,7 @@ module ApplicationHelper
 
     if resource_class.andand.to_s == 'Collection'
       if CollectionsHelper.match(attrvalue)
-        readable = Collection.find? attrvalue
+        readable = Collection.find? attrvalue   # portable_data_hash
       else
         readable = collections_for_object(attrvalue).any?
       end
