@@ -75,32 +75,6 @@ func (h *authHandler) ServeHTTP(wOrig http.ResponseWriter, r *http.Request) {
 	repoName = pathParts[0]
 	repoName = strings.TrimRight(repoName, "/")
 
-	// Regardless of whether the client asked for "/foo.git" or
-	// "/foo/.git", we choose whichever variant exists in our repo
-	// root. If neither exists, we won't even bother checking
-	// authentication.
-	rewrittenPath := ""
-	tryDirs := []string{
-		"/" + repoName + ".git",
-		"/" + repoName + "/.git",
-	}
-	for _, dir := range tryDirs {
-		if fileInfo, err := os.Stat(theConfig.Root + dir); err != nil {
-			if !os.IsNotExist(err) {
-				statusCode, statusText = http.StatusInternalServerError, err.Error()
-				return
-			}
-		} else if fileInfo.IsDir() {
-			rewrittenPath = dir + "/" + pathParts[1]
-			break
-		}
-	}
-	if rewrittenPath == "" {
-		statusCode, statusText = http.StatusNotFound, "not found"
-		return
-	}
-	r.URL.Path = rewrittenPath
-
 	arv, ok := connectionPool.Get().(*arvadosclient.ArvadosClient)
 	if !ok || arv == nil {
 		statusCode, statusText = http.StatusInternalServerError, "connection pool failed"
@@ -108,7 +82,8 @@ func (h *authHandler) ServeHTTP(wOrig http.ResponseWriter, r *http.Request) {
 	}
 	defer connectionPool.Put(arv)
 
-	// Ask API server whether the repository is readable using this token (by trying to read it!)
+	// Ask API server whether the repository is readable using
+	// this token (by trying to read it!)
 	arv.ApiToken = password
 	reposFound := arvadosclient.Dict{}
 	if err := arv.List("repositories", arvadosclient.Dict{
@@ -127,12 +102,14 @@ func (h *authHandler) ServeHTTP(wOrig http.ResponseWriter, r *http.Request) {
 		statusCode, statusText = http.StatusInternalServerError, "name collision"
 		return
 	}
+
+	repoUUID := reposFound["items"].([]interface{})[0].(map[string]interface{})["uuid"].(string)
+
 	isWrite := strings.HasSuffix(r.URL.Path, "/git-receive-pack")
 	if !isWrite {
 		statusText = "read"
 	} else {
-		uuid := reposFound["items"].([]interface{})[0].(map[string]interface{})["uuid"].(string)
-		err := arv.Update("repositories", uuid, arvadosclient.Dict{
+		err := arv.Update("repositories", repoUUID, arvadosclient.Dict{
 			"repository": arvadosclient.Dict{
 				"modified_at": time.Now().String(),
 			},
@@ -143,6 +120,40 @@ func (h *authHandler) ServeHTTP(wOrig http.ResponseWriter, r *http.Request) {
 		}
 		statusText = "write"
 	}
+
+	// Regardless of whether the client asked for "/foo.git" or
+	// "/foo/.git", we choose whichever variant exists in our repo
+	// root, and we try {uuid}.git and {uuid}/.git first. If none
+	// of these exist, we 404 even though the API told us the repo
+	// _should_ exist (presumably this means the repo was just
+	// created, and gitolite sync hasn't run yet).
+	rewrittenPath := ""
+	tryDirs := []string{
+		"/" + repoUUID + ".git",
+		"/" + repoUUID + "/.git",
+		"/" + repoName + ".git",
+		"/" + repoName + "/.git",
+	}
+	for _, dir := range tryDirs {
+		log.Println("Trying", theConfig.Root + dir)
+		if fileInfo, err := os.Stat(theConfig.Root + dir); err != nil {
+			if !os.IsNotExist(err) {
+				statusCode, statusText = http.StatusInternalServerError, err.Error()
+				return
+			}
+		} else if fileInfo.IsDir() {
+			rewrittenPath = dir + "/" + pathParts[1]
+			break
+		}
+	}
+	if rewrittenPath == "" {
+		// We say "content not found" to disambiguate from the
+		// earlier "API says that repo does not exist" error.
+		statusCode, statusText = http.StatusNotFound, "content not found"
+		return
+	}
+	r.URL.Path = rewrittenPath
+
 	handlerCopy := *h.handler
 	handlerCopy.Env = append(handlerCopy.Env, "REMOTE_USER="+r.RemoteAddr) // Should be username
 	handlerCopy.ServeHTTP(&w, r)

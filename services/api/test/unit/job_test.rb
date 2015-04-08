@@ -15,7 +15,7 @@ class JobTest < ActiveSupport::TestCase
     {
       script: "hash",
       script_version: "master",
-      repository: "foo",
+      repository: "active/foo",
     }.merge(merge_me)
   end
 

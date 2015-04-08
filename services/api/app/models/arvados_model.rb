@@ -308,8 +308,13 @@ class ArvadosModel < ActiveRecord::Base
     # Verify "write" permission on new owner
     # default fail unless one of:
     # current_user is this object
-    # current user can_write new owner
-    unless current_user == self or current_user.can? write: owner_uuid
+    # current user can_write new owner, or this object if owner unchanged
+    if new_record? or owner_uuid_changed? or is_a?(ApiClientAuthorization)
+      write_target = owner_uuid
+    else
+      write_target = uuid
+    end
+    unless current_user == self or current_user.can? write: write_target
       logger.warn "User #{current_user.uuid} tried to modify #{self.class.to_s} #{uuid} but does not have permission to write new owner_uuid #{owner_uuid}"
       errors.add :owner_uuid, "cannot be changed without write permission on new owner"
       raise PermissionDeniedError

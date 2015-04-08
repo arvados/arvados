@@ -20,6 +20,7 @@ development:
 
 production:
   host: api.dev.arvados
+  git_host: api.dev.arvados
 
   # At minimum, you need a nice long randomly generated secret_token here.
   # Use a long string of alphanumeric characters (at least 36).
@@ -55,6 +56,10 @@ production:
   auto_setup_new_users: true
 
   auto_admin_first_user: true
+
+  auto_setup_new_users_with_repository: true
+
+  auto_setup_new_users_with_vm_uuid: @@API_HOSTNAME@@-2x53u-csbtkecoa669vkz
 
 test:
   uuid_prefix: zzzzz

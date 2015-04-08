@@ -53,6 +53,8 @@ end
 class Dispatcher
   include ApplicationHelper
 
+  EXIT_TEMPFAIL = 75
+
   def initialize
     @crunch_job_bin = (ENV['CRUNCH_JOB_BIN'] || `which arv-crunch-job`.strip)
     if @crunch_job_bin.empty?
@@ -66,6 +68,7 @@ class Dispatcher
     end
 
     @repo_root = Rails.configuration.git_repositories_dir
+    @arvados_repo_path = Repository.where(name: "arvados").first.server_path
     @authorizations = {}
     @did_recently = {}
     @fetched_commits = {}
@@ -276,19 +279,10 @@ class Dispatcher
     @authorizations[job.uuid]
   end
 
-  def get_commit(repo_name, commit_hash)
+  def get_commit(src_repo, commit_hash)
     # @fetched_commits[V]==true if we know commit V exists in the
     # arvados_internal git repository.
     if !@fetched_commits[commit_hash]
-      src_repo = File.join(@repo_root, "#{repo_name}.git")
-      if not File.exists? src_repo
-        src_repo = File.join(@repo_root, repo_name, '.git')
-        if not File.exists? src_repo
-          fail_job job, "No #{repo_name}.git or #{repo_name}/.git at #{@repo_root}"
-          return nil
-        end
-      end
-
       # check if the commit needs to be fetched or not
       commit_rev = stdout_s(git_cmd("rev-list", "-n1", commit_hash),
                             err: "/dev/null")
@@ -383,11 +377,17 @@ class Dispatcher
                          "GEM_PATH=#{ENV['GEM_PATH']}")
       end
 
+      repo = Repository.where(name: job.repository).first
+      if repo.nil? or repo.server_path.nil?
+        fail_job "Repository #{job.repository} not found under #{@repo_root}"
+        next
+      end
+
       ready = (get_authorization(job) and
-               get_commit(job.repository, job.script_version) and
+               get_commit(repo.server_path, job.script_version) and
                tag_commit(job.script_version, job.uuid))
       if ready and job.arvados_sdk_version
-        ready = (get_commit("arvados", job.arvados_sdk_version) and
+        ready = (get_commit(@arvados_repo_path, job.arvados_sdk_version) and
                  tag_commit(job.arvados_sdk_version, "#{job.uuid}-arvados-sdk"))
       end
       next unless ready
@@ -634,7 +634,7 @@ class Dispatcher
     exit_status = j_done[:wait_thr].value.exitstatus
 
     jobrecord = Job.find_by_uuid(job_done.uuid)
-    if exit_status != 75 and jobrecord.state == "Running"
+    if exit_status != EXIT_TEMPFAIL and jobrecord.state == "Running"
       # crunch-job did not return exit code 75 (see below) and left the job in
       # the "Running" state, which means there was an unhandled error.  Fail
       # the job.
@@ -757,5 +757,11 @@ end
 
 # This is how crunch-job child procs know where the "refresh" trigger file is
 ENV["CRUNCH_REFRESH_TRIGGER"] = Rails.configuration.crunch_refresh_trigger
+
+# If salloc can't allocate resources immediately, make it use our temporary
+# failure exit code.  This ensures crunch-dispatch won't mark a job failed
+# because of an issue with node allocation.  This often happens when
+# another dispatcher wins the race to allocate nodes.
+ENV["SLURM_EXIT_IMMEDIATE"] = Dispatcher::EXIT_TEMPFAIL.to_s
 
 Dispatcher.new.run

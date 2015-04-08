@@ -96,7 +96,9 @@ def locators_and_ranges(data_locators, range_start, range_size):
         block_start = dl.range_start
         block_size = dl.range_size
         block_end = block_start + block_size
-        _logger.debug(dl.locator, "range_start", range_start, "block_start", block_start, "range_end", range_end, "block_end", block_end)
+        _logger.debug(
+            "%s range_start %s block_start %s range_end %s block_end %s",
+            dl.locator, range_start, block_start, range_end, block_end)
         if range_end <= block_start:
             # range ends before this block starts, so don't look at any more locators
             break
@@ -168,7 +170,10 @@ def replace_range(data_locators, new_range_start, new_range_size, new_locator, n
         dl = data_locators[i]
         old_segment_start = dl.range_start
         old_segment_end = old_segment_start + dl.range_size
-        _logger.debug(dl, "range_start", new_range_start, "segment_start", old_segment_start, "range_end", new_range_end, "segment_end", old_segment_end)
+        _logger.debug(
+            "%s range_start %s segment_start %s range_end %s segment_end %s",
+            dl, new_range_start, old_segment_start, new_range_end,
+            old_segment_end)
         if new_range_end <= old_segment_start:
             # range ends before this segment starts, so don't look at any more locators
             break

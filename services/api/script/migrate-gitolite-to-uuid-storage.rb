@@ -1,4 +1,20 @@
 #!/usr/bin/env ruby
+#
+# Prior to April 2015, Arvados Gitolite integration stored repositories by
+# name.  To improve user repository management, we switched to storing
+# repositories by UUID, and aliasing them to names.  This makes it easy to
+# have rich name hierarchies, and allow users to rename repositories.
+#
+# This script will migrate a name-based Gitolite configuration to a UUID-based
+# one.  To use it:
+#
+# 1. Change the value of REPOS_DIR below, if needed.
+# 2. Install this script in the same directory as `update-gitolite.rb`.
+# 3. Ensure that no *other* users can access Gitolite: edit gitolite's
+#    authorized_keys file so it only contains the arvados_git_user key,
+#    and disable the update-gitolite cron job.
+# 4. Run this script: `ruby migrate-gitolite-to-uuid-storage.rb production`.
+# 5. Undo step 3.
 
 require 'rubygems'
 require 'pp'
@@ -6,9 +22,7 @@ require 'arvados'
 require 'tempfile'
 require 'yaml'
 
-# This script does the actual gitolite config management on disk.
-#
-# Ward Vandewege <ward@curoverse.com>
+REPOS_DIR = "/var/lib/gitolite/repositories"
 
 # Default is development
 production = ARGV[0] == "production"
@@ -103,82 +117,42 @@ module TrackCommitState
   end
 end
 
-class UserSSHKeys
-  include TrackCommitState
-
-  def initialize(user_keys_map, key_dir)
-    @user_keys_map = user_keys_map
-    @key_dir = key_dir
-    @installed = {}
-  end
-
-  def install(filename, pubkey)
-    unless pubkey.nil?
-      key_path = File.join(@key_dir, filename)
-      ensure_in_git(key_path, pubkey)
-    end
-    @installed[filename] = true
-  end
-
-  def ensure_keys_for_user(user_uuid)
-    return unless key_list = @user_keys_map.delete(user_uuid)
-    key_list.map { |k| k[:public_key] }.compact.each_with_index do |pubkey, ii|
-      # Handle putty-style ssh public keys
-      pubkey.sub!(/^(Comment: "r[^\n]*\n)(.*)$/m,'ssh-rsa \2 \1')
-      pubkey.sub!(/^(Comment: "d[^\n]*\n)(.*)$/m,'ssh-dss \2 \1')
-      pubkey.gsub!(/\n/,'')
-      pubkey.strip!
-      install("#{user_uuid}@#{ii}.pub", pubkey)
-    end
-  end
-
-  def installed?(filename)
-    @installed[filename]
-  end
-end
-
 class Repository
   include TrackCommitState
 
   @@aliases = {}
 
-  def initialize(arv_repo, user_keys)
+  def initialize(arv_repo)
     @arv_repo = arv_repo
-    @user_keys = user_keys
   end
 
   def self.ensure_system_config(conf_root)
-    ensure_in_git(File.join(conf_root, "conf", "gitolite.conf"),
-                  %Q{include "auto/*.conf"\ninclude "admin/*.conf"\n})
     ensure_in_git(File.join(conf_root, "arvadosaliases.pl"), alias_config)
+  end
 
-    conf_path = File.join(conf_root, "conf", "admin", "arvados.conf")
-    conf_file = %Q{
-@arvados_git_user = arvados_git_user
-
-repo gitolite-admin
-     RW           = @arvados_git_user
-
-}
-    ensure_directory(File.dirname(conf_path), 0755)
-    ensure_in_git(conf_path, conf_file)
+  def self.rename_repos(repos_root)
+    @@aliases.each_pair do |uuid, name|
+      begin
+        File.rename(File.join(repos_root, "#{name}.git/"),
+                    File.join(repos_root, "#{uuid}.git"))
+      rescue Errno::ENOENT
+      end
+      if name == "arvados"
+        Dir.chdir(repos_root) { File.symlink("#{uuid}.git/", "arvados.git") }
+      end
+    end
   end
 
   def ensure_config(conf_root)
-    if name and (File.exist?(auto_conf_path(conf_root, name)))
-      # This gitolite installation knows the repository by name, rather than
-      # UUID.  Leave it configured that way until a separate migration is run.
-      basename = name
-    else
-      basename = uuid
-      @@aliases[name] = uuid unless name.nil?
-    end
-    conf_file = "\nrepo #{basename}\n"
-    @arv_repo[:user_permissions].sort.each do |user_uuid, perm|
-      conf_file += "\t#{perm[:gitolite_permissions]}\t= #{user_uuid}\n"
-      @user_keys.ensure_keys_for_user(user_uuid)
-    end
-    ensure_in_git(auto_conf_path(conf_root, basename), conf_file)
+    return if name.nil?
+    @@aliases[uuid] = name
+    name_conf_path = auto_conf_path(conf_root, name)
+    return unless File.exist?(name_conf_path)
+    conf_file = IO.read(name_conf_path)
+    conf_file.gsub!(/^repo #{Regexp.escape(name)}$/m, "repo #{uuid}")
+    ensure_in_git(auto_conf_path(conf_root, uuid), conf_file)
+    File.unlink(name_conf_path)
+    system("git", "rm", "--quiet", name_conf_path)
   end
 
   private
@@ -225,34 +199,18 @@ begin
   arv = Arvados.new
   permissions = arv.repository.get_all_permissions
 
-  ensure_directory(gitolite_keydir, 0700)
-  user_ssh_keys = UserSSHKeys.new(permissions[:user_keys], gitolite_keydir)
-  # Make sure the arvados_git_user key is installed
-  user_ssh_keys.install('arvados_git_user.pub', gitolite_arvados_git_user_key)
-
   permissions[:repositories].each do |repo_record|
-    repo = Repository.new(repo_record, user_ssh_keys)
+    repo = Repository.new(repo_record)
     repo.ensure_config(gitolite_admin)
   end
   Repository.ensure_system_config(gitolite_admin)
 
-  # Clean up public key files that should not be present
-  Dir.chdir(gitolite_keydir)
-  stale_keys = Dir.glob('*.pub').reject do |key_file|
-    user_ssh_keys.installed?(key_file)
-  end
-  if stale_keys.any?
-    stale_keys.each { |key_file| puts "Extra file #{key_file}" }
-    system("git", "rm", "--quiet", *stale_keys)
-  end
-
-  if UserSSHKeys.changed? or Repository.changed? or stale_keys.any?
-    message = "#{Time.now().to_s}: update from API"
-    Dir.chdir(gitolite_admin)
-    `git add --all`
-    `git commit -m '#{message}'`
-    `git push`
-  end
+  message = "#{Time.now().to_s}: migrate to storing repositories by UUID"
+  Dir.chdir(gitolite_admin)
+  `git add --all`
+  `git commit -m '#{message}'`
+  Repository.rename_repos(REPOS_DIR)
+  `git push`
 
 rescue => bang
   puts "Error: " + bang.to_s

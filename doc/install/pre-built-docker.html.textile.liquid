@@ -1,21 +1,20 @@
 ---
 layout: default
 navsection: installguide
-title: Install pre-built docker images
+title: Install pre-built Docker images
 ...
 
-{% include 'notebox_begin' %}
-This method is easy, but is not suitable for production use. It is still in development: some features do not work yet.
-* Websockets service is not enabled. This means Workbench auto-refresh and web upload (and some other features) do not work.
-* The node manager is not enabled. Two worker containers are brought up at startup.
-* The automatic network configuration allows you to log in to Workbench from a browser _running on the same host as docker_. Connecting from other hosts will require additional configuration (not covered here).
-{% include 'notebox_end' %}
+This method is intended for evaluation and development on a local workstation. It is not suitable for production use in a cluster deployment.
 
-This installation method is appropriate for testing and evaluation on one computer. *For production use, this installation method is not recommended*.
+{% include 'notebox_begin' %}
+* The automatic network configuration allows you to log in to Workbench from a browser _running on the same host as Docker_. Connecting from other hosts requires additional configuration (not covered here).
+* Your data will be stored inside the Docker containers.  You may stop and restart the containers without loss, but if you delete the container, your data will be gone.
+* Updating the Arvados software inside the Docker containers is not supported.  You may download updated Docker images, but migrating data to updated containers is not yet supported.
+{% include 'notebox_end' %}
 
 h2. Prerequisites
 
-# A GNU/Linux (virtual) machine
+# A GNU/Linux x64 (virtual) machine
 # A working Docker installation (see "Installing Docker":https://docs.docker.com/installation/)
 # curl
 
@@ -37,6 +36,35 @@ h2. Download and install Arvados.
 <pre><code>~$ <span class="userinput">\curl -sSL get.arvados.org | bash</span>
 </code></pre></notextile>
 
-This command will download the latest copy of the Arvados docker images. It also gets the arvdock command and saves it in the current working directory. It then uses arvdock to spin up Arvados. Depending on the speed of your internet connection, it can take a while to download the Arvados docker images.
+This command will download the latest build of the Arvados docker images. It also gets the @arvdock@ command and saves it in the current working directory. It then uses @arvdock@ to spin up Arvados. Note that the Arvados Docker images are large and may take a while to download.
 
-If you prefer, you can also download the installation script and inspect it before running it. @get.arvados.org@ redirects to "https://raw.githubusercontent.com/curoverse/arvados-dev/master/install/easy-docker-install.sh":https://raw.githubusercontent.com/curoverse/arvados-dev/master/install/easy-docker-install.sh, which is the installation script.
+If you prefer, you can also download and inspect the installation script before running it. @get.arvados.org@ redirects to "https://raw.githubusercontent.com/curoverse/arvados-dev/master/install/easy-docker-install.sh":https://raw.githubusercontent.com/curoverse/arvados-dev/master/install/easy-docker-install.sh, which is the installation script.
+
+The @arvdock@ command usage is listed here:
+
+<pre>
+usage: ./arvdock (start|stop|restart|reset|test) [options]
+
+start    run new or restart stopped arvados containers
+stop     stop arvados containers
+restart  stop and then start arvados containers
+reset    stop and delete containers WARNING: this will delete the data inside Arvados!
+test     run tests
+
+./arvdock start/stop/restart options:
+  -d[port], --doc[=port]        Documentation server (default port 9898)
+  -w[port], --workbench[=port]  Workbench server (default port 9899)
+  -s[port], --sso[=port]        SSO server (default port 9901)
+  -a[port], --api[=port]        API server (default port 9900)
+  -c, --compute                 Compute nodes (starts 2)
+  -v, --vm                      Shell server
+  -n, --nameserver              Nameserver
+  -k, --keep                    Keep servers
+  -p, --keepproxy               Keepproxy server
+  -h, --help                    Display this help and exit
+
+  If no options are given, the action is applied to all servers.
+
+./arvdock test [testname] [testname] ...
+  By default, all tests are run.
+</pre>

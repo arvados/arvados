@@ -90,6 +90,7 @@ function unselect_all_files() {
                   :href => url_for(controller: 'collections', action: 'show_file',
                                    uuid: @object.portable_data_hash, file: file_path),
                   :title => "Include #{file_path} in your selections",
+                  :id => "#{@object.uuid}_file_#{index}",
                 } %>
             <span>&nbsp;</span>
             <% end %>

@@ -87,4 +87,36 @@ class Arvados::V1::RepositoriesControllerTest < ActionController::TestCase
                    "response public_key does not match fixture #{u}.")
     end
   end
+
+  test "default index includes fetch_url" do
+    authorize_with :active
+    get(:index)
+    assert_response :success
+    assert_includes(json_response["items"].map { |r| r["fetch_url"] },
+                    "git@git.zzzzz.arvadosapi.com:active/foo.git")
+  end
+
+  [
+    {config: "example.com", host: "example.com"},
+    {config: false, host: "git.zzzzz.arvadosapi.com"}
+  ].each do |set_git_host|
+    test "setting git_host to #{set_git_host[:host]} changes fetch/push_url to #{set_git_host[:config]}" do
+      Rails.configuration.git_host = set_git_host[:config]
+      authorize_with :active
+      get(:index)
+      assert_response :success
+      assert_includes(json_response["items"].map { |r| r["fetch_url"] },
+                      "git@#{set_git_host[:host]}:active/foo.git")
+      assert_includes(json_response["items"].map { |r| r["push_url"] },
+                      "git@#{set_git_host[:host]}:active/foo.git")
+    end
+  end
+
+  test "can select push_url in index" do
+    authorize_with :active
+    get(:index, {select: ["uuid", "push_url"]})
+    assert_response :success
+    assert_includes(json_response["items"].map { |r| r["push_url"] },
+                    "git@git.zzzzz.arvadosapi.com:active/foo.git")
+  end
 end

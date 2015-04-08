@@ -2,7 +2,7 @@
 
 # Based on Debian Wheezy
 FROM arvados/debian:wheezy
-MAINTAINER Tim Pierce <twp@curoverse.com>
+MAINTAINER Ward Vandewege <ward@curoverse.com>
 
 ENV DEBIAN_FRONTEND noninteractive
 

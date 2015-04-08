@@ -46,6 +46,9 @@ local_repo_dir = {}
 # destination collection UUIDs.
 collections_copied = {}
 
+# Set of (repository, script_version) two-tuples of commits copied in git.
+scripts_copied = set()
+
 # The owner_uuid of the object being copied
 src_owner_uuid = None
 
@@ -139,6 +142,7 @@ def main():
     exit(0)
 
 def set_src_owner_uuid(resource, uuid, args):
+    global src_owner_uuid
     c = resource.get(uuid=uuid).execute(num_retries=args.retries)
     src_owner_uuid = c.get("owner_uuid")
 
@@ -317,6 +321,31 @@ def copy_collections(obj, src, dst, args):
         return [copy_collections(v, src, dst, args) for v in obj]
     return obj
 
+def migrate_jobspec(jobspec, src, dst, dst_repo, args):
+    """Copy a job's script to the destination repository, and update its record.
+
+    Given a jobspec dictionary, this function finds the referenced script from
+    src and copies it to dst and dst_repo.  It also updates jobspec in place to
+    refer to names on the destination.
+    """
+    repo = jobspec.get('repository')
+    if repo is None:
+        return
+    # script_version is the "script_version" parameter from the source
+    # component or job.  If no script_version was supplied in the
+    # component or job, it is a mistake in the pipeline, but for the
+    # purposes of copying the repository, default to "master".
+    script_version = jobspec.get('script_version') or 'master'
+    script_key = (repo, script_version)
+    if script_key not in scripts_copied:
+        copy_git_repo(repo, src, dst, dst_repo, script_version, args)
+        scripts_copied.add(script_key)
+    jobspec['repository'] = dst_repo
+    repo_dir = local_repo_dir[repo]
+    for version_key in ['script_version', 'supplied_script_version']:
+        if version_key in jobspec:
+            jobspec[version_key] = git_rev_parse(jobspec[version_key], repo_dir)
+
 # copy_git_repos(p, src, dst, dst_repo, args)
 #
 #    Copies all git repositories referenced by pipeline instance or
@@ -335,33 +364,10 @@ def copy_collections(obj, src, dst, args):
 #    names.  The return value is undefined.
 #
 def copy_git_repos(p, src, dst, dst_repo, args):
-    copied = set()
-    for c in p['components']:
-        component = p['components'][c]
-        if 'repository' in component:
-            repo = component['repository']
-            script_version = component.get('script_version', None)
-            if repo not in copied:
-                copy_git_repo(repo, src, dst, dst_repo, script_version, args)
-                copied.add(repo)
-            component['repository'] = dst_repo
-            if script_version:
-                repo_dir = local_repo_dir[repo]
-                component['script_version'] = git_rev_parse(script_version, repo_dir)
+    for component in p['components'].itervalues():
+        migrate_jobspec(component, src, dst, dst_repo, args)
         if 'job' in component:
-            j = component['job']
-            if 'repository' in j:
-                repo = j['repository']
-                script_version = j.get('script_version', None)
-                if repo not in copied:
-                    copy_git_repo(repo, src, dst, dst_repo, script_version, args)
-                    copied.add(repo)
-                j['repository'] = dst_repo
-                repo_dir = local_repo_dir[repo]
-                if script_version:
-                    j['script_version'] = git_rev_parse(script_version, repo_dir)
-                if 'supplied_script_version' in j:
-                    j['supplied_script_version'] = git_rev_parse(j['supplied_script_version'], repo_dir)
+            migrate_jobspec(component['job'], src, dst, dst_repo, args)
 
 def total_collection_size(manifest_text):
     """Return the total number of bytes in this collection (excluding
@@ -576,8 +582,7 @@ def copy_collection(obj_uuid, src, dst, args):
 #    All commits will be copied to a destination branch named for the
 #    source repository URL.
 #
-#    Because users cannot create their own repositories, the
-#    destination repository must already exist.
+#    The destination repository must already exist.
 #
 #    The user running this command must be authenticated
 #    to both repositories.
@@ -600,34 +605,23 @@ def copy_git_repo(src_git_repo, src, dst, dst_git_repo, script_version, args):
     dst_git_push_url  = r['items'][0]['push_url']
     logger.debug('dst_git_push_url: {}'.format(dst_git_push_url))
 
-    # script_version is the "script_version" parameter from the source
-    # component or job.  It is used here to tie the destination branch
-    # to the commit that was used on the source.  If no script_version
-    # was supplied in the component or job, it is a mistake in the pipeline,
-    # but for the purposes of copying the repository, default to "master".
-    #
-    if not script_version:
-        script_version = "master"
-
     dst_branch = re.sub(r'\W+', '_', "{}_{}".format(src_git_url, script_version))
 
-    # Copy git commits from src repo to dst repo (but only if
-    # we have not already copied this repo in this session).
-    #
-    if src_git_repo in local_repo_dir:
-        logger.debug('already copied src repo %s, skipping', src_git_repo)
-    else:
-        tmprepo = tempfile.mkdtemp()
-        local_repo_dir[src_git_repo] = tmprepo
+    # Copy git commits from src repo to dst repo.
+    if src_git_repo not in local_repo_dir:
+        local_repo_dir[src_git_repo] = tempfile.mkdtemp()
         arvados.util.run_command(
-            ["git", "clone", "--bare", src_git_url, tmprepo],
-            cwd=os.path.dirname(tmprepo))
+            ["git", "clone", "--bare", src_git_url,
+             local_repo_dir[src_git_repo]],
+            cwd=os.path.dirname(local_repo_dir[src_git_repo]))
         arvados.util.run_command(
-            ["git", "branch", dst_branch, script_version],
-            cwd=tmprepo)
-        arvados.util.run_command(["git", "remote", "add", "dst", dst_git_push_url], cwd=tmprepo)
-        arvados.util.run_command(["git", "push", "dst", dst_branch], cwd=tmprepo)
-
+            ["git", "remote", "add", "dst", dst_git_push_url],
+            cwd=local_repo_dir[src_git_repo])
+    arvados.util.run_command(
+        ["git", "branch", dst_branch, script_version],
+        cwd=local_repo_dir[src_git_repo])
+    arvados.util.run_command(["git", "push", "dst", dst_branch],
+                             cwd=local_repo_dir[src_git_repo])
 
 def copy_docker_images(pipeline, src, dst, args):
     """Copy any docker images named in the pipeline components'
