@@ -14,6 +14,7 @@ import (
 	"net/http"
 	"os"
 	"os/signal"
+	"reflect"
 	"sync"
 	"syscall"
 	"time"
@@ -135,24 +136,25 @@ type ApiTokenCache struct {
 
 // Refresh the keep service list every five minutes.
 func RefreshServicesList(kc *keepclient.KeepClient) {
-	previousRoots := ""
+	var previousRoots = []map[string]string{}
+	var delay time.Duration = 0
 	for {
+		time.Sleep(delay * time.Second)
+		delay = 300
 		if err := kc.DiscoverKeepServers(); err != nil {
 			log.Println("Error retrieving services list:", err)
-			time.Sleep(3*time.Second)
-			previousRoots = ""
-		} else if len(kc.LocalRoots()) == 0 {
-			log.Println("Received empty services list")
-			time.Sleep(3*time.Second)
-			previousRoots = ""
-		} else {
-			newRoots := fmt.Sprint("Locals ", kc.LocalRoots(), ", gateways ", kc.GatewayRoots())
-			if newRoots != previousRoots {
-				log.Println("Updated services list:", newRoots)
-				previousRoots = newRoots
-			}
-			time.Sleep(300*time.Second)
+			delay = 3
+			continue
 		}
+		newRoots := []map[string]string{kc.LocalRoots(), kc.GatewayRoots()}
+		if !reflect.DeepEqual(previousRoots, newRoots) {
+			log.Printf("Updated services list: locals %v gateways %v", newRoots[0], newRoots[1])
+		}
+		if len(newRoots[0]) == 0 {
+			log.Print("WARNING: No local services. Retrying in 3 seconds.")
+			delay = 3
+		}
+		previousRoots = newRoots
 	}
 }
 
