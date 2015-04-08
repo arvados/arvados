@@ -184,7 +184,11 @@ module ApplicationHelper
     end
 
     if resource_class.andand.to_s == 'Collection'
-      readable = resource_class.find?(attrvalue)
+      if CollectionsHelper.match(attrvalue)
+        readable = Collection.find? attrvalue
+      else
+        readable = collections_for_object(attrvalue).any?
+      end
     else
       readable = object_for_dataclass(resource_class, attrvalue)
     end

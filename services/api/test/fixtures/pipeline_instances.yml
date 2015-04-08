@@ -268,7 +268,13 @@ pipeline_in_publicly_accessible_project:
           title: foo instance input
       job:
         uuid: zzzzz-8i9sb-jyq01m7in1jlofj
+        repository: active/foo
+        script: foo
         script_version: master
+        script_parameters:
+          input:
+            dataclass: Collection
+            title: foo instance input
         log: zzzzz-4zz18-4en62shvi99lxd4
         output: b519d9cb706a29fc7ea24dbea2f05851+93
         state: Complete
@@ -291,7 +297,13 @@ pipeline_in_publicly_accessible_project_but_other_objects_elsewhere:
           title: foo instance input
       job:
         uuid: zzzzz-8i9sb-aceg2bnq7jt7kon
+        repository: active/foo
+        script: foo
         script_version: master
+        script_parameters:
+          input:
+            dataclass: Collection
+            title: foo instance input
         log: zzzzz-4zz18-bv31uwvy3neko21
         output: zzzzz-4zz18-bv31uwvy3neko21
         state: Complete

@@ -9,7 +9,7 @@
       <% data_toggle = "tab" %>
       <% tab_tooltip = "" %>
 
-      <% if !current_user and pane_name == "Log"
+      <% if (pane_name == "Log") and (@object.owner_uuid != current_user)
           if controller.model_class.to_s == 'Job'
             if @object.log and !@object.log.empty?
               logCollection = Collection.find? @object.log

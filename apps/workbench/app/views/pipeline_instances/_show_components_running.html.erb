@@ -87,6 +87,11 @@
     resource_class = resource_class_for_uuid(job_uuids.first, friendly_name: true)
     preload_objects_for_dataclass resource_class, job_uuids
   end
+
+  job_outputs = pipeline_jobs.collect {|j| j[:job][:output]}.compact
+  job_output_pdhs = job_outputs.select {|x| !(m = CollectionsHelper.match(x)).nil?}.compact
+  job_output_uuids = job_outputs - job_output_pdhs
+  preload_collections_for_objects job_output_uuids if job_output_uuids.any?
 %>
 
 <% pipeline_jobs.each_with_index do |pj, i| %>
