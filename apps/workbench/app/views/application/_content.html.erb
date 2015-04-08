@@ -9,7 +9,7 @@
       <% data_toggle = "tab" %>
       <% tab_tooltip = "" %>
 
-      <% if (pane_name == "Log") and (@object.owner_uuid != current_user)
+      <% if (pane_name == "Log") and !(ArvadosBase.find(@object.owner_uuid).writable_by.include?(current_user.andand.uuid) rescue nil)
           if controller.model_class.to_s == 'Job'
             if @object.log and !@object.log.empty?
               logCollection = Collection.find? @object.log
