@@ -34,4 +34,20 @@ class RepositoriesTest < ActionDispatch::IntegrationTest
     click_on sha1
     assert_text fakecommit
   end
+
+  test "browse using arv-git-http" do
+    repo = api_fixture('repositories')['foo']
+    portfile =
+      File.expand_path('../../../../../tmp/arv-git-httpd-ssl.port', __FILE__)
+    gitsslport = File.read(portfile)
+    Repository.any_instance.
+      stubs(:http_fetch_url).
+      returns "https://localhost:#{gitsslport}/#{repo['name']}.git"
+    commit_sha1 = '1de84a854e2b440dc53bf42f8548afa4c17da332'
+    visit page_with_token('active', "/repositories/#{repo['uuid']}/commit/#{commit_sha1}")
+    assert_text "Date:   Tue Mar 18 15:55:28 2014 -0400"
+    visit page_with_token('active', "/repositories/#{repo['uuid']}/tree/#{commit_sha1}")
+    assert_selector "tbody td a", "foo"
+    assert_text "12 bytes"
+  end
 end
