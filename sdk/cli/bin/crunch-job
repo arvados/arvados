@@ -659,6 +659,10 @@ update_progress_stats();
 
 
 THISROUND:
+my $tasks_this_level = 0;
+foreach my $id (@jobstep_todo) {
+  $tasks_this_level++ if ($jobstep[$id]->{level} == $level);
+}
 for (my $todo_ptr = 0; $todo_ptr <= $#jobstep_todo; $todo_ptr ++)
 {
   my $id = $jobstep_todo[$todo_ptr];
@@ -716,6 +720,11 @@ for (my $todo_ptr = 0; $todo_ptr <= $#jobstep_todo; $todo_ptr ++)
 
     $ENV{"GZIP"} = "-n";
 
+    my $max_node_concurrent_tasks = $ENV{CRUNCH_NODE_SLOTS};
+    if ($tasks_this_level < $max_node_concurrent_tasks) {
+      $max_node_concurrent_tasks = $tasks_this_level;
+    }
+
     my @srunargs = (
       "srun",
       "--nodelist=".$childnode->{name},
@@ -730,7 +739,7 @@ for (my $todo_ptr = 0; $todo_ptr <= $#jobstep_todo; $todo_ptr ++)
         # $command.  No tool is expected to read these values directly.
         .q{&& MEM=$(awk '($1 == "MemTotal:"){print $2}' </proc/meminfo) }
         .q{&& SWAP=$(awk '($1 == "SwapTotal:"){print $2}' </proc/meminfo) }
-        ."&& MEMLIMIT=\$(( (\$MEM * 95) / ($ENV{CRUNCH_NODE_SLOTS} * 100) )) "
+        ."&& MEMLIMIT=\$(( (\$MEM * 95) / ($max_node_concurrent_tasks * 100) )) "
         ."&& let SWAPLIMIT=\$MEMLIMIT+\$SWAP ";
     $command .= "&& exec arv-mount --by-id --allow-other $ENV{TASK_KEEPMOUNT} --exec ";
     if ($docker_hash)
