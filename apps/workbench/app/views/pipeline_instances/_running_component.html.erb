@@ -148,12 +148,7 @@
                   </td>
                   <td>
                     <% if k == :uuid %>
-                      <% resource_class = resource_class_for_uuid(current_component[k]) %>
-                      <% if resource_class.andand.to_s == 'Job' %>
-                        <%= link_to_arvados_object_if_readable(current_component[k], current_component[k], current_component[k], false, resource_class) %>
-                      <% else %>
-                        <%= link_to_if_arvados_object current_component[k], link_text: current_component[k] %>
-                      <% end %>
+                      <%= link_to_arvados_object_if_readable(current_component[k], current_component[k], current_component[k], false) %>
                     <% elsif k.to_s.end_with? 'uuid' %>
                       <%= link_to_if_arvados_object current_component[k], friendly_name: true %>
                     <% elsif k.to_s.end_with? '_at' %>

@@ -92,6 +92,7 @@
   job_output_pdhs = job_outputs.select {|x| !(m = CollectionsHelper.match(x)).nil?}.compact
   job_output_uuids = job_outputs - job_output_pdhs
   preload_collections_for_objects job_output_uuids if job_output_uuids.any?
+  preload_for_pdhs job_output_pdhs if job_output_pdhs.any?
 %>
 
 <% pipeline_jobs.each_with_index do |pj, i| %>

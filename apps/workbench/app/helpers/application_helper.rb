@@ -177,15 +177,15 @@ module ApplicationHelper
     end
   end
 
-  def link_to_arvados_object_if_readable(attrvalue, link_text, link_text_if_not_readable, use_friendly_name=false, resource_class=nil)
-    resource_class = resource_class_for_uuid(attrvalue) if !resource_class
+  def link_to_arvados_object_if_readable(attrvalue, link_text, link_text_if_not_readable, use_friendly_name=false)
+    resource_class = resource_class_for_uuid(attrvalue)
     if !resource_class
       return link_text_if_not_readable
     end
 
-    if resource_class.andand.to_s == 'Collection'
+    if resource_class.to_s == 'Collection'
       if CollectionsHelper.match(attrvalue)
-        readable = Collection.find? attrvalue   # portable_data_hash
+        readable = collection_for_pdh(attrvalue).any?
       else
         readable = collections_for_object(attrvalue).any?
       end

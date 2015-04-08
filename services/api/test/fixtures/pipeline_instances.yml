@@ -272,9 +272,7 @@ pipeline_in_publicly_accessible_project:
         script: foo
         script_version: master
         script_parameters:
-          input:
-            dataclass: Collection
-            title: foo instance input
+          input: zzzzz-4zz18-4en62shvi99lxd4
         log: zzzzz-4zz18-4en62shvi99lxd4
         output: b519d9cb706a29fc7ea24dbea2f05851+93
         state: Complete
@@ -301,9 +299,7 @@ pipeline_in_publicly_accessible_project_but_other_objects_elsewhere:
         script: foo
         script_version: master
         script_parameters:
-          input:
-            dataclass: Collection
-            title: foo instance input
+          input: zzzzz-4zz18-bv31uwvy3neko21
         log: zzzzz-4zz18-bv31uwvy3neko21
         output: zzzzz-4zz18-bv31uwvy3neko21
         state: Complete
