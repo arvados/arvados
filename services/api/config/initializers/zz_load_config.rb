@@ -5,6 +5,8 @@ $application_config = {}
   if File.exists? path
     yaml = ERB.new(IO.read path).result(binding)
     confs = YAML.load(yaml)
+    # Ignore empty YAML file:
+    next if confs == false
     $application_config.merge!(confs['common'] || {})
     $application_config.merge!(confs[::Rails.env.to_s] || {})
   end
