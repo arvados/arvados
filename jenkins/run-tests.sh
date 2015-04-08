@@ -130,7 +130,7 @@ report_outcomes() {
 exit_cleanly() {
     trap - INT
     rotate_logfile "$WORKSPACE/apps/workbench/log/" "test.log"
-    stop_api
+    stop_services
     rotate_logfile "$WORKSPACE/services/api/log/" "test.log"
     report_outcomes
     clear_temp
@@ -243,7 +243,23 @@ start_api() {
         && (env | egrep ^ARVADOS)
 }
 
-stop_api() {
+start_nginx_proxy_services() {
+    echo 'Starting keepproxy, arv-git-httpd, and nginx ssl proxy...'
+    cd "$WORKSPACE" \
+        && python sdk/python/tests/run_test_server.py start_keep_proxy \
+        && python sdk/python/tests/run_test_server.py start_arv-git-httpd \
+        && python sdk/python/tests/run_test_server.py start_nginx \
+        && export ARVADOS_TEST_PROXY_SERVICES=1
+}
+
+stop_services() {
+    if [[ -n "$ARVADOS_TEST_PROXY_SERVICES" ]]; then
+        unset ARVADOS_TEST_PROXY_SERVICES
+        cd "$WORKSPACE" \
+            && python sdk/python/tests/run_test_server.py stop_nginx \
+            && python sdk/python/tests/run_test_server.py stop_arv-git-httpd \
+            && python sdk/python/tests/run_test_server.py stop_keep_proxy
+    fi
     if [[ -n "$ARVADOS_TEST_API_HOST" ]]; then
         unset ARVADOS_TEST_API_HOST
         cd "$WORKSPACE" \
@@ -595,7 +611,7 @@ test_doclinkchecker() {
 }
 do_test doc doclinkchecker
 
-stop_api
+stop_services
 
 test_apiserver() {
     cd "$WORKSPACE/services/api" \
@@ -636,19 +652,22 @@ do
 done
 
 test_workbench() {
-    cd "$WORKSPACE/apps/workbench" \
+    start_nginx_proxy_services \
+        && cd "$WORKSPACE/apps/workbench" \
         && RAILS_ENV=test bundle exec rake test TESTOPTS=-v ${testargs[apps/workbench]}
 }
 do_test apps/workbench workbench
 
 test_workbench_benchmark() {
-    cd "$WORKSPACE/apps/workbench" \
+    start_nginx_proxy_services \
+        && cd "$WORKSPACE/apps/workbench" \
         && RAILS_ENV=test bundle exec rake test:benchmark ${testargs[apps/workbench_benchmark]}
 }
 do_test apps/workbench_benchmark workbench_benchmark
 
 test_workbench_profile() {
-    cd "$WORKSPACE/apps/workbench" \
+    start_nginx_proxy_services \
+        && cd "$WORKSPACE/apps/workbench" \
         && RAILS_ENV=test bundle exec rake test:profile ${testargs[apps/workbench_profile]}
 }
 do_test apps/workbench_profile workbench_profile
