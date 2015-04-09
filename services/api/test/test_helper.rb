@@ -22,6 +22,7 @@ end
 
 require File.expand_path('../../config/environment', __FILE__)
 require 'rails/test_help'
+require 'mocha/mini_test'
 
 module ArvadosTestSupport
   def json_response

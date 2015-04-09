@@ -392,4 +392,45 @@ class Arvados::V1::JobsControllerTest < ActionController::TestCase
     post :lock, {id: jobs(:running).uuid}
     assert_response 403 # forbidden
   end
+
+  test 'reject invalid commit in remote repository' do
+    authorize_with :active
+    url = "http://localhost:1/fake/fake.git"
+    fetch_remote_from_local_repo url, :foo
+    post :create, job: {
+      script: "hash",
+      script_version: "abc123",
+      repository: url,
+      script_parameters: {}
+    }
+    assert_response 422
+  end
+
+  test 'tag remote commit in internal repository' do
+    authorize_with :active
+    url = "http://localhost:1/fake/fake.git"
+    fetch_remote_from_local_repo url, :foo
+    post :create, job: {
+      script: "hash",
+      script_version: "master",
+      repository: url,
+      script_parameters: {}
+    }
+    assert_response :success
+    assert_equal('077ba2ad3ea24a929091a9e6ce545c93199b8e57',
+                 internal_tag(json_response['uuid']))
+  end
+
+  test 'tag local commit in internal repository' do
+    authorize_with :active
+    post :create, job: {
+      script: "hash",
+      script_version: "master",
+      repository: "active/foo",
+      script_parameters: {}
+    }
+    assert_response :success
+    assert_equal('077ba2ad3ea24a929091a9e6ce545c93199b8e57',
+                 internal_tag(json_response['uuid']))
+  end
 end

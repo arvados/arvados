@@ -45,6 +45,8 @@ test:
   blob_signing_key: zfhgfenhffzltr9dixws36j1yhksjoll2grmku38mi7yxd66h5j4q9w4jzanezacp8s6q0ro3hxakfye02152hncy6zml2ed0uc
   user_profile_notification_address: arvados@example.com
   workbench_address: https://localhost:3001/
+  git_repositories_dir: <%= Rails.root.join 'tmp', 'git', 'test' %>
+  git_internal_dir: <%= Rails.root.join 'tmp', 'internal.git' %>
 
 common:
   # The prefix used for all database identifiers to identify the record as

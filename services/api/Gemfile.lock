@@ -114,7 +114,10 @@ GEM
     mail (2.5.4)
       mime-types (~> 1.16)
       treetop (~> 1.4.8)
+    metaclass (0.0.4)
     mime-types (1.25.1)
+    mocha (1.1.0)
+      metaclass (~> 0.0.1)
     multi_json (1.10.1)
     multipart-post (1.2.0)
     net-scp (1.2.0)
@@ -232,6 +235,7 @@ DEPENDENCIES
   faye-websocket
   google-api-client (~> 0.6.3)
   jquery-rails
+  mocha
   multi_json
   oj
   omniauth (= 1.1.1)
