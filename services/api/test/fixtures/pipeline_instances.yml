@@ -304,6 +304,40 @@ pipeline_in_publicly_accessible_project_but_other_objects_elsewhere:
         output: zzzzz-4zz18-bv31uwvy3neko21
         state: Complete
 
+new_pipeline_in_publicly_accessible_project:
+  uuid: zzzzz-d1hrv-newpisharedobjs
+  owner_uuid: zzzzz-j7d0g-zhxawtyetzwc5f0
+  name: Pipeline in New state in publicly accessible project
+  pipeline_template_uuid: zzzzz-p5p6p-tmpltpublicproj
+  state: New
+  created_at: 2014-09-15 12:00:00
+  components:
+    foo:
+      script: foo
+      script_version: master
+      script_parameters:
+        input:
+          required: true
+          dataclass: Collection
+          value: b519d9cb706a29fc7ea24dbea2f05851+93
+
+new_pipeline_in_publicly_accessible_project_but_other_objects_elsewhere:
+  uuid: zzzzz-d1hrv-newsharenotobjs
+  owner_uuid: zzzzz-j7d0g-zhxawtyetzwc5f0
+  name: Pipeline in New state in public project with objects elsewhere
+  pipeline_template_uuid: zzzzz-p5p6p-aox0k0ofxrystgw
+  state: New
+  created_at: 2014-09-15 12:00:00
+  components:
+    foo:
+      script: foo
+      script_version: master
+      script_parameters:
+        input:
+          required: true
+          dataclass: Collection
+          value: zzzzz-4zz18-bv31uwvy3neko21
+
 pipeline_in_running_state:
   name: running_with_job
   state: Ready

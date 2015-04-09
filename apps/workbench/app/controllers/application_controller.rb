@@ -1120,10 +1120,14 @@ class ApplicationController < ActionController::Base
     return @objects_for if uuids.empty?
 
     # if already preloaded for all of these uuids, return
-    if not uuids.select { |x| @objects_for[x].nil? }.any?
+    if not uuids.select { |x| !@objects_for.include?(x) }.any?
       return @objects_for
     end
 
+    # preset all uuids to nil
+    uuids.each do |x|
+      @objects_for[x] = nil
+    end
     dataclass.where(uuid: uuids).each do |obj|
       @objects_for[obj.uuid] = obj
     end

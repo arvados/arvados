@@ -1,3 +1,23 @@
+<%
+  input_uuids = []
+  input_pdhs = []
+  @object.components.each do |k, component|
+    next if !component
+    component[:script_parameters].andand.each do |p, tv|
+      if tv[:value] and tv[:dataclass].andand.eql?('Collection')
+        if CollectionsHelper.match(tv[:value])
+          input_pdhs << tv[:value]
+        else
+          input_uuids << tv[:value]
+        end
+      end
+    end
+  end
+
+  preload_collections_for_objects input_uuids if input_uuids.any?
+  preload_for_pdhs input_pdhs if input_pdhs.any?
+%>
+
 <table class="table pipeline-components-table" style="margin-top: -.1em">
   <colgroup>
     <col style="width: 20%" />

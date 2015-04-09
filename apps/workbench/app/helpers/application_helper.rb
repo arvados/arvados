@@ -298,7 +298,7 @@ module ApplicationHelper
     end
 
     if not object.andand.attribute_editable?(attr)
-      return link_to_if_arvados_object attrvalue
+      return link_to_arvados_object_if_readable(attrvalue, attrvalue, attrvalue, false)
     end
 
     if dataclass

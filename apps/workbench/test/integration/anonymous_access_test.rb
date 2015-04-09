@@ -215,7 +215,7 @@ class AnonymousAccessTest < ActionDispatch::IntegrationTest
       if objects_readable
         if pipeline_page
           assert_text 'This pipeline was created from'
-          assert_selector 'a', object['components']['foo']['job']['uuid']
+          assert_selector 'a', text: object['components']['foo']['job']['uuid']
         end
         assert_no_text 'Output data not available'
         assert_selector 'a[href="#Log"]', text: 'Log'
@@ -238,6 +238,40 @@ class AnonymousAccessTest < ActionDispatch::IntegrationTest
       else
         assert_text 'foo'     # Log tab disabled and hence still in first tab
         assert_no_text 'stderr crunchstat'  # log line shouldn't be seen
+      end
+    end
+  end
+
+  [
+    ['new_pipeline_in_publicly_accessible_project', true],
+    ['new_pipeline_in_publicly_accessible_project_but_other_objects_elsewhere', false],
+    ['new_pipeline_in_publicly_accessible_project_but_other_objects_elsewhere', false, 'spectator'],
+    ['new_pipeline_in_publicly_accessible_project_but_other_objects_elsewhere', true, 'admin'],
+  ].each do |fixture, objects_readable, user=nil|
+    test "access #{fixture} in public project with objects readable=#{objects_readable} with user #{user}" do
+      object = api_fixture('pipeline_instances')[fixture]
+      page = "/pipeline_instances/#{object['uuid']}"
+      if user
+        visit page_with_token user, page
+      else
+        visit page
+      end
+
+      # click Components tab
+      click_link 'Components'
+
+      if objects_readable
+        assert_text 'This pipeline was created from'
+        if user == 'admin'
+          assert_text 'input'
+          assert_selector 'a', text: 'Choose'
+        else
+          assert_selector 'a', text: object['components']['foo']['script_parameters']['input']['value']
+        end
+      else
+        assert_no_text 'This pipeline was created from'  # template is not readable
+        assert_text object['components']['foo']['script_parameters']['input']['value']
+        assert_no_selector 'a', text: object['components']['foo']['script_parameters']['input']['value']
       end
     end
   end
