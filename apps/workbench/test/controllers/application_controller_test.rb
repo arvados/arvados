@@ -59,6 +59,7 @@ class ApplicationControllerTest < ActionController::TestCase
     [:preload_collections_for_objects, [] ],
     [:preload_log_collections_for_objects, [] ],
     [:preload_objects_for_dataclass, [] ],
+    [:preload_for_pdhs, [] ],
   ].each do |input|
     test "preload data for empty array input #{input}" do
       use_token :active
@@ -90,6 +91,8 @@ class ApplicationControllerTest < ActionController::TestCase
     [:preload_objects_for_dataclass, nil],
     [:object_for_dataclass, 'some_dataclass', nil],
     [:object_for_dataclass, nil, 'some_uuid'],
+    [:preload_for_pdhs, 'input not an array'],
+    [:preload_for_pdhs, nil],
   ].each do |input|
     test "preload data for wrong type input #{input}" do
       use_token :active
@@ -112,6 +115,7 @@ class ApplicationControllerTest < ActionController::TestCase
     [:collections_for_object, 'no-such-uuid' ],
     [:log_collections_for_object, 'no-such-uuid' ],
     [:object_for_dataclass, 'no-such-uuid' ],
+    [:collection_for_pdh, 'no-such-pdh' ],
   ].each do |input|
     test "get data for no such uuid #{input}" do
       use_token :active
@@ -125,6 +129,7 @@ class ApplicationControllerTest < ActionController::TestCase
         objects = ac.send input[0], input[1]
         assert objects, 'Expected objects'
         assert objects.is_a?(Array), 'Expected a array'
+        assert_empty objects
       end
     end
   end
@@ -298,6 +303,35 @@ class ApplicationControllerTest < ActionController::TestCase
     assert users, 'Expected objects'
     assert users.is_a?(Hash), 'Expected a hash'
     assert users.size == 3, 'Expected two objects in the preloaded hash'
+  end
+
+  test "preload one collection each for given portable_data_hash list" do
+    use_token :active
+
+    ac = ApplicationController.new
+
+    pdh1 = api_fixture('collections')['foo_file']['portable_data_hash']
+    pdh2 = api_fixture('collections')['bar_file']['portable_data_hash']
+
+    pdhs = [pdh1, pdh2]
+    collections = ac.send :preload_for_pdhs, pdhs
+
+    assert collections, 'Expected collections map'
+    assert collections.is_a?(Hash), 'Expected a hash'
+    # Each pdh has more than one collection; however, we should get only one for each
+    assert collections.size == 2, 'Expected two objects in the preloaded collection hash'
+    assert collections[pdh1], 'Expected collections for the passed in pdh #{pdh1}'
+    assert_equal collections[pdh1].size, 1, 'Expected one collection for the passed in pdh #{pdh1}'
+    assert collections[pdh2], 'Expected collections for the passed in pdh #{pdh2}'
+    assert_equal collections[pdh2].size, 1, 'Expected one collection for the passed in pdh #{pdh2}'
+
+    # invoke again for this same input. this time, the preloaded data will be returned
+    collections = ac.send :preload_collections_for_objects, pdhs
+    assert collections, 'Expected collections map'
+    assert collections.is_a?(Hash), 'Expected a hash'
+    assert collections.size == 2, 'Expected two objects in the preloaded collection hash'
+    assert collections[pdh1], 'Expected collection for the passed in pdh #{pdh1}'
+    assert collections[pdh2], 'Expected collection for the passed in pdh #{pdh2}'
   end
 
   test "requesting a nonexistent object returns 404" do

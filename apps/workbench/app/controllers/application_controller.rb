@@ -1094,7 +1094,7 @@ class ApplicationController < ActionController::Base
     pdhs.each do |x|
       @all_pdhs_for[x] = []
     end
-    # TODO: make sure we get every page of results from API server
+
     Collection.select(%w(portable_data_hash)).where(portable_data_hash: pdhs).distinct().each do |collection|
       @all_pdhs_for[collection.portable_data_hash] << collection
     end
