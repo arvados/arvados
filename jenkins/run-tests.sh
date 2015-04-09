@@ -27,6 +27,9 @@ sdk/python_test="--test-suite test.test_keep_locator"
                Restrict Python SDK tests to the given class
 apps/workbench_test="TEST=test/integration/pipeline_instances_test.rb"
                Restrict Workbench tests to the given file
+services/arv-git-httpd_test="-check.vv"
+               Show all log messages, even when tests pass (also works
+               with services/keepstore_test etc.)
 ARVADOS_DEBUG=1
                Print more debug messages
 envvar=value   Set \$envvar to value. Primarily useful for WORKSPACE,
@@ -424,7 +427,16 @@ do_test_once() {
         timer_reset
         if [[ "$2" == "go" ]]
         then
-            go test ${testargs[$1]} "git.curoverse.com/arvados.git/$1"
+            if [[ -n "${testargs[$1]}" ]]
+            then
+                # "go test -check.vv giturl" doesn't work, but this
+                # does:
+                cd "$WORKSPACE/$1" && go test ${testargs[$1]}
+            else
+                # The above form gets verbose even when testargs is
+                # empty, so use this form in such cases:
+                go test "git.curoverse.com/arvados.git/$1"
+            fi
         elif [[ "$2" == "pip" ]]
         then
            cd "$WORKSPACE/$1" \
