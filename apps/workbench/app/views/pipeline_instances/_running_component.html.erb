@@ -124,7 +124,8 @@
                     docker_image_locator:
                   </td>
                   <td>
-                    <%= link_to_if_arvados_object current_component[:docker_image_locator], friendly_name: true %>
+                    <%= link_to_arvados_object_if_readable(current_component[:docker_image_locator],
+                      current_component[:docker_image_locator], current_component[:docker_image_locator], true) %>
                   </td>
                 </tr>
               <% else %>
@@ -150,7 +151,7 @@
                     <% if k == :uuid %>
                       <%= link_to_arvados_object_if_readable(current_component[k], current_component[k], current_component[k], false) %>
                     <% elsif k.to_s.end_with? 'uuid' %>
-                      <%= link_to_if_arvados_object current_component[k], friendly_name: true %>
+                      <%= link_to_arvados_object_if_readable(current_component[k], current_component[k], current_component[k], true) %>
                     <% elsif k.to_s.end_with? '_at' %>
                       <%= render_localized_date(current_component[k]) %>
                     <% else %>

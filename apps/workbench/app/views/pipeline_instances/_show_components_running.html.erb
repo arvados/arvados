@@ -88,11 +88,12 @@
     preload_objects_for_dataclass resource_class, job_uuids
   end
 
-  job_outputs = pipeline_jobs.collect {|j| j[:job][:output]}.compact
-  job_output_pdhs = job_outputs.select {|x| !(m = CollectionsHelper.match(x)).nil?}.compact
-  job_output_uuids = job_outputs - job_output_pdhs
-  preload_collections_for_objects job_output_uuids if job_output_uuids.any?
-  preload_for_pdhs job_output_pdhs if job_output_pdhs.any?
+  job_collections = pipeline_jobs.collect {|j| j[:job][:output]}.compact
+  job_collections.concat pipeline_jobs.collect {|j| j[:job][:docker_image_locator]}.uniq.compact
+  job_collections_pdhs = job_collections.select {|x| !(m = CollectionsHelper.match(x)).nil?}.uniq.compact
+  job_collections_uuids = job_collections - job_collections_pdhs
+  preload_collections_for_objects job_collections_uuids if job_collections_uuids.any?
+  preload_for_pdhs job_collections_pdhs if job_collections_pdhs.any?
 %>
 
 <% pipeline_jobs.each_with_index do |pj, i| %>
