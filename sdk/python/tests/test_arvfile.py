@@ -149,14 +149,15 @@ class ArvadosFileWriterTestCase(unittest.TestCase):
             self.assertEqual(writer.size(), 0)
             self.assertEqual(". d41d8cd98f00b204e9800998ecf8427e+0 0:0:count.txt\n", c.manifest_text())
 
-    def test_get_manifest_text_commits(self):
+    def test_save_manifest_text(self):
         keep = ArvadosFileWriterTestCase.MockKeep({})
         with Collection(keep_client=keep) as c:
             writer = c.open("count.txt", "w")
             writer.write("0123456789")
-            self.assertEqual('. 781e5e245d69b566979b86e28d23f2c7+10 0:10:count.txt\n', c.manifest_text(strip=True))
+            self.assertEqual('. 781e5e245d69b566979b86e28d23f2c7+10 0:10:count.txt\n', c.manifest_text())
             self.assertNotIn('781e5e245d69b566979b86e28d23f2c7+10', keep.blocks)
-            self.assertEqual('. 781e5e245d69b566979b86e28d23f2c7+10 0:10:count.txt\n', c.manifest_text(strip=False))
+
+            self.assertEqual('. 781e5e245d69b566979b86e28d23f2c7+10 0:10:count.txt\n', c.save_new(create_collection_record=False))
             self.assertIn('781e5e245d69b566979b86e28d23f2c7+10', keep.blocks)
 
     def test_write_in_middle(self):
