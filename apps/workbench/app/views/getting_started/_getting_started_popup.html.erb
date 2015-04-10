@@ -1,5 +1,11 @@
+<style>
+.style_image {
+  border: 10px solid #ddd;
+}
+</style>
+
 <div id="getting-started-modal-window" class="modal">
-  <div class="modal-dialog modal-with-loading-spinner">
+  <div class="modal-dialog modal-with-loading-spinner" style="width:80%">
     <div class="modal-content">
       <div class="modal-header">
         <button type="button" class="close" data-dismiss="modal" aria-hidden="true">x</button>
@@ -10,16 +16,51 @@
         <br/>
       </div>
 
-      <div class="modal-body" style="height: 25em; overflow-y: scroll">
-         <%= image_tag "getting_started/pipeline.gif" %>
+           <div class="modal-body" style="height: 38em; overflow-y: scroll">
+
+
+<div class="container">
+    <div class="row">
+        <div class="col-md-6">
+  <strong>How does this work?</strong> What you're looking at right now is Workbench, the graphical interface to the Arvados system.
+<br><br>
+Click the <span class="btn btn-sm btn-primary">Next &gt;</span> button below for a quick tour of Arvados.
+<br><br>
+<strong>OR</strong> 
+          <br><br>Get started by running your first pipeline in 3 quick steps:<br><br>
+<ol><li> Go to the <span class="btn btn-sm btn-default"><i class="fa fa-lg fa-fw fa-dashboard"></i> Dashboard</span> &gt; <span class="btn btn-sm btn-primary"><i class="fa fa-fw fa-gear"></i> Run a pipeline...</span> <br><br>
+<%= image_tag "mouse-move.gif", :class => "style_image" %>.
+</li><br>
+  <li>  <span class="btn btn-sm btn-default"><i class="fa fa-fw fa-gear"></i>Mason Lab -- Ancestry Mapper (public)</span> &gt; <span class="btn btn-sm btn-primary">Next: choose inputs <i class="fa fa-fw fa-arrow-circle-right"></i></span></li><br>
+  <li> <span class="btn btn-sm btn-primary">Run <i class="fa fa-fw fa-play"></i></span></li>
+</ol>
+      </div>        <div class="col-md-6" style="border-left: solid; border-width: 1px">
+            <br>
+<i class="fa fa-flag fa-flip-horizontal" style="color: green"></i> <i class="fa fa-child"></i> 
+<strong>Voila!</strong> <i class="fa fa-child"></i> <i class="fa fa-flag" style="color: green"></i> 
+Your pipeline is now spooling up and getting ready to run!  
+            <br><br>
+
+  <br><br>
+  Go ahead, try it for yourself right now. <span class="glyphicon glyphicon-thumbs-up"></span>
+<br><br>
+<%= image_tag "pipeline-running.gif", :class => "style_image" %>
+
+  <br><br>
+  <em><strong>Note:</strong> You can always come back to this Getting Started guide by clicking the <span class="fa fa-lg fa-question-circle"></span> in the upper-right corner.</em> 
+  <br><br>
+</div> </div> </div> 
+
+
+
       </div>
-      <div class="modal-body" style="height: 25em; overflow-y: scroll">
-         <%= image_tag "getting_started/mouse-move.gif" %>
+      <div class="modal-body" style="height: 38em; overflow-y: scroll">
+        Page 2
       </div>
-      <div class="modal-body" style="height: 25em; overflow-y: scroll">
+      <div class="modal-body" style="height: 38em; overflow-y: scroll">
         Page 3
       </div>
-      <div class="modal-body" style="height: 25em; overflow-y: scroll">
+      <div class="modal-body" style="height: 38em; overflow-y: scroll">
         Page 4
       </div>
 
