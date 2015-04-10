@@ -1250,7 +1250,8 @@ class Collection(RichCollectionBase):
 
         Commit pending buffer blocks to Keep, merge with remote record (if
         merge=True, the default), write the manifest to Keep, and update the
-        collection record.
+        collection record.  Returns the signed manifest locator returned by
+        keep.put() or None if the collection is unmodified.
 
         Will raise AssertionError if not associated with a collection record on
         the API server.  If you want to save a manifest to Keep only, see
@@ -1270,7 +1271,7 @@ class Collection(RichCollectionBase):
             self._my_block_manager().commit_all()
             if merge:
                 self.update()
-            self._my_keep().put(self.manifest_text(strip=True), num_retries=num_retries)
+            signed_manifest_locator = self._my_keep().put(self.manifest_text(strip=True), num_retries=num_retries)
 
             text = self.manifest_text(strip=False)
             self._api_response = self._my_api().collections().update(
@@ -1280,6 +1281,9 @@ class Collection(RichCollectionBase):
                     num_retries=num_retries)
             self._manifest_text = self._api_response["manifest_text"]
             self.set_unmodified()
+            return signed_manifest_locator
+        else:
+            return None
 
 
     @must_be_writable
@@ -1291,7 +1295,8 @@ class Collection(RichCollectionBase):
         Commit pending buffer blocks to Keep, write the manifest to Keep, and
         create a new collection record (if create_collection_record True).
         After creating a new collection record, this Collection object will be
-        associated with the new record used by `save()`.
+        associated with the new record used by `save()`.  Returns the signed
+        manifest locator returned by keep.put().
 
         :name:
           The collection name.
@@ -1313,7 +1318,7 @@ class Collection(RichCollectionBase):
 
         """
         self._my_block_manager().commit_all()
-        self._my_keep().put(self.manifest_text(strip=True), num_retries=num_retries)
+        signed_manifest_locator = self._my_keep().put(self.manifest_text(strip=True), num_retries=num_retries)
         text = self.manifest_text(strip=False)
 
         if create_collection_record:
@@ -1329,9 +1334,13 @@ class Collection(RichCollectionBase):
             text = self._api_response["manifest_text"]
 
             self._manifest_locator = self._api_response["uuid"]
+        else:
+            self._manifest_locator = signed_manifest_locator
 
         self._manifest_text = text
         self.set_unmodified()
+
+        return signed_manifest_locator
 
     @synchronized
     def subscribe(self, callback):
