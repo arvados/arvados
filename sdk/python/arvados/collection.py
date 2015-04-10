@@ -831,7 +831,8 @@ class RichCollectionBase(CollectionBase):
 
         :strip:
           If True, remove signing tokens from block locators if present.
-          If False (default), block locators are left unchanged.
+          If False (default), block locators are left unchanged.  Note: if
+          strip is False, this will also flush any open files (committing blocks to Keep).
 
         :normalize:
           If True, always export the manifest text in normalized form
@@ -842,6 +843,9 @@ class RichCollectionBase(CollectionBase):
         """
 
         if self.modified() or self._manifest_text is None or normalize:
+            if strip is False:
+                self._my_block_manager().commit_all()
+
             stream = {}
             buf = []
             sorted_keys = sorted(self.keys())
@@ -1249,8 +1253,7 @@ class Collection(RichCollectionBase):
         """Save collection to an existing collection record.
 
         Commit pending buffer blocks to Keep, merge with remote record (if
-        merge=True, the default), write the manifest to Keep, and update the
-        collection record.
+        merge=True, the default), and update the collection record.
 
         Will raise AssertionError if not associated with a collection record on
         the API server.  If you want to save a manifest to Keep only, see
@@ -1267,10 +1270,9 @@ class Collection(RichCollectionBase):
         if self.modified():
             if not self._has_collection_uuid():
                 raise AssertionError("Collection manifest_locator must be a collection uuid.  Use save_new() for new collections.")
-            self._my_block_manager().commit_all()
+
             if merge:
                 self.update()
-            self._my_keep().put(self.manifest_text(strip=True), num_retries=num_retries)
 
             text = self.manifest_text(strip=False)
             self._api_response = self._my_api().collections().update(
@@ -1285,19 +1287,16 @@ class Collection(RichCollectionBase):
     @must_be_writable
     @synchronized
     @retry_method
-    def save_new(self, name=None, create_collection_record=True, owner_uuid=None, ensure_unique_name=False, num_retries=None):
+    def save_new(self, name=None, owner_uuid=None, ensure_unique_name=False, num_retries=None):
         """Save collection to a new collection record.
 
-        Commit pending buffer blocks to Keep, write the manifest to Keep, and
-        create a new collection record (if create_collection_record True).
-        After creating a new collection record, this Collection object will be
-        associated with the new record used by `save()`.
+        Commit pending buffer blocks to Keep and create a new collection record
+        (if create_collection_record True).  After creating a new collection
+        record, this Collection object will be associated with the new record
+        used by `save()`.
 
         :name:
           The collection name.
-
-        :create_collection_record:
-          If True, create a collection record.  If False, only save the manifest to keep.
 
         :owner_uuid:
           the user, or project uuid that will own this collection.
@@ -1312,23 +1311,20 @@ class Collection(RichCollectionBase):
           Retry count on API calls (if None,  use the collection default)
 
         """
-        self._my_block_manager().commit_all()
-        self._my_keep().put(self.manifest_text(strip=True), num_retries=num_retries)
         text = self.manifest_text(strip=False)
 
-        if create_collection_record:
-            if name is None:
-                name = "Collection created %s" % (time.strftime("%Y-%m-%d %H:%M:%S %Z", time.localtime()))
+        if name is None:
+            name = "Collection created %s" % (time.strftime("%Y-%m-%d %H:%M:%S %Z", time.localtime()))
 
-            body = {"manifest_text": text,
-                    "name": name}
-            if owner_uuid:
-                body["owner_uuid"] = owner_uuid
+        body = {"manifest_text": text,
+                "name": name}
+        if owner_uuid:
+            body["owner_uuid"] = owner_uuid
 
-            self._api_response = self._my_api().collections().create(ensure_unique_name=ensure_unique_name, body=body).execute(num_retries=num_retries)
-            text = self._api_response["manifest_text"]
+        self._api_response = self._my_api().collections().create(ensure_unique_name=ensure_unique_name, body=body).execute(num_retries=num_retries)
+        text = self._api_response["manifest_text"]
 
-            self._manifest_locator = self._api_response["uuid"]
+        self._manifest_locator = self._api_response["uuid"]
 
         self._manifest_text = text
         self.set_unmodified()

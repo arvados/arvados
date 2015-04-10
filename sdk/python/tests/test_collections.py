@@ -990,7 +990,7 @@ class NewCollectionTestCase(unittest.TestCase, CollectionTestMixin):
 
         # c1 changed, so it should not be deleted.
         c1.apply(d)
-        self.assertEqual(c1.manifest_text(), ". 95ebc3c7b3b9f1d2c40fec14415d3cb8+5 5348b82a029fd9e971a811ce1f71360b+43 0:5:count1.txt 5:10:count2.txt\n")
+        self.assertEqual(c1.manifest_text(strip=True), ". 95ebc3c7b3b9f1d2c40fec14415d3cb8+5 5348b82a029fd9e971a811ce1f71360b+43 0:5:count1.txt 5:10:count2.txt\n")
 
     def test_conflict_mod(self):
         c1 = Collection('. 781e5e245d69b566979b86e28d23f2c7+10 0:10:count1.txt')
@@ -1002,7 +1002,7 @@ class NewCollectionTestCase(unittest.TestCase, CollectionTestMixin):
 
         # c1 changed, so c2 mod will go to a conflict file
         c1.apply(d)
-        self.assertRegexpMatches(c1.manifest_text(), r"\. 95ebc3c7b3b9f1d2c40fec14415d3cb8\+5 5348b82a029fd9e971a811ce1f71360b\+43 0:5:count1\.txt 5:10:count1\.txt~conflict-\d\d\d\d-\d\d-\d\d-\d\d:\d\d:\d\d~$")
+        self.assertRegexpMatches(c1.manifest_text(strip=True), r"\. 95ebc3c7b3b9f1d2c40fec14415d3cb8\+5 5348b82a029fd9e971a811ce1f71360b\+43 0:5:count1\.txt 5:10:count1\.txt~conflict-\d\d\d\d-\d\d-\d\d-\d\d:\d\d:\d\d~$")
 
     def test_conflict_add(self):
         c1 = Collection('. 781e5e245d69b566979b86e28d23f2c7+10 0:10:count2.txt\n')
@@ -1015,7 +1015,7 @@ class NewCollectionTestCase(unittest.TestCase, CollectionTestMixin):
 
         # c1 added count1.txt, so c2 add will go to a conflict file
         c1.apply(d)
-        self.assertRegexpMatches(c1.manifest_text(), r"\. 95ebc3c7b3b9f1d2c40fec14415d3cb8\+5 5348b82a029fd9e971a811ce1f71360b\+43 0:5:count1\.txt 5:10:count1\.txt~conflict-\d\d\d\d-\d\d-\d\d-\d\d:\d\d:\d\d~$")
+        self.assertRegexpMatches(c1.manifest_text(strip=True), r"\. 95ebc3c7b3b9f1d2c40fec14415d3cb8\+5 5348b82a029fd9e971a811ce1f71360b\+43 0:5:count1\.txt 5:10:count1\.txt~conflict-\d\d\d\d-\d\d-\d\d-\d\d:\d\d:\d\d~$")
 
     def test_conflict_del(self):
         c1 = Collection('. 781e5e245d69b566979b86e28d23f2c7+10 0:10:count1.txt')
