@@ -34,7 +34,7 @@ table(table table-bordered table-condensed).
 |minimum_script_version |string     |Git branch, tag, or commit hash specifying the minimum acceptable script version (earliest ancestor) to consider when deciding whether to re-use a past job.[1]|query|@"c3e86c9"@|
 |exclude_script_versions|array of strings|Git commit branches, tags, or hashes to exclude when deciding whether to re-use a past job.|query|@["8f03c71","8f03c71"]@
 @["badtag1","badtag2"]@|
-|filters|array|Conditions to find Jobs to reuse.|query||
+|filters|array of arrays|Conditions to find Jobs to reuse.|query||
 |find_or_create         |boolean    |Before creating, look for an existing job that has identical script, script_version, and script_parameters to those in the present job, has nondeterministic=false, and did not fail (it could be queued, running, or completed). If such a job exists, respond with the existing job instead of submitting a new one.|query|@false@|
 
 When a job is submitted to the queue using the **create** method, the @script_version@ attribute is updated to a full 40-character Git commit hash based on the current content of the specified repository. If @script_version@ cannot be resolved, the job submission is rejected.
@@ -60,8 +60,8 @@ Because Arvados records the exact version of the script, input parameters, and r
 notextile. <div class="spaced-out">
 
 # If @find_or_create@ is false or omitted, create a new job and skip the rest of these steps.
-# If @filters@ are specified, find jobs that match those filters.  Filters *must* be specified to limit the @repository@ and @script@ attributes.  An error is returned if they are missing.
-# If @filters@ are not specified, find jobs with the same @repository@ and @script@, with a @script_version@ between @minimum_script_version@ and @script_version@ (excluding @excluded_script_versions@), and a @docker_image_locator@ with the latest Collection that matches the submitted job's @docker_image@ constraint.  If the submitted job includes an @arvados_sdk_version@ constraint, jobs must have an @arvados_sdk_version@ between that refspec and HEAD to be found.
+# If @filters@ are specified, find jobs that match those filters. If any filters are given, there must be at least one filter on the @repository@ attribute and one on the @script@ attribute: otherwise an error is returned.
+# If @filters@ are not specified, find jobs with the same @repository@ and @script@, with a @script_version@ between @minimum_script_version@ and @script_version@ inclusively (excluding @excluded_script_versions@), and a @docker_image_locator@ with the latest Collection that matches the submitted job's @docker_image@ constraint.  If the submitted job includes an @arvados_sdk_version@ constraint, jobs must have an @arvados_sdk_version@ between that refspec and HEAD to be found. *This form is deprecated: use filters instead.*
 # If the found jobs include a completed job, and all found completed jobs have consistent output, return one of them.  Which specific job is returned is undefined.
 # If the found jobs only include incomplete jobs, return one of them.  Which specific job is returned is undefined.
 # If no job has been returned so far, create and return a new job.
