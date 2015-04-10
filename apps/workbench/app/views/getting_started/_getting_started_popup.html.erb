@@ -1,25 +1,81 @@
+<<<<<<< HEAD:apps/workbench/app/views/application/_getting_started_popup.html.erb
+<%
+  update_getting_started_shown_user_pref() if current_user
+%>
+<style>
+.style_image {
+  border: 10px solid #ddd;
+}
+</style>
+
+<div class="modal">
+  <div class="modal-dialog modal-with-loading-spinner" style="width:80%">
+=======
 <div id="getting-started-modal-window" class="modal">
   <div class="modal-dialog modal-with-loading-spinner">
+>>>>>>> 8e4ed0edeadc4dfcc85666ef5c36619815dca8e2:apps/workbench/app/views/getting_started/_getting_started_popup.html.erb
     <div class="modal-content">
       <div class="modal-header">
         <button type="button" class="close" data-dismiss="modal" aria-hidden="true">x</button>
         <div>
-          <div class="col-sm-8"> <h4 class="modal-title"> Getting Started with Arvados </h4> </div>
+          <div class="col-sm-8"> <h4 class="modal-title">Welcome to Arvados!</h4> </div>
           <div class="spinner spinner-32px spinner-h-center col-sm-1" hidden="true"></div>
         </div>
         <br/>
       </div>
 
+<<<<<<< HEAD:apps/workbench/app/views/application/_getting_started_popup.html.erb
+      <div class="modal-body" style="height: 38em; overflow-y: scroll">
+
+<div class="container">
+    <div class="row">
+        <div class="col-md-6">
+  <strong>How does this work?</strong> What you're looking at right now is Workbench, the graphical interface to the Arvados system.
+<br><br>
+Click the <span class="btn btn-sm btn-primary">Next &gt;</span> button below for a quick tour of Arvados.
+<br><br>
+<strong>OR</strong> 
+          <br><br>Get started by running your first pipeline in 3 quick steps:<br><br>
+<ol><li> Go to the <span class="btn btn-sm btn-default"><i class="fa fa-lg fa-fw fa-dashboard"></i> Dashboard</span> &gt; <span class="btn btn-sm btn-primary"><i class="fa fa-fw fa-gear"></i> Run a pipeline...</span> <br><br>
+<%= image_tag "mouse-move.gif", :class => "style_image" %>.
+</li><br>
+  <li>  <span class="btn btn-sm btn-default"><i class="fa fa-fw fa-gear"></i>Mason Lab -- Ancestry Mapper (public)</span> &gt; <span class="btn btn-sm btn-primary">Next: choose inputs <i class="fa fa-fw fa-arrow-circle-right"></i></span></li><br>
+  <li> <span class="btn btn-sm btn-primary">Run <i class="fa fa-fw fa-play"></i></span></li>
+</ol>
+      </div>        <div class="col-md-6" style="border-left: solid; border-width: 1px">
+            <br>
+<i class="fa fa-flag fa-flip-horizontal" style="color: green"></i> <i class="fa fa-child"></i> 
+<strong>Voila!</strong> <i class="fa fa-child"></i> <i class="fa fa-flag" style="color: green"></i> 
+Your pipeline is now spooling up and getting ready to run!  
+            <br><br>
+
+  <br><br>
+  Go ahead, try it for yourself right now. <span class="glyphicon glyphicon-thumbs-up"></span>
+<br><br>
+<%= image_tag "pipeline-running.gif", :class => "style_image" %>
+
+  <br><br>
+  <em><strong>Note:</strong> You can always come back to this Getting Started guide by clicking the <span class="fa fa-lg fa-question-circle"></span> in the upper-right corner.</em> 
+  <br><br>
+</div> </div> </div> 
+
+
+
+      </div>
+      <div class="modal-body" style="height: 35em; overflow-y: scroll">
+        Page 2
+=======
       <div class="modal-body" style="height: 25em; overflow-y: scroll">
          <%= image_tag "getting_started/pipeline.gif" %>
       </div>
       <div class="modal-body" style="height: 25em; overflow-y: scroll">
          <%= image_tag "getting_started/mouse-move.gif" %>
+>>>>>>> 8e4ed0edeadc4dfcc85666ef5c36619815dca8e2:apps/workbench/app/views/getting_started/_getting_started_popup.html.erb
       </div>
-      <div class="modal-body" style="height: 25em; overflow-y: scroll">
+      <div class="modal-body" style="height: 35em; overflow-y: scroll">
         Page 3
       </div>
-      <div class="modal-body" style="height: 25em; overflow-y: scroll">
+      <div class="modal-body" style="height: 35em; overflow-y: scroll">
         Page 4
       </div>
 
