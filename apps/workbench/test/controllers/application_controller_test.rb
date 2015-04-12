@@ -324,14 +324,6 @@ class ApplicationControllerTest < ActionController::TestCase
     assert_equal collections[pdh1].size, 1, 'Expected one collection for the passed in pdh #{pdh1}'
     assert collections[pdh2], 'Expected collections for the passed in pdh #{pdh2}'
     assert_equal collections[pdh2].size, 1, 'Expected one collection for the passed in pdh #{pdh2}'
-
-    # invoke again for this same input. this time, the preloaded data will be returned
-    collections = ac.send :preload_collections_for_objects, pdhs
-    assert collections, 'Expected collections map'
-    assert collections.is_a?(Hash), 'Expected a hash'
-    assert collections.size == 2, 'Expected two objects in the preloaded collection hash'
-    assert collections[pdh1], 'Expected collection for the passed in pdh #{pdh1}'
-    assert collections[pdh2], 'Expected collection for the passed in pdh #{pdh2}'
   end
 
   test "requesting a nonexistent object returns 404" do

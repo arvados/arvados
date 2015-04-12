@@ -4,7 +4,7 @@
   @object.components.each do |k, component|
     next if !component
     component[:script_parameters].andand.each do |p, tv|
-      if tv.is_a? Hash and !tv[:value].nil? and tv[:dataclass].andand.eql?('Collection')
+      if tv.is_a? Hash and !tv[:value].nil? and (tv[:dataclass] == "Collection")
         if CollectionsHelper.match(tv[:value])
           input_pdhs << tv[:value]
         else

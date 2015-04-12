@@ -219,7 +219,7 @@ class AnonymousAccessTest < ActionDispatch::IntegrationTest
         end
         assert_no_text 'Output data not available'
         assert_selector 'a[href="#Log"]', text: 'Log'
-        assert_no_selector 'a[data-toggle="disabled"]', text: 'Log'
+        assert_no_selector 'a[class="disabled"]', text: 'Log'
       else
         if pipeline_page
           assert_no_text 'This pipeline was created from'  # template is not readable
@@ -228,7 +228,7 @@ class AnonymousAccessTest < ActionDispatch::IntegrationTest
         assert_text 'Output data not available'
         assert_text object['job']
         assert_selector 'a[href="#Log"]', text: 'Log'
-        assert_selector 'a[data-toggle="disabled"]', text: 'Log'
+        assert_selector 'a[class="disabled"]', text: 'Log'
       end
 
       click_link 'Log'

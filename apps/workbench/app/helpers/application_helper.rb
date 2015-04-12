@@ -177,7 +177,7 @@ module ApplicationHelper
     end
   end
 
-  def link_to_arvados_object_if_readable(attrvalue, link_text, link_text_if_not_readable, use_friendly_name=false)
+  def link_to_arvados_object_if_readable(attrvalue, link_text_if_not_readable, opts={})
     resource_class = resource_class_for_uuid(attrvalue)
     if !resource_class
       return link_text_if_not_readable
@@ -194,11 +194,7 @@ module ApplicationHelper
     end
 
     if readable
-      if use_friendly_name
-        link_to_if_arvados_object attrvalue, friendly_name: true
-      else
-        link_to_if_arvados_object attrvalue, link_text: link_text
-      end
+      link_to_if_arvados_object attrvalue, opts
     else
       link_text_if_not_readable
     end
