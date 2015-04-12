@@ -135,6 +135,10 @@ class ArvadosBase < ActiveRecord::Base
     ArvadosResourceList.new(self).select(*args)
   end
 
+  def self.distinct(*args)
+    ArvadosResourceList.new(self).distinct(*args)
+  end
+
   def self.eager(*args)
     ArvadosResourceList.new(self).eager(*args)
   end

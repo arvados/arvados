@@ -5,10 +5,36 @@
   <ul class="nav nav-tabs" data-tab-counts-url="<%= url_for(action: :tab_counts) rescue '' %>">
     <% pane_list.each_with_index do |pane, i| %>
       <% pane_name = (pane.is_a?(Hash) ? pane[:name] : pane) %>
-      <li class="<%= 'active' if i==0 %>">
+
+      <% data_toggle = "tab" %>
+      <% tab_tooltip = "" %>
+      <% link_disabled = "" %>
+
+      <% if (pane_name == "Log") and !(ArvadosBase.find(@object.owner_uuid).writable_by.include?(current_user.andand.uuid) rescue nil)
+          if controller.model_class.to_s == 'Job'
+            if @object.log and !@object.log.empty?
+              logCollection = Collection.find? @object.log
+              if !logCollection
+                data_toggle = "disabled"
+                tab_tooltip = "Log data is not available"
+                link_disabled = "disabled"
+              end
+            end
+          elsif controller.model_class.to_s == 'PipelineInstance'
+            log_uuids = [@object.uuid] + pipeline_jobs(@object).collect{|x|x[:job].andand[:uuid]}.compact
+            if stderr_log_history(log_uuids, 1).empty?
+              data_toggle = "disabled"
+              tab_tooltip = "Log data is not available"
+              link_disabled = "disabled"
+            end
+          end
+        end
+      %>
+
+      <li class="<%= 'active' if i==0 %> <%= link_disabled %>" data-toggle="tooltip" data-placement="top" title="<%=tab_tooltip%>">
         <a href="#<%= pane_name %>"
            id="<%= pane_name %>-tab"
-           data-toggle="tab"
+           data-toggle="<%= data_toggle %>"
            data-tab-history=true
            data-tab-history-update-url=true
            >

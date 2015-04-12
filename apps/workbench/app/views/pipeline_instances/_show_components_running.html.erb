@@ -81,6 +81,21 @@
 
 <%# Components %>
 
+<%
+  job_uuids = pipeline_jobs.collect {|j| j[:job][:uuid]}.compact
+  if job_uuids.any?
+    resource_class = resource_class_for_uuid(job_uuids.first, friendly_name: true)
+    preload_objects_for_dataclass resource_class, job_uuids
+  end
+
+  job_collections = pipeline_jobs.collect {|j| j[:job][:output]}.compact
+  job_collections.concat pipeline_jobs.collect {|j| j[:job][:docker_image_locator]}.uniq.compact
+  job_collections_pdhs = job_collections.select {|x| !(m = CollectionsHelper.match(x)).nil?}.uniq.compact
+  job_collections_uuids = job_collections - job_collections_pdhs
+  preload_collections_for_objects job_collections_uuids if job_collections_uuids.any?
+  preload_for_pdhs job_collections_pdhs if job_collections_pdhs.any?
+%>
+
 <% pipeline_jobs.each_with_index do |pj, i| %>
   <%= render partial: 'running_component', locals: {tasks: tasks, pj: pj, i: i, expanded: false} %>
 <% end %>
