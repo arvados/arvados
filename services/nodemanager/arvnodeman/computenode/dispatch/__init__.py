@@ -139,8 +139,10 @@ class ComputeNodeSetupActor(ComputeNodeStateChangeBase):
         self._finished()
 
     def stop_if_no_cloud_node(self):
-        if self.cloud_node is None:
-            self.stop()
+        if self.cloud_node is not None:
+            return False
+        self.stop()
+        return True
 
 
 class ComputeNodeShutdownActor(ComputeNodeStateChangeBase):
