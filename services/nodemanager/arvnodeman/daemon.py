@@ -299,8 +299,7 @@ class NodeManagerDaemonActor(actor_class):
         if (nodes_excess < 1) or not self.booting:
             return None
         for key, node in self.booting.iteritems():
-            node.stop_if_no_cloud_node().get()
-            if not node.actor_ref.is_alive():
+            if node.stop_if_no_cloud_node().get():
                 del self.booting[key]
                 if nodes_excess > 1:
                     self._later.stop_booting_node()
@@ -345,12 +344,14 @@ class NodeManagerDaemonActor(actor_class):
     def shutdown(self):
         self._logger.info("Shutting down after signal.")
         self.poll_stale_after = -1  # Inhibit starting/stopping nodes
-        for bootnode in self.booting.itervalues():
-            bootnode.stop_if_no_cloud_node()
+        setup_stops = {key: node.stop_if_no_cloud_node()
+                       for key, node in self.booting.iteritems()}
+        self.booting = {key: self.booting[key]
+                        for key in setup_stops if not setup_stops[key].get()}
         self._later.await_shutdown()
 
     def await_shutdown(self):
-        if any(node.actor_ref.is_alive() for node in self.booting.itervalues()):
+        if self.booting:
             self._timer.schedule(time.time() + 1, self._later.await_shutdown)
         else:
             self.stop()

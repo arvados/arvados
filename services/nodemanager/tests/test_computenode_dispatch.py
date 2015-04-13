@@ -79,14 +79,16 @@ class ComputeNodeSetupActorTestCase(testutil.ActorTestMixin, unittest.TestCase):
         self.make_mocks(
             arverror.ApiError(httplib2.Response({'status': '500'}), ""))
         self.make_actor()
-        self.setup_actor.stop_if_no_cloud_node()
+        self.assertTrue(
+            self.setup_actor.stop_if_no_cloud_node().get(self.TIMEOUT))
         self.assertTrue(
             self.setup_actor.actor_ref.actor_stopped.wait(self.TIMEOUT))
 
     def test_no_stop_when_cloud_node(self):
         self.make_actor()
         self.wait_for_assignment(self.setup_actor, 'cloud_node')
-        self.setup_actor.stop_if_no_cloud_node().get(self.TIMEOUT)
+        self.assertFalse(
+            self.setup_actor.stop_if_no_cloud_node().get(self.TIMEOUT))
         self.assertTrue(self.stop_proxy(self.setup_actor),
                         "actor was stopped by stop_if_no_cloud_node")
 
