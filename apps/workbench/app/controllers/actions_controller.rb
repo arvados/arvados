@@ -1,3 +1,5 @@
+require "arvados/collection"
+
 class ActionsController < ApplicationController
 
   skip_filter :require_thread_api_token, only: [:report_issue_popup, :report_issue]
@@ -100,141 +102,113 @@ class ActionsController < ApplicationController
     end
   end
 
-  def arv_normalize mt, *opts
-    r = ""
-    env = Hash[ENV].
-      merge({'ARVADOS_API_HOST' =>
-              arvados_api_client.arvados_v1_base.
-              sub(/\/arvados\/v1/, '').
-              sub(/^https?:\/\//, ''),
-              'ARVADOS_API_TOKEN' => 'x',
-              'ARVADOS_API_HOST_INSECURE' =>
-              Rails.configuration.arvados_insecure_https ? 'true' : 'false'
-            })
-    IO.popen([env, 'arv-normalize'] + opts, 'w+b') do |io|
-      io.write mt
-      io.close_write
-      while buf = io.read(2**16)
-        r += buf
+  expose_action :combine_selected_files_into_collection do
+    link_uuids, coll_ids = params["selection"].partition do |sel_s|
+      ArvadosBase::resource_class_for_uuid(sel_s) == Link
+    end
+
+    unless link_uuids.empty?
+      Link.select([:head_uuid]).where(uuid: link_uuids).each do |link|
+        if ArvadosBase::resource_class_for_uuid(link.head_uuid) == Collection
+          coll_ids << link.head_uuid
+        end
       end
     end
-    r
-  end
 
-  expose_action :combine_selected_files_into_collection do
     uuids = []
     pdhs = []
-    files = []
-    params["selection"].each do |s|
-      a = ArvadosBase::resource_class_for_uuid s
-      if a == Link
-        begin
-          if (m = CollectionsHelper.match(Link.find(s).head_uuid))
-            pdhs.append(m[1] + m[2])
-            files.append(m)
-          end
-        rescue
-        end
-      elsif (m = CollectionsHelper.match(s))
-        pdhs.append(m[1] + m[2])
-        files.append(m)
-      elsif (m = CollectionsHelper.match_uuid_with_optional_filepath(s))
-        uuids.append(m[1])
-        files.append(m)
+    source_paths = Hash.new { |hash, key| hash[key] = [] }
+    coll_ids.each do |coll_id|
+      if m = CollectionsHelper.match(coll_id)
+        key = m[1] + m[2]
+        pdhs << key
+        source_paths[key] << m[4]
+      elsif m = CollectionsHelper.match_uuid_with_optional_filepath(coll_id)
+        key = m[1]
+        uuids << key
+        source_paths[key] << m[4]
       end
     end
 
-    pdhs = pdhs.uniq
-    uuids = uuids.uniq
-    chash = {}
-
-    Collection.select([:uuid, :manifest_text]).where(uuid: uuids).each do |c|
-      chash[c.uuid] = c
-    end
-
-    Collection.select([:portable_data_hash, :manifest_text]).where(portable_data_hash: pdhs).each do |c|
-      chash[c.portable_data_hash] = c
-    end
-
-    combined = ""
-    files_in_dirs = {}
-    files.each do |m|
-      mt = chash[m[1]+m[2]].andand.manifest_text
-      if not m[4].nil? and m[4].size > 1
-        manifest_files = files_in_dirs['.']
-        if !manifest_files
-          manifest_files = []
-          files_in_dirs['.'] = manifest_files
+    unless pdhs.empty?
+      Collection.where(portable_data_hash: pdhs.uniq).
+          select([:uuid, :portable_data_hash]).each do |coll|
+        unless source_paths[coll.portable_data_hash].empty?
+          uuids << coll.uuid
+          source_paths[coll.uuid] = source_paths.delete(coll.portable_data_hash)
         end
-        manifest_file = m[4].split('/')[-1]
-        uniq_file = derive_unique_filename(manifest_file, manifest_files)
-        normalized = arv_normalize mt, '--extract', ".#{m[4]}"
-        normalized = normalized.gsub(/(\d+:\d+:)(#{Regexp.quote manifest_file})/) {|s| "#{$1}#{uniq_file}" }
-        combined += normalized
-        manifest_files << uniq_file
+      end
+    end
+
+    new_coll = Arv::Collection.new
+    Collection.where(uuid: uuids.uniq).
+        select([:uuid, :manifest_text]).each do |coll|
+      src_coll = Arv::Collection.new(coll.manifest_text)
+      src_pathlist = source_paths[coll.uuid]
+      if src_pathlist.any?(&:blank?)
+        src_pathlist = src_coll.each_file_path
+        destdir = nil
       else
-        mt = arv_normalize mt
-        manifest_streams = mt.split "\n"
-        adjusted_streams = []
-        manifest_streams.each do |stream|
-          manifest_parts = stream.split
-          adjusted_parts = []
-          manifest_files = files_in_dirs[manifest_parts[0]]
-          if !manifest_files
-            manifest_files = []
-            files_in_dirs[manifest_parts[0]] = manifest_files
-          end
-
-          manifest_parts.each do |part|
-            part_match = /(\d+:\d+:)(\S+)/.match(part)
-            if part_match
-              uniq_file = derive_unique_filename(part_match[2], manifest_files)
-              adjusted_parts << "#{part_match[1]}#{uniq_file}" 
-              manifest_files << uniq_file
-            else
-              adjusted_parts << part
-            end
-          end
-          adjusted_streams << adjusted_parts.join(' ')
+        destdir = "."
+      end
+      src_pathlist.each do |src_path|
+        src_path = src_path.sub(/^(\.\/|\/|)/, "./")
+        src_stream, _, basename = src_path.rpartition("/")
+        dst_stream = destdir || src_stream
+        # Generate a unique name by adding (1), (2), etc. to it.
+        # If the filename has a dot that's not at the beginning, insert the
+        # number just before that.  Otherwise, append the number to the name.
+        if match = basename.match(/[^\.]\./)
+          suffix_start = match.begin(0) + 1
+        else
+          suffix_start = basename.size
         end
-        adjusted_streams.each do |stream|
-          combined += (stream + "\n")
+        suffix_size = 0
+        dst_path = nil
+        loop.each_with_index do |_, try_count|
+          dst_path = "#{dst_stream}/#{basename}"
+          break unless new_coll.exist?(dst_path)
+          uniq_suffix = "(#{try_count + 1})"
+          basename[suffix_start, suffix_size] = uniq_suffix
+          suffix_size = uniq_suffix.size
         end
+        new_coll.cp_r(src_path, dst_path, src_coll)
       end
     end
 
-    normalized = arv_normalize combined
-    newc = Collection.new({:manifest_text => normalized})
-    newc.name = newc.name || "Collection created at #{Time.now.localtime}"
+    coll_attrs = {
+      manifest_text: new_coll.manifest_text,
+      name: "Collection created at #{Time.now.localtime}",
+    }
+    flash = {}
 
     # set owner_uuid to current project, provided it is writable
-    current_project_writable = false
-    action_data = JSON.parse(params['action_data']) if params['action_data']
-    if action_data && action_data['current_project_uuid']
-      current_project = Group.find(action_data['current_project_uuid']) rescue nil
-      if (current_project && current_project.writable_by.andand.include?(current_user.uuid))
-        newc.owner_uuid = action_data['current_project_uuid']
-        current_project_writable = true
+    action_data = Oj.load(params['action_data'] || "{}")
+    if action_data['current_project_uuid'] and
+        current_project = Group.find?(action_data['current_project_uuid']) and
+        current_project.writable_by.andand.include?(current_user.uuid)
+      coll_attrs[:owner_uuid] = current_project.uuid
+      flash[:message] =
+        "Created new collection in the project #{current_project.name}."
+    else
+      flash[:message] = "Created new collection in your Home project."
+    end
+
+    newc = Collection.create!(coll_attrs)
+    source_paths.each_key do |src_uuid|
+      unless Link.create({
+                           tail_uuid: src_uuid,
+                           head_uuid: newc.uuid,
+                           link_class: "provenance",
+                           name: "provided",
+                         })
+        flash[:error] = "
+An error occurred when saving provenance information for this collection.
+You can try recreating the collection to get a copy with full provenance data."
+        break
       end
     end
-
-    newc.save!
-
-    chash.each do |k,v|
-      l = Link.new({
-                     tail_uuid: k,
-                     head_uuid: newc.uuid,
-                     link_class: "provenance",
-                     name: "provided"
-                   })
-      l.save!
-    end
-
-    msg = current_project_writable ?
-              "Created new collection in the project #{current_project.name}." :
-              "Created new collection in your Home project."
-
-    redirect_to newc, flash: {'message' => msg}
+    redirect_to(newc, flash: flash)
   end
 
   def report_issue_popup
