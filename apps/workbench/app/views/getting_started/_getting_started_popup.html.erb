@@ -5,63 +5,83 @@
 </style>
 
 <div id="getting-started-modal-window" class="modal">
-  <div class="modal-dialog modal-with-loading-spinner" style="width:80%">
+  <div class="modal-dialog modal-with-loading-spinner" style="width:60%">
+  <%#<div class="modal-dialog modal-with-loading-spinner">%>
     <div class="modal-content">
       <div class="modal-header">
         <button type="button" class="close" data-dismiss="modal" aria-hidden="true">x</button>
         <div>
-          <div class="col-sm-8"> <h4 class="modal-title"> Getting Started with Arvados </h4> </div>
+          <div class="col-sm-8"> <h4 class="modal-title">Getting Started with Arvados </h4> </div>
           <div class="spinner spinner-32px spinner-h-center col-sm-1" hidden="true"></div>
         </div>
         <br/>
       </div>
 
-           <div class="modal-body" style="height: 38em; overflow-y: scroll">
+     <div class="modal-body" style="height: 38em; overflow-y: scroll">
+       <h2> Welcome!</h2> <strong>How does this work?</strong> 
+       
+       What you're looking at right now is Workbench, the graphical interface to the Arvados system.
+          <br>For example, here's what a pipeline running in Arvados looks like:<br>
+          <%= image_tag "pipeline-running.gif", :class => "style_image" %>
+          <br><br>
+          Click the <span class="btn btn-sm btn-primary">Next &gt;</span> button below for a speed tour of Arvados.
+        <br><br>
+        <em><strong>Note:</strong> You can always come back to this Getting Started guide by clicking the <span class="fa fa-lg fa-question-circle"></span> in the upper-right corner.</em> 
+        <br><br>
+      </div>
 
-
-<div class="container">
-    <div class="row">
-        <div class="col-md-6">
-  <strong>How does this work?</strong> What you're looking at right now is Workbench, the graphical interface to the Arvados system.
-<br><br>
-Click the <span class="btn btn-sm btn-primary">Next &gt;</span> button below for a quick tour of Arvados.
-<br><br>
-<strong>OR</strong> 
-          <br><br>Get started by running your first pipeline in 3 quick steps:<br><br>
-<ol><li> Go to the <span class="btn btn-sm btn-default"><i class="fa fa-lg fa-fw fa-dashboard"></i> Dashboard</span> &gt; <span class="btn btn-sm btn-primary"><i class="fa fa-fw fa-gear"></i> Run a pipeline...</span> <br><br>
-<%= image_tag "mouse-move.gif", :class => "style_image" %>.
-</li><br>
-  <li>  <span class="btn btn-sm btn-default"><i class="fa fa-fw fa-gear"></i>Mason Lab -- Ancestry Mapper (public)</span> &gt; <span class="btn btn-sm btn-primary">Next: choose inputs <i class="fa fa-fw fa-arrow-circle-right"></i></span></li><br>
-  <li> <span class="btn btn-sm btn-primary">Run <i class="fa fa-fw fa-play"></i></span></li>
-</ol>
-      </div>        <div class="col-md-6" style="border-left: solid; border-width: 1px">
-            <br>
-<i class="fa fa-flag fa-flip-horizontal" style="color: green"></i> <i class="fa fa-child"></i> 
-<strong>Voila!</strong> <i class="fa fa-child"></i> <i class="fa fa-flag" style="color: green"></i> 
-Your pipeline is now spooling up and getting ready to run!  
-            <br><br>
-
-  <br><br>
-  Go ahead, try it for yourself right now. <span class="glyphicon glyphicon-thumbs-up"></span>
-<br><br>
-<%= image_tag "pipeline-running.gif", :class => "style_image" %>
-
-  <br><br>
-  <em><strong>Note:</strong> You can always come back to this Getting Started guide by clicking the <span class="fa fa-lg fa-question-circle"></span> in the upper-right corner.</em> 
-  <br><br>
-</div> </div> </div> 
-
-
+      <div class="modal-body" style="height: 38em; overflow-y: scroll">
+        <h2>Quickstart</h2>
+        <strong>Don't like reading manuals?</strong> Get started by running your first pipeline in 3 quick steps:<br><br>
+        <em>Tip: log-in or register with any google account if you haven't already</em>
+        <ol><li> Go to the <span class="btn btn-sm btn-default"><i class="fa fa-lg fa-fw fa-dashboard"></i> Dashboard</span> &gt; <span class="btn btn-sm btn-primary"><i class="fa fa-fw fa-gear"></i> Run a pipeline...</span> <br><br>
+          <%= image_tag "mouse-move.gif", :class => "style_image" %><br>
+        </li>
+          <li>  <span class="btn btn-sm btn-default"><i class="fa fa-fw fa-gear"></i>Mason Lab -- Ancestry Mapper (public)</span> &gt; <span class="btn btn-sm btn-primary">Next: choose inputs <i class="fa fa-fw fa-arrow-circle-right"></i></span></li><br>
+          <li> <span class="btn btn-sm btn-primary">Run <i class="fa fa-fw fa-play"></i></span></li>
+        </ol>
+        <br>
+        <i class="fa fa-flag fa-flip-horizontal" style="color: green"></i> <i class="fa fa-child"></i> 
+        <strong>Voila!</strong> <i class="fa fa-child"></i> <i class="fa fa-flag" style="color: green"></i> 
+        Your pipeline is now spooling up and getting ready to run!  
+          <br><br>
+          Go ahead, try it for yourself right now. <span class="glyphicon glyphicon-thumbs-up"></span>
+          <br><br>
+          Or click <span class="btn btn-sm btn-primary">Next &gt;</span> below to keep reading!
+          <br><br>
+      </div>
+      <div class="modal-body" style="height: 38em; overflow-y: scroll">
+        <h2>Three Useful Terms</h2>
+        * <strong>Pipeline</strong> -- A re-usable series of analysis steps.<br><br>
+        ** Sometimes known as a “workflow” in other systems<br><br>
+        ** A list of well-documented public pipelines can be found in the upper right corner by clicking the "?" > "Public Pipelines and Datasets"<br><br>
+        ** Pro-tip:  Pipeline &gt; Jobs &gt; Tasks. A pipeline contains jobs which contain tasks.<br><br>
+        ** Pipelines can only be shared within a project<br><br>
+        <br><br><br><br>
+        * Collection -- Like a folder, but better<br><br>
+        ** Upload data right in your browser<br><br>
+        ** Better than a folder? <br><br>
+        *** Collections contain the content-address of the data instead of the data itself<br><br>
+        *** Sets of data can be flexibly defined and re-defined without duplicating data<br><br>
+        ** Collections can be shared using the "Sharing and Permissions"  &gt; "Share" button<br><br>
+        <br><br><br><br>
+        * Projects -- Contain pipelines templates, pipeline instances (individual runs of a pipeline), and collections<br><br>
+        ** The most useful one is your default "Home" project, under Projects &gt; Home<br><br>
+        ** Projects can be shared using the "sharing" tab<br><br>
 
       </div>
       <div class="modal-body" style="height: 38em; overflow-y: scroll">
-        Page 2
-      </div>
-      <div class="modal-body" style="height: 38em; overflow-y: scroll">
-        Page 3
-      </div>
-      <div class="modal-body" style="height: 38em; overflow-y: scroll">
-        Page 4
+        1. Reproducible Analyses: Enough said.<br><br>
+        2. Data provenance: Every file in Arvados knows can tell you where it came from.<br><br>
+        3. Serious scaling: Need 500 GB of space? 200 compute hours? Arvados scales and parallelizes your work for you intelligently.<br><br>
+        4. Share pipelines or data: Easily publish your work the world, just like the Pathomap team did: http://www.pathomap.org/2015/04/08/run-the-pathomap-human-ancestry-pipeline-on-arvados/<br><br>
+        5. Use existing pipelines: Use best-practices pipelines on your own data with the click of a button<br><br>
+        6. Open-source: Arvados is completely open-source. Check us out at http://arvados.org/<br><br>
+        <br><br><br>
+        This guide and even all of Workbench is just a glimpse into the power of Arvados. Want to use the command-line instead? Or hungry to learn more? Check out our detailed documentation: http://doc.arvados.org/ (our real-time contact info is there too!)
+        <br><br><br>
+        That's all, folks!
+
       </div>
 
       <div class="modal-footer">
