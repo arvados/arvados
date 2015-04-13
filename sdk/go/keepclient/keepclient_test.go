@@ -839,6 +839,16 @@ func (s *StandaloneSuite) TestMakeLocatorNoSizeHint(c *C) {
 	c.Check(l.Hints, DeepEquals, []string{"Aabcde@12345678"})
 }
 
+func (s *StandaloneSuite) TestMakeLocatorPreservesUnrecognizedHints(c *C) {
+	str := "91f372a266fe2bf2823cb8ec7fda31ce+3+Unknown+Kzzzzz+Afoobar"
+	l, err := MakeLocator(str)
+	c.Check(err, Equals, nil)
+	c.Check(l.Hash, Equals, "91f372a266fe2bf2823cb8ec7fda31ce")
+	c.Check(l.Size, Equals, 3)
+	c.Check(l.Hints, DeepEquals, []string{"3", "Unknown", "Kzzzzz", "Afoobar"})
+	c.Check(l.String(), Equals, str)
+}
+
 func (s *StandaloneSuite) TestMakeLocatorInvalidInput(c *C) {
 	_, err := MakeLocator("91f372a266fe2bf2823cb8ec7fda31c")
 	c.Check(err, Equals, InvalidLocatorError)
