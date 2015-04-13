@@ -40,12 +40,12 @@ div.figure p {
          What you're looking at right now is <b>Workbench</b>, the graphical interface to the Arvados system.
          </p><p>
          <div class="figure">
-           <p> <%= image_tag "pipeline-running.gif", :class => "style_image1" %></p>
+           <p> <%= image_tag "pipeline-running.gif", :class => "style_image1" %></p> <%#Todo: shorter gif%>
            <p>Running the Pathomap pipeline in Arvados.</p>
         </div>
         </p> <p>
-          Click the <span class="btn btn-sm btn-primary">Next &gt;</span> button below for a speed tour of Arvados.
-          </p><p>
+          Click the <span class="btn-sm btn-primary">Next &gt;</span> button below for a speed tour of Arvados.
+          </p><p style="margin-top:2em;">
           <em><strong>Note:</strong> You can always come back to this Getting Started guide by clicking the <span class="fa fa-lg fa-question-circle"></span> in the upper-right corner.</em>
         </p>
       </div>
@@ -54,20 +54,20 @@ div.figure p {
      <%#Page Two%>
       <div class="modal-body" style="height: auto; overflow-y: scroll">
        <div style="margin-top: -0.5em; margin-left: 0.5em;">
-        <p><div style="font-size: 150%;">Don't feel like reading?</div></p>
+         <p><div style="font-size: 150%;">Take It for a Spin</div></p>
         <p>
         Run your first pipeline in 3 quick steps:
         </p>
-        <div style="display: block; margin: 0em 2em; padding-top: 1em; padding-bottom: 1em; border: thin dashed silver;">
+        <div style="display: block; margin: 0em 2em; padding-top: 1em; padding-bottom: 1em; border: thin solid silver;">
         <p style="margin-left: 1em;">
-        <em>First, log-in or register with any Google account if you haven't already.</em>
+        <em>First, <a href="/users/welcome">log-in or register</a> with any Google account if you haven't already.</em>
         </p><p>
         <ol><li> Go to the <span class="btn btn-sm btn-default"><i class="fa fa-lg fa-fw fa-dashboard"></i> Dashboard</span> &gt; <span class="btn btn-sm btn-primary"><i class="fa fa-fw fa-gear"></i> Run a pipeline...</span>
           <p style="margin-top:1em;">
           <%= image_tag "mouse-move.gif", :class => "style_image2" %>
           </p>
         </li>
-          <li>  <span class="btn btn-sm btn-default"><i class="fa fa-fw fa-gear"></i>Mason Lab -- Ancestry Mapper (public)</span> &gt; <span class="btn btn-sm btn-primary">Next: choose inputs <i class="fa fa-fw fa-arrow-circle-right"></i></span></li><br>
+          <li> <span class="btn btn-sm btn-default"><i class="fa fa-fw fa-gear"></i>Mason Lab -- Ancestry Mapper (public)</span> &gt; <span class="btn btn-sm btn-primary">Next: choose inputs <i class="fa fa-fw fa-arrow-circle-right"></i></span></li><br>
           <li> <span class="btn btn-sm btn-primary">Run <i class="fa fa-fw fa-play"></i></span></li>
         </ol>
       </p></div>
@@ -84,40 +84,87 @@ div.figure p {
       </div>
 
 
-      <div class="modal-body" style="height: 38em; overflow-y: scroll">
-       <div style="margin: -0.2em 0.5em">
+      <div class="modal-body" style="height: auto; overflow-y: scroll">
+       <div style="margin-top: -0.5em; margin-left: 0.5em;">
         <p><div style="font-size: 150%;">Three Useful Terms</div></p>
-        * <strong>Pipeline</strong> -- A re-usable series of analysis steps.<br><br>
-        ** Sometimes known as a “workflow” in other systems<br><br>
-        ** A list of well-documented public pipelines can be found in the upper right corner by clicking the "?" > "Public Pipelines and Datasets"<br><br>
-        ** Pro-tip:  Pipeline &gt; Jobs &gt; Tasks. A pipeline contains jobs which contain tasks.<br><br>
-        ** Pipelines can only be shared within a project<br><br>
-        <br><br><br><br>
-        * Collection -- Like a folder, but better<br><br>
-        ** Upload data right in your browser<br><br>
-        ** Better than a folder? <br><br>
-        *** Collections contain the content-address of the data instead of the data itself<br><br>
-        *** Sets of data can be flexibly defined and re-defined without duplicating data<br><br>
-        ** Collections can be shared using the "Sharing and Permissions"  &gt; "Share" button<br><br>
-        <br><br><br><br>
-        * Projects -- Contain pipelines templates, pipeline instances (individual runs of a pipeline), and collections<br><br>
-        ** The most useful one is your default "Home" project, under Projects &gt; Home<br><br>
-        ** Projects can be shared using the "sharing" tab<br><br>
-      </div>
-      </div>
-      <div class="modal-body" style="height: 38em; overflow-y: scroll">
-        <h2>Why We Think Arvados is Awesome</h2>
-        1. Reproducible Analyses: Enough said.<br><br>
-        2. Data provenance: Every file in Arvados knows can tell you where it came from.<br><br>
-        3. Serious scaling: Need 500 GB of space? 200 compute hours? Arvados scales and parallelizes your work for you intelligently.<br><br>
-        4. Share pipelines or data: Easily publish your work the world, just like the Pathomap team did: http://www.pathomap.org/2015/04/08/run-the-pathomap-human-ancestry-pipeline-on-arvados/<br><br>
-        5. Use existing pipelines: Use best-practices pipelines on your own data with the click of a button<br><br>
-        6. Open-source: Arvados is completely open-source. Check us out at http://arvados.org/<br><br>
-        <br><br><br>
-        This guide and even all of Workbench is just a glimpse into the power of Arvados. Want to use the command-line instead? Or hungry to learn more? Check out our detailed documentation: http://doc.arvados.org/ (our real-time contact info is there too!)
-        <br><br><br>
-        That's all, folks!
+        <ul>
+        <li>
+                 <strong>Pipeline</strong> — A re-usable series of analysis steps.
+                 <ul>
+                   <li>
+                    Also known as a “workflow” in other systems
+                  </li><li>
+              A list of well-documented public pipelines can be found in the upper right corner by clicking the <span class="fa fa-lg fa-question-circle"></span> &gt; "Public Pipelines and Datasets"
+                  </li><li>
+              Pro-tip: A Pipeline contains Jobs which contain Tasks
+                  </li><li>
+              Pipelines can only be shared within a project
+                  </li>
+                </ul>
+        </li>
 
+        <li>
+        <strong>Collection </strong>— Like a folder, but better.
+            <ul>
+              <li>
+             Upload data right in your browser
+                </li><li>
+             Better than a folder? 
+             <ul><li>
+            Collections contain the content-address of the data instead of the data itself
+                </li><li>
+            Sets of data can be flexibly defined and re-defined without duplicating data
+            </li>
+          </ul></li><li>
+             Collections can be shared using the "Sharing and Permissions"  &gt; "Share" button
+                </li>
+            </ul>
+        </li>
+
+        <li>
+        <strong>Projects </strong>— Contain pipelines templates, pipeline instances (individual runs of a pipeline), and collections.
+            <ul><li>
+        The most useful one is your default "Home" project, under Projects &gt; Home
+            </li><li>
+        Projects can be shared using the "sharing" tab
+            </li>
+          </ul>
+          </li>
+        </ul>
+
+      </div>
+      </div>
+
+
+      <div class="modal-body" style="height: auto; overflow-y: scroll">
+       <div style="margin-top: -0.5em; margin-left: 0.5em;">
+        <p><div style="font-size: 150%;">Six Reasons Arvados is Awesome</div></p>
+        <p>
+        This guide, and in fact all of Workbench, is just a teaser for the full power of Arvados:
+        </p>
+        <ol>
+          <li>
+          <strong>Reproducible Analyses</strong>: Enough said.
+            </li><li>
+            <strong>Data provenance</strong>: Every file in Arvados knows can tell you where it came from.
+            </li><li>
+            <strong>Serious scaling</strong>: Need 500 GB of space? 200 compute hours? Arvados scales and parallelizes your work for you intelligently.
+            </li><li>
+            <strong>Share pipelines or data</strong>: Easily publish your work the world, just like <a href="http://www.pathomap.org/2015/04/08/run-the-pathomap-human-ancestry-pipeline-on-arvados/">the Pathomap team did</a>.
+            </li><li>
+            <strong>Use existing pipelines</strong>: Use best-practices pipelines on your own data with the click of a button.
+            </li><li>
+            <strong>Open-source</strong>: Arvados is completely open-source. Check out our <a href="http://arvados.org">developer site</a>.
+          </li>
+        </ol>
+        <p style="margin-top: 1em;">
+        Want to use the command-line, or hungry to learn more? Check out the User Guide at <a href="http://doc.arvados.org/">doc.arvados.org</a>.
+        </p><p>
+        Questions still? Head over to <a href="http://doc.arvados.org/">doc.arvados.org</a> to find mailing-list and contact info for the Arvados community.
+        </p><p>
+        That's all, folks! Click the "x" up top to leave this guide.
+        </p>
+      </div>
       </div>
 
       <div class="modal-footer">
