@@ -183,6 +183,98 @@ class AnonymousAccessTest < ActionDispatch::IntegrationTest
     assert_no_selector 'a', text: 'Run this pipeline'
   end
 
+  [
+    ['pipeline_in_publicly_accessible_project', true],
+    ['pipeline_in_publicly_accessible_project_but_other_objects_elsewhere', false],
+    ['pipeline_in_publicly_accessible_project_but_other_objects_elsewhere', false, 'spectator'],
+    ['pipeline_in_publicly_accessible_project_but_other_objects_elsewhere', true, 'admin'],
+
+    ['completed_job_in_publicly_accessible_project', true],
+    ['job_in_publicly_accessible_project_but_other_objects_elsewhere', false],
+  ].each do |fixture, objects_readable, user=nil|
+    test "access #{fixture} in public project with objects readable=#{objects_readable} with user #{user}" do
+      pipeline_page = true if fixture.include?('pipeline')
+
+      if pipeline_page
+        object = api_fixture('pipeline_instances')[fixture]
+        page = "/pipeline_instances/#{object['uuid']}"
+      else      # job
+        object = api_fixture('jobs')[fixture]
+        page = "/jobs/#{object['uuid']}"
+      end
+
+      if user
+        visit page_with_token user, page
+      else
+        visit page
+      end
+
+      # click job link, if in pipeline page
+      click_link 'foo' if pipeline_page
+
+      if objects_readable
+        if pipeline_page
+          assert_text 'This pipeline was created from'
+          assert_selector 'a', text: object['components']['foo']['job']['uuid']
+        end
+        assert_no_text 'Output data not available'
+        assert_selector 'a[href="#Log"]', text: 'Log'
+        assert_no_selector 'a[data-toggle="disabled"]', text: 'Log'
+      else
+        if pipeline_page
+          assert_no_text 'This pipeline was created from'  # template is not readable
+          assert_no_selector 'a', text: object['components']['foo']['job']['uuid']
+        end
+        assert_text 'Output data not available'
+        assert_text object['job']
+        assert_selector 'a[data-toggle="disabled"]', text: 'Log'
+      end
+
+      click_link 'Log'
+      if objects_readable
+        assert_no_text 'foo'  # should be in Log tab
+        assert_text 'stderr crunchstat'   if pipeline_page
+      else
+        assert_text 'foo'     # Log tab disabled and hence still in first tab
+        assert_no_text 'stderr crunchstat'  # log line shouldn't be seen
+      end
+    end
+  end
+
+  [
+    ['new_pipeline_in_publicly_accessible_project', true],
+    ['new_pipeline_in_publicly_accessible_project_but_other_objects_elsewhere', false],
+    ['new_pipeline_in_publicly_accessible_project_but_other_objects_elsewhere', false, 'spectator'],
+    ['new_pipeline_in_publicly_accessible_project_but_other_objects_elsewhere', true, 'admin'],
+  ].each do |fixture, objects_readable, user=nil|
+    test "access #{fixture} in public project with objects readable=#{objects_readable} with user #{user}" do
+      object = api_fixture('pipeline_instances')[fixture]
+      page = "/pipeline_instances/#{object['uuid']}"
+      if user
+        visit page_with_token user, page
+      else
+        visit page
+      end
+
+      # click Components tab
+      click_link 'Components'
+
+      if objects_readable
+        assert_text 'This pipeline was created from'
+        if user == 'admin'
+          assert_text 'input'
+          assert_selector 'a', text: 'Choose'
+        else
+          assert_selector 'a', text: object['components']['foo']['script_parameters']['input']['value']
+        end
+      else
+        assert_no_text 'This pipeline was created from'  # template is not readable
+        assert_text object['components']['foo']['script_parameters']['input']['value']
+        assert_no_selector 'a', text: object['components']['foo']['script_parameters']['input']['value']
+      end
+    end
+  end
+
   test "anonymous user accesses collection in shared project" do
     visit "/collections/#{api_fixture('collections')['public_text_file']['uuid']}"
 

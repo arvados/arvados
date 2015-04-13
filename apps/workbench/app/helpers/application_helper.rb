@@ -177,6 +177,29 @@ module ApplicationHelper
     end
   end
 
+  def link_to_arvados_object_if_readable(attrvalue, link_text_if_not_readable, opts={})
+    resource_class = resource_class_for_uuid(attrvalue)
+    if !resource_class
+      return link_to_if_arvados_object attrvalue, opts
+    end
+
+    if resource_class.to_s == 'Collection'
+      if CollectionsHelper.match(attrvalue)
+        readable = collection_for_pdh(attrvalue).any?
+      else
+        readable = collections_for_object(attrvalue).any?
+      end
+    else
+      readable = object_for_dataclass(resource_class, attrvalue)
+    end
+
+    if readable
+      link_to_if_arvados_object attrvalue, opts
+    else
+      link_text_if_not_readable
+    end
+  end
+
   def render_editable_attribute(object, attr, attrvalue=nil, htmloptions={})
     attrvalue = object.send(attr) if attrvalue.nil?
     if not object.attribute_editable?(attr)
@@ -271,7 +294,7 @@ module ApplicationHelper
     end
 
     if not object.andand.attribute_editable?(attr)
-      return link_to_if_arvados_object attrvalue
+      return link_to_arvados_object_if_readable(attrvalue, attrvalue, friendly_name: true)
     end
 
     if dataclass

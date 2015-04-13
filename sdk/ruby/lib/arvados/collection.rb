@@ -14,8 +14,13 @@ module Arv
         loc_list = LocatorList.new(locators)
         file_specs.map { |s| manifest.split_file_token(s) }.
             each do |file_start, file_len, file_path|
-          @root.file_at(normalize_path(stream_root, file_path)).
-            add_segment(loc_list.segment(file_start, file_len))
+          begin
+            @root.file_at(normalize_path(stream_root, file_path)).
+              add_segment(loc_list.segment(file_start, file_len))
+          rescue Errno::ENOTDIR, Errno::EISDIR => error
+            raise ArgumentError.new("%p is both a stream and file" %
+                                    error.to_s.partition(" - ").last)
+          end
         end
       end
     end
@@ -41,6 +46,19 @@ module Arv
     def cp_r(source, target, source_collection=nil)
       opts = {descend_target: !source.end_with?("/")}
       copy(:merge, source.chomp("/"), target, source_collection, opts)
+    end
+
+    def each_file_path(&block)
+      @root.each_file_path(&block)
+    end
+
+    def exist?(path)
+      begin
+        substream, item = find(path)
+        not (substream.leaf? or substream[item].nil?)
+      rescue Errno::ENOENT, Errno::ENOTDIR
+        false
+      end
     end
 
     def rename(source, target)
@@ -88,13 +106,19 @@ module Arv
       # is found and can be copied.
       source_collection = self if source_collection.nil?
       src_stream, src_tail = source_collection.find(source)
-      dst_stream, dst_tail = find(target)
+      dst_stream_path, _, dst_tail = normalize_path(target).rpartition("/")
+      if dst_stream_path.empty?
+        dst_stream, dst_tail = @root.find(dst_tail)
+        dst_tail ||= src_tail
+      else
+        dst_stream = @root.stream_at(dst_stream_path)
+        dst_tail = src_tail if dst_tail.empty?
+      end
       if (source_collection.equal?(self) and
           (src_stream.path == dst_stream.path) and (src_tail == dst_tail))
         return self
       end
       src_item = src_stream[src_tail]
-      dst_tail ||= src_tail
       check_method = "check_can_#{copy_method}".to_sym
       target_name = nil
       if opts.fetch(:descend_target, true)
@@ -272,6 +296,17 @@ module Arv
         end
       end
 
+      def each_file_path
+        return to_enum(__method__) unless block_given?
+        items.each_value do |item|
+          if item.file?
+            yield item.path
+          else
+            item.each_file_path { |path| yield path }
+          end
+        end
+      end
+
       def find(find_path)
         # Given a POSIX-style path, return the CollectionStream that
         # contains the object at that path, and the name of the object
@@ -283,7 +318,7 @@ module Arv
 
       def stream_at(find_path)
         key, rest = find_path.split("/", 2)
-        next_stream = get_or_new(key, CollectionStream)
+        next_stream = get_or_new(key, CollectionStream, Errno::ENOTDIR)
         if rest.nil?
           next_stream
         else
@@ -294,7 +329,7 @@ module Arv
       def file_at(find_path)
         stream_path, _, file_name = find_path.rpartition("/")
         if stream_path.empty?
-          get_or_new(file_name, CollectionFile)
+          get_or_new(file_name, CollectionFile, Errno::EISDIR)
         else
           stream_at(stream_path).file_at(file_name)
         end
@@ -377,17 +412,15 @@ module Arv
         items[key] = item
       end
 
-      def get_or_new(key, klass)
+      def get_or_new(key, klass, err_class)
         # Return the collection item at `key` and ensure that it's a `klass`.
         # If `key` does not exist, create a new `klass` there.
-        # If the value for `key` is not a `klass`, raise an ArgumentError.
+        # If the value for `key` is not a `klass`, raise an `err_class`.
         item = items[key]
         if item.nil?
           self[key] = klass.new("#{path}/#{key}")
         elsif not item.is_a?(klass)
-          raise ArgumentError.
-            new("in stream %p, %p is a %s, not a %s" %
-                [path, key, items[key].class.human_name, klass.human_name])
+          raise err_class.new(item.path)
         else
           item
         end
