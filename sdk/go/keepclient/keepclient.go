@@ -24,7 +24,7 @@ const BLOCKSIZE = 64 * 1024 * 1024
 
 var BlockNotFound = errors.New("Block not found")
 var InsufficientReplicasError = errors.New("Could not write sufficient replicas")
-var OversizeBlockError = errors.New("Exceeded maximum block size ("+strconv.Itoa(BLOCKSIZE)+")")
+var OversizeBlockError = errors.New("Exceeded maximum block size (" + strconv.Itoa(BLOCKSIZE) + ")")
 var MissingArvadosApiHost = errors.New("Missing required environment variable ARVADOS_API_HOST")
 var MissingArvadosApiToken = errors.New("Missing required environment variable ARVADOS_API_TOKEN")
 var InvalidLocatorError = errors.New("Invalid locator")
@@ -126,7 +126,7 @@ func (kc *KeepClient) PutR(r io.Reader) (locator string, replicas int, err error
 func (kc *KeepClient) Get(locator string) (io.ReadCloser, int64, string, error) {
 	var errs []string
 	for _, host := range kc.getSortedRoots(locator) {
-		url := host+"/"+locator
+		url := host + "/" + locator
 		req, err := http.NewRequest("GET", url, nil)
 		if err != nil {
 			continue
@@ -148,8 +148,8 @@ func (kc *KeepClient) Get(locator string) (io.ReadCloser, int64, string, error) 
 		}
 		return HashCheckingReader{
 			Reader: resp.Body,
-			Hash: md5.New(),
-			Check: locator[0:32],
+			Hash:   md5.New(),
+			Check:  locator[0:32],
 		}, resp.ContentLength, url, nil
 	}
 	log.Printf("DEBUG: GET %s failed: %v", locator, errs)
@@ -165,7 +165,7 @@ func (kc *KeepClient) Get(locator string) (io.ReadCloser, int64, string, error) 
 // and the URI reporting the data size.
 func (kc *KeepClient) Ask(locator string) (int64, string, error) {
 	for _, host := range kc.getSortedRoots(locator) {
-		url := host+"/"+locator
+		url := host + "/" + locator
 		req, err := http.NewRequest("HEAD", url, nil)
 		if err != nil {
 			continue
@@ -246,8 +246,8 @@ func (kc *KeepClient) getSortedRoots(locator string) []string {
 
 type Locator struct {
 	Hash  string
-	Size  int		// -1 if data size is not known
-	Hints []string		// Including the size hint, if any
+	Size  int      // -1 if data size is not known
+	Hints []string // Including the size hint, if any
 }
 
 func (loc *Locator) String() string {

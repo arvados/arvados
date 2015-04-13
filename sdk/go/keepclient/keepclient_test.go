@@ -504,7 +504,7 @@ func (s *StandaloneSuite) TestGetWithServiceHint(c *C) {
 	// This one should be used:
 	ks := RunFakeKeepServer(StubGetHandler{
 		c,
-		hash+"+K@"+uuid,
+		hash + "+K@" + uuid,
 		"abc123",
 		http.StatusOK,
 		[]byte("foo")})
@@ -517,7 +517,7 @@ func (s *StandaloneSuite) TestGetWithServiceHint(c *C) {
 		map[string]string{"x": ks0.url},
 		map[string]string{uuid: ks.url})
 
-	r, n, uri, err := kc.Get(hash+"+K@"+uuid)
+	r, n, uri, err := kc.Get(hash + "+K@" + uuid)
 	defer r.Close()
 	c.Check(err, Equals, nil)
 	c.Check(n, Equals, int64(3))
@@ -546,7 +546,7 @@ func (s *StandaloneSuite) TestGetWithLocalServiceHint(c *C) {
 	// This one should be used:
 	ks := RunFakeKeepServer(StubGetHandler{
 		c,
-		hash+"+K@"+uuid,
+		hash + "+K@" + uuid,
 		"abc123",
 		http.StatusOK,
 		[]byte("foo")})
@@ -568,7 +568,7 @@ func (s *StandaloneSuite) TestGetWithLocalServiceHint(c *C) {
 			uuid: ks.url},
 	)
 
-	r, n, uri, err := kc.Get(hash+"+K@"+uuid)
+	r, n, uri, err := kc.Get(hash + "+K@" + uuid)
 	defer r.Close()
 	c.Check(err, Equals, nil)
 	c.Check(n, Equals, int64(3))
@@ -585,14 +585,14 @@ func (s *StandaloneSuite) TestGetWithServiceHintFailoverToLocals(c *C) {
 
 	ksLocal := RunFakeKeepServer(StubGetHandler{
 		c,
-		hash+"+K@"+uuid,
+		hash + "+K@" + uuid,
 		"abc123",
 		http.StatusOK,
 		[]byte("foo")})
 	defer ksLocal.listener.Close()
 	ksGateway := RunFakeKeepServer(StubGetHandler{
 		c,
-		hash+"+K@"+uuid,
+		hash + "+K@" + uuid,
 		"abc123",
 		http.StatusInternalServerError,
 		[]byte("Error")})
@@ -605,7 +605,7 @@ func (s *StandaloneSuite) TestGetWithServiceHintFailoverToLocals(c *C) {
 		map[string]string{"zzzzz-bi6l4-keepdisk0000000": ksLocal.url},
 		map[string]string{uuid: ksGateway.url})
 
-	r, n, uri, err := kc.Get(hash+"+K@"+uuid)
+	r, n, uri, err := kc.Get(hash + "+K@" + uuid)
 	c.Assert(err, Equals, nil)
 	defer r.Close()
 	c.Check(n, Equals, int64(3))
