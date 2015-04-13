@@ -1097,7 +1097,7 @@ class CollectionCreateUpdateTest(run_test_server.TestCaseWithServers):
 
         c.apply(diff)
 
-        self.assertEqual(c._get_manifest_text(".", False, True), ". 7ac66c0f148de9519b8bd264312c4d64+7+A715fd31f8111894f717eb1003c1b0216799dd9ec@54f5dd1a 0:7:count.txt\n")
+        self.assertEqual(c.manifest_text(), ". 7ac66c0f148de9519b8bd264312c4d64+7+A715fd31f8111894f717eb1003c1b0216799dd9ec@54f5dd1a 0:7:count.txt\n")
 
 
     def test_create_and_update(self):
