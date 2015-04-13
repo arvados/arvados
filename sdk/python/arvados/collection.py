@@ -825,21 +825,20 @@ class RichCollectionBase(CollectionBase):
     def portable_manifest_text(self, stream_name="."):
         """Get the manifest text for this collection, sub collections and files.
 
-        This method does not flush outstanding to Keep.  It will return a
-        normalized manifest with access tokens stripped.
+        This method does not flush outstanding blocks to Keep.  It will return
+        a normalized manifest with access tokens stripped.
 
         :stream_name:
           Name to use for this stream (directory)
 
         """
-        return self.manifest_text(stream_name, strip=True, normalize=True, flush=False)
+        return self._get_manifest_text(stream_name, True, True)
 
-    @synchronized
-    def manifest_text(self, stream_name=".", strip=False, normalize=False, flush=True):
+    def manifest_text(self, stream_name=".", strip=False, normalize=False):
         """Get the manifest text for this collection, sub collections and files.
 
-        By default, this method will flush outstanding blocksto Keep.  By
-        default it will not normalize the manifest or strip access tokens.
+        This method will flush outstanding blocks to Keep.  By default, it will
+        not normalize an unmodified manifest or strip access tokens.
 
         :stream_name:
           Name to use for this stream (directory)
@@ -854,15 +853,31 @@ class RichCollectionBase(CollectionBase):
           is not modified, return the original manifest text even if it is not
           in normalized form.
 
-        :flush:
-          If true (default) write any outstanding blocks.
+        """
+
+        self._my_block_manager().commit_all()
+        return self._get_manifest_text(stream_name, strip, normalize)
+
+    @synchronized
+    def _get_manifest_text(self, stream_name, strip, normalize):
+        """Get the manifest text for this collection, sub collections and files.
+
+        :stream_name:
+          Name to use for this stream (directory)
+
+        :strip:
+          If True, remove signing tokens from block locators if present.
+          If False (default), block locators are left unchanged.
+
+        :normalize:
+          If True, always export the manifest text in normalized form
+          even if the Collection is not modified.  If False (default) and the collection
+          is not modified, return the original manifest text even if it is not
+          in normalized form.
 
         """
 
         if self.modified() or self._manifest_text is None or normalize:
-            if flush:
-                self._my_block_manager().commit_all()
-
             stream = {}
             buf = []
             sorted_keys = sorted(self.keys())
@@ -882,7 +897,7 @@ class RichCollectionBase(CollectionBase):
             if stream:
                 buf.append(" ".join(normalize_stream(stream_name, stream)) + "\n")
             for dirname in [s for s in sorted_keys if isinstance(self[s], RichCollectionBase)]:
-                buf.append(self[dirname].manifest_text(stream_name=os.path.join(stream_name, dirname), strip=strip))
+                buf.append(self[dirname].manifest_text(stream_name=os.path.join(stream_name, dirname), strip=strip, normalize=True))
             return "".join(buf)
         else:
             if strip:
