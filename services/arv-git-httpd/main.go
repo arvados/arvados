@@ -43,6 +43,7 @@ func main() {
 		log.Fatal(err)
 	}
 	log.Println("Listening at", srv.Addr)
+	log.Println("Repository root", theConfig.Root)
 	if err := srv.Wait(); err != nil {
 		log.Fatal(err)
 	}
