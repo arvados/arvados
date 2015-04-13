@@ -1,9 +1,9 @@
 module JobsHelper
-  def stderr_log_history(job_uuids)
+  def stderr_log_history(job_uuids, limit=2000)
     results = []
 
     log_history = Log.where(event_type: 'stderr',
-                            object_uuid: job_uuids).limit(2000).order('id DESC')
+                            object_uuid: job_uuids).limit(limit).order('id DESC')
     if !log_history.results.empty?
       reversed_results = log_history.results.reverse
       reversed_results.each do |entry|

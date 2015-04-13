@@ -830,11 +830,11 @@ class NewCollectionTestCase(unittest.TestCase, CollectionTestMixin):
 
     def test_remove(self):
         c = Collection('. 781e5e245d69b566979b86e28d23f2c7+10 0:10:count1.txt 0:10:count2.txt\n')
-        self.assertEqual(". 781e5e245d69b566979b86e28d23f2c7+10 0:10:count1.txt 0:10:count2.txt\n", c.manifest_text())
+        self.assertEqual(". 781e5e245d69b566979b86e28d23f2c7+10 0:10:count1.txt 0:10:count2.txt\n", c.portable_manifest_text())
         self.assertIn("count1.txt", c)
         c.remove("count1.txt")
         self.assertNotIn("count1.txt", c)
-        self.assertEqual(". 781e5e245d69b566979b86e28d23f2c7+10 0:10:count2.txt\n", c.manifest_text())
+        self.assertEqual(". 781e5e245d69b566979b86e28d23f2c7+10 0:10:count2.txt\n", c.portable_manifest_text())
         with self.assertRaises(arvados.errors.ArgumentError):
             c.remove("")
 
@@ -851,45 +851,45 @@ class NewCollectionTestCase(unittest.TestCase, CollectionTestMixin):
     def test_remove_in_subdir(self):
         c = Collection('. 781e5e245d69b566979b86e28d23f2c7+10 0:10:count1.txt\n./foo 781e5e245d69b566979b86e28d23f2c7+10 0:10:count2.txt\n')
         c.remove("foo/count2.txt")
-        self.assertEqual(". 781e5e245d69b566979b86e28d23f2c7+10 0:10:count1.txt\n", c.manifest_text())
+        self.assertEqual(". 781e5e245d69b566979b86e28d23f2c7+10 0:10:count1.txt\n", c.portable_manifest_text())
 
     def test_remove_empty_subdir(self):
         c = Collection('. 781e5e245d69b566979b86e28d23f2c7+10 0:10:count1.txt\n./foo 781e5e245d69b566979b86e28d23f2c7+10 0:10:count2.txt\n')
         c.remove("foo/count2.txt")
         c.remove("foo")
-        self.assertEqual(". 781e5e245d69b566979b86e28d23f2c7+10 0:10:count1.txt\n", c.manifest_text())
+        self.assertEqual(". 781e5e245d69b566979b86e28d23f2c7+10 0:10:count1.txt\n", c.portable_manifest_text())
 
     def test_remove_nonempty_subdir(self):
         c = Collection('. 781e5e245d69b566979b86e28d23f2c7+10 0:10:count1.txt\n./foo 781e5e245d69b566979b86e28d23f2c7+10 0:10:count2.txt\n')
         with self.assertRaises(IOError):
             c.remove("foo")
         c.remove("foo", recursive=True)
-        self.assertEqual(". 781e5e245d69b566979b86e28d23f2c7+10 0:10:count1.txt\n", c.manifest_text())
+        self.assertEqual(". 781e5e245d69b566979b86e28d23f2c7+10 0:10:count1.txt\n", c.portable_manifest_text())
 
     def test_copy_to_file_in_dir(self):
         c = Collection('. 781e5e245d69b566979b86e28d23f2c7+10 0:10:count1.txt\n')
         c.copy("count1.txt", "foo/count2.txt")
-        self.assertEqual(". 781e5e245d69b566979b86e28d23f2c7+10 0:10:count1.txt\n./foo 781e5e245d69b566979b86e28d23f2c7+10 0:10:count2.txt\n", c.manifest_text())
+        self.assertEqual(". 781e5e245d69b566979b86e28d23f2c7+10 0:10:count1.txt\n./foo 781e5e245d69b566979b86e28d23f2c7+10 0:10:count2.txt\n", c.portable_manifest_text())
 
     def test_copy_file(self):
         c = Collection('. 781e5e245d69b566979b86e28d23f2c7+10 0:10:count1.txt\n')
         c.copy("count1.txt", "count2.txt")
-        self.assertEqual(". 781e5e245d69b566979b86e28d23f2c7+10 0:10:count1.txt 0:10:count2.txt\n", c.manifest_text())
+        self.assertEqual(". 781e5e245d69b566979b86e28d23f2c7+10 0:10:count1.txt 0:10:count2.txt\n", c.portable_manifest_text())
 
     def test_copy_to_existing_dir(self):
         c = Collection('. 781e5e245d69b566979b86e28d23f2c7+10 0:10:count1.txt\n./foo 781e5e245d69b566979b86e28d23f2c7+10 0:10:count2.txt\n')
         c.copy("count1.txt", "foo")
-        self.assertEqual(". 781e5e245d69b566979b86e28d23f2c7+10 0:10:count1.txt\n./foo 781e5e245d69b566979b86e28d23f2c7+10 0:10:count1.txt 0:10:count2.txt\n", c.manifest_text())
+        self.assertEqual(". 781e5e245d69b566979b86e28d23f2c7+10 0:10:count1.txt\n./foo 781e5e245d69b566979b86e28d23f2c7+10 0:10:count1.txt 0:10:count2.txt\n", c.portable_manifest_text())
 
     def test_copy_to_new_dir(self):
         c = Collection('. 781e5e245d69b566979b86e28d23f2c7+10 0:10:count1.txt\n')
         c.copy("count1.txt", "foo/")
-        self.assertEqual(". 781e5e245d69b566979b86e28d23f2c7+10 0:10:count1.txt\n./foo 781e5e245d69b566979b86e28d23f2c7+10 0:10:count1.txt\n", c.manifest_text())
+        self.assertEqual(". 781e5e245d69b566979b86e28d23f2c7+10 0:10:count1.txt\n./foo 781e5e245d69b566979b86e28d23f2c7+10 0:10:count1.txt\n", c.portable_manifest_text())
 
     def test_clone(self):
         c = Collection('. 781e5e245d69b566979b86e28d23f2c7+10 0:10:count1.txt\n./foo 781e5e245d69b566979b86e28d23f2c7+10 0:10:count2.txt\n')
         cl = c.clone()
-        self.assertEqual(". 781e5e245d69b566979b86e28d23f2c7+10 0:10:count1.txt\n./foo 781e5e245d69b566979b86e28d23f2c7+10 0:10:count2.txt\n", cl.manifest_text())
+        self.assertEqual(". 781e5e245d69b566979b86e28d23f2c7+10 0:10:count1.txt\n./foo 781e5e245d69b566979b86e28d23f2c7+10 0:10:count2.txt\n", cl.portable_manifest_text())
 
     def test_diff_del_add(self):
         c1 = Collection('. 781e5e245d69b566979b86e28d23f2c7+10 0:10:count1.txt\n')
@@ -900,9 +900,9 @@ class NewCollectionTestCase(unittest.TestCase, CollectionTestMixin):
         d = c1.diff(c2)
         self.assertEqual(d, [('del', './count1.txt', c1["count1.txt"]),
                              ('add', './count2.txt', c2["count2.txt"])])
-        self.assertNotEqual(c1.manifest_text(), c2.manifest_text())
+        self.assertNotEqual(c1.portable_manifest_text(), c2.portable_manifest_text())
         c1.apply(d)
-        self.assertEqual(c1.manifest_text(), c2.manifest_text())
+        self.assertEqual(c1.portable_manifest_text(), c2.portable_manifest_text())
 
     def test_diff_same(self):
         c1 = Collection('. 781e5e245d69b566979b86e28d23f2c7+10 0:10:count1.txt\n')
@@ -912,9 +912,9 @@ class NewCollectionTestCase(unittest.TestCase, CollectionTestMixin):
         d = c1.diff(c2)
         self.assertEqual(d, [])
 
-        self.assertEqual(c1.manifest_text(), c2.manifest_text())
+        self.assertEqual(c1.portable_manifest_text(), c2.portable_manifest_text())
         c1.apply(d)
-        self.assertEqual(c1.manifest_text(), c2.manifest_text())
+        self.assertEqual(c1.portable_manifest_text(), c2.portable_manifest_text())
 
     def test_diff_mod(self):
         c1 = Collection('. 781e5e245d69b566979b86e28d23f2c7+10 0:10:count1.txt\n')
@@ -924,9 +924,9 @@ class NewCollectionTestCase(unittest.TestCase, CollectionTestMixin):
         d = c1.diff(c2)
         self.assertEqual(d, [('mod', './count1.txt', c1["count1.txt"], c2["count1.txt"])])
 
-        self.assertNotEqual(c1.manifest_text(), c2.manifest_text())
+        self.assertNotEqual(c1.portable_manifest_text(), c2.portable_manifest_text())
         c1.apply(d)
-        self.assertEqual(c1.manifest_text(), c2.manifest_text())
+        self.assertEqual(c1.portable_manifest_text(), c2.portable_manifest_text())
 
     def test_diff_add(self):
         c1 = Collection('. 781e5e245d69b566979b86e28d23f2c7+10 0:10:count1.txt\n')
@@ -936,9 +936,9 @@ class NewCollectionTestCase(unittest.TestCase, CollectionTestMixin):
         d = c1.diff(c2)
         self.assertEqual(d, [('add', './count2.txt', c2["count2.txt"])])
 
-        self.assertNotEqual(c1.manifest_text(), c2.manifest_text())
+        self.assertNotEqual(c1.portable_manifest_text(), c2.portable_manifest_text())
         c1.apply(d)
-        self.assertEqual(c1.manifest_text(), c2.manifest_text())
+        self.assertEqual(c1.portable_manifest_text(), c2.portable_manifest_text())
 
     def test_diff_add_in_subcollection(self):
         c1 = Collection('. 781e5e245d69b566979b86e28d23f2c7+10 0:10:count1.txt\n')
@@ -948,9 +948,9 @@ class NewCollectionTestCase(unittest.TestCase, CollectionTestMixin):
         d = c1.diff(c2)
         self.assertEqual(d, [('add', './foo', c2["foo"])])
 
-        self.assertNotEqual(c1.manifest_text(), c2.manifest_text())
+        self.assertNotEqual(c1.portable_manifest_text(), c2.portable_manifest_text())
         c1.apply(d)
-        self.assertEqual(c1.manifest_text(), c2.manifest_text())
+        self.assertEqual(c1.portable_manifest_text(), c2.portable_manifest_text())
 
     def test_diff_del_add_in_subcollection(self):
         c1 = Collection('. 781e5e245d69b566979b86e28d23f2c7+10 0:10:count1.txt\n./foo 5348b82a029fd9e971a811ce1f71360b+43 0:10:count2.txt\n')
@@ -963,9 +963,9 @@ class NewCollectionTestCase(unittest.TestCase, CollectionTestMixin):
         self.assertEqual(d, [('del', './foo/count2.txt', c1.find("foo/count2.txt")),
                              ('add', './foo/count3.txt', c2.find("foo/count3.txt"))])
 
-        self.assertNotEqual(c1.manifest_text(), c2.manifest_text())
+        self.assertNotEqual(c1.portable_manifest_text(), c2.portable_manifest_text())
         c1.apply(d)
-        self.assertEqual(c1.manifest_text(), c2.manifest_text())
+        self.assertEqual(c1.portable_manifest_text(), c2.portable_manifest_text())
 
     def test_diff_mod_in_subcollection(self):
         c1 = Collection('. 781e5e245d69b566979b86e28d23f2c7+10 0:10:count1.txt\n./foo 5348b82a029fd9e971a811ce1f71360b+43 0:10:count2.txt\n')
@@ -975,9 +975,9 @@ class NewCollectionTestCase(unittest.TestCase, CollectionTestMixin):
         d = c1.diff(c2)
         self.assertEqual(d, [('mod', './foo', c1["foo"], c2["foo"])])
 
-        self.assertNotEqual(c1.manifest_text(), c2.manifest_text())
+        self.assertNotEqual(c1.portable_manifest_text(), c2.portable_manifest_text())
         c1.apply(d)
-        self.assertEqual(c1.manifest_text(), c2.manifest_text())
+        self.assertEqual(c1.portable_manifest_text(), c2.portable_manifest_text())
 
     def test_conflict_keep_local_change(self):
         c1 = Collection('. 781e5e245d69b566979b86e28d23f2c7+10 0:10:count1.txt\n')
@@ -990,7 +990,7 @@ class NewCollectionTestCase(unittest.TestCase, CollectionTestMixin):
 
         # c1 changed, so it should not be deleted.
         c1.apply(d)
-        self.assertEqual(c1.manifest_text(), ". 95ebc3c7b3b9f1d2c40fec14415d3cb8+5 5348b82a029fd9e971a811ce1f71360b+43 0:5:count1.txt 5:10:count2.txt\n")
+        self.assertEqual(c1.portable_manifest_text(), ". 95ebc3c7b3b9f1d2c40fec14415d3cb8+5 5348b82a029fd9e971a811ce1f71360b+43 0:5:count1.txt 5:10:count2.txt\n")
 
     def test_conflict_mod(self):
         c1 = Collection('. 781e5e245d69b566979b86e28d23f2c7+10 0:10:count1.txt')
@@ -1002,7 +1002,7 @@ class NewCollectionTestCase(unittest.TestCase, CollectionTestMixin):
 
         # c1 changed, so c2 mod will go to a conflict file
         c1.apply(d)
-        self.assertRegexpMatches(c1.manifest_text(), r"\. 95ebc3c7b3b9f1d2c40fec14415d3cb8\+5 5348b82a029fd9e971a811ce1f71360b\+43 0:5:count1\.txt 5:10:count1\.txt~conflict-\d\d\d\d-\d\d-\d\d-\d\d:\d\d:\d\d~$")
+        self.assertRegexpMatches(c1.portable_manifest_text(), r"\. 95ebc3c7b3b9f1d2c40fec14415d3cb8\+5 5348b82a029fd9e971a811ce1f71360b\+43 0:5:count1\.txt 5:10:count1\.txt~conflict-\d\d\d\d-\d\d-\d\d-\d\d:\d\d:\d\d~$")
 
     def test_conflict_add(self):
         c1 = Collection('. 781e5e245d69b566979b86e28d23f2c7+10 0:10:count2.txt\n')
@@ -1015,7 +1015,7 @@ class NewCollectionTestCase(unittest.TestCase, CollectionTestMixin):
 
         # c1 added count1.txt, so c2 add will go to a conflict file
         c1.apply(d)
-        self.assertRegexpMatches(c1.manifest_text(), r"\. 95ebc3c7b3b9f1d2c40fec14415d3cb8\+5 5348b82a029fd9e971a811ce1f71360b\+43 0:5:count1\.txt 5:10:count1\.txt~conflict-\d\d\d\d-\d\d-\d\d-\d\d:\d\d:\d\d~$")
+        self.assertRegexpMatches(c1.portable_manifest_text(), r"\. 95ebc3c7b3b9f1d2c40fec14415d3cb8\+5 5348b82a029fd9e971a811ce1f71360b\+43 0:5:count1\.txt 5:10:count1\.txt~conflict-\d\d\d\d-\d\d-\d\d-\d\d:\d\d:\d\d~$")
 
     def test_conflict_del(self):
         c1 = Collection('. 781e5e245d69b566979b86e28d23f2c7+10 0:10:count1.txt')
@@ -1026,7 +1026,7 @@ class NewCollectionTestCase(unittest.TestCase, CollectionTestMixin):
 
         # c1 deleted, so c2 mod will go to a conflict file
         c1.apply(d)
-        self.assertRegexpMatches(c1.manifest_text(), r"\. 5348b82a029fd9e971a811ce1f71360b\+43 0:10:count1\.txt~conflict-\d\d\d\d-\d\d-\d\d-\d\d:\d\d:\d\d~$")
+        self.assertRegexpMatches(c1.portable_manifest_text(), r"\. 5348b82a029fd9e971a811ce1f71360b\+43 0:10:count1\.txt~conflict-\d\d\d\d-\d\d-\d\d-\d\d:\d\d:\d\d~$")
 
     def test_notify(self):
         c1 = Collection()
@@ -1058,7 +1058,7 @@ class CollectionCreateUpdateTest(run_test_server.TestCaseWithServers):
         with c.open("count.txt", "w") as f:
             f.write("0123456789")
 
-        self.assertEqual(c.manifest_text(), ". 781e5e245d69b566979b86e28d23f2c7+10 0:10:count.txt\n")
+        self.assertEqual(c.portable_manifest_text(), ". 781e5e245d69b566979b86e28d23f2c7+10 0:10:count.txt\n")
 
         return c
 
@@ -1066,7 +1066,6 @@ class CollectionCreateUpdateTest(run_test_server.TestCaseWithServers):
         c = self.create_count_txt()
         c.save()
         self.assertRegexpMatches(c.manifest_text(), r"^\. 781e5e245d69b566979b86e28d23f2c7\+10\+A[a-f0-9]{40}@[a-f0-9]{8} 0:10:count\.txt$",)
-
 
     def test_create_and_save_new(self):
         c = self.create_count_txt()

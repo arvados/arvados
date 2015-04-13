@@ -1068,6 +1068,39 @@ class ApplicationController < ActionController::Base
     @all_log_collections_for
   end
 
+  # Helper method to get one collection for the given portable_data_hash
+  # This is used to determine if a pdh is readable by the current_user
+  helper_method :collection_for_pdh
+  def collection_for_pdh pdh
+    raise ArgumentError, 'No input argument' unless pdh
+    preload_for_pdhs([pdh])
+    @all_pdhs_for[pdh] ||= []
+  end
+
+  # Helper method to preload one collection each for the given pdhs
+  # This is used to determine if a pdh is readable by the current_user
+  helper_method :preload_for_pdhs
+  def preload_for_pdhs pdhs
+    @all_pdhs_for ||= {}
+
+    raise ArgumentError, 'Argument is not an array' unless pdhs.is_a? Array
+    return @all_pdhs_for if pdhs.empty?
+
+    # if already preloaded for all of these pdhs, return
+    if not pdhs.select { |x| @all_pdhs_for[x].nil? }.any?
+      return @all_pdhs_for
+    end
+
+    pdhs.each do |x|
+      @all_pdhs_for[x] = []
+    end
+
+    Collection.select(%w(portable_data_hash)).where(portable_data_hash: pdhs).distinct().each do |collection|
+      @all_pdhs_for[collection.portable_data_hash] << collection
+    end
+    @all_pdhs_for
+  end
+
   # helper method to get object of a given dataclass and uuid
   helper_method :object_for_dataclass
   def object_for_dataclass dataclass, uuid
@@ -1087,10 +1120,14 @@ class ApplicationController < ActionController::Base
     return @objects_for if uuids.empty?
 
     # if already preloaded for all of these uuids, return
-    if not uuids.select { |x| @objects_for[x].nil? }.any?
+    if not uuids.select { |x| !@objects_for.include?(x) }.any?
       return @objects_for
     end
 
+    # preset all uuids to nil
+    uuids.each do |x|
+      @objects_for[x] = nil
+    end
     dataclass.where(uuid: uuids).each do |obj|
       @objects_for[obj.uuid] = obj
     end
