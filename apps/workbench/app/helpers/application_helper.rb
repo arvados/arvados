@@ -180,7 +180,7 @@ module ApplicationHelper
   def link_to_arvados_object_if_readable(attrvalue, link_text_if_not_readable, opts={})
     resource_class = resource_class_for_uuid(attrvalue)
     if !resource_class
-      return link_text_if_not_readable
+      return link_to_if_arvados_object attrvalue, opts
     end
 
     if resource_class.to_s == 'Collection'
