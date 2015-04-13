@@ -226,7 +226,7 @@ class CollectionTest < Minitest::Test
   def test_copy_stream_over_file_raises_ENOTDIR(source="./s1", target="./f2")
     coll = Arv::Collection.new(TWO_BY_TWO_MANIFEST_S)
     assert_raises(Errno::ENOTDIR) do
-      coll.cp_r("./s1", target)
+      coll.cp_r(source, target)
     end
   end
 
