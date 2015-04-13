@@ -24,7 +24,7 @@ import ciso8601
 import collections
 
 from fusedir import sanitize_filename, Directory, CollectionDirectory, MagicDirectory, TagsDirectory, ProjectDirectory, SharedDirectory
-from fusefile import StreamReaderFile
+from fusefile import StreamReaderFile, StringFile
 
 _logger = logging.getLogger('arvados.arvados_fuse')
 
@@ -56,7 +56,7 @@ class DirectoryHandle(object):
         self.dirobj.dec_use()
 
 
-class ObjectCache(object):
+class InodeCache(object):
     def __init__(self, cap):
         self._entries = collections.OrderedDict()
         self._counter = itertools.count(1)
@@ -69,11 +69,13 @@ class ObjectCache(object):
             for key in ents:
                 capobj = self._entries[key]
                 if capobj.clear():
+                    _logger.debug("Cleared %s", self._entries[key])
                     del self._entries[key]
 
     def manage(self, obj):
         obj._cache_priority = next(self._counter)
         self._entries[obj._cache_priority] = obj
+        _logger.debug("Managing %s", obj)
         self.cap_cache()
 
     def touch(self, obj):
@@ -84,6 +86,7 @@ class ObjectCache(object):
     def unmanage(self, obj):
         if obj._cache_priority in self._entries:
             if obj.clear():
+                _logger.debug("Cleared %s", obj)
                 del self._entries[obj._cache_priority]
 
 
@@ -91,10 +94,10 @@ class Inodes(object):
     """Manage the set of inodes.  This is the mapping from a numeric id
     to a concrete File or Directory object"""
 
-    def __init__(self, cache_cap=1000):
+    def __init__(self, inode_cache=1000):
         self._entries = {}
         self._counter = itertools.count(llfuse.ROOT_INODE)
-        self._obj_cache = ObjectCache(cap=cache_cap)
+        self._obj_cache = InodeCache(cap=inode_cache)
 
     def __getitem__(self, item):
         return self._entries[item]
@@ -112,6 +115,7 @@ class Inodes(object):
         return k in self._entries
 
     def touch(self, entry):
+        entry._atime = time.time()
         self._obj_cache.touch(entry)
 
     def cap_cache(self):
@@ -141,10 +145,10 @@ class Operations(llfuse.Operations):
 
     """
 
-    def __init__(self, uid, gid, encoding="utf-8", cache_cap=1000):
+    def __init__(self, uid, gid, encoding="utf-8", inode_cache=1000):
         super(Operations, self).__init__()
 
-        self.inodes = Inodes(cache_cap)
+        self.inodes = Inodes(inode_cache)
         self.uid = uid
         self.gid = gid
         self.encoding = encoding
@@ -236,6 +240,7 @@ class Operations(llfuse.Operations):
         fh = self._filehandles_counter
         self._filehandles_counter += 1
         self._filehandles[fh] = FileHandle(fh, p)
+        self.inodes.touch(p)
         return fh
 
     def read(self, fh, off, size):
@@ -245,8 +250,7 @@ class Operations(llfuse.Operations):
         else:
             raise llfuse.FUSEError(errno.EBADF)
 
-        # update atime
-        handle.fileobj._atime = time.time()
+        self.inodes.touch(handle.fileobj)
 
         try:
             with llfuse.lock_released:
@@ -286,14 +290,10 @@ class Operations(llfuse.Operations):
             raise llfuse.FUSEError(errno.EIO)
 
         # update atime
-        p._atime = time.time()
+        self.inodes.touch(p)
 
-        try:
-            p.inc_use()
-            self._filehandles[fh] = DirectoryHandle(fh, p, [('.', p), ('..', parent)] + list(p.items()))
-            return fh
-        finally:
-            p.dec_use()
+        self._filehandles[fh] = DirectoryHandle(fh, p, [('.', p), ('..', parent)] + list(p.items()))
+        return fh
 
 
     def readdir(self, fh, off):
