@@ -796,7 +796,7 @@ class ArvadosFile(object):
         replace_range(self._segments, offset, len(data), self._current_bblock.blockid, self._current_bblock.write_pointer - len(data))
 
     @synchronized
-    def flush(self, num_retries=None):
+    def flush(self, num_retries=0):
         if self._current_bblock:
             self._repack_writes(num_retries)
             self.parent._my_block_manager().commit_bufferblock(self._current_bblock)

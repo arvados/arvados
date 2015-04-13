@@ -822,12 +822,27 @@ class RichCollectionBase(CollectionBase):
 
         target_dir.add(source_obj, target_name, overwrite)
 
-    @synchronized
-    def manifest_text(self, stream_name=".", strip=False, normalize=False):
+    def portable_manifest_text(self, stream_name="."):
         """Get the manifest text for this collection, sub collections and files.
 
+        This method does not flush outstanding to Keep.  It will return a
+        normalized manifest with access tokens stripped.
+
         :stream_name:
-          Name of the stream (directory)
+          Name to use for this stream (directory)
+
+        """
+        return self.manifest_text(stream_name, strip=True, normalize=True, flush=False)
+
+    @synchronized
+    def manifest_text(self, stream_name=".", strip=False, normalize=False, flush=True):
+        """Get the manifest text for this collection, sub collections and files.
+
+        By default, this method will flush outstanding blocksto Keep.  By
+        default it will not normalize the manifest or strip access tokens.
+
+        :stream_name:
+          Name to use for this stream (directory)
 
         :strip:
           If True, remove signing tokens from block locators if present.
@@ -839,9 +854,15 @@ class RichCollectionBase(CollectionBase):
           is not modified, return the original manifest text even if it is not
           in normalized form.
 
+        :flush:
+          If true (default) write any outstanding blocks.
+
         """
 
         if self.modified() or self._manifest_text is None or normalize:
+            if flush:
+                self._my_block_manager().commit_all()
+
             stream = {}
             buf = []
             sorted_keys = sorted(self.keys())
@@ -941,7 +962,7 @@ class RichCollectionBase(CollectionBase):
 
     def portable_data_hash(self):
         """Get the portable data hash for this collection's manifest."""
-        stripped = self.manifest_text(strip=True)
+        stripped = self.portable_manifest_text()
         return hashlib.md5(stripped).hexdigest() + '+' + str(len(stripped))
 
     @synchronized
