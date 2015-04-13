@@ -24,6 +24,14 @@ class File(FreshBase):
     def mtime(self):
         return self._mtime
 
+    def clear(self):
+        pass
+
+    def inc_use(self):
+        pass
+
+    def dec_use(self):
+        pass
 
 class StreamReaderFile(File):
     """Wraps a StreamFileReader as a file."""
