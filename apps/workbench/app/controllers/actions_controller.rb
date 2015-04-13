@@ -180,6 +180,7 @@ class ActionsController < ApplicationController
       manifest_text: new_coll.manifest_text,
       name: "Collection created at #{Time.now.localtime}",
     }
+    flash = {}
 
     # set owner_uuid to current project, provided it is writable
     action_data = Oj.load(params['action_data'] || "{}")
@@ -187,22 +188,27 @@ class ActionsController < ApplicationController
         current_project = Group.find?(action_data['current_project_uuid']) and
         current_project.writable_by.andand.include?(current_user.uuid)
       coll_attrs[:owner_uuid] = current_project.uuid
-      msg = "Created new collection in the project #{current_project.name}."
+      flash[:message] =
+        "Created new collection in the project #{current_project.name}."
     else
-      msg = "Created new collection in your Home project."
+      flash[:message] = "Created new collection in your Home project."
     end
 
     newc = Collection.create!(coll_attrs)
-    redirect_to newc, flash: {'message' => msg}
-
     source_paths.each_key do |src_uuid|
-      Link.create({
-                    tail_uuid: src_uuid,
-                    head_uuid: newc.uuid,
-                    link_class: "provenance",
-                    name: "provided",
-                  })
+      unless Link.create({
+                           tail_uuid: src_uuid,
+                           head_uuid: newc.uuid,
+                           link_class: "provenance",
+                           name: "provided",
+                         })
+        flash[:error] = "
+An error occurred when saving provenance information for this collection.
+You can try recreating the collection to get a copy with full provenance data."
+        break
+      end
     end
+    redirect_to(newc, flash: flash)
   end
 
   def report_issue_popup
