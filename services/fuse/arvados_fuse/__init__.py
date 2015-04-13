@@ -22,10 +22,8 @@ import threading
 import itertools
 import ciso8601
 
-from fusedir import sanitize_filename, CollectionDirectory, MagicDirectory, TagsDirectory, ProjectDirectory, SharedDirectory
-
-from arvados.util import portable_data_hash_pattern, uuid_pattern, collection_uuid_pattern, group_uuid_pattern, user_uuid_pattern, link_uuid_pattern
-
+from fusedir import sanitize_filename, Directory, CollectionDirectory, MagicDirectory, TagsDirectory, ProjectDirectory, SharedDirectory
+from fusefile import StreamReaderFile
 
 _logger = logging.getLogger('arvados.arvados_fuse')
 
