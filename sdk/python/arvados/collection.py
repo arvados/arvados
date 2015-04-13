@@ -822,12 +822,48 @@ class RichCollectionBase(CollectionBase):
 
         target_dir.add(source_obj, target_name, overwrite)
 
-    @synchronized
+    def portable_manifest_text(self, stream_name="."):
+        """Get the manifest text for this collection, sub collections and files.
+
+        This method does not flush outstanding blocks to Keep.  It will return
+        a normalized manifest with access tokens stripped.
+
+        :stream_name:
+          Name to use for this stream (directory)
+
+        """
+        return self._get_manifest_text(stream_name, True, True)
+
     def manifest_text(self, stream_name=".", strip=False, normalize=False):
         """Get the manifest text for this collection, sub collections and files.
 
+        This method will flush outstanding blocks to Keep.  By default, it will
+        not normalize an unmodified manifest or strip access tokens.
+
         :stream_name:
-          Name of the stream (directory)
+          Name to use for this stream (directory)
+
+        :strip:
+          If True, remove signing tokens from block locators if present.
+          If False (default), block locators are left unchanged.
+
+        :normalize:
+          If True, always export the manifest text in normalized form
+          even if the Collection is not modified.  If False (default) and the collection
+          is not modified, return the original manifest text even if it is not
+          in normalized form.
+
+        """
+
+        self._my_block_manager().commit_all()
+        return self._get_manifest_text(stream_name, strip, normalize)
+
+    @synchronized
+    def _get_manifest_text(self, stream_name, strip, normalize):
+        """Get the manifest text for this collection, sub collections and files.
+
+        :stream_name:
+          Name to use for this stream (directory)
 
         :strip:
           If True, remove signing tokens from block locators if present.
@@ -861,7 +897,7 @@ class RichCollectionBase(CollectionBase):
             if stream:
                 buf.append(" ".join(normalize_stream(stream_name, stream)) + "\n")
             for dirname in [s for s in sorted_keys if isinstance(self[s], RichCollectionBase)]:
-                buf.append(self[dirname].manifest_text(stream_name=os.path.join(stream_name, dirname), strip=strip))
+                buf.append(self[dirname].manifest_text(stream_name=os.path.join(stream_name, dirname), strip=strip, normalize=True))
             return "".join(buf)
         else:
             if strip:
@@ -941,7 +977,7 @@ class RichCollectionBase(CollectionBase):
 
     def portable_data_hash(self):
         """Get the portable data hash for this collection's manifest."""
-        stripped = self.manifest_text(strip=True)
+        stripped = self.portable_manifest_text()
         return hashlib.md5(stripped).hexdigest() + '+' + str(len(stripped))
 
     @synchronized
@@ -1249,8 +1285,8 @@ class Collection(RichCollectionBase):
         """Save collection to an existing collection record.
 
         Commit pending buffer blocks to Keep, merge with remote record (if
-        merge=True, the default), write the manifest to Keep, and update the
-        collection record.
+        merge=True, the default), and update the collection record.  Returns
+        the current manifest text.
 
         Will raise AssertionError if not associated with a collection record on
         the API server.  If you want to save a manifest to Keep only, see
@@ -1267,10 +1303,11 @@ class Collection(RichCollectionBase):
         if self.modified():
             if not self._has_collection_uuid():
                 raise AssertionError("Collection manifest_locator must be a collection uuid.  Use save_new() for new collections.")
+
             self._my_block_manager().commit_all()
+
             if merge:
                 self.update()
-            self._my_keep().put(self.manifest_text(strip=True), num_retries=num_retries)
 
             text = self.manifest_text(strip=False)
             self._api_response = self._my_api().collections().update(
@@ -1281,23 +1318,30 @@ class Collection(RichCollectionBase):
             self._manifest_text = self._api_response["manifest_text"]
             self.set_unmodified()
 
+        return self._manifest_text
+
 
     @must_be_writable
     @synchronized
     @retry_method
-    def save_new(self, name=None, create_collection_record=True, owner_uuid=None, ensure_unique_name=False, num_retries=None):
+    def save_new(self, name=None,
+                 create_collection_record=True,
+                 owner_uuid=None,
+                 ensure_unique_name=False,
+                 num_retries=None):
         """Save collection to a new collection record.
 
-        Commit pending buffer blocks to Keep, write the manifest to Keep, and
-        create a new collection record (if create_collection_record True).
-        After creating a new collection record, this Collection object will be
-        associated with the new record used by `save()`.
+        Commit pending buffer blocks to Keep and, when create_collection_record
+        is True (default), create a new collection record.  After creating a
+        new collection record, this Collection object will be associated with
+        the new record used by `save()`.  Returns the current manifest text.
 
         :name:
           The collection name.
 
         :create_collection_record:
-          If True, create a collection record.  If False, only save the manifest to keep.
+           If True, create a collection record on the API server.
+           If False, only commit blocks to Keep and return the manifest text.
 
         :owner_uuid:
           the user, or project uuid that will own this collection.
@@ -1313,7 +1357,6 @@ class Collection(RichCollectionBase):
 
         """
         self._my_block_manager().commit_all()
-        self._my_keep().put(self.manifest_text(strip=True), num_retries=num_retries)
         text = self.manifest_text(strip=False)
 
         if create_collection_record:
@@ -1330,8 +1373,10 @@ class Collection(RichCollectionBase):
 
             self._manifest_locator = self._api_response["uuid"]
 
-        self._manifest_text = text
-        self.set_unmodified()
+            self._manifest_text = text
+            self.set_unmodified()
+
+        return text
 
     @synchronized
     def subscribe(self, callback):
