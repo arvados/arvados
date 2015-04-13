@@ -76,7 +76,7 @@ func (this *KeepClient) setClientSettingsStore() {
 	}
 }
 
-func (this *KeepClient) DiscoverKeepServers() (map[string]string, error) {
+func (this *KeepClient) DiscoverKeepServers() error {
 	type svcList struct {
 		Items []keepDisk `json:"items"`
 	}
@@ -86,31 +86,40 @@ func (this *KeepClient) DiscoverKeepServers() (map[string]string, error) {
 
 	if err != nil {
 		if err := this.Arvados.List("keep_disks", nil, &m); err != nil {
-			return nil, err
+			return err
 		}
 	}
 
 	listed := make(map[string]bool)
-	service_roots := make(map[string]string)
+	localRoots := make(map[string]string)
+	gatewayRoots := make(map[string]string)
 
-	for _, element := range m.Items {
-		n := ""
-
-		if element.SSL {
-			n = "s"
+	for _, service := range m.Items {
+		scheme := "http"
+		if service.SSL {
+			scheme = "https"
 		}
-
-		// Construct server URL
-		url := fmt.Sprintf("http%s://%s:%d", n, element.Hostname, element.Port)
+		url := fmt.Sprintf("%s://%s:%d", scheme, service.Hostname, service.Port)
 
 		// Skip duplicates
-		if !listed[url] {
-			listed[url] = true
-			service_roots[element.Uuid] = url
+		if listed[url] {
+			continue
 		}
-		if element.SvcType == "proxy" {
+		listed[url] = true
+
+		switch service.SvcType {
+		case "disk":
+			localRoots[service.Uuid] = url
+		case "proxy":
+			localRoots[service.Uuid] = url
 			this.Using_proxy = true
 		}
+		// Gateway services are only used when specified by
+		// UUID, so there's nothing to gain by filtering them
+		// by service type. Including all accessible services
+		// (gateway and otherwise) merely accommodates more
+		// service configurations.
+		gatewayRoots[service.Uuid] = url
 	}
 
 	if this.Using_proxy {
@@ -119,9 +128,8 @@ func (this *KeepClient) DiscoverKeepServers() (map[string]string, error) {
 		this.setClientSettingsStore()
 	}
 
-	this.SetServiceRoots(service_roots)
-
-	return service_roots, nil
+	this.SetServiceRoots(localRoots, gatewayRoots)
+	return nil
 }
 
 type uploadStatus struct {
@@ -204,7 +212,7 @@ func (this KeepClient) putReplicas(
 	requestId := fmt.Sprintf("%x", md5.Sum([]byte(locator+time.Now().String())))[0:8]
 
 	// Calculate the ordering for uploading to servers
-	sv := NewRootSorter(this.ServiceRoots(), hash).GetSortedRoots()
+	sv := NewRootSorter(this.LocalRoots(), hash).GetSortedRoots()
 
 	// The next server to try contacting
 	next_server := 0
