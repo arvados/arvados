@@ -1,0 +1,179 @@
+<style>
+div.figure {
+}
+.style_image1 {
+  border: 10px solid #ddd;
+  display: block;
+  margin-left: auto;
+  margin-right: auto;
+}
+.style_image2 {
+  border: 10px solid #ddd;
+  display: block;
+  margin-left: 1em;
+}
+div.figure p {
+  text-align: center;
+  font-style: italic;
+  text-indent: 0;
+  border-top:-0.3em;
+}
+</style>
+
+<div id="getting-started-modal-window" class="modal">
+  <div class="modal-dialog modal-with-loading-spinner" style="width: 50em">
+    <div class="modal-content">
+      <div class="modal-header" style="text-align: center">
+        <button type="button" class="close" data-dismiss="modal" aria-hidden="true">x</button>
+        <div>
+          <div class="col-sm-8"><h4 class="modal-title" style="text-align: right">Getting Started with Arvados</h4></div>  <%#Todo: center instead of right%>
+          <div class="spinner spinner-32px spinner-h-center col-sm-1" hidden="true"></div>
+        </div>
+        <br/>
+      </div>
+
+     <%#First Page%>
+     <div class="modal-body" style="height: 40em; overflow-y: scroll">
+       <div style="margin-top: -0.5em; margin-left: 0.5em;">
+         <p><div style="font-size: 150%;">Welcome!</div></p>
+         <p>
+         What you're looking at right now is <b>Workbench</b>, the graphical interface to the Arvados system.
+         </p><p>
+         <div class="figure">
+           <p> <%= image_tag "pipeline-running.gif", :class => "style_image1" %></p> <%#Todo: shorter gif%>
+           <p>Running the Pathomap pipeline in Arvados.</p>
+        </div>
+        </p> <p>
+          Click the <span class="btn btn-sm btn-primary">Next &gt;</span> button below for a speed tour of Arvados.
+          </p><p style="margin-top:2em;">
+          <em><strong>Note:</strong> You can always come back to this Getting Started guide by clicking the <span class="fa fa-lg fa-question-circle"></span> in the upper-right corner.</em>
+        </p>
+      </div>
+      </div>
+
+     <%#Page Two%>
+      <div class="modal-body" style="height: 40em; overflow-y: scroll">
+       <div style="margin-top: -0.5em; margin-left: 0.5em;">
+         <p><div style="font-size: 150%;">Take It for a Spin</div></p>
+        <p>
+        Run your first pipeline in 3 quick steps:
+        </p>
+        <div style="display: block; margin: 0em 2em; padding-top: 1em; padding-bottom: 1em; border: thin dashed silver;">
+        <p style="margin-left: 1em;">
+        <em>First, <a href="/users/welcome">log-in or register</a> with any Google account if you haven't already.</em>
+        </p><p>
+        <ol><li> Go to the <span class="btn btn-sm btn-default"><i class="fa fa-lg fa-fw fa-dashboard"></i> Dashboard</span> &gt; <span class="btn btn-sm btn-primary"><i class="fa fa-fw fa-gear"></i> Run a pipeline...</span>
+          <p style="margin-top:1em;">
+          <%= image_tag "mouse-move.gif", :class => "style_image2" %>
+          </p>
+        </li>
+          <li> <span class="btn btn-sm btn-default"><i class="fa fa-fw fa-gear"></i>Mason Lab -- Ancestry Mapper (public)</span> &gt; <span class="btn btn-sm btn-primary">Next: choose inputs <i class="fa fa-fw fa-arrow-circle-right"></i></span></li><br>
+          <li> <span class="btn btn-sm btn-primary">Run <i class="fa fa-fw fa-play"></i></span></li>
+        </ol>
+      </p></div>
+      <p style="margin-top:1em;">
+        <i class="fa fa-flag fa-flip-horizontal" style="color: green"></i> <i class="fa fa-child"></i> 
+        <strong>Voila!</strong> <i class="fa fa-child"></i> <i class="fa fa-flag" style="color: green"></i> 
+        Your pipeline is now spooling up and getting ready to run!  
+        </p><p>
+          Go ahead, try it for yourself right now. <span class="glyphicon glyphicon-thumbs-up"></span>
+        </p><p>
+          Or click <span class="btn btn-sm btn-primary">Next &gt;</span> below to keep reading!
+        </p><p>
+      </div>
+      </div>
+
+      <%#Page Three%>
+      <div class="modal-body" style="height: 40em; overflow-y: scroll">
+       <div style="margin-top: -0.5em; margin-left: 0.5em;">
+        <p><div style="font-size: 150%;">Three Useful Terms</div></p>
+        <ol>
+        <li>
+                 <strong>Pipeline</strong> — A re-usable series of analysis steps.
+                 <ul>
+                   <li>
+                    Also known as a “workflow” in other systems
+                  </li><li>
+              A list of well-documented public pipelines can be found in the upper right corner by clicking the <span class="fa fa-lg fa-question-circle"></span> &gt; <a href="<%= Rails.configuration.arvados_public_data_doc_url %>">Public Pipelines and Datasets</a>
+                  </li><li>
+              Pro-tip: A Pipeline contains Jobs which contain Tasks
+                  </li><li>
+              Pipelines can only be shared within a project
+                  </li>
+                </ul>
+        </li>
+
+        <li>
+        <strong>Collection </strong>— Like a folder, but better.
+            <ul>
+              <li>
+             Upload data right in your browser
+                </li><li>
+             Better than a folder? 
+             <ul><li>
+            Collections contain the content-address of the data instead of the data itself
+                </li><li>
+            Sets of data can be flexibly defined and re-defined without duplicating data
+            </li>
+          </ul></li><li>
+             Collections can be shared using the "Sharing and Permissions"  &gt; "Share" button
+                </li>
+            </ul>
+        </li>
+
+        <li>
+        <strong>Projects </strong>— Contain pipelines templates, pipeline instances (individual runs of a pipeline), and collections.
+            <ul><li>
+        The most useful one is your default "Home" project, under Projects &gt; Home
+            </li><li>
+        Projects can be shared using the "sharing" tab
+            </li>
+          </ul>
+          </li>
+        </ol>
+
+      </div>
+      </div>
+
+      <%#Page Four%>
+      <div class="modal-body" style="height: 40em; overflow-y: scroll">
+       <div style="margin-top: -0.5em; margin-left: 0.5em;">
+        <p><div style="font-size: 150%;">Six Reasons Arvados is Awesome</div></p>
+        <p>
+        This guide, and in fact all of Workbench, is just a teaser for the full power of Arvados:
+        </p>
+        <ol>
+          <li>
+          <strong>Reproducible analyses</strong>: Enough said.
+            </li><li>
+            <strong>Data provenance</strong>: Every file in Arvados can tell you where it came from.
+            </li><li>
+            <strong>Serious scaling</strong>: Need 500 GB of space? 200 compute hours? Arvados scales and parallelizes your work for you intelligently.
+            </li><li>
+            <strong>Share pipelines or data</strong>: Easily publish your work to the world, just like <a href="http://www.pathomap.org/2015/04/08/run-the-pathomap-human-ancestry-pipeline-on-arvados/">the Pathomap team did</a>.
+            </li><li>
+            <strong>Use existing pipelines</strong>: Use best-practices pipelines on your own data with the click of a button.
+            </li><li>
+            <strong>Open-source</strong>: Arvados is completely open-source. Check out our <a href="http://arvados.org">developer site</a>.
+          </li>
+        </ol>
+        <p style="margin-top: 1em;">
+        Want to use the command-line, or hungry to learn more? Check out the User Guide at <a href="http://doc.arvados.org/">doc.arvados.org</a>.
+        </p><p>
+        Questions still? Head over to <a href="http://doc.arvados.org/">doc.arvados.org</a> to find mailing-list and contact info for the Arvados community.
+        </p><p>
+        That's all, folks! Click the "x" up top to leave this guide.
+        </p>
+      </div>
+      </div>
+
+      <div class="modal-footer">
+        <div style="text-align:center">
+          <button class="btn btn-default pager-prev"><i class="fa fa-fw fa-chevron-left"></i><span style="font-weight: bold;"> Prev</span></button>
+          <button class="btn btn-default pager-next"><span style="font-weight: bold;">Next </span><i class="fa fa-fw fa-chevron-right"></i></button>
+          <div class="pager-count pull-right"><span style="margin:5px"></span></div>
+        </div>
+      </div>
+    </div>
+  </div>
+</div>

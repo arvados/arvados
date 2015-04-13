@@ -30,6 +30,7 @@ admin:
     profile:
       organization: example.com
       role: IT
+    getting_started_shown: 2015-03-26 12:34:56.789000000 Z
 
 miniadmin:
   owner_uuid: zzzzz-tpzed-000000000000000
@@ -45,6 +46,7 @@ miniadmin:
     profile:
       organization: example.com
       role: IT
+    getting_started_shown: 2015-03-26 12:34:56.789000000 Z
 
 rominiadmin:
   owner_uuid: zzzzz-tpzed-000000000000000
@@ -60,6 +62,7 @@ rominiadmin:
     profile:
       organization: example.com
       role: IT
+    getting_started_shown: 2015-03-26 12:34:56.789000000 Z
 
 active:
   owner_uuid: zzzzz-tpzed-000000000000000
@@ -75,6 +78,7 @@ active:
     profile:
       organization: example.com
       role: Computational biologist
+    getting_started_shown: 2015-03-26 12:34:56.789000000 Z
 
 project_viewer:
   owner_uuid: zzzzz-tpzed-000000000000000
@@ -90,6 +94,7 @@ project_viewer:
     profile:
       organization: example.com
       role: Computational biologist
+    getting_started_shown: 2015-03-26 12:34:56.789000000 Z
 
 future_project_user:
   # Workbench tests give this user permission on aproject.
@@ -106,6 +111,7 @@ future_project_user:
     profile:
       organization: example.com
       role: Computational biologist
+    getting_started_shown: 2015-03-26 12:34:56.789000000 Z
 
 subproject_admin:
   owner_uuid: zzzzz-tpzed-000000000000000
@@ -121,6 +127,7 @@ subproject_admin:
     profile:
       organization: example.com
       role: Computational biologist
+    getting_started_shown: 2015-03-26 12:34:56.789000000 Z
 
 spectator:
   owner_uuid: zzzzz-tpzed-000000000000000
@@ -136,6 +143,7 @@ spectator:
     profile:
       organization: example.com
       role: Computational biologist
+    getting_started_shown: 2015-03-26 12:34:56.789000000 Z
 
 inactive_uninvited:
   owner_uuid: zzzzz-tpzed-000000000000000
@@ -173,6 +181,7 @@ inactive_but_signed_user_agreement:
     profile:
       organization: example.com
       role: Computational biologist
+    getting_started_shown: 2015-03-26 12:34:56.789000000 Z
 
 anonymous:
   owner_uuid: zzzzz-tpzed-000000000000000
@@ -198,6 +207,7 @@ job_reader:
     profile:
       organization: example.com
       role: Computational biologist
+    getting_started_shown: 2015-03-26 12:34:56.789000000 Z
 
 active_no_prefs:
   owner_uuid: zzzzz-tpzed-000000000000000
@@ -210,7 +220,7 @@ active_no_prefs:
   is_admin: false
   prefs: {}
 
-active_no_prefs_profile:
+active_no_prefs_profile_no_getting_started_shown:
   owner_uuid: zzzzz-tpzed-000000000000000
   uuid: zzzzz-tpzed-a46c98d1td4aoj4
   email: active_no_prefs_profile@arvados.local
@@ -221,6 +231,19 @@ active_no_prefs_profile:
   is_admin: false
   prefs:
     test: abc
+
+active_no_prefs_profile_with_getting_started_shown:
+  owner_uuid: zzzzz-tpzed-000000000000000
+  uuid: zzzzz-tpzed-getstartnoprofl
+  email: active_no_prefs_profile@arvados.local
+  first_name: HasPrefs
+  last_name: NoProfileWithGettingStartedShown
+  identity_url: https://active_no_prefs_profile_seen_gs.openid.local
+  is_active: true
+  is_admin: false
+  prefs:
+    test: abc
+    getting_started_shown: 2015-03-26 12:34:56.789000000 Z
 
 # Fixtures to test granting and removing permissions.
 
@@ -259,6 +282,7 @@ user1_with_load:
     profile:
       organization: example.com
       role: IT
+    getting_started_shown: 2015-03-26 12:34:56.789000000 Z
 
 fuse:
   owner_uuid: zzzzz-tpzed-000000000000000
@@ -274,3 +298,4 @@ fuse:
     profile:
       organization: example.com
       role: IT
+    getting_started_shown: 2015-03-26 12:34:56.789000000 Z

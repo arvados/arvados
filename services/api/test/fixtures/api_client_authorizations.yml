@@ -187,10 +187,16 @@ active_no_prefs:
   api_token: 3kg612cdc0f3415c2428b9758f33bdfb07bc3561b00e86qdmi
   expires_at: 2038-01-01 00:00:00
 
-active_no_prefs_profile:
+active_no_prefs_profile_no_getting_started_shown:
   api_client: untrusted
-  user: active_no_prefs_profile
+  user: active_no_prefs_profile_no_getting_started_shown
   api_token: 3kg612cdc0f3415c242856758f33bdfb07bc3561b00e86qdmi
+  expires_at: 2038-01-01 00:00:00
+
+active_no_prefs_profile_with_getting_started_shown:
+  api_client: untrusted
+  user: active_no_prefs_profile_with_getting_started_shown
+  api_token: 3kg612cdc0f3415c245786758f33bdfb07babcd1b00e86qdmi
   expires_at: 2038-01-01 00:00:00
 
 user_foo_in_sharing_group:
