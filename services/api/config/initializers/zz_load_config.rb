@@ -1,3 +1,11 @@
+begin
+  # If secret_token.rb exists here, we need to load it first.
+  require_relative 'secret_token.rb'
+rescue LoadError
+  # Normally secret_token.rb is missing and the secret token is
+  # configured by application.yml (i.e., here!) instead.
+end
+
 $application_config = {}
 
 %w(application.default application).each do |cfgfile|
