@@ -94,7 +94,7 @@ div.figure p {
                    <li>
                     Also known as a “workflow” in other systems
                   </li><li>
-              A list of well-documented public pipelines can be found in the upper right corner by clicking the <span class="fa fa-lg fa-question-circle"></span> &gt; "Public Pipelines and Datasets"
+              A list of well-documented public pipelines can be found in the upper right corner by clicking the <span class="fa fa-lg fa-question-circle"></span> &gt; <a href="<%= Rails.configuration.arvados_public_data_doc_url %>">Public Pipelines and Datasets</a>
                   </li><li>
               Pro-tip: A Pipeline contains Jobs which contain Tasks
                   </li><li>
@@ -146,7 +146,7 @@ div.figure p {
           <li>
           <strong>Reproducible analyses</strong>: Enough said.
             </li><li>
-            <strong>Data provenance</strong>: Every file in Arvados knows can tell you where it came from.
+            <strong>Data provenance</strong>: Every file in Arvados can tell you where it came from.
             </li><li>
             <strong>Serious scaling</strong>: Need 500 GB of space? 200 compute hours? Arvados scales and parallelizes your work for you intelligently.
             </li><li>
