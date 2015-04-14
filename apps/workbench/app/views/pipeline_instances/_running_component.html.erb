@@ -97,10 +97,13 @@
           <div class="col-md-6">
             <table>
               <% # link to repo tree/file only if the repo is readable
-                 # and the commit is a sha1
+                 # and the commit is a sha1...
                  repo =
                  (/^[0-9a-f]{40}$/ =~ current_component[:script_version] and
                  Repository.where(name: current_component[:repository]).first)
+
+                 # ...and the api server provides an http:// or https:// url
+                 repo = nil unless repo.andand.http_fetch_url
                  %>
               <% [:script, :repository, :script_version, :supplied_script_version, :nondeterministic].each do |k| %>
                 <tr>

@@ -59,10 +59,19 @@ common:
   # logic for deciding on a hostname.
   host: false
 
-  # If not false, this is the hostname that will be used to generate
-  # fetch_url and push_url for locally hosted git repositories.  By
-  # default, this is git.(uuid_prefix).arvadosapi.com
-  git_host: false
+  # Base part of SSH git clone url given with repository resources. If
+  # true, the default "git@git.(uuid_prefix).arvadosapi.com:" is
+  # used. If false, SSH clone URLs are not advertised. Include a
+  # trailing ":" or "/" if needed: it will not be added automatically.
+  git_repo_ssh_base: true
+
+  # Base part of HTTPS git clone urls given with repository
+  # resources. This is expected to be an arv-git-httpd service which
+  # accepts API tokens as HTTP-auth passwords. If true, the default
+  # "https://git.(uuid_prefix).arvadosapi.com/" is used. If false,
+  # HTTPS clone URLs are not advertised. Include a trailing ":" or "/"
+  # if needed: it will not be added automatically.
+  git_repo_https_base: true
 
   # If this is not false, HTML requests at the API server's root URL
   # are redirected to this location, and it is provided in the text of
@@ -75,11 +84,6 @@ common:
   # of the arvados tree in {git_repositories_dir}/arvados.git or
   # {git_repositories_dir}/arvados/.git
   git_repositories_dir: /var/lib/arvados/git
-
-  # If an arv-git-httpd service is running, advertise it in the
-  # discovery document by adding its public URI base here. Example:
-  # https://git.xxxxx.arvadosapi.com
-  git_http_base: false
 
   # This is a (bare) repository that stores commits used in jobs.  When a job
   # runs, the source commits are first fetched into this repository, then this
@@ -236,7 +240,8 @@ common:
   # should be at least 50 characters.
   secret_token: ~
 
-  # email address to which mail should be sent when the user creates profile for the first time
+  # Email address to notify whenever a user creates a profile for the
+  # first time
   user_profile_notification_address: false
 
   default_openid_prefix: https://www.google.com/accounts/o8/id

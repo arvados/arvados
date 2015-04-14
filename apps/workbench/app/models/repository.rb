@@ -59,12 +59,10 @@ class Repository < ArvadosBase
     @fresh = true
   end
 
-  # http_fetch_url returns an http:// or https:// fetch-url which can
-  # accept arvados API token authentication. The API server currently
-  # advertises SSH fetch-urls, which work for users with SSH keys but
-  # are useless for fetching repository content into workbench itself.
+  # http_fetch_url returns the first http:// or https:// url (if any)
+  # in the api response's clone_urls attribute.
   def http_fetch_url
-    "https://git.#{uuid[0,5]}.arvadosapi.com/#{name}.git"
+    clone_urls.andand.select { |u| /^http/ =~ u }.first
   end
 
   # run_git sets up the ARVADOS_API_TOKEN environment variable,
