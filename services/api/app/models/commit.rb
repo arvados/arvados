@@ -1,4 +1,6 @@
 class Commit < ActiveRecord::Base
+  extend CurrentApiClient
+
   class GitError < StandardError
     def http_status
       422
@@ -29,7 +31,7 @@ class Commit < ActiveRecord::Base
   # repository can be the name of a locally hosted repository or a git
   # URL (see git-fetch(1)). Currently http, https, and git schemes are
   # supported.
-  def self.find_commit_range(current_user, repository, minimum, maximum, exclude)
+  def self.find_commit_range repository, minimum, maximum, exclude
     if minimum and minimum.empty?
       minimum = nil
     end
@@ -109,14 +111,14 @@ class Commit < ActiveRecord::Base
   # The repo can be a remote url, but in this case sha1 must already
   # be present in our local cache for that repo: e.g., sha1 was just
   # returned by find_commit_range.
-  def self.tag_in_internal_repository repo, sha1, tag
+  def self.tag_in_internal_repository repo_name, sha1, tag
     unless git_check_ref_format tag
       raise ArgumentError.new "invalid tag #{tag}"
     end
     unless /^[0-9a-f]{40}$/ =~ sha1
       raise ArgumentError.new "invalid sha1 #{sha1}"
     end
-    src_gitdir, _ = git_dir_for repo
+    src_gitdir, _ = git_dir_for repo_name
     dst_gitdir = Rails.configuration.git_internal_dir
     must_pipe("echo #{sha1.shellescape}",
               "git --git-dir #{src_gitdir.shellescape} pack-objects -q --revs --stdout",
@@ -127,8 +129,8 @@ class Commit < ActiveRecord::Base
 
   protected
 
-  def self.remote_url? repository
-    /^(https?|git):\/\// =~ repository
+  def self.remote_url? repo_name
+    /^(https?|git):\/\// =~ repo_name
   end
 
   # Return [local_git_dir, is_remote]. If is_remote, caller must use

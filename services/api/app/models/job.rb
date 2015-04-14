@@ -132,7 +132,7 @@ class Job < ArvadosModel
       return true
     end
     if new_record? or repository_changed? or script_version_changed?
-      sha1 = Commit.find_commit_range(current_user, repository,
+      sha1 = Commit.find_commit_range(repository,
                                       nil, script_version, nil).first
       if not sha1
         errors.add :script_version, "#{script_version} does not resolve to a commit"
@@ -189,7 +189,7 @@ class Job < ArvadosModel
   def find_arvados_sdk_version
     resolve_runtime_constraint("arvados_sdk_version",
                                :arvados_sdk_version) do |git_search|
-      commits = Commit.find_commit_range(current_user, "arvados",
+      commits = Commit.find_commit_range("arvados",
                                          nil, git_search, nil)
       if commits.empty?
         [false, "#{git_search} does not resolve to a commit"]
