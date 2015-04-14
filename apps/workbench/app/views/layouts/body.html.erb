@@ -111,7 +111,17 @@
               </li>
             <% end %>
           <% else %>
-            <li><a href="<%= arvados_api_client.arvados_login_url(return_to: root_url) %>">Log in</a></li>
+            <li class="dropdown hover-dropdown login-menu">
+              <a href="<%= arvados_api_client.arvados_login_url(return_to: root_url) %>">Log in</a>
+              <ul class="dropdown-menu">
+                <li>
+                  <a href="<%= arvados_api_client.arvados_login_url(return_to: root_url) %>">
+                    <span class="fa fa-lg fa-sign-in"></span>
+                    <p style="margin-left: 1.6em; margin-top: -1.35em; margin-bottom: 0em; margin-right: 0.5em;">Log in or register with<br/>any Google account</p>
+                  </a>
+                </li>
+              </ul>
+            </li>
           <% end %>
 
           <li class="dropdown help-menu">
