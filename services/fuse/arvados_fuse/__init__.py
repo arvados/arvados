@@ -65,15 +65,15 @@ class InodeCache(object):
 
     def _remove(self, obj, clear):
         if clear and not obj.clear():
-            _logger.warn("Could not clear %s in_use %s", obj, obj.in_use())
+            _logger.debug("Could not clear %s in_use %s", obj, obj.in_use())
             return False
         self._total -= obj._cache_size
         del self._entries[obj._cache_priority]
-        _logger.warn("Cleared %s total now %i", obj, self._total)
+        _logger.debug("Cleared %s total now %i", obj, self._total)
         return True
 
     def cap_cache(self):
-        _logger.warn("total is %i cap is %i", self._total, self.cap)
+        _logger.debug("total is %i cap is %i", self._total, self.cap)
         if self._total > self.cap:
             need_gc = False
             for key in list(self._entries.keys()):
@@ -88,7 +88,7 @@ class InodeCache(object):
             obj._cache_size = obj.objsize()
             self._entries[obj._cache_priority] = obj
             self._total += obj.objsize()
-            _logger.warn("Managing %s total now %i", obj, self._total)
+            _logger.debug("Managing %s total now %i", obj, self._total)
             self.cap_cache()
 
     def touch(self, obj):
@@ -96,7 +96,7 @@ class InodeCache(object):
             if obj._cache_priority in self._entries:
                 self._remove(obj, False)
             self.manage(obj)
-            _logger.warn("Touched %s (%i) total now %i", obj, obj.objsize(), self._total)
+            _logger.debug("Touched %s (%i) total now %i", obj, obj.objsize(), self._total)
 
     def unmanage(self, obj):
         if obj.persisted() and obj._cache_priority in self._entries:
