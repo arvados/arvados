@@ -251,7 +251,7 @@ class KeepProxyTestCase(run_test_server.TestCaseWithServers):
 class KeepClientServiceTestCase(unittest.TestCase, tutil.ApiClientMock):
     def get_service_roots(self, api_client):
         keep_client = arvados.KeepClient(api_client=api_client)
-        services = keep_client.weighted_service_roots('000000')
+        services = keep_client.weighted_service_roots(arvados.KeepLocator('0'*32))
         return [urlparse.urlparse(url) for url in sorted(services)]
 
     def test_ssl_flag_respected_in_roots(self):
@@ -344,7 +344,7 @@ class KeepClientServiceTestCase(unittest.TestCase, tutil.ApiClientMock):
         api_client = self.mock_keep_services(count=16)
         keep_client = arvados.KeepClient(api_client=api_client)
         for i, hash in enumerate(hashes):
-            roots = keep_client.weighted_service_roots(hash)
+            roots = keep_client.weighted_service_roots(arvados.KeepLocator(hash))
             got_order = [
                 re.search(r'//\[?keep0x([0-9a-f]+)', root).group(1)
                 for root in roots]
@@ -357,14 +357,14 @@ class KeepClientServiceTestCase(unittest.TestCase, tutil.ApiClientMock):
         api_client = self.mock_keep_services(count=initial_services)
         keep_client = arvados.KeepClient(api_client=api_client)
         probes_before = [
-            keep_client.weighted_service_roots(hash) for hash in hashes]
+            keep_client.weighted_service_roots(arvados.KeepLocator(hash)) for hash in hashes]
         for added_services in range(1, 12):
             api_client = self.mock_keep_services(count=initial_services+added_services)
             keep_client = arvados.KeepClient(api_client=api_client)
             total_penalty = 0
             for hash_index in range(len(hashes)):
                 probe_after = keep_client.weighted_service_roots(
-                    hashes[hash_index])
+                    arvados.KeepLocator(hashes[hash_index]))
                 penalty = probe_after.index(probes_before[hash_index][0])
                 self.assertLessEqual(penalty, added_services)
                 total_penalty += penalty
@@ -455,6 +455,65 @@ class KeepClientServiceTestCase(unittest.TestCase, tutil.ApiClientMock):
             keep_client = arvados.KeepClient(api_client=api_client)
             keep_client.put(data)
         self.assertEqual(2, len(exc_check.exception.request_errors()))
+
+
+class KeepClientGatewayTestCase(unittest.TestCase, tutil.ApiClientMock):
+    def mock_disks_and_gateways(self, disks=3, gateways=1):
+        self.gateways = [{
+                'uuid': 'zzzzz-bi6l4-gateway{:08d}'.format(i),
+                'owner_uuid': 'zzzzz-tpzed-000000000000000',
+                'service_host': 'gatewayhost{}'.format(i),
+                'service_port': 12345,
+                'service_ssl_flag': True,
+                'service_type': 'gateway:test',
+        } for i in range(gateways)]
+        self.gateway_roots = [
+            "https://[{service_host}]:{service_port}/".format(**gw)
+            for gw in self.gateways]
+        self.api_client = self.mock_keep_services(
+            count=disks, additional_services=self.gateways)
+        self.keepClient = arvados.KeepClient(api_client=self.api_client)
+
+    @mock.patch('requests.Session')
+    def test_get_with_gateway_hint_first(self, MockSession):
+        MockSession.return_value.get.return_value = tutil.fake_requests_response(
+            code=200, body='foo', headers={'Content-Length': 3})
+        self.mock_disks_and_gateways()
+        locator = 'acbd18db4cc2f85cedef654fccc4a4d8+3+K@' + self.gateways[0]['uuid']
+        self.assertEqual('foo', self.keepClient.get(locator))
+        self.assertEqual((self.gateway_roots[0]+locator,),
+                         MockSession.return_value.get.call_args_list[0][0])
+
+    @mock.patch('requests.Session')
+    def test_get_with_gateway_hints_in_order(self, MockSession):
+        gateways = 4
+        disks = 3
+        MockSession.return_value.get.return_value = tutil.fake_requests_response(
+            code=404, body='')
+        self.mock_disks_and_gateways(gateways=gateways, disks=disks)
+        locator = '+'.join(['acbd18db4cc2f85cedef654fccc4a4d8+3'] +
+                           ['K@'+gw['uuid'] for gw in self.gateways])
+        with self.assertRaises(arvados.errors.NotFoundError):
+            self.keepClient.get(locator)
+        # Gateways are tried first, in the order given.
+        for i, root in enumerate(self.gateway_roots):
+            self.assertEqual((root+locator,),
+                             MockSession.return_value.get.call_args_list[i][0])
+        # Disk services are tried next.
+        for i in range(gateways, gateways+disks):
+            self.assertRegexpMatches(
+                MockSession.return_value.get.call_args_list[i][0][0],
+                r'keep0x')
+
+    @mock.patch('requests.Session')
+    def test_get_with_remote_proxy_hint(self, MockSession):
+        MockSession.return_value.get.return_value = tutil.fake_requests_response(
+            code=200, body='foo', headers={'Content-Length': 3})
+        self.mock_disks_and_gateways()
+        locator = 'acbd18db4cc2f85cedef654fccc4a4d8+3+K@xyzzy'
+        self.assertEqual('foo', self.keepClient.get(locator))
+        self.assertEqual(('https://keep.xyzzy.arvadosapi.com/'+locator,),
+                         MockSession.return_value.get.call_args_list[0][0])
 
 
 class KeepClientRetryTestMixin(object):

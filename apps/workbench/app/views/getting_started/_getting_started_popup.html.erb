@@ -32,8 +32,8 @@ div.figure p {
         <br/>
       </div>
 
-     <%#First Modal%>
-     <div class="modal-body" style="height: auto; overflow-y: scroll">
+     <%#First Page%>
+     <div class="modal-body" style="height: 40em; overflow-y: scroll">
        <div style="margin-top: -0.5em; margin-left: 0.5em;">
          <p><div style="font-size: 150%;">Welcome!</div></p>
          <p>
@@ -44,7 +44,7 @@ div.figure p {
            <p>Running the Pathomap pipeline in Arvados.</p>
         </div>
         </p> <p>
-          Click the <span class="btn-sm btn-primary">Next &gt;</span> button below for a speed tour of Arvados.
+          Click the <span class="btn btn-sm btn-primary">Next &gt;</span> button below for a speed tour of Arvados.
           </p><p style="margin-top:2em;">
           <em><strong>Note:</strong> You can always come back to this Getting Started guide by clicking the <span class="fa fa-lg fa-question-circle"></span> in the upper-right corner.</em>
         </p>
@@ -52,7 +52,7 @@ div.figure p {
       </div>
 
      <%#Page Two%>
-      <div class="modal-body" style="height: auto; overflow-y: scroll">
+      <div class="modal-body" style="height: 40em; overflow-y: scroll">
        <div style="margin-top: -0.5em; margin-left: 0.5em;">
          <p><div style="font-size: 150%;">Take It for a Spin</div></p>
         <p>
@@ -83,18 +83,18 @@ div.figure p {
       </div>
       </div>
 
-
-      <div class="modal-body" style="height: auto; overflow-y: scroll">
+      <%#Page Three%>
+      <div class="modal-body" style="height: 40em; overflow-y: scroll">
        <div style="margin-top: -0.5em; margin-left: 0.5em;">
         <p><div style="font-size: 150%;">Three Useful Terms</div></p>
-        <ul>
+        <ol>
         <li>
                  <strong>Pipeline</strong> — A re-usable series of analysis steps.
                  <ul>
                    <li>
                     Also known as a “workflow” in other systems
                   </li><li>
-              A list of well-documented public pipelines can be found in the upper right corner by clicking the <span class="fa fa-lg fa-question-circle"></span> &gt; "Public Pipelines and Datasets"
+              A list of well-documented public pipelines can be found in the upper right corner by clicking the <span class="fa fa-lg fa-question-circle"></span> &gt; <a href="<%= Rails.configuration.arvados_public_data_doc_url %>">Public Pipelines and Datasets</a>
                   </li><li>
               Pro-tip: A Pipeline contains Jobs which contain Tasks
                   </li><li>
@@ -130,13 +130,13 @@ div.figure p {
             </li>
           </ul>
           </li>
-        </ul>
+        </ol>
 
       </div>
       </div>
 
-
-      <div class="modal-body" style="height: auto; overflow-y: scroll">
+      <%#Page Four%>
+      <div class="modal-body" style="height: 40em; overflow-y: scroll">
        <div style="margin-top: -0.5em; margin-left: 0.5em;">
         <p><div style="font-size: 150%;">Six Reasons Arvados is Awesome</div></p>
         <p>
@@ -146,11 +146,11 @@ div.figure p {
           <li>
           <strong>Reproducible analyses</strong>: Enough said.
             </li><li>
-            <strong>Data provenance</strong>: Every file in Arvados knows can tell you where it came from.
+            <strong>Data provenance</strong>: Every file in Arvados can tell you where it came from.
             </li><li>
             <strong>Serious scaling</strong>: Need 500 GB of space? 200 compute hours? Arvados scales and parallelizes your work for you intelligently.
             </li><li>
-            <strong>Share pipelines or data</strong>: Easily publish your work the world, just like <a href="http://www.pathomap.org/2015/04/08/run-the-pathomap-human-ancestry-pipeline-on-arvados/">the Pathomap team did</a>.
+            <strong>Share pipelines or data</strong>: Easily publish your work to the world, just like <a href="http://www.pathomap.org/2015/04/08/run-the-pathomap-human-ancestry-pipeline-on-arvados/">the Pathomap team did</a>.
             </li><li>
             <strong>Use existing pipelines</strong>: Use best-practices pipelines on your own data with the click of a button.
             </li><li>
