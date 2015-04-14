@@ -296,3 +296,7 @@ span.editable-textile {
 ul.nav.nav-tabs {
     font-size: 90%
 }
+
+.hover-dropdown:hover .dropdown-menu {
+  display: block;
+}
