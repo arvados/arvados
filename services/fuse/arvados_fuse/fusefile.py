@@ -18,7 +18,7 @@ class File(FreshBase):
     def size(self):
         return 0
 
-    def readfrom(self, off, size):
+    def readfrom(self, off, size, num_retries=0):
         return ''
 
     def mtime(self):
@@ -28,18 +28,18 @@ class File(FreshBase):
         return True
 
 
-class StreamReaderFile(File):
-    """Wraps a StreamFileReader as a file."""
+class FuseArvadosFile(File):
+    """Wraps a ArvadosFile."""
 
-    def __init__(self, parent_inode, reader, _mtime):
-        super(StreamReaderFile, self).__init__(parent_inode, _mtime)
-        self.reader = reader
+    def __init__(self, parent_inode, arvfile, _mtime):
+        super(FuseArvadosFile, self).__init__(parent_inode, _mtime)
+        self.arvfile = arvfile
 
     def size(self):
-        return self.reader.size()
+        return self.arvfile.size()
 
-    def readfrom(self, off, size):
-        return self.reader.readfrom(off, size)
+    def readfrom(self, off, size, num_retries=0):
+        return self.arvfile.readfrom(off, size, num_retries)
 
     def stale(self):
         return False
@@ -54,7 +54,7 @@ class StringFile(File):
     def size(self):
         return len(self.contents)
 
-    def readfrom(self, off, size):
+    def readfrom(self, off, size, num_retries=0):
         return self.contents[off:(off+size)]
 
 

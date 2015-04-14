@@ -6,9 +6,10 @@ import arvados
 import apiclient
 import functools
 
-from fusefile import StringFile, StreamReaderFile, ObjectFile
+from fusefile import StringFile, ObjectFile, FuseArvadosFile
 from fresh import FreshBase, convertTime, use_counter
 
+import arvados.collection
 from arvados.util import portable_data_hash_pattern, uuid_pattern, collection_uuid_pattern, group_uuid_pattern, user_uuid_pattern, link_uuid_pattern
 
 _logger = logging.getLogger('arvados.arvados_fuse')
@@ -184,6 +185,17 @@ class CollectionDirectory(Directory):
     def same(self, i):
         return i['uuid'] == self.collection_locator or i['portable_data_hash'] == self.collection_locator
 
+    @staticmethod
+    def populate(inodes, cwd, collection, mtime):
+        for entry, item in collection.items():
+            entry = sanitize_filename(entry)
+            if isinstance(item, arvados.collection.RichCollectionBase):
+                cwd._entries[entry] = inodes.add_entry(Directory(cwd.inode, inodes))
+                cwd._mtime = mtime
+                CollectionDirectory.populate(inodes, cwd._entries[entry], item, mtime)
+            else:
+                cwd._entries[entry] = inodes.add_entry(FuseArvadosFile(cwd.inode, item, mtime))
+
     # Used by arv-web.py to switch the contents of the CollectionDirectory
     def change_collection(self, new_locator):
         """Switch the contents of the CollectionDirectory.
@@ -205,16 +217,7 @@ class CollectionDirectory(Directory):
         if self.collection_object_file is not None:
             self.collection_object_file.update(self.collection_object)
 
-        for s in coll_reader.all_streams():
-            cwd = self
-            for part in s.name().split('/'):
-                if part != '' and part != '.':
-                    partname = sanitize_filename(part)
-                    if partname not in cwd._entries:
-                        cwd._entries[partname] = self.inodes.add_entry(Directory(cwd.inode, self.inodes))
-                    cwd = cwd._entries[partname]
-            for k, v in s.files().items():
-                cwd._entries[sanitize_filename(k)] = self.inodes.add_entry(StreamReaderFile(cwd.inode, v, self.mtime()))
+        CollectionDirectory.populate(self.inodes, self, coll_reader, self.mtime())
 
     def update(self):
         try:

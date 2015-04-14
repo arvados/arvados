@@ -24,7 +24,7 @@ import ciso8601
 import collections
 
 from fusedir import sanitize_filename, Directory, CollectionDirectory, MagicDirectory, TagsDirectory, ProjectDirectory, SharedDirectory
-from fusefile import StreamReaderFile, StringFile
+from fusefile import StringFile, FuseArvadosFile
 
 _logger = logging.getLogger('arvados.arvados_fuse')
 
@@ -157,7 +157,7 @@ class Operations(llfuse.Operations):
 
     """
 
-    def __init__(self, uid, gid, encoding="utf-8", inode_cache=1000):
+    def __init__(self, uid, gid, encoding="utf-8", inode_cache=1000, num_retries=7):
         super(Operations, self).__init__()
 
         self.inodes = Inodes(inode_cache)
@@ -172,6 +172,8 @@ class Operations(llfuse.Operations):
         # Other threads that need to wait until the fuse driver
         # is fully initialized should wait() on this event object.
         self.initlock = threading.Event()
+
+        self.num_retries = num_retries
 
     def init(self):
         # Allow threads that are waiting for the driver to be finished
@@ -196,7 +198,7 @@ class Operations(llfuse.Operations):
         entry.st_mode = stat.S_IRUSR | stat.S_IRGRP | stat.S_IROTH
         if isinstance(e, Directory):
             entry.st_mode |= stat.S_IXUSR | stat.S_IXGRP | stat.S_IXOTH | stat.S_IFDIR
-        elif isinstance(e, StreamReaderFile):
+        elif isinstance(e, FuseArvadosFile):
             entry.st_mode |= stat.S_IXUSR | stat.S_IXGRP | stat.S_IXOTH | stat.S_IFREG
         else:
             entry.st_mode |= stat.S_IFREG
@@ -266,12 +268,12 @@ class Operations(llfuse.Operations):
 
         try:
             with llfuse.lock_released:
-                return handle.fileobj.readfrom(off, size)
+                return handle.fileobj.readfrom(off, size, self.num_retries)
         except arvados.errors.NotFoundError as e:
             _logger.warning("Block not found: " + str(e))
             raise llfuse.FUSEError(errno.EIO)
         except Exception:
-            _logger.exception()
+            _logger.exception("Read error")
             raise llfuse.FUSEError(errno.EIO)
 
     def release(self, fh):
