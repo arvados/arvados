@@ -13,6 +13,12 @@
 
 <% else %>
   <%# state is either New or Ready %>
+  <% if controller.class.name.eql?('PipelineInstancesController') and unreadable_inputs_present? %>
+    <div class="unreadable-inputs-present">
+      <p style="color:#ff6666"> One or more inputs provided are not readable by you. Please correct these before you can run the pipeline.</p>
+    </div>
+  <% end %>
+
   <p><i>Here are all of the pipeline's components (jobs that will need to run in order to complete the pipeline). If you know what you're doing (or you're experimenting) you can modify these parameters before starting the pipeline. Usually, you only need to edit the settings presented on the "Inputs" tab above.</i></p>
 
   <%= render_pipeline_components("editable", :json, editable: true) %>

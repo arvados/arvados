@@ -1,6 +1,6 @@
 function run_pipeline_button_state() {
     var a = $('a.editable.required.editable-empty,input.form-control.required[value=""]');
-    if (a.length > 0) {
+    if ((a.length > 0) || ($('.unreadable-inputs-present').length)) {
         $(".run-pipeline-button").addClass("disabled");
     }
     else {
@@ -35,9 +35,20 @@ $(document).on('editable:success', function(event, tag, response, newValue) {
 $(document).on('ready ajax:complete', function() {
     $('a.editable.required').each(function() {
         var $tag = $(this);
-        if ($tag.hasClass("editable-empty")) {
+        if ($tag.hasClass("unreadable-input")) {
             $tag.parent().css("background-color", "#ffdddd");
             $tag.parent().prev().css("background-color", "#ffdddd");
+        }
+        else {
+            $tag.parent().css("background-color", "");
+            $tag.parent().prev().css("background-color", "");
+        }
+    });
+    $('input.required').each(function() {
+        var $tag = $(this);
+        if ($tag.hasClass("editable-empty") || $tag.hasClass("unreadable-input")) {
+            $tag.parent().parent().css("background-color", "#ffdddd");
+            $tag.parent().parent().prev().css("background-color", "#ffdddd");
         }
         else {
             $tag.parent().css("background-color", "");

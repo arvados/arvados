@@ -183,20 +183,26 @@ module ApplicationHelper
       return link_to_if_arvados_object attrvalue, opts
     end
 
-    if resource_class.to_s == 'Collection'
-      if CollectionsHelper.match(attrvalue)
-        readable = collection_for_pdh(attrvalue).any?
-      else
-        readable = collections_for_object(attrvalue).any?
-      end
-    else
-      readable = object_for_dataclass(resource_class, attrvalue)
-    end
-
+    readable = object_readable attrvalue, resource_class
     if readable
       link_to_if_arvados_object attrvalue, opts
     else
       link_text_if_not_readable
+    end
+  end
+
+  def object_readable attrvalue, resource_class=nil
+    resource_class = resource_class_for_uuid(attrvalue)
+    return if resource_class.nil?
+
+    if resource_class.to_s == 'Collection'
+      if CollectionsHelper.match(attrvalue)
+        collection_for_pdh(attrvalue).any?
+      else
+        collections_for_object(attrvalue).any?
+      end
+    else
+      object_for_dataclass(resource_class, attrvalue)
     end
   end
 
@@ -346,10 +352,11 @@ module ApplicationHelper
            success: 'page-refresh'
          }.to_json,
         })
+      is_readable_input = object_readable attrvalue.split('/')[0] unless attrvalue.andand.empty?
       return content_tag('div', :class => 'input-group') do
         html = text_field_tag(dn, display_value,
                               :class =>
-                              "form-control #{'required' if required}")
+                              "form-control #{'required' if required} #{'unreadable-input' if !attrvalue.andand.empty? and !is_readable_input}")
         html + content_tag('span', :class => 'input-group-btn') do
           link_to('Choose',
                   modal_path,
