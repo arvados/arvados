@@ -1,6 +1,7 @@
 import time
 import ciso8601
 import calendar
+import functools
 
 def convertTime(t):
     """Parse Arvados timestamp to unix time."""
@@ -11,6 +12,16 @@ def convertTime(t):
     except (TypeError, ValueError):
         return 0
 
+def use_counter(orig_func):
+    @functools.wraps(orig_func)
+    def use_counter_wrapper(self, *args, **kwargs):
+        try:
+            self.inc_use()
+            return orig_func(self, *args, **kwargs)
+        finally:
+            self.dec_use()
+    return use_counter_wrapper
+
 class FreshBase(object):
     """Base class for maintaining fresh/stale state to determine when to update."""
     def __init__(self):
@@ -19,6 +30,7 @@ class FreshBase(object):
         self._last_update = time.time()
         self._atime = time.time()
         self._poll_time = 60
+        self.use_count = 0
 
     # Mark the value as stale
     def invalidate(self):
@@ -38,3 +50,21 @@ class FreshBase(object):
 
     def atime(self):
         return self._atime
+
+    def persisted(self):
+        return False
+
+    def clear(self, force=False):
+        pass
+
+    def in_use(self):
+        return self.use_count > 0
+
+    def inc_use(self):
+        self.use_count += 1
+
+    def dec_use(self):
+        self.use_count -= 1
+
+    def objsize(self):
+        return 0

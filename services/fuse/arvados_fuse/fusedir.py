@@ -7,7 +7,7 @@ import apiclient
 import functools
 
 from fusefile import StringFile, StreamReaderFile, ObjectFile
-from fresh import FreshBase, convertTime
+from fresh import FreshBase, convertTime, use_counter
 
 from arvados.util import portable_data_hash_pattern, uuid_pattern, collection_uuid_pattern, group_uuid_pattern, user_uuid_pattern, link_uuid_pattern
 
@@ -32,16 +32,6 @@ def sanitize_filename(dirty):
     else:
         return _disallowed_filename_characters.sub('_', dirty)
 
-def use_counter(orig_func):
-    @functools.wraps(orig_func)
-    def use_counter_wrapper(self, *args, **kwargs):
-        try:
-            self.inc_use()
-            return orig_func(self, *args, **kwargs)
-        finally:
-            self.dec_use()
-    return use_counter_wrapper
-
 
 class Directory(FreshBase):
     """Generic directory object, backed by a dict.
@@ -61,7 +51,6 @@ class Directory(FreshBase):
         self.inodes = inodes
         self._entries = {}
         self._mtime = time.time()
-        self.use_count = 0
 
     #  Overriden by subclasses to implement logic to update the entries dict
     #  when the directory is stale
@@ -74,14 +63,8 @@ class Directory(FreshBase):
     def size(self):
         return 0
 
-    def in_use(self):
-        return self.use_count > 0
-
-    def inc_use(self):
-        self.use_count += 1
-
-    def dec_use(self):
-        self.use_count -= 1
+    def persisted(self):
+        return False
 
     def checkupdate(self):
         if self.stale():
@@ -165,14 +148,12 @@ class Directory(FreshBase):
             oldentries = self._entries
             self._entries = {}
             for n in oldentries:
-                if isinstance(n, Directory):
-                    if not n.clear(force):
-                        self._entries = oldentries
-                        return False
+                if not oldentries[n].clear(force):
+                    self._entries = oldentries
+                    return False
             for n in oldentries:
-                if isinstance(n, Directory):
-                    llfuse.invalidate_entry(self.inode, str(n))
-                    self.inodes.del_entry(oldentries[n])
+                llfuse.invalidate_entry(self.inode, str(n))
+                self.inodes.del_entry(oldentries[n])
             llfuse.invalidate_inode(self.inode)
             self.invalidate()
             return True
@@ -198,6 +179,7 @@ class CollectionDirectory(Directory):
         else:
             self.collection_locator = collection
             self._mtime = 0
+        self._manifest_size = 0
 
     def same(self, i):
         return i['uuid'] == self.collection_locator or i['portable_data_hash'] == self.collection_locator
@@ -214,6 +196,8 @@ class CollectionDirectory(Directory):
         self.update()
 
     def new_collection(self, new_collection_object, coll_reader):
+        self.clear(force=True)
+
         self.collection_object = new_collection_object
 
         self._mtime = convertTime(self.collection_object.get('modified_at'))
@@ -221,7 +205,6 @@ class CollectionDirectory(Directory):
         if self.collection_object_file is not None:
             self.collection_object_file.update(self.collection_object)
 
-        self.clear(force=True)
         for s in coll_reader.all_streams():
             cwd = self
             for part in s.name().split('/'):
@@ -229,9 +212,6 @@ class CollectionDirectory(Directory):
                     partname = sanitize_filename(part)
                     if partname not in cwd._entries:
                         cwd._entries[partname] = self.inodes.add_entry(Directory(cwd.inode, self.inodes))
-                        # (hack until using new API)
-                        cwd._entries[partname].inc_use()
-                        # end hack
                     cwd = cwd._entries[partname]
             for k, v in s.files().items():
                 cwd._entries[sanitize_filename(k)] = self.inodes.add_entry(StreamReaderFile(cwd.inode, v, self.mtime()))
@@ -264,6 +244,9 @@ class CollectionDirectory(Directory):
             if self.collection_object is None or self.collection_object["portable_data_hash"] != new_collection_object["portable_data_hash"]:
                 self.new_collection(new_collection_object, coll_reader)
 
+            self._manifest_size = len(coll_reader.manifest_text())
+            _logger.debug("%s manifest_size %i", self, self._manifest_size)
+
             self.fresh()
             return True
         except arvados.errors.NotFoundError:
@@ -295,15 +278,15 @@ class CollectionDirectory(Directory):
             return super(CollectionDirectory, self).__contains__(k)
 
     def invalidate(self):
-        super(CollectionDirectory, self).invalidate()
         self.collection_object = None
+        self.collection_object_file = None
+        super(CollectionDirectory, self).invalidate()
 
-    def clear(self, force=False):
-        if self.collection_locator is None:
-            return False
-        else:
-            return super(CollectionDirectory, self).clear(force)
+    def persisted(self):
+        return (self.collection_locator is not None)
 
+    def objsize(self):
+        return self._manifest_size * 128
 
 class MagicDirectory(Directory):
     """A special directory that logically contains the set of all extant keep locators.
@@ -525,6 +508,11 @@ class ProjectDirectory(Directory):
         else:
             return super(ProjectDirectory, self).__contains__(k)
 
+    def persisted(self):
+        return False
+
+    def objsize(self):
+        return len(self.project_object) * 1024 if self.project_object else 0
 
 class SharedDirectory(Directory):
     """A special directory that represents users or groups who have shared projects with me."""

@@ -61,40 +61,52 @@ class InodeCache(object):
         self._entries = collections.OrderedDict()
         self._counter = itertools.count(1)
         self.cap = cap
+        self._total = 0
+
+    def _remove(self, obj, clear):
+        if clear and not obj.clear():
+            _logger.warn("Could not clear %s in_use %s", obj, obj.in_use())
+            return False
+        self._total -= obj._cache_size
+        del self._entries[obj._cache_priority]
+        _logger.warn("Cleared %s total now %i", obj, self._total)
+        return True
 
     def cap_cache(self):
-        if len(self._entries) > self.cap:
-            ent = iter(self._entries)
-            ents = [next(ent) for i in xrange(0, len(self._entries) - self.cap)]
-            for key in ents:
-                capobj = self._entries[key]
-                if capobj.clear():
-                    _logger.debug("Cleared %s", self._entries[key])
-                    del self._entries[key]
+        _logger.warn("total is %i cap is %i", self._total, self.cap)
+        if self._total > self.cap:
+            need_gc = False
+            for key in list(self._entries.keys()):
+                if self._total < self.cap or len(self._entries) < 4:
+                    break
+                self._remove(self._entries[key], True)
+
 
     def manage(self, obj):
-        obj._cache_priority = next(self._counter)
-        self._entries[obj._cache_priority] = obj
-        _logger.debug("Managing %s", obj)
-        self.cap_cache()
+        if obj.persisted():
+            obj._cache_priority = next(self._counter)
+            obj._cache_size = obj.objsize()
+            self._entries[obj._cache_priority] = obj
+            self._total += obj.objsize()
+            _logger.warn("Managing %s total now %i", obj, self._total)
+            self.cap_cache()
 
     def touch(self, obj):
-        if obj._cache_priority in self._entries:
-            del self._entries[obj._cache_priority]
-        self.manage(obj)
+        if obj.persisted():
+            if obj._cache_priority in self._entries:
+                self._remove(obj, False)
+            self.manage(obj)
+            _logger.warn("Touched %s (%i) total now %i", obj, obj.objsize(), self._total)
 
     def unmanage(self, obj):
-        if obj._cache_priority in self._entries:
-            if obj.clear():
-                _logger.debug("Cleared %s", obj)
-                del self._entries[obj._cache_priority]
-
+        if obj.persisted() and obj._cache_priority in self._entries:
+            self._remove(obj, True)
 
 class Inodes(object):
     """Manage the set of inodes.  This is the mapping from a numeric id
     to a concrete File or Directory object"""
 
-    def __init__(self, inode_cache=1000):
+    def __init__(self, inode_cache=256*1024*1024):
         self._entries = {}
         self._counter = itertools.count(llfuse.ROOT_INODE)
         self._obj_cache = InodeCache(cap=inode_cache)
