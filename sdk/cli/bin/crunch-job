@@ -657,12 +657,13 @@ my $progress_stats_updated = 0;
 update_progress_stats();
 
 
-
-THISROUND:
 my $tasks_this_level = 0;
 foreach my $id (@jobstep_todo) {
   $tasks_this_level++ if ($jobstep[$id]->{level} == $level);
 }
+
+
+THISROUND:
 for (my $todo_ptr = 0; $todo_ptr <= $#jobstep_todo; $todo_ptr ++)
 {
   my $id = $jobstep_todo[$todo_ptr];
