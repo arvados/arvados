@@ -1119,6 +1119,7 @@ sub reapchildren
       };
       push @jobstep, $jobstep;
       push @jobstep_todo, $#jobstep;
+      $tasks_this_level++ if ($jobstep->{level} == $level);
     }
   }
 
