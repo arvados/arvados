@@ -645,22 +645,31 @@ my $thisround_failed_multiple = 0;
 my $level = $jobstep[$jobstep_todo[0]]->{level};
 Log (undef, "start level $level");
 
-
+my $tasks_this_level = 0;
+foreach my $id (@jobstep_todo) {
+  $tasks_this_level++ if ($jobstep[$id]->{level} == $level);
+}
+my @freeslot;
+if ($tasks_this_level < @slot) {
+  @freeslot = (0..$tasks_this_level - 1);
+} else {
+  @freeslot = (0..$#slot);
+}
+my %round_max_slots = ();
+for (my $ii = $#freeslot; $ii >= 0; $ii--) {
+  my $this_slot = $slot[$freeslot[$ii]];
+  my $node_name = $this_slot->{node}->{name};
+  last if defined($round_max_slots{$node_name});
+  $round_max_slots{$node_name} = $this_slot->{cpu};
+}
 
 my %proc;
-my @freeslot = (0..$#slot);
 my @holdslot;
 my %reader;
 my $progress_is_dirty = 1;
 my $progress_stats_updated = 0;
 
 update_progress_stats();
-
-
-my $tasks_this_level = 0;
-foreach my $id (@jobstep_todo) {
-  $tasks_this_level++ if ($jobstep[$id]->{level} == $level);
-}
 
 
 THISROUND:
@@ -716,15 +725,10 @@ for (my $todo_ptr = 0; $todo_ptr <= $#jobstep_todo; $todo_ptr ++)
     $ENV{"HOME"} = $ENV{"TASK_WORK"};
     $ENV{"TASK_KEEPMOUNT"} = $ENV{"TASK_WORK"}.".keep";
     $ENV{"TASK_TMPDIR"} = $ENV{"TASK_WORK"}; # deprecated
-    $ENV{"CRUNCH_NODE_SLOTS"} = $slot[$childslot]->{node}->{ncpus};
+    $ENV{"CRUNCH_NODE_SLOTS"} = $round_max_slots{$ENV{TASK_SLOT_NODE}};
     $ENV{"PATH"} = $ENV{"CRUNCH_INSTALL"} . "/bin:" . $ENV{"PATH"};
 
     $ENV{"GZIP"} = "-n";
-
-    my $max_node_concurrent_tasks = $ENV{CRUNCH_NODE_SLOTS};
-    if ($tasks_this_level < $max_node_concurrent_tasks) {
-      $max_node_concurrent_tasks = $tasks_this_level;
-    }
 
     my @srunargs = (
       "srun",
@@ -740,7 +744,7 @@ for (my $todo_ptr = 0; $todo_ptr <= $#jobstep_todo; $todo_ptr ++)
         # $command.  No tool is expected to read these values directly.
         .q{&& MEM=$(awk '($1 == "MemTotal:"){print $2}' </proc/meminfo) }
         .q{&& SWAP=$(awk '($1 == "SwapTotal:"){print $2}' </proc/meminfo) }
-        ."&& MEMLIMIT=\$(( (\$MEM * 95) / ($max_node_concurrent_tasks * 100) )) "
+        ."&& MEMLIMIT=\$(( (\$MEM * 95) / ($ENV{CRUNCH_NODE_SLOTS} * 100) )) "
         ."&& let SWAPLIMIT=\$MEMLIMIT+\$SWAP ";
     $command .= "&& exec arv-mount --by-id --allow-other $ENV{TASK_KEEPMOUNT} --exec ";
     if ($docker_hash)
