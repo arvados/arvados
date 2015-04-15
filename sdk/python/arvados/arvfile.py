@@ -9,6 +9,7 @@ import Queue
 import copy
 import errno
 import re
+import logging
 
 from .errors import KeepWriteError, AssertionError
 from .keep import KeepLocator
@@ -17,6 +18,8 @@ from ._ranges import locators_and_ranges, replace_range, Range
 from .retry import retry_method
 
 MOD = "mod"
+
+_logger = logging.getLogger('arvados.arvfile')
 
 def split(path):
     """split(path) -> streamname, filename

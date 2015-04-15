@@ -23,11 +23,15 @@ import itertools
 import ciso8601
 import collections
 
-from fusedir import sanitize_filename, Directory, CollectionDirectory, MagicDirectory, TagsDirectory, ProjectDirectory, SharedDirectory
+from fusedir import sanitize_filename, Directory, CollectionDirectory, MagicDirectory, TagsDirectory, ProjectDirectory, SharedDirectory, CollectionDirectoryBase
 from fusefile import StringFile, FuseArvadosFile
 
 _logger = logging.getLogger('arvados.arvados_fuse')
 
+# log_handler = logging.StreamHandler()
+# llogger = logging.getLogger('llfuse')
+# llogger.addHandler(log_handler)
+# llogger.setLevel(logging.DEBUG)
 
 class FileHandle(object):
     """Connects a numeric file handle to a File object that has
@@ -198,10 +202,13 @@ class Operations(llfuse.Operations):
         entry.st_mode = stat.S_IRUSR | stat.S_IRGRP | stat.S_IROTH
         if isinstance(e, Directory):
             entry.st_mode |= stat.S_IXUSR | stat.S_IXGRP | stat.S_IXOTH | stat.S_IFDIR
-        elif isinstance(e, FuseArvadosFile):
-            entry.st_mode |= stat.S_IXUSR | stat.S_IXGRP | stat.S_IXOTH | stat.S_IFREG
         else:
             entry.st_mode |= stat.S_IFREG
+            if isinstance(e, FuseArvadosFile):
+                entry.st_mode |= stat.S_IXUSR | stat.S_IXGRP | stat.S_IXOTH
+
+        if e.writable():
+            entry.st_mode |= stat.S_IWUSR | stat.S_IWGRP | stat.S_IWOTH
 
         entry.st_nlink = 1
         entry.st_uid = self.uid

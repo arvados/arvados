@@ -164,37 +164,72 @@ class Directory(FreshBase):
     def mtime(self):
         return self._mtime
 
+    def writable(self):
+        return False
 
-class CollectionDirectory(Directory):
+
+class CollectionDirectoryBase(Directory):
+    def __init__(self, parent_inode, inodes, collection):
+        super(CollectionDirectoryBase, self).__init__(parent_inode, inodes)
+        self.collection = collection
+
+    def new_entry(self, name, item, mtime):
+        name = sanitize_filename(name)
+        if isinstance(item, arvados.collection.RichCollectionBase):
+            self._entries[name] = self.inodes.add_entry(CollectionDirectoryBase(self.inode, self.inodes, item))
+            self._entries[name].populate(mtime)
+        else:
+            self._entries[name] = self.inodes.add_entry(FuseArvadosFile(self.inode, item, mtime))
+
+    def on_event(self, event, collection, name, item):
+        _logger.warn("Got event! %s %s %s %s", event, collection, name, item)
+        if collection == self.collection:
+            with llfuse.lock:
+                if event == arvados.collection.ADD:
+                    self.new_entry(name, item, self.mtime())
+                elif event == arvados.collection.DEL:
+                    ent = self._entries[name]
+                    llfuse.invalidate_entry(self.inode, name)
+                    self.inodes.del_entry(ent)
+                elif event == arvados.collection.MOD:
+                    ent = self._entries[name]
+                    llfuse.invalidate_entry(self.inode, name)
+                    llfuse.invalidate_inode(ent.inode)
+
+    def populate(self, mtime):
+        self._mtime = mtime
+        self.collection.subscribe(self.on_event)
+        for entry, item in self.collection.items():
+            self.new_entry(entry, item, self.mtime())
+
+    def writable(self):
+        return self.collection.writable()
+
+
+class CollectionDirectory(CollectionDirectoryBase):
     """Represents the root of a directory tree holding a collection."""
 
-    def __init__(self, parent_inode, inodes, api, num_retries, collection):
-        super(CollectionDirectory, self).__init__(parent_inode, inodes)
+    def __init__(self, parent_inode, inodes, api, num_retries, collection_record=None, explicit_collection=None):
+        super(CollectionDirectory, self).__init__(parent_inode, inodes, None)
         self.api = api
         self.num_retries = num_retries
         self.collection_object_file = None
         self.collection_object = None
-        if isinstance(collection, dict):
-            self.collection_locator = collection['uuid']
-            self._mtime = convertTime(collection.get('modified_at'))
+        if isinstance(collection_record, dict):
+            self.collection_locator = collection_record['uuid']
+            self._mtime = convertTime(collection_record.get('modified_at'))
         else:
-            self.collection_locator = collection
+            self.collection_locator = collection_record
             self._mtime = 0
         self._manifest_size = 0
+        if self.collection_locator:
+            self._writable = (uuid_pattern.match(self.collection_locator) is not None)
 
     def same(self, i):
         return i['uuid'] == self.collection_locator or i['portable_data_hash'] == self.collection_locator
 
-    @staticmethod
-    def populate(inodes, cwd, collection, mtime):
-        for entry, item in collection.items():
-            entry = sanitize_filename(entry)
-            if isinstance(item, arvados.collection.RichCollectionBase):
-                cwd._entries[entry] = inodes.add_entry(Directory(cwd.inode, inodes))
-                cwd._mtime = mtime
-                CollectionDirectory.populate(inodes, cwd._entries[entry], item, mtime)
-            else:
-                cwd._entries[entry] = inodes.add_entry(FuseArvadosFile(cwd.inode, item, mtime))
+    def writable(self):
+        return self.collection.writable() if self.collection else self._writable
 
     # Used by arv-web.py to switch the contents of the CollectionDirectory
     def change_collection(self, new_locator):
@@ -208,16 +243,19 @@ class CollectionDirectory(Directory):
         self.update()
 
     def new_collection(self, new_collection_object, coll_reader):
-        self.clear(force=True)
+        if self.inode:
+            self.clear(force=True)
 
         self.collection_object = new_collection_object
 
-        self._mtime = convertTime(self.collection_object.get('modified_at'))
+        if self.collection_object:
+            self._mtime = convertTime(self.collection_object.get('modified_at'))
 
-        if self.collection_object_file is not None:
-            self.collection_object_file.update(self.collection_object)
+            if self.collection_object_file is not None:
+                self.collection_object_file.update(self.collection_object)
 
-        CollectionDirectory.populate(self.inodes, self, coll_reader, self.mtime())
+        self.collection = coll_reader
+        self.populate(self.mtime())
 
     def update(self):
         try:
@@ -229,9 +267,14 @@ class CollectionDirectory(Directory):
                 return True
 
             with llfuse.lock_released:
-                coll_reader = arvados.CollectionReader(
-                    self.collection_locator, self.api, self.api.keep,
-                    num_retries=self.num_retries)
+                if uuid_pattern.match(self.collection_locator):
+                    coll_reader = arvados.collection.Collection(
+                        self.collection_locator, self.api, self.api.keep,
+                        num_retries=self.num_retries)
+                else:
+                    coll_reader = arvados.collection.CollectionReader(
+                        self.collection_locator, self.api, self.api.keep,
+                        num_retries=self.num_retries)
                 new_collection_object = coll_reader.api_response() or {}
                 # If the Collection only exists in Keep, there will be no API
                 # response.  Fill in the fields we need.
@@ -241,7 +284,6 @@ class CollectionDirectory(Directory):
                     new_collection_object["portable_data_hash"] = new_collection_object["uuid"]
                 if 'manifest_text' not in new_collection_object:
                     new_collection_object['manifest_text'] = coll_reader.manifest_text()
-                coll_reader.normalize()
             # end with llfuse.lock_released, re-acquire lock
 
             if self.collection_object is None or self.collection_object["portable_data_hash"] != new_collection_object["portable_data_hash"]:

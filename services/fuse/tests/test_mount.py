@@ -12,6 +12,7 @@ import tempfile
 import threading
 import time
 import unittest
+import logging
 
 import run_test_server
 
@@ -32,6 +33,7 @@ class MountTestBase(unittest.TestCase):
         threading.Thread(None, llfuse.main).start()
         # wait until the driver is finished initializing
         operations.initlock.wait()
+        return operations.inodes[llfuse.ROOT_INODE]
 
     def tearDown(self):
         # llfuse.close is buggy, so use fusermount instead.
@@ -98,7 +100,7 @@ class FuseMountTest(MountTestBase):
         self.api.collections().create(body={"manifest_text":cw.manifest_text()}).execute()
 
     def runTest(self):
-        self.make_mount(fuse.CollectionDirectory, collection=self.testcollection)
+        self.make_mount(fuse.CollectionDirectory, collection_record=self.testcollection)
 
         self.assertDirContents(None, ['thing1.txt', 'thing2.txt',
                                       'edgecases', 'dir1', 'dir2'])
@@ -310,6 +312,69 @@ class FuseHomeTest(MountTestBase):
 
         d3 = os.listdir(os.path.join(self.mounttmp, 'Unrestricted public data', 'GNU General Public License, version 3'))
         self.assertEqual(["GNU_General_Public_License,_version_3.pdf"], d3)
+
+class FuseUpdateFileTest(MountTestBase):
+    def runTest(self):
+        collection = arvados.collection.Collection(api_client=self.api)
+        with collection.open("file1.txt", "w") as f:
+            f.write("blub")
+
+        m = self.make_mount(fuse.CollectionDirectory)
+        with llfuse.lock:
+            m.new_collection(None, collection)
+
+        d1 = os.listdir(self.mounttmp)
+        self.assertEqual(["file1.txt"], d1)
+        with open(os.path.join(self.mounttmp, "file1.txt")) as f:
+            self.assertEqual("blub", f.read())
+
+        with collection.open("file1.txt", "w") as f:
+            f.write("plnp")
+
+        d1 = os.listdir(self.mounttmp)
+        self.assertEqual(["file1.txt"], d1)
+        with open(os.path.join(self.mounttmp, "file1.txt")) as f:
+            self.assertEqual("plnp", f.read())
+
+class FuseAddFileToCollectionTest(MountTestBase):
+    def runTest(self):
+        collection = arvados.collection.Collection(api_client=self.api)
+        with collection.open("file1.txt", "w") as f:
+            f.write("blub")
+
+        m = self.make_mount(fuse.CollectionDirectory)
+        with llfuse.lock:
+            m.new_collection(None, collection)
+
+        d1 = os.listdir(self.mounttmp)
+        self.assertEqual(["file1.txt"], d1)
+
+        with collection.open("file2.txt", "w") as f:
+            f.write("plnp")
+
+        d1 = os.listdir(self.mounttmp)
+        self.assertEqual(["file1.txt", "file2.txt"], sorted(d1))
+
+class FuseRemoveFileFromCollectionTest(MountTestBase):
+    def runTest(self):
+        collection = arvados.collection.Collection(api_client=self.api)
+        with collection.open("file1.txt", "w") as f:
+            f.write("blub")
+
+        with collection.open("file2.txt", "w") as f:
+            f.write("plnp")
+
+        m = self.make_mount(fuse.CollectionDirectory)
+        with llfuse.lock:
+            m.new_collection(None, collection)
+
+        d1 = os.listdir(self.mounttmp)
+        self.assertEqual(["file1.txt", "file2.txt"], sorted(d1))
+
+        collection.remove("file2.txt")
+
+        d1 = os.listdir(self.mounttmp)
+        self.assertEqual(["file1.txt"], d1)
 
 
 class FuseUnitTest(unittest.TestCase):

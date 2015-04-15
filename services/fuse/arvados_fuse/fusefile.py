@@ -27,6 +27,8 @@ class File(FreshBase):
     def clear(self, force=False):
         return True
 
+    def writable(self):
+        return False
 
 class FuseArvadosFile(File):
     """Wraps a ArvadosFile."""
@@ -43,6 +45,9 @@ class FuseArvadosFile(File):
 
     def stale(self):
         return False
+
+    def writable(self):
+        return self.arvfile.writable()
 
 
 class StringFile(File):
