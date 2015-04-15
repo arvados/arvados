@@ -51,8 +51,8 @@ $(document).on('ready ajax:complete', function() {
             $tag.parent().parent().prev().css("background-color", "#ffdddd");
         }
         else {
-            $tag.parent().css("background-color", "");
-            $tag.parent().prev().css("background-color", "");
+            $tag.parent().parent().css("background-color", "");
+            $tag.parent().parent().prev().css("background-color", "");
         }
     });
     run_pipeline_button_state();

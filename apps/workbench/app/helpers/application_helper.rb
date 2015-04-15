@@ -186,12 +186,18 @@ module ApplicationHelper
     readable = object_readable attrvalue, resource_class
     if readable
       link_to_if_arvados_object attrvalue, opts
+    elsif opts[:required]
+      raw('<div><input type="text" style="border:none;width:100%;background:#ffdddd" disabled=true class="required unreadable-input" value="' +
+           link_text_if_not_readable + '" ></input></div>')
     else
       link_text_if_not_readable
     end
   end
 
   def object_readable attrvalue, resource_class=nil
+    # if it is a collection filename, check readable for the locator
+    attrvalue = attrvalue.split('/')[0] if attrvalue
+
     resource_class = resource_class_for_uuid(attrvalue)
     return if resource_class.nil?
 
@@ -300,7 +306,7 @@ module ApplicationHelper
     end
 
     if not object.andand.attribute_editable?(attr)
-      return link_to_arvados_object_if_readable(attrvalue, attrvalue, friendly_name: true)
+      return link_to_arvados_object_if_readable(attrvalue, attrvalue, {friendly_name: true, required: required})
     end
 
     if dataclass
@@ -352,7 +358,7 @@ module ApplicationHelper
            success: 'page-refresh'
          }.to_json,
         })
-      is_readable_input = object_readable attrvalue.split('/')[0] unless attrvalue.andand.empty?
+      is_readable_input = object_readable attrvalue unless attrvalue.andand.empty?
       return content_tag('div', :class => 'input-group') do
         html = text_field_tag(dn, display_value,
                               :class =>
