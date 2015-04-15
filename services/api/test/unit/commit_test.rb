@@ -29,8 +29,8 @@ class CommitTest < ActiveSupport::TestCase
   ].each do |url|
     test "find_commit_range uses fetch_remote_repository to get #{url}" do
       fake_gitdir = repositories(:foo).server_path
-      Commit.expects(:fetch_remote_repository).
-        once.with(Commit.cache_dir_for(url), url).returns fake_gitdir
+      Commit.expects(:cache_dir_for).once.with(url).returns fake_gitdir
+      Commit.expects(:fetch_remote_repository).once.with(fake_gitdir, url).returns true
       c = Commit.find_commit_range url, nil, 'master', []
       refute_empty c
     end

@@ -166,9 +166,16 @@ class Commit < ActiveRecord::Base
     unless /^[a-z]+:\/\// =~ git_url
       raise ArgumentError.new "invalid git url #{git_url}"
     end
-    FileUtils.mkdir_p gitdir
+    begin
+      must_git gitdir, "branch"
+    rescue GitError => e
+      raise unless /Not a git repository/ =~ e.to_s
+      # OK, this just means we need to create a blank cache repository
+      # before fetching.
+      FileUtils.mkdir_p gitdir
+      must_git gitdir, "init"
+    end
     must_git(gitdir,
-             "init",
              "fetch --no-progress --tags --prune --force --update-head-ok #{git_url.shellescape} 'refs/heads/*:refs/heads/*'")
   end
 
