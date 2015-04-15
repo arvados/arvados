@@ -415,8 +415,8 @@ class ArvadosFileReaderTestCase(StreamFileReaderTestCase):
             blocks[loc] = d
             stream.append(Range(loc, n, len(d)))
             n += len(d)
-        af = ArvadosFile(ArvadosFileReaderTestCase.MockParent(blocks, nocache), stream=stream, segments=[Range(1, 0, 3), Range(6, 3, 3), Range(11, 6, 3)])
-        return ArvadosFileReader(af, "count.txt")
+        af = ArvadosFile(ArvadosFileReaderTestCase.MockParent(blocks, nocache), "count.txt", stream=stream, segments=[Range(1, 0, 3), Range(6, 3, 3), Range(11, 6, 3)])
+        return ArvadosFileReader(af)
 
     def test_read_returns_first_block(self):
         # read() calls will be aligned on block boundaries - see #3663.
@@ -483,10 +483,10 @@ class ArvadosFileReadTestCase(unittest.TestCase, StreamRetryTestMixin):
         blockmanager = arvados.arvfile._BlockManager(self.keep_client())
         blockmanager.prefetch_enabled = False
         col = Collection(keep_client=self.keep_client(), block_manager=blockmanager)
-        af = ArvadosFile(col,
+        af = ArvadosFile(col, "test",
                          stream=stream,
                          segments=segments)
-        return ArvadosFileReader(af, "test", **kwargs)
+        return ArvadosFileReader(af, **kwargs)
 
     def read_for_test(self, reader, byte_count, **kwargs):
         return reader.read(byte_count, **kwargs)

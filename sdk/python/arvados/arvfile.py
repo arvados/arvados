@@ -16,6 +16,8 @@ from ._normalize_stream import normalize_stream
 from ._ranges import locators_and_ranges, replace_range, Range
 from .retry import retry_method
 
+MOD = "mod"
+
 def split(path):
     """split(path) -> streamname, filename
 
@@ -588,7 +590,7 @@ class ArvadosFile(object):
 
     """
 
-    def __init__(self, parent, stream=[], segments=[]):
+    def __init__(self, parent, name, stream=[], segments=[]):
         """
         ArvadosFile constructor.
 
@@ -605,6 +607,7 @@ class ArvadosFile(object):
         for s in segments:
             self._add_segment(stream, s.locator, s.range_size)
         self._current_bblock = None
+        self.name = name
 
     def writable(self):
         return self.parent.writable()
@@ -614,9 +617,9 @@ class ArvadosFile(object):
         return copy.copy(self._segments)
 
     @synchronized
-    def clone(self, new_parent):
+    def clone(self, new_parent, new_name):
         """Make a copy of this file."""
-        cp = ArvadosFile(new_parent)
+        cp = ArvadosFile(new_parent, new_name)
         cp.replace_contents(self)
         return cp
 
@@ -799,6 +802,7 @@ class ArvadosFile(object):
         if self._current_bblock:
             self._repack_writes()
             self.parent._my_block_manager().commit_bufferblock(self._current_bblock)
+        self.parent.notify(MOD, self.parent, self.name, (self, self))
 
     @must_be_writable
     @synchronized
@@ -853,8 +857,8 @@ class ArvadosFileReader(ArvadosFileReaderBase):
 
     """
 
-    def __init__(self, arvadosfile, name, mode="r", num_retries=None):
-        super(ArvadosFileReader, self).__init__(name, mode, num_retries=num_retries)
+    def __init__(self, arvadosfile,  mode="r", num_retries=None):
+        super(ArvadosFileReader, self).__init__(arvadosfile.name, mode, num_retries=num_retries)
         self.arvadosfile = arvadosfile
 
     def size(self):
@@ -889,8 +893,8 @@ class ArvadosFileWriter(ArvadosFileReader):
 
     """
 
-    def __init__(self, arvadosfile, name, mode, num_retries=None):
-        super(ArvadosFileWriter, self).__init__(arvadosfile, name, mode, num_retries=num_retries)
+    def __init__(self, arvadosfile, mode, num_retries=None):
+        super(ArvadosFileWriter, self).__init__(arvadosfile, mode, num_retries=num_retries)
 
     @_FileLikeObjectBase._before_close
     @retry_method
