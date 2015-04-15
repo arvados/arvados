@@ -243,6 +243,7 @@ class AnonymousAccessTest < ActionDispatch::IntegrationTest
 
   [
     ['new_pipeline_in_publicly_accessible_project', true],
+    ['new_pipeline_in_publicly_accessible_project', true, 'spectator'],
     ['new_pipeline_in_publicly_accessible_project_but_other_objects_elsewhere', false],
     ['new_pipeline_in_publicly_accessible_project_but_other_objects_elsewhere', false, 'spectator'],
     ['new_pipeline_in_publicly_accessible_project_but_other_objects_elsewhere', true, 'admin'],
@@ -264,13 +265,24 @@ class AnonymousAccessTest < ActionDispatch::IntegrationTest
         if user == 'admin'
           assert_text 'input'
           assert_selector 'a', text: 'Choose'
+          assert_selector 'a', text: 'Run'
+          assert_no_selector 'a.disabled', text: 'Run'
         else
           assert_selector 'a', text: object['components']['foo']['script_parameters']['input']['value']
+          user ? (assert_selector 'a', text: 'Run') : (assert_no_selector 'a', text: 'Run')
         end
       else
         assert_no_text 'This pipeline was created from'  # template is not readable
-        assert_text object['components']['foo']['script_parameters']['input']['value']
         assert_no_selector 'a', text: object['components']['foo']['script_parameters']['input']['value']
+        if user
+          assert_text "One or more inputs provided are not readable"
+          assert_selector "input[type=text][value=#{object['components']['foo']['script_parameters']['input']['value']}]"
+          assert_selector 'a.disabled', text: 'Run'
+        else
+          assert_no_text "One or more inputs provided are not readable"
+          assert_text object['components']['foo']['script_parameters']['input']['value']
+          assert_no_selector 'a', text: 'Run'
+        end
       end
     end
   end

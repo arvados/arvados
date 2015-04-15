@@ -186,9 +186,8 @@ module ApplicationHelper
     readable = object_readable attrvalue, resource_class
     if readable
       link_to_if_arvados_object attrvalue, opts
-    elsif opts[:required]
-      raw('<div><input type="text" style="border:none;width:100%;background:#ffdddd" disabled=true class="required unreadable-input" value="' +
-           link_text_if_not_readable + '" ></input></div>')
+    elsif opts[:required] and current_user # no need to show this for anonymous user
+      raw('<div><input type="text" style="border:none;width:100%;background:#ffdddd" disabled=true class="required unreadable-input" value="' + link_text_if_not_readable + '" ></input></div>')
     else
       link_text_if_not_readable
     end
