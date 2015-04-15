@@ -27,6 +27,7 @@ module GitTestHelper
 
     base.teardown do
       FileUtils.remove_entry @tmpdir, true
+      FileUtils.remove_entry Commit.cache_dir_base, true
     end
   end
 
