@@ -643,26 +643,43 @@ my $thisround_failed_multiple = 0;
 @jobstep_todo = sort { $jobstep[$a]->{level} <=> $jobstep[$b]->{level}
 		       or $a <=> $b } @jobstep_todo;
 my $level = $jobstep[$jobstep_todo[0]]->{level};
-Log (undef, "start level $level");
 
-my $tasks_this_level = 0;
+my $initial_tasks_this_level = 0;
 foreach my $id (@jobstep_todo) {
-  $tasks_this_level++ if ($jobstep[$id]->{level} == $level);
+  $initial_tasks_this_level++ if ($jobstep[$id]->{level} == $level);
 }
+
+# If the number of tasks scheduled at this level #T is smaller than the number
+# of slots available #S, only use the first #T slots, or the first slot on
+# each node, whichever number is greater.
+#
+# When we dispatch tasks later, we'll allocate whole-node resources like RAM
+# based on these numbers.  Using fewer slots makes more resources available
+# to each individual task, which should normally be a better strategy when
+# there are fewer of them running with less parallelism.
+#
+# Note that this calculation is not redone if the initial tasks at
+# this level queue more tasks at the same level.  This may harm
+# overall task throughput for that level.
 my @freeslot;
-if ($tasks_this_level < @slot) {
-  @freeslot = (0..$tasks_this_level - 1);
+if ($initial_tasks_this_level < @node) {
+  @freeslot = (0..$#node);
+} elsif ($initial_tasks_this_level < @slot) {
+  @freeslot = (0..$initial_tasks_this_level - 1);
 } else {
   @freeslot = (0..$#slot);
 }
+my $round_num_freeslots = scalar(@freeslot);
+
 my %round_max_slots = ();
 for (my $ii = $#freeslot; $ii >= 0; $ii--) {
   my $this_slot = $slot[$freeslot[$ii]];
   my $node_name = $this_slot->{node}->{name};
-  last if defined($round_max_slots{$node_name});
-  $round_max_slots{$node_name} = $this_slot->{cpu};
+  $round_max_slots{$node_name} ||= $this_slot->{cpu};
+  last if (scalar(keys(%round_max_slots)) >= @node);
 }
 
+Log(undef, "start level $level with $round_num_freeslots slots");
 my %proc;
 my @holdslot;
 my %reader;
@@ -864,7 +881,7 @@ for (my $todo_ptr = 0; $todo_ptr <= $#jobstep_todo; $todo_ptr ++)
 
   while (!@freeslot
 	 ||
-	 (@slot > @freeslot && $todo_ptr+1 > $#jobstep_todo))
+	 ($round_num_freeslots > @freeslot && $todo_ptr+1 > $#jobstep_todo))
   {
     last THISROUND if $main::please_freeze || defined($main::success);
     if ($main::please_info)
