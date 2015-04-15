@@ -154,8 +154,11 @@ class Commit < ActiveRecord::Base
   end
 
   def self.cache_dir_for git_url
-    Rails.root.join('tmp', 'git', Digest::SHA1.hexdigest(git_url) + ".git").
-      to_s
+    File.join(cache_dir_base, Digest::SHA1.hexdigest(git_url) + ".git").to_s
+  end
+
+  def self.cache_dir_base
+    Rails.root.join 'tmp', 'git'
   end
 
   def self.fetch_remote_repository gitdir, git_url

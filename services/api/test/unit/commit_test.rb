@@ -64,10 +64,6 @@ class CommitTest < ActiveSupport::TestCase
     assert_equal [], c
   end
 
-  test 'fetch_remote_repository finds versions' do
-    skip 'not written yet'
-  end
-
   test 'tag_in_internal_repository creates and updates tags in internal.git' do
     authorize_with :active
     gitint = "git --git-dir #{Rails.configuration.git_internal_dir}"
