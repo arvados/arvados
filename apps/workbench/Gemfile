@@ -3,8 +3,7 @@ source 'https://rubygems.org'
 gem 'rails', '~> 4.1.0'
 gem 'arvados', '>= 0.1.20150421171838'
 
-gem 'sqlite3'
-
+gem 'activerecord-nulldb-adapter'
 gem 'multi_json'
 gem 'oj'
 gem 'sass'
