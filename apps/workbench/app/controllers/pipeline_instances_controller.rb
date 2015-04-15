@@ -287,7 +287,7 @@ class PipelineInstancesController < ApplicationController
   helper_method :unreadable_inputs_present?
   def unreadable_inputs_present?
     unless @unreadable_inputs_present.nil?
-      @unreadable_inputs_present
+      return @unreadable_inputs_present
     end
 
     input_uuids = []
