@@ -104,12 +104,12 @@ class ComputeNodeSetupActor(ComputeNodeStateChangeBase):
         else:
             self._later.prepare_arvados_node(arvados_node)
 
-    @ComputeNodeStateChangeBase._retry()
+    @ComputeNodeStateChangeBase._retry(config.ARVADOS_ERRORS)
     def create_arvados_node(self):
         self.arvados_node = self._arvados.nodes().create(body={}).execute()
         self._later.create_cloud_node()
 
-    @ComputeNodeStateChangeBase._retry()
+    @ComputeNodeStateChangeBase._retry(config.ARVADOS_ERRORS)
     def prepare_arvados_node(self, node):
         self.arvados_node = self._arvados.nodes().update(
             uuid=node['uuid'],
@@ -139,8 +139,10 @@ class ComputeNodeSetupActor(ComputeNodeStateChangeBase):
         self._finished()
 
     def stop_if_no_cloud_node(self):
-        if self.cloud_node is None:
-            self.stop()
+        if self.cloud_node is not None:
+            return False
+        self.stop()
+        return True
 
 
 class ComputeNodeShutdownActor(ComputeNodeStateChangeBase):
