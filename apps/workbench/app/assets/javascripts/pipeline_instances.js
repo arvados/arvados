@@ -1,6 +1,6 @@
 function run_pipeline_button_state() {
     var a = $('a.editable.required.editable-empty,input.form-control.required[value=""]');
-    if (a.length > 0) {
+    if ((a.length > 0) || ($('.unreadable-inputs-present').length)) {
         $(".run-pipeline-button").addClass("disabled");
     }
     else {
@@ -42,6 +42,17 @@ $(document).on('ready ajax:complete', function() {
         else {
             $tag.parent().css("background-color", "");
             $tag.parent().prev().css("background-color", "");
+        }
+    });
+    $('input.required').each(function() {
+        var $tag = $(this);
+        if ($tag.hasClass("unreadable-input")) {
+            $tag.parent().parent().css("background-color", "#ffdddd");
+            $tag.parent().parent().prev().css("background-color", "#ffdddd");
+        }
+        else {
+            $tag.parent().parent().css("background-color", "");
+            $tag.parent().parent().prev().css("background-color", "");
         }
     });
     run_pipeline_button_state();
