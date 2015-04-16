@@ -13,6 +13,7 @@ class RepositoriesTest < ActionDispatch::IntegrationTest
   end
 
   test "browse repository from jobs#show" do
+    skip "git2 is unreliable" if Repository.disable_repository_browsing?
     sha1 = api_fixture('jobs')['running']['script_version']
     _, fakecommit, fakefile =
       stub_repo_content sha1: sha1, filename: 'crunch_scripts/hash'
@@ -36,6 +37,7 @@ class RepositoriesTest < ActionDispatch::IntegrationTest
   end
 
   test "browse using arv-git-http" do
+    skip "git2 is unreliable" if Repository.disable_repository_browsing?
     repo = api_fixture('repositories')['foo']
     portfile =
       File.expand_path('../../../../../tmp/arv-git-httpd-ssl.port', __FILE__)

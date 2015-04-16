@@ -48,6 +48,15 @@ class Repository < ArvadosBase
     subtree
   end
 
+  # git 2.1.4 does not use credential helpers reliably, see #5416
+  def self.disable_repository_browsing?
+    return false if Rails.configuration.use_git2_despite_bug_risk
+    if @buggy_git_version.nil?
+      @buggy_git_version = /git version 2/ =~ `git version`
+    end
+    @buggy_git_version
+  end
+
   protected
 
   # refresh fetches the latest repository content into the local
