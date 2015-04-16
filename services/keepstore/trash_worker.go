@@ -29,15 +29,14 @@ func RunTrashWorker(trashq *WorkQueue) {
 */
 func TrashItem(trashRequest TrashRequest) (err error) {
 	// Verify if the block is to be deleted based on its Mtime
-	for _, volume := range KeepVM.Volumes() {
+	for _, volume := range KeepVM.AllWritable() {
 		mtime, err := volume.Mtime(trashRequest.Locator)
-		if err == nil {
-			if trashRequest.BlockMtime == mtime.Unix() {
-				currentTime := time.Now().Unix()
-				if time.Duration(currentTime-trashRequest.BlockMtime)*time.Second >= permission_ttl {
-					err = volume.Delete(trashRequest.Locator)
-				}
-			}
+		if err != nil || trashRequest.BlockMtime != mtime.Unix() {
+			continue
+		}
+		currentTime := time.Now().Unix()
+		if time.Duration(currentTime-trashRequest.BlockMtime)*time.Second >= permission_ttl {
+			err = volume.Delete(trashRequest.Locator)
 		}
 	}
 	return
