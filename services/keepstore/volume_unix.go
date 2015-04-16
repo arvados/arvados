@@ -50,8 +50,9 @@ type IOResponse struct {
 //       request.
 //
 type UnixVolume struct {
-	root  string // path to this volume
-	queue chan *IORequest
+	root     string // path to this volume
+	queue    chan *IORequest
+	readonly bool
 }
 
 func (v *UnixVolume) IOHandler() {
@@ -67,14 +68,17 @@ func (v *UnixVolume) IOHandler() {
 	}
 }
 
-func MakeUnixVolume(root string, serialize bool) (v UnixVolume) {
-	if serialize {
-		v = UnixVolume{root, make(chan *IORequest)}
-		go v.IOHandler()
-	} else {
-		v = UnixVolume{root, nil}
+func MakeUnixVolume(root string, serialize bool, readonly bool) *UnixVolume {
+	v := &UnixVolume{
+		root: root,
+		queue: nil,
+		readonly: readonly,
 	}
-	return
+	if serialize {
+		v.queue =make(chan *IORequest)
+		go v.IOHandler()
+	}
+	return v
 }
 
 func (v *UnixVolume) Get(loc string) ([]byte, error) {
@@ -88,6 +92,9 @@ func (v *UnixVolume) Get(loc string) ([]byte, error) {
 }
 
 func (v *UnixVolume) Put(loc string, block []byte) error {
+	if v.readonly {
+		return MethodDisabledError
+	}
 	if v.queue == nil {
 		return v.Write(loc, block)
 	}
@@ -98,6 +105,9 @@ func (v *UnixVolume) Put(loc string, block []byte) error {
 }
 
 func (v *UnixVolume) Touch(loc string) error {
+	if v.readonly {
+		return MethodDisabledError
+	}
 	p := v.blockPath(loc)
 	f, err := os.OpenFile(p, os.O_RDWR|os.O_APPEND, 0644)
 	if err != nil {
@@ -263,6 +273,9 @@ func (v *UnixVolume) Delete(loc string) error {
 	// Delete() will read the correct up-to-date timestamp and choose not to
 	// delete the file.
 
+	if v.readonly {
+		return MethodDisabledError
+	}
 	p := v.blockPath(loc)
 	f, err := os.OpenFile(p, os.O_RDWR|os.O_APPEND, 0644)
 	if err != nil {
@@ -348,6 +361,10 @@ func (v *UnixVolume) FreeDiskSpace() (free uint64, err error) {
 
 func (v *UnixVolume) String() string {
 	return fmt.Sprintf("[UnixVolume %s]", v.root)
+}
+
+func (v *UnixVolume) Writable() bool {
+	return !v.readonly
 }
 
 // lockfile and unlockfile use flock(2) to manage kernel file locks.
