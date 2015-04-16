@@ -247,6 +247,7 @@ class AnonymousAccessTest < ActionDispatch::IntegrationTest
     ['new_pipeline_in_publicly_accessible_project_but_other_objects_elsewhere', false],
     ['new_pipeline_in_publicly_accessible_project_but_other_objects_elsewhere', false, 'spectator'],
     ['new_pipeline_in_publicly_accessible_project_but_other_objects_elsewhere', true, 'admin'],
+    ['new_pipeline_in_publicly_accessible_project_with_dataclass_file_and_other_objects_elsewhere', false],
     ['new_pipeline_in_publicly_accessible_project_with_dataclass_file_and_other_objects_elsewhere', false, 'spectator'],
     ['new_pipeline_in_publicly_accessible_project_with_dataclass_file_and_other_objects_elsewhere', true, 'admin'],
   ].each do |fixture, objects_readable, user=nil|
@@ -276,9 +277,9 @@ class AnonymousAccessTest < ActionDispatch::IntegrationTest
       else
         assert_no_text 'This pipeline was created from'  # template is not readable
         input = object['components']['foo']['script_parameters']['input']['value']
-        input = input.gsub('/', '\\/')
         assert_no_selector 'a', text: input
         if user
+          input = input.gsub('/', '\\/')
           assert_text "One or more inputs provided are not readable"
           assert_selector "input[type=text][value=#{input}]"
           assert_selector 'a.disabled', text: 'Run'
