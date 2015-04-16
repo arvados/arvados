@@ -187,9 +187,10 @@ func performTrashWorkerTest(testData TrashWorkerTestData, t *testing.T) {
 
 	// Create Keep Volumes
 	KeepVM = MakeTestVolumeManager(2)
+	defer KeepVM.Close()
 
 	// Put test content
-	vols := KeepVM.Volumes()
+	vols := KeepVM.AllWritable()
 	if testData.CreateData {
 		vols[0].Put(testData.Locator1, testData.Block1)
 		vols[0].Put(testData.Locator1+".meta", []byte("metadata"))
@@ -263,7 +264,7 @@ func performTrashWorkerTest(testData TrashWorkerTestData, t *testing.T) {
 	if (testData.ExpectLocator1) &&
 		(testData.Locator1 == testData.Locator2) {
 		locatorFoundIn := 0
-		for _, volume := range KeepVM.Volumes() {
+		for _, volume := range KeepVM.AllReadable() {
 			if _, err := volume.Get(testData.Locator1); err == nil {
 				locatorFoundIn = locatorFoundIn + 1
 			}
@@ -276,5 +277,4 @@ func performTrashWorkerTest(testData TrashWorkerTestData, t *testing.T) {
 	// Done
 	permission_ttl = actual_permission_ttl
 	trashq.Close()
-	KeepVM.Quit()
 }

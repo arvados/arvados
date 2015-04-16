@@ -8,7 +8,6 @@ package main
 // StatusHandler   (GET /status.json)
 
 import (
-	"bufio"
 	"bytes"
 	"container/list"
 	"crypto/md5"
@@ -81,38 +80,6 @@ func MakeRESTRouter() *mux.Router {
 
 func BadRequestHandler(w http.ResponseWriter, r *http.Request) {
 	http.Error(w, BadRequestError.Error(), BadRequestError.HTTPCode)
-}
-
-// FindKeepVolumes scans all mounted volumes on the system for Keep
-// volumes, and returns a list of matching paths.
-//
-// A device is assumed to be a Keep volume if it is a normal or tmpfs
-// volume and has a "/keep" directory directly underneath the mount
-// point.
-//
-func FindKeepVolumes() []string {
-	vols := make([]string, 0)
-
-	if f, err := os.Open(PROC_MOUNTS); err != nil {
-		log.Fatalf("opening %s: %s\n", PROC_MOUNTS, err)
-	} else {
-		scanner := bufio.NewScanner(f)
-		for scanner.Scan() {
-			args := strings.Fields(scanner.Text())
-			dev, mount := args[0], args[1]
-			if mount != "/" &&
-				(dev == "tmpfs" || strings.HasPrefix(dev, "/dev/")) {
-				keep := mount + "/keep"
-				if st, err := os.Stat(keep); err == nil && st.IsDir() {
-					vols = append(vols, keep)
-				}
-			}
-		}
-		if err := scanner.Err(); err != nil {
-			log.Fatal(err)
-		}
-	}
-	return vols
 }
 
 func GetBlockHandler(resp http.ResponseWriter, req *http.Request) {
@@ -235,7 +202,7 @@ func IndexHandler(resp http.ResponseWriter, req *http.Request) {
 	prefix := mux.Vars(req)["prefix"]
 
 	var index string
-	for _, vol := range KeepVM.Volumes() {
+	for _, vol := range KeepVM.AllReadable() {
 		index = index + vol.Index(prefix)
 	}
 	resp.Write([]byte(index))
@@ -282,8 +249,8 @@ func StatusHandler(resp http.ResponseWriter, req *http.Request) {
 func GetNodeStatus() *NodeStatus {
 	st := new(NodeStatus)
 
-	st.Volumes = make([]*VolumeStatus, len(KeepVM.Volumes()))
-	for i, vol := range KeepVM.Volumes() {
+	st.Volumes = make([]*VolumeStatus, len(KeepVM.AllReadable()))
+	for i, vol := range KeepVM.AllReadable() {
 		st.Volumes[i] = vol.Status()
 	}
 	return st
@@ -358,14 +325,14 @@ func DeleteHandler(resp http.ResponseWriter, req *http.Request) {
 		return
 	}
 
-	// Delete copies of this block from all available volumes.  Report
-	// how many blocks were successfully and unsuccessfully
-	// deleted.
+	// Delete copies of this block from all available volumes.
+	// Report how many blocks were successfully deleted, and how
+	// many were found on writable volumes but not deleted.
 	var result struct {
 		Deleted int `json:"copies_deleted"`
 		Failed  int `json:"copies_failed"`
 	}
-	for _, vol := range KeepVM.Volumes() {
+	for _, vol := range KeepVM.AllWritable() {
 		if err := vol.Delete(hash); err == nil {
 			result.Deleted++
 		} else if os.IsNotExist(err) {
@@ -528,52 +495,54 @@ func GetBlock(hash string, update_timestamp bool) ([]byte, error) {
 	// Attempt to read the requested hash from a keep volume.
 	error_to_caller := NotFoundError
 
-	for _, vol := range KeepVM.Volumes() {
-		if buf, err := vol.Get(hash); err != nil {
-			// IsNotExist is an expected error and may be ignored.
-			// (If all volumes report IsNotExist, we return a NotFoundError)
-			// All other errors should be logged but we continue trying to
-			// read.
-			switch {
-			case os.IsNotExist(err):
-				continue
-			default:
-				log.Printf("GetBlock: reading %s: %s\n", hash, err)
-			}
-		} else {
-			// Double check the file checksum.
-			//
-			filehash := fmt.Sprintf("%x", md5.Sum(buf))
-			if filehash != hash {
-				// TODO(twp): this condition probably represents a bad disk and
-				// should raise major alarm bells for an administrator: e.g.
-				// they should be sent directly to an event manager at high
-				// priority or logged as urgent problems.
-				//
-				log.Printf("%s: checksum mismatch for request %s (actual %s)\n",
-					vol, hash, filehash)
-				error_to_caller = DiskHashError
-			} else {
-				// Success!
-				if error_to_caller != NotFoundError {
-					log.Printf("%s: checksum mismatch for request %s but a good copy was found on another volume and returned\n",
-						vol, hash)
-				}
-				// Update the timestamp if the caller requested.
-				// If we could not update the timestamp, continue looking on
-				// other volumes.
-				if update_timestamp {
-					if vol.Touch(hash) != nil {
-						continue
-					}
-				}
-				return buf, nil
-			}
-		}
+	var vols []Volume
+	if update_timestamp {
+		// Pointless to find the block on an unwritable volume
+		// because Touch() will fail -- this is as good as
+		// "not found" for purposes of callers who need to
+		// update_timestamp.
+		vols = KeepVM.AllWritable()
+	} else {
+		vols = KeepVM.AllReadable()
 	}
 
-	if error_to_caller != NotFoundError {
-		log.Printf("%s: checksum mismatch, no good copy found\n", hash)
+	for _, vol := range vols {
+		buf, err := vol.Get(hash)
+		if err != nil {
+			// IsNotExist is an expected error and may be
+			// ignored. All other errors are logged. In
+			// any case we continue trying to read other
+			// volumes. If all volumes report IsNotExist,
+			// we return a NotFoundError.
+			if !os.IsNotExist(err) {
+				log.Printf("GetBlock: reading %s: %s\n", hash, err)
+			}
+			continue
+		}
+		// Check the file checksum.
+		//
+		filehash := fmt.Sprintf("%x", md5.Sum(buf))
+		if filehash != hash {
+			// TODO: Try harder to tell a sysadmin about
+			// this.
+			log.Printf("%s: checksum mismatch for request %s (actual %s)\n",
+				vol, hash, filehash)
+			error_to_caller = DiskHashError
+			continue
+		}
+		if error_to_caller == DiskHashError {
+			log.Printf("%s: checksum mismatch for request %s but a good copy was found on another volume and returned",
+				vol, hash)
+		}
+		if update_timestamp {
+			if err := vol.Touch(hash); err != nil {
+				error_to_caller = GenericError
+				log.Printf("%s: Touch %s failed: %s",
+					vol, hash, error_to_caller)
+				continue
+			}
+		}
+		return buf, nil
 	}
 	return nil, error_to_caller
 }
@@ -630,31 +599,39 @@ func PutBlock(block []byte, hash string) error {
 
 	// Choose a Keep volume to write to.
 	// If this volume fails, try all of the volumes in order.
-	vol := KeepVM.Choose()
-	if err := vol.Put(hash, block); err == nil {
-		return nil // success!
-	} else {
-		allFull := true
-		for _, vol := range KeepVM.Volumes() {
-			err := vol.Put(hash, block)
-			if err == nil {
-				return nil // success!
-			}
-			if err != FullError {
-				// The volume is not full but the write did not succeed.
-				// Report the error and continue trying.
-				allFull = false
-				log.Printf("%s: Write(%s): %s\n", vol, hash, err)
-			}
+	if vol := KeepVM.NextWritable(); vol != nil {
+		if err := vol.Put(hash, block); err == nil {
+			return nil // success!
 		}
+	}
 
-		if allFull {
-			log.Printf("all Keep volumes full")
-			return FullError
-		} else {
-			log.Printf("all Keep volumes failed")
-			return GenericError
+	writables := KeepVM.AllWritable()
+	if len(writables) == 0 {
+		log.Print("No writable volumes.")
+		return FullError
+	}
+
+	allFull := true
+	for _, vol := range writables {
+		err := vol.Put(hash, block)
+		if err == nil {
+			return nil // success!
 		}
+		if err != FullError {
+			// The volume is not full but the
+			// write did not succeed.  Report the
+			// error and continue trying.
+			allFull = false
+			log.Printf("%s: Write(%s): %s\n", vol, hash, err)
+		}
+	}
+
+	if allFull {
+		log.Print("All volumes are full.")
+		return FullError
+	} else {
+		// Already logged the non-full errors.
+		return GenericError
 	}
 }
 
