@@ -310,7 +310,7 @@ class _BufferBlock(object):
                 self.buffer_view = None
                 self.buffer_block = None
         else:
-            raise AssertionError("Invalid state change from %s to %s" % (self.state, state))
+            raise AssertionError("Invalid state change from %s to %s" % (self.state, nextstate))
 
     @synchronized
     def state(self):
@@ -354,7 +354,7 @@ def must_be_writable(orig_func):
     @functools.wraps(orig_func)
     def must_be_writable_wrapper(self, *args, **kwargs):
         if not self.writable():
-            raise IOError((errno.EROFS, "Collection must be writable."))
+            raise IOError(errno.EROFS, "Collection must be writable.")
         return orig_func(self, *args, **kwargs)
     return must_be_writable_wrapper
 
@@ -719,7 +719,7 @@ class ArvadosFile(object):
             self._segments = new_segs
             self._modified = True
         elif size > self.size():
-            raise IOError("truncate() does not support extending the file size")
+            raise IOError(errno.EINVAL, "truncate() does not support extending the file size")
 
     def readfrom(self, offset, size, num_retries):
         """Read upto `size` bytes from the file starting at `offset`."""
@@ -800,12 +800,17 @@ class ArvadosFile(object):
 
         replace_range(self._segments, offset, len(data), self._current_bblock.blockid, self._current_bblock.write_pointer - len(data))
 
+        self.parent.notify(MOD, self.parent, self.name, (self, self))
+
+        return len(data)
+
     @synchronized
     def flush(self):
-        if self._current_bblock:
-            self._repack_writes()
-            self.parent._my_block_manager().commit_bufferblock(self._current_bblock)
-        self.parent.notify(MOD, self.parent, self.name, (self, self))
+        if self.modified():
+            if self._current_bblock and self._current_bblock.state() == _BufferBlock.WRITABLE:
+                self._repack_writes()
+                self.parent._my_block_manager().commit_bufferblock(self._current_bblock)
+            self.parent.notify(MOD, self.parent, self.name, (self, self))
 
     @must_be_writable
     @synchronized
@@ -872,16 +877,32 @@ class ArvadosFileReader(ArvadosFileReaderBase):
 
     @_FileLikeObjectBase._before_close
     @retry_method
-    def read(self, size, num_retries=None):
-        """Read up to `size` bytes from the stream, starting at the current file position."""
-        data = self.arvadosfile.readfrom(self._filepos, size, num_retries)
-        self._filepos += len(data)
-        return data
+    def read(self, size=None, num_retries=None):
+        """Read up to `size` bytes from the file and return the result.
+
+        Starts at the current file position.  If `size` is None, read the
+        entire remainder of the file.
+        """
+        if size is None:
+            data = []
+            rd = self.arvadosfile.readfrom(self._filepos, config.KEEP_BLOCK_SIZE, num_retries)
+            while rd:
+                data.append(rd)
+                self._filepos += len(rd)
+                rd = self.arvadosfile.readfrom(self._filepos, config.KEEP_BLOCK_SIZE, num_retries)
+            return ''.join(data)
+        else:
+            data = self.arvadosfile.readfrom(self._filepos, size, num_retries)
+            self._filepos += len(data)
+            return data
 
     @_FileLikeObjectBase._before_close
     @retry_method
     def readfrom(self, offset, size, num_retries=None):
-        """Read up to `size` bytes from the stream, starting at the current file position."""
+        """Read up to `size` bytes from the stream, starting at the specified file offset.
+
+        This method does not change the file position.
+        """
         return self.arvadosfile.readfrom(offset, size, num_retries)
 
     def flush(self):
@@ -907,6 +928,7 @@ class ArvadosFileWriter(ArvadosFileReader):
         else:
             self.arvadosfile.writeto(self._filepos, data, num_retries)
             self._filepos += len(data)
+        return len(data)
 
     @_FileLikeObjectBase._before_close
     @retry_method

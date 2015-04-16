@@ -167,6 +167,8 @@ class Directory(FreshBase):
     def writable(self):
         return False
 
+    def flush(self):
+        pass
 
 class CollectionDirectoryBase(Directory):
     def __init__(self, parent_inode, inodes, collection):
@@ -195,6 +197,7 @@ class CollectionDirectoryBase(Directory):
                     ent = self._entries[name]
                     llfuse.invalidate_entry(self.inode, name)
                     llfuse.invalidate_inode(ent.inode)
+        _logger.warn("Finished handling event")
 
     def populate(self, mtime):
         self._mtime = mtime
@@ -205,6 +208,8 @@ class CollectionDirectoryBase(Directory):
     def writable(self):
         return self.collection.writable()
 
+    def flush(self):
+        self.collection.root_collection().save()
 
 class CollectionDirectory(CollectionDirectoryBase):
     """Represents the root of a directory tree holding a collection."""
@@ -229,7 +234,7 @@ class CollectionDirectory(CollectionDirectoryBase):
         return i['uuid'] == self.collection_locator or i['portable_data_hash'] == self.collection_locator
 
     def writable(self):
-        return self.collection.writable() if self.collection else self._writable
+        return self.collection.writable() if self.collection is not None else self._writable
 
     # Used by arv-web.py to switch the contents of the CollectionDirectory
     def change_collection(self, new_locator):

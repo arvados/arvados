@@ -21,6 +21,9 @@ class File(FreshBase):
     def readfrom(self, off, size, num_retries=0):
         return ''
 
+    def writeto(self, off, size, num_retries=0):
+        raise Exception("Not writable")
+
     def mtime(self):
         return self._mtime
 
@@ -29,6 +32,9 @@ class File(FreshBase):
 
     def writable(self):
         return False
+
+    def flush(self):
+        pass
 
 class FuseArvadosFile(File):
     """Wraps a ArvadosFile."""
@@ -43,11 +49,19 @@ class FuseArvadosFile(File):
     def readfrom(self, off, size, num_retries=0):
         return self.arvfile.readfrom(off, size, num_retries)
 
+    def writeto(self, off, buf, num_retries=0):
+        return self.arvfile.writeto(off, buf, num_retries)
+
     def stale(self):
         return False
 
     def writable(self):
         return self.arvfile.writable()
+
+    def flush(self):
+        if self.writable():
+            self.arvfile.flush()
+            return self.arvfile.parent.root_collection().save()
 
 
 class StringFile(File):

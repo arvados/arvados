@@ -22,42 +22,48 @@ import threading
 import itertools
 import ciso8601
 import collections
+import functools
 
 from fusedir import sanitize_filename, Directory, CollectionDirectory, MagicDirectory, TagsDirectory, ProjectDirectory, SharedDirectory, CollectionDirectoryBase
 from fusefile import StringFile, FuseArvadosFile
 
 _logger = logging.getLogger('arvados.arvados_fuse')
 
-# log_handler = logging.StreamHandler()
-# llogger = logging.getLogger('llfuse')
-# llogger.addHandler(log_handler)
-# llogger.setLevel(logging.DEBUG)
+log_handler = logging.StreamHandler()
+llogger = logging.getLogger('llfuse')
+llogger.addHandler(log_handler)
+llogger.setLevel(logging.DEBUG)
 
-class FileHandle(object):
-    """Connects a numeric file handle to a File object that has
+class Handle(object):
+    """Connects a numeric file handle to a File or Directory object that has
     been opened by the client."""
 
-    def __init__(self, fh, fileobj):
+    def __init__(self, fh, obj):
         self.fh = fh
-        self.fileobj = fileobj
-        self.fileobj.inc_use()
+        self.obj = obj
+        self.obj.inc_use()
 
     def release(self):
-        self.fileobj.dec_use()
+        self.obj.dec_use()
+
+    def flush(self):
+        with llfuse.lock_released:
+            return self.obj.flush()
 
 
-class DirectoryHandle(object):
+class FileHandle(Handle):
+    """Connects a numeric file handle to a File  object that has
+    been opened by the client."""
+    pass
+
+
+class DirectoryHandle(Handle):
     """Connects a numeric file handle to a Directory object that has
     been opened by the client."""
 
     def __init__(self, fh, dirobj, entries):
-        self.fh = fh
+        super(DirectoryHandle, self).__init__(fh, dirobj)
         self.entries = entries
-        self.dirobj = dirobj
-        self.dirobj.inc_use()
-
-    def release(self):
-        self.dirobj.dec_use()
 
 
 class InodeCache(object):
@@ -106,6 +112,7 @@ class InodeCache(object):
         if obj.persisted() and obj._cache_priority in self._entries:
             self._remove(obj, True)
 
+
 class Inodes(object):
     """Manage the set of inodes.  This is the mapping from a numeric id
     to a concrete File or Directory object"""
@@ -148,6 +155,21 @@ class Inodes(object):
         llfuse.invalidate_inode(entry.inode)
         del self._entries[entry.inode]
 
+def catch_exceptions(orig_func):
+    @functools.wraps(orig_func)
+    def catch_exceptions_wrapper(self, *args, **kwargs):
+        try:
+            return orig_func(self, *args, **kwargs)
+        except llfuse.FUSEError:
+            raise
+        except EnvironmentError as e:
+            raise llfuse.FUSEError(e.errno)
+        except Exception:
+            _logger.exception("")
+            raise llfuse.FUSEError(errno.EIO)
+
+    return catch_exceptions_wrapper
+
 
 class Operations(llfuse.Operations):
     """This is the main interface with llfuse.
@@ -187,6 +209,7 @@ class Operations(llfuse.Operations):
     def access(self, inode, mode, ctx):
         return True
 
+    @catch_exceptions
     def getattr(self, inode):
         if inode not in self.inodes:
             raise llfuse.FUSEError(errno.ENOENT)
@@ -225,6 +248,7 @@ class Operations(llfuse.Operations):
 
         return entry
 
+    @catch_exceptions
     def lookup(self, parent_inode, name):
         name = unicode(name, self.encoding)
         _logger.debug("arv-mount lookup: parent_inode %i name %s",
@@ -246,17 +270,18 @@ class Operations(llfuse.Operations):
         else:
             raise llfuse.FUSEError(errno.ENOENT)
 
+    @catch_exceptions
     def open(self, inode, flags):
         if inode in self.inodes:
             p = self.inodes[inode]
         else:
             raise llfuse.FUSEError(errno.ENOENT)
 
-        if (flags & os.O_WRONLY) or (flags & os.O_RDWR):
-            raise llfuse.FUSEError(errno.EROFS)
-
         if isinstance(p, Directory):
             raise llfuse.FUSEError(errno.EISDIR)
+
+        if ((flags & os.O_WRONLY) or (flags & os.O_RDWR)) and not p.writable():
+            raise llfuse.FUSEError(errno.EPERM)
 
         fh = self._filehandles_counter
         self._filehandles_counter += 1
@@ -264,6 +289,7 @@ class Operations(llfuse.Operations):
         self.inodes.touch(p)
         return fh
 
+    @catch_exceptions
     def read(self, fh, off, size):
         _logger.debug("arv-mount read %i %i %i", fh, off, size)
         if fh in self._filehandles:
@@ -271,20 +297,40 @@ class Operations(llfuse.Operations):
         else:
             raise llfuse.FUSEError(errno.EBADF)
 
-        self.inodes.touch(handle.fileobj)
+        self.inodes.touch(handle.obj)
 
         try:
             with llfuse.lock_released:
-                return handle.fileobj.readfrom(off, size, self.num_retries)
+                return handle.obj.readfrom(off, size, self.num_retries)
         except arvados.errors.NotFoundError as e:
             _logger.warning("Block not found: " + str(e))
             raise llfuse.FUSEError(errno.EIO)
-        except Exception:
-            _logger.exception("Read error")
-            raise llfuse.FUSEError(errno.EIO)
 
+    @catch_exceptions
+    def write(self, fh, off, buf):
+        _logger.debug("arv-mount write %i %i %i", fh, off, len(buf))
+        if fh in self._filehandles:
+            handle = self._filehandles[fh]
+        else:
+            raise llfuse.FUSEError(errno.EBADF)
+
+        if not handle.obj.writable():
+            raise llfuse.FUSEError(errno.EPERM)
+
+        self.inodes.touch(handle.obj)
+
+        with llfuse.lock_released:
+            return handle.obj.writeto(off, buf, self.num_retries)
+
+    @catch_exceptions
     def release(self, fh):
         if fh in self._filehandles:
+            try:
+                self._filehandles[fh].flush()
+            except EnvironmentError as e:
+                raise llfuse.FUSEError(e.errno)
+            except Exception:
+                _logger.exception("Flush error")
             self._filehandles[fh].release()
             del self._filehandles[fh]
         self.inodes.cap_cache()
@@ -292,6 +338,7 @@ class Operations(llfuse.Operations):
     def releasedir(self, fh):
         self.release(fh)
 
+    @catch_exceptions
     def opendir(self, inode):
         _logger.debug("arv-mount opendir: inode %i", inode)
 
@@ -316,7 +363,7 @@ class Operations(llfuse.Operations):
         self._filehandles[fh] = DirectoryHandle(fh, p, [('.', p), ('..', parent)] + list(p.items()))
         return fh
 
-
+    @catch_exceptions
     def readdir(self, fh, off):
         _logger.debug("arv-mount readdir: fh %i off %i", fh, off)
 
@@ -325,7 +372,7 @@ class Operations(llfuse.Operations):
         else:
             raise llfuse.FUSEError(errno.EBADF)
 
-        _logger.debug("arv-mount handle.dirobj %s", handle.dirobj)
+        _logger.debug("arv-mount handle.dirobj %s", handle.obj)
 
         e = off
         while e < len(handle.entries):
@@ -336,6 +383,7 @@ class Operations(llfuse.Operations):
                     pass
             e += 1
 
+    @catch_exceptions
     def statfs(self):
         st = llfuse.StatvfsData()
         st.f_bsize = 64 * 1024
@@ -351,12 +399,78 @@ class Operations(llfuse.Operations):
         st.f_frsize = 0
         return st
 
-    # The llfuse documentation recommends only overloading functions that
-    # are actually implemented, as the default implementation will raise ENOSYS.
-    # However, there is a bug in the llfuse default implementation of create()
-    # "create() takes exactly 5 positional arguments (6 given)" which will crash
-    # arv-mount.
-    # The workaround is to implement it with the proper number of parameters,
-    # and then everything works out.
+    def _check_writable(self, inode_parent):
+        if inode_parent in self.inodes:
+            p = self.inodes[inode_parent]
+        else:
+            raise llfuse.FUSEError(errno.ENOENT)
+
+        if not isinstance(p, Directory):
+            raise llfuse.FUSEError(errno.ENOTDIR)
+
+        if not p.writable():
+            raise llfuse.FUSEError(errno.EPERM)
+
+        if not isinstance(p, CollectionDirectoryBase):
+            raise llfuse.FUSEError(errno.EPERM)
+
+        return p
+
+    @catch_exceptions
     def create(self, inode_parent, name, mode, flags, ctx):
-        raise llfuse.FUSEError(errno.EROFS)
+        p = self._check_writable(inode_parent)
+
+        with llfuse.lock_released:
+            p.collection.open(name, "w")
+
+        # The file entry should have been implicitly created by callback.
+        f = p[name]
+
+        fh = self._filehandles_counter
+        self._filehandles_counter += 1
+        self._filehandles[fh] = FileHandle(fh, f)
+        self.inodes.touch(p)
+
+        return (fh, self.getattr(f.inode))
+
+    @catch_exceptions
+    def mkdir(self, inode_parent, name, mode, ctx):
+        p = self._check_writable(inode_parent)
+
+        with llfuse.lock_released:
+            p.collection.mkdirs(name)
+
+        # The dir entry should have been implicitly created by callback.
+        d = p[name]
+
+        return self.getattr(d.inode)
+
+    @catch_exceptions
+    def unlink(self, inode_parent, name):
+        p = self._check_writable(inode_parent)
+
+        with llfuse.lock_released:
+            p.collection.remove(name)
+
+    def rmdir(self, inode_parent, name):
+        self.unlink(inode_parent, name)
+
+    @catch_exceptions
+    def rename(self, inode_parent_old, name_old, inode_parent_new, name_new):
+        src = self._check_writable(inode_parent_old)
+        dest = self._check_writable(inode_parent_new)
+
+        with llfuse.lock_released:
+            dest.collection.copy(name_old, name_new, source_collection=src.collection, overwrite=True)
+            src.collection.remove(name_old)
+
+    @catch_exceptions
+    def flush(self, fh):
+        if fh in self._filehandles:
+            self._filehandles[fh].flush()
+
+    def fsync(self, fh, datasync):
+        self.flush(fh)
+
+    def fsyncdir(self, fh, datasync):
+        self.flush(fh)

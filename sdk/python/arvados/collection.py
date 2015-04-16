@@ -555,7 +555,7 @@ class RichCollectionBase(CollectionBase):
                 if isinstance(item, RichCollectionBase):
                     return item.find_or_create(pathcomponents[1], create_type)
                 else:
-                    raise IOError((errno.ENOTDIR, "Interior path components must be subcollection"))
+                    raise IOError(errno.ENOTDIR, "Interior path components must be subcollection")
         else:
             return self
 
@@ -581,9 +581,9 @@ class RichCollectionBase(CollectionBase):
                 else:
                     return item
             else:
-                raise IOError((errno.ENOTDIR, "Interior path components must be subcollection"))
+                raise IOError(errno.ENOTDIR, "Interior path components must be subcollection")
 
-    def mkdirs(path):
+    def mkdirs(self, path):
         """Recursive subcollection create.
 
         Like `os.mkdirs()`.  Will create intermediate subcollections needed to
@@ -616,7 +616,7 @@ class RichCollectionBase(CollectionBase):
         create = (mode != "r")
 
         if create and not self.writable():
-            raise IOError((errno.EROFS, "Collection is read only"))
+            raise IOError(errno.EROFS, "Collection is read only")
 
         if create:
             arvfile = self.find_or_create(path, FILE)
@@ -624,9 +624,9 @@ class RichCollectionBase(CollectionBase):
             arvfile = self.find(path)
 
         if arvfile is None:
-            raise IOError((errno.ENOENT, "File not found"))
+            raise IOError(errno.ENOENT, "File not found")
         if not isinstance(arvfile, ArvadosFile):
-            raise IOError((errno.EISDIR, "Path must refer to a file."))
+            raise IOError(errno.EISDIR, "Path must refer to a file.")
 
         if mode[0] == "w":
             arvfile.truncate(0)
@@ -721,10 +721,10 @@ class RichCollectionBase(CollectionBase):
         pathcomponents = path.split("/", 1)
         item = self._items.get(pathcomponents[0])
         if item is None:
-            raise IOError((errno.ENOENT, "File not found"))
+            raise IOError(errno.ENOENT, "File not found")
         if len(pathcomponents) == 1:
             if isinstance(self._items[pathcomponents[0]], RichCollectionBase) and len(self._items[pathcomponents[0]]) > 0 and not recursive:
-                raise IOError((errno.ENOTEMPTY, "Subcollection not empty"))
+                raise IOError(errno.ENOTEMPTY, "Subcollection not empty")
             deleteditem = self._items[pathcomponents[0]]
             del self._items[pathcomponents[0]]
             self._modified = True
@@ -757,7 +757,7 @@ class RichCollectionBase(CollectionBase):
         """
 
         if target_name in self and not overwrite:
-            raise IOError((errno.EEXIST, "File already exists"))
+            raise IOError(errno.EEXIST, "File already exists")
 
         modified_from = None
         if target_name in self:
@@ -800,7 +800,7 @@ class RichCollectionBase(CollectionBase):
         if isinstance(source, basestring):
             source_obj = source_collection.find(source)
             if source_obj is None:
-                raise IOError((errno.ENOENT, "File not found"))
+                raise IOError(errno.ENOENT, "File not found")
             sourcecomponents = source.split("/")
         else:
             source_obj = source
@@ -1380,6 +1380,7 @@ class Collection(RichCollectionBase):
                 segments = []
                 streamoffset = 0L
                 state = BLOCKS
+                self.mkdirs(stream_name)
                 continue
 
             if state == BLOCKS:
@@ -1432,6 +1433,7 @@ class Subcollection(RichCollectionBase):
         self.lock = self.root_collection().lock
         self._manifest_text = None
         self.name = name
+        self.num_retries = parent.num_retries
 
     def root_collection(self):
         return self.parent.root_collection()
