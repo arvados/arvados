@@ -256,7 +256,7 @@ pipeline_in_publicly_accessible_project:
   name: Pipeline in publicly accessible project
   pipeline_template_uuid: zzzzz-p5p6p-tmpltpublicproj
   state: Complete
-  created_at: 2014-09-15 12:00:00
+  created_at: <%= 1.minute.ago.to_s(:db) %>
   components:
     foo:
       script: foo
