@@ -295,7 +295,7 @@ class PipelineInstancesController < ApplicationController
     @object.components.each do |k, component|
       next if !component
       component[:script_parameters].andand.each do |p, tv|
-        if (tv.is_a? Hash) and (tv[:dataclass] == "Collection")
+        if (tv.is_a? Hash) and ((tv[:dataclass] == "Collection") || (tv[:dataclass] == "File"))
           if tv[:value]
             value = tv[:value]
           elsif tv[:default]

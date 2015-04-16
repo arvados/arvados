@@ -187,28 +187,35 @@ module ApplicationHelper
     if readable
       link_to_if_arvados_object attrvalue, opts
     elsif opts[:required] and current_user # no need to show this for anonymous user
-      raw('<div><input type="text" style="border:none;width:100%;background:#ffdddd" disabled=true class="required unreadable-input" value="' + link_text_if_not_readable + '" ></input></div>')
+      raw('<div><input type="text" style="border:none;width:100%;background:#ffdddd" disabled=true class="required unreadable-input" value="') + link_text_if_not_readable + raw('" ></input></div>')
     else
       link_text_if_not_readable
     end
   end
 
+  # This method takes advantage of preloaded collections and objects.
+  # Hence you can improve performance by first preloading objects
+  # related to the page context before using this method.
   def object_readable attrvalue, resource_class=nil
-    # if it is a collection filename, check readable for the locator
-    attrvalue = attrvalue.split('/')[0] if attrvalue
-
-    resource_class = resource_class_for_uuid(attrvalue)
+    resource_class = resource_class_for_uuid(attrvalue) if resource_class.nil?
     return if resource_class.nil?
 
+    return_value = nil
     if resource_class.to_s == 'Collection'
+      # if it is a collection filename, check readable for the locator
+      attrvalue = attrvalue.split('/')[0] if attrvalue
+
       if CollectionsHelper.match(attrvalue)
-        collection_for_pdh(attrvalue).any?
+        found = collection_for_pdh(attrvalue)
+        return_value = found.first if found.any?
       else
-        collections_for_object(attrvalue).any?
+        found = collections_for_object(attrvalue)
+        return_value = found.first if found.any?
       end
     else
-      object_for_dataclass(resource_class, attrvalue)
+      return_value = object_for_dataclass(resource_class, attrvalue)
     end
+    return_value
   end
 
   def render_editable_attribute(object, attr, attrvalue=nil, htmloptions={})

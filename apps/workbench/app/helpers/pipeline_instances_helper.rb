@@ -308,8 +308,8 @@ module PipelineInstancesHelper
 
   def render_unreadable_inputs_present
     if current_user and controller.class.name.eql?('PipelineInstancesController') and unreadable_inputs_present?
-      raw('<div class="unreadable-inputs-present">' +
-            '<p style="color:#ff6666">One or more inputs provided are not readable by you. ' +
+      raw('<div class="alert alert-danger unreadable-inputs-present">' +
+            '<p>One or more inputs provided are not readable by you. ' +
               'Please correct these before you can run the pipeline.</p></div>')
     end
   end

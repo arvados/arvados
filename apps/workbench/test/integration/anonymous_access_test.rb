@@ -247,6 +247,7 @@ class AnonymousAccessTest < ActionDispatch::IntegrationTest
     ['new_pipeline_in_publicly_accessible_project_but_other_objects_elsewhere', false],
     ['new_pipeline_in_publicly_accessible_project_but_other_objects_elsewhere', false, 'spectator'],
     ['new_pipeline_in_publicly_accessible_project_but_other_objects_elsewhere', true, 'admin'],
+    ['new_pipeline_in_publicly_accessible_project_with_dataclass_file_and_other_objects_elsewhere', false, 'spectator'],
   ].each do |fixture, objects_readable, user=nil|
     test "access #{fixture} in public project with objects readable=#{objects_readable} with user #{user}" do
       object = api_fixture('pipeline_instances')[fixture]

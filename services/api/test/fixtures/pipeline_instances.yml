@@ -338,6 +338,23 @@ new_pipeline_in_publicly_accessible_project_but_other_objects_elsewhere:
           dataclass: Collection
           value: zzzzz-4zz18-bv31uwvy3neko21
 
+new_pipeline_in_publicly_accessible_project_with_dataclass_file_and_other_objects_elsewhere:
+  uuid: zzzzz-d1hrv-newsharenotfile
+  owner_uuid: zzzzz-j7d0g-zhxawtyetzwc5f0
+  name: Pipeline in public project in New state with file type data class with objects elsewhere
+  pipeline_template_uuid: zzzzz-p5p6p-aox0k0ofxrystgw
+  state: New
+  created_at: 2014-09-15 12:00:00
+  components:
+    foo:
+      script: foo
+      script_version: master
+      script_parameters:
+        input:
+          required: true
+          dataclass: File
+          value: zzzzz-4zz18-bv31uwvy3neko21
+
 pipeline_in_running_state:
   name: running_with_job
   state: Ready
