@@ -599,35 +599,52 @@ class Arvados::V1::JobReuseControllerTest < ActionController::TestCase
                     jobs(:previous_docker_job_run).uuid)
   end
 
-  def create_foo_hash_job_params(params)
+  JOB_SUBMIT_KEYS = [:script, :script_parameters, :script_version, :repository]
+  DEFAULT_START_JOB = :previous_job_run
+
+  def create_job_params(params, start_from=DEFAULT_START_JOB)
     if not params.has_key?(:find_or_create)
       params[:find_or_create] = true
     end
     job_attrs = params.delete(:job) || {}
-    params[:job] = {
-      script: "hash",
-      script_version: "4fe459abe02d9b365932b8f5dc419439ab4e2577",
-      repository: "active/foo",
-      script_parameters: {
-        input: 'fa7aeb5140e2848d39b416daeef4ffc5+45',
-        an_integer: '1',
-      },
-    }.merge(job_attrs)
+    start_job = jobs(start_from)
+    params[:job] = Hash[JOB_SUBMIT_KEYS.map do |key|
+                          [key, start_job.send(key)]
+                        end]
+    params[:job][:runtime_constraints] =
+      job_attrs.delete(:runtime_constraints) || {}
+    { arvados_sdk_version: :arvados_sdk_version,
+      docker_image_locator: :docker_image }.each do |method, constraint_key|
+      if constraint_value = start_job.send(method)
+        params[:job][:runtime_constraints][constraint_key] ||= constraint_value
+      end
+    end
+    params[:job].merge!(job_attrs)
     params
   end
 
-  def check_new_job_created_from(params)
-    start_time = Time.now
-    post(:create, create_foo_hash_job_params(params))
+  def create_job_from(params, start_from)
+    post(:create, create_job_params(params, start_from))
     assert_response :success
     new_job = assigns(:object)
     assert_not_nil new_job
+    new_job
+  end
+
+  def check_new_job_created_from(params, start_from=DEFAULT_START_JOB)
+    start_time = Time.now
+    new_job = create_job_from(params, start_from)
     assert_operator(start_time, :<=, new_job.created_at)
     new_job
   end
 
-  def check_errors_from(params)
-    post(:create, create_foo_hash_job_params(params))
+  def check_job_reused_from(params, start_from)
+    new_job = create_job_from(params, start_from)
+    assert_equal(jobs(start_from).uuid, new_job.uuid)
+  end
+
+  def check_errors_from(params, start_from=DEFAULT_START_JOB)
+    post(:create, create_job_params(params, start_from))
     assert_includes(405..499, @response.code.to_i)
     errors = json_response.fetch("errors", [])
     assert(errors.any?, "no errors assigned from #{params}")
@@ -671,22 +688,18 @@ class Arvados::V1::JobReuseControllerTest < ActionController::TestCase
   end
 
   test "can't reuse job with older Arvados SDK version" do
-    params = {
-      script_version: "31ce37fe365b3dc204300a3e4c396ad333ed0556",
-      runtime_constraints: {
-        "arvados_sdk_version" => "master",
-        "docker_image" => links(:docker_image_collection_tag).name,
-      },
-    }
-    check_new_job_created_from(job: params)
+    jobspec = {runtime_constraints: {
+        arvados_sdk_version: "master",
+      }}
+    check_new_job_created_from({job: jobspec},
+                               :previous_job_run_with_arvados_sdk_version)
   end
 
   test "reuse job from arvados_sdk_version git filters" do
     filters_hash = BASE_FILTERS.
       merge("arvados_sdk_version" => ["in git", "commit2"])
     filters_hash.delete("script_version")
-    params = create_foo_hash_job_params(filters:
-                                        filters_from_hash(filters_hash))
+    params = create_job_params(filters: filters_from_hash(filters_hash))
     post(:create, params)
     assert_response :success
     assert_equal(jobs(:previous_job_run_with_arvados_sdk_version).uuid,
