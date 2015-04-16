@@ -203,7 +203,7 @@ previous_docker_job_run:
     input: fa7aeb5140e2848d39b416daeef4ffc5+45
     an_integer: "1"
   runtime_constraints:
-    docker_image: arvados/test
+    docker_image: arvados/apitestfixture
   success: true
   output: ea10d51bcf88862dbcc36eb292017dfd+45
   docker_image_locator: fa3c1a9cb6783f85f2ecda037e07b8c3+167
@@ -221,7 +221,9 @@ previous_job_run_with_arvados_sdk_version:
     an_integer: "1"
   runtime_constraints:
     arvados_sdk_version: commit2
+    docker_image: arvados/apitestfixture
   arvados_sdk_version: 00634b2b8a492d6f121e3cf1d6587b821136a9a7
+  docker_image_locator: fa3c1a9cb6783f85f2ecda037e07b8c3+167
   success: true
   output: ea10d51bcf88862dbcc36eb292017dfd+45
   state: Complete
