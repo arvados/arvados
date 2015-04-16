@@ -178,7 +178,7 @@ module ApplicationHelper
   end
 
   def link_to_arvados_object_if_readable(attrvalue, link_text_if_not_readable, opts={})
-    resource_class = resource_class_for_uuid(attrvalue)
+    resource_class = resource_class_for_uuid(attrvalue.split('/')[0]) if attrvalue
     if !resource_class
       return link_to_if_arvados_object attrvalue, opts
     end
@@ -197,14 +197,14 @@ module ApplicationHelper
   # Hence you can improve performance by first preloading objects
   # related to the page context before using this method.
   def object_readable attrvalue, resource_class=nil
+    # if it is a collection filename, check readable for the locator
+    attrvalue = attrvalue.split('/')[0] if attrvalue
+
     resource_class = resource_class_for_uuid(attrvalue) if resource_class.nil?
     return if resource_class.nil?
 
     return_value = nil
     if resource_class.to_s == 'Collection'
-      # if it is a collection filename, check readable for the locator
-      attrvalue = attrvalue.split('/')[0] if attrvalue
-
       if CollectionsHelper.match(attrvalue)
         found = collection_for_pdh(attrvalue)
         return_value = found.first if found.any?

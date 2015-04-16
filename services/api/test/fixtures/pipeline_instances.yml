@@ -353,7 +353,7 @@ new_pipeline_in_publicly_accessible_project_with_dataclass_file_and_other_object
         input:
           required: true
           dataclass: File
-          value: zzzzz-4zz18-bv31uwvy3neko21
+          value: zzzzz-4zz18-bv31uwvy3neko21/bar
 
 pipeline_in_running_state:
   name: running_with_job
