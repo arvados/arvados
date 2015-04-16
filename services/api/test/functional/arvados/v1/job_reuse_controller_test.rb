@@ -696,14 +696,15 @@ class Arvados::V1::JobReuseControllerTest < ActionController::TestCase
   end
 
   test "reuse job from arvados_sdk_version git filters" do
+    prev_job = jobs(:previous_job_run_with_arvados_sdk_version)
     filters_hash = BASE_FILTERS.
-      merge("arvados_sdk_version" => ["in git", "commit2"])
+      merge("arvados_sdk_version" => ["in git", "commit2"],
+            "docker_image_locator" => ["=", prev_job.docker_image_locator])
     filters_hash.delete("script_version")
     params = create_job_params(filters: filters_from_hash(filters_hash))
     post(:create, params)
     assert_response :success
-    assert_equal(jobs(:previous_job_run_with_arvados_sdk_version).uuid,
-                 assigns(:object).uuid)
+    assert_equal(prev_job.uuid, assigns(:object).uuid)
   end
 
   test "create new job because of arvados_sdk_version 'not in git' filters" do
