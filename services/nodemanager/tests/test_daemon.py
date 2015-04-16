@@ -288,6 +288,24 @@ class NodeManagerDaemonActorTestCase(testutil.ActorTestMixin,
         self.stop_proxy(self.daemon)
         self.assertTrue(self.last_setup.stop_if_no_cloud_node.called)
 
+    def test_all_booting_nodes_tried_to_shut_down(self):
+        size = testutil.MockSize(2)
+        self.make_daemon(want_sizes=[size])
+        self.daemon.max_nodes.get(self.TIMEOUT)
+        setup1 = self.last_setup
+        setup1.stop_if_no_cloud_node().get.return_value = False
+        setup1.stop_if_no_cloud_node.reset_mock()
+        self.daemon.update_server_wishlist([size, size]).get(self.TIMEOUT)
+        self.daemon.max_nodes.get(self.TIMEOUT)
+        self.assertIsNot(setup1, self.last_setup)
+        self.last_setup.stop_if_no_cloud_node().get.return_value = True
+        self.last_setup.stop_if_no_cloud_node.reset_mock()
+        self.daemon.update_server_wishlist([]).get(self.TIMEOUT)
+        self.daemon.max_nodes.get(self.TIMEOUT)
+        self.stop_proxy(self.daemon)
+        self.assertEqual(1, self.last_setup.stop_if_no_cloud_node.call_count)
+        self.assertTrue(setup1.stop_if_no_cloud_node.called)
+
     def test_shutdown_declined_at_wishlist_capacity(self):
         cloud_node = testutil.cloud_node_mock(1)
         size = testutil.MockSize(1)
@@ -384,6 +402,8 @@ class NodeManagerDaemonActorTestCase(testutil.ActorTestMixin,
 
     def test_clean_shutdown_waits_for_node_setup_finish(self):
         new_node = self.start_node_boot()
+        new_node.stop_if_no_cloud_node().get.return_value = False
+        new_node.stop_if_no_cloud_node.reset_mock()
         self.daemon.shutdown().get(self.TIMEOUT)
         self.assertTrue(new_node.stop_if_no_cloud_node.called)
         self.daemon.node_up(new_node).get(self.TIMEOUT)
@@ -393,9 +413,11 @@ class NodeManagerDaemonActorTestCase(testutil.ActorTestMixin,
             self.daemon.actor_ref.actor_stopped.wait(self.TIMEOUT))
 
     def test_wishlist_ignored_after_shutdown(self):
-        size = testutil.MockSize(2)
-        self.make_daemon(want_sizes=[size])
+        new_node = self.start_node_boot()
+        new_node.stop_if_no_cloud_node().get.return_value = False
+        new_node.stop_if_no_cloud_node.reset_mock()
         self.daemon.shutdown().get(self.TIMEOUT)
+        size = testutil.MockSize(2)
         self.daemon.update_server_wishlist([size] * 2).get(self.TIMEOUT)
         self.timer.deliver()
         self.stop_proxy(self.daemon)
