@@ -35,7 +35,7 @@ $(document).on('editable:success', function(event, tag, response, newValue) {
 $(document).on('ready ajax:complete', function() {
     $('a.editable.required').each(function() {
         var $tag = $(this);
-        if ($tag.hasClass("editable-empty") || $tag.hasClass("unreadable-input")) {
+        if ($tag.hasClass("editable-empty")) {
             $tag.parent().css("background-color", "#ffdddd");
             $tag.parent().prev().css("background-color", "#ffdddd");
         }
