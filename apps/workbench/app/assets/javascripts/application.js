@@ -145,6 +145,9 @@ jQuery(function($){
         on('ready ajax:complete', function() {
             // This makes the dialog close on Esc key, obviously.
             $('.modal').attr('tabindex', '-1')
+        }).
+        on('ready', function() {
+            $('input').trigger('input');
         });
 
     HeaderRowFixer = function(selector) {
