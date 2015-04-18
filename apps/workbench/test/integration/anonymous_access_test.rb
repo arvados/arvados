@@ -62,8 +62,8 @@ class AnonymousAccessTest < ActionDispatch::IntegrationTest
     assert_selector 'a', text: 'Data collections'
     assert_selector 'a', text: 'Jobs and pipelines'
     assert_selector 'a', text: 'Pipeline templates'
+    assert_selector 'a', text: 'Subprojects'
     assert_selector 'a', text: 'Advanced'
-    assert_no_selector 'a', text: 'Subprojects'
     assert_no_selector 'a', text: 'Other objects'
     assert_no_selector 'button', text: 'Add data'
 
@@ -181,6 +181,19 @@ class AnonymousAccessTest < ActionDispatch::IntegrationTest
     assert_text 'Public Projects Unrestricted public data'
     assert_text 'script version'
     assert_no_selector 'a', text: 'Run this pipeline'
+  end
+
+  test "anonymous user accesses subprojects tab in shared project" do
+    visit PUBLIC_PROJECT + '#Subprojects'
+
+    assert_text 'Subproject in anonymous accessible project'
+
+    within first('tr[data-kind="arvados#group"]') do
+      click_link 'Show'
+    end
+
+    # in subproject
+    assert_text 'Description for subproject in anonymous accessible project'
   end
 
   [

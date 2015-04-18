@@ -165,7 +165,11 @@ module ApplicationHelper
       if opts[:no_link] or (resource_class == User && !current_user)
         raw(link_name)
       else
-        (link_to raw(link_name), { controller: resource_class.to_s.tableize, action: 'show', id: ((opts[:name_link].andand.uuid) || link_uuid) }, style_opts) + raw(tags)
+        controller_class = resource_class.to_s.tableize
+        if controller_class.eql?('groups') and object.andand.group_class.eql?('project')
+          controller_class = 'projects'
+        end
+        (link_to raw(link_name), { controller: controller_class, action: 'show', id: ((opts[:name_link].andand.uuid) || link_uuid) }, style_opts) + raw(tags)
       end
     else
       # just return attrvalue if it is not recognizable as an Arvados object or uuid.
