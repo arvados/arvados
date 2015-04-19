@@ -28,12 +28,12 @@ Create a secret:
 
 <notextile>
 <pre><code>~/sso-devise-omniauth-provider$ <span class="userinput">cp -i config/initializers/secret_token.rb.example config/initializers/secret_token.rb</span>
-~/sso-devise-omniauth-provider$ <span class="userinput">rake secret</span>
+~/sso-devise-omniauth-provider$ <span class="userinput">ruby -e 'puts rand(2**400).to_s(36)'</span>
 zzzzzzzzzzzzzzzzzzzzzzzzzzzzzzzzzzzzzzzzzzzzzzzzzzzzzzzz
 </code></pre>
 </notextile>
 
-Edit @config/initializers/secret_token.rb@ to set @config.secret_token@ to the string produced by @rake secret@.
+Edit @config/initializers/secret_token.rb@ to set @config.secret_token@ to the string produced by @rand@ above.
 
 h3. Configure upstream authentication provider
 
@@ -51,7 +51,7 @@ h3(#client). Create arvados-server client
 Use @rails console@ to create a @Client@ record that will be used by the Arvados API server.  The values of @app_id@ and @app_secret@ correspond to the @APP_ID@ and @APP_SECRET@ that must be set in in "Setting up Omniauth in the API server.":install-api-server.html#omniauth
 
 <notextile>
-<pre><code>~/sso-devise-omniauth-provider$ <span class="userinput">rake secret</span>
+<pre><code>~/sso-devise-omniauth-provider$ <span class="userinput">ruby -e 'puts rand(2**400).to_s(36)'</span>
 xxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxx
 ~/sso-devise-omniauth-provider$ <span class="userinput">RAILS_ENV=production bundle exec rails console</span>
 :001 &gt; <span class="userinput">c = Client.new</span>
