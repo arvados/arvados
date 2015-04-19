@@ -54,6 +54,8 @@ module SDKFixtures
   NONNORMALIZED_MANIFEST =
     ["./dir2 #{random_block} 0:0:z 0:0:y 0:0:x",
      "./dir1 #{random_block} 0:0:p 0:0:o 0:0:n\n"].join("\n")
+  MULTILEVEL_MANIFEST_WITH_DIRS_IN_FILENAMES =
+    [". #{random_block(10)} 0:3:file1 3:3:dir1/file1 6:3:dir1/dir2/file1\n"].join("")
 
   ### Non-tree manifests
   # These manifests follow the spec, but they express a structure that can't

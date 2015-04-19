@@ -208,4 +208,22 @@ class ManifestTest < Minitest::Test
       assert !file_name.empty?, "empty file_name in #{name} fixture"
     end
   end
+
+  def test_multilevel_collection_with_dirs_in_filenames
+    manifest = Keep::Manifest.new(MULTILEVEL_MANIFEST_WITH_DIRS_IN_FILENAMES)
+
+    seen = Hash.new { |this, key| this[key] = [] }
+
+    manifest.files.each do |stream, basename, size|
+      refute(seen[stream].include?(basename), "each_file repeated #{stream}/#{basename}")
+      assert_equal(3, size, "wrong size for #{stream}/#{basename}")
+      seen[stream] << basename
+    end
+
+    assert_equal(%w(. ./dir1 ./dir1/dir2), seen.keys)
+
+    seen.each_pair do |stream, basenames|
+      assert_equal(%w(file1), basenames.sort, "wrong file list for #{stream}")
+    end
+  end
 end
