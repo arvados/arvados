@@ -69,7 +69,7 @@ function maybe_load_more_content(event) {
             fail(function(jqxhr, status, error) {
                 var $faildiv;
                 var $container = this.container;
-                if ($container.attr('data-infinite-serial') != this.serial) {
+                if ($container.attr('data-infinite-serial') != JSON.stringify(this.serial)) {
                     // A newer request is already in progress.
                     return;
                 }
