@@ -98,7 +98,7 @@ class JobsTest < ActionDispatch::IntegrationTest
       # that the error message says something appropriate for that
       # situation.
       if expect_options && use_latest
-        assert_text "no local repository for active/foo"
+        assert_text "Script version #{job['supplied_script_version']} does not resolve to a commit"
       else
         assert_text "Script version #{job['script_version']} does not resolve to a commit"
       end
