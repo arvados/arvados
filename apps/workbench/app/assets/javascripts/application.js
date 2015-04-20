@@ -147,6 +147,9 @@ jQuery(function($){
             $('.modal').attr('tabindex', '-1')
         }).
         on('ready', function() {
+            // Need this to trigger input validation/synchronization callbacks because some browsers
+            // auto-fill form fields (e.g., when navigating "back" to a page where some text
+            // had been entered in a search box) without triggering a change or input event.
             $('input').trigger('input');
         });
 
