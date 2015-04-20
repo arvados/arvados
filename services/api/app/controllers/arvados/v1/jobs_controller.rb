@@ -254,18 +254,17 @@ class Arvados::V1::JobsController < ApplicationController
       else
         raise ArgumentError.new("unknown attribute for git filter: #{attr}")
       end
-      version_range = Commit.find_commit_range(current_user,
-                                               filter["repository"],
-                                               filter["min_version"],
-                                               filter["max_version"],
-                                               filter["exclude_versions"])
-      if version_range.nil?
+      revisions = Commit.find_commit_range(filter["repository"],
+                                           filter["min_version"],
+                                           filter["max_version"],
+                                           filter["exclude_versions"])
+      if revisions.empty?
         raise ArgumentError.
           new("error searching #{filter['repository']} from " +
               "'#{filter['min_version']}' to '#{filter['max_version']}', " +
               "excluding #{filter['exclude_versions']}")
       end
-      @filters.append([attr, "in", version_range])
+      @filters.append([attr, "in", revisions])
     end
   end
 

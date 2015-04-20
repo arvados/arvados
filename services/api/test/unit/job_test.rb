@@ -400,4 +400,15 @@ class JobTest < ActiveSupport::TestCase
     job = Job.create!(job_attrs(good_params))
     assert job.valid?
   end
+
+  test 'update job uuid tag in internal.git when version changes' do
+    authorize_with :active
+    j = jobs :queued
+    j.update_attributes repository: 'active/foo', script_version: 'b1'
+    assert_equal('1de84a854e2b440dc53bf42f8548afa4c17da332',
+                 internal_tag(j.uuid))
+    j.update_attributes repository: 'active/foo', script_version: 'master'
+    assert_equal('077ba2ad3ea24a929091a9e6ce545c93199b8e57',
+                 internal_tag(j.uuid))
+  end
 end
