@@ -57,6 +57,12 @@ class Repository < ArvadosBase
     @buggy_git_version
   end
 
+  # http_fetch_url returns the first http:// or https:// url (if any)
+  # in the api response's clone_urls attribute.
+  def http_fetch_url
+    clone_urls.andand.select { |u| /^http/ =~ u }.first
+  end
+
   protected
 
   # refresh fetches the latest repository content into the local
@@ -66,12 +72,6 @@ class Repository < ArvadosBase
   def refresh
     run_git 'fetch', http_fetch_url, '+*:*' unless @fresh
     @fresh = true
-  end
-
-  # http_fetch_url returns the first http:// or https:// url (if any)
-  # in the api response's clone_urls attribute.
-  def http_fetch_url
-    clone_urls.andand.select { |u| /^http/ =~ u }.first
   end
 
   # run_git sets up the ARVADOS_API_TOKEN environment variable,
