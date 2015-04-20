@@ -119,6 +119,9 @@ class Commit < ActiveRecord::Base
       raise ArgumentError.new "invalid sha1 #{sha1}"
     end
     src_gitdir, _ = git_dir_for repo_name
+    unless src_gitdir
+      raise ArgumentError.new "no local repository for #{repo_name}"
+    end
     dst_gitdir = Rails.configuration.git_internal_dir
     must_pipe("echo #{sha1.shellescape}",
               "git --git-dir #{src_gitdir.shellescape} pack-objects -q --revs --stdout",

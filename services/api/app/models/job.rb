@@ -125,7 +125,7 @@ class Job < ArvadosModel
   end
 
   def ensure_script_version_is_commit
-    if self.state == Running
+    if state == Running
       # Apparently client has already decided to go for it. This is
       # needed to run a local job using a local working directory
       # instead of a commit-ish.
@@ -147,8 +147,11 @@ class Job < ArvadosModel
   end
 
   def tag_version_in_internal_repository
-    if self.state == Running
+    if state == Running
       # No point now. See ensure_script_version_is_commit.
+      true
+    elsif errors.any?
+      # Won't be saved, and script_version might not even be valid.
       true
     elsif new_record? or repository_changed? or script_version_changed?
       uuid_was = uuid
