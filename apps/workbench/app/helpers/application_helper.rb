@@ -178,26 +178,44 @@ module ApplicationHelper
   end
 
   def link_to_arvados_object_if_readable(attrvalue, link_text_if_not_readable, opts={})
-    resource_class = resource_class_for_uuid(attrvalue)
+    resource_class = resource_class_for_uuid(attrvalue.split('/')[0]) if attrvalue
     if !resource_class
       return link_to_if_arvados_object attrvalue, opts
     end
 
-    if resource_class.to_s == 'Collection'
-      if CollectionsHelper.match(attrvalue)
-        readable = collection_for_pdh(attrvalue).any?
-      else
-        readable = collections_for_object(attrvalue).any?
-      end
-    else
-      readable = object_for_dataclass(resource_class, attrvalue)
-    end
-
+    readable = object_readable attrvalue, resource_class
     if readable
       link_to_if_arvados_object attrvalue, opts
+    elsif opts[:required] and current_user # no need to show this for anonymous user
+      raw('<div><input type="text" style="border:none;width:100%;background:#ffdddd" disabled=true class="required unreadable-input" value="') + link_text_if_not_readable + raw('" ></input></div>')
     else
       link_text_if_not_readable
     end
+  end
+
+  # This method takes advantage of preloaded collections and objects.
+  # Hence you can improve performance by first preloading objects
+  # related to the page context before using this method.
+  def object_readable attrvalue, resource_class=nil
+    # if it is a collection filename, check readable for the locator
+    attrvalue = attrvalue.split('/')[0] if attrvalue
+
+    resource_class = resource_class_for_uuid(attrvalue) if resource_class.nil?
+    return if resource_class.nil?
+
+    return_value = nil
+    if resource_class.to_s == 'Collection'
+      if CollectionsHelper.match(attrvalue)
+        found = collection_for_pdh(attrvalue)
+        return_value = found.first if found.any?
+      else
+        found = collections_for_object(attrvalue)
+        return_value = found.first if found.any?
+      end
+    else
+      return_value = object_for_dataclass(resource_class, attrvalue)
+    end
+    return_value
   end
 
   def render_editable_attribute(object, attr, attrvalue=nil, htmloptions={})
@@ -294,7 +312,7 @@ module ApplicationHelper
     end
 
     if not object.andand.attribute_editable?(attr)
-      return link_to_arvados_object_if_readable(attrvalue, attrvalue, friendly_name: true)
+      return link_to_arvados_object_if_readable(attrvalue, attrvalue, {friendly_name: true, required: required})
     end
 
     if dataclass
@@ -346,10 +364,11 @@ module ApplicationHelper
            success: 'page-refresh'
          }.to_json,
         })
+      is_readable_input = attrvalue.present? and object_readable attrvalue, Collection
       return content_tag('div', :class => 'input-group') do
         html = text_field_tag(dn, display_value,
                               :class =>
-                              "form-control #{'required' if required}")
+                              "form-control #{'required' if required} #{'unreadable-input' if !attrvalue.andand.empty? and !is_readable_input}")
         html + content_tag('span', :class => 'input-group-btn') do
           link_to('Choose',
                   modal_path,

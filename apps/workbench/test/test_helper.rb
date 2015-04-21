@@ -44,7 +44,7 @@ class ActiveSupport::TestCase
     end
   end
 
-  setup do
+  teardown do
     Thread.current[:arvados_api_token] = nil
     Thread.current[:user] = nil
     Thread.current[:reader_tokens] = nil

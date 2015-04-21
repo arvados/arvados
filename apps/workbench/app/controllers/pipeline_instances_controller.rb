@@ -284,6 +284,60 @@ class PipelineInstancesController < ApplicationController
     %w(Compare Graph)
   end
 
+  helper_method :unreadable_inputs_present?
+  def unreadable_inputs_present?
+    unless @unreadable_inputs_present.nil?
+      return @unreadable_inputs_present
+    end
+
+    input_uuids = []
+    input_pdhs = []
+    @object.components.each do |k, component|
+      next if !component
+      component[:script_parameters].andand.each do |p, tv|
+        if (tv.is_a? Hash) and ((tv[:dataclass] == "Collection") || (tv[:dataclass] == "File"))
+          if tv[:value]
+            value = tv[:value]
+          elsif tv[:default]
+            value = tv[:default]
+          end
+          if value
+            split = value.split '/'
+            if CollectionsHelper.match(split[0])
+              input_pdhs << split[0]
+            else
+              input_uuids << split[0]
+            end
+          end
+        end
+      end
+    end
+
+    input_pdhs = input_pdhs.uniq
+    input_uuids = input_uuids.uniq
+
+    preload_collections_for_objects input_uuids if input_uuids.any?
+    preload_for_pdhs input_pdhs if input_pdhs.any?
+
+    @unreadable_inputs_present = false
+    input_uuids.each do |uuid|
+      if !collections_for_object(uuid).any?
+        @unreadable_inputs_present = true
+        break
+      end
+    end
+    if !@unreadable_inputs_present
+      input_pdhs.each do |pdh|
+        if !collection_for_pdh(pdh).any?
+          @unreadable_inputs_present = true
+          break
+        end
+      end
+    end
+
+    @unreadable_inputs_present
+  end
+
   protected
   def for_comparison v
     if v.is_a? Hash or v.is_a? Array

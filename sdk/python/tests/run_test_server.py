@@ -256,7 +256,7 @@ def _start_keep(n, keep_args):
     keep0 = tempfile.mkdtemp()
     port = find_available_port()
     keep_cmd = ["keepstore",
-                "-volumes={}".format(keep0),
+                "-volume={}".format(keep0),
                 "-listen=:{}".format(port),
                 "-pid={}".format("{}/keep{}.pid".format(TEST_TMPDIR, n))]
 

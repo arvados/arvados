@@ -16,7 +16,11 @@
         <div class="panel-body">
           <% if !missing_required_profile? && params[:offer_return_to] %>
             <div class="alert alert-success">
-              <p>Thank you for filling in your profile. <%= link_to 'Back to work!', params[:offer_return_to], class: 'btn btn-sm btn-primary' %></p>
+              <% if current_user.prefs[:getting_started_shown] %>
+                <p>Thank you for filling in your profile. <%= link_to 'Back to work!', params[:offer_return_to], class: 'btn btn-sm btn-primary' %></p>
+              <% else %>
+                <p>Thank you for filling in your profile. <%= link_to 'Get started', params[:offer_return_to], class: 'btn btn-sm btn-primary' %></p>
+              <% end %>
             </div>
           <% else %>
             <div class="alert alert-info">
@@ -79,6 +83,13 @@
                       </div>
                     <% end %>
                   </div>
+                <% end %>
+              <% end %>
+
+              <%# If the user has other prefs, we need to preserve them %>
+              <% current_user.prefs.each do |key, value| %>
+                <% if key != :profile %>
+                  <input type="hidden" name="user[prefs][:<%=key%>]" value="<%=value.to_json%>">
                 <% end %>
               <% end %>
 

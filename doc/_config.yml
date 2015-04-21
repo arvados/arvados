@@ -13,16 +13,16 @@ arvados_workbench_host: localhost
 exclude: ["Rakefile", "tmp", "vendor"]
 
 navbar:
-  start:
-    - Getting Started:
-      - start/index.html.textile.liquid
-    - Quickstart:
-      - start/getting_started/publicproject.html.textile.liquid
-      - start/getting_started/firstpipeline.html.textile.liquid
-    - Common Use Cases:
-      - start/getting_started/sharedata.html.textile.liquid
-    - Next Steps:
-      - start/getting_started/nextsteps.html.textile.liquid
+  #start:
+    #- Getting Started:
+      #- start/index.html.textile.liquid
+    #- Quickstart:
+      #- start/getting_started/publicproject.html.textile.liquid
+      #- start/getting_started/firstpipeline.html.textile.liquid
+    #- Common Use Cases:
+      #- start/getting_started/sharedata.html.textile.liquid
+    #- Next Steps:
+      #- start/getting_started/nextsteps.html.textile.liquid
 
   userguide:
     - Welcome:

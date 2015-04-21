@@ -745,17 +745,17 @@ class Arvados::V1::UsersControllerTest < ActionController::TestCase
     authorize_with :admin
 
     user = {}
-    user[:prefs] = users(:active_no_prefs_profile).prefs
+    user[:prefs] = users(:active_no_prefs_profile_no_getting_started_shown).prefs
     user[:prefs][:profile] = {:profile => {'organization' => 'example.com'}}
     put :update, {
-      id: users(:active_no_prefs_profile).uuid,
+      id: users(:active_no_prefs_profile_no_getting_started_shown).uuid,
       user: user
     }
     assert_response :success
 
     found_email = false
     ActionMailer::Base.deliveries.andand.each do |email|
-      if email.subject == "Profile created by #{users(:active_no_prefs_profile).email}"
+      if email.subject == "Profile created by #{users(:active_no_prefs_profile_no_getting_started_shown).email}"
         found_email = true
         break
       end

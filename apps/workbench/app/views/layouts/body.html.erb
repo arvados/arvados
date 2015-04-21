@@ -111,7 +111,17 @@
               </li>
             <% end %>
           <% else %>
-            <li><a href="<%= arvados_api_client.arvados_login_url(return_to: root_url) %>">Log in</a></li>
+            <li class="dropdown hover-dropdown login-menu">
+              <a href="<%= arvados_api_client.arvados_login_url(return_to: root_url) %>">Log in</a>
+              <ul class="dropdown-menu">
+                <li>
+                  <a href="<%= arvados_api_client.arvados_login_url(return_to: root_url) %>">
+                    <span class="fa fa-lg fa-sign-in"></span>
+                    <p style="margin-left: 1.6em; margin-top: -1.35em; margin-bottom: 0em; margin-right: 0.5em;">Log in or register with<br/>any Google account</p>
+                  </a>
+                </li>
+              </ul>
+            </li>
           <% end %>
 
           <li class="dropdown help-menu">
@@ -119,6 +129,13 @@
               <span class="fa fa-lg fa-question-circle"></span>
             </a>
             <ul class="dropdown-menu">
+              <li>
+              <%= link_to raw('<i class="fa fa-fw fa-info"></i> Getting Started ...'), "#",
+                   {'data-toggle' => "modal", 'data-target' => '#getting-started-modal-window'}  %>
+              </li>
+              <% if Rails.configuration.arvados_public_data_doc_url %>
+                <li><%= link_to raw('<i class="fa fa-book fa-fw"></i> Public Pipelines and Data sets'), "#{Rails.configuration.arvados_public_data_doc_url}", target: "_blank" %></li>
+              <% end %>
               <li><%= link_to raw('<i class="fa fa-book fa-fw"></i> Tutorials and User guide'), "#{Rails.configuration.arvados_docsite}/user", target: "_blank" %></li>
               <li><%= link_to raw('<i class="fa fa-book fa-fw"></i> API Reference'), "#{Rails.configuration.arvados_docsite}/api", target: "_blank" %></li>
               <li><%= link_to raw('<i class="fa fa-book fa-fw"></i> SDK Reference'), "#{Rails.configuration.arvados_docsite}/sdk", target: "_blank" %></li>
@@ -210,6 +227,7 @@
     <% end %>
 
     <%= render partial: 'browser_unsupported' %><%# requires JS support below %>
+    <%= render partial: 'getting_started/getting_started_popup' %>
 
     <div id="page-wrapper">
       <%= yield %>
@@ -221,3 +239,17 @@
 <div class="modal-container"></div>
 <div id="report-issue-modal-window"></div>
 <script src="/browser_unsupported.js"></script>
+
+<%  if current_user and !current_user.prefs[:getting_started_shown] and
+       !request.url.include?("/profile") and
+       !request.url.include?("/user_agreements") and
+       !request.url.include?("/inactive")%>
+  <script>
+    $("#getting-started-modal-window").modal('show');
+  </script>
+  <%
+    prefs = current_user.prefs
+    prefs[:getting_started_shown] = Time.now
+    current_user.update_attributes prefs: prefs.to_json
+  %>
+<% end %>

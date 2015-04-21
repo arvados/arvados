@@ -13,6 +13,8 @@
 
 <% else %>
   <%# state is either New or Ready %>
+  <%= render_unreadable_inputs_present %>
+
   <p><i>Here are all of the pipeline's components (jobs that will need to run in order to complete the pipeline). If you know what you're doing (or you're experimenting) you can modify these parameters before starting the pipeline. Usually, you only need to edit the settings presented on the "Inputs" tab above.</i></p>
 
   <%= render_pipeline_components("editable", :json, editable: true) %>

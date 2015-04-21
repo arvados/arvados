@@ -457,6 +457,7 @@ class UserTest < ActiveSupport::TestCase
 
     vm_perm = find_obj_in_resp response, 'Link', 'arvados#virtualMachine'
     verify_link vm_perm, 'permission', 'can_login', resp_user[:uuid], vm.uuid
+    assert_equal("foo", vm_perm.properties["username"])
   end
 
   test "setup new user with junk in database" do
@@ -499,6 +500,7 @@ class UserTest < ActiveSupport::TestCase
 
     vm_perm = find_obj_in_resp response, 'Link', 'arvados#virtualMachine'
     verify_link vm_perm, 'permission', 'can_login', resp_user[:uuid], vm.uuid
+    assert_equal("foo", vm_perm.properties["username"])
   end
 
   test "setup new user in multiple steps" do
@@ -552,6 +554,7 @@ class UserTest < ActiveSupport::TestCase
 
     vm_perm = find_obj_in_resp response, 'Link', 'arvados#virtualMachine'
     verify_link vm_perm, 'permission', 'can_login', resp_user[:uuid], vm.uuid
+    assert_equal("foo", vm_perm.properties["username"])
   end
 
   def find_obj_in_resp (response_items, object_type, head_kind=nil)

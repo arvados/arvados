@@ -473,6 +473,9 @@ class _BlockManager(object):
                     if self._put_queue is not None:
                         self._put_queue.task_done()
 
+        if block.state() != _BufferBlock.WRITABLE:
+            return
+
         if wait:
             block.set_state(_BufferBlock.PENDING)
             loc = self._keep.put(block.buffer_view[0:block.write_pointer].tobytes())
@@ -541,7 +544,7 @@ class _BlockManager(object):
 
         for k,v in items:
             if v.state() == _BufferBlock.WRITABLE:
-                self.commit_bufferblock(v, False)
+                v.owner.flush(False)
 
         with self.lock:
             if self._put_queue is not None:
@@ -760,7 +763,7 @@ class ArvadosFile(object):
                 break
         return ''.join(data)
 
-    def _repack_writes(self):
+    def _repack_writes(self, num_retries):
         """Test if the buffer block has more data than actual segments.
 
         This happens when a buffered write over-writes a file range written in
@@ -778,9 +781,10 @@ class ArvadosFile(object):
         if write_total < self._current_bblock.size():
             # There is more data in the buffer block than is actually accounted for by segments, so
             # re-pack into a new buffer by copying over to a new buffer block.
+            contents = self.parent._my_block_manager().get_block_contents(self._current_bblock.blockid, num_retries)
             new_bb = self.parent._my_block_manager().alloc_bufferblock(self._current_bblock.blockid, starting_capacity=write_total, owner=self)
             for t in bufferblock_segs:
-                new_bb.append(self._current_bblock.buffer_view[t.segment_offset:t.segment_offset+t.range_size].tobytes())
+                new_bb.append(contents[t.segment_offset:t.segment_offset+t.range_size])
                 t.segment_offset = new_bb.size() - t.range_size
 
             self._current_bblock = new_bb
@@ -809,7 +813,7 @@ class ArvadosFile(object):
             self._current_bblock = self.parent._my_block_manager().alloc_bufferblock(owner=self)
 
         if (self._current_bblock.size() + len(data)) > config.KEEP_BLOCK_SIZE:
-            self._repack_writes()
+            self._repack_writes(num_retries)
             if (self._current_bblock.size() + len(data)) > config.KEEP_BLOCK_SIZE:
                 self.parent._my_block_manager().commit_bufferblock(self._current_bblock, False)
                 self._current_bblock = self.parent._my_block_manager().alloc_bufferblock(owner=self)
@@ -823,10 +827,10 @@ class ArvadosFile(object):
         return len(data)
 
     @synchronized
-    def flush(self, wait=True):
+    def flush(self, wait=True, num_retries=0):
         if self.modified():
             if self._current_bblock and self._current_bblock.state() == _BufferBlock.WRITABLE:
-                self._repack_writes()
+                self._repack_writes(num_retries)
                 self.parent._my_block_manager().commit_bufferblock(self._current_bblock, wait)
             self.parent.notify(MOD, self.parent, self.name, (self, self))
 

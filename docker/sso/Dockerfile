@@ -18,9 +18,10 @@ RUN a2dissite default && \
     a2enmod rewrite && \
     a2enmod ssl && \
     cd /usr/src/sso-provider && \
+    cp config/environments/production.rb.example config/environments/production.rb && \
     RAILS_ENV=production /usr/local/rvm/bin/rvm-exec default bundle exec rake db:setup && \
     /usr/local/rvm/bin/rvm-exec default bundle exec rake assets:precompile && \
-    chown www-data:www-data tmp_omniauth log config.ru -R && \
+    chown www-data:www-data log config.ru -R && \
     chown www-data:www-data db db/production.sqlite3 && \
     /bin/mkdir /var/run/apache2
 
