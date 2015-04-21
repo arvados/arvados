@@ -98,17 +98,7 @@ func WriteHeapProfile() {
 
 func GetCollectionsAndSummarize(params GetCollectionsParams) (results ReadCollections) {
 	results = GetCollections(params)
-	results.Summarize()
-
-	if params.Logger != nil {
-		params.Logger.Update(func(p map[string]interface{}, e map[string]interface{}) {
-			collectionInfo := p["collection_info"].(map[string]interface{})
-			// Since maps are shallow copied, we run a risk of concurrent
-			// updates here. By copying results.OwnerToCollectionSize into
-			// the log, we're assuming that it won't be updated.
-			collectionInfo["owner_to_collection_size"] = results.OwnerToCollectionSize
-		})
-	}
+	results.Summarize(params.Logger)
 
 	log.Printf("Uuid to Size used: %v", results.OwnerToCollectionSize)
 	log.Printf("Read and processed %d collections",
@@ -160,10 +150,9 @@ func GetCollections(params GetCollectionsParams) (results ReadCollections) {
 
 	if params.Logger != nil {
 		params.Logger.Update(func(p map[string]interface{}, e map[string]interface{}) {
-			collectionInfo := make(map[string]interface{})
+			collectionInfo := logger.GetOrCreateMap(p, "collection_info")
 			collectionInfo["num_collections_at_start"] = initialNumberOfCollectionsAvailable
 			collectionInfo["batch_size"] = params.BatchSize
-			p["collection_info"] = collectionInfo
 		})
 	}
 
@@ -205,7 +194,7 @@ func GetCollections(params GetCollectionsParams) (results ReadCollections) {
 
 		if params.Logger != nil {
 			params.Logger.Update(func(p map[string]interface{}, e map[string]interface{}) {
-				collectionInfo := p["collection_info"].(map[string]interface{})
+				collectionInfo := logger.GetOrCreateMap(p, "collection_info")
 				collectionInfo["collections_read"] = totalCollections
 				collectionInfo["latest_modified_date_seen"] = sdkParams["filters"].([][]string)[0][2]
 				collectionInfo["total_manifest_size"] = totalManifestSize
@@ -295,7 +284,7 @@ func ProcessCollections(arvLogger *logger.Logger,
 	return
 }
 
-func (readCollections *ReadCollections) Summarize() {
+func (readCollections *ReadCollections) Summarize(arvLogger *logger.Logger) {
 	readCollections.OwnerToCollectionSize = make(map[string]int)
 	readCollections.BlockToReplication = make(map[blockdigest.BlockDigest]int)
 	numCollections := len(readCollections.UuidToCollection)
@@ -320,6 +309,19 @@ func (readCollections *ReadCollections) Summarize() {
 				readCollections.BlockToReplication[block] = coll.ReplicationLevel
 			}
 		}
+	}
+
+	if arvLogger != nil {
+		arvLogger.Update(func(p map[string]interface{}, e map[string]interface{}) {
+			collectionInfo := logger.GetOrCreateMap(p, "collection_info")
+			// Since maps are shallow copied, we run a risk of concurrent
+			// updates here. By copying results.OwnerToCollectionSize into
+			// the log, we're assuming that it won't be updated.
+			collectionInfo["owner_to_collection_size"] =
+				readCollections.OwnerToCollectionSize
+			collectionInfo["distinct_blocks_named"] =
+				len(readCollections.BlockToReplication)
+		})
 	}
 
 	return

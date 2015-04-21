@@ -8,12 +8,21 @@ import (
 	"git.curoverse.com/arvados.git/sdk/go/blockdigest"
 	"git.curoverse.com/arvados.git/services/datamanager/collection"
 	"git.curoverse.com/arvados.git/services/datamanager/keep"
+	"sort"
 )
 
 type BlockSet map[blockdigest.BlockDigest]struct{}
 
+// Adds a single block to the set.
 func (bs BlockSet) Insert(digest blockdigest.BlockDigest) {
 	bs[digest] = struct{}{}
+}
+
+// Adds a set of blocks to the set.
+func (bs BlockSet) Union(obs BlockSet) {
+	for k, v := range obs {
+		bs[k] = v
+	}
 }
 
 // We use the collection index to save space. To convert to and from
@@ -21,6 +30,8 @@ func (bs BlockSet) Insert(digest blockdigest.BlockDigest) {
 // CollectionIndexToUuid and CollectionUuidToIndex.
 type CollectionIndexSet map[int]struct{}
 
+// Adds a single collection to the set. The collection is specified by
+// its index.
 func (cis CollectionIndexSet) Insert(collectionIndex int) {
 	cis[collectionIndex] = struct{}{}
 }
@@ -29,11 +40,36 @@ func (bs BlockSet) ToCollectionIndexSet(
 	readCollections collection.ReadCollections,
 	collectionIndexSet *CollectionIndexSet) {
 	for block := range bs {
-		for _,collectionIndex := range readCollections.BlockToCollectionIndices[block] {
+		for _, collectionIndex := range readCollections.BlockToCollectionIndices[block] {
 			collectionIndexSet.Insert(collectionIndex)
 		}
 	}
 }
+
+// Keeps track of the requested and actual replication levels.
+// Currently this is only used for blocks but could easily be used for
+// collections as well.
+type ReplicationLevels struct {
+	// The requested replication level.
+	// For Blocks this is the maximum replication level among all the
+	// collections this block belongs to.
+	Requested int
+
+	// The actual number of keep servers this is on.
+	Actual int
+}
+
+// Maps from replication levels to their blocks.
+type ReplicationLevelBlockSetMap map[ReplicationLevels]BlockSet
+
+// An individual entry from ReplicationLevelBlockSetMap which only reports the number of blocks, not which blocks.
+type ReplicationLevelBlockCount struct {
+	Levels ReplicationLevels
+	Count  int
+}
+
+// An ordered list of ReplicationLevelBlockCount useful for reporting.
+type ReplicationLevelBlockSetSlice []ReplicationLevelBlockCount
 
 type ReplicationSummary struct {
 	CollectionBlocksNotInKeep  BlockSet
@@ -61,9 +97,66 @@ type ReplicationSummaryCounts struct {
 	CorrectlyReplicatedCollections int
 }
 
+// Gets the BlockSet for a given set of ReplicationLevels, creating it
+// if it doesn't already exist.
+func (rlbs ReplicationLevelBlockSetMap) GetOrCreate(
+	repLevels ReplicationLevels) (bs BlockSet) {
+	bs, exists := rlbs[repLevels]
+	if !exists {
+		bs = make(BlockSet)
+		rlbs[repLevels] = bs
+	}
+	return
+}
+
+// Adds a block to the set for a given replication level.
+func (rlbs ReplicationLevelBlockSetMap) Insert(
+	repLevels ReplicationLevels,
+	block blockdigest.BlockDigest) {
+	rlbs.GetOrCreate(repLevels).Insert(block)
+}
+
+// Adds a set of blocks to the set for a given replication level.
+func (rlbs ReplicationLevelBlockSetMap) Union(
+	repLevels ReplicationLevels,
+	bs BlockSet) {
+	rlbs.GetOrCreate(repLevels).Union(bs)
+}
+
+// Outputs a sorted list of ReplicationLevelBlockCounts.
+func (rlbs ReplicationLevelBlockSetMap) Counts() (
+	sorted ReplicationLevelBlockSetSlice) {
+	sorted = make(ReplicationLevelBlockSetSlice, len(rlbs))
+	i := 0
+	for levels, set := range rlbs {
+		sorted[i] = ReplicationLevelBlockCount{Levels: levels, Count: len(set)}
+		i++
+	}
+	sort.Sort(sorted)
+	return
+}
+
+// Implemented to meet sort.Interface
+func (rlbss ReplicationLevelBlockSetSlice) Len() int {
+	return len(rlbss)
+}
+
+// Implemented to meet sort.Interface
+func (rlbss ReplicationLevelBlockSetSlice) Less(i, j int) bool {
+	return rlbss[i].Levels.Requested < rlbss[j].Levels.Requested ||
+		(rlbss[i].Levels.Requested == rlbss[j].Levels.Requested &&
+			rlbss[i].Levels.Actual < rlbss[j].Levels.Actual)
+}
+
+// Implemented to meet sort.Interface
+func (rlbss ReplicationLevelBlockSetSlice) Swap(i, j int) {
+	rlbss[i], rlbss[j] = rlbss[j], rlbss[i]
+}
+
 func (rs ReplicationSummary) ComputeCounts() (rsc ReplicationSummaryCounts) {
-	// TODO(misha): Consider replacing this brute-force approach by
-	// iterating through the fields using reflection.
+	// TODO(misha): Consider rewriting this method to iterate through
+	// the fields using reflection, instead of explictily listing the
+	// fields as we do now.
 	rsc.CollectionBlocksNotInKeep = len(rs.CollectionBlocksNotInKeep)
 	rsc.UnderReplicatedBlocks = len(rs.UnderReplicatedBlocks)
 	rsc.OverReplicatedBlocks = len(rs.OverReplicatedBlocks)
@@ -99,34 +192,53 @@ func (rsc ReplicationSummaryCounts) PrettyPrint() string {
 		rsc.CorrectlyReplicatedCollections)
 }
 
-func SummarizeReplication(readCollections collection.ReadCollections,
-	keepServerInfo keep.ReadServers) (rs ReplicationSummary) {
+func BucketReplication(readCollections collection.ReadCollections,
+	keepServerInfo keep.ReadServers) (rlbsm ReplicationLevelBlockSetMap) {
+	rlbsm = make(ReplicationLevelBlockSetMap)
+
+	for block, requestedReplication := range readCollections.BlockToReplication {
+		rlbsm.Insert(
+			ReplicationLevels{
+				Requested: requestedReplication,
+				Actual:    len(keepServerInfo.BlockToServers[block])},
+			block)
+	}
+
+	for block, servers := range keepServerInfo.BlockToServers {
+		if 0 == readCollections.BlockToReplication[block] {
+			rlbsm.Insert(
+				ReplicationLevels{Requested: 0, Actual: len(servers)},
+				block)
+		}
+	}
+	return
+}
+
+func (rlbsm ReplicationLevelBlockSetMap) SummarizeBuckets(
+	readCollections collection.ReadCollections) (
+	rs ReplicationSummary) {
 	rs.CollectionBlocksNotInKeep = make(BlockSet)
 	rs.UnderReplicatedBlocks = make(BlockSet)
 	rs.OverReplicatedBlocks = make(BlockSet)
 	rs.CorrectlyReplicatedBlocks = make(BlockSet)
 	rs.KeepBlocksNotInCollections = make(BlockSet)
+
 	rs.CollectionsNotFullyInKeep = make(CollectionIndexSet)
 	rs.UnderReplicatedCollections = make(CollectionIndexSet)
 	rs.OverReplicatedCollections = make(CollectionIndexSet)
 	rs.CorrectlyReplicatedCollections = make(CollectionIndexSet)
 
-	for block, requestedReplication := range readCollections.BlockToReplication {
-		actualReplication := len(keepServerInfo.BlockToServers[block])
-		if actualReplication == 0 {
-			rs.CollectionBlocksNotInKeep.Insert(block)
-		} else if actualReplication < requestedReplication {
-			rs.UnderReplicatedBlocks.Insert(block)
-		} else if actualReplication > requestedReplication {
-			rs.OverReplicatedBlocks.Insert(block)
+	for levels, bs := range rlbsm {
+		if levels.Actual == 0 {
+			rs.CollectionBlocksNotInKeep.Union(bs)
+		} else if levels.Requested == 0 {
+			rs.KeepBlocksNotInCollections.Union(bs)
+		} else if levels.Actual < levels.Requested {
+			rs.UnderReplicatedBlocks.Union(bs)
+		} else if levels.Actual > levels.Requested {
+			rs.OverReplicatedBlocks.Union(bs)
 		} else {
-			rs.CorrectlyReplicatedBlocks.Insert(block)
-		}
-	}
-
-	for block, _ := range keepServerInfo.BlockToServers {
-		if 0 == readCollections.BlockToReplication[block] {
-			rs.KeepBlocksNotInCollections.Insert(block)
+			rs.CorrectlyReplicatedBlocks.Union(bs)
 		}
 	}
 
@@ -151,5 +263,5 @@ func SummarizeReplication(readCollections collection.ReadCollections,
 		}
 	}
 
-	return rs
+	return
 }

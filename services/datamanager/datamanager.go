@@ -103,19 +103,34 @@ func singlerun() {
 
 	summary.MaybeWriteData(arvLogger, readCollections, keepServerInfo)
 
-	replicationSummary :=
-		summary.SummarizeReplication(readCollections, keepServerInfo)
+	buckets := summary.BucketReplication(readCollections, keepServerInfo)
+	bucketCounts := buckets.Counts()
+
+	replicationSummary := buckets.SummarizeBuckets(readCollections)
+	replicationCounts := replicationSummary.ComputeCounts()
 
 	log.Printf("Blocks In Collections: %d, "+
 		"\nBlocks In Keep: %d.",
 		len(readCollections.BlockToReplication),
 		len(keepServerInfo.BlockToServers))
-	log.Println(replicationSummary.ComputeCounts().PrettyPrint())
+	log.Println(replicationCounts.PrettyPrint())
+
+	log.Printf("Blocks Histogram:")
+	for _, rlbss := range bucketCounts {
+		log.Printf("%+v: %10d",
+			rlbss.Levels,
+			rlbss.Count)
+	}
 
 	// Log that we're finished. We force the recording, since go will
-	// not wait for the timer before exiting.
+	// not wait for the write timer before exiting.
 	if arvLogger != nil {
 		arvLogger.FinalUpdate(func(p map[string]interface{}, e map[string]interface{}) {
+			summaryInfo := logger.GetOrCreateMap(p, "summary_info")
+			summaryInfo["block_replication_counts"] = bucketCounts
+			summaryInfo["replication_summary"] = replicationCounts
+			p["summary_info"] = summaryInfo
+
 			p["run_info"].(map[string]interface{})["finished_at"] = time.Now()
 		})
 	}

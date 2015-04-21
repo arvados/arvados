@@ -101,8 +101,8 @@ func MaybeReadData(arvLogger *logger.Logger,
 
 		// re-summarize data, so that we can update our summarizing
 		// functions without needing to do all our network i/o
-		data.ReadCollections.Summarize()
-		keep.ComputeBlockReplicationCounts(&data.KeepServerInfo)
+		data.ReadCollections.Summarize(arvLogger)
+		data.KeepServerInfo.Summarize(arvLogger)
 
 		*readCollections = data.ReadCollections
 		*keepServerInfo = data.KeepServerInfo

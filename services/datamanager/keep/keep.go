@@ -116,7 +116,7 @@ func GetKeepServersAndSummarize(params GetKeepServersParams) (results ReadServer
 	results = GetKeepServers(params)
 	log.Printf("Returned %d keep disks", len(results.ServerToContents))
 
-	ComputeBlockReplicationCounts(&results)
+	results.Summarize(params.Logger)
 	log.Printf("Replication level distribution: %v",
 		results.BlockReplicationCounts)
 
@@ -146,13 +146,10 @@ func GetKeepServers(params GetKeepServersParams) (results ReadServers) {
 
 	if params.Logger != nil {
 		params.Logger.Update(func(p map[string]interface{}, e map[string]interface{}) {
-			keepInfo := make(map[string]interface{})
-
+			keepInfo := logger.GetOrCreateMap(p, "keep_info")
 			keepInfo["num_keep_servers_available"] = sdkResponse.ItemsAvailable
 			keepInfo["num_keep_servers_received"] = len(sdkResponse.KeepServers)
 			keepInfo["keep_servers"] = sdkResponse.KeepServers
-
-			p["keep_info"] = keepInfo
 		})
 	}
 
@@ -223,7 +220,10 @@ func GetServerContents(arvLogger *logger.Logger,
 	resp, err := client.Do(req)
 	if err != nil {
 		loggerutil.FatalWithMessage(arvLogger,
-			fmt.Sprintf("Error fetching %s: %v", req.URL.String(), err))
+			fmt.Sprintf("Error fetching %s: %v. Response was %+v",
+				req.URL.String(),
+				err,
+				resp))
 	}
 
 	return ReadServerResponse(arvLogger, keepServer, resp)
@@ -239,7 +239,7 @@ func GetServerStatus(arvLogger *logger.Logger,
 	if arvLogger != nil {
 		now := time.Now()
 		arvLogger.Update(func(p map[string]interface{}, e map[string]interface{}) {
-			keepInfo := p["keep_info"].(map[string]interface{})
+			keepInfo := logger.GetOrCreateMap(p, "keep_info")
 			serverInfo := make(map[string]interface{})
 			serverInfo["status_request_sent_at"] = now
 			serverInfo["host"] = keepServer.Host
@@ -272,7 +272,7 @@ func GetServerStatus(arvLogger *logger.Logger,
 	if arvLogger != nil {
 		now := time.Now()
 		arvLogger.Update(func(p map[string]interface{}, e map[string]interface{}) {
-			keepInfo := p["keep_info"].(map[string]interface{})
+			keepInfo := logger.GetOrCreateMap(p, "keep_info")
 			serverInfo := keepInfo[keepServer.Uuid].(map[string]interface{})
 			serverInfo["status_response_processed_at"] = now
 			serverInfo["status"] = keepStatus
@@ -288,7 +288,7 @@ func CreateIndexRequest(arvLogger *logger.Logger,
 	if arvLogger != nil {
 		now := time.Now()
 		arvLogger.Update(func(p map[string]interface{}, e map[string]interface{}) {
-			keepInfo := p["keep_info"].(map[string]interface{})
+			keepInfo := logger.GetOrCreateMap(p, "keep_info")
 			serverInfo := keepInfo[keepServer.Uuid].(map[string]interface{})
 			serverInfo["index_request_sent_at"] = now
 		})
@@ -319,7 +319,7 @@ func ReadServerResponse(arvLogger *logger.Logger,
 	if arvLogger != nil {
 		now := time.Now()
 		arvLogger.Update(func(p map[string]interface{}, e map[string]interface{}) {
-			keepInfo := p["keep_info"].(map[string]interface{})
+			keepInfo := logger.GetOrCreateMap(p, "keep_info")
 			serverInfo := keepInfo[keepServer.Uuid].(map[string]interface{})
 			serverInfo["index_response_received_at"] = now
 		})
@@ -355,7 +355,7 @@ func ReadServerResponse(arvLogger *logger.Logger,
 				log.Println(message)
 				if arvLogger != nil {
 					arvLogger.Update(func(p map[string]interface{}, e map[string]interface{}) {
-						keepInfo := p["keep_info"].(map[string]interface{})
+						keepInfo := logger.GetOrCreateMap(p, "keep_info")
 						serverInfo := keepInfo[keepServer.Uuid].(map[string]interface{})
 						var error_list []string
 						read_error_list, has_list := serverInfo["error_list"]
@@ -393,7 +393,7 @@ func ReadServerResponse(arvLogger *logger.Logger,
 		if arvLogger != nil {
 			now := time.Now()
 			arvLogger.Update(func(p map[string]interface{}, e map[string]interface{}) {
-				keepInfo := p["keep_info"].(map[string]interface{})
+				keepInfo := logger.GetOrCreateMap(p, "keep_info")
 				serverInfo := keepInfo[keepServer.Uuid].(map[string]interface{})
 
 				serverInfo["processing_finished_at"] = now
@@ -435,10 +435,18 @@ func parseBlockInfoFromIndexLine(indexLine string) (blockInfo BlockInfo, err err
 	return
 }
 
-func ComputeBlockReplicationCounts(readServers *ReadServers) {
+func (readServers *ReadServers) Summarize(arvLogger *logger.Logger) {
 	readServers.BlockReplicationCounts = make(map[int]int)
 	for _, infos := range readServers.BlockToServers {
 		replication := len(infos)
 		readServers.BlockReplicationCounts[replication] += 1
 	}
+
+	if arvLogger != nil {
+		arvLogger.Update(func(p map[string]interface{}, e map[string]interface{}) {
+			keepInfo := logger.GetOrCreateMap(p, "keep_info")
+			keepInfo["distinct_blocks_stored"] = len(readServers.BlockToServers)
+		})
+	}
+
 }

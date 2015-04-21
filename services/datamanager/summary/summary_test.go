@@ -36,6 +36,13 @@ func (cis CollectionIndexSet) ToSlice() (ints []int) {
 	return
 }
 
+// Helper method to meet interface expected by older tests.
+func SummarizeReplication(readCollections collection.ReadCollections,
+	keepServerInfo keep.ReadServers) (rs ReplicationSummary) {
+	return BucketReplication(readCollections, keepServerInfo).
+		SummarizeBuckets(readCollections)
+}
+
 // Takes a map from block digest to replication level and represents
 // it in a keep.ReadServers structure.
 func SpecifyReplication(digestToReplication map[int]int) (rs keep.ReadServers) {
@@ -94,7 +101,7 @@ func TestSimpleSummary(t *testing.T) {
 	rc := collection.MakeTestReadCollections([]collection.TestCollectionSpec{
 		collection.TestCollectionSpec{ReplicationLevel: 1, Blocks: []int{1, 2}},
 	})
-	rc.Summarize()
+	rc.Summarize(nil)
 	cIndex := rc.CollectionIndicesForTesting()
 
 	keepInfo := SpecifyReplication(map[int]int{1: 1, 2: 1})
@@ -123,7 +130,7 @@ func TestMissingBlock(t *testing.T) {
 	rc := collection.MakeTestReadCollections([]collection.TestCollectionSpec{
 		collection.TestCollectionSpec{ReplicationLevel: 1, Blocks: []int{1, 2}},
 	})
-	rc.Summarize()
+	rc.Summarize(nil)
 	cIndex := rc.CollectionIndicesForTesting()
 
 	keepInfo := SpecifyReplication(map[int]int{1: 1})
@@ -154,7 +161,7 @@ func TestUnderAndOverReplicatedBlocks(t *testing.T) {
 	rc := collection.MakeTestReadCollections([]collection.TestCollectionSpec{
 		collection.TestCollectionSpec{ReplicationLevel: 2, Blocks: []int{1, 2}},
 	})
-	rc.Summarize()
+	rc.Summarize(nil)
 	cIndex := rc.CollectionIndicesForTesting()
 
 	keepInfo := SpecifyReplication(map[int]int{1: 1, 2: 3})
@@ -187,7 +194,7 @@ func TestMixedReplication(t *testing.T) {
 		collection.TestCollectionSpec{ReplicationLevel: 1, Blocks: []int{3, 4}},
 		collection.TestCollectionSpec{ReplicationLevel: 2, Blocks: []int{5, 6}},
 	})
-	rc.Summarize()
+	rc.Summarize(nil)
 	cIndex := rc.CollectionIndicesForTesting()
 
 	keepInfo := SpecifyReplication(map[int]int{1: 1, 2: 1, 3: 1, 5: 1, 6: 3, 7: 2})

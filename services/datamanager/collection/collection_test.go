@@ -63,10 +63,10 @@ func CompareSummarizedReadCollections(t *testing.T,
 func TestSummarizeSimple(t *testing.T) {
 	rc := MakeTestReadCollections([]TestCollectionSpec{TestCollectionSpec{
 		ReplicationLevel: 5,
-		Blocks: []int{1, 2},
+		Blocks:           []int{1, 2},
 	}})
 
-	rc.Summarize()
+	rc.Summarize(nil)
 
 	c := rc.UuidToCollection["col0"]
 
@@ -86,15 +86,15 @@ func TestSummarizeOverlapping(t *testing.T) {
 	rc := MakeTestReadCollections([]TestCollectionSpec{
 		TestCollectionSpec{
 			ReplicationLevel: 5,
-			Blocks: []int{1, 2},
+			Blocks:           []int{1, 2},
 		},
 		TestCollectionSpec{
 			ReplicationLevel: 8,
-			Blocks: []int{2, 3},
+			Blocks:           []int{2, 3},
 		},
 	})
 
-	rc.Summarize()
+	rc.Summarize(nil)
 
 	c0 := rc.UuidToCollection["col0"]
 	c1 := rc.UuidToCollection["col1"]
