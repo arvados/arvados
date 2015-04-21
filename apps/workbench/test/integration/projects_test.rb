@@ -676,7 +676,7 @@ class ProjectsTest < ActionDispatch::IntegrationTest
     visit page_with_token 'active', '/projects/' + api_fixture('groups')['aproject']['uuid']
 
     # Point to a bad api server url to generate error
-    Rails.configuration.arvados_v1_base = "https://[100::f]:1/"
+    Rails.configuration.arvados_v1_base = "https://[::1]:1/"
     click_link 'Other objects'
     within '#Other_objects' do
       # Error
