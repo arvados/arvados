@@ -31,6 +31,8 @@ class FreshBase(object):
         self._atime = time.time()
         self._poll_time = 60
         self.use_count = 0
+        self.ref_count = 0
+        self.dead = False
 
     # Mark the value as stale
     def invalidate(self):
@@ -65,6 +67,14 @@ class FreshBase(object):
 
     def dec_use(self):
         self.use_count -= 1
+
+    def inc_ref(self):
+        self.ref_count += 1
+        return self.ref_count
+
+    def dec_ref(self, n):
+        self.ref_count -= n
+        return self.ref_count
 
     def objsize(self):
         return 0

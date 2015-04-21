@@ -47,7 +47,7 @@ class FuseArvadosFile(File):
         return self.arvfile.size()
 
     def readfrom(self, off, size, num_retries=0):
-        return self.arvfile.readfrom(off, size, num_retries)
+        return self.arvfile.readfrom(off, size, num_retries, exact=True)
 
     def writeto(self, off, buf, num_retries=0):
         return self.arvfile.writeto(off, buf, num_retries)
@@ -60,8 +60,7 @@ class FuseArvadosFile(File):
 
     def flush(self):
         if self.writable():
-            self.arvfile.flush()
-            return self.arvfile.parent.root_collection().save()
+            self.arvfile.parent.root_collection().save()
 
 
 class StringFile(File):

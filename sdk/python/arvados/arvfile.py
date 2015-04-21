@@ -457,6 +457,7 @@ class _BlockManager(object):
                     bufferblock = self._put_queue.get()
                     if bufferblock is None:
                         return
+
                     loc = self._keep.put(bufferblock.buffer_view[0:bufferblock.write_pointer].tobytes())
                     bufferblock.set_state(_BufferBlock.COMMITTED, loc)
 
@@ -721,8 +722,14 @@ class ArvadosFile(object):
         elif size > self.size():
             raise IOError(errno.EINVAL, "truncate() does not support extending the file size")
 
-    def readfrom(self, offset, size, num_retries):
-        """Read upto `size` bytes from the file starting at `offset`."""
+    def readfrom(self, offset, size, num_retries, exact=False):
+        """Read upto `size` bytes from the file starting at `offset`.
+
+        :exact:
+         If False (default), return less data than requested if the read
+         crosses a block boundary and the next block isn't cached.  If True,
+         only return less data than requested when hitting EOF.
+        """
 
         with self.lock:
             if size == 0 or offset >= self.size():
@@ -735,7 +742,7 @@ class ArvadosFile(object):
 
         data = []
         for lr in readsegs:
-            block = self.parent._my_block_manager().get_block_contents(lr.locator, num_retries=num_retries, cache_only=bool(data))
+            block = self.parent._my_block_manager().get_block_contents(lr.locator, num_retries=num_retries, cache_only=(bool(data) and not exact))
             if block:
                 data.append(block[lr.segment_offset:lr.segment_offset+lr.segment_size])
             else:

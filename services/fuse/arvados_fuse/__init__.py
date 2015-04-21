@@ -151,9 +151,14 @@ class Inodes(object):
         return entry
 
     def del_entry(self, entry):
-        self._obj_cache.unmanage(entry)
-        llfuse.invalidate_inode(entry.inode)
-        del self._entries[entry.inode]
+        if entry.ref_count == 0:
+            _logger.warn("Deleting inode %i", entry.inode)
+            self._obj_cache.unmanage(entry)
+            llfuse.invalidate_inode(entry.inode)
+            del self._entries[entry.inode]
+        else:
+            _logger.warn("Inode %i has refcount %i", entry.inode, entry.ref_count)
+            entry.dead = True
 
 def catch_exceptions(orig_func):
     @functools.wraps(orig_func)
@@ -164,8 +169,8 @@ def catch_exceptions(orig_func):
             raise
         except EnvironmentError as e:
             raise llfuse.FUSEError(e.errno)
-        except Exception:
-            _logger.exception("")
+        except:
+            _logger.exception("Unhandled exception during FUSE operation")
             raise llfuse.FUSEError(errno.EIO)
 
     return catch_exceptions_wrapper
@@ -251,8 +256,6 @@ class Operations(llfuse.Operations):
     @catch_exceptions
     def lookup(self, parent_inode, name):
         name = unicode(name, self.encoding)
-        _logger.debug("arv-mount lookup: parent_inode %i name %s",
-                      parent_inode, name)
         inode = None
 
         if name == '.':
@@ -266,9 +269,22 @@ class Operations(llfuse.Operations):
                     inode = p[name].inode
 
         if inode != None:
+            _logger.debug("arv-mount lookup: parent_inode %i name '%s' inode %i",
+                      parent_inode, name, inode)
+            self.inodes[inode].inc_ref()
             return self.getattr(inode)
         else:
+            _logger.debug("arv-mount lookup: parent_inode %i name '%s' not found",
+                      parent_inode, name)
             raise llfuse.FUSEError(errno.ENOENT)
+
+    @catch_exceptions
+    def forget(self, inodes):
+        for inode, nlookup in inodes:
+            _logger.debug("arv-mount forget: %i %i", inode, nlookup)
+            ent = self.inodes[inode]
+            if ent.dec_ref(nlookup) == 0 and ent.dead:
+                self.inodes.del_entry(ent)
 
     @catch_exceptions
     def open(self, inode, flags):
@@ -425,12 +441,12 @@ class Operations(llfuse.Operations):
 
         # The file entry should have been implicitly created by callback.
         f = p[name]
-
         fh = self._filehandles_counter
         self._filehandles_counter += 1
         self._filehandles[fh] = FileHandle(fh, f)
         self.inodes.touch(p)
 
+        f.inc_ref()
         return (fh, self.getattr(f.inode))
 
     @catch_exceptions
@@ -443,6 +459,7 @@ class Operations(llfuse.Operations):
         # The dir entry should have been implicitly created by callback.
         d = p[name]
 
+        d.inc_ref()
         return self.getattr(d.inode)
 
     @catch_exceptions
@@ -455,14 +472,14 @@ class Operations(llfuse.Operations):
     def rmdir(self, inode_parent, name):
         self.unlink(inode_parent, name)
 
-    @catch_exceptions
-    def rename(self, inode_parent_old, name_old, inode_parent_new, name_new):
-        src = self._check_writable(inode_parent_old)
-        dest = self._check_writable(inode_parent_new)
-
-        with llfuse.lock_released:
-            dest.collection.copy(name_old, name_new, source_collection=src.collection, overwrite=True)
-            src.collection.remove(name_old)
+    # @catch_exceptions
+    # def rename(self, inode_parent_old, name_old, inode_parent_new, name_new):
+    #     src = self._check_writable(inode_parent_old)
+    #     dest = self._check_writable(inode_parent_new)
+    #
+    #     with llfuse.lock_released:
+    #         dest.collection.copy(name_old, name_new, source_collection=src.collection, overwrite=True)
+    #         src.collection.remove(name_old)
 
     @catch_exceptions
     def flush(self, fh):

@@ -138,6 +138,7 @@ class Directory(FreshBase):
             changed = True
 
         if changed:
+            llfuse.invalidate_inode(self.inode)
             self._mtime = time.time()
 
         self.fresh()
@@ -191,11 +192,11 @@ class CollectionDirectoryBase(Directory):
                     self.new_entry(name, item, self.mtime())
                 elif event == arvados.collection.DEL:
                     ent = self._entries[name]
+                    del self._entries[name]
                     llfuse.invalidate_entry(self.inode, name)
                     self.inodes.del_entry(ent)
                 elif event == arvados.collection.MOD:
                     ent = self._entries[name]
-                    llfuse.invalidate_entry(self.inode, name)
                     llfuse.invalidate_inode(ent.inode)
         _logger.warn("Finished handling event")
 
