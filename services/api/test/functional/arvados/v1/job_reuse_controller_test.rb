@@ -323,6 +323,11 @@ class Arvados::V1::JobReuseControllerTest < ActionController::TestCase
                      new_job['script_version'])
   end
 
+  test "cannot reuse job when hash-like branch includes newer commit" do
+    check_new_job_created_from({job: {script_version: "738783"}},
+                               :previous_job_run_superseded_by_hash_branch)
+  end
+
   BASE_FILTERS = {
     'repository' => ['=', 'active/foo'],
     'script' => ['=', 'hash'],
@@ -510,6 +515,14 @@ class Arvados::V1::JobReuseControllerTest < ActionController::TestCase
     assert_not_equal(jobs(:previous_docker_job_run).uuid, new_job.uuid)
   end
 
+  test "don't reuse job using older Docker image of same name" do
+    jobspec = {runtime_constraints: {
+        docker_image: "arvados/apitestfixture",
+      }}
+    check_new_job_created_from({job: jobspec},
+                               :previous_ancient_docker_image_job_run)
+  end
+
   test "reuse job with Docker image that has hash name" do
     jobspec = {runtime_constraints: {
         docker_image: "a" * 64,
@@ -694,9 +707,25 @@ class Arvados::V1::JobReuseControllerTest < ActionController::TestCase
            "bad refspec not mentioned in error message")
   end
 
-  test "can't reuse job with older Arvados SDK version" do
+  test "don't reuse job with older Arvados SDK version specified by branch" do
     jobspec = {runtime_constraints: {
         arvados_sdk_version: "master",
+      }}
+    check_new_job_created_from({job: jobspec},
+                               :previous_job_run_with_arvados_sdk_version)
+  end
+
+  test "don't reuse job with older Arvados SDK version specified by commit" do
+    jobspec = {runtime_constraints: {
+        arvados_sdk_version: "ca68b24e51992e790f29df5cc4bc54ce1da4a1c2",
+      }}
+    check_new_job_created_from({job: jobspec},
+                               :previous_job_run_with_arvados_sdk_version)
+  end
+
+  test "don't reuse job with newer Arvados SDK version specified by commit" do
+    jobspec = {runtime_constraints: {
+        arvados_sdk_version: "436637c87a1d2bdbf4b624008304064b6cf0e30c",
       }}
     check_new_job_created_from({job: jobspec},
                                :previous_job_run_with_arvados_sdk_version)
