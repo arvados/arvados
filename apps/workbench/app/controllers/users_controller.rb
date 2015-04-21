@@ -52,15 +52,15 @@ class UsersController < ApplicationController
                1.month.ago.beginning_of_month,
                Time.now.beginning_of_month]]
     @spans.each do |span, threshold_start, threshold_end|
-      @activity[:logins][span] = Log.
+      @activity[:logins][span] = Log.select(%w(uuid modified_by_user_uuid)).
         filter([[:event_type, '=', 'login'],
                 [:object_kind, '=', 'arvados#user'],
                 [:created_at, '>=', threshold_start],
                 [:created_at, '<', threshold_end]])
-      @activity[:jobs][span] = Job.
+      @activity[:jobs][span] = Job.select(%w(uuid modified_by_user_uuid)).
         filter([[:created_at, '>=', threshold_start],
                 [:created_at, '<', threshold_end]])
-      @activity[:pipeline_instances][span] = PipelineInstance.
+      @activity[:pipeline_instances][span] = PipelineInstance.select(%w(uuid modified_by_user_uuid)).
         filter([[:created_at, '>=', threshold_start],
                 [:created_at, '<', threshold_end]])
       @activity.each do |type, act|

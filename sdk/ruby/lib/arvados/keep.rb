@@ -165,6 +165,11 @@ module Keep
       if @files.nil?
         file_sizes = Hash.new(0)
         each_file_spec do |streamname, _, filesize, filename|
+          if filename.include?('/')
+            parts = filename.rpartition('/')
+            streamname = streamname + parts[1] + parts[0]   # ./dir_parts
+            filename = parts[2]
+          end
           file_sizes[[streamname, filename]] += filesize
         end
         @files = file_sizes.each_pair.map do |(streamname, filename), size|

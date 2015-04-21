@@ -368,7 +368,7 @@ module ApplicationHelper
            success: 'page-refresh'
          }.to_json,
         })
-      is_readable_input = object_readable attrvalue unless attrvalue.andand.empty?
+      is_readable_input = attrvalue.present? and object_readable attrvalue, Collection
       return content_tag('div', :class => 'input-group') do
         html = text_field_tag(dn, display_value,
                               :class =>

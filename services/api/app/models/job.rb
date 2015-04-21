@@ -16,6 +16,7 @@ class Job < ArvadosModel
   validate :validate_status
   validate :validate_state_change
   validate :ensure_no_collection_uuids_in_script_params
+  before_save :tag_version_in_internal_repository
   before_save :update_timestamps_when_state_changes
 
   has_many :commit_ancestors, :foreign_key => :descendant, :primary_key => :script_version
@@ -124,20 +125,42 @@ class Job < ArvadosModel
   end
 
   def ensure_script_version_is_commit
-    if self.state == Running
+    if state == Running
       # Apparently client has already decided to go for it. This is
       # needed to run a local job using a local working directory
       # instead of a commit-ish.
       return true
     end
-    if new_record? or script_version_changed?
-      sha1 = Commit.find_commit_range(current_user, self.repository, nil, self.script_version, nil)[0] rescue nil
-      if sha1
-        self.supplied_script_version = self.script_version if self.supplied_script_version.nil? or self.supplied_script_version.empty?
-        self.script_version = sha1
-      else
-        self.errors.add :script_version, "#{self.script_version} does not resolve to a commit"
+    if new_record? or repository_changed? or script_version_changed?
+      sha1 = Commit.find_commit_range(repository,
+                                      nil, script_version, nil).first
+      if not sha1
+        errors.add :script_version, "#{script_version} does not resolve to a commit"
         return false
+      end
+      if supplied_script_version.nil? or supplied_script_version.empty?
+        self.supplied_script_version = script_version
+      end
+      self.script_version = sha1
+    end
+    true
+  end
+
+  def tag_version_in_internal_repository
+    if state == Running
+      # No point now. See ensure_script_version_is_commit.
+      true
+    elsif errors.any?
+      # Won't be saved, and script_version might not even be valid.
+      true
+    elsif new_record? or repository_changed? or script_version_changed?
+      uuid_was = uuid
+      begin
+        assign_uuid
+        Commit.tag_in_internal_repository repository, script_version, uuid
+      rescue
+        uuid = uuid_was
+        raise
       end
     end
   end
@@ -169,9 +192,9 @@ class Job < ArvadosModel
   def find_arvados_sdk_version
     resolve_runtime_constraint("arvados_sdk_version",
                                :arvados_sdk_version) do |git_search|
-      commits = Commit.find_commit_range(current_user, "arvados",
+      commits = Commit.find_commit_range("arvados",
                                          nil, git_search, nil)
-      if commits.nil? or commits.empty?
+      if commits.empty?
         [false, "#{git_search} does not resolve to a commit"]
       elsif not runtime_constraints["docker_image"]
         [false, "cannot be specified without a Docker image constraint"]
