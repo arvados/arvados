@@ -18,22 +18,6 @@ import run_test_server
 
 logger = logging.getLogger('arvados.arv-mount')
 
-import threading, sys, traceback
-
-def dumpstacks(signal, frame):
-    id2name = dict([(th.ident, th.name) for th in threading.enumerate()])
-    code = []
-    for threadId, stack in sys._current_frames().items():
-        code.append("\n# Thread: %s(%d)" % (id2name.get(threadId,""), threadId))
-        for filename, lineno, name, line in traceback.extract_stack(stack):
-            code.append('File: "%s", line %d, in %s' % (filename, lineno, name))
-            if line:
-                code.append("  %s" % (line.strip()))
-    print "\n".join(code)
-
-import signal
-signal.signal(signal.SIGUSR1, dumpstacks)
-
 class MountTestBase(unittest.TestCase):
     def setUp(self):
         self.keeptmp = tempfile.mkdtemp()
@@ -44,14 +28,14 @@ class MountTestBase(unittest.TestCase):
         self.api = arvados.safeapi.ThreadSafeApiCache(arvados.config.settings())
 
     def make_mount(self, root_class, **root_kwargs):
-        operations = fuse.Operations(os.getuid(), os.getgid(), inode_cache=2)
-        operations.inodes.add_entry(root_class(
-            llfuse.ROOT_INODE, operations.inodes, self.api, 0, **root_kwargs))
-        llfuse.init(operations, self.mounttmp, ['debug'])
+        self.operations = fuse.Operations(os.getuid(), os.getgid(), inode_cache=2)
+        self.operations.inodes.add_entry(root_class(
+            llfuse.ROOT_INODE, self.operations.inodes, self.api, 0, **root_kwargs))
+        llfuse.init(self.operations, self.mounttmp, ['debug'])
         threading.Thread(None, llfuse.main).start()
         # wait until the driver is finished initializing
-        operations.initlock.wait()
-        return operations.inodes[llfuse.ROOT_INODE]
+        self.operations.initlock.wait()
+        return self.operations.inodes[llfuse.ROOT_INODE]
 
     def tearDown(self):
         # llfuse.close is buggy, so use fusermount instead.
@@ -341,7 +325,7 @@ class FuseUpdateFileTest(MountTestBase):
 
         m = self.make_mount(fuse.CollectionDirectory)
         with llfuse.lock:
-            m.new_collection(None, collection)
+            m.new_collection(collection.api_response(), collection)
 
         d1 = llfuse.listdir(self.mounttmp)
         self.assertEqual(["file1.txt"], d1)
@@ -366,7 +350,7 @@ class FuseAddFileToCollectionTest(MountTestBase):
 
         m = self.make_mount(fuse.CollectionDirectory)
         with llfuse.lock:
-            m.new_collection(None, collection)
+            m.new_collection(collection.api_response(), collection)
 
         d1 = llfuse.listdir(self.mounttmp)
         self.assertEqual(["file1.txt"], d1)
@@ -390,7 +374,7 @@ class FuseRemoveFileFromCollectionTest(MountTestBase):
 
         m = self.make_mount(fuse.CollectionDirectory)
         with llfuse.lock:
-            m.new_collection(None, collection)
+            m.new_collection(collection.api_response(), collection)
 
         d1 = llfuse.listdir(self.mounttmp)
         self.assertEqual(["file1.txt", "file2.txt"], sorted(d1))
@@ -412,7 +396,7 @@ class FuseCreateFileTest(MountTestBase):
 
         m = self.make_mount(fuse.CollectionDirectory)
         with llfuse.lock:
-            m.new_collection(None, collection)
+            m.new_collection(collection.api_response(), collection)
         self.assertTrue(m.writable())
 
         self.assertNotIn("file1.txt", collection)
@@ -442,7 +426,7 @@ class FuseWriteFileTest(MountTestBase):
 
         m = self.make_mount(fuse.CollectionDirectory)
         with llfuse.lock:
-            m.new_collection(None, collection)
+            m.new_collection(collection.api_response(), collection)
         self.assertTrue(m.writable())
 
         self.assertNotIn("file1.txt", collection)
@@ -494,7 +478,7 @@ class FuseUpdateFileTest(MountTestBase):
 
         m = self.make_mount(fuse.CollectionDirectory)
         with llfuse.lock:
-            m.new_collection(None, collection)
+            m.new_collection(collection.api_response(), collection)
         self.assertTrue(m.writable())
 
         with open(os.path.join(self.mounttmp, "file1.txt"), "w") as f:
@@ -520,7 +504,7 @@ class FuseMkdirTest(MountTestBase):
 
         m = self.make_mount(fuse.CollectionDirectory)
         with llfuse.lock:
-            m.new_collection(None, collection)
+            m.new_collection(collection.api_response(), collection)
         self.assertTrue(m.writable())
 
         with self.assertRaises(IOError):
@@ -555,7 +539,7 @@ class FuseRmTest(MountTestBase):
 
         m = self.make_mount(fuse.CollectionDirectory)
         with llfuse.lock:
-            m.new_collection(None, collection)
+            m.new_collection(collection.api_response(), collection)
         self.assertTrue(m.writable())
 
         os.mkdir(os.path.join(self.mounttmp, "testdir"))
@@ -615,7 +599,7 @@ class FuseMvTest(MountTestBase):
 
         m = self.make_mount(fuse.CollectionDirectory)
         with llfuse.lock:
-            m.new_collection(None, collection)
+            m.new_collection(collection.api_response(), collection)
         self.assertTrue(m.writable())
 
         os.mkdir(os.path.join(self.mounttmp, "testdir"))
@@ -643,6 +627,34 @@ class FuseMvTest(MountTestBase):
         collection2 = self.api.collections().get(uuid=collection.manifest_locator()).execute()
         self.assertRegexpMatches(collection2["manifest_text"],
             r'\. 86fb269d190d2c85f6e0468ceca42a20\+12\+A[a-f0-9]{40}@[a-f0-9]{8} 0:12:file1\.txt$')
+
+
+class FuseUpdateFromEventTest(MountTestBase):
+    def runTest(self):
+        arvados.logger.setLevel(logging.DEBUG)
+
+        collection = arvados.collection.Collection(api_client=self.api)
+        collection.save_new()
+
+        m = self.make_mount(fuse.CollectionDirectory)
+        with llfuse.lock:
+            m.new_collection(collection.api_response(), collection)
+
+        self.operations.listen_for_events(self.api)
+
+        d1 = llfuse.listdir(os.path.join(self.mounttmp))
+        self.assertEqual([], sorted(d1))
+
+        with arvados.collection.Collection(collection.manifest_locator(), api_client=self.api) as collection2:
+            with collection2.open("file1.txt", "w") as f:
+                f.write("foo")
+
+        time.sleep(1)
+
+        # should show up via event bus notify
+
+        d1 = llfuse.listdir(os.path.join(self.mounttmp))
+        self.assertEqual(["file1.txt"], sorted(d1))
 
 
 class FuseUnitTest(unittest.TestCase):

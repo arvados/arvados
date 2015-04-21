@@ -69,6 +69,7 @@ class DirectoryHandle(Handle):
 class InodeCache(object):
     def __init__(self, cap):
         self._entries = collections.OrderedDict()
+        self._by_uuid = {}
         self._counter = itertools.count(1)
         self.cap = cap
         self._total = 0
@@ -79,27 +80,33 @@ class InodeCache(object):
             return False
         self._total -= obj._cache_size
         del self._entries[obj._cache_priority]
+        if obj._cache_uuid:
+            del self._by_uuid[obj._cache_uuid]
+            obj._cache_uuid = None
         _logger.debug("Cleared %s total now %i", obj, self._total)
         return True
 
     def cap_cache(self):
         _logger.debug("total is %i cap is %i", self._total, self.cap)
         if self._total > self.cap:
-            need_gc = False
             for key in list(self._entries.keys()):
                 if self._total < self.cap or len(self._entries) < 4:
                     break
                 self._remove(self._entries[key], True)
-
 
     def manage(self, obj):
         if obj.persisted():
             obj._cache_priority = next(self._counter)
             obj._cache_size = obj.objsize()
             self._entries[obj._cache_priority] = obj
+            if obj.uuid():
+                obj._cache_uuid = obj.uuid()
+                self._by_uuid[obj._cache_uuid] = obj
             self._total += obj.objsize()
             _logger.debug("Managing %s total now %i", obj, self._total)
             self.cap_cache()
+        else:
+            obj._cache_priority = None
 
     def touch(self, obj):
         if obj.persisted():
@@ -112,6 +119,8 @@ class InodeCache(object):
         if obj.persisted() and obj._cache_priority in self._entries:
             self._remove(obj, True)
 
+    def find(self, uuid):
+        return self._by_uuid.get(uuid)
 
 class Inodes(object):
     """Manage the set of inodes.  This is the mapping from a numeric id
@@ -120,7 +129,7 @@ class Inodes(object):
     def __init__(self, inode_cache=256*1024*1024):
         self._entries = {}
         self._counter = itertools.count(llfuse.ROOT_INODE)
-        self._obj_cache = InodeCache(cap=inode_cache)
+        self.cache = InodeCache(cap=inode_cache)
 
     def __getitem__(self, item):
         return self._entries[item]
@@ -139,21 +148,18 @@ class Inodes(object):
 
     def touch(self, entry):
         entry._atime = time.time()
-        self._obj_cache.touch(entry)
-
-    def cap_cache(self):
-        self._obj_cache.cap_cache()
+        self.cache.touch(entry)
 
     def add_entry(self, entry):
         entry.inode = next(self._counter)
         self._entries[entry.inode] = entry
-        self._obj_cache.manage(entry)
+        self.cache.manage(entry)
         return entry
 
     def del_entry(self, entry):
         if entry.ref_count == 0:
             _logger.warn("Deleting inode %i", entry.inode)
-            self._obj_cache.unmanage(entry)
+            self.cache.unmanage(entry)
             llfuse.invalidate_inode(entry.inode)
             del self._entries[entry.inode]
         else:
@@ -206,13 +212,37 @@ class Operations(llfuse.Operations):
 
         self.num_retries = num_retries
 
+        self.events = None
+
     def init(self):
         # Allow threads that are waiting for the driver to be finished
         # initializing to continue
         self.initlock.set()
 
+    def destroy(self):
+        if self.events:
+            self.events.close()
+
     def access(self, inode, mode, ctx):
         return True
+
+    def listen_for_events(self, api_client):
+        self.event = arvados.events.subscribe(api_client,
+                                 [["event_type", "in", ["create", "update", "delete"]]],
+                                 self.on_event)
+
+    def on_event(self, ev):
+        if 'event_type' in ev:
+            with llfuse.lock:
+                item = self.inodes.cache.find(ev["object_uuid"])
+                if item:
+                    item.invalidate()
+                    item.update()
+
+                itemparent = self.inodes.cache.find(ev["object_owner_uuid"])
+                if itemparent:
+                    itemparent.invalidate()
+                    itemparent.update()
 
     @catch_exceptions
     def getattr(self, inode):
@@ -349,7 +379,7 @@ class Operations(llfuse.Operations):
                 _logger.exception("Flush error")
             self._filehandles[fh].release()
             del self._filehandles[fh]
-        self.inodes.cap_cache()
+        self.inodes.cache.cap_cache()
 
     def releasedir(self, fh):
         self.release(fh)

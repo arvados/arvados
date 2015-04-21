@@ -78,3 +78,6 @@ class FreshBase(object):
 
     def objsize(self):
         return 0
+
+    def uuid(self):
+        return None

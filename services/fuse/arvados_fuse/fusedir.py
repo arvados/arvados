@@ -219,8 +219,8 @@ class CollectionDirectory(CollectionDirectoryBase):
         super(CollectionDirectory, self).__init__(parent_inode, inodes, None)
         self.api = api
         self.num_retries = num_retries
-        self.collection_object_file = None
-        self.collection_object = None
+        self.collection_record_file = None
+        self.collection_record = None
         if isinstance(collection_record, dict):
             self.collection_locator = collection_record['uuid']
             self._mtime = convertTime(collection_record.get('modified_at'))
@@ -245,27 +245,30 @@ class CollectionDirectory(CollectionDirectoryBase):
         """
 
         self.collection_locator = new_locator
-        self.collection_object = None
+        self.collection_record = None
         self.update()
 
-    def new_collection(self, new_collection_object, coll_reader):
+    def new_collection(self, new_collection_record, coll_reader):
         if self.inode:
             self.clear(force=True)
 
-        self.collection_object = new_collection_object
+        self.collection_record = new_collection_record
 
-        if self.collection_object:
-            self._mtime = convertTime(self.collection_object.get('modified_at'))
-
-            if self.collection_object_file is not None:
-                self.collection_object_file.update(self.collection_object)
+        if self.collection_record:
+            self._mtime = convertTime(self.collection_record.get('modified_at'))
+            self.collection_locator = self.collection_record["uuid"]
+            if self.collection_record_file is not None:
+                self.collection_record_file.update(self.collection_record)
 
         self.collection = coll_reader
         self.populate(self.mtime())
 
+    def uuid(self):
+        return self.collection_locator
+
     def update(self):
         try:
-            if self.collection_object is not None and portable_data_hash_pattern.match(self.collection_locator):
+            if self.collection_record is not None and portable_data_hash_pattern.match(self.collection_locator):
                 return True
 
             if self.collection_locator is None:
@@ -273,27 +276,31 @@ class CollectionDirectory(CollectionDirectoryBase):
                 return True
 
             with llfuse.lock_released:
-                if uuid_pattern.match(self.collection_locator):
-                    coll_reader = arvados.collection.Collection(
-                        self.collection_locator, self.api, self.api.keep,
-                        num_retries=self.num_retries)
+                _logger.debug("Updating %s", self.collection_locator)
+                if self.collection:
+                    self.collection.update()
                 else:
-                    coll_reader = arvados.collection.CollectionReader(
-                        self.collection_locator, self.api, self.api.keep,
-                        num_retries=self.num_retries)
-                new_collection_object = coll_reader.api_response() or {}
-                # If the Collection only exists in Keep, there will be no API
-                # response.  Fill in the fields we need.
-                if 'uuid' not in new_collection_object:
-                    new_collection_object['uuid'] = self.collection_locator
-                if "portable_data_hash" not in new_collection_object:
-                    new_collection_object["portable_data_hash"] = new_collection_object["uuid"]
-                if 'manifest_text' not in new_collection_object:
-                    new_collection_object['manifest_text'] = coll_reader.manifest_text()
+                    if uuid_pattern.match(self.collection_locator):
+                        coll_reader = arvados.collection.Collection(
+                            self.collection_locator, self.api, self.api.keep,
+                            num_retries=self.num_retries)
+                    else:
+                        coll_reader = arvados.collection.CollectionReader(
+                            self.collection_locator, self.api, self.api.keep,
+                            num_retries=self.num_retries)
+                    new_collection_record = coll_reader.api_response() or {}
+                    # If the Collection only exists in Keep, there will be no API
+                    # response.  Fill in the fields we need.
+                    if 'uuid' not in new_collection_record:
+                        new_collection_record['uuid'] = self.collection_locator
+                    if "portable_data_hash" not in new_collection_record:
+                        new_collection_record["portable_data_hash"] = new_collection_record["uuid"]
+                    if 'manifest_text' not in new_collection_record:
+                        new_collection_record['manifest_text'] = coll_reader.manifest_text()
             # end with llfuse.lock_released, re-acquire lock
 
-            if self.collection_object is None or self.collection_object["portable_data_hash"] != new_collection_object["portable_data_hash"]:
-                self.new_collection(new_collection_object, coll_reader)
+            if self.collection_record is None or self.collection_record["portable_data_hash"] != new_collection_record["portable_data_hash"]:
+                self.new_collection(new_collection_record, coll_reader)
 
             self._manifest_size = len(coll_reader.manifest_text())
             _logger.debug("%s manifest_size %i", self, self._manifest_size)
@@ -304,21 +311,21 @@ class CollectionDirectory(CollectionDirectoryBase):
             _logger.exception("arv-mount %s: error", self.collection_locator)
         except arvados.errors.ArgumentError as detail:
             _logger.warning("arv-mount %s: error %s", self.collection_locator, detail)
-            if self.collection_object is not None and "manifest_text" in self.collection_object:
-                _logger.warning("arv-mount manifest_text is: %s", self.collection_object["manifest_text"])
+            if self.collection_record is not None and "manifest_text" in self.collection_record:
+                _logger.warning("arv-mount manifest_text is: %s", self.collection_record["manifest_text"])
         except Exception:
             _logger.exception("arv-mount %s: error", self.collection_locator)
-            if self.collection_object is not None and "manifest_text" in self.collection_object:
-                _logger.error("arv-mount manifest_text is: %s", self.collection_object["manifest_text"])
+            if self.collection_record is not None and "manifest_text" in self.collection_record:
+                _logger.error("arv-mount manifest_text is: %s", self.collection_record["manifest_text"])
         return False
 
     def __getitem__(self, item):
         self.checkupdate()
         if item == '.arvados#collection':
-            if self.collection_object_file is None:
-                self.collection_object_file = ObjectFile(self.inode, self.collection_object)
-                self.inodes.add_entry(self.collection_object_file)
-            return self.collection_object_file
+            if self.collection_record_file is None:
+                self.collection_record_file = ObjectFile(self.inode, self.collection_record)
+                self.inodes.add_entry(self.collection_record_file)
+            return self.collection_record_file
         else:
             return super(CollectionDirectory, self).__getitem__(item)
 
@@ -329,8 +336,8 @@ class CollectionDirectory(CollectionDirectoryBase):
             return super(CollectionDirectory, self).__contains__(k)
 
     def invalidate(self):
-        self.collection_object = None
-        self.collection_object_file = None
+        self.collection_record = None
+        self.collection_record_file = None
         super(CollectionDirectory, self).invalidate()
 
     def persisted(self):
@@ -497,6 +504,9 @@ class ProjectDirectory(Directory):
             return ObjectFile(self.parent_inode, i)
         else:
             return None
+
+    def uuid(self):
+        return self.uuid
 
     def update(self):
         if self.project_object_file == None:
