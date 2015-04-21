@@ -510,6 +510,13 @@ class Arvados::V1::JobReuseControllerTest < ActionController::TestCase
     assert_not_equal(jobs(:previous_docker_job_run).uuid, new_job.uuid)
   end
 
+  test "reuse job with Docker image that has hash name" do
+    jobspec = {runtime_constraints: {
+        docker_image: "a" * 64,
+      }}
+    check_job_reused_from(jobspec, :previous_docker_job_run)
+  end
+
   ["repository", "script"].each do |skip_key|
     test "missing #{skip_key} filter raises an error" do
       filters = filters_from_hash(BASE_FILTERS.reject { |k| k == skip_key })
