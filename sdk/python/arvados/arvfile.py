@@ -441,11 +441,17 @@ class _BlockManager(object):
         self._prefetch_threads = None
         self._prefetch_queue = None
 
-    def commit_bufferblock(self, block):
+    def commit_bufferblock(self, block, wait):
         """Initiate a background upload of a bufferblock.
 
-        This will block if the upload queue is at capacity, otherwise it will
-        return immediately.
+        :block:
+          The block object to upload
+
+        :wait:
+          If `wait` is True, upload the block synchronously.
+          If `wait` is False, upload the block asynchronously.  This will
+          return immediately unless if the upload queue is at capacity, in
+          which case it will wait on an upload queue slot.
 
         """
 
@@ -467,32 +473,37 @@ class _BlockManager(object):
                     if self._put_queue is not None:
                         self._put_queue.task_done()
 
-        with self.lock:
-            if self._put_threads is None:
-                # Start uploader threads.
+        if wait:
+            block.set_state(_BufferBlock.PENDING)
+            loc = self._keep.put(block.buffer_view[0:block.write_pointer].tobytes())
+            block.set_state(_BufferBlock.COMMITTED, loc)
+        else:
+            with self.lock:
+                if self._put_threads is None:
+                    # Start uploader threads.
 
-                # If we don't limit the Queue size, the upload queue can quickly
-                # grow to take up gigabytes of RAM if the writing process is
-                # generating data more quickly than it can be send to the Keep
-                # servers.
-                #
-                # With two upload threads and a queue size of 2, this means up to 4
-                # blocks pending.  If they are full 64 MiB blocks, that means up to
-                # 256 MiB of internal buffering, which is the same size as the
-                # default download block cache in KeepClient.
-                self._put_queue = Queue.Queue(maxsize=2)
-                self._put_errors = Queue.Queue()
+                    # If we don't limit the Queue size, the upload queue can quickly
+                    # grow to take up gigabytes of RAM if the writing process is
+                    # generating data more quickly than it can be send to the Keep
+                    # servers.
+                    #
+                    # With two upload threads and a queue size of 2, this means up to 4
+                    # blocks pending.  If they are full 64 MiB blocks, that means up to
+                    # 256 MiB of internal buffering, which is the same size as the
+                    # default download block cache in KeepClient.
+                    self._put_queue = Queue.Queue(maxsize=2)
+                    self._put_errors = Queue.Queue()
 
-                self._put_threads = []
-                for i in xrange(0, self.num_put_threads):
-                    thread = threading.Thread(target=commit_bufferblock_worker, args=(self,))
-                    self._put_threads.append(thread)
-                    thread.daemon = True
-                    thread.start()
+                    self._put_threads = []
+                    for i in xrange(0, self.num_put_threads):
+                        thread = threading.Thread(target=commit_bufferblock_worker, args=(self,))
+                        self._put_threads.append(thread)
+                        thread.daemon = True
+                        thread.start()
 
-        # Mark the block as PENDING so to disallow any more appends.
-        block.set_state(_BufferBlock.PENDING)
-        self._put_queue.put(block)
+            # Mark the block as PENDING so to disallow any more appends.
+            block.set_state(_BufferBlock.PENDING)
+            self._put_queue.put(block)
 
     @synchronized
     def get_bufferblock(self, locator):
@@ -530,7 +541,7 @@ class _BlockManager(object):
 
         for k,v in items:
             if v.state() == _BufferBlock.WRITABLE:
-                self.commit_bufferblock(v)
+                self.commit_bufferblock(v, False)
 
         with self.lock:
             if self._put_queue is not None:
@@ -605,13 +616,13 @@ class ArvadosFile(object):
           a list of Range objects representing segments
         """
         self.parent = parent
+        self.name = name
         self._modified = True
         self._segments = []
         self.lock = parent.root_collection().lock
         for s in segments:
             self._add_segment(stream, s.locator, s.range_size)
         self._current_bblock = None
-        self.name = name
 
     def writable(self):
         return self.parent.writable()
@@ -800,7 +811,7 @@ class ArvadosFile(object):
         if (self._current_bblock.size() + len(data)) > config.KEEP_BLOCK_SIZE:
             self._repack_writes()
             if (self._current_bblock.size() + len(data)) > config.KEEP_BLOCK_SIZE:
-                self.parent._my_block_manager().commit_bufferblock(self._current_bblock)
+                self.parent._my_block_manager().commit_bufferblock(self._current_bblock, False)
                 self._current_bblock = self.parent._my_block_manager().alloc_bufferblock(owner=self)
 
         self._current_bblock.append(data)
@@ -812,11 +823,11 @@ class ArvadosFile(object):
         return len(data)
 
     @synchronized
-    def flush(self):
+    def flush(self, wait=True):
         if self.modified():
             if self._current_bblock and self._current_bblock.state() == _BufferBlock.WRITABLE:
                 self._repack_writes()
-                self.parent._my_block_manager().commit_bufferblock(self._current_bblock)
+                self.parent._my_block_manager().commit_bufferblock(self._current_bblock, wait)
             self.parent.notify(MOD, self.parent, self.name, (self, self))
 
     @must_be_writable
@@ -863,6 +874,16 @@ class ArvadosFile(object):
         buf += "\n"
         return buf
 
+    @must_be_writable
+    @synchronized
+    def reparent(self, newparent, newname):
+        self.flush()
+        self.parent.remove(self.name)
+
+        self.parent = newparent
+        self.name = newname
+        self.lock = self.parent.root_collection().lock
+        self._modified = True
 
 class ArvadosFileReader(ArvadosFileReaderBase):
     """Wraps ArvadosFile in a file-like object supporting reading only.

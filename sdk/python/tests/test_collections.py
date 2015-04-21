@@ -886,6 +886,24 @@ class NewCollectionTestCase(unittest.TestCase, CollectionTestMixin):
         c.copy("count1.txt", "foo/")
         self.assertEqual(". 781e5e245d69b566979b86e28d23f2c7+10 0:10:count1.txt\n./foo 781e5e245d69b566979b86e28d23f2c7+10 0:10:count1.txt\n", c.manifest_text())
 
+    def test_rename_file(self):
+        c = Collection('. 781e5e245d69b566979b86e28d23f2c7+10 0:10:count1.txt\n')
+        c.rename("count1.txt", "count2.txt")
+        self.assertEqual(". 781e5e245d69b566979b86e28d23f2c7+10 0:10:count2.txt\n", c.manifest_text())
+
+    def test_move_file_to_dir(self):
+        c = Collection('. 781e5e245d69b566979b86e28d23f2c7+10 0:10:count1.txt\n')
+        c.mkdirs("foo")
+        c.rename("count1.txt", "foo/count2.txt")
+        self.assertEqual("./foo 781e5e245d69b566979b86e28d23f2c7+10 0:10:count2.txt\n", c.manifest_text())
+
+    def test_move_file_to_other(self):
+        c1 = Collection('. 781e5e245d69b566979b86e28d23f2c7+10 0:10:count1.txt\n')
+        c2 = Collection()
+        c2.rename("count1.txt", "count2.txt", source_collection=c1)
+        self.assertEqual("", c1.manifest_text())
+        self.assertEqual(". 781e5e245d69b566979b86e28d23f2c7+10 0:10:count2.txt\n", c2.manifest_text())
+
     def test_clone(self):
         c = Collection('. 781e5e245d69b566979b86e28d23f2c7+10 0:10:count1.txt\n./foo 781e5e245d69b566979b86e28d23f2c7+10 0:10:count2.txt\n')
         cl = c.clone()
@@ -985,8 +1003,8 @@ class NewCollectionTestCase(unittest.TestCase, CollectionTestMixin):
         d = c1.diff(c2)
         self.assertEqual(d, [('del', './count1.txt', c1["count1.txt"]),
                              ('add', './count2.txt', c2["count2.txt"])])
-        with c1.open("count1.txt", "w") as f:
-            f.write("zzzzz")
+        f = c1.open("count1.txt", "w")
+        f.write("zzzzz")
 
         # c1 changed, so it should not be deleted.
         c1.apply(d)
@@ -997,8 +1015,8 @@ class NewCollectionTestCase(unittest.TestCase, CollectionTestMixin):
         c2 = Collection('. 5348b82a029fd9e971a811ce1f71360b+43 0:10:count1.txt')
         d = c1.diff(c2)
         self.assertEqual(d, [('mod', './count1.txt', c1["count1.txt"], c2["count1.txt"])])
-        with c1.open("count1.txt", "w") as f:
-            f.write("zzzzz")
+        f = c1.open("count1.txt", "w")
+        f.write("zzzzz")
 
         # c1 changed, so c2 mod will go to a conflict file
         c1.apply(d)
@@ -1010,8 +1028,8 @@ class NewCollectionTestCase(unittest.TestCase, CollectionTestMixin):
         d = c1.diff(c2)
         self.assertEqual(d, [('del', './count2.txt', c1["count2.txt"]),
                              ('add', './count1.txt', c2["count1.txt"])])
-        with c1.open("count1.txt", "w") as f:
-            f.write("zzzzz")
+        f = c1.open("count1.txt", "w")
+        f.write("zzzzz")
 
         # c1 added count1.txt, so c2 add will go to a conflict file
         c1.apply(d)

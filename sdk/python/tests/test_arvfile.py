@@ -450,8 +450,8 @@ class ArvadosFileReaderTestCase(StreamFileReaderTestCase):
     def test__eq__from_writes(self):
         with Collection('. 781e5e245d69b566979b86e28d23f2c7+10 0:10:count1.txt') as c1:
             with Collection() as c2:
-                with c2.open("count1.txt", "w") as f:
-                    f.write("0123456789")
+                f = c2.open("count1.txt", "w")
+                f.write("0123456789")
 
                 self.assertTrue(c1["count1.txt"] == c2["count1.txt"])
                 self.assertFalse(c1["count1.txt"] != c2["count1.txt"])
@@ -459,8 +459,8 @@ class ArvadosFileReaderTestCase(StreamFileReaderTestCase):
     def test__ne__(self):
         with Collection('. 781e5e245d69b566979b86e28d23f2c7+10 0:10:count1.txt') as c1:
             with Collection() as c2:
-                with c2.open("count1.txt", "w") as f:
-                    f.write("1234567890")
+                f = c2.open("count1.txt", "w")
+                f.write("1234567890")
 
                 self.assertTrue(c1["count1.txt"] != c2["count1.txt"])
                 self.assertFalse(c1["count1.txt"] == c2["count1.txt"])

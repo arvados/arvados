@@ -462,6 +462,7 @@ class FuseWriteFileTest(MountTestBase):
         # Forturnately the multiprocessing module makes this relatively easy.
         pool = multiprocessing.Pool(1)
         self.assertTrue(pool.apply(fuseWriteFileTestHelper, (self.mounttmp,)))
+        pool.close()
 
         collection2 = self.api.collections().get(uuid=collection.manifest_locator()).execute()
         self.assertRegexpMatches(collection2["manifest_text"],
@@ -503,6 +504,7 @@ class FuseUpdateFileTest(MountTestBase):
         pool = multiprocessing.Pool(1)
         self.assertTrue(pool.apply(fuseUpdateFileTestHelper1, (self.mounttmp,)))
         self.assertTrue(pool.apply(fuseUpdateFileTestHelper2, (self.mounttmp,)))
+        pool.close()
 
         collection2 = self.api.collections().get(uuid=collection.manifest_locator()).execute()
         self.assertRegexpMatches(collection2["manifest_text"],

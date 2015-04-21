@@ -472,14 +472,15 @@ class Operations(llfuse.Operations):
     def rmdir(self, inode_parent, name):
         self.unlink(inode_parent, name)
 
-    # @catch_exceptions
-    # def rename(self, inode_parent_old, name_old, inode_parent_new, name_new):
-    #     src = self._check_writable(inode_parent_old)
-    #     dest = self._check_writable(inode_parent_new)
-    #
-    #     with llfuse.lock_released:
-    #         dest.collection.copy(name_old, name_new, source_collection=src.collection, overwrite=True)
-    #         src.collection.remove(name_old)
+    @catch_exceptions
+    def rename(self, inode_parent_old, name_old, inode_parent_new, name_new):
+        src = self._check_writable(inode_parent_old)
+        dest = self._check_writable(inode_parent_new)
+
+        with llfuse.lock_released:
+            dest.collection.rename(name_old, name_new, source_collection=src.collection, overwrite=True)
+            dest.flush()
+            src.flush()
 
     @catch_exceptions
     def flush(self, fh):
