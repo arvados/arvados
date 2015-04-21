@@ -1,6 +1,8 @@
 require 'test_helper'
 
 class CollectionsHelperTest < ActionView::TestCase
+  reset_api_fixtures :after_each_test, false
+
   [
     ["filename.csv", true],
     ["filename.fa", true],
