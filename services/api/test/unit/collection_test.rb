@@ -253,4 +253,11 @@ class CollectionTest < ActiveSupport::TestCase
       assert c.valid?
     end
   end
+
+  test "find_all_for_docker_image resolves names that look like hashes" do
+    coll_list = Collection.
+      find_all_for_docker_image('a' * 64, nil, [users(:active)])
+    coll_uuids = coll_list.map(&:uuid)
+    assert_includes(coll_uuids, collections(:docker_image).uuid)
+  end
 end
