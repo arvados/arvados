@@ -26,7 +26,9 @@
     </td>
 
     <td>
-      <%= render_editable_attribute (name_link || object), 'name', nil, {tiptitle: 'rename'} %>
+      <% if object.respond_to?(:name) %>
+        <%= render_editable_attribute (name_link || object), 'name', nil, {tiptitle: 'rename'} %>
+      <% end %>
     </td>
 
     <td class="arv-description-in-table">

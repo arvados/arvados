@@ -79,50 +79,45 @@ class ErrorsTest < ActionDispatch::IntegrationTest
   end
 
   test "API error page has Report problem button" do
+    # point to a bad api server url to generate fiddlesticks error
     original_arvados_v1_base = Rails.configuration.arvados_v1_base
+    Rails.configuration.arvados_v1_base = "https://[::1]:1/"
 
-    begin
-      # point to a bad api server url to generate fiddlesticks error
-      Rails.configuration.arvados_v1_base = "https://[100::f]:1/"
+    visit page_with_token("active")
 
-      visit page_with_token("active")
+    assert_text 'fiddlesticks'
 
-      assert_text 'fiddlesticks'
+    # reset api server base config to let the popup rendering to work
+    Rails.configuration.arvados_v1_base = original_arvados_v1_base
 
-      # reset api server base config to let the popup rendering to work
-      Rails.configuration.arvados_v1_base = original_arvados_v1_base
+    click_link 'Report problem'
 
-      click_link 'Report problem'
+    within '.modal-content' do
+      assert_text 'Report a problem'
+      assert_no_text 'Version / debugging info'
+      assert_text 'Describe the problem'
+      assert_text 'Send problem report'
+      # "Send" button should be disabled until text is entered
+      assert_no_selector 'a,button:not([disabled])', text: 'Send problem report'
+      assert_selector 'a,button', text: 'Cancel'
 
-      within '.modal-content' do
-        assert_text 'Report a problem'
-        assert_no_text 'Version / debugging info'
-        assert_text 'Describe the problem'
-        assert_text 'Send problem report'
-        # "Send" button should be disabled until text is entered
-        assert_no_selector 'a,button:not([disabled])', text: 'Send problem report'
-        assert_selector 'a,button', text: 'Cancel'
+      report = mock
+      report.expects(:deliver).returns true
+      IssueReporter.expects(:send_report).returns report
 
-        report = mock
-        report.expects(:deliver).returns true
-        IssueReporter.expects(:send_report).returns report
+      # enter a report text and click on report
+      find_field('report_issue_text').set 'my test report text'
+      click_button 'Send problem report'
 
-        # enter a report text and click on report
-        find_field('report_issue_text').set 'my test report text'
-        click_button 'Send problem report'
-
-        # ajax success updated button texts and added footer message
-        assert_no_selector 'a,button', text: 'Send problem report'
-        assert_no_selector 'a,button', text: 'Cancel'
-        assert_text 'Report sent'
-        assert_text 'Thanks for reporting this issue'
-        click_button 'Close'
-      end
-
-      # out of the popup now and should be back in the error page
-      assert_text 'fiddlesticks'
-    ensure
-      Rails.configuration.arvados_v1_base = original_arvados_v1_base
+      # ajax success updated button texts and added footer message
+      assert_no_selector 'a,button', text: 'Send problem report'
+      assert_no_selector 'a,button', text: 'Cancel'
+      assert_text 'Report sent'
+      assert_text 'Thanks for reporting this issue'
+      click_button 'Close'
     end
+
+    # out of the popup now and should be back in the error page
+    assert_text 'fiddlesticks'
   end
 end

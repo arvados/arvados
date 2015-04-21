@@ -279,26 +279,24 @@ class Dispatcher
     @authorizations[job.uuid]
   end
 
-  def get_commit(src_repo, commit_hash)
-    # @fetched_commits[V]==true if we know commit V exists in the
-    # arvados_internal git repository.
-    if !@fetched_commits[commit_hash]
-      # check if the commit needs to be fetched or not
-      commit_rev = stdout_s(git_cmd("rev-list", "-n1", commit_hash),
-                            err: "/dev/null")
-      unless $? == 0 and commit_rev == commit_hash
-        # commit does not exist in internal repository, so import the source repository using git fetch-pack
-        cmd = git_cmd("fetch-pack", "--no-progress", "--all", src_repo)
-        $stderr.puts "dispatch: #{cmd}"
-        $stderr.puts(stdout_s(cmd))
-        unless $? == 0
-          fail_job job, "git fetch-pack failed"
-          return nil
-        end
-      end
-      @fetched_commits[commit_hash] = true
+  def internal_repo_has_commit? sha1
+    if (not @fetched_commits[sha1] and
+        sha1 == stdout_s(git_cmd("rev-list", "-n1", sha1), err: "/dev/null") and
+        $? == 0)
+      @fetched_commits[sha1] = true
     end
-    @fetched_commits[commit_hash]
+    return @fetched_commits[sha1]
+  end
+
+  def get_commit src_repo, sha1
+    return true if internal_repo_has_commit? sha1
+
+    # commit does not exist in internal repository, so import the
+    # source repository using git fetch-pack
+    cmd = git_cmd("fetch-pack", "--no-progress", "--all", src_repo)
+    $stderr.puts "dispatch: #{cmd}"
+    $stderr.puts(stdout_s(cmd))
+    @fetched_commits[sha1] = ($? == 0)
   end
 
   def tag_commit(commit_hash, tag_name)
@@ -377,20 +375,42 @@ class Dispatcher
                          "GEM_PATH=#{ENV['GEM_PATH']}")
       end
 
-      repo = Repository.where(name: job.repository).first
-      if repo.nil? or repo.server_path.nil?
-        fail_job "Repository #{job.repository} not found under #{@repo_root}"
-        next
+      next unless get_authorization job
+
+      ready = internal_repo_has_commit? job.script_version
+
+      if not ready
+        # Import the commit from the specified repository into the
+        # internal repository. This should have been done already when
+        # the job was created/updated; this code is obsolete except to
+        # avoid deployment races. Failing the job would be a
+        # reasonable thing to do at this point.
+        repo = Repository.where(name: job.repository).first
+        if repo.nil? or repo.server_path.nil?
+          fail_job "Repository #{job.repository} not found under #{@repo_root}"
+          next
+        end
+        ready &&= get_commit repo.server_path, job.script_version
+        ready &&= tag_commit job.script_version, job.uuid
       end
 
-      ready = (get_authorization(job) and
-               get_commit(repo.server_path, job.script_version) and
-               tag_commit(job.script_version, job.uuid))
-      if ready and job.arvados_sdk_version
-        ready = (get_commit(@arvados_repo_path, job.arvados_sdk_version) and
-                 tag_commit(job.arvados_sdk_version, "#{job.uuid}-arvados-sdk"))
+      # This should be unnecessary, because API server does it during
+      # job create/update, but it's still not a bad idea to verify the
+      # tag is correct before starting the job:
+      ready &&= tag_commit job.script_version, job.uuid
+
+      # The arvados_sdk_version doesn't support use of arbitrary
+      # remote URLs, so the requested version isn't necessarily copied
+      # into the internal repository yet.
+      if job.arvados_sdk_version
+        ready &&= get_commit @arvados_repo_path, job.arvados_sdk_version
+        ready &&= tag_commit job.arvados_sdk_version, "#{job.uuid}-arvados-sdk"
       end
-      next unless ready
+
+      if not ready
+        fail_job job, "commit not present in internal repository"
+        next
+      end
 
       cmd_args += [@crunch_job_bin,
                    '--job-api-token', @authorizations[job.uuid].api_token,
