@@ -13,22 +13,27 @@ class Repository < ArvadosModel
     t.add :name
     t.add :fetch_url
     t.add :push_url
+    t.add :clone_urls
   end
 
   def self.attributes_required_columns
-    super.merge({"push_url" => ["name"], "fetch_url" => ["name"]})
+    super.merge("clone_urls" => ["name"],
+                "fetch_url" => ["name"],
+                "push_url" => ["name"])
   end
 
+  # Deprecated. Use clone_urls instead.
   def push_url
-    if Rails.configuration.git_host
-      "git@%s:%s.git" % [Rails.configuration.git_host, name]
-    else
-      "git@git.%s.arvadosapi.com:%s.git" % [Rails.configuration.uuid_prefix, name]
-    end
+    ssh_clone_url
   end
 
+  # Deprecated. Use clone_urls instead.
   def fetch_url
-    push_url
+    ssh_clone_url
+  end
+
+  def clone_urls
+    [ssh_clone_url, https_clone_url].compact
   end
 
   def server_path
@@ -86,5 +91,25 @@ class Repository < ArvadosModel
                  "#{errmsg_start} a letter followed by alphanumerics")
       false
     end
+  end
+
+  def ssh_clone_url
+    _clone_url :git_repo_ssh_base, 'git@git.%s.arvadosapi.com:'
+  end
+
+  def https_clone_url
+    _clone_url :git_repo_https_base, 'https://git.%s.arvadosapi.com/'
+  end
+
+  def _clone_url config_var, default_base_fmt
+    configured_base = Rails.configuration.send config_var
+    return nil if configured_base == false
+    prefix = new_record? ? Rails.configuration.uuid_prefix : uuid[0,5]
+    if prefix == Rails.configuration.uuid_prefix and configured_base != true
+      base = configured_base
+    else
+      base = default_base_fmt % prefix
+    end
+    '%s%s.git' % [base, name]
   end
 end
