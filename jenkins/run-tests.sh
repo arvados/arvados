@@ -18,6 +18,7 @@ Options:
 --skip-install Do not run any install steps. Just run tests.
                You should provide GOPATH, GEMHOME, and VENVDIR options
                from a previous invocation if you use this option.
+--only-install Run specific install step
 WORKSPACE=path Arvados source tree to test.
 CONFIGSRC=path Dir with api server config files to copy into source tree.
                (If none given, leave config files alone in source tree.)
@@ -211,6 +212,10 @@ do
         --skip-install)
             skip_install=1
             ;;
+        --only-install)
+            skip_install=1
+            only_install="$1"; shift
+            ;;
         --leave-temp)
             leave_temp[VENVDIR]=1
             leave_temp[GOPATH]=1
@@ -358,6 +363,10 @@ ln -sfn "$WORKSPACE" "$GOPATH/src/git.curoverse.com/arvados.git" \
 virtualenv --setuptools "$VENVDIR" || fatal "virtualenv $VENVDIR failed"
 . "$VENVDIR/bin/activate"
 
+# When re-using $VENVDIR, upgrade any packages (except arvados) that are
+# already installed
+pip install --quiet --upgrade `pip freeze | grep -v arvados | cut -f1 -d=`
+
 # Note: this must be the last time we change PATH, otherwise rvm will
 # whine a lot.
 setup_ruby_environment
@@ -371,7 +380,7 @@ fi
 
 # Needed for run_test_server.py which is used by certain (non-Python) tests.
 echo "pip install -q PyYAML"
-pip install -q PyYAML || fatal "pip install PyYAML failed"
+pip install --quiet PyYAML || fatal "pip install PyYAML failed"
 
 checkexit() {
     if [[ "$1" != "0" ]]; then
@@ -429,7 +438,7 @@ do_test_once() {
 }
 
 do_install() {
-    if [[ -z "$skip_install" ]]
+    if [[ -z "$skip_install" || (-n "$only_install" && "$only_install" == "$1") ]]
     then
         title "Running $1 install"
         timer_reset
@@ -438,9 +447,20 @@ do_install() {
             go get -t "git.curoverse.com/arvados.git/$1"
         elif [[ "$2" == "pip" ]]
         then
+            # Need to change to a different directory after creating
+            # the source dist package to avoid a pip bug.
+            # see https://arvados.org/issues/5766 for details.
+
+            # Also need to install twice, because if it belives the package is
+            # already installed, pip it won't install it.  So the first "pip
+            # install" ensures that the dependencies are met, the second "pip
+            # install" ensures that we've actually install the local package
+            # we just built.
             cd "$WORKSPACE/$1" \
                 && python setup.py sdist rotate --keep=1 --match .tar.gz \
-                && pip install -q --upgrade dist/*.tar.gz
+                && cd "$WORKSPACE" \
+                && pip install --quiet "$WORKSPACE/$1/dist"/*.tar.gz \
+                && pip install --quiet --no-deps --ignore-installed "$WORKSPACE/$1/dist"/*.tar.gz
         elif [[ "$2" != "" ]]
         then
             "install_$2"
