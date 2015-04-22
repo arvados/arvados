@@ -2,6 +2,7 @@
 
 import functools
 import inspect
+import pycurl
 import time
 
 from collections import deque
@@ -109,11 +110,11 @@ class RetryLoop(object):
                 "queried loop results before any were recorded")
 
 
-def check_http_response_success(result):
-    """Convert a 'requests' response to a loop control flag.
+def check_http_response_success(status_code):
+    """Convert an HTTP status code to a loop control flag.
 
-    Pass this method a requests.Response object.  It returns True if
-    the response indicates success, None if it indicates temporary
+    Pass this method a numeric HTTP status code.  It returns True if
+    the code indicates success, None if it indicates temporary
     failure, and False otherwise.  You can use this as the
     success_check for a RetryLoop.
 
@@ -128,15 +129,11 @@ def check_http_response_success(result):
       3xx status codes.  They don't indicate success, and you can't
       retry those requests verbatim.
     """
-    try:
-        status = result.status_code
-    except Exception:
-        return None
-    if status in _HTTP_SUCCESSES:
+    if status_code in _HTTP_SUCCESSES:
         return True
-    elif status in _HTTP_CAN_RETRY:
+    elif status_code in _HTTP_CAN_RETRY:
         return None
-    elif 100 <= status < 600:
+    elif 100 <= status_code < 600:
         return False
     else:
         return None  # Get well soon, server.

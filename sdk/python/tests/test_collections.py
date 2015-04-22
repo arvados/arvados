@@ -551,7 +551,7 @@ class CollectionReaderTestCase(unittest.TestCase, CollectionTestMixin):
     def test_locator_init(self):
         client = self.api_client_mock(200)
         # Ensure Keep will not return anything if asked.
-        with tutil.mock_get_responses(None, 404):
+        with tutil.mock_keep_responses(None, 404):
             reader = arvados.CollectionReader(self.DEFAULT_DATA_HASH,
                                               api_client=client)
             self.assertEqual(self.DEFAULT_MANIFEST, reader.manifest_text())
@@ -561,7 +561,7 @@ class CollectionReaderTestCase(unittest.TestCase, CollectionTestMixin):
         # been written to Keep.
         client = self.api_client_mock(200)
         self.mock_get_collection(client, 404, None)
-        with tutil.mock_get_responses(self.DEFAULT_MANIFEST, 200):
+        with tutil.mock_keep_responses(self.DEFAULT_MANIFEST, 200):
             reader = arvados.CollectionReader(self.DEFAULT_DATA_HASH,
                                               api_client=client)
             self.assertEqual(self.DEFAULT_MANIFEST, reader.manifest_text())
@@ -569,7 +569,7 @@ class CollectionReaderTestCase(unittest.TestCase, CollectionTestMixin):
     def test_uuid_init_no_fallback_to_keep(self):
         # Do not look up a collection UUID in Keep.
         client = self.api_client_mock(404)
-        with tutil.mock_get_responses(self.DEFAULT_MANIFEST, 200):
+        with tutil.mock_keep_responses(self.DEFAULT_MANIFEST, 200):
             with self.assertRaises(arvados.errors.ApiError):
                 reader = arvados.CollectionReader(self.DEFAULT_UUID,
                                                   api_client=client)
@@ -578,7 +578,7 @@ class CollectionReaderTestCase(unittest.TestCase, CollectionTestMixin):
         # To verify that CollectionReader tries Keep first here, we
         # mock API server to return the wrong data.
         client = self.api_client_mock(200)
-        with tutil.mock_get_responses(self.ALT_MANIFEST, 200):
+        with tutil.mock_keep_responses(self.ALT_MANIFEST, 200):
             self.assertEqual(
                 self.ALT_MANIFEST,
                 arvados.CollectionReader(
@@ -590,7 +590,7 @@ class CollectionReaderTestCase(unittest.TestCase, CollectionTestMixin):
         client = self.api_client_mock(200)
         reader = arvados.CollectionReader(self.DEFAULT_UUID, api_client=client,
                                           num_retries=3)
-        with tutil.mock_get_responses('foo', 500, 500, 200):
+        with tutil.mock_keep_responses('foo', 500, 500, 200):
             self.assertEqual('foo',
                              ''.join(f.read(9) for f in reader.all_files()))
 
@@ -630,7 +630,7 @@ class CollectionReaderTestCase(unittest.TestCase, CollectionTestMixin):
     def test_api_response_with_collection_from_keep(self):
         client = self.api_client_mock()
         self.mock_get_collection(client, 404, 'foo')
-        with tutil.mock_get_responses(self.DEFAULT_MANIFEST, 200):
+        with tutil.mock_keep_responses(self.DEFAULT_MANIFEST, 200):
             reader = arvados.CollectionReader(self.DEFAULT_DATA_HASH,
                                               api_client=client)
             api_response = reader.api_response()
@@ -673,7 +673,7 @@ class CollectionReaderTestCase(unittest.TestCase, CollectionTestMixin):
 class CollectionWriterTestCase(unittest.TestCase, CollectionTestMixin):
     def mock_keep(self, body, *codes, **headers):
         headers.setdefault('x-keep-replicas-stored', 2)
-        return tutil.mock_put_responses(body, *codes, **headers)
+        return tutil.mock_keep_responses(body, *codes, **headers)
 
     def foo_writer(self, **kwargs):
         kwargs.setdefault('api_client', self.api_client_mock())
@@ -695,7 +695,7 @@ class CollectionWriterTestCase(unittest.TestCase, CollectionTestMixin):
 
     def test_write_insufficient_replicas_via_proxy(self):
         writer = self.foo_writer(replication=3)
-        with self.mock_keep(None, 200, headers={'x-keep-replicas-stored': 2}):
+        with self.mock_keep(None, 200, **{'x-keep-replicas-stored': 2}):
             with self.assertRaises(arvados.errors.KeepWriteError):
                 writer.manifest_text()
 
@@ -717,10 +717,7 @@ class CollectionWriterTestCase(unittest.TestCase, CollectionTestMixin):
             self.mock_keep_services(client, status=200, service_type='disk', count=6)
             writer = self.foo_writer(api_client=client, replication=3)
             writer.manifest_text()
-            # keepmock is the mock session constructor; keepmock.return_value
-            # is the mock session object, and keepmock.return_value.put is the
-            # actual mock method of interest.
-            self.assertEqual(6, keepmock.return_value.put.call_count)
+            self.assertEqual(6, keepmock.call_count)
 
     def test_write_whole_collection_through_retries(self):
         writer = self.foo_writer(num_retries=2)

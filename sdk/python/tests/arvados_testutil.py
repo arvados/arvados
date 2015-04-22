@@ -8,8 +8,8 @@ import httplib2
 import io
 import mock
 import os
+import pycurl
 import Queue
-import requests
 import shutil
 import tempfile
 import unittest
@@ -43,44 +43,80 @@ def mock_responses(body, *codes, **headers):
     return mock.patch('httplib2.Http.request', side_effect=queue_with((
         (fake_httplib2_response(code, **headers), body) for code in codes)))
 
-# fake_requests_response, mock_get_responses and mock_put_responses
-# mock calls to requests.get() and requests.put()
-def fake_requests_response(code, body, **headers):
-    r = requests.Response()
-    r.status_code = code
-    r.reason = httplib.responses.get(code, "Unknown Response")
-    r.headers = headers
-    r.raw = io.BytesIO(body)
-    return r
 
-# The following methods patch requests.Session(), where return_value is a mock
-# Session object.  The put/get attributes are set on mock Session, and the
-# desired put/get behavior is set on the put/get mocks.
+class FakeCurl:
+    @classmethod
+    def make(cls, code, body='', headers={}):
+        return mock.Mock(spec=cls, wraps=cls(code, body, headers))
 
-def mock_put_responses(body, *codes, **headers):
-    m = mock.MagicMock()
+    def __init__(self, code=200, body='', headers={}):
+        self._opt = {}
+        self._got_url = None
+        self._writer = None
+        self._headerfunction = None
+        self._resp_code = code
+        self._resp_body = body
+        self._resp_headers = headers
+
+    def getopt(self, opt):
+        return self._opt.get(str(opt), None)
+
+    def setopt(self, opt, val):
+        self._opt[str(opt)] = val
+        if opt == pycurl.WRITEDATA:
+            self._writer = val
+        elif opt == pycurl.HEADERFUNCTION:
+            self._headerfunction = val
+
+    def perform(self):
+        if not isinstance(self._resp_code, int):
+            raise self._resp_code
+        if self.getopt(pycurl.URL) is None:
+            raise ValueError
+        if self._writer is None:
+            raise ValueError
+        if self._headerfunction:
+            self._headerfunction("HTTP/1.1 {} Status".format(self._resp_code))
+            for k, v in self._resp_headers.iteritems():
+                self._headerfunction(k + ': ' + str(v))
+        self._writer.write(self._resp_body)
+
+    def close(self):
+        pass
+
+    def reset(self):
+        """Prevent fake UAs from going back into the user agent pool."""
+        raise Exception
+
+    def getinfo(self, opt):
+        if opt == pycurl.RESPONSE_CODE:
+            return self._resp_code
+        raise Exception
+
+def mock_keep_responses(body, *codes, **headers):
+    """Patch pycurl to return fake responses and raise exceptions.
+
+    body can be a string to return as the response body; an exception
+    to raise when perform() is called; or an iterable that returns a
+    sequence of such values.
+    """
+    cm = mock.MagicMock()
     if isinstance(body, tuple):
         codes = list(codes)
         codes.insert(0, body)
-        m.return_value.put.side_effect = queue_with((fake_requests_response(code, b, **headers) for b, code in codes))
+        responses = [
+            FakeCurl.make(code=code, body=b, headers=headers)
+            for b, code in codes
+        ]
     else:
-        m.return_value.put.side_effect = queue_with((fake_requests_response(code, body, **headers) for code in codes))
-    return mock.patch('requests.Session', m)
+        responses = [
+            FakeCurl.make(code=code, body=body, headers=headers)
+            for code in codes
+        ]
+    cm.side_effect = queue_with(responses)
+    cm.responses = responses
+    return mock.patch('pycurl.Curl', cm)
 
-def mock_get_responses(body, *codes, **headers):
-    m = mock.MagicMock()
-    m.return_value.get.side_effect = queue_with((fake_requests_response(code, body, **headers) for code in codes))
-    return mock.patch('requests.Session', m)
-
-def mock_get(side_effect):
-    m = mock.MagicMock()
-    m.return_value.get.side_effect = side_effect
-    return mock.patch('requests.Session', m)
-
-def mock_put(side_effect):
-    m = mock.MagicMock()
-    m.return_value.put.side_effect = side_effect
-    return mock.patch('requests.Session', m)
 
 class MockStreamReader(object):
     def __init__(self, name='.', *data):
