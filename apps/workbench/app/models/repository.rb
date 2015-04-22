@@ -92,12 +92,24 @@ class Repository < ArvadosBase
       end
       @workdir = workdir
     end
+
+    netrc = File.expand_path "#{uuid}.netrc", Rails.configuration.repository_cache
+    if not Dir.exists? netrc
+      Dir.mkdir netrc, 0700
+    end
+
+    netrc += "/#{Thread.current[:arvados_api_token]}"
+    if not Dir.exists? netrc
+      Dir.mkdir netrc, 0700
+    end
+
+    File.open "#{netrc}/.netrc", "w", 0700 do |f|
+      f.write "machine #{URI(http_fetch_url).host}\n"
+      f.write "login none\n"
+      f.write "password #{Thread.current[:arvados_api_token]}\n"
+    end
+
     [['git', '--git-dir', @workdir, 'config', '--local',
-      "credential.#{http_fetch_url}.username", 'none'],
-     ['git', '--git-dir', @workdir, 'config', '--local',
-      "credential.#{http_fetch_url}.helper",
-      '!token(){ echo password="$ARVADOS_API_TOKEN"; }; token'],
-     ['git', '--git-dir', @workdir, 'config', '--local',
            'http.sslVerify',
            Rails.configuration.arvados_insecure_https ? 'false' : 'true'],
      ].each do |cmd|
@@ -106,7 +118,8 @@ class Repository < ArvadosBase
     end
     env = {}.
       merge(ENV).
-      merge('ARVADOS_API_TOKEN' => Thread.current[:arvados_api_token])
+      merge('ARVADOS_API_TOKEN' => Thread.current[:arvados_api_token]).
+      merge("HOME" => netrc)
     cmd = ['git', '--git-dir', @workdir] + gitcmd
     io = IO.popen(env, cmd, err: [:child, :out])
     output = io.read
