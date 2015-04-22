@@ -83,7 +83,7 @@ h3. secret_token
 This application needs a secret token. Generate a new secret:
 
 <notextile>
-<pre><code>~/arvados/apps/workbench$ <span class="userinput">rake secret</span>
+<pre><code>~/arvados/apps/workbench$ <span class="userinput">ruby -e 'puts rand(2**400).to_s(36)'</span>
 aaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaa
 </code></pre>
 </notextile>
