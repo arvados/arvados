@@ -65,7 +65,7 @@ class ProjectsController < ApplicationController
       {
         :name => 'Subprojects',
         :filters => [%w(uuid is_a arvados#group)]
-      } if current_user
+      }
     pane_list <<
       {
         :name => 'Other_objects',
