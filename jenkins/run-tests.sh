@@ -27,6 +27,9 @@ sdk/python_test="--test-suite test.test_keep_locator"
                Restrict Python SDK tests to the given class
 apps/workbench_test="TEST=test/integration/pipeline_instances_test.rb"
                Restrict Workbench tests to the given file
+services/arv-git-httpd_test="-check.vv"
+               Show all log messages, even when tests pass (also works
+               with services/keepstore_test etc.)
 ARVADOS_DEBUG=1
                Print more debug messages
 envvar=value   Set \$envvar to value. Primarily useful for WORKSPACE,
@@ -130,7 +133,7 @@ report_outcomes() {
 exit_cleanly() {
     trap - INT
     rotate_logfile "$WORKSPACE/apps/workbench/log/" "test.log"
-    stop_api
+    stop_services
     rotate_logfile "$WORKSPACE/services/api/log/" "test.log"
     report_outcomes
     clear_temp
@@ -243,7 +246,23 @@ start_api() {
         && (env | egrep ^ARVADOS)
 }
 
-stop_api() {
+start_nginx_proxy_services() {
+    echo 'Starting keepproxy, arv-git-httpd, and nginx ssl proxy...'
+    cd "$WORKSPACE" \
+        && python sdk/python/tests/run_test_server.py start_keep_proxy \
+        && python sdk/python/tests/run_test_server.py start_arv-git-httpd \
+        && python sdk/python/tests/run_test_server.py start_nginx \
+        && export ARVADOS_TEST_PROXY_SERVICES=1
+}
+
+stop_services() {
+    if [[ -n "$ARVADOS_TEST_PROXY_SERVICES" ]]; then
+        unset ARVADOS_TEST_PROXY_SERVICES
+        cd "$WORKSPACE" \
+            && python sdk/python/tests/run_test_server.py stop_nginx \
+            && python sdk/python/tests/run_test_server.py stop_arv-git-httpd \
+            && python sdk/python/tests/run_test_server.py stop_keep_proxy
+    fi
     if [[ -n "$ARVADOS_TEST_API_HOST" ]]; then
         unset ARVADOS_TEST_API_HOST
         cd "$WORKSPACE" \
@@ -408,7 +427,16 @@ do_test_once() {
         timer_reset
         if [[ "$2" == "go" ]]
         then
-            go test ${testargs[$1]} "git.curoverse.com/arvados.git/$1"
+            if [[ -n "${testargs[$1]}" ]]
+            then
+                # "go test -check.vv giturl" doesn't work, but this
+                # does:
+                cd "$WORKSPACE/$1" && go test ${testargs[$1]}
+            else
+                # The above form gets verbose even when testargs is
+                # empty, so use this form in such cases:
+                go test "git.curoverse.com/arvados.git/$1"
+            fi
         elif [[ "$2" == "pip" ]]
         then
            cd "$WORKSPACE/$1" \
@@ -548,9 +576,11 @@ install_apiserver() {
         && git add tmp \
         && git commit -m 'initial commit'
 
-    # Clear out any lingering postgresql connections to arvados_test, so that we can drop it
-    # This assumes the current user is a postgresql superuser
-    psql arvados_test -c "SELECT pg_terminate_backend (pg_stat_activity.procpid::int) FROM pg_stat_activity WHERE pg_stat_activity.datname = 'arvados_test';" 2>/dev/null
+    # Clear out any lingering postgresql connections to the test
+    # database, so that we can drop it. This assumes the current user
+    # is a postgresql superuser.
+    test_database=$(python -c "import yaml; print yaml.load(file('config/database.yml'))['test']['database']")
+    psql "$test_database" -c "SELECT pg_terminate_backend (pg_stat_activity.procpid::int) FROM pg_stat_activity WHERE pg_stat_activity.datname = '$test_database';" 2>/dev/null
 
     cd "$WORKSPACE/services/api" \
         && RAILS_ENV=test bundle exec rake db:drop \
@@ -593,7 +623,7 @@ test_doclinkchecker() {
 }
 do_test doc doclinkchecker
 
-stop_api
+stop_services
 
 test_apiserver() {
     cd "$WORKSPACE/services/api" \
@@ -634,19 +664,22 @@ do
 done
 
 test_workbench() {
-    cd "$WORKSPACE/apps/workbench" \
+    start_nginx_proxy_services \
+        && cd "$WORKSPACE/apps/workbench" \
         && RAILS_ENV=test bundle exec rake test TESTOPTS=-v ${testargs[apps/workbench]}
 }
 do_test apps/workbench workbench
 
 test_workbench_benchmark() {
-    cd "$WORKSPACE/apps/workbench" \
+    start_nginx_proxy_services \
+        && cd "$WORKSPACE/apps/workbench" \
         && RAILS_ENV=test bundle exec rake test:benchmark ${testargs[apps/workbench_benchmark]}
 }
 do_test apps/workbench_benchmark workbench_benchmark
 
 test_workbench_profile() {
-    cd "$WORKSPACE/apps/workbench" \
+    start_nginx_proxy_services \
+        && cd "$WORKSPACE/apps/workbench" \
         && RAILS_ENV=test bundle exec rake test:profile ${testargs[apps/workbench_profile]}
 }
 do_test apps/workbench_profile workbench_profile
