@@ -148,9 +148,11 @@ func (s *IntegrationSuite) runGit(c *check.C, token, gitCmd, repo string, args .
 
 // Make a bare arvados repo at {tmpRepoRoot}/arvados.git
 func (s *IntegrationSuite) makeArvadosRepo(c *check.C) {
-	_, err := exec.Command("git", "init", "--bare", s.tmpRepoRoot+"/zzzzz-s0uqq-arvadosrepo0123.git").Output()
+	msg, err := exec.Command("git", "init", "--bare", s.tmpRepoRoot+"/zzzzz-s0uqq-arvadosrepo0123.git").CombinedOutput()
+	c.Log(msg)
 	c.Assert(err, check.Equals, nil)
-	_, err = exec.Command("git", "--git-dir", s.tmpRepoRoot+"/zzzzz-s0uqq-arvadosrepo0123.git", "fetch", "../../.git", "master:master").Output()
+	msg, err = exec.Command("git", "--git-dir", s.tmpRepoRoot+"/zzzzz-s0uqq-arvadosrepo0123.git", "fetch", "../../.git", "HEAD:master").CombinedOutput()
+	c.Log(msg)
 	c.Assert(err, check.Equals, nil)
 }
 
