@@ -432,8 +432,8 @@ CREATE TABLE jobs (
     docker_image_locator character varying(255),
     priority integer DEFAULT 0 NOT NULL,
     description character varying(524288),
-    state character varying(255),
-    arvados_sdk_version character varying(255)
+    arvados_sdk_version character varying(255),
+    state character varying(255)
 );
 
 
@@ -1316,7 +1316,7 @@ CREATE INDEX collections_full_text_search_idx ON collections USING gin (to_tsvec
 -- Name: collections_search_index; Type: INDEX; Schema: public; Owner: -; Tablespace: 
 --
 
-CREATE INDEX collections_search_index ON collections USING btree (owner_uuid, modified_by_client_uuid, modified_by_user_uuid, portable_data_hash, uuid, name, file_names);
+CREATE INDEX collections_search_index ON collections USING btree (owner_uuid, modified_by_client_uuid, modified_by_user_uuid, portable_data_hash, uuid, name);
 
 
 --
@@ -2375,3 +2375,5 @@ INSERT INTO schema_migrations (version) VALUES ('20150312151136');
 INSERT INTO schema_migrations (version) VALUES ('20150317132720');
 
 INSERT INTO schema_migrations (version) VALUES ('20150324152204');
+
+INSERT INTO schema_migrations (version) VALUES ('20150423145759');
