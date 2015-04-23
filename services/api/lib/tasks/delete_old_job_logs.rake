@@ -1,3 +1,7 @@
+# This task finds jobs that have been finished for at least as long as
+# the duration specified in the `clean_job_log_rows_after`
+# configuration setting, and deletes their stderr logs from the logs table.
+
 namespace :db do
   desc "Remove old job stderr entries from the logs table"
   task delete_old_job_logs: :environment do
