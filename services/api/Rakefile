@@ -11,3 +11,24 @@ rescue
 end
 
 Server::Application.load_tasks
+
+namespace :test do
+  task(:run).clear
+  # Copied from the definition in Rails 3.2.
+  # This may need to be updated if we upgrade Rails.
+  task :run do
+    errors = %w(test:units test:functionals test:integration test:tasks).collect do |task|
+      begin
+        Rake::Task[task].invoke
+        nil
+      rescue => e
+        { :task => task, :exception => e }
+      end
+    end.compact
+
+    if errors.any?
+      puts errors.map { |e| "Errors running #{e[:task]}! #{e[:exception].inspect}" }.join("\n")
+      abort
+    end
+  end
+end

@@ -163,6 +163,7 @@ runningbarbaz:
 previous_job_run:
   uuid: zzzzz-8i9sb-cjs4pklxxjykqqq
   created_at: <%= 14.minute.ago.to_s(:db) %>
+  finished_at: <%= 13.minutes.ago.to_s(:db) %>
   owner_uuid: zzzzz-tpzed-xurymjxw79nv3jz
   repository: active/foo
   script: hash
@@ -171,6 +172,23 @@ previous_job_run:
     input: fa7aeb5140e2848d39b416daeef4ffc5+45
     an_integer: "1"
   success: true
+  log: d41d8cd98f00b204e9800998ecf8427e+0
+  output: ea10d51bcf88862dbcc36eb292017dfd+45
+  state: Complete
+
+previous_ancient_job_run:
+  uuid: zzzzz-8i9sb-ahd7cie8jah9qui
+  created_at: <%= 366.days.ago.to_s(:db) %>
+  finished_at: <%= 365.days.ago.to_s(:db) %>
+  owner_uuid: zzzzz-tpzed-xurymjxw79nv3jz
+  repository: active/foo
+  script: hash
+  script_version: 4fe459abe02d9b365932b8f5dc419439ab4e2577
+  script_parameters:
+    input: fa7aeb5140e2848d39b416daeef4ffc5+45
+    an_integer: "2"
+  success: true
+  log: d41d8cd98f00b204e9800998ecf8427e+0
   output: ea10d51bcf88862dbcc36eb292017dfd+45
   state: Complete
 
