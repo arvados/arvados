@@ -357,7 +357,6 @@ new_pipeline_in_publicly_accessible_project_with_dataclass_file_and_other_object
 
 pipeline_in_running_state:
   name: running_with_job
-  state: Ready
   uuid: zzzzz-d1hrv-runningpipeline
   owner_uuid: zzzzz-tpzed-xurymjxw79nv3jz
   created_at: <%= 3.1.minute.ago.to_s(:db) %>
