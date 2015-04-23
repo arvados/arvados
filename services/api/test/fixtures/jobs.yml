@@ -7,6 +7,8 @@ running:
   created_at: <%= 3.minute.ago.to_s(:db) %>
   started_at: <%= 3.minute.ago.to_s(:db) %>
   finished_at: ~
+  script: hash
+  repository: active/foo
   script_version: 1de84a854e2b440dc53bf42f8548afa4c17da332
   running: true
   success: ~
@@ -31,6 +33,8 @@ running_cancelled:
   created_at: <%= 4.minute.ago.to_s(:db) %>
   started_at: <%= 3.minute.ago.to_s(:db) %>
   finished_at: ~
+  script: hash
+  repository: active/foo
   script_version: 1de84a854e2b440dc53bf42f8548afa4c17da332
   running: true
   success: ~
@@ -56,6 +60,8 @@ uses_nonexistent_script_version:
   created_at: <%= 5.minute.ago.to_s(:db) %>
   started_at: <%= 3.minute.ago.to_s(:db) %>
   finished_at: <%= 2.minute.ago.to_s(:db) %>
+  script: hash
+  repository: active/foo
   running: false
   success: true
   output: d41d8cd98f00b204e9800998ecf8427e+0

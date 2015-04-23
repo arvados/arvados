@@ -137,7 +137,7 @@ class ApiServerForTests
   @main_process_pid = $$
   @@server_is_running = false
 
-  def check_call *args
+  def check_output *args
     output = nil
     Bundler.with_clean_env do
       output = IO.popen *args do |io|
@@ -153,7 +153,12 @@ class ApiServerForTests
   def run_test_server
     env_script = nil
     Dir.chdir PYTHON_TESTS_DIR do
-      env_script = check_call %w(python ./run_test_server.py start --auth admin)
+      # These are no-ops if we're running within run-tests.sh (except
+      # that we do get a useful env_script back from "start", even
+      # though it doesn't need to start up a new server).
+      env_script = check_output %w(python ./run_test_server.py start --auth admin)
+      check_output %w(python ./run_test_server.py start_arv-git-httpd)
+      check_output %w(python ./run_test_server.py start_nginx)
     end
     test_env = {}
     env_script.each_line do |line|
@@ -169,8 +174,10 @@ class ApiServerForTests
 
   def stop_test_server
     Dir.chdir PYTHON_TESTS_DIR do
-      # This is a no-op if we're running within run-tests.sh
-      check_call %w(python ./run_test_server.py stop)
+      # These are no-ops if we're running within run-tests.sh
+      check_output %w(python ./run_test_server.py stop_nginx)
+      check_output %w(python ./run_test_server.py stop_arv-git-httpd)
+      check_output %w(python ./run_test_server.py stop)
     end
     @@server_is_running = false
   end
@@ -196,7 +203,7 @@ class ApiServerForTests
 
   def run_rake_task task_name, arg_string
     Dir.chdir ARV_API_SERVER_DIR do
-      check_call ['bundle', 'exec', 'rake', "#{task_name}[#{arg_string}]"]
+      check_output ['bundle', 'exec', 'rake', "#{task_name}[#{arg_string}]"]
     end
   end
 end
@@ -270,10 +277,15 @@ class ActiveSupport::TestCase
   end
 
   def after_teardown
-    if self.class.want_reset_api_fixtures[:after_each_test]
+    if self.class.want_reset_api_fixtures[:after_each_test] and
+        @want_reset_api_fixtures != false
       self.class.reset_api_fixtures_now
     end
     super
+  end
+
+  def reset_api_fixtures_after_test t=true
+    @want_reset_api_fixtures = t
   end
 
   protected

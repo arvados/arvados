@@ -20,7 +20,11 @@ development:
 
 production:
   host: api.dev.arvados
-  git_host: api.dev.arvados
+
+  git_repo_ssh_base: "git@api.dev.arvados:"
+
+  # Docker setup doesn't include arv-git-httpd yet.
+  git_repo_https_base: false
 
   # At minimum, you need a nice long randomly generated secret_token here.
   # Use a long string of alphanumeric characters (at least 36).

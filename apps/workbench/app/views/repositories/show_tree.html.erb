@@ -1,0 +1,40 @@
+<%= render partial: 'repository_breadcrumbs' %>
+
+<table class="table table-condensed table-hover">
+  <thead>
+    <tr>
+      <th>File</th>
+      <th class="data-size">Size</th>
+    </tr>
+  </thead>
+  <tbody>
+    <% @subtree.each do |mode, sha1, size, subpath| %>
+      <tr>
+        <td>
+          <span style="opacity: 0.6">
+            <% pathparts = subpath.sub(/^\//, '').split('/')
+               basename = pathparts.pop
+               parents = @path
+               pathparts.each do |pathpart| %>
+              <% parents = parents + '/' + pathpart %>
+              <%= link_to pathpart, url_for(path: parents) %>
+              /
+            <% end %>
+          </span>
+          <%= link_to basename, url_for(action: :show_blob, path: parents + '/' + basename) %>
+        </td>
+        <td class="data-size">
+          <%= human_readable_bytes_html(size) %>
+        </td>
+      </tr>
+    <% end %>
+    <% if @subtree.empty? %>
+      <tr>
+        <td>
+          No files found.
+        </td>
+      </tr>
+    <% end %>
+  </tbody>
+  <tfoot></tfoot>
+</table>

@@ -77,7 +77,7 @@ h3. secret_token
 Generate a new secret token for signing cookies:
 
 <notextile>
-<pre><code>~/arvados/services/api$ <span class="userinput">rake secret</span>
+<pre><code>~/arvados/services/api$ <span class="userinput">ruby -e 'puts rand(2**400).to_s(36)'</span>
 zzzzzzzzzzzzzzzzzzzzzzzzzzzzzzzzzzzzzzzzzzzzzzzzzzzzzzzz
 </code></pre></notextile>
 
