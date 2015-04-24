@@ -279,7 +279,4 @@ common:
   # When you run the db:delete_old_job_logs task, it will find jobs that
   # have been finished for at least this many seconds, and delete their
   # stderr logs from the logs table.
-  # If a pipeline runs longer than this, client applications like
-  # Workbench will lose the ability to display logs from jobs in the
-  # pipeline that finished this long ago.
   clean_job_log_rows_after: <%= 30.days %>

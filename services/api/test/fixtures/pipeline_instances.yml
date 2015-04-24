@@ -371,6 +371,47 @@ pipeline_in_running_state:
       uuid: zzzzz-8i9sb-pshmckwoma9plh7
       script_version: master
 
+running_pipeline_with_complete_job:
+  uuid: zzzzz-d1hrv-partdonepipelin
+  owner_uuid: zzzzz-tpzed-xurymjxw79nv3jz
+  state: RunningOnServer
+  components:
+   previous:
+    job:
+      uuid: zzzzz-8i9sb-cjs4pklxxjykqqq
+      log: zzzzz-4zz18-op4e2lbej01tcvu
+   running:
+    job:
+      uuid: zzzzz-8i9sb-pshmckwoma9plh7
+
+complete_pipeline_with_two_jobs:
+  uuid: zzzzz-d1hrv-twodonepipeline
+  owner_uuid: zzzzz-tpzed-xurymjxw79nv3jz
+  state: Complete
+  components:
+   ancient:
+    job:
+      uuid: zzzzz-8i9sb-ahd7cie8jah9qui
+      log: zzzzz-4zz18-op4e2lbej01tcvu
+   previous:
+    job:
+      uuid: zzzzz-8i9sb-cjs4pklxxjykqqq
+      log: zzzzz-4zz18-op4e2lbej01tcvu
+
+failed_pipeline_with_two_jobs:
+  uuid: zzzzz-d1hrv-twofailpipeline
+  owner_uuid: zzzzz-tpzed-xurymjxw79nv3jz
+  state: Failed
+  components:
+   ancient:
+    job:
+      uuid: zzzzz-8i9sb-ahd7cie8jah9qui
+      log: zzzzz-4zz18-op4e2lbej01tcvu
+   previous:
+    job:
+      uuid: zzzzz-8i9sb-cjs4pklxxjykqqq
+      log: zzzzz-4zz18-op4e2lbej01tcvu
+
 # Test Helper trims the rest of the file
 
 # Do not add your fixtures below this line as the rest of this file will be trimmed by test_helper
