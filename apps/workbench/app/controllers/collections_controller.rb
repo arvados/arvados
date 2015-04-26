@@ -276,6 +276,14 @@ class CollectionsController < ApplicationController
     super
   end
 
+  def tab_counts
+    @limit = 1
+    @filters = [["portable_data_hash", "=", @object.portable_data_hash]]
+    @objects = find_objects_for_index
+    @tab_counts = {}
+    @tab_counts['Hash_matches'] = @objects.andand.items_available
+  end
+
   def sharing_popup
     @search_sharing = search_scopes
     render("sharing_popup.js", content_type: "text/javascript")
