@@ -374,7 +374,7 @@ def run_arv_git_httpd():
     gitdir = os.path.join(SERVICES_SRC_DIR, 'api', 'tmp', 'git')
     gitport = find_available_port()
     env = os.environ.copy()
-    del env['ARVADOS_API_TOKEN']
+    env.pop('ARVADOS_API_TOKEN', None)
     agh = subprocess.Popen(
         ['arv-git-httpd',
          '-repo-root='+gitdir+'/test',

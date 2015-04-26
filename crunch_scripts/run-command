@@ -57,7 +57,7 @@ else:
     jobp = json.loads(args.script_parameters)
     os.environ['JOB_UUID'] = 'zzzzz-8i9sb-1234567890abcde'
     os.environ['TASK_UUID'] = 'zzzzz-ot0gb-1234567890abcde'
-    os.environ['CRUNCH_SRC'] = '/tmp/crunche-src'
+    os.environ['CRUNCH_SRC'] = '/tmp/crunch-src'
     if 'TASK_KEEPMOUNT' not in os.environ:
         os.environ['TASK_KEEPMOUNT'] = '/keep'
 
