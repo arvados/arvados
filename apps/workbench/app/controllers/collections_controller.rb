@@ -18,10 +18,13 @@ class CollectionsController < ApplicationController
   RELATION_LIMIT = 5
 
   def show_pane_list
-    return @panes if @panes.andand.any?
-    @panes = %w(Files Upload Provenance_graph Used_by Advanced)
-    @panes = @panes - %w(Upload) unless (@object.editable? rescue false)
-    @panes
+    if current_user and CollectionsHelper.match(@object.uuid)
+      panes = %w(Hash_matches)
+    else
+      panes = %w(Files Upload Provenance_graph Used_by Advanced)
+      panes = panes - %w(Upload) unless (@object.editable? rescue false)
+      panes
+    end
   end
 
   def set_persistent
@@ -238,7 +241,6 @@ class CollectionsController < ApplicationController
         end
 
         # This pdh has more than one uuid matching. Show the hash matches page listing those uuids.
-        @panes = %w(Hash_matches)
       else
         jobs_with = lambda do |conds|
           Job.limit(RELATION_LIMIT).where(conds)
@@ -277,11 +279,14 @@ class CollectionsController < ApplicationController
   end
 
   def tab_counts
-    @limit = 1
-    @filters = [["portable_data_hash", "=", @object.portable_data_hash]]
-    @objects = find_objects_for_index
     @tab_counts = {}
-    @tab_counts['Hash_matches'] = @objects.andand.items_available
+    if show_pane_list.include? "Hash_matches"
+      @limit = 1
+      @filters = [["portable_data_hash", "=", @object.portable_data_hash]]
+      @objects = find_objects_for_index
+      @tab_counts['Hash_matches'] = @objects.andand.items_available
+    end
+    @tab_counts
   end
 
   def sharing_popup

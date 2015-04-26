@@ -225,6 +225,30 @@ class CollectionsTest < ActionDispatch::IntegrationTest
     assert page.has_no_text?("Sharing and permissions")
   end
 
+  test "Collection portable data hash with more than one page of multiple matches" do
+    pdh = api_fixture('collections')['baz_file']['portable_data_hash']
+    visit page_with_token('admin', "/collections/#{pdh}")
+
+    matches = api_fixture('collections').select {|k,v| v["portable_data_hash"] == pdh}
+    assert matches.size > 1
+
+    (0..10).each do
+      within(".arv-collection-Hash_matches") do
+        page.execute_script "window.scrollBy(0,999000)"
+        begin
+          wait_for_ajax
+        rescue
+        end
+      end
+    end
+
+    matches.each do |k,v|
+      assert page.has_link?(v["name"]), "Page /collections/#{pdh} should contain link '#{v['name']}'"
+    end
+    assert page.has_no_text?("Activity")
+    assert page.has_no_text?("Sharing and permissions")
+  end
+
   test "Filtering collection files by regexp" do
     col = api_fixture('collections', 'multilevel_collection_1')
     visit page_with_token('active', "/collections/#{col['uuid']}")
