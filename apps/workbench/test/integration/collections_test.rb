@@ -104,7 +104,7 @@ class CollectionsTest < ActionDispatch::IntegrationTest
     Capybara.current_driver = :rack_test
     uuid = 'd41d8cd98f00b204e9800998ecf8427e+0'
     visit page_with_token('active', "/collections/#{uuid}")
-    assert page.has_text?(/This collection is empty|The following collections have this content/)
+    assert page.has_text?(/This collection is empty|The following collections have the content/)
   end
 
   test "combine selected collections into new collection" do
@@ -212,7 +212,7 @@ class CollectionsTest < ActionDispatch::IntegrationTest
   end
 
   test "Collection portable data hash with multiple matches" do
-    pdh = api_fixture('collections')['baz_file']['portable_data_hash']
+    pdh = api_fixture('collections')['foo_file']['portable_data_hash']
     visit page_with_token('admin', "/collections/#{pdh}")
 
     matches = api_fixture('collections').select {|k,v| v["portable_data_hash"] == pdh}

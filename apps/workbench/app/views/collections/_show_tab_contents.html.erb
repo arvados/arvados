@@ -1,0 +1,8 @@
+<%# Currently this partial is used to display hash matches. %>
+
+<p><i>The following collections have the content from <%= params["uuid"]%> </i></p>
+
+<div class="arv-collection-<%= tab_pane %>">
+  <div data-infinite-scroller="#<%= tab_pane %>-scroll" data-infinite-content-href="<%= url_for partial: :contents_rows %>" data-infinite-content-params-collectiontab="<%= local_assigns.select{|k| [:order, :offset, :limit, :filters].include? k }.to_json %>" data-infinite-content-params-attr="collectiontab">
+  </div>
+</div>

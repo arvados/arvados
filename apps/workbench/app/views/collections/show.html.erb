@@ -1,3 +1,4 @@
+<% if !CollectionsHelper.match(params['uuid']) %> <%# not pdh %>
 <div class="row row-fill-height">
   <div class="col-md-6">
     <div class="panel panel-info">
@@ -116,5 +117,6 @@
   </div>
   <% end %>
 </div>
+<% end %>
 
 <%= render file: 'application/show.html.erb', locals: local_assigns %>

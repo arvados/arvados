@@ -1,0 +1,3 @@
+<%= render_pane 'tab_contents', to_string: true, locals: {
+    filters: [["portable_data_hash", "=", @object.portable_data_hash]]
+    }.merge(local_assigns) %>

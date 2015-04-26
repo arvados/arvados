@@ -18,9 +18,10 @@ class CollectionsController < ApplicationController
   RELATION_LIMIT = 5
 
   def show_pane_list
-    panes = %w(Files Upload Provenance_graph Used_by Advanced)
-    panes = panes - %w(Upload) unless (@object.editable? rescue false)
-    panes
+    return @panes if @panes.andand.any?
+    @panes = %w(Files Upload Provenance_graph Used_by Advanced)
+    @panes = @panes - %w(Upload) unless (@object.editable? rescue false)
+    @panes
   end
 
   def set_persistent
@@ -189,6 +190,35 @@ class CollectionsController < ApplicationController
 
     @logs = []
 
+    # Hash_matches page
+    if params[:partial].andand.eql?('contents_rows')
+      @limit = 50
+      find_objects_for_index
+
+      owners = @objects.map(&:owner_uuid).to_a.uniq
+      preload_objects_for_dataclass Group, owners
+      preload_objects_for_dataclass User, owners
+      uuids = @objects.map(&:uuid).to_a.uniq
+      preload_links_for_objects uuids
+
+      @next_page_href = next_page_href(partial: :contents_rows,
+                                       filters: @filters.to_json,
+                                       offset: @offset,
+                                       order: @order.to_json)
+
+      respond_to do |f|
+        f.json {
+          render json: {
+            content: render_to_string(partial: 'show_contents_rows.html',
+                                      formats: [:html]),
+            next_page_href: @next_page_href
+          }
+        }
+      end
+      return
+    end
+
+    # Collection show
     if params["tab_pane"] == "Provenance_graph"
       @prov_svg = ProvenanceHelper::create_provenance_graph(@object.provenance, "provenance_svg",
                                                             {:request => request,
@@ -198,16 +228,17 @@ class CollectionsController < ApplicationController
 
     if current_user
       if Keep::Locator.parse params["uuid"]
+        @limit = 2
         @same_pdh = Collection.filter([["portable_data_hash", "=", @object.portable_data_hash]])
+
+        # If there is only uuid matching this pdh, show it
         if @same_pdh.results.size == 1
           redirect_to collection_path(@same_pdh[0]["uuid"])
           return
         end
-        owners = @same_pdh.map(&:owner_uuid).to_a.uniq
-        preload_objects_for_dataclass Group, owners
-        preload_objects_for_dataclass User, owners
-        render 'hash_matches'
-        return
+
+        # This pdh has more than one uuid matching. Show the hash matches page listing those uuids.
+        @panes = %w(Hash_matches)
       else
         jobs_with = lambda do |conds|
           Job.limit(RELATION_LIMIT).where(conds)
@@ -241,6 +272,7 @@ class CollectionsController < ApplicationController
         end
       end
     end
+
     super
   end
 
