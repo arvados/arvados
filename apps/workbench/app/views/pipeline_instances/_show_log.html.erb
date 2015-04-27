@@ -28,6 +28,8 @@
 <% end %>
 
 <% unless still_logging.empty? %>
+  <h4>Logs in progress</h4>
+
   <div id="event_log_div"
        class="arv-log-event-listener arv-log-event-handler-append-logs arv-log-event-subscribe-to-pipeline-job-uuids arv-job-log-window"
        data-object-uuids="<%= @object.stderr_log_object_uuids.join(' ') %>"
