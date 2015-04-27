@@ -195,7 +195,6 @@ class CollectionsController < ApplicationController
 
     # Hash_matches page
     if params[:partial].andand.eql?('contents_rows')
-      @limit = 50
       find_objects_for_index
 
       owners = @objects.map(&:owner_uuid).to_a.uniq

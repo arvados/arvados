@@ -232,6 +232,9 @@ class CollectionsTest < ActionDispatch::IntegrationTest
     matches = api_fixture('collections').select {|k,v| v["portable_data_hash"] == pdh}
     assert matches.size > 1
 
+    match = /Hash matches \(\d+\)/.match page.text
+    assert match, 'Expected hash matches tab title was not found'
+
     (0..10).each do
       within(".arv-collection-Hash_matches") do
         page.execute_script "window.scrollBy(0,999000)"
