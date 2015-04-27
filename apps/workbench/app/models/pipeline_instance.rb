@@ -1,3 +1,5 @@
+require "arvados/keep"
+
 class PipelineInstance < ArvadosBase
   attr_accessor :pipeline_template
 
@@ -112,8 +114,9 @@ class PipelineInstance < ArvadosBase
   end
 
   def has_readable_logs?
-    log_pdhs, log_uuids =
-      job_log_ids.values.compact.partition { |s| s =~ /^[0-9a-f]{32}\b/ }
+    log_pdhs, log_uuids = job_log_ids.values.compact.partition do |loc_s|
+      Keep::Locator.parse(loc_s)
+    end
     if log_pdhs.any? and
         Collection.where(portable_data_hash: log_pdhs).limit(1).results.any?
       true
