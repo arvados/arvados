@@ -182,7 +182,7 @@ module ApplicationHelper
   end
 
   def link_to_arvados_object_if_readable(attrvalue, link_text_if_not_readable, opts={})
-    resource_class = resource_class_for_uuid(attrvalue.split('/')[0]) if attrvalue
+    resource_class = resource_class_for_uuid(attrvalue.split('/')[0]) if attrvalue.is_a?(String)
     if !resource_class
       return link_to_if_arvados_object attrvalue, opts
     end
