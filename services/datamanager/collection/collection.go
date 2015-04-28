@@ -13,7 +13,6 @@ import (
 	"git.curoverse.com/arvados.git/services/datamanager/loggerutil"
 	"log"
 	"os"
-	"runtime"
 	"runtime/pprof"
 	"time"
 )
@@ -123,7 +122,6 @@ func GetCollections(params GetCollectionsParams) (results ReadCollections) {
 	fieldsWanted := []string{"manifest_text",
 		"owner_uuid",
 		"uuid",
-		// TODO(misha): Start using the redundancy field.
 		"redundancy",
 		"modified_at"}
 
@@ -203,9 +201,6 @@ func GetCollections(params GetCollectionsParams) (results ReadCollections) {
 		}
 	}
 
-	// Just in case this lowers the numbers reported in the heap profile.
-	runtime.GC()
-
 	// Write the heap profile for examining memory usage
 	WriteHeapProfile()
 
@@ -232,7 +227,7 @@ func ProcessCollections(arvLogger *logger.Logger,
 			loggerutil.FatalWithMessage(arvLogger,
 				fmt.Sprintf(
 					"Arvados SDK collection returned with unexpected zero "+
-						"modifcation date. This probably means that either we failed to "+
+						"modification date. This probably means that either we failed to "+
 						"parse the modification date or the API server has changed how "+
 						"it returns modification dates: %+v",
 					collection))
