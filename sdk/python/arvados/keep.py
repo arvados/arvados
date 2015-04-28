@@ -662,7 +662,7 @@ class KeepClient(object):
     def get_from_cache(self, loc):
         """Fetch a block only if is in the cache, otherwise return None."""
         slot = self.block_cache.get(loc)
-        if slot.ready.is_set():
+        if slot is not None and slot.ready.is_set():
             return slot.get()
         else:
             return None
