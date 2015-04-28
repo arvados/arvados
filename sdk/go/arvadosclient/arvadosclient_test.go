@@ -1,8 +1,8 @@
 package arvadosclient
 
 import (
-	. "gopkg.in/check.v1"
 	"git.curoverse.com/arvados.git/sdk/go/arvadostest"
+	. "gopkg.in/check.v1"
 	"net/http"
 	"os"
 	"testing"
@@ -87,16 +87,16 @@ func (s *ServerRequiredSuite) TestErrorResponse(c *C) {
 			Dict{"log": Dict{"bogus_attr": "foo"}},
 			&getback)
 		c.Assert(err, ErrorMatches, ".*unknown attribute: bogus_attr.*")
-		c.Assert(err, FitsTypeOf, ArvadosApiError{})
-		c.Assert(err.(ArvadosApiError).HttpStatusCode, Equals, 422)
+		c.Assert(err, FitsTypeOf, RemoteApiServerError{})
+		c.Assert(err.(RemoteApiServerError).HttpStatusCode, Equals, 422)
 	}
 
 	{
 		err := arv.Create("bogus",
 			Dict{"bogus": Dict{}},
 			&getback)
-		c.Assert(err, ErrorMatches, "Path not found")
-		c.Assert(err, FitsTypeOf, ArvadosApiError{})
-		c.Assert(err.(ArvadosApiError).HttpStatusCode, Equals, 404)
+		c.Assert(err, ErrorMatches, ".*Path not found.*")
+		c.Assert(err, FitsTypeOf, RemoteApiServerError{})
+		c.Assert(err.(RemoteApiServerError).HttpStatusCode, Equals, 404)
 	}
 }
