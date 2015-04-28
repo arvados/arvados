@@ -212,7 +212,7 @@ class CollectionsTest < ActionDispatch::IntegrationTest
   end
 
   test "Collection portable data hash with multiple matches" do
-    pdh = api_fixture('collections')['baz_file']['portable_data_hash']
+    pdh = api_fixture('collections')['foo_file']['portable_data_hash']
     visit page_with_token('admin', "/collections/#{pdh}")
 
     matches = api_fixture('collections').select {|k,v| v["portable_data_hash"] == pdh}
@@ -221,8 +221,22 @@ class CollectionsTest < ActionDispatch::IntegrationTest
     matches.each do |k,v|
       assert page.has_link?(v["name"]), "Page /collections/#{pdh} should contain link '#{v['name']}'"
     end
-    assert page.has_no_text?("Activity")
-    assert page.has_no_text?("Sharing and permissions")
+    assert_text 'The following collections have this content:'
+    assert_no_text 'more results are not shown'
+    assert_no_text 'Activity'
+    assert_no_text 'Sharing and permissions'
+  end
+
+  test "Collection portable data hash with multiple matches with more than one page of results" do
+    pdh = api_fixture('collections')['baz_file']['portable_data_hash']
+    visit page_with_token('admin', "/collections/#{pdh}")
+
+    assert_selector 'a', text: 'Collection_1'
+
+    assert_text 'The following collections have this content:'
+    assert_text 'more results are not shown'
+    assert_no_text 'Activity'
+    assert_no_text 'Sharing and permissions'
   end
 
   test "Filtering collection files by regexp" do

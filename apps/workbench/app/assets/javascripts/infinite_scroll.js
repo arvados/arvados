@@ -1,3 +1,37 @@
+// infinite_scroll.js displays a tab's content using automatic scrolling
+// when the user scrolls to the bottom of the page and there is more data.
+//
+// Usage:
+//
+// 1. Adding infinite scrolling to a tab pane using "show" method
+//
+//  The steps below describe adding scrolling to the project#show action.
+//
+//  a. In the "app/views/projects/" folder add a file for your tab
+//      (ex: _show_jobs_and_pipelines.html.erb)
+//    In this file, add a div or tbody with data-infinite-scroller.
+//      Note: This page uses _show_tab_contents.html.erb so that
+//            several tabs can reuse this implementation.
+//    Also add the filters to be used for loading the tab content.
+//
+//  b. Add a file named "_show_contents_rows.html.erb" that loads
+//    the data (by invoking get_objects_and_names from the controller).
+//
+//  c. In the "app/controllers/projects_controller.rb,
+//    Update the show method to add a block for "params[:partial]"
+//      that loads the show_contents_rows partial.
+//    Optionally, add a "tab_counts" method that loads the total number
+//      of objects count to be displayed for this tab.
+//
+// 2. Adding infinite scrolling to the "Recent" tab in "index" page
+//  The steps below describe adding scrolling to the pipeline_instances index page.
+//
+//  a. In the "app/views/pipeline_instances/_show_recent.html.erb/" file
+//      add a div or tbody with data-infinite-scroller.
+//
+//  b. Add the partial "_show_recent_rows.html.erb" that displays the
+//      page contents on scroll using the @objects
+
 function maybe_load_more_content(event) {
     var scroller = this;
     var $container = $(event.data.container);
