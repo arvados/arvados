@@ -86,6 +86,7 @@ func (s *ServerRequiredSuite) TestErrorResponse(c *C) {
 		err := arv.Create("logs",
 			Dict{"log": Dict{"bogus_attr": "foo"}},
 			&getback)
+		c.Assert(err, ErrorMatches, "API Server.*")
 		c.Assert(err, ErrorMatches, ".*unknown attribute: bogus_attr.*")
 		c.Assert(err, FitsTypeOf, RemoteApiServerError{})
 		c.Assert(err.(RemoteApiServerError).HttpStatusCode, Equals, 422)
@@ -95,6 +96,7 @@ func (s *ServerRequiredSuite) TestErrorResponse(c *C) {
 		err := arv.Create("bogus",
 			Dict{"bogus": Dict{}},
 			&getback)
+		c.Assert(err, ErrorMatches, "API Server.*")
 		c.Assert(err, ErrorMatches, ".*Path not found.*")
 		c.Assert(err, FitsTypeOf, RemoteApiServerError{})
 		c.Assert(err.(RemoteApiServerError).HttpStatusCode, Equals, 404)

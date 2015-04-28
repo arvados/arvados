@@ -29,7 +29,7 @@ type RemoteApiServerError struct {
 	HttpStatusCode    int
 	HttpStatusMessage string
 
-	// Additional error details from response body
+	// Additional error details from response body.
 	ErrorDetails []string
 }
 
