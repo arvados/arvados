@@ -5,12 +5,15 @@ import pycurl
 import random
 import re
 import socket
+import threading
+import time
 import unittest
 import urlparse
 
 import arvados
 import arvados.retry
 import arvados_testutil as tutil
+import keepstub
 import run_test_server
 
 class KeepTestCase(run_test_server.TestCaseWithServers):
@@ -268,9 +271,10 @@ class KeepClientServiceTestCase(unittest.TestCase, tutil.ApiClientMock):
         self.assertEqual('100::1', service.hostname)
         self.assertEqual(10, service.port)
 
-    # test_get_timeout and test_put_timeout test that
-    # KeepClient.get and KeepClient.put use the appropriate timeouts
-    # when connected directly to a Keep server (i.e. non-proxy timeout)
+    # test_*_timeout verify that KeepClient instructs pycurl to use
+    # the appropriate connection and read timeouts. They don't care
+    # whether pycurl actually exhibits the expected timeout behavior
+    # -- those tests are in the KeepClientTimeout test class.
 
     def test_get_timeout(self):
         api_client = self.mock_keep_services(count=1)
@@ -458,6 +462,91 @@ class KeepClientServiceTestCase(unittest.TestCase, tutil.ApiClientMock):
             keep_client = arvados.KeepClient(api_client=api_client)
             keep_client.put(data)
         self.assertEqual(2, len(exc_check.exception.request_errors()))
+
+
+class KeepClientTimeout(unittest.TestCase, tutil.ApiClientMock):
+    DATA = 'x' * 2**10
+
+    class assertTakesBetween(unittest.TestCase):
+        def __init__(self, tmin, tmax):
+            self.tmin = tmin
+            self.tmax = tmax
+
+        def __enter__(self):
+            self.t0 = time.time()
+
+        def __exit__(self, *args, **kwargs):
+            self.assertGreater(time.time() - self.t0, self.tmin)
+            self.assertLess(time.time() - self.t0, self.tmax)
+
+    def setUp(self):
+        sock = socket.socket()
+        sock.bind(('0.0.0.0', 0))
+        self.port = sock.getsockname()[1]
+        sock.close()
+        self.server = keepstub.Server(('0.0.0.0', self.port), keepstub.Handler)
+        self.thread = threading.Thread(target=self.server.serve_forever)
+        self.thread.daemon = True # Exit thread if main proc exits
+        self.thread.start()
+        self.api_client = self.mock_keep_services(
+            count=1,
+            service_host='localhost',
+            service_port=self.port,
+        )
+
+    def tearDown(self):
+        self.server.shutdown()
+
+    def keepClient(self, timeouts=(0.1, 1.0)):
+        return arvados.KeepClient(
+            api_client=self.api_client,
+            timeout=timeouts)
+
+    def test_timeout_slow_connect(self):
+        # Can't simulate TCP delays with our own socket. Leave our
+        # stub server running uselessly, and try to connect to an
+        # unroutable IP address instead.
+        self.api_client = self.mock_keep_services(
+            count=1,
+            service_host='240.0.0.0',
+        )
+        with self.assertTakesBetween(0.1, 0.5):
+            with self.assertRaises(arvados.errors.KeepWriteError):
+                self.keepClient((0.1, 1)).put(self.DATA, copies=1, num_retries=0)
+
+    def test_timeout_slow_request(self):
+        self.server.setdelays(request=0.2)
+        self._test_200ms()
+
+    def test_timeout_slow_response(self):
+        self.server.setdelays(response=0.2)
+        self._test_200ms()
+
+    def test_timeout_slow_response_body(self):
+        self.server.setdelays(response_body=0.2)
+        self._test_200ms()
+
+    def _test_200ms(self):
+        """Connect should be t<100ms, request should be 200ms <= t < 300ms"""
+
+        # Allow 100ms to connect, then 1s for response. Everything
+        # should work, and everything should take at least 200ms to
+        # return.
+        kc = self.keepClient((.1, 1))
+        with self.assertTakesBetween(.2, .3):
+            loc = kc.put(self.DATA, copies=1, num_retries=0)
+        with self.assertTakesBetween(.2, .3):
+            self.assertEqual(self.DATA, kc.get(loc, num_retries=0))
+
+        # Allow 1s to connect, then 100ms for response. Nothing should
+        # work, and everything should take at least 100ms to return.
+        kc = self.keepClient((1, .1))
+        with self.assertTakesBetween(.1, .2):
+            with self.assertRaises(arvados.errors.KeepReadError):
+                kc.get(loc, num_retries=0)
+        with self.assertTakesBetween(.1, .2):
+            with self.assertRaises(arvados.errors.KeepWriteError):
+                kc.put(self.DATA, copies=1, num_retries=0)
 
 
 class KeepClientGatewayTestCase(unittest.TestCase, tutil.ApiClientMock):
