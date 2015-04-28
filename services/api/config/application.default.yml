@@ -275,3 +275,8 @@ common:
   # Note you must separately configure the upstream web server or proxy to
   # actually enforce the desired maximum request size on the server side.
   max_request_size: 134217728
+
+  # When you run the db:delete_old_job_logs task, it will find jobs that
+  # have been finished for at least this many seconds, and delete their
+  # stderr logs from the logs table.
+  clean_job_log_rows_after: <%= 30.days %>

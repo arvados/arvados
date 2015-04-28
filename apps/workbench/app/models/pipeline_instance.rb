@@ -1,3 +1,5 @@
+require "arvados/keep"
+
 class PipelineInstance < ArvadosBase
   attr_accessor :pipeline_template
 
@@ -80,5 +82,55 @@ class PipelineInstance < ArvadosBase
 
   def textile_attributes
     [ 'description' ]
+  end
+
+  def job_uuids
+    components_map { |cspec| cspec[:job][:uuid] rescue nil }
+  end
+
+  def job_log_ids
+    components_map { |cspec| cspec[:job][:log] rescue nil }
+  end
+
+  def stderr_log_object_uuids
+    result = job_uuids.values.compact
+    result << uuid
+  end
+
+  def stderr_log_query(limit=nil)
+    query = Log.
+      where(event_type: "stderr",
+            object_uuid: stderr_log_object_uuids).
+      order("id DESC")
+    unless limit.nil?
+      query = query.limit(limit)
+    end
+    query
+  end
+
+  def stderr_log_lines(limit=2000)
+    stderr_log_query(limit).results.reverse.
+      flat_map { |log| log.properties[:text].split("\n") rescue [] }
+  end
+
+  def has_readable_logs?
+    log_pdhs, log_uuids = job_log_ids.values.compact.partition do |loc_s|
+      Keep::Locator.parse(loc_s)
+    end
+    if log_pdhs.any? and
+        Collection.where(portable_data_hash: log_pdhs).limit(1).results.any?
+      true
+    elsif log_uuids.any? and
+        Collection.where(uuid: log_uuids).limit(1).results.any?
+      true
+    else
+      stderr_log_query(1).results.any?
+    end
+  end
+
+  private
+
+  def components_map
+    Hash[components.map { |cname, cspec| [cname, yield(cspec)] }]
   end
 end

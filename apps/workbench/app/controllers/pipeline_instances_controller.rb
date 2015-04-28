@@ -305,7 +305,7 @@ class PipelineInstancesController < ApplicationController
             split = value.split '/'
             if CollectionsHelper.match(split[0])
               input_pdhs << split[0]
-            else
+            elsif CollectionsHelper.match_uuid_with_optional_filepath(split[0])
               input_uuids << split[0]
             end
           end
