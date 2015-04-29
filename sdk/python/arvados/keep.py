@@ -340,6 +340,14 @@ class KeepClient(object):
             except:
                 ua.close()
 
+        def _socket_open(self, family, socktype, protocol, address):
+            """Because pycurl doesn't have CURLOPT_TCP_KEEPALIVE"""
+            s = socket.socket(family, socktype, protocol)
+            s.setsockopt(socket.SOL_SOCKET, socket.SO_KEEPALIVE, 1)
+            s.setsockopt(socket.IPPROTO_TCP, socket.TCP_KEEPIDLE, 75)
+            s.setsockopt(socket.IPPROTO_TCP, socket.TCP_KEEPINTVL, 75)
+            return s
+
         def get(self, locator, timeout=None):
             # locator is a KeepLocator object.
             url = self.root + str(locator)
@@ -350,6 +358,7 @@ class KeepClient(object):
                     self._headers = {}
                     response_body = StringIO.StringIO()
                     curl.setopt(pycurl.NOSIGNAL, 1)
+                    curl.setopt(pycurl.OPENSOCKETFUNCTION, self._socket_open)
                     curl.setopt(pycurl.URL, url.encode('utf-8'))
                     curl.setopt(pycurl.HTTPHEADER, [
                         '{}: {}'.format(k,v) for k,v in self.get_headers.iteritems()])
@@ -406,6 +415,7 @@ class KeepClient(object):
                 self._headers = {}
                 response_body = StringIO.StringIO()
                 curl.setopt(pycurl.NOSIGNAL, 1)
+                curl.setopt(pycurl.OPENSOCKETFUNCTION, self._socket_open)
                 curl.setopt(pycurl.URL, url.encode('utf-8'))
                 curl.setopt(pycurl.POSTFIELDS, body)
                 curl.setopt(pycurl.CUSTOMREQUEST, 'PUT')
