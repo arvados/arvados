@@ -386,13 +386,19 @@ class KeepClient(object):
                 }
                 ok = False
             self._usable = ok != False
+            if self._result.get('status_code', None):
+                # The client worked well enough to get an HTTP status
+                # code, so presumably any problems are just on the
+                # server side and it's OK to reuse the client.
+                self._put_user_agent(curl)
+            else:
+                # Don't return this client to the pool, in case it's
+                # broken.
+                curl.close()
             if not ok:
                 _logger.debug("Request fail: GET %s => %s: %s",
                               url, type(self._result['error']), str(self._result['error']))
-                # Don't return this ua to the pool, in case it's broken.
-                curl.close()
                 return None
-            self._put_user_agent(curl)
             _logger.info("%s response: %s bytes in %s msec (%.3f MiB/sec)",
                          self._result['status_code'],
                          len(self._result['body']),
@@ -445,13 +451,15 @@ class KeepClient(object):
                 }
                 ok = False
             self._usable = ok != False # still usable if ok is True or None
+            if self._result.get('status_code', None):
+                # Client is functional. See comment in get().
+                self._put_user_agent(curl)
+            else:
+                curl.close()
             if not ok:
                 _logger.debug("Request fail: PUT %s => %s: %s",
                               url, type(self._result['error']), str(self._result['error']))
-                # Don't return this ua to the pool, in case it's broken.
-                curl.close()
                 return False
-            self._put_user_agent(curl)
             return True
 
         def _setcurltimeouts(self, curl, timeouts):
