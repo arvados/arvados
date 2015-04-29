@@ -21,7 +21,7 @@ var MissingArvadosApiHost = errors.New("Missing required environment variable AR
 var MissingArvadosApiToken = errors.New("Missing required environment variable ARVADOS_API_TOKEN")
 
 // Indicates an error that was returned by the API server.
-type RemoteApiServerError struct {
+type APIServerError struct {
 	// Address of server returning error, of the form "host:port".
 	ServerAddress string
 
@@ -33,17 +33,19 @@ type RemoteApiServerError struct {
 	ErrorDetails []string
 }
 
-func (e RemoteApiServerError) Error() string {
-	s := fmt.Sprintf("API server (%s) returned %d: %s.",
-		e.ServerAddress,
-		e.HttpStatusCode,
-		e.HttpStatusMessage)
+func (e APIServerError) Error() string {
 	if len(e.ErrorDetails) > 0 {
-		s = fmt.Sprintf("%s Additional details: %s",
-			s,
-			strings.Join(e.ErrorDetails, "; "))
+		return fmt.Sprintf("arvados API server error: %s (%d: %s) returned by %s",
+			strings.Join(e.ErrorDetails, "; "),
+			e.HttpStatusCode,
+			e.HttpStatusMessage,
+			e.ServerAddress)
+	} else {
+		return fmt.Sprintf("arvados API server error: %d: %s returned by %s",
+			e.HttpStatusCode,
+			e.HttpStatusMessage,
+			e.ServerAddress)
 	}
-	return s
 }
 
 // Helper type so we don't have to write out 'map[string]interface{}' every time.
@@ -167,12 +169,12 @@ func (this ArvadosClient) CallRaw(method string, resource string, uuid string, a
 	}
 
 	defer resp.Body.Close()
-	return nil, NewRemoteApiServerError(this.ApiServer, resp)
+	return nil, newAPIServerError(this.ApiServer, resp)
 }
 
-func NewRemoteApiServerError(ServerAddress string, resp *http.Response) RemoteApiServerError {
+func newAPIServerError(ServerAddress string, resp *http.Response) APIServerError {
 
-	rase := RemoteApiServerError{
+	ase := APIServerError{
 		ServerAddress:     ServerAddress,
 		HttpStatusCode:    resp.StatusCode,
 		HttpStatusMessage: resp.Status}
@@ -188,15 +190,15 @@ func NewRemoteApiServerError(ServerAddress string, resp *http.Response) RemoteAp
 					// Non-strings will be passed along
 					// JSON-encoded.
 					if s, ok := errItem.(string); ok {
-						rase.ErrorDetails = append(rase.ErrorDetails, s)
+						ase.ErrorDetails = append(ase.ErrorDetails, s)
 					} else if j, err := json.Marshal(errItem); err == nil {
-						rase.ErrorDetails = append(rase.ErrorDetails, string(j))
+						ase.ErrorDetails = append(ase.ErrorDetails, string(j))
 					}
 				}
 			}
 		}
 	}
-	return rase
+	return ase
 }
 
 // Access to a resource.
