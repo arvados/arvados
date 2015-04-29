@@ -368,11 +368,11 @@ module ApplicationHelper
            success: 'page-refresh'
          }.to_json,
         })
-      is_readable_input = attrvalue.present? and object_readable attrvalue, Collection
+
       return content_tag('div', :class => 'input-group') do
         html = text_field_tag(dn, display_value,
                               :class =>
-                              "form-control #{'required' if required} #{'unreadable-input' if !attrvalue.andand.empty? and !is_readable_input}")
+                              "form-control #{'required' if required} #{'unreadable-input' if attrvalue.present? and !object_readable(attrvalue, Collection)}")
         html + content_tag('span', :class => 'input-group-btn') do
           link_to('Choose',
                   modal_path,
