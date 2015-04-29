@@ -1,7 +1,6 @@
 # errors.py - Arvados-specific exceptions.
 
 import json
-import requests
 
 from apiclient import errors as apiclient_errors
 from collections import OrderedDict
@@ -46,7 +45,7 @@ class KeepRequestError(Exception):
         self.message = message
 
     def _format_error(self, key, error):
-        if isinstance(error, requests.Response):
+        if isinstance(error, HttpError):
             err_fmt = "{} {} responded with {e.status_code} {e.reason}"
         else:
             err_fmt = "{} {} raised {e.__class__.__name__} ({e})"
@@ -59,6 +58,12 @@ class KeepRequestError(Exception):
         The corresponding value is the exception raised when sending the
         request to it."""
         return self._request_errors
+
+
+class HttpError(Exception):
+    def __init__(self, status_code, reason):
+        self.status_code = status_code
+        self.reason = reason
 
 
 class ArgumentError(Exception):
