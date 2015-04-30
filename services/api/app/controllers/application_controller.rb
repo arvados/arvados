@@ -191,9 +191,18 @@ class ApplicationController < ActionController::Base
            }.merge opts)
   end
 
+  def self.limit_index_columns_read
+    # This method returns a list of column names.
+    # If an index request reads that column from the database,
+    # find_objects_for_index will only fetch objects until it reads
+    # max_index_database_read bytes of data from those columns.
+    []
+  end
+
   def find_objects_for_index
     @objects ||= model_class.readable_by(*@read_users)
     apply_where_limit_order_params
+    limit_database_read if (action_name == "index")
   end
 
   def apply_filters model_class=nil
@@ -268,10 +277,7 @@ class ApplicationController < ActionController::Base
         # Map attribute names in @select to real column names, resolve
         # those to fully-qualified SQL column names, and pass the
         # resulting string to the select method.
-        api_column_map = model_class.attributes_required_columns
-        columns_list = @select.
-          flat_map { |attr| api_column_map[attr] }.
-          uniq.
+        columns_list = model_class.columns_for_attributes(@select).
           map { |s| "#{ar_table_name}.#{ActiveRecord::Base.connection.quote_column_name s}" }
         @objects = @objects.select(columns_list.join(", "))
       end
@@ -287,6 +293,29 @@ class ApplicationController < ActionController::Base
     @objects = @objects.limit(@limit)
     @objects = @objects.offset(@offset)
     @objects = @objects.uniq(@distinct) if not @distinct.nil?
+  end
+
+  def limit_database_read
+    limit_columns = self.class.limit_index_columns_read
+    limit_columns &= model_class.columns_for_attributes(@select) if @select
+    return if limit_columns.empty?
+    model_class.transaction do
+      limit_query = @objects.
+        select("(%s) as read_length" %
+               limit_columns.map { |s| "length(#{s})" }.join(" + "))
+      new_limit = 0
+      read_total = 0
+      limit_query.find_each do |record|
+        new_limit += 1
+        read_total += record.read_length.to_i
+        break if ((read_total >= Rails.configuration.max_index_database_read) or
+                  (new_limit >= @limit))
+      end
+      @limit = new_limit
+      @objects = @objects.limit(@limit)
+      # Force @objects to run its query inside this transaction.
+      @objects.each { |_| break }
+    end
   end
 
   def resource_attrs

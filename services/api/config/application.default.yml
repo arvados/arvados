@@ -276,6 +276,14 @@ common:
   # actually enforce the desired maximum request size on the server side.
   max_request_size: 134217728
 
+  # Limit how much data we read from large database columns (in bytes)
+  # to answer an index request.
+  # Currently only `GET /collections` respects this parameter, when the
+  # user requests an index that includes manifest_text.  The API server
+  # will find matching records that include this many bytes of
+  # manifest texts, then return a result.
+  max_index_database_read: 134217728
+
   # When you run the db:delete_old_job_logs task, it will find jobs that
   # have been finished for at least this many seconds, and delete their
   # stderr logs from the logs table.

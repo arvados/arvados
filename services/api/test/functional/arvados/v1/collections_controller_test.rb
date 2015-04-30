@@ -91,6 +91,45 @@ class Arvados::V1::CollectionsControllerTest < ActionController::TestCase
     assert_equal 99999, resp['offset']
   end
 
+  def request_capped_index(params={})
+    authorize_with :user1_with_load
+    coll1 = collections(:collection_1_of_201)
+    Rails.configuration.max_index_database_read =
+      yield(coll1.manifest_text.size)
+    get :index, {
+      select: %w(uuid manifest_text),
+      filters: [["owner_uuid", "=", coll1.owner_uuid]],
+      limit: 300,
+    }.merge(params)
+  end
+
+  test "index with manifest_text limited by max_index_database_read" do
+    request_capped_index() { |size| (size * 3) + 1 }
+    assert_response :success
+    assert_equal(4, json_response["items"].size)
+    assert_equal(4, json_response["limit"])
+    assert_equal(201, json_response["items_available"])
+  end
+
+  test "max_index_database_read does not interfere with limit" do
+    request_capped_index(limit: 5) { |size| size * 20 }
+    assert_response :success
+    assert_equal(5, json_response["items"].size)
+    assert_equal(5, json_response["limit"])
+    assert_equal(201, json_response["items_available"])
+  end
+
+  test "max_index_database_read does not interfere with order" do
+    request_capped_index(order: "name DESC") { |size| (size * 15) + 1 }
+    assert_response :success
+    assert_equal(16, json_response["items"].size)
+    assert_empty(json_response["items"].reject do |coll|
+                   coll["name"] !~ /^Collection_9/
+                 end)
+    assert_equal(16, json_response["limit"])
+    assert_equal(201, json_response["items_available"])
+  end
+
   test "admin can create collection with unsigned manifest" do
     authorize_with :admin
     test_collection = {

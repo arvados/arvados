@@ -103,6 +103,13 @@ class ArvadosModel < ActiveRecord::Base
     api_column_map
   end
 
+  def self.columns_for_attributes(select_attributes)
+    # Given an array of attribute names to select, return an array of column
+    # names that must be fetched from the database to satisfy the request.
+    api_column_map = attributes_required_columns
+    select_attributes.flat_map { |attr| api_column_map[attr] }.uniq
+  end
+
   def self.default_orders
     ["#{table_name}.modified_at desc", "#{table_name}.uuid"]
   end
