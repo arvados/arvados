@@ -362,7 +362,7 @@ class KeepClient(object):
                     curl.setopt(pycurl.URL, url.encode('utf-8'))
                     curl.setopt(pycurl.HTTPHEADER, [
                         '{}: {}'.format(k,v) for k,v in self.get_headers.iteritems()])
-                    curl.setopt(pycurl.WRITEDATA, response_body)
+                    curl.setopt(pycurl.WRITEFUNCTION, response_body.write)
                     curl.setopt(pycurl.HEADERFUNCTION, self._headerfunction)
                     self._setcurltimeouts(curl, timeout)
                     try:
@@ -427,7 +427,7 @@ class KeepClient(object):
                 curl.setopt(pycurl.CUSTOMREQUEST, 'PUT')
                 curl.setopt(pycurl.HTTPHEADER, [
                     '{}: {}'.format(k,v) for k,v in self.put_headers.iteritems()])
-                curl.setopt(pycurl.WRITEDATA, response_body)
+                curl.setopt(pycurl.WRITEFUNCTION, response_body.write)
                 curl.setopt(pycurl.HEADERFUNCTION, self._headerfunction)
                 self._setcurltimeouts(curl, timeout)
                 try:
