@@ -440,20 +440,30 @@ class ArvadosFileReaderTestCase(StreamFileReaderTestCase):
         af = ArvadosFile(ArvadosFileReaderTestCase.MockParent(blocks, nocache), stream=stream, segments=[Range(1, 0, 3), Range(6, 3, 3), Range(11, 6, 3)])
         return ArvadosFileReader(af, "count.txt")
 
-    def test_read_returns_first_block(self):
-        # read() calls will be aligned on block boundaries - see #3663.
+    def test_read_crosses_blocks(self):
+        # read() needs to return all the data requested if possible, even if it
+        # crosses uncached blocks: https://arvados.org/issues/5856
         sfile = self.make_count_reader(nocache=True)
-        self.assertEqual('123', sfile.read(10))
+        self.assertEqual('12345678', sfile.read(8))
+
+    def test_read_returns_first_block(self):
+        # Override StreamFileReaderTestCase.test_read_returns_first_block
+        sfile = self.make_count_reader(nocache=True)
+        self.assertEqual('123', sfile.arvadosfile.readfrom(0, 10, 0))
 
     def test_successive_reads(self):
+        # Override StreamFileReaderTestCase.test_successive_reads
         sfile = self.make_count_reader(nocache=True)
-        for expect in ['123', '456', '789', '']:
-            self.assertEqual(expect, sfile.read(10))
+        self.assertEqual('123', sfile.arvadosfile.readfrom(0, 10, 0))
+        self.assertEqual('456', sfile.arvadosfile.readfrom(3, 10, 0))
+        self.assertEqual('789', sfile.arvadosfile.readfrom(6, 10, 0))
+        self.assertEqual('', sfile.arvadosfile.readfrom(9, 10, 0))
 
     def test_tell_after_block_read(self):
+        # Override StreamFileReaderTestCase.test_tell_after_block_read
         sfile = self.make_count_reader(nocache=True)
-        sfile.read(5)
-        self.assertEqual(3, sfile.tell())
+        self.assertEqual('12345678', sfile.read(8))
+        self.assertEqual(8, sfile.tell())
 
     def test_prefetch(self):
         keep = ArvadosFileWriterTestCase.MockKeep({"2e9ec317e197819358fbc43afca7d837+8": "01234567", "e8dc4081b13434b45189a720b77b6818+8": "abcdefgh"})
