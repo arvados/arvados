@@ -717,7 +717,7 @@ class ArvadosFile(object):
 
 
     def readfrom(self, offset, size, num_retries, exact=False):
-        """Read upto `size` bytes from the file starting at `offset`.
+        """Read up to `size` bytes from the file starting at `offset`.
 
         :exact:
          If False (default), return less data than requested if the read
