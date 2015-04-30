@@ -23,8 +23,8 @@ class AnonymousAccessTest < ActionDispatch::IntegrationTest
       end
       within('.navbar-fixed-top') do
         assert_selector 'a', text: Rails.configuration.site_name.downcase
-        assert_selector 'a', text: "#{user['email']}"
-        find('a', text: "#{user['email']}").click
+        assert(page.has_link?("notifications-menu"), 'no user menu')
+        page.find("#notifications-menu").click
         within('.dropdown-menu') do
           assert_selector 'a', text: 'Log out'
         end
