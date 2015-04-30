@@ -75,7 +75,8 @@ var (
 	NotFoundError       = &KeepError{404, "Not Found"}
 	GenericError        = &KeepError{500, "Fail"}
 	FullError           = &KeepError{503, "Full"}
-	TooLongError        = &KeepError{504, "Timeout"}
+	SizeRequiredError   = &KeepError{411, "Missing Content-Length"}
+	TooLongError        = &KeepError{413, "Block is too large"}
 	MethodDisabledError = &KeepError{405, "Method disabled"}
 )
 
@@ -109,6 +110,7 @@ var (
 	flagSerializeIO bool
 	flagReadonly    bool
 )
+
 type volumeSet []Volume
 
 func (vs *volumeSet) Set(value string) error {

@@ -160,6 +160,11 @@ func PutBlockHandler(resp http.ResponseWriter, req *http.Request) {
 	// the body: avoid transmitting data that will not end up
 	// being written anyway.
 
+	if req.ContentLength == -1 {
+		http.Error(resp, SizeRequiredError.Error(), SizeRequiredError.HTTPCode)
+		return
+	}
+
 	if req.ContentLength > BLOCKSIZE {
 		http.Error(resp, TooLongError.Error(), TooLongError.HTTPCode)
 		return
