@@ -420,12 +420,14 @@ class KeepClient(object):
             curl = self._get_user_agent()
             try:
                 self._headers = {}
+                body_reader = StringIO.StringIO(body)
                 response_body = StringIO.StringIO()
                 curl.setopt(pycurl.NOSIGNAL, 1)
                 curl.setopt(pycurl.OPENSOCKETFUNCTION, self._socket_open)
                 curl.setopt(pycurl.URL, url.encode('utf-8'))
-                curl.setopt(pycurl.POSTFIELDS, body)
-                curl.setopt(pycurl.CUSTOMREQUEST, 'PUT')
+                curl.setopt(pycurl.UPLOAD, True)
+                curl.setopt(pycurl.INFILESIZE, len(body))
+                curl.setopt(pycurl.READFUNCTION, body_reader.read)
                 curl.setopt(pycurl.HTTPHEADER, [
                     '{}: {}'.format(k,v) for k,v in self.put_headers.iteritems()])
                 curl.setopt(pycurl.WRITEFUNCTION, response_body.write)
