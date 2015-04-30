@@ -340,7 +340,8 @@ class KeepClient(object):
             except:
                 ua.close()
 
-        def _socket_open(self, family, socktype, protocol, address):
+        @staticmethod
+        def _socket_open(family, socktype, protocol, address=None):
             """Because pycurl doesn't have CURLOPT_TCP_KEEPALIVE"""
             s = socket.socket(family, socktype, protocol)
             s.setsockopt(socket.SOL_SOCKET, socket.SO_KEEPALIVE, 1)
