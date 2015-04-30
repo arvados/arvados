@@ -425,6 +425,12 @@ class KeepClient(object):
                 curl.setopt(pycurl.NOSIGNAL, 1)
                 curl.setopt(pycurl.OPENSOCKETFUNCTION, self._socket_open)
                 curl.setopt(pycurl.URL, url.encode('utf-8'))
+                # Using UPLOAD tells cURL to wait for a "go ahead" from the
+                # Keep server (in the form of a HTTP/1.1 "100 Continue"
+                # response) instead of sending the request body immediately.
+                # This allows the server to reject the request if the request
+                # is invalid or the server is read-only, without waiting for
+                # the client to send the entire block.
                 curl.setopt(pycurl.UPLOAD, True)
                 curl.setopt(pycurl.INFILESIZE, len(body))
                 curl.setopt(pycurl.READFUNCTION, body_reader.read)
