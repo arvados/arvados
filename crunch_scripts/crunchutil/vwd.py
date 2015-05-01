@@ -2,7 +2,7 @@ import arvados
 import os
 import robust_put
 import stat
-import arvados.command.run
+import arvados.commands.run
 
 # Implements "Virtual Working Directory"
 # Provides a way of emulating a shared writable directory in Keep based
@@ -33,13 +33,17 @@ def checkout(source_collection, target_dir, keepmount=None):
         for f in files:
             os.symlink(os.path.join(root, f), os.path.join(target_dir, rel, f))
 
-def is_collection(fn):
-    if os.path.exists
-
-# Delete all symlinks and check in any remaining normal files.
-# If merge == True, merge the manifest with source_collection and return a
-# CollectionReader for the combined collection.
 def checkin(target_dir):
+    """Write files in the target_dir to Keep.
+
+    Symlinks into the keep mount in the output dir are efficiently added to the
+    collection with no data copying.
+
+    Returns a new Collection object, with data flushed but the collection record
+    not saved to the API.
+
+    """
+
     # delete symlinks, commit directory, merge manifests and return combined
     # collection.
 
@@ -56,7 +60,7 @@ def checkin(target_dir):
             if stat.S_ISLNK(s.st_mode):
                 # 1. check if it is a link into a collection
                 real = os.path.split(os.path.realpath(os.path.join(root, f)))
-                (pdh, branch) = arvados.command.run.is_in_collection(real[0], real[1])
+                (pdh, branch) = arvados.commands.run.is_in_collection(real[0], real[1])
                 if pdh is not None:
                     # 2. load collection
                     if pdh not in collections:
@@ -65,7 +69,7 @@ def checkin(target_dir):
                                                                                keep_client=outputcollection._my_keep(),
                                                                                num_retries=5)
                     # 3. copy arvfile to new collection
-                    outputcollection.copy(branch, branch, source_collection=collections[pdh])
+                    outputcollection.copy(branch, os.path.join(root[len(target_dir):], f), source_collection=collections[pdh])
 
             elif stat.S_ISREG(s.st_mode):
                 reldir = root[len(target_dir):]
@@ -76,4 +80,4 @@ def checkin(target_dir):
                             writer.write(dat)
                             dat = reader.read(64*1024)
 
-    return outputcollection.manifest_text()
+    return outputcollection
