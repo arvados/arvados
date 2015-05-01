@@ -61,8 +61,6 @@ else:
     if 'TASK_KEEPMOUNT' not in os.environ:
         os.environ['TASK_KEEPMOUNT'] = '/keep'
 
-links = []
-
 def sub_tmpdir(v):
     return os.path.join(arvados.current_task().tmpdir, 'tmpdir')
 
@@ -415,24 +413,20 @@ signal.signal(signal.SIGINT, signal.SIG_DFL)
 signal.signal(signal.SIGTERM, signal.SIG_DFL)
 signal.signal(signal.SIGQUIT, signal.SIG_DFL)
 
-for l in links:
-    os.unlink(l)
-
 logger.info("the following output files will be saved to keep:")
 
-subprocess.call(["find", ".", "-type", "f", "-printf", "run-command: %12.12s %h/%f\\n"], stdout=sys.stderr, cwd=outdir)
+subprocess.call(["find", ".", "-printf", "run-command: %12.12s %h/%f\\n"], stdout=sys.stderr, cwd=outdir)
 
 logger.info("start writing output to keep")
 
-if "task.vwd" in taskp:
-    if "task.foreach" in jobp:
-        # This is a subtask, so don't merge with the original collection, that will happen at the end
-        outcollection = vwd.checkin(subst.do_substitution(taskp, taskp["task.vwd"]), outdir, merge=False).manifest_text()
-    else:
-        # Just a single task, so do merge with the original collection
-        outcollection = vwd.checkin(subst.do_substitution(taskp, taskp["task.vwd"]), outdir, merge=True).manifest_text()
-else:
-    outcollection = robust_put.upload(outdir, logger)
+if "task.vwd" in taskp and "task.foreach" in jobp:
+    for root, dirs, files in os.walk(outdir):
+        for f in files:
+            s = os.lstat(os.path.join(root, f))
+            if stat.S_ISLNK(s.st_mode):
+                os.unlink(os.path.join(root, f))
+
+outcollection = vwd.checkin(outdir).manifest_text()
 
 # Success if we ran any subprocess, and they all exited 0.
 success = rcode and all(status == 0 for status in rcode.itervalues())
