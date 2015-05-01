@@ -125,7 +125,7 @@ func (v *MockVolume) Delete(loc string) error {
 		return MethodDisabledError
 	}
 	if _, ok := v.Store[loc]; ok {
-		if time.Since(v.Timestamps[loc]) < permission_ttl {
+		if time.Since(v.Timestamps[loc]) < blob_signature_ttl {
 			return nil
 		}
 		delete(v.Store, loc)

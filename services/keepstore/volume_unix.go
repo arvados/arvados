@@ -287,15 +287,15 @@ func (v *UnixVolume) Delete(loc string) error {
 	}
 	defer unlockfile(f)
 
-	// If the block has been PUT more recently than -permission_ttl,
-	// return success without removing the block.  This guards against
-	// a race condition where a block is old enough that Data Manager
-	// has added it to the trash list, but the user submitted a PUT
-	// for the block since then.
+	// If the block has been PUT in the last blob_signature_ttl
+	// seconds, return success without removing the block. This
+	// protects data from garbage collection until it is no longer
+	// possible for clients to retrieve the unreferenced blocks
+	// anyway (because the permission signatures have expired).
 	if fi, err := os.Stat(p); err != nil {
 		return err
 	} else {
-		if time.Since(fi.ModTime()) < permission_ttl {
+		if time.Since(fi.ModTime()) < blob_signature_ttl {
 			return nil
 		}
 	}

@@ -17,9 +17,9 @@ type TrashWorkerTestData struct {
 
 	CreateData       bool
 	CreateInVolume1  bool
-	UseDelayToCreate bool
 
 	UseTrashLifeTime bool
+	DifferentMtimes  bool
 
 	DeleteLocator string
 
@@ -122,8 +122,8 @@ func TestTrashWorkerIntegration_MtimeMatchesForLocator1ButNotForLocator2(t *test
 		Locator2: TEST_HASH,
 		Block2:   TEST_BLOCK,
 
-		CreateData:       true,
-		UseDelayToCreate: true,
+		CreateData:      true,
+		DifferentMtimes: true,
 
 		DeleteLocator: TEST_HASH,
 
@@ -183,8 +183,6 @@ func TestTrashWorkerIntegration_SameLocatorInTwoVolumesWithDefaultTrashLifeTime(
 
 /* Perform the test */
 func performTrashWorkerTest(testData TrashWorkerTestData, t *testing.T) {
-	actual_permission_ttl := permission_ttl
-
 	// Create Keep Volumes
 	KeepVM = MakeTestVolumeManager(2)
 	defer KeepVM.Close()
@@ -195,11 +193,6 @@ func performTrashWorkerTest(testData TrashWorkerTestData, t *testing.T) {
 		vols[0].Put(testData.Locator1, testData.Block1)
 		vols[0].Put(testData.Locator1+".meta", []byte("metadata"))
 
-		// One of the tests deletes a locator with different Mtimes in two different volumes
-		if testData.UseDelayToCreate {
-			time.Sleep(1 * time.Second)
-		}
-
 		if testData.CreateInVolume1 {
 			vols[0].Put(testData.Locator2, testData.Block2)
 			vols[0].Put(testData.Locator2+".meta", []byte("metadata"))
@@ -209,24 +202,30 @@ func performTrashWorkerTest(testData TrashWorkerTestData, t *testing.T) {
 		}
 	}
 
+	oldBlockTime := time.Now().Add(-blob_signature_ttl-time.Minute)
+
 	// Create TrashRequest for the test
 	trashRequest := TrashRequest{
 		Locator:    testData.DeleteLocator,
-		BlockMtime: time.Now().Unix(),
+		BlockMtime: oldBlockTime.Unix(),
 	}
-
-	// delay by permission_ttl to allow deletes to work
-	time.Sleep(1 * time.Second)
 
 	// Run trash worker and put the trashRequest on trashq
 	trashList := list.New()
 	trashList.PushBack(trashRequest)
 	trashq = NewWorkQueue()
+	defer trashq.Close()
 
-	// Trash worker would not delete block if its Mtime is within trash life time.
-	// Hence, we will have to bypass it to allow the deletion to succeed.
 	if !testData.UseTrashLifeTime {
-		permission_ttl = time.Duration(1) * time.Second
+		// Trash worker would not delete block if its Mtime is
+		// within trash life time. Back-date the block to
+		// allow the deletion to succeed.
+		for _, v := range vols {
+			v.(*MockVolume).Timestamps[testData.DeleteLocator] = oldBlockTime
+			if testData.DifferentMtimes {
+				oldBlockTime = oldBlockTime.Add(time.Second)
+			}
+		}
 	}
 	go RunTrashWorker(trashq)
 
@@ -259,10 +258,10 @@ func performTrashWorkerTest(testData TrashWorkerTestData, t *testing.T) {
 		}
 	}
 
-	// One test used the same locator in two different volumes but with different Mtime values
-	// Hence let's verify that only one volume has it and the other is deleted
-	if (testData.ExpectLocator1) &&
-		(testData.Locator1 == testData.Locator2) {
+	// The DifferentMtimes test puts the same locator in two
+	// different volumes, but only one copy has an Mtime matching
+	// the trash request.
+	if testData.DifferentMtimes {
 		locatorFoundIn := 0
 		for _, volume := range KeepVM.AllReadable() {
 			if _, err := volume.Get(testData.Locator1); err == nil {
@@ -270,11 +269,7 @@ func performTrashWorkerTest(testData TrashWorkerTestData, t *testing.T) {
 			}
 		}
 		if locatorFoundIn != 1 {
-			t.Errorf("Expected locator to be found in only one volume after deleting. But found: %s", locatorFoundIn)
+			t.Errorf("Found %d copies of %s, expected 1", locatorFoundIn, testData.Locator1)
 		}
 	}
-
-	// Done
-	permission_ttl = actual_permission_ttl
-	trashq.Close()
 }
