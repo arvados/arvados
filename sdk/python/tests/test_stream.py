@@ -21,7 +21,7 @@ class StreamFileReaderTestCase(unittest.TestCase):
         return StreamFileReader(stream, [Range(1, 0, 3), Range(6, 3, 3), Range(11, 6, 3)],
                                 'count.txt')
 
-    def test_read_returns_first_block(self):
+    def test_read_block_crossing_behavior(self):
         # read() calls will be aligned on block boundaries - see #3663.
         sfile = self.make_count_reader()
         self.assertEqual('123', sfile.read(10))
