@@ -426,14 +426,14 @@ if "task.vwd" in taskp and "task.foreach" in jobp:
             if stat.S_ISLNK(s.st_mode):
                 os.unlink(os.path.join(root, f))
 
-(outcollection, checkin_error) = vwd.checkin(outdir).manifest_text()
+(outcollection, checkin_error) = vwd.checkin(outdir)
 
 # Success if we ran any subprocess, and they all exited 0.
 success = rcode and all(status == 0 for status in rcode.itervalues()) and not checkin_error
 
 api.job_tasks().update(uuid=arvados.current_task()['uuid'],
                                      body={
-                                         'output': outcollection,
+                                         'output': outcollection.manifest_text(),
                                          'success': success,
                                          'progress':1.0
                                      }).execute()
