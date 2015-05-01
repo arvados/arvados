@@ -156,11 +156,22 @@ func PutBlockHandler(resp http.ResponseWriter, req *http.Request) {
 
 	hash := mux.Vars(req)["hash"]
 
-	// Read the block data to be stored.
-	// If the request exceeds BLOCKSIZE bytes, issue a HTTP 500 error.
-	//
+	// Detect as many error conditions as possible before reading
+	// the body: avoid transmitting data that will not end up
+	// being written anyway.
+
+	if req.ContentLength == -1 {
+		http.Error(resp, SizeRequiredError.Error(), SizeRequiredError.HTTPCode)
+		return
+	}
+
 	if req.ContentLength > BLOCKSIZE {
 		http.Error(resp, TooLongError.Error(), TooLongError.HTTPCode)
+		return
+	}
+
+	if len(KeepVM.AllWritable()) == 0 {
+		http.Error(resp, FullError.Error(), FullError.HTTPCode)
 		return
 	}
 
@@ -168,25 +179,28 @@ func PutBlockHandler(resp http.ResponseWriter, req *http.Request) {
 	nread, err := io.ReadFull(req.Body, buf)
 	if err != nil {
 		http.Error(resp, err.Error(), 500)
+		return
 	} else if int64(nread) < req.ContentLength {
 		http.Error(resp, "request truncated", 500)
-	} else {
-		if err := PutBlock(buf, hash); err == nil {
-			// Success; add a size hint, sign the locator if
-			// possible, and return it to the client.
-			return_hash := fmt.Sprintf("%s+%d", hash, len(buf))
-			api_token := GetApiToken(req)
-			if PermissionSecret != nil && api_token != "" {
-				expiry := time.Now().Add(permission_ttl)
-				return_hash = SignLocator(return_hash, api_token, expiry)
-			}
-			resp.Write([]byte(return_hash + "\n"))
-		} else {
-			ke := err.(*KeepError)
-			http.Error(resp, ke.Error(), ke.HTTPCode)
-		}
+		return
 	}
-	return
+
+	err = PutBlock(buf, hash)
+	if err != nil {
+		ke := err.(*KeepError)
+		http.Error(resp, ke.Error(), ke.HTTPCode)
+		return
+	}
+
+	// Success; add a size hint, sign the locator if possible, and
+	// return it to the client.
+	return_hash := fmt.Sprintf("%s+%d", hash, len(buf))
+	api_token := GetApiToken(req)
+	if PermissionSecret != nil && api_token != "" {
+		expiry := time.Now().Add(permission_ttl)
+		return_hash = SignLocator(return_hash, api_token, expiry)
+	}
+	resp.Write([]byte(return_hash + "\n"))
 }
 
 // IndexHandler

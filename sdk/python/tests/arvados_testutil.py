@@ -63,7 +63,7 @@ class FakeCurl:
 
     def setopt(self, opt, val):
         self._opt[str(opt)] = val
-        if opt == pycurl.WRITEDATA:
+        if opt == pycurl.WRITEFUNCTION:
             self._writer = val
         elif opt == pycurl.HEADERFUNCTION:
             self._headerfunction = val
@@ -79,7 +79,7 @@ class FakeCurl:
             self._headerfunction("HTTP/1.1 {} Status".format(self._resp_code))
             for k, v in self._resp_headers.iteritems():
                 self._headerfunction(k + ': ' + str(v))
-        self._writer.write(self._resp_body)
+        self._writer(self._resp_body)
 
     def close(self):
         pass

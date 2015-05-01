@@ -20,13 +20,33 @@ import (
 var MissingArvadosApiHost = errors.New("Missing required environment variable ARVADOS_API_HOST")
 var MissingArvadosApiToken = errors.New("Missing required environment variable ARVADOS_API_TOKEN")
 
-type ArvadosApiError struct {
-	error
-	HttpStatusCode int
-	HttpStatus string
+// Indicates an error that was returned by the API server.
+type APIServerError struct {
+	// Address of server returning error, of the form "host:port".
+	ServerAddress string
+
+	// Components of server response.
+	HttpStatusCode    int
+	HttpStatusMessage string
+
+	// Additional error details from response body.
+	ErrorDetails []string
 }
 
-func (e ArvadosApiError) Error() string { return e.error.Error() }
+func (e APIServerError) Error() string {
+	if len(e.ErrorDetails) > 0 {
+		return fmt.Sprintf("arvados API server error: %s (%d: %s) returned by %s",
+			strings.Join(e.ErrorDetails, "; "),
+			e.HttpStatusCode,
+			e.HttpStatusMessage,
+			e.ServerAddress)
+	} else {
+		return fmt.Sprintf("arvados API server error: %d: %s returned by %s",
+			e.HttpStatusCode,
+			e.HttpStatusMessage,
+			e.ServerAddress)
+	}
+}
 
 // Helper type so we don't have to write out 'map[string]interface{}' every time.
 type Dict map[string]interface{}
@@ -50,15 +70,15 @@ type ArvadosClient struct {
 	External bool
 }
 
-// Create a new KeepClient, initialized with standard Arvados environment
+// Create a new ArvadosClient, initialized with standard Arvados environment
 // variables ARVADOS_API_HOST, ARVADOS_API_TOKEN, and (optionally)
 // ARVADOS_API_HOST_INSECURE.
-func MakeArvadosClient() (kc ArvadosClient, err error) {
+func MakeArvadosClient() (ac ArvadosClient, err error) {
 	var matchTrue = regexp.MustCompile("^(?i:1|yes|true)$")
 	insecure := matchTrue.MatchString(os.Getenv("ARVADOS_API_HOST_INSECURE"))
 	external := matchTrue.MatchString(os.Getenv("ARVADOS_EXTERNAL_CLIENT"))
 
-	kc = ArvadosClient{
+	ac = ArvadosClient{
 		ApiServer:   os.Getenv("ARVADOS_API_HOST"),
 		ApiToken:    os.Getenv("ARVADOS_API_TOKEN"),
 		ApiInsecure: insecure,
@@ -66,14 +86,14 @@ func MakeArvadosClient() (kc ArvadosClient, err error) {
 			TLSClientConfig: &tls.Config{InsecureSkipVerify: insecure}}},
 		External: external}
 
-	if kc.ApiServer == "" {
-		return kc, MissingArvadosApiHost
+	if ac.ApiServer == "" {
+		return ac, MissingArvadosApiHost
 	}
-	if kc.ApiToken == "" {
-		return kc, MissingArvadosApiToken
+	if ac.ApiToken == "" {
+		return ac, MissingArvadosApiToken
 	}
 
-	return kc, err
+	return ac, err
 }
 
 // Low-level access to a resource.
@@ -149,30 +169,36 @@ func (this ArvadosClient) CallRaw(method string, resource string, uuid string, a
 	}
 
 	defer resp.Body.Close()
-	errorText := fmt.Sprintf("API response: %s", resp.Status)
+	return nil, newAPIServerError(this.ApiServer, resp)
+}
+
+func newAPIServerError(ServerAddress string, resp *http.Response) APIServerError {
+
+	ase := APIServerError{
+		ServerAddress:     ServerAddress,
+		HttpStatusCode:    resp.StatusCode,
+		HttpStatusMessage: resp.Status}
 
 	// If the response body has {"errors":["reason1","reason2"]}
 	// then return those reasons.
 	var errInfo = Dict{}
 	if err := json.NewDecoder(resp.Body).Decode(&errInfo); err == nil {
 		if errorList, ok := errInfo["errors"]; ok {
-			var errorStrings []string
 			if errArray, ok := errorList.([]interface{}); ok {
 				for _, errItem := range errArray {
 					// We expect an array of strings here.
 					// Non-strings will be passed along
 					// JSON-encoded.
 					if s, ok := errItem.(string); ok {
-						errorStrings = append(errorStrings, s)
+						ase.ErrorDetails = append(ase.ErrorDetails, s)
 					} else if j, err := json.Marshal(errItem); err == nil {
-						errorStrings = append(errorStrings, string(j))
+						ase.ErrorDetails = append(ase.ErrorDetails, string(j))
 					}
 				}
-				errorText = strings.Join(errorStrings, "; ")
 			}
 		}
 	}
-	return nil, ArvadosApiError{errors.New(errorText), resp.StatusCode, resp.Status}
+	return ase
 }
 
 // Access to a resource.
