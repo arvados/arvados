@@ -410,12 +410,10 @@ def create_collection_from(c, src, dst, args):
     for link_class in ("docker_image_repo+tag", "docker_image_hash"):
         docker_links = src.links().list(filters=[["head_uuid", "=", collection_uuid], ["link_class", "=", link_class]]).execute(num_retries=args.retries)['items']
 
-        for d in docker_links:
-            body={
-                'head_uuid': dst_collection['uuid'],
-                'link_class': link_class,
-                'name': d['name'],
-            }
+        for src_link in docker_links:
+            body = {key: src_link[key]
+                    for key in ['link_class', 'name', 'properties']}
+            body['head_uuid'] = dst_collection['uuid']
             body['owner_uuid'] = args.project_uuid
 
             lk = dst.links().create(body=body).execute(num_retries=args.retries)
