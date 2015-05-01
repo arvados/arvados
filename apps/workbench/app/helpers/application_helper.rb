@@ -274,11 +274,16 @@ module ApplicationHelper
       "id" => span_id,
       :class => "editable #{is_textile?( object, attr ) ? 'editable-textile' : ''}"
     }.merge(htmloptions).merge(ajax_options)
+
     edit_tiptitle = 'edit'
     edit_tiptitle = 'Warning: do not use hyphens in the repository name as they will be stripped' if (object.class.to_s == 'Repository' and attr == 'name')
-    edit_button = raw('<a href="#" class="btn btn-xs btn-default btn-nodecorate" data-toggle="x-editable tooltip" data-toggle-selector="#' + span_id + '" data-placement="top" title="' + (htmloptions[:tiptitle] || edit_tiptitle) + '"><i class="fa fa-fw fa-pencil"></i></a>')
+
+    edit_button = raw('<a href="#" class="btn btn-xs btn-' + (htmloptions['btnclass'] || 'default') + ' btn-nodecorate" data-toggle="x-editable tooltip" data-toggle-selector="#' + span_id + '" data-placement="top" title="' + (htmloptions[:tiptitle] || edit_tiptitle) + '"><i class="fa fa-fw fa-pencil"></i>' + (htmloptions['btntext'] || '') + '</a>')
+
     if htmloptions[:btnplacement] == :left
       edit_button + ' ' + span_tag
+    elsif htmloptions['btnplacement'] == 'top'
+      edit_button + raw('<br/>') + span_tag
     else
       span_tag + ' ' + edit_button
     end

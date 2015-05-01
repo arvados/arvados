@@ -300,3 +300,11 @@ ul.nav.nav-tabs {
 .hover-dropdown:hover .dropdown-menu {
   display: block;
 }
+
+.editable-inline,
+.editable-inline .form-group,
+.editable-inline .form-group .editable-input,
+.editable-inline .form-group .editable-input textarea,
+{
+    width: 98%!important;
+}
