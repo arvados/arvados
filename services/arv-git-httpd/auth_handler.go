@@ -60,7 +60,7 @@ func (h *authHandler) ServeHTTP(wOrig http.ResponseWriter, r *http.Request) {
 	username, password, ok := BasicAuth(r)
 	if !ok || username == "" || password == "" {
 		statusCode, statusText = http.StatusUnauthorized, "no credentials provided"
-		w.Header().Add("WWW-Authenticate", "basic")
+		w.Header().Add("WWW-Authenticate", "Basic realm=\"git\"")
 		return
 	}
 
