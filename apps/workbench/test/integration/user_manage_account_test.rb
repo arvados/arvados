@@ -9,7 +9,7 @@ class UserManageAccountTest < ActionDispatch::IntegrationTest
   def verify_manage_account user
     if user['is_active']
       within('.navbar-fixed-top') do
-        find('a', text: "#{user['email']}").click
+        page.find("#notifications-menu").click
         within('.dropdown-menu') do
           find('a', text: 'Manage account').click
         end
@@ -24,7 +24,7 @@ class UserManageAccountTest < ActionDispatch::IntegrationTest
       add_and_verify_ssh_key
     else  # inactive user
       within('.navbar-fixed-top') do
-        find('a', text: "#{user['email']}").click
+        page.find("#notifications-menu").click
         within('.dropdown-menu') do
           assert page.has_no_link?('Manage profile'), 'Found link - Manage profile'
         end
@@ -162,7 +162,7 @@ class UserManageAccountTest < ActionDispatch::IntegrationTest
     # Revisit the page and verify the request sent message along with
     # the request button.
     within('.navbar-fixed-top') do
-      find('a', text: 'spectator').click
+      page.find("#notifications-menu").click
       within('.dropdown-menu') do
         find('a', text: 'Manage account').click
       end

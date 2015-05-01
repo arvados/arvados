@@ -9,7 +9,7 @@ class ErrorsTest < ActionDispatch::IntegrationTest
 
   test "error page renders user navigation" do
     visit(page_with_token("active", "/collections/#{BAD_UUID}"))
-    assert(page.has_text?(api_fixture("users")["active"]["email"]),
+    assert(page.has_link?("notifications-menu"),
            "User information missing from error page")
     assert(page.has_no_text?(/log ?in/i),
            "Logged in user prompted to log in on error page")
@@ -17,7 +17,7 @@ class ErrorsTest < ActionDispatch::IntegrationTest
 
   test "no user navigation with expired token" do
     visit(page_with_token("expired", "/collections/#{BAD_UUID}"))
-    assert(page.has_no_text?(api_fixture("users")["active"]["email"]),
+    assert(page.has_no_link?("notifications-menu"),
            "Page visited with expired token included user information")
     assert(page.has_selector?("a", text: /log ?in/i),
            "Login prompt missing on expired token error page")

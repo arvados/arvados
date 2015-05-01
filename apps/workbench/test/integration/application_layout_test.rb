@@ -40,8 +40,8 @@ class ApplicationLayoutTest < ActionDispatch::IntegrationTest
       else
         # my account menu
         assert_selector 'a', text: Rails.configuration.site_name.downcase
-        assert page.has_link?("#{user['email']}"), 'Not found link - email'
-        find('a', text: "#{user['email']}").click
+        assert(page.has_link?("notifications-menu"), 'no user menu')
+        page.find("#notifications-menu").click
         within('.dropdown-menu') do
           if user['is_active']
             assert page.has_no_link?('Not active'), 'Found link - Not active'
