@@ -15,8 +15,8 @@ type TrashWorkerTestData struct {
 	Block2      []byte
 	BlockMtime2 int64
 
-	CreateData       bool
-	CreateInVolume1  bool
+	CreateData      bool
+	CreateInVolume1 bool
 
 	UseTrashLifeTime bool
 	DifferentMtimes  bool
@@ -202,7 +202,7 @@ func performTrashWorkerTest(testData TrashWorkerTestData, t *testing.T) {
 		}
 	}
 
-	oldBlockTime := time.Now().Add(-blob_signature_ttl-time.Minute)
+	oldBlockTime := time.Now().Add(-blob_signature_ttl - time.Minute)
 
 	// Create TrashRequest for the test
 	trashRequest := TrashRequest{

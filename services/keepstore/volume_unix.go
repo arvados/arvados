@@ -70,12 +70,12 @@ func (v *UnixVolume) IOHandler() {
 
 func MakeUnixVolume(root string, serialize bool, readonly bool) *UnixVolume {
 	v := &UnixVolume{
-		root: root,
-		queue: nil,
+		root:     root,
+		queue:    nil,
 		readonly: readonly,
 	}
 	if serialize {
-		v.queue =make(chan *IORequest)
+		v.queue = make(chan *IORequest)
 		go v.IOHandler()
 	}
 	return v

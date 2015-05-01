@@ -228,13 +228,13 @@ func TestPutAndDeleteSkipReadonlyVolumes(t *testing.T) {
 	IssueRequest(
 		&RequestTester{
 			method:       "PUT",
-			uri:          "/"+TEST_HASH,
+			uri:          "/" + TEST_HASH,
 			request_body: TEST_BLOCK,
 		})
 	IssueRequest(
 		&RequestTester{
 			method:       "DELETE",
-			uri:          "/"+TEST_HASH,
+			uri:          "/" + TEST_HASH,
 			request_body: TEST_BLOCK,
 			api_token:    data_manager_token,
 		})
