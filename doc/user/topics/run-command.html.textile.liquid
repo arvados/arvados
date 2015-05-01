@@ -73,12 +73,12 @@ table(table table-bordered table-condensed).
 |$(dir ...)        | Takes a reference to an Arvados collection or directory within an Arvados collection and evaluates to a directory path on the local file system where that directory can be accessed by your command.  The path may include a file name, in which case it will evaluate to the parent directory of the file.  Uses Python's os.path.dirname(), so "/foo/bar" will evaluate to "/foo" but "/foo/bar/" will evaluate to "/foo/bar".  Will raise an error if the directory is not accessible. |
 |$(basename&nbsp;...)   | Strip leading directory and trailing file extension from the path provided.  For example, $(basename /foo/bar.baz.txt) will evaluate to "bar.baz".|
 |$(glob ...)       | Take a Unix shell path pattern (supports @*@ @?@ and @[]@) and search the local filesystem, returning the first match found.  Use together with $(dir ...) to get a local filesystem path for Arvados collections.  For example: $(glob $(dir $(mycollection)/*.bam)) will find the first .bam file in the collection specified by the user parameter "mycollection".  If there is more than one match, which one is returned is undefined.  Will raise an error if no matches are found.|
-|$(task.tmpdir)|Get the designated temporary directory.  This directory will be discarded when the job completes.|
-|$(task.outdir)|Get the designated output directory.  The contents of this directory will be saved to Keep when the job completes.  A symlink to a file in the keep mount will reference existing Keep blocks in your job output collection, with no data copying or duplication.|
-|$(job.srcdir)|Get the path to your git checkout.|
-|$(node.cores)|Get the number of CPU cores on the node.|
-|$(job.uuid)|Get current job uuid.|
-|$(task.uuid)|Get current task uuid.|
+|$(task.tmpdir)|Designated temporary directory.  This directory will be discarded when the job completes.|
+|$(task.outdir)|Designated output directory.  The contents of this directory will be saved to Keep when the job completes.  A symlink to a file in the keep mount will reference existing Keep blocks in your job output collection, with no data copying or duplication.|
+|$(job.srcdir)|Path to the git working directory ($CRUNCH_SRC).|
+|$(node.cores)|Number of CPU cores on the node.|
+|$(job.uuid)|Current job uuid ($JOB_UUID)|
+|$(task.uuid)|Current task uuid ($TASK_UUID)|
 
 h3. Escape sequences
 
@@ -241,7 +241,7 @@ h3. task.vwd
 
 Background: because Keep collections are read-only, this does not play well with certain tools that expect to be able to write their outputs alongside their inputs (such as tools that generate indexes that are closely associated with the original file.)  The run-command's solution to this is the "virtual working directory".
 
-@task.vwd@ specifies a Keep collection with the starting contents of the directory.  @run-command@ will then populate @task.outdir@ with directories and symlinks to mirror the contents of the @task.vwd@ collection.  Your command will then be able to both access its input files and write its output files in @task.outdir@.  When the command completes, the output collection will write both the output of your command and the contents of the starting collection.  Note that files from the starting collection remain read-only and cannot be altered, but may be deleted or renamed.
+@task.vwd@ specifies a Keep collection with the starting contents of the output directory.  @run-command@ will populate @task.outdir@ with directories and symlinks to mirror the contents of the @task.vwd@ collection.  Your command will then be able to both access its input files and write its output files from within @task.outdir@.  When the command completes, run-command will write the contents of the output directory, which will include the out of your command as well as symlinks to files in starting collection.  Note that files from the starting collection remain read-only and cannot be altered, but may be deleted or renamed.
 
 h3. task.foreach
 

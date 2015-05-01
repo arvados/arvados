@@ -40,7 +40,7 @@ def checkin(target_dir):
     Keep as normal files (Keep does not support symlinks).
 
     Symlinks to files in the keep mount will result in files in the new
-    collection which reference existing Keep blocks, no data copying necessay.
+    collection which reference existing Keep blocks, no data copying necessary.
 
     Returns a new Collection object, with data flushed but the collection record
     not saved to the API.
@@ -56,6 +56,7 @@ def checkin(target_dir):
 
     logger = logging.getLogger("arvados")
 
+    caught_error = False
     for root, dirs, files in os.walk(target_dir):
         for f in files:
             try:
@@ -91,5 +92,6 @@ def checkin(target_dir):
                                 dat = reader.read(64*1024)
             except (IOError, OSError) as e:
                 logger.error(e)
+                caught_error = True
 
-    return outputcollection
+    return (outputcollection, caught_error)
