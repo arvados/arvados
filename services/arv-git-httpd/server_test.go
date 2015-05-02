@@ -91,6 +91,17 @@ func (s *IntegrationSuite) SetUpTest(c *check.C) {
 	_, err = exec.Command("sh", "-c", "cd "+s.tmpWorkdir+" && echo work >work && git add work && git -c user.name=Foo -c user.email=Foo commit -am 'workdir: test'").CombinedOutput()
 	c.Assert(err, check.Equals, nil)
 
+	_, err = exec.Command("git", "config",
+		"--file", s.tmpWorkdir+"/.git/config",
+		"credential.http://"+s.testServer.Addr+"/.helper",
+		"!cred(){ cat >/dev/null; if [ \"$1\" = get ]; then echo password=$ARVADOS_API_TOKEN; fi; };cred").Output()
+	c.Assert(err, check.Equals, nil)
+	_, err = exec.Command("git", "config",
+		"--file", s.tmpWorkdir+"/.git/config",
+		"credential.http://"+s.testServer.Addr+"/.username",
+		"none").Output()
+	c.Assert(err, check.Equals, nil)
+
 	theConfig = &config{
 		Addr:       ":",
 		GitCommand: "/usr/bin/git",
@@ -127,9 +138,10 @@ func (s *IntegrationSuite) runGit(c *check.C, token, gitCmd, repo string, args .
 	os.Chdir(s.tmpWorkdir)
 
 	gitargs := append([]string{
-		gitCmd, "http://none:" + token + "@" + s.testServer.Addr + "/" + repo,
+		gitCmd, "http://" + s.testServer.Addr + "/" + repo,
 	}, args...)
 	cmd := exec.Command("git", gitargs...)
+	cmd.Env = append(os.Environ(), "ARVADOS_API_TOKEN="+token)
 	w, err := cmd.StdinPipe()
 	c.Assert(err, check.Equals, nil)
 	w.Close()

@@ -96,7 +96,7 @@ class Repository < ArvadosBase
       "credential.#{http_fetch_url}.username", 'none'],
      ['git', '--git-dir', @workdir, 'config', '--local',
       "credential.#{http_fetch_url}.helper",
-      '!token(){ echo password="$ARVADOS_API_TOKEN"; }; token'],
+      '!cred(){ cat >/dev/null; if [ "$1" = get ]; then echo password=$ARVADOS_API_TOKEN; fi; };cred'],
      ['git', '--git-dir', @workdir, 'config', '--local',
            'http.sslVerify',
            Rails.configuration.arvados_insecure_https ? 'false' : 'true'],
