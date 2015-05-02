@@ -14,15 +14,15 @@ type basicAuthTestCase struct {
 
 func TestBasicAuth(t *testing.T) {
 	tests := []basicAuthTestCase{
-		basicAuthTestCase{"Basic Zm9vOmJhcg==", "foo", "bar", true},
-		basicAuthTestCase{"Bogus Zm9vOmJhcg==", "", "", false},
-		basicAuthTestCase{"Zm9vOmJhcg==", "", "", false},
-		basicAuthTestCase{"Basic", "", "", false},
-		basicAuthTestCase{"", "", "", false},
+		{"Basic Zm9vOmJhcg==", "foo", "bar", true},
+		{"Bogus Zm9vOmJhcg==", "", "", false},
+		{"Zm9vOmJhcg==", "", "", false},
+		{"Basic", "", "", false},
+		{"", "", "", false},
 	}
 	for _, test := range tests {
 		if u, p, ok := BasicAuth(&http.Request{Header: map[string][]string{
-			"Authorization": []string{test.hdr},
+			"Authorization": {test.hdr},
 		}}); u != test.user || p != test.pass || ok != test.ok {
 			t.Error("got:", u, p, ok, "expected:", test.user, test.pass, test.ok, "from:", test.hdr)
 		}
