@@ -54,11 +54,11 @@ func TestGetHandler(t *testing.T) {
 	// Turn on permission settings so we can generate signed locators.
 	enforce_permissions = true
 	PermissionSecret = []byte(known_key)
-	permission_ttl = time.Duration(300) * time.Second
+	blob_signature_ttl = 300 * time.Second
 
 	var (
 		unsigned_locator  = "/" + TEST_HASH
-		valid_timestamp   = time.Now().Add(permission_ttl)
+		valid_timestamp   = time.Now().Add(blob_signature_ttl)
 		expired_timestamp = time.Now().Add(-time.Hour)
 		signed_locator    = "/" + SignLocator(TEST_HASH, known_token, valid_timestamp)
 		expired_locator   = "/" + SignLocator(TEST_HASH, known_token, expired_timestamp)
@@ -176,7 +176,7 @@ func TestPutHandler(t *testing.T) {
 	// With a server key.
 
 	PermissionSecret = []byte(known_key)
-	permission_ttl = time.Duration(300) * time.Second
+	blob_signature_ttl = 300 * time.Second
 
 	// When a permission key is available, the locator returned
 	// from an authenticated PUT request will be signed.
@@ -228,13 +228,13 @@ func TestPutAndDeleteSkipReadonlyVolumes(t *testing.T) {
 	IssueRequest(
 		&RequestTester{
 			method:       "PUT",
-			uri:          "/"+TEST_HASH,
+			uri:          "/" + TEST_HASH,
 			request_body: TEST_BLOCK,
 		})
 	IssueRequest(
 		&RequestTester{
 			method:       "DELETE",
-			uri:          "/"+TEST_HASH,
+			uri:          "/" + TEST_HASH,
 			request_body: TEST_BLOCK,
 			api_token:    data_manager_token,
 		})
@@ -440,10 +440,10 @@ func TestDeleteHandler(t *testing.T) {
 	vols := KeepVM.AllWritable()
 	vols[0].Put(TEST_HASH, TEST_BLOCK)
 
-	// Explicitly set the permission_ttl to 0 for these
+	// Explicitly set the blob_signature_ttl to 0 for these
 	// tests, to ensure the MockVolume deletes the blocks
 	// even though they have just been created.
-	permission_ttl = time.Duration(0)
+	blob_signature_ttl = time.Duration(0)
 
 	var user_token = "NOT DATA MANAGER TOKEN"
 	data_manager_token = "DATA MANAGER TOKEN"
@@ -528,10 +528,10 @@ func TestDeleteHandler(t *testing.T) {
 		t.Error("superuser_existing_block_req: block not deleted")
 	}
 
-	// A DELETE request on a block newer than permission_ttl should return
-	// success but leave the block on the volume.
+	// A DELETE request on a block newer than blob_signature_ttl
+	// should return success but leave the block on the volume.
 	vols[0].Put(TEST_HASH, TEST_BLOCK)
-	permission_ttl = time.Duration(1) * time.Hour
+	blob_signature_ttl = time.Hour
 
 	response = IssueRequest(superuser_existing_block_req)
 	ExpectStatusCode(t,

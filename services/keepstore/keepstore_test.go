@@ -345,7 +345,7 @@ func TestDiscoverTmpfs(t *testing.T) {
 			t.Errorf("Discover returned %s, expected %s\n",
 				resultVols[i].(*UnixVolume).root, tmpdir)
 		}
-		if expectReadonly := i % 2 == 1; expectReadonly != resultVols[i].(*UnixVolume).readonly {
+		if expectReadonly := i%2 == 1; expectReadonly != resultVols[i].(*UnixVolume).readonly {
 			t.Errorf("Discover added %s with readonly=%v, should be %v",
 				tmpdir, !expectReadonly, expectReadonly)
 		}
