@@ -241,7 +241,7 @@ h3. task.vwd
 
 Background: because Keep collections are read-only, this does not play well with certain tools that expect to be able to write their outputs alongside their inputs (such as tools that generate indexes that are closely associated with the original file.)  The run-command's solution to this is the "virtual working directory".
 
-@task.vwd@ specifies a Keep collection with the starting contents of the output directory.  @run-command@ will populate @task.outdir@ with directories and symlinks to mirror the contents of the @task.vwd@ collection.  Your command will then be able to both access its input files and write its output files from within @task.outdir@.  When the command completes, run-command will write the contents of the output directory, which will include the out of your command as well as symlinks to files in starting collection.  Note that files from the starting collection remain read-only and cannot be altered, but may be deleted or renamed.
+@task.vwd@ specifies a Keep collection with the starting contents of the output directory.  @run-command@ will populate @task.outdir@ with directories and symlinks to mirror the contents of the @task.vwd@ collection.  Your command will then be able to both access its input files and write its output files from within @task.outdir@.  When the command completes, run-command will write the contents of the output directory, which will include the output of your command as well as symlinks to files in starting collection.  Note that files from the starting collection remain read-only and cannot be altered, but may be deleted or renamed.
 
 h3. task.foreach
 

@@ -56,7 +56,7 @@ def checkin(target_dir):
 
     logger = logging.getLogger("arvados")
 
-    caught_error = False
+    last_error = None
     for root, dirs, files in os.walk(target_dir):
         for f in files:
             try:
@@ -92,6 +92,6 @@ def checkin(target_dir):
                                 dat = reader.read(64*1024)
             except (IOError, OSError) as e:
                 logger.error(e)
-                caught_error = True
+                last_error = e
 
-    return (outputcollection, caught_error)
+    return (outputcollection, last_error)
