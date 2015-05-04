@@ -211,9 +211,3 @@ common:
 
   # Enable response payload compression in Arvados API requests.
   include_accept_encoding_header_in_api_requests: true
-
-  # Enable repository browsing even if git2 is installed. Repository
-  # browsing requires credential helpers, which do not work reliably
-  # as of git version 2.1.4. If you have git version 2.* and you want
-  # to use it anyway, change this to true.
-  use_git2_despite_bug_risk: false
