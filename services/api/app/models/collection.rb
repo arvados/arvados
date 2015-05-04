@@ -60,7 +60,7 @@ class Collection < ArvadosModel
       signing_opts = {
         key: Rails.configuration.blob_signing_key,
         api_token: api_token,
-        ttl: Rails.configuration.blob_signing_ttl,
+        ttl: Rails.configuration.blob_signature_ttl,
       }
       self.manifest_text.lines.each do |entry|
         entry.split[1..-1].each do |tok|
@@ -195,7 +195,7 @@ class Collection < ArvadosModel
     signing_opts = {
       key: Rails.configuration.blob_signing_key,
       api_token: token,
-      ttl: Rails.configuration.blob_signing_ttl,
+      ttl: Rails.configuration.blob_signature_ttl,
     }
     m = manifest.dup
     munge_manifest_locators!(m) do |loc|
