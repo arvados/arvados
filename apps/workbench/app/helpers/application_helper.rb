@@ -273,7 +273,7 @@ module ApplicationHelper
       "data-value" => attrvalue,
       "id" => span_id,
       :class => "editable #{is_textile?( object, attr ) ? 'editable-textile' : ''}"
-    }.merge(htmloptions).merge(ajax_options)
+    }.merge(htmloptions.reject {|k, v| k.to_s.start_with?('btn') }).merge(ajax_options)
 
     edit_tiptitle = 'edit'
     edit_tiptitle = 'Warning: do not use hyphens in the repository name as they will be stripped' if (object.class.to_s == 'Repository' and attr == 'name')
