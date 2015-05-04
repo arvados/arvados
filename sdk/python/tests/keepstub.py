@@ -65,6 +65,15 @@ class Handler(BaseHTTPServer.BaseHTTPRequestHandler, object):
 
     def do_PUT(self):
         self.server._do_delay('request_body')
+
+        # The comments at https://bugs.python.org/issue1491 implies that Python
+        # 2.7 BaseHTTPRequestHandler was patched to support 100 Continue, but
+        # reading the actual code that ships in Debian it clearly is not, so we
+        # need to send the response on the socket directly.
+
+        self.wfile.write("%s %d %s\r\n\r\n" %
+                         (self.protocol_version, 100, "Continue"))
+
         data = self.rfile.read(int(self.headers.getheader('content-length')))
         datahash = hashlib.md5(data).hexdigest()
         self.server.store[datahash] = data

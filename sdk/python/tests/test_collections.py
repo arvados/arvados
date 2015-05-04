@@ -712,7 +712,7 @@ class CollectionWriterTestCase(unittest.TestCase, CollectionTestMixin):
     def test_write_three_replicas(self):
         client = mock.MagicMock(name='api_client')
         with self.mock_keep(
-                None, 500, 500, 500, 200, 200, 200,
+                "", 500, 500, 500, 200, 200, 200,
                 **{'x-keep-replicas-stored': 1}) as keepmock:
             self.mock_keep_services(client, status=200, service_type='disk', count=6)
             writer = self.foo_writer(api_client=client, replication=3)
