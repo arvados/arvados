@@ -14,7 +14,7 @@ import re
 import socket
 import ssl
 import string
-import StringIO
+import cStringIO
 import subprocess
 import sys
 import threading
@@ -357,7 +357,7 @@ class KeepClient(object):
             try:
                 with timer.Timer() as t:
                     self._headers = {}
-                    response_body = StringIO.StringIO()
+                    response_body = cStringIO.StringIO()
                     curl.setopt(pycurl.NOSIGNAL, 1)
                     curl.setopt(pycurl.OPENSOCKETFUNCTION, self._socket_open)
                     curl.setopt(pycurl.URL, url.encode('utf-8'))
@@ -420,12 +420,20 @@ class KeepClient(object):
             curl = self._get_user_agent()
             try:
                 self._headers = {}
-                response_body = StringIO.StringIO()
+                body_reader = cStringIO.StringIO(body)
+                response_body = cStringIO.StringIO()
                 curl.setopt(pycurl.NOSIGNAL, 1)
                 curl.setopt(pycurl.OPENSOCKETFUNCTION, self._socket_open)
                 curl.setopt(pycurl.URL, url.encode('utf-8'))
-                curl.setopt(pycurl.POSTFIELDS, body)
-                curl.setopt(pycurl.CUSTOMREQUEST, 'PUT')
+                # Using UPLOAD tells cURL to wait for a "go ahead" from the
+                # Keep server (in the form of a HTTP/1.1 "100 Continue"
+                # response) instead of sending the request body immediately.
+                # This allows the server to reject the request if the request
+                # is invalid or the server is read-only, without waiting for
+                # the client to send the entire block.
+                curl.setopt(pycurl.UPLOAD, True)
+                curl.setopt(pycurl.INFILESIZE, len(body))
+                curl.setopt(pycurl.READFUNCTION, body_reader.read)
                 curl.setopt(pycurl.HTTPHEADER, [
                     '{}: {}'.format(k,v) for k,v in self.put_headers.iteritems()])
                 curl.setopt(pycurl.WRITEFUNCTION, response_body.write)

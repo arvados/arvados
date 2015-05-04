@@ -48,15 +48,6 @@ class Repository < ArvadosBase
     subtree
   end
 
-  # git 2.1.4 does not use credential helpers reliably, see #5416
-  def self.disable_repository_browsing?
-    return false if Rails.configuration.use_git2_despite_bug_risk
-    if @buggy_git_version.nil?
-      @buggy_git_version = /git version 2/ =~ `git version`
-    end
-    @buggy_git_version
-  end
-
   # http_fetch_url returns the first http:// or https:// url (if any)
   # in the api response's clone_urls attribute.
   def http_fetch_url
@@ -96,7 +87,7 @@ class Repository < ArvadosBase
       "credential.#{http_fetch_url}.username", 'none'],
      ['git', '--git-dir', @workdir, 'config', '--local',
       "credential.#{http_fetch_url}.helper",
-      '!token(){ echo password="$ARVADOS_API_TOKEN"; }; token'],
+      '!cred(){ cat >/dev/null; if [ "$1" = get ]; then echo password=$ARVADOS_API_TOKEN; fi; };cred'],
      ['git', '--git-dir', @workdir, 'config', '--local',
            'http.sslVerify',
            Rails.configuration.arvados_insecure_https ? 'false' : 'true'],
