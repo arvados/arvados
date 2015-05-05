@@ -9,10 +9,10 @@ import argparse
 import collections
 import copy
 import functools
-import logging
 import json
-import time
+import logging
 import sys
+import time
 
 import docker
 
@@ -87,21 +87,25 @@ class DockerImages:
         self.container_image_map.pop(cid, None)
         logger.debug("Unregistered container %s", cid)
 
-    def any_users(self):
-        return bool(self.container_image_map)
-
     def should_delete(self):
+        # Build a set of images in use, and figure out how much space we have
+        # left for Docker images after keeping them.
         used_images = set(self.container_image_map.values())
         space_left = (self.target_size - sum(self.images[image_id].size
                                              for image_id in used_images))
+        # Build a list of images not in use, ordered by use time.
         lru_images = [image for image in self.images.values()
                       if image.docker_id not in used_images]
         lru_images.sort(key=lambda image: image.last_used)
+        # Go through the list most recently used first, and note which
+        # images can be saved with the space available.
         keep_ids = set()
         for image in reversed(lru_images):
             if image.size <= space_left:
                 keep_ids.add(image.docker_id)
                 space_left -= image.size
+        # Yield the Docker IDs of any image we don't want to save, least
+        # recently used first.
         for image in lru_images:
             if image.docker_id not in keep_ids:
                 yield image.docker_id
@@ -179,8 +183,6 @@ class DockerImageCleaner(DockerImageUseRecorder):
 
     @event_handlers.on('destroy')
     def clean_images(self, event=None):
-        if self.images.any_users():
-            return
         for image_id in self.images.should_delete():
             try:
                 self.docker_client.remove_image(image_id)
@@ -202,7 +204,7 @@ def human_size(size_str):
 
 def parse_arguments(arguments):
     parser = argparse.ArgumentParser(
-        prog="dockerclean",
+        prog="arvados_docker.cleaner",
         description="clean old Docker images from Arvados compute nodes")
     parser.add_argument(
         '--keep', action='store', type=human_size, required=True,
