@@ -281,7 +281,7 @@ module ApplicationHelper
     edit_tiptitle = 'edit'
     edit_tiptitle = 'Warning: do not use hyphens in the repository name as they will be stripped' if (object.class.to_s == 'Repository' and attr == 'name')
 
-    edit_button = raw('<a href="#" class="btn btn-xs btn-' + (nonhtml_options[:btnclass] || 'default') + ' btn-nodecorate" data-toggle="x-editable tooltip" data-toggle-selector="#' + span_id + '" data-placement="top" title="' + (htmloptions[:tiptitle] || edit_tiptitle) + '"><i class="fa fa-fw fa-pencil"></i>' + (nonhtml_options[:btntext] || '') + '</a>')
+    edit_button = raw('<a href="#" class="btn btn-xs btn-' + (nonhtml_options[:btnclass] || 'default') + ' btn-nodecorate" data-toggle="x-editable tooltip" data-toggle-selector="#' + span_id + '" data-placement="top" title="' + (nonhtml_options[:tiptitle] || edit_tiptitle) + '"><i class="fa fa-fw fa-pencil"></i>' + (nonhtml_options[:btntext] || '') + '</a>')
 
     if nonhtml_options[:btnplacement] == :left
       edit_button + ' ' + span_tag
