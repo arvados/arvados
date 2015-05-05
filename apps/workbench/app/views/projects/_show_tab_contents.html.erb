@@ -1,3 +1,13 @@
+<script>
+function select_all_files() {
+  $(".arv-project-contents :checkbox").filter(":visible").prop("checked", true).trigger("change");
+}
+
+function unselect_all_files() {
+  $(".arv-project-contents :checkbox").filter(":visible").prop("checked", false).trigger("change");
+}
+</script>
+
 <% sortable_columns = {} if local_assigns[:sortable_columns].nil? %>
 <div class="selection-action-container">
   <div class="row">
@@ -71,13 +81,17 @@
           <% end %>
         </ul>
       </div>
+      <div class="btn-group btn-group-sm">
+        <button id="select-all" type="button" class="btn btn-default" onClick="select_all_files()">Select all</button>
+        <button id="unselect-all" type="button" class="btn btn-default" onClick="unselect_all_files()">Unselect all</button>
+      </div>
     </div>
     <div class="col-sm-4 pull-right">
       <input type="text" class="form-control filterable-control" placeholder="Search project contents" data-filterable-target="table.arv-index.arv-project-<%= tab_pane %> tbody"/>
     </div>
   </div>
 
-  <table class="table table-condensed arv-index arv-project-<%= tab_pane %>">
+  <table class="table table-condensed arv-index arv-project-contents arv-project-<%= tab_pane %>">
     <colgroup>
       <col width="0*" style="max-width: fit-content;" />
       <col width="0*" style="max-width: fit-content;" />
