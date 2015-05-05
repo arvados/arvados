@@ -222,7 +222,7 @@ module ApplicationHelper
     return_value
   end
 
-  def render_editable_attribute(object, attr, attrvalue=nil, htmloptions={})
+  def render_editable_attribute(object, attr, attrvalue=nil, htmloptions={}, nonhtml_options={})
     attrvalue = object.send(attr) if attrvalue.nil?
     if not object.attribute_editable?(attr)
       if attrvalue && attrvalue.length > 0
@@ -273,16 +273,16 @@ module ApplicationHelper
       "data-value" => attrvalue,
       "id" => span_id,
       :class => "editable #{is_textile?( object, attr ) ? 'editable-textile' : ''}"
-    }.merge(htmloptions.reject {|k, v| k.to_s.start_with?('btn') }).merge(ajax_options)
+    }.merge(htmloptions).merge(ajax_options)
 
     edit_tiptitle = 'edit'
     edit_tiptitle = 'Warning: do not use hyphens in the repository name as they will be stripped' if (object.class.to_s == 'Repository' and attr == 'name')
 
-    edit_button = raw('<a href="#" class="btn btn-xs btn-' + (htmloptions['data-btnclass'] || 'default') + ' btn-nodecorate" data-toggle="x-editable tooltip" data-toggle-selector="#' + span_id + '" data-placement="top" title="' + (htmloptions[:tiptitle] || edit_tiptitle) + '"><i class="fa fa-fw fa-pencil"></i>' + (htmloptions['data-btntext'] || '') + '</a>')
+    edit_button = raw('<a href="#" class="btn btn-xs btn-' + (nonhtml_options[:btnclass] || 'default') + ' btn-nodecorate" data-toggle="x-editable tooltip" data-toggle-selector="#' + span_id + '" data-placement="top" title="' + (htmloptions[:tiptitle] || edit_tiptitle) + '"><i class="fa fa-fw fa-pencil"></i>' + (nonhtml_options[:btntext] || '') + '</a>')
 
-    if htmloptions[:btnplacement] == :left
+    if nonhtml_options[:btnplacement] == :left
       edit_button + ' ' + span_tag
-    elsif htmloptions[:btnplacement] == :top
+    elsif nonhtml_options[:btnplacement] == :top
       edit_button + raw('<br/>') + span_tag
     else
       span_tag + ' ' + edit_button
