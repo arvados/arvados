@@ -48,15 +48,15 @@ func TestVerifySignatureExtraHints(t *testing.T) {
 	PermissionSecret = []byte(known_key)
 	defer func() { PermissionSecret = nil }()
 
-	if !VerifySignature(known_locator + "+K@xyzzy" + known_sig_hint, known_token) {
+	if !VerifySignature(known_locator+"+K@xyzzy"+known_sig_hint, known_token) {
 		t.Fatal("Verify cannot handle hint before permission signature")
 	}
 
-	if !VerifySignature(known_locator + known_sig_hint + "+Zfoo", known_token) {
+	if !VerifySignature(known_locator+known_sig_hint+"+Zfoo", known_token) {
 		t.Fatal("Verify cannot handle hint after permission signature")
 	}
 
-	if !VerifySignature(known_locator + "+K@xyzzy" + known_sig_hint + "+Zfoo", known_token) {
+	if !VerifySignature(known_locator+"+K@xyzzy"+known_sig_hint+"+Zfoo", known_token) {
 		t.Fatal("Verify cannot handle hints around permission signature")
 	}
 }
@@ -66,11 +66,11 @@ func TestVerifySignatureWrongSize(t *testing.T) {
 	PermissionSecret = []byte(known_key)
 	defer func() { PermissionSecret = nil }()
 
-	if !VerifySignature(known_hash + "+999999" + known_sig_hint, known_token) {
+	if !VerifySignature(known_hash+"+999999"+known_sig_hint, known_token) {
 		t.Fatal("Verify cannot handle incorrect size hint")
 	}
 
-	if !VerifySignature(known_hash + known_sig_hint, known_token) {
+	if !VerifySignature(known_hash+known_sig_hint, known_token) {
 		t.Fatal("Verify cannot handle missing size hint")
 	}
 }

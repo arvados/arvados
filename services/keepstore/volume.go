@@ -69,7 +69,7 @@ func (vm *RRVolumeManager) NextWritable() Volume {
 		return nil
 	}
 	i := atomic.AddUint32(&vm.counter, 1)
-	return vm.writables[i % uint32(len(vm.writables))]
+	return vm.writables[i%uint32(len(vm.writables))]
 }
 
 func (vm *RRVolumeManager) Close() {

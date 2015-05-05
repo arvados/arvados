@@ -197,7 +197,7 @@ func PutBlockHandler(resp http.ResponseWriter, req *http.Request) {
 	return_hash := fmt.Sprintf("%s+%d", hash, len(buf))
 	api_token := GetApiToken(req)
 	if PermissionSecret != nil && api_token != "" {
-		expiry := time.Now().Add(permission_ttl)
+		expiry := time.Now().Add(blob_signature_ttl)
 		return_hash = SignLocator(return_hash, api_token, expiry)
 	}
 	resp.Write([]byte(return_hash + "\n"))

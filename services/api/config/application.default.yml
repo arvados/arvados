@@ -231,9 +231,9 @@ common:
   # Datamanager considers an unreferenced block older than this to be
   # eligible for garbage collection. Therefore, it should never be
   # smaller than the corresponding value used by any local keepstore
-  # service (see keepstore -blob-signing-ttl flag). This rule prevents
-  # datamanager from trying to garbage-collect recently written blocks
-  # while clients are still holding valid signatures.
+  # service (see keepstore -blob-signature-ttl flag). This rule
+  # prevents datamanager from trying to garbage-collect recently
+  # written blocks while clients are still holding valid signatures.
   #
   # The default is 2 weeks.
   blob_signature_ttl: 1209600

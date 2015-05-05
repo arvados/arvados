@@ -14,15 +14,15 @@ type MockVolume struct {
 	Store      map[string][]byte
 	Timestamps map[string]time.Time
 	// Bad volumes return an error for every operation.
-	Bad        bool
+	Bad bool
 	// Touchable volumes' Touch() method succeeds for a locator
 	// that has been Put().
-	Touchable  bool
+	Touchable bool
 	// Readonly volumes return an error for Put, Delete, and
 	// Touch.
-	Readonly   bool
-	called     map[string]int
-	mutex      sync.Mutex
+	Readonly bool
+	called   map[string]int
+	mutex    sync.Mutex
 }
 
 // CreateMockVolume returns a non-Bad, non-Readonly, Touchable mock
@@ -125,7 +125,7 @@ func (v *MockVolume) Delete(loc string) error {
 		return MethodDisabledError
 	}
 	if _, ok := v.Store[loc]; ok {
-		if time.Since(v.Timestamps[loc]) < permission_ttl {
+		if time.Since(v.Timestamps[loc]) < blob_signature_ttl {
 			return nil
 		}
 		delete(v.Store, loc)
