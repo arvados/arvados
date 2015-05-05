@@ -222,6 +222,9 @@ module ApplicationHelper
     return_value
   end
 
+  # Render an editable attribute with the attrvalue of the attr.
+  # The htmloptions are added to the editable element's list of attributes.
+  # The nonhtml_options are only used to customize the display of the element.
   def render_editable_attribute(object, attr, attrvalue=nil, htmloptions={}, nonhtml_options={})
     attrvalue = object.send(attr) if attrvalue.nil?
     if not object.attribute_editable?(attr)
