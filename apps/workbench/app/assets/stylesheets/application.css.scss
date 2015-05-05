@@ -300,3 +300,11 @@ ul.nav.nav-tabs {
 .hover-dropdown:hover .dropdown-menu {
   display: block;
 }
+
+.arv-description-as-subtitle .editable-inline,
+.arv-description-as-subtitle .editable-inline .form-group,
+.arv-description-as-subtitle .editable-inline .form-group .editable-input,
+.arv-description-as-subtitle .editable-inline .form-group .editable-input textarea,
+{
+    width: 98%!important;
+}
