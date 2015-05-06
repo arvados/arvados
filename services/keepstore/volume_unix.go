@@ -218,7 +218,7 @@ func (v *UnixVolume) Status() *VolumeStatus {
 
 // IndexTo writes (to the given Writer) a list of blocks found on this
 // volume which begin with the specified prefix. If the prefix is an
-// empty string, Index writes a complete list of blocks.
+// empty string, IndexTo writes a complete list of blocks.
 //
 // Each block is given in the format
 //
@@ -238,24 +238,22 @@ func (v *UnixVolume) IndexTo(prefix string, w io.Writer) error {
 					v, path, err)
 				return nil
 			}
-			locator := filepath.Base(path)
-			// Skip directories that do not match prefix.
-			// We know there is nothing interesting inside.
+			basename := filepath.Base(path)
 			if info.IsDir() &&
-				!strings.HasPrefix(locator, prefix) &&
-				!strings.HasPrefix(prefix, locator) {
+				!strings.HasPrefix(basename, prefix) &&
+				!strings.HasPrefix(prefix, basename) {
+				// Skip directories that do not match
+				// prefix. We know there is nothing
+				// interesting inside.
 				return filepath.SkipDir
 			}
-			// Skip any file that is not apparently a locator, e.g. .meta files
-			if info.IsDir() || !IsValidLocator(locator) {
-				return nil
-			}
-			// Print filenames beginning with prefix
-			if !strings.HasPrefix(locator, prefix) {
+			if info.IsDir() ||
+				!IsValidLocator(basename) ||
+				!strings.HasPrefix(basename, prefix) {
 				return nil
 			}
 			_, err = fmt.Fprintf(w, "%s+%d %d\n",
-				locator, info.Size(), info.ModTime().Unix())
+				basename, info.Size(), info.ModTime().Unix())
 			return err
 		})
 }

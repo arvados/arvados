@@ -109,7 +109,7 @@ func (v *MockVolume) Mtime(loc string) (time.Time, error) {
 }
 
 func (v *MockVolume) IndexTo(prefix string, w io.Writer) error {
-	v.gotCall("Index")
+	v.gotCall("IndexTo")
 	for loc, block := range v.Store {
 		if !IsValidLocator(loc) || !strings.HasPrefix(loc, prefix) {
 			continue
