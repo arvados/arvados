@@ -3,6 +3,7 @@ package main
 import (
 	"errors"
 	"fmt"
+	"io"
 	"os"
 	"strings"
 	"sync"
@@ -107,16 +108,19 @@ func (v *MockVolume) Mtime(loc string) (time.Time, error) {
 	return mtime, err
 }
 
-func (v *MockVolume) Index(prefix string) string {
+func (v *MockVolume) IndexTo(prefix string, w io.Writer) error {
 	v.gotCall("Index")
-	var result string
 	for loc, block := range v.Store {
-		if IsValidLocator(loc) && strings.HasPrefix(loc, prefix) {
-			result = result + fmt.Sprintf("%s+%d %d\n",
-				loc, len(block), 123456789)
+		if !IsValidLocator(loc) || !strings.HasPrefix(loc, prefix) {
+			continue
+		}
+		_, err := fmt.Fprintf(w, "%s+%d %d\n",
+			loc, len(block), 123456789)
+		if err != nil {
+			return err
 		}
 	}
-	return result
+	return nil
 }
 
 func (v *MockVolume) Delete(loc string) error {
