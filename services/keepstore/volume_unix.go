@@ -4,6 +4,7 @@ package main
 
 import (
 	"fmt"
+	"io"
 	"io/ioutil"
 	"log"
 	"os"
@@ -215,14 +216,13 @@ func (v *UnixVolume) Status() *VolumeStatus {
 	return &VolumeStatus{v.root, devnum, free, used}
 }
 
-// Index returns a list of blocks found on this volume which begin with
-// the specified prefix. If the prefix is an empty string, Index returns
-// a complete list of blocks.
+// IndexTo writes (to the given Writer) a list of blocks found on this
+// volume which begin with the specified prefix. If the prefix is an
+// empty string, IndexTo writes a complete list of blocks.
 //
-// The return value is a multiline string (separated by
-// newlines). Each line is in the format
+// Each block is given in the format
 //
-//     locator+size modification-time
+//     locator+size modification-time {newline}
 //
 // e.g.:
 //
@@ -230,38 +230,32 @@ func (v *UnixVolume) Status() *VolumeStatus {
 //     e4d41e6fd68460e0e3fc18cc746959d2+67108864 1377796043
 //     e4de7a2810f5554cd39b36d8ddb132ff+67108864 1388701136
 //
-func (v *UnixVolume) Index(prefix string) (output string) {
-	filepath.Walk(v.root,
+func (v *UnixVolume) IndexTo(prefix string, w io.Writer) error {
+	return filepath.Walk(v.root,
 		func(path string, info os.FileInfo, err error) error {
-			// This WalkFunc inspects each path in the volume
-			// and prints an index line for all files that begin
-			// with prefix.
 			if err != nil {
-				log.Printf("IndexHandler: %s: walking to %s: %s",
+				log.Printf("%s: IndexTo Walk error at %s: %s",
 					v, path, err)
 				return nil
 			}
-			locator := filepath.Base(path)
-			// Skip directories that do not match prefix.
-			// We know there is nothing interesting inside.
+			basename := filepath.Base(path)
 			if info.IsDir() &&
-				!strings.HasPrefix(locator, prefix) &&
-				!strings.HasPrefix(prefix, locator) {
+				!strings.HasPrefix(basename, prefix) &&
+				!strings.HasPrefix(prefix, basename) {
+				// Skip directories that do not match
+				// prefix. We know there is nothing
+				// interesting inside.
 				return filepath.SkipDir
 			}
-			// Skip any file that is not apparently a locator, e.g. .meta files
-			if !IsValidLocator(locator) {
+			if info.IsDir() ||
+				!IsValidLocator(basename) ||
+				!strings.HasPrefix(basename, prefix) {
 				return nil
 			}
-			// Print filenames beginning with prefix
-			if !info.IsDir() && strings.HasPrefix(locator, prefix) {
-				output = output + fmt.Sprintf(
-					"%s+%d %d\n", locator, info.Size(), info.ModTime().Unix())
-			}
-			return nil
+			_, err = fmt.Fprintf(w, "%s+%d %d\n",
+				basename, info.Size(), info.ModTime().Unix())
+			return err
 		})
-
-	return
 }
 
 func (v *UnixVolume) Delete(loc string) error {

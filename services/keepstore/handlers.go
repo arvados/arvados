@@ -215,11 +215,18 @@ func IndexHandler(resp http.ResponseWriter, req *http.Request) {
 
 	prefix := mux.Vars(req)["prefix"]
 
-	var index string
 	for _, vol := range KeepVM.AllReadable() {
-		index = index + vol.Index(prefix)
+		if err := vol.IndexTo(prefix, resp); err != nil {
+			// The only errors returned by IndexTo are
+			// write errors returned by resp.Write(),
+			// which probably means the client has
+			// disconnected and this error will never be
+			// reported to the client -- but it will
+			// appear in our own error log.
+			http.Error(resp, err.Error(), http.StatusInternalServerError)
+			return
+		}
 	}
-	resp.Write([]byte(index))
 }
 
 // StatusHandler

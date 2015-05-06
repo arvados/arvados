@@ -394,8 +394,10 @@ func TestIndex(t *testing.T) {
 	vols[0].Put(TEST_HASH+".meta", []byte("metadata"))
 	vols[1].Put(TEST_HASH_2+".meta", []byte("metadata"))
 
-	index := vols[0].Index("") + vols[1].Index("")
-	index_rows := strings.Split(index, "\n")
+	buf := new(bytes.Buffer)
+	vols[0].IndexTo("", buf)
+	vols[1].IndexTo("", buf)
+	index_rows := strings.Split(string(buf.Bytes()), "\n")
 	sort.Strings(index_rows)
 	sorted_index := strings.Join(index_rows, "\n")
 	expected := `^\n` + TEST_HASH + `\+\d+ \d+\n` +
@@ -405,7 +407,7 @@ func TestIndex(t *testing.T) {
 	match, err := regexp.MatchString(expected, sorted_index)
 	if err == nil {
 		if !match {
-			t.Errorf("IndexLocators returned:\n%s", index)
+			t.Errorf("IndexLocators returned:\n%s", string(buf.Bytes()))
 		}
 	} else {
 		t.Errorf("regexp.MatchString: %s", err)
