@@ -304,3 +304,6 @@ common:
   # have been finished for at least this many seconds, and delete their
   # stderr logs from the logs table.
   clean_job_log_rows_after: <%= 30.days %>
+
+  # The maximum number of compute nodes that can be in use simultaneously
+  max_compute_nodes: 64
