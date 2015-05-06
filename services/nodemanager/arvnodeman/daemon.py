@@ -327,7 +327,7 @@ class NodeManagerDaemonActor(actor_class):
                 break
         else:
             return None
-        if record.arvados_node is None:
+        if not record.actor.in_state('idle', 'busy').get():
             self._begin_node_shutdown(record.actor, cancellable=False)
 
     def node_finished_shutdown(self, shutdown_actor):
