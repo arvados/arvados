@@ -5,6 +5,7 @@
 package main
 
 import (
+	"io"
 	"sync/atomic"
 	"time"
 )
@@ -14,7 +15,7 @@ type Volume interface {
 	Put(loc string, block []byte) error
 	Touch(loc string) error
 	Mtime(loc string) (time.Time, error)
-	Index(prefix string) string
+	IndexTo(prefix string, writer io.Writer) error
 	Delete(loc string) error
 	Status() *VolumeStatus
 	String() string
