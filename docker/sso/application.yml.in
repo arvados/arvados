@@ -1,0 +1,26 @@
+#
+# Consult application.default.yml for the full list of configuration
+# settings.
+#
+# The order of precedence is:
+# 1. config/environments/{RAILS_ENV}.rb (deprecated)
+# 2. Section in application.yml corresponding to RAILS_ENV (e.g., development)
+# 3. Section in application.yml called "common"
+# 4. Section in application.default.yml corresponding to RAILS_ENV
+# 5. Section in application.default.yml called "common"
+
+production:
+  allow_account_registration: true
+
+  secret_token: @@SSO_SECRET@@
+  uuid_prefix: 'zzzzz'
+
+development:
+  # No development settings 
+
+test:
+  # No test settings 
+
+common:
+  # No common settings 
+
