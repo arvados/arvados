@@ -110,12 +110,14 @@ func OpenStatFile(cgroup Cgroup, statgroup string, stat string) (*os.File, error
 		// whether we happen to collect stats [a] before any
 		// processes have been created in the container and
 		// [b] after all contained processes have exited.
-		reportedStatFile[stat] = path
 		if path == "" {
-			statLog.Printf("error finding stats file: stat %s, statgroup %s, cid %s, parent %s, root %s\n", stat, statgroup, cgroup.cid, cgroup.parent, cgroup.root)
+			statLog.Printf("notice: stats not available: stat %s, statgroup %s, cid %s, parent %s, root %s\n", stat, statgroup, cgroup.cid, cgroup.parent, cgroup.root)
+		} else if ok {
+			statLog.Printf("notice: stats moved from %s to %s\n", reportedStatFile[stat], path)
 		} else {
-			statLog.Printf("error reading stats from %s\n", path)
+			statLog.Printf("notice: reading stats from %s\n", path)
 		}
+		reportedStatFile[stat] = path
 	}
 	return file, err
 }
