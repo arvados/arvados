@@ -86,11 +86,19 @@ var reportedStatFile = map[string]string{}
 // cgroup root for the given statgroup. (This will avoid falling back
 // to host-level stats during container setup and teardown.)
 func OpenStatFile(cgroup Cgroup, statgroup string, stat string) (*os.File, error) {
-	var paths = []string{
-		fmt.Sprintf("%s/%s/%s/%s/%s", cgroup.root, statgroup, cgroup.parent, cgroup.cid, stat),
-		fmt.Sprintf("%s/%s/%s/%s", cgroup.root, cgroup.parent, cgroup.cid, stat),
-		fmt.Sprintf("%s/%s/%s", cgroup.root, statgroup, stat),
-		fmt.Sprintf("%s/%s", cgroup.root, stat),
+	var paths []string
+	if cgroup.cid != "" {
+		// Collect container's stats
+		paths = []string{
+			fmt.Sprintf("%s/%s/%s/%s/%s", cgroup.root, statgroup, cgroup.parent, cgroup.cid, stat),
+			fmt.Sprintf("%s/%s/%s/%s", cgroup.root, cgroup.parent, cgroup.cid, stat),
+		}
+	} else {
+		// Collect this host's stats
+		paths = []string{
+			fmt.Sprintf("%s/%s/%s", cgroup.root, statgroup, stat),
+			fmt.Sprintf("%s/%s", cgroup.root, stat),
+		}
 	}
 	var path string
 	var file *os.File
