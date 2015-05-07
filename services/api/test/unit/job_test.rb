@@ -78,6 +78,26 @@ class JobTest < ActiveSupport::TestCase
     assert(job.invalid?, "Job with bad Docker tag valid")
   end
 
+  [
+    false,
+    true
+  ].each do |use_config|
+    test "Job with no Docker image uses default docker image when configuration is set #{use_config}" do
+      default_docker_image = collections(:docker_image)[:portable_data_hash]
+      Rails.configuration.default_docker_image_for_jobs = default_docker_image if use_config
+
+      job = Job.new job_attrs
+      assert job.valid?, job.errors.full_messages.to_s
+
+      if use_config
+        refute_nil job.docker_image_locator
+        assert_equal default_docker_image, job.docker_image_locator
+      else
+        assert_nil job.docker_image_locator
+      end
+    end
+  end
+
   test "create a job with a disambiguated script_version branch name" do
     job = Job.
       new(script: "testscript",

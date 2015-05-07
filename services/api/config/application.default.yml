@@ -311,3 +311,6 @@ common:
   # won't be strictly enforced until those nodes with higher slot numbers
   # go down.
   max_compute_nodes: 64
+
+  # Docker image to be used when none found in runtime_constraints of a job
+  default_docker_image_for_jobs: false
