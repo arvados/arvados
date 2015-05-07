@@ -101,15 +101,32 @@ class DockerImagesTestCase(unittest.TestCase):
         images.del_image(MockDockerId())
         self.assertTrue(images.has_image(self.mock_images[0]['Id']))
 
-    def test_images_under_target_not_deletable(self):
-        images = self.setup_images(200, 100, 300, target_size=150)
-        self.assertEqual({self.mock_images[ii]['Id'] for ii in (0, 2)},
-                         set(images.should_delete()))
-
-    def test_all_images_deletable(self):
+    def test_one_image_always_kept(self):
+        # When crunch-job starts a job, it makes sure each compute node
+        # has the Docker image loaded, then it runs all the tasks with
+        # the assumption the image is on each node.  As long as that's
+        # true, the cleaner should avoid removing every installed image:
+        # crunch-job might be counting on the most recent one to be
+        # available, even if it's not currently in use.
         images = self.setup_images(None, None, target_size=1)
-        self.assertEqual({image['Id'] for image in self.mock_images},
-                         set(images.should_delete()))
+        for use_time, image in enumerate(self.mock_images, 1):
+            user = MockContainer(image)
+            images.add_user(user, use_time)
+            images.end_user(user['Id'])
+        self.assertEqual([self.mock_images[0]['Id']],
+                         list(images.should_delete()))
+
+    def test_images_under_target_not_deletable(self):
+        # The images are used in this order.  target_size is set so it
+        # could hold the largest image, but not after the most recently
+        # used image is kept; then we have to fall back to the previous one.
+        images = self.setup_images(20, 30, 40, 10, target_size=45)
+        for use_time, image in enumerate(self.mock_images, 1):
+            user = MockContainer(image)
+            images.add_user(user, use_time)
+            images.end_user(user['Id'])
+        self.assertEqual([self.mock_images[ii]['Id'] for ii in [0, 2]],
+                         list(images.should_delete()))
 
     def test_images_in_use_not_deletable(self):
         images = self.setup_images(None, None, target_size=1)
@@ -121,11 +138,12 @@ class DockerImagesTestCase(unittest.TestCase):
                          list(images.should_delete()))
 
     def test_image_deletable_after_unused(self):
-        images = self.setup_images(None, target_size=1)
-        user = MockContainer(self.mock_images[-1])
-        images.add_user(user, 1)
-        images.end_user(user['Id'])
-        self.assertEqual([self.mock_images[-1]['Id']],
+        images = self.setup_images(None, None, target_size=1)
+        users = [MockContainer(image) for image in self.mock_images]
+        images.add_user(users[0], 1)
+        images.add_user(users[1], 2)
+        images.end_user(users[0]['Id'])
+        self.assertEqual([self.mock_images[0]['Id']],
                          list(images.should_delete()))
 
     def test_image_not_deletable_if_user_restarts(self):
@@ -145,12 +163,13 @@ class DockerImagesTestCase(unittest.TestCase):
         self.assertEqual([], list(images.should_delete()))
 
     def test_image_deletable_after_all_users_end(self):
-        images = self.setup_images(None, target_size=1)
-        users = [MockContainer(self.mock_images[0]) for ii in range(2)]
+        images = self.setup_images(None, None, target_size=1)
+        users = [MockContainer(self.mock_images[ii]) for ii in [0, 1, 1]]
         images.add_user(users[0], 1)
         images.add_user(users[1], 2)
-        images.end_user(users[0]['Id'])
+        images.add_user(users[2], 3)
         images.end_user(users[1]['Id'])
+        images.end_user(users[2]['Id'])
         self.assertEqual([self.mock_images[-1]['Id']],
                          list(images.should_delete()))
 
@@ -162,7 +181,7 @@ class DockerImagesTestCase(unittest.TestCase):
         images.add_user(users[2], 2)
         for user in users:
             images.end_user(user['Id'])
-        self.assertEqual([self.mock_images[ii]['Id'] for ii in (1, 2, 0)],
+        self.assertEqual([self.mock_images[ii]['Id'] for ii in [1, 2]],
                          list(images.should_delete()))
 
     def test_adding_user_without_image_does_not_implicitly_add_image(self):
@@ -195,7 +214,9 @@ class DockerImagesTestCase(unittest.TestCase):
             self.assertTrue(images.has_image(image['Id']))
 
     def test_target_size_set_from_daemon(self):
-        images = self.setup_from_daemon(20, 10, target_size=15)
+        images = self.setup_from_daemon(20, 10, 5, target_size=15)
+        user = MockContainer(self.mock_images[-1])
+        images.add_user(user, 1)
         self.assertEqual([self.mock_images[0]['Id']],
                          list(images.should_delete()))
 

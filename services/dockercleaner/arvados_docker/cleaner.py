@@ -88,20 +88,23 @@ class DockerImages:
         logger.debug("Unregistered container %s", cid)
 
     def should_delete(self):
-        # Build a set of images in use, and figure out how much space we have
-        # left for Docker images after keeping them.
-        used_images = set(self.container_image_map.values())
-        space_left = (self.target_size - sum(self.images[image_id].size
-                                             for image_id in used_images))
-        # Build a list of images not in use, ordered by use time.
-        lru_images = [image for image in self.images.values()
-                      if image.docker_id not in used_images]
+        if not self.images:
+            return
+        # Build a list of images, ordered by use time.
+        lru_images = list(self.images.values())
         lru_images.sort(key=lambda image: image.last_used)
+        # Make sure we don't delete any images in use, or if there are
+        # none, the most recently used image.
+        if self.container_image_map:
+            keep_ids = set(self.container_image_map.values())
+        else:
+            keep_ids = {lru_images[-1].docker_id}
+        space_left = (self.target_size - sum(self.images[image_id].size
+                                             for image_id in keep_ids))
         # Go through the list most recently used first, and note which
-        # images can be saved with the space available.
-        keep_ids = set()
+        # images can be saved with the space allotted.
         for image in reversed(lru_images):
-            if image.size <= space_left:
+            if (image.docker_id not in keep_ids) and (image.size <= space_left):
                 keep_ids.add(image.docker_id)
                 space_left -= image.size
         # Yield the Docker IDs of any image we don't want to save, least
