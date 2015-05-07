@@ -202,10 +202,10 @@ class NodeManagerDaemonActor(actor_class):
                    [self.cloud_nodes, self.booted, self.booting])
 
     def _nodes_busy(self):
-        return sum(1 for idle in
-                   pykka.get_all(rec.actor.in_state('idle') for rec in
+        return sum(1 for busy in
+                   pykka.get_all(rec.actor.in_state('busy') for rec in
                                  self.cloud_nodes.nodes.itervalues())
-                   if idle is False)
+                   if busy)
 
     def _nodes_wanted(self):
         up_count = self._nodes_up()
@@ -327,7 +327,7 @@ class NodeManagerDaemonActor(actor_class):
                 break
         else:
             return None
-        if record.arvados_node is None:
+        if not record.actor.in_state('idle', 'busy').get():
             self._begin_node_shutdown(record.actor, cancellable=False)
 
     def node_finished_shutdown(self, shutdown_actor):

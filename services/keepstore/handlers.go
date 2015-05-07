@@ -40,35 +40,19 @@ func MakeRESTRouter() *mux.Router {
 
 	rest.HandleFunc(`/{hash:[0-9a-f]{32}}`, PutBlockHandler).Methods("PUT")
 	rest.HandleFunc(`/{hash:[0-9a-f]{32}}`, DeleteHandler).Methods("DELETE")
-
-	// For IndexHandler we support:
-	//   /index           - returns all locators
-	//   /index/{prefix}  - returns all locators that begin with {prefix}
-	//      {prefix} is a string of hexadecimal digits between 0 and 32 digits.
-	//      If {prefix} is the empty string, return an index of all locators
-	//      (so /index and /index/ behave identically)
-	//      A client may supply a full 32-digit locator string, in which
-	//      case the server will return an index with either zero or one
-	//      entries. This usage allows a client to check whether a block is
-	//      present, and its size and upload time, without retrieving the
-	//      entire block.
-	//
+	// List all blocks stored here. Privileged client only.
 	rest.HandleFunc(`/index`, IndexHandler).Methods("GET", "HEAD")
-	rest.HandleFunc(
-		`/index/{prefix:[0-9a-f]{0,32}}`, IndexHandler).Methods("GET", "HEAD")
+	// List blocks stored here whose hash has the given prefix.
+	// Privileged client only.
+	rest.HandleFunc(`/index/{prefix:[0-9a-f]{0,32}}`, IndexHandler).Methods("GET", "HEAD")
+
+	// List volumes: path, device number, bytes used/avail.
 	rest.HandleFunc(`/status.json`, StatusHandler).Methods("GET", "HEAD")
 
-	// The PullHandler and TrashHandler process "PUT /pull" and "PUT
-	// /trash" requests from Data Manager.  These requests instruct
-	// Keep to replicate or delete blocks; see
-	// https://arvados.org/projects/arvados/wiki/Keep_Design_Doc
-	// for more details.
-	//
-	// Each handler parses the JSON list of block management requests
-	// in the message body, and replaces any existing pull queue or
-	// trash queue with their contentes.
-	//
+	// Replace the current pull queue.
 	rest.HandleFunc(`/pull`, PullHandler).Methods("PUT")
+
+	// Replace the current trash queue.
 	rest.HandleFunc(`/trash`, TrashHandler).Methods("PUT")
 
 	// Any request which does not match any of these routes gets
@@ -215,11 +199,18 @@ func IndexHandler(resp http.ResponseWriter, req *http.Request) {
 
 	prefix := mux.Vars(req)["prefix"]
 
-	var index string
 	for _, vol := range KeepVM.AllReadable() {
-		index = index + vol.Index(prefix)
+		if err := vol.IndexTo(prefix, resp); err != nil {
+			// The only errors returned by IndexTo are
+			// write errors returned by resp.Write(),
+			// which probably means the client has
+			// disconnected and this error will never be
+			// reported to the client -- but it will
+			// appear in our own error log.
+			http.Error(resp, err.Error(), http.StatusInternalServerError)
+			return
+		}
 	}
-	resp.Write([]byte(index))
 }
 
 // StatusHandler

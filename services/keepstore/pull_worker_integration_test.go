@@ -1,9 +1,12 @@
 package main
 
 import (
+	"bytes"
+	"errors"
 	"git.curoverse.com/arvados.git/sdk/go/arvadosclient"
 	"git.curoverse.com/arvados.git/sdk/go/arvadostest"
 	"git.curoverse.com/arvados.git/sdk/go/keepclient"
+	"io"
 	"net/http"
 	"os"
 	"strings"
@@ -104,6 +107,7 @@ func TestPullWorkerIntegration_GetExistingLocator(t *testing.T) {
 func performPullWorkerIntegrationTest(testData PullWorkIntegrationTestData, pullRequest PullRequest, t *testing.T) {
 
 	// Override PutContent to mock PutBlock functionality
+	defer func(orig func([]byte, string)(error)) { PutContent = orig }(PutContent)
 	PutContent = func(content []byte, locator string) (err error) {
 		if string(content) != testData.Content {
 			t.Errorf("PutContent invoked with unexpected data. Expected: %s; Found: %s", testData.Content, content)
@@ -111,16 +115,27 @@ func performPullWorkerIntegrationTest(testData PullWorkIntegrationTestData, pull
 		return
 	}
 
+	// Override GetContent to mock keepclient Get functionality
+	defer func(orig func(string, *keepclient.KeepClient)(io.ReadCloser, int64, string, error)) { GetContent = orig }(GetContent)
+	GetContent = func(signedLocator string, keepClient *keepclient.KeepClient) (
+		reader io.ReadCloser, contentLength int64, url string, err error) {
+		if testData.GetError != "" {
+			return nil, 0, "", errors.New(testData.GetError)
+		}
+		rdr := &ClosingBuffer{bytes.NewBufferString(testData.Content)}
+		return rdr, int64(len(testData.Content)), "", nil
+	}
+
 	keepClient.Arvados.ApiToken = GenerateRandomApiToken()
 	err := PullItemAndProcess(pullRequest, keepClient.Arvados.ApiToken, keepClient)
 
 	if len(testData.GetError) > 0 {
 		if (err == nil) || (!strings.Contains(err.Error(), testData.GetError)) {
-			t.Errorf("Got error %v", err)
+			t.Errorf("Got error %v, expected %v", err, testData.GetError)
 		}
 	} else {
 		if err != nil {
-			t.Errorf("Got error %v", err)
+			t.Errorf("Got error %v, expected nil", err)
 		}
 	}
 }

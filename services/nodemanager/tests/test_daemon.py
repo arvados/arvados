@@ -183,6 +183,19 @@ class NodeManagerDaemonActorTestCase(testutil.ActorTestMixin,
         self.last_setup.arvados_node.get.return_value = arv_node
         return self.last_setup
 
+    def test_no_new_node_when_booted_node_not_usable(self):
+        cloud_node = testutil.cloud_node_mock(4)
+        arv_node = testutil.arvados_node_mock(4, crunch_worker_state='down')
+        setup = self.start_node_boot(cloud_node, arv_node)
+        self.daemon.node_up(setup).get(self.TIMEOUT)
+        self.assertEqual(1, self.alive_monitor_count())
+        self.daemon.update_cloud_nodes([cloud_node])
+        self.daemon.update_arvados_nodes([arv_node])
+        self.daemon.update_server_wishlist(
+            [testutil.MockSize(1)]).get(self.TIMEOUT)
+        self.stop_proxy(self.daemon)
+        self.assertEqual(1, self.node_setup.start.call_count)
+
     def test_no_duplication_when_booting_node_listed_fast(self):
         # Test that we don't start two ComputeNodeMonitorActors when
         # we learn about a booting node through a listing before we
@@ -270,9 +283,33 @@ class NodeManagerDaemonActorTestCase(testutil.ActorTestMixin,
         self.stop_proxy(self.daemon)
         self.assertShutdownCancellable(False)
 
+    def test_booted_node_shut_down_when_never_working(self):
+        cloud_node = testutil.cloud_node_mock(4)
+        arv_node = testutil.arvados_node_mock(4, crunch_worker_state='down')
+        setup = self.start_node_boot(cloud_node, arv_node)
+        self.daemon.node_up(setup).get(self.TIMEOUT)
+        self.assertEqual(1, self.alive_monitor_count())
+        self.daemon.update_cloud_nodes([cloud_node])
+        self.daemon.update_arvados_nodes([arv_node]).get(self.TIMEOUT)
+        self.timer.deliver()
+        self.stop_proxy(self.daemon)
+        self.assertShutdownCancellable(False)
+
     def test_node_that_pairs_not_considered_failed_boot(self):
         cloud_node = testutil.cloud_node_mock(3)
         arv_node = testutil.arvados_node_mock(3)
+        setup = self.start_node_boot(cloud_node, arv_node)
+        self.daemon.node_up(setup).get(self.TIMEOUT)
+        self.assertEqual(1, self.alive_monitor_count())
+        self.daemon.update_cloud_nodes([cloud_node])
+        self.daemon.update_arvados_nodes([arv_node]).get(self.TIMEOUT)
+        self.timer.deliver()
+        self.stop_proxy(self.daemon)
+        self.assertFalse(self.node_shutdown.start.called)
+
+    def test_node_that_pairs_busy_not_considered_failed_boot(self):
+        cloud_node = testutil.cloud_node_mock(5)
+        arv_node = testutil.arvados_node_mock(5, job_uuid=True)
         setup = self.start_node_boot(cloud_node, arv_node)
         self.daemon.node_up(setup).get(self.TIMEOUT)
         self.assertEqual(1, self.alive_monitor_count())
