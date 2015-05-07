@@ -177,6 +177,10 @@ class DockerImageUseRecorder(DockerEventListener):
 class DockerImageCleaner(DockerImageUseRecorder):
     event_handlers = DockerImageUseRecorder.event_handlers.copy()
 
+    def __init__(self, images, docker_client, events):
+        super().__init__(images, docker_client, events)
+        self.logged_unknown = set()
+
     def new_container(self, event, container_hash):
         container_image_id = container_hash['Image']
         if not self.images.has_image(container_image_id):
@@ -194,6 +198,15 @@ class DockerImageCleaner(DockerImageUseRecorder):
             else:
                 logger.info("Removed image %s", image_id)
                 self.images.del_image(image_id)
+
+    @event_handlers.on('destroy')
+    def log_unknown_images(self, event):
+        unknown_ids = {image['Id'] for image in self.docker_client.images()
+                       if not self.images.has_image(image['Id'])}
+        for image_id in (unknown_ids - self.logged_unknown):
+            logger.info("Image %s is loaded but unused, so it won't be cleaned",
+                        image_id)
+        self.logged_unknown = unknown_ids
 
 
 def human_size(size_str):
