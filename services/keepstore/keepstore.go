@@ -56,6 +56,9 @@ var data_manager_token string
 // actually deleting anything.
 var never_delete = false
 
+var maxBuffers = 128
+var bufs *bufferPool
+
 // ==========
 // Error types.
 //
@@ -276,8 +279,18 @@ func main() {
 		"pid",
 		"",
 		"Path to write pid file")
+	flag.IntVar(
+		&maxBuffers,
+		"max-buffers",
+		maxBuffers,
+		fmt.Sprintf("Maximum RAM to use for data buffers, given in multiples of block size (%d MiB). When this limit is reached, HTTP requests requiring buffers (like GET and PUT) will wait for buffer space to be released.", BLOCKSIZE>>20))
 
 	flag.Parse()
+
+	if maxBuffers < 0 {
+		log.Fatal("-max-buffers must be greater than zero.")
+	}
+	bufs = newBufferPool(maxBuffers, BLOCKSIZE)
 
 	if len(volumes) == 0 {
 		if volumes.Discover() == 0 {
