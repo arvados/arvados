@@ -129,7 +129,11 @@ func (vs *volumeSet) Set(value string) error {
 	if _, err := os.Stat(value); err != nil {
 		return err
 	}
-	*vs = append(*vs, MakeUnixVolume(value, flagSerializeIO, flagReadonly))
+	*vs = append(*vs, &UnixVolume{
+		root:      value,
+		serialize: flagSerializeIO,
+		readonly:  flagReadonly,
+	})
 	return nil
 }
 

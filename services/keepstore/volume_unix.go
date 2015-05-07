@@ -11,98 +11,17 @@ import (
 	"path/filepath"
 	"strconv"
 	"strings"
+	"sync"
 	"syscall"
 	"time"
 )
 
-// IORequests are encapsulated Get or Put requests.  They are used to
-// implement serialized I/O (i.e. only one read/write operation per
-// volume). When running in serialized mode, the Keep front end sends
-// IORequests on a channel to an IORunner, which handles them one at a
-// time and returns an IOResponse.
-//
-type IOMethod int
-
-const (
-	KeepGet IOMethod = iota
-	KeepPut
-)
-
-type IORequest struct {
-	method IOMethod
-	loc    string
-	data   []byte
-	reply  chan *IOResponse
-}
-
-type IOResponse struct {
-	data []byte
-	err  error
-}
-
-// A UnixVolume has the following properties:
-//
-//   root
-//       the path to the volume's root directory
-//   queue
-//       A channel of IORequests. If non-nil, all I/O requests for
-//       this volume should be queued on this channel; the result
-//       will be delivered on the IOResponse channel supplied in the
-//       request.
-//
+// A UnixVolume stores and retrieves blocks in a local directory.
 type UnixVolume struct {
-	root     string // path to this volume
-	queue    chan *IORequest
-	readonly bool
-}
-
-func (v *UnixVolume) IOHandler() {
-	for req := range v.queue {
-		var result IOResponse
-		switch req.method {
-		case KeepGet:
-			result.data, result.err = v.Read(req.loc)
-		case KeepPut:
-			result.err = v.Write(req.loc, req.data)
-		}
-		req.reply <- &result
-	}
-}
-
-func MakeUnixVolume(root string, serialize bool, readonly bool) *UnixVolume {
-	v := &UnixVolume{
-		root:     root,
-		queue:    nil,
-		readonly: readonly,
-	}
-	if serialize {
-		v.queue = make(chan *IORequest)
-		go v.IOHandler()
-	}
-	return v
-}
-
-func (v *UnixVolume) Get(loc string) ([]byte, error) {
-	if v.queue == nil {
-		return v.Read(loc)
-	}
-	reply := make(chan *IOResponse)
-	v.queue <- &IORequest{KeepGet, loc, nil, reply}
-	response := <-reply
-	return response.data, response.err
-}
-
-func (v *UnixVolume) Put(loc string, block []byte) error {
-	if v.readonly {
-		return MethodDisabledError
-	}
-	if v.queue == nil {
-		return v.Write(loc, block)
-	}
-	reply := make(chan *IOResponse)
-	v.queue <- &IORequest{KeepPut, loc, block, reply}
-	response := <-reply
-	return response.err
+	root      string // path to the volume's root directory
+	serialize bool
+	readonly  bool
+	mutex     sync.Mutex
 }
 
 func (v *UnixVolume) Touch(loc string) error {
@@ -115,6 +34,10 @@ func (v *UnixVolume) Touch(loc string) error {
 		return err
 	}
 	defer f.Close()
+	if v.serialize {
+		v.mutex.Lock()
+		defer v.mutex.Unlock()
+	}
 	if e := lockfile(f); e != nil {
 		return e
 	}
@@ -133,28 +56,32 @@ func (v *UnixVolume) Mtime(loc string) (time.Time, error) {
 	}
 }
 
-// Read retrieves a block identified by the locator string "loc", and
+// Get retrieves a block identified by the locator string "loc", and
 // returns its contents as a byte slice.
 //
-// If the block could not be opened or read, Read returns a nil slice
-// and the os.Error that was generated.
-//
-// If the block is present but its content hash does not match loc,
-// Read returns the block and a CorruptError.  It is the caller's
-// responsibility to decide what (if anything) to do with the
-// corrupted data block.
-//
-func (v *UnixVolume) Read(loc string) ([]byte, error) {
-	buf, err := ioutil.ReadFile(v.blockPath(loc))
+// If the block could not be found, opened, or read, Get returns a nil
+// slice and whatever non-nil error was returned by Stat or ReadFile.
+func (v *UnixVolume) Get(loc string) ([]byte, error) {
+	path := v.blockPath(loc)
+	if _, err := os.Stat(path); err != nil {
+		return nil, err
+	}
+	if v.serialize {
+		v.mutex.Lock()
+		defer v.mutex.Unlock()
+	}
+	buf, err := ioutil.ReadFile(path)
 	return buf, err
 }
 
-// Write stores a block of data identified by the locator string
+// Put stores a block of data identified by the locator string
 // "loc".  It returns nil on success.  If the volume is full, it
 // returns a FullError.  If the write fails due to some other error,
 // that error is returned.
-//
-func (v *UnixVolume) Write(loc string, block []byte) error {
+func (v *UnixVolume) Put(loc string, block []byte) error {
+	if v.readonly {
+		return MethodDisabledError
+	}
 	if v.IsFull() {
 		return FullError
 	}
@@ -172,8 +99,14 @@ func (v *UnixVolume) Write(loc string, block []byte) error {
 	}
 	bpath := v.blockPath(loc)
 
+	if v.serialize {
+		v.mutex.Lock()
+		defer v.mutex.Unlock()
+	}
 	if _, err := tmpfile.Write(block); err != nil {
 		log.Printf("%s: writing to %s: %s\n", v, bpath, err)
+		tmpfile.Close()
+		os.Remove(tmpfile.Name())
 		return err
 	}
 	if err := tmpfile.Close(); err != nil {
@@ -269,6 +202,10 @@ func (v *UnixVolume) Delete(loc string) error {
 
 	if v.readonly {
 		return MethodDisabledError
+	}
+	if v.serialize {
+		v.mutex.Lock()
+		defer v.mutex.Unlock()
 	}
 	p := v.blockPath(loc)
 	f, err := os.OpenFile(p, os.O_RDWR|os.O_APPEND, 0644)

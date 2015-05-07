@@ -56,14 +56,13 @@ func RunTestPullWorker(c *C) {
 
 var first_pull_list = []byte(`[
 		{
-			"locator":"locator1",
+			"locator":"acbd18db4cc2f85cedef654fccc4a4d8+3",
 			"servers":[
 				"server_1",
 				"server_2"
 		 	]
-		},
-    {
-			"locator":"locator2",
+		},{
+			"locator":"37b51d194a7513e45b56f6524f2d51f2+3",
 			"servers":[
 				"server_3"
 		 	]
@@ -72,10 +71,10 @@ var first_pull_list = []byte(`[
 
 var second_pull_list = []byte(`[
 		{
-			"locator":"locator3",
+			"locator":"73feffa4b7f6bb68e44cf984c85f6e88+3",
 			"servers":[
 				"server_1",
-        "server_2"
+				"server_2"
 		 	]
 		}
 	]`)
@@ -244,6 +243,7 @@ func performTest(testData PullWorkerTestData, c *C) {
 	testPullLists[testData.name] = testData.response_body
 
 	// Override GetContent to mock keepclient Get functionality
+	defer func(orig func(string, *keepclient.KeepClient)(io.ReadCloser, int64, string, error)) { GetContent = orig }(GetContent)
 	GetContent = func(signedLocator string, keepClient *keepclient.KeepClient) (
 		reader io.ReadCloser, contentLength int64, url string, err error) {
 
@@ -262,6 +262,7 @@ func performTest(testData PullWorkerTestData, c *C) {
 	}
 
 	// Override PutContent to mock PutBlock functionality
+	defer func(orig func([]byte, string)(error)) { PutContent = orig }(PutContent)
 	PutContent = func(content []byte, locator string) (err error) {
 		if testData.put_error {
 			err = errors.New("Error putting data")
@@ -274,8 +275,8 @@ func performTest(testData PullWorkerTestData, c *C) {
 	}
 
 	response := IssueRequest(&testData.req)
-	c.Assert(testData.response_code, Equals, response.Code)
-	c.Assert(testData.response_body, Equals, response.Body.String())
+	c.Assert(response.Code, Equals, testData.response_code)
+	c.Assert(response.Body.String(), Equals, testData.response_body)
 
 	expectWorkerChannelEmpty(c, pullq.NextItem)
 
