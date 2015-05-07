@@ -202,7 +202,8 @@ func (vs *volumeSet) Discover() int {
 // permission arguments).
 
 func main() {
-	log.Println("Keep started: pid", os.Getpid())
+	log.Println("keepstore starting, pid", os.Getpid())
+	defer log.Println("keepstore exiting, pid", os.Getpid())
 
 	var (
 		data_manager_token_file string
@@ -278,7 +279,7 @@ func main() {
 		&pidfile,
 		"pid",
 		"",
-		"Path to write pid file")
+		"Path to write pid file during startup. This file is kept open and locked with LOCK_EX until keepstore exits, so `fuser -k pidfile` is one way to shut down. Exit immediately if there is an error opening, locking, or writing the pid file.")
 	flag.IntVar(
 		&maxBuffers,
 		"max-buffers",
@@ -291,6 +292,31 @@ func main() {
 		log.Fatal("-max-buffers must be greater than zero.")
 	}
 	bufs = newBufferPool(maxBuffers, BLOCKSIZE)
+
+	if pidfile != "" {
+		f, err := os.OpenFile(pidfile, os.O_RDWR | os.O_CREATE, 0777)
+		if err != nil {
+			log.Fatalf("open pidfile (%s): %s", pidfile, err)
+		}
+		err = syscall.Flock(int(f.Fd()), syscall.LOCK_EX | syscall.LOCK_NB)
+		if err != nil {
+			log.Fatalf("flock pidfile (%s): %s", pidfile, err)
+		}
+		err = f.Truncate(0)
+		if err != nil {
+			log.Fatalf("truncate pidfile (%s): %s", pidfile, err)
+		}
+		_, err = fmt.Fprint(f, os.Getpid())
+		if err != nil {
+			log.Fatalf("write pidfile (%s): %s", pidfile, err)
+		}
+		err = f.Sync()
+		if err != nil {
+			log.Fatalf("sync pidfile (%s): %s", pidfile, err)
+		}
+		defer f.Close()
+		defer os.Remove(pidfile)
+	}
 
 	if len(volumes) == 0 {
 		if volumes.Discover() == 0 {
@@ -374,24 +400,9 @@ func main() {
 		listener.Close()
 	}(term)
 	signal.Notify(term, syscall.SIGTERM)
+	signal.Notify(term, syscall.SIGINT)
 
-	if pidfile != "" {
-		f, err := os.Create(pidfile)
-		if err == nil {
-			fmt.Fprint(f, os.Getpid())
-			f.Close()
-		} else {
-			log.Printf("Error writing pid file (%s): %s", pidfile, err.Error())
-		}
-	}
-
-	// Start listening for requests.
+	log.Println("listening at", listen)
 	srv := &http.Server{Addr: listen}
 	srv.Serve(listener)
-
-	log.Println("shutting down")
-
-	if pidfile != "" {
-		os.Remove(pidfile)
-	}
 }
