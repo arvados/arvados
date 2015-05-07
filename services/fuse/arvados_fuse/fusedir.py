@@ -511,8 +511,6 @@ class ProjectDirectory(Directory):
     def persisted(self):
         return False
 
-    def objsize(self):
-        return len(self.project_object) * 1024 if self.project_object else 0
 
 class SharedDirectory(Directory):
     """A special directory that represents users or groups who have shared projects with me."""

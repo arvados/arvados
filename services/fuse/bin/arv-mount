@@ -12,6 +12,7 @@ import time
 import arvados.commands._util as arv_cmd
 from arvados_fuse import *
 from arvados.safeapi import ThreadSafeApiCache
+import arvados.keep
 
 logger = logging.getLogger('arvados.arv-mount')
 
@@ -46,7 +47,8 @@ with "--".
     parser.add_argument('--foreground', action='store_true', help="""Run in foreground (default is to daemonize unless --exec specified)""", default=False)
     parser.add_argument('--encoding', type=str, help="Character encoding to use for filesystem, default is utf-8 (see Python codec registry for list of available encodings)", default="utf-8")
 
-    parser.add_argument('--inode-cache', type=int, help="Inode cache size (default 128MiB)", default=128*1024*1024)
+    parser.add_argument('--file-cache', type=int, help="File data cache size, in bytes (default 256MiB)", default=256*1024*1024)
+    parser.add_argument('--directory-cache', type=int, help="Directory data cache size, in bytes (default 128MiB)", default=128*1024*1024)
 
     parser.add_argument('--exec', type=str, nargs=argparse.REMAINDER,
                         dest="exec_args", metavar=('command', 'args', '...', '--'),
@@ -84,9 +86,12 @@ with "--".
 
     try:
         # Create the request handler
-        operations = Operations(os.getuid(), os.getgid(), args.encoding,
-                                arvados_fuse.InodeCache(args.inode_cache))
-        api = ThreadSafeApiCache(arvados.config.settings())
+        operations = Operations(os.getuid(),
+                                os.getgid(),
+                                encoding=args.encoding,
+                                inode_cache=InodeCache(cap=args.directory_cache))
+        api = ThreadSafeApiCache(apiconfig=arvados.config.settings(),
+                                  keep_params={"block_cache": arvados.keep.KeepBlockCache(args.file_cache)})
 
         usr = api.users().current().execute(num_retries=args.retries)
         now = time.time()
