@@ -1,13 +1,3 @@
-<script>
-function select_all_files() {
-  $(".arv-project-contents :checkbox").filter(":visible").prop("checked", true).trigger("change");
-}
-
-function unselect_all_files() {
-  $(".arv-project-contents :checkbox").filter(":visible").prop("checked", false).trigger("change");
-}
-</script>
-
 <% sortable_columns = {} if local_assigns[:sortable_columns].nil? %>
 <div class="selection-action-container">
   <div class="row">
@@ -82,8 +72,8 @@ function unselect_all_files() {
         </ul>
       </div>
       <div class="btn-group btn-group-sm">
-        <button id="select-all" type="button" class="btn btn-default" onClick="select_all_files()">Select all</button>
-        <button id="unselect-all" type="button" class="btn btn-default" onClick="unselect_all_files()">Unselect all</button>
+        <button id="select-all" type="button" class="btn btn-default" onClick="select_all_items()">Select all</button>
+        <button id="unselect-all" type="button" class="btn btn-default" onClick="unselect_all_items()">Unselect all</button>
       </div>
     </div>
     <div class="col-sm-4 pull-right">
@@ -91,7 +81,7 @@ function unselect_all_files() {
     </div>
   </div>
 
-  <table class="table table-condensed arv-index arv-project-contents arv-project-<%= tab_pane %>">
+  <table class="table table-condensed arv-index arv-selectable-items arv-project-<%= tab_pane %>">
     <colgroup>
       <col width="0*" style="max-width: fit-content;" />
       <col width="0*" style="max-width: fit-content;" />
