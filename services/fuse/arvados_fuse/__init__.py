@@ -57,59 +57,61 @@ class DirectoryHandle(object):
 
 
 class InodeCache(object):
-    def __init__(self, cap):
+    def __init__(self, cap, min_entries=4):
         self._entries = collections.OrderedDict()
         self._counter = itertools.count(1)
         self.cap = cap
         self._total = 0
+        self.min_entries = min_entries
+
+    def total(self):
+        return self._total
 
     def _remove(self, obj, clear):
         if clear and not obj.clear():
             _logger.debug("Could not clear %s in_use %s", obj, obj.in_use())
             return False
-        self._total -= obj._cache_size
-        del self._entries[obj._cache_priority]
+        self._total -= obj.cache_size
+        del self._entries[obj.cache_priority]
         _logger.debug("Cleared %s total now %i", obj, self._total)
         return True
 
     def cap_cache(self):
         _logger.debug("total is %i cap is %i", self._total, self.cap)
         if self._total > self.cap:
-            need_gc = False
             for key in list(self._entries.keys()):
-                if self._total < self.cap or len(self._entries) < 4:
+                if self._total < self.cap or len(self._entries) < self.min_entries:
                     break
                 self._remove(self._entries[key], True)
 
-
     def manage(self, obj):
         if obj.persisted():
-            obj._cache_priority = next(self._counter)
-            obj._cache_size = obj.objsize()
-            self._entries[obj._cache_priority] = obj
+            obj.cache_priority = next(self._counter)
+            obj.cache_size = obj.objsize()
+            self._entries[obj.cache_priority] = obj
             self._total += obj.objsize()
             _logger.debug("Managing %s total now %i", obj, self._total)
             self.cap_cache()
 
     def touch(self, obj):
         if obj.persisted():
-            if obj._cache_priority in self._entries:
+            if obj.cache_priority in self._entries:
                 self._remove(obj, False)
             self.manage(obj)
             _logger.debug("Touched %s (%i) total now %i", obj, obj.objsize(), self._total)
 
     def unmanage(self, obj):
-        if obj.persisted() and obj._cache_priority in self._entries:
+        if obj.persisted() and obj.cache_priority in self._entries:
             self._remove(obj, True)
 
 class Inodes(object):
     """Manage the set of inodes.  This is the mapping from a numeric id
     to a concrete File or Directory object"""
 
-    def __init__(self, inode_cache=256*1024*1024):
+    def __init__(self, inode_cache):
         self._entries = {}
         self._counter = itertools.count(llfuse.ROOT_INODE)
-        self._obj_cache = InodeCache(cap=inode_cache)
+        self.inode_cache = inode_cache
 
     def __getitem__(self, item):
         return self._entries[item]
@@ -128,19 +130,16 @@ class Inodes(object):
 
     def touch(self, entry):
         entry._atime = time.time()
-        self._obj_cache.touch(entry)
-
-    def cap_cache(self):
-        self._obj_cache.cap_cache()
+        self.inode_cache.touch(entry)
 
     def add_entry(self, entry):
         entry.inode = next(self._counter)
         self._entries[entry.inode] = entry
-        self._obj_cache.manage(entry)
+        self.inode_cache.manage(entry)
         return entry
 
     def del_entry(self, entry):
-        self._obj_cache.unmanage(entry)
+        self.inode_cache.unmanage(entry)
         llfuse.invalidate_inode(entry.inode)
         del self._entries[entry.inode]
 
@@ -157,7 +156,7 @@ class Operations(llfuse.Operations):
 
     """
 
-    def __init__(self, uid, gid, encoding="utf-8", inode_cache=1000):
+    def __init__(self, uid, gid, encoding="utf-8", inode_cache=InodeCache(cap=256*1024*1024)):
         super(Operations, self).__init__()
 
         self.inodes = Inodes(inode_cache)
@@ -278,7 +277,7 @@ class Operations(llfuse.Operations):
         if fh in self._filehandles:
             self._filehandles[fh].release()
             del self._filehandles[fh]
-        self.inodes.cap_cache()
+        self.inodes.inode_cache.cap_cache()
 
     def releasedir(self, fh):
         self.release(fh)

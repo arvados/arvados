@@ -84,7 +84,8 @@ with "--".
 
     try:
         # Create the request handler
-        operations = Operations(os.getuid(), os.getgid(), args.encoding, args.inode_cache)
+        operations = Operations(os.getuid(), os.getgid(), args.encoding,
+                                arvados_fuse.InodeCache(args.inode_cache))
         api = ThreadSafeApiCache(arvados.config.settings())
 
         usr = api.users().current().execute(num_retries=args.retries)

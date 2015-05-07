@@ -31,6 +31,8 @@ class FreshBase(object):
         self._atime = time.time()
         self._poll_time = 60
         self.use_count = 0
+        self.cache_priority = 0
+        self.cache_size = 0
 
     # Mark the value as stale
     def invalidate(self):
