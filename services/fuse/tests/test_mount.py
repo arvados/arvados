@@ -28,10 +28,10 @@ class MountTestBase(unittest.TestCase):
         self.api = arvados.safeapi.ThreadSafeApiCache(arvados.config.settings())
 
     def make_mount(self, root_class, **root_kwargs):
-        self.operations = fuse.Operations(os.getuid(), os.getgid(), inode_cache=2)
+        self.operations = fuse.Operations(os.getuid(), os.getgid())
         self.operations.inodes.add_entry(root_class(
             llfuse.ROOT_INODE, self.operations.inodes, self.api, 0, **root_kwargs))
-        llfuse.init(self.operations, self.mounttmp, ['debug'])
+        llfuse.init(self.operations, self.mounttmp, [])
         threading.Thread(None, llfuse.main).start()
         # wait until the driver is finished initializing
         self.operations.initlock.wait()

@@ -297,13 +297,13 @@ class CollectionDirectory(CollectionDirectoryBase):
                         new_collection_record["portable_data_hash"] = new_collection_record["uuid"]
                     if 'manifest_text' not in new_collection_record:
                         new_collection_record['manifest_text'] = coll_reader.manifest_text()
+
+                    if self.collection_record is None or self.collection_record["portable_data_hash"] != new_collection_record.get("portable_data_hash"):
+                        self.new_collection(new_collection_record, coll_reader)
+
+                    self._manifest_size = len(coll_reader.manifest_text())
+                    _logger.debug("%s manifest_size %i", self, self._manifest_size)
             # end with llfuse.lock_released, re-acquire lock
-
-            if self.collection_record is None or self.collection_record["portable_data_hash"] != new_collection_record["portable_data_hash"]:
-                self.new_collection(new_collection_record, coll_reader)
-
-            self._manifest_size = len(coll_reader.manifest_text())
-            _logger.debug("%s manifest_size %i", self, self._manifest_size)
 
             self.fresh()
             return True
@@ -572,8 +572,6 @@ class ProjectDirectory(Directory):
     def persisted(self):
         return False
 
-    def objsize(self):
-        return len(self.project_object) * 1024 if self.project_object else 0
 
 class SharedDirectory(Directory):
     """A special directory that represents users or groups who have shared projects with me."""
