@@ -409,7 +409,7 @@ func PullHandler(resp http.ResponseWriter, req *http.Request) {
 	var pr []PullRequest
 	r := json.NewDecoder(req.Body)
 	if err := r.Decode(&pr); err != nil {
-		http.Error(resp, BadRequestError.Error(), BadRequestError.HTTPCode)
+		http.Error(resp, err.Error(), BadRequestError.HTTPCode)
 		return
 	}
 
@@ -443,7 +443,7 @@ func TrashHandler(resp http.ResponseWriter, req *http.Request) {
 	var trash []TrashRequest
 	r := json.NewDecoder(req.Body)
 	if err := r.Decode(&trash); err != nil {
-		http.Error(resp, BadRequestError.Error(), BadRequestError.HTTPCode)
+		http.Error(resp, err.Error(), BadRequestError.HTTPCode)
 		return
 	}
 
