@@ -355,7 +355,7 @@ func main() {
 			log.Println("Running without a PermissionSecret. Block locators " +
 				"returned by this server will not be signed, and will be rejected " +
 				"by a server that enforces permissions.")
-			log.Println("To fix this, use the -permission-key-file flag " +
+			log.Println("To fix this, use the -blob-signing-key-file flag " +
 				"to specify the file containing the permission key.")
 		}
 	}
