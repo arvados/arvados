@@ -636,7 +636,7 @@ func TestPullHandler(t *testing.T) {
 			"Invalid pull request from the data manager",
 			RequestTester{"/pull", data_manager_token, "PUT", bad_json},
 			http.StatusBadRequest,
-			"Bad Request\n",
+			"",
 		},
 	}
 
@@ -740,7 +740,7 @@ func TestTrashHandler(t *testing.T) {
 			"Invalid trash list from the data manager",
 			RequestTester{"/trash", data_manager_token, "PUT", bad_json},
 			http.StatusBadRequest,
-			"Bad Request\n",
+			"",
 		},
 	}
 
@@ -798,7 +798,7 @@ func ExpectBody(
 	testname string,
 	expected_body string,
 	response *httptest.ResponseRecorder) {
-	if response.Body.String() != expected_body {
+	if expected_body != "" && response.Body.String() != expected_body {
 		t.Errorf("%s: expected response body '%s', got %+v",
 			testname, expected_body, response)
 	}
