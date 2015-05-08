@@ -38,7 +38,7 @@ function maybe_load_more_content(event) {
         }
         $container.find(".spinner").detach();
         $container.append(spinner);
-        $container.attr('data-infinite-serial', serial);
+        $container.data('data-infinite-serial', serial);
 
         if (src == $container.attr('data-infinite-content-href0')) {
             // If we're loading the first page, collect filters from
@@ -69,12 +69,12 @@ function maybe_load_more_content(event) {
             fail(function(jqxhr, status, error) {
                 var $faildiv;
                 var $container = this.container;
-                if ($container.attr('data-infinite-serial') != JSON.stringify(this.serial)) {
+                if ($container.data('data-infinite-serial') != this.serial) {
                     // A newer request is already in progress.
                     return;
                 }
                 if (jqxhr.readyState == 0 || jqxhr.status == 0) {
-                    message = "Cancelled."
+                    return;   // User may have navigated away; skip.
                 } else if (jqxhr.responseJSON && jqxhr.responseJSON.errors) {
                     message = jqxhr.responseJSON.errors.join("; ");
                 } else {
@@ -89,7 +89,7 @@ function maybe_load_more_content(event) {
                 $container.find('div.spinner').replaceWith($faildiv);
             }).
             done(function(data, status, jqxhr) {
-                if ($container.attr('data-infinite-serial') != this.serial) {
+                if ($container.data('data-infinite-serial') != this.serial) {
                     // A newer request is already in progress.
                     return;
                 }

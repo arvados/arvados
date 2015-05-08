@@ -133,7 +133,9 @@ $(document).on('arv:pane:reload', '[data-pane-content-url]', function(e) {
             var $pane = this;
             var errhtml;
             var contentType = jqxhr.getResponseHeader('Content-Type');
-            if (contentType && contentType.match(/\btext\/html\b/)) {
+            if (jqxhr.readyState == 0 || jqxhr.status == 0) {
+              return;   // User may have navigated away; skip.
+            } else if (contentType && contentType.match(/\btext\/html\b/)) {
                 var $response = $(jqxhr.responseText);
                 var $wrapper = $('div#page-wrapper', $response);
                 if ($wrapper.length) {
