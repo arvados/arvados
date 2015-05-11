@@ -13,7 +13,7 @@ class ComputeNodeShutdownActor(ShutdownActorBase):
     SLURM_END_STATES = frozenset(['down\n', 'down*\n', 'drain\n', 'fail\n'])
 
     def on_start(self):
-        arv_node = self._monitor.arvados_node.get()
+        arv_node = self._arvados_node()
         if arv_node is None:
             return super(ComputeNodeShutdownActor, self).on_start()
         else:
