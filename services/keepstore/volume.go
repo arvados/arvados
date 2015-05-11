@@ -11,6 +11,9 @@ import (
 )
 
 type Volume interface {
+	// Get a block. IFF the returned error is nil, the caller must
+	// put the returned slice back into the buffer pool when it's
+	// finished with it.
 	Get(loc string) ([]byte, error)
 	Put(loc string, block []byte) error
 	Touch(loc string) error

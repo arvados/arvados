@@ -1,5 +1,6 @@
 require 'integration_helper'
 require 'helpers/share_object_helper'
+require_relative 'integration_test_utils'
 
 class ProjectsTest < ActionDispatch::IntegrationTest
   include ShareObjectHelper
@@ -721,5 +722,112 @@ class ProjectsTest < ActionDispatch::IntegrationTest
     assert_text("API response")
     find("#page-wrapper .nav-tabs :first-child a").click
     assert_text("Collection modified at")
+  end
+
+  # "Select all" and "Unselect all" options
+  test "select all and unselect all actions" do
+    need_selenium 'to check and uncheck checkboxes'
+
+    visit page_with_token 'active', '/projects/' + api_fixture('groups')['aproject']['uuid']
+
+    # Go to "Data collections" tab and click on "Select all"
+    click_link 'Data collections'
+    wait_for_ajax
+
+    # Initially, all selection options for this tab should be disabled
+    click_button 'Selection'
+    within('.selection-action-container') do
+      assert_selector 'li.disabled', text: 'Create new collection with selected collections'
+      assert_selector 'li.disabled', text: 'Copy selected'
+    end
+
+    # Select all
+    click_button 'Select all'
+
+    assert_checkboxes_state('input[type=checkbox]', true, '"select all" should check all checkboxes')
+
+    # Now the selection options should be enabled
+    click_button 'Selection'
+    within('.selection-action-container') do
+      assert_selector 'li', text: 'Create new collection with selected collections'
+      assert_no_selector 'li.disabled', text: 'Copy selected'
+      assert_selector 'li', text: 'Create new collection with selected collections'
+      assert_no_selector 'li.disabled', text: 'Copy selected'
+    end
+
+    # Go to Jobs and pipelines tab and assert none selected
+    click_link 'Jobs and pipelines'
+    wait_for_ajax
+
+    # Since this is the first visit to this tab, all selection options should be disabled
+    click_button 'Selection'
+    within('.selection-action-container') do
+      assert_selector 'li.disabled', text: 'Create new collection with selected collections'
+      assert_selector 'li.disabled', text: 'Copy selected'
+    end
+
+    assert_checkboxes_state('input[type=checkbox]', false, '"select all" should check all checkboxes')
+
+    # Select all
+    click_button 'Select all'
+    assert_checkboxes_state('input[type=checkbox]', true, '"select all" should check all checkboxes')
+
+    # Applicable selection options should be enabled
+    click_button 'Selection'
+    within('.selection-action-container') do
+      assert_selector 'li.disabled', text: 'Create new collection with selected collections'
+      assert_selector 'li', text: 'Copy selected'
+      assert_no_selector 'li.disabled', text: 'Copy selected'
+    end
+
+    # Unselect all
+    click_button 'Unselect all'
+    assert_checkboxes_state('input[type=checkbox]', false, '"select all" should check all checkboxes')
+
+    # All selection options should be disabled again
+    click_button 'Selection'
+    within('.selection-action-container') do
+      assert_selector 'li.disabled', text: 'Create new collection with selected collections'
+      assert_selector 'li.disabled', text: 'Copy selected'
+    end
+
+    # Go back to Data collections tab and verify all are still selected
+    click_link 'Data collections'
+    wait_for_ajax
+
+    # Selection options should be enabled based on the fact that all collections are still selected in this tab
+    click_button 'Selection'
+    within('.selection-action-container') do
+      assert_selector 'li', text: 'Create new collection with selected collections'
+      assert_no_selector 'li.disabled', text: 'Copy selected'
+      assert_selector 'li', text: 'Create new collection with selected collections'
+      assert_no_selector 'li.disabled', text: 'Copy selected'
+    end
+
+    assert_checkboxes_state('input[type=checkbox]', true, '"select all" should check all checkboxes')
+
+    # Unselect all
+    find('button#unselect-all').click
+    assert_checkboxes_state('input[type=checkbox]', false, '"unselect all" should clear all checkboxes')
+
+    # Now all selection options should be disabled because none of the collections are checked
+    click_button 'Selection'
+    within('.selection-action-container') do
+      assert_selector 'li.disabled', text: 'Copy selected'
+      assert_selector 'li.disabled', text: 'Copy selected'
+    end
+
+    # Verify checking just one checkbox still works as expected
+    within('tr', text: api_fixture('collections')['collection_to_move_around_in_aproject']['name']) do
+      find('input[type=checkbox]').click
+    end
+
+    click_button 'Selection'
+    within('.selection-action-container') do
+      assert_selector 'li', text: 'Create new collection with selected collections'
+      assert_no_selector 'li.disabled', text: 'Copy selected'
+      assert_selector 'li', text: 'Create new collection with selected collections'
+      assert_no_selector 'li.disabled', text: 'Copy selected'
+    end
   end
 end
