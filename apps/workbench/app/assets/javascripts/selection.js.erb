@@ -86,3 +86,11 @@ $(document).
             on('click', dispatch_selection_action);
         $(this).trigger('selections-updated');
     });
+
+function select_all_items() {
+  $(".arv-selectable-items :checkbox").filter(":visible").prop("checked", true).trigger("change");
+}
+
+function unselect_all_items() {
+  $(".arv-selectable-items :checkbox").filter(":visible").prop("checked", false).trigger("change");
+}
