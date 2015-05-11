@@ -112,25 +112,17 @@ func GetBlockHandler(resp http.ResponseWriter, req *http.Request) {
 	}
 
 	block, err := GetBlock(hash, false)
-
-	// Garbage collect after each GET. Fixes #2865.
-	// TODO(twp): review Keep memory usage and see if there's
-	// a better way to do this than blindly garbage collecting
-	// after every block.
-	defer runtime.GC()
-
 	if err != nil {
 		// This type assertion is safe because the only errors
 		// GetBlock can return are DiskHashError or NotFoundError.
 		http.Error(resp, err.Error(), err.(*KeepError).HTTPCode)
 		return
 	}
+	defer bufs.Put(block)
 
-	resp.Header().Set("Content-Length", fmt.Sprintf("%d", len(block)))
-
-	_, err = resp.Write(block)
-
-	return
+	resp.Header().Set("Content-Length", strconv.Itoa(len(block)))
+	resp.Header().Set("Content-Type", "application/octet-stream")
+	resp.Write(block)
 }
 
 func PutBlockHandler(resp http.ResponseWriter, req *http.Request) {
@@ -159,17 +151,17 @@ func PutBlockHandler(resp http.ResponseWriter, req *http.Request) {
 		return
 	}
 
-	buf := make([]byte, req.ContentLength)
-	nread, err := io.ReadFull(req.Body, buf)
+	buf := bufs.Get(int(req.ContentLength))
+	_, err := io.ReadFull(req.Body, buf)
 	if err != nil {
 		http.Error(resp, err.Error(), 500)
-		return
-	} else if int64(nread) < req.ContentLength {
-		http.Error(resp, "request truncated", 500)
+		bufs.Put(buf)
 		return
 	}
 
 	err = PutBlock(buf, hash)
+	bufs.Put(buf)
+
 	if err != nil {
 		ke := err.(*KeepError)
 		http.Error(resp, ke.Error(), ke.HTTPCode)
@@ -178,7 +170,7 @@ func PutBlockHandler(resp http.ResponseWriter, req *http.Request) {
 
 	// Success; add a size hint, sign the locator if possible, and
 	// return it to the client.
-	return_hash := fmt.Sprintf("%s+%d", hash, len(buf))
+	return_hash := fmt.Sprintf("%s+%d", hash, req.ContentLength)
 	api_token := GetApiToken(req)
 	if PermissionSecret != nil && api_token != "" {
 		expiry := time.Now().Add(blob_signature_ttl)
@@ -417,7 +409,7 @@ func PullHandler(resp http.ResponseWriter, req *http.Request) {
 	var pr []PullRequest
 	r := json.NewDecoder(req.Body)
 	if err := r.Decode(&pr); err != nil {
-		http.Error(resp, BadRequestError.Error(), BadRequestError.HTTPCode)
+		http.Error(resp, err.Error(), BadRequestError.HTTPCode)
 		return
 	}
 
@@ -451,7 +443,7 @@ func TrashHandler(resp http.ResponseWriter, req *http.Request) {
 	var trash []TrashRequest
 	r := json.NewDecoder(req.Body)
 	if err := r.Decode(&trash); err != nil {
-		http.Error(resp, BadRequestError.Error(), BadRequestError.HTTPCode)
+		http.Error(resp, err.Error(), BadRequestError.HTTPCode)
 		return
 	}
 

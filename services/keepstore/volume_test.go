@@ -65,7 +65,9 @@ func (v *MockVolume) Get(loc string) ([]byte, error) {
 	if v.Bad {
 		return nil, errors.New("Bad volume")
 	} else if block, ok := v.Store[loc]; ok {
-		return block, nil
+		buf := bufs.Get(len(block))
+		copy(buf, block)
+		return buf, nil
 	}
 	return nil, os.ErrNotExist
 }

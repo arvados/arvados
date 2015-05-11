@@ -63,15 +63,33 @@ func (v *UnixVolume) Mtime(loc string) (time.Time, error) {
 // slice and whatever non-nil error was returned by Stat or ReadFile.
 func (v *UnixVolume) Get(loc string) ([]byte, error) {
 	path := v.blockPath(loc)
-	if _, err := os.Stat(path); err != nil {
+	stat, err := os.Stat(path)
+	if err != nil {
 		return nil, err
 	}
+	if stat.Size() < 0 {
+		return nil, os.ErrInvalid
+	} else if stat.Size() == 0 {
+		return bufs.Get(0), nil
+	} else if stat.Size() > BLOCKSIZE {
+		return nil, TooLongError
+	}
+	f, err := os.Open(path)
+	if err != nil {
+		return nil, err
+	}
+	defer f.Close()
+	buf := bufs.Get(int(stat.Size()))
 	if v.serialize {
 		v.mutex.Lock()
 		defer v.mutex.Unlock()
 	}
-	buf, err := ioutil.ReadFile(path)
-	return buf, err
+	_, err = io.ReadFull(f, buf)
+	if err != nil {
+		bufs.Put(buf)
+		return nil, err
+	}
+	return buf, nil
 }
 
 // Put stores a block of data identified by the locator string
