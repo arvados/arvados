@@ -286,6 +286,9 @@ class CollectionDirectory(Directory):
         return (self.collection_locator is not None)
 
     def objsize(self):
+        # This is an empirically-derived heuristic to estimate the memory used
+        # to store this collection's metadata.  Calculating the memory
+        # footprint directly would be more accurate, but also more complicated.
         return self._manifest_size * 128
 
 class MagicDirectory(Directory):
