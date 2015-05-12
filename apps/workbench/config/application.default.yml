@@ -139,8 +139,14 @@ common:
   default_openid_prefix: https://www.google.com/accounts/o8/id
   send_user_setup_notification_email: true
 
-  # Set user_profile_form_fields to enable and configure the user profile page.
-  # Default is set to false. A commented setting with full description is provided below.
+  # Scratch directory used by the remote repository browsing
+  # feature. If it doesn't exist, it (and any missing parents) will be
+  # created using mkdir_p.
+  repository_cache: <%= File.expand_path 'tmp/git', Rails.root %>
+
+  # Set user_profile_form_fields to enable and configure the user
+  # profile page. Default is set to false. A commented example with
+  # full description is provided below.
   user_profile_form_fields: false
 
   # Below is a sample setting of user_profile_form_fields config parameter.
@@ -203,5 +209,5 @@ common:
   # in the directory where your API server is running.
   anonymous_user_token: false
 
-  # Include Accept-Encoding header when making API requests
+  # Enable response payload compression in Arvados API requests.
   include_accept_encoding_header_in_api_requests: true

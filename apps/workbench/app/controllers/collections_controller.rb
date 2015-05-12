@@ -198,7 +198,7 @@ class CollectionsController < ApplicationController
 
     if current_user
       if Keep::Locator.parse params["uuid"]
-        @same_pdh = Collection.filter([["portable_data_hash", "=", @object.portable_data_hash]])
+        @same_pdh = Collection.filter([["portable_data_hash", "=", @object.portable_data_hash]]).limit(20)
         if @same_pdh.results.size == 1
           redirect_to collection_path(@same_pdh[0]["uuid"])
           return
@@ -206,6 +206,8 @@ class CollectionsController < ApplicationController
         owners = @same_pdh.map(&:owner_uuid).to_a.uniq
         preload_objects_for_dataclass Group, owners
         preload_objects_for_dataclass User, owners
+        uuids = @same_pdh.map(&:uuid).to_a.uniq
+        preload_links_for_objects uuids
         render 'hash_matches'
         return
       else

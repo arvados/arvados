@@ -138,6 +138,33 @@ class ProjectsControllerTest < ActionController::TestCase
     assert_equal api_fixture('users', 'subproject_admin')['uuid'], new_specimen.owner_uuid
   end
 
+  # An object which does not offer an expired_at field but has a xx_owner_uuid_name_unique constraint
+  # will be renamed when removed and another object with the same name exists in user's home project.
+  [
+    ['groups', 'subproject_in_asubproject_with_same_name_as_one_in_active_user_home'],
+    ['pipeline_templates', 'template_in_asubproject_with_same_name_as_one_in_active_user_home'],
+  ].each do |dm, fixture|
+    test "removing #{dm} from a subproject results in renaming it when there is another such object with same name in home project" do
+      object = api_fixture(dm, fixture)
+      delete(:remove_item,
+             { id: api_fixture('groups', 'asubproject')['uuid'],
+               item_uuid: object['uuid'],
+               format: 'js' },
+             session_for(:active))
+      assert_response :success
+      assert_match(/\b#{object['uuid']}\b/, @response.body,
+                   "removed object not named in response")
+      use_token :active
+      if dm.eql?('groups')
+        found = Group.find(object['uuid'])
+      else
+        found = PipelineTemplate.find(object['uuid'])
+      end
+      assert_equal api_fixture('users', 'active')['uuid'], found.owner_uuid
+      assert_equal true, found.name.include?(object['name'] + ' removed from ')
+    end
+  end
+
   test 'projects#show tab infinite scroll partial obeys limit' do
     get_contents_rows(limit: 1, filters: [['uuid','is_a',['arvados#job']]])
     assert_response :success

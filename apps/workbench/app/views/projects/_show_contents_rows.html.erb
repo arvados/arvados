@@ -27,7 +27,7 @@
 
     <td>
       <% if object.respond_to?(:name) %>
-        <%= render_editable_attribute (name_link || object), 'name', nil, {tiptitle: 'rename'} %>
+        <%= render_editable_attribute (name_link || object), 'name', nil, {}, {tiptitle: 'rename'} %>
       <% end %>
     </td>
 

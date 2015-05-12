@@ -19,6 +19,7 @@ module ShareObjectHelper
       # Otherwise, the not-included assertions might falsely pass because
       # the modal hasn't loaded yet.
       find(".selectable", text: name).click
+      assert_text "Only #{share_type} you are allowed to access are shown"
       assert(has_no_selector?(".modal-dialog-preview-pane"),
              "preview pane available in sharing dialog")
       if share_type == 'users' and obj and obj['email']

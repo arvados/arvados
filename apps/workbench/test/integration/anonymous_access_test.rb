@@ -23,8 +23,8 @@ class AnonymousAccessTest < ActionDispatch::IntegrationTest
       end
       within('.navbar-fixed-top') do
         assert_selector 'a', text: Rails.configuration.site_name.downcase
-        assert_selector 'a', text: "#{user['email']}"
-        find('a', text: "#{user['email']}").click
+        assert(page.has_link?("notifications-menu"), 'no user menu')
+        page.find("#notifications-menu").click
         within('.dropdown-menu') do
           assert_selector 'a', text: 'Log out'
         end
@@ -62,8 +62,8 @@ class AnonymousAccessTest < ActionDispatch::IntegrationTest
     assert_selector 'a', text: 'Data collections'
     assert_selector 'a', text: 'Jobs and pipelines'
     assert_selector 'a', text: 'Pipeline templates'
+    assert_selector 'a', text: 'Subprojects'
     assert_selector 'a', text: 'Advanced'
-    assert_no_selector 'a', text: 'Subprojects'
     assert_no_selector 'a', text: 'Other objects'
     assert_no_selector 'button', text: 'Add data'
 
@@ -183,6 +183,19 @@ class AnonymousAccessTest < ActionDispatch::IntegrationTest
     assert_no_selector 'a', text: 'Run this pipeline'
   end
 
+  test "anonymous user accesses subprojects tab in shared project" do
+    visit PUBLIC_PROJECT + '#Subprojects'
+
+    assert_text 'Subproject in anonymous accessible project'
+
+    within first('tr[data-kind="arvados#group"]') do
+      click_link 'Show'
+    end
+
+    # in subproject
+    assert_text 'Description for subproject in anonymous accessible project'
+  end
+
   [
     ['pipeline_in_publicly_accessible_project', true],
     ['pipeline_in_publicly_accessible_project_but_other_objects_elsewhere', false],
@@ -198,9 +211,11 @@ class AnonymousAccessTest < ActionDispatch::IntegrationTest
       if pipeline_page
         object = api_fixture('pipeline_instances')[fixture]
         page = "/pipeline_instances/#{object['uuid']}"
+        expect_log_text = "Log for foo"
       else      # job
         object = api_fixture('jobs')[fixture]
         page = "/jobs/#{object['uuid']}"
+        expect_log_text = "stderr crunchstat"
       end
 
       if user
@@ -213,30 +228,29 @@ class AnonymousAccessTest < ActionDispatch::IntegrationTest
       click_link 'foo' if pipeline_page
 
       if objects_readable
+        assert_selector 'a[href="#Log"]', text: 'Log'
+        assert_no_selector 'a[data-toggle="disabled"]', text: 'Log'
+        assert_no_text 'Output data not available'
         if pipeline_page
           assert_text 'This pipeline was created from'
           assert_selector 'a', text: object['components']['foo']['job']['uuid']
+          # We'd like to test the Log tab on job pages too, but we can't right
+          # now because Poltergeist 1.x doesn't support JavaScript's
+          # Function.prototype.bind, which is used by job_log_graph.js.
+          click_link "Log"
+          assert_text expect_log_text
         end
-        assert_no_text 'Output data not available'
-        assert_selector 'a[href="#Log"]', text: 'Log'
-        assert_no_selector 'a[data-toggle="disabled"]', text: 'Log'
       else
+        assert_selector 'a[data-toggle="disabled"]', text: 'Log'
+        assert_text 'Output data not available'
+        assert_text object['job']
         if pipeline_page
           assert_no_text 'This pipeline was created from'  # template is not readable
           assert_no_selector 'a', text: object['components']['foo']['job']['uuid']
         end
+        click_link "Log"
         assert_text 'Output data not available'
-        assert_text object['job']
-        assert_selector 'a[data-toggle="disabled"]', text: 'Log'
-      end
-
-      click_link 'Log'
-      if objects_readable
-        assert_no_text 'foo'  # should be in Log tab
-        assert_text 'stderr crunchstat'   if pipeline_page
-      else
-        assert_text 'foo'     # Log tab disabled and hence still in first tab
-        assert_no_text 'stderr crunchstat'  # log line shouldn't be seen
+        assert_no_text expect_log_text
       end
     end
   end

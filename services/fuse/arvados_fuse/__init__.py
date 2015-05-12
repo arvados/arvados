@@ -198,12 +198,11 @@ class Operations(llfuse.Operations):
 
     """
 
-    def __init__(self, uid, gid,
-                 encoding="utf-8",
-                 inode_cache=InodeCache(cap=256*1024*1024),
-                 num_retries=4):
+    def __init__(self, uid, gid, encoding="utf-8", inode_cache=None, num_retries=4):
         super(Operations, self).__init__()
 
+        if not inode_cache:
+            inode_cache = InodeCache(cap=256*1024*1024)
         self.inodes = Inodes(inode_cache)
         self.uid = uid
         self.gid = gid

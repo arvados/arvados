@@ -101,3 +101,41 @@ log_line_for_pipeline_in_publicly_accessible_project_but_other_objects_elsewhere
   updated_at: 2014-11-07 23:33:42.347455000 Z
   modified_at: 2014-11-07 23:33:42.347455000 Z
   object_owner_uuid: zzzzz-j7d0g-v955i6s2oi1cbso
+
+crunchstat_for_previous_job:
+  id: 10
+  uuid: zzzzz-57u5n-eir3aesha3kaene
+  owner_uuid: zzzzz-tpzed-xurymjxw79nv3jz
+  modified_by_client_uuid: zzzzz-ozdt8-obw7foaks3qjyej
+  modified_by_user_uuid: zzzzz-tpzed-xurymjxw79nv3jz
+  object_uuid: zzzzz-8i9sb-cjs4pklxxjykqqq
+  event_at: 2014-11-07 23:33:42.347455000 Z
+  event_type: stderr
+  summary: ~
+  properties:
+    text: '2014-11-07_23:33:41 zzzzz-8i9sb-cjs4pklxxjykqqq 11592 1 stderr crunchstat:
+      cpu 1935.4300 user 59.4100 sys 8 cpus -- interval 10.0002 seconds 12.9900 user
+      0.9900 sys'
+  created_at: 2014-11-07 23:33:42.351913000 Z
+  updated_at: 2014-11-07 23:33:42.347455000 Z
+  modified_at: 2014-11-07 23:33:42.347455000 Z
+  object_owner_uuid: zzzzz-j7d0g-xurymjxw79nv3jz
+
+crunchstat_for_ancient_job:
+  id: 11
+  uuid: zzzzz-57u5n-ixioph7ieb5ung8
+  owner_uuid: zzzzz-tpzed-xurymjxw79nv3jz
+  modified_by_client_uuid: zzzzz-ozdt8-obw7foaks3qjyej
+  modified_by_user_uuid: zzzzz-tpzed-xurymjxw79nv3jz
+  object_uuid: zzzzz-8i9sb-ahd7cie8jah9qui
+  event_at: 2013-11-07 23:33:42.347455000 Z
+  event_type: stderr
+  summary: ~
+  properties:
+    text: '2013-11-07_23:33:41 zzzzz-8i9sb-ahd7cie8jah9qui 29610 1 stderr crunchstat:
+      cpu 1935.4300 user 59.4100 sys 8 cpus -- interval 10.0002 seconds 12.9900 user
+      0.9900 sys'
+  created_at: 2013-11-07 23:33:42.351913000 Z
+  updated_at: 2013-11-07 23:33:42.347455000 Z
+  modified_at: 2013-11-07 23:33:42.347455000 Z
+  object_owner_uuid: zzzzz-j7d0g-xurymjxw79nv3jz

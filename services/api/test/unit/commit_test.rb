@@ -75,6 +75,66 @@ class CommitTest < ActiveSupport::TestCase
     assert $?.success?
   end
 
+  # In active/shabranchnames, "7387838c69a21827834586cc42b467ff6c63293b" is
+  # both a commit hash, and the name of a branch that begins from that same
+  # commit.
+  COMMIT_BRANCH_NAME = "7387838c69a21827834586cc42b467ff6c63293b"
+  # A commit that appears in the branch after 7387838c.
+  COMMIT_BRANCH_COMMIT_2 = "abec49829bf1758413509b7ffcab32a771b71e81"
+  # "738783" is another branch that starts from the above commit.
+  SHORT_COMMIT_BRANCH_NAME = COMMIT_BRANCH_NAME[0, 6]
+  # A commit that appears in branch 738783 after 7387838c.
+  SHORT_BRANCH_COMMIT_2 = "77e1a93093663705a63bb4d505698047e109dedd"
+
+  test "find_commit_range min_version prefers commits over branch names" do
+    assert_equal([COMMIT_BRANCH_NAME],
+                 Commit.find_commit_range("active/shabranchnames",
+                                          COMMIT_BRANCH_NAME, nil, nil))
+  end
+
+  test "find_commit_range max_version prefers commits over branch names" do
+    assert_equal([COMMIT_BRANCH_NAME],
+                 Commit.find_commit_range("active/shabranchnames",
+                                          nil, COMMIT_BRANCH_NAME, nil))
+  end
+
+  test "find_commit_range min_version with short branch name" do
+    assert_equal([SHORT_BRANCH_COMMIT_2],
+                 Commit.find_commit_range("active/shabranchnames",
+                                          SHORT_COMMIT_BRANCH_NAME, nil, nil))
+  end
+
+  test "find_commit_range max_version with short branch name" do
+    assert_equal([SHORT_BRANCH_COMMIT_2],
+                 Commit.find_commit_range("active/shabranchnames",
+                                          nil, SHORT_COMMIT_BRANCH_NAME, nil))
+  end
+
+  test "find_commit_range min_version with disambiguated branch name" do
+    assert_equal([COMMIT_BRANCH_COMMIT_2],
+                 Commit.find_commit_range("active/shabranchnames",
+                                          "heads/#{COMMIT_BRANCH_NAME}",
+                                          nil, nil))
+  end
+
+  test "find_commit_range max_version with disambiguated branch name" do
+    assert_equal([COMMIT_BRANCH_COMMIT_2],
+                 Commit.find_commit_range("active/shabranchnames", nil,
+                                          "heads/#{COMMIT_BRANCH_NAME}", nil))
+  end
+
+  test "find_commit_range min_version with unambiguous short name" do
+    assert_equal([COMMIT_BRANCH_NAME],
+                 Commit.find_commit_range("active/shabranchnames",
+                                          COMMIT_BRANCH_NAME[0..-2], nil, nil))
+  end
+
+  test "find_commit_range max_version with unambiguous short name" do
+    assert_equal([COMMIT_BRANCH_NAME],
+                 Commit.find_commit_range("active/shabranchnames", nil,
+                                          COMMIT_BRANCH_NAME[0..-2], nil))
+  end
+
   test "find_commit_range laundry list" do
     authorize_with :active
 

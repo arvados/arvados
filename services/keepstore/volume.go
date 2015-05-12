@@ -5,16 +5,20 @@
 package main
 
 import (
+	"io"
 	"sync/atomic"
 	"time"
 )
 
 type Volume interface {
+	// Get a block. IFF the returned error is nil, the caller must
+	// put the returned slice back into the buffer pool when it's
+	// finished with it.
 	Get(loc string) ([]byte, error)
 	Put(loc string, block []byte) error
 	Touch(loc string) error
 	Mtime(loc string) (time.Time, error)
-	Index(prefix string) string
+	IndexTo(prefix string, writer io.Writer) error
 	Delete(loc string) error
 	Status() *VolumeStatus
 	String() string
@@ -69,7 +73,7 @@ func (vm *RRVolumeManager) NextWritable() Volume {
 		return nil
 	}
 	i := atomic.AddUint32(&vm.counter, 1)
-	return vm.writables[i % uint32(len(vm.writables))]
+	return vm.writables[i%uint32(len(vm.writables))]
 }
 
 func (vm *RRVolumeManager) Close() {

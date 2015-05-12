@@ -1,5 +1,6 @@
 #!/usr/bin/env python
 
+from __future__ import print_function
 import argparse
 import atexit
 import httplib2
@@ -41,6 +42,7 @@ if not os.path.exists(TEST_TMPDIR):
     os.mkdir(TEST_TMPDIR)
 
 my_api_host = None
+_cached_config = {}
 
 def find_server_pid(PID_PATH, wait=10):
     now = time.time()
@@ -178,6 +180,13 @@ def run(leave_running_atexit=False):
             '-subj', '/CN=0.0.0.0'],
         stdout=sys.stderr)
 
+    # Install the git repository fixtures.
+    gitdir = os.path.join(SERVICES_SRC_DIR, 'api', 'tmp', 'git')
+    gittarball = os.path.join(SERVICES_SRC_DIR, 'api', 'test', 'test.git.tar')
+    if not os.path.isdir(gitdir):
+        os.makedirs(gitdir)
+    subprocess.check_output(['tar', '-xC', gitdir, '-f', gittarball])
+
     port = find_available_port()
     env = os.environ.copy()
     env['RAILS_ENV'] = 'test'
@@ -258,13 +267,14 @@ def _start_keep(n, keep_args):
     keep_cmd = ["keepstore",
                 "-volume={}".format(keep0),
                 "-listen=:{}".format(port),
-                "-pid={}".format("{}/keep{}.pid".format(TEST_TMPDIR, n))]
+                "-pid="+_pidfile('keep{}'.format(n))]
 
     for arg, val in keep_args.iteritems():
         keep_cmd.append("{}={}".format(arg, val))
 
-    kp0 = subprocess.Popen(keep_cmd)
-    with open("{}/keep{}.pid".format(TEST_TMPDIR, n), 'w') as f:
+    kp0 = subprocess.Popen(
+        keep_cmd, stdin=open('/dev/null'), stdout=sys.stderr)
+    with open(_pidfile('keep{}'.format(n)), 'w') as f:
         f.write(str(kp0.pid))
 
     with open("{}/keep{}.volume".format(TEST_TMPDIR, n), 'w') as f:
@@ -307,7 +317,7 @@ def run_keep(blob_signing_key=None, enforce_permissions=False):
         }).execute()
 
 def _stop_keep(n):
-    kill_server_pid("{}/keep{}.pid".format(TEST_TMPDIR, n), 0)
+    kill_server_pid(_pidfile('keep{}'.format(n)), 0)
     if os.path.exists("{}/keep{}.volume".format(TEST_TMPDIR, n)):
         with open("{}/keep{}.volume".format(TEST_TMPDIR, n), 'r') as r:
             shutil.rmtree(r.read(), True)
@@ -320,6 +330,8 @@ def stop_keep():
     _stop_keep(1)
 
 def run_keep_proxy():
+    if 'ARVADOS_TEST_PROXY_SERVICES' in os.environ:
+        return
     stop_keep_proxy()
 
     admin_token = auth_token('admin')
@@ -328,9 +340,9 @@ def run_keep_proxy():
     env['ARVADOS_API_TOKEN'] = admin_token
     kp = subprocess.Popen(
         ['keepproxy',
-         '-pid={}/keepproxy.pid'.format(TEST_TMPDIR),
+         '-pid='+_pidfile('keepproxy'),
          '-listen=:{}'.format(port)],
-        env=env)
+        env=env, stdin=open('/dev/null'), stdout=sys.stderr)
 
     api = arvados.api(
         version='v1',
@@ -347,9 +359,100 @@ def run_keep_proxy():
         'service_ssl_flag': False,
     }}).execute()
     os.environ["ARVADOS_KEEP_PROXY"] = "http://localhost:{}".format(port)
+    _setport('keepproxy', port)
 
 def stop_keep_proxy():
-    kill_server_pid(os.path.join(TEST_TMPDIR, "keepproxy.pid"), 0)
+    if 'ARVADOS_TEST_PROXY_SERVICES' in os.environ:
+        return
+    kill_server_pid(_pidfile('keepproxy'), wait=0)
+
+def run_arv_git_httpd():
+    if 'ARVADOS_TEST_PROXY_SERVICES' in os.environ:
+        return
+    stop_arv_git_httpd()
+
+    gitdir = os.path.join(SERVICES_SRC_DIR, 'api', 'tmp', 'git')
+    gitport = find_available_port()
+    env = os.environ.copy()
+    env.pop('ARVADOS_API_TOKEN', None)
+    agh = subprocess.Popen(
+        ['arv-git-httpd',
+         '-repo-root='+gitdir+'/test',
+         '-address=:'+str(gitport)],
+        env=env, stdin=open('/dev/null'), stdout=sys.stderr)
+    with open(_pidfile('arv-git-httpd'), 'w') as f:
+        f.write(str(agh.pid))
+    _setport('arv-git-httpd', gitport)
+
+def stop_arv_git_httpd():
+    if 'ARVADOS_TEST_PROXY_SERVICES' in os.environ:
+        return
+    kill_server_pid(_pidfile('arv-git-httpd'), wait=0)
+
+def run_nginx():
+    if 'ARVADOS_TEST_PROXY_SERVICES' in os.environ:
+        return
+    nginxconf = {}
+    nginxconf['KEEPPROXYPORT'] = _getport('keepproxy')
+    nginxconf['KEEPPROXYSSLPORT'] = find_available_port()
+    nginxconf['GITPORT'] = _getport('arv-git-httpd')
+    nginxconf['GITSSLPORT'] = find_available_port()
+    nginxconf['SSLCERT'] = os.path.join(SERVICES_SRC_DIR, 'api', 'tmp', 'self-signed.pem')
+    nginxconf['SSLKEY'] = os.path.join(SERVICES_SRC_DIR, 'api', 'tmp', 'self-signed.key')
+
+    conftemplatefile = os.path.join(MY_DIRNAME, 'nginx.conf')
+    conffile = os.path.join(TEST_TMPDIR, 'nginx.conf')
+    with open(conffile, 'w') as f:
+        f.write(re.sub(
+            r'{{([A-Z]+)}}',
+            lambda match: str(nginxconf.get(match.group(1))),
+            open(conftemplatefile).read()))
+
+    env = os.environ.copy()
+    env['PATH'] = env['PATH']+':/sbin:/usr/sbin:/usr/local/sbin'
+    nginx = subprocess.Popen(
+        ['nginx',
+         '-g', 'error_log stderr info;',
+         '-g', 'pid '+_pidfile('nginx')+';',
+         '-c', conffile],
+        env=env, stdin=open('/dev/null'), stdout=sys.stderr)
+    _setport('keepproxy-ssl', nginxconf['KEEPPROXYSSLPORT'])
+    _setport('arv-git-httpd-ssl', nginxconf['GITSSLPORT'])
+
+def stop_nginx():
+    if 'ARVADOS_TEST_PROXY_SERVICES' in os.environ:
+        return
+    kill_server_pid(_pidfile('nginx'), wait=0)
+
+def _pidfile(program):
+    return os.path.join(TEST_TMPDIR, program + '.pid')
+
+def _portfile(program):
+    return os.path.join(TEST_TMPDIR, program + '.port')
+
+def _setport(program, port):
+    with open(_portfile(program), 'w') as f:
+        f.write(str(port))
+
+# Returns 9 if program is not up.
+def _getport(program):
+    try:
+        return int(open(_portfile(program)).read())
+    except IOError:
+        return 9
+
+def _apiconfig(key):
+    if _cached_config:
+        return _cached_config[key]
+    def _load(f):
+        return yaml.load(os.path.join(SERVICES_SRC_DIR, 'api', 'config', f))
+    cdefault = _load('application.default.yml')
+    csite = _load('application.yml')
+    _cached_config = {}
+    for section in [cdefault.get('common',{}), cdefault.get('test',{}),
+                    csite.get('common',{}), csite.get('test',{})]:
+        _cached_config.update(section)
+    return _cached_config[key]
 
 def fixture(fix):
     '''load a fixture yaml file'''
@@ -431,14 +534,21 @@ class TestCaseWithServers(unittest.TestCase):
 
 
 if __name__ == "__main__":
-    actions = ['start', 'stop',
-               'start_keep', 'stop_keep',
-               'start_keep_proxy', 'stop_keep_proxy']
+    actions = [
+        'start', 'stop',
+        'start_keep', 'stop_keep',
+        'start_keep_proxy', 'stop_keep_proxy',
+        'start_arv-git-httpd', 'stop_arv-git-httpd',
+        'start_nginx', 'stop_nginx',
+    ]
     parser = argparse.ArgumentParser()
     parser.add_argument('action', type=str, help="one of {}".format(actions))
     parser.add_argument('--auth', type=str, metavar='FIXTURE_NAME', help='Print authorization info for given api_client_authorizations fixture')
     args = parser.parse_args()
 
+    if args.action not in actions:
+        print("Unrecognized action '{}'. Actions are: {}.".format(args.action, actions), file=sys.stderr)
+        sys.exit(1)
     if args.action == 'start':
         stop(force=('ARVADOS_TEST_API_HOST' not in os.environ))
         run(leave_running_atexit=True)
@@ -460,5 +570,13 @@ if __name__ == "__main__":
         run_keep_proxy()
     elif args.action == 'stop_keep_proxy':
         stop_keep_proxy()
+    elif args.action == 'start_arv-git-httpd':
+        run_arv_git_httpd()
+    elif args.action == 'stop_arv-git-httpd':
+        stop_arv_git_httpd()
+    elif args.action == 'start_nginx':
+        run_nginx()
+    elif args.action == 'stop_nginx':
+        stop_nginx()
     else:
-        print("Unrecognized action '{}'. Actions are: {}.".format(args.action, actions))
+        raise Exception("action recognized but not implemented!?")

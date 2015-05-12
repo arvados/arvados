@@ -14,9 +14,15 @@ require 'tmpdir'
 module GitTestHelper
   def self.included base
     base.setup do
-      @tmpdir = Dir.mktmpdir()
-      system("tar", "-xC", @tmpdir, "-f", "test/test.git.tar")
+      # Extract the test repository data into the default test
+      # environment's Rails.configuration.git_repositories_dir. (We
+      # don't use that config setting here, though: it doesn't seem
+      # worth the risk of stepping on a real git repo root.)
+      @tmpdir = Rails.root.join 'tmp', 'git'
+      FileUtils.mkdir_p @tmpdir
+      system("tar", "-xC", @tmpdir.to_s, "-f", "test/test.git.tar")
       Rails.configuration.git_repositories_dir = "#{@tmpdir}/test"
+
       intdir = Rails.configuration.git_internal_dir
       if not File.exist? intdir
         FileUtils.mkdir_p intdir

@@ -165,7 +165,11 @@ module ApplicationHelper
       if opts[:no_link] or (resource_class == User && !current_user)
         raw(link_name)
       else
-        (link_to raw(link_name), { controller: resource_class.to_s.tableize, action: 'show', id: ((opts[:name_link].andand.uuid) || link_uuid) }, style_opts) + raw(tags)
+        controller_class = resource_class.to_s.tableize
+        if controller_class.eql?('groups') and object.andand.group_class.eql?('project')
+          controller_class = 'projects'
+        end
+        (link_to raw(link_name), { controller: controller_class, action: 'show', id: ((opts[:name_link].andand.uuid) || link_uuid) }, style_opts) + raw(tags)
       end
     else
       # just return attrvalue if it is not recognizable as an Arvados object or uuid.
@@ -178,7 +182,7 @@ module ApplicationHelper
   end
 
   def link_to_arvados_object_if_readable(attrvalue, link_text_if_not_readable, opts={})
-    resource_class = resource_class_for_uuid(attrvalue.split('/')[0]) if attrvalue
+    resource_class = resource_class_for_uuid(attrvalue.split('/')[0]) if attrvalue.is_a?(String)
     if !resource_class
       return link_to_if_arvados_object attrvalue, opts
     end
@@ -218,7 +222,10 @@ module ApplicationHelper
     return_value
   end
 
-  def render_editable_attribute(object, attr, attrvalue=nil, htmloptions={})
+  # Render an editable attribute with the attrvalue of the attr.
+  # The htmloptions are added to the editable element's list of attributes.
+  # The nonhtml_options are only used to customize the display of the element.
+  def render_editable_attribute(object, attr, attrvalue=nil, htmloptions={}, nonhtml_options={})
     attrvalue = object.send(attr) if attrvalue.nil?
     if not object.attribute_editable?(attr)
       if attrvalue && attrvalue.length > 0
@@ -270,11 +277,16 @@ module ApplicationHelper
       "id" => span_id,
       :class => "editable #{is_textile?( object, attr ) ? 'editable-textile' : ''}"
     }.merge(htmloptions).merge(ajax_options)
+
     edit_tiptitle = 'edit'
     edit_tiptitle = 'Warning: do not use hyphens in the repository name as they will be stripped' if (object.class.to_s == 'Repository' and attr == 'name')
-    edit_button = raw('<a href="#" class="btn btn-xs btn-default btn-nodecorate" data-toggle="x-editable tooltip" data-toggle-selector="#' + span_id + '" data-placement="top" title="' + (htmloptions[:tiptitle] || edit_tiptitle) + '"><i class="fa fa-fw fa-pencil"></i></a>')
-    if htmloptions[:btnplacement] == :left
+
+    edit_button = raw('<a href="#" class="btn btn-xs btn-' + (nonhtml_options[:btnclass] || 'default') + ' btn-nodecorate" data-toggle="x-editable tooltip" data-toggle-selector="#' + span_id + '" data-placement="top" title="' + (nonhtml_options[:tiptitle] || edit_tiptitle) + '"><i class="fa fa-fw fa-pencil"></i>' + (nonhtml_options[:btntext] || '') + '</a>')
+
+    if nonhtml_options[:btnplacement] == :left
       edit_button + ' ' + span_tag
+    elsif nonhtml_options[:btnplacement] == :top
+      edit_button + raw('<br/>') + span_tag
     else
       span_tag + ' ' + edit_button
     end
@@ -364,11 +376,11 @@ module ApplicationHelper
            success: 'page-refresh'
          }.to_json,
         })
-      is_readable_input = attrvalue.present? and object_readable attrvalue, Collection
+
       return content_tag('div', :class => 'input-group') do
         html = text_field_tag(dn, display_value,
                               :class =>
-                              "form-control #{'required' if required} #{'unreadable-input' if !attrvalue.andand.empty? and !is_readable_input}")
+                              "form-control #{'required' if required} #{'unreadable-input' if attrvalue.present? and !object_readable(attrvalue, Collection)}")
         html + content_tag('span', :class => 'input-group-btn') do
           link_to('Choose',
                   modal_path,

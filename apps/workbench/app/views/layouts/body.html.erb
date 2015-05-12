@@ -47,9 +47,13 @@
             <li class="dropdown notification-menu">
               <a href="#" class="dropdown-toggle" data-toggle="dropdown" id="notifications-menu">
                 <span class="badge badge-alert notification-count"><%= user_notifications.length if user_notifications.any? %></span>
-                <%= current_user.email %> <span class="caret"></span>
+                <span class="fa fa-lg fa-user"></span>
+                <span class="caret"></span>
               </a>
               <ul class="dropdown-menu" role="menu">
+                <li role="presentation" class="dropdown-header">
+                  <%= current_user.email %>
+                </li>
                 <% if current_user.is_active %>
                 <li role="menuitem"><a href="/projects/<%=current_user.uuid%>" role="menuitem"><i class="fa fa-home fa-fw"></i> Home project </a></li>
                 <li role="menuitem"><a href="/manage_account" role="menuitem"><i class="fa fa-key fa-fw"></i> Manage account</a></li>
@@ -72,6 +76,7 @@
               <li class="dropdown">
                 <a href="#" class="dropdown-toggle" data-toggle="dropdown" id="system-menu">
                   <span class="fa fa-lg fa-gear"></span>
+                  <span class="caret"></span>
                 </a>
                 <ul class="dropdown-menu" role="menu">
                   <li role="presentation" class="dropdown-header">
@@ -127,8 +132,12 @@
           <li class="dropdown help-menu">
             <a href="#" class="dropdown-toggle" data-toggle="dropdown" id="arv-help">
               <span class="fa fa-lg fa-question-circle"></span>
+              <span class="caret"></span>
             </a>
             <ul class="dropdown-menu">
+              <li role="presentation" class="dropdown-header">
+                Help
+              </li>
               <li>
               <%= link_to raw('<i class="fa fa-fw fa-info"></i> Getting Started ...'), "#",
                    {'data-toggle' => "modal", 'data-target' => '#getting-started-modal-window'}  %>

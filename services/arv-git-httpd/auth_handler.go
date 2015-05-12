@@ -52,7 +52,7 @@ func (h *authHandler) ServeHTTP(wOrig http.ResponseWriter, r *http.Request) {
 			w.WriteHeader(statusCode)
 			w.Write([]byte(statusText))
 		}
-		log.Println(quoteStrings(r.RemoteAddr, username, password, wroteStatus, statusText, repoName, r.URL.Path)...)
+		log.Println(quoteStrings(r.RemoteAddr, username, password, wroteStatus, statusText, repoName, r.Method, r.URL.Path)...)
 	}()
 
 	// HTTP request username is logged, but unused. Password is an
@@ -60,7 +60,7 @@ func (h *authHandler) ServeHTTP(wOrig http.ResponseWriter, r *http.Request) {
 	username, password, ok := BasicAuth(r)
 	if !ok || username == "" || password == "" {
 		statusCode, statusText = http.StatusUnauthorized, "no credentials provided"
-		w.Header().Add("WWW-Authenticate", "basic")
+		w.Header().Add("WWW-Authenticate", "Basic realm=\"git\"")
 		return
 	}
 
@@ -87,7 +87,7 @@ func (h *authHandler) ServeHTTP(wOrig http.ResponseWriter, r *http.Request) {
 	arv.ApiToken = password
 	reposFound := arvadosclient.Dict{}
 	if err := arv.List("repositories", arvadosclient.Dict{
-		"filters": [][]string{[]string{"name", "=", repoName}},
+		"filters": [][]string{{"name", "=", repoName}},
 	}, &reposFound); err != nil {
 		statusCode, statusText = http.StatusInternalServerError, err.Error()
 		return

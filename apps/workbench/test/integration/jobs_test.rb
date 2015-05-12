@@ -98,7 +98,7 @@ class JobsTest < ActionDispatch::IntegrationTest
       # that the error message says something appropriate for that
       # situation.
       if expect_options && use_latest
-        assert_text "Script version #{job['supplied_script_version']} does not resolve to a commit"
+        assert_text "077ba2ad3ea24a929091a9e6ce545c93199b8e57"
       else
         assert_text "Script version #{job['script_version']} does not resolve to a commit"
       end

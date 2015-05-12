@@ -154,7 +154,16 @@ module Keep
             stream_name = unescape token
           elsif in_file_tokens or not Locator.valid? token
             in_file_tokens = true
-            yield [stream_name] + split_file_token(token)
+
+            file_tokens = split_file_token(token)
+            stream_name_adjuster = ''
+            if file_tokens[2].include?('/')                # '/' in filename
+              parts = file_tokens[2].rpartition('/')
+              stream_name_adjuster = parts[1] + parts[0]   # /dir_parts
+              file_tokens[2] = parts[2]
+            end
+
+            yield [stream_name + stream_name_adjuster] + file_tokens
           end
         end
       end

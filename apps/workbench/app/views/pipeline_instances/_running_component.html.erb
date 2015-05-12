@@ -96,6 +96,15 @@
         <div class="row">
           <div class="col-md-6">
             <table>
+              <% # link to repo tree/file only if the repo is readable
+                 # and the commit is a sha1...
+                 repo =
+                 (/^[0-9a-f]{40}$/ =~ current_component[:script_version] and
+                 Repository.where(name: current_component[:repository]).first)
+
+                 # ...and the api server provides an http:// or https:// url
+                 repo = nil unless repo.andand.http_fetch_url
+                 %>
               <% [:script, :repository, :script_version, :supplied_script_version, :nondeterministic].each do |k| %>
                 <tr>
                   <td style="padding-right: 1em">
@@ -104,6 +113,12 @@
                   <td>
                     <% if current_component[k].nil? %>
                       (none)
+                    <% elsif repo and k == :repository %>
+                      <%= link_to current_component[k], show_repository_tree_path(id: repo.uuid, commit: current_component[:script_version], path: '/') %>
+                    <% elsif repo and k == :script %>
+                      <%= link_to current_component[k], show_repository_blob_path(id: repo.uuid, commit: current_component[:script_version], path: 'crunch_scripts/'+current_component[:script]) %>
+                    <% elsif repo and k == :script_version %>
+                      <%= link_to current_component[k], show_repository_commit_path(id: repo.uuid, commit: current_component[:script_version]) %>
                     <% else %>
                       <%= current_component[k] %>
                     <% end %>

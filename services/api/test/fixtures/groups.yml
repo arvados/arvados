@@ -127,6 +127,14 @@ anonymously_accessible_project:
   group_class: project
   description: An anonymously accessible project
 
+subproject_in_anonymous_accessible_project:
+  uuid: zzzzz-j7d0g-mhtfesvgmkolpyf
+  owner_uuid: zzzzz-j7d0g-zhxawtyetzwc5f0
+  created_at: 2014-04-21 15:37:48 -0400
+  name: Subproject in anonymous accessible project
+  description: Description for subproject in anonymous accessible project
+  group_class: project
+
 active_user_has_can_manage:
   uuid: zzzzz-j7d0g-ptt1ou6a9lxrv07
   owner_uuid: zzzzz-tpzed-d9tiejq69daie8f
@@ -247,4 +255,30 @@ project_owns_itself:
   name: zzzzz-j7d0g-7rqh7hdshd5yp5t
   description: ~
   updated_at: 2014-11-05 22:31:24.258093171 Z
+  group_class: project
+
+# Used to test renaming when removed from the "asubproject" while
+# another such object with same name exists in home project.
+subproject_in_active_user_home_project_to_test_unique_key_violation:
+  uuid: zzzzz-j7d0g-subprojsamenam1
+  owner_uuid: zzzzz-tpzed-xurymjxw79nv3jz
+  created_at: 2013-04-21 15:37:48 -0400
+  modified_by_client_uuid: zzzzz-ozdt8-brczlopd8u8d0jr
+  modified_by_user_uuid: zzzzz-tpzed-xurymjxw79nv3jz
+  modified_at: 2013-04-21 15:37:48 -0400
+  updated_at: 2013-04-21 15:37:48 -0400
+  name: Subproject to test owner uuid and name unique key violation upon removal
+  description: Subproject in active user home project to test owner uuid and name unique key violation upon removal
+  group_class: project
+
+subproject_in_asubproject_with_same_name_as_one_in_active_user_home:
+  uuid: zzzzz-j7d0g-subprojsamenam2
+  owner_uuid: zzzzz-j7d0g-axqo7eu9pwvna1x
+  created_at: 2013-04-21 15:37:48 -0400
+  modified_by_client_uuid: zzzzz-ozdt8-brczlopd8u8d0jr
+  modified_by_user_uuid: zzzzz-tpzed-xurymjxw79nv3jz
+  modified_at: 2013-04-21 15:37:48 -0400
+  updated_at: 2013-04-21 15:37:48 -0400
+  name: Subproject to test owner uuid and name unique key violation upon removal
+  description: "Removing this will result in name conflict with 'A project' in Home project and hence get renamed."
   group_class: project

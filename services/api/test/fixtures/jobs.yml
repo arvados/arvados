@@ -7,6 +7,8 @@ running:
   created_at: <%= 3.minute.ago.to_s(:db) %>
   started_at: <%= 3.minute.ago.to_s(:db) %>
   finished_at: ~
+  script: hash
+  repository: active/foo
   script_version: 1de84a854e2b440dc53bf42f8548afa4c17da332
   running: true
   success: ~
@@ -31,6 +33,8 @@ running_cancelled:
   created_at: <%= 4.minute.ago.to_s(:db) %>
   started_at: <%= 3.minute.ago.to_s(:db) %>
   finished_at: ~
+  script: hash
+  repository: active/foo
   script_version: 1de84a854e2b440dc53bf42f8548afa4c17da332
   running: true
   success: ~
@@ -56,6 +60,8 @@ uses_nonexistent_script_version:
   created_at: <%= 5.minute.ago.to_s(:db) %>
   started_at: <%= 3.minute.ago.to_s(:db) %>
   finished_at: <%= 2.minute.ago.to_s(:db) %>
+  script: hash
+  repository: active/foo
   running: false
   success: true
   output: d41d8cd98f00b204e9800998ecf8427e+0
@@ -157,6 +163,7 @@ runningbarbaz:
 previous_job_run:
   uuid: zzzzz-8i9sb-cjs4pklxxjykqqq
   created_at: <%= 14.minute.ago.to_s(:db) %>
+  finished_at: <%= 13.minutes.ago.to_s(:db) %>
   owner_uuid: zzzzz-tpzed-xurymjxw79nv3jz
   repository: active/foo
   script: hash
@@ -165,6 +172,23 @@ previous_job_run:
     input: fa7aeb5140e2848d39b416daeef4ffc5+45
     an_integer: "1"
   success: true
+  log: d41d8cd98f00b204e9800998ecf8427e+0
+  output: ea10d51bcf88862dbcc36eb292017dfd+45
+  state: Complete
+
+previous_ancient_job_run:
+  uuid: zzzzz-8i9sb-ahd7cie8jah9qui
+  created_at: <%= 366.days.ago.to_s(:db) %>
+  finished_at: <%= 365.days.ago.to_s(:db) %>
+  owner_uuid: zzzzz-tpzed-xurymjxw79nv3jz
+  repository: active/foo
+  script: hash
+  script_version: 4fe459abe02d9b365932b8f5dc419439ab4e2577
+  script_parameters:
+    input: fa7aeb5140e2848d39b416daeef4ffc5+45
+    an_integer: "2"
+  success: true
+  log: d41d8cd98f00b204e9800998ecf8427e+0
   output: ea10d51bcf88862dbcc36eb292017dfd+45
   state: Complete
 
@@ -179,10 +203,27 @@ previous_docker_job_run:
     input: fa7aeb5140e2848d39b416daeef4ffc5+45
     an_integer: "1"
   runtime_constraints:
-    docker_image: arvados/test
+    docker_image: arvados/apitestfixture
   success: true
   output: ea10d51bcf88862dbcc36eb292017dfd+45
   docker_image_locator: fa3c1a9cb6783f85f2ecda037e07b8c3+167
+  state: Complete
+
+previous_ancient_docker_image_job_run:
+  uuid: zzzzz-8i9sb-t3b460aolxxuldl
+  created_at: <%= 144.minute.ago.to_s(:db) %>
+  owner_uuid: zzzzz-tpzed-xurymjxw79nv3jz
+  repository: active/foo
+  script: hash
+  script_version: 4fe459abe02d9b365932b8f5dc419439ab4e2577
+  script_parameters:
+    input: fa7aeb5140e2848d39b416daeef4ffc5+45
+    an_integer: "2"
+  runtime_constraints:
+    docker_image: arvados/apitestfixture
+  success: true
+  output: ea10d51bcf88862dbcc36eb292017dfd+45
+  docker_image_locator: b519d9cb706a29fc7ea24dbea2f05851+93
   state: Complete
 
 previous_job_run_with_arvados_sdk_version:
@@ -197,7 +238,9 @@ previous_job_run_with_arvados_sdk_version:
     an_integer: "1"
   runtime_constraints:
     arvados_sdk_version: commit2
+    docker_image: arvados/apitestfixture
   arvados_sdk_version: 00634b2b8a492d6f121e3cf1d6587b821136a9a7
+  docker_image_locator: fa3c1a9cb6783f85f2ecda037e07b8c3+167
   success: true
   output: ea10d51bcf88862dbcc36eb292017dfd+45
   state: Complete
@@ -214,6 +257,20 @@ previous_job_run_no_output:
     an_integer: "2"
   success: true
   output: ~
+  state: Complete
+
+previous_job_run_superseded_by_hash_branch:
+  # This supplied_script_version is a branch name with later commits.
+  uuid: zzzzz-8i9sb-aeviezu5dahph3e
+  created_at: <%= 15.minute.ago.to_s(:db) %>
+  owner_uuid: zzzzz-tpzed-xurymjxw79nv3jz
+  repository: active/shabranchnames
+  script: testscript
+  script_version: 7387838c69a21827834586cc42b467ff6c63293b
+  supplied_script_version: 738783
+  script_parameters: {}
+  success: true
+  output: d41d8cd98f00b204e9800998ecf8427e+0
   state: Complete
 
 nondeterminisic_job_run:

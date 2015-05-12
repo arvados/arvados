@@ -737,7 +737,7 @@ class ArvadosFile(object):
             raise IOError(errno.EINVAL, "truncate() does not support extending the file size")
 
     def readfrom(self, offset, size, num_retries, exact=False):
-        """Read upto `size` bytes from the file starting at `offset`.
+        """Read up to `size` bytes from the file starting at `offset`.
 
         :exact:
          If False (default), return less data than requested if the read
@@ -924,7 +924,7 @@ class ArvadosFileReader(ArvadosFileReaderBase):
                 rd = self.arvadosfile.readfrom(self._filepos, config.KEEP_BLOCK_SIZE, num_retries)
             return ''.join(data)
         else:
-            data = self.arvadosfile.readfrom(self._filepos, size, num_retries)
+            data = self.arvadosfile.readfrom(self._filepos, size, num_retries, exact=True)
             self._filepos += len(data)
             return data
 
