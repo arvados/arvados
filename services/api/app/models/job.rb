@@ -11,8 +11,8 @@ class Job < ArvadosModel
   before_validation :set_priority
   before_validation :update_state_from_old_state_attrs
   validate :ensure_script_version_is_commit
-  validate :find_arvados_sdk_version
   validate :find_docker_image_locator
+  validate :find_arvados_sdk_version
   validate :validate_status
   validate :validate_state_change
   validate :ensure_no_collection_uuids_in_script_params
@@ -205,6 +205,10 @@ class Job < ArvadosModel
   end
 
   def find_docker_image_locator
+    runtime_constraints['docker_image'] =
+        Rails.configuration.default_docker_image_for_jobs if ((runtime_constraints.is_a? Hash) and
+                                                              (runtime_constraints['docker_image']).nil? and
+                                                              Rails.configuration.default_docker_image_for_jobs)
     resolve_runtime_constraint("docker_image",
                                :docker_image_locator) do |image_search|
       image_tag = runtime_constraints['docker_image_tag']

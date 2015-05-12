@@ -15,6 +15,7 @@ import (
 	"os"
 	"os/signal"
 	"reflect"
+	"regexp"
 	"sync"
 	"syscall"
 	"time"
@@ -297,6 +298,8 @@ var BadAuthorizationHeader = errors.New("Missing or invalid Authorization header
 var ContentLengthMismatch = errors.New("Actual length != expected content length")
 var MethodNotSupported = errors.New("Method not supported")
 
+var removeHint, _ = regexp.Compile("\\+K@[a-z0-9]{5}(\\+|$)")
+
 func (this GetBlockHandler) ServeHTTP(resp http.ResponseWriter, req *http.Request) {
 	SetCorsHeaders(resp)
 
@@ -328,6 +331,8 @@ func (this GetBlockHandler) ServeHTTP(resp http.ResponseWriter, req *http.Reques
 	kc.Arvados = &arvclient
 
 	var reader io.ReadCloser
+
+	locator = removeHint.ReplaceAllString(locator, "$1")
 
 	switch req.Method {
 	case "HEAD":

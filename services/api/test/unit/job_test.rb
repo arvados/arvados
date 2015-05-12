@@ -78,6 +78,36 @@ class JobTest < ActiveSupport::TestCase
     assert(job.invalid?, "Job with bad Docker tag valid")
   end
 
+  [
+    false,
+    true
+  ].each do |use_config|
+    test "Job with no Docker image uses default docker image when configuration is set #{use_config}" do
+      default_docker_image = collections(:docker_image)[:portable_data_hash]
+      Rails.configuration.default_docker_image_for_jobs = default_docker_image if use_config
+
+      job = Job.new job_attrs
+      assert job.valid?, job.errors.full_messages.to_s
+
+      if use_config
+        refute_nil job.docker_image_locator
+        assert_equal default_docker_image, job.docker_image_locator
+      else
+        assert_nil job.docker_image_locator
+      end
+    end
+  end
+
+  test "create a job with a disambiguated script_version branch name" do
+    job = Job.
+      new(script: "testscript",
+          script_version: "heads/7387838c69a21827834586cc42b467ff6c63293b",
+          repository: "active/shabranchnames",
+          script_parameters: {})
+    assert(job.save)
+    assert_equal("abec49829bf1758413509b7ffcab32a771b71e81", job.script_version)
+  end
+
   test "locate a Docker image with a partial hash" do
     image_hash = links(:docker_image_collection_hash).name[0..24]
     job = Job.new job_attrs(runtime_constraints:

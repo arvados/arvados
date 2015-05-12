@@ -300,8 +300,10 @@ class PipelineInstancesController < ApplicationController
             value = tv[:value]
           elsif tv[:default]
             value = tv[:default]
+          else
+            value = ''
           end
-          if value
+          if value.present?
             split = value.split '/'
             if CollectionsHelper.match(split[0])
               input_pdhs << split[0]

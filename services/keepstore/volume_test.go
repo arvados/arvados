@@ -3,6 +3,7 @@ package main
 import (
 	"errors"
 	"fmt"
+	"io"
 	"os"
 	"strings"
 	"sync"
@@ -14,15 +15,15 @@ type MockVolume struct {
 	Store      map[string][]byte
 	Timestamps map[string]time.Time
 	// Bad volumes return an error for every operation.
-	Bad        bool
+	Bad bool
 	// Touchable volumes' Touch() method succeeds for a locator
 	// that has been Put().
-	Touchable  bool
+	Touchable bool
 	// Readonly volumes return an error for Put, Delete, and
 	// Touch.
-	Readonly   bool
-	called     map[string]int
-	mutex      sync.Mutex
+	Readonly bool
+	called   map[string]int
+	mutex    sync.Mutex
 }
 
 // CreateMockVolume returns a non-Bad, non-Readonly, Touchable mock
@@ -64,7 +65,9 @@ func (v *MockVolume) Get(loc string) ([]byte, error) {
 	if v.Bad {
 		return nil, errors.New("Bad volume")
 	} else if block, ok := v.Store[loc]; ok {
-		return block, nil
+		buf := bufs.Get(len(block))
+		copy(buf, block)
+		return buf, nil
 	}
 	return nil, os.ErrNotExist
 }
@@ -107,16 +110,19 @@ func (v *MockVolume) Mtime(loc string) (time.Time, error) {
 	return mtime, err
 }
 
-func (v *MockVolume) Index(prefix string) string {
-	v.gotCall("Index")
-	var result string
+func (v *MockVolume) IndexTo(prefix string, w io.Writer) error {
+	v.gotCall("IndexTo")
 	for loc, block := range v.Store {
-		if IsValidLocator(loc) && strings.HasPrefix(loc, prefix) {
-			result = result + fmt.Sprintf("%s+%d %d\n",
-				loc, len(block), 123456789)
+		if !IsValidLocator(loc) || !strings.HasPrefix(loc, prefix) {
+			continue
+		}
+		_, err := fmt.Fprintf(w, "%s+%d %d\n",
+			loc, len(block), 123456789)
+		if err != nil {
+			return err
 		}
 	}
-	return result
+	return nil
 }
 
 func (v *MockVolume) Delete(loc string) error {
@@ -125,7 +131,7 @@ func (v *MockVolume) Delete(loc string) error {
 		return MethodDisabledError
 	}
 	if _, ok := v.Store[loc]; ok {
-		if time.Since(v.Timestamps[loc]) < permission_ttl {
+		if time.Since(v.Timestamps[loc]) < blob_signature_ttl {
 			return nil
 		}
 		delete(v.Store, loc)

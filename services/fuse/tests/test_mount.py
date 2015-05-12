@@ -243,8 +243,7 @@ class FuseSharedTest(MountTestBase):
         # directory)
         fuse_user_objs = os.listdir(os.path.join(self.mounttmp, 'FUSE User'))
         fuse_user_objs.sort()
-        self.assertEqual(['Empty collection.link',                # permission link on collection
-                          'FUSE Test Project',                    # project owned by user
+        self.assertEqual(['FUSE Test Project',                    # project owned by user
                           'collection #1 owned by FUSE',          # collection owned by user
                           'collection #2 owned by FUSE',          # collection owned by user
                           'pipeline instance owned by FUSE.pipelineInstance',  # pipeline instance owned by user

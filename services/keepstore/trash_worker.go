@@ -14,30 +14,34 @@ import (
 */
 
 func RunTrashWorker(trashq *WorkQueue) {
-	nextItem := trashq.NextItem
-	for item := range nextItem {
+	for item := range trashq.NextItem {
 		trashRequest := item.(TrashRequest)
-		err := TrashItem(trashRequest)
-		if err != nil {
-			log.Printf("Trash request error for %s: %s", trashRequest, err)
-		}
+		TrashItem(trashRequest)
 	}
 }
 
-/*
-	Delete the block indicated by the Locator in TrashRequest.
-*/
-func TrashItem(trashRequest TrashRequest) (err error) {
-	// Verify if the block is to be deleted based on its Mtime
+// TrashItem deletes the indicated block from every writable volume.
+func TrashItem(trashRequest TrashRequest) {
+	reqMtime := time.Unix(trashRequest.BlockMtime, 0)
+	if time.Since(reqMtime) < blob_signature_ttl {
+		log.Printf("WARNING: data manager asked to delete a %v old block %v (BlockMtime %d = %v), but my blob_signature_ttl is %v! Skipping.",
+			time.Since(reqMtime),
+			trashRequest.Locator,
+			trashRequest.BlockMtime,
+			reqMtime,
+			blob_signature_ttl)
+		return
+	}
 	for _, volume := range KeepVM.AllWritable() {
 		mtime, err := volume.Mtime(trashRequest.Locator)
 		if err != nil || trashRequest.BlockMtime != mtime.Unix() {
 			continue
 		}
-		currentTime := time.Now().Unix()
-		if time.Duration(currentTime-trashRequest.BlockMtime)*time.Second >= permission_ttl {
-			err = volume.Delete(trashRequest.Locator)
+		err = volume.Delete(trashRequest.Locator)
+		if err != nil {
+			log.Printf("%v Delete(%v): %v", volume, trashRequest.Locator, err)
+			continue
 		}
+		log.Printf("%v Delete(%v) OK", volume, trashRequest.Locator)
 	}
-	return
 }

@@ -1,18 +1,9 @@
 require 'integration_helper'
+require_relative 'integration_test_utils'
 
 class CollectionsTest < ActionDispatch::IntegrationTest
   setup do
     need_javascript
-  end
-
-  # check_checkboxes_state asserts that the page holds at least one
-  # checkbox matching 'selector', and that all matching checkboxes
-  # are in state 'checkbox_status' (i.e. checked if true, unchecked otherwise)
-  def assert_checkboxes_state(selector, checkbox_status, msg=nil)
-    assert page.has_selector?(selector)
-    page.all(selector).each do |checkbox|
-      assert(checkbox.checked? == checkbox_status, msg)
-    end
   end
 
   test "Can copy a collection to a project" do
@@ -212,7 +203,7 @@ class CollectionsTest < ActionDispatch::IntegrationTest
   end
 
   test "Collection portable data hash with multiple matches" do
-    pdh = api_fixture('collections')['baz_file']['portable_data_hash']
+    pdh = api_fixture('collections')['foo_file']['portable_data_hash']
     visit page_with_token('admin', "/collections/#{pdh}")
 
     matches = api_fixture('collections').select {|k,v| v["portable_data_hash"] == pdh}
@@ -221,8 +212,22 @@ class CollectionsTest < ActionDispatch::IntegrationTest
     matches.each do |k,v|
       assert page.has_link?(v["name"]), "Page /collections/#{pdh} should contain link '#{v['name']}'"
     end
-    assert page.has_no_text?("Activity")
-    assert page.has_no_text?("Sharing and permissions")
+    assert_text 'The following collections have this content:'
+    assert_no_text 'more results are not shown'
+    assert_no_text 'Activity'
+    assert_no_text 'Sharing and permissions'
+  end
+
+  test "Collection portable data hash with multiple matches with more than one page of results" do
+    pdh = api_fixture('collections')['baz_file']['portable_data_hash']
+    visit page_with_token('admin', "/collections/#{pdh}")
+
+    assert_selector 'a', text: 'Collection_1'
+
+    assert_text 'The following collections have this content:'
+    assert_text 'more results are not shown'
+    assert_no_text 'Activity'
+    assert_no_text 'Sharing and permissions'
   end
 
   test "Filtering collection files by regexp" do

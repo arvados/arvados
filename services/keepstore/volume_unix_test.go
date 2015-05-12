@@ -15,19 +15,20 @@ func TempUnixVolume(t *testing.T, serialize bool, readonly bool) *UnixVolume {
 	if err != nil {
 		t.Fatal(err)
 	}
-	return MakeUnixVolume(d, serialize, readonly)
+	return &UnixVolume{
+		root:      d,
+		serialize: serialize,
+		readonly:  readonly,
+	}
 }
 
 func _teardown(v *UnixVolume) {
-	if v.queue != nil {
-		close(v.queue)
-	}
 	os.RemoveAll(v.root)
 }
 
-// store writes a Keep block directly into a UnixVolume, for testing
-// UnixVolume methods.
-//
+// _store writes a Keep block directly into a UnixVolume, bypassing
+// the overhead and safeguards of Put(). Useful for storing bogus data
+// and isolating unit tests from Put() behavior.
 func _store(t *testing.T, vol *UnixVolume, filename string, block []byte) {
 	blockdir := fmt.Sprintf("%s/%s", vol.root, filename[:3])
 	if err := os.MkdirAll(blockdir, 0755); err != nil {

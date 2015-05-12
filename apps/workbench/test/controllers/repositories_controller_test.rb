@@ -69,7 +69,6 @@ class RepositoriesControllerTest < ActionController::TestCase
 
   [:active, :spectator].each do |user|
     test "show tree to #{user}" do
-      skip "git2 is unreliable" if Repository.disable_repository_browsing?
       reset_api_fixtures_after_test false
       sha1, _, _ = stub_repo_content
       get :show_tree, {
@@ -86,7 +85,6 @@ class RepositoriesControllerTest < ActionController::TestCase
     end
 
     test "show commit to #{user}" do
-      skip "git2 is unreliable" if Repository.disable_repository_browsing?
       reset_api_fixtures_after_test false
       sha1, commit, _ = stub_repo_content
       get :show_commit, {
@@ -98,7 +96,6 @@ class RepositoriesControllerTest < ActionController::TestCase
     end
 
     test "show blob to #{user}" do
-      skip "git2 is unreliable" if Repository.disable_repository_browsing?
       reset_api_fixtures_after_test false
       sha1, _, filedata = stub_repo_content filename: 'COPYING'
       get :show_blob, {
@@ -113,7 +110,6 @@ class RepositoriesControllerTest < ActionController::TestCase
 
   ['', '/'].each do |path|
     test "show tree with path '#{path}'" do
-      skip "git2 is unreliable" if Repository.disable_repository_browsing?
       reset_api_fixtures_after_test false
       sha1, _, _ = stub_repo_content filename: 'COPYING'
       get :show_tree, {

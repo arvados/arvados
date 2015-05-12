@@ -86,11 +86,19 @@ var reportedStatFile = map[string]string{}
 // cgroup root for the given statgroup. (This will avoid falling back
 // to host-level stats during container setup and teardown.)
 func OpenStatFile(cgroup Cgroup, statgroup string, stat string) (*os.File, error) {
-	var paths = []string{
-		fmt.Sprintf("%s/%s/%s/%s/%s", cgroup.root, statgroup, cgroup.parent, cgroup.cid, stat),
-		fmt.Sprintf("%s/%s/%s/%s", cgroup.root, cgroup.parent, cgroup.cid, stat),
-		fmt.Sprintf("%s/%s/%s", cgroup.root, statgroup, stat),
-		fmt.Sprintf("%s/%s", cgroup.root, stat),
+	var paths []string
+	if cgroup.cid != "" {
+		// Collect container's stats
+		paths = []string{
+			fmt.Sprintf("%s/%s/%s/%s/%s", cgroup.root, statgroup, cgroup.parent, cgroup.cid, stat),
+			fmt.Sprintf("%s/%s/%s/%s", cgroup.root, cgroup.parent, cgroup.cid, stat),
+		}
+	} else {
+		// Collect this host's stats
+		paths = []string{
+			fmt.Sprintf("%s/%s/%s", cgroup.root, statgroup, stat),
+			fmt.Sprintf("%s/%s", cgroup.root, stat),
+		}
 	}
 	var path string
 	var file *os.File
@@ -110,12 +118,14 @@ func OpenStatFile(cgroup Cgroup, statgroup string, stat string) (*os.File, error
 		// whether we happen to collect stats [a] before any
 		// processes have been created in the container and
 		// [b] after all contained processes have exited.
-		reportedStatFile[stat] = path
 		if path == "" {
-			statLog.Printf("error finding stats file: stat %s, statgroup %s, cid %s, parent %s, root %s\n", stat, statgroup, cgroup.cid, cgroup.parent, cgroup.root)
+			statLog.Printf("notice: stats not available: stat %s, statgroup %s, cid %s, parent %s, root %s\n", stat, statgroup, cgroup.cid, cgroup.parent, cgroup.root)
+		} else if ok {
+			statLog.Printf("notice: stats moved from %s to %s\n", reportedStatFile[stat], path)
 		} else {
-			statLog.Printf("error reading stats from %s\n", path)
+			statLog.Printf("notice: reading stats from %s\n", path)
 		}
+		reportedStatFile[stat] = path
 	}
 	return file, err
 }

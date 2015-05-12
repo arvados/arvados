@@ -39,22 +39,25 @@ var PROC_MOUNTS = "/proc/mounts"
 
 // enforce_permissions controls whether permission signatures
 // should be enforced (affecting GET and DELETE requests).
-// Initialized by the --enforce-permissions flag.
+// Initialized by the -enforce-permissions flag.
 var enforce_permissions bool
 
-// permission_ttl is the time duration for which new permission
+// blob_signature_ttl is the time duration for which new permission
 // signatures (returned by PUT requests) will be valid.
-// Initialized by the --permission-ttl flag.
-var permission_ttl time.Duration
+// Initialized by the -permission-ttl flag.
+var blob_signature_ttl time.Duration
 
 // data_manager_token represents the API token used by the
 // Data Manager, and is required on certain privileged operations.
-// Initialized by the --data-manager-token-file flag.
+// Initialized by the -data-manager-token-file flag.
 var data_manager_token string
 
 // never_delete can be used to prevent the DELETE handler from
 // actually deleting anything.
 var never_delete = false
+
+var maxBuffers = 128
+var bufs *bufferPool
 
 // ==========
 // Error types.
@@ -75,7 +78,8 @@ var (
 	NotFoundError       = &KeepError{404, "Not Found"}
 	GenericError        = &KeepError{500, "Fail"}
 	FullError           = &KeepError{503, "Full"}
-	TooLongError        = &KeepError{504, "Timeout"}
+	SizeRequiredError   = &KeepError{411, "Missing Content-Length"}
+	TooLongError        = &KeepError{413, "Block is too large"}
 	MethodDisabledError = &KeepError{405, "Method disabled"}
 )
 
@@ -109,6 +113,7 @@ var (
 	flagSerializeIO bool
 	flagReadonly    bool
 )
+
 type volumeSet []Volume
 
 func (vs *volumeSet) Set(value string) error {
@@ -127,7 +132,11 @@ func (vs *volumeSet) Set(value string) error {
 	if _, err := os.Stat(value); err != nil {
 		return err
 	}
-	*vs = append(*vs, MakeUnixVolume(value, flagSerializeIO, flagReadonly))
+	*vs = append(*vs, &UnixVolume{
+		root:      value,
+		serialize: flagSerializeIO,
+		readonly:  flagReadonly,
+	})
 	return nil
 }
 
@@ -193,12 +202,13 @@ func (vs *volumeSet) Discover() int {
 // permission arguments).
 
 func main() {
-	log.Println("Keep started: pid", os.Getpid())
+	log.Println("keepstore starting, pid", os.Getpid())
+	defer log.Println("keepstore exiting, pid", os.Getpid())
 
 	var (
 		data_manager_token_file string
 		listen                  string
-		permission_key_file     string
+		blob_signing_key_file   string
 		permission_ttl_sec      int
 		volumes                 volumeSet
 		pidfile                 string
@@ -226,17 +236,27 @@ func main() {
 		"If set, nothing will be deleted. HTTP 405 will be returned "+
 			"for valid DELETE requests.")
 	flag.StringVar(
-		&permission_key_file,
+		&blob_signing_key_file,
 		"permission-key-file",
 		"",
+		"Synonym for -blob-signing-key-file.")
+	flag.StringVar(
+		&blob_signing_key_file,
+		"blob-signing-key-file",
+		"",
 		"File containing the secret key for generating and verifying "+
-			"permission signatures.")
+			"blob permission signatures.")
 	flag.IntVar(
 		&permission_ttl_sec,
 		"permission-ttl",
-		1209600,
-		"Expiration time (in seconds) for newly generated permission "+
-			"signatures.")
+		0,
+		"Synonym for -blob-signature-ttl.")
+	flag.IntVar(
+		&permission_ttl_sec,
+		"blob-signature-ttl",
+		int(time.Duration(2*7*24*time.Hour).Seconds()),
+		"Lifetime of blob permission signatures. "+
+			"See services/api/config/application.default.yml.")
 	flag.BoolVar(
 		&flagSerializeIO,
 		"serialize",
@@ -259,9 +279,44 @@ func main() {
 		&pidfile,
 		"pid",
 		"",
-		"Path to write pid file")
+		"Path to write pid file during startup. This file is kept open and locked with LOCK_EX until keepstore exits, so `fuser -k pidfile` is one way to shut down. Exit immediately if there is an error opening, locking, or writing the pid file.")
+	flag.IntVar(
+		&maxBuffers,
+		"max-buffers",
+		maxBuffers,
+		fmt.Sprintf("Maximum RAM to use for data buffers, given in multiples of block size (%d MiB). When this limit is reached, HTTP requests requiring buffers (like GET and PUT) will wait for buffer space to be released.", BLOCKSIZE>>20))
 
 	flag.Parse()
+
+	if maxBuffers < 0 {
+		log.Fatal("-max-buffers must be greater than zero.")
+	}
+	bufs = newBufferPool(maxBuffers, BLOCKSIZE)
+
+	if pidfile != "" {
+		f, err := os.OpenFile(pidfile, os.O_RDWR | os.O_CREATE, 0777)
+		if err != nil {
+			log.Fatalf("open pidfile (%s): %s", pidfile, err)
+		}
+		err = syscall.Flock(int(f.Fd()), syscall.LOCK_EX | syscall.LOCK_NB)
+		if err != nil {
+			log.Fatalf("flock pidfile (%s): %s", pidfile, err)
+		}
+		err = f.Truncate(0)
+		if err != nil {
+			log.Fatalf("truncate pidfile (%s): %s", pidfile, err)
+		}
+		_, err = fmt.Fprint(f, os.Getpid())
+		if err != nil {
+			log.Fatalf("write pidfile (%s): %s", pidfile, err)
+		}
+		err = f.Sync()
+		if err != nil {
+			log.Fatalf("sync pidfile (%s): %s", pidfile, err)
+		}
+		defer f.Close()
+		defer os.Remove(pidfile)
+	}
 
 	if len(volumes) == 0 {
 		if volumes.Discover() == 0 {
@@ -283,28 +338,25 @@ func main() {
 			log.Fatalf("reading data manager token: %s\n", err)
 		}
 	}
-	if permission_key_file != "" {
-		if buf, err := ioutil.ReadFile(permission_key_file); err == nil {
+	if blob_signing_key_file != "" {
+		if buf, err := ioutil.ReadFile(blob_signing_key_file); err == nil {
 			PermissionSecret = bytes.TrimSpace(buf)
 		} else {
 			log.Fatalf("reading permission key: %s\n", err)
 		}
 	}
 
-	// Initialize permission TTL
-	permission_ttl = time.Duration(permission_ttl_sec) * time.Second
+	blob_signature_ttl = time.Duration(permission_ttl_sec) * time.Second
 
-	// If --enforce-permissions is true, we must have a permission key
-	// to continue.
 	if PermissionSecret == nil {
 		if enforce_permissions {
-			log.Fatal("--enforce-permissions requires a permission key")
+			log.Fatal("-enforce-permissions requires a permission key")
 		} else {
 			log.Println("Running without a PermissionSecret. Block locators " +
 				"returned by this server will not be signed, and will be rejected " +
 				"by a server that enforces permissions.")
-			log.Println("To fix this, run Keep with --permission-key-file=<path> " +
-				"to define the location of a file containing the permission key.")
+			log.Println("To fix this, use the -blob-signing-key-file flag " +
+				"to specify the file containing the permission key.")
 		}
 	}
 
@@ -348,24 +400,9 @@ func main() {
 		listener.Close()
 	}(term)
 	signal.Notify(term, syscall.SIGTERM)
+	signal.Notify(term, syscall.SIGINT)
 
-	if pidfile != "" {
-		f, err := os.Create(pidfile)
-		if err == nil {
-			fmt.Fprint(f, os.Getpid())
-			f.Close()
-		} else {
-			log.Printf("Error writing pid file (%s): %s", pidfile, err.Error())
-		}
-	}
-
-	// Start listening for requests.
+	log.Println("listening at", listen)
 	srv := &http.Server{Addr: listen}
 	srv.Serve(listener)
-
-	log.Println("shutting down")
-
-	if pidfile != "" {
-		os.Remove(pidfile)
-	}
 }

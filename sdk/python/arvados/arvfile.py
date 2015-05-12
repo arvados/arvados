@@ -703,7 +703,7 @@ class ArvadosFile(object):
                     # segment is past the trucate size, all done
                     break
                 elif size < range_end:
-                    nr = Range(r.locator, r.range_start, size - r.range_start)
+                    nr = Range(r.locator, r.range_start, size - r.range_start, 0)
                     nr.segment_offset = r.segment_offset
                     new_segs.append(nr)
                     break
@@ -715,8 +715,15 @@ class ArvadosFile(object):
         elif size > self.size():
             raise IOError("truncate() does not support extending the file size")
 
-    def readfrom(self, offset, size, num_retries):
-        """Read upto `size` bytes from the file starting at `offset`."""
+
+    def readfrom(self, offset, size, num_retries, exact=False):
+        """Read up to `size` bytes from the file starting at `offset`.
+
+        :exact:
+         If False (default), return less data than requested if the read
+         crosses a block boundary and the next block isn't cached.  If True,
+         only return less data than requested when hitting EOF.
+        """
 
         with self.lock:
             if size == 0 or offset >= self.size():
@@ -729,7 +736,7 @@ class ArvadosFile(object):
 
         data = []
         for lr in readsegs:
-            block = self.parent._my_block_manager().get_block_contents(lr.locator, num_retries=num_retries, cache_only=bool(data))
+            block = self.parent._my_block_manager().get_block_contents(lr.locator, num_retries=num_retries, cache_only=(bool(data) and not exact))
             if block:
                 data.append(block[lr.segment_offset:lr.segment_offset+lr.segment_size])
             else:
@@ -816,7 +823,7 @@ class ArvadosFile(object):
         """Internal implementation of add_segment."""
         self._modified = True
         for lr in locators_and_ranges(blocks, pos, size):
-            last = self._segments[-1] if self._segments else Range(0, 0, 0)
+            last = self._segments[-1] if self._segments else Range(0, 0, 0, 0)
             r = Range(lr.locator, last.range_start+last.range_size, lr.segment_size, lr.segment_offset)
             self._segments.append(r)
 
@@ -868,7 +875,7 @@ class ArvadosFileReader(ArvadosFileReaderBase):
     @retry_method
     def read(self, size, num_retries=None):
         """Read up to `size` bytes from the stream, starting at the current file position."""
-        data = self.arvadosfile.readfrom(self._filepos, size, num_retries)
+        data = self.arvadosfile.readfrom(self._filepos, size, num_retries, exact=True)
         self._filepos += len(data)
         return data
 
