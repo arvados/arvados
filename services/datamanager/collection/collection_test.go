@@ -11,7 +11,6 @@ func Test(t *testing.T) {
 	TestingT(t)
 }
 
-// Tests that require the Keep server running
 type MySuite struct{}
 
 var _ = Suite(&MySuite{})
