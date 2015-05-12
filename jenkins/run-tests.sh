@@ -56,6 +56,7 @@ apps/workbench_profile
 doc
 services/api
 services/crunchstat
+services/dockercleaner
 services/fuse
 services/keepproxy
 services/keepstore
@@ -79,6 +80,7 @@ unset $(env | cut -d= -f1 | grep \^ARVADOS_)
 GITDIR=
 GOPATH=
 VENVDIR=
+VENV3DIR=
 PYTHONPATH=
 GEMHOME=
 
@@ -90,7 +92,7 @@ skip_install=
 declare -A leave_temp
 clear_temp() {
     leaving=""
-    for var in VENVDIR GOPATH GITDIR GEMHOME
+    for var in VENVDIR VENV3DIR GOPATH GITDIR GEMHOME
     do
         if [[ -z "${leave_temp[$var]}" ]]
         then
@@ -221,6 +223,7 @@ do
             ;;
         --leave-temp)
             leave_temp[VENVDIR]=1
+            leave_temp[VENV3DIR]=1
             leave_temp[GOPATH]=1
             leave_temp[GEMHOME]=1
             ;;
@@ -295,7 +298,7 @@ cd "$WORKSPACE"
 find -name '*.pyc' -delete
 
 # Set up temporary install dirs (unless existing dirs were supplied)
-for tmpdir in VENVDIR GOPATH GEMHOME
+for tmpdir in VENVDIR VENV3DIR GOPATH GEMHOME
 do
     if [[ -n "${!tmpdir}" ]]; then
         leave_temp[$tmpdir]=1
@@ -401,6 +404,23 @@ fi
 echo "pip install -q PyYAML"
 pip install --quiet PyYAML || fatal "pip install PyYAML failed"
 
+# If Python 3 is available, set up its virtualenv in $VENV3DIR.
+# Otherwise, skip dependent tests.
+PYTHON3=$(which python3)
+if [ "0" = "$?" ]; then
+    virtualenv --python "$PYTHON3" --setuptools "$VENV3DIR" \
+        || fatal "python3 virtualenv $VENV3DIR failed"
+else
+    PYTHON3=
+    skip[services/dockercleaner]=1
+    cat >&2 <<EOF
+
+Warning: python3 could not be found
+services/dockercleaner install and tests will be skipped
+
+EOF
+fi
+
 checkexit() {
     if [[ "$1" != "0" ]]; then
         title "!!!!!! $2 FAILED !!!!!!"
@@ -448,8 +468,10 @@ do_test_once() {
             fi
         elif [[ "$2" == "pip" ]]
         then
-           cd "$WORKSPACE/$1" \
-                && python setup.py test ${testargs[$1]}
+            # $3 can name a path directory for us to use, including trailing
+            # slash; e.g., the bin/ subdirectory of a virtualenv.
+            cd "$WORKSPACE/$1" \
+                && "${3}python" setup.py test ${testargs[$1]}
         elif [[ "$2" != "" ]]
         then
             "test_$2"
@@ -475,6 +497,9 @@ do_install() {
             go get -t "git.curoverse.com/arvados.git/$1"
         elif [[ "$2" == "pip" ]]
         then
+            # $3 can name a path directory for us to use, including trailing
+            # slash; e.g., the bin/ subdirectory of a virtualenv.
+
             # Need to change to a different directory after creating
             # the source dist package to avoid a pip bug.
             # see https://arvados.org/issues/5766 for details.
@@ -485,10 +510,10 @@ do_install() {
             # install" ensures that we've actually install the local package
             # we just built.
             cd "$WORKSPACE/$1" \
-                && python setup.py sdist rotate --keep=1 --match .tar.gz \
+                && "${3}python" setup.py sdist rotate --keep=1 --match .tar.gz \
                 && cd "$WORKSPACE" \
-                && pip install --quiet "$WORKSPACE/$1/dist"/*.tar.gz \
-                && pip install --quiet --no-deps --ignore-installed "$WORKSPACE/$1/dist"/*.tar.gz
+                && "${3}pip" install --quiet "$WORKSPACE/$1/dist"/*.tar.gz \
+                && "${3}pip" install --quiet --no-deps --ignore-installed "$WORKSPACE/$1/dist"/*.tar.gz
         elif [[ "$2" != "" ]]
         then
             "install_$2"
@@ -559,6 +584,9 @@ for p in "${pythonstuff[@]}"
 do
     do_install "$p" pip
 done
+if [ -n "$PYTHON3" ]; then
+    do_install services/dockercleaner pip "$VENV3DIR/bin/"
+fi
 
 install_apiserver() {
     cd "$WORKSPACE/services/api" \
@@ -677,6 +705,7 @@ for p in "${pythonstuff[@]}"
 do
     do_test "$p" pip
 done
+do_test services/dockercleaner pip "$VENV3DIR/bin/"
 
 for g in "${gostuff[@]}"
 do
