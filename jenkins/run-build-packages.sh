@@ -81,6 +81,16 @@ if [[ "$?" != 0 ]]; then
   exit 1
 fi
 
+if ! easy_install3 --version >/dev/null; then
+  cat >&2 <<EOF
+$helpmessage
+
+Error: easy_install3 (from python3-setuptools) not found
+
+EOF
+  exit 1
+fi
+
 if [[ "$DEBUG" != 0 ]]; then
   echo "Workspace is $WORKSPACE"
 fi
@@ -130,26 +140,27 @@ build_and_scp_deb () {
   PACKAGE=$1
   shift
   # The name of the package to build.  Defaults to $PACKAGE.
-  PACKAGE_NAME=$1
+  PACKAGE_NAME=${1:-$PACKAGE}
   shift
   # Optional: the vendor of the package.  Should be "Curoverse, Inc." for
   # packages of our own software.  Passed to fpm --vendor.
   VENDOR=$1
   shift
   # The type of source package.  Passed to fpm -s.  Default "python".
-  PACKAGE_TYPE=$1
+  PACKAGE_TYPE=${1:-python}
   shift
+
+  if [ "python3" = "$PACKAGE_TYPE" ]; then
+      # fpm does not actually support this package type.  Instead we recognize
+      # it as a convenience shortcut to add several necessary arguments to
+      # fpm's command line later.
+      PACKAGE_TYPE=python
+      set -- "$@" --python-bin python3 --python-easyinstall easy_install3 \
+          --python-package-name-prefix python3
+  fi
   # Optional: the package version number.  Passed to fpm -v.
   VERSION=$1
   shift
-
-  if [[ "$PACKAGE_NAME" == "" ]]; then
-    PACKAGE_NAME=$PACKAGE
-  fi
-
-  if [[ "$PACKAGE_TYPE" == "" ]]; then
-    PACKAGE_TYPE='python'
-  fi
 
   declare -a COMMAND_ARR=("fpm" "--maintainer=Ward Vandewege <ward@curoverse.com>" "-s" "$PACKAGE_TYPE" "-t" "deb" "-x" "usr/local/lib/python2.7/dist-packages/tests")
 
@@ -461,6 +472,10 @@ cd $WORKSPACE/debs
 # to match our other version numbers. Cf. commit 4afcb8c, compliance with PEP-440.
 build_and_scp_deb $WORKSPACE/services/nodemanager arvados-node-manager 'Curoverse, Inc.' 'python' "$(awk '($1 == "Version:"){ gsub(/-/,".",$2); print $2}' $WORKSPACE/services/nodemanager/arvados_node_manager.egg-info/PKG-INFO)" "--url=https://arvados.org" "--description=The Arvados node manager"
 
+# The Docker image cleaner
+cd $WORKSPACE/debs
+build_and_scp_deb $WORKSPACE/services/dockercleaner arvados-docker-cleaner 'Curoverse, Inc.' 'python3' "$(awk '($1 == "Version:"){print $2}' $WORKSPACE/services/dockercleaner/arvados_docker_cleaner.egg-info/PKG-INFO)" "--url=https://arvados.org" "--description=The Arvados Docker image cleaner"
+
 # A few dependencies
 for deppkg in python-gflags pyvcf google-api-python-client oauth2client \
       pyasn1 pyasn1-modules rsa uritemplate httplib2 ws4py virtualenv \
@@ -468,6 +483,7 @@ for deppkg in python-gflags pyvcf google-api-python-client oauth2client \
       pycrypto backports.ssl_match_hostname; do
     build_and_scp_deb "$deppkg"
 done
+build_and_scp_deb docker-py python3-docker-py python3
 
 # cwltool from common-workflow-language. We use this in arv-run-pipeline-instance.
 # We use $WORKSPACE/common-workflow-language as the clean directory from which to build the cwltool package
