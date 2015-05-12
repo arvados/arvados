@@ -335,6 +335,12 @@ class _BufferBlock(object):
         bufferblock.append(self.buffer_view[0:self.size()])
         return bufferblock
 
+    @synchronized
+    def clear(self):
+        self.owner = None
+        self.buffer_block = None
+        self.buffer_view = None
+
 
 class NoopLock(object):
     def __enter__(self):
@@ -511,6 +517,12 @@ class _BlockManager(object):
     @synchronized
     def get_bufferblock(self, locator):
         return self._bufferblocks.get(locator)
+
+    @synchronized
+    def delete_bufferblock(self, locator):
+        bb = self._bufferblocks[locator]
+        bb.clear()
+        del self._bufferblocks[locator]
 
     def get_block_contents(self, locator, num_retries, cache_only=False):
         """Fetch a block.
@@ -832,6 +844,19 @@ class ArvadosFile(object):
             if self._current_bblock and self._current_bblock.state() == _BufferBlock.WRITABLE:
                 self._repack_writes(num_retries)
                 self.parent._my_block_manager().commit_bufferblock(self._current_bblock, wait)
+            if wait:
+                to_delete = set()
+                for s in self._segments:
+                    bb = self.parent._my_block_manager().get_bufferblock(s.locator)
+                    if bb:
+                        if bb.state() != _BufferBlock.COMMITTED:
+                            _logger.error("bufferblock %s is not committed" % (s.locator))
+                        else:
+                            to_delete.add(s.locator)
+                            s.locator = bb.locator()
+                for s in to_delete:
+                   self.parent._my_block_manager().delete_bufferblock(s)
+
             self.parent.notify(MOD, self.parent, self.name, (self, self))
 
     @must_be_writable
@@ -881,13 +906,14 @@ class ArvadosFile(object):
     @must_be_writable
     @synchronized
     def reparent(self, newparent, newname):
+        self._modified = True
         self.flush()
         self.parent.remove(self.name)
 
         self.parent = newparent
         self.name = newname
         self.lock = self.parent.root_collection().lock
-        self._modified = True
+
 
 class ArvadosFileReader(ArvadosFileReaderBase):
     """Wraps ArvadosFile in a file-like object supporting reading only.

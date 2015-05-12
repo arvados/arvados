@@ -988,6 +988,8 @@ class RichCollectionBase(CollectionBase):
         alternate path indicating the conflict.
 
         """
+        if changes:
+            self._modified = True
         for change in changes:
             event_type = change[0]
             path = change[1]
@@ -1190,6 +1192,7 @@ class Collection(RichCollectionBase):
             other = CollectionReader(response["manifest_text"])
         baseline = CollectionReader(self._manifest_text)
         self.apply(baseline.diff(other))
+        self._manifest_text = self.manifest_text()
 
     @synchronized
     def _my_api(self):
@@ -1554,6 +1557,16 @@ class Subcollection(RichCollectionBase):
         c = Subcollection(new_parent, new_name)
         c._clonefrom(self)
         return c
+
+    @must_be_writable
+    @synchronized
+    def reparent(self, newparent, newname):
+        # XXX add flush()
+        self.parent.remove(self.name, recursive=True)
+        self.parent = newparent
+        self.name = newname
+        self.lock = self.parent.root_collection().lock
+        self._modified = True
 
 
 class CollectionReader(Collection):

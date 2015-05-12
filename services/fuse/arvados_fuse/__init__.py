@@ -70,7 +70,7 @@ class InodeCache(object):
     def __init__(self, cap, min_entries=4):
         self._entries = collections.OrderedDict()
         self._by_uuid = {}
-        self._counter = itertools.count(1)
+        self._counter = itertools.count(0)
         self.cap = cap
         self._total = 0
         self.min_entries = min_entries
@@ -156,19 +156,22 @@ class Inodes(object):
 
     def add_entry(self, entry):
         entry.inode = next(self._counter)
+        if entry.inode == llfuse.ROOT_INODE:
+            entry.inc_ref()
         self._entries[entry.inode] = entry
         self.inode_cache.manage(entry)
         return entry
 
     def del_entry(self, entry):
         if entry.ref_count == 0:
-            _logger.warn("Deleting inode %i", entry.inode)
+            _logger.debug("Deleting inode %i", entry.inode)
             self.inode_cache.unmanage(entry)
             llfuse.invalidate_inode(entry.inode)
             del self._entries[entry.inode]
+            entry.inode = None
         else:
-            _logger.warn("Inode %i has refcount %i", entry.inode, entry.ref_count)
             entry.dead = True
+            _logger.debug("del_entry on inode %i with refcount %i", entry.inode, entry.ref_count)
 
 def catch_exceptions(orig_func):
     @functools.wraps(orig_func)
@@ -210,7 +213,7 @@ class Operations(llfuse.Operations):
 
         # dict of inode to filehandle
         self._filehandles = {}
-        self._filehandles_counter = 1
+        self._filehandles_counter = itertools.count(0)
 
         # Other threads that need to wait until the fuse driver
         # is fully initialized should wait() on this event object.
@@ -317,8 +320,8 @@ class Operations(llfuse.Operations):
     @catch_exceptions
     def forget(self, inodes):
         for inode, nlookup in inodes:
-            _logger.debug("arv-mount forget: %i %i", inode, nlookup)
             ent = self.inodes[inode]
+            _logger.debug("arv-mount forget: inode %i nlookup %i ref_count %i", inode, nlookup, ent.ref_count)
             if ent.dec_ref(nlookup) == 0 and ent.dead:
                 self.inodes.del_entry(ent)
 
@@ -335,8 +338,7 @@ class Operations(llfuse.Operations):
         if ((flags & os.O_WRONLY) or (flags & os.O_RDWR)) and not p.writable():
             raise llfuse.FUSEError(errno.EPERM)
 
-        fh = self._filehandles_counter
-        self._filehandles_counter += 1
+        fh = next(self._filehandles_counter)
         self._filehandles[fh] = FileHandle(fh, p)
         self.inodes.touch(p)
         return fh
@@ -402,8 +404,7 @@ class Operations(llfuse.Operations):
         if not isinstance(p, Directory):
             raise llfuse.FUSEError(errno.ENOTDIR)
 
-        fh = self._filehandles_counter
-        self._filehandles_counter += 1
+        fh = next(self._filehandles_counter)
         if p.parent_inode in self.inodes:
             parent = self.inodes[p.parent_inode]
         else:
@@ -477,8 +478,7 @@ class Operations(llfuse.Operations):
 
         # The file entry should have been implicitly created by callback.
         f = p[name]
-        fh = self._filehandles_counter
-        self._filehandles_counter += 1
+        fh = next(self._filehandles_counter)
         self._filehandles[fh] = FileHandle(fh, f)
         self.inodes.touch(p)
 
@@ -487,6 +487,8 @@ class Operations(llfuse.Operations):
 
     @catch_exceptions
     def mkdir(self, inode_parent, name, mode, ctx):
+        _logger.debug("arv-mount mkdir: %i '%s' %o", inode_parent, name, mode)
+
         p = self._check_writable(inode_parent)
 
         with llfuse.lock_released:
@@ -500,6 +502,7 @@ class Operations(llfuse.Operations):
 
     @catch_exceptions
     def unlink(self, inode_parent, name):
+        _logger.debug("arv-mount unlink: %i '%s'", inode_parent, name)
         p = self._check_writable(inode_parent)
 
         with llfuse.lock_released:
@@ -510,6 +513,7 @@ class Operations(llfuse.Operations):
 
     @catch_exceptions
     def rename(self, inode_parent_old, name_old, inode_parent_new, name_new):
+        _logger.debug("arv-mount rename: %i '%s' %i '%s'", inode_parent_old, name_old, inode_parent_new, name_new)
         src = self._check_writable(inode_parent_old)
         dest = self._check_writable(inode_parent_new)
 

@@ -178,15 +178,23 @@ class CollectionDirectoryBase(Directory):
 
     def new_entry(self, name, item, mtime):
         name = sanitize_filename(name)
-        if isinstance(item, arvados.collection.RichCollectionBase):
+        if hasattr(item, "fuse_entry") and item.fuse_entry is not None:
+            if item.fuse_entry.dead is not True:
+                raise Exception("Can only reparent dead inode entry")
+            if item.fuse_entry.inode is None:
+                raise Exception("Reparented entry must still have valid inode")
+            item.fuse_entry.dead = False
+            self._entries[name] = item.fuse_entry
+        elif isinstance(item, arvados.collection.RichCollectionBase):
             self._entries[name] = self.inodes.add_entry(CollectionDirectoryBase(self.inode, self.inodes, item))
             self._entries[name].populate(mtime)
         else:
             self._entries[name] = self.inodes.add_entry(FuseArvadosFile(self.inode, item, mtime))
+        item.fuse_entry = self._entries[name]
 
     def on_event(self, event, collection, name, item):
-        _logger.warn("Got event! %s %s %s %s", event, collection, name, item)
         if collection == self.collection:
+            _logger.debug("%s %s %s %s", event, collection, name, item)
             with llfuse.lock:
                 if event == arvados.collection.ADD:
                     self.new_entry(name, item, self.mtime())
@@ -196,9 +204,10 @@ class CollectionDirectoryBase(Directory):
                     llfuse.invalidate_entry(self.inode, name)
                     self.inodes.del_entry(ent)
                 elif event == arvados.collection.MOD:
-                    ent = self._entries[name]
-                    llfuse.invalidate_inode(ent.inode)
-        _logger.warn("Finished handling event")
+                    if hasattr(item, "fuse_entry") and item.fuse_entry is not None:
+                        llfuse.invalidate_inode(item.fuse_entry.inode)
+                    elif name in self._entries:
+                        llfuse.invalidate_inode(self._entries[name].inode)
 
     def populate(self, mtime):
         self._mtime = mtime
