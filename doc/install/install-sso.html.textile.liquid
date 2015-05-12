@@ -10,17 +10,14 @@ Make sure you have "Ruby and Bundler":install-manual-prerequisites-ruby.html ins
 
 h2(#install). Install SSO server
 
-h3. Get SSO server code and create database
+h3. Get SSO server code and run bundle
 
 <notextile>
 <pre><code>~$ <span class="userinput">cd $HOME</span> # (or wherever you want to install)
 ~$ <span class="userinput">git clone https://github.com/curoverse/sso-devise-omniauth-provider.git</span>
 ~$ <span class="userinput">cd sso-devise-omniauth-provider</span>
 ~/sso-devise-omniauth-provider$ <span class="userinput">bundle install</span>
-~/sso-devise-omniauth-provider$ <span class="userinput">RAILS_ENV=production bundle exec rake db:create</span>
-~/sso-devise-omniauth-provider$ <span class="userinput">RAILS_ENV=production bundle exec rake db:migrate</span>
-</code></pre>
-</notextile>
+</code></pre></notextile>
 
 h2. Configure the SSO server
 
@@ -122,6 +119,53 @@ You can also create local accounts on the SSO server from the rails console:
 </code></pre>
 </notextile>
 
+h2. Set up the database
+
+Generate a new database password. Nobody ever needs to memorize it or type it, so we'll make a strong one:
+
+<notextile>
+<pre><code>~/sso-devise-omniauth-provider$ <span class="userinput">ruby -e 'puts rand(2**128).to_s(36)'</span>
+abcdefghijklmnopqrstuvwxyz012345689
+</code></pre></notextile>
+
+Create a new database user with permission to create its own databases.
+
+<notextile>
+<pre><code>~/sso-devise-omniauth-provider$ <span class="userinput">sudo -u postgres createuser --createdb --encrypted -R -S --pwprompt arvados_sso</span>
+Enter password for new role: <span class="userinput">paste-database-password-you-generated</span>
+Enter it again: <span class="userinput">paste-database-password-you-generated</span>
+</code></pre></notextile>
+
+Configure SSO server to connect to your database by creating and updating @config/database.yml@. Replace the @xxxxxxxx@ database password placeholders with the new password you generated above.
+
+<notextile>
+<pre><code>~/sso-devise-omniauth-provider$ <span class="userinput">cp -i config/database.yml.sample config/database.yml</span>
+~/sso-devise-omniauth-provider$ <span class="userinput">edit config/database.yml</span>
+</code></pre></notextile>
+
+Create and initialize the database. If you are planning a production system, choose the @production@ rails environment, otherwise use @development@.
+
+<notextile>
+<pre><code>~/sso-devise-omniauth-provider$ <span class="userinput">RAILS_ENV=production bundle exec rake db:setup</span>
+</code></pre></notextile>
+
+Alternatively, if the database user you intend to use for the SSO server is not allowed to create new databases, you can create the database first and then populate it with rake. Be sure to adjust the database name if you are using the @development@ environment. This sequence of commands is functionally equivalent to the rake db:setup command above:
+
+<notextile>
+<pre><code>~/sso-devise-omniauth-provider$ <span class="userinput">su postgres createdb arvados_sso_production -E UTF8 -O arvados_sso</span>
+~/sso-devise-omniauth-provider$ <span class="userinput">RAILS_ENV=production bundle exec rake db:structure:load</span>
+~/sso-devise-omniauth-provider$ <span class="userinput">RAILS_ENV=production bundle exec rake db:seed</span>
+</code></pre></notextile>
+
+h2(#client). Generate assets
+
+If you are running in the production environment, you'll want to generate the assets:
+
+<notextile>
+<pre><code>~/sso-devise-omniauth-provider$ <span class="userinput">RAILS_ENV=production bundle exec rake assets:precompile</span>
+</code></pre>
+</notextile>
+
 h2(#client). Create arvados-server client
 
 Use @rails console@ to create a @Client@ record that will be used by the Arvados API server.  The values of @app_id@ and @app_secret@ correspond to the @APP_ID@ and @APP_SECRET@ that must be set in in "Setting up Omniauth in the API server.":install-api-server.html#omniauth
@@ -146,7 +190,7 @@ h3. Run a simple standalone server
 You can use the Webrick server that is bundled with Ruby to quickly verify that your installation is functioning:
 
 <notextile>
-<pre><code>~/arvados/services/api$ <span class="userinput">RAILS_ENV=production bundle exec rails server</span>
+<pre><code>~/sso-devise-omniauth-provider$ <span class="userinput">RAILS_ENV=production bundle exec rails server</span>
 </code></pre>
 </notextile>
 
