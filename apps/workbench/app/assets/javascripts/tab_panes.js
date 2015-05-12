@@ -134,7 +134,7 @@ $(document).on('arv:pane:reload', '[data-pane-content-url]', function(e) {
             var errhtml;
             var contentType = jqxhr.getResponseHeader('Content-Type');
             if (jqxhr.readyState == 0 || jqxhr.status == 0) {
-              return;   // User may have navigated away; skip.
+              message = "Cancelled";
             } else if (contentType && contentType.match(/\btext\/html\b/)) {
                 var $response = $(jqxhr.responseText);
                 var $wrapper = $('div#page-wrapper', $response);

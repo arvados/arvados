@@ -74,7 +74,7 @@ function maybe_load_more_content(event) {
                     return;
                 }
                 if (jqxhr.readyState == 0 || jqxhr.status == 0) {
-                    return;   // User may have navigated away; skip.
+                    message = "Cancelled";
                 } else if (jqxhr.responseJSON && jqxhr.responseJSON.errors) {
                     message = jqxhr.responseJSON.errors.join("; ");
                 } else {
