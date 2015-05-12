@@ -234,7 +234,6 @@ function do_start {
       $DOCKER ps | grep skydns >/dev/null
       if [[ "$?" != "0" ]]; then
         echo "Detecting bridge '$start_bridge' IP for crosbymichael/skydns"
-	
         bridge_ip=$(bridge_ip_address "$start_bridge")
 
         echo "Starting crosbymichael/skydns container..."
