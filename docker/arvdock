@@ -46,7 +46,7 @@ function ip_address {
 
 function bridge_ip_address {
     local bridge_name=$1
-    # FIXME: add a more robust check here. 
+    # FIXME: add a more robust check here.
     # because ip command could be mising, multiple docker birdges could be there.. etc.
     echo $(ip -oneline addr show  | grep $bridge_name | grep -E '\binet\b' | awk '{ print $4 }'| cut -d/ -f1 )
 }
@@ -171,7 +171,6 @@ function do_start {
                 shift
                 ;;
             -w | --workbench)
-		echo "DEBUG: $*"
                 case "$2" in
                     "") start_workbench=9899; shift 2 ;;
                     *)  start_workbench=$2; shift 2 ;;
