@@ -2,9 +2,19 @@ package collection
 
 import (
 	"git.curoverse.com/arvados.git/sdk/go/blockdigest"
-	"reflect"
+	. "gopkg.in/check.v1"
 	"testing"
 )
+
+// Gocheck boilerplate
+func Test(t *testing.T) {
+	TestingT(t)
+}
+
+// Tests that require the Keep server running
+type MySuite struct{}
+
+var _ = Suite(&MySuite{})
 
 // This captures the result we expect from
 // ReadCollections.Summarize().  Because CollectionUuidToIndex is
@@ -16,23 +26,15 @@ type ExpectedSummary struct {
 	BlockToCollectionUuids map[blockdigest.BlockDigest][]string
 }
 
-func CompareSummarizedReadCollections(t *testing.T,
+func CompareSummarizedReadCollections(c *C,
 	summarized ReadCollections,
 	expected ExpectedSummary) {
 
-	if !reflect.DeepEqual(summarized.OwnerToCollectionSize,
-		expected.OwnerToCollectionSize) {
-		t.Fatalf("Expected summarized OwnerToCollectionSize to look like %+v but instead it is %+v",
-			expected.OwnerToCollectionSize,
-			summarized.OwnerToCollectionSize)
-	}
+	c.Assert(summarized.OwnerToCollectionSize, DeepEquals,
+		expected.OwnerToCollectionSize)
 
-	if !reflect.DeepEqual(summarized.BlockToReplication,
-		expected.BlockToReplication) {
-		t.Fatalf("Expected summarized BlockToReplication to look like %+v but instead it is %+v",
-			expected.BlockToReplication,
-			summarized.BlockToReplication)
-	}
+	c.Assert(summarized.BlockToReplication, DeepEquals,
+		expected.BlockToReplication)
 
 	summarizedBlockToCollectionUuids :=
 		make(map[blockdigest.BlockDigest]map[string]struct{})
@@ -54,13 +56,11 @@ func CompareSummarizedReadCollections(t *testing.T,
 		}
 	}
 
-	if !reflect.DeepEqual(summarizedBlockToCollectionUuids,
-		expectedBlockToCollectionUuids) {
-		t.Fatalf("Expected summarized BlockToCollectionUuids to look like %+v but instead it is %+v", expectedBlockToCollectionUuids, summarizedBlockToCollectionUuids)
-	}
+	c.Assert(summarizedBlockToCollectionUuids, DeepEquals,
+		expectedBlockToCollectionUuids)
 }
 
-func TestSummarizeSimple(t *testing.T) {
+func (s *MySuite) TestSummarizeSimple(checker *C) {
 	rc := MakeTestReadCollections([]TestCollectionSpec{TestCollectionSpec{
 		ReplicationLevel: 5,
 		Blocks:           []int{1, 2},
@@ -79,10 +79,10 @@ func TestSummarizeSimple(t *testing.T) {
 		BlockToCollectionUuids: map[blockdigest.BlockDigest][]string{blockDigest1: []string{c.Uuid}, blockDigest2: []string{c.Uuid}},
 	}
 
-	CompareSummarizedReadCollections(t, rc, expected)
+	CompareSummarizedReadCollections(checker, rc, expected)
 }
 
-func TestSummarizeOverlapping(t *testing.T) {
+func (s *MySuite) TestSummarizeOverlapping(checker *C) {
 	rc := MakeTestReadCollections([]TestCollectionSpec{
 		TestCollectionSpec{
 			ReplicationLevel: 5,
@@ -120,5 +120,5 @@ func TestSummarizeOverlapping(t *testing.T) {
 		},
 	}
 
-	CompareSummarizedReadCollections(t, rc, expected)
+	CompareSummarizedReadCollections(checker, rc, expected)
 }
