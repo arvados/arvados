@@ -7,8 +7,8 @@ RUN git clone git://github.com/curoverse/sso-devise-omniauth-provider.git /usr/s
     /usr/local/rvm/bin/rvm-exec default bundle install --gemfile=/usr/src/sso-provider/Gemfile
 
 # Install generated config files
-ADD generated/secret_token.rb /usr/src/sso-provider/config/initializers/secret_token.rb
 ADD generated/seeds.rb /usr/src/sso-provider/db/seeds.rb
+ADD generated/database.yml /usr/src/sso-provider/config/database.yml
 ADD generated/application.yml /usr/src/sso-provider/config/application.yml
 ADD generated/apache2_vhost /etc/apache2/sites-available/sso-provider
 ADD generated/apache2_vhost /etc/apache2/sites-available/sso-provider
