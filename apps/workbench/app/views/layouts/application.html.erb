@@ -18,6 +18,20 @@
   <meta name="arv-websocket-url" content="<%=$arvados_api_client.discovery[:websocketUrl]%>?api_token=<%=Thread.current[:arvados_api_token]%>">
   <% end %>
   <meta name="robots" content="NOINDEX, NOFOLLOW">
+
+  <%# Add open graph meta tags %>
+  <meta property="og:type" content="article" />
+  <meta property="og:url" content="<%= request.url %>" />
+  <% if @object %>
+    <% if (@object.respond_to?(:name) rescue nil) and @object.name.present? %>
+      <meta property="og:title" content="<%= @object.name%>" />
+    <% end %>
+    <% if (@object.respond_to?(:description) rescue nil) and @object.description.present? %>
+      <meta property="og:description" content="<%= @object.description%>" />
+    <% end %>
+  <% end %>
+  <%# Done adding open graph meta tags %>
+
   <%= stylesheet_link_tag    "application", :media => "all" %>
   <%= javascript_include_tag "application" %>
   <%= csrf_meta_tags %>
