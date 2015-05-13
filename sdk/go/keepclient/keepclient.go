@@ -39,6 +39,7 @@ type KeepClient struct {
 	Using_proxy   bool
 	localRoots    *map[string]string
 	gatewayRoots  *map[string]string
+	writableRoots *map[string]string
 	lock          sync.RWMutex
 	Client        *http.Client
 }
@@ -194,6 +195,14 @@ func (kc *KeepClient) GatewayRoots() map[string]string {
 	return *kc.gatewayRoots
 }
 
+// WritableRoots() returns the map of writable Keep services:
+// url -> ""
+func (kc *KeepClient) WritableRoots() map[string]string {
+	kc.lock.RLock()
+	defer kc.lock.RUnlock()
+	return *kc.writableRoots
+}
+
 // SetServiceRoots updates the localRoots and gatewayRoots maps,
 // without risk of disrupting operations that are already in progress.
 //
@@ -201,7 +210,7 @@ func (kc *KeepClient) GatewayRoots() map[string]string {
 // caller can reuse/modify them after SetServiceRoots returns, but
 // they should not be modified by any other goroutine while
 // SetServiceRoots is running.
-func (kc *KeepClient) SetServiceRoots(newLocals, newGateways map[string]string) {
+func (kc *KeepClient) SetServiceRoots(newLocals, newGateways map[string]string, writableRoots map[string]string) {
 	locals := make(map[string]string)
 	for uuid, root := range newLocals {
 		locals[uuid] = root
@@ -210,10 +219,15 @@ func (kc *KeepClient) SetServiceRoots(newLocals, newGateways map[string]string) 
 	for uuid, root := range newGateways {
 		gateways[uuid] = root
 	}
+	writables := make(map[string]string)
+	for root, _ := range writableRoots {
+		writables[root] = ""
+	}
 	kc.lock.Lock()
 	defer kc.lock.Unlock()
 	kc.localRoots = &locals
 	kc.gatewayRoots = &gateways
+	kc.writableRoots = &writables
 }
 
 // getSortedRoots returns a list of base URIs of Keep services, in the

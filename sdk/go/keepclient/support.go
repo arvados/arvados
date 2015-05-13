@@ -21,6 +21,7 @@ type keepDisk struct {
 	Port     int    `json:"service_port"`
 	SSL      bool   `json:"service_ssl_flag"`
 	SvcType  string `json:"service_type"`
+	ReadOnly bool   `json:"read_only"`
 }
 
 func Md5String(s string) string {
@@ -93,6 +94,7 @@ func (this *KeepClient) DiscoverKeepServers() error {
 	listed := make(map[string]bool)
 	localRoots := make(map[string]string)
 	gatewayRoots := make(map[string]string)
+	writableRoots := make(map[string]string)
 
 	for _, service := range m.Items {
 		scheme := "http"
@@ -114,6 +116,11 @@ func (this *KeepClient) DiscoverKeepServers() error {
 			localRoots[service.Uuid] = url
 			this.Using_proxy = true
 		}
+
+		if service.ReadOnly == false {
+			writableRoots[url] = ""
+		}
+
 		// Gateway services are only used when specified by
 		// UUID, so there's nothing to gain by filtering them
 		// by service type. Including all accessible services
@@ -128,7 +135,7 @@ func (this *KeepClient) DiscoverKeepServers() error {
 		this.setClientSettingsStore()
 	}
 
-	this.SetServiceRoots(localRoots, gatewayRoots)
+	this.SetServiceRoots(localRoots, gatewayRoots, writableRoots)
 	return nil
 }
 
@@ -231,10 +238,12 @@ func (this KeepClient) putReplicas(
 		for active < remaining_replicas {
 			// Start some upload requests
 			if next_server < len(sv) {
-				log.Printf("[%v] Begin upload %s to %s", requestId, hash, sv[next_server])
-				go this.uploadToKeepServer(sv[next_server], hash, tr.MakeStreamReader(), upload_status, expectedLength, requestId)
+				if _, ok := this.WritableRoots()[sv[next_server]]; ok { // If writable
+					log.Printf("[%v] Begin upload %s to %s", requestId, hash, sv[next_server])
+					go this.uploadToKeepServer(sv[next_server], hash, tr.MakeStreamReader(), upload_status, expectedLength, requestId)
+					active += 1
+				}
 				next_server += 1
-				active += 1
 			} else {
 				if active == 0 {
 					return locator, (this.Want_replicas - remaining_replicas), InsufficientReplicasError
