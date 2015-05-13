@@ -643,7 +643,7 @@ class RichCollectionBase(CollectionBase):
         """Test if the collection (or any subcollection or file) has been modified."""
         if self._modified:
             return True
-        for k,v in self._items.items():
+        for v in self._items.values():
             if v.modified():
                 return True
         return False
@@ -770,7 +770,7 @@ class RichCollectionBase(CollectionBase):
 
         # Actually make the move or copy.
         if reparent:
-            source_obj.reparent(self, target_name)
+            source_obj._reparent(self, target_name)
             item = source_obj
         else:
             item = source_obj.clone(self, target_name)
@@ -1068,6 +1068,12 @@ class RichCollectionBase(CollectionBase):
 
     def __ne__(self, other):
         return not self.__eq__(other)
+
+    @synchronized
+    def flush(self):
+        """Flush bufferblocks to Keep."""
+        for e in self.values():
+            e.flush()
 
 
 class Collection(RichCollectionBase):
@@ -1560,13 +1566,13 @@ class Subcollection(RichCollectionBase):
 
     @must_be_writable
     @synchronized
-    def reparent(self, newparent, newname):
-        # XXX add flush()
+    def _reparent(self, newparent, newname):
+        self._modified = True
+        self.flush()
         self.parent.remove(self.name, recursive=True)
         self.parent = newparent
         self.name = newname
         self.lock = self.parent.root_collection().lock
-        self._modified = True
 
 
 class CollectionReader(Collection):

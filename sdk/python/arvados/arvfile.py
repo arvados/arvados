@@ -571,6 +571,12 @@ class _BlockManager(object):
                         pass
                     raise KeepWriteError("Error writing some blocks", err, label="block")
 
+        for k,v in items:
+            # flush again with wait=True to remove committed bufferblocks from
+            # the segments.
+            v.owner.flush(True)
+
+
     def block_prefetch(self, locator):
         """Initiate a background download of a block.
 
@@ -840,6 +846,7 @@ class ArvadosFile(object):
 
     @synchronized
     def flush(self, wait=True, num_retries=0):
+        """Flush bufferblocks to Keep."""
         if self.modified():
             if self._current_bblock and self._current_bblock.state() == _BufferBlock.WRITABLE:
                 self._repack_writes(num_retries)
@@ -905,11 +912,10 @@ class ArvadosFile(object):
 
     @must_be_writable
     @synchronized
-    def reparent(self, newparent, newname):
+    def _reparent(self, newparent, newname):
         self._modified = True
         self.flush()
         self.parent.remove(self.name)
-
         self.parent = newparent
         self.name = newname
         self.lock = self.parent.root_collection().lock
