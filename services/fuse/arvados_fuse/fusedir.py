@@ -5,6 +5,7 @@ import llfuse
 import arvados
 import apiclient
 import functools
+import threading
 
 from fusefile import StringFile, ObjectFile, FuseArvadosFile
 from fresh import FreshBase, convertTime, use_counter
@@ -72,7 +73,7 @@ class Directory(FreshBase):
             try:
                 self.update()
             except apiclient.errors.HttpError as e:
-                _logger.debug(e)
+                _logger.warn(e)
 
     @use_counter
     def __getitem__(self, item):
@@ -125,6 +126,7 @@ class Directory(FreshBase):
                     self._entries[name] = oldentries[name]
                     del oldentries[name]
                 else:
+                    _logger.debug("Adding entry '%s' to inode %i", name, self.inode)
                     # create new directory entry
                     ent = new_entry(i)
                     if ent is not None:
@@ -133,6 +135,7 @@ class Directory(FreshBase):
 
         # delete any other directory entries that were not in found in 'items'
         for i in oldentries:
+            _logger.debug("Forgetting about entry '%s' on inode %i", str(i), self.inode)
             llfuse.invalidate_entry(self.inode, str(i))
             self.inodes.del_entry(oldentries[i])
             changed = True
@@ -170,6 +173,21 @@ class Directory(FreshBase):
 
     def flush(self):
         pass
+
+    def create(self):
+        raise NotImplementedError()
+
+    def mkdir(self):
+        raise NotImplementedError()
+
+    def unlink(self):
+        raise NotImplementedError()
+
+    def rmdir(self):
+        raise NotImplementedError()
+
+    def rename(self):
+        raise NotImplementedError()
 
 class CollectionDirectoryBase(Directory):
     def __init__(self, parent_inode, inodes, collection):
@@ -221,6 +239,26 @@ class CollectionDirectoryBase(Directory):
     def flush(self):
         self.collection.root_collection().save()
 
+    def create(self, name):
+        self.collection.open(name, "w").close()
+
+    def mkdir(self, name):
+        self.collection.mkdirs(name)
+
+    def unlink(self, name):
+        self.collection.remove(name)
+
+    def rmdir(self, name):
+        self.collection.remove(name)
+
+    def rename(self, name_old, name_new, src):
+        if not isinstance(src, CollectionDirectoryBase):
+            raise llfuse.FUSEError(errno.EPERM)
+        self.collection.rename(name_old, name_new, source_collection=src.collection, overwrite=True)
+        self.flush()
+        src.flush()
+
+
 class CollectionDirectory(CollectionDirectoryBase):
     """Represents the root of a directory tree holding a collection."""
 
@@ -239,6 +277,7 @@ class CollectionDirectory(CollectionDirectoryBase):
         self._manifest_size = 0
         if self.collection_locator:
             self._writable = (uuid_pattern.match(self.collection_locator) is not None)
+        self._updating_lock = threading.Lock()
 
     def same(self, i):
         return i['uuid'] == self.collection_locator or i['portable_data_hash'] == self.collection_locator
@@ -284,38 +323,45 @@ class CollectionDirectory(CollectionDirectoryBase):
                 self.fresh()
                 return True
 
-            with llfuse.lock_released:
-                _logger.debug("Updating %s", self.collection_locator)
-                if self.collection:
-                    self.collection.update()
-                else:
-                    if uuid_pattern.match(self.collection_locator):
-                        coll_reader = arvados.collection.Collection(
-                            self.collection_locator, self.api, self.api.keep,
-                            num_retries=self.num_retries)
+            try:
+                with llfuse.lock_released:
+                    self._updating_lock.acquire()
+                    if not self.stale():
+                        return
+
+                    _logger.debug("Updating %s", self.collection_locator)
+                    if self.collection:
+                        self.collection.update()
                     else:
-                        coll_reader = arvados.collection.CollectionReader(
-                            self.collection_locator, self.api, self.api.keep,
-                            num_retries=self.num_retries)
-                    new_collection_record = coll_reader.api_response() or {}
-                    # If the Collection only exists in Keep, there will be no API
-                    # response.  Fill in the fields we need.
-                    if 'uuid' not in new_collection_record:
-                        new_collection_record['uuid'] = self.collection_locator
-                    if "portable_data_hash" not in new_collection_record:
-                        new_collection_record["portable_data_hash"] = new_collection_record["uuid"]
-                    if 'manifest_text' not in new_collection_record:
-                        new_collection_record['manifest_text'] = coll_reader.manifest_text()
+                        if uuid_pattern.match(self.collection_locator):
+                            coll_reader = arvados.collection.Collection(
+                                self.collection_locator, self.api, self.api.keep,
+                                num_retries=self.num_retries)
+                        else:
+                            coll_reader = arvados.collection.CollectionReader(
+                                self.collection_locator, self.api, self.api.keep,
+                                num_retries=self.num_retries)
+                        new_collection_record = coll_reader.api_response() or {}
+                        # If the Collection only exists in Keep, there will be no API
+                        # response.  Fill in the fields we need.
+                        if 'uuid' not in new_collection_record:
+                            new_collection_record['uuid'] = self.collection_locator
+                        if "portable_data_hash" not in new_collection_record:
+                            new_collection_record["portable_data_hash"] = new_collection_record["uuid"]
+                        if 'manifest_text' not in new_collection_record:
+                            new_collection_record['manifest_text'] = coll_reader.manifest_text()
 
-                    if self.collection_record is None or self.collection_record["portable_data_hash"] != new_collection_record.get("portable_data_hash"):
-                        self.new_collection(new_collection_record, coll_reader)
+                        if self.collection_record is None or self.collection_record["portable_data_hash"] != new_collection_record.get("portable_data_hash"):
+                            self.new_collection(new_collection_record, coll_reader)
 
-                    self._manifest_size = len(coll_reader.manifest_text())
-                    _logger.debug("%s manifest_size %i", self, self._manifest_size)
-            # end with llfuse.lock_released, re-acquire lock
+                        self._manifest_size = len(coll_reader.manifest_text())
+                        _logger.debug("%s manifest_size %i", self, self._manifest_size)
+                # end with llfuse.lock_released, re-acquire lock
 
-            self.fresh()
-            return True
+                self.fresh()
+                return True
+            finally:
+                self._updating_lock.release()
         except arvados.errors.NotFoundError:
             _logger.exception("arv-mount %s: error", self.collection_locator)
         except arvados.errors.ArgumentError as detail:
@@ -498,9 +544,10 @@ class ProjectDirectory(Directory):
         self.num_retries = num_retries
         self.project_object = project_object
         self.project_object_file = None
-        self.uuid = project_object['uuid']
+        self.project_uuid = project_object['uuid']
         self._poll = poll
         self._poll_time = poll_time
+        self._updating_lock = threading.Lock()
 
     def createDirectory(self, i):
         if collection_uuid_pattern.match(i['uuid']):
@@ -518,7 +565,7 @@ class ProjectDirectory(Directory):
             return None
 
     def uuid(self):
-        return self.uuid
+        return self.project_uuid
 
     def update(self):
         if self.project_object_file == None:
@@ -542,31 +589,36 @@ class ProjectDirectory(Directory):
                 return None
 
         def samefn(a, i):
-            if isinstance(a, CollectionDirectory):
-                return a.collection_locator == i['uuid']
-            elif isinstance(a, ProjectDirectory):
-                return a.uuid == i['uuid']
+            if isinstance(a, CollectionDirectory) or isinstance(a, ProjectDirectory):
+                return a.uuid() == i['uuid']
             elif isinstance(a, ObjectFile):
-                return a.uuid == i['uuid'] and not a.stale()
+                return a.uuid() == i['uuid'] and not a.stale()
             return False
 
-        with llfuse.lock_released:
-            if group_uuid_pattern.match(self.uuid):
-                self.project_object = self.api.groups().get(
-                    uuid=self.uuid).execute(num_retries=self.num_retries)
-            elif user_uuid_pattern.match(self.uuid):
-                self.project_object = self.api.users().get(
-                    uuid=self.uuid).execute(num_retries=self.num_retries)
+        try:
+            with llfuse.lock_released:
+                self._updating_lock.acquire()
+                if not self.stale():
+                    return
 
-            contents = arvados.util.list_all(self.api.groups().contents,
-                                             self.num_retries, uuid=self.uuid)
+                if group_uuid_pattern.match(self.project_uuid):
+                    self.project_object = self.api.groups().get(
+                        uuid=self.project_uuid).execute(num_retries=self.num_retries)
+                elif user_uuid_pattern.match(self.project_uuid):
+                    self.project_object = self.api.users().get(
+                        uuid=self.project_uuid).execute(num_retries=self.num_retries)
 
-        # end with llfuse.lock_released, re-acquire lock
+                contents = arvados.util.list_all(self.api.groups().contents,
+                                                 self.num_retries, uuid=self.project_uuid)
 
-        self.merge(contents,
-                   namefn,
-                   samefn,
-                   self.createDirectory)
+            # end with llfuse.lock_released, re-acquire lock
+
+            self.merge(contents,
+                       namefn,
+                       samefn,
+                       self.createDirectory)
+        finally:
+            self._updating_lock.release()
 
     def __getitem__(self, item):
         self.checkupdate()
@@ -582,7 +634,7 @@ class ProjectDirectory(Directory):
             return super(ProjectDirectory, self).__contains__(k)
 
     def persisted(self):
-        return False
+        return True
 
 
 class SharedDirectory(Directory):
@@ -632,10 +684,13 @@ class SharedDirectory(Directory):
             for r in root_owners:
                 if r in objects:
                     obr = objects[r]
-                    if "name" in obr:
+                    if obr.get("name"):
                         contents[obr["name"]] = obr
-                    if "first_name" in obr:
+                    #elif obr.get("username"):
+                    #    contents[obr["username"]] = obr
+                    elif "first_name" in obr:
                         contents[u"{} {}".format(obr["first_name"], obr["last_name"])] = obr
+
 
             for r in roots:
                 if r['owner_uuid'] not in objects:
@@ -646,7 +701,7 @@ class SharedDirectory(Directory):
         try:
             self.merge(contents.items(),
                        lambda i: i[0],
-                       lambda a, i: a.uuid == i[1]['uuid'],
+                       lambda a, i: a.uuid() == i[1]['uuid'],
                        lambda i: ProjectDirectory(self.inode, self.inodes, self.api, self.num_retries, i[1], poll=self._poll, poll_time=self._poll_time))
         except Exception:
             _logger.exception()

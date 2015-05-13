@@ -81,8 +81,11 @@ class ObjectFile(StringFile):
 
     def __init__(self, parent_inode, obj):
         super(ObjectFile, self).__init__(parent_inode, "", 0)
-        self.uuid = obj['uuid']
+        self.object_uuid = obj['uuid']
         self.update(obj)
+
+    def uuid(self):
+        return self.object_uuid
 
     def update(self, obj):
         self._mtime = convertTime(obj['modified_at']) if 'modified_at' in obj else 0

@@ -80,18 +80,19 @@ class InodeCache(object):
 
     def _remove(self, obj, clear):
         if clear and not obj.clear():
-            _logger.debug("Could not clear %s in_use %s", obj, obj.in_use())
+            _logger.debug("InodeCache could not clear %i in_use %s", obj.inode, obj.in_use())
             return False
         self._total -= obj.cache_size
         del self._entries[obj.cache_priority]
         if obj.cache_uuid:
             del self._by_uuid[obj.cache_uuid]
             obj.cache_uuid = None
-        _logger.debug("Cleared %s total now %i", obj, self._total)
+        if clear:
+            _logger.debug("InodeCache cleared %i total now %i", obj.inode, self._total)
         return True
 
     def cap_cache(self):
-        _logger.debug("total is %i cap is %i", self._total, self.cap)
+        #_logger.debug("InodeCache total is %i cap is %i", self._total, self.cap)
         if self._total > self.cap:
             for key in list(self._entries.keys()):
                 if self._total < self.cap or len(self._entries) < self.min_entries:
@@ -107,7 +108,7 @@ class InodeCache(object):
             if obj.cache_uuid:
                 self._by_uuid[obj.cache_uuid] = obj
             self._total += obj.objsize()
-            _logger.debug("Managing %s total now %i", obj, self._total)
+            _logger.debug("InodeCache touched %i (size %i) total now %i", obj.inode, obj.objsize(), self._total)
             self.cap_cache()
         else:
             obj.cache_priority = None
@@ -117,7 +118,6 @@ class InodeCache(object):
             if obj.cache_priority in self._entries:
                 self._remove(obj, False)
             self.manage(obj)
-            _logger.debug("Touched %s (%i) total now %i", obj, obj.objsize(), self._total)
 
     def unmanage(self, obj):
         if obj.persisted() and obj.cache_priority in self._entries:
@@ -464,9 +464,6 @@ class Operations(llfuse.Operations):
         if not p.writable():
             raise llfuse.FUSEError(errno.EPERM)
 
-        if not isinstance(p, CollectionDirectoryBase):
-            raise llfuse.FUSEError(errno.EPERM)
-
         return p
 
     @catch_exceptions
@@ -474,7 +471,7 @@ class Operations(llfuse.Operations):
         p = self._check_writable(inode_parent)
 
         with llfuse.lock_released:
-            p.collection.open(name, "w")
+            p.create(name)
 
         # The file entry should have been implicitly created by callback.
         f = p[name]
@@ -492,7 +489,7 @@ class Operations(llfuse.Operations):
         p = self._check_writable(inode_parent)
 
         with llfuse.lock_released:
-            p.collection.mkdirs(name)
+            p.mkdir(name)
 
         # The dir entry should have been implicitly created by callback.
         d = p[name]
@@ -506,10 +503,15 @@ class Operations(llfuse.Operations):
         p = self._check_writable(inode_parent)
 
         with llfuse.lock_released:
-            p.collection.remove(name)
+            p.unlink(name)
 
+    @catch_exceptions
     def rmdir(self, inode_parent, name):
-        self.unlink(inode_parent, name)
+        _logger.debug("arv-mount rmdir: %i '%s'", inode_parent, name)
+        p = self._check_writable(inode_parent)
+
+        with llfuse.lock_released:
+            p.rmdir(name)
 
     @catch_exceptions
     def rename(self, inode_parent_old, name_old, inode_parent_new, name_new):
@@ -518,9 +520,7 @@ class Operations(llfuse.Operations):
         dest = self._check_writable(inode_parent_new)
 
         with llfuse.lock_released:
-            dest.collection.rename(name_old, name_new, source_collection=src.collection, overwrite=True)
-            dest.flush()
-            src.flush()
+            dest.rename(name_old, name_new, src)
 
     @catch_exceptions
     def flush(self, fh):

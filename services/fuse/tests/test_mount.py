@@ -26,6 +26,7 @@ class MountTestBase(unittest.TestCase):
         run_test_server.run()
         run_test_server.authorize_with("admin")
         self.api = arvados.safeapi.ThreadSafeApiCache(arvados.config.settings())
+        self.pool = multiprocessing.Pool(1)
 
     def make_mount(self, root_class, **root_kwargs):
         self.operations = fuse.Operations(os.getuid(), os.getgid())
@@ -50,6 +51,7 @@ class MountTestBase(unittest.TestCase):
         os.rmdir(self.mounttmp)
         shutil.rmtree(self.keeptmp)
         run_test_server.reset()
+        self.pool.close()
 
     def assertDirContents(self, subdir, expect_content):
         path = self.mounttmp
@@ -240,12 +242,12 @@ class FuseSharedTest(MountTestBase):
         # to the current user)
         shared_dirs = llfuse.listdir(self.mounttmp)
         shared_dirs.sort()
-        self.assertIn('FUSE User', shared_dirs)
+        self.assertIn('FUSE', shared_dirs)
 
         # fuse_user_objs is a list of the objects owned by the FUSE
         # test user (which present as files in the 'FUSE User'
         # directory)
-        fuse_user_objs = llfuse.listdir(os.path.join(self.mounttmp, 'FUSE User'))
+        fuse_user_objs = llfuse.listdir(os.path.join(self.mounttmp, 'FUSE'))
         fuse_user_objs.sort()
         self.assertEqual(['FUSE Test Project',                    # project owned by user
                           'collection #1 owned by FUSE',          # collection owned by user
@@ -254,7 +256,7 @@ class FuseSharedTest(MountTestBase):
                       ], fuse_user_objs)
 
         # test_proj_files is a list of the files in the FUSE Test Project.
-        test_proj_files = llfuse.listdir(os.path.join(self.mounttmp, 'FUSE User', 'FUSE Test Project'))
+        test_proj_files = llfuse.listdir(os.path.join(self.mounttmp, 'FUSE', 'FUSE Test Project'))
         test_proj_files.sort()
         self.assertEqual(['collection in FUSE project',
                           'pipeline instance in FUSE project.pipelineInstance',
@@ -265,7 +267,7 @@ class FuseSharedTest(MountTestBase):
         # and that its contents are what we expect.
         pipeline_template_path = os.path.join(
                 self.mounttmp,
-                'FUSE User',
+                'FUSE',
                 'FUSE Test Project',
                 'pipeline template in FUSE project.pipelineTemplate')
         with open(pipeline_template_path) as f:
@@ -279,7 +281,7 @@ class FuseSharedTest(MountTestBase):
         # check mtime on collection
         st = os.stat(os.path.join(
                 self.mounttmp,
-                'FUSE User',
+                'FUSE',
                 'collection #1 owned by FUSE'))
         self.assertEqual(st.st_mtime, 1391448174)
 
@@ -315,7 +317,26 @@ class FuseHomeTest(MountTestBase):
         d3 = llfuse.listdir(os.path.join(self.mounttmp, 'Unrestricted public data', 'GNU General Public License, version 3'))
         self.assertEqual(["GNU_General_Public_License,_version_3.pdf"], d3)
 
-class FuseUpdateFileTest(MountTestBase):
+
+def fuseModifyFileTestHelper1(mounttmp):
+    class Test(unittest.TestCase):
+        def runTest(self):
+            d1 = llfuse.listdir(mounttmp)
+            self.assertEqual(["file1.txt"], d1)
+            with open(os.path.join(mounttmp, "file1.txt")) as f:
+                self.assertEqual("blub", f.read())
+    Test().runTest()
+
+def fuseModifyFileTestHelper2(mounttmp):
+    class Test(unittest.TestCase):
+        def runTest(self):
+            d1 = llfuse.listdir(mounttmp)
+            self.assertEqual(["file1.txt"], d1)
+            with open(os.path.join(mounttmp, "file1.txt")) as f:
+                self.assertEqual("plnp", f.read())
+    Test().runTest()
+
+class FuseModifyFileTest(MountTestBase):
     def runTest(self):
         collection = arvados.collection.Collection(api_client=self.api)
         with collection.open("file1.txt", "w") as f:
@@ -327,18 +348,12 @@ class FuseUpdateFileTest(MountTestBase):
         with llfuse.lock:
             m.new_collection(collection.api_response(), collection)
 
-        d1 = llfuse.listdir(self.mounttmp)
-        self.assertEqual(["file1.txt"], d1)
-        with open(os.path.join(self.mounttmp, "file1.txt")) as f:
-            self.assertEqual("blub", f.read())
+        self.pool.apply(fuseModifyFileTestHelper1, (self.mounttmp,))
 
         with collection.open("file1.txt", "w") as f:
             f.write("plnp")
 
-        d1 = llfuse.listdir(self.mounttmp)
-        self.assertEqual(["file1.txt"], d1)
-        with open(os.path.join(self.mounttmp, "file1.txt")) as f:
-            self.assertEqual("plnp", f.read())
+        self.pool.apply(fuseModifyFileTestHelper2, (self.mounttmp,))
 
 class FuseAddFileToCollectionTest(MountTestBase):
     def runTest(self):
@@ -413,7 +428,14 @@ class FuseCreateFileTest(MountTestBase):
         self.assertRegexpMatches(collection2["manifest_text"],
             r'\. d41d8cd98f00b204e9800998ecf8427e\+0\+A[a-f0-9]{40}@[a-f0-9]{8} 0:0:file1\.txt$')
 
-def fuseWriteFileTestHelper(mounttmp):
+def fuseWriteFileTestHelper1(mounttmp):
+    class Test(unittest.TestCase):
+        def runTest(self):
+            with open(os.path.join(mounttmp, "file1.txt"), "w") as f:
+                f.write("Hello world!")
+    Test().runTest()
+
+def fuseWriteFileTestHelper2(mounttmp):
     class Test(unittest.TestCase):
         def runTest(self):
             with open(os.path.join(mounttmp, "file1.txt"), "r") as f:
@@ -422,8 +444,6 @@ def fuseWriteFileTestHelper(mounttmp):
 
 class FuseWriteFileTest(MountTestBase):
     def runTest(self):
-        arvados.logger.setLevel(logging.DEBUG)
-
         collection = arvados.collection.Collection(api_client=self.api)
         collection.save_new()
 
@@ -434,12 +454,6 @@ class FuseWriteFileTest(MountTestBase):
 
         self.assertNotIn("file1.txt", collection)
 
-        with open(os.path.join(self.mounttmp, "file1.txt"), "w") as f:
-            f.write("Hello world!")
-
-        with collection.open("file1.txt") as f:
-            self.assertEqual(f.read(), "Hello world!")
-
         # We can't just open the collection for reading because the underlying
         # C implementation of open() makes a fstat() syscall with the GIL still
         # held.  When the GETATTR message comes back to llfuse (which in these
@@ -447,17 +461,23 @@ class FuseWriteFileTest(MountTestBase):
         # so it can't service the fstat() call, so it deadlocks.  The
         # workaround is to run some of our test code in a separate process.
         # Forturnately the multiprocessing module makes this relatively easy.
-        pool = multiprocessing.Pool(1)
-        pool.apply(fuseWriteFileTestHelper, (self.mounttmp,))
-        pool.close()
+        self.pool.apply(fuseWriteFileTestHelper1, (self.mounttmp,))
+
+        with collection.open("file1.txt") as f:
+            self.assertEqual(f.read(), "Hello world!")
+
+        self.pool.apply(fuseWriteFileTestHelper2, (self.mounttmp,))
 
         collection2 = self.api.collections().get(uuid=collection.manifest_locator()).execute()
         self.assertRegexpMatches(collection2["manifest_text"],
             r'\. 86fb269d190d2c85f6e0468ceca42a20\+12\+A[a-f0-9]{40}@[a-f0-9]{8} 0:12:file1\.txt$')
 
-def fuseUpdateFileTestHelper1(mounttmp):
+def fuseUpdateFileTestHelper(mounttmp):
     class Test(unittest.TestCase):
         def runTest(self):
+            with open(os.path.join(mounttmp, "file1.txt"), "w") as f:
+                f.write("Hello world!")
+
             with open(os.path.join(mounttmp, "file1.txt"), "r+") as f:
                 fr = f.read()
                 self.assertEqual(fr, "Hello world!")
@@ -466,20 +486,14 @@ def fuseUpdateFileTestHelper1(mounttmp):
                 f.seek(0)
                 fr = f.read()
                 self.assertEqual(fr, "Hola mundo!!")
-                return True
-    Test().runTest()
 
-def fuseUpdateFileTestHelper2(mounttmp):
-    class Test(unittest.TestCase):
-        def runTest(self):
             with open(os.path.join(mounttmp, "file1.txt"), "r") as f:
-                return f.read() == "Hola mundo!!"
+                self.assertEqual(f.read(), "Hola mundo!!")
+
     Test().runTest()
 
 class FuseUpdateFileTest(MountTestBase):
     def runTest(self):
-        arvados.logger.setLevel(logging.DEBUG)
-
         collection = arvados.collection.Collection(api_client=self.api)
         collection.save_new()
 
@@ -488,14 +502,8 @@ class FuseUpdateFileTest(MountTestBase):
             m.new_collection(collection.api_response(), collection)
         self.assertTrue(m.writable())
 
-        with open(os.path.join(self.mounttmp, "file1.txt"), "w") as f:
-            f.write("Hello world!")
-
         # See note in FuseWriteFileTest
-        pool = multiprocessing.Pool(1)
-        pool.apply(fuseUpdateFileTestHelper1, (self.mounttmp,))
-        pool.apply(fuseUpdateFileTestHelper2, (self.mounttmp,))
-        pool.close()
+        self.pool.apply(fuseUpdateFileTestHelper, (self.mounttmp,))
 
         collection2 = self.api.collections().get(uuid=collection.manifest_locator()).execute()
         self.assertRegexpMatches(collection2["manifest_text"],
@@ -504,8 +512,6 @@ class FuseUpdateFileTest(MountTestBase):
 
 class FuseMkdirTest(MountTestBase):
     def runTest(self):
-        arvados.logger.setLevel(logging.DEBUG)
-
         collection = arvados.collection.Collection(api_client=self.api)
         collection.save_new()
 
@@ -539,8 +545,6 @@ class FuseMkdirTest(MountTestBase):
 
 class FuseRmTest(MountTestBase):
     def runTest(self):
-        arvados.logger.setLevel(logging.DEBUG)
-
         collection = arvados.collection.Collection(api_client=self.api)
         collection.save_new()
 
@@ -599,8 +603,6 @@ class FuseRmTest(MountTestBase):
 
 class FuseMvFileTest(MountTestBase):
     def runTest(self):
-        arvados.logger.setLevel(logging.DEBUG)
-
         collection = arvados.collection.Collection(api_client=self.api)
         collection.save_new()
 
@@ -636,10 +638,18 @@ class FuseMvFileTest(MountTestBase):
             r'\. 86fb269d190d2c85f6e0468ceca42a20\+12\+A[a-f0-9]{40}@[a-f0-9]{8} 0:12:file1\.txt$')
 
 
+def fuseRenameTestHelper(mounttmp):
+    class Test(unittest.TestCase):
+        def runTest(self):
+            os.mkdir(os.path.join(mounttmp, "testdir"))
+
+            with open(os.path.join(mounttmp, "testdir", "file1.txt"), "w") as f:
+                f.write("Hello world!")
+
+    Test().runTest()
+
 class FuseRenameTest(MountTestBase):
     def runTest(self):
-        arvados.logger.setLevel(logging.DEBUG)
-
         collection = arvados.collection.Collection(api_client=self.api)
         collection.save_new()
 
@@ -648,10 +658,7 @@ class FuseRenameTest(MountTestBase):
             m.new_collection(collection.api_response(), collection)
         self.assertTrue(m.writable())
 
-        os.mkdir(os.path.join(self.mounttmp, "testdir"))
-
-        with open(os.path.join(self.mounttmp, "testdir", "file1.txt"), "w") as f:
-            f.write("Hello world!")
+        self.pool.apply(fuseRenameTestHelper, (self.mounttmp,))
 
         # Starting manifest
         collection2 = self.api.collections().get(uuid=collection.manifest_locator()).execute()
@@ -677,8 +684,6 @@ class FuseRenameTest(MountTestBase):
 
 class FuseUpdateFromEventTest(MountTestBase):
     def runTest(self):
-        arvados.logger.setLevel(logging.DEBUG)
-
         collection = arvados.collection.Collection(api_client=self.api)
         collection.save_new()
 
@@ -722,8 +727,6 @@ def fuseFileConflictTestHelper(mounttmp):
 
 class FuseFileConflictTest(MountTestBase):
     def runTest(self):
-        arvados.logger.setLevel(logging.DEBUG)
-
         collection = arvados.collection.Collection(api_client=self.api)
         collection.save_new()
 
@@ -742,9 +745,7 @@ class FuseFileConflictTest(MountTestBase):
             f.write("bar")
 
         # See comment in FuseWriteFileTest
-        pool = multiprocessing.Pool(1)
-        pool.apply(fuseFileConflictTestHelper, (self.mounttmp,))
-        pool.close()
+        self.pool.apply(fuseFileConflictTestHelper, (self.mounttmp,))
 
 
 def fuseUnlinkOpenFileTest(mounttmp):
@@ -772,8 +773,6 @@ def fuseUnlinkOpenFileTest(mounttmp):
 
 class FuseUnlinkOpenFileTest(MountTestBase):
     def runTest(self):
-        arvados.logger.setLevel(logging.DEBUG)
-
         collection = arvados.collection.Collection(api_client=self.api)
         collection.save_new()
 
@@ -782,9 +781,7 @@ class FuseUnlinkOpenFileTest(MountTestBase):
             m.new_collection(collection.api_response(), collection)
 
         # See comment in FuseWriteFileTest
-        pool = multiprocessing.Pool(1)
-        pool.apply(fuseUnlinkOpenFileTest, (self.mounttmp,))
-        pool.close()
+        self.pool.apply(fuseUnlinkOpenFileTest, (self.mounttmp,))
 
         self.assertEqual(collection.manifest_text(), "")
 
@@ -816,8 +813,6 @@ def fuseMvFileBetweenCollectionsTest2(mounttmp, uuid1, uuid2):
 
 class FuseMvFileBetweenCollectionsTest(MountTestBase):
     def runTest(self):
-        arvados.logger.setLevel(logging.DEBUG)
-
         collection1 = arvados.collection.Collection(api_client=self.api)
         collection1.save_new()
 
@@ -827,8 +822,7 @@ class FuseMvFileBetweenCollectionsTest(MountTestBase):
         m = self.make_mount(fuse.MagicDirectory)
 
         # See comment in FuseWriteFileTest
-        pool = multiprocessing.Pool(1)
-        pool.apply(fuseMvFileBetweenCollectionsTest1, (self.mounttmp,
+        self.pool.apply(fuseMvFileBetweenCollectionsTest1, (self.mounttmp,
                                                   collection1.manifest_locator(),
                                                   collection2.manifest_locator()))
 
@@ -838,10 +832,9 @@ class FuseMvFileBetweenCollectionsTest(MountTestBase):
         self.assertRegexpMatches(collection1.manifest_text(), r"\. 86fb269d190d2c85f6e0468ceca42a20\+12\+A[a-f0-9]{40}@[a-f0-9]{8} 0:12:file1\.txt$")
         self.assertEqual(collection2.manifest_text(), "")
 
-        pool.apply(fuseMvFileBetweenCollectionsTest2, (self.mounttmp,
+        self.pool.apply(fuseMvFileBetweenCollectionsTest2, (self.mounttmp,
                                                   collection1.manifest_locator(),
                                                   collection2.manifest_locator()))
-        pool.close()
 
         collection1.update()
         collection2.update()
@@ -884,8 +877,6 @@ def fuseMvDirBetweenCollectionsTest2(mounttmp, uuid1, uuid2):
 
 class FuseMvDirBetweenCollectionsTest(MountTestBase):
     def runTest(self):
-        arvados.logger.setLevel(logging.DEBUG)
-
         collection1 = arvados.collection.Collection(api_client=self.api)
         collection1.save_new()
 
@@ -895,8 +886,7 @@ class FuseMvDirBetweenCollectionsTest(MountTestBase):
         m = self.make_mount(fuse.MagicDirectory)
 
         # See comment in FuseWriteFileTest
-        pool = multiprocessing.Pool(1)
-        pool.apply(fuseMvDirBetweenCollectionsTest1, (self.mounttmp,
+        self.pool.apply(fuseMvDirBetweenCollectionsTest1, (self.mounttmp,
                                                   collection1.manifest_locator(),
                                                   collection2.manifest_locator()))
 
@@ -906,10 +896,9 @@ class FuseMvDirBetweenCollectionsTest(MountTestBase):
         self.assertRegexpMatches(collection1.manifest_text(), r"\./testdir 86fb269d190d2c85f6e0468ceca42a20\+12\+A[a-f0-9]{40}@[a-f0-9]{8} 0:12:file1\.txt$")
         self.assertEqual(collection2.manifest_text(), "")
 
-        pool.apply(fuseMvDirBetweenCollectionsTest2, (self.mounttmp,
+        self.pool.apply(fuseMvDirBetweenCollectionsTest2, (self.mounttmp,
                                                   collection1.manifest_locator(),
                                                   collection2.manifest_locator()))
-        pool.close()
 
         collection1.update()
         collection2.update()
