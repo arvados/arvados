@@ -6,6 +6,8 @@ import arvados
 import apiclient
 import functools
 import threading
+from apiclient import errors as apiclient_errors
+import errno
 
 from fusefile import StringFile, ObjectFile, FuseArvadosFile
 from fresh import FreshBase, convertTime, use_counter
@@ -89,6 +91,11 @@ class Directory(FreshBase):
     def __contains__(self, k):
         self.checkupdate()
         return k in self._entries
+
+    @use_counter
+    def __len__(self):
+        self.checkupdate()
+        return len(self._entries)
 
     def fresh(self):
         self.inodes.touch(self)
@@ -174,19 +181,19 @@ class Directory(FreshBase):
     def flush(self):
         pass
 
-    def create(self):
+    def create(self, name):
         raise NotImplementedError()
 
-    def mkdir(self):
+    def mkdir(self, name):
         raise NotImplementedError()
 
-    def unlink(self):
+    def unlink(self, name):
         raise NotImplementedError()
 
-    def rmdir(self):
+    def rmdir(self, name):
         raise NotImplementedError()
 
-    def rename(self):
+    def rename(self, name_old, name_new, src):
         raise NotImplementedError()
 
 class CollectionDirectoryBase(Directory):
@@ -237,26 +244,32 @@ class CollectionDirectoryBase(Directory):
         return self.collection.writable()
 
     def flush(self):
-        self.collection.root_collection().save()
+        with llfuse.lock_released:
+            self.collection.root_collection().save()
 
     def create(self, name):
-        self.collection.open(name, "w").close()
+        with llfuse.lock_released:
+            self.collection.open(name, "w").close()
 
     def mkdir(self, name):
-        self.collection.mkdirs(name)
+        with llfuse.lock_released:
+            self.collection.mkdirs(name)
 
     def unlink(self, name):
-        self.collection.remove(name)
+        with llfuse.lock_released:
+            self.collection.remove(name)
 
     def rmdir(self, name):
-        self.collection.remove(name)
+        with llfuse.lock_released:
+            self.collection.remove(name)
 
     def rename(self, name_old, name_new, src):
-        if not isinstance(src, CollectionDirectoryBase):
-            raise llfuse.FUSEError(errno.EPERM)
-        self.collection.rename(name_old, name_new, source_collection=src.collection, overwrite=True)
-        self.flush()
-        src.flush()
+        with llfuse.lock_released:
+            if not isinstance(src, CollectionDirectoryBase):
+                raise llfuse.FUSEError(errno.EPERM)
+            self.collection.rename(name_old, name_new, source_collection=src.collection, overwrite=True)
+            self.flush()
+            src.flush()
 
 
 class CollectionDirectory(CollectionDirectoryBase):
@@ -548,6 +561,7 @@ class ProjectDirectory(Directory):
         self._poll = poll
         self._poll_time = poll_time
         self._updating_lock = threading.Lock()
+        self._current_user = None
 
     def createDirectory(self, i):
         if collection_uuid_pattern.match(i['uuid']):
@@ -633,8 +647,39 @@ class ProjectDirectory(Directory):
         else:
             return super(ProjectDirectory, self).__contains__(k)
 
+    def writable(self):
+        with llfuse.lock_released:
+            if not self._current_user:
+                self._current_user = self.api.users().current().execute(num_retries=self.num_retries)
+            return self._current_user["uuid"] in self.project_object["writable_by"]
+
     def persisted(self):
         return True
+
+    def mkdir(self, name):
+        try:
+            with llfuse.lock_released:
+                new_collection = self.api.collections().create(body={"owner_uuid": self.project_uuid,
+                                                                     "name": name,
+                                                                     "manifest_text": ""}).execute(num_retries=self.num_retries)
+            self.invalidate()
+        except apiclient_errors.Error as error:
+            _logger.error(error)
+            raise llfuse.FUSEError(errno.EEXIST)
+
+    def rmdir(self, name):
+        if name not in self:
+            raise llfuse.FUSEError(errno.ENOENT)
+        if not isinstance(self[name], CollectionDirectory):
+            raise llfuse.FUSEError(errno.EPERM)
+        if len(self[name]) > 0:
+            raise llfuse.FUSEError(errno.ENOTEMPTY)
+        with llfuse.lock_released:
+            self.api.collections().delete(uuid=self[name].uuid()).execute(num_retries=self.num_retries)
+        self.invalidate()
+
+    def rename(self, name_old, name_new, src):
+        raise NotImplementedError()
 
 
 class SharedDirectory(Directory):

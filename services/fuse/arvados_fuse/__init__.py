@@ -469,9 +469,7 @@ class Operations(llfuse.Operations):
     @catch_exceptions
     def create(self, inode_parent, name, mode, flags, ctx):
         p = self._check_writable(inode_parent)
-
-        with llfuse.lock_released:
-            p.create(name)
+        p.create(name)
 
         # The file entry should have been implicitly created by callback.
         f = p[name]
@@ -487,9 +485,7 @@ class Operations(llfuse.Operations):
         _logger.debug("arv-mount mkdir: %i '%s' %o", inode_parent, name, mode)
 
         p = self._check_writable(inode_parent)
-
-        with llfuse.lock_released:
-            p.mkdir(name)
+        p.mkdir(name)
 
         # The dir entry should have been implicitly created by callback.
         d = p[name]
@@ -501,26 +497,20 @@ class Operations(llfuse.Operations):
     def unlink(self, inode_parent, name):
         _logger.debug("arv-mount unlink: %i '%s'", inode_parent, name)
         p = self._check_writable(inode_parent)
-
-        with llfuse.lock_released:
-            p.unlink(name)
+        p.unlink(name)
 
     @catch_exceptions
     def rmdir(self, inode_parent, name):
         _logger.debug("arv-mount rmdir: %i '%s'", inode_parent, name)
         p = self._check_writable(inode_parent)
-
-        with llfuse.lock_released:
-            p.rmdir(name)
+        p.rmdir(name)
 
     @catch_exceptions
     def rename(self, inode_parent_old, name_old, inode_parent_new, name_new):
         _logger.debug("arv-mount rename: %i '%s' %i '%s'", inode_parent_old, name_old, inode_parent_new, name_new)
         src = self._check_writable(inode_parent_old)
         dest = self._check_writable(inode_parent_new)
-
-        with llfuse.lock_released:
-            dest.rename(name_old, name_new, src)
+        dest.rename(name_old, name_new, src)
 
     @catch_exceptions
     def flush(self, fh):
