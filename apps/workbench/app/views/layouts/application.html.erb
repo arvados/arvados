@@ -22,6 +22,7 @@
   <%# Add open graph meta tags %>
   <meta property="og:type" content="article" />
   <meta property="og:url" content="<%= request.url %>" />
+  <meta property="og:site_name" content="<%= Rails.configuration.site_name %>" />
   <% if @object %>
     <% if (@object.respond_to?(:name) rescue nil) and @object.name.present? %>
       <meta property="og:title" content="<%= @object.name%>" />
