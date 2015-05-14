@@ -119,10 +119,14 @@ class CollectionsController < ApplicationController
     # we ask the API server if the file actually exists.  This serves two
     # purposes: it lets us return a useful status code for common errors, and
     # helps us figure out which token to provide to arv-get.
+    # The order of searched tokens is important: because the anonymous user
+    # token is passed along with every API request, we have to check it first.
+    # Otherwise, it's impossible to know whether any other request succeeded
+    # because of the reader token.
     coll = nil
-    tokens = [Thread.current[:arvados_api_token],
+    tokens = [(Rails.configuration.anonymous_user_token || nil),
               params[:reader_token],
-              (Rails.configuration.anonymous_user_token || nil)].compact
+              Thread.current[:arvados_api_token]].compact
     usable_token = find_usable_token(tokens) do
       coll = Collection.find(params[:uuid])
     end
