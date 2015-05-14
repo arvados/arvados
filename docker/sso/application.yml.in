@@ -15,6 +15,10 @@ production:
   secret_token: @@SSO_SECRET@@
   uuid_prefix: 'zzzzz'
 
+  # If true, allow new creation of new accounts in the SSO server's internal
+  # user database.
+  allow_account_registration: true
+
 development:
   # No development settings 
 
