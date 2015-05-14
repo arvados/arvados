@@ -803,3 +803,66 @@ func ExpectBody(
 			testname, expected_body, response)
 	}
 }
+
+// Invoke the PutBlockHandler a bunch of times to test for bufferpool resource
+// leak.
+func TestPutHandlerNoBufferleak(t *testing.T) {
+	defer teardown()
+
+	// Prepare two test Keep volumes.
+	KeepVM = MakeTestVolumeManager(2)
+	defer KeepVM.Close()
+
+	// Unfortunately this will just hang if the bug is present, because
+	// bufferPool.Get() blocks forever.  To make this actually fail we need
+	// some kind of watchdog timer that kills the test after a while.
+
+	for i := 0; i < maxBuffers+1; i += 1 {
+		// Unauthenticated request, no server key
+		// => OK (unsigned response)
+		unsigned_locator := "/" + TEST_HASH
+		response := IssueRequest(
+			&RequestTester{
+				method:       "PUT",
+				uri:          unsigned_locator,
+				request_body: TEST_BLOCK,
+			})
+		ExpectStatusCode(t,
+			"TestPutHandlerBufferleak", http.StatusOK, response)
+		ExpectBody(t,
+			"TestPutHandlerBufferleak",
+			TEST_HASH_PUT_RESPONSE, response)
+	}
+}
+
+// Invoke the GetBlockHandler a bunch of times to test for bufferpool resource
+// leak.
+func TestGetHandlerNoBufferleak(t *testing.T) {
+	defer teardown()
+
+	// Prepare two test Keep volumes. Our block is stored on the second volume.
+	KeepVM = MakeTestVolumeManager(2)
+	defer KeepVM.Close()
+
+	vols := KeepVM.AllWritable()
+	if err := vols[0].Put(TEST_HASH, TEST_BLOCK); err != nil {
+		t.Error(err)
+	}
+
+	for i := 0; i < maxBuffers+1; i += 1 {
+		// Unauthenticated request, unsigned locator
+		// => OK
+		unsigned_locator := "/" + TEST_HASH
+		response := IssueRequest(
+			&RequestTester{
+				method: "GET",
+				uri:    unsigned_locator,
+			})
+		ExpectStatusCode(t,
+			"Unauthenticated request, unsigned locator", http.StatusOK, response)
+		ExpectBody(t,
+			"Unauthenticated request, unsigned locator",
+			string(TEST_BLOCK),
+			response)
+	}
+}
