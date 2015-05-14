@@ -514,6 +514,7 @@ func GetBlock(hash string, update_timestamp bool) ([]byte, error) {
 			if !os.IsNotExist(err) {
 				log.Printf("GetBlock: reading %s: %s\n", hash, err)
 			}
+			bufs.Put(buf)
 			continue
 		}
 		// Check the file checksum.
@@ -525,6 +526,7 @@ func GetBlock(hash string, update_timestamp bool) ([]byte, error) {
 			log.Printf("%s: checksum mismatch for request %s (actual %s)\n",
 				vol, hash, filehash)
 			error_to_caller = DiskHashError
+			bufs.Put(buf)
 			continue
 		}
 		if error_to_caller == DiskHashError {
@@ -536,6 +538,7 @@ func GetBlock(hash string, update_timestamp bool) ([]byte, error) {
 				error_to_caller = GenericError
 				log.Printf("%s: Touch %s failed: %s",
 					vol, hash, error_to_caller)
+				bufs.Put(buf)
 				continue
 			}
 		}
@@ -586,6 +589,7 @@ func PutBlock(block []byte, hash string) error {
 	// so there is nothing special to do if err != nil.
 	//
 	if oldblock, err := GetBlock(hash, true); err == nil {
+		defer bufs.Put(oldblock)
 		if bytes.Compare(block, oldblock) == 0 {
 			// The block already exists; return success.
 			return nil
