@@ -659,9 +659,9 @@ class ProjectDirectory(Directory):
     def mkdir(self, name):
         try:
             with llfuse.lock_released:
-                new_collection = self.api.collections().create(body={"owner_uuid": self.project_uuid,
-                                                                     "name": name,
-                                                                     "manifest_text": ""}).execute(num_retries=self.num_retries)
+                self.api.collections().create(body={"owner_uuid": self.project_uuid,
+                                                    "name": name,
+                                                    "manifest_text": ""}).execute(num_retries=self.num_retries)
             self.invalidate()
         except apiclient_errors.Error as error:
             _logger.error(error)
@@ -679,6 +679,10 @@ class ProjectDirectory(Directory):
         self.invalidate()
 
     def rename(self, name_old, name_new, src):
+        with llfuse.lock_released:
+            if not isinstance(src, ProjectDirectory):
+                raise llfuse.FUSEError(errno.EPERM)
+
         raise NotImplementedError()
 
 
