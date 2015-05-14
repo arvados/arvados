@@ -258,10 +258,12 @@ class CollectionDirectoryBase(Directory):
     def unlink(self, name):
         with llfuse.lock_released:
             self.collection.remove(name)
+        self.flush()
 
     def rmdir(self, name):
         with llfuse.lock_released:
             self.collection.remove(name)
+        self.flush()
 
     def rename(self, name_old, name_new, src):
         if not isinstance(src, CollectionDirectoryBase):
@@ -270,14 +272,14 @@ class CollectionDirectoryBase(Directory):
         if name_new in self:
             ent = src[name_old]
             tgt = self[name_new]
-            if isinstance(FuseArvadosFile, ent) and isinstance(FuseArvadosFile, tgt):
+            if isinstance(ent, FuseArvadosFile) and isinstance(tgt, FuseArvadosFile):
                 pass
-            elif isinstance(CollectionDirectoryBase, ent) and isinstance(CollectionDirectoryBase, tgt):
+            elif isinstance(ent, CollectionDirectoryBase) and isinstance(tgt, CollectionDirectoryBase):
                 if len(tgt) > 0:
                     raise llfuse.FUSEError(errno.ENOTEMPTY)
-            elif isinstance(CollectionDirectoryBase, ent) and isinstance(FuseArvadosFile, tgt):
+            elif isinstance(ent, CollectionDirectoryBase) and isinstance(tgt, FuseArvadosFile):
                 raise llfuse.FUSEError(errno.ENOTDIR)
-            elif isinstance(FuseArvadosFile, ent) and isinstance(CollectionDirectoryBase, tgt):
+            elif isinstance(ent, FuseArvadosFile) and isinstance(tgt, CollectionDirectoryBase):
                 raise llfuse.FUSEError(errno.EISDIR)
 
         with llfuse.lock_released:

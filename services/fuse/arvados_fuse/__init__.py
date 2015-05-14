@@ -292,6 +292,19 @@ class Operations(llfuse.Operations):
         return entry
 
     @catch_exceptions
+    def setattr(self, inode, attr):
+        entry = self.getattr(inode)
+
+        e = self.inodes[inode]
+
+        if attr.st_size is not None and isinstance(e, FuseArvadosFile):
+            with llfuse.lock_released:
+                e.arvfile.truncate(attr.st_size)
+                entry.st_size = e.arvfile.size()
+
+        return entry
+
+    @catch_exceptions
     def lookup(self, parent_inode, name):
         name = unicode(name, self.encoding)
         inode = None
