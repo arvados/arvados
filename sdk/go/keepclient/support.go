@@ -220,6 +220,7 @@ func (this KeepClient) putReplicas(
 
 	// Calculate the ordering for uploading to servers
 	sv := NewRootSorter(this.WritableRoots(), hash).GetSortedRoots()
+
 	// The next server to try contacting
 	next_server := 0
 

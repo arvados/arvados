@@ -620,8 +620,7 @@ func (s *StandaloneSuite) TestGetWithServiceHintFailoverToLocals(c *C) {
 	kc.SetServiceRoots(
 		map[string]string{"zzzzz-bi6l4-keepdisk0000000": ksLocal.url},
 		map[string]string{uuid: ksGateway.url},
-		map[string]string{"zzzzz-bi6l4-keepdisk0000000": ksLocal.url},
-  )
+		map[string]string{"zzzzz-bi6l4-keepdisk0000000": ksLocal.url})
 
 	r, n, uri, err := kc.Get(hash + "+K@" + uuid)
 	c.Assert(err, Equals, nil)
