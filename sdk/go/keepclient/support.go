@@ -118,7 +118,7 @@ func (this *KeepClient) DiscoverKeepServers() error {
 		}
 
 		if service.ReadOnly == false {
-			writableRoots[url] = ""
+			writableRoots[service.Uuid] = url
 		}
 
 		// Gateway services are only used when specified by
@@ -219,8 +219,7 @@ func (this KeepClient) putReplicas(
 	requestId := fmt.Sprintf("%x", md5.Sum([]byte(locator+time.Now().String())))[0:8]
 
 	// Calculate the ordering for uploading to servers
-	sv := NewRootSorter(this.LocalRoots(), hash).GetSortedRoots()
-
+	sv := NewRootSorter(this.WritableRoots(), hash).GetSortedRoots()
 	// The next server to try contacting
 	next_server := 0
 
@@ -238,12 +237,10 @@ func (this KeepClient) putReplicas(
 		for active < remaining_replicas {
 			// Start some upload requests
 			if next_server < len(sv) {
-				if _, ok := this.WritableRoots()[sv[next_server]]; ok { // If writable
-					log.Printf("[%v] Begin upload %s to %s", requestId, hash, sv[next_server])
-					go this.uploadToKeepServer(sv[next_server], hash, tr.MakeStreamReader(), upload_status, expectedLength, requestId)
-					active += 1
-				}
+				log.Printf("[%v] Begin upload %s to %s", requestId, hash, sv[next_server])
+				go this.uploadToKeepServer(sv[next_server], hash, tr.MakeStreamReader(), upload_status, expectedLength, requestId)
 				next_server += 1
+				active += 1
 			} else {
 				if active == 0 {
 					return locator, (this.Want_replicas - remaining_replicas), InsufficientReplicasError

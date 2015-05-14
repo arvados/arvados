@@ -249,7 +249,7 @@ func (s *StandaloneSuite) TestPutB(c *C) {
 
 	for i, k := range ks {
 		localRoots[fmt.Sprintf("zzzzz-bi6l4-fakefakefake%03d", i)] = k.url
-		writableRoots[k.url] = ""
+		writableRoots[fmt.Sprintf("zzzzz-bi6l4-fakefakefake%03d", i)] = k.url
 		defer k.listener.Close()
 	}
 
@@ -294,7 +294,7 @@ func (s *StandaloneSuite) TestPutHR(c *C) {
 
 	for i, k := range ks {
 		localRoots[fmt.Sprintf("zzzzz-bi6l4-fakefakefake%03d", i)] = k.url
-		writableRoots[k.url] = ""
+		writableRoots[fmt.Sprintf("zzzzz-bi6l4-fakefakefake%03d", i)] = k.url
 		defer k.listener.Close()
 	}
 
@@ -351,12 +351,12 @@ func (s *StandaloneSuite) TestPutWithFail(c *C) {
 
 	for i, k := range ks1 {
 		localRoots[fmt.Sprintf("zzzzz-bi6l4-fakefakefake%03d", i)] = k.url
-		writableRoots[k.url] = ""
+		writableRoots[fmt.Sprintf("zzzzz-bi6l4-fakefakefake%03d", i)] = k.url
 		defer k.listener.Close()
 	}
 	for i, k := range ks2 {
 		localRoots[fmt.Sprintf("zzzzz-bi6l4-fakefakefake%03d", i+len(ks1))] = k.url
-		writableRoots[k.url] = ""
+		writableRoots[fmt.Sprintf("zzzzz-bi6l4-fakefakefake%03d", i+len(ks1))] = k.url
 		defer k.listener.Close()
 	}
 
@@ -410,12 +410,12 @@ func (s *StandaloneSuite) TestPutWithTooManyFail(c *C) {
 
 	for i, k := range ks1 {
 		localRoots[fmt.Sprintf("zzzzz-bi6l4-fakefakefake%03d", i)] = k.url
-		writableRoots[k.url] = ""
+		writableRoots[fmt.Sprintf("zzzzz-bi6l4-fakefakefake%03d", i)] = k.url
 		defer k.listener.Close()
 	}
 	for i, k := range ks2 {
 		localRoots[fmt.Sprintf("zzzzz-bi6l4-fakefakefake%03d", i+len(ks1))] = k.url
-		writableRoots[k.url] = ""
+		writableRoots[fmt.Sprintf("zzzzz-bi6l4-fakefakefake%03d", i+len(ks1))] = k.url
 		defer k.listener.Close()
 	}
 
@@ -577,7 +577,11 @@ func (s *StandaloneSuite) TestGetWithLocalServiceHint(c *C) {
 			"zzzzz-bi6l4-xxxxxxxxxxxxxxx": ks0.url,
 			"zzzzz-bi6l4-wwwwwwwwwwwwwww": ks0.url,
 			uuid: ks.url},
-		map[string]string{ks.url: ""},
+		map[string]string{
+			"zzzzz-bi6l4-yyyyyyyyyyyyyyy": ks0.url,
+			"zzzzz-bi6l4-xxxxxxxxxxxxxxx": ks0.url,
+			"zzzzz-bi6l4-wwwwwwwwwwwwwww": ks0.url,
+			uuid: ks.url},
 	)
 
 	r, n, uri, err := kc.Get(hash + "+K@" + uuid)
@@ -616,7 +620,8 @@ func (s *StandaloneSuite) TestGetWithServiceHintFailoverToLocals(c *C) {
 	kc.SetServiceRoots(
 		map[string]string{"zzzzz-bi6l4-keepdisk0000000": ksLocal.url},
 		map[string]string{uuid: ksGateway.url},
-		map[string]string{ksLocal.url: "", ksGateway.url: ""})
+		map[string]string{"zzzzz-bi6l4-keepdisk0000000": ksLocal.url},
+  )
 
 	r, n, uri, err := kc.Get(hash + "+K@" + uuid)
 	c.Assert(err, Equals, nil)
@@ -692,12 +697,12 @@ func (s *StandaloneSuite) TestGetWithFailures(c *C) {
 
 	for i, k := range ks1 {
 		localRoots[fmt.Sprintf("zzzzz-bi6l4-fakefakefake%03d", i)] = k.url
-		writableRoots[k.url] = ""
+		writableRoots[fmt.Sprintf("zzzzz-bi6l4-fakefakefake%03d", i)] = k.url
 		defer k.listener.Close()
 	}
 	for i, k := range ks2 {
 		localRoots[fmt.Sprintf("zzzzz-bi6l4-fakefakefake%03d", i+len(ks1))] = k.url
-		writableRoots[k.url] = ""
+		writableRoots[fmt.Sprintf("zzzzz-bi6l4-fakefakefake%03d", i+len(ks1))] = k.url
 		defer k.listener.Close()
 	}
 
@@ -788,7 +793,7 @@ func (s *StandaloneSuite) TestPutProxy(c *C) {
 
 	for i, k := range ks1 {
 		localRoots[fmt.Sprintf("zzzzz-bi6l4-fakefakefake%03d", i)] = k.url
-		writableRoots[k.url] = ""
+		writableRoots[fmt.Sprintf("zzzzz-bi6l4-fakefakefake%03d", i)] = k.url
 		defer k.listener.Close()
 	}
 
@@ -821,7 +826,7 @@ func (s *StandaloneSuite) TestPutProxyInsufficientReplicas(c *C) {
 
 	for i, k := range ks1 {
 		localRoots[fmt.Sprintf("zzzzz-bi6l4-fakefakefake%03d", i)] = k.url
-		writableRoots[k.url] = ""
+		writableRoots[fmt.Sprintf("zzzzz-bi6l4-fakefakefake%03d", i)] = k.url
 		defer k.listener.Close()
 	}
 	kc.SetServiceRoots(localRoots, nil, writableRoots)
@@ -899,7 +904,7 @@ func (s *StandaloneSuite) TestPutBWant2ReplicasWithOnlyOneWritableRoots(c *C) {
 	for i, k := range ks {
 		localRoots[fmt.Sprintf("zzzzz-bi6l4-fakefakefake%03d", i)] = k.url
 		if i == 0 {
-			writableRoots[k.url] = ""
+			writableRoots[fmt.Sprintf("zzzzz-bi6l4-fakefakefake%03d", i)] = k.url
 		}
 		defer k.listener.Close()
 	}

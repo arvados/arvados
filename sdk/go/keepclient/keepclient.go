@@ -196,7 +196,7 @@ func (kc *KeepClient) GatewayRoots() map[string]string {
 }
 
 // WritableRoots() returns the map of writable Keep services:
-// url -> ""
+// uuid -> baseURI.
 func (kc *KeepClient) WritableRoots() map[string]string {
 	kc.lock.RLock()
 	defer kc.lock.RUnlock()
@@ -220,8 +220,8 @@ func (kc *KeepClient) SetServiceRoots(newLocals, newGateways map[string]string, 
 		gateways[uuid] = root
 	}
 	writables := make(map[string]string)
-	for root, _ := range writableRoots {
-		writables[root] = ""
+	for uuid, root := range writableRoots {
+		writables[uuid] = root
 	}
 	kc.lock.Lock()
 	defer kc.lock.Unlock()
