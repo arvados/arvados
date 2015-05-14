@@ -739,6 +739,8 @@ class FuseRenameTest(MountTestBase):
 
 class FuseUpdateFromEventTest(MountTestBase):
     def runTest(self):
+        arvados.logger.setLevel(logging.DEBUG)
+
         collection = arvados.collection.Collection(api_client=self.api)
         collection.save_new()
 
@@ -1004,6 +1006,39 @@ class FuseProjectMkdirRmdirTest(MountTestBase):
 
         d1 = llfuse.listdir(self.mounttmp)
         self.assertNotIn('testcollection', d1)
+
+
+def fuseProjectMvTestHelper1(mounttmp):
+    class Test(unittest.TestCase):
+        def runTest(self):
+            d1 = llfuse.listdir(mounttmp)
+            self.assertNotIn('testcollection', d1)
+
+            os.mkdir(os.path.join(mounttmp, "testcollection"))
+
+            d1 = llfuse.listdir(mounttmp)
+            self.assertIn('testcollection', d1)
+
+            with self.assertRaises(OSError):
+                os.rename(os.path.join(mounttmp, "testcollection"), os.path.join(mounttmp, 'Unrestricted public data'))
+
+            os.rename(os.path.join(mounttmp, "testcollection"), os.path.join(mounttmp, 'Unrestricted public data', 'testcollection'))
+
+            d1 = llfuse.listdir(mounttmp)
+            self.assertNotIn('testcollection', d1)
+
+            d1 = llfuse.listdir(os.path.join(mounttmp, 'Unrestricted public data'))
+            self.assertIn('testcollection', d1)
+
+    Test().runTest()
+
+class FuseProjectMvTest(MountTestBase):
+    def runTest(self):
+        self.make_mount(fuse.ProjectDirectory,
+                        project_object=self.api.users().current().execute())
+
+        self.pool.apply(fuseProjectMvTestHelper1, (self.mounttmp,))
+
 
 class FuseUnitTest(unittest.TestCase):
     def test_sanitize_filename(self):

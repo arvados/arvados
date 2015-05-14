@@ -1,6 +1,7 @@
 import logging
 import re
 import json
+import llfuse
 
 from fresh import FreshBase, convertTime
 
@@ -59,8 +60,9 @@ class FuseArvadosFile(File):
         return self.arvfile.writable()
 
     def flush(self):
-        if self.writable():
-            self.arvfile.parent.root_collection().save()
+        with llfuse.lock_released:
+            if self.writable():
+                self.arvfile.parent.root_collection().save()
 
 
 class StringFile(File):
@@ -87,6 +89,9 @@ class ObjectFile(StringFile):
     def uuid(self):
         return self.object_uuid
 
-    def update(self, obj):
+    def update(self, obj=None):
         self._mtime = convertTime(obj['modified_at']) if 'modified_at' in obj else 0
         self.contents = json.dumps(obj, indent=4, sort_keys=True) + "\n"
+
+    def persisted(self):
+        return True

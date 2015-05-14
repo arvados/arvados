@@ -264,12 +264,26 @@ class CollectionDirectoryBase(Directory):
             self.collection.remove(name)
 
     def rename(self, name_old, name_new, src):
+        if not isinstance(src, CollectionDirectoryBase):
+            raise llfuse.FUSEError(errno.EPERM)
+
+        if name_new in self:
+            ent = src[name_old]
+            tgt = self[name_new]
+            if isinstance(FuseArvadosFile, ent) and isinstance(FuseArvadosFile, tgt):
+                pass
+            elif isinstance(CollectionDirectoryBase, ent) and isinstance(CollectionDirectoryBase, tgt):
+                if len(tgt) > 0:
+                    raise llfuse.FUSEError(errno.ENOTEMPTY)
+            elif isinstance(CollectionDirectoryBase, ent) and isinstance(FuseArvadosFile, tgt):
+                raise llfuse.FUSEError(errno.ENOTDIR)
+            elif isinstance(FuseArvadosFile, ent) and isinstance(CollectionDirectoryBase, tgt):
+                raise llfuse.FUSEError(errno.EISDIR)
+
         with llfuse.lock_released:
-            if not isinstance(src, CollectionDirectoryBase):
-                raise llfuse.FUSEError(errno.EPERM)
             self.collection.rename(name_old, name_new, source_collection=src.collection, overwrite=True)
-            self.flush()
-            src.flush()
+        self.flush()
+        src.flush()
 
 
 class CollectionDirectory(CollectionDirectoryBase):
@@ -679,12 +693,29 @@ class ProjectDirectory(Directory):
         self.invalidate()
 
     def rename(self, name_old, name_new, src):
-        with llfuse.lock_released:
-            if not isinstance(src, ProjectDirectory):
-                raise llfuse.FUSEError(errno.EPERM)
+        if not isinstance(src, ProjectDirectory):
+            raise llfuse.FUSEError(errno.EPERM)
 
-        raise NotImplementedError()
+        ent = src[name_old]
 
+        if not isinstance(ent, CollectionDirectory):
+            raise llfuse.FUSEError(errno.EPERM)
+
+        if name_new in self:
+            # POSIX semantics for replacing one directory with another is
+            # tricky (the target directory must be empty, the operation must be
+            # atomic which isn't possible with the Arvados API as of this
+            # writing) so don't support that.
+            raise llfuse.FUSEError(errno.EPERM)
+
+        self.api.collections().update(uuid=ent.uuid(),
+                                      body={"owner_uuid": self.uuid(),
+                                            "name": name_new}).execute(num_retries=self.num_retries)
+
+        # Acually move the entry from source directory to this directory.
+        del src._entries[name_old]
+        self._entries[name_new] = ent
+        llfuse.invalidate_entry(src.inode, name_old)
 
 class SharedDirectory(Directory):
     """A special directory that represents users or groups who have shared projects with me."""

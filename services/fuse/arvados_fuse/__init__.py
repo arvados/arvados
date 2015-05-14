@@ -47,8 +47,7 @@ class Handle(object):
         self.obj.dec_use()
 
     def flush(self):
-        with llfuse.lock_released:
-            return self.obj.flush()
+        return self.obj.flush()
 
 
 class FileHandle(Handle):
@@ -244,12 +243,12 @@ class Operations(llfuse.Operations):
         if 'event_type' in ev:
             with llfuse.lock:
                 item = self.inodes.inode_cache.find(ev["object_uuid"])
-                if item:
+                if item is not None:
                     item.invalidate()
                     item.update()
 
                 itemparent = self.inodes.inode_cache.find(ev["object_owner_uuid"])
-                if itemparent:
+                if itemparent is not None:
                     itemparent.invalidate()
                     itemparent.update()
 
