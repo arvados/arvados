@@ -821,10 +821,10 @@ func TestPutHandlerNoBufferleak(t *testing.T) {
 			unsigned_locator := "/" + TEST_HASH
 			response := IssueRequest(
 				&RequestTester{
-				method:       "PUT",
-				uri:          unsigned_locator,
-				request_body: TEST_BLOCK,
-			})
+					method:       "PUT",
+					uri:          unsigned_locator,
+					request_body: TEST_BLOCK,
+				})
 			ExpectStatusCode(t,
 				"TestPutHandlerBufferleak", http.StatusOK, response)
 			ExpectBody(t,
@@ -834,7 +834,7 @@ func TestPutHandlerNoBufferleak(t *testing.T) {
 		ok <- true
 	}()
 	select {
-	case <-time.After(20*time.Second):
+	case <-time.After(20 * time.Second):
 		// If the buffer pool leaks, the test goroutine hangs.
 		t.Fatal("test did not finish, assuming pool leaked")
 	case <-ok:
@@ -863,9 +863,9 @@ func TestGetHandlerNoBufferleak(t *testing.T) {
 			unsigned_locator := "/" + TEST_HASH
 			response := IssueRequest(
 				&RequestTester{
-				method: "GET",
-				uri:    unsigned_locator,
-			})
+					method: "GET",
+					uri:    unsigned_locator,
+				})
 			ExpectStatusCode(t,
 				"Unauthenticated request, unsigned locator", http.StatusOK, response)
 			ExpectBody(t,
@@ -876,7 +876,7 @@ func TestGetHandlerNoBufferleak(t *testing.T) {
 		ok <- true
 	}()
 	select {
-	case <-time.After(20*time.Second):
+	case <-time.After(20 * time.Second):
 		// If the buffer pool leaks, the test goroutine hangs.
 		t.Fatal("test did not finish, assuming pool leaked")
 	case <-ok:

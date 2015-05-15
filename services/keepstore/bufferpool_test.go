@@ -10,8 +10,10 @@ import (
 func TestBufferPool(t *testing.T) {
 	TestingT(t)
 }
+
 var _ = Suite(&BufferPoolSuite{})
-type BufferPoolSuite struct {}
+
+type BufferPoolSuite struct{}
 
 // Initialize a default-sized buffer pool for the benefit of test
 // suites that don't run main().
@@ -50,7 +52,7 @@ func testBufferPoolRace(c *C, bufs *bufferPool, unused []byte, expectWin string)
 		race <- "Get"
 	}()
 	go func() {
-		time.Sleep(10*time.Millisecond)
+		time.Sleep(10 * time.Millisecond)
 		bufs.Put(unused)
 		race <- "Put"
 	}()
@@ -81,5 +83,5 @@ func (s *BufferPoolSuite) TestBufferPoolReuse(c *C) {
 		}
 		last = next
 	}
-	c.Check(reuses > allocs * 95/100, Equals, true)
+	c.Check(reuses > allocs*95/100, Equals, true)
 }
