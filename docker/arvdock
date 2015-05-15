@@ -47,12 +47,12 @@ function ip_address {
 function bridge_ip_address {
     local bridge_name=$1
     # FIXME: add a more robust check here.
-    # because ip command could be mising, multiple docker birdges could be there.. etc.
-    echo $(ip -oneline addr show  | grep $bridge_name | grep -E '\binet\b' | awk '{ print $4 }'| cut -d/ -f1 )
+    # because ip command could be mising, multiple docker bridges could be there.. etc.
+    echo $(ip --oneline --family inet addr show dev "$bridge_name" | awk '{ print $4 }'| cut -d/ -f1 )
 }
 
 function start_container {
-    bridge_ip=$(bridge_ip_address "$start_bridge")
+    bridge_ip=$(bridge_ip_address "$bridge")
 
     local args="-d -i -t"
     if [[ "$1" != '' ]]; then
@@ -126,12 +126,12 @@ function do_start {
     local start_nameserver=false
     local start_keep=false
     local start_keepproxy=false
-    local start_bridge="docker0"
+    local bridge="docker0"
     local
 
     # NOTE: This requires GNU getopt (part of the util-linux package on Debian-based distros).
-    local TEMP=`getopt -o d::s::a::cw::nkpvh \
-                  --long doc::,sso::,api::,bridge::,compute,workbench::,nameserver,keep,keepproxy,vm,help \
+    local TEMP=`getopt -o d::s::b:a::cw::nkpvh \
+                  --long doc::,sso::,api::,bridge:,compute,workbench::,nameserver,keep,keepproxy,vm,help \
                   -n "$0" -- "$@"`
 
     if [ $? != 0 ] ; then echo "Use -h for help"; exit 1 ; fi
@@ -144,7 +144,6 @@ function do_start {
         case $1 in
             -b | --bridge)
                 case "$2" in
-                    "") start_bridge="docker0"; shift 2 ;;
                     *)  start_bridge=$2; shift 2 ;;
                 esac
                 ;;
@@ -214,7 +213,6 @@ function do_start {
           $start_keep == false &&
           $start_keepproxy == false ]]
     then
-        start_bridge="docker0"
         start_doc=9898
         #the sso server is currently not used by default so don't start it unless explicitly requested
         #start_sso=9901
@@ -233,8 +231,8 @@ function do_start {
       # so make sure they are running
       $DOCKER ps | grep skydns >/dev/null
       if [[ "$?" != "0" ]]; then
-        echo "Detecting bridge '$start_bridge' IP for crosbymichael/skydns"
-        bridge_ip=$(bridge_ip_address "$start_bridge")
+        echo "Detecting bridge '$bridge' IP for crosbymichael/skydns"
+        bridge_ip=$(bridge_ip_address "$bridge")
 
         echo "Starting crosbymichael/skydns container..."
         $DOCKER rm "skydns" 2>/dev/null
