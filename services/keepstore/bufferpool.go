@@ -39,8 +39,6 @@ func (p *bufferPool) Get(size int) []byte {
 }
 
 func (p *bufferPool) Put(buf []byte) {
-	if buf != nil {
-		p.Pool.Put(buf)
-		<-p.limiter
-	}
+	p.Pool.Put(buf)
+	<-p.limiter
 }

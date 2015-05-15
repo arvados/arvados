@@ -514,7 +514,6 @@ func GetBlock(hash string, update_timestamp bool) ([]byte, error) {
 			if !os.IsNotExist(err) {
 				log.Printf("GetBlock: reading %s: %s\n", hash, err)
 			}
-			bufs.Put(buf)
 			continue
 		}
 		// Check the file checksum.
