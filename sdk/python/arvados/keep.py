@@ -648,6 +648,10 @@ class KeepClient(object):
                     'uuid': 'proxy',
                     '_service_root': proxy,
                     }]
+                self._writable_services = [{
+                    'uuid': 'proxy',
+                    '_service_root': proxy,
+                    }]
                 self.using_proxy = True
                 self._static_services_list = True
             else:
@@ -659,6 +663,7 @@ class KeepClient(object):
                 self.api_token = api_client.api_token
                 self._gateway_services = {}
                 self._keep_services = None
+                self._writable_services = None
                 self.using_proxy = None
                 self._static_services_list = False
 
@@ -711,6 +716,9 @@ class KeepClient(object):
             self._keep_services = [
                 ks for ks in accessible
                 if ks.get('service_type') in ['disk', 'proxy']]
+            self._writable_services = [
+                ks for ks in accessible
+                if (ks.get('service_type') in ['disk', 'proxy']) and (True != ks.get('read_only'))]
             _logger.debug(str(self._keep_services))
 
             self.using_proxy = any(ks.get('service_type') == 'proxy'
@@ -725,7 +733,7 @@ class KeepClient(object):
         """
         return hashlib.md5(data_hash + service_uuid[-15:]).hexdigest()
 
-    def weighted_service_roots(self, locator, force_rebuild=False):
+    def weighted_service_roots(self, locator, force_rebuild=False, need_writable=False):
         """Return an array of Keep service endpoints, in the order in
         which they should be probed when reading or writing data with
         the given hash+hints.
@@ -750,21 +758,24 @@ class KeepClient(object):
         # Sort the available local services by weight (heaviest first)
         # for this locator, and return their service_roots (base URIs)
         # in that order.
+        use_services = self._keep_services
+        if (need_writable == True):
+          use_services = self._writable_services
         sorted_roots.extend([
             svc['_service_root'] for svc in sorted(
-                self._keep_services,
+                use_services,
                 reverse=True,
                 key=lambda svc: self._service_weight(locator.md5sum, svc['uuid']))])
         _logger.debug("{}: {}".format(locator, sorted_roots))
         return sorted_roots
 
-    def map_new_services(self, roots_map, locator, force_rebuild, **headers):
+    def map_new_services(self, roots_map, locator, force_rebuild, need_writable, **headers):
         # roots_map is a dictionary, mapping Keep service root strings
         # to KeepService objects.  Poll for Keep services, and add any
         # new ones to roots_map.  Return the current list of local
         # root strings.
         headers.setdefault('Authorization', "OAuth2 %s" % (self.api_token,))
-        local_roots = self.weighted_service_roots(locator, force_rebuild)
+        local_roots = self.weighted_service_roots(locator, force_rebuild, need_writable)
         for root in local_roots:
             if root not in roots_map:
                 roots_map[root] = self.KeepService(
@@ -858,7 +869,8 @@ class KeepClient(object):
             try:
                 sorted_roots = self.map_new_services(
                     roots_map, locator,
-                    force_rebuild=(tries_left < num_retries))
+                    force_rebuild=(tries_left < num_retries),
+                    need_writable=False)
             except Exception as error:
                 loop.save_result(error)
                 continue
@@ -939,7 +951,7 @@ class KeepClient(object):
             try:
                 local_roots = self.map_new_services(
                     roots_map, locator,
-                    force_rebuild=(tries_left < num_retries), **headers)
+                    force_rebuild=(tries_left < num_retries), need_writable=True, **headers)
             except Exception as error:
                 loop.save_result(error)
                 continue

@@ -463,6 +463,16 @@ class KeepClientServiceTestCase(unittest.TestCase, tutil.ApiClientMock):
             keep_client.put(data)
         self.assertEqual(2, len(exc_check.exception.request_errors()))
 
+    def test_proxy_put_with_no_writable_services(self):
+        data = 'test with no writable services'
+        data_loc = '{}+{}'.format(hashlib.md5(data).hexdigest(), len(data))
+        api_client = self.mock_keep_services(service_type='proxy', read_only=True, count=1)
+        with tutil.mock_keep_responses(data_loc, 200, 500, 500) as req_mock, \
+                self.assertRaises(arvados.errors.KeepWriteError) as exc_check:
+          keep_client = arvados.KeepClient(api_client=api_client)
+          keep_client.put(data)
+        self.assertEqual(True, ("no Keep services available" in str(exc_check.exception)))
+        self.assertEqual(0, len(exc_check.exception.request_errors()))
 
 class KeepClientTimeout(unittest.TestCase, tutil.ApiClientMock):
     DATA = 'x' * 2**10
