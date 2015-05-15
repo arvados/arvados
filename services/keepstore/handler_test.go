@@ -813,25 +813,31 @@ func TestPutHandlerNoBufferleak(t *testing.T) {
 	KeepVM = MakeTestVolumeManager(2)
 	defer KeepVM.Close()
 
-	// Unfortunately this will just hang if the bug is present, because
-	// bufferPool.Get() blocks forever.  To make this actually fail we need
-	// some kind of watchdog timer that kills the test after a while.
-
-	for i := 0; i < maxBuffers+1; i += 1 {
-		// Unauthenticated request, no server key
-		// => OK (unsigned response)
-		unsigned_locator := "/" + TEST_HASH
-		response := IssueRequest(
-			&RequestTester{
+	ok := make(chan bool)
+	go func() {
+		for i := 0; i < maxBuffers+1; i += 1 {
+			// Unauthenticated request, no server key
+			// => OK (unsigned response)
+			unsigned_locator := "/" + TEST_HASH
+			response := IssueRequest(
+				&RequestTester{
 				method:       "PUT",
 				uri:          unsigned_locator,
 				request_body: TEST_BLOCK,
 			})
-		ExpectStatusCode(t,
-			"TestPutHandlerBufferleak", http.StatusOK, response)
-		ExpectBody(t,
-			"TestPutHandlerBufferleak",
-			TEST_HASH_PUT_RESPONSE, response)
+			ExpectStatusCode(t,
+				"TestPutHandlerBufferleak", http.StatusOK, response)
+			ExpectBody(t,
+				"TestPutHandlerBufferleak",
+				TEST_HASH_PUT_RESPONSE, response)
+		}
+		ok <- true
+	}()
+	select {
+	case <-time.After(20*time.Second):
+		// If the buffer pool leaks, the test goroutine hangs.
+		t.Fatal("test did not finish, assuming pool leaked")
+	case <-ok:
 	}
 }
 
@@ -849,20 +855,30 @@ func TestGetHandlerNoBufferleak(t *testing.T) {
 		t.Error(err)
 	}
 
-	for i := 0; i < maxBuffers+1; i += 1 {
-		// Unauthenticated request, unsigned locator
-		// => OK
-		unsigned_locator := "/" + TEST_HASH
-		response := IssueRequest(
-			&RequestTester{
+	ok := make(chan bool)
+	go func() {
+		for i := 0; i < maxBuffers+1; i += 1 {
+			// Unauthenticated request, unsigned locator
+			// => OK
+			unsigned_locator := "/" + TEST_HASH
+			response := IssueRequest(
+				&RequestTester{
 				method: "GET",
 				uri:    unsigned_locator,
 			})
-		ExpectStatusCode(t,
-			"Unauthenticated request, unsigned locator", http.StatusOK, response)
-		ExpectBody(t,
-			"Unauthenticated request, unsigned locator",
-			string(TEST_BLOCK),
-			response)
+			ExpectStatusCode(t,
+				"Unauthenticated request, unsigned locator", http.StatusOK, response)
+			ExpectBody(t,
+				"Unauthenticated request, unsigned locator",
+				string(TEST_BLOCK),
+				response)
+		}
+		ok <- true
+	}()
+	select {
+	case <-time.After(20*time.Second):
+		// If the buffer pool leaks, the test goroutine hangs.
+		t.Fatal("test did not finish, assuming pool leaked")
+	case <-ok:
 	}
 }
