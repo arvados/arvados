@@ -366,10 +366,9 @@ class Operations(llfuse.Operations):
         self.inodes.touch(handle.obj)
 
         try:
-            with llfuse.lock_released:
-                return handle.obj.readfrom(off, size, self.num_retries)
+            return handle.obj.readfrom(off, size, self.num_retries)
         except arvados.errors.NotFoundError as e:
-            _logger.warning("Block not found: " + str(e))
+            _logger.error("Block not found: " + str(e))
             raise llfuse.FUSEError(errno.EIO)
 
     @catch_exceptions
@@ -385,8 +384,7 @@ class Operations(llfuse.Operations):
 
         self.inodes.touch(handle.obj)
 
-        with llfuse.lock_released:
-            return handle.obj.writeto(off, buf, self.num_retries)
+        return handle.obj.writeto(off, buf, self.num_retries)
 
     @catch_exceptions
     def release(self, fh):

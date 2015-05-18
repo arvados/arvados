@@ -156,6 +156,8 @@ From here, the following directories are available:
     opts = [optname for optname in ['allow_other', 'debug']
             if getattr(args, optname)]
 
+    opts += ["big_writes", "max_read=131072"]
+
     if args.exec_args:
         # Initialize the fuse connection
         llfuse.init(operations, args.mountpoint, opts)

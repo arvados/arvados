@@ -18,6 +18,7 @@ from ._ranges import locators_and_ranges, replace_range, Range
 from .retry import retry_method
 
 MOD = "mod"
+WRITE = "write"
 
 _logger = logging.getLogger('arvados.arvfile')
 
@@ -574,7 +575,8 @@ class _BlockManager(object):
         for k,v in items:
             # flush again with wait=True to remove committed bufferblocks from
             # the segments.
-            v.owner.flush(True)
+            if v.owner:
+                v.owner.flush(True)
 
 
     def block_prefetch(self, locator):
@@ -840,7 +842,7 @@ class ArvadosFile(object):
 
         replace_range(self._segments, offset, len(data), self._current_bblock.blockid, self._current_bblock.write_pointer - len(data))
 
-        self.parent.notify(MOD, self.parent, self.name, (self, self))
+        self.parent.notify(WRITE, self.parent, self.name, (self, self))
 
         return len(data)
 
@@ -864,7 +866,6 @@ class ArvadosFile(object):
                 for s in to_delete:
                    self.parent._my_block_manager().delete_bufferblock(s)
 
-            self.parent.notify(MOD, self.parent, self.name, (self, self))
 
     @must_be_writable
     @synchronized

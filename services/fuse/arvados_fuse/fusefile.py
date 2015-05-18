@@ -48,10 +48,12 @@ class FuseArvadosFile(File):
         return self.arvfile.size()
 
     def readfrom(self, off, size, num_retries=0):
-        return self.arvfile.readfrom(off, size, num_retries, exact=True)
+        with llfuse.lock_released:
+            return self.arvfile.readfrom(off, size, num_retries, exact=True)
 
     def writeto(self, off, buf, num_retries=0):
-        return self.arvfile.writeto(off, buf, num_retries)
+        with llfuse.lock_released:
+            return self.arvfile.writeto(off, buf, num_retries)
 
     def stale(self):
         return False
