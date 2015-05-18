@@ -302,7 +302,16 @@ class Operations(llfuse.Operations):
                 item = self.inodes.inode_cache.find(ev["object_uuid"])
                 if item is not None:
                     item.invalidate()
-                    item.update()
+                    if ev["object_kind"] == "arvados#collection":
+                        item.update(to_pdh=ev.get("properties", {}).get("new_attributes", {}).get("portable_data_hash"))
+                    else:
+                        item.update()
+
+                oldowner = ev.get("properties", {}).get("old_attributes", {}).get("owner_uuid")
+                olditemparent = self.inodes.inode_cache.find(oldowner)
+                if olditemparent is not None:
+                    olditemparent.invalidate()
+                    olditemparent.update()
 
                 itemparent = self.inodes.inode_cache.find(ev["object_owner_uuid"])
                 if itemparent is not None:

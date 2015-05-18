@@ -2,6 +2,9 @@ import logging
 
 _logger = logging.getLogger('arvados.ranges')
 
+# Log level below 'debug' !
+RANGES_SPAM = 9
+
 class Range(object):
     def __init__(self, locator, range_start, range_size, segment_offset=0):
         self.locator = locator
@@ -96,7 +99,7 @@ def locators_and_ranges(data_locators, range_start, range_size):
         block_start = dl.range_start
         block_size = dl.range_size
         block_end = block_start + block_size
-        _logger.debug(
+        _logger.log(RANGES_SPAM,
             "%s range_start %s block_start %s range_end %s block_end %s",
             dl.locator, range_start, block_start, range_end, block_end)
         if range_end <= block_start:
@@ -170,7 +173,7 @@ def replace_range(data_locators, new_range_start, new_range_size, new_locator, n
         dl = data_locators[i]
         old_segment_start = dl.range_start
         old_segment_end = old_segment_start + dl.range_size
-        _logger.debug(
+        _logger.log(RANGES_SPAM,
             "%s range_start %s segment_start %s range_end %s segment_end %s",
             dl, new_range_start, old_segment_start, new_range_end,
             old_segment_end)

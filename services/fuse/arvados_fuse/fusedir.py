@@ -371,7 +371,7 @@ class CollectionDirectory(CollectionDirectoryBase):
         return self.collection_locator
 
     @use_counter
-    def update(self):
+    def update(self, to_pdh=None):
         try:
             if self.collection_record is not None and portable_data_hash_pattern.match(self.collection_locator):
                 return True
@@ -388,7 +388,10 @@ class CollectionDirectory(CollectionDirectoryBase):
 
                     _logger.debug("Updating %s", self.collection_locator)
                     if self.collection:
-                        self.collection.update()
+                        if self.collection.portable_data_hash() == to_pdh:
+                            _logger.debug("%s is fresh at pdh '%s'", self.collection_locator, to_pdh)
+                        else:
+                            self.collection.update()
                     else:
                         if uuid_pattern.match(self.collection_locator):
                             coll_reader = arvados.collection.Collection(

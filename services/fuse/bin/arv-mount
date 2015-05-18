@@ -163,6 +163,9 @@ From here, the following directories are available:
         # Initialize the fuse connection
         llfuse.init(operations, args.mountpoint, opts)
 
+        # Subscribe to change events from API server
+        operations.listen_for_events(api)
+
         t = threading.Thread(None, lambda: llfuse.main())
         t.start()
 
@@ -199,6 +202,10 @@ From here, the following directories are available:
     else:
         try:
             llfuse.init(operations, args.mountpoint, opts)
+
+            # Subscribe to change events from API server
+            operations.listen_for_events(api)
+
             llfuse.main()
         except Exception as e:
             logger.exception('arv-mount: exception during mount')
