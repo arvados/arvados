@@ -866,6 +866,7 @@ class ArvadosFile(object):
                 for s in to_delete:
                    self.parent._my_block_manager().delete_bufferblock(s)
 
+            self.parent.notify(MOD, self.parent, self.name, (self, self))
 
     @must_be_writable
     @synchronized

@@ -1,6 +1,49 @@
-#
-# FUSE driver for Arvados Keep
-#
+"""FUSE driver for Arvados Keep
+
+Architecture:
+
+There is one `Operations` object per mount point.  It is the entry point for all
+read and write requests from the llfuse module.
+
+The operations object owns an `Inodes` object.  The inodes object stores the
+mapping from numeric inode (used throughout the file system API to uniquely
+identify files) to the Python objects that implement files and directories.
+
+The `Inodes` object owns an `InodeCache` object.  The inode cache records the
+memory footprint of file system objects and when they are last used.  When the
+cache limit is exceeded, the least recently used objects are cleared.
+
+File system objects inherit from `fresh.FreshBase` which manages the object lifecycle.
+
+File objects inherit from `fusefile.File`.  Key methods are `readfrom` and `writeto`
+which implement actual reads and writes.
+
+Directory objects inherit from `fusedir.Directory`.  The directory object wraps
+a Python dict which stores the mapping from filenames to directory entries.
+Directory contents can be accessed through the Python operators such as `[]`
+and `in`.  These methods automatically check if the directory is fresh (up to
+date) or stale (needs update) and will call `update` if necessary before
+returing a result.
+
+The general FUSE operation flow is as follows:
+
+- The request handler is called with either an inode or file handle that is the
+  subject of the operation.
+
+- Look up the inode using the Inodes table or the file handle in the
+  filehandles table to get the file system object.
+
+- For methods that alter files or directories, check that the operation is
+  valid and permitted using _check_writable().
+
+- Call the relevant method on the file system object.
+
+- Return the result.
+
+The FUSE driver supports the Arvados event bus.  When an event is received for
+an object that is live in the inode cache, that object is immediately updated.
+
+"""
 
 import os
 import sys
@@ -66,6 +109,17 @@ class DirectoryHandle(Handle):
 
 
 class InodeCache(object):
+    """Records the memory footprint of objects and when they are last used.
+
+    When the cache limit is exceeded, the least recently used objects are
+    cleared.  Clearing the object means discarding its contents to release
+    memory.  The next time the object is accessed, it must be re-fetched from
+    the server.  Note that the inode cache limit is a soft limit; the cache
+    limit may be exceeded if necessary to load very large objects, it may also
+    be exceeded if open file handles prevent objects from being cleared.
+
+    """
+
     def __init__(self, cap, min_entries=4):
         self._entries = collections.OrderedDict()
         self._by_uuid = {}
@@ -172,7 +226,10 @@ class Inodes(object):
             entry.dead = True
             _logger.debug("del_entry on inode %i with refcount %i", entry.inode, entry.ref_count)
 
+
 def catch_exceptions(orig_func):
+    """Catch uncaught exceptions and log them consistently."""
+
     @functools.wraps(orig_func)
     def catch_exceptions_wrapper(self, *args, **kwargs):
         try:
@@ -449,7 +506,7 @@ class Operations(llfuse.Operations):
     @catch_exceptions
     def statfs(self):
         st = llfuse.StatvfsData()
-        st.f_bsize = 64 * 1024
+        st.f_bsize = 128 * 1024
         st.f_blocks = 0
         st.f_files = 0
 

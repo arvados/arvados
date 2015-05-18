@@ -37,6 +37,7 @@ class File(FreshBase):
     def flush(self):
         pass
 
+
 class FuseArvadosFile(File):
     """Wraps a ArvadosFile."""
 

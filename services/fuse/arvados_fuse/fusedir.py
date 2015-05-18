@@ -10,7 +10,7 @@ from apiclient import errors as apiclient_errors
 import errno
 
 from fusefile import StringFile, ObjectFile, FuseArvadosFile
-from fresh import FreshBase, convertTime, use_counter
+from fresh import FreshBase, convertTime, use_counter, check_update
 
 import arvados.collection
 from arvados.util import portable_data_hash_pattern, uuid_pattern, collection_uuid_pattern, group_uuid_pattern, user_uuid_pattern, link_uuid_pattern
@@ -45,9 +45,10 @@ class Directory(FreshBase):
     """
 
     def __init__(self, parent_inode, inodes):
+        """parent_inode is the integer inode number"""
+
         super(Directory, self).__init__()
 
-        """parent_inode is the integer inode number"""
         self.inode = None
         if not isinstance(parent_inode, int):
             raise Exception("parent_inode should be an int")
@@ -78,23 +79,23 @@ class Directory(FreshBase):
                 _logger.warn(e)
 
     @use_counter
+    @check_update
     def __getitem__(self, item):
-        self.checkupdate()
         return self._entries[item]
 
     @use_counter
+    @check_update
     def items(self):
-        self.checkupdate()
         return list(self._entries.items())
 
     @use_counter
+    @check_update
     def __contains__(self, k):
-        self.checkupdate()
         return k in self._entries
 
     @use_counter
+    @check_update
     def __len__(self):
-        self.checkupdate()
         return len(self._entries)
 
     def fresh(self):
@@ -196,7 +197,22 @@ class Directory(FreshBase):
     def rename(self, name_old, name_new, src):
         raise NotImplementedError()
 
+
 class CollectionDirectoryBase(Directory):
+    """Represent an Arvados Collection as a directory.
+
+    This class is used for Subcollections, and is also the base class for
+    CollectionDirectory, which implements collection loading/saving on
+    Collection records.
+
+    Most operations act only the underlying Arvados `Collection` object.  The
+    `Collection` object signals via a notify callback to
+    `CollectionDirectoryBase.on_event` that an item was added, removed or
+    modified.  FUSE inodes and directory entries are created, deleted or
+    invalidated in response to these events.
+
+    """
+
     def __init__(self, parent_inode, inodes, collection):
         super(CollectionDirectoryBase, self).__init__(parent_inode, inodes)
         self.collection = collection
@@ -243,28 +259,39 @@ class CollectionDirectoryBase(Directory):
     def writable(self):
         return self.collection.writable()
 
+    @use_counter
     def flush(self):
         with llfuse.lock_released:
             self.collection.root_collection().save()
 
+    @use_counter
+    @check_update
     def create(self, name):
         with llfuse.lock_released:
             self.collection.open(name, "w").close()
 
+    @use_counter
+    @check_update
     def mkdir(self, name):
         with llfuse.lock_released:
             self.collection.mkdirs(name)
 
+    @use_counter
+    @check_update
     def unlink(self, name):
         with llfuse.lock_released:
             self.collection.remove(name)
         self.flush()
 
+    @use_counter
+    @check_update
     def rmdir(self, name):
         with llfuse.lock_released:
             self.collection.remove(name)
         self.flush()
 
+    @use_counter
+    @check_update
     def rename(self, name_old, name_new, src):
         if not isinstance(src, CollectionDirectoryBase):
             raise llfuse.FUSEError(errno.EPERM)
@@ -289,7 +316,7 @@ class CollectionDirectoryBase(Directory):
 
 
 class CollectionDirectory(CollectionDirectoryBase):
-    """Represents the root of a directory tree holding a collection."""
+    """Represents the root of a directory tree representing a collection."""
 
     def __init__(self, parent_inode, inodes, api, num_retries, collection_record=None, explicit_collection=None):
         super(CollectionDirectory, self).__init__(parent_inode, inodes, None)
@@ -343,6 +370,7 @@ class CollectionDirectory(CollectionDirectoryBase):
     def uuid(self):
         return self.collection_locator
 
+    @use_counter
     def update(self):
         try:
             if self.collection_record is not None and portable_data_hash_pattern.match(self.collection_locator):
@@ -403,8 +431,9 @@ class CollectionDirectory(CollectionDirectoryBase):
                 _logger.error("arv-mount manifest_text is: %s", self.collection_record["manifest_text"])
         return False
 
+    @use_counter
+    @check_update
     def __getitem__(self, item):
-        self.checkupdate()
         if item == '.arvados#collection':
             if self.collection_record_file is None:
                 self.collection_record_file = ObjectFile(self.inode, self.collection_record)
@@ -432,6 +461,7 @@ class CollectionDirectory(CollectionDirectoryBase):
         # to store this collection's metadata.  Calculating the memory
         # footprint directly would be more accurate, but also more complicated.
         return self._manifest_size * 128
+
 
 class MagicDirectory(Directory):
     """A special directory that logically contains the set of all extant keep locators.
@@ -522,6 +552,7 @@ class TagsDirectory(RecursiveInvalidateDirectory):
         self._poll = True
         self._poll_time = poll_time
 
+    @use_counter
     def update(self):
         with llfuse.lock_released:
             tags = self.api.links().list(
@@ -549,6 +580,7 @@ class TagDirectory(Directory):
         self._poll = poll
         self._poll_time = poll_time
 
+    @use_counter
     def update(self):
         with llfuse.lock_released:
             taggedcollections = self.api.links().list(
@@ -597,6 +629,7 @@ class ProjectDirectory(Directory):
     def uuid(self):
         return self.project_uuid
 
+    @use_counter
     def update(self):
         if self.project_object_file == None:
             self.project_object_file = ObjectFile(self.inode, self.project_object)
@@ -650,8 +683,9 @@ class ProjectDirectory(Directory):
         finally:
             self._updating_lock.release()
 
+    @use_counter
+    @check_update
     def __getitem__(self, item):
-        self.checkupdate()
         if item == '.arvados#project':
             return self.project_object_file
         else:
@@ -663,6 +697,8 @@ class ProjectDirectory(Directory):
         else:
             return super(ProjectDirectory, self).__contains__(k)
 
+    @use_counter
+    @check_update
     def writable(self):
         with llfuse.lock_released:
             if not self._current_user:
@@ -672,6 +708,8 @@ class ProjectDirectory(Directory):
     def persisted(self):
         return True
 
+    @use_counter
+    @check_update
     def mkdir(self, name):
         try:
             with llfuse.lock_released:
@@ -683,6 +721,8 @@ class ProjectDirectory(Directory):
             _logger.error(error)
             raise llfuse.FUSEError(errno.EEXIST)
 
+    @use_counter
+    @check_update
     def rmdir(self, name):
         if name not in self:
             raise llfuse.FUSEError(errno.ENOENT)
@@ -694,6 +734,8 @@ class ProjectDirectory(Directory):
             self.api.collections().delete(uuid=self[name].uuid()).execute(num_retries=self.num_retries)
         self.invalidate()
 
+    @use_counter
+    @check_update
     def rename(self, name_old, name_new, src):
         if not isinstance(src, ProjectDirectory):
             raise llfuse.FUSEError(errno.EPERM)
@@ -719,6 +761,7 @@ class ProjectDirectory(Directory):
         self._entries[name_new] = ent
         llfuse.invalidate_entry(src.inode, name_old)
 
+
 class SharedDirectory(Directory):
     """A special directory that represents users or groups who have shared projects with me."""
 
@@ -731,6 +774,7 @@ class SharedDirectory(Directory):
         self._poll = True
         self._poll_time = poll_time
 
+    @use_counter
     def update(self):
         with llfuse.lock_released:
             all_projects = arvados.util.list_all(
