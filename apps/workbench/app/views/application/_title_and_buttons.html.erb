@@ -27,7 +27,7 @@
              success: 'redirect-to-created-object'
            }.to_json),
           { class: "btn btn-sm btn-primary", remote: true, method: 'get',
-            title: "Make a copy this #{object_class}" }) do %>
+            title: "Make a copy of this #{object_class}" }) do %>
         <i class="fa fa-fw fa-copy"></i> Copy to project...
       <% end %>
     <% end %>
@@ -52,15 +52,17 @@
   <% end %>
 <% end %>
 
-<%
-  # Display any flash messages in an alert. If there is any entry with "error" key, alert-danger is used.
-  flash_msg = ''
-  flash_msg_is_error = false
-  flash.each do |msg|
-    flash_msg_is_error ||= (msg[0]=='error')
-    flash_msg += ('<p class="contain-align-left">' + msg[1] + '</p>')
-  end
-  if flash_msg != ''
-%>
-<div class="flash-message alert <%= flash_msg_is_error ? 'alert-danger' : 'alert-warning' %>"><%=flash_msg.html_safe%></div>
+<% unless flash["error"].blank? %>
+<div class="flash-message alert alert-danger" role="alert">
+  <p class="contain-align-left"><%= flash["error"] %></p>
+</div>
+<% flash.delete("error") %>
+<% end %>
+
+<% unless flash.empty? %>
+<div class="flash-message alert alert-warning">
+  <% flash.each do |_, msg| %>
+  <p class="contain-align-left"><%= msg %></p>
+  <% end %>
+</div>
 <% end %>

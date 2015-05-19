@@ -5,7 +5,9 @@ import re
 import subprocess
 import errno
 import sys
-from arvados.collection import *
+
+import arvados
+from arvados.collection import CollectionReader
 
 HEX_RE = re.compile(r'^[0-9a-fA-F]+$')
 

@@ -12,7 +12,7 @@ h2. Install prerequisites
 <pre><code>~$ <span class="userinput">sudo apt-get install \
     bison build-essential gettext libcurl3 libcurl3-gnutls \
     libcurl4-openssl-dev libpcre3-dev libpq-dev libreadline-dev \
-    libssl-dev libxslt1.1 sudo wget zlib1g-dev graphviz
+    libssl-dev libxslt1.1 git wget zlib1g-dev graphviz
 </span></code></pre></notextile>
 
 Also make sure you have "Ruby and bundler":install-manual-prerequisites-ruby.html installed.
@@ -83,7 +83,7 @@ h3. secret_token
 This application needs a secret token. Generate a new secret:
 
 <notextile>
-<pre><code>~/arvados/apps/workbench$ <span class="userinput">rake secret</span>
+<pre><code>~/arvados/apps/workbench$ <span class="userinput">ruby -e 'puts rand(2**400).to_s(36)'</span>
 aaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaa
 </code></pre>
 </notextile>

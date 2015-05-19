@@ -18,6 +18,22 @@
   <meta name="arv-websocket-url" content="<%=$arvados_api_client.discovery[:websocketUrl]%>?api_token=<%=Thread.current[:arvados_api_token]%>">
   <% end %>
   <meta name="robots" content="NOINDEX, NOFOLLOW">
+
+  <%# Feature #5645: Add open graph meta tags to generate this page's
+      social graph that search engines can use. http://ogp.me/ %>
+  <meta property="og:type" content="article" />
+  <meta property="og:url" content="<%= request.url %>" />
+  <meta property="og:site_name" content="<%= Rails.configuration.site_name %>" />
+  <% if @object %>
+    <% if @object.respond_to?(:name) and @object.name.present? %>
+      <meta property="og:title" content="<%= @object.name%>" />
+    <% end %>
+    <% if (@object.respond_to?(:description) rescue nil) and @object.description.present? %>
+      <meta property="og:description" content="<%= @object.description%>" />
+    <% end %>
+  <% end %>
+  <%# Done adding open graph meta tags %>
+
   <%= stylesheet_link_tag    "application", :media => "all" %>
   <%= javascript_include_tag "application" %>
   <%= csrf_meta_tags %>
@@ -37,9 +53,9 @@
     @media (max-width: 979px) { body { padding-top: 0; } }
 
     @media (max-width: 767px) {
-    .breadcrumbs {
-    display: none;
-    }
+      .breadcrumbs {
+        padding-top: 0;
+      }
     }
   </style>
   <link href="//netdna.bootstrapcdn.com/font-awesome/4.1.0/css/font-awesome.css" rel="stylesheet">

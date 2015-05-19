@@ -29,12 +29,13 @@ setup(name='arvados_fuse',
         'bin/arv-mount'
         ],
       install_requires=[
-        'arvados-python-client>=0.1.20150206225333',
+        'arvados-python-client>=0.1.20150303143450',
         'llfuse',
         'python-daemon',
+        'ciso8601'
         ],
       test_suite='tests',
-      tests_require=['PyYAML'],
+      tests_require=['mock>=1.0', 'PyYAML'],
       zip_safe=False,
       cmdclass={'egg_info': tagger},
       )

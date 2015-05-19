@@ -34,16 +34,20 @@ class ApplicationLayoutTest < ActionDispatch::IntegrationTest
 
     within('.navbar-fixed-top') do
       if !user
+        assert_text Rails.configuration.site_name.downcase
+        assert_no_selector 'a', text: Rails.configuration.site_name.downcase
         assert page.has_link?('Log in'), 'Not found link - Log in'
       else
         # my account menu
-        assert page.has_link?("#{user['email']}"), 'Not found link - email'
-        find('a', text: "#{user['email']}").click
+        assert_selector 'a', text: Rails.configuration.site_name.downcase
+        assert(page.has_link?("notifications-menu"), 'no user menu')
+        page.find("#notifications-menu").click
         within('.dropdown-menu') do
           if user['is_active']
             assert page.has_no_link?('Not active'), 'Found link - Not active'
             assert page.has_no_link?('Sign agreements'), 'Found link - Sign agreements'
 
+            assert_selector "a[href=\"/projects/#{user['uuid']}\"]", text: 'Home project'
             assert page.has_link?('Manage account'), 'No link - Manage account'
 
             if profile_config
@@ -52,6 +56,7 @@ class ApplicationLayoutTest < ActionDispatch::IntegrationTest
               assert page.has_no_link?('Manage profile'), 'Found link - Manage profile'
             end
           else
+            assert_no_selector 'a', text: 'Home project'
             assert page.has_no_link?('Manage account'), 'Found link - Manage account'
             assert page.has_no_link?('Manage profile'), 'Found link - Manage profile'
           end
@@ -66,6 +71,8 @@ class ApplicationLayoutTest < ActionDispatch::IntegrationTest
     within('.navbar-fixed-top') do
       page.find("#arv-help").click
       within('.dropdown-menu') do
+        assert_selector 'a', text:'Getting Started ...'
+        assert_selector 'a', text:'Public Pipelines and Data sets'
         assert page.has_link?('Tutorials and User guide'), 'No link - Tutorials and User guide'
         assert page.has_link?('API Reference'), 'No link - API Reference'
         assert page.has_link?('SDK Reference'), 'No link - SDK Reference'
@@ -103,7 +110,8 @@ class ApplicationLayoutTest < ActionDispatch::IntegrationTest
     ['active', api_fixture('users')['active'], true, true],
     ['admin', api_fixture('users')['admin'], true, true],
     ['active_no_prefs', api_fixture('users')['active_no_prefs'], true, false],
-    ['active_no_prefs_profile', api_fixture('users')['active_no_prefs_profile'], true, false],
+    ['active_no_prefs_profile_no_getting_started_shown',
+        api_fixture('users')['active_no_prefs_profile_no_getting_started_shown'], true, false],
   ].each do |token, user, invited, has_profile|
 
     test "visit home page for user #{token}" do
@@ -134,6 +142,61 @@ class ApplicationLayoutTest < ActionDispatch::IntegrationTest
       end
 
       verify_system_menu user
+    end
+  end
+
+  test "test getting started help menu item" do
+    visit page_with_token('active')
+    within '.navbar-fixed-top' do
+      find('.help-menu > a').click
+      find('.help-menu .dropdown-menu a', text: 'Getting Started ...').click
+    end
+
+    within '.modal-content' do
+      assert_text 'Getting Started'
+      assert_selector 'button:not([disabled])', text: 'Next'
+      assert_no_selector 'button:not([disabled])', text: 'Prev'
+
+      # Use Next button to enable Prev button
+      click_button 'Next'
+      assert_selector 'button:not([disabled])', text: 'Prev'  # Prev button is now enabled
+      click_button 'Prev'
+      assert_no_selector 'button:not([disabled])', text: 'Prev'  # Prev button is again disabled
+
+      # Click Next until last page is reached and verify that it is disabled
+      (0..20).each do |i|   # currently we only have 4 pages, and don't expect to have more than 20 in future
+        click_button 'Next'
+        begin
+          find('button:not([disabled])', text: 'Next')
+        rescue => e
+          break
+        end
+      end
+      assert_no_selector 'button:not([disabled])', text: 'Next'  # Next button is disabled
+      assert_selector 'button:not([disabled])', text: 'Prev'     # Prev button is enabled
+      click_button 'Prev'
+      assert_selector 'button:not([disabled])', text: 'Next'     # Next button is now enabled
+
+      first('button', text: 'x').click
+    end
+    assert_text 'Active pipelines' # seeing dashboard now
+  end
+
+  test "test arvados_public_data_doc_url config unset" do
+    Rails.configuration.arvados_public_data_doc_url = false
+
+    visit page_with_token('active')
+    within '.navbar-fixed-top' do
+      find('.help-menu > a').click
+
+      assert_no_selector 'a', text:'Public Pipelines and Data sets'
+
+      assert_selector 'a', text:'Getting Started ...'
+      assert page.has_link?('Tutorials and User guide'), 'No link - Tutorials and User guide'
+      assert page.has_link?('API Reference'), 'No link - API Reference'
+      assert page.has_link?('SDK Reference'), 'No link - SDK Reference'
+      assert page.has_link?('Show version / debugging info ...'), 'No link - Show version / debugging info'
+      assert page.has_link?('Report a problem ...'), 'No link - Report a problem'
     end
   end
 end

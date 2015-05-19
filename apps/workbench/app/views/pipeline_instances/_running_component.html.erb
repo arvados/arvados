@@ -39,7 +39,7 @@
           <% if current_job[:state] == "Queued" %>
             <%# column offset 5 %>
             <div class="col-md-6">
-              <% queuetime = Time.now - current_job[:created_at] %>
+              <% queuetime = Time.now - Time.parse(current_job[:created_at].to_s) %>
               Queued for <%= render_runtime(queuetime, true) %>.
               <% begin %>
                 <% if current_job[:queue_position] == 0 %>
@@ -66,9 +66,9 @@
             <%# column offset 8 %>
             <div class="col-md-4 text-overflow-ellipsis">
               <% if pj[:output_uuid] %>
-                <%= link_to_if_arvados_object pj[:output_uuid], friendly_name: true %>
+                <%= link_to_arvados_object_if_readable(pj[:output_uuid], 'Output data not available', friendly_name: true) %>
               <% elsif current_job[:output] %>
-                <%= link_to_if_arvados_object current_job[:output], link_text: "Output of #{pj[:name]}" %>
+                <%= link_to_arvados_object_if_readable(current_job[:output], 'Output data not available', link_text: "Output of #{pj[:name]}") %>
               <% else %>
                 No output.
               <% end %>
@@ -96,6 +96,15 @@
         <div class="row">
           <div class="col-md-6">
             <table>
+              <% # link to repo tree/file only if the repo is readable
+                 # and the commit is a sha1...
+                 repo =
+                 (/^[0-9a-f]{40}$/ =~ current_component[:script_version] and
+                 Repository.where(name: current_component[:repository]).first)
+
+                 # ...and the api server provides an http:// or https:// url
+                 repo = nil unless repo.andand.http_fetch_url
+                 %>
               <% [:script, :repository, :script_version, :supplied_script_version, :nondeterministic].each do |k| %>
                 <tr>
                   <td style="padding-right: 1em">
@@ -104,6 +113,12 @@
                   <td>
                     <% if current_component[k].nil? %>
                       (none)
+                    <% elsif repo and k == :repository %>
+                      <%= link_to current_component[k], show_repository_tree_path(id: repo.uuid, commit: current_component[:script_version], path: '/') %>
+                    <% elsif repo and k == :script %>
+                      <%= link_to current_component[k], show_repository_blob_path(id: repo.uuid, commit: current_component[:script_version], path: 'crunch_scripts/'+current_component[:script]) %>
+                    <% elsif repo and k == :script_version %>
+                      <%= link_to current_component[k], show_repository_commit_path(id: repo.uuid, commit: current_component[:script_version]) %>
                     <% else %>
                       <%= current_component[k] %>
                     <% end %>
@@ -124,7 +139,8 @@
                     docker_image_locator:
                   </td>
                   <td>
-                    <%= link_to_if_arvados_object current_component[:docker_image_locator], friendly_name: true %>
+                    <%= link_to_arvados_object_if_readable(current_component[:docker_image_locator],
+                      current_component[:docker_image_locator], friendly_name: true) %>
                   </td>
                 </tr>
               <% else %>
@@ -148,9 +164,9 @@
                   </td>
                   <td>
                     <% if k == :uuid %>
-                      <%= link_to_if_arvados_object current_component[k], link_text: current_component[k] %>
+                      <%= link_to_arvados_object_if_readable(current_component[k], current_component[k], link_text: current_component[k]) %>
                     <% elsif k.to_s.end_with? 'uuid' %>
-                      <%= link_to_if_arvados_object current_component[k], friendly_name: true %>
+                      <%= link_to_arvados_object_if_readable(current_component[k], current_component[k], friendly_name: true) %>
                     <% elsif k.to_s.end_with? '_at' %>
                       <%= render_localized_date(current_component[k]) %>
                     <% else %>

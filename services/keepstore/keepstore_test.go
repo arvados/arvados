@@ -52,9 +52,9 @@ func TestGetBlock(t *testing.T) {
 
 	// Prepare two test Keep volumes. Our block is stored on the second volume.
 	KeepVM = MakeTestVolumeManager(2)
-	defer func() { KeepVM.Quit() }()
+	defer KeepVM.Close()
 
-	vols := KeepVM.Volumes()
+	vols := KeepVM.AllReadable()
 	if err := vols[1].Put(TEST_HASH, TEST_BLOCK); err != nil {
 		t.Error(err)
 	}
@@ -77,7 +77,7 @@ func TestGetBlockMissing(t *testing.T) {
 
 	// Create two empty test Keep volumes.
 	KeepVM = MakeTestVolumeManager(2)
-	defer func() { KeepVM.Quit() }()
+	defer KeepVM.Close()
 
 	// Check that GetBlock returns failure.
 	result, err := GetBlock(TEST_HASH, false)
@@ -95,9 +95,9 @@ func TestGetBlockCorrupt(t *testing.T) {
 
 	// Create two test Keep volumes and store a corrupt block in one.
 	KeepVM = MakeTestVolumeManager(2)
-	defer func() { KeepVM.Quit() }()
+	defer KeepVM.Close()
 
-	vols := KeepVM.Volumes()
+	vols := KeepVM.AllReadable()
 	vols[0].Put(TEST_HASH, BAD_BLOCK)
 
 	// Check that GetBlock returns failure.
@@ -119,15 +119,15 @@ func TestPutBlockOK(t *testing.T) {
 
 	// Create two test Keep volumes.
 	KeepVM = MakeTestVolumeManager(2)
-	defer func() { KeepVM.Quit() }()
+	defer KeepVM.Close()
 
 	// Check that PutBlock stores the data as expected.
 	if err := PutBlock(TEST_BLOCK, TEST_HASH); err != nil {
 		t.Fatalf("PutBlock: %v", err)
 	}
 
-	vols := KeepVM.Volumes()
-	result, err := vols[0].Get(TEST_HASH)
+	vols := KeepVM.AllReadable()
+	result, err := vols[1].Get(TEST_HASH)
 	if err != nil {
 		t.Fatalf("Volume #0 Get returned error: %v", err)
 	}
@@ -146,9 +146,9 @@ func TestPutBlockOneVol(t *testing.T) {
 
 	// Create two test Keep volumes, but cripple one of them.
 	KeepVM = MakeTestVolumeManager(2)
-	defer func() { KeepVM.Quit() }()
+	defer KeepVM.Close()
 
-	vols := KeepVM.Volumes()
+	vols := KeepVM.AllWritable()
 	vols[0].(*MockVolume).Bad = true
 
 	// Check that PutBlock stores the data as expected.
@@ -176,7 +176,7 @@ func TestPutBlockMD5Fail(t *testing.T) {
 
 	// Create two test Keep volumes.
 	KeepVM = MakeTestVolumeManager(2)
-	defer func() { KeepVM.Quit() }()
+	defer KeepVM.Close()
 
 	// Check that PutBlock returns the expected error when the hash does
 	// not match the block.
@@ -200,10 +200,10 @@ func TestPutBlockCorrupt(t *testing.T) {
 
 	// Create two test Keep volumes.
 	KeepVM = MakeTestVolumeManager(2)
-	defer func() { KeepVM.Quit() }()
+	defer KeepVM.Close()
 
 	// Store a corrupted block under TEST_HASH.
-	vols := KeepVM.Volumes()
+	vols := KeepVM.AllWritable()
 	vols[0].Put(TEST_HASH, BAD_BLOCK)
 	if err := PutBlock(TEST_BLOCK, TEST_HASH); err != nil {
 		t.Errorf("PutBlock: %v", err)
@@ -231,7 +231,7 @@ func TestPutBlockCollision(t *testing.T) {
 
 	// Prepare two test Keep volumes.
 	KeepVM = MakeTestVolumeManager(2)
-	defer func() { KeepVM.Quit() }()
+	defer KeepVM.Close()
 
 	// Store one block, then attempt to store the other. Confirm that
 	// PutBlock reported a CollisionError.
@@ -254,8 +254,8 @@ func TestPutBlockTouchFails(t *testing.T) {
 
 	// Prepare two test Keep volumes.
 	KeepVM = MakeTestVolumeManager(2)
-	defer func() { KeepVM.Quit() }()
-	vols := KeepVM.Volumes()
+	defer KeepVM.Close()
+	vols := KeepVM.AllWritable()
 
 	// Store a block and then make the underlying volume bad,
 	// so a subsequent attempt to update the file timestamp
@@ -293,29 +293,16 @@ func TestPutBlockTouchFails(t *testing.T) {
 	}
 }
 
-// ========================================
-// FindKeepVolumes tests.
-// ========================================
-
-// TestFindKeepVolumes
-//     Confirms that FindKeepVolumes finds tmpfs volumes with "/keep"
-//     directories at the top level.
-//
-func TestFindKeepVolumes(t *testing.T) {
-	var tempVols [2]string
+func TestDiscoverTmpfs(t *testing.T) {
+	var tempVols [4]string
 	var err error
 
-	defer func() {
-		for _, path := range tempVols {
-			os.RemoveAll(path)
-		}
-	}()
-
-	// Create two directories suitable for using as keep volumes.
+	// Create some directories suitable for using as keep volumes.
 	for i := range tempVols {
 		if tempVols[i], err = ioutil.TempDir("", "findvol"); err != nil {
 			t.Fatal(err)
 		}
+		defer os.RemoveAll(tempVols[i])
 		tempVols[i] = tempVols[i] + "/keep"
 		if err = os.Mkdir(tempVols[i], 0755); err != nil {
 			t.Fatal(err)
@@ -323,53 +310,69 @@ func TestFindKeepVolumes(t *testing.T) {
 	}
 
 	// Set up a bogus PROC_MOUNTS file.
-	if f, err := ioutil.TempFile("", "keeptest"); err == nil {
-		for _, vol := range tempVols {
-			fmt.Fprintf(f, "tmpfs %s tmpfs opts\n", path.Dir(vol))
+	f, err := ioutil.TempFile("", "keeptest")
+	if err != nil {
+		t.Fatal(err)
+	}
+	defer os.Remove(f.Name())
+	for i, vol := range tempVols {
+		// Add readonly mount points at odd indexes.
+		var opts string
+		switch i % 2 {
+		case 0:
+			opts = "rw,nosuid,nodev,noexec"
+		case 1:
+			opts = "nosuid,nodev,noexec,ro"
 		}
-		f.Close()
-		PROC_MOUNTS = f.Name()
+		fmt.Fprintf(f, "tmpfs %s tmpfs %s 0 0\n", path.Dir(vol), opts)
+	}
+	f.Close()
+	PROC_MOUNTS = f.Name()
 
-		// Check that FindKeepVolumes finds the temp volumes.
-		resultVols := FindKeepVolumes()
-		if len(tempVols) != len(resultVols) {
-			t.Fatalf("set up %d volumes, FindKeepVolumes found %d\n",
-				len(tempVols), len(resultVols))
-		}
-		for i := range tempVols {
-			if tempVols[i] != resultVols[i] {
-				t.Errorf("FindKeepVolumes returned %s, expected %s\n",
-					resultVols[i], tempVols[i])
-			}
-		}
+	var resultVols volumeSet
+	added := resultVols.Discover()
 
-		os.Remove(f.Name())
+	if added != len(resultVols) {
+		t.Errorf("Discover returned %d, but added %d volumes",
+			added, len(resultVols))
+	}
+	if added != len(tempVols) {
+		t.Errorf("Discover returned %d but we set up %d volumes",
+			added, len(tempVols))
+	}
+	for i, tmpdir := range tempVols {
+		if tmpdir != resultVols[i].(*UnixVolume).root {
+			t.Errorf("Discover returned %s, expected %s\n",
+				resultVols[i].(*UnixVolume).root, tmpdir)
+		}
+		if expectReadonly := i%2 == 1; expectReadonly != resultVols[i].(*UnixVolume).readonly {
+			t.Errorf("Discover added %s with readonly=%v, should be %v",
+				tmpdir, !expectReadonly, expectReadonly)
+		}
 	}
 }
 
-// TestFindKeepVolumesFail
-//     When no Keep volumes are present, FindKeepVolumes returns an empty slice.
-//
-func TestFindKeepVolumesFail(t *testing.T) {
+func TestDiscoverNone(t *testing.T) {
 	defer teardown()
 
 	// Set up a bogus PROC_MOUNTS file with no Keep vols.
-	if f, err := ioutil.TempFile("", "keeptest"); err == nil {
-		fmt.Fprintln(f, "rootfs / rootfs opts 0 0")
-		fmt.Fprintln(f, "sysfs /sys sysfs opts 0 0")
-		fmt.Fprintln(f, "proc /proc proc opts 0 0")
-		fmt.Fprintln(f, "udev /dev devtmpfs opts 0 0")
-		fmt.Fprintln(f, "devpts /dev/pts devpts opts 0 0")
-		f.Close()
-		PROC_MOUNTS = f.Name()
+	f, err := ioutil.TempFile("", "keeptest")
+	if err != nil {
+		t.Fatal(err)
+	}
+	defer os.Remove(f.Name())
+	fmt.Fprintln(f, "rootfs / rootfs opts 0 0")
+	fmt.Fprintln(f, "sysfs /sys sysfs opts 0 0")
+	fmt.Fprintln(f, "proc /proc proc opts 0 0")
+	fmt.Fprintln(f, "udev /dev devtmpfs opts 0 0")
+	fmt.Fprintln(f, "devpts /dev/pts devpts opts 0 0")
+	f.Close()
+	PROC_MOUNTS = f.Name()
 
-		// Check that FindKeepVolumes returns an empty array.
-		resultVols := FindKeepVolumes()
-		if len(resultVols) != 0 {
-			t.Fatalf("FindKeepVolumes returned %v", resultVols)
-		}
-
-		os.Remove(PROC_MOUNTS)
+	var resultVols volumeSet
+	added := resultVols.Discover()
+	if added != 0 || len(resultVols) != 0 {
+		t.Fatalf("got %d, %v; expected 0, []", added, resultVols)
 	}
 }
 
@@ -382,17 +385,19 @@ func TestIndex(t *testing.T) {
 	// Include multiple blocks on different volumes, and
 	// some metadata files.
 	KeepVM = MakeTestVolumeManager(2)
-	defer func() { KeepVM.Quit() }()
+	defer KeepVM.Close()
 
-	vols := KeepVM.Volumes()
+	vols := KeepVM.AllReadable()
 	vols[0].Put(TEST_HASH, TEST_BLOCK)
 	vols[1].Put(TEST_HASH_2, TEST_BLOCK_2)
 	vols[0].Put(TEST_HASH_3, TEST_BLOCK_3)
 	vols[0].Put(TEST_HASH+".meta", []byte("metadata"))
 	vols[1].Put(TEST_HASH_2+".meta", []byte("metadata"))
 
-	index := vols[0].Index("") + vols[1].Index("")
-	index_rows := strings.Split(index, "\n")
+	buf := new(bytes.Buffer)
+	vols[0].IndexTo("", buf)
+	vols[1].IndexTo("", buf)
+	index_rows := strings.Split(string(buf.Bytes()), "\n")
 	sort.Strings(index_rows)
 	sorted_index := strings.Join(index_rows, "\n")
 	expected := `^\n` + TEST_HASH + `\+\d+ \d+\n` +
@@ -402,7 +407,7 @@ func TestIndex(t *testing.T) {
 	match, err := regexp.MatchString(expected, sorted_index)
 	if err == nil {
 		if !match {
-			t.Errorf("IndexLocators returned:\n%s", index)
+			t.Errorf("IndexLocators returned:\n%s", string(buf.Bytes()))
 		}
 	} else {
 		t.Errorf("regexp.MatchString: %s", err)
@@ -420,9 +425,9 @@ func TestNodeStatus(t *testing.T) {
 
 	// Set up test Keep volumes with some blocks.
 	KeepVM = MakeTestVolumeManager(2)
-	defer func() { KeepVM.Quit() }()
+	defer KeepVM.Close()
 
-	vols := KeepVM.Volumes()
+	vols := KeepVM.AllReadable()
 	vols[0].Put(TEST_HASH, TEST_BLOCK)
 	vols[1].Put(TEST_HASH_2, TEST_BLOCK_2)
 
@@ -450,10 +455,8 @@ func TestNodeStatus(t *testing.T) {
 // Helper functions for unit tests.
 // ========================================
 
-// MakeTestVolumeManager
-//     Creates and returns a RRVolumeManager with the specified number
-//     of MockVolumes.
-//
+// MakeTestVolumeManager returns a RRVolumeManager with the specified
+// number of MockVolumes.
 func MakeTestVolumeManager(num_volumes int) VolumeManager {
 	vols := make([]Volume, num_volumes)
 	for i := range vols {
@@ -462,9 +465,7 @@ func MakeTestVolumeManager(num_volumes int) VolumeManager {
 	return MakeRRVolumeManager(vols)
 }
 
-// teardown
-//     Cleanup to perform after each test.
-//
+// teardown cleans up after each test.
 func teardown() {
 	data_manager_token = ""
 	enforce_permissions = false

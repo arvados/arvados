@@ -1,0 +1,5 @@
+<% if @object.respond_to? :description %>
+  <div class="arv-description-as-subtitle">
+    <%= render_editable_attribute @object, 'description', nil, { 'data-emptytext' => "(No description provided)", 'data-toggle' => 'manual', 'data-mode' => 'inline', 'data-rows' => 10 }, { btntext: 'Edit', btnclass: 'primary', btnplacement: :top } %>
+  </div>
+<% end %>

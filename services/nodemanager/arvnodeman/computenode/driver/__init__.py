@@ -3,6 +3,7 @@
 from __future__ import absolute_import, print_function
 
 import libcloud.common.types as cloud_types
+from libcloud.compute.base import NodeDriver
 
 from ...config import NETWORK_ERRORS
 
@@ -25,14 +26,15 @@ class BaseComputeNodeDriver(object):
         self.real = driver_class(**auth_kwargs)
         self.list_kwargs = list_kwargs
         self.create_kwargs = create_kwargs
+        for key in self.create_kwargs.keys():
+            init_method = getattr(self, '_init_' + key, None)
+            if init_method is not None:
+                new_pair = init_method(self.create_kwargs.pop(key))
+                if new_pair is not None:
+                    self.create_kwargs[new_pair[0]] = new_pair[1]
 
-    def __getattr__(self, name):
-        # Proxy non-extension methods to the real driver.
-        if (not name.startswith('_') and not name.startswith('ex_')
-              and hasattr(self.real, name)):
-            return getattr(self.real, name)
-        else:
-            return super(BaseComputeNodeDriver, self).__getattr__(name)
+    def _init_ping_host(self, ping_host):
+        self.ping_host = ping_host
 
     def search_for(self, term, list_method, key=lambda item: item.id):
         cache_key = (list_method, term)
@@ -51,6 +53,11 @@ class BaseComputeNodeDriver(object):
 
     def arvados_create_kwargs(self, arvados_node):
         raise NotImplementedError("BaseComputeNodeDriver.arvados_create_kwargs")
+
+    def _make_ping_url(self, arvados_node):
+        return 'https://{}/arvados/v1/nodes/{}/ping?ping_secret={}'.format(
+            self.ping_host, arvados_node['uuid'],
+            arvados_node['info']['ping_secret'])
 
     def create_node(self, size, arvados_node):
         kwargs = self.create_kwargs.copy()
@@ -72,6 +79,12 @@ class BaseComputeNodeDriver(object):
         raise NotImplementedError("BaseComputeNodeDriver.sync_node")
 
     @classmethod
+    def node_fqdn(cls, node):
+        # This method should return the FQDN of the node object argument.
+        # Different clouds store this in different places.
+        raise NotImplementedError("BaseComputeNodeDriver.node_fqdn")
+
+    @classmethod
     def node_start_time(cls, node):
         raise NotImplementedError("BaseComputeNodeDriver.node_start_time")
 
@@ -82,3 +95,16 @@ class BaseComputeNodeDriver(object):
         # exactly an Exception, or a better-known higher-level exception.
         return (isinstance(exception, cls.CLOUD_ERRORS) or
                 getattr(exception, '__class__', None) is Exception)
+
+    # Now that we've defined all our own methods, delegate generic, public
+    # attributes of libcloud drivers that we haven't defined ourselves.
+    def _delegate_to_real(attr_name):
+        return property(
+            lambda self: getattr(self.real, attr_name),
+            lambda self, value: setattr(self.real, attr_name, value),
+            doc=getattr(getattr(NodeDriver, attr_name), '__doc__', None))
+
+    _locals = locals()
+    for _attr_name in dir(NodeDriver):
+        if (not _attr_name.startswith('_')) and (_attr_name not in _locals):
+            _locals[_attr_name] = _delegate_to_real(_attr_name)

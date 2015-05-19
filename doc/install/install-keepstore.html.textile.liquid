@@ -33,31 +33,36 @@ Verify that Keepstore is functional:
 
 <notextile>
 <pre><code>~$ <span class="userinput">keepstore -h</span>
-2014/10/29 14:23:38 Keep started: pid 6848
-Usage of keepstore:
+2015/05/08 13:41:16 keepstore starting, pid 2565
+Usage of ./keepstore:
+  -blob-signature-ttl=1209600: Lifetime of blob permission signatures. See services/api/config/application.default.yml.
+  -blob-signing-key-file="": File containing the secret key for generating and verifying blob permission signatures.
   -data-manager-token-file="": File with the API token used by the Data Manager. All DELETE requests or GET /index requests must carry this token.
   -enforce-permissions=false: Enforce permission signatures on requests.
-  -listen=":25107": Interface on which to listen for requests, in the format ipaddr:port. e.g. -listen=10.0.1.24:8000. Use -listen=:port to listen on all network interfaces.
+  -listen=":25107": Listening address, in the form "host:port". e.g., 10.0.1.24:8000. Omit the host part to listen on all interfaces.
+  -max-buffers=128: Maximum RAM to use for data buffers, given in multiples of block size (64 MiB). When this limit is reached, HTTP requests requiring buffers (like GET and PUT) will wait for buffer space to be released.
   -never-delete=false: If set, nothing will be deleted. HTTP 405 will be returned for valid DELETE requests.
-  -permission-key-file="": File containing the secret key for generating and verifying permission signatures.
-  -permission-ttl=1209600: Expiration time (in seconds) for newly generated permission signatures.
-  -pid="": Path to write pid file
-  -serialize=false: If set, all read and write operations on local Keep volumes will be serialized.
-  -volumes="": Comma-separated list of directories to use for Keep volumes, e.g. -volumes=/var/keep1,/var/keep2. If empty or not supplied, Keep will scan mounted filesystems for volumes with a /keep top-level directory.
+  -permission-key-file="": Synonym for -blob-signing-key-file.
+  -permission-ttl=0: Synonym for -blob-signature-ttl.
+  -pid="": Path to write pid file during startup. This file is kept open and locked with LOCK_EX until keepstore exits, so `fuser -k pidfile` is one way to shut down. Exit immediately if there is an error opening, locking, or writing the pid file.
+  -readonly=false: Do not write, delete, or touch anything on the following volumes.
+  -serialize=false: Serialize read and write operations on the following volumes.
+  -volume=[]: Local storage directory. Can be given more than once to add multiple directories. If none are supplied, the default is to use all directories named "keep" that exist in the top level directory of a mount point at startup time. Can be a comma-separated list, but this is deprecated: use multiple -volume arguments instead.
+  -volumes=[]: Deprecated synonym for -volume.
 </code></pre>
 </notextile>
 
-If you want access control on your Keepstore server(s), you should provide a permission key. The @-permission-key-file@ argument should contain the path to a file that contains a single line with a long random alphanumeric string. It should be the same as the @blob_signing_key@ that can be set in the "API server":install-api-server.html config/application.yml file.
+If you want access control on your Keepstore server(s), you must specify the @-enforce-permissions@ flag and provide a signing key. The @-blob-signing-key-file@ argument should be a file containing a long random alphanumeric string with no internal line breaks (it is also possible to use a socket or FIFO: keepstore reads it only once, at startup). This key must be the same as the @blob_signing_key@ configured in the "API server":install-api-server.html config/application.yml file.
+
+The @-max-buffers@ argument can be used to restrict keepstore's memory use. By default, keepstore will allocate no more than 128 blocks (8 GiB) worth of data buffers at a time. Normally this should be set as high as possible without risking swapping.
 
 Prepare one or more volumes for Keepstore to use. Simply create a /keep directory on all the partitions you would like Keepstore to use, and then start Keepstore. For example, using 2 tmpfs volumes:
 
 <notextile>
-<pre><code>~$ <span class="userinput">keepstore</span>
-2014/10/29 11:41:37 Keep started: pid 20736
-2014/10/29 11:41:37 adding Keep volume: /tmp/tmp.vwSCtUCyeH/keep
-2014/10/29 11:41:37 adding Keep volume: /tmp/tmp.Lsn4w8N3Xv/keep
-2014/10/29 11:41:37 Running without a PermissionSecret. Block locators returned by this server will not be signed, and will be rejected by a server that enforces permissions.
-2014/10/29 11:41:37 To fix this, run Keep with --permission-key-file=<path> to define the location of a file containing the permission key.
+<pre><code>~$ <span class="userinput">keepstore -blob-signing-key-file=./blob-signing-key</span>
+2015/05/08 13:44:26 keepstore starting, pid 2765
+2015/05/08 13:44:26 Using volume [UnixVolume /mnt/keep] (writable=true)
+2015/05/08 13:44:26 listening at :25107
 
 </code></pre>
 </notextile>

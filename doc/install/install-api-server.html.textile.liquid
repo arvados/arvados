@@ -12,7 +12,7 @@ h2. Install prerequisites
 <pre><code>~$ <span class="userinput">sudo apt-get install \
     bison build-essential gettext libcurl3 libcurl3-gnutls \
     libcurl4-openssl-dev libpcre3-dev libpq-dev libreadline-dev \
-    libssl-dev libxslt1.1 postgresql sudo wget zlib1g-dev
+    libssl-dev libxslt1.1 postgresql git wget zlib1g-dev
 </span></code></pre></notextile>
 
 Also make sure you have "Ruby and bundler":install-manual-prerequisites-ruby.html installed.
@@ -59,7 +59,7 @@ Consult @config/application.default.yml@ for a full list of configuration option
 
 h3(#uuid_prefix). uuid_prefix
 
-It is recommended to explicitly define your @uuid_prefix@ in @config/application.yml@, by setting the 'uuid_prefix' field in the section for your environment.
+Define your @uuid_prefix@ in @config/application.yml@ by setting the @uuid_prefix@ field in the section for your environment.  This prefix is used for all database identifiers to identify the record as originating from this site.  It must be exactly 5 alphanumeric characters (lowercase ASCII letters and digits).
 
 h3(#git_repositories_dir). git_repositories_dir
 
@@ -77,7 +77,7 @@ h3. secret_token
 Generate a new secret token for signing cookies:
 
 <notextile>
-<pre><code>~/arvados/services/api$ <span class="userinput">rake secret</span>
+<pre><code>~/arvados/services/api$ <span class="userinput">ruby -e 'puts rand(2**400).to_s(36)'</span>
 zzzzzzzzzzzzzzzzzzzzzzzzzzzzzzzzzzzzzzzzzzzzzzzzzzzzzzzz
 </code></pre></notextile>
 
@@ -109,12 +109,10 @@ Generate a new database password. Nobody ever needs to memorize it or type it, s
 Create a new database user with permission to create its own databases.
 
 <notextile>
-<pre><code>~/arvados/services/api$ <span class="userinput">sudo -u postgres createuser --createdb --encrypted --pwprompt arvados</span>
+<pre><code>~/arvados/services/api$ <span class="userinput">sudo -u postgres createuser --createdb --encrypted -R -S --pwprompt arvados</span>
 [sudo] password for <b>you</b>: <span class="userinput">yourpassword</span>
 Enter password for new role: <span class="userinput">paste-password-you-generated</span>
 Enter it again: <span class="userinput">paste-password-again</span>
-Shall the new role be a superuser? (y/n) <span class="userinput">n</span>
-Shall the new role be allowed to create more new roles? (y/n) <span class="userinput">n</span>
 </code></pre></notextile>
 
 Configure API server to connect to your database by creating and updating @config/database.yml@. Replace the @xxxxxxxx@ database password placeholders with the new password you generated above.
@@ -138,13 +136,11 @@ Alternatively, if the database user you intend to use for the API server is not 
 ~/arvados/services/api$ <span class="userinput">RAILS_ENV=production bundle exec rake db:seed</span>
 </code></pre></notextile>
 
-<div class="alert alert-block alert-info">
-  <button type="button" class="close" data-dismiss="alert">&times;</button>
-  <h4>Note!</h4>
+{% include 'notebox_begin' %}
 You can safely ignore the following error message you may see when loading the database structure:
 <notextile>
 <pre><code>ERROR:  must be owner of extension plpgsql</code></pre></notextile>
-</div>
+{% include 'notebox_end' %}
 
 h2(#omniauth). Set up omniauth
 

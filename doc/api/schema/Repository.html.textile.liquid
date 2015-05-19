@@ -18,6 +18,8 @@ Each Repository has, in addition to the usual "attributes of Arvados resources":
 
 table(table table-bordered table-condensed).
 |_. Attribute|_. Type|_. Description|_. Example|
-|name|string|||
-|fetch_url|string|||
-|push_url|string|||
+|name|string|The name of the repository on disk.  Repository names must begin with a letter and contain only alphanumerics.  Unless the repository is owned by the system user, the name must begin with the owner's username, then be separated from the base repository name with @/@.  You may not create a repository that is owned by a user without a username.|@username/project1@|
+|clone_urls|array|URLs from which the repository can be cloned. Read-only.|@["git@git.zzzzz.arvadosapi.com:foo/bar.git",
+ "https://git.zzzzz.arvadosapi.com/foo/bar.git"]@|
+|fetch_url|string|URL suggested as a fetch-url in git config. Deprecated. Read-only.||
+|push_url|string|URL suggested as a push-url in git config. Deprecated. Read-only.||

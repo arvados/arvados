@@ -129,6 +129,9 @@ jQuery(function($){
                     this.addClass('label-danger').fadeTo('fast', '1');
                 });
             return false;
+        }).
+        on('click focusin', 'input.select-on-focus', function(event) {
+            event.target.select();
         });
 
     $(document).
@@ -142,6 +145,12 @@ jQuery(function($){
         on('ready ajax:complete', function() {
             // This makes the dialog close on Esc key, obviously.
             $('.modal').attr('tabindex', '-1')
+        }).
+        on('ready', function() {
+            // Need this to trigger input validation/synchronization callbacks because some browsers
+            // auto-fill form fields (e.g., when navigating "back" to a page where some text
+            // had been entered in a search box) without triggering a change or input event.
+            $('input').trigger('input');
         });
 
     HeaderRowFixer = function(selector) {

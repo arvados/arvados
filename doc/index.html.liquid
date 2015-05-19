@@ -2,7 +2,7 @@
 layout: default
 no_nav_left: true
 navsection: top
-title: Arvados
+title: Arvados | Documentation
 ...
 
 <div class="jumbotron">
@@ -21,28 +21,53 @@ title: Arvados
 
 <div class="container-fluid">
   <div class="row">
-    <div class="col-sm-5">
+    <div class="col-sm-6">
+      <p><strong>What is Arvados</strong>
       <p><a href="https://arvados.org/">Arvados</a> enables you to quickly begin using cloud computing resources in your data science work. It allows you to track your methods and datasets, share them securely, and easily re-run analyses.
       </p>
-      <p><strong>Quickstart</strong>: Check out our <a href="{{ site.baseurl }}/start/index.html">key features</a>, complete with screenshots, and then follow our tutorial to <a href="{{ site.baseurl }}/start/getting_started/firstpipeline.html">run your first pipeline</a> using our <a href="http://lp.curoverse.com/beta-signup/">public beta</a>.
+      <p><strong>News</strong>
+      <p>Read our <a href="https://arvados.org/projects/arvados/blogs">blog updates</a> or look through our <a href="https://arvados.org/projects/arvados/activity">recent developer activity</a>.
       </p>
-      <p><strong>News</strong>: Read our <a href="https://arvados.org/projects/arvados/blogs">blog updates</a> or look through our <a href="https://arvados.org/projects/arvados/activity">recent developer activity</a>.
+      <p><strong>Questions?</strong></p>
+      <p>Email <a href="http://lists.arvados.org/mailman/listinfo/arvados">the mailing list</a>, or chat with us on IRC: <a href="irc://irc.oftc.net:6667/#arvados">#arvados</a> @ OFTC (you can <a href="https://webchat.oftc.net/?channels=arvados">join in your browser</a>).
       </p>
-      <p><strong>Questions?</strong> Email <a href="http://lists.arvados.org/mailman/listinfo/arvados">arvados@arvado.org</a>, or chat with us on IRC: <a href="irc://irc.oftc.net:6667/#arvados">#arvados</a> @ OFTC (you can <a href="https://webchat.oftc.net/?channels=arvados">join in your browser</a>).
+      <p><strong>Want to contribute?</strong></p>
+      <p>Check out our <a href="https://arvados.org/projects/arvados">developer site</a>. We're open source, check out our code on <a href="https://github.com/curoverse/arvados">github</a>.
       </p>
-      <p><strong>Want to contribute?</strong> Check out our <a href="https://arvados.org/projects/arvados">developer site</a>. We're open source, check out our code on <a href="https://github.com/curoverse/arvados">github</a>.
-      </p>
-      <p><strong>License</strong>: Arvados is under the copyleft <a href="{{ site.baseurl }}/user/copying/agpl-3.0.html">GNU AGPL v3</a>, with our SDKs under <a href="{{ site.baseurl }}/user/copying/LICENSE-2.0.html">Apache License 2.0</a> (so that you can incorporate proprietary toolchains into your pipelines).
+      <p><strong>License</strong></p>
+      <p>Arvados is under the copyleft <a href="{{ site.baseurl }}/user/copying/agpl-3.0.html">GNU AGPL v3</a>, with our SDKs under <a href="{{ site.baseurl }}/user/copying/LICENSE-2.0.html">Apache License 2.0</a> (so that you can incorporate proprietary toolchains into your pipelines).
       </p>
 
     </div>
-    <div class="col-sm-7" style="border-left: solid; border-width: 1px">
-      <p>Below you can also find more in-depth guides for using Arvados.
-      </p>
-      <br>
+    <div class="col-sm-6" style="border-left: solid; border-width: 1px">
+      <p><strong>Quickstart</strong> 
       <p>
-        <a href="{{ site.baseurl }}/start/index.html">Getting Started</a> &mdash; Start here if you're new to Arvados.
+        Try any pipeline from the <a href="https://arvados.org/projects/arvados/wiki/Public_Pipelines_and_Datasets">list of public pipelines</a>. For instance, the <a href="http://curover.se/pathomap">Pathomap Pipeline</a> links to these <a href="https://arvados.org/projects/arvados/wiki/pathomap_tutorial/">step-by-step instructions</a> for trying Arvados out right in your browser using Curoverse's <a href="http://lp.curoverse.com/beta-signup/">public Arvados instance</a>.
       </p>
+        <!--<p>-->
+      <!--<ol>-->
+         <!--<li>-->
+           <!--Go to <a href="https://{{ site.arvados_workbench_host }}/" target="_blank">https://{{ site.arvados_workbench_host }}/</a>-->
+        <!--</li><li>-->
+          <!--Register with any Google account-->
+        <!--</li><li>-->
+        <!--Follow the Getting Started guide-->
+        <!--<br>-->
+        <!--<em>Tip: Don't see the guide? You can find it by clicking (in the upper-right corner) <span class="fa fa-lg fa-question-circle"></span> &gt; Getting Started)</em>-->
+        <!--</li>-->
+      <!--</ol>-->
+      <!--</p>-->
+      <p><strong>
+        Pipeline Developer Quickstart
+      </strong></p>
+      <p>
+      Want to port your pipeline to Arvados? Check out the step-by-step <a href="https://arvados.org/projects/arvados/wiki/Port_a_Pipeline">Port-a-Pipeline</a> guide on the Arvados wiki.
+      </p>
+      <p><strong>More in-depth guides
+      </strong></p>
+      <!--<p>-->
+        <!--<a href="{{ site.baseurl }}/start/index.html">Getting Started</a> &mdash; Start here if you're new to Arvados.-->
+      <!--</p>-->
       <p>
         <a href="{{ site.baseurl }}/user/index.html">User Guide</a> &mdash; How to manage data and do analysis with Arvados.
       </p>
@@ -53,11 +78,13 @@ title: Arvados
         <a href="{{ site.baseurl }}/api/index.html">API Reference</a> &mdash; Details about the the Arvados REST API.
       </p>
       <p>
-        <a href="{{ site.baseurl }}/admin/index.html">Admin Guide</a> &mdash; How to administer an Arvados system.
-      </p>
-      <p>
         <a href="{{ site.baseurl }}/install/index.html">Install Guide</a> &mdash; How to install Arvados on a cloud platform.
       </p>
+    </div>
+  </div>
+
+  <div class="row">
+    <div class="col-sm-12">
       <br>
       <p><em><small>
       The content of the above documentation is licensed under the
@@ -65,7 +92,6 @@ title: Arvados
         Commons Attribution-Share Alike 3.0 United States</a> license. Code samples in the above documentation are licensed under the
       <a href="{{ site.baseurl }}/user/copying/LICENSE-2.0.html">Apache License, Version 2.0.</a></small></em>
       </p>
-
     </div>
   </div>
 </div>

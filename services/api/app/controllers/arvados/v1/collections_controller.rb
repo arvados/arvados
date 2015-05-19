@@ -1,6 +1,10 @@
 require "arvados/keep"
 
 class Arvados::V1::CollectionsController < ApplicationController
+  def self.limit_index_columns_read
+    ["manifest_text"]
+  end
+
   def create
     if resource_attrs[:uuid] and (loc = Keep::Locator.parse(resource_attrs[:uuid]))
       resource_attrs[:portable_data_hash] = loc.to_s

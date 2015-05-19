@@ -154,6 +154,7 @@ class NodeManagerDaemonActor(actor_class):
             cloud_node=cloud_node,
             cloud_node_start_time=start_time,
             shutdown_timer=shutdown_timer,
+            cloud_fqdn_func=self._cloud_driver.node_fqdn,
             update_actor=self._cloud_updater,
             timer_actor=self._timer,
             arvados_node=None,
@@ -201,10 +202,10 @@ class NodeManagerDaemonActor(actor_class):
                    [self.cloud_nodes, self.booted, self.booting])
 
     def _nodes_busy(self):
-        return sum(1 for idle in
-                   pykka.get_all(rec.actor.in_state('idle') for rec in
+        return sum(1 for busy in
+                   pykka.get_all(rec.actor.in_state('busy') for rec in
                                  self.cloud_nodes.nodes.itervalues())
-                   if idle is False)
+                   if busy)
 
     def _nodes_wanted(self):
         up_count = self._nodes_up()
@@ -298,8 +299,7 @@ class NodeManagerDaemonActor(actor_class):
         if (nodes_excess < 1) or not self.booting:
             return None
         for key, node in self.booting.iteritems():
-            node.stop_if_no_cloud_node().get()
-            if not node.actor_ref.is_alive():
+            if node.stop_if_no_cloud_node().get():
                 del self.booting[key]
                 if nodes_excess > 1:
                     self._later.stop_booting_node()
@@ -311,6 +311,7 @@ class NodeManagerDaemonActor(actor_class):
             return None
         shutdown = self._node_shutdown.start(
             timer_actor=self._timer, cloud_client=self._new_cloud(),
+            arvados_client=self._new_arvados(),
             node_monitor=node_actor.actor_ref, cancellable=cancellable).proxy()
         self.shutdowns[cloud_node_id] = shutdown
         shutdown.subscribe(self._later.node_finished_shutdown)
@@ -327,7 +328,7 @@ class NodeManagerDaemonActor(actor_class):
                 break
         else:
             return None
-        if record.arvados_node is None:
+        if not record.actor.in_state('idle', 'busy').get():
             self._begin_node_shutdown(record.actor, cancellable=False)
 
     def node_finished_shutdown(self, shutdown_actor):
@@ -344,12 +345,14 @@ class NodeManagerDaemonActor(actor_class):
     def shutdown(self):
         self._logger.info("Shutting down after signal.")
         self.poll_stale_after = -1  # Inhibit starting/stopping nodes
-        for bootnode in self.booting.itervalues():
-            bootnode.stop_if_no_cloud_node()
+        setup_stops = {key: node.stop_if_no_cloud_node()
+                       for key, node in self.booting.iteritems()}
+        self.booting = {key: self.booting[key]
+                        for key in setup_stops if not setup_stops[key].get()}
         self._later.await_shutdown()
 
     def await_shutdown(self):
-        if any(node.actor_ref.is_alive() for node in self.booting.itervalues()):
+        if self.booting:
             self._timer.schedule(time.time() + 1, self._later.await_shutdown)
         else:
             self.stop()

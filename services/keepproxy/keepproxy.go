@@ -1,6 +1,7 @@
 package main
 
 import (
+	"errors"
 	"flag"
 	"fmt"
 	"git.curoverse.com/arvados.git/sdk/go/arvadosclient"
@@ -13,6 +14,8 @@ import (
 	"net/http"
 	"os"
 	"os/signal"
+	"reflect"
+	"regexp"
 	"sync"
 	"syscall"
 	"time"
@@ -105,7 +108,7 @@ func main() {
 		log.Fatalf("Could not listen on %v", listen)
 	}
 
-	go RefreshServicesList(&kc)
+	go RefreshServicesList(kc)
 
 	// Shut down the server gracefully (by closing the listener)
 	// if SIGTERM is received.
@@ -118,10 +121,10 @@ func main() {
 	signal.Notify(term, syscall.SIGTERM)
 	signal.Notify(term, syscall.SIGINT)
 
-	log.Printf("Arvados Keep proxy started listening on %v with server list %v", listener.Addr(), kc.ServiceRoots())
+	log.Printf("Arvados Keep proxy started listening on %v", listener.Addr())
 
 	// Start listening for requests.
-	http.Serve(listener, MakeRESTRouter(!no_get, !no_put, &kc))
+	http.Serve(listener, MakeRESTRouter(!no_get, !no_put, kc))
 
 	log.Println("shutting down")
 }
@@ -134,16 +137,25 @@ type ApiTokenCache struct {
 
 // Refresh the keep service list every five minutes.
 func RefreshServicesList(kc *keepclient.KeepClient) {
+	var previousRoots = []map[string]string{}
+	var delay time.Duration = 0
 	for {
-		time.Sleep(300 * time.Second)
-		oldservices := kc.ServiceRoots()
-		kc.DiscoverKeepServers()
-		newservices := kc.ServiceRoots()
-		s1 := fmt.Sprint(oldservices)
-		s2 := fmt.Sprint(newservices)
-		if s1 != s2 {
-			log.Printf("Updated server list to %v", s2)
+		time.Sleep(delay * time.Second)
+		delay = 300
+		if err := kc.DiscoverKeepServers(); err != nil {
+			log.Println("Error retrieving services list:", err)
+			delay = 3
+			continue
 		}
+		newRoots := []map[string]string{kc.LocalRoots(), kc.GatewayRoots()}
+		if !reflect.DeepEqual(previousRoots, newRoots) {
+			log.Printf("Updated services list: locals %v gateways %v", newRoots[0], newRoots[1])
+		}
+		if len(newRoots[0]) == 0 {
+			log.Print("WARNING: No local services. Retrying in 3 seconds.")
+			delay = 3
+		}
+		previousRoots = newRoots
 	}
 }
 
@@ -247,14 +259,14 @@ func MakeRESTRouter(
 	rest := mux.NewRouter()
 
 	if enable_get {
-		rest.Handle(`/{hash:[0-9a-f]{32}}+{hints}`,
+		rest.Handle(`/{locator:[0-9a-f]{32}\+.*}`,
 			GetBlockHandler{kc, t}).Methods("GET", "HEAD")
-		rest.Handle(`/{hash:[0-9a-f]{32}}`, GetBlockHandler{kc, t}).Methods("GET", "HEAD")
+		rest.Handle(`/{locator:[0-9a-f]{32}}`, GetBlockHandler{kc, t}).Methods("GET", "HEAD")
 	}
 
 	if enable_put {
-		rest.Handle(`/{hash:[0-9a-f]{32}}+{hints}`, PutBlockHandler{kc, t}).Methods("PUT")
-		rest.Handle(`/{hash:[0-9a-f]{32}}`, PutBlockHandler{kc, t}).Methods("PUT")
+		rest.Handle(`/{locator:[0-9a-f]{32}\+.*}`, PutBlockHandler{kc, t}).Methods("PUT")
+		rest.Handle(`/{locator:[0-9a-f]{32}}`, PutBlockHandler{kc, t}).Methods("PUT")
 		rest.Handle(`/`, PutBlockHandler{kc, t}).Methods("POST")
 		rest.Handle(`/{any}`, OptionsHandler{}).Methods("OPTIONS")
 		rest.Handle(`/`, OptionsHandler{}).Methods("OPTIONS")
@@ -282,22 +294,34 @@ func (this OptionsHandler) ServeHTTP(resp http.ResponseWriter, req *http.Request
 	SetCorsHeaders(resp)
 }
 
+var BadAuthorizationHeader = errors.New("Missing or invalid Authorization header")
+var ContentLengthMismatch = errors.New("Actual length != expected content length")
+var MethodNotSupported = errors.New("Method not supported")
+
+var removeHint, _ = regexp.Compile("\\+K@[a-z0-9]{5}(\\+|$)")
+
 func (this GetBlockHandler) ServeHTTP(resp http.ResponseWriter, req *http.Request) {
 	SetCorsHeaders(resp)
 
+	locator := mux.Vars(req)["locator"]
+	var err error
+	var status int
+	var expectLength, responseLength int64
+	var proxiedURI = "-"
+
+	defer func() {
+		log.Println(GetRemoteAddress(req), req.Method, req.URL.Path, status, expectLength, responseLength, proxiedURI, err)
+		if status != http.StatusOK {
+			http.Error(resp, err.Error(), status)
+		}
+	}()
+
 	kc := *this.KeepClient
-
-	hash := mux.Vars(req)["hash"]
-	hints := mux.Vars(req)["hints"]
-
-	locator := keepclient.MakeLocator2(hash, hints)
-
-	log.Printf("%s: %s %s begin", GetRemoteAddress(req), req.Method, hash)
 
 	var pass bool
 	var tok string
 	if pass, tok = CheckAuthorizationHeader(kc, this.ApiTokenCache, req); !pass {
-		http.Error(resp, "Missing or invalid Authorization header", http.StatusForbidden)
+		status, err = http.StatusForbidden, BadAuthorizationHeader
 		return
 	}
 
@@ -307,91 +331,99 @@ func (this GetBlockHandler) ServeHTTP(resp http.ResponseWriter, req *http.Reques
 	kc.Arvados = &arvclient
 
 	var reader io.ReadCloser
-	var err error
-	var blocklen int64
 
-	if req.Method == "GET" {
-		reader, blocklen, _, err = kc.AuthorizedGet(hash, locator.Signature, locator.Timestamp)
-		defer reader.Close()
-	} else if req.Method == "HEAD" {
-		blocklen, _, err = kc.AuthorizedAsk(hash, locator.Signature, locator.Timestamp)
+	locator = removeHint.ReplaceAllString(locator, "$1")
+
+	switch req.Method {
+	case "HEAD":
+		expectLength, proxiedURI, err = kc.Ask(locator)
+	case "GET":
+		reader, expectLength, proxiedURI, err = kc.Get(locator)
+		if reader != nil {
+			defer reader.Close()
+		}
+	default:
+		status, err = http.StatusNotImplemented, MethodNotSupported
+		return
 	}
 
-	if blocklen > -1 {
-		resp.Header().Set("Content-Length", fmt.Sprint(blocklen))
-	} else {
-		log.Printf("%s: %s %s Keep server did not return Content-Length",
-			GetRemoteAddress(req), req.Method, hash)
+	if expectLength == -1 {
+		log.Println("Warning:", GetRemoteAddress(req), req.Method, proxiedURI, "Content-Length not provided")
 	}
 
-	var status = 0
 	switch err {
 	case nil:
 		status = http.StatusOK
-		if reader != nil {
-			n, err2 := io.Copy(resp, reader)
-			if blocklen > -1 && n != blocklen {
-				log.Printf("%s: %s %s %v %v mismatched copy size expected Content-Length: %v",
-					GetRemoteAddress(req), req.Method, hash, status, n, blocklen)
-			} else if err2 == nil {
-				log.Printf("%s: %s %s %v %v",
-					GetRemoteAddress(req), req.Method, hash, status, n)
-			} else {
-				log.Printf("%s: %s %s %v %v copy error: %v",
-					GetRemoteAddress(req), req.Method, hash, status, n, err2.Error())
+		resp.Header().Set("Content-Length", fmt.Sprint(expectLength))
+		switch req.Method {
+		case "HEAD":
+			responseLength = 0
+		case "GET":
+			responseLength, err = io.Copy(resp, reader)
+			if err == nil && expectLength > -1 && responseLength != expectLength {
+				err = ContentLengthMismatch
 			}
-		} else {
-			log.Printf("%s: %s %s %v 0", GetRemoteAddress(req), req.Method, hash, status)
 		}
 	case keepclient.BlockNotFound:
 		status = http.StatusNotFound
-		http.Error(resp, "Not found", http.StatusNotFound)
 	default:
 		status = http.StatusBadGateway
-		http.Error(resp, err.Error(), http.StatusBadGateway)
-	}
-
-	if err != nil {
-		log.Printf("%s: %s %s %v error: %v",
-			GetRemoteAddress(req), req.Method, hash, status, err.Error())
 	}
 }
+
+var LengthRequiredError = errors.New(http.StatusText(http.StatusLengthRequired))
+var LengthMismatchError = errors.New("Locator size hint does not match Content-Length header")
 
 func (this PutBlockHandler) ServeHTTP(resp http.ResponseWriter, req *http.Request) {
 	SetCorsHeaders(resp)
 
 	kc := *this.KeepClient
+	var err error
+	var expectLength int64 = -1
+	var status = http.StatusInternalServerError
+	var wroteReplicas int
+	var locatorOut string = "-"
 
-	hash := mux.Vars(req)["hash"]
-	hints := mux.Vars(req)["hints"]
+	defer func() {
+		log.Println(GetRemoteAddress(req), req.Method, req.URL.Path, status, expectLength, kc.Want_replicas, wroteReplicas, locatorOut, err)
+		if status != http.StatusOK {
+			http.Error(resp, err.Error(), status)
+		}
+	}()
 
-	locator := keepclient.MakeLocator2(hash, hints)
+	locatorIn := mux.Vars(req)["locator"]
 
-	var contentLength int64 = -1
 	if req.Header.Get("Content-Length") != "" {
-		_, err := fmt.Sscanf(req.Header.Get("Content-Length"), "%d", &contentLength)
+		_, err := fmt.Sscanf(req.Header.Get("Content-Length"), "%d", &expectLength)
 		if err != nil {
-			resp.Header().Set("Content-Length", fmt.Sprintf("%d", contentLength))
+			resp.Header().Set("Content-Length", fmt.Sprintf("%d", expectLength))
 		}
 
 	}
 
-	log.Printf("%s: %s %s Content-Length %v", GetRemoteAddress(req), req.Method, hash, contentLength)
-
-	if contentLength < 0 {
-		http.Error(resp, "Must include Content-Length header", http.StatusLengthRequired)
+	if expectLength < 0 {
+		err = LengthRequiredError
+		status = http.StatusLengthRequired
 		return
 	}
 
-	if locator.Size > 0 && int64(locator.Size) != contentLength {
-		http.Error(resp, "Locator size hint does not match Content-Length header", http.StatusBadRequest)
-		return
+	if locatorIn != "" {
+		var loc *keepclient.Locator
+		if loc, err = keepclient.MakeLocator(locatorIn); err != nil {
+			status = http.StatusBadRequest
+			return
+		} else if loc.Size > 0 && int64(loc.Size) != expectLength {
+			err = LengthMismatchError
+			status = http.StatusBadRequest
+			return
+		}
 	}
 
 	var pass bool
 	var tok string
 	if pass, tok = CheckAuthorizationHeader(kc, this.ApiTokenCache, req); !pass {
-		http.Error(resp, "Missing or invalid Authorization header", http.StatusForbidden)
+		err = BadAuthorizationHeader
+		status = http.StatusForbidden
 		return
 	}
 
@@ -410,57 +442,42 @@ func (this PutBlockHandler) ServeHTTP(resp http.ResponseWriter, req *http.Reques
 	}
 
 	// Now try to put the block through
-	var replicas int
-	var put_err error
-	if hash == "" {
+	if locatorIn == "" {
 		if bytes, err := ioutil.ReadAll(req.Body); err != nil {
-			msg := fmt.Sprintf("Error reading request body: %s", err)
-			log.Printf(msg)
-			http.Error(resp, msg, http.StatusInternalServerError)
+			err = errors.New(fmt.Sprintf("Error reading request body: %s", err))
+			status = http.StatusInternalServerError
 			return
 		} else {
-			hash, replicas, put_err = kc.PutB(bytes)
+			locatorOut, wroteReplicas, err = kc.PutB(bytes)
 		}
 	} else {
-		hash, replicas, put_err = kc.PutHR(hash, req.Body, contentLength)
+		locatorOut, wroteReplicas, err = kc.PutHR(locatorIn, req.Body, expectLength)
 	}
 
 	// Tell the client how many successful PUTs we accomplished
-	resp.Header().Set(keepclient.X_Keep_Replicas_Stored, fmt.Sprintf("%d", replicas))
+	resp.Header().Set(keepclient.X_Keep_Replicas_Stored, fmt.Sprintf("%d", wroteReplicas))
 
-	switch put_err {
+	switch err {
 	case nil:
-		// Default will return http.StatusOK
-		log.Printf("%s: %s %s finished, stored %v replicas (desired %v)", GetRemoteAddress(req), req.Method, hash, replicas, kc.Want_replicas)
-		n, err2 := io.WriteString(resp, hash)
-		if err2 != nil {
-			log.Printf("%s: wrote %v bytes to response body and got error %v", n, err2.Error())
-		}
+		status = http.StatusOK
+		_, err = io.WriteString(resp, locatorOut)
 
 	case keepclient.OversizeBlockError:
 		// Too much data
-		http.Error(resp, fmt.Sprintf("Exceeded maximum blocksize %d", keepclient.BLOCKSIZE), http.StatusRequestEntityTooLarge)
+		status = http.StatusRequestEntityTooLarge
 
 	case keepclient.InsufficientReplicasError:
-		if replicas > 0 {
+		if wroteReplicas > 0 {
 			// At least one write is considered success.  The
 			// client can decide if getting less than the number of
 			// replications it asked for is a fatal error.
-			// Default will return http.StatusOK
-			n, err2 := io.WriteString(resp, hash)
-			if err2 != nil {
-				log.Printf("%s: wrote %v bytes to response body and got error %v", n, err2.Error())
-			}
+			status = http.StatusOK
+			_, err = io.WriteString(resp, locatorOut)
 		} else {
-			http.Error(resp, put_err.Error(), http.StatusServiceUnavailable)
+			status = http.StatusServiceUnavailable
 		}
 
 	default:
-		http.Error(resp, put_err.Error(), http.StatusBadGateway)
+		status = http.StatusBadGateway
 	}
-
-	if put_err != nil {
-		log.Printf("%s: %s %s stored %v replicas (desired %v) got error %v", GetRemoteAddress(req), req.Method, hash, replicas, kc.Want_replicas, put_err.Error())
-	}
-
 }

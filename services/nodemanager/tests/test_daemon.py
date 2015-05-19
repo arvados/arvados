@@ -94,8 +94,11 @@ class NodeManagerDaemonActorTestCase(testutil.ActorTestMixin,
         self.check_monitors_arvados_nodes(arv_node)
 
     def test_arvados_node_un_and_re_paired(self):
+        # We need to create the Arvados node mock after spinning up the daemon
+        # to make sure it's new enough to pair with the cloud node.
+        self.make_daemon([testutil.cloud_node_mock(3)], arvados_nodes=None)
         arv_node = testutil.arvados_node_mock(3)
-        self.make_daemon([testutil.cloud_node_mock(3)], [arv_node])
+        self.daemon.update_arvados_nodes([arv_node]).get(self.TIMEOUT)
         self.check_monitors_arvados_nodes(arv_node)
         self.daemon.update_cloud_nodes([]).get(self.TIMEOUT)
         self.assertEqual(0, self.alive_monitor_count())
@@ -179,6 +182,19 @@ class NodeManagerDaemonActorTestCase(testutil.ActorTestMixin,
         self.last_setup.cloud_node.get.return_value = cloud_node
         self.last_setup.arvados_node.get.return_value = arv_node
         return self.last_setup
+
+    def test_no_new_node_when_booted_node_not_usable(self):
+        cloud_node = testutil.cloud_node_mock(4)
+        arv_node = testutil.arvados_node_mock(4, crunch_worker_state='down')
+        setup = self.start_node_boot(cloud_node, arv_node)
+        self.daemon.node_up(setup).get(self.TIMEOUT)
+        self.assertEqual(1, self.alive_monitor_count())
+        self.daemon.update_cloud_nodes([cloud_node])
+        self.daemon.update_arvados_nodes([arv_node])
+        self.daemon.update_server_wishlist(
+            [testutil.MockSize(1)]).get(self.TIMEOUT)
+        self.stop_proxy(self.daemon)
+        self.assertEqual(1, self.node_setup.start.call_count)
 
     def test_no_duplication_when_booting_node_listed_fast(self):
         # Test that we don't start two ComputeNodeMonitorActors when
@@ -267,9 +283,33 @@ class NodeManagerDaemonActorTestCase(testutil.ActorTestMixin,
         self.stop_proxy(self.daemon)
         self.assertShutdownCancellable(False)
 
+    def test_booted_node_shut_down_when_never_working(self):
+        cloud_node = testutil.cloud_node_mock(4)
+        arv_node = testutil.arvados_node_mock(4, crunch_worker_state='down')
+        setup = self.start_node_boot(cloud_node, arv_node)
+        self.daemon.node_up(setup).get(self.TIMEOUT)
+        self.assertEqual(1, self.alive_monitor_count())
+        self.daemon.update_cloud_nodes([cloud_node])
+        self.daemon.update_arvados_nodes([arv_node]).get(self.TIMEOUT)
+        self.timer.deliver()
+        self.stop_proxy(self.daemon)
+        self.assertShutdownCancellable(False)
+
     def test_node_that_pairs_not_considered_failed_boot(self):
         cloud_node = testutil.cloud_node_mock(3)
         arv_node = testutil.arvados_node_mock(3)
+        setup = self.start_node_boot(cloud_node, arv_node)
+        self.daemon.node_up(setup).get(self.TIMEOUT)
+        self.assertEqual(1, self.alive_monitor_count())
+        self.daemon.update_cloud_nodes([cloud_node])
+        self.daemon.update_arvados_nodes([arv_node]).get(self.TIMEOUT)
+        self.timer.deliver()
+        self.stop_proxy(self.daemon)
+        self.assertFalse(self.node_shutdown.start.called)
+
+    def test_node_that_pairs_busy_not_considered_failed_boot(self):
+        cloud_node = testutil.cloud_node_mock(5)
+        arv_node = testutil.arvados_node_mock(5, job_uuid=True)
         setup = self.start_node_boot(cloud_node, arv_node)
         self.daemon.node_up(setup).get(self.TIMEOUT)
         self.assertEqual(1, self.alive_monitor_count())
@@ -284,6 +324,24 @@ class NodeManagerDaemonActorTestCase(testutil.ActorTestMixin,
         self.daemon.update_server_wishlist([]).get(self.TIMEOUT)
         self.stop_proxy(self.daemon)
         self.assertTrue(self.last_setup.stop_if_no_cloud_node.called)
+
+    def test_all_booting_nodes_tried_to_shut_down(self):
+        size = testutil.MockSize(2)
+        self.make_daemon(want_sizes=[size])
+        self.daemon.max_nodes.get(self.TIMEOUT)
+        setup1 = self.last_setup
+        setup1.stop_if_no_cloud_node().get.return_value = False
+        setup1.stop_if_no_cloud_node.reset_mock()
+        self.daemon.update_server_wishlist([size, size]).get(self.TIMEOUT)
+        self.daemon.max_nodes.get(self.TIMEOUT)
+        self.assertIsNot(setup1, self.last_setup)
+        self.last_setup.stop_if_no_cloud_node().get.return_value = True
+        self.last_setup.stop_if_no_cloud_node.reset_mock()
+        self.daemon.update_server_wishlist([]).get(self.TIMEOUT)
+        self.daemon.max_nodes.get(self.TIMEOUT)
+        self.stop_proxy(self.daemon)
+        self.assertEqual(1, self.last_setup.stop_if_no_cloud_node.call_count)
+        self.assertTrue(setup1.stop_if_no_cloud_node.called)
 
     def test_shutdown_declined_at_wishlist_capacity(self):
         cloud_node = testutil.cloud_node_mock(1)
@@ -381,6 +439,8 @@ class NodeManagerDaemonActorTestCase(testutil.ActorTestMixin,
 
     def test_clean_shutdown_waits_for_node_setup_finish(self):
         new_node = self.start_node_boot()
+        new_node.stop_if_no_cloud_node().get.return_value = False
+        new_node.stop_if_no_cloud_node.reset_mock()
         self.daemon.shutdown().get(self.TIMEOUT)
         self.assertTrue(new_node.stop_if_no_cloud_node.called)
         self.daemon.node_up(new_node).get(self.TIMEOUT)
@@ -390,9 +450,11 @@ class NodeManagerDaemonActorTestCase(testutil.ActorTestMixin,
             self.daemon.actor_ref.actor_stopped.wait(self.TIMEOUT))
 
     def test_wishlist_ignored_after_shutdown(self):
-        size = testutil.MockSize(2)
-        self.make_daemon(want_sizes=[size])
+        new_node = self.start_node_boot()
+        new_node.stop_if_no_cloud_node().get.return_value = False
+        new_node.stop_if_no_cloud_node.reset_mock()
         self.daemon.shutdown().get(self.TIMEOUT)
+        size = testutil.MockSize(2)
         self.daemon.update_server_wishlist([size] * 2).get(self.TIMEOUT)
         self.timer.deliver()
         self.stop_proxy(self.daemon)

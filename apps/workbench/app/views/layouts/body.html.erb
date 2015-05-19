@@ -7,7 +7,12 @@
           <span class="icon-bar"></span>
           <span class="icon-bar"></span>
         </button>
-        <a class="navbar-brand" href="/" data-push=true><%= Rails.configuration.site_name.downcase rescue Rails.application.class.parent_name %></a>
+        <% site_name = Rails.configuration.site_name.downcase rescue Rails.application.class.parent_name %>
+        <% if current_user %>
+          <a class="navbar-brand" href="/" data-push=true><%= site_name %></a>
+        <% else %>
+          <span class="navbar-brand"><%= site_name %></span>
+        <% end %>
       </div>
 
       <div class="collapse navbar-collapse">
@@ -42,10 +47,15 @@
             <li class="dropdown notification-menu">
               <a href="#" class="dropdown-toggle" data-toggle="dropdown" id="notifications-menu">
                 <span class="badge badge-alert notification-count"><%= user_notifications.length if user_notifications.any? %></span>
-                <%= current_user.email %> <span class="caret"></span>
+                <span class="fa fa-lg fa-user"></span>
+                <span class="caret"></span>
               </a>
               <ul class="dropdown-menu" role="menu">
+                <li role="presentation" class="dropdown-header">
+                  <%= current_user.email %>
+                </li>
                 <% if current_user.is_active %>
+                <li role="menuitem"><a href="/projects/<%=current_user.uuid%>" role="menuitem"><i class="fa fa-home fa-fw"></i> Home project </a></li>
                 <li role="menuitem"><a href="/manage_account" role="menuitem"><i class="fa fa-key fa-fw"></i> Manage account</a></li>
                 <% if Rails.configuration.user_profile_form_fields %>
                   <li role="menuitem"><a href="/users/<%=current_user.uuid%>/profile" role="menuitem"><i class="fa fa-key fa-fw"></i> Manage profile</a></li>
@@ -66,6 +76,7 @@
               <li class="dropdown">
                 <a href="#" class="dropdown-toggle" data-toggle="dropdown" id="system-menu">
                   <span class="fa fa-lg fa-gear"></span>
+                  <span class="caret"></span>
                 </a>
                 <ul class="dropdown-menu" role="menu">
                   <li role="presentation" class="dropdown-header">
@@ -105,14 +116,35 @@
               </li>
             <% end %>
           <% else %>
-            <li><a href="<%= arvados_api_client.arvados_login_url(return_to: root_url) %>">Log in</a></li>
+            <li class="dropdown hover-dropdown login-menu">
+              <a href="<%= arvados_api_client.arvados_login_url(return_to: root_url) %>">Log in</a>
+              <ul class="dropdown-menu">
+                <li>
+                  <a href="<%= arvados_api_client.arvados_login_url(return_to: root_url) %>">
+                    <span class="fa fa-lg fa-sign-in"></span>
+                    <p style="margin-left: 1.6em; margin-top: -1.35em; margin-bottom: 0em; margin-right: 0.5em;">Log in or register with<br/>any Google account</p>
+                  </a>
+                </li>
+              </ul>
+            </li>
           <% end %>
 
           <li class="dropdown help-menu">
             <a href="#" class="dropdown-toggle" data-toggle="dropdown" id="arv-help">
               <span class="fa fa-lg fa-question-circle"></span>
+              <span class="caret"></span>
             </a>
             <ul class="dropdown-menu">
+              <li role="presentation" class="dropdown-header">
+                Help
+              </li>
+              <li>
+              <%= link_to raw('<i class="fa fa-fw fa-info"></i> Getting Started ...'), "#",
+                   {'data-toggle' => "modal", 'data-target' => '#getting-started-modal-window'}  %>
+              </li>
+              <% if Rails.configuration.arvados_public_data_doc_url %>
+                <li><%= link_to raw('<i class="fa fa-book fa-fw"></i> Public Pipelines and Data sets'), "#{Rails.configuration.arvados_public_data_doc_url}", target: "_blank" %></li>
+              <% end %>
               <li><%= link_to raw('<i class="fa fa-book fa-fw"></i> Tutorials and User guide'), "#{Rails.configuration.arvados_docsite}/user", target: "_blank" %></li>
               <li><%= link_to raw('<i class="fa fa-book fa-fw"></i> API Reference'), "#{Rails.configuration.arvados_docsite}/api", target: "_blank" %></li>
               <li><%= link_to raw('<i class="fa fa-book fa-fw"></i> SDK Reference'), "#{Rails.configuration.arvados_docsite}/sdk", target: "_blank" %></li>
@@ -183,9 +215,28 @@
           <% end %>
         </ul>
       </nav>
+    <% elsif !current_user %>   <%# anonymous %>
+      <% if (@name_link or @object) and (project_breadcrumbs.any?) %>
+        <nav class="navbar navbar-default breadcrumbs" role="navigation">
+          <ul class="nav navbar-nav navbar-left">
+            <li>
+              &nbsp; Public Projects &nbsp;
+            </li>
+            <% project_breadcrumbs.each do |p| %>
+              <li class="nav-separator">
+                <i class="fa fa-lg fa-angle-double-right"></i>
+              </li>
+              <li>
+                <%= link_to(p.name, project_path(p.uuid), data: {object_uuid: p.uuid, name: 'name'}) %>
+              </li>
+            <% end %>
+          </ul>
+        </nav>
+      <% end %>
     <% end %>
 
     <%= render partial: 'browser_unsupported' %><%# requires JS support below %>
+    <%= render partial: 'getting_started/getting_started_popup' %>
 
     <div id="page-wrapper">
       <%= yield %>
@@ -197,3 +248,17 @@
 <div class="modal-container"></div>
 <div id="report-issue-modal-window"></div>
 <script src="/browser_unsupported.js"></script>
+
+<%  if current_user and !current_user.prefs[:getting_started_shown] and
+       !request.url.include?("/profile") and
+       !request.url.include?("/user_agreements") and
+       !request.url.include?("/inactive")%>
+  <script>
+    $("#getting-started-modal-window").modal('show');
+  </script>
+  <%
+    prefs = current_user.prefs
+    prefs[:getting_started_shown] = Time.now
+    current_user.update_attributes prefs: prefs.to_json
+  %>
+<% end %>

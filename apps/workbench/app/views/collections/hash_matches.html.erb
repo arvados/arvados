@@ -1,3 +1,9 @@
+<%
+  message = "The following collections have this content:"
+  if @same_pdh.items_available > @same_pdh.results.size
+    message += ' (' + (@same_pdh.items_available - @same_pdh.results.size).to_s + ' more results are not shown)'
+  end
+%>
 <div class="row">
   <div class="col-md-10 col-md-offset-1">
     <div class="panel panel-info">
@@ -5,7 +11,7 @@
         <h3 class="panel-title"><%= params["uuid"] %></h3>
       </div>
       <div class="panel-body">
-        <p><i>The following collections have this content:</i></p>
+        <p><i><%= message %></i></p>
         <% @same_pdh.sort { |a,b| b.created_at <=> a.created_at }.each do |c| %>
           <div class="row">
             <div class="col-md-8">

@@ -13,8 +13,7 @@ class Node < ArvadosModel
   belongs_to(:job, foreign_key: :job_uuid, primary_key: :uuid)
   attr_accessor :job_readable
 
-  MAX_SLOTS = 64
-
+  @@max_compute_nodes = Rails.configuration.max_compute_nodes
   @@dns_server_conf_dir = Rails.configuration.dns_server_conf_dir
   @@dns_server_conf_template = Rails.configuration.dns_server_conf_template
   @@dns_server_reload_command = Rails.configuration.dns_server_reload_command
@@ -61,12 +60,12 @@ class Node < ArvadosModel
 
   def status
     if !self.last_ping_at
-      if Time.now - self.created_at > 5.minutes
+      if db_current_time - self.created_at > 5.minutes
         'startup-fail'
       else
         'pending'
       end
-    elsif Time.now - self.last_ping_at > 1.hours
+    elsif db_current_time - self.last_ping_at > 1.hours
       'missing'
     else
       'running'
@@ -80,7 +79,9 @@ class Node < ArvadosModel
       logger.info "Ping: secret mismatch: received \"#{o[:ping_secret]}\" != \"#{self.info['ping_secret']}\""
       raise ArvadosModel::UnauthorizedError.new("Incorrect ping_secret")
     end
-    self.last_ping_at = Time.now
+
+    current_time = db_current_time
+    self.last_ping_at = current_time
 
     @bypass_arvados_authorization = true
 
@@ -88,7 +89,7 @@ class Node < ArvadosModel
     if self.ip_address.nil?
       logger.info "#{self.uuid} ip_address= #{o[:ip]}"
       self.ip_address = o[:ip]
-      self.first_ping_at = Time.now
+      self.first_ping_at = current_time
     end
 
     # Record instance ID if not already known
@@ -112,7 +113,7 @@ class Node < ArvadosModel
         rescue ActiveRecord::RecordNotUnique
           try_slot += 1
         end
-        raise "No available node slots" if try_slot == MAX_SLOTS
+        raise "No available node slots" if try_slot == @@max_compute_nodes
       end while true
       self.hostname = self.class.hostname_for_slot(self.slot_number)
     end
@@ -190,7 +191,7 @@ class Node < ArvadosModel
   # At startup, make sure all DNS entries exist.  Otherwise, slurmctld
   # will refuse to start.
   if @@dns_server_conf_dir and @@dns_server_conf_template
-    (0..MAX_SLOTS-1).each do |slot_number|
+    (0..@@max_compute_nodes-1).each do |slot_number|
       hostname = hostname_for_slot(slot_number)
       hostfile = File.join @@dns_server_conf_dir, "#{hostname}.conf"
       if !File.exists? hostfile

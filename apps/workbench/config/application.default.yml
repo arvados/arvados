@@ -131,6 +131,7 @@ common:
   arvados_insecure_https: true
   activation_contact_link: mailto:info@arvados.org
   arvados_docsite: http://doc.arvados.org
+  arvados_public_data_doc_url: http://arvados.org/projects/arvados/wiki/Public_Pipelines_and_Datasets
   arvados_theme: default
   show_user_agreement_inline: false
   secret_token: ~
@@ -138,8 +139,14 @@ common:
   default_openid_prefix: https://www.google.com/accounts/o8/id
   send_user_setup_notification_email: true
 
-  # Set user_profile_form_fields to enable and configure the user profile page.
-  # Default is set to false. A commented setting with full description is provided below.
+  # Scratch directory used by the remote repository browsing
+  # feature. If it doesn't exist, it (and any missing parents) will be
+  # created using mkdir_p.
+  repository_cache: <%= File.expand_path 'tmp/git', Rails.root %>
+
+  # Set user_profile_form_fields to enable and configure the user
+  # profile page. Default is set to false. A commented example with
+  # full description is provided below.
   user_profile_form_fields: false
 
   # Below is a sample setting of user_profile_form_fields config parameter.
@@ -188,8 +195,11 @@ common:
   # generic issue email from
   email_from: arvados@example.com
 
-  # filename suffixes for which view icon would be shown in collection show page
-  filename_suffixes_with_view_icon: [txt, gif, jpeg, jpg, png, html, htm, pdf]
+  # Mimetypes of applications for which the view icon
+  # would be enabled in a collection's show page.
+  # It is sufficient to list only applications here.
+  # No need to list text and image types.
+  application_mimetypes_with_view_icon: [fasta, go, javascript, json, pdf, python, r, rtf, sam, sh, xml, xsl]
 
   # the maximum number of bytes to load in the log viewer
   log_viewer_max_bytes: 1000000
@@ -198,3 +208,6 @@ common:
   # the token by running "bundle exec ./script/get_anonymous_user_token.rb"
   # in the directory where your API server is running.
   anonymous_user_token: false
+
+  # Enable response payload compression in Arvados API requests.
+  include_accept_encoding_header_in_api_requests: true

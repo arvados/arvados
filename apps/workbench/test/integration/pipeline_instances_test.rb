@@ -5,6 +5,51 @@ class PipelineInstancesTest < ActionDispatch::IntegrationTest
     need_javascript
   end
 
+  def parse_browser_timestamp t
+    # Timestamps are displayed in the browser's time zone (which can
+    # differ from ours) and they come from toLocaleTimeString (which
+    # means they don't necessarily tell us which time zone they're
+    # using). In order to make sense of them, we need to ask the
+    # browser to parse them and generate a timestamp that can be
+    # parsed reliably.
+    #
+    # Note: Even with all this help, phantomjs seem to behave badly
+    # when parsing timestamps on the other side of a DST transition.
+    # See skipped tests below.
+    if /(\d+:\d+ [AP]M) (\d+\/\d+\/\d+)/ =~ t
+      # Currently dates.js renders timestamps as
+      # '{t.toLocaleTimeString()} {t.toLocaleDateString()}' which even
+      # browsers can't make sense of. First we need to flip it around
+      # so it looks like what toLocaleString() would have made.
+      t = $~[2] + ', ' + $~[1]
+    end
+    DateTime.parse(page.evaluate_script "new Date('#{t}').toUTCString()").to_time
+  end
+
+  if false
+    # No need to test (or mention) these all the time. If they start
+    # working (without need_selenium) then some real tests might not
+    # need_selenium any more.
+
+    test 'phantomjs DST' do
+      skip '^^'
+      t0s = '3/8/2015, 01:59 AM'
+      t1s = '3/8/2015, 03:01 AM'
+      t0 = parse_browser_timestamp t0s
+      t1 = parse_browser_timestamp t1s
+      assert_equal 120, t1-t0, "'#{t0s}' to '#{t1s}' was reported as #{t1-t0} seconds, should be 120"
+    end
+
+    test 'phantomjs DST 2' do
+      skip '^^'
+      t0s = '2015-03-08T10:43:00Z'
+      t1s = '2015-03-09T03:43:00Z'
+      t0 = parse_browser_timestamp page.evaluate_script("new Date('#{t0s}').toLocaleString()")
+      t1 = parse_browser_timestamp page.evaluate_script("new Date('#{t1s}').toLocaleString()")
+      assert_equal 17*3600, t1-t0, "'#{t0s}' to '#{t1s}' was reported as #{t1-t0} seconds, should be #{17*3600} (17 hours)"
+    end
+  end
+
   test 'Create and run a pipeline' do
     visit page_with_token('active_trustedclient', '/pipeline_templates')
     within('tr', text: 'Two Part Pipeline Template') do
@@ -412,28 +457,38 @@ class PipelineInstancesTest < ActionDispatch::IntegrationTest
   end
 
   [
-    [1, 0], # run time 0 minutes
-    [10, 17*60*60 + 51*60], # run time 17 hours and 51 minutes
-  ].each do |index, run_time|
-    test "pipeline start and finish time display #{index}" do
-      visit page_with_token("user1_with_load", "/pipeline_instances/zzzzz-d1hrv-10pipelines0#{index.to_s.rjust(3, '0')}")
+    ['user1_with_load', 'zzzzz-d1hrv-10pipelines0001', 0], # run time 0 minutes
+    ['user1_with_load', 'zzzzz-d1hrv-10pipelines0010', 17*60*60 + 51*60], # run time 17 hours and 51 minutes
+    ['active', 'zzzzz-d1hrv-runningpipeline', nil], # state = running
+  ].each do |user, uuid, run_time|
+    test "pipeline start and finish time display for #{uuid}" do
+      need_selenium 'to parse timestamps correctly across DST boundaries'
+      visit page_with_token(user, "/pipeline_instances/#{uuid}")
 
       assert page.has_text? 'This pipeline started at'
       page_text = page.text
 
-      match = /This pipeline started at (.*)\. It failed after (.*) seconds at (.*)\. Check the Log/.match page_text
+      if run_time
+        match = /This pipeline started at (.*)\. It failed after (.*) seconds at (.*)\. Check the Log/.match page_text
+      else
+        match = /This pipeline started at (.*). It has been active for(.*)/.match page_text
+      end
       assert_not_nil(match, 'Did not find text - This pipeline started at . . . ')
 
       start_at = match[1]
-      finished_at = match[3]
       assert_not_nil(start_at, 'Did not find start_at time')
-      assert_not_nil(finished_at, 'Did not find finished_at time')
 
-      # start and finished time display is of the format '2:20 PM 10/20/2014'
-      start_time = DateTime.strptime(start_at, '%H:%M %p %m/%d/%Y').to_time
-      finished_time = DateTime.strptime(finished_at, '%H:%M %p %m/%d/%Y').to_time
-      assert_equal(run_time, finished_time-start_time,
-        "Time difference did not match for start_at #{start_at}, finished_at #{finished_at}, ran_for #{match[2]}")
+      start_time = parse_browser_timestamp start_at
+      if run_time
+        finished_at = match[3]
+        assert_not_nil(finished_at, 'Did not find finished_at time')
+        finished_time = parse_browser_timestamp finished_at
+        assert_equal(run_time, finished_time-start_time,
+          "Time difference did not match for start_at #{start_at}, finished_at #{finished_at}, ran_for #{match[2]}")
+      else
+        match = /\d(.*)/.match match[2]
+        assert_not_nil match, 'Did not find expected match for running component'
+      end
     end
   end
 
@@ -478,6 +533,53 @@ class PipelineInstancesTest < ActionDispatch::IntegrationTest
         assert_equal(true, found_count<=expected_max,
           "Found too many items. Expected at most #{expected_max} and found #{found_count}")
       end
+    end
+  end
+
+  test 'render job run time when job record is inaccessible' do
+    pi = api_fixture('pipeline_instances', 'has_component_with_completed_jobs')
+    visit page_with_token 'active', '/pipeline_instances/' + pi['uuid']
+    assert_text 'Queued for '
+  end
+
+  test "job logs linked for running pipeline" do
+    pi = api_fixture("pipeline_instances", "running_pipeline_with_complete_job")
+    visit(page_with_token("active", "/pipeline_instances/#{pi['uuid']}"))
+    click_on "Log"
+    within "#Log" do
+      assert_text "Log for previous"
+      log_link = find("a", text: "Log for previous")
+      assert_includes(log_link[:href],
+                      pi["components"]["previous"]["job"]["log"])
+      assert_selector "#event_log_div"
+    end
+  end
+
+  test "job logs linked for complete pipeline" do
+    pi = api_fixture("pipeline_instances", "complete_pipeline_with_two_jobs")
+    visit(page_with_token("active", "/pipeline_instances/#{pi['uuid']}"))
+    click_on "Log"
+    within "#Log" do
+      assert_text "Log for previous"
+      pi["components"].each do |cname, cspec|
+        log_link = find("a", text: "Log for #{cname}")
+        assert_includes(log_link[:href], cspec["job"]["log"])
+      end
+      assert_no_selector "#event_log_div"
+    end
+  end
+
+  test "job logs linked for failed pipeline" do
+    pi = api_fixture("pipeline_instances", "failed_pipeline_with_two_jobs")
+    visit(page_with_token("active", "/pipeline_instances/#{pi['uuid']}"))
+    click_on "Log"
+    within "#Log" do
+      assert_text "Log for previous"
+      pi["components"].each do |cname, cspec|
+        log_link = find("a", text: "Log for #{cname}")
+        assert_includes(log_link[:href], cspec["job"]["log"])
+      end
+      assert_no_selector "#event_log_div"
     end
   end
 end

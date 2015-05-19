@@ -131,7 +131,7 @@ class ArvadosModelTest < ActiveSupport::TestCase
         search_index_columns = table_class.searchable_columns('ilike')
         # Disappointing, but text columns aren't indexed yet.
         search_index_columns -= table_class.columns.select { |c|
-          c.type == :text or c.name == 'description'
+          c.type == :text or c.name == 'description' or c.name == 'file_names'
         }.collect(&:name)
 
         indexes = ActiveRecord::Base.connection.indexes(table)
@@ -166,5 +166,35 @@ class ArvadosModelTest < ActiveSupport::TestCase
     attr_a = Job.selectable_attributes(:common)
     assert_includes(attr_a, "uuid")
     refute_includes(attr_a, "success")
+  end
+
+  test 'create and retrieve using created_at time' do
+    set_user_from_auth :active
+    group = Group.create! name: 'test create and retrieve group'
+    assert group.valid?, "group is not valid"
+
+    results = Group.where(created_at: group.created_at)
+    assert_includes results.map(&:uuid), group.uuid,
+      "Expected new group uuid in results when searched with its created_at timestamp"
+  end
+
+  test 'create and update twice and expect different update times' do
+    set_user_from_auth :active
+    group = Group.create! name: 'test create and retrieve group'
+    assert group.valid?, "group is not valid"
+
+    # update 1
+    group.update_attributes!(name: "test create and update name 1")
+    results = Group.where(uuid: group.uuid)
+    assert_equal "test create and update name 1", results.first.name, "Expected name to be updated to 1"
+    updated_at_1 = results.first.updated_at.to_f
+
+    # update 2
+    group.update_attributes!(name: "test create and update name 2")
+    results = Group.where(uuid: group.uuid)
+    assert_equal "test create and update name 2", results.first.name, "Expected name to be updated to 2"
+    updated_at_2 = results.first.updated_at.to_f
+
+    assert_equal true, (updated_at_2 > updated_at_1), "Expected updated time 2 to be newer than 1"
   end
 end

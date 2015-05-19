@@ -52,6 +52,35 @@ module ApplicationHelper
     ArvadosBase::resource_class_for_uuid(attrvalue, opts)
   end
 
+  # When using {remote:true}, or using {method:...} to use an HTTP
+  # method other than GET, move the target URI from href to
+  # data-remote-href. Otherwise, browsers offer features like "open in
+  # new window" and "copy link address" which bypass Rails' click
+  # handler and therefore end up at incorrect/nonexistent routes (by
+  # ignoring data-method) and expect to receive pages rather than
+  # javascript responses.
+  #
+  # See assets/javascripts/link_to_remote.js for supporting code.
+  def link_to *args, &block
+    if (args.last and args.last.is_a? Hash and
+        (args.last[:remote] or
+         (args.last[:method] and
+          args.last[:method].to_s.upcase != 'GET')))
+      if Rails.env.test?
+        # Capybara/phantomjs can't click_link without an href, even if
+        # the click handler means it never gets used.
+        raw super.gsub(' href="', ' href="#" data-remote-href="')
+      else
+        # Regular browsers work as desired: users can click A elements
+        # without hrefs, and click handlers fire; but there's no "copy
+        # link address" option in the right-click menu.
+        raw super.gsub(' href="', ' data-remote-href="')
+      end
+    else
+      super
+    end
+  end
+
   ##
   # Returns HTML that links to the Arvados object specified in +attrvalue+
   # Provides various output control and styling options.
@@ -136,7 +165,11 @@ module ApplicationHelper
       if opts[:no_link] or (resource_class == User && !current_user)
         raw(link_name)
       else
-        (link_to raw(link_name), { controller: resource_class.to_s.tableize, action: 'show', id: ((opts[:name_link].andand.uuid) || link_uuid) }, style_opts) + raw(tags)
+        controller_class = resource_class.to_s.tableize
+        if controller_class.eql?('groups') and object.andand.group_class.eql?('project')
+          controller_class = 'projects'
+        end
+        (link_to raw(link_name), { controller: controller_class, action: 'show', id: ((opts[:name_link].andand.uuid) || link_uuid) }, style_opts) + raw(tags)
       end
     else
       # just return attrvalue if it is not recognizable as an Arvados object or uuid.
@@ -148,7 +181,51 @@ module ApplicationHelper
     end
   end
 
-  def render_editable_attribute(object, attr, attrvalue=nil, htmloptions={})
+  def link_to_arvados_object_if_readable(attrvalue, link_text_if_not_readable, opts={})
+    resource_class = resource_class_for_uuid(attrvalue.split('/')[0]) if attrvalue.is_a?(String)
+    if !resource_class
+      return link_to_if_arvados_object attrvalue, opts
+    end
+
+    readable = object_readable attrvalue, resource_class
+    if readable
+      link_to_if_arvados_object attrvalue, opts
+    elsif opts[:required] and current_user # no need to show this for anonymous user
+      raw('<div><input type="text" style="border:none;width:100%;background:#ffdddd" disabled=true class="required unreadable-input" value="') + link_text_if_not_readable + raw('" ></input></div>')
+    else
+      link_text_if_not_readable
+    end
+  end
+
+  # This method takes advantage of preloaded collections and objects.
+  # Hence you can improve performance by first preloading objects
+  # related to the page context before using this method.
+  def object_readable attrvalue, resource_class=nil
+    # if it is a collection filename, check readable for the locator
+    attrvalue = attrvalue.split('/')[0] if attrvalue
+
+    resource_class = resource_class_for_uuid(attrvalue) if resource_class.nil?
+    return if resource_class.nil?
+
+    return_value = nil
+    if resource_class.to_s == 'Collection'
+      if CollectionsHelper.match(attrvalue)
+        found = collection_for_pdh(attrvalue)
+        return_value = found.first if found.any?
+      else
+        found = collections_for_object(attrvalue)
+        return_value = found.first if found.any?
+      end
+    else
+      return_value = object_for_dataclass(resource_class, attrvalue)
+    end
+    return_value
+  end
+
+  # Render an editable attribute with the attrvalue of the attr.
+  # The htmloptions are added to the editable element's list of attributes.
+  # The nonhtml_options are only used to customize the display of the element.
+  def render_editable_attribute(object, attr, attrvalue=nil, htmloptions={}, nonhtml_options={})
     attrvalue = object.send(attr) if attrvalue.nil?
     if not object.attribute_editable?(attr)
       if attrvalue && attrvalue.length > 0
@@ -200,9 +277,16 @@ module ApplicationHelper
       "id" => span_id,
       :class => "editable #{is_textile?( object, attr ) ? 'editable-textile' : ''}"
     }.merge(htmloptions).merge(ajax_options)
-    edit_button = raw('<a href="#" class="btn btn-xs btn-default btn-nodecorate" data-toggle="x-editable tooltip" data-toggle-selector="#' + span_id + '" data-placement="top" title="' + (htmloptions[:tiptitle] || 'edit') + '"><i class="fa fa-fw fa-pencil"></i></a>')
-    if htmloptions[:btnplacement] == :left
+
+    edit_tiptitle = 'edit'
+    edit_tiptitle = 'Warning: do not use hyphens in the repository name as they will be stripped' if (object.class.to_s == 'Repository' and attr == 'name')
+
+    edit_button = raw('<a href="#" class="btn btn-xs btn-' + (nonhtml_options[:btnclass] || 'default') + ' btn-nodecorate" data-toggle="x-editable tooltip" data-toggle-selector="#' + span_id + '" data-placement="top" title="' + (nonhtml_options[:tiptitle] || edit_tiptitle) + '"><i class="fa fa-fw fa-pencil"></i>' + (nonhtml_options[:btntext] || '') + '</a>')
+
+    if nonhtml_options[:btnplacement] == :left
       edit_button + ' ' + span_tag
+    elsif nonhtml_options[:btnplacement] == :top
+      edit_button + raw('<br/>') + span_tag
     else
       span_tag + ' ' + edit_button
     end
@@ -240,7 +324,7 @@ module ApplicationHelper
     end
 
     if not object.andand.attribute_editable?(attr)
-      return link_to_if_arvados_object attrvalue
+      return link_to_arvados_object_if_readable(attrvalue, attrvalue, {friendly_name: true, required: required})
     end
 
     if dataclass
@@ -292,10 +376,11 @@ module ApplicationHelper
            success: 'page-refresh'
          }.to_json,
         })
+
       return content_tag('div', :class => 'input-group') do
         html = text_field_tag(dn, display_value,
                               :class =>
-                              "form-control #{'required' if required}")
+                              "form-control #{'required' if required} #{'unreadable-input' if attrvalue.present? and !object_readable(attrvalue, Collection)}")
         html + content_tag('span', :class => 'input-group-btn') do
           link_to('Choose',
                   modal_path,

@@ -200,10 +200,8 @@ function createJobGraph(elementName) {
         hideHover: 'auto',
         parseTime: true,
         hoverCallback: function(index, options, content) {
-            var s = "<div class='morris-hover-row-label'>";
-            s += options.data[index][options.xkey];
-            s += "</div> ";
-            for( i = 0; i < jobGraphSortedSeries.length; i++ ) {
+            var s = '';
+            for (var i=0; i < jobGraphSortedSeries.length; i++) {
                 var sortedIndex = jobGraphSortedSeries[i];
                 var series = options.ykeys[sortedIndex];
                 var datum = options.data[index][series];
@@ -237,7 +235,15 @@ function createJobGraph(elementName) {
                 point += "</div> ";
                 s += point;
             }
-            return s;
+            if (s === '') {
+                // No Y coordinates? This isn't a real data point,
+                // it's just the placeholder we use to make sure the
+                // graph can render when empty. Don't show a tooltip.
+                return '';
+            }
+            return ("<div class='morris-hover-row-label'>" +
+                    options.data[index][options.xkey] +
+                    "</div> " + s);
         }
     }
     if( emptyGraph ) {
@@ -245,6 +251,7 @@ function createJobGraph(elementName) {
         graphteristics['parseTime'] = false;
         graphteristics['hideHover'] = 'always';
     }
+    $('#' + elementName).html('');
     window.jobGraph = Morris.Line( graphteristics );
     if( emptyGraph ) {
         jobGraphData = [];
@@ -267,16 +274,44 @@ function isJobSeriesRescalable( series ) {
     return !/-cpu$/.test(series);
 }
 
-$(document).on('arv-log-event', '#log_graph_div', function(event, eventData) {
+function processLogEventForGraph(event, eventData) {
     if( eventData.properties.text ) {
         eventData.properties.text.split('\n').forEach( function( logLine ) {
             processLogLineForChart( logLine );
         } );
     }
-} );
+}
+
+$(document).on('arv-log-event', '#log_graph_div', function(event, eventData) {
+    processLogEventForGraph(event, eventData);
+    if (!window.jobGraphShown) {
+        // Draw immediately, instead of waiting for the 5-second
+        // timer.
+        redrawIfNeeded.call(window, this);
+    }
+});
+
+function redrawIfNeeded(graph_div) {
+    if (!window.redraw) {
+        return;
+    }
+    window.redraw = false;
+
+    if (window.recreate) {
+        // Series have changed: we need to draw an entirely new graph.
+        // Running createJobGraph in a show() callback ensures the div
+        // is fully shown when morris uses it to size its svg element.
+        $(graph_div).show(0, createJobGraph.bind(window, $(graph_div).attr('id')));
+        window.jobGraphShown = true;
+        window.recreate = false;
+    } else {
+        window.jobGraph.setData(window.jobGraphData);
+    }
+}
 
 $(document).on('ready ajax:complete', function() {
     $('#log_graph_div').not('.graph-is-setup').addClass('graph-is-setup').each( function( index, graph_div ) {
+        window.jobGraphShown = false;
         window.jobGraphData = [];
         window.jobGraphSeries = [];
         window.jobGraphSortedSeries = [];
@@ -284,30 +319,17 @@ $(document).on('ready ajax:complete', function() {
         window.recreate = false;
         window.redraw = false;
 
-        createJobGraph($(graph_div).attr('id'));
-        var object_uuid = $(graph_div).data('object-uuid');
-        // if there are any listeners for this object uuid or "all", we will trigger the event
-        var matches = ".arv-log-event-listener[data-object-uuid=\"" + object_uuid + "\"],.arv-log-event-listener[data-object-uuids~=\"" + object_uuid + "\"]";
-
-        $(document).trigger('ajax:send');
         $.get('/jobs/' + $(graph_div).data('object-uuid') + '/logs.json', function(data) {
             data.forEach( function( entry ) {
-                $(matches).trigger('arv-log-event', entry);
+                processLogEventForGraph({}, entry);
             });
+            // Update the graph now to show the recent data points
+            // received via /logs.json (along with any new data points
+            // we received via websockets while waiting for /logs.json
+            // to respond).
+            redrawIfNeeded(graph_div);
         });
 
-        setInterval( function() {
-            if (window.recreate || window.redraw) {
-                if (window.recreate) {
-                    // series have changed, draw entirely new graph.
-                    $(graph_div).html('').show(500);
-                    createJobGraph($(graph_div).attr('id'));
-                } else {
-                    jobGraph.setData(jobGraphData);
-                }
-                window.recreate = false;
-                window.redraw = false;
-            }
-        }, 5000);
+        setInterval(redrawIfNeeded.bind(window, graph_div), 5000);
     });
 });

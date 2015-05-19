@@ -14,35 +14,38 @@ import util
 
 _logger = logging.getLogger('arvados.api')
 
-class CredentialsFromToken(object):
-    def __init__(self, api_token):
-        self.api_token = api_token
+def _intercept_http_request(self, uri, **kwargs):
+    from httplib import BadStatusLine
 
-    @staticmethod
-    def http_request(self, uri, **kwargs):
-        from httplib import BadStatusLine
-        if 'headers' not in kwargs:
-            kwargs['headers'] = {}
+    if (self.max_request_size and
+        kwargs.get('body') and
+        self.max_request_size < len(kwargs['body'])):
+        raise apiclient_errors.MediaUploadSizeError("Request size %i bytes exceeds published limit of %i bytes" % (len(kwargs['body']), self.max_request_size))
 
-        if config.get("ARVADOS_EXTERNAL_CLIENT", "") == "true":
-            kwargs['headers']['X-External-Client'] = '1'
+    if 'headers' not in kwargs:
+        kwargs['headers'] = {}
 
-        kwargs['headers']['Authorization'] = 'OAuth2 %s' % self.arvados_api_token
-        try:
-            return self.orig_http_request(uri, **kwargs)
-        except BadStatusLine:
-            # This is how httplib tells us that it tried to reuse an
-            # existing connection but it was already closed by the
-            # server. In that case, yes, we would like to retry.
-            # Unfortunately, we are not absolutely certain that the
-            # previous call did not succeed, so this is slightly
-            # risky.
-            return self.orig_http_request(uri, **kwargs)
-    def authorize(self, http):
-        http.arvados_api_token = self.api_token
-        http.orig_http_request = http.request
-        http.request = types.MethodType(self.http_request, http)
-        return http
+    if config.get("ARVADOS_EXTERNAL_CLIENT", "") == "true":
+        kwargs['headers']['X-External-Client'] = '1'
+
+    kwargs['headers']['Authorization'] = 'OAuth2 %s' % self.arvados_api_token
+    try:
+        return self.orig_http_request(uri, **kwargs)
+    except BadStatusLine:
+        # This is how httplib tells us that it tried to reuse an
+        # existing connection but it was already closed by the
+        # server. In that case, yes, we would like to retry.
+        # Unfortunately, we are not absolutely certain that the
+        # previous call did not succeed, so this is slightly
+        # risky.
+        return self.orig_http_request(uri, **kwargs)
+
+def _patch_http_request(http, api_token):
+    http.arvados_api_token = api_token
+    http.max_request_size = 0
+    http.orig_http_request = http.request
+    http.request = types.MethodType(_intercept_http_request, http)
+    return http
 
 # Monkey patch discovery._cast() so objects and arrays get serialized
 # with json.dumps() instead of str().
@@ -76,14 +79,22 @@ def http_cache(data_type):
 def api(version=None, cache=True, host=None, token=None, insecure=False, **kwargs):
     """Return an apiclient Resources object for an Arvados instance.
 
-    Arguments:
-    * version: A string naming the version of the Arvados API to use (for
+    :version:
+      A string naming the version of the Arvados API to use (for
       example, 'v1').
-    * cache: Use a cache (~/.cache/arvados/discovery) for the discovery
+
+    :cache:
+      Use a cache (~/.cache/arvados/discovery) for the discovery
       document.
-    * host: The Arvados API server host (and optional :port) to connect to.
-    * token: The authentication token to send with each API call.
-    * insecure: If True, ignore SSL certificate validation errors.
+
+    :host:
+      The Arvados API server host (and optional :port) to connect to.
+
+    :token:
+      The authentication token to send with each API call.
+
+    :insecure:
+      If True, ignore SSL certificate validation errors.
 
     Additional keyword arguments will be passed directly to
     `apiclient_discovery.build` if a new Resource object is created.
@@ -109,13 +120,7 @@ def api(version=None, cache=True, host=None, token=None, insecure=False, **kwarg
     elif host and token:
         pass
     elif not host and not token:
-        # Load from user configuration or environment
-        for x in ['ARVADOS_API_HOST', 'ARVADOS_API_TOKEN']:
-            if x not in config.settings():
-                raise ValueError("%s is not set. Aborting." % x)
-        host = config.get('ARVADOS_API_HOST')
-        token = config.get('ARVADOS_API_TOKEN')
-        insecure = config.flag_is_true('ARVADOS_API_HOST_INSECURE')
+        return api_from_config(version=version, cache=cache, **kwargs)
     else:
         # Caller provided one but not the other
         if not host:
@@ -140,10 +145,41 @@ def api(version=None, cache=True, host=None, token=None, insecure=False, **kwarg
             http_kwargs['disable_ssl_certificate_validation'] = True
         kwargs['http'] = httplib2.Http(**http_kwargs)
 
-    credentials = CredentialsFromToken(api_token=token)
-    kwargs['http'] = credentials.authorize(kwargs['http'])
+    kwargs['http'] = _patch_http_request(kwargs['http'], token)
 
     svc = apiclient_discovery.build('arvados', version, **kwargs)
     svc.api_token = token
+    kwargs['http'].max_request_size = svc._rootDesc.get('maxRequestSize', 0)
     kwargs['http'].cache = None
     return svc
+
+def api_from_config(version=None, apiconfig=None, **kwargs):
+    """Return an apiclient Resources object enabling access to an Arvados server
+    instance.
+
+    :version:
+      A string naming the version of the Arvados REST API to use (for
+      example, 'v1').
+
+    :apiconfig:
+      If provided, this should be a dict-like object (must support the get()
+      method) with entries for ARVADOS_API_HOST, ARVADOS_API_TOKEN, and
+      optionally ARVADOS_API_HOST_INSECURE.  If not provided, use
+      arvados.config (which gets these parameters from the environment by
+      default.)
+
+    Other keyword arguments such as `cache` will be passed along `api()`
+
+    """
+    # Load from user configuration or environment
+    if apiconfig is None:
+        apiconfig = config.settings()
+
+    for x in ['ARVADOS_API_HOST', 'ARVADOS_API_TOKEN']:
+        if x not in apiconfig:
+            raise ValueError("%s is not set. Aborting." % x)
+    host = apiconfig.get('ARVADOS_API_HOST')
+    token = apiconfig.get('ARVADOS_API_TOKEN')
+    insecure = config.flag_is_true('ARVADOS_API_HOST_INSECURE', apiconfig)
+
+    return api(version=version, host=host, token=token, insecure=insecure, **kwargs)

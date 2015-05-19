@@ -9,6 +9,8 @@ class Arvados::V1::SchemaController < ApplicationController
   skip_before_filter :render_404_if_no_object
   skip_before_filter :require_auth_scope
 
+  include DbCurrentTime
+
   def index
     expires_in 24.hours, public: true
     discovery = Rails.cache.fetch 'arvados_v1_rest_discovery' do
@@ -21,7 +23,7 @@ class Arvados::V1::SchemaController < ApplicationController
         version: "v1",
         revision: "20131114",
         source_version: (Rails.application.config.source_version ? Rails.application.config.source_version : "No version information available") + (Rails.application.config.local_modified ? Rails.application.config.local_modified.to_s : ''),
-        generatedAt: Time.now.iso8601,
+        generatedAt: db_current_time.iso8601,
         title: "Arvados API",
         description: "The API to interact with Arvados.",
         documentationLink: "http://doc.arvados.org/api/index.html",
@@ -33,6 +35,8 @@ class Arvados::V1::SchemaController < ApplicationController
         servicePath: "arvados/v1/",
         batchPath: "batch",
         defaultTrashLifetime: Rails.application.config.default_trash_lifetime,
+        blobSignatureTtl: Rails.application.config.blob_signature_ttl,
+        maxRequestSize: Rails.application.config.max_request_size,
         parameters: {
           alt: {
             type: "string",

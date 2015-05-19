@@ -25,7 +25,6 @@ class WebsocketTest < ActionDispatch::IntegrationTest
                 event_type: "stderr",
                 properties: {"text" => "123 hello"}}})
     assert_text '123 hello'
-    Thread.current[:arvados_api_token] = nil
   end
 
 
@@ -80,8 +79,6 @@ class WebsocketTest < ActionDispatch::IntegrationTest
 
       # Check that we haven't changed scroll position
       assert_equal 30, page.evaluate_script("$('#event_log_div').scrollTop()")
-
-      Thread.current[:arvados_api_token] = nil
     end
   end
 
@@ -111,8 +108,6 @@ class WebsocketTest < ActionDispatch::IntegrationTest
     assert page.has_no_link? 'Pause'
     assert_text 'Complete'
     assert page.has_link? 'Re-run with latest'
-
-    Thread.current[:arvados_api_token] = nil
   end
 
   test "job arv-refresh-on-log-event" do
@@ -130,8 +125,6 @@ class WebsocketTest < ActionDispatch::IntegrationTest
 
     assert_text 'complete'
     assert_text 'Re-run job'
-
-    Thread.current[:arvados_api_token] = nil
   end
 
   test "dashboard arv-refresh-on-log-event" do
@@ -149,59 +142,73 @@ class WebsocketTest < ActionDispatch::IntegrationTest
                                 })
 
     assert_text 'test dashboard arv-refresh-on-log-event'
-
-    Thread.current[:arvados_api_token] = nil
   end
 
-  test "live log charting" do
-    uuid = api_fixture("jobs")['running']['uuid']
+  test 'job graph appears when first data point is already in logs table' do
+    job_graph_first_datapoint_test
+  end
 
-    visit page_with_token "admin", "/jobs/#{uuid}"
+  test 'job graph appears when first data point arrives by websocket' do
+    use_token :admin do
+      Log.find(api_fixture('logs')['crunchstat_for_running_job']['uuid']).destroy
+    end
+    job_graph_first_datapoint_test expect_existing_datapoints: false
+  end
+
+  def job_graph_first_datapoint_test expect_existing_datapoints: true
+    uuid = api_fixture('jobs')['running']['uuid']
+
+    visit page_with_token "active", "/jobs/#{uuid}"
     click_link "Log"
 
-    # Until graphable data arrives, we should see the text log but not the graph.
     assert_selector '#event_log_div', visible: true
-    assert_no_selector '#log_graph_div', visible: true
 
-    api = ArvadosApiClient.new
+    if expect_existing_datapoints
+      assert_selector '#log_graph_div', visible: true
+      # Magic numbers 12.99 etc come from the job log fixture:
+      assert_last_datapoint 'T1-cpu', (((12.99+0.99)/10.0002)/8)
+    else
+      # Until graphable data arrives, we should see the text log but not the graph.
+      assert_no_selector '#log_graph_div', visible: true
+    end
 
-    # should give 45.3% or (((36.39+0.86)/10.0002)/8)*100 rounded to 1 decimal place
     text = "2014-11-07_23:33:51 #{uuid} 31708 1 stderr crunchstat: cpu 1970.8200 user 60.2700 sys 8 cpus -- interval 10.0002 seconds 35.3900 user 0.8600 sys"
 
-    Thread.current[:arvados_api_token] = @@API_AUTHS["admin"]['api_token']
-    api.api("logs", "", {log: {
-                object_uuid: uuid,
-                event_type: "stderr",
-                properties: {"text" => text}}})
+    assert_triggers_dom_event 'arv-log-event' do
+      use_token :active do
+        api = ArvadosApiClient.new
+        api.api("logs", "", {log: {
+                    object_uuid: uuid,
+                    event_type: "stderr",
+                    properties: {"text" => text}}})
+      end
+    end
 
-    # Log div should appear when the first data point arrives by websocket.
-    assert_selector '#log_graph_div', visible: true
-
-    # Using datapoint 1 instead of datapoint 0 because there will be a
-    # "dummy" datapoint with no actual stats 10 minutes previous to
-    # the one we're looking for, for the sake of making the x-axis of
-    # the graph show a full 10 minutes of time even though there is
-    # only a single real datapoint.
-    cpu_stat = page.evaluate_script("jobGraphData[1]['T1-cpu']")
-
-    assert_equal 45.3, (cpu_stat.to_f*100).round(1)
-
-    Thread.current[:arvados_api_token] = nil
+    # Graph should have appeared (even if it hadn't above). It's
+    # important not to wait like matchers usually do: we are
+    # confirming the graph is visible _immediately_ after the first
+    # data point arrives.
+    using_wait_time 0 do
+      assert_selector '#log_graph_div', visible: true
+    end
+    assert_last_datapoint 'T1-cpu', (((35.39+0.86)/10.0002)/8)
   end
 
   test "live log charting from replayed log" do
     uuid = api_fixture("jobs")['running']['uuid']
 
-    visit page_with_token "admin", "/jobs/#{uuid}"
+    visit page_with_token "active", "/jobs/#{uuid}"
     click_link "Log"
 
-    ApiServerForTests.new.run_rake_task("replay_job_log", "test/job_logs/crunchstatshort.log,1.0,#{uuid}")
-    wait_for_ajax
+    assert_triggers_dom_event 'arv-log-event' do
+      ApiServerForTests.new.run_rake_task("replay_job_log", "test/job_logs/crunchstatshort.log,1.0,#{uuid}")
+    end
 
-    # see above comment as to why we use datapoint 1 rather than 0
-    cpu_stat = page.evaluate_script("jobGraphData[1]['T1-cpu']")
-
-    assert_equal 45.3, (cpu_stat.to_f*100).round(1)
+    assert_last_datapoint 'T1-cpu', (((35.39+0.86)/10.0002)/8)
   end
 
+  def assert_last_datapoint series, value
+    datum = page.evaluate_script("jobGraphData[jobGraphData.length-1]['#{series}']")
+    assert_in_epsilon value, datum.to_f
+  end
 end

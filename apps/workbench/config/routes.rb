@@ -26,6 +26,11 @@ ArvadosWorkbench::Application.routes.draw do
   resources :repositories do
     post 'share_with', on: :member
   end
+  # {format: false} prevents rails from treating "foo.png" as foo?format=png
+  get '/repositories/:id/tree/:commit' => 'repositories#show_tree'
+  get '/repositories/:id/tree/:commit/*path' => 'repositories#show_tree', as: :show_repository_tree, format: false
+  get '/repositories/:id/blob/:commit/*path' => 'repositories#show_blob', as: :show_repository_blob, format: false
+  get '/repositories/:id/commit/:commit' => 'repositories#show_commit', as: :show_repository_commit
   match '/logout' => 'sessions#destroy', via: [:get, :post]
   get '/logged_out' => 'sessions#index'
   resources :users do

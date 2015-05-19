@@ -25,10 +25,12 @@ admin:
   identity_url: https://admin.openid.local
   is_active: true
   is_admin: true
+  username: admin
   prefs:
     profile:
       organization: example.com
       role: IT
+    getting_started_shown: 2015-03-26 12:34:56.789000000 Z
 
 miniadmin:
   owner_uuid: zzzzz-tpzed-000000000000000
@@ -39,10 +41,12 @@ miniadmin:
   identity_url: https://miniadmin.openid.local
   is_active: true
   is_admin: false
+  username: miniadmin
   prefs:
     profile:
       organization: example.com
       role: IT
+    getting_started_shown: 2015-03-26 12:34:56.789000000 Z
 
 rominiadmin:
   owner_uuid: zzzzz-tpzed-000000000000000
@@ -53,10 +57,12 @@ rominiadmin:
   identity_url: https://rominiadmin.openid.local
   is_active: true
   is_admin: false
+  username: rominiadmin
   prefs:
     profile:
       organization: example.com
       role: IT
+    getting_started_shown: 2015-03-26 12:34:56.789000000 Z
 
 active:
   owner_uuid: zzzzz-tpzed-000000000000000
@@ -67,10 +73,12 @@ active:
   identity_url: https://active-user.openid.local
   is_active: true
   is_admin: false
+  username: active
   prefs:
     profile:
       organization: example.com
       role: Computational biologist
+    getting_started_shown: 2015-03-26 12:34:56.789000000 Z
 
 project_viewer:
   owner_uuid: zzzzz-tpzed-000000000000000
@@ -81,10 +89,12 @@ project_viewer:
   identity_url: https://project-viewer.openid.local
   is_active: true
   is_admin: false
+  username: projectviewer
   prefs:
     profile:
       organization: example.com
       role: Computational biologist
+    getting_started_shown: 2015-03-26 12:34:56.789000000 Z
 
 future_project_user:
   # Workbench tests give this user permission on aproject.
@@ -96,10 +106,12 @@ future_project_user:
   identity_url: https://future-project-user.openid.local
   is_active: true
   is_admin: false
+  username: futureprojectviewer
   prefs:
     profile:
       organization: example.com
       role: Computational biologist
+    getting_started_shown: 2015-03-26 12:34:56.789000000 Z
 
 subproject_admin:
   owner_uuid: zzzzz-tpzed-000000000000000
@@ -110,10 +122,12 @@ subproject_admin:
   identity_url: https://subproject-admin.openid.local
   is_active: true
   is_admin: false
+  username: subprojectadmin
   prefs:
     profile:
       organization: example.com
       role: Computational biologist
+    getting_started_shown: 2015-03-26 12:34:56.789000000 Z
 
 spectator:
   owner_uuid: zzzzz-tpzed-000000000000000
@@ -124,10 +138,12 @@ spectator:
   identity_url: https://spectator.openid.local
   is_active: true
   is_admin: false
+  username: spectator
   prefs:
     profile:
       organization: example.com
       role: Computational biologist
+    getting_started_shown: 2015-03-26 12:34:56.789000000 Z
 
 inactive_uninvited:
   owner_uuid: zzzzz-tpzed-000000000000000
@@ -149,6 +165,7 @@ inactive:
   identity_url: https://inactive-user.openid.local
   is_active: false
   is_admin: false
+  username: inactiveuser
   prefs: {}
 
 inactive_but_signed_user_agreement:
@@ -164,6 +181,7 @@ inactive_but_signed_user_agreement:
     profile:
       organization: example.com
       role: Computational biologist
+    getting_started_shown: 2015-03-26 12:34:56.789000000 Z
 
 anonymous:
   owner_uuid: zzzzz-tpzed-000000000000000
@@ -184,10 +202,12 @@ job_reader:
   identity_url: https://spectator.openid.local
   is_active: true
   is_admin: false
+  username: jobber
   prefs:
     profile:
       organization: example.com
       role: Computational biologist
+    getting_started_shown: 2015-03-26 12:34:56.789000000 Z
 
 active_no_prefs:
   owner_uuid: zzzzz-tpzed-000000000000000
@@ -200,7 +220,7 @@ active_no_prefs:
   is_admin: false
   prefs: {}
 
-active_no_prefs_profile:
+active_no_prefs_profile_no_getting_started_shown:
   owner_uuid: zzzzz-tpzed-000000000000000
   uuid: zzzzz-tpzed-a46c98d1td4aoj4
   email: active_no_prefs_profile@arvados.local
@@ -211,6 +231,19 @@ active_no_prefs_profile:
   is_admin: false
   prefs:
     test: abc
+
+active_no_prefs_profile_with_getting_started_shown:
+  owner_uuid: zzzzz-tpzed-000000000000000
+  uuid: zzzzz-tpzed-getstartnoprofl
+  email: active_no_prefs_profile@arvados.local
+  first_name: HasPrefs
+  last_name: NoProfileWithGettingStartedShown
+  identity_url: https://active_no_prefs_profile_seen_gs.openid.local
+  is_active: true
+  is_admin: false
+  prefs:
+    test: abc
+    getting_started_shown: 2015-03-26 12:34:56.789000000 Z
 
 # Fixtures to test granting and removing permissions.
 
@@ -223,6 +256,7 @@ user_foo_in_sharing_group:
   identity_url: https://user_foo_in_sharing_group.openid.local
   is_active: true
   is_admin: false
+  username: fooinsharing
 
 user_bar_in_sharing_group:
   owner_uuid: zzzzz-tpzed-000000000000000
@@ -233,6 +267,7 @@ user_bar_in_sharing_group:
   identity_url: https://user_bar_in_sharing_group.openid.local
   is_active: true
   is_admin: false
+  username: barinsharing
 
 user1_with_load:
   owner_uuid: zzzzz-tpzed-000000000000000
@@ -247,6 +282,7 @@ user1_with_load:
     profile:
       organization: example.com
       role: IT
+    getting_started_shown: 2015-03-26 12:34:56.789000000 Z
 
 fuse:
   owner_uuid: zzzzz-tpzed-000000000000000
@@ -257,7 +293,9 @@ fuse:
   identity_url: https://fuse.openid.local
   is_active: true
   is_admin: false
+  username: FUSE
   prefs:
     profile:
       organization: example.com
       role: IT
+    getting_started_shown: 2015-03-26 12:34:56.789000000 Z

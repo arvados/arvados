@@ -1,3 +1,11 @@
+begin
+  # If secret_token.rb exists here, we need to load it first.
+  require_relative 'secret_token.rb'
+rescue LoadError
+  # Normally secret_token.rb is missing and the secret token is
+  # configured by application.yml (i.e., here!) instead.
+end
+
 $application_config = {}
 
 %w(application.default application).each do |cfgfile|
@@ -5,6 +13,8 @@ $application_config = {}
   if File.exists? path
     yaml = ERB.new(IO.read path).result(binding)
     confs = YAML.load(yaml)
+    # Ignore empty YAML file:
+    next if confs == false
     $application_config.merge!(confs['common'] || {})
     $application_config.merge!(confs[::Rails.env.to_s] || {})
   end

@@ -21,6 +21,7 @@ type keepDisk struct {
 	Port     int    `json:"service_port"`
 	SSL      bool   `json:"service_ssl_flag"`
 	SvcType  string `json:"service_type"`
+	ReadOnly bool   `json:"read_only"`
 }
 
 func Md5String(s string) string {
@@ -91,26 +92,41 @@ func (this *KeepClient) DiscoverKeepServers() error {
 	}
 
 	listed := make(map[string]bool)
-	service_roots := make(map[string]string)
+	localRoots := make(map[string]string)
+	gatewayRoots := make(map[string]string)
+	writableLocalRoots := make(map[string]string)
 
-	for _, element := range m.Items {
-		n := ""
-
-		if element.SSL {
-			n = "s"
+	for _, service := range m.Items {
+		scheme := "http"
+		if service.SSL {
+			scheme = "https"
 		}
-
-		// Construct server URL
-		url := fmt.Sprintf("http%s://%s:%d", n, element.Hostname, element.Port)
+		url := fmt.Sprintf("%s://%s:%d", scheme, service.Hostname, service.Port)
 
 		// Skip duplicates
-		if !listed[url] {
-			listed[url] = true
-			service_roots[element.Uuid] = url
+		if listed[url] {
+			continue
 		}
-		if element.SvcType == "proxy" {
+		listed[url] = true
+
+		switch service.SvcType {
+		case "disk":
+			localRoots[service.Uuid] = url
+		case "proxy":
+			localRoots[service.Uuid] = url
 			this.Using_proxy = true
 		}
+
+		if service.ReadOnly == false {
+			writableLocalRoots[service.Uuid] = url
+		}
+
+		// Gateway services are only used when specified by
+		// UUID, so there's nothing to gain by filtering them
+		// by service type. Including all accessible services
+		// (gateway and otherwise) merely accommodates more
+		// service configurations.
+		gatewayRoots[service.Uuid] = url
 	}
 
 	if this.Using_proxy {
@@ -119,8 +135,7 @@ func (this *KeepClient) DiscoverKeepServers() error {
 		this.setClientSettingsStore()
 	}
 
-	this.SetServiceRoots(service_roots)
-
+	this.SetServiceRoots(localRoots, writableLocalRoots, gatewayRoots)
 	return nil
 }
 
@@ -204,7 +219,7 @@ func (this KeepClient) putReplicas(
 	requestId := fmt.Sprintf("%x", md5.Sum([]byte(locator+time.Now().String())))[0:8]
 
 	// Calculate the ordering for uploading to servers
-	sv := NewRootSorter(this.ServiceRoots(), hash).GetSortedRoots()
+	sv := NewRootSorter(this.WritableLocalRoots(), hash).GetSortedRoots()
 
 	// The next server to try contacting
 	next_server := 0

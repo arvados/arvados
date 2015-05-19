@@ -5,8 +5,9 @@
 # See http://doc.arvados.org/user/topics/arv-web.html
 
 import arvados
+from arvados.safeapi import ThreadSafeApiCache
 import subprocess
-from arvados_fuse import Operations, SafeApi, CollectionDirectory
+from arvados_fuse import Operations, CollectionDirectory
 import tempfile
 import os
 import llfuse
@@ -32,7 +33,7 @@ class ArvWeb(object):
         self.override_docker_image = docker_image
         self.port = port
         self.evqueue = Queue.Queue()
-        self.api = SafeApi(arvados.config)
+        self.api = ThreadSafeApiCache(arvados.config.settings())
 
         if arvados.util.group_uuid_pattern.match(project) is None:
             raise arvados.errors.ArgumentError("Project uuid is not valid")

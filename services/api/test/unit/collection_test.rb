@@ -233,4 +233,31 @@ class CollectionTest < ActiveSupport::TestCase
       assert_equal 'value_1', c.properties['property_1']
     end
   end
+
+  test 'create, delete, recreate collection with same name and owner' do
+    act_as_user users(:active) do
+      # create collection with name
+      c = Collection.create(manifest_text: '',
+                            name: "test collection name")
+      assert c.valid?
+      uuid = c.uuid
+
+      # mark collection as expired
+      c.update_attribute 'expires_at', Time.new.strftime("%Y-%m-%d")
+      c = Collection.where(uuid: uuid)
+      assert_empty c, 'Should not be able to find expired collection'
+
+      # recreate collection with the same name
+      c = Collection.create(manifest_text: '',
+                            name: "test collection name")
+      assert c.valid?
+    end
+  end
+
+  test "find_all_for_docker_image resolves names that look like hashes" do
+    coll_list = Collection.
+      find_all_for_docker_image('a' * 64, nil, [users(:active)])
+    coll_uuids = coll_list.map(&:uuid)
+    assert_includes(coll_uuids, collections(:docker_image).uuid)
+  end
 end

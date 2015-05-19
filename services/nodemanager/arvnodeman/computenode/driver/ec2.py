@@ -52,18 +52,9 @@ class ComputeNodeDriver(BaseComputeNodeDriver):
         super(ComputeNodeDriver, self).__init__(
             auth_kwargs, {'ex_filters': list_kwargs}, create_kwargs,
             driver_class)
-        for key in self.create_kwargs.keys():
-            init_method = getattr(self, '_init_' + key, None)
-            if init_method is not None:
-                new_pair = init_method(self.create_kwargs.pop(key))
-                if new_pair is not None:
-                    self.create_kwargs[new_pair[0]] = new_pair[1]
 
     def _init_image_id(self, image_id):
         return 'image', self.search_for(image_id, 'list_images')
-
-    def _init_ping_host(self, ping_host):
-        self.ping_host = ping_host
 
     def _init_security_groups(self, group_names):
         return 'ex_security_groups', [
@@ -79,14 +70,8 @@ class ComputeNodeDriver(BaseComputeNodeDriver):
         return 'auth', key
 
     def arvados_create_kwargs(self, arvados_node):
-        result = {'name': arvados_node_fqdn(arvados_node)}
-        ping_secret = arvados_node['info'].get('ping_secret')
-        if ping_secret is not None:
-            ping_url = ('https://{}/arvados/v1/nodes/{}/ping?ping_secret={}'.
-                        format(self.ping_host, arvados_node['uuid'],
-                               ping_secret))
-            result['ex_userdata'] = ping_url
-        return result
+        return {'name': arvados_node_fqdn(arvados_node),
+                'ex_userdata': self._make_ping_url(arvados_node)}
 
     def post_create_node(self, cloud_node):
         self.real.ex_create_tags(cloud_node, self.tags)
@@ -94,6 +79,10 @@ class ComputeNodeDriver(BaseComputeNodeDriver):
     def sync_node(self, cloud_node, arvados_node):
         self.real.ex_create_tags(cloud_node,
                                  {'Name': arvados_node_fqdn(arvados_node)})
+
+    @classmethod
+    def node_fqdn(cls, node):
+        return node.name
 
     @classmethod
     def node_start_time(cls, node):

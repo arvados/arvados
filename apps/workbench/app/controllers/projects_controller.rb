@@ -43,6 +43,9 @@ class ProjectsController < ApplicationController
   # It also seems to me that something like these could be used to configure the contents of the panes.
   def show_pane_list
     pane_list = []
+    if @object.uuid != current_user.andand.uuid
+      pane_list << 'Description'
+    end
     pane_list <<
       {
         :name => 'Data_collections',
@@ -62,7 +65,7 @@ class ProjectsController < ApplicationController
       {
         :name => 'Subprojects',
         :filters => [%w(uuid is_a arvados#group)]
-      } if current_user
+      }
     pane_list <<
       {
         :name => 'Other_objects',
@@ -133,7 +136,7 @@ class ProjectsController < ApplicationController
           item.update_attributes owner_uuid: current_user.uuid
           @removed_uuids << item.uuid
         rescue ArvadosApiClient::ApiErrorResponseException => e
-          if e.message.include? 'collection_owner_uuid_name_unique'
+          if e.message.include? '_owner_uuid_name_unique'
             rename_to = item.name + ' removed from ' +
                         (@object.name ? @object.name : @object.uuid) +
                         ' at ' + Time.now.to_s

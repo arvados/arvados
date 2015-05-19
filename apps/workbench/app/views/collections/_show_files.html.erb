@@ -1,13 +1,3 @@
-<script>
-function select_all_files() {
-  $("#collection_files :checkbox").filter(":visible").prop("checked", true).trigger("change");
-}
-
-function unselect_all_files() {
-  $("#collection_files :checkbox").filter(":visible").prop("checked", false).trigger("change");
-}
-</script>
-
 <%
   preview_selectable_container = ''
   preview_selectable = ''
@@ -38,8 +28,8 @@ function unselect_all_files() {
           </ul>
         </div>
         <div class="btn-group btn-group-sm">
-          <button id="select-all" type="button" class="btn btn-default" onClick="select_all_files()">Select all</button>
-          <button id="unselect-all" type="button" class="btn btn-default" onClick="unselect_all_files()">Unselect all</button>
+          <button id="select-all" type="button" class="btn btn-default" onClick="select_all_items()">Select all</button>
+          <button id="unselect-all" type="button" class="btn btn-default" onClick="unselect_all_items()">Unselect all</button>
         </div>
       </div>
       <div class="pull-right">
@@ -53,7 +43,7 @@ function unselect_all_files() {
   <% if file_tree.nil? or file_tree.empty? %>
     <p>This collection is empty.</p>
   <% else %>
-    <ul id="collection_files" class="collection_files <%=preview_selectable_container%>">
+    <ul id="collection_files" class="collection_files arv-selectable-items <%=preview_selectable_container%>">
     <% dirstack = [file_tree.first.first] %>
     <% file_tree.take(10000).each_with_index do |(dirname, filename, size), index| %>
       <% file_path = CollectionsHelper::file_path([dirname, filename]) %>
@@ -73,17 +63,16 @@ function unselect_all_files() {
          <div class="collection_files_row filterable <%=preview_selectable%>" href="<%=@object.uuid%>/<%=file_path%>">
           <div class="collection_files_buttons pull-right">
             <%= raw(human_readable_bytes_html(size)) %>
-            <% disable_search = (Rails.configuration.filename_suffixes_with_view_icon.include? file_path.split('.')[-1]) ? false : true %>
             <%= link_to(raw('<i class="fa fa-search"></i>'),
                         link_params.merge(disposition: 'inline'),
-                        {title: "View #{file_path}", class: "btn btn-info btn-sm", disabled: disable_search}) %>
+                        {title: "View #{file_path}", class: "btn btn-info btn-sm", disabled: !preview_allowed_for(file_path)}) %>
             <%= link_to(raw('<i class="fa fa-download"></i>'),
                         link_params.merge(disposition: 'attachment'),
                         {title: "Download #{file_path}", class: "btn btn-info btn-sm"}) %>
           </div>
 
           <div class="collection_files_name">
-            <% if !defined? no_checkboxes or !no_checkboxes %>
+            <% if (!defined? no_checkboxes or !no_checkboxes) and current_user %>
             <%= check_box_tag 'uuids[]', "#{@object.uuid}/#{file_path}", false, {
                   :class => "persistent-selection",
                   :friendly_type => "File",
@@ -91,6 +80,7 @@ function unselect_all_files() {
                   :href => url_for(controller: 'collections', action: 'show_file',
                                    uuid: @object.portable_data_hash, file: file_path),
                   :title => "Include #{file_path} in your selections",
+                  :id => "#{@object.uuid}_file_#{index}",
                 } %>
             <span>&nbsp;</span>
             <% end %>

@@ -87,4 +87,55 @@ class Arvados::V1::RepositoriesControllerTest < ActionController::TestCase
                    "response public_key does not match fixture #{u}.")
     end
   end
+
+  test "default index includes fetch_url" do
+    authorize_with :active
+    get(:index)
+    assert_response :success
+    assert_includes(json_response["items"].map { |r| r["fetch_url"] },
+                    "git@git.zzzzz.arvadosapi.com:active/foo.git")
+  end
+
+  [
+    {cfg: :git_repo_ssh_base, cfgval: "git@example.com:", match: %r"^git@example.com:/"},
+    {cfg: :git_repo_ssh_base, cfgval: true, match: %r"^git@git.zzzzz.arvadosapi.com:/"},
+    {cfg: :git_repo_ssh_base, cfgval: false, refute: /^git@/ },
+    {cfg: :git_repo_https_base, cfgval: "https://example.com/", match: %r"https://example.com/"},
+    {cfg: :git_repo_https_base, cfgval: true, match: %r"^https://git.zzzzz.arvadosapi.com/"},
+    {cfg: :git_repo_https_base, cfgval: false, refute: /^http/ },
+  ].each do |expect|
+    test "set #{expect[:cfg]} to #{expect[:cfgval]}" do
+      Rails.configuration.send expect[:cfg].to_s+"=", expect[:cfgval]
+      authorize_with :active
+      get :index
+      assert_response :success
+      json_response['items'].each do |r|
+        if expect[:refute]
+          r['clone_urls'].each do |u|
+            refute_match expect[:refute], u
+          end
+        else
+          assert r['clone_urls'].any? do |u|
+            expect[:prefix].match u
+          end
+        end
+      end
+    end
+  end
+
+  test "select push_url in index" do
+    authorize_with :active
+    get(:index, {select: ["uuid", "push_url"]})
+    assert_response :success
+    assert_includes(json_response["items"].map { |r| r["push_url"] },
+                    "git@git.zzzzz.arvadosapi.com:active/foo.git")
+  end
+
+  test "select clone_urls in index" do
+    authorize_with :active
+    get(:index, {select: ["uuid", "clone_urls"]})
+    assert_response :success
+    assert_includes(json_response["items"].map { |r| r["clone_urls"] }.flatten,
+                    "git@git.zzzzz.arvadosapi.com:active/foo.git")
+  end
 end

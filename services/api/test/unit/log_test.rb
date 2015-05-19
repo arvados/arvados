@@ -233,25 +233,40 @@ class LogTest < ActiveSupport::TestCase
   end
 
   test "use ownership and permission links to determine which logs a user can see" do
+    known_logs = [:noop,
+                  :admin_changes_repository2,
+                  :admin_changes_specimen,
+                  :system_adds_foo_file,
+                  :system_adds_baz,
+                  :log_owned_by_active,
+                  :crunchstat_for_running_job]
+
     c = Log.readable_by(users(:admin)).order("id asc").each.to_a
-    assert_equal 6, c.size
-    assert_equal 1, c[0].id # no-op
-    assert_equal 2, c[1].id # admin changes repository foo, which is owned by active user
-    assert_equal 3, c[2].id # admin changes specimen owned_by_spectator
-    assert_equal 4, c[3].id # foo collection added, readable by active through link
-    assert_equal 5, c[4].id # baz collection added, readable by active and spectator through group 'all users' group membership
-    assert_equal 6, c[5].id # log_owned_by_active
+    assert_log_result c, known_logs, known_logs
 
     c = Log.readable_by(users(:active)).order("id asc").each.to_a
-    assert_equal 4, c.size
-    assert_equal 2, c[0].id # admin changes repository foo, which is owned by active user
-    assert_equal 4, c[1].id # foo collection added, readable by active through link
-    assert_equal 5, c[2].id # baz collection added, readable by active and spectator through group 'all users' group membership
-    assert_equal 6, c[3].id # log_owned_by_active
+    assert_log_result c, known_logs, [:admin_changes_repository2, # owned by active
+                                      :system_adds_foo_file,      # readable via link
+                                      :system_adds_baz,           # readable via 'all users' group
+                                      :log_owned_by_active,       # log owned by active
+                                      :crunchstat_for_running_job] # log & job owned by active
 
     c = Log.readable_by(users(:spectator)).order("id asc").each.to_a
-    assert_equal 2, c.size
-    assert_equal 3, c[0].id # admin changes specimen owned_by_spectator
-    assert_equal 5, c[1].id # baz collection added, readable by active and spectator through group 'all users' group membership
+    assert_log_result c, known_logs, [:admin_changes_specimen, # owned by spectator
+                                      :system_adds_baz] # readable via 'all users' group
+  end
+
+  def assert_log_result result, known_logs, expected_logs
+    # All of expected_logs must appear in result. Additional logs can
+    # appear too, but only if they are _not_ listed in known_logs
+    # (i.e., we do not make any assertions about logs not mentioned in
+    # either "known" or "expected".)
+    result_ids = result.collect &:id
+    expected_logs.each do |want|
+      assert_includes result_ids, logs(want).id
+    end
+    (known_logs - expected_logs).each do |notwant|
+      refute_includes result_ids, logs(notwant).id
+    end
   end
 end

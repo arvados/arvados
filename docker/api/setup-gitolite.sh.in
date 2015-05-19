@@ -13,10 +13,7 @@ su - git -c "mkdir -p ~/bin"
 su - git -c "git clone git://github.com/sitaramc/gitolite"
 su - git -c "gitolite/install -ln ~/bin"
 su - git -c "PATH=/home/git/bin:$PATH gitolite setup -pk ~git/root-authorized_keys.pub"
-
-# Make sure the repositories are created in such a way that they are readable
-# by the api server
-sed -i 's/0077/0022/g' /home/git/.gitolite.rc
+install -o git -g git -m 600 /usr/local/arvados/config/.gitolite.rc /home/git/
 
 # And make sure that the existing repos are equally readable, or the API server commit model will freak out...
 chmod 755 /home/git/repositories
@@ -25,9 +22,9 @@ chmod +rx /home/git/repositories/*git -R
 # Now set up the gitolite repo(s) we use
 mkdir -p /usr/local/arvados/gitolite-tmp/
 # Make ssh store the host key
-ssh -o "StrictHostKeyChecking no" git@api info
+ssh -o "StrictHostKeyChecking no" git@api.dev.arvados info
 # Now check out the tree
-git clone git@api:gitolite-admin.git /usr/local/arvados/gitolite-tmp/gitolite-admin/
+git clone git@api.dev.arvados:gitolite-admin.git /usr/local/arvados/gitolite-tmp/gitolite-admin/
 cd /usr/local/arvados/gitolite-tmp/gitolite-admin
 mkdir keydir/arvados
 mkdir conf/admin
@@ -74,4 +71,3 @@ export ARVADOS_API_TOKEN=@@API_SUPERUSER_SECRET@@
 
 echo "PATH=/usr/bin:/bin:/sbin" > /etc/cron.d/arvados-repo-update
 echo "*/5 * * * * git cd ~git/repositories/arvados.git; git fetch https://github.com/curoverse/arvados.git master:master" >> /etc/cron.d/arvados-repo-update
-

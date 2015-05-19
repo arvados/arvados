@@ -59,6 +59,11 @@ class ReportIssueTest < ActionDispatch::IntegrationTest
       # enter a report text and click on report
       page.find_field('report_issue_text').set 'my test report text'
       assert page.has_button?('Send problem report'), 'Send problem report button not enabled after entering text'
+
+      report = mock
+      report.expects(:deliver).returns true
+      IssueReporter.expects(:send_report).returns report
+
       click_button 'Send problem report'
 
       # ajax success updated button texts and added footer message
@@ -79,7 +84,8 @@ class ReportIssueTest < ActionDispatch::IntegrationTest
     ['active', api_fixture('users')['active']],
     ['admin', api_fixture('users')['admin']],
     ['active_no_prefs', api_fixture('users')['active_no_prefs']],
-    ['active_no_prefs_profile', api_fixture('users')['active_no_prefs_profile']],
+    ['active_no_prefs_profile_no_getting_started_shown',
+        api_fixture('users')['active_no_prefs_profile_no_getting_started_shown']],
   ].each do |token, user|
 
     test "check version info and report issue for user #{token}" do

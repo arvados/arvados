@@ -1,9 +1,12 @@
 package main
 
 import (
+	"bufio"
 	"bytes"
+	"errors"
 	"flag"
 	"fmt"
+	"git.curoverse.com/arvados.git/sdk/go/keepclient"
 	"io/ioutil"
 	"log"
 	"net"
@@ -36,22 +39,25 @@ var PROC_MOUNTS = "/proc/mounts"
 
 // enforce_permissions controls whether permission signatures
 // should be enforced (affecting GET and DELETE requests).
-// Initialized by the --enforce-permissions flag.
+// Initialized by the -enforce-permissions flag.
 var enforce_permissions bool
 
-// permission_ttl is the time duration for which new permission
+// blob_signature_ttl is the time duration for which new permission
 // signatures (returned by PUT requests) will be valid.
-// Initialized by the --permission-ttl flag.
-var permission_ttl time.Duration
+// Initialized by the -permission-ttl flag.
+var blob_signature_ttl time.Duration
 
 // data_manager_token represents the API token used by the
 // Data Manager, and is required on certain privileged operations.
-// Initialized by the --data-manager-token-file flag.
+// Initialized by the -data-manager-token-file flag.
 var data_manager_token string
 
 // never_delete can be used to prevent the DELETE handler from
 // actually deleting anything.
 var never_delete = false
+
+var maxBuffers = 128
+var bufs *bufferPool
 
 // ==========
 // Error types.
@@ -72,7 +78,8 @@ var (
 	NotFoundError       = &KeepError{404, "Not Found"}
 	GenericError        = &KeepError{500, "Fail"}
 	FullError           = &KeepError{503, "Full"}
-	TooLongError        = &KeepError{504, "Timeout"}
+	SizeRequiredError   = &KeepError{411, "Missing Content-Length"}
+	TooLongError        = &KeepError{413, "Block is too large"}
 	MethodDisabledError = &KeepError{405, "Method disabled"}
 )
 
@@ -102,40 +109,108 @@ var KeepVM VolumeManager
 var pullq *WorkQueue
 var trashq *WorkQueue
 
+var (
+	flagSerializeIO bool
+	flagReadonly    bool
+)
+
+type volumeSet []Volume
+
+func (vs *volumeSet) Set(value string) error {
+	if dirs := strings.Split(value, ","); len(dirs) > 1 {
+		log.Print("DEPRECATED: using comma-separated volume list.")
+		for _, dir := range dirs {
+			if err := vs.Set(dir); err != nil {
+				return err
+			}
+		}
+		return nil
+	}
+	if len(value) == 0 || value[0] != '/' {
+		return errors.New("Invalid volume: must begin with '/'.")
+	}
+	if _, err := os.Stat(value); err != nil {
+		return err
+	}
+	*vs = append(*vs, &UnixVolume{
+		root:      value,
+		serialize: flagSerializeIO,
+		readonly:  flagReadonly,
+	})
+	return nil
+}
+
+func (vs *volumeSet) String() string {
+	s := "["
+	for i, v := range *vs {
+		if i > 0 {
+			s = s + " "
+		}
+		s = s + v.String()
+	}
+	return s + "]"
+}
+
+// Discover adds a volume for every directory named "keep" that is
+// located at the top level of a device- or tmpfs-backed mount point
+// other than "/". It returns the number of volumes added.
+func (vs *volumeSet) Discover() int {
+	added := 0
+	f, err := os.Open(PROC_MOUNTS)
+	if err != nil {
+		log.Fatalf("opening %s: %s", PROC_MOUNTS, err)
+	}
+	scanner := bufio.NewScanner(f)
+	for scanner.Scan() {
+		args := strings.Fields(scanner.Text())
+		if err := scanner.Err(); err != nil {
+			log.Fatalf("reading %s: %s", PROC_MOUNTS, err)
+		}
+		dev, mount := args[0], args[1]
+		if mount == "/" {
+			continue
+		}
+		if dev != "tmpfs" && !strings.HasPrefix(dev, "/dev/") {
+			continue
+		}
+		keepdir := mount + "/keep"
+		if st, err := os.Stat(keepdir); err != nil || !st.IsDir() {
+			continue
+		}
+		// Set the -readonly flag (but only for this volume)
+		// if the filesystem is mounted readonly.
+		flagReadonlyWas := flagReadonly
+		for _, fsopt := range strings.Split(args[3], ",") {
+			if fsopt == "ro" {
+				flagReadonly = true
+				break
+			}
+			if fsopt == "rw" {
+				break
+			}
+		}
+		vs.Set(keepdir)
+		flagReadonly = flagReadonlyWas
+		added++
+	}
+	return added
+}
+
 // TODO(twp): continue moving as much code as possible out of main
 // so it can be effectively tested. Esp. handling and postprocessing
 // of command line flags (identifying Keep volumes and initializing
 // permission arguments).
 
 func main() {
-	log.Println("Keep started: pid", os.Getpid())
-
-	// Parse command-line flags:
-	//
-	// -listen=ipaddr:port
-	//    Interface on which to listen for requests. Use :port without
-	//    an ipaddr to listen on all network interfaces.
-	//    Examples:
-	//      -listen=127.0.0.1:4949
-	//      -listen=10.0.1.24:8000
-	//      -listen=:25107 (to listen to port 25107 on all interfaces)
-	//
-	// -volumes
-	//    A comma-separated list of directories to use as Keep volumes.
-	//    Example:
-	//      -volumes=/var/keep01,/var/keep02,/var/keep03/subdir
-	//
-	//    If -volumes is empty or is not present, Keep will select volumes
-	//    by looking at currently mounted filesystems for /keep top-level
-	//    directories.
+	log.Println("keepstore starting, pid", os.Getpid())
+	defer log.Println("keepstore exiting, pid", os.Getpid())
 
 	var (
 		data_manager_token_file string
 		listen                  string
-		permission_key_file     string
+		blob_signing_key_file   string
 		permission_ttl_sec      int
-		serialize_io            bool
-		volumearg               string
+		volumes                 volumeSet
 		pidfile                 string
 	)
 	flag.StringVar(
@@ -153,9 +228,7 @@ func main() {
 		&listen,
 		"listen",
 		DEFAULT_ADDR,
-		"Interface on which to listen for requests, in the format "+
-			"ipaddr:port. e.g. -listen=10.0.1.24:8000. Use -listen=:port "+
-			"to listen on all network interfaces.")
+		"Listening address, in the form \"host:port\". e.g., 10.0.1.24:8000. Omit the host part to listen on all interfaces.")
 	flag.BoolVar(
 		&never_delete,
 		"never-delete",
@@ -163,65 +236,96 @@ func main() {
 		"If set, nothing will be deleted. HTTP 405 will be returned "+
 			"for valid DELETE requests.")
 	flag.StringVar(
-		&permission_key_file,
+		&blob_signing_key_file,
 		"permission-key-file",
 		"",
+		"Synonym for -blob-signing-key-file.")
+	flag.StringVar(
+		&blob_signing_key_file,
+		"blob-signing-key-file",
+		"",
 		"File containing the secret key for generating and verifying "+
-			"permission signatures.")
+			"blob permission signatures.")
 	flag.IntVar(
 		&permission_ttl_sec,
 		"permission-ttl",
-		1209600,
-		"Expiration time (in seconds) for newly generated permission "+
-			"signatures.")
+		0,
+		"Synonym for -blob-signature-ttl.")
+	flag.IntVar(
+		&permission_ttl_sec,
+		"blob-signature-ttl",
+		int(time.Duration(2*7*24*time.Hour).Seconds()),
+		"Lifetime of blob permission signatures. "+
+			"See services/api/config/application.default.yml.")
 	flag.BoolVar(
-		&serialize_io,
+		&flagSerializeIO,
 		"serialize",
 		false,
-		"If set, all read and write operations on local Keep volumes will "+
-			"be serialized.")
-	flag.StringVar(
-		&volumearg,
+		"Serialize read and write operations on the following volumes.")
+	flag.BoolVar(
+		&flagReadonly,
+		"readonly",
+		false,
+		"Do not write, delete, or touch anything on the following volumes.")
+	flag.Var(
+		&volumes,
 		"volumes",
-		"",
-		"Comma-separated list of directories to use for Keep volumes, "+
-			"e.g. -volumes=/var/keep1,/var/keep2. If empty or not "+
-			"supplied, Keep will scan mounted filesystems for volumes "+
-			"with a /keep top-level directory.")
-
+		"Deprecated synonym for -volume.")
+	flag.Var(
+		&volumes,
+		"volume",
+		"Local storage directory. Can be given more than once to add multiple directories. If none are supplied, the default is to use all directories named \"keep\" that exist in the top level directory of a mount point at startup time. Can be a comma-separated list, but this is deprecated: use multiple -volume arguments instead.")
 	flag.StringVar(
 		&pidfile,
 		"pid",
 		"",
-		"Path to write pid file")
+		"Path to write pid file during startup. This file is kept open and locked with LOCK_EX until keepstore exits, so `fuser -k pidfile` is one way to shut down. Exit immediately if there is an error opening, locking, or writing the pid file.")
+	flag.IntVar(
+		&maxBuffers,
+		"max-buffers",
+		maxBuffers,
+		fmt.Sprintf("Maximum RAM to use for data buffers, given in multiples of block size (%d MiB). When this limit is reached, HTTP requests requiring buffers (like GET and PUT) will wait for buffer space to be released.", BLOCKSIZE>>20))
 
 	flag.Parse()
 
-	// Look for local keep volumes.
-	var keepvols []string
-	if volumearg == "" {
-		// TODO(twp): decide whether this is desirable default behavior.
-		// In production we may want to require the admin to specify
-		// Keep volumes explicitly.
-		keepvols = FindKeepVolumes()
-	} else {
-		keepvols = strings.Split(volumearg, ",")
+	if maxBuffers < 0 {
+		log.Fatal("-max-buffers must be greater than zero.")
+	}
+	bufs = newBufferPool(maxBuffers, BLOCKSIZE)
+
+	if pidfile != "" {
+		f, err := os.OpenFile(pidfile, os.O_RDWR | os.O_CREATE, 0777)
+		if err != nil {
+			log.Fatalf("open pidfile (%s): %s", pidfile, err)
+		}
+		err = syscall.Flock(int(f.Fd()), syscall.LOCK_EX | syscall.LOCK_NB)
+		if err != nil {
+			log.Fatalf("flock pidfile (%s): %s", pidfile, err)
+		}
+		err = f.Truncate(0)
+		if err != nil {
+			log.Fatalf("truncate pidfile (%s): %s", pidfile, err)
+		}
+		_, err = fmt.Fprint(f, os.Getpid())
+		if err != nil {
+			log.Fatalf("write pidfile (%s): %s", pidfile, err)
+		}
+		err = f.Sync()
+		if err != nil {
+			log.Fatalf("sync pidfile (%s): %s", pidfile, err)
+		}
+		defer f.Close()
+		defer os.Remove(pidfile)
 	}
 
-	// Check that the specified volumes actually exist.
-	var goodvols []Volume = nil
-	for _, v := range keepvols {
-		if _, err := os.Stat(v); err == nil {
-			log.Println("adding Keep volume:", v)
-			newvol := MakeUnixVolume(v, serialize_io)
-			goodvols = append(goodvols, &newvol)
-		} else {
-			log.Printf("bad Keep volume: %s\n", err)
+	if len(volumes) == 0 {
+		if volumes.Discover() == 0 {
+			log.Fatal("No volumes found.")
 		}
 	}
 
-	if len(goodvols) == 0 {
-		log.Fatal("could not find any keep volumes")
+	for _, v := range volumes {
+		log.Printf("Using volume %v (writable=%v)", v, v.Writable())
 	}
 
 	// Initialize data manager token and permission key.
@@ -234,33 +338,30 @@ func main() {
 			log.Fatalf("reading data manager token: %s\n", err)
 		}
 	}
-	if permission_key_file != "" {
-		if buf, err := ioutil.ReadFile(permission_key_file); err == nil {
+	if blob_signing_key_file != "" {
+		if buf, err := ioutil.ReadFile(blob_signing_key_file); err == nil {
 			PermissionSecret = bytes.TrimSpace(buf)
 		} else {
 			log.Fatalf("reading permission key: %s\n", err)
 		}
 	}
 
-	// Initialize permission TTL
-	permission_ttl = time.Duration(permission_ttl_sec) * time.Second
+	blob_signature_ttl = time.Duration(permission_ttl_sec) * time.Second
 
-	// If --enforce-permissions is true, we must have a permission key
-	// to continue.
 	if PermissionSecret == nil {
 		if enforce_permissions {
-			log.Fatal("--enforce-permissions requires a permission key")
+			log.Fatal("-enforce-permissions requires a permission key")
 		} else {
 			log.Println("Running without a PermissionSecret. Block locators " +
 				"returned by this server will not be signed, and will be rejected " +
 				"by a server that enforces permissions.")
-			log.Println("To fix this, run Keep with --permission-key-file=<path> " +
-				"to define the location of a file containing the permission key.")
+			log.Println("To fix this, use the -blob-signing-key-file flag " +
+				"to specify the file containing the permission key.")
 		}
 	}
 
 	// Start a round-robin VolumeManager with the volumes we have found.
-	KeepVM = MakeRRVolumeManager(goodvols)
+	KeepVM = MakeRRVolumeManager(volumes)
 
 	// Tell the built-in HTTP server to direct all requests to the REST router.
 	loggingRouter := MakeLoggingRESTRouter()
@@ -274,6 +375,22 @@ func main() {
 		log.Fatal(err)
 	}
 
+	// Initialize Pull queue and worker
+	keepClient := &keepclient.KeepClient{
+		Arvados:       nil,
+		Want_replicas: 1,
+		Using_proxy:   true,
+		Client:        &http.Client{},
+	}
+
+	// Initialize the pullq and worker
+	pullq = NewWorkQueue()
+	go RunPullWorker(pullq, keepClient)
+
+	// Initialize the trashq and worker
+	trashq = NewWorkQueue()
+	go RunTrashWorker(trashq)
+
 	// Shut down the server gracefully (by closing the listener)
 	// if SIGTERM is received.
 	term := make(chan os.Signal, 1)
@@ -283,24 +400,9 @@ func main() {
 		listener.Close()
 	}(term)
 	signal.Notify(term, syscall.SIGTERM)
+	signal.Notify(term, syscall.SIGINT)
 
-	if pidfile != "" {
-		f, err := os.Create(pidfile)
-		if err == nil {
-			fmt.Fprint(f, os.Getpid())
-			f.Close()
-		} else {
-			log.Printf("Error writing pid file (%s): %s", pidfile, err.Error())
-		}
-	}
-
-	// Start listening for requests.
+	log.Println("listening at", listen)
 	srv := &http.Server{Addr: listen}
 	srv.Serve(listener)
-
-	log.Println("shutting down")
-
-	if pidfile != "" {
-		os.Remove(pidfile)
-	}
 }

@@ -1,15 +1,19 @@
 import hashlib
 import mock
 import os
+import pycurl
 import random
 import re
 import socket
+import threading
+import time
 import unittest
 import urlparse
 
 import arvados
 import arvados.retry
 import arvados_testutil as tutil
+import keepstub
 import run_test_server
 
 class KeepTestCase(run_test_server.TestCaseWithServers):
@@ -76,6 +80,21 @@ class KeepTestCase(run_test_server.TestCaseWithServers):
             '^d41d8cd98f00b204e9800998ecf8427e\+0',
             ('wrong locator from Keep.put(""): ' + blob_locator))
 
+    def test_unicode_must_be_ascii(self):
+        # If unicode type, must only consist of valid ASCII
+        foo_locator = self.keep_client.put(u'foo')
+        self.assertRegexpMatches(
+            foo_locator,
+            '^acbd18db4cc2f85cedef654fccc4a4d8\+3',
+            'wrong md5 hash from Keep.put("foo"): ' + foo_locator)
+
+        with self.assertRaises(UnicodeEncodeError):
+            # Error if it is not ASCII
+            self.keep_client.put(u'\xe2')
+
+        with self.assertRaises(arvados.errors.ArgumentError):
+            # Must be a string type
+            self.keep_client.put({})
 
 class KeepPermissionTestCase(run_test_server.TestCaseWithServers):
     MAIN_SERVER = {}
@@ -236,7 +255,7 @@ class KeepProxyTestCase(run_test_server.TestCaseWithServers):
 class KeepClientServiceTestCase(unittest.TestCase, tutil.ApiClientMock):
     def get_service_roots(self, api_client):
         keep_client = arvados.KeepClient(api_client=api_client)
-        services = keep_client.weighted_service_roots('000000')
+        services = keep_client.weighted_service_roots(arvados.KeepLocator('0'*32))
         return [urlparse.urlparse(url) for url in sorted(services)]
 
     def test_ssl_flag_respected_in_roots(self):
@@ -252,63 +271,66 @@ class KeepClientServiceTestCase(unittest.TestCase, tutil.ApiClientMock):
         self.assertEqual('100::1', service.hostname)
         self.assertEqual(10, service.port)
 
-    # test_get_timeout and test_put_timeout test that
-    # KeepClient.get and KeepClient.put use the appropriate timeouts
-    # when connected directly to a Keep server (i.e. non-proxy timeout)
+    # test_*_timeout verify that KeepClient instructs pycurl to use
+    # the appropriate connection and read timeouts. They don't care
+    # whether pycurl actually exhibits the expected timeout behavior
+    # -- those tests are in the KeepClientTimeout test class.
 
     def test_get_timeout(self):
         api_client = self.mock_keep_services(count=1)
-        keep_client = arvados.KeepClient(api_client=api_client)
-        force_timeout = [socket.timeout("timed out")]
-        with mock.patch('requests.get', side_effect=force_timeout) as mock_request:
+        force_timeout = socket.timeout("timed out")
+        with tutil.mock_keep_responses(force_timeout, 0) as mock:
+            keep_client = arvados.KeepClient(api_client=api_client)
             with self.assertRaises(arvados.errors.KeepReadError):
                 keep_client.get('ffffffffffffffffffffffffffffffff')
-            self.assertTrue(mock_request.called)
             self.assertEqual(
-                arvados.KeepClient.DEFAULT_TIMEOUT,
-                mock_request.call_args[1]['timeout'])
+                mock.responses[0].getopt(pycurl.CONNECTTIMEOUT_MS),
+                int(arvados.KeepClient.DEFAULT_TIMEOUT[0]*1000))
+            self.assertEqual(
+                mock.responses[0].getopt(pycurl.TIMEOUT_MS),
+                int(arvados.KeepClient.DEFAULT_TIMEOUT[1]*1000))
 
     def test_put_timeout(self):
         api_client = self.mock_keep_services(count=1)
-        keep_client = arvados.KeepClient(api_client=api_client)
-        force_timeout = [socket.timeout("timed out")]
-        with mock.patch('requests.put', side_effect=force_timeout) as mock_request:
+        force_timeout = socket.timeout("timed out")
+        with tutil.mock_keep_responses(force_timeout, 0) as mock:
+            keep_client = arvados.KeepClient(api_client=api_client)
             with self.assertRaises(arvados.errors.KeepWriteError):
                 keep_client.put('foo')
-            self.assertTrue(mock_request.called)
             self.assertEqual(
-                arvados.KeepClient.DEFAULT_TIMEOUT,
-                mock_request.call_args[1]['timeout'])
+                mock.responses[0].getopt(pycurl.CONNECTTIMEOUT_MS),
+                int(arvados.KeepClient.DEFAULT_TIMEOUT[0]*1000))
+            self.assertEqual(
+                mock.responses[0].getopt(pycurl.TIMEOUT_MS),
+                int(arvados.KeepClient.DEFAULT_TIMEOUT[1]*1000))
 
     def test_proxy_get_timeout(self):
-        # Force a timeout, verifying that the requests.get or
-        # requests.put method was called with the proxy_timeout
-        # setting rather than the default timeout.
         api_client = self.mock_keep_services(service_type='proxy', count=1)
-        keep_client = arvados.KeepClient(api_client=api_client)
-        force_timeout = [socket.timeout("timed out")]
-        with mock.patch('requests.get', side_effect=force_timeout) as mock_request:
+        force_timeout = socket.timeout("timed out")
+        with tutil.mock_keep_responses(force_timeout, 0) as mock:
+            keep_client = arvados.KeepClient(api_client=api_client)
             with self.assertRaises(arvados.errors.KeepReadError):
                 keep_client.get('ffffffffffffffffffffffffffffffff')
-            self.assertTrue(mock_request.called)
             self.assertEqual(
-                arvados.KeepClient.DEFAULT_PROXY_TIMEOUT,
-                mock_request.call_args[1]['timeout'])
+                mock.responses[0].getopt(pycurl.CONNECTTIMEOUT_MS),
+                int(arvados.KeepClient.DEFAULT_PROXY_TIMEOUT[0]*1000))
+            self.assertEqual(
+                mock.responses[0].getopt(pycurl.TIMEOUT_MS),
+                int(arvados.KeepClient.DEFAULT_PROXY_TIMEOUT[1]*1000))
 
     def test_proxy_put_timeout(self):
-        # Force a timeout, verifying that the requests.get or
-        # requests.put method was called with the proxy_timeout
-        # setting rather than the default timeout.
         api_client = self.mock_keep_services(service_type='proxy', count=1)
-        keep_client = arvados.KeepClient(api_client=api_client)
-        force_timeout = [socket.timeout("timed out")]
-        with mock.patch('requests.put', side_effect=force_timeout) as mock_request:
+        force_timeout = socket.timeout("timed out")
+        with tutil.mock_keep_responses(force_timeout, 0) as mock:
+            keep_client = arvados.KeepClient(api_client=api_client)
             with self.assertRaises(arvados.errors.KeepWriteError):
                 keep_client.put('foo')
-            self.assertTrue(mock_request.called)
             self.assertEqual(
-                arvados.KeepClient.DEFAULT_PROXY_TIMEOUT,
-                mock_request.call_args[1]['timeout'])
+                mock.responses[0].getopt(pycurl.CONNECTTIMEOUT_MS),
+                int(arvados.KeepClient.DEFAULT_PROXY_TIMEOUT[0]*1000))
+            self.assertEqual(
+                mock.responses[0].getopt(pycurl.TIMEOUT_MS),
+                int(arvados.KeepClient.DEFAULT_PROXY_TIMEOUT[1]*1000))
 
     def test_probe_order_reference_set(self):
         # expected_order[i] is the probe order for
@@ -329,7 +351,7 @@ class KeepClientServiceTestCase(unittest.TestCase, tutil.ApiClientMock):
         api_client = self.mock_keep_services(count=16)
         keep_client = arvados.KeepClient(api_client=api_client)
         for i, hash in enumerate(hashes):
-            roots = keep_client.weighted_service_roots(hash)
+            roots = keep_client.weighted_service_roots(arvados.KeepLocator(hash))
             got_order = [
                 re.search(r'//\[?keep0x([0-9a-f]+)', root).group(1)
                 for root in roots]
@@ -342,14 +364,14 @@ class KeepClientServiceTestCase(unittest.TestCase, tutil.ApiClientMock):
         api_client = self.mock_keep_services(count=initial_services)
         keep_client = arvados.KeepClient(api_client=api_client)
         probes_before = [
-            keep_client.weighted_service_roots(hash) for hash in hashes]
+            keep_client.weighted_service_roots(arvados.KeepLocator(hash)) for hash in hashes]
         for added_services in range(1, 12):
             api_client = self.mock_keep_services(count=initial_services+added_services)
             keep_client = arvados.KeepClient(api_client=api_client)
             total_penalty = 0
             for hash_index in range(len(hashes)):
                 probe_after = keep_client.weighted_service_roots(
-                    hashes[hash_index])
+                    arvados.KeepLocator(hashes[hash_index]))
                 penalty = probe_after.index(probes_before[hash_index][0])
                 self.assertLessEqual(penalty, added_services)
                 total_penalty += penalty
@@ -382,12 +404,12 @@ class KeepClientServiceTestCase(unittest.TestCase, tutil.ApiClientMock):
         aport = random.randint(1024,65535)
         api_client = self.mock_keep_services(service_port=aport, count=16)
         keep_client = arvados.KeepClient(api_client=api_client)
-        with mock.patch('requests.' + verb,
-                        side_effect=socket.timeout) as req_mock, \
-                self.assertRaises(exc_class) as err_check:
+        with mock.patch('pycurl.Curl') as curl_mock, \
+             self.assertRaises(exc_class) as err_check:
+            curl_mock.return_value.side_effect = socket.timeout
             getattr(keep_client, verb)(data)
         urls = [urlparse.urlparse(url)
-                for url in err_check.exception.service_errors()]
+                for url in err_check.exception.request_errors()]
         self.assertEqual([('keep0x' + c, aport) for c in '3eab2d5fc9681074'],
                          [(url.hostname, url.port) for url in urls])
 
@@ -404,7 +426,7 @@ class KeepClientServiceTestCase(unittest.TestCase, tutil.ApiClientMock):
         keep_client = arvados.KeepClient(api_client=api_client)
         with self.assertRaises(exc_class) as err_check:
             getattr(keep_client, verb)('d41d8cd98f00b204e9800998ecf8427e+0')
-        self.assertEqual(0, len(err_check.exception.service_errors()))
+        self.assertEqual(0, len(err_check.exception.request_errors()))
 
     def test_get_error_with_no_services(self):
         self.check_no_services_error('get', arvados.errors.KeepReadError)
@@ -414,16 +436,16 @@ class KeepClientServiceTestCase(unittest.TestCase, tutil.ApiClientMock):
 
     def check_errors_from_last_retry(self, verb, exc_class):
         api_client = self.mock_keep_services(count=2)
-        keep_client = arvados.KeepClient(api_client=api_client)
-        req_mock = getattr(tutil, 'mock_{}_responses'.format(verb))(
+        req_mock = tutil.mock_keep_responses(
             "retry error reporting test", 500, 500, 403, 403)
         with req_mock, tutil.skip_sleep, \
                 self.assertRaises(exc_class) as err_check:
+            keep_client = arvados.KeepClient(api_client=api_client)
             getattr(keep_client, verb)('d41d8cd98f00b204e9800998ecf8427e+0',
                                        num_retries=3)
         self.assertEqual([403, 403], [
                 getattr(error, 'status_code', None)
-                for error in err_check.exception.service_errors().itervalues()])
+                for error in err_check.exception.request_errors().itervalues()])
 
     def test_get_error_reflects_last_retry(self):
         self.check_errors_from_last_retry('get', arvados.errors.KeepReadError)
@@ -435,11 +457,168 @@ class KeepClientServiceTestCase(unittest.TestCase, tutil.ApiClientMock):
         data = 'partial failure test'
         data_loc = '{}+{}'.format(hashlib.md5(data).hexdigest(), len(data))
         api_client = self.mock_keep_services(count=3)
-        keep_client = arvados.KeepClient(api_client=api_client)
-        with tutil.mock_put_responses(data_loc, 200, 500, 500) as req_mock, \
+        with tutil.mock_keep_responses(data_loc, 200, 500, 500) as req_mock, \
                 self.assertRaises(arvados.errors.KeepWriteError) as exc_check:
+            keep_client = arvados.KeepClient(api_client=api_client)
             keep_client.put(data)
-        self.assertEqual(2, len(exc_check.exception.service_errors()))
+        self.assertEqual(2, len(exc_check.exception.request_errors()))
+
+    def test_proxy_put_with_no_writable_services(self):
+        data = 'test with no writable services'
+        data_loc = '{}+{}'.format(hashlib.md5(data).hexdigest(), len(data))
+        api_client = self.mock_keep_services(service_type='proxy', read_only=True, count=1)
+        with tutil.mock_keep_responses(data_loc, 200, 500, 500) as req_mock, \
+                self.assertRaises(arvados.errors.KeepWriteError) as exc_check:
+          keep_client = arvados.KeepClient(api_client=api_client)
+          keep_client.put(data)
+        self.assertEqual(True, ("no Keep services available" in str(exc_check.exception)))
+        self.assertEqual(0, len(exc_check.exception.request_errors()))
+
+class KeepClientTimeout(unittest.TestCase, tutil.ApiClientMock):
+    DATA = 'x' * 2**10
+
+    class assertTakesBetween(unittest.TestCase):
+        def __init__(self, tmin, tmax):
+            self.tmin = tmin
+            self.tmax = tmax
+
+        def __enter__(self):
+            self.t0 = time.time()
+
+        def __exit__(self, *args, **kwargs):
+            self.assertGreater(time.time() - self.t0, self.tmin)
+            self.assertLess(time.time() - self.t0, self.tmax)
+
+    def setUp(self):
+        sock = socket.socket()
+        sock.bind(('0.0.0.0', 0))
+        self.port = sock.getsockname()[1]
+        sock.close()
+        self.server = keepstub.Server(('0.0.0.0', self.port), keepstub.Handler)
+        self.thread = threading.Thread(target=self.server.serve_forever)
+        self.thread.daemon = True # Exit thread if main proc exits
+        self.thread.start()
+        self.api_client = self.mock_keep_services(
+            count=1,
+            service_host='localhost',
+            service_port=self.port,
+        )
+
+    def tearDown(self):
+        self.server.shutdown()
+
+    def keepClient(self, timeouts=(0.1, 1.0)):
+        return arvados.KeepClient(
+            api_client=self.api_client,
+            timeout=timeouts)
+
+    def test_timeout_slow_connect(self):
+        # Can't simulate TCP delays with our own socket. Leave our
+        # stub server running uselessly, and try to connect to an
+        # unroutable IP address instead.
+        self.api_client = self.mock_keep_services(
+            count=1,
+            service_host='240.0.0.0',
+        )
+        with self.assertTakesBetween(0.1, 0.5):
+            with self.assertRaises(arvados.errors.KeepWriteError):
+                self.keepClient((0.1, 1)).put(self.DATA, copies=1, num_retries=0)
+
+    def test_timeout_slow_request(self):
+        self.server.setdelays(request=0.2)
+        self._test_200ms()
+
+    def test_timeout_slow_response(self):
+        self.server.setdelays(response=0.2)
+        self._test_200ms()
+
+    def test_timeout_slow_response_body(self):
+        self.server.setdelays(response_body=0.2)
+        self._test_200ms()
+
+    def _test_200ms(self):
+        """Connect should be t<100ms, request should be 200ms <= t < 300ms"""
+
+        # Allow 100ms to connect, then 1s for response. Everything
+        # should work, and everything should take at least 200ms to
+        # return.
+        kc = self.keepClient((.1, 1))
+        with self.assertTakesBetween(.2, .3):
+            loc = kc.put(self.DATA, copies=1, num_retries=0)
+        with self.assertTakesBetween(.2, .3):
+            self.assertEqual(self.DATA, kc.get(loc, num_retries=0))
+
+        # Allow 1s to connect, then 100ms for response. Nothing should
+        # work, and everything should take at least 100ms to return.
+        kc = self.keepClient((1, .1))
+        with self.assertTakesBetween(.1, .2):
+            with self.assertRaises(arvados.errors.KeepReadError):
+                kc.get(loc, num_retries=0)
+        with self.assertTakesBetween(.1, .2):
+            with self.assertRaises(arvados.errors.KeepWriteError):
+                kc.put(self.DATA, copies=1, num_retries=0)
+
+
+class KeepClientGatewayTestCase(unittest.TestCase, tutil.ApiClientMock):
+    def mock_disks_and_gateways(self, disks=3, gateways=1):
+        self.gateways = [{
+                'uuid': 'zzzzz-bi6l4-gateway{:08d}'.format(i),
+                'owner_uuid': 'zzzzz-tpzed-000000000000000',
+                'service_host': 'gatewayhost{}'.format(i),
+                'service_port': 12345,
+                'service_ssl_flag': True,
+                'service_type': 'gateway:test',
+        } for i in range(gateways)]
+        self.gateway_roots = [
+            "https://{service_host}:{service_port}/".format(**gw)
+            for gw in self.gateways]
+        self.api_client = self.mock_keep_services(
+            count=disks, additional_services=self.gateways)
+        self.keepClient = arvados.KeepClient(api_client=self.api_client)
+
+    @mock.patch('pycurl.Curl')
+    def test_get_with_gateway_hint_first(self, MockCurl):
+        MockCurl.return_value = tutil.FakeCurl.make(
+            code=200, body='foo', headers={'Content-Length': 3})
+        self.mock_disks_and_gateways()
+        locator = 'acbd18db4cc2f85cedef654fccc4a4d8+3+K@' + self.gateways[0]['uuid']
+        self.assertEqual('foo', self.keepClient.get(locator))
+        self.assertEqual(self.gateway_roots[0]+locator,
+                         MockCurl.return_value.getopt(pycurl.URL))
+
+    @mock.patch('pycurl.Curl')
+    def test_get_with_gateway_hints_in_order(self, MockCurl):
+        gateways = 4
+        disks = 3
+        mocks = [
+            tutil.FakeCurl.make(code=404, body='')
+            for _ in range(gateways+disks)
+        ]
+        MockCurl.side_effect = tutil.queue_with(mocks)
+        self.mock_disks_and_gateways(gateways=gateways, disks=disks)
+        locator = '+'.join(['acbd18db4cc2f85cedef654fccc4a4d8+3'] +
+                           ['K@'+gw['uuid'] for gw in self.gateways])
+        with self.assertRaises(arvados.errors.NotFoundError):
+            self.keepClient.get(locator)
+        # Gateways are tried first, in the order given.
+        for i, root in enumerate(self.gateway_roots):
+            self.assertEqual(root+locator,
+                             mocks[i].getopt(pycurl.URL))
+        # Disk services are tried next.
+        for i in range(gateways, gateways+disks):
+            self.assertRegexpMatches(
+                mocks[i].getopt(pycurl.URL),
+                r'keep0x')
+
+    @mock.patch('pycurl.Curl')
+    def test_get_with_remote_proxy_hint(self, MockCurl):
+        MockCurl.return_value = tutil.FakeCurl.make(
+            code=200, body='foo', headers={'Content-Length': 3})
+        self.mock_disks_and_gateways()
+        locator = 'acbd18db4cc2f85cedef654fccc4a4d8+3+K@xyzzy'
+        self.assertEqual('foo', self.keepClient.get(locator))
+        self.assertEqual('https://keep.xyzzy.arvadosapi.com/'+locator,
+                         MockCurl.return_value.getopt(pycurl.URL))
 
 
 class KeepClientRetryTestMixin(object):
@@ -513,14 +692,14 @@ class KeepClientRetryGetTestCase(KeepClientRetryTestMixin, unittest.TestCase):
     DEFAULT_EXPECT = KeepClientRetryTestMixin.TEST_DATA
     DEFAULT_EXCEPTION = arvados.errors.KeepReadError
     HINTED_LOCATOR = KeepClientRetryTestMixin.TEST_LOCATOR + '+K@xyzzy'
-    TEST_PATCHER = staticmethod(tutil.mock_get_responses)
+    TEST_PATCHER = staticmethod(tutil.mock_keep_responses)
 
     def run_method(self, locator=KeepClientRetryTestMixin.TEST_LOCATOR,
                    *args, **kwargs):
         return self.new_client().get(locator, *args, **kwargs)
 
     def test_specific_exception_when_not_found(self):
-        with tutil.mock_get_responses(self.DEFAULT_EXPECT, 404, 200):
+        with tutil.mock_keep_responses(self.DEFAULT_EXPECT, 404, 200):
             self.check_exception(arvados.errors.NotFoundError, num_retries=3)
 
     def test_general_exception_with_mixed_errors(self):
@@ -529,7 +708,7 @@ class KeepClientRetryGetTestCase(KeepClientRetryTestMixin, unittest.TestCase):
         # This test rigs up 50/50 disagreement between two servers, and
         # checks that it does not become a NotFoundError.
         client = self.new_client()
-        with tutil.mock_get_responses(self.DEFAULT_EXPECT, 404, 500):
+        with tutil.mock_keep_responses(self.DEFAULT_EXPECT, 404, 500):
             with self.assertRaises(arvados.errors.KeepReadError) as exc_check:
                 client.get(self.HINTED_LOCATOR)
             self.assertNotIsInstance(
@@ -537,21 +716,19 @@ class KeepClientRetryGetTestCase(KeepClientRetryTestMixin, unittest.TestCase):
                 "mixed errors raised NotFoundError")
 
     def test_hint_server_can_succeed_without_retries(self):
-        with tutil.mock_get_responses(self.DEFAULT_EXPECT, 404, 200, 500):
+        with tutil.mock_keep_responses(self.DEFAULT_EXPECT, 404, 200, 500):
             self.check_success(locator=self.HINTED_LOCATOR)
 
     def test_try_next_server_after_timeout(self):
-        side_effects = [
-            socket.timeout("timed out"),
-            tutil.fake_requests_response(200, self.DEFAULT_EXPECT)]
-        with mock.patch('requests.get',
-                        side_effect=iter(side_effects)):
+        with tutil.mock_keep_responses(
+                (socket.timeout("timed out"), 200),
+                (self.DEFAULT_EXPECT, 200)):
             self.check_success(locator=self.HINTED_LOCATOR)
 
     def test_retry_data_with_wrong_checksum(self):
-        side_effects = (tutil.fake_requests_response(200, s)
-                        for s in ['baddata', self.TEST_DATA])
-        with mock.patch('requests.get', side_effect=side_effects):
+        with tutil.mock_keep_responses(
+                ('baddata', 200),
+                (self.DEFAULT_EXPECT, 200)):
             self.check_success(locator=self.HINTED_LOCATOR)
 
 
@@ -559,12 +736,12 @@ class KeepClientRetryGetTestCase(KeepClientRetryTestMixin, unittest.TestCase):
 class KeepClientRetryPutTestCase(KeepClientRetryTestMixin, unittest.TestCase):
     DEFAULT_EXPECT = KeepClientRetryTestMixin.TEST_LOCATOR
     DEFAULT_EXCEPTION = arvados.errors.KeepWriteError
-    TEST_PATCHER = staticmethod(tutil.mock_put_responses)
+    TEST_PATCHER = staticmethod(tutil.mock_keep_responses)
 
     def run_method(self, data=KeepClientRetryTestMixin.TEST_DATA,
                    copies=1, *args, **kwargs):
         return self.new_client().put(data, copies, *args, **kwargs)
 
     def test_do_not_send_multiple_copies_to_same_server(self):
-        with tutil.mock_put_responses(self.DEFAULT_EXPECT, 200):
+        with tutil.mock_keep_responses(self.DEFAULT_EXPECT, 200):
             self.check_exception(copies=2, num_retries=3)

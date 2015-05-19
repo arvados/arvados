@@ -168,7 +168,7 @@ CREATE TABLE collections (
     name character varying(255),
     description character varying(524288),
     properties text,
-    expires_at date,
+    expires_at timestamp without time zone,
     file_names character varying(8192)
 );
 
@@ -432,8 +432,8 @@ CREATE TABLE jobs (
     docker_image_locator character varying(255),
     priority integer DEFAULT 0 NOT NULL,
     description character varying(524288),
-    state character varying(255),
-    arvados_sdk_version character varying(255)
+    arvados_sdk_version character varying(255),
+    state character varying(255)
 );
 
 
@@ -518,7 +518,8 @@ CREATE TABLE keep_services (
     service_ssl_flag boolean,
     service_type character varying(255),
     created_at timestamp without time zone NOT NULL,
-    updated_at timestamp without time zone NOT NULL
+    updated_at timestamp without time zone NOT NULL,
+    read_only boolean DEFAULT false NOT NULL
 );
 
 
@@ -760,8 +761,6 @@ CREATE TABLE repositories (
     modified_by_user_uuid character varying(255),
     modified_at timestamp without time zone,
     name character varying(255),
-    fetch_url character varying(255),
-    push_url character varying(255),
     created_at timestamp without time zone NOT NULL,
     updated_at timestamp without time zone NOT NULL
 );
@@ -889,7 +888,8 @@ CREATE TABLE users (
     prefs text,
     updated_at timestamp without time zone NOT NULL,
     default_owner_uuid character varying(255),
-    is_active boolean DEFAULT false
+    is_active boolean DEFAULT false,
+    username character varying(255)
 );
 
 
@@ -1303,7 +1303,7 @@ CREATE INDEX authorized_keys_search_index ON authorized_keys USING btree (uuid, 
 -- Name: collection_owner_uuid_name_unique; Type: INDEX; Schema: public; Owner: -; Tablespace: 
 --
 
-CREATE UNIQUE INDEX collection_owner_uuid_name_unique ON collections USING btree (owner_uuid, name);
+CREATE UNIQUE INDEX collection_owner_uuid_name_unique ON collections USING btree (owner_uuid, name) WHERE (expires_at IS NULL);
 
 
 --
@@ -1317,7 +1317,7 @@ CREATE INDEX collections_full_text_search_idx ON collections USING gin (to_tsvec
 -- Name: collections_search_index; Type: INDEX; Schema: public; Owner: -; Tablespace: 
 --
 
-CREATE INDEX collections_search_index ON collections USING btree (owner_uuid, modified_by_client_uuid, modified_by_user_uuid, portable_data_hash, uuid, name, file_names);
+CREATE INDEX collections_search_index ON collections USING btree (owner_uuid, modified_by_client_uuid, modified_by_user_uuid, portable_data_hash, uuid, name);
 
 
 --
@@ -1965,6 +1965,13 @@ CREATE INDEX index_users_on_owner_uuid ON users USING btree (owner_uuid);
 
 
 --
+-- Name: index_users_on_username; Type: INDEX; Schema: public; Owner: -; Tablespace: 
+--
+
+CREATE UNIQUE INDEX index_users_on_username ON users USING btree (username);
+
+
+--
 -- Name: index_users_on_uuid; Type: INDEX; Schema: public; Owner: -; Tablespace: 
 --
 
@@ -2094,7 +2101,7 @@ CREATE INDEX pipeline_templates_search_index ON pipeline_templates USING btree (
 -- Name: repositories_search_index; Type: INDEX; Schema: public; Owner: -; Tablespace: 
 --
 
-CREATE INDEX repositories_search_index ON repositories USING btree (uuid, owner_uuid, modified_by_client_uuid, modified_by_user_uuid, name, fetch_url, push_url);
+CREATE INDEX repositories_search_index ON repositories USING btree (uuid, owner_uuid, modified_by_client_uuid, modified_by_user_uuid, name);
 
 
 --
@@ -2122,7 +2129,7 @@ CREATE UNIQUE INDEX unique_schema_migrations ON schema_migrations USING btree (v
 -- Name: users_search_index; Type: INDEX; Schema: public; Owner: -; Tablespace: 
 --
 
-CREATE INDEX users_search_index ON users USING btree (uuid, owner_uuid, modified_by_client_uuid, modified_by_user_uuid, email, first_name, last_name, identity_url, default_owner_uuid);
+CREATE INDEX users_search_index ON users USING btree (uuid, owner_uuid, modified_by_client_uuid, modified_by_user_uuid, email, first_name, last_name, identity_url, default_owner_uuid, username);
 
 
 --
@@ -2359,3 +2366,17 @@ INSERT INTO schema_migrations (version) VALUES ('20150203180223');
 INSERT INTO schema_migrations (version) VALUES ('20150206210804');
 
 INSERT INTO schema_migrations (version) VALUES ('20150206230342');
+
+INSERT INTO schema_migrations (version) VALUES ('20150216193428');
+
+INSERT INTO schema_migrations (version) VALUES ('20150303210106');
+
+INSERT INTO schema_migrations (version) VALUES ('20150312151136');
+
+INSERT INTO schema_migrations (version) VALUES ('20150317132720');
+
+INSERT INTO schema_migrations (version) VALUES ('20150324152204');
+
+INSERT INTO schema_migrations (version) VALUES ('20150423145759');
+
+INSERT INTO schema_migrations (version) VALUES ('20150512193020');

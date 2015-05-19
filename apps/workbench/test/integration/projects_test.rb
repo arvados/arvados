@@ -1,5 +1,6 @@
 require 'integration_helper'
 require 'helpers/share_object_helper'
+require_relative 'integration_test_utils'
 
 class ProjectsTest < ActionDispatch::IntegrationTest
   include ShareObjectHelper
@@ -11,6 +12,7 @@ class ProjectsTest < ActionDispatch::IntegrationTest
   test 'Check collection count for A Project in the tab pane titles' do
     project_uuid = api_fixture('groups')['aproject']['uuid']
     visit page_with_token 'active', '/projects/' + project_uuid
+    click_link 'Data collections'
     wait_for_ajax
     collection_count = page.all("[data-pk*='collection']").count
     assert_selector '#Data_collections-tab span', text: "(#{collection_count})"
@@ -256,6 +258,7 @@ class ProjectsTest < ActionDispatch::IntegrationTest
         visit page_with_token 'active', '/'
         find("#projects-menu").click
         find(".dropdown-menu a", text: dest['name']).click
+        click_link 'Data collections'
         assert page.has_text?(my_collection['name']), 'Collection not found in dest project after copy'
 
       when 'Move'
@@ -263,6 +266,7 @@ class ProjectsTest < ActionDispatch::IntegrationTest
         visit page_with_token 'active', '/'
         find("#projects-menu").click
         find(".dropdown-menu a", text: dest['name']).click
+        click_link 'Data collections'
         assert page.has_text?(my_collection['name']), 'Collection not found in dest project after move'
 
       when 'Remove'
@@ -275,6 +279,7 @@ class ProjectsTest < ActionDispatch::IntegrationTest
     visit page_with_token 'active', '/'
     find("#projects-menu").click
     find(".dropdown-menu a", text: src['name']).click
+    click_link 'Data collections'
     assert page.has_text?(item['name']), 'Collection not found in src project'
 
     within('tr', text: item['name']) do
@@ -313,6 +318,7 @@ class ProjectsTest < ActionDispatch::IntegrationTest
     find("#projects-menu").click
     find(".dropdown-menu a", text: my_project['name']).click
 
+    click_link 'Data collections'
     click_button 'Selection'
     within('.selection-action-container') do
       assert_selector 'li.disabled', text: 'Create new collection with selected collections'
@@ -326,6 +332,7 @@ class ProjectsTest < ActionDispatch::IntegrationTest
     visit page_with_token 'active', '/'
     find("#projects-menu").click
     find(".dropdown-menu a", text: my_project['name']).click
+    click_link 'Data collections'
     assert page.has_text?(my_collection['name']), 'Collection not found in project'
 
     within('tr', text: my_collection['name']) do
@@ -459,11 +466,13 @@ class ProjectsTest < ActionDispatch::IntegrationTest
     end
   end
 
-  # "Move selected" and "Remove selected" options should not be available when current user cannot write to the project
+  # "Move selected" and "Remove selected" options should not be
+  # available when current user cannot write to the project
   test "move selected and remove selected actions not available when current user cannot write to project" do
     my_project = api_fixture('groups')['anonymously_accessible_project']
     visit page_with_token 'active', "/projects/#{my_project['uuid']}"
 
+    click_link 'Data collections'
     click_button 'Selection'
     within('.selection-action-container') do
       assert_selector 'li', text: 'Create new collection with selected collections'
@@ -485,6 +494,7 @@ class ProjectsTest < ActionDispatch::IntegrationTest
       visit page_with_token user, '/'
       find("#projects-menu").click
       find(".dropdown-menu a", text: my_project['name']).click
+      click_link 'Data collections'
       assert page.has_text?(my_collection['name']), 'Collection not found in project'
 
       within('tr', text: my_collection['name']) do
@@ -504,7 +514,6 @@ class ProjectsTest < ActionDispatch::IntegrationTest
         assert page.has_text?("Created new collection in your Home project"),
                               'Not found flash message that new collection is created in Home project'
       end
-      assert page.has_text?('Content hash'), 'Not found content hash in collection page'
     end
   end
 
@@ -668,7 +677,7 @@ class ProjectsTest < ActionDispatch::IntegrationTest
     visit page_with_token 'active', '/projects/' + api_fixture('groups')['aproject']['uuid']
 
     # Point to a bad api server url to generate error
-    Rails.configuration.arvados_v1_base = "https://[100::f]:1/"
+    Rails.configuration.arvados_v1_base = "https://[::1]:1/"
     click_link 'Other objects'
     within '#Other_objects' do
       # Error
@@ -707,11 +716,118 @@ class ProjectsTest < ActionDispatch::IntegrationTest
     # As of 2014-12-19, the first tab of project#show uses infinite scrolling.
     # Make sure that it loads data even if we visit another tab directly.
     need_selenium 'to land on specified tab using {url}#Advanced'
-    project = api_fixture("groups", "aproject")
+    user = api_fixture("users", "active")
     visit(page_with_token("active_trustedclient",
-                          "/projects/#{project['uuid']}#Advanced"))
+                          "/projects/#{user['uuid']}#Advanced"))
     assert_text("API response")
     find("#page-wrapper .nav-tabs :first-child a").click
     assert_text("Collection modified at")
+  end
+
+  # "Select all" and "Unselect all" options
+  test "select all and unselect all actions" do
+    need_selenium 'to check and uncheck checkboxes'
+
+    visit page_with_token 'active', '/projects/' + api_fixture('groups')['aproject']['uuid']
+
+    # Go to "Data collections" tab and click on "Select all"
+    click_link 'Data collections'
+    wait_for_ajax
+
+    # Initially, all selection options for this tab should be disabled
+    click_button 'Selection'
+    within('.selection-action-container') do
+      assert_selector 'li.disabled', text: 'Create new collection with selected collections'
+      assert_selector 'li.disabled', text: 'Copy selected'
+    end
+
+    # Select all
+    click_button 'Select all'
+
+    assert_checkboxes_state('input[type=checkbox]', true, '"select all" should check all checkboxes')
+
+    # Now the selection options should be enabled
+    click_button 'Selection'
+    within('.selection-action-container') do
+      assert_selector 'li', text: 'Create new collection with selected collections'
+      assert_no_selector 'li.disabled', text: 'Copy selected'
+      assert_selector 'li', text: 'Create new collection with selected collections'
+      assert_no_selector 'li.disabled', text: 'Copy selected'
+    end
+
+    # Go to Jobs and pipelines tab and assert none selected
+    click_link 'Jobs and pipelines'
+    wait_for_ajax
+
+    # Since this is the first visit to this tab, all selection options should be disabled
+    click_button 'Selection'
+    within('.selection-action-container') do
+      assert_selector 'li.disabled', text: 'Create new collection with selected collections'
+      assert_selector 'li.disabled', text: 'Copy selected'
+    end
+
+    assert_checkboxes_state('input[type=checkbox]', false, '"select all" should check all checkboxes')
+
+    # Select all
+    click_button 'Select all'
+    assert_checkboxes_state('input[type=checkbox]', true, '"select all" should check all checkboxes')
+
+    # Applicable selection options should be enabled
+    click_button 'Selection'
+    within('.selection-action-container') do
+      assert_selector 'li.disabled', text: 'Create new collection with selected collections'
+      assert_selector 'li', text: 'Copy selected'
+      assert_no_selector 'li.disabled', text: 'Copy selected'
+    end
+
+    # Unselect all
+    click_button 'Unselect all'
+    assert_checkboxes_state('input[type=checkbox]', false, '"select all" should check all checkboxes')
+
+    # All selection options should be disabled again
+    click_button 'Selection'
+    within('.selection-action-container') do
+      assert_selector 'li.disabled', text: 'Create new collection with selected collections'
+      assert_selector 'li.disabled', text: 'Copy selected'
+    end
+
+    # Go back to Data collections tab and verify all are still selected
+    click_link 'Data collections'
+    wait_for_ajax
+
+    # Selection options should be enabled based on the fact that all collections are still selected in this tab
+    click_button 'Selection'
+    within('.selection-action-container') do
+      assert_selector 'li', text: 'Create new collection with selected collections'
+      assert_no_selector 'li.disabled', text: 'Copy selected'
+      assert_selector 'li', text: 'Create new collection with selected collections'
+      assert_no_selector 'li.disabled', text: 'Copy selected'
+    end
+
+    assert_checkboxes_state('input[type=checkbox]', true, '"select all" should check all checkboxes')
+
+    # Unselect all
+    find('button#unselect-all').click
+    assert_checkboxes_state('input[type=checkbox]', false, '"unselect all" should clear all checkboxes')
+
+    # Now all selection options should be disabled because none of the collections are checked
+    click_button 'Selection'
+    within('.selection-action-container') do
+      assert_selector 'li.disabled', text: 'Copy selected'
+      assert_selector 'li.disabled', text: 'Copy selected'
+    end
+
+    # Verify checking just one checkbox still works as expected
+    within('tr', text: api_fixture('collections')['collection_to_move_around_in_aproject']['name']) do
+      find('input[type=checkbox]').click
+    end
+
+    click_button 'Selection'
+    within('.selection-action-container') do
+      assert_selector 'li', text: 'Create new collection with selected collections'
+      assert_no_selector 'li.disabled', text: 'Copy selected'
+      assert_selector 'li', text: 'Create new collection with selected collections'
+      assert_no_selector 'li.disabled', text: 'Copy selected'
+    end
   end
 end

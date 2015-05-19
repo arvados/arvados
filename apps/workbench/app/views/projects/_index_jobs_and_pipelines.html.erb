@@ -6,7 +6,7 @@
       <div class="col-sm-4">
         <%= render :partial => "show_object_button", :locals => {object: object, size: 'xs'} %>
         <% if object.respond_to?(:name) %>
-          <%= render_editable_attribute object, 'name', nil, {tiptitle: 'rename'} %>
+          <%= render_editable_attribute object, 'name', nil, {}, {tiptitle: 'rename'} %>
         <% else %>
           <%= object.class_for_display %> <%= object.uuid %>
         <% end %>

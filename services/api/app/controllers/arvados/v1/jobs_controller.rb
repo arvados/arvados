@@ -5,6 +5,8 @@ class Arvados::V1::JobsController < ApplicationController
   skip_before_filter :find_object_by_uuid, :only => [:queue, :queue_size]
   skip_before_filter :render_404_if_no_object, :only => [:queue, :queue_size]
 
+  include DbCurrentTime
+
   def create
     [:repository, :script, :script_version, :script_parameters].each do |r|
       if !resource_attrs[r]
@@ -31,20 +33,27 @@ class Arvados::V1::JobsController < ApplicationController
         @filters =
           [["repository", "=", resource_attrs[:repository]],
            ["script", "=", resource_attrs[:script]],
-           ["script_version", "in git",
-            params[:minimum_script_version] || resource_attrs[:script_version]],
            ["script_version", "not in git", params[:exclude_script_versions]],
           ].reject { |filter| filter.last.nil? or filter.last.empty? }
+        if !params[:minimum_script_version].blank?
+          @filters << ["script_version", "in git",
+                       params[:minimum_script_version]]
+        else
+          add_default_git_filter("script_version", resource_attrs[:repository],
+                                 resource_attrs[:script_version])
+        end
         if image_search = resource_attrs[:runtime_constraints].andand["docker_image"]
           if image_tag = resource_attrs[:runtime_constraints]["docker_image_tag"]
             image_search += ":#{image_tag}"
           end
-          @filters.append(["docker_image_locator", "in docker", image_search])
+          image_locator = Collection.
+            for_latest_docker_image(image_search).andand.portable_data_hash
         else
-          @filters.append(["docker_image_locator", "=", nil])
+          image_locator = nil
         end
+        @filters << ["docker_image_locator", "=", image_locator]
         if sdk_version = resource_attrs[:runtime_constraints].andand["arvados_sdk_version"]
-          @filters.append(["arvados_sdk_version", "in git", sdk_version])
+          add_default_git_filter("arvados_sdk_version", "arvados", sdk_version)
         end
         begin
           load_job_specific_filters
@@ -122,8 +131,9 @@ class Arvados::V1::JobsController < ApplicationController
       while not @job.started_at
         # send a summary (job queue + available nodes) to the client
         # every few seconds while waiting for the job to start
-        last_ack_at ||= Time.now - Q_UPDATE_INTERVAL - 1
-        if Time.now - last_ack_at >= Q_UPDATE_INTERVAL
+        current_time = db_current_time
+        last_ack_at ||= current_time - Q_UPDATE_INTERVAL - 1
+        if current_time - last_ack_at >= Q_UPDATE_INTERVAL
           nodes_in_state = {idle: 0, alloc: 0}
           ActiveRecord::Base.uncached do
             Node.where('hostname is not ?', nil).collect do |n|
@@ -139,13 +149,13 @@ class Arvados::V1::JobsController < ApplicationController
             break if j.uuid == @job.uuid
             n_queued_before_me += 1
           end
-          yield "#{Time.now}" \
+          yield "#{db_current_time}" \
             " job #{@job.uuid}" \
             " queue_position #{n_queued_before_me}" \
             " queue_size #{job_queue.size}" \
             " nodes_idle #{nodes_in_state[:idle]}" \
             " nodes_alloc #{nodes_in_state[:alloc]}\n"
-          last_ack_at = Time.now
+          last_ack_at = db_current_time
         end
         sleep 3
         ActiveRecord::Base.uncached do
@@ -195,6 +205,16 @@ class Arvados::V1::JobsController < ApplicationController
   end
 
   protected
+
+  def add_default_git_filter(attr_name, repo_name, refspec)
+    # Add a filter to @filters for `attr_name` = the latest commit available
+    # in `repo_name` at `refspec`.  No filter is added if refspec can't be
+    # resolved.
+    commits = Commit.find_commit_range(repo_name, nil, refspec, nil)
+    if commit_hash = commits.first
+      @filters << [attr_name, "=", commit_hash]
+    end
+  end
 
   def load_job_specific_filters
     # Convert Job-specific @filters entries into general SQL filters.
@@ -251,18 +271,17 @@ class Arvados::V1::JobsController < ApplicationController
       else
         raise ArgumentError.new("unknown attribute for git filter: #{attr}")
       end
-      version_range = Commit.find_commit_range(current_user,
-                                               filter["repository"],
-                                               filter["min_version"],
-                                               filter["max_version"],
-                                               filter["exclude_versions"])
-      if version_range.nil?
+      revisions = Commit.find_commit_range(filter["repository"],
+                                           filter["min_version"],
+                                           filter["max_version"],
+                                           filter["exclude_versions"])
+      if revisions.empty?
         raise ArgumentError.
           new("error searching #{filter['repository']} from " +
               "'#{filter['min_version']}' to '#{filter['max_version']}', " +
               "excluding #{filter['exclude_versions']}")
       end
-      @filters.append([attr, "in", version_range])
+      @filters.append([attr, "in", revisions])
     end
   end
 

@@ -43,7 +43,7 @@ class ArvadosPutResumeCacheTest(ArvadosBaseTestCase):
 
     def test_cache_names_stable(self):
         for argset in self.CACHE_ARGSET:
-            self.assertEquals(self.cache_path_from_arglist(argset),
+            self.assertEqual(self.cache_path_from_arglist(argset),
                               self.cache_path_from_arglist(argset),
                               "cache name changed for {}".format(argset))
 
@@ -65,10 +65,10 @@ class ArvadosPutResumeCacheTest(ArvadosBaseTestCase):
                              "path too exotic: {}".format(path))
 
     def test_cache_names_ignore_argument_order(self):
-        self.assertEquals(
+        self.assertEqual(
             self.cache_path_from_arglist(['a', 'b', 'c']),
             self.cache_path_from_arglist(['c', 'a', 'b']))
-        self.assertEquals(
+        self.assertEqual(
             self.cache_path_from_arglist(['-', '--filename', 'stdin']),
             self.cache_path_from_arglist(['--filename', 'stdin', '-']))
 
@@ -84,32 +84,32 @@ class ArvadosPutResumeCacheTest(ArvadosBaseTestCase):
         args = arv_put.parse_arguments(['/tmp'])
         args.filename = 'tmp'
         path2 = arv_put.ResumeCache.make_path(args)
-        self.assertEquals(path1, path2,
+        self.assertEqual(path1, path2,
                          "cache path considered --filename for directory")
-        self.assertEquals(
+        self.assertEqual(
             self.cache_path_from_arglist(['-']),
             self.cache_path_from_arglist(['-', '--max-manifest-depth', '1']),
             "cache path considered --max-manifest-depth for file")
 
     def test_cache_names_treat_negative_manifest_depths_identically(self):
         base_args = ['/tmp', '--max-manifest-depth']
-        self.assertEquals(
+        self.assertEqual(
             self.cache_path_from_arglist(base_args + ['-1']),
             self.cache_path_from_arglist(base_args + ['-2']))
 
     def test_cache_names_treat_stdin_consistently(self):
-        self.assertEquals(
+        self.assertEqual(
             self.cache_path_from_arglist(['-', '--filename', 'test']),
             self.cache_path_from_arglist(['/dev/stdin', '--filename', 'test']))
 
     def test_cache_names_identical_for_synonymous_names(self):
-        self.assertEquals(
+        self.assertEqual(
             self.cache_path_from_arglist(['.']),
             self.cache_path_from_arglist([os.path.realpath('.')]))
         testdir = self.make_tmpdir()
         looplink = os.path.join(testdir, 'loop')
         os.symlink(testdir, looplink)
-        self.assertEquals(
+        self.assertEqual(
             self.cache_path_from_arglist([testdir]),
             self.cache_path_from_arglist([looplink]))
 
@@ -131,7 +131,7 @@ class ArvadosPutResumeCacheTest(ArvadosBaseTestCase):
         with tempfile.NamedTemporaryFile() as cachefile:
             self.last_cache = arv_put.ResumeCache(cachefile.name)
         self.last_cache.save(thing)
-        self.assertEquals(thing, self.last_cache.load())
+        self.assertEqual(thing, self.last_cache.load())
 
     def test_empty_cache(self):
         with tempfile.NamedTemporaryFile() as cachefile:
@@ -145,7 +145,7 @@ class ArvadosPutResumeCacheTest(ArvadosBaseTestCase):
         cache.save(thing)
         cache.close()
         self.last_cache = arv_put.ResumeCache(path)
-        self.assertEquals(thing, self.last_cache.load())
+        self.assertEqual(thing, self.last_cache.load())
 
     def test_multiple_cache_writes(self):
         thing = ['short', 'list']
@@ -155,7 +155,7 @@ class ArvadosPutResumeCacheTest(ArvadosBaseTestCase):
         # sure the cache file gets truncated.
         self.last_cache.save(['long', 'long', 'list'])
         self.last_cache.save(thing)
-        self.assertEquals(thing, self.last_cache.load())
+        self.assertEqual(thing, self.last_cache.load())
 
     def test_cache_is_locked(self):
         with tempfile.NamedTemporaryFile() as cachefile:
@@ -216,12 +216,12 @@ class ArvadosPutCollectionWriterTest(run_test_server.TestCaseWithServers,
         cwriter.write_file('/dev/null')
         cwriter.cache_state()
         self.assertTrue(self.cache.load())
-        self.assertEquals(". d41d8cd98f00b204e9800998ecf8427e+0 0:0:null\n", cwriter.manifest_text())
+        self.assertEqual(". d41d8cd98f00b204e9800998ecf8427e+0 0:0:null\n", cwriter.manifest_text())
 
     def test_writer_works_without_cache(self):
         cwriter = arv_put.ArvPutCollectionWriter()
         cwriter.write_file('/dev/null')
-        self.assertEquals(". d41d8cd98f00b204e9800998ecf8427e+0 0:0:null\n", cwriter.manifest_text())
+        self.assertEqual(". d41d8cd98f00b204e9800998ecf8427e+0 0:0:null\n", cwriter.manifest_text())
 
     def test_writer_resumes_from_cache(self):
         cwriter = arv_put.ArvPutCollectionWriter(self.cache)
@@ -230,7 +230,7 @@ class ArvadosPutCollectionWriterTest(run_test_server.TestCaseWithServers,
             cwriter.cache_state()
             new_writer = arv_put.ArvPutCollectionWriter.from_cache(
                 self.cache)
-            self.assertEquals(
+            self.assertEqual(
                 ". 098f6bcd4621d373cade4e832627b4f6+4 0:4:test\n",
                 new_writer.manifest_text())
 
@@ -240,12 +240,12 @@ class ArvadosPutCollectionWriterTest(run_test_server.TestCaseWithServers,
             cwriter.write_file(testfile.name, 'test')
         new_writer = arv_put.ArvPutCollectionWriter.from_cache(self.cache)
         new_writer.write_file('/dev/null')
-        self.assertEquals(". d41d8cd98f00b204e9800998ecf8427e+0 0:0:null\n", new_writer.manifest_text())
+        self.assertEqual(". d41d8cd98f00b204e9800998ecf8427e+0 0:0:null\n", new_writer.manifest_text())
 
     def test_new_writer_from_empty_cache(self):
         cwriter = arv_put.ArvPutCollectionWriter.from_cache(self.cache)
         cwriter.write_file('/dev/null')
-        self.assertEquals(". d41d8cd98f00b204e9800998ecf8427e+0 0:0:null\n", cwriter.manifest_text())
+        self.assertEqual(". d41d8cd98f00b204e9800998ecf8427e+0 0:0:null\n", cwriter.manifest_text())
 
     def test_writer_resumable_after_arbitrary_bytes(self):
         cwriter = arv_put.ArvPutCollectionWriter(self.cache)
@@ -255,7 +255,7 @@ class ArvadosPutCollectionWriterTest(run_test_server.TestCaseWithServers,
             cwriter.cache_state()
             new_writer = arv_put.ArvPutCollectionWriter.from_cache(
                 self.cache)
-        self.assertEquals(cwriter.manifest_text(), new_writer.manifest_text())
+        self.assertEqual(cwriter.manifest_text(), new_writer.manifest_text())
 
     def make_progress_tester(self):
         progression = []
@@ -288,16 +288,16 @@ class ArvadosExpectedBytesTest(ArvadosBaseTestCase):
     TEST_SIZE = os.path.getsize(__file__)
 
     def test_expected_bytes_for_file(self):
-        self.assertEquals(self.TEST_SIZE,
+        self.assertEqual(self.TEST_SIZE,
                           arv_put.expected_bytes_for([__file__]))
 
     def test_expected_bytes_for_tree(self):
         tree = self.make_tmpdir()
         shutil.copyfile(__file__, os.path.join(tree, 'one'))
         shutil.copyfile(__file__, os.path.join(tree, 'two'))
-        self.assertEquals(self.TEST_SIZE * 2,
+        self.assertEqual(self.TEST_SIZE * 2,
                           arv_put.expected_bytes_for([tree]))
-        self.assertEquals(self.TEST_SIZE * 3,
+        self.assertEqual(self.TEST_SIZE * 3,
                           arv_put.expected_bytes_for([tree, __file__]))
 
     def test_expected_bytes_for_device(self):

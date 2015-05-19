@@ -1,18 +1,9 @@
 require 'integration_helper'
+require_relative 'integration_test_utils'
 
 class CollectionsTest < ActionDispatch::IntegrationTest
   setup do
     need_javascript
-  end
-
-  # check_checkboxes_state asserts that the page holds at least one
-  # checkbox matching 'selector', and that all matching checkboxes
-  # are in state 'checkbox_status' (i.e. checked if true, unchecked otherwise)
-  def assert_checkboxes_state(selector, checkbox_status, msg=nil)
-    assert page.has_selector?(selector)
-    page.all(selector).each do |checkbox|
-      assert(checkbox.checked? == checkbox_status, msg)
-    end
   end
 
   test "Can copy a collection to a project" do
@@ -24,10 +15,9 @@ class CollectionsTest < ActionDispatch::IntegrationTest
     click_link 'Copy to project...'
     find('.selectable', text: project_name).click
     find('.modal-footer a,button', text: 'Copy').click
-    wait_for_ajax
-    # It should navigate to the project after copying...
-    assert(page.has_text?(project_name))
-    assert(page.has_text?("Copy of #{collection_name}"))
+    # Should navigate to the Data collections tab of the project after copying
+    assert_text project_name
+    assert_text "Copy of #{collection_name}"
   end
 
   test "Collection page renders name" do
@@ -213,7 +203,7 @@ class CollectionsTest < ActionDispatch::IntegrationTest
   end
 
   test "Collection portable data hash with multiple matches" do
-    pdh = api_fixture('collections')['baz_file']['portable_data_hash']
+    pdh = api_fixture('collections')['foo_file']['portable_data_hash']
     visit page_with_token('admin', "/collections/#{pdh}")
 
     matches = api_fixture('collections').select {|k,v| v["portable_data_hash"] == pdh}
@@ -222,8 +212,22 @@ class CollectionsTest < ActionDispatch::IntegrationTest
     matches.each do |k,v|
       assert page.has_link?(v["name"]), "Page /collections/#{pdh} should contain link '#{v['name']}'"
     end
-    assert page.has_no_text?("Activity")
-    assert page.has_no_text?("Sharing and permissions")
+    assert_text 'The following collections have this content:'
+    assert_no_text 'more results are not shown'
+    assert_no_text 'Activity'
+    assert_no_text 'Sharing and permissions'
+  end
+
+  test "Collection portable data hash with multiple matches with more than one page of results" do
+    pdh = api_fixture('collections')['baz_file']['portable_data_hash']
+    visit page_with_token('admin', "/collections/#{pdh}")
+
+    assert_selector 'a', text: 'Collection_1'
+
+    assert_text 'The following collections have this content:'
+    assert_text 'more results are not shown'
+    assert_no_text 'Activity'
+    assert_no_text 'Sharing and permissions'
   end
 
   test "Filtering collection files by regexp" do
@@ -250,13 +254,13 @@ class CollectionsTest < ActionDispatch::IntegrationTest
     # make sure that we actually are looking at the collections
     # page and not e.g. a fiddlesticks
     assert page.has_text?("multilevel_collection_1")
-    assert page.has_text?(col['portable_data_hash'])
+    assert page.has_text?(col["name"] || col["uuid"])
 
     # Set filename filter to a syntactically invalid regex
     # Page loads, but stops filtering after the last valid regex parse
     page.find_field('file_regex').set('file[2')
     assert page.has_text?("multilevel_collection_1")
-    assert page.has_text?(col['portable_data_hash'])
+    assert page.has_text?(col["name"] || col["uuid"])
     assert page.has_text?("file1")
     assert page.has_text?("file2")
     assert page.has_text?("file3")
@@ -329,15 +333,14 @@ class CollectionsTest < ActionDispatch::IntegrationTest
     end
 
     # now in the newly created collection page
-    assert page.has_text?('Content hash:'), 'not on new collection page'
-    assert page.has_no_text?(col['uuid']), 'new collection page has old collection uuid'
-    assert page.has_no_text?(col['portable_data_hash']), 'new collection page has old portable_data_hash'
-
     # must have files in subdir1 and subdir3 but not subdir4
     assert page.has_text?('file_in_subdir1'), 'file_in_subdir1 missing from new collection'
     assert page.has_text?('file1_in_subdir3'), 'file1_in_subdir3 missing from new collection'
     assert page.has_text?('file2_in_subdir3'), 'file2_in_subdir3 missing from new collection'
     assert page.has_no_text?('file1_in_subdir4'), 'file1_in_subdir4 found in new collection'
     assert page.has_no_text?('file2_in_subdir4'), 'file2_in_subdir4 found in new collection'
+
+    # Make sure we're not still on the old collection page.
+    refute_match(%r{/collections/#{col['uuid']}}, page.current_url)
   end
 end

@@ -11,11 +11,12 @@ class Job < ArvadosModel
   before_validation :set_priority
   before_validation :update_state_from_old_state_attrs
   validate :ensure_script_version_is_commit
-  validate :find_arvados_sdk_version
   validate :find_docker_image_locator
+  validate :find_arvados_sdk_version
   validate :validate_status
   validate :validate_state_change
   validate :ensure_no_collection_uuids_in_script_params
+  before_save :tag_version_in_internal_repository
   before_save :update_timestamps_when_state_changes
 
   has_many :commit_ancestors, :foreign_key => :descendant, :primary_key => :script_version
@@ -43,7 +44,6 @@ class Job < ArvadosModel
     t.add :log
     t.add :runtime_constraints
     t.add :tasks_summary
-    t.add :dependencies
     t.add :nondeterministic
     t.add :repository
     t.add :supplied_script_version
@@ -64,7 +64,7 @@ class Job < ArvadosModel
            ]
 
   def assert_finished
-    update_attributes(finished_at: finished_at || Time.now,
+    update_attributes(finished_at: finished_at || db_current_time,
                       success: success.nil? ? false : success,
                       running: false)
   end
@@ -125,20 +125,42 @@ class Job < ArvadosModel
   end
 
   def ensure_script_version_is_commit
-    if self.state == Running
+    if state == Running
       # Apparently client has already decided to go for it. This is
       # needed to run a local job using a local working directory
       # instead of a commit-ish.
       return true
     end
-    if new_record? or script_version_changed?
-      sha1 = Commit.find_commit_range(current_user, self.repository, nil, self.script_version, nil)[0] rescue nil
-      if sha1
-        self.supplied_script_version = self.script_version if self.supplied_script_version.nil? or self.supplied_script_version.empty?
-        self.script_version = sha1
-      else
-        self.errors.add :script_version, "#{self.script_version} does not resolve to a commit"
+    if new_record? or repository_changed? or script_version_changed?
+      sha1 = Commit.find_commit_range(repository,
+                                      nil, script_version, nil).first
+      if not sha1
+        errors.add :script_version, "#{script_version} does not resolve to a commit"
         return false
+      end
+      if supplied_script_version.nil? or supplied_script_version.empty?
+        self.supplied_script_version = script_version
+      end
+      self.script_version = sha1
+    end
+    true
+  end
+
+  def tag_version_in_internal_repository
+    if state == Running
+      # No point now. See ensure_script_version_is_commit.
+      true
+    elsif errors.any?
+      # Won't be saved, and script_version might not even be valid.
+      true
+    elsif new_record? or repository_changed? or script_version_changed?
+      uuid_was = uuid
+      begin
+        assign_uuid
+        Commit.tag_in_internal_repository repository, script_version, uuid
+      rescue
+        uuid = uuid_was
+        raise
       end
     end
   end
@@ -170,9 +192,9 @@ class Job < ArvadosModel
   def find_arvados_sdk_version
     resolve_runtime_constraint("arvados_sdk_version",
                                :arvados_sdk_version) do |git_search|
-      commits = Commit.find_commit_range(current_user, "arvados",
+      commits = Commit.find_commit_range("arvados",
                                          nil, git_search, nil)
-      if commits.nil? or commits.empty?
+      if commits.empty?
         [false, "#{git_search} does not resolve to a commit"]
       elsif not runtime_constraints["docker_image"]
         [false, "cannot be specified without a Docker image constraint"]
@@ -183,6 +205,10 @@ class Job < ArvadosModel
   end
 
   def find_docker_image_locator
+    runtime_constraints['docker_image'] =
+        Rails.configuration.default_docker_image_for_jobs if ((runtime_constraints.is_a? Hash) and
+                                                              (runtime_constraints['docker_image']).nil? and
+                                                              Rails.configuration.default_docker_image_for_jobs)
     resolve_runtime_constraint("docker_image",
                                :docker_image_locator) do |image_search|
       image_tag = runtime_constraints['docker_image_tag']
@@ -192,24 +218,6 @@ class Job < ArvadosModel
         [false, "not found for #{image_search}"]
       end
     end
-  end
-
-  def dependencies
-    deps = {}
-    queue = self.script_parameters.values
-    while not queue.empty?
-      queue = queue.flatten.compact.collect do |v|
-        if v.is_a? Hash
-          v.values
-        elsif v.is_a? String
-          v.match(/^(([0-9a-f]{32})\b(\+[^,]+)?,?)*$/) do |locator|
-            deps[locator.to_s] = true
-          end
-          nil
-        end
-      end
-    end
-    deps.keys
   end
 
   def permission_to_update
@@ -258,7 +266,7 @@ class Job < ArvadosModel
       # Ensure cancelled_at cannot be set to arbitrary non-now times,
       # or changed once it is set.
       if self.cancelled_at and not self.cancelled_at_was
-        self.cancelled_at = Time.now
+        self.cancelled_at = db_current_time
         self.cancelled_by_user_uuid = current_user.uuid
         self.cancelled_by_client_uuid = current_api_client.andand.uuid
         @need_crunch_dispatch_trigger = true
@@ -284,11 +292,11 @@ class Job < ArvadosModel
 
     case state
     when Running
-      self.started_at ||= Time.now
+      self.started_at ||= db_current_time
     when Failed, Complete
-      self.finished_at ||= Time.now
+      self.finished_at ||= db_current_time
     when Cancelled
-      self.cancelled_at ||= Time.now
+      self.cancelled_at ||= db_current_time
     end
 
     # TODO: Remove the following case block when old "success" and

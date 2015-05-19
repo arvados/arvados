@@ -13,6 +13,8 @@ import tempfile
 import unittest
 
 import run_test_server
+from arvados._ranges import Range, LocatorAndRange
+from arvados.collection import Collection, CollectionReader
 import arvados_testutil as tutil
 
 class TestResumableWriter(arvados.ResumableCollectionWriter):
@@ -210,97 +212,97 @@ class ArvadosCollectionsTest(run_test_server.TestCaseWithServers,
         self.assertEqual(arvados.CollectionReader(m8, self.api_client).manifest_text(normalize=True), m8)
 
     def test_locators_and_ranges(self):
-        blocks2 = [['a', 10, 0],
-                  ['b', 10, 10],
-                  ['c', 10, 20],
-                  ['d', 10, 30],
-                  ['e', 10, 40],
-                  ['f', 10, 50]]
+        blocks2 = [Range('a', 0, 10),
+                   Range('b', 10, 10),
+                   Range('c', 20, 10),
+                   Range('d', 30, 10),
+                   Range('e', 40, 10),
+                   Range('f', 50, 10)]
 
-        self.assertEqual(arvados.locators_and_ranges(blocks2,  2,  2), [['a', 10, 2, 2]])
-        self.assertEqual(arvados.locators_and_ranges(blocks2, 12, 2), [['b', 10, 2, 2]])
-        self.assertEqual(arvados.locators_and_ranges(blocks2, 22, 2), [['c', 10, 2, 2]])
-        self.assertEqual(arvados.locators_and_ranges(blocks2, 32, 2), [['d', 10, 2, 2]])
-        self.assertEqual(arvados.locators_and_ranges(blocks2, 42, 2), [['e', 10, 2, 2]])
-        self.assertEqual(arvados.locators_and_ranges(blocks2, 52, 2), [['f', 10, 2, 2]])
+        self.assertEqual(arvados.locators_and_ranges(blocks2,  2,  2), [LocatorAndRange('a', 10, 2, 2)])
+        self.assertEqual(arvados.locators_and_ranges(blocks2, 12, 2), [LocatorAndRange('b', 10, 2, 2)])
+        self.assertEqual(arvados.locators_and_ranges(blocks2, 22, 2), [LocatorAndRange('c', 10, 2, 2)])
+        self.assertEqual(arvados.locators_and_ranges(blocks2, 32, 2), [LocatorAndRange('d', 10, 2, 2)])
+        self.assertEqual(arvados.locators_and_ranges(blocks2, 42, 2), [LocatorAndRange('e', 10, 2, 2)])
+        self.assertEqual(arvados.locators_and_ranges(blocks2, 52, 2), [LocatorAndRange('f', 10, 2, 2)])
         self.assertEqual(arvados.locators_and_ranges(blocks2, 62, 2), [])
         self.assertEqual(arvados.locators_and_ranges(blocks2, -2, 2), [])
 
-        self.assertEqual(arvados.locators_and_ranges(blocks2,  0,  2), [['a', 10, 0, 2]])
-        self.assertEqual(arvados.locators_and_ranges(blocks2, 10, 2), [['b', 10, 0, 2]])
-        self.assertEqual(arvados.locators_and_ranges(blocks2, 20, 2), [['c', 10, 0, 2]])
-        self.assertEqual(arvados.locators_and_ranges(blocks2, 30, 2), [['d', 10, 0, 2]])
-        self.assertEqual(arvados.locators_and_ranges(blocks2, 40, 2), [['e', 10, 0, 2]])
-        self.assertEqual(arvados.locators_and_ranges(blocks2, 50, 2), [['f', 10, 0, 2]])
+        self.assertEqual(arvados.locators_and_ranges(blocks2,  0,  2), [LocatorAndRange('a', 10, 0, 2)])
+        self.assertEqual(arvados.locators_and_ranges(blocks2, 10, 2), [LocatorAndRange('b', 10, 0, 2)])
+        self.assertEqual(arvados.locators_and_ranges(blocks2, 20, 2), [LocatorAndRange('c', 10, 0, 2)])
+        self.assertEqual(arvados.locators_and_ranges(blocks2, 30, 2), [LocatorAndRange('d', 10, 0, 2)])
+        self.assertEqual(arvados.locators_and_ranges(blocks2, 40, 2), [LocatorAndRange('e', 10, 0, 2)])
+        self.assertEqual(arvados.locators_and_ranges(blocks2, 50, 2), [LocatorAndRange('f', 10, 0, 2)])
         self.assertEqual(arvados.locators_and_ranges(blocks2, 60, 2), [])
         self.assertEqual(arvados.locators_and_ranges(blocks2, -2, 2), [])
 
-        self.assertEqual(arvados.locators_and_ranges(blocks2,  9,  2), [['a', 10, 9, 1], ['b', 10, 0, 1]])
-        self.assertEqual(arvados.locators_and_ranges(blocks2, 19, 2), [['b', 10, 9, 1], ['c', 10, 0, 1]])
-        self.assertEqual(arvados.locators_and_ranges(blocks2, 29, 2), [['c', 10, 9, 1], ['d', 10, 0, 1]])
-        self.assertEqual(arvados.locators_and_ranges(blocks2, 39, 2), [['d', 10, 9, 1], ['e', 10, 0, 1]])
-        self.assertEqual(arvados.locators_and_ranges(blocks2, 49, 2), [['e', 10, 9, 1], ['f', 10, 0, 1]])
-        self.assertEqual(arvados.locators_and_ranges(blocks2, 59, 2), [['f', 10, 9, 1]])
+        self.assertEqual(arvados.locators_and_ranges(blocks2,  9,  2), [LocatorAndRange('a', 10, 9, 1), LocatorAndRange('b', 10, 0, 1)])
+        self.assertEqual(arvados.locators_and_ranges(blocks2, 19, 2), [LocatorAndRange('b', 10, 9, 1), LocatorAndRange('c', 10, 0, 1)])
+        self.assertEqual(arvados.locators_and_ranges(blocks2, 29, 2), [LocatorAndRange('c', 10, 9, 1), LocatorAndRange('d', 10, 0, 1)])
+        self.assertEqual(arvados.locators_and_ranges(blocks2, 39, 2), [LocatorAndRange('d', 10, 9, 1), LocatorAndRange('e', 10, 0, 1)])
+        self.assertEqual(arvados.locators_and_ranges(blocks2, 49, 2), [LocatorAndRange('e', 10, 9, 1), LocatorAndRange('f', 10, 0, 1)])
+        self.assertEqual(arvados.locators_and_ranges(blocks2, 59, 2), [LocatorAndRange('f', 10, 9, 1)])
 
 
-        blocks3 = [['a', 10, 0],
-                  ['b', 10, 10],
-                  ['c', 10, 20],
-                  ['d', 10, 30],
-                  ['e', 10, 40],
-                  ['f', 10, 50],
-                  ['g', 10, 60]]
+        blocks3 = [Range('a', 0, 10),
+                  Range('b', 10, 10),
+                  Range('c', 20, 10),
+                  Range('d', 30, 10),
+                  Range('e', 40, 10),
+                  Range('f', 50, 10),
+                   Range('g', 60, 10)]
 
-        self.assertEqual(arvados.locators_and_ranges(blocks3,  2,  2), [['a', 10, 2, 2]])
-        self.assertEqual(arvados.locators_and_ranges(blocks3, 12, 2), [['b', 10, 2, 2]])
-        self.assertEqual(arvados.locators_and_ranges(blocks3, 22, 2), [['c', 10, 2, 2]])
-        self.assertEqual(arvados.locators_and_ranges(blocks3, 32, 2), [['d', 10, 2, 2]])
-        self.assertEqual(arvados.locators_and_ranges(blocks3, 42, 2), [['e', 10, 2, 2]])
-        self.assertEqual(arvados.locators_and_ranges(blocks3, 52, 2), [['f', 10, 2, 2]])
-        self.assertEqual(arvados.locators_and_ranges(blocks3, 62, 2), [['g', 10, 2, 2]])
+        self.assertEqual(arvados.locators_and_ranges(blocks3,  2,  2), [LocatorAndRange('a', 10, 2, 2)])
+        self.assertEqual(arvados.locators_and_ranges(blocks3, 12, 2), [LocatorAndRange('b', 10, 2, 2)])
+        self.assertEqual(arvados.locators_and_ranges(blocks3, 22, 2), [LocatorAndRange('c', 10, 2, 2)])
+        self.assertEqual(arvados.locators_and_ranges(blocks3, 32, 2), [LocatorAndRange('d', 10, 2, 2)])
+        self.assertEqual(arvados.locators_and_ranges(blocks3, 42, 2), [LocatorAndRange('e', 10, 2, 2)])
+        self.assertEqual(arvados.locators_and_ranges(blocks3, 52, 2), [LocatorAndRange('f', 10, 2, 2)])
+        self.assertEqual(arvados.locators_and_ranges(blocks3, 62, 2), [LocatorAndRange('g', 10, 2, 2)])
 
 
-        blocks = [['a', 10, 0],
-                  ['b', 15, 10],
-                  ['c', 5, 25]]
+        blocks = [Range('a', 0, 10),
+                  Range('b', 10, 15),
+                  Range('c', 25, 5)]
         self.assertEqual(arvados.locators_and_ranges(blocks, 1, 0), [])
-        self.assertEqual(arvados.locators_and_ranges(blocks, 0, 5), [['a', 10, 0, 5]])
-        self.assertEqual(arvados.locators_and_ranges(blocks, 3, 5), [['a', 10, 3, 5]])
-        self.assertEqual(arvados.locators_and_ranges(blocks, 0, 10), [['a', 10, 0, 10]])
+        self.assertEqual(arvados.locators_and_ranges(blocks, 0, 5), [LocatorAndRange('a', 10, 0, 5)])
+        self.assertEqual(arvados.locators_and_ranges(blocks, 3, 5), [LocatorAndRange('a', 10, 3, 5)])
+        self.assertEqual(arvados.locators_and_ranges(blocks, 0, 10), [LocatorAndRange('a', 10, 0, 10)])
 
-        self.assertEqual(arvados.locators_and_ranges(blocks, 0, 11), [['a', 10, 0, 10],
-                                                                      ['b', 15, 0, 1]])
-        self.assertEqual(arvados.locators_and_ranges(blocks, 1, 11), [['a', 10, 1, 9],
-                                                                      ['b', 15, 0, 2]])
-        self.assertEqual(arvados.locators_and_ranges(blocks, 0, 25), [['a', 10, 0, 10],
-                                                                      ['b', 15, 0, 15]])
+        self.assertEqual(arvados.locators_and_ranges(blocks, 0, 11), [LocatorAndRange('a', 10, 0, 10),
+                                                                      LocatorAndRange('b', 15, 0, 1)])
+        self.assertEqual(arvados.locators_and_ranges(blocks, 1, 11), [LocatorAndRange('a', 10, 1, 9),
+                                                                      LocatorAndRange('b', 15, 0, 2)])
+        self.assertEqual(arvados.locators_and_ranges(blocks, 0, 25), [LocatorAndRange('a', 10, 0, 10),
+                                                                      LocatorAndRange('b', 15, 0, 15)])
 
-        self.assertEqual(arvados.locators_and_ranges(blocks, 0, 30), [['a', 10, 0, 10],
-                                                                      ['b', 15, 0, 15],
-                                                                      ['c', 5, 0, 5]])
-        self.assertEqual(arvados.locators_and_ranges(blocks, 1, 30), [['a', 10, 1, 9],
-                                                                      ['b', 15, 0, 15],
-                                                                      ['c', 5, 0, 5]])
-        self.assertEqual(arvados.locators_and_ranges(blocks, 0, 31), [['a', 10, 0, 10],
-                                                                      ['b', 15, 0, 15],
-                                                                      ['c', 5, 0, 5]])
+        self.assertEqual(arvados.locators_and_ranges(blocks, 0, 30), [LocatorAndRange('a', 10, 0, 10),
+                                                                      LocatorAndRange('b', 15, 0, 15),
+                                                                      LocatorAndRange('c', 5, 0, 5)])
+        self.assertEqual(arvados.locators_and_ranges(blocks, 1, 30), [LocatorAndRange('a', 10, 1, 9),
+                                                                      LocatorAndRange('b', 15, 0, 15),
+                                                                      LocatorAndRange('c', 5, 0, 5)])
+        self.assertEqual(arvados.locators_and_ranges(blocks, 0, 31), [LocatorAndRange('a', 10, 0, 10),
+                                                                      LocatorAndRange('b', 15, 0, 15),
+                                                                      LocatorAndRange('c', 5, 0, 5)])
 
-        self.assertEqual(arvados.locators_and_ranges(blocks, 15, 5), [['b', 15, 5, 5]])
+        self.assertEqual(arvados.locators_and_ranges(blocks, 15, 5), [LocatorAndRange('b', 15, 5, 5)])
 
-        self.assertEqual(arvados.locators_and_ranges(blocks, 8, 17), [['a', 10, 8, 2],
-                                                                      ['b', 15, 0, 15]])
+        self.assertEqual(arvados.locators_and_ranges(blocks, 8, 17), [LocatorAndRange('a', 10, 8, 2),
+                                                                      LocatorAndRange('b', 15, 0, 15)])
 
-        self.assertEqual(arvados.locators_and_ranges(blocks, 8, 20), [['a', 10, 8, 2],
-                                                                      ['b', 15, 0, 15],
-                                                                      ['c', 5, 0, 3]])
+        self.assertEqual(arvados.locators_and_ranges(blocks, 8, 20), [LocatorAndRange('a', 10, 8, 2),
+                                                                      LocatorAndRange('b', 15, 0, 15),
+                                                                      LocatorAndRange('c', 5, 0, 3)])
 
-        self.assertEqual(arvados.locators_and_ranges(blocks, 26, 2), [['c', 5, 1, 2]])
+        self.assertEqual(arvados.locators_and_ranges(blocks, 26, 2), [LocatorAndRange('c', 5, 1, 2)])
 
-        self.assertEqual(arvados.locators_and_ranges(blocks, 9, 15), [['a', 10, 9, 1],
-                                                                      ['b', 15, 0, 14]])
-        self.assertEqual(arvados.locators_and_ranges(blocks, 10, 15), [['b', 15, 0, 15]])
-        self.assertEqual(arvados.locators_and_ranges(blocks, 11, 15), [['b', 15, 1, 14],
-                                                                       ['c', 5, 0, 1]])
+        self.assertEqual(arvados.locators_and_ranges(blocks, 9, 15), [LocatorAndRange('a', 10, 9, 1),
+                                                                      LocatorAndRange('b', 15, 0, 14)])
+        self.assertEqual(arvados.locators_and_ranges(blocks, 10, 15), [LocatorAndRange('b', 15, 0, 15)])
+        self.assertEqual(arvados.locators_and_ranges(blocks, 11, 15), [LocatorAndRange('b', 15, 1, 14),
+                                                                       LocatorAndRange('c', 5, 0, 1)])
 
     class MockKeep(object):
         def __init__(self, content, num_retries=0):
@@ -431,7 +433,7 @@ class ArvadosCollectionsTest(run_test_server.TestCaseWithServers,
         with self.make_test_file() as testfile:
             cwriter.write_file(testfile.name, 'test')
             resumed = TestResumableWriter.from_state(cwriter.current_state())
-        self.assertEquals(cwriter.manifest_text(), resumed.manifest_text(),
+        self.assertEqual(cwriter.manifest_text(), resumed.manifest_text(),
                           "resumed CollectionWriter had different manifest")
 
     def test_resume_fails_when_missing_dependency(self):
@@ -543,14 +545,13 @@ class CollectionReaderTestCase(unittest.TestCase, CollectionTestMixin):
 
     def test_uuid_init_failure_raises_api_error(self):
         client = self.api_client_mock(500)
-        reader = arvados.CollectionReader(self.DEFAULT_UUID, api_client=client)
         with self.assertRaises(arvados.errors.ApiError):
-            reader.manifest_text()
+            reader = arvados.CollectionReader(self.DEFAULT_UUID, api_client=client)
 
     def test_locator_init(self):
         client = self.api_client_mock(200)
         # Ensure Keep will not return anything if asked.
-        with tutil.mock_get_responses(None, 404):
+        with tutil.mock_keep_responses(None, 404):
             reader = arvados.CollectionReader(self.DEFAULT_DATA_HASH,
                                               api_client=client)
             self.assertEqual(self.DEFAULT_MANIFEST, reader.manifest_text())
@@ -560,7 +561,7 @@ class CollectionReaderTestCase(unittest.TestCase, CollectionTestMixin):
         # been written to Keep.
         client = self.api_client_mock(200)
         self.mock_get_collection(client, 404, None)
-        with tutil.mock_get_responses(self.DEFAULT_MANIFEST, 200):
+        with tutil.mock_keep_responses(self.DEFAULT_MANIFEST, 200):
             reader = arvados.CollectionReader(self.DEFAULT_DATA_HASH,
                                               api_client=client)
             self.assertEqual(self.DEFAULT_MANIFEST, reader.manifest_text())
@@ -568,17 +569,16 @@ class CollectionReaderTestCase(unittest.TestCase, CollectionTestMixin):
     def test_uuid_init_no_fallback_to_keep(self):
         # Do not look up a collection UUID in Keep.
         client = self.api_client_mock(404)
-        reader = arvados.CollectionReader(self.DEFAULT_UUID,
-                                          api_client=client)
-        with tutil.mock_get_responses(self.DEFAULT_MANIFEST, 200):
+        with tutil.mock_keep_responses(self.DEFAULT_MANIFEST, 200):
             with self.assertRaises(arvados.errors.ApiError):
-                reader.manifest_text()
+                reader = arvados.CollectionReader(self.DEFAULT_UUID,
+                                                  api_client=client)
 
     def test_try_keep_first_if_permission_hint(self):
         # To verify that CollectionReader tries Keep first here, we
         # mock API server to return the wrong data.
         client = self.api_client_mock(200)
-        with tutil.mock_get_responses(self.ALT_MANIFEST, 200):
+        with tutil.mock_keep_responses(self.ALT_MANIFEST, 200):
             self.assertEqual(
                 self.ALT_MANIFEST,
                 arvados.CollectionReader(
@@ -590,7 +590,7 @@ class CollectionReaderTestCase(unittest.TestCase, CollectionTestMixin):
         client = self.api_client_mock(200)
         reader = arvados.CollectionReader(self.DEFAULT_UUID, api_client=client,
                                           num_retries=3)
-        with tutil.mock_get_responses('foo', 500, 500, 200):
+        with tutil.mock_keep_responses('foo', 500, 500, 200):
             self.assertEqual('foo',
                              ''.join(f.read(9) for f in reader.all_files()))
 
@@ -630,7 +630,7 @@ class CollectionReaderTestCase(unittest.TestCase, CollectionTestMixin):
     def test_api_response_with_collection_from_keep(self):
         client = self.api_client_mock()
         self.mock_get_collection(client, 404, 'foo')
-        with tutil.mock_get_responses(self.DEFAULT_MANIFEST, 200):
+        with tutil.mock_keep_responses(self.DEFAULT_MANIFEST, 200):
             reader = arvados.CollectionReader(self.DEFAULT_DATA_HASH,
                                               api_client=client)
             api_response = reader.api_response()
@@ -639,19 +639,13 @@ class CollectionReaderTestCase(unittest.TestCase, CollectionTestMixin):
     def check_open_file(self, coll_file, stream_name, file_name, file_size):
         self.assertFalse(coll_file.closed, "returned file is not open")
         self.assertEqual(stream_name, coll_file.stream_name())
-        self.assertEqual(file_name, coll_file.name())
+        self.assertEqual(file_name, coll_file.name)
         self.assertEqual(file_size, coll_file.size())
 
     def test_open_collection_file_one_argument(self):
         client = self.api_client_mock(200)
         reader = arvados.CollectionReader(self.DEFAULT_UUID, api_client=client)
         cfile = reader.open('./foo')
-        self.check_open_file(cfile, '.', 'foo', 3)
-
-    def test_open_collection_file_two_arguments(self):
-        client = self.api_client_mock(200)
-        reader = arvados.CollectionReader(self.DEFAULT_UUID, api_client=client)
-        cfile = reader.open('.', 'foo')
         self.check_open_file(cfile, '.', 'foo', 3)
 
     def test_open_deep_file(self):
@@ -667,19 +661,19 @@ class CollectionReaderTestCase(unittest.TestCase, CollectionTestMixin):
     def test_open_nonexistent_stream(self):
         client = self.api_client_mock(200)
         reader = arvados.CollectionReader(self.DEFAULT_UUID, api_client=client)
-        self.assertRaises(ValueError, reader.open, './nonexistent', 'foo')
+        self.assertRaises(IOError, reader.open, './nonexistent/foo')
 
     def test_open_nonexistent_file(self):
         client = self.api_client_mock(200)
         reader = arvados.CollectionReader(self.DEFAULT_UUID, api_client=client)
-        self.assertRaises(ValueError, reader.open, '.', 'nonexistent')
+        self.assertRaises(IOError, reader.open, 'nonexistent')
 
 
 @tutil.skip_sleep
 class CollectionWriterTestCase(unittest.TestCase, CollectionTestMixin):
     def mock_keep(self, body, *codes, **headers):
         headers.setdefault('x-keep-replicas-stored', 2)
-        return tutil.mock_put_responses(body, *codes, **headers)
+        return tutil.mock_keep_responses(body, *codes, **headers)
 
     def foo_writer(self, **kwargs):
         kwargs.setdefault('api_client', self.api_client_mock())
@@ -701,27 +695,27 @@ class CollectionWriterTestCase(unittest.TestCase, CollectionTestMixin):
 
     def test_write_insufficient_replicas_via_proxy(self):
         writer = self.foo_writer(replication=3)
-        with self.mock_keep(None, 200, headers={'x-keep-replicas-stored': 2}):
+        with self.mock_keep(None, 200, **{'x-keep-replicas-stored': 2}):
             with self.assertRaises(arvados.errors.KeepWriteError):
                 writer.manifest_text()
 
     def test_write_insufficient_replicas_via_disks(self):
         client = mock.MagicMock(name='api_client')
-        self.mock_keep_services(client, status=200, service_type='disk', count=2)
-        writer = self.foo_writer(api_client=client, replication=3)
         with self.mock_keep(
                 None, 200, 200,
                 **{'x-keep-replicas-stored': 1}) as keepmock:
+            self.mock_keep_services(client, status=200, service_type='disk', count=2)
+            writer = self.foo_writer(api_client=client, replication=3)
             with self.assertRaises(arvados.errors.KeepWriteError):
                 writer.manifest_text()
 
     def test_write_three_replicas(self):
         client = mock.MagicMock(name='api_client')
-        self.mock_keep_services(client, status=200, service_type='disk', count=6)
-        writer = self.foo_writer(api_client=client, replication=3)
         with self.mock_keep(
-                None, 500, 500, 500, 200, 200, 200,
+                "", 500, 500, 500, 200, 200, 200,
                 **{'x-keep-replicas-stored': 1}) as keepmock:
+            self.mock_keep_services(client, status=200, service_type='disk', count=6)
+            writer = self.foo_writer(api_client=client, replication=3)
             writer.manifest_text()
             self.assertEqual(6, keepmock.call_count)
 
@@ -764,15 +758,14 @@ class CollectionWriterTestCase(unittest.TestCase, CollectionTestMixin):
 
     def test_open_flush(self):
         client = self.api_client_mock()
-        writer = arvados.CollectionWriter(client)
-        with writer.open('flush_test') as out_file:
-            out_file.write('flush1')
-            data_loc1 = hashlib.md5('flush1').hexdigest() + '+6'
-            with self.mock_keep(data_loc1, 200) as keep_mock:
+        data_loc1 = hashlib.md5('flush1').hexdigest() + '+6'
+        data_loc2 = hashlib.md5('flush2').hexdigest() + '+6'
+        with self.mock_keep((data_loc1, 200), (data_loc2, 200)) as keep_mock:
+            writer = arvados.CollectionWriter(client)
+            with writer.open('flush_test') as out_file:
+                out_file.write('flush1')
                 out_file.flush()
-            out_file.write('flush2')
-            data_loc2 = hashlib.md5('flush2').hexdigest() + '+6'
-        with self.mock_keep(data_loc2, 200) as keep_mock:
+                out_file.write('flush2')
             self.assertEqual(". {} {} 0:12:flush_test\n".format(data_loc1,
                                                                 data_loc2),
                              writer.manifest_text())
@@ -791,15 +784,14 @@ class CollectionWriterTestCase(unittest.TestCase, CollectionTestMixin):
 
     def test_two_opens_two_streams(self):
         client = self.api_client_mock()
-        writer = arvados.CollectionWriter(client)
-        with writer.open('file') as out_file:
-            out_file.write('file')
-            data_loc1 = hashlib.md5('file').hexdigest() + '+4'
-        with self.mock_keep(data_loc1, 200) as keep_mock:
+        data_loc1 = hashlib.md5('file').hexdigest() + '+4'
+        data_loc2 = hashlib.md5('indir').hexdigest() + '+5'
+        with self.mock_keep((data_loc1, 200), (data_loc2, 200)) as keep_mock:
+            writer = arvados.CollectionWriter(client)
+            with writer.open('file') as out_file:
+                out_file.write('file')
             with writer.open('./dir', 'indir') as out_file:
                 out_file.write('indir')
-                data_loc2 = hashlib.md5('indir').hexdigest() + '+5'
-        with self.mock_keep(data_loc2, 200) as keep_mock:
             expected = ". {} 0:4:file\n./dir {} 0:5:indir\n".format(
                 data_loc1, data_loc2)
             self.assertEqual(expected, writer.manifest_text())
@@ -809,6 +801,332 @@ class CollectionWriterTestCase(unittest.TestCase, CollectionTestMixin):
         writer = arvados.CollectionWriter(client)
         file1 = writer.open('one')
         self.assertRaises(arvados.errors.AssertionError, writer.open, 'two')
+
+
+class NewCollectionTestCase(unittest.TestCase, CollectionTestMixin):
+
+    def test_init_manifest(self):
+        m1 = """. 5348b82a029fd9e971a811ce1f71360b+43 0:43:md5sum.txt
+. 085c37f02916da1cad16f93c54d899b7+41 0:41:md5sum.txt
+. 8b22da26f9f433dea0a10e5ec66d73ba+43 0:43:md5sum.txt
+"""
+        self.assertEqual(m1, CollectionReader(m1).manifest_text(normalize=False))
+        self.assertEqual(". 5348b82a029fd9e971a811ce1f71360b+43 085c37f02916da1cad16f93c54d899b7+41 8b22da26f9f433dea0a10e5ec66d73ba+43 0:127:md5sum.txt\n", CollectionReader(m1).manifest_text(normalize=True))
+
+    def test_init_manifest_with_collision(self):
+        m1 = """. 5348b82a029fd9e971a811ce1f71360b+43 0:43:md5sum.txt
+./md5sum.txt 085c37f02916da1cad16f93c54d899b7+41 0:41:md5sum.txt
+"""
+        with self.assertRaises(arvados.errors.ArgumentError):
+            self.assertEqual(m1, CollectionReader(m1))
+
+    def test_init_manifest_with_error(self):
+        m1 = """. 0:43:md5sum.txt"""
+        with self.assertRaises(arvados.errors.ArgumentError):
+            self.assertEqual(m1, CollectionReader(m1))
+
+    def test_remove(self):
+        c = Collection('. 781e5e245d69b566979b86e28d23f2c7+10 0:10:count1.txt 0:10:count2.txt\n')
+        self.assertEqual(". 781e5e245d69b566979b86e28d23f2c7+10 0:10:count1.txt 0:10:count2.txt\n", c.portable_manifest_text())
+        self.assertIn("count1.txt", c)
+        c.remove("count1.txt")
+        self.assertNotIn("count1.txt", c)
+        self.assertEqual(". 781e5e245d69b566979b86e28d23f2c7+10 0:10:count2.txt\n", c.portable_manifest_text())
+        with self.assertRaises(arvados.errors.ArgumentError):
+            c.remove("")
+
+    def test_find(self):
+        c = Collection('. 781e5e245d69b566979b86e28d23f2c7+10 0:10:count1.txt 0:10:count2.txt\n')
+        self.assertIs(c.find("."), c)
+        self.assertIs(c.find("./count1.txt"), c["count1.txt"])
+        self.assertIs(c.find("count1.txt"), c["count1.txt"])
+        with self.assertRaises(IOError):
+            c.find("/.")
+        with self.assertRaises(arvados.errors.ArgumentError):
+            c.find("")
+
+    def test_remove_in_subdir(self):
+        c = Collection('. 781e5e245d69b566979b86e28d23f2c7+10 0:10:count1.txt\n./foo 781e5e245d69b566979b86e28d23f2c7+10 0:10:count2.txt\n')
+        c.remove("foo/count2.txt")
+        self.assertEqual(". 781e5e245d69b566979b86e28d23f2c7+10 0:10:count1.txt\n", c.portable_manifest_text())
+
+    def test_remove_empty_subdir(self):
+        c = Collection('. 781e5e245d69b566979b86e28d23f2c7+10 0:10:count1.txt\n./foo 781e5e245d69b566979b86e28d23f2c7+10 0:10:count2.txt\n')
+        c.remove("foo/count2.txt")
+        c.remove("foo")
+        self.assertEqual(". 781e5e245d69b566979b86e28d23f2c7+10 0:10:count1.txt\n", c.portable_manifest_text())
+
+    def test_remove_nonempty_subdir(self):
+        c = Collection('. 781e5e245d69b566979b86e28d23f2c7+10 0:10:count1.txt\n./foo 781e5e245d69b566979b86e28d23f2c7+10 0:10:count2.txt\n')
+        with self.assertRaises(IOError):
+            c.remove("foo")
+        c.remove("foo", recursive=True)
+        self.assertEqual(". 781e5e245d69b566979b86e28d23f2c7+10 0:10:count1.txt\n", c.portable_manifest_text())
+
+    def test_copy_to_file_in_dir(self):
+        c = Collection('. 781e5e245d69b566979b86e28d23f2c7+10 0:10:count1.txt\n')
+        c.copy("count1.txt", "foo/count2.txt")
+        self.assertEqual(". 781e5e245d69b566979b86e28d23f2c7+10 0:10:count1.txt\n./foo 781e5e245d69b566979b86e28d23f2c7+10 0:10:count2.txt\n", c.portable_manifest_text())
+
+    def test_copy_file(self):
+        c = Collection('. 781e5e245d69b566979b86e28d23f2c7+10 0:10:count1.txt\n')
+        c.copy("count1.txt", "count2.txt")
+        self.assertEqual(". 781e5e245d69b566979b86e28d23f2c7+10 0:10:count1.txt 0:10:count2.txt\n", c.portable_manifest_text())
+
+    def test_copy_to_existing_dir(self):
+        c = Collection('. 781e5e245d69b566979b86e28d23f2c7+10 0:10:count1.txt\n./foo 781e5e245d69b566979b86e28d23f2c7+10 0:10:count2.txt\n')
+        c.copy("count1.txt", "foo")
+        self.assertEqual(". 781e5e245d69b566979b86e28d23f2c7+10 0:10:count1.txt\n./foo 781e5e245d69b566979b86e28d23f2c7+10 0:10:count1.txt 0:10:count2.txt\n", c.portable_manifest_text())
+
+    def test_copy_to_new_dir(self):
+        c = Collection('. 781e5e245d69b566979b86e28d23f2c7+10 0:10:count1.txt\n')
+        c.copy("count1.txt", "foo/")
+        self.assertEqual(". 781e5e245d69b566979b86e28d23f2c7+10 0:10:count1.txt\n./foo 781e5e245d69b566979b86e28d23f2c7+10 0:10:count1.txt\n", c.portable_manifest_text())
+
+    def test_clone(self):
+        c = Collection('. 781e5e245d69b566979b86e28d23f2c7+10 0:10:count1.txt\n./foo 781e5e245d69b566979b86e28d23f2c7+10 0:10:count2.txt\n')
+        cl = c.clone()
+        self.assertEqual(". 781e5e245d69b566979b86e28d23f2c7+10 0:10:count1.txt\n./foo 781e5e245d69b566979b86e28d23f2c7+10 0:10:count2.txt\n", cl.portable_manifest_text())
+
+    def test_diff_del_add(self):
+        c1 = Collection('. 781e5e245d69b566979b86e28d23f2c7+10 0:10:count1.txt\n')
+        c2 = Collection('. 5348b82a029fd9e971a811ce1f71360b+43 0:10:count2.txt\n')
+        d = c2.diff(c1)
+        self.assertEqual(d, [('del', './count2.txt', c2["count2.txt"]),
+                             ('add', './count1.txt', c1["count1.txt"])])
+        d = c1.diff(c2)
+        self.assertEqual(d, [('del', './count1.txt', c1["count1.txt"]),
+                             ('add', './count2.txt', c2["count2.txt"])])
+        self.assertNotEqual(c1.portable_manifest_text(), c2.portable_manifest_text())
+        c1.apply(d)
+        self.assertEqual(c1.portable_manifest_text(), c2.portable_manifest_text())
+
+    def test_diff_same(self):
+        c1 = Collection('. 781e5e245d69b566979b86e28d23f2c7+10 0:10:count1.txt\n')
+        c2 = Collection('. 781e5e245d69b566979b86e28d23f2c7+10 0:10:count1.txt\n')
+        d = c2.diff(c1)
+        self.assertEqual(d, [])
+        d = c1.diff(c2)
+        self.assertEqual(d, [])
+
+        self.assertEqual(c1.portable_manifest_text(), c2.portable_manifest_text())
+        c1.apply(d)
+        self.assertEqual(c1.portable_manifest_text(), c2.portable_manifest_text())
+
+    def test_diff_mod(self):
+        c1 = Collection('. 781e5e245d69b566979b86e28d23f2c7+10 0:10:count1.txt\n')
+        c2 = Collection('. 5348b82a029fd9e971a811ce1f71360b+43 0:10:count1.txt\n')
+        d = c2.diff(c1)
+        self.assertEqual(d, [('mod', './count1.txt', c2["count1.txt"], c1["count1.txt"])])
+        d = c1.diff(c2)
+        self.assertEqual(d, [('mod', './count1.txt', c1["count1.txt"], c2["count1.txt"])])
+
+        self.assertNotEqual(c1.portable_manifest_text(), c2.portable_manifest_text())
+        c1.apply(d)
+        self.assertEqual(c1.portable_manifest_text(), c2.portable_manifest_text())
+
+    def test_diff_add(self):
+        c1 = Collection('. 781e5e245d69b566979b86e28d23f2c7+10 0:10:count1.txt\n')
+        c2 = Collection('. 781e5e245d69b566979b86e28d23f2c7+10 5348b82a029fd9e971a811ce1f71360b+43 0:10:count1.txt 10:20:count2.txt\n')
+        d = c2.diff(c1)
+        self.assertEqual(d, [('del', './count2.txt', c2["count2.txt"])])
+        d = c1.diff(c2)
+        self.assertEqual(d, [('add', './count2.txt', c2["count2.txt"])])
+
+        self.assertNotEqual(c1.portable_manifest_text(), c2.portable_manifest_text())
+        c1.apply(d)
+        self.assertEqual(c1.portable_manifest_text(), c2.portable_manifest_text())
+
+    def test_diff_add_in_subcollection(self):
+        c1 = Collection('. 781e5e245d69b566979b86e28d23f2c7+10 0:10:count1.txt\n')
+        c2 = Collection('. 781e5e245d69b566979b86e28d23f2c7+10 0:10:count1.txt\n./foo 5348b82a029fd9e971a811ce1f71360b+43 0:10:count2.txt\n')
+        d = c2.diff(c1)
+        self.assertEqual(d, [('del', './foo', c2["foo"])])
+        d = c1.diff(c2)
+        self.assertEqual(d, [('add', './foo', c2["foo"])])
+
+        self.assertNotEqual(c1.portable_manifest_text(), c2.portable_manifest_text())
+        c1.apply(d)
+        self.assertEqual(c1.portable_manifest_text(), c2.portable_manifest_text())
+
+    def test_diff_del_add_in_subcollection(self):
+        c1 = Collection('. 781e5e245d69b566979b86e28d23f2c7+10 0:10:count1.txt\n./foo 5348b82a029fd9e971a811ce1f71360b+43 0:10:count2.txt\n')
+        c2 = Collection('. 781e5e245d69b566979b86e28d23f2c7+10 0:10:count1.txt\n./foo 5348b82a029fd9e971a811ce1f71360b+43 0:3:count3.txt\n')
+
+        d = c2.diff(c1)
+        self.assertEqual(d, [('del', './foo/count3.txt', c2.find("foo/count3.txt")),
+                             ('add', './foo/count2.txt', c1.find("foo/count2.txt"))])
+        d = c1.diff(c2)
+        self.assertEqual(d, [('del', './foo/count2.txt', c1.find("foo/count2.txt")),
+                             ('add', './foo/count3.txt', c2.find("foo/count3.txt"))])
+
+        self.assertNotEqual(c1.portable_manifest_text(), c2.portable_manifest_text())
+        c1.apply(d)
+        self.assertEqual(c1.portable_manifest_text(), c2.portable_manifest_text())
+
+    def test_diff_mod_in_subcollection(self):
+        c1 = Collection('. 781e5e245d69b566979b86e28d23f2c7+10 0:10:count1.txt\n./foo 5348b82a029fd9e971a811ce1f71360b+43 0:10:count2.txt\n')
+        c2 = Collection('. 781e5e245d69b566979b86e28d23f2c7+10 0:10:count1.txt 0:3:foo\n')
+        d = c2.diff(c1)
+        self.assertEqual(d, [('mod', './foo', c2["foo"], c1["foo"])])
+        d = c1.diff(c2)
+        self.assertEqual(d, [('mod', './foo', c1["foo"], c2["foo"])])
+
+        self.assertNotEqual(c1.portable_manifest_text(), c2.portable_manifest_text())
+        c1.apply(d)
+        self.assertEqual(c1.portable_manifest_text(), c2.portable_manifest_text())
+
+    def test_conflict_keep_local_change(self):
+        c1 = Collection('. 781e5e245d69b566979b86e28d23f2c7+10 0:10:count1.txt\n')
+        c2 = Collection('. 5348b82a029fd9e971a811ce1f71360b+43 0:10:count2.txt\n')
+        d = c1.diff(c2)
+        self.assertEqual(d, [('del', './count1.txt', c1["count1.txt"]),
+                             ('add', './count2.txt', c2["count2.txt"])])
+        with c1.open("count1.txt", "w") as f:
+            f.write("zzzzz")
+
+        # c1 changed, so it should not be deleted.
+        c1.apply(d)
+        self.assertEqual(c1.portable_manifest_text(), ". 95ebc3c7b3b9f1d2c40fec14415d3cb8+5 5348b82a029fd9e971a811ce1f71360b+43 0:5:count1.txt 5:10:count2.txt\n")
+
+    def test_conflict_mod(self):
+        c1 = Collection('. 781e5e245d69b566979b86e28d23f2c7+10 0:10:count1.txt')
+        c2 = Collection('. 5348b82a029fd9e971a811ce1f71360b+43 0:10:count1.txt')
+        d = c1.diff(c2)
+        self.assertEqual(d, [('mod', './count1.txt', c1["count1.txt"], c2["count1.txt"])])
+        with c1.open("count1.txt", "w") as f:
+            f.write("zzzzz")
+
+        # c1 changed, so c2 mod will go to a conflict file
+        c1.apply(d)
+        self.assertRegexpMatches(c1.portable_manifest_text(), r"\. 95ebc3c7b3b9f1d2c40fec14415d3cb8\+5 5348b82a029fd9e971a811ce1f71360b\+43 0:5:count1\.txt 5:10:count1\.txt~conflict-\d\d\d\d-\d\d-\d\d-\d\d:\d\d:\d\d~$")
+
+    def test_conflict_add(self):
+        c1 = Collection('. 781e5e245d69b566979b86e28d23f2c7+10 0:10:count2.txt\n')
+        c2 = Collection('. 5348b82a029fd9e971a811ce1f71360b+43 0:10:count1.txt\n')
+        d = c1.diff(c2)
+        self.assertEqual(d, [('del', './count2.txt', c1["count2.txt"]),
+                             ('add', './count1.txt', c2["count1.txt"])])
+        with c1.open("count1.txt", "w") as f:
+            f.write("zzzzz")
+
+        # c1 added count1.txt, so c2 add will go to a conflict file
+        c1.apply(d)
+        self.assertRegexpMatches(c1.portable_manifest_text(), r"\. 95ebc3c7b3b9f1d2c40fec14415d3cb8\+5 5348b82a029fd9e971a811ce1f71360b\+43 0:5:count1\.txt 5:10:count1\.txt~conflict-\d\d\d\d-\d\d-\d\d-\d\d:\d\d:\d\d~$")
+
+    def test_conflict_del(self):
+        c1 = Collection('. 781e5e245d69b566979b86e28d23f2c7+10 0:10:count1.txt')
+        c2 = Collection('. 5348b82a029fd9e971a811ce1f71360b+43 0:10:count1.txt')
+        d = c1.diff(c2)
+        self.assertEqual(d, [('mod', './count1.txt', c1["count1.txt"], c2["count1.txt"])])
+        c1.remove("count1.txt")
+
+        # c1 deleted, so c2 mod will go to a conflict file
+        c1.apply(d)
+        self.assertRegexpMatches(c1.portable_manifest_text(), r"\. 5348b82a029fd9e971a811ce1f71360b\+43 0:10:count1\.txt~conflict-\d\d\d\d-\d\d-\d\d-\d\d:\d\d:\d\d~$")
+
+    def test_notify(self):
+        c1 = Collection()
+        events = []
+        c1.subscribe(lambda event, collection, name, item: events.append((event, collection, name, item)))
+        f = c1.open("foo.txt", "w")
+        self.assertEqual(events[0], (arvados.collection.ADD, c1, "foo.txt", f.arvadosfile))
+
+    def test_open_w(self):
+        c1 = Collection(". 781e5e245d69b566979b86e28d23f2c7+10 0:10:count1.txt\n")
+        self.assertEqual(c1["count1.txt"].size(), 10)
+        c1.open("count1.txt", "w").close()
+        self.assertEqual(c1["count1.txt"].size(), 0)
+
+
+class CollectionCreateUpdateTest(run_test_server.TestCaseWithServers):
+    MAIN_SERVER = {}
+    KEEP_SERVER = {}
+
+    def create_count_txt(self):
+        # Create an empty collection, save it to the API server, then write a
+        # file, but don't save it.
+
+        c = Collection()
+        c.save_new("CollectionCreateUpdateTest", ensure_unique_name=True)
+        self.assertEqual(c.portable_data_hash(), "d41d8cd98f00b204e9800998ecf8427e+0")
+        self.assertEqual(c.api_response()["portable_data_hash"], "d41d8cd98f00b204e9800998ecf8427e+0" )
+
+        with c.open("count.txt", "w") as f:
+            f.write("0123456789")
+
+        self.assertEqual(c.portable_manifest_text(), ". 781e5e245d69b566979b86e28d23f2c7+10 0:10:count.txt\n")
+
+        return c
+
+    def test_create_and_save(self):
+        c = self.create_count_txt()
+        c.save()
+        self.assertRegexpMatches(c.manifest_text(), r"^\. 781e5e245d69b566979b86e28d23f2c7\+10\+A[a-f0-9]{40}@[a-f0-9]{8} 0:10:count\.txt$",)
+
+    def test_create_and_save_new(self):
+        c = self.create_count_txt()
+        c.save_new()
+        self.assertRegexpMatches(c.manifest_text(), r"^\. 781e5e245d69b566979b86e28d23f2c7\+10\+A[a-f0-9]{40}@[a-f0-9]{8} 0:10:count\.txt$",)
+
+    def test_create_diff_apply(self):
+        c1 = self.create_count_txt()
+        c1.save()
+
+        c2 = Collection(c1.manifest_locator())
+        with c2.open("count.txt", "w") as f:
+            f.write("abcdefg")
+
+        diff = c1.diff(c2)
+
+        self.assertEqual(diff[0], (arvados.collection.MOD, u'./count.txt', c1["count.txt"], c2["count.txt"]))
+
+        c1.apply(diff)
+        self.assertEqual(c1.portable_data_hash(), c2.portable_data_hash())
+
+    def test_diff_apply_with_token(self):
+        baseline = CollectionReader(". 781e5e245d69b566979b86e28d23f2c7+10+A715fd31f8111894f717eb1003c1b0216799dd9ec@54f5dd1a 0:10:count.txt\n")
+        c = Collection(". 781e5e245d69b566979b86e28d23f2c7+10 0:10:count.txt\n")
+        other = CollectionReader(". 7ac66c0f148de9519b8bd264312c4d64+7+A715fd31f8111894f717eb1003c1b0216799dd9ec@54f5dd1a 0:7:count.txt\n")
+
+        diff = baseline.diff(other)
+        self.assertEqual(diff, [('mod', u'./count.txt', c["count.txt"], other["count.txt"])])
+
+        c.apply(diff)
+
+        self.assertEqual(c.manifest_text(), ". 7ac66c0f148de9519b8bd264312c4d64+7+A715fd31f8111894f717eb1003c1b0216799dd9ec@54f5dd1a 0:7:count.txt\n")
+
+
+    def test_create_and_update(self):
+        c1 = self.create_count_txt()
+        c1.save()
+
+        c2 = arvados.collection.Collection(c1.manifest_locator())
+        with c2.open("count.txt", "w") as f:
+            f.write("abcdefg")
+
+        c2.save()
+
+        self.assertNotEqual(c1.portable_data_hash(), c2.portable_data_hash())
+        c1.update()
+        self.assertEqual(c1.portable_data_hash(), c2.portable_data_hash())
+
+
+    def test_create_and_update_with_conflict(self):
+        c1 = self.create_count_txt()
+        c1.save()
+
+        with c1.open("count.txt", "w") as f:
+            f.write("XYZ")
+
+        c2 = arvados.collection.Collection(c1.manifest_locator())
+        with c2.open("count.txt", "w") as f:
+            f.write("abcdefg")
+
+        c2.save()
+
+        c1.update()
+        self.assertRegexpMatches(c1.manifest_text(), r"\. e65075d550f9b5bf9992fa1d71a131be\+3 7ac66c0f148de9519b8bd264312c4d64\+7\+A[a-f0-9]{40}@[a-f0-9]{8} 0:3:count\.txt 3:7:count\.txt~conflict-\d\d\d\d-\d\d-\d\d-\d\d:\d\d:\d\d~$")
 
 
 if __name__ == '__main__':

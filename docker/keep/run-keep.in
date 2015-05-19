@@ -8,4 +8,4 @@ else
     permission_args=""
 fi
 
-exec keepstore $permission_args -listen=":25107" -volumes="/keep-data"
+exec keepstore $permission_args -listen=":25107" -volume="/keep-data"

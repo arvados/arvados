@@ -154,7 +154,16 @@ module Keep
             stream_name = unescape token
           elsif in_file_tokens or not Locator.valid? token
             in_file_tokens = true
-            yield [stream_name] + split_file_token(token)
+
+            file_tokens = split_file_token(token)
+            stream_name_adjuster = ''
+            if file_tokens[2].include?('/')                # '/' in filename
+              parts = file_tokens[2].rpartition('/')
+              stream_name_adjuster = parts[1] + parts[0]   # /dir_parts
+              file_tokens[2] = parts[2]
+            end
+
+            yield [stream_name + stream_name_adjuster] + file_tokens
           end
         end
       end
@@ -189,6 +198,11 @@ module Keep
         return stop_after if (seen_files.size >= stop_after)
       end
       seen_files.size
+    end
+
+    def files_size
+      # Return the total size of all files in this manifest.
+      files.reduce(0) { |total, (_, _, size)| total + size }
     end
 
     def exact_file_count?(want_count)

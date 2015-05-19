@@ -13,16 +13,19 @@ arvados_workbench_host: localhost
 exclude: ["Rakefile", "tmp", "vendor"]
 
 navbar:
-  start:
-    - Getting Started:
-      - start/index.html.textile.liquid
-    - Quickstart:
-      - start/getting_started/firstpipeline.html.textile.liquid
-    - Common Use Cases:
-      - start/getting_started/sharedata.html.textile.liquid
+  #start:
+    #- Getting Started:
+      #- start/index.html.textile.liquid
+    #- Quickstart:
+      #- start/getting_started/publicproject.html.textile.liquid
+      #- start/getting_started/firstpipeline.html.textile.liquid
+    #- Common Use Cases:
+      #- start/getting_started/sharedata.html.textile.liquid
+    #- Next Steps:
+      #- start/getting_started/nextsteps.html.textile.liquid
 
   userguide:
-    - Getting Started:
+    - Welcome:
       - user/index.html.textile.liquid
       - user/getting_started/community.html.textile.liquid
     - Run a pipeline using Workbench:
@@ -133,17 +136,13 @@ navbar:
       - api/schema/Trait.html.textile.liquid
       - api/schema/User.html.textile.liquid
       - api/schema/VirtualMachine.html.textile.liquid
-  admin:
-    - Admin:
-      - admin/index.html.md.liquid
-      - admin/cheat_sheet.html.textile.liquid
   installguide:
     - Overview:
       - install/index.html.textile.liquid
     - Docker:
+      - install/pre-built-docker.html.textile.liquid
       - install/install-docker.html.textile.liquid
     - Manual installation:
-      - install/install-manual-overview.html.textile.liquid
       - install/install-manual-prerequisites.html.textile.liquid
       - install/install-api-server.html.textile.liquid
       - install/install-workbench-app.html.textile.liquid
@@ -151,8 +150,9 @@ navbar:
       - install/create-standard-objects.html.textile.liquid
       - install/install-keepstore.html.textile.liquid
       - install/install-keepproxy.html.textile.liquid
+      - install/install-arv-git-httpd.html.textile.liquid
       - install/install-crunch-dispatch.html.textile.liquid
-      - install/install-compute-node.html.textile.liquid
+      - install/cheat_sheet.html.textile.liquid
     - Software prerequisites:
       - install/install-manual-prerequisites-ruby.html.textile.liquid
       - install/install-sso.html.textile.liquid

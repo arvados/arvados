@@ -1,0 +1,15 @@
+#!/bin/sh
+
+export ARVADOS_API_HOST=api
+export ARVADOS_API_HOST_INSECURE=yes
+# This should be an anonymous token, but we don't have a good way
+# to get one while building the images
+export ARVADOS_API_TOKEN=@@API_SUPERUSER_SECRET@@
+
+read pid cmd state ppid pgrp session tty_nr tpgid rest < /proc/self/stat
+trap "kill -TERM -$pgrp; exit" HUP EXIT TERM QUIT
+
+while /bin/true ; do
+    keepproxy -listen=':9100'
+    sleep 1
+done

@@ -93,6 +93,16 @@ form.small-form-margin {
 .nowrap {
     white-space: nowrap;
 }
+input.select-on-focus {
+    font-family: monospace;
+    background: inherit;
+    border: thin #ccc solid;
+    border-radius: .2em;
+    padding: .15em .5em;
+}
+input.select-on-focus:focus {
+    border-color: #9bf;
+}
 
 /* top nav */
 $top-nav-bg: #3c163d;
@@ -277,6 +287,24 @@ span.editable-textile {
   display: none;
 }
 
+/* Hide Angular content until Angular is ready */
 [ng\:cloak], [ng-cloak], .ng-cloak {
     display: none !important;
+}
+
+/* tabs */
+ul.nav.nav-tabs {
+    font-size: 90%
+}
+
+.hover-dropdown:hover .dropdown-menu {
+  display: block;
+}
+
+.arv-description-as-subtitle .editable-inline,
+.arv-description-as-subtitle .editable-inline .form-group,
+.arv-description-as-subtitle .editable-inline .form-group .editable-input,
+.arv-description-as-subtitle .editable-inline .form-group .editable-input textarea,
+{
+    width: 98%!important;
 }

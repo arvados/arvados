@@ -434,7 +434,7 @@ replication_desired_2_confirmed_2:
   created_at: 2015-02-07 00:19:28.596506247 Z
   modified_by_user_uuid: zzzzz-tpzed-xurymjxw79nv3jz
   modified_at: 2015-02-07 00:19:28.596338465 Z
-  portable_data_hash: fa7aeb5140e2848d39b416daeef4ffc5+45
+  portable_data_hash: ec53808e4c23e6aeebea24d998ae5346+88
   replication_desired: 2
   replication_confirmed_at: 2015-02-07 00:24:52.983381227 Z
   replication_confirmed: 2
@@ -469,6 +469,80 @@ collection_with_one_property:
   name: collection with one property
   properties:
     property1: value1
+
+# The following four collections are used to test combining collections with repeated filenames
+collection_with_repeated_filenames_and_contents_in_two_dirs_1:
+  uuid: zzzzz-4zz18-duplicatenames1
+  portable_data_hash: fa7aeb5140e2848d39b416daeef4ffc5+45
+  owner_uuid: zzzzz-tpzed-xurymjxw79nv3jz
+  created_at: 2014-02-03T17:22:54Z
+  modified_by_client_uuid: zzzzz-ozdt8-brczlopd8u8d0jr
+  modified_by_user_uuid: zzzzz-tpzed-d9tiejq69daie8f
+  modified_at: 2014-02-03T17:22:54Z
+  updated_at: 2014-02-03T17:22:54Z
+  name: collection_with_repeated_filenames_and_contents_in_two_dirs_1
+  manifest_text: "./dir1 92b53930db60fe94be2a73fc771ba921+34+Af966b611a1e6a7df18e0f20ac742a255c27744b7@550a3f11 0:12:alice 12:12:alice.txt 24:10:bob.txt\n./dir2 56ac2557b1ded11ccab7293dc47d1e88+44+A1780092551dadcb9c74190a793a779cea84d632d@550a3f11 0:27:alice.txt\n"
+
+collection_with_repeated_filenames_and_contents_in_two_dirs_2:
+  uuid: zzzzz-4zz18-duplicatenames2
+  portable_data_hash: fa7aeb5140e2848d39b416daeef4ffc5+45
+  owner_uuid: zzzzz-tpzed-xurymjxw79nv3jz
+  created_at: 2014-02-03T17:22:54Z
+  modified_by_client_uuid: zzzzz-ozdt8-brczlopd8u8d0jr
+  modified_by_user_uuid: zzzzz-tpzed-d9tiejq69daie8f
+  modified_at: 2014-02-03T17:22:54Z
+  updated_at: 2014-02-03T17:22:54Z
+  name: collection_with_repeated_filenames_and_contents_in_two_dirs_2
+  manifest_text: "./dir1 92b53930db60fe94be2a73fc771ba921+34+Af966b611a1e6a7df18e0f20ac742a255c27744b7@550a3f11 0:12:alice 12:12:alice.txt 24:10:carol.txt\n./dir2 56ac2557b1ded11ccab7293dc47d1e88+44+A1780092551dadcb9c74190a793a779cea84d632d@550a3f11 0:27:alice.txt\n"
+
+foo_and_bar_files_in_dir:
+  uuid: zzzzz-4zz18-foonbarfilesdir
+  portable_data_hash: 6bbac24198d09a93975f60098caf0bdf+62
+  owner_uuid: zzzzz-tpzed-xurymjxw79nv3jz
+  created_at: 2014-02-03T17:22:54Z
+  modified_by_client_uuid: zzzzz-ozdt8-brczlopd8u8d0jr
+  modified_by_user_uuid: zzzzz-tpzed-d9tiejq69daie8f
+  modified_at: 2014-02-03T17:22:54Z
+  updated_at: 2014-02-03T17:22:54Z
+  name: foo_file_in_dir
+  manifest_text: "./dir1 a84b928ebdbae3f658518c711beaec02+28+A0cff02249e70e8cd6e55dba49fef4afa3f5bfdfb@550acd28 0:3:bar 12:16:foo\n"
+
+multi_level_to_combine:
+  uuid: zzzzz-4zz18-pyw8yp9g3ujh45f
+  portable_data_hash: 7a6ef4c162a5c6413070a8bd0bffc818+150
+  owner_uuid: zzzzz-tpzed-xurymjxw79nv3jz
+  created_at: 2014-02-03T17:22:54Z
+  modified_by_client_uuid: zzzzz-ozdt8-brczlopd8u8d0jr
+  modified_by_user_uuid: zzzzz-tpzed-d9tiejq69daie8f
+  modified_at: 2014-02-03T17:22:54Z
+  updated_at: 2014-02-03T17:22:54Z
+  manifest_text: ". 85877ca2d7e05498dd3d109baf2df106+95 0:0:file1 0:0:file2 0:0:file3\n./dir1 85877ca2d7e05498dd3d109baf2df106+95 0:0:file1 0:0:file2 0:0:file3\n./dir1/subdir 85877ca2d7e05498dd3d109baf2df106+95 0:0:file1 0:0:file2 0:0:file3\n./dir2 85877ca2d7e05498dd3d109baf2df106+95 0:0:file1 0:0:file2 0:0:file3\n"
+  name: multi_level_to_combine
+
+# collection with several file types to test view icon enabled state in collection show page
+collection_with_several_supported_file_types:
+  uuid: zzzzz-4zz18-supportedtypes1
+  portable_data_hash: 020d82cf7dedb70fd2b7788b5d0634da+269
+  owner_uuid: zzzzz-tpzed-xurymjxw79nv3jz
+  created_at: 2014-02-03T17:22:54Z
+  modified_by_client_uuid: zzzzz-ozdt8-brczlopd8u8d0jr
+  modified_by_user_uuid: zzzzz-tpzed-d9tiejq69daie8f
+  modified_at: 2014-02-03T17:22:54Z
+  updated_at: 2014-02-03T17:22:54Z
+  manifest_text: ". d41d8cd98f00b204e9800998ecf8427e+0 0:0:file.csv 0:0:file.fa 0:0:file.fasta 0:0:file.gif 0:0:file.json 0:0:file.md 0:0:file.pdf 0:0:file.py 0:0:file.R 0:0:file.sam 0:0:file.sh 0:0:file.tiff 0:0:file.tsv 0:0:file.txt 0:0:file.vcf 0:0:file.xml 0:0:file.xsl 0:0:file.yml\n"
+  name: collection_with_several_supported_file_types
+
+collection_with_several_unsupported_file_types:
+  uuid: zzzzz-4zz18-supportedtypes2
+  portable_data_hash: 71ac42f87464ee5f9fd396d560d400c3+59
+  owner_uuid: zzzzz-tpzed-xurymjxw79nv3jz
+  created_at: 2014-02-03T17:22:54Z
+  modified_by_client_uuid: zzzzz-ozdt8-brczlopd8u8d0jr
+  modified_by_user_uuid: zzzzz-tpzed-d9tiejq69daie8f
+  modified_at: 2014-02-03T17:22:54Z
+  updated_at: 2014-02-03T17:22:54Z
+  manifest_text: ". d41d8cd98f00b204e9800998ecf8427e+0 0:0:file 0:0:file.bam\n"
+  name: collection_with_several_unsupported_file_types
 
 # Test Helper trims the rest of the file
 

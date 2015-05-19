@@ -4,6 +4,7 @@ class ArvadosModel < ActiveRecord::Base
   self.abstract_class = true
 
   include CurrentApiClient      # current_user, current_api_client, etc.
+  include DbCurrentTime
 
   attr_protected :created_at
   attr_protected :modified_by_user_uuid
@@ -100,6 +101,13 @@ class ArvadosModel < ActiveRecord::Base
       end
     end
     api_column_map
+  end
+
+  def self.columns_for_attributes(select_attributes)
+    # Given an array of attribute names to select, return an array of column
+    # names that must be fetched from the database to satisfy the request.
+    api_column_map = attributes_required_columns
+    select_attributes.flat_map { |attr| api_column_map[attr] }.uniq
   end
 
   def self.default_orders
@@ -307,8 +315,13 @@ class ArvadosModel < ActiveRecord::Base
     # Verify "write" permission on new owner
     # default fail unless one of:
     # current_user is this object
-    # current user can_write new owner
-    unless current_user == self or current_user.can? write: owner_uuid
+    # current user can_write new owner, or this object if owner unchanged
+    if new_record? or owner_uuid_changed? or is_a?(ApiClientAuthorization)
+      write_target = owner_uuid
+    else
+      write_target = uuid
+    end
+    unless current_user == self or current_user.can? write: write_target
       logger.warn "User #{current_user.uuid} tried to modify #{self.class.to_s} #{uuid} but does not have permission to write new owner_uuid #{owner_uuid}"
       errors.add :owner_uuid, "cannot be changed without write permission on new owner"
       raise PermissionDeniedError
@@ -358,9 +371,10 @@ class ArvadosModel < ActiveRecord::Base
   end
 
   def update_modified_by_fields
-    self.updated_at = Time.now
+    current_time = db_current_time
+    self.updated_at = current_time
     self.owner_uuid ||= current_default_owner if self.respond_to? :owner_uuid=
-    self.modified_at = Time.now
+    self.modified_at = current_time
     self.modified_by_user_uuid = current_user ? current_user.uuid : nil
     self.modified_by_client_uuid = current_api_client ? current_api_client.uuid : nil
     true

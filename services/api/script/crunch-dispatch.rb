@@ -53,6 +53,8 @@ end
 class Dispatcher
   include ApplicationHelper
 
+  EXIT_TEMPFAIL = 75
+
   def initialize
     @crunch_job_bin = (ENV['CRUNCH_JOB_BIN'] || `which arv-crunch-job`.strip)
     if @crunch_job_bin.empty?
@@ -66,6 +68,7 @@ class Dispatcher
     end
 
     @repo_root = Rails.configuration.git_repositories_dir
+    @arvados_repo_path = Repository.where(name: "arvados").first.server_path
     @authorizations = {}
     @did_recently = {}
     @fetched_commits = {}
@@ -276,35 +279,24 @@ class Dispatcher
     @authorizations[job.uuid]
   end
 
-  def get_commit(repo_name, commit_hash)
-    # @fetched_commits[V]==true if we know commit V exists in the
-    # arvados_internal git repository.
-    if !@fetched_commits[commit_hash]
-      src_repo = File.join(@repo_root, "#{repo_name}.git")
-      if not File.exists? src_repo
-        src_repo = File.join(@repo_root, repo_name, '.git')
-        if not File.exists? src_repo
-          fail_job job, "No #{repo_name}.git or #{repo_name}/.git at #{@repo_root}"
-          return nil
-        end
-      end
-
-      # check if the commit needs to be fetched or not
-      commit_rev = stdout_s(git_cmd("rev-list", "-n1", commit_hash),
-                            err: "/dev/null")
-      unless $? == 0 and commit_rev == commit_hash
-        # commit does not exist in internal repository, so import the source repository using git fetch-pack
-        cmd = git_cmd("fetch-pack", "--no-progress", "--all", src_repo)
-        $stderr.puts "dispatch: #{cmd}"
-        $stderr.puts(stdout_s(cmd))
-        unless $? == 0
-          fail_job job, "git fetch-pack failed"
-          return nil
-        end
-      end
-      @fetched_commits[commit_hash] = true
+  def internal_repo_has_commit? sha1
+    if (not @fetched_commits[sha1] and
+        sha1 == stdout_s(git_cmd("rev-list", "-n1", sha1), err: "/dev/null") and
+        $? == 0)
+      @fetched_commits[sha1] = true
     end
-    @fetched_commits[commit_hash]
+    return @fetched_commits[sha1]
+  end
+
+  def get_commit src_repo, sha1
+    return true if internal_repo_has_commit? sha1
+
+    # commit does not exist in internal repository, so import the
+    # source repository using git fetch-pack
+    cmd = git_cmd("fetch-pack", "--no-progress", "--all", src_repo)
+    $stderr.puts "dispatch: #{cmd}"
+    $stderr.puts(stdout_s(cmd))
+    @fetched_commits[sha1] = ($? == 0)
   end
 
   def tag_commit(commit_hash, tag_name)
@@ -383,14 +375,42 @@ class Dispatcher
                          "GEM_PATH=#{ENV['GEM_PATH']}")
       end
 
-      ready = (get_authorization(job) and
-               get_commit(job.repository, job.script_version) and
-               tag_commit(job.script_version, job.uuid))
-      if ready and job.arvados_sdk_version
-        ready = (get_commit("arvados", job.arvados_sdk_version) and
-                 tag_commit(job.arvados_sdk_version, "#{job.uuid}-arvados-sdk"))
+      next unless get_authorization job
+
+      ready = internal_repo_has_commit? job.script_version
+
+      if not ready
+        # Import the commit from the specified repository into the
+        # internal repository. This should have been done already when
+        # the job was created/updated; this code is obsolete except to
+        # avoid deployment races. Failing the job would be a
+        # reasonable thing to do at this point.
+        repo = Repository.where(name: job.repository).first
+        if repo.nil? or repo.server_path.nil?
+          fail_job "Repository #{job.repository} not found under #{@repo_root}"
+          next
+        end
+        ready &&= get_commit repo.server_path, job.script_version
+        ready &&= tag_commit job.script_version, job.uuid
       end
-      next unless ready
+
+      # This should be unnecessary, because API server does it during
+      # job create/update, but it's still not a bad idea to verify the
+      # tag is correct before starting the job:
+      ready &&= tag_commit job.script_version, job.uuid
+
+      # The arvados_sdk_version doesn't support use of arbitrary
+      # remote URLs, so the requested version isn't necessarily copied
+      # into the internal repository yet.
+      if job.arvados_sdk_version
+        ready &&= get_commit @arvados_repo_path, job.arvados_sdk_version
+        ready &&= tag_commit job.arvados_sdk_version, "#{job.uuid}-arvados-sdk"
+      end
+
+      if not ready
+        fail_job job, "commit not present in internal repository"
+        next
+      end
 
       cmd_args += [@crunch_job_bin,
                    '--job-api-token', @authorizations[job.uuid].api_token,
@@ -634,7 +654,7 @@ class Dispatcher
     exit_status = j_done[:wait_thr].value.exitstatus
 
     jobrecord = Job.find_by_uuid(job_done.uuid)
-    if exit_status != 75 and jobrecord.state == "Running"
+    if exit_status != EXIT_TEMPFAIL and jobrecord.state == "Running"
       # crunch-job did not return exit code 75 (see below) and left the job in
       # the "Running" state, which means there was an unhandled error.  Fail
       # the job.
@@ -757,5 +777,11 @@ end
 
 # This is how crunch-job child procs know where the "refresh" trigger file is
 ENV["CRUNCH_REFRESH_TRIGGER"] = Rails.configuration.crunch_refresh_trigger
+
+# If salloc can't allocate resources immediately, make it use our temporary
+# failure exit code.  This ensures crunch-dispatch won't mark a job failed
+# because of an issue with node allocation.  This often happens when
+# another dispatcher wins the race to allocate nodes.
+ENV["SLURM_EXIT_IMMEDIATE"] = Dispatcher::EXIT_TEMPFAIL.to_s
 
 Dispatcher.new.run

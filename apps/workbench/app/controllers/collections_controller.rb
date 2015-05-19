@@ -119,10 +119,14 @@ class CollectionsController < ApplicationController
     # we ask the API server if the file actually exists.  This serves two
     # purposes: it lets us return a useful status code for common errors, and
     # helps us figure out which token to provide to arv-get.
+    # The order of searched tokens is important: because the anonymous user
+    # token is passed along with every API request, we have to check it first.
+    # Otherwise, it's impossible to know whether any other request succeeded
+    # because of the reader token.
     coll = nil
-    tokens = [Thread.current[:arvados_api_token],
+    tokens = [(Rails.configuration.anonymous_user_token || nil),
               params[:reader_token],
-              (Rails.configuration.anonymous_user_token || nil)].compact
+              Thread.current[:arvados_api_token]].compact
     usable_token = find_usable_token(tokens) do
       coll = Collection.find(params[:uuid])
     end
@@ -198,7 +202,7 @@ class CollectionsController < ApplicationController
 
     if current_user
       if Keep::Locator.parse params["uuid"]
-        @same_pdh = Collection.filter([["portable_data_hash", "=", @object.portable_data_hash]])
+        @same_pdh = Collection.filter([["portable_data_hash", "=", @object.portable_data_hash]]).limit(20)
         if @same_pdh.results.size == 1
           redirect_to collection_path(@same_pdh[0]["uuid"])
           return
@@ -206,6 +210,8 @@ class CollectionsController < ApplicationController
         owners = @same_pdh.map(&:owner_uuid).to_a.uniq
         preload_objects_for_dataclass Group, owners
         preload_objects_for_dataclass User, owners
+        uuids = @same_pdh.map(&:uuid).to_a.uniq
+        preload_links_for_objects uuids
         render 'hash_matches'
         return
       else
@@ -224,6 +230,7 @@ class CollectionsController < ApplicationController
           .where(head_uuid: @object.uuid, link_class: 'permission',
                  name: 'can_read').results
         @logs = Log.limit(RELATION_LIMIT).order("created_at DESC")
+          .select(%w(uuid event_type object_uuid event_at summary))
           .where(object_uuid: @object.uuid).results
         @is_persistent = Link.limit(1)
           .where(head_uuid: @object.uuid, tail_uuid: current_user.uuid,
