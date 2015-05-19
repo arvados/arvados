@@ -185,10 +185,12 @@ sanity_checks() {
 }
 
 rotate_logfile() {
+  # i.e.  rotate_logfile "$WORKSPACE/apps/workbench/log/" "test.log"
   # $BUILD_NUMBER is set by Jenkins if this script is being called as part of a Jenkins run
   if [[ -f "$1/$2" ]]; then
     THEDATE=`date +%Y%m%d%H%M%S`
     mv "$1/$2" "$1/$THEDATE-$BUILD_NUMBER-$2"
+    ./create-plot-data-from-log.sh $BUILD_NUMBER "$1/$THEDATE-$BUILD_NUMBER-$2" "$1"
     gzip "$1/$THEDATE-$BUILD_NUMBER-$2"
   fi
 }
