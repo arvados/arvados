@@ -118,10 +118,10 @@ func runProxy(c *C, args []string, port int, bogusClientToken bool) keepclient.K
 	locals := map[string]string{
 		"proxy": fmt.Sprintf("http://localhost:%v", port),
 	}
-	writables := map[string]string{
+	writableLocals := map[string]string{
 		"proxy": fmt.Sprintf("http://localhost:%v", port),
 	}
-	kc.SetServiceRoots(locals, nil, writables)
+	kc.SetServiceRoots(locals, writableLocals, nil)
 	c.Check(kc.Using_proxy, Equals, true)
 	c.Check(len(kc.LocalRoots()), Equals, 1)
 	for _, root := range kc.LocalRoots() {

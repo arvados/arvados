@@ -243,17 +243,17 @@ func (s *StandaloneSuite) TestPutB(c *C) {
 	kc.Want_replicas = 2
 	arv.ApiToken = "abc123"
 	localRoots := make(map[string]string)
-	writableRoots := make(map[string]string)
+	writableLocalRoots := make(map[string]string)
 
 	ks := RunSomeFakeKeepServers(st, 5)
 
 	for i, k := range ks {
 		localRoots[fmt.Sprintf("zzzzz-bi6l4-fakefakefake%03d", i)] = k.url
-		writableRoots[fmt.Sprintf("zzzzz-bi6l4-fakefakefake%03d", i)] = k.url
+		writableLocalRoots[fmt.Sprintf("zzzzz-bi6l4-fakefakefake%03d", i)] = k.url
 		defer k.listener.Close()
 	}
 
-	kc.SetServiceRoots(localRoots, nil, writableRoots)
+	kc.SetServiceRoots(localRoots, writableLocalRoots, nil)
 
 	kc.PutB([]byte("foo"))
 
@@ -288,17 +288,17 @@ func (s *StandaloneSuite) TestPutHR(c *C) {
 	kc.Want_replicas = 2
 	arv.ApiToken = "abc123"
 	localRoots := make(map[string]string)
-	writableRoots := make(map[string]string)
+	writableLocalRoots := make(map[string]string)
 
 	ks := RunSomeFakeKeepServers(st, 5)
 
 	for i, k := range ks {
 		localRoots[fmt.Sprintf("zzzzz-bi6l4-fakefakefake%03d", i)] = k.url
-		writableRoots[fmt.Sprintf("zzzzz-bi6l4-fakefakefake%03d", i)] = k.url
+		writableLocalRoots[fmt.Sprintf("zzzzz-bi6l4-fakefakefake%03d", i)] = k.url
 		defer k.listener.Close()
 	}
 
-	kc.SetServiceRoots(localRoots, nil, writableRoots)
+	kc.SetServiceRoots(localRoots, writableLocalRoots, nil)
 
 	reader, writer := io.Pipe()
 
@@ -344,23 +344,23 @@ func (s *StandaloneSuite) TestPutWithFail(c *C) {
 	kc.Want_replicas = 2
 	arv.ApiToken = "abc123"
 	localRoots := make(map[string]string)
-	writableRoots := make(map[string]string)
+	writableLocalRoots := make(map[string]string)
 
 	ks1 := RunSomeFakeKeepServers(st, 4)
 	ks2 := RunSomeFakeKeepServers(fh, 1)
 
 	for i, k := range ks1 {
 		localRoots[fmt.Sprintf("zzzzz-bi6l4-fakefakefake%03d", i)] = k.url
-		writableRoots[fmt.Sprintf("zzzzz-bi6l4-fakefakefake%03d", i)] = k.url
+		writableLocalRoots[fmt.Sprintf("zzzzz-bi6l4-fakefakefake%03d", i)] = k.url
 		defer k.listener.Close()
 	}
 	for i, k := range ks2 {
 		localRoots[fmt.Sprintf("zzzzz-bi6l4-fakefakefake%03d", i+len(ks1))] = k.url
-		writableRoots[fmt.Sprintf("zzzzz-bi6l4-fakefakefake%03d", i+len(ks1))] = k.url
+		writableLocalRoots[fmt.Sprintf("zzzzz-bi6l4-fakefakefake%03d", i+len(ks1))] = k.url
 		defer k.listener.Close()
 	}
 
-	kc.SetServiceRoots(localRoots, nil, writableRoots)
+	kc.SetServiceRoots(localRoots, writableLocalRoots, nil)
 
 	shuff := NewRootSorter(
 		kc.LocalRoots(), Md5String("foo")).GetSortedRoots()
@@ -403,23 +403,23 @@ func (s *StandaloneSuite) TestPutWithTooManyFail(c *C) {
 	kc.Want_replicas = 2
 	arv.ApiToken = "abc123"
 	localRoots := make(map[string]string)
-	writableRoots := make(map[string]string)
+	writableLocalRoots := make(map[string]string)
 
 	ks1 := RunSomeFakeKeepServers(st, 1)
 	ks2 := RunSomeFakeKeepServers(fh, 4)
 
 	for i, k := range ks1 {
 		localRoots[fmt.Sprintf("zzzzz-bi6l4-fakefakefake%03d", i)] = k.url
-		writableRoots[fmt.Sprintf("zzzzz-bi6l4-fakefakefake%03d", i)] = k.url
+		writableLocalRoots[fmt.Sprintf("zzzzz-bi6l4-fakefakefake%03d", i)] = k.url
 		defer k.listener.Close()
 	}
 	for i, k := range ks2 {
 		localRoots[fmt.Sprintf("zzzzz-bi6l4-fakefakefake%03d", i+len(ks1))] = k.url
-		writableRoots[fmt.Sprintf("zzzzz-bi6l4-fakefakefake%03d", i+len(ks1))] = k.url
+		writableLocalRoots[fmt.Sprintf("zzzzz-bi6l4-fakefakefake%03d", i+len(ks1))] = k.url
 		defer k.listener.Close()
 	}
 
-	kc.SetServiceRoots(localRoots, nil, writableRoots)
+	kc.SetServiceRoots(localRoots, writableLocalRoots, nil)
 
 	_, replicas, err := kc.PutB([]byte("foo"))
 
@@ -464,7 +464,7 @@ func (s *StandaloneSuite) TestGet(c *C) {
 	arv, err := arvadosclient.MakeArvadosClient()
 	kc, _ := MakeKeepClient(&arv)
 	arv.ApiToken = "abc123"
-	kc.SetServiceRoots(map[string]string{"x": ks.url}, nil, map[string]string{ks.url: ""})
+	kc.SetServiceRoots(map[string]string{"x": ks.url}, map[string]string{ks.url: ""}, nil)
 
 	r, n, url2, err := kc.Get(hash)
 	defer r.Close()
@@ -490,7 +490,7 @@ func (s *StandaloneSuite) TestGetFail(c *C) {
 	arv, err := arvadosclient.MakeArvadosClient()
 	kc, _ := MakeKeepClient(&arv)
 	arv.ApiToken = "abc123"
-	kc.SetServiceRoots(map[string]string{"x": ks.url}, nil, map[string]string{ks.url: ""})
+	kc.SetServiceRoots(map[string]string{"x": ks.url}, map[string]string{ks.url: ""}, nil)
 
 	r, n, url2, err := kc.Get(hash)
 	c.Check(err, Equals, BlockNotFound)
@@ -525,8 +525,8 @@ func (s *StandaloneSuite) TestGetWithServiceHint(c *C) {
 	arv.ApiToken = "abc123"
 	kc.SetServiceRoots(
 		map[string]string{"x": ks0.url},
-		map[string]string{uuid: ks.url},
-		map[string]string{ks0.url: "", ks.url: ""})
+		map[string]string{"x": ks0.url},
+		map[string]string{uuid: ks.url})
 
 	r, n, uri, err := kc.Get(hash + "+K@" + uuid)
 	defer r.Close()
@@ -619,8 +619,8 @@ func (s *StandaloneSuite) TestGetWithServiceHintFailoverToLocals(c *C) {
 	arv.ApiToken = "abc123"
 	kc.SetServiceRoots(
 		map[string]string{"zzzzz-bi6l4-keepdisk0000000": ksLocal.url},
-		map[string]string{uuid: ksGateway.url},
-		map[string]string{"zzzzz-bi6l4-keepdisk0000000": ksLocal.url})
+		map[string]string{"zzzzz-bi6l4-keepdisk0000000": ksLocal.url},
+		map[string]string{uuid: ksGateway.url})
 
 	r, n, uri, err := kc.Get(hash + "+K@" + uuid)
 	c.Assert(err, Equals, nil)
@@ -654,7 +654,7 @@ func (s *StandaloneSuite) TestChecksum(c *C) {
 	arv, err := arvadosclient.MakeArvadosClient()
 	kc, _ := MakeKeepClient(&arv)
 	arv.ApiToken = "abc123"
-	kc.SetServiceRoots(map[string]string{"x": ks.url}, nil, map[string]string{ks.url: ""})
+	kc.SetServiceRoots(map[string]string{"x": ks.url}, map[string]string{ks.url: ""}, nil)
 
 	r, n, _, err := kc.Get(barhash)
 	_, err = ioutil.ReadAll(r)
@@ -689,23 +689,23 @@ func (s *StandaloneSuite) TestGetWithFailures(c *C) {
 	kc, _ := MakeKeepClient(&arv)
 	arv.ApiToken = "abc123"
 	localRoots := make(map[string]string)
-	writableRoots := make(map[string]string)
+	writableLocalRoots := make(map[string]string)
 
 	ks1 := RunSomeFakeKeepServers(st, 1)
 	ks2 := RunSomeFakeKeepServers(fh, 4)
 
 	for i, k := range ks1 {
 		localRoots[fmt.Sprintf("zzzzz-bi6l4-fakefakefake%03d", i)] = k.url
-		writableRoots[fmt.Sprintf("zzzzz-bi6l4-fakefakefake%03d", i)] = k.url
+		writableLocalRoots[fmt.Sprintf("zzzzz-bi6l4-fakefakefake%03d", i)] = k.url
 		defer k.listener.Close()
 	}
 	for i, k := range ks2 {
 		localRoots[fmt.Sprintf("zzzzz-bi6l4-fakefakefake%03d", i+len(ks1))] = k.url
-		writableRoots[fmt.Sprintf("zzzzz-bi6l4-fakefakefake%03d", i+len(ks1))] = k.url
+		writableLocalRoots[fmt.Sprintf("zzzzz-bi6l4-fakefakefake%03d", i+len(ks1))] = k.url
 		defer k.listener.Close()
 	}
 
-	kc.SetServiceRoots(localRoots, nil, writableRoots)
+	kc.SetServiceRoots(localRoots, writableLocalRoots, nil)
 
 	// This test works only if one of the failing services is
 	// attempted before the succeeding service. Otherwise,
@@ -786,17 +786,17 @@ func (s *StandaloneSuite) TestPutProxy(c *C) {
 	kc.Using_proxy = true
 	arv.ApiToken = "abc123"
 	localRoots := make(map[string]string)
-	writableRoots := make(map[string]string)
+	writableLocalRoots := make(map[string]string)
 
 	ks1 := RunSomeFakeKeepServers(st, 1)
 
 	for i, k := range ks1 {
 		localRoots[fmt.Sprintf("zzzzz-bi6l4-fakefakefake%03d", i)] = k.url
-		writableRoots[fmt.Sprintf("zzzzz-bi6l4-fakefakefake%03d", i)] = k.url
+		writableLocalRoots[fmt.Sprintf("zzzzz-bi6l4-fakefakefake%03d", i)] = k.url
 		defer k.listener.Close()
 	}
 
-	kc.SetServiceRoots(localRoots, nil, writableRoots)
+	kc.SetServiceRoots(localRoots, writableLocalRoots, nil)
 
 	_, replicas, err := kc.PutB([]byte("foo"))
 	<-st.handled
@@ -819,16 +819,16 @@ func (s *StandaloneSuite) TestPutProxyInsufficientReplicas(c *C) {
 	kc.Using_proxy = true
 	arv.ApiToken = "abc123"
 	localRoots := make(map[string]string)
-	writableRoots := make(map[string]string)
+	writableLocalRoots := make(map[string]string)
 
 	ks1 := RunSomeFakeKeepServers(st, 1)
 
 	for i, k := range ks1 {
 		localRoots[fmt.Sprintf("zzzzz-bi6l4-fakefakefake%03d", i)] = k.url
-		writableRoots[fmt.Sprintf("zzzzz-bi6l4-fakefakefake%03d", i)] = k.url
+		writableLocalRoots[fmt.Sprintf("zzzzz-bi6l4-fakefakefake%03d", i)] = k.url
 		defer k.listener.Close()
 	}
-	kc.SetServiceRoots(localRoots, nil, writableRoots)
+	kc.SetServiceRoots(localRoots, writableLocalRoots, nil)
 
 	_, replicas, err := kc.PutB([]byte("foo"))
 	<-st.handled
@@ -878,9 +878,7 @@ func (s *StandaloneSuite) TestMakeLocatorInvalidInput(c *C) {
 	c.Check(err, Equals, InvalidLocatorError)
 }
 
-func (s *StandaloneSuite) TestPutBWant2ReplicasWithOnlyOneWritableRoots(c *C) {
-	log.Printf("TestPutWant2ReplicasWithOnlyOneWritableRoots")
-
+func (s *StandaloneSuite) TestPutBWant2ReplicasWithOnlyOneWritableLocalRoot(c *C) {
 	hash := Md5String("foo")
 
 	st := StubPutHandler{
@@ -896,19 +894,19 @@ func (s *StandaloneSuite) TestPutBWant2ReplicasWithOnlyOneWritableRoots(c *C) {
 	kc.Want_replicas = 2
 	arv.ApiToken = "abc123"
 	localRoots := make(map[string]string)
-	writableRoots := make(map[string]string)
+	writableLocalRoots := make(map[string]string)
 
 	ks := RunSomeFakeKeepServers(st, 5)
 
 	for i, k := range ks {
 		localRoots[fmt.Sprintf("zzzzz-bi6l4-fakefakefake%03d", i)] = k.url
 		if i == 0 {
-			writableRoots[fmt.Sprintf("zzzzz-bi6l4-fakefakefake%03d", i)] = k.url
+			writableLocalRoots[fmt.Sprintf("zzzzz-bi6l4-fakefakefake%03d", i)] = k.url
 		}
 		defer k.listener.Close()
 	}
 
-	kc.SetServiceRoots(localRoots, nil, writableRoots)
+	kc.SetServiceRoots(localRoots, writableLocalRoots, nil)
 
 	_, replicas, err := kc.PutB([]byte("foo"))
 
@@ -916,13 +914,9 @@ func (s *StandaloneSuite) TestPutBWant2ReplicasWithOnlyOneWritableRoots(c *C) {
 	c.Check(replicas, Equals, 1)
 
 	c.Check(<-st.handled, Equals, localRoots[fmt.Sprintf("zzzzz-bi6l4-fakefakefake%03d", 0)])
-
-	log.Printf("TestPutWant2ReplicasWithOnlyOneWritableRoots done")
 }
 
-func (s *StandaloneSuite) TestPutBWithNoWritableRoots(c *C) {
-	log.Printf("TestPutBWithNoWritableRoots")
-
+func (s *StandaloneSuite) TestPutBWithNoWritableLocalRoots(c *C) {
 	hash := Md5String("foo")
 
 	st := StubPutHandler{
@@ -938,7 +932,7 @@ func (s *StandaloneSuite) TestPutBWithNoWritableRoots(c *C) {
 	kc.Want_replicas = 2
 	arv.ApiToken = "abc123"
 	localRoots := make(map[string]string)
-	writableRoots := make(map[string]string)
+	writableLocalRoots := make(map[string]string)
 
 	ks := RunSomeFakeKeepServers(st, 5)
 
@@ -947,12 +941,10 @@ func (s *StandaloneSuite) TestPutBWithNoWritableRoots(c *C) {
 		defer k.listener.Close()
 	}
 
-	kc.SetServiceRoots(localRoots, nil, writableRoots)
+	kc.SetServiceRoots(localRoots, writableLocalRoots, nil)
 
 	_, replicas, err := kc.PutB([]byte("foo"))
 
 	c.Check(err, Equals, InsufficientReplicasError)
 	c.Check(replicas, Equals, 0)
-
-	log.Printf("TestPutBWithNoWritableRoots done")
 }

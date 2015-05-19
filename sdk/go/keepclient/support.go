@@ -94,7 +94,7 @@ func (this *KeepClient) DiscoverKeepServers() error {
 	listed := make(map[string]bool)
 	localRoots := make(map[string]string)
 	gatewayRoots := make(map[string]string)
-	writableRoots := make(map[string]string)
+	writableLocalRoots := make(map[string]string)
 
 	for _, service := range m.Items {
 		scheme := "http"
@@ -118,7 +118,7 @@ func (this *KeepClient) DiscoverKeepServers() error {
 		}
 
 		if service.ReadOnly == false {
-			writableRoots[service.Uuid] = url
+			writableLocalRoots[service.Uuid] = url
 		}
 
 		// Gateway services are only used when specified by
@@ -135,7 +135,7 @@ func (this *KeepClient) DiscoverKeepServers() error {
 		this.setClientSettingsStore()
 	}
 
-	this.SetServiceRoots(localRoots, gatewayRoots, writableRoots)
+	this.SetServiceRoots(localRoots, writableLocalRoots, gatewayRoots)
 	return nil
 }
 
@@ -219,7 +219,7 @@ func (this KeepClient) putReplicas(
 	requestId := fmt.Sprintf("%x", md5.Sum([]byte(locator+time.Now().String())))[0:8]
 
 	// Calculate the ordering for uploading to servers
-	sv := NewRootSorter(this.WritableRoots(), hash).GetSortedRoots()
+	sv := NewRootSorter(this.WritableLocalRoots(), hash).GetSortedRoots()
 
 	// The next server to try contacting
 	next_server := 0

@@ -648,10 +648,7 @@ class KeepClient(object):
                     'uuid': 'proxy',
                     '_service_root': proxy,
                     }]
-                self._writable_services = [{
-                    'uuid': 'proxy',
-                    '_service_root': proxy,
-                    }]
+                self._writable_services = self._keep_services
                 self.using_proxy = True
                 self._static_services_list = True
             else:
@@ -759,7 +756,7 @@ class KeepClient(object):
         # for this locator, and return their service_roots (base URIs)
         # in that order.
         use_services = self._keep_services
-        if (need_writable == True):
+        if need_writable:
           use_services = self._writable_services
         sorted_roots.extend([
             svc['_service_root'] for svc in sorted(
