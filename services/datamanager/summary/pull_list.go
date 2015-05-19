@@ -24,23 +24,21 @@ func (l Locator) MarshalJSON() ([]byte, error) {
 }
 
 // One entry in the Pull List
-type PullListEntry struct {
+type PullRequest struct {
 	Locator Locator  `json:"locator"`
 	Servers []string `json:"servers"`
 }
 
 // The Pull List for a particular server
-type PullList struct {
-	Entries []PullListEntry `json:"blocks"`
-}
+type PullList []PullRequest
 
-// EntriesByDigest implements sort.Interface for []PullListEntry
-// based on the Digest.
-type EntriesByDigest []PullListEntry
+// PullListByDigest implements sort.Interface for PullList based on
+// the Digest.
+type PullListByDigest PullList
 
-func (a EntriesByDigest) Len() int      { return len(a) }
-func (a EntriesByDigest) Swap(i, j int) { a[i], a[j] = a[j], a[i] }
-func (a EntriesByDigest) Less(i, j int) bool {
+func (a PullListByDigest) Len() int      { return len(a) }
+func (a PullListByDigest) Swap(i, j int) { a[i], a[j] = a[j], a[i] }
+func (a PullListByDigest) Less(i, j int) bool {
 	di, dj := a[i].Locator.Digest, a[j].Locator.Digest
 	return di.H < dj.H || (di.H == dj.H && di.L < dj.L)
 }
@@ -138,11 +136,11 @@ func BuildPullLists(lps map[Locator]PullServers) (spl map[string]PullList) {
 		for _, destination := range pullServers.To {
 			pullList, pullListExists := spl[destination]
 			if !pullListExists {
-				pullList = PullList{Entries: []PullListEntry{}}
+				pullList = PullList{}
 				spl[destination] = pullList
 			}
-			pullList.Entries = append(pullList.Entries,
-				PullListEntry{Locator: locator, Servers: pullServers.From})
+			pullList = append(pullList,
+				PullRequest{Locator: locator, Servers: pullServers.From})
 			spl[destination] = pullList
 		}
 	}
