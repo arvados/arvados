@@ -21,6 +21,7 @@ function usage {
     echo >&2 "test     run tests"
     echo >&2
     echo >&2 "$0 options:"
+    echo >&2 "  -b[bridge], --bridge[=bridge] Docker bridge (default bridge docker0)"
     echo >&2 "  -d[port], --doc[=port]        Documentation server (default port 9898)"
     echo >&2 "  -w[port], --workbench[=port]  Workbench server (default port 9899)"
     echo >&2 "  -s[port], --sso[=port]        SSO server (default port 9901)"
@@ -43,7 +44,16 @@ function ip_address {
     echo `$DOCKER inspect $container  |grep IPAddress |cut -f4 -d\"`
 }
 
+function bridge_ip_address {
+    local bridge_name=$1
+    # FIXME: add a more robust check here.
+    # because ip command could be mising, multiple docker bridges could be there.. etc.
+    echo $(ip --oneline --family inet addr show dev "$bridge_name" | awk '{ print $4 }'| cut -d/ -f1 )
+}
+
 function start_container {
+    bridge_ip=$(bridge_ip_address "$bridge")
+
     local args="-d -i -t"
     if [[ "$1" != '' ]]; then
       local port="$1"
@@ -52,14 +62,14 @@ function start_container {
     if [[ "$2" != '' ]]; then
       local name="$2"
       if [[ "$name" == "api_server" ]]; then
-        args="$args --dns=172.17.42.1 --dns-search=compute.dev.arvados --hostname api -P --name $name"
+        args="$args --dns=$bridge_ip --dns-search=compute.dev.arvados --hostname api -P --name $name"
       elif [[ "$name" == "compute" ]]; then
         name=$name$COMPUTE_COUNTER
         # We need --privileged because we run docker-inside-docker on the compute nodes
-        args="$args --dns=172.17.42.1 --dns-search=compute.dev.arvados --hostname compute$COMPUTE_COUNTER -P --privileged --name $name"
+        args="$args --dns=$bridge_ip --dns-search=compute.dev.arvados --hostname compute$COMPUTE_COUNTER -P --privileged --name $name"
         let COMPUTE_COUNTER=$(($COMPUTE_COUNTER + 1))
       else
-        args="$args --dns=172.17.42.1 --dns-search=dev.arvados --hostname ${name#_server} --name $name"
+        args="$args --dns=$bridge_ip --dns-search=dev.arvados --hostname ${name#_server} --name $name"
       fi
     fi
     if [[ "$3" != '' ]]; then
@@ -72,14 +82,14 @@ function start_container {
     fi
     local image=$5
 
-    `$DOCKER ps |grep -P "$name[^/]" -q`
+    `$DOCKER ps |grep -E "\b$name\b" -q`
     if [[ "$?" == "0" ]]; then
       echo "You have a running container with name $name -- skipping."
       return
     fi
 
     echo "Starting container: $name"
-    `$DOCKER ps --all |grep -P "$name[^/]" -q`
+    `$DOCKER ps --all |grep -E "\b$name\b" -q`
     if [[ "$?" == "0" ]]; then
         echo "  $DOCKER start $name"
         container=`$DOCKER start $name`
@@ -99,7 +109,7 @@ function start_container {
 
 # Create a Docker data volume
 function make_keep_volumes () {
-    `$DOCKER ps --all |grep -P "keep_data[^/]" -q`
+    `$DOCKER ps --all |grep -E "\bkeep_data\b" -q`
     if [[ "$?" == "0" ]]; then
       return
     fi
@@ -116,11 +126,12 @@ function do_start {
     local start_nameserver=false
     local start_keep=false
     local start_keepproxy=false
+    local bridge="docker0"
     local
 
     # NOTE: This requires GNU getopt (part of the util-linux package on Debian-based distros).
-    local TEMP=`getopt -o d::s::a::cw::nkpvh \
-                  --long doc::,sso::,api::,compute,workbench::,nameserver,keep,keepproxy,vm,help \
+    local TEMP=`getopt -o d::s::b:a::cw::nkpvh \
+                  --long doc::,sso::,api::,bridge:,compute,workbench::,nameserver,keep,keepproxy,vm,help \
                   -n "$0" -- "$@"`
 
     if [ $? != 0 ] ; then echo "Use -h for help"; exit 1 ; fi
@@ -131,6 +142,11 @@ function do_start {
     while [ $# -ge 1 ]
     do
         case $1 in
+            -b | --bridge)
+                case "$2" in
+                    *)  start_bridge=$2; shift 2 ;;
+                esac
+                ;;
             -d | --doc)
                 case "$2" in
                     "") start_doc=9898; shift 2 ;;
@@ -215,10 +231,13 @@ function do_start {
       # so make sure they are running
       $DOCKER ps | grep skydns >/dev/null
       if [[ "$?" != "0" ]]; then
+        echo "Detecting bridge '$bridge' IP for crosbymichael/skydns"
+        bridge_ip=$(bridge_ip_address "$bridge")
+
         echo "Starting crosbymichael/skydns container..."
         $DOCKER rm "skydns" 2>/dev/null
-        echo $DOCKER run -d -p 172.17.42.1:53:53/udp --name skydns crosbymichael/skydns -nameserver 8.8.8.8:53 -domain arvados
-        $DOCKER run -d -p 172.17.42.1:53:53/udp --name skydns crosbymichael/skydns -nameserver 8.8.8.8:53 -domain arvados
+        echo $DOCKER run -d -p $bridge_ip:53:53/udp --name skydns crosbymichael/skydns -nameserver 8.8.8.8:53 -domain arvados
+        $DOCKER run -d -p $bridge_ip:53:53/udp --name skydns crosbymichael/skydns -nameserver 8.8.8.8:53 -domain arvados
       fi
       $DOCKER ps | grep skydock >/dev/null
       if [[ "$?" != "0" ]]; then
@@ -302,12 +321,12 @@ EOF
         fi
     fi
 
-    if [ "$(awk '($1 == "nameserver"){print $2; exit}' </etc/resolv.conf)" != "172.17.42.1" ]; then
+    if [ "$(awk '($1 == "nameserver"){print $2; exit}' </etc/resolv.conf)" != "$bridge_ip" ]; then
         echo
         echo "******************************************************************"
         echo "To access Arvados you must add the Arvados nameserver to the top"
         echo "of your DNS configuration in /etc/resolv.conf:"
-        echo "nameserver 172.17.42.1"
+        echo "nameserver $bridge_ip"
         echo
         echo "Then run '$0 start' again"
         echo "******************************************************************"
@@ -318,7 +337,7 @@ EOF
             sleep 1
         done
 
-        `$DOCKER ps |grep -P "doc_server[^/]" -q`
+        `$DOCKER ps |grep -E "\bdoc_server\b" -q`
         if [[ "$?" == "0" ]]; then
             echo
             echo "******************************************************************"
@@ -327,7 +346,7 @@ EOF
             echo
         fi
 
-        `$DOCKER ps |grep -P "workbench_server[^/]" -q`
+        `$DOCKER ps |grep -E "\bworkbench_server\b" -q`
         if [[ "$?" == "0" ]]; then
             echo
             echo "********************************************************************"
@@ -370,7 +389,7 @@ function do_stop {
             -a | --api)
                 stop_api=api_server ; shift ;;
             -c | --compute)
-                stop_compute=`$DOCKER ps |grep -P "compute\d+" |grep -v api_server |cut -f1 -d ' '` ; shift ;;
+                stop_compute=`$DOCKER ps |grep -E "\bcompute[0-9]+\b" |grep -v api_server |cut -f1 -d ' '` ; shift ;;
             -w | --workbench)
                 stop_workbench=workbench_server ; shift ;;
             -n | --nameserver )
@@ -406,7 +425,7 @@ function do_stop {
         stop_doc=doc_server
         stop_sso=sso_server
         stop_api=api_server
-        stop_compute=`$DOCKER ps |grep -P "compute\d+" |grep -v api_server |cut -f1 -d ' '`
+        stop_compute=`$DOCKER ps |grep -E "\bcompute[0-9]+\b" |grep -v api_server |cut -f1 -d ' '`
         stop_workbench=workbench_server
         stop_vm=shell
         stop_nameserver="skydock skydns"
@@ -452,12 +471,12 @@ function do_test {
 function do_reset {
     for name in skydock skydns workbench_server shell doc_server keepproxy_server keep_server_0 keep_server_1 compute0 compute1 api_server keepproxy keep_data
     do
-        `$DOCKER ps |grep -P "$name[^/]" -q`
+        `$DOCKER ps |grep -E "\b$name\b" -q`
         if [[ "$?" == "0" ]]; then
             echo "  $DOCKER stop $name"
             $DOCKER stop $name
         fi
-        `$DOCKER ps --all |grep -P "$name[^/]" -q`
+        `$DOCKER ps --all |grep -E "\b$name\b" -q`
         if [[ "$?" == "0" ]]; then
             echo "  $DOCKER rm $name"
             $DOCKER rm $name
