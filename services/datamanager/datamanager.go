@@ -130,7 +130,7 @@ func singlerun() {
 			fmt.Sprintf("Error setting up keep client %s", err.Error()))
 	}
 
-	pullServers := summary.ComputePullServers(&kc,
+	pullServers := summary.ComputePullServers(kc,
 		&keepServerInfo,
 		readCollections.BlockToReplication,
 		replicationSummary.UnderReplicatedBlocks)

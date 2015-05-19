@@ -84,7 +84,7 @@ func ComputePullServers(kc *keepclient.KeepClient,
 					serverHasBlock[sa.HostPort()] = struct{}{}
 				}
 
-				roots := keepclient.NewRootSorter(kc.ServiceRoots(),
+				roots := keepclient.NewRootSorter(kc.LocalRoots(),
 					block.String()).GetSortedRoots()
 
 				l := Locator{Digest: block}
