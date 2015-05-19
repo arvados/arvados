@@ -1,4 +1,4 @@
-package org.arvados.sdk.java;
+package org.arvados.sdk;
 
 import com.google.api.client.http.javanet.*;
 import com.google.api.client.http.ByteArrayContent;
