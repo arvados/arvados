@@ -147,8 +147,8 @@ public class Arvados {
       HttpRequest request =
           requestFactory.buildRequest(method.getHttpMethod(), url, content);
 
-      // Set read timeout to 45 seconds (up from default of 20 seconds)
-      request.setReadTimeout(45 * 1000);
+      // Set read timeout to 120 seconds (up from default of 20 seconds)
+      request.setReadTimeout(120 * 1000);
 
       // Add retry behavior
       request.setIOExceptionHandler(new HttpBackOffIOExceptionHandler(new ExponentialBackOff()));
