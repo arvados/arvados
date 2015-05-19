@@ -150,15 +150,15 @@ func (s *MySuite) TestBuildPullLists(c *C) {
 		BuildPullLists(map[Locator]PullServers{
 			locator1: PullServers{To: []string{"t1"}, From: []string{"f1", "f2"}}}),
 		PullListMapEquals,
-		map[string]PullList{"t1": PullList{
-			PullRequest{Locator: locator1, Servers: []string{"f1", "f2"}}}})
+		map[string]PullList{
+			"t1": PullList{PullRequest{locator1, []string{"f1", "f2"}}}})
 
 	c.Check(
 		BuildPullLists(map[Locator]PullServers{
 			locator1: PullServers{To: []string{"t1"}, From: []string{}}}),
 		PullListMapEquals,
 		map[string]PullList{"t1": PullList{
-			PullRequest{Locator: locator1, Servers: []string{}}}})
+			PullRequest{locator1, []string{}}}})
 
 	c.Check(
 		BuildPullLists(map[Locator]PullServers{
@@ -168,10 +168,8 @@ func (s *MySuite) TestBuildPullLists(c *C) {
 			}}),
 		PullListMapEquals,
 		map[string]PullList{
-			"t1": PullList{
-				PullRequest{Locator: locator1, Servers: []string{"f1", "f2"}}},
-			"t2": PullList{
-				PullRequest{Locator: locator1, Servers: []string{"f1", "f2"}}},
+			"t1": PullList{PullRequest{locator1, []string{"f1", "f2"}}},
+			"t2": PullList{PullRequest{locator1, []string{"f1", "f2"}}},
 		})
 
 	locator2 := Locator{Digest: blockdigest.MakeTestBlockDigest(0xCabbed)}
@@ -181,10 +179,8 @@ func (s *MySuite) TestBuildPullLists(c *C) {
 			locator2: PullServers{To: []string{"t2"}, From: []string{"f3", "f4"}}}),
 		PullListMapEquals,
 		map[string]PullList{
-			"t1": PullList{
-				PullRequest{Locator: locator1, Servers: []string{"f1", "f2"}}},
-			"t2": PullList{
-				PullRequest{Locator: locator2, Servers: []string{"f3", "f4"}}},
+			"t1": PullList{PullRequest{locator1, []string{"f1", "f2"}}},
+			"t2": PullList{PullRequest{locator2, []string{"f3", "f4"}}},
 		})
 
 	c.Check(
@@ -199,11 +195,11 @@ func (s *MySuite) TestBuildPullLists(c *C) {
 		PullListMapEquals,
 		map[string]PullList{
 			"t1": PullList{
-				PullRequest{Locator: locator1, Servers: []string{"f1", "f2"}},
-				PullRequest{Locator: locator2, Servers: []string{"f3", "f4"}},
+				PullRequest{locator1, []string{"f1", "f2"}},
+				PullRequest{locator2, []string{"f3", "f4"}},
 			},
 			"t2": PullList{
-				PullRequest{Locator: locator2, Servers: []string{"f3", "f4"}},
+				PullRequest{locator2, []string{"f3", "f4"}},
 			},
 		})
 
@@ -227,22 +223,22 @@ func (s *MySuite) TestBuildPullLists(c *C) {
 		PullListMapEquals,
 		map[string]PullList{
 			"t1": PullList{
-				PullRequest{Locator: locator1, Servers: []string{"f1", "f2"}},
-				PullRequest{Locator: locator2, Servers: []string{"f3", "f4"}},
-				PullRequest{Locator: locator3, Servers: []string{"f4", "f5"}},
-				PullRequest{Locator: locator4, Servers: []string{"f1", "f5"}},
+				PullRequest{locator1, []string{"f1", "f2"}},
+				PullRequest{locator2, []string{"f3", "f4"}},
+				PullRequest{locator3, []string{"f4", "f5"}},
+				PullRequest{locator4, []string{"f1", "f5"}},
 			},
 			"t2": PullList{
-				PullRequest{Locator: locator2, Servers: []string{"f3", "f4"}},
-				PullRequest{Locator: locator3, Servers: []string{"f4", "f5"}},
-				PullRequest{Locator: locator4, Servers: []string{"f1", "f5"}},
+				PullRequest{locator2, []string{"f3", "f4"}},
+				PullRequest{locator3, []string{"f4", "f5"}},
+				PullRequest{locator4, []string{"f1", "f5"}},
 			},
 			"t3": PullList{
-				PullRequest{Locator: locator3, Servers: []string{"f4", "f5"}},
-				PullRequest{Locator: locator4, Servers: []string{"f1", "f5"}},
+				PullRequest{locator3, []string{"f4", "f5"}},
+				PullRequest{locator4, []string{"f1", "f5"}},
 			},
 			"t4": PullList{
-				PullRequest{Locator: locator4, Servers: []string{"f1", "f5"}},
+				PullRequest{locator4, []string{"f1", "f5"}},
 			},
 		})
 }
