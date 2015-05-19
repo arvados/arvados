@@ -102,7 +102,7 @@ class ArvadosBase < ActiveRecord::Base
     # Only do one lookup on the API side per {class, uuid, workbench
     # request} unless {cache: false} is given via opts.
     cache_key = "request_#{Thread.current.object_id}_#{self.to_s}_#{uuid}"
-    if opts[:cache] == false
+    if false != opts[:cache]
       Rails.cache.write cache_key, arvados_api_client.api(self, '/' + uuid)
     end
     hash = Rails.cache.fetch cache_key do
