@@ -46,7 +46,7 @@ func PullItemAndProcess(pullRequest PullRequest, token string, keepClient *keepc
 	for _, addr := range pullRequest.Servers {
 		service_roots[addr] = addr
 	}
-	keepClient.SetServiceRoots(service_roots, nil)
+	keepClient.SetServiceRoots(service_roots, nil, nil)
 
 	// Generate signature with a random token
 	expires_at := time.Now().Add(60 * time.Second)
