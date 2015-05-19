@@ -87,6 +87,10 @@ func init() {
 
 // TODO(misha): Change this to include the UUID as well.
 func (s ServerAddress) String() string {
+	return s.HostPort()
+}
+
+func (s ServerAddress) HostPort() string {
 	return fmt.Sprintf("%s:%d", s.Host, s.Port)
 }
 
