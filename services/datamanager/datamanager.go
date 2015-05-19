@@ -4,7 +4,9 @@ package main
 
 import (
 	"flag"
+	"fmt"
 	"git.curoverse.com/arvados.git/sdk/go/arvadosclient"
+	"git.curoverse.com/arvados.git/sdk/go/keepclient"
 	"git.curoverse.com/arvados.git/sdk/go/logger"
 	"git.curoverse.com/arvados.git/sdk/go/util"
 	"git.curoverse.com/arvados.git/services/datamanager/collection"
@@ -121,6 +123,21 @@ func singlerun() {
 			rlbss.Levels,
 			rlbss.Count)
 	}
+
+	kc, err := keepclient.MakeKeepClient(&arv)
+	if err != nil {
+		loggerutil.FatalWithMessage(arvLogger,
+			fmt.Sprintf("Error setting up keep client %s", err.Error()))
+	}
+
+	pullServers := summary.ComputePullServers(&kc,
+		&keepServerInfo,
+		readCollections.BlockToReplication,
+		replicationSummary.UnderReplicatedBlocks)
+
+	pullLists := summary.BuildPullLists(pullServers)
+
+	summary.WritePullLists(arvLogger, pullLists)
 
 	// Log that we're finished. We force the recording, since go will
 	// not wait for the write timer before exiting.
