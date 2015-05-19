@@ -133,7 +133,23 @@ $(document).on('arv:pane:reload', '[data-pane-content-url]', function(e) {
             var $pane = this;
             var errhtml;
             var contentType = jqxhr.getResponseHeader('Content-Type');
-            if (contentType && contentType.match(/\btext\/html\b/)) {
+            if (jqxhr.readyState == 0 || jqxhr.status == 0) {
+                if ($pane.attr('data-loaded-at') > 0) {
+                    // Stale content is already present. Leave it
+                    // there while loading the next page.
+                    $pane.removeClass('pane-loading');
+                    $pane.addClass('pane-loaded');
+                    // ...but schedule another refresh (after a
+                    // throttle delay) in case the act of navigating
+                    // away gets cancelled itself, leaving this page
+                    // with content that we know is stale.
+                    $pane.addClass('pane-stale');
+                    $pane.attr('data-loaded-at', (new Date()).getTime());
+                    $pane.trigger('arv:pane:reload');
+                    return;
+                }
+                errhtml = "Cancelled.";
+            } else if (contentType && contentType.match(/\btext\/html\b/)) {
                 var $response = $(jqxhr.responseText);
                 var $wrapper = $('div#page-wrapper', $response);
                 if ($wrapper.length) {
