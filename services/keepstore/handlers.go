@@ -126,10 +126,6 @@ func GetBlockHandler(resp http.ResponseWriter, req *http.Request) {
 }
 
 func PutBlockHandler(resp http.ResponseWriter, req *http.Request) {
-	// Garbage collect after each PUT. Fixes #2865.
-	// See also GetBlockHandler.
-	defer runtime.GC()
-
 	hash := mux.Vars(req)["hash"]
 
 	// Detect as many error conditions as possible before reading
