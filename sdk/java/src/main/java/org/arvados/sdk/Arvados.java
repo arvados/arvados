@@ -1,8 +1,9 @@
-package org.arvados.sdk.java;
+package org.arvados.sdk;
 
 import com.google.api.client.http.javanet.*;
 import com.google.api.client.http.ByteArrayContent;
 import com.google.api.client.http.GenericUrl;
+import com.google.api.client.http.HttpBackOffIOExceptionHandler;
 import com.google.api.client.http.HttpContent;
 import com.google.api.client.http.HttpRequest;
 import com.google.api.client.http.HttpRequestFactory;
@@ -10,6 +11,7 @@ import com.google.api.client.http.HttpTransport;
 import com.google.api.client.http.UriTemplate;
 import com.google.api.client.json.JsonFactory;
 import com.google.api.client.json.jackson2.JacksonFactory;
+import com.google.api.client.util.ExponentialBackOff;
 import com.google.api.client.util.Maps;
 import com.google.api.services.discovery.Discovery;
 import com.google.api.services.discovery.model.JsonSchema;
@@ -33,10 +35,10 @@ import org.json.simple.JSONObject;
 
 /**
  * This class provides a java SDK interface to Arvados API server.
- * 
+ *
  * Please refer to http://doc.arvados.org/api/ to learn about the
  *  various resources and methods exposed by the API server.
- *  
+ *
  * @author radhika
  */
 public class Arvados {
@@ -79,7 +81,7 @@ public class Arvados {
     if (host != null) {
       arvadosApiHost = host;
     } else {
-      arvadosApiHost = System.getenv().get("ARVADOS_API_HOST");      
+      arvadosApiHost = System.getenv().get("ARVADOS_API_HOST");
       if (arvadosApiHost == null) {
         throw new Exception("Missing environment variable: ARVADOS_API_HOST");
       }
@@ -120,7 +122,7 @@ public class Arvados {
     HashMap<String, Object> parameters = loadParameters(paramsMap, method);
 
     GenericUrl url = new GenericUrl(UriTemplate.expand(
-        arvadosRootUrl + restDescription.getBasePath() + method.getPath(), 
+        arvadosRootUrl + restDescription.getBasePath() + method.getPath(),
         parameters, true));
 
     try {
@@ -144,6 +146,12 @@ public class Arvados {
 
       HttpRequest request =
           requestFactory.buildRequest(method.getHttpMethod(), url, content);
+
+      // Set read timeout to 120 seconds (up from default of 20 seconds)
+      request.setReadTimeout(120 * 1000);
+
+      // Add retry behavior
+      request.setIOExceptionHandler(new HttpBackOffIOExceptionHandler(new ExponentialBackOff()));
 
       // make the request
       List<String> authHeader = new ArrayList<String>();
@@ -212,7 +220,7 @@ public class Arvados {
               if (Boolean.TRUE.equals(required)) {
                 requiredParameters.add(property);
               } else {
-                optionalParameters.add(property);                
+                optionalParameters.add(property);
               }
             }
           }
@@ -282,7 +290,7 @@ public class Arvados {
     Map<String, RestMethod> methodMap = getMatchingMethodMap(resourceName);
 
     if (methodName == null) {
-      error("missing method name");      
+      error("missing method name");
     }
 
     RestMethod method =
@@ -297,7 +305,7 @@ public class Arvados {
   private Map<String, RestMethod> getMatchingMethodMap(String resourceName)
       throws Exception {
     if (resourceName == null) {
-      error("missing resource name");      
+      error("missing resource name");
     }
 
     Map<String, RestMethod> methodMap = null;

@@ -518,7 +518,8 @@ CREATE TABLE keep_services (
     service_ssl_flag boolean,
     service_type character varying(255),
     created_at timestamp without time zone NOT NULL,
-    updated_at timestamp without time zone NOT NULL
+    updated_at timestamp without time zone NOT NULL,
+    read_only boolean DEFAULT false NOT NULL
 );
 
 
@@ -2377,3 +2378,5 @@ INSERT INTO schema_migrations (version) VALUES ('20150317132720');
 INSERT INTO schema_migrations (version) VALUES ('20150324152204');
 
 INSERT INTO schema_migrations (version) VALUES ('20150423145759');
+
+INSERT INTO schema_migrations (version) VALUES ('20150512193020');

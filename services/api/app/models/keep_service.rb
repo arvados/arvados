@@ -8,6 +8,7 @@ class KeepService < ArvadosModel
     t.add  :service_port
     t.add  :service_ssl_flag
     t.add  :service_type
+    t.add  :read_only
   end
   api_accessible :superuser, :extend => :user do |t|
   end
