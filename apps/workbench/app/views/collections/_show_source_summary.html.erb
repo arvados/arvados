@@ -32,7 +32,7 @@
 <% if @log_of.andand.any? %>
   <p><i>This collection contains log messages from:</i><br />
     <%= render_arvados_object_list_start(@log_of, 'Show all jobs',
-                                         jobs_path(filters: [['log', '=', @object.uuid]].to_json)) do |job| %>
+                                         jobs_path(filters: [['log', '=', @object.portable_data_hash]].to_json)) do |job| %>
       <%= link_to_if_arvados_object(job, friendly_name: true) %><br />
     <% end %>
   </p>
