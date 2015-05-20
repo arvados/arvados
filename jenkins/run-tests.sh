@@ -135,6 +135,7 @@ report_outcomes() {
 
 exit_cleanly() {
     trap - INT
+    create-plot-data-from-log.sh $BUILD_NUMBER "$WORKSPACE/apps/workbench/log/test.log" "$WORKSPACE/apps/workbench/log/"
     rotate_logfile "$WORKSPACE/apps/workbench/log/" "test.log"
     stop_services
     rotate_logfile "$WORKSPACE/services/api/log/" "test.log"
@@ -190,7 +191,6 @@ rotate_logfile() {
   if [[ -f "$1/$2" ]]; then
     THEDATE=`date +%Y%m%d%H%M%S`
     mv "$1/$2" "$1/$THEDATE-$BUILD_NUMBER-$2"
-    ./create-plot-data-from-log.sh $BUILD_NUMBER "$1/$THEDATE-$BUILD_NUMBER-$2" "$1"
     gzip "$1/$THEDATE-$BUILD_NUMBER-$2"
   fi
 }
