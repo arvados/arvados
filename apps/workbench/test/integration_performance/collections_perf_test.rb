@@ -1,10 +1,15 @@
 require 'integration_helper'
 
+# The tests in the "integration_performance" dir are not included in regular
+#   build pipeline since it is not one of the "standard" test directories.
+#
+# To run tests in this directory use the following command:
+# ./run-tests.sh WORKSPACE=~/arvados --only apps/workbench apps/workbench_test="TEST=test/integration_performance/*.rb"
+#
+
 class CollectionsPerfTest < ActionDispatch::IntegrationTest
   setup do
     Capybara.current_driver = :rack_test
-
-    skip "ENV variable RUN_INTG_PERF_TESTS with value 'y' is not found" if !ENV["RUN_INTG_PERF_TESTS"].andand.start_with? 'y'
   end
 
   def create_large_collection size, file_name_prefix
