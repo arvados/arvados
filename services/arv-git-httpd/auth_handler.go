@@ -9,6 +9,7 @@ import (
 	"sync"
 	"time"
 
+	"git.curoverse.com/arvados.git/sdk/go/auth"
 	"git.curoverse.com/arvados.git/sdk/go/arvadosclient"
 )
 
@@ -40,7 +41,7 @@ type authHandler struct {
 func (h *authHandler) ServeHTTP(wOrig http.ResponseWriter, r *http.Request) {
 	var statusCode int
 	var statusText string
-	var username, password string
+	var apiToken string
 	var repoName string
 	var wroteStatus int
 	var validApiToken bool
@@ -49,7 +50,8 @@ func (h *authHandler) ServeHTTP(wOrig http.ResponseWriter, r *http.Request) {
 
 	defer func() {
 		if wroteStatus == 0 {
-			// Nobody has called WriteHeader yet: that must be our job.
+			// Nobody has called WriteHeader yet: that
+			// must be our job.
 			w.WriteHeader(statusCode)
 			w.Write([]byte(statusText))
 		}
@@ -58,24 +60,23 @@ func (h *authHandler) ServeHTTP(wOrig http.ResponseWriter, r *http.Request) {
 		// Otherwise: log the string <invalid> if a password is given, else an empty string.
 		passwordToLog := ""
 		if !validApiToken {
-			if len(password) > 0 {
+			if len(apiToken) > 0 {
 				passwordToLog = "<invalid>"
 			}
 		} else {
-			passwordToLog = password[0:10]
+			passwordToLog = apiToken[0:10]
 		}
 
-		log.Println(quoteStrings(r.RemoteAddr, username, passwordToLog, wroteStatus, statusText, repoName, r.Method, r.URL.Path)...)
+		log.Println(quoteStrings(r.RemoteAddr, passwordToLog, wroteStatus, statusText, repoName, r.Method, r.URL.Path)...)
 	}()
 
-	// HTTP request username is logged, but unused. Password is an
-	// Arvados API token.
-	username, password, ok := BasicAuth(r)
-	if !ok || username == "" || password == "" {
+	creds := auth.NewCredentialsFromHTTPRequest(r)
+	if len(creds.Tokens) == 0 {
 		statusCode, statusText = http.StatusUnauthorized, "no credentials provided"
 		w.Header().Add("WWW-Authenticate", "Basic realm=\"git\"")
 		return
 	}
+	apiToken = creds.Tokens[0]
 
 	// Access to paths "/foo/bar.git/*" and "/foo/bar/.git/*" are
 	// protected by the permissions on the repository named
@@ -97,7 +98,7 @@ func (h *authHandler) ServeHTTP(wOrig http.ResponseWriter, r *http.Request) {
 
 	// Ask API server whether the repository is readable using
 	// this token (by trying to read it!)
-	arv.ApiToken = password
+	arv.ApiToken = apiToken
 	reposFound := arvadosclient.Dict{}
 	if err := arv.List("repositories", arvadosclient.Dict{
 		"filters": [][]string{{"name", "=", repoName}},
