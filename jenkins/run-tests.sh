@@ -111,7 +111,7 @@ clear_temp() {
 
 fatal() {
     clear_temp
-    echo >&2 "Fatal: $* in ${FUNCNAME[1]} at ${BASH_SOURCE[1]} line ${BASH_LINENO[0]}"
+    echo >&2 "Fatal: $* (encountered in ${FUNCNAME[1]} at ${BASH_SOURCE[1]} line ${BASH_LINENO[0]})"
     exit 1
 }
 
@@ -144,44 +144,27 @@ exit_cleanly() {
 }
 
 sanity_checks() {
-  # Make sure WORKSPACE is set
-  if ! [[ -n "$WORKSPACE" ]]; then
-    echo >&2 "$helpmessage"
-    echo >&2
-    echo >&2 "Error: WORKSPACE environment variable not set"
-    echo >&2
-    exit 1
-  fi
-
-  # Make sure virtualenv is installed
-  `virtualenv --help >/dev/null 2>&1`
-
-  if [[ "$?" != "0" ]]; then
-    echo >&2
-    echo >&2 "Error: virtualenv could not be found"
-    echo >&2
-    exit 1
-  fi
-
-  # Make sure go is installed
-  `go env >/dev/null 2>&1`
-
-  if [[ "$?" != "0" ]]; then
-    echo >&2
-    echo >&2 "Error: go could not be found"
-    echo >&2
-    exit 1
-  fi
-
-  # Make sure gcc is installed
-  `gcc --help >/dev/null 2>&1`
-
-  if [[ "$?" != "0" ]]; then
-    echo >&2
-    echo >&2 "Error: gcc could not be found"
-    echo >&2
-    exit 1
-  fi
+    ( [[ -n "$WORKSPACE" ]] && [[ -d "$WORKSPACE/services" ]] ) \
+        || fatal "WORKSPACE environment variable not set to a source directory (see: $0 --help)"
+    echo Checking dependencies:
+    echo -n 'virtualenv: '
+    virtualenv --version \
+        || fatal "No virtualenv. Try: apt-get install virtualenv"
+    echo -n 'go: '
+    go version \
+        || fatal "No go binary. See http://golang.org/doc/install"
+    echo -n 'gcc: '
+    gcc --version | egrep ^gcc \
+        || fatal "No gcc. Try: apt-get install build-essential"
+    echo -n 'fuse.h: '
+    find /usr/include -wholename '*fuse/fuse.h' \
+        || fatal "No fuse/fuse.h. Try: apt-get install libfuse-dev"
+    echo -n 'pyconfig.h: '
+    find /usr/include -name pyconfig.h | egrep --max-count=1 . \
+        || fatal "No pyconfig.h. Try: apt-get install python-dev"
+    echo -n 'nginx: '
+    PATH="$PATH:/sbin:/usr/sbin:/usr/local/sbin" nginx -v \
+        || fatal "No nginx. Try: apt-get install nginx"
 }
 
 rotate_logfile() {
