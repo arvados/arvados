@@ -156,7 +156,7 @@ build_and_scp_deb () {
       # fpm's command line later.
       PACKAGE_TYPE=python
       set -- "$@" --python-bin python3 --python-easyinstall easy_install3 \
-          --python-package-name-prefix python3
+          --python-package-name-prefix python3 --depends python3
   fi
   # Optional: the package version number.  Passed to fpm -v.
   VERSION=$1
@@ -483,7 +483,11 @@ for deppkg in python-gflags pyvcf google-api-python-client oauth2client \
       pycrypto backports.ssl_match_hostname; do
     build_and_scp_deb "$deppkg"
 done
-build_and_scp_deb docker-py python3-docker-py python3
+# Python 3 dependencies
+for deppkg in docker-py six requests; do
+    # The empty string is the vendor argument: these aren't Curoverse software.
+    build_and_scp_deb "$deppkg" "python3-$deppkg" "" python3
+done
 
 # cwltool from common-workflow-language. We use this in arv-run-pipeline-instance.
 # We use $WORKSPACE/common-workflow-language as the clean directory from which to build the cwltool package
