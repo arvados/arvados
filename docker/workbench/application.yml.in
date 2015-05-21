@@ -15,8 +15,8 @@ common:
   secret_token: @@WORKBENCH_SECRET@@
 
   # You probably also want to point to your API server.
-  arvados_login_base: 'https://api.dev.arvados/login'
-  arvados_v1_base: 'https://api.dev.arvados/arvados/v1'
+  arvados_login_base: 'https://api.@@ARVADOS_DOMAIN@@/login'
+  arvados_v1_base: 'https://api.@@ARVADOS_DOMAIN@@/arvados/v1'
   arvados_insecure_https: @@WORKBENCH_INSECURE_HTTPS@@
 
   data_import_dir: @@WORKBENCH_DATA_IMPORT_DIR@@
@@ -24,3 +24,5 @@ common:
 
   site_name: @@WORKBENCH_SITE_NAME@@
   activation_contact_link: @@WORKBENCH_ACTIVATION_CONTACT_LINK@@
+
+  arvados_docsite: http://doc.@@ARVADOS_DOMAIN@@

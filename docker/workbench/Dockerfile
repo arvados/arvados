@@ -28,10 +28,10 @@ ADD generated/apache2_vhost /etc/apache2/sites-available/workbench
 RUN \
   a2dissite default && \
   a2ensite workbench && \
-  a2enmod rewrite
+  a2enmod rewrite && \
+  /bin/mkdir /var/run/apache2
 
 ADD apache2_foreground.sh /etc/apache2/foreground.sh
 
 # Start Apache
 CMD ["/etc/apache2/foreground.sh"]
-

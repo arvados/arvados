@@ -10,6 +10,8 @@ CURL=`which curl`
 
 COMPUTE_COUNTER=0
 
+ARVADOS_DOMAIN=dev.arvados
+
 function usage {
     echo >&2
     echo >&2 "usage: $0 (start|stop|restart|reset|test) [options]"
@@ -62,14 +64,14 @@ function start_container {
     if [[ "$2" != '' ]]; then
       local name="$2"
       if [[ "$name" == "api_server" ]]; then
-        args="$args --dns=$bridge_ip --dns-search=compute.dev.arvados --hostname api -P --name $name"
+        args="$args --dns=$bridge_ip --dns-search=compute.$ARVADOS_DOMAIN --hostname api -P --name $name"
       elif [[ "$name" == "compute" ]]; then
         name=$name$COMPUTE_COUNTER
         # We need --privileged because we run docker-inside-docker on the compute nodes
-        args="$args --dns=$bridge_ip --dns-search=compute.dev.arvados --hostname compute$COMPUTE_COUNTER -P --privileged --name $name"
+        args="$args --dns=$bridge_ip --dns-search=compute.$ARVADOS_DOMAIN --hostname compute$COMPUTE_COUNTER -P --privileged --name $name"
         let COMPUTE_COUNTER=$(($COMPUTE_COUNTER + 1))
       else
-        args="$args --dns=$bridge_ip --dns-search=dev.arvados --hostname ${name#_server} --name $name"
+        args="$args --dns=$bridge_ip --dns-search=$ARVADOS_DOMAIN --hostname ${name#_server} --name $name"
       fi
     fi
     if [[ "$3" != '' ]]; then
@@ -214,12 +216,11 @@ function do_start {
           $start_keepproxy == false ]]
     then
         start_doc=9898
-        #the sso server is currently not used by default so don't start it unless explicitly requested
-        #start_sso=9901
+        start_sso=9901
         start_api=9900
         start_compute=2
         start_workbench=9899
-        start_vm=true
+        #start_vm=true
         start_nameserver=true
         start_keep=true
         start_keepproxy=true
@@ -227,10 +228,26 @@ function do_start {
 
     if [[ $start_nameserver != false ]]
     then
+      $DOCKER ps | grep skydns >/dev/null
+      need_skydns="$?"
+
+      $DOCKER ps | grep skydock >/dev/null
+      need_skydock="$?"
+
+      if [[ "$need_skydns" != 0 || "$need_skydock" != 0 ]]
+      then
+          # skydns and skydock need to both be running before everything else.
+          # If they are not running we need to shut everything down and start
+          # over, otherwise DNS will be broken and the containers won't find each other.
+          do_stop
+          need_skydns=1
+          need_skydock=1
+      fi
+
       # We rely on skydock and skydns for dns discovery between the slurm controller and compute nodes,
       # so make sure they are running
       $DOCKER ps | grep skydns >/dev/null
-      if [[ "$?" != "0" ]]; then
+      if [[ $need_skydns != "0" ]]; then
         echo "Detecting bridge '$bridge' IP for crosbymichael/skydns"
         bridge_ip=$(bridge_ip_address "$bridge")
 
@@ -240,7 +257,7 @@ function do_start {
         $DOCKER run -d -p $bridge_ip:53:53/udp --name skydns crosbymichael/skydns -nameserver 8.8.8.8:53 -domain arvados
       fi
       $DOCKER ps | grep skydock >/dev/null
-      if [[ "$?" != "0" ]]; then
+      if [[ "$need_skydock" != "0" ]]; then
         echo "Starting crosbymichael/skydock container..."
         $DOCKER rm "skydock" 2>/dev/null
         echo $DOCKER run -d -v /var/run/docker.sock:/docker.sock --name skydock crosbymichael/skydock -ttl 30 -environment dev -s /docker.sock -domain arvados -name skydns
@@ -303,7 +320,7 @@ function do_start {
 
     if [[ $start_workbench != false ]]
     then
-        start_container "$start_workbench:80" "workbench_server" '' "api_server:api" "arvados/workbench"
+        start_container "" "workbench_server" '' "" "arvados/workbench"
     fi
 
     if [[ $start_api != false ]]
@@ -332,7 +349,7 @@ EOF
         echo "******************************************************************"
         echo
     else
-        while ! $CURL -L -f http://workbench.dev.arvados >/dev/null 2>/dev/null ; do
+        while ! $CURL -k -L -f http://workbench.$ARVADOS_DOMAIN >/dev/null 2>/dev/null ; do
             echo "Waiting for Arvados to be ready."
             sleep 1
         done
@@ -341,7 +358,7 @@ EOF
         if [[ "$?" == "0" ]]; then
             echo
             echo "******************************************************************"
-            echo "You can access the Arvados documentation at http://doc.dev.arvados"
+            echo "You can access the Arvados documentation at http://doc.$ARVADOS_DOMAIN"
             echo "******************************************************************"
             echo
         fi
@@ -350,7 +367,7 @@ EOF
         if [[ "$?" == "0" ]]; then
             echo
             echo "********************************************************************"
-            echo "You can access the Arvados workbench at http://workbench.dev.arvados"
+            echo "You can access the Arvados workbench at http://workbench.$ARVADOS_DOMAIN"
             echo "********************************************************************"
             echo
         fi
@@ -469,7 +486,7 @@ function do_test {
 }
 
 function do_reset {
-    for name in skydock skydns workbench_server shell doc_server keepproxy_server keep_server_0 keep_server_1 compute0 compute1 api_server keepproxy keep_data
+    for name in skydock skydns workbench_server shell doc_server keepproxy_server keep_server_0 keep_server_1 compute0 compute1 api_server keepproxy keep_data sso_server
     do
         `$DOCKER ps |grep -E "\b$name\b" -q`
         if [[ "$?" == "0" ]]; then
