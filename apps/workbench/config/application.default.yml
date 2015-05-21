@@ -88,7 +88,7 @@ test:
   action_controller.allow_forgery_protection: false
   action_mailer.delivery_method: :test
   active_support.deprecation: :stderr
-  profiling_enabled: false
+  profiling_enabled: true
   secret_token: <%= rand(2**256).to_s(36) %>
   secret_key_base: <%= rand(2**256).to_s(36) %>
 
