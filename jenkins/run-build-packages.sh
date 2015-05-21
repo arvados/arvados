@@ -149,18 +149,18 @@ build_and_scp_deb () {
   # The type of source package.  Passed to fpm -s.  Default "python".
   PACKAGE_TYPE=${1:-python}
   shift
+  # Optional: the package version number.  Passed to fpm -v.
+  VERSION=$1
+  shift
 
+  # fpm does not actually support a python3 package type.  Instead we recognize
+  # it as a convenience shortcut to add several necessary arguments to
+  # fpm's command line later, after we're done handling positional arguments.
   if [ "python3" = "$PACKAGE_TYPE" ]; then
-      # fpm does not actually support this package type.  Instead we recognize
-      # it as a convenience shortcut to add several necessary arguments to
-      # fpm's command line later.
       PACKAGE_TYPE=python
       set -- "$@" --python-bin python3 --python-easyinstall easy_install3 \
           --python-package-name-prefix python3 --depends python3
   fi
-  # Optional: the package version number.  Passed to fpm -v.
-  VERSION=$1
-  shift
 
   declare -a COMMAND_ARR=("fpm" "--maintainer=Ward Vandewege <ward@curoverse.com>" "-s" "$PACKAGE_TYPE" "-t" "deb" "-x" "usr/local/lib/python2.7/dist-packages/tests")
 

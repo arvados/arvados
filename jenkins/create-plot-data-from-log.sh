@@ -12,7 +12,7 @@ usage() {
 
 if [ $# -ne 3 ]
 then
-    usage 
+    usage
     exit 1
 fi
 
@@ -33,7 +33,7 @@ fi
 ## MAXLINE is the amount of lines that will read after the pattern
 ## is match (the logfile could be hundred thousands lines long).
 ## 1000 should be safe enough to capture all the output of the individual test
-MAXLINES=1000 
+MAXLINES=1000
 
 ## TODO: check $build and $file make sense
 
@@ -46,12 +46,14 @@ do
  (zgrep -i -E -A$MAXLINES "^[A-Za-z0-9]+Test: $test" $file && echo "----") | tail -n +1 | tail --lines=+3|grep -B$MAXLINES -E "^-*$" -m1 > $outputdir/$cleaned_test-$build.txt
  result=$?
  if [ $result -eq 0 ]
- then 
+ then
    echo processing  $outputdir/$cleaned_test-$build.txt creating  $outputdir/$cleaned_test.csv
    echo $(grep ^Completed $outputdir/$cleaned_test-$build.txt | perl -n -e '/^Completed (.*) in [0-9]+ms.*$/;print "".++$line."-$1,";' | perl -p -e 's/,$//g'|tr " " "_" ) >  $outputdir/$cleaned_test.csv
    echo $(grep ^Completed $outputdir/$cleaned_test-$build.txt | perl -n -e '/^Completed.*in ([0-9]+)ms.*$/;print "$1,";' | perl -p -e 's/,$//g' ) >>  $outputdir/$cleaned_test.csv
    #echo URL=https://ci.curoverse.com/view/job/arvados-api-server/ws/apps/workbench/log/$cleaned_test-$build.txt/*view*/ >>  $outputdir/$test.properties
- else  
+ else
    echo "$test was't found on $file"
+   cleaned_test=$(echo $test | tr -d ",.:;/")
+   >  $outputdir/$cleaned_test.csv
  fi
 done
