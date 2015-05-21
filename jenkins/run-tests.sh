@@ -370,10 +370,6 @@ ln -sfn "$WORKSPACE" "$GOPATH/src/git.curoverse.com/arvados.git" \
 virtualenv --setuptools "$VENVDIR" || fatal "virtualenv $VENVDIR failed"
 . "$VENVDIR/bin/activate"
 
-# When re-using $VENVDIR, upgrade any packages (except arvados) that are
-# already installed
-pip install --quiet --upgrade `pip freeze | grep -v arvados | cut -f1 -d=`
-
 # Note: this must be the last time we change PATH, otherwise rvm will
 # whine a lot.
 setup_ruby_environment
@@ -386,8 +382,9 @@ then
 fi
 
 # Needed for run_test_server.py which is used by certain (non-Python) tests.
-echo "pip install -q PyYAML"
-pip install --quiet PyYAML || fatal "pip install PyYAML failed"
+pip freeze 2>/dev/null | egrep ^PyYAML= \
+    || pip install PyYAML \
+    || fatal "pip install PyYAML failed"
 
 # If Python 3 is available, set up its virtualenv in $VENV3DIR.
 # Otherwise, skip dependent tests.
