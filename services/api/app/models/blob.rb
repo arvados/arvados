@@ -91,7 +91,7 @@ class Blob
     if !timestamp.match /^[\da-f]+$/
       raise Blob::InvalidSignatureError.new 'Timestamp is not a base16 number.'
     end
-    if timestamp.to_i(16) < db_current_time.to_i
+    if timestamp.to_i(16) < (opts[:now] or db_current_time.to_i)
       raise Blob::InvalidSignatureError.new 'Signature expiry time has passed.'
     end
 

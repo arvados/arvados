@@ -1,6 +1,7 @@
 require 'arvados/keep'
 
 class Collection < ArvadosModel
+  extend DbCurrentTime
   include HasUuid
   include KindAndEtag
   include CommonApiTemplate
@@ -60,7 +61,7 @@ class Collection < ArvadosModel
       signing_opts = {
         key: Rails.configuration.blob_signing_key,
         api_token: api_token,
-        ttl: Rails.configuration.blob_signature_ttl,
+        now: db_current_time.to_i,
       }
       self.manifest_text.lines.each do |entry|
         entry.split[1..-1].each do |tok|
@@ -195,7 +196,7 @@ class Collection < ArvadosModel
     signing_opts = {
       key: Rails.configuration.blob_signing_key,
       api_token: token,
-      ttl: Rails.configuration.blob_signature_ttl,
+      expire: db_current_time.to_i + Rails.configuration.blob_signature_ttl,
     }
     m = manifest.dup
     munge_manifest_locators!(m) do |loc|
