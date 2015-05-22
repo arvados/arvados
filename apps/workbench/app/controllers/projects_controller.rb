@@ -1,8 +1,8 @@
 class ProjectsController < ApplicationController
-  before_filter :set_share_links, if: -> { defined? @object }
+  before_filter :set_share_links, if: -> { defined? @object and @object}
   skip_around_filter :require_thread_api_token, if: proc { |ctrl|
     Rails.configuration.anonymous_user_token and
-    %w(show tab_counts).include? ctrl.action_name
+    %w(show tab_counts public).include? ctrl.action_name
   }
 
   def model_class
@@ -306,5 +306,16 @@ class ProjectsController < ApplicationController
       end
     end
     objects_and_names
+  end
+
+  def public  # Yes 'public' is the name of the action for public projects
+    if Rails.configuration.anonymous_user_token
+      @public_projects = using_specific_api_token Rails.configuration.anonymous_user_token do
+        Group.where(group_class: 'project').order("updated_at DESC")
+      end
+      render 'public_projects'
+    else
+      redirect_to '/projects'
+    end
   end
 end

@@ -35,6 +35,7 @@ class AnonymousAccessTest < ActionDispatch::IntegrationTest
         assert_text Rails.configuration.site_name.downcase
         assert_no_selector 'a', text: Rails.configuration.site_name.downcase
         assert_selector 'a', text: 'Log in'
+        assert_selector 'a', text: 'Browse public projects'
       end
     end
   end
