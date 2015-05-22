@@ -1983,6 +1983,12 @@ open L, ">", "$destdir.lock" or die "$destdir.lock: $!";
 flock L, LOCK_EX;
 if (readlink ("$destdir.commit") eq $commit && -d $destdir) {
   # This version already installed -> nothing to do.
+
+  # We must consume our DATA section, though: otherwise the process
+  # feeding it to us will get SIGPIPE.
+  my $buf;
+  while (read(DATA, $buf, 65536)) { }
+
   exit(0);
 }
 
