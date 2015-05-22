@@ -1,3 +1,4 @@
+import collections
 import httplib2
 import json
 import logging
@@ -13,6 +14,26 @@ import errors
 import util
 
 _logger = logging.getLogger('arvados.api')
+
+class OrderedJsonModel(apiclient.model.JsonModel):
+    """Model class for JSON that preserves the contents' order.
+
+    API clients that care about preserving the order of fields in API
+    server responses can use this model to do so, like this::
+
+        from arvados.api import OrderedJsonModel
+        client = arvados.api('v1', ..., model=OrderedJsonModel())
+    """
+
+    def deserialize(self, content):
+        # This is a very slightly modified version of the parent class'
+        # implementation.  Copyright (c) 2010 Google.
+        content = content.decode('utf-8')
+        body = json.loads(content, object_pairs_hook=collections.OrderedDict)
+        if self._data_wrapper and isinstance(body, dict) and 'data' in body:
+            body = body['data']
+        return body
+
 
 def _intercept_http_request(self, uri, **kwargs):
     from httplib import BadStatusLine

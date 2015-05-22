@@ -32,6 +32,8 @@ import arvados.util
 import arvados.commands._util as arv_cmd
 import arvados.commands.keepdocker
 
+from arvados.api import OrderedJsonModel
+
 logger = logging.getLogger('arvados.arv-copy')
 
 # local_repo_dir records which git repositories from the Arvados source
@@ -180,7 +182,8 @@ def api_for_instance(instance_name):
         client = arvados.api('v1',
                              host=cfg['ARVADOS_API_HOST'],
                              token=cfg['ARVADOS_API_TOKEN'],
-                             insecure=api_is_insecure)
+                             insecure=api_is_insecure,
+                             model=OrderedJsonModel())
     else:
         abort('need ARVADOS_API_HOST and ARVADOS_API_TOKEN for {}'.format(instance_name))
     return client
