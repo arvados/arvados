@@ -125,7 +125,7 @@ title "uploading images"
 
 timer_reset
 
-if [[ ! "$ECODE" == "0" ]]; then
+if [[ "$ECODE" != "0" ]]; then
     title "upload arvados images SKIPPED because build failed"
 else
     if [[ $upload == true ]]; then 
@@ -160,7 +160,7 @@ title "docker build java-bwa-samtools complete (`timer`)"
 
 timer_reset
 
-if [[ ! "$ECODE" == "0" ]]; then
+if [[ "$ECODE" != "0" ]]; then
     title "upload arvados/jobs image SKIPPED because build failed"
 else
     if [[ $upload == true ]]; then 
