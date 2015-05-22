@@ -34,6 +34,7 @@ function usage {
     echo >&2 "  -k, --keep                    Keep servers"
     echo >&2 "  -p, --keepproxy               Keepproxy server"
     echo >&2 "  -h, --help                    Display this help and exit"
+    echo >&2 "      --domain=dns.domain       DNS domain used by containers (default dev.arvados)"
     echo >&2
     echo >&2 "  If no options are given, the action is applied to all servers."
     echo >&2
@@ -133,7 +134,7 @@ function do_start {
 
     # NOTE: This requires GNU getopt (part of the util-linux package on Debian-based distros).
     local TEMP=`getopt -o d::s::b:a::cw::nkpvh \
-                  --long doc::,sso::,api::,bridge:,compute,workbench::,nameserver,keep,keepproxy,vm,help \
+                  --long doc::,sso::,api::,bridge:,compute,workbench::,nameserver,keep,keepproxy,vm,help,domain:: \
                   -n "$0" -- "$@"`
 
     if [ $? != 0 ] ; then echo "Use -h for help"; exit 1 ; fi
@@ -192,6 +193,11 @@ function do_start {
             -p | --keepproxy)
                 start_keepproxy=true
                 shift
+                ;;
+            --domain)
+                case "$2" in
+                    *) ARVADOS_DOMAIN="$2"; shift 2 ;;
+                esac
                 ;;
             --)
                 shift
@@ -388,7 +394,7 @@ function do_stop {
 
     # NOTE: This requires GNU getopt (part of the util-linux package on Debian-based distros).
     local TEMP=`getopt -o dsacwnkpvh \
-                  --long doc,sso,api,compute,workbench,nameserver,keep,keepproxy,vm,help \
+                  --long doc,sso,api,compute,workbench,nameserver,keep,keepproxy,vm,help,domain:: \
                   -n "$0" -- "$@"`
 
     if [ $? != 0 ] ; then echo "Use -h for help"; exit 1 ; fi
@@ -417,6 +423,11 @@ function do_stop {
                 stop_keep="keep_server_0 keep_server_1" ; shift ;;
             -p | --keepproxy )
                 stop_keep="keepproxy_server" ; shift ;;
+            --domain)
+                case "$2" in
+                    *) ARVADOS_DOMAIN="$2"; shift 2 ;;
+                esac
+                ;;
             --)
                 shift
                 break

@@ -432,8 +432,8 @@ CREATE TABLE jobs (
     docker_image_locator character varying(255),
     priority integer DEFAULT 0 NOT NULL,
     description character varying(524288),
-    arvados_sdk_version character varying(255),
-    state character varying(255)
+    state character varying(255),
+    arvados_sdk_version character varying(255)
 );
 
 
@@ -2326,6 +2326,8 @@ INSERT INTO schema_migrations (version) VALUES ('20140709172343');
 INSERT INTO schema_migrations (version) VALUES ('20140714184006');
 
 INSERT INTO schema_migrations (version) VALUES ('20140811184643');
+
+INSERT INTO schema_migrations (version) VALUES ('20140815171049');
 
 INSERT INTO schema_migrations (version) VALUES ('20140817035914');
 

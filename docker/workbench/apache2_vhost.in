@@ -27,8 +27,6 @@
     SSLEngine off
     # SSLCertificateChainFile /etc/ssl/certs/startcom.sub.class1.server.ca.pem
     # SSLCACertificateFile    /etc/ssl/certs/startcom.ca.pem
-    # SSLCertificateFile      /etc/ssl/certs/qr1hi.arvadosapi.com.crt.pem
-    # SSLCertificateKeyFile   /etc/ssl/private/qr1hi.arvadosapi.com.key.pem
     SSLCertificateFile    /etc/ssl/certs/ssl-cert-snakeoil.pem
     SSLCertificateKeyFile /etc/ssl/private/ssl-cert-snakeoil.key
     SetEnvIf User-Agent ".*MSIE.*" nokeepalive ssl-unclean-shutdown
