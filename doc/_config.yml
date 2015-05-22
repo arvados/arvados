@@ -152,6 +152,7 @@ navbar:
       - install/install-keepproxy.html.textile.liquid
       - install/install-arv-git-httpd.html.textile.liquid
       - install/install-crunch-dispatch.html.textile.liquid
+      - install/install-compute-node.html.textile.liquid
       - install/cheat_sheet.html.textile.liquid
     - Software prerequisites:
       - install/install-manual-prerequisites-ruby.html.textile.liquid
