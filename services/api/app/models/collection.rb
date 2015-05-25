@@ -59,7 +59,6 @@ class Collection < ArvadosModel
       # which will return 403 Permission denied to the client.
       api_token = current_api_client_authorization.andand.api_token
       signing_opts = {
-        key: Rails.configuration.blob_signing_key,
         api_token: api_token,
         now: db_current_time.to_i,
       }
@@ -194,7 +193,6 @@ class Collection < ArvadosModel
 
   def self.sign_manifest manifest, token
     signing_opts = {
-      key: Rails.configuration.blob_signing_key,
       api_token: token,
       expire: db_current_time.to_i + Rails.configuration.blob_signature_ttl,
     }
