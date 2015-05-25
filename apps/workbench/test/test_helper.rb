@@ -95,11 +95,12 @@ module ApiFixtureLoader
 end
 
 module ApiMockHelpers
-  def stub_api_calls_with_body body, status_code=200
+  def stub_api_calls_with_body body, status_code=200, headers={}
     resp = mock
     stubbed_client = ArvadosApiClient.new
     stubbed_client.instance_eval do
       resp.responds_like_instance_of HTTP::Message
+      resp.stubs(:headers).returns headers
       resp.stubs(:content).returns body
       resp.stubs(:status_code).returns status_code
       @api_client = HTTPClient.new
