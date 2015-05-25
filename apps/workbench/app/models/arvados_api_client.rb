@@ -91,6 +91,9 @@ class ArvadosApiClient
           # Use system CA certificates
           @api_client.ssl_config.add_trust_ca('/etc/ssl/certs')
         end
+        if Rails.configuration.api_response_compression
+          @api_client.transparent_gzip_decompression = true
+        end
       end
     end
 
@@ -130,9 +133,6 @@ class ArvadosApiClient
     end
 
     header = {"Accept" => "application/json"}
-    if Rails.configuration.include_accept_encoding_header_in_api_requests
-      header["Accept-Encoding"] = "gzip, deflate"
-    end
 
     profile_checkpoint { "Prepare request #{url} #{query[:uuid]} #{query[:where]} #{query[:filters]} #{query[:order]}" }
     msg = @client_mtx.synchronize do

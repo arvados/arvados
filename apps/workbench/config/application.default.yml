@@ -209,5 +209,5 @@ common:
   # in the directory where your API server is running.
   anonymous_user_token: false
 
-  # Enable response payload compression in Arvados API requests.
-  include_accept_encoding_header_in_api_requests: true
+  # Ask Arvados API server to compress its response payloads.
+  api_response_compression: true
