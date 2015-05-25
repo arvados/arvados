@@ -28,8 +28,8 @@ class Blob
   # Blob.sign_locator: return a signed and timestamped blob locator.
   #
   # The 'opts' argument should include:
-  #   [required] :key       - the Arvados server-side blobstore key
-  #   [required] :api_token - user's API token
+  #   [required] :api_token - API token (signatures only work for this token)
+  #   [optional] :key       - the Arvados server-side blobstore key
   #   [optional] :ttl       - number of seconds before signature should expire
   #   [optional] :expire    - unix timestamp when signature should expire
   #
@@ -44,14 +44,16 @@ class Blob
       end
       timestamp = opts[:expire]
     else
-      timestamp = db_current_time.to_i + (opts[:ttl] || 1209600)
+      timestamp = db_current_time.to_i +
+        (opts[:ttl] || Rails.configuration.blob_signature_ttl)
     end
     timestamp_hex = timestamp.to_s(16)
     # => "53163cb4"
 
     # Generate a signature.
     signature =
-      generate_signature opts[:key], blob_hash, opts[:api_token], timestamp_hex
+      generate_signature((opts[:key] or Rails.configuration.blob_signing_key),
+                         blob_hash, opts[:api_token], timestamp_hex)
 
     blob_locator + '+A' + signature + '@' + timestamp_hex
   end
@@ -96,7 +98,8 @@ class Blob
     end
 
     my_signature =
-      generate_signature opts[:key], blob_hash, opts[:api_token], timestamp
+      generate_signature((opts[:key] or Rails.configuration.blob_signing_key),
+                         blob_hash, opts[:api_token], timestamp)
 
     if my_signature != given_signature
       raise Blob::InvalidSignatureError.new 'Signature is invalid.'
