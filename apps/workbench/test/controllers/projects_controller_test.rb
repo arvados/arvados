@@ -248,4 +248,42 @@ class ProjectsControllerTest < ActionController::TestCase
     assert_response :redirect
     assert_match /\/users\/welcome/, @response.redirect_url
   end
+
+  [
+    nil,
+    :active,
+  ].each do |user|
+    test "visit public projects page when anon config is enabled, as user #{user}, and expect page" do
+      Rails.configuration.anonymous_user_token = api_fixture('api_client_authorizations')['anonymous']['api_token']
+
+      if user
+        get :public, {}, session_for(user)
+      else
+        get :public
+      end
+
+      assert_response :success
+      assert_not_nil assigns(:objects)
+      project_names = assigns(:objects).collect(&:name)
+      assert_operator 0, :<, project_names.length
+      assert project_names.include?('Unrestricted public data')
+      assert !project_names.include?('A Project')
+    end
+  end
+
+  [
+    nil,
+    :active,
+  ].each do |user|
+    test "visit public projects page when anon config is not enabled, as user #{user}, and expect no such page" do
+      if user
+        get :public, {}, session_for(user)
+        assert_response 404
+      else
+        get :public
+        assert_response :redirect
+        assert_match /\/users\/welcome/, @response.redirect_url
+      end
+    end
+  end
 end

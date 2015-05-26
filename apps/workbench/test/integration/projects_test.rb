@@ -830,42 +830,4 @@ class ProjectsTest < ActionDispatch::IntegrationTest
       assert_no_selector 'li.disabled', text: 'Copy selected'
     end
   end
-
-  [
-    [true, nil, true],
-    [true, 'active', true],
-    [false, nil, false],
-    [false, 'active', false],
-  ].each do |anon_config, user, expect_page|
-    test "visit public_projects page when anon config enabled #{anon_config}, as user #{user}, and expect page #{expect_page}" do
-      Rails.configuration.anonymous_user_token = api_fixture('api_client_authorizations')['anonymous']['api_token'] if anon_config
-
-      if user
-        visit page_with_token user, '/projects/public'
-      else
-        visit '/public_projects'
-      end
-
-      # verify public projects are listed
-      assert_selector 'a', 'Unrestricted public data'
-
-      if user
-        find("#projects-menu").click
-        if anon_config
-          assert_selector 'a', text: 'Browse public projects'
-        else
-          assert_no_selector 'a', text: 'Browse public projects'
-        end
-      else
-        within('.navbar-fixed-top') do
-          assert_selector 'a', text: 'Log in'
-          if anon_config
-            assert_selector 'a', text: 'Browse public projects'
-          else
-            assert_no_selector 'a', text: 'Browse public projects'
-          end
-        end
-      end
-    end
-  end
 end

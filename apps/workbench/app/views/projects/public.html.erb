@@ -1,4 +1,4 @@
-<table class="table arv-public-projects" style="width: 100%;">
+<table class="table">
   <colgroup>
     <col width="25%" />
     <col width="75%" />
@@ -6,21 +6,24 @@
   <thead>
     <tr class="contain-align-left">
       <th>
-	Name
-      </th><th>
-	Description
+        Name
+      </th>
+      <th>
+        Description
+      </th>
     </tr>
   </thead>
 
-  <% @public_projects.each do |p| %>
+  <tbody>
+  <% @objects.each do |p| %>
     <tr>
       <td style="word-break:break-all;">
         <%= link_to_if_arvados_object p, {friendly_name: true} %>
-      </div></td>
+      </td>
       <td style="word-break:break-all;">
         <%= render_attribute_as_textile(p, "description", p.description, true) %>
-      </div></td>
+      </td>
     </tr>
   <% end %>
+  </tbody>
 </table>
-

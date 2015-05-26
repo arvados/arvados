@@ -18,6 +18,10 @@ class AnonymousAccessTest < ActionDispatch::IntegrationTest
       if user['is_active']
         assert_text 'Unrestricted public data'
         assert_selector 'a', text: 'Projects'
+        page.find("#projects-menu").click
+        assert_selector 'a', text: 'Add a new project'
+        assert_selector 'a', text: 'Browse public projects'
+        assert page.has_text?('Projects shared with me'), 'Not found text - Project shared with me'
       else
         assert_text 'indicate that you have read and accepted the user agreement'
       end
