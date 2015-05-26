@@ -82,19 +82,19 @@ You can now run your script on your local workstation or VM using @arv-crunch-jo
 2014-08-06_15:16:35 qr1hi-8i9sb-qyrat80ef927lam 14473  release job allocation
 2014-08-06_15:16:35 qr1hi-8i9sb-qyrat80ef927lam 14473  Freeze not implemented
 2014-08-06_15:16:35 qr1hi-8i9sb-qyrat80ef927lam 14473  collate
-2014-08-06_15:16:36 qr1hi-8i9sb-qyrat80ef927lam 14473  output uuid qr1hi-4zz18-n91qrqfp3zivexo
+2014-08-06_15:16:36 qr1hi-8i9sb-qyrat80ef927lam 14473  collated output manifest text to send to API server is 105 bytes with access tokens
 2014-08-06_15:16:36 qr1hi-8i9sb-qyrat80ef927lam 14473  output hash c1b44b6dc41ef334cf1136033ca950e6+54
 2014-08-06_15:16:37 qr1hi-8i9sb-qyrat80ef927lam 14473  finish
 2014-08-06_15:16:38 qr1hi-8i9sb-qyrat80ef927lam 14473  log manifest is 7fe8cf1d45d438a3ca3ac4a184b7aff4+83
 </code></pre>
 </notextile>
 
-Although the job runs locally, the output of the job has been saved to Keep, the Arvados file store.  The "output uuid" line (fourth from the bottom) provides the UUID of the Arvados collection where the script's output has been saved.  Copy the output identifier and use @arv-ls@ to list the contents of your output collection, and @arv-get@ to download it to the current directory:
+Although the job runs locally, the output of the job has been saved to Keep, the Arvados file store.  The "output hash" line (third from the bottom) provides the portable data hash of the Arvados collection where the script's output has been saved.  Copy the output hash and use @arv-ls@ to list the contents of your output collection, and @arv-get@ to download it to the current directory:
 
 <notextile>
-<pre><code>~/tutorial/crunch_scripts$ <span class="userinput">arv-ls qr1hi-4zz18-n91qrqfp3zivexo</span>
+<pre><code>~/tutorial/crunch_scripts$ <span class="userinput">arv-ls c1b44b6dc41ef334cf1136033ca950e6+54</span>
 ./md5sum.txt
-~/tutorial/crunch_scripts$ <span class="userinput">arv-get qr1hi-4zz18-n91qrqfp3zivexo/ .</span>
+~/tutorial/crunch_scripts$ <span class="userinput">arv-get c1b44b6dc41ef334cf1136033ca950e6+54/ .</span>
 0 MiB / 0 MiB 100.0%
 ~/tutorial/crunch_scripts$ <span class="userinput">cat md5sum.txt</span>
 44b8ae3fde7a8a88d2f7ebd237625b4f c1bad4b39ca5a924e481008009d94e32+210/var-GS000016015-ASM.tsv.bz2
