@@ -1,0 +1,29 @@
+<table class="table">
+  <colgroup>
+    <col width="25%" />
+    <col width="75%" />
+  </colgroup>
+  <thead>
+    <tr class="contain-align-left">
+      <th>
+        Name
+      </th>
+      <th>
+        Description
+      </th>
+    </tr>
+  </thead>
+
+  <tbody>
+  <% @objects.each do |p| %>
+    <tr>
+      <td style="word-break:break-all;">
+        <%= link_to_if_arvados_object p, {friendly_name: true} %>
+      </td>
+      <td style="word-break:break-all;">
+        <%= render_attribute_as_textile(p, "description", p.description, true) %>
+      </td>
+    </tr>
+  <% end %>
+  </tbody>
+</table>

@@ -82,7 +82,9 @@ ArvadosWorkbench::Application.routes.draw do
     get 'choose', on: :collection
     post 'share_with', on: :member
     get 'tab_counts', on: :member
+    get 'public', on: :collection
   end
+
   resources :search do
     get 'choose', :on => :collection
   end

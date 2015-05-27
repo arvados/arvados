@@ -1,7 +1,6 @@
 {
-  "service_host": "keep_server_1.keep.dev.arvados",
+  "service_host": "keep_server_0.keep.@@ARVADOS_DOMAIN@@",
   "service_port": 25107,
   "service_ssl_flag": "false",
   "service_type": "disk"
 }
-

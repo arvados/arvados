@@ -1,12 +1,11 @@
 
-ServerName doc.arvados.org
+ServerName doc.@@ARVADOS_DOMAIN@@
 
 <VirtualHost *:80>
   ServerAdmin sysadmin@curoverse.com
 
-  ServerName doc.arvados.org
+  ServerName doc.@@ARVADOS_DOMAIN@@
 
   DocumentRoot /usr/src/arvados/doc/.site/
 
 </VirtualHost>
-
