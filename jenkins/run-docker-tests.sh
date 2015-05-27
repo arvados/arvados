@@ -5,6 +5,7 @@ function usage {
     echo >&2 "usage: $0 [options]"
     echo >&2
     echo >&2 "$0 options:"
+    echo >&2 "  -t, --tags [csv_tags]         comma separated tags"
     echo >&2 "  -u, --upload                  Upload the images (docker push)"
     echo >&2 "  -h, --help                    Display this help and exit"
     echo >&2
@@ -14,8 +15,8 @@ function usage {
 upload=false
 
 # NOTE: This requires GNU getopt (part of the util-linux package on Debian-based distros).
-TEMP=`getopt -o hu \
-    --long help,upload \
+TEMP=`getopt -o hut: \
+    --long help,upload,tags: \
     -n "$0" -- "$@"`
 
 if [ $? != 0 ] ; then echo "Use -h for help"; exit 1 ; fi
@@ -28,6 +29,19 @@ do
         -u | --upload)
             upload=true
             shift
+            ;;
+        -t | --tags)
+            case "$2" in
+                "")
+                  echo "ERROR: --tags needs a parameter";
+                  usage;
+                  exit 1
+                  ;;
+                *)
+                  tags=$2;
+                  shift 2
+                  ;;
+            esac
             ;;
         --)
             shift
@@ -50,7 +64,15 @@ title () {
 }
 
 docker_push () {
-  # Sometimes docker push fails; retry it a few times if necessary.
+    if [[ ! -z "$tags" ]]
+    then
+        for tag in $( echo $tags|tr "," " " )
+        do
+             $DOCKER tag $1 $1:$tag
+        done
+    fi
+
+    # Sometimes docker push fails; retry it a few times if necessary.
     for i in `seq 1 5`; do
         $DOCKER push $*
         ECODE=$?
