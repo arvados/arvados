@@ -51,38 +51,38 @@ def main options
   # Generate a config.yml if it does not exist or is empty
   if not File.size? 'config.yml'
     print "Generating config.yml.\n"
-    print "Arvados needs to know the email address of the administrative user,\n"
-    print "so that when that user logs in they are automatically made an admin.\n"
-    print "This should be an email address associated with a Google account.\n"
-    print "\n"
-    admin_email_address = ""
-    until is_valid_email? admin_email_address
-      print "Enter your Google ID email address here: "
-      admin_email_address = gets.strip
-      if not is_valid_email? admin_email_address
-        print "That doesn't look like a valid email address. Please try again.\n"
-      end
-    end
+    # print "Arvados needs to know the email address of the administrative user,\n"
+    # print "so that when that user logs in they are automatically made an admin.\n"
+    # print "This should be an email address associated with a Google account.\n"
+    # print "\n"
+    # admin_email_address = ""
+    # until is_valid_email? admin_email_address
+    #   print "Enter your Google ID email address here: "
+    #   admin_email_address = gets.strip
+    #   if not is_valid_email? admin_email_address
+    #     print "That doesn't look like a valid email address. Please try again.\n"
+    #   end
+    # end
 
-    print "Arvados needs to know the shell login name for the administrative user.\n"
-    print "This will also be used as the name for your git repository.\n"
-    print "\n"
-    user_name = ""
-    until is_valid_user_name? user_name
-      print "Enter a shell login name here: "
-      user_name = gets.strip
-      if not is_valid_user_name? user_name
-        print "That doesn't look like a valid shell login name. Please try again.\n"
-      end
-    end
+    # print "Arvados needs to know the shell login name for the administrative user.\n"
+    # print "This will also be used as the name for your git repository.\n"
+    # print "\n"
+    # user_name = ""
+    # until is_valid_user_name? user_name
+    #   print "Enter a shell login name here: "
+    #   user_name = gets.strip
+    #   if not is_valid_user_name? user_name
+    #     print "That doesn't look like a valid shell login name. Please try again.\n"
+    #   end
+    # end
 
     File.open 'config.yml', 'w' do |config_out|
       config_out.write "# If a _PW or _SECRET variable is set to an empty string, a password\n"
       config_out.write "# will be chosen randomly at build time. This is the\n"
       config_out.write "# recommended setting.\n\n"
       config = YAML.load_file 'config.yml.example'
-      config['API_AUTO_ADMIN_USER'] = admin_email_address
-      config['ARVADOS_USER_NAME'] = user_name
+      #config['API_AUTO_ADMIN_USER'] = admin_email_address
+      #config['ARVADOS_USER_NAME'] = user_name
       config['API_HOSTNAME'] = generate_api_hostname
       config['API_WORKBENCH_ADDRESS'] = 'false'
       config.each_key do |var|
