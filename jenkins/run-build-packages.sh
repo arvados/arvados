@@ -489,37 +489,6 @@ for deppkg in docker-py six requests; do
     build_and_scp_deb "$deppkg" "python3-$deppkg" "" python3
 done
 
-# cwltool from common-workflow-language. We use this in arv-run-pipeline-instance.
-# We use $WORKSPACE/common-workflow-language as the clean directory from which to build the cwltool package
-if [[ ! -d "$WORKSPACE/common-workflow-language" ]]; then
-  mkdir "$WORKSPACE/common-workflow-language"
-  cd "$WORKSPACE"
-  if [[ "$DEBUG" != 0 ]]; then
-    git clone https://github.com/common-workflow-language/common-workflow-language.git common-workflow-language
-  else
-    git clone -q https://github.com/common-workflow-language/common-workflow-language.git common-workflow-language
-  fi
-fi
-
-cd "$WORKSPACE/common-workflow-language"
-if [[ "$DEBUG" != 0 ]]; then
-  git checkout master
-  git pull
-else
-  git checkout -q master
-  git pull -q
-fi
-
-cd reference
-handle_python_package
-CWLTOOL_VERSION=`git log --first-parent --max-count=1 --format='format:0.1.%ct.%h'`
-
-# Build cwltool package
-cd $WORKSPACE/debs
-# Python version numbering is obscure. Strip dashes and replace them with dots
-# to match our other version numbers. Cf. commit 4afcb8c, compliance with PEP-440.
-build_and_scp_deb $WORKSPACE/common-workflow-language/reference cwltool 'Common Workflow Language Working Group' 'python' "$(awk '($1 == "Version:"){ gsub(/-/,".",$2); print $2 }' $WORKSPACE/common-workflow-language/reference/cwltool.egg-info/PKG-INFO)"
-
 # Finally, publish the packages, if necessary
 if [[ "$UPLOAD" != 0 && "$CALL_FREIGHT" != 0 ]]; then
   ssh -p2222 $APTUSER@$APTSERVER -t "cd tmp && ls -laF *deb && freight add *deb apt/wheezy && freight cache && rm -f *deb"
