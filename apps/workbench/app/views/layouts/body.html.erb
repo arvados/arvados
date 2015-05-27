@@ -117,7 +117,7 @@
             <% end %>
           <% else %>
             <% if Rails.configuration.anonymous_user_token %>
-              <li><%= link_to raw('Browse public projects'), "/projects/public" %></li>
+              <li><%= link_to 'Browse public projects', "/projects/public" %></li>
             <% end %>
             <li class="dropdown hover-dropdown login-menu">
               <a href="<%= arvados_api_client.arvados_login_url(return_to: root_url) %>">Log in</a>
@@ -184,7 +184,7 @@
             </a>
             <ul class="dropdown-menu" style="min-width: 20em" role="menu">
               <% if Rails.configuration.anonymous_user_token %>
-                <li><%= link_to raw('Browse public projects'), "/projects/public", class: 'btn btn-xs btn-default pull-right' %></li>
+                <li><%= link_to 'Browse public projects', "/projects/public", class: 'btn btn-xs btn-default pull-right' %></li>
               <% end %>
               <li>
                 <%= link_to projects_path(options: {ensure_unique_name: true}), method: :post, class: 'btn btn-xs btn-default pull-right' do %>

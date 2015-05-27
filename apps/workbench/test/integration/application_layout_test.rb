@@ -25,7 +25,7 @@ class ApplicationLayoutTest < ActionDispatch::IntegrationTest
         assert page.has_link?("Projects"), 'Not found link - Projects'
         page.find("#projects-menu").click
         assert_selector 'a', text: 'Add a new project'
-        assert_no_selector 'a', text: 'Browse public projects'  # anonymous config is not enabled by default
+        assert_no_selector 'a', text: 'Browse public projects'
         assert page.has_text?('Projects shared with me'), 'Not found text - Project shared with me'
       end
     elsif invited
