@@ -156,23 +156,6 @@ fi
 
 cd "$WORKSPACE"
 
-# We use $WORKSPACE as the clean directory from which to build the cwltool package
-if [[ ! -d "$WORKSPACE/.git" ]]; then
-  if [[ "$DEBUG" != 0 ]]; then
-    git clone https://github.com/common-workflow-language/common-workflow-language.git .
-  else
-    git clone -q https://github.com/common-workflow-language/common-workflow-language.git .
-  fi
-fi
-
-if [[ "$DEBUG" != 0 ]]; then
-  git checkout master
-  git pull
-else
-  git checkout -q master
-  git pull -q
-fi
-
 pushd reference
 python setup.py install
 python setup.py test
