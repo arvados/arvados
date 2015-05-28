@@ -1,14 +1,17 @@
 #!/usr/bin/env python
 
 import arvados
+import collections
 import httplib2
 import json
 import mimetypes
 import os
 import run_test_server
+import string
 import unittest
 from apiclient import errors as apiclient_errors
 from apiclient import http as apiclient_http
+from arvados.api import OrderedJsonModel
 
 from arvados_testutil import fake_httplib2_response
 
@@ -106,6 +109,21 @@ class ArvadosApiClientTest(unittest.TestCase):
         with self.assertRaises(apiclient_errors.MediaUploadSizeError):
             text = "X" * maxsize
             arvados.api('v1').collections().create(body={"manifest_text": text}).execute()
+
+    def test_ordered_json_model(self):
+        mock_responses = {
+            'arvados.humans.get': (None, json.dumps(collections.OrderedDict(
+                        (c, int(c, 16)) for c in string.hexdigits))),
+            }
+        req_builder = apiclient_http.RequestMockBuilder(mock_responses)
+        api = arvados.api('v1',
+                          host=os.environ['ARVADOS_API_HOST'],
+                          token='discovery-doc-only-no-token-needed',
+                          insecure=True,
+                          requestBuilder=req_builder,
+                          model=OrderedJsonModel())
+        result = api.humans().get(uuid='test').execute()
+        self.assertEqual(string.hexdigits, ''.join(result.keys()))
 
 
 if __name__ == '__main__':

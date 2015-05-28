@@ -22,7 +22,11 @@ class CollectionsPerfTest < ActionDispatch::IntegrationTest
     end
     manifest_text << "\n"
 
-    Collection.create! ({manifest_text: manifest_text})
+    Rails.logger.info "Creating collection at #{Time.now.to_f}"
+    collection = Collection.create! ({manifest_text: manifest_text})
+    Rails.logger.info "Done creating collection at #{Time.now.to_f}"
+
+    collection
   end
 
   [
@@ -34,7 +38,9 @@ class CollectionsPerfTest < ActionDispatch::IntegrationTest
       use_token :active
       new_collection = create_large_collection size, 'collection_file_name_with_prefix_'
 
+      Rails.logger.info "Visiting collection at #{Time.now.to_f}"
       visit page_with_token('active', "/collections/#{new_collection.uuid}")
+      Rails.logger.info "Done visiting collection at #{Time.now.to_f}"
 
       assert_text new_collection.uuid
       assert(page.has_link?('collection_file_name_with_prefix_0'), "Collection page did not include file link")
@@ -52,17 +58,21 @@ class CollectionsPerfTest < ActionDispatch::IntegrationTest
       use_token :active
       new_collection = create_large_collection size, 'collection_file_name_with_prefix_'
 
+      Rails.logger.info "Visiting collection at #{Time.now.to_f}"
       visit page_with_token('active', "/collections/#{new_collection.uuid}")
+      Rails.logger.info "Done visiting collection at #{Time.now.to_f}"
 
       assert_text new_collection.uuid
       assert(page.has_link?('collection_file_name_with_prefix_0'), "Collection page did not include file link")
 
       # edit description
+      Rails.logger.info "Editing description at #{Time.now.to_f}"
       within('.arv-description-as-subtitle') do
         find('.fa-pencil').click
         find('.editable-input textarea').set('description for this large collection')
         find('.editable-submit').click
       end
+      Rails.logger.info "Done editing description at #{Time.now.to_f}"
 
       assert_text 'description for this large collection'
     end
@@ -78,7 +88,9 @@ class CollectionsPerfTest < ActionDispatch::IntegrationTest
       first_collection = create_large_collection size1, 'collection_file_name_with_prefix_1_'
       second_collection = create_large_collection size2, 'collection_file_name_with_prefix_2_'
 
+      Rails.logger.info "Visiting collections page at #{Time.now.to_f}"
       visit page_with_token('active', "/collections")
+      Rails.logger.info "Done visiting collections page at at #{Time.now.to_f}"
 
       assert_text first_collection.uuid
       assert_text second_collection.uuid
@@ -91,10 +103,12 @@ class CollectionsPerfTest < ActionDispatch::IntegrationTest
         find('input[type=checkbox]').click
       end
 
+      Rails.logger.info "Clicking on combine collections option at #{Time.now.to_f}"
       click_button 'Selection...'
       within('.selection-action-container') do
         click_link 'Create new collection with selected collections'
       end
+      Rails.logger.info "Done combining collections at #{Time.now.to_f}"
 
       assert(page.has_link?('collection_file_name_with_prefix_1_0'), "Collection page did not include file link")
     end

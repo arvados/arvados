@@ -226,21 +226,20 @@ class ArvadosModel < ActiveRecord::Base
 
   def self.full_text_searchable_columns
     self.columns.select do |col|
-      if col.type == :string or col.type == :text
-        true
-      end
+      col.type == :string or col.type == :text
     end.map(&:name)
   end
 
   def self.full_text_tsvector
-    tsvector_str = "to_tsvector('english', "
-    first = true
-    self.full_text_searchable_columns.each do |column|
-      tsvector_str += " || ' ' || " if not first
-      tsvector_str += "coalesce(#{column},'')"
-      first = false
+    parts = full_text_searchable_columns.collect do |column|
+      "coalesce(#{column},'')"
     end
-    tsvector_str += ")"
+    # We prepend a space to the tsvector() argument here. Otherwise,
+    # it might start with a column that has its own (non-full-text)
+    # index, which causes Postgres to use the column index instead of
+    # the tsvector index, which causes full text queries to be just as
+    # slow as if we had no index at all.
+    "to_tsvector('english', ' ' || #{parts.join(" || ' ' || ")})"
   end
 
   protected

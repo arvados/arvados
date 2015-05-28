@@ -53,8 +53,8 @@ RUN mkdir -p /var/lib/arvados
 RUN addgroup --gid 4005 crunch && mkdir /home/crunch && useradd --uid 4005 --gid 4005 crunch && chown crunch:crunch /home/crunch
 
 # Create keep and compute node objects
-ADD keep_server_0.json /root/
-ADD keep_server_1.json /root/
+ADD generated/keep_server_0.json /root/
+ADD generated/keep_server_1.json /root/
 ADD keep_proxy.json /root/
 
 # Set up update-gitolite.rb
