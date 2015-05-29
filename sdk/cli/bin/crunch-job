@@ -2083,19 +2083,23 @@ if (readlink ("$destdir.archive_hash") eq $archive_hash && -d $destdir) {
 unlink "$destdir.archive_hash";
 mkdir $destdir;
 
-warn "Extracting archive: $archive_hash\n";
-if (!open(TARX, "|-", "tar", "-xC", $destdir)) {
-  die "Error launching 'tar -xC $destdir': $!";
-}
-# If we send too much data to tar in one write (> 4-5 MiB), it stops, and we
-# get SIGPIPE.  We must feed it data incrementally.
-my $tar_input;
-while (read(DATA, $tar_input, 65536)) {
-  print TARX $tar_input;
-}
-if(!close(TARX)) {
-  die "'tar -xC $destdir' exited $?: $!";
-}
+do {
+  # Ignore SIGPIPE: we check retval of close() instead. See perlipc(1).
+  local $SIG{PIPE} = "IGNORE";
+  warn "Extracting archive: $archive_hash\n";
+  if (!open(TARX, "|-", "tar", "-xC", $destdir)) {
+    die "Error launching 'tar -xC $destdir': $!";
+  }
+  # If we send too much data to tar in one write (> 4-5 MiB), it stops, and we
+  # get SIGPIPE.  We must feed it data incrementally.
+  my $tar_input;
+  while (read(DATA, $tar_input, 65536)) {
+    print TARX $tar_input;
+  }
+  if(!close(TARX)) {
+    die "'tar -xC $destdir' exited $?: $!";
+  }
+};
 
 mkdir $install_dir;
 
