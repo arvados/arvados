@@ -228,9 +228,29 @@ class ArvadosFileWriterTestCase(unittest.TestCase):
         with Collection('. ' + arvados.config.EMPTY_BLOCK_LOCATOR + ' 0:0:count.txt',
                              api_client=api, keep_client=keep) as c:
             writer = c.open("count.txt", "r+")
-            text = ''.join(["0123456789" for a in xrange(0, 100)])
+            text = "0123456789" * 100
             for b in xrange(0, 100000):
                 writer.write(text)
+            self.assertEqual(writer.size(), 100000000)
+
+            self.assertEqual(None, c.manifest_locator())
+            self.assertEqual(True, c.modified())
+            c.save_new("test_write_large")
+            self.assertEqual("zzzzz-4zz18-mockcollection0", c.manifest_locator())
+            self.assertEqual(False, c.modified())
+
+
+    def test_large_write(self):
+        keep = ArvadosFileWriterTestCase.MockKeep({})
+        api = ArvadosFileWriterTestCase.MockApi({"name":"test_write_large",
+                                                 "manifest_text": ". a5de24f4417cfba9d5825eadc2f4ca49+67108000 598cc1a4ccaef8ab6e4724d87e675d78+32892000 0:100000000:count.txt\n"},
+                                                {"uuid":"zzzzz-4zz18-mockcollection0",
+                                                 "manifest_text": ". a5de24f4417cfba9d5825eadc2f4ca49+67108000 598cc1a4ccaef8ab6e4724d87e675d78+32892000 0:100000000:count.txt\n"})
+        with Collection('. ' + arvados.config.EMPTY_BLOCK_LOCATOR + ' 0:0:count.txt',
+                             api_client=api, keep_client=keep) as c:
+            writer = c.open("count.txt", "r+")
+            text = "0123456789" * 10000000
+            writer.write(text)
             self.assertEqual(writer.size(), 100000000)
 
             self.assertEqual(None, c.manifest_locator())
