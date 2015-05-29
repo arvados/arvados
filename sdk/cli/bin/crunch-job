@@ -2083,6 +2083,7 @@ if (readlink ("$destdir.archive_hash") eq $archive_hash && -d $destdir) {
 unlink "$destdir.archive_hash";
 mkdir $destdir;
 
+warn "Extracting archive: $archive_hash\n";
 if (!open(TARX, "|-", "tar", "-xC", $destdir)) {
   die "Error launching 'tar -xC $destdir': $!";
 }
