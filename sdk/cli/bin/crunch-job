@@ -1934,7 +1934,14 @@ sub combined_git_archive {
   }
   my $base_tar_name = tar_filename_n(1);
   foreach my $tar_to_append (map { tar_filename_n($_); } (2..$git_tar_count)) {
-    my $tar_exit = system("tar", "-Af", $base_tar_name, $tar_to_append);
+    # --blocking-factor 1 here fixes a bug: without it, depending on
+    # the inputs, the resulting tarball can have so much extra
+    # trailing NUL padding that tar exits early and sends a SIGPIPE
+    # when we extract it in the install script (see TARX below).
+    my $tar_exit = system("tar",
+                          "--blocking-factor", "1",
+                          "-Af", $base_tar_name,
+                          $tar_to_append);
     if ($tar_exit != 0) {
       croak("Error preparing build archive: tar -A exited " .
             exit_status_s($tar_exit));
