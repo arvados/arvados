@@ -148,7 +148,7 @@ common:
   #dns_server_conf_template: /path/to/your/api/server/config/unbound.template
   ## ...plus one of the following two methods of reloading:
   #dns_server_reload_command: unbound-control reload
-  #dns_server_update_command: unbound-control local_data %{hostname} IN A %{ip_address} && unbound-control local_data %{hostname}.%{uuid_prefix} IN A %{ip_address} && unbound-control local_data %{hostname}.%{uuid_prefix}.arvadosapi.com IN A %{ip_address} && unbound-control local_data %{ptr_domain}. IN PTR %{hostname}.%{uuid_prefix}.arvadosapi.com
+  #dns_server_update_command: echo %{hostname} %{hostname}.%{uuid_prefix} %{hostname}.%{uuid_prefix}.arvadosapi.com %{ptr_domain} | xargs -n 1 unbound-control local_data_remove && unbound-control local_data %{hostname} IN A %{ip_address} && unbound-control local_data %{hostname}.%{uuid_prefix} IN A %{ip_address} && unbound-control local_data %{hostname}.%{uuid_prefix}.arvadosapi.com IN A %{ip_address} && unbound-control local_data %{ptr_domain}. IN PTR %{hostname}.%{uuid_prefix}.arvadosapi.com
 
   compute_node_domain: false
   compute_node_nameservers:
