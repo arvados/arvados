@@ -139,7 +139,7 @@ if (defined $job_api_token) {
   $ENV{ARVADOS_API_TOKEN} = $job_api_token;
 }
 
-my $have_slurm = exists $ENV{SLURM_JOBID} && exists $ENV{SLURM_NODELIST};
+my $have_slurm = exists $ENV{SLURM_JOB_ID} && exists $ENV{SLURM_NODELIST};
 
 
 $SIG{'USR1'} = sub
@@ -1296,7 +1296,7 @@ sub check_squeue
   }
 
   # get a list of steps still running
-  my @squeue = `squeue --jobs=\Q$ENV{SLURM_JOBID}\E --steps --format='%i %j' --noheader`;
+  my @squeue = `squeue --jobs=\Q$ENV{SLURM_JOB_ID}\E --steps --format='%i %j' --noheader`;
   if ($? != 0)
   {
     Log(undef, "warning: squeue exit status $? ($!)");
@@ -1310,7 +1310,7 @@ sub check_squeue
   {
     if (/^(\d+)\.(\d+) (\S+)/)
     {
-      if ($1 eq $ENV{SLURM_JOBID})
+      if ($1 eq $ENV{SLURM_JOB_ID})
       {
 	$ok{$3} = 1;
       }
@@ -1344,7 +1344,7 @@ sub release_allocation
   if ($have_slurm)
   {
     Log (undef, "release job allocation");
-    system "scancel $ENV{SLURM_JOBID}";
+    system "scancel $ENV{SLURM_JOB_ID}";
   }
 }
 
