@@ -1284,7 +1284,11 @@ sub check_squeue
         && $jobstep->{killtime} <= time
         && $jobstep->{stderr_at} < $last_squeue_check)
     {
-      Log($jobstep->{jobstep}, "killing orphaned srun process $pid (task disappeared from slurm queue)");
+      my $sincewhen = "";
+      if ($jobstep->{stderr_at}) {
+        $sincewhen = " in last " . (time - $jobstep->{stderr_at}) . "s";
+      }
+      Log($jobstep->{jobstep}, "killing orphaned srun process $pid (task not in slurm queue, no stderr received$sincewhen)");
       killem ($pid);
     }
   }
