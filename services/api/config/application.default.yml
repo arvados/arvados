@@ -123,21 +123,32 @@ common:
   # silenced by throttling are not counted against this total.
   crunch_limit_log_bytes_per_job: 67108864
 
-  # Path to dns server configuration directory (e.g. /etc/unbound.d/conf.d),
-  # or false = do not update dns server data.
+  # Path to dns server configuration directory
+  # (e.g. /etc/unbound.d/conf.d). If false, do not write any config
+  # files or touch restart.txt (see below).
   dns_server_conf_dir: false
 
-  # Template for the dns server host snippets. See unbound.template in this directory for
-  # an example. Set to false to disable.
+  # Template file for the dns server host snippets. See
+  # unbound.template in this directory for an example. If false, do
+  # not write any config files.
   dns_server_conf_template: false
 
-  # Dns server reload command, or false = do not reload dns server after data change
+  # String to write to {dns_server_conf_dir}/restart.txt (with a
+  # trailing newline) after updating local data. If false, do not
+  # open or write the restart.txt file.
   dns_server_reload_command: false
 
-  # Example for unbound
+  # Command to run after each DNS update. Template variables will be
+  # substituted; see the "unbound" example below. If false, do not run
+  # a command.
+  dns_server_update_command: false
+
+  ## Example for unbound:
   #dns_server_conf_dir: /etc/unbound/conf.d
   #dns_server_conf_template: /path/to/your/api/server/config/unbound.template
-  #dns_server_reload_command: /etc/init.d/unbound reload
+  ## ...plus one of the following two methods of reloading:
+  #dns_server_reload_command: unbound-control reload
+  #dns_server_update_command: unbound-control local_data %{hostname} IN A %{ip_address} && unbound-control local_data %{hostname}.%{uuid_prefix} IN A %{ip_address} && unbound-control local_data %{hostname}.%{uuid_prefix}.arvadosapi.com IN A %{ip_address} && unbound-control local_data %{ptr_domain}. IN PTR %{hostname}.%{uuid_prefix}.arvadosapi.com
 
   compute_node_domain: false
   compute_node_nameservers:
