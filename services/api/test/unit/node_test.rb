@@ -26,4 +26,53 @@ class NodeTest < ActiveSupport::TestCase
     assert_nil node.slot_number, "fixture is not what I expected"
     assert_equal 'down', node.crunch_worker_state, "wrong worker state"
   end
+
+  test "dns_server_conf_template" do
+    Rails.configuration.dns_server_conf_dir = Rails.root.join 'tmp'
+    Rails.configuration.dns_server_conf_template = Rails.root.join 'config', 'unbound.template'
+    conffile = Rails.root.join 'tmp', 'compute65535.conf'
+    File.unlink conffile rescue nil
+    assert Node.dns_server_update 'compute65535', '127.0.0.1'
+    assert_match /\"1\.0\.0\.127\.in-addr\.arpa\. IN PTR compute65535\.zzzzz\.arvadosapi\.com\"/, IO.read(conffile)
+    File.unlink conffile
+  end
+
+  test "dns_server_restart_command" do
+    Rails.configuration.dns_server_conf_dir = Rails.root.join 'tmp'
+    Rails.configuration.dns_server_reload_command = 'foobar'
+    restartfile = Rails.root.join 'tmp', 'restart.txt'
+    File.unlink restartfile rescue nil
+    assert Node.dns_server_update 'compute65535', '127.0.0.127'
+    assert_equal "foobar\n", IO.read(restartfile)
+    File.unlink restartfile
+  end
+
+  test "dns_server_restart_command fail" do
+    Rails.configuration.dns_server_conf_dir = Rails.root.join 'tmp', 'bogusdir'
+    Rails.configuration.dns_server_reload_command = 'foobar'
+    refute Node.dns_server_update 'compute65535', '127.0.0.127'
+  end
+
+  test "dns_server_update_command with valid command" do
+    testfile = Rails.root.join('tmp', 'node_test_dns_server_update_command.txt')
+    Rails.configuration.dns_server_update_command =
+      ('echo -n "%{hostname} == %{ip_address}" >' +
+       testfile.to_s.shellescape)
+    assert Node.dns_server_update 'compute65535', '127.0.0.1'
+    assert_equal 'compute65535 == 127.0.0.1', IO.read(testfile)
+    File.unlink testfile
+  end
+
+  test "dns_server_update_command with failing command" do
+    Rails.configuration.dns_server_update_command = 'false %{hostname}'
+    refute Node.dns_server_update 'compute65535', '127.0.0.1'
+  end
+
+  test "dns update with no commands/dirs configured" do
+    Rails.configuration.dns_server_update_command = false
+    Rails.configuration.dns_server_conf_dir = false
+    Rails.configuration.dns_server_conf_template = 'ignored!'
+    Rails.configuration.dns_server_reload_command = 'ignored!'
+    assert Node.dns_server_update 'compute65535', '127.0.0.127'
+  end
 end
