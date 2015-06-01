@@ -243,9 +243,9 @@ class ArvadosFileWriterTestCase(unittest.TestCase):
     def test_large_write(self):
         keep = ArvadosFileWriterTestCase.MockKeep({})
         api = ArvadosFileWriterTestCase.MockApi({"name":"test_write_large",
-                                                 "manifest_text": ". a5de24f4417cfba9d5825eadc2f4ca49+67108000 598cc1a4ccaef8ab6e4724d87e675d78+32892000 0:100000000:count.txt\n"},
+                                                 "manifest_text": ". 48dd23ea1645fd47d789804d71b5bb8e+67108864 b373ad0ffebb84efb524947b247ea89a+32891136 0:100000000:count.txt\n"},
                                                 {"uuid":"zzzzz-4zz18-mockcollection0",
-                                                 "manifest_text": ". a5de24f4417cfba9d5825eadc2f4ca49+67108000 598cc1a4ccaef8ab6e4724d87e675d78+32892000 0:100000000:count.txt\n"})
+                                                 "manifest_text": ". 48dd23ea1645fd47d789804d71b5bb8e+67108864 598cc1a4ccaef8ab6e4724d87e675d78+32891136 0:100000000:count.txt\n"})
         with Collection('. ' + arvados.config.EMPTY_BLOCK_LOCATOR + ' 0:0:count.txt',
                              api_client=api, keep_client=keep) as c:
             writer = c.open("count.txt", "r+")
