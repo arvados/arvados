@@ -2087,7 +2087,12 @@ do {
   # Ignore SIGPIPE: we check retval of close() instead. See perlipc(1).
   local $SIG{PIPE} = "IGNORE";
   warn "Extracting archive: $archive_hash\n";
-  if (!open(TARX, "|-", "tar", "-xC", $destdir)) {
+  # --ignore-zeros is necessary sometimes: depending on how much NUL
+  # padding tar -A put on our combined archive (which in turn depends
+  # on the length of the component archives) tar without
+  # --ignore-zeros will exit before consuming stdin and cause close()
+  # to fail on the resulting SIGPIPE.
+  if (!open(TARX, "|-", "tar", "--ignore-zeros", "-xC", $destdir)) {
     die "Error launching 'tar -xC $destdir': $!";
   }
   # If we send too much data to tar in one write (> 4-5 MiB), it stops, and we
