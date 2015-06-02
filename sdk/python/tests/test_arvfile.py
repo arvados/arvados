@@ -242,24 +242,19 @@ class ArvadosFileWriterTestCase(unittest.TestCase):
 
     def test_large_write(self):
         keep = ArvadosFileWriterTestCase.MockKeep({})
-        api = ArvadosFileWriterTestCase.MockApi({"name":"test_write_large",
-                                                 "manifest_text": ". 781e5e245d69b566979b86e28d23f2c7+10 48dd23ea1645fd47d789804d71b5bb8e+67108864 77c57dc6ac5a10bb2205caaa73187994+32891126 0:100000000:count.txt\n"},
-                                                {"uuid":"zzzzz-4zz18-mockcollection0",
-                                                 "manifest_text": ". 781e5e245d69b566979b86e28d23f2c7+10 48dd23ea1645fd47d789804d71b5bb8e+67108864 77c57dc6ac5a10bb2205caaa73187994+32891126 0:100000000:count.txt\n"})
+        api = ArvadosFileWriterTestCase.MockApi({}, {})
         with Collection('. ' + arvados.config.EMPTY_BLOCK_LOCATOR + ' 0:0:count.txt',
                              api_client=api, keep_client=keep) as c:
             writer = c.open("count.txt", "r+")
+            self.assertEqual(writer.size(), 0)
+
             text = "0123456789"
             writer.write(text)
             text = "0123456789" * 9999999
             writer.write(text)
             self.assertEqual(writer.size(), 100000000)
 
-            self.assertEqual(None, c.manifest_locator())
-            self.assertEqual(True, c.modified())
-            c.save_new("test_write_large")
-            self.assertEqual("zzzzz-4zz18-mockcollection0", c.manifest_locator())
-            self.assertEqual(False, c.modified())
+            self.assertEqual(c.manifest_text(), ". 781e5e245d69b566979b86e28d23f2c7+10 48dd23ea1645fd47d789804d71b5bb8e+67108864 77c57dc6ac5a10bb2205caaa73187994+32891126 0:100000000:count.txt\n")
 
     def test_rewrite_on_empty_file(self):
         keep = ArvadosFileWriterTestCase.MockKeep({})
