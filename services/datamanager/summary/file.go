@@ -26,6 +26,10 @@ var (
 	readDataFrom string
 )
 
+type DataFetcher func(arvLogger *logger.Logger,
+	readCollections *collection.ReadCollections,
+	keepServerInfo *keep.ReadServers)
+
 func init() {
 	flag.StringVar(&writeDataTo,
 		"write-data-to",
@@ -71,6 +75,10 @@ func MaybeWriteData(arvLogger *logger.Logger,
 	}
 }
 
+func ShouldReadData() bool {
+	return readDataFrom != ""
+}
+
 // Reads data that we've written to a file.
 //
 // This is useful for development, so that we don't need to read all
@@ -78,11 +86,12 @@ func MaybeWriteData(arvLogger *logger.Logger,
 //
 // This should not be used outside of development, since you'll be
 // working with stale data.
-func MaybeReadData(arvLogger *logger.Logger,
+func ReadData(arvLogger *logger.Logger,
 	readCollections *collection.ReadCollections,
-	keepServerInfo *keep.ReadServers) bool {
+	keepServerInfo *keep.ReadServers) {
 	if readDataFrom == "" {
-		return false
+		loggerutil.FatalWithMessage(arvLogger,
+			"ReadData() called with empty filename.")
 	} else {
 		summaryFile, err := os.Open(readDataFrom)
 		if err != nil {
@@ -107,6 +116,5 @@ func MaybeReadData(arvLogger *logger.Logger,
 		*readCollections = data.ReadCollections
 		*keepServerInfo = data.KeepServerInfo
 		log.Printf("Read summary data from: %s", readDataFrom)
-		return true
 	}
 }

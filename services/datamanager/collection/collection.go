@@ -25,6 +25,8 @@ var (
 )
 
 const (
+	// TODO(misha): Read this value from the SDK once support is added
+	// as suggested in https://arvados.org/issues/3408#note-31
 	DefaultReplicationLevel = 2
 )
 

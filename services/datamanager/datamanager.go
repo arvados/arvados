@@ -79,29 +79,18 @@ func singlerun() {
 	}
 
 	var (
+		dataFetcher     summary.DataFetcher
 		readCollections collection.ReadCollections
 		keepServerInfo  keep.ReadServers
 	)
 
-	if !summary.MaybeReadData(arvLogger, &readCollections, &keepServerInfo) {
-		collectionChannel := make(chan collection.ReadCollections)
-
-		go func() {
-			collectionChannel <- collection.GetCollectionsAndSummarize(
-				collection.GetCollectionsParams{
-					Client:    arv,
-					Logger:    arvLogger,
-					BatchSize: 50})
-		}()
-
-		keepServerInfo = keep.GetKeepServersAndSummarize(
-			keep.GetKeepServersParams{
-				Client: arv,
-				Logger: arvLogger,
-				Limit:  1000})
-
-		readCollections = <-collectionChannel
+	if summary.ShouldReadData() {
+		dataFetcher = summary.ReadData
+	} else {
+		dataFetcher = BuildDataFetcher(arv)
 	}
+
+	dataFetcher(arvLogger, &readCollections, &keepServerInfo)
 
 	summary.MaybeWriteData(arvLogger, readCollections, keepServerInfo)
 
@@ -150,5 +139,30 @@ func singlerun() {
 
 			p["run_info"].(map[string]interface{})["finished_at"] = time.Now()
 		})
+	}
+}
+
+// Returns a data fetcher that fetches data from remote servers.
+func BuildDataFetcher(arv arvadosclient.ArvadosClient) summary.DataFetcher {
+	return func(arvLogger *logger.Logger,
+		readCollections *collection.ReadCollections,
+		keepServerInfo *keep.ReadServers) {
+		collectionChannel := make(chan collection.ReadCollections)
+
+		go func() {
+			collectionChannel <- collection.GetCollectionsAndSummarize(
+				collection.GetCollectionsParams{
+					Client:    arv,
+					Logger:    arvLogger,
+					BatchSize: 50})
+		}()
+
+		*keepServerInfo = keep.GetKeepServersAndSummarize(
+			keep.GetKeepServersParams{
+				Client: arv,
+				Logger: arvLogger,
+				Limit:  1000})
+
+		*readCollections = <-collectionChannel
 	}
 }

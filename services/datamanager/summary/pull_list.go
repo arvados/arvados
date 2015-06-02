@@ -62,6 +62,12 @@ func ComputePullServers(kc *keepclient.KeepClient,
 	// copies of the same string.
 	var cs CanonicalString
 
+	// Servers that are writeable
+	writableServers := map[string]struct{}{}
+	for _, url := range kc.WritableLocalRoots() {
+		writableServers[cs.Get(RemoveProtocolPrefix(url))] = struct{}{}
+	}
+
 	for block, _ := range underReplicated {
 		serversStoringBlock := keepServerInfo.BlockToServers[block]
 		numCopies := len(serversStoringBlock)
@@ -79,14 +85,15 @@ func ComputePullServers(kc *keepclient.KeepClient,
 				serverHasBlock := map[string]struct{}{}
 				for _, info := range serversStoringBlock {
 					sa := keepServerInfo.KeepServerIndexToAddress[info.ServerIndex]
-					serverHasBlock[sa.HostPort()] = struct{}{}
+					serverHasBlock[cs.Get(sa.HostPort())] = struct{}{}
 				}
 
 				roots := keepclient.NewRootSorter(kc.LocalRoots(),
 					block.String()).GetSortedRoots()
 
 				l := Locator{Digest: block}
-				m[l] = CreatePullServers(cs, serverHasBlock, roots, numCopiesMissing)
+				m[l] = CreatePullServers(cs, serverHasBlock, writableServers,
+					roots, numCopiesMissing)
 			}
 		}
 	}
@@ -98,6 +105,7 @@ func ComputePullServers(kc *keepclient.KeepClient,
 // strings.
 func CreatePullServers(cs CanonicalString,
 	serverHasBlock map[string]struct{},
+	writableServers map[string]struct{},
 	sortedServers []string,
 	maxToFields int) (ps PullServers) {
 
@@ -114,7 +122,10 @@ func CreatePullServers(cs CanonicalString,
 		if hasBlock {
 			ps.From = append(ps.From, server)
 		} else if len(ps.To) < maxToFields {
-			ps.To = append(ps.To, server)
+			_, writable := writableServers[server]
+			if writable {
+				ps.To = append(ps.To, server)
+			}
 		}
 	}
 
@@ -137,11 +148,9 @@ func BuildPullLists(lps map[Locator]PullServers) (spl map[string]PullList) {
 			pullList, pullListExists := spl[destination]
 			if !pullListExists {
 				pullList = PullList{}
-				spl[destination] = pullList
 			}
-			pullList = append(pullList,
+			spl[destination] = append(pullList,
 				PullRequest{Locator: locator, Servers: pullServers.From})
-			spl[destination] = pullList
 		}
 	}
 	return

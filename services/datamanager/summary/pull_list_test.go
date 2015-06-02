@@ -46,6 +46,7 @@ func (s *MySuite) TestCreatePullServers(c *C) {
 	c.Check(
 		CreatePullServers(cs,
 			stringSet(),
+			stringSet(),
 			[]string{},
 			5),
 		DeepEquals,
@@ -54,6 +55,7 @@ func (s *MySuite) TestCreatePullServers(c *C) {
 	c.Check(
 		CreatePullServers(cs,
 			stringSet("keep0:25107", "keep1:25108"),
+			stringSet(),
 			[]string{},
 			5),
 		DeepEquals,
@@ -62,6 +64,7 @@ func (s *MySuite) TestCreatePullServers(c *C) {
 	c.Check(
 		CreatePullServers(cs,
 			stringSet("keep0:25107", "keep1:25108"),
+			stringSet("keep0:25107"),
 			[]string{"keep0:25107"},
 			5),
 		DeepEquals,
@@ -70,6 +73,7 @@ func (s *MySuite) TestCreatePullServers(c *C) {
 	c.Check(
 		CreatePullServers(cs,
 			stringSet("keep0:25107", "keep1:25108"),
+			stringSet("keep3:25110", "keep2:25109", "keep1:25108", "keep0:25107"),
 			[]string{"keep3:25110", "keep2:25109", "keep1:25108", "keep0:25107"},
 			5),
 		DeepEquals,
@@ -79,6 +83,17 @@ func (s *MySuite) TestCreatePullServers(c *C) {
 	c.Check(
 		CreatePullServers(cs,
 			stringSet("keep0:25107", "keep1:25108"),
+			stringSet("keep3:25110", "keep1:25108", "keep0:25107"),
+			[]string{"keep3:25110", "keep2:25109", "keep1:25108", "keep0:25107"},
+			5),
+		DeepEquals,
+		PullServers{To: []string{"keep3:25110"},
+			From: []string{"keep1:25108", "keep0:25107"}})
+
+	c.Check(
+		CreatePullServers(cs,
+			stringSet("keep0:25107", "keep1:25108"),
+			stringSet("keep3:25110", "keep2:25109", "keep1:25108", "keep0:25107"),
 			[]string{"keep3:25110", "keep2:25109", "keep1:25108", "keep0:25107"},
 			1),
 		DeepEquals,
@@ -88,6 +103,7 @@ func (s *MySuite) TestCreatePullServers(c *C) {
 	c.Check(
 		CreatePullServers(cs,
 			stringSet("keep0:25107", "keep1:25108"),
+			stringSet("keep3:25110", "keep2:25109", "keep1:25108", "keep0:25107"),
 			[]string{"keep3:25110", "keep2:25109", "keep1:25108", "keep0:25107"},
 			0),
 		DeepEquals,
