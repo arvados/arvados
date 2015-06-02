@@ -95,22 +95,39 @@ module ApiFixtureLoader
 end
 
 module ApiMockHelpers
-  def stub_api_calls_with_body body, status_code=200, headers={}
+  def fake_api_response body, status_code, headers
     resp = mock
-    stubbed_client = ArvadosApiClient.new
-    stubbed_client.instance_eval do
-      resp.responds_like_instance_of HTTP::Message
-      resp.stubs(:headers).returns headers
-      resp.stubs(:content).returns body
-      resp.stubs(:status_code).returns status_code
+    resp.responds_like_instance_of HTTP::Message
+    resp.stubs(:headers).returns headers
+    resp.stubs(:content).returns body
+    resp.stubs(:status_code).returns status_code
+    resp
+  end
+
+  def stub_api_calls_with_body body, status_code=200, headers={}
+    stub_api_calls
+    resp = fake_api_response body, status_code, headers
+    stub_api_client.stubs(:post).returns resp
+  end
+
+  def stub_api_calls
+    @stubbed_client = ArvadosApiClient.new
+    @stubbed_client.instance_eval do
       @api_client = HTTPClient.new
-      @api_client.stubs(:post).returns resp
     end
-    ArvadosApiClient.stubs(:new_or_current).returns(stubbed_client)
+    ArvadosApiClient.stubs(:new_or_current).returns(@stubbed_client)
   end
 
   def stub_api_calls_with_invalid_json
     stub_api_calls_with_body ']"omg,bogus"['
+  end
+
+  # Return the HTTPClient mock used by the ArvadosApiClient mock. You
+  # must have called stub_api_calls first.
+  def stub_api_client
+    @stubbed_client.instance_eval do
+      @api_client
+    end
   end
 end
 

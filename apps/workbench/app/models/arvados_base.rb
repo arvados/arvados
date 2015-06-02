@@ -171,8 +171,9 @@ class ArvadosBase < ActiveRecord::Base
   def save
     obdata = {}
     self.class.columns.each do |col|
-      unless self.send(col.name.to_sym).nil? and !self.changed.include?(col.name)
-          obdata[col.name.to_sym] = self.send(col.name.to_sym)
+      if changed.include? col.name or
+          self.class.serialized_attributes.include? col.name
+        obdata[col.name.to_sym] = self.send col.name
       end
     end
     obdata.delete :id
@@ -199,6 +200,7 @@ class ArvadosBase < ActiveRecord::Base
     end
 
     @new_record = false
+    changes_applied
 
     self
   end
@@ -281,6 +283,7 @@ class ArvadosBase < ActiveRecord::Base
     end
     @all_links = nil
     @new_record = false
+    changes_applied
     self
   end
 
