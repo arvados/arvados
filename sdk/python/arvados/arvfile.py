@@ -788,11 +788,9 @@ class ArvadosFile(object):
             # Chunk it up into smaller writes
             n = 0
             dataview = memoryview(data)
-            while (n + config.KEEP_BLOCK_SIZE) < len(data):
+            while n < len(data):
                 self.writeto(offset+n, dataview[n:n + config.KEEP_BLOCK_SIZE].tobytes(), num_retries)
                 n += config.KEEP_BLOCK_SIZE
-            if n < len(data):
-                self.writeto(offset+n, dataview[n:].tobytes(), num_retries)
             return
 
         self._modified = True
