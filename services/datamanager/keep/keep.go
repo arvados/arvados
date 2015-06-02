@@ -421,6 +421,8 @@ func parseBlockInfoFromIndexLine(indexLine string) (blockInfo BlockInfo, err err
 
 	var locator manifest.BlockLocator
 	if locator, err = manifest.ParseBlockLocator(tokens[0]); err != nil {
+		err = fmt.Errorf("%v Received error while parsing line \"%s\"",
+			err, indexLine)
 		return
 	}
 	if len(locator.Hints) > 0 {
