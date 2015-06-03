@@ -4,7 +4,7 @@ navsection: userguide
 title: "Uploading data"
 ...
 
-Arvados Data collections can be uploaded using either the @*arv keep put*@ command line tool or using Workbench.
+Arvados Data collections can be uploaded using either the @arv keep put@ command line tool or using Workbench.
 
 # "*Upload using command line tool*":#upload-using-command
 # "*Upload using Workbench*":#upload-using-workbench
@@ -24,9 +24,10 @@ qr1hi-4zz18-xxxxxxxxxxxxxxx
 </code></pre>
 </notextile>
 
+
 The output value @qr1hi-4zz18-xxxxxxxxxxxxxxx@ is the uuid of the Arvados collection created.
 
-The file used in this example is a freely available TSV file containing variant annotations from "Personal Genome Project (PGP)":http://www.pgp-hms.org participant "hu599905.":https://my.pgp-hms.org/profile/hu599905), downloadable "here":https://warehouse.pgp-hms.org/warehouse/f815ec01d5d2f11cb12874ab2ed50daa+234+K@ant/var-GS000016015-ASM.tsv.bz2.
+Note: The file used in this example is a freely available TSV file containing variant annotations from the "Personal Genome Project (PGP)":http://www.pgp-hms.org participant "hu599905":https://my.pgp-hms.org/profile/hu599905), downloadable "here":https://warehouse.pgp-hms.org/warehouse/f815ec01d5d2f11cb12874ab2ed50daa+234+K@ant/var-GS000016015-ASM.tsv.bz2. Alternatively, you can replace @var-GS000016015-ASM.tsv.bz2@ with the name of any file you have locally, or you could get the TSV file by "downloading it from Keep.":{{site.baseurl}}/user/tutorials/tutorial-keep-get.html
 
 <notextile><a name="dir"></a></notextile>It is also possible to upload an entire directory with @arv keep put@:
 
