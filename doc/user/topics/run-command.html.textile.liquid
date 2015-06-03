@@ -6,6 +6,8 @@ title: "run-command reference"
 
 The @run-command@ crunch script enables you run command line programs.
 
+{% include 'tutorial_expectations_workstation' %}
+
 h1. Using run-command
 
 The basic @run-command@ process evaluates its inputs and builds a command line, executes the command, and saves the contents of the output directory back to Keep.  For large datasets, @run-command@ can schedule concurrent tasks to execute the wrapped program over a range of inputs (see @task.foreach@ below.)
