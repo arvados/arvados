@@ -309,8 +309,12 @@ class ApplicationController < ActionController::Base
       limit_query.find_each do |record|
         new_limit += 1
         read_total += record.read_length.to_i
-        break if ((read_total >= Rails.configuration.max_index_database_read) or
-                  (new_limit >= @limit))
+        if read_total >= Rails.configuration.max_index_database_read
+          new_limit -= 1 if new_limit > 1
+          break
+        elsif new_limit >= @limit
+          break
+        end
       end
       @limit = new_limit
       @objects = @objects.limit(@limit)

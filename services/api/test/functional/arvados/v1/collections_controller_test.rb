@@ -103,11 +103,19 @@ class Arvados::V1::CollectionsControllerTest < ActionController::TestCase
     }.merge(params)
   end
 
+  test "index with manifest_text limited by max_index_database_read returns non-empty" do
+    request_capped_index() { |_| 1 }
+    assert_response :success
+    assert_equal(1, json_response["items"].size)
+    assert_equal(1, json_response["limit"])
+    assert_equal(201, json_response["items_available"])
+  end
+
   test "index with manifest_text limited by max_index_database_read" do
     request_capped_index() { |size| (size * 3) + 1 }
     assert_response :success
-    assert_equal(4, json_response["items"].size)
-    assert_equal(4, json_response["limit"])
+    assert_equal(3, json_response["items"].size)
+    assert_equal(3, json_response["limit"])
     assert_equal(201, json_response["items_available"])
   end
 
@@ -122,11 +130,11 @@ class Arvados::V1::CollectionsControllerTest < ActionController::TestCase
   test "max_index_database_read does not interfere with order" do
     request_capped_index(order: "name DESC") { |size| (size * 15) + 1 }
     assert_response :success
-    assert_equal(16, json_response["items"].size)
+    assert_equal(15, json_response["items"].size)
     assert_empty(json_response["items"].reject do |coll|
                    coll["name"] !~ /^Collection_9/
                  end)
-    assert_equal(16, json_response["limit"])
+    assert_equal(15, json_response["limit"])
     assert_equal(201, json_response["items_available"])
   end
 
