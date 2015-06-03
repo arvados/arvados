@@ -30,6 +30,8 @@ class Collection < ArvadosModel
     t.add :replication_confirmed_at
   end
 
+  LOCATOR_REGEXP = /^([[:xdigit:]]{32})(\+([[:digit:]]+))?(\+([[:upper:]][[:alnum:]+@_-]*))?$/
+
   def self.attributes_required_columns
     super.merge(
                 # If we don't list manifest_text explicitly, the
@@ -94,11 +96,21 @@ class Collection < ArvadosModel
   def strip_manifest_text
     if self.manifest_text_changed?
       # Remove any permission signatures from the manifest.
-      self.class.munge_manifest_locators!(self[:manifest_text]) do |loc|
-        loc.without_signature.to_s
+      self.class.munge_manifest_locators!(self[:manifest_text]) do |match|
+        self.class.locator_without_signature(match)
       end
     end
     true
+  end
+
+  def self.locator_without_signature match
+    without_signature = match[1]
+    without_signature += match[2] if match[2]
+    if match[4]
+      hints = match[4].split('+').reject { |hint| hint.start_with?("A") }
+      without_signature += hints.join('+')
+    end
+    without_signature
   end
 
   def set_portable_data_hash
@@ -198,8 +210,8 @@ class Collection < ArvadosModel
       expire: db_current_time.to_i + Rails.configuration.blob_signature_ttl,
     }
     m = manifest.dup
-    munge_manifest_locators!(m) do |loc|
-      Blob.sign_locator(loc.to_s, signing_opts)
+    munge_manifest_locators!(m) do |match|
+      Blob.sign_locator(locator_without_signature(match), signing_opts)
     end
     return m
   end
@@ -207,13 +219,21 @@ class Collection < ArvadosModel
   def self.munge_manifest_locators! manifest
     # Given a manifest text and a block, yield each locator,
     # and replace it with whatever the block returns.
-    manifest.andand.gsub!(/ [[:xdigit:]]{32}(\+\S+)?/) do |word|
-      if loc = Keep::Locator.parse(word.strip)
-        " " + yield(loc)
-      else
-        " " + word
+    new_lines = []
+    lines = manifest.andand.split("\n")
+    lines.andand.each do |line|
+      words = line.split(' ')
+      new_words = []
+      words.each do |word|
+        if match = LOCATOR_REGEXP.match(word.strip)
+          new_words << yield(match)
+        else
+          new_words << word
+        end
       end
+      new_lines << new_words.join(' ')
     end
+    manifest = new_lines.join("\n")+"\n"
   end
 
   def self.each_manifest_locator manifest
@@ -309,21 +329,23 @@ class Collection < ArvadosModel
   protected
   def portable_manifest_text
     portable_manifest = self[:manifest_text].dup
-    self.class.munge_manifest_locators!(portable_manifest) do |loc|
-      if loc.size
-        loc.hash + '+' + loc.size.to_s
+    portable_manifest = self.class.munge_manifest_locators!(portable_manifest) do |match|
+      if match[2] # size
+        match[1] + match[2]
       else
-        loc.hash
+        match[1]
       end
     end
     portable_manifest
   end
 
   def compute_pdh
+    return @computed_pdh if @computed_pdh
     portable_manifest = portable_manifest_text
-    (Digest::MD5.hexdigest(portable_manifest) +
-     '+' +
-     portable_manifest.bytesize.to_s)
+    @computed_pdh = (Digest::MD5.hexdigest(portable_manifest) +
+                     '+' +
+                     portable_manifest.bytesize.to_s)
+    @computed_pdh
   end
 
   def maybe_clear_replication_confirmed
