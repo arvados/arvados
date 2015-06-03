@@ -301,6 +301,7 @@ class ApplicationController < ActionController::Base
     return if limit_columns.empty?
     model_class.transaction do
       limit_query = @objects.
+        except(:select).
         select("(%s) as read_length" %
                limit_columns.map { |s| "octet_length(#{s})" }.join(" + "))
       new_limit = 0
