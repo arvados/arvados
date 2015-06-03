@@ -24,6 +24,31 @@ class ArvadosBaseTest < ActiveSupport::TestCase
     end
   end
 
+  test '#save does not send unchanged attributes missing because of select' do
+    use_token :active do
+      fixture = api_fixture("collections")["foo_collection_in_aproject"]
+      c = Collection.
+        filter([['uuid','=',fixture['uuid']]]).
+        select(['uuid']).
+        first
+      assert_equal nil, c.properties
+
+      got_query = nil
+      stub_api_calls
+      stub_api_client.expects(:post).with do |url, query, opts={}|
+        got_query = query
+        true
+      end.returns fake_api_response('{}', 200, {})
+      c.name = 'foo'
+      c.save
+
+      updates = JSON.parse got_query['collection']
+      assert_includes updates, 'name'
+      refute_includes updates, 'description'
+      refute_includes updates, 'properties'
+    end
+  end
+
   [false,
    {},
    {'foo' => 'bar'},
