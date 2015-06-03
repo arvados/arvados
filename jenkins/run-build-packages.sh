@@ -9,10 +9,16 @@ Syntax:
 
 Options:
 
---upload               Upload packages (default: false)
---scp-user USERNAME    Scp user for apt server (only required when --upload is specified)
---apt-server HOSTNAME  Apt server hostname (only required when --upload is specified)
---debug                Output debug information (default: false)
+--upload
+    Upload packages (default: false)
+--scp-user USERNAME
+    Scp user for apt server (only required when --upload is specified)
+--apt-server HOSTNAME
+    Apt server hostname (only required when --upload is specified)
+--build-bundle-packages  (default: false)
+    Build api server and workbench packages with vendor/bundle included
+--debug
+    Output debug information (default: false)
 
 WORKSPACE=path         Path to the Arvados source tree to build packages from
 
@@ -44,6 +50,9 @@ do
             ;;
         --upload)
             UPLOAD=1
+            ;;
+        --build-bundle-packages)
+            BUILD_BUNDLE_PACKAGES=1
             ;;
         *)
             echo >&2 "$0: Unrecognized option: '$arg'. Try: $0 --help"
@@ -91,7 +100,16 @@ EOF
   exit 1
 fi
 
+RUN_BUILD_PACKAGES_PATH="`dirname \"$0\"`"
+RUN_BUILD_PACKAGES_PATH="`( cd \"$RUN_BUILD_PACKAGES_PATH\" && pwd )`"  # absolutized and normalized
+if [ -z "$RUN_BUILD_PACKAGES_PATH" ] ; then
+  # error; for some reason, the path is not accessible
+  # to the script (e.g. permissions re-evaled after suid)
+  exit 1  # fail
+fi
+
 if [[ "$DEBUG" != 0 ]]; then
+  echo "$0 is running from $RUN_BUILD_PACKAGES_PATH"
   echo "Workspace is $WORKSPACE"
 fi
 
@@ -192,6 +210,15 @@ build_and_scp_deb () {
   FPM_RESULTS=$("${COMMAND_ARR[@]}")
   FPM_EXIT_CODE=$?
 
+  verify_and_scp_deb $FPM_EXIT_CODE $FPM_RESULTS
+}
+
+# verify build results and scp debs, if needed
+verify_and_scp_deb () {
+  FPM_EXIT_CODE=$1
+  shift
+  FPM_RESULTS=$@
+
   FPM_PACKAGE_NAME=''
   if [[ $FPM_RESULTS =~ ([A-Za-z0-9_\-.]*\.deb) ]]; then
     FPM_PACKAGE_NAME=${BASH_REMATCH[1]}
@@ -270,7 +297,7 @@ if [[ "$DEBUG" != 0 ]]; then
   echo
 fi
 
-if type rvm-exec 2>/dev/null; then
+if type rvm-exec >/dev/null 2>&1; then
   FPM_GEM_PREFIX=$(rvm-exec system gem environment gemdir)
 else
   FPM_GEM_PREFIX=$(gem environment gemdir)
@@ -286,7 +313,7 @@ if [[ "$DEBUG" != 0 ]]; then
   gem build arvados.gemspec
 else
   # -q appears to be broken in gem version 2.2.2
-  gem build arvados.gemspec -q >/dev/null
+  gem build arvados.gemspec -q >/dev/null 2>&1
 fi
 
 if [[ "$UPLOAD" != 0 ]]; then
@@ -483,11 +510,126 @@ for deppkg in python-gflags pyvcf google-api-python-client oauth2client \
       pycrypto backports.ssl_match_hostname; do
     build_and_scp_deb "$deppkg"
 done
+
 # Python 3 dependencies
 for deppkg in docker-py six requests; do
     # The empty string is the vendor argument: these aren't Curoverse software.
     build_and_scp_deb "$deppkg" "python3-$deppkg" "" python3
 done
+
+# Build the API server package
+
+cd "$WORKSPACE/services/api"
+
+API_VERSION=$(version_from_git)
+PACKAGE_NAME=arvados-api-server
+
+if [[ ! -d "$WORKSPACE/services/api/tmp" ]]; then
+  mkdir $WORKSPACE/services/api/tmp
+fi
+
+BUNDLE_OUTPUT=`bundle install --path vendor/bundle`
+
+if [[ "$DEBUG" != 0 ]]; then
+  echo $BUNDLE_OUTPUT
+fi
+
+/usr/bin/git rev-parse HEAD > git-commit.version
+
+cd $WORKSPACE/debs
+
+# Annoyingly, we require a database.yml file for rake assets:precompile to work. So for now,
+# we do that in the upgrade script.
+# TODO: add bogus database.yml file so we can precompile the assets and put them in the
+# package. Then remove that database.yml file again. It has to be a valid file though.
+#RAILS_ENV=production RAILS_GROUPS=assets bundle exec rake assets:precompile
+
+# This is the complete package with vendor/bundle included.
+# It's big, so we do not build it by default.
+if [[ "$BUILD_BUNDLE_PACKAGES" != 0 ]]; then
+  declare -a COMMAND_ARR=("fpm" "--maintainer=Ward Vandewege <ward@curoverse.com>" "--vendor='Curoverse, Inc.'" "--url='https://arvados.org'" "--description='Arvados API server - Arvados is a free and open source platform for big data science.'" "--license='AGPL v3'" "-s" "dir" "-t" "deb" "-n" "$PACKAGE_NAME" "-v" "$API_VERSION" "-x" "var/www/arvados-api/current/tmp" "-x" "var/www/arvados-api/current/log" "-x" "var/www/arvados-api/current/vendor/cache/*" "-x" "var/www/arvados-api/current/coverage" "-x" "var/www/arvados-api/current/Capfile*" "-x" "var/www/arvados-api/current/config/deploy*" "--after-install=$RUN_BUILD_PACKAGES_PATH/arvados-api-server-extras/postinst.sh" "$WORKSPACE/services/api/=/var/www/arvados-api/current" "$RUN_BUILD_PACKAGES_PATH/arvados-api-server-extras/arvados-api-server-upgrade.sh=/usr/local/bin/arvados-api-server-upgrade.sh")
+
+  if [[ "$DEBUG" != 0 ]]; then
+    echo
+    echo "${COMMAND_ARR[@]}"
+    echo
+  fi
+
+  FPM_RESULTS=$("${COMMAND_ARR[@]}")
+  FPM_EXIT_CODE=$?
+  verify_and_scp_deb $FPM_EXIT_CODE $FPM_RESULTS
+fi
+
+# Build the 'bare' package without vendor/bundle.
+declare -a COMMAND_ARR=("fpm" "--maintainer=Ward Vandewege <ward@curoverse.com>" "--vendor='Curoverse, Inc.'" "--url='https://arvados.org'" "--description='Arvados API server - Arvados is a free and open source platform for big data science.'" "--license='AGPL v3'" "-s" "dir" "-t" "deb" "-n" "${PACKAGE_NAME}-bare" "-v" "$API_VERSION" "-x" "var/www/arvados-api/current/tmp" "-x" "var/www/arvados-api/current/log" "-x" "var/www/arvados-api/current/vendor/bundle" "-x" "var/www/arvados-api/current/vendor/cache/*" "-x" "var/www/arvados-api/current/coverage" "-x" "var/www/arvados-api/current/Capfile*" "-x" "var/www/arvados-api/current/config/deploy*" "--after-install=$RUN_BUILD_PACKAGES_PATH/arvados-api-server-extras/postinst.sh" "$WORKSPACE/services/api/=/var/www/arvados-api/current" "$RUN_BUILD_PACKAGES_PATH/arvados-api-server-extras/arvados-api-server-upgrade.sh=/usr/local/bin/arvados-api-server-upgrade.sh")
+
+if [[ "$DEBUG" != 0 ]]; then
+  echo
+  echo "${COMMAND_ARR[@]}"
+  echo
+fi
+
+FPM_RESULTS=$("${COMMAND_ARR[@]}")
+FPM_EXIT_CODE=$?
+verify_and_scp_deb $FPM_EXIT_CODE $FPM_RESULTS
+
+# API server package build done
+
+# Build the workbench server package
+
+cd "$WORKSPACE/apps/workbench"
+
+WORKBENCH_VERSION=$(version_from_git)
+PACKAGE_NAME=arvados-workbench
+
+if [[ ! -d "$WORKSPACE/apps/workbench/tmp" ]]; then
+  mkdir $WORKSPACE/apps/workbench/tmp
+fi
+
+BUNDLE_OUTPUT=`bundle install --path vendor/bundle`
+
+if [[ "$DEBUG" != 0 ]]; then
+  echo $BUNDLE_OUTPUT
+fi
+
+/usr/bin/git rev-parse HEAD > git-commit.version
+
+RAILS_ENV=production RAILS_GROUPS=assets bundle exec rake assets:precompile >/dev/null
+
+cd $WORKSPACE/debs
+
+# This is the complete package with vendor/bundle included.
+# It's big, so we do not build it by default.
+if [[ "$BUILD_BUNDLE_PACKAGES" != 0 ]]; then
+
+  declare -a COMMAND_ARR=("fpm" "--maintainer=Ward Vandewege <ward@curoverse.com>" "--vendor='Curoverse, Inc.'" "--url='https://arvados.org'" "--description='Arvados Workbench - Arvados is a free and open source platform for big data science.'" "--license='AGPL v3'" "-s" "dir" "-t" "deb" "-n" "$PACKAGE_NAME" "-v" "$WORKBENCH_VERSION" "-x" "var/www/arvados-workbench/current/tmp" "-x" "var/www/arvados-workbench/current/log" "-x" "var/www/arvados-workbench/current/vendor/cache/*" "-x" "var/www/arvados-workbench/current/coverage" "-x" "var/www/arvados-workbench/current/Capfile*" "-x" "var/www/arvados-workbench/current/config/deploy*" "--after-install=$RUN_BUILD_PACKAGES_PATH/arvados-workbench-extras/postinst.sh" "$WORKSPACE/apps/workbench/=/var/www/arvados-workbench/current" "$RUN_BUILD_PACKAGES_PATH/arvados-workbench-extras/arvados-workbench-upgrade.sh=/usr/local/bin/arvados-workbench-upgrade.sh")
+
+  if [[ "$DEBUG" != 0 ]]; then
+    echo
+    echo "${COMMAND_ARR[@]}"
+    echo
+  fi
+
+  FPM_RESULTS=$("${COMMAND_ARR[@]}")
+  FPM_EXIT_CODE=$?
+  verify_and_scp_deb $FPM_EXIT_CODE $FPM_RESULTS
+fi
+
+# Build the 'bare' package without vendor/bundle.
+
+declare -a COMMAND_ARR=("fpm" "--maintainer=Ward Vandewege <ward@curoverse.com>" "--vendor='Curoverse, Inc.'" "--url='https://arvados.org'" "--description='Arvados Workbench - Arvados is a free and open source platform for big data science.'" "--license='AGPL v3'" "-s" "dir" "-t" "deb" "-n" "${PACKAGE_NAME}-bare" "-v" "$WORKBENCH_VERSION" "-x" "var/www/arvados-workbench/current/tmp" "-x" "var/www/arvados-workbench/current/log" "-x" "var/www/arvados-workbench/current/vendor/bundle" "-x" "var/www/arvados-workbench/current/vendor/cache/*" "-x" "var/www/arvados-workbench/current/coverage" "-x" "var/www/arvados-workbench/current/Capfile*" "-x" "var/www/arvados-workbench/current/config/deploy*" "--after-install=$RUN_BUILD_PACKAGES_PATH/arvados-workbench-extras/postinst.sh" "$WORKSPACE/apps/workbench/=/var/www/arvados-workbench/current" "$RUN_BUILD_PACKAGES_PATH/arvados-workbench-extras/arvados-workbench-upgrade.sh=/usr/local/bin/arvados-workbench-upgrade.sh")
+
+if [[ "$DEBUG" != 0 ]]; then
+  echo
+  echo "${COMMAND_ARR[@]}"
+  echo
+fi
+
+FPM_RESULTS=$("${COMMAND_ARR[@]}")
+FPM_EXIT_CODE=$?
+verify_and_scp_deb $FPM_EXIT_CODE $FPM_RESULTS
+
+# Workbench package build done
 
 # Finally, publish the packages, if necessary
 if [[ "$UPLOAD" != 0 && "$CALL_FREIGHT" != 0 ]]; then
