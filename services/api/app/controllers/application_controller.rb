@@ -302,7 +302,7 @@ class ApplicationController < ActionController::Base
     model_class.transaction do
       limit_query = @objects.
         select("(%s) as read_length" %
-               limit_columns.map { |s| "length(#{s})" }.join(" + "))
+               limit_columns.map { |s| "octet_length(#{s})" }.join(" + "))
       new_limit = 0
       read_total = 0
       limit_query.find_each do |record|
