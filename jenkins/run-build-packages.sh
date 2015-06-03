@@ -29,6 +29,7 @@ CALL_FREIGHT=0
 
 DEBUG=0
 UPLOAD=0
+BUILD_BUNDLE_PACKAGES=0
 
 while [[ -n "$1" ]]
 do
