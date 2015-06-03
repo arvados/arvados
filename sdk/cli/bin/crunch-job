@@ -139,7 +139,7 @@ if (defined $job_api_token) {
   $ENV{ARVADOS_API_TOKEN} = $job_api_token;
 }
 
-my $have_slurm = exists $ENV{SLURM_JOBID} && exists $ENV{SLURM_NODELIST};
+my $have_slurm = exists $ENV{SLURM_JOB_ID} && exists $ENV{SLURM_NODELIST};
 
 
 $SIG{'USR1'} = sub
@@ -342,8 +342,7 @@ my @jobstep_todo = ();
 my @jobstep_done = ();
 my @jobstep_tomerge = ();
 my $jobstep_tomerge_level = 0;
-my $squeue_checked;
-my $squeue_kill_checked;
+my $squeue_checked = 0;
 my $latest_refresh = scalar time;
 
 
@@ -1254,29 +1253,45 @@ sub check_refresh_wanted
 
 sub check_squeue
 {
-  # return if the kill list was checked <4 seconds ago
-  if (defined $squeue_kill_checked && $squeue_kill_checked > time - 4)
-  {
-    return;
-  }
-  $squeue_kill_checked = time;
+  my $last_squeue_check = $squeue_checked;
 
-  # use killem() on procs whose killtime is reached
-  for (keys %proc)
+  # Do not call `squeue` or check the kill list more than once every
+  # 15 seconds.
+  return if $last_squeue_check > time - 15;
+  $squeue_checked = time;
+
+  # Look for children from which we haven't received stderr data since
+  # the last squeue check. If no such children exist, all procs are
+  # alive and there's no need to even look at squeue.
+  #
+  # As long as the crunchstat poll interval (10s) is shorter than the
+  # squeue check interval (15s) this should make the squeue check an
+  # infrequent event.
+  my $silent_procs = 0;
+  for my $jobstep (values %proc)
   {
-    if (exists $proc{$_}->{killtime}
-	&& $proc{$_}->{killtime} <= time)
+    if ($jobstep->{stderr_at} < $last_squeue_check)
     {
-      killem ($_);
+      $silent_procs++;
     }
   }
+  return if $silent_procs == 0;
 
-  # return if the squeue was checked <60 seconds ago
-  if (defined $squeue_checked && $squeue_checked > time - 60)
+  # use killem() on procs whose killtime is reached
+  while (my ($pid, $jobstep) = each %proc)
   {
-    return;
+    if (exists $jobstep->{killtime}
+        && $jobstep->{killtime} <= time
+        && $jobstep->{stderr_at} < $last_squeue_check)
+    {
+      my $sincewhen = "";
+      if ($jobstep->{stderr_at}) {
+        $sincewhen = " in last " . (time - $jobstep->{stderr_at}) . "s";
+      }
+      Log($jobstep->{jobstep}, "killing orphaned srun process $pid (task not in slurm queue, no stderr received$sincewhen)");
+      killem ($pid);
+    }
   }
-  $squeue_checked = time;
 
   if (!$have_slurm)
   {
@@ -1285,13 +1300,13 @@ sub check_squeue
   }
 
   # get a list of steps still running
-  my @squeue = `squeue -s -h -o '%i %j' && echo ok`;
-  chop @squeue;
-  if ($squeue[-1] ne "ok")
+  my @squeue = `squeue --jobs=\Q$ENV{SLURM_JOB_ID}\E --steps --format='%i %j' --noheader`;
+  if ($? != 0)
   {
+    Log(undef, "warning: squeue exit status $? ($!)");
     return;
   }
-  pop @squeue;
+  chop @squeue;
 
   # which of my jobsteps are running, according to squeue?
   my %ok;
@@ -1299,22 +1314,30 @@ sub check_squeue
   {
     if (/^(\d+)\.(\d+) (\S+)/)
     {
-      if ($1 eq $ENV{SLURM_JOBID})
+      if ($1 eq $ENV{SLURM_JOB_ID})
       {
 	$ok{$3} = 1;
       }
     }
   }
 
-  # which of my active child procs (>60s old) were not mentioned by squeue?
-  foreach (keys %proc)
+  # Check for child procs >60s old and not mentioned by squeue.
+  while (my ($pid, $jobstep) = each %proc)
   {
-    if ($proc{$_}->{time} < time - 60
-	&& !exists $ok{$proc{$_}->{jobstepname}}
-	&& !exists $proc{$_}->{killtime})
+    if ($jobstep->{time} < time - 60
+        && $jobstep->{jobstepname}
+        && !exists $ok{$jobstep->{jobstepname}}
+        && !exists $jobstep->{killtime})
     {
-      # kill this proc if it hasn't exited in 30 seconds
-      $proc{$_}->{killtime} = time + 30;
+      # According to slurm, this task has ended (successfully or not)
+      # -- but our srun child hasn't exited. First we must wait (30
+      # seconds) in case this is just a race between communication
+      # channels. Then, if our srun child process still hasn't
+      # terminated, we'll conclude some slurm communication
+      # error/delay has caused the task to die without notifying srun,
+      # and we'll kill srun ourselves.
+      $jobstep->{killtime} = time + 30;
+      Log($jobstep->{jobstep}, "notice: task is not in slurm queue but srun process $pid has not exited");
     }
   }
 }
@@ -1325,7 +1348,7 @@ sub release_allocation
   if ($have_slurm)
   {
     Log (undef, "release job allocation");
-    system "scancel $ENV{SLURM_JOBID}";
+    system "scancel $ENV{SLURM_JOB_ID}";
   }
 }
 
@@ -1339,6 +1362,7 @@ sub readfrompipes
     while (0 < sysread ($reader{$job}, $buf, 8192))
     {
       print STDERR $buf if $ENV{CRUNCH_DEBUG};
+      $jobstep[$job]->{stderr_at} = time;
       $jobstep[$job]->{stderr} .= $buf;
       preprocess_stderr ($job);
       if (length ($jobstep[$job]->{stderr}) > 16384)
