@@ -306,7 +306,7 @@ class ApplicationController < ActionController::Base
                limit_columns.map { |s| "octet_length(#{s})" }.join(" + "))
       new_limit = 0
       read_total = 0
-      limit_query.find_each do |record|
+      limit_query.each do |record|
         new_limit += 1
         read_total += record.read_length.to_i
         if read_total >= Rails.configuration.max_index_database_read

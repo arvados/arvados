@@ -111,6 +111,23 @@ class Arvados::V1::CollectionsControllerTest < ActionController::TestCase
     assert_equal(201, json_response["items_available"])
   end
 
+  test "max_index_database_read size check follows same order as real query" do
+    authorize_with :user1_with_load
+    txt = '.' + ' d41d8cd98f00b204e9800998ecf8427e+0'*1000 + " 0:0:empty.txt\n"
+    c = Collection.create! manifest_text: txt, name: '0000000000000000000'
+    request_capped_index(select: %w(uuid manifest_text name),
+                         order: ['name asc'],
+                         filters: [['name','>=',c.name]]) do |_|
+      txt.length - 1
+    end
+    assert_response :success
+    assert_equal(1, json_response["items"].size)
+    assert_equal(1, json_response["limit"])
+    assert_equal(c.uuid, json_response["items"][0]["uuid"])
+    # The effectiveness of the test depends on >1 item matching the filters.
+    assert_operator(1, :<, json_response["items_available"])
+  end
+
   test "index with manifest_text limited by max_index_database_read" do
     request_capped_index() { |size| (size * 3) + 1 }
     assert_response :success
@@ -128,13 +145,14 @@ class Arvados::V1::CollectionsControllerTest < ActionController::TestCase
   end
 
   test "max_index_database_read does not interfere with order" do
-    request_capped_index(order: "name DESC") { |size| (size * 15) + 1 }
+    request_capped_index(select: %w(uuid manifest_text name),
+                         order: "name DESC") { |size| (size * 11) + 1 }
     assert_response :success
-    assert_equal(15, json_response["items"].size)
+    assert_equal(11, json_response["items"].size)
     assert_empty(json_response["items"].reject do |coll|
-                   coll["name"] !~ /^Collection_9/
+                   coll["name"] =~ /^Collection_9/
                  end)
-    assert_equal(15, json_response["limit"])
+    assert_equal(11, json_response["limit"])
     assert_equal(201, json_response["items_available"])
   end
 
