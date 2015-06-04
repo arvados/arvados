@@ -103,7 +103,7 @@ class Collection < ArvadosModel
 
       # Remove any permission signatures from the manifest.
       self[:manifest_text] = self.class.munge_manifest_locators!(self[:manifest_text]) do |match|
-        if not in_old_manifest[match[1]] && !cleared_replication_confirmed
+        if not cleared_replication_confirmed  and not in_old_manifest[match[1]]
           self.replication_confirmed_at = nil
           self.replication_confirmed = nil
           cleared_replication_confirmed = true
