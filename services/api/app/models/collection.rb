@@ -10,9 +10,8 @@ class Collection < ArvadosModel
 
   before_validation :check_encoding
   before_validation :check_signatures
-  before_validation :strip_manifest_text
+  before_validation :strip_manifest_text_and_clear_replication_confirmed
   before_validation :set_portable_data_hash
-  before_validation :maybe_clear_replication_confirmed
   validate :ensure_hash_matches_manifest_text
   before_save :set_file_names
 
@@ -93,10 +92,22 @@ class Collection < ArvadosModel
     @signatures_checked = computed_pdh
   end
 
-  def strip_manifest_text
+  def strip_manifest_text_and_clear_replication_confirmed
     if self.manifest_text_changed?
+      in_old_manifest = {}
+      self.class.munge_manifest_locators!(manifest_text_was) do |match|
+        in_old_manifest[match[1]] = true
+      end
+
+      cleared_replication_confirmed = false
+
       # Remove any permission signatures from the manifest.
-      self.class.munge_manifest_locators!(self[:manifest_text]) do |match|
+      self[:manifest_text] = self.class.munge_manifest_locators!(self[:manifest_text]) do |match|
+        if not in_old_manifest[match[1]] && !cleared_replication_confirmed
+          self.replication_confirmed_at = nil
+          self.replication_confirmed = nil
+          cleared_replication_confirmed = true
+        end
         self.class.locator_without_signature(match)
       end
     end
@@ -210,7 +221,7 @@ class Collection < ArvadosModel
       expire: db_current_time.to_i + Rails.configuration.blob_signature_ttl,
     }
     m = manifest.dup
-    munge_manifest_locators!(m) do |match|
+    m = munge_manifest_locators!(m) do |match|
       Blob.sign_locator(locator_without_signature(match), signing_opts)
     end
     return m
@@ -228,21 +239,13 @@ class Collection < ArvadosModel
         if match = LOCATOR_REGEXP.match(word.strip)
           new_words << yield(match)
         else
-          new_words << word
+          new_words << word.strip
         end
       end
       new_lines << new_words.join(' ')
     end
-    manifest = new_lines.join("\n")+"\n"
-  end
-
-  def self.each_manifest_locator manifest
-    # Given a manifest text and a block, yield each locator.
-    manifest.andand.scan(/ ([[:xdigit:]]{32}(\+\S+)?)/) do |word, _|
-      if loc = Keep::Locator.parse(word)
-        yield loc
-      end
-    end
+    manifest = new_lines.join("\n")+"\n" if !new_lines.empty?
+    manifest
   end
 
   def self.normalize_uuid uuid
@@ -346,25 +349,6 @@ class Collection < ArvadosModel
                      '+' +
                      portable_manifest.bytesize.to_s)
     @computed_pdh
-  end
-
-  def maybe_clear_replication_confirmed
-    if manifest_text_changed?
-      # If the new manifest_text contains locators whose hashes
-      # weren't in the old manifest_text, storage replication is no
-      # longer confirmed.
-      in_old_manifest = {}
-      self.class.each_manifest_locator(manifest_text_was) do |loc|
-        in_old_manifest[loc.hash] = true
-      end
-      self.class.each_manifest_locator(manifest_text) do |loc|
-        if not in_old_manifest[loc.hash]
-          self.replication_confirmed_at = nil
-          self.replication_confirmed = nil
-          break
-        end
-      end
-    end
   end
 
   def ensure_permission_to_save
