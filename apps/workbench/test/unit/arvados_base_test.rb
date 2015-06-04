@@ -31,7 +31,13 @@ class ArvadosBaseTest < ActiveSupport::TestCase
         filter([['uuid','=',fixture['uuid']]]).
         select(['uuid']).
         first
-      assert_equal nil, c.properties
+      if 'MissingAttribute check is re-enabled' == true
+        assert_raises ActiveModel::MissingAttributeError do
+          c.properties
+        end
+      else
+        assert_equal({}, c.properties)
+      end
 
       got_query = nil
       stub_api_calls
