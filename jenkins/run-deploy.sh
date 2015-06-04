@@ -63,7 +63,7 @@ SUM_ECODE=0
 # Install updated debian packages
 title "Deploying updated arvados debian packages"
 
-ssh -p2222 root@$IDENTIFIER.arvadosapi.com -C "apt-get update && apt-get -qqy install arvados-src python-arvados-fuse python-arvados-python-client arvados-api-server-bare"
+ssh -p2222 root@$IDENTIFIER.arvadosapi.com -C "apt-get update && apt-get -qqy install arvados-src python-arvados-fuse python-arvados-python-client arvados-api-server"
 
 ECODE=$?
 SUM_ECODE=$(($SUM_ECODE + $ECODE))
@@ -103,7 +103,7 @@ title "Deploying workbench"
 # Install updated debian packages
 title "Deploying updated arvados debian packages"
 
-ssh -p2222 root@workbench.$IDENTIFIER.arvadosapi.com -C "apt-get update && apt-get -qqy install python-arvados-fuse python-arvados-python-client arvados-workbench-bare"
+ssh -p2222 root@workbench.$IDENTIFIER.arvadosapi.com -C "apt-get update && apt-get -qqy install python-arvados-fuse python-arvados-python-client arvados-workbench"
 
 ECODE=$?
 SUM_ECODE=$(($SUM_ECODE + $ECODE))
