@@ -244,7 +244,13 @@ class Collection < ArvadosModel
       end
       new_lines << new_words.join(' ')
     end
-    manifest = new_lines.join("\n")+"\n" if !new_lines.empty?
+
+    if !new_lines.empty?
+      ends_with_newline = manifest.end_with?("\n")
+      manifest = new_lines.join("\n")
+      manifest += "\n" if ends_with_newline
+    end
+
     manifest
   end
 
