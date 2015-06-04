@@ -14,13 +14,11 @@ import (
 	"strings"
 )
 
-type Locator struct {
-	Digest blockdigest.BlockDigest
-	// TODO(misha): Add size field to the Locator (and MarshalJSON() below)
-}
+type Locator blockdigest.DigestWithSize
 
 func (l Locator) MarshalJSON() ([]byte, error) {
-	return []byte("\"" + l.Digest.String() + "\""), nil
+	//return []byte("\"" + l.Digest.String() + "\""), nil
+	return []byte("\"" + blockdigest.DigestWithSize(l).String() + "\""), nil
 }
 
 // One entry in the Pull List
@@ -32,15 +30,24 @@ type PullRequest struct {
 // The Pull List for a particular server
 type PullList []PullRequest
 
-// PullListByDigest implements sort.Interface for PullList based on
+// PullListByLocator implements sort.Interface for PullList based on
 // the Digest.
-type PullListByDigest PullList
+type PullListByLocator PullList
 
-func (a PullListByDigest) Len() int      { return len(a) }
-func (a PullListByDigest) Swap(i, j int) { a[i], a[j] = a[j], a[i] }
-func (a PullListByDigest) Less(i, j int) bool {
+func (a PullListByLocator) Len() int      { return len(a) }
+func (a PullListByLocator) Swap(i, j int) { a[i], a[j] = a[j], a[i] }
+func (a PullListByLocator) Less(i, j int) bool {
 	di, dj := a[i].Locator.Digest, a[j].Locator.Digest
-	return di.H < dj.H || (di.H == dj.H && di.L < dj.L)
+	if di.H < dj.H {
+		return true
+	} else if di.H == dj.H {
+		if di.L < dj.L {
+			return true
+		} else if di.L == dj.L {
+			return a[i].Locator.Size < a[j].Locator.Size
+		}
+	}
+	return false
 }
 
 // For a given under-replicated block, this structure represents which
@@ -55,7 +62,7 @@ type PullServers struct {
 // each under-replicated block.
 func ComputePullServers(kc *keepclient.KeepClient,
 	keepServerInfo *keep.ReadServers,
-	blockToDesiredReplication map[blockdigest.BlockDigest]int,
+	blockToDesiredReplication map[blockdigest.DigestWithSize]int,
 	underReplicated BlockSet) (m map[Locator]PullServers) {
 	m = map[Locator]PullServers{}
 	// We use CanonicalString to avoid filling memory with dupicate
@@ -91,7 +98,7 @@ func ComputePullServers(kc *keepclient.KeepClient,
 				roots := keepclient.NewRootSorter(kc.LocalRoots(),
 					block.String()).GetSortedRoots()
 
-				l := Locator{Digest: block}
+				l := Locator(block)
 				m[l] = CreatePullServers(cs, serverHasBlock, writableServers,
 					roots, numCopiesMissing)
 			}

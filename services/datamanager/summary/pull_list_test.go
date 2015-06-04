@@ -29,13 +29,13 @@ func stringSet(slice ...string) (m map[string]struct{}) {
 
 func (s *MySuite) TestPullListPrintsJSONCorrectly(c *C) {
 	pl := PullList{PullRequest{
-		Locator: Locator{Digest: blockdigest.MakeTestBlockDigest(0xBadBeef)},
+		Locator: Locator(blockdigest.MakeTestDigestSpecifySize(0xBadBeef, 56789)),
 		Servers: []string{"keep0.qr1hi.arvadosapi.com:25107",
 			"keep1.qr1hi.arvadosapi.com:25108"}}}
 
 	b, err := json.Marshal(pl)
 	c.Assert(err, IsNil)
-	expectedOutput := `[{"locator":"0000000000000000000000000badbeef",` +
+	expectedOutput := `[{"locator":"0000000000000000000000000badbeef+56789",` +
 		`"servers":["keep0.qr1hi.arvadosapi.com:25107",` +
 		`"keep1.qr1hi.arvadosapi.com:25108"]}]`
 	c.Check(string(b), Equals, expectedOutput)
@@ -129,10 +129,10 @@ func (c *pullListMapEqualsChecker) Check(params []interface{}, names []string) (
 	}
 
 	for _, v := range obtained {
-		sort.Sort(PullListByDigest(v))
+		sort.Sort(PullListByLocator(v))
 	}
 	for _, v := range expected {
-		sort.Sort(PullListByDigest(v))
+		sort.Sort(PullListByLocator(v))
 	}
 
 	return DeepEquals.Check(params, names)

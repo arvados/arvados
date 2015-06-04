@@ -12,7 +12,7 @@ import (
 func BlockSetFromSlice(digests []int) (bs BlockSet) {
 	bs = make(BlockSet)
 	for _, digest := range digests {
-		bs.Insert(blockdigest.MakeTestBlockDigest(digest))
+		bs.Insert(blockdigest.MakeTestDigestWithSize(digest))
 	}
 	return
 }
@@ -46,9 +46,9 @@ func SummarizeReplication(readCollections collection.ReadCollections,
 // Takes a map from block digest to replication level and represents
 // it in a keep.ReadServers structure.
 func SpecifyReplication(digestToReplication map[int]int) (rs keep.ReadServers) {
-	rs.BlockToServers = make(map[blockdigest.BlockDigest][]keep.BlockServerInfo)
+	rs.BlockToServers = make(map[blockdigest.DigestWithSize][]keep.BlockServerInfo)
 	for digest, replication := range digestToReplication {
-		rs.BlockToServers[blockdigest.MakeTestBlockDigest(digest)] =
+		rs.BlockToServers[blockdigest.MakeTestDigestWithSize(digest)] =
 			make([]keep.BlockServerInfo, replication)
 	}
 	return
@@ -66,10 +66,10 @@ func VerifyToCollectionIndexSet(
 	expected := CollectionIndexSetFromSlice(expectedCollections)
 
 	rc := collection.ReadCollections{
-		BlockToCollectionIndices: map[blockdigest.BlockDigest][]int{},
+		BlockToCollectionIndices: map[blockdigest.DigestWithSize][]int{},
 	}
 	for digest, indices := range blockToCollectionIndices {
-		rc.BlockToCollectionIndices[blockdigest.MakeTestBlockDigest(digest)] = indices
+		rc.BlockToCollectionIndices[blockdigest.MakeTestDigestWithSize(digest)] = indices
 	}
 
 	returned := make(CollectionIndexSet)

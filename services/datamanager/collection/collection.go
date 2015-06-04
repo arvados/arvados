@@ -42,10 +42,10 @@ type ReadCollections struct {
 	ReadAllCollections       bool
 	UuidToCollection         map[string]Collection
 	OwnerToCollectionSize    map[string]int
-	BlockToReplication       map[blockdigest.BlockDigest]int
+	BlockToReplication       map[blockdigest.DigestWithSize]int
 	CollectionUuidToIndex    map[string]int
 	CollectionIndexToUuid    []string
-	BlockToCollectionIndices map[blockdigest.BlockDigest][]int
+	BlockToCollectionIndices map[blockdigest.DigestWithSize][]int
 }
 
 type GetCollectionsParams struct {
@@ -283,11 +283,11 @@ func ProcessCollections(arvLogger *logger.Logger,
 
 func (readCollections *ReadCollections) Summarize(arvLogger *logger.Logger) {
 	readCollections.OwnerToCollectionSize = make(map[string]int)
-	readCollections.BlockToReplication = make(map[blockdigest.BlockDigest]int)
+	readCollections.BlockToReplication = make(map[blockdigest.DigestWithSize]int)
 	numCollections := len(readCollections.UuidToCollection)
 	readCollections.CollectionUuidToIndex = make(map[string]int, numCollections)
 	readCollections.CollectionIndexToUuid = make([]string, 0, numCollections)
-	readCollections.BlockToCollectionIndices = make(map[blockdigest.BlockDigest][]int)
+	readCollections.BlockToCollectionIndices = make(map[blockdigest.DigestWithSize][]int)
 
 	for _, coll := range readCollections.UuidToCollection {
 		collectionIndex := len(readCollections.CollectionIndexToUuid)
@@ -298,12 +298,14 @@ func (readCollections *ReadCollections) Summarize(arvLogger *logger.Logger) {
 		readCollections.OwnerToCollectionSize[coll.OwnerUuid] =
 			readCollections.OwnerToCollectionSize[coll.OwnerUuid] + coll.TotalSize
 
-		for block, _ := range coll.BlockDigestToSize {
-			readCollections.BlockToCollectionIndices[block] =
-				append(readCollections.BlockToCollectionIndices[block], collectionIndex)
-			storedReplication := readCollections.BlockToReplication[block]
+		for block, size := range coll.BlockDigestToSize {
+			locator := blockdigest.DigestWithSize{Digest: block, Size: uint32(size)}
+			readCollections.BlockToCollectionIndices[locator] =
+				append(readCollections.BlockToCollectionIndices[locator],
+					collectionIndex)
+			storedReplication := readCollections.BlockToReplication[locator]
 			if coll.ReplicationLevel > storedReplication {
-				readCollections.BlockToReplication[block] = coll.ReplicationLevel
+				readCollections.BlockToReplication[locator] = coll.ReplicationLevel
 			}
 		}
 	}

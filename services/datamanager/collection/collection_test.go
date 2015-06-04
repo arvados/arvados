@@ -21,8 +21,8 @@ var _ = Suite(&MySuite{})
 // BlockToCollectionUuids.
 type ExpectedSummary struct {
 	OwnerToCollectionSize  map[string]int
-	BlockToReplication     map[blockdigest.BlockDigest]int
-	BlockToCollectionUuids map[blockdigest.BlockDigest][]string
+	BlockToReplication     map[blockdigest.DigestWithSize]int
+	BlockToCollectionUuids map[blockdigest.DigestWithSize][]string
 }
 
 func CompareSummarizedReadCollections(c *C,
@@ -36,7 +36,7 @@ func CompareSummarizedReadCollections(c *C,
 		expected.BlockToReplication)
 
 	summarizedBlockToCollectionUuids :=
-		make(map[blockdigest.BlockDigest]map[string]struct{})
+		make(map[blockdigest.DigestWithSize]map[string]struct{})
 	for digest, indices := range summarized.BlockToCollectionIndices {
 		uuidSet := make(map[string]struct{})
 		summarizedBlockToCollectionUuids[digest] = uuidSet
@@ -46,7 +46,7 @@ func CompareSummarizedReadCollections(c *C,
 	}
 
 	expectedBlockToCollectionUuids :=
-		make(map[blockdigest.BlockDigest]map[string]struct{})
+		make(map[blockdigest.DigestWithSize]map[string]struct{})
 	for digest, uuidSlice := range expected.BlockToCollectionUuids {
 		uuidSet := make(map[string]struct{})
 		expectedBlockToCollectionUuids[digest] = uuidSet
@@ -69,13 +69,13 @@ func (s *MySuite) TestSummarizeSimple(checker *C) {
 
 	c := rc.UuidToCollection["col0"]
 
-	blockDigest1 := blockdigest.MakeTestBlockDigest(1)
-	blockDigest2 := blockdigest.MakeTestBlockDigest(2)
+	blockDigest1 := blockdigest.MakeTestDigestWithSize(1)
+	blockDigest2 := blockdigest.MakeTestDigestWithSize(2)
 
 	expected := ExpectedSummary{
 		OwnerToCollectionSize:  map[string]int{c.OwnerUuid: c.TotalSize},
-		BlockToReplication:     map[blockdigest.BlockDigest]int{blockDigest1: 5, blockDigest2: 5},
-		BlockToCollectionUuids: map[blockdigest.BlockDigest][]string{blockDigest1: []string{c.Uuid}, blockDigest2: []string{c.Uuid}},
+		BlockToReplication:     map[blockdigest.DigestWithSize]int{blockDigest1: 5, blockDigest2: 5},
+		BlockToCollectionUuids: map[blockdigest.DigestWithSize][]string{blockDigest1: []string{c.Uuid}, blockDigest2: []string{c.Uuid}},
 	}
 
 	CompareSummarizedReadCollections(checker, rc, expected)
@@ -98,21 +98,21 @@ func (s *MySuite) TestSummarizeOverlapping(checker *C) {
 	c0 := rc.UuidToCollection["col0"]
 	c1 := rc.UuidToCollection["col1"]
 
-	blockDigest1 := blockdigest.MakeTestBlockDigest(1)
-	blockDigest2 := blockdigest.MakeTestBlockDigest(2)
-	blockDigest3 := blockdigest.MakeTestBlockDigest(3)
+	blockDigest1 := blockdigest.MakeTestDigestWithSize(1)
+	blockDigest2 := blockdigest.MakeTestDigestWithSize(2)
+	blockDigest3 := blockdigest.MakeTestDigestWithSize(3)
 
 	expected := ExpectedSummary{
 		OwnerToCollectionSize: map[string]int{
 			c0.OwnerUuid: c0.TotalSize,
 			c1.OwnerUuid: c1.TotalSize,
 		},
-		BlockToReplication: map[blockdigest.BlockDigest]int{
+		BlockToReplication: map[blockdigest.DigestWithSize]int{
 			blockDigest1: 5,
 			blockDigest2: 8,
 			blockDigest3: 8,
 		},
-		BlockToCollectionUuids: map[blockdigest.BlockDigest][]string{
+		BlockToCollectionUuids: map[blockdigest.DigestWithSize][]string{
 			blockDigest1: []string{c0.Uuid},
 			blockDigest2: []string{c0.Uuid, c1.Uuid},
 			blockDigest3: []string{c1.Uuid},

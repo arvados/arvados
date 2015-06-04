@@ -11,10 +11,10 @@ import (
 	"sort"
 )
 
-type BlockSet map[blockdigest.BlockDigest]struct{}
+type BlockSet map[blockdigest.DigestWithSize]struct{}
 
 // Adds a single block to the set.
-func (bs BlockSet) Insert(digest blockdigest.BlockDigest) {
+func (bs BlockSet) Insert(digest blockdigest.DigestWithSize) {
 	bs[digest] = struct{}{}
 }
 
@@ -112,7 +112,7 @@ func (rlbs ReplicationLevelBlockSetMap) GetOrCreate(
 // Adds a block to the set for a given replication level.
 func (rlbs ReplicationLevelBlockSetMap) Insert(
 	repLevels ReplicationLevels,
-	block blockdigest.BlockDigest) {
+	block blockdigest.DigestWithSize) {
 	rlbs.GetOrCreate(repLevels).Insert(block)
 }
 
