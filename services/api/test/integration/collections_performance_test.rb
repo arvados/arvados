@@ -9,7 +9,7 @@ class CollectionsApiPerformanceTest < ActionDispatch::IntegrationTest
     bigmanifest = time_block 'make example' do
       make_manifest(streams: 100,
                     files_per_stream: 100,
-                    blocks_per_file: 10,
+                    blocks_per_file: 20,
                     bytes_per_block: 2**26,
                     api_token: api_token(:active))
     end

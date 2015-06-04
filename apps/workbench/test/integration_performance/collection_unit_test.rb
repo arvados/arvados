@@ -31,7 +31,7 @@ class BigCollectionTest < ActiveSupport::TestCase
     bigmanifest = time_block 'build example' do
       make_manifest(streams: 100,
                     files_per_stream: 100,
-                    blocks_per_file: 30,
+                    blocks_per_file: 20,
                     bytes_per_block: 0)
     end
     c = time_block "new (manifest size = #{bigmanifest.length>>20}MiB)" do
@@ -51,6 +51,11 @@ class BigCollectionTest < ActiveSupport::TestCase
       assert_equal 1, list.count
       assert_equal c.uuid, list.first.uuid
       assert_not_nil list.first.manifest_text
+    end
+    time_block 'update(name-only)' do
+      manifest_text_length = c.manifest_text.length
+      c.update_attributes name: 'renamed during test case'
+      assert_equal c.manifest_text.length, manifest_text_length
     end
     time_block 'update' do
       c.manifest_text += ". d41d8cd98f00b204e9800998ecf8427e+0 0:0:empty.txt\n"

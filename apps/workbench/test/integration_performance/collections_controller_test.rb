@@ -17,10 +17,10 @@ class BigCollectionsControllerTest < ActionController::TestCase
     bigmanifest1 = time_block 'build example' do
       make_manifest(streams: 100,
                     files_per_stream: 100,
-                    blocks_per_file: 30,
+                    blocks_per_file: 20,
                     bytes_per_block: 0)
     end
-    bigmanifest2 = bigmanifest1.sub '.txt', '.txt2'
+    bigmanifest2 = bigmanifest1.gsub '.txt', '.txt2'
     smallmanifest1 = ". d41d8cd98f00b204e9800998ecf8427e+0 0:0:small1.txt\n"
     smallmanifest2 = ". d41d8cd98f00b204e9800998ecf8427e+0 0:0:small2.txt\n"
     totalsize = bigmanifest1.length + bigmanifest2.length +
@@ -53,7 +53,7 @@ class BigCollectionsControllerTest < ActionController::TestCase
       bigmanifest = time_block 'build example' do
         make_manifest(streams: 100,
                       files_per_stream: 100,
-                      blocks_per_file: 30,
+                      blocks_per_file: 20,
                       bytes_per_block: 0)
       end
       @controller = CollectionsController.new
