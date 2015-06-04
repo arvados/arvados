@@ -400,8 +400,15 @@ class CollectionsControllerTest < ActionController::TestCase
     }, session_for(:active)
     assert_response :success
     assert_not_nil assigns(:object)
+    # Ensure the Workbench response still has the original manifest_text
     assert_equal 'test description update', assigns(:object).description
     assert_equal collection['manifest_text'], assigns(:object).manifest_text
+    # Ensure the API server still has the original manifest_text after
+    # we called arvados.v1.collections.update
+    use_token :active do
+      assert_equal(Collection.find(collection['uuid']).manifest_text,
+                   collection['manifest_text'])
+    end
   end
 
   test "view collection and verify none of the file types listed are disabled" do

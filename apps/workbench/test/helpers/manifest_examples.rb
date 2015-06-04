@@ -1,0 +1,1 @@
+../../../../services/api/test/helpers/manifest_examples.rb

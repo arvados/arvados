@@ -53,6 +53,7 @@ class ArvadosBase < ActiveRecord::Base
       'modified_by_client_uuid' => '203',
       'uuid' => '999',
     }
+    @loaded_attributes = {}
   end
 
   def self.columns
@@ -73,6 +74,12 @@ class ArvadosBase < ActiveRecord::Base
           # Hash, Array
           @columns << column(k, :text)
           serialize k, coldef[:type].constantize
+        end
+        define_method k do
+          unless new_record? or @loaded_attributes.include? k
+            raise ActiveModel::MissingAttributeError, "missing attribute: #{k}"
+          end
+          super
         end
         @attribute_info[k] = coldef
       end
@@ -171,8 +178,15 @@ class ArvadosBase < ActiveRecord::Base
   def save
     obdata = {}
     self.class.columns.each do |col|
-      unless self.send(col.name.to_sym).nil? and !self.changed.include?(col.name)
-          obdata[col.name.to_sym] = self.send(col.name.to_sym)
+      # Non-nil serialized values must be sent because we can't tell
+      # whether they've changed. Other than that, any given attribute
+      # is either unchanged (in which case there's no need to send its
+      # old value in the update/create command) or has been added to
+      # #changed by ActiveRecord's #attr= method.
+      if changed.include? col.name or
+          (self.class.serialized_attributes.include? col.name and
+           @loaded_attributes[col.name])
+        obdata[col.name.to_sym] = self.send col.name
       end
     end
     obdata.delete :id
@@ -199,6 +213,7 @@ class ArvadosBase < ActiveRecord::Base
     end
 
     @new_record = false
+    changes_applied
 
     self
   end
@@ -266,6 +281,7 @@ class ArvadosBase < ActiveRecord::Base
       hash = arvados_api_client.api(self.class, '/' + uuid_or_hash)
     end
     hash.each do |k,v|
+      @loaded_attributes[k.to_s] = true
       if self.respond_to?(k.to_s + '=')
         self.send(k.to_s + '=', v)
       else
@@ -281,6 +297,7 @@ class ArvadosBase < ActiveRecord::Base
     end
     @all_links = nil
     @new_record = false
+    changes_applied
     self
   end
 
