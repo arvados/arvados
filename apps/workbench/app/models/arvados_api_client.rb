@@ -91,6 +91,9 @@ class ArvadosApiClient
           # Use system CA certificates
           @api_client.ssl_config.add_trust_ca('/etc/ssl/certs')
         end
+        if Rails.configuration.api_response_compression
+          @api_client.transparent_gzip_decompression = true
+        end
       end
     end
 
@@ -130,11 +133,8 @@ class ArvadosApiClient
     end
 
     header = {"Accept" => "application/json"}
-    if Rails.configuration.include_accept_encoding_header_in_api_requests
-      header["Accept-Encoding"] = "gzip, deflate"
-    end
 
-    profile_checkpoint { "Prepare request #{url} #{query[:uuid]} #{query[:where]} #{query[:filters]} #{query[:order]}" }
+    profile_checkpoint { "Prepare request #{query["_method"] or "POST"} #{url} #{query[:uuid]} #{query.inspect[0,256]}" }
     msg = @client_mtx.synchronize do
       begin
         @api_client.post(url, query, header: header)
@@ -143,6 +143,12 @@ class ArvadosApiClient
       end
     end
     profile_checkpoint 'API transaction'
+    if @@profiling_enabled
+      if msg.headers['X-Runtime']
+        Rails.logger.info "API server: #{msg.headers['X-Runtime']} runtime reported"
+      end
+      Rails.logger.info "Content-Encoding #{msg.headers['Content-Encoding'].inspect}, Content-Length #{msg.headers['Content-Length'].inspect}, actual content size #{msg.content.size}"
+    end
 
     begin
       resp = Oj.load(msg.content, :symbol_keys => true)
