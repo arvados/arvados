@@ -295,20 +295,24 @@ common:
   # collection's replication_desired attribute is nil.
   default_collection_replication: 2
 
-  # Maximum size (in bytes) allowed for a single API request that will be
-  # published in the discovery document for use by clients.
-  # Note you must separately configure the upstream web server or proxy to
-  # actually enforce the desired maximum request size on the server side.
+  # Maximum size (in bytes) allowed for a single API request.  This
+  # limit is published in the discovery document for use by clients.
+  # Note: You must separately configure the upstream web server or
+  # proxy to actually enforce the desired maximum request size on the
+  # server side.
   max_request_size: 134217728
 
-  # Stop collecting records for an index request after we read this much
-  # data (in bytes) from large database columns.
-  # Currently only `GET /collections` respects this parameter, when the
-  # user requests an index that includes manifest_text.  Once the API
-  # server collects records with a total manifest_text size at or above
-  # this amount, it returns those results immediately.
-  # Note this is a threshold, not a limit.  Record collection stops
-  # *after* reading this much data.
+  # Limit the number of bytes read from the database during an index
+  # request (by retrieving and returning fewer rows than would
+  # normally be returned in a single response).
+  # Note 1: This setting never reduces the number of returned rows to
+  # zero, no matter how big the first data row is.
+  # Note 2: Currently, this only limits the
+  # arvados.v1.collections.list API (GET /arvados/v1/collections), and
+  # only takes the size of manifest_text into account. Other fields
+  # (e.g., "properties" hashes) are not counted against this limit
+  # when returning collections, and the limit is not applied at all
+  # for other data types.
   max_index_database_read: 134217728
 
   # When you run the db:delete_old_job_logs task, it will find jobs that
