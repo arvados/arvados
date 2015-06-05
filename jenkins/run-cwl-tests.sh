@@ -159,7 +159,7 @@ cd "$WORKSPACE"
 pushd reference
 python setup.py install
 python setup.py test
-./docker-node-engine.sh
+./build-node-docker.sh
 popd
 
 pushd conformance
@@ -173,6 +173,7 @@ handle_python_package
 ./build-cwl-docker.sh
 
 if [[ "$UPLOAD_DOCKER" != 0 ]]; then
+    docker push commonworkflowlanguage/cwltool_module
     docker push commonworkflowlanguage/cwltool
     docker push commonworkflowlanguage/nodejs-engine
 fi
