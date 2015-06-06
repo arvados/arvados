@@ -97,12 +97,12 @@ class EventBus
 
         # Now build filters provided by client
         ws.filters.each do |filter|
-          ft = record_filters filter.filters, Log
-          if ft[:cond_out].any?
+          sql = record_filters filter.filters, Log
+          if sql[:conditions].any?
             # Join the clauses within a single subscription filter with AND
             # so it is consistent with regular queries
-            cond_out << "(#{ft[:cond_out].join ') AND ('})"
-            param_out += ft[:param_out]
+            cond_out << "(#{sql[:conditions].join ') AND ('})"
+            param_out += sql[:params]
           end
         end
 

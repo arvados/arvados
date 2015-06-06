@@ -207,10 +207,10 @@ class ApplicationController < ActionController::Base
 
   def apply_filters model_class=nil
     model_class ||= self.model_class
-    ft = record_filters @filters, model_class
-    if ft[:cond_out].any?
-      @objects = @objects.where('(' + ft[:cond_out].join(') AND (') + ')',
-                                *ft[:param_out])
+    sql = record_filters @filters, model_class
+    if sql[:conditions].any?
+      @objects = @objects.where('(' + sql[:conditions].join(') AND (') + ')',
+                                *sql[:params])
     end
   end
 

@@ -131,7 +131,7 @@ module RecordFilters
       conds_out << cond_out.join(' OR ') if cond_out.any?
     end
 
-    {:cond_out => conds_out, :param_out => param_out}
+    {:conditions => conds_out, :params => param_out}
   end
 
 end
