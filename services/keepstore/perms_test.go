@@ -39,7 +39,7 @@ func TestVerifySignature(t *testing.T) {
 	PermissionSecret = []byte(known_key)
 	defer func() { PermissionSecret = nil }()
 
-	if !VerifySignature(known_signed_locator, known_token) {
+	if VerifySignature(known_signed_locator, known_token) != nil {
 		t.Fail()
 	}
 }
@@ -48,15 +48,15 @@ func TestVerifySignatureExtraHints(t *testing.T) {
 	PermissionSecret = []byte(known_key)
 	defer func() { PermissionSecret = nil }()
 
-	if !VerifySignature(known_locator+"+K@xyzzy"+known_sig_hint, known_token) {
+	if VerifySignature(known_locator+"+K@xyzzy"+known_sig_hint, known_token) != nil{
 		t.Fatal("Verify cannot handle hint before permission signature")
 	}
 
-	if !VerifySignature(known_locator+known_sig_hint+"+Zfoo", known_token) {
+	if VerifySignature(known_locator+known_sig_hint+"+Zfoo", known_token) != nil {
 		t.Fatal("Verify cannot handle hint after permission signature")
 	}
 
-	if !VerifySignature(known_locator+"+K@xyzzy"+known_sig_hint+"+Zfoo", known_token) {
+	if VerifySignature(known_locator+"+K@xyzzy"+known_sig_hint+"+Zfoo", known_token) != nil {
 		t.Fatal("Verify cannot handle hints around permission signature")
 	}
 }
@@ -66,11 +66,11 @@ func TestVerifySignatureWrongSize(t *testing.T) {
 	PermissionSecret = []byte(known_key)
 	defer func() { PermissionSecret = nil }()
 
-	if !VerifySignature(known_hash+"+999999"+known_sig_hint, known_token) {
+	if VerifySignature(known_hash+"+999999"+known_sig_hint, known_token) != nil {
 		t.Fatal("Verify cannot handle incorrect size hint")
 	}
 
-	if !VerifySignature(known_hash+known_sig_hint, known_token) {
+	if VerifySignature(known_hash+known_sig_hint, known_token) != nil {
 		t.Fatal("Verify cannot handle missing size hint")
 	}
 }
@@ -80,7 +80,7 @@ func TestVerifySignatureBadSig(t *testing.T) {
 	defer func() { PermissionSecret = nil }()
 
 	bad_locator := known_locator + "+Aaaaaaaaaaaaaaaa@" + known_timestamp
-	if VerifySignature(bad_locator, known_token) {
+	if VerifySignature(bad_locator, known_token) != PermissionError {
 		t.Fail()
 	}
 }
@@ -89,8 +89,8 @@ func TestVerifySignatureBadTimestamp(t *testing.T) {
 	PermissionSecret = []byte(known_key)
 	defer func() { PermissionSecret = nil }()
 
-	bad_locator := known_locator + "+A" + known_signature + "@00000000"
-	if VerifySignature(bad_locator, known_token) {
+	bad_locator := known_locator + "+A" + known_signature + "@OOOOOOOl"
+	if VerifySignature(bad_locator, known_token) != PermissionError {
 		t.Fail()
 	}
 }
@@ -99,7 +99,7 @@ func TestVerifySignatureBadSecret(t *testing.T) {
 	PermissionSecret = []byte("00000000000000000000")
 	defer func() { PermissionSecret = nil }()
 
-	if VerifySignature(known_signed_locator, known_token) {
+	if VerifySignature(known_signed_locator, known_token) != PermissionError {
 		t.Fail()
 	}
 }
@@ -108,7 +108,7 @@ func TestVerifySignatureBadToken(t *testing.T) {
 	PermissionSecret = []byte(known_key)
 	defer func() { PermissionSecret = nil }()
 
-	if VerifySignature(known_signed_locator, "00000000") {
+	if VerifySignature(known_signed_locator, "00000000") != PermissionError {
 		t.Fail()
 	}
 }
@@ -119,7 +119,7 @@ func TestVerifySignatureExpired(t *testing.T) {
 
 	yesterday := time.Now().AddDate(0, 0, -1)
 	expired_locator := SignLocator(known_hash, known_token, yesterday)
-	if VerifySignature(expired_locator, known_token) {
+	if VerifySignature(expired_locator, known_token) != ExpiredError {
 		t.Fail()
 	}
 }

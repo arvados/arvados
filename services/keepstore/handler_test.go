@@ -195,7 +195,7 @@ func TestPutHandler(t *testing.T) {
 		"Authenticated PUT, signed locator, with server key",
 		http.StatusOK, response)
 	response_locator := strings.TrimSpace(response.Body.String())
-	if !VerifySignature(response_locator, known_token) {
+	if VerifySignature(response_locator, known_token) != nil {
 		t.Errorf("Authenticated PUT, signed locator, with server key:\n"+
 			"response '%s' does not contain a valid signature",
 			response_locator)
@@ -788,7 +788,7 @@ func ExpectStatusCode(
 	expected_status int,
 	response *httptest.ResponseRecorder) {
 	if response.Code != expected_status {
-		t.Errorf("%s: expected status %s, got %+v",
+		t.Errorf("%s: expected status %d, got %+v",
 			testname, expected_status, response)
 	}
 }
