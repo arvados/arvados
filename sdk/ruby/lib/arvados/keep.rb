@@ -101,6 +101,8 @@ module Keep
     def initialize(manifest_text)
       @text = manifest_text
       @files = nil
+      @files_count = nil
+      @files_size = nil
     end
 
     def each_line
@@ -109,7 +111,8 @@ module Keep
         stream_name = nil
         block_tokens = []
         file_tokens = []
-        line.scan /\S+/ do |token|
+        splits = line.split
+        splits.each do |token|
           if stream_name.nil?
             stream_name = unescape token
           elsif file_tokens.empty? and Locator.valid? token
@@ -149,7 +152,8 @@ module Keep
       @text.each_line do |line|
         stream_name = nil
         in_file_tokens = false
-        line.scan /\S+/ do |token|
+        splits = line.split
+        splits.each do |token|
           if stream_name.nil?
             stream_name = unescape token
           elsif in_file_tokens or not Locator.valid? token
@@ -183,26 +187,55 @@ module Keep
       @files
     end
 
+    FILE_REGEXP = /^(\d+)(:)(\d+)(:)(.*)$/
     def files_count(stop_after=nil)
       # Return the number of files represented in this manifest.
       # If stop_after is provided, files_count will read the manifest
       # incrementally, and return immediately when it counts that number of
       # files.  This can help you avoid parsing the entire manifest if you
       # just want to check if a small number of files are specified.
-      if stop_after.nil? or not @files.nil?
-        return files.size
+
+      if not @files.nil?
+        return @files.size
+      elsif @files_count
+        return @files_count
       end
-      seen_files = {}
-      each_file_spec do |streamname, _, _, filename|
-        seen_files[[streamname, filename]] = true
-        return stop_after if (seen_files.size >= stop_after)
+
+      files = {}
+      total_size = 0
+      count_so_far = 0
+      @text.split("\n").each do |line|
+        words = line.split
+        stream = words[0]
+        files[stream] = {}
+        words.each do |word|
+          match = FILE_REGEXP.match word
+          if match
+            if !files[stream][match[5]]
+              files[stream][match[5]] = true
+              count_so_far += 1
+            end
+
+            if stop_after and (count_so_far >= stop_after)
+              return count_so_far
+            end
+
+            total_size += match[3].to_i
+          end
+        end
       end
-      seen_files.size
+
+      @files_size = total_size
+      @files_count = count_so_far
     end
 
     def files_size
       # Return the total size of all files in this manifest.
-      files.reduce(0) { |total, (_, _, size)| total + size }
+      if @files_size
+        @files_size
+      else
+        files.reduce(0) { |total, (_, _, size)| total + size }
+      end
     end
 
     def exact_file_count?(want_count)
