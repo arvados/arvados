@@ -42,6 +42,7 @@ class Collection < ArvadosModel
                 )
   end
 
+  FILE_TOKEN = /^[[:digit:]]+:[[:digit:]]+:/
   def check_signatures
     return false if self.manifest_text.nil?
 
@@ -66,7 +67,7 @@ class Collection < ArvadosModel
       }
       self.manifest_text.lines.each do |entry|
         entry.split[1..-1].each do |tok|
-          if /^[[:digit:]]+:[[:digit:]]+:/.match tok
+          if tok =~ FILE_TOKEN
             # This is a filename token, not a blob locator. Note that we
             # keep checking tokens after this, even though manifest
             # format dictates that all subsequent tokens will also be
