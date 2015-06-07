@@ -207,12 +207,12 @@ module Keep
       @text.split("\n").each do |line|
         words = line.split
         stream = words[0]
-        files[stream] = {}
+        files[stream] ||= Set.new
         words.each do |word|
           match = FILE_REGEXP.match word
           if match
-            if !files[stream][match[5]]
-              files[stream][match[5]] = true
+            if !files[stream].include? [match[5]]
+              files[stream].add [match[5]]
               count_so_far += 1
             end
 
