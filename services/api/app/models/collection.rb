@@ -331,14 +331,13 @@ class Collection < ArvadosModel
 
   protected
   def portable_manifest_text
-    portable_manifest = self.class.munge_manifest_locators(manifest_text) do |match|
+    self.class.munge_manifest_locators(manifest_text) do |match|
       if match[2] # size
         match[1] + match[2]
       else
         match[1]
       end
     end
-    portable_manifest
   end
 
   def compute_pdh
