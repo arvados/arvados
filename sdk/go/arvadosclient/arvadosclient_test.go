@@ -105,14 +105,14 @@ func (s *ServerRequiredSuite) TestErrorResponse(c *C) {
 
 func (s *ServerRequiredSuite) TestAPIDiscovery_Get_defaultCollectionReplication(c *C) {
 	arv, err := MakeArvadosClient()
-	valueMap, err := arv.Discovery("defaultCollectionReplication")
+	value, err := arv.Discovery("defaultCollectionReplication")
 	c.Assert(err, IsNil)
-	c.Assert(valueMap["defaultCollectionReplication"], NotNil)
+	c.Assert(value, NotNil)
 }
 
 func (s *ServerRequiredSuite) TestAPIDiscovery_Get_noSuchParameter(c *C) {
 	arv, err := MakeArvadosClient()
-	valueMap, err := arv.Discovery("noSuchParameter")
-	c.Assert(err, IsNil)
-	c.Assert(valueMap["noSuchParameter"], IsNil)
+	value, err := arv.Discovery("noSuchParameter")
+	c.Assert(err, NotNil)
+	c.Assert(value, IsNil)
 }

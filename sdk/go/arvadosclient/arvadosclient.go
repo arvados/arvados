@@ -289,14 +289,20 @@ func (this ArvadosClient) List(resource string, parameters Dict, output interfac
 //   err - error accessing the resource, or nil if no error
 var API_DISCOVERY_RESOURCE string = "discovery/v1/apis/arvados/v1/rest"
 
-func (this *ArvadosClient) Discovery(parameter string) (valueMap Dict, err error) {
+func (this *ArvadosClient) Discovery(parameter string) (value interface{}, err error) {
 	if len(this.DiscoveryDoc) == 0 {
 		this.DiscoveryDoc = make(Dict)
 		err = this.Call("GET", API_DISCOVERY_RESOURCE, "", "", nil, &this.DiscoveryDoc)
+		if err != nil {
+			return nil, err
+		}
 	}
 
-	valueMap = make(Dict)
-	valueMap[parameter] = this.DiscoveryDoc[parameter]
-
-	return valueMap, err
+	var found bool
+	value, found = this.DiscoveryDoc[parameter]
+	if found {
+		return value, nil
+	} else {
+		return value, errors.New("Not found")
+	}
 }
