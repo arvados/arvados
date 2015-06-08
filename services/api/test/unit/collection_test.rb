@@ -120,12 +120,12 @@ class CollectionTest < ActiveSupport::TestCase
   end
 
   test 'portable data hash with missing size hints' do
-    [[". d41d8cd98f00b204e9800998ecf8427e+0+Bar 0:0:x",
-      ". d41d8cd98f00b204e9800998ecf8427e+0 0:0:x"],
-     [". d41d8cd98f00b204e9800998ecf8427e+Foo 0:0:x",
-      ". d41d8cd98f00b204e9800998ecf8427e 0:0:x"],
-     [". d41d8cd98f00b204e9800998ecf8427e 0:0:x",
-      ". d41d8cd98f00b204e9800998ecf8427e 0:0:x"],
+    [[". d41d8cd98f00b204e9800998ecf8427e+0+Bar 0:0:x\n",
+      ". d41d8cd98f00b204e9800998ecf8427e+0 0:0:x\n"],
+     [". d41d8cd98f00b204e9800998ecf8427e+Foo 0:0:x\n",
+      ". d41d8cd98f00b204e9800998ecf8427e 0:0:x\n"],
+     [". d41d8cd98f00b204e9800998ecf8427e 0:0:x\n",
+      ". d41d8cd98f00b204e9800998ecf8427e 0:0:x\n"],
     ].each do |unportable, portable|
       c = Collection.new(manifest_text: unportable)
       assert c.valid?
