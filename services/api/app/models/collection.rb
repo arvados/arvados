@@ -218,9 +218,8 @@ class Collection < ArvadosModel
     new_lines = []
     manifest.each_line do |line|
       line.rstrip!
-      words = line.split(' ')
       new_words = []
-      words.each do |word|
+      line.split(' ').each do |word|
         if match = Keep::Locator::LOCATOR_REGEXP.match(word)
           new_words << yield(match)
         else
@@ -229,17 +228,16 @@ class Collection < ArvadosModel
       end
       new_lines << new_words.join(' ')
     end
-
-    manifest = new_lines.join("\n") + "\n"
+    new_lines.join("\n") + "\n"
   end
 
   def self.each_manifest_locator manifest
     # Given a manifest text and a block, yield the regexp match object
     # for each locator.
     manifest.each_line do |line|
-      line.rstrip!
-      words = line.split(' ')
-      words.each do |word|
+      # line will have a trailing newline, but the last token is never
+      # a locator, so it's harmless here.
+      line.each_line(' ') do |word|
         if match = Keep::Locator::LOCATOR_REGEXP.match(word)
           yield(match)
         end
