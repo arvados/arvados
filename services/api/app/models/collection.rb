@@ -213,7 +213,7 @@ class Collection < ArvadosModel
     # for each locator. Return a new manifest in which each locator
     # has been replaced by the block's return value.
     return nil if !manifest
-    return '' if !manifest.present?
+    return '' if manifest == ''
 
     new_lines = []
     lines = manifest.split("\n")
