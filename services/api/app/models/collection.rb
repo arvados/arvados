@@ -216,7 +216,6 @@ class Collection < ArvadosModel
     return '' if manifest == ''
 
     new_lines = []
-    lines = manifest.split("\n")
     manifest.each_line do |line|
       line.rstrip!
       words = line.split(' ')
