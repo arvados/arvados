@@ -222,7 +222,8 @@ class Collection < ArvadosModel
 
     new_lines = []
     lines = manifest.split("\n")
-    lines.each do |line|
+    manifest.each_line do |line|
+      line.rstrip!
       words = line.split(' ')
       new_words = []
       words.each do |word|
