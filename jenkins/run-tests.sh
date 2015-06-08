@@ -609,8 +609,9 @@ install_apiserver() {
     # Clear out any lingering postgresql connections to the test
     # database, so that we can drop it. This assumes the current user
     # is a postgresql superuser.
-    test_database=$(python -c "import yaml; print yaml.load(file('config/database.yml'))['test']['database']")
-    psql "$test_database" -c "SELECT pg_terminate_backend (pg_stat_activity.procpid::int) FROM pg_stat_activity WHERE pg_stat_activity.datname = '$test_database';" 2>/dev/null
+    cd "$WORKSPACE/services/api" \
+        && test_database=$(python -c "import yaml; print yaml.load(file('config/database.yml'))['test']['database']") \
+        && psql "$test_database" -c "SELECT pg_terminate_backend (pg_stat_activity.procpid::int) FROM pg_stat_activity WHERE pg_stat_activity.datname = '$test_database';" 2>/dev/null
 
     cd "$WORKSPACE/services/api" \
         && RAILS_ENV=test bundle exec rake db:drop \
