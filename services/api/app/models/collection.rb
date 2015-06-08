@@ -128,8 +128,8 @@ class Collection < ArvadosModel
       true
     elsif portable_data_hash.nil? or not portable_data_hash_changed?
       self.portable_data_hash = computed_pdh
-    elsif portable_data_hash !~ /^[0-9a-f]{32}(\+\d+)?$/
-      errors.add(:portable_data_hash, "is not a valid hash or hash+size")
+    elsif portable_data_hash !~ Keep::Locator::LOCATOR_REGEXP
+      errors.add(:portable_data_hash, "is not a valid locator")
       false
     elsif portable_data_hash[0..31] != computed_pdh[0..31]
       errors.add(:portable_data_hash,
