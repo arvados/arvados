@@ -10,9 +10,9 @@ class Collection < ArvadosModel
 
   before_validation :check_encoding
   before_validation :check_signatures
-  before_validation :strip_manifest_text_and_clear_replication_confirmed
+  before_validation :strip_signatures_and_update_replication_confirmed
   before_validation :set_portable_data_hash
-  validate :ensure_hash_matches_manifest_text
+  validate :ensure_pdh_matches_manifest_text
   before_save :set_file_names
 
   # Query only undeleted collections by default.
@@ -53,7 +53,6 @@ class Collection < ArvadosModel
     # subsequent passes without checking any signatures. This is
     # important because the signatures have probably been stripped off
     # by the time we get to a second validation pass!
-    computed_pdh = compute_pdh
     return true if @signatures_checked and @signatures_checked == computed_pdh
 
     if self.manifest_text_changed?
@@ -93,7 +92,7 @@ class Collection < ArvadosModel
     @signatures_checked = computed_pdh
   end
 
-  def strip_manifest_text_and_clear_replication_confirmed
+  def strip_signatures_and_update_replication_confirmed
     if self.manifest_text_changed?
       in_old_manifest = {}
       self.class.munge_manifest_locators!(manifest_text_was) do |match|
@@ -112,6 +111,7 @@ class Collection < ArvadosModel
         self.class.locator_without_signature(match)
       end
     end
+    @computed_pdh_for_manifest_text = self[:manifest_text] if @computed_pdh_for_manifest_text
     true
   end
 
@@ -129,10 +129,8 @@ class Collection < ArvadosModel
     if (portable_data_hash.nil? or
         portable_data_hash == "" or
         (manifest_text_changed? and !portable_data_hash_changed?))
-      @need_pdh_validation = false
-      self.portable_data_hash = compute_pdh
+      self.portable_data_hash = computed_pdh
     elsif portable_data_hash_changed?
-      @need_pdh_validation = true
       begin
         loc = Keep::Locator.parse!(self.portable_data_hash)
         loc.strip_hints!
@@ -149,11 +147,10 @@ class Collection < ArvadosModel
     true
   end
 
-  def ensure_hash_matches_manifest_text
+  def ensure_pdh_matches_manifest_text
     return true unless manifest_text_changed? or portable_data_hash_changed?
     # No need verify it if :set_portable_data_hash just computed it!
-    return true if not @need_pdh_validation
-    expect_pdh = compute_pdh
+    expect_pdh = computed_pdh
     if expect_pdh != portable_data_hash
       errors.add(:portable_data_hash,
                  "does not match computed hash #{expect_pdh}")
@@ -350,11 +347,18 @@ class Collection < ArvadosModel
   end
 
   def compute_pdh
-    return @computed_pdh if @computed_pdh
     portable_manifest = portable_manifest_text
-    @computed_pdh = (Digest::MD5.hexdigest(portable_manifest) +
-                     '+' +
-                     portable_manifest.bytesize.to_s)
+    (Digest::MD5.hexdigest(portable_manifest) +
+     '+' +
+     portable_manifest.bytesize.to_s)
+  end
+
+  def computed_pdh
+    if @computed_pdh_for_manifest_text == manifest_text
+      return @computed_pdh
+    end
+    @computed_pdh = compute_pdh
+    @computed_pdh_for_manifest_text = manifest_text.dup
     @computed_pdh
   end
 
