@@ -61,7 +61,7 @@ class Collection < ArvadosModel
         api_token: api_token,
         now: db_current_time.to_i,
       }
-      self.manifest_text.lines.each do |entry|
+      self.manifest_text.each_line do |entry|
         entry.split[1..-1].each do |tok|
           if tok =~ FILE_TOKEN
             # This is a filename token, not a blob locator. Note that we
