@@ -134,6 +134,25 @@ class CollectionTest < ActiveSupport::TestCase
     end
   end
 
+  pdhmanifest = ". d41d8cd98f00b204e9800998ecf8427e+0 0:0:x\n"
+  pdhmd5 = Digest::MD5.hexdigest pdhmanifest
+  [[true, nil],
+   [true, pdhmd5],
+   [true, pdhmd5+'+12345'],
+   [true, pdhmd5+'+'+pdhmanifest.length.to_s],
+   [false, pdhmd5+'+Foo'],
+   [false, Digest::MD5.hexdigest(pdhmanifest.strip)],
+   [false, Digest::MD5.hexdigest(pdhmanifest.strip)+'+'+pdhmanifest.length.to_s],
+   [false, pdhmd5[0..30]],
+   [false, pdhmd5[0..30]+'z'],
+   [false, pdhmd5[0..24]+'000000000'],
+   [false, pdhmd5[0..24]+'000000000+0']].each do |isvalid, pdh|
+    test "portable_data_hash #{pdh.inspect} valid? == #{isvalid}" do
+      c = Collection.new manifest_text: pdhmanifest, portable_data_hash: pdh
+      assert_equal isvalid, c.valid?, c.errors.full_messages.to_s
+    end
+  end
+
   [0, 2, 4, nil].each do |ask|
     test "set replication_desired to #{ask.inspect}" do
       Rails.configuration.default_collection_replication = 2

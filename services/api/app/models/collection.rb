@@ -11,7 +11,6 @@ class Collection < ArvadosModel
   before_validation :check_encoding
   before_validation :check_signatures
   before_validation :strip_signatures_and_update_replication_confirmed
-  before_validation :set_portable_data_hash
   validate :ensure_pdh_matches_manifest_text
   before_save :set_file_names
 
@@ -92,9 +91,6 @@ class Collection < ArvadosModel
 
   def strip_signatures_and_update_replication_confirmed
     if self.manifest_text_changed?
-      # If the new manifest_text contains locators whose hashes
-      # weren't in the old manifest_text, storage replication is no
-      # longer confirmed.
       in_old_manifest = {}
       if not self.replication_confirmed.nil?
         self.class.each_manifest_locator(manifest_text_was) do |match|
@@ -102,49 +98,47 @@ class Collection < ArvadosModel
         end
       end
 
-      # Remove any permission signatures from the manifest.
-      self[:manifest_text] = self.class.munge_manifest_locators(self[:manifest_text]) do |match|
+      stripped_manifest = self.class.munge_manifest_locators(manifest_text) do |match|
         if not self.replication_confirmed.nil? and not in_old_manifest[match[1]]
+          # If the new manifest_text contains locators whose hashes
+          # weren't in the old manifest_text, storage replication is no
+          # longer confirmed.
           self.replication_confirmed_at = nil
           self.replication_confirmed = nil
         end
+
+        # Return the locator with all permission signatures removed,
+        # but otherwise intact.
         match[0].gsub(/\+A[^+]*/, '')
       end
-    end
-    @computed_pdh_for_manifest_text = self[:manifest_text] if @computed_pdh_for_manifest_text
-    true
-  end
 
-  def set_portable_data_hash
-    if (portable_data_hash.nil? or
-        portable_data_hash == "" or
-        (manifest_text_changed? and !portable_data_hash_changed?))
-      self.portable_data_hash = computed_pdh
-    elsif portable_data_hash_changed?
-      begin
-        loc = Keep::Locator.parse!(self.portable_data_hash)
-        loc.strip_hints!
-        if loc.size
-          self.portable_data_hash = loc.to_s
-        else
-          self.portable_data_hash = "#{loc.hash}+#{portable_manifest_text.bytesize}"
-        end
-      rescue ArgumentError => e
-        errors.add(:portable_data_hash, "#{e}")
-        return false
+      if @computed_pdh_for_manifest_text == manifest_text
+        # If the cached PDH was valid before stripping, it is still
+        # valid after stripping.
+        @computed_pdh_for_manifest_text = stripped_manifest.dup
       end
+
+      self[:manifest_text] = stripped_manifest
     end
     true
   end
 
   def ensure_pdh_matches_manifest_text
-    return true unless manifest_text_changed? or portable_data_hash_changed?
-    # No need verify it if :set_portable_data_hash just computed it!
-    expect_pdh = computed_pdh
-    if expect_pdh != portable_data_hash
+    if not manifest_text_changed? and not portable_data_hash_changed?
+      true
+    elsif portable_data_hash.nil? or not portable_data_hash_changed?
+      self.portable_data_hash = computed_pdh
+    elsif portable_data_hash !~ /^[0-9a-f]{32}(\+\d+)?$/
+      errors.add(:portable_data_hash, "is not a valid hash or hash+size")
+      false
+    elsif portable_data_hash[0..31] != computed_pdh[0..31]
       errors.add(:portable_data_hash,
-                 "does not match computed hash #{expect_pdh}")
-      return false
+                 "does not match computed hash #{computed_pdh}")
+      false
+    else
+      # Ignore the client-provided size part: always store
+      # computed_pdh in the database.
+      self.portable_data_hash = computed_pdh
     end
   end
 
@@ -215,8 +209,9 @@ class Collection < ArvadosModel
   end
 
   def self.munge_manifest_locators manifest
-    # Given a manifest text and a block, yield each locator,
-    # and replace it with whatever the block returns.
+    # Given a manifest text and a block, yield the regexp MatchData
+    # for each locator. Return a new manifest in which each locator
+    # has been replaced by the block's return value.
     return nil if !manifest
     return '' if !manifest.present?
 
@@ -240,7 +235,8 @@ class Collection < ArvadosModel
   end
 
   def self.each_manifest_locator manifest
-    # Given a manifest text and a block, yield each locator.
+    # Given a manifest text and a block, yield the regexp match object
+    # for each locator.
     manifest.each_line do |line|
       line.rstrip!
       words = line.split(' ')
