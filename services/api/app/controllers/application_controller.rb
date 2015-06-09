@@ -301,15 +301,20 @@ class ApplicationController < ActionController::Base
     return if limit_columns.empty?
     model_class.transaction do
       limit_query = @objects.
+        except(:select).
         select("(%s) as read_length" %
-               limit_columns.map { |s| "length(#{s})" }.join(" + "))
+               limit_columns.map { |s| "octet_length(#{s})" }.join(" + "))
       new_limit = 0
       read_total = 0
-      limit_query.find_each do |record|
+      limit_query.each do |record|
         new_limit += 1
         read_total += record.read_length.to_i
-        break if ((read_total >= Rails.configuration.max_index_database_read) or
-                  (new_limit >= @limit))
+        if read_total >= Rails.configuration.max_index_database_read
+          new_limit -= 1 if new_limit > 1
+          break
+        elsif new_limit >= @limit
+          break
+        end
       end
       @limit = new_limit
       @objects = @objects.limit(@limit)

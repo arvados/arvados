@@ -1299,8 +1299,15 @@ sub check_squeue
     return;
   }
 
-  # get a list of steps still running
-  my @squeue = `squeue --jobs=\Q$ENV{SLURM_JOB_ID}\E --steps --format='%i %j' --noheader`;
+  # Get a list of steps still running.  Note: squeue(1) says --steps
+  # selects a format (which we override anyway) and allows us to
+  # specify which steps we're interested in (which we don't).
+  # Importantly, it also changes the meaning of %j from "job name" to
+  # "step name" and (although this isn't mentioned explicitly in the
+  # docs) switches from "one line per job" mode to "one line per step"
+  # mode. Without it, we'd just get a list of one job, instead of a
+  # list of N steps.
+  my @squeue = `squeue --jobs=\Q$ENV{SLURM_JOB_ID}\E --steps --format='%j' --noheader`;
   if ($? != 0)
   {
     Log(undef, "warning: squeue exit status $? ($!)");
@@ -1310,15 +1317,9 @@ sub check_squeue
 
   # which of my jobsteps are running, according to squeue?
   my %ok;
-  foreach (@squeue)
+  for my $jobstepname (@squeue)
   {
-    if (/^(\d+)\.(\d+) (\S+)/)
-    {
-      if ($1 eq $ENV{SLURM_JOB_ID})
-      {
-	$ok{$3} = 1;
-      }
-    }
+    $ok{$jobstepname} = 1;
   }
 
   # Check for child procs >60s old and not mentioned by squeue.
