@@ -36,6 +36,7 @@ setup(name='arvados-python-client',
           'bin/arv-ws'
       ],
       install_requires=[
+          'ciso8601',
           'google-api-python-client',
           'httplib2',
           'pycurl>=7.19.5.1',

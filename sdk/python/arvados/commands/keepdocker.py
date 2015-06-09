@@ -1,6 +1,7 @@
 #!/usr/bin/env python
 
 import argparse
+import collections
 import datetime
 import errno
 import json
@@ -11,17 +12,19 @@ import tarfile
 import tempfile
 import _strptime
 
-from collections import namedtuple
+from operator import itemgetter
 from stat import *
 
 import arvados
+import arvados.util
 import arvados.commands._util as arv_cmd
 import arvados.commands.put as arv_put
+import ciso8601
 
 STAT_CACHE_ERRORS = (IOError, OSError, ValueError)
 
-DockerImage = namedtuple('DockerImage',
-                         ['repo', 'tag', 'hash', 'created', 'vsize'])
+DockerImage = collections.namedtuple(
+    'DockerImage', ['repo', 'tag', 'hash', 'created', 'vsize'])
 
 keepdocker_parser = argparse.ArgumentParser(add_help=False)
 keepdocker_parser.add_argument(
@@ -159,11 +162,40 @@ def make_link(api_client, num_retries, link_class, link_name, **link_attrs):
     return api_client.links().create(body=link_attrs).execute(
         num_retries=num_retries)
 
-def ptimestamp(t):
-    s = t.split(".")
-    if len(s) == 2:
-        t = s[0] + s[1][-1:]
-    return datetime.datetime.strptime(t, "%Y-%m-%dT%H:%M:%SZ")
+def docker_link_sort_key(link):
+    """Build a sort key to find the latest available Docker image.
+
+    To find one source collection for a Docker image referenced by
+    name or image id, the API server looks for a link with the most
+    recent `image_timestamp` property; then the most recent
+    `created_at` timestamp.  This method generates a sort key for
+    Docker metadata links to sort them from least to most preferred.
+    """
+    try:
+        image_timestamp = ciso8601.parse_datetime_unaware(
+            link['properties']['image_timestamp'])
+    except (KeyError, ValueError):
+        image_timestamp = 0
+    return (image_timestamp,
+            ciso8601.parse_datetime_unaware(link['created_at']))
+
+def _get_docker_links(api_client, num_retries, **kwargs):
+    links = arvados.util.list_all(api_client.links().list,
+                                  num_retries, **kwargs)
+    for link in links:
+        link['_sort_key'] = docker_link_sort_key(link)
+    links.sort(key=itemgetter('_sort_key'), reverse=True)
+    return links
+
+def _new_image_listing(link, dockerhash, repo='<none>', tag='<none>'):
+    return {
+        '_sort_key': link['_sort_key'],
+        'timestamp': link['_sort_key'][0] or link['_sort_key'][1],
+        'collection': link['head_uuid'],
+        'dockerhash': dockerhash,
+        'repo': repo,
+        'tag': tag,
+        }
 
 def list_images_in_arv(api_client, num_retries, image_name=None, image_tag=None):
     """List all Docker images known to the api_client with image_name and
@@ -177,39 +209,77 @@ def list_images_in_arv(api_client, num_retries, image_name=None, image_tag=None)
     a dict with fields "dockerhash", "repo", "tag", and "timestamp".
 
     """
-    docker_image_filters = [['link_class', 'in', ['docker_image_hash', 'docker_image_repo+tag']]]
+    search_filters = []
+    repo_links = None
+    hash_links = None
     if image_name:
-        image_link_name = "{}:{}".format(image_name, image_tag or 'latest')
-        docker_image_filters.append(['name', '=', image_link_name])
-
-    existing_links = api_client.links().list(
-        filters=docker_image_filters
-        ).execute(num_retries=num_retries)['items']
-    images = {}
-    for link in existing_links:
-        collection_uuid = link["head_uuid"]
-        if collection_uuid not in images:
-            images[collection_uuid]= {"dockerhash": "<none>",
-                      "repo":"<none>",
-                      "tag":"<none>",
-                      "timestamp": ptimestamp("1970-01-01T00:00:01Z")}
-
-        if link["link_class"] == "docker_image_hash":
-            images[collection_uuid]["dockerhash"] = link["name"]
-
-        if link["link_class"] == "docker_image_repo+tag":
-            r = link["name"].split(":")
-            images[collection_uuid]["repo"] = r[0]
-            if len(r) > 1:
-                images[collection_uuid]["tag"] = r[1]
-
-        if "image_timestamp" in link["properties"]:
-            images[collection_uuid]["timestamp"] = ptimestamp(link["properties"]["image_timestamp"])
+        # Find images with the name the user specified.
+        search_links = _get_docker_links(
+            api_client, num_retries,
+            filters=[['link_class', '=', 'docker_image_repo+tag'],
+                     ['name', '=',
+                      '{}:{}'.format(image_name, image_tag or 'latest')]])
+        if search_links:
+            repo_links = search_links
         else:
-            images[collection_uuid]["timestamp"] = ptimestamp(link["created_at"])
+            # Fall back to finding images with the specified image hash.
+            search_links = _get_docker_links(
+                api_client, num_retries,
+                filters=[['link_class', '=', 'docker_image_hash'],
+                         ['name', 'ilike', image_name + '%']])
+            hash_links = search_links
+        # Only list information about images that were found in the search.
+        search_filters.append(['head_uuid', 'in',
+                               [link['head_uuid'] for link in search_links]])
 
-    return sorted(images.items(), lambda a, b: cmp(b[1]["timestamp"], a[1]["timestamp"]))
+    # It should be reasonable to expect that each collection only has one
+    # image hash (though there may be many links specifying this).  Find
+    # the API server's most preferred image hash link for each collection.
+    if hash_links is None:
+        hash_links = _get_docker_links(
+            api_client, num_retries,
+            filters=search_filters + [['link_class', '=', 'docker_image_hash']])
+    hash_link_map = {link['head_uuid']: link for link in reversed(hash_links)}
 
+    # Each collection may have more than one name (though again, one name
+    # may be specified more than once).  Build an image listing from name
+    # tags, sorted by API server preference.
+    if repo_links is None:
+        repo_links = _get_docker_links(
+            api_client, num_retries,
+            filters=search_filters + [['link_class', '=',
+                                       'docker_image_repo+tag']])
+    seen_image_names = collections.defaultdict(set)
+    images = []
+    for link in repo_links:
+        collection_uuid = link['head_uuid']
+        if link['name'] in seen_image_names[collection_uuid]:
+            continue
+        seen_image_names[collection_uuid].add(link['name'])
+        try:
+            dockerhash = hash_link_map[collection_uuid]['name']
+        except KeyError:
+            dockerhash = '<unknown>'
+        name_parts = link['name'].split(':', 1)
+        images.append(_new_image_listing(link, dockerhash, *name_parts))
+
+    # Find any image hash links that did not have a corresponding name link,
+    # and add image listings for them, retaining the API server preference
+    # sorting.
+    images_start_size = len(images)
+    for collection_uuid, link in hash_link_map.iteritems():
+        if not seen_image_names[collection_uuid]:
+            images.append(_new_image_listing(link, link['name']))
+    if len(images) > images_start_size:
+        images.sort(key=itemgetter('_sort_key'), reverse=True)
+
+    # Remove any image listings that refer to unknown collections.
+    existing_coll_uuids = {coll['uuid'] for coll in arvados.util.list_all(
+            api_client.collections().list, num_retries,
+            filters=[['uuid', 'in', [im['collection'] for im in images]]],
+            select=['uuid'])}
+    return [(image['collection'], image) for image in images
+            if image['collection'] in existing_coll_uuids]
 
 def main(arguments=None):
     args = arg_parser.parse_args(arguments)
