@@ -177,3 +177,17 @@ if [[ "$UPLOAD_DOCKER" != 0 ]]; then
     docker push commonworkflowlanguage/cwltool
     docker push commonworkflowlanguage/nodejs-engine
 fi
+
+# Setup virtualenv and build documentation.
+
+virtualenv ../venv
+. ../venv/bin/activate
+python setup.py install
+cd ..
+
+git clone git@github.com:common-workflow-language/common-workflow-language.github.io.git
+python -mcwltool specification/cwlsite.cwl specification/cwlsite-job.json --outdir=common-workflow-language.github.io
+cd common-workflow-language.github.io
+git add --all
+git commit -m"Build bot"
+git push
