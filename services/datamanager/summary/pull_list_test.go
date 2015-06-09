@@ -103,6 +103,18 @@ func (s *MySuite) TestCreatePullServers(c *C) {
 	c.Check(
 		CreatePullServers(cs,
 			stringSet("keep0:25107", "keep1:25108"),
+			stringSet("https://keep3:25110", "http://keep2:25109",
+				"https://keep1:25108", "http://keep0:25107"),
+			[]string{"https://keep3:25110", "http://keep2:25109",
+				"https://keep1:25108", "http://keep0:25107"},
+			1),
+		DeepEquals,
+		PullServers{To: []string{"keep3:25110"},
+			From: []string{"https://keep1:25108", "http://keep0:25107"}})
+
+	c.Check(
+		CreatePullServers(cs,
+			stringSet("keep0:25107", "keep1:25108"),
 			stringSet("keep3:25110", "keep2:25109", "keep1:25108", "keep0:25107"),
 			[]string{"keep3:25110", "keep2:25109", "keep1:25108", "keep0:25107"},
 			0),

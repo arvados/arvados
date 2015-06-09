@@ -71,7 +71,7 @@ func ComputePullServers(kc *keepclient.KeepClient,
 	// Servers that are writeable
 	writableServers := map[string]struct{}{}
 	for _, url := range kc.WritableLocalRoots() {
-		writableServers[cs.Get(RemoveProtocolPrefix(url))] = struct{}{}
+		writableServers[cs.Get(url)] = struct{}{}
 	}
 
 	for block, _ := range underReplicated {
@@ -129,7 +129,7 @@ func CreatePullServers(cs CanonicalString,
 			// The from field should include the protocol.
 			ps.From = append(ps.From, cs.Get(host))
 		} else if len(ps.To) < maxToFields {
-			_, writable := writableServers[server]
+			_, writable := writableServers[host]
 			if writable {
 				ps.To = append(ps.To, server)
 			}
