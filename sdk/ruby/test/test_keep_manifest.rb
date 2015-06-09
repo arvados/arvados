@@ -245,4 +245,38 @@ class ManifestTest < Minitest::Test
       assert_equal(%w(file1), basenames.sort, "wrong file list for #{stream}")
     end
   end
+
+  [[false, nil],
+   [false, '+0'],
+   [false, 'd41d8cd98f00b204e9800998ecf8427'],
+   [false, 'd41d8cd98f00b204e9800998ecf8427+0'],
+   [false, 'd41d8cd98f00b204e9800998ecf8427e0'],
+   [false, 'd41d8cd98f00b204e9800998ecf8427e0+0'],
+   [false, 'd41d8cd98f00b204e9800998ecf8427e+0 '],
+   [false, "d41d8cd98f00b204e9800998ecf8427e+0\n"],
+   [false, ' d41d8cd98f00b204e9800998ecf8427e+0'],
+   [false, 'd41d8cd98f00b204e9800998ecf8427e+K+0'],
+   [false, 'd41d8cd98f00b204e9800998ecf8427e+0+0'],
+   [false, 'd41d8cd98f00b204e9800998ecf8427e++'],
+   [false, 'd41d8cd98f00b204e9800998ecf8427e+0+K+'],
+   [false, 'd41d8cd98f00b204e9800998ecf8427e+0++K'],
+   [false, 'd41d8cd98f00b204e9800998ecf8427e+0+K++'],
+   [false, 'd41d8cd98f00b204e9800998ecf8427e+0+K++Z'],
+   [true, 'd41d8cd98f00b204e9800998ecf8427e', nil,nil,nil],
+   [true, 'd41d8cd98f00b204e9800998ecf8427e+0', '+0','0',nil],
+   [true, 'd41d8cd98f00b204e9800998ecf8427e+0+Fizz+Buzz','+0','0','+Fizz+Buzz'],
+   [true, 'd41d8cd98f00b204e9800998ecf8427e+Fizz+Buzz', nil,nil,'+Fizz+Buzz'],
+   [true, 'd41d8cd98f00b204e9800998ecf8427e+0+Z', '+0','0','+Z'],
+   [true, 'd41d8cd98f00b204e9800998ecf8427e+Z', nil,nil,'+Z'],
+  ].each do |ok, locator, match2, match3, match4|
+    define_method "test_LOCATOR_REGEXP_on_#{locator.inspect}" do
+      match = Keep::Locator::LOCATOR_REGEXP.match locator
+      assert_equal ok, !!match
+      if ok
+        assert_equal match2, match[2]
+        assert_equal match3, match[3]
+        assert_equal match4, match[4]
+      end
+    end
+  end
 end

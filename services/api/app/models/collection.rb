@@ -62,8 +62,10 @@ class Collection < ArvadosModel
         now: db_current_time.to_i,
       }
       self.manifest_text.each_line do |entry|
-        entry.split[1..-1].each do |tok|
-          if tok =~ FILE_TOKEN
+        entry.split.each do |tok|
+          if tok == '.' or tok.starts_with? './'
+            # Stream name token.
+          elsif tok =~ FILE_TOKEN
             # This is a filename token, not a blob locator. Note that we
             # keep checking tokens after this, even though manifest
             # format dictates that all subsequent tokens will also be
@@ -220,7 +222,9 @@ class Collection < ArvadosModel
       line.rstrip!
       new_words = []
       line.split(' ').each do |word|
-        if match = Keep::Locator::LOCATOR_REGEXP.match(word)
+        if new_words.empty?
+          new_words << word
+        elsif match = Keep::Locator::LOCATOR_REGEXP.match(word)
           new_words << yield(match)
         else
           new_words << word

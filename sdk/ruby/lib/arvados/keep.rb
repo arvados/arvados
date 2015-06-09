@@ -18,7 +18,7 @@ module Keep
     #   sign-timestamp ::= <8 lowercase hex digits>
     attr_reader :hash, :hints, :size
 
-    LOCATOR_REGEXP = /^([[:xdigit:]]{32})(\+([[:digit:]]+))?(\+([[:upper:]][[:alnum:]+@_-]*))?$/
+    LOCATOR_REGEXP = /^([[:xdigit:]]{32})(\+([[:digit:]]+))?((\+([[:upper:]][[:alnum:]@_-]*))+)?\z/
 
     def initialize(hasharg, sizearg, hintarg)
       @hash = hasharg
