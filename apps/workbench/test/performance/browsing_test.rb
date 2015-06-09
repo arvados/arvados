@@ -34,7 +34,7 @@ class BrowsingTest < WorkbenchPerformanceTest
       end
     end
 
-    sleep(25)
+    sleep(50)
 
     # In the search dialog now. Expect at least one item in the result display.
     within '.modal-content' do
