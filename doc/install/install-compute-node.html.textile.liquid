@@ -72,8 +72,14 @@ Then execute this script to create a compute node object, and set up a cron job 
 <notextile>
 <pre><code>
 #!/bin/bash
+set -e
 if ! test -f /root/node.json ; then
-    arv node create --node "{\"hostname\": \"$(hostname)\"}" > /root/node.json
+    python - &lt;&lt;EOF
+import arvados, json, socket
+node = arvados.api('v1').nodes().create(body={'hostname': socket.gethostname()}).execute()
+with open('/root/node.json', 'w') as node_file:
+    json.dump(node, node_file, indent=2)
+EOF
 
     # Make sure /dev/fuse permissions are correct (the device appears after fuse is loaded)
     chmod 1660 /dev/fuse && chgrp fuse /dev/fuse
