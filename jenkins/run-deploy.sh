@@ -1,24 +1,50 @@
 #!/bin/bash
 
+DEBUG=0
 
-read -rd "\000" helpmessage <<EOF
-$(basename $0): Deploy Arvados to a cluster
+function usage {
+    echo >&2
+    echo >&2 "usage: $0 [options] <identifier>"
+    echo >&2
+    echo >&2 "   <identifier>                 Arvados cluster name"
+    echo >&2
+    echo >&2 "$0 options:"
+    echo >&2 "  -d, --debug                   Enable debug output"
+    echo >&2 "  -h, --help                    Display this help and exit"
+    echo >&2
+}
 
-Syntax:
-        $(basename $0) <identifier>
+# NOTE: This requires GNU getopt (part of the util-linux package on Debian-based distros).
+TEMP=`getopt -o hd \
+    --long help,debug \
+    -n "$0" -- "$@"`
 
-Options:
+if [ $? != 0 ] ; then echo "Use -h for help"; exit 1 ; fi
+# Note the quotes around `$TEMP': they are essential!
+eval set -- "$TEMP"
 
-  identifier             Arvados cluster name
-
-EOF
-
+while [ $# -ge 1 ]
+do
+    case $1 in
+        -d | --debug)
+            DEBUG=1
+            shift
+            ;;
+        --)
+            shift
+            break
+            ;;
+        *)
+            usage
+            exit 1
+            ;;
+    esac
+done
 
 IDENTIFIER=$1
 
 if [[ "$IDENTIFIER" == '' ]]; then
-  echo >&2 "$helpmessage"
-  echo >&2
+  usage
   exit 1
 fi
 
@@ -27,156 +53,145 @@ EXITCODE=0
 COLUMNS=80
 
 title () {
-  printf "\n%*s\n\n" $(((${#title}+$COLUMNS)/2)) "********** $1 **********"
+  date=`date +'%Y-%m-%d %H:%M:%S'`
+  printf "$date $1\n"
 }
-
-echo $WORKSPACE
 
 function run_puppet() {
   node=$1
   return_var=$2
 
+  title "Running puppet on $node"
   TMP_FILE=`mktemp`
-  ssh -t -p2222 -o "StrictHostKeyChecking no" -o "ConnectTimeout 5" root@$node.$IDENTIFIER -C "/usr/bin/puppet agent -t" | tee $TMP_FILE
+  if [[ "$DEBUG" != "0" ]]; then
+    ssh -t -p2222 -o "StrictHostKeyChecking no" -o "ConnectTimeout 5" root@$node -C "/usr/bin/puppet agent -t" | tee $TMP_FILE
+  else
+    ssh -t -p2222 -o "StrictHostKeyChecking no" -o "ConnectTimeout 5" root@$node -C "/usr/bin/puppet agent -t" > $TMP_FILE 2>&1
+  fi
 
   ECODE=$?
   RESULT=$(cat $TMP_FILE)
 
   if [[ "$ECODE" != "255" && ! ("$RESULT" =~ 'already in progress') && "$ECODE" != "2" && "$ECODE" != "0"  ]]; then
-    # Puppet exists 255 if the connection timed out. Just ignore that, it's possible that this node is
-    #   a compute node that was being shut down.
+    # Ssh exits 255 if the connection timed out. Just ignore that.
     # Puppet exits 2 if there are changes. For real!
     # Puppet prints 'Notice: Run of Puppet configuration client already in progress' if another puppet process
     #   was already running
-    echo "ERROR updating $node.$IDENTIFIER: exit code $ECODE"
+    echo "ERROR running puppet on $node: exit code $ECODE"
+    if [[ "$DEBUG" == "0" ]]; then
+      title "Command output follows:"
+      echo $RESULT
+    fi
+  fi
+  if [[ "$ECODE" == "255" ]]; then
+    title "Connection timed out"
+    ECODE=0
+  fi
+  if [[ "$ECODE" == "2" ]]; then
+    ECODE=0
   fi
   rm -f $TMP_FILE
-  echo
   eval "$return_var=$ECODE"
 }
 
-# Deploy API server
-title "Deploying API server"
+function run_command() {
+  node=$1
+  return_var=$2
+  command=$3
 
-SUM_ECODE=0
-
-# Install updated debian packages
-title "Deploying updated arvados debian packages"
-
-ssh -p2222 root@$IDENTIFIER.arvadosapi.com -C "apt-get update && apt-get -qqy install arvados-src python-arvados-fuse python-arvados-python-client arvados-api-server"
-
-ECODE=$?
-SUM_ECODE=$(($SUM_ECODE + $ECODE))
-
-ssh -p2222 root@$IDENTIFIER.arvadosapi.com -C "/usr/local/bin/arvados-api-server-upgrade.sh"
-
-ECODE=$?
-SUM_ECODE=$(($SUM_ECODE + $ECODE))
-
-if [[ "$SUM_ECODE" != "0" ]]; then
-  title "!!!!!! DEPLOYING DEBIAN PACKAGES FAILED !!!!!!"
-  EXITCODE=$(($EXITCODE + $SUM_ECODE))
-  exit $EXITCODE
-fi
-
-title "Deploying updated arvados debian packages complete"
-
-# Install updated arvados gems
-title "Deploying updated arvados gems"
-
-ssh -p2222 root@$IDENTIFIER.arvadosapi.com -C "/usr/local/rvm/bin/rvm default do gem install arvados arvados-cli && /usr/local/rvm/bin/rvm default do gem clean arvados arvados-cli"
-
-ECODE=$?
-
-if [[ "$ECODE" != "0" ]]; then
-  title "!!!!!! DEPLOYING ARVADOS GEMS FAILED !!!!!!"
-  EXITCODE=$(($EXITCODE + $ECODE))
-  exit $EXITCODE
-fi
-
-title "Deploying updated arvados gems complete"
-title "Deploying API server complete"
-
-# Deploy Workbench
-title "Deploying workbench"
-
-# Install updated debian packages
-title "Deploying updated arvados debian packages"
-
-ssh -p2222 root@workbench.$IDENTIFIER.arvadosapi.com -C "apt-get update && apt-get -qqy install python-arvados-fuse python-arvados-python-client arvados-workbench"
-
-ECODE=$?
-SUM_ECODE=$(($SUM_ECODE + $ECODE))
-
-ssh -p2222 root@workbench.$IDENTIFIER.arvadosapi.com -C "/usr/local/bin/arvados-workbench-upgrade.sh"
-
-ECODE=$?
-SUM_ECODE=$(($SUM_ECODE + $ECODE))
-
-if [[ "$SUM_ECODE" != "0" ]]; then
-  title "!!!!!! DEPLOYING DEBIAN PACKAGES FAILED !!!!!!"
-  EXITCODE=$(($EXITCODE + $SUM_ECODE))
-  exit $EXITCODE
-fi
-
-title "Deploying updated arvados debian packages complete"
-
-title "Deploying workbench complete"
-
-# Update compute node(s)
-title "Update compute node(s)"
-
-# Get list of nodes that are up
-COMPRESSED_NODE_LIST=`ssh -p2222 root@$IDENTIFIER -C "sinfo --long -p crypto -r -o "%N" -h"`
-
-if [[ "$COMPRESSED_NODE_LIST" != '' ]]; then
-  COMPUTE_NODES=`ssh -p2222 root@$IDENTIFIER -C "scontrol show hostname $COMPRESSED_NODE_LIST"`
-
-  SUM_ECODE=0
-  for node in $COMPUTE_NODES; do
-    echo "Updating $node.$IDENTIFIER"
-    run_puppet $node ECODE
-    SUM_ECODE=$(($SUM_ECODE + $ECODE))
-  done
-
-  if [[ "$SUM_ECODE" != "0" ]]; then
-    title "!!!!!! Update compute node(s) FAILED !!!!!!"
-    EXITCODE=$(($EXITCODE + $SUM_ECODE))
+  title "Running '$command' on $node"
+  TMP_FILE=`mktemp`
+  if [[ "$DEBUG" != "0" ]]; then
+    ssh -t -p2222 -o "StrictHostKeyChecking no" -o "ConnectTimeout 5" root@$node -C "$command" | tee $TMP_FILE
+  else
+    ssh -t -p2222 -o "StrictHostKeyChecking no" -o "ConnectTimeout 5" root@$node -C "$command" > $TMP_FILE 2>&1
   fi
+
+  ECODE=$?
+  RESULT=$(cat $TMP_FILE)
+
+  if [[ "$ECODE" != "255" && "$ECODE" != "0"  ]]; then
+    # Ssh exists 255 if the connection timed out. Just ignore that, it's possible that this node is
+    #   a shell node that is down.
+    title "ERROR running command on $node: exit code $ECODE"
+    if [[ "$DEBUG" == "0" ]]; then
+      title "Command output follows:"
+      echo $RESULT
+    fi
+  fi
+  if [[ "$ECODE" == "255" ]]; then
+    title "Connection timed out"
+    ECODE=0
+  fi
+  rm -f $TMP_FILE
+  eval "$return_var=$ECODE"
+}
+
+title "Loading ARVADOS_API_HOST and ARVADOS_API_TOKEN"
+if [[ -f "$HOME/.config/arvados/$IDENTIFIER.arvadosapi.com.conf" ]]; then
+  . $HOME/.config/arvados/$IDENTIFIER.arvadosapi.com.conf
+else
+  title "WARNING: $HOME/.config/arvados/$IDENTIFIER.arvadosapi.com.conf not found."
+fi
+if [[ "$ARVADOS_API_HOST" == "" ]] || [[ "$ARVADOS_API_TOKEN" == "" ]]; then
+  title "ERROR: ARVADOS_API_HOST and/or ARVADOS_API_TOKEN environment variables are not set."
+  exit 1
 fi
 
-title "Update compute node(s) complete"
+title "Gathering list of shell and Keep nodes"
+SHELL_NODES=`ARVADOS_API_HOST=$ARVADOS_API_HOST ARVADOS_API_TOKEN=$ARVADOS_API_TOKEN arv virtual_machine list |jq .items[].hostname -r`
+KEEP_NODES=`ARVADOS_API_HOST=$ARVADOS_API_HOST ARVADOS_API_TOKEN=$ARVADOS_API_TOKEN arv keep_service list |jq .items[].service_host -r`
 
-title "Update shell"
+title "Updating API server"
+SUM_ECODE=0
+run_puppet $IDENTIFIER ECODE
+SUM_ECODE=$(($SUM_ECODE + $ECODE))
+run_command $IDENTIFIER ECODE "/usr/local/bin/arvados-api-server-upgrade.sh"
+SUM_ECODE=$(($SUM_ECODE + $ECODE))
+run_command $IDENTIFIER ECODE "dpkg -L arvados-mailchimp-plugin 2>/dev/null && apt-get install arvados-mailchimp-plugin --reinstall || echo"
+SUM_ECODE=$(($SUM_ECODE + $ECODE))
 
-run_puppet shell ECODE
+if [[ "$SUM_ECODE" != "0" ]]; then
+  title "ERROR: Updating API server FAILED"
+  EXITCODE=$(($EXITCODE + $SUM_ECODE))
+  exit $EXITCODE
+fi
 
-if [[ "$ECODE" == "2" ]]; then
-  # Puppet exits '2' if there are changes. For real!
+title "Updating workbench"
+SUM_ECODE=0
+if [[ `host workbench.$ARVADOS_API_HOST` != `host $ARVADOS_API_HOST` ]]; then
+  # Workbench runs on a separate host. We need to run puppet there too.
+  run_puppet workbench.$IDENTIFIER ECODE
+  SUM_ECODE=$(($SUM_ECODE + $ECODE))
+fi
+
+run_command workbench.$IDENTIFIER ECODE "/usr/local/bin/arvados-workbench-upgrade.sh"
+SUM_ECODE=$(($SUM_ECODE + $ECODE))
+
+if [[ "$SUM_ECODE" != "0" ]]; then
+  title "ERROR: Updating workbench FAILED"
+  EXITCODE=$(($EXITCODE + $SUM_ECODE))
+  exit $EXITCODE
+fi
+
+for n in manage $SHELL_NODES $KEEP_NODES; do
   ECODE=0
-fi
+  if [[ $n =~ $ARVADOS_API_HOST$ ]]; then
+    # e.g. keep.qr1hi.arvadosapi.com
+    node=$n
+  else
+    # e.g. shell
+    node=$n.$ARVADOS_API_HOST
+  fi
 
-if [[ "$ECODE" != "0" ]]; then
-  title "!!!!!! Update shell FAILED !!!!!!"
-  EXITCODE=$(($EXITCODE + $ECODE))
-fi
+  # e.g. keep.qr1hi
+  node=${node%.arvadosapi.com}
 
-title "Update shell complete"
-
-title "Update keep0"
-
-run_puppet keep0 ECODE
-
-if [[ "$ECODE" == "2" ]]; then
-  # Puppet exits '2' if there are changes. For real!
-  ECODE=0
-fi
-
-if [[ "$ECODE" != "0" ]]; then
-  title "!!!!!! Update keep0 FAILED !!!!!!"
-  EXITCODE=$(($EXITCODE + $ECODE))
-fi
-
-title "Update keep0 complete"
-
-exit $EXITCODE
+  title "Updating $node"
+  run_puppet $node ECODE
+  if [[ "$ECODE" != "0" ]]; then
+    title "ERROR: Updating $node node FAILED: exit code $ECODE"
+    EXITCODE=$(($EXITCODE + $ECODE))
+    exit $EXITCODE
+  fi
+done
