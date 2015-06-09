@@ -383,7 +383,7 @@ fi
 
 # Needed for run_test_server.py which is used by certain (non-Python) tests.
 pip freeze 2>/dev/null | egrep ^PyYAML= \
-    || pip install PyYAML \
+    || pip install PyYAML >/dev/null \
     || fatal "pip install PyYAML failed"
 
 # If Python 3 is available, set up its virtualenv in $VENV3DIR.
@@ -649,7 +649,7 @@ test_doclinkchecker() {
         ARVADOS_API_HOST=qr1hi.arvadosapi.com
         # Make sure python-epydoc is installed or the next line won't
         # do much good!
-        PYTHONPATH=$WORKSPACE/sdk/python/ bundle exec rake linkchecker baseurl=file://$WORKSPACE/doc/.site/ arvados_workbench_host=workbench.$ARVADOS_API_HOST arvados_api_host=$ARVADOS_API_HOST
+        PYTHONPATH=$WORKSPACE/sdk/python/ bundle exec rake linkchecker baseurl=file://$WORKSPACE/doc/.site/ arvados_workbench_host=https://workbench.$ARVADOS_API_HOST arvados_api_host=$ARVADOS_API_HOST
     )
 }
 do_test doc doclinkchecker
