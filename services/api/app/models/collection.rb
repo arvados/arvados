@@ -29,8 +29,6 @@ class Collection < ArvadosModel
     t.add :replication_confirmed_at
   end
 
-  LOCATOR_REGEXP = /^([[:xdigit:]]{32})(\+([[:digit:]]+))?(\+([[:upper:]][[:alnum:]+@_-]*))?$/
-
   def self.attributes_required_columns
     super.merge(
                 # If we don't list manifest_text explicitly, the
@@ -94,19 +92,21 @@ class Collection < ArvadosModel
 
   def strip_signatures_and_update_replication_confirmed
     if self.manifest_text_changed?
+      # If the new manifest_text contains locators whose hashes
+      # weren't in the old manifest_text, storage replication is no
+      # longer confirmed.
       in_old_manifest = {}
-      self.class.munge_manifest_locators(manifest_text_was) do |match|
-        in_old_manifest[match[1]] = true
+      if not self.replication_confirmed.nil?
+        self.class.each_manifest_locator(manifest_text_was) do |match|
+          in_old_manifest[match[1]] = true
+        end
       end
-
-      cleared_replication_confirmed = false
 
       # Remove any permission signatures from the manifest.
       self[:manifest_text] = self.class.munge_manifest_locators(self[:manifest_text]) do |match|
-        if not cleared_replication_confirmed  and not in_old_manifest[match[1]]
+        if not self.replication_confirmed.nil? and not in_old_manifest[match[1]]
           self.replication_confirmed_at = nil
           self.replication_confirmed = nil
-          cleared_replication_confirmed = true
         end
         match[0].gsub(/\+A[^+]*/, '')
       end
@@ -227,7 +227,7 @@ class Collection < ArvadosModel
       words = line.split(' ')
       new_words = []
       words.each do |word|
-        if match = LOCATOR_REGEXP.match(word)
+        if match = Keep::Locator::LOCATOR_REGEXP.match(word)
           new_words << yield(match)
         else
           new_words << word
@@ -237,6 +237,19 @@ class Collection < ArvadosModel
     end
 
     manifest = new_lines.join("\n") + "\n"
+  end
+
+  def self.each_manifest_locator manifest
+    # Given a manifest text and a block, yield each locator.
+    manifest.each_line do |line|
+      line.rstrip!
+      words = line.split(' ')
+      words.each do |word|
+        if match = Keep::Locator::LOCATOR_REGEXP.match(word)
+          yield(match)
+        end
+      end
+    end
   end
 
   def self.normalize_uuid uuid
