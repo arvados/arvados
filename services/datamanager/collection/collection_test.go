@@ -20,9 +20,9 @@ var _ = Suite(&MySuite{})
 // indeterminate, we replace BlockToCollectionIndices with
 // BlockToCollectionUuids.
 type ExpectedSummary struct {
-	OwnerToCollectionSize  map[string]int
-	BlockToReplication     map[blockdigest.DigestWithSize]int
-	BlockToCollectionUuids map[blockdigest.DigestWithSize][]string
+	OwnerToCollectionSize     map[string]int
+	BlockToDesiredReplication map[blockdigest.DigestWithSize]int
+	BlockToCollectionUuids    map[blockdigest.DigestWithSize][]string
 }
 
 func CompareSummarizedReadCollections(c *C,
@@ -32,8 +32,8 @@ func CompareSummarizedReadCollections(c *C,
 	c.Assert(summarized.OwnerToCollectionSize, DeepEquals,
 		expected.OwnerToCollectionSize)
 
-	c.Assert(summarized.BlockToReplication, DeepEquals,
-		expected.BlockToReplication)
+	c.Assert(summarized.BlockToDesiredReplication, DeepEquals,
+		expected.BlockToDesiredReplication)
 
 	summarizedBlockToCollectionUuids :=
 		make(map[blockdigest.DigestWithSize]map[string]struct{})
@@ -73,9 +73,9 @@ func (s *MySuite) TestSummarizeSimple(checker *C) {
 	blockDigest2 := blockdigest.MakeTestDigestWithSize(2)
 
 	expected := ExpectedSummary{
-		OwnerToCollectionSize:  map[string]int{c.OwnerUuid: c.TotalSize},
-		BlockToReplication:     map[blockdigest.DigestWithSize]int{blockDigest1: 5, blockDigest2: 5},
-		BlockToCollectionUuids: map[blockdigest.DigestWithSize][]string{blockDigest1: []string{c.Uuid}, blockDigest2: []string{c.Uuid}},
+		OwnerToCollectionSize:     map[string]int{c.OwnerUuid: c.TotalSize},
+		BlockToDesiredReplication: map[blockdigest.DigestWithSize]int{blockDigest1: 5, blockDigest2: 5},
+		BlockToCollectionUuids:    map[blockdigest.DigestWithSize][]string{blockDigest1: []string{c.Uuid}, blockDigest2: []string{c.Uuid}},
 	}
 
 	CompareSummarizedReadCollections(checker, rc, expected)
@@ -107,7 +107,7 @@ func (s *MySuite) TestSummarizeOverlapping(checker *C) {
 			c0.OwnerUuid: c0.TotalSize,
 			c1.OwnerUuid: c1.TotalSize,
 		},
-		BlockToReplication: map[blockdigest.DigestWithSize]int{
+		BlockToDesiredReplication: map[blockdigest.DigestWithSize]int{
 			blockDigest1: 5,
 			blockDigest2: 8,
 			blockDigest3: 8,

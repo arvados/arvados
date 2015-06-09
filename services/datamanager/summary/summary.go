@@ -196,7 +196,7 @@ func BucketReplication(readCollections collection.ReadCollections,
 	keepServerInfo keep.ReadServers) (rlbsm ReplicationLevelBlockSetMap) {
 	rlbsm = make(ReplicationLevelBlockSetMap)
 
-	for block, requestedReplication := range readCollections.BlockToReplication {
+	for block, requestedReplication := range readCollections.BlockToDesiredReplication {
 		rlbsm.Insert(
 			ReplicationLevels{
 				Requested: requestedReplication,
@@ -205,7 +205,7 @@ func BucketReplication(readCollections collection.ReadCollections,
 	}
 
 	for block, servers := range keepServerInfo.BlockToServers {
-		if 0 == readCollections.BlockToReplication[block] {
+		if 0 == readCollections.BlockToDesiredReplication[block] {
 			rlbsm.Insert(
 				ReplicationLevels{Requested: 0, Actual: len(servers)},
 				block)

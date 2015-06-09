@@ -39,13 +39,13 @@ type Collection struct {
 }
 
 type ReadCollections struct {
-	ReadAllCollections       bool
-	UuidToCollection         map[string]Collection
-	OwnerToCollectionSize    map[string]int
-	BlockToReplication       map[blockdigest.DigestWithSize]int
-	CollectionUuidToIndex    map[string]int
-	CollectionIndexToUuid    []string
-	BlockToCollectionIndices map[blockdigest.DigestWithSize][]int
+	ReadAllCollections        bool
+	UuidToCollection          map[string]Collection
+	OwnerToCollectionSize     map[string]int
+	BlockToDesiredReplication map[blockdigest.DigestWithSize]int
+	CollectionUuidToIndex     map[string]int
+	CollectionIndexToUuid     []string
+	BlockToCollectionIndices  map[blockdigest.DigestWithSize][]int
 }
 
 type GetCollectionsParams struct {
@@ -283,7 +283,7 @@ func ProcessCollections(arvLogger *logger.Logger,
 
 func (readCollections *ReadCollections) Summarize(arvLogger *logger.Logger) {
 	readCollections.OwnerToCollectionSize = make(map[string]int)
-	readCollections.BlockToReplication = make(map[blockdigest.DigestWithSize]int)
+	readCollections.BlockToDesiredReplication = make(map[blockdigest.DigestWithSize]int)
 	numCollections := len(readCollections.UuidToCollection)
 	readCollections.CollectionUuidToIndex = make(map[string]int, numCollections)
 	readCollections.CollectionIndexToUuid = make([]string, 0, numCollections)
@@ -303,9 +303,10 @@ func (readCollections *ReadCollections) Summarize(arvLogger *logger.Logger) {
 			readCollections.BlockToCollectionIndices[locator] =
 				append(readCollections.BlockToCollectionIndices[locator],
 					collectionIndex)
-			storedReplication := readCollections.BlockToReplication[locator]
+			storedReplication := readCollections.BlockToDesiredReplication[locator]
 			if coll.ReplicationLevel > storedReplication {
-				readCollections.BlockToReplication[locator] = coll.ReplicationLevel
+				readCollections.BlockToDesiredReplication[locator] =
+					coll.ReplicationLevel
 			}
 		}
 	}
@@ -319,7 +320,7 @@ func (readCollections *ReadCollections) Summarize(arvLogger *logger.Logger) {
 			collectionInfo["owner_to_collection_size"] =
 				readCollections.OwnerToCollectionSize
 			collectionInfo["distinct_blocks_named"] =
-				len(readCollections.BlockToReplication)
+				len(readCollections.BlockToDesiredReplication)
 		})
 	}
 

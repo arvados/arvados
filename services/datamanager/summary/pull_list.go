@@ -17,7 +17,6 @@ import (
 type Locator blockdigest.DigestWithSize
 
 func (l Locator) MarshalJSON() ([]byte, error) {
-	//return []byte("\"" + l.Digest.String() + "\""), nil
 	return []byte("\"" + blockdigest.DigestWithSize(l).String() + "\""), nil
 }
 
@@ -127,7 +126,8 @@ func CreatePullServers(cs CanonicalString,
 		server := cs.Get(RemoveProtocolPrefix(host))
 		_, hasBlock := serverHasBlock[server]
 		if hasBlock {
-			ps.From = append(ps.From, server)
+			// The from field should include the protocol.
+			ps.From = append(ps.From, cs.Get(host))
 		} else if len(ps.To) < maxToFields {
 			_, writable := writableServers[server]
 			if writable {

@@ -102,7 +102,7 @@ func singlerun() {
 
 	log.Printf("Blocks In Collections: %d, "+
 		"\nBlocks In Keep: %d.",
-		len(readCollections.BlockToReplication),
+		len(readCollections.BlockToDesiredReplication),
 		len(keepServerInfo.BlockToServers))
 	log.Println(replicationCounts.PrettyPrint())
 
@@ -121,7 +121,7 @@ func singlerun() {
 
 	pullServers := summary.ComputePullServers(kc,
 		&keepServerInfo,
-		readCollections.BlockToReplication,
+		readCollections.BlockToDesiredReplication,
 		replicationSummary.UnderReplicatedBlocks)
 
 	pullLists := summary.BuildPullLists(pullServers)
