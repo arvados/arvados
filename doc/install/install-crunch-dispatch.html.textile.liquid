@@ -21,19 +21,77 @@ Install the Python SDK and CLI tools on controller and all compute nodes.
 
 * See "Python SDK":{{site.baseurl}}/sdk/python/sdk-python.html page for details.
 
-h4. Likely crunch job dependencies
+h4. Slurm
 
-On compute nodes:
+On the API server, install slurm and munge, and generate a munge key:
 
-* @pip install --upgrade pyvcf@
+<notextile>
+<pre><code>~$ <span class="userinput">sudo /usr/bin/apt-get install slurm-llnl munge</span>
+~$ <span class="userinput">sudo /usr/sbin/create-munge-key</span>
+</code></pre>
+</notextile>
+
+Now we need to give slurm a configuration file in @/etc/slurm-llnl/slurm.conf@. Here's an example:
+
+<notextile>
+<pre>
+ControlMachine=uuid_prefix.your.domain
+SlurmctldPort=6817
+SlurmdPort=6818
+AuthType=auth/munge
+StateSaveLocation=/tmp
+SlurmdSpoolDir=/tmp/slurmd
+SwitchType=switch/none
+MpiDefault=none
+SlurmctldPidFile=/var/run/slurmctld.pid
+SlurmdPidFile=/var/run/slurmd.pid
+ProctrackType=proctrack/pgid
+CacheGroups=0
+ReturnToService=2
+TaskPlugin=task/affinity
+#
+# TIMERS
+SlurmctldTimeout=300
+SlurmdTimeout=300
+InactiveLimit=0
+MinJobAge=300
+KillWait=30
+Waittime=0
+#
+# SCHEDULING
+SchedulerType=sched/backfill
+SchedulerPort=7321
+SelectType=select/cons_res
+SelectTypeParameters=CR_CPU_Memory
+FastSchedule=1
+#
+# LOGGING
+SlurmctldDebug=3
+#SlurmctldLogFile=
+SlurmdDebug=3
+#SlurmdLogFile=
+JobCompType=jobcomp/none
+#JobCompLoc=
+JobAcctGatherType=jobacct_gather/none
+#
+# COMPUTE NODES
+NodeName=DEFAULT
+PartitionName=DEFAULT MaxTime=INFINITE State=UP
+PartitionName=compute Default=YES Shared=yes
+
+NodeName=compute[0-255]
+
+PartitionName=compute Nodes=compute[0-255]
+</pre>
+</notextile>
+
+Please make sure to update the value of the @ControlMachine@ parameter to the hostname of your dispatcher (api server).
 
 h4. Crunch user account
 
-On compute nodes and controller:
-
 * @adduser crunch@
 
-The crunch user should have the same UID, GID, and home directory on all compute nodes and on the controller.
+The crunch user should have the same UID, GID, and home directory on all compute nodes and on the dispatcher (api server).
 
 h4. Repositories
 

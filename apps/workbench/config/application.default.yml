@@ -88,7 +88,7 @@ test:
   action_controller.allow_forgery_protection: false
   action_mailer.delivery_method: :test
   active_support.deprecation: :stderr
-  profiling_enabled: false
+  profiling_enabled: true
   secret_token: <%= rand(2**256).to_s(36) %>
   secret_key_base: <%= rand(2**256).to_s(36) %>
 
@@ -209,5 +209,5 @@ common:
   # in the directory where your API server is running.
   anonymous_user_token: false
 
-  # Enable response payload compression in Arvados API requests.
-  include_accept_encoding_header_in_api_requests: true
+  # Ask Arvados API server to compress its response payloads.
+  api_response_compression: true

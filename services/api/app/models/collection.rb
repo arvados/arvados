@@ -1,6 +1,7 @@
 require 'arvados/keep'
 
 class Collection < ArvadosModel
+  extend DbCurrentTime
   include HasUuid
   include KindAndEtag
   include CommonApiTemplate
@@ -50,7 +51,8 @@ class Collection < ArvadosModel
     # subsequent passes without checking any signatures. This is
     # important because the signatures have probably been stripped off
     # by the time we get to a second validation pass!
-    return true if @signatures_checked and @signatures_checked == compute_pdh
+    computed_pdh = compute_pdh
+    return true if @signatures_checked and @signatures_checked == computed_pdh
 
     if self.manifest_text_changed?
       # Check permissions on the collection manifest.
@@ -58,9 +60,8 @@ class Collection < ArvadosModel
       # which will return 403 Permission denied to the client.
       api_token = current_api_client_authorization.andand.api_token
       signing_opts = {
-        key: Rails.configuration.blob_signing_key,
         api_token: api_token,
-        ttl: Rails.configuration.blob_signature_ttl,
+        now: db_current_time.to_i,
       }
       self.manifest_text.lines.each do |entry|
         entry.split[1..-1].each do |tok|
@@ -87,7 +88,7 @@ class Collection < ArvadosModel
         end
       end
     end
-    @signatures_checked = compute_pdh
+    @signatures_checked = computed_pdh
   end
 
   def strip_manifest_text
@@ -193,9 +194,8 @@ class Collection < ArvadosModel
 
   def self.sign_manifest manifest, token
     signing_opts = {
-      key: Rails.configuration.blob_signing_key,
       api_token: token,
-      ttl: Rails.configuration.blob_signature_ttl,
+      expire: db_current_time.to_i + Rails.configuration.blob_signature_ttl,
     }
     m = manifest.dup
     munge_manifest_locators!(m) do |loc|

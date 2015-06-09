@@ -4,7 +4,7 @@ navsection: userguide
 title: "Uploading data"
 ...
 
-Arvados Data collections can be uploaded using either the @*arv keep put*@ command line tool or using Workbench.
+Arvados Data collections can be uploaded using either the @arv keep put@ command line tool or using Workbench.
 
 # "*Upload using command line tool*":#upload-using-command
 # "*Upload using Workbench*":#upload-using-workbench
@@ -24,9 +24,10 @@ qr1hi-4zz18-xxxxxxxxxxxxxxx
 </code></pre>
 </notextile>
 
+
 The output value @qr1hi-4zz18-xxxxxxxxxxxxxxx@ is the uuid of the Arvados collection created.
 
-The file used in this example is a freely available TSV file containing variant annotations from "Personal Genome Project (PGP)":http://www.pgp-hms.org participant "hu599905.":https://my.pgp-hms.org/profile/hu599905), downloadable "here":https://warehouse.pgp-hms.org/warehouse/f815ec01d5d2f11cb12874ab2ed50daa+234+K@ant/var-GS000016015-ASM.tsv.bz2.
+Note: The file used in this example is a freely available TSV file containing variant annotations from the "Personal Genome Project (PGP)":http://www.pgp-hms.org participant "hu599905":https://my.pgp-hms.org/profile/hu599905), downloadable "here":https://warehouse.pgp-hms.org/warehouse/f815ec01d5d2f11cb12874ab2ed50daa+234+K@ant/var-GS000016015-ASM.tsv.bz2. Alternatively, you can replace @var-GS000016015-ASM.tsv.bz2@ with the name of any file you have locally, or you could get the TSV file by "downloading it from Keep.":{{site.baseurl}}/user/tutorials/tutorial-keep-get.html
 
 <notextile><a name="dir"></a></notextile>It is also possible to upload an entire directory with @arv keep put@:
 
@@ -48,9 +49,9 @@ In both examples, the @arv keep put@ command created a collection. The first col
 
 h3. Locate your collection in Workbench
 
-Visit the Workbench *Dashboard*.  Click on *Projects*<span class="caret"></span> dropdown menu in the top navigation menu, select your *Home* project.  Your newly uploaded collection should appear near the top of the *Data collections* tab.  The collection locator printed by @arv keep put@ will appear under the *name* column.
+Visit the Workbench *Dashboard*.  Click on *Projects*<span class="caret"></span> dropdown menu in the top navigation menu, select your *Home* project.  Your newly uploaded collection should appear near the top of the *Data collections* tab.  The collection name printed by @arv keep put@ will appear under the *name* column.
 
-To move the collection to a different project, check the box at the left of the collection row.  Pull down the *Selection...*<span class="caret"></span> menu near the top of the page tab, and select *Move selected*. This will open a dialog box where you can select a destination project for the collection.  Click a project, then finally the <span class="btn btn-sm btn-primary">Move</span> button.
+To move the collection to a different project, check the box at the left of the collection row.  Pull down the *Selection...*<span class="caret"></span> menu near the top of the page tab, and select *Move selected...* button. This will open a dialog box where you can select a destination project for the collection.  Click a project, then finally the <span class="btn btn-sm btn-primary">Move</span> button.
 
 !{display: block;margin-left: 25px;margin-right: auto;}{{ site.baseurl }}/images/workbench-move-selected.png!
 
@@ -76,4 +77,4 @@ Click on the *Browse...* button and select the files you would like to upload. S
 
 *Note:* If you leave the collection page during the upload, the upload process will be aborted and you will need to upload the files again.
 
-*Note:* You can also use the Upload tab to add files to an existing collection.
+*Note:* You can also use the Upload tab to add additional files to an existing collection.

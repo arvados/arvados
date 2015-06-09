@@ -21,12 +21,13 @@ This will open the template record in an interactive text editor (as specified b
 * @"name"@ is a human-readable name for the pipeline.
 * @"components"@ is a set of scripts or commands that make up the pipeline.  Each component is given an identifier (@"bwa-mem"@ and @"SortSam"@) in this example).
 ** Each entry in components @"components"@ is an Arvados job submission.  For more information about individual jobs, see the "job object reference":{{site.baseurl}}/api/schema/Job.html and "job create method.":{{site.baseurl}}/api/methods/jobs.html#create
-* @"repository"@, @"script_version"@, and @"script"@ indicate that we intend to use the external @"run-command"@ tool wrapper that is part of the Arvados.  These parameters are described in more detail in "Writing a script":tutorial-firstscript.html
+* @"repository"@, @"script_version"@, and @"script"@ indicate that we intend to use the external @"run-command"@ tool wrapper that is part of the Arvados.  These parameters are described in more detail in "Writing a script":tutorial-firstscript.html.
 * @"runtime_constraints"@ describes runtime resource requirements for the component.
-** @"docker_image"@ specifies the "Docker":https://www.docker.com/ runtime environment in which to run the job.  The Docker image @"arvados/jobs-java-bwa-samtools"@ supplied here has the Arvados SDK, Java runtime environment, bwa, and samtools installed.
+** @"docker_image"@ specifies the "Docker":https://www.docker.com/ runtime environment in which to run the job.  The Docker image @"bcosc/arv-base-java"@ supplied here has the Java runtime environment, bwa, and samtools installed.
+** @"arvados_sdk_version"@ specifies a version of the Arvados SDK to load alongside the job's script.
 * @"script_parameters"@ describes the component parameters.
 ** @"command"@ is the actual command line to invoke the @bwa@ and then @SortSam@.  The notation @$()@ denotes macro substitution commands evaluated by the run-command tool wrapper.
-** @"stdout"@ indicates that the output of this command should be captured to a file.
+** @"task.stdout"@ indicates that the output of this command should be captured to a file.
 ** @$(node.cores)@ evaluates to the number of cores available on the compute node at time the command is run.
 ** @$(tmpdir)@ evaluates to the local path for temporary directory the command should use for scratch data.
 ** @$(reference_collection)@ evaluates to the script_parameter @"reference_collection"@
@@ -34,7 +35,7 @@ This will open the template record in an interactive text editor (as specified b
 ** @$(file $(...))@ constructs a local path to a given file within the supplied Arvados collection.
 ** @$(glob $(...))@ searches the specified path based on a file glob pattern and evalutes to the first result.
 ** @$(basename $(...))@ evaluates to the supplied path with leading path portion and trailing filename extensions stripped
-** @"output_of"@ indicates that the @output@ of the @bwa-mem@ component should be used as the @"input"@ of @SortSam@.  Arvados uses these dependencies between components to automatically determine the correct order to run them.
+* @"output_of"@ indicates that the @output@ of the @bwa-mem@ component should be used as the @"input"@ script parameter of @SortSam@.  Arvados uses these dependencies between components to automatically determine the correct order to run them.
 
 When using @run-command@, the tool should write its output to the current working directory.  The output will be automatically uploaded to Keep when the job completes.
 
@@ -42,11 +43,11 @@ See the "run-command reference":{{site.baseurl}}/user/topics/run-command.html fo
 
 h2. Running your pipeline
 
-Your new pipeline template should appear at the top of the Workbench "pipeline&nbsp;templates":https://{{ site.arvados_workbench_host }}/pipeline_templates page.  You can run your pipeline "using Workbench":tutorial-pipeline-workbench.html or the "command line.":{{site.baseurl}}/user/topics/running-pipeline-command-line.html
+Your new pipeline template should appear at the top of the Workbench "pipeline&nbsp;templates":{{site.arvados_workbench_host}}/pipeline_templates page.  You can run your pipeline "using Workbench":tutorial-pipeline-workbench.html or the "command line.":{{site.baseurl}}/user/topics/running-pipeline-command-line.html
 
-Test data is available in the "Arvados Tutorial":https://{{ site.arvados_workbench_host }}/projects/qr1hi-j7d0g-u7zg1qdaowykd8d project:
+Test data is available in the "Arvados Tutorial":{{site.arvados_workbench_host}}/projects/qr1hi-j7d0g-u7zg1qdaowykd8d project:
 
-* Choose <i class="fa fa-fw fa-archive"></i> "Tutorial chromosome 19 reference (2463fa9efeb75e099685528b3b9071e0+438)":https://{{ site.arvados_workbench_host }}/collections/2463fa9efeb75e099685528b3b9071e0+438 for the "reference_collection" parameter
-* Choose <i class="fa fa-fw fa-archive"></i> "Tutorial sample exome (3229739b505d2b878b62aed09895a55a+142)":https://{{ site.arvados_workbench_host }}/collections/3229739b505d2b878b62aed09895a55a+142 for the "sample" parameter
+* Choose <i class="fa fa-fw fa-archive"></i> "Tutorial chromosome 19 reference (2463fa9efeb75e099685528b3b9071e0+438)":{{site.arvados_workbench_host}}/collections/2463fa9efeb75e099685528b3b9071e0+438 for the "reference_collection" parameter
+* Choose <i class="fa fa-fw fa-archive"></i> "Tutorial sample exome (3229739b505d2b878b62aed09895a55a+142)":{{site.arvados_workbench_host}}/collections/3229739b505d2b878b62aed09895a55a+142 for the "sample" parameter
 
 For more information and examples for writing pipelines, see the "pipeline template reference":{{site.baseurl}}/api/schema/PipelineTemplate.html

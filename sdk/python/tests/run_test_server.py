@@ -165,6 +165,15 @@ def run(leave_running_atexit=False):
     # died, or we have lost our credentials, or something else is
     # preventing us from calling reset(). Start a new one.
 
+    if not os.path.exists('tmp'):
+        os.makedirs('tmp')
+
+    if not os.path.exists('tmp/api'):
+        os.makedirs('tmp/api')
+
+    if not os.path.exists('tmp/logs'):
+        os.makedirs('tmp/logs')
+
     if not os.path.exists('tmp/self-signed.pem'):
         # We assume here that either passenger reports its listening
         # address as https:/0.0.0.0:port/. If it reports "127.0.0.1"

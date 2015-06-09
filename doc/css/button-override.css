@@ -1,0 +1,7 @@
+.btn:hover,
+.btn:focus,
+.btn:active,
+.btn.active,
+.open .dropdown-toggle.btn {
+  opacity: 0.4;
+}

@@ -7,8 +7,15 @@
 <% end %>
 
 <% if @output_of.andand.any? %>
-  <p><i>This collection was the output of:</i><br />
-    <% pipelines = PipelineInstance.filter([["components", "like", "%#{@object.uuid}%"]]).each do |pipeline| %>
+  <% pipelines = PipelineInstance.limit(5).filter([["components", "like", "%#{@object.uuid}%"]]) %>
+  <%
+    message = "This collection was the output of the following:"
+    if pipelines.items_available > pipelines.results.size
+      message += ' (' + (pipelines.items_available - pipelines.results.size).to_s + ' more results are not shown)'
+    end
+  %>
+  <p><i><%= message %></i><br />
+    <% pipelines.each do |pipeline| %>
       <% pipeline.components.each do |cname, c| %>
         <% if c[:output_uuid] == @object.uuid %>
           <b><%= cname %></b> component of <b><%= link_to_if_arvados_object(pipeline, friendly_name: true) %></b>
@@ -25,7 +32,7 @@
 <% if @log_of.andand.any? %>
   <p><i>This collection contains log messages from:</i><br />
     <%= render_arvados_object_list_start(@log_of, 'Show all jobs',
-                                         jobs_path(filters: [['log', '=', @object.uuid]].to_json)) do |job| %>
+                                         jobs_path(filters: [['log', '=', @object.portable_data_hash]].to_json)) do |job| %>
       <%= link_to_if_arvados_object(job, friendly_name: true) %><br />
     <% end %>
   </p>
