@@ -121,7 +121,7 @@ class ArvadosApiClient
         elsif v == false
           query[k] = 0
         else
-          query[k] = JSON.dump(v)
+          query[k] = Oj.dump(v, mode: :compat)
         end
       end
     else
