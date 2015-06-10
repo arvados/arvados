@@ -102,3 +102,17 @@ func (s *ServerRequiredSuite) TestErrorResponse(c *C) {
 		c.Assert(err.(APIServerError).HttpStatusCode, Equals, 404)
 	}
 }
+
+func (s *ServerRequiredSuite) TestAPIDiscovery_Get_defaultCollectionReplication(c *C) {
+	arv, err := MakeArvadosClient()
+	value, err := arv.Discovery("defaultCollectionReplication")
+	c.Assert(err, IsNil)
+	c.Assert(value, NotNil)
+}
+
+func (s *ServerRequiredSuite) TestAPIDiscovery_Get_noSuchParameter(c *C) {
+	arv, err := MakeArvadosClient()
+	value, err := arv.Discovery("noSuchParameter")
+	c.Assert(err, NotNil)
+	c.Assert(value, IsNil)
+}

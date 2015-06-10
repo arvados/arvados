@@ -4,7 +4,8 @@ OLD_SHELL := $(SHELL)
 SHELL = $(warning [$@])$(OLD_SHELL) -x
 endif
 
-all: skydns-image skydock-image api-image compute-image doc-image workbench-image keep-image keep-proxy-image sso-image shell-image
+#shell-image
+all: skydns-image skydock-image api-image compute-image doc-image workbench-image keep-image keep-proxy-image sso-image
 
 IMAGE_FILES := $(shell ls *-image 2>/dev/null |grep -v -E 'debian-arvados-image|skydns-image|skydock-image')
 GENERATED_DIRS := $(shell ls */generated 2>/dev/null)
@@ -70,7 +71,7 @@ SHELL_DEPS = shell/* config.yml $(SHELL_GENERATED)
 
 COMPUTE_DEPS = compute/* config.yml $(COMPUTE_GENERATED)
 
-DOC_DEPS = doc/Dockerfile doc/apache2_vhost
+DOC_DEPS = doc/Dockerfile $(DOC_GENERATED)
 
 WORKBENCH_DEPS = workbench/Dockerfile \
                  config.yml \
@@ -109,6 +110,9 @@ WORKBENCH_GENERATED    = workbench/generated/*
 
 SSO_GENERATED_IN       = sso/*.in
 SSO_GENERATED          = sso/generated/*
+
+DOC_GENERATED_IN       = doc/*.in
+DOC_GENERATED          = doc/generated/*
 
 KEEP_DEPS += keep/generated/bin/keepproxy
 KEEP_DEPS += keep/generated/bin/keepstore
@@ -157,6 +161,9 @@ $(COMPUTE_GENERATED): $(COMPUTE_GENERATED_IN)
 
 $(SSO_GENERATED): $(SSO_GENERATED_IN)
 	$(CONFIG_RB) sso
+
+$(DOC_GENERATED): $(DOC_GENERATED_IN)
+	$(CONFIG_RB) doc
 
 $(KEEP_GENERATED): $(KEEP_GENERATED_IN)
 	$(CONFIG_RB) keep

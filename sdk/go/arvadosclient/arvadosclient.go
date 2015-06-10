@@ -68,6 +68,9 @@ type ArvadosClient struct {
 	// If true, sets the X-External-Client header to indicate
 	// the client is outside the cluster.
 	External bool
+
+	// Discovery document
+	DiscoveryDoc Dict
 }
 
 // Create a new ArvadosClient, initialized with standard Arvados environment
@@ -114,7 +117,9 @@ func (this ArvadosClient) CallRaw(method string, resource string, uuid string, a
 		Scheme: "https",
 		Host:   this.ApiServer}
 
-	u.Path = "/arvados/v1"
+	if resource != API_DISCOVERY_RESOURCE {
+		u.Path = "/arvados/v1"
+	}
 
 	if resource != "" {
 		u.Path = u.Path + "/" + resource
@@ -274,4 +279,30 @@ func (this ArvadosClient) Update(resource string, uuid string, parameters Dict, 
 //   err - error accessing the resource, or nil if no error
 func (this ArvadosClient) List(resource string, parameters Dict, output interface{}) (err error) {
 	return this.Call("GET", resource, "", "", parameters, output)
+}
+
+// API Discovery
+//
+//   parameter - name of parameter to be discovered
+// return
+//   valueMap - Dict key value pair of the discovered parameter
+//   err - error accessing the resource, or nil if no error
+var API_DISCOVERY_RESOURCE string = "discovery/v1/apis/arvados/v1/rest"
+
+func (this *ArvadosClient) Discovery(parameter string) (value interface{}, err error) {
+	if len(this.DiscoveryDoc) == 0 {
+		this.DiscoveryDoc = make(Dict)
+		err = this.Call("GET", API_DISCOVERY_RESOURCE, "", "", nil, &this.DiscoveryDoc)
+		if err != nil {
+			return nil, err
+		}
+	}
+
+	var found bool
+	value, found = this.DiscoveryDoc[parameter]
+	if found {
+		return value, nil
+	} else {
+		return value, errors.New("Not found")
+	}
 }

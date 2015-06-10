@@ -19,9 +19,9 @@ development:
   blob_signing_key: ~
 
 production:
-  host: api.dev.arvados
+  host: api.@@ARVADOS_DOMAIN@@
 
-  git_repo_ssh_base: "git@api.dev.arvados:"
+  git_repo_ssh_base: "git@api.@@ARVADOS_DOMAIN@@:"
 
   # Docker setup doesn't include arv-git-httpd yet.
   git_repo_https_base: false
@@ -36,13 +36,6 @@ production:
   blob_signing_key: @@KEEP_SIGNING_SECRET@@
 
   uuid_prefix: @@API_HOSTNAME@@
-
-  # The e-mail address of the user you would like to become marked as an admin
-  # user on their first login.
-  # In the default configuration, authentication happens through the Arvados SSO
-  # server, which uses openid against Google's servers, so in that case this
-  # should be an address associated with a Google account.
-  auto_admin_user: @@API_AUTO_ADMIN_USER@@
 
   # compute_node_domain: example.org
   # compute_node_nameservers:

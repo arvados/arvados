@@ -31,7 +31,7 @@ ADD generated/arvados.tar.gz /usr/src/arvados/
 # Update gem. This (hopefully) fixes
 # https://github.com/rubygems/rubygems.org/issues/613.
 RUN /usr/local/rvm/bin/rvm-exec default gem update --system && \
-    /usr/local/rvm/bin/rvm-exec default gem install bundler && \
+    /usr/local/rvm/bin/rvm-exec default gem install bundler  -v 1.9.9 && \
     /usr/local/rvm/bin/rvm-exec default bundle install --gemfile=/usr/src/arvados/apps/workbench/Gemfile && \
     /usr/local/rvm/bin/rvm-exec default bundle install --gemfile=/usr/src/arvados/services/api/Gemfile && \
     /usr/local/rvm/bin/rvm-exec default bundle install --gemfile=/usr/src/arvados/doc/Gemfile

@@ -11,7 +11,7 @@ import errno
 import re
 import logging
 
-from .errors import KeepWriteError, AssertionError
+from .errors import KeepWriteError, AssertionError, ArgumentError
 from .keep import KeepLocator
 from ._normalize_stream import normalize_stream
 from ._ranges import locators_and_ranges, replace_range, Range
@@ -825,7 +825,13 @@ class ArvadosFile(object):
             raise ArgumentError("Offset is past the end of the file")
 
         if len(data) > config.KEEP_BLOCK_SIZE:
-            raise ArgumentError("Please append data in chunks smaller than %i bytes (config.KEEP_BLOCK_SIZE)" % (config.KEEP_BLOCK_SIZE))
+            # Chunk it up into smaller writes
+            n = 0
+            dataview = memoryview(data)
+            while n < len(data):
+                self.writeto(offset+n, dataview[n:n + config.KEEP_BLOCK_SIZE].tobytes(), num_retries)
+                n += config.KEEP_BLOCK_SIZE
+            return
 
         self._modified = True
 

@@ -1,4 +1,4 @@
-package org.arvados.sdk.java;
+package org.arvados.sdk;
 
 import com.google.api.client.util.Lists;
 import com.google.api.client.util.Sets;

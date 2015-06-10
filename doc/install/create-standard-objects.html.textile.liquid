@@ -13,7 +13,7 @@ This will be readable by the "All users" group, and therefore by every active us
 <pre><code>~$ <span class="userinput">prefix=`arv --format=uuid user current | cut -d- -f1`</span>
 ~$ <span class="userinput">echo "Site prefix is '$prefix'"</span>
 ~$ <span class="userinput">all_users_group_uuid="$prefix-j7d0g-fffffffffffffff"</span>
-~$ <span class="userinput">repo_uuid=`arv --format=uuid repository create --repository '{"owner_uuid":"$prefix-tpzed-000000000000000", "name":"arvados"}'`</span>
+~$ <span class="userinput">repo_uuid=`arv --format=uuid repository create --repository "{\"owner_uuid\":\"$prefix-tpzed-000000000000000\", \"name\":\"arvados\"}"`</span>
 ~$ <span class="userinput">echo "Arvados repository uuid is '$repo_uuid'"</span>
 ~$ <span class="userinput">read -rd $'\000' newlink &lt;&lt;EOF; arv link create --link "$newlink"</span>
 <span class="userinput">{

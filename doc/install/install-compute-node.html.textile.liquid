@@ -1,0 +1,109 @@
+---
+layout: default
+navsection: installguide
+title: Install a compute node
+...
+
+This installation guide assumes you are on a 64 bit Debian or Ubuntu system.
+
+h2. Install dependencies
+
+First add the Arvados apt repository, and then install a number of packages.
+
+<notextile>
+<pre><code>~$ <span class="userinput">echo "deb http://apt.arvados.org/ wheezy main" | sudo tee /etc/apt/sources.list.d/apt.arvados.org.list</span>
+~$ <span class="userinput">sudo /usr/bin/apt-key adv --keyserver pool.sks-keyservers.net --recv 1078ECD7</span>
+~$ <span class="userinput">sudo /usr/bin/apt-get update</span>
+~$ <span class="userinput">sudo /usr/bin/apt-get install python-pip python-pyvcf python-gflags python-google-api-python-client python-virtualenv libattr1-dev libfuse-dev python-dev python-llfuse fuse crunchstat python-arvados-fuse iptables ca-certificates lxc apt-transport-https docker.io</span>
+</code></pre>
+</notextile>
+
+h2. Install slurm and munge
+
+<notextile>
+<pre><code>~$ <span class="userinput">sudo /usr/bin/apt-get install slurm-llnl munge</span>
+</code></pre>
+</notextile>
+
+h2. Copy configuration files from the dispatcher (api)
+
+The @/etc/slurm-llnl/slurm.conf@ and @/etc/munge/munge.key@ files need to be identicaly across the dispatcher and all compute nodes. Copy the files you created in the "Install the Crunch dispatcher":{{site.baseurl}} step to this compute node.
+
+h2. Crunch user account
+
+* @adduser crunch@
+
+The crunch user should have the same UID, GID, and home directory on all compute nodes and on the dispatcher (api server).
+
+h2. Configure fuse
+
+Install this file as @/etc/fuse.conf@:
+
+<notextile>
+<pre>
+# Set the maximum number of FUSE mounts allowed to non-root users.
+# The default is 1000.
+#
+#mount_max = 1000
+
+# Allow non-root users to specify the 'allow_other' or 'allow_root'
+# mount options.
+#
+user_allow_other
+</pre>
+</notextile>
+
+h2. Tell the API server about this compute node
+
+Load your API superuser token on the compute node:
+
+<notextile>
+<pre><code>
+~$ <span class="userinput">HISTIGNORE=$HISTIGNORE:'export ARVADOS_API_TOKEN=*'</span>
+~$ <span class="userinput">export ARVADOS_API_TOKEN=@your-superuser-token@</span>
+~$ <span class="userinput">export ARVADOS_API_HOST=@uuid_prefix.your.domain@</span>
+~$ <span class="userinput">unset ARVADOS_API_HOST_INSECURE</span>
+</code>
+</pre>
+</notextile>
+
+Then execute this script to create a compute node object, and set up a cron job to have the compute node ping the API server every five minutes:
+
+<notextile>
+<pre><code>
+#!/bin/bash
+set -e
+if ! test -f /root/node.json ; then
+    python - &lt;&lt;EOF
+import arvados, json, socket
+node = arvados.api('v1').nodes().create(body={'hostname': socket.gethostname()}).execute()
+with open('/root/node.json', 'w') as node_file:
+    json.dump(node, node_file, indent=2)
+EOF
+
+    # Make sure /dev/fuse permissions are correct (the device appears after fuse is loaded)
+    chmod 1660 /dev/fuse && chgrp fuse /dev/fuse
+fi
+
+UUID=`grep \"uuid\" /root/node.json  |cut -f4 -d\"`
+PING_SECRET=`grep \"ping_secret\" /root/node.json  |cut -f4 -d\"`
+
+if ! test -f /etc/cron.d/node_ping ; then
+    echo "*/5 * * * * root /usr/bin/curl -k -d ping_secret=$PING_SECRET https://api/arvados/v1/nodes/$UUID/ping" > /etc/cron.d/node_ping
+fi
+
+/usr/bin/curl -k -d ping_secret=$PING_SECRET https://api/arvados/v1/nodes/$UUID/ping?ping_secret=$PING_SECRET
+</code>
+</pre>
+</notextile>
+
+And remove your token from the environment:
+
+<notextile>
+<pre><code>
+~$ <span class="userinput">unset ARVADOS_API_TOKEN</span>
+~$ <span class="userinput">unset ARVADOS_API_HOST</span>
+</code>
+</pre>
+</notextile>
+

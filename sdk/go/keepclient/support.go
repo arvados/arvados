@@ -21,6 +21,7 @@ type keepDisk struct {
 	Port     int    `json:"service_port"`
 	SSL      bool   `json:"service_ssl_flag"`
 	SvcType  string `json:"service_type"`
+	ReadOnly bool   `json:"read_only"`
 }
 
 func Md5String(s string) string {
@@ -93,6 +94,7 @@ func (this *KeepClient) DiscoverKeepServers() error {
 	listed := make(map[string]bool)
 	localRoots := make(map[string]string)
 	gatewayRoots := make(map[string]string)
+	writableLocalRoots := make(map[string]string)
 
 	for _, service := range m.Items {
 		scheme := "http"
@@ -114,6 +116,11 @@ func (this *KeepClient) DiscoverKeepServers() error {
 			localRoots[service.Uuid] = url
 			this.Using_proxy = true
 		}
+
+		if service.ReadOnly == false {
+			writableLocalRoots[service.Uuid] = url
+		}
+
 		// Gateway services are only used when specified by
 		// UUID, so there's nothing to gain by filtering them
 		// by service type. Including all accessible services
@@ -128,7 +135,7 @@ func (this *KeepClient) DiscoverKeepServers() error {
 		this.setClientSettingsStore()
 	}
 
-	this.SetServiceRoots(localRoots, gatewayRoots)
+	this.SetServiceRoots(localRoots, writableLocalRoots, gatewayRoots)
 	return nil
 }
 
@@ -212,7 +219,7 @@ func (this KeepClient) putReplicas(
 	requestId := fmt.Sprintf("%x", md5.Sum([]byte(locator+time.Now().String())))[0:8]
 
 	// Calculate the ordering for uploading to servers
-	sv := NewRootSorter(this.LocalRoots(), hash).GetSortedRoots()
+	sv := NewRootSorter(this.WritableLocalRoots(), hash).GetSortedRoots()
 
 	// The next server to try contacting
 	next_server := 0

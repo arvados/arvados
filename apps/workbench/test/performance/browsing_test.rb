@@ -34,6 +34,8 @@ class BrowsingTest < WorkbenchPerformanceTest
       end
     end
 
+    sleep(50)
+
     # In the search dialog now. Expect at least one item in the result display.
     within '.modal-content' do
       assert_text 'All projects'

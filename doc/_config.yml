@@ -8,7 +8,7 @@
 
 baseurl:
 arvados_api_host: localhost
-arvados_workbench_host: localhost
+arvados_workbench_host: http://localhost
 
 exclude: ["Rakefile", "tmp", "vendor"]
 
@@ -152,6 +152,7 @@ navbar:
       - install/install-keepproxy.html.textile.liquid
       - install/install-arv-git-httpd.html.textile.liquid
       - install/install-crunch-dispatch.html.textile.liquid
+      - install/install-compute-node.html.textile.liquid
       - install/cheat_sheet.html.textile.liquid
     - Software prerequisites:
       - install/install-manual-prerequisites-ruby.html.textile.liquid
