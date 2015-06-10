@@ -192,6 +192,10 @@ if test -d common-workflow-language.github.io ; then
     cd ..
 else
     git clone git@github.com:common-workflow-language/common-workflow-language.github.io.git
+    cd common-workflow-language.github.io
+    git config user.email "sysadmin@curoverse.com"
+    git config user.name "Curoverse build bot"
+    cd ..
 fi
 python -mcwltool specification/cwlsite.cwl specification/cwlsite-job.json --outdir=$PWD/common-workflow-language.github.io
 cd common-workflow-language.github.io
