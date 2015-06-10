@@ -4,8 +4,7 @@ OLD_SHELL := $(SHELL)
 SHELL = $(warning [$@])$(OLD_SHELL) -x
 endif
 
-#shell-image
-all: skydns-image skydock-image api-image compute-image doc-image workbench-image keep-image keep-proxy-image sso-image
+all: skydns-image skydock-image api-image compute-image doc-image workbench-image keep-image keep-proxy-image sso-image shell-image
 
 IMAGE_FILES := $(shell ls *-image 2>/dev/null |grep -v -E 'debian-arvados-image|skydns-image|skydock-image')
 GENERATED_DIRS := $(shell ls */generated 2>/dev/null)
