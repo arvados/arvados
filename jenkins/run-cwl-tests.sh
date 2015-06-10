@@ -200,5 +200,5 @@ fi
 python -mcwltool specification/cwlsite.cwl specification/cwlsite-job.json --outdir=$PWD/common-workflow-language.github.io
 cd common-workflow-language.github.io
 git add --all
-git commit -m"Build bot"
+git diff-index --quiet HEAD || git commit -m"Build bot"
 git push
