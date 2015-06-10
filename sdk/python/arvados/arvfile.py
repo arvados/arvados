@@ -361,7 +361,7 @@ def must_be_writable(orig_func):
     @functools.wraps(orig_func)
     def must_be_writable_wrapper(self, *args, **kwargs):
         if not self.writable():
-            raise IOError(errno.EROFS, "Collection must be writable.")
+            raise IOError(errno.EROFS, "Collection is read-only.")
         return orig_func(self, *args, **kwargs)
     return must_be_writable_wrapper
 

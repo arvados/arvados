@@ -555,7 +555,7 @@ class RichCollectionBase(CollectionBase):
                 if isinstance(item, RichCollectionBase):
                     return item.find_or_create(pathcomponents[1], create_type)
                 else:
-                    raise IOError(errno.ENOTDIR, "Interior path components must be subcollection")
+                    raise IOError(errno.ENOTDIR, "Is not a directory: %s" % pathcomponents[0])
         else:
             return self
 
@@ -568,7 +568,7 @@ class RichCollectionBase(CollectionBase):
 
         """
         if not path:
-            raise errors.ArgumentError("Parameter 'path' must not be empty.")
+            raise errors.ArgumentError("Parameter 'path' is empty.")
 
         pathcomponents = path.split("/", 1)
         item = self._items.get(pathcomponents[0])
@@ -581,7 +581,7 @@ class RichCollectionBase(CollectionBase):
                 else:
                     return item
             else:
-                raise IOError(errno.ENOTDIR, "Interior path components must be subcollection")
+                raise IOError(errno.ENOTDIR, "Is not a directory: %s" % pathcomponents[0])
 
     def mkdirs(self, path):
         """Recursive subcollection create.
@@ -626,7 +626,7 @@ class RichCollectionBase(CollectionBase):
         if arvfile is None:
             raise IOError(errno.ENOENT, "File not found")
         if not isinstance(arvfile, ArvadosFile):
-            raise IOError(errno.EISDIR, "Path must refer to a file.")
+            raise IOError(errno.EISDIR, "Is a directory: %s" % path)
 
         if mode[0] == "w":
             arvfile.truncate(0)
@@ -716,7 +716,7 @@ class RichCollectionBase(CollectionBase):
         """
 
         if not path:
-            raise errors.ArgumentError("Parameter 'path' must not be empty.")
+            raise errors.ArgumentError("Parameter 'path' is empty.")
 
         pathcomponents = path.split("/", 1)
         item = self._items.get(pathcomponents[0])
@@ -870,7 +870,7 @@ class RichCollectionBase(CollectionBase):
 
         source_obj, target_dir, target_name = self._get_src_target(source, target_path, source_collection, False)
         if not source_obj.writable():
-            raise IOError(errno.EROFS, "Source collection must be writable.")
+            raise IOError(errno.EROFS, "Source collection is read only.")
         target_dir.add(source_obj, target_name, overwrite, True)
 
     def portable_manifest_text(self, stream_name="."):
@@ -1170,7 +1170,7 @@ class Collection(RichCollectionBase):
                 self._manifest_text = manifest_locator_or_text
             else:
                 raise errors.ArgumentError(
-                    "Argument to CollectionReader must be a manifest or a collection UUID")
+                    "Argument to CollectionReader is not a manifest or a collection UUID")
 
             try:
                 self._populate()
@@ -1379,7 +1379,7 @@ class Collection(RichCollectionBase):
         """
         if self.modified():
             if not self._has_collection_uuid():
-                raise AssertionError("Collection manifest_locator must be a collection uuid.  Use save_new() for new collections.")
+                raise AssertionError("Collection manifest_locator is not a collection uuid.  Use save_new() for new collections.")
 
             self._my_block_manager().commit_all()
 
