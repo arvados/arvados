@@ -185,8 +185,15 @@ virtualenv ../venv
 python setup.py install
 cd ..
 
-git clone git@github.com:common-workflow-language/common-workflow-language.github.io.git
-python -mcwltool specification/cwlsite.cwl specification/cwlsite-job.json --outdir=common-workflow-language.github.io
+if test -d common-workflow-language.github.io ; then
+    cd common-workflow-language.github.io
+    git fetch
+    git reset --hard origin/master
+    cd ..
+else
+    git clone git@github.com:common-workflow-language/common-workflow-language.github.io.git
+fi
+python -mcwltool specification/cwlsite.cwl specification/cwlsite-job.json --outdir=$PWD/common-workflow-language.github.io
 cd common-workflow-language.github.io
 git add --all
 git commit -m"Build bot"
