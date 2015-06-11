@@ -232,6 +232,7 @@ module Keep
     # Valid format: stream name + one or more locators + one or more files for each stream in manifest.
     # https://arvados.org/projects/arvados/wiki/Keep_manifest_format
     def self.valid?(manifest)
+      raise ArgumentError.new "Invalid manifest: does not end with new line" if !manifest.end_with?("\n")
       line_count = 0
       manifest.each_line do |line|
         line_count += 1
