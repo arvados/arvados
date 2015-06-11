@@ -391,6 +391,8 @@ else
   git checkout -q `git log --format=format:%h -n1 .`
 fi
 
+git log --format=format:%H -n1 . > git-commit.version
+
 # Build arvados src deb package
 cd "$WORKSPACE"
 PKG_VERSION=$(version_from_git)
