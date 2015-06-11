@@ -2146,13 +2146,27 @@ if (-d $sdk_root) {
 }
 
 my $python_dir = "$install_dir/python";
-if ((-d $python_dir) and can_run("python2.7") and
-    (system("python2.7", "$python_dir/setup.py", "--quiet", "egg_info") != 0)) {
-  # egg_info failed, probably when it asked git for a build tag.
-  # Specify no build tag.
-  open(my $pysdk_cfg, ">>", "$python_dir/setup.cfg");
-  print $pysdk_cfg "\n[egg_info]\ntag_build =\n";
-  close($pysdk_cfg);
+if ((-d $python_dir) and can_run("python2.7")) {
+  open(my $egg_info_pipe, "-|",
+       "python2.7 \Q$python_dir/setup.py\E --quiet egg_info 2>&1 >/dev/null");
+  my @egg_info_errors = <$egg_info_pipe>;
+  close($egg_info_pipe);
+  if ($?) {
+    if (@egg_info_errors and ($egg_info_errors[-1] =~ /\bgit\b/)) {
+      # egg_info apparently failed because it couldn't ask git for a build tag.
+      # Specify no build tag.
+      open(my $pysdk_cfg, ">>", "$python_dir/setup.cfg");
+      print $pysdk_cfg "\n[egg_info]\ntag_build =\n";
+      close($pysdk_cfg);
+    } else {
+      my $egg_info_exit = $? >> 8;
+      foreach my $errline (@egg_info_errors) {
+        print STDERR_ORIG $errline;
+      }
+      warn "python setup.py egg_info failed: exit $egg_info_exit";
+      exit ($egg_info_exit || 1);
+    }
+  }
 }
 
 # Hide messages from the install script (unless it fails: shell_or_die
