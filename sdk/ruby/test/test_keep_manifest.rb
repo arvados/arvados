@@ -281,22 +281,23 @@ class ManifestTest < Minitest::Test
   end
 
   [
-   [false, 'abc d41d8cd98f00b204e9800998ecf8427e 0:0:abc.txt', 'invalid stream name abc'],
-   [false, 'd41d8cd98f00b204e9800998ecf8427e+0 0:0:abc.txt', 'invalid stream name d41d8cd98f00b204e9800998ecf8427e'],
-   [false, '. d41d8cd98f00b204e9800998ecf8427 0:0:abc.txt', 'invalid locator d41d8cd98f00b204e9800998ecf8427'],
+   [false, 'abc d41d8cd98f00b204e9800998ecf8427e 0:0:abc.txt', "invalid stream name \"abc\""],
+   [false, 'd41d8cd98f00b204e9800998ecf8427e+0 0:0:abc.txt', "invalid stream name \"d41d8cd98f00b204e9800998ecf8427e+0\""],
+   [false, '. d41d8cd98f00b204e9800998ecf8427 0:0:abc.txt', "invalid locator \"d41d8cd98f00b204e9800998ecf8427\""],
+   [false, '. d41d8cd98f00b204e9800998ecf8427e', "Manifest invalid for stream 1: no file tokens"],
    [true, '. d41d8cd98f00b204e9800998ecf8427e 0:0:abc.txt'],
    [true, '. d41d8cd98f00b204e9800998ecf8427e+0 0:0:abc.txt'],
    [true, '. d41d8cd98f00b204e9800998ecf8427e a41d8cd98f00b204e9800998ecf8427e+0 0:0:abc.txt'], # 2 locators
    [false, ". d41d8cd98f00b204e9800998ecf8427e+0 0:0:abc.txt\n/dir1 d41d8cd98f00b204e9800998ecf842 0:0:abc.txt",
-    'Manifest invalid for stream 2. Missing or invalid stream name /dir1'],
+    "Manifest invalid for stream 2: missing or invalid stream name \"/dir1\""],
    [false, ". d41d8cd98f00b204e9800998ecf8427e+0 0:0:abc.txt\n./dir1 d41d8cd98f00b204e9800998ecf842 0:0:abc.txt",
-    'Manifest invalid for stream 2. Missing or invalid locator d41d8cd98f00b204e9800998ecf842'],
+    "Manifest invalid for stream 2: missing or invalid locator \"d41d8cd98f00b204e9800998ecf842\""],
    [false, ". d41d8cd98f00b204e9800998ecf8427e+0 0:0:abc.txt\n./dir1 a41d8cd98f00b204e9800998ecf8427e+0 abc.txt",
-    'Manifest invalid for stream 2. Missing or invalid file name abc.txt'],
+    "Manifest invalid for stream 2: invalid file token \"abc.txt\""],
    [false, ". d41d8cd98f00b204e9800998ecf8427e+0 0:0:abc.txt\n./dir1 a41d8cd98f00b204e9800998ecf8427e+0 0:abc.txt",
-    'Manifest invalid for stream 2. Missing or invalid file name 0:abc.txt'],
+    "Manifest invalid for stream 2: invalid file token \"0:abc.txt\""],
    [false, ". d41d8cd98f00b204e9800998ecf8427e+0 0:0:abc.txt\n./dir1 a41d8cd98f00b204e9800998ecf8427e+0 0:0:abc.txt xyz.txt",
-    'Manifest invalid for stream 2. Missing or invalid file name xyz.txt'],
+    "Manifest invalid for stream 2: invalid file token \"xyz.txt\""],
   ].each do |ok, manifest, expected_error=nil|
     define_method "test_manifest_valid_#{ok}_#{manifest}_and_expect_error_#{expected_error}" do
       if ok

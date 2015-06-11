@@ -241,7 +241,7 @@ module Keep
         count = 0
         word = words.shift
         count += 1 if word =~ STREAM_REGEXP
-        raise ArgumentError.new "Manifest invalid for stream #{line_count}. Missing or invalid stream name #{word}" if count != 1
+        raise ArgumentError.new "Manifest invalid for stream #{line_count}: missing or invalid stream name #{word.inspect}" if count != 1
 
         count = 0
         word = words.shift
@@ -249,15 +249,18 @@ module Keep
           word = words.shift
           count += 1
         end
-        raise ArgumentError.new "Manifest invalid for stream #{line_count}. Missing or invalid locator #{word}" if count == 0
+        raise ArgumentError.new "Manifest invalid for stream #{line_count}: missing or invalid locator #{word.inspect}" if count == 0
 
         count = 0
         while word =~ FILE_REGEXP
           word = words.shift
           count += 1
         end
-        if(count == 0) or (word and word !~ FILE_REGEXP)
-          raise ArgumentError.new "Manifest invalid for stream #{line_count}. Missing or invalid file name #{word}"
+
+        if word
+          raise ArgumentError.new "Manifest invalid for stream #{line_count}: invalid file token #{word.inspect}"
+        elsif count == 0
+          raise ArgumentError.new "Manifest invalid for stream #{line_count}: no file tokens"
         end
       end
     end
