@@ -52,12 +52,15 @@ class MountTestBase(unittest.TestCase):
 
         # llfuse.close is buggy, so use fusermount instead.
         #llfuse.close(unmount=True)
+
         count = 0
         success = 1
         while (count < 9 and success != 0):
           success = subprocess.call(["fusermount", "-u", self.mounttmp])
-          time.sleep(0.5)
+          time.sleep(0.1)
           count += 1
+
+        self.operations.destroy()
 
         os.rmdir(self.mounttmp)
         shutil.rmtree(self.keeptmp)
@@ -328,7 +331,7 @@ class FuseHomeTest(MountTestBase):
         self.assertEqual(["GNU_General_Public_License,_version_3.pdf"], d3)
 
 
-def fuseModifyFileTestHelper1(mounttmp):
+def fuseModifyFileTestHelperReadStartContents(mounttmp):
     class Test(unittest.TestCase):
         def runTest(self):
             d1 = llfuse.listdir(mounttmp)
@@ -337,7 +340,7 @@ def fuseModifyFileTestHelper1(mounttmp):
                 self.assertEqual("blub", f.read())
     Test().runTest()
 
-def fuseModifyFileTestHelper2(mounttmp):
+def fuseModifyFileTestHelperReadEndContents(mounttmp):
     class Test(unittest.TestCase):
         def runTest(self):
             d1 = llfuse.listdir(mounttmp)
@@ -358,12 +361,12 @@ class FuseModifyFileTest(MountTestBase):
         with llfuse.lock:
             m.new_collection(collection.api_response(), collection)
 
-        self.pool.apply(fuseModifyFileTestHelper1, (self.mounttmp,))
+        self.pool.apply(fuseModifyFileTestHelperReadStartContents, (self.mounttmp,))
 
         with collection.open("file1.txt", "w") as f:
             f.write("plnp")
 
-        self.pool.apply(fuseModifyFileTestHelper2, (self.mounttmp,))
+        self.pool.apply(fuseModifyFileTestHelperReadEndContents, (self.mounttmp,))
 
 
 class FuseAddFileToCollectionTest(MountTestBase):
@@ -445,17 +448,17 @@ class FuseCreateFileTest(MountTestBase):
 
         collection2 = self.api.collections().get(uuid=collection.manifest_locator()).execute()
         self.assertRegexpMatches(collection2["manifest_text"],
-            r'\. d41d8cd98f00b204e9800998ecf8427e\+0\+A[a-f0-9]{40}@[a-f0-9]{8} 0:0:file1\.txt$')
+            r'\. d41d8cd98f00b204e9800998ecf8427e\+0\+A\S+ 0:0:file1\.txt$')
 
 
-def fuseWriteFileTestHelper1(mounttmp):
+def fuseWriteFileTestHelperWriteFile(mounttmp):
     class Test(unittest.TestCase):
         def runTest(self):
             with open(os.path.join(mounttmp, "file1.txt"), "w") as f:
                 f.write("Hello world!")
     Test().runTest()
 
-def fuseWriteFileTestHelper2(mounttmp):
+def fuseWriteFileTestHelperReadFile(mounttmp):
     class Test(unittest.TestCase):
         def runTest(self):
             with open(os.path.join(mounttmp, "file1.txt"), "r") as f:
@@ -474,16 +477,16 @@ class FuseWriteFileTest(MountTestBase):
 
         self.assertNotIn("file1.txt", collection)
 
-        self.pool.apply(fuseWriteFileTestHelper1, (self.mounttmp,))
+        self.pool.apply(fuseWriteFileTestHelperWriteFile, (self.mounttmp,))
 
         with collection.open("file1.txt") as f:
             self.assertEqual(f.read(), "Hello world!")
 
-        self.pool.apply(fuseWriteFileTestHelper2, (self.mounttmp,))
+        self.pool.apply(fuseWriteFileTestHelperReadFile, (self.mounttmp,))
 
         collection2 = self.api.collections().get(uuid=collection.manifest_locator()).execute()
         self.assertRegexpMatches(collection2["manifest_text"],
-            r'\. 86fb269d190d2c85f6e0468ceca42a20\+12\+A[a-f0-9]{40}@[a-f0-9]{8} 0:12:file1\.txt$')
+            r'\. 86fb269d190d2c85f6e0468ceca42a20\+12\+A\S+ 0:12:file1\.txt$')
 
 
 def fuseUpdateFileTestHelper(mounttmp):
@@ -521,7 +524,7 @@ class FuseUpdateFileTest(MountTestBase):
 
         collection2 = self.api.collections().get(uuid=collection.manifest_locator()).execute()
         self.assertRegexpMatches(collection2["manifest_text"],
-            r'\. daaef200ebb921e011e3ae922dd3266b\+11\+A[a-f0-9]{40}@[a-f0-9]{8} 86fb269d190d2c85f6e0468ceca42a20\+12\+A[a-f0-9]{40}@[a-f0-9]{8} 0:11:file1\.txt 22:1:file1\.txt$')
+            r'\. daaef200ebb921e011e3ae922dd3266b\+11\+A\S+ 86fb269d190d2c85f6e0468ceca42a20\+12\+A\S+ 0:11:file1\.txt 22:1:file1\.txt$')
 
 
 def fuseMkdirTestHelper(mounttmp):
@@ -561,10 +564,10 @@ class FuseMkdirTest(MountTestBase):
 
         collection2 = self.api.collections().get(uuid=collection.manifest_locator()).execute()
         self.assertRegexpMatches(collection2["manifest_text"],
-            r'\./testdir 86fb269d190d2c85f6e0468ceca42a20\+12\+A[a-f0-9]{40}@[a-f0-9]{8} 0:12:file1\.txt$')
+            r'\./testdir 86fb269d190d2c85f6e0468ceca42a20\+12\+A\S+ 0:12:file1\.txt$')
 
 
-def fuseRmTestHelper1(mounttmp):
+def fuseRmTestHelperWriteFile(mounttmp):
     class Test(unittest.TestCase):
         def runTest(self):
             os.mkdir(os.path.join(mounttmp, "testdir"))
@@ -574,7 +577,7 @@ def fuseRmTestHelper1(mounttmp):
 
     Test().runTest()
 
-def fuseRmTestHelper2(mounttmp):
+def fuseRmTestHelperDeleteFile(mounttmp):
     class Test(unittest.TestCase):
         def runTest(self):
             # Can't delete because it's not empty
@@ -597,7 +600,7 @@ def fuseRmTestHelper2(mounttmp):
 
     Test().runTest()
 
-def fuseRmTestHelper3(mounttmp):
+def fuseRmTestHelperRmdir(mounttmp):
     class Test(unittest.TestCase):
         def runTest(self):
             # Should be able to delete now that it is empty
@@ -623,26 +626,26 @@ class FuseRmTest(MountTestBase):
             m.new_collection(collection.api_response(), collection)
         self.assertTrue(m.writable())
 
-        self.pool.apply(fuseRmTestHelper1, (self.mounttmp,))
+        self.pool.apply(fuseRmTestHelperWriteFile, (self.mounttmp,))
 
         # Starting manifest
         collection2 = self.api.collections().get(uuid=collection.manifest_locator()).execute()
         self.assertRegexpMatches(collection2["manifest_text"],
-            r'\./testdir 86fb269d190d2c85f6e0468ceca42a20\+12\+A[a-f0-9]{40}@[a-f0-9]{8} 0:12:file1\.txt$')
-        self.pool.apply(fuseRmTestHelper2, (self.mounttmp,))
+            r'\./testdir 86fb269d190d2c85f6e0468ceca42a20\+12\+A\S+ 0:12:file1\.txt$')
+        self.pool.apply(fuseRmTestHelperDeleteFile, (self.mounttmp,))
 
         # Can't have empty directories :-( so manifest will be empty.
         collection2 = self.api.collections().get(uuid=collection.manifest_locator()).execute()
         self.assertEqual(collection2["manifest_text"], "")
 
-        self.pool.apply(fuseRmTestHelper3, (self.mounttmp,))
+        self.pool.apply(fuseRmTestHelperRmdir, (self.mounttmp,))
 
         # manifest should be empty now.
         collection2 = self.api.collections().get(uuid=collection.manifest_locator()).execute()
         self.assertEqual(collection2["manifest_text"], "")
 
 
-def fuseMvFileTestHelper1(mounttmp):
+def fuseMvFileTestHelperWriteFile(mounttmp):
     class Test(unittest.TestCase):
         def runTest(self):
             os.mkdir(os.path.join(mounttmp, "testdir"))
@@ -652,7 +655,7 @@ def fuseMvFileTestHelper1(mounttmp):
 
     Test().runTest()
 
-def fuseMvFileTestHelper2(mounttmp):
+def fuseMvFileTestHelperMoveFile(mounttmp):
     class Test(unittest.TestCase):
         def runTest(self):
             d1 = llfuse.listdir(os.path.join(mounttmp))
@@ -679,18 +682,18 @@ class FuseMvFileTest(MountTestBase):
             m.new_collection(collection.api_response(), collection)
         self.assertTrue(m.writable())
 
-        self.pool.apply(fuseMvFileTestHelper1, (self.mounttmp,))
+        self.pool.apply(fuseMvFileTestHelperWriteFile, (self.mounttmp,))
 
         # Starting manifest
         collection2 = self.api.collections().get(uuid=collection.manifest_locator()).execute()
         self.assertRegexpMatches(collection2["manifest_text"],
-            r'\./testdir 86fb269d190d2c85f6e0468ceca42a20\+12\+A[a-f0-9]{40}@[a-f0-9]{8} 0:12:file1\.txt$')
+            r'\./testdir 86fb269d190d2c85f6e0468ceca42a20\+12\+A\S+ 0:12:file1\.txt$')
 
-        self.pool.apply(fuseMvFileTestHelper2, (self.mounttmp,))
+        self.pool.apply(fuseMvFileTestHelperMoveFile, (self.mounttmp,))
 
         collection2 = self.api.collections().get(uuid=collection.manifest_locator()).execute()
         self.assertRegexpMatches(collection2["manifest_text"],
-            r'\. 86fb269d190d2c85f6e0468ceca42a20\+12\+A[a-f0-9]{40}@[a-f0-9]{8} 0:12:file1\.txt$')
+            r'\. 86fb269d190d2c85f6e0468ceca42a20\+12\+A\S+ 0:12:file1\.txt$')
 
 
 def fuseRenameTestHelper(mounttmp):
@@ -718,7 +721,7 @@ class FuseRenameTest(MountTestBase):
         # Starting manifest
         collection2 = self.api.collections().get(uuid=collection.manifest_locator()).execute()
         self.assertRegexpMatches(collection2["manifest_text"],
-            r'\./testdir 86fb269d190d2c85f6e0468ceca42a20\+12\+A[a-f0-9]{40}@[a-f0-9]{8} 0:12:file1\.txt$')
+            r'\./testdir 86fb269d190d2c85f6e0468ceca42a20\+12\+A\S+ 0:12:file1\.txt$')
 
         d1 = llfuse.listdir(os.path.join(self.mounttmp))
         self.assertEqual(["testdir"], d1)
@@ -734,13 +737,11 @@ class FuseRenameTest(MountTestBase):
 
         collection2 = self.api.collections().get(uuid=collection.manifest_locator()).execute()
         self.assertRegexpMatches(collection2["manifest_text"],
-            r'\./testdir2 86fb269d190d2c85f6e0468ceca42a20\+12\+A[a-f0-9]{40}@[a-f0-9]{8} 0:12:file1\.txt$')
+            r'\./testdir2 86fb269d190d2c85f6e0468ceca42a20\+12\+A\S+ 0:12:file1\.txt$')
 
 
 class FuseUpdateFromEventTest(MountTestBase):
     def runTest(self):
-        arvados.logger.setLevel(logging.DEBUG)
-
         collection = arvados.collection.Collection(api_client=self.api)
         collection.save_new()
 
@@ -778,7 +779,7 @@ def fuseFileConflictTestHelper(mounttmp):
                 self.assertEqual(f.read(), "bar")
 
             self.assertRegexpMatches(d1[1],
-                r'file1\.txt~conflict-\d\d\d\d-\d\d-\d\d-\d\d:\d\d:\d\d~')
+                r'file1\.txt~\d\d\d\d\d\d\d\d-\d\d\d\d\d\d~conflict~')
 
             with open(os.path.join(mounttmp, d1[1]), "r") as f:
                 self.assertEqual(f.read(), "foo")
@@ -886,7 +887,7 @@ class FuseMvFileBetweenCollectionsTest(MountTestBase):
         collection1.update()
         collection2.update()
 
-        self.assertRegexpMatches(collection1.manifest_text(), r"\. 86fb269d190d2c85f6e0468ceca42a20\+12\+A[a-f0-9]{40}@[a-f0-9]{8} 0:12:file1\.txt$")
+        self.assertRegexpMatches(collection1.manifest_text(), r"\. 86fb269d190d2c85f6e0468ceca42a20\+12\+A\S+ 0:12:file1\.txt$")
         self.assertEqual(collection2.manifest_text(), "")
 
         self.pool.apply(fuseMvFileBetweenCollectionsTest2, (self.mounttmp,
@@ -897,7 +898,10 @@ class FuseMvFileBetweenCollectionsTest(MountTestBase):
         collection2.update()
 
         self.assertEqual(collection1.manifest_text(), "")
-        self.assertRegexpMatches(collection2.manifest_text(), r"\. 86fb269d190d2c85f6e0468ceca42a20\+12\+A[a-f0-9]{40}@[a-f0-9]{8} 0:12:file2\.txt$")
+        self.assertRegexpMatches(collection2.manifest_text(), r"\. 86fb269d190d2c85f6e0468ceca42a20\+12\+A\S+ 0:12:file2\.txt$")
+
+        collection1.stop_threads()
+        collection2.stop_threads()
 
 
 def fuseMvDirBetweenCollectionsTest1(mounttmp, uuid1, uuid2):
@@ -954,7 +958,7 @@ class FuseMvDirBetweenCollectionsTest(MountTestBase):
         collection1.update()
         collection2.update()
 
-        self.assertRegexpMatches(collection1.manifest_text(), r"\./testdir 86fb269d190d2c85f6e0468ceca42a20\+12\+A[a-f0-9]{40}@[a-f0-9]{8} 0:12:file1\.txt$")
+        self.assertRegexpMatches(collection1.manifest_text(), r"\./testdir 86fb269d190d2c85f6e0468ceca42a20\+12\+A\S+ 0:12:file1\.txt$")
         self.assertEqual(collection2.manifest_text(), "")
 
         self.pool.apply(fuseMvDirBetweenCollectionsTest2, (self.mounttmp,
@@ -965,8 +969,10 @@ class FuseMvDirBetweenCollectionsTest(MountTestBase):
         collection2.update()
 
         self.assertEqual(collection1.manifest_text(), "")
-        self.assertRegexpMatches(collection2.manifest_text(), r"\./testdir2 86fb269d190d2c85f6e0468ceca42a20\+12\+A[a-f0-9]{40}@[a-f0-9]{8} 0:12:file1\.txt$")
+        self.assertRegexpMatches(collection2.manifest_text(), r"\./testdir2 86fb269d190d2c85f6e0468ceca42a20\+12\+A\S+ 0:12:file1\.txt$")
 
+        collection1.stop_threads()
+        collection2.stop_threads()
 
 def fuseProjectMkdirTestHelper1(mounttmp):
     class Test(unittest.TestCase):

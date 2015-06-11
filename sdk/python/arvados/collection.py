@@ -1007,7 +1007,7 @@ class RichCollectionBase(CollectionBase):
             path = change[1]
             initial = change[2]
             local = self.find(path)
-            conflictpath = "%s~conflict-%s~" % (path, time.strftime("%Y-%m-%d-%H:%M:%S",
+            conflictpath = "%s~%s~conflict~" % (path, time.strftime("%Y%m%d-%H%M%S",
                                                                     time.gmtime()))
             if event_type == ADD:
                 if local is None:
@@ -1307,6 +1307,9 @@ class Collection(RichCollectionBase):
         if exc_type is None:
             if self.writable() and self._has_collection_uuid():
                 self.save()
+        self.stop_threads()
+
+    def stop_threads(self):
         if self._block_manager is not None:
             self._block_manager.stop_threads()
 

@@ -197,6 +197,7 @@ From here, the following directories are available:
                 pass
         finally:
             subprocess.call(["fusermount", "-u", "-z", args.mountpoint])
+            operations.destroy()
 
         exit(rc)
     else:
@@ -210,3 +211,5 @@ From here, the following directories are available:
         except Exception as e:
             logger.exception('arv-mount: exception during mount')
             exit(getattr(e, 'errno', 1))
+        finally:
+            operations.destroy()

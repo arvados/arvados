@@ -553,7 +553,7 @@ class _BlockManager(object):
         :sync:
           If `sync` is True, upload the block synchronously.
           If `sync` is False, upload the block asynchronously.  This will
-          return immediately unless if the upload queue is at capacity, in
+          return immediately unless the upload queue is at capacity, in
           which case it will wait on an upload queue slot.
 
         """

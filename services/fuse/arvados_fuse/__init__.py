@@ -72,10 +72,11 @@ from fusefile import StringFile, FuseArvadosFile
 
 _logger = logging.getLogger('arvados.arvados_fuse')
 
-log_handler = logging.StreamHandler()
-llogger = logging.getLogger('llfuse')
-llogger.addHandler(log_handler)
-llogger.setLevel(logging.DEBUG)
+# Uncomment this to enable llfuse debug logging.
+# log_handler = logging.StreamHandler()
+# llogger = logging.getLogger('llfuse')
+# llogger.addHandler(log_handler)
+# llogger.setLevel(logging.DEBUG)
 
 class Handle(object):
     """Connects a numeric file handle to a File or Directory object that has
@@ -145,7 +146,6 @@ class InodeCache(object):
         return True
 
     def cap_cache(self):
-        #_logger.debug("InodeCache total is %i cap is %i", self._total, self.cap)
         if self._total > self.cap:
             for key in list(self._entries.keys()):
                 if self._total < self.cap or len(self._entries) < self.min_entries:
@@ -220,6 +220,7 @@ class Inodes(object):
             _logger.debug("Deleting inode %i", entry.inode)
             self.inode_cache.unmanage(entry)
             llfuse.invalidate_inode(entry.inode)
+            entry.finalize()
             del self._entries[entry.inode]
             entry.inode = None
         else:
@@ -284,15 +285,21 @@ class Operations(llfuse.Operations):
         # initializing to continue
         self.initlock.set()
 
+    @catch_exceptions
     def destroy(self):
         if self.events:
             self.events.close()
+            self.events = None
+
+        for k,v in self.inodes.items():
+            v.finalize()
+        self.inodes = None
 
     def access(self, inode, mode, ctx):
         return True
 
     def listen_for_events(self, api_client):
-        self.event = arvados.events.subscribe(api_client,
+        self.events = arvados.events.subscribe(api_client,
                                  [["event_type", "in", ["create", "update", "delete"]]],
                                  self.on_event)
 

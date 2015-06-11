@@ -465,6 +465,12 @@ class CollectionDirectory(CollectionDirectoryBase):
         # footprint directly would be more accurate, but also more complicated.
         return self._manifest_size * 128
 
+    def finalize(self):
+        if self.collection is not None:
+            if self.writable():
+                self.collection.save()
+            self.collection.stop_threads()
+
 
 class MagicDirectory(Directory):
     """A special directory that logically contains the set of all extant keep locators.

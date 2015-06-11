@@ -115,3 +115,6 @@ class FreshBase(object):
 
     def uuid(self):
         return None
+
+    def finalize(self):
+        pass
