@@ -487,7 +487,7 @@ class RichCollectionBase(CollectionBase):
 
     def __init__(self, parent=None):
         self.parent = parent
-        self._modified = True
+        self._committed = False
         self._callback = None
         self._items = {}
 
@@ -542,7 +542,7 @@ class RichCollectionBase(CollectionBase):
                     else:
                         item = ArvadosFile(self, pathcomponents[0])
                     self._items[pathcomponents[0]] = item
-                    self._modified = True
+                    self._committed = False
                     self.notify(ADD, self, pathcomponents[0], item)
                 return item
             else:
@@ -550,12 +550,12 @@ class RichCollectionBase(CollectionBase):
                     # create new collection
                     item = Subcollection(self, pathcomponents[0])
                     self._items[pathcomponents[0]] = item
-                    self._modified = True
+                    self._committed = False
                     self.notify(ADD, self, pathcomponents[0], item)
                 if isinstance(item, RichCollectionBase):
                     return item.find_or_create(pathcomponents[1], create_type)
                 else:
-                    raise IOError(errno.ENOTDIR, "Is not a directory: %s" % pathcomponents[0])
+                    raise IOError(errno.ENOTDIR, "Not a directory: '%s'" % pathcomponents[0])
         else:
             return self
 
@@ -583,13 +583,18 @@ class RichCollectionBase(CollectionBase):
             else:
                 raise IOError(errno.ENOTDIR, "Is not a directory: %s" % pathcomponents[0])
 
+    @synchronized
     def mkdirs(self, path):
         """Recursive subcollection create.
 
-        Like `os.mkdirs()`.  Will create intermediate subcollections needed to
-        contain the leaf subcollection path.
+        Like `os.makedirs()`.  Will create intermediate subcollections needed
+        to contain the leaf subcollection path.
 
         """
+
+        if self.find(path) != None:
+            raise IOError(errno.EEXIST, "Directory or file exists: '%s'" % path)
+
         return self.find_or_create(path, COLLECTION)
 
     def open(self, path, mode="r"):
@@ -634,26 +639,32 @@ class RichCollectionBase(CollectionBase):
         name = os.path.basename(path)
 
         if mode == "r":
-            return ArvadosFileReader(arvfile, mode, num_retries=self.num_retries)
+            return ArvadosFileReader(arvfile, num_retries=self.num_retries)
         else:
             return ArvadosFileWriter(arvfile, mode, num_retries=self.num_retries)
 
-    @synchronized
     def modified(self):
-        """Test if the collection (or any subcollection or file) has been modified."""
-        if self._modified:
-            return True
-        for v in self._items.values():
-            if v.modified():
-                return True
-        return False
+        return not self.committed()
+
+    def set_unmodified(self):
+        self.set_committed()
 
     @synchronized
-    def set_unmodified(self):
-        """Recursively clear modified flag."""
-        self._modified = False
+    def committed(self):
+        """Test if the collection and all subcollection and files are committed."""
+        if self._committed is False:
+            return False
+        for v in self._items.values():
+            if v.committed() is False:
+                return False
+        return True
+
+    @synchronized
+    def set_committed(self):
+        """Recursively set committed flag."""
+        self._committed = True
         for k,v in self._items.items():
-            v.set_unmodified()
+            v.set_committed()
 
     @synchronized
     def __iter__(self):
@@ -684,7 +695,7 @@ class RichCollectionBase(CollectionBase):
     def __delitem__(self, p):
         """Delete an item by name which is directly contained by this collection."""
         del self._items[p]
-        self._modified = True
+        self._committed = False
         self.notify(DEL, self, p, None)
 
     @synchronized
@@ -727,7 +738,7 @@ class RichCollectionBase(CollectionBase):
                 raise IOError(errno.ENOTEMPTY, "Subcollection not empty")
             deleteditem = self._items[pathcomponents[0]]
             del self._items[pathcomponents[0]]
-            self._modified = True
+            self._committed = False
             self.notify(DEL, self, pathcomponents[0], deleteditem)
         else:
             item.remove(pathcomponents[1])
@@ -776,7 +787,7 @@ class RichCollectionBase(CollectionBase):
             item = source_obj.clone(self, target_name)
 
         self._items[target_name] = item
-        self._modified = True
+        self._committed = False
 
         if modified_from:
             self.notify(MOD, self, target_name, (modified_from, item))
@@ -885,6 +896,7 @@ class RichCollectionBase(CollectionBase):
         """
         return self._get_manifest_text(stream_name, True, True)
 
+    @synchronized
     def manifest_text(self, stream_name=".", strip=False, normalize=False):
         """Get the manifest text for this collection, sub collections and files.
 
@@ -928,7 +940,7 @@ class RichCollectionBase(CollectionBase):
 
         """
 
-        if self.modified() or self._manifest_text is None or normalize:
+        if not self.committed() or self._manifest_text is None or normalize:
             stream = {}
             buf = []
             sorted_keys = sorted(self.keys())
@@ -989,7 +1001,7 @@ class RichCollectionBase(CollectionBase):
 
         """
         if changes:
-            self._modified = True
+            self._committed = False
         for change in changes:
             event_type = change[0]
             path = change[1]
@@ -1377,7 +1389,7 @@ class Collection(RichCollectionBase):
           Retry count on API calls (if None,  use the collection default)
 
         """
-        if self.modified():
+        if not self.committed():
             if not self._has_collection_uuid():
                 raise AssertionError("Collection manifest_locator is not a collection uuid.  Use save_new() for new collections.")
 
@@ -1393,7 +1405,7 @@ class Collection(RichCollectionBase):
                 ).execute(
                     num_retries=num_retries)
             self._manifest_text = self._api_response["manifest_text"]
-            self.set_unmodified()
+            self.set_committed()
 
         return self._manifest_text
 
@@ -1452,7 +1464,7 @@ class Collection(RichCollectionBase):
             self._manifest_locator = self._api_response["uuid"]
 
             self._manifest_text = text
-            self.set_unmodified()
+            self.set_committed()
 
         return text
 
@@ -1485,7 +1497,7 @@ class Collection(RichCollectionBase):
                 segments = []
                 streamoffset = 0L
                 state = BLOCKS
-                self.mkdirs(stream_name)
+                self.find_or_create(stream_name, COLLECTION)
                 continue
 
             if state == BLOCKS:
@@ -1511,13 +1523,13 @@ class Collection(RichCollectionBase):
                         raise errors.SyntaxError("File %s conflicts with stream of the same name.", filepath)
                 else:
                     # error!
-                    raise errors.SyntaxError("Invalid manifest format")
+                    raise errors.SyntaxError("Invalid manifest format, expected file segment but did not match format: '%s'" % tok)
 
             if sep == "\n":
                 stream_name = None
                 state = STREAM_NAME
 
-        self.set_unmodified()
+        self.set_committed()
 
     @synchronized
     def notify(self, event, collection, name, item):
@@ -1567,7 +1579,7 @@ class Subcollection(RichCollectionBase):
     @must_be_writable
     @synchronized
     def _reparent(self, newparent, newname):
-        self._modified = True
+        self._committed = False
         self.flush()
         self.parent.remove(self.name, recursive=True)
         self.parent = newparent

@@ -236,6 +236,13 @@ def synchronized(orig_func):
             return orig_func(self, *args, **kwargs)
     return synchronized_wrapper
 
+
+class StateChangeError(Exception):
+    def __init__(self, message, state, nextstate):
+        super(StateChangeError, self).__init__(message)
+        self.state = state
+        self.nextstate = nextstate
+
 class _BufferBlock(object):
     """A stand-in for a Keep block that is in the process of being written.
 
@@ -259,6 +266,7 @@ class _BufferBlock(object):
     WRITABLE = 0
     PENDING = 1
     COMMITTED = 2
+    ERROR = 3
 
     def __init__(self, blockid, starting_capacity, owner):
         """
@@ -280,6 +288,8 @@ class _BufferBlock(object):
         self._locator = None
         self.owner = owner
         self.lock = threading.Lock()
+        self.wait_for_commit = threading.Event()
+        self.error = None
 
     @synchronized
     def append(self, data):
@@ -302,16 +312,27 @@ class _BufferBlock(object):
             raise AssertionError("Buffer block is not writable")
 
     @synchronized
-    def set_state(self, nextstate, loc=None):
+    def set_state(self, nextstate, val=None):
         if ((self._state == _BufferBlock.WRITABLE and nextstate == _BufferBlock.PENDING) or
-            (self._state == _BufferBlock.PENDING and nextstate == _BufferBlock.COMMITTED)):
+            (self._state == _BufferBlock.PENDING and nextstate == _BufferBlock.COMMITTED) or
+            (self._state == _BufferBlock.PENDING and nextstate == _BufferBlock.ERROR) or
+            (self._state == _BufferBlock.ERROR and nextstate == _BufferBlock.PENDING)):
             self._state = nextstate
+
+            if self._state == _BufferBlock.PENDING:
+                self.wait_for_commit.clear()
+
             if self._state == _BufferBlock.COMMITTED:
-                self._locator = loc
+                self._locator = val
                 self.buffer_view = None
                 self.buffer_block = None
+                self.wait_for_commit.set()
+
+            if self._state == _BufferBlock.ERROR:
+                self.error = val
+                self.wait_for_commit.set()
         else:
-            raise AssertionError("Invalid state change from %s to %s" % (self.state, nextstate))
+            raise StateChangeError("Invalid state change from %s to %s" % (self.state, nextstate), self.state, nextstate)
 
     @synchronized
     def state(self):
@@ -331,7 +352,7 @@ class _BufferBlock(object):
     @synchronized
     def clone(self, new_blockid, owner):
         if self._state == _BufferBlock.COMMITTED:
-            raise AssertionError("Can only duplicate a writable or pending buffer block")
+            raise AssertionError("Cannot duplicate committed buffer block")
         bufferblock = _BufferBlock(new_blockid, self.size(), owner)
         bufferblock.append(self.buffer_view[0:self.size()])
         return bufferblock
@@ -373,19 +394,22 @@ class _BlockManager(object):
     Collection of ArvadosFiles.
 
     """
+
+    DEFAULT_PUT_THREADS = 2
+    DEFAULT_GET_THREADS = 2
+
     def __init__(self, keep):
         """keep: KeepClient object to use"""
         self._keep = keep
         self._bufferblocks = {}
         self._put_queue = None
-        self._put_errors = None
         self._put_threads = None
         self._prefetch_queue = None
         self._prefetch_threads = None
         self.lock = threading.Lock()
         self.prefetch_enabled = True
-        self.num_put_threads = 2
-        self.num_get_threads = 2
+        self.num_put_threads = _BlockManager.DEFAULT_PUT_THREADS
+        self.num_get_threads = _BlockManager.DEFAULT_GET_THREADS
 
     @synchronized
     def alloc_bufferblock(self, blockid=None, starting_capacity=2**14, owner=None):
@@ -427,6 +451,70 @@ class _BlockManager(object):
     def is_bufferblock(self, locator):
         return locator in self._bufferblocks
 
+    def _commit_bufferblock_worker(self):
+        """Background uploader thread."""
+
+        while True:
+            try:
+                bufferblock = self._put_queue.get()
+                if bufferblock is None:
+                    return
+
+                loc = self._keep.put(bufferblock.buffer_view[0:bufferblock.write_pointer].tobytes())
+                bufferblock.set_state(_BufferBlock.COMMITTED, loc)
+
+            except Exception as e:
+                bufferblock.set_state(_BufferBlock.ERROR, e)
+            finally:
+                if self._put_queue is not None:
+                    self._put_queue.task_done()
+
+    @synchronized
+    def start_put_threads(self):
+        if self._put_threads is None:
+            # Start uploader threads.
+
+            # If we don't limit the Queue size, the upload queue can quickly
+            # grow to take up gigabytes of RAM if the writing process is
+            # generating data more quickly than it can be send to the Keep
+            # servers.
+            #
+            # With two upload threads and a queue size of 2, this means up to 4
+            # blocks pending.  If they are full 64 MiB blocks, that means up to
+            # 256 MiB of internal buffering, which is the same size as the
+            # default download block cache in KeepClient.
+            self._put_queue = Queue.Queue(maxsize=2)
+
+            self._put_threads = []
+            for i in xrange(0, self.num_put_threads):
+                thread = threading.Thread(target=self._commit_bufferblock_worker)
+                self._put_threads.append(thread)
+                thread.daemon = False
+                thread.start()
+
+    def _block_prefetch_worker(self):
+        """The background downloader thread."""
+        while True:
+            try:
+                b = self._prefetch_queue.get()
+                if b is None:
+                    return
+                self._keep.get(b)
+            except Exception:
+                pass
+
+    @synchronized
+    def start_get_threads(self):
+        if self._prefetch_threads is None:
+            self._prefetch_queue = Queue.Queue()
+            self._prefetch_threads = []
+            for i in xrange(0, self.num_get_threads):
+                thread = threading.Thread(target=self._block_prefetch_worker)
+                self._prefetch_threads.append(thread)
+                thread.daemon = True
+                thread.start()
+
+
     @synchronized
     def stop_threads(self):
         """Shut down and wait for background upload and download threads to finish."""
@@ -438,7 +526,6 @@ class _BlockManager(object):
                 t.join()
         self._put_threads = None
         self._put_queue = None
-        self._put_errors = None
 
         if self._prefetch_threads is not None:
             for t in self._prefetch_threads:
@@ -448,71 +535,48 @@ class _BlockManager(object):
         self._prefetch_threads = None
         self._prefetch_queue = None
 
-    def commit_bufferblock(self, block, wait):
+    def __enter__(self):
+        return self
+
+    def __exit__(self, exc_type, exc_value, traceback):
+        self.stop_threads()
+
+    def __del__(self):
+        self.stop_threads()
+
+    def commit_bufferblock(self, block, sync):
         """Initiate a background upload of a bufferblock.
 
         :block:
           The block object to upload
 
-        :wait:
-          If `wait` is True, upload the block synchronously.
-          If `wait` is False, upload the block asynchronously.  This will
+        :sync:
+          If `sync` is True, upload the block synchronously.
+          If `sync` is False, upload the block asynchronously.  This will
           return immediately unless if the upload queue is at capacity, in
           which case it will wait on an upload queue slot.
 
         """
 
-        def commit_bufferblock_worker(self):
-            """Background uploader thread."""
-
-            while True:
-                try:
-                    bufferblock = self._put_queue.get()
-                    if bufferblock is None:
-                        return
-
-                    loc = self._keep.put(bufferblock.buffer_view[0:bufferblock.write_pointer].tobytes())
-                    bufferblock.set_state(_BufferBlock.COMMITTED, loc)
-
-                except Exception as e:
-                    self._put_errors.put((bufferblock.locator(), e))
-                finally:
-                    if self._put_queue is not None:
-                        self._put_queue.task_done()
-
-        if block.state() != _BufferBlock.WRITABLE:
-            return
-
-        if wait:
-            block.set_state(_BufferBlock.PENDING)
-            loc = self._keep.put(block.buffer_view[0:block.write_pointer].tobytes())
-            block.set_state(_BufferBlock.COMMITTED, loc)
-        else:
-            with self.lock:
-                if self._put_threads is None:
-                    # Start uploader threads.
-
-                    # If we don't limit the Queue size, the upload queue can quickly
-                    # grow to take up gigabytes of RAM if the writing process is
-                    # generating data more quickly than it can be send to the Keep
-                    # servers.
-                    #
-                    # With two upload threads and a queue size of 2, this means up to 4
-                    # blocks pending.  If they are full 64 MiB blocks, that means up to
-                    # 256 MiB of internal buffering, which is the same size as the
-                    # default download block cache in KeepClient.
-                    self._put_queue = Queue.Queue(maxsize=2)
-                    self._put_errors = Queue.Queue()
-
-                    self._put_threads = []
-                    for i in xrange(0, self.num_put_threads):
-                        thread = threading.Thread(target=commit_bufferblock_worker, args=(self,))
-                        self._put_threads.append(thread)
-                        thread.daemon = True
-                        thread.start()
-
+        try:
             # Mark the block as PENDING so to disallow any more appends.
             block.set_state(_BufferBlock.PENDING)
+        except StateChangeError as e:
+            if e.state == _BufferBlock.PENDING and sync:
+                block.wait_for_commit.wait()
+                if block.state() == _BufferBlock.ERROR:
+                    raise block.error
+            return
+
+        if sync:
+            try:
+                loc = self._keep.put(block.buffer_view[0:block.write_pointer].tobytes())
+                block.set_state(_BufferBlock.COMMITTED, loc)
+            except Exception as e:
+                block.set_state(_BufferBlock.ERROR, e)
+                raise
+        else:
+            self.start_put_threads()
             self._put_queue.put(block)
 
     @synchronized
@@ -547,36 +611,33 @@ class _BlockManager(object):
     def commit_all(self):
         """Commit all outstanding buffer blocks.
 
-        Unlike commit_bufferblock(), this is a synchronous call, and will not
-        return until all buffer blocks are uploaded.  Raises
-        KeepWriteError() if any blocks failed to upload.
+        This is a synchronous call, and will not return until all buffer blocks
+        are uploaded.  Raises KeepWriteError() if any blocks failed to upload.
 
         """
         with self.lock:
             items = self._bufferblocks.items()
 
         for k,v in items:
-            if v.state() == _BufferBlock.WRITABLE:
-                v.owner.flush(False)
+            if v.state() != _BufferBlock.COMMITTED:
+                v.owner.flush(sync=False)
 
         with self.lock:
             if self._put_queue is not None:
                 self._put_queue.join()
 
-                if not self._put_errors.empty():
-                    err = []
-                    try:
-                        while True:
-                            err.append(self._put_errors.get(False))
-                    except Queue.Empty:
-                        pass
+                err = []
+                for k,v in items:
+                    if v.state() == _BufferBlock.ERROR:
+                        err.append((v.locator(), v.error))
+                if err:
                     raise KeepWriteError("Error writing some blocks", err, label="block")
 
         for k,v in items:
-            # flush again with wait=True to remove committed bufferblocks from
+            # flush again with sync=True to remove committed bufferblocks from
             # the segments.
             if v.owner:
-                v.owner.flush(True)
+                v.owner.flush(sync=True)
 
 
     def block_prefetch(self, locator):
@@ -592,28 +653,10 @@ class _BlockManager(object):
         if not self.prefetch_enabled:
             return
 
-        def block_prefetch_worker(self):
-            """The background downloader thread."""
-            while True:
-                try:
-                    b = self._prefetch_queue.get()
-                    if b is None:
-                        return
-                    self._keep.get(b)
-                except Exception:
-                    pass
-
         with self.lock:
             if locator in self._bufferblocks:
                 return
-            if self._prefetch_threads is None:
-                self._prefetch_queue = Queue.Queue()
-                self._prefetch_threads = []
-                for i in xrange(0, self.num_get_threads):
-                    thread = threading.Thread(target=block_prefetch_worker, args=(self,))
-                    self._prefetch_threads.append(thread)
-                    thread.daemon = True
-                    thread.start()
+        self.start_get_threads()
         self._prefetch_queue.put(locator)
 
 
@@ -640,7 +683,7 @@ class ArvadosFile(object):
         """
         self.parent = parent
         self.name = name
-        self._modified = True
+        self._committed = False
         self._segments = []
         self.lock = parent.root_collection().lock
         for s in segments:
@@ -681,7 +724,7 @@ class ArvadosFile(object):
 
             self._segments.append(Range(new_loc, other_segment.range_start, other_segment.range_size, other_segment.segment_offset))
 
-        self._modified = True
+        self._committed = False
 
     def __eq__(self, other):
         if other is self:
@@ -717,14 +760,14 @@ class ArvadosFile(object):
         return not self.__eq__(other)
 
     @synchronized
-    def set_unmodified(self):
-        """Clear the modified flag"""
-        self._modified = False
+    def set_committed(self):
+        """Set committed flag to False"""
+        self._committed = True
 
     @synchronized
-    def modified(self):
-        """Test the modified flag"""
-        return self._modified
+    def committed(self):
+        """Get whether this is committed or not."""
+        return self._committed
 
     @must_be_writable
     @synchronized
@@ -752,7 +795,7 @@ class ArvadosFile(object):
                     new_segs.append(r)
 
             self._segments = new_segs
-            self._modified = True
+            self._committed = False
         elif size > self.size():
             raise IOError(errno.EINVAL, "truncate() does not support extending the file size")
 
@@ -833,7 +876,7 @@ class ArvadosFile(object):
                 n += config.KEEP_BLOCK_SIZE
             return
 
-        self._modified = True
+        self._committed = False
 
         if self._current_bblock is None or self._current_bblock.state() != _BufferBlock.WRITABLE:
             self._current_bblock = self.parent._my_block_manager().alloc_bufferblock(owner=self)
@@ -841,7 +884,7 @@ class ArvadosFile(object):
         if (self._current_bblock.size() + len(data)) > config.KEEP_BLOCK_SIZE:
             self._repack_writes(num_retries)
             if (self._current_bblock.size() + len(data)) > config.KEEP_BLOCK_SIZE:
-                self.parent._my_block_manager().commit_bufferblock(self._current_bblock, False)
+                self.parent._my_block_manager().commit_bufferblock(self._current_bblock, sync=False)
                 self._current_bblock = self.parent._my_block_manager().alloc_bufferblock(owner=self)
 
         self._current_bblock.append(data)
@@ -853,26 +896,35 @@ class ArvadosFile(object):
         return len(data)
 
     @synchronized
-    def flush(self, wait=True, num_retries=0):
-        """Flush bufferblocks to Keep."""
-        if self.modified():
-            if self._current_bblock and self._current_bblock.state() == _BufferBlock.WRITABLE:
-                self._repack_writes(num_retries)
-                self.parent._my_block_manager().commit_bufferblock(self._current_bblock, wait)
-            if wait:
-                to_delete = set()
-                for s in self._segments:
-                    bb = self.parent._my_block_manager().get_bufferblock(s.locator)
-                    if bb:
-                        if bb.state() != _BufferBlock.COMMITTED:
-                            _logger.error("bufferblock %s is not committed" % (s.locator))
-                        else:
-                            to_delete.add(s.locator)
-                            s.locator = bb.locator()
-                for s in to_delete:
-                   self.parent._my_block_manager().delete_bufferblock(s)
+    def flush(self, sync=True, num_retries=0):
+        """Flush the current bufferblock to Keep.
 
-            self.parent.notify(MOD, self.parent, self.name, (self, self))
+        :sync:
+          If True, commit block synchronously, wait until buffer block has been written.
+          If False, commit block asynchronously, return immediately after putting block into
+          the keep put queue.
+        """
+        if self.committed():
+            return
+
+        if self._current_bblock and self._current_bblock.state() != _BufferBlock.COMMITTED:
+            if self._current_bblock.state() == _BufferBlock.WRITABLE:
+                self._repack_writes(num_retries)
+            self.parent._my_block_manager().commit_bufferblock(self._current_bblock, sync=sync)
+
+        if sync:
+            to_delete = set()
+            for s in self._segments:
+                bb = self.parent._my_block_manager().get_bufferblock(s.locator)
+                if bb:
+                    if bb.state() != _BufferBlock.COMMITTED:
+                        self.parent._my_block_manager().commit_bufferblock(self._current_bblock, sync=True)
+                    to_delete.add(s.locator)
+                    s.locator = bb.locator()
+            for s in to_delete:
+               self.parent._my_block_manager().delete_bufferblock(s)
+
+        self.parent.notify(MOD, self.parent, self.name, (self, self))
 
     @must_be_writable
     @synchronized
@@ -887,7 +939,7 @@ class ArvadosFile(object):
 
     def _add_segment(self, blocks, pos, size):
         """Internal implementation of add_segment."""
-        self._modified = True
+        self._committed = False
         for lr in locators_and_ranges(blocks, pos, size):
             last = self._segments[-1] if self._segments else Range(0, 0, 0, 0)
             r = Range(lr.locator, last.range_start+last.range_size, lr.segment_size, lr.segment_offset)
@@ -921,8 +973,8 @@ class ArvadosFile(object):
     @must_be_writable
     @synchronized
     def _reparent(self, newparent, newname):
-        self._modified = True
-        self.flush()
+        self._committed = False
+        self.flush(sync=True)
         self.parent.remove(self.name)
         self.parent = newparent
         self.name = newname
@@ -937,8 +989,8 @@ class ArvadosFileReader(ArvadosFileReaderBase):
 
     """
 
-    def __init__(self, arvadosfile,  mode="r", num_retries=None):
-        super(ArvadosFileReader, self).__init__(arvadosfile.name, mode, num_retries=num_retries)
+    def __init__(self, arvadosfile, num_retries=None):
+        super(ArvadosFileReader, self).__init__(arvadosfile.name, "r", num_retries=num_retries)
         self.arvadosfile = arvadosfile
 
     def size(self):
@@ -990,7 +1042,8 @@ class ArvadosFileWriter(ArvadosFileReader):
     """
 
     def __init__(self, arvadosfile, mode, num_retries=None):
-        super(ArvadosFileWriter, self).__init__(arvadosfile, mode, num_retries=num_retries)
+        super(ArvadosFileWriter, self).__init__(arvadosfile, num_retries=num_retries)
+        self.mode = mode
 
     @_FileLikeObjectBase._before_close
     @retry_method
