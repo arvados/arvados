@@ -97,6 +97,9 @@ module Keep
   end
 
   class Manifest
+    STREAM_REGEXP = /(\.)(\/+.*)*$/
+    FILE_REGEXP = /^[[:digit:]]+:[[:digit:]]+:/
+
     # Class to parse a manifest text and provide common views of that data.
     def initialize(manifest_text)
       @text = manifest_text
@@ -223,6 +226,40 @@ module Keep
         end
       end
       false
+    end
+
+    # Verify that a given manifest is valid as per the manifest format definition.
+    # Valid format: stream name + one or more locators + one or more files for each stream in manifest.
+    # https://arvados.org/projects/arvados/wiki/Keep_manifest_format
+    def self.valid?(manifest)
+      line_count = 0
+      manifest.each_line do |line|
+        line_count += 1
+
+        words = line.split
+
+        count = 0
+        word = words.shift
+        count += 1 if word =~ STREAM_REGEXP
+        raise ArgumentError.new "Manifest invalid for stream #{line_count}. Missing or invalid stream name #{word}" if count != 1
+
+        count = 0
+        word = words.shift
+        while word =~ Locator::LOCATOR_REGEXP
+          word = words.shift
+          count += 1
+        end
+        raise ArgumentError.new "Manifest invalid for stream #{line_count}. Missing or invalid locator #{word}" if count == 0
+
+        count = 0
+        while word =~ FILE_REGEXP
+          word = words.shift
+          count += 1
+        end
+        if(count == 0) or (word and word !~ FILE_REGEXP)
+          raise ArgumentError.new "Manifest invalid for stream #{line_count}. Missing or invalid file name #{word}"
+        end
+      end
     end
   end
 end
