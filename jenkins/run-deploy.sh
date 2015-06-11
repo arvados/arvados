@@ -138,6 +138,41 @@ if [[ "$ARVADOS_API_HOST" == "" ]] || [[ "$ARVADOS_API_TOKEN" == "" ]]; then
   exit 1
 fi
 
+title "Locating Arvados Standard Docker images project"
+
+JSON_FILTER="[[\"name\", \"=\", \"Arvados Standard Docker Images\"], [\"owner_uuid\", \"=\", \"$IDENTIFIER-tpzed-000000000000000\"]]"
+DOCKER_IMAGES_PROJECT=`ARVADOS_API_HOST=$ARVADOS_API_HOST ARVADOS_API_TOKEN=$ARVADOS_API_TOKEN arv --format=uuid group list --filters="$JSON_FILTER"`
+
+if [[ "$DOCKER_IMAGES_PROJECT" == "" ]]; then
+  title "Warning: Arvados Standard Docker Images project not found. Creating it."
+
+  DOCKER_IMAGES_PROJECT=`ARVADOS_API_HOST=$ARVADOS_API_HOST ARVADOS_API_TOKEN=$ARVADOS_API_TOKEN arv --format=uuid group create --group "{\"owner_uuid\":\"$IDENTIFIER-tpzed-000000000000000\", \"name\":\"Arvados Standard Docker Images\"}"`
+  ARVADOS_API_HOST=$ARVADOS_API_HOST ARVADOS_API_TOKEN=$ARVADOS_API_TOKEN arv link create --link "{\"tail_uuid\":\"$IDENTIFIER-j7d0g-fffffffffffffff\", \"head_uuid\":\"$DOCKER_IMAGES_PROJECT\", \"link_class\":\"permission\", \"name\":\"can_read\" }"
+  if [[ "$?" != "0" ]]; then
+    title "ERROR: could not create standard Docker images project Please create it, cf. http://doc.arvados.org/install/create-standard-objects.html"
+    exit 1
+  fi
+fi
+
+title "Found Arvados Standard Docker Images project with uuid $DOCKER_IMAGES_PROJECT"
+GIT_COMMIT=`ssh $IDENTIFIER cat /usr/local/arvados/src/git-commit.version`
+
+if [[ "$?" != "0" ]] || [[ "$GIT_COMMIT" == "" ]]; then
+  title "ERROR: unable to get arvados/jobs Docker image git revision"
+  exit 1
+else
+  title "Found git commit for arvados/jobs Docker image: $GIT_COMMIT"
+fi
+
+run_command shell.$IDENTIFIER ECODE "/usr/local/rvm/bin/rvm-exec default arv keep docker" |grep -q $GIT_COMMIT
+
+if [[ "$?" == "0" ]]; then
+  title "Found latest arvados/jobs Docker image, nothing to upload"
+else
+  title "Installing latest arvados/jobs Docker image"
+  ssh shell.$IDENTIFIER "/usr/local/rvm/bin/rvm-exec default arv keep docker --pull --project-uuid=$DOCKER_IMAGES_PROJECT arvados/jobs $GIT_COMMIT"
+fi
+
 title "Gathering list of shell and Keep nodes"
 SHELL_NODES=`ARVADOS_API_HOST=$ARVADOS_API_HOST ARVADOS_API_TOKEN=$ARVADOS_API_TOKEN arv virtual_machine list |jq .items[].hostname -r`
 KEEP_NODES=`ARVADOS_API_HOST=$ARVADOS_API_HOST ARVADOS_API_TOKEN=$ARVADOS_API_TOKEN arv keep_service list |jq .items[].service_host -r`
