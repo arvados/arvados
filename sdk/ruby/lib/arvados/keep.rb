@@ -97,8 +97,8 @@ module Keep
   end
 
   class Manifest
-    STREAM_REGEXP = /(\.)(\/+.*)*$/
-    FILE_REGEXP = /^[[:digit:]]+:[[:digit:]]+:/
+    STREAM_REGEXP = /(\.)((\/+.*[^\/])*)$/
+    FILE_REGEXP = /^[[:digit:]]+:[[:digit:]]+:(?!\/).*[^\/]$/
 
     # Class to parse a manifest text and provide common views of that data.
     def initialize(manifest_text)
@@ -237,12 +237,14 @@ module Keep
       manifest.each_line do |line|
         line_count += 1
 
-        words = line.split
+        words = line.split(/[[:space:]]/)
+        raise ArgumentError.new "Manifest invalid for stream #{line_count}: missing stream name" if words.empty?
 
         count = 0
+
         word = words.shift
-        count += 1 if word =~ STREAM_REGEXP
-        raise ArgumentError.new "Manifest invalid for stream #{line_count}: missing or invalid stream name #{word.inspect}" if count != 1
+        count += 1 if word =~ STREAM_REGEXP and !word.include? '//'
+        raise ArgumentError.new "Manifest invalid for stream #{line_count}: missing or invalid stream name #{word.inspect if word}" if count != 1
 
         count = 0
         word = words.shift
@@ -250,10 +252,10 @@ module Keep
           word = words.shift
           count += 1
         end
-        raise ArgumentError.new "Manifest invalid for stream #{line_count}: missing or invalid locator #{word.inspect}" if count == 0
+        raise ArgumentError.new "Manifest invalid for stream #{line_count}: missing or invalid locator #{word.inspect if word}" if count == 0
 
         count = 0
-        while word =~ FILE_REGEXP
+        while(word =~ FILE_REGEXP and !word.include? '//')
           word = words.shift
           count += 1
         end
