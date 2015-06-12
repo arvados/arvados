@@ -316,41 +316,61 @@ fi
 
 cd "$WORKSPACE"
 cd sdk/ruby
-# clean up old packages
-find -maxdepth 1 \( -name 'arvados-*.gem' -or -name 'rubygem-arvados_*.deb' \) \
-    -delete
 
-if [[ "$DEBUG" != 0 ]]; then
-  gem build arvados.gemspec
-else
-  # -q appears to be broken in gem version 2.2.2
-  gem build arvados.gemspec -q >/dev/null 2>&1
+ARVADOS_GEM_EPOCH=`git log -n1 --first-parent --format=%ct`
+ARVADOS_GEM_DATE=`date --utc --date="@${ARVADOS_GEM_EPOCH}" +%Y%m%d%H%M%S`
+ARVADOS_GEM_VERSION="0.1.${ARVADOS_GEM_DATE}"
+
+# see if this gem needs building/uploading
+gem search arvados -r -a |grep -q $ARVADOS_GEM_VERSION
+
+if [[ "$?" != "0" ]]; then
+  # clean up old packages
+  find -maxdepth 1 \( -name 'arvados-*.gem' -or -name 'rubygem-arvados_*.deb' -or -name 'rubygem-arvados_*.rpm' \) \
+      -delete
+
+  if [[ "$DEBUG" != 0 ]]; then
+    gem build arvados.gemspec
+  else
+    # -q appears to be broken in gem version 2.2.2
+    gem build arvados.gemspec -q >/dev/null 2>&1
+  fi
+  
+  if [[ "$UPLOAD" != 0 ]]; then
+    # publish new gem
+    gem push arvados-*gem
+  fi
+  
+  build_and_scp_deb arvados-*.gem "" "Curoverse, Inc." gem "" \
+      --prefix "$FPM_GEM_PREFIX"
 fi
-
-if [[ "$UPLOAD" != 0 ]]; then
-  # publish new gem
-  gem push arvados-*gem
-fi
-
-build_and_scp_deb arvados-*.gem "" "Curoverse, Inc." gem "" \
-    --prefix "$FPM_GEM_PREFIX"
-
+  
 # Build arvados-cli GEM
 cd "$WORKSPACE"
 cd sdk/cli
-# clean up old gems
-rm -f arvados-cli*gem
 
-if [[ "$DEBUG" != 0 ]]; then
-  gem build arvados-cli.gemspec
-else
-  # -q appears to be broken in gem version 2.2.2
-  gem build arvados-cli.gemspec -q >/dev/null
-fi
+ARVADOS_CLI_GEM_EPOCH=`git log -n1 --first-parent --format=%ct`
+ARVADOS_CLI_GEM_DATE=`date --utc --date="@${ARVADOS_CLI_GEM_EPOCH}" +%Y%m%d%H%M%S`
+ARVADOS_CLI_GEM_VERSION="0.1.${ARVADOS_CLI_GEM_DATE}"
 
-if [[ "$UPLOAD" != 0 ]]; then
-  # publish new gem
-  gem push arvados-cli*gem
+# see if this gem needs building/uploading
+gem search arvados-cli -r -a |grep -q $ARVADOS_GEM_VERSION
+
+if [[ "$?" != "0" ]]; then
+  # clean up old gems
+  rm -f arvados-cli*gem
+  
+  if [[ "$DEBUG" != 0 ]]; then
+    gem build arvados-cli.gemspec
+  else
+    # -q appears to be broken in gem version 2.2.2
+    gem build arvados-cli.gemspec -q >/dev/null
+  fi
+  
+  if [[ "$UPLOAD" != 0 ]]; then
+    # publish new gem
+    gem push arvados-cli*gem
+  fi
 fi
 
 # Python packages
