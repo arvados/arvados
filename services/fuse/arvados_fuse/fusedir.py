@@ -143,8 +143,8 @@ class Directory(FreshBase):
 
         # delete any other directory entries that were not in found in 'items'
         for i in oldentries:
-            _logger.debug("Forgetting about entry '%s' on inode %i", str(i), self.inode)
-            llfuse.invalidate_entry(self.inode, str(i))
+            _logger.debug("Forgetting about entry '%s' on inode %i", i, self.inode)
+            llfuse.invalidate_entry(self.inode, i.encode(self.inodes.encoding))
             self.inodes.del_entry(oldentries[i])
             changed = True
 
@@ -165,7 +165,7 @@ class Directory(FreshBase):
                     self._entries = oldentries
                     return False
             for n in oldentries:
-                llfuse.invalidate_entry(self.inode, str(n))
+                llfuse.invalidate_entry(self.inode, n.encode(self.inodes.encoding))
                 self.inodes.del_entry(oldentries[n])
             llfuse.invalidate_inode(self.inode)
             self.invalidate()
@@ -235,14 +235,15 @@ class CollectionDirectoryBase(Directory):
 
     def on_event(self, event, collection, name, item):
         if collection == self.collection:
-            _logger.debug("%s %s %s %s", event, collection, name, item)
+            name = sanitize_filename(name)
+            _logger.debug("collection notify %s %s %s %s", event, collection, name, item)
             with llfuse.lock:
                 if event == arvados.collection.ADD:
                     self.new_entry(name, item, self.mtime())
                 elif event == arvados.collection.DEL:
                     ent = self._entries[name]
                     del self._entries[name]
-                    llfuse.invalidate_entry(self.inode, name)
+                    llfuse.invalidate_entry(self.inode, name.encode(self.inodes.encoding))
                     self.inodes.del_entry(ent)
                 elif event == arvados.collection.MOD:
                     if hasattr(item, "fuse_entry") and item.fuse_entry is not None:
@@ -371,7 +372,7 @@ class CollectionDirectory(CollectionDirectoryBase):
         return self.collection_locator
 
     @use_counter
-    def update(self, to_pdh=None):
+    def update(self, to_record_version=None):
         try:
             if self.collection_record is not None and portable_data_hash_pattern.match(self.collection_locator):
                 return True
@@ -387,9 +388,9 @@ class CollectionDirectory(CollectionDirectoryBase):
                         return
 
                     _logger.debug("Updating %s", self.collection_locator)
-                    if self.collection:
-                        if self.collection.portable_data_hash() == to_pdh:
-                            _logger.debug("%s is fresh at pdh '%s'", self.collection_locator, to_pdh)
+                    if self.collection is not None:
+                        if self.collection.known_past_version(to_record_version):
+                            _logger.debug("%s already processed %s", self.collection_locator, to_record_version)
                         else:
                             self.collection.update()
                     else:
@@ -768,7 +769,7 @@ class ProjectDirectory(Directory):
         # Acually move the entry from source directory to this directory.
         del src._entries[name_old]
         self._entries[name_new] = ent
-        llfuse.invalidate_entry(src.inode, name_old)
+        llfuse.invalidate_entry(src.inode, name_old.encode(self.inodes.encoding))
 
 
 class SharedDirectory(Directory):

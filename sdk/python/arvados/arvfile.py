@@ -821,7 +821,8 @@ class ArvadosFile(object):
         for lr in readsegs:
             block = self.parent._my_block_manager().get_block_contents(lr.locator, num_retries=num_retries, cache_only=(bool(data) and not exact))
             if block:
-                data.append(block[lr.segment_offset:lr.segment_offset+lr.segment_size])
+                blockview = memoryview(block)
+                data.append(blockview[lr.segment_offset:lr.segment_offset+lr.segment_size].tobytes())
             else:
                 break
         return ''.join(data)

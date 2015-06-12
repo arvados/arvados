@@ -183,10 +183,11 @@ class Inodes(object):
     """Manage the set of inodes.  This is the mapping from a numeric id
     to a concrete File or Directory object"""
 
-    def __init__(self, inode_cache):
+    def __init__(self, inode_cache, encoding="utf-8"):
         self._entries = {}
         self._counter = itertools.count(llfuse.ROOT_INODE)
         self.inode_cache = inode_cache
+        self.encoding = encoding
 
     def __getitem__(self, item):
         return self._entries[item]
@@ -263,10 +264,9 @@ class Operations(llfuse.Operations):
 
         if not inode_cache:
             inode_cache = InodeCache(cap=256*1024*1024)
-        self.inodes = Inodes(inode_cache)
+        self.inodes = Inodes(inode_cache, encoding=encoding)
         self.uid = uid
         self.gid = gid
-        self.encoding = encoding
 
         # dict of inode to filehandle
         self._filehandles = {}
@@ -303,6 +303,7 @@ class Operations(llfuse.Operations):
                                  [["event_type", "in", ["create", "update", "delete"]]],
                                  self.on_event)
 
+    @catch_exceptions
     def on_event(self, ev):
         if 'event_type' in ev:
             with llfuse.lock:
@@ -310,11 +311,13 @@ class Operations(llfuse.Operations):
                 if item is not None:
                     item.invalidate()
                     if ev["object_kind"] == "arvados#collection":
-                        item.update(to_pdh=ev.get("properties", {}).get("new_attributes", {}).get("portable_data_hash"))
+                        new_attr = ev.get("properties") and ev["properties"].get("new_attributes") and ev["properties"]["new_attributes"]
+                        record_version = (new_attr["modified_at"], new_attr["portable_data_hash"]) if new_attr else None
+                        item.update(to_record_version=record_version)
                     else:
                         item.update()
 
-                oldowner = ev.get("properties", {}).get("old_attributes", {}).get("owner_uuid")
+                oldowner = ev.get("properties") and ev["properties"].get("old_attributes") and ev["properties"]["old_attributes"].get("owner_uuid")
                 olditemparent = self.inodes.inode_cache.find(oldowner)
                 if olditemparent is not None:
                     olditemparent.invalidate()
@@ -335,8 +338,8 @@ class Operations(llfuse.Operations):
         entry = llfuse.EntryAttributes()
         entry.st_ino = inode
         entry.generation = 0
-        entry.entry_timeout = 300
-        entry.attr_timeout = 300
+        entry.entry_timeout = 60
+        entry.attr_timeout = 60
 
         entry.st_mode = stat.S_IRUSR | stat.S_IRGRP | stat.S_IROTH
         if isinstance(e, Directory):
@@ -357,7 +360,7 @@ class Operations(llfuse.Operations):
         entry.st_size = e.size()
 
         entry.st_blksize = 512
-        entry.st_blocks = (e.size()/512)+1
+        entry.st_blocks = (entry.st_size/512)+1
         entry.st_atime = int(e.atime())
         entry.st_mtime = int(e.mtime())
         entry.st_ctime = int(e.mtime())
@@ -379,7 +382,7 @@ class Operations(llfuse.Operations):
 
     @catch_exceptions
     def lookup(self, parent_inode, name):
-        name = unicode(name, self.encoding)
+        name = unicode(name, self.inodes.encoding)
         inode = None
 
         if name == '.':
@@ -431,6 +434,7 @@ class Operations(llfuse.Operations):
     @catch_exceptions
     def read(self, fh, off, size):
         _logger.debug("arv-mount read %i %i %i", fh, off, size)
+
         if fh in self._filehandles:
             handle = self._filehandles[fh]
         else:
@@ -513,10 +517,7 @@ class Operations(llfuse.Operations):
         e = off
         while e < len(handle.entries):
             if handle.entries[e][1].inode in self.inodes:
-                try:
-                    yield (handle.entries[e][0].encode(self.encoding), self.getattr(handle.entries[e][1].inode), e+1)
-                except UnicodeEncodeError:
-                    pass
+                yield (handle.entries[e][0].encode(self.inodes.encoding), self.getattr(handle.entries[e][1].inode), e+1)
             e += 1
 
     @catch_exceptions
