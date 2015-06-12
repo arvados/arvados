@@ -355,7 +355,6 @@ class UsersController < ApplicationController
       perm_properties = can_login_perms.first.properties
       current_selections[:identity_url_prefix] = perm_properties[:identity_url_prefix]
       current_selections[:groups] = perm_properties[:groups].andand.join(', ')
-@current_groups = current_selections[:groups]
     end
 
     # repo perm
