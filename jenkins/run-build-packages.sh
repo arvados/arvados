@@ -240,10 +240,14 @@ verify_and_scp_deb () {
   else
     if [[ ! $FPM_RESULTS =~ "File already exists" ]]; then
       if [[ "$FPM_EXIT_CODE" != "0" ]]; then
-        echo "Error building debian package for $1:\n $FPM_RESULTS"
+        echo "Error building package for $1:\n $FPM_RESULTS"
       else
         if [[ "$UPLOAD" != 0 ]]; then
-          scp -P2222 $FPM_PACKAGE_NAME $APTUSER@$APTSERVER:tmp/
+          if [[ "$FORMAT" == 'deb' ]]; then
+            scp -P2222 $FPM_PACKAGE_NAME $APTUSER@$APTSERVER:tmp/
+          else
+            scp -P2222 $FPM_PACKAGE_NAME $APTUSER@$APTSERVER:rpm/
+          fi
           CALL_FREIGHT=1
         fi
       fi
@@ -647,7 +651,11 @@ verify_and_scp_deb $FPM_EXIT_CODE $FPM_RESULTS
 
 # Finally, publish the packages, if necessary
 if [[ "$UPLOAD" != 0 && "$CALL_FREIGHT" != 0 ]]; then
-  ssh -p2222 $APTUSER@$APTSERVER -t "cd tmp && ls -laF *deb && freight add *deb apt/wheezy && freight cache && rm -f *deb"
+  if [[ "$FORMAT" == 'deb' ]]; then
+    ssh -p2222 $APTUSER@$APTSERVER -t "cd tmp && ls -laF *deb && freight add *deb apt/wheezy && freight cache && rm -f *deb"
+  else
+    ssh -p2222 $APTUSER@$APTSERVER -t "cd rpm && ls -laF *rpm && mv *rpm /var/www/rpm.arvados.org/CentOS/6/os/x86_64/ && createrepo /var/www/rpm.arvados.org/CentOS/6/os/x86_64/"
+  fi
 else
   if [[ "$UPLOAD" != 0 ]]; then
     echo "No new packages generated. No freight run necessary."
