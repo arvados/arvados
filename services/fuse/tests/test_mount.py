@@ -48,7 +48,7 @@ class MountTestBase(unittest.TestCase):
 
     def tearDown(self):
         self.pool.close()
-        self.pool = None
+        del self.pool
 
         # llfuse.close is buggy, so use fusermount instead.
         #llfuse.close(unmount=True)

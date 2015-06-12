@@ -644,14 +644,13 @@ class RichCollectionBase(CollectionBase):
             return ArvadosFileWriter(arvfile, mode, num_retries=self.num_retries)
 
     def modified(self):
+        """Determine if the collection has been modified since last commited."""
         return not self.committed()
-
-    def set_unmodified(self):
-        self.set_committed()
 
     @synchronized
     def committed(self):
-        """Test if the collection and all subcollection and files are committed."""
+        """Determine if the collection has been committed to the API server."""
+
         if self._committed is False:
             return False
         for v in self._items.values():
@@ -661,7 +660,7 @@ class RichCollectionBase(CollectionBase):
 
     @synchronized
     def set_committed(self):
-        """Recursively set committed flag."""
+        """Recursively set committed flag to True."""
         self._committed = True
         for k,v in self._items.items():
             v.set_committed()
