@@ -57,7 +57,7 @@ func (h *authHandler) ServeHTTP(wOrig http.ResponseWriter, r *http.Request) {
 			passwordToLog = apiToken[0:10]
 		}
 
-		log.Println(quoteStrings(r.RemoteAddr, passwordToLog, w.WroteStatus(), statusText, repoName, r.Method, r.URL.Path)...)
+		httpserver.Log(r.RemoteAddr, passwordToLog, w.WroteStatus(), statusText, repoName, r.Method, r.URL.Path)
 	}()
 
 	creds := auth.NewCredentialsFromHTTPRequest(r)
@@ -163,17 +163,4 @@ func (h *authHandler) ServeHTTP(wOrig http.ResponseWriter, r *http.Request) {
 	handlerCopy := *h.handler
 	handlerCopy.Env = append(handlerCopy.Env, "REMOTE_USER="+r.RemoteAddr) // Should be username
 	handlerCopy.ServeHTTP(&w, r)
-}
-
-var escaper = strings.NewReplacer("\"", "\\\"", "\\", "\\\\", "\n", "\\n")
-
-// Transform strings so they are safer to write in logs (e.g.,
-// 'foo"bar' becomes '"foo\"bar"'). Non-string args are left alone.
-func quoteStrings(args ...interface{}) []interface{} {
-	for i, arg := range args {
-		if s, ok := arg.(string); ok {
-			args[i] = "\"" + escaper.Replace(s) + "\""
-		}
-	}
-	return args
 }
