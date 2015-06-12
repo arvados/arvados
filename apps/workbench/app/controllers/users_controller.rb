@@ -214,14 +214,15 @@ class UsersController < ApplicationController
         if User.setup setup_params
           if params[:groups]
             new_groups = params[:groups].split(',').map(&:strip).compact.select{|i| !i.to_s.empty?}
-            can_login_perms = Link.where(tail_uuid: params[:user_email],
-                                         head_kind: 'arvados#user',
-                                         link_class: 'permission',
-                                         name: 'can_login')
-            if can_login_perms.any?
-              perm = can_login_perms.first
-              props = perm.properties
-              if new_groups != props[:groups]
+            prev_groups = params[:prev_groups].split(',').map(&:strip).compact.select{|i| !i.to_s.empty?}
+            if new_groups != prev_groups
+              can_login_perms = Link.where(tail_uuid: params[:user_email],
+                                           head_kind: 'arvados#user',
+                                           link_class: 'permission',
+                                           name: 'can_login')
+              if can_login_perms.any?
+                perm = can_login_perms.first
+                props = perm.properties
                 props[:groups] = new_groups
                 perm.save!
               end
@@ -354,6 +355,7 @@ class UsersController < ApplicationController
       perm_properties = can_login_perms.first.properties
       current_selections[:identity_url_prefix] = perm_properties[:identity_url_prefix]
       current_selections[:groups] = perm_properties[:groups].andand.join(', ')
+@current_groups = current_selections[:groups]
     end
 
     # repo perm
