@@ -212,6 +212,22 @@ class UsersController < ApplicationController
         end
 
         if User.setup setup_params
+          if params[:groups]
+            new_groups = params[:groups].split(',').map(&:strip).compact.select{|i| !i.to_s.empty?}
+            can_login_perms = Link.where(tail_uuid: params[:user_email],
+                                         head_kind: 'arvados#user',
+                                         link_class: 'permission',
+                                         name: 'can_login')
+            if can_login_perms.any?
+              perm = can_login_perms.first
+              props = perm.properties
+              if new_groups != props[:groups]
+                props[:groups] = new_groups
+                perm.save!
+              end
+            end
+          end
+
           format.js
         else
           self.render_error status: 422
@@ -329,14 +345,15 @@ class UsersController < ApplicationController
     end
 
     # oid login perm
-    oid_login_perms = Link.where(tail_uuid: user.email,
+    can_login_perms = Link.where(tail_uuid: user.email,
                                    head_kind: 'arvados#user',
                                    link_class: 'permission',
                                    name: 'can_login')
 
-    if oid_login_perms.any?
-      prefix_properties = oid_login_perms.first.properties
-      current_selections[:identity_url_prefix] = prefix_properties[:identity_url_prefix]
+    if can_login_perms.any?
+      perm_properties = can_login_perms.first.properties
+      current_selections[:identity_url_prefix] = perm_properties[:identity_url_prefix]
+      current_selections[:groups] = perm_properties[:groups].andand.join(', ')
     end
 
     # repo perm
