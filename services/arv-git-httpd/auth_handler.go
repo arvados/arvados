@@ -6,7 +6,6 @@ import (
 	"net/http/cgi"
 	"os"
 	"strings"
-	"sync"
 	"time"
 
 	"git.curoverse.com/arvados.git/sdk/go/arvadosclient"
@@ -14,16 +13,7 @@ import (
 	"git.curoverse.com/arvados.git/sdk/go/httpserver"
 )
 
-func newArvadosClient() interface{} {
-	arv, err := arvadosclient.MakeArvadosClient()
-	if err != nil {
-		log.Println("MakeArvadosClient:", err)
-		return nil
-	}
-	return &arv
-}
-
-var connectionPool = &sync.Pool{New: newArvadosClient}
+var clientPool = arvadosclient.MakeClientPool()
 
 type authHandler struct {
 	handler *cgi.Handler
@@ -79,12 +69,12 @@ func (h *authHandler) ServeHTTP(wOrig http.ResponseWriter, r *http.Request) {
 	repoName = pathParts[0]
 	repoName = strings.TrimRight(repoName, "/")
 
-	arv, ok := connectionPool.Get().(*arvadosclient.ArvadosClient)
-	if !ok || arv == nil {
-		statusCode, statusText = http.StatusInternalServerError, "connection pool failed"
+	arv := clientPool.Get()
+	if arv == nil {
+		statusCode, statusText = http.StatusInternalServerError, "connection pool failed: "+clientPool.Err().Error()
 		return
 	}
-	defer connectionPool.Put(arv)
+	defer clientPool.Put(arv)
 
 	// Ask API server whether the repository is readable using
 	// this token (by trying to read it!)
