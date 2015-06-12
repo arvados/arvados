@@ -11,6 +11,7 @@ import (
 
 	"git.curoverse.com/arvados.git/sdk/go/auth"
 	"git.curoverse.com/arvados.git/sdk/go/arvadosclient"
+	"git.curoverse.com/arvados.git/sdk/go/httpserver"
 )
 
 func newArvadosClient() interface{} {
@@ -24,16 +25,6 @@ func newArvadosClient() interface{} {
 
 var connectionPool = &sync.Pool{New: newArvadosClient}
 
-type spyingResponseWriter struct {
-	http.ResponseWriter
-	wroteStatus *int
-}
-
-func (w spyingResponseWriter) WriteHeader(s int) {
-	*w.wroteStatus = s
-	w.ResponseWriter.WriteHeader(s)
-}
-
 type authHandler struct {
 	handler *cgi.Handler
 }
@@ -43,13 +34,12 @@ func (h *authHandler) ServeHTTP(wOrig http.ResponseWriter, r *http.Request) {
 	var statusText string
 	var apiToken string
 	var repoName string
-	var wroteStatus int
 	var validApiToken bool
 
-	w := spyingResponseWriter{wOrig, &wroteStatus}
+	w := httpserver.WrapResponseWriter(wOrig)
 
 	defer func() {
-		if wroteStatus == 0 {
+		if w.WroteStatus() == 0 {
 			// Nobody has called WriteHeader yet: that
 			// must be our job.
 			w.WriteHeader(statusCode)
@@ -67,7 +57,7 @@ func (h *authHandler) ServeHTTP(wOrig http.ResponseWriter, r *http.Request) {
 			passwordToLog = apiToken[0:10]
 		}
 
-		log.Println(quoteStrings(r.RemoteAddr, passwordToLog, wroteStatus, statusText, repoName, r.Method, r.URL.Path)...)
+		log.Println(quoteStrings(r.RemoteAddr, passwordToLog, w.WroteStatus(), statusText, repoName, r.Method, r.URL.Path)...)
 	}()
 
 	creds := auth.NewCredentialsFromHTTPRequest(r)
