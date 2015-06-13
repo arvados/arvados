@@ -211,17 +211,24 @@ class UsersController < ApplicationController
           setup_params[:vm_uuid] = params['vm_uuid']
         end
 
-        if User.setup setup_params
+        setup_resp = User.setup setup_params
+        if setup_resp
+          prev_groups = nil
+          setup_resp[:items].each do |item|
+            if item[:head_kind] == "arvados#virtualMachine"
+              prev_groups = item[:properties][:groups]
+              break
+            end
+          end
           if params[:groups]
-            new_groups = params[:groups].split(',').map(&:strip).compact.select{|i| !i.to_s.empty?}
-            prev_groups = params[:prev_groups].split(',').map(&:strip).compact.select{|i| !i.to_s.empty?}
+            new_groups = params[:groups].split(',').map(&:strip).select{|i| !i.empty?}
             if new_groups != prev_groups
-              can_login_perms = Link.where(tail_uuid: params[:user_email],
-                                           head_kind: 'arvados#user',
-                                           link_class: 'permission',
-                                           name: 'can_login')
-              if can_login_perms.any?
-                perm = can_login_perms.first
+              vm_login_perms = Link.where(tail_uuid: params['user_uuid'],
+                                          head_kind: 'arvados#virtualMachine',
+                                          link_class: 'permission',
+                                          name: 'can_login')
+              if vm_login_perms.any?
+                perm = vm_login_perms.first
                 props = perm.properties
                 props[:groups] = new_groups
                 perm.save!
@@ -346,15 +353,14 @@ class UsersController < ApplicationController
     end
 
     # oid login perm
-    can_login_perms = Link.where(tail_uuid: user.email,
+    oid_login_perms = Link.where(tail_uuid: user.email,
                                    head_kind: 'arvados#user',
                                    link_class: 'permission',
                                    name: 'can_login')
 
-    if can_login_perms.any?
-      perm_properties = can_login_perms.first.properties
-      current_selections[:identity_url_prefix] = perm_properties[:identity_url_prefix]
-      current_selections[:groups] = perm_properties[:groups].andand.join(', ')
+    if oid_login_perms.any?
+      prefix_properties = oid_login_perms.first.properties
+      current_selections[:identity_url_prefix] = prefix_properties[:identity_url_prefix]
     end
 
     # repo perm
@@ -377,8 +383,10 @@ class UsersController < ApplicationController
                               link_class: 'permission',
                               name: 'can_login')
     if vm_login_perms.any?
-      vm_uuid = vm_login_perms.first.head_uuid
+      vm_perm = vm_login_perms.first
+      vm_uuid = vm_perm.head_uuid
       current_selections[:vm_uuid] = vm_uuid
+      current_selections[:groups] = vm_perm.properties[:groups].andand.join(', ')
     end
 
     return current_selections
