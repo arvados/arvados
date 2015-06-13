@@ -222,7 +222,7 @@ class UsersController < ApplicationController
           end
           if params[:groups]
             new_groups = params[:groups].split(',').map(&:strip).select{|i| !i.empty?}
-            if new_groups != vm_link[:properties][:groups]
+            if vm_link and new_groups != vm_link[:properties][:groups]
               vm_login_link = Link.where(uuid: vm_link[:uuid])
               if vm_login_link.items_available > 0
                 link = vm_login_link.results.first
