@@ -632,7 +632,16 @@ fi
 # from the package - empty it instead.
 rm -rf $WORKSPACE/apps/workbench/tmp/*
 
+# Set up application.yml so that asset precompilation works
+\cp config/application.yml.example config/application.yml -f
+sed -i 's/secret_token: ~/secret_token: xxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxx/' config/application.yml
+
 RAILS_ENV=production RAILS_GROUPS=assets bundle exec rake assets:precompile >/dev/null
+
+if [[ "$?" != "0" ]]; then
+  echo "ERROR: Asset precompilation failed"
+  EXITCODE=1
+fi
 
 cd $WORKSPACE/debs
 
