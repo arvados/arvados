@@ -213,25 +213,22 @@ class UsersController < ApplicationController
 
         setup_resp = User.setup setup_params
         if setup_resp
-          prev_groups = nil
+          vm_link = nil
           setup_resp[:items].each do |item|
             if item[:head_kind] == "arvados#virtualMachine"
-              prev_groups = item[:properties][:groups]
+              vm_link = item
               break
             end
           end
           if params[:groups]
             new_groups = params[:groups].split(',').map(&:strip).select{|i| !i.empty?}
-            if new_groups != prev_groups
-              vm_login_perms = Link.where(tail_uuid: params['user_uuid'],
-                                          head_kind: 'arvados#virtualMachine',
-                                          link_class: 'permission',
-                                          name: 'can_login')
-              if vm_login_perms.any?
-                perm = vm_login_perms.first
-                props = perm.properties
+            if new_groups != vm_link[:properties][:groups]
+              vm_login_link = Link.where(uuid: vm_link[:uuid])
+              if vm_login_link.items_available > 0
+                link = vm_login_link.results.first
+                props = link.properties
                 props[:groups] = new_groups
-                perm.save!
+                link.save!
               end
             end
           end
