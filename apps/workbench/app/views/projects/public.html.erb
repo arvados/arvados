@@ -17,10 +17,10 @@
   <tbody>
   <% @objects.each do |p| %>
     <tr>
-      <td style="word-break:break-all;">
+      <td>
         <%= link_to_if_arvados_object p, {friendly_name: true} %>
       </td>
-      <td style="word-break:break-all;">
+      <td>
         <%= render_attribute_as_textile(p, "description", p.description, true) %>
       </td>
     </tr>
