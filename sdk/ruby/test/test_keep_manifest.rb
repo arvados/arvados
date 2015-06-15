@@ -281,6 +281,9 @@ class ManifestTest < Minitest::Test
   end
 
   [
+    [false, nil, "No manifest found"],
+    [true, ""],
+    [false, " ", "Invalid manifest: does not end with newline"],
     [true, ". d41d8cd98f00b204e9800998ecf8427e 0:0:abc.txt\n"],
     [true, ". d41d8cd98f00b204e9800998ecf8427e+0 0:0:abc.txt\n"],
     [true, ". d41d8cd98f00b204e9800998ecf8427e a41d8cd98f00b204e9800998ecf8427e+0 0:0:abc.txt\n"], # 2 locators
