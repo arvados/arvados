@@ -18,7 +18,7 @@ module ManifestExamples
       blocktokens = []
       filetokens = []
       (1..opts[:files_per_stream]).each do |f|
-        filetokens << " #{streamsize}:#{filesize}:file#{f}.txt"
+        filetokens << "#{streamsize}:#{filesize}:file#{f}.txt"
         (1..opts[:blocks_per_file]).each do |b|
           blocktokens << locator
         end

@@ -64,10 +64,10 @@ class CollectionTest < ActiveSupport::TestCase
         manifest_text = './blurfl d41d8cd98f00b204e9800998ecf8427e+0'
         index = 0
         while manifest_text.length < manifest_size
-          manifest_text += ' ' + "0:0:veryverylongfilename000000000000#{index}.txt\n./subdir1"
+          manifest_text += './subdir1 d41d8cd98f00b204e9800998ecf8427e+0' if index > 0
+          manifest_text += ' ' + "0:0:veryverylongfilename000000000000#{index}.txt\n"
           index += 1
         end
-        manifest_text += "\n"
         c = Collection.create(manifest_text: manifest_text)
 
         assert c.valid?
@@ -87,7 +87,7 @@ class CollectionTest < ActiveSupport::TestCase
     act_as_system_user do
       Collection.create(manifest_text: ". acbd18db4cc2f85cedef654fccc4a4d8+3 0:3:foo\n")
       Collection.create(manifest_text: ". 37b51d194a7513e45b56f6524f2d51f2+3 0:3:bar\n")
-      Collection.create(manifest_text: ". 85877ca2d7e05498dd3d109baf2df106+95+A3a4e26a366ee7e4ed3e476ccf05354761be2e4ae@545a9920 0:95:file_in_subdir1\n./subdir2/subdir3 2bbc341c702df4d8f42ec31f16c10120+64+A315d7e7bad2ce937e711fc454fae2d1194d14d64@545a9920 0:32:file1.txt 32:32:file2.txt\n./subdir2/subdir3/subdir4 2bbc341c702df4d8f42ec31f16c10120+64+A315d7e7bad2ce937e711fc454fae2d1194d14d64@545a9920 0:32:file3.txt 32:32:file4.txt")
+      Collection.create(manifest_text: ". 85877ca2d7e05498dd3d109baf2df106+95+A3a4e26a366ee7e4ed3e476ccf05354761be2e4ae@545a9920 0:95:file_in_subdir1\n./subdir2/subdir3 2bbc341c702df4d8f42ec31f16c10120+64+A315d7e7bad2ce937e711fc454fae2d1194d14d64@545a9920 0:32:file1.txt 32:32:file2.txt\n./subdir2/subdir3/subdir4 2bbc341c702df4d8f42ec31f16c10120+64+A315d7e7bad2ce937e711fc454fae2d1194d14d64@545a9920 0:32:file3.txt 32:32:file4.txt\n")
     end
 
     [
