@@ -634,8 +634,6 @@ class Dispatcher
     return if !pid_done
 
     job_done = j_done[:job]
-    $stderr.puts "dispatch: child #{pid_done} exit"
-    $stderr.puts "dispatch: job #{job_done.uuid} end"
 
     # Ensure every last drop of stdout and stderr is consumed.
     read_pipes
@@ -652,6 +650,9 @@ class Dispatcher
 
     # Wait the thread (returns a Process::Status)
     exit_status = j_done[:wait_thr].value.exitstatus
+
+    $stderr.puts "dispatch: child #{pid_done} exit #{exit_status}"
+    $stderr.puts "dispatch: job #{job_done.uuid} end"
 
     jobrecord = Job.find_by_uuid(job_done.uuid)
     if exit_status != EXIT_TEMPFAIL and jobrecord.state == "Running"
