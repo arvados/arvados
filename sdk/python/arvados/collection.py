@@ -1211,11 +1211,11 @@ class Collection(RichCollectionBase):
             if self._manifest_locator is None:
                 raise errors.ArgumentError("`other` is None but collection does not have a manifest_locator uuid")
             response = self._my_api().collections().get(uuid=self._manifest_locator).execute(num_retries=num_retries)
-            if self.known_past_version((response["modified_at"], response["portable_data_hash"])):
+            if self.known_past_version((response.get("modified_at"), response.get("portable_data_hash"))):
                 # We've merged this record this before.  Don't do anything.
                 return
             else:
-                self._past_versions.add((response["modified_at"], response["portable_data_hash"]))
+                self._past_versions.add((response.get("modified_at"), response.get("portable_data_hash")))
             other = CollectionReader(response["manifest_text"])
         baseline = CollectionReader(self._manifest_text)
         self.apply(baseline.diff(other))
@@ -1245,7 +1245,7 @@ class Collection(RichCollectionBase):
 
     def _remember_api_response(self, response):
         self._api_response = response
-        self._past_versions.add((response["modified_at"], response["portable_data_hash"]))
+        self._past_versions.add((response.get("modified_at"), response.get("portable_data_hash")))
 
     def _populate_from_api_server(self):
         # As in KeepClient itself, we must wait until the last

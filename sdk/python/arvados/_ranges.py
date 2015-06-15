@@ -21,7 +21,7 @@ class Range(object):
                 self.range_size == other.range_size and
                 self.segment_offset == other.segment_offset)
 
-def first_block(data_locators, range_start, range_size):
+def first_block(data_locators, range_start):
     block_start = 0L
 
     # range_start/block_start is the inclusive lower bound
@@ -68,7 +68,7 @@ class LocatorAndRange(object):
     def __repr__(self):
         return "LocatorAndRange(%r, %r, %r, %r)" % (self.locator, self.block_size, self.segment_offset, self.segment_size)
 
-def locators_and_ranges(data_locators, range_start, range_size):
+def locators_and_ranges(data_locators, range_start, range_size, limit=None):
     """Get blocks that are covered by a range.
 
     Returns a list of LocatorAndRange objects.
@@ -82,19 +82,26 @@ def locators_and_ranges(data_locators, range_start, range_size):
     :range_size:
       size of range
 
+    :limit:
+      Maximum segments to return, default None (unlimited).  Will truncate the
+      result if there are more segments needed to cover the range than the
+      limit.
+
     """
     if range_size == 0:
         return []
     resp = []
     range_end = range_start + range_size
 
-    i = first_block(data_locators, range_start, range_size)
+    i = first_block(data_locators, range_start)
     if i is None:
         return []
 
     # We should always start at the first segment due to the binary
     # search.
     while i < len(data_locators):
+        if limit and len(resp) > limit:
+            break
         dl = data_locators[i]
         block_start = dl.range_start
         block_size = dl.range_size
@@ -163,7 +170,7 @@ def replace_range(data_locators, new_range_start, new_range_size, new_locator, n
             data_locators.append(Range(new_locator, new_range_start, new_range_size, new_segment_offset))
         return
 
-    i = first_block(data_locators, new_range_start, new_range_size)
+    i = first_block(data_locators, new_range_start)
     if i is None:
         return
 

@@ -434,7 +434,6 @@ class Operations(llfuse.Operations):
     @catch_exceptions
     def read(self, fh, off, size):
         _logger.debug("arv-mount read %i %i %i", fh, off, size)
-
         if fh in self._filehandles:
             handle = self._filehandles[fh]
         else:

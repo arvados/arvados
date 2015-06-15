@@ -639,7 +639,6 @@ class _BlockManager(object):
             if v.owner:
                 v.owner.flush(sync=True)
 
-
     def block_prefetch(self, locator):
         """Initiate a background download of a block.
 
@@ -653,9 +652,13 @@ class _BlockManager(object):
         if not self.prefetch_enabled:
             return
 
+        if self._keep.get_from_cache(locator) is not None:
+            return
+
         with self.lock:
             if locator in self._bufferblocks:
                 return
+
         self.start_get_threads()
         self._prefetch_queue.put(locator)
 
@@ -811,20 +814,25 @@ class ArvadosFile(object):
         with self.lock:
             if size == 0 or offset >= self.size():
                 return ''
-            prefetch = locators_and_ranges(self._segments, offset, size + config.KEEP_BLOCK_SIZE)
             readsegs = locators_and_ranges(self._segments, offset, size)
+            prefetch = locators_and_ranges(self._segments, offset + size, config.KEEP_BLOCK_SIZE, limit=32)
 
-        for lr in prefetch:
-            self.parent._my_block_manager().block_prefetch(lr.locator)
-
+        locs = set()
         data = []
         for lr in readsegs:
             block = self.parent._my_block_manager().get_block_contents(lr.locator, num_retries=num_retries, cache_only=(bool(data) and not exact))
             if block:
                 blockview = memoryview(block)
                 data.append(blockview[lr.segment_offset:lr.segment_offset+lr.segment_size].tobytes())
+                locs.add(lr.locator)
             else:
                 break
+
+        for lr in prefetch:
+            if lr.locator not in locs:
+                self.parent._my_block_manager().block_prefetch(lr.locator)
+                locs.add(lr.locator)
+
         return ''.join(data)
 
     def _repack_writes(self, num_retries):
