@@ -211,7 +211,28 @@ class UsersController < ApplicationController
           setup_params[:vm_uuid] = params['vm_uuid']
         end
 
-        if User.setup setup_params
+        setup_resp = User.setup setup_params
+        if setup_resp
+          vm_link = nil
+          setup_resp[:items].each do |item|
+            if item[:head_kind] == "arvados#virtualMachine"
+              vm_link = item
+              break
+            end
+          end
+          if params[:groups]
+            new_groups = params[:groups].split(',').map(&:strip).select{|i| !i.empty?}
+            if vm_link and new_groups != vm_link[:properties][:groups]
+              vm_login_link = Link.where(uuid: vm_link[:uuid])
+              if vm_login_link.items_available > 0
+                link = vm_login_link.results.first
+                props = link.properties
+                props[:groups] = new_groups
+                link.save!
+              end
+            end
+          end
+
           format.js
         else
           self.render_error status: 422
@@ -359,8 +380,10 @@ class UsersController < ApplicationController
                               link_class: 'permission',
                               name: 'can_login')
     if vm_login_perms.any?
-      vm_uuid = vm_login_perms.first.head_uuid
+      vm_perm = vm_login_perms.first
+      vm_uuid = vm_perm.head_uuid
       current_selections[:vm_uuid] = vm_uuid
+      current_selections[:groups] = vm_perm.properties[:groups].andand.join(', ')
     end
 
     return current_selections
