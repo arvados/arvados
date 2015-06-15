@@ -231,6 +231,10 @@ module Keep
     # Verify that a given manifest is valid according to
     # https://arvados.org/projects/arvados/wiki/Keep_manifest_format
     def self.validate! manifest
+      raise ArgumentError.new "No manifest found" if !manifest
+
+      return true if manifest.empty?
+
       raise ArgumentError.new "Invalid manifest: does not end with newline" if !manifest.end_with?("\n")
       line_count = 0
       manifest.each_line do |line|
