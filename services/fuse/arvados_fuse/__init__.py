@@ -259,7 +259,7 @@ class Operations(llfuse.Operations):
 
     """
 
-    def __init__(self, uid, gid, encoding="utf-8", inode_cache=None, num_retries=4):
+    def __init__(self, uid, gid, encoding="utf-8", inode_cache=None, num_retries=4, enable_write=False):
         super(Operations, self).__init__()
 
         if not inode_cache:
@@ -267,6 +267,7 @@ class Operations(llfuse.Operations):
         self.inodes = Inodes(inode_cache, encoding=encoding)
         self.uid = uid
         self.gid = gid
+        self.enable_write = enable_write
 
         # dict of inode to filehandle
         self._filehandles = {}
@@ -349,7 +350,7 @@ class Operations(llfuse.Operations):
             if isinstance(e, FuseArvadosFile):
                 entry.st_mode |= stat.S_IXUSR | stat.S_IXGRP | stat.S_IXOTH
 
-        if e.writable():
+        if self.enable_write and e.writable():
             entry.st_mode |= stat.S_IWUSR | stat.S_IWGRP | stat.S_IWOTH
 
         entry.st_nlink = 1
@@ -536,6 +537,9 @@ class Operations(llfuse.Operations):
         return st
 
     def _check_writable(self, inode_parent):
+        if not self.enable_write:
+            raise llfuse.FUSEError(errno.EROFS)
+
         if inode_parent in self.inodes:
             p = self.inodes[inode_parent]
         else:

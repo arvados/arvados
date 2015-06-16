@@ -311,28 +311,30 @@ class _BufferBlock(object):
         else:
             raise AssertionError("Buffer block is not writable")
 
+    STATE_TRANSITIONS = frozenset([
+            (WRITABLE, PENDING),
+            (PENDING, COMMITTED),
+            (PENDING, ERROR),
+            (ERROR, PENDING)])
+
     @synchronized
     def set_state(self, nextstate, val=None):
-        if ((self._state == _BufferBlock.WRITABLE and nextstate == _BufferBlock.PENDING) or
-            (self._state == _BufferBlock.PENDING and nextstate == _BufferBlock.COMMITTED) or
-            (self._state == _BufferBlock.PENDING and nextstate == _BufferBlock.ERROR) or
-            (self._state == _BufferBlock.ERROR and nextstate == _BufferBlock.PENDING)):
-            self._state = nextstate
-
-            if self._state == _BufferBlock.PENDING:
-                self.wait_for_commit.clear()
-
-            if self._state == _BufferBlock.COMMITTED:
-                self._locator = val
-                self.buffer_view = None
-                self.buffer_block = None
-                self.wait_for_commit.set()
-
-            if self._state == _BufferBlock.ERROR:
-                self.error = val
-                self.wait_for_commit.set()
-        else:
+        if (self._state, nextstate) not in self.STATE_TRANSITIONS:
             raise StateChangeError("Invalid state change from %s to %s" % (self.state, nextstate), self.state, nextstate)
+        self._state = nextstate
+
+        if self._state == _BufferBlock.PENDING:
+            self.wait_for_commit.clear()
+
+        if self._state == _BufferBlock.COMMITTED:
+            self._locator = val
+            self.buffer_view = None
+            self.buffer_block = None
+            self.wait_for_commit.set()
+
+        if self._state == _BufferBlock.ERROR:
+            self.error = val
+            self.wait_for_commit.set()
 
     @synchronized
     def state(self):

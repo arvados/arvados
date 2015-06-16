@@ -50,6 +50,9 @@ with "--".
     parser.add_argument('--file-cache', type=int, help="File data cache size, in bytes (default 256MiB)", default=256*1024*1024)
     parser.add_argument('--directory-cache', type=int, help="Directory data cache size, in bytes (default 128MiB)", default=128*1024*1024)
 
+    parser.add_argument('--read-only', action='store_false', help="Mount will be read only (default)", dest="enable_write", default=False)
+    parser.add_argument('--enable-write', action='store_true', help="Mount will be read-write", dest="enable_write", default=False)
+
     parser.add_argument('--exec', type=str, nargs=argparse.REMAINDER,
                         dest="exec_args", metavar=('command', 'args', '...', '--'),
                         help="""Mount, run a command, then unmount and exit""")
@@ -84,14 +87,17 @@ with "--".
         arvados.logger.setLevel(logging.DEBUG)
         logger.debug("arv-mount debugging enabled")
 
+    logger.warn("enable write is %s", args.enable_write)
+
     try:
         # Create the request handler
         operations = Operations(os.getuid(),
                                 os.getgid(),
                                 encoding=args.encoding,
-                                inode_cache=InodeCache(cap=args.directory_cache))
+                                inode_cache=InodeCache(cap=args.directory_cache),
+                                enable_write=args.enable_write)
         api = ThreadSafeApiCache(apiconfig=arvados.config.settings(),
-                                  keep_params={"block_cache": arvados.keep.KeepBlockCache(args.file_cache)})
+                                 keep_params={"block_cache": arvados.keep.KeepBlockCache(args.file_cache)})
 
         usr = api.users().current().execute(num_retries=args.retries)
         now = time.time()

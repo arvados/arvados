@@ -99,9 +99,7 @@ def locators_and_ranges(data_locators, range_start, range_size, limit=None):
 
     # We should always start at the first segment due to the binary
     # search.
-    while i < len(data_locators):
-        if limit and len(resp) > limit:
-            break
+    while i < len(data_locators) and len(resp) != limit:
         dl = data_locators[i]
         block_start = dl.range_start
         block_size = dl.range_size

@@ -14,7 +14,7 @@ h2. Arv-mount
 
 * You can browse, open and read Keep entries as if they are regular files.
 * It is easy for existing tools to access files in Keep.
-* Data is downloaded on demand.  It is not necessary to download an entire file or collection to start processing.
+* Data is streamed on demand.  It is not necessary to download an entire file or collection to start processing.
 
 The default mode permits browsing any collection in Arvados as a subdirectory under the mount directory.  To avoid having to fetch a potentially large list of all collections, collection directories only come into existence when explicitly accessed by their Keep locator. For instance, a collection may be found by its content hash in the @keep/by_id@ directory.
 
@@ -34,3 +34,22 @@ var-GS000016015-ASM.tsv.bz2
 The last line unmounts Keep.  Subdirectories will no longer be accessible.
 
 Within each directory on Keep, there is a @.arvados#collection@ file that does not show up with @ls@. Its contents include, for instance, the @portable_data_hash@, which is the same as the Keep locator.
+
+h3. Modifying files and directories in Keep
+
+By default, all files in the Keep mount are read only.  However, @arv-mount --enable-write@ enables you to perform the following operations using normal Unix command line tools (@touch@, @mv@, @rm@, @mkdir@, @rmdir@) and your own programs using standard POSIX file system APIs:
+
+* Create, update, rename and delete individual files within collections
+* Create and delete subdirectories inside collections
+* Move files and directories within and between collections
+* Create and delete collections within a project (using @mkdir@ and @rmdir@ in a project directory)
+
+Not supported:
+
+* Symlinks, hard links
+* Changing permissions
+* Extended attributes
+
+If multiple clients try to modify the same file in the same collection, this result in a conflict.  In this case, the most recent file wins, and the "loser" will be renamed to a conflict file in the form @name~YYYYMMDD-HHMMSS~conflict~@.
+
+Please note this feature is in beta testing.  In particular, the conflict mechanism is itself currently subject to race condiditions with potential for data loss when a collection is being modified simultaneously by multiple clients.  This issue will be resolved in future development.

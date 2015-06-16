@@ -37,7 +37,7 @@ class MountTestBase(unittest.TestCase):
         self.api = arvados.safeapi.ThreadSafeApiCache(arvados.config.settings())
 
     def make_mount(self, root_class, **root_kwargs):
-        self.operations = fuse.Operations(os.getuid(), os.getgid())
+        self.operations = fuse.Operations(os.getuid(), os.getgid(), enable_write=True)
         self.operations.inodes.add_entry(root_class(
             llfuse.ROOT_INODE, self.operations.inodes, self.api, 0, **root_kwargs))
         llfuse.init(self.operations, self.mounttmp, [])
@@ -47,7 +47,8 @@ class MountTestBase(unittest.TestCase):
         return self.operations.inodes[llfuse.ROOT_INODE]
 
     def tearDown(self):
-        self.pool.close()
+        self.pool.terminate()
+        self.pool.join()
         del self.pool
 
         # llfuse.close is buggy, so use fusermount instead.
@@ -519,7 +520,7 @@ class FuseUpdateFileTest(MountTestBase):
             m.new_collection(collection.api_response(), collection)
         self.assertTrue(m.writable())
 
-        # See note in FuseWriteFileTest
+        # See note in MountTestBase.setUp
         self.pool.apply(fuseUpdateFileTestHelper, (self.mounttmp,))
 
         collection2 = self.api.collections().get(uuid=collection.manifest_locator()).execute()
@@ -802,7 +803,7 @@ class FuseFileConflictTest(MountTestBase):
             with collection2.open("file1.txt", "w") as f:
                 f.write("foo")
 
-        # See comment in FuseWriteFileTest
+        # See note in MountTestBase.setUp
         self.pool.apply(fuseFileConflictTestHelper, (self.mounttmp,))
 
 
@@ -838,7 +839,7 @@ class FuseUnlinkOpenFileTest(MountTestBase):
         with llfuse.lock:
             m.new_collection(collection.api_response(), collection)
 
-        # See comment in FuseWriteFileTest
+        # See note in MountTestBase.setUp
         self.pool.apply(fuseUnlinkOpenFileTest, (self.mounttmp,))
 
         self.assertEqual(collection.manifest_text(), "")
@@ -879,7 +880,7 @@ class FuseMvFileBetweenCollectionsTest(MountTestBase):
 
         m = self.make_mount(fuse.MagicDirectory)
 
-        # See comment in FuseWriteFileTest
+        # See note in MountTestBase.setUp
         self.pool.apply(fuseMvFileBetweenCollectionsTest1, (self.mounttmp,
                                                   collection1.manifest_locator(),
                                                   collection2.manifest_locator()))
@@ -950,7 +951,7 @@ class FuseMvDirBetweenCollectionsTest(MountTestBase):
 
         m = self.make_mount(fuse.MagicDirectory)
 
-        # See comment in FuseWriteFileTest
+        # See note in MountTestBase.setUp
         self.pool.apply(fuseMvDirBetweenCollectionsTest1, (self.mounttmp,
                                                   collection1.manifest_locator(),
                                                   collection2.manifest_locator()))
