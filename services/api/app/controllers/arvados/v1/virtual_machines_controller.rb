@@ -29,6 +29,7 @@ class Arvados::V1::VirtualMachinesController < ApplicationController
             @response << {
               username: username,
               hostname: vm.hostname,
+              groups: (perm.properties["groups"].to_a rescue []),
               public_key: ak.public_key,
               user_uuid: user_uuid,
               virtual_machine_uuid: vm.uuid,
