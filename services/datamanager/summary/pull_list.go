@@ -59,6 +59,10 @@ type PullServers struct {
 
 // Creates a map from block locator to PullServers with one entry for
 // each under-replicated block.
+//
+// This method ignores zero-replica blocks since there are no servers
+// to pull them from, so callers should feel free to omit them, but
+// this function will ignore them if they are provided.
 func ComputePullServers(kc *keepclient.KeepClient,
 	keepServerInfo *keep.ReadServers,
 	blockToDesiredReplication map[blockdigest.DigestWithSize]int,
@@ -81,10 +85,9 @@ func ComputePullServers(kc *keepclient.KeepClient,
 		if numCopiesMissing > 0 {
 			// We expect this to always be true, since the block was listed
 			// in underReplicated.
-			// TODO(misha): Consider asserting the above conditional.
 
 			if numCopies > 0 {
-				// I believe that we should expect this to always be true.
+				// Not much we can do with blocks with no copies.
 
 				// A server's host-port string appears as a key in this map
 				// iff it contains the block.
