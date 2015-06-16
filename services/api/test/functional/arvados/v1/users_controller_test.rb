@@ -584,7 +584,7 @@ class Arvados::V1::UsersControllerTest < ActionController::TestCase
     assert active_user['is_active'], 'expected is_active for active user'
 
     verify_link_existence active_user['uuid'], active_user['email'],
-          false, true, false, true, true
+          false, true, true, true, true
 
     authorize_with :admin
 
