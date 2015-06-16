@@ -94,7 +94,7 @@ class Node < ArvadosModel
       end
     end
 
-    # Assign hostname
+    # Assign slot_number
     if self.slot_number.nil?
       try_slot = 0
       begin
@@ -107,6 +107,10 @@ class Node < ArvadosModel
         end
         raise "No available node slots" if try_slot == Rails.configuration.max_compute_nodes
       end while true
+    end
+
+    # Assign hostname
+    if self.hostname.nil? and Rails.configuration.assign_node_hostname
       self.hostname = self.class.hostname_for_slot(self.slot_number)
     end
 
@@ -205,21 +209,36 @@ class Node < ArvadosModel
   end
 
   def self.hostname_for_slot(slot_number)
-    "compute#{slot_number}"
+    config = Rails.configuration.assign_node_hostname
+
+    return nil if !config
+
+    begin
+      if config.include?('%')
+        sprintf(config, {:slot_number => slot_number})
+      else
+        eval('"' + config + '"')
+      end
+    rescue => e
+      logger.error "Eror generating hostname: #{e.message}"
+      return nil
+    end
   end
 
   # At startup, make sure all DNS entries exist.  Otherwise, slurmctld
   # will refuse to start.
   if Rails.configuration.dns_server_conf_dir and Rails.configuration.dns_server_conf_template
     (0..Rails.configuration.max_compute_nodes-1).each do |slot_number|
-      hostname = hostname_for_slot(slot_number)
-      hostfile = File.join Rails.configuration.dns_server_conf_dir, "#{hostname}.conf"
-      if !File.exists? hostfile
-        n = Node.where(:slot_number => slot_number).first
-        if n.nil? or n.ip_address.nil?
-          dns_server_update(hostname, '127.40.4.0')
-        else
-          dns_server_update(hostname, n.ip_address)
+      if Rails.configuration.assign_node_hostname
+        hostname = hostname_for_slot(slot_number)
+        hostfile = File.join Rails.configuration.dns_server_conf_dir, "#{hostname}.conf"
+        if !File.exists? hostfile
+          n = Node.where(:slot_number => slot_number).first
+          if n.nil? or n.ip_address.nil?
+            dns_server_update(hostname, '127.40.4.0')
+          else
+            dns_server_update(hostname, n.ip_address)
+          end
         end
       end
     end

@@ -329,3 +329,21 @@ common:
 
   # Docker image to be used when none found in runtime_constraints of a job
   default_docker_image_for_jobs: false
+
+  # Hostname to assign to a compute node when it sends a "ping" and the
+  # hostname in its Node record is nil.
+  # During bootstrapping, the "ping" script is expected to notice the
+  # hostname given in the ping response, and update its unix hostname
+  # accordingly.
+  # If false, leave the hostname alone (this is appropriate if your compute
+  # nodes' hostnames are already assigned by some other mechanism).
+  #
+  # One way or another, the hostnames of your node records should agree
+  # with your DNS records and your /etc/slurm-llnl/slurm.conf files.
+  #
+  # Example for compute0000, compute0001, ....:
+  # assign_node_hostname: compute#{slot_number.to_s.rjust(4, "0")}
+  # or
+  # assign_node_hostname: compute%<slot_number>04d
+  # (See http://ruby-doc.org/core-2.2.2/Kernel.html#method-i-format for more.)
+  assign_node_hostname: compute#{slot_number}

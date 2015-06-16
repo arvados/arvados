@@ -75,4 +75,66 @@ class NodeTest < ActiveSupport::TestCase
     Rails.configuration.dns_server_reload_command = 'ignored!'
     assert Node.dns_server_update 'compute65535', '127.0.0.127'
   end
+
+  test "ping new node with no hostname and default config" do
+    node = ping_node(:new_with_no_hostname, {})
+    slot_number = node.slot_number
+    refute_nil slot_number
+    assert_equal("compute#{slot_number}", node.hostname)
+  end
+
+  test "ping new node with no hostname and no config" do
+    Rails.configuration.assign_node_hostname = false
+    node = ping_node(:new_with_no_hostname, {})
+    refute_nil node.slot_number
+    assert_nil node.hostname
+  end
+
+  [
+    'compute#{slot_number.to_s.rjust(4, "0")}',
+    'compute%<slot_number>04d',
+  ].each do |config|
+    test "ping new node with zero padding config #{config}" do
+      Rails.configuration.assign_node_hostname = config
+      node = ping_node(:new_with_no_hostname, {})
+      slot_number = node.slot_number
+      refute_nil slot_number
+      assert_equal("compute000#{slot_number}", node.hostname)
+    end
+  end
+
+  test "ping node with hostname and config and expect hostname unchanged" do
+    node = ping_node(:new_with_custom_hostname, {})
+    assert_equal(23, node.slot_number)
+    assert_equal("custom1", node.hostname)
+  end
+
+  test "ping node with hostname and no config and expect hostname unchanged" do
+    Rails.configuration.assign_node_hostname = false
+    node = ping_node(:new_with_custom_hostname, {})
+    assert_equal(23, node.slot_number)
+    assert_equal("custom1", node.hostname)
+  end
+
+  # Ping two nodes: one with no hostname and the other with a hostname.
+  # Verify that the first one gets a hostname and second one is unchanged.
+  test "ping two nodes one with no hostname and one with hostname and check hostnames" do
+    # ping node with no hostname and expect it set with config format
+    node = ping_node(:new_with_no_hostname, {})
+    slot_number = node.slot_number
+    refute_nil node.slot_number
+    assert_equal "compute#{slot_number}", node.hostname
+
+    # ping node with a hostname and expect it to be unchanged
+    node2 = ping_node(:new_with_custom_hostname, {})
+    refute_nil node2.slot_number
+    assert_equal "custom1", node2.hostname
+  end
+
+  test "ping node with no hostname and malformed config and expect nil for hostname" do
+    Rails.configuration.assign_node_hostname = 'compute%<slot_number>04'  # should end with "04d"
+    node = ping_node(:new_with_no_hostname, {})
+    refute_nil node.slot_number
+    assert_equal(nil, node.hostname)
+  end
 end
