@@ -20,7 +20,6 @@ import (
 	"os"
 	"regexp"
 	"strconv"
-	"strings"
 	"syscall"
 	"time"
 )
@@ -66,51 +65,15 @@ func BadRequestHandler(w http.ResponseWriter, r *http.Request) {
 }
 
 func GetBlockHandler(resp http.ResponseWriter, req *http.Request) {
-	hash := mux.Vars(req)["hash"]
-
-	hints := mux.Vars(req)["hints"]
-
-	// Parse the locator string and hints from the request.
-	// TODO(twp): implement a Locator type.
-	var signature, timestamp string
-	if hints != "" {
-		signature_pat, _ := regexp.Compile("^A([[:xdigit:]]+)@([[:xdigit:]]{8})$")
-		for _, hint := range strings.Split(hints, "+") {
-			if match, _ := regexp.MatchString("^[[:digit:]]+$", hint); match {
-				// Server ignores size hints
-			} else if m := signature_pat.FindStringSubmatch(hint); m != nil {
-				signature = m[1]
-				timestamp = m[2]
-			} else if match, _ := regexp.MatchString("^[[:upper:]]", hint); match {
-				// Any unknown hint that starts with an uppercase letter is
-				// presumed to be valid and ignored, to permit forward compatibility.
-			} else {
-				// Unknown format; not a valid locator.
-				http.Error(resp, BadRequestError.Error(), BadRequestError.HTTPCode)
-				return
-			}
-		}
-	}
-
-	// If permission checking is in effect, verify this
-	// request's permission signature.
 	if enforce_permissions {
-		if signature == "" || timestamp == "" {
-			http.Error(resp, PermissionError.Error(), PermissionError.HTTPCode)
+		locator := req.URL.Path[1:] // strip leading slash
+		if err := VerifySignature(locator, GetApiToken(req)); err != nil {
+			http.Error(resp, err.Error(), err.(*KeepError).HTTPCode)
 			return
-		} else if IsExpired(timestamp) {
-			http.Error(resp, ExpiredError.Error(), ExpiredError.HTTPCode)
-			return
-		} else {
-			req_locator := req.URL.Path[1:] // strip leading slash
-			if !VerifySignature(req_locator, GetApiToken(req)) {
-				http.Error(resp, PermissionError.Error(), PermissionError.HTTPCode)
-				return
-			}
 		}
 	}
 
-	block, err := GetBlock(hash, false)
+	block, err := GetBlock(mux.Vars(req)["hash"], false)
 	if err != nil {
 		// This type assertion is safe because the only errors
 		// GetBlock can return are DiskHashError or NotFoundError.
@@ -630,28 +593,25 @@ func PutBlock(block []byte, hash string) error {
 	}
 }
 
+var validLocatorRe = regexp.MustCompile(`^[0-9a-f]{32}$`)
+
 // IsValidLocator
 //     Return true if the specified string is a valid Keep locator.
 //     When Keep is extended to support hash types other than MD5,
 //     this should be updated to cover those as well.
 //
 func IsValidLocator(loc string) bool {
-	match, err := regexp.MatchString(`^[0-9a-f]{32}$`, loc)
-	if err == nil {
-		return match
-	}
-	log.Printf("IsValidLocator: %s\n", err)
-	return false
+	return validLocatorRe.MatchString(loc)
 }
+
+var authRe = regexp.MustCompile(`^OAuth2\s+(.*)`)
 
 // GetApiToken returns the OAuth2 token from the Authorization
 // header of a HTTP request, or an empty string if no matching
 // token is found.
 func GetApiToken(req *http.Request) string {
 	if auth, ok := req.Header["Authorization"]; ok {
-		if pat, err := regexp.Compile(`^OAuth2\s+(.*)`); err != nil {
-			log.Println(err)
-		} else if match := pat.FindStringSubmatch(auth[0]); match != nil {
+		if match := authRe.FindStringSubmatch(auth[0]); match != nil {
 			return match[1]
 		}
 	}
