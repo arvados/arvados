@@ -3,6 +3,7 @@ package main
 import (
 	"fmt"
 	"io"
+	"mime"
 	"net/http"
 	"os"
 	"strings"
@@ -146,6 +147,17 @@ func (h *handler) ServeHTTP(wOrig http.ResponseWriter, r *http.Request) {
 		statusCode, statusText = http.StatusBadGateway, err.Error()
 		return
 	}
+
+	// One or both of these can be -1 if not found:
+	basenamePos := strings.LastIndex(filename, "/")
+	extPos := strings.LastIndex(filename, ".")
+	if extPos > basenamePos {
+		// Now extPos is safely >= 0.
+		if t := mime.TypeByExtension(filename[extPos:]); t != "" {
+			w.Header().Set("Content-Type", t)
+		}
+	}
+
 	_, err = io.Copy(w, rdr)
 	if err != nil {
 		statusCode, statusText = http.StatusBadGateway, err.Error()

@@ -109,6 +109,12 @@ func (s *IntegrationSuite) Test200(c *check.C) {
 			continue
 		}
 		c.Check(hdr, check.Matches, `(?s)HTTP/1.1 200 OK\r\n.*`)
+		if strings.HasSuffix(spec[1], ".txt") {
+			c.Check(hdr, check.Matches, `(?s).*\r\nContent-Type: text/plain.*`)
+			// TODO: Check some types that aren't
+			// automatically detected by Go's http server
+			// by sniffing the content.
+		}
 		c.Check(fmt.Sprintf("%x", md5.Sum([]byte(body))), check.Equals, spec[2])
 	}
 }
