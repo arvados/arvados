@@ -377,7 +377,7 @@ func TestIndexHandler(t *testing.T) {
 		response)
 
 	expected := `^` + TEST_HASH + `\+\d+ \d+\n` +
-		TEST_HASH_2 + `\+\d+ \d+\n$`
+		TEST_HASH_2 + `\+\d+ \d+\n\n$`
 	match, _ := regexp.MatchString(expected, response.Body.String())
 	if !match {
 		t.Errorf(
@@ -393,7 +393,7 @@ func TestIndexHandler(t *testing.T) {
 		http.StatusOK,
 		response)
 
-	expected = `^` + TEST_HASH + `\+\d+ \d+\n$`
+	expected = `^` + TEST_HASH + `\+\d+ \d+\n\n$`
 	match, _ = regexp.MatchString(expected, response.Body.String())
 	if !match {
 		t.Errorf(

@@ -161,6 +161,9 @@ func IndexHandler(resp http.ResponseWriter, req *http.Request) {
 			return
 		}
 	}
+	// An empty line at EOF is the only way the client can be
+	// assured the entire index was received.
+	resp.Write([]byte{'\n'})
 }
 
 // StatusHandler
