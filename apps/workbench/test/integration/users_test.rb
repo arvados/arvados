@@ -206,39 +206,36 @@ class UsersTest < ActionDispatch::IntegrationTest
   end
 
   [
-    ['admin', false],
-    ['active', true],
-  ].each do |username, expect_show_button|
-    test "login as #{username} and access show button #{expect_show_button}" do
+    'admin',
+    'active',
+  ].each do |username|
+    test "login as #{username} and access show button" do
       need_javascript
 
       user = api_fixture('users', username)
 
       visit page_with_token(username, '/users')
 
-      if expect_show_button
-        within('tr', text: user['uuid']) do
-          assert_text user['email']
-          assert_selector 'a', text: 'Show'
-          find('a', text: 'Show').click
-        end
-        assert_selector 'a', 'Data collections'
-      else
-        # no 'Show' button in the admin user's own row
-        within('tr', text: user['uuid']) do
-          assert_text user['email']
-          assert_no_selector 'a', text: 'Show'
-        end
-
-        # but the admin user can access 'Show' button for other users
-        active_user = api_fixture('users', 'active')
-        within('tr', text: active_user['uuid']) do
-          assert_text active_user['email']
-          assert_selector 'a', text: 'Show'
-          find('a', text: 'Show').click
-          assert_selector 'a', 'Attributes'
-        end
+      within('tr', text: user['uuid']) do
+        assert_text user['email']
+        assert_selector 'a', text: 'Show'
+        find('a', text: 'Show').click
       end
+      assert_selector 'a', text:'Attributes'
     end
+  end
+
+  test "admin user can access another user page" do
+    need_javascript
+
+    visit page_with_token('admin', '/users')
+
+    active_user = api_fixture('users', 'active')
+    within('tr', text: active_user['uuid']) do
+      assert_text active_user['email']
+      assert_selector 'a', text: 'Show'
+      find('a', text: 'Show').click
+    end
+    assert_selector 'a', text:'Attributes'
   end
 end

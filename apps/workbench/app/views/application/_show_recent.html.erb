@@ -40,9 +40,7 @@
         </td>
       <% end %>
       <td>
-        <% if (current_user.is_admin and current_user.uuid != object.uuid) or !current_user.is_admin %>
-          <%= render :partial => "show_object_button", :locals => {object: object, size: 'xs'} %>
-        <% end %>
+        <%= render :partial => "show_object_button", :locals => {object: object, size: 'xs'} %>
       </td>
 
       <% object.attributes_for_display.each do |attr, attrvalue| %>

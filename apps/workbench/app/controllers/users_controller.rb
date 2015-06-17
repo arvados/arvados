@@ -9,7 +9,11 @@ class UsersController < ApplicationController
     if params[:uuid] == current_user.uuid
       respond_to do |f|
         f.html do
-          redirect_to(params[:return_to] || project_path(params[:uuid]))
+          if request.url.include?("/users/#{current_user.uuid}")
+            super
+          else
+            redirect_to(params[:return_to] || project_path(params[:uuid]))
+          end
         end
       end
     else
