@@ -213,32 +213,21 @@ class Node < ArvadosModel
 
     return nil if !config
 
-    begin
-      if config.include?('%')
-        sprintf(config, {:slot_number => slot_number})
-      else
-        eval('"' + config + '"')
-      end
-    rescue => e
-      logger.error "Eror generating hostname: #{e.message}"
-      return nil
-    end
+    sprintf(config, {:slot_number => slot_number})
   end
 
   # At startup, make sure all DNS entries exist.  Otherwise, slurmctld
   # will refuse to start.
-  if Rails.configuration.dns_server_conf_dir and Rails.configuration.dns_server_conf_template
+  if Rails.configuration.dns_server_conf_dir and Rails.configuration.dns_server_conf_template and Rails.configuration.assign_node_hostname
     (0..Rails.configuration.max_compute_nodes-1).each do |slot_number|
-      if Rails.configuration.assign_node_hostname
-        hostname = hostname_for_slot(slot_number)
-        hostfile = File.join Rails.configuration.dns_server_conf_dir, "#{hostname}.conf"
-        if !File.exists? hostfile
-          n = Node.where(:slot_number => slot_number).first
-          if n.nil? or n.ip_address.nil?
-            dns_server_update(hostname, '127.40.4.0')
-          else
-            dns_server_update(hostname, n.ip_address)
-          end
+      hostname = hostname_for_slot(slot_number)
+      hostfile = File.join Rails.configuration.dns_server_conf_dir, "#{hostname}.conf"
+      if !File.exists? hostfile
+        n = Node.where(:slot_number => slot_number).first
+        if n.nil? or n.ip_address.nil?
+          dns_server_update(hostname, '127.40.4.0')
+        else
+          dns_server_update(hostname, n.ip_address)
         end
       end
     end

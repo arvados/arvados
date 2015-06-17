@@ -342,8 +342,6 @@ common:
   # with your DNS records and your /etc/slurm-llnl/slurm.conf files.
   #
   # Example for compute0000, compute0001, ....:
-  # assign_node_hostname: compute#{slot_number.to_s.rjust(4, "0")}
-  # or
   # assign_node_hostname: compute%<slot_number>04d
   # (See http://ruby-doc.org/core-2.2.2/Kernel.html#method-i-format for more.)
-  assign_node_hostname: compute#{slot_number}
+  assign_node_hostname: compute%<slot_number>d

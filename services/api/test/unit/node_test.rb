@@ -90,17 +90,12 @@ class NodeTest < ActiveSupport::TestCase
     assert_nil node.hostname
   end
 
-  [
-    'compute#{slot_number.to_s.rjust(4, "0")}',
-    'compute%<slot_number>04d',
-  ].each do |config|
-    test "ping new node with zero padding config #{config}" do
-      Rails.configuration.assign_node_hostname = config
-      node = ping_node(:new_with_no_hostname, {})
-      slot_number = node.slot_number
-      refute_nil slot_number
-      assert_equal("compute000#{slot_number}", node.hostname)
-    end
+  test "ping new node with zero padding config" do
+    Rails.configuration.assign_node_hostname = 'compute%<slot_number>04d'
+    node = ping_node(:new_with_no_hostname, {})
+    slot_number = node.slot_number
+    refute_nil slot_number
+    assert_equal("compute000#{slot_number}", node.hostname)
   end
 
   test "ping node with hostname and config and expect hostname unchanged" do
@@ -116,7 +111,7 @@ class NodeTest < ActiveSupport::TestCase
     assert_equal("custom1", node.hostname)
   end
 
-  # Ping two nodes: one with no hostname and the other with a hostname.
+  # Ping two nodes: one without a hostname and the other with a hostname.
   # Verify that the first one gets a hostname and second one is unchanged.
   test "ping two nodes one with no hostname and one with hostname and check hostnames" do
     # ping node with no hostname and expect it set with config format
@@ -133,8 +128,8 @@ class NodeTest < ActiveSupport::TestCase
 
   test "ping node with no hostname and malformed config and expect nil for hostname" do
     Rails.configuration.assign_node_hostname = 'compute%<slot_number>04'  # should end with "04d"
-    node = ping_node(:new_with_no_hostname, {})
-    refute_nil node.slot_number
-    assert_equal(nil, node.hostname)
+    assert_raise ArgumentError do
+      ping_node(:new_with_no_hostname, {})
+    end
   end
 end
