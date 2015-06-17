@@ -1053,6 +1053,7 @@ if (!defined $main::success)
   if (!@jobstep_todo) {
     $main::success = 1;
   } elsif ($working_slot_count < 1) {
+    save_output_collection();
     save_meta();
     exit(EX_RETRY_UNLOCKED);
   } elsif ($thisround_succeeded == 0 &&
@@ -1068,16 +1069,7 @@ goto ONELEVEL if !defined $main::success;
 
 release_allocation();
 freeze();
-my $collated_output = &create_output_collection();
-
-if (!$collated_output) {
-  Log (undef, "Failed to write output collection");
-}
-else {
-  Log(undef, "job output $collated_output");
-  $Job->update_attributes('output' => $collated_output);
-}
-
+my $collated_output = save_output_collection();
 Log (undef, "finish");
 
 save_meta();
@@ -1512,6 +1504,20 @@ print (arvados.api("v1").collections().
   return $joboutput;
 }
 
+# Calls create_output_collection, logs the result, and returns it.
+# If that was successful, save that as the output in the job record.
+sub save_output_collection {
+  my $collated_output = create_output_collection();
+
+  if (!$collated_output) {
+    Log(undef, "Failed to write output collection");
+  }
+  else {
+    Log(undef, "job output $collated_output");
+    $Job->update_attributes('output' => $collated_output);
+  }
+  return $collated_output;
+}
 
 sub killem
 {
@@ -1719,9 +1725,8 @@ sub save_meta
       owner_uuid => $Job->{owner_uuid},
       name => sprintf("Log from %s job %s", $Job->{script}, $Job->{uuid}),
     });
-  Log(undef, "log manifest is " . $log_coll->{portable_data_hash});
-  $Job->{'log'} = $log_coll->{portable_data_hash};
-  $Job->update_attributes('log', $log_coll->{portable_data_hash});
+  Log(undef, "log collection is " . $log_coll->{portable_data_hash});
+  $Job->update_attributes('log' => $log_coll->{portable_data_hash});
 }
 
 
