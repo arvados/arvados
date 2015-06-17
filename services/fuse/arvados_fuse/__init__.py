@@ -67,6 +67,14 @@ import ciso8601
 import collections
 import functools
 
+import Queue
+
+# Default _notify_queue has a limit of 1000 items, but it really needs to be
+# unlimited to avoid deadlocks, see https://arvados.org/issues/3198#note-43 for
+# details.
+
+llfuse.capi._notify_queue = Queue.Queue()
+
 from fusedir import sanitize_filename, Directory, CollectionDirectory, MagicDirectory, TagsDirectory, ProjectDirectory, SharedDirectory, CollectionDirectoryBase
 from fusefile import StringFile, FuseArvadosFile
 
@@ -188,6 +196,7 @@ class Inodes(object):
         self._counter = itertools.count(llfuse.ROOT_INODE)
         self.inode_cache = inode_cache
         self.encoding = encoding
+        self.deferred_invalidations = []
 
     def __getitem__(self, item):
         return self._entries[item]
@@ -220,14 +229,39 @@ class Inodes(object):
         if entry.ref_count == 0:
             _logger.debug("Deleting inode %i", entry.inode)
             self.inode_cache.unmanage(entry)
-            llfuse.invalidate_inode(entry.inode)
-            entry.finalize()
+            _logger.debug("(1) unmanaged inode %i", entry.inode)
+
             del self._entries[entry.inode]
+            _logger.debug("(2) deleted inode %i", entry.inode)
+
+            with llfuse.lock_released:
+                entry.finalize()
+                _logger.debug("(3) finalized inode %i", entry.inode)
+
+            self.invalidate_inode(entry.inode)
+            _logger.debug("(4) invalidated inode %i", entry.inode)
+
             entry.inode = None
         else:
             entry.dead = True
             _logger.debug("del_entry on inode %i with refcount %i", entry.inode, entry.ref_count)
 
+    def invalidate_inode(self, inode):
+        self.deferred_invalidations.append((inode,))
+
+    def invalidate_entry(self, inode, name):
+        self.deferred_invalidations.append((inode, name))
+
+    def do_invalidations(self):
+        di = self.deferred_invalidations
+        self.deferred_invalidations = []
+
+        with llfuse.lock_released:
+            for d in di:
+                if len(d) == 1:
+                    llfuse.invalidate_inode(d[0])
+                elif len(d) == 2:
+                    llfuse.invalidate_entry(d[0], d[1])
 
 def catch_exceptions(orig_func):
     """Catch uncaught exceptions and log them consistently."""
@@ -246,6 +280,13 @@ def catch_exceptions(orig_func):
 
     return catch_exceptions_wrapper
 
+def deferred_invalidate(orig_func):
+    @functools.wraps(orig_func)
+    def deferred_invalidate_wrapper(self, *args, **kwargs):
+        n = orig_func(self, *args, **kwargs)
+        self.inodes.do_invalidations()
+        return n
+    return deferred_invalidate_wrapper
 
 class Operations(llfuse.Operations):
     """This is the main interface with llfuse.
@@ -313,7 +354,12 @@ class Operations(llfuse.Operations):
                     item.invalidate()
                     if ev["object_kind"] == "arvados#collection":
                         new_attr = ev.get("properties") and ev["properties"].get("new_attributes") and ev["properties"]["new_attributes"]
-                        record_version = (new_attr["modified_at"], new_attr["portable_data_hash"]) if new_attr else None
+
+                        # new_attributes.modified_at currently lacks subsecond precision (see #6347) so use event_at which
+                        # should always be the same.
+                        #record_version = (new_attr["modified_at"], new_attr["portable_data_hash"]) if new_attr else None
+                        record_version = (ev["event_at"], new_attr["portable_data_hash"]) if new_attr else None
+
                         item.update(to_record_version=record_version)
                     else:
                         item.update()
@@ -328,6 +374,8 @@ class Operations(llfuse.Operations):
                 if itemparent is not None:
                     itemparent.invalidate()
                     itemparent.update()
+
+                self.inodes.do_invalidations()
 
     @catch_exceptions
     def getattr(self, inode):
@@ -359,6 +407,8 @@ class Operations(llfuse.Operations):
         entry.st_rdev = 0
 
         entry.st_size = e.size()
+
+        _logger.debug("getattr got size")
 
         entry.st_blksize = 512
         entry.st_blocks = (entry.st_size/512)+1
@@ -407,6 +457,7 @@ class Operations(llfuse.Operations):
             raise llfuse.FUSEError(errno.ENOENT)
 
     @catch_exceptions
+    @deferred_invalidate
     def forget(self, inodes):
         for inode, nlookup in inodes:
             ent = self.inodes[inode]
@@ -464,6 +515,7 @@ class Operations(llfuse.Operations):
         return handle.obj.writeto(off, buf, self.num_retries)
 
     @catch_exceptions
+    @deferred_invalidate
     def release(self, fh):
         if fh in self._filehandles:
             try:
@@ -480,6 +532,7 @@ class Operations(llfuse.Operations):
         self.release(fh)
 
     @catch_exceptions
+    @deferred_invalidate
     def opendir(self, inode):
         _logger.debug("arv-mount opendir: inode %i", inode)
 
@@ -554,7 +607,10 @@ class Operations(llfuse.Operations):
         return p
 
     @catch_exceptions
+    @deferred_invalidate
     def create(self, inode_parent, name, mode, flags, ctx):
+        _logger.debug("arv-mount create: %i '%s' %o", inode_parent, name, mode)
+
         p = self._check_writable(inode_parent)
         p.create(name)
 
@@ -568,6 +624,7 @@ class Operations(llfuse.Operations):
         return (fh, self.getattr(f.inode))
 
     @catch_exceptions
+    @deferred_invalidate
     def mkdir(self, inode_parent, name, mode, ctx):
         _logger.debug("arv-mount mkdir: %i '%s' %o", inode_parent, name, mode)
 
@@ -581,18 +638,21 @@ class Operations(llfuse.Operations):
         return self.getattr(d.inode)
 
     @catch_exceptions
+    @deferred_invalidate
     def unlink(self, inode_parent, name):
         _logger.debug("arv-mount unlink: %i '%s'", inode_parent, name)
         p = self._check_writable(inode_parent)
         p.unlink(name)
 
     @catch_exceptions
+    @deferred_invalidate
     def rmdir(self, inode_parent, name):
         _logger.debug("arv-mount rmdir: %i '%s'", inode_parent, name)
         p = self._check_writable(inode_parent)
         p.rmdir(name)
 
     @catch_exceptions
+    @deferred_invalidate
     def rename(self, inode_parent_old, name_old, inode_parent_new, name_new):
         _logger.debug("arv-mount rename: %i '%s' %i '%s'", inode_parent_old, name_old, inode_parent_new, name_new)
         src = self._check_writable(inode_parent_old)
@@ -600,6 +660,7 @@ class Operations(llfuse.Operations):
         dest.rename(name_old, name_new, src)
 
     @catch_exceptions
+    @deferred_invalidate
     def flush(self, fh):
         if fh in self._filehandles:
             self._filehandles[fh].flush()

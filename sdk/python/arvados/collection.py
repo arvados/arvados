@@ -1215,6 +1215,7 @@ class Collection(RichCollectionBase):
                 # We've merged this record this before.  Don't do anything.
                 return
             else:
+                _logger.debug("Remembering %s %s", response.get("modified_at"), response.get("portable_data_hash"))
                 self._past_versions.add((response.get("modified_at"), response.get("portable_data_hash")))
             other = CollectionReader(response["manifest_text"])
         baseline = CollectionReader(self._manifest_text)
@@ -1245,6 +1246,7 @@ class Collection(RichCollectionBase):
 
     def _remember_api_response(self, response):
         self._api_response = response
+        _logger.debug("Remembering %s %s", response.get("modified_at"), response.get("portable_data_hash"))
         self._past_versions.add((response.get("modified_at"), response.get("portable_data_hash")))
 
     def _populate_from_api_server(self):
