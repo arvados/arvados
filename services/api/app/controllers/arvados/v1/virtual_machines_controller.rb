@@ -24,10 +24,9 @@ class Arvados::V1::VirtualMachinesController < ApplicationController
       vm.login_permissions.each do |perm|
         user_uuid = perm.tail_uuid
         @users[user_uuid].andand.authorized_keys.andand.each do |ak|
-          username = perm.properties.andand['username']
-          if username
+          unless perm.properties['username'].blank?
             @response << {
-              username: username,
+              username: perm.properties['username'],
               hostname: vm.hostname,
               groups: (perm.properties["groups"].to_a rescue []),
               public_key: ak.public_key,
