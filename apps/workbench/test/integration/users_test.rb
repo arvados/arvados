@@ -218,10 +218,15 @@ class UsersTest < ActionDispatch::IntegrationTest
 
       within('tr', text: user['uuid']) do
         assert_text user['email']
+        if username == 'admin'
+          assert_selector 'a', text: 'Home'
+        else
+          assert_no_selector 'a', text: 'Home'
+        end
         assert_selector 'a', text: 'Show'
         find('a', text: 'Show').click
       end
-      assert_selector 'a', text:'Attributes'
+      assert_selector 'a', text: 'Attributes'
     end
   end
 
@@ -233,6 +238,7 @@ class UsersTest < ActionDispatch::IntegrationTest
     active_user = api_fixture('users', 'active')
     within('tr', text: active_user['uuid']) do
       assert_text active_user['email']
+      assert_selector "a[href=\"/projects/#{active_user['uuid']}\"]", text: 'Home'
       assert_selector 'a', text: 'Show'
       find('a', text: 'Show').click
     end
