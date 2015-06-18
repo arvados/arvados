@@ -402,13 +402,37 @@ class CollectionsControllerTest < ActionController::TestCase
     assert_not_nil assigns(:object)
     # Ensure the Workbench response still has the original manifest_text
     assert_equal 'test description update', assigns(:object).description
-    assert_equal collection['manifest_text'], assigns(:object).manifest_text
+    assert_equal true, strip_signatures_and_compare(collection['manifest_text'], assigns(:object).manifest_text)
     # Ensure the API server still has the original manifest_text after
     # we called arvados.v1.collections.update
     use_token :active do
-      assert_equal(Collection.find(collection['uuid']).manifest_text,
-                   collection['manifest_text'])
+      assert_equal true, strip_signatures_and_compare(Collection.find(collection['uuid']).manifest_text,
+                                                      collection['manifest_text'])
     end
+  end
+
+  # Since we got the initial collection from fixture, there are no signatures in manifest_text.
+  # However, after update or find, the collection retrieved will have singed manifest_text.
+  # Hence, let's compare each line after excluding signatures.
+  def strip_signatures_and_compare m1, m2
+    m1_lines = m1.split "\n"
+    m2_lines = m2.split "\n"
+
+    return false if m1_lines.size != m2_lines.size
+
+    m1_lines.each_with_index do |line, i|
+      m1_words = []
+      line.split.each do |word|
+        m1_words << word.split('+A')[0]
+      end
+      m2_words = []
+      m2_lines[i].split.each do |word|
+        m2_words << word.split('+A')[0]
+      end
+      return false if !m1_words.join(' ').eql?(m2_words.join(' '))
+    end
+
+    return true
   end
 
   test "view collection and verify none of the file types listed are disabled" do
