@@ -46,9 +46,7 @@ class FuseArvadosFile(File):
         self.arvfile = arvfile
 
     def size(self):
-        _logger.debug("started calling self.arvfile.size()")
         with llfuse.lock_released:
-            _logger.debug("locked_released and calling self.arvfile.size()")
             return self.arvfile.size()
 
     def readfrom(self, off, size, num_retries=0):

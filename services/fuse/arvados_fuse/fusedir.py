@@ -238,30 +238,18 @@ class CollectionDirectoryBase(Directory):
             name = sanitize_filename(name)
             _logger.debug("collection notify %s %s %s %s", event, collection, name, item)
             with llfuse.lock:
-                _logger.debug("on_event got llfuse.lock %s %s %s", event, collection, name)
                 if event == arvados.collection.ADD:
                     self.new_entry(name, item, self.mtime())
                 elif event == arvados.collection.DEL:
-                    _logger.debug("on_event (1) %s %s %s", event, collection, name)
                     ent = self._entries[name]
-                    _logger.debug("on_event (2) %s %s %s", event, collection, name)
                     del self._entries[name]
-
-                    _logger.debug("on_event (3) %s %s %s", event, collection, name)
-
                     self.inodes.invalidate_entry(self.inode, name.encode(self.inodes.encoding))
-
-                    _logger.debug("on_event (4) %s %s %s", event, collection, name)
-
                     self.inodes.del_entry(ent)
-
-                    _logger.debug("on_event (5) %s %s %s", event, collection, name)
                 elif event == arvados.collection.MOD:
                     if hasattr(item, "fuse_entry") and item.fuse_entry is not None:
                         self.inodes.invalidate_inode(item.fuse_entry.inode)
                     elif name in self._entries:
                         self.inodes.invalidate_inode(self._entries[name].inode)
-                _logger.debug("on_event completed %s %s %s", event, collection, name)
 
     def populate(self, mtime):
         self._mtime = mtime
