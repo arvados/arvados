@@ -125,11 +125,4 @@ class NodeTest < ActiveSupport::TestCase
     refute_nil node2.slot_number
     assert_equal "custom1", node2.hostname
   end
-
-  test "ping node with no hostname and malformed config and expect nil for hostname" do
-    Rails.configuration.assign_node_hostname = 'compute%<slot_number>04'  # should end with "04d"
-    assert_raise ArgumentError do
-      ping_node(:new_with_no_hostname, {})
-    end
-  end
 end
