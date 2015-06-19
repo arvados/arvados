@@ -691,12 +691,11 @@ class Dispatcher
         end
       end
     else
-      # Don't fail the job if crunch-job didn't even get as far as
-      # starting it. If the job failed to run due to an infrastructure
+      # If the job failed to run due to an infrastructure
       # issue with crunch-job or slurm, we want the job to stay in the
       # queue. If crunch-job exited after losing a race to another
       # crunch-job process, it exits 75 and we should leave the job
-      # record alone so the winner of the race do its thing.
+      # record alone so the winner of the race can do its thing.
       # If crunch-job exited after all of its allocated nodes failed,
       # it exits 93, and we want to retry it later (see the
       # EXIT_RETRY_UNLOCKED `if` block).
@@ -766,6 +765,14 @@ class Dispatcher
       reap_children
       select(@running.values.collect { |j| [j[:stdout], j[:stderr]] }.flatten,
              [], [], 1)
+    end
+    # If there are jobs we wanted to retry, we have to mark them as failed now.
+    # Other dispatchers can't pick them up because we hold their lock.
+    @todo_job_retries.each_key do |job_uuid|
+      job = Job.find_by_uuid(job_uuid)
+      if job.state == "Running"
+        fail_job(job, "crunch-dispatch was stopped during job's tempfail retry loop")
+      end
     end
   end
 
