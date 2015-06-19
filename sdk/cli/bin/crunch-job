@@ -293,9 +293,16 @@ foreach (@sinfo)
   {
     Log (undef, "node $nodename - $ncpus slots");
     my $node = { name => $nodename,
-		 ncpus => $ncpus,
-		 losing_streak => 0,
-		 hold_until => 0 };
+                 ncpus => $ncpus,
+                 # The number of consecutive times a task has been dispatched
+                 # to this node and failed.
+                 losing_streak => 0,
+                 # The number of consecutive times that SLURM has reported
+                 # a node failure since the last successful task.
+                 fail_count => 0,
+                 # Don't dispatch work to this node until this time
+                 # (in seconds since the epoch) has passed.
+                 hold_until => 0 };
     foreach my $cpu (1..$ncpus)
     {
       push @slot, { node => $node,
@@ -952,6 +959,7 @@ for (my $todo_ptr = 0; $todo_ptr <= $#jobstep_todo; $todo_ptr ++)
   $Jobstep->{slotindex} = $childslot;
   delete $Jobstep->{stderr};
   delete $Jobstep->{finishtime};
+  delete $Jobstep->{tempfail};
 
   $Jobstep->{'arvados_task'}->{started_at} = strftime "%Y-%m-%dT%H:%M:%SZ", gmtime($Jobstep->{starttime});
   $Jobstep->{'arvados_task'}->save;
@@ -988,7 +996,7 @@ for (my $todo_ptr = 0; $todo_ptr <= $#jobstep_todo; $todo_ptr ++)
     {
       update_progress_stats();
     }
-    $working_slot_count = scalar(grep { $_->{node}->{losing_streak} == 0 &&
+    $working_slot_count = scalar(grep { $_->{node}->{fail_count} == 0 &&
                                         $_->{node}->{hold_count} < 4 } @slot);
     if (($thisround_failed_multiple >= 8 && $thisround_succeeded == 0) ||
 	($thisround_failed_multiple >= 16 && $thisround_failed_multiple > $thisround_succeeded))
@@ -1134,7 +1142,7 @@ sub reapchildren
   if (!$task_success)
   {
     my $temporary_fail;
-    $temporary_fail ||= $Jobstep->{node_fail};
+    $temporary_fail ||= $Jobstep->{tempfail};
     $temporary_fail ||= ($exitvalue == TASK_TEMPFAIL);
 
     ++$thisround_failed;
@@ -1172,6 +1180,7 @@ sub reapchildren
     ++$thisround_succeeded;
     $slot[$proc{$pid}->{slot}]->{node}->{losing_streak} = 0;
     $slot[$proc{$pid}->{slot}]->{node}->{hold_until} = 0;
+    $slot[$proc{$pid}->{slot}]->{node}->{fail_count} = 0;
     push @jobstep_done, $jobstepid;
     Log ($jobstepid, "success in $elapsed seconds");
   }
@@ -1382,8 +1391,17 @@ sub preprocess_stderr
       # whoa.
       $main::please_freeze = 1;
     }
-    elsif ($line =~ /(srun: error: (Node failure on|Unable to create job step|.*: Communication connection failure))|arvados.errors.Keep/) {
-      $jobstep[$job]->{node_fail} = 1;
+    elsif ($line =~ /arvados\.errors\.Keep/) {
+      $jobstep[$job]->{tempfail} = 1;
+    }
+    elsif ($line =~ /srun: error: Node failure on/) {
+      my $job_slot_index = $jobstep[$job]->{slotindex};
+      $slot[$job_slot_index]->{node}->{fail_count}++;
+      $jobstep[$job]->{tempfail} = 1;
+      ban_node_by_slot($job_slot_index);
+    }
+    elsif ($line =~ /srun: error: (Unable to create job step|.*: Communication connection failure)/) {
+      $jobstep[$job]->{tempfail} = 1;
       ban_node_by_slot($jobstep[$job]->{slotindex});
     }
   }
