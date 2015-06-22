@@ -1,8 +1,12 @@
-# Use the PerformanceProfiler class to write your performance tests.
+# Use the "profiled" decorator on a test to get profiling data.
 #
 # Usage:
-#   from performance_profiler import PerformanceProfiler
-#   self.run_profiler(...
+#   from performance_profiler import profiled
+#
+#   # See report in tmp/profile/foobar
+#   @profiled
+#   def foobar():
+#       baz = 1
 #
 #   See "test_a_sample.py" for a working example.
 #
@@ -14,22 +18,35 @@
 #         ./run-tests.sh WORKSPACE=~/arvados --only sdk/python sdk/python_test="--test-suite=tests.performance"
 #
 
+import functools
 import os
-import unittest
+import pstats
 import sys
-from datetime import datetime
+import unittest
 try:
     import cProfile as profile
 except ImportError:
     import profile
 
-class PerformanceProfiler(unittest.TestCase):
-    def run_profiler(self, function, test_name):
-        filename = os.getcwd()+'/tmp/performance/'+ datetime.now().strftime('%Y-%m-%d-%H-%M-%S') +'-' +test_name
+output_dir = os.path.abspath(os.path.join('tmp', 'profile'))
+if not os.path.exists(output_dir):
+    os.makedirs(output_dir)
 
-        directory = os.path.dirname(filename)
-        if not os.path.exists(directory):
-            os.makedirs(directory)
-
-        sys.stdout = open(filename, 'w')
-        profile.runctx(function, globals(), locals())
+def profiled(function):
+    @functools.wraps(function)
+    def profiled_function(*args, **kwargs):
+        outfile = open(os.path.join(output_dir, function.__name__), "w")
+        caught = None
+        pr = profile.Profile()
+        pr.enable()
+        try:
+            ret = function(*args, **kwargs)
+        except e:
+            caught = e
+        pr.disable()
+        ps = pstats.Stats(pr, stream=outfile)
+        ps.print_stats()
+        if caught:
+            raise caught
+        return ret
+    return profiled_function

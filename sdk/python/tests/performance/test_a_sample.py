@@ -1,10 +1,15 @@
 import unittest
 
-from performance_profiler import PerformanceProfiler
+from performance_profiler import profiled
 
-class PerformanceTestSample(PerformanceProfiler):
-    def func(self):
+class PerformanceTestSample(unittest.TestCase):
+    def foo(self):
+        bar = 64
+
+    @profiled
+    def test_profiled_decorator(self):
+        j = 0
+        for i in range(0,2**20):
+            j += i
+        self.foo()
         print 'Hello'
-
-    def test_performance(self):
-        self.run_profiler('self.func()', 'test_sample')
