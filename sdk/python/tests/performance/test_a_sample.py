@@ -7,4 +7,4 @@ class PerformanceTestSample(PerformanceProfiler):
         print 'Hello'
 
     def test_performance(self):
-        self.run_profiler('self.func', 'test_sample')
+        self.run_profiler('self.func()', 'test_sample')
