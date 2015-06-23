@@ -12,9 +12,9 @@ Options:
 --upload
     Upload packages (default: false)
 --scp-user USERNAME
-    Scp user for apt server (only required when --upload is specified)
---apt-server HOSTNAME
-    Apt server hostname (only required when --upload is specified)
+    scp user for repository server (only required when --upload is specified)
+--scp-host HOSTNAME
+    scp host for repository server (only required when --upload is specified)
 --build-bundle-packages  (default: false)
     Build api server and workbench packages with vendor/bundle included
 --debug
@@ -34,23 +34,29 @@ UPLOAD=0
 BUILD_BUNDLE_PACKAGES=0
 FORMAT=deb
 
-while [[ -n "$1" ]]
-do
-    arg="$1"; shift
-    case "$arg" in
+PARSEDOPTS=$(getopt --name "$0" --longoptions \
+    help,upload,scp-user:,scp-host:,apt-server:,build-bundle-packages,debug,format: \
+    -- "" "$@")
+if [ $? -ne 0 ]; then
+    exit 1
+fi
+
+eval set -- "$PARSEDOPTS"
+while [ $# -gt 0 ]; do
+    case "$1" in
         --help)
             echo >&2 "$helpmessage"
             echo >&2
             exit 1
             ;;
         --scp-user)
-            APTUSER="$1"; shift
+            SCPUSER="$2"; shift
             ;;
-        --apt-server)
-            APTSERVER="$1"; shift
+        --scp-host|--apt-server)
+            SCPHOST="$2"; shift
             ;;
         --format)
-            FORMAT="$1"; shift
+            FORMAT="$2"; shift
             ;;
         --debug)
             DEBUG=1
@@ -61,18 +67,21 @@ do
         --build-bundle-packages)
             BUILD_BUNDLE_PACKAGES=1
             ;;
-        *)
-            echo >&2 "$0: Unrecognized option: '$arg'. Try: $0 --help"
-            exit 1
+        --)
+            if [ $# -gt 1 ]; then
+                echo >&2 "$0: unrecognized argument '$2'. Try: $0 --help"
+                exit 1
+            fi
             ;;
     esac
+    shift
 done
 
 # Sanity checks
-if [[ "$UPLOAD" != '0' && ("$APTUSER" == '' || "$APTSERVER" == '') ]]; then
+if [[ "$UPLOAD" != '0' && ("$SCPUSER" == '' || "$SCPHOST" == '') ]]; then
   echo >&2 "$helpmessage"
   echo >&2
-  echo >&2 "Error: please specify --scp-user and --apt-server if --upload is set"
+  echo >&2 "Error: please specify --scp-user and --scp-host if --upload is set"
   echo >&2
   exit 1
 fi
@@ -158,7 +167,7 @@ handle_python_package () {
 }
 
 # Build debs for everything
-build_and_scp_deb () {
+fpm_build_and_scp () {
   # The package source.  Depending on the source type, this can be a
   # path, or the name of the package in an upstream repository (e.g.,
   # pip).
@@ -217,11 +226,11 @@ build_and_scp_deb () {
   FPM_RESULTS=$("${COMMAND_ARR[@]}")
   FPM_EXIT_CODE=$?
 
-  verify_and_scp_deb $FPM_EXIT_CODE $FPM_RESULTS
+  fpm_verify_and_scp $FPM_EXIT_CODE $FPM_RESULTS
 }
 
 # verify build results and scp debs, if needed
-verify_and_scp_deb () {
+fpm_verify_and_scp () {
   FPM_EXIT_CODE=$1
   shift
   FPM_RESULTS=$@
@@ -244,9 +253,9 @@ verify_and_scp_deb () {
       else
         if [[ "$UPLOAD" != 0 ]]; then
           if [[ "$FORMAT" == 'deb' ]]; then
-            scp -P2222 $FPM_PACKAGE_NAME $APTUSER@$APTSERVER:tmp/
+            scp -P2222 $FPM_PACKAGE_NAME $SCPUSER@$SCPHOST:tmp/
           else
-            scp -P2222 $FPM_PACKAGE_NAME $APTUSER@$APTSERVER:rpm/
+            scp -P2222 $FPM_PACKAGE_NAME $SCPUSER@$SCPHOST:rpm/
           fi
           CALL_FREIGHT=1
         fi
@@ -298,7 +307,7 @@ rm -rf install
 
 perl Makefile.PL >"$PERL_OUT" && \
     make install PREFIX=install INSTALLDIRS=perl >"$PERL_OUT" && \
-    build_and_scp_deb install/=/usr libarvados-perl "Curoverse, Inc." dir \
+    fpm_build_and_scp install/=/usr libarvados-perl "Curoverse, Inc." dir \
       "$(version_from_git)"
 
 # Ruby gems
@@ -335,16 +344,16 @@ if [[ "$?" != "0" ]]; then
     # -q appears to be broken in gem version 2.2.2
     gem build arvados.gemspec -q >/dev/null 2>&1
   fi
-  
+
   if [[ "$UPLOAD" != 0 ]]; then
     # publish new gem
     gem push arvados-*gem
   fi
-  
-  build_and_scp_deb arvados-*.gem "" "Curoverse, Inc." gem "" \
+
+  fpm_build_and_scp arvados-*.gem "" "Curoverse, Inc." gem "" \
       --prefix "$FPM_GEM_PREFIX"
 fi
-  
+
 # Build arvados-cli GEM
 cd "$WORKSPACE"
 cd sdk/cli
@@ -359,14 +368,14 @@ gem search arvados-cli -r -a |grep -q $ARVADOS_GEM_VERSION
 if [[ "$?" != "0" ]]; then
   # clean up old gems
   rm -f arvados-cli*gem
-  
+
   if [[ "$DEBUG" != 0 ]]; then
     gem build arvados-cli.gemspec
   else
     # -q appears to be broken in gem version 2.2.2
     gem build arvados-cli.gemspec -q >/dev/null
   fi
-  
+
   if [[ "$UPLOAD" != 0 ]]; then
     # publish new gem
     gem push arvados-cli*gem
@@ -427,7 +436,7 @@ git log --format=format:%H -n1 . > git-commit.version
 cd "$WORKSPACE"
 PKG_VERSION=$(version_from_git)
 cd $WORKSPACE/debs
-build_and_scp_deb $WORKSPACE/src-build-dir/=/usr/local/arvados/src arvados-src 'Curoverse, Inc.' 'dir' "$PKG_VERSION" "--exclude=usr/local/arvados/src/.git" "--url=https://arvados.org" "--license=GNU Affero General Public License, version 3.0" "--description=The Arvados source code" "--architecture=all"
+fpm_build_and_scp $WORKSPACE/src-build-dir/=/usr/local/arvados/src arvados-src 'Curoverse, Inc.' 'dir' "$PKG_VERSION" "--exclude=usr/local/arvados/src/.git" "--url=https://arvados.org" "--license=GNU Affero General Public License, version 3.0" "--description=The Arvados source code" "--architecture=all"
 
 # clean up, check out master and step away from detached-head state
 cd "$WORKSPACE/src-build-dir"
@@ -447,7 +456,7 @@ cd "$GOPATH/src/git.curoverse.com/arvados.git/services/keepstore"
 PKG_VERSION=$(version_from_git)
 go get "git.curoverse.com/arvados.git/services/keepstore"
 cd $WORKSPACE/debs
-build_and_scp_deb $GOPATH/bin/keepstore=/usr/bin/keepstore keepstore 'Curoverse, Inc.' 'dir' "$PKG_VERSION" "--url=https://arvados.org" "--license=GNU Affero General Public License, version 3.0" "--description=Keepstore is the Keep storage daemon, accessible to clients on the LAN"
+fpm_build_and_scp $GOPATH/bin/keepstore=/usr/bin/keepstore keepstore 'Curoverse, Inc.' 'dir' "$PKG_VERSION" "--url=https://arvados.org" "--license=GNU Affero General Public License, version 3.0" "--description=Keepstore is the Keep storage daemon, accessible to clients on the LAN"
 
 # Get GO SDK version
 cd "$GOPATH/src/git.curoverse.com/arvados.git/sdk/go"
@@ -467,7 +476,7 @@ fi
 
 go get "git.curoverse.com/arvados.git/services/keepproxy"
 cd $WORKSPACE/debs
-build_and_scp_deb $GOPATH/bin/keepproxy=/usr/bin/keepproxy keepproxy 'Curoverse, Inc.' 'dir' "$PKG_VERSION" "--url=https://arvados.org" "--license=GNU Affero General Public License, version 3.0" "--description=Keepproxy makes a Keep cluster accessible to clients that are not on the LAN"
+fpm_build_and_scp $GOPATH/bin/keepproxy=/usr/bin/keepproxy keepproxy 'Curoverse, Inc.' 'dir' "$PKG_VERSION" "--url=https://arvados.org" "--license=GNU Affero General Public License, version 3.0" "--description=Keepproxy makes a Keep cluster accessible to clients that are not on the LAN"
 
 # datamanager
 cd "$GOPATH/src/git.curoverse.com/arvados.git/services/datamanager"
@@ -482,7 +491,7 @@ fi
 
 go get "git.curoverse.com/arvados.git/services/datamanager"
 cd $WORKSPACE/debs
-build_and_scp_deb $GOPATH/bin/datamanager=/usr/bin/arvados-data-manager arvados-data-manager 'Curoverse, Inc.' 'dir' "$PKG_VERSION" "--url=https://arvados.org" "--license=GNU Affero General Public License, version 3.0" "--description=Datamanager ensures block replication levels, reports on disk usage and determines which blocks should be deleted when space is needed."
+fpm_build_and_scp $GOPATH/bin/datamanager=/usr/bin/arvados-data-manager arvados-data-manager 'Curoverse, Inc.' 'dir' "$PKG_VERSION" "--url=https://arvados.org" "--license=GNU Affero General Public License, version 3.0" "--description=Datamanager ensures block replication levels, reports on disk usage and determines which blocks should be deleted when space is needed."
 
 # arv-git-httpd
 cd "$GOPATH/src/git.curoverse.com/arvados.git/services/arv-git-httpd"
@@ -497,14 +506,14 @@ fi
 
 go get "git.curoverse.com/arvados.git/services/arv-git-httpd"
 cd $WORKSPACE/debs
-build_and_scp_deb $GOPATH/bin/arv-git-httpd=/usr/bin/arvados-git-httpd arvados-git-httpd 'Curoverse, Inc.' 'dir' "$PKG_VERSION" "--url=https://arvados.org" "--license=GNU Affero General Public License, version 3.0" "--description=Provides authenticated http access to Arvados-hosted git repositories."
+fpm_build_and_scp $GOPATH/bin/arv-git-httpd=/usr/bin/arvados-git-httpd arvados-git-httpd 'Curoverse, Inc.' 'dir' "$PKG_VERSION" "--url=https://arvados.org" "--license=GNU Affero General Public License, version 3.0" "--description=Provides authenticated http access to Arvados-hosted git repositories."
 
 # crunchstat
 cd "$GOPATH/src/git.curoverse.com/arvados.git/services/crunchstat"
 PKG_VERSION=$(version_from_git)
 go get "git.curoverse.com/arvados.git/services/crunchstat"
 cd $WORKSPACE/debs
-build_and_scp_deb $GOPATH/bin/crunchstat=/usr/bin/crunchstat crunchstat 'Curoverse, Inc.' 'dir' "$PKG_VERSION" "--url=https://arvados.org" "--license=GNU Affero General Public License, version 3.0" "--description=Crunchstat gathers cpu/memory/network statistics of running Crunch jobs"
+fpm_build_and_scp $GOPATH/bin/crunchstat=/usr/bin/crunchstat crunchstat 'Curoverse, Inc.' 'dir' "$PKG_VERSION" "--url=https://arvados.org" "--license=GNU Affero General Public License, version 3.0" "--description=Crunchstat gathers cpu/memory/network statistics of running Crunch jobs"
 
 # The Python SDK
 # Please resist the temptation to add --no-python-fix-name to the fpm call here
@@ -516,7 +525,7 @@ build_and_scp_deb $GOPATH/bin/crunchstat=/usr/bin/crunchstat crunchstat 'Curover
 cd $WORKSPACE/debs
 # Python version numbering is obscure. Strip dashes and replace them with dots
 # to match our other version numbers. Cf. commit 4afcb8c, compliance with PEP-440.
-build_and_scp_deb $WORKSPACE/sdk/python python-arvados-python-client 'Curoverse, Inc.' 'python' "$(awk '($1 == "Version:"){ gsub(/-/,".",$2); print $2 }' $WORKSPACE/sdk/python/arvados_python_client.egg-info/PKG-INFO)" "--url=https://arvados.org" "--description=The Arvados Python SDK"
+fpm_build_and_scp $WORKSPACE/sdk/python python-arvados-python-client 'Curoverse, Inc.' 'python' "$(awk '($1 == "Version:"){ gsub(/-/,".",$2); print $2 }' $WORKSPACE/sdk/python/arvados_python_client.egg-info/PKG-INFO)" "--url=https://arvados.org" "--description=The Arvados Python SDK"
 
 # The FUSE driver
 # Please see comment about --no-python-fix-name above; we stay consistent and do
@@ -524,30 +533,30 @@ build_and_scp_deb $WORKSPACE/sdk/python python-arvados-python-client 'Curoverse,
 cd $WORKSPACE/debs
 # Python version numbering is obscure. Strip dashes and replace them with dots
 # to match our other version numbers. Cf. commit 4afcb8c, compliance with PEP-440.
-build_and_scp_deb $WORKSPACE/services/fuse python-arvados-fuse 'Curoverse, Inc.' 'python' "$(awk '($1 == "Version:"){ gsub(/-/,".",$2); print $2 }' $WORKSPACE/services/fuse/arvados_fuse.egg-info/PKG-INFO)" "--url=https://arvados.org" "--description=The Keep FUSE driver"
+fpm_build_and_scp $WORKSPACE/services/fuse python-arvados-fuse 'Curoverse, Inc.' 'python' "$(awk '($1 == "Version:"){ gsub(/-/,".",$2); print $2 }' $WORKSPACE/services/fuse/arvados_fuse.egg-info/PKG-INFO)" "--url=https://arvados.org" "--description=The Keep FUSE driver"
 
 # The node manager
 cd $WORKSPACE/debs
 # Python version numbering is obscure. Strip dashes and replace them with dots
 # to match our other version numbers. Cf. commit 4afcb8c, compliance with PEP-440.
-build_and_scp_deb $WORKSPACE/services/nodemanager arvados-node-manager 'Curoverse, Inc.' 'python' "$(awk '($1 == "Version:"){ gsub(/-/,".",$2); print $2}' $WORKSPACE/services/nodemanager/arvados_node_manager.egg-info/PKG-INFO)" "--url=https://arvados.org" "--description=The Arvados node manager"
+fpm_build_and_scp $WORKSPACE/services/nodemanager arvados-node-manager 'Curoverse, Inc.' 'python' "$(awk '($1 == "Version:"){ gsub(/-/,".",$2); print $2}' $WORKSPACE/services/nodemanager/arvados_node_manager.egg-info/PKG-INFO)" "--url=https://arvados.org" "--description=The Arvados node manager"
 
 # The Docker image cleaner
 cd $WORKSPACE/debs
-build_and_scp_deb $WORKSPACE/services/dockercleaner arvados-docker-cleaner 'Curoverse, Inc.' 'python3' "$(awk '($1 == "Version:"){print $2}' $WORKSPACE/services/dockercleaner/arvados_docker_cleaner.egg-info/PKG-INFO)" "--url=https://arvados.org" "--description=The Arvados Docker image cleaner"
+fpm_build_and_scp $WORKSPACE/services/dockercleaner arvados-docker-cleaner 'Curoverse, Inc.' 'python3' "$(awk '($1 == "Version:"){print $2}' $WORKSPACE/services/dockercleaner/arvados_docker_cleaner.egg-info/PKG-INFO)" "--url=https://arvados.org" "--description=The Arvados Docker image cleaner"
 
 # A few dependencies
 for deppkg in python-gflags pyvcf google-api-python-client oauth2client \
       pyasn1 pyasn1-modules rsa uritemplate httplib2 ws4py virtualenv \
       pykka apache-libcloud requests six pyexecjs jsonschema ciso8601 \
       pycrypto backports.ssl_match_hostname; do
-    build_and_scp_deb "$deppkg"
+    fpm_build_and_scp "$deppkg"
 done
 
 # Python 3 dependencies
 for deppkg in docker-py six requests; do
     # The empty string is the vendor argument: these aren't Curoverse software.
-    build_and_scp_deb "$deppkg" "python3-$deppkg" "" python3
+    fpm_build_and_scp "$deppkg" "python3-$deppkg" "" python3
 done
 
 # Build the API server package
@@ -590,7 +599,7 @@ if [[ "$BUILD_BUNDLE_PACKAGES" != 0 ]]; then
 
   FPM_RESULTS=$("${COMMAND_ARR[@]}")
   FPM_EXIT_CODE=$?
-  verify_and_scp_deb $FPM_EXIT_CODE $FPM_RESULTS
+  fpm_verify_and_scp $FPM_EXIT_CODE $FPM_RESULTS
 fi
 
 # Build the 'bare' package without vendor/bundle.
@@ -604,7 +613,7 @@ fi
 
 FPM_RESULTS=$("${COMMAND_ARR[@]}")
 FPM_EXIT_CODE=$?
-verify_and_scp_deb $FPM_EXIT_CODE $FPM_RESULTS
+fpm_verify_and_scp $FPM_EXIT_CODE $FPM_RESULTS
 
 # API server package build done
 
@@ -659,7 +668,7 @@ if [[ "$BUILD_BUNDLE_PACKAGES" != 0 ]]; then
 
   FPM_RESULTS=$("${COMMAND_ARR[@]}")
   FPM_EXIT_CODE=$?
-  verify_and_scp_deb $FPM_EXIT_CODE $FPM_RESULTS
+  fpm_verify_and_scp $FPM_EXIT_CODE $FPM_RESULTS
 fi
 
 # Build the 'bare' package without vendor/bundle.
@@ -674,16 +683,16 @@ fi
 
 FPM_RESULTS=$("${COMMAND_ARR[@]}")
 FPM_EXIT_CODE=$?
-verify_and_scp_deb $FPM_EXIT_CODE $FPM_RESULTS
+fpm_verify_and_scp $FPM_EXIT_CODE $FPM_RESULTS
 
 # Workbench package build done
 
 # Finally, publish the packages, if necessary
 if [[ "$UPLOAD" != 0 && "$CALL_FREIGHT" != 0 ]]; then
   if [[ "$FORMAT" == 'deb' ]]; then
-    ssh -p2222 $APTUSER@$APTSERVER -t "cd tmp && ls -laF *deb && freight add *deb apt/wheezy && freight cache && rm -f *deb"
+    ssh -p2222 $SCPUSER@$SCPHOST -t "cd tmp && ls -laF *deb && freight add *deb apt/wheezy && freight cache && rm -f *deb"
   else
-    ssh -p2222 $APTUSER@$APTSERVER -t "cd rpm && ls -laF *rpm && mv *rpm /var/www/rpm.arvados.org/CentOS/6/os/x86_64/ && createrepo /var/www/rpm.arvados.org/CentOS/6/os/x86_64/"
+    ssh -p2222 $SCPUSER@$SCPHOST -t "cd rpm && ls -laF *rpm && mv *rpm /var/www/rpm.arvados.org/CentOS/6/os/x86_64/ && createrepo /var/www/rpm.arvados.org/CentOS/6/os/x86_64/"
   fi
 else
   if [[ "$UPLOAD" != 0 ]]; then
