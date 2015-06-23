@@ -10,13 +10,10 @@
 #
 #   See "test_a_sample.py" for a working example.
 #
-# To run performance tests:
-#     cd arvados/sdk/python
+# Performance tests run as part of regular test suite.
+# You can also run only the performance tests using one of the following:
 #     python -m unittest discover tests.performance
-#
-#     Alternatively, using run-tests.sh
-#         ./run-tests.sh WORKSPACE=~/arvados --only sdk/python sdk/python_test="--test-suite=tests.performance"
-#
+#     ./run-tests.sh WORKSPACE=~/arvados --only sdk/python sdk/python_test="--test-suite=tests.performance"
 
 import functools
 import os
