@@ -88,11 +88,17 @@ fi
 
 declare -a PYTHON_BACKPORTS PYTHON3_BACKPORTS
 
+PYTHON2_VERSION=2.7
+PYTHON3_VERSION=$(python3 -c 'import sys; print("{v.major}.{v.minor}".format(v=sys.version_info))')
+
 case "$TARGET" in
     debian7)
         FORMAT=deb
         FPM_OUTDIR=tmp
         REPO_UPDATE_CMD='freight add *deb apt/wheezy && freight cache && rm -f *deb'
+
+        PYTHON2_PACKAGE=python$PYTHON2_VERSION
+        PYTHON3_PACKAGE=python$PYTHON3_VERSION
         PYTHON_BACKPORTS=(python-gflags pyvcf google-api-python-client \
             oauth2client pyasn1 pyasn1-modules rsa uritemplate httplib2 ws4py \
             virtualenv pykka apache-libcloud requests six pyexecjs jsonschema \
@@ -103,6 +109,9 @@ case "$TARGET" in
         FORMAT=rpm
         FPM_OUTDIR=rpm
         REPO_UPDATE_CMD='mv *rpm /var/www/rpm.arvados.org/CentOS/6/os/x86_64/ && createrepo /var/www/rpm.arvados.org/CentOS/6/os/x86_64/'
+
+        PYTHON2_PACKAGE=$(rpm -qf "$(which python$PYTHON2_VERSION)" --queryformat '%{NAME}\n')
+        PYTHON3_PACKAGE=$(rpm -qf "$(which python$PYTHON3_VERSION)" --queryformat '%{NAME}\n')
         PYTHON_BACKPORTS=(python-gflags pyvcf google-api-python-client \
             oauth2client pyasn1 pyasn1-modules rsa uritemplate httplib2 ws4py \
             virtualenv pykka apache-libcloud requests six pyexecjs jsonschema \
@@ -135,15 +144,24 @@ if [[ "$?" != 0 ]]; then
   exit 1
 fi
 
-if ! easy_install3 --version >/dev/null; then
-  cat >&2 <<EOF
+find_easy_install() {
+    for version_suffix in "$@"; do
+        if "easy_install$version_suffix" --version >/dev/null 2>&1; then
+            echo "easy_install$version_suffix"
+            return 0
+        fi
+    done
+    cat >&2 <<EOF
 $helpmessage
 
-Error: easy_install3 (from python3-setuptools) not found
+Error: easy_install$1 (from Python setuptools module) not found
 
 EOF
-  exit 1
-fi
+    exit 1
+}
+
+EASY_INSTALL2=$(find_easy_install -$PYTHON2_VERSION "")
+EASY_INSTALL3=$(find_easy_install -$PYTHON3_VERSION 3)
 
 RUN_BUILD_PACKAGES_PATH="`dirname \"$0\"`"
 RUN_BUILD_PACKAGES_PATH="`( cd \"$RUN_BUILD_PACKAGES_PATH\" && pwd )`"  # absolutized and normalized
@@ -221,7 +239,7 @@ fpm_build_and_scp () {
           # All Arvados Python2 packages depend on Python 2.7.
           # Make sure we build with that for consistency.
           set -- "$@" --python-bin python2.7 \
-              --python-easyinstall easy_install-2.7
+              --python-easyinstall "$EASY_INSTALL2"
           ;;
       python3)
           # fpm does not actually support a python3 package type.  Instead
@@ -229,8 +247,9 @@ fpm_build_and_scp () {
           # necessary arguments to fpm's command line later, after we're
           # done handling positional arguments.
           PACKAGE_TYPE=python
-          set -- "$@" --python-bin python3 --python-easyinstall easy_install3 \
-              --python-package-name-prefix python3 --depends python3
+          set -- "$@" --python-bin python3 \
+              --python-easyinstall "$EASY_INSTALL3" \
+              --python-package-name-prefix python3 --depends "$PYTHON3_PACKAGE"
           ;;
   esac
 
@@ -558,17 +577,17 @@ fpm_build_and_scp $GOPATH/bin/crunchstat=/usr/bin/crunchstat crunchstat 'Curover
 # whip up a patch and send it upstream, but that will be for another day. Ward,
 # 2014-05-15
 cd $WORKSPACE/debs
-fpm_build_and_scp $WORKSPACE/sdk/python python-arvados-python-client 'Curoverse, Inc.' 'python' "$(awk '($1 == "Version:"){print $2}' $WORKSPACE/sdk/python/arvados_python_client.egg-info/PKG-INFO)" "--url=https://arvados.org" "--description=The Arvados Python SDK" --depends=python2.7
+fpm_build_and_scp $WORKSPACE/sdk/python python-arvados-python-client 'Curoverse, Inc.' 'python' "$(awk '($1 == "Version:"){print $2}' $WORKSPACE/sdk/python/arvados_python_client.egg-info/PKG-INFO)" "--url=https://arvados.org" "--description=The Arvados Python SDK" --depends="$PYTHON2_PACKAGE"
 
 # The FUSE driver
 # Please see comment about --no-python-fix-name above; we stay consistent and do
 # not omit the python- prefix first.
 cd $WORKSPACE/debs
-fpm_build_and_scp $WORKSPACE/services/fuse python-arvados-fuse 'Curoverse, Inc.' 'python' "$(awk '($1 == "Version:"){print $2}' $WORKSPACE/services/fuse/arvados_fuse.egg-info/PKG-INFO)" "--url=https://arvados.org" "--description=The Keep FUSE driver" --depends=python2.7
+fpm_build_and_scp $WORKSPACE/services/fuse python-arvados-fuse 'Curoverse, Inc.' 'python' "$(awk '($1 == "Version:"){print $2}' $WORKSPACE/services/fuse/arvados_fuse.egg-info/PKG-INFO)" "--url=https://arvados.org" "--description=The Keep FUSE driver" --depends="$PYTHON2_PACKAGE"
 
 # The node manager
 cd $WORKSPACE/debs
-fpm_build_and_scp $WORKSPACE/services/nodemanager arvados-node-manager 'Curoverse, Inc.' 'python' "$(awk '($1 == "Version:"){print $2}' $WORKSPACE/services/nodemanager/arvados_node_manager.egg-info/PKG-INFO)" "--url=https://arvados.org" "--description=The Arvados node manager" --depends=python2.7
+fpm_build_and_scp $WORKSPACE/services/nodemanager arvados-node-manager 'Curoverse, Inc.' 'python' "$(awk '($1 == "Version:"){print $2}' $WORKSPACE/services/nodemanager/arvados_node_manager.egg-info/PKG-INFO)" "--url=https://arvados.org" "--description=The Arvados node manager" --depends="$PYTHON2_PACKAGE"
 
 # The Docker image cleaner
 cd $WORKSPACE/debs
