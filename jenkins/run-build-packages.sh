@@ -319,6 +319,10 @@ if [[ "$DEBUG" != 0 ]]; then
   echo "umask is" `umask`
 fi
 
+if [[ ! -d "$WORKSPACE/debs" ]]; then
+  mkdir -p $WORKSPACE/debs
+fi
+
 # Perl packages
 if [[ "$DEBUG" != 0 ]]; then
   echo -e "\nPerl packages\n"
@@ -335,14 +339,15 @@ cd "$WORKSPACE/sdk/perl"
 if [[ -e Makefile ]]; then
   make realclean >"$PERL_OUT"
 fi
-find -maxdepth 1 \( -name 'MANIFEST*' -or -name 'libarvados-perl_*.deb' \) \
+find -maxdepth 1 \( -name 'MANIFEST*' -or -name "libarvados-perl*.$FORMAT" \) \
     -delete
 rm -rf install
 
-perl Makefile.PL >"$PERL_OUT" && \
-    make install PREFIX=install INSTALLDIRS=perl >"$PERL_OUT" && \
-    fpm_build_and_scp install/=/usr libarvados-perl "Curoverse, Inc." dir \
-      "$(version_from_git)"
+perl Makefile.PL INSTALL_BASE=install >"$PERL_OUT" && \
+    make install INSTALLDIRS=perl >"$PERL_OUT" && \
+    fpm_build_and_scp install/lib/=/usr/share libarvados-perl \
+    "Curoverse, Inc." dir "$(version_from_git)" install/man/=/usr/share/man && \
+    mv libarvados-perl*.$FORMAT "$WORKSPACE/debs/"
 
 # Ruby gems
 if [[ "$DEBUG" != 0 ]]; then
@@ -433,10 +438,6 @@ handle_python_package
 
 cd ../../services/nodemanager
 handle_python_package
-
-if [[ ! -d "$WORKSPACE/debs" ]]; then
-  mkdir -p $WORKSPACE/debs
-fi
 
 # Arvados-src
 # We use $WORKSPACE/src-build-dir as the clean directory from which to build the src package
