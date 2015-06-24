@@ -216,14 +216,23 @@ fpm_build_and_scp () {
   VERSION=$1
   shift
 
-  # fpm does not actually support a python3 package type.  Instead we recognize
-  # it as a convenience shortcut to add several necessary arguments to
-  # fpm's command line later, after we're done handling positional arguments.
-  if [ "python3" = "$PACKAGE_TYPE" ]; then
-      PACKAGE_TYPE=python
-      set -- "$@" --python-bin python3 --python-easyinstall easy_install3 \
-          --python-package-name-prefix python3 --depends python3
-  fi
+  case "$PACKAGE_TYPE" in
+      python)
+          # All Arvados Python2 packages depend on Python 2.7.
+          # Make sure we build with that for consistency.
+          set -- "$@" --python-bin python2.7 \
+              --python-easyinstall easy_install-2.7
+          ;;
+      python3)
+          # fpm does not actually support a python3 package type.  Instead
+          # we recognize it as a convenience shortcut to add several
+          # necessary arguments to fpm's command line later, after we're
+          # done handling positional arguments.
+          PACKAGE_TYPE=python
+          set -- "$@" --python-bin python3 --python-easyinstall easy_install3 \
+              --python-package-name-prefix python3 --depends python3
+          ;;
+  esac
 
   declare -a COMMAND_ARR=("fpm" "--maintainer=Ward Vandewege <ward@curoverse.com>" "-s" "$PACKAGE_TYPE" "-t" "$FORMAT" "-x" "usr/local/lib/python2.7/dist-packages/tests")
 
@@ -550,7 +559,7 @@ fpm_build_and_scp $GOPATH/bin/crunchstat=/usr/bin/crunchstat crunchstat 'Curover
 cd $WORKSPACE/debs
 # Python version numbering is obscure. Strip dashes and replace them with dots
 # to match our other version numbers. Cf. commit 4afcb8c, compliance with PEP-440.
-fpm_build_and_scp $WORKSPACE/sdk/python python-arvados-python-client 'Curoverse, Inc.' 'python' "$(awk '($1 == "Version:"){ gsub(/-/,".",$2); print $2 }' $WORKSPACE/sdk/python/arvados_python_client.egg-info/PKG-INFO)" "--url=https://arvados.org" "--description=The Arvados Python SDK"
+fpm_build_and_scp $WORKSPACE/sdk/python python-arvados-python-client 'Curoverse, Inc.' 'python' "$(awk '($1 == "Version:"){ gsub(/-/,".",$2); print $2 }' $WORKSPACE/sdk/python/arvados_python_client.egg-info/PKG-INFO)" "--url=https://arvados.org" "--description=The Arvados Python SDK" --depends=python2.7
 
 # The FUSE driver
 # Please see comment about --no-python-fix-name above; we stay consistent and do
@@ -558,13 +567,13 @@ fpm_build_and_scp $WORKSPACE/sdk/python python-arvados-python-client 'Curoverse,
 cd $WORKSPACE/debs
 # Python version numbering is obscure. Strip dashes and replace them with dots
 # to match our other version numbers. Cf. commit 4afcb8c, compliance with PEP-440.
-fpm_build_and_scp $WORKSPACE/services/fuse python-arvados-fuse 'Curoverse, Inc.' 'python' "$(awk '($1 == "Version:"){ gsub(/-/,".",$2); print $2 }' $WORKSPACE/services/fuse/arvados_fuse.egg-info/PKG-INFO)" "--url=https://arvados.org" "--description=The Keep FUSE driver"
+fpm_build_and_scp $WORKSPACE/services/fuse python-arvados-fuse 'Curoverse, Inc.' 'python' "$(awk '($1 == "Version:"){ gsub(/-/,".",$2); print $2 }' $WORKSPACE/services/fuse/arvados_fuse.egg-info/PKG-INFO)" "--url=https://arvados.org" "--description=The Keep FUSE driver" --depends=python2.7
 
 # The node manager
 cd $WORKSPACE/debs
 # Python version numbering is obscure. Strip dashes and replace them with dots
 # to match our other version numbers. Cf. commit 4afcb8c, compliance with PEP-440.
-fpm_build_and_scp $WORKSPACE/services/nodemanager arvados-node-manager 'Curoverse, Inc.' 'python' "$(awk '($1 == "Version:"){ gsub(/-/,".",$2); print $2}' $WORKSPACE/services/nodemanager/arvados_node_manager.egg-info/PKG-INFO)" "--url=https://arvados.org" "--description=The Arvados node manager"
+fpm_build_and_scp $WORKSPACE/services/nodemanager arvados-node-manager 'Curoverse, Inc.' 'python' "$(awk '($1 == "Version:"){ gsub(/-/,".",$2); print $2}' $WORKSPACE/services/nodemanager/arvados_node_manager.egg-info/PKG-INFO)" "--url=https://arvados.org" "--description=The Arvados node manager" --depends=python2.7
 
 # The Docker image cleaner
 cd $WORKSPACE/debs
