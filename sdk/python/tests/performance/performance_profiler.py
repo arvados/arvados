@@ -38,8 +38,8 @@ def profiled(function):
         pr.enable()
         try:
             ret = function(*args, **kwargs)
-        except:
-            caught = sys.exc_info()[0]
+        except Exception as e:
+            caught = e
         pr.disable()
         ps = pstats.Stats(pr, stream=outfile)
         ps.print_stats()
