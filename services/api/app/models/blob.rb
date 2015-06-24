@@ -90,7 +90,7 @@ class Blob
     if !timestamp
       raise Blob::InvalidSignatureError.new 'No signature provided.'
     end
-    if !timestamp.match /^[\da-f]+$/
+    unless timestamp =~ /^[\da-f]+$/
       raise Blob::InvalidSignatureError.new 'Timestamp is not a base16 number.'
     end
     if timestamp.to_i(16) < (opts[:now] or db_current_time.to_i)

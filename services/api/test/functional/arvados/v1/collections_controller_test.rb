@@ -531,8 +531,8 @@ EOS
     }
 
     # Generate a locator with a bad signature.
-    unsigned_locator = "d41d8cd98f00b204e9800998ecf8427e+0"
-    bad_locator = unsigned_locator + "+Affffffff@ffffffff"
+    unsigned_locator = "acbd18db4cc2f85cedef654fccc4a4d8+3"
+    bad_locator = unsigned_locator + "+Affffffffffffffffffffffffffffffffffffffff@ffffffff"
     assert !Blob.verify_signature(bad_locator, signing_opts)
 
     # Creating a collection with this locator should
@@ -575,6 +575,16 @@ EOS
     }
 
     assert_response 422
+  end
+
+  test "reject manifest with unsigned block as stream name" do
+    authorize_with :active
+    post :create, {
+      collection: {
+        manifest_text: "00000000000000000000000000000000+1234 d41d8cd98f00b204e9800998ecf8427e+0 0:0:foo.txt\n"
+      }
+    }
+    assert_includes [422, 403], response.code.to_i
   end
 
   test "multiple locators per line" do

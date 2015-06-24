@@ -173,4 +173,13 @@ class Arvados::V1::NodesControllerTest < ActionController::TestCase
     assert_equal(jobs(:nearly_finished_job).uuid, json_response["job_uuid"],
                  "mismatched job UUID after ping update")
   end
+
+  test "node should fail ping with invalid hostname config format" do
+    Rails.configuration.assign_node_hostname = 'compute%<slot_number>04'  # should end with "04d"
+    post :ping, {
+      id: nodes(:new_with_no_hostname).uuid,
+      ping_secret: nodes(:new_with_no_hostname).info['ping_secret'],
+    }
+    assert_response 422
+  end
 end

@@ -116,7 +116,9 @@ class UsersTest < ActionDispatch::IntegrationTest
     click_link 'Advanced'
     click_link 'Metadata'
     assert page.has_text? 'Repository: active/activetestrepo'
-    assert !(page.has_text? 'VirtualMachine:')
+    vm_links = all("a", text: "VirtualMachine:")
+    assert_equal(1, vm_links.size)
+    assert_equal("VirtualMachine: testvm2.shell", vm_links.first.text)
 
     # Click on Setup button again and this time also choose a VM
     click_link 'Admin'
@@ -125,6 +127,7 @@ class UsersTest < ActionDispatch::IntegrationTest
     within '.modal-content' do
       fill_in "repo_name", :with => "activetestrepo2"
       select("testvm.shell", :from => 'vm_uuid')
+      fill_in "groups", :with => "test group one, test-group-two"
       click_button "Submit"
     end
 
@@ -135,6 +138,7 @@ class UsersTest < ActionDispatch::IntegrationTest
     click_link 'Metadata'
     assert page.has_text? 'Repository: active/activetestrepo2'
     assert page.has_text? 'VirtualMachine: testvm.shell'
+    assert page.has_text? '["test group one", "test-group-two"]'
   end
 
   test "unsetup active user" do

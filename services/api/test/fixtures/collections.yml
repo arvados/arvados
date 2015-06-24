@@ -79,7 +79,7 @@ multilevel_collection_1:
   modified_by_user_uuid: zzzzz-tpzed-d9tiejq69daie8f
   modified_at: 2014-02-03T17:22:54Z
   updated_at: 2014-02-03T17:22:54Z
-  manifest_text: ". 0:0:file1 0:0:file2 0:0:file3\n./dir1 0:0:file1 0:0:file2 0:0:file3\n./dir1/subdir 0:0:file1 0:0:file2 0:0:file3\n./dir2 0:0:file1 0:0:file2 0:0:file3\n"
+  manifest_text: ". d41d8cd98f00b204e9800998ecf8427e+0 0:0:file1 0:0:file2 0:0:file3\n./dir1 d41d8cd98f00b204e9800998ecf8427e+0 0:0:file1 0:0:file2 0:0:file3\n./dir1/subdir d41d8cd98f00b204e9800998ecf8427e+0 0:0:file1 0:0:file2 0:0:file3\n./dir2 d41d8cd98f00b204e9800998ecf8427e+0 0:0:file1 0:0:file2 0:0:file3\n"
   name: multilevel_collection_1
 
 multilevel_collection_2:

@@ -18,7 +18,7 @@ module Keep
     #   sign-timestamp ::= <8 lowercase hex digits>
     attr_reader :hash, :hints, :size
 
-    LOCATOR_REGEXP = /^([[:xdigit:]]{32})(\+([[:digit:]]+))?(\+([[:upper:]][[:alnum:]+@_-]*))?$/
+    LOCATOR_REGEXP = /^([[:xdigit:]]{32})(\+([[:digit:]]+))?((\+([[:upper:]][[:alnum:]@_-]*))+)?\z/
 
     def initialize(hasharg, sizearg, hintarg)
       @hash = hasharg
@@ -97,6 +97,9 @@ module Keep
   end
 
   class Manifest
+    STRICT_STREAM_TOKEN_REGEXP = /^(\.)(\/[^\/\s]+)*$/
+    STRICT_FILE_TOKEN_REGEXP = /^[[:digit:]]+:[[:digit:]]+:([^\s\/]+(\/[^\s\/]+)*)$/
+
     # Class to parse a manifest text and provide common views of that data.
     def initialize(manifest_text)
       @text = manifest_text
@@ -223,6 +226,64 @@ module Keep
         end
       end
       false
+    end
+
+    # Verify that a given manifest is valid according to
+    # https://arvados.org/projects/arvados/wiki/Keep_manifest_format
+    def self.validate! manifest
+      raise ArgumentError.new "No manifest found" if !manifest
+
+      return true if manifest.empty?
+
+      raise ArgumentError.new "Invalid manifest: does not end with newline" if !manifest.end_with?("\n")
+      line_count = 0
+      manifest.each_line do |line|
+        line_count += 1
+
+        words = line[0..-2].split(/ /)
+        raise ArgumentError.new "Manifest invalid for stream #{line_count}: missing stream name" if words.empty?
+
+        count = 0
+
+        word = words.shift
+        count += 1 if word =~ STRICT_STREAM_TOKEN_REGEXP and word !~ /\/\.\.?(\/|$)/
+        raise ArgumentError.new "Manifest invalid for stream #{line_count}: missing or invalid stream name #{word.inspect if word}" if count != 1
+
+        count = 0
+        word = words.shift
+        while word =~ Locator::LOCATOR_REGEXP
+          word = words.shift
+          count += 1
+        end
+        raise ArgumentError.new "Manifest invalid for stream #{line_count}: missing or invalid locator #{word.inspect if word}" if count == 0
+
+        count = 0
+        while word =~ STRICT_FILE_TOKEN_REGEXP and ($~[1].split('/') & ['..','.']).empty?
+          word = words.shift
+          count += 1
+        end
+
+        if word
+          raise ArgumentError.new "Manifest invalid for stream #{line_count}: invalid file token #{word.inspect}"
+        elsif count == 0
+          raise ArgumentError.new "Manifest invalid for stream #{line_count}: no file tokens"
+        end
+
+        # Ruby's split() method silently drops trailing empty tokens
+        # (which are not allowed by the manifest format) so we have to
+        # check trailing spaces manually.
+        raise ArgumentError.new "Manifest invalid for stream #{line_count}: trailing space" if line.end_with? " \n"
+      end
+      true
+    end
+
+    def self.valid? manifest
+      begin
+        validate! manifest
+        true
+      rescue ArgumentError
+        false
+      end
     end
   end
 end

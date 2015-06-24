@@ -33,6 +33,7 @@ class CollectionModelPerformanceTest < ActiveSupport::TestCase
         c.check_signatures
       end
       time_block 'check signatures + save' do
+        c.instance_eval do @signatures_checked = false end
         c.save!
       end
       c = time_block 'read' do
