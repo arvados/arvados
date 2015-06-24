@@ -557,23 +557,17 @@ fpm_build_and_scp $GOPATH/bin/crunchstat=/usr/bin/crunchstat crunchstat 'Curover
 # whip up a patch and send it upstream, but that will be for another day. Ward,
 # 2014-05-15
 cd $WORKSPACE/debs
-# Python version numbering is obscure. Strip dashes and replace them with dots
-# to match our other version numbers. Cf. commit 4afcb8c, compliance with PEP-440.
-fpm_build_and_scp $WORKSPACE/sdk/python python-arvados-python-client 'Curoverse, Inc.' 'python' "$(awk '($1 == "Version:"){ gsub(/-/,".",$2); print $2 }' $WORKSPACE/sdk/python/arvados_python_client.egg-info/PKG-INFO)" "--url=https://arvados.org" "--description=The Arvados Python SDK" --depends=python2.7
+fpm_build_and_scp $WORKSPACE/sdk/python python-arvados-python-client 'Curoverse, Inc.' 'python' "$(awk '($1 == "Version:"){print $2}' $WORKSPACE/sdk/python/arvados_python_client.egg-info/PKG-INFO)" "--url=https://arvados.org" "--description=The Arvados Python SDK" --depends=python2.7
 
 # The FUSE driver
 # Please see comment about --no-python-fix-name above; we stay consistent and do
 # not omit the python- prefix first.
 cd $WORKSPACE/debs
-# Python version numbering is obscure. Strip dashes and replace them with dots
-# to match our other version numbers. Cf. commit 4afcb8c, compliance with PEP-440.
-fpm_build_and_scp $WORKSPACE/services/fuse python-arvados-fuse 'Curoverse, Inc.' 'python' "$(awk '($1 == "Version:"){ gsub(/-/,".",$2); print $2 }' $WORKSPACE/services/fuse/arvados_fuse.egg-info/PKG-INFO)" "--url=https://arvados.org" "--description=The Keep FUSE driver" --depends=python2.7
+fpm_build_and_scp $WORKSPACE/services/fuse python-arvados-fuse 'Curoverse, Inc.' 'python' "$(awk '($1 == "Version:"){print $2}' $WORKSPACE/services/fuse/arvados_fuse.egg-info/PKG-INFO)" "--url=https://arvados.org" "--description=The Keep FUSE driver" --depends=python2.7
 
 # The node manager
 cd $WORKSPACE/debs
-# Python version numbering is obscure. Strip dashes and replace them with dots
-# to match our other version numbers. Cf. commit 4afcb8c, compliance with PEP-440.
-fpm_build_and_scp $WORKSPACE/services/nodemanager arvados-node-manager 'Curoverse, Inc.' 'python' "$(awk '($1 == "Version:"){ gsub(/-/,".",$2); print $2}' $WORKSPACE/services/nodemanager/arvados_node_manager.egg-info/PKG-INFO)" "--url=https://arvados.org" "--description=The Arvados node manager" --depends=python2.7
+fpm_build_and_scp $WORKSPACE/services/nodemanager arvados-node-manager 'Curoverse, Inc.' 'python' "$(awk '($1 == "Version:"){print $2}' $WORKSPACE/services/nodemanager/arvados_node_manager.egg-info/PKG-INFO)" "--url=https://arvados.org" "--description=The Arvados node manager" --depends=python2.7
 
 # The Docker image cleaner
 cd $WORKSPACE/debs
