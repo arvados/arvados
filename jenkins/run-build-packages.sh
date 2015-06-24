@@ -96,7 +96,7 @@ case "$TARGET" in
         PYTHON_BACKPORTS=(python-gflags pyvcf google-api-python-client \
             oauth2client pyasn1 pyasn1-modules rsa uritemplate httplib2 ws4py \
             virtualenv pykka apache-libcloud requests six pyexecjs jsonschema \
-            ciso8601 pycrypto backports.ssl_match_hostname)
+            ciso8601 pycrypto backports.ssl_match_hostname pycurl)
         PYTHON3_BACKPORTS=(docker-py six requests)
         ;;
     centos6)
@@ -106,7 +106,7 @@ case "$TARGET" in
         PYTHON_BACKPORTS=(python-gflags pyvcf google-api-python-client \
             oauth2client pyasn1 pyasn1-modules rsa uritemplate httplib2 ws4py \
             virtualenv pykka apache-libcloud requests six pyexecjs jsonschema \
-            ciso8601 pycrypto backports.ssl_match_hostname)
+            ciso8601 pycrypto backports.ssl_match_hostname pycurl)
         PYTHON3_BACKPORTS=(docker-py six requests)
         ;;
     *)
