@@ -19,8 +19,8 @@ Options:
     Build api server and workbench packages with vendor/bundle included
 --debug
     Output debug information (default: false)
---format
-    Package format (default: deb)
+--target
+    Distribution to build packages for (default: debian7)
 
 WORKSPACE=path         Path to the Arvados source tree to build packages from
 
@@ -32,10 +32,10 @@ CALL_FREIGHT=0
 DEBUG=0
 UPLOAD=0
 BUILD_BUNDLE_PACKAGES=0
-FORMAT=deb
+TARGET=debian7
 
 PARSEDOPTS=$(getopt --name "$0" --longoptions \
-    help,upload,scp-user:,scp-host:,apt-server:,build-bundle-packages,debug,format: \
+    help,upload,scp-user:,scp-host:,apt-server:,build-bundle-packages,debug,target: \
     -- "" "$@")
 if [ $? -ne 0 ]; then
     exit 1
@@ -55,8 +55,8 @@ while [ $# -gt 0 ]; do
         --scp-host|--apt-server)
             SCPHOST="$2"; shift
             ;;
-        --format)
-            FORMAT="$2"; shift
+        --target)
+            TARGET="$2"; shift
             ;;
         --debug)
             DEBUG=1
@@ -86,7 +86,36 @@ if [[ "$UPLOAD" != '0' && ("$SCPUSER" == '' || "$SCPHOST" == '') ]]; then
   exit 1
 fi
 
-# Sanity check
+declare -a PYTHON_BACKPORTS PYTHON3_BACKPORTS
+
+case "$TARGET" in
+    debian7)
+        FORMAT=deb
+        FPM_OUTDIR=tmp
+        REPO_UPDATE_CMD='freight add *deb apt/wheezy && freight cache && rm -f *deb'
+        PYTHON_BACKPORTS=(python-gflags pyvcf google-api-python-client \
+            oauth2client pyasn1 pyasn1-modules rsa uritemplate httplib2 ws4py \
+            virtualenv pykka apache-libcloud requests six pyexecjs jsonschema \
+            ciso8601 pycrypto backports.ssl_match_hostname)
+        PYTHON3_BACKPORTS=(docker-py six requests)
+        ;;
+    centos6)
+        FORMAT=rpm
+        FPM_OUTDIR=rpm
+        REPO_UPDATE_CMD='mv *rpm /var/www/rpm.arvados.org/CentOS/6/os/x86_64/ && createrepo /var/www/rpm.arvados.org/CentOS/6/os/x86_64/'
+        PYTHON_BACKPORTS=(python-gflags pyvcf google-api-python-client \
+            oauth2client pyasn1 pyasn1-modules rsa uritemplate httplib2 ws4py \
+            virtualenv pykka apache-libcloud requests six pyexecjs jsonschema \
+            ciso8601 pycrypto backports.ssl_match_hostname)
+        PYTHON3_BACKPORTS=(docker-py six requests)
+        ;;
+    *)
+        echo -e "$0: Unknown target '$TARGET'.\n" >&2
+        exit 1
+        ;;
+esac
+
+
 if ! [[ -n "$WORKSPACE" ]]; then
   echo >&2 "$helpmessage"
   echo >&2
@@ -252,11 +281,7 @@ fpm_verify_and_scp () {
         echo "Error building package for $1:\n $FPM_RESULTS"
       else
         if [[ "$UPLOAD" != 0 ]]; then
-          if [[ "$FORMAT" == 'deb' ]]; then
-            scp -P2222 $FPM_PACKAGE_NAME $SCPUSER@$SCPHOST:tmp/
-          else
-            scp -P2222 $FPM_PACKAGE_NAME $SCPUSER@$SCPHOST:rpm/
-          fi
+          scp -P2222 $FPM_PACKAGE_NAME $SCPUSER@$SCPHOST:$FPM_OUTDIR/
           CALL_FREIGHT=1
         fi
       fi
@@ -546,15 +571,12 @@ cd $WORKSPACE/debs
 fpm_build_and_scp $WORKSPACE/services/dockercleaner arvados-docker-cleaner 'Curoverse, Inc.' 'python3' "$(awk '($1 == "Version:"){print $2}' $WORKSPACE/services/dockercleaner/arvados_docker_cleaner.egg-info/PKG-INFO)" "--url=https://arvados.org" "--description=The Arvados Docker image cleaner"
 
 # A few dependencies
-for deppkg in python-gflags pyvcf google-api-python-client oauth2client \
-      pyasn1 pyasn1-modules rsa uritemplate httplib2 ws4py virtualenv \
-      pykka apache-libcloud requests six pyexecjs jsonschema ciso8601 \
-      pycrypto backports.ssl_match_hostname; do
+for deppkg in "${PYTHON_BACKPORTS[@]}"; do
     fpm_build_and_scp "$deppkg"
 done
 
 # Python 3 dependencies
-for deppkg in docker-py six requests; do
+for deppkg in "${PYTHON3_BACKPORTS[@]}"; do
     # The empty string is the vendor argument: these aren't Curoverse software.
     fpm_build_and_scp "$deppkg" "python3-$deppkg" "" python3
 done
@@ -689,11 +711,11 @@ fpm_verify_and_scp $FPM_EXIT_CODE $FPM_RESULTS
 
 # Finally, publish the packages, if necessary
 if [[ "$UPLOAD" != 0 && "$CALL_FREIGHT" != 0 ]]; then
-  if [[ "$FORMAT" == 'deb' ]]; then
-    ssh -p2222 $SCPUSER@$SCPHOST -t "cd tmp && ls -laF *deb && freight add *deb apt/wheezy && freight cache && rm -f *deb"
-  else
-    ssh -p2222 $SCPUSER@$SCPHOST -t "cd rpm && ls -laF *rpm && mv *rpm /var/www/rpm.arvados.org/CentOS/6/os/x86_64/ && createrepo /var/www/rpm.arvados.org/CentOS/6/os/x86_64/"
-  fi
+  ssh -p2222 $SCPUSER@$SCPHOST -t bash - <<EOF
+if [ -n "\$(find -name "$FPM_OUTDIR/*.$FORMAT" -print -quit)" ]; then
+    cd "$FPM_OUTDIR" && $REPO_UPDATE_CMD
+fi
+EOF
 else
   if [[ "$UPLOAD" != 0 ]]; then
     echo "No new packages generated. No freight run necessary."
