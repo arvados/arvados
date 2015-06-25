@@ -117,7 +117,8 @@ case "$TARGET" in
             oauth2client pyasn1==0.1.7 pyasn1-modules==0.0.5 \
             rsa uritemplate httplib2 ws4py \
             pykka apache-libcloud requests six pyexecjs jsonschema \
-            ciso8601 pycrypto backports.ssl_match_hostname pycurl)
+            ciso8601 pycrypto backports.ssl_match_hostname pycurl
+            daemon llfuse)
         PYTHON3_BACKPORTS=(docker-py six requests)
         export PYCURL_SSL_LIBRARY=nss
         ;;
