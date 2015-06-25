@@ -1,5 +1,6 @@
 import fcntl
 import hashlib
+import httplib2
 import os
 import re
 import subprocess
@@ -371,3 +372,20 @@ def list_all(fn, num_retries=0, **kwargs):
         items_available = c['items_available']
         offset = c['offset'] + len(c['items'])
     return items
+
+def ca_certs_path(fallback=httplib2.CA_CERTS):
+    """Return the path of the best available CA certs source.
+
+    This function searches for various distribution sources of CA
+    certificates, and returns the first it finds.  If it doesn't find any,
+    it returns the value of `fallback` (httplib2's CA certs by default).
+    """
+    for ca_certs_path in [
+        # Debian:
+        '/etc/ssl/certs/ca-certificates.crt',
+        # Red Hat:
+        '/etc/pki/tls/certs/ca-bundle.crt',
+        ]:
+        if os.path.exists(ca_certs_path):
+            return ca_certs_path
+    return fallback
