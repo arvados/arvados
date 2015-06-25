@@ -11,6 +11,7 @@ import (
 	"git.curoverse.com/arvados.git/sdk/go/arvadosclient"
 	"git.curoverse.com/arvados.git/sdk/go/auth"
 	"git.curoverse.com/arvados.git/sdk/go/httpserver"
+	"git.curoverse.com/arvados.git/sdk/go/keepclient"
 )
 
 var clientPool = arvadosclient.MakeClientPool()
@@ -136,17 +137,20 @@ func (h *handler) ServeHTTP(wOrig http.ResponseWriter, r *http.Request) {
 	}
 
 	filename := strings.Join(targetPath, "/")
-	rdr, err := arvadosclient.CollectionFileReader(collection, filename)
+	kc, err := keepclient.MakeKeepClient(arv)
+	if err != nil {
+		statusCode, statusText = http.StatusInternalServerError, err.Error()
+		return
+	}
+	rdr, err := kc.CollectionFileReader(collection, filename)
 	if os.IsNotExist(err) {
 		statusCode = http.StatusNotFound
-		return
-	} else if err == arvadosclient.ErrNotImplemented {
-		statusCode = http.StatusNotImplemented
 		return
 	} else if err != nil {
 		statusCode, statusText = http.StatusBadGateway, err.Error()
 		return
 	}
+	defer rdr.Close()
 
 	// One or both of these can be -1 if not found:
 	basenamePos := strings.LastIndex(filename, "/")

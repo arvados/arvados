@@ -15,16 +15,7 @@ import (
 
 var _ = check.Suite(&IntegrationSuite{})
 
-const (
-	spectatorToken  = "zw2f4gwx8hw8cjre7yp6v1zylhrhn3m5gvjq73rtpwhmknrybu"
-	activeToken     = "3kg6k6lzmp9kj5cpkcoxie963cmvjahbt2fod9zru30k1jqdmi"
-	anonymousToken  = "4kg6k6lzmp9kj4cpkcoxie964cmvjahbt4fod9zru44k4jqdmi"
-	fooCollection   = "zzzzz-4zz18-fy296fx3hot09f7"
-	bogusCollection = "zzzzz-4zz18-totallynotexist"
-	hwCollection    = "zzzzz-4zz18-4en62shvi99lxd4"
-)
-
-// IntegrationSuite tests need an API server and an arv-git-httpd server
+// IntegrationSuite tests need an API server and a keep-web server
 type IntegrationSuite struct {
 	testServer *server
 }
@@ -34,12 +25,12 @@ func (s *IntegrationSuite) TestNoToken(c *check.C) {
 		"",
 		"bogustoken",
 	} {
-		hdr, body := s.runCurl(c, token, "/collections/"+fooCollection+"/foo")
+		hdr, body := s.runCurl(c, token, "/collections/"+arvadostest.FooCollection+"/foo")
 		c.Check(hdr, check.Matches, `(?s)HTTP/1.1 401 Unauthorized\r\n.*`)
 		c.Check(body, check.Equals, "")
 
 		if token != "" {
-			hdr, body = s.runCurl(c, token, "/collections/download/"+fooCollection+"/"+token+"/foo")
+			hdr, body = s.runCurl(c, token, "/collections/download/"+arvadostest.FooCollection+"/"+token+"/foo")
 			c.Check(hdr, check.Matches, `(?s)HTTP/1.1 404 Not Found\r\n.*`)
 			c.Check(body, check.Equals, "")
 		}
@@ -62,46 +53,46 @@ func (s *IntegrationSuite) Test404(c *check.C) {
 		"/download",
 		"/collections",
 		"/collections/",
-		"/collections/" + fooCollection,
-		"/collections/" + fooCollection + "/",
+		"/collections/" + arvadostest.FooCollection,
+		"/collections/" + arvadostest.FooCollection + "/",
 		// Non-existent file in collection
-		"/collections/" + fooCollection + "/theperthcountyconspiracy",
-		"/collections/download/" + fooCollection + "/" + activeToken + "/theperthcountyconspiracy",
+		"/collections/" + arvadostest.FooCollection + "/theperthcountyconspiracy",
+		"/collections/download/" + arvadostest.FooCollection + "/" + arvadostest.ActiveToken + "/theperthcountyconspiracy",
 		// Non-existent collection
-		"/collections/" + bogusCollection,
-		"/collections/" + bogusCollection + "/",
-		"/collections/" + bogusCollection + "/theperthcountyconspiracy",
-		"/collections/download/" + bogusCollection + "/" + activeToken + "/theperthcountyconspiracy",
+		"/collections/" + arvadostest.NonexistentCollection,
+		"/collections/" + arvadostest.NonexistentCollection + "/",
+		"/collections/" + arvadostest.NonexistentCollection + "/theperthcountyconspiracy",
+		"/collections/download/" + arvadostest.NonexistentCollection + "/" + arvadostest.ActiveToken + "/theperthcountyconspiracy",
 	} {
-		hdr, body := s.runCurl(c, activeToken, uri)
+		hdr, body := s.runCurl(c, arvadostest.ActiveToken, uri)
 		c.Check(hdr, check.Matches, "(?s)HTTP/1.1 404 Not Found\r\n.*")
 		c.Check(body, check.Equals, "")
 	}
 }
 
 func (s *IntegrationSuite) Test200(c *check.C) {
-	anonymousTokens = []string{anonymousToken}
+	anonymousTokens = []string{arvadostest.AnonymousToken}
 	arv, err := arvadosclient.MakeArvadosClient()
 	c.Assert(err, check.Equals, nil)
-	arv.ApiToken = activeToken
+	arv.ApiToken = arvadostest.ActiveToken
 	kc, err := keepclient.MakeKeepClient(&arv)
 	c.Assert(err, check.Equals, nil)
 	kc.PutB([]byte("Hello world\n"))
 	kc.PutB([]byte("foo"))
 	for _, spec := range [][]string{
 		// My collection
-		{activeToken, "/collections/" + fooCollection + "/foo", "acbd18db4cc2f85cedef654fccc4a4d8"},
-		{"", "/collections/download/" + fooCollection + "/" + activeToken + "/foo", "acbd18db4cc2f85cedef654fccc4a4d8"},
-		{"tokensobogus", "/collections/download/" + fooCollection + "/" + activeToken + "/foo", "acbd18db4cc2f85cedef654fccc4a4d8"},
-		{activeToken, "/collections/download/" + fooCollection + "/" + activeToken + "/foo", "acbd18db4cc2f85cedef654fccc4a4d8"},
-		{anonymousToken, "/collections/download/" + fooCollection + "/" + activeToken + "/foo", "acbd18db4cc2f85cedef654fccc4a4d8"},
+		{arvadostest.ActiveToken, "/collections/" + arvadostest.FooCollection + "/foo", "acbd18db4cc2f85cedef654fccc4a4d8"},
+		{"", "/collections/download/" + arvadostest.FooCollection + "/" + arvadostest.ActiveToken + "/foo", "acbd18db4cc2f85cedef654fccc4a4d8"},
+		{"tokensobogus", "/collections/download/" + arvadostest.FooCollection + "/" + arvadostest.ActiveToken + "/foo", "acbd18db4cc2f85cedef654fccc4a4d8"},
+		{arvadostest.ActiveToken, "/collections/download/" + arvadostest.FooCollection + "/" + arvadostest.ActiveToken + "/foo", "acbd18db4cc2f85cedef654fccc4a4d8"},
+		{arvadostest.AnonymousToken, "/collections/download/" + arvadostest.FooCollection + "/" + arvadostest.ActiveToken + "/foo", "acbd18db4cc2f85cedef654fccc4a4d8"},
 		// Anonymously accessible user agreement. These should
 		// start working when CollectionFileReader provides
 		// real data instead of fake/stub data.
-		{"", "/collections/"+hwCollection+"/Hello%20world.txt", "f0ef7081e1539ac00ef5b761b4fb01b3"},
-		{activeToken, "/collections/"+hwCollection+"/Hello%20world.txt", "f0ef7081e1539ac00ef5b761b4fb01b3"},
-		{spectatorToken, "/collections/"+hwCollection+"/Hello%20world.txt", "f0ef7081e1539ac00ef5b761b4fb01b3"},
-		{spectatorToken, "/collections/download/"+hwCollection+"/"+spectatorToken+"/Hello%20world.txt", "f0ef7081e1539ac00ef5b761b4fb01b3"},
+		{"", "/collections/" + arvadostest.HelloWorldCollection + "/Hello%20world.txt", "f0ef7081e1539ac00ef5b761b4fb01b3"},
+		{arvadostest.ActiveToken, "/collections/" + arvadostest.HelloWorldCollection + "/Hello%20world.txt", "f0ef7081e1539ac00ef5b761b4fb01b3"},
+		{arvadostest.SpectatorToken, "/collections/" + arvadostest.HelloWorldCollection + "/Hello%20world.txt", "f0ef7081e1539ac00ef5b761b4fb01b3"},
+		{arvadostest.SpectatorToken, "/collections/download/" + arvadostest.HelloWorldCollection + "/" + arvadostest.SpectatorToken + "/Hello%20world.txt", "f0ef7081e1539ac00ef5b761b4fb01b3"},
 	} {
 		hdr, body := s.runCurl(c, spec[0], spec[1])
 		if strings.HasPrefix(hdr, "HTTP/1.1 501 Not Implemented\r\n") && body == "" {
