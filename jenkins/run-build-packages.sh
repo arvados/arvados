@@ -98,7 +98,9 @@ case "$TARGET" in
         REPO_UPDATE_CMD='freight add *deb apt/wheezy && freight cache && rm -f *deb'
 
         PYTHON2_PACKAGE=python$PYTHON2_VERSION
+        PYTHON2_PKG_PREFIX=python
         PYTHON3_PACKAGE=python$PYTHON3_VERSION
+        PYTHON3_PKG_PREFIX=python3
         PYTHON_BACKPORTS=(python-gflags pyvcf google-api-python-client \
             oauth2client pyasn1==0.1.7 pyasn1-modules==0.0.5 \
             rsa uritemplate httplib2 ws4py \
@@ -112,7 +114,9 @@ case "$TARGET" in
         REPO_UPDATE_CMD='mv *rpm /var/www/rpm.arvados.org/CentOS/6/os/x86_64/ && createrepo /var/www/rpm.arvados.org/CentOS/6/os/x86_64/'
 
         PYTHON2_PACKAGE=$(rpm -qf "$(which python$PYTHON2_VERSION)" --queryformat '%{NAME}\n')
+        PYTHON2_PKG_PREFIX=$PYTHON2_PACKAGE
         PYTHON3_PACKAGE=$(rpm -qf "$(which python$PYTHON3_VERSION)" --queryformat '%{NAME}\n')
+        PYTHON3_PKG_PREFIX=$PYTHON3_PACKAGE
         PYTHON_BACKPORTS=(python-gflags pyvcf google-api-python-client \
             oauth2client pyasn1==0.1.7 pyasn1-modules==0.0.5 \
             rsa uritemplate httplib2 ws4py \
@@ -243,7 +247,9 @@ fpm_build_and_scp () {
           # All Arvados Python2 packages depend on Python 2.7.
           # Make sure we build with that for consistency.
           set -- "$@" --python-bin python2.7 \
-              --python-easyinstall "$EASY_INSTALL2"
+              --python-easyinstall "$EASY_INSTALL2" \
+              --python-package-name-prefix "$PYTHON2_PKG_PREFIX" \
+              --depends "$PYTHON2_PACKAGE"
           ;;
       python3)
           # fpm does not actually support a python3 package type.  Instead
@@ -253,11 +259,15 @@ fpm_build_and_scp () {
           PACKAGE_TYPE=python
           set -- "$@" --python-bin python3 \
               --python-easyinstall "$EASY_INSTALL3" \
-              --python-package-name-prefix python3 --depends "$PYTHON3_PACKAGE"
+              --python-package-name-prefix "$PYTHON3_PKG_PREFIX" \
+              --depends "$PYTHON3_PACKAGE"
           ;;
   esac
 
-  declare -a COMMAND_ARR=("fpm" "--maintainer=Ward Vandewege <ward@curoverse.com>" "-s" "$PACKAGE_TYPE" "-t" "$FORMAT" "-x" "usr/local/lib/python2.7/dist-packages/tests")
+  declare -a COMMAND_ARR=("fpm" "--maintainer=Ward Vandewege <ward@curoverse.com>" "-s" "$PACKAGE_TYPE" "-t" "$FORMAT")
+  if [ python = "$PACKAGE_TYPE" ]; then
+    COMMAND_ARR+=(--exclude=\*/{dist,site}-packages/tests/\*)
+  fi
 
   if [[ "$PACKAGE_NAME" != "$PACKAGE" ]]; then
     COMMAND_ARR+=('-n' "$PACKAGE_NAME")
@@ -581,17 +591,17 @@ fpm_build_and_scp $GOPATH/bin/crunchstat=/usr/bin/crunchstat crunchstat 'Curover
 # whip up a patch and send it upstream, but that will be for another day. Ward,
 # 2014-05-15
 cd $WORKSPACE/debs
-fpm_build_and_scp $WORKSPACE/sdk/python python-arvados-python-client 'Curoverse, Inc.' 'python' "$(awk '($1 == "Version:"){print $2}' $WORKSPACE/sdk/python/arvados_python_client.egg-info/PKG-INFO)" "--url=https://arvados.org" "--description=The Arvados Python SDK" --depends="$PYTHON2_PACKAGE"
+fpm_build_and_scp $WORKSPACE/sdk/python "${PYTHON2_PKG_PREFIX}-arvados-python-client" 'Curoverse, Inc.' 'python' "$(awk '($1 == "Version:"){print $2}' $WORKSPACE/sdk/python/arvados_python_client.egg-info/PKG-INFO)" "--url=https://arvados.org" "--description=The Arvados Python SDK"
 
 # The FUSE driver
 # Please see comment about --no-python-fix-name above; we stay consistent and do
 # not omit the python- prefix first.
 cd $WORKSPACE/debs
-fpm_build_and_scp $WORKSPACE/services/fuse python-arvados-fuse 'Curoverse, Inc.' 'python' "$(awk '($1 == "Version:"){print $2}' $WORKSPACE/services/fuse/arvados_fuse.egg-info/PKG-INFO)" "--url=https://arvados.org" "--description=The Keep FUSE driver" --depends="$PYTHON2_PACKAGE"
+fpm_build_and_scp $WORKSPACE/services/fuse "${PYTHON2_PKG_PREFIX}-arvados-fuse" 'Curoverse, Inc.' 'python' "$(awk '($1 == "Version:"){print $2}' $WORKSPACE/services/fuse/arvados_fuse.egg-info/PKG-INFO)" "--url=https://arvados.org" "--description=The Keep FUSE driver"
 
 # The node manager
 cd $WORKSPACE/debs
-fpm_build_and_scp $WORKSPACE/services/nodemanager arvados-node-manager 'Curoverse, Inc.' 'python' "$(awk '($1 == "Version:"){print $2}' $WORKSPACE/services/nodemanager/arvados_node_manager.egg-info/PKG-INFO)" "--url=https://arvados.org" "--description=The Arvados node manager" --depends="$PYTHON2_PACKAGE"
+fpm_build_and_scp $WORKSPACE/services/nodemanager arvados-node-manager 'Curoverse, Inc.' 'python' "$(awk '($1 == "Version:"){print $2}' $WORKSPACE/services/nodemanager/arvados_node_manager.egg-info/PKG-INFO)" "--url=https://arvados.org" "--description=The Arvados node manager"
 
 # The Docker image cleaner
 cd $WORKSPACE/debs
@@ -599,13 +609,15 @@ fpm_build_and_scp $WORKSPACE/services/dockercleaner arvados-docker-cleaner 'Curo
 
 # A few dependencies
 for deppkg in "${PYTHON_BACKPORTS[@]}"; do
-    fpm_build_and_scp "$deppkg"
+    outname=$(echo "$deppkg" | sed -e 's/^python-//' -e 's/[<=>].*//' -e 's/_/-/g' -e "s/^/${PYTHON2_PKG_PREFIX}-/")
+    fpm_build_and_scp "$deppkg" "$outname"
 done
 
 # Python 3 dependencies
 for deppkg in "${PYTHON3_BACKPORTS[@]}"; do
+    outname=$(echo "$deppkg" | sed -e 's/^python-//' -e 's/[<=>].*//' -e 's/_/-/g' -e "s/^/${PYTHON3_PKG_PREFIX}-/")
     # The empty string is the vendor argument: these aren't Curoverse software.
-    fpm_build_and_scp "$deppkg" "python3-$deppkg" "" python3
+    fpm_build_and_scp "$deppkg" "$outname" "" python3
 done
 
 # Build the API server package
