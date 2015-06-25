@@ -100,7 +100,8 @@ case "$TARGET" in
         PYTHON2_PACKAGE=python$PYTHON2_VERSION
         PYTHON3_PACKAGE=python$PYTHON3_VERSION
         PYTHON_BACKPORTS=(python-gflags pyvcf google-api-python-client \
-            oauth2client pyasn1 pyasn1-modules rsa uritemplate httplib2 ws4py \
+            oauth2client pyasn1==0.1.7 pyasn1-modules==0.0.5 \
+            rsa uritemplate httplib2 ws4py \
             virtualenv pykka apache-libcloud requests six pyexecjs jsonschema \
             ciso8601 pycrypto backports.ssl_match_hostname pycurl)
         PYTHON3_BACKPORTS=(docker-py six requests)
@@ -113,8 +114,9 @@ case "$TARGET" in
         PYTHON2_PACKAGE=$(rpm -qf "$(which python$PYTHON2_VERSION)" --queryformat '%{NAME}\n')
         PYTHON3_PACKAGE=$(rpm -qf "$(which python$PYTHON3_VERSION)" --queryformat '%{NAME}\n')
         PYTHON_BACKPORTS=(python-gflags pyvcf google-api-python-client \
-            oauth2client pyasn1 pyasn1-modules rsa uritemplate httplib2 ws4py \
-            virtualenv pykka apache-libcloud requests six pyexecjs jsonschema \
+            oauth2client pyasn1==0.1.7 pyasn1-modules==0.0.5 \
+            rsa uritemplate httplib2 ws4py \
+            pykka apache-libcloud requests six pyexecjs jsonschema \
             ciso8601 pycrypto backports.ssl_match_hostname pycurl)
         PYTHON3_BACKPORTS=(docker-py six requests)
         export PYCURL_SSL_LIBRARY=nss
