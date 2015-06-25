@@ -151,6 +151,11 @@ if [[ "$ECODE" != "0" ]]; then
     title "upload arvados images SKIPPED because build failed"
 else
     if [[ $upload == true ]]; then 
+        ## 20150526 nico -- *sometimes* dockerhub needs re-login 
+        ## even though credentials are already in .dockercfg
+        docker login -u arvados
+
+
         docker_push arvados/api
         docker_push arvados/compute
         docker_push arvados/doc
