@@ -117,6 +117,7 @@ case "$TARGET" in
             virtualenv pykka apache-libcloud requests six pyexecjs jsonschema \
             ciso8601 pycrypto backports.ssl_match_hostname pycurl)
         PYTHON3_BACKPORTS=(docker-py six requests)
+        export PYCURL_SSL_LIBRARY=nss
         ;;
     *)
         echo -e "$0: Unknown target '$TARGET'.\n" >&2
