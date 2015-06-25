@@ -35,7 +35,7 @@ BUILD_BUNDLE_PACKAGES=0
 TARGET=debian7
 
 PARSEDOPTS=$(getopt --name "$0" --longoptions \
-    help,upload,scp-user:,scp-host:,apt-server:,build-bundle-packages,debug,target: \
+    help,upload,scp-user:,scp-host:,build-bundle-packages,debug,target: \
     -- "" "$@")
 if [ $? -ne 0 ]; then
     exit 1
@@ -52,7 +52,7 @@ while [ $# -gt 0 ]; do
         --scp-user)
             SCPUSER="$2"; shift
             ;;
-        --scp-host|--apt-server)
+        --scp-host)
             SCPHOST="$2"; shift
             ;;
         --target)
