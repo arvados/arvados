@@ -22,10 +22,9 @@ logger = logging.getLogger('arvados.arv-mount')
 from performance_profiler import profiled
 
 @profiled
-def fuseCreateCollectionWithManyFiles(mounttmp, streams=1, files_per_stream=1, blocks_per_file=1, bytes_per_block=1):
+def fuseCreateCollectionWithManyFiles(mounttmp, streams=1, files_per_stream=1, blocks_per_file=1, bytes_per_block=1, data='x'):
     class Test(unittest.TestCase):
         def runTest(self):
-            data = 'x' * blocks_per_file * bytes_per_block
             names = 'file0.txt'
             for i in range(1, files_per_stream):
                 names += ',file' + str(i) + '.txt'
@@ -48,6 +47,18 @@ def fuseCreateCollectionWithManyFiles(mounttmp, streams=1, files_per_stream=1, b
 
                 d1 = llfuse.listdir(os.path.join(mounttmp, "./stream" + str(i)))
                 self.assertEqual(sorted(file_names), sorted(d1))
+
+    Test().runTest()
+
+@profiled
+def fuseReadContentsFromCollectionWithManyFiles(mounttmp, streams, files_per_stream, content):
+    class Test(unittest.TestCase):
+        def runTest(self):
+            for i in range(0, streams):
+                d1 = llfuse.listdir(os.path.join(mounttmp, 'stream'+str(i)))
+                for j in range(0, files_per_stream):
+                    with open(os.path.join(mounttmp, 'stream'+str(i), 'file'+str(i)+'.txt')) as f:
+                        self.assertEqual(content, f.read())
 
     Test().runTest()
 
@@ -96,8 +107,12 @@ class CreateCollectionWithManyFilesAndRenameMoveAndDeleteFile(MountTestBase):
 
         streams = 2
         files_per_stream = 200
+        blocks_per_file = 1
+        bytes_per_block = 1
 
-        self.pool.apply(fuseCreateCollectionWithManyFiles, (self.mounttmp, streams, files_per_stream, 1, 1,))
+        data = 'x' * blocks_per_file * bytes_per_block
+
+        self.pool.apply(fuseCreateCollectionWithManyFiles, (self.mounttmp, streams, files_per_stream, blocks_per_file, bytes_per_block, data))
 
         collection2 = self.api.collections().get(uuid=collection.manifest_locator()).execute()
 
@@ -107,41 +122,42 @@ class CreateCollectionWithManyFilesAndRenameMoveAndDeleteFile(MountTestBase):
         for i in range(0, files_per_stream):
             self.assertIn('file' + str(i) + '.txt', collection2["manifest_text"])
 
+        # Read file contents
+        self.pool.apply(fuseReadContentsFromCollectionWithManyFiles, (self.mounttmp, streams, files_per_stream, data,))
+
         # Move file0.txt out of the streams into .
-        self.pool.apply(fuseMoveFileFromCollectionWithManyFiles, (self.mounttmp, 'stream0', 'file0.txt',))
-        self.pool.apply(fuseMoveFileFromCollectionWithManyFiles, (self.mounttmp, 'stream1', 'file0.txt',))
+        for i in range(0, streams):
+            self.pool.apply(fuseMoveFileFromCollectionWithManyFiles, (self.mounttmp, 'stream'+str(i), 'file0.txt',))
 
         collection2 = self.api.collections().get(uuid=collection.manifest_locator()).execute()
 
         manifest_streams = collection2['manifest_text'].split('\n')
         self.assertEqual(4, len(manifest_streams))
 
-        self.assertIn('moved-from-stream0-file0.txt', manifest_streams[0])
-        self.assertIn('moved-from-stream1-file0.txt', manifest_streams[0])
+        for i in range(0, streams):
+            self.assertIn('moved-from-stream'+str(i)+'-file0.txt', manifest_streams[0])
 
-        self.assertNotIn('file0.txt', manifest_streams[1])
-        self.assertNotIn('file0.txt', manifest_streams[2])
+        for i in range(0, streams):
+            self.assertNotIn('file0.txt', manifest_streams[i+1])
 
-        for i in range(1, files_per_stream):
-            self.assertIn('file' + str(i) + '.txt', manifest_streams[1])
-            self.assertIn('file' + str(i) + '.txt', manifest_streams[2])
+        for i in range(0, streams):
+            for j in range(1, files_per_stream):
+                self.assertIn('file' + str(j) + '.txt', manifest_streams[i+1])
 
-        # Delete 'file1.txt' from both the streams
-        self.pool.apply(fuseDeleteFileFromCollectionWithManyFiles, (self.mounttmp, 'stream0', 'file1.txt'))
-        self.pool.apply(fuseDeleteFileFromCollectionWithManyFiles, (self.mounttmp, 'stream1', 'file1.txt'))
+        # Delete 'file1.txt' from all the streams
+        for i in range(0, streams):
+            self.pool.apply(fuseDeleteFileFromCollectionWithManyFiles, (self.mounttmp, 'stream'+str(i), 'file1.txt'))
 
         collection2 = self.api.collections().get(uuid=collection.manifest_locator()).execute()
 
         manifest_streams = collection2['manifest_text'].split('\n')
         self.assertEqual(4, len(manifest_streams))
 
-        self.assertIn('moved-from-stream0-file0.txt', manifest_streams[0])
-        self.assertIn('moved-from-stream1-file0.txt', manifest_streams[0])
+        for i in range(0, streams):
+            self.assertIn('moved-from-stream'+str(i)+'-file0.txt', manifest_streams[0])
 
-        self.assertNotIn('file1.txt', manifest_streams[1])
-        self.assertNotIn('file1.txt', manifest_streams[2])
+        self.assertNotIn('file1.txt', collection2['manifest_text'])
 
-        for i in range(2, files_per_stream):
-            self.assertIn('file' + str(i) + '.txt', manifest_streams[1])
-            self.assertIn('file' + str(i) + '.txt', manifest_streams[2])
-
+        for i in range(0, streams):
+            for j in range(2, files_per_stream):
+                self.assertIn('file' + str(j) + '.txt', manifest_streams[i+1])
