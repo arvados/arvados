@@ -122,7 +122,7 @@ case "$TARGET" in
             rsa uritemplate httplib2 ws4py \
             pykka apache-libcloud requests six pyexecjs jsonschema \
             ciso8601 pycrypto backports.ssl_match_hostname pycurl
-            daemon llfuse)
+            python-daemon lockfile llfuse)
         PYTHON3_BACKPORTS=(docker-py six requests)
         export PYCURL_SSL_LIBRARY=nss
         ;;
