@@ -29,7 +29,7 @@ $(document).
            if (response.errors) {
                error_div.html($('<p/>').text(response.errors).html());
            } else {
-               error_div.html('<p>Sorry, request failed.');
+               error_div.html('<p>Sorry, request failed.</p>');
            }
            error_div.show();
            $($('input[name=disable_element]', e.target).val()).
