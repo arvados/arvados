@@ -237,7 +237,7 @@ handle_python_package () {
   fi
 }
 
-# Build debs for everything
+# Build packages for everything
 fpm_build_and_scp () {
   # The package source.  Depending on the source type, this can be a
   # path, or the name of the package in an upstream repository (e.g.,
@@ -316,7 +316,7 @@ fpm_build_and_scp () {
   fpm_verify_and_scp $FPM_EXIT_CODE $FPM_RESULTS
 }
 
-# verify build results and scp debs, if needed
+# verify build results and scp packages, if needed
 fpm_verify_and_scp () {
   FPM_EXIT_CODE=$1
   shift
