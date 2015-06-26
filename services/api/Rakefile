@@ -32,3 +32,34 @@ namespace :test do
     end
   end
 end
+
+namespace :db do
+  namespace :structure do
+    task :dump do
+      require 'tempfile'
+      origfnm = File.expand_path('../db/structure.sql', __FILE__)
+      tmpfnm = Tempfile.new 'structure.sql', File.expand_path('..', origfnm)
+      begin
+        tmpfile = File.new tmpfnm, 'w'
+        origfile = File.new origfnm
+        origfile.each_line do |line|
+          if /^SET lock_timeout = 0;/ =~ line
+            # Avoid edit wars between versions that do/don't write this line.
+            next
+          elsif /^COMMENT ON EXTENSION/ =~ line
+            # Avoid warning message when loading:
+            # "structure.sql:22: ERROR:  must be owner of extension plpgsql"
+            tmpfile.write "-- "
+          end
+          tmpfile.write line
+        end
+        origfile.close
+        tmpfile.close
+        File.rename tmpfnm, origfnm
+        tmpfnm = false
+      ensure
+        File.unlink tmpfnm if tmpfnm
+      end
+    end
+  end
+end
