@@ -2,6 +2,9 @@ import logging
 
 _logger = logging.getLogger('arvados.ranges')
 
+# Log level below 'debug' !
+RANGES_SPAM = 9
+
 class Range(object):
     def __init__(self, locator, range_start, range_size, segment_offset=0):
         self.locator = locator
@@ -18,7 +21,7 @@ class Range(object):
                 self.range_size == other.range_size and
                 self.segment_offset == other.segment_offset)
 
-def first_block(data_locators, range_start, range_size):
+def first_block(data_locators, range_start):
     block_start = 0L
 
     # range_start/block_start is the inclusive lower bound
@@ -65,7 +68,7 @@ class LocatorAndRange(object):
     def __repr__(self):
         return "LocatorAndRange(%r, %r, %r, %r)" % (self.locator, self.block_size, self.segment_offset, self.segment_size)
 
-def locators_and_ranges(data_locators, range_start, range_size):
+def locators_and_ranges(data_locators, range_start, range_size, limit=None):
     """Get blocks that are covered by a range.
 
     Returns a list of LocatorAndRange objects.
@@ -79,24 +82,29 @@ def locators_and_ranges(data_locators, range_start, range_size):
     :range_size:
       size of range
 
+    :limit:
+      Maximum segments to return, default None (unlimited).  Will truncate the
+      result if there are more segments needed to cover the range than the
+      limit.
+
     """
     if range_size == 0:
         return []
     resp = []
     range_end = range_start + range_size
 
-    i = first_block(data_locators, range_start, range_size)
+    i = first_block(data_locators, range_start)
     if i is None:
         return []
 
     # We should always start at the first segment due to the binary
     # search.
-    while i < len(data_locators):
+    while i < len(data_locators) and len(resp) != limit:
         dl = data_locators[i]
         block_start = dl.range_start
         block_size = dl.range_size
         block_end = block_start + block_size
-        _logger.debug(
+        _logger.log(RANGES_SPAM,
             "%s range_start %s block_start %s range_end %s block_end %s",
             dl.locator, range_start, block_start, range_end, block_end)
         if range_end <= block_start:
@@ -160,7 +168,7 @@ def replace_range(data_locators, new_range_start, new_range_size, new_locator, n
             data_locators.append(Range(new_locator, new_range_start, new_range_size, new_segment_offset))
         return
 
-    i = first_block(data_locators, new_range_start, new_range_size)
+    i = first_block(data_locators, new_range_start)
     if i is None:
         return
 
@@ -170,7 +178,7 @@ def replace_range(data_locators, new_range_start, new_range_size, new_locator, n
         dl = data_locators[i]
         old_segment_start = dl.range_start
         old_segment_end = old_segment_start + dl.range_size
-        _logger.debug(
+        _logger.log(RANGES_SPAM,
             "%s range_start %s segment_start %s range_end %s segment_end %s",
             dl, new_range_start, old_segment_start, new_range_end,
             old_segment_end)

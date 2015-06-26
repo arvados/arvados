@@ -116,7 +116,9 @@ class UsersTest < ActionDispatch::IntegrationTest
     click_link 'Advanced'
     click_link 'Metadata'
     assert page.has_text? 'Repository: active/activetestrepo'
-    assert !(page.has_text? 'VirtualMachine:')
+    vm_links = all("a", text: "VirtualMachine:")
+    assert_equal(1, vm_links.size)
+    assert_equal("VirtualMachine: testvm2.shell", vm_links.first.text)
 
     # Click on Setup button again and this time also choose a VM
     click_link 'Admin'

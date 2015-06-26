@@ -803,6 +803,49 @@ auto_setup_vm_login_username_can_login_to_test_vm:
   properties: {username: 'auto_setup_vm_login'}
   updated_at: 2014-08-06 22:11:51.242010312 Z
 
+admin_can_login_to_testvm2:
+  uuid: zzzzz-o0j2j-peek9mecohgh3ai
+  owner_uuid: zzzzz-tpzed-d9tiejq69daie8f
+  created_at: 2014-08-06 22:11:51.242392533 Z
+  modified_by_client_uuid: zzzzz-ozdt8-brczlopd8u8d0jr
+  modified_by_user_uuid: zzzzz-tpzed-d9tiejq69daie8f
+  modified_at: 2014-08-06 22:11:51.242150425 Z
+  tail_uuid: zzzzz-tpzed-d9tiejq69daie8f
+  link_class: permission
+  name: can_login
+  head_uuid: zzzzz-2x53u-382brsig8rp3065
+  # username is not obviously related to other user data.
+  properties: {username: 'adminroot', groups: ['docker', 'admin']}
+  updated_at: 2014-08-06 22:11:51.242010312 Z
+
+active_can_login_to_testvm2:
+  uuid: zzzzz-o0j2j-rah2ya1ohx9xaev
+  owner_uuid: zzzzz-tpzed-d9tiejq69daie8f
+  created_at: 2014-08-06 22:11:51.242392533 Z
+  modified_by_client_uuid: zzzzz-ozdt8-brczlopd8u8d0jr
+  modified_by_user_uuid: zzzzz-tpzed-d9tiejq69daie8f
+  modified_at: 2014-08-06 22:11:51.242150425 Z
+  tail_uuid: zzzzz-tpzed-xurymjxw79nv3jz
+  link_class: permission
+  name: can_login
+  head_uuid: zzzzz-2x53u-382brsig8rp3065
+  # No groups.
+  properties: {username: 'active'}
+  updated_at: 2014-08-06 22:11:51.242010312 Z
+
+spectator_login_link_for_testvm2_without_username:
+  uuid: zzzzz-o0j2j-aem0eilie1jigh9
+  owner_uuid: zzzzz-tpzed-d9tiejq69daie8f
+  created_at: 2014-08-06 22:11:51.242392533 Z
+  modified_by_client_uuid: zzzzz-ozdt8-brczlopd8u8d0jr
+  modified_by_user_uuid: zzzzz-tpzed-d9tiejq69daie8f
+  modified_at: 2014-08-06 22:11:51.242150425 Z
+  tail_uuid: zzzzz-tpzed-l1s2piq4t4mps8r
+  link_class: permission
+  name: can_login
+  head_uuid: zzzzz-2x53u-382brsig8rp3065
+  updated_at: 2014-08-06 22:11:51.242010312 Z
+
 user_foo_can_read_sharing_group:
   uuid: zzzzz-o0j2j-gdpvwvpj9kjs5in
   owner_uuid: zzzzz-tpzed-000000000000000
