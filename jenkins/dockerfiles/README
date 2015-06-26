@@ -1,0 +1,29 @@
+==================
+BUILD
+==================
+
+cd dockerfiles/ubuntu1204
+docker build -t arvados/build:ubuntu1204 .
+
+or
+
+cd dockerfiles/debian7
+docker build -t arvados/build:debian7 .
+
+==================
+START
+==================
+
+docker run  -v /path/to/your/arvados-dev/jenkins:/jenkins -v /path/to/your/arvados:/arvados -i -t <imagehash> /bin/bash
+
+====================
+INSIDE THE CONTAINER
+====================
+
+source /etc/profile.d/rvm.sh
+
+WORKSPACE=/arvados ./run-build-packages.sh --target debian7
+
+or
+
+WORKSPACE=/arvados ./run-build-packages.sh --target ubuntu1204
