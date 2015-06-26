@@ -144,12 +144,12 @@ class Directory(FreshBase):
         # delete any other directory entries that were not in found in 'items'
         for i in oldentries:
             _logger.debug("Forgetting about entry '%s' on inode %i", i, self.inode)
-            llfuse.invalidate_entry(self.inode, i.encode(self.inodes.encoding))
+            self.inodes.invalidate_entry(self.inode, i.encode(self.inodes.encoding))
             self.inodes.del_entry(oldentries[i])
             changed = True
 
         if changed:
-            llfuse.invalidate_inode(self.inode)
+            self.inodes.invalidate_inode(self.inode)
             self._mtime = time.time()
 
         self.fresh()
@@ -165,9 +165,9 @@ class Directory(FreshBase):
                     self._entries = oldentries
                     return False
             for n in oldentries:
-                llfuse.invalidate_entry(self.inode, n.encode(self.inodes.encoding))
+                self.inodes.invalidate_entry(self.inode, n.encode(self.inodes.encoding))
                 self.inodes.del_entry(oldentries[n])
-            llfuse.invalidate_inode(self.inode)
+            self.inodes.invalidate_inode(self.inode)
             self.invalidate()
             return True
         else:
@@ -243,13 +243,13 @@ class CollectionDirectoryBase(Directory):
                 elif event == arvados.collection.DEL:
                     ent = self._entries[name]
                     del self._entries[name]
-                    llfuse.invalidate_entry(self.inode, name.encode(self.inodes.encoding))
+                    self.inodes.invalidate_entry(self.inode, name.encode(self.inodes.encoding))
                     self.inodes.del_entry(ent)
                 elif event == arvados.collection.MOD:
                     if hasattr(item, "fuse_entry") and item.fuse_entry is not None:
-                        llfuse.invalidate_inode(item.fuse_entry.inode)
+                        self.inodes.invalidate_inode(item.fuse_entry.inode)
                     elif name in self._entries:
-                        llfuse.invalidate_inode(self._entries[name].inode)
+                        self.inodes.invalidate_inode(self._entries[name].inode)
 
     def populate(self, mtime):
         self._mtime = mtime
@@ -387,7 +387,7 @@ class CollectionDirectory(CollectionDirectoryBase):
                     if not self.stale():
                         return
 
-                    _logger.debug("Updating %s", self.collection_locator)
+                    _logger.debug("Updating %s", to_record_version)
                     if self.collection is not None:
                         if self.collection.known_past_version(to_record_version):
                             _logger.debug("%s already processed %s", self.collection_locator, to_record_version)
@@ -769,7 +769,7 @@ class ProjectDirectory(Directory):
         # Acually move the entry from source directory to this directory.
         del src._entries[name_old]
         self._entries[name_new] = ent
-        llfuse.invalidate_entry(src.inode, name_old.encode(self.inodes.encoding))
+        self.inodes.invalidate_entry(src.inode, name_old.encode(self.inodes.encoding))
 
 
 class SharedDirectory(Directory):
