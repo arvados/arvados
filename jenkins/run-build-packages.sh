@@ -368,8 +368,8 @@ if [[ "$DEBUG" != 0 ]]; then
   echo "umask is" `umask`
 fi
 
-if [[ ! -d "$WORKSPACE/debs" ]]; then
-  mkdir -p $WORKSPACE/debs
+if [[ ! -d "$WORKSPACE/packages/$TARGET" ]]; then
+  mkdir -p $WORKSPACE/packages/$TARGET
 fi
 
 # Perl packages
@@ -396,7 +396,7 @@ perl Makefile.PL INSTALL_BASE=install >"$PERL_OUT" && \
     make install INSTALLDIRS=perl >"$PERL_OUT" && \
     fpm_build_and_scp install/lib/=/usr/share libarvados-perl \
     "Curoverse, Inc." dir "$(version_from_git)" install/man/=/usr/share/man && \
-    mv libarvados-perl*.$FORMAT "$WORKSPACE/debs/"
+    mv libarvados-perl*.$FORMAT "$WORKSPACE/packages/$TARGET/"
 
 # Ruby gems
 if [[ "$DEBUG" != 0 ]]; then
@@ -519,7 +519,7 @@ git log --format=format:%H -n1 . > git-commit.version
 # Build arvados src deb package
 cd "$WORKSPACE"
 PKG_VERSION=$(version_from_git)
-cd $WORKSPACE/debs
+cd $WORKSPACE/packages/$TARGET
 fpm_build_and_scp $WORKSPACE/src-build-dir/=/usr/local/arvados/src arvados-src 'Curoverse, Inc.' 'dir' "$PKG_VERSION" "--exclude=usr/local/arvados/src/.git" "--url=https://arvados.org" "--license=GNU Affero General Public License, version 3.0" "--description=The Arvados source code" "--architecture=all"
 
 # clean up, check out master and step away from detached-head state
@@ -539,7 +539,7 @@ ln -sfn "$WORKSPACE" "$GOPATH/src/git.curoverse.com/arvados.git"
 cd "$GOPATH/src/git.curoverse.com/arvados.git/services/keepstore"
 PKG_VERSION=$(version_from_git)
 go get "git.curoverse.com/arvados.git/services/keepstore"
-cd $WORKSPACE/debs
+cd $WORKSPACE/packages/$TARGET
 fpm_build_and_scp $GOPATH/bin/keepstore=/usr/bin/keepstore keepstore 'Curoverse, Inc.' 'dir' "$PKG_VERSION" "--url=https://arvados.org" "--license=GNU Affero General Public License, version 3.0" "--description=Keepstore is the Keep storage daemon, accessible to clients on the LAN"
 
 # Get GO SDK version
@@ -559,7 +559,7 @@ else
 fi
 
 go get "git.curoverse.com/arvados.git/services/keepproxy"
-cd $WORKSPACE/debs
+cd $WORKSPACE/packages/$TARGET
 fpm_build_and_scp $GOPATH/bin/keepproxy=/usr/bin/keepproxy keepproxy 'Curoverse, Inc.' 'dir' "$PKG_VERSION" "--url=https://arvados.org" "--license=GNU Affero General Public License, version 3.0" "--description=Keepproxy makes a Keep cluster accessible to clients that are not on the LAN"
 
 # datamanager
@@ -574,7 +574,7 @@ else
 fi
 
 go get "git.curoverse.com/arvados.git/services/datamanager"
-cd $WORKSPACE/debs
+cd $WORKSPACE/packages/$TARGET
 fpm_build_and_scp $GOPATH/bin/datamanager=/usr/bin/arvados-data-manager arvados-data-manager 'Curoverse, Inc.' 'dir' "$PKG_VERSION" "--url=https://arvados.org" "--license=GNU Affero General Public License, version 3.0" "--description=Datamanager ensures block replication levels, reports on disk usage and determines which blocks should be deleted when space is needed."
 
 # arv-git-httpd
@@ -589,14 +589,14 @@ else
 fi
 
 go get "git.curoverse.com/arvados.git/services/arv-git-httpd"
-cd $WORKSPACE/debs
+cd $WORKSPACE/packages/$TARGET
 fpm_build_and_scp $GOPATH/bin/arv-git-httpd=/usr/bin/arvados-git-httpd arvados-git-httpd 'Curoverse, Inc.' 'dir' "$PKG_VERSION" "--url=https://arvados.org" "--license=GNU Affero General Public License, version 3.0" "--description=Provides authenticated http access to Arvados-hosted git repositories."
 
 # crunchstat
 cd "$GOPATH/src/git.curoverse.com/arvados.git/services/crunchstat"
 PKG_VERSION=$(version_from_git)
 go get "git.curoverse.com/arvados.git/services/crunchstat"
-cd $WORKSPACE/debs
+cd $WORKSPACE/packages/$TARGET
 fpm_build_and_scp $GOPATH/bin/crunchstat=/usr/bin/crunchstat crunchstat 'Curoverse, Inc.' 'dir' "$PKG_VERSION" "--url=https://arvados.org" "--license=GNU Affero General Public License, version 3.0" "--description=Crunchstat gathers cpu/memory/network statistics of running Crunch jobs"
 
 # The Python SDK
@@ -606,21 +606,21 @@ fpm_build_and_scp $GOPATH/bin/crunchstat=/usr/bin/crunchstat crunchstat 'Curover
 # prefix from only one of the dependencies of a package...  Maybe I could
 # whip up a patch and send it upstream, but that will be for another day. Ward,
 # 2014-05-15
-cd $WORKSPACE/debs
+cd $WORKSPACE/packages/$TARGET
 fpm_build_and_scp $WORKSPACE/sdk/python "${PYTHON2_PKG_PREFIX}-arvados-python-client" 'Curoverse, Inc.' 'python' "$(awk '($1 == "Version:"){print $2}' $WORKSPACE/sdk/python/arvados_python_client.egg-info/PKG-INFO)" "--url=https://arvados.org" "--description=The Arvados Python SDK"
 
 # The FUSE driver
 # Please see comment about --no-python-fix-name above; we stay consistent and do
 # not omit the python- prefix first.
-cd $WORKSPACE/debs
+cd $WORKSPACE/packages/$TARGET
 fpm_build_and_scp $WORKSPACE/services/fuse "${PYTHON2_PKG_PREFIX}-arvados-fuse" 'Curoverse, Inc.' 'python' "$(awk '($1 == "Version:"){print $2}' $WORKSPACE/services/fuse/arvados_fuse.egg-info/PKG-INFO)" "--url=https://arvados.org" "--description=The Keep FUSE driver"
 
 # The node manager
-cd $WORKSPACE/debs
+cd $WORKSPACE/packages/$TARGET
 fpm_build_and_scp $WORKSPACE/services/nodemanager arvados-node-manager 'Curoverse, Inc.' 'python' "$(awk '($1 == "Version:"){print $2}' $WORKSPACE/services/nodemanager/arvados_node_manager.egg-info/PKG-INFO)" "--url=https://arvados.org" "--description=The Arvados node manager"
 
 # The Docker image cleaner
-cd $WORKSPACE/debs
+cd $WORKSPACE/packages/$TARGET
 fpm_build_and_scp $WORKSPACE/services/dockercleaner arvados-docker-cleaner 'Curoverse, Inc.' 'python3' "$(awk '($1 == "Version:"){print $2}' $WORKSPACE/services/dockercleaner/arvados_docker_cleaner.egg-info/PKG-INFO)" "--url=https://arvados.org" "--description=The Arvados Docker image cleaner"
 
 # A few dependencies
@@ -655,7 +655,7 @@ fi
 
 /usr/bin/git rev-parse HEAD > git-commit.version
 
-cd $WORKSPACE/debs
+cd $WORKSPACE/packages/$TARGET
 
 # Annoyingly, we require a database.yml file for rake assets:precompile to work. So for now,
 # we do that in the upgrade script.
@@ -729,7 +729,7 @@ if [[ "$?" != "0" ]]; then
   EXITCODE=1
 fi
 
-cd $WORKSPACE/debs
+cd $WORKSPACE/packages/$TARGET
 
 # This is the complete package with vendor/bundle included.
 # It's big, so we do not build it by default.
@@ -767,7 +767,7 @@ fpm_verify_and_scp $FPM_EXIT_CODE $FPM_RESULTS
 # Finally, publish the packages, if necessary
 if [[ "$UPLOAD" != 0 && "$CALL_FREIGHT" != 0 ]]; then
   ssh -p2222 $SCPUSER@$SCPHOST -t bash - <<EOF
-if [ -n "\$(find -name "$FPM_OUTDIR/*.$FORMAT" -print -quit)" ]; then
+if [ -n "\$(find $FPM_OUTDIR -name "*.$FORMAT" -print -quit)" ]; then
     cd "$FPM_OUTDIR" && $REPO_UPDATE_CMD
 fi
 EOF
