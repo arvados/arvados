@@ -170,6 +170,10 @@ popd
 cd reference
 handle_python_package
 
+cd cwl-runner
+handle_python_package
+cd ..
+
 ./build-cwl-docker.sh
 
 if [[ "$UPLOAD_DOCKER" != 0 ]]; then
