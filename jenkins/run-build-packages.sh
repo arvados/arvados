@@ -307,7 +307,7 @@ fpm_verify_and_scp () {
   FPM_RESULTS=$@
 
   FPM_PACKAGE_NAME=''
-  if [[ $FPM_RESULTS =~ ([A-Za-z0-9_\-.]*\.)(deb|rpm) ]]; then
+  if [[ $FPM_RESULTS =~ ([A-Za-z0-9_\.-]*\.)(deb|rpm) ]]; then
     FPM_PACKAGE_NAME=${BASH_REMATCH[1]}${BASH_REMATCH[2]}
   fi
 
