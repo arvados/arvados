@@ -101,7 +101,7 @@ def statfile(prefix, fn):
 
     return prefix+fn
 
-def uploadfiles(files):
+def uploadfiles(files, api):
     # Find the smallest path prefix that includes all the files that need to be uploaded.
     # This starts at the root and iteratively removes common parent directory prefixes
     # until all file pathes no longer have a common parent.
@@ -237,8 +237,8 @@ def main(arguments=None):
     n = True
     pathprefix = "/"
     files = [c for command in slots[1:] for c in command if isinstance(c, UploadFile)]
-    if len(files) > 0:
-        uploadfiles(files)
+    if files:
+        uploadfiles(files, api)
 
     for i in xrange(1, len(slots)):
         slots[i] = [("%s%s" % (c.prefix, c.fn)) if isinstance(c, ArvFile) else c for c in slots[i]]
