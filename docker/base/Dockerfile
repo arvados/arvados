@@ -12,9 +12,9 @@ ENV DEBIAN_FRONTEND noninteractive
 
 ADD apt.arvados.org.list /etc/apt/sources.list.d/
 RUN apt-key adv --keyserver pool.sks-keyservers.net --recv 1078ECD7
-RUN apt-get update -qq
+RUN apt-get update -q
 
-RUN apt-get install -qqy apt-utils git curl \
+RUN apt-get install -qy apt-utils git curl \
              libcurl3 libcurl3-gnutls libcurl4-openssl-dev locales \
              postgresql-server-dev-9.1 python-arvados-python-client
 
