@@ -33,7 +33,8 @@ setup(name='arvados-python-client',
           'bin/arv-normalize',
           'bin/arv-put',
           'bin/arv-run',
-          'bin/arv-ws'
+          'bin/arv-ws',
+          'bin/cwl-runner'
       ],
       install_requires=[
           'ciso8601',
@@ -41,7 +42,8 @@ setup(name='arvados-python-client',
           'httplib2',
           'pycurl>=7.19.5.1',
           'python-gflags',
-          'ws4py'
+          'ws4py',
+          'cwltool'
       ],
       test_suite='tests',
       tests_require=['mock>=1.0', 'PyYAML'],
