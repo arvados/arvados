@@ -11,6 +11,10 @@ import cwltool.main
 import threading
 import cwltool.docker
 import fnmatch
+import logging
+import re
+import os
+from cwltool.process import get_feature
 
 logger = logging.getLogger('arvados.cwl-runner')
 logger.setLevel(logging.INFO)
@@ -29,7 +33,10 @@ def arv_docker_get_image(api_client, dockerRequirement, pull_image):
 
     if not images:
         imageId = cwltool.docker.get_image(dockerRequirement, pull_image)
-        arvados.commands.keepdocker.main(dockerRequirement["dockerImageId"])
+        args = [image_name]
+        if image_tag:
+            args.append(image_tag)
+        arvados.commands.keepdocker.main(args)
 
     return dockerRequirement["dockerImageId"]
 
@@ -81,14 +88,14 @@ class ArvadosJob(object):
         runtime_constraints = {}
 
         if self.stdin:
-            command["stdin"] = self.stdin
+            script_parameters["task.stdin"] = self.stdin
 
         if self.stdout:
-            command["stdout"] = self.stdout
+            script_parameters["task.stdout"] = self.stdout
 
         (docker_req, docker_is_req) = get_feature(self, "DockerRequirement")
         if docker_req and kwargs.get("use_container") is not False:
-            runtime_constraints["docker_image"] = arv_docker_get(docker_req, pull_image)
+            runtime_constraints["docker_image"] = arv_docker_get_image(self.arvrunner.api, docker_req, pull_image)
             runtime_constraints["arvados_sdk_version"] = "master"
 
         response = self.arvrunner.api.jobs().create(body={
@@ -113,7 +120,7 @@ class ArvadosJob(object):
 
 
 class ArvPathMapper(cwltool.pathmapper.PathMapper):
-    def __init__(self, arvrunner, referenced_files, basedir):
+    def __init__(self, arvrunner, referenced_files, basedir, **kwargs):
         self._pathmap = {}
         uploadfiles = []
 
@@ -122,16 +129,19 @@ class ArvPathMapper(cwltool.pathmapper.PathMapper):
         for src in referenced_files:
             ab = src if os.path.isabs(src) else os.path.join(basedir, src)
             st = arvados.commands.run.statfile("", ab)
-            if isinstance(st, arvados.commands.run.UploadFile):
+            if kwargs.get("conformance_test"):
+                self._pathmap[src] = (src, ab)
+            elif isinstance(st, arvados.commands.run.UploadFile):
                 uploadfiles.append((src, ab, st))
             elif isinstance(st, arvados.commands.run.ArvFile):
                 self._pathmap[src] = (ab, st.fn)
             elif isinstance(st, basestring) and pdh_path.match(st):
-                self._pathmap[src] = (st, "$(file %s") % st)
+                self._pathmap[src] = (st, "$(file %s)" % st)
             else:
-                workflow.WorkflowException("Input file path '%s' is invalid", st)
+                raise cwltool.workflow.WorkflowException("Input file path '%s' is invalid", st)
 
-        arvados.commands.run.uploadfiles([u[2] for u in uploadfiles], arvrunner.api)
+        if uploadfiles:
+            arvados.commands.run.uploadfiles([u[2] for u in uploadfiles], arvrunner.api, dry_run=kwargs.get("dry_run"), num_retries=3)
 
         for src, ab, st in uploadfiles:
             self._pathmap[src] = (ab, st.fn)
@@ -145,8 +155,8 @@ class ArvadosCommandTool(cwltool.draft2tool.CommandLineTool):
     def makeJobRunner(self):
         return ArvadosJob(self.arvrunner)
 
-    def makePathMapper(self, reffiles, input_basedir):
-        return ArvadosCommandTool.ArvPathMapper(self.arvrunner, reffiles, input_basedir)
+    def makePathMapper(self, reffiles, input_basedir, **kwargs):
+        return ArvPathMapper(self.arvrunner, reffiles, input_basedir, **kwargs)
 
 
 class ArvCwlRunner(object):
@@ -174,12 +184,12 @@ class ArvCwlRunner(object):
         if "object_uuid" in event:
                 if event["object_uuid"] in self.jobs and event["event_type"] == "update":
                     if ev["properties"]["new_attributes"]["state"] in ("Complete", "Failed", "Cancelled"):
-                    try:
-                        self.cond.acquire()
-                        self.jobs[event["object_uuid"]].done(ev["properties"]["new_attributes"])
-                        self.cond.notify()
-                    finally:
-                        self.cond.release()
+                        try:
+                            self.cond.acquire()
+                            self.jobs[event["object_uuid"]].done(ev["properties"]["new_attributes"])
+                            self.cond.notify()
+                        finally:
+                            self.cond.release()
 
     def arvExecutor(self, t, job_order, input_basedir, **kwargs):
         events = arvados.events.subscribe(arvados.api('v1'), [["object_kind", "=", "arvados#job"]], self.on_message)
@@ -204,7 +214,7 @@ class ArvCwlRunner(object):
                         finally:
                             self.cond.release()
                     else:
-                        raise workflow.WorkflowException("Workflow deadlocked.")
+                        raise cwltool.workflow.WorkflowException("Workflow deadlocked.")
 
             while self.jobs:
                 try:
@@ -216,7 +226,7 @@ class ArvCwlRunner(object):
             events.close()
 
             if self.final_output is None:
-                raise workflow.WorkflowException("Workflow did not return a result.")
+                raise cwltool.workflow.WorkflowException("Workflow did not return a result.")
 
             return self.final_output
 

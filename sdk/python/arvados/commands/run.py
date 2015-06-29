@@ -101,10 +101,12 @@ def statfile(prefix, fn):
 
     return prefix+fn
 
-def uploadfiles(files, api):
+def uploadfiles(files, api, dry_run=False, num_retries=0, project=None):
     # Find the smallest path prefix that includes all the files that need to be uploaded.
     # This starts at the root and iteratively removes common parent directory prefixes
     # until all file pathes no longer have a common parent.
+    n = True
+    pathprefix = "/"
     while n:
         pathstep = None
         for c in files:
@@ -133,12 +135,12 @@ def uploadfiles(files, api):
 
     logger.info("Upload local files: \"%s\"", '" "'.join([c.fn for c in files]))
 
-    if args.dry_run:
+    if dry_run:
         logger.info("$(input) is %s", pathprefix.rstrip('/'))
         pdh = "$(input)"
     else:
         files = sorted(files, key=lambda x: x.fn)
-        collection = arvados.CollectionWriter(api, num_retries=args.retries)
+        collection = arvados.CollectionWriter(api, num_retries=num_retries)
         stream = None
         for f in files:
             sp = os.path.split(f.fn)
@@ -234,11 +236,9 @@ def main(arguments=None):
                             command[i] = statfile(m.group(1), m.group(2))
                             break
 
-    n = True
-    pathprefix = "/"
     files = [c for command in slots[1:] for c in command if isinstance(c, UploadFile)]
     if files:
-        uploadfiles(files, api)
+        uploadfiles(files, api, dry_run=args.dry_run, num_retries=args.num_retries, project=project)
 
     for i in xrange(1, len(slots)):
         slots[i] = [("%s%s" % (c.prefix, c.fn)) if isinstance(c, ArvFile) else c for c in slots[i]]
