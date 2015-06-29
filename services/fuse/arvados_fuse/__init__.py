@@ -67,6 +67,14 @@ import ciso8601
 import collections
 import functools
 
+import Queue
+
+# Default _notify_queue has a limit of 1000 items, but it really needs to be
+# unlimited to avoid deadlocks, see https://arvados.org/issues/3198#note-43 for
+# details.
+
+llfuse.capi._notify_queue = Queue.Queue()
+
 from fusedir import sanitize_filename, Directory, CollectionDirectory, MagicDirectory, TagsDirectory, ProjectDirectory, SharedDirectory, CollectionDirectoryBase
 from fusefile import StringFile, FuseArvadosFile
 
@@ -188,6 +196,7 @@ class Inodes(object):
         self._counter = itertools.count(llfuse.ROOT_INODE)
         self.inode_cache = inode_cache
         self.encoding = encoding
+        self.deferred_invalidations = []
 
     def __getitem__(self, item):
         return self._entries[item]
@@ -218,15 +227,21 @@ class Inodes(object):
 
     def del_entry(self, entry):
         if entry.ref_count == 0:
-            _logger.debug("Deleting inode %i", entry.inode)
             self.inode_cache.unmanage(entry)
-            llfuse.invalidate_inode(entry.inode)
-            entry.finalize()
             del self._entries[entry.inode]
+            with llfuse.lock_released:
+                entry.finalize()
+            self.invalidate_inode(entry.inode)
             entry.inode = None
         else:
             entry.dead = True
             _logger.debug("del_entry on inode %i with refcount %i", entry.inode, entry.ref_count)
+
+    def invalidate_inode(self, inode):
+        llfuse.invalidate_inode(inode)
+
+    def invalidate_entry(self, inode, name):
+        llfuse.invalidate_entry(inode, name)
 
 
 def catch_exceptions(orig_func):
@@ -240,6 +255,12 @@ def catch_exceptions(orig_func):
             raise
         except EnvironmentError as e:
             raise llfuse.FUSEError(e.errno)
+        except arvados.errors.KeepWriteError as e:
+            _logger.error("Keep write error: " + str(e))
+            raise llfuse.FUSEError(errno.EIO)
+        except arvados.errors.NotFoundError as e:
+            _logger.error("Block not found error: " + str(e))
+            raise llfuse.FUSEError(errno.EIO)
         except:
             _logger.exception("Unhandled exception during FUSE operation")
             raise llfuse.FUSEError(errno.EIO)
@@ -293,7 +314,10 @@ class Operations(llfuse.Operations):
             self.events = None
 
         for k,v in self.inodes.items():
-            v.finalize()
+            try:
+                v.finalize()
+            except Exception as e:
+                _logger.exception("Error during finalize of inode %i", k)
         self.inodes = None
 
     def access(self, inode, mode, ctx):
@@ -313,7 +337,12 @@ class Operations(llfuse.Operations):
                     item.invalidate()
                     if ev["object_kind"] == "arvados#collection":
                         new_attr = ev.get("properties") and ev["properties"].get("new_attributes") and ev["properties"]["new_attributes"]
-                        record_version = (new_attr["modified_at"], new_attr["portable_data_hash"]) if new_attr else None
+
+                        # new_attributes.modified_at currently lacks subsecond precision (see #6347) so use event_at which
+                        # should always be the same.
+                        #record_version = (new_attr["modified_at"], new_attr["portable_data_hash"]) if new_attr else None
+                        record_version = (ev["event_at"], new_attr["portable_data_hash"]) if new_attr else None
+
                         item.update(to_record_version=record_version)
                     else:
                         item.update()
@@ -328,6 +357,7 @@ class Operations(llfuse.Operations):
                 if itemparent is not None:
                     itemparent.invalidate()
                     itemparent.update()
+
 
     @catch_exceptions
     def getattr(self, inode):
@@ -442,11 +472,7 @@ class Operations(llfuse.Operations):
 
         self.inodes.touch(handle.obj)
 
-        try:
-            return handle.obj.readfrom(off, size, self.num_retries)
-        except arvados.errors.NotFoundError as e:
-            _logger.error("Block not found: " + str(e))
-            raise llfuse.FUSEError(errno.EIO)
+        return handle.obj.readfrom(off, size, self.num_retries)
 
     @catch_exceptions
     def write(self, fh, off, buf):
@@ -468,12 +494,11 @@ class Operations(llfuse.Operations):
         if fh in self._filehandles:
             try:
                 self._filehandles[fh].flush()
-            except EnvironmentError as e:
-                raise llfuse.FUSEError(e.errno)
             except Exception:
-                _logger.exception("Flush error")
-            self._filehandles[fh].release()
-            del self._filehandles[fh]
+                raise
+            finally:
+                self._filehandles[fh].release()
+                del self._filehandles[fh]
         self.inodes.inode_cache.cap_cache()
 
     def releasedir(self, fh):
@@ -555,6 +580,8 @@ class Operations(llfuse.Operations):
 
     @catch_exceptions
     def create(self, inode_parent, name, mode, flags, ctx):
+        _logger.debug("arv-mount create: %i '%s' %o", inode_parent, name, mode)
+
         p = self._check_writable(inode_parent)
         p.create(name)
 

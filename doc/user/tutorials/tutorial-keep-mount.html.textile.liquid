@@ -49,7 +49,8 @@ Not supported:
 * Symlinks, hard links
 * Changing permissions
 * Extended attributes
+* Moving a subdirectory of a collection into a project, or moving a collection from a project into another collection
 
-If multiple clients try to modify the same file in the same collection, this result in a conflict.  In this case, the most recent file wins, and the "loser" will be renamed to a conflict file in the form @name~YYYYMMDD-HHMMSS~conflict~@.
+If multiple clients (separate instances of arv-mount or other arvados applications) modify the same file in the same collection within a short time interval, this may result in a conflict.  In this case, the most recent commit wins, and the "loser" will be renamed to a conflict file in the form @name~YYYYMMDD-HHMMSS~conflict~@.
 
 Please note this feature is in beta testing.  In particular, the conflict mechanism is itself currently subject to race condiditions with potential for data loss when a collection is being modified simultaneously by multiple clients.  This issue will be resolved in future development.
