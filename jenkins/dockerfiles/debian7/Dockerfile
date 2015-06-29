@@ -15,3 +15,5 @@ RUN gpg --keyserver pool.sks-keyservers.net --recv-keys D39DC0E3 && \
 ADD generated/golang-amd64.tar.gz /usr/local/
 RUN ln -s /usr/local/go/bin/go /usr/local/bin/
 
+ENV WORKSPACE /arvados
+CMD ["/usr/local/rvm/bin/rvm-exec", "default", "bash", "/jenkins/run-build-packages.sh", "--target", "debian7"]
