@@ -21,7 +21,6 @@ RUN apt-get update -q
 ## do it by hand here (or add apt_preferences if it gets too hairy)
 RUN apt-get install -qy apt-utils git curl \
              libcurl3 libcurl3-gnutls libcurl4-openssl-dev locales \
-             postgresql-server-dev-9.1 python-arvados-python-client
              postgresql-server-dev-9.1 python-arvados-python-client \
              python-google-api-python-client python-oauth2client python-pyasn1=0.1.7 python-pyasn1-modules=0.0.5
 
