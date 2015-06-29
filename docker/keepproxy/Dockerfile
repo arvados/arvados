@@ -2,8 +2,8 @@
 FROM arvados/debian:wheezy
 MAINTAINER Ward Vandewege <ward@curoverse.com>
 
-RUN apt-get update -qq
-RUN apt-get install -qqy ca-certificates
+RUN apt-get update -q
+RUN apt-get install -qy ca-certificates
 
 ADD generated/bin/keepproxy /usr/local/bin/
 ADD generated/run-keepproxy /usr/local/bin/

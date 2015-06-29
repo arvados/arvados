@@ -5,8 +5,8 @@ maintainer Ward Vandewege <ward@curoverse.com>
 
 # Install packages
 RUN /bin/mkdir -p /usr/src/arvados && \
-    apt-get update -qq && \
-    apt-get install -qqy curl procps apache2-mpm-worker
+    apt-get update -q && \
+    apt-get install -qy curl procps apache2-mpm-worker
 
 ADD generated/doc.tar.gz /usr/src/arvados/
 
