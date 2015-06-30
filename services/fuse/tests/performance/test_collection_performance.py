@@ -406,3 +406,19 @@ class UsingMagicDir_CreateCollectionWithManyFilesAndMoveEachFileIntoAnother(Moun
         updated_collection = self.api.collections().get(uuid=collection1.manifest_locator()).execute()
         for name in file_names:
           self.assertTrue(name in updated_collection['manifest_text'])
+
+class FuseListLargeProjectContents(MountTestBase):
+    @profiled
+    def listLargeProjectContents(self):
+        project_contents = llfuse.listdir(self.mounttmp)
+        self.assertEqual(201, len(project_contents))
+        self.assertIn('Collection_1', project_contents)
+
+        for collection_name in project_contents:
+            collection_contents = llfuse.listdir(os.path.join(self.mounttmp, collection_name))
+            self.assertIn('baz', collection_contents)
+
+    def test_listLargeProjectContents(self):
+        self.make_mount(fuse.ProjectDirectory,
+                        project_object=run_test_server.fixture('groups')['project_with_201_collections'])
+        self.listLargeProjectContents()
