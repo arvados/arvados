@@ -287,8 +287,9 @@ for tmpdir in VENVDIR VENV3DIR GOPATH GEMHOME
 do
     if [[ -n "${!tmpdir}" ]]; then
         leave_temp[$tmpdir]=1
+        mkdir -p "${!tmpdir}"
     else
-        eval $tmpdir=$(mktemp -d)
+        eval "$tmpdir"='$(mktemp -d)'
     fi
 done
 
