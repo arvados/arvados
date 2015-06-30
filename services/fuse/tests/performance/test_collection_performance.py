@@ -21,8 +21,7 @@ logger = logging.getLogger('arvados.arv-mount')
 
 from performance_profiler import profiled
 
-@profiled
-def fuse_CreateCollectionWithManyFiles(mounttmp, streams=1, files_per_stream=1, blocks_per_file=1, bytes_per_block=1, data='x'):
+def fuse_CreateCollection(mounttmp, streams=1, files_per_stream=1, data='x'):
     class Test(unittest.TestCase):
         def runTest(self):
             for i in range(0, streams):
@@ -35,36 +34,33 @@ def fuse_CreateCollectionWithManyFiles(mounttmp, streams=1, files_per_stream=1, 
 
     Test().runTest()
 
-@profiled
-def fuse_ReadContentsFromCollectionWithManyFiles(mounttmp, streams, files_per_stream, content):
+def fuse_ReadContentsFromCollectionWithManyFiles(mounttmp, streams=1, files_per_stream=1, data='x'):
     class Test(unittest.TestCase):
         def runTest(self):
             for i in range(0, streams):
                 d1 = llfuse.listdir(os.path.join(mounttmp, 'stream'+str(i)))
                 for j in range(0, files_per_stream):
                     with open(os.path.join(mounttmp, 'stream'+str(i), 'file'+str(i)+'.txt')) as f:
-                        self.assertEqual(content, f.read())
+                        self.assertEqual(data, f.read())
 
     Test().runTest()
 
-@profiled
 def fuse_MoveFileFromCollectionWithManyFiles(mounttmp, stream, filename):
     class Test(unittest.TestCase):
         def runTest(self):
             d1 = llfuse.listdir(os.path.join(mounttmp, stream))
             self.assertIn(filename, d1)
 
-            os.rename(os.path.join(mounttmp, stream, filename), os.path.join(mounttmp, filename))
+            os.rename(os.path.join(mounttmp, stream, filename), os.path.join(mounttmp, 'moved_from_'+stream+'_'+filename))
 
             d1 = llfuse.listdir(os.path.join(mounttmp))
-            self.assertIn(filename, d1)
+            self.assertIn('moved_from_'+stream+'_'+filename, d1)
 
             d1 = llfuse.listdir(os.path.join(mounttmp, stream))
             self.assertNotIn(filename, d1)
 
     Test().runTest()
 
-@profiled
 def fuse_DeleteFileFromCollectionWithManyFiles(mounttmp, stream, filename):
     class Test(unittest.TestCase):
         def runTest(self):
@@ -72,12 +68,30 @@ def fuse_DeleteFileFromCollectionWithManyFiles(mounttmp, stream, filename):
 
     Test().runTest()
 
-# Create a collection with two streams, each with 200 files
-class CreateCollectionWithManyFilesAndMoveAndDeleteFile(MountTestBase):
+# Create a collection with 2 streams, 3 files_per_stream, 2 blocks_per_file, 2**26 bytes_per_block
+class CreateCollectionWithMultipleBlocksAndMoveAndDeleteFile(MountTestBase):
     def setUp(self):
-        super(CreateCollectionWithManyFilesAndMoveAndDeleteFile, self).setUp()
+        super(CreateCollectionWithMultipleBlocksAndMoveAndDeleteFile, self).setUp()
 
-    def test_CreateCollectionWithManyFilesAndMoveAndDeleteFile(self):
+    @profiled
+    def createCollectionWithMultipleBlocks(self, streams, files_per_stream, data):
+        self.pool.apply(fuse_CreateCollection, (self.mounttmp, streams, files_per_stream, data,))
+
+    @profiled
+    def readContentsOfCollectionWithMultipleBlocks(self, streams, files_per_stream, data):
+        self.pool.apply(fuse_ReadContentsFromCollectionWithManyFiles, (self.mounttmp, streams, files_per_stream, data,))
+
+    @profiled
+    def moveFileFromCollectionWithMultipleBlocks(self, streams):
+        for i in range(0, streams):
+            self.pool.apply(fuse_MoveFileFromCollectionWithManyFiles, (self.mounttmp, 'stream'+str(i), 'file0.txt',))
+
+    @profiled
+    def removeFileFromCollectionWithMultipleBlocks(self, streams):
+        for i in range(0, streams):
+            self.pool.apply(fuse_DeleteFileFromCollectionWithManyFiles, (self.mounttmp, 'stream'+str(i), 'file1.txt'))
+
+    def test_CreateCollectionWithManyBlocksAndMoveAndDeleteFile(self):
         collection = arvados.collection.Collection(api_client=self.api)
         collection.save_new()
 
@@ -87,14 +101,13 @@ class CreateCollectionWithManyFilesAndMoveAndDeleteFile(MountTestBase):
         self.assertTrue(m.writable())
 
         streams = 2
-        files_per_stream = 200
-        blocks_per_file = 1
-        bytes_per_block = 1
+        files_per_stream = 3
+        blocks_per_file = 2
+        bytes_per_block = 2**26
 
         data = 'x' * blocks_per_file * bytes_per_block
 
-        self.pool.apply(fuse_CreateCollectionWithManyFiles, (self.mounttmp, streams,
-            files_per_stream, blocks_per_file, bytes_per_block, data))
+        self.createCollectionWithMultipleBlocks(streams, files_per_stream, data)
 
         collection2 = self.api.collections().get(uuid=collection.manifest_locator()).execute()
 
@@ -105,11 +118,10 @@ class CreateCollectionWithManyFilesAndMoveAndDeleteFile(MountTestBase):
             self.assertIn('file' + str(i) + '.txt', collection2["manifest_text"])
 
         # Read file contents
-        self.pool.apply(fuse_ReadContentsFromCollectionWithManyFiles, (self.mounttmp, streams, files_per_stream, data,))
+        self.readContentsOfCollectionWithMultipleBlocks(streams, files_per_stream, data)
 
         # Move file0.txt out of the streams into .
-        for i in range(0, streams):
-            self.pool.apply(fuse_MoveFileFromCollectionWithManyFiles, (self.mounttmp, 'stream'+str(i), 'file0.txt',))
+        self.moveFileFromCollectionWithMultipleBlocks(streams)
 
         collection2 = self.api.collections().get(uuid=collection.manifest_locator()).execute()
 
@@ -127,8 +139,92 @@ class CreateCollectionWithManyFilesAndMoveAndDeleteFile(MountTestBase):
                 self.assertIn('file' + str(j) + '.txt', manifest_streams[i+1])
 
         # Delete 'file1.txt' from all the streams
+        self.removeFileFromCollectionWithMultipleBlocks(streams)
+
+        collection2 = self.api.collections().get(uuid=collection.manifest_locator()).execute()
+
+        manifest_streams = collection2['manifest_text'].split('\n')
+        self.assertEqual(4, len(manifest_streams))
+
+        for i in range(0, streams):
+            self.assertIn('file0.txt', manifest_streams[0])
+
+        self.assertNotIn('file1.txt', collection2['manifest_text'])
+
+        for i in range(0, streams):
+            for j in range(2, files_per_stream):
+                self.assertIn('file' + str(j) + '.txt', manifest_streams[i+1])
+
+# Create a collection with two streams, each with 200 files
+class CreateCollectionWithManyFilesAndMoveAndDeleteFile(MountTestBase):
+    def setUp(self):
+        super(CreateCollectionWithManyFilesAndMoveAndDeleteFile, self).setUp()
+
+    @profiled
+    def createCollectionWithManyFiles(self, streams, files_per_stream, data):
+        self.pool.apply(fuse_CreateCollection, (self.mounttmp, streams, files_per_stream, data,))
+
+    @profiled
+    def readContentsOfCollectionWithManyFiles(self, streams, files_per_stream, data):
+        self.pool.apply(fuse_ReadContentsFromCollectionWithManyFiles, (self.mounttmp, streams, files_per_stream, data,))
+
+    @profiled
+    def moveFileFromCollectionWithManyFiles(self, streams):
+        for i in range(0, streams):
+            self.pool.apply(fuse_MoveFileFromCollectionWithManyFiles, (self.mounttmp, 'stream'+str(i), 'file0.txt',))
+
+    @profiled
+    def removeFileFromCollectionWithManyFiles(self, streams):
         for i in range(0, streams):
             self.pool.apply(fuse_DeleteFileFromCollectionWithManyFiles, (self.mounttmp, 'stream'+str(i), 'file1.txt'))
+
+    def test_CreateCollectionWithManyFilesAndMoveAndDeleteFile(self):
+        collection = arvados.collection.Collection(api_client=self.api)
+        collection.save_new()
+
+        m = self.make_mount(fuse.CollectionDirectory)
+        with llfuse.lock:
+            m.new_collection(collection.api_response(), collection)
+        self.assertTrue(m.writable())
+
+        streams = 2
+        files_per_stream = 200
+
+        data = 'x'
+
+        self.createCollectionWithManyFiles(streams, files_per_stream, data)
+
+        collection2 = self.api.collections().get(uuid=collection.manifest_locator()).execute()
+
+        for i in range(0, streams):
+            self.assertIn('./stream' + str(i), collection2["manifest_text"])
+
+        for i in range(0, files_per_stream):
+            self.assertIn('file' + str(i) + '.txt', collection2["manifest_text"])
+
+        # Read file contents
+        self.readContentsOfCollectionWithManyFiles(streams, files_per_stream, data)
+
+        # Move file0.txt out of the streams into .
+        self.moveFileFromCollectionWithManyFiles(streams)
+
+        collection2 = self.api.collections().get(uuid=collection.manifest_locator()).execute()
+
+        manifest_streams = collection2['manifest_text'].split('\n')
+        self.assertEqual(4, len(manifest_streams))
+
+        for i in range(0, streams):
+            self.assertIn('file0.txt', manifest_streams[0])
+
+        for i in range(0, streams):
+            self.assertNotIn('file0.txt', manifest_streams[i+1])
+
+        for i in range(0, streams):
+            for j in range(1, files_per_stream):
+                self.assertIn('file' + str(j) + '.txt', manifest_streams[i+1])
+
+        # Delete 'file1.txt' from all the streams
+        self.removeFileFromCollectionWithManyFiles(streams)
 
         collection2 = self.api.collections().get(uuid=collection.manifest_locator()).execute()
 
@@ -159,14 +255,12 @@ def magicDirTest_RemoveFileFromCollection(mounttmp, collection1, stream, filenam
 
     Test().runTest()
 
-
 class UsingMagicDir_CreateCollectionWithManyFilesAndMoveAndDeleteFile(MountTestBase):
     def setUp(self):
         super(UsingMagicDir_CreateCollectionWithManyFilesAndMoveAndDeleteFile, self).setUp()
 
     @profiled
-    def magicDirTest_createCollectionWithManyFiles(self, streams=0, files_per_stream=0,
-            blocks_per_file=0, bytes_per_block=0, data='x'):
+    def magicDirTest_createCollectionWithManyFiles(self, streams=0, files_per_stream=0, data='x'):
         # Create collection
         collection = arvados.collection.Collection(api_client=self.api)
         for j in range(0, files_per_stream):
@@ -176,8 +270,7 @@ class UsingMagicDir_CreateCollectionWithManyFilesAndMoveAndDeleteFile(MountTestB
         return collection
 
     @profiled
-    def magicDirTest_readCollectionContents(self, collection, streams=1, files_per_stream=1,
-            blocks_per_file=1, bytes_per_block=1, data='x'):
+    def magicDirTest_readCollectionContents(self, collection, streams=1, files_per_stream=1, data='x'):
         mount_ls = os.listdir(os.path.join(self.mounttmp, collection))
 
         files = {}
@@ -204,21 +297,16 @@ class UsingMagicDir_CreateCollectionWithManyFilesAndMoveAndDeleteFile(MountTestB
     def test_UsingMagicDirCreateCollectionWithManyFilesAndMoveAndDeleteFile(self):
         streams = 2
         files_per_stream = 200
-        blocks_per_file = 1
-        bytes_per_block = 1
-
-        data = 'x' * blocks_per_file * bytes_per_block
+        data = 'x'
 
         collection1 = self.magicDirTest_createCollectionWithManyFiles()
         # Create collection with multiple files
-        collection2 = self.magicDirTest_createCollectionWithManyFiles(streams, files_per_stream,
-                          blocks_per_file, bytes_per_block, data)
+        collection2 = self.magicDirTest_createCollectionWithManyFiles(streams, files_per_stream, data)
 
         # Mount FuseMagicDir
         self.make_mount(fuse.MagicDirectory)
 
-        self.magicDirTest_readCollectionContents(collection2.manifest_locator(), streams,
-            files_per_stream, blocks_per_file, bytes_per_block, data)
+        self.magicDirTest_readCollectionContents(collection2.manifest_locator(), streams, files_per_stream, data)
 
         # Move file0.txt out of the collection2 into collection1
         self.magicDirTest_moveFileFromCollection(collection2, collection1)
@@ -259,15 +347,11 @@ class UsingMagicDir_CreateCollectionWithManyFilesAndMoveAllFilesIntoAnother(Moun
     def test_UsingMagicDirCreateCollectionWithManyFilesAndMoveAllFilesIntoAnother(self):
         streams = 2
         files_per_stream = 200
-        blocks_per_file = 1
-        bytes_per_block = 1
-
-        data = 'x' * blocks_per_file * bytes_per_block
+        data = 'x'
 
         collection1 = self.magicDirTestMoveAllFiles_createCollectionWithManyFiles()
         # Create collection with multiple files
-        collection2 = self.magicDirTestMoveAllFiles_createCollectionWithManyFiles(streams, files_per_stream,
-                          blocks_per_file, bytes_per_block, data)
+        collection2 = self.magicDirTestMoveAllFiles_createCollectionWithManyFiles(streams, files_per_stream, data)
 
         # Mount FuseMagicDir
         self.make_mount(fuse.MagicDirectory)
@@ -291,8 +375,7 @@ class UsingMagicDir_CreateCollectionWithManyFilesAndMoveEachFileIntoAnother(Moun
         super(UsingMagicDir_CreateCollectionWithManyFilesAndMoveEachFileIntoAnother, self).setUp()
 
     @profiled
-    def magicDirTestMoveFiles_createCollectionWithManyFiles(self, streams=0, files_per_stream=0,
-            blocks_per_file=0, bytes_per_block=0, data='x'):
+    def magicDirTestMoveFiles_createCollectionWithManyFiles(self, streams=0, files_per_stream=0, data='x'):
         # Create collection
         collection = arvados.collection.Collection(api_client=self.api)
         for j in range(0, files_per_stream):
@@ -312,15 +395,11 @@ class UsingMagicDir_CreateCollectionWithManyFilesAndMoveEachFileIntoAnother(Moun
     def test_UsingMagicDirCreateCollectionWithManyFilesAndMoveEachFileIntoAnother(self):
         streams = 2
         files_per_stream = 200
-        blocks_per_file = 1
-        bytes_per_block = 1
-
-        data = 'x' * blocks_per_file * bytes_per_block
+        data = 'x'
 
         collection1 = self.magicDirTestMoveFiles_createCollectionWithManyFiles()
         # Create collection with multiple files
-        collection2 = self.magicDirTestMoveFiles_createCollectionWithManyFiles(streams, files_per_stream,
-                          blocks_per_file, bytes_per_block, data)
+        collection2 = self.magicDirTestMoveFiles_createCollectionWithManyFiles(streams, files_per_stream, data)
 
         # Mount FuseMagicDir
         self.make_mount(fuse.MagicDirectory)
