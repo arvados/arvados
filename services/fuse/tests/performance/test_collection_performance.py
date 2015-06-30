@@ -1,19 +1,10 @@
 import arvados
-import arvados.safeapi
 import arvados_fuse as fuse
-import glob
-import json
 import llfuse
-import os
-import shutil
-import subprocess
-import sys
-import tempfile
-import threading
-import time
-import unittest
 import logging
-import multiprocessing
+import os
+import sys
+import unittest
 from .. import run_test_server
 from ..mount_test_base import MountTestBase
 

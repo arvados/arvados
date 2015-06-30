@@ -1,8 +1,6 @@
 import arvados
 import arvados.safeapi
 import arvados_fuse as fuse
-import glob
-import json
 import llfuse
 import os
 import shutil
