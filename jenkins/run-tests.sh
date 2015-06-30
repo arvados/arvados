@@ -359,7 +359,13 @@ with_test_gemset() {
     if [[ "$using_rvm" == true ]]; then
         "$@"
     else
-        GEM_HOME="$tmpdir_gem_home" "$@"
+        GEM_HOME="$tmpdir_gem_home" GEM_PATH="$tmpdir_gem_home" "$@"
+    fi
+}
+
+gem_uninstall_if_exists() {
+    if gem list "$1\$" | egrep '^\w'; then
+        gem uninstall --force --all --executables "$1"
     fi
 }
 
@@ -535,7 +541,7 @@ install_doc() {
 do_install doc
 
 install_ruby_sdk() {
-    with_test_gemset gem uninstall --force --all --executables arvados \
+    with_test_gemset gem_uninstall_if_exists arvados \
         && cd "$WORKSPACE/sdk/ruby" \
         && bundle_install_trylocal \
         && gem build arvados.gemspec \
@@ -544,7 +550,7 @@ install_ruby_sdk() {
 do_install sdk/ruby ruby_sdk
 
 install_cli() {
-    with_test_gemset gem uninstall --force --all --executables arvados-cli \
+    with_test_gemset gem_uninstall_if_exists arvados-cli \
         && cd "$WORKSPACE/sdk/cli" \
         && bundle_install_trylocal \
         && gem build arvados-cli.gemspec \
