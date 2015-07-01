@@ -5,6 +5,7 @@ require 'pp'
 require 'arvados'
 require 'tempfile'
 require 'yaml'
+require 'fileutils'
 
 # This script does the actual gitolite config management on disk.
 #
@@ -54,6 +55,7 @@ end
 def replace_file(path, contents)
   unlink_now = true
   dirname, basename = File.split(path)
+  FileUtils.mkpath(dirname)
   new_file = Tempfile.new([basename, ".tmp"], dirname)
   begin
     new_file.write(contents)
