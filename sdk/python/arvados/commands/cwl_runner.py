@@ -98,6 +98,23 @@ class ArvadosJob(object):
         }
         runtime_constraints = {}
 
+        if self.generatefiles:
+            vwd = arvados.collection.Collection()
+            for t in self.generatefiles:
+                if isinstance(self.generatefiles[t], dict):
+                    src, rest = self.arvrunner.fs_access.get_collection(self.generatefiles[t]["path"])
+                    vwd.copy(rest, t, source_collection=src)
+                else:
+                    with vwd.open(t, "w") as f:
+                        f.write(self.generatefiles[t])
+            vwd.save_new()
+            script_parameters["task.vwd"] = vwd.portable_data_hash()
+
+        script_parameters["task.env"] = {"TMPDIR": "$(task.tmpdir)"}
+        if self.environment:
+            for k,v in self.environment.items():
+                script_parameters["task.env"][k] = v
+
         if self.stdin:
             script_parameters["task.stdin"] = self.pathmapper.mapper(self.stdin)[1]
 
@@ -115,11 +132,14 @@ class ArvadosJob(object):
             "script_version": "master",
             "script_parameters": script_parameters,
             "runtime_constraints": runtime_constraints
-        }).execute()
-
-        logger.info("Submitted job %s", response["uuid"])
+        }, find_or_create=kwargs.get("enable_reuse", True)).execute()
 
         self.arvrunner.jobs[response["uuid"]] = self
+
+        logger.info("Job %s is %s", response["uuid"], response["state"])
+
+        if response["state"] in ("Complete", "Failed", "Cancelled"):
+            self.done(response)
 
     def done(self, record):
         try:
@@ -206,7 +226,8 @@ class ArvCwlRunner(object):
                 if event["object_uuid"] in self.jobs and event["event_type"] == "update":
                     if event["properties"]["new_attributes"]["state"] == "Running" and self.jobs[event["object_uuid"]].running is False:
                         logger.info("Job %s is Running", event["object_uuid"])
-                        self.jobs[event["object_uuid"]].running = True
+                        with self.lock:
+                            self.jobs[event["object_uuid"]].running = True
                     elif event["properties"]["new_attributes"]["state"] in ("Complete", "Failed", "Cancelled"):
                         logger.info("Job %s is %s", event["object_uuid"], event["properties"]["new_attributes"]["state"])
                         try:
@@ -216,13 +237,16 @@ class ArvCwlRunner(object):
                         finally:
                             self.cond.release()
 
-    def arvExecutor(self, t, job_order, input_basedir, **kwargs):
+    def arvExecutor(self, t, job_order, input_basedir, args, **kwargs):
         events = arvados.events.subscribe(arvados.api('v1'), [["object_uuid", "is_a", "arvados#job"]], self.on_message)
 
-        kwargs["fs_access"] = CollectionFsAccess(input_basedir)
+        self.fs_access = CollectionFsAccess(input_basedir)
+
+        kwargs["fs_access"] = self.fs_access
+        kwargs["enable_reuse"] = args.enable_reuse
 
         if kwargs.get("conformance_test"):
-            return cwltool.main.single_job_executor(t, job_order, input_basedir, **kwargs)
+            return cwltool.main.single_job_executor(t, job_order, input_basedir, args, **kwargs)
         else:
             jobiter = t.job(job_order,
                             input_basedir,
@@ -261,4 +285,12 @@ class ArvCwlRunner(object):
 def main(args, stdout, stderr, api_client=None):
     runner = ArvCwlRunner(api_client=arvados.api('v1'))
     args.append("--leave-outputs")
-    return cwltool.main.main(args, executor=runner.arvExecutor, makeTool=runner.arvMakeTool)
+    parser = cwltool.main.arg_parser()
+    parser.add_argument("--enable-reuse", action="store_true",
+                        default=False, dest="enable_reuse",
+                        help="")
+    parser.add_argument("--disable-reuse", action="store_false",
+                        default=False, dest="enable_reuse",
+                        help="")
+
+    return cwltool.main.main(args, executor=runner.arvExecutor, makeTool=runner.arvMakeTool, parser=parser)
