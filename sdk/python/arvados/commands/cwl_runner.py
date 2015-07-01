@@ -43,17 +43,19 @@ def arv_docker_get_image(api_client, dockerRequirement, pull_image):
 
     return dockerRequirement["dockerImageId"]
 
-class CollectionFsAccess(object):
-    def __init__(self):
+class CollectionFsAccess(cwltool.draft2tool.StdFsAccess):
+    def __init__(self, basedir):
         self.collections = {}
+        self.basedir = basedir
 
     def get_collection(self, path):
         p = path.split("/")
-        if p[0] == "keep":
-            del p[0]
-        if p[0] not in self.collections:
-            self.collections[p[0]] = arvados.collection.CollectionReader(p[0])
-        return (self.collections[p[0]], "/".join(p[1:]))
+        if arvados.util.keep_locator_pattern.match(p[0]):
+            if p[0] not in self.collections:
+                self.collections[p[0]] = arvados.collection.CollectionReader(p[0])
+            return (self.collections[p[0]], "/".join(p[1:]))
+        else:
+            return (None, path)
 
     def _match(self, collection, patternsegments, parent):
         ret = []
@@ -73,12 +75,17 @@ class CollectionFsAccess(object):
 
     def open(self, fn, mode):
         collection, rest = self.get_collection(fn)
-        return collection.open(rest, mode)
+        if collection:
+            return collection.open(rest, mode)
+        else:
+            return open(self._abs(fn), mode)
 
     def exists(self, fn):
         collection, rest = self.get_collection(fn)
-        return collection.exists(rest)
-
+        if collection:
+            return collection.exists(rest)
+        else:
+            return os.path.exists(self._abs(fn))
 
 class ArvadosJob(object):
     def __init__(self, runner):
@@ -212,7 +219,7 @@ class ArvCwlRunner(object):
     def arvExecutor(self, t, job_order, input_basedir, **kwargs):
         events = arvados.events.subscribe(arvados.api('v1'), [["object_uuid", "is_a", "arvados#job"]], self.on_message)
 
-        kwargs["fs_access"] = CollectionFsAccess()
+        kwargs["fs_access"] = CollectionFsAccess(input_basedir)
 
         if kwargs.get("conformance_test"):
             return cwltool.main.single_job_executor(t, job_order, input_basedir, **kwargs)
