@@ -19,9 +19,6 @@ from cwltool.process import get_feature
 logger = logging.getLogger('arvados.cwl-runner')
 logger.setLevel(logging.INFO)
 
-del cwltool.draft2tool.supportedProcessRequirements[cwltool.draft2tool.supportedProcessRequirements.index("EnvVarRequirement")]
-del cwltool.draft2tool.supportedProcessRequirements[cwltool.draft2tool.supportedProcessRequirements.index("CreateFileRequirement")]
-
 def arv_docker_get_image(api_client, dockerRequirement, pull_image):
     if "dockerImageId" not in dockerRequirement and "dockerPull" in dockerRequirement:
         dockerRequirement["dockerImageId"] = dockerRequirement["dockerPull"]
@@ -102,7 +99,7 @@ class ArvadosJob(object):
             vwd = arvados.collection.Collection()
             for t in self.generatefiles:
                 if isinstance(self.generatefiles[t], dict):
-                    src, rest = self.arvrunner.fs_access.get_collection(self.generatefiles[t]["path"])
+                    src, rest = self.arvrunner.fs_access.get_collection(self.generatefiles[t]["path"][7:-1])
                     vwd.copy(rest, t, source_collection=src)
                 else:
                     with vwd.open(t, "w") as f:
@@ -167,18 +164,19 @@ class ArvPathMapper(cwltool.pathmapper.PathMapper):
         pdh_path = re.compile(r'^[0-9a-f]{32}\+\d+/(.*)')
 
         for src in referenced_files:
-            ab = src if os.path.isabs(src) else os.path.join(basedir, src)
-            st = arvados.commands.run.statfile("", ab)
-            if kwargs.get("conformance_test"):
-                self._pathmap[src] = (src, ab)
-            elif isinstance(st, arvados.commands.run.UploadFile):
-                uploadfiles.append((src, ab, st))
-            elif isinstance(st, arvados.commands.run.ArvFile):
-                self._pathmap[src] = (ab, st.fn)
-            elif isinstance(st, basestring) and pdh_path.match(st):
-                self._pathmap[src] = (st, "$(file %s)" % st)
+            if isinstance(src, basestring) and pdh_path.match(src):
+                self._pathmap[src] = (src, "$(file %s)" % src)
             else:
-                raise cwltool.workflow.WorkflowException("Input file path '%s' is invalid", st)
+                ab = src if os.path.isabs(src) else os.path.join(basedir, src)
+                st = arvados.commands.run.statfile("", ab)
+                if kwargs.get("conformance_test"):
+                    self._pathmap[src] = (src, ab)
+                elif isinstance(st, arvados.commands.run.UploadFile):
+                    uploadfiles.append((src, ab, st))
+                elif isinstance(st, arvados.commands.run.ArvFile):
+                    self._pathmap[src] = (ab, st.fn)
+                else:
+                    raise cwltool.workflow.WorkflowException("Input file path '%s' is invalid" % st)
 
         if uploadfiles:
             arvados.commands.run.uploadfiles([u[2] for u in uploadfiles], arvrunner.api, dry_run=kwargs.get("dry_run"), num_retries=3)
@@ -265,7 +263,8 @@ class ArvCwlRunner(object):
                         finally:
                             self.cond.release()
                     else:
-                        raise cwltool.workflow.WorkflowException("Workflow deadlocked.")
+                        logger.error("Workflow cannot make any more progress.")
+                        break
 
             while self.jobs:
                 try:
