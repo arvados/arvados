@@ -35,6 +35,7 @@ gitolite_arvados_git_user_key = cp_config['gitolite_arvados_git_user_key']
 gitolite_tmpdir = File.join(File.absolute_path(File.dirname(__FILE__)),
                             cp_config['gitolite_tmp'])
 gitolite_admin = File.join(gitolite_tmpdir, 'gitolite-admin')
+gitolite_admin_keydir = File.join(gitolite_admin, 'keydir')
 gitolite_keydir = File.join(gitolite_admin, 'keydir', 'arvados')
 
 ENV['ARVADOS_API_HOST'] = cp_config['arvados_api_host']
@@ -228,10 +229,12 @@ begin
   permissions = arv.repository.get_all_permissions
 
   ensure_directory(gitolite_keydir, 0700)
-  user_ssh_keys = UserSSHKeys.new(permissions[:user_keys], gitolite_keydir)
-  # Make sure the arvados_git_user key is installed
-  user_ssh_keys.install('arvados_git_user.pub', gitolite_arvados_git_user_key)
+  admin_user_ssh_keys = UserSSHKeys.new(permissions[:user_keys], gitolite_admin_keydir)
+  # Make sure the arvados_git_user key is installed; put it in gitolite_admin_keydir
+  # because that is where gitolite will try to put it if we do not.
+  admin_user_ssh_keys.install('arvados_git_user.pub', gitolite_arvados_git_user_key)
 
+  user_ssh_keys = UserSSHKeys.new(permissions[:user_keys], gitolite_keydir)
   permissions[:repositories].each do |repo_record|
     repo = Repository.new(repo_record, user_ssh_keys)
     repo.ensure_config(gitolite_admin)
