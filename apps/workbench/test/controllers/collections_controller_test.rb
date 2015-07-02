@@ -461,4 +461,15 @@ class CollectionsControllerTest < ActionController::TestCase
 
     assert_equal files.sort, disabled.sort, "Expected to see all collection files in disabled list of files"
   end
+
+  test "anonymous user accesses collection in shared project" do
+    Rails.configuration.anonymous_user_token =
+      api_fixture('api_client_authorizations')['anonymous']['api_token']
+    collection = api_fixture('collections')['public_text_file']
+    get(:show, {id: collection['uuid']})
+
+    response_object = assigns(:object)
+    assert_equal collection['name'], response_object['name']
+    assert_equal collection['uuid'], response_object['uuid']
+  end
 end
