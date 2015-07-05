@@ -1,13 +1,38 @@
 #!/bin/bash
 
+set -e
+
+if [ -e /etc/redhat-release ]; then
+    WWW_OWNER=apache:apache
+else
+    # Assume we're on a Debian-based system for now.
+    WWW_OWNER=www-data:www-data
+fi
+
+NGINX_SERVICE=${NGINX_SERVICE:-$(service --status-all 2>/dev/null \
+    | grep -Eo '\bnginx[^[:space:]]*' || true)}
+if [ -z "$NGINX_SERVICE" ]; then
+    cat >&2 <<EOF
+Error: nginx service not found. Aborting.
+Set NGINX_SERVICE to the name of the service hosting the Rails server.
+EOF
+    exit 1
+elif [ "$NGINX_SERVICE" != "$(echo "$NGINX_SERVICE" | head -n 1)" ]; then
+    cat >&2 <<EOF
+Error: multiple nginx services found. Aborting.
+Set NGINX_SERVICE to the name of the service hosting the Rails server.
+EOF
+    exit 1
+fi
+
 RELEASE_PATH=/var/www/arvados-api/current
 SHARED_PATH=/var/www/arvados-api/shared
 CONFIG_PATH=/etc/arvados/api/
 
-echo "Assumption: nginx is configured to serve `hostname` from /var/www/`hostname`/current"
-echo "Assumption: /var/www/`hostname` is symlinked to /var/www/arvados-api"
+echo "Assumption: $NGINX_SERVICE is configured to serve $HOSTNAME from /var/www/$HOSTNAME/current"
+echo "Assumption: /var/www/$HOSTNAME is symlinked to /var/www/arvados-api"
 echo "Assumption: configuration files are in /etc/arvados/api/"
-echo "Assumption: nginx and passenger run as the www-data user"
+echo "Assumption: $NGINX_SERVICE and passenger run as $WWW_OWNER"
 echo
 
 echo "Copying files from $CONFIG_PATH"
@@ -34,13 +59,13 @@ echo "Done."
 
 echo "Ensuring directory and file permissions"
 # Ensure correct ownership of a few files
-chown www-data:www-data $RELEASE_PATH/config/environment.rb
-chown www-data:www-data $RELEASE_PATH/config.ru
-chown www-data:www-data $RELEASE_PATH/config/database.yml
-chown www-data:www-data $RELEASE_PATH/Gemfile.lock
-chown -R www-data:www-data $RELEASE_PATH/tmp
-chown -R www-data:www-data $SHARED_PATH/log
-chown www-data:www-data $RELEASE_PATH/db/structure.sql
+chown "$WWW_OWNER" $RELEASE_PATH/config/environment.rb
+chown "$WWW_OWNER" $RELEASE_PATH/config.ru
+chown "$WWW_OWNER" $RELEASE_PATH/config/database.yml
+chown "$WWW_OWNER" $RELEASE_PATH/Gemfile.lock
+chown -R "$WWW_OWNER" $RELEASE_PATH/tmp
+chown -R "$WWW_OWNER" $SHARED_PATH/log
+chown "$WWW_OWNER" $RELEASE_PATH/db/structure.sql
 chmod 644 $SHARED_PATH/log/*
 echo "Done."
 
@@ -60,5 +85,5 @@ echo "Starting db:migrate"
 echo "Done."
 
 echo "Restarting nginx"
-service nginx restart
+service "$NGINX_SERVICE" restart
 echo "Done."
