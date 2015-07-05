@@ -4,14 +4,20 @@ class Arvados::V1::RepositoriesController < ApplicationController
   before_filter :admin_required, :only => :get_all_permissions
   def get_all_permissions
     @users = {}
-    User.includes(:authorized_keys).all.each do |u|
+    User.includes(:authorized_keys).find_each do |u|
       @users[u.uuid] = u
     end
     admins = @users.select { |k,v| v.is_admin }
     @user_aks = {}
     @repo_info = {}
-    @repos = Repository.includes(:permissions).all
-    @repos.each do |repo|
+    Repository.includes(:permissions).find_each do |repo|
+      @repo_info[repo.uuid] = {
+        uuid: repo.uuid,
+        name: repo.name,
+        push_url: repo.push_url,
+        fetch_url: repo.fetch_url,
+        user_permissions: {},
+      }
       gitolite_permissions = ''
       perms = []
       repo.permissions.each do |perm|
@@ -45,13 +51,6 @@ class Arvados::V1::RepositoriesController < ApplicationController
           }
         end || []
         if @user_aks[user_uuid].any?
-          @repo_info[repo.uuid] ||= {
-            uuid: repo.uuid,
-            name: repo.name,
-            push_url: repo.push_url,
-            fetch_url: repo.fetch_url,
-            user_permissions: {}
-          }
           ri = (@repo_info[repo.uuid][:user_permissions][user_uuid] ||= {})
           ri[perm[:name]] = true
         end
