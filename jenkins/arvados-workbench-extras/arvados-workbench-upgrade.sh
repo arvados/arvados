@@ -39,10 +39,9 @@ chmod 644 $SHARED_PATH/log/*
 echo "Done."
 
 echo "Running sanity check"
-(cd $RELEASE_PATH; RAILS_ENV=production bundle exec rake config:check)
-echo "Done."
-
+(cd $RELEASE_PATH && RAILS_ENV=production bundle exec rake config:check)
 SANITY_CHECK_EXIT_CODE=$?
+echo "Done."
 
 if [[ "$SANITY_CHECK_EXIT_CODE" != "0" ]]; then
   echo "Sanity check failed, aborting. Please roll back to the previous version of the package."
