@@ -116,7 +116,7 @@
               </li>
             <% end %>
           <% else %>
-            <% if Rails.configuration.anonymous_user_token %>
+            <% if Rails.configuration.anonymous_user_token and Rails.configuration.enable_public_projects_page %>
               <li><%= link_to 'Browse public projects', "/projects/public" %></li>
             <% end %>
             <li class="dropdown hover-dropdown login-menu">
@@ -183,7 +183,7 @@
               <span class="caret"></span>
             </a>
             <ul class="dropdown-menu" style="min-width: 20em" role="menu">
-              <% if Rails.configuration.anonymous_user_token %>
+              <% if Rails.configuration.anonymous_user_token and Rails.configuration.enable_public_projects_page %>
                 <li><%= link_to 'Browse public projects', "/projects/public", class: 'btn btn-xs btn-default pull-right' %></li>
               <% end %>
               <li>

@@ -267,6 +267,7 @@ class ProjectsControllerTest < ActionController::TestCase
       project_names = assigns(:objects).collect(&:name)
       assert_includes project_names, 'Unrestricted public data'
       assert_not_includes project_names, 'A Project'
+      refute_empty css_select('[href="/projects/public"]')
     end
   end
 
@@ -275,7 +276,7 @@ class ProjectsControllerTest < ActionController::TestCase
     assert_response 404
   end
 
-  test "visit public projects page when anon config is enabled but public projects page is disabled and expect 404" do
+  test "visit public projects page when anon config is enabled but public projects page is disabled as active user and expect 404" do
     Rails.configuration.anonymous_user_token = api_fixture('api_client_authorizations')['anonymous']['api_token']
     Rails.configuration.enable_public_projects_page = false
     get :public, {}, session_for(:active)
@@ -286,5 +287,23 @@ class ProjectsControllerTest < ActionController::TestCase
     get :public
     assert_response :redirect
     assert_match /\/users\/welcome/, @response.redirect_url
+    assert_empty css_select('[href="/projects/public"]')
+  end
+
+  test "visit public projects page when anon config is enabled and public projects page is disabled and expect login page" do
+    Rails.configuration.anonymous_user_token = api_fixture('api_client_authorizations')['anonymous']['api_token']
+    Rails.configuration.enable_public_projects_page = false
+    get :index
+    assert_response :redirect
+    assert_match /\/users\/welcome/, @response.redirect_url
+    assert_empty css_select('[href="/projects/public"]')
+  end
+
+  test "visit public projects page when anon config is not enabled and public projects page is enabled and expect login page" do
+    Rails.configuration.enable_public_projects_page = true
+    get :index
+    assert_response :redirect
+    assert_match /\/users\/welcome/, @response.redirect_url
+    assert_empty css_select('[href="/projects/public"]')
   end
 end
