@@ -1,13 +1,38 @@
 #!/bin/bash
 
+set -e
+
+if [ -e /etc/redhat-release ]; then
+    WWW_OWNER=apache:apache
+else
+    # Assume we're on a Debian-based system for now.
+    WWW_OWNER=www-data:www-data
+fi
+
+NGINX_SERVICE=${NGINX_SERVICE:-$(service --status-all 2>/dev/null \
+    | grep -Eo '\bnginx[^[:space:]]*' || true)}
+if [ -z "$NGINX_SERVICE" ]; then
+    cat >&2 <<EOF
+Error: nginx service not found. Aborting.
+Set NGINX_SERVICE to the name of the service hosting the Rails server.
+EOF
+    exit 1
+elif [ "$NGINX_SERVICE" != "$(echo "$NGINX_SERVICE" | head -n 1)" ]; then
+    cat >&2 <<EOF
+Error: multiple nginx services found. Aborting.
+Set NGINX_SERVICE to the name of the service hosting the Rails server.
+EOF
+    exit 1
+fi
+
 RELEASE_PATH=/var/www/arvados-api/current
 SHARED_PATH=/var/www/arvados-api/shared
 CONFIG_PATH=/etc/arvados/api/
 
-echo "Assumption: nginx is configured to serve `hostname` from /var/www/`hostname`/current"
-echo "Assumption: /var/www/`hostname` is symlinked to /var/www/arvados-api"
+echo "Assumption: $NGINX_SERVICE is configured to serve $HOSTNAME from /var/www/$HOSTNAME/current"
+echo "Assumption: /var/www/$HOSTNAME is symlinked to /var/www/arvados-api"
 echo "Assumption: configuration files are in /etc/arvados/api/"
-echo "Assumption: nginx and passenger run as the www-data user"
+echo "Assumption: $NGINX_SERVICE and passenger run as $WWW_OWNER"
 echo
 
 echo "Copying files from $CONFIG_PATH"
@@ -23,29 +48,32 @@ if [[ ! -e $RELEASE_PATH/tmp ]]; then mkdir -p $RELEASE_PATH/tmp; fi
 if [[ ! -e $RELEASE_PATH/log ]]; then ln -s $SHARED_PATH/log $RELEASE_PATH/log; fi
 if [[ ! -e $SHARED_PATH/log/production.log ]]; then touch $SHARED_PATH/log/production.log; fi
 
+cd "$RELEASE_PATH"
+export RAILS_ENV=production
+
 echo "Running bundle install"
-(cd $RELEASE_PATH && RAILS_ENV=production bundle install --path $SHARED_PATH/vendor_bundle)
+bundle install --path $SHARED_PATH/vendor_bundle
 echo "Done."
 
 echo "Precompiling assets"
 # precompile assets; thankfully this does not take long
-(cd $RELEASE_PATH; RAILS_ENV=production bundle exec rake assets:precompile)
+bundle exec rake assets:precompile
 echo "Done."
 
 echo "Ensuring directory and file permissions"
 # Ensure correct ownership of a few files
-chown www-data:www-data $RELEASE_PATH/config/environment.rb
-chown www-data:www-data $RELEASE_PATH/config.ru
-chown www-data:www-data $RELEASE_PATH/config/database.yml
-chown www-data:www-data $RELEASE_PATH/Gemfile.lock
-chown -R www-data:www-data $RELEASE_PATH/tmp
-chown -R www-data:www-data $SHARED_PATH/log
-chown www-data:www-data $RELEASE_PATH/db/structure.sql
+chown "$WWW_OWNER" $RELEASE_PATH/config/environment.rb
+chown "$WWW_OWNER" $RELEASE_PATH/config.ru
+chown "$WWW_OWNER" $RELEASE_PATH/config/database.yml
+chown "$WWW_OWNER" $RELEASE_PATH/Gemfile.lock
+chown -R "$WWW_OWNER" $RELEASE_PATH/tmp
+chown -R "$WWW_OWNER" $SHARED_PATH/log
+chown "$WWW_OWNER" $RELEASE_PATH/db/structure.sql
 chmod 644 $SHARED_PATH/log/*
 echo "Done."
 
 echo "Running sanity check"
-(cd $RELEASE_PATH && RAILS_ENV=production bundle exec rake config:check)
+bundle exec rake config:check
 SANITY_CHECK_EXIT_CODE=$?
 echo "Done."
 
@@ -55,10 +83,21 @@ if [[ "$SANITY_CHECK_EXIT_CODE" != "0" ]]; then
   exit $SANITY_CHECK_EXIT_CODE
 fi
 
-echo "Starting db:migrate"
-(cd $RELEASE_PATH && bundle exec rake RAILS_ENV=production  db:migrate)
+echo "Checking database status"
+# If we use `grep -q`, rake will write a backtrace on EPIPE.
+if bundle exec rake db:migrate:status | grep '^database: ' >/dev/null; then
+    echo "Starting db:migrate"
+    bundle exec rake db:migrate
+elif [ 0 -eq ${PIPESTATUS[0]} ]; then
+    # The database exists, but the migrations table doesn't.
+    echo "Setting up database"
+    bundle exec rake db:structure:load db:seed
+else
+    echo "Error: Database is not ready to set up. Aborting." >&2
+    exit 1
+fi
 echo "Done."
 
 echo "Restarting nginx"
-service nginx restart
+service "$NGINX_SERVICE" restart
 echo "Done."
