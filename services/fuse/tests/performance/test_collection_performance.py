@@ -226,7 +226,6 @@ class CreateCollectionWithManyFilesAndMoveAndDeleteFile(MountTestBase):
 
         streams = 2
         files_per_stream = 200
-
         data = 'x'
 
         self.pool.apply(fuse_createCollectionWithManyFiles, (self.mounttmp, streams, files_per_stream, data,))
@@ -283,7 +282,10 @@ class CreateCollectionWithManyFilesAndMoveAndDeleteFile(MountTestBase):
 def magicDirTest_MoveFileFromCollection(mounttmp, collection1, collection2, stream, filename):
     class Test(unittest.TestCase):
         def runTest(self):
-            #os.rename(os.path.join(mounttmp, collection1, stream, filename), os.path.join(mounttmp, collection2, stream, filename))
+            self.magicDirTest_moveFileFromCollection()
+
+        @profiled
+        def magicDirTest_moveFileFromCollection(self):
             os.rename(os.path.join(mounttmp, collection1, filename), os.path.join(mounttmp, collection2, filename))
 
     Test().runTest()
@@ -291,6 +293,10 @@ def magicDirTest_MoveFileFromCollection(mounttmp, collection1, collection2, stre
 def magicDirTest_RemoveFileFromCollection(mounttmp, collection1, stream, filename):
     class Test(unittest.TestCase):
         def runTest(self):
+            self.magicDirTest_removeFileFromCollection()
+
+        @profiled
+        def magicDirTest_removeFileFromCollection(self):
             os.remove(os.path.join(mounttmp, collection1, filename))
 
     Test().runTest()
@@ -316,23 +322,10 @@ class UsingMagicDir_CreateCollectionWithManyFilesAndMoveAndDeleteFile(MountTestB
         files = {}
         for j in range(0, files_per_stream):
             files[os.path.join(self.mounttmp, collection, 'file'+str(j)+'.txt')] = data
-            #files[os.path.join(self.mounttmp, collection, 'stream'+str(i)+'/file'+str(j)+'.txt')] = data
 
         for k, v in files.items():
             with open(os.path.join(self.mounttmp, collection, k)) as f:
                 self.assertEqual(v, f.read())
-
-    @profiled
-    def magicDirTest_moveFileFromCollection(self, from_collection, to_collection):
-        self.pool.apply(magicDirTest_MoveFileFromCollection, (self.mounttmp, from_collection.manifest_locator(),
-              to_collection.manifest_locator(), 'stream0', 'file0.txt',))
-        from_collection.update()
-        to_collection.update()
-
-    @profiled
-    def magicDirTest_removeFileFromCollection(self, collection):
-        self.pool.apply(magicDirTest_RemoveFileFromCollection, (self.mounttmp, collection.manifest_locator(), 'stream0', 'file1.txt',))
-        collection.update()
 
     def test_UsingMagicDirCreateCollectionWithManyFilesAndMoveAndDeleteFile(self):
         streams = 2
@@ -349,17 +342,30 @@ class UsingMagicDir_CreateCollectionWithManyFilesAndMoveAndDeleteFile(MountTestB
         self.magicDirTest_readCollectionContents(collection2.manifest_locator(), streams, files_per_stream, data)
 
         # Move file0.txt out of the collection2 into collection1
-        self.magicDirTest_moveFileFromCollection(collection2, collection1)
+        self.pool.apply(magicDirTest_MoveFileFromCollection, (self.mounttmp, collection2.manifest_locator(),
+              collection1.manifest_locator(), 'stream0', 'file0.txt',))
         updated_collection = self.api.collections().get(uuid=collection2.manifest_locator()).execute()
         self.assertFalse('file0.txt' in updated_collection['manifest_text'])
         self.assertTrue('file1.txt' in updated_collection['manifest_text'])
 
         # Delete file1.txt from collection2
-        self.magicDirTest_removeFileFromCollection(collection2)
+        self.pool.apply(magicDirTest_RemoveFileFromCollection, (self.mounttmp, collection2.manifest_locator(), 'stream0', 'file1.txt',))
         updated_collection = self.api.collections().get(uuid=collection2.manifest_locator()).execute()
         self.assertFalse('file1.txt' in updated_collection['manifest_text'])
         self.assertTrue('file2.txt' in updated_collection['manifest_text'])
 
+
+def magicDirTest_MoveAllFilesFromCollection(mounttmp, from_collection, to_collection, stream, files_per_stream):
+    class Test(unittest.TestCase):
+        def runTest(self):
+            self.magicDirTest_moveAllFilesFromCollection()
+
+        @profiled
+        def magicDirTest_moveAllFilesFromCollection(self):
+            for j in range(0, files_per_stream):
+                os.rename(os.path.join(mounttmp, from_collection, 'file'+str(j)+'.txt'), os.path.join(mounttmp, to_collection, 'file'+str(j)+'.txt'))
+
+    Test().runTest()
 
 class UsingMagicDir_CreateCollectionWithManyFilesAndMoveAllFilesIntoAnother(MountTestBase):
     def setUp(self):
@@ -377,13 +383,6 @@ class UsingMagicDir_CreateCollectionWithManyFilesAndMoveAllFilesIntoAnother(Moun
         return collection
 
     @profiled
-    def magicDirTestMoveAllFiles_moveFilesFromCollection(self, from_collection, to_collection, files_per_stream):
-        for j in range(0, files_per_stream):
-            self.pool.apply(magicDirTest_MoveFileFromCollection, (self.mounttmp, from_collection.manifest_locator(),
-                  to_collection.manifest_locator(), 'stream0', 'file'+str(j)+'.txt',))
-        from_collection.update()
-        to_collection.update()
-
     def test_UsingMagicDirCreateCollectionWithManyFilesAndMoveAllFilesIntoAnother(self):
         streams = 2
         files_per_stream = 200
@@ -397,16 +396,17 @@ class UsingMagicDir_CreateCollectionWithManyFilesAndMoveAllFilesIntoAnother(Moun
         self.make_mount(fuse.MagicDirectory)
 
         # Move all files from collection2 into collection1
-        self.magicDirTestMoveAllFiles_moveFilesFromCollection(collection2, collection1, files_per_stream)
+        self.pool.apply(magicDirTest_MoveAllFilesFromCollection, (self.mounttmp, collection2.manifest_locator(),
+                  collection1.manifest_locator(), 'stream0', files_per_stream,))
 
         updated_collection = self.api.collections().get(uuid=collection2.manifest_locator()).execute()
         file_names = ["file%i.txt" % i for i in range(0, files_per_stream)]
         for name in file_names:
-          self.assertFalse(name in updated_collection['manifest_text'])
+            self.assertFalse(name in updated_collection['manifest_text'])
 
         updated_collection = self.api.collections().get(uuid=collection1.manifest_locator()).execute()
         for name in file_names:
-          self.assertTrue(name in updated_collection['manifest_text'])
+            self.assertTrue(name in updated_collection['manifest_text'])
 
 
 # Move one file at a time from one collection into another
@@ -424,14 +424,12 @@ class UsingMagicDir_CreateCollectionWithManyFilesAndMoveEachFileIntoAnother(Moun
         collection.save_new()
         return collection
 
-    @profiled
     def magicDirTestMoveFiles_oneEachIntoAnother(self, from_collection, to_collection, files_per_stream):
         for j in range(0, files_per_stream):
             self.pool.apply(magicDirTest_MoveFileFromCollection, (self.mounttmp, from_collection.manifest_locator(),
                   to_collection.manifest_locator(), 'stream0', 'file'+str(j)+'.txt',))
-            from_collection.update()
-            to_collection.update()
 
+    @profiled
     def test_UsingMagicDirCreateCollectionWithManyFilesAndMoveEachFileIntoAnother(self):
         streams = 2
         files_per_stream = 200
@@ -450,11 +448,11 @@ class UsingMagicDir_CreateCollectionWithManyFilesAndMoveEachFileIntoAnother(Moun
         updated_collection = self.api.collections().get(uuid=collection2.manifest_locator()).execute()
         file_names = ["file%i.txt" % i for i in range(0, files_per_stream)]
         for name in file_names:
-          self.assertFalse(name in updated_collection['manifest_text'])
+            self.assertFalse(name in updated_collection['manifest_text'])
 
         updated_collection = self.api.collections().get(uuid=collection1.manifest_locator()).execute()
         for name in file_names:
-          self.assertTrue(name in updated_collection['manifest_text'])
+            self.assertTrue(name in updated_collection['manifest_text'])
 
 class FuseListLargeProjectContents(MountTestBase):
     @profiled
