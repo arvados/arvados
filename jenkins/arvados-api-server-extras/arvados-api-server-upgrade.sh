@@ -48,13 +48,16 @@ if [[ ! -e $RELEASE_PATH/tmp ]]; then mkdir -p $RELEASE_PATH/tmp; fi
 if [[ ! -e $RELEASE_PATH/log ]]; then ln -s $SHARED_PATH/log $RELEASE_PATH/log; fi
 if [[ ! -e $SHARED_PATH/log/production.log ]]; then touch $SHARED_PATH/log/production.log; fi
 
+cd "$RELEASE_PATH"
+export RAILS_ENV=production
+
 echo "Running bundle install"
-(cd $RELEASE_PATH && RAILS_ENV=production bundle install --path $SHARED_PATH/vendor_bundle)
+bundle install --path $SHARED_PATH/vendor_bundle
 echo "Done."
 
 echo "Precompiling assets"
 # precompile assets; thankfully this does not take long
-(cd $RELEASE_PATH; RAILS_ENV=production bundle exec rake assets:precompile)
+bundle exec rake assets:precompile
 echo "Done."
 
 echo "Ensuring directory and file permissions"
@@ -70,7 +73,7 @@ chmod 644 $SHARED_PATH/log/*
 echo "Done."
 
 echo "Running sanity check"
-(cd $RELEASE_PATH && RAILS_ENV=production bundle exec rake config:check)
+bundle exec rake config:check
 SANITY_CHECK_EXIT_CODE=$?
 echo "Done."
 
@@ -80,8 +83,19 @@ if [[ "$SANITY_CHECK_EXIT_CODE" != "0" ]]; then
   exit $SANITY_CHECK_EXIT_CODE
 fi
 
-echo "Starting db:migrate"
-(cd $RELEASE_PATH && bundle exec rake RAILS_ENV=production  db:migrate)
+echo "Checking database status"
+# If we use `grep -q`, rake will write a backtrace on EPIPE.
+if bundle exec rake db:migrate:status | grep '^database: ' >/dev/null; then
+    echo "Starting db:migrate"
+    bundle exec rake db:migrate
+elif [ 0 -eq ${PIPESTATUS[0]} ]; then
+    # The database exists, but the migrations table doesn't.
+    echo "Setting up database"
+    bundle exec rake db:structure:load db:seed
+else
+    echo "Error: Database is not ready to set up. Aborting." >&2
+    exit 1
+fi
 echo "Done."
 
 echo "Restarting nginx"
