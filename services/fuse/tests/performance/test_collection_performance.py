@@ -382,7 +382,6 @@ class UsingMagicDir_CreateCollectionWithManyFilesAndMoveAllFilesIntoAnother(Moun
         collection.save_new()
         return collection
 
-    @profiled
     def test_UsingMagicDirCreateCollectionWithManyFilesAndMoveAllFilesIntoAnother(self):
         streams = 2
         files_per_stream = 200
@@ -429,7 +428,6 @@ class UsingMagicDir_CreateCollectionWithManyFilesAndMoveEachFileIntoAnother(Moun
             self.pool.apply(magicDirTest_MoveFileFromCollection, (self.mounttmp, from_collection.manifest_locator(),
                   to_collection.manifest_locator(), 'stream0', 'file'+str(j)+'.txt',))
 
-    @profiled
     def test_UsingMagicDirCreateCollectionWithManyFilesAndMoveEachFileIntoAnother(self):
         streams = 2
         files_per_stream = 200
