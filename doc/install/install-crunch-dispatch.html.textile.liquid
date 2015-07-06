@@ -91,13 +91,13 @@ Please make sure to update the value of the @ControlMachine@ parameter to the ho
 
 h2. Enable SLURM job dispatch
 
-h4. Crunch user account
+In your API server's @application.yml@ configuration file, add the line @crunch_job_wrapper: :slurm_immediate@ under the appropriate section.  (The second colon is not a typo.  It denotes a Ruby symbol.)
 
-* @adduser crunch@
+h2. Crunch user account
 
-The crunch user should have the same UID, GID, and home directory on all compute nodes and on the dispatcher (api server).
+Run @sudo adduser crunch@.  The crunch user should have the same UID, GID, and home directory on all compute nodes and on the dispatcher (API server).
 
-h4. Repositories
+h2. Git Repositories
 
 Crunch scripts must be in Git repositories in the directory configured as @git_repositories_dir@/*.git (see the "API server installation":install-api-server.html#git_repositories_dir).
 

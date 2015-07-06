@@ -6,7 +6,7 @@ title: Install a compute node
 
 h2. Install dependencies
 
-First, "add the appropriate package repository for your distribution":/install/install-manual-prerequisites.html#repos.
+First, "add the appropriate package repository for your distribution":{{ site.baseurl }}/install/install-manual-prerequisites.html#repos.
 
 On Debian-based systems:
 
@@ -15,24 +15,30 @@ On Debian-based systems:
 </code></pre>
 </notextile>
 
-h2. Install slurm and munge
+On Red Hat-based systems:
 
 <notextile>
-<pre><code>~$ <span class="userinput">sudo /usr/bin/apt-get install slurm-llnl munge</span>
+<pre><code>~$ <span class="userinput">sudo yum install perl python27-python-virtualenv fuse python27-python-arvados-python-client python27-python-arvados-fuse crunchstat iptables ca-certificates</span>
 </code></pre>
 </notextile>
 
-h2. Copy configuration files from the dispatcher (api)
+{% include 'note_python27_sc' %}
+
+h2. Set up Docker
+
+Compute nodes must have Docker installed to run jobs inside containers.  This requires a relatively recent version of Linux (at least upstream version 3.10, or a distribution version with the appropriate patches backported).  Follow the "Docker Engine installation documentation":https://docs.docker.com/ for your distribution.
+
+For Debian-based systems, the Arvados package repository includes a backported @docker.io@ package with a known-good version you can install.
+
+h2. Set up SLURM
+
+Install SLURM following "the same process you used to install the Crunch dispatcher":{{ site.baseurl }}/install/install-crunch-dispatch.html#slurm.
+
+h2. Copy configuration files from the dispatcher (API server)
 
 The @/etc/slurm-llnl/slurm.conf@ and @/etc/munge/munge.key@ files need to be identicaly across the dispatcher and all compute nodes. Copy the files you created in the "Install the Crunch dispatcher":{{site.baseurl}} step to this compute node.
 
-h2. Crunch user account
-
-* @adduser crunch@
-
-The crunch user should have the same UID, GID, and home directory on all compute nodes and on the dispatcher (api server).
-
-h2. Configure fuse
+h2. Configure FUSE
 
 Install this file as @/etc/fuse.conf@:
 
@@ -49,6 +55,17 @@ Install this file as @/etc/fuse.conf@:
 user_allow_other
 </pre>
 </notextile>
+
+h2. Crunch user account
+
+Create a Crunch user account, and add it to the @fuse@ and @docker@ groups so it can use those tools:
+
+<notextile>
+<pre><code>~$ <span class="userinput">sudo useradd --groups fuse,docker crunch</span>
+</code></pre>
+</notextile>
+
+The crunch user should have the same UID, GID, and home directory across all compute nodes and the dispatcher (API server).
 
 h2. Tell the API server about this compute node
 
