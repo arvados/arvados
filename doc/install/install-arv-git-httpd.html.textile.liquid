@@ -4,8 +4,6 @@ navsection: installguide
 title: Install Git server
 ...
 
-This installation guide assumes you are on a 64 bit Debian or Ubuntu system.
-
 The arv-git-httpd server provides HTTP access to hosted git repositories, using Arvados authentication tokens instead of passwords. It is intended to be installed on the system where your git repositories are stored, and accessed through a web proxy that provides SSL support.
 
 By convention, we use the following hostname for the git service:
@@ -19,13 +17,17 @@ This hostname should resolve from anywhere on the internet.
 
 h2. Install arv-git-httpd
 
-First add the Arvados apt repository, and then install the arv-git-httpd package.
+On Debian-based systems:
 
 <notextile>
-<pre><code>~$ <span class="userinput">echo "deb http://apt.arvados.org/ wheezy main" | sudo tee /etc/apt/sources.list.d/apt.arvados.org.list</span>
-~$ <span class="userinput">sudo /usr/bin/apt-key adv --keyserver pool.sks-keyservers.net --recv 1078ECD7</span>
-~$ <span class="userinput">sudo /usr/bin/apt-get update</span>
-~$ <span class="userinput">sudo /usr/bin/apt-get install arv-git-httpd</span>
+<pre><code>~$ <span class="userinput">sudo apt-get install git arv-git-httpd</span>
+</code></pre>
+</notextile>
+
+On Red Hat-based systems:
+
+<notextile>
+<pre><code>~$ <span class="userinput">sudo yum install git arv-git-httpd</span>
 </code></pre>
 </notextile>
 
@@ -47,7 +49,7 @@ fatal: No REQUEST_METHOD from server
 </code></pre>
 </notextile>
 
-We recommend running @arv-git-httpd@ under "runit":https://packages.debian.org/search?keywords=runit or something similar.
+We recommend running @arv-git-httpd@ under "runit":http://smarden.org/runit/ or something similar.
 
 Your @run@ script should look something like this:
 
@@ -65,7 +67,7 @@ This is best achieved by putting a reverse proxy with SSL support in front of ar
 
 h3. Tell the API server about the arv-git-httpd service
 
-In your API server's config/application.yml file, add the following entry:
+In your API server's @config/application.yml@ file, add the following entry:
 
 <notextile>
 <pre><code>git_http_base: git.<span class="userinput">uuid_prefix</span>.your.domain

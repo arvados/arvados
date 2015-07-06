@@ -5,25 +5,25 @@ title: Install the Crunch dispatcher
 
 ...
 
-
-
 The dispatcher normally runs on the same host/VM as the API server.
 
-h4. Perl SDK dependencies
+h2. Perl SDK dependencies
 
 Install the Perl SDK on the controller.
 
 * See "Perl SDK":{{site.baseurl}}/sdk/perl/index.html page for details.
 
-h4. Python SDK dependencies
+h2. Python SDK dependencies
 
 Install the Python SDK and CLI tools on controller and all compute nodes.
 
 * See "Python SDK":{{site.baseurl}}/sdk/python/sdk-python.html page for details.
 
-h4. Slurm
+h2(#slurm). Set up SLURM
 
-On the API server, install slurm and munge, and generate a munge key:
+On the API server, install SLURM and munge, and generate a munge key.
+
+On Debian-based systems:
 
 <notextile>
 <pre><code>~$ <span class="userinput">sudo /usr/bin/apt-get install slurm-llnl munge</span>
@@ -31,7 +31,9 @@ On the API server, install slurm and munge, and generate a munge key:
 </code></pre>
 </notextile>
 
-Now we need to give slurm a configuration file in @/etc/slurm-llnl/slurm.conf@. Here's an example:
+On Red Hat-based systems, "install SLURM and munge from source following their installation guide":https://computing.llnl.gov/linux/slurm/quickstart_admin.html.
+
+Now we need to give SLURM a configuration file in @/etc/slurm-llnl/slurm.conf@. Here's an example:
 
 <notextile>
 <pre>
@@ -85,7 +87,9 @@ PartitionName=compute Nodes=compute[0-255]
 </pre>
 </notextile>
 
-Please make sure to update the value of the @ControlMachine@ parameter to the hostname of your dispatcher (api server).
+Please make sure to update the value of the @ControlMachine@ parameter to the hostname of your dispatcher (API server).
+
+h2. Enable SLURM job dispatch
 
 h4. Crunch user account
 
@@ -114,12 +118,12 @@ Without getting this error:
 ArgumentError: Specified script_version does not resolve to a commit
 </pre>
 
-h4. Running jobs
+h2. Running jobs
 
 * @services/api/script/crunch-dispatch.rb@ must be running.
 * @crunch-dispatch.rb@ needs @services/crunch/crunch-job@ in its @PATH@.
-* @crunch-job@ needs @sdk/perl/lib@ and @warehouse-apps/libwarehouse-perl/lib@ in its @PERLLIB@
-* @crunch-job@ needs @ARVADOS_API_HOST@ (and, if necessary in a development environment, @ARVADOS_API_HOST_INSECURE@)
+* @crunch-job@ needs the installation path of the Perl SDK in its @PERLLIB@.
+* @crunch-job@ needs the @ARVADOS_API_HOST@ (and, if necessary in a development environment, @ARVADOS_API_HOST_INSECURE@) environment variable set.
 
 Example @/var/service/arvados_crunch_dispatch/run@ script:
 
