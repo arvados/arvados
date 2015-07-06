@@ -471,5 +471,8 @@ class CollectionsControllerTest < ActionController::TestCase
     response_object = assigns(:object)
     assert_equal collection['name'], response_object['name']
     assert_equal collection['uuid'], response_object['uuid']
+    assert_includes @response.body, 'Hello world'
+    assert_includes @response.body, 'Content address'
+    refute_nil css_select('[href="#Advanced"]')
   end
 end
