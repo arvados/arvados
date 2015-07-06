@@ -15,9 +15,9 @@ try:
 except ImportError:
     tagger = egg_info_cmd.egg_info
 
-setup(name='arvados-python-client',
-      version='0.1',
-      description='Arvados client library',
+setup(name='arvados-cwl-runner',
+      version='1.0',
+      description='Arvados Commond Workflow Language runner',
       long_description=open(README).read(),
       author='Arvados',
       author_email='info@arvados.org',
@@ -26,25 +26,12 @@ setup(name='arvados-python-client',
       license='Apache 2.0',
       packages=find_packages(),
       scripts=[
-          'bin/arv-copy',
-          'bin/arv-get',
-          'bin/arv-keepdocker',
-          'bin/arv-ls',
-          'bin/arv-normalize',
-          'bin/arv-put',
-          'bin/arv-run',
-          'bin/arv-ws'
+          'bin/cwl-runner'
       ],
       install_requires=[
-          'ciso8601',
-          'google-api-python-client',
-          'httplib2',
-          'pycurl>=7.19.5.1',
-          'python-gflags',
-          'ws4py'
+          'cwltool',
+          'arvados-python-client'
       ],
-      test_suite='tests',
-      tests_require=['mock>=1.0', 'PyYAML'],
-      zip_safe=False,
+      zip_safe=True,
       cmdclass={'egg_info': tagger},
       )
