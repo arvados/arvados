@@ -99,8 +99,9 @@ $(document).on('click', '.selectable', function() {
                 message = "Request failed.";
             }
             this.modal.find('.modal-error').
-                html('<div class="alert alert-danger">' + message + '</div>').
-                show();
+                html('<div class="alert alert-danger"></div>').
+                show().
+                children().text(message);
         }).
         done(function(data, status, jqxhr) {
             var event_name = this.action_data.success;

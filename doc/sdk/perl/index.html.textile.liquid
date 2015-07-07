@@ -15,24 +15,46 @@ It should be treated as alpha/experimental. Currently, limitations include:
 
 h3. Installation
 
+h4. Option 1: Install from distribution packages
+
+First, "add the appropriate package repository for your distribution":{{ site.baseurl }}/install/install-manual-prerequisites.html#repos.
+
+On Debian-based systems:
+
 <notextile>
-<pre>
-$ <code class="userinput">sudo apt-get install libjson-perl libio-socket-ssl-perl libwww-perl libipc-system-simple-perl</code>
-$ <code class="userinput">git clone https://github.com/curoverse/arvados.git</code>
-$ <code class="userinput">cd arvados/sdk/perl</code>
-$ <code class="userinput">perl Makefile.PL</code>
-$ <code class="userinput">sudo make install</code>
-</pre>
+<pre><code>~$ <span class="userinput">sudo apt-get install libjson-perl libio-socket-ssl-perl libwww-perl libipc-system-simple-perl libarvados-perl</code>
+</code></pre>
 </notextile>
 
-h4. Test installation
+On Red Hat-based systems:
+
+<notextile>
+<pre><code>~$ <span class="userinput">sudo yum install perl-ExtUtils-MakeMaker perl-JSON perl-IO-Socket-SSL perl-WWW-Curl libarvados-perl</code>
+</code></pre>
+</notextile>
+
+h4. Option 2: Install from source
+
+First, install dependencies from your distribution.  Refer to the package lists above, but don't install @libarvados-perl@.
+
+Then run the following:
+
+<notextile>
+<pre><code>~$ <span class="userinput">git clone https://github.com/curoverse/arvados.git</span>
+~$ <span class="userinput">cd arvados/sdk/perl</span>
+~$ <span class="userinput">perl Makefile.PL</span>
+~$ <span class="userinput">sudo make install</span>
+</code></pre>
+</notextile>
+
+h3. Test installation
 
 If the SDK is installed, @perl -MArvados -e ''@ should produce no errors.
 
 If your @ARVADOS_API_HOST@ and @ARVADOS_API_TOKEN@ environment variables are set up correctly (see "api-tokens":{{site.baseurl}}/user/reference/api-tokens.html for details), the following test script should work:
 
 <notextile>
-<pre>$ <code class="userinput">perl &lt;&lt;'EOF'
+<pre>~$ <code class="userinput">perl &lt;&lt;'EOF'
 use Arvados;
 my $arv = Arvados-&gt;new('apiVersion' => 'v1');
 my $me = $arv-&gt;{'users'}-&gt;{'current'}-&gt;execute;

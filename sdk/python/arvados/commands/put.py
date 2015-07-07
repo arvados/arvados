@@ -5,6 +5,7 @@
 
 import argparse
 import arvados
+import arvados.collection
 import base64
 import datetime
 import errno
@@ -479,14 +480,14 @@ def main(arguments=None, stdout=sys.stdout, stderr=sys.stderr):
     if args.stream:
         output = writer.manifest_text()
         if args.normalize:
-            output = CollectionReader(output).manifest_text(normalize=True)
+            output = arvados.collection.CollectionReader(output).manifest_text(normalize=True)
     elif args.raw:
         output = ','.join(writer.data_locators())
     else:
         try:
             manifest_text = writer.manifest_text()
             if args.normalize:
-                manifest_text = CollectionReader(manifest_text).manifest_text(normalize=True)
+                manifest_text = arvados.collection.CollectionReader(manifest_text).manifest_text(normalize=True)
             replication_attr = 'replication_desired'
             if api_client._schema.schemas['Collection']['properties'].get(replication_attr, None) is None:
                 # API called it 'redundancy' before #3410.

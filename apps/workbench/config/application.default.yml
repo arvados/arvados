@@ -209,5 +209,8 @@ common:
   # in the directory where your API server is running.
   anonymous_user_token: false
 
+  # when anonymous_user_token is configured, show public projects page
+  enable_public_projects_page: true
+
   # Ask Arvados API server to compress its response payloads.
   api_response_compression: true

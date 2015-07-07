@@ -381,6 +381,20 @@ class ArvadosPutTest(run_test_server.TestCaseWithServers, ArvadosBaseTestCase):
             arv_put.ResumeCache.CACHE_DIR = orig_cachedir
             os.chmod(cachedir, 0o700)
 
+    def test_normalize(self):
+        testfile1 = self.make_test_file()
+        testfile2 = self.make_test_file()
+        test_paths = [testfile1.name, testfile2.name]
+        # Reverse-sort the paths, so normalization must change their order.
+        test_paths.sort(reverse=True)
+        self.call_main_with_args(['--stream', '--no-progress', '--normalize'] +
+                                 test_paths)
+        manifest = self.main_stdout.getvalue()
+        # Assert the second file we specified appears first in the manifest.
+        file_indices = [manifest.find(':' + os.path.basename(path))
+                        for path in test_paths]
+        self.assertGreater(*file_indices)
+
     def test_error_name_without_collection(self):
         self.assertRaises(SystemExit, self.call_main_with_args,
                           ['--name', 'test without Collection',

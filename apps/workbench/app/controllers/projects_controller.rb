@@ -10,12 +10,22 @@ class ProjectsController < ApplicationController
   end
 
   def find_object_by_uuid
-    if current_user and params[:uuid] == current_user.uuid
-      @object = current_user.dup
-      @object.uuid = current_user.uuid
+    if (current_user and params[:uuid] == current_user.uuid) or
+       (resource_class_for_uuid(params[:uuid]) == User)
+      if params[:uuid] != current_user.uuid
+        @object = User.find(params[:uuid])
+      else
+        @object = current_user.dup
+        @object.uuid = current_user.uuid
+      end
+
       class << @object
         def name
-          'Home'
+          if current_user.uuid == self.uuid
+            'Home'
+          else
+            "Home for #{self.email}"
+          end
         end
         def description
           ''
@@ -309,7 +319,7 @@ class ProjectsController < ApplicationController
   end
 
   def public  # Yes 'public' is the name of the action for public projects
-    return render_not_found if not Rails.configuration.anonymous_user_token
+    return render_not_found if not Rails.configuration.anonymous_user_token or not Rails.configuration.enable_public_projects_page
     @objects = using_specific_api_token Rails.configuration.anonymous_user_token do
       Group.where(group_class: 'project').order("updated_at DESC")
     end

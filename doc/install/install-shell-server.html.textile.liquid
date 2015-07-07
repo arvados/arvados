@@ -4,14 +4,42 @@ navsection: installguide
 title: Install a shell server
 ...
 
-This installation guide assumes you are on a 64 bit Debian or Ubuntu system.
-
-There is nothing inherently special about an Arvados shell server. It is just a GNU/Linux machine with the Arvados SDKs installed. For optimal performance, the Arvados shell server should be on the same LAN as the Arvados cluster, but that is not required.
+There is nothing inherently special about an Arvados shell server. It is just a GNU/Linux machine with Arvados utilites and SDKs installed. For optimal performance, the Arvados shell server should be on the same LAN as the Arvados cluster, but that is not required.
 
 h2. Install API tokens
 
 Please follow the "API token guide":{{site.baseurl}}/user/reference/api-tokens.html to get API tokens for your user and install them on your shell server. We will use those tokens to test the SDKs as we install them.
 
-h2. Install the SDKs
+h2. Install the Ruby SDK and utilities
 
-Install the "Python SDK":{{site.baseurl}}/sdk/python/sdk-python.html and the "Command line SDK":{{site.baseurl}}/sdk/cli/install.html
+If you're using RVM:
+
+<notextile>
+<pre><code>~$ <span class="userinput">sudo rvm-exec gem install arvados-cli</span>
+</code></pre>
+</notextile>
+
+If you're not using RVM:
+
+<notextile>
+<pre><code>~$ <span class="userinput">sudo gem install arvados-cli</span>
+</code></pre>
+</notextile>
+
+h2. Install the Python SDK and utilities
+
+On Debian-based systems:
+
+<notextile>
+<pre><code>~$ <span class="userinput">sudo apt-get install python-arvados-python-client python-arvados-fuse</span>
+</code></pre>
+</notextile>
+
+On Red Hat-based systems:
+
+<notextile>
+<pre><code>~$ <span class="userinput">sudo yum install python27-python-arvados-python-client python27-python-arvados-fuse</span>
+</code></pre>
+</notextile>
+
+{% include 'note_python27_sc' %}

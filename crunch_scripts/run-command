@@ -331,6 +331,13 @@ try:
         if not args.dry_run:
             stdoutfile = open(stdoutname, "wb")
 
+    if "task.env" in taskp:
+        env = copy.copy(os.environ)
+        for k,v in taskp["task.env"].items():
+            env[k] = subst.do_substitution(taskp, v)
+    else:
+        env = None
+
     logger.info("{}{}{}".format(' | '.join([' '.join(c) for c in cmd]), (" < " + stdinname) if stdinname is not None else "", (" > " + stdoutname) if stdoutname is not None else ""))
 
     if args.dry_run:
@@ -363,7 +370,7 @@ try:
             # this is an intermediate command in the pipeline, so its stdout should go to a pipe
             next_stdout = subprocess.PIPE
 
-        sp = subprocess.Popen(cmd[i], shell=False, stdin=next_stdin, stdout=next_stdout)
+        sp = subprocess.Popen(cmd[i], shell=False, stdin=next_stdin, stdout=next_stdout, env=env)
 
         # Need to close the FDs on our side so that subcommands will get SIGPIPE if the
         # consuming process ends prematurely.

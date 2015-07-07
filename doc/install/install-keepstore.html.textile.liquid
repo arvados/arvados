@@ -4,8 +4,6 @@ navsection: installguide
 title: Install Keepstore servers
 ...
 
-This installation guide assumes you are on a 64 bit Debian or Ubuntu system.
-
 We are going to install two Keepstore servers. By convention, we use the following hostname pattern:
 
 <div class="offset1">
@@ -19,13 +17,17 @@ Because the Keepstore servers are not directly accessible from the internet, the
 
 h2. Install Keepstore
 
-First add the Arvados apt repository, and then install the Keepstore package.
+On Debian-based systems:
 
 <notextile>
-<pre><code>~$ <span class="userinput">echo "deb http://apt.arvados.org/ wheezy main" | sudo tee /etc/apt/sources.list.d/apt.arvados.org.list</span>
-~$ <span class="userinput">sudo /usr/bin/apt-key adv --keyserver pool.sks-keyservers.net --recv 1078ECD7</span>
-~$ <span class="userinput">sudo /usr/bin/apt-get update</span>
-~$ <span class="userinput">sudo /usr/bin/apt-get install keepstore</span>
+<pre><code>~$ <span class="userinput">sudo apt-get install keepstore</span>
+</code></pre>
+</notextile>
+
+On Red Hat-based systems:
+
+<notextile>
+<pre><code>~$ <span class="userinput">sudo yum install keepstore</span>
 </code></pre>
 </notextile>
 
@@ -63,11 +65,10 @@ Prepare one or more volumes for Keepstore to use. Simply create a /keep director
 2015/05/08 13:44:26 keepstore starting, pid 2765
 2015/05/08 13:44:26 Using volume [UnixVolume /mnt/keep] (writable=true)
 2015/05/08 13:44:26 listening at :25107
-
 </code></pre>
 </notextile>
 
-It's recommended to run Keepstore under "runit":https://packages.debian.org/search?keywords=runit or something similar.
+It's recommended to run Keepstore under "runit":http://smarden.org/runit/ or something similar.
 
 Repeat this section for each Keepstore server you are setting up.
 
