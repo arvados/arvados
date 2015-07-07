@@ -653,11 +653,9 @@ class Arvados::V1::UsersControllerTest < ActionController::TestCase
 
     assert_equal Rails.configuration.user_notifier_email_from, setup_email.from[0]
     assert_equal 'foo@example.com', setup_email.to[0]
-    assert_equal 'Welcome to Curoverse', setup_email.subject
-    assert (setup_email.body.to_s.include? 'Your Arvados account has been set up'),
-        'Expected Your Arvados account has been set up in email body'
-    assert (setup_email.body.to_s.include? 'foo@example.com'),
-        'Expected user email in email body'
+    assert_equal 'Welcome to Curoverse - shell account enabled', setup_email.subject
+    assert (setup_email.body.to_s.include? 'Your Arvados shell account has been set up'),
+        'Expected Your Arvados shell account has been set up in email body'
     assert (setup_email.body.to_s.include? Rails.configuration.workbench_address),
         'Expected workbench url in email body'
   end

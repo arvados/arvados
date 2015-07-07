@@ -4,8 +4,6 @@ navsection: installguide
 title: Install Keepproxy server
 ...
 
-This installation guide assumes you are on a 64 bit Debian or Ubuntu system.
-
 The Keepproxy server is a gateway into your Keep storage. Unlike the Keepstore servers, which are only accessible on the local LAN, Keepproxy is designed to provide secure access into Keep from anywhere on the internet.
 
 By convention, we use the following hostname for the Keepproxy:
@@ -20,13 +18,17 @@ This hostname should resolve from anywhere on the internet.
 
 h2. Install Keepproxy
 
-First add the Arvados apt repository, and then install the Keepproxy package.
+On Debian-based systems:
 
 <notextile>
-<pre><code>~$ <span class="userinput">echo "deb http://apt.arvados.org/ wheezy main" | sudo tee /etc/apt/sources.list.d/apt.arvados.org.list</span>
-~$ <span class="userinput">sudo /usr/bin/apt-key adv --keyserver pool.sks-keyservers.net --recv 1078ECD7</span>
-~$ <span class="userinput">sudo /usr/bin/apt-get update</span>
-~$ <span class="userinput">sudo /usr/bin/apt-get install keepproxy</span>
+<pre><code>~$ <span class="userinput">sudo apt-get install keepproxy</span>
+</code></pre>
+</notextile>
+
+On Red Hat-based systems:
+
+<notextile>
+<pre><code>~$ <span class="userinput">sudo yum install keepproxy</span>
 </code></pre>
 </notextile>
 
@@ -43,7 +45,7 @@ Usage of default:
 </code></pre>
 </notextile>
 
-It's recommended to run Keepproxy under "runit":https://packages.debian.org/search?keywords=runit or something similar.
+It's recommended to run Keepproxy under "runit":http://smarden.org/runit/ or something similar.
 
 h3. Create an API token for the Keepproxy server
 

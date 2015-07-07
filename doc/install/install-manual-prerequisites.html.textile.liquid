@@ -21,6 +21,56 @@ table(table table-bordered table-condensed).
 
 The number of Keepstore, shell and compute nodes listed above is a minimum. In a real production installation, you will likely run many more of each of those types of nodes. In such a scenario, you would probably also want to dedicate a node to the Workbench server and Crunch dispatcher, respectively. For performance reasons, you may want to run the database server on a separate node as well.
 
+h2(#repos). Arvados package repositories
+
+On any host where you install Arvados software, you'll need to set up an Arvados package repository.  They're available for several popular distributions.
+
+h3. CentOS
+
+Packages are available for CentOS 6.  First, register the Curoverse signing key in RPM's database:
+
+{% include 'install_redhat_key' %}
+
+Then save this configuration block in @/etc/yum.repos.d/arvados.repo@:
+
+<notextile>
+<pre><code>[arvados]
+name=Arvados
+baseurl=http://rpm.arvados.org/CentOS/$releasever/os/$basearch/
+</code></pre>
+</notextile>
+
+h3. Debian
+
+Packages are available for Debian 7 ("wheezy").  First, register the Curoverse signing key in apt's database:
+
+{% include 'install_debian_key' %}
+
+Then save the configuration line listed for your version of Debian in @/etc/apt/sources.list.d/arvados.list@:
+
+table(table table-bordered table-condensed).
+|*Debian version*|*@/etc/apt/sources.list.d/arvados.list@*|
+|7 ("wheezy")|@deb http://apt.arvados.org/ wheezy main@|
+
+Finally, add this new repository to apt's database:
+
+<notextile>
+<pre><code>~$ <span class="userinput">sudo /usr/bin/apt-get update</span>
+</code></pre>
+</notextile>
+
+h3. Ubuntu
+
+Packages are available for Ubuntu 12.04 ("precise").  First, register the Curoverse signing key in apt's database:
+
+{% include 'install_debian_key' %}
+
+Then save the configuration line listed for your version of Ubuntu in @/etc/apt/sources.list.d/arvados.list@:
+
+table(table table-bordered table-condensed).
+|*Ubuntu version*|*@/etc/apt/sources.list.d/arvados.list@*|
+|12.04 ("precise")|@deb http://apt.arvados.org/ precise main@|
+
 h2. A unique identifier
 
 Each Arvados installation should have a globally unique identifier, which is a unique 5-character alphanumeric string. Here is a snippet of ruby that generates such a string based on the hostname of your computer:
@@ -29,7 +79,7 @@ Each Arvados installation should have a globally unique identifier, which is a u
 Digest::MD5.hexdigest(`hostname`).to_i(16).to_s(36)[0..4]
 </pre>
 
-You may also use a different method to pick the unique identifier. The unique identifier will be part of the hostname of the services in your Arvados cluster. The rest of this documentation will refer to it as your @uuid_prefix@. 
+You may also use a different method to pick the unique identifier. The unique identifier will be part of the hostname of the services in your Arvados cluster. The rest of this documentation will refer to it as your @uuid_prefix@.
 
 
 h2. SSL certificates
