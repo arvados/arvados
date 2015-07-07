@@ -99,7 +99,7 @@ class ArvadosJob(object):
             vwd = arvados.collection.Collection()
             for t in self.generatefiles:
                 if isinstance(self.generatefiles[t], dict):
-                    src, rest = self.arvrunner.fs_access.get_collection(self.generatefiles[t]["path"][7:-1])
+                    src, rest = self.arvrunner.fs_access.get_collection(self.generatefiles[t]["path"][6:])
                     vwd.copy(rest, t, source_collection=src)
                 else:
                     with vwd.open(t, "w") as f:
@@ -165,7 +165,7 @@ class ArvPathMapper(cwltool.pathmapper.PathMapper):
 
         for src in referenced_files:
             if isinstance(src, basestring) and pdh_path.match(src):
-                self._pathmap[src] = (src, "$(file %s)" % src)
+                self._pathmap[src] = (src, "/keep/%s" % src)
             else:
                 ab = src if os.path.isabs(src) else os.path.join(basedir, src)
                 st = arvados.commands.run.statfile("", ab)
