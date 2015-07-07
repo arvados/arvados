@@ -42,8 +42,8 @@ def profiled(function):
             caught = e
         pr.disable()
         ps = pstats.Stats(pr, stream=outfile)
-        ps.print_stats()
+        ps.sort_stats('time').print_stats()
         if caught:
-            raise caught
+            raise
         return ret
     return profiled_function
