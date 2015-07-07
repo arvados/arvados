@@ -4,14 +4,14 @@ navsection: installguide
 title: Install Ruby and bundler
 ...
 
-We recommend Ruby >= 2.1.  We currently require Bundler 1.9 (not 1.10 or above) because of a limitation in some of our gem dependencies.
+Currently, only Ruby 2.1 is supported.
 
 h2(#rvm). Option 1: Install with rvm
 
 <notextile>
 <pre><code>~$ <span class="userinput">gpg --keyserver hkp://keys.gnupg.net --recv-keys 409B6B1796C275462A1703113804BB82D39DC0E3</span>
 ~$ <span class="userinput">\curl -sSL https://get.rvm.io | bash -s stable --ruby=2.1</span>
-~$ <span class="userinput">gem install -v 1.9.9 bundler
+~$ <span class="userinput">gem install bundler
 </span></code></pre></notextile>
 
 h2(#fromsource). Option 2: Install from source
@@ -19,12 +19,12 @@ h2(#fromsource). Option 2: Install from source
 <notextile>
 <pre><code><span class="userinput">mkdir -p ~/src
 cd ~/src
-wget http://cache.ruby-lang.org/pub/ruby/2.1/ruby-2.1.5.tar.gz
-tar xzf ruby-2.1.5.tar.gz
-cd ruby-2.1.5
-./configure
+wget http://cache.ruby-lang.org/pub/ruby/2.1/ruby-2.1.6.tar.gz
+tar xzf ruby-2.1.6.tar.gz
+cd ruby-2.1.6
+./configure --no-rdoc --no-ri
 make
 sudo make install
 
-sudo gem install -v 1.9.9 bundler</span>
+sudo gem install bundler</span>
 </code></pre></notextile>
