@@ -15,7 +15,7 @@ class UserSessionsController < ApplicationController
     unless identity_url_ok
       # Whoa. This should never happen.
       logger.error "UserSessionsController.create: omniauth object missing/invalid"
-      logger.error "omniauth.pretty_inspect():\n\n#{omniauth.pretty_inspect()}"
+      logger.error "omniauth: "+omniauth.pretty_inspect
 
       return redirect_to login_failure_url
     end
@@ -93,7 +93,7 @@ class UserSessionsController < ApplicationController
 
     flash[:notice] = 'You have logged off'
     return_to = params[:return_to] || root_url
-    redirect_to "#{CUSTOM_PROVIDER_URL}/users/sign_out?redirect_uri=#{CGI.escape return_to}"
+    redirect_to "#{Rails.configuration.sso_provider_url}/users/sign_out?redirect_uri=#{CGI.escape return_to}"
   end
 
   # login - Just bounce to /auth/joshid. The only purpose of this function is
