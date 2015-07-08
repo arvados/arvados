@@ -80,26 +80,15 @@ The API server package uses configuration files that you write to @/etc/arvados/
 </code></pre>
 </notextile>
 
-h2(#omniauth). Configure Omniauth
-
-Edit @/etc/arvados/api/omniauth.rb@ to configure the SSO server for authentication.  @APP_ID@ and @APP_SECRET@ correspond to the @app_id@ and @app_secret@ set in "Create arvados-server client for Single Sign On (SSO)":install-sso.html#client and @CUSTOM_PROVIDER_URL@ is the address of your SSO server.
-
-<notextile>
-<pre><code>APP_ID = 'arvados-server'
-APP_SECRET = 'xxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxx'
-CUSTOM_PROVIDER_URL = 'https://sso.example.com/'
-</code></pre>
-</notextile>
-
 h2. Configure the database connection
 
 Edit @/etc/arvados/api/database.yml@ and replace the @xxxxxxxx@ database password placeholders with the PostgreSQL password you generated above.
 
 h2. Configure the API server
 
-Edit @/etc/arvados/api/application.yml@ following the instructions below.  The deployment script will consistently deploy this to the API server's configuration directory.  The API server reads both @application.yml@ and its own @config/application.defaults.yml@ file.  Values in @application.yml@ take precedence over the defaults that are defined in @config/application.defaults.yml@.  The @config/application.yml.example@ file is not read by the API server and is provided for installation convenience only.
+Edit @/etc/arvados/api/application.yml@ following the instructions below.  The deployment script will consistently deploy this to the API server's configuration directory.  The API server reads both @application.yml@ and its own @config/application.default.yml@ file.  Values in @application.yml@ take precedence over the defaults that are defined in @config/application.default.yml@.  The @config/application.yml.example@ file is not read by the API server and is provided for installation convenience only.
 
-Consult @config/application.default.yml@ for a full list of configuration options.  Always put your local configuration in @/etc/arvados/api/application.yml@&mdash;never edit @config/application.default.yml@.
+Always put your local configuration in @application.yml@ instead of editing @application.default.yml@.
 
 h3(#uuid_prefix). uuid_prefix
 
@@ -137,9 +126,22 @@ Fill in the url of your workbench application in @workbench_address@, for exampl
 
 &nbsp;&nbsp;https://workbench.@prefix_uuid@.your.domain
 
+h3(#omniauth). sso_app_id, sso_app_secret, sso_provider_url
+
+For @sso_app_id@ and @sso_app_secret@, provide the same @app_id@ and @app_secret@ used in the "Create arvados-server client for Single Sign On (SSO)":install-sso.html#client step.
+
+For @sso_provider_url@, provide the base URL where your SSO server is installed: just the scheme and host, with no trailing slash.
+
+<notextile>
+<pre><code>  sso_app_id: arvados-server
+  sso_app_secret: xxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxx
+  sso_provider_url: https://sso.example.com
+</code></pre>
+</notextile>
+
 h3. Other options
 
-Consult @/var/www/arvados-api/current/config/application.default.yml@ for a full list of configuration options. Always put your local configuration in @application.yml@ instead of editing @application.default.yml@.
+Consult @/var/www/arvados-api/current/config/application.default.yml@ for a full list of configuration options. (But don't edit it. Edit @application.yml@ instead.)
 
 h2. Prepare the API server deployment
 
