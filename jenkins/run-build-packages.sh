@@ -636,6 +636,18 @@ for deppkg in "${PYTHON3_BACKPORTS[@]}"; do
     fpm_build_and_scp "$deppkg" "$outname" "" python3
 done
 
+# libpam-arvados
+cd $WORKSPACE/sdk/pam
+PKG_VERSION=$(version_from_git)
+cd $WORKSPACE/packages/$TARGET
+
+if [[ "$FORMAT" == "deb" ]]; then
+  fpm_build_and_scp $WORKSPACE/sdk/pam/debian/shellinabox=/etc/pam.d/shellinabox libpam-arvados 'Curoverse, Inc.' 'dir' "$PKG_VERSION" "--url=https://arvados.org" "--license=Apache License, Version 2.0" "--description=PAM module for Arvados" "--config-files=/etc/default" $WORKSPACE/sdk/pam/arvados_pam.py=/usr/bin/arvados_pam.py $WORKSPACE/sdk/pam/debian/arvados_pam=/etc/default/arvados_pam
+#else
+  # FIXME enable and test once we have the centos pam.d file
+  #fpm_build_and_scp $WORKSPACE/sdk/pam/centos/shellinabox=/etc/pam.d/shellinabox libpam-arvados 'Curoverse, Inc.' 'dir' "$PKG_VERSION" "--url=https://arvados.org" "--license=Apache License, Version 2.0" "--description=PAM module for Arvados" "--config-files=/etc/default" $WORKSPACE/sdk/pam/arvados_pam.py=/usr/bin/arvados_pam.py $WORKSPACE/sdk/pam/centos/arvados_pam=/etc/default/arvados_pam
+fi
+
 # Build the API server package
 
 cd "$WORKSPACE/services/api"
