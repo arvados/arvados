@@ -228,6 +228,24 @@ You can try recreating the collection to get a copy with full provenance data."
     end
   end
 
+  expose_action :webshell do
+    shell_in_a_box_url_config = Rails.configuration.shell_in_a_box_url
+    return render_not_found if not shell_in_a_box_url_config
+
+    @webshell_login = params['login']
+    @webshell_hostname = params['hostname']
+
+    if not shell_in_a_box_url_config.end_with?('/')
+      shell_in_a_box_url_config += '/'
+    end
+    @webshell_url = shell_in_a_box_url_config + @webshell_hostname + '/'
+
+    respond_to do |format|
+      render partial: 'virtual_machines/webshell'
+      return
+    end
+  end
+
   protected
 
   def derive_unique_filename filename, manifest_files

@@ -84,6 +84,11 @@
                 <% end %>
               <% end %>
             </td>
+            <td>
+              <% if  Rails.configuration.shell_in_a_box_url %>
+                <%= link_to 'Login', webshell_path(login: @my_vm_logins[vm[:uuid]].first, hostname: vm[:hostname], vm_uuid: vm[:uuid]) %>
+              <% end %>
+            </td>
           </tr>
         <% end %>
       </tbody>

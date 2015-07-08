@@ -214,3 +214,6 @@ common:
 
   # Ask Arvados API server to compress its response payloads.
   api_response_compression: true
+
+  # ShellInABox URL
+  shell_in_a_box_url: false
