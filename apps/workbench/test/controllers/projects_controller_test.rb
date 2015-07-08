@@ -306,4 +306,49 @@ class ProjectsControllerTest < ActionController::TestCase
     assert_match /\/users\/welcome/, @response.redirect_url
     assert_empty css_select('[href="/projects/public"]')
   end
+
+  test "find a project and edit its description" do
+    project = api_fixture('groups')['aproject']
+    use_token :active
+    found = Group.find(project['uuid'])
+    found.description = 'test description update'
+    found.save!
+    get(:show, {id: project['uuid']}, session_for(:active))
+    assert_includes @response.body, 'test description update'
+  end
+
+  test "find a project and edit description to textile description" do
+    project = api_fixture('groups')['aproject']
+    use_token :active
+    found = Group.find(project['uuid'])
+    found.description = '*test bold description for textile formatting*'
+    found.save!
+    get(:show, {id: project['uuid']}, session_for(:active))
+    assert_includes @response.body, '<strong>test bold description for textile formatting</strong>'
+  end
+
+  test "find a project and edit description to html description" do
+    project = api_fixture('groups')['aproject']
+    use_token :active
+    found = Group.find(project['uuid'])
+    found.description = 'Textile description with link to home page <a href="/">take me home</a>.'
+    found.save!
+    get(:show, {id: project['uuid']}, session_for(:active))
+    assert_not_includes 'Textile description with link to home page <a href="/">take me home</a>.', @response.body
+    assert_match /Textile description with link to home page .*a href=.*take me home.*\/a.*./, @response.body
+  end
+
+  test "find a project and edit description to textile description with link to object" do
+    project = api_fixture('groups')['aproject']
+    use_token :active
+    found = Group.find(project['uuid'])
+    found.description = '"Link to object":' + api_fixture('groups')['asubproject']['uuid']
+    found.save!
+    get(:show, {id: project['uuid']}, session_for(:active))
+    puts @response.body
+    assert_not_includes '"Link to object"', @response.body
+    assert_match /href=.*Link to object.*\/a./, @response.body
+    refute_empty css_select('[href="/groups/zzzzz-j7d0g-axqo7eu9pwvna1x"]')
+  end
+
 end
