@@ -155,7 +155,7 @@ if [[ "$DOCKER_IMAGES_PROJECT" == "" ]]; then
 fi
 
 title "Found Arvados Standard Docker Images project with uuid $DOCKER_IMAGES_PROJECT"
-GIT_COMMIT=`ssh $IDENTIFIER cat /usr/local/arvados/src/git-commit.version`
+GIT_COMMIT=`ssh -o "StrictHostKeyChecking no" $IDENTIFIER cat /usr/local/arvados/src/git-commit.version`
 
 if [[ "$?" != "0" ]] || [[ "$GIT_COMMIT" == "" ]]; then
   title "ERROR: unable to get arvados/jobs Docker image git revision"
@@ -164,13 +164,13 @@ else
   title "Found git commit for arvados/jobs Docker image: $GIT_COMMIT"
 fi
 
-run_command shell.$IDENTIFIER ECODE "/usr/local/rvm/bin/rvm-exec default arv keep docker" |grep -q $GIT_COMMIT
+run_command shell.$IDENTIFIER ECODE "ARVADOS_API_HOST=$ARVADOS_API_HOST ARVADOS_API_TOKEN=$ARVADOS_API_TOKEN /usr/local/rvm/bin/rvm-exec default arv keep docker" |grep -q $GIT_COMMIT
 
 if [[ "$?" == "0" ]]; then
   title "Found latest arvados/jobs Docker image, nothing to upload"
 else
   title "Installing latest arvados/jobs Docker image"
-  ssh shell.$IDENTIFIER "/usr/local/rvm/bin/rvm-exec default arv keep docker --pull --project-uuid=$DOCKER_IMAGES_PROJECT arvados/jobs $GIT_COMMIT"
+  ssh -o "StrictHostKeyChecking no" shell.$IDENTIFIER "ARVADOS_API_HOST=$ARVADOS_API_HOST ARVADOS_API_TOKEN=$ARVADOS_API_TOKEN /usr/local/rvm/bin/rvm-exec default arv keep docker --pull --project-uuid=$DOCKER_IMAGES_PROJECT arvados/jobs $GIT_COMMIT"
 fi
 
 title "Gathering list of shell and Keep nodes"
