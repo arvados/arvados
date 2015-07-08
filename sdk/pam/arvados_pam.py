@@ -16,24 +16,24 @@ def check_arvados_token(requested_username, token):
     auth_log("%s %s" % (requested_username, token))
 
     try:
- 	f=file('/etc/default/arvados_pam')
-	config=dict([l for l in f.readlines() if not l.startswith('#') or l.strip()==""])
-	arvados_api_host=config['ARVADOS_API_HOST'].strip()
-	hostname=config['HOSTNAME'].strip()
+        f=file('/etc/default/arvados_pam')
+        config=dict([l for l in f.readlines() if not l.startswith('#') or l.strip()==""])
+        arvados_api_host=config['ARVADOS_API_HOST'].strip()
+        hostname=config['HOSTNAME'].strip()
     except Exception as e:
-	auth_log("problem getting default values" % (str(e)))
+        auth_log("problem getting default values" % (str(e)))
 
     try:
-	arv = arvados.api('v1',host=arvados_api_host, token=token, cache=None)
+        arv = arvados.api('v1',host=arvados_api_host, token=token, cache=None)
     except Exception as e:
-	auth_log(str(e))
-	return False
+        auth_log(str(e))
+        return False
 
     try:
-	matches = arv.virtual_machines().list(filters=[['hostname','=',hostname]]).execute()['items']
+        matches = arv.virtual_machines().list(filters=[['hostname','=',hostname]]).execute()['items']
     except Exception as e:
-	auth_log(str(e))
-	return False
+        auth_log(str(e))
+        return False
 
 
     if len(matches) != 1:
