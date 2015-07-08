@@ -70,7 +70,7 @@ session       required   pam_env.so readenv=1 envfile=/etc/default/locale
 # pam-auth-update(8) for details.
 
 # here are the per-package modules (the "Primary" block)
-auth  [success=1 default=ignore] pam_python.so /usr/local/bin/arvados_pam.py
+auth  [success=1 default=ignore] pam_python.so /usr/bin/arvados_pam.py
 # here's the fallback if no module succeeds
 auth	requisite			pam_deny.so
 # prime the stack with a positive return value if there isn't one already;
