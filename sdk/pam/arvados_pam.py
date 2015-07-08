@@ -37,7 +37,7 @@ def check_arvados_token(requested_username, token):
 
 
     if len(matches) != 1:
-        auth_log("libpam_arvados could not dertermine vm uuid for '%s'" % hostname)
+        auth_log("libpam_arvados could not determine vm uuid for '%s'" % hostname)
         return False
 
     this_vm_uuid = matches[0]['uuid']
