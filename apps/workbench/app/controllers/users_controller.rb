@@ -208,9 +208,6 @@ class UsersController < ApplicationController
         if params['openid_prefix'] && params['openid_prefix'].size>0
           setup_params[:openid_prefix] = params['openid_prefix']
         end
-        if params['repo_name'] && params['repo_name'].size>0
-          setup_params[:repo_name] = params['repo_name']
-        end
         if params['vm_uuid'] && params['vm_uuid'].size>0
           setup_params[:vm_uuid] = params['vm_uuid']
         end

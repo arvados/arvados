@@ -88,6 +88,17 @@ class Arvados::V1::RepositoriesControllerTest < ActionController::TestCase
     end
   end
 
+  test "get_all_permissions lists repos with no authorized keys" do
+    authorize_with :admin
+    AuthorizedKey.destroy_all
+    get :get_all_permissions
+    assert_response :success
+    assert_equal(Repository.count, json_response["repositories"].size)
+    assert(json_response["repositories"].any? do |repo|
+             repo["user_permissions"].empty?
+           end, "test is invalid - all repositories have authorized keys")
+  end
+
   test "default index includes fetch_url" do
     authorize_with :active
     get(:index)

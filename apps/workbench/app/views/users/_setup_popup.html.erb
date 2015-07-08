@@ -7,7 +7,7 @@
     <div class="modal-header">
       <button type="button" class="close" onClick="reset_form()" data-dismiss="modal" aria-hidden="true">&times;</button>
       <div>
-        <div class="col-sm-6"> <h4 class="modal-title">Setup User</h4> </div>
+        <div class="col-sm-6"> <h4 class="modal-title">Setup Shell Account</h4> </div>
         <div class="spinner spinner-32px spinner-h-center col-sm-1" hidden="true"></div>
       </div>
       <br/>
@@ -21,7 +21,6 @@
       <% disable_email = uuid != nil %>
       <% identity_url_prefix = @current_selections[:identity_url_prefix] %>
       <% disable_url_prefix = identity_url_prefix != nil %>
-      <% selected_repo = @current_selections[:repo_name] %>
       <% selected_vm = @current_selections[:vm_uuid] %>
       <% groups = @current_selections[:groups] %>
 
@@ -43,10 +42,6 @@
         <input class="form-control" id="openid_prefix" maxlength="250" name="openid_prefix" type="text"
                value="<%= Rails.configuration.default_openid_prefix %>">
         <% end %>
-      </div>
-      <div class="form-group">
-        <label for="repo_name">Repository Name and Shell Login</label>
-        <input class="form-control" id="repo_name" maxlength="250" name="repo_name" type="text" value="<%=selected_repo%>">
       </div>
       <div class="form-group">
         <label for="vm_uuid">Virtual Machine</label>
