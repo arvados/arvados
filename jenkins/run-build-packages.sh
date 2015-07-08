@@ -204,7 +204,7 @@ version_from_git() {
   # Generates a version number from the git log for the current working
   # directory, and writes it to stdout.
   local git_ts git_hash
-  declare $(TZ=UTC git log -n1 --first-parent --max-count=1 \
+  declare $(TZ=UTC git log -n1 --first-parent \
       --format=format:"git_ts=%ct git_hash=%h" .)
   echo "0.1.$(date -ud "@$git_ts" +%Y%m%d%H%M%S).$git_hash"
 }
@@ -213,7 +213,7 @@ timestamp_from_git() {
   # Generates a version number from the git log for the current working
   # directory, and writes it to stdout.
   local git_ts git_hash
-  declare $(TZ=UTC git log -n1 --first-parent --max-count=1 \
+  declare $(TZ=UTC git log -n1 --first-parent \
       --format=format:"git_ts=%ct git_hash=%h" .)
   echo "$git_ts"
 }
@@ -506,15 +506,15 @@ if [[ "$DEBUG" != 0 ]]; then
   git checkout master
   git pull
   # go into detached-head state
-  git checkout `git log --format=format:%h -n1 .`
+  git checkout `git log --format=format:%h -n1 --first-parent .`
 else
   git checkout -q master
   git pull -q
   # go into detached-head state
-  git checkout -q `git log --format=format:%h -n1 .`
+  git checkout -q `git log --format=format:%h -n1 --first-parent .`
 fi
 
-git log --format=format:%H -n1 . > git-commit.version
+git log --format=format:%H -n1 --first-parent . > git-commit.version
 
 # Build arvados src deb package
 cd "$WORKSPACE"
