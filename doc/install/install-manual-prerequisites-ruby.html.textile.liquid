@@ -19,10 +19,9 @@ h2(#fromsource). Option 2: Install from source
 <notextile>
 <pre><code><span class="userinput">mkdir -p ~/src
 cd ~/src
-wget http://cache.ruby-lang.org/pub/ruby/2.1/ruby-2.1.6.tar.gz
-tar xzf ruby-2.1.6.tar.gz
+curl http://cache.ruby-lang.org/pub/ruby/2.1/ruby-2.1.6.tar.gz | tar xz
 cd ruby-2.1.6
-./configure --no-rdoc --no-ri
+./configure --no-install-rdoc
 make
 sudo make install
 
