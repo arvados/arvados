@@ -9,9 +9,16 @@ Currently, only Ruby 2.1 is supported.
 h2(#rvm). Option 1: Install with rvm
 
 <notextile>
-<pre><code>~$ <span class="userinput">gpg --keyserver hkp://keys.gnupg.net --recv-keys 409B6B1796C275462A1703113804BB82D39DC0E3</span>
-~$ <span class="userinput">\curl -sSL https://get.rvm.io | bash -s stable --ruby=2.1</span>
-~$ <span class="userinput">gem install bundler
+<pre><code><span class="userinput">sudo gpg --keyserver hkp://keys.gnupg.net --recv-keys 409B6B1796C275462A1703113804BB82D39DC0E3
+\curl -sSL https://get.rvm.io | sudo bash -s stable --ruby=2.1
+sudo -i gem install bundler
+sudo adduser "$USER" rvm
+</span></code></pre></notextile>
+
+Either log out and log back in to activate RVM, or explicitly load it in all open shells like this:
+
+<notextile>
+<pre><code><span class="userinput">source /usr/local/rvm/scripts/rvm
 </span></code></pre></notextile>
 
 h2(#fromsource). Option 2: Install from source
