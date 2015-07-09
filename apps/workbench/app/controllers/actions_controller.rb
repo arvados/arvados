@@ -229,6 +229,7 @@ You can try recreating the collection to get a copy with full provenance data."
   end
 
   # webshell action is used to login to an arvados shell using workbench
+  # https://code.google.com/p/shellinabox/source/browse/#git%2Fshellinabox
   expose_action :webshell do
     shell_in_a_box_url_config = Rails.configuration.shell_in_a_box_url
 
