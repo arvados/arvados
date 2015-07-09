@@ -1,6 +1,6 @@
 <html>
-    <title>Shell login into <%= @webshell_hostname %> </title>
-    <link rel="stylesheet" href="/webshell_styles.css" type="text/css">
+    <title><%= @object.hostname %> / <%= Rails.configuration.site_name %></title>
+    <link rel="stylesheet" href="<%= asset_path 'webshell/styles.css' %>" type="text/css">
     <style type="text/css">
       body {
         margin: 0px;
@@ -25,24 +25,24 @@
       })();
 
       function login(username, token) {
-        var sh = new ShellInABox("<%= @webshell_url %>");
+        var sh = new ShellInABox("<%= j @webshell_url %>");
         setTimeout(function() {
-          sh.keysPressed("<%= @webshell_login %>\n");
+          sh.keysPressed("<%= j params[:login] %>\n");
           setTimeout(function() {
-            sh.keysPressed("<%= Thread.current[:arvados_api_token] %>\n");
+            sh.keysPressed("<%= j Thread.current[:arvados_api_token] %>\n");
           }, 1000);
         }, 1000);
       }
-    -->
+    // -->
 </script>
-    <link rel="shortcut icon" href="favicon.ico" type="image/x-icon">
-    <script type="text/javascript" src="/shell_in_a_box.js"></script>
+    <link rel="icon" href="<%= asset_path 'favicon.ico' %>" type="image/x-icon">
+    <script type="text/javascript" src="<%= asset_path 'webshell/shell_in_a_box.js' %>"></script>
   </head>
   <!-- Load ShellInABox from a timer as Konqueror sometimes fails to
        correctly deal with the enclosing frameset (if any), if we do not
        do this
    -->
-<body onload="setTimeout('login()', 1000)"
+<body onload="setTimeout(login, 1000)"
     scroll="no"><noscript>JavaScript must be enabled for ShellInABox</noscript>
 </body>
 </html>

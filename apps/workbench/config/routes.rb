@@ -17,6 +17,7 @@ ArvadosWorkbench::Application.routes.draw do
   resources :traits
   resources :api_client_authorizations
   resources :virtual_machines
+  get '/virtual_machines/:id/webshell/:login' => 'virtual_machines#webshell', :as => :webshell_virtual_machine
   resources :authorized_keys
   resources :job_tasks
   resources :jobs do
@@ -93,7 +94,6 @@ ArvadosWorkbench::Application.routes.draw do
   get 'actions' => 'actions#show'
   get 'websockets' => 'websocket#index'
   post "combine_selected" => 'actions#combine_selected_files_into_collection'
-  get "webshell" => 'actions#webshell'
 
   root :to => 'projects#index'
 

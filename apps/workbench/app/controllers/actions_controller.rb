@@ -228,29 +228,6 @@ You can try recreating the collection to get a copy with full provenance data."
     end
   end
 
-  # webshell action is used to login to an arvados shell using workbench
-  # https://code.google.com/p/shellinabox/source/browse/#git%2Fshellinabox
-  expose_action :webshell do
-    shell_in_a_box_url_config = Rails.configuration.shell_in_a_box_url
-
-    return render_not_found if not shell_in_a_box_url_config
-
-    return unprocessable "Missing parameters" if not params['login'] or not params['hostname']
-
-    @webshell_login = params['login']
-    @webshell_hostname = params['hostname'].chomp('.shell')
-
-    if not shell_in_a_box_url_config.end_with?('/')
-      shell_in_a_box_url_config += '/'
-    end
-    @webshell_url = shell_in_a_box_url_config + @webshell_hostname
-
-    respond_to do |format|
-      render partial: 'virtual_machines/webshell'
-      return
-    end
-  end
-
   protected
 
   def derive_unique_filename filename, manifest_files
