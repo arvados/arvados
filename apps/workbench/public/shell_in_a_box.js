@@ -3116,6 +3116,7 @@ VT100.prototype.handleKey = function(event) {
       case 187: /* =            */ ch = this.applyModifiers(61, event); break;
       case 188: /* ,            */ ch = this.applyModifiers(44, event); break;
       case 189: /* -            */ ch = this.applyModifiers(45, event); break;
+      case 173: /* -            */ ch = this.applyModifiers(45, event); break; // FF15 Patch
       case 190: /* .            */ ch = this.applyModifiers(46, event); break;
       case 191: /* /            */ ch = this.applyModifiers(47, event); break;
       // Conflicts with dead key " on Swiss keyboards
@@ -3260,6 +3261,7 @@ VT100.prototype.fixEvent = function(event) {
     case 187: /* = -> + */ u = 61; s =  43; break;
     case 188: /* , -> < */ u = 44; s =  60; break;
     case 189: /* - -> _ */ u = 45; s =  95; break;
+    case 173: /* - -> _ */ u = 45; s =  95; break; // FF15 Patch
     case 190: /* . -> > */ u = 46; s =  62; break;
     case 191: /* / -> ? */ u = 47; s =  63; break;
     case 192: /* ` -> ~ */ u = 96; s = 126; break;
