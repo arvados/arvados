@@ -17,11 +17,12 @@ def check_arvados_token(requested_username, token):
 
     try:
         f=file('/etc/default/arvados_pam')
-        config=dict([l for l in f.readlines() if not l.startswith('#') or l.strip()==""])
+        config=dict([l.split('=') for l in f.readlines() if not l.startswith('#') or l.strip()==""])
         arvados_api_host=config['ARVADOS_API_HOST'].strip()
         hostname=config['HOSTNAME'].strip()
     except Exception as e:
-        auth_log("problem getting default values" % (str(e)))
+        auth_log("problem getting default values  %s" % e)
+        return False
 
     try:
         arv = arvados.api('v1',host=arvados_api_host, token=token, cache=None)

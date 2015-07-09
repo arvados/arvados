@@ -414,7 +414,7 @@ class ArvPutIntegrationTest(run_test_server.TestCaseWithServers,
                             ArvadosBaseTestCase):
     def _getKeepServerConfig():
         for config_file, mandatory in [
-                ['application.yml', True], ['application.default.yml', False]]:
+                ['application.yml', False], ['application.default.yml', True]]:
             path = os.path.join(run_test_server.SERVICES_SRC_DIR,
                                 "api", "config", config_file)
             if not mandatory and not os.path.exists(path):

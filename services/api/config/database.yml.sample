@@ -1,5 +1,6 @@
 development:
   adapter: postgresql
+  template: template0
   encoding: utf8
   database: arvados_development
   username: arvados
@@ -8,6 +9,7 @@ development:
 
 test:
   adapter: postgresql
+  template: template0
   encoding: utf8
   database: arvados_test
   username: arvados
@@ -16,6 +18,7 @@ test:
 
 production:
   adapter: postgresql
+  template: template0
   encoding: utf8
   database: arvados_production
   username: arvados
