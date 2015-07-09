@@ -228,6 +228,7 @@ You can try recreating the collection to get a copy with full provenance data."
     end
   end
 
+  # webshell action is used to login to an arvados shell using workbench
   expose_action :webshell do
     shell_in_a_box_url_config = Rails.configuration.shell_in_a_box_url
 
@@ -241,7 +242,7 @@ You can try recreating the collection to get a copy with full provenance data."
     if not shell_in_a_box_url_config.end_with?('/')
       shell_in_a_box_url_config += '/'
     end
-    @webshell_url = shell_in_a_box_url_config + @webshell_hostname + '/'
+    @webshell_url = shell_in_a_box_url_config + @webshell_hostname
 
     respond_to do |format|
       render partial: 'virtual_machines/webshell'

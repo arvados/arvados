@@ -1,3 +1,6 @@
+// This file contains code from shell_in_a_box.js and vt100.js
+
+
 // ShellInABox.js -- Use XMLHttpRequest to provide an AJAX terminal emulator.
 // Copyright (C) 2008-2010 Markus Gutschke <markus@shellinabox.com>
 //
