@@ -8,7 +8,7 @@ ADD apt.arvados.org.list /etc/apt/sources.list.d/
 RUN apt-key adv --keyserver pool.sks-keyservers.net --recv 1078ECD7
 RUN apt-get update -q
 
-RUN apt-get install -qy git python-minimal python-arvados-python-client
+RUN apt-get install -qy git python-minimal python-virtualenv python-arvados-python-client
 
 RUN gpg --keyserver pool.sks-keyservers.net --recv-keys D39DC0E3
 
