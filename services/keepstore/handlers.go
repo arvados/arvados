@@ -19,8 +19,9 @@ import (
 	"net/http"
 	"os"
 	"regexp"
+	"runtime"
 	"strconv"
-	"syscall"
+	"sync"
 	"time"
 )
 
@@ -185,60 +186,52 @@ type VolumeStatus struct {
 	BytesUsed  uint64 `json:"bytes_used"`
 }
 
-type NodeStatus struct {
-	Volumes []*VolumeStatus `json:"volumes"`
+type PoolStatus struct {
+	Alloc uint64 `json:"BytesAllocated"`
+	Cap   int    `json:"BuffersMax"`
+	Len   int    `json:"BuffersInUse"`
 }
 
+type NodeStatus struct {
+	Volumes    []*VolumeStatus  `json:"volumes"`
+	BufferPool PoolStatus
+	Memory     runtime.MemStats
+}
+
+var st NodeStatus
+var stLock sync.Mutex
 func StatusHandler(resp http.ResponseWriter, req *http.Request) {
-	st := GetNodeStatus()
-	if jstat, err := json.Marshal(st); err == nil {
+	stLock.Lock()
+	ReadNodeStatus(&st)
+	jstat, err := json.Marshal(&st)
+	stLock.Unlock()
+	if err == nil {
 		resp.Write(jstat)
 	} else {
 		log.Printf("json.Marshal: %s\n", err)
-		log.Printf("NodeStatus = %v\n", st)
+		log.Printf("NodeStatus = %v\n", &st)
 		http.Error(resp, err.Error(), 500)
 	}
 }
 
-// GetNodeStatus
-//     Returns a NodeStatus struct describing this Keep
-//     node's current status.
+// ReadNodeStatus populates the given NodeStatus struct with current
+// values.
 //
-func GetNodeStatus() *NodeStatus {
-	st := new(NodeStatus)
-
-	st.Volumes = make([]*VolumeStatus, len(KeepVM.AllReadable()))
-	for i, vol := range KeepVM.AllReadable() {
-		st.Volumes[i] = vol.Status()
+func ReadNodeStatus(st *NodeStatus) {
+	vols := KeepVM.AllReadable()
+	if cap(st.Volumes) < len(vols) {
+		st.Volumes = make([]*VolumeStatus, len(vols))
 	}
-	return st
-}
-
-// GetVolumeStatus
-//     Returns a VolumeStatus describing the requested volume.
-//
-func GetVolumeStatus(volume string) *VolumeStatus {
-	var fs syscall.Statfs_t
-	var devnum uint64
-
-	if fi, err := os.Stat(volume); err == nil {
-		devnum = fi.Sys().(*syscall.Stat_t).Dev
-	} else {
-		log.Printf("GetVolumeStatus: os.Stat: %s\n", err)
-		return nil
+	st.Volumes = st.Volumes[:0]
+	for _, vol := range vols {
+		if s := vol.Status(); s != nil {
+			st.Volumes = append(st.Volumes, s)
+		}
 	}
-
-	err := syscall.Statfs(volume, &fs)
-	if err != nil {
-		log.Printf("GetVolumeStatus: statfs: %s\n", err)
-		return nil
-	}
-	// These calculations match the way df calculates disk usage:
-	// "free" space is measured by fs.Bavail, but "used" space
-	// uses fs.Blocks - fs.Bfree.
-	free := fs.Bavail * uint64(fs.Bsize)
-	used := (fs.Blocks - fs.Bfree) * uint64(fs.Bsize)
-	return &VolumeStatus{volume, devnum, free, used}
+	st.BufferPool.Alloc = bufs.Alloc()
+	st.BufferPool.Cap = bufs.Cap()
+	st.BufferPool.Len = bufs.Len()
+	runtime.ReadMemStats(&st.Memory)
 }
 
 // DeleteHandler processes DELETE requests.
