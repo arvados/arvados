@@ -81,11 +81,12 @@ Retrieve the package list:
 
 h2. A unique identifier
 
-Each Arvados installation should have a globally unique identifier, which is a unique 5-character alphanumeric string. Here is a snippet of ruby that generates such a string based on the hostname of your computer:
+Each Arvados installation should have a globally unique identifier, which is a unique 5-character lowercase alphanumeric string. For testing purposes, here is one way to make a random 5-character string:
 
-<pre>
-Digest::MD5.hexdigest(`hostname`).to_i(16).to_s(36)[0..4]
-</pre>
+<notextile>
+<pre><code>~$ <span class="userinput">tr -dc 0-9a-z &lt;/dev/urandom | head -c5; echo</span>
+</code></pre>
+</notextile>
 
 You may also use a different method to pick the unique identifier. The unique identifier will be part of the hostname of the services in your Arvados cluster. The rest of this documentation will refer to it as your @uuid_prefix@.
 
