@@ -201,7 +201,8 @@ else
 	sudo tar --numeric-owner -c . | $docker import - $repo:$suite
 	
 	# test the image
-	$docker run -i -t $repo:$suite echo success
+	[[ "$(/usr/bin/tty || true)" != "not a tty" ]] && RUN_OPTS="-i -t"
+	$docker run $RUN_OPS $repo:$suite echo success
 	
 	if [ -z "$skipDetection" ]; then
 		case "$lsbDist" in
