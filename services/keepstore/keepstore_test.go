@@ -414,43 +414,6 @@ func TestIndex(t *testing.T) {
 	}
 }
 
-// TestNodeStatus
-//     Test that GetNodeStatus returns valid info about available volumes.
-//
-//     TODO(twp): set up appropriate interfaces to permit more rigorous
-//     testing.
-//
-func TestNodeStatus(t *testing.T) {
-	defer teardown()
-
-	// Set up test Keep volumes with some blocks.
-	KeepVM = MakeTestVolumeManager(2)
-	defer KeepVM.Close()
-
-	vols := KeepVM.AllReadable()
-	vols[0].Put(TEST_HASH, TEST_BLOCK)
-	vols[1].Put(TEST_HASH_2, TEST_BLOCK_2)
-
-	// Get node status and make a basic sanity check.
-	st := GetNodeStatus()
-	for i := range vols {
-		volinfo := st.Volumes[i]
-		mtp := volinfo.MountPoint
-		if mtp != "/bogo" {
-			t.Errorf("GetNodeStatus mount_point %s, expected /bogo", mtp)
-		}
-		if volinfo.DeviceNum == 0 {
-			t.Errorf("uninitialized device_num in %v", volinfo)
-		}
-		if volinfo.BytesFree == 0 {
-			t.Errorf("uninitialized bytes_free in %v", volinfo)
-		}
-		if volinfo.BytesUsed == 0 {
-			t.Errorf("uninitialized bytes_used in %v", volinfo)
-		}
-	}
-}
-
 // ========================================
 // Helper functions for unit tests.
 // ========================================
