@@ -134,7 +134,9 @@ ShellInABox.prototype.sessionClosed = function() {
       }
       this.vt100('Session closed.');
     }
-    this.showReconnect(true);
+    // Revealing the "reconnect" button is commented out until we hook
+    // up the username+token auto-login mechanism to the new session:
+    //this.showReconnect(true);
   } catch (e) {
   }
 };
