@@ -214,3 +214,13 @@ common:
 
   # Ask Arvados API server to compress its response payloads.
   api_response_compression: true
+
+  # ShellInABox service endpoint URL for a given VM.  If false, do not
+  # offer web shell logins.
+  #
+  # E.g., using a path-based proxy server to forward connections to shell hosts:
+  # https://webshell.uuid_prefix.arvadosapi.com/%{hostname}
+  #
+  # E.g., using a name-based proxy server to forward connections to shell hosts:
+  # https://%{hostname}.webshell.uuid_prefix.arvadosapi.com/
+  shell_in_a_box_url: false

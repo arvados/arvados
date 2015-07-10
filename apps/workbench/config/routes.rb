@@ -17,6 +17,7 @@ ArvadosWorkbench::Application.routes.draw do
   resources :traits
   resources :api_client_authorizations
   resources :virtual_machines
+  get '/virtual_machines/:id/webshell/:login' => 'virtual_machines#webshell', :as => :webshell_virtual_machine
   resources :authorized_keys
   resources :job_tasks
   resources :jobs do
