@@ -108,6 +108,22 @@ case "$TARGET" in
             ciso8601 pycrypto backports.ssl_match_hostname pycurl llfuse)
         PYTHON3_BACKPORTS=(docker-py six requests)
         ;;
+    debian8)
+        FORMAT=deb
+        FPM_OUTDIR=tmp
+        REPO_UPDATE_CMD='freight add *deb apt/wheezy && freight cache && rsync -AaHX /var/www/freight/ /var/www/freight-production/ --delete && rm -f *deb'
+
+        PYTHON2_PACKAGE=python$PYTHON2_VERSION
+        PYTHON2_PKG_PREFIX=python
+        PYTHON3_PACKAGE=python$PYTHON3_VERSION
+        PYTHON3_PKG_PREFIX=python3
+        PYTHON_BACKPORTS=(python-gflags pyvcf google-api-python-client \
+            oauth2client pyasn1==0.1.7 pyasn1-modules==0.0.5 \
+            rsa uritemplate httplib2 ws4py \
+            virtualenv pykka apache-libcloud requests six pyexecjs jsonschema \
+            ciso8601 pycrypto backports.ssl_match_hostname pycurl llfuse)
+        PYTHON3_BACKPORTS=(docker-py six requests)
+        ;;
     ubuntu1204)
         FORMAT=deb
         FPM_OUTDIR=tmp

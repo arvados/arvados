@@ -1,4 +1,4 @@
-all: centos6/generated debian7/generated ubuntu1204/generated
+all: centos6/generated debian7/generated debian8/generated ubuntu1204/generated
 
 centos6/generated: common-generated-all
 	test -d centos6/generated || mkdir centos6/generated
@@ -7,6 +7,10 @@ centos6/generated: common-generated-all
 debian7/generated: common-generated-all
 	test -d debian7/generated || mkdir debian7/generated
 	cp -rlt debian7/generated common-generated/*
+
+debian8/generated: common-generated-all
+	test -d debian8/generated || mkdir debian8/generated
+	cp -rlt debian8/generated common-generated/*
 
 ubuntu1204/generated: common-generated-all
 	test -d ubuntu1204/generated || mkdir ubuntu1204/generated
