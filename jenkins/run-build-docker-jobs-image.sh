@@ -125,14 +125,13 @@ timer_reset
 # clean up the docker build environment
 cd "$WORKSPACE"
 cd docker
-./build.sh realclean
-
+rm -f jobs-image
 rm -f config.yml
 
 # Get test config.yml file
 cp $HOME/docker/config.yml .
 
-./build.sh
+./build.sh jobs-image
 
 ECODE=$?
 
@@ -155,45 +154,8 @@ else
         ## even though credentials are already in .dockercfg
         docker login -u arvados
 
-
-        docker_push arvados/api
-        docker_push arvados/compute
-        docker_push arvados/doc
-        docker_push arvados/workbench
-        docker_push arvados/keep
-        docker_push arvados/keepproxy
-        docker_push arvados/shell
-        docker_push arvados/sso
-        title "upload arvados images complete (`timer`)"
-    else
-        title "upload arvados images SKIPPED because no --upload option set"
-    fi
-fi
-
-title "Starting docker java-bwa-samtools build"
-
-timer_reset
-
-./build.sh java-bwa-samtools-image
-
-ECODE=$?
-
-if [[ "$ECODE" != "0" ]]; then
-    title "!!!!!! docker java-bwa-samtools BUILD FAILED !!!!!!"
-    EXITCODE=$(($EXITCODE + $ECODE))
-fi
-
-title "docker build java-bwa-samtools complete (`timer`)"
-
-timer_reset
-
-if [[ "$ECODE" != "0" ]]; then
-    title "upload arvados/jobs image SKIPPED because build failed"
-else
-    if [[ $upload == true ]]; then 
-        title "upload arvados/jobs image"
         docker_push arvados/jobs
-        title "upload arvados/jobs image complete (`timer`)"
+        title "upload arvados images complete (`timer`)"
     else
         title "upload arvados images SKIPPED because no --upload option set"
     fi
