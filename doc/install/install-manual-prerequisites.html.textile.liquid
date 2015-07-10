@@ -40,28 +40,11 @@ baseurl=http://rpm.arvados.org/CentOS/$releasever/os/$basearch/
 </code></pre>
 </notextile>
 
-h3. Debian
+h3. Debian and Ubuntu
 
-Packages are available for Debian 7 ("wheezy").  First, register the Curoverse signing key in apt's database:
+Packages are available for Debian 7 ("wheezy") and Ubuntu 12.04 ("precise").
 
-{% include 'install_debian_key' %}
-
-Then save the configuration line listed for your version of Debian in @/etc/apt/sources.list.d/arvados.list@:
-
-table(table table-bordered table-condensed).
-|*Debian version*|*@/etc/apt/sources.list.d/arvados.list@*|
-|7 ("wheezy")|@deb http://apt.arvados.org/ wheezy main@|
-
-Finally, add this new repository to apt's database:
-
-<notextile>
-<pre><code>~$ <span class="userinput">sudo /usr/bin/apt-get update</span>
-</code></pre>
-</notextile>
-
-h3. Ubuntu
-
-Packages are available for Ubuntu 12.04 ("precise").  First, register the Curoverse signing key in apt's database:
+First, register the Curoverse signing key in apt's database:
 
 {% include 'install_debian_key' %}
 
