@@ -65,11 +65,19 @@ Packages are available for Ubuntu 12.04 ("precise").  First, register the Curove
 
 {% include 'install_debian_key' %}
 
-Then save the configuration line listed for your version of Ubuntu in @/etc/apt/sources.list.d/arvados.list@:
+Configure apt to retrieve packages from the Arvados package repository:
 
-table(table table-bordered table-condensed).
-|*Ubuntu version*|*@/etc/apt/sources.list.d/arvados.list@*|
-|12.04 ("precise")|@deb http://apt.arvados.org/ precise main@|
+<notextile>
+<pre><code>~$ <span class="userinput">echo "deb http://apt.arvados.org/ $(lsb_release -cs) main" | sudo tee /etc/apt/sources.list.d/arvados.list</span>
+</code></pre>
+</notextile>
+
+Retrieve the package list:
+
+<notextile>
+<pre><code>~$ <span class="userinput">sudo apt-get update</span>
+</code></pre>
+</notextile>
 
 h2. A unique identifier
 
