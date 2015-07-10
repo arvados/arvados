@@ -185,6 +185,7 @@ ShellInABox.prototype.sendRequest = function(request) {
              }
            }
     }(this);
+  ShellInABox.lastRequestSent = Date.now();
   request.send(content);
 };
 
@@ -205,8 +206,13 @@ ShellInABox.prototype.onReadyStateChange = function(request) {
         this.sendRequest(request);
       }
     } else if (request.status == 0) {
-      // Time Out
-      this.sendRequest(request);
+        if (ShellInABox.lastRequestSent + 2000 < Date.now()) {
+            // Timeout, try again
+            this.sendRequest(request);
+        } else {
+            this.vt100('\r\n\r\nRequest failed.');
+            this.sessionClosed();
+        }
     } else {
       this.sessionClosed();
     }
