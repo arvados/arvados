@@ -800,7 +800,7 @@ VT100.prototype.initializeUserCSSStyles = function() {
                           sheet.disabled = false;
                         }
                         if (!sheet.disabled) {
-                          label.innerHTML= '<img src="enabled.gif" />' +
+                          label.innerHTML= '<img src="/webshell/enabled.gif" />' +
                                            label.innerHTML;
                         }
                       } else {
@@ -839,7 +839,7 @@ VT100.prototype.initializeUserCSSStyles = function() {
       // both ends), or whether this is a on/off toggle, which can be grouped
       // together with other on/off options.
       group                             +=
-        '<li>' + (enabled ? '<img src="enabled.gif" />' : '') +
+        '<li>' + (enabled ? '<img src="/webshell/enabled.gif" />' : '') +
                  label +
         '</li>';
     }
@@ -1249,7 +1249,7 @@ VT100.prototype.initializeElements = function(container) {
                        '<div id="scrollable">' +
                          '<table id="kbd_button">' +
                            '<tr><td width="100%">&nbsp;</td>' +
-                           '<td><img id="kbd_img" src="keyboard.png" /></td>' +
+                           '<td><img id="kbd_img" src="/webshell/keyboard.png" /></td>' +
                            '<td>&nbsp;&nbsp;&nbsp;&nbsp;</td></tr>' +
                          '</table>' +
                          '<pre id="lineheight">&nbsp;</pre>' +
@@ -1269,7 +1269,7 @@ VT100.prototype.initializeElements = function(container) {
                          (typeof suppressAllAudio != 'undefined' &&
                           suppressAllAudio ? "" :
                          embed + '<bgsound id="beep_bgsound" loop=1 />') +
-                          '<iframe id="layout" src="keyboard.html" />' +
+                          '<iframe id="layout" src="/webshell/keyboard.html" />' +
                         '</div>';
   }
 
@@ -2840,16 +2840,16 @@ VT100.prototype.showContextMenu = function(x, y) {
           '<li id="reset">Reset</li>' +
           '<hr />' +
           '<li id="beginconfig">' +
-             (this.utfEnabled ? '<img src="enabled.gif" />' : '') +
+             (this.utfEnabled ? '<img src="/webshell/enabled.gif" />' : '') +
              'Unicode</li>' +
           '<li>' +
-             (this.visualBell ? '<img src="enabled.gif" />' : '') +
+             (this.visualBell ? '<img src="/webshell/enabled.gif" />' : '') +
              'Visual Bell</li>'+
           '<li>' +
-             (this.softKeyboard ? '<img src="enabled.gif" />' : '') +
+             (this.softKeyboard ? '<img src="/webshell/enabled.gif" />' : '') +
              'Onscreen Keyboard</li>' +
           '<li id="endconfig">' +
-             (this.blinkingCursor ? '<img src="enabled.gif" />' : '') +
+             (this.blinkingCursor ? '<img src="/webshell/enabled.gif" />' : '') +
              'Blinking Cursor</li>'+
           (this.usercss.firstChild ?
            '<hr id="beginusercss" />' +
