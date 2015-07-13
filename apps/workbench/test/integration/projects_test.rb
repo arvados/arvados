@@ -36,34 +36,6 @@ class ProjectsTest < ActionDispatch::IntegrationTest
            "Description update did not survive page refresh")
   end
 
-  test 'Add a new name, then edit it, without creating a duplicate' do
-    project_uuid = api_fixture('groups')['aproject']['uuid']
-    specimen_uuid = api_fixture('traits')['owned_by_aproject_with_no_name']['uuid']
-    visit page_with_token 'active', '/projects/' + project_uuid
-    click_link 'Other objects'
-    within '.selection-action-container' do
-      # Wait for the tab to load:
-      assert_selector 'tr[data-kind="arvados#trait"]'
-      within first('tr', text: 'Trait') do
-        find(".fa-pencil").click
-        find('.editable-input input').set('Now I have a name.')
-        find('.glyphicon-ok').click
-        assert_selector '.editable', text: 'Now I have a name.'
-        find(".fa-pencil").click
-        find('.editable-input input').set('Now I have a new name.')
-        find('.glyphicon-ok').click
-      end
-      wait_for_ajax
-      assert_selector '.editable', text: 'Now I have a new name.'
-    end
-    visit current_path
-    click_link 'Other objects'
-    within '.selection-action-container' do
-      find '.editable', text: 'Now I have a new name.'
-      assert_no_selector '.editable', text: 'Now I have a name.'
-    end
-  end
-
   test 'Create a project and move it into a different project' do
     visit page_with_token 'active', '/projects'
     find("#projects-menu").click

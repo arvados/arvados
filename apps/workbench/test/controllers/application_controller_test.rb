@@ -402,4 +402,20 @@ class ApplicationControllerTest < ActionController::TestCase
       assert_equal([['.', 'foo', 3]], assigns(:object).files)
     end
   end
+
+  test 'Edit name and verify that a duplicate is not created' do
+    @controller = ProjectsController.new
+    project = api_fixture("groups")["aproject"]
+    post :update, {
+      id: project["uuid"],
+      project: {
+        name: 'test name'
+      },
+      format: :json
+    }, session_for(:active)
+    assert_includes @response.body, 'test name'
+    updated = assigns(:object)
+    assert_equal updated.uuid, project["uuid"]
+    assert_equal 'test name', updated.name
+  end
 end
