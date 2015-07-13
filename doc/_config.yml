@@ -44,6 +44,8 @@ navbar:
     - Run a pipeline on the command line:
       - user/topics/running-pipeline-command-line.html.textile.liquid
       - user/topics/arv-run.html.textile.liquid
+    - Working with Arvados Repositories:
+      - user/tutorials/add-new-repository.html.textile.liquid
     - Develop a new pipeline:
       - user/tutorials/intro-crunch.html.textile.liquid
       - user/tutorials/running-external-program.html.textile.liquid
