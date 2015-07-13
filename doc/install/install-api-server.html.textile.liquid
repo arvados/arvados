@@ -127,7 +127,7 @@ h3. workbench_address
 
 Fill in the url of your workbench application in @workbench_address@, for example
 
-&nbsp;&nbsp;https://workbench.@prefix_uuid@.your.domain
+&nbsp;&nbsp;https://workbench.@uuid_prefix@.your.domain
 
 h3(#omniauth). sso_app_id, sso_app_secret, sso_provider_url
 
@@ -215,7 +215,7 @@ proxy_http_version 1.1;
 
 server {
   listen       <span class="userinput">[your public IP address]</span>:443 ssl;
-  server_name  <span class="userinput">uuid-prefix.your.domain</span>;
+  server_name  <span class="userinput">uuid_prefix.your.domain</span>;
 
   ssl on;
 
@@ -235,7 +235,7 @@ server {
 
 server {
   listen       <span class="userinput">[your public IP address]</span>:443 ssl;
-  server_name  ws.<span class="userinput">uuid-prefix.your.domain</span>;
+  server_name  ws.<span class="userinput">uuid_prefix.your.domain</span>;
 
   ssl on;
 
