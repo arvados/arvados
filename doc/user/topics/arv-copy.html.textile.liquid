@@ -44,11 +44,11 @@ h3. How to copy a pipeline template or pipeline instance
 
 {% include 'arv_copy_expectations' %}
 
-We will use the uuid @cluster1-p5p6p-abcd123efghi45jkl@ as an example pipeline template/instance, and @samplegitrepo/samplename.git@ as an example git repo.
+We will use the uuid @cluster1-p5p6p-abcd123efghi45jkl@ as an example pipeline template or instance, and @samplegitrepo/samplename.git@ as an example git repo.
 
 <notextile>
 <pre><code>~$ <span class="userinput">arv-copy --src cluster1 --dst cluster2 --dst-git-repo samplegitrepo/samplename cluster1-p5p6p-abcd123efghi45jkl</span>
 </code></pre>
 </notextile>
 
-New branches in the destination git repo will be created for each branch used in the pipeline template. For example, if your source branch was named branch_name, your new branch will be named git_git_cluster1_arvadosapi_com_reponame_git_branch_name. 
+New branches in the destination git repo will be created for each branch used in the pipeline template. For example, if your source branch was named branch_name, your new branch will be named @git_git_cluster1_arvadosapi_com_reponame_git_branch_name@. 
