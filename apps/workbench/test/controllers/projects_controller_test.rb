@@ -345,10 +345,16 @@ class ProjectsControllerTest < ActionController::TestCase
     found.description = '"Link to object":' + api_fixture('groups')['asubproject']['uuid']
     found.save!
     get(:show, {id: project['uuid']}, session_for(:active))
-    puts @response.body
     assert_not_includes '"Link to object"', @response.body
     assert_match /href=.*Link to object.*\/a./, @response.body
     refute_empty css_select('[href="/groups/zzzzz-j7d0g-axqo7eu9pwvna1x"]')
+  end
+
+  test "project viewer can't see project sharing tab" do
+    project = api_fixture('groups')['aproject']
+    get(:show, {id: project['uuid']}, session_for(:project_viewer))
+    refute_includes @response.body, '<div id ="Sharing"'
+    assert_includes @response.body, '<div id="Data_collections"'
   end
 
 end

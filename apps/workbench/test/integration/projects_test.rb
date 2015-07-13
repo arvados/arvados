@@ -127,12 +127,6 @@ class ProjectsTest < ActionDispatch::IntegrationTest
                     text: group_name("anonymous_group"))
   end
 
-  test "project viewer can't see project sharing tab" do
-    show_object_using('project_viewer', 'groups', 'aproject', 'A Project')
-    assert(page.has_no_link?("Sharing"),
-           "read-only project user sees sharing tab")
-  end
-
   test "project owner can manage sharing for another user" do
     add_user = api_fixture('users')['future_project_user']
     new_name = ["first_name", "last_name"].map { |k| add_user[k] }.join(" ")
