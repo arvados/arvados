@@ -13,7 +13,7 @@ h2. Arv-copy
 
 @arv-copy@ allows users to copy collections, pipeline templates, and pipeline instances, including all their dependencies from one cluster to another.
 
-For example, lets copy from "cluster1" to "cluster2". The names "cluster1" and "cluster2" are interchangable with any cluster name.
+For example, lets copy from *cluster1* to *cluster2*. The names *cluster1* and *cluster2* are interchangable with any cluster name.
 
 In order for the clusters to be able to communicate with each other, you must create custom configuration files for both clusters. First, go to your Manage Account page in Workbench and copy the @ARVADOS_API_HOST@ and @ARVADOS_API_TOKEN@ in both of your clusters. Then, create two configuration files, one for each cluster. The names of the files is very important, they must match the cluster names.
 
@@ -30,7 +30,7 @@ h3. How to copy a collection
 
 First, select the uuid of the collection you want to copy from the source cluster. The uuid can be found inside of a collection in the top left box, or from the URL bar (the part after @collections/...@)
 
-Now copy the collection from cluster1 to cluster2. We will use the uuid cluster1-4zz18-1234567890abcde as an example.
+Now copy the collection from *cluster1* to *cluster2*. We will use the uuid @cluster1-4zz18-1234567890abcde@ as an example.
 <notextile>
 <pre><code>~$ <span class="userinput">arv-copy --src cluster1 --dst cluster2 cluster1-4zz18-1234567890abcde</span>
 cluster1-4zz18-1234567890abcde: 100M / 100M 100.0% 
@@ -44,11 +44,7 @@ h3. How to copy a pipeline template or pipeline instance
 
 {% include 'arv_copy_expectations' %}
 
-When copying a pipeline template or pipeline instance recursively (copying all dependencies in the template/instance) you must have a git repository in the destination cluster.
-
-If you do not have a repository created, you can follow the documentation here: (Point to #6014)
-
-We will use the uuid cluster1-p5p6p-abcd123efghi45jkl as an example pipeline template/instance, and samplegitrepo/samplename.git as an example git repo.
+We will use the uuid @cluster1-p5p6p-abcd123efghi45jkl@ as an example pipeline template/instance, and @samplegitrepo/samplename.git@ as an example git repo.
 
 <notextile>
 <pre><code>~$ <span class="userinput">arv-copy --src cluster1 --dst cluster2 --dst-git-repo samplegitrepo/samplename cluster1-p5p6p-abcd123efghi45jkl</span>
