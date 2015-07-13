@@ -326,3 +326,23 @@ func TestIsFull(t *testing.T) {
 		t.Errorf("%s: should no longer be full", v)
 	}
 }
+
+func TestNodeStatus(t *testing.T) {
+	v := TempUnixVolume(t, false, false)
+	defer _teardown(v)
+
+	// Get node status and make a basic sanity check.
+	volinfo := v.Status()
+	if volinfo.MountPoint != v.root {
+		t.Errorf("GetNodeStatus mount_point %s, expected %s", volinfo.MountPoint, v.root)
+	}
+	if volinfo.DeviceNum == 0 {
+		t.Errorf("uninitialized device_num in %v", volinfo)
+	}
+	if volinfo.BytesFree == 0 {
+		t.Errorf("uninitialized bytes_free in %v", volinfo)
+	}
+	if volinfo.BytesUsed == 0 {
+		t.Errorf("uninitialized bytes_used in %v", volinfo)
+	}
+}

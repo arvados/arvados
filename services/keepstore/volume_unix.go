@@ -141,7 +141,7 @@ func (v *UnixVolume) Put(loc string, block []byte) error {
 }
 
 // Status returns a VolumeStatus struct describing the volume's
-// current state.
+// current state, or nil if an error occurs.
 //
 func (v *UnixVolume) Status() *VolumeStatus {
 	var fs syscall.Statfs_t

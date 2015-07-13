@@ -1,0 +1,49 @@
+<html>
+    <title><%= @object.hostname %> / <%= Rails.configuration.site_name %></title>
+    <link rel="stylesheet" href="<%= asset_path 'webshell/styles.css' %>" type="text/css">
+    <style type="text/css">
+      body {
+        margin: 0px;
+      }
+    </style>
+    <script type="text/javascript"><!--
+      (function() {
+        // We would like to hide overflowing lines as this can lead to
+        // visually jarring results if the browser substitutes oversized
+        // Unicode characters from different fonts. Unfortunately, a bug
+        // in Firefox prevents it from allowing multi-line text
+        // selections whenever we change the "overflow" style. So, only
+        // do so for non-Netscape browsers.
+        if (typeof navigator.appName == 'undefined' ||
+            navigator.appName != 'Netscape') {
+          document.write('<style type="text/css">' +
+                         '#vt100 #console div, #vt100 #alt_console div {' +
+                         '  overflow: hidden;' +
+                         '}' +
+                         '</style>');
+        }
+      })();
+
+      function login(username, token) {
+        var sh = new ShellInABox("<%= j @webshell_url %>");
+        setTimeout(function() {
+          sh.keysPressed("<%= j params[:login] %>\n");
+          setTimeout(function() {
+            sh.keysPressed("<%= j Thread.current[:arvados_api_token] %>\n");
+            sh.vt100('(sent authentication token)\n');
+          }, 1000);
+        }, 1000);
+      }
+    // -->
+</script>
+    <link rel="icon" href="<%= asset_path 'favicon.ico' %>" type="image/x-icon">
+    <script type="text/javascript" src="<%= asset_path 'webshell/shell_in_a_box.js' %>"></script>
+  </head>
+  <!-- Load ShellInABox from a timer as Konqueror sometimes fails to
+       correctly deal with the enclosing frameset (if any), if we do not
+       do this
+   -->
+<body onload="setTimeout(login, 1000)"
+    scroll="no"><noscript>JavaScript must be enabled for ShellInABox</noscript>
+</body>
+</html>
