@@ -12,6 +12,17 @@ function usage {
     echo >&2 "  -d, --debug                   Enable debug output"
     echo >&2 "  -h, --help                    Display this help and exit"
     echo >&2
+    echo >&2 "Note: this script requires an arvados token created with these permissions:"
+    echo >&2 '  arv api_client_authorization create_system_auth \'
+    echo >&2 '    --scopes "[\"GET /arvados/v1/virtual_machines\",'
+    echo >&2 '               \"GET /arvados/v1/keep_services\",'
+    echo >&2 '               \"GET /arvados/v1/groups\",'
+    echo >&2 '               \"GET /arvados/v1/links\",'
+    echo >&2 '               \"GET /arvados/v1/groups/\",'
+    echo >&2 '               \"GET /arvados/v1/keep_services/accessible\",'
+    echo >&2 '               \"POST /arvados/v1/collections\",'
+    echo >&2 '               \"POST /arvados/v1/links\"]"'
+    echo >&2
 }
 
 # NOTE: This requires GNU getopt (part of the util-linux package on Debian-based distros).
@@ -146,7 +157,7 @@ DOCKER_IMAGES_PROJECT=`ARVADOS_API_HOST=$ARVADOS_API_HOST ARVADOS_API_TOKEN=$ARV
 if [[ "$DOCKER_IMAGES_PROJECT" == "" ]]; then
   title "Warning: Arvados Standard Docker Images project not found. Creating it."
 
-  DOCKER_IMAGES_PROJECT=`ARVADOS_API_HOST=$ARVADOS_API_HOST ARVADOS_API_TOKEN=$ARVADOS_API_TOKEN arv --format=uuid group create --group "{\"owner_uuid\":\"$IDENTIFIER-tpzed-000000000000000\", \"name\":\"Arvados Standard Docker Images\"}"`
+  DOCKER_IMAGES_PROJECT=`ARVADOS_API_HOST=$ARVADOS_API_HOST ARVADOS_API_TOKEN=$ARVADOS_API_TOKEN arv --format=uuid group create --group "{\"owner_uuid\":\"$IDENTIFIER-tpzed-000000000000000\", \"name\":\"Arvados Standard Docker Images\", \"group_class\":\"project\"}"`
   ARVADOS_API_HOST=$ARVADOS_API_HOST ARVADOS_API_TOKEN=$ARVADOS_API_TOKEN arv link create --link "{\"tail_uuid\":\"$IDENTIFIER-j7d0g-fffffffffffffff\", \"head_uuid\":\"$DOCKER_IMAGES_PROJECT\", \"link_class\":\"permission\", \"name\":\"can_read\" }"
   if [[ "$?" != "0" ]]; then
     title "ERROR: could not create standard Docker images project Please create it, cf. http://doc.arvados.org/install/create-standard-objects.html"
