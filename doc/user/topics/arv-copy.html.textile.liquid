@@ -1,7 +1,7 @@
 ---
 layout: default
 navsection: userguide
-title: "How arv-copy works"
+title: "Using arv-copy"
 ...
 
 
@@ -9,26 +9,22 @@ This tutorial describes how to copy Arvados objects from one cluster to another 
 
 {% include 'tutorial_expectations' %}
 
-Also note that they must work from a machine with an SSH key that is allowed to access both clusters (required to copy git repositories).
-
 h2. Arv-copy
 
 @arv-copy@ allows users to copy collections, pipeline templates, and pipeline instances, including all their dependencies from one cluster to another.
 
-Suppose we want to copy from one cloud cluster to another. For example cluster "one" to cluster "two". The names "one" and "two" are interchangable with any cluster name.
+For example, lets copy from "cluster1" to "cluster2". The names "cluster1" and "cluster2" are interchangable with any cluster name.
 
-First we have to make configuration files for both clusters.
+First, you must custom configuration files for both clusters. Go to your Manage Account page in Workbench and copy the @ARVADOS_API_HOST@ and @ARVADOS_API_TOKEN@ in both of your clusters. Then, create two configuration files, one for each cluster. The names of the files is very important, they must match the cluster names.
 
 <notextile>
 <pre><code>~$ <span class="userinput">cd ~/.config/arvados</span>
-~$ <span class="userinput">echo "ARVADOS_API_HOST=one.arvadosapi.com" >> one.conf</span>
-~$ <span class="userinput">echo "ARVADOS_API_TOKEN=123456789abcdefghijkl" >> one.conf</span>
-~$ <span class="userinput">echo "ARVADOS_API_HOST=two.arvadosapi.com" >> two.conf</span>
-~$ <span class="userinput">echo "ARVADOS_API_TOKEN=987654321lkjihgfedcba" >> two.conf</span>
+~$ <span class="userinput">echo "ARVADOS_API_HOST=cluster1.arvadosapi.com" >> cluster1.conf</span>
+~$ <span class="userinput">echo "ARVADOS_API_TOKEN=123456789abcdefghijkl" >> cluster1.conf</span>
+~$ <span class="userinput">echo "ARVADOS_API_HOST=cluster2.arvadosapi.com" >> cluster2.conf</span>
+~$ <span class="userinput">echo "ARVADOS_API_TOKEN=987654321lkjihgfedcba" >> cluster2.conf</span>
 </code></pre>
 </notextile>
-
-Your ARVADOS_API_TOKEN can be found in the manage accounts page in Workbench under Current Token.
 
 Once you have your config files ready, you can start copying!
 
@@ -38,34 +34,29 @@ h3. How to copy a collection
 
 First, copy the uuid of the collection you want to copy from the cluster you want to copy from. The uuid can be found inside of a collection in the top left box, or from the URL bar (the part after @collections/...@)
 
-Now copy the collection from cluster one to cluster two. We will use the uuid one-4zz18-1234567890abcde as an example.
+Now copy the collection from cluster1 to cluster2. We will use the uuid cluster1-4zz18-1234567890abcde as an example.
 <notextile>
-<pre><code>~$ <span class="userinput">arv-copy --src one --dst two one-4zz18-1234567890abcde</span>
+<pre><code>~$ <span class="userinput">arv-copy --src cluster1 --dst cluster2 cluster1-4zz18-1234567890abcde</span>
+cluster1-4zz18-1234567890abcde: 100M / 100M 100.0% 
+arvados.arv-copy[1234] INFO: Success: created copy with uuid cluster2-4zz18-8765943210cdbae
 </code></pre>
 </notextile>
 
-The output should be like this:
-
-<notextile>
-<pre><code>
-one-4zz18-1234567890abcde: 100M / 100M 100.0% 
-arvados.arv-copy[1234] INFO: Success: created copy with uuid two-4zz18-8765943210cdbae
-</code></pre>
-</notextile>
-
-The collection will be placed in your home project in the destination cluster. If you want to place your collection inside of a pre-created project, you can specify the project you want it to be in using the tag @--project-uuid@
+The collection will be placed in your home project in the destination cluster. If you want to place your collection inside of a pre-created project, you can specify the project you want it to be in using the tag @--project-uuid@ followed by the project uuid.
 
 h3. How to copy a pipeline template or pipeline instance
+
+{% include 'arv_copy_expectations' %}
 
 When copying a pipeline template or pipeline instance recursively (copying all dependencies in the template/instance) you must have a git repository in the destination cluster.
 
 If you do not have a repository created, you can follow the documentation here: (Point to #6014)
 
-Once you have your repository created, you can copy your pipeline template/instance. We will use the uuid one-p5p6p-abcd123efghi45jkl as an example, and samplegitrepo/samplename.git as an example git repo.
+Once you have your repository created, you can copy your pipeline template/instance. We will use the uuid cluster1-p5p6p-abcd123efghi45jkl as an example, and samplegitrepo/samplename.git as an example git repo.
 
 <notextile>
-<pre><code>~$ <span class="userinput">arv-copy --src one --dst two --dst-git-repo samplegitrepo/samplename.git one-p5p6p-abcd123efghi45jkl</span>
+<pre><code>~$ <span class="userinput">arv-copy --src cluster1 --dst cluster2 --dst-git-repo samplegitrepo/samplename cluster1-p5p6p-abcd123efghi45jkl</span>
 </code></pre>
 </notextile>
 
-New branches in the destination git repo will be created for each branch used in the pipeline template. For example, if your source branch was named branch_name, your new branch will be named git_git_one_arvadosapi_com_reponame_git_branch_name. 
+New branches in the destination git repo will be created for each branch used in the pipeline template. For example, if your source branch was named branch_name, your new branch will be named git_git_cluster1_arvadosapi_com_reponame_git_branch_name. 
