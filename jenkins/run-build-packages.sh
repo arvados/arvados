@@ -746,8 +746,9 @@ fi
 # from the package - empty it instead.
 rm -rf $WORKSPACE/apps/workbench/tmp/*
 
-# Set up application.yml so that asset precompilation works
+# Set up application.yml and production.rb so that asset precompilation works
 \cp config/application.yml.example config/application.yml -f
+\cp config/environments/production.rb.example config/environments/production.rb -f
 sed -i 's/secret_token: ~/secret_token: xxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxx/' config/application.yml
 
 RAILS_ENV=production RAILS_GROUPS=assets bundle exec rake assets:precompile >/dev/null
