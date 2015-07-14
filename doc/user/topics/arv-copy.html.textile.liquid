@@ -1,7 +1,7 @@
 ---
 layout: default
 navsection: userguide
-title: "Using Arv-copy"
+title: "Using arv-copy"
 ...
 
 
@@ -9,46 +9,55 @@ This tutorial describes how to copy Arvados objects from one cluster to another 
 
 {% include 'tutorial_expectations' %}
 
-h2. Arv-copy
+h2. arv-copy
 
-@arv-copy@ allows users to copy collections, pipeline templates, and pipeline instances, including all their dependencies from one cluster to another.
+@arv-copy@ allows users to copy collections, pipeline templates, and pipeline instances from one cluster to another. By default, @arv-copy@ will recursively go through a template or instance and copy all dependencies associated with the object.
 
-For example, lets copy from *cluster1* to *cluster2*. The names *cluster1* and *cluster2* are interchangable with any cluster name.
+For example, lets copy from our beta cloud instance *qr1hi* to *dst_cluster*. The names *qr1hi* and *dst_cluster* are interchangable with any cluster name. You can find the cluster name by the prefix of the uuid of the object you want to copy or the prefix of the @ARVADOS_API_HOST@.
 
-In order for the clusters to be able to communicate with each other, you must create custom configuration files for both clusters. First, go to your Manage Account page in Workbench and copy the @ARVADOS_API_HOST@ and @ARVADOS_API_TOKEN@ in both of your clusters. Then, create two configuration files, one for each cluster. The names of the files is very important, they must match the cluster names.
+In order for the clusters to be able to communicate with each other, you must create custom configuration files for both clusters. First, go to your Manage Account page in Workbench and copy the @ARVADOS_API_HOST@ and @ARVADOS_API_TOKEN@ in both of your clusters. Then, create two configuration files, one for each cluster. The names of the files must have the format of <uuid_prefix>.conf. In our example, let's make two files, one for *qr1hi* and one for *dst_cluster*. From your *Manage account* page in *qr1hi* and *dst_cluster*, copy the @ARVADOS_API_HOST@ and @ARVADOS_API_TOKEN@.
+
+!{display: block;margin-left: 25px;margin-right: auto;border:1px solid lightgray;}{{ site.baseurl }}/images/api-token-host.png!
+
+Copy your @ARVADOS_API_HOST@ and @ARVADOS_API_TOKEN@ into the config files as shown below.
 
 <notextile>
 <pre><code>~$ <span class="userinput">cd ~/.config/arvados</span>
-~$ <span class="userinput">echo "ARVADOS_API_HOST=cluster1.arvadosapi.com" >> cluster1.conf</span>
-~$ <span class="userinput">echo "ARVADOS_API_TOKEN=123456789abcdefghijkl" >> cluster1.conf</span>
-~$ <span class="userinput">echo "ARVADOS_API_HOST=cluster2.arvadosapi.com" >> cluster2.conf</span>
-~$ <span class="userinput">echo "ARVADOS_API_TOKEN=987654321lkjihgfedcba" >> cluster2.conf</span>
+~$ <span class="userinput">echo "ARVADOS_API_HOST=qr1hi.arvadosapi.com" >> qr1hi.conf</span>
+~$ <span class="userinput">echo "ARVADOS_API_TOKEN=123456789abcdefghijkl" >> qr1hi.conf</span>
+~$ <span class="userinput">echo "ARVADOS_API_HOST=dst_cluster.arvadosapi.com" >> dst_cluster.conf</span>
+~$ <span class="userinput">echo "ARVADOS_API_TOKEN=987654321lkjihgfedcba" >> dst_cluster.conf</span>
 </code></pre>
 </notextile>
+
+Now you're ready to copy between *qr1hi* and *dst_cluster*!
 
 h3. How to copy a collection
 
 First, select the uuid of the collection you want to copy from the source cluster. The uuid can be found inside of a collection in the top left box, or from the URL bar (the part after @collections/...@)
 
-Now copy the collection from *cluster1* to *cluster2*. We will use the uuid @cluster1-4zz18-1234567890abcde@ as an example.
+Now copy the collection from *qr1hi* to *dst_cluster*. We will use the uuid @qr1hi-4zz18-tci4vn4fa95w0zx@ as an example. You can find this collection in the lobSTR v.3 project on *qr1hi*.
 <notextile>
-<pre><code>~$ <span class="userinput">arv-copy --src cluster1 --dst cluster2 cluster1-4zz18-1234567890abcde</span>
-cluster1-4zz18-1234567890abcde: 100M / 100M 100.0% 
-arvados.arv-copy[1234] INFO: Success: created copy with uuid cluster2-4zz18-8765943210cdbae
+<pre><code>~$ <span class="userinput">arv-copy --src qr1hi --dst dst_cluster qr1hi-4zz18-tci4vn4fa95w0zx</span>
+qr1hi-4zz18-tci4vn4fa95w0zx: 6.1M / 6.1M 100.0% 
+arvados.arv-copy[1234] INFO: Success: created copy with uuid dst_cluster-4zz18-8765943210cdbae
 </code></pre>
 </notextile>
 
-The collection will be placed in your home project in the destination cluster. If you want to place your collection inside of a pre-created project, you can specify the project you want it to be in using the tag @--project-uuid@ followed by the project uuid.
+The output of arv-copy displays the uuid of the collection generated. By default, the output is placed in your home project in the destination cluster. If you want to place your collection inside of a pre-created project, you can specify the project you want it to be in using the tag @--project-uuid@ followed by the project uuid.
 
 h3. How to copy a pipeline template or pipeline instance
 
 {% include 'arv_copy_expectations' %}
 
-We will use the uuid @cluster1-p5p6p-abcd123efghi45jkl@ as an example pipeline template or instance, and @samplegitrepo/samplename.git@ as an example git repo.
+We will use the uuid @qr1hi-d1hrv-nao0ohw8y7dpf84@ as an example pipeline instance.
 
 <notextile>
 <pre><code>~$ <span class="userinput">arv-copy --src cluster1 --dst cluster2 --dst-git-repo samplegitrepo/samplename cluster1-p5p6p-abcd123efghi45jkl</span>
 </code></pre>
 </notextile>
+
+By default, if you copy a pipeline instance recursively, you will find that the template as well as all the dependecies are in your home project.
+
 
 New branches in the destination git repo will be created for each branch used in the pipeline template. For example, if your source branch was named branch_name, your new branch will be named @git_git_cluster1_arvadosapi_com_reponame_git_branch_name@. 
