@@ -15,7 +15,7 @@ h2. arv-copy
 
 For example, lets copy from our beta cloud instance *qr1hi* to *dst_cluster*. The names *qr1hi* and *dst_cluster* are interchangable with any cluster name. You can find the cluster name from the prefix of the uuid of the object you want to copy.
 
-In order for the clusters to be able to communicate with each other, you must create custom configuration files for both clusters. First, go to your Manage Account page in Workbench and copy the @ARVADOS_API_HOST@ and @ARVADOS_API_TOKEN@ in both of your clusters. Then, create two configuration files, one for each cluster. The names of the files must have the format of <uuid_prefix>.conf. In our example, let's make two files, one for *qr1hi* and one for *dst_cluster*. From your *Manage account* page in *qr1hi* and *dst_cluster*, copy the @ARVADOS_API_HOST@ and @ARVADOS_API_TOKEN@.
+In order for the clusters to be able to communicate with each other, you must create custom configuration files for both clusters. First, go to your *Manage account* page in Workbench and copy the @ARVADOS_API_HOST@ and @ARVADOS_API_TOKEN@ in both of your clusters. Then, create two configuration files, one for each cluster. The names of the files must have the format of *uuid_prefix*.conf. In our example, let's make two files, one for *qr1hi* and one for *dst_cluster*. From your *Manage account* page in *qr1hi* and *dst_cluster*, copy the @ARVADOS_API_HOST@ and @ARVADOS_API_TOKEN@.
 
 !{display: block;margin-left: 25px;margin-right: auto;border:1px solid lightgray;}{{ site.baseurl }}/images/api-token-host.png!
 
@@ -60,6 +60,6 @@ arvados.arv-copy[19694] INFO: Success: created copy with uuid dst_cluster-d1hrv-
 </code></pre>
 </notextile>
 
-By default, if you copy a pipeline instance recursively, you will find that the template as well as all the dependcies are in your home project.
+By default, if you copy a pipeline instance recursively, you will find that the template as well as all the dependencies are in your home project.
 
 New branches in the destination git repo will be created for each branch used in the pipeline template. For example, if your source branch was named ac21f0d45a76294aaca0c0c0fdf06eb72d03368d, your new branch will be named @git_git_cluster1_arvadosapi_com_reponame_git_ac21f0d45a76294aaca0c0c0fdf06eb72d03368d@. 
