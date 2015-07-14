@@ -12,6 +12,7 @@
 
 <% pipeline_jobs = render_pipeline_jobs %>
 <% job_uuids = pipeline_jobs.map { |j| j[:job].andand[:uuid] }.compact %>
+<% job_uuids_finished = {}; pipeline_jobs.map { |j| job_uuids_finished[j[:job].andand[:uuid]] = j[:job].andand[:finished_at] } %>
 
 <% if @object.state == 'Paused' %>
   <p>
@@ -65,11 +66,12 @@
     <% end %>
     for
     <% cputime = tasks.map { |task|
-         if task.started_at
-           (if task.finished_at then task.finished_at else Time.now() end) - task.started_at
-           else
-         0
-       end
+        if task.started_at
+          finished_at = task.finished_at || job_uuids_finished[task.job_uuid] || Time.now()
+          finished_at - task.started_at
+        else
+          0
+        end
        }.reduce(:+) || 0 %>
     <%= render_runtime(runningtime, true, false) %><% if (walltime - runningtime) > 0 %>
       (<%= render_runtime(walltime - runningtime, true, false) %> queued)<% end %><% if cputime == 0 %>.<% else %>

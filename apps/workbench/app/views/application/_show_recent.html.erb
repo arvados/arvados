@@ -8,6 +8,8 @@
 
 <% attr_blacklist = ' created_at modified_at modified_by_user_uuid modified_by_client_uuid updated_at owner_uuid group_class properties' %>
 
+<% show_home_link = current_user.is_admin and controller.model_class == User %>
+
 <%= render partial: "paging", locals: {results: objects, object: @object} %>
 
 <%= form_tag do |f| %>
@@ -25,6 +27,11 @@
         <%= controller.model_class.attribute_info[attr.to_sym].andand[:column_heading] or attr.sub /_uuid/, '' %>
       </th>
       <% end %>
+      <% if show_home_link %>
+        <th class="arv-user-home">
+          <!-- a column for user's home -->
+        </th>
+      <% end %>
       <th>
         <!-- a column for delete buttons -->
       </th>
@@ -40,9 +47,7 @@
         </td>
       <% end %>
       <td>
-        <% if (current_user.is_admin and current_user.uuid != object.uuid) or !current_user.is_admin %>
-          <%= render :partial => "show_object_button", :locals => {object: object, size: 'xs'} %>
-        <% end %>
+        <%= render :partial => "show_object_button", :locals => {object: object, size: 'xs'} %>
       </td>
 
       <% object.attributes_for_display.each do |attr, attrvalue| %>
@@ -54,6 +59,11 @@
           <%= link_to_if_arvados_object attrvalue, {referring_attr: attr, referring_object: object, with_class_name: true, friendly_name: true} %>
         <% end %>
       </td>
+      <% end %>
+      <% if show_home_link %>
+        <td>
+          <%= link_to 'Home', "/projects/#{object.uuid}" %>
+        </td>
       <% end %>
       <td>
         <%= render partial: 'delete_object_button', locals: {object:object} %>

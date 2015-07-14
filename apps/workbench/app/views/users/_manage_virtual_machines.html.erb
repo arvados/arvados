@@ -66,6 +66,9 @@
           <th> Host name </th>
           <th> Login name </th>
           <th> Command line </th>
+          <% if Rails.configuration.shell_in_a_box_url %>
+            <th> Web shell <span class="label label-info">beta</span></th>
+          <% end %>
         </tr>
       </thead>
       <tbody>
@@ -84,6 +87,15 @@
                 <% end %>
               <% end %>
             </td>
+            <% if Rails.configuration.shell_in_a_box_url %>
+              <td>
+                <% @my_vm_logins[vm[:uuid]].andand.each do |login| %>
+                  <%= link_to webshell_virtual_machine_path(vm, login: login), title: "Open a terminal session in your browser", class: 'btn btn-xs btn-default', target: "_blank" do %>
+                    Log in as <%= login %><br />
+                  <% end %>
+                <% end %>
+              </td>
+            <% end %>
           </tr>
         <% end %>
       </tbody>

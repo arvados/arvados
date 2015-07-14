@@ -4,86 +4,65 @@ navsection: installguide
 title: Install Workbench
 ...
 
-This installation guide assumes you are on a 64 bit Debian or Ubuntu system.
-
 h2. Install prerequisites
 
-<notextile>
-<pre><code>~$ <span class="userinput">sudo apt-get install \
-    bison build-essential gettext libcurl3 libcurl3-gnutls \
-    libcurl4-openssl-dev libpcre3-dev libpq-dev libreadline-dev \
-    libssl-dev libxslt1.1 git wget zlib1g-dev graphviz
-</span></code></pre></notextile>
+The Arvados package repository includes Workbench server package that can help automate much of the deployment.  It requires:
 
-Also make sure you have "Ruby and bundler":install-manual-prerequisites-ruby.html installed.
+* "Ruby 2.1 and bundler":install-manual-prerequisites-ruby.html
+* The Arvados Python SDK
+* Graphviz
+* Build tools to build gem dependencies
+* Nginx
 
 Workbench doesn't need its own database, so it does not need to have PostgreSQL installed.
 
-h2. Download the source tree
+On older distributions, you may need to use a backports repository to satisfy these requirements.  For example, on older Red Hat-based systems, consider using the "nginx16":https://www.softwarecollections.org/en/scls/rhscl/nginx16/ Software Collection.
+
+On a Debian-based system, install the following packages:
 
 <notextile>
-<pre><code>~$ <span class="userinput">cd $HOME</span> # (or wherever you want to install)
-~$ <span class="userinput">git clone https://github.com/curoverse/arvados.git</span>
-</code></pre></notextile>
-
-See also: "Downloading the source code":https://arvados.org/projects/arvados/wiki/Download on the Arvados wiki.
-
-The Workbench application is in @apps/workbench@ in the source tree.
-
-h2. Install gem dependencies
-
-<notextile>
-<pre><code>~$ <span class="userinput">cd arvados/apps/workbench</span>
-~/arvados/apps/workbench$ <span class="userinput">bundle install</span>
+<pre><code>~$ <span class="userinput">sudo apt-get install bison build-essential graphviz git nginx python-arvados-python-client arvados-workbench</span>
 </code></pre>
 </notextile>
 
-Alternatively, if you don't have sudo/root privileges on the host, install the gems in your own directory instead of installing them system-wide:
+On a Red Hat-based system, install the following packages:
 
 <notextile>
-<pre><code>~$ <span class="userinput">cd arvados/apps/workbench</span>
-~/arvados/apps/workbench$ <span class="userinput">bundle install --path=vendor/bundle</span>
-</code></pre></notextile>
+<pre><code>~$ <span class="userinput">sudo yum install bison make automake gcc gcc-c++ graphviz git nginx python27-python-arvados-python-client arvados-workbench</span>
+</code></pre>
+</notextile>
 
-The @bundle install@ command might produce a warning about the themes_for_rails gem. This is OK:
+{% include 'notebox_begin' %}
 
-<notextile>
-<pre><code>themes_for_rails at /home/<b>you</b>/.rvm/gems/ruby-2.1.1/bundler/gems/themes_for_rails-1fd2d7897d75 did not have a valid gemspec.
-This prevents bundler from installing bins or native extensions, but that may not affect its functionality.
-The validation message from Rubygems was:
-  duplicate dependency on rails (= 3.0.11, development), (>= 3.0.0) use:
-    add_runtime_dependency 'rails', '= 3.0.11', '>= 3.0.0'
-Using themes_for_rails (0.5.1) from https://github.com/holtkampw/themes_for_rails (at 1fd2d78)
-</code></pre></notextile>
+If you intend to use specific versions of these packages from Software Collections, you may have to adapt some of the package names to match; e.g., @nginx16@.
 
-h2. Choose your environment
+{% include 'notebox_end' %}
 
-The Workbench application can be run in @development@ or in @production@ mode. Unless this installation is going to be used for development on the Workbench applicatoin itself, you should run it in @production@ mode.
+{% include 'note_python27_sc' %}
 
-Copy the example environment file for your environment. For example, if you choose @production@:
+h2. Set up configuration files
+
+The Workbench server package uses configuration files that you write to @/etc/arvados/workbench@ and ensures they're consistently deployed.  Create this directory and copy the example configuration files to it:
 
 <notextile>
-<pre><code>~/arvados/apps/workbench$ <span class="userinput">cp -i config/environments/production.rb.example config/environments/production.rb</span>
-</code></pre></notextile>
+<pre><code>~$ <span class="userinput">sudo mkdir -p /etc/arvados/workbench</span>
+~$ <span class="userinput">sudo chmod 700 /etc/arvados/workbench</span>
+~$ <span class="userinput">sudo cp /var/www/arvados-workbench/current/config/application.yml.example /etc/arvados/workbench/application.yml</span>
+</code></pre>
+</notextile>
 
-h2. Configure the Workbench application
+h2. Configure Workbench
 
-First, copy the example configuration file:
+Edit @/etc/arvados/workbench/application.yml@ following the instructions below.  The deployment script will consistently deploy this to Workbench's configuration directory.  Workbench reads both @application.yml@ and its own @config/application.defaults.yml@ file.  Values in @application.yml@ take precedence over the defaults that are defined in @config/application.defaults.yml@.  The @config/application.yml.example@ file is not read by Workbench and is provided for installation convenience only.
 
-<notextile>
-<pre><code>~/arvados/apps/workbench$ <span class="userinput">cp -i config/application.yml.example config/application.yml</span>
-</code></pre></notextile>
-
-The Workbench application reads the @config/application.yml@ file, as well as the @config/application.defaults.yml@ file. Values in @config/application.yml@ take precedence over the defaults that are defined in @config/application.defaults.yml@. The @config/application.yml.example@ file is not read by the Workbench application and is provided for installation convenience, only.
-
-Consult @config/application.default.yml@ for a full list of configuration options. Always put your local configuration in @config/application.yml@, never edit @config/application.default.yml@.
+Consult @config/application.default.yml@ for a full list of configuration options.  Always put your local configuration in @/etc/arvados/workbench/application.yml@&mdash;never edit @config/application.default.yml@.
 
 h3. secret_token
 
 This application needs a secret token. Generate a new secret:
 
 <notextile>
-<pre><code>~/arvados/apps/workbench$ <span class="userinput">ruby -e 'puts rand(2**400).to_s(36)'</span>
+<pre><code>~$ <span class="userinput">ruby -e 'puts rand(2**400).to_s(36)'</span>
 aaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaa
 </code></pre>
 </notextile>
@@ -108,27 +87,89 @@ h3. arvados_insecure_https
 
 If the SSL certificate you use for your API server isn't an official certificate signed by a CA, make sure @arvados_insecure_https@ is @true@.
 
-h3. other options
+h3. Other options
 
 Consult @application.default.yml@ for a full list of configuration options. Always put your local configuration in @application.yml@ instead of editing @application.default.yml@.
 
-Copy @config/piwik.yml.example@ to @config/piwik.yml@ and edit to suit.
+h2. Configure Piwik
 
-h2. Start the Workbench application
+In @/var/www/arvados-workbench/current/config@, copy @piwik.yml.example@ to @piwik.yml@ and edit to suit.
 
-h3. Development environment
+h2. Prepare the Workbench deployment
 
-If you plan to run in development mode, you can now run the development server this way:
+Now that all your configuration is in place, run @/usr/local/bin/arvados-workbench-upgrade.sh@.  This will install and check your configuration, and install necessary gems.
+
+{% include 'notebox_begin' %}
+You can safely ignore the following error message you may see when installing gems:
+<notextile>
+<pre><code>themes_for_rails at /usr/local/rvm/gems/ruby-2.1.1/bundler/gems/themes_for_rails-1fd2d7897d75 did not have a valid gemspec.
+This prevents bundler from installing bins or native extensions, but that may not affect its functionality.
+The validation message from Rubygems was:
+  duplicate dependency on rails (= 3.0.11, development), (>= 3.0.0) use:
+    add_runtime_dependency 'rails', '= 3.0.11', '>= 3.0.0'
+Using themes_for_rails (0.5.1) from https://github.com/holtkampw/themes_for_rails (at 1fd2d78)
+</code></pre>
+</notextile>
+{% include 'notebox_end' %}
+
+This command aborts when it encounters an error.  It's safe to rerun multiple times, so if there's a problem with your configuration, you can fix that and try again.
+
+h2. Set up Web server
+
+For best performance, we recommend you use Nginx as your Web server front-end, with a Passenger backend to serve Workbench.  To do that:
 
 <notextile>
-<pre><code>~/arvados/apps/workbench$ <span class="userinput">bundle exec rails server --port=3031</span>
-</code></pre></notextile>
+<ol>
+<li>Install Nginx via your distribution or a backports repository.</li>
 
-h3. Production environment
+<li><a href="https://www.phusionpassenger.com/documentation/Users%20guide%20Nginx.html">Install Phusion Passenger for Nginx</a>.</li>
 
-We recommend "Passenger":https://www.phusionpassenger.com/ to run the API server in production.
+<li><p>Edit the http section of your Nginx configuration to run the Passenger server, and act as a front-end for it.  You might add a block like the following, adding SSL and logging parameters to taste:</p>
 
-Point it to the apps/workbench directory in the source tree.
+<pre><code>server {
+  listen 127.0.0.1:9000;
+  server_name localhost-workbench;
+
+  root /var/www/arvados-workbench/current/public;
+  index  index.html index.htm index.php;
+
+  passenger_enabled on;
+  # If you're using RVM, uncomment the line below.
+  #passenger_ruby /usr/local/rvm/wrappers/default/ruby;
+}
+
+upstream workbench {
+  server     127.0.0.1:9000  fail_timeout=10s;
+}
+
+proxy_http_version 1.1;
+
+server {
+  listen       <span class="userinput">[your public IP address]</span>:443 ssl;
+  server_name  workbench.<span class="userinput">uuid-prefix.your.domain</span>;
+
+  ssl on;
+
+  index  index.html index.htm index.php;
+
+  location / {
+    proxy_pass            http://workbench;
+    proxy_redirect        off;
+
+    proxy_set_header      X-Forwarded-Proto https;
+    proxy_set_header      Host $http_host;
+    proxy_set_header      X-External-Client $external_client;
+    proxy_set_header      X-Real-IP $remote_addr;
+    proxy_set_header      X-Forwarded-For $proxy_add_x_forwarded_for;
+  }
+}
+</code></pre>
+</li>
+
+<li>Restart Nginx.</li>
+
+</ol>
+</notextile>
 
 h2. Trusted client setting
 
@@ -136,7 +177,7 @@ Log in to Workbench once to ensure that the Arvados API server has a record of t
 
 In the <strong>API server</strong> project root, start the rails console.  Locate the ApiClient record for your Workbench installation (typically, while you're setting this up, the @last@ one in the database is the one you want), then set the @is_trusted@ flag for the appropriate client record:
 
-<notextile><pre><code>~/arvados/services/api$ <span class="userinput">RAILS_ENV=production bundle exec rails console</span>
+<notextile><pre><code>/var/www/arvados-api/current$ <span class="userinput">RAILS_ENV=production bundle exec rails console</span>
 irb(main):001:0&gt; <span class="userinput">wb = ApiClient.all.last; [wb.url_prefix, wb.created_at]</span>
 =&gt; ["https://workbench.example.com/", Sat, 19 Apr 2014 03:35:12 UTC +00:00]
 irb(main):002:0&gt; <span class="userinput">include CurrentApiClient</span>
@@ -151,7 +192,7 @@ h2(#admin-user). Add an admin user
 Next, we're going to use the rails console on the <strong>API server</strong> to activate our own account and give yourself admin privileges:
 
 <notextile>
-<pre><code>~/arvados/services/api$ <span class="userinput">RAILS_ENV=production bundle exec rails console</span>
+<pre><code>/var/www/arvados-api/current$ <span class="userinput">RAILS_ENV=production bundle exec rails console</span>
 irb(main):001:0&gt; <span class="userinput">Thread.current[:user] = User.all.select(&:identity_url).last</span>
 irb(main):002:0&gt; <span class="userinput">Thread.current[:user].is_admin = true</span>
 irb(main):003:0&gt; <span class="userinput">Thread.current[:user].update_attributes is_admin: true, is_active: true</span>

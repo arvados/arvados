@@ -4,8 +4,8 @@ FROM arvados/passenger
 MAINTAINER Ward Vandewege <ward@curoverse.com>
 
 # Install postgres and apache.
-RUN apt-get update -qq
-RUN apt-get install -qqy \
+RUN apt-get update -q
+RUN apt-get install -qy \
     procps postgresql postgresql-server-dev-9.1 slurm-llnl munge \
     supervisor sudo libwww-perl libio-socket-ssl-perl libcrypt-ssleay-perl \
     libjson-perl cron openssh-server

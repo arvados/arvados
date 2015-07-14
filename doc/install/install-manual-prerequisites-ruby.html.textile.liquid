@@ -4,7 +4,7 @@ navsection: installguide
 title: Install Ruby and bundler
 ...
 
-We recommend Ruby >= 2.1.
+Currently, only Ruby 2.1 is supported.
 
 h2(#rvm). Option 1: Install with rvm
 
@@ -19,10 +19,10 @@ h2(#fromsource). Option 2: Install from source
 <notextile>
 <pre><code><span class="userinput">mkdir -p ~/src
 cd ~/src
-wget http://cache.ruby-lang.org/pub/ruby/2.1/ruby-2.1.5.tar.gz
-tar xzf ruby-2.1.5.tar.gz
-cd ruby-2.1.5
-./configure
+wget http://cache.ruby-lang.org/pub/ruby/2.1/ruby-2.1.6.tar.gz
+tar xzf ruby-2.1.6.tar.gz
+cd ruby-2.1.6
+./configure --no-rdoc --no-ri
 make
 sudo make install
 

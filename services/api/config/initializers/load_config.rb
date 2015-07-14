@@ -6,6 +6,22 @@ rescue LoadError
   # configured by application.yml (i.e., here!) instead.
 end
 
+if (File.exists?(File.expand_path '../omniauth.rb', __FILE__) and
+    not defined? WARNED_OMNIAUTH_CONFIG)
+  Rails.logger.warn <<-EOS
+DEPRECATED CONFIGURATION:
+ Please move your SSO provider config into config/application.yml
+ and delete config/initializers/omniauth.rb.
+EOS
+  # Real values will be copied from globals by omniauth_init.rb. For
+  # now, assign some strings so the generic *.yml config loader
+  # doesn't overwrite them or complain that they're missing.
+  Rails.configuration.sso_app_id = 'xxx'
+  Rails.configuration.sso_app_secret = 'xxx'
+  Rails.configuration.sso_provider_url = '//xxx'
+  WARNED_OMNIAUTH_CONFIG = true
+end
+
 $application_config = {}
 
 %w(application.default application).each do |cfgfile|
