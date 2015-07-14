@@ -13,11 +13,11 @@ h2. arv-copy
 
 @arv-copy@ allows users to copy collections, pipeline templates, and pipeline instances from one cluster to another. By default, @arv-copy@ will recursively go through a template or instance and copy all dependencies associated with the object.
 
-For example, let's copy from our <a href="https://cloud.curoverse.com/">beta cloud instance</a> *qr1hi* to *dst_cluster*. The names *qr1hi* and *dst_cluster* are interchangable with any cluster name. You can find the cluster name from the prefix of the uuid of the object you want to copy. For example, in qr1hi-4zz18-tci4vn4fa95w0zx, the cluster name is qr1hi.
+For example, let's copy from our <a href="https://cloud.curoverse.com/">beta cloud instance *qr1hi*</a> to *dst_cluster*. The names *qr1hi* and *dst_cluster* are interchangable with any cluster name. You can find the cluster name from the prefix of the uuid of the object you want to copy. For example, in qr1hi-4zz18-tci4vn4fa95w0zx, the cluster name is qr1hi.
 
 In order for the clusters to be able to communicate with each other, you must create custom configuration files for both clusters. First, go to your *Manage account* page in Workbench and copy the @ARVADOS_API_HOST@ and @ARVADOS_API_TOKEN@ in both of your clusters. Then, create two configuration files, one for each cluster. The names of the files must have the format of *uuid_prefix*.conf. In our example, let's make two files, one for *qr1hi* and one for *dst_cluster*. From your *Manage account* page in *qr1hi* and *dst_cluster*, copy the @ARVADOS_API_HOST@ and @ARVADOS_API_TOKEN@.
 
-!{display: block;margin-left: 25px;margin-right: auto;border:1px solid lightgray;}{{ site.baseurl }}/images/api-token-host.png!
+!{display: block;margin-left: 25px;margin-right: auto;}{{ site.baseurl }}/images/api-token-host.png!
 
 Copy your @ARVADOS_API_HOST@ and @ARVADOS_API_TOKEN@ into the config files as shown below in the shell account from which you are executing the commands. For example, the default shell you may have access to is shell.qr1hi. You can add these files in ~/.config/arvados/ in the qr1hi shell terminal.
 
@@ -36,7 +36,7 @@ h3. How to copy a collection
 
 First, select the uuid of the collection you want to copy from the source cluster. The uuid can be found in the collection displace page in the collection summary area (top left box), or from the URL bar (the part after @collections/...@)
 
-Now copy the collection from *qr1hi* to *dst_cluster*. We will use the uuid @qr1hi-4zz18-tci4vn4fa95w0zx@ as an example. You can find this collection in the lobSTR v.3 project on <a href="https://cloud.curoverse.com/">cloud.curoverse.com</a>.
+Now copy the collection from *qr1hi* to *dst_cluster*. We will use the uuid @qr1hi-4zz18-tci4vn4fa95w0zx@ as an example. You can find this collection in the <a href="https://cloud.curoverse.com/collections/qr1hi-4zz18-tci4vn4fa95w0zx">lobSTR v.3 project on cloud.curoverse.com</a>.
 <notextile>
 <pre><code>~$ <span class="userinput">arv-copy --src qr1hi --dst dst_cluster qr1hi-4zz18-tci4vn4fa95w0zx</span>
 qr1hi-4zz18-tci4vn4fa95w0zx: 6.1M / 6.1M 100.0% 
@@ -74,5 +74,7 @@ If you would like to copy the object without dependencies, you can use the @--no
 
 For example, we can copy the same object using this tag.
 
+<notextile>
 <pre><code>~$ <span class="userinput">arv-copy --src qr1hi --dst dst_cluster --dst-git-repo $USER/tutorial --no-recursive qr1hi-d1hrv-nao0ohw8y7dpf84</span>
-
+</code></pre>
+</notextile>
