@@ -288,6 +288,10 @@ func main() {
 
 	flag.Parse()
 
+	if never_delete != true {
+		log.Fatal("never_delete must be true, see #6221")
+	}
+
 	if maxBuffers < 0 {
 		log.Fatal("-max-buffers must be greater than zero.")
 	}

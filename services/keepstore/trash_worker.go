@@ -39,16 +39,16 @@ func TrashItem(trashRequest TrashRequest) {
 			continue
 		}
 
-		if !never_delete {
-			err = volume.Delete(trashRequest.Locator)
-		} else {
+		if never_delete {
 			err = errors.New("did not delete block because never_delete is true")
+		} else {
+			err = volume.Delete(trashRequest.Locator)
 		}
 
-		if err == nil {
-			log.Printf("%v Delete(%v) OK", volume, trashRequest.Locator)
-		} else {
+		if err != nil {
 			log.Printf("%v Delete(%v): %v", volume, trashRequest.Locator, err)
+		} else {
+			log.Printf("%v Delete(%v) OK", volume, trashRequest.Locator)
 		}
 	}
 }
