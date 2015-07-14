@@ -13,7 +13,7 @@ h2. arv-copy
 
 @arv-copy@ allows users to copy collections, pipeline templates, and pipeline instances from one cluster to another. By default, @arv-copy@ will recursively go through a template or instance and copy all dependencies associated with the object.
 
-For example, lets copy from our beta cloud instance *qr1hi* to *dst_cluster*. The names *qr1hi* and *dst_cluster* are interchangable with any cluster name. You can find the cluster name by the prefix of the uuid of the object you want to copy or the prefix of the @ARVADOS_API_HOST@.
+For example, lets copy from our beta cloud instance *qr1hi* to *dst_cluster*. The names *qr1hi* and *dst_cluster* are interchangable with any cluster name. You can find the cluster name from the prefix of the uuid of the object you want to copy.
 
 In order for the clusters to be able to communicate with each other, you must create custom configuration files for both clusters. First, go to your Manage Account page in Workbench and copy the @ARVADOS_API_HOST@ and @ARVADOS_API_TOKEN@ in both of your clusters. Then, create two configuration files, one for each cluster. The names of the files must have the format of <uuid_prefix>.conf. In our example, let's make two files, one for *qr1hi* and one for *dst_cluster*. From your *Manage account* page in *qr1hi* and *dst_cluster*, copy the @ARVADOS_API_HOST@ and @ARVADOS_API_TOKEN@.
 
@@ -56,10 +56,10 @@ We will use the uuid @qr1hi-d1hrv-nao0ohw8y7dpf84@ as an example pipeline instan
 <pre><code>~$ <span class="userinput">arv-copy --src qr1hi --dst dst_cluster --dst-git-repo $USER/tutorial qr1hi-d1hrv-nao0ohw8y7dpf84</span>
 To git@git.su92l.arvadosapi.com:bcosc.htslib.git
  * [new branch] git_git_qr1hi_arvadosapi_com_arvados_git_ac21f0d45a76294aaca0c0c0fdf06eb72d03368d -> git_git_qr1hi_arvadosapi_com_arvados_git_ac21f0d45a76294aaca0c0c0fdf06eb72d03368d
-arvados.arv-copy[19694] INFO: Success: created copy with uuid su92l-d1hrv-rym2h5ub9m8ofwj
+arvados.arv-copy[19694] INFO: Success: created copy with uuid dst_cluster-d1hrv-rym2h5ub9m8ofwj
 </code></pre>
 </notextile>
 
-By default, if you copy a pipeline instance recursively, you will find that the template as well as all the dependecies are in your home project.
+By default, if you copy a pipeline instance recursively, you will find that the template as well as all the dependcies are in your home project.
 
 New branches in the destination git repo will be created for each branch used in the pipeline template. For example, if your source branch was named ac21f0d45a76294aaca0c0c0fdf06eb72d03368d, your new branch will be named @git_git_cluster1_arvadosapi_com_reponame_git_ac21f0d45a76294aaca0c0c0fdf06eb72d03368d@. 
