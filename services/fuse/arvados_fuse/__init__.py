@@ -99,7 +99,8 @@ class Handle(object):
         self.obj.dec_use()
 
     def flush(self):
-        return self.obj.flush()
+        if self.obj.writable():
+            return self.obj.flush()
 
 
 class FileHandle(Handle):

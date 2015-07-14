@@ -1047,6 +1047,21 @@ class FuseProjectMvTest(MountTestBase):
         self.pool.apply(fuseProjectMvTestHelper1, (self.mounttmp,))
 
 
+def fuseFsyncTestHelper(mounttmp, k):
+    class Test(unittest.TestCase):
+        def runTest(self):
+            fd = os.open(os.path.join(mounttmp, k), os.O_RDONLY)
+            os.fsync(fd)
+            os.close(fd)
+
+    Test().runTest()
+
+class FuseFsyncTest(FuseMagicTest):
+    def runTest(self):
+        self.make_mount(fuse.MagicDirectory)
+        self.pool.apply(fuseFsyncTestHelper, (self.mounttmp, self.testcollection))
+
+
 class FuseUnitTest(unittest.TestCase):
     def test_sanitize_filename(self):
         acceptable = [
