@@ -285,7 +285,7 @@ func (this ArvadosClient) List(resource string, parameters Dict, output interfac
 //
 //   parameter - name of parameter to be discovered
 // return
-//   valueMap - Dict key value pair of the discovered parameter
+//   value - value of the discovered parameter
 //   err - error accessing the resource, or nil if no error
 var API_DISCOVERY_RESOURCE string = "discovery/v1/apis/arvados/v1/rest"
 

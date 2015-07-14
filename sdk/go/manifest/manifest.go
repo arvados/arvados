@@ -5,25 +5,13 @@
 package manifest
 
 import (
-	"fmt"
 	"git.curoverse.com/arvados.git/sdk/go/blockdigest"
 	"log"
-	"regexp"
-	"strconv"
 	"strings"
 )
 
-var LocatorPattern = regexp.MustCompile(
-	"^[0-9a-fA-F]{32}\\+[0-9]+(\\+[A-Z][A-Za-z0-9@_-]+)*$")
-
 type Manifest struct {
 	Text string
-}
-
-type BlockLocator struct {
-	Digest blockdigest.BlockDigest
-	Size   int
-	Hints  []string
 }
 
 // Represents a single line from a manifest.
@@ -33,40 +21,13 @@ type ManifestStream struct {
 	Files      []string
 }
 
-func ParseBlockLocator(s string) (b BlockLocator, err error) {
-	if !LocatorPattern.MatchString(s) {
-		err = fmt.Errorf("String \"%s\" does not match BlockLocator pattern "+
-			"\"%s\".",
-			s,
-			LocatorPattern.String())
-	} else {
-		tokens := strings.Split(s, "+")
-		var blockSize int64
-		var blockDigest blockdigest.BlockDigest
-		// We expect both of the following to succeed since LocatorPattern
-		// restricts the strings appropriately.
-		blockDigest, err = blockdigest.FromString(tokens[0])
-		if err != nil {
-			return
-		}
-		blockSize, err = strconv.ParseInt(tokens[1], 10, 0)
-		if err != nil {
-			return
-		}
-		b.Digest = blockDigest
-		b.Size = int(blockSize)
-		b.Hints = tokens[2:]
-	}
-	return
-}
-
 func parseManifestStream(s string) (m ManifestStream) {
 	tokens := strings.Split(s, " ")
 	m.StreamName = tokens[0]
 	tokens = tokens[1:]
 	var i int
 	for i = range tokens {
-		if !LocatorPattern.MatchString(tokens[i]) {
+		if !blockdigest.IsBlockLocator(tokens[i]) {
 			break
 		}
 	}
@@ -100,12 +61,12 @@ func (m *Manifest) StreamIter() <-chan ManifestStream {
 // Blocks may appear mulitple times within the same manifest if they
 // are used by multiple files. In that case this Iterator will output
 // the same block multiple times.
-func (m *Manifest) BlockIterWithDuplicates() <-chan BlockLocator {
-	blockChannel := make(chan BlockLocator)
+func (m *Manifest) BlockIterWithDuplicates() <-chan blockdigest.BlockLocator {
+	blockChannel := make(chan blockdigest.BlockLocator)
 	go func(streamChannel <-chan ManifestStream) {
 		for m := range streamChannel {
 			for _, block := range m.Blocks {
-				if b, err := ParseBlockLocator(block); err == nil {
+				if b, err := blockdigest.ParseBlockLocator(block); err == nil {
 					blockChannel <- b
 				} else {
 					log.Printf("ERROR: Failed to parse block: %v", err)
