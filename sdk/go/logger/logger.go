@@ -14,8 +14,11 @@
 // 	entry map[string]interface{}) {
 //   // Modifiy properties and entry however you want
 //   // properties is a shortcut for entry["properties"].(map[string]interface{})
-//   // properties can take any values you want to give it,
-//   // entry will only take the fields listed at http://doc.arvados.org/api/schema/Log.html
+//   // properties can take any (valid) values you want to give it,
+//   // entry will only take the fields listed at
+//   // http://doc.arvados.org/api/schema/Log.html
+//   // Valid values for properties are anything that can be json
+//   // encoded (i.e. will not error if you call json.Marshal() on it.
 // })
 package logger
 
