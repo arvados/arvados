@@ -54,7 +54,7 @@ var data_manager_token string
 
 // never_delete can be used to prevent the DELETE handler from
 // actually deleting anything.
-var never_delete = false
+var never_delete = true
 
 var maxBuffers = 128
 var bufs *bufferPool
@@ -232,7 +232,7 @@ func main() {
 	flag.BoolVar(
 		&never_delete,
 		"never-delete",
-		false,
+		true,
 		"If set, nothing will be deleted. HTTP 405 will be returned "+
 			"for valid DELETE requests.")
 	flag.StringVar(
@@ -294,11 +294,11 @@ func main() {
 	bufs = newBufferPool(maxBuffers, BLOCKSIZE)
 
 	if pidfile != "" {
-		f, err := os.OpenFile(pidfile, os.O_RDWR | os.O_CREATE, 0777)
+		f, err := os.OpenFile(pidfile, os.O_RDWR|os.O_CREATE, 0777)
 		if err != nil {
 			log.Fatalf("open pidfile (%s): %s", pidfile, err)
 		}
-		err = syscall.Flock(int(f.Fd()), syscall.LOCK_EX | syscall.LOCK_NB)
+		err = syscall.Flock(int(f.Fd()), syscall.LOCK_EX|syscall.LOCK_NB)
 		if err != nil {
 			log.Fatalf("flock pidfile (%s): %s", pidfile, err)
 		}
