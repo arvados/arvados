@@ -7,13 +7,14 @@
  *
  * You're free to add application-wide styles to this file and they'll appear at the top of the
  * compiled file, but it's generally better to create a new file per style scope.
- *
- *= require_self
- *= require bootstrap
- *= require bootstrap3-editable/bootstrap-editable
- *= require morris
- *= require_tree .
  */
+
+@import 'bootstrap-sprockets';
+@import 'bootstrap';
+@import 'bootstrap3-editable/bootstrap-editable';
+
+//= require morris
+//= require_tree .
 
 .contain-align-left {
     text-align: left;
