@@ -9,7 +9,11 @@ class UsersController < ApplicationController
     if params[:uuid] == current_user.uuid
       respond_to do |f|
         f.html do
-          redirect_to(params[:return_to] || project_path(params[:uuid]))
+          if request.url.include?("/users/#{current_user.uuid}")
+            super
+          else
+            redirect_to(params[:return_to] || project_path(params[:uuid]))
+          end
         end
       end
     else
@@ -204,14 +208,32 @@ class UsersController < ApplicationController
         if params['openid_prefix'] && params['openid_prefix'].size>0
           setup_params[:openid_prefix] = params['openid_prefix']
         end
-        if params['repo_name'] && params['repo_name'].size>0
-          setup_params[:repo_name] = params['repo_name']
-        end
         if params['vm_uuid'] && params['vm_uuid'].size>0
           setup_params[:vm_uuid] = params['vm_uuid']
         end
 
-        if User.setup setup_params
+        setup_resp = User.setup setup_params
+        if setup_resp
+          vm_link = nil
+          setup_resp[:items].each do |item|
+            if item[:head_kind] == "arvados#virtualMachine"
+              vm_link = item
+              break
+            end
+          end
+          if params[:groups]
+            new_groups = params[:groups].split(',').map(&:strip).select{|i| !i.empty?}
+            if vm_link and new_groups != vm_link[:properties][:groups]
+              vm_login_link = Link.where(uuid: vm_link[:uuid])
+              if vm_login_link.items_available > 0
+                link = vm_login_link.results.first
+                props = link.properties
+                props[:groups] = new_groups
+                link.save!
+              end
+            end
+          end
+
           format.js
         else
           self.render_error status: 422
@@ -359,8 +381,10 @@ class UsersController < ApplicationController
                               link_class: 'permission',
                               name: 'can_login')
     if vm_login_perms.any?
-      vm_uuid = vm_login_perms.first.head_uuid
+      vm_perm = vm_login_perms.first
+      vm_uuid = vm_perm.head_uuid
       current_selections[:vm_uuid] = vm_uuid
+      current_selections[:groups] = vm_perm.properties[:groups].andand.join(', ')
     end
 
     return current_selections

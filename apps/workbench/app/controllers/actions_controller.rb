@@ -91,7 +91,8 @@ class ActionsController < ApplicationController
     end
     if (resource_classes == [Collection] and
         @object.is_a? Group and
-        @object.group_class == 'project')
+        @object.group_class == 'project') or
+        @object.is_a? User
       # In the common case where only collections are copied/moved
       # into a project, it's polite to land on the collections tab on
       # the destination project.

@@ -1,6 +1,7 @@
 import arvados_fuse
 import mock
 import unittest
+import llfuse
 
 class InodeTests(unittest.TestCase):
     def test_inodes_basic(self):
@@ -140,7 +141,9 @@ class InodeTests(unittest.TestCase):
         # Delete ent1
         self.assertEqual(500, cache.total())
         ent1.clear.return_value = True
-        inodes.del_entry(ent1)
+        ent1.ref_count = 0
+        with llfuse.lock:
+            inodes.del_entry(ent1)
         self.assertEqual(0, cache.total())
         cache.touch(ent3)
         self.assertEqual(600, cache.total())

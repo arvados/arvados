@@ -122,7 +122,7 @@ class Arvados::V1::LinksControllerTest < ActionController::TestCase
       link_class: 'test',
       name: 'stuff',
       head_uuid: users(:active).uuid,
-      tail_uuid: virtual_machines(:testvm2).uuid
+      tail_uuid: authorized_keys(:admin).uuid,
     }
     authorize_with :active
     post :create, link: link

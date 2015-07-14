@@ -56,7 +56,6 @@ class UsersTest < ActionDispatch::IntegrationTest
     within '.modal-content' do
       find 'label', text: 'Virtual Machine'
       fill_in "email", :with => "foo@example.com"
-      fill_in "repo_name", :with => "newtestrepo"
       click_button "Submit"
       wait_for_ajax
     end
@@ -81,7 +80,6 @@ class UsersTest < ActionDispatch::IntegrationTest
 
     click_link 'Advanced'
     click_link 'Metadata'
-    assert page.has_text? 'Repository: foo/newtestrepo'
     assert !(page.has_text? 'VirtualMachine:')
   end
 
@@ -102,11 +100,10 @@ class UsersTest < ActionDispatch::IntegrationTest
     click_link 'Admin'
     assert page.has_text? 'As an admin, you can setup'
 
-    click_link 'Setup Active User'
+    click_link 'Setup shell account for Active User'
 
     within '.modal-content' do
       find 'label', text: 'Virtual Machine'
-      fill_in "repo_name", :with => "activetestrepo"
       click_button "Submit"
     end
 
@@ -115,16 +112,17 @@ class UsersTest < ActionDispatch::IntegrationTest
 
     click_link 'Advanced'
     click_link 'Metadata'
-    assert page.has_text? 'Repository: active/activetestrepo'
-    assert !(page.has_text? 'VirtualMachine:')
+    vm_links = all("a", text: "VirtualMachine:")
+    assert_equal(1, vm_links.size)
+    assert_equal("VirtualMachine: testvm2.shell", vm_links.first.text)
 
     # Click on Setup button again and this time also choose a VM
     click_link 'Admin'
-    click_link 'Setup Active User'
+    click_link 'Setup shell account for Active User'
 
     within '.modal-content' do
-      fill_in "repo_name", :with => "activetestrepo2"
       select("testvm.shell", :from => 'vm_uuid')
+      fill_in "groups", :with => "test group one, test-group-two"
       click_button "Submit"
     end
 
@@ -133,8 +131,8 @@ class UsersTest < ActionDispatch::IntegrationTest
 
     click_link 'Advanced'
     click_link 'Metadata'
-    assert page.has_text? 'Repository: active/activetestrepo2'
     assert page.has_text? 'VirtualMachine: testvm.shell'
+    assert page.has_text? '["test group one", "test-group-two"]'
   end
 
   test "unsetup active user" do
@@ -181,15 +179,13 @@ class UsersTest < ActionDispatch::IntegrationTest
 
     click_link 'Advanced'
     click_link 'Metadata'
-    assert page.has_no_text? 'Repository: active/'
     assert page.has_no_text? 'VirtualMachine: testvm.shell'
 
     # setup user again and verify links present
     click_link 'Admin'
-    click_link 'Setup Active User'
+    click_link 'Setup shell account for Active User'
 
     within '.modal-content' do
-      fill_in "repo_name", :with => "activetestrepo"
       select("testvm.shell", :from => 'vm_uuid')
       click_button "Submit"
     end
@@ -199,44 +195,46 @@ class UsersTest < ActionDispatch::IntegrationTest
 
     click_link 'Advanced'
     click_link 'Metadata'
-    assert page.has_text? 'Repository: active/activetestrepo'
     assert page.has_text? 'VirtualMachine: testvm.shell'
   end
 
   [
-    ['admin', false],
-    ['active', true],
-  ].each do |username, expect_show_button|
-    test "login as #{username} and access show button #{expect_show_button}" do
+    'admin',
+    'active',
+  ].each do |username|
+    test "login as #{username} and access show button" do
       need_javascript
 
       user = api_fixture('users', username)
 
       visit page_with_token(username, '/users')
 
-      if expect_show_button
-        within('tr', text: user['uuid']) do
-          assert_text user['email']
-          assert_selector 'a', text: 'Show'
-          find('a', text: 'Show').click
+      within('tr', text: user['uuid']) do
+        assert_text user['email']
+        if username == 'admin'
+          assert_selector 'a', text: 'Home'
+        else
+          assert_no_selector 'a', text: 'Home'
         end
-        assert_selector 'a', 'Data collections'
-      else
-        # no 'Show' button in the admin user's own row
-        within('tr', text: user['uuid']) do
-          assert_text user['email']
-          assert_no_selector 'a', text: 'Show'
-        end
-
-        # but the admin user can access 'Show' button for other users
-        active_user = api_fixture('users', 'active')
-        within('tr', text: active_user['uuid']) do
-          assert_text active_user['email']
-          assert_selector 'a', text: 'Show'
-          find('a', text: 'Show').click
-          assert_selector 'a', 'Attributes'
-        end
+        assert_selector 'a', text: 'Show'
+        find('a', text: 'Show').click
       end
+      assert_selector 'a', text: 'Attributes'
     end
+  end
+
+  test "admin user can access another user page" do
+    need_javascript
+
+    visit page_with_token('admin', '/users')
+
+    active_user = api_fixture('users', 'active')
+    within('tr', text: active_user['uuid']) do
+      assert_text active_user['email']
+      assert_selector "a[href=\"/projects/#{active_user['uuid']}\"]", text: 'Home'
+      assert_selector 'a', text: 'Show'
+      find('a', text: 'Show').click
+    end
+    assert_selector 'a', text:'Attributes'
   end
 end

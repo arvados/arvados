@@ -1,13 +1,13 @@
 ---
 layout: default
 navsection: installguide
-title: Add an Arvados repository
+title: Create standard objects
 
 ...
 
-Next, we're going to use the Arvados CLI tools on the <strong>shell server</strong> to create a few Arvados objects. These objects set up a hosted clone of the arvados repository on this cluster.
+Next, we're going to use the Arvados CLI tools on the <strong>shell server</strong> to create a few Arvados objects.
 
-This will be readable by the "All users" group, and therefore by every active user. This makes it possible for users to run the bundled Crunch scripts by specifying @"script_version":"master","repository":"arvados"@ rather than pulling the Arvados source tree into their own repositories.
+First we create a repository object which will be used to set up a hosted clone of the arvados repository on this cluster.
 
 <notextile>
 <pre><code>~$ <span class="userinput">prefix=`arv --format=uuid user current | cut -d- -f1`</span>
@@ -15,13 +15,32 @@ This will be readable by the "All users" group, and therefore by every active us
 ~$ <span class="userinput">all_users_group_uuid="$prefix-j7d0g-fffffffffffffff"</span>
 ~$ <span class="userinput">repo_uuid=`arv --format=uuid repository create --repository "{\"owner_uuid\":\"$prefix-tpzed-000000000000000\", \"name\":\"arvados\"}"`</span>
 ~$ <span class="userinput">echo "Arvados repository uuid is '$repo_uuid'"</span>
-~$ <span class="userinput">read -rd $'\000' newlink &lt;&lt;EOF; arv link create --link "$newlink"</span>
+</code></pre></notextile>
+
+Secondly, create a link object to make the repository object readable by the "All users" group, and therefore by every active user. This makes it possible for users to run the bundled Crunch scripts by specifying @"script_version":"master","repository":"arvados"@ rather than pulling the Arvados source tree into their own repositories.
+
+<notextile>
+<pre><code>~$ <span class="userinput">read -rd $'\000' newlink &lt;&lt;EOF; arv link create --link "$newlink"</span>
 <span class="userinput">{
  "tail_uuid":"$all_users_group_uuid",
  "head_uuid":"$repo_uuid",
  "link_class":"permission",
- "name":"can_read" 
-}                                         
+ "name":"can_read"
+}
 EOF</span>
 </code></pre></notextile>
 
+Next, create a default project for the standard Arvados Docker images, and give all users read access to it. The project is owned by the system user.
+
+<notextile>
+<pre><code>~$ <span class="userinput">project_uuid=`arv --format=uuid group create --group "{\"owner_uuid\":\"$prefix-tpzed-000000000000000\", \"name\":\"Arvados Standard Docker Images\"}"`</span>
+~$ <span class="userinput">echo "Arvados project uuid is '$project_uuid'"</span>
+~$ <span class="userinput">read -rd $'\000' newlink &lt;&lt;EOF; arv link create --link "$newlink"</span>
+<span class="userinput">{
+ "tail_uuid":"$all_users_group_uuid",
+ "head_uuid":"$project_uuid",
+ "link_class":"permission",
+ "name":"can_read"
+}
+EOF</span>
+</code></pre></notextile>

@@ -239,6 +239,19 @@ Provide standard input and standard output redirection.
 
 @task.stdout@ specifies the desired file name in the output directory to save the content of standard output.  When command describes a Unix pipeline, this captures the output of the last command.
 
+h3. task.env
+
+Set environment variables for the command.  Accepts an object mapping environment variables to the desired values.  Parameter substitution is performed on values, but not on the environment variable names themselves.  Example usage:
+
+<pre>
+{
+  "command": ["/bin/sh", "-c", "echo $MY_ENV_VAR"],
+  "task.env": {
+    "MY_ENV_VAR": "Hello world!"
+  }
+}
+</pre>
+
 h3. task.vwd
 
 Background: because Keep collections are read-only, this does not play well with certain tools that expect to be able to write their outputs alongside their inputs (such as tools that generate indexes that are closely associated with the original file.)  The run-command's solution to this is the "virtual working directory".

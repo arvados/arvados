@@ -4,8 +4,7 @@ OLD_SHELL := $(SHELL)
 SHELL = $(warning [$@])$(OLD_SHELL) -x
 endif
 
-#shell-image
-all: skydns-image skydock-image api-image compute-image doc-image workbench-image keep-image keep-proxy-image sso-image
+all: skydns-image skydock-image api-image compute-image doc-image workbench-image keep-image keep-proxy-image sso-image shell-image
 
 IMAGE_FILES := $(shell ls *-image 2>/dev/null |grep -v -E 'debian-arvados-image|skydns-image|skydock-image')
 GENERATED_DIRS := $(shell ls */generated 2>/dev/null)
@@ -211,7 +210,7 @@ keep-proxy-image: debian-arvados-image $(BUILD) $(KEEP_PROXY_DEPS)
 	$(DOCKER_BUILD) -t arvados/keepproxy keepproxy
 	date >keep-proxy-image
 
-jobs-image: base-image $(BUILD) $(JOBS_DEPS)
+jobs-image: debian-arvados-image $(BUILD) $(JOBS_DEPS)
 	$(DOCKER_BUILD) -t arvados/jobs jobs
 	date >jobs-image
 
@@ -262,7 +261,7 @@ base-image: debian-arvados-image $(BASE_DEPS)
 
 debian-arvados-image:
 	@echo "Building debian-arvados-image"
-	./mkimage-debootstrap.sh arvados/debian wheezy ftp://ftp.us.debian.org/debian/
+	./mkimage-debootstrap.sh arvados/debian wheezy http://ftp.us.debian.org/debian/
 	date >debian-arvados-image
 
 skydns-image:

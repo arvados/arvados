@@ -41,8 +41,6 @@ setup(name='arvados-python-client',
           'httplib2',
           'pycurl>=7.19.5.1',
           'python-gflags',
-          'requests>=2.4',
-          'urllib3',
           'ws4py'
       ],
       test_suite='tests',

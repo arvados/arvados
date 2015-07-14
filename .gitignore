@@ -16,3 +16,5 @@ sdk/java/target
 *.class
 sdk/java/log
 /tmp
+sdk/python/tmp
+services/fuse/tmp

@@ -19,9 +19,9 @@ import (
 	"net/http"
 	"os"
 	"regexp"
+	"runtime"
 	"strconv"
-	"strings"
-	"syscall"
+	"sync"
 	"time"
 )
 
@@ -66,51 +66,15 @@ func BadRequestHandler(w http.ResponseWriter, r *http.Request) {
 }
 
 func GetBlockHandler(resp http.ResponseWriter, req *http.Request) {
-	hash := mux.Vars(req)["hash"]
-
-	hints := mux.Vars(req)["hints"]
-
-	// Parse the locator string and hints from the request.
-	// TODO(twp): implement a Locator type.
-	var signature, timestamp string
-	if hints != "" {
-		signature_pat, _ := regexp.Compile("^A([[:xdigit:]]+)@([[:xdigit:]]{8})$")
-		for _, hint := range strings.Split(hints, "+") {
-			if match, _ := regexp.MatchString("^[[:digit:]]+$", hint); match {
-				// Server ignores size hints
-			} else if m := signature_pat.FindStringSubmatch(hint); m != nil {
-				signature = m[1]
-				timestamp = m[2]
-			} else if match, _ := regexp.MatchString("^[[:upper:]]", hint); match {
-				// Any unknown hint that starts with an uppercase letter is
-				// presumed to be valid and ignored, to permit forward compatibility.
-			} else {
-				// Unknown format; not a valid locator.
-				http.Error(resp, BadRequestError.Error(), BadRequestError.HTTPCode)
-				return
-			}
-		}
-	}
-
-	// If permission checking is in effect, verify this
-	// request's permission signature.
 	if enforce_permissions {
-		if signature == "" || timestamp == "" {
-			http.Error(resp, PermissionError.Error(), PermissionError.HTTPCode)
+		locator := req.URL.Path[1:] // strip leading slash
+		if err := VerifySignature(locator, GetApiToken(req)); err != nil {
+			http.Error(resp, err.Error(), err.(*KeepError).HTTPCode)
 			return
-		} else if IsExpired(timestamp) {
-			http.Error(resp, ExpiredError.Error(), ExpiredError.HTTPCode)
-			return
-		} else {
-			req_locator := req.URL.Path[1:] // strip leading slash
-			if !VerifySignature(req_locator, GetApiToken(req)) {
-				http.Error(resp, PermissionError.Error(), PermissionError.HTTPCode)
-				return
-			}
 		}
 	}
 
-	block, err := GetBlock(hash, false)
+	block, err := GetBlock(mux.Vars(req)["hash"], false)
 	if err != nil {
 		// This type assertion is safe because the only errors
 		// GetBlock can return are DiskHashError or NotFoundError.
@@ -198,6 +162,9 @@ func IndexHandler(resp http.ResponseWriter, req *http.Request) {
 			return
 		}
 	}
+	// An empty line at EOF is the only way the client can be
+	// assured the entire index was received.
+	resp.Write([]byte{'\n'})
 }
 
 // StatusHandler
@@ -219,60 +186,52 @@ type VolumeStatus struct {
 	BytesUsed  uint64 `json:"bytes_used"`
 }
 
-type NodeStatus struct {
-	Volumes []*VolumeStatus `json:"volumes"`
+type PoolStatus struct {
+	Alloc uint64 `json:"BytesAllocated"`
+	Cap   int    `json:"BuffersMax"`
+	Len   int    `json:"BuffersInUse"`
 }
 
+type NodeStatus struct {
+	Volumes    []*VolumeStatus  `json:"volumes"`
+	BufferPool PoolStatus
+	Memory     runtime.MemStats
+}
+
+var st NodeStatus
+var stLock sync.Mutex
 func StatusHandler(resp http.ResponseWriter, req *http.Request) {
-	st := GetNodeStatus()
-	if jstat, err := json.Marshal(st); err == nil {
+	stLock.Lock()
+	ReadNodeStatus(&st)
+	jstat, err := json.Marshal(&st)
+	stLock.Unlock()
+	if err == nil {
 		resp.Write(jstat)
 	} else {
 		log.Printf("json.Marshal: %s\n", err)
-		log.Printf("NodeStatus = %v\n", st)
+		log.Printf("NodeStatus = %v\n", &st)
 		http.Error(resp, err.Error(), 500)
 	}
 }
 
-// GetNodeStatus
-//     Returns a NodeStatus struct describing this Keep
-//     node's current status.
+// ReadNodeStatus populates the given NodeStatus struct with current
+// values.
 //
-func GetNodeStatus() *NodeStatus {
-	st := new(NodeStatus)
-
-	st.Volumes = make([]*VolumeStatus, len(KeepVM.AllReadable()))
-	for i, vol := range KeepVM.AllReadable() {
-		st.Volumes[i] = vol.Status()
+func ReadNodeStatus(st *NodeStatus) {
+	vols := KeepVM.AllReadable()
+	if cap(st.Volumes) < len(vols) {
+		st.Volumes = make([]*VolumeStatus, len(vols))
 	}
-	return st
-}
-
-// GetVolumeStatus
-//     Returns a VolumeStatus describing the requested volume.
-//
-func GetVolumeStatus(volume string) *VolumeStatus {
-	var fs syscall.Statfs_t
-	var devnum uint64
-
-	if fi, err := os.Stat(volume); err == nil {
-		devnum = fi.Sys().(*syscall.Stat_t).Dev
-	} else {
-		log.Printf("GetVolumeStatus: os.Stat: %s\n", err)
-		return nil
+	st.Volumes = st.Volumes[:0]
+	for _, vol := range vols {
+		if s := vol.Status(); s != nil {
+			st.Volumes = append(st.Volumes, s)
+		}
 	}
-
-	err := syscall.Statfs(volume, &fs)
-	if err != nil {
-		log.Printf("GetVolumeStatus: statfs: %s\n", err)
-		return nil
-	}
-	// These calculations match the way df calculates disk usage:
-	// "free" space is measured by fs.Bavail, but "used" space
-	// uses fs.Blocks - fs.Bfree.
-	free := fs.Bavail * uint64(fs.Bsize)
-	used := (fs.Blocks - fs.Bfree) * uint64(fs.Bsize)
-	return &VolumeStatus{volume, devnum, free, used}
+	st.BufferPool.Alloc = bufs.Alloc()
+	st.BufferPool.Cap = bufs.Cap()
+	st.BufferPool.Len = bufs.Len()
+	runtime.ReadMemStats(&st.Memory)
 }
 
 // DeleteHandler processes DELETE requests.
@@ -630,28 +589,25 @@ func PutBlock(block []byte, hash string) error {
 	}
 }
 
+var validLocatorRe = regexp.MustCompile(`^[0-9a-f]{32}$`)
+
 // IsValidLocator
 //     Return true if the specified string is a valid Keep locator.
 //     When Keep is extended to support hash types other than MD5,
 //     this should be updated to cover those as well.
 //
 func IsValidLocator(loc string) bool {
-	match, err := regexp.MatchString(`^[0-9a-f]{32}$`, loc)
-	if err == nil {
-		return match
-	}
-	log.Printf("IsValidLocator: %s\n", err)
-	return false
+	return validLocatorRe.MatchString(loc)
 }
+
+var authRe = regexp.MustCompile(`^OAuth2\s+(.*)`)
 
 // GetApiToken returns the OAuth2 token from the Authorization
 // header of a HTTP request, or an empty string if no matching
 // token is found.
 func GetApiToken(req *http.Request) string {
 	if auth, ok := req.Header["Authorization"]; ok {
-		if pat, err := regexp.Compile(`^OAuth2\s+(.*)`); err != nil {
-			log.Println(err)
-		} else if match := pat.FindStringSubmatch(auth[0]); match != nil {
+		if match := authRe.FindStringSubmatch(auth[0]); match != nil {
 			return match[1]
 		}
 	}

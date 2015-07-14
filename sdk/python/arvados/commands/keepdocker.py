@@ -21,6 +21,7 @@ import arvados.commands._util as arv_cmd
 import arvados.commands.put as arv_put
 import ciso8601
 
+EARLIEST_DATETIME = datetime.datetime(datetime.MINYEAR, 1, 1, 0, 0, 0)
 STAT_CACHE_ERRORS = (IOError, OSError, ValueError)
 
 DockerImage = collections.namedtuple(
@@ -175,7 +176,7 @@ def docker_link_sort_key(link):
         image_timestamp = ciso8601.parse_datetime_unaware(
             link['properties']['image_timestamp'])
     except (KeyError, ValueError):
-        image_timestamp = 0
+        image_timestamp = EARLIEST_DATETIME
     return (image_timestamp,
             ciso8601.parse_datetime_unaware(link['created_at']))
 
@@ -188,9 +189,10 @@ def _get_docker_links(api_client, num_retries, **kwargs):
     return links
 
 def _new_image_listing(link, dockerhash, repo='<none>', tag='<none>'):
+    timestamp_index = 1 if (link['_sort_key'][0] is EARLIEST_DATETIME) else 0
     return {
         '_sort_key': link['_sort_key'],
-        'timestamp': link['_sort_key'][0] or link['_sort_key'][1],
+        'timestamp': link['_sort_key'][timestamp_index],
         'collection': link['head_uuid'],
         'dockerhash': dockerhash,
         'repo': repo,

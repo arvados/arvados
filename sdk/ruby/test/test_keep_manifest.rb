@@ -245,4 +245,185 @@ class ManifestTest < Minitest::Test
       assert_equal(%w(file1), basenames.sort, "wrong file list for #{stream}")
     end
   end
+
+  [[false, nil],
+   [false, '+0'],
+   [false, 'd41d8cd98f00b204e9800998ecf8427'],
+   [false, 'd41d8cd98f00b204e9800998ecf8427+0'],
+   [false, 'd41d8cd98f00b204e9800998ecf8427e0'],
+   [false, 'd41d8cd98f00b204e9800998ecf8427e0+0'],
+   [false, 'd41d8cd98f00b204e9800998ecf8427e+0 '],
+   [false, "d41d8cd98f00b204e9800998ecf8427e+0\n"],
+   [false, ' d41d8cd98f00b204e9800998ecf8427e+0'],
+   [false, 'd41d8cd98f00b204e9800998ecf8427e+K+0'],
+   [false, 'd41d8cd98f00b204e9800998ecf8427e+0+0'],
+   [false, 'd41d8cd98f00b204e9800998ecf8427e++'],
+   [false, 'd41d8cd98f00b204e9800998ecf8427e+0+K+'],
+   [false, 'd41d8cd98f00b204e9800998ecf8427e+0++K'],
+   [false, 'd41d8cd98f00b204e9800998ecf8427e+0+K++'],
+   [false, 'd41d8cd98f00b204e9800998ecf8427e+0+K++Z'],
+   [true, 'd41d8cd98f00b204e9800998ecf8427e', nil,nil,nil],
+   [true, 'd41d8cd98f00b204e9800998ecf8427e+0', '+0','0',nil],
+   [true, 'd41d8cd98f00b204e9800998ecf8427e+0+Fizz+Buzz','+0','0','+Fizz+Buzz'],
+   [true, 'd41d8cd98f00b204e9800998ecf8427e+Fizz+Buzz', nil,nil,'+Fizz+Buzz'],
+   [true, 'd41d8cd98f00b204e9800998ecf8427e+0+Z', '+0','0','+Z'],
+   [true, 'd41d8cd98f00b204e9800998ecf8427e+Z', nil,nil,'+Z'],
+  ].each do |ok, locator, match2, match3, match4|
+    define_method "test_LOCATOR_REGEXP_on_#{locator.inspect}" do
+      match = Keep::Locator::LOCATOR_REGEXP.match locator
+      assert_equal ok, !!match
+      if ok
+        assert_equal match2, match[2]
+        assert_equal match3, match[3]
+        assert_equal match4, match[4]
+      end
+    end
+  end
+
+  [
+    [false, nil, "No manifest found"],
+    [true, ""],
+    [false, " ", "Invalid manifest: does not end with newline"],
+    [true, ". d41d8cd98f00b204e9800998ecf8427e 0:0:abc.txt\n"],
+    [true, ". d41d8cd98f00b204e9800998ecf8427e+0 0:0:abc.txt\n"],
+    [true, ". d41d8cd98f00b204e9800998ecf8427e a41d8cd98f00b204e9800998ecf8427e+0 0:0:abc.txt\n"], # 2 locators
+    [true, ". d41d8cd98f00b204e9800998ecf8427e+0 0:0:foo/bar.txt\n"],
+    [true, ". d41d8cd98f00b204e9800998ecf8427e+0 0:0:.foo.txt\n"],
+    [true, ". d41d8cd98f00b204e9800998ecf8427e+0 0:0:.foo\n"],
+    [true, ". d41d8cd98f00b204e9800998ecf8427e+0 0:0:...\n"],
+    [true, ". d41d8cd98f00b204e9800998ecf8427e+0 0:0:.../.foo./.../bar\n"],
+    [true, ". d41d8cd98f00b204e9800998ecf8427e+0 0:0:foo/...\n"],
+    [true, ". d41d8cd98f00b204e9800998ecf8427e+0 0:0:foo/.../bar\n"],
+    [true, ". d41d8cd98f00b204e9800998ecf8427e+0 0:0:foo/.bar/baz.txt\n"],
+    [true, ". d41d8cd98f00b204e9800998ecf8427e+0 0:0:foo/bar./baz.txt\n"],
+    [true, ". d41d8cd98f00b204e9800998ecf8427e+0 000000000000000000000000000000:0777:foo.txt\n"],
+    [true, ". d41d8cd98f00b204e9800998ecf8427e+0 0:0:0:0\n"],
+    [true, ". d41d8cd98f00b204e9800998ecf8427e+0 0:0:\\040\n"],
+    [true, ". 00000000000000000000000000000000+0 0:0:0\n"],
+    [true, ". 00000000000000000000000000000000+0 0:0:d41d8cd98f00b204e9800998ecf8427e+0+Ad41d8cd98f00b204e9800998ecf8427e00000000@ffffffff\n"],
+    [false, '. d41d8cd98f00b204e9800998ecf8427e 0:0:abc.txt',
+      "Invalid manifest: does not end with newline"],
+    [false, "abc d41d8cd98f00b204e9800998ecf8427e 0:0:abc.txt\n",
+      "invalid stream name \"abc\""],
+    [false, "abc/./foo d41d8cd98f00b204e9800998ecf8427e 0:0:abc.txt\n",
+      "invalid stream name \"abc/./foo\""],
+    [false, "./abc/../foo d41d8cd98f00b204e9800998ecf8427e 0:0:abc.txt\n",
+      "invalid stream name \"./abc/../foo\""],
+    [false, "./abc/. d41d8cd98f00b204e9800998ecf8427e 0:0:abc.txt\n",
+      "invalid stream name \"./abc/.\""],
+    [false, "./abc/.. d41d8cd98f00b204e9800998ecf8427e 0:0:abc.txt\n",
+      "invalid stream name \"./abc/..\""],
+    [false, "./abc/./foo d41d8cd98f00b204e9800998ecf8427e 0:0:abc.txt\n",
+      "invalid stream name \"./abc/./foo\""],
+    [false, ". d41d8cd98f00b204e9800998ecf8427e 0:0:.\n",
+      "invalid file token \"0:0:.\""],
+    [false, ". d41d8cd98f00b204e9800998ecf8427e 0:0:..\n",
+      "invalid file token \"0:0:..\""],
+    [false, ". d41d8cd98f00b204e9800998ecf8427e 0:0:./abc.txt\n",
+      "invalid file token \"0:0:./abc.txt\""],
+    [false, ". d41d8cd98f00b204e9800998ecf8427e 0:0:../abc.txt\n",
+      "invalid file token \"0:0:../abc.txt\""],
+    [false, ". d41d8cd98f00b204e9800998ecf8427e 0:0:abc.txt/.\n",
+      "invalid file token \"0:0:abc.txt/.\""],
+    [false, ". d41d8cd98f00b204e9800998ecf8427e 0:0:abc.txt/..\n",
+      "invalid file token \"0:0:abc.txt/..\""],
+    [false, ". d41d8cd98f00b204e9800998ecf8427e 0:0:a/./bc.txt\n",
+      "invalid file token \"0:0:a/./bc.txt\""],
+    [false, ". d41d8cd98f00b204e9800998ecf8427e 0:0:a/../bc.txt\n",
+      "invalid file token \"0:0:a/../bc.txt\""],
+    [false, "./abc/./foo d41d8cd98f00b204e9800998ecf8427e 0:0:abc.txt\n",
+      "invalid stream name \"./abc/./foo\""],
+    [false, "d41d8cd98f00b204e9800998ecf8427e+0 0:0:abc.txt\n",
+      "invalid stream name \"d41d8cd98f00b204e9800998ecf8427e+0\""],
+    [false, ". d41d8cd98f00b204e9800998ecf8427 0:0:abc.txt\n",
+      "invalid locator \"d41d8cd98f00b204e9800998ecf8427\""],
+    [false, ". d41d8cd98f00b204e9800998ecf8427e\n",
+      "Manifest invalid for stream 1: no file tokens"],
+    [false, ". d41d8cd98f00b204e9800998ecf8427e+0 0:0:abc.txt\n/dir1 d41d8cd98f00b204e9800998ecf842 0:0:abc.txt\n",
+      "Manifest invalid for stream 2: missing or invalid stream name \"/dir1\""],
+    [false, ". d41d8cd98f00b204e9800998ecf8427e+0 0:0:abc.txt\n./dir1 d41d8cd98f00b204e9800998ecf842 0:0:abc.txt\n",
+      "Manifest invalid for stream 2: missing or invalid locator \"d41d8cd98f00b204e9800998ecf842\""],
+    [false, ". d41d8cd98f00b204e9800998ecf8427e+0 0:0:abc.txt\n./dir1 a41d8cd98f00b204e9800998ecf8427e+0 abc.txt\n",
+      "Manifest invalid for stream 2: invalid file token \"abc.txt\""],
+    [false, ". d41d8cd98f00b204e9800998ecf8427e+0 0:0:abc.txt\n./dir1 a41d8cd98f00b204e9800998ecf8427e+0 0:abc.txt\n",
+      "Manifest invalid for stream 2: invalid file token \"0:abc.txt\""],
+    [false, ". d41d8cd98f00b204e9800998ecf8427e+0 0:0:abc.txt\n./dir1 a41d8cd98f00b204e9800998ecf8427e+0 0:0:abc.txt xyz.txt\n",
+      "Manifest invalid for stream 2: invalid file token \"xyz.txt\""],
+    [false, ". d41d8cd98f00b204e9800998ecf8427e+0 0:0:foo.txt d41d8cd98f00b204e9800998ecf8427e+0\n",
+      "Manifest invalid for stream 1: invalid file token \"d41d8cd98f00b204e9800998ecf8427e+0\""],
+    [false, ". d41d8cd98f00b204e9800998ecf8427e+0 0:0:\n",
+      "Manifest invalid for stream 1: invalid file token \"0:0:\""],
+    [false, ". d41d8cd98f00b204e9800998ecf8427e+0\n",
+      "Manifest invalid for stream 1: no file tokens"],
+    [false, ". 0:0:foo.txt d41d8cd98f00b204e9800998ecf8427e+0\n",
+      "Manifest invalid for stream 1: missing or invalid locator \"0:0:foo.txt\""],
+    [false, ". 0:0:foo.txt\n",
+      "Manifest invalid for stream 1: missing or invalid locator \"0:0:foo.txt\""],
+    [false, ".\n", "Manifest invalid for stream 1: missing or invalid locator"],
+    [false, ".", "Invalid manifest: does not end with newline"],
+    [false, ". \n", "Manifest invalid for stream 1: missing or invalid locator"],
+    [false, ".  \n", "Manifest invalid for stream 1: missing or invalid locator"],
+    [false, " . d41d8cd98f00b204e9800998ecf8427e+0 0:0:foo.txt\n",
+      "Manifest invalid for stream 1: missing or invalid stream name"],
+    [false, ". d41d8cd98f00b204e9800998ecf8427e+0 0:0:foo.txt \n",
+      "stream 1: trailing space"],
+   # TAB and other tricky whitespace characters:
+    [false, "\v. d41d8cd98f00b204e9800998ecf8427e+0 0:0:foo.txt\n",
+      "Manifest invalid for stream 1: missing or invalid stream name \"\\v."],
+    [false, "./foo\vbar d41d8cd98f00b204e9800998ecf8427e+0 0:0:foo.txt\n",
+      "Manifest invalid for stream 1: missing or invalid stream name \"./foo\\vbar"],
+    [false, "\t. d41d8cd98f00b204e9800998ecf8427e+0 0:0:foo.txt\n",
+      "Manifest invalid for stream 1: missing or invalid stream name \"\\t"],
+    [false, ".\td41d8cd98f00b204e9800998ecf8427e+0 0:0:foo.txt\n",
+      "Manifest invalid for stream 1: missing or invalid stream name \".\\t"],
+    [false, ". d41d8cd98f00b204e9800998ecf8427e+0 0:0:foo.txt\t\n",
+      "stream 1: invalid file token \"0:0:foo.txt\\t\""],
+    [false, ". d41d8cd98f00b204e9800998ecf8427e+0\t 0:0:foo.txt\n",
+      "stream 1: missing or invalid locator \"d41d8cd98f00b204e9800998ecf8427e+0\\t\""],
+    [false, "./foo\tbar d41d8cd98f00b204e9800998ecf8427e+0 0:0:foo.txt\n",
+      "stream 1: missing or invalid stream name \"./foo\\tbar\""],
+    # other whitespace errors:
+    [false, ". d41d8cd98f00b204e9800998ecf8427e+0  0:0:foo.txt\n",
+      "Manifest invalid for stream 1: invalid file token \"\""],
+    [false, ". d41d8cd98f00b204e9800998ecf8427e+0 0:0:foo.txt\n \n",
+      "Manifest invalid for stream 2: missing stream name"],
+    [false, ". d41d8cd98f00b204e9800998ecf8427e+0 0:0:foo.txt\n\n",
+      "Manifest invalid for stream 2: missing stream name"],
+    [false, ". d41d8cd98f00b204e9800998ecf8427e+0 0:0:foo.txt\n ",
+      "Invalid manifest: does not end with newline"],
+    [false, "\n. d41d8cd98f00b204e9800998ecf8427e+0 0:0:foo.txt\n",
+      "Manifest invalid for stream 1: missing stream name"],
+    [false, " \n. d41d8cd98f00b204e9800998ecf8427e+0 0:0:foo.txt\n",
+      "Manifest invalid for stream 1: missing stream name"],
+    # empty file and stream name components:
+    [false, ". d41d8cd98f00b204e9800998ecf8427e+0 0:0:/foo.txt\n",
+      "Manifest invalid for stream 1: invalid file token \"0:0:/foo.txt\""],
+    [false, "./ d41d8cd98f00b204e9800998ecf8427e+0 0:0:foo.txt\n",
+      "Manifest invalid for stream 1: missing or invalid stream name \"./\""],
+    [false, ".//foo d41d8cd98f00b204e9800998ecf8427e+0 0:0:foo.txt\n",
+      "Manifest invalid for stream 1: missing or invalid stream name \".//foo\""],
+    [false, "./foo/ d41d8cd98f00b204e9800998ecf8427e+0 0:0:foo.txt\n",
+      "Manifest invalid for stream 1: missing or invalid stream name \"./foo/\""],
+    [false, "./foo//bar d41d8cd98f00b204e9800998ecf8427e+0 0:0:foo.txt\n",
+      "Manifest invalid for stream 1: missing or invalid stream name \"./foo//bar\""],
+    [false, ". d41d8cd98f00b204e9800998ecf8427e+0 0:0:foo//bar.txt\n",
+      "Manifest invalid for stream 1: invalid file token \"0:0:foo//bar.txt\""],
+    [false, ". d41d8cd98f00b204e9800998ecf8427e+0 0:0:foo/\n",
+      "Manifest invalid for stream 1: invalid file token \"0:0:foo/\""],
+  ].each do |ok, manifest, expected_error=nil|
+    define_method "test_validate manifest #{manifest.inspect}" do
+      assert_equal ok, Keep::Manifest.valid?(manifest)
+      if ok
+        assert Keep::Manifest.validate! manifest
+      else
+        begin
+          Keep::Manifest.validate! manifest
+        rescue ArgumentError => e
+          msg = e.message
+        end
+        refute_nil msg, "Expected ArgumentError"
+        assert msg.include?(expected_error), "Did not find expected error message. Expected: #{expected_error}; Actual: #{msg}"
+      end
+    end
+  end
 end

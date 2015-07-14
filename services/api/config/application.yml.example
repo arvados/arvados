@@ -23,6 +23,9 @@ production:
   blob_signing_key: ~
   uuid_prefix: bogus
   workbench_address: https://workbench.bogus.arvadosapi.com
+  sso_app_id: arvados-server
+  sso_app_secret: ~
+  sso_provider_url: https://login.bogus.arvadosapi.com
 
 test:
   # Tests should be able to run without further configuration, but if you do

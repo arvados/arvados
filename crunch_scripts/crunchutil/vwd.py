@@ -73,6 +73,12 @@ def checkin(target_dir):
                     if pdh is not None:
                         # 2. load collection
                         if pdh not in collections:
+                            # 2.1 make sure it is flushed (see #5787 note 11)
+                            fd = os.open(real[0], os.O_RDONLY)
+                            os.fsync(fd)
+                            os.close(fd)
+
+                            # 2.2 get collection from API server
                             collections[pdh] = arvados.collection.CollectionReader(pdh,
                                                                                    api_client=outputcollection._my_api(),
                                                                                    keep_client=outputcollection._my_keep(),

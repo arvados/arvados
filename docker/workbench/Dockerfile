@@ -4,8 +4,8 @@ FROM arvados/passenger
 MAINTAINER Ward Vandewege <ward@curoverse.com>
 
 # We need graphviz for the provenance graphs
-RUN apt-get update -qq
-RUN apt-get install -qqy graphviz
+RUN apt-get update -q
+RUN apt-get install -qy graphviz
 
 # Update Arvados source
 RUN /bin/mkdir -p /usr/src/arvados/apps

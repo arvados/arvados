@@ -56,27 +56,27 @@ class CollectionTest < ActiveSupport::TestCase
   [
     [2**8, false],
     [2**18, true],
-  ].each do |manifest_size, gets_truncated|
-    test "create collection with manifest size #{manifest_size} which gets truncated #{gets_truncated},
+  ].each do |manifest_size, allow_truncate|
+    test "create collection with manifest size #{manifest_size} with allow_truncate=#{allow_truncate},
           and not expect exceptions even on very large manifest texts" do
       # file_names has a max size, hence there will be no errors even on large manifests
       act_as_system_user do
-        manifest_text = './blurfl d41d8cd98f00b204e9800998ecf8427e+0'
+        manifest_text = ''
         index = 0
         while manifest_text.length < manifest_size
-          manifest_text += ' ' + "0:0:veryverylongfilename000000000000#{index}.txt\n./subdir1"
+          manifest_text += "./blurfl d41d8cd98f00b204e9800998ecf8427e+0 0:0:veryverylongfilename000000000000#{index}.txt\n"
           index += 1
         end
-        manifest_text += "\n"
+        manifest_text += "./laststreamname d41d8cd98f00b204e9800998ecf8427e+0 0:0:veryverylastfilename.txt\n"
         c = Collection.create(manifest_text: manifest_text)
 
         assert c.valid?
         assert c.file_names
         assert_match /veryverylongfilename0000000000001.txt/, c.file_names
         assert_match /veryverylongfilename0000000000002.txt/, c.file_names
-        if !gets_truncated
-          assert_match /blurfl/, c.file_names
-          assert_match /subdir1/, c.file_names
+        if not allow_truncate
+          assert_match /veryverylastfilename/, c.file_names
+          assert_match /laststreamname/, c.file_names
         end
       end
     end
@@ -87,7 +87,7 @@ class CollectionTest < ActiveSupport::TestCase
     act_as_system_user do
       Collection.create(manifest_text: ". acbd18db4cc2f85cedef654fccc4a4d8+3 0:3:foo\n")
       Collection.create(manifest_text: ". 37b51d194a7513e45b56f6524f2d51f2+3 0:3:bar\n")
-      Collection.create(manifest_text: ". 85877ca2d7e05498dd3d109baf2df106+95+A3a4e26a366ee7e4ed3e476ccf05354761be2e4ae@545a9920 0:95:file_in_subdir1\n./subdir2/subdir3 2bbc341c702df4d8f42ec31f16c10120+64+A315d7e7bad2ce937e711fc454fae2d1194d14d64@545a9920 0:32:file1.txt 32:32:file2.txt\n./subdir2/subdir3/subdir4 2bbc341c702df4d8f42ec31f16c10120+64+A315d7e7bad2ce937e711fc454fae2d1194d14d64@545a9920 0:32:file3.txt 32:32:file4.txt")
+      Collection.create(manifest_text: ". 85877ca2d7e05498dd3d109baf2df106+95+A3a4e26a366ee7e4ed3e476ccf05354761be2e4ae@545a9920 0:95:file_in_subdir1\n./subdir2/subdir3 2bbc341c702df4d8f42ec31f16c10120+64+A315d7e7bad2ce937e711fc454fae2d1194d14d64@545a9920 0:32:file1.txt 32:32:file2.txt\n./subdir2/subdir3/subdir4 2bbc341c702df4d8f42ec31f16c10120+64+A315d7e7bad2ce937e711fc454fae2d1194d14d64@545a9920 0:32:file3.txt 32:32:file4.txt\n")
     end
 
     [
@@ -120,17 +120,37 @@ class CollectionTest < ActiveSupport::TestCase
   end
 
   test 'portable data hash with missing size hints' do
-    [[". d41d8cd98f00b204e9800998ecf8427e+0+Bar 0:0:x",
-      ". d41d8cd98f00b204e9800998ecf8427e+0 0:0:x"],
-     [". d41d8cd98f00b204e9800998ecf8427e+Foo 0:0:x",
-      ". d41d8cd98f00b204e9800998ecf8427e 0:0:x"],
-     [". d41d8cd98f00b204e9800998ecf8427e 0:0:x",
-      ". d41d8cd98f00b204e9800998ecf8427e 0:0:x"],
+    [[". d41d8cd98f00b204e9800998ecf8427e+0+Bar 0:0:x\n",
+      ". d41d8cd98f00b204e9800998ecf8427e+0 0:0:x\n"],
+     [". d41d8cd98f00b204e9800998ecf8427e+Foo 0:0:x\n",
+      ". d41d8cd98f00b204e9800998ecf8427e 0:0:x\n"],
+     [". d41d8cd98f00b204e9800998ecf8427e 0:0:x\n",
+      ". d41d8cd98f00b204e9800998ecf8427e 0:0:x\n"],
     ].each do |unportable, portable|
       c = Collection.new(manifest_text: unportable)
       assert c.valid?
       assert_equal(Digest::MD5.hexdigest(portable)+"+#{portable.length}",
                    c.portable_data_hash)
+    end
+  end
+
+  pdhmanifest = ". d41d8cd98f00b204e9800998ecf8427e+0 0:0:x\n"
+  pdhmd5 = Digest::MD5.hexdigest pdhmanifest
+  [[true, nil],
+   [true, pdhmd5],
+   [true, pdhmd5+'+12345'],
+   [true, pdhmd5+'+'+pdhmanifest.length.to_s],
+   [true, pdhmd5+'+12345+Foo'],
+   [true, pdhmd5+'+Foo'],
+   [false, Digest::MD5.hexdigest(pdhmanifest.strip)],
+   [false, Digest::MD5.hexdigest(pdhmanifest.strip)+'+'+pdhmanifest.length.to_s],
+   [false, pdhmd5[0..30]],
+   [false, pdhmd5[0..30]+'z'],
+   [false, pdhmd5[0..24]+'000000000'],
+   [false, pdhmd5[0..24]+'000000000+0']].each do |isvalid, pdh|
+    test "portable_data_hash #{pdh.inspect} valid? == #{isvalid}" do
+      c = Collection.new manifest_text: pdhmanifest, portable_data_hash: pdh
+      assert_equal isvalid, c.valid?, c.errors.full_messages.to_s
     end
   end
 

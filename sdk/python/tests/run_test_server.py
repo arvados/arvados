@@ -453,10 +453,13 @@ def _getport(program):
 def _apiconfig(key):
     if _cached_config:
         return _cached_config[key]
-    def _load(f):
-        return yaml.load(os.path.join(SERVICES_SRC_DIR, 'api', 'config', f))
+    def _load(f, required=True):
+        fullpath = os.path.join(SERVICES_SRC_DIR, 'api', 'config', f)
+        if not required and not os.path.exists(fullpath):
+            return {}
+        return yaml.load(fullpath)
     cdefault = _load('application.default.yml')
-    csite = _load('application.yml')
+    csite = _load('application.yml', required=False)
     _cached_config = {}
     for section in [cdefault.get('common',{}), cdefault.get('test',{}),
                     csite.get('common',{}), csite.get('test',{})]:

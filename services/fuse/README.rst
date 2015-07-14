@@ -55,6 +55,10 @@ on your system.
 Testing and Development
 -----------------------
 
+Debian packages you need to build llfuse:
+
+$ apt-get install python-dev pkg-config libfuse-dev libattr1-dev
+
 This package is one part of the Arvados source package, and it has
 integration tests to check interoperability with other Arvados
 components.  Our `hacking guide

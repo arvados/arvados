@@ -41,6 +41,9 @@ test:
   active_support.deprecation: :stderr
   active_record.mass_assignment_sanitizer: :strict
   uuid_prefix: zzzzz
+  sso_app_id: arvados-server
+  sso_app_secret: <%= rand(2**512).to_s(36) %>
+  sso_provider_url: http://localhost:3002
   secret_token: <%= rand(2**512).to_s(36) %>
   blob_signing_key: zfhgfenhffzltr9dixws36j1yhksjoll2grmku38mi7yxd66h5j4q9w4jzanezacp8s6q0ro3hxakfye02152hncy6zml2ed0uc
   user_profile_notification_address: arvados@example.com
@@ -291,6 +294,12 @@ common:
   # server is using a self-signed cert.
   sso_insecure: false
 
+  # These settings are provided by your OAuth2 provider (e.g.,
+  # sso-provider).
+  sso_app_id: ~
+  sso_app_secret: ~
+  sso_provider_url: ~
+
   # Default replication level for collections. This is used when a
   # collection's replication_desired attribute is nil.
   default_collection_replication: 2
@@ -329,3 +338,19 @@ common:
 
   # Docker image to be used when none found in runtime_constraints of a job
   default_docker_image_for_jobs: false
+
+  # Hostname to assign to a compute node when it sends a "ping" and the
+  # hostname in its Node record is nil.
+  # During bootstrapping, the "ping" script is expected to notice the
+  # hostname given in the ping response, and update its unix hostname
+  # accordingly.
+  # If false, leave the hostname alone (this is appropriate if your compute
+  # nodes' hostnames are already assigned by some other mechanism).
+  #
+  # One way or another, the hostnames of your node records should agree
+  # with your DNS records and your /etc/slurm-llnl/slurm.conf files.
+  #
+  # Example for compute0000, compute0001, ....:
+  # assign_node_hostname: compute%<slot_number>04d
+  # (See http://ruby-doc.org/core-2.2.2/Kernel.html#method-i-format for more.)
+  assign_node_hostname: compute%<slot_number>d
