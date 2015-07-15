@@ -94,7 +94,7 @@ func ComputePullServers(kc *keepclient.KeepClient,
 				serverHasBlock := map[string]struct{}{}
 				for _, info := range serversStoringBlock {
 					sa := keepServerInfo.KeepServerIndexToAddress[info.ServerIndex]
-					serverHasBlock[cs.Get(sa.HostPort())] = struct{}{}
+					serverHasBlock[cs.Get(sa.URL())] = struct{}{}
 				}
 
 				roots := keepclient.NewRootSorter(kc.LocalRoots(),

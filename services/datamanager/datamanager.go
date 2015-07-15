@@ -130,7 +130,6 @@ func singlerun() {
 		replicationSummary.KeepBlocksNotInCollections)
 
 	summary.WritePullLists(arvLogger, pullLists)
-
 	keep.SendTrashLists(arvLogger, kc, trashLists)
 
 	// Log that we're finished. We force the recording, since go will

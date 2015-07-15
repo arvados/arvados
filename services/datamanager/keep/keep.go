@@ -87,10 +87,10 @@ func init() {
 
 // TODO(misha): Change this to include the UUID as well.
 func (s ServerAddress) String() string {
-	return s.HostPort()
+	return s.URL()
 }
 
-func (s ServerAddress) HostPort() string {
+func (s ServerAddress) URL() string {
 	if s.SSL {
 		return fmt.Sprintf("https://%s:%d", s.Host, s.Port)
 	} else {
@@ -497,9 +497,7 @@ func SendTrashLists(arvLogger *logger.Logger, kc *keepclient.KeepClient, spl map
 				return
 			}
 
-			if resp.StatusCode != http.StatusOK {
-				log.Printf("Error sending trash list to %v error: %v", url, err.Error())
-			}
+			log.Printf("Sent trash list to %v: response was HTTP %d", url, resp.Status)
 
 			io.Copy(ioutil.Discard, resp.Body)
 			resp.Body.Close()

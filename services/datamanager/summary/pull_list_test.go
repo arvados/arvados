@@ -54,7 +54,7 @@ func (s *MySuite) TestCreatePullServers(c *C) {
 
 	c.Check(
 		CreatePullServers(cs,
-			stringSet("keep0:25107", "keep1:25108"),
+			stringSet("https://keep0:25107", "https://keep1:25108"),
 			stringSet(),
 			[]string{},
 			5),
@@ -63,64 +63,64 @@ func (s *MySuite) TestCreatePullServers(c *C) {
 
 	c.Check(
 		CreatePullServers(cs,
-			stringSet("keep0:25107", "keep1:25108"),
-			stringSet("keep0:25107"),
-			[]string{"keep0:25107"},
+			stringSet("https://keep0:25107", "https://keep1:25108"),
+			stringSet("https://keep0:25107"),
+			[]string{"https://keep0:25107"},
 			5),
 		DeepEquals,
-		PullServers{To: []string{}, From: []string{"keep0:25107"}})
+		PullServers{To: []string{}, From: []string{"https://keep0:25107"}})
 
 	c.Check(
 		CreatePullServers(cs,
-			stringSet("keep0:25107", "keep1:25108"),
-			stringSet("keep3:25110", "keep2:25109", "keep1:25108", "keep0:25107"),
-			[]string{"keep3:25110", "keep2:25109", "keep1:25108", "keep0:25107"},
+			stringSet("https://keep0:25107", "https://keep1:25108"),
+			stringSet("https://keep3:25110", "https://keep2:25109", "https://keep1:25108", "https://keep0:25107"),
+			[]string{"https://keep3:25110", "https://keep2:25109", "https://keep1:25108", "https://keep0:25107"},
 			5),
 		DeepEquals,
-		PullServers{To: []string{"keep3:25110", "keep2:25109"},
-			From: []string{"keep1:25108", "keep0:25107"}})
+		PullServers{To: []string{"https://keep3:25110", "https://keep2:25109"},
+			From: []string{"https://keep1:25108", "https://keep0:25107"}})
 
 	c.Check(
 		CreatePullServers(cs,
-			stringSet("keep0:25107", "keep1:25108"),
-			stringSet("keep3:25110", "keep1:25108", "keep0:25107"),
-			[]string{"keep3:25110", "keep2:25109", "keep1:25108", "keep0:25107"},
+			stringSet("https://keep0:25107", "https://keep1:25108"),
+			stringSet("https://keep3:25110", "https://keep1:25108", "https://keep0:25107"),
+			[]string{"https://keep3:25110", "https://keep2:25109", "https://keep1:25108", "https://keep0:25107"},
 			5),
 		DeepEquals,
-		PullServers{To: []string{"keep3:25110"},
-			From: []string{"keep1:25108", "keep0:25107"}})
+		PullServers{To: []string{"https://keep3:25110"},
+			From: []string{"https://keep1:25108", "https://keep0:25107"}})
 
 	c.Check(
 		CreatePullServers(cs,
-			stringSet("keep0:25107", "keep1:25108"),
-			stringSet("keep3:25110", "keep2:25109", "keep1:25108", "keep0:25107"),
-			[]string{"keep3:25110", "keep2:25109", "keep1:25108", "keep0:25107"},
+			stringSet("https://keep0:25107", "https://keep1:25108"),
+			stringSet("https://keep3:25110", "https://keep2:25109", "https://keep1:25108", "https://keep0:25107"),
+			[]string{"https://keep3:25110", "https://keep2:25109", "https://keep1:25108", "https://keep0:25107"},
 			1),
 		DeepEquals,
-		PullServers{To: []string{"keep3:25110"},
-			From: []string{"keep1:25108", "keep0:25107"}})
+		PullServers{To: []string{"https://keep3:25110"},
+			From: []string{"https://keep1:25108", "https://keep0:25107"}})
 
 	c.Check(
 		CreatePullServers(cs,
-			stringSet("keep0:25107", "keep1:25108"),
-			stringSet("https://keep3:25110", "http://keep2:25109",
-				"https://keep1:25108", "http://keep0:25107"),
-			[]string{"https://keep3:25110", "http://keep2:25109",
-				"https://keep1:25108", "http://keep0:25107"},
+			stringSet("https://keep0:25107", "https://keep1:25108"),
+			stringSet("https://keep3:25110", "https://keep2:25109",
+				"https://keep1:25108", "https://keep0:25107"),
+			[]string{"https://keep3:25110", "https://keep2:25109",
+				"https://keep1:25108", "https://keep0:25107"},
 			1),
 		DeepEquals,
-		PullServers{To: []string{"keep3:25110"},
-			From: []string{"https://keep1:25108", "http://keep0:25107"}})
+		PullServers{To: []string{"https://keep3:25110"},
+			From: []string{"https://keep1:25108", "https://keep0:25107"}})
 
 	c.Check(
 		CreatePullServers(cs,
-			stringSet("keep0:25107", "keep1:25108"),
-			stringSet("keep3:25110", "keep2:25109", "keep1:25108", "keep0:25107"),
-			[]string{"keep3:25110", "keep2:25109", "keep1:25108", "keep0:25107"},
+			stringSet("https://keep0:25107", "https://keep1:25108"),
+			stringSet("https://keep3:25110", "https://keep2:25109", "https://keep1:25108", "https://keep0:25107"),
+			[]string{"https://keep3:25110", "https://keep2:25109", "https://keep1:25108", "https://keep0:25107"},
 			0),
 		DeepEquals,
 		PullServers{To: []string{},
-			From: []string{"keep1:25108", "keep0:25107"}})
+			From: []string{"https://keep1:25108", "https://keep0:25107"}})
 }
 
 // Checks whether two pull list maps are equal. Since pull lists are
