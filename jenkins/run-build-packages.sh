@@ -106,7 +106,7 @@ case "$TARGET" in
             rsa uritemplate httplib2 ws4py \
             virtualenv pykka apache-libcloud requests six pyexecjs jsonschema \
             ciso8601 pycrypto backports.ssl_match_hostname pycurl llfuse)
-        PYTHON3_BACKPORTS=(docker-py six requests)
+        PYTHON3_BACKPORTS=(docker-py six requests websocket-client)
         ;;
     debian8)
         FORMAT=deb
@@ -122,7 +122,7 @@ case "$TARGET" in
             rsa uritemplate httplib2 ws4py \
             virtualenv pykka apache-libcloud requests six pyexecjs jsonschema \
             ciso8601 pycrypto backports.ssl_match_hostname pycurl llfuse)
-        PYTHON3_BACKPORTS=(docker-py six requests)
+        PYTHON3_BACKPORTS=(docker-py six requests websocket-client)
         ;;
     ubuntu1204)
         FORMAT=deb
@@ -138,7 +138,7 @@ case "$TARGET" in
             rsa uritemplate httplib2 ws4py \
             virtualenv pykka apache-libcloud requests six pyexecjs jsonschema \
             ciso8601 pycrypto backports.ssl_match_hostname pycurl llfuse)
-        PYTHON3_BACKPORTS=(docker-py six requests)
+        PYTHON3_BACKPORTS=(docker-py six requests websocket-client)
         ;;
     centos6)
         FORMAT=rpm
