@@ -44,4 +44,25 @@ class Arvados::V1::VirtualMachinesControllerTest < ActionController::TestCase
     assert_empty(json_response.
                  select { |login| login["user_uuid"] == spectator_uuid })
   end
+
+  test "logins without ssh keys are listed" do
+    u, vm = nil
+    act_as_system_user do
+      u = create :active_user, first_name: 'Bob', last_name: 'Blogin'
+      vm = VirtualMachine.create! hostname: 'foo.shell'
+      Link.create!(tail_uuid: u.uuid,
+                   head_uuid: vm.uuid,
+                   link_class: 'permission',
+                   name: 'can_login',
+                   properties: {'username' => 'bobblogin'})
+    end
+    authorize_with :admin
+    get :logins, id: vm.uuid
+    assert_response :success
+    assert_equal 1, json_response['items'].length
+    assert_equal nil, json_response['items'][0]['public_key']
+    assert_equal nil, json_response['items'][0]['authorized_key_uuid']
+    assert_equal u.uuid, json_response['items'][0]['user_uuid']
+    assert_equal 'bobblogin', json_response['items'][0]['username']
+  end
 end
