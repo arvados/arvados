@@ -1,6 +1,7 @@
 require 'test_helper'
 
 class UsersControllerTest < ActionController::TestCase
+
   test "valid token works in controller test" do
     get :index, {}, session_for(:active)
     assert_response :success
@@ -73,5 +74,49 @@ class UsersControllerTest < ActionController::TestCase
       end
     end
     assert_equal 1, found_email, "Expected 1 email after requesting shell access"
+  end
+
+  [
+    'admin',
+    'active',
+  ].each do |username|
+    test "access users page as #{username} and verify show button is available" do
+      admin_user = api_fixture('users','admin')
+      active_user = api_fixture('users','active')
+      get :index, {}, session_for(username)
+      if username == 'admin'
+        assert_match /<a href="\/projects\/#{admin_user['uuid']}">Home<\/a.*./, @response.body
+        assert_match /<a href="\/projects\/#{active_user['uuid']}">Home<\/a.*./, @response.body
+        assert_match /<a.*href="\/users\/#{admin_user['uuid']}".*Show<\/a.*./, @response.body
+        assert_match /<a.*href="\/users\/#{active_user['uuid']}".*Show<\/a.*./, @response.body
+        assert_includes @response.body, admin_user['email']
+        assert_includes @response.body, active_user['email']
+      else
+        refute_match  /a href=.*Home<.*\/a.*./, @response.body
+        refute_match /<a.*href="\/users\/#{admin_user['uuid']}".*Show<\/a.*./, @response.body
+        assert_match /<a.*href="\/users\/#{active_user['uuid']}".*Show<\/a.*./, @response.body
+        assert_includes @response.body, active_user['email']
+      end
+    end
+  end
+
+  [
+    'admin',
+    'active',
+  ].each do |username|
+    test "access settings drop down menu as #{username}" do
+      admin_user = api_fixture('users','admin')
+      active_user = api_fixture('users','active')
+      get :show, {
+        id: api_fixture('users')[username]['uuid']
+      }, session_for(username)
+      if username == 'admin'
+        assert_includes @response.body, admin_user['email']
+        refute_empty css_select('[id="system-menu"]')
+      else
+        assert_includes @response.body, active_user['email']
+        assert_empty css_select('[id="system-menu"]')
+      end
+    end
   end
 end

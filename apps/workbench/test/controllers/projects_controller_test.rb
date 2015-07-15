@@ -353,8 +353,19 @@ class ProjectsControllerTest < ActionController::TestCase
   test "project viewer can't see project sharing tab" do
     project = api_fixture('groups')['aproject']
     get(:show, {id: project['uuid']}, session_for(:project_viewer))
-    refute_includes @response.body, '<div id ="Sharing"'
+    refute_includes @response.body, '<div id="Sharing"'
     assert_includes @response.body, '<div id="Data_collections"'
   end
 
+  [
+    'admin',
+    'active',
+  ].each do |username|
+    test "#{username} can see project sharing tab" do
+     project = api_fixture('groups')['aproject']
+     get(:show, {id: project['uuid']}, session_for(username))
+     assert_includes @response.body, '<div id="Sharing"'
+     assert_includes @response.body, '<div id="Data_collections"'
+    end
+  end
 end
