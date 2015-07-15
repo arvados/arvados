@@ -115,6 +115,32 @@ def find_available_port():
     sock.close()
     return port
 
+def _wait_until_port_listens(port, timeout=10):
+    """Wait for a process to start listening on the given port.
+
+    If nothing listens on the port within the specified timeout (given
+    in seconds), print a warning on stderr before returning.
+    """
+    try:
+        subprocess.check_output(['fuser', '-l'])
+    except subprocess.CalledProcessError:
+        print("WARNING: No `fuser` -- cannot wait for port to listen. "+
+              "Sleeping 0.5 and hoping for the best.")
+        time.sleep(0.5)
+        return
+    deadline = time.time() + timeout
+    while time.time() < deadline:
+        try:
+            fuser_says = subprocess.check_output(['fuser', str(port)+'/tcp'])
+        except subprocess.CalledProcessError:
+            time.sleep(0.1)
+            continue
+        return
+    print(
+        "WARNING: Nothing is listening on port {} (waited {} seconds).".
+        format(port, timeout),
+        file=sys.stderr)
+
 def run(leave_running_atexit=False):
     """Ensure an API server is running, and ARVADOS_API_* env vars have
     admin credentials for it.
@@ -224,8 +250,10 @@ def run(leave_running_atexit=False):
     my_api_host = match.group(1)
     os.environ['ARVADOS_API_HOST'] = my_api_host
 
-    # Make sure the server has written its pid file before continuing
+    # Make sure the server has written its pid file and started
+    # listening on its TCP port
     find_server_pid(pid_file)
+    _wait_until_port_listens(port)
 
     reset()
     os.chdir(restore_cwd)
@@ -288,6 +316,8 @@ def _start_keep(n, keep_args):
 
     with open("{}/keep{}.volume".format(TEST_TMPDIR, n), 'w') as f:
         f.write(keep0)
+
+    _wait_until_port_listens(port)
 
     return port
 
@@ -369,6 +399,7 @@ def run_keep_proxy():
     }}).execute()
     os.environ["ARVADOS_KEEP_PROXY"] = "http://localhost:{}".format(port)
     _setport('keepproxy', port)
+    _wait_until_port_listens(port)
 
 def stop_keep_proxy():
     if 'ARVADOS_TEST_PROXY_SERVICES' in os.environ:
@@ -392,6 +423,7 @@ def run_arv_git_httpd():
     with open(_pidfile('arv-git-httpd'), 'w') as f:
         f.write(str(agh.pid))
     _setport('arv-git-httpd', gitport)
+    _wait_until_port_listens(gitport)
 
 def stop_arv_git_httpd():
     if 'ARVADOS_TEST_PROXY_SERVICES' in os.environ:
