@@ -454,9 +454,15 @@ func (readServers *ReadServers) Summarize(arvLogger *logger.Logger) {
 
 }
 
+type Locator blockdigest.DigestWithSize
+
+func (l Locator) MarshalJSON() ([]byte, error) {
+	return []byte("\"" + blockdigest.DigestWithSize(l).String() + "\""), nil
+}
+
 type TrashRequest struct {
-	Locator    string `json:"locator"`
-	BlockMtime int64  `json:"block_mtime"`
+	Locator    Locator `json:"locator"`
+	BlockMtime int64   `json:"block_mtime"`
 }
 
 type TrashList []TrashRequest
@@ -499,6 +505,66 @@ func SendTrashLists(arvLogger *logger.Logger, kc *keepclient.KeepClient, spl map
 
 			if resp.StatusCode != http.StatusOK {
 				log.Printf("Error sending trash list to %v error: %v", url, err.Error())
+			}
+
+			io.Copy(ioutil.Discard, resp.Body)
+			resp.Body.Close()
+		})(url, v)
+
+	}
+
+	for i := 0; i < count; i += 1 {
+		<-rendezvous
+	}
+}
+
+// One entry in the Pull List
+type PullRequest struct {
+	Locator Locator  `json:"locator"`
+	Servers []string `json:"servers"`
+}
+
+// The Pull List for a particular server
+type PullList []PullRequest
+
+func SendPullLists(arvLogger *logger.Logger, kc *keepclient.KeepClient, spl map[string]PullList) {
+	count := 0
+	rendezvous := make(chan bool)
+
+	for url, v := range spl {
+		count += 1
+		log.Printf("Sending pull list to %v", url)
+
+		go (func(url string, v PullList) {
+			defer (func() {
+				rendezvous <- true
+			})()
+
+			pipeReader, pipeWriter := io.Pipe()
+			go (func() {
+				enc := json.NewEncoder(pipeWriter)
+				enc.Encode(v)
+				pipeWriter.Close()
+			})()
+
+			req, err := http.NewRequest("PUT", fmt.Sprintf("%s/pull", url), pipeReader)
+			if err != nil {
+				log.Printf("Error creating pull list request for %v error: %v", url, err.Error())
+				return
+			}
+
+			// Add api token header
+			req.Header.Add("Authorization", fmt.Sprintf("OAuth2 %s", getDataManagerToken(arvLogger)))
+
+			// Make the request
+			var resp *http.Response
+			if resp, err = kc.Client.Do(req); err != nil {
+				log.Printf("Error sending pull list to %v error: %v", url, err.Error())
+				return
+			}
+
+			if resp.StatusCode != http.StatusOK {
+				log.Printf("Error sending pull list to %v error: %v", url, err.Error())
 			}
 
 			io.Copy(ioutil.Discard, resp.Body)

@@ -46,7 +46,7 @@ func BuildTrashLists(kc *keepclient.KeepClient,
 				_, writable := writableServers[srv]
 
 				if writable {
-					m[srv] = append(m[srv], keep.TrashRequest{Locator: block.Digest.String(), BlockMtime: block_on_server.Mtime})
+					m[srv] = append(m[srv], keep.TrashRequest{Locator: keep.Locator(block), BlockMtime: block_on_server.Mtime})
 				}
 			}
 		}

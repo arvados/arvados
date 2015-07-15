@@ -14,24 +14,9 @@ import (
 	"strings"
 )
 
-type Locator blockdigest.DigestWithSize
-
-func (l Locator) MarshalJSON() ([]byte, error) {
-	return []byte("\"" + blockdigest.DigestWithSize(l).String() + "\""), nil
-}
-
-// One entry in the Pull List
-type PullRequest struct {
-	Locator Locator  `json:"locator"`
-	Servers []string `json:"servers"`
-}
-
-// The Pull List for a particular server
-type PullList []PullRequest
-
 // PullListByLocator implements sort.Interface for PullList based on
 // the Digest.
-type PullListByLocator PullList
+type PullListByLocator keep.PullList
 
 func (a PullListByLocator) Len() int      { return len(a) }
 func (a PullListByLocator) Swap(i, j int) { a[i], a[j] = a[j], a[i] }
@@ -66,8 +51,8 @@ type PullServers struct {
 func ComputePullServers(kc *keepclient.KeepClient,
 	keepServerInfo *keep.ReadServers,
 	blockToDesiredReplication map[blockdigest.DigestWithSize]int,
-	underReplicated BlockSet) (m map[Locator]PullServers) {
-	m = map[Locator]PullServers{}
+	underReplicated BlockSet) (m map[keep.Locator]PullServers) {
+	m = map[keep.Locator]PullServers{}
 	// We use CanonicalString to avoid filling memory with dupicate
 	// copies of the same string.
 	var cs CanonicalString
@@ -100,7 +85,7 @@ func ComputePullServers(kc *keepclient.KeepClient,
 				roots := keepclient.NewRootSorter(kc.LocalRoots(),
 					block.String()).GetSortedRoots()
 
-				l := Locator(block)
+				l := keep.Locator(block)
 				m[l] = CreatePullServers(cs, serverHasBlock, writableServers,
 					roots, numCopiesMissing)
 			}
@@ -148,8 +133,8 @@ func RemoveProtocolPrefix(url string) string {
 }
 
 // Produces a PullList for each keep server.
-func BuildPullLists(lps map[Locator]PullServers) (spl map[string]PullList) {
-	spl = map[string]PullList{}
+func BuildPullLists(lps map[keep.Locator]PullServers) (spl map[string]keep.PullList) {
+	spl = map[string]keep.PullList{}
 	// We don't worry about canonicalizing our strings here, because we
 	// assume lps was created by ComputePullServers() which already
 	// canonicalized the strings for us.
@@ -157,10 +142,10 @@ func BuildPullLists(lps map[Locator]PullServers) (spl map[string]PullList) {
 		for _, destination := range pullServers.To {
 			pullList, pullListExists := spl[destination]
 			if !pullListExists {
-				pullList = PullList{}
+				pullList = keep.PullList{}
 			}
 			spl[destination] = append(pullList,
-				PullRequest{Locator: locator, Servers: pullServers.From})
+				keep.PullRequest{Locator: locator, Servers: pullServers.From})
 		}
 	}
 	return
@@ -172,7 +157,7 @@ func BuildPullLists(lps map[Locator]PullServers) (spl map[string]PullList) {
 // This is just a hack for prototyping, it is not expected to be used
 // in production.
 func WritePullLists(arvLogger *logger.Logger,
-	pullLists map[string]PullList) {
+	pullLists map[string]keep.PullList) {
 	r := strings.NewReplacer(":", ".")
 	for host, list := range pullLists {
 		filename := fmt.Sprintf("pull_list.%s", r.Replace(RemoveProtocolPrefix(host)))

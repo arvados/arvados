@@ -40,6 +40,11 @@ func RunPullWorker(pullq *WorkQueue, keepClient *keepclient.KeepClient) {
 		Write to storage
 */
 func PullItemAndProcess(pullRequest PullRequest, token string, keepClient *keepclient.KeepClient) (err error) {
+
+	if never_pull {
+		return errors.New(fmt.Sprintf("never_pull is true"))
+	}
+
 	keepClient.Arvados.ApiToken = token
 
 	service_roots := make(map[string]string)

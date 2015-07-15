@@ -56,6 +56,9 @@ var data_manager_token string
 // actually deleting anything.
 var never_delete = true
 
+// accept but don't process pull lists
+var never_pull = true
+
 var maxBuffers = 128
 var bufs *bufferPool
 
@@ -233,8 +236,13 @@ func main() {
 		&never_delete,
 		"never-delete",
 		true,
-		"If set, nothing will be deleted. HTTP 405 will be returned "+
-			"for valid DELETE requests.")
+		"If true, nothing will be deleted. HTTP 405 will be returned "+
+			"for valid DELETE requests, and don't process trash lists.")
+	flag.BoolVar(
+		&never_pull,
+		"never-pull",
+		true,
+		"If true, don't process pull lists")
 	flag.StringVar(
 		&blob_signing_key_file,
 		"permission-key-file",
