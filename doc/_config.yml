@@ -41,6 +41,7 @@ navbar:
       - user/tutorials/tutorial-keep-get.html.textile.liquid
       - user/tutorials/tutorial-keep-mount.html.textile.liquid
       - user/topics/keep.html.textile.liquid
+      - user/topics/arv-copy.html.textile.liquid
     - Run a pipeline on the command line:
       - user/topics/running-pipeline-command-line.html.textile.liquid
       - user/topics/arv-run.html.textile.liquid

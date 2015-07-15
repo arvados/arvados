@@ -31,6 +31,7 @@ type TrashWorkerTestData struct {
    Expect no errors.
 */
 func TestTrashWorkerIntegration_GetNonExistingLocator(t *testing.T) {
+	never_delete = false
 	testData := TrashWorkerTestData{
 		Locator1: "5d41402abc4b2a76b9719d911017c592",
 		Block1:   []byte("hello"),
@@ -52,6 +53,7 @@ func TestTrashWorkerIntegration_GetNonExistingLocator(t *testing.T) {
    Expect the second locator in volume 2 to be unaffected.
 */
 func TestTrashWorkerIntegration_LocatorInVolume1(t *testing.T) {
+	never_delete = false
 	testData := TrashWorkerTestData{
 		Locator1: TEST_HASH,
 		Block1:   TEST_BLOCK,
@@ -73,6 +75,7 @@ func TestTrashWorkerIntegration_LocatorInVolume1(t *testing.T) {
    Expect the first locator in volume 1 to be unaffected.
 */
 func TestTrashWorkerIntegration_LocatorInVolume2(t *testing.T) {
+	never_delete = false
 	testData := TrashWorkerTestData{
 		Locator1: TEST_HASH,
 		Block1:   TEST_BLOCK,
@@ -94,6 +97,7 @@ func TestTrashWorkerIntegration_LocatorInVolume2(t *testing.T) {
    Expect locator to be deleted from both volumes.
 */
 func TestTrashWorkerIntegration_LocatorInBothVolumes(t *testing.T) {
+	never_delete = false
 	testData := TrashWorkerTestData{
 		Locator1: TEST_HASH,
 		Block1:   TEST_BLOCK,
@@ -115,6 +119,7 @@ func TestTrashWorkerIntegration_LocatorInBothVolumes(t *testing.T) {
    Delete the second and expect the first to be still around.
 */
 func TestTrashWorkerIntegration_MtimeMatchesForLocator1ButNotForLocator2(t *testing.T) {
+	never_delete = false
 	testData := TrashWorkerTestData{
 		Locator1: TEST_HASH,
 		Block1:   TEST_BLOCK,
@@ -138,6 +143,7 @@ func TestTrashWorkerIntegration_MtimeMatchesForLocator1ButNotForLocator2(t *test
    Expect the other unaffected.
 */
 func TestTrashWorkerIntegration_TwoDifferentLocatorsInVolume1(t *testing.T) {
+	never_delete = false
 	testData := TrashWorkerTestData{
 		Locator1: TEST_HASH,
 		Block1:   TEST_BLOCK,
@@ -160,6 +166,7 @@ func TestTrashWorkerIntegration_TwoDifferentLocatorsInVolume1(t *testing.T) {
    will not be deleted becuase its Mtime is within the trash life time.
 */
 func TestTrashWorkerIntegration_SameLocatorInTwoVolumesWithDefaultTrashLifeTime(t *testing.T) {
+	never_delete = false
 	testData := TrashWorkerTestData{
 		Locator1: TEST_HASH,
 		Block1:   TEST_BLOCK,
@@ -175,6 +182,28 @@ func TestTrashWorkerIntegration_SameLocatorInTwoVolumesWithDefaultTrashLifeTime(
 		DeleteLocator: TEST_HASH, // locator 1
 
 		// Since trash life time is in effect, block won't be deleted.
+		ExpectLocator1: true,
+		ExpectLocator2: true,
+	}
+	performTrashWorkerTest(testData, t)
+}
+
+/* Delete a block with matching mtime for locator in both volumes, but never_delete is true,
+   so block won't be deleted.
+*/
+func TestTrashWorkerIntegration_NeverDelete(t *testing.T) {
+	never_delete = true
+	testData := TrashWorkerTestData{
+		Locator1: TEST_HASH,
+		Block1:   TEST_BLOCK,
+
+		Locator2: TEST_HASH,
+		Block2:   TEST_BLOCK,
+
+		CreateData: true,
+
+		DeleteLocator: TEST_HASH,
+
 		ExpectLocator1: true,
 		ExpectLocator2: true,
 	}
