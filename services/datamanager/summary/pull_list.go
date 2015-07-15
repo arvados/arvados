@@ -126,7 +126,7 @@ func CreatePullServers(cs CanonicalString,
 	for _, host := range sortedServers {
 		// Strip the protocol portion of the url.
 		// Use the canonical copy of the string to avoid memory waste.
-		server := cs.Get(RemoveProtocolPrefix(host))
+		server := cs.Get(host)
 		_, hasBlock := serverHasBlock[server]
 		if hasBlock {
 			// The from field should include the protocol.
@@ -175,7 +175,7 @@ func WritePullLists(arvLogger *logger.Logger,
 	pullLists map[string]PullList) {
 	r := strings.NewReplacer(":", ".")
 	for host, list := range pullLists {
-		filename := fmt.Sprintf("pull_list.%s", r.Replace(host))
+		filename := fmt.Sprintf("pull_list.%s", r.Replace(RemoveProtocolPrefix(host)))
 		pullListFile, err := os.Create(filename)
 		if err != nil {
 			loggerutil.FatalWithMessage(arvLogger,

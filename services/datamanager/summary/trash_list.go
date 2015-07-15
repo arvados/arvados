@@ -14,18 +14,17 @@ import (
 	"time"
 )
 
-type TrashRequest struct {
-	Locator    string `json:"locator"`
-	BlockMtime int64  `json:"block_mtime"`
-}
-
-type TrashList []TrashRequest
-
 func BuildTrashLists(kc *keepclient.KeepClient,
 	keepServerInfo *keep.ReadServers,
-	keepBlocksNotInCollections BlockSet) (m map[string]TrashList) {
+	keepBlocksNotInCollections BlockSet) (m map[string]keep.TrashList) {
 
-	m = make(map[string]TrashList)
+	// Servers that are writeable
+	writableServers := map[string]struct{}{}
+	for _, url := range kc.WritableLocalRoots() {
+		writableServers[url] = struct{}{}
+	}
+
+	m = make(map[string]keep.TrashList)
 
 	_ttl, err := kc.Arvados.Discovery("blobSignatureTtl")
 	if err != nil {
@@ -43,7 +42,12 @@ func BuildTrashLists(kc *keepclient.KeepClient,
 			if block_on_server.Mtime < expiry {
 				// block is older than expire cutoff
 				srv := keepServerInfo.KeepServerIndexToAddress[block_on_server.ServerIndex].String()
-				m[srv] = append(m[srv], TrashRequest{Locator: block.String(), BlockMtime: block_on_server.Mtime})
+
+				_, writable := writableServers[srv]
+
+				if writable {
+					m[srv] = append(m[srv], keep.TrashRequest{Locator: block.Digest.String(), BlockMtime: block_on_server.Mtime})
+				}
 			}
 		}
 	}
@@ -56,10 +60,10 @@ func BuildTrashLists(kc *keepclient.KeepClient,
 // This is just a hack for prototyping, it is not expected to be used
 // in production.
 func WriteTrashLists(arvLogger *logger.Logger,
-	trashLists map[string]TrashList) {
+	trashLists map[string]keep.TrashList) {
 	r := strings.NewReplacer(":", ".")
 	for host, list := range trashLists {
-		filename := fmt.Sprintf("trash_list.%s", r.Replace(host))
+		filename := fmt.Sprintf("trash_list.%s", r.Replace(RemoveProtocolPrefix(host)))
 		trashListFile, err := os.Create(filename)
 		if err != nil {
 			loggerutil.FatalWithMessage(arvLogger,

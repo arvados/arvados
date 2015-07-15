@@ -9,6 +9,7 @@ import (
 	"fmt"
 	"git.curoverse.com/arvados.git/sdk/go/arvadosclient"
 	"git.curoverse.com/arvados.git/sdk/go/blockdigest"
+	"git.curoverse.com/arvados.git/sdk/go/keepclient"
 	"git.curoverse.com/arvados.git/sdk/go/logger"
 	"git.curoverse.com/arvados.git/services/datamanager/loggerutil"
 	"io"
@@ -22,6 +23,7 @@ import (
 )
 
 type ServerAddress struct {
+	SSL  bool   `json:service_ssl_flag`
 	Host string `json:"service_host"`
 	Port int    `json:"service_port"`
 	Uuid string `json:"uuid"`
@@ -89,7 +91,11 @@ func (s ServerAddress) String() string {
 }
 
 func (s ServerAddress) HostPort() string {
-	return fmt.Sprintf("%s:%d", s.Host, s.Port)
+	if s.SSL {
+		return fmt.Sprintf("https://%s:%d", s.Host, s.Port)
+	} else {
+		return fmt.Sprintf("http://%s:%d", s.Host, s.Port)
+	}
 }
 
 func getDataManagerToken(arvLogger *logger.Logger) string {
@@ -446,4 +452,62 @@ func (readServers *ReadServers) Summarize(arvLogger *logger.Logger) {
 		})
 	}
 
+}
+
+type TrashRequest struct {
+	Locator    string `json:"locator"`
+	BlockMtime int64  `json:"block_mtime"`
+}
+
+type TrashList []TrashRequest
+
+func SendTrashLists(arvLogger *logger.Logger, kc *keepclient.KeepClient, spl map[string]TrashList) {
+	count := 0
+	rendezvous := make(chan bool)
+
+	for url, v := range spl {
+		count += 1
+		log.Printf("Sending trash list to %v", url)
+
+		go (func(url string, v TrashList) {
+			defer (func() {
+				rendezvous <- true
+			})()
+
+			pipeReader, pipeWriter := io.Pipe()
+			go (func() {
+				enc := json.NewEncoder(pipeWriter)
+				enc.Encode(v)
+				pipeWriter.Close()
+			})()
+
+			req, err := http.NewRequest("PUT", fmt.Sprintf("%s/trash", url), pipeReader)
+			if err != nil {
+				log.Printf("Error creating trash list request for %v error: %v", url, err.Error())
+				return
+			}
+
+			// Add api token header
+			req.Header.Add("Authorization", fmt.Sprintf("OAuth2 %s", getDataManagerToken(arvLogger)))
+
+			// Make the request
+			var resp *http.Response
+			if resp, err = kc.Client.Do(req); err != nil {
+				log.Printf("Error sending trash list to %v error: %v", url, err.Error())
+				return
+			}
+
+			if resp.StatusCode != http.StatusOK {
+				log.Printf("Error sending trash list to %v error: %v", url, err.Error())
+			}
+
+			io.Copy(ioutil.Discard, resp.Body)
+			resp.Body.Close()
+		})(url, v)
+
+	}
+
+	for i := 0; i < count; i += 1 {
+		<-rendezvous
+	}
 }

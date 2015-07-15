@@ -131,7 +131,7 @@ func singlerun() {
 
 	summary.WritePullLists(arvLogger, pullLists)
 
-	summary.WriteTrashLists(arvLogger, trashLists)
+	keep.SendTrashLists(arvLogger, kc, trashLists)
 
 	// Log that we're finished. We force the recording, since go will
 	// not wait for the write timer before exiting.

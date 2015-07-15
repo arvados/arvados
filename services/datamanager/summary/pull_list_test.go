@@ -270,10 +270,3 @@ func (s *MySuite) TestBuildPullLists(c *C) {
 			},
 		})
 }
-
-func (s *MySuite) TestRemoveProtocolPrefix(c *C) {
-	c.Check(RemoveProtocolPrefix("blah"), Equals, "blah")
-	c.Check(RemoveProtocolPrefix("bl/ah"), Equals, "ah")
-	c.Check(RemoveProtocolPrefix("http://blah.com"), Equals, "blah.com")
-	c.Check(RemoveProtocolPrefix("https://blah.com:8900"), Equals, "blah.com:8900")
-}
