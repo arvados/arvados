@@ -25,7 +25,8 @@
               <% walltime = ((if current_job[:finished_at] then current_job[:finished_at] else Time.now() end) - current_job[:started_at]) %>
               <% cputime = tasks.map { |task|
                    if task.started_at and task.job_uuid == current_job[:uuid]
-                     (if task.finished_at then task.finished_at else Time.now() end) - task.started_at
+                      finished_at = task.finished_at || current_job[:finished_at] || Time.now()
+                      finished_at - task.started_at
                    else
                      0
                    end
