@@ -231,6 +231,7 @@ func TestPutAndDeleteSkipReadonlyVolumes(t *testing.T) {
 			uri:          "/" + TEST_HASH,
 			request_body: TEST_BLOCK,
 		})
+	never_delete = false
 	IssueRequest(
 		&RequestTester{
 			method:       "DELETE",
@@ -447,6 +448,8 @@ func TestDeleteHandler(t *testing.T) {
 
 	var user_token = "NOT DATA MANAGER TOKEN"
 	data_manager_token = "DATA MANAGER TOKEN"
+
+	never_delete = false
 
 	unauth_req := &RequestTester{
 		method: "DELETE",

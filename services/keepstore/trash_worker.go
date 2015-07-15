@@ -1,6 +1,7 @@
 package main
 
 import (
+	"errors"
 	"log"
 	"time"
 )
@@ -37,11 +38,17 @@ func TrashItem(trashRequest TrashRequest) {
 		if err != nil || trashRequest.BlockMtime != mtime.Unix() {
 			continue
 		}
-		err = volume.Delete(trashRequest.Locator)
+
+		if never_delete {
+			err = errors.New("did not delete block because never_delete is true")
+		} else {
+			err = volume.Delete(trashRequest.Locator)
+		}
+
 		if err != nil {
 			log.Printf("%v Delete(%v): %v", volume, trashRequest.Locator, err)
-			continue
+		} else {
+			log.Printf("%v Delete(%v) OK", volume, trashRequest.Locator)
 		}
-		log.Printf("%v Delete(%v) OK", volume, trashRequest.Locator)
 	}
 }
