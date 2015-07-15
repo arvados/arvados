@@ -13,9 +13,9 @@ h2. arv-copy
 
 @arv-copy@ allows users to copy collections, pipeline templates, and pipeline instances from one cluster to another. By default, @arv-copy@ will recursively go through a template or instance and copy all dependencies associated with the object.
 
-For example, let's copy from our <a href="https://cloud.curoverse.com/">beta cloud instance *qr1hi*</a> to *dst_cluster*. The names *qr1hi* and *dst_cluster* are interchangable with any cluster name. You can find the cluster name from the prefix of the uuid of the object you want to copy. For example, in qr1hi-4zz18-tci4vn4fa95w0zx, the cluster name is qr1hi.
+For example, let's copy from our <a href="https://cloud.curoverse.com/">beta cloud instance *qr1hi*</a> to *dst_cluster*. The names *qr1hi* and *dst_cluster* are interchangable with any cluster name. You can find the cluster name from the prefix of the uuid of the object you want to copy. For example, in *qr1hi*-4zz18-tci4vn4fa95w0zx, the cluster name is qr1hi.
 
-In order for the clusters to be able to communicate with each other, you must create custom configuration files for both clusters. First, go to your *Manage account* page in Workbench and copy the @ARVADOS_API_HOST@ and @ARVADOS_API_TOKEN@ in both of your clusters. Then, create two configuration files, one for each cluster. The names of the files must have the format of *uuid_prefix*.conf. In our example, let's make two files, one for *qr1hi* and one for *dst_cluster*. From your *Manage account* page in *qr1hi* and *dst_cluster*, copy the @ARVADOS_API_HOST@ and @ARVADOS_API_TOKEN@.
+In order for the clusters to be able to communicate with each other, you must create custom configuration files for both clusters. First, go to your *Manage account* page in Workbench and copy the @ARVADOS_API_HOST@ and @ARVADOS_API_TOKEN@ in both of your clusters. Then, create two configuration files, one for each cluster. The names of the files must have the format of *uuid_prefix.conf*. In our example, let's make two files, one for *qr1hi* and one for *dst_cluster*. From your *Manage account* page in *qr1hi* and *dst_cluster*, copy the @ARVADOS_API_HOST@ and @ARVADOS_API_TOKEN@.
 
 !{display: block;margin-left: 25px;margin-right: auto;}{{ site.baseurl }}/images/api-token-host.png!
 
@@ -34,7 +34,7 @@ Now you're ready to copy between *qr1hi* and *dst_cluster*!
 
 h3. How to copy a collection
 
-First, select the uuid of the collection you want to copy from the source cluster. The uuid can be found in the collection displace page in the collection summary area (top left box), or from the URL bar (the part after @collections/...@)
+First, select the uuid of the collection you want to copy from the source cluster. The uuid can be found in the collection display page in the collection summary area (top left box), or from the URL bar (the part after @collections/...@)
 
 Now copy the collection from *qr1hi* to *dst_cluster*. We will use the uuid @qr1hi-4zz18-tci4vn4fa95w0zx@ as an example. You can find this collection in the <a href="https://cloud.curoverse.com/collections/qr1hi-4zz18-tci4vn4fa95w0zx">lobSTR v.3 project on cloud.curoverse.com</a>.
 <notextile>
@@ -44,7 +44,7 @@ arvados.arv-copy[1234] INFO: Success: created copy with uuid dst_cluster-4zz18-8
 </code></pre>
 </notextile>
 
-The output of arv-copy displays the uuid of the collection generated in the destination cluster. By default, the output is placed in your home project in the destination cluster. If you want to place your collection inside of a pre-created project, you can specify the project you want it to be in using the tag @--project-uuid@ followed by the project uuid.
+The output of arv-copy displays the uuid of the collection generated in the destination cluster. By default, the output is placed in your home project in the destination cluster. If you want to place your collection in a pre-created project, you can specify the project you want it to be in using the tag @--project-uuid@ followed by the project uuid.
 
 For example, this will copy the collection to project dst_cluster-j7d0g-a894213ukjhal12 in the destination cluster.
 
