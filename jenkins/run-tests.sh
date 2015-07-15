@@ -633,6 +633,8 @@ gostuff=(
     services/crunchstat
     services/keepstore
     services/keepproxy
+    services/datamanager/summary
+    services/datamanager/collection
     sdk/go/arvadosclient
     sdk/go/keepclient
     sdk/go/streamer
