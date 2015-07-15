@@ -125,8 +125,13 @@ func singlerun() {
 		replicationSummary.UnderReplicatedBlocks)
 
 	pullLists := summary.BuildPullLists(pullServers)
+	trashLists := summary.BuildTrashLists(kc,
+		&keepServerInfo,
+		replicationSummary.KeepBlocksNotInCollections)
 
 	summary.WritePullLists(arvLogger, pullLists)
+
+	summary.WriteTrashLists(arvLogger, trashLists)
 
 	// Log that we're finished. We force the recording, since go will
 	// not wait for the write timer before exiting.
