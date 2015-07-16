@@ -9,32 +9,40 @@ class Arvados::V1::VirtualMachinesController < ApplicationController
   end
 
   def get_all_logins
-    @users = {}
-    User.includes(:authorized_keys).all.each do |u|
-      @users[u.uuid] = u
-    end
     @response = []
-    @vms = VirtualMachine.includes(:login_permissions)
+    @vms = VirtualMachine.eager_load :login_permissions
     if @object
-      @vms = @vms.where('uuid=?', @object.uuid)
+      @vms = @vms.where uuid: @object.uuid
     else
       @vms = @vms.all
+    end
+    @users = {}
+    User.eager_load(:authorized_keys).
+      where('users.uuid in (?)',
+            @vms.map { |vm| vm.login_permissions.map &:tail_uuid }.flatten.uniq).
+      each do |u|
+      @users[u.uuid] = u
     end
     @vms.each do |vm|
       vm.login_permissions.each do |perm|
         user_uuid = perm.tail_uuid
-        @users[user_uuid].andand.authorized_keys.andand.each do |ak|
-          unless perm.properties['username'].blank?
-            @response << {
-              username: perm.properties['username'],
-              hostname: vm.hostname,
-              groups: (perm.properties["groups"].to_a rescue []),
-              public_key: ak.public_key,
-              user_uuid: user_uuid,
-              virtual_machine_uuid: vm.uuid,
-              authorized_key_uuid: ak.uuid
-            }
-          end
+        next if not @users[user_uuid]
+        next if perm.properties['username'].blank?
+        aks = @users[user_uuid].authorized_keys
+        if aks.empty?
+          # We'll emit one entry, with no public key.
+          aks = [nil]
+        end
+        aks.each do |ak|
+          @response << {
+            username: perm.properties['username'],
+            hostname: vm.hostname,
+            groups: (perm.properties['groups'].to_a rescue []),
+            public_key: ak ? ak.public_key : nil,
+            user_uuid: user_uuid,
+            virtual_machine_uuid: vm.uuid,
+            authorized_key_uuid: ak ? ak.uuid : nil,
+          }
         end
       end
     end
