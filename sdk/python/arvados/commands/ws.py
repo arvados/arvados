@@ -14,6 +14,7 @@ def main(arguments=None):
     parser = argparse.ArgumentParser()
     parser.add_argument('-u', '--uuid', type=str, default="", help="Filter events on object_uuid")
     parser.add_argument('-f', '--filters', type=str, default="", help="Arvados query filter to apply to log events (JSON encoded)")
+    parser.add_argument('-s', '--start_time', type=str, default="", help="Arvados query filter to apply to log events created after this time. Allowed format: YYYY-MM-DD or YYYY-MM-DD hh:mm:ss")
 
     group = parser.add_mutually_exclusive_group()
     group.add_argument('--poll-interval', default=15, type=int, help="If websockets is not available, specify the polling interval, default is every 15 seconds")
@@ -59,6 +60,9 @@ def main(arguments=None):
 
     if args.pipeline:
         filters += [ ['object_uuid', '=', args.pipeline] ]
+
+    if args.start_time:
+        filters += [ ['created_at', '>', args.start_time] ]
 
     def on_message(ev):
         global filters
