@@ -48,12 +48,12 @@ First, register the Curoverse signing key in apt's database:
 
 {% include 'install_debian_key' %}
 
-Configure apt to retrieve packages from the Arvados package repository:
+Configure apt to retrieve packages from the Arvados package repository. This command depends on your OS vendor and version:
 
-<notextile>
-<pre><code>~$ <span class="userinput">echo "deb http://apt.arvados.org/ $(lsb_release -cs) main" | sudo tee /etc/apt/sources.list.d/arvados.list</span>
-</code></pre>
-</notextile>
+table(table table-bordered table-condensed).
+|OS version|Command|
+|Debian 7 ("wheezy")|<notextile><code><span class="userinput">echo "deb http://apt.arvados.org/ wheezy main" &#x7c; sudo tee /etc/apt/sources.list.d/arvados.list</span></code></notextile>|
+|Ubuntu 12.04 ("precise")|<notextile><code><span class="userinput">echo "deb http://apt.arvados.org/ precise main" &#x7c; sudo tee /etc/apt/sources.list.d/arvados.list</span></code></notextile>|
 
 Retrieve the package list:
 
