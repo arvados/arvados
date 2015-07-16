@@ -9,13 +9,13 @@ import (
 )
 
 // Gocheck boilerplate
-func Test(t *testing.T) {
+func TestPullLists(t *testing.T) {
 	TestingT(t)
 }
 
-type MySuite struct{}
+type PullSuite struct{}
 
-var _ = Suite(&MySuite{})
+var _ = Suite(&PullSuite{})
 
 // Helper method to declare string sets more succinctly
 // Could be placed somewhere more general.
@@ -27,7 +27,7 @@ func stringSet(slice ...string) (m map[string]struct{}) {
 	return
 }
 
-func (s *MySuite) TestPullListPrintsJSONCorrectly(c *C) {
+func (s *PullSuite) TestPullListPrintsJSONCorrectly(c *C) {
 	pl := PullList{PullRequest{
 		Locator: Locator(blockdigest.MakeTestDigestSpecifySize(0xBadBeef, 56789)),
 		Servers: []string{"keep0.qr1hi.arvadosapi.com:25107",
@@ -41,7 +41,7 @@ func (s *MySuite) TestPullListPrintsJSONCorrectly(c *C) {
 	c.Check(string(b), Equals, expectedOutput)
 }
 
-func (s *MySuite) TestCreatePullServers(c *C) {
+func (s *PullSuite) TestCreatePullServers(c *C) {
 	var cs CanonicalString
 	c.Check(
 		CreatePullServers(cs,
@@ -155,7 +155,7 @@ var PullListMapEquals Checker = &pullListMapEqualsChecker{&CheckerInfo{
 	Params: []string{"obtained", "expected"},
 }}
 
-func (s *MySuite) TestBuildPullLists(c *C) {
+func (s *PullSuite) TestBuildPullLists(c *C) {
 	c.Check(
 		BuildPullLists(map[Locator]PullServers{}),
 		PullListMapEquals,

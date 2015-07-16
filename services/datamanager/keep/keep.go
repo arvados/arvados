@@ -98,7 +98,7 @@ func (s ServerAddress) URL() string {
 	}
 }
 
-func getDataManagerToken(arvLogger *logger.Logger) string {
+func GetDataManagerToken(arvLogger *logger.Logger) string {
 	readDataManagerToken := func() {
 		if dataManagerTokenFile == "" {
 			flag.Usage()
@@ -308,7 +308,7 @@ func CreateIndexRequest(arvLogger *logger.Logger,
 	}
 
 	req.Header.Add("Authorization",
-		fmt.Sprintf("OAuth2 %s", getDataManagerToken(arvLogger)))
+		fmt.Sprintf("OAuth2 %s", GetDataManagerToken(arvLogger)))
 	return
 }
 
@@ -461,9 +461,11 @@ type TrashRequest struct {
 
 type TrashList []TrashRequest
 
-func SendTrashLists(arvLogger *logger.Logger, kc *keepclient.KeepClient, spl map[string]TrashList) {
+func SendTrashLists(dataManagerToken string, kc *keepclient.KeepClient, spl map[string]TrashList) {
 	count := 0
-	rendezvous := make(chan bool)
+	barrier := make(chan bool)
+
+	client := kc.Client
 
 	for url, v := range spl {
 		count += 1
@@ -471,7 +473,7 @@ func SendTrashLists(arvLogger *logger.Logger, kc *keepclient.KeepClient, spl map
 
 		go (func(url string, v TrashList) {
 			defer (func() {
-				rendezvous <- true
+				barrier <- true
 			})()
 
 			pipeReader, pipeWriter := io.Pipe()
@@ -488,16 +490,16 @@ func SendTrashLists(arvLogger *logger.Logger, kc *keepclient.KeepClient, spl map
 			}
 
 			// Add api token header
-			req.Header.Add("Authorization", fmt.Sprintf("OAuth2 %s", getDataManagerToken(arvLogger)))
+			req.Header.Add("Authorization", fmt.Sprintf("OAuth2 %s", dataManagerToken))
 
 			// Make the request
 			var resp *http.Response
-			if resp, err = kc.Client.Do(req); err != nil {
+			if resp, err = client.Do(req); err != nil {
 				log.Printf("Error sending trash list to %v error: %v", url, err.Error())
 				return
 			}
 
-			log.Printf("Sent trash list to %v: response was HTTP %d", url, resp.Status)
+			log.Printf("Sent trash list to %v: response was HTTP %v", url, resp.Status)
 
 			io.Copy(ioutil.Discard, resp.Body)
 			resp.Body.Close()
@@ -506,6 +508,6 @@ func SendTrashLists(arvLogger *logger.Logger, kc *keepclient.KeepClient, spl map
 	}
 
 	for i := 0; i < count; i += 1 {
-		<-rendezvous
+		<-barrier
 	}
 }

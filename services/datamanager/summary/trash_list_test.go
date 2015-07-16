@@ -8,7 +8,7 @@ import (
 )
 
 // Gocheck boilerplate
-func TrashTest(t *testing.T) {
+func TestTrash(t *testing.T) {
 	TestingT(t)
 }
 
@@ -38,7 +38,7 @@ func (s *TrashSuite) TestBuildTrashLists(c *C) {
 	bs[block0] = struct{}{}
 
 	// Test trash list where only sv0 is on writable list.
-	c.Check(BuildTrashListsInternal(
+	c.Check(buildTrashListsInternal(
 		map[string]struct{}{
 			sv0.URL(): struct{}{}},
 		&keepServerInfo,
@@ -49,7 +49,7 @@ func (s *TrashSuite) TestBuildTrashLists(c *C) {
 			"http://keep0.example.com:80": keep.TrashList{keep.TrashRequest{"000000000000000000000000deadbeef", 99}}})
 
 	// Test trash list where both sv0 and sv1 are on writable list.
-	c.Check(BuildTrashListsInternal(
+	c.Check(buildTrashListsInternal(
 		map[string]struct{}{
 			sv0.URL(): struct{}{},
 			sv1.URL(): struct{}{}},
@@ -62,7 +62,7 @@ func (s *TrashSuite) TestBuildTrashLists(c *C) {
 			"http://keep1.example.com:80": keep.TrashList{keep.TrashRequest{"000000000000000000000000deadbeef", 101}}})
 
 	// Test trash list where only block on sv0 is expired
-	c.Check(BuildTrashListsInternal(
+	c.Check(buildTrashListsInternal(
 		map[string]struct{}{
 			sv0.URL(): struct{}{},
 			sv1.URL(): struct{}{}},

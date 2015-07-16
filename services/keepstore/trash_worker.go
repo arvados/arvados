@@ -41,7 +41,7 @@ func TrashItem(trashRequest TrashRequest) {
 			continue
 		}
 		if trashRequest.BlockMtime != mtime.Unix() {
-			log.Printf("%v Delete(%v): mtime does not match", volume, trashRequest.Locator)
+			log.Printf("%v Delete(%v): mtime on volume is %v does not match trash list value %v", volume, trashRequest.Locator, mtime.Unix(), trashRequest.BlockMtime)
 			continue
 		}
 
