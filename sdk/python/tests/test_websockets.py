@@ -63,18 +63,6 @@ class WebsocketTest(run_test_server.TestCaseWithServers):
                 poll_fallback=False, expect_type=arvados.events.EventClient,
                     additional_filters=[['created_at', '>', tomorrow.strftime('%Y-%m-%d')]])
 
-    def test_subscribe_websocket_with_start_time_incorrect_date_format(self):
-        now = datetime.today()
-        self._test_subscribe(
-            poll_fallback=False, expect_type=arvados.events.EventClient,
-                additional_filters=[['created_at', '>', now.strftime('%Y-%m')]])
-
-    def test_subscribe_websocket_with_start_time_incorrect_time_format(self):
-        now = datetime.today()
-        self._test_subscribe(
-            poll_fallback=False, expect_type=arvados.events.EventClient,
-                additional_filters=[['created_at', '>', now.strftime('%Y-%m-%d %H:%M')]])
-
     @mock.patch('arvados.events.EventClient.__init__')
     def test_subscribe_poll(self, event_client_constr):
         event_client_constr.side_effect = Exception('All is well')
