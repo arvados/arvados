@@ -20,8 +20,14 @@ clean:
 DEBIAN_IMAGE := $(shell $(DOCKER) images -q arvados/debian |head -n1)
 
 REALCLEAN_CONTAINERS := $(shell $(DOCKER) ps -a |grep -e arvados -e api_server -e keep_server -e keep_proxy_server -e doc_server -e workbench_server |cut -f 1 -d' ')
-REALCLEAN_IMAGES := $(shell $(DOCKER) images -q arvados/* |grep -v $(DEBIAN_IMAGE) 2>/dev/null)
-DEEPCLEAN_IMAGES := $(shell $(DOCKER) images -q arvados/*)
+# Generate a list of docker images tagged as arvados/*
+# but exclude those tagged as arvados/build
+ADI_TEMPFILE := $(shell mktemp)
+ARVADOS_DOCKER_IMAGES := $(shell $(DOCKER) images -q arvados/* |sort > $(ADI_TEMPFILE))
+ABDI_TEMPFILE := $(shell mktemp)
+ARVADOS_BUILD_DOCKER_IMAGES := $(shell $(DOCKER) images -q arvados/build |sort > $(ABDI_TEMPFILE))
+REALCLEAN_IMAGES := $(shell comm -3 $(ADI_TEMPFILE) $(ABDI_TEMPFILE) |grep -v $(DEBIAN_IMAGE) 2>/dev/null)
+DEEPCLEAN_IMAGES := $(shell comm -3 $(ADI_TEMPFILE) $(ABDI_TEMPFILE))
 SKYDNS_CONTAINERS := $(shell $(DOCKER) ps -a |grep -e crosbymichael/skydns -e crosbymichael/skydock |cut -f 1 -d' ')
 SKYDNS_IMAGES := $(shell $(DOCKER) images -q crosbymichael/skyd*)
 
