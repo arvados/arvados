@@ -95,7 +95,7 @@ case "$TARGET" in
     debian7)
         FORMAT=deb
         FPM_OUTDIR=tmp
-        REPO_UPDATE_CMD='freight add *deb apt/wheezy && freight cache && rsync -AaHX /var/www/freight/ /var/www/freight-production/ --delete && rm -f *deb'
+        REPO_UPDATE_CMD='freight add *deb apt/wheezy && freight cache && rm -f *deb'
 
         PYTHON2_PACKAGE=python$PYTHON2_VERSION
         PYTHON2_PKG_PREFIX=python
@@ -111,7 +111,7 @@ case "$TARGET" in
     debian8)
         FORMAT=deb
         FPM_OUTDIR=tmp
-        REPO_UPDATE_CMD='freight add *deb apt/wheezy && freight cache && rsync -AaHX /var/www/freight/ /var/www/freight-production/ --delete && rm -f *deb'
+        REPO_UPDATE_CMD='freight add *deb apt/wheezy && freight cache && rm -f *deb'
 
         PYTHON2_PACKAGE=python$PYTHON2_VERSION
         PYTHON2_PKG_PREFIX=python
@@ -127,7 +127,7 @@ case "$TARGET" in
     ubuntu1204)
         FORMAT=deb
         FPM_OUTDIR=tmp
-        REPO_UPDATE_CMD='freight add *deb apt/precise && freight cache && rsync -AaHX /var/www/freight/ /var/www/freight-production/ --delete && rm -f *deb'
+        REPO_UPDATE_CMD='freight add *deb apt/precise && freight cache && rm -f *deb'
 
         PYTHON2_PACKAGE=python$PYTHON2_VERSION
         PYTHON2_PKG_PREFIX=python
