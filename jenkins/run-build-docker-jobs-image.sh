@@ -68,7 +68,7 @@ docker_push () {
     then
         for tag in $( echo $tags|tr "," " " )
         do
-             $DOCKER tag $1 $1:$tag
+             $DOCKER tag -f $1 $1:$tag
         done
     fi
 
