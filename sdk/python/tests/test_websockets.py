@@ -38,10 +38,10 @@ class WebsocketTest(run_test_server.TestCaseWithServers):
             poll_fallback=False, expect_type=arvados.events.EventClient)
 
     def test_subscribe_websocket_with_start_time_today(self):
-        lastHour = datetime.today() - timedelta(hours = 1)
+        now = datetime.today()
         self._test_subscribe(
             poll_fallback=False, expect_type=arvados.events.EventClient,
-                additional_filters=[['created_at', '>', lastHour.strftime('%Y-%m-%d')]])
+                additional_filters=[['created_at', '>', now.strftime('%Y-%m-%d')]])
 
     def test_subscribe_websocket_with_start_time_last_hour(self):
         lastHour = datetime.today() - timedelta(hours = 1)
@@ -55,6 +55,25 @@ class WebsocketTest(run_test_server.TestCaseWithServers):
             self._test_subscribe(
                 poll_fallback=False, expect_type=arvados.events.EventClient,
                     additional_filters=[['created_at', '>', nextHour.strftime('%Y-%m-%d %H:%M:%S')]])
+
+    def test_subscribe_websocket_with_start_time_tomorrow(self):
+        tomorrow = datetime.today() + timedelta(hours = 24)
+        with self.assertRaises(Queue.Empty):
+            self._test_subscribe(
+                poll_fallback=False, expect_type=arvados.events.EventClient,
+                    additional_filters=[['created_at', '>', tomorrow.strftime('%Y-%m-%d')]])
+
+    def test_subscribe_websocket_with_start_time_incorrect_date_format(self):
+        now = datetime.today()
+        self._test_subscribe(
+            poll_fallback=False, expect_type=arvados.events.EventClient,
+                additional_filters=[['created_at', '>', now.strftime('%Y-%m')]])
+
+    def test_subscribe_websocket_with_start_time_incorrect_time_format(self):
+        now = datetime.today()
+        self._test_subscribe(
+            poll_fallback=False, expect_type=arvados.events.EventClient,
+                additional_filters=[['created_at', '>', now.strftime('%Y-%m-%d %H:%M')]])
 
     @mock.patch('arvados.events.EventClient.__init__')
     def test_subscribe_poll(self, event_client_constr):
