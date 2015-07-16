@@ -190,11 +190,11 @@ KEEP_NODES=`ARVADOS_API_HOST=$ARVADOS_API_HOST ARVADOS_API_TOKEN=$ARVADOS_API_TO
 
 title "Updating API server"
 SUM_ECODE=0
-run_puppet $IDENTIFIER ECODE
+run_puppet $IDENTIFIER.arvadosapi.com ECODE
 SUM_ECODE=$(($SUM_ECODE + $ECODE))
-run_command $IDENTIFIER ECODE "/usr/local/bin/arvados-api-server-upgrade.sh"
+run_command $IDENTIFIER.arvadosapi.com ECODE "/usr/local/bin/arvados-api-server-upgrade.sh"
 SUM_ECODE=$(($SUM_ECODE + $ECODE))
-run_command $IDENTIFIER ECODE "dpkg -L arvados-mailchimp-plugin 2>/dev/null && apt-get install arvados-mailchimp-plugin --reinstall || echo"
+run_command $IDENTIFIER.arvadosapi.com ECODE "dpkg -L arvados-mailchimp-plugin 2>/dev/null && apt-get install arvados-mailchimp-plugin --reinstall || echo"
 SUM_ECODE=$(($SUM_ECODE + $ECODE))
 
 if [[ "$SUM_ECODE" != "0" ]]; then
