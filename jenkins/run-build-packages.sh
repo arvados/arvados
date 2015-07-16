@@ -111,7 +111,7 @@ case "$TARGET" in
     debian8)
         FORMAT=deb
         FPM_OUTDIR=tmp
-        REPO_UPDATE_CMD='freight add *deb apt/wheezy && freight cache && rm -f *deb'
+        REPO_UPDATE_CMD='freight add *deb apt/jessie && freight cache && rm -f *deb'
 
         PYTHON2_PACKAGE=python$PYTHON2_VERSION
         PYTHON2_PKG_PREFIX=python
