@@ -206,7 +206,7 @@ class ApplicationLayoutTest < ActionDispatch::IntegrationTest
     Rails.configuration.shell_in_a_box_url = 'example.com'
     visit page_with_token('job_reader')
     click_link 'notifications-menu'
-    assert page.has_no_link?('Click here to set up an SSH public key for use with Arvados.')
-    assert page.has_link?('Click here to learn how to run an Arvados Crunch pipeline')
+    assert_no_selector 'a', text:'Click here to set up an SSH public key for use with Arvados.'
+    assert_selector 'a', text:'Click here to learn how to run an Arvados Crunch pipeline'
   end
 end
