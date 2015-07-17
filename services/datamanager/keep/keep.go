@@ -462,7 +462,7 @@ type TrashRequest struct {
 
 type TrashList []TrashRequest
 
-func SendTrashLists(dataManagerToken string, kc *keepclient.KeepClient, spl map[string]TrashList) (err []error) {
+func SendTrashLists(dataManagerToken string, kc *keepclient.KeepClient, spl map[string]TrashList) (errs []error) {
 	count := 0
 	barrier := make(chan error)
 
@@ -513,8 +513,11 @@ func SendTrashLists(dataManagerToken string, kc *keepclient.KeepClient, spl map[
 	}
 
 	for i := 0; i < count; i += 1 {
-		err = append(err, <-barrier)
+		b := <-barrier
+		if b != nil {
+			errs = append(errs, b)
+		}
 	}
 
-	return err
+	return errs
 }

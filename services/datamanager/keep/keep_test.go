@@ -42,7 +42,7 @@ func (s *KeepSuite) TestSendTrashLists(c *C) {
 	err := SendTrashLists("", &kc, tl)
 	server.Close()
 
-	c.Check(err[0], IsNil)
+	c.Check(err, IsNil)
 
 	c.Check(th.request,
 		DeepEquals,
@@ -68,6 +68,7 @@ func sendTrashListError(c *C, server *httptest.Server) {
 
 	err := SendTrashLists("", &kc, tl)
 
+	c.Check(err, NotNil)
 	c.Check(err[0], NotNil)
 }
 
