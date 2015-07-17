@@ -10,11 +10,8 @@
 <div id="manage_virtual_machines" class="panel-body">
   <p>
     For more information see <%= link_to raw('Arvados Docs &rarr; User Guide &rarr; SSH access'),
-  "#{Rails.configuration.arvados_docsite}/user/getting_started/ssh-access-unix.html",
+  "#{Rails.configuration.arvados_docsite}/user/getting_started/vm-login-with-webshell.html",
   target: "_blank"%>.
-    <% if @my_virtual_machines.any? or true %>
-      A sample <code>~/.ssh/config</code> entry is provided below.
-    <% end %>
   </p>
 
   <% if !@my_virtual_machines.any? %>
@@ -101,7 +98,7 @@
       </tbody>
     </table>
 
-    <p><i>~/.ssh/config:</i></p>
+    <p>Sample SSH Conig  <i>~/.ssh/config:</i></p>
     <pre>Host *.arvados
       TCPKeepAlive yes
       ServerAliveInterval 60
