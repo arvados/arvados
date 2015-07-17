@@ -122,16 +122,17 @@ def _wait_until_port_listens(port, timeout=10):
     in seconds), print a warning on stderr before returning.
     """
     try:
-        subprocess.check_output(['fuser', '-l'])
+        subprocess.check_output(['which', 'lsof'])
     except subprocess.CalledProcessError:
-        print("WARNING: No `fuser` -- cannot wait for port to listen. "+
+        print("WARNING: No `lsof` -- cannot wait for port to listen. "+
               "Sleeping 0.5 and hoping for the best.")
         time.sleep(0.5)
         return
     deadline = time.time() + timeout
     while time.time() < deadline:
         try:
-            fuser_says = subprocess.check_output(['fuser', str(port)+'/tcp'])
+            subprocess.check_output(
+                ['lsof', '-t', '-i', 'tcp:'+str(port)])
         except subprocess.CalledProcessError:
             time.sleep(0.1)
             continue
