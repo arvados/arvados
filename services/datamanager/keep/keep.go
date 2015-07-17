@@ -5,6 +5,7 @@ package keep
 import (
 	"bufio"
 	"encoding/json"
+	"errors"
 	"flag"
 	"fmt"
 	"git.curoverse.com/arvados.git/sdk/go/arvadosclient"
@@ -461,9 +462,9 @@ type TrashRequest struct {
 
 type TrashList []TrashRequest
 
-func SendTrashLists(dataManagerToken string, kc *keepclient.KeepClient, spl map[string]TrashList) {
+func SendTrashLists(dataManagerToken string, kc *keepclient.KeepClient, spl map[string]TrashList) (err []error) {
 	count := 0
-	barrier := make(chan bool)
+	barrier := make(chan error)
 
 	client := kc.Client
 
@@ -472,10 +473,6 @@ func SendTrashLists(dataManagerToken string, kc *keepclient.KeepClient, spl map[
 		log.Printf("Sending trash list to %v", url)
 
 		go (func(url string, v TrashList) {
-			defer (func() {
-				barrier <- true
-			})()
-
 			pipeReader, pipeWriter := io.Pipe()
 			go (func() {
 				enc := json.NewEncoder(pipeWriter)
@@ -486,6 +483,7 @@ func SendTrashLists(dataManagerToken string, kc *keepclient.KeepClient, spl map[
 			req, err := http.NewRequest("PUT", fmt.Sprintf("%s/trash", url), pipeReader)
 			if err != nil {
 				log.Printf("Error creating trash list request for %v error: %v", url, err.Error())
+				barrier <- err
 				return
 			}
 
@@ -496,6 +494,7 @@ func SendTrashLists(dataManagerToken string, kc *keepclient.KeepClient, spl map[
 			var resp *http.Response
 			if resp, err = client.Do(req); err != nil {
 				log.Printf("Error sending trash list to %v error: %v", url, err.Error())
+				barrier <- err
 				return
 			}
 
@@ -503,11 +502,19 @@ func SendTrashLists(dataManagerToken string, kc *keepclient.KeepClient, spl map[
 
 			io.Copy(ioutil.Discard, resp.Body)
 			resp.Body.Close()
+
+			if resp.StatusCode != 200 {
+				barrier <- errors.New(fmt.Sprintf("Got HTTP code %v", resp.StatusCode))
+			} else {
+				barrier <- nil
+			}
 		})(url, v)
 
 	}
 
 	for i := 0; i < count; i += 1 {
-		<-barrier
+		err = append(err, <-barrier)
 	}
+
+	return err
 }

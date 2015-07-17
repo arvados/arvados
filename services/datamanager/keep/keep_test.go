@@ -39,8 +39,10 @@ func (s *KeepSuite) TestSendTrashLists(c *C) {
 		map[string]string{"xxxx": server.URL},
 		map[string]string{})
 
-	SendTrashLists("", &kc, tl)
+	err := SendTrashLists("", &kc, tl)
 	server.Close()
+
+	c.Check(err[0], IsNil)
 
 	c.Check(th.request,
 		DeepEquals,
@@ -52,14 +54,14 @@ type TestHandlerError struct {
 }
 
 func (this *TestHandlerError) ServeHTTP(writer http.ResponseWriter, req *http.Request) {
-	http.Error(writer, "I'm a teapot", 405)
+	http.Error(writer, "I'm a teapot", 418)
 }
 
-func (s *KeepSuite) TestSendTrashListError(c *C) {
-	// Server responds with an error
-
-	th := TestHandlerError{}
-	server := httptest.NewServer(&th)
+func sendTrashListError(c *C, close_early bool, th http.Handler) {
+	server := httptest.NewServer(th)
+	if close_early {
+		server.Close()
+	}
 
 	tl := map[string]TrashList{
 		server.URL: TrashList{TrashRequest{"000000000000000000000000deadbeef", 99}}}
@@ -69,24 +71,18 @@ func (s *KeepSuite) TestSendTrashListError(c *C) {
 		map[string]string{"xxxx": server.URL},
 		map[string]string{})
 
-	SendTrashLists("", &kc, tl)
-	server.Close()
+	err := SendTrashLists("", &kc, tl)
+	if !close_early {
+		server.Close()
+	}
+
+	c.Check(err[0], NotNil)
 }
 
-func (s *KeepSuite) TestSendTrashListError2(c *C) {
-	// Server is not reachable
+func (s *KeepSuite) TestSendTrashListErrorResponse(c *C) {
+	sendTrashListError(c, false, &TestHandlerError{})
+}
 
-	th := TestHandler{}
-	server := httptest.NewServer(&th)
-	server.Close()
-
-	tl := map[string]TrashList{
-		server.URL: TrashList{TrashRequest{"000000000000000000000000deadbeef", 99}}}
-
-	kc := keepclient.KeepClient{Client: &http.Client{}}
-	kc.SetServiceRoots(map[string]string{"xxxx": server.URL},
-		map[string]string{"xxxx": server.URL},
-		map[string]string{})
-
-	SendTrashLists("", &kc, tl)
+func (s *KeepSuite) TestSendTrashListUnreachable(c *C) {
+	sendTrashListError(c, true, &TestHandler{})
 }
