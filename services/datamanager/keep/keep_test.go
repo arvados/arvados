@@ -57,12 +57,7 @@ func (this *TestHandlerError) ServeHTTP(writer http.ResponseWriter, req *http.Re
 	http.Error(writer, "I'm a teapot", 418)
 }
 
-func sendTrashListError(c *C, close_early bool, th http.Handler) {
-	server := httptest.NewServer(th)
-	if close_early {
-		server.Close()
-	}
-
+func sendTrashListError(c *C, server *httptest.Server) {
 	tl := map[string]TrashList{
 		server.URL: TrashList{TrashRequest{"000000000000000000000000deadbeef", 99}}}
 
@@ -72,17 +67,14 @@ func sendTrashListError(c *C, close_early bool, th http.Handler) {
 		map[string]string{})
 
 	err := SendTrashLists("", &kc, tl)
-	if !close_early {
-		server.Close()
-	}
 
 	c.Check(err[0], NotNil)
 }
 
 func (s *KeepSuite) TestSendTrashListErrorResponse(c *C) {
-	sendTrashListError(c, false, &TestHandlerError{})
+	sendTrashListError(c, httptest.NewServer(&TestHandlerError{}))
 }
 
 func (s *KeepSuite) TestSendTrashListUnreachable(c *C) {
-	sendTrashListError(c, true, &TestHandler{})
+	sendTrashListError(c, httptest.NewUnstartedServer(&TestHandler{}))
 }
