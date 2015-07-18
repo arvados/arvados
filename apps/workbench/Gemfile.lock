@@ -51,12 +51,8 @@ GEM
       addressable (>= 2.3.1)
       extlib (>= 0.9.15)
       multi_json (>= 1.0.0)
-    autoprefixer-rails (5.2.1)
-      execjs
-      json
-    bootstrap-sass (3.3.5.1)
-      autoprefixer-rails (>= 5.0.0.1)
-      sass (>= 3.3.0)
+    bootstrap-sass (3.1.1.1)
+      sass (~> 3.2)
     bootstrap-tab-history-rails (0.1.0)
       railties (>= 3.1)
     bootstrap-x-editable-rails (1.5.1.1)
@@ -260,7 +256,7 @@ DEPENDENCIES
   andand
   angularjs-rails
   arvados (>= 0.1.20150511150219)
-  bootstrap-sass (~> 3.3.0)
+  bootstrap-sass (~> 3.1.0)
   bootstrap-tab-history-rails
   bootstrap-x-editable-rails
   byebug
@@ -293,7 +289,6 @@ DEPENDENCIES
   selenium-webdriver
   simplecov (~> 0.7)
   simplecov-rcov
-  sprockets-rails
   sshkey
   themes_for_rails!
   therubyracer

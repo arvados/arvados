@@ -53,8 +53,7 @@ group :test, :performance do
 end
 
 gem 'jquery-rails'
-gem 'sprockets-rails'
-gem 'bootstrap-sass', '~> 3.3.0'
+gem 'bootstrap-sass', '~> 3.1.0'
 gem 'bootstrap-x-editable-rails'
 gem 'bootstrap-tab-history-rails'
 
