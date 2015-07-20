@@ -294,3 +294,6 @@ DEPENDENCIES
   therubyracer
   uglifier (>= 1.0.3)
   wiselinks
+
+BUNDLED WITH
+   1.10.5
