@@ -37,6 +37,13 @@ Cloning into 'tutorial'...</code></pre>
 This will create a Git repository in the directory called @tutorial@ in your home directory. Say yes when prompted to continue with connection.
 Ignore any warning that you are cloning an empty repository.
 
+*Note:* If you are prompted for username and password when you try to git clone using this command, it would mean that git config needs to be updated. Execute the following commands to update your git configuration.
+
+<pre>
+git config 'credential.https://git.{{ site.arvados_api_host }}/.username' none
+git config 'credential.https://git.{{ site.arvados_api_host }}/.helper' '!cred(){ cat >/dev/null; if [ "$1" = get ]; then echo password=$ARVADOS_API_TOKEN; fi; };cred'
+</pre>
+
 {% include 'notebox_begin' %}
 For more information about using Git, try
 
