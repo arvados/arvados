@@ -43,3 +43,16 @@ On Red Hat-based systems:
 </notextile>
 
 {% include 'note_python27_sc' %}
+
+h2. Update Git Config
+
+Configure git to use the ARVADOS_API_TOKEN environment variable to authenticate to arv-git-httpd.
+
+Execute the following commands to setup the needed configuration.
+
+<notextile>
+<pre>
+<code>~$ <span class="userinput">git config 'credential.https://git.{{ site.arvados_api_host }}/.username' none</span></code>
+<code>~$ <span class="userinput">git config 'credential.https://git.{{ site.arvados_api_host }}/.helper' '!cred(){ cat >/dev/null; if [ "$1" = get ]; then echo password=$ARVADOS_API_TOKEN; fi; };cred'</span></code>
+</pre>
+</notextile>

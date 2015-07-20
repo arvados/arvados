@@ -45,7 +45,7 @@ def run_command(execargs, **kwargs):
     p = subprocess.Popen(execargs, **kwargs)
     stdoutdata, stderrdata = p.communicate(None)
     if p.returncode != 0:
-        raise errors.CommandFailedError(
+        raise arvados.errors.CommandFailedError(
             "run_command %s exit %d:\n%s" %
             (execargs, p.returncode, stderrdata))
     return stdoutdata, stderrdata
@@ -110,7 +110,7 @@ def tarball_extract(tarball, path):
             elif re.search('\.tar$', f.name()):
                 p = tar_extractor(path, '')
             else:
-                raise errors.AssertionError(
+                raise arvados.errors.AssertionError(
                     "tarball_extract cannot handle filename %s" % f.name())
             while True:
                 buf = f.read(2**20)
@@ -121,7 +121,7 @@ def tarball_extract(tarball, path):
             p.wait()
             if p.returncode != 0:
                 lockfile.close()
-                raise errors.CommandFailedError(
+                raise arvados.errors.CommandFailedError(
                     "tar exited %d" % p.returncode)
         os.symlink(tarball, os.path.join(path, '.locator'))
     tld_extracts = filter(lambda f: f != '.locator', os.listdir(path))
@@ -165,7 +165,7 @@ def zipball_extract(zipball, path):
 
         for f in CollectionReader(zipball).all_files():
             if not re.search('\.zip$', f.name()):
-                raise errors.NotImplementedError(
+                raise arvados.errors.NotImplementedError(
                     "zipball_extract cannot handle filename %s" % f.name())
             zip_filename = os.path.join(path, os.path.basename(f.name()))
             zip_file = open(zip_filename, 'wb')
@@ -186,7 +186,7 @@ def zipball_extract(zipball, path):
             p.wait()
             if p.returncode != 0:
                 lockfile.close()
-                raise errors.CommandFailedError(
+                raise arvados.errors.CommandFailedError(
                     "unzip exited %d" % p.returncode)
             os.unlink(zip_filename)
         os.symlink(zipball, os.path.join(path, '.locator'))
@@ -250,7 +250,7 @@ def collection_extract(collection, path, files=[], decompress=True):
                     outfile.write(buf)
                 outfile.close()
     if len(files_got) < len(files):
-        raise errors.AssertionError(
+        raise arvados.errors.AssertionError(
             "Wanted files %s but only got %s from %s" %
             (files, files_got,
              [z.name() for z in CollectionReader(collection).all_files()]))
@@ -305,7 +305,7 @@ def stream_extract(stream, path, files=[], decompress=True):
                 outfile.write(buf)
             outfile.close()
     if len(files_got) < len(files):
-        raise errors.AssertionError(
+        raise arvados.errors.AssertionError(
             "Wanted files %s but only got %s from %s" %
             (files, files_got, [z.name() for z in stream.all_files()]))
     lockfile.close()
@@ -352,8 +352,8 @@ def is_hex(s, *length_args):
     """
     num_length_args = len(length_args)
     if num_length_args > 2:
-        raise errors.ArgumentError("is_hex accepts up to 3 arguments ({} given)"
-                                   .format(1 + num_length_args))
+        raise arvados.errors.ArgumentError(
+            "is_hex accepts up to 3 arguments ({} given)".format(1 + num_length_args))
     elif num_length_args == 2:
         good_len = (length_args[0] <= len(s) <= length_args[1])
     elif num_length_args == 1:
