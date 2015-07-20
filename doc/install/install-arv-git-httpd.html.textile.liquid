@@ -4,7 +4,7 @@ navsection: installguide
 title: Install Git server
 ...
 
-The arv-git-httpd server provides HTTP access to hosted git repositories, using Arvados authentication tokens instead of passwords. It is intended to be installed on the system where your git repositories are stored, and accessed through a web proxy that provides SSL support.
+The arvados-git-httpd server provides HTTP access to hosted git repositories, using Arvados authentication tokens instead of passwords. It is intended to be installed on the system where your git repositories are stored, and accessed through a web proxy that provides SSL support.
 
 By convention, we use the following hostname for the git service:
 
@@ -15,26 +15,26 @@ table(table table-bordered table-condensed).
 
 This hostname should resolve from anywhere on the internet.
 
-h2. Install arv-git-httpd
+h2. Install arvados-git-httpd
 
 On Debian-based systems:
 
 <notextile>
-<pre><code>~$ <span class="userinput">sudo apt-get install git arv-git-httpd</span>
+<pre><code>~$ <span class="userinput">sudo apt-get install git arvados-git-httpd</span>
 </code></pre>
 </notextile>
 
 On Red Hat-based systems:
 
 <notextile>
-<pre><code>~$ <span class="userinput">sudo yum install git arv-git-httpd</span>
+<pre><code>~$ <span class="userinput">sudo yum install git arvados-git-httpd</span>
 </code></pre>
 </notextile>
 
-Verify that @arv-git-httpd@ and @git-http-backend@ are functional:
+Verify that @arvados-git-httpd@ and @git-http-backend@ are functional:
 
 <notextile>
-<pre><code>~$ <span class="userinput">arv-git-httpd -h</span>
+<pre><code>~$ <span class="userinput">arvados-git-httpd -h</span>
 Usage of arv-git-httpd:
   -address="0.0.0.0:80": Address to listen on, "host:port".
   -git-command="/usr/bin/git": Path to git executable. Each authenticated request will execute this program with a single argument, "http-backend".
@@ -49,27 +49,27 @@ fatal: No REQUEST_METHOD from server
 </code></pre>
 </notextile>
 
-We recommend running @arv-git-httpd@ under "runit":http://smarden.org/runit/ or something similar.
+We recommend running @arvados-git-httpd@ under "runit":http://smarden.org/runit/ or something similar.
 
 Your @run@ script should look something like this:
 
 <notextile>
 <pre><code>export ARVADOS_API_HOST=<span class="userinput">uuid_prefix</span>.your.domain
-exec sudo -u git arv-git-httpd -address=:9001 -git-command="$(which git)" -repo-root=<span class="userinput">/var/lib/arvados/git</span> 2>&1
+exec sudo -u git arvados-git-httpd -address=:9001 -git-command="$(which git)" -repo-root=<span class="userinput">/var/lib/arvados/git</span> 2>&1
 </code></pre>
 </notextile>
 
 h3. Set up a reverse proxy with SSL support
 
-The arv-git-httpd service will be accessible from anywhere on the internet, so we recommend using SSL for transport encryption.
+The arvados-git-httpd service will be accessible from anywhere on the internet, so we recommend using SSL for transport encryption.
 
-This is best achieved by putting a reverse proxy with SSL support in front of arv-git-httpd, running on port 443 and passing requests to arv-git-httpd on port 9001 (or whatever port you chose in your run script).
+This is best achieved by putting a reverse proxy with SSL support in front of arvados-git-httpd, running on port 443 and passing requests to arvados-git-httpd on port 9001 (or whatever port you chose in your run script).
 
-h3. Tell the API server about the arv-git-httpd service
+h3. Tell the API server about the arvados-git-httpd service
 
 In your API server's @config/application.yml@ file, add the following entry:
 
 <notextile>
-<pre><code>git_http_base: git.<span class="userinput">uuid_prefix</span>.your.domain
+<pre><code>git_http_base: git.<span class="userinput">uuid_prefix.your.domain</span>
 </code></pre>
 </notextile>

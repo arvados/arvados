@@ -306,4 +306,68 @@ class ProjectsControllerTest < ActionController::TestCase
     assert_match /\/users\/welcome/, @response.redirect_url
     assert_empty css_select('[href="/projects/public"]')
   end
+
+  test "find a project and edit its description" do
+    project = api_fixture('groups')['aproject']
+    use_token :active
+    found = Group.find(project['uuid'])
+    found.description = 'test description update'
+    found.save!
+    get(:show, {id: project['uuid']}, session_for(:active))
+    assert_includes @response.body, 'test description update'
+  end
+
+  test "find a project and edit description to textile description" do
+    project = api_fixture('groups')['aproject']
+    use_token :active
+    found = Group.find(project['uuid'])
+    found.description = '*test bold description for textile formatting*'
+    found.save!
+    get(:show, {id: project['uuid']}, session_for(:active))
+    assert_includes @response.body, '<strong>test bold description for textile formatting</strong>'
+  end
+
+  test "find a project and edit description to html description" do
+    project = api_fixture('groups')['aproject']
+    use_token :active
+    found = Group.find(project['uuid'])
+    found.description = 'Textile description with link to home page <a href="/">take me home</a>.'
+    found.save!
+    get(:show, {id: project['uuid']}, session_for(:active))
+    assert_includes @response.body, 'Textile description with link to home page <a href="/">take me home</a>.'
+  end
+
+  test "find a project and edit description to textile description with link to object" do
+    project = api_fixture('groups')['aproject']
+    use_token :active
+    found = Group.find(project['uuid'])
+
+    # uses 'Link to object' as a hyperlink for the object
+    found.description = '"Link to object":' + api_fixture('groups')['asubproject']['uuid']
+    found.save!
+    get(:show, {id: project['uuid']}, session_for(:active))
+
+    # check that input was converted to textile, not staying as inputted
+    refute_includes  @response.body,'"Link to object"'
+    refute_empty css_select('[href="/groups/zzzzz-j7d0g-axqo7eu9pwvna1x"]')
+  end
+
+  test "project viewer can't see project sharing tab" do
+    project = api_fixture('groups')['aproject']
+    get(:show, {id: project['uuid']}, session_for(:project_viewer))
+    refute_includes @response.body, '<div id="Sharing"'
+    assert_includes @response.body, '<div id="Data_collections"'
+  end
+
+  [
+    'admin',
+    'active',
+  ].each do |username|
+    test "#{username} can see project sharing tab" do
+     project = api_fixture('groups')['aproject']
+     get(:show, {id: project['uuid']}, session_for(username))
+     assert_includes @response.body, '<div id="Sharing"'
+     assert_includes @response.body, '<div id="Data_collections"'
+    end
+  end
 end
