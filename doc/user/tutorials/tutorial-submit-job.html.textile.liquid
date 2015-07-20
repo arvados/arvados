@@ -39,10 +39,12 @@ Ignore any warning that you are cloning an empty repository.
 
 *Note:* If you are prompted for username and password when you try to git clone using this command, it would mean that git config needs to be updated. Execute the following commands to update your git configuration.
 
+<notextile>
 <pre>
-git config 'credential.https://git.{{ site.arvados_api_host }}/.username' none
-git config 'credential.https://git.{{ site.arvados_api_host }}/.helper' '!cred(){ cat >/dev/null; if [ "$1" = get ]; then echo password=$ARVADOS_API_TOKEN; fi; };cred'
+<code>~$ <span class="userinput">git config 'credential.https://git.{{ site.arvados_api_host }}/.username' none</span></code>
+<code>~$ <span class="userinput">git config 'credential.https://git.{{ site.arvados_api_host }}/.helper' '!cred(){ cat >/dev/null; if [ "$1" = get ]; then echo password=$ARVADOS_API_TOKEN; fi; };cred'</span></code>
 </pre>
+</notextile>
 
 {% include 'notebox_begin' %}
 For more information about using Git, try
