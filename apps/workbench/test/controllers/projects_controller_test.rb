@@ -341,9 +341,13 @@ class ProjectsControllerTest < ActionController::TestCase
     project = api_fixture('groups')['aproject']
     use_token :active
     found = Group.find(project['uuid'])
+
+    # uses 'Link to object' as a hyperlink for the object
     found.description = '"Link to object":' + api_fixture('groups')['asubproject']['uuid']
     found.save!
     get(:show, {id: project['uuid']}, session_for(:active))
+
+    # check that input was converted to textile, not staying as inputted
     refute_includes  @response.body,'"Link to object"'
     refute_empty css_select('[href="/groups/zzzzz-j7d0g-axqo7eu9pwvna1x"]')
   end
