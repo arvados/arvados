@@ -334,8 +334,7 @@ class ProjectsControllerTest < ActionController::TestCase
     found.description = 'Textile description with link to home page <a href="/">take me home</a>.'
     found.save!
     get(:show, {id: project['uuid']}, session_for(:active))
-    assert_not_includes 'Textile description with link to home page <a href="/">take me home</a>.', @response.body
-    assert_match /Textile description with link to home page .*a href=.*take me home.*\/a.*./, @response.body
+    assert_includes @response.body, 'Textile description with link to home page <a href="/">take me home</a>.'
   end
 
   test "find a project and edit description to textile description with link to object" do
@@ -345,8 +344,7 @@ class ProjectsControllerTest < ActionController::TestCase
     found.description = '"Link to object":' + api_fixture('groups')['asubproject']['uuid']
     found.save!
     get(:show, {id: project['uuid']}, session_for(:active))
-    assert_not_includes '"Link to object"', @response.body
-    assert_match /href=.*Link to object.*\/a./, @response.body
+    refute_includes  @response.body,'"Link to object"'
     refute_empty css_select('[href="/groups/zzzzz-j7d0g-axqo7eu9pwvna1x"]')
   end
 

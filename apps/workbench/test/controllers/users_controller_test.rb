@@ -85,16 +85,16 @@ class UsersControllerTest < ActionController::TestCase
       active_user = api_fixture('users','active')
       get :index, {}, session_for(username)
       if username == 'admin'
-        assert_match /<a href="\/projects\/#{admin_user['uuid']}">Home<\/a.*./, @response.body
-        assert_match /<a href="\/projects\/#{active_user['uuid']}">Home<\/a.*./, @response.body
-        assert_match /<a.*href="\/users\/#{admin_user['uuid']}".*Show<\/a.*./, @response.body
-        assert_match /<a.*href="\/users\/#{active_user['uuid']}".*Show<\/a.*./, @response.body
+        assert_match /<a href="\/projects\/#{admin_user['uuid']}">Home<\/a>/, @response.body
+        assert_match /<a href="\/projects\/#{active_user['uuid']}">Home<\/a>/, @response.body
+        assert_match /href="\/users\/#{admin_user['uuid']}" title="show user"><i class="fa fa-fw fa-user"><\/i> Show<\/a/, @response.body
+        assert_match /href="\/users\/#{active_user['uuid']}" title="show user"><i class="fa fa-fw fa-user"><\/i> Show<\/a/, @response.body
         assert_includes @response.body, admin_user['email']
         assert_includes @response.body, active_user['email']
       else
-        refute_match  /a href=.*Home<.*\/a.*./, @response.body
-        refute_match /<a.*href="\/users\/#{admin_user['uuid']}".*Show<\/a.*./, @response.body
-        assert_match /<a.*href="\/users\/#{active_user['uuid']}".*Show<\/a.*./, @response.body
+        refute_match  /Home<\/a>/, @response.body
+        refute_match /href="\/users\/#{admin_user['uuid']}" title="show user"><i class="fa fa-fw fa-user"><\/i> Show<\/a/, @response.body
+        assert_match /href="\/users\/#{active_user['uuid']}" title="show user"><i class="fa fa-fw fa-user"><\/i> Show<\/a/, @response.body
         assert_includes @response.body, active_user['email']
       end
     end

@@ -494,7 +494,7 @@ class CollectionsControllerTest < ActionController::TestCase
     assert matches.size > 1
 
     matches.each do |k,v|
-      assert_match /href="\/collections\/#{v['uuid']}".*#{v['name']}<\/a>/, @response.body
+      assert_match /href="\/collections\/#{v['uuid']}">.*#{v['name']}<\/a>/, @response.body
     end
 
     assert_includes @response.body, 'The following collections have this content:'
@@ -507,7 +507,7 @@ class CollectionsControllerTest < ActionController::TestCase
     collection = api_fixture('collections')['foo_file']
     get :show, {id: collection['uuid']}, session_for(:active)
     assert_includes @response.body, collection['name']
-    assert_match /href="#{collection['uuid']}.*foo.*/, @response.body
+    assert_match /href="#{collection['uuid']}\/foo" ><\/i> foo</, @response.body
   end
 
   test "No Upload tab on non-writable collection" do
