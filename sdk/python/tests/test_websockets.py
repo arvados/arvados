@@ -22,13 +22,16 @@ class WebsocketTest(run_test_server.TestCaseWithServers):
     def _test_subscribe(self, poll_fallback, expect_type, last_log_id=None, additional_filters=None, expected=1):
         run_test_server.authorize_with('active')
         events = Queue.Queue(100)
+
+        # Create ancestor before subscribing.
+        # When listening with start_time in the past, this should also be retrieved.
+        # However, when start_time is omitted in subscribe, this should not be fetched.
+        ancestor = arvados.api('v1').humans().create(body={}).execute()
+        time.sleep(5)
+
         filters = [['object_uuid', 'is_a', 'arvados#human']]
         if additional_filters:
             filters = filters + additional_filters
-
-            # Create an extra object before subscribing and verify that as well
-            ancestor = arvados.api('v1').humans().create(body={}).execute()
-            time.sleep(5)
 
         self.ws = arvados.events.subscribe(
             arvados.api('v1'), filters,
