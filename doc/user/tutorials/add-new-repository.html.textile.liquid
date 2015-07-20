@@ -23,7 +23,7 @@ On the Arvados Workbench, click on the dropdown menu icon <span class="fa fa-lg 
 
 In the *Manage account* page, you will see the *Repositories* panel with the *Add new repository* button.
 
-!{{ site.baseurl }}/images/repositories-panel.png!
+!{display: block;margin-left: 25px;margin-right: auto;}{{ site.baseurl }}/images/repositories-panel.png!
 
 Click the *Add new Repository* button to open the popup to add a new arvados repository. You will see a text box where you can enter the name of the repository. Enter *tutorial* in this text box and click on *Create*.
 
@@ -31,10 +31,12 @@ Click the *Add new Repository* button to open the popup to add a new arvados rep
 The name you enter here must begin with a letter and can only contain alphanumeric characters.
 {% include 'notebox_end' %}
 
-!{{ site.baseurl }}/images/add-new-repository.png!
+!{display: block;margin-left: 25px;margin-right: auto;border:1px solid lightgray;}{{ site.baseurl }}/images/add-new-repository.png!
 
-This will create a new repository with the name @$USER/tutorial@ with the URL <notextile><code>git@git.{{ site.arvados_api_host }}:$USER/tutorial.git</code></notextile>
+This will create a new repository with the name @$USER/tutorial@. It can be accessed using the URL <notextile><code>https://git.{{ site.arvados_api_host }}/$USER/tutorial.git</code></notextile> or <notextile><code>git@git.{{ site.arvados_api_host }}:$USER/tutorial.git</code></notextile>
 
-Back in the *Repositories* panel in the *Manage account* page, you should see the @$USER/tutorial@ repository listed in the name column with the URL <notextile><code>git@git.{{ site.arvados_api_host }}:$USER/tutorial.git</code></notextile>.
+Back in the *Repositories* panel in the *Manage account* page, you should see the @$USER/tutorial@ repository listed in the name column with these URLs.
+
+!{display: block;margin-left: 25px;margin-right: auto;}{{ site.baseurl }}/images/added-new-repository.png!
 
 You are now ready to use this *tutorial* repository to run your crunch scripts.
