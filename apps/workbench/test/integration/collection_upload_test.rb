@@ -28,13 +28,6 @@ class CollectionUploadTest < ActionDispatch::IntegrationTest
     assert_selector 'div#Upload.active div.panel'
   end
 
-  test "No Upload tab on non-writable collection" do
-    need_javascript
-    visit(page_with_token 'active',
-          '/collections/'+api_fixture('collections')['user_agreement']['uuid'])
-    assert_no_selector '.nav-tabs Upload'
-  end
-
   test "Upload two empty files with the same name" do
     need_selenium "to make file uploads work"
     visit page_with_token 'active', sandbox_path

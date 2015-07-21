@@ -46,6 +46,7 @@
               <%= writable ? 'writable' : 'read-only' %>
             </td>
             <td style="word-break:break-all;">
+              <code><%= repo.http_fetch_url %></code><br/>
               <code><%= writable ? repo.push_url : repo.fetch_url %></code>
             </td>
             <td>

@@ -202,6 +202,14 @@ class ApplicationLayoutTest < ActionDispatch::IntegrationTest
     end
   end
 
+  test "no SSH public key notification when shell_in_a_box_url is configured" do
+    Rails.configuration.shell_in_a_box_url = 'example.com'
+    visit page_with_token('job_reader')
+    click_link 'notifications-menu'
+    assert_no_selector 'a', text:'Click here to set up an SSH public key for use with Arvados.'
+    assert_selector 'a', text:'Click here to learn how to run an Arvados Crunch pipeline'
+  end
+
    [
     ['Repositories','repository','Attributes'],
     ['Virtual machines','virtual machine','current_user_logins'],

@@ -180,5 +180,7 @@ class UserManageAccountTest < ActionDispatch::IntegrationTest
       click_on "Create"
     end
     assert_text ":active/workbenchtest.git"
+    assert_match /git@git.*:active\/workbenchtest.git/, page.text
+    assert_match /https:\/\/git.*\/active\/workbenchtest.git/, page.text
   end
 end

@@ -707,6 +707,7 @@ class ApplicationController < ActionController::Base
   @@notification_tests = []
 
   @@notification_tests.push lambda { |controller, current_user|
+    return nil if Rails.configuration.shell_in_a_box_url
     AuthorizedKey.limit(1).where(authorized_user_uuid: current_user.uuid).each do
       return nil
     end
