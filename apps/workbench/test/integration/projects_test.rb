@@ -408,18 +408,6 @@ class ProjectsTest < ActionDispatch::IntegrationTest
     end
   end
 
-  [
-    ["jobs", "/jobs"],
-    ["pipelines", "/pipeline_instances"],
-    ["collections", "/collections"]
-  ].each do |target,path|
-    test "Test dashboard button all #{target}" do
-      visit page_with_token 'active', '/'
-      click_link "All #{target}"
-      assert_equal path, current_path
-    end
-  end
-
   def scroll_setup(project_name,
                    total_nbr_items,
                    item_list_parameter,
@@ -539,26 +527,6 @@ class ProjectsTest < ActionDispatch::IntegrationTest
       jobs_found = page.all('tr[data-kind="arvados#job"]')
       found_job_count = jobs_found.count
       assert_equal num_jobs, found_job_count, 'Did not find expected number of jobs'
-    end
-  end
-
-  # Move button accessibility
-  [
-    ['admin', true],
-    ['active', true],  # project owner
-    ['project_viewer', false],
-    ].each do |user, can_move|
-    test "#{user} can move subproject under another user's Home #{can_move}" do
-      project = api_fixture('groups')['aproject']
-      collection = api_fixture('collections')['collection_to_move_around_in_aproject']
-
-      # verify the project move button
-      visit page_with_token user, "/projects/#{project['uuid']}"
-      if can_move
-        assert page.has_link? 'Move project...'
-      else
-        assert page.has_no_link? 'Move project...'
-      end
     end
   end
 

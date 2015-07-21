@@ -370,4 +370,31 @@ class ProjectsControllerTest < ActionController::TestCase
      assert_includes @response.body, '<div id="Data_collections"'
     end
   end
+
+  [
+    ['admin',true],
+    ['active',true],
+    ['project_viewer',false],
+  ].each do |user, can_move|
+    test "#{user} can move subproject from project #{can_move}" do
+      get(:show, {id: api_fixture('groups')['aproject']['uuid']}, session_for(user))
+      if can_move
+        assert_includes @response.body, 'Move project...'
+      else
+        refute_includes @response.body, 'Move project...'
+      end
+    end
+  end
+
+  [
+    ["jobs", "/jobs"],
+    ["pipelines", "/pipeline_instances"],
+    ["collections", "/collections"],
+  ].each do |target,path|
+    test "test dashboard button all #{target}" do
+      get :index, {}, session_for(:active)
+      refute_empty css_select("[href=\"#{path}\"]")
+      assert_includes @response.body, "All #{target}"
+    end
+  end
 end
