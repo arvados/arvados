@@ -56,13 +56,13 @@ class CollectionFsAccess(cwltool.draft2tool.StdFsAccess):
 
     def _match(self, collection, patternsegments, parent):
         ret = []
-        for i in collection:
-            if fnmatch.fnmatch(i, patternsegments[0]):
-                cur = os.path.join(parent, i)
+        for filename in collection:
+            if fnmatch.fnmatch(filename, patternsegments[0]):
+                cur = os.path.join(parent, filename)
                 if len(patternsegments) == 1:
                     ret.append(cur)
                 else:
-                    ret.extend(self._match(collection[i], patternsegments[1:], cur))
+                    ret.extend(self._match(collection[filename], patternsegments[1:], cur))
         return ret
 
     def glob(self, pattern):
@@ -109,8 +109,7 @@ class ArvadosJob(object):
 
         script_parameters["task.env"] = {"TMPDIR": "$(task.tmpdir)"}
         if self.environment:
-            for k,v in self.environment.items():
-                script_parameters["task.env"][k] = v
+            script_parameters["task.env"].update(self.environment)
 
         if self.stdin:
             script_parameters["task.stdin"] = self.pathmapper.mapper(self.stdin)[1]
@@ -161,7 +160,7 @@ class ArvPathMapper(cwltool.pathmapper.PathMapper):
         self._pathmap = {}
         uploadfiles = []
 
-        pdh_path = re.compile(r'^[0-9a-f]{32}\+\d+/(.*)')
+        pdh_path = re.compile(r'^[0-9a-f]{32}\+\d+/.+')
 
         for src in referenced_files:
             if isinstance(src, basestring) and pdh_path.match(src):
@@ -235,7 +234,7 @@ class ArvCwlRunner(object):
                         finally:
                             self.cond.release()
 
-    def arvExecutor(self, t, job_order, input_basedir, args, **kwargs):
+    def arvExecutor(self, tool, job_order, input_basedir, args, **kwargs):
         events = arvados.events.subscribe(arvados.api('v1'), [["object_uuid", "is_a", "arvados#job"]], self.on_message)
 
         self.fs_access = CollectionFsAccess(input_basedir)
@@ -244,17 +243,17 @@ class ArvCwlRunner(object):
         kwargs["enable_reuse"] = args.enable_reuse
 
         if kwargs.get("conformance_test"):
-            return cwltool.main.single_job_executor(t, job_order, input_basedir, args, **kwargs)
+            return cwltool.main.single_job_executor(tool, job_order, input_basedir, args, **kwargs)
         else:
-            jobiter = t.job(job_order,
+            jobiter = tool.job(job_order,
                             input_basedir,
                             self.output_callback,
                             **kwargs)
 
-            for r in jobiter:
-                if r:
+            for runnable in jobiter:
+                if runnable:
                     with self.lock:
-                        r.run(**kwargs)
+                        runnable.run(**kwargs)
                 else:
                     if self.jobs:
                         try:
