@@ -64,6 +64,8 @@ def main(arguments=None):
     if args.start_time:
         last_log_id = 1
         filters += [ ['created_at', '>=', args.start_time] ]
+    else:
+        last_log_id = None
 
     def on_message(ev):
         global filters
