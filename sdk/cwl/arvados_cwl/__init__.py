@@ -285,10 +285,11 @@ def main(args, stdout, stderr, api_client=None):
     runner = ArvCwlRunner(api_client=arvados.api('v1'))
     args.append("--leave-outputs")
     parser = cwltool.main.arg_parser()
-    parser.add_argument("--enable-reuse", action="store_true",
+    exgroup = parser.add_mutually_exclusive_group()
+    exgroup.add_argument("--enable-reuse", action="store_true",
                         default=False, dest="enable_reuse",
                         help="")
-    parser.add_argument("--disable-reuse", action="store_false",
+    exgroup.add_argument("--disable-reuse", action="store_false",
                         default=False, dest="enable_reuse",
                         help="")
 
