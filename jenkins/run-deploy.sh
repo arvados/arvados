@@ -182,6 +182,10 @@ if [[ "$?" == "0" ]]; then
 else
   title "Installing latest arvados/jobs Docker image"
   ssh -o "StrictHostKeyChecking no" shell.$IDENTIFIER "ARVADOS_API_HOST=$ARVADOS_API_HOST ARVADOS_API_TOKEN=$ARVADOS_API_TOKEN /usr/local/rvm/bin/rvm-exec default arv keep docker --pull --project-uuid=$DOCKER_IMAGES_PROJECT arvados/jobs $GIT_COMMIT"
+  if [[ "$?" -ne 0 ]]; then
+    title "'git pull' failed exiting..."
+    exit 1
+  fi
 fi
 
 title "Gathering list of shell and Keep nodes"
