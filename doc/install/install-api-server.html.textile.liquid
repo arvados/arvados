@@ -173,18 +173,21 @@ For best performance, we recommend you use Nginx as your Web server front-end, w
 <pre><code>#!/bin/bash
 
 set -e
+exec 2>&1
+
 # Uncomment the line below if you're using RVM.
 #source /etc/profile.d/rvm.sh
 
-envdir="/etc/sv/puma/env"
-root=/etc/sv/puma
-echo "Starting puma from ${root}"
-cd $root
-mkdir -p "${envdir}"
-exec 2>&1
+envdir="`pwd`/env"
+mkdir -p "$envdir"
+echo ws-only > "$envdir/ARVADOS_WEBSOCKETS"
+
 cd /var/www/arvados-api/current
+echo "Starting puma in `pwd`"
+
 # You may need to change arguments below to match your deployment, especially -u.
-exec chpst -e "${envdir}" -m 1073741824 -u www-data:www-data bundle exec puma -t 0:512 -e production -b tcp://127.0.0.1:8100
+exec chpst -m 1073741824 -u www-data:www-data -e "$envdir" \
+  bundle exec puma -t 0:512 -e production -b tcp://127.0.0.1:8100
 </code></pre>
 </li>
 
