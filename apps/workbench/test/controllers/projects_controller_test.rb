@@ -393,7 +393,7 @@ class ProjectsControllerTest < ActionController::TestCase
   ].each do |target,path|
     test "test dashboard button all #{target}" do
       get :index, {}, session_for(:active)
-      refute_empty css_select("[href=\"#{path}\"]")
+      assert_includes @response.body, "href=\"#{path}\""
       assert_includes @response.body, "All #{target}"
     end
   end
