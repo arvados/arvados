@@ -310,14 +310,4 @@ class AnonymousAccessTest < ActionDispatch::IntegrationTest
       end
     end
   end
-
-  test "anonymous user accesses collection in shared project" do
-    visit "/collections/#{api_fixture('collections')['public_text_file']['uuid']}"
-
-    # in collection page
-    assert_text 'Public Projects Unrestricted public data'
-    assert_text 'Hello world'
-    assert_text 'Content address'
-    assert_selector 'a', text: 'Provenance graph'
-  end
 end

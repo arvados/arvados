@@ -461,4 +461,57 @@ class CollectionsControllerTest < ActionController::TestCase
 
     assert_equal files.sort, disabled.sort, "Expected to see all collection files in disabled list of files"
   end
+
+  test "anonymous user accesses collection in shared project" do
+    Rails.configuration.anonymous_user_token =
+      api_fixture('api_client_authorizations')['anonymous']['api_token']
+    collection = api_fixture('collections')['public_text_file']
+    get(:show, {id: collection['uuid']})
+
+    response_object = assigns(:object)
+    assert_equal collection['name'], response_object['name']
+    assert_equal collection['uuid'], response_object['uuid']
+    assert_includes @response.body, 'Hello world'
+    assert_includes @response.body, 'Content address'
+    refute_nil css_select('[href="#Advanced"]')
+  end
+
+  test "can view empty collection" do
+    get :show, {id: 'd41d8cd98f00b204e9800998ecf8427e+0'}, session_for(:active)
+    assert_includes @response.body, 'The following collections have this content'
+  end
+
+  test "collection portable data hash redirect" do
+    di = api_fixture('collections')['docker_image']
+    get :show, {id: di['portable_data_hash']}, session_for(:active)
+    assert_match /\/collections\/#{di['uuid']}/, @response.redirect_url
+  end
+
+  test "collection portable data hash with multiple matches" do
+    pdh = api_fixture('collections')['foo_file']['portable_data_hash']
+    get :show, {id: pdh}, session_for(:admin)
+    matches = api_fixture('collections').select {|k,v| v["portable_data_hash"] == pdh}
+    assert matches.size > 1
+
+    matches.each do |k,v|
+      assert_match /href="\/collections\/#{v['uuid']}">.*#{v['name']}<\/a>/, @response.body
+    end
+
+    assert_includes @response.body, 'The following collections have this content:'
+    assert_not_includes @response.body, 'more results are not shown'
+    assert_not_includes @response.body, 'Activity'
+    assert_not_includes @response.body, 'Sharing and permissions'
+  end
+
+  test "collection page renders name" do
+    collection = api_fixture('collections')['foo_file']
+    get :show, {id: collection['uuid']}, session_for(:active)
+    assert_includes @response.body, collection['name']
+    assert_match /href="#{collection['uuid']}\/foo" ><\/i> foo</, @response.body
+  end
+
+  test "No Upload tab on non-writable collection" do
+    get :show, {id: api_fixture('collections')['user_agreement']['uuid']}, session_for(:active)
+    assert_not_includes @response.body, '<a href="#Upload"'
+  end
 end
