@@ -27,6 +27,7 @@ class CollectionsHelperTest < ActionView::TestCase
     ["filename.yml", true],
 
     ["filename.bam", false],
+    ["filename.tar", false],
     ["filename", false],
   ].each do |file_name, preview_allowed|
     test "verify '#{file_name}' is allowed for preview #{preview_allowed}" do
