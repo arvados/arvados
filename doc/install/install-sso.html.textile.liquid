@@ -8,6 +8,24 @@ h2(#dependencies). Install dependencies
 
 Make sure you have "Ruby and Bundler":install-manual-prerequisites-ruby.html installed.
 
+On a Debian-based system, install the following packages:
+
+<notextile>
+<pre><code>~$ <span class="userinput">sudo apt-get install git libpq-dev postgresql</span>
+</code></pre>
+</notextile>
+
+On a Red Hat-based system, install the following packages:
+
+<notextile>
+<pre><code>~$ <span class="userinput">sudo yum install git postgresql postgresql-devel</span>
+</code></pre>
+</notextile>
+
+{% include 'notebox_begin' %}
+If your distribution offers PostgreSQL 8, consider using Software Collections to install postgresql92 and postgresql92-postgresql-devel instead, as described on the "API server installation page":install-api-server.html.
+{% include 'notebox_end' %}
+
 h2(#install). Install SSO server
 
 h3. Get SSO server code and run bundle
@@ -16,7 +34,7 @@ h3. Get SSO server code and run bundle
 <pre><code>~$ <span class="userinput">cd $HOME</span> # (or wherever you want to install)
 ~$ <span class="userinput">git clone https://github.com/curoverse/sso-devise-omniauth-provider.git</span>
 ~$ <span class="userinput">cd sso-devise-omniauth-provider</span>
-~/sso-devise-omniauth-provider$ <span class="userinput">bundle install</span>
+~/sso-devise-omniauth-provider$ <span class="userinput">bundle</span>
 </code></pre></notextile>
 
 h2. Configure the SSO server
@@ -48,28 +66,35 @@ Then put that value in the @secret_token@ field.
 
 h3(#authentication_methods). Authentication methods
 
-Three authentication methods are supported: google OAuth2, ldap, local accounts.
+Three authentication methods are supported: Google+, LDAP, and local accounts.
 
-h3(#google_oauth2). google_oauth2 authentication
+h3(#google). Google+ authentication
 
-Google OAuth2 authentication can be configured with these options.
+In order to use Google+ authentication, you must use the "Google Developers Console":https://console.developers.google.com to create a set of client credentials. In short:
 
-<pre>
+* Enable the Contacts and Google+ APIs.
+* Create an OAuth Client ID for a web application.
+** JavaScript origins: @https://sso.example.com/@
+** Redirect URIs: @https://sso.example.com/auth/google_oauth2/callback@
+
+Copy the "Client ID" and "Client secret" values from the Google Developers Console into the Google section of @config/application.yml@, like this:
+
+<notextile>
+<pre><code>
   # Google API tokens required for OAuth2 login.
   #
   # See https://github.com/zquestz/omniauth-google-oauth2
   #
   # and https://developers.google.com/accounts/docs/OAuth2
-  google_oauth2_client_id: false
-  google_oauth2_client_secret: false
+  google_oauth2_client_id: "<span class="userinput">---YOUR---CLIENT---ID---HERE---</span>"
+  google_oauth2_client_secret: "<span class="userinput">---YOUR---CLIENT---SECRET---HERE---</span>"
 
   # Set this to your OpenId 2.0 realm to enable migration from Google OpenId
   # 2.0 to Google OAuth2 OpenId Connect (Google will provide OpenId 2.0 user
   # identifiers via the openid.realm parameter in the OAuth2 flow until 2017).
-  google_openid_realm: false
-</pre>
+  google_openid_realm: <span class="userinput">false</span></code></pre></notextile>
 
-h3(#ldap). ldap authentication
+h3(#ldap). LDAP authentication
 
 LDAP authentication can be configured with these options. Make sure to preserve the indentation of the fields beyond @use_ldap@.
 
@@ -92,7 +117,7 @@ LDAP authentication can be configured with these options. Make sure to preserve 
   use_ldap: false
 </pre>
 
-h3(#local_accounts). local account authentication
+h3(#local_accounts). Local account authentication
 
 If neither Google OAuth2 nor LDAP are enabled, the SSO server automatically
 falls back to local accounts. There are two configuration options for local
@@ -121,7 +146,7 @@ You can also create local accounts on the SSO server from the rails console:
 
 h2. Set up the database
 
-Generate a new database password. Nobody ever needs to memorize it or type it, so we'll make a strong one:
+Generate a new database password. Nobody ever needs to memorize it or type it, so make a strong one:
 
 <notextile>
 <pre><code>~/sso-devise-omniauth-provider$ <span class="userinput">ruby -e 'puts rand(2**128).to_s(36)'</span>
@@ -153,7 +178,7 @@ Alternatively, if the database user you intend to use for the SSO server is not 
 
 <notextile>
 <pre><code>~/sso-devise-omniauth-provider$ <span class="userinput">su postgres createdb arvados_sso_production -E UTF8 -O arvados_sso</span>
-~/sso-devise-omniauth-provider$ <span class="userinput">RAILS_ENV=production bundle exec rake db:structure:load</span>
+~/sso-devise-omniauth-provider$ <span class="userinput">RAILS_ENV=production bundle exec rake db:schema:load</span>
 ~/sso-devise-omniauth-provider$ <span class="userinput">RAILS_ENV=production bundle exec rake db:seed</span>
 </code></pre></notextile>
 

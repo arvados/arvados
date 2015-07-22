@@ -31,7 +31,10 @@ On a Red Hat-based system, install the following packages:
 
 {% include 'notebox_begin' %}
 
-If you intend to use specific versions of these packages from Software Collections, you may have to adapt some of the package names to match; e.g., @postgresql92-postgresql-server postgresql92-postgresql-devel nginx16@.
+If you intend to use specific versions of these packages from Software Collections, you may have to adapt some of the package names to match. For example:
+
+<notextile>
+<pre><code>~$ <span class="userinput">sudo yum install postgresql92 postgresql92-postgresql-devel nginx16</span></code></pre></notextile>
 
 {% include 'notebox_end' %}
 
@@ -124,7 +127,7 @@ h3. workbench_address
 
 Fill in the url of your workbench application in @workbench_address@, for example
 
-&nbsp;&nbsp;https://workbench.@prefix_uuid@.your.domain
+&nbsp;&nbsp;https://workbench.@uuid_prefix@.your.domain
 
 h3(#omniauth). sso_app_id, sso_app_secret, sso_provider_url
 
@@ -170,18 +173,21 @@ For best performance, we recommend you use Nginx as your Web server front-end, w
 <pre><code>#!/bin/bash
 
 set -e
+exec 2>&1
+
 # Uncomment the line below if you're using RVM.
 #source /etc/profile.d/rvm.sh
 
-envdir="/etc/sv/puma/env"
-root=/etc/sv/puma
-echo "Starting puma from ${root}"
-cd $root
-mkdir -p "${envdir}"
-exec 2>&1
+envdir="`pwd`/env"
+mkdir -p "$envdir"
+echo ws-only > "$envdir/ARVADOS_WEBSOCKETS"
+
 cd /var/www/arvados-api/current
+echo "Starting puma in `pwd`"
+
 # You may need to change arguments below to match your deployment, especially -u.
-exec chpst -e "${envdir}" -m 1073741824 -u www-data:www-data bundle exec puma -t 0:512 -e production -b tcp://127.0.0.1:8100
+exec chpst -m 1073741824 -u www-data:www-data -e "$envdir" \
+  bundle exec puma -t 0:512 -e production -b tcp://127.0.0.1:8100
 </code></pre>
 </li>
 
@@ -212,7 +218,7 @@ proxy_http_version 1.1;
 
 server {
   listen       <span class="userinput">[your public IP address]</span>:443 ssl;
-  server_name  <span class="userinput">uuid-prefix.your.domain</span>;
+  server_name  <span class="userinput">uuid_prefix.your.domain</span>;
 
   ssl on;
 
@@ -232,7 +238,7 @@ server {
 
 server {
   listen       <span class="userinput">[your public IP address]</span>:443 ssl;
-  server_name  ws.<span class="userinput">uuid-prefix.your.domain</span>;
+  server_name  ws.<span class="userinput">uuid_prefix.your.domain</span>;
 
   ssl on;
 
