@@ -14,6 +14,7 @@ import logging
 import arvados.commands._util as arv_cmd
 
 logger = logging.getLogger('arvados.arv-run')
+logger.setLevel(logging.INFO)
 
 arvrun_parser = argparse.ArgumentParser(parents=[arv_cmd.retry_opt])
 arvrun_parser.add_argument('--dry-run', action="store_true", help="Print out the pipeline that would be submitted and exit")
@@ -100,6 +101,63 @@ def statfile(prefix, fn):
 
     return prefix+fn
 
+def uploadfiles(files, api, dry_run=False, num_retries=0, project=None):
+    # Find the smallest path prefix that includes all the files that need to be uploaded.
+    # This starts at the root and iteratively removes common parent directory prefixes
+    # until all file pathes no longer have a common parent.
+    n = True
+    pathprefix = "/"
+    while n:
+        pathstep = None
+        for c in files:
+            if pathstep is None:
+                sp = c.fn.split('/')
+                if len(sp) < 2:
+                    # no parent directories left
+                    n = False
+                    break
+                # path step takes next directory
+                pathstep = sp[0] + "/"
+            else:
+                # check if pathstep is common prefix for all files
+                if not c.fn.startswith(pathstep):
+                    n = False
+                    break
+        if n:
+            # pathstep is common parent directory for all files, so remove the prefix
+            # from each path
+            pathprefix += pathstep
+            for c in files:
+                c.fn = c.fn[len(pathstep):]
+
+    orgdir = os.getcwd()
+    os.chdir(pathprefix)
+
+    logger.info("Upload local files: \"%s\"", '" "'.join([c.fn for c in files]))
+
+    if dry_run:
+        logger.info("$(input) is %s", pathprefix.rstrip('/'))
+        pdh = "$(input)"
+    else:
+        files = sorted(files, key=lambda x: x.fn)
+        collection = arvados.CollectionWriter(api, num_retries=num_retries)
+        stream = None
+        for f in files:
+            sp = os.path.split(f.fn)
+            if sp[0] != stream:
+                stream = sp[0]
+                collection.start_new_stream(stream)
+            collection.write_file(f.fn, sp[1])
+        item = api.collections().create(body={"owner_uuid": project, "manifest_text": collection.manifest_text()}).execute()
+        pdh = item["portable_data_hash"]
+        logger.info("Uploaded to %s", item["uuid"])
+
+    for c in files:
+        c.fn = "$(file %s/%s)" % (pdh, c.fn)
+
+    os.chdir(orgdir)
+
+
 def main(arguments=None):
     args = arvrun_parser.parse_args(arguments)
 
@@ -178,62 +236,9 @@ def main(arguments=None):
                             command[i] = statfile(m.group(1), m.group(2))
                             break
 
-    n = True
-    pathprefix = "/"
     files = [c for command in slots[1:] for c in command if isinstance(c, UploadFile)]
-    if len(files) > 0:
-        # Find the smallest path prefix that includes all the files that need to be uploaded.
-        # This starts at the root and iteratively removes common parent directory prefixes
-        # until all file pathes no longer have a common parent.
-        while n:
-            pathstep = None
-            for c in files:
-                if pathstep is None:
-                    sp = c.fn.split('/')
-                    if len(sp) < 2:
-                        # no parent directories left
-                        n = False
-                        break
-                    # path step takes next directory
-                    pathstep = sp[0] + "/"
-                else:
-                    # check if pathstep is common prefix for all files
-                    if not c.fn.startswith(pathstep):
-                        n = False
-                        break
-            if n:
-                # pathstep is common parent directory for all files, so remove the prefix
-                # from each path
-                pathprefix += pathstep
-                for c in files:
-                    c.fn = c.fn[len(pathstep):]
-
-        orgdir = os.getcwd()
-        os.chdir(pathprefix)
-
-        print("Upload local files: \"%s\"" % '" "'.join([c.fn for c in files]))
-
-        if args.dry_run:
-            print("$(input) is %s" % pathprefix.rstrip('/'))
-            pdh = "$(input)"
-        else:
-            files = sorted(files, key=lambda x: x.fn)
-            collection = arvados.CollectionWriter(api, num_retries=args.retries)
-            stream = None
-            for f in files:
-                sp = os.path.split(f.fn)
-                if sp[0] != stream:
-                    stream = sp[0]
-                    collection.start_new_stream(stream)
-                collection.write_file(f.fn, sp[1])
-            item = api.collections().create(body={"owner_uuid": project, "manifest_text": collection.manifest_text()}).execute()
-            pdh = item["portable_data_hash"]
-            print "Uploaded to %s" % item["uuid"]
-
-        for c in files:
-            c.fn = "$(file %s/%s)" % (pdh, c.fn)
-
-        os.chdir(orgdir)
+    if files:
+        uploadfiles(files, api, dry_run=args.dry_run, num_retries=args.num_retries, project=project)
 
     for i in xrange(1, len(slots)):
         slots[i] = [("%s%s" % (c.prefix, c.fn)) if isinstance(c, ArvFile) else c for c in slots[i]]
@@ -298,7 +303,7 @@ def main(arguments=None):
     else:
         pipeline["owner_uuid"] = project
         pi = api.pipeline_instances().create(body=pipeline, ensure_unique_name=True).execute()
-        print "Running pipeline %s" % pi["uuid"]
+        logger.info("Running pipeline %s", pi["uuid"])
 
         if args.local:
             subprocess.call(["arv-run-pipeline-instance", "--instance", pi["uuid"], "--run-jobs-here"] + (["--no-reuse"] if args.no_reuse else []))
@@ -306,11 +311,11 @@ def main(arguments=None):
             ws.main(["--pipeline", pi["uuid"]])
 
         pi = api.pipeline_instances().get(uuid=pi["uuid"]).execute()
-        print "Pipeline is %s" % pi["state"]
+        logger.info("Pipeline is %s", pi["state"])
         if "output_uuid" in pi["components"]["command"]:
-            print "Output is %s" % pi["components"]["command"]["output_uuid"]
+            logger.info("Output is %s", pi["components"]["command"]["output_uuid"])
         else:
-            print "No output"
+            logger.info("No output")
 
 if __name__ == '__main__':
     main()
