@@ -14,7 +14,7 @@ from ws4py.client.threadedclient import WebSocketClient
 _logger = logging.getLogger('arvados.events')
 
 class EventClient(WebSocketClient):
-    def __init__(self, url, filters, on_event):
+    def __init__(self, url, filters, on_event, last_log_id):
         ssl_options = {'ca_certs': arvados.util.ca_certs_path()}
         if config.flag_is_true('ARVADOS_API_HOST_INSECURE'):
             ssl_options['cert_reqs'] = ssl.CERT_NONE
@@ -28,9 +28,10 @@ class EventClient(WebSocketClient):
         super(EventClient, self).__init__(url, ssl_options=ssl_options)
         self.filters = filters
         self.on_event = on_event
+        self.last_log_id = last_log_id
 
     def opened(self):
-        self.subscribe(self.filters)
+        self.subscribe(self.filters, self.last_log_id)
 
     def received_message(self, m):
         self.on_event(json.loads(str(m)))
@@ -52,7 +53,7 @@ class EventClient(WebSocketClient):
         self.send(json.dumps({"method": "unsubscribe", "filters": filters}))
 
 class PollClient(threading.Thread):
-    def __init__(self, api, filters, on_event, poll_time):
+    def __init__(self, api, filters, on_event, poll_time, last_log_id):
         super(PollClient, self).__init__()
         self.api = api
         if filters:
@@ -63,14 +64,18 @@ class PollClient(threading.Thread):
         self.poll_time = poll_time
         self.daemon = True
         self.stop = threading.Event()
+        self.last_log_id = last_log_id
 
     def run(self):
         self.id = 0
-        for f in self.filters:
-            items = self.api.logs().list(limit=1, order="id desc", filters=f).execute()['items']
-            if items:
-                if items[0]['id'] > self.id:
-                    self.id = items[0]['id']
+        if self.last_log_id != None:
+            self.id = self.last_log_id
+        else:
+            for f in self.filters:
+                items = self.api.logs().list(limit=1, order="id desc", filters=f).execute()['items']
+                if items:
+                    if items[0]['id'] > self.id:
+                        self.id = items[0]['id']
 
         self.on_event({'status': 200})
 
@@ -109,13 +114,13 @@ class PollClient(threading.Thread):
         del self.filters[self.filters.index(filters)]
 
 
-def _subscribe_websocket(api, filters, on_event):
+def _subscribe_websocket(api, filters, on_event, last_log_id=None):
     endpoint = api._rootDesc.get('websocketUrl', None)
     if not endpoint:
         raise errors.FeatureNotEnabledError(
             "Server does not advertise a websocket endpoint")
     uri_with_token = "{}?api_token={}".format(endpoint, api.api_token)
-    client = EventClient(uri_with_token, filters, on_event)
+    client = EventClient(uri_with_token, filters, on_event, last_log_id)
     ok = False
     try:
         client.connect()
@@ -125,7 +130,7 @@ def _subscribe_websocket(api, filters, on_event):
         if not ok:
             client.close_connection()
 
-def subscribe(api, filters, on_event, poll_fallback=15):
+def subscribe(api, filters, on_event, poll_fallback=15, last_log_id=None):
     """
     :api:
       a client object retrieved from arvados.api(). The caller should not use this client object for anything else after calling subscribe().
@@ -135,15 +140,17 @@ def subscribe(api, filters, on_event, poll_fallback=15):
       The callback when a message is received.
     :poll_fallback:
       If websockets are not available, fall back to polling every N seconds.  If poll_fallback=False, this will return None if websockets are not available.
+    :last_log_id:
+      Log rows that are newer than the log id
     """
 
     if not poll_fallback:
-        return _subscribe_websocket(api, filters, on_event)
+        return _subscribe_websocket(api, filters, on_event, last_log_id)
 
     try:
-        return _subscribe_websocket(api, filters, on_event)
+        return _subscribe_websocket(api, filters, on_event, last_log_id)
     except Exception as e:
         _logger.warn("Falling back to polling after websocket error: %s" % e)
-    p = PollClient(api, filters, on_event, poll_fallback)
+    p = PollClient(api, filters, on_event, poll_fallback, last_log_id)
     p.start()
     return p
