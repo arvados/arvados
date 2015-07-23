@@ -39,7 +39,9 @@ echo "Copying files from $CONFIG_PATH"
 cp -f $CONFIG_PATH/database.yml $RELEASE_PATH/config/database.yml
 cp -f $RELEASE_PATH/config/environments/production.rb.example $RELEASE_PATH/config/environments/production.rb
 cp -f $CONFIG_PATH/application.yml $RELEASE_PATH/config/application.yml
-cp -f $CONFIG_PATH/omniauth.rb $RELEASE_PATH/config/initializers/omniauth.rb
+if [ -e $CONFIG_PATH/omniauth.rb ]; then
+    cp -f $CONFIG_PATH/omniauth.rb $RELEASE_PATH/config/initializers/omniauth.rb
+fi
 echo "Done."
 
 # Before we do anything else, make sure some directories and files are in place
