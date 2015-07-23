@@ -6,10 +6,18 @@ title: Install the API server
 
 h2. Install prerequisites
 
-The Arvados package repository includes an API server package that can help automate much of the deployment.  It requires:
+The Arvados package repository includes an API server package that can help automate much of the deployment.
 
-* PostgreSQL 9.0+
-* "Ruby 2.1 and bundler":install-manual-prerequisites-ruby.html
+h3(#install_ruby_and_bundler). Install Ruby and Bundler
+
+{% include 'install_ruby_and_bundler' %}
+
+h3(#install_postgres). Install Postgres
+
+{% include 'install_postgres' %}
+
+h3(#build_tools_apiserver). Build tools
+
 * Build tools and the curl and PostgreSQL development libraries, to build gem dependencies
 * Nginx
 
@@ -28,15 +36,6 @@ On a Red Hat-based system, install the following packages:
 <pre><code>~$ <span class="userinput">sudo yum install bison make automake gcc gcc-c++ libcurl-devel postgresql-server postgresql-devel nginx git arvados-api-server</span>
 </code></pre>
 </notextile>
-
-{% include 'notebox_begin' %}
-
-If you intend to use specific versions of these packages from Software Collections, you may have to adapt some of the package names to match. For example:
-
-<notextile>
-<pre><code>~$ <span class="userinput">sudo yum install postgresql92 postgresql92-postgresql-devel nginx16</span></code></pre></notextile>
-
-{% include 'notebox_end' %}
 
 h2. Set up the database
 
@@ -159,105 +158,4 @@ This command aborts when it encounters an error.  It's safe to rerun multiple ti
 
 h2. Set up Web servers
 
-For best performance, we recommend you use Nginx as your Web server front-end, with a Passenger backend for the main API server and a Puma backend for API server Websockets.  To do that:
-
-<notextile>
-<ol>
-<li>Install Nginx via your distribution or a backports repository.</li>
-
-<li><a href="https://www.phusionpassenger.com/documentation/Users%20guide%20Nginx.html">Install Phusion Passenger for Nginx</a>.</li>
-
-<li><p>Puma is already included with the API server's gems.  We recommend you use a tool like <a href="http://smarden.org/runit/">runit</a> or something similar.  Here's a sample run script for that:</p>
-
-<pre><code>#!/bin/bash
-
-set -e
-exec 2>&1
-
-# Uncomment the line below if you're using RVM.
-#source /etc/profile.d/rvm.sh
-
-envdir="`pwd`/env"
-mkdir -p "$envdir"
-echo ws-only > "$envdir/ARVADOS_WEBSOCKETS"
-
-cd /var/www/arvados-api/current
-echo "Starting puma in `pwd`"
-
-# You may need to change arguments below to match your deployment, especially -u.
-exec chpst -m 1073741824 -u www-data:www-data -e "$envdir" \
-  bundle exec puma -t 0:512 -e production -b tcp://127.0.0.1:8100
-</code></pre>
-</li>
-
-<li><p>Edit the http section of your Nginx configuration to run the Passenger server, and act as a front-end for both it and Puma.  You might add a block like the following, adding SSL and logging parameters to taste:</p>
-
-<pre><code>server {
-  listen 127.0.0.1:8000;
-  server_name localhost-api;
-
-  root /var/www/arvados-api/current/public;
-  index  index.html index.htm index.php;
-
-  passenger_enabled on;
-  # If you're using RVM, uncomment the line below.
-  #passenger_ruby /usr/local/rvm/wrappers/default/ruby;
-}
-
-upstream api {
-  server     127.0.0.1:8000  fail_timeout=10s;
-}
-
-upstream websockets {
-  # The address below must match the one specified in puma's -b option.
-  server     127.0.0.1:8100  fail_timeout=10s;
-}
-
-proxy_http_version 1.1;
-
-server {
-  listen       <span class="userinput">[your public IP address]</span>:443 ssl;
-  server_name  <span class="userinput">uuid_prefix.your.domain</span>;
-
-  ssl on;
-
-  index  index.html index.htm index.php;
-
-  location / {
-    proxy_pass            http://api;
-    proxy_redirect        off;
-
-    proxy_set_header      X-Forwarded-Proto https;
-    proxy_set_header      Host $http_host;
-    proxy_set_header      X-External-Client $external_client;
-    proxy_set_header      X-Real-IP $remote_addr;
-    proxy_set_header      X-Forwarded-For $proxy_add_x_forwarded_for;
-  }
-}
-
-server {
-  listen       <span class="userinput">[your public IP address]</span>:443 ssl;
-  server_name  ws.<span class="userinput">uuid_prefix.your.domain</span>;
-
-  ssl on;
-
-  index  index.html index.htm index.php;
-
-  location / {
-    proxy_pass            http://websockets;
-    proxy_redirect        off;
-
-    proxy_set_header      Upgrade $http_upgrade;
-    proxy_set_header      Connection "upgrade";
-    proxy_set_header      Host $host;
-    proxy_set_header      X-Real-IP $remote_addr;
-    proxy_set_header      X-Forwarded-For $proxy_add_x_forwarded_for;
-  }
-}
-</code></pre>
-</li>
-
-<li>Restart Nginx.</li>
-
-</ol>
-</notextile>
+{% include 'install_nginx_apiserver' %}
