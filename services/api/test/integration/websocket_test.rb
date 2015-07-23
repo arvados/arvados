@@ -646,4 +646,55 @@ class WebsocketTest < ActionDispatch::IntegrationTest
   end
 
 
+  test "connect, subscribe with invalid filter" do
+    state = 1
+    human = nil
+    human_ev_uuid = nil
+
+    authorize_with :admin
+
+    ws_helper :admin do |ws|
+      ws.on :open do |event|
+        ws.send ({method: 'subscribe', filters: [['object_blarg', 'is_a', 'arvados#human']]}.to_json)
+      end
+
+      ws.on :message do |event|
+        d = Oj.load event.data
+        case state
+        when 1
+          assert_equal 200, d["status"]
+          Specimen.create
+          human = Human.create
+          state = 2
+        when 2
+          assert_equal 500, d["status"]
+          state = 3
+          ws.close
+        when 3
+          assert false, "Should not get any more events"
+        end
+      end
+
+    end
+
+    # Try connecting again, test that #6451 is fixed
+    # (invalid filter crashes websockets)
+    status = nil
+    ws_helper :admin do |ws|
+      ws.on :open do |event|
+        ws.send ({method: 'subscribe'}.to_json)
+      end
+
+      ws.on :message do |event|
+        d = Oj.load event.data
+        status = d["status"]
+        ws.close
+      end
+    end
+
+    assert_equal 200, status
+
+  end
+
+
 end
