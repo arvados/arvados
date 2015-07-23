@@ -15,11 +15,10 @@ function usage {
     echo >&2 "Note: this script requires an arvados token created with these permissions:"
     echo >&2 '  arv api_client_authorization create_system_auth \'
     echo >&2 '    --scopes "[\"GET /arvados/v1/virtual_machines\",'
-    echo >&2 '               \"GET /arvados/v1/keep_services\",'
+    echo >&2 '               \"GET /arvados/v1/keep_services/\",'
     echo >&2 '               \"GET /arvados/v1/groups\",'
     echo >&2 '               \"GET /arvados/v1/links\",'
     echo >&2 '               \"GET /arvados/v1/groups/\",'
-    echo >&2 '               \"GET /arvados/v1/keep_services/accessible\",'
     echo >&2 '               \"POST /arvados/v1/collections\",'
     echo >&2 '               \"POST /arvados/v1/links\"]"'
     echo >&2
