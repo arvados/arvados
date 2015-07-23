@@ -297,6 +297,7 @@ class UsersController < ApplicationController
     # current user's ssh keys
     @my_ssh_keys = AuthorizedKey.where(key_type: 'SSH', owner_uuid: current_user.uuid)
 
+    @page = params["page"]
     respond_to do |f|
       f.html { render template: 'users/manage_account' }
     end

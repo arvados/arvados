@@ -56,7 +56,14 @@
                 </li>
                 <% if current_user.is_active %>
                 <li role="menuitem"><a href="/projects/<%=current_user.uuid%>" role="menuitem"><i class="fa fa-home fa-fw"></i> Home project </a></li>
+
+                <li role="menuitem"><%= link_to raw('<i class="fa fa-key fa-fw"></i> Virtual Machines'), manage_account_path(page: "manage_virtual_machines") %></li>
+                <li role="menuitem"><%= link_to raw('<i class="fa fa-key fa-fw"></i> Repositories'), manage_account_path(page: "manage_repositories") %></li>
+                <li role="menuitem"><%= link_to raw('<i class="fa fa-key fa-fw"></i> SSH Keys'), manage_account_path(page: "manage_ssh_keys") %></li>
+                <li role="menuitem"><%= link_to raw('<i class="fa fa-key fa-fw"></i> Current Token'), manage_account_path(page: "manage_current_token") %></li>
+
                 <li role="menuitem"><a href="/manage_account" role="menuitem"><i class="fa fa-key fa-fw"></i> Manage account</a></li>
+
                 <% if Rails.configuration.user_profile_form_fields %>
                   <li role="menuitem"><a href="/users/<%=current_user.uuid%>/profile" role="menuitem"><i class="fa fa-key fa-fw"></i> Manage profile</a></li>
                 <% end %>
