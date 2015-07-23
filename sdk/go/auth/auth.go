@@ -1,6 +1,7 @@
 package auth
 
 import (
+	"encoding/base64"
 	"net/http"
 	"net/url"
 	"strings"
@@ -19,6 +20,15 @@ func NewCredentialsFromHTTPRequest(r *http.Request) *Credentials {
 	c.LoadTokensFromHTTPRequest(r)
 	return c
 }
+
+// EncodeTokenCookie accepts a token and returns a byte slice suitable
+// for use as a cookie value, such that it will be decoded correctly
+// by LoadTokensFromHTTPRequest.
+var EncodeTokenCookie func([]byte) string = base64.URLEncoding.EncodeToString
+
+// DecodeTokenCookie accepts a cookie value and returns the encoded
+// token.
+var DecodeTokenCookie func(string) ([]byte, error) = base64.URLEncoding.DecodeString
 
 // LoadTokensFromHttpRequest loads all tokens it can find in the
 // headers and query string of an http query.
@@ -51,6 +61,8 @@ func (a *Credentials) LoadTokensFromHTTPRequest(r *http.Request) {
 		a.Tokens = append(a.Tokens, val...)
 	}
 
+	a.loadTokenFromCookie(r)
+
 	// TODO: Load token from Rails session cookie (if Rails site
 	// secret is known)
 }
@@ -59,3 +71,15 @@ func (a *Credentials) LoadTokensFromHTTPRequest(r *http.Request) {
 // LoadTokensFromHttpRequest() that [or how] we should read and parse
 // the request body. This has to be requested explicitly by the
 // application.
+
+func (a *Credentials) loadTokenFromCookie(r *http.Request) {
+	cookie, err := r.Cookie("api_token")
+	if err != nil || len(cookie.Value) == 0 {
+		return
+	}
+	token, err := DecodeTokenCookie(cookie.Value)
+	if err != nil {
+		return
+	}
+	a.Tokens = append(a.Tokens, string(token))
+}

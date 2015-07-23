@@ -1,27 +1,157 @@
 // Keep-web provides read-only HTTP access to files stored in Keep. It
 // serves public data to anonymous and unauthenticated clients, and
-// accepts authentication via Arvados tokens. It can be installed
-// anywhere with access to Keep services, typically behind a web proxy
-// that provides SSL support.
+// serves private data to clients that supply Arvados API tokens. It
+// can be installed anywhere with access to Keep services, typically
+// behind a web proxy that supports TLS.
 //
-// Given that this amounts to a web hosting service for arbitrary
-// content, it is vital to ensure that at least one of the following is
-// true:
+// Starting the server
 //
-// Usage
-//
-// Listening:
+// Serve HTTP requests at port 1234 on all interfaces:
 //
 //   keep-web -address=:1234
 //
-// Start an HTTP server on port 1234.
+// Serve HTTP requests at port 1234 on the interface with IP address 1.2.3.4:
 //
 //   keep-web -address=1.2.3.4:1234
 //
-// Start an HTTP server on port 1234, on the interface with IP address 1.2.3.4.
+// Proxy configuration
 //
 // Keep-web does not support SSL natively. Typically, it is installed
 // behind a proxy like nginx.
+//
+// Here is an example nginx configuration.
+//
+//	http {
+//	  upstream keep-web {
+//	    server localhost:1234;
+//	  }
+//	  server {
+//	    listen *:443 ssl;
+//	    server_name dl.example.com *.dl.example.com ~.*--dl.example.com;
+//	    ssl_certificate /root/wildcard.example.com.crt;
+//	    ssl_certificate_key /root/wildcard.example.com.key;
+//	    location  / {
+//	      proxy_pass http://keep-web;
+//	      proxy_set_header Host $host;
+//	      proxy_set_header X-Forwarded-For $remote_addr;
+//	    }
+//	  }
+//	}
+//
+// It is not necessary to run keep-web on the same host as the nginx
+// proxy. However, TLS is not used between nginx and keep-web, so
+// intervening networks must be secured by other means.
+//
+// Download URLs
+//
+// The following "same origin" URL patterns are supported for public
+// collections (i.e., collections which can be served by keep-web
+// without making use of any credentials supplied by the client). See
+// "Same-origin mode" below.
+//
+//   http://dl.example.com/c=uuid_or_pdh/path/file.txt
+//   http://dl.example.com/c=uuid_or_pdh/path/t=TOKEN/file.txt
+//
+// The following "multiple origin" URL patterns are supported for all
+// collections:
+//
+//   http://uuid_or_pdh--dl.example.com/path/file.txt
+//   http://uuid_or_pdh--dl.example.com/t=/path/file.txt
+//   http://uuid_or_pdh--dl.example.com/t=TOKEN/path/file.txt
+//
+// In the "multiple origin" form, the string "--" can be replaced with
+// "." with identical results (assuming the upstream proxy is
+// configured accordingly). These two are equivalent:
+//
+//   http://uuid_or_pdh--dl.example.com/path/file.txt
+//   http://uuid_or_pdh.dl.example.com/path/file.txt
+//
+// The first form minimizes the cost and effort of deploying a
+// wildcard TLS certificate for *.dl.example.com. The second form is
+// likely to be easier to configure, and more efficient to run, on an
+// upstream proxy.
+//
+// In all of the above forms, the "dl.example.com" part can be
+// anything at all.
+//
+// In all of the above forms, the "uuid_or_pdh" part can be either a
+// collection UUID or a portable data hash with the "+" character
+// replaced by "-".
+//
+// Assuming there is a collection with UUID
+// zzzzz-4zz18-znfnqtbbv4spc3w and portable data hash
+// 1f4b0bc7583c2a7f9102c395f4ffc5e3+45, the following URLs are
+// interchangeable:
+//
+//   http://zzzzz-4zz18-znfnqtbbv4spc3w.dl.example.com/foo
+//   http://zzzzz-4zz18-znfnqtbbv4spc3w.dl.example.com/t=/foo
+//   http://zzzzz-4zz18-znfnqtbbv4spc3w--dl.example.com/t=/foo
+//   http://1f4b0bc7583c2a7f9102c395f4ffc5e3-45--foo.example.com/foo
+//   http://1f4b0bc7583c2a7f9102c395f4ffc5e3-45--.invalid/foo
+//
+// Authorization mechanisms
+//
+// A token can be provided in an Authorization header:
+//
+//   Authorization: OAuth2 o07j4px7RlJK4CuMYp7C0LDT4CzR1J1qBE5Avo7eCcUjOTikxK
+//
+// A base64-encoded token can be provided in a cookie named "api_token":
+//
+//   Cookie: api_token=bzA3ajRweDdSbEpLNEN1TVlwN0MwTERUNEN6UjFKMXFCRTVBdm83ZUNjVWpPVGlreEs=
+//
+// A token can be provided in an URL-encoded query string:
+//
+//   GET /foo.txt?api_token=o07j4px7RlJK4CuMYp7C0LDT4CzR1J1qBE5Avo7eCcUjOTikxK
+//
+// A suitably encoded token can be provided in a POST body if the
+// request has a content type of application/x-www-form-urlencoded or
+// multipart/form-data:
+//
+//   POST /foo.txt
+//   Content-Type: application/x-www-form-urlencoded
+//   [...]
+//   api_token=o07j4px7RlJK4CuMYp7C0LDT4CzR1J1qBE5Avo7eCcUjOTikxK
+//
+// If a token is provided in a query string or in a POST request, the
+// response is an HTTP 303 redirect to an equivalent GET request, with
+// the token stripped from the query string and added to a cookie
+// instead.
+//
+// Compatibility
+//
+// Client-provided authorization tokens are ignored if the client does
+// not provide a Host header.
+//
+// In order to use the query string or a POST form authorization
+// mechanisms, the client must follow 303 redirects; the client must
+// accept cookies with a 303 response and send those cookies when
+// performing the redirect; and either the client or an intervening
+// proxy must resolve a relative URL ("//host/path") if given in a
+// response Location header.
+//
+// Intranet mode
+//
+// Normally, Keep-web accepts requests for multiple collections using
+// the same host name, provided the client's credentials are not being
+// used. This provides insufficient XSS protection in an installation
+// where the "anonymously accessible" data is not truly public, but
+// merely protected by network topology.
+//
+// In such cases -- for example, a site which is not reachable from
+// the internet, where some data is world-readable from Arvados's
+// perspective but is intended to be available only to users within
+// the local network -- the upstream proxy should configured to return
+// 401 for all paths beginning with "/c=".
+//
+// Same-origin mode
+//
+// Without the same-origin protection outlined above, a web page
+// stored in collection X could execute JavaScript code that uses the
+// current viewer's credentials to download additional data from
+// collection Y -- data which is accessible to the current viewer, but
+// not to the author of collection X -- from the same origin
+// (``https://dl.example.com/'') and upload it to some other site
+// chosen by the author of collection X.
 //
 package main
 
@@ -31,7 +161,7 @@ package main
 //
 // Normally, Keep-web is installed using a wildcard DNS entry and a
 // wildcard HTTPS certificate, serving data from collection X at
-// ``https://X.dl.example.com/path/file.ext''.
+// ``https://X--dl.example.com/path/file.ext''.
 //
 // It will also serve publicly accessible data at
 // ``https://dl.example.com/collections/X/path/file.txt'', but it does not
@@ -48,10 +178,4 @@ package main
 //
 //   keep-web -trust-all-content [...]
 //
-// In the general case, this should not be enabled: A web page stored
-// in collection X can execute JavaScript code that uses the current
-// viewer's credentials to download additional data -- data which is
-// accessible to the current viewer, but not to the author of
-// collection X -- from the same origin (``https://dl.example.com/'')
-// and upload it to some other site chosen by the author of collection
-// X.
+// In the general case, this should not be enabled: 
