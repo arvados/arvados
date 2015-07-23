@@ -21,7 +21,7 @@ WORKSPACE=path         Path to the Arvados source tree to build packages from
 EOF
 
 EXITCODE=0
-DEBUG=0
+DEBUG=${ARVADOS_DEBUG:-0}
 BUILD_BUNDLE_PACKAGES=0
 TARGET=debian7
 
