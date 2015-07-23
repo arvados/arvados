@@ -19,6 +19,7 @@ function usage {
     echo >&2 '               \"GET /arvados/v1/groups\",'
     echo >&2 '               \"GET /arvados/v1/links\",'
     echo >&2 '               \"GET /arvados/v1/groups/\",'
+    echo >&2 '               \"GET /arvados/v1/collections\",'
     echo >&2 '               \"POST /arvados/v1/collections\",'
     echo >&2 '               \"POST /arvados/v1/links\"]"'
     echo >&2
