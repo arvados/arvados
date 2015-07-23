@@ -153,6 +153,7 @@ rm "$@"
         'debian7': 'wheezy',
         'debian8': 'jessie',
         'ubuntu1204': 'precise',
+        'ubuntu1404': 'trusty',
         }
 
     def post_uploads(self, paths):
@@ -191,7 +192,7 @@ PACKAGE_SUITES = {
                             'services/nodemanager/dist/*.tar.gz'),
     'gems': _define_suite(GemPackageSuite, 'sdk/ruby/*.gem', 'sdk/cli/*.gem'),
     }
-for target in ['debian7', 'debian8', 'ubuntu1204']:
+for target in ['debian7', 'debian8', 'ubuntu1204', 'ubuntu1404']:
     PACKAGE_SUITES[target] = _define_suite(
         DebianPackageSuite, os.path.join('packages', target, '*.deb'),
         target=target)
