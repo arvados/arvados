@@ -144,15 +144,21 @@ class DistroPackageSuite(PackageSuite):
 class DebianPackageSuite(DistroPackageSuite):
     FREIGHT_SCRIPT = """
 cd "$1"; shift
-TARGET=$1; shift
-freight add "$@" "apt/$TARGET"
+DISTNAME=$1; shift
+freight add "$@" "apt/$DISTNAME"
 freight cache
 rm "$@"
 """
+    TARGET_DISTNAMES = {
+        'debian7': 'wheezy',
+        'debian8': 'jessie',
+        'ubuntu1204': 'precise',
+        }
 
     def post_uploads(self, paths):
         self._run_script(self.FREIGHT_SCRIPT, self.REMOTE_DEST_DIR,
-                         self.target, *self._paths_basenames(paths))
+                         self.TARGET_DISTNAMES[self.target],
+                         *self._paths_basenames(paths))
 
 
 class RedHatPackageSuite(DistroPackageSuite):
