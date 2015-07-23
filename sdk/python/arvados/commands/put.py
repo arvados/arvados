@@ -167,7 +167,7 @@ def parse_arguments(arguments):
     args = arg_parser.parse_args(arguments)
 
     if len(args.paths) == 0:
-        args.paths += ['/dev/stdin']
+        args.paths = ['-']
 
     if len(args.paths) != 1 or os.path.isdir(args.paths[0]):
         if args.filename:
@@ -182,9 +182,9 @@ def parse_arguments(arguments):
         args.progress = True
 
     if args.paths == ['-']:
-        args.paths = ['/dev/stdin']
+        args.resume = False
         if not args.filename:
-            args.filename = '-'
+            args.filename = 'stdin'
 
     return args
 
@@ -466,7 +466,16 @@ def main(arguments=None, stdout=sys.stdout, stderr=sys.stderr):
     writer.report_progress()
     writer.do_queued_work()  # Do work resumed from cache.
     for path in args.paths:  # Copy file data to Keep.
-        if os.path.isdir(path):
+        if path == '-':
+            writer.start_new_stream()
+            writer.start_new_file(args.filename)
+            r = sys.stdin.read(64*1024)
+            while r:
+                # Need to bypass _queued_file check in ResumableCollectionWriter.write() to get
+                # CollectionWriter.write().
+                super(arvados.collection.ResumableCollectionWriter, writer).write(r)
+                r = sys.stdin.read(64*1024)
+        elif os.path.isdir(path):
             writer.write_directory_tree(
                 path, max_manifest_depth=args.max_manifest_depth)
         else:
