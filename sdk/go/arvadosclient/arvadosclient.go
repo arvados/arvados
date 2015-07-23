@@ -270,6 +270,21 @@ func (this ArvadosClient) Update(resource string, uuid string, parameters Dict, 
 	return this.Call("PUT", resource, uuid, "", parameters, output)
 }
 
+// Get a resource.
+func (c ArvadosClient) Get(resource string, uuid string, parameters Dict, output interface{}) (err error) {
+	if uuid == "" {
+		// There's no endpoint for that because GET /type/ is
+		// the List API. If there were an endpoint, the
+		// response would be 404: no object has uuid == "".
+		return APIServerError{
+			ServerAddress:     c.ApiServer,
+			HttpStatusCode:    404,
+			HttpStatusMessage: "Not Found",
+		}
+	}
+	return c.Call("GET", resource, uuid, "", parameters, output)
+}
+
 // List the instances of a resource
 //
 //   resource - the arvados resource on which to list

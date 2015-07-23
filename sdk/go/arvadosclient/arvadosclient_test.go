@@ -62,6 +62,13 @@ func (s *ServerRequiredSuite) TestCreatePipelineTemplate(c *C) {
 	c.Assert(getback["components"].(map[string]interface{})["c2"].(map[string]interface{})["script"], Equals, "script2")
 
 	uuid := getback["uuid"].(string)
+
+	getback = make(Dict)
+	err = arv.Get("pipeline_templates", uuid, nil, &getback)
+	c.Assert(err, Equals, nil)
+	c.Assert(getback["name"], Equals, "tmp")
+	c.Assert(getback["components"].(map[string]interface{})["c1"].(map[string]interface{})["script"], Equals, "script1")
+
 	getback = make(Dict)
 	err = arv.Update("pipeline_templates", uuid,
 		Dict{
