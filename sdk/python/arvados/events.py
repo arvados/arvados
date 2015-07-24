@@ -81,14 +81,18 @@ class PollClient(threading.Thread):
 
         while not self.stop.isSet():
             max_id = self.id
+            moreitems = False
             for f in self.filters:
-                items = self.api.logs().list(order="id asc", filters=f+[["id", ">", str(self.id)]]).execute()['items']
-                for i in items:
+                items = self.api.logs().list(order="id asc", filters=f+[["id", ">", str(self.id)]]).execute()
+                for i in items["items"]:
                     if i['id'] > max_id:
                         max_id = i['id']
                     self.on_event(i)
+                if items["items_available"] > len(items["items"]):
+                    moreitems = True
             self.id = max_id
-            self.stop.wait(self.poll_time)
+            if not moreitems:
+                self.stop.wait(self.poll_time)
 
     def run_forever(self):
         # Have to poll here, otherwise KeyboardInterrupt will never get processed.
@@ -119,16 +123,21 @@ def _subscribe_websocket(api, filters, on_event, last_log_id=None):
     if not endpoint:
         raise errors.FeatureNotEnabledError(
             "Server does not advertise a websocket endpoint")
-    uri_with_token = "{}?api_token={}".format(endpoint, api.api_token)
-    client = EventClient(uri_with_token, filters, on_event, last_log_id)
-    ok = False
     try:
-        client.connect()
-        ok = True
-        return client
-    finally:
-        if not ok:
-            client.close_connection()
+        uri_with_token = "{}?api_token={}".format(endpoint, api.api_token)
+        client = EventClient(uri_with_token, filters, on_event, last_log_id)
+        ok = False
+        try:
+            client.connect()
+            ok = True
+            return client
+        finally:
+            if not ok:
+                client.close_connection()
+    except:
+        _logger.warn("Failed to connect to websockets on %s" % endpoint)
+        raise
+
 
 def subscribe(api, filters, on_event, poll_fallback=15, last_log_id=None):
     """
