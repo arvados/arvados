@@ -188,6 +188,11 @@ class InodeCache(object):
     def find(self, uuid):
         return self._by_uuid.get(uuid)
 
+    def clear(self):
+        self._entries.clear()
+        self._by_uuid.clear()
+        self._total = 0
+
 class Inodes(object):
     """Manage the set of inodes.  This is the mapping from a numeric id
     to a concrete File or Directory object"""
@@ -243,6 +248,17 @@ class Inodes(object):
 
     def invalidate_entry(self, inode, name):
         llfuse.invalidate_entry(inode, name)
+
+    def clear(self):
+        self.inode_cache.clear()
+
+        for k,v in self._entries.items():
+            try:
+                v.finalize()
+            except Exception as e:
+                _logger.exception("Error during finalize of inode %i", k)
+
+        self._entries.clear()
 
 
 def catch_exceptions(orig_func):
@@ -311,15 +327,10 @@ class Operations(llfuse.Operations):
     @catch_exceptions
     def destroy(self):
         if self.events:
-            self.events.close()
+            self.events.terminate()
             self.events = None
 
-        for k,v in self.inodes.items():
-            try:
-                v.finalize()
-            except Exception as e:
-                _logger.exception("Error during finalize of inode %i", k)
-        self.inodes = None
+        self.inodes.clear()
 
     def access(self, inode, mode, ctx):
         return True
