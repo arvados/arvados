@@ -170,7 +170,7 @@ class InodeCache(object):
             if obj.cache_uuid:
                 self._by_uuid[obj.cache_uuid] = obj
             self._total += obj.objsize()
-            _logger.debug("InodeCache touched %i (size %i) total now %i", obj.inode, obj.objsize(), self._total)
+            _logger.debug("InodeCache touched %i (size %i) (uuid %s) total now %i", obj.inode, obj.objsize(), obj.cache_uuid, self._total)
             self.cap_cache()
         else:
             obj.cache_priority = None

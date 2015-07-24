@@ -423,8 +423,8 @@ class CollectionDirectory(CollectionDirectoryBase):
                 return True
             finally:
                 self._updating_lock.release()
-        except arvados.errors.NotFoundError:
-            _logger.exception("arv-mount %s: error", self.collection_locator)
+        except arvados.errors.NotFoundError as e:
+            _logger.error("Error fetching collection '%s': %s", self.collection_locator, e)
         except arvados.errors.ArgumentError as detail:
             _logger.warning("arv-mount %s: error %s", self.collection_locator, detail)
             if self.collection_record is not None and "manifest_text" in self.collection_record:
@@ -527,6 +527,7 @@ will appear if it exists.
                 self._entries[k] = e
                 return True
             else:
+                _logger.debug('update failed of %s', k)
                 return False
         except Exception as e:
             _logger.debug('arv-mount exception keep %s', e)
