@@ -327,7 +327,7 @@ class Operations(llfuse.Operations):
     @catch_exceptions
     def destroy(self):
         if self.events:
-            self.events.terminate()
+            self.events.close()
             self.events = None
 
         self.inodes.clear()

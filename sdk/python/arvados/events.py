@@ -28,6 +28,7 @@ class EventClient(WebSocketClient):
         super(EventClient, self).__init__(url, ssl_options=ssl_options)
         self.filters = filters
         self.on_event = on_event
+        self.stop = threading.Event()
         self.last_log_id = last_log_id
 
     def opened(self):
@@ -36,12 +37,14 @@ class EventClient(WebSocketClient):
     def received_message(self, m):
         self.on_event(json.loads(str(m)))
 
-    def close_connection(self):
-        try:
-            self.sock.shutdown(socket.SHUT_RDWR)
-            self.sock.close()
-        except:
-            pass
+    def closed(self, code, reason=None):
+        self.stop.set()
+
+    def close(self, code=1000, reason=''):
+        super(EventClient, self).close(code, reason)
+        self.close_connection()
+        while not self.stop.is_set():
+            self.stop.wait(1)
 
     def subscribe(self, filters, last_log_id=None):
         m = {"method": "subscribe", "filters": filters}
