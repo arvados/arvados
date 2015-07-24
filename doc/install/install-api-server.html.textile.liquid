@@ -6,37 +6,33 @@ title: Install the API server
 
 h2. Install prerequisites
 
-The Arvados package repository includes an API server package that can help automate much of the deployment.  It requires:
+The Arvados package repository includes an API server package that can help automate much of the deployment.
 
-* PostgreSQL 9.0+
-* "Ruby 2.1 and bundler":install-manual-prerequisites-ruby.html
-* Build tools and the curl and PostgreSQL development libraries, to build gem dependencies
-* Nginx
+h3(#install_ruby_and_bundler). Install Ruby and Bundler
+
+{% include 'install_ruby_and_bundler' %}
+
+h3(#install_postgres). Install PostgreSQL
+
+{% include 'install_postgres' %}
+
+h3(#build_tools_apiserver). Build tools
 
 On older distributions, you may need to use a backports repository to satisfy these requirements.  For example, on older Red Hat-based systems, consider using the "postgresql92":https://www.softwarecollections.org/en/scls/rhscl/postgresql92/ and "nginx16":https://www.softwarecollections.org/en/scls/rhscl/nginx16/ Software Collections.
 
 On a Debian-based system, install the following packages:
 
 <notextile>
-<pre><code>~$ <span class="userinput">sudo apt-get install bison build-essential libpq-dev libcurl4-openssl-dev postgresql git nginx arvados-api-server</span>
+<pre><code>~$ <span class="userinput">sudo apt-get install bison build-essential libcurl4-openssl-dev git nginx arvados-api-server</span>
 </code></pre>
 </notextile>
 
 On a Red Hat-based system, install the following packages:
 
 <notextile>
-<pre><code>~$ <span class="userinput">sudo yum install bison make automake gcc gcc-c++ libcurl-devel postgresql-server postgresql-devel nginx git arvados-api-server</span>
+<pre><code>~$ <span class="userinput">sudo yum install bison make automake gcc gcc-c++ libcurl-devel nginx git arvados-api-server</span>
 </code></pre>
 </notextile>
-
-{% include 'notebox_begin' %}
-
-If you intend to use specific versions of these packages from Software Collections, you may have to adapt some of the package names to match. For example:
-
-<notextile>
-<pre><code>~$ <span class="userinput">sudo yum install postgresql92 postgresql92-postgresql-devel nginx16</span></code></pre></notextile>
-
-{% include 'notebox_end' %}
 
 h2. Set up the database
 
