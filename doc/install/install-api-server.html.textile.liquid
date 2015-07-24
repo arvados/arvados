@@ -158,4 +158,105 @@ This command aborts when it encounters an error.  It's safe to rerun multiple ti
 
 h2. Set up Web servers
 
-{% include 'install_nginx_apiserver' %}
+For best performance, we recommend you use Nginx as your Web server front-end, with a Passenger backend for the main API server and a Puma backend for API server Websockets.  To do that:
+
+<notextile>
+<ol>
+<li>Install Nginx via your distribution or a backports repository.</li>
+
+<li><a href="https://www.phusionpassenger.com/documentation/Users%20guide%20Nginx.html">Install Phusion Passenger for Nginx</a>.</li>
+
+<li><p>Puma is already included with the API server's gems.  We recommend you use a tool like <a href="http://smarden.org/runit/">runit</a> or something similar.  Here's a sample run script for that:</p>
+
+<pre><code>#!/bin/bash
+
+set -e
+exec 2>&1
+
+# Uncomment the line below if you're using RVM.
+#source /etc/profile.d/rvm.sh
+
+envdir="`pwd`/env"
+mkdir -p "$envdir"
+echo ws-only > "$envdir/ARVADOS_WEBSOCKETS"
+
+cd /var/www/arvados-api/current
+echo "Starting puma in `pwd`"
+
+# You may need to change arguments below to match your deployment, especially -u.
+exec chpst -m 1073741824 -u www-data:www-data -e "$envdir" \
+  bundle exec puma -t 0:512 -e production -b tcp://127.0.0.1:8100
+</code></pre>
+</li>
+
+<li><p>Edit the http section of your Nginx configuration to run the Passenger server, and act as a front-end for both it and Puma.  You might add a block like the following, adding SSL and logging parameters to taste:</p>
+
+<pre><code>server {
+  listen 127.0.0.1:8000;
+  server_name localhost-api;
+
+  root /var/www/arvados-api/current/public;
+  index  index.html index.htm index.php;
+
+  passenger_enabled on;
+  # If you're using RVM, uncomment the line below.
+  #passenger_ruby /usr/local/rvm/wrappers/default/ruby;
+}
+
+upstream api {
+  server     127.0.0.1:8000  fail_timeout=10s;
+}
+
+upstream websockets {
+  # The address below must match the one specified in puma's -b option.
+  server     127.0.0.1:8100  fail_timeout=10s;
+}
+
+proxy_http_version 1.1;
+
+server {
+  listen       <span class="userinput">[your public IP address]</span>:443 ssl;
+  server_name  <span class="userinput">uuid_prefix.your.domain</span>;
+
+  ssl on;
+
+  index  index.html index.htm index.php;
+
+  location / {
+    proxy_pass            http://api;
+    proxy_redirect        off;
+
+    proxy_set_header      X-Forwarded-Proto https;
+    proxy_set_header      Host $http_host;
+    proxy_set_header      X-External-Client $external_client;
+    proxy_set_header      X-Real-IP $remote_addr;
+    proxy_set_header      X-Forwarded-For $proxy_add_x_forwarded_for;
+  }
+}
+
+server {
+  listen       <span class="userinput">[your public IP address]</span>:443 ssl;
+  server_name  ws.<span class="userinput">uuid_prefix.your.domain</span>;
+
+  ssl on;
+
+  index  index.html index.htm index.php;
+
+  location / {
+    proxy_pass            http://websockets;
+    proxy_redirect        off;
+
+    proxy_set_header      Upgrade $http_upgrade;
+    proxy_set_header      Connection "upgrade";
+    proxy_set_header      Host $host;
+    proxy_set_header      X-Real-IP $remote_addr;
+    proxy_set_header      X-Forwarded-For $proxy_add_x_forwarded_for;
+  }
+}
+</code></pre>
+</li>
+
+<li>Restart Nginx.</li>
+
+</ol>
+</notextile>

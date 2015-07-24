@@ -121,7 +121,60 @@ This command aborts when it encounters an error.  It's safe to rerun multiple ti
 
 h2. Set up Web server
 
-{% include 'install_nginx_workbench' %}
+For best performance, we recommend you use Nginx as your Web server front-end, with a Passenger backend to serve Workbench.  To do that:
+
+<notextile>
+<ol>
+<li>Install Nginx via your distribution or a backports repository.</li>
+
+<li><a href="https://www.phusionpassenger.com/documentation/Users%20guide%20Nginx.html">Install Phusion Passenger for Nginx</a>.</li>
+
+<li><p>Edit the http section of your Nginx configuration to run the Passenger server, and act as a front-end for it.  You might add a block like the following, adding SSL and logging parameters to taste:</p>
+
+<pre><code>server {
+  listen 127.0.0.1:9000;
+  server_name localhost-workbench;
+
+  root /var/www/arvados-workbench/current/public;
+  index  index.html index.htm index.php;
+
+  passenger_enabled on;
+  # If you're using RVM, uncomment the line below.
+  #passenger_ruby /usr/local/rvm/wrappers/default/ruby;
+}
+
+upstream workbench {
+  server     127.0.0.1:9000  fail_timeout=10s;
+}
+
+proxy_http_version 1.1;
+
+server {
+  listen       <span class="userinput">[your public IP address]</span>:443 ssl;
+  server_name  workbench.<span class="userinput">uuid-prefix.your.domain</span>;
+
+  ssl on;
+
+  index  index.html index.htm index.php;
+
+  location / {
+    proxy_pass            http://workbench;
+    proxy_redirect        off;
+
+    proxy_set_header      X-Forwarded-Proto https;
+    proxy_set_header      Host $http_host;
+    proxy_set_header      X-External-Client $external_client;
+    proxy_set_header      X-Real-IP $remote_addr;
+    proxy_set_header      X-Forwarded-For $proxy_add_x_forwarded_for;
+  }
+}
+</code></pre>
+</li>
+
+<li>Restart Nginx.</li>
+
+</ol>
+</notextile>
 
 h2. Trusted client setting
 
