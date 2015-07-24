@@ -41,8 +41,16 @@ class EventClient(WebSocketClient):
         self.stop.set()
 
     def close(self, code=1000, reason=''):
+        # parent close() method sends a asynchronous "closed" event to the server
         super(EventClient, self).close(code, reason)
+
+        # if server doesn't respond by finishing the close handshake, we'll be
+        # stuck in limbo forever.  We don't need to wait for the server to
+        # respond to go ahead and actually close the socket.
         self.close_connection()
+
+        # wait for websocket thread to finish up (closed() is called by
+        # websocket thread in as part of terminate())
         while not self.stop.is_set():
             self.stop.wait(1)
 
