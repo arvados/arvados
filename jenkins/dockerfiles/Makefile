@@ -1,4 +1,4 @@
-all: centos6/generated debian7/generated debian8/generated ubuntu1204/generated
+all: centos6/generated debian7/generated debian8/generated ubuntu1204/generated ubuntu1404/generated
 
 centos6/generated: common-generated-all
 	test -d centos6/generated || mkdir centos6/generated
@@ -15,6 +15,10 @@ debian8/generated: common-generated-all
 ubuntu1204/generated: common-generated-all
 	test -d ubuntu1204/generated || mkdir ubuntu1204/generated
 	cp -rlt ubuntu1204/generated common-generated/*
+
+ubuntu1404/generated: common-generated-all
+	test -d ubuntu1404/generated || mkdir ubuntu1404/generated
+	cp -rlt ubuntu1404/generated common-generated/*
 
 common-generated-all: common-generated/golang-amd64.tar.gz
 

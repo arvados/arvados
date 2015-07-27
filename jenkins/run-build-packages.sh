@@ -104,6 +104,17 @@ case "$TARGET" in
             ciso8601 pycrypto backports.ssl_match_hostname pycurl llfuse)
         PYTHON3_BACKPORTS=(docker-py six requests websocket-client)
         ;;
+    ubuntu1404)
+        FORMAT=deb
+        PYTHON2_PACKAGE=python$PYTHON2_VERSION
+        PYTHON2_PKG_PREFIX=python
+        PYTHON3_PACKAGE=python$PYTHON3_VERSION
+        PYTHON3_PKG_PREFIX=python3
+        PYTHON_BACKPORTS=(pyasn1==0.1.7 pyasn1-modules==0.0.5 llfuse ciso8601 \
+            google-api-python-client six uritemplate oauth2client httplib2 \
+            rsa apache-libcloud pycurl backports.ssl_match_hostname)
+        PYTHON3_BACKPORTS=(docker-py requests websocket-client)
+        ;;
     centos6)
         FORMAT=rpm
         PYTHON2_PACKAGE=$(rpm -qf "$(which python$PYTHON2_VERSION)" --queryformat '%{NAME}\n')
