@@ -6,6 +6,10 @@ title: Install Single Sign On (SSO) server
 
 h2(#dependencies). Install dependencies
 
+h3(#install_ruby_and_bundler). Install git and curl
+
+{% include 'install_tools' %}
+
 h3(#install_ruby_and_bundler). Install Ruby and Bundler
 
 {% include 'install_ruby_and_bundler' %}
@@ -198,9 +202,9 @@ xxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxx
 </code></pre>
 </notextile>
 
-h2(#client). Generate assets
+h2(#client). Precompile assets
 
-If you are running in the production environment, you'll want to generate the assets:
+If you are running in the production environment, you must precompile the assets:
 
 <notextile>
 <pre><code>~/sso-devise-omniauth-provider$ <span class="userinput">RAILS_ENV=production bundle exec rake assets:precompile</span>
@@ -209,15 +213,24 @@ If you are running in the production environment, you'll want to generate the as
 
 h2. Start the SSO server
 
-h3. Run a simple standalone server
-
-You can use the Webrick server that is bundled with Ruby to quickly verify that your installation is functioning:
+h3. Run a standalone passenger server
 
 <notextile>
-<pre><code>~/sso-devise-omniauth-provider$ <span class="userinput">RAILS_ENV=production bundle exec rails server</span>
+<pre><code>~/sso-devise-omniauth-provider$ <span class="userinput">RAILS_ENV=production passenger start</span>
+=============== Phusion Passenger Standalone web server started ===============
+...
 </code></pre>
-</notextile>
 
-h3. Production environment
+Note, if you get the following warning "you may safely ignore it:":https://stackoverflow.com/questions/10374871/no-secret-option-provided-to-racksessioncookie-warning
 
-As a Ruby on Rails application, the SSO server should be compatible with any Ruby application server that supports Rack applications.  We recommend "Passenger":https://www.phusionpassenger.com/ to run the SSO server in production.
+<pre>
+Connecting to database specified by database.yml
+App 4574 stderr:         SECURITY WARNING: No secret option provided to Rack::Session::Cookie.
+App 4574 stderr:         This poses a security threat. It is strongly recommended that you
+App 4574 stderr:         provide a secret to prevent exploits that may be possible from crafted
+App 4574 stderr:         cookies. This will not be supported in future versions of Rack, and
+App 4574 stderr:         future versions will even invalidate your existing user cookies.
+App 4574 stderr:
+App 4574 stderr:         Called from: /var/lib/gems/2.1.0/gems/actionpack-3.2.8/lib/action_dispatch/middleware/session/abstract_store.rb:28:in `initialize'.
+App 4592 stdout:
+</pre>
