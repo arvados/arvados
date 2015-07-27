@@ -225,8 +225,8 @@ for s,f,outfilename in todo:
             sys.stderr.write("%s  %s/%s\n"
                              % (digestor.hexdigest(), s.name(), f.name()))
     except KeyboardInterrupt:
-        if outfile and (outfile.fileno() > 2) and (not outfile.closed()):
-            os.unlink(outfilename)
+        if outfile and (outfile.fileno() > 2) and not outfile.closed:
+            os.unlink(outfile.name)
         break
 
 if args.progress:
