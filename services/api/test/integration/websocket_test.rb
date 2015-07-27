@@ -84,7 +84,7 @@ class WebsocketTest < ActionDispatch::IntegrationTest
     assert_equal 200, status
   end
 
-  test "connect, subscribe, get event" do
+  def subscribe_test
     state = 1
     spec = nil
     ev_uuid = nil
@@ -113,6 +113,10 @@ class WebsocketTest < ActionDispatch::IntegrationTest
 
     assert_not_nil spec
     assert_equal spec.uuid, ev_uuid
+  end
+
+  test "connect, subscribe, get event" do
+    subscribe_test()
   end
 
   test "connect, subscribe, get two events" do
@@ -682,20 +686,7 @@ class WebsocketTest < ActionDispatch::IntegrationTest
 
     # Try connecting again, ensure that websockets server is still running and
     # didn't crash per #6451
-    status = nil
-    ws_helper :admin do |ws|
-      ws.on :open do |event|
-        ws.send ({method: 'subscribe'}.to_json)
-      end
-
-      ws.on :message do |event|
-        d = Oj.load event.data
-        status = d["status"]
-        ws.close
-      end
-    end
-
-    assert_equal 200, status
+    subscribe_test()
 
   end
 
