@@ -201,7 +201,7 @@ else
     git config user.name "Curoverse build bot"
     cd ..
 fi
-python -mcwltool specification/cwlsite.cwl specification/cwlsite-job.json --outdir=$PWD/common-workflow-language.github.io
+python -mcwltool --outdir=$PWD/common-workflow-language.github.io specification/cwlsite.cwl specification/cwlsite-job.json
 cd common-workflow-language.github.io
 git add --all
 git diff-index --quiet HEAD || git commit -m"Build bot"
