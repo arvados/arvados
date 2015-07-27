@@ -22,7 +22,7 @@ h3. Get SSO server code and run bundle
 <pre><code>~$ <span class="userinput">cd $HOME</span> # (or wherever you want to install)
 ~$ <span class="userinput">git clone https://github.com/curoverse/sso-devise-omniauth-provider.git</span>
 ~$ <span class="userinput">cd sso-devise-omniauth-provider</span>
-~/sso-devise-omniauth-provider$ <span class="userinput">bundle</span>
+~/sso-devise-omniauth-provider$ <span class="userinput">bundle install --without=development</span>
 </code></pre></notextile>
 
 h2. Configure the SSO server
@@ -35,11 +35,18 @@ First, copy the example configuration file:
 
 The SSO server reads the @config/application.yml@ file, as well as the @config/application.defaults.yml@ file. Values in @config/application.yml@ take precedence over the defaults that are defined in @config/application.defaults.yml@. The @config/application.yml.example@ file is not read by the SSO server and is provided for installation convenience, only.
 
-Consult @config/application.default.yml@ for a full list of configuration options. Always put your local configuration in @config/application.yml@, never edit @config/application.default.yml@.
+Consult @config/application.default.yml@ for a full list of configuration options.  Local configuration goes in @config/application.yml@, do not edit @config/application.default.yml@.
 
 h3(#uuid_prefix). uuid_prefix
 
-Define your @uuid_prefix@ in @config/application.yml@ by setting the @uuid_prefix@ field in the section for your environment.  This prefix is used for all database identifiers to identify the record as originating from this site.  It must be exactly 5 alphanumeric characters (lowercase ASCII letters and digits).
+Generate a uuid prefix for the single sign on service.  This prefix is used to identify user records as originating from this site.  It must be exactly 5 alphanumeric characters (lowercase ASCII letters and digits).  You may use the following snippet to generate a uuid prefix:
+
+<notextile>
+<pre><code>~/sso-devise-omniauth-provider$ <span class="userinput">ruby -e 'puts "#{rand(2**64).to_s(36)[0,5]}"'</span>
+abcde
+</code></pre></notextile>
+
+Edit @config/application.yml@ and set @uuid_prefix@ in the "common" section.
 
 h3(#secret_token). secret_token
 
@@ -50,66 +57,15 @@ Generate a new secret token for signing cookies:
 zzzzzzzzzzzzzzzzzzzzzzzzzzzzzzzzzzzzzzzzzzzzzzzzzzzzzzzz
 </code></pre></notextile>
 
-Then put that value in the @secret_token@ field.
+Edit @config/application.yml@ and set @secret_token@ in the "common" section.
 
-h3(#authentication_methods). Authentication methods
+h2(#authentication_methods). Authentication methods
 
-Three authentication methods are supported: Google+, LDAP, and local accounts.
-
-h3(#google). Google+ authentication
-
-In order to use Google+ authentication, you must use the "Google Developers Console":https://console.developers.google.com to create a set of client credentials. In short:
-
-* Enable the Contacts and Google+ APIs.
-* Create an OAuth Client ID for a web application.
-** JavaScript origins: @https://sso.example.com/@
-** Redirect URIs: @https://sso.example.com/auth/google_oauth2/callback@
-
-Copy the "Client ID" and "Client secret" values from the Google Developers Console into the Google section of @config/application.yml@, like this:
-
-<notextile>
-<pre><code>
-  # Google API tokens required for OAuth2 login.
-  #
-  # See https://github.com/zquestz/omniauth-google-oauth2
-  #
-  # and https://developers.google.com/accounts/docs/OAuth2
-  google_oauth2_client_id: "<span class="userinput">---YOUR---CLIENT---ID---HERE---</span>"
-  google_oauth2_client_secret: "<span class="userinput">---YOUR---CLIENT---SECRET---HERE---</span>"
-
-  # Set this to your OpenId 2.0 realm to enable migration from Google OpenId
-  # 2.0 to Google OAuth2 OpenId Connect (Google will provide OpenId 2.0 user
-  # identifiers via the openid.realm parameter in the OAuth2 flow until 2017).
-  google_openid_realm: <span class="userinput">false</span></code></pre></notextile>
-
-h3(#ldap). LDAP authentication
-
-LDAP authentication can be configured with these options. Make sure to preserve the indentation of the fields beyond @use_ldap@.
-
-<pre>
-  # Enable LDAP support.
-  #
-  # If you want to use LDAP, you need to provide
-  # the following set of fields under the use_ldap key.
-  #
-  # use_ldap: false
-  #   title: Example LDAP
-  #   host: ldap.example.com
-  #   port: 636
-  #   method: ssl
-  #   base: "ou=Users, dc=example, dc=com"
-  #   uid: uid
-  #   email_domain: example.com
-  #   #bind_dn: "some_user"
-  #   #password: "some_password"
-  use_ldap: false
-</pre>
+Three authentication methods are supported: local accounts, LDAP, and Google+.  If neither Google OAuth2 nor LDAP are enabled, the SSO server defaults to local user accounts.   Only one authentication mechanism should be in use at a time.
 
 h3(#local_accounts). Local account authentication
 
-If neither Google OAuth2 nor LDAP are enabled, the SSO server automatically
-falls back to local accounts. There are two configuration options for local
-accounts:
+There are two configuration options for local accounts:
 
 <pre>
   # If true, allow new creation of new accounts in the SSO server's internal
@@ -117,11 +73,13 @@ accounts:
   allow_account_registration: false
 
   # If true, send an email confirmation before activating new accounts in the
-  # SSO server's internal user database.
+  # SSO server's internal user database (otherwise users are activated immediately.)
   require_email_confirmation: false
 </pre>
 
-You can also create local accounts on the SSO server from the rails console:
+For more information about configuring backend support for sending email (required to send email confirmations) see "Configuring Action Mailer":http://guides.rubyonrails.org/configuring.html#configuring-action-mailer
+
+If @allow_account_registration@ is false, you may manually create local accounts on the SSO server from the rails console:
 
 <notextile>
 <pre><code>~/sso-devise-omniauth-provider$ <span class="userinput">RAILS_ENV=production bundle exec rails console</span>
@@ -131,6 +89,59 @@ You can also create local accounts on the SSO server from the rails console:
 :004 &gt; <span class="userinput">quit</span>
 </code></pre>
 </notextile>
+
+h3(#ldap). LDAP authentication
+
+The following options are available to configure LDAP authentication.  Note that you must preserve the indentation of the fields listed under @use_ldap@.
+
+<pre>
+  use_ldap:
+    title: Example LDAP
+    host: ldap.example.com
+    port: 636
+    method: ssl
+    base: "ou=Users, dc=example, dc=com"
+    uid: uid
+    email_domain: example.com
+    #bind_dn: "some_user"
+    #password: "some_password"
+</pre>
+
+table(table).
+|_. Option|_. Description|
+|title |Title displayed to the user on the login page|
+|host  |LDAP server hostname|
+|port  |LDAP server port|
+|method|One of "plain", "ssl", "tls"|
+|base  |Directory lookup base|
+|uid   |User id field used for directory lookup|
+|email_domain|Strip off specified email domain from login and perform lookup on bare username|
+|bind_dn|If required by server, username to log with in before performing directory lookup|
+|password|If required by server, password to log with before performing directory lookup|
+
+h3(#google). Google+ authentication
+
+In order to use Google+ authentication, you must use the <a href="https://console.developers.google.com" target="_blank">Google Developers Console</a> to create a set of client credentials.
+
+# Go to the <a href="https://console.developers.google.com" target="_blank">Google Developers Console</a> and select or create a project; this will take you to the project page
+# On the sidebar, click on *APIs & auth* then select *APIs*
+## Search for "Contacts API" and click on "Enable API"
+## Search for "Google+ API" and click on "Enable API"
+# On the sidebar, click on *Credentials*; under *OAuth* click on "Create new Client ID" to bring up the "Create Client ID" dialog box
+# Under "Application type" select "Web application"
+# If the authorization origins are not displayed, clicking on "Create Client ID" will take you to *Consent screen* settings.
+## On consent screen settings, enter the appropriate details and click on "Save"
+## This will return you to the "Create Client ID" dialog box.
+# You must set the authorization origins.  Edit @sso.your-site.com@ to the appropriate hostname that you will use to access the SSO service:
+## JavaScript origin should be @https://sso.your-site.com/@
+## Redirect URI should be @https://sso.your-site.com/auth/google_oauth2/callback@
+# Copy the values of "Client ID" and "Client secret" from the Google Developers Console into the Google section of @config/application.yml@, like this:
+
+<notextile>
+<pre><code>  # Google API tokens required for OAuth2 login.
+  google_oauth2_client_id: <span class="userinput">"---YOUR---CLIENT---ID---HERE--"-</span>
+  google_oauth2_client_secret: <span class="userinput">"---YOUR---CLIENT---SECRET---HERE--"-</span></code></pre></notextile>
+
 
 h2. Set up the database
 
@@ -170,15 +181,6 @@ Alternatively, if the database user you intend to use for the SSO server is not 
 ~/sso-devise-omniauth-provider$ <span class="userinput">RAILS_ENV=production bundle exec rake db:seed</span>
 </code></pre></notextile>
 
-h2(#client). Generate assets
-
-If you are running in the production environment, you'll want to generate the assets:
-
-<notextile>
-<pre><code>~/sso-devise-omniauth-provider$ <span class="userinput">RAILS_ENV=production bundle exec rake assets:precompile</span>
-</code></pre>
-</notextile>
-
 h2(#client). Create arvados-server client
 
 Use @rails console@ to create a @Client@ record that will be used by the Arvados API server.  The values of @app_id@ and @app_secret@ correspond to the @APP_ID@ and @APP_SECRET@ that must be set in in "Setting up Omniauth in the API server.":install-api-server.html#omniauth
@@ -193,6 +195,15 @@ xxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxx
 :004 &gt; <span class="userinput">c.app_secret = "xxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxx"</span>
 :005 &gt; <span class="userinput">c.save!</span>
 :006 &gt; <span class="userinput">quit</span>
+</code></pre>
+</notextile>
+
+h2(#client). Generate assets
+
+If you are running in the production environment, you'll want to generate the assets:
+
+<notextile>
+<pre><code>~/sso-devise-omniauth-provider$ <span class="userinput">RAILS_ENV=production bundle exec rake assets:precompile</span>
 </code></pre>
 </notextile>
 
