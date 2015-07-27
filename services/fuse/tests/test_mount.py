@@ -1022,12 +1022,13 @@ class MagicDirApiError(FuseMagicTest):
         self.make_mount(fuse.MagicDirectory)
 
         self.operations.inodes.inode_cache.cap = 1
-        self.operations.inodes.inode_cache.min_entries = 1
+        self.operations.inodes.inode_cache.min_entries = 2
 
         with self.assertRaises(OSError):
             llfuse.listdir(os.path.join(self.mounttmp, self.testcollection))
 
         llfuse.listdir(os.path.join(self.mounttmp, self.testcollection))
+
 
 class FuseUnitTest(unittest.TestCase):
     def test_sanitize_filename(self):

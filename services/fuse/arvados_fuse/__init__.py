@@ -148,7 +148,9 @@ class InodeCache(object):
         self._total -= obj.cache_size
         del self._entries[obj.cache_priority]
         if obj.cache_uuid:
-            del self._by_uuid[obj.cache_uuid]
+            self._by_uuid[obj.cache_uuid].remove(obj)
+            if not self._by_uuid[obj.cache_uuid]:
+                del self._by_uuid[obj.cache_uuid]
             obj.cache_uuid = None
         if clear:
             _logger.debug("InodeCache cleared %i total now %i", obj.inode, self._total)
@@ -168,7 +170,11 @@ class InodeCache(object):
             self._entries[obj.cache_priority] = obj
             obj.cache_uuid = obj.uuid()
             if obj.cache_uuid:
-                self._by_uuid[obj.cache_uuid] = obj
+                if obj.cache_uuid not in self._by_uuid:
+                    self._by_uuid[obj.cache_uuid] = [obj]
+                else:
+                    if obj not in self._by_uuid[obj.cache_uuid]:
+                        self._by_uuid[obj.cache_uuid].append(obj)
             self._total += obj.objsize()
             _logger.debug("InodeCache touched %i (size %i) (uuid %s) total now %i", obj.inode, obj.objsize(), obj.cache_uuid, self._total)
             self.cap_cache()

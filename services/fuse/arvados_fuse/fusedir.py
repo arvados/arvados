@@ -524,13 +524,17 @@ will appear if it exists.
                     self.inode, self.inodes, self.api, self.num_retries, k))
 
             if e.update():
-                self._entries[k] = e
+                if k not in self._entries:
+                    self._entries[k] = e
+                else:
+                    self.inodes.del_entry(e)
                 return True
             else:
-                _logger.debug('update failed of %s', k)
+                self.inodes.del_entry(e)
                 return False
         except Exception as e:
             _logger.debug('arv-mount exception keep %s', e)
+            self.inodes.del_entry(e)
             return False
 
     def __getitem__(self, item):
