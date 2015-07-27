@@ -41,6 +41,8 @@ class EventClient(WebSocketClient):
         self.stop.set()
 
     def close(self, code=1000, reason=''):
+        """Close event client and wait for it to finish."""
+
         # parent close() method sends a asynchronous "closed" event to the server
         super(EventClient, self).close(code, reason)
 
@@ -107,6 +109,8 @@ class PollClient(threading.Thread):
             self.stop.wait(1)
 
     def close(self):
+        """Close poll client and wait for it to finish."""
+
         self.stop.set()
         try:
             self.join()
