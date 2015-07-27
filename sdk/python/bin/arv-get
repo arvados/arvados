@@ -24,10 +24,9 @@ parser.add_argument('locator', type=str,
                     help="""
 Collection locator, optionally with a file path or prefix.
 """)
-parser.add_argument('destination', type=str, nargs='?', default='/dev/stdout',
+parser.add_argument('destination', type=str, nargs='?', default='-',
                     help="""
-Local file or directory where the data is to be written. Default:
-/dev/stdout.
+Local file or directory where the data is to be written. Default: stdout.
 """)
 group = parser.add_mutually_exclusive_group()
 group.add_argument('--progress', action='store_true',
@@ -74,7 +73,7 @@ group.add_argument('-f', action='store_true',
                    help="""
 Overwrite existing files while writing. The default behavior is to
 refuse to write *anything* if any of the output files already
-exist. As a special case, -f is not needed to write to /dev/stdout.
+exist. As a special case, -f is not needed to write to stdout.
 """)
 group.add_argument('--skip-existing', action='store_true',
                    help="""
@@ -116,7 +115,7 @@ else:
 # that isn't a tty.
 if (not (args.batch_progress or args.no_progress)
     and sys.stderr.isatty()
-    and (args.destination != '/dev/stdout'
+    and (args.destination != '-'
          or not sys.stdout.isatty())):
     args.progress = True
 
@@ -226,7 +225,7 @@ for s,f,outfilename in todo:
             sys.stderr.write("%s  %s/%s\n"
                              % (digestor.hexdigest(), s.name(), f.name()))
     except KeyboardInterrupt:
-        if outfile and outfilename != '-':
+        if outfile and (outfile.fileno() > 2) and (not outfile.closed()):
             os.unlink(outfilename)
         break
 
