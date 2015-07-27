@@ -41,9 +41,9 @@
                   end %>
 
     <%= if walltime > runningtime
-          render_runtime(walltime, true, false)
+          render_runtime_compact(walltime)
         else
-          render_runtime(runningtime, true, false)
+          render_runtime_compact(runningtime)
         end %><% if @object.finished_at %> at <%= render_localized_date(@object.finished_at) %><% end %>.
     <% else %>
       This pipeline is <%= if @object.state.start_with? 'Running' then 'active' else @object.state.downcase end %>.
@@ -71,11 +71,11 @@
           0
         end
        }.reduce(:+) || 0 %>
-    <%= render_runtime(runningtime, true, false) %><% if (walltime - runningtime) > 0 %>
-      (<%= render_runtime(walltime - runningtime, true, false) %> queued)<% end %><% if cputime == 0 %>.<% else %>
+    <%= render_runtime_compact(runningtime) %><% if (walltime - runningtime) > 0 %>
+      (<%= render_runtime_compact(walltime - runningtime) %> queued)<% end %><% if cputime == 0 %>.<% else %>
       and used
-    <%= render_runtime(cputime, true, false) %>
-    of total time on the nodes (<%= (cputime/runningtime).round(1) %>&Cross; scaling).
+    <%= render_runtime_compact(cputime) %>
+    of node allocation time (<%= (cputime/runningtime).round(1) %>&Cross; scaling).
     <% end %>
 </p>
 

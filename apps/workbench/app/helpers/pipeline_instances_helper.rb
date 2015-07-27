@@ -306,6 +306,19 @@ module PipelineInstancesHelper
     raw(s)
   end
 
+  def render_runtime_compact duration
+    if duration >= DAY
+      "#{(duration / DAY.to_f).round(2)} days"
+    elsif duration >= HOUR
+      "#{(duration / HOUR.to_f).round(2)} hours"
+    elsif duration >= MINUTE
+      "#{(duration / MINUTE.to_f).round(2)} minutes"
+    else
+      seconds = duration.round(2)
+      "#{seconds} second#{'s' if seconds != 1}"
+    end
+  end
+
   def render_unreadable_inputs_present
     if current_user and controller.class.name.eql?('PipelineInstancesController') and unreadable_inputs_present?
       raw('<div class="alert alert-danger unreadable-inputs-present">' +
