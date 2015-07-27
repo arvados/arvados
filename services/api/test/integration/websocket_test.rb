@@ -655,6 +655,7 @@ class WebsocketTest < ActionDispatch::IntegrationTest
 
     ws_helper :admin do |ws|
       ws.on :open do |event|
+        # test that #6451 is fixed (invalid filter crashes websockets)
         ws.send ({method: 'subscribe', filters: [['object_blarg', 'is_a', 'arvados#human']]}.to_json)
       end
 
@@ -677,8 +678,10 @@ class WebsocketTest < ActionDispatch::IntegrationTest
 
     end
 
-    # Try connecting again, test that #6451 is fixed
-    # (invalid filter crashes websockets)
+    assert_equal 3, state
+
+    # Try connecting again, ensure that websockets server is still running and
+    # didn't crash per #6451
     status = nil
     ws_helper :admin do |ws|
       ws.on :open do |event|
