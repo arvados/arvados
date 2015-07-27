@@ -42,7 +42,7 @@ baseurl=http://rpm.arvados.org/CentOS/$releasever/os/$basearch/
 
 h3. Debian and Ubuntu
 
-Packages are available for Debian 7 ("wheezy") and Ubuntu 12.04 ("precise").
+Packages are available for Debian 7 ("wheezy"), Ubuntu 12.04 ("precise"), and Ubuntu 14.04 ("trusty").
 
 First, register the Curoverse signing key in apt's database:
 
@@ -54,6 +54,13 @@ table(table table-bordered table-condensed).
 |OS version|Command|
 |Debian 7 ("wheezy")|<notextile><code><span class="userinput">echo "deb http://apt.arvados.org/ wheezy main" &#x7c; sudo tee /etc/apt/sources.list.d/arvados.list</span></code></notextile>|
 |Ubuntu 12.04 ("precise")|<notextile><code><span class="userinput">echo "deb http://apt.arvados.org/ precise main" &#x7c; sudo tee /etc/apt/sources.list.d/arvados.list</span></code></notextile>|
+|Ubuntu 14.04 ("trusty")|<notextile><code><span class="userinput">echo "deb http://apt.arvados.org/ trusty main" &#x7c; sudo tee /etc/apt/sources.list.d/arvados.list</span></code></notextile>|
+
+{% include 'notebox_begin' %}
+
+Arvados packages for Ubuntu may depend on third-party packages in Ubuntu's "universe" repository.  If you're installing on Ubuntu, make sure you have the universe sources uncommented in @/etc/apt/sources.list@.
+
+{% include 'notebox_end' %}
 
 Retrieve the package list:
 
