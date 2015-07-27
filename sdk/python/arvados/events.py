@@ -28,6 +28,7 @@ class EventClient(WebSocketClient):
         super(EventClient, self).__init__(url, ssl_options=ssl_options)
         self.filters = filters
         self.on_event = on_event
+        self.stop = threading.Event()
         self.last_log_id = last_log_id
 
     def opened(self):
@@ -36,12 +37,24 @@ class EventClient(WebSocketClient):
     def received_message(self, m):
         self.on_event(json.loads(str(m)))
 
-    def close_connection(self):
-        try:
-            self.sock.shutdown(socket.SHUT_RDWR)
-            self.sock.close()
-        except:
-            pass
+    def closed(self, code, reason=None):
+        self.stop.set()
+
+    def close(self, code=1000, reason=''):
+        """Close event client and wait for it to finish."""
+
+        # parent close() method sends a asynchronous "closed" event to the server
+        super(EventClient, self).close(code, reason)
+
+        # if server doesn't respond by finishing the close handshake, we'll be
+        # stuck in limbo forever.  We don't need to wait for the server to
+        # respond to go ahead and actually close the socket.
+        self.close_connection()
+
+        # wait for websocket thread to finish up (closed() is called by
+        # websocket thread in as part of terminate())
+        while not self.stop.is_set():
+            self.stop.wait(1)
 
     def subscribe(self, filters, last_log_id=None):
         m = {"method": "subscribe", "filters": filters}
@@ -100,6 +113,8 @@ class PollClient(threading.Thread):
             self.stop.wait(1)
 
     def close(self):
+        """Close poll client and wait for it to finish."""
+
         self.stop.set()
         try:
             self.join()
