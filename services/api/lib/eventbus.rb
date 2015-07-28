@@ -140,10 +140,15 @@ class EventBus
         # No filters set up, so just record the sequence number
         ws.last_log_id = notify_id
       end
+    rescue ArgumentError => e
+      # There was some kind of user error.
+      Rails.logger.warn "Error publishing event: #{$!}"
+      ws.send ({status: 500, message: $!}.to_json)
+      ws.close
     rescue => e
       Rails.logger.warn "Error publishing event: #{$!}"
       Rails.logger.warn "Backtrace:\n\t#{e.backtrace.join("\n\t")}"
-      ws.send ({status: 500, message: 'error'}.to_json)
+      ws.send ({status: 500, message: $!}.to_json)
       ws.close
       # These exceptions typically indicate serious server trouble:
       # out of memory issues, database connection problems, etc.  Go ahead and
