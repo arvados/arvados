@@ -350,20 +350,21 @@ class Operations(llfuse.Operations):
     def on_event(self, ev):
         if 'event_type' in ev:
             with llfuse.lock:
-                item = self.inodes.inode_cache.find(ev["object_uuid"])
-                if item is not None:
-                    item.invalidate()
-                    if ev["object_kind"] == "arvados#collection":
-                        new_attr = ev.get("properties") and ev["properties"].get("new_attributes") and ev["properties"]["new_attributes"]
+                items = self.inodes.inode_cache.find(ev["object_uuid"])
+                if items is not None:
+                    for item in items:
+                        item.invalidate()
+                        if ev["object_kind"] == "arvados#collection":
+                            new_attr = ev.get("properties") and ev["properties"].get("new_attributes") and ev["properties"]["new_attributes"]
 
-                        # new_attributes.modified_at currently lacks subsecond precision (see #6347) so use event_at which
-                        # should always be the same.
-                        #record_version = (new_attr["modified_at"], new_attr["portable_data_hash"]) if new_attr else None
-                        record_version = (ev["event_at"], new_attr["portable_data_hash"]) if new_attr else None
+                            # new_attributes.modified_at currently lacks subsecond precision (see #6347) so use event_at which
+                            # should always be the same.
+                            #record_version = (new_attr["modified_at"], new_attr["portable_data_hash"]) if new_attr else None
+                            record_version = (ev["event_at"], new_attr["portable_data_hash"]) if new_attr else None
 
-                        item.update(to_record_version=record_version)
-                    else:
-                        item.update()
+                            item.update(to_record_version=record_version)
+                        else:
+                            item.update()
 
                 oldowner = ev.get("properties") and ev["properties"].get("old_attributes") and ev["properties"]["old_attributes"].get("owner_uuid")
                 olditemparent = self.inodes.inode_cache.find(oldowner)
