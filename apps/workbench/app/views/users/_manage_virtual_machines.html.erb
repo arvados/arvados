@@ -97,13 +97,12 @@
         <% end %>
       </tbody>
     </table>
-
-    <p>Sample SSH Conig  <i>~/.ssh/config:</i></p>
+  <% end %>
+</div>
+</div>
+  <p>In order to access virtual machines using SSH, <%= link_to raw('add an SSH key to your account'), manage_account_path(page: "manage_ssh_keys") %> and add a section like this to your SSH configuration file ( <i>~/.ssh/config</i>):</p>
     <pre>Host *.arvados
       TCPKeepAlive yes
       ServerAliveInterval 60
       ProxyCommand ssh -p2222 turnout@switchyard.<%= current_api_host || 'xyzzy.arvadosapi.com' %> -x -a $SSH_PROXY_FLAGS %h
     </pre>
-  <% end %>
-</div>
-</div>

@@ -61,3 +61,5 @@
   <% end %>
 </div>
 </div>
+  <p>In order to clone git repositories using SSH, <%= link_to raw('add an SSH key to your account'), manage_account_path(page: "manage_ssh_keys") %> and clone the git@ URLs.</p>
+  <p>When you are using an Arvados virtual machine, you should clone the https:// URLs. This will authenticate automatically using your API token.</p>

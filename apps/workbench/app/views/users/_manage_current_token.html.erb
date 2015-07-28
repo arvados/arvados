@@ -9,7 +9,7 @@
 
 <div id="#manage_current_token" class="panel-body">
 <p>The Arvados API token is a secret key that enables the Arvados SDKs to access Arvados with the proper permissions. For more information see <%= link_to raw('Getting an API token'), "#{Rails.configuration.arvados_docsite}/user/reference/api-tokens.html", target: "_blank"%>.</p>
-<p>Paste the following lines at a shell prompt to set up the necessary environment for Arvados SDKs to authenticate to your account, <b><%= current_user.email %></b></p>
+<p>Paste the following lines at a shell prompt to set up the necessary environment for Arvados SDKs to authenticate to your <b><%= current_user.username %></b> account.</p>
 
 <pre>
 HISTIGNORE=$HISTIGNORE:'export ARVADOS_API_TOKEN=*'
@@ -21,5 +21,6 @@ export ARVADOS_API_HOST_INSECURE=true
 unset ARVADOS_API_HOST_INSECURE
 <% end %>
 </pre>
+<p>Arvados <%= link_to raw('virtual machines'), manage_account_path(page: "manage_virtual_machines") %> do this for you automatically. This setup is needed only when you use the API remotely (e.g., from your own workstation).</p>
 </div>
 </div>
