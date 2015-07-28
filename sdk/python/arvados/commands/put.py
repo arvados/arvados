@@ -169,6 +169,8 @@ def parse_arguments(arguments):
     if len(args.paths) == 0:
         args.paths = ['-']
 
+    args.paths = map(lambda x: "-" if x == "/dev/stdin" else x, args.paths)
+
     if len(args.paths) != 1 or os.path.isdir(args.paths[0]):
         if args.filename:
             arg_parser.error("""
