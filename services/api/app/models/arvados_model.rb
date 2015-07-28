@@ -23,6 +23,7 @@ class ArvadosModel < ActiveRecord::Base
   after_destroy :log_destroy
   after_find :convert_serialized_symbols_to_strings
   before_validation :normalize_collection_uuids
+  before_validation :set_default_owner
   validate :ensure_serialized_attribute_type
   validate :ensure_valid_uuids
 
@@ -276,12 +277,14 @@ class ArvadosModel < ActiveRecord::Base
     true
   end
 
-  def ensure_owner_uuid_is_permitted
-    raise PermissionDeniedError if !current_user
-
-    if new_record? and respond_to? :owner_uuid=
+  def set_default_owner
+    if new_record? and current_user and respond_to? :owner_uuid=
       self.owner_uuid ||= current_user.uuid
     end
+  end
+
+  def ensure_owner_uuid_is_permitted
+    raise PermissionDeniedError if !current_user
 
     if self.owner_uuid.nil?
       errors.add :owner_uuid, "cannot be nil"
