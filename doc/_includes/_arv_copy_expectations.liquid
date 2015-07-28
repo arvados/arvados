@@ -1,3 +1,12 @@
 {% include 'notebox_begin' %}
-This part of the tutorial assumes that you have a working git repository in the destination cluster. If you do not have a repository created, you can follow the "Adding a new repository":{{site.baseurl}}/user/tutorials/add-new-repository.html page. We will use the *tutorial* repository created in that page as the example.
+As stated above, arv-copy is recursive by default and requires a working git repository in the destination cluster. If you do not have a repository created, you can follow the "Adding a new repository":{{site.baseurl}}/user/tutorials/add-new-repository.html page. We will use the *tutorial* repository created in that page as the example.
+
+<br/>In addition, arv-copy requires git when copying to a git repository. Please make sure that git is installed and available.
+
+Use the following command to check if git is available.
+<notextile><pre><code>~$ <span class="userinput">git --help</span></code></pre></notextile>
+
+Use the following command to install git.
+<notextile><pre><code>~$ <span class="userinput">sudo apt-get install git</span></code></pre></notextile>
+
 {% include 'notebox_end' %}
