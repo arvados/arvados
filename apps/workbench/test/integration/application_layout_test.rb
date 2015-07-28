@@ -240,29 +240,4 @@ class ApplicationLayoutTest < ActionDispatch::IntegrationTest
       assert page.has_text? look_for
     end
   end
-
-  [
-    ['My Virtual Machines', nil, 'Host name'],
-    ['My Repositories', 'Add new repository', 'It may take a minute or two before you can clone your new repository.'],
-    ['My SSH Keys', 'Add new SSH key', 'Click here to learn about SSH keys in Arvados.'],
-    ['My Current Token', nil, 'HISTIGNORE=$HISTIGNORE'],
-  ].each do |page_name, button_name, look_for|
-    test "test notification menu for page #{page_name}" do
-      visit page_with_token('admin')
-      within('.navbar-fixed-top') do
-          page.find("#notifications-menu").click
-          within('.dropdown-menu') do
-            assert_selector 'a', text: page_name
-            find('a', text: page_name).click
-          end
-      end
-
-      if button_name
-        assert_selector 'a', text: button_name
-        find('a', text: button_name).click
-      end
-
-      assert page.has_text? look_for
-    end
-  end
 end

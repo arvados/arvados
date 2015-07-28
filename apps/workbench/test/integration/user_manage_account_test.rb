@@ -11,16 +11,16 @@ class UserManageAccountTest < ActionDispatch::IntegrationTest
       within('.navbar-fixed-top') do
         page.find("#notifications-menu").click
         within('.dropdown-menu') do
-          find('a', text: 'Manage account').click
+          assert_selector 'a', text: 'My Virtual Machines'
+          assert_selector 'a', text: 'My Repositories'
+          assert_selector 'a', text: 'My Current Token'
+          assert_selector 'a', text: 'My SSH Keys'
+          find('a', text: 'My SSH Keys').click
         end
       end
 
-      # now in manage account page
-      assert page.has_text?('Virtual Machines'), 'No text - Virtual Machines'
-      assert page.has_text?('Repositories'), 'No text - Repositories'
-      assert page.has_text?('SSH Keys'), 'No text - SSH Keys'
-      assert page.has_text?('Current Token'), 'No text - Current Token'
-      assert page.has_text?('The Arvados API token is a secret key that enables the Arvados SDKs to access Arvados'), 'No text - Arvados API token'
+      # now in My SSH Keys page
+      assert page.has_text?('Add new SSH key'), 'No text - Add SSH key'
       add_and_verify_ssh_key
     else  # inactive user
       within('.navbar-fixed-top') do
@@ -164,7 +164,7 @@ class UserManageAccountTest < ActionDispatch::IntegrationTest
     within('.navbar-fixed-top') do
       page.find("#notifications-menu").click
       within('.dropdown-menu') do
-        find('a', text: 'Manage account').click
+        find('a', text: 'My Virtual Machines').click
       end
     end
     assert_text 'You do not have access to any virtual machines.'
@@ -182,5 +182,50 @@ class UserManageAccountTest < ActionDispatch::IntegrationTest
     assert_text ":active/workbenchtest.git"
     assert_match /git@git.*:active\/workbenchtest.git/, page.text
     assert_match /https:\/\/git.*\/active\/workbenchtest.git/, page.text
+  end
+
+  [
+    ['My Virtual Machines', nil, 'Host name'],
+    ['My Repositories', 'Add new repository', 'It may take a minute or two before you can clone your new repository.'],
+    ['My Current Token', nil, 'HISTIGNORE=$HISTIGNORE'],
+    ['My SSH Keys', 'Add new SSH key', 'Click here to learn about SSH keys in Arvados.'],
+  ].each do |page_name, button_name, look_for|
+    test "test notification menu for page #{page_name}" do
+      visit page_with_token('admin')
+      within('.navbar-fixed-top') do
+          page.find("#notifications-menu").click
+          within('.dropdown-menu') do
+            assert_selector 'a', text: page_name
+            find('a', text: page_name).click
+          end
+      end
+
+      if button_name
+        assert_selector 'a', text: button_name
+        find('a', text: button_name).click
+      end
+
+      assert page.has_text? look_for
+    end
+  end
+
+  [
+    ['My Virtual Machines', 'You do not have access to any virtual machines.'],
+    ['My Repositories', 'You do not seem to have access to any repositories.'],
+    ['My Current Token', 'HISTIGNORE=$HISTIGNORE'],
+    ['My SSH Keys', 'You have not yet set up an SSH public key for use with Arvados.'],
+  ].each do |page_name, look_for|
+    test "test notification menu for page #{page_name} when page is empty" do
+      visit page_with_token('user1_with_load')
+      within ('.navbar-fixed-top') do
+        page.find("#notifications-menu").click
+        within('.dropdown-menu') do
+          assert_selector 'a', text: page_name
+          find('a', text: page_name).click
+        end
+      end
+
+     assert page.has_text? look_for
+    end
   end
 end

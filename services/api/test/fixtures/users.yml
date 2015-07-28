@@ -278,6 +278,7 @@ user1_with_load:
   identity_url: https://user1_with_load.openid.local
   is_active: true
   is_admin: false
+  username: user1withload
   prefs:
     profile:
       organization: example.com
