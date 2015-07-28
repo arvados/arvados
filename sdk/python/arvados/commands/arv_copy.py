@@ -212,6 +212,12 @@ def copy_pipeline_instance(pi_uuid, src, dst, args):
     pi = src.pipeline_instances().get(uuid=pi_uuid).execute(num_retries=args.retries)
 
     if args.recursive:
+        # Check if git is available
+        try:
+            arvados.util.run_command(['git', '--help'])
+        except:
+            abort('git command is not available. Please ensure git is installed.')
+
         if not args.dst_git_repo:
             abort('--dst-git-repo is required when copying a pipeline recursively.')
         # Copy the pipeline template and save the copied template.
@@ -589,12 +595,6 @@ def copy_collection(obj_uuid, src, dst, args):
 #    to both repositories.
 #
 def copy_git_repo(src_git_repo, src, dst, dst_git_repo, script_version, args):
-    # Check if git is available
-    try:
-        arvados.util.run_command(['git', '--help'])
-    except:
-        raise Exception('git command is not available. Please ensure git is installed.')
-
     # Identify the fetch and push URLs for the git repositories.
     r = src.repositories().list(
         filters=[['name', '=', src_git_repo]]).execute(num_retries=args.retries)
