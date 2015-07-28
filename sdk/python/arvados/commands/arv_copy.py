@@ -271,6 +271,12 @@ def copy_pipeline_template(pt_uuid, src, dst, args):
     pt = src.pipeline_templates().get(uuid=pt_uuid).execute(num_retries=args.retries)
 
     if args.recursive:
+        # Check if git is available
+        try:
+            arvados.util.run_command(['git', '--help'])
+        except:
+            abort('git command is not available. Please ensure git is installed.')
+
         if not args.dst_git_repo:
             abort('--dst-git-repo is required when copying a pipeline recursively.')
         # Copy input collections, docker images and git repos.
