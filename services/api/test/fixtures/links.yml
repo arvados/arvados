@@ -405,6 +405,20 @@ admin_can_write_aproject:
   head_uuid: zzzzz-j7d0g-v955i6s2oi1cbso
   properties: {}
 
+project_viewer_member_of_all_users_group:
+  uuid: zzzzz-o0j2j-cdnq6627g0h0r2x
+  owner_uuid: zzzzz-tpzed-000000000000000
+  created_at: 2015-07-28T21:34:41.361747000Z
+  modified_by_client_uuid: zzzzz-ozdt8-brczlopd8u8d0jr
+  modified_by_user_uuid: zzzzz-tpzed-000000000000000
+  modified_at: 2015-07-28T21:34:41.361747000Z
+  updated_at: 2015-07-28T21:34:41.361747000Z
+  tail_uuid: zzzzz-tpzed-projectviewer1a
+  link_class: permission
+  name: can_read
+  head_uuid: zzzzz-j7d0g-fffffffffffffff
+  properties: {}
+
 project_viewer_can_read_project:
   uuid: zzzzz-o0j2j-projviewerreadp
   owner_uuid: zzzzz-tpzed-000000000000000
