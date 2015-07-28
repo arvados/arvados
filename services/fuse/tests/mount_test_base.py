@@ -17,7 +17,7 @@ import run_test_server
 logger = logging.getLogger('arvados.arv-mount')
 
 class MountTestBase(unittest.TestCase):
-    def setUp(self):
+    def setUp(self, api=None):
         # The underlying C implementation of open() makes a fstat() syscall
         # with the GIL still held.  When the GETATTR message comes back to
         # llfuse (which in these tests is in the same interpreter process) it
@@ -32,7 +32,7 @@ class MountTestBase(unittest.TestCase):
         self.mounttmp = tempfile.mkdtemp()
         run_test_server.run()
         run_test_server.authorize_with("admin")
-        self.api = arvados.safeapi.ThreadSafeApiCache(arvados.config.settings())
+        self.api = api if api else arvados.safeapi.ThreadSafeApiCache(arvados.config.settings())
 
     def make_mount(self, root_class, **root_kwargs):
         self.operations = fuse.Operations(os.getuid(), os.getgid(), enable_write=True)
