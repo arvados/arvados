@@ -298,7 +298,7 @@ module PipelineInstancesHelper
 
       s += "#{minutes}<span class='time-label-divider'>m</span>"
 
-      if not round_to_min
+      if not round_to_min or (days == 0 and hours == 0 and minutes == 0)
         s += "#{seconds}<span class='time-label-divider'>s</span>"
       end
     end
