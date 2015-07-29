@@ -395,7 +395,7 @@ if (!defined $no_clear_tmp) {
     # TODO: When #5036 is done and widely deployed, we can get rid of the
     # regular expression and just unmount everything with type fuse.keep.
     srun (["srun", "--nodelist=$nodelist", "-D", $ENV{'TMPDIR'}],
-          ['bash', '-ec', 'mount -t fuse,fuse.keep | awk \'($3 ~ /\ykeep\y/){print $3}\' | xargs -r -n 1 fusermount -u -z; sleep 1; rm -rf $JOB_WORK $CRUNCH_INSTALL $CRUNCH_TMP/task $CRUNCH_TMP/src* $CRUNCH_TMP/*.cid']);
+          ['bash', '-ec', '-o', 'pipefail', 'mount -t fuse,fuse.keep | awk \'($3 ~ /\ykeep\y/){print $3}\' | xargs -r -n 1 fusermount -u -z; sleep 1; rm -rf $JOB_WORK $CRUNCH_INSTALL $CRUNCH_TMP/task $CRUNCH_TMP/src* $CRUNCH_TMP/*.cid']);
     exit (1);
   }
   while (1)
@@ -404,7 +404,10 @@ if (!defined $no_clear_tmp) {
     freeze_if_want_freeze ($cleanpid);
     select (undef, undef, undef, 0.1);
   }
-  Log (undef, "Cleanup command exited ".exit_status_s($?));
+  if ($?) {
+    Log(undef, "Clean work dirs: exit ".exit_status_s($?));
+    exit(EX_RETRY_UNLOCKED);
+  }
 }
 
 # If this job requires a Docker image, install that.
