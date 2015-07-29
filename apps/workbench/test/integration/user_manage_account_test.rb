@@ -110,7 +110,7 @@ class UserManageAccountTest < ActionDispatch::IntegrationTest
   end
 
   test "verify repositories for active user" do
-    visit page_with_token('active', '/manage_account')
+    visit page_with_token('active', '/manage_repositories')
 
     repos = [[api_fixture('repositories')['foo'], true, true],
              [api_fixture('repositories')['repository3'], false, false],
@@ -136,7 +136,7 @@ class UserManageAccountTest < ActionDispatch::IntegrationTest
 
   test "request shell access" do
     ActionMailer::Base.deliveries = []
-    visit page_with_token('spectator', '/manage_account')
+    visit page_with_token('spectator', '/manage_virtual_machines')
     assert_text 'You do not have access to any virtual machines'
     click_link 'Send request for shell access'
 
@@ -173,7 +173,7 @@ class UserManageAccountTest < ActionDispatch::IntegrationTest
   end
 
   test "create new repository" do
-    visit page_with_token("active_trustedclient", "/manage_account")
+    visit page_with_token("active_trustedclient", "/manage_repositories")
     click_on "Add new repository"
     within ".modal-dialog" do
       fill_in "Name", with: "workbenchtest"

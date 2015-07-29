@@ -32,7 +32,7 @@ class UsersControllerTest < ActionController::TestCase
   end
 
   test "show repositories with read, write, or manage permission" do
-    get :manage_account, {}, session_for(:active)
+    get :manage_repositories, {}, session_for(:active)
     assert_response :success
     repos = assigns(:my_repositories)
     assert repos
@@ -43,7 +43,7 @@ class UsersControllerTest < ActionController::TestCase
   end
 
   test "show repositories lists linked as well as owned repositories" do
-    get :manage_account, {}, session_for(:active)
+    get :manage_repositories, {}, session_for(:active)
     assert_response :success
     repos = assigns(:my_repositories)
     assert repos

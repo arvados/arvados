@@ -62,8 +62,6 @@
                 <li role="menuitem"><a href="/manage_current_token" role="menuitem"><i class="fa fa-lg fa-ticket fa-fw"></i> My current token</a></li>
                 <li role="menuitem"><a href="/manage_ssh_keys" role="menuitem"><i class="fa fa-lg fa-key fa-fw"></i> My SSH keys</a></li>
 
-                <li role="menuitem"><a href="/manage_account" role="menuitem"><i class="fa fa-lg fa-key fa-fw"></i> Manage account</a></li>
-
                 <% if Rails.configuration.user_profile_form_fields %>
                   <li role="menuitem"><a href="/users/<%=current_user.uuid%>/profile" role="menuitem"><i class="fa fa-lg fa-user fa-fw"></i> Manage profile</a></li>
                 <% end %>

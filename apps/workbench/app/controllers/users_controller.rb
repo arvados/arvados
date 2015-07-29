@@ -312,53 +312,6 @@ class UsersController < ApplicationController
     end
   end
 
-  def manage_account
-    # repositories current user can read / write
-    repo_links = Link.
-      filter([['head_uuid', 'is_a', 'arvados#repository'],
-              ['tail_uuid', '=', current_user.uuid],
-              ['link_class', '=', 'permission'],
-             ])
-
-    owned_repositories = Repository.where(owner_uuid: current_user.uuid)
-
-    @my_repositories = (Repository.where(uuid: repo_links.collect(&:head_uuid)) |
-                        owned_repositories).
-                       uniq { |repo| repo.uuid }
-
-
-    @repo_writable = {}
-    repo_links.each do |link|
-      if link.name.in? ['can_write', 'can_manage']
-        @repo_writable[link.head_uuid] = link.name
-      end
-    end
-
-    owned_repositories.each do |repo|
-      @repo_writable[repo.uuid] = 'can_manage'
-    end
-
-    # virtual machines the current user can login into
-    @my_vm_logins = {}
-    Link.where(tail_uuid: current_user.uuid,
-               link_class: 'permission',
-               name: 'can_login').
-          each do |perm_link|
-            if perm_link.properties.andand[:username]
-              @my_vm_logins[perm_link.head_uuid] ||= []
-              @my_vm_logins[perm_link.head_uuid] << perm_link.properties[:username]
-            end
-          end
-    @my_virtual_machines = VirtualMachine.where(uuid: @my_vm_logins.keys)
-
-    # current user's ssh keys
-    @my_ssh_keys = AuthorizedKey.where(key_type: 'SSH', owner_uuid: current_user.uuid)
-
-    respond_to do |f|
-      f.html { render template: 'users/manage_account' }
-    end
-  end
-
   def add_ssh_key_popup
     respond_to do |format|
       format.html

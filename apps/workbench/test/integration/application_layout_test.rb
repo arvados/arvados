@@ -50,7 +50,10 @@ class ApplicationLayoutTest < ActionDispatch::IntegrationTest
             assert page.has_no_link?('Sign agreements'), 'Found link - Sign agreements'
 
             assert_selector "a[href=\"/projects/#{user['uuid']}\"]", text: 'My home project'
-            assert page.has_link?('Manage account'), 'No link - Manage account'
+            assert page.has_link?('My virtual machines'), 'No link - My virtual machines'
+            assert page.has_link?('My repositories'), 'No link - My repositories'
+            assert page.has_link?('My current token'), 'No link - My current token'
+            assert page.has_link?('My SSH keys'), 'No link - My SSH keys'
 
             if profile_config
               assert page.has_link?('Manage profile'), 'No link - Manage profile'
@@ -59,7 +62,10 @@ class ApplicationLayoutTest < ActionDispatch::IntegrationTest
             end
           else
             assert_no_selector 'a', text: 'My home project'
-            assert page.has_no_link?('Manage account'), 'Found link - Manage account'
+            assert page.has_no_link?('My virtual machines'), 'No link - My virtual machines'
+            assert page.has_no_link?('My repositories'), 'No link - My repositories'
+            assert page.has_no_link?('My current token'), 'No link - My current token'
+            assert page.has_no_link?('My SSH keys'), 'No link - My SSH keys'
             assert page.has_no_link?('Manage profile'), 'Found link - Manage profile'
           end
           assert page.has_link?('Log out'), 'No link - Log out'
