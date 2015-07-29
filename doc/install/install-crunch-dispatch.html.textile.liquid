@@ -82,12 +82,28 @@ PartitionName=DEFAULT MaxTime=INFINITE State=UP
 PartitionName=compute Default=YES Shared=yes
 
 NodeName=compute[0-255]
-
 PartitionName=compute Nodes=compute[0-255]
 </pre>
 </notextile>
 
-Please make sure to update the value of the @ControlMachine@ parameter to the hostname of your dispatcher (API server).
+Whenever you change this file, you also need to update the copy _on every compute node._
+
+*@ControlMachine@* should be a DNS name that resolve to the slurm controller (dispatch/API server). This must work for all slurm worker nodes as well as the controller itself. In general slurm is very sensitive about all of the nodes being able to communicate with one another and with the controller using the same DNS names.
+
+*@NodeName=compute[0-255]@* establishes that the hostnames of the worker nodes will be compute0, compute1, etc.
+* It is not necessary for all of the nodes to be up. It is easiest to define lots of hostnames up front, and assign them to real nodes as the nodes appear. This reduces the need to synchronize the slurm.conf files on the worker nodes and run @scontrol reconfigure@ to relod its configuration.
+* Each hostname must resolve properly in DNS: on the controller, on the worker itself, and on all other workers.
+* Each hostname must be the one reported by @hostname -s@ on the worker node itself.
+* If your worker node bootstrapping script (see "next page":install-compute-node.html) does not send the worker's current hostname, the API server will choose an unused hostname from the set compute[0-255].
+
+If it is not feasible to give your compute nodes hostnames like compute0, compute1, etc., you can accommodate other naming schemes with a bit of extra configuration.
+* If you want Arvados to assign names to your nodes with a different consecutive numeric series (worker1-0000-x, worker1-0001-x, worker1-0002-x) add an entry to @/etc/arvados/api/application.yml@; see @/var/www/arvados-api/current/config/application.default.yml@ for details. Example:
+** application.yml: <code>assign_node_hostname: worker1-%<slot_number>04d-x</code>
+** slurm.conf: <code>NodeName=worker1-[0000-0255]-x</code>
+* If your worker hostnames are already assigned by other means, and the full set of names is known in advance, have your worker node bootstrapping script (see "next page":install-compute-node.html) send its current hostname, rather than expect Arvados to assign one.
+** application.yml: <code>assign_node_hostname: false</code>
+** slurm.conf: <code>NodeName=alice,bob,clay,darlene</code>
+* If your worker hostnames are already assigned by other means, but the full set of names is _not_ known in advance, you can use the slurm.conf and application.yml settings in the previous example, but you must also update slurm.conf (both on the controller and on all worker nodes) whenever a new node comes online. After updating the config files, run @scontrol reconfigure@ as root from any slurm node.
 
 h2. Enable SLURM job dispatch
 
