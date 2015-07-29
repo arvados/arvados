@@ -126,7 +126,7 @@ my $jobspec;
 my $job_api_token;
 my $no_clear_tmp;
 my $resume_stash;
-my $docker_bin = "/usr/bin/docker.io";
+my $docker_bin = "docker.io";
 GetOptions('force-unlock' => \$force_unlock,
            'git-dir=s' => \$git_dir,
            'job=s' => \$jobspec,
@@ -598,7 +598,7 @@ else {
   unless ($? == 0 && $sha1 =~ /^([0-9a-f]{40})$/) {
     croak("`$gitcmd rev-list` exited "
           .exit_status_s($?)
-          .", '$treeish' not found. Giving up.");
+          .", '$treeish' not found, giving up");
   }
   $commit = $1;
   Log(undef, "Version $treeish is commit $commit");
