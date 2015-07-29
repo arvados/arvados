@@ -310,8 +310,9 @@ def _start_keep(n, keep_args):
     for arg, val in keep_args.iteritems():
         keep_cmd.append("{}={}".format(arg, val))
 
+    logf = open(os.path.join(TEST_TMPDIR, 'keep{}.log'.format(n)), 'a+')
     kp0 = subprocess.Popen(
-        keep_cmd, stdin=open('/dev/null'), stdout=sys.stderr)
+        keep_cmd, stdin=open('/dev/null'), stdout=logf, stderr=logf, close_fds=True)
     with open(_pidfile('keep{}'.format(n)), 'w') as f:
         f.write(str(kp0.pid))
 
@@ -326,10 +327,11 @@ def run_keep(blob_signing_key=None, enforce_permissions=False):
     stop_keep()
 
     keep_args = {}
-    if blob_signing_key:
-        with open(os.path.join(TEST_TMPDIR, "keep.blob_signing_key"), "w") as f:
-            keep_args['--permission-key-file'] = f.name
-            f.write(blob_signing_key)
+    if not blob_signing_key:
+        blob_signing_key = 'zfhgfenhffzltr9dixws36j1yhksjoll2grmku38mi7yxd66h5j4q9w4jzanezacp8s6q0ro3hxakfye02152hncy6zml2ed0uc'
+    with open(os.path.join(TEST_TMPDIR, "keep.blob_signing_key"), "w") as f:
+        keep_args['--blob-signing-key-file'] = f.name
+        f.write(blob_signing_key)
     if enforce_permissions:
         keep_args['--enforce-permissions'] = 'true'
     with open(os.path.join(TEST_TMPDIR, "keep.data-manager-token-file"), "w") as f:

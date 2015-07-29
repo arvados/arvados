@@ -743,7 +743,7 @@ func (s *ServerRequiredSuite) TestPutGetHead(c *C) {
 	}
 	{
 		hash2, replicas, err := kc.PutB(content)
-		c.Check(hash2, Equals, fmt.Sprintf("%s+%d", hash, len(content)))
+		c.Check(hash2, Matches, fmt.Sprintf(`%s\+%d\b.*`, hash, len(content)))
 		c.Check(replicas, Equals, 2)
 		c.Check(err, Equals, nil)
 	}
