@@ -23,16 +23,10 @@
           <div class="col-md-3">
             <% if current_job[:started_at] %>
               <% walltime = ((if current_job[:finished_at] then current_job[:finished_at] else Time.now() end) - current_job[:started_at]) %>
-              <% cputime = tasks.map { |task|
-                   if task.started_at and task.job_uuid == current_job[:uuid]
-                      finished_at = task.finished_at || current_job[:finished_at] || Time.now()
-                      finished_at - task.started_at
-                   else
-                     0
-                   end
-                 }.reduce(:+) || 0 %>
-              <%= render_runtime(walltime, false, false) %>
-              <% if cputime > 0 %> / <%= render_runtime(cputime, false, false) %> (<%= (cputime/walltime).round(1) %>&Cross;)<% end %>
+              <% cputime = (current_job[:runtime_constraints].andand[:min_nodes] || 1) *
+                           ((current_job[:finished_at] || Time.now()) - current_job[:started_at]) %>
+              <%= render_runtime(walltime, false) %>
+              <% if cputime > 0 %> / <%= render_runtime(cputime, false) %> (<%= (cputime/walltime).round(1) %>&Cross;)<% end %>
             <% end %>
           </div>
           <% end %>
@@ -41,7 +35,7 @@
             <%# column offset 5 %>
             <div class="col-md-6">
               <% queuetime = Time.now - Time.parse(current_job[:created_at].to_s) %>
-              Queued for <%= render_runtime(queuetime, true) %>.
+              Queued for <%= render_runtime(queuetime, false) %>.
               <% begin %>
                 <% if current_job[:queue_position] == 0 %>
                   This job is next in the queue to run.

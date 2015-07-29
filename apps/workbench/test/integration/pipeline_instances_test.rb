@@ -469,7 +469,7 @@ class PipelineInstancesTest < ActionDispatch::IntegrationTest
       page_text = page.text
 
       if run_time
-        match = /This pipeline started at (.*)\. It failed after (.*) seconds at (.*)\. Check the Log/.match page_text
+        match = /This pipeline started at (.*)\. It failed after (.*) at (.*)\. Check the Log/.match page_text
       else
         match = /This pipeline started at (.*). It has been active for(.*)/.match page_text
       end
