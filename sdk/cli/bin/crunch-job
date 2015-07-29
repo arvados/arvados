@@ -169,8 +169,7 @@ if ($jobspec =~ /^[-a-z\d]+$/)
 }
 else
 {
-  $Job = JSON::decode_json($jobspec);
-  $local_job = 1;
+  $local_job = JSON::decode_json($jobspec);
 }
 
 
@@ -178,7 +177,7 @@ else
 # at least able to run basic commands: they aren't down or severely
 # misconfigured.
 my $cmd = ['true'];
-if ($Job->{docker_image_locator}) {
+if (($Job || $local_job)->{docker_image_locator}) {
   $cmd = [$docker_bin, 'ps', '-q'];
 }
 Log(undef, "Sanity check is `@$cmd`");
@@ -208,15 +207,15 @@ else
 {
   if (!$resume_stash)
   {
-    map { croak ("No $_ specified") unless $Job->{$_} }
+    map { croak ("No $_ specified") unless $local_job->{$_} }
     qw(script script_version script_parameters);
   }
 
-  $Job->{'is_locked_by_uuid'} = $User->{'uuid'};
-  $Job->{'started_at'} = gmtime;
-  $Job->{'state'} = 'Running';
+  $local_job->{'is_locked_by_uuid'} = $User->{'uuid'};
+  $local_job->{'started_at'} = gmtime;
+  $local_job->{'state'} = 'Running';
 
-  $Job = api_call("jobs/create", job => $Job);
+  $Job = api_call("jobs/create", job => $local_job);
 }
 $job_id = $Job->{'uuid'};
 
