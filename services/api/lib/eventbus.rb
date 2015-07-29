@@ -116,7 +116,7 @@ class EventBus
 
         # Execute query and actually send the matching log rows
         count = 0
-        limit = 20
+        limit = 10
 
         logs.limit(limit).each do |l|
           ws.send(l.as_api_response.to_json)
@@ -128,7 +128,7 @@ class EventBus
           # Number of rows returned was capped by limit(), we need to schedule
           # another query to get more logs (will start from last_log_id
           # reported by current query)
-          EventMachine::schedule do
+          EventMachine::next_tick do
             push_events ws, nil
           end
         elsif !notify_id.nil? and (ws.last_log_id.nil? or notify_id > ws.last_log_id)
@@ -140,10 +140,15 @@ class EventBus
         # No filters set up, so just record the sequence number
         ws.last_log_id = notify_id
       end
+    rescue ArgumentError => e
+      # There was some kind of user error.
+      Rails.logger.warn "Error publishing event: #{$!}"
+      ws.send ({status: 500, message: $!}.to_json)
+      ws.close
     rescue => e
       Rails.logger.warn "Error publishing event: #{$!}"
       Rails.logger.warn "Backtrace:\n\t#{e.backtrace.join("\n\t")}"
-      ws.send ({status: 500, message: 'error'}.to_json)
+      ws.send ({status: 500, message: $!}.to_json)
       ws.close
       # These exceptions typically indicate serious server trouble:
       # out of memory issues, database connection problems, etc.  Go ahead and

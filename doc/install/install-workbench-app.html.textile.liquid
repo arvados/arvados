@@ -6,13 +6,13 @@ title: Install Workbench
 
 h2. Install prerequisites
 
-The Arvados package repository includes Workbench server package that can help automate much of the deployment.  It requires:
+The Arvados package repository includes Workbench server package that can help automate much of the deployment.
 
-* "Ruby 2.1 and bundler":install-manual-prerequisites-ruby.html
-* The Arvados Python SDK
-* Graphviz
-* Build tools to build gem dependencies
-* Nginx
+h3(#install_ruby_and_bundler). Install Ruby and Bundler
+
+{% include 'install_ruby_and_bundler' %}
+
+h3(#build_tools_workbench). Build tools
 
 Workbench doesn't need its own database, so it does not need to have PostgreSQL installed.
 

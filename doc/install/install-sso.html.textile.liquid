@@ -6,25 +6,13 @@ title: Install Single Sign On (SSO) server
 
 h2(#dependencies). Install dependencies
 
-Make sure you have "Ruby and Bundler":install-manual-prerequisites-ruby.html installed.
+h3(#install_ruby_and_bundler). Install Ruby and Bundler
 
-On a Debian-based system, install the following packages:
+{% include 'install_ruby_and_bundler' %}
 
-<notextile>
-<pre><code>~$ <span class="userinput">sudo apt-get install git libpq-dev postgresql</span>
-</code></pre>
-</notextile>
+h3(#install_postgres). Install PostgreSQL
 
-On a Red Hat-based system, install the following packages:
-
-<notextile>
-<pre><code>~$ <span class="userinput">sudo yum install git postgresql postgresql-devel</span>
-</code></pre>
-</notextile>
-
-{% include 'notebox_begin' %}
-If your distribution offers PostgreSQL 8, consider using Software Collections to install postgresql92 and postgresql92-postgresql-devel instead, as described on the "API server installation page":install-api-server.html.
-{% include 'notebox_end' %}
+{% include 'install_postgres' %}
 
 h2(#install). Install SSO server
 
@@ -182,7 +170,7 @@ Alternatively, if the database user you intend to use for the SSO server is not 
 ~/sso-devise-omniauth-provider$ <span class="userinput">RAILS_ENV=production bundle exec rake db:seed</span>
 </code></pre></notextile>
 
-h2(#client). Generate assets
+h2(#assets). Generate assets
 
 If you are running in the production environment, you'll want to generate the assets:
 

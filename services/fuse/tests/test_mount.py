@@ -15,6 +15,7 @@ import unittest
 import logging
 import multiprocessing
 import run_test_server
+import mock
 
 from mount_test_base import MountTestBase
 
@@ -110,8 +111,8 @@ class FuseNoAPITest(MountTestBase):
 
 
 class FuseMagicTest(MountTestBase):
-    def setUp(self):
-        super(FuseMagicTest, self).setUp()
+    def setUp(self, api=None):
+        super(FuseMagicTest, self).setUp(api=api)
 
         cw = arvados.CollectionWriter()
 
@@ -119,7 +120,8 @@ class FuseMagicTest(MountTestBase):
         cw.write("data 1")
 
         self.testcollection = cw.finish()
-        self.api.collections().create(body={"manifest_text":cw.manifest_text()}).execute()
+        self.test_manifest = cw.manifest_text()
+        self.api.collections().create(body={"manifest_text":self.test_manifest}).execute()
 
     def runTest(self):
         self.make_mount(fuse.MagicDirectory)
@@ -1007,6 +1009,25 @@ class FuseFsyncTest(FuseMagicTest):
     def runTest(self):
         self.make_mount(fuse.MagicDirectory)
         self.pool.apply(fuseFsyncTestHelper, (self.mounttmp, self.testcollection))
+
+
+class MagicDirApiError(FuseMagicTest):
+    def setUp(self):
+        api = mock.MagicMock()
+        super(MagicDirApiError, self).setUp(api=api)
+        api.collections().get().execute.side_effect = iter([Exception('API fail'), {"manifest_text": self.test_manifest}])
+        api.keep.get.side_effect = Exception('Keep fail')
+
+    def runTest(self):
+        self.make_mount(fuse.MagicDirectory)
+
+        self.operations.inodes.inode_cache.cap = 1
+        self.operations.inodes.inode_cache.min_entries = 2
+
+        with self.assertRaises(OSError):
+            llfuse.listdir(os.path.join(self.mounttmp, self.testcollection))
+
+        llfuse.listdir(os.path.join(self.mounttmp, self.testcollection))
 
 
 class FuseUnitTest(unittest.TestCase):
