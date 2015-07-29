@@ -12,7 +12,6 @@
 
 <% pipeline_jobs = render_pipeline_jobs %>
 <% job_uuids = pipeline_jobs.map { |j| j[:job].andand[:uuid] }.compact %>
-<% job_uuids_finished = {}; pipeline_jobs.map { |j| job_uuids_finished[j[:job].andand[:uuid]] = j[:job].andand[:finished_at] } %>
 
 <% if @object.state == 'Paused' %>
   <p>
@@ -21,7 +20,6 @@
   </p>
 <% end %>
 
-<% tasks = JobTask.filter([['job_uuid', 'in', job_uuids]]).results %>
 <% runningtime = determine_wallclock_runtime(pipeline_jobs.map {|j| j[:job]}.compact) %>
 
 <p>
@@ -43,9 +41,9 @@
                   end %>
 
     <%= if walltime > runningtime
-          render_runtime(walltime, true, false)
+          render_runtime(walltime, false)
         else
-          render_runtime(runningtime, true, false)
+          render_runtime(runningtime, false)
         end %><% if @object.finished_at %> at <%= render_localized_date(@object.finished_at) %><% end %>.
     <% else %>
       This pipeline is <%= if @object.state.start_with? 'Running' then 'active' else @object.state.downcase end %>.
@@ -65,19 +63,19 @@
       ran
     <% end %>
     for
-    <% cputime = tasks.map { |task|
-        if task.started_at
-          finished_at = task.finished_at || job_uuids_finished[task.job_uuid] || Time.now()
-          finished_at - task.started_at
+    <%
+        cputime = pipeline_jobs.map { |j|
+        if j[:job][:started_at]
+          (j[:job][:runtime_constraints].andand[:min_nodes] || 1) * ((j[:job][:finished_at] || Time.now()) - j[:job][:started_at])
         else
           0
         end
        }.reduce(:+) || 0 %>
-    <%= render_runtime(runningtime, true, false) %><% if (walltime - runningtime) > 0 %>
-      (<%= render_runtime(walltime - runningtime, true, false) %> queued)<% end %><% if cputime == 0 %>.<% else %>
+    <%= render_runtime(runningtime, false) %><% if (walltime - runningtime) > 0 %>
+      (<%= render_runtime(walltime - runningtime, false) %> queued)<% end %><% if cputime == 0 %>.<% else %>
       and used
-    <%= render_runtime(cputime, true, false) %>
-    of CPU time (<%= (cputime/runningtime).round(1) %>&Cross; scaling).
+    <%= render_runtime(cputime, false) %>
+    of node allocation time (<%= (cputime/runningtime).round(1) %>&Cross; scaling).
     <% end %>
 </p>
 
@@ -99,5 +97,5 @@
 %>
 
 <% pipeline_jobs.each_with_index do |pj, i| %>
-  <%= render partial: 'running_component', locals: {tasks: tasks, pj: pj, i: i, expanded: false} %>
+  <%= render partial: 'running_component', locals: {pj: pj, i: i, expanded: false} %>
 <% end %>
