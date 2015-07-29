@@ -1,7 +1,7 @@
 <div class="panel panel-default">
   <div class="panel-heading">
     <h4 class="panel-title">
-      <a data-parent="#arv-adv-accordion" href="#manage_current_token">
+      <a data-parent="#arv-adv-accordion" href="/manage_current_token">
         Current Token
       </a>
     </h4>
@@ -21,6 +21,6 @@ export ARVADOS_API_HOST_INSECURE=true
 unset ARVADOS_API_HOST_INSECURE
 <% end %>
 </pre>
-<p>Arvados <%= link_to raw('virtual machines'), manage_account_path(page: "manage_virtual_machines") %> do this for you automatically. This setup is needed only when you use the API remotely (e.g., from your own workstation).</p>
+<p>Arvados <a href="/manage_virtual_machines"> virtual machines</a> do this for you automatically. This setup is needed only when you use the API remotely (e.g., from your own workstation).</p>
 </div>
 </div>

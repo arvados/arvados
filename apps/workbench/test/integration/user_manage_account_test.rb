@@ -11,11 +11,11 @@ class UserManageAccountTest < ActionDispatch::IntegrationTest
       within('.navbar-fixed-top') do
         page.find("#notifications-menu").click
         within('.dropdown-menu') do
-          assert_selector 'a', text: 'My Virtual Machines'
-          assert_selector 'a', text: 'My Repositories'
-          assert_selector 'a', text: 'My Current Token'
-          assert_selector 'a', text: 'My SSH Keys'
-          find('a', text: 'My SSH Keys').click
+          assert_selector 'a', text: 'My virtual machines'
+          assert_selector 'a', text: 'My repositories'
+          assert_selector 'a', text: 'My current token'
+          assert_selector 'a', text: 'My SSH keys'
+          find('a', text: 'My SSH keys').click
         end
       end
 
@@ -164,7 +164,7 @@ class UserManageAccountTest < ActionDispatch::IntegrationTest
     within('.navbar-fixed-top') do
       page.find("#notifications-menu").click
       within('.dropdown-menu') do
-        find('a', text: 'My Virtual Machines').click
+        find('a', text: 'My virtual machines').click
       end
     end
     assert_text 'You do not have access to any virtual machines.'
@@ -185,10 +185,10 @@ class UserManageAccountTest < ActionDispatch::IntegrationTest
   end
 
   [
-    ['My Virtual Machines', nil, 'Host name'],
-    ['My Repositories', 'Add new repository', 'It may take a minute or two before you can clone your new repository.'],
-    ['My Current Token', nil, 'HISTIGNORE=$HISTIGNORE'],
-    ['My SSH Keys', 'Add new SSH key', 'Click here to learn about SSH keys in Arvados.'],
+    ['My virtual machines', nil, 'Host name'],
+    ['My repositories', 'Add new repository', 'It may take a minute or two before you can clone your new repository.'],
+    ['My current token', nil, 'HISTIGNORE=$HISTIGNORE'],
+    ['My SSH keys', 'Add new SSH key', 'Click here to learn about SSH keys in Arvados.'],
   ].each do |page_name, button_name, look_for|
     test "test notification menu for page #{page_name}" do
       visit page_with_token('admin')
@@ -210,10 +210,10 @@ class UserManageAccountTest < ActionDispatch::IntegrationTest
   end
 
   [
-    ['My Virtual Machines', 'You do not have access to any virtual machines.'],
-    ['My Repositories', 'You do not seem to have access to any repositories.'],
-    ['My Current Token', 'HISTIGNORE=$HISTIGNORE'],
-    ['My SSH Keys', 'You have not yet set up an SSH public key for use with Arvados.'],
+    ['My virtual machines', 'You do not have access to any virtual machines.'],
+    ['My repositories', 'You do not seem to have access to any repositories.'],
+    ['My current token', 'HISTIGNORE=$HISTIGNORE'],
+    ['My SSH keys', 'You have not yet set up an SSH public key for use with Arvados.'],
   ].each do |page_name, look_for|
     test "test notification menu for page #{page_name} when page is empty" do
       visit page_with_token('user1_with_load')

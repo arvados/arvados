@@ -1,7 +1,3 @@
-<% if @page %>
-  <div>
-    <%= render partial: @page %>
-<% else %>
 <div class="col-sm-6">
   <div class="panel-group" id="arv-adv-accordion">
     <div class="panel panel-default">
@@ -21,7 +17,6 @@
       <%= render partial: "manage_current_token" %>
     </div>
   </div>
-<% end %>
   <div id="add-ssh-key-modal-window" class="modal fade" role="dialog" aria-labelledby="myModalLabel" aria-hidden="true"></div>
   <%= render partial: "add_repository_modal" %>
 </div>

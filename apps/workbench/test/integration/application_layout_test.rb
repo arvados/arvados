@@ -49,7 +49,7 @@ class ApplicationLayoutTest < ActionDispatch::IntegrationTest
             assert page.has_no_link?('Not active'), 'Found link - Not active'
             assert page.has_no_link?('Sign agreements'), 'Found link - Sign agreements'
 
-            assert_selector "a[href=\"/projects/#{user['uuid']}\"]", text: 'Home project'
+            assert_selector "a[href=\"/projects/#{user['uuid']}\"]", text: 'My home project'
             assert page.has_link?('Manage account'), 'No link - Manage account'
 
             if profile_config
@@ -58,7 +58,7 @@ class ApplicationLayoutTest < ActionDispatch::IntegrationTest
               assert page.has_no_link?('Manage profile'), 'Found link - Manage profile'
             end
           else
-            assert_no_selector 'a', text: 'Home project'
+            assert_no_selector 'a', text: 'My home project'
             assert page.has_no_link?('Manage account'), 'Found link - Manage account'
             assert page.has_no_link?('Manage profile'), 'Found link - Manage profile'
           end

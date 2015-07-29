@@ -55,12 +55,12 @@
                   <%= current_user.email %>
                 </li>
                 <% if current_user.is_active %>
-                <li role="menuitem"><a href="/projects/<%=current_user.uuid%>" role="menuitem"><i class="fa fa-lg fa-home fa-fw"></i> Home project </a></li>
+                <li role="menuitem"><a href="/projects/<%=current_user.uuid%>" role="menuitem"><i class="fa fa-lg fa-home fa-fw"></i> My home project </a></li>
 
-                <li role="menuitem"><%= link_to raw('<i class="fa fa-lg fa-terminal fa-fw"></i> My Virtual Machines'), manage_account_path(page: "manage_virtual_machines") %></li>
-                <li role="menuitem"><%= link_to raw('<i class="fa fa-lg fa-code-fork fa-fw"></i> My Repositories'), manage_account_path(page: "manage_repositories") %></li>
-                <li role="menuitem"><%= link_to raw('<i class="fa fa-lg fa-ticket fa-fw"></i> My Current Token'), manage_account_path(page: "manage_current_token") %></li>
-                <li role="menuitem"><%= link_to raw('<i class="fa fa-lg fa-key fa-fw"></i> My SSH Keys'), manage_account_path(page: "manage_ssh_keys") %></li>
+                <li role="menuitem"><a href="/manage_virtual_machines" role="menuitem"><i class="fa fa-lg fa-terminal fa-fw"></i> My virtual machines</a></li>
+                <li role="menuitem"><a href="/manage_repositories" role="menuitem"><i class="fa fa-lg fa-code-fork fa-fw"></i> My repositories</a></li>
+                <li role="menuitem"><a href="/manage_current_token" role="menuitem"><i class="fa fa-lg fa-ticket fa-fw"></i> My current token</a></li>
+                <li role="menuitem"><a href="/manage_ssh_keys" role="menuitem"><i class="fa fa-lg fa-key fa-fw"></i> My SSH keys</a></li>
 
                 <li role="menuitem"><a href="/manage_account" role="menuitem"><i class="fa fa-lg fa-key fa-fw"></i> Manage account</a></li>
 
