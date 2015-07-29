@@ -289,7 +289,7 @@ module PipelineInstancesHelper
     else
       s = ""
       if days > 0
-        s += "#{days}<span class='time-label-divider'>d</span> "
+        s += "#{days}<span class='time-label-divider'>d</span>"
       end
 
       if (hours > 0)
@@ -304,19 +304,6 @@ module PipelineInstancesHelper
     end
 
     raw(s)
-  end
-
-  def render_runtime_compact duration
-    if duration >= DAY
-      "#{(duration / DAY.to_f).round(2)} days"
-    elsif duration >= HOUR
-      "#{(duration / HOUR.to_f).round(2)} hours"
-    elsif duration >= MINUTE
-      "#{(duration / MINUTE.to_f).round(2)} minutes"
-    else
-      seconds = duration.round(2)
-      "#{seconds} second#{'s' if seconds != 1}"
-    end
   end
 
   def render_unreadable_inputs_present
