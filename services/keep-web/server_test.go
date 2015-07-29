@@ -3,6 +3,9 @@ package main
 import (
 	"crypto/md5"
 	"fmt"
+	"io"
+	"io/ioutil"
+	"net"
 	"os/exec"
 	"strings"
 	"testing"
@@ -25,17 +28,17 @@ func (s *IntegrationSuite) TestNoToken(c *check.C) {
 		"",
 		"bogustoken",
 	} {
-		hdr, body := s.runCurl(c, token, "/collections/"+arvadostest.FooCollection+"/foo")
+		hdr, body, _ := s.runCurl(c, token, "dl.example.com", "/collections/"+arvadostest.FooCollection+"/foo")
 		c.Check(hdr, check.Matches, `(?s)HTTP/1.1 401 Unauthorized\r\n.*`)
 		c.Check(body, check.Equals, "")
 
 		if token != "" {
-			hdr, body = s.runCurl(c, token, "/collections/download/"+arvadostest.FooCollection+"/"+token+"/foo")
+			hdr, body, _ = s.runCurl(c, token, "dl.example.com", "/collections/download/"+arvadostest.FooCollection+"/"+token+"/foo")
 			c.Check(hdr, check.Matches, `(?s)HTTP/1.1 404 Not Found\r\n.*`)
 			c.Check(body, check.Equals, "")
 		}
 
-		hdr, body = s.runCurl(c, token, "/bad-route")
+		hdr, body, _ = s.runCurl(c, token, "dl.example.com", "/bad-route")
 		c.Check(hdr, check.Matches, `(?s)HTTP/1.1 404 Not Found\r\n.*`)
 		c.Check(body, check.Equals, "")
 	}
@@ -64,10 +67,56 @@ func (s *IntegrationSuite) Test404(c *check.C) {
 		"/collections/" + arvadostest.NonexistentCollection + "/theperthcountyconspiracy",
 		"/collections/download/" + arvadostest.NonexistentCollection + "/" + arvadostest.ActiveToken + "/theperthcountyconspiracy",
 	} {
-		hdr, body := s.runCurl(c, arvadostest.ActiveToken, uri)
+		hdr, body, _ := s.runCurl(c, arvadostest.ActiveToken, "dl.example.com", uri)
 		c.Check(hdr, check.Matches, "(?s)HTTP/1.1 404 Not Found\r\n.*")
 		c.Check(body, check.Equals, "")
 	}
+}
+
+func (s *IntegrationSuite) Test1GBFile(c *check.C) {
+	if testing.Short() {
+		c.Skip("skipping 1GB integration test in short mode")
+	}
+	s.test100BlockFile(c, 10000000)
+}
+
+func (s *IntegrationSuite) Test300MBFile(c *check.C) {
+	s.test100BlockFile(c, 3000000)
+}
+
+func (s *IntegrationSuite) test100BlockFile(c *check.C, blocksize int) {
+	testdata := make([]byte, blocksize)
+	for i := 0; i < blocksize; i++ {
+		testdata[i] = byte(' ')
+	}
+	arv, err := arvadosclient.MakeArvadosClient()
+	c.Assert(err, check.Equals, nil)
+	arv.ApiToken = arvadostest.ActiveToken
+	kc, err := keepclient.MakeKeepClient(&arv)
+	c.Assert(err, check.Equals, nil)
+	loc, _, err := kc.PutB(testdata[:])
+	c.Assert(err, check.Equals, nil)
+	mtext := "."
+	for i := 0; i < 100; i++ {
+		mtext = mtext + " " + loc
+	}
+	mtext = mtext + fmt.Sprintf(" 0:%d00:testdata.bin\n", blocksize)
+	coll := map[string]interface{}{}
+	err = arv.Create("collections",
+		map[string]interface{}{
+			"collection": map[string]interface{}{
+				"name": fmt.Sprintf("testdata blocksize=%d", blocksize),
+				"manifest_text": mtext,
+			},
+		}, &coll)
+	c.Assert(err, check.Equals, nil)
+	uuid := coll["uuid"].(string)
+
+	hdr, body, size := s.runCurl(c, arv.ApiToken, uuid + ".dl.example.com", "/testdata.bin")
+	c.Check(hdr, check.Matches, `(?s)HTTP/1.1 200 OK\r\n.*`)
+	c.Check(hdr, check.Matches, `(?si).*Content-length: `+fmt.Sprintf("%d00", blocksize)+`\r\n.*`)
+	c.Check([]byte(body)[:1234], check.DeepEquals, testdata[:1234])
+	c.Check(size, check.Equals, int64(blocksize)*100)
 }
 
 func (s *IntegrationSuite) Test200(c *check.C) {
@@ -86,19 +135,13 @@ func (s *IntegrationSuite) Test200(c *check.C) {
 		{"tokensobogus", "/collections/download/" + arvadostest.FooCollection + "/" + arvadostest.ActiveToken + "/foo", "acbd18db4cc2f85cedef654fccc4a4d8"},
 		{arvadostest.ActiveToken, "/collections/download/" + arvadostest.FooCollection + "/" + arvadostest.ActiveToken + "/foo", "acbd18db4cc2f85cedef654fccc4a4d8"},
 		{arvadostest.AnonymousToken, "/collections/download/" + arvadostest.FooCollection + "/" + arvadostest.ActiveToken + "/foo", "acbd18db4cc2f85cedef654fccc4a4d8"},
-		// Anonymously accessible user agreement. These should
-		// start working when CollectionFileReader provides
-		// real data instead of fake/stub data.
+		// Anonymously accessible user agreement.
 		{"", "/collections/" + arvadostest.HelloWorldCollection + "/Hello%20world.txt", "f0ef7081e1539ac00ef5b761b4fb01b3"},
 		{arvadostest.ActiveToken, "/collections/" + arvadostest.HelloWorldCollection + "/Hello%20world.txt", "f0ef7081e1539ac00ef5b761b4fb01b3"},
 		{arvadostest.SpectatorToken, "/collections/" + arvadostest.HelloWorldCollection + "/Hello%20world.txt", "f0ef7081e1539ac00ef5b761b4fb01b3"},
 		{arvadostest.SpectatorToken, "/collections/download/" + arvadostest.HelloWorldCollection + "/" + arvadostest.SpectatorToken + "/Hello%20world.txt", "f0ef7081e1539ac00ef5b761b4fb01b3"},
 	} {
-		hdr, body := s.runCurl(c, spec[0], spec[1])
-		if strings.HasPrefix(hdr, "HTTP/1.1 501 Not Implemented\r\n") && body == "" {
-			c.Log("Not implemented!")
-			continue
-		}
+		hdr, body, _ := s.runCurl(c, spec[0], "dl.example.com", spec[1])
 		c.Check(hdr, check.Matches, `(?s)HTTP/1.1 200 OK\r\n.*`)
 		if strings.HasSuffix(spec[1], ".txt") {
 			c.Check(hdr, check.Matches, `(?s).*\r\nContent-Type: text/plain.*`)
@@ -111,15 +154,34 @@ func (s *IntegrationSuite) Test200(c *check.C) {
 }
 
 // Return header block and body.
-func (s *IntegrationSuite) runCurl(c *check.C, token, uri string, args ...string) (hdr, body string) {
+func (s *IntegrationSuite) runCurl(c *check.C, token, host, uri string, args ...string) (hdr, bodyPart string, bodySize int64) {
 	curlArgs := []string{"--silent", "--show-error", "--include"}
+	testHost, testPort, _ := net.SplitHostPort(s.testServer.Addr)
+	curlArgs = append(curlArgs, "--resolve", host + ":" + testPort + ":" + testHost)
 	if token != "" {
 		curlArgs = append(curlArgs, "-H", "Authorization: OAuth2 "+token)
 	}
 	curlArgs = append(curlArgs, args...)
-	curlArgs = append(curlArgs, "http://"+s.testServer.Addr+uri)
+	curlArgs = append(curlArgs, "http://"+host+":"+testPort+uri)
 	c.Log(fmt.Sprintf("curlArgs == %#v", curlArgs))
-	output, err := exec.Command("curl", curlArgs...).CombinedOutput()
+	cmd := exec.Command("curl", curlArgs...)
+	stdout, err := cmd.StdoutPipe()
+	c.Assert(err, check.Equals, nil)
+	cmd.Stderr = cmd.Stdout
+	go cmd.Start()
+	buf := make([]byte, 2<<27)
+	n, err := io.ReadFull(stdout, buf)
+	// Discard (but measure size of) anything past 128 MiB.
+	var discarded int64
+	if err == io.ErrUnexpectedEOF {
+		err = nil
+		buf = buf[:n]
+	} else {
+		c.Assert(err, check.Equals, nil)
+		discarded, err = io.Copy(ioutil.Discard, stdout)
+		c.Assert(err, check.Equals, nil)
+	}
+	err = cmd.Wait()
 	// Without "-f", curl exits 0 as long as it gets a valid HTTP
 	// response from the server, even if the response status
 	// indicates that the request failed. In our test suite, we
@@ -127,10 +189,11 @@ func (s *IntegrationSuite) runCurl(c *check.C, token, uri string, args ...string
 	// headers ourselves. If curl exits non-zero, our testing
 	// environment is broken.
 	c.Assert(err, check.Equals, nil)
-	hdrsAndBody := strings.SplitN(string(output), "\r\n\r\n", 2)
+	hdrsAndBody := strings.SplitN(string(buf), "\r\n\r\n", 2)
 	c.Assert(len(hdrsAndBody), check.Equals, 2)
 	hdr = hdrsAndBody[0]
-	body = hdrsAndBody[1]
+	bodyPart = hdrsAndBody[1]
+	bodySize = int64(len(bodyPart)) + discarded
 	return
 }
 
