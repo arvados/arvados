@@ -239,6 +239,7 @@ func (h *handler) ServeHTTP(wOrig http.ResponseWriter, r *http.Request) {
 			w.Header().Set("Content-Type", t)
 		}
 	}
+	w.Header().Set("Content-Length", fmt.Sprintf("%d", rdr.Len()))
 
 	w.WriteHeader(http.StatusOK)
 	_, err = io.Copy(w, rdr)
