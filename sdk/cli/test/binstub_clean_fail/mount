@@ -1,0 +1,3 @@
+#!/bin/sh
+echo >&2 Failing mount stub was called
+exit 1
