@@ -62,12 +62,12 @@ class Arvados::V1::RepositoriesController < ApplicationController
           evidence << {name: perm.name, user_uuid: perm.tail_uuid}
         end
       end
-      # Owner of the repository, and all admins, can RW.
+      # Owner of the repository, and all admins, can do everything.
       ([repo.owner_uuid] | admins).each do |user_uuid|
         # Except: no permissions for inactive users, even if they own
         # repositories.
         next unless users[user_uuid]
-        evidence << {name: 'can_write', user_uuid: user_uuid}
+        evidence << {name: 'can_manage', user_uuid: user_uuid}
       end
       # Distill all the evidence about permissions on this repository
       # into one hash per user, of the form {'can_xxx' => true, ...}.
