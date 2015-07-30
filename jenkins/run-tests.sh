@@ -83,6 +83,7 @@ VENVDIR=
 VENV3DIR=
 PYTHONPATH=
 GEMHOME=
+PERLINSTALLBASE=
 
 COLUMNS=80
 
@@ -92,7 +93,7 @@ skip_install=
 declare -A leave_temp
 clear_temp() {
     leaving=""
-    for var in VENVDIR VENV3DIR GOPATH GITDIR GEMHOME
+    for var in VENVDIR VENV3DIR GOPATH GITDIR GEMHOME PERLINSTALLBASE
     do
         if [[ -z "${leave_temp[$var]}" ]]
         then
@@ -166,6 +167,14 @@ sanity_checks() {
     echo -n 'nginx: '
     PATH="$PATH:/sbin:/usr/sbin:/usr/local/sbin" nginx -v \
         || fatal "No nginx. Try: apt-get install nginx"
+    echo -n 'perl: '
+    perl -v | grep version \
+        || fatal "No perl. Try: apt-get install perl"
+    for mod in ExtUtils::MakeMaker JSON LWP Net::SSL; do
+        echo -n "perl $mod: "
+        perl -e "use $mod; print \"\$$mod::VERSION\\n\"" \
+            || fatal "No $mod. Try: apt-get install perl-modules libcrypt-ssleay-perl libjson-perl"
+    done
 }
 
 rotate_logfile() {
@@ -211,6 +220,7 @@ do
             leave_temp[VENV3DIR]=1
             leave_temp[GOPATH]=1
             leave_temp[GEMHOME]=1
+            leave_temp[PERLINSTALLBASE]=1
             ;;
         --retry)
             retry=1
@@ -283,7 +293,7 @@ cd "$WORKSPACE"
 find -name '*.pyc' -delete
 
 # Set up temporary install dirs (unless existing dirs were supplied)
-for tmpdir in VENVDIR VENV3DIR GOPATH GEMHOME
+for tmpdir in VENVDIR VENV3DIR GOPATH GEMHOME PERLINSTALLBASE
 do
     if [[ -n "${!tmpdir}" ]]; then
         leave_temp[$tmpdir]=1
@@ -368,6 +378,9 @@ gem_uninstall_if_exists() {
         gem uninstall --force --all --executables "$1"
     fi
 }
+
+export PERLINSTALLBASE
+export PERLLIB="$PERLINSTALLBASE/lib/perl5:${PERLLIB:+$PERLLIB}"
 
 export GOPATH
 mkdir -p "$GOPATH/src/git.curoverse.com"
@@ -548,6 +561,13 @@ install_ruby_sdk() {
         && with_test_gemset gem install --no-ri --no-rdoc `ls -t arvados-*.gem|head -n1`
 }
 do_install sdk/ruby ruby_sdk
+
+install_perl_sdk() {
+    cd "$WORKSPACE/sdk/perl" \
+        && perl Makefile.PL INSTALL_BASE="$PERLINSTALLBASE" \
+        && make install INSTALLDIRS=perl
+}
+do_install sdk/perl perl_sdk
 
 install_cli() {
     with_test_gemset gem_uninstall_if_exists arvados-cli \
