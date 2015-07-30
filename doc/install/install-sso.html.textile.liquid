@@ -63,9 +63,73 @@ zzzzzzzzzzzzzzzzzzzzzzzzzzzzzzzzzzzzzzzzzzzzzzzzzzzzzzzz
 
 Edit @config/application.yml@ and set @secret_token@ in the "common" section.
 
+h2(#database). Set up the database
+
+Generate a new database password. Nobody ever needs to memorize it or type it, so make a strong one:
+
+<notextile>
+<pre><code>~/sso-devise-omniauth-provider$ <span class="userinput">ruby -e 'puts rand(2**128).to_s(36)'</span>
+abcdefghijklmnopqrstuvwxyz012345689
+</code></pre></notextile>
+
+Create a new database user with permission to create its own databases.
+
+<notextile>
+<pre><code>~/sso-devise-omniauth-provider$ <span class="userinput">sudo -u postgres createuser --createdb --encrypted -R -S --pwprompt arvados_sso</span>
+Enter password for new role: <span class="userinput">paste-database-password-you-generated</span>
+Enter it again: <span class="userinput">paste-database-password-you-generated</span>
+</code></pre></notextile>
+
+Configure SSO server to connect to your database by creating and updating @config/database.yml@. Replace the @xxxxxxxx@ database password placeholders with the new password you generated above.  If you are planning a production system, update the @production@ section, otherwise use @development@.
+
+<notextile>
+<pre><code>~/sso-devise-omniauth-provider$ <span class="userinput">cp -i config/database.yml.example config/database.yml</span>
+~/sso-devise-omniauth-provider$ <span class="userinput">edit config/database.yml</span>
+</code></pre></notextile>
+
+Create and initialize the database. If you are planning a production system, choose the @production@ rails environment, otherwise use @development@.
+
+<notextile>
+<pre><code>~/sso-devise-omniauth-provider$ <span class="userinput">RAILS_ENV=production bundle exec rake db:setup</span>
+</code></pre></notextile>
+
+Alternatively, if the database user you intend to use for the SSO server is not allowed to create new databases, you can create the database first and then populate it with rake. Be sure to adjust the database name if you are using the @development@ environment. This sequence of commands is functionally equivalent to the rake db:setup command above:
+
+<notextile>
+<pre><code>~/sso-devise-omniauth-provider$ <span class="userinput">sudo -u postgres createdb arvados_sso_production -E UTF8 -O arvados_sso -T template0</span>
+~/sso-devise-omniauth-provider$ <span class="userinput">RAILS_ENV=production bundle exec rake db:schema:load</span>
+~/sso-devise-omniauth-provider$ <span class="userinput">RAILS_ENV=production bundle exec rake db:seed</span>
+</code></pre></notextile>
+
+h2(#client). Create arvados-server client
+
+Use @rails console@ to create a @Client@ record that will be used by the Arvados API server.  The values of @app_id@ and @app_secret@ correspond to the @APP_ID@ and @APP_SECRET@ that must be set in in "Setting up Omniauth in the API server.":install-api-server.html#omniauth
+
+<notextile>
+<pre><code>~/sso-devise-omniauth-provider$ <span class="userinput">ruby -e 'puts rand(2**400).to_s(36)'</span>
+xxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxx
+~/sso-devise-omniauth-provider$ <span class="userinput">RAILS_ENV=production bundle exec rails console</span>
+:001 &gt; <span class="userinput">c = Client.new</span>
+:002 &gt; <span class="userinput">c.name = "joshid"</span>
+:003 &gt; <span class="userinput">c.app_id = "arvados-server"</span>
+:004 &gt; <span class="userinput">c.app_secret = "xxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxx"</span>
+:005 &gt; <span class="userinput">c.save!</span>
+:006 &gt; <span class="userinput">quit</span>
+</code></pre>
+</notextile>
+
+h2(#assets). Precompile assets
+
+If you are running in the production environment, you must precompile the assets:
+
+<notextile>
+<pre><code>~/sso-devise-omniauth-provider$ <span class="userinput">RAILS_ENV=production bundle exec rake assets:precompile</span>
+</code></pre>
+</notextile>
+
 h2(#authentication_methods). Authentication methods
 
-Three authentication methods are supported: local accounts, LDAP, and Google+.  If neither Google OAuth2 nor LDAP are enabled, the SSO server defaults to local user accounts.   Only one authentication mechanism should be in use at a time.
+Authentication methods are configured in @application.yml@.  Currently three authentication methods are supported: local accounts, LDAP, and Google+.  If neither Google+ nor LDAP are enabled, the SSO server defaults to local user accounts.   Only one authentication mechanism should be in use at a time.
 
 h3(#local_accounts). Local account authentication
 
@@ -138,78 +202,13 @@ In order to use Google+ authentication, you must use the <a href="https://consol
 ## This will return you to the "Create Client ID" dialog box.
 # You must set the authorization origins.  Edit @sso.your-site.com@ to the appropriate hostname that you will use to access the SSO service:
 ## JavaScript origin should be @https://sso.your-site.com/@
-## Redirect URI should be @https://sso.your-site.com/auth/google_oauth2/callback@
+## Redirect URI should be @https://sso.your-site.com/users/auth/google_oauth2/callback@
 # Copy the values of "Client ID" and "Client secret" from the Google Developers Console into the Google section of @config/application.yml@, like this:
 
 <notextile>
 <pre><code>  # Google API tokens required for OAuth2 login.
   google_oauth2_client_id: <span class="userinput">"---YOUR---CLIENT---ID---HERE--"-</span>
   google_oauth2_client_secret: <span class="userinput">"---YOUR---CLIENT---SECRET---HERE--"-</span></code></pre></notextile>
-
-
-h2(#database). Set up the database
-
-Generate a new database password. Nobody ever needs to memorize it or type it, so make a strong one:
-
-<notextile>
-<pre><code>~/sso-devise-omniauth-provider$ <span class="userinput">ruby -e 'puts rand(2**128).to_s(36)'</span>
-abcdefghijklmnopqrstuvwxyz012345689
-</code></pre></notextile>
-
-Create a new database user with permission to create its own databases.
-
-<notextile>
-<pre><code>~/sso-devise-omniauth-provider$ <span class="userinput">sudo -u postgres createuser --createdb --encrypted -R -S --pwprompt arvados_sso</span>
-Enter password for new role: <span class="userinput">paste-database-password-you-generated</span>
-Enter it again: <span class="userinput">paste-database-password-you-generated</span>
-</code></pre></notextile>
-
-Configure SSO server to connect to your database by creating and updating @config/database.yml@. Replace the @xxxxxxxx@ database password placeholders with the new password you generated above.
-
-<notextile>
-<pre><code>~/sso-devise-omniauth-provider$ <span class="userinput">cp -i config/database.yml.sample config/database.yml</span>
-~/sso-devise-omniauth-provider$ <span class="userinput">edit config/database.yml</span>
-</code></pre></notextile>
-
-Create and initialize the database. If you are planning a production system, choose the @production@ rails environment, otherwise use @development@.
-
-<notextile>
-<pre><code>~/sso-devise-omniauth-provider$ <span class="userinput">RAILS_ENV=production bundle exec rake db:setup</span>
-</code></pre></notextile>
-
-Alternatively, if the database user you intend to use for the SSO server is not allowed to create new databases, you can create the database first and then populate it with rake. Be sure to adjust the database name if you are using the @development@ environment. This sequence of commands is functionally equivalent to the rake db:setup command above:
-
-<notextile>
-<pre><code>~/sso-devise-omniauth-provider$ <span class="userinput">su postgres createdb arvados_sso_production -E UTF8 -O arvados_sso</span>
-~/sso-devise-omniauth-provider$ <span class="userinput">RAILS_ENV=production bundle exec rake db:schema:load</span>
-~/sso-devise-omniauth-provider$ <span class="userinput">RAILS_ENV=production bundle exec rake db:seed</span>
-</code></pre></notextile>
-
-h2(#client). Create arvados-server client
-
-Use @rails console@ to create a @Client@ record that will be used by the Arvados API server.  The values of @app_id@ and @app_secret@ correspond to the @APP_ID@ and @APP_SECRET@ that must be set in in "Setting up Omniauth in the API server.":install-api-server.html#omniauth
-
-<notextile>
-<pre><code>~/sso-devise-omniauth-provider$ <span class="userinput">ruby -e 'puts rand(2**400).to_s(36)'</span>
-xxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxx
-~/sso-devise-omniauth-provider$ <span class="userinput">RAILS_ENV=production bundle exec rails console</span>
-:001 &gt; <span class="userinput">c = Client.new</span>
-:002 &gt; <span class="userinput">c.name = "joshid"</span>
-:003 &gt; <span class="userinput">c.app_id = "arvados-server"</span>
-:004 &gt; <span class="userinput">c.app_secret = "xxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxx"</span>
-:005 &gt; <span class="userinput">c.save!</span>
-:006 &gt; <span class="userinput">quit</span>
-</code></pre>
-</notextile>
-
-h2(#assets). Precompile assets
-
-If you are running in the production environment, you must precompile the assets:
-
-<notextile>
-<pre><code>~/sso-devise-omniauth-provider$ <span class="userinput">RAILS_ENV=production bundle exec rake assets:precompile</span>
-</code></pre>
-</notextile>
 
 h2(#start). Start the SSO server
 
@@ -220,6 +219,9 @@ h3. Run a standalone passenger server
 =============== Phusion Passenger Standalone web server started ===============
 ...
 </code></pre>
+</notextile>
+
+You can now test your installation by going to the page reported by passenger as "Accessible via: ..."
 
 Note, if you get the following warning "you may safely ignore it:":https://stackoverflow.com/questions/10374871/no-secret-option-provided-to-racksessioncookie-warning
 
