@@ -25,7 +25,8 @@ class TestCrunchJob < Minitest::Test
   # Return environment suitable for running crunch-job.
   def crunchenv opts={}
     env = ENV.to_h
-    env['PERLLIB'] = File.absolute_path('../../../perl/lib', __FILE__)
+    env['CRUNCH_REFRESH_TRIGGER'] =
+      File.absolute_path('../../../../tmp/crunch-refresh-trigger', __FILE__)
     env
   end
 
