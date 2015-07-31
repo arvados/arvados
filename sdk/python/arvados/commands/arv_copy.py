@@ -192,7 +192,7 @@ def api_for_instance(instance_name):
 def check_git_availability():
     try:
         arvados.util.run_command(['git', '--help'])
-    except:
+    except Exception:
         abort('git command is not available. Please ensure git is installed.')
 
 # copy_pipeline_instance(pi_uuid, src, dst, args)
