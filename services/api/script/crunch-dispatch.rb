@@ -63,7 +63,7 @@ class Dispatcher
       raise "No CRUNCH_JOB_BIN env var, and crunch-job not in path."
     end
 
-    @docker_bin = (ENV['CRUNCH_JOB_DOCKER_BIN'] || "/usr/bin/docker.io")
+    @docker_bin = (ENV['CRUNCH_JOB_DOCKER_BIN'] || "docker.io")
 
     @arvados_internal = Rails.configuration.git_internal_dir
     if not File.exists? @arvados_internal
