@@ -148,7 +148,9 @@ class InodeCache(object):
         self._total -= obj.cache_size
         del self._entries[obj.cache_priority]
         if obj.cache_uuid:
-            del self._by_uuid[obj.cache_uuid]
+            self._by_uuid[obj.cache_uuid].remove(obj)
+            if not self._by_uuid[obj.cache_uuid]:
+                del self._by_uuid[obj.cache_uuid]
             obj.cache_uuid = None
         if clear:
             _logger.debug("InodeCache cleared %i total now %i", obj.inode, self._total)
@@ -168,9 +170,13 @@ class InodeCache(object):
             self._entries[obj.cache_priority] = obj
             obj.cache_uuid = obj.uuid()
             if obj.cache_uuid:
-                self._by_uuid[obj.cache_uuid] = obj
+                if obj.cache_uuid not in self._by_uuid:
+                    self._by_uuid[obj.cache_uuid] = [obj]
+                else:
+                    if obj not in self._by_uuid[obj.cache_uuid]:
+                        self._by_uuid[obj.cache_uuid].append(obj)
             self._total += obj.objsize()
-            _logger.debug("InodeCache touched %i (size %i) total now %i", obj.inode, obj.objsize(), self._total)
+            _logger.debug("InodeCache touched %i (size %i) (uuid %s) total now %i", obj.inode, obj.objsize(), obj.cache_uuid, self._total)
             self.cap_cache()
         else:
             obj.cache_priority = None
@@ -344,20 +350,21 @@ class Operations(llfuse.Operations):
     def on_event(self, ev):
         if 'event_type' in ev:
             with llfuse.lock:
-                item = self.inodes.inode_cache.find(ev["object_uuid"])
-                if item is not None:
-                    item.invalidate()
-                    if ev["object_kind"] == "arvados#collection":
-                        new_attr = ev.get("properties") and ev["properties"].get("new_attributes") and ev["properties"]["new_attributes"]
+                items = self.inodes.inode_cache.find(ev["object_uuid"])
+                if items is not None:
+                    for item in items:
+                        item.invalidate()
+                        if ev["object_kind"] == "arvados#collection":
+                            new_attr = ev.get("properties") and ev["properties"].get("new_attributes") and ev["properties"]["new_attributes"]
 
-                        # new_attributes.modified_at currently lacks subsecond precision (see #6347) so use event_at which
-                        # should always be the same.
-                        #record_version = (new_attr["modified_at"], new_attr["portable_data_hash"]) if new_attr else None
-                        record_version = (ev["event_at"], new_attr["portable_data_hash"]) if new_attr else None
+                            # new_attributes.modified_at currently lacks subsecond precision (see #6347) so use event_at which
+                            # should always be the same.
+                            #record_version = (new_attr["modified_at"], new_attr["portable_data_hash"]) if new_attr else None
+                            record_version = (ev["event_at"], new_attr["portable_data_hash"]) if new_attr else None
 
-                        item.update(to_record_version=record_version)
-                    else:
-                        item.update()
+                            item.update(to_record_version=record_version)
+                        else:
+                            item.update()
 
                 oldowner = ev.get("properties") and ev["properties"].get("old_attributes") and ev["properties"]["old_attributes"].get("owner_uuid")
                 olditemparent = self.inodes.inode_cache.find(oldowner)

@@ -58,12 +58,22 @@ class Commit < ActiveRecord::Base
 
     # Get the commit hash for the upper bound
     max_hash = nil
-    IO.foreach("|git rev-list --max-count=1 #{maximum.shellescape} --") do |line|
+    git_max_hash_cmd = "git rev-list --max-count=1 #{maximum.shellescape} --"
+    IO.foreach("|#{git_max_hash_cmd}") do |line|
       max_hash = line.strip
     end
 
-    # If not found or string is invalid, nothing else to do
-    return [] if !max_hash or !git_check_ref_format(max_hash)
+    # If not found, nothing else to do
+    if !max_hash
+      logger.warn "no refs found looking for max_hash: `GIT_DIR=#{gitdir} #{git_max_hash_cmd}` returned no output"
+      return []
+    end
+
+    # If string is invalid, nothing else to do
+    if !git_check_ref_format(max_hash)
+      logger.warn "ref returned by `GIT_DIR=#{gitdir} #{git_max_hash_cmd}` was invalid for max_hash: #{max_hash}"
+      return []
+    end
 
     resolved_exclude = nil
     if exclude
@@ -83,12 +93,22 @@ class Commit < ActiveRecord::Base
     if minimum
       # Get the commit hash for the lower bound
       min_hash = nil
-      IO.foreach("|git rev-list --max-count=1 #{minimum.shellescape} --") do |line|
+      git_min_hash_cmd = "git rev-list --max-count=1 #{minimum.shellescape} --"
+      IO.foreach("|#{git_min_hash_cmd}") do |line|
         min_hash = line.strip
       end
 
-      # If not found or string is invalid, nothing else to do
-      return [] if !min_hash or !git_check_ref_format(min_hash)
+      # If not found, nothing else to do
+      if !min_hash
+        logger.warn "no refs found looking for min_hash: `GIT_DIR=#{gitdir} #{git_min_hash_cmd}` returned no output"
+        return []
+      end
+
+      # If string is invalid, nothing else to do
+      if !git_check_ref_format(min_hash)
+        logger.warn "ref returned by `GIT_DIR=#{gitdir} #{git_min_hash_cmd}` was invalid for min_hash: #{min_hash}"
+        return []
+      end
 
       # Now find all commits between them
       IO.foreach("|git rev-list #{min_hash.shellescape}..#{max_hash.shellescape} --") do |line|

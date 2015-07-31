@@ -22,8 +22,6 @@ class TestArvPut < Minitest::Test
   end
 
   def test_raw_stdin
-    skip "Waiting unitl #4534 is implemented"
-
     out, err = capture_subprocess_io do
       r,w = IO.pipe
       wpid = fork do
@@ -41,8 +39,6 @@ class TestArvPut < Minitest::Test
   end
 
   def test_raw_file
-    skip "Waiting unitl #4534 is implemented"
-
     out, err = capture_subprocess_io do
       assert arv_put('--raw', './tmp/foo')
     end
@@ -52,8 +48,6 @@ class TestArvPut < Minitest::Test
   end
 
   def test_raw_empty_file
-    skip "Waiting unitl #4534 is implemented"
-
     out, err = capture_subprocess_io do
       assert arv_put('--raw', './tmp/empty_file')
     end
@@ -83,8 +77,6 @@ class TestArvPut < Minitest::Test
   end
 
   def test_filename_arg_with_empty_file
-    skip "Waiting unitl #4534 is implemented"
-
     out, err = capture_subprocess_io do
       assert arv_put('--filename', 'foo', './tmp/empty_file')
     end
@@ -94,8 +86,6 @@ class TestArvPut < Minitest::Test
   end
 
   def test_as_stream
-    skip "Waiting unitl #4534 is implemented"
-
     out, err = capture_subprocess_io do
       assert arv_put('--as-stream', './tmp/foo')
     end
@@ -105,8 +95,6 @@ class TestArvPut < Minitest::Test
   end
 
   def test_progress
-    skip "Waiting unitl #4534 is implemented"
-
     out, err = capture_subprocess_io do
       assert arv_put('--manifest', '--progress', './tmp/foo')
     end
@@ -115,8 +103,6 @@ class TestArvPut < Minitest::Test
   end
 
   def test_batch_progress
-    skip "Waiting unitl #4534 is implemented"
-
     out, err = capture_subprocess_io do
       assert arv_put('--manifest', '--batch-progress', './tmp/foo')
     end
@@ -136,20 +122,14 @@ class TestArvPut < Minitest::Test
   end
 
   def test_read_from_implicit_stdin
-    skip "Waiting unitl #4534 is implemented"
-
     test_read_from_stdin(specify_stdin_as='--manifest')
   end
 
   def test_read_from_dev_stdin
-    skip "Waiting unitl #4534 is implemented"
-
     test_read_from_stdin(specify_stdin_as='/dev/stdin')
   end
 
   def test_read_from_stdin(specify_stdin_as='-')
-    skip "Waiting unitl #4534 is implemented"
-
     out, err = capture_subprocess_io do
       r,w = IO.pipe
       wpid = fork do
@@ -168,22 +148,16 @@ class TestArvPut < Minitest::Test
   end
 
   def test_read_from_implicit_stdin_implicit_manifest
-    skip "Waiting unitl #4534 is implemented"
-
     test_read_from_stdin_implicit_manifest(specify_stdin_as=nil,
                                            expect_filename='stdin')
   end
 
   def test_read_from_dev_stdin_implicit_manifest
-    skip "Waiting unitl #4534 is implemented"
-
     test_read_from_stdin_implicit_manifest(specify_stdin_as='/dev/stdin')
   end
 
   def test_read_from_stdin_implicit_manifest(specify_stdin_as='-',
                                              expect_filename=nil)
-    skip "Waiting unitl #4534 is implemented"
-
     expect_filename = expect_filename || specify_stdin_as.split('/').last
     out, err = capture_subprocess_io do
       r,w = IO.pipe
