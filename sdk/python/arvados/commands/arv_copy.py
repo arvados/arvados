@@ -188,6 +188,13 @@ def api_for_instance(instance_name):
         abort('need ARVADOS_API_HOST and ARVADOS_API_TOKEN for {}'.format(instance_name))
     return client
 
+# Check if git is available
+def check_git_availability():
+    try:
+        arvados.util.run_command(['git', '--help'])
+    except Exception:
+        abort('git command is not available. Please ensure git is installed.')
+
 # copy_pipeline_instance(pi_uuid, src, dst, args)
 #
 #    Copies a pipeline instance identified by pi_uuid from src to dst.
@@ -212,6 +219,8 @@ def copy_pipeline_instance(pi_uuid, src, dst, args):
     pi = src.pipeline_instances().get(uuid=pi_uuid).execute(num_retries=args.retries)
 
     if args.recursive:
+        check_git_availability()
+
         if not args.dst_git_repo:
             abort('--dst-git-repo is required when copying a pipeline recursively.')
         # Copy the pipeline template and save the copied template.
@@ -265,6 +274,8 @@ def copy_pipeline_template(pt_uuid, src, dst, args):
     pt = src.pipeline_templates().get(uuid=pt_uuid).execute(num_retries=args.retries)
 
     if args.recursive:
+        check_git_availability()
+
         if not args.dst_git_repo:
             abort('--dst-git-repo is required when copying a pipeline recursively.')
         # Copy input collections, docker images and git repos.
@@ -318,9 +329,9 @@ def copy_collections(obj, src, dst, args):
         obj = arvados.util.portable_data_hash_pattern.sub(copy_collection_fn, obj)
         obj = arvados.util.collection_uuid_pattern.sub(copy_collection_fn, obj)
         return obj
-    elif type(obj) == dict:
+    elif isinstance(obj, dict):
         return {v: copy_collections(obj[v], src, dst, args) for v in obj}
-    elif type(obj) == list:
+    elif isinstance(obj, list):
         return [copy_collections(v, src, dst, args) for v in obj]
     return obj
 

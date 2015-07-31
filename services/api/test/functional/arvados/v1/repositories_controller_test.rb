@@ -42,6 +42,26 @@ class Arvados::V1::RepositoriesControllerTest < ActionController::TestCase
     end
   end
 
+  test "get_all_permissions takes into account is_active flag" do
+    r = nil
+    act_as_user users(:active) do
+      r = Repository.create! name: 'active/testrepo'
+    end
+    act_as_system_user do
+      u = users(:active)
+      u.is_active = false
+      u.save!
+    end
+    authorize_with :admin
+    get :get_all_permissions
+    assert_response :success
+    json_response['repositories'].each do |r|
+      r['user_permissions'].each do |user_uuid, perms|
+        refute_equal user_uuid, users(:active).uuid
+      end
+    end
+  end
+
   test "get_all_permissions does not give any access to user without permission" do
     viewer_uuid = users(:project_viewer).uuid
     assert_equal(authorized_keys(:project_viewer).authorized_user_uuid,
@@ -88,15 +108,84 @@ class Arvados::V1::RepositoriesControllerTest < ActionController::TestCase
     end
   end
 
-  test "get_all_permissions lists repos with no authorized keys" do
+  test "get_all_permissions lists all repos regardless of permissions" do
+    act_as_system_user do
+      # Create repos that could potentially be left out of the
+      # permission list by accident.
+
+      # No authorized_key, no username (this can't even be done
+      # without skipping validations)
+      r = Repository.create name: 'root/testrepo'
+      assert r.save validate: false
+
+      r = Repository.create name: 'invalid username / repo name', owner_uuid: users(:inactive).uuid
+      assert r.save validate: false
+    end
+    authorize_with :admin
+    get :get_all_permissions
+    assert_response :success
+    assert_equal(Repository.count, json_response["repositories"].size)
+  end
+
+  test "get_all_permissions lists user permissions for users with no authorized keys" do
     authorize_with :admin
     AuthorizedKey.destroy_all
     get :get_all_permissions
     assert_response :success
     assert_equal(Repository.count, json_response["repositories"].size)
-    assert(json_response["repositories"].any? do |repo|
-             repo["user_permissions"].empty?
-           end, "test is invalid - all repositories have authorized keys")
+    repos_with_perms = []
+    json_response['repositories'].each do |repo|
+      if repo['user_permissions'].any?
+        repos_with_perms << repo['uuid']
+      end
+    end
+    assert_not_empty repos_with_perms, 'permissions are missing'
+  end
+
+  # Ensure get_all_permissions correctly describes what the normal
+  # permission system would do.
+  test "get_all_permissions obeys group permissions" do
+    act_as_user system_user do
+      r = Repository.create!(name: 'admin/groupcanwrite', owner_uuid: users(:admin).uuid)
+      g = Group.create!(group_class: 'group', name: 'repo-writers')
+      u1 = users(:active)
+      u2 = users(:spectator)
+      Link.create!(tail_uuid: g.uuid, head_uuid: r.uuid, link_class: 'permission', name: 'can_manage')
+      Link.create!(tail_uuid: u1.uuid, head_uuid: g.uuid, link_class: 'permission', name: 'can_write')
+      Link.create!(tail_uuid: u2.uuid, head_uuid: g.uuid, link_class: 'permission', name: 'can_read')
+
+      r = Repository.create!(name: 'admin/groupreadonly', owner_uuid: users(:admin).uuid)
+      g = Group.create!(group_class: 'group', name: 'repo-readers')
+      u1 = users(:active)
+      u2 = users(:spectator)
+      Link.create!(tail_uuid: g.uuid, head_uuid: r.uuid, link_class: 'permission', name: 'can_read')
+      Link.create!(tail_uuid: u1.uuid, head_uuid: g.uuid, link_class: 'permission', name: 'can_write')
+      Link.create!(tail_uuid: u2.uuid, head_uuid: g.uuid, link_class: 'permission', name: 'can_read')
+    end
+    authorize_with :admin
+    get :get_all_permissions
+    assert_response :success
+    json_response['repositories'].each do |repo|
+      repo['user_permissions'].each do |user_uuid, perms|
+        u = User.find_by_uuid(user_uuid)
+        if perms['can_read']
+          assert u.can? read: repo['uuid']
+          assert_match /R/, perms['gitolite_permissions']
+        else
+          refute_match /R/, perms['gitolite_permissions']
+        end
+        if perms['can_write']
+          assert u.can? write: repo['uuid']
+          assert_match /RW/, perms['gitolite_permissions']
+        else
+          refute_match /W/, perms['gitolite_permissions']
+        end
+        if perms['can_manage']
+          assert u.can? manage: repo['uuid']
+          assert_match /RW/, perms['gitolite_permissions']
+        end
+      end
+    end
   end
 
   test "default index includes fetch_url" do
