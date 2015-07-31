@@ -72,7 +72,7 @@ class Commit < ActiveRecord::Base
     # If string is invalid, nothing else to do
     if !git_check_ref_format(max_hash)
       logger.warn "ref returned by `GIT_DIR=#{gitdir} #{git_max_hash_cmd}` was invalid for max_hash: #{max_hash}"
-      return[]
+      return []
     end
 
     resolved_exclude = nil
