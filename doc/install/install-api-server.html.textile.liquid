@@ -94,13 +94,10 @@ Define your @uuid_prefix@ in @application.yml@ by setting the @uuid_prefix@ fiel
 
 h3(#git_repositories_dir). git_repositories_dir
 
-This field defaults to @/var/lib/arvados/git@. You can override the value by defining it in @application.yml@.
-
-Make sure a clone of the arvados repository exists in @git_repositories_dir@.
+Additional git setup will be done on the "next page":install-arv-git-httpd.html. For now, just create the repository storage directory.
 
 <notextile>
-<pre><code>~$ <span class="userinput">sudo mkdir -p /var/lib/arvados/git</span>
-~$ <span class="userinput">sudo git clone --bare git://git.curoverse.com/arvados.git /var/lib/arvados/git/arvados.git</span>
+<pre><code>~$ <span class="userinput">sudo mkdir -p /var/lib/arvados/git/repositories</span>
 </code></pre></notextile>
 
 h3. secret_token
@@ -146,9 +143,10 @@ h2. Prepare the API server deployment
 Now that all your configuration is in place, run @/usr/local/bin/arvados-api-server-upgrade.sh@.  This will install and check your configuration, install necessary gems, and run any necessary database setup.
 
 {% include 'notebox_begin' %}
-You can safely ignore the following error message you may see when loading the database structure:
-<notextile>
-<pre><code>ERROR:  must be owner of extension plpgsql</code></pre></notextile>
+You can safely ignore the following messages if they appear while this script runs:
+<pre>Don't run Bundler as root. Bundler can ask for sudo if it is needed, and installing your bundle as root will
+break this application for all non-root users on this machine.</pre>
+<pre>fatal: Not a git repository (or any of the parent directories): .git</pre>
 {% include 'notebox_end' %}
 
 This command aborts when it encounters an error.  It's safe to rerun multiple times, so if there's a problem with your configuration, you can fix that and try again.

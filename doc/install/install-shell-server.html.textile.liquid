@@ -8,14 +8,14 @@ There is nothing inherently special about an Arvados shell server. It is just a 
 
 h2. Install API tokens
 
-Please follow the "API token guide":{{site.baseurl}}/user/reference/api-tokens.html to get API tokens for your user and install them on your shell server. We will use those tokens to test the SDKs as we install them.
+Please follow the "API token guide":../user/reference/api-tokens.html to get API tokens for your Arvados account and install them on your shell server. We will use those tokens to test the SDKs as we install them.
 
 h2. Install the Ruby SDK and utilities
 
 If you're using RVM:
 
 <notextile>
-<pre><code>~$ <span class="userinput">sudo rvm-exec gem install arvados-cli</span>
+<pre><code>~$ <span class="userinput">sudo /usr/local/rvm/bin/rvm-exec default gem install arvados-cli</span>
 </code></pre>
 </notextile>
 
@@ -46,13 +46,11 @@ On Red Hat-based systems:
 
 h2. Update Git Config
 
-Configure git to use the ARVADOS_API_TOKEN environment variable to authenticate to arv-git-httpd.
-
-Execute the following commands to setup the needed configuration.
+Configure git to use the ARVADOS_API_TOKEN environment variable to authenticate to arv-git-httpd. We use the @--system@ flag so it takes effect for all current and future user accounts. It does not affect git's behavior when connecting to other git servers.
 
 <notextile>
 <pre>
-<code>~$ <span class="userinput">git config 'credential.https://git.{{ site.arvados_api_host }}/.username' none</span></code>
-<code>~$ <span class="userinput">git config 'credential.https://git.{{ site.arvados_api_host }}/.helper' '!cred(){ cat >/dev/null; if [ "$1" = get ]; then echo password=$ARVADOS_API_TOKEN; fi; };cred'</span></code>
+<code>~$ <span class="userinput">sudo git config --system 'credential.https://git.<b>uuid_prefix.your.domain</b>/.username' none</span></code>
+<code>~$ <span class="userinput">sudo git config --system 'credential.https://git.<b>uuid_prefix.your.domain</b>/.helper' '!cred(){ cat >/dev/null; if [ "$1" = get ]; then echo password=$ARVADOS_API_TOKEN; fi; };cred'</span></code>
 </pre>
 </notextile>
