@@ -63,7 +63,7 @@ class Dispatcher
       raise "No CRUNCH_JOB_BIN env var, and crunch-job not in path."
     end
 
-    @docker_bin = (ENV['CRUNCH_JOB_DOCKER_BIN'] || "docker.io")
+    @docker_bin = ENV['CRUNCH_JOB_DOCKER_BIN']
 
     @arvados_internal = Rails.configuration.git_internal_dir
     if not File.exists? @arvados_internal
@@ -421,8 +421,11 @@ class Dispatcher
       cmd_args += [@crunch_job_bin,
                    '--job-api-token', @authorizations[job.uuid].api_token,
                    '--job', job.uuid,
-                   '--git-dir', @arvados_internal,
-                   '--docker-bin', @docker_bin]
+                   '--git-dir', @arvados_internal]
+
+      if @docker_bin
+        cmd_args += ['--docker-bin', @docker_bin]
+      end
 
       if @todo_job_retries.include?(job.uuid)
         cmd_args << "--force-unlock"
