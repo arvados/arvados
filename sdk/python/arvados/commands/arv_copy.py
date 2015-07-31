@@ -329,9 +329,9 @@ def copy_collections(obj, src, dst, args):
         obj = arvados.util.portable_data_hash_pattern.sub(copy_collection_fn, obj)
         obj = arvados.util.collection_uuid_pattern.sub(copy_collection_fn, obj)
         return obj
-    elif type(obj) == dict:
+    elif isinstance(obj, dict):
         return {v: copy_collections(obj[v], src, dst, args) for v in obj}
-    elif type(obj) == list:
+    elif isinstance(obj, list):
         return [copy_collections(v, src, dst, args) for v in obj]
     return obj
 
