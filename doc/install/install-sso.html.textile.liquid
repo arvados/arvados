@@ -6,9 +6,9 @@ title: Install Single Sign On (SSO) server
 
 h2(#dependencies). Install dependencies
 
-h3(#install_ruby_and_bundler). Install git and curl
+h3(#install_git_curl). Install git and curl
 
-{% include 'install_tools' %}
+{% include 'install_git_curl' %}
 
 h3(#install_ruby_and_bundler). Install Ruby and Bundler
 
@@ -37,13 +37,13 @@ First, copy the example configuration file:
 <pre><code>~/sso-devise-omniauth-provider$ <span class="userinput">cp -i config/application.yml.example config/application.yml</span>
 </code></pre></notextile>
 
-The SSO server reads the @config/application.yml@ file, as well as the @config/application.defaults.yml@ file. Values in @config/application.yml@ take precedence over the defaults that are defined in @config/application.defaults.yml@. The @config/application.yml.example@ file is not read by the SSO server and is provided for installation convenience, only.
+The SSO server reads the @config/application.yml@ file, as well as the @config/application.defaults.yml@ file. Values in @config/application.yml@ take precedence over the defaults that are defined in @config/application.defaults.yml@. The @config/application.yml.example@ file is not read by the SSO server and is provided for installation convenience only.
 
 Consult @config/application.default.yml@ for a full list of configuration options.  Local configuration goes in @config/application.yml@, do not edit @config/application.default.yml@.
 
 h3(#uuid_prefix). uuid_prefix
 
-Generate a uuid prefix for the single sign on service.  This prefix is used to identify user records as originating from this site.  It must be exactly 5 alphanumeric characters (lowercase ASCII letters and digits).  You may use the following snippet to generate a uuid prefix:
+Generate a uuid prefix for the single sign on service.  This prefix is used to identify user records as originating from this site.  It must be exactly 5 lowercase ASCII letters and/or digits.  You may use the following snippet to generate a uuid prefix:
 
 <notextile>
 <pre><code>~/sso-devise-omniauth-provider$ <span class="userinput">ruby -e 'puts "#{rand(2**64).to_s(36)[0,5]}"'</span>
@@ -103,7 +103,7 @@ Alternatively, if the database user you intend to use for the SSO server is not 
 
 h2(#client). Create arvados-server client
 
-Use @rails console@ to create a @Client@ record that will be used by the Arvados API server.  The values of @app_id@ and @app_secret@ correspond to the @APP_ID@ and @APP_SECRET@ that must be set in in "Setting up Omniauth in the API server.":install-api-server.html#omniauth
+Use @rails console@ to create a @Client@ record that will be used by the Arvados API server.  The values of @app_id@ and @app_secret@ correspond to the values for @sso_app_id@ and @sso_app_secret@ in the "API server's SSO settings.":install-api-server.html#omniauth
 
 <notextile>
 <pre><code>~/sso-devise-omniauth-provider$ <span class="userinput">ruby -e 'puts rand(2**400).to_s(36)'</span>
@@ -191,19 +191,19 @@ h3(#google). Google+ authentication
 
 In order to use Google+ authentication, you must use the <a href="https://console.developers.google.com" target="_blank">Google Developers Console</a> to create a set of client credentials.
 
-# Go to the <a href="https://console.developers.google.com" target="_blank">Google Developers Console</a> and select or create a project; this will take you to the project page
-# On the sidebar, click on *APIs & auth* then select *APIs*
-## Search for "Contacts API" and click on "Enable API"
-## Search for "Google+ API" and click on "Enable API"
-# On the sidebar, click on *Credentials*; under *OAuth* click on "Create new Client ID" to bring up the "Create Client ID" dialog box
-# Under "Application type" select "Web application"
-# If the authorization origins are not displayed, clicking on "Create Client ID" will take you to *Consent screen* settings.
-## On consent screen settings, enter the appropriate details and click on "Save"
-## This will return you to the "Create Client ID" dialog box.
+# Go to the <a href="https://console.developers.google.com" target="_blank">Google Developers Console</a> and select or create a project; this will take you to the project page.
+# On the sidebar, click on *APIs & auth* then select *APIs*.
+## Search for *Contacts API* and click on *Enable API*.
+## Search for *Google+ API* and click on *Enable API*.
+# On the sidebar, click on *Credentials*; under *OAuth* click on *Create new Client ID* to bring up the *Create Client ID* dialog box.
+# Under *Application type* select *Web application*.
+# If the authorization origins are not displayed, clicking on *Create Client ID* will take you to *Consent screen* settings.
+## On consent screen settings, enter the appropriate details and click on *Save*.
+## This will return you to the *Create Client ID* dialog box.
 # You must set the authorization origins.  Edit @sso.your-site.com@ to the appropriate hostname that you will use to access the SSO service:
 ## JavaScript origin should be @https://sso.your-site.com/@
 ## Redirect URI should be @https://sso.your-site.com/users/auth/google_oauth2/callback@
-# Copy the values of "Client ID" and "Client secret" from the Google Developers Console into the Google section of @config/application.yml@, like this:
+# Copy the values of *Client ID* and *Client secret* from the Google Developers Console into the Google section of @config/application.yml@, like this:
 
 <notextile>
 <pre><code>  # Google API tokens required for OAuth2 login.
@@ -223,7 +223,7 @@ h3. Run a standalone passenger server
 
 You can now test your installation by going to the page reported by passenger as "Accessible via: ..."
 
-Note, if you get the following warning "you may safely ignore it:":https://stackoverflow.com/questions/10374871/no-secret-option-provided-to-racksessioncookie-warning
+Note: if you get the following warning "you may safely ignore it:":https://stackoverflow.com/questions/10374871/no-secret-option-provided-to-racksessioncookie-warning
 
 <pre>
 Connecting to database specified by database.yml
