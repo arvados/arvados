@@ -84,18 +84,15 @@ Edit @/etc/arvados/api/database.yml@ and replace the @xxxxxxxx@ database passwor
 
 h2(#configure_application). Configure the API server
 
-Edit @/etc/arvados/api/application.yml@ and to configure the settings described in the following sections.  The deployment script will consistently deploy this to the API server's configuration directory.  The API server reads both @application.yml@ and its own @config/application.default.yml@ file.  The settings in @application.yml@ take precedence over the defaults that are defined in @config/application.default.yml@.  The @config/application.yml.example@ file is not read by the API server and is provided as a starting template only.
+Edit @/etc/arvados/api/application.yml@ to configure the settings described in the following sections.  The deployment script will consistently deploy this to the API server's configuration directory.  The API server reads both @application.yml@ and its own @config/application.default.yml@ file.  The settings in @application.yml@ take precedence over the defaults that are defined in @config/application.default.yml@.  The @config/application.yml.example@ file is not read by the API server and is provided as a starting template only.
 
-Only put local configuration in @application.yml@, do not edit @application.default.yml@.
+@config/application.default.yml@ documents additional configuration settings not listed here.  You can "view the current source version":https://arvados.org/projects/arvados/repository/revisions/master/entry/services/api/config/application.default.yml for reference.
+
+Only put local configuration in @application.yml@.  Do not edit @application.default.yml@.
 
 h3(#uuid_prefix). uuid_prefix
 
-The @uuid_prefix@ is used for all database identifiers to identify the record as originating from this site.  It is a string consisting of exactly 5 lowercase ASCII letters and digits.  Generate a random value and set it in @application.yml@:
-
-<notextile>
-<pre><code>~$ <span class="userinput">ruby -e 'puts rand(2**40).to_s(36)[0,5]'</span>
-zzzzz
-</code></pre></notextile>
+Define your @uuid_prefix@ in @application.yml@ by setting the @uuid_prefix@ field in the section for your environment.  This prefix is used for all database identifiers to identify the record as originating from this site.  It must be exactly 5 lowercase ASCII letters and digits.
 
 Example @application.yml@:
 
@@ -105,7 +102,7 @@ Example @application.yml@:
 
 h3. secret_token
 
-The @secret_token@ is used for for signing cookies.  IMPORTANT: This is a site secret. It should be at least 50 characters.  Generate a random value and set it to @application.yml@:
+The @secret_token@ is used for for signing cookies.  IMPORTANT: This is a site secret. It should be at least 50 characters.  Generate a random value and set it in @application.yml@:
 
 <notextile>
 <pre><code>~$ <span class="userinput">ruby -e 'puts rand(2**400).to_s(36)'</span>
@@ -120,7 +117,7 @@ Example @application.yml@:
 
 h3(#blob_signing_key). blob_signing_key
 
-The @blob_signing_key@ is used to enforce access control to Keep blocks.  This same key must be provided to the Keepstore daemons when "installing Keepstore servers.":install-keepstore.html  IMPORTANT: This is a site secret. It should be at least 50 characters.  Generate a random value and set it to @application.yml@:
+The @blob_signing_key@ is used to enforce access control to Keep blocks.  This same key must be provided to the Keepstore daemons when "installing Keepstore servers.":install-keepstore.html  IMPORTANT: This is a site secret. It should be at least 50 characters.  Generate a random value and set it in @application.yml@:
 
 <notextile>
 <pre><code>~$ <span class="userinput">ruby -e 'puts rand(2**400).to_s(36)'</span>
@@ -162,31 +159,42 @@ Example @application.yml@:
 
 h3. websockets_address
 
-Set @websockets_address@ to the @@wss://@ URL of the API server websocket endpoint after following "Set up Web servers.":#set_up
+Set @websockets_address@ to the @wss://@ URL of the API server websocket endpoint after following "Set up Web servers.":#set_up
 
 Example @application.yml@:
 
 <notextile>
-<pre><code>  websockets_address: <span class="userinput">https://ws.zzzzz.example.com</span></code></pre>
+<pre><code>  websockets_address: <span class="userinput">wss://ws.zzzzz.example.com</span></code></pre>
 </notextile>
 
-h3(#git_repositories_dir). git_repositories_dir, git_internal_dir
+h3(#git_repositories_dir). git_repositories_dir
 
-The @git_repositories_dir@ setting specifies the directory is where user git repositories will be stored.  By default this is @/var/lib/arvados/git@. You can change the location by defining it in @application.yml@.
-
-The @git_internal_dir@ setting specifies the directory is where the system internal git repository will be stored.  By default this is @/var/lib/arvados/internal.git@.  This repository stores git branches that have been used to run crunch jobs.
+The @git_repositories_dir@ setting specifies the directory where user git repositories will be stored.  By default this is @/var/lib/arvados/git@.
 
 Example @application.yml@:
 
 <notextile>
 <pre><code>  git_repositories_dir: <span class="userinput">/var/lib/arvados/git</span>
-  git_internal_dir: <span class="userinput">/var/lib/arvados/internal.git</span>
 </code></pre>
 </notextile>
 
-h3. Additional settings
+Make sure a clone of the arvados repository exists in @git_repositories_dir@.
 
-The file @config/application.default.yml@ (online at "https://arvados.org/projects/arvados/repository/revisions/master/entry/services/api/config/application.default.yml":https://arvados.org/projects/arvados/repository/revisions/master/entry/services/api/config/application.default.yml documents a number of additional configuration settings.  Only put local configuration in @application.yml@, do not edit @application.default.yml@.
+<notextile>
+<pre><code>~$ <span class="userinput">sudo mkdir -p /var/lib/arvados/git</span>
+~$ <span class="userinput">sudo git clone --bare git://git.curoverse.com/arvados.git /var/lib/arvados/git/arvados.git</span>
+</code></pre></notextile>
+
+h3(#git_internal_dir). git_internal_dir
+
+The @git_internal_dir@ setting specifies the location of Arvados' internal git repository.  By default this is @/var/lib/arvados/internal.git@.  This repository stores git commits that have been used to run Crunch jobs.  It should _not_ be a subdirectory of @git_repositories_dir@.
+
+Example @application.yml@:
+
+<notextile>
+<pre><code>  git_internal_dir: <span class="userinput">/var/lib/arvados/internal.git</span>
+</code></pre>
+</notextile>
 
 h2. Prepare the API server deployment
 
