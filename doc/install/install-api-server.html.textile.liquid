@@ -16,21 +16,19 @@ h3(#install_postgres). Install PostgreSQL
 
 {% include 'install_postgres' %}
 
-h3(#build_tools_apiserver). Build tools
-
-On older distributions, you may need to use a backports repository to satisfy these requirements.  For example, on older Red Hat-based systems, consider using the "postgresql92":https://www.softwarecollections.org/en/scls/rhscl/postgresql92/ and "nginx16":https://www.softwarecollections.org/en/scls/rhscl/nginx16/ Software Collections.
+h2(#install_apiserver). Install API server and dependencies
 
 On a Debian-based system, install the following packages:
 
 <notextile>
-<pre><code>~$ <span class="userinput">sudo apt-get install bison build-essential libcurl4-openssl-dev git nginx arvados-api-server</span>
+<pre><code>~$ <span class="userinput">sudo apt-get install bison build-essential libcurl4-openssl-dev git arvados-api-server</span>
 </code></pre>
 </notextile>
 
 On a Red Hat-based system, install the following packages:
 
 <notextile>
-<pre><code>~$ <span class="userinput">sudo yum install bison make automake gcc gcc-c++ libcurl-devel nginx git arvados-api-server</span>
+<pre><code>~$ <span class="userinput">sudo yum install bison make automake gcc gcc-c++ libcurl-devel git arvados-api-server</span>
 </code></pre>
 </notextile>
 
@@ -214,11 +212,9 @@ For best performance, we recommend you use Nginx as your Web server front-end, w
 
 <notextile>
 <ol>
-<li>Install Nginx via your distribution or a backports repository.</li>
+<li><a href="https://www.phusionpassenger.com/documentation/Users%20guide%20Nginx.html">Install Nginx and Phusion Passenger</a>.</li>
 
-<li><a href="https://www.phusionpassenger.com/documentation/Users%20guide%20Nginx.html">Install Phusion Passenger for Nginx</a>.</li>
-
-<li><p>Puma is already included with the API server's gems.  We recommend you use a tool like <a href="http://smarden.org/runit/">runit</a> or something similar.  Here's a sample run script for that:</p>
+<li><p>Puma is already included with the API server's gems.  We recommend you run it as a service under <a href="http://smarden.org/runit/">runit</a> or a similar tool.  Here's a sample runit script for that:</p>
 
 <pre><code>#!/bin/bash
 

@@ -12,31 +12,23 @@ h3(#install_ruby_and_bundler). Install Ruby and Bundler
 
 {% include 'install_ruby_and_bundler' %}
 
-h3(#build_tools_workbench). Build tools
+h2(#install_workbench). Install Workbench and dependencies
 
 Workbench doesn't need its own database, so it does not need to have PostgreSQL installed.
-
-On older distributions, you may need to use a backports repository to satisfy these requirements.  For example, on older Red Hat-based systems, consider using the "nginx16":https://www.softwarecollections.org/en/scls/rhscl/nginx16/ Software Collection.
 
 On a Debian-based system, install the following packages:
 
 <notextile>
-<pre><code>~$ <span class="userinput">sudo apt-get install bison build-essential graphviz git nginx python-arvados-python-client arvados-workbench</span>
+<pre><code>~$ <span class="userinput">sudo apt-get install bison build-essential graphviz git python-arvados-python-client arvados-workbench</span>
 </code></pre>
 </notextile>
 
 On a Red Hat-based system, install the following packages:
 
 <notextile>
-<pre><code>~$ <span class="userinput">sudo yum install bison make automake gcc gcc-c++ graphviz git nginx python27-python-arvados-python-client arvados-workbench</span>
+<pre><code>~$ <span class="userinput">sudo yum install bison make automake gcc gcc-c++ graphviz git python27-python-arvados-python-client arvados-workbench</span>
 </code></pre>
 </notextile>
-
-{% include 'notebox_begin' %}
-
-If you intend to use specific versions of these packages from Software Collections, you may have to adapt some of the package names to match; e.g., @nginx16@.
-
-{% include 'notebox_end' %}
 
 {% include 'note_python27_sc' %}
 
@@ -120,9 +112,7 @@ For best performance, we recommend you use Nginx as your Web server front-end, w
 
 <notextile>
 <ol>
-<li>Install Nginx via your distribution or a backports repository.</li>
-
-<li><a href="https://www.phusionpassenger.com/documentation/Users%20guide%20Nginx.html">Install Phusion Passenger for Nginx</a>.</li>
+<li><a href="https://www.phusionpassenger.com/documentation/Users%20guide%20Nginx.html">Install Nginx and Phusion Passenger</a>.</li>
 
 <li><p>Edit the http section of your Nginx configuration to run the Passenger server, and act as a front-end for it.  You might add a block like the following, adding SSL and logging parameters to taste:</p>
 
