@@ -1,3 +1,0 @@
-Server::Application.configure do
-  config.accept_api_token = { 'foobar' => true }
-end

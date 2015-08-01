@@ -73,7 +73,7 @@ The API server package uses configuration files that you write to @/etc/arvados/
 <pre><code>~$ <span class="userinput">sudo mkdir -p /etc/arvados/api</span>
 ~$ <span class="userinput">sudo chmod 700 /etc/arvados/api</span>
 ~$ <span class="userinput">cd /var/www/arvados-api/current</span>
-/var/www/arvados-api/current$ <span class="userinput">sudo cp config/database.yml.sample /etc/arvados/api/database.yml</span>
+/var/www/arvados-api/current$ <span class="userinput">sudo cp config/database.yml.example /etc/arvados/api/database.yml</span>
 /var/www/arvados-api/current$ <span class="userinput">sudo cp config/application.yml.example /etc/arvados/api/application.yml</span>
 </code></pre>
 </notextile>
@@ -82,19 +82,101 @@ h2. Configure the database connection
 
 Edit @/etc/arvados/api/database.yml@ and replace the @xxxxxxxx@ database password placeholders with the PostgreSQL password you generated above.
 
-h2. Configure the API server
+h2(#configure_application). Configure the API server
 
-Edit @/etc/arvados/api/application.yml@ following the instructions below.  The deployment script will consistently deploy this to the API server's configuration directory.  The API server reads both @application.yml@ and its own @config/application.default.yml@ file.  Values in @application.yml@ take precedence over the defaults that are defined in @config/application.default.yml@.  The @config/application.yml.example@ file is not read by the API server and is provided for installation convenience only.
+Edit @/etc/arvados/api/application.yml@ to configure the settings described in the following sections.  The deployment script will consistently deploy this to the API server's configuration directory.  The API server reads both @application.yml@ and its own @config/application.default.yml@ file.  The settings in @application.yml@ take precedence over the defaults that are defined in @config/application.default.yml@.  The @config/application.yml.example@ file is not read by the API server and is provided as a starting template only.
 
-Always put your local configuration in @application.yml@ instead of editing @application.default.yml@.
+@config/application.default.yml@ documents additional configuration settings not listed here.  You can "view the current source version":https://arvados.org/projects/arvados/repository/revisions/master/entry/services/api/config/application.default.yml for reference.
+
+Only put local configuration in @application.yml@.  Do not edit @application.default.yml@.
 
 h3(#uuid_prefix). uuid_prefix
 
-Define your @uuid_prefix@ in @application.yml@ by setting the @uuid_prefix@ field in the section for your environment.  This prefix is used for all database identifiers to identify the record as originating from this site.  It must be exactly 5 alphanumeric characters (lowercase ASCII letters and digits).
+Define your @uuid_prefix@ in @application.yml@ by setting the @uuid_prefix@ field in the section for your environment.  This prefix is used for all database identifiers to identify the record as originating from this site.  It must be exactly 5 lowercase ASCII letters and digits.
+
+Example @application.yml@:
+
+<notextile>
+<pre><code>  uuid_prefix: <span class="userinput">zzzzz</span></code></pre>
+</notextile>
+
+h3. secret_token
+
+The @secret_token@ is used for for signing cookies.  IMPORTANT: This is a site secret. It should be at least 50 characters.  Generate a random value and set it in @application.yml@:
+
+<notextile>
+<pre><code>~$ <span class="userinput">ruby -e 'puts rand(2**400).to_s(36)'</span>
+yyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyy
+</code></pre></notextile>
+
+Example @application.yml@:
+
+<notextile>
+<pre><code>  secret_token: <span class="userinput">yyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyy</span></code></pre>
+</notextile>
+
+h3(#blob_signing_key). blob_signing_key
+
+The @blob_signing_key@ is used to enforce access control to Keep blocks.  This same key must be provided to the Keepstore daemons when "installing Keepstore servers.":install-keepstore.html  IMPORTANT: This is a site secret. It should be at least 50 characters.  Generate a random value and set it in @application.yml@:
+
+<notextile>
+<pre><code>~$ <span class="userinput">ruby -e 'puts rand(2**400).to_s(36)'</span>
+xxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxx
+</code></pre></notextile>
+
+Example @application.yml@:
+
+<notextile>
+<pre><code>  blob_signing_key: <span class="userinput">xxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxx</span></code></pre>
+</notextile>
+
+h3(#omniauth). sso_app_secret, sso_app_id, sso_provider_url
+
+The following settings enable the API server to communicate with the "Single Sign On (SSO) server":install-sso.html to authenticate user log in.
+
+Set @sso_provider_url@ to the base URL where your SSO server is installed.  This should be a URL consisting of the scheme and host (and optionally, port), without a trailing slash.
+
+Set @sso_app_secret@ and @sso_app_id@ to the corresponding values for @app_secret@ and @app_id@ used in the "Create arvados-server client for Single Sign On (SSO)":install-sso.html#client step.
+
+Example @application.yml@:
+
+<notextile>
+<pre><code>  sso_app_id: <span class="userinput">arvados-server</span>
+  sso_app_secret: <span class="userinput">wwwwwwwwwwwwwwwwwwwwwwwwwwwwwwwwwwwwwwwwwwwwwwwwwwwwwwww</span>
+  sso_provider_url: <span class="userinput">https://sso.example.com</span>
+</code></pre>
+</notextile>
+
+h3. workbench_address
+
+Set @workbench_address@ to the URL of your workbench application after following "Install Workbench.":install-workbench-app.html
+
+Example @application.yml@:
+
+<notextile>
+<pre><code>  workbench_address: <span class="userinput">https://workbench.zzzzz.example.com</span></code></pre>
+</notextile>
+
+h3. websockets_address
+
+Set @websockets_address@ to the @wss://@ URL of the API server websocket endpoint after following "Set up Web servers.":#set_up
+
+Example @application.yml@:
+
+<notextile>
+<pre><code>  websockets_address: <span class="userinput">wss://ws.zzzzz.example.com</span></code></pre>
+</notextile>
 
 h3(#git_repositories_dir). git_repositories_dir
 
-This field defaults to @/var/lib/arvados/git@. You can override the value by defining it in @application.yml@.
+The @git_repositories_dir@ setting specifies the directory where user git repositories will be stored.  By default this is @/var/lib/arvados/git@.
+
+Example @application.yml@:
+
+<notextile>
+<pre><code>  git_repositories_dir: <span class="userinput">/var/lib/arvados/git</span>
+</code></pre>
+</notextile>
 
 Make sure a clone of the arvados repository exists in @git_repositories_dir@.
 
@@ -103,43 +185,16 @@ Make sure a clone of the arvados repository exists in @git_repositories_dir@.
 ~$ <span class="userinput">sudo git clone --bare git://git.curoverse.com/arvados.git /var/lib/arvados/git/arvados.git</span>
 </code></pre></notextile>
 
-h3. secret_token
+h3(#git_internal_dir). git_internal_dir
 
-Generate a new secret token for signing cookies:
+The @git_internal_dir@ setting specifies the location of Arvados' internal git repository.  By default this is @/var/lib/arvados/internal.git@.  This repository stores git commits that have been used to run Crunch jobs.  It should _not_ be a subdirectory of @git_repositories_dir@.
 
-<notextile>
-<pre><code>~$ <span class="userinput">ruby -e 'puts rand(2**400).to_s(36)'</span>
-zzzzzzzzzzzzzzzzzzzzzzzzzzzzzzzzzzzzzzzzzzzzzzzzzzzzzzzz
-</code></pre></notextile>
-
-Then put that value in the @secret_token@ field.
-
-h3. blob_signing_key
-
-If you want access control on your "Keepstore":install-keepstore.html server(s), you should set @blob_signing_key@ to the same value as the permission key you provide to your Keepstore daemon(s).
-
-h3. workbench_address
-
-Fill in the url of your workbench application in @workbench_address@, for example
-
-&nbsp;&nbsp;https://workbench.@uuid_prefix@.your.domain
-
-h3(#omniauth). sso_app_id, sso_app_secret, sso_provider_url
-
-For @sso_app_id@ and @sso_app_secret@, provide the same @app_id@ and @app_secret@ used in the "Create arvados-server client for Single Sign On (SSO)":install-sso.html#client step.
-
-For @sso_provider_url@, provide the base URL where your SSO server is installed: just the scheme and host, with no trailing slash.
+Example @application.yml@:
 
 <notextile>
-<pre><code>  sso_app_id: arvados-server
-  sso_app_secret: xxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxx
-  sso_provider_url: https://sso.example.com
+<pre><code>  git_internal_dir: <span class="userinput">/var/lib/arvados/internal.git</span>
 </code></pre>
 </notextile>
-
-h3. Other options
-
-Consult @/var/www/arvados-api/current/config/application.default.yml@ for a full list of configuration options. (But don't edit it. Edit @application.yml@ instead.)
 
 h2. Prepare the API server deployment
 
@@ -153,7 +208,7 @@ You can safely ignore the following error message you may see when loading the d
 
 This command aborts when it encounters an error.  It's safe to rerun multiple times, so if there's a problem with your configuration, you can fix that and try again.
 
-h2. Set up Web servers
+h2(#set_up). Set up Web servers
 
 For best performance, we recommend you use Nginx as your Web server front-end, with a Passenger backend for the main API server and a Puma backend for API server Websockets.  To do that:
 
