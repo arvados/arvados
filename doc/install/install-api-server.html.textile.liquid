@@ -283,6 +283,8 @@ server {
   location / {
     proxy_pass            http://api;
     proxy_redirect        off;
+    proxy_connect_timeout 90s;
+    proxy_read_timeout    300s;
 
     proxy_set_header      X-Forwarded-Proto https;
     proxy_set_header      Host $http_host;
@@ -303,6 +305,8 @@ server {
   location / {
     proxy_pass            http://websockets;
     proxy_redirect        off;
+    proxy_connect_timeout 90s;
+    proxy_read_timeout    300s;
 
     proxy_set_header      Upgrade $http_upgrade;
     proxy_set_header      Connection "upgrade";
