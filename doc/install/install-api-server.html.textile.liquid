@@ -262,6 +262,16 @@ upstream websockets {
 
 proxy_http_version 1.1;
 
+# When Keep clients request a list of Keep services from the API server, the
+# server will automatically return the list of available proxies if
+# the request headers include X-External-Client: 1.  Following the example
+# here, at the end of this section, add a line for each netmask that has
+# direct access to Keep storage daemons to set this header value to 0.
+geo $external_client {
+  default        1;
+  <span class="userinput">10.20.30.0/24</span>  0;
+}
+
 server {
   listen       <span class="userinput">[your public IP address]</span>:443 ssl;
   server_name  <span class="userinput">uuid_prefix.your.domain</span>;
