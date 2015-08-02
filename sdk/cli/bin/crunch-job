@@ -868,13 +868,6 @@ for (my $todo_ptr = 0; $todo_ptr <= $#jobstep_todo; $todo_ptr ++)
         $command .= "--memory=\${MEMLIMIT}k --memory-swap=\${SWAPLIMIT}k ";
       }
 
-      # Dynamically configure the container to use the host system as its
-      # DNS server.  Get the host's global addresses from the ip command,
-      # and turn them into docker --dns options using gawk.
-      $command .=
-          q{$(ip -o address show scope global |
-              gawk 'match($4, /^([0-9\.:]+)\//, x){print "--dns", x[1]}') };
-
       # The source tree and $destdir directory (which we have
       # installed on the worker host) are available in the container,
       # under the same path.
