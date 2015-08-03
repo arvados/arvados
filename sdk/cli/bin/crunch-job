@@ -126,7 +126,7 @@ my $jobspec;
 my $job_api_token;
 my $no_clear_tmp;
 my $resume_stash;
-my $docker_bin = "/usr/bin/docker.io";
+my $docker_bin = "docker.io";
 GetOptions('force-unlock' => \$force_unlock,
            'git-dir=s' => \$git_dir,
            'job=s' => \$jobspec,
@@ -169,8 +169,7 @@ if ($jobspec =~ /^[-a-z\d]+$/)
 }
 else
 {
-  $Job = JSON::decode_json($jobspec);
-  $local_job = 1;
+  $local_job = JSON::decode_json($jobspec);
 }
 
 
@@ -178,7 +177,7 @@ else
 # at least able to run basic commands: they aren't down or severely
 # misconfigured.
 my $cmd = ['true'];
-if ($Job->{docker_image_locator}) {
+if (($Job || $local_job)->{docker_image_locator}) {
   $cmd = [$docker_bin, 'ps', '-q'];
 }
 Log(undef, "Sanity check is `@$cmd`");
@@ -208,15 +207,15 @@ else
 {
   if (!$resume_stash)
   {
-    map { croak ("No $_ specified") unless $Job->{$_} }
+    map { croak ("No $_ specified") unless $local_job->{$_} }
     qw(script script_version script_parameters);
   }
 
-  $Job->{'is_locked_by_uuid'} = $User->{'uuid'};
-  $Job->{'started_at'} = gmtime;
-  $Job->{'state'} = 'Running';
+  $local_job->{'is_locked_by_uuid'} = $User->{'uuid'};
+  $local_job->{'started_at'} = gmtime;
+  $local_job->{'state'} = 'Running';
 
-  $Job = api_call("jobs/create", job => $Job);
+  $Job = api_call("jobs/create", job => $local_job);
 }
 $job_id = $Job->{'uuid'};
 
@@ -396,7 +395,7 @@ if (!defined $no_clear_tmp) {
     # TODO: When #5036 is done and widely deployed, we can get rid of the
     # regular expression and just unmount everything with type fuse.keep.
     srun (["srun", "--nodelist=$nodelist", "-D", $ENV{'TMPDIR'}],
-          ['bash', '-ec', 'mount -t fuse,fuse.keep | awk \'($3 ~ /\ykeep\y/){print $3}\' | xargs -r -n 1 fusermount -u -z; sleep 1; rm -rf $JOB_WORK $CRUNCH_INSTALL $CRUNCH_TMP/task $CRUNCH_TMP/src* $CRUNCH_TMP/*.cid']);
+          ['bash', '-ec', '-o', 'pipefail', 'mount -t fuse,fuse.keep | awk \'($3 ~ /\ykeep\y/){print $3}\' | xargs -r -n 1 fusermount -u -z; sleep 1; rm -rf $JOB_WORK $CRUNCH_INSTALL $CRUNCH_TMP/task $CRUNCH_TMP/src* $CRUNCH_TMP/*.cid']);
     exit (1);
   }
   while (1)
@@ -405,7 +404,10 @@ if (!defined $no_clear_tmp) {
     freeze_if_want_freeze ($cleanpid);
     select (undef, undef, undef, 0.1);
   }
-  Log (undef, "Cleanup command exited ".exit_status_s($?));
+  if ($?) {
+    Log(undef, "Clean work dirs: exit ".exit_status_s($?));
+    exit(EX_RETRY_UNLOCKED);
+  }
 }
 
 # If this job requires a Docker image, install that.
@@ -596,7 +598,7 @@ else {
   unless ($? == 0 && $sha1 =~ /^([0-9a-f]{40})$/) {
     croak("`$gitcmd rev-list` exited "
           .exit_status_s($?)
-          .", '$treeish' not found. Giving up.");
+          .", '$treeish' not found, giving up");
   }
   $commit = $1;
   Log(undef, "Version $treeish is commit $commit");
@@ -866,13 +868,6 @@ for (my $todo_ptr = 0; $todo_ptr <= $#jobstep_todo; $todo_ptr ++)
         $command .= "--memory=\${MEMLIMIT}k --memory-swap=\${SWAPLIMIT}k ";
       }
 
-      # Dynamically configure the container to use the host system as its
-      # DNS server.  Get the host's global addresses from the ip command,
-      # and turn them into docker --dns options using gawk.
-      $command .=
-          q{$(ip -o address show scope global |
-              gawk 'match($4, /^([0-9\.:]+)\//, x){print "--dns", x[1]}') };
-
       # The source tree and $destdir directory (which we have
       # installed on the worker host) are available in the container,
       # under the same path.
@@ -992,7 +987,7 @@ for (my $todo_ptr = 0; $todo_ptr <= $#jobstep_todo; $todo_ptr ++)
       update_progress_stats();
       select (undef, undef, undef, 0.1);
     }
-    elsif (time - $progress_stats_updated >= 30)
+    elsif (time - $progress_stats_updated >= 30 || $progress_is_dirty)
     {
       update_progress_stats();
     }
@@ -1099,8 +1094,8 @@ sub update_progress_stats
   $progress_stats_updated = time;
   return if !$progress_is_dirty;
   my ($todo, $done, $running) = (scalar @jobstep_todo,
-				 scalar @jobstep_done,
-				 scalar @slot - scalar @freeslot - scalar @holdslot);
+                                 scalar @jobstep_done,
+                                 scalar keys(%proc));
   $Job->{'tasks_summary'} ||= {};
   $Job->{'tasks_summary'}->{'todo'} = $todo;
   $Job->{'tasks_summary'}->{'done'} = $done;

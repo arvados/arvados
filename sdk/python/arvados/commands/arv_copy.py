@@ -192,7 +192,7 @@ def api_for_instance(instance_name):
 def check_git_availability():
     try:
         arvados.util.run_command(['git', '--help'])
-    except:
+    except Exception:
         abort('git command is not available. Please ensure git is installed.')
 
 # copy_pipeline_instance(pi_uuid, src, dst, args)
@@ -329,9 +329,9 @@ def copy_collections(obj, src, dst, args):
         obj = arvados.util.portable_data_hash_pattern.sub(copy_collection_fn, obj)
         obj = arvados.util.collection_uuid_pattern.sub(copy_collection_fn, obj)
         return obj
-    elif type(obj) == dict:
+    elif isinstance(obj, dict):
         return {v: copy_collections(obj[v], src, dst, args) for v in obj}
-    elif type(obj) == list:
+    elif isinstance(obj, list):
         return [copy_collections(v, src, dst, args) for v in obj]
     return obj
 

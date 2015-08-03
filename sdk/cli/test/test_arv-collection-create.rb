@@ -7,8 +7,6 @@ class TestCollectionCreate < Minitest::Test
   end
 
   def test_small_collection
-    skip "Waiting unitl #4534 is implemented"
-
     uuid = Digest::MD5.hexdigest(foo_manifest) + '+' + foo_manifest.size.to_s
     out, err = capture_subprocess_io do
       assert_arv('--format', 'uuid', 'collection', 'create', '--collection', {

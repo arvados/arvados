@@ -1,5 +1,335 @@
 # Do not use this file for site configuration. Create application.yml
 # instead (see application.yml.example).
+#
+# The order of precedence is:
+# 1. config/environments/{RAILS_ENV}.rb (deprecated)
+# 2. Section in application.yml corresponding to RAILS_ENV (e.g., development)
+# 3. Section in application.yml called "common"
+# 4. Section in application.default.yml corresponding to RAILS_ENV
+# 5. Section in application.default.yml called "common"
+
+common:
+  ###
+  ### Essential site configuration
+  ###
+
+  # The prefix used for all database identifiers to identify the record as
+  # originating from this site.  Must be exactly 5 alphanumeric characters
+  # (lowercase ASCII letters and digits).
+  uuid_prefix: ~
+
+  # secret_token is a string of alphanumeric characters used by Rails
+  # to sign session tokens. IMPORTANT: This is a site secret. It
+  # should be at least 50 characters.
+  secret_token: ~
+
+  # blob_signing_key is a string of alphanumeric characters used to
+  # generate permission signatures for Keep locators. It must be
+  # identical to the permission key given to Keep. IMPORTANT: This is
+  # a site secret. It should be at least 50 characters.
+  blob_signing_key: ~
+
+  # These settings are provided by your OAuth2 provider (e.g.,
+  # sso-provider).
+  sso_app_secret: ~
+  sso_app_id: ~
+  sso_provider_url: ~
+
+  # If this is not false, HTML requests at the API server's root URL
+  # are redirected to this location, and it is provided in the text of
+  # user activation notification email messages to remind them where
+  # to log in.
+  workbench_address: false
+
+  # The ARVADOS_WEBSOCKETS environment variable determines whether to
+  # serve http, websockets, or both.
+  #
+  # If ARVADOS_WEBSOCKETS="true", http and websockets are both served
+  # from the same process.
+  #
+  # If ARVADOS_WEBSOCKETS="ws-only", only websockets is served.
+  #
+  # If ARVADOS_WEBSOCKETS="false" or not set at all, only http is
+  # served. In this case, you should have a separate process serving
+  # websockets, and the address of that service should be given here
+  # as websocket_address.
+  #
+  # If websocket_address is false (which is the default), the
+  # discovery document will tell clients to use the current server as
+  # the websocket service, or (if the current server does not have
+  # websockets enabled) not to use websockets at all.
+  #
+  # Example: Clients will connect to the specified endpoint.
+  #websocket_address: wss://127.0.0.1:3333/websocket
+  # Default: Clients will connect to this server if it's running
+  # websockets, otherwise none at all.
+  websocket_address: false
+
+  # Git repositories must be readable by api server, or you won't be
+  # able to submit crunch jobs. To pass the test suites, put a clone
+  # of the arvados tree in {git_repositories_dir}/arvados.git or
+  # {git_repositories_dir}/arvados/.git
+  git_repositories_dir: /var/lib/arvados/git
+
+  # This is a (bare) repository that stores commits used in jobs.  When a job
+  # runs, the source commits are first fetched into this repository, then this
+  # repository is used to deploy to compute nodes.  This should NOT be a
+  # subdirectory of {git_repositiories_dir}.
+  git_internal_dir: /var/lib/arvados/internal.git
+
+  # Default replication level for collections. This is used when a
+  # collection's replication_desired attribute is nil.
+  default_collection_replication: 2
+
+
+  ###
+  ### Overriding default advertised hostnames/URLs
+  ###
+
+  # If not false, this is the hostname that will be used for root_url and
+  # advertised in the discovery document.  By default, use the default Rails
+  # logic for deciding on a hostname.
+  host: false
+
+  # Base part of SSH git clone url given with repository resources. If
+  # true, the default "git@git.(uuid_prefix).arvadosapi.com:" is
+  # used. If false, SSH clone URLs are not advertised. Include a
+  # trailing ":" or "/" if needed: it will not be added automatically.
+  git_repo_ssh_base: true
+
+  # Base part of HTTPS git clone urls given with repository
+  # resources. This is expected to be an arv-git-httpd service which
+  # accepts API tokens as HTTP-auth passwords. If true, the default
+  # "https://git.(uuid_prefix).arvadosapi.com/" is used. If false,
+  # HTTPS clone URLs are not advertised. Include a trailing ":" or "/"
+  # if needed: it will not be added automatically.
+  git_repo_https_base: true
+
+
+  ###
+  ### New user and & email settings
+  ###
+
+  # Config parameters to automatically setup new users.
+  # The params auto_setup_new_users_with_* are meaningful only when auto_setup_new_users is turned on.
+  # auto_setup_name_blacklist is a list of usernames to be blacklisted for auto setup.
+  auto_setup_new_users: false
+  auto_setup_new_users_with_vm_uuid: false
+  auto_setup_new_users_with_repository: false
+  auto_setup_name_blacklist: [arvados, git, gitolite, gitolite-admin, root, syslog]
+
+  # When new_users_are_active is set to true, the user agreement check is skipped.
+  new_users_are_active: false
+
+  # The e-mail address of the user you would like to become marked as an admin
+  # user on their first login.
+  # In the default configuration, authentication happens through the Arvados SSO
+  # server, which uses OAuth2 against Google's servers, so in that case this
+  # should be an address associated with a Google account.
+  auto_admin_user: false
+
+  # If auto_admin_first_user is set to true, the first user to log in when no
+  # other admin users exist will automatically become an admin user.
+  auto_admin_first_user: false
+
+  # Email address to notify whenever a user creates a profile for the
+  # first time
+  user_profile_notification_address: false
+
+  admin_notifier_email_from: arvados@example.com
+  email_subject_prefix: "[ARVADOS] "
+  user_notifier_email_from: arvados@example.com
+  new_user_notification_recipients: [ ]
+  new_inactive_user_notification_recipients: [ ]
+
+
+  ###
+  ### Limits, timeouts and durations
+  ###
+
+  # Lifetime (in seconds) of blob permission signatures generated by
+  # the API server. This determines how long a client can take (after
+  # retrieving a collection record) to retrieve the collection data
+  # from Keep. If the client needs more time than that (assuming the
+  # collection still has the same content and the relevant user/token
+  # still has permission) the client can retrieve the collection again
+  # to get fresh signatures.
+  #
+  # Datamanager considers an unreferenced block older than this to be
+  # eligible for garbage collection. Therefore, it should never be
+  # smaller than the corresponding value used by any local keepstore
+  # service (see keepstore -blob-signature-ttl flag). This rule
+  # prevents datamanager from trying to garbage-collect recently
+  # written blocks while clients are still holding valid signatures.
+  #
+  # The default is 2 weeks.
+  blob_signature_ttl: 1209600
+
+  # Default lifetime for ephemeral collections: 2 weeks.
+  default_trash_lifetime: 1209600
+
+  # Maximum size (in bytes) allowed for a single API request.  This
+  # limit is published in the discovery document for use by clients.
+  # Note: You must separately configure the upstream web server or
+  # proxy to actually enforce the desired maximum request size on the
+  # server side.
+  max_request_size: 134217728
+
+  # Limit the number of bytes read from the database during an index
+  # request (by retrieving and returning fewer rows than would
+  # normally be returned in a single response).
+  # Note 1: This setting never reduces the number of returned rows to
+  # zero, no matter how big the first data row is.
+  # Note 2: Currently, this only limits the
+  # arvados.v1.collections.list API (GET /arvados/v1/collections), and
+  # only takes the size of manifest_text into account. Other fields
+  # (e.g., "properties" hashes) are not counted against this limit
+  # when returning collections, and the limit is not applied at all
+  # for other data types.
+  max_index_database_read: 134217728
+
+  # When you run the db:delete_old_job_logs task, it will find jobs that
+  # have been finished for at least this many seconds, and delete their
+  # stderr logs from the logs table.
+  clean_job_log_rows_after: <%= 30.days %>
+
+  # The maximum number of compute nodes that can be in use simultaneously
+  # If this limit is reduced, any existing nodes with slot number >= new limit
+  # will not be counted against the new limit. In other words, the new limit
+  # won't be strictly enforced until those nodes with higher slot numbers
+  # go down.
+  max_compute_nodes: 64
+
+  # These two settings control how frequently log events are flushed to the
+  # database.  Log lines are buffered until either crunch_log_bytes_per_event
+  # has been reached or crunch_log_seconds_between_events has elapsed since
+  # the last flush.
+  crunch_log_bytes_per_event: 4096
+  crunch_log_seconds_between_events: 1
+
+  # The sample period for throttling logs, in seconds.
+  crunch_log_throttle_period: 60
+
+  # Maximum number of bytes that job can log over crunch_log_throttle_period
+  # before being silenced until the end of the period.
+  crunch_log_throttle_bytes: 65536
+
+  # Maximum number of lines that job can log over crunch_log_throttle_period
+  # before being silenced until the end of the period.
+  crunch_log_throttle_lines: 1024
+
+  # Maximum bytes that may be logged by a single job.  Log bytes that are
+  # silenced by throttling are not counted against this total.
+  crunch_limit_log_bytes_per_job: 67108864
+
+
+  ###
+  ### Crunch, DNS & compute node management
+  ###
+
+  # Docker image to be used when none found in runtime_constraints of a job
+  default_docker_image_for_jobs: false
+
+  # :none or :slurm_immediate
+  crunch_job_wrapper: :none
+
+  # username, or false = do not set uid when running jobs.
+  crunch_job_user: crunch
+
+  # The web service must be able to create/write this file, and
+  # crunch-job must be able to stat() it.
+  crunch_refresh_trigger: /tmp/crunch_refresh_trigger
+
+  # Path to dns server configuration directory
+  # (e.g. /etc/unbound.d/conf.d). If false, do not write any config
+  # files or touch restart.txt (see below).
+  dns_server_conf_dir: false
+
+  # Template file for the dns server host snippets. See
+  # unbound.template in this directory for an example. If false, do
+  # not write any config files.
+  dns_server_conf_template: false
+
+  # String to write to {dns_server_conf_dir}/restart.txt (with a
+  # trailing newline) after updating local data. If false, do not
+  # open or write the restart.txt file.
+  dns_server_reload_command: false
+
+  # Command to run after each DNS update. Template variables will be
+  # substituted; see the "unbound" example below. If false, do not run
+  # a command.
+  dns_server_update_command: false
+
+  ## Example for unbound:
+  #dns_server_conf_dir: /etc/unbound/conf.d
+  #dns_server_conf_template: /path/to/your/api/server/config/unbound.template
+  ## ...plus one of the following two methods of reloading:
+  #dns_server_reload_command: unbound-control reload
+  #dns_server_update_command: echo %{hostname} %{hostname}.%{uuid_prefix} %{hostname}.%{uuid_prefix}.arvadosapi.com %{ptr_domain} | xargs -n 1 unbound-control local_data_remove && unbound-control local_data %{hostname} IN A %{ip_address} && unbound-control local_data %{hostname}.%{uuid_prefix} IN A %{ip_address} && unbound-control local_data %{hostname}.%{uuid_prefix}.arvadosapi.com IN A %{ip_address} && unbound-control local_data %{ptr_domain}. IN PTR %{hostname}.%{uuid_prefix}.arvadosapi.com
+
+  compute_node_domain: false
+  compute_node_nameservers:
+    - 192.168.1.1
+
+  # Hostname to assign to a compute node when it sends a "ping" and the
+  # hostname in its Node record is nil.
+  # During bootstrapping, the "ping" script is expected to notice the
+  # hostname given in the ping response, and update its unix hostname
+  # accordingly.
+  # If false, leave the hostname alone (this is appropriate if your compute
+  # nodes' hostnames are already assigned by some other mechanism).
+  #
+  # One way or another, the hostnames of your node records should agree
+  # with your DNS records and your /etc/slurm-llnl/slurm.conf files.
+  #
+  # Example for compute0000, compute0001, ....:
+  # assign_node_hostname: compute%<slot_number>04d
+  # (See http://ruby-doc.org/core-2.2.2/Kernel.html#method-i-format for more.)
+  assign_node_hostname: compute%<slot_number>d
+
+
+  ###
+  ### Remaining assorted configuration options.
+  ###
+
+  arvados_theme: default
+
+  # Permit insecure (OpenSSL::SSL::VERIFY_NONE) connections to the Single Sign
+  # On (sso) server.  Should only be enabled during development when the SSO
+  # server is using a self-signed cert.
+  sso_insecure: false
+
+  ## Set Time.zone default to the specified zone and make Active
+  ## Record auto-convert to this zone.  Run "rake -D time" for a list
+  ## of tasks for finding time zone names. Default is UTC.
+  #time_zone: Central Time (US & Canada)
+
+  ## Default encoding used in templates for Ruby 1.9.
+  encoding: utf-8
+
+  # Enable the asset pipeline
+  assets.enabled: true
+
+  # Version of your assets, change this if you want to expire all your assets
+  assets.version: "1.0"
+
+  # Allow clients to create collections by providing a manifest with
+  # unsigned data blob locators. IMPORTANT: This effectively disables
+  # access controls for data stored in Keep: a client who knows a hash
+  # can write a manifest that references the hash, pass it to
+  # collections.create (which will create a permission link), use
+  # collections.get to obtain a signature for that data locator, and
+  # use that signed locator to retrieve the data from Keep. Therefore,
+  # do not turn this on if your users expect to keep data private from
+  # one another!
+  permit_create_collection_with_unsigned_manifest: false
+
+  default_openid_prefix: https://www.google.com/accounts/o8/id
+
+  # source_version
+  source_version: "<%= `git log -n 1 --format=%h`.strip %>"
+  local_modified: false
+
 
 development:
   force_ssl: false
@@ -50,307 +380,3 @@ test:
   workbench_address: https://localhost:3001/
   git_repositories_dir: <%= Rails.root.join 'tmp', 'git', 'test' %>
   git_internal_dir: <%= Rails.root.join 'tmp', 'internal.git' %>
-
-common:
-  # The prefix used for all database identifiers to identify the record as
-  # originating from this site.  Must be exactly 5 alphanumeric characters
-  # (lowercase ASCII letters and digits).
-  uuid_prefix: <%= Digest::MD5.hexdigest(`hostname`).to_i(16).to_s(36)[0..4] %>
-
-  # If not false, this is the hostname that will be used for root_url and
-  # advertised in the discovery document.  By default, use the default Rails
-  # logic for deciding on a hostname.
-  host: false
-
-  # Base part of SSH git clone url given with repository resources. If
-  # true, the default "git@git.(uuid_prefix).arvadosapi.com:" is
-  # used. If false, SSH clone URLs are not advertised. Include a
-  # trailing ":" or "/" if needed: it will not be added automatically.
-  git_repo_ssh_base: true
-
-  # Base part of HTTPS git clone urls given with repository
-  # resources. This is expected to be an arv-git-httpd service which
-  # accepts API tokens as HTTP-auth passwords. If true, the default
-  # "https://git.(uuid_prefix).arvadosapi.com/" is used. If false,
-  # HTTPS clone URLs are not advertised. Include a trailing ":" or "/"
-  # if needed: it will not be added automatically.
-  git_repo_https_base: true
-
-  # If this is not false, HTML requests at the API server's root URL
-  # are redirected to this location, and it is provided in the text of
-  # user activation notification email messages to remind them where
-  # to log in.
-  workbench_address: false
-
-  # Git repositories must be readable by api server, or you won't be
-  # able to submit crunch jobs. To pass the test suites, put a clone
-  # of the arvados tree in {git_repositories_dir}/arvados.git or
-  # {git_repositories_dir}/arvados/.git
-  git_repositories_dir: /var/lib/arvados/git
-
-  # This is a (bare) repository that stores commits used in jobs.  When a job
-  # runs, the source commits are first fetched into this repository, then this
-  # repository is used to deploy to compute nodes.  This should NOT be a
-  # subdirectory of {git_repositiories_dir}.
-  git_internal_dir: /var/lib/arvados/internal.git
-
-  # :none or :slurm_immediate
-  crunch_job_wrapper: :none
-
-  # username, or false = do not set uid when running jobs.
-  crunch_job_user: crunch
-
-  # The web service must be able to create/write this file, and
-  # crunch-job must be able to stat() it.
-  crunch_refresh_trigger: /tmp/crunch_refresh_trigger
-
-  # These two settings control how frequently log events are flushed to the
-  # database.  Log lines are buffered until either crunch_log_bytes_per_event
-  # has been reached or crunch_log_seconds_between_events has elapsed since
-  # the last flush.
-  crunch_log_bytes_per_event: 4096
-  crunch_log_seconds_between_events: 1
-
-  # The sample period for throttling logs, in seconds.
-  crunch_log_throttle_period: 60
-
-  # Maximum number of bytes that job can log over crunch_log_throttle_period
-  # before being silenced until the end of the period.
-  crunch_log_throttle_bytes: 65536
-
-  # Maximum number of lines that job can log over crunch_log_throttle_period
-  # before being silenced until the end of the period.
-  crunch_log_throttle_lines: 1024
-
-  # Maximum bytes that may be logged by a single job.  Log bytes that are
-  # silenced by throttling are not counted against this total.
-  crunch_limit_log_bytes_per_job: 67108864
-
-  # Path to dns server configuration directory
-  # (e.g. /etc/unbound.d/conf.d). If false, do not write any config
-  # files or touch restart.txt (see below).
-  dns_server_conf_dir: false
-
-  # Template file for the dns server host snippets. See
-  # unbound.template in this directory for an example. If false, do
-  # not write any config files.
-  dns_server_conf_template: false
-
-  # String to write to {dns_server_conf_dir}/restart.txt (with a
-  # trailing newline) after updating local data. If false, do not
-  # open or write the restart.txt file.
-  dns_server_reload_command: false
-
-  # Command to run after each DNS update. Template variables will be
-  # substituted; see the "unbound" example below. If false, do not run
-  # a command.
-  dns_server_update_command: false
-
-  ## Example for unbound:
-  #dns_server_conf_dir: /etc/unbound/conf.d
-  #dns_server_conf_template: /path/to/your/api/server/config/unbound.template
-  ## ...plus one of the following two methods of reloading:
-  #dns_server_reload_command: unbound-control reload
-  #dns_server_update_command: echo %{hostname} %{hostname}.%{uuid_prefix} %{hostname}.%{uuid_prefix}.arvadosapi.com %{ptr_domain} | xargs -n 1 unbound-control local_data_remove && unbound-control local_data %{hostname} IN A %{ip_address} && unbound-control local_data %{hostname}.%{uuid_prefix} IN A %{ip_address} && unbound-control local_data %{hostname}.%{uuid_prefix}.arvadosapi.com IN A %{ip_address} && unbound-control local_data %{ptr_domain}. IN PTR %{hostname}.%{uuid_prefix}.arvadosapi.com
-
-  compute_node_domain: false
-  compute_node_nameservers:
-    - 192.168.1.1
-
-  # The version below is suitable for AWS.
-  # To use it, copy it to your application.yml, uncomment, and change <%# to <%=
-  # compute_node_nameservers: <%#
-  #   require 'net/http'
-  #   ['local', 'public'].collect do |iface|
-  #     Net::HTTP.get(URI("http://169.254.169.254/latest/meta-data/#{iface}-ipv4")).match(/^[\d\.]+$/)[0]
-  #   end << '172.16.0.23'
-  # %>
-
-  accept_api_token: {}
-
-  # When new_users_are_active is set to true, the user agreement check is skipped.
-  new_users_are_active: false
-
-  admin_notifier_email_from: arvados@example.com
-  email_subject_prefix: "[ARVADOS] "
-  user_notifier_email_from: arvados@example.com
-  new_user_notification_recipients: [ ]
-  new_inactive_user_notification_recipients: [ ]
-
-  # The e-mail address of the user you would like to become marked as an admin
-  # user on their first login.
-  # In the default configuration, authentication happens through the Arvados SSO
-  # server, which uses openid against Google's servers, so in that case this
-  # should be an address associated with a Google account.
-  auto_admin_user: false
-
-  # If auto_admin_first_user is set to true, the first user to log in when no
-  # other admin users exist will automatically become an admin user.
-  auto_admin_first_user: false
-
-  ## Set Time.zone default to the specified zone and make Active
-  ## Record auto-convert to this zone.  Run "rake -D time" for a list
-  ## of tasks for finding time zone names. Default is UTC.
-  #time_zone: Central Time (US & Canada)
-
-  ## Default encoding used in templates for Ruby 1.9.
-  encoding: utf-8
-
-  # Enable the asset pipeline
-  assets.enabled: true
-
-  # Version of your assets, change this if you want to expire all your assets
-  assets.version: "1.0"
-
-  arvados_theme: default
-
-  # The ARVADOS_WEBSOCKETS environment variable determines whether to
-  # serve http, websockets, or both.
-  #
-  # If ARVADOS_WEBSOCKETS="true", http and websockets are both served
-  # from the same process.
-  #
-  # If ARVADOS_WEBSOCKETS="ws-only", only websockets is served.
-  #
-  # If ARVADOS_WEBSOCKETS="false" or not set at all, only http is
-  # served. In this case, you should have a separate process serving
-  # websockets, and the address of that service should be given here
-  # as websocket_address.
-  #
-  # If websocket_address is false (which is the default), the
-  # discovery document will tell clients to use the current server as
-  # the websocket service, or (if the current server does not have
-  # websockets enabled) not to use websockets at all.
-  #
-  # Example: Clients will connect to the specified endpoint.
-  #websocket_address: wss://127.0.0.1:3333/websocket
-  # Default: Clients will connect to this server if it's running
-  # websockets, otherwise none at all.
-  websocket_address: false
-
-  # blob_signing_key is a string of alphanumeric characters used to
-  # generate permission signatures for Keep locators. It must be
-  # identical to the permission key given to Keep. IMPORTANT: This is
-  # a site secret. It should be at least 50 characters.
-  blob_signing_key: ~
-
-  # Lifetime (in seconds) of blob permission signatures generated by
-  # the API server. This determines how long a client can take (after
-  # retrieving a collection record) to retrieve the collection data
-  # from Keep. If the client needs more time than that (assuming the
-  # collection still has the same content and the relevant user/token
-  # still has permission) the client can retrieve the collection again
-  # to get fresh signatures.
-  #
-  # Datamanager considers an unreferenced block older than this to be
-  # eligible for garbage collection. Therefore, it should never be
-  # smaller than the corresponding value used by any local keepstore
-  # service (see keepstore -blob-signature-ttl flag). This rule
-  # prevents datamanager from trying to garbage-collect recently
-  # written blocks while clients are still holding valid signatures.
-  #
-  # The default is 2 weeks.
-  blob_signature_ttl: 1209600
-
-  # Allow clients to create collections by providing a manifest with
-  # unsigned data blob locators. IMPORTANT: This effectively disables
-  # access controls for data stored in Keep: a client who knows a hash
-  # can write a manifest that references the hash, pass it to
-  # collections.create (which will create a permission link), use
-  # collections.get to obtain a signature for that data locator, and
-  # use that signed locator to retrieve the data from Keep. Therefore,
-  # do not turn this on if your users expect to keep data private from
-  # one another!
-  permit_create_collection_with_unsigned_manifest: false
-
-  # secret_token is a string of alphanumeric characters used by Rails
-  # to sign session tokens. IMPORTANT: This is a site secret. It
-  # should be at least 50 characters.
-  secret_token: ~
-
-  # Email address to notify whenever a user creates a profile for the
-  # first time
-  user_profile_notification_address: false
-
-  default_openid_prefix: https://www.google.com/accounts/o8/id
-
-  # Config parameters to automatically setup new users.
-  # The params auto_setup_new_users_with_* are meaningful only when auto_setup_new_users is turned on.
-  # auto_setup_name_blacklist is a list of usernames to be blacklisted for auto setup.
-  auto_setup_new_users: false
-  auto_setup_new_users_with_vm_uuid: false
-  auto_setup_new_users_with_repository: false
-  auto_setup_name_blacklist: [arvados, git, gitolite, gitolite-admin, root, syslog]
-
-  # source_version
-  source_version: "<%= `git log -n 1 --format=%h`.strip %>"
-  local_modified: false
-
-  # Default lifetime for ephemeral collections: 2 weeks.
-  default_trash_lifetime: 1209600
-
-  # Permit insecure (OpenSSL::SSL::VERIFY_NONE) connections to the Single Sign
-  # On (sso) server.  Should only be enabled during development when the SSO
-  # server is using a self-signed cert.
-  sso_insecure: false
-
-  # These settings are provided by your OAuth2 provider (e.g.,
-  # sso-provider).
-  sso_app_id: ~
-  sso_app_secret: ~
-  sso_provider_url: ~
-
-  # Default replication level for collections. This is used when a
-  # collection's replication_desired attribute is nil.
-  default_collection_replication: 2
-
-  # Maximum size (in bytes) allowed for a single API request.  This
-  # limit is published in the discovery document for use by clients.
-  # Note: You must separately configure the upstream web server or
-  # proxy to actually enforce the desired maximum request size on the
-  # server side.
-  max_request_size: 134217728
-
-  # Limit the number of bytes read from the database during an index
-  # request (by retrieving and returning fewer rows than would
-  # normally be returned in a single response).
-  # Note 1: This setting never reduces the number of returned rows to
-  # zero, no matter how big the first data row is.
-  # Note 2: Currently, this only limits the
-  # arvados.v1.collections.list API (GET /arvados/v1/collections), and
-  # only takes the size of manifest_text into account. Other fields
-  # (e.g., "properties" hashes) are not counted against this limit
-  # when returning collections, and the limit is not applied at all
-  # for other data types.
-  max_index_database_read: 134217728
-
-  # When you run the db:delete_old_job_logs task, it will find jobs that
-  # have been finished for at least this many seconds, and delete their
-  # stderr logs from the logs table.
-  clean_job_log_rows_after: <%= 30.days %>
-
-  # The maximum number of compute nodes that can be in use simultaneously
-  # If this limit is reduced, any existing nodes with slot number >= new limit
-  # will not be counted against the new limit. In other words, the new limit
-  # won't be strictly enforced until those nodes with higher slot numbers
-  # go down.
-  max_compute_nodes: 64
-
-  # Docker image to be used when none found in runtime_constraints of a job
-  default_docker_image_for_jobs: false
-
-  # Hostname to assign to a compute node when it sends a "ping" and the
-  # hostname in its Node record is nil.
-  # During bootstrapping, the "ping" script is expected to notice the
-  # hostname given in the ping response, and update its unix hostname
-  # accordingly.
-  # If false, leave the hostname alone (this is appropriate if your compute
-  # nodes' hostnames are already assigned by some other mechanism).
-  #
-  # One way or another, the hostnames of your node records should agree
-  # with your DNS records and your /etc/slurm-llnl/slurm.conf files.
-  #
-  # Example for compute0000, compute0001, ....:
-  # assign_node_hostname: compute%<slot_number>04d
-  # (See http://ruby-doc.org/core-2.2.2/Kernel.html#method-i-format for more.)
-  assign_node_hostname: compute%<slot_number>d

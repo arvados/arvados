@@ -42,13 +42,13 @@ class UserManageAccountTest < ActionDispatch::IntegrationTest
 
         page.find_field('public_key').set 'first test with an incorrect ssh key value'
         click_button 'Submit'
-        assert page.has_text?('Public key does not appear to be a valid ssh-rsa or dsa public key'), 'No text - Public key does not appear to be a valid'
+        assert_text 'Public key does not appear to be a valid ssh-rsa or dsa public key'
 
         public_key_str = api_fixture('authorized_keys')['active']['public_key']
         page.find_field('public_key').set public_key_str
         page.find_field('name').set 'added_in_test'
         click_button 'Submit'
-        assert page.has_text?('Public key already exists in the database, use a different key.'), 'No text - Public key already exists'
+        assert_text 'Public key already exists in the database, use a different key.'
 
         new_key = SSHKey.generate
         page.find_field('public_key').set new_key.ssh_public_key
@@ -57,7 +57,7 @@ class UserManageAccountTest < ActionDispatch::IntegrationTest
       end
 
       # key must be added. look for it in the refreshed page
-      assert page.has_text?('added_in_test'), 'No text - added_in_test'
+      assert_text 'added_in_test'
   end
 
   [
