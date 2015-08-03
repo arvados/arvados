@@ -277,6 +277,8 @@ server {
   server_name  <span class="userinput">uuid_prefix.your.domain</span>;
 
   ssl on;
+  ssl_certificate     <span class="userinput">/YOUR/PATH/TO/cert.pem</span>;
+  ssl_certificate_key <span class="userinput">/YOUR/PATH/TO/cert.key</span>;
 
   index  index.html index.htm index.php;
 
@@ -299,6 +301,8 @@ server {
   server_name  ws.<span class="userinput">uuid_prefix.your.domain</span>;
 
   ssl on;
+  ssl_certificate     <span class="userinput">/YOUR/PATH/TO/cert.pem</span>;
+  ssl_certificate_key <span class="userinput">/YOUR/PATH/TO/cert.key</span>;
 
   index  index.html index.htm index.php;
 
