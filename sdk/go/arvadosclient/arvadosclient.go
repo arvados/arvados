@@ -16,7 +16,11 @@ import (
 	"strings"
 )
 
-// Errors
+type StringMatcher func(string) bool
+
+var UUIDMatch StringMatcher = regexp.MustCompile(`^[a-z0-9]{5}-[a-z0-9]{5}-[a-z0-9]{15}$`).MatchString
+var PDHMatch StringMatcher = regexp.MustCompile(`^[0-9a-f]{32}\+\d+$`).MatchString
+
 var MissingArvadosApiHost = errors.New("Missing required environment variable ARVADOS_API_HOST")
 var MissingArvadosApiToken = errors.New("Missing required environment variable ARVADOS_API_TOKEN")
 
