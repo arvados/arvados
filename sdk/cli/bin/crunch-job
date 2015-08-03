@@ -987,7 +987,7 @@ for (my $todo_ptr = 0; $todo_ptr <= $#jobstep_todo; $todo_ptr ++)
       update_progress_stats();
       select (undef, undef, undef, 0.1);
     }
-    elsif (time - $progress_stats_updated >= 30)
+    elsif (time - $progress_stats_updated >= 30 || $progress_is_dirty)
     {
       update_progress_stats();
     }
@@ -1094,8 +1094,8 @@ sub update_progress_stats
   $progress_stats_updated = time;
   return if !$progress_is_dirty;
   my ($todo, $done, $running) = (scalar @jobstep_todo,
-				 scalar @jobstep_done,
-				 scalar @slot - scalar @freeslot - scalar @holdslot);
+                                 scalar @jobstep_done,
+                                 scalar keys(%proc));
   $Job->{'tasks_summary'} ||= {};
   $Job->{'tasks_summary'}->{'todo'} = $todo;
   $Job->{'tasks_summary'}->{'done'} = $done;
