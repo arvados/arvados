@@ -397,4 +397,14 @@ class ProjectsControllerTest < ActionController::TestCase
       assert_includes @response.body, "All #{target}"
     end
   end
+
+  test "visit a public project and verify the public projects page link exists" do
+    Rails.configuration.anonymous_user_token = api_fixture('api_client_authorizations')['anonymous']['api_token']
+    uuid = api_fixture('groups')['anonymously_accessible_project']['uuid']
+    get :show, {id: uuid}
+    project = assigns(:object)
+    assert_equal uuid, project['uuid']
+    refute_empty css_select("[href=\"/projects/#{project['uuid']}\"]")
+    assert_includes @response.body, "<a href=\"/projects/public\">Public Projects</a>"
+  end
 end
