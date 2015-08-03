@@ -24,11 +24,29 @@ On Red Hat-based systems:
 
 {% include 'note_python27_sc' %}
 
-h2. Set up Docker
+h2. Install Docker
 
 Compute nodes must have Docker installed to run jobs inside containers.  This requires a relatively recent version of Linux (at least upstream version 3.10, or a distribution version with the appropriate patches backported).  Follow the "Docker Engine installation documentation":https://docs.docker.com/ for your distribution.
 
 For Debian-based systems, the Arvados package repository includes a backported @docker.io@ package with a known-good version you can install.
+
+h2. Configure Docker
+
+Crunch runs jobs in Docker containers with relatively little configuration.  You may need to start the Docker daemon with specific options to make sure these jobs run smoothly in your environment.  This section highlights options that are useful to most installations.  Refer to the "Docker daemon reference":https://docs.docker.com/reference/commandline/daemon/ for complete information about all available options.
+
+The best way to configure these options varies by distribution.
+
+* If you're using our backported @docker.io@ package, you can list these options in the @DOCKER_OPTS@ setting in @/etc/default/docker.io@.
+* If you're using another Debian-based package, you can list these options in the @DOCKER_OPTS@ setting in @/etc/default/docker@.
+* On Red Hat-based distributions, you can list these options in the @other_args@ setting in @/etc/sysconfig/docker@.
+
+h3. Default ulimits
+
+Docker containers inherit ulimits from the Docker daemon.  However, the ulimits for a single Unix daemon may not accommodate a long-running Crunch job.  You may want to increase default limits for compute jobs by passing @--default-ulimit@ options to the Docker daemon.  For example, to allow jobs to open 10,000 files, set @--default-ulimit nofile=10000:10000@.
+
+h3. DNS
+
+Your containers must be able to resolve the hostname in the ARVADOS_API_HOST environment variable (provided by the Crunch dispatcher) and any hostnames returned in Keep service records.  If these names are not in public DNS records, you may need to set a DNS resolver for the containers by specifying the @--dns@ address with the IP address of an appropriate nameserver.  You may specify this option more than once to use multiple nameservers.
 
 h2. Set up SLURM
 

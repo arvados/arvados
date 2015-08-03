@@ -33,9 +33,15 @@ func TrashItem(trashRequest TrashRequest) {
 			blob_signature_ttl)
 		return
 	}
+
 	for _, volume := range KeepVM.AllWritable() {
 		mtime, err := volume.Mtime(trashRequest.Locator)
-		if err != nil || trashRequest.BlockMtime != mtime.Unix() {
+		if err != nil {
+			log.Printf("%v Delete(%v): %v", volume, trashRequest.Locator, err)
+			continue
+		}
+		if trashRequest.BlockMtime != mtime.Unix() {
+			log.Printf("%v Delete(%v): mtime on volume is %v does not match trash list value %v", volume, trashRequest.Locator, mtime.Unix(), trashRequest.BlockMtime)
 			continue
 		}
 

@@ -868,13 +868,6 @@ for (my $todo_ptr = 0; $todo_ptr <= $#jobstep_todo; $todo_ptr ++)
         $command .= "--memory=\${MEMLIMIT}k --memory-swap=\${SWAPLIMIT}k ";
       }
 
-      # Dynamically configure the container to use the host system as its
-      # DNS server.  Get the host's global addresses from the ip command,
-      # and turn them into docker --dns options using gawk.
-      $command .=
-          q{$(ip -o address show scope global |
-              gawk 'match($4, /^([0-9\.:]+)\//, x){print "--dns", x[1]}') };
-
       # The source tree and $destdir directory (which we have
       # installed on the worker host) are available in the container,
       # under the same path.
@@ -994,7 +987,7 @@ for (my $todo_ptr = 0; $todo_ptr <= $#jobstep_todo; $todo_ptr ++)
       update_progress_stats();
       select (undef, undef, undef, 0.1);
     }
-    elsif (time - $progress_stats_updated >= 30)
+    elsif (time - $progress_stats_updated >= 30 || $progress_is_dirty)
     {
       update_progress_stats();
     }
@@ -1101,8 +1094,8 @@ sub update_progress_stats
   $progress_stats_updated = time;
   return if !$progress_is_dirty;
   my ($todo, $done, $running) = (scalar @jobstep_todo,
-				 scalar @jobstep_done,
-				 scalar @slot - scalar @freeslot - scalar @holdslot);
+                                 scalar @jobstep_done,
+                                 scalar keys(%proc));
   $Job->{'tasks_summary'} ||= {};
   $Job->{'tasks_summary'}->{'todo'} = $todo;
   $Job->{'tasks_summary'}->{'done'} = $done;

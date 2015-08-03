@@ -10,22 +10,33 @@
 # 4. Section in application.default.yml corresponding to RAILS_ENV
 # 5. Section in application.default.yml called "common"
 
-development:
-  # Mandatory site secrets. See application.default.yml for more info.
-  secret_token: ~
-  blob_signing_key: ~
-  uuid_prefix: bogus
-  workbench_address: https://localhost:3031
-
 production:
-  # Mandatory site secrets. See application.default.yml for more info.
+  # Mandatory site configuration.  See application.default.yml and
+  # http://http://doc.arvados.org/install/install-api-server.html#configure_application
+  # for more information.
+  uuid_prefix: ~
   secret_token: ~
   blob_signing_key: ~
-  uuid_prefix: bogus
-  workbench_address: https://workbench.bogus.arvadosapi.com
-  sso_app_id: arvados-server
   sso_app_secret: ~
-  sso_provider_url: https://login.bogus.arvadosapi.com
+  sso_app_id: ~
+  sso_provider_url: ~
+  workbench_address: ~
+  websockets_address: ~
+  #git_repositories_dir: ~
+  #git_internal_dir: ~
+
+development:
+  # Separate settings for development configuration.
+  uuid_prefix: ~
+  secret_token: ~
+  blob_signing_key: ~
+  sso_app_id: ~
+  sso_app_secret: ~
+  sso_provider_url: ~
+  workbench_address: ~
+  websockets_address: ~
+  #git_repositories_dir: ~
+  #git_internal_dir: ~
 
 test:
   # Tests should be able to run without further configuration, but if you do
