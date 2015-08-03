@@ -11,15 +11,15 @@ class UserManageAccountTest < ActionDispatch::IntegrationTest
       within('.navbar-fixed-top') do
         page.find("#notifications-menu").click
         within('.dropdown-menu') do
-          assert_selector 'a', text: 'My virtual machines'
-          assert_selector 'a', text: 'My repositories'
-          assert_selector 'a', text: 'My current token'
-          assert_selector 'a', text: 'My SSH keys'
-          find('a', text: 'My SSH keys').click
+          assert_selector 'a', text: 'Virtual machines'
+          assert_selector 'a', text: 'Repositories'
+          assert_selector 'a', text: 'Current token'
+          assert_selector 'a', text: 'SSH keys'
+          find('a', text: 'SSH keys').click
         end
       end
 
-      # now in My SSH Keys page
+      # now in SSH Keys page
       assert page.has_text?('Add new SSH key'), 'No text - Add SSH key'
       add_and_verify_ssh_key
     else  # inactive user
@@ -110,7 +110,14 @@ class UserManageAccountTest < ActionDispatch::IntegrationTest
   end
 
   test "verify repositories for active user" do
-    visit page_with_token('active', '/manage_account')
+    visit page_with_token('active')
+    within('.navbar-fixed-top') do
+        page.find("#notifications-menu").click
+        within('.dropdown-menu') do
+          assert_selector 'a', text: 'Repositories'
+          find('a', text: 'Repositories').click
+        end
+    end
 
     repos = [[api_fixture('repositories')['foo'], true, true],
              [api_fixture('repositories')['repository3'], false, false],
@@ -136,7 +143,14 @@ class UserManageAccountTest < ActionDispatch::IntegrationTest
 
   test "request shell access" do
     ActionMailer::Base.deliveries = []
-    visit page_with_token('spectator', '/manage_account')
+    visit page_with_token('spectator')
+    within('.navbar-fixed-top') do
+        page.find("#notifications-menu").click
+        within('.dropdown-menu') do
+          assert_selector 'a', text: 'Virtual machines'
+          find('a', text: 'Virtual machines').click
+        end
+    end
     assert_text 'You do not have access to any virtual machines'
     click_link 'Send request for shell access'
 
@@ -164,7 +178,7 @@ class UserManageAccountTest < ActionDispatch::IntegrationTest
     within('.navbar-fixed-top') do
       page.find("#notifications-menu").click
       within('.dropdown-menu') do
-        find('a', text: 'My virtual machines').click
+        find('a', text: 'Virtual machines').click
       end
     end
     assert_text 'You do not have access to any virtual machines.'
@@ -173,7 +187,14 @@ class UserManageAccountTest < ActionDispatch::IntegrationTest
   end
 
   test "create new repository" do
-    visit page_with_token("active_trustedclient", "/manage_account")
+    visit page_with_token("active_trustedclient")
+    within('.navbar-fixed-top') do
+        page.find("#notifications-menu").click
+        within('.dropdown-menu') do
+          assert_selector 'a', text: 'Repositories'
+          find('a', text: 'Repositories').click
+        end
+    end
     click_on "Add new repository"
     within ".modal-dialog" do
       fill_in "Name", with: "workbenchtest"
@@ -185,10 +206,10 @@ class UserManageAccountTest < ActionDispatch::IntegrationTest
   end
 
   [
-    ['My virtual machines', nil, 'Host name'],
-    ['My repositories', 'Add new repository', 'It may take a minute or two before you can clone your new repository.'],
-    ['My current token', nil, 'HISTIGNORE=$HISTIGNORE'],
-    ['My SSH keys', 'Add new SSH key', 'Click here to learn about SSH keys in Arvados.'],
+    ['Virtual machines', nil, 'Host name'],
+    ['Repositories', 'Add new repository', 'It may take a minute or two before you can clone your new repository.'],
+    ['Current token', nil, 'HISTIGNORE=$HISTIGNORE'],
+    ['SSH keys', 'Add new SSH key', 'Click here to learn about SSH keys in Arvados.'],
   ].each do |page_name, button_name, look_for|
     test "test notification menu for page #{page_name}" do
       visit page_with_token('admin')
@@ -210,10 +231,10 @@ class UserManageAccountTest < ActionDispatch::IntegrationTest
   end
 
   [
-    ['My virtual machines', 'You do not have access to any virtual machines.'],
-    ['My repositories', 'You do not seem to have access to any repositories.'],
-    ['My current token', 'HISTIGNORE=$HISTIGNORE'],
-    ['My SSH keys', 'You have not yet set up an SSH public key for use with Arvados.'],
+    ['Virtual machines', 'You do not have access to any virtual machines.'],
+    ['Repositories', 'You do not seem to have access to any repositories.'],
+    ['Current token', 'HISTIGNORE=$HISTIGNORE'],
+    ['SSH keys', 'You have not yet set up an SSH public key for use with Arvados.'],
   ].each do |page_name, look_for|
     test "test notification menu for page #{page_name} when page is empty" do
       visit page_with_token('user1_with_load')

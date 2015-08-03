@@ -49,8 +49,12 @@ class ApplicationLayoutTest < ActionDispatch::IntegrationTest
             assert page.has_no_link?('Not active'), 'Found link - Not active'
             assert page.has_no_link?('Sign agreements'), 'Found link - Sign agreements'
 
-            assert_selector "a[href=\"/projects/#{user['uuid']}\"]", text: 'My home project'
+            assert_selector "a[href=\"/projects/#{user['uuid']}\"]", text: 'Home project'
             assert page.has_link?('Manage account'), 'No link - Manage account'
+            assert page.has_link?('Virtual machines'), 'No link - Virtual machines'
+            assert page.has_link?('Repositories'), 'No link - Repositories'
+            assert page.has_link?('Current token'), 'No link - Current token'
+            assert page.has_link?('SSH keys'), 'No link - SSH keys'
 
             if profile_config
               assert page.has_link?('Manage profile'), 'No link - Manage profile'
@@ -58,8 +62,12 @@ class ApplicationLayoutTest < ActionDispatch::IntegrationTest
               assert page.has_no_link?('Manage profile'), 'Found link - Manage profile'
             end
           else
-            assert_no_selector 'a', text: 'My home project'
+            assert_no_selector 'a', text: 'Home project'
             assert page.has_no_link?('Manage account'), 'Found link - Manage account'
+            assert page.has_no_link?('Virtual machines'), 'Found link - Virtual machines'
+            assert page.has_no_link?('Repositories'), 'Found link - Repositories'
+            assert page.has_no_link?('Current token'), 'Found link - Current token'
+            assert page.has_no_link?('SSH keys'), 'Found link - SSH keys'
             assert page.has_no_link?('Manage profile'), 'Found link - Manage profile'
           end
           assert page.has_link?('Log out'), 'No link - Log out'

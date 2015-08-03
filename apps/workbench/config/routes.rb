@@ -46,12 +46,12 @@ ArvadosWorkbench::Application.routes.draw do
     get 'setup_popup', :on => :member
     get 'profile', :on => :member
     post 'request_shell_access', :on => :member
+    get 'manage_account', :on => :member
+    get 'virtual_machines', :on => :member
+    get 'repositories', :on => :member
+    get 'ssh_keys', :on => :member
   end
-  get '/manage_virtual_machines' => 'users#manage_virtual_machines'
-  get '/manage_repositories' => 'users#manage_repositories'
-  get '/manage_current_token' => 'users#manage_current_token'
-  get '/manage_ssh_keys' => 'users#manage_ssh_keys'
-  get '/manage_account' => 'users#manage_account'
+  get '/current_token' => 'users#current_token'
   get "/add_ssh_key_popup" => 'users#add_ssh_key_popup', :as => :add_ssh_key_popup
   get "/add_ssh_key" => 'users#add_ssh_key', :as => :add_ssh_key
   resources :logs

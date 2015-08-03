@@ -6,9 +6,9 @@
                     'data-target' => '#add-ssh-key-modal-window'}  %>
     </div>
     <h4 class="panel-title">
-      <a data-parent="#arv-adv-accordion" href="/manage_ssh_keys">
+      <%= link_to ssh_keys_user_path(current_user) do %>
         SSH Keys
-      </a>
+      <%end%>
     </h4>
   </div>
 

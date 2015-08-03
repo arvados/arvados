@@ -1,9 +1,10 @@
 <div class="panel panel-default">
   <div class="panel-heading">
     <h4 class="panel-title">
-      <a data-parent="#arv-adv-accordion" href="/manage_virtual_machines">
+      <%= link_to virtual_machines_user_path(current_user) do %>
         Virtual Machines
-      </a>
+      <% end %>
+
     </h4>
   </div>
 
@@ -100,7 +101,7 @@
   <% end %>
 </div>
 </div>
-  <p>In order to access virtual machines using SSH, <a href="/manage_ssh_keys"> add an SSH key to your account</a> and add a section like this to your SSH configuration file ( <i>~/.ssh/config</i>):</p>
+  <p>In order to access virtual machines using SSH, <%= link_to ssh_keys_user_path(current_user) do%> add an SSH key to your account<%end%> and add a section like this to your SSH configuration file ( <i>~/.ssh/config</i>):</p>
     <pre>Host *.arvados
       TCPKeepAlive yes
       ServerAliveInterval 60
