@@ -135,12 +135,11 @@ func (this ArvadosClient) CallRaw(method string, resource string, uuid string, a
 		parameters = make(Dict)
 	}
 
-	parameters["format"] = "json"
-
 	vals := make(url.Values)
 	for k, v := range parameters {
-		m, err := json.Marshal(v)
-		if err == nil {
+		if s, ok := v.(string); ok {
+			vals.Set(k, s)
+		} else if m, err := json.Marshal(v); err == nil {
 			vals.Set(k, string(m))
 		}
 	}
@@ -296,14 +295,9 @@ func (this ArvadosClient) List(resource string, parameters Dict, output interfac
 	return this.Call("GET", resource, "", "", parameters, output)
 }
 
-// API Discovery
-//
-//   parameter - name of parameter to be discovered
-// return
-//   value - value of the discovered parameter
-//   err - error accessing the resource, or nil if no error
-var API_DISCOVERY_RESOURCE string = "discovery/v1/apis/arvados/v1/rest"
+const API_DISCOVERY_RESOURCE = "discovery/v1/apis/arvados/v1/rest"
 
+// Discovery returns the value of the given parameter in the discovery document.
 func (this *ArvadosClient) Discovery(parameter string) (value interface{}, err error) {
 	if len(this.DiscoveryDoc) == 0 {
 		this.DiscoveryDoc = make(Dict)
