@@ -39,7 +39,7 @@ On the API server, if you are using RVM:
 <notextile>
 <pre><code>gitserver:~$ <span class="userinput">cd /var/www/arvados-api/current</span>
 gitserver:/var/www/arvados-api/current$ <span class="userinput">sudo -u www-data RAILS_ENV=production `which rvm-exec` default bundle exec ./script/create_superuser_token.rb</span>
-4hdqaixi5a027jqn0vyjbwa3xmcue8logzhtsmk1bplgp064fe
+zzzzzzzzzzzzzzzzzzzzzzzzzzzzzzzzzzzzzzzzzzzzzzzzzz
 </code></pre>
 </notextile>
 
@@ -48,7 +48,7 @@ If you are not using RVM:
 <notextile>
 <pre><code>gitserver:~$ <span class="userinput">cd /var/www/arvados-api/current</span>
 gitserver:/var/www/arvados-api/current$ <span class="userinput">sudo -u www-data RAILS_ENV=production bundle exec ./script/create_superuser_token.rb</span>
-4hdqaixi5a027jqn0vyjbwa3xmcue8logzhtsmk1bplgp064fe
+zzzzzzzzzzzzzzzzzzzzzzzzzzzzzzzzzzzzzzzzzzzzzzzzzz
 </code></pre>
 </notextile>
 
@@ -182,7 +182,7 @@ Create a configuration file @/var/www/arvados-api/current/config/arvados-clients
   gitolite_url: /var/lib/arvados/git/repositories/gitolite-admin.git
   gitolite_tmp: /var/lib/arvados/git
   arvados_api_host: <span class="userinput">uuid_prefix.example.com</span>
-  arvados_api_token: "<span class="userinput">4hdqaixi5a027jqn0vyjbwa3xmcue8logzhtsmk1bplgp064fe</span>"
+  arvados_api_token: "<span class="userinput">zzzzzzzzzzzzzzzzzzzzzzzzzzzzzzzzzzzzzzzzzzzzzzzzzz</span>"
   arvados_api_host_insecure: <span class="userinput">false</span>
   gitolite_arvados_git_user_key: "<span class="userinput">ssh-rsa AAAAB3NzaC1yc2EAAAADAQABAAABAQC7aBIDAAgMQN16Pg6eHmvc+D+6TljwCGr4YGUBphSdVb25UyBCeAEgzqRiqy0IjQR2BLtSirXr+1SJAcQfBgI/jwR7FG+YIzJ4ND9JFEfcpq20FvWnMMQ6XD3y3xrZ1/h/RdBNwy4QCqjiXuxDpDB7VNP9/oeAzoATPZGhqjPfNS+RRVEQpC6BzZdsR+S838E53URguBOf9yrPwdHvosZn7VC0akeWQerHqaBIpSfDMtaM4+9s1Gdsz0iP85rtj/6U/K/XOuv2CZsuVZZ52nu3soHnEX2nx2IaXMS3L8Z+lfOXB2T6EaJgXF7Z9ME5K1tx9TSNTRcYCiKztXLNLSbp git@gitserver</span>"
 </code></pre>
