@@ -72,7 +72,7 @@ On Red Hat-based systems:
 
 h2. Create a "git" user and a storage directory
 
-Gitolite and some additional scripts will be installed in @/var/lib/arvados/git@, which means hosted repository data will be stored in @/var/lib/arvados/git/repositories@. If you choose to install gitolite in a different location, make sure to update the @git_repositories_dir@ entry in your API server's @config/application.yml@ file accordingly: for example, if you install gitolite at @/data/gitolite@ then your @git_repositories_dir@ will be @/data/gitolite/repositories@.
+Gitolite and some additional scripts will be installed in @/var/lib/arvados/git@, which means hosted repository data will be stored in @/var/lib/arvados/git/repositories@. If you choose to install gitolite in a different location, make sure to update the @git_repositories_dir@ entry in your API server's @application.yml@ file accordingly: for example, if you install gitolite at @/data/gitolite@ then your @git_repositories_dir@ will be @/data/gitolite/repositories@.
 
 A new UNIX account called "git" will own the files. This makes git URLs look familiar to users (<code>git@[...]:username/reponame.git</code>).
 
@@ -210,7 +210,7 @@ Otherwise, create @/etc/cron.d/arvados-git-sync@ with the following content:
 
 h3. Configure the API server to advertise the correct SSH URLs
 
-In your API server's @config/application.yml@ file, add the following entry:
+In your API server's @application.yml@ file, add the following entry:
 
 <notextile>
 <pre><code>git_repo_ssh_base: git@git.<span class="userinput">uuid_prefix.your.domain</span>:
@@ -332,7 +332,7 @@ server {
 
 h3. Configure the API server to advertise the correct HTTPS URLs
 
-In your API server's @config/application.yml@ file, add the following entry:
+In your API server's @application.yml@ file, add the following entry:
 
 <notextile>
 <pre><code>git_repo_http_base: https://git.<span class="userinput">uuid_prefix.your.domain</span>/
