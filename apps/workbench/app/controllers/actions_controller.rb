@@ -6,11 +6,7 @@ class ActionsController < ApplicationController
     Rails.configuration.anonymous_user_token and
     'show' == ctrl.action_name and
     params['uuid'] and
-    (model_class == Collection or
-     model_class == Group or
-     model_class == Job or
-     model_class == PipelineInstance or
-     model_class == PipelineTemplate)
+    model_class.in?([Collection, Group, Job, PipelineInstance, PipelineTemplate])
   }
   skip_filter :require_thread_api_token, only: [:report_issue_popup, :report_issue]
   skip_filter :check_user_agreements, only: [:report_issue_popup, :report_issue]
