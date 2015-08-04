@@ -32,8 +32,8 @@ class FuseMountTest(MountTestBase):
         cw.write("data 1")
         cw.start_new_file('thing2.txt')
         cw.write("data 2")
-        cw.start_new_stream('dir1')
 
+        cw.start_new_stream('dir1')
         cw.start_new_file('thing3.txt')
         cw.write("data 3")
         cw.start_new_file('thing4.txt')
@@ -53,11 +53,11 @@ class FuseMountTest(MountTestBase):
         cw.write("data 8")
 
         cw.start_new_stream('edgecases')
-        for f in ":/./../.../-/*/\x01\\/ ".split("/"):
+        for f in ":/.../-/*/\x01\\/ ".split("/"):
             cw.start_new_file(f)
             cw.write('x')
 
-        for f in ":/../.../-/*/\x01\\/ ".split("/"):
+        for f in ":/.../-/*/\x01\\/ ".split("/"):
             cw.start_new_stream('edgecases/dirs/' + f)
             cw.start_new_file('x/x')
             cw.write('x')
@@ -74,9 +74,9 @@ class FuseMountTest(MountTestBase):
         self.assertDirContents('dir2', ['thing5.txt', 'thing6.txt', 'dir3'])
         self.assertDirContents('dir2/dir3', ['thing7.txt', 'thing8.txt'])
         self.assertDirContents('edgecases',
-                               "dirs/:/_/__/.../-/*/\x01\\/ ".split("/"))
+                               "dirs/:/.../-/*/\x01\\/ ".split("/"))
         self.assertDirContents('edgecases/dirs',
-                               ":/__/.../-/*/\x01\\/ ".split("/"))
+                               ":/.../-/*/\x01\\/ ".split("/"))
 
         files = {'thing1.txt': 'data 1',
                  'thing2.txt': 'data 2',

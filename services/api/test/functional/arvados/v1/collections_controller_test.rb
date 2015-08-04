@@ -809,4 +809,23 @@ EOS
     assert_not_nil json_response['uuid']
     assert_equal 'value_1', json_response['properties']['property_1']
   end
+
+  [
+    nil,
+    ". 0:0:foo.txt",
+    ". d41d8cd98f00b204e9800998ecf8427e foo.txt",
+    "d41d8cd98f00b204e9800998ecf8427e 0:0:foo.txt",
+    ". d41d8cd98f00b204e9800998ecf8427e 0:0:foo.txt",
+  ].each do |manifest_text|
+    test "create collection with invalid manifest #{manifest_text}" do
+      authorize_with :active
+      post :create, {
+        collection: {
+          manifest_text: manifest_text,
+          portable_data_hash: "d30fe8ae534397864cb96c544f4cf102+47"
+        }
+      }
+      assert_response 422
+    end
+  end
 end

@@ -9,7 +9,7 @@ class Collection < ArvadosModel
   serialize :properties, Hash
 
   before_validation :check_encoding
-  before_validation :log_invalid_manifest_format
+  before_validation :check_manifest_validity
   before_validation :check_signatures
   before_validation :strip_signatures_and_update_replication_confirmed
   validate :ensure_pdh_matches_manifest_text
@@ -193,13 +193,14 @@ class Collection < ArvadosModel
     end
   end
 
-  def log_invalid_manifest_format
+  def check_manifest_validity
     begin
-      Keep::Manifest.validate! manifest_text if manifest_text
+      Keep::Manifest.validate! manifest_text
+      true
     rescue => e
       logger.warn e
+      false
     end
-    true
   end
 
   def signed_manifest_text
