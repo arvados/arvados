@@ -74,12 +74,6 @@
                   <% end %>
                 </li>
 
-                <li role="menuitem">
-                  <%= link_to manage_account_user_path(current_user), role: 'menu-item' do %>
-                    <i class="fa fa-lg fa-key fa-fw"></i> Manage account
-                  <% end %>
-                </li>
-
                 <% if Rails.configuration.user_profile_form_fields %>
                   <li role="menuitem"><a href="/users/<%=current_user.uuid%>/profile" role="menuitem"><i class="fa fa-lg fa-user fa-fw"></i> Manage profile</a></li>
                 <% end %>

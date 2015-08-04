@@ -299,12 +299,6 @@ class UsersController < ApplicationController
     @my_ssh_keys = AuthorizedKey.where(key_type: 'SSH', owner_uuid: @object.uuid)
   end
 
-  def manage_account
-    repositories
-    virtual_machines
-    ssh_keys
-  end
-
   def add_ssh_key_popup
     respond_to do |format|
       format.html

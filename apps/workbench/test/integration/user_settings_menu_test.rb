@@ -1,6 +1,6 @@
 require 'integration_helper'
 
-class UserManageAccountTest < ActionDispatch::IntegrationTest
+class UserSettingsMenuTest < ActionDispatch::IntegrationTest
   setup do
     need_javascript
   end
