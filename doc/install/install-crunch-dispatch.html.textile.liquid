@@ -82,12 +82,44 @@ PartitionName=DEFAULT MaxTime=INFINITE State=UP
 PartitionName=compute Default=YES Shared=yes
 
 NodeName=compute[0-255]
-
 PartitionName=compute Nodes=compute[0-255]
 </pre>
 </notextile>
 
-Please make sure to update the value of the @ControlMachine@ parameter to the hostname of your dispatcher (API server).
+h3. SLURM configuration essentials
+
+Whenever you change this file, you will need to update the copy _on every compute node_ as well as the controller node, and then run @sudo scontrol reconfigure@.
+
+*@ControlMachine@* should be a DNS name that resolve to the slurm controller (dispatch/API server). This must resolve correctly on all slurm worker nodes as well as the controller itself. In general slurm is very sensitive about all of the nodes being able to communicate with the controller _and one another,_ all using the same DNS names.
+
+*@NodeName=compute[0-255]@* establishes that the hostnames of the worker nodes will be compute0, compute1, etc.
+* There are several ways to compress sequences of names, like @compute[0-9,80,100-110]@. See the "hostlist" discussion in the @slurm.conf(5)@ and @scontrol(1)@ man pages for more information.
+* It is not necessary for all of the nodes listed here to be alive in order for slurm to work, although you should make sure the DNS entries exist. It is easiest to define lots of hostnames up front, assigning them to real nodes and updating your DNS data as the nodes appear. This minimizes the frequency of @slurm.conf@ updates and use of @scontrol reconfigure@.
+
+Each hostname appearing in @slurm.conf@ must resolve properly on the controller, on the worker itself, and on all other workers. Furthermore, the hostnames used in the configuration file must match the hostnames reported by @hostname@ or @hostname -s@ on the nodes themselves. This applies to the ControlMachine as well as the worker nodes.
+
+For example:
+* In @/etc/slurm-llnl/slurm.conf@ on control and worker nodes: @ControlMachine=uuid_prefix.your.domain@
+* In @/etc/slurm-llnl/slurm.conf@ on control and worker nodes: @NodeName=compute[0-255]@
+* In @/etc/resolv.conf@ on control and worker nodes: @search uuid_prefix.your.domain@
+* On the control node: @hostname@ reports @uuid_prefix.your.domain@
+* On worker node 123: @hostname@ reports @compute123.uuid_prefix.your.domain@
+
+h3. Automatic hostname assignment
+
+If your worker node bootstrapping script (see "Installing a compute node":install-compute-node.html) does not send the worker's current hostname, the API server will choose an unused hostname from the set given in @application.yml@, which defaults to @compute[0-255]@.
+
+If it is not feasible to give your compute nodes hostnames like compute0, compute1, etc., you can accommodate other naming schemes with a bit of extra configuration.
+
+If you want Arvados to assign names to your nodes with a different consecutive numeric series like @{worker1-0000, worker1-0001, worker1-0002}@, add an entry to @application.yml@; see @/var/www/arvados-api/current/config/application.default.yml@ for details. Example:
+* In @application.yml@: <code>assign_node_hostname: worker1-%<slot_number>04d</code>
+* In @slurm.conf@: <code>NodeName=worker1-[0000-0255]</code>
+
+If your worker hostnames are already assigned by other means, and the full set of names is known in advance, have your worker node bootstrapping script (see "Installing a compute node":install-compute-node.html) send its current hostname, rather than expect Arvados to assign one.
+* application.yml: <code>assign_node_hostname: false</code>
+* slurm.conf: <code>NodeName=alice,bob,clay,darlene</code>
+
+If your worker hostnames are already assigned by other means, but the full set of names is _not_ known in advance, you can use the slurm.conf and application.yml settings in the previous example, but you must also update @slurm.conf@ (both on the controller and on all worker nodes) and run @sudo scontrol reconfigure@ whenever a new node comes online.
 
 h2. Enable SLURM job dispatch
 
