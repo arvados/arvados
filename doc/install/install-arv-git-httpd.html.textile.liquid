@@ -190,7 +190,7 @@ Create a configuration file @/var/www/arvados-api/current/config/arvados-clients
 
 h2. Enable the synchronization script
 
-The API server package includes a script that retrieves the current set of repository names and permissions from the API, writes names and permissions to @arvadosaliases.pl@ in a format usable by gitolite, and creates new empty repositories if needed. This script should run every 2 to 5 minutes.
+The API server package includes a script that retrieves the current set of repository names and permissions from the API, writes them to @arvadosaliases.pl@ in a format usable by gitolite, and triggers gitolite hooks which create new empty repositories if needed. This script should run every 2 to 5 minutes.
 
 If you are using RVM, create @/etc/cron.d/arvados-git-sync@ with the following content:
 
