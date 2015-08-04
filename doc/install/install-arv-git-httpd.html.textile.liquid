@@ -257,11 +257,19 @@ fatal: No REQUEST_METHOD from server
 
 h3. Enable arvados-git-httpd
 
-Install "runit":http://smarden.org/runit/ (if it's not already installed) and configure it to run arvados-git-httpd. Update the API host to match your site.
+On Debian-based systems, install runit:
 
 <notextile>
 <pre><code>~$ <span class="userinput">sudo apt-get install runit</span>
-~$ <span class="userinput">cd /etc/sv</span>
+</code></pre>
+</notextile>
+
+On Red Hat-based systems, "install runit from source":http://smarden.org/runit/install.html or use an alternative daemon supervisor.
+
+Configure runit to run arvados-git-httpd, making sure to update the API host to match your site:
+
+<notextile>
+<pre><code>~$ <span class="userinput">cd /etc/sv</span>
 /etc/sv$ <span class="userinput">sudo mkdir arvados-git-httpd; cd arvados-git-httpd</span>
 /etc/sv/arvados-git-httpd$ <span class="userinput">sudo mkdir log</span>
 /etc/sv/arvados-git-httpd$ <span class="userinput">sudo sh -c 'cat &gt;log/run' &lt;&lt;'EOF'
