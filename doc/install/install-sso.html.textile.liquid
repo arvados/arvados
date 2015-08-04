@@ -210,29 +210,76 @@ In order to use Google+ authentication, you must use the <a href="https://consol
   google_oauth2_client_id: <span class="userinput">"---YOUR---CLIENT---ID---HERE--"-</span>
   google_oauth2_client_secret: <span class="userinput">"---YOUR---CLIENT---SECRET---HERE--"-</span></code></pre></notextile>
 
-h2(#start). Start the SSO server
+h2(#start). Set up a Web server
 
-h3. Run a standalone passenger server
+For best performance, we recommend you use Nginx as your Web server front-end, with a Passenger backend to serve the SSO server.  To do that:
 
 <notextile>
-<pre><code>~/sso-devise-omniauth-provider$ <span class="userinput">RAILS_ENV=production passenger start</span>
-=============== Phusion Passenger Standalone web server started ===============
-...
+<ol>
+<li><a href="https://www.phusionpassenger.com/documentation/Users%20guide%20Nginx.html">Install Nginx and Phusion Passenger</a>.</li>
+
+<li><p>Edit the http section of your Nginx configuration to run the Passenger server, and act as a front-end for it.  You might add a block like the following, adding SSL and logging parameters to taste:</p>
+
+<pre><code>server {
+  listen 127.0.0.1:8900;
+  server_name localhost-sso;
+
+  root   <span class="userinput">/YOUR/PATH/TO/sso-devise-omniauth-provider/public</span>;
+  index  index.html index.htm index.php;
+
+  passenger_enabled on;
+  # If you're using RVM, uncomment the line below.
+  #passenger_ruby /usr/local/rvm/wrappers/default/ruby;
+}
+
+upstream sso {
+  server     127.0.0.1:8900  fail_timeout=10s;
+}
+
+proxy_http_version 1.1;
+
+server {
+  listen       <span class="userinput">[your public IP address]</span>:443 ssl;
+  server_name  auth.<span class="userinput">your.domain</span>;
+
+  ssl on;
+  ssl_certificate     <span class="userinput">/YOUR/PATH/TO/cert.pem</span>;
+  ssl_certificate_key <span class="userinput">/YOUR/PATH/TO/cert.key</span>;
+
+  index  index.html index.htm index.php;
+
+  location / {
+    proxy_pass            http://sso;
+    proxy_redirect        off;
+    proxy_connect_timeout 90s;
+    proxy_read_timeout    300s;
+
+    proxy_set_header      X-Forwarded-Proto https;
+    proxy_set_header      Host $http_host;
+    proxy_set_header      X-Real-IP $remote_addr;
+    proxy_set_header      X-Forwarded-For $proxy_add_x_forwarded_for;
+  }
+}
 </code></pre>
+</li>
+
+<li>Restart Nginx.</li>
+
+</ol>
 </notextile>
 
-You can now test your installation by going to the page reported by passenger as "Accessible via: ..."
+{% include 'notebox_begin' %}
 
-Note: if you get the following warning "you may safely ignore it:":https://stackoverflow.com/questions/10374871/no-secret-option-provided-to-racksessioncookie-warning
+If you see the following warning "you may safely ignore it":https://stackoverflow.com/questions/10374871/no-secret-option-provided-to-racksessioncookie-warning:
 
 <pre>
-Connecting to database specified by database.yml
-App 4574 stderr:         SECURITY WARNING: No secret option provided to Rack::Session::Cookie.
-App 4574 stderr:         This poses a security threat. It is strongly recommended that you
-App 4574 stderr:         provide a secret to prevent exploits that may be possible from crafted
-App 4574 stderr:         cookies. This will not be supported in future versions of Rack, and
-App 4574 stderr:         future versions will even invalidate your existing user cookies.
-App 4574 stderr:
-App 4574 stderr:         Called from: /var/lib/gems/2.1.0/gems/actionpack-3.2.8/lib/action_dispatch/middleware/session/abstract_store.rb:28:in `initialize'.
-App 4592 stdout:
+SECURITY WARNING: No secret option provided to Rack::Session::Cookie.
+This poses a security threat. It is strongly recommended that you
+provide a secret to prevent exploits that may be possible from crafted
+cookies. This will not be supported in future versions of Rack, and
+future versions will even invalidate your existing user cookies.
+
+Called from: /var/lib/gems/2.1.0/gems/actionpack-3.2.8/lib/action_dispatch/middleware/session/abstract_store.rb:28:in `initialize'.
 </pre>
+
+{% include 'notebox_end' %}

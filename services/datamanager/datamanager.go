@@ -41,19 +41,25 @@ func init() {
 func main() {
 	flag.Parse()
 	if minutesBetweenRuns == 0 {
-		singlerun()
+		err := singlerun()
+		if err != nil {
+			log.Fatalf("Got an error: %v", err)
+		}
 	} else {
 		waitTime := time.Minute * time.Duration(minutesBetweenRuns)
 		for {
 			log.Println("Beginning Run")
-			singlerun()
+			err := singlerun()
+			if err != nil {
+				log.Printf("Got an error: %v", err)
+			}
 			log.Printf("Sleeping for %d minutes", minutesBetweenRuns)
 			time.Sleep(waitTime)
 		}
 	}
 }
 
-func singlerun() {
+func singlerun() error {
 	arv, err := arvadosclient.MakeArvadosClient()
 	if err != nil {
 		log.Fatalf("Error setting up arvados client %s", err.Error())
@@ -119,19 +125,10 @@ func singlerun() {
 			fmt.Sprintf("Error setting up keep client %s", err.Error()))
 	}
 
-	pullServers := summary.ComputePullServers(kc,
-		&keepServerInfo,
-		readCollections.BlockToDesiredReplication,
-		replicationSummary.UnderReplicatedBlocks)
-
-	pullLists := summary.BuildPullLists(pullServers)
-
-	summary.WritePullLists(arvLogger, pullLists)
-
 	// Log that we're finished. We force the recording, since go will
 	// not wait for the write timer before exiting.
 	if arvLogger != nil {
-		arvLogger.FinalUpdate(func(p map[string]interface{}, e map[string]interface{}) {
+		defer arvLogger.FinalUpdate(func(p map[string]interface{}, e map[string]interface{}) {
 			summaryInfo := logger.GetOrCreateMap(p, "summary_info")
 			summaryInfo["block_replication_counts"] = bucketCounts
 			summaryInfo["replication_summary"] = replicationCounts
@@ -140,6 +137,27 @@ func singlerun() {
 			p["run_info"].(map[string]interface{})["finished_at"] = time.Now()
 		})
 	}
+
+	pullServers := summary.ComputePullServers(kc,
+		&keepServerInfo,
+		readCollections.BlockToDesiredReplication,
+		replicationSummary.UnderReplicatedBlocks)
+
+	pullLists := summary.BuildPullLists(pullServers)
+
+	trashLists, trashErr := summary.BuildTrashLists(kc,
+		&keepServerInfo,
+		replicationSummary.KeepBlocksNotInCollections)
+
+	summary.WritePullLists(arvLogger, pullLists)
+
+	if trashErr != nil {
+		return err
+	} else {
+		keep.SendTrashLists(keep.GetDataManagerToken(arvLogger), kc, trashLists)
+	}
+
+	return nil
 }
 
 // Returns a data fetcher that fetches data from remote servers.
