@@ -160,4 +160,43 @@ class ActionsControllerTest < ActionController::TestCase
     assert_includes(manifest_text, 'foo')
     assert_includes(manifest_text, 'foo(1)')
   end
+
+  [
+    ['collections', 'user_agreement_in_anonymously_accessible_project'],
+    ['groups', 'anonymously_accessible_project'],
+    ['jobs', 'running_job_in_publicly_accessible_project'],
+    ['pipeline_instances', 'pipeline_in_publicly_accessible_project'],
+    ['pipeline_templates', 'pipeline_template_in_publicly_accessible_project'],
+  ].each do |dm, fixture|
+    test "access show method for public #{dm} and expect to see page" do
+      Rails.configuration.anonymous_user_token = api_fixture('api_client_authorizations')['anonymous']['api_token']
+      get(:show, {uuid: api_fixture(dm)[fixture]['uuid']})
+      assert_response :redirect
+      if dm == 'groups'
+        assert_includes @response.redirect_url, "projects/#{fixture['uuid']}"
+      else
+        assert_includes @response.redirect_url, "#{dm}/#{fixture['uuid']}"
+      end
+    end
+  end
+
+  [
+    ['collections', 'foo_collection_in_aproject', 404],
+    ['groups', 'subproject_in_asubproject_with_same_name_as_one_in_active_user_home', 404],
+    ['jobs', 'job_with_latest_version', 404],
+    ['pipeline_instances', 'pipeline_owned_by_active_in_home', 404],
+    ['pipeline_templates', 'template_in_asubproject_with_same_name_as_one_in_active_user_home', 404],
+    ['traits', 'owned_by_aproject_with_no_name', :redirect],
+  ].each do |dm, fixture, expected|
+    test "access show method for non-public #{dm} and expect #{expected}" do
+      Rails.configuration.anonymous_user_token = api_fixture('api_client_authorizations')['anonymous']['api_token']
+      get(:show, {uuid: api_fixture(dm)[fixture]['uuid']})
+      assert_response expected
+      if expected == 404
+        assert_includes @response.inspect, 'Log in'
+      else
+        assert_match /\/users\/welcome/, @response.redirect_url
+      end
+    end
+  end
 end
