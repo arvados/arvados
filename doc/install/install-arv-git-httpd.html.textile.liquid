@@ -85,7 +85,7 @@ gitserver:~$ <span class="userinput">sudo chown -R git:git ~git</span>
 </code></pre>
 </notextile>
 
-The git user needs its own SSH key. (It must be able to run @ssh git@localhost@ from scripts.)
+The git user needs its own SSH key. (It must be able to run <code>ssh git@localhost</code> from scripts.)
 
 <notextile>
 <pre><code>gitserver:~$ <span class="userinput">sudo -u git -i bash</span>
@@ -100,7 +100,7 @@ git@gitserver:~$ <span class="userinput">rm .ssh/authorized_keys</span>
 
 h2. Install gitolite
 
-Check https://github.com/sitaramc/gitolite/tags for the latest stable version (_e.g.,_ @v3.6.3@).
+Check "https://github.com/sitaramc/gitolite/tags":https://github.com/sitaramc/gitolite/tags for the latest stable version (_e.g.,_ @v3.6.3@).
 
 Download and install the version you selected.
 
@@ -140,7 +140,7 @@ Everything up-to-date
 </code></pre>
 </notextile>
 
-h2. Configure gitolite
+h3. Configure gitolite
 
 Configure gitolite to look up a repository name like @username/reponame.git@ and find the appropriate bare repository storage directory.
 
@@ -188,7 +188,7 @@ Create a configuration file @/var/www/arvados-api/current/config/arvados-clients
 </code></pre>
 </notextile>
 
-h2. Enable the synchronization script
+h3. Enable the synchronization script
 
 The API server package includes a script that retrieves the current set of repository names and permissions from the API, writes them to @arvadosaliases.pl@ in a format usable by gitolite, and triggers gitolite hooks which create new empty repositories if needed. This script should run every 2 to 5 minutes.
 
