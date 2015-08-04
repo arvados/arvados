@@ -100,7 +100,7 @@ git@gitserver:~$ <span class="userinput">rm .ssh/authorized_keys</span>
 
 h2. Install gitolite
 
-Check "https://github.com/sitaramc/gitolite/tags":https://github.com/sitaramc/gitolite/tags for the latest stable version (_e.g.,_ @v3.6.3@).
+Check "https://github.com/sitaramc/gitolite/tags":https://github.com/sitaramc/gitolite/tags for the latest stable version. This guide was tested with @v3.6.3@. _Versions below 3.0 are missing some features needed by Arvados, and should not be used._
 
 Download and install the version you selected.
 
@@ -120,6 +120,8 @@ WARNING: /var/lib/arvados/git/.ssh/authorized_keys missing; creating a new one
     (this is normal on a brand new install)
 </code></pre>
 </notextile>
+
+_If this didn't go well, more detail about installing gitolite, and information about how it works, can be found on the "gitolite home page":http://gitolite.com/._
 
 Clone the gitolite-admin repository. The arvados-git-sync.rb script works by editing the files in this working directory and pushing them to gitolite. Here we make sure "git push" won't produce any errors or warnings.
 
