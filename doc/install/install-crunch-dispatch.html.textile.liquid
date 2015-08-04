@@ -139,6 +139,10 @@ export PATH="$PATH":/path/to/arvados/services/crunch
 export ARVADOS_API_HOST={{ site.arvados_api_host }}
 export CRUNCH_DISPATCH_LOCKFILE=/var/lock/crunch-dispatch
 
+# This is the path to docker on your compute nodes. You might need to
+# change it to "docker", "/opt/bin/docker", etc.
+export CRUNCH_JOB_DOCKER_BIN=docker.io
+
 fuser -TERM -k $CRUNCH_DISPATCH_LOCKFILE || true
 
 ## Only if your SSL cert is unverifiable:
