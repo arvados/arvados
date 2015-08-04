@@ -110,15 +110,7 @@ class UserManageAccountTest < ActionDispatch::IntegrationTest
   end
 
   test "verify repositories for active user" do
-    visit page_with_token('active')
-    within('.navbar-fixed-top') do
-        page.find("#notifications-menu").click
-        within('.dropdown-menu') do
-          assert_selector 'a', text: 'Repositories'
-          find('a', text: 'Repositories').click
-        end
-    end
-
+    visit page_with_token('active',"/users/zzzzz-tpzed-xurymjxw79nv3jz/repositories")
     repos = [[api_fixture('repositories')['foo'], true, true],
              [api_fixture('repositories')['repository3'], false, false],
              [api_fixture('repositories')['repository4'], true, false]]
@@ -143,14 +135,7 @@ class UserManageAccountTest < ActionDispatch::IntegrationTest
 
   test "request shell access" do
     ActionMailer::Base.deliveries = []
-    visit page_with_token('spectator')
-    within('.navbar-fixed-top') do
-        page.find("#notifications-menu").click
-        within('.dropdown-menu') do
-          assert_selector 'a', text: 'Virtual machines'
-          find('a', text: 'Virtual machines').click
-        end
-    end
+    visit page_with_token('spectator', "/users/zzzzz-tpzed-l1s2piq4t4mps8r/virtual_machines")
     assert_text 'You do not have access to any virtual machines'
     click_link 'Send request for shell access'
 
@@ -189,11 +174,11 @@ class UserManageAccountTest < ActionDispatch::IntegrationTest
   test "create new repository" do
     visit page_with_token("active_trustedclient")
     within('.navbar-fixed-top') do
-        page.find("#notifications-menu").click
-        within('.dropdown-menu') do
-          assert_selector 'a', text: 'Repositories'
-          find('a', text: 'Repositories').click
-        end
+      page.find("#notifications-menu").click
+      within('.dropdown-menu') do
+        assert_selector 'a', text: 'Repositories'
+        find('a', text: 'Repositories').click
+      end
     end
     click_on "Add new repository"
     within ".modal-dialog" do
@@ -214,11 +199,11 @@ class UserManageAccountTest < ActionDispatch::IntegrationTest
     test "test notification menu for page #{page_name}" do
       visit page_with_token('admin')
       within('.navbar-fixed-top') do
-          page.find("#notifications-menu").click
-          within('.dropdown-menu') do
-            assert_selector 'a', text: page_name
-            find('a', text: page_name).click
-          end
+        page.find("#notifications-menu").click
+        within('.dropdown-menu') do
+          assert_selector 'a', text: page_name
+          find('a', text: page_name).click
+        end
       end
 
       if button_name
