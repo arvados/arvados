@@ -291,6 +291,17 @@ EOF</span>
 </code></pre>
 </notextile>
 
+If you are using a different daemon supervisor, or if you want to test the daemon in a terminal window, an equivalent shell command to run arvados-git-httpd is:
+
+<notextile>
+<pre><code>sudo -u git \
+  ARVADOS_API_HOST=<span class="userinput">uuid_prefix.your.domain</span> \
+  GITOLITE_HTTP_HOME=/var/lib/arvados/git \
+  PATH="$PATH:/var/lib/arvados/git/bin" \
+  arvados-git-httpd -address=:9001 -git-command="$(which git)" -repo-root=<span class="userinput">/var/lib/arvados/git/repositories</span> 2&gt;&1
+</code></pre>
+</notextile>
+
 h3. Set up a reverse proxy to provide SSL service
 
 The arvados-git-httpd service will be accessible from anywhere on the internet, so we recommend using SSL.
