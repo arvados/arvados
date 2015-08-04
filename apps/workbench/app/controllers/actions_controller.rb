@@ -2,6 +2,8 @@ require "arvados/collection"
 
 class ActionsController < ApplicationController
 
+  # Skip require_thread_api_token if this is a show action
+  # for an object uuid that supports anonymous access.
   skip_around_filter :require_thread_api_token, if: proc { |ctrl|
     Rails.configuration.anonymous_user_token and
     'show' == ctrl.action_name and
