@@ -110,7 +110,8 @@ class UserManageAccountTest < ActionDispatch::IntegrationTest
   end
 
   test "verify repositories for active user" do
-    visit page_with_token('active',"/users/zzzzz-tpzed-xurymjxw79nv3jz/repositories")
+    user = api_fixture('users')['active']
+    visit page_with_token('active',"/users/#{api_fixture('users')['active']['uuid']}/repositories")
     repos = [[api_fixture('repositories')['foo'], true, true],
              [api_fixture('repositories')['repository3'], false, false],
              [api_fixture('repositories')['repository4'], true, false]]
@@ -134,8 +135,9 @@ class UserManageAccountTest < ActionDispatch::IntegrationTest
   end
 
   test "request shell access" do
+    user = api_fixture('users')['spectator']
     ActionMailer::Base.deliveries = []
-    visit page_with_token('spectator', "/users/zzzzz-tpzed-l1s2piq4t4mps8r/virtual_machines")
+    visit page_with_token('spectator', "/users/#{api_fixture('users')['spectator']['uuid']}/virtual_machines")
     assert_text 'You do not have access to any virtual machines'
     click_link 'Send request for shell access'
 
@@ -147,7 +149,6 @@ class UserManageAccountTest < ActionDispatch::IntegrationTest
     assert_text 'A request for shell access was sent'
 
     # verify that the email was sent
-    user = api_fixture('users')['spectator']
     full_name = "#{user['first_name']} #{user['last_name']}"
     expected = "Shell account request from #{full_name} (#{user['email']}, #{user['uuid']})"
     found_email = 0
@@ -191,21 +192,19 @@ class UserManageAccountTest < ActionDispatch::IntegrationTest
   end
 
   [
-    ['Virtual machines', nil, 'Host name'],
-    ['Repositories', 'Add new repository', 'It may take a minute or two before you can clone your new repository.'],
-    ['Current token', nil, 'HISTIGNORE=$HISTIGNORE'],
-    ['SSH keys', 'Add new SSH key', 'Click here to learn about SSH keys in Arvados.'],
-  ].each do |page_name, button_name, look_for|
-    test "test notification menu for page #{page_name}" do
-      visit page_with_token('admin')
-      within('.navbar-fixed-top') do
-        page.find("#notifications-menu").click
-        within('.dropdown-menu') do
-          assert_selector 'a', text: page_name
-          find('a', text: page_name).click
-        end
+    ['virtual_machines', nil, 'Host name', 'testvm2.shell'],
+    ['repositories', 'Add new repository', 'It may take a minute or two before you can clone your new repository.', 'active/foo'],
+    ['/current_token', nil, 'HISTIGNORE=$HISTIGNORE', 'ARVADOS_API_TOKEN=3kg6k6lzmp9kj5'],
+    ['ssh_keys', 'Add new SSH key', 'Click here to learn about SSH keys in Arvados.', 'active'],
+  ].each do |page_name, button_name, look_for, content|
+    test "test user-settings menu for page #{page_name}" do
+      if page_name == '/current_token'
+        visit page_with_token('active', page_name)
+      else
+        visit page_with_token('active', "/users/#{api_fixture('users')['active']['uuid']}/#{page_name}")
       end
 
+      assert page.has_text? content
       if button_name
         assert_selector 'a', text: button_name
         find('a', text: button_name).click
@@ -216,19 +215,16 @@ class UserManageAccountTest < ActionDispatch::IntegrationTest
   end
 
   [
-    ['Virtual machines', 'You do not have access to any virtual machines.'],
-    ['Repositories', 'You do not seem to have access to any repositories.'],
-    ['Current token', 'HISTIGNORE=$HISTIGNORE'],
-    ['SSH keys', 'You have not yet set up an SSH public key for use with Arvados.'],
+    ['virtual_machines', 'You do not have access to any virtual machines.'],
+    ['repositories', 'You do not seem to have access to any repositories.'],
+    ['/current_token', 'HISTIGNORE=$HISTIGNORE'],
+    ['ssh_keys', 'You have not yet set up an SSH public key for use with Arvados.'],
   ].each do |page_name, look_for|
-    test "test notification menu for page #{page_name} when page is empty" do
-      visit page_with_token('user1_with_load')
-      within ('.navbar-fixed-top') do
-        page.find("#notifications-menu").click
-        within('.dropdown-menu') do
-          assert_selector 'a', text: page_name
-          find('a', text: page_name).click
-        end
+    test "test user-settings menu for page #{page_name} when page is empty" do
+      if page_name == '/current_token'
+        visit page_with_token('user1_with_load', page_name)
+      else
+        visit page_with_token('admin', "/users/#{api_fixture('users')['user1_with_load']['uuid']}/#{page_name}")
       end
 
      assert page.has_text? look_for
