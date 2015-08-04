@@ -206,6 +206,17 @@ Otherwise, create @/etc/cron.d/arvados-git-sync@ with the following content:
 </code></pre>
 </notextile>
 
+h3. Configure the API server to advertise the correct SSH URLs
+
+In your API server's @config/application.yml@ file, add the following entry:
+
+<notextile>
+<pre><code>git_repo_ssh_base: git@git.<span class="userinput">uuid_prefix.your.domain</span>:
+</code></pre>
+</notextile>
+
+Make sure to include the trailing colon.
+
 h2. Install the arvados-git-httpd package
 
 This is needed only for HTTPS access.
@@ -296,11 +307,13 @@ This is best achieved by putting a reverse proxy with SSL support in front of ar
 </code></pre>
 </notextile>
 
-h3. Tell the API server about the arvados-git-httpd service
+h3. Configure the API server to advertise the correct HTTPS URLs
 
 In your API server's @config/application.yml@ file, add the following entry:
 
 <notextile>
-<pre><code>git_http_base: git.<span class="userinput">uuid_prefix.your.domain</span>
+<pre><code>git_repo_http_base: https://git.<span class="userinput">uuid_prefix.your.domain</span>/
 </code></pre>
 </notextile>
+
+Make sure to include the trailing slash.
