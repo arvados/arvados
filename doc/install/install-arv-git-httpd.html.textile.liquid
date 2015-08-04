@@ -297,6 +297,8 @@ The arvados-git-httpd service will be accessible from anywhere on the internet, 
 
 This is best achieved by putting a reverse proxy with SSL support in front of arvados-git-httpd, running on port 443 and passing requests to @arvados-git-httpd@ on port 9001 (or whichever port you used in your run script).
 
+Add the following configuration to the @http@ section of your Nginx configuration:
+
 <notextile>
 <pre><code>
 upstream arvados-git-httpd {
@@ -312,15 +314,6 @@ server {
 
   location  / {
     proxy_pass            http://arvados-git-httpd;
-    proxy_redirect        off;
-    proxy_connect_timeout 90s;
-    proxy_read_timeout    300s;
-
-    proxy_set_header      X-Forwarded-Proto https;
-    proxy_set_header      Host $http_host;
-    proxy_set_header      X-External-Client $external_client;
-    proxy_set_header      X-Real-IP $remote_addr;
-    proxy_set_header      X-Forwarded-For $proxy_add_x_forwarded_for;
   }
 }
 </code></pre>
@@ -337,9 +330,9 @@ In your API server's @config/application.yml@ file, add the following entry:
 
 Make sure to include the trailing slash.
 
-h2. Restart nginx
+h2. Restart Nginx
 
-Restart nginx to make the nginx and API server configuration changes take effect.
+Restart Nginx to make the Nginx and API server configuration changes take effect.
 
 <notextile>
 <pre><code>gitserver:~$ <span class="userinput">sudo nginx -s reload</span>
