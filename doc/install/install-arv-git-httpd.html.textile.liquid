@@ -288,22 +288,31 @@ The arvados-git-httpd service will be accessible from anywhere on the internet, 
 This is best achieved by putting a reverse proxy with SSL support in front of arvados-git-httpd, running on port 443 and passing requests to @arvados-git-httpd@ on port 9001 (or whichever port you used in your run script).
 
 <notextile>
-<pre><code><span class="userinput">http {
-  upstream arvados-git-httpd {
-    server localhost:9001;
-  }
-  server {
-    listen *:443 ssl;
-    server_name git.uuid_prefix.example.com;
-    ssl_certificate /root/git.uuid_prefix.example.com.crt;
-    ssl_certificate_key /root/git.uuid_prefix.example.com.key;
-    location  / {
-      proxy_pass http://arvados-git-httpd;
-      proxy_set_header X-Forwarded-For $remote_addr;
-    }
+<pre><code>
+upstream arvados-git-httpd {
+  server                  127.0.0.1:<span class="userinput">9001</span>;
+}
+server {
+  listen                  <span class="userinput">[your public IP address]</span>:443 ssl;
+  server_name             git.<span class="userinput">uuid_prefix.your.domain</span>;
+
+  ssl on;
+  ssl_certificate         <span class="userinput">/YOUR/PATH/TO/cert.pem</span>;
+  ssl_certificate_key     <span class="userinput">/YOUR/PATH/TO/cert.key</span>;
+
+  location  / {
+    proxy_pass            http://arvados-git-httpd;
+    proxy_redirect        off;
+    proxy_connect_timeout 90s;
+    proxy_read_timeout    300s;
+
+    proxy_set_header      X-Forwarded-Proto https;
+    proxy_set_header      Host $http_host;
+    proxy_set_header      X-External-Client $external_client;
+    proxy_set_header      X-Real-IP $remote_addr;
+    proxy_set_header      X-Forwarded-For $proxy_add_x_forwarded_for;
   }
 }
-</span>
 </code></pre>
 </notextile>
 
