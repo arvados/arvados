@@ -55,13 +55,37 @@
                   <%= current_user.email %>
                 </li>
                 <% if current_user.is_active %>
-                <li role="menuitem"><a href="/projects/<%=current_user.uuid%>" role="menuitem"><i class="fa fa-home fa-fw"></i> Home project </a></li>
-                <li role="menuitem"><a href="/manage_account" role="menuitem"><i class="fa fa-key fa-fw"></i> Manage account</a></li>
+                <li role="menuitem"><a href="/projects/<%=current_user.uuid%>" role="menuitem"><i class="fa fa-lg fa-home fa-fw"></i> Home project </a></li>
+
+                <li role="menuitem">
+                  <%= link_to virtual_machines_user_path(current_user), role: 'menu-item' do %>
+                    <i class="fa fa-lg fa-code-fork fa-fw"></i> Virtual machines
+                  <% end %>
+                </li>
+                <li role="menuitem">
+                  <%= link_to repositories_user_path(current_user), role: 'menu-item' do %>
+                    <i class="fa fa-lg fa-code-fork fa-fw"></i> Repositories
+                  <% end %>
+                </li>
+                <li role="menuitem"><a href="/current_token" role="menuitem"><i class="fa fa-lg fa-ticket fa-fw"></i> Current token</a></li>
+                <li role="menuitem">
+                  <%= link_to ssh_keys_user_path(current_user), role: 'menu-item' do %>
+                    <i class="fa fa-lg fa-key fa-fw"></i> SSH keys
+                  <% end %>
+                </li>
+
+                <li role="menuitem">
+                  <%= link_to manage_account_user_path(current_user), role: 'menu-item' do %>
+                    <i class="fa fa-lg fa-key fa-fw"></i> Manage account
+                  <% end %>
+                </li>
+
                 <% if Rails.configuration.user_profile_form_fields %>
-                  <li role="menuitem"><a href="/users/<%=current_user.uuid%>/profile" role="menuitem"><i class="fa fa-key fa-fw"></i> Manage profile</a></li>
+                  <li role="menuitem"><a href="/users/<%=current_user.uuid%>/profile" role="menuitem"><i class="fa fa-lg fa-user fa-fw"></i> Manage profile</a></li>
                 <% end %>
                 <% end %>
-                <li role="menuitem"><a href="<%= logout_path %>" role="menuitem"><i class="fa fa-sign-out fa-fw"></i> Log out</a></li>
+                <li role="presentation" class="divider"></li>
+                <li role="menuitem"><a href="<%= logout_path %>" role="menuitem"><i class="fa fa-lg fa-sign-out fa-fw"></i> Log out</a></li>
                 <% if user_notifications.any? %>
                   <li role="presentation" class="divider"></li>
                   <% user_notifications.each_with_index do |n, i| %>
@@ -80,7 +104,7 @@
                 </a>
                 <ul class="dropdown-menu" role="menu">
                   <li role="presentation" class="dropdown-header">
-                    Settings
+                    Admin Settings
                   </li>
                   <li role="menuitem"><a href="/repositories">
                       <i class="fa fa-lg fa-code-fork fa-fw"></i> Repositories

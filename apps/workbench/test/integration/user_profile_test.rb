@@ -54,7 +54,10 @@ class UserProfileTest < ActionDispatch::IntegrationTest
             assert page.has_no_link?('Not active'), 'Found link - Not active'
             assert page.has_no_link?('Sign agreements'), 'Found link - Sign agreements'
 
-            assert page.has_link?('Manage account'), 'No link - Manage account'
+            assert page.has_link?('Virtual machines'), 'No link - Virtual machines'
+            assert page.has_link?('Repositories'), 'No link - Repositories'
+            assert page.has_link?('Current token'), 'No link - Current token'
+            assert page.has_link?('SSH keys'), 'No link - SSH Keys'
 
             if profile_config
               assert page.has_link?('Manage profile'), 'No link - Manage profile'

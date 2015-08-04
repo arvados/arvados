@@ -11,16 +11,16 @@ class UserManageAccountTest < ActionDispatch::IntegrationTest
       within('.navbar-fixed-top') do
         page.find("#notifications-menu").click
         within('.dropdown-menu') do
-          find('a', text: 'Manage account').click
+          assert_selector 'a', text: 'Virtual machines'
+          assert_selector 'a', text: 'Repositories'
+          assert_selector 'a', text: 'Current token'
+          assert_selector 'a', text: 'SSH keys'
+          find('a', text: 'SSH keys').click
         end
       end
 
-      # now in manage account page
-      assert page.has_text?('Virtual Machines'), 'No text - Virtual Machines'
-      assert page.has_text?('Repositories'), 'No text - Repositories'
-      assert page.has_text?('SSH Keys'), 'No text - SSH Keys'
-      assert page.has_text?('Current Token'), 'No text - Current Token'
-      assert page.has_text?('The Arvados API token is a secret key that enables the Arvados SDKs to access Arvados'), 'No text - Arvados API token'
+      # now in SSH Keys page
+      assert page.has_text?('Add new SSH key'), 'No text - Add SSH key'
       add_and_verify_ssh_key
     else  # inactive user
       within('.navbar-fixed-top') do
@@ -110,8 +110,8 @@ class UserManageAccountTest < ActionDispatch::IntegrationTest
   end
 
   test "verify repositories for active user" do
-    visit page_with_token('active', '/manage_account')
-
+    user = api_fixture('users')['active']
+    visit page_with_token('active',"/users/#{api_fixture('users')['active']['uuid']}/repositories")
     repos = [[api_fixture('repositories')['foo'], true, true],
              [api_fixture('repositories')['repository3'], false, false],
              [api_fixture('repositories')['repository4'], true, false]]
@@ -135,8 +135,9 @@ class UserManageAccountTest < ActionDispatch::IntegrationTest
   end
 
   test "request shell access" do
+    user = api_fixture('users')['spectator']
     ActionMailer::Base.deliveries = []
-    visit page_with_token('spectator', '/manage_account')
+    visit page_with_token('spectator', "/users/#{api_fixture('users')['spectator']['uuid']}/virtual_machines")
     assert_text 'You do not have access to any virtual machines'
     click_link 'Send request for shell access'
 
@@ -148,7 +149,6 @@ class UserManageAccountTest < ActionDispatch::IntegrationTest
     assert_text 'A request for shell access was sent'
 
     # verify that the email was sent
-    user = api_fixture('users')['spectator']
     full_name = "#{user['first_name']} #{user['last_name']}"
     expected = "Shell account request from #{full_name} (#{user['email']}, #{user['uuid']})"
     found_email = 0
@@ -164,7 +164,7 @@ class UserManageAccountTest < ActionDispatch::IntegrationTest
     within('.navbar-fixed-top') do
       page.find("#notifications-menu").click
       within('.dropdown-menu') do
-        find('a', text: 'Manage account').click
+        find('a', text: 'Virtual machines').click
       end
     end
     assert_text 'You do not have access to any virtual machines.'
@@ -173,7 +173,14 @@ class UserManageAccountTest < ActionDispatch::IntegrationTest
   end
 
   test "create new repository" do
-    visit page_with_token("active_trustedclient", "/manage_account")
+    visit page_with_token("active_trustedclient")
+    within('.navbar-fixed-top') do
+      page.find("#notifications-menu").click
+      within('.dropdown-menu') do
+        assert_selector 'a', text: 'Repositories'
+        find('a', text: 'Repositories').click
+      end
+    end
     click_on "Add new repository"
     within ".modal-dialog" do
       fill_in "Name", with: "workbenchtest"
@@ -182,5 +189,45 @@ class UserManageAccountTest < ActionDispatch::IntegrationTest
     assert_text ":active/workbenchtest.git"
     assert_match /git@git.*:active\/workbenchtest.git/, page.text
     assert_match /https:\/\/git.*\/active\/workbenchtest.git/, page.text
+  end
+
+  [
+    ['virtual_machines', nil, 'Host name', 'testvm2.shell'],
+    ['repositories', 'Add new repository', 'It may take a minute or two before you can clone your new repository.', 'active/foo'],
+    ['/current_token', nil, 'HISTIGNORE=$HISTIGNORE', 'ARVADOS_API_TOKEN=3kg6k6lzmp9kj5'],
+    ['ssh_keys', 'Add new SSH key', 'Click here to learn about SSH keys in Arvados.', 'active'],
+  ].each do |page_name, button_name, look_for, content|
+    test "test user-settings menu for page #{page_name}" do
+      if page_name == '/current_token'
+        visit page_with_token('active', page_name)
+      else
+        visit page_with_token('active', "/users/#{api_fixture('users')['active']['uuid']}/#{page_name}")
+      end
+
+      assert page.has_text? content
+      if button_name
+        assert_selector 'a', text: button_name
+        find('a', text: button_name).click
+      end
+
+      assert page.has_text? look_for
+    end
+  end
+
+  [
+    ['virtual_machines', 'You do not have access to any virtual machines.'],
+    ['repositories', 'You do not seem to have access to any repositories.'],
+    ['/current_token', 'HISTIGNORE=$HISTIGNORE'],
+    ['ssh_keys', 'You have not yet set up an SSH public key for use with Arvados.'],
+  ].each do |page_name, look_for|
+    test "test user-settings menu for page #{page_name} when page is empty" do
+      if page_name == '/current_token'
+        visit page_with_token('user1_with_load', page_name)
+      else
+        visit page_with_token('admin', "/users/#{api_fixture('users')['user1_with_load']['uuid']}/#{page_name}")
+      end
+
+     assert page.has_text? look_for
+    end
   end
 end

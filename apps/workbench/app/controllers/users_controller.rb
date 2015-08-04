@@ -255,15 +255,14 @@ class UsersController < ApplicationController
     end
   end
 
-  def manage_account
-    # repositories current user can read / write
+  def repositories
     repo_links = Link.
       filter([['head_uuid', 'is_a', 'arvados#repository'],
               ['tail_uuid', '=', current_user.uuid],
               ['link_class', '=', 'permission'],
              ])
 
-    owned_repositories = Repository.where(owner_uuid: current_user.uuid)
+    owned_repositories = Repository.where(owner_uuid: @object.uuid)
 
     @my_repositories = (Repository.where(uuid: repo_links.collect(&:head_uuid)) |
                         owned_repositories).
@@ -280,10 +279,11 @@ class UsersController < ApplicationController
     owned_repositories.each do |repo|
       @repo_writable[repo.uuid] = 'can_manage'
     end
+  end
 
-    # virtual machines the current user can login into
+  def virtual_machines
     @my_vm_logins = {}
-    Link.where(tail_uuid: current_user.uuid,
+    Link.where(tail_uuid: @object.uuid,
                link_class: 'permission',
                name: 'can_login').
           each do |perm_link|
@@ -293,13 +293,16 @@ class UsersController < ApplicationController
             end
           end
     @my_virtual_machines = VirtualMachine.where(uuid: @my_vm_logins.keys)
+  end
 
-    # current user's ssh keys
-    @my_ssh_keys = AuthorizedKey.where(key_type: 'SSH', owner_uuid: current_user.uuid)
+  def ssh_keys
+    @my_ssh_keys = AuthorizedKey.where(key_type: 'SSH', owner_uuid: @object.uuid)
+  end
 
-    respond_to do |f|
-      f.html { render template: 'users/manage_account' }
-    end
+  def manage_account
+    repositories
+    virtual_machines
+    ssh_keys
   end
 
   def add_ssh_key_popup

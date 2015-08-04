@@ -6,9 +6,9 @@
                     'data-target' => '#add-repository-modal'}  %>
     </div>
     <h4 class="panel-title">
-      <a data-parent="#arv-adv-accordion" href="#manage_repositories">
+      <%= link_to repositories_user_path(current_user) do%>
         Repositories
-      </a>
+      <%end%>
     </h4>
   </div>
 
@@ -61,3 +61,5 @@
   <% end %>
 </div>
 </div>
+  <p>When you are using an Arvados virtual machine, you should clone the https:// URLs. This will authenticate automatically using your API token.</p>
+  <p>In order to clone git repositories using SSH, <%= link_to ssh_keys_user_path(current_user) do%> add an SSH key to your account<%end%> and clone the git@ URLs.</p>
