@@ -169,13 +169,15 @@ h3(#git_repositories_dir). git_repositories_dir
 
 The @git_repositories_dir@ setting specifies the directory where user git repositories will be stored.
 
-Some additional git setup will be done on the "next page":install-arv-git-httpd.html. For now, create an empty directory in the default location:
+The git server setup process is covered on "its own page":install-arv-git-httpd.html. For now, create an empty directory in the default location:
 
 <notextile>
 <pre><code>~$ <span class="userinput">sudo mkdir -p /var/lib/arvados/git/repositories</span>
 </code></pre></notextile>
 
-Example @application.yml@:
+If you intend to store your git repositories are stored in a different location, specify that location in @application.yml@.
+
+Default setting in @application.default.yml@:
 
 <notextile>
 <pre><code>  git_repositories_dir: <span class="userinput">/var/lib/arvados/git/repositories</span>
