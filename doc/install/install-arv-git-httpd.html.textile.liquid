@@ -326,3 +326,12 @@ In your API server's @config/application.yml@ file, add the following entry:
 </notextile>
 
 Make sure to include the trailing slash.
+
+h2. Restart nginx
+
+Restart nginx to make the nginx and API server configuration changes take effect.
+
+<notextile>
+<pre><code>gitserver:~$ <span class="userinput">sudo nginx -s reload</span>
+</code></pre>
+</notextile>
