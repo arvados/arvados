@@ -138,6 +138,21 @@ function run_command() {
   eval "$return_var=$ECODE"
 }
 
+title "Updating API server"
+SUM_ECODE=0
+run_puppet $IDENTIFIER.arvadosapi.com ECODE
+SUM_ECODE=$(($SUM_ECODE + $ECODE))
+run_command $IDENTIFIER.arvadosapi.com ECODE "/usr/local/bin/arvados-api-server-upgrade.sh"
+SUM_ECODE=$(($SUM_ECODE + $ECODE))
+run_command $IDENTIFIER.arvadosapi.com ECODE "dpkg -L arvados-mailchimp-plugin 2>/dev/null && apt-get install arvados-mailchimp-plugin --reinstall || echo"
+SUM_ECODE=$(($SUM_ECODE + $ECODE))
+
+if [[ "$SUM_ECODE" != "0" ]]; then
+  title "ERROR: Updating API server FAILED"
+  EXITCODE=$(($EXITCODE + $SUM_ECODE))
+  exit $EXITCODE
+fi
+
 title "Loading ARVADOS_API_HOST and ARVADOS_API_TOKEN"
 if [[ -f "$HOME/.config/arvados/$IDENTIFIER.arvadosapi.com.conf" ]]; then
   . $HOME/.config/arvados/$IDENTIFIER.arvadosapi.com.conf
@@ -191,21 +206,6 @@ fi
 title "Gathering list of shell and Keep nodes"
 SHELL_NODES=`ARVADOS_API_HOST=$ARVADOS_API_HOST ARVADOS_API_TOKEN=$ARVADOS_API_TOKEN arv virtual_machine list |jq .items[].hostname -r`
 KEEP_NODES=`ARVADOS_API_HOST=$ARVADOS_API_HOST ARVADOS_API_TOKEN=$ARVADOS_API_TOKEN arv keep_service list |jq .items[].service_host -r`
-
-title "Updating API server"
-SUM_ECODE=0
-run_puppet $IDENTIFIER.arvadosapi.com ECODE
-SUM_ECODE=$(($SUM_ECODE + $ECODE))
-run_command $IDENTIFIER.arvadosapi.com ECODE "/usr/local/bin/arvados-api-server-upgrade.sh"
-SUM_ECODE=$(($SUM_ECODE + $ECODE))
-run_command $IDENTIFIER.arvadosapi.com ECODE "dpkg -L arvados-mailchimp-plugin 2>/dev/null && apt-get install arvados-mailchimp-plugin --reinstall || echo"
-SUM_ECODE=$(($SUM_ECODE + $ECODE))
-
-if [[ "$SUM_ECODE" != "0" ]]; then
-  title "ERROR: Updating API server FAILED"
-  EXITCODE=$(($EXITCODE + $SUM_ECODE))
-  exit $EXITCODE
-fi
 
 title "Updating workbench"
 SUM_ECODE=0
