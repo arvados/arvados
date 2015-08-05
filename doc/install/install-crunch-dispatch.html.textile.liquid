@@ -90,13 +90,13 @@ h3. SLURM configuration essentials
 
 Whenever you change this file, you will need to update the copy _on every compute node_ as well as the controller node, and then run @sudo scontrol reconfigure@.
 
-*@ControlMachine@* should be a DNS name that resolve to the slurm controller (dispatch/API server). This must resolve correctly on all slurm worker nodes as well as the controller itself. In general slurm is very sensitive about all of the nodes being able to communicate with the controller _and one another,_ all using the same DNS names.
+*@ControlMachine@* should be a DNS name that resolves to the SLURM controller (dispatch/API server). This must resolve correctly on all SLURM worker nodes as well as the controller itself. In general SLURM is very sensitive about all of the nodes being able to communicate with the controller _and one another_, all using the same DNS names.
 
-*@NodeName=compute[0-255]@* establishes that the hostnames of the worker nodes will be compute0, compute1, etc.
+*@NodeName=compute[0-255]@* establishes that the hostnames of the worker nodes will be compute0, compute1, etc. through compute255.
 * There are several ways to compress sequences of names, like @compute[0-9,80,100-110]@. See the "hostlist" discussion in the @slurm.conf(5)@ and @scontrol(1)@ man pages for more information.
-* It is not necessary for all of the nodes listed here to be alive in order for slurm to work, although you should make sure the DNS entries exist. It is easiest to define lots of hostnames up front, assigning them to real nodes and updating your DNS data as the nodes appear. This minimizes the frequency of @slurm.conf@ updates and use of @scontrol reconfigure@.
+* It is not necessary for all of the nodes listed here to be alive in order for SLURM to work, although you should make sure the DNS entries exist. It is easiest to define lots of hostnames up front, assigning them to real nodes and updating your DNS records as the nodes appear. This minimizes the frequency of @slurm.conf@ updates and use of @scontrol reconfigure@.
 
-Each hostname appearing in @slurm.conf@ must resolve properly on the controller, on the worker itself, and on all other workers. Furthermore, the hostnames used in the configuration file must match the hostnames reported by @hostname@ or @hostname -s@ on the nodes themselves. This applies to the ControlMachine as well as the worker nodes.
+Each hostname in @slurm.conf@ must also resolve correctly on all SLURM worker nodes as well as the controller itself. Furthermore, the hostnames used in the configuration file must match the hostnames reported by @hostname@ or @hostname -s@ on the nodes themselves. This applies to the ControlMachine as well as the worker nodes.
 
 For example:
 * In @/etc/slurm-llnl/slurm.conf@ on control and worker nodes: @ControlMachine=uuid_prefix.your.domain@
@@ -116,10 +116,10 @@ If you want Arvados to assign names to your nodes with a different consecutive n
 * In @slurm.conf@: <code>NodeName=worker1-[0000-0255]</code>
 
 If your worker hostnames are already assigned by other means, and the full set of names is known in advance, have your worker node bootstrapping script (see "Installing a compute node":install-compute-node.html) send its current hostname, rather than expect Arvados to assign one.
-* application.yml: <code>assign_node_hostname: false</code>
-* slurm.conf: <code>NodeName=alice,bob,clay,darlene</code>
+* In @application.yml@: <code>assign_node_hostname: false</code>
+* In @slurm.conf@: <code>NodeName=alice,bob,clay,darlene</code>
 
-If your worker hostnames are already assigned by other means, but the full set of names is _not_ known in advance, you can use the slurm.conf and application.yml settings in the previous example, but you must also update @slurm.conf@ (both on the controller and on all worker nodes) and run @sudo scontrol reconfigure@ whenever a new node comes online.
+If your worker hostnames are already assigned by other means, but the full set of names is _not_ known in advance, you can use the @slurm.conf@ and @application.yml@ settings in the previous example, but you must also update @slurm.conf@ (both on the controller and on all worker nodes) and run @sudo scontrol reconfigure@ whenever a new node comes online.
 
 h2. Enable SLURM job dispatch
 
