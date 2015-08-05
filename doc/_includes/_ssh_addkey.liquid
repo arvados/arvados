@@ -5,13 +5,13 @@ h1(#workbench). Adding your key to Arvados Workbench
 
 h3. From the Workbench dashboard
 
-If you have no SSH keys registered, there should be a notification asking you to provide your SSH public key.  In the Workbench top navigation menu, look for a dropdown menu with an icon such as <span class="badge badge-alert">1</span> <span class="fa fa-lg fa-user"></span> <span class="caret"></span> (the number indicates there are new notifications).  Click on this icon and a dropdown menu should appear with a message asking you to add your public key. Click on the link *Click here to set up an SSH public key for use with Arvados*. Alternatively, you can click on the menu item *Manage account*. Either one of these actions will take you to the *Manage account* page. Click on the <span class="btn btn-primary">*+* Add new SSH key</span> button in this page. This will open a popup as shown in this screenshot:
+In the Workbench top navigation menu, click on the dropdown menu icon <span class="fa fa-lg fa-user"></span> <span class="caret"></span> to access the user settings menu and click on the menu item *SSH keys* to go to the *SSH keys* page. Click on the <span class="btn btn-primary">*+* Add new SSH key</span> button in this page. This will open a popup as shown in this screenshot:
 
 !{{ site.baseurl }}/images/ssh-adding-public-key.png!
 Paste your public key into the text area labeled *Public Key*, and click on the <span class="btn btn-primary">Submit</span> button. You are now ready to "log into an Arvados VM":#login.
 
 h1(#login). Using SSH to log into an Arvados VM
 
-To see a list of virtual machines that you have access to and determine the name and login information, click on the dropdown menu icon <span class="fa fa-lg fa-user"></span> <span class="caret"></span> in the upper right corner of the top navigation menu to access the user settings menu and click on the menu item *Manage account* to go to the account management page. On this page, you will see a *Virtual Machines* panel, which lists the virtual machines you can access. The *hostname* column lists the name of each available VM.  The *logins* column will have a list of comma separated values of the form @you@. In this guide the hostname will be *_shell_* and the login will be *_you_*.  Replace these with your hostname and login name as appropriate.
+To see a list of virtual machines that you have access to and determine the name and login information, click on the dropdown menu icon <span class="fa fa-lg fa-user"></span> <span class="caret"></span> in the upper right corner of the top navigation menu to access the user settings menu and click on the menu item *Virtual machines* to go to the Virtual machines page. This page lists the virtual machines you can access. The *hostname* column lists the name of each available VM.  The *logins* column will have a list of comma separated values of the form @you@. In this guide the hostname will be *_shell_* and the login will be *_you_*.  Replace these with your hostname and login name as appropriate.
 
 
