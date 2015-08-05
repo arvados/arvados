@@ -5,9 +5,11 @@ title: Create standard objects
 
 ...
 
-Next, we're going to use the Arvados CLI tools on the <strong>shell server</strong> to create a few Arvados objects.
+In these steps we use the Arvados CLI tools on the <strong>shell server</strong> to create a few Arvados objects. The CLI tools require an ARVADOS_API_TOKEN environment variable with a valid admin token. If you haven't already done so, set that up as shown in the "API token guide":../user/reference/api-tokens.html.
 
-First we create a repository object which will be used to set up a hosted clone of the arvados repository on this cluster.
+h3. Arvados repository
+
+Here we create a repository object which will be used to set up a hosted clone of the arvados repository on this cluster.
 
 <notextile>
 <pre><code>~$ <span class="userinput">prefix=`arv --format=uuid user current | cut -d- -f1`</span>
@@ -17,7 +19,7 @@ First we create a repository object which will be used to set up a hosted clone 
 ~$ <span class="userinput">echo "Arvados repository uuid is '$repo_uuid'"</span>
 </code></pre></notextile>
 
-Secondly, create a link object to make the repository object readable by the "All users" group, and therefore by every active user. This makes it possible for users to run the bundled Crunch scripts by specifying @"script_version":"master","repository":"arvados"@ rather than pulling the Arvados source tree into their own repositories.
+Create a link object to make the repository object readable by the "All users" group, and therefore by every active user. This makes it possible for users to run the bundled Crunch scripts by specifying @"script_version":"master","repository":"arvados"@ rather than pulling the Arvados source tree into their own repositories.
 
 <notextile>
 <pre><code>~$ <span class="userinput">read -rd $'\000' newlink &lt;&lt;EOF; arv link create --link "$newlink"</span>
@@ -30,7 +32,28 @@ Secondly, create a link object to make the repository object readable by the "Al
 EOF</span>
 </code></pre></notextile>
 
-Next, create a default project for the standard Arvados Docker images, and give all users read access to it. The project is owned by the system user.
+In a couple of minutes, your arvados-git-sync cron job will create an empty repository on your git server. Seed it with the real arvados repository. If your git credential helpers were configured correctly when you "set up your shell server":install-shell-server.html, the "git push" command will use your API token instead of prompting you for a username and password.
+
+<notextile>
+<pre><code>~$ <span class="userinput">cd /tmp</span>
+/tmp$ <span class="userinput">git clone --bare https://github.com/curoverse/arvados.git</span>
+/tmp <span class="userinput">git --git-dir arvados.git push https://git.<b>uuid_prefix.your.domain</b>/arvados.git '*:*'</span>
+</code></pre>
+</notextile>
+
+If you did not set up a HTTPS service, you can push to <code>git@git.uuid_prefix.your.domain:arvados.git</code> using your SSH key, or by logging in to your git server and using sudo.
+
+<notextile>
+<pre><code>gitserver:~$ <span class="userinput">sudo -u git -i bash</span>
+git@gitserver:~$ <span class="userinput">git clone --bare https://github.com/curoverse/arvados.git /tmp/arvados.git</span>
+git@gitserver:~$ <span class="userinput">cd /tmp/arvados.git</span>
+git@gitserver:/tmp/arvados.git$ <span class="userinput">gitolite push /var/lib/arvados/git/repositories/<b>your_arvados_repo_uuid</b>.git '*:*'</span>
+</code></pre>
+</notextile>
+
+h3. Default project for docker images
+
+Here we create a default project for the standard Arvados Docker images, and give all users read access to it. The project is owned by the system user.
 
 <notextile>
 <pre><code>~$ <span class="userinput">project_uuid=`arv --format=uuid group create --group "{\"owner_uuid\":\"$prefix-tpzed-000000000000000\", \"name\":\"Arvados Standard Docker Images\"}"`</span>

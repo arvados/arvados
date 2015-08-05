@@ -59,9 +59,9 @@ ADD keep_proxy.json /root/
 
 # Set up update-gitolite.rb
 RUN mkdir /usr/local/arvados/config -p
-ADD generated/arvados-clients.yml /usr/local/arvados/config/
+ADD generated/arvados-clients.yml /usr/src/arvados/services/api/config/
 ADD .gitolite.rc /usr/local/arvados/config/
-ADD update-gitolite.rb /usr/local/arvados/
+RUN ln /usr/src/arvados/services/api/script/arvados-git-sync.rb /usr/local/bin/
 
 # Supervisor.
 ADD supervisor.conf /etc/supervisor/conf.d/arvados.conf

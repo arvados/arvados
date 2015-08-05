@@ -167,21 +167,22 @@ Example @application.yml@:
 
 h3(#git_repositories_dir). git_repositories_dir
 
-The @git_repositories_dir@ setting specifies the directory where user git repositories will be stored.  By default this is @/var/lib/arvados/git@.
+The @git_repositories_dir@ setting specifies the directory where user git repositories will be stored.
 
-Example @application.yml@:
+The git server setup process is covered on "its own page":install-arv-git-httpd.html. For now, create an empty directory in the default location:
 
 <notextile>
-<pre><code>  git_repositories_dir: <span class="userinput">/var/lib/arvados/git</span>
+<pre><code>~$ <span class="userinput">sudo mkdir -p /var/lib/arvados/git/repositories</span>
+</code></pre></notextile>
+
+If you intend to store your git repositories in a different location, specify that location in @application.yml@.
+
+Default setting in @application.default.yml@:
+
+<notextile>
+<pre><code>  git_repositories_dir: <span class="userinput">/var/lib/arvados/git/repositories</span>
 </code></pre>
 </notextile>
-
-Make sure a clone of the arvados repository exists in @git_repositories_dir@.
-
-<notextile>
-<pre><code>~$ <span class="userinput">sudo mkdir -p /var/lib/arvados/git</span>
-~$ <span class="userinput">sudo git clone --bare git://git.curoverse.com/arvados.git /var/lib/arvados/git/arvados.git</span>
-</code></pre></notextile>
 
 h3(#git_internal_dir). git_internal_dir
 
@@ -199,9 +200,10 @@ h2. Prepare the API server deployment
 Now that all your configuration is in place, run @/usr/local/bin/arvados-api-server-upgrade.sh@.  This will install and check your configuration, install necessary gems, and run any necessary database setup.
 
 {% include 'notebox_begin' %}
-You can safely ignore the following error message you may see when loading the database structure:
-<notextile>
-<pre><code>ERROR:  must be owner of extension plpgsql</code></pre></notextile>
+You can safely ignore the following messages if they appear while this script runs:
+<pre>Don't run Bundler as root. Bundler can ask for sudo if it is needed, and installing your bundle as root will
+break this application for all non-root users on this machine.</pre>
+<pre>fatal: Not a git repository (or any of the parent directories): .git</pre>
 {% include 'notebox_end' %}
 
 This command aborts when it encounters an error.  It's safe to rerun multiple times, so if there's a problem with your configuration, you can fix that and try again.
@@ -322,7 +324,12 @@ server {
 </code></pre>
 </li>
 
-<li>Restart Nginx.</li>
+<li><p>Restart Nginx:</p>
+
+<pre><code>~$ <span class="userinput">sudo nginx -s reload</span>
+</code></pre>
+
+</li>
 
 </ol>
 </notextile>
