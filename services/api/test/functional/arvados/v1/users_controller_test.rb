@@ -656,6 +656,8 @@ class Arvados::V1::UsersControllerTest < ActionController::TestCase
     assert_equal 'Welcome to Curoverse - shell account enabled', setup_email.subject
     assert (setup_email.body.to_s.include? 'Your Arvados shell account has been set up'),
         'Expected Your Arvados shell account has been set up in email body'
+    assert (setup_email.body.to_s.include? '/virtual_machines'),
+        'Expected /virtual_machines link to appear in email body'
     assert (setup_email.body.to_s.include? Rails.configuration.workbench_address),
         'Expected workbench url in email body'
   end

@@ -5,8 +5,8 @@ class UserSettingsMenuTest < ActionDispatch::IntegrationTest
     need_javascript
   end
 
-  # test manage_account page
-  def verify_manage_account user
+  # test ssh_keys page
+  def verify_settings_menu user
     if user['is_active']
       within('.navbar-fixed-top') do
         page.find("#notifications-menu").click
@@ -66,9 +66,9 @@ class UserSettingsMenuTest < ActionDispatch::IntegrationTest
     ['active', api_fixture('users')['active']],
     ['admin', api_fixture('users')['admin']],
   ].each do |token, user|
-    test "test manage account for user #{token}" do
+    test "test settings menu for user #{token}" do
       visit page_with_token(token)
-      verify_manage_account user
+      verify_settings_menu user
     end
   end
 
@@ -84,7 +84,7 @@ class UserSettingsMenuTest < ActionDispatch::IntegrationTest
     ['job_reader', :ssh, :pipeline],
     ['active'],
   ].each do |user, *expect|
-    test "manage account for #{user} with notifications #{expect.inspect}" do
+    test "settings menu for #{user} with notifications #{expect.inspect}" do
       Rails.configuration.anonymous_user_token = false
       visit page_with_token(user)
       click_link 'notifications-menu'

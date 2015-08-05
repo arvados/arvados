@@ -4,9 +4,9 @@
 Hi there,
 <% end -%>
 
-Your Arvados shell account has been set up. Please visit the manage account page <% if Rails.configuration.workbench_address %>at
+Your Arvados shell account has been set up. Please visit the virtual machines page <% if Rails.configuration.workbench_address %>at
 
-  <%= Rails.configuration.workbench_address %>/manage_account <% else %><% end %>
+  <%= Rails.configuration.workbench_address %>users/<%= @user.uuid%>/virtual_machines <% else %><% end %>
 
 for connection instructions.
 
