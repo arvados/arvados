@@ -59,7 +59,7 @@
 
                 <li role="menuitem">
                   <%= link_to virtual_machines_user_path(current_user), role: 'menu-item' do %>
-                    <i class="fa fa-lg fa-code-fork fa-fw"></i> Virtual machines
+                    <i class="fa fa-lg fa-terminal fa-fw"></i> Virtual machines
                   <% end %>
                 </li>
                 <li role="menuitem">
@@ -71,12 +71,6 @@
                 <li role="menuitem">
                   <%= link_to ssh_keys_user_path(current_user), role: 'menu-item' do %>
                     <i class="fa fa-lg fa-key fa-fw"></i> SSH keys
-                  <% end %>
-                </li>
-
-                <li role="menuitem">
-                  <%= link_to manage_account_user_path(current_user), role: 'menu-item' do %>
-                    <i class="fa fa-lg fa-key fa-fw"></i> Manage account
                   <% end %>
                 </li>
 

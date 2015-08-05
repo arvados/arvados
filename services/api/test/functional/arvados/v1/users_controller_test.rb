@@ -656,8 +656,7 @@ class Arvados::V1::UsersControllerTest < ActionController::TestCase
     assert_equal 'Welcome to Curoverse - shell account enabled', setup_email.subject
     assert (setup_email.body.to_s.include? 'Your Arvados shell account has been set up'),
         'Expected Your Arvados shell account has been set up in email body'
-    assert (setup_email.body.to_s.include? Rails.configuration.workbench_address),
-        'Expected workbench url in email body'
+    assert (setup_email.body.to_s.include? "#{Rails.configuration.workbench_address}users/#{created['uuid']}/virtual_machines"), 'Expected virtual machines url in email body'
   end
 
   test "non-admin user can get basic information about readable users" do
