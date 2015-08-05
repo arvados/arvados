@@ -60,7 +60,7 @@ git push
 su - git -c "git clone --bare git://github.com/curoverse/arvados.git /home/git/repositories/arvados.git"
 
 echo "ARVADOS_API_HOST_INSECURE=yes" > /etc/cron.d/gitolite-update
-echo "*/2 * * * * root /bin/bash -c 'source /etc/profile.d/rvm.sh && /usr/local/arvados/update-gitolite.rb production'" >> /etc/cron.d/gitolite-update
+echo "*/2 * * * * root /bin/bash -c 'source /etc/profile.d/rvm.sh && /usr/src/arvados/services/api/script/arvados-git-sync.rb production'" >> /etc/cron.d/gitolite-update
 
 # Create/update the repos now
 . /etc/profile.d/rvm.sh

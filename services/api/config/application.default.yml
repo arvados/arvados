@@ -69,7 +69,7 @@ common:
   # able to submit crunch jobs. To pass the test suites, put a clone
   # of the arvados tree in {git_repositories_dir}/arvados.git or
   # {git_repositories_dir}/arvados/.git
-  git_repositories_dir: /var/lib/arvados/git
+  git_repositories_dir: /var/lib/arvados/git/repositories
 
   # This is a (bare) repository that stores commits used in jobs.  When a job
   # runs, the source commits are first fetched into this repository, then this

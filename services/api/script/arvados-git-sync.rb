@@ -21,19 +21,18 @@ DEBUG = 1
 
 # load and merge in the environment-specific application config info
 # if present, overriding base config parameters as specified
-path = File.dirname(__FILE__) + '/config/arvados-clients.yml'
+path = File.absolute_path('../../config/arvados-clients.yml', __FILE__)
 if File.exists?(path) then
   cp_config = YAML.load_file(path)[ENV['RAILS_ENV']]
 else
-  puts "Please create a\n " + File.dirname(__FILE__) + "/config/arvados-clients.yml\n file"
+  puts "Please create a\n #{path}\n file"
   exit 1
 end
 
 gitolite_url = cp_config['gitolite_url']
 gitolite_arvados_git_user_key = cp_config['gitolite_arvados_git_user_key']
 
-gitolite_tmpdir = File.join(File.absolute_path(File.dirname(__FILE__)),
-                            cp_config['gitolite_tmp'])
+gitolite_tmpdir = cp_config['gitolite_tmp']
 gitolite_admin = File.join(gitolite_tmpdir, 'gitolite-admin')
 gitolite_admin_keydir = File.join(gitolite_admin, 'keydir')
 gitolite_keydir = File.join(gitolite_admin, 'keydir', 'arvados')
