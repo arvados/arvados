@@ -172,6 +172,7 @@ class Collection < ArvadosModel
   end
 
   def check_encoding
+    return true if !manifest_text
     if manifest_text.encoding.name == 'UTF-8' and manifest_text.valid_encoding?
       true
     else
@@ -198,7 +199,7 @@ class Collection < ArvadosModel
       Keep::Manifest.validate! manifest_text
       true
     rescue => e
-      logger.warn e
+      errors.add :manifest_text, e.message
       false
     end
   end

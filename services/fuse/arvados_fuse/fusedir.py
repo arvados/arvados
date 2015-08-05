@@ -23,6 +23,7 @@ _logger = logging.getLogger('arvados.arvados_fuse')
 # appear as underscores in the fuse mount.)
 _disallowed_filename_characters = re.compile('[\x00/]')
 
+# '.' and '..' are not reachable if API server is newer than #6277
 def sanitize_filename(dirty):
     """Replace disallowed filename characters with harmless "_"."""
     if dirty is None:

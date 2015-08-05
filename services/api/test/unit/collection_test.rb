@@ -39,6 +39,39 @@ class CollectionTest < ActiveSupport::TestCase
     end
   end
 
+  [
+    nil,
+    ". 0:0:foo.txt",
+    ". d41d8cd98f00b204e9800998ecf8427e foo.txt",
+    "d41d8cd98f00b204e9800998ecf8427e 0:0:foo.txt",
+    ". d41d8cd98f00b204e9800998ecf8427e 0:0:foo.txt",
+  ].each do |manifest_text|
+    test "create collection with invalid manifest text #{manifest_text} and expect error" do
+      act_as_system_user do
+        c = Collection.create(manifest_text: manifest_text)
+        assert !c.valid?
+      end
+    end
+  end
+
+  [
+    nil,
+    ". 0:0:foo.txt",
+    ". d41d8cd98f00b204e9800998ecf8427e foo.txt",
+    "d41d8cd98f00b204e9800998ecf8427e 0:0:foo.txt",
+    ". d41d8cd98f00b204e9800998ecf8427e 0:0:foo.txt",
+  ].each do |manifest_text|
+    test "update collection with invalid manifest text #{manifest_text} and expect error" do
+      act_as_system_user do
+        c = create_collection 'foo', Encoding::US_ASCII
+        assert c.valid?
+
+        c.update_attribute 'manifest_text', manifest_text
+        assert !c.valid?
+      end
+    end
+  end
+
   test 'create and update collection and verify file_names' do
     act_as_system_user do
       c = create_collection 'foo', Encoding::US_ASCII
