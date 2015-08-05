@@ -809,4 +809,82 @@ EOS
     assert_not_nil json_response['uuid']
     assert_equal 'value_1', json_response['properties']['property_1']
   end
+
+  [
+    ". 0:0:foo.txt",
+    ". d41d8cd98f00b204e9800998ecf8427e foo.txt",
+    "d41d8cd98f00b204e9800998ecf8427e 0:0:foo.txt",
+    ". d41d8cd98f00b204e9800998ecf8427e 0:0:foo.txt",
+  ].each do |manifest_text|
+    test "create collection with invalid manifest #{manifest_text} and expect error" do
+      authorize_with :active
+      post :create, {
+        collection: {
+          manifest_text: manifest_text,
+          portable_data_hash: "d41d8cd98f00b204e9800998ecf8427e+0"
+        }
+      }
+      assert_response 422
+      response_errors = json_response['errors']
+      assert_not_nil response_errors, 'Expected error in response'
+      assert(response_errors.first.include?('Invalid manifest'),
+             "Expected 'Invalid manifest' error in #{response_errors.first}")
+    end
+  end
+
+  [
+    [nil, "d41d8cd98f00b204e9800998ecf8427e+0"],
+    ["", "d41d8cd98f00b204e9800998ecf8427e+0"],
+    [". d41d8cd98f00b204e9800998ecf8427e 0:0:foo.txt\n", "d30fe8ae534397864cb96c544f4cf102+47"],
+  ].each do |manifest_text, pdh|
+    test "create collection with valid manifest #{manifest_text.inspect} and expect success" do
+      authorize_with :active
+      post :create, {
+        collection: {
+          manifest_text: manifest_text,
+          portable_data_hash: pdh
+        }
+      }
+      assert_response 200
+    end
+  end
+
+  [
+    ". 0:0:foo.txt",
+    ". d41d8cd98f00b204e9800998ecf8427e foo.txt",
+    "d41d8cd98f00b204e9800998ecf8427e 0:0:foo.txt",
+    ". d41d8cd98f00b204e9800998ecf8427e 0:0:foo.txt",
+  ].each do |manifest_text|
+    test "update collection with invalid manifest #{manifest_text} and expect error" do
+      authorize_with :active
+      post :update, {
+        id: 'zzzzz-4zz18-bv31uwvy3neko21',
+        collection: {
+          manifest_text: manifest_text,
+        }
+      }
+      assert_response 422
+      response_errors = json_response['errors']
+      assert_not_nil response_errors, 'Expected error in response'
+      assert(response_errors.first.include?('Invalid manifest'),
+             "Expected 'Invalid manifest' error in #{response_errors.first}")
+    end
+  end
+
+  [
+    nil,
+    "",
+    ". d41d8cd98f00b204e9800998ecf8427e 0:0:foo.txt\n",
+  ].each do |manifest_text|
+    test "update collection with valid manifest #{manifest_text.inspect} and expect success" do
+      authorize_with :active
+      post :update, {
+        id: 'zzzzz-4zz18-bv31uwvy3neko21',
+        collection: {
+          manifest_text: manifest_text,
+        }
+      }
+      assert_response 200
+    end
+  end
 end

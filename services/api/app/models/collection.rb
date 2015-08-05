@@ -8,8 +8,9 @@ class Collection < ArvadosModel
 
   serialize :properties, Hash
 
+  before_validation :default_empty_manifest
   before_validation :check_encoding
-  before_validation :log_invalid_manifest_format
+  before_validation :check_manifest_validity
   before_validation :check_signatures
   before_validation :strip_signatures_and_update_replication_confirmed
   validate :ensure_pdh_matches_manifest_text
@@ -171,6 +172,10 @@ class Collection < ArvadosModel
     names[0,2**12]
   end
 
+  def default_empty_manifest
+    self.manifest_text ||= ''
+  end
+
   def check_encoding
     if manifest_text.encoding.name == 'UTF-8' and manifest_text.valid_encoding?
       true
@@ -193,13 +198,14 @@ class Collection < ArvadosModel
     end
   end
 
-  def log_invalid_manifest_format
+  def check_manifest_validity
     begin
-      Keep::Manifest.validate! manifest_text if manifest_text
-    rescue => e
-      logger.warn e
+      Keep::Manifest.validate! manifest_text
+      true
+    rescue ArgumentError => e
+      errors.add :manifest_text, e.message
+      false
     end
-    true
   end
 
   def signed_manifest_text
