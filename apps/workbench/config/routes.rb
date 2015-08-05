@@ -46,7 +46,6 @@ ArvadosWorkbench::Application.routes.draw do
     get 'setup_popup', :on => :member
     get 'profile', :on => :member
     post 'request_shell_access', :on => :member
-    get 'manage_account', :on => :member
     get 'virtual_machines', :on => :member
     get 'repositories', :on => :member
     get 'ssh_keys', :on => :member
