@@ -110,7 +110,6 @@ class UserSettingsMenuTest < ActionDispatch::IntegrationTest
   end
 
   test "verify repositories for active user" do
-    user = api_fixture('users')['active']
     visit page_with_token('active',"/users/#{api_fixture('users')['active']['uuid']}/repositories")
     repos = [[api_fixture('repositories')['foo'], true, true],
              [api_fixture('repositories')['repository3'], false, false],
@@ -135,7 +134,6 @@ class UserSettingsMenuTest < ActionDispatch::IntegrationTest
   end
 
   test "request shell access" do
-    user = api_fixture('users')['spectator']
     ActionMailer::Base.deliveries = []
     visit page_with_token('spectator', "/users/#{api_fixture('users')['spectator']['uuid']}/virtual_machines")
     assert_text 'You do not have access to any virtual machines'
@@ -149,6 +147,7 @@ class UserSettingsMenuTest < ActionDispatch::IntegrationTest
     assert_text 'A request for shell access was sent'
 
     # verify that the email was sent
+    user = api_fixture('users')['spectator']
     full_name = "#{user['first_name']} #{user['last_name']}"
     expected = "Shell account request from #{full_name} (#{user['email']}, #{user['uuid']})"
     found_email = 0
