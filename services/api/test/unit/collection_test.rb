@@ -40,7 +40,6 @@ class CollectionTest < ActiveSupport::TestCase
   end
 
   [
-    nil,
     ". 0:0:foo.txt",
     ". d41d8cd98f00b204e9800998ecf8427e foo.txt",
     "d41d8cd98f00b204e9800998ecf8427e 0:0:foo.txt",
@@ -49,17 +48,25 @@ class CollectionTest < ActiveSupport::TestCase
     test "create collection with invalid manifest text #{manifest_text} and expect error" do
       act_as_system_user do
         c = Collection.create(manifest_text: manifest_text)
-        if manifest_text
-          assert !c.valid?
-        else
-          assert c.valid?
-        end
+        assert !c.valid?
       end
     end
   end
 
   [
     nil,
+    "",
+    ". d41d8cd98f00b204e9800998ecf8427e 0:0:foo.txt\n",
+  ].each do |manifest_text|
+    test "create collection with valid manifest text #{manifest_text.inspect} and expect success" do
+      act_as_system_user do
+        c = Collection.create(manifest_text: manifest_text)
+        assert c.valid?
+      end
+    end
+  end
+
+  [
     ". 0:0:foo.txt",
     ". d41d8cd98f00b204e9800998ecf8427e foo.txt",
     "d41d8cd98f00b204e9800998ecf8427e 0:0:foo.txt",
@@ -71,11 +78,23 @@ class CollectionTest < ActiveSupport::TestCase
         assert c.valid?
 
         c.update_attribute 'manifest_text', manifest_text
-        if manifest_text
-          assert !c.valid?
-        else
-          assert c.valid?
-        end
+        assert !c.valid?
+      end
+    end
+  end
+
+  [
+    nil,
+    "",
+    ". d41d8cd98f00b204e9800998ecf8427e 0:0:foo.txt\n",
+  ].each do |manifest_text|
+    test "update collection with valid manifest text #{manifest_text.inspect} and expect success" do
+      act_as_system_user do
+        c = create_collection 'foo', Encoding::US_ASCII
+        assert c.valid?
+
+        c.update_attribute 'manifest_text', manifest_text
+        assert c.valid?
       end
     end
   end

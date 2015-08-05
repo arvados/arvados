@@ -202,7 +202,7 @@ class Collection < ArvadosModel
     begin
       Keep::Manifest.validate! manifest_text
       true
-    rescue => e
+    rescue ArgumentError => e
       errors.add :manifest_text, e.message
       false
     end
