@@ -822,18 +822,17 @@ EOS
       post :create, {
         collection: {
           manifest_text: manifest_text,
-          portable_data_hash: "d30fe8ae534397864cb96c544f4cf102+47"
+          portable_data_hash: "d41d8cd98f00b204e9800998ecf8427e+0"
         }
       }
-      assert_response 422
-      response_errors = json_response['errors']
-      assert_not_nil response_errors, 'Expected error in response'
       if manifest_text
+        assert_response 422
+        response_errors = json_response['errors']
+        assert_not_nil response_errors, 'Expected error in response'
         assert(response_errors.first.include?('Invalid manifest'),
                "Expected 'Invalid manifest' error in #{response_errors.first}")
       else
-        assert(response_errors.first.include?('No manifest found'),
-               "Expected 'No manifest found' error in #{response_errors.first}")
+        assert_response 200
       end
     end
   end
@@ -853,15 +852,14 @@ EOS
           manifest_text: manifest_text,
         }
       }
-      assert_response 422
-      response_errors = json_response['errors']
-      assert_not_nil response_errors, 'Expected error in response'
       if manifest_text
+        assert_response 422
+        response_errors = json_response['errors']
+        assert_not_nil response_errors, 'Expected error in response'
         assert(response_errors.first.include?('Invalid manifest'),
                "Expected 'Invalid manifest' error in #{response_errors.first}")
       else
-        assert(response_errors.first.include?('No manifest found'),
-               "Expected 'No manifest found' error in #{response_errors.first}")
+        assert_response 200
       end
     end
   end

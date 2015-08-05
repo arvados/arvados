@@ -49,7 +49,11 @@ class CollectionTest < ActiveSupport::TestCase
     test "create collection with invalid manifest text #{manifest_text} and expect error" do
       act_as_system_user do
         c = Collection.create(manifest_text: manifest_text)
-        assert !c.valid?
+        if manifest_text
+          assert !c.valid?
+        else
+          assert c.valid?
+        end
       end
     end
   end
@@ -67,7 +71,11 @@ class CollectionTest < ActiveSupport::TestCase
         assert c.valid?
 
         c.update_attribute 'manifest_text', manifest_text
-        assert !c.valid?
+        if manifest_text
+          assert !c.valid?
+        else
+          assert c.valid?
+        end
       end
     end
   end

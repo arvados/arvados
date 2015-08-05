@@ -8,6 +8,7 @@ class Collection < ArvadosModel
 
   serialize :properties, Hash
 
+  before_validation :default_empty_manifest
   before_validation :check_encoding
   before_validation :check_manifest_validity
   before_validation :check_signatures
@@ -171,8 +172,11 @@ class Collection < ArvadosModel
     names[0,2**12]
   end
 
+  def default_empty_manifest
+    self.manifest_text ||= ''
+  end
+
   def check_encoding
-    return true if !manifest_text
     if manifest_text.encoding.name == 'UTF-8' and manifest_text.valid_encoding?
       true
     else
