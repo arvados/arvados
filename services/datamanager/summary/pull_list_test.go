@@ -9,13 +9,13 @@ import (
 )
 
 // Gocheck boilerplate
-func Test(t *testing.T) {
+func TestPullLists(t *testing.T) {
 	TestingT(t)
 }
 
-type MySuite struct{}
+type PullSuite struct{}
 
-var _ = Suite(&MySuite{})
+var _ = Suite(&PullSuite{})
 
 // Helper method to declare string sets more succinctly
 // Could be placed somewhere more general.
@@ -27,7 +27,7 @@ func stringSet(slice ...string) (m map[string]struct{}) {
 	return
 }
 
-func (s *MySuite) TestPullListPrintsJSONCorrectly(c *C) {
+func (s *PullSuite) TestPullListPrintsJSONCorrectly(c *C) {
 	pl := PullList{PullRequest{
 		Locator: Locator(blockdigest.MakeTestDigestSpecifySize(0xBadBeef, 56789)),
 		Servers: []string{"keep0.qr1hi.arvadosapi.com:25107",
@@ -41,7 +41,7 @@ func (s *MySuite) TestPullListPrintsJSONCorrectly(c *C) {
 	c.Check(string(b), Equals, expectedOutput)
 }
 
-func (s *MySuite) TestCreatePullServers(c *C) {
+func (s *PullSuite) TestCreatePullServers(c *C) {
 	var cs CanonicalString
 	c.Check(
 		CreatePullServers(cs,
@@ -54,7 +54,7 @@ func (s *MySuite) TestCreatePullServers(c *C) {
 
 	c.Check(
 		CreatePullServers(cs,
-			stringSet("keep0:25107", "keep1:25108"),
+			stringSet("https://keep0:25107", "https://keep1:25108"),
 			stringSet(),
 			[]string{},
 			5),
@@ -63,64 +63,64 @@ func (s *MySuite) TestCreatePullServers(c *C) {
 
 	c.Check(
 		CreatePullServers(cs,
-			stringSet("keep0:25107", "keep1:25108"),
-			stringSet("keep0:25107"),
-			[]string{"keep0:25107"},
+			stringSet("https://keep0:25107", "https://keep1:25108"),
+			stringSet("https://keep0:25107"),
+			[]string{"https://keep0:25107"},
 			5),
 		DeepEquals,
-		PullServers{To: []string{}, From: []string{"keep0:25107"}})
+		PullServers{To: []string{}, From: []string{"https://keep0:25107"}})
 
 	c.Check(
 		CreatePullServers(cs,
-			stringSet("keep0:25107", "keep1:25108"),
-			stringSet("keep3:25110", "keep2:25109", "keep1:25108", "keep0:25107"),
-			[]string{"keep3:25110", "keep2:25109", "keep1:25108", "keep0:25107"},
+			stringSet("https://keep0:25107", "https://keep1:25108"),
+			stringSet("https://keep3:25110", "https://keep2:25109", "https://keep1:25108", "https://keep0:25107"),
+			[]string{"https://keep3:25110", "https://keep2:25109", "https://keep1:25108", "https://keep0:25107"},
 			5),
 		DeepEquals,
-		PullServers{To: []string{"keep3:25110", "keep2:25109"},
-			From: []string{"keep1:25108", "keep0:25107"}})
+		PullServers{To: []string{"https://keep3:25110", "https://keep2:25109"},
+			From: []string{"https://keep1:25108", "https://keep0:25107"}})
 
 	c.Check(
 		CreatePullServers(cs,
-			stringSet("keep0:25107", "keep1:25108"),
-			stringSet("keep3:25110", "keep1:25108", "keep0:25107"),
-			[]string{"keep3:25110", "keep2:25109", "keep1:25108", "keep0:25107"},
+			stringSet("https://keep0:25107", "https://keep1:25108"),
+			stringSet("https://keep3:25110", "https://keep1:25108", "https://keep0:25107"),
+			[]string{"https://keep3:25110", "https://keep2:25109", "https://keep1:25108", "https://keep0:25107"},
 			5),
 		DeepEquals,
-		PullServers{To: []string{"keep3:25110"},
-			From: []string{"keep1:25108", "keep0:25107"}})
+		PullServers{To: []string{"https://keep3:25110"},
+			From: []string{"https://keep1:25108", "https://keep0:25107"}})
 
 	c.Check(
 		CreatePullServers(cs,
-			stringSet("keep0:25107", "keep1:25108"),
-			stringSet("keep3:25110", "keep2:25109", "keep1:25108", "keep0:25107"),
-			[]string{"keep3:25110", "keep2:25109", "keep1:25108", "keep0:25107"},
+			stringSet("https://keep0:25107", "https://keep1:25108"),
+			stringSet("https://keep3:25110", "https://keep2:25109", "https://keep1:25108", "https://keep0:25107"),
+			[]string{"https://keep3:25110", "https://keep2:25109", "https://keep1:25108", "https://keep0:25107"},
 			1),
 		DeepEquals,
-		PullServers{To: []string{"keep3:25110"},
-			From: []string{"keep1:25108", "keep0:25107"}})
+		PullServers{To: []string{"https://keep3:25110"},
+			From: []string{"https://keep1:25108", "https://keep0:25107"}})
 
 	c.Check(
 		CreatePullServers(cs,
-			stringSet("keep0:25107", "keep1:25108"),
-			stringSet("https://keep3:25110", "http://keep2:25109",
-				"https://keep1:25108", "http://keep0:25107"),
-			[]string{"https://keep3:25110", "http://keep2:25109",
-				"https://keep1:25108", "http://keep0:25107"},
+			stringSet("https://keep0:25107", "https://keep1:25108"),
+			stringSet("https://keep3:25110", "https://keep2:25109",
+				"https://keep1:25108", "https://keep0:25107"),
+			[]string{"https://keep3:25110", "https://keep2:25109",
+				"https://keep1:25108", "https://keep0:25107"},
 			1),
 		DeepEquals,
-		PullServers{To: []string{"keep3:25110"},
-			From: []string{"https://keep1:25108", "http://keep0:25107"}})
+		PullServers{To: []string{"https://keep3:25110"},
+			From: []string{"https://keep1:25108", "https://keep0:25107"}})
 
 	c.Check(
 		CreatePullServers(cs,
-			stringSet("keep0:25107", "keep1:25108"),
-			stringSet("keep3:25110", "keep2:25109", "keep1:25108", "keep0:25107"),
-			[]string{"keep3:25110", "keep2:25109", "keep1:25108", "keep0:25107"},
+			stringSet("https://keep0:25107", "https://keep1:25108"),
+			stringSet("https://keep3:25110", "https://keep2:25109", "https://keep1:25108", "https://keep0:25107"),
+			[]string{"https://keep3:25110", "https://keep2:25109", "https://keep1:25108", "https://keep0:25107"},
 			0),
 		DeepEquals,
 		PullServers{To: []string{},
-			From: []string{"keep1:25108", "keep0:25107"}})
+			From: []string{"https://keep1:25108", "https://keep0:25107"}})
 }
 
 // Checks whether two pull list maps are equal. Since pull lists are
@@ -155,7 +155,7 @@ var PullListMapEquals Checker = &pullListMapEqualsChecker{&CheckerInfo{
 	Params: []string{"obtained", "expected"},
 }}
 
-func (s *MySuite) TestBuildPullLists(c *C) {
+func (s *PullSuite) TestBuildPullLists(c *C) {
 	c.Check(
 		BuildPullLists(map[Locator]PullServers{}),
 		PullListMapEquals,
@@ -269,11 +269,4 @@ func (s *MySuite) TestBuildPullLists(c *C) {
 				PullRequest{locator4, []string{"f1", "f5"}},
 			},
 		})
-}
-
-func (s *MySuite) TestRemoveProtocolPrefix(c *C) {
-	c.Check(RemoveProtocolPrefix("blah"), Equals, "blah")
-	c.Check(RemoveProtocolPrefix("bl/ah"), Equals, "ah")
-	c.Check(RemoveProtocolPrefix("http://blah.com"), Equals, "blah.com")
-	c.Check(RemoveProtocolPrefix("https://blah.com:8900"), Equals, "blah.com:8900")
 }

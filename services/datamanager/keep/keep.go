@@ -5,10 +5,12 @@ package keep
 import (
 	"bufio"
 	"encoding/json"
+	"errors"
 	"flag"
 	"fmt"
 	"git.curoverse.com/arvados.git/sdk/go/arvadosclient"
 	"git.curoverse.com/arvados.git/sdk/go/blockdigest"
+	"git.curoverse.com/arvados.git/sdk/go/keepclient"
 	"git.curoverse.com/arvados.git/sdk/go/logger"
 	"git.curoverse.com/arvados.git/services/datamanager/loggerutil"
 	"io"
@@ -22,6 +24,7 @@ import (
 )
 
 type ServerAddress struct {
+	SSL  bool   `json:service_ssl_flag`
 	Host string `json:"service_host"`
 	Port int    `json:"service_port"`
 	Uuid string `json:"uuid"`
@@ -85,14 +88,18 @@ func init() {
 
 // TODO(misha): Change this to include the UUID as well.
 func (s ServerAddress) String() string {
-	return s.HostPort()
+	return s.URL()
 }
 
-func (s ServerAddress) HostPort() string {
-	return fmt.Sprintf("%s:%d", s.Host, s.Port)
+func (s ServerAddress) URL() string {
+	if s.SSL {
+		return fmt.Sprintf("https://%s:%d", s.Host, s.Port)
+	} else {
+		return fmt.Sprintf("http://%s:%d", s.Host, s.Port)
+	}
 }
 
-func getDataManagerToken(arvLogger *logger.Logger) string {
+func GetDataManagerToken(arvLogger *logger.Logger) string {
 	readDataManagerToken := func() {
 		if dataManagerTokenFile == "" {
 			flag.Usage()
@@ -302,7 +309,7 @@ func CreateIndexRequest(arvLogger *logger.Logger,
 	}
 
 	req.Header.Add("Authorization",
-		fmt.Sprintf("OAuth2 %s", getDataManagerToken(arvLogger)))
+		fmt.Sprintf("OAuth2 %s", GetDataManagerToken(arvLogger)))
 	return
 }
 
@@ -446,4 +453,71 @@ func (readServers *ReadServers) Summarize(arvLogger *logger.Logger) {
 		})
 	}
 
+}
+
+type TrashRequest struct {
+	Locator    string `json:"locator"`
+	BlockMtime int64  `json:"block_mtime"`
+}
+
+type TrashList []TrashRequest
+
+func SendTrashLists(dataManagerToken string, kc *keepclient.KeepClient, spl map[string]TrashList) (errs []error) {
+	count := 0
+	barrier := make(chan error)
+
+	client := kc.Client
+
+	for url, v := range spl {
+		count += 1
+		log.Printf("Sending trash list to %v", url)
+
+		go (func(url string, v TrashList) {
+			pipeReader, pipeWriter := io.Pipe()
+			go (func() {
+				enc := json.NewEncoder(pipeWriter)
+				enc.Encode(v)
+				pipeWriter.Close()
+			})()
+
+			req, err := http.NewRequest("PUT", fmt.Sprintf("%s/trash", url), pipeReader)
+			if err != nil {
+				log.Printf("Error creating trash list request for %v error: %v", url, err.Error())
+				barrier <- err
+				return
+			}
+
+			// Add api token header
+			req.Header.Add("Authorization", fmt.Sprintf("OAuth2 %s", dataManagerToken))
+
+			// Make the request
+			var resp *http.Response
+			if resp, err = client.Do(req); err != nil {
+				log.Printf("Error sending trash list to %v error: %v", url, err.Error())
+				barrier <- err
+				return
+			}
+
+			log.Printf("Sent trash list to %v: response was HTTP %v", url, resp.Status)
+
+			io.Copy(ioutil.Discard, resp.Body)
+			resp.Body.Close()
+
+			if resp.StatusCode != 200 {
+				barrier <- errors.New(fmt.Sprintf("Got HTTP code %v", resp.StatusCode))
+			} else {
+				barrier <- nil
+			}
+		})(url, v)
+
+	}
+
+	for i := 0; i < count; i += 1 {
+		b := <-barrier
+		if b != nil {
+			errs = append(errs, b)
+		}
+	}
+
+	return errs
 }

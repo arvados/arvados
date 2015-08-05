@@ -2,6 +2,14 @@ require "arvados/collection"
 
 class ActionsController < ApplicationController
 
+  # Skip require_thread_api_token if this is a show action
+  # for an object uuid that supports anonymous access.
+  skip_around_filter :require_thread_api_token, if: proc { |ctrl|
+    Rails.configuration.anonymous_user_token and
+    'show' == ctrl.action_name and
+    params['uuid'] and
+    model_class.in?([Collection, Group, Job, PipelineInstance, PipelineTemplate])
+  }
   skip_filter :require_thread_api_token, only: [:report_issue_popup, :report_issue]
   skip_filter :check_user_agreements, only: [:report_issue_popup, :report_issue]
 
@@ -21,6 +29,8 @@ class ActionsController < ApplicationController
         @object.link_class == 'name' and
         ArvadosBase::resource_class_for_uuid(@object.head_uuid) == Collection
       redirect_to collection_path(id: @object.uuid)
+    elsif @object.is_a?(Group) and @object.group_class == 'project'
+      redirect_to project_path(id: @object.uuid)
     elsif @object
       redirect_to @object
     else
