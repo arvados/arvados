@@ -318,6 +318,8 @@ upstream arvados-git-httpd {
 server {
   listen                  <span class="userinput">[your public IP address]</span>:443 ssl;
   server_name             git.<span class="userinput">uuid_prefix.your.domain</span>;
+  proxy_connect_timeout   90s;
+  proxy_read_timeout      300s;
 
   ssl on;
   ssl_certificate         <span class="userinput">/YOUR/PATH/TO/cert.pem</span>;
