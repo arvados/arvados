@@ -6,7 +6,7 @@ Hi there,
 
 Your Arvados shell account has been set up. Please visit the virtual machines page <% if Rails.configuration.workbench_address %>at
 
-  <%= Rails.configuration.workbench_address %>users/<%= @user.uuid%>/virtual_machines <% else %><% end %>
+  <%= Rails.configuration.workbench_address %><%= "/" if !Rails.configuration.workbench_address.end_with?("/") %>users/<%= @user.uuid%>/virtual_machines <% else %><% end %>
 
 for connection instructions.
 

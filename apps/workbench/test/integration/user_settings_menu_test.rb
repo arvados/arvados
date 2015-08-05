@@ -5,8 +5,8 @@ class UserSettingsMenuTest < ActionDispatch::IntegrationTest
     need_javascript
   end
 
-  # test ssh_keys page
-  def verify_settings_menu user
+  # test user settings menu
+  def verify_user_settings_menu user
     if user['is_active']
       within('.navbar-fixed-top') do
         page.find("#notifications-menu").click
@@ -66,9 +66,9 @@ class UserSettingsMenuTest < ActionDispatch::IntegrationTest
     ['active', api_fixture('users')['active']],
     ['admin', api_fixture('users')['admin']],
   ].each do |token, user|
-    test "test settings menu for user #{token}" do
+    test "test user settings menu for user #{token}" do
       visit page_with_token(token)
-      verify_settings_menu user
+      verify_user_settings_menu user
     end
   end
 
@@ -84,7 +84,7 @@ class UserSettingsMenuTest < ActionDispatch::IntegrationTest
     ['job_reader', :ssh, :pipeline],
     ['active'],
   ].each do |user, *expect|
-    test "settings menu for #{user} with notifications #{expect.inspect}" do
+    test "user settings menu for #{user} with notifications #{expect.inspect}" do
       Rails.configuration.anonymous_user_token = false
       visit page_with_token(user)
       click_link 'notifications-menu'
@@ -197,7 +197,7 @@ class UserSettingsMenuTest < ActionDispatch::IntegrationTest
     ['/current_token', nil, 'HISTIGNORE=$HISTIGNORE', 'ARVADOS_API_TOKEN=3kg6k6lzmp9kj5'],
     ['ssh_keys', 'Add new SSH key', 'Click here to learn about SSH keys in Arvados.', 'active'],
   ].each do |page_name, button_name, look_for, content|
-    test "test user-settings menu for page #{page_name}" do
+    test "test user settings menu for page #{page_name}" do
       if page_name == '/current_token'
         visit page_with_token('active', page_name)
       else
@@ -220,7 +220,7 @@ class UserSettingsMenuTest < ActionDispatch::IntegrationTest
     ['/current_token', 'HISTIGNORE=$HISTIGNORE'],
     ['ssh_keys', 'You have not yet set up an SSH public key for use with Arvados.'],
   ].each do |page_name, look_for|
-    test "test user-settings menu for page #{page_name} when page is empty" do
+    test "test user settings menu for page #{page_name} when page is empty" do
       if page_name == '/current_token'
         visit page_with_token('user1_with_load', page_name)
       else
