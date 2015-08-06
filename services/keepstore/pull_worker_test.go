@@ -245,7 +245,7 @@ func performTest(testData PullWorkerTestData, c *C) {
 	processedPullLists := make(map[string]string)
 
 	// Override GetContent to mock keepclient Get functionality
-	defer func(orig func(string, *keepclient.KeepClient)(io.ReadCloser, int64, string, error)) {
+	defer func(orig func(string, *keepclient.KeepClient) (io.ReadCloser, int64, string, error)) {
 		GetContent = orig
 	}(GetContent)
 	GetContent = func(signedLocator string, keepClient *keepclient.KeepClient) (reader io.ReadCloser, contentLength int64, url string, err error) {
@@ -264,7 +264,7 @@ func performTest(testData PullWorkerTestData, c *C) {
 	}
 
 	// Override PutContent to mock PutBlock functionality
-	defer func(orig func([]byte, string)(error)) { PutContent = orig }(PutContent)
+	defer func(orig func([]byte, string) error) { PutContent = orig }(PutContent)
 	PutContent = func(content []byte, locator string) (err error) {
 		if testData.put_error {
 			err = errors.New("Error putting data")

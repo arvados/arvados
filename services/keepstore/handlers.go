@@ -193,13 +193,14 @@ type PoolStatus struct {
 }
 
 type NodeStatus struct {
-	Volumes    []*VolumeStatus  `json:"volumes"`
+	Volumes    []*VolumeStatus `json:"volumes"`
 	BufferPool PoolStatus
 	Memory     runtime.MemStats
 }
 
 var st NodeStatus
 var stLock sync.Mutex
+
 func StatusHandler(resp http.ResponseWriter, req *http.Request) {
 	stLock.Lock()
 	ReadNodeStatus(&st)
