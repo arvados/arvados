@@ -1,4 +1,4 @@
-<% if object.editable? %>
+<% if object.deletable? %>
   <%= link_to({action: 'destroy', id: object.uuid}, method: :delete, remote: true, data: {confirm: "Really delete #{object.class_for_display.downcase} '#{object.friendly_link_name}'?"}) do %>
     <i class="glyphicon glyphicon-trash"></i>
   <% end %>

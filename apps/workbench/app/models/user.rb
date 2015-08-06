@@ -60,4 +60,7 @@ class User < ArvadosBase
                                                params))
   end
 
+  def deletable?
+    false
+  end
 end
