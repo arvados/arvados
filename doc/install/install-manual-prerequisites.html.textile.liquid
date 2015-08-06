@@ -83,7 +83,15 @@ You may also use a different method to pick the unique identifier. The unique id
 
 h2. SSL certificates
 
-There are six public-facing services that will require an SSL certificate. If you do not have official SSL certificates, you can use self-signed certificates. By convention, we use the following hostname pattern:
+There are six public-facing services that require an SSL certificate. If you do not have official SSL certificates, you can use self-signed certificates.
+
+{% include 'notebox_begin' %}
+
+Users will probably not be able to upload data through Workbench if you use self-signed certificates.  Web browsers will not upload data unless they can verify the authenticity of the API server and Keepproxy SSL certificates.
+
+{% include 'notebox_end' %}
+
+By convention, we use the following hostname pattern:
 
 <div class="offset1">
 table(table table-bordered table-condensed).
