@@ -374,6 +374,7 @@ class Dispatcher
       if Server::Application.config.crunch_job_user
         cmd_args.unshift("sudo", "-E", "-u",
                          Server::Application.config.crunch_job_user,
+                         "LD_LIBRARY_PATH=#{ENV['LD_LIBRARY_PATH']}",
                          "PATH=#{ENV['PATH']}",
                          "PERLLIB=#{ENV['PERLLIB']}",
                          "PYTHONPATH=#{ENV['PYTHONPATH']}",
