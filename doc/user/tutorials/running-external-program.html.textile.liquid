@@ -54,15 +54,15 @@ For more information and examples for writing pipelines, see the "pipeline templ
 
 h2. Re-using your pipeline run
 
-Arvados allows users to re-use jobs that have the same inputs in order to save computing time and resources. Users are able to change a job downstream without re-computing earlier jobs. This section shows what parameters you need to version control in order to make sure Arvados will not re-compute your jobs. 
+Arvados allows users to re-use jobs that have the same inputs in order to save computing time and resources. Users are able to change a job downstream without re-computing earlier jobs. This section shows which version control parameters should be tuned to make sure Arvados will not re-compute your jobs. 
 
 Note: Job reuse can only happen if all input collections do not change.
 
-* @"arvados_sdk_version"@ : The arvados_sdk_version parameter is used to download the specific version of the Arvados sdk into the docker image. The latest version can be found in the "Arvados Python sdk repository":https://arvados.org/projects/arvados/repository/revisions/master/show/sdk/python under *Latest revisions*.
-* @"script_version"@ : The script_version is the commit hash of the git branch that the crunch script resides. This information can be found in your git repository by using the following command:
+* @"arvados_sdk_version"@ : The arvados_sdk_version parameter is used to download the specific version of the Arvados sdk into the docker image. The latest version can be found in the "Arvados Python sdk repository":https://arvados.org/projects/arvados/repository/revisions/master/show/sdk/python under *Latest revisions*. Make sure you set this to the same version as the previous run that you are trying to reuse.
+* @"script_version"@ : The script_version is the commit hash of the git branch that the crunch script resides in. This information can be found in your git repository by using the following command:
 
 <notextile>
 <pre><code>~$ <span class="userinput">git rev-parse HEAD</span></code></pre>
 </notextile>
 
-* @"docker_image"@ : This specifies the "Docker":https://www.docker.com/ runtime environment where job's run their scripts. Docker version control is similar to git, you can commit and push changes to your images. In order to version control your docker image on arvados, you must use the docker image hash which is found on the "Collection page":https://cloud.curoverse.com/collections/qr1hi-4zz18-dov6im679g3jr1n as the *Content address*.
+* @"docker_image"@ : This specifies the "Docker":https://www.docker.com/ runtime environment where jobs run their scripts. Docker version control is similar to git, and you can commit and push changes to your images. You must re-use the docker image hash from the previous run to use the same image. It can be found on the "Collection page":https://cloud.curoverse.com/collections/qr1hi-4zz18-dov6im679g3jr1n as the *Content address* or the *docker_image_locator* in a job's metadata.
