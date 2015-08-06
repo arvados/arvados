@@ -79,10 +79,9 @@ JobAcctGatherType=jobacct_gather/none
 # COMPUTE NODES
 NodeName=DEFAULT
 PartitionName=DEFAULT MaxTime=INFINITE State=UP
-PartitionName=compute Default=YES Shared=yes
 
 NodeName=compute[0-255]
-PartitionName=compute Nodes=compute[0-255]
+PartitionName=compute Nodes=compute[0-255] Default=YES Shared=YES
 </pre>
 </notextile>
 
