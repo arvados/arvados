@@ -422,7 +422,7 @@ class ApplicationControllerTest < ActionController::TestCase
   [
     [VirtualMachinesController.new, 'hostname', false],
     [UsersController.new, 'first_name', true],
-  ].each do |controller, expect_str, expect_home_link=false|
+  ].each do |controller, expect_str, expect_home_link|
     test "access #{controller.controller_name} index as admin and verify Home link is#{' not' if !expect_home_link} shown" do
       @controller = controller
 
@@ -444,7 +444,7 @@ class ApplicationControllerTest < ActionController::TestCase
   [
     [VirtualMachinesController.new, 'hostname', true],
     [UsersController.new, 'first_name', false],
-  ].each do |controller, expect_str, expect_delete_link=false|
+  ].each do |controller, expect_str, expect_delete_link|
     test "access #{controller.controller_name} index as admin and verify Delete option is#{' not' if !expect_delete_link} shown" do
       @controller = controller
 
