@@ -213,7 +213,7 @@ h3. Configure the API server to advertise the correct SSH URLs
 In your API server's @application.yml@ file, add the following entry:
 
 <notextile>
-<pre><code>git_repo_ssh_base: git@git.<span class="userinput">uuid_prefix.your.domain</span>:
+<pre><code>git_repo_ssh_base: "git@git.<span class="userinput">uuid_prefix.your.domain</span>:"
 </code></pre>
 </notextile>
 
