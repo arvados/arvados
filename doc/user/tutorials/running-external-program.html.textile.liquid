@@ -24,7 +24,7 @@ This will open the template record in an interactive text editor (as specified b
 * @"repository"@, @"script_version"@, and @"script"@ indicate that we intend to use the external @"run-command"@ tool wrapper that is part of the Arvados.  These parameters are described in more detail in "Writing a script":tutorial-firstscript.html.
 * @"runtime_constraints"@ describes runtime resource requirements for the component.
 ** @"docker_image"@ specifies the "Docker":https://www.docker.com/ runtime environment in which to run the job.  The Docker image @"bcosc/arv-base-java"@ supplied here has the Java runtime environment, bwa, and samtools installed.
-** @"arvados_sdk_version"@ specifies a version of the Arvados SDK to load alongside the job's script.
+** @"arvados_sdk_version"@ specifies a version of the Arvados SDK to load alongside the job's script. The example uses 'master'. If you would like to use a specific version of the sdk, you can find it in the "Arvados Python sdk repository":https://arvados.org/projects/arvados/repository/revisions/master/show/sdk/python under *Latest revisions*.
 * @"script_parameters"@ describes the component parameters.
 ** @"command"@ is the actual command line to invoke the @bwa@ and then @SortSam@.  The notation @$()@ denotes macro substitution commands evaluated by the run-command tool wrapper.
 ** @"task.stdout"@ indicates that the output of this command should be captured to a file.
@@ -51,3 +51,18 @@ Test data is available in the "Arvados Tutorial":{{site.arvados_workbench_host}}
 * Choose <i class="fa fa-fw fa-archive"></i> "Tutorial sample exome (3229739b505d2b878b62aed09895a55a+142)":{{site.arvados_workbench_host}}/collections/3229739b505d2b878b62aed09895a55a+142 for the "sample" parameter
 
 For more information and examples for writing pipelines, see the "pipeline template reference":{{site.baseurl}}/api/schema/PipelineTemplate.html
+
+h2. Re-using your pipeline run
+
+Arvados allows users to re-use jobs that have the same inputs in order to save computing time and resources. Users are able to change a job downstream without re-computing earlier jobs. This section shows which version control parameters should be tuned to make sure Arvados will not re-compute your jobs. 
+
+Note: Job reuse can only happen if all input collections do not change.
+
+* @"arvados_sdk_version"@ : The arvados_sdk_version parameter is used to download the specific version of the Arvados sdk into the docker image. The latest version can be found in the "Arvados Python sdk repository":https://arvados.org/projects/arvados/repository/revisions/master/show/sdk/python under *Latest revisions*. Make sure you set this to the same version as the previous run that you are trying to reuse.
+* @"script_version"@ : The script_version is the commit hash of the git branch that the crunch script resides in. This information can be found in your git repository by using the following command:
+
+<notextile>
+<pre><code>~$ <span class="userinput">git rev-parse HEAD</span></code></pre>
+</notextile>
+
+* @"docker_image"@ : This specifies the "Docker":https://www.docker.com/ runtime environment where jobs run their scripts. Docker version control is similar to git, and you can commit and push changes to your images. You must re-use the docker image hash from the previous run to use the same image. It can be found on the "Collection page":https://cloud.curoverse.com/collections/qr1hi-4zz18-dov6im679g3jr1n as the *Content address* or the *docker_image_locator* in a job's metadata.
