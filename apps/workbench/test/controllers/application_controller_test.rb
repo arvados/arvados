@@ -418,4 +418,45 @@ class ApplicationControllerTest < ActionController::TestCase
     assert_equal updated.uuid, project["uuid"]
     assert_equal 'test name', updated.name
   end
+
+  [
+    [VirtualMachinesController.new, 'hostname', false],
+    [UsersController.new, 'first_name', true],
+  ].each do |controller, expect_str, expect_home_link=false|
+    test "access #{controller.controller_name} index as admin and verify Home link is#{' not' if !expect_home_link} shown" do
+      @controller = controller
+
+      get :index, {}, session_for(:admin)
+
+      assert_response 200
+      assert_includes @response.body, expect_str
+
+      home_link = "/projects/#{api_fixture('users')['active']['uuid']}"
+
+      if expect_home_link
+        refute_empty css_select("[href=\"/projects/#{api_fixture('users')['active']['uuid']}\"]")
+      else
+        assert_empty css_select("[href=\"/projects/#{api_fixture('users')['active']['uuid']}\"]")
+      end
+    end
+  end
+
+  [
+    [VirtualMachinesController.new, 'hostname', true],
+    [UsersController.new, 'first_name', false],
+  ].each do |controller, expect_str, expect_delete_link=false|
+    test "access #{controller.controller_name} index as admin and verify Delete option is#{' not' if !expect_delete_link} shown" do
+      @controller = controller
+
+      get :index, {}, session_for(:admin)
+
+      assert_response 200
+      assert_includes @response.body, expect_str
+      if expect_delete_link
+        refute_empty css_select('[data-method=delete]')
+      else
+        assert_empty css_select('[data-method=delete]')
+      end
+    end
+  end
 end

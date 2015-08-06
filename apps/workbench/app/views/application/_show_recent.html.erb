@@ -8,7 +8,8 @@
 
 <% attr_blacklist = ' created_at modified_at modified_by_user_uuid modified_by_client_uuid updated_at owner_uuid group_class properties' %>
 
-<% show_home_link = current_user.is_admin and controller.model_class == User %>
+<% show_home_link = (current_user.is_admin and controller.model_class == User) %>
+<% show_delete_btn = (controller.model_class != User) %>
 
 <%= render partial: "paging", locals: {results: objects, object: @object} %>
 
@@ -66,7 +67,9 @@
         </td>
       <% end %>
       <td>
-        <%= render partial: 'delete_object_button', locals: {object:object} %>
+        <% if show_delete_btn %>
+          <%= render partial: 'delete_object_button', locals: {object:object} %>
+        <% end %>
       </td>
     </tr>
     <% end %>
