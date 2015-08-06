@@ -150,12 +150,12 @@ navbar:
       - install/install-manual-prerequisites.html.textile.liquid
       - install/install-sso.html.textile.liquid
       - install/install-api-server.html.textile.liquid
+      - install/install-workbench-app.html.textile.liquid
+      - install/install-shell-server.html.textile.liquid
+      - install/create-standard-objects.html.textile.liquid
       - install/install-arv-git-httpd.html.textile.liquid
       - install/install-keepstore.html.textile.liquid
       - install/install-keepproxy.html.textile.liquid
       - install/install-crunch-dispatch.html.textile.liquid
       - install/install-compute-node.html.textile.liquid
-      - install/install-shell-server.html.textile.liquid
-      - install/create-standard-objects.html.textile.liquid
-      - install/install-workbench-app.html.textile.liquid
       - install/cheat_sheet.html.textile.liquid
