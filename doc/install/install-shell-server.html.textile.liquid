@@ -44,6 +44,10 @@ On Red Hat-based systems:
 
 {% include 'note_python27_sc' %}
 
+h2. Install Git and curl
+
+{% include 'install_git_curl' %}
+
 h2. Update Git Config
 
 Configure git to use the ARVADOS_API_TOKEN environment variable to authenticate to arv-git-httpd. We use the @--system@ flag so it takes effect for all current and future user accounts. It does not affect git's behavior when connecting to other git servers.
