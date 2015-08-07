@@ -447,19 +447,22 @@ if [[ ! -d "$WORKSPACE/src-build-dir" ]]; then
   fi
 fi
 
+# Get the commit hash we're building against, from the working directory
+cd "$WORKSPACE"
+MASTER_COMMIT_HASH=$(format_last_commit_here "%H")
+
+# Make sure we check out that commit in the clean $WORKSPACE/src-build-dir directory
 cd "$WORKSPACE/src-build-dir"
 # just in case, check out master
 if [[ "$DEBUG" != 0 ]]; then
   git checkout master
   git pull
   # go into detached-head state
-  MASTER_COMMIT_HASH=$(format_last_commit_here "%H")
   git checkout "$MASTER_COMMIT_HASH"
 else
   git checkout -q master
   git pull -q
   # go into detached-head state
-  MASTER_COMMIT_HASH=$(format_last_commit_here "%H")
   git checkout -q "$MASTER_COMMIT_HASH"
 fi
 echo "$MASTER_COMMIT_HASH" >git-commit.version
