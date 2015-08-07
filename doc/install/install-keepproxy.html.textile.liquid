@@ -90,7 +90,7 @@ The API server needs to be informed about the presence of your Keepproxy server.
 ~$ <span class="userinput">echo "Site prefix is '$prefix'"</span>
 ~$ <span class="userinput">read -rd $'\000' keepservice &lt;&lt;EOF; arv keep_service create --keep-service "$keepservice"</span>
 <span class="userinput">{
- "service_host":"keep.$prefix.your.domain",
+ "service_host":"<strong>keep.$prefix.your.domain</strong>",
  "service_port":443,
  "service_ssl_flag":true,
  "service_type":"proxy"

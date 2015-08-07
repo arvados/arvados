@@ -83,7 +83,7 @@ Make sure to update the @service_host@ value to match each of your Keepstore ser
 ~$ <span class="userinput">echo "Site prefix is '$prefix'"</span>
 ~$ <span class="userinput">read -rd $'\000' keepservice &lt;&lt;EOF; arv keep_service create --keep-service "$keepservice"</span>
 <span class="userinput">{
- "service_host":"keep0.$prefix.your.domain",
+ "service_host":"<strong>keep0.$prefix.your.domain</strong>",
  "service_port":25107,
  "service_ssl_flag":false,
  "service_type":"disk"
