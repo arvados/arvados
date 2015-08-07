@@ -1,12 +1,12 @@
-import Queue
-import run_test_server
-import unittest
 import arvados
 import arvados.events
-import mock
-import threading
 from datetime import datetime, timedelta
+import mock
+import Queue
+import run_test_server
+import threading
 import time
+import unittest
 
 class WebsocketTest(run_test_server.TestCaseWithServers):
     MAIN_SERVER = {}
@@ -18,6 +18,7 @@ class WebsocketTest(run_test_server.TestCaseWithServers):
         if self.ws:
             self.ws.close()
         super(WebsocketTest, self).tearDown()
+        run_test_server.reset()
 
     def _test_subscribe(self, poll_fallback, expect_type, last_log_id=None, additional_filters=None, expected=1):
         run_test_server.authorize_with('active')
