@@ -165,6 +165,13 @@ Add the following lines inside the section that begins @%RC = (@:
 </span></code></pre>
 </notextile>
 
+Inside that section, adjust the 'UMASK' setting to @022@, to ensure the API server has permission to read repositories:
+
+<notextile>
+<pre><code>    UMASK => <span class="userinput">022</span>,
+</code></pre>
+</notextile>
+
 Uncomment the 'Alias' line in the section that begins @ENABLE => [@:
 
 <notextile>
