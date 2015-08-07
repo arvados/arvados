@@ -52,7 +52,17 @@ func (h *authHandler) ServeHTTP(wOrig http.ResponseWriter, r *http.Request) {
 			w.WriteHeader(statusCode)
 			w.Write([]byte(statusText))
 		}
-		log.Println(quoteStrings(r.RemoteAddr, username, password, wroteStatus, statusText, repoName, r.Method, r.URL.Path)...)
+
+		passwordToLog := ""
+		if statusCode == 401 || strings.Contains(statusText, "Unauthorized") {
+			if len(password) > 0 {
+				passwordToLog = "<invalid>"
+			}
+		} else {
+			passwordToLog = password[0:10]
+		}
+
+		log.Println(quoteStrings(r.RemoteAddr, username, passwordToLog, wroteStatus, statusText, repoName, r.Method, r.URL.Path)...)
 	}()
 
 	// HTTP request username is logged, but unused. Password is an
