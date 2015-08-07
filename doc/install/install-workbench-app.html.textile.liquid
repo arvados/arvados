@@ -143,6 +143,7 @@ server {
   ssl_certificate_key <span class="userinput">/YOUR/PATH/TO/cert.key</span>;
 
   index  index.html index.htm index.php;
+  client_max_body_size 128m;
 
   location / {
     proxy_pass            http://workbench;

@@ -284,6 +284,12 @@ server {
 
   index  index.html index.htm index.php;
 
+  # This value effectively limits the size of API objects users can create,
+  # especially collections.  If you change this, you should also set
+  # `max_request_size` in the API server's application.yml file to the same
+  # value.
+  client_max_body_size 128m;
+
   location / {
     proxy_pass            http://api;
     proxy_redirect        off;
