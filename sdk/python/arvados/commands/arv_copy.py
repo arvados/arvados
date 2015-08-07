@@ -580,7 +580,6 @@ def copy_collection(obj_uuid, src, dst, args):
     # Copy the manifest and save the collection.
     logger.debug('saving %s with manifest: <%s>', obj_uuid, dst_manifest)
 
-    dst_keep.put(dst_manifest.encode('utf-8'))
     c['manifest_text'] = dst_manifest
     return create_collection_from(c, src, dst, args)
 
