@@ -19,6 +19,7 @@ import time
 import threading
 
 from .api import api, http_cache
+from .retry import retry_method
 from collection import CollectionReader, CollectionWriter, ResumableCollectionWriter
 from keep import *
 from stream import *
@@ -37,7 +38,8 @@ logger.addHandler(log_handler)
 logger.setLevel(logging.DEBUG if config.get('ARVADOS_DEBUG')
                 else logging.WARNING)
 
-def task_set_output(self,s):
+@retry_method
+def task_set_output(self,s,num_retries=5):
     api('v1').job_tasks().update(uuid=self['uuid'],
                                  body={
             'output':s,
@@ -46,7 +48,8 @@ def task_set_output(self,s):
             }).execute()
 
 _current_task = None
-def current_task():
+@retry_method
+def current_task(num_retries=5):
     global _current_task
     if _current_task:
         return _current_task
@@ -58,7 +61,8 @@ def current_task():
     return t
 
 _current_job = None
-def current_job():
+@retry_method
+def current_job(num_retries=5):
     global _current_job
     if _current_job:
         return _current_job
@@ -82,6 +86,10 @@ class JobTask(object):
         print "init jobtask %s %s" % (parameters, runtime_constraints)
 
 class job_setup:
+    @retry_method
+    def _add_task(self, num_retries):
+	return self.num_retries
+
     @staticmethod
     def one_task_per_input_file(if_sequence=0, and_end_task=True, input_as_path=False, api_client=None):
         if if_sequence != current_task()['sequence']:
@@ -107,7 +115,7 @@ class job_setup:
                         'input':task_input
                         }
                     }
-                api_client.job_tasks().create(body=new_task_attrs).execute()
+                api_client.job_tasks().create(body=new_task_attrs).execute()._add_task(num_retries=5)
         if and_end_task:
             api_client.job_tasks().update(uuid=current_task()['uuid'],
                                        body={'success':True}
@@ -130,7 +138,7 @@ class job_setup:
                     'input':task_input
                     }
                 }
-            api('v1').job_tasks().create(body=new_task_attrs).execute()
+            api('v1').job_tasks().create(body=new_task_attrs).execute()._add_task(num_retries=5)
         if and_end_task:
             api('v1').job_tasks().update(uuid=current_task()['uuid'],
                                        body={'success':True}
