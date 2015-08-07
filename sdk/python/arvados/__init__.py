@@ -20,6 +20,7 @@ import threading
 
 from .api import api, http_cache
 from .retry import retry_method
+from retry import RetryLoop
 from collection import CollectionReader, CollectionWriter, ResumableCollectionWriter
 from keep import *
 from stream import *
@@ -39,26 +40,43 @@ logger.setLevel(logging.DEBUG if config.get('ARVADOS_DEBUG')
                 else logging.WARNING)
 
 @retry_method
-def task_set_output(self,s,num_retries=5):
-    api('v1').job_tasks().update(uuid=self['uuid'],
-                                 body={
-            'output':s,
-            'success':True,
-            'progress':1.0
-            }).execute()
+def task_set_output(self,s):
+    output_retry_loop = RetryLoop(num_retries=5, backoff_start=1)
+    for tries_left in output_retry_loop:
+	try:
+	    api('v1').job_tasks().update(uuid=self['uuid'],
+        	                         body={
+            					'output':s,
+				            	'success':True,
+				            	'progress':1.0
+			                 	}).execute()
+	except TemporaryError as error:
+	    logger.debug("Error in task_set_output api call: {} ({} tries left)".format(error,tries_left))
+	else:
+	    output_retry_loop.save_result(result)
+    if output_retry_loop.success():
+	return output_retry_loop.last_result()	    
 
 _current_task = None
 @retry_method
-def current_task(num_retries=5):
+def current_task():
     global _current_task
     if _current_task:
         return _current_task
-    t = api('v1').job_tasks().get(uuid=os.environ['TASK_UUID']).execute()
-    t = UserDict.UserDict(t)
-    t.set_output = types.MethodType(task_set_output, t)
-    t.tmpdir = os.environ['TASK_WORK']
-    _current_task = t
-    return t
+    current_task_retry_loop = RetryLoop(num_retries=5, backoff_start=1)
+    for tries_left in current_task_retry_loop:
+	try:
+	    t = api('v1').job_tasks().get(uuid=os.environ['TASK_UUID']).execute()
+	except TemporaryError as error:
+	    logger.debug("Error in current_task api call: {} ({} tries left)".format(error,tries_left))
+	else:
+	    current_task_retry_loop.save_result(result)
+    if current_task_retry_loop.success():
+        t = UserDict.UserDict(t)
+        t.set_output = types.MethodType(task_set_output, t)
+        t.tmpdir = os.environ['TASK_WORK']
+        _current_task = t
+        return t
 
 _current_job = None
 @retry_method
@@ -66,11 +84,19 @@ def current_job(num_retries=5):
     global _current_job
     if _current_job:
         return _current_job
-    t = api('v1').jobs().get(uuid=os.environ['JOB_UUID']).execute()
-    t = UserDict.UserDict(t)
-    t.tmpdir = os.environ['JOB_WORK']
-    _current_job = t
-    return t
+    current_job_retry_loop = RetryLoop(num_retries=5, backoff_start=1)
+    for tries_left in current_job_retry_loop:
+	try:
+	    t = api('v1').jobs().get(uuid=os.environ['JOB_UUID']).execute()
+	except TemporaryError as error:
+	    logger.debug("Error in current_job api call: {} ({} tries left)".format(error,tries_left))
+	else:
+	    current_job_retry_loop.save_result(result)
+    if current_job_retry_loop.success():
+        t = UserDict.UserDict(t)
+        t.tmpdir = os.environ['JOB_WORK']
+        _current_job = t
+        return t
 
 def getjobparam(*args):
     return current_job()['script_parameters'].get(*args)
@@ -87,11 +113,12 @@ class JobTask(object):
 
 class job_setup:
     @retry_method
-    def _add_task(self, num_retries=5):
-        return
+    def __init__(self, num_retries=5):
+        self.num_retries = num_retries
 
+    @retry_method
     @staticmethod
-    def one_task_per_input_file(if_sequence=0, and_end_task=True, input_as_path=False, api_client=None):
+    def one_task_per_input_file(if_sequence=0, and_end_task=True, input_as_path=False, api_client=None, num_retries=None):
         if if_sequence != current_task()['sequence']:
             return
 
@@ -115,15 +142,16 @@ class job_setup:
                         'input':task_input
                         }
                     }
-                api_client.job_tasks().create(body=new_task_attrs).execute()._add_task()
+                api_client.job_tasks().create(body=new_task_attrs).execute(num_retries)
         if and_end_task:
             api_client.job_tasks().update(uuid=current_task()['uuid'],
                                        body={'success':True}
-                                       ).execute()._add_task()
+                                       ).execute(num_retries)
             exit(0)
 
+    @retry_method
     @staticmethod
-    def one_task_per_input_stream(if_sequence=0, and_end_task=True):
+    def one_task_per_input_stream(if_sequence=0, and_end_task=True, num_retries=None):
         if if_sequence != current_task()['sequence']:
             return
         job_input = current_job()['script_parameters']['input']
@@ -138,9 +166,9 @@ class job_setup:
                     'input':task_input
                     }
                 }
-            api('v1').job_tasks().create(body=new_task_attrs).execute()._add_task()
+            api('v1').job_tasks().create(body=new_task_attrs).execute(num_retries)
         if and_end_task:
             api('v1').job_tasks().update(uuid=current_task()['uuid'],
                                        body={'success':True}
-                                       ).execute()._add_task()
+                                       ).execute(num_retries)
             exit(0)
