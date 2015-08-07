@@ -87,8 +87,8 @@ class JobTask(object):
 
 class job_setup:
     @retry_method
-    def _add_task(self, num_retries):
-	return self.num_retries
+    def _add_task(self, num_retries=5):
+        return
 
     @staticmethod
     def one_task_per_input_file(if_sequence=0, and_end_task=True, input_as_path=False, api_client=None):
@@ -115,11 +115,11 @@ class job_setup:
                         'input':task_input
                         }
                     }
-                api_client.job_tasks().create(body=new_task_attrs).execute()._add_task(num_retries=5)
+                api_client.job_tasks().create(body=new_task_attrs).execute()._add_task()
         if and_end_task:
             api_client.job_tasks().update(uuid=current_task()['uuid'],
                                        body={'success':True}
-                                       ).execute()
+                                       ).execute()._add_task()
             exit(0)
 
     @staticmethod
@@ -138,9 +138,9 @@ class job_setup:
                     'input':task_input
                     }
                 }
-            api('v1').job_tasks().create(body=new_task_attrs).execute()._add_task(num_retries=5)
+            api('v1').job_tasks().create(body=new_task_attrs).execute()._add_task()
         if and_end_task:
             api('v1').job_tasks().update(uuid=current_task()['uuid'],
                                        body={'success':True}
-                                       ).execute()
+                                       ).execute()._add_task()
             exit(0)
