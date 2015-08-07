@@ -187,9 +187,8 @@ Next, we're going to use the rails console on the <strong>API server</strong> to
 <notextile>
 <pre><code>/var/www/arvados-api/current$ <span class="userinput">RAILS_ENV=production bundle exec rails console</span>
 irb(main):001:0&gt; <span class="userinput">Thread.current[:user] = User.all.select(&:identity_url).last</span>
-irb(main):002:0&gt; <span class="userinput">Thread.current[:user].is_admin = true</span>
-irb(main):003:0&gt; <span class="userinput">Thread.current[:user].update_attributes is_admin: true, is_active: true</span>
-irb(main):004:0&gt; <span class="userinput">User.where(is_admin: true).collect &:email</span>
+irb(main):002:0&gt; <span class="userinput">Thread.current[:user].update_attributes is_admin: true, is_active: true</span>
+irb(main):003:0&gt; <span class="userinput">User.where(is_admin: true).collect &:email</span>
 =&gt; ["root", "<b>your_address@example.com</b>"]
 </code></pre></notextile>
 
