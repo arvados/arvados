@@ -357,6 +357,10 @@ class ArvadosBase < ActiveRecord::Base
        (ArvadosBase.find(owner_uuid).writable_by.include? current_user.uuid rescue false)))) or false
   end
 
+  def deletable?
+    editable?
+  end
+
   # Array of strings that are the names of attributes that can be edited
   # with X-Editable.
   def editable_attributes

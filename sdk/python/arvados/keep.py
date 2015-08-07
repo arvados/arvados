@@ -932,9 +932,10 @@ class KeepClient(object):
             raise arvados.errors.ArgumentError("Argument 'data' to KeepClient.put is not type 'str'")
 
         data_hash = hashlib.md5(data).hexdigest()
+        loc_s = data_hash + '+' + str(len(data))
         if copies < 1:
-            return data_hash
-        locator = KeepLocator(data_hash + '+' + str(len(data)))
+            return loc_s
+        locator = KeepLocator(loc_s)
 
         headers = {}
         if self.using_proxy:

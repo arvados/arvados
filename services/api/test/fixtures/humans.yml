@@ -1,0 +1,1 @@
+# File exists to ensure the table gets cleared during DatabaseController#reset

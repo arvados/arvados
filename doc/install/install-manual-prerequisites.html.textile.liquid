@@ -87,7 +87,16 @@ There are six public-facing services that require an SSL certificate. If you do 
 
 {% include 'notebox_begin' %}
 
-Users will probably not be able to upload data through Workbench if you use self-signed certificates.  Web browsers will not upload data unless they can verify the authenticity of the API server and Keepproxy SSL certificates.
+Most Arvados clients and services will accept self-signed certificates when the @ARVADOS_API_HOST_INSECURE@ environment variable is set to @true@.  However, web browsers generally do not make it easy for users to accept self-signed certificates from Web sites.
+
+Users who log in through Workbench will visit three sites: the SSO server, the API server, and Workbench itself.  When a browser visits each of these sites, it will warn the user if the site uses a self-signed certificate, and the user must accept it before continuing.  This procedure usually only needs to be done once in a browser.
+
+After that's done, Workbench includes JavaScript clients for other Arvados services.  Users are usually not warned if these client connections are refused because the server uses a self-signed certificate, and it is especially difficult to accept those cerficiates:
+
+* JavaScript connects to the Websockets server to provide incremental page updates and view logs from running jobs.
+* JavaScript connects to the API and Keepproxy servers to upload local files to collections.
+
+In sum, Workbench will be much less pleasant to use in a cluster that uses self-signed certificates.  You should avoid using self-signed certificates unless you plan to deploy a cluster without Workbench; you are deploying only to evaluate Arvados as an individual system administrator; or you can push configuration to users' browsers to trust your self-signed certificates.
 
 {% include 'notebox_end' %}
 

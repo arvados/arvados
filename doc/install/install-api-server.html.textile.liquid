@@ -157,12 +157,12 @@ Example @application.yml@:
 
 h3. websocket_address
 
-Set @websocket_address@ to the @wss://@ URL of the API server websocket endpoint after following "Set up Web servers.":#set_up
+Set @websocket_address@ to the @wss://@ URL of the API server websocket endpoint after following "Set up Web servers":#set_up.  The path of the default endpoint is @/websocket@.
 
 Example @application.yml@:
 
 <notextile>
-<pre><code>  websocket_address: <span class="userinput">wss://ws.zzzzz.example.com</span></code></pre>
+<pre><code>  websocket_address: <span class="userinput">wss://ws.zzzzz.example.com</span>/websocket</code></pre>
 </notextile>
 
 h3(#git_repositories_dir). git_repositories_dir
