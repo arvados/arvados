@@ -31,6 +31,7 @@ setup(name='arvados-pam',
       ],
       install_requires=[
           'arvados-python-client>=0.1.20150801000000',
+          'pyyaml',
       ],
       test_suite='tests',
       tests_require=['mock>=1.0', 'PyYAML'],

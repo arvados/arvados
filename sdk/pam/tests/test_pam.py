@@ -9,37 +9,30 @@ import unittest
 class ConfigTest(unittest.TestCase):
     def test_ok_config(self):
         self.assertConfig(
-            "#comment\nARVADOS_API_HOST=xyzzy.example\nHOSTNAME=foo.shell\n#HOSTNAME=bogus\n",
-            'xyzzy.example',
-            'foo.shell')
-
-    def test_config_missing_apihost(self):
-        with self.assertRaises(KeyError):
-            self.assertConfig('HOSTNAME=foo', '', 'foo')
-
-    def test_config_missing_shellhost(self):
-        with self.assertRaises(KeyError):
-            self.assertConfig('ARVADOS_API_HOST=foo', 'foo', '')
-
-    def test_config_empty_shellhost(self):
-        self.assertConfig("ARVADOS_API_HOST=foo\nHOSTNAME=\n", 'foo', '')
-
-    def test_config_strip_whitespace(self):
-        self.assertConfig(" ARVADOS_API_HOST = foo \n\tHOSTNAME\t=\tbar\t\n", 'foo', 'bar')
+            """servicename:
+              ARVADOS_API_HOST: xyzzy.example
+              virtual_machine_hostname: foo.shell
+            """, 'servicename', 'xyzzy.example', 'foo.shell')
 
     @mock.patch('arvados_pam.config_file')
-    def assertConfig(self, txt, apihost, shellhost, config_file):
+    def assertConfig(self, txt, svcname, apihost, shellhost, config_file):
         configfake = StringIO.StringIO(txt)
         config_file.side_effect = [configfake]
         c = arvados_pam.config()
-        self.assertEqual(apihost, c['ARVADOS_API_HOST'])
-        self.assertEqual(shellhost, c['HOSTNAME'])
+        self.assertEqual(apihost, c[svcname]['ARVADOS_API_HOST'])
+        self.assertEqual(shellhost, c[svcname]['virtual_machine_hostname'])
 
 class AuthTest(unittest.TestCase):
 
+    default_config = {
+        'test_service': {
+            'ARVADOS_API_HOST': 'zzzzz.api_host.example',
+            'virtual_machine_hostname': 'testvm2.shell',
+        }
+    }
+
     default_request = {
-        'api_host': 'zzzzz.api_host.example',
-        'shell_host': 'testvm2.shell',
+        'client_host': '::1',
         'token': '3kg6k6lzmp9kj5cpkcoxie963cmvjahbt2fod9zru30k1jqdmi',
         'username': 'active',
     }
@@ -71,14 +64,16 @@ class AuthTest(unittest.TestCase):
     }
 
     def attempt(self):
-        return arvados_pam.AuthEvent('::1', **self.request).can_login()
+        return arvados_pam.AuthEvent(config=self.config, service='test_service', **self.request).can_login()
 
     def test_success(self):
         self.assertTrue(self.attempt())
+
+        cfg = self.config['test_service']
         self.api_client.virtual_machines().list.assert_called_with(
-            filters=[['hostname','=',self.request['shell_host']]])
+            filters=[['hostname','=',cfg['virtual_machine_hostname']]])
         self.api.assert_called_with(
-            'v1', host=self.request['api_host'], token=self.request['token'], cache=None)
+            'v1', host=cfg['ARVADOS_API_HOST'], token=self.request['token'], cache=None)
 
     def test_fail_vm_lookup(self):
         self.response['virtual_machines'] = self._raise
@@ -149,6 +144,7 @@ class AuthTest(unittest.TestCase):
         self.assertFalse(self.attempt())
 
     def setUp(self):
+        self.config = self.default_config.copy()
         self.request = self.default_request.copy()
         self.response = self.default_response.copy()
         self.api_client = mock.MagicMock(name='api_client')
