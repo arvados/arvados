@@ -3,6 +3,7 @@
 import arvados
 import arvados_pam
 import mock
+import re
 import StringIO
 import unittest
 
@@ -74,10 +75,19 @@ class AuthTest(unittest.TestCase):
             filters=[['hostname','=',cfg['virtual_machine_hostname']]])
         self.api.assert_called_with(
             'v1', host=cfg['ARVADOS_API_HOST'], token=self.request['token'], cache=None)
+        self.assertEqual(1, len(self.syslogged))
+        for i in ['test_service',
+                  self.request['username'],
+                  self.config['test_service']['ARVADOS_API_HOST'],
+                  self.response['virtual_machines']()['items'][0]['uuid']]:
+            self.assertRegexpMatches(self.syslogged[0], re.escape(i))
+        self.assertRegexpMatches(self.syslogged[0], re.escape(self.request['token'][0:15]), 'token prefix not logged')
+        self.assertNotRegexpMatches(self.syslogged[0], re.escape(self.request['token'][15:30]), 'too much token logged')
 
     def test_fail_vm_lookup(self):
         self.response['virtual_machines'] = self._raise
         self.assertFalse(self.attempt())
+        self.assertRegexpMatches(self.syslogged[0], 'Test-induced failure')
 
     def test_vm_hostname_not_found(self):
         self.response['virtual_machines'] = lambda: {
@@ -155,6 +165,12 @@ class AuthTest(unittest.TestCase):
         self.api = patcher.start()
         self.addCleanup(patcher.stop)
         self.api.side_effect = [self.api_client]
+
+        self.syslogged = []
+        patcher = mock.patch('syslog.syslog')
+        self.syslog = patcher.start()
+        self.addCleanup(patcher.stop)
+        self.syslog.side_effect = lambda s: self.syslogged.append(s)
 
     def _raise(self, exception=Exception("Test-induced failure"), *args, **kwargs):
         raise exception

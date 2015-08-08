@@ -91,9 +91,7 @@ class AuthEvent(object):
         else:
             log_token = '<invalid>'
 
-        log_label = [self.client_host, self.api_host, self.vm_uuid, self.username, log_token]
-        if self.vm_uuid:
-            log_label += [self.vm_uuid]
+        log_label = [self.service, self.api_host, self.vm_uuid, self.client_host, self.username, log_token]
         if self.user:
             log_label += [self.user.get('uuid'), self.user.get('full_name')]
         return str(log_label) + ': ' + outcome
