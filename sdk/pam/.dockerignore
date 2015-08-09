@@ -1,0 +1,8 @@
+*~
+*.pyc
+.eggs
+*.egg_info
+build
+debian
+dist
+tmp

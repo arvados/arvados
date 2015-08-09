@@ -4,19 +4,12 @@ sys.argv=['']
 import arvados
 import os
 import syslog
-import yaml
 
 def auth_log(msg):
-    """Send errors to default auth log"""
+    """Log an authentication result to syslogd"""
     syslog.openlog(facility=syslog.LOG_AUTH)
     syslog.syslog('arvados_pam: ' + msg)
     syslog.closelog()
-
-def config_file():
-    return file('/etc/default/arvados_pam.conf').read()
-
-def config():
-    return yaml.load(config_file())
 
 class AuthEvent(object):
     def __init__(self, config, service, client_host, username, token):
@@ -34,10 +27,10 @@ class AuthEvent(object):
         """Return truthy IFF credentials should be accepted."""
         ok = False
         try:
-            self.api_host = self.config[self.service]['ARVADOS_API_HOST']
+            self.api_host = self.config['arvados_api_host']
             self.arv = arvados.api('v1', host=self.api_host, token=self.token, cache=None)
 
-            vmname = self.config[self.service]['virtual_machine_hostname']
+            vmname = self.config['virtual_machine_hostname']
             vms = self.arv.virtual_machines().list(filters=[['hostname','=',vmname]]).execute()
             if vms['items_available'] > 1:
                 raise Exception("lookup hostname %s returned %d records" % (vmname, vms['items_available']))
@@ -98,6 +91,11 @@ class AuthEvent(object):
 
 
 def pam_sm_authenticate(pamh, flags, argv):
+    config = {}
+    config['arvados_api_host'] = argv[1]
+    config['virtual_machine_hostname'] = argv[2]
+    config['noprompt'] = (len(argv) > 3 and argv[3] == 'noprompt')
+
     try:
         username = pamh.get_user()
     except pamh.exception as e:
@@ -107,11 +105,12 @@ def pam_sm_authenticate(pamh, flags, argv):
         return pamh.PAM_USER_UNKNOWN
 
     try:
-        token = pamh.conversation(pamh.Message(pamh.PAM_PROMPT_ECHO_OFF, '')).resp
+        prompt = '' if config['noprompt'] else 'Arvados API token: '
+        token = pamh.conversation(pamh.Message(pamh.PAM_PROMPT_ECHO_OFF, prompt)).resp
     except pamh.exception as e:
         return e.pam_result
 
-    if AuthEvent(config(),
+    if AuthEvent(config,
                  service=pamh.service,
                  client_host=pamh.rhost,
                  username=username,

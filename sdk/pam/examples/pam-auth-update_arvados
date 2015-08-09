@@ -1,0 +1,11 @@
+# 1. Install in /usr/share/pam-configs/arvados
+# 2. Run `pam-auth-update arvados`
+
+Name: Arvados authentication
+Default: yes
+Priority: 256
+Auth-Type: Primary
+Auth:
+	[success=end default=ignore]	pam_python.so /usr/local/lib/python2.7/dist-packages/arvados_pam/__init__.py api.example shell.example
+Auth-Initial:
+	[success=end default=ignore]	pam_python.so /usr/local/lib/python2.7/dist-packages/arvados_pam/__init__.py api.example shell.example
