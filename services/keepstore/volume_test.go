@@ -22,13 +22,20 @@ type MockVolume struct {
 	// Readonly volumes return an error for Put, Delete, and
 	// Touch.
 	Readonly bool
-	called   map[string]int
-	mutex    sync.Mutex
+	// Every operation (except Status) starts by receiving from
+	// Gate. Send one value to unblock one operation; close the
+	// channel to unblock all. By default, it is a closed channel,
+	// so all operations proceed without blocking.
+	Gate   chan struct{}
+	called map[string]int
+	mutex  sync.Mutex
 }
 
 // CreateMockVolume returns a non-Bad, non-Readonly, Touchable mock
 // volume.
 func CreateMockVolume() *MockVolume {
+	gate := make(chan struct{})
+	close(gate)
 	return &MockVolume{
 		Store:      make(map[string][]byte),
 		Timestamps: make(map[string]time.Time),
@@ -36,6 +43,7 @@ func CreateMockVolume() *MockVolume {
 		Touchable:  true,
 		Readonly:   false,
 		called:     map[string]int{},
+		Gate:       gate,
 	}
 }
 
@@ -62,6 +70,7 @@ func (v *MockVolume) gotCall(method string) {
 
 func (v *MockVolume) Get(loc string) ([]byte, error) {
 	v.gotCall("Get")
+	<-v.Gate
 	if v.Bad {
 		return nil, errors.New("Bad volume")
 	} else if block, ok := v.Store[loc]; ok {
@@ -74,6 +83,7 @@ func (v *MockVolume) Get(loc string) ([]byte, error) {
 
 func (v *MockVolume) Put(loc string, block []byte) error {
 	v.gotCall("Put")
+	<-v.Gate
 	if v.Bad {
 		return errors.New("Bad volume")
 	}
@@ -86,6 +96,7 @@ func (v *MockVolume) Put(loc string, block []byte) error {
 
 func (v *MockVolume) Touch(loc string) error {
 	v.gotCall("Touch")
+	<-v.Gate
 	if v.Readonly {
 		return MethodDisabledError
 	}
@@ -98,6 +109,7 @@ func (v *MockVolume) Touch(loc string) error {
 
 func (v *MockVolume) Mtime(loc string) (time.Time, error) {
 	v.gotCall("Mtime")
+	<-v.Gate
 	var mtime time.Time
 	var err error
 	if v.Bad {
@@ -112,6 +124,7 @@ func (v *MockVolume) Mtime(loc string) (time.Time, error) {
 
 func (v *MockVolume) IndexTo(prefix string, w io.Writer) error {
 	v.gotCall("IndexTo")
+	<-v.Gate
 	for loc, block := range v.Store {
 		if !IsValidLocator(loc) || !strings.HasPrefix(loc, prefix) {
 			continue
@@ -127,6 +140,7 @@ func (v *MockVolume) IndexTo(prefix string, w io.Writer) error {
 
 func (v *MockVolume) Delete(loc string) error {
 	v.gotCall("Delete")
+	<-v.Gate
 	if v.Readonly {
 		return MethodDisabledError
 	}

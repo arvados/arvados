@@ -192,9 +192,17 @@ type PoolStatus struct {
 	Len   int    `json:"BuffersInUse"`
 }
 
+type WorkQueueStatus struct {
+	InProgress  int
+	Outstanding int
+	Queued      int
+}
+
 type NodeStatus struct {
 	Volumes    []*VolumeStatus `json:"volumes"`
 	BufferPool PoolStatus
+	PullQueue  WorkQueueStatus
+	TrashQueue WorkQueueStatus
 	Memory     runtime.MemStats
 }
 
@@ -203,7 +211,7 @@ var stLock sync.Mutex
 
 func StatusHandler(resp http.ResponseWriter, req *http.Request) {
 	stLock.Lock()
-	ReadNodeStatus(&st)
+	readNodeStatus(&st)
 	jstat, err := json.Marshal(&st)
 	stLock.Unlock()
 	if err == nil {
@@ -215,10 +223,8 @@ func StatusHandler(resp http.ResponseWriter, req *http.Request) {
 	}
 }
 
-// ReadNodeStatus populates the given NodeStatus struct with current
-// values.
-//
-func ReadNodeStatus(st *NodeStatus) {
+// populate the given NodeStatus struct with current values.
+func readNodeStatus(st *NodeStatus) {
 	vols := KeepVM.AllReadable()
 	if cap(st.Volumes) < len(vols) {
 		st.Volumes = make([]*VolumeStatus, len(vols))
@@ -232,7 +238,22 @@ func ReadNodeStatus(st *NodeStatus) {
 	st.BufferPool.Alloc = bufs.Alloc()
 	st.BufferPool.Cap = bufs.Cap()
 	st.BufferPool.Len = bufs.Len()
+	readWorkQueueStatus(&st.PullQueue, pullq)
+	readWorkQueueStatus(&st.TrashQueue, trashq)
 	runtime.ReadMemStats(&st.Memory)
+}
+
+// Populate a WorkQueueStatus. This is not atomic, so race conditions
+// can cause InProgress + Queued != Outstanding.
+func readWorkQueueStatus(st *WorkQueueStatus, q *WorkQueue) {
+	if q == nil {
+		// This should only happen during tests.
+		*st = WorkQueueStatus{}
+		return
+	}
+	st.InProgress = q.CountInProgress()
+	st.Outstanding = q.CountOutstanding()
+	st.Queued = q.CountQueued()
 }
 
 // DeleteHandler processes DELETE requests.

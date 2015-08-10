@@ -236,6 +236,9 @@ func (s *PullWorkerTestSuite) TestPullWorker_invalid_data_manager_token(c *C) {
 }
 
 func performTest(testData PullWorkerTestData, c *C) {
+	KeepVM = MakeTestVolumeManager(2)
+	defer KeepVM.Close()
+
 	RunTestPullWorker(c)
 	defer pullq.Close()
 
@@ -249,6 +252,7 @@ func performTest(testData PullWorkerTestData, c *C) {
 		GetContent = orig
 	}(GetContent)
 	GetContent = func(signedLocator string, keepClient *keepclient.KeepClient) (reader io.ReadCloser, contentLength int64, url string, err error) {
+		c.Assert(getStatusItem("PullQueue", "InProgress"), Equals, float64(1))
 		processedPullLists[testData.name] = testData.response_body
 		if testData.read_error {
 			err = errors.New("Error getting data")
@@ -275,6 +279,10 @@ func performTest(testData PullWorkerTestData, c *C) {
 			return nil
 		}
 	}
+
+	c.Assert(getStatusItem("PullQueue", "InProgress"), Equals, float64(0))
+	c.Assert(getStatusItem("PullQueue", "Outstanding"), Equals, float64(0))
+	c.Assert(getStatusItem("PullQueue", "Queued"), Equals, float64(0))
 
 	response := IssueRequest(&testData.req)
 	c.Assert(response.Code, Equals, testData.response_code)
