@@ -103,9 +103,9 @@ func (h *authHandler) ServeHTTP(wOrig http.ResponseWriter, r *http.Request) {
 		"filters": [][]string{{"name", "=", repoName}},
 	}, &reposFound); err != nil {
 		statusCode, statusText = http.StatusInternalServerError, err.Error()
-		validApiToken = true
 		return
 	}
+	validApiToken = true
 	if avail, ok := reposFound["items_available"].(float64); !ok {
 		statusCode, statusText = http.StatusInternalServerError, "bad list response from API"
 		return

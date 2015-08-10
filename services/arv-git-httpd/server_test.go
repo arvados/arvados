@@ -88,7 +88,7 @@ func (s *IntegrationSuite) TestInvalidToken(c *check.C) {
 func (s *IntegrationSuite) TestShortToken(c *check.C) {
 	for _, repo := range []string{"active/foo.git", "active/foo/.git"} {
 		err := s.runGit(c, "s3cr3t", "fetch", repo)
-		c.Assert(err, check.ErrorMatches, `.* Authentication failed.*`)
+		c.Assert(err, check.ErrorMatches, `.* 500 while accessing.*`)
 	}
 }
 
