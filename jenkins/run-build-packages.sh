@@ -424,15 +424,16 @@ if [[ "$DEBUG" != 0 ]]; then
   echo
 fi
 
-cd "$WORKSPACE"
-
-cd sdk/python
+cd "$WORKSPACE/sdk/pam"
 handle_python_package
 
-cd ../../services/fuse
+cd "$WORKSPACE/sdk/python"
 handle_python_package
 
-cd ../../services/nodemanager
+cd "$WORKSPACE/services/fuse"
+handle_python_package
+
+cd "$WORKSPACE/services/nodemanager"
 handle_python_package
 
 # Arvados-src
@@ -558,6 +559,11 @@ cd $WORKSPACE/packages/$TARGET
 rm -rf "$WORKSPACE/sdk/python/build"
 fpm_build $WORKSPACE/sdk/python "${PYTHON2_PKG_PREFIX}-arvados-python-client" 'Curoverse, Inc.' 'python' "$(awk '($1 == "Version:"){print $2}' $WORKSPACE/sdk/python/arvados_python_client.egg-info/PKG-INFO)" "--url=https://arvados.org" "--description=The Arvados Python SDK" --deb-recommends=git
 
+# The PAM module
+cd $WORKSPACE/packages/$TARGET
+rm -rf "$WORKSPACE/sdk/pam/build"
+fpm_build $WORKSPACE/sdk/pam libpam-arvados 'Curoverse, Inc.' 'python' "$(awk '($1 == "Version:"){print $2}' $WORKSPACE/sdk/pam/arvados_pam.egg-info/PKG-INFO)" "--url=https://arvados.org" "--description=PAM module for authenticating shell logins using Arvados API tokens"
+
 # The FUSE driver
 # Please see comment about --no-python-fix-name above; we stay consistent and do
 # not omit the python- prefix first.
@@ -587,18 +593,6 @@ for deppkg in "${PYTHON3_BACKPORTS[@]}"; do
     # The empty string is the vendor argument: these aren't Curoverse software.
     fpm_build "$deppkg" "$outname" "" python3
 done
-
-# libpam-arvados
-cd $WORKSPACE/sdk/pam
-PKG_VERSION=$(version_from_git)
-cd $WORKSPACE/packages/$TARGET
-
-if [[ "$FORMAT" == "deb" ]]; then
-  fpm_build $WORKSPACE/sdk/pam/debian/shellinabox=/etc/pam.d/shellinabox libpam-arvados 'Curoverse, Inc.' 'dir' "$PKG_VERSION" "--url=https://arvados.org" "--license=Apache License, Version 2.0" "--description=PAM module for Arvados" "--config-files=/etc/default" "-d libpam-python" $WORKSPACE/sdk/pam/arvados_pam.py=/usr/bin/arvados_pam.py $WORKSPACE/sdk/pam/debian/arvados_pam=/etc/default/arvados_pam
-#else
-  # FIXME enable and test once we have the centos pam.d file
-  #fpm_build $WORKSPACE/sdk/pam/centos/shellinabox=/etc/pam.d/shellinabox libpam-arvados 'Curoverse, Inc.' 'dir' "$PKG_VERSION" "--url=https://arvados.org" "--license=Apache License, Version 2.0" "--description=PAM module for Arvados" "--config-files=/etc/default" "-d libpam-python" $WORKSPACE/sdk/pam/arvados_pam.py=/usr/bin/arvados_pam.py $WORKSPACE/sdk/pam/centos/arvados_pam=/etc/default/arvados_pam
-fi
 
 # Build the API server package
 
