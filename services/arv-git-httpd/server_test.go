@@ -80,8 +80,22 @@ func (s *IntegrationSuite) TestExpiredToken(c *check.C) {
 
 func (s *IntegrationSuite) TestInvalidToken(c *check.C) {
 	for _, repo := range []string{"active/foo.git", "active/foo/.git"} {
-		err := s.runGit(c, "no-such-token-in-the-system", "fetch", repo)
+		err := s.runGit(c, "s3cr3tp@ssw0rd", "fetch", repo)
+		c.Assert(err, check.ErrorMatches, `.* requested URL returned error.*`)
+	}
+}
+
+func (s *IntegrationSuite) TestShortToken(c *check.C) {
+	for _, repo := range []string{"active/foo.git", "active/foo/.git"} {
+		err := s.runGit(c, "s3cr3t", "fetch", repo)
 		c.Assert(err, check.ErrorMatches, `.* 500 while accessing.*`)
+	}
+}
+
+func (s *IntegrationSuite) TestShortTokenBadReq(c *check.C) {
+	for _, repo := range []string{"bogus"} {
+		err := s.runGit(c, "s3cr3t", "fetch", repo)
+		c.Assert(err, check.ErrorMatches, `.* requested URL returned error.*`)
 	}
 }
 

@@ -43,6 +43,7 @@ func (h *authHandler) ServeHTTP(wOrig http.ResponseWriter, r *http.Request) {
 	var username, password string
 	var repoName string
 	var wroteStatus int
+	var validApiToken bool
 
 	w := spyingResponseWriter{wOrig, &wroteStatus}
 
@@ -53,10 +54,10 @@ func (h *authHandler) ServeHTTP(wOrig http.ResponseWriter, r *http.Request) {
 			w.Write([]byte(statusText))
 		}
 
-    // If the given password is a valid token, log the first 10 characters of the token.
-    // Otherwise: log the string <invalid> if a password is given, else an empty string.
+		// If the given password is a valid token, log the first 10 characters of the token.
+		// Otherwise: log the string <invalid> if a password is given, else an empty string.
 		passwordToLog := ""
-		if statusCode == 401 || strings.Contains(statusText, "Unauthorized") {
+		if !validApiToken {
 			if len(password) > 0 {
 				passwordToLog = "<invalid>"
 			}
@@ -104,6 +105,7 @@ func (h *authHandler) ServeHTTP(wOrig http.ResponseWriter, r *http.Request) {
 		statusCode, statusText = http.StatusInternalServerError, err.Error()
 		return
 	}
+	validApiToken = true
 	if avail, ok := reposFound["items_available"].(float64); !ok {
 		statusCode, statusText = http.StatusInternalServerError, "bad list response from API"
 		return
