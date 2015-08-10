@@ -18,6 +18,7 @@ const (
 	spectatorToken = "zw2f4gwx8hw8cjre7yp6v1zylhrhn3m5gvjq73rtpwhmknrybu"
 	activeToken    = "3kg6k6lzmp9kj5cpkcoxie963cmvjahbt2fod9zru30k1jqdmi"
 	anonymousToken = "4kg6k6lzmp9kj4cpkcoxie964cmvjahbt4fod9zru44k4jqdmi"
+	expiredToken   = "2ym314ysp27sk7h943q6vtc378srb06se3pq6ghurylyf3pdmx"
 )
 
 // IntegrationSuite tests need an API server and an arv-git-httpd server
@@ -67,6 +68,20 @@ func (s *IntegrationSuite) TestNoPermission(c *check.C) {
 	for _, repo := range []string{"active/foo.git", "active/foo/.git"} {
 		err := s.runGit(c, anonymousToken, "fetch", repo)
 		c.Assert(err, check.ErrorMatches, `.* not found.*`)
+	}
+}
+
+func (s *IntegrationSuite) TestExpiredToken(c *check.C) {
+	for _, repo := range []string{"active/foo.git", "active/foo/.git"} {
+		err := s.runGit(c, expiredToken, "fetch", repo)
+		c.Assert(err, check.ErrorMatches, `.* 500 while accessing.*`)
+	}
+}
+
+func (s *IntegrationSuite) TestInvalidToken(c *check.C) {
+	for _, repo := range []string{"active/foo.git", "active/foo/.git"} {
+		err := s.runGit(c, "no-such-token-in-the-system", "fetch", repo)
+		c.Assert(err, check.ErrorMatches, `.* 500 while accessing.*`)
 	}
 }
 

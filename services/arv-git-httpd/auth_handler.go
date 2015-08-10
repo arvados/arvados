@@ -52,7 +52,19 @@ func (h *authHandler) ServeHTTP(wOrig http.ResponseWriter, r *http.Request) {
 			w.WriteHeader(statusCode)
 			w.Write([]byte(statusText))
 		}
-		log.Println(quoteStrings(r.RemoteAddr, username, password, wroteStatus, statusText, repoName, r.Method, r.URL.Path)...)
+
+    // If the given password is a valid token, log the first 10 characters of the token.
+    // Otherwise: log the string <invalid> if a password is given, else an empty string.
+		passwordToLog := ""
+		if statusCode == 401 || strings.Contains(statusText, "Unauthorized") {
+			if len(password) > 0 {
+				passwordToLog = "<invalid>"
+			}
+		} else {
+			passwordToLog = password[0:10]
+		}
+
+		log.Println(quoteStrings(r.RemoteAddr, username, passwordToLog, wroteStatus, statusText, repoName, r.Method, r.URL.Path)...)
 	}()
 
 	// HTTP request username is logged, but unused. Password is an
