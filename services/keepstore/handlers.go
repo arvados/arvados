@@ -192,12 +192,6 @@ type PoolStatus struct {
 	Len   int    `json:"BuffersInUse"`
 }
 
-type WorkQueueStatus struct {
-	InProgress  int
-	Outstanding int
-	Queued      int
-}
-
 type NodeStatus struct {
 	Volumes    []*VolumeStatus `json:"volumes"`
 	BufferPool PoolStatus
@@ -238,22 +232,20 @@ func readNodeStatus(st *NodeStatus) {
 	st.BufferPool.Alloc = bufs.Alloc()
 	st.BufferPool.Cap = bufs.Cap()
 	st.BufferPool.Len = bufs.Len()
-	readWorkQueueStatus(&st.PullQueue, pullq)
-	readWorkQueueStatus(&st.TrashQueue, trashq)
+	st.PullQueue = getWorkQueueStatus(pullq)
+	st.TrashQueue = getWorkQueueStatus(trashq)
 	runtime.ReadMemStats(&st.Memory)
 }
 
-// Populate a WorkQueueStatus. This is not atomic, so race conditions
-// can cause InProgress + Queued != Outstanding.
-func readWorkQueueStatus(st *WorkQueueStatus, q *WorkQueue) {
+// return a WorkQueueStatus for the given queue. If q is nil (which
+// should never happen except in test suites), return a zero status
+// value instead of crashing.
+func getWorkQueueStatus(q *WorkQueue) WorkQueueStatus {
 	if q == nil {
 		// This should only happen during tests.
-		*st = WorkQueueStatus{}
-		return
+		return WorkQueueStatus{}
 	}
-	st.InProgress = q.CountInProgress()
-	st.Outstanding = q.CountOutstanding()
-	st.Queued = q.CountQueued()
+	return q.Status()
 }
 
 // DeleteHandler processes DELETE requests.

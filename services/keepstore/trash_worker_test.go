@@ -271,26 +271,23 @@ func performTrashWorkerTest(testData TrashWorkerTestData, t *testing.T) {
 	}
 
 	assertStatusItem("InProgress", 0)
-	assertStatusItem("Outstanding", 0)
 	assertStatusItem("Queued", 0)
 
 	listLen := trashList.Len()
 	trashq.ReplaceQueue(trashList)
 
 	// Wait for worker to take request(s)
-	expectEqualWithin(t, time.Second, listLen, func() interface{} { return trashq.CountOutstanding() })
-	expectEqualWithin(t, time.Second, listLen, func() interface{} { return trashq.CountInProgress() })
+	expectEqualWithin(t, time.Second, listLen, func() interface{} { return trashq.Status().InProgress })
 
 	// Ensure status.json also reports work is happening
 	assertStatusItem("InProgress", float64(1))
-	assertStatusItem("Outstanding", float64(listLen))
 	assertStatusItem("Queued", float64(listLen-1))
 
 	// Let worker proceed
 	close(gate)
 
 	// Wait for worker to finish
-	expectEqualWithin(t, time.Second, 0, func() interface{} { return trashq.CountOutstanding() })
+	expectEqualWithin(t, time.Second, 0, func() interface{} { return trashq.Status().InProgress })
 
 	// Verify Locator1 to be un/deleted as expected
 	data, _ := GetBlock(testData.Locator1, false)

@@ -281,14 +281,16 @@ func performTest(testData PullWorkerTestData, c *C) {
 	}
 
 	c.Assert(getStatusItem("PullQueue", "InProgress"), Equals, float64(0))
-	c.Assert(getStatusItem("PullQueue", "Outstanding"), Equals, float64(0))
 	c.Assert(getStatusItem("PullQueue", "Queued"), Equals, float64(0))
 
 	response := IssueRequest(&testData.req)
 	c.Assert(response.Code, Equals, testData.response_code)
 	c.Assert(response.Body.String(), Equals, testData.response_body)
 
-	expectEqualWithin(c, time.Second, 0, func() interface{} { return pullq.CountOutstanding() })
+	expectEqualWithin(c, time.Second, 0, func() interface{} {
+		st := pullq.Status()
+		return st.InProgress + st.Queued
+	})
 
 	if testData.name == "TestPullWorker_pull_list_with_two_items_latest_replacing_old" {
 		c.Assert(len(testPullLists), Equals, 2)
