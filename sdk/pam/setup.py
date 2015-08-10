@@ -13,8 +13,7 @@ README = os.path.join(SETUP_DIR, 'README.rst')
 tagger = egg_info_cmd.egg_info
 try:
     import gittaggers
-    if subprocess.check_call(['git', 'log', '-n1']):
-        tagger = gittaggers.EggInfoFromGit
+    tagger = gittaggers.EggInfoFromGit
 except (ImportError, OSError):
     pass
 
@@ -31,6 +30,10 @@ setup(name='arvados-pam',
           'arvados_pam',
       ],
       scripts=[
+      ],
+      data_files=[
+          ('/usr/share/pam-configs', ['pam-configs/arvados']),
+          ('/lib/security', ['lib/libpam_arvados.py']),
       ],
       install_requires=[
           'arvados-python-client>=0.1.20150801000000',

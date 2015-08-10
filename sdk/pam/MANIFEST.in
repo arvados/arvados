@@ -1,1 +1,3 @@
 include README.rst
+include lib/libpam_arvados.py
+include pam-configs/arvados
