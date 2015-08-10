@@ -1,0 +1,36 @@
+---
+layout: default
+navsection: userguide
+title: Working with your Arvados Git Repository
+...
+
+Working with your Arvados git repository is analogous to working with your other repositories, the difference being that you push to Arvados rather than Github or Bitbucket.
+
+Include: This tutorial assumes that you have a working Arvados repository. If you need to create one, you can go to the /user/tutorials/add-new-repository.html section and follow those instructions.
+
+Using the example $USER/tutorial repository from the "Add new Arvados repository":http://doc.arvados.org/user/tutorials/add-new-repository.html page, first,  clone your remote repository into a new local directory.
+
+<notextile>
+<pre><code>~$ <span class="userinput">git clone $USER/tutorial.git</span>
+</code></pre>
+</notextile>
+
+You may get warning: You appear to have cloned an empty repository., Do not worry about this.
+
+Now go into your new repository and we'll create a new script for you to push to Arvados.
+
+Start by creating a file in your local repository.
+
+<notextile>
+<pre><code>~$ <span class="userinput">cd tutorial</span>
+~$ <span class="userinput">echo 'hello world' > tutorial.txt</span>
+</code></pre>
+</notextile>
+
+Now, add your file to the index:
+
+<notextile>
+<pre><code>~$ <span class="userinput">git add tutorial.txt</span>
+</code></pre>
+</notextile>
+
