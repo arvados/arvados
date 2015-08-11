@@ -46,6 +46,16 @@ func (s *ServerRequiredSuite) TestMakeArvadosClientInsecure(c *C) {
 	c.Check(kc.Client.Transport.(*http.Transport).TLSClientConfig.InsecureSkipVerify, Equals, true)
 }
 
+func (s *ServerRequiredSuite) TestGetEmptyUUID(c *C) {
+	arv, err := MakeArvadosClient()
+
+	getback := make(Dict)
+	err = arv.Get("collections", "", nil, &getback)
+	c.Assert(err, FitsTypeOf, APIServerError{})
+	c.Assert(err.(APIServerError).HttpStatusCode, Equals, http.StatusNotFound)
+	c.Assert(len(getback), Equals, 0)
+}
+
 func (s *ServerRequiredSuite) TestCreatePipelineTemplate(c *C) {
 	arv, err := MakeArvadosClient()
 
