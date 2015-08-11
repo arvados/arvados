@@ -22,10 +22,13 @@ type MockVolume struct {
 	// Readonly volumes return an error for Put, Delete, and
 	// Touch.
 	Readonly bool
-	// Every operation (except Status) starts by receiving from
-	// Gate. Send one value to unblock one operation; close the
-	// channel to unblock all. By default, it is a closed channel,
-	// so all operations proceed without blocking.
+	// Gate is a "starting gate", allowing test cases to pause
+	// volume operations long enough to inspect state. Every
+	// operation (except Status) starts by receiving from
+	// Gate. Sending one value unblocks one operation; closing the
+	// channel unblocks all operations. By default, Gate is a
+	// closed channel, so all operations proceed without
+	// blocking. See trash_worker_test.go for an example.
 	Gate   chan struct{}
 	called map[string]int
 	mutex  sync.Mutex
