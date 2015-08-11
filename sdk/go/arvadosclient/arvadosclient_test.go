@@ -14,6 +14,7 @@ func Test(t *testing.T) {
 }
 
 var _ = Suite(&ServerRequiredSuite{})
+var _ = Suite(&UnitSuite{})
 
 // Tests that require the Keep server running
 type ServerRequiredSuite struct{}
@@ -151,4 +152,34 @@ func (s *ServerRequiredSuite) TestAPIDiscovery_Get_noSuchParameter(c *C) {
 	value, err := arv.Discovery("noSuchParameter")
 	c.Assert(err, NotNil)
 	c.Assert(value, IsNil)
+}
+
+type UnitSuite struct{}
+
+func (s *UnitSuite) TestUUIDMatch(c *C) {
+	c.Assert(UUIDMatch("zzzzz-tpzed-000000000000000"), Equals, true)
+	c.Assert(UUIDMatch("zzzzz-zebra-000000000000000"), Equals, true)
+	c.Assert(UUIDMatch("00000-00000-zzzzzzzzzzzzzzz"), Equals, true)
+	c.Assert(UUIDMatch("ZEBRA-HORSE-AFRICANELEPHANT"), Equals, false)
+	c.Assert(UUIDMatch(" zzzzz-tpzed-000000000000000"), Equals, false)
+	c.Assert(UUIDMatch("d41d8cd98f00b204e9800998ecf8427e"), Equals, false)
+	c.Assert(UUIDMatch("d41d8cd98f00b204e9800998ecf8427e+0"), Equals, false)
+	c.Assert(UUIDMatch(""), Equals, false)
+}
+
+func (s *UnitSuite) TestPDHMatch(c *C) {
+	c.Assert(PDHMatch("zzzzz-tpzed-000000000000000"), Equals, false)
+	c.Assert(PDHMatch("d41d8cd98f00b204e9800998ecf8427e"), Equals, false)
+	c.Assert(PDHMatch("d41d8cd98f00b204e9800998ecf8427e+0"), Equals, true)
+	c.Assert(PDHMatch("d41d8cd98f00b204e9800998ecf8427e+12345"), Equals, true)
+	c.Assert(PDHMatch("d41d8cd98f00b204e9800998ecf8427e 12345"), Equals, false)
+	c.Assert(PDHMatch("D41D8CD98F00B204E9800998ECF8427E+12345"), Equals, false)
+	c.Assert(PDHMatch("d41d8cd98f00b204e9800998ecf8427e+12345 "), Equals, false)
+	c.Assert(PDHMatch("d41d8cd98f00b204e9800998ecf8427e+abcdef"), Equals, false)
+	c.Assert(PDHMatch("da39a3ee5e6b4b0d3255bfef95601890afd80709"), Equals, false)
+	c.Assert(PDHMatch("da39a3ee5e6b4b0d3255bfef95601890afd80709+0"), Equals, false)
+	c.Assert(PDHMatch("d41d8cd98f00b204e9800998ecf8427+12345"), Equals, false)
+	c.Assert(PDHMatch("d41d8cd98f00b204e9800998ecf8427e+12345\n"), Equals, false)
+	c.Assert(PDHMatch("+12345"), Equals, false)
+	c.Assert(PDHMatch(""), Equals, false)
 }
