@@ -24,7 +24,7 @@ func RunPullWorker(pullq *WorkQueue, keepClient *keepclient.KeepClient) {
 	for item := range nextItem {
 		pullRequest := item.(PullRequest)
 		err := PullItemAndProcess(item.(PullRequest), GenerateRandomApiToken(), keepClient)
-		pullq.ReportDone <- struct{}{}
+		pullq.DoneItem <- struct{}{}
 		if err == nil {
 			log.Printf("Pull %s success", pullRequest)
 		} else {

@@ -59,7 +59,7 @@ func doWorkItems(t fatalfer, q *WorkQueue, expected []int) {
 		if !ok {
 			t.Fatalf("Expected %+v but channel was closed after receiving %+v as expected.", expected, expected[:i])
 		}
-		q.ReportDone <- struct{}{}
+		q.DoneItem <- struct{}{}
 		if actual.(int) != expected[i] {
 			t.Fatalf("Expected %+v but received %+v after receiving %+v as expected.", expected[i], actual, expected[:i])
 		}
@@ -101,7 +101,7 @@ func TestWorkQueueDoneness(t *testing.T) {
 		for _ = range b.NextItem {
 			<-gate
 			time.Sleep(time.Millisecond)
-			b.ReportDone <- struct{}{}
+			b.DoneItem <- struct{}{}
 		}
 	}()
 	expectEqualWithin(t, time.Second, 0, func() interface{} { return b.Status().InProgress })
@@ -167,7 +167,7 @@ func TestWorkQueueClose(t *testing.T) {
 		<-b.NextItem
 		mark <- struct{}{}
 		<-mark
-		b.ReportDone <- struct{}{}
+		b.DoneItem <- struct{}{}
 	}()
 	b.ReplaceQueue(makeTestWorkList(input))
 	// Wait for worker to take item 1

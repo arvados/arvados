@@ -89,11 +89,11 @@ type WorkQueue struct {
 	newlist   chan *list.List
 	// Workers get work items by reading from this channel.
 	NextItem <-chan interface{}
-	// Each worker must send struct{}{} to ReportDone exactly once
+	// Each worker must send struct{}{} to DoneItem exactly once
 	// for each work item received from NextItem, when it stops
 	// working on that item (regardless of whether the work was
 	// successful).
-	ReportDone chan<- struct{}
+	DoneItem chan<- struct{}
 }
 
 type WorkQueueStatus struct {
@@ -108,10 +108,10 @@ func NewWorkQueue() *WorkQueue {
 	reportDone := make(chan struct{})
 	newList := make(chan *list.List)
 	b := WorkQueue{
-		getStatus:  make(chan WorkQueueStatus),
-		newlist:    newList,
-		NextItem:   nextItem,
-		ReportDone: reportDone,
+		getStatus: make(chan WorkQueueStatus),
+		newlist:   newList,
+		NextItem:  nextItem,
+		DoneItem:  reportDone,
 	}
 	go func() {
 		// Read new work lists from the newlist channel.
