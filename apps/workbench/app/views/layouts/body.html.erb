@@ -201,14 +201,21 @@
               <span class="caret"></span>
             </a>
             <ul class="dropdown-menu" style="min-width: 20em" role="menu">
+               <li role="menuitem"><a href="/projects/public" role="menuitem"><i class="glyphicon fa-fw glyphicon-search"></i> Search all projects </a>
+               </li>
               <% if Rails.configuration.anonymous_user_token and Rails.configuration.enable_public_projects_page %>
-                <li><%= link_to 'Browse public projects', "/projects/public", class: 'btn btn-xs btn-default pull-right' %></li>
+                <li role="menuitem"><a href="/projects/public" role="menuitem"><i class="fa fa-fw fa-list"></i> Browse public projects </a>
+                </li>
               <% end %>
-              <li>
-                <%= link_to projects_path(options: {ensure_unique_name: true}), method: :post, class: 'btn btn-xs btn-default pull-right' do %>
-                  <i class="fa fa-plus"></i> Add a new project
+              <li role="menuitem">
+                <%= link_to projects_path(options: {ensure_unique_name: true}), role: 'menu-item', method: :post do %>
+                  <i class="fa fa-fw fa-plus"></i> Create a new project
                 <% end %>
               </li>
+               <li role="presentation" class="divider"></li>
+               <li role="presentation" class="dropdown-header">
+                 My projects
+               </li>
               <%= render partial: "projects_tree_menu", locals: {
                   :project_link_to => Proc.new do |pnode, &block|
                     link_to(project_path(pnode[:object].uuid),
