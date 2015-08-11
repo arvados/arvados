@@ -1,51 +1,10 @@
-import arvados
 import arvados_pam
-import mock
-import os
 import re
-import StringIO
-import unittest
+from . import mocker
 
-ACTIVE_TOKEN = '3kg6k6lzmp9kj5cpkcoxie963cmvjahbt2fod9zru30k1jqdmi'
-
-class AuthTest(unittest.TestCase):
-    default_config = {
-        'ARVADOS_API_HOST': 'zzzzz.api_host.example',
-        'virtual_machine_hostname': 'testvm2.shell',
-    }
-    default_request = {
-        'client_host': '::1',
-        'token': ACTIVE_TOKEN,
-        'username': 'active',
-    }
-    default_response = {
-        'links': {
-            'items': [{
-                'uuid': 'zzzzz-o0j2j-rah2ya1ohx9xaev',
-                'tail_uuid': 'zzzzz-tpzed-xurymjxw79nv3jz',
-                'head_uuid': 'zzzzz-2x53u-382brsig8rp3065',
-                'link_class': 'permission',
-                'name': 'can_login',
-                'properties': {
-                    'username': 'active',
-                },
-            }],
-        },
-        'users': {
-            'uuid': 'zzzzz-tpzed-xurymjxw79nv3jz',
-            'full_name': 'Active User',
-        },
-        'virtual_machines': {
-            'items': [{
-                'uuid': 'zzzzz-2x53u-382brsig8rp3065',
-                'hostname': 'testvm2.shell',
-            }],
-            'items_available': 1,
-        },
-    }
-
+class AuthEventTest(mocker.Mocker):
     def attempt(self):
-        return arvados_pam.AuthEvent(config=self.config, service='test_service', **self.request).can_login()
+        return arvados_pam.auth_event.AuthEvent(config=self.config, service='test_service', **self.request).can_login()
 
     def test_success(self):
         self.assertTrue(self.attempt())
@@ -53,11 +12,14 @@ class AuthTest(unittest.TestCase):
         self.api_client.virtual_machines().list.assert_called_with(
             filters=[['hostname','=',self.config['virtual_machine_hostname']]])
         self.api.assert_called_with(
-            'v1', host=self.config['ARVADOS_API_HOST'], token=self.request['token'], cache=None)
+            'v1',
+            host=self.config['arvados_api_host'], token=self.request['token'],
+            insecure=False,
+            cache=False)
         self.assertEqual(1, len(self.syslogged))
         for i in ['test_service',
                   self.request['username'],
-                  self.config['ARVADOS_API_HOST'],
+                  self.config['arvados_api_host'],
                   self.response['virtual_machines']['items'][0]['uuid']]:
             self.assertRegexpMatches(self.syslogged[0], re.escape(i))
         self.assertRegexpMatches(self.syslogged[0], re.escape(self.request['token'][0:15]), 'token prefix not logged')
@@ -131,22 +93,3 @@ class AuthTest(unittest.TestCase):
             }],
         }
         self.assertFalse(self.attempt())
-
-    def setUp(self):
-        self.config = self.default_config.copy()
-        self.request = self.default_request.copy()
-        self.response = self.default_response.copy()
-        self.api_client = mock.MagicMock(name='api_client')
-        self.api_client.users().current().execute.side_effect = lambda: self.response['users']
-        self.api_client.virtual_machines().list().execute.side_effect = lambda: self.response['virtual_machines']
-        self.api_client.links().list().execute.side_effect = lambda: self.response['links']
-        patcher = mock.patch('arvados.api')
-        self.api = patcher.start()
-        self.addCleanup(patcher.stop)
-        self.api.side_effect = [self.api_client]
-
-        self.syslogged = []
-        patcher = mock.patch('syslog.syslog')
-        self.syslog = patcher.start()
-        self.addCleanup(patcher.stop)
-        self.syslog.side_effect = lambda s: self.syslogged.append(s)
