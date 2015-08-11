@@ -23,6 +23,7 @@ var PDHMatch StringMatcher = regexp.MustCompile(`^[0-9a-f]{32}\+\d+$`).MatchStri
 
 var MissingArvadosApiHost = errors.New("Missing required environment variable ARVADOS_API_HOST")
 var MissingArvadosApiToken = errors.New("Missing required environment variable ARVADOS_API_TOKEN")
+var ErrInvalidArgument = errors.New("Invalid argument")
 
 // Indicates an error that was returned by the API server.
 type APIServerError struct {
@@ -247,16 +248,12 @@ func (c ArvadosClient) Update(resourceType string, uuid string, parameters Dict,
 
 // Get a resource. See Call for argument descriptions.
 func (c ArvadosClient) Get(resourceType string, uuid string, parameters Dict, output interface{}) (err error) {
-	if uuid == "" {
+	if !UUIDMatch(uuid) && !(resourceType == "collections" && PDHMatch(uuid)) {
 		// No object has uuid == "": there is no need to make
 		// an API call. Furthermore, the HTTP request for such
 		// an API call would be "GET /arvados/v1/type/", which
 		// is liable to be misinterpreted as the List API.
-		return APIServerError{
-			ServerAddress:     c.ApiServer,
-			HttpStatusCode:    http.StatusNotFound,
-			HttpStatusMessage: "Not Found",
-		}
+		return ErrInvalidArgument
 	}
 	return c.Call("GET", resourceType, uuid, "", parameters, output)
 }
@@ -268,7 +265,10 @@ func (c ArvadosClient) List(resource string, parameters Dict, output interface{}
 
 const API_DISCOVERY_RESOURCE = "discovery/v1/apis/arvados/v1/rest"
 
-// Discovery returns the value of the given parameter in the discovery document.
+// Discovery returns the value of the given parameter in the discovery
+// document. Returns a non-nil error if the discovery document cannot
+// be retrieved/decoded. Returns ErrInvalidArgument if the requested
+// parameter is not found in the discovery document.
 func (c *ArvadosClient) Discovery(parameter string) (value interface{}, err error) {
 	if len(c.DiscoveryDoc) == 0 {
 		c.DiscoveryDoc = make(Dict)
@@ -283,6 +283,6 @@ func (c *ArvadosClient) Discovery(parameter string) (value interface{}, err erro
 	if found {
 		return value, nil
 	} else {
-		return value, errors.New("Not found")
+		return value, ErrInvalidArgument
 	}
 }

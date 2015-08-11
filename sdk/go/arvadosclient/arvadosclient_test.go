@@ -51,8 +51,7 @@ func (s *ServerRequiredSuite) TestGetEmptyUUID(c *C) {
 
 	getback := make(Dict)
 	err = arv.Get("collections", "", nil, &getback)
-	c.Assert(err, FitsTypeOf, APIServerError{})
-	c.Assert(err.(APIServerError).HttpStatusCode, Equals, http.StatusNotFound)
+	c.Assert(err, Equals, ErrInvalidArgument)
 	c.Assert(len(getback), Equals, 0)
 }
 
