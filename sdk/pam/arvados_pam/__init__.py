@@ -28,7 +28,9 @@ class AuthEvent(object):
         ok = False
         try:
             self.api_host = self.config['arvados_api_host']
-            self.arv = arvados.api('v1', host=self.api_host, token=self.token, cache=None)
+            self.arv = arvados.api('v1', host=self.api_host, token=self.token,
+                                   insecure=self.config.get('insecure'),
+                                   cache=False)
 
             vmname = self.config['virtual_machine_hostname']
             vms = self.arv.virtual_machines().list(filters=[['hostname','=',vmname]]).execute()
@@ -94,18 +96,20 @@ def pam_sm_authenticate(pamh, flags, argv):
     config = {}
     config['arvados_api_host'] = argv[1]
     config['virtual_machine_hostname'] = argv[2]
-    config['noprompt'] = (len(argv) > 3 and argv[3] == 'noprompt')
+    if len(argv) > 3:
+        for k in argv[3:]:
+            config[k] = True
 
     try:
-        username = pamh.get_user()
-    except pamh.exception as e:
+        username = pamh.get_user(None)
+    except pamh.exception, e:
         return e.pam_result
 
     if not username:
         return pamh.PAM_USER_UNKNOWN
 
     try:
-        prompt = '' if config['noprompt'] else 'Arvados API token: '
+        prompt = '' if config.get('noprompt') else 'Arvados API token: '
         token = pamh.conversation(pamh.Message(pamh.PAM_PROMPT_ECHO_OFF, prompt)).resp
     except pamh.exception as e:
         return e.pam_result
