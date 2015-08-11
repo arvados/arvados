@@ -47,12 +47,35 @@ func (s *ServerRequiredSuite) TestMakeArvadosClientInsecure(c *C) {
 	c.Check(kc.Client.Transport.(*http.Transport).TLSClientConfig.InsecureSkipVerify, Equals, true)
 }
 
-func (s *ServerRequiredSuite) TestGetEmptyUUID(c *C) {
+func (s *ServerRequiredSuite) TestGetInvalidUUID(c *C) {
 	arv, err := MakeArvadosClient()
 
 	getback := make(Dict)
 	err = arv.Get("collections", "", nil, &getback)
 	c.Assert(err, Equals, ErrInvalidArgument)
+	c.Assert(len(getback), Equals, 0)
+
+	err = arv.Get("collections", "zebra-moose-unicorn", nil, &getback)
+	c.Assert(err, Equals, ErrInvalidArgument)
+	c.Assert(len(getback), Equals, 0)
+
+	err = arv.Get("collections", "acbd18db4cc2f85cedef654fccc4a4d8", nil, &getback)
+	c.Assert(err, Equals, ErrInvalidArgument)
+	c.Assert(len(getback), Equals, 0)
+}
+
+func (s *ServerRequiredSuite) TestGetValidUUID(c *C) {
+	arv, err := MakeArvadosClient()
+
+	getback := make(Dict)
+	err = arv.Get("collections", "zzzzz-4zz18-abcdeabcdeabcde", nil, &getback)
+	c.Assert(err, FitsTypeOf, APIServerError{})
+	c.Assert(err.(APIServerError).HttpStatusCode, Equals, http.StatusNotFound)
+	c.Assert(len(getback), Equals, 0)
+
+	err = arv.Get("collections", "acbd18db4cc2f85cedef654fccc4a4d8+3", nil, &getback)
+	c.Assert(err, FitsTypeOf, APIServerError{})
+	c.Assert(err.(APIServerError).HttpStatusCode, Equals, http.StatusNotFound)
 	c.Assert(len(getback), Equals, 0)
 }
 
