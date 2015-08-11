@@ -19,9 +19,12 @@ class AnonymousAccessTest < ActionDispatch::IntegrationTest
         assert_text 'Unrestricted public data'
         assert_selector 'a', text: 'Projects'
         page.find("#projects-menu").click
-        assert_selector 'a', text: 'Add a new project'
-        assert_selector 'a', text: 'Browse public projects'
-        assert page.has_text?('Projects shared with me'), 'Not found text - Project shared with me'
+        within('.dropdown-menu') do
+          assert_selector 'a', text: 'Search all projects'
+          assert_selector "a[href=\"/projects/public\"]", text: 'Browse public projects'
+          assert_selector 'a', text: 'Add a new project'
+          assert_selector 'li[class="dropdown-header"]', text: 'My projects'
+        end
       else
         assert_text 'indicate that you have read and accepted the user agreement'
       end

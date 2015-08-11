@@ -34,7 +34,7 @@
                           action_name: 'Show',
                           action_href: url_for(controller: :actions, action: :show),
                           action_method: 'get',
-                          action_data: {selection_param: 'uuid', success: 'redirect-to-created-object', copy_from_search_box: true}.to_json)
+                          action_data: {selection_param: 'uuid', success: 'redirect-to-created-object'}.to_json)
                          %>">
                 <div class="input-group" style="width: 220px">
                   <input type="text" class="form-control" placeholder="search">
@@ -201,14 +201,31 @@
               <span class="caret"></span>
             </a>
             <ul class="dropdown-menu" style="min-width: 20em" role="menu">
+              <li role="menuitem">
+                  <%= link_to(
+                        url_for(
+                          action: 'choose',
+                          controller: 'search',
+                          filters: [['uuid', 'is_a', 'arvados#group']].to_json,
+                          title: 'Search',
+                          action_name: 'Show',
+                          action_href: url_for(controller: :actions, action: :show),
+                          action_method: 'get',
+                          action_data: {selection_param: 'uuid', success: 'redirect-to-created-object'}.to_json),
+                { remote: true, method: 'get', title: "Search" }) do %>
+                    <i class="glyphicon fa-fw glyphicon-search"></i> Search all projects ...
+                  <% end %>
+               </li>
               <% if Rails.configuration.anonymous_user_token and Rails.configuration.enable_public_projects_page %>
-                <li><%= link_to 'Browse public projects', "/projects/public", class: 'btn btn-xs btn-default pull-right' %></li>
+                <li role="menuitem"><a href="/projects/public" role="menuitem"><i class="fa fa-fw fa-list"></i> Browse public projects </a>
+                </li>
               <% end %>
-              <li>
-                <%= link_to projects_path(options: {ensure_unique_name: true}), method: :post, class: 'btn btn-xs btn-default pull-right' do %>
-                  <i class="fa fa-plus"></i> Add a new project
+              <li role="menuitem">
+                <%= link_to projects_path(options: {ensure_unique_name: true}), role: 'menu-item', method: :post do %>
+                  <i class="fa fa-fw fa-plus"></i> Add a new project
                 <% end %>
               </li>
+               <li role="presentation" class="divider"></li>
               <%= render partial: "projects_tree_menu", locals: {
                   :project_link_to => Proc.new do |pnode, &block|
                     link_to(project_path(pnode[:object].uuid),
