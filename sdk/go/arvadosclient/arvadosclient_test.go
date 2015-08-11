@@ -56,6 +56,26 @@ func (s *ServerRequiredSuite) TestGetEmptyUUID(c *C) {
 	c.Assert(len(getback), Equals, 0)
 }
 
+func (s *ServerRequiredSuite) TestInvalidResourceType(c *C) {
+	arv, err := MakeArvadosClient()
+
+	getback := make(Dict)
+	err = arv.Get("unicorns", "zzzzz-zebra-unicorn7unicorn", nil, &getback)
+	c.Assert(err, FitsTypeOf, APIServerError{})
+	c.Assert(err.(APIServerError).HttpStatusCode, Equals, http.StatusNotFound)
+	c.Assert(len(getback), Equals, 0)
+
+	err = arv.Update("unicorns", "zzzzz-zebra-unicorn7unicorn", nil, &getback)
+	c.Assert(err, FitsTypeOf, APIServerError{})
+	c.Assert(err.(APIServerError).HttpStatusCode, Equals, http.StatusNotFound)
+	c.Assert(len(getback), Equals, 0)
+
+	err = arv.List("unicorns", nil, &getback)
+	c.Assert(err, FitsTypeOf, APIServerError{})
+	c.Assert(err.(APIServerError).HttpStatusCode, Equals, http.StatusNotFound)
+	c.Assert(len(getback), Equals, 0)
+}
+
 func (s *ServerRequiredSuite) TestCreatePipelineTemplate(c *C) {
 	arv, err := MakeArvadosClient()
 
