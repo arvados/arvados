@@ -193,16 +193,19 @@ type PoolStatus struct {
 }
 
 type NodeStatus struct {
-	Volumes    []*VolumeStatus  `json:"volumes"`
+	Volumes    []*VolumeStatus `json:"volumes"`
 	BufferPool PoolStatus
+	PullQueue  WorkQueueStatus
+	TrashQueue WorkQueueStatus
 	Memory     runtime.MemStats
 }
 
 var st NodeStatus
 var stLock sync.Mutex
+
 func StatusHandler(resp http.ResponseWriter, req *http.Request) {
 	stLock.Lock()
-	ReadNodeStatus(&st)
+	readNodeStatus(&st)
 	jstat, err := json.Marshal(&st)
 	stLock.Unlock()
 	if err == nil {
@@ -214,10 +217,8 @@ func StatusHandler(resp http.ResponseWriter, req *http.Request) {
 	}
 }
 
-// ReadNodeStatus populates the given NodeStatus struct with current
-// values.
-//
-func ReadNodeStatus(st *NodeStatus) {
+// populate the given NodeStatus struct with current values.
+func readNodeStatus(st *NodeStatus) {
 	vols := KeepVM.AllReadable()
 	if cap(st.Volumes) < len(vols) {
 		st.Volumes = make([]*VolumeStatus, len(vols))
@@ -231,7 +232,20 @@ func ReadNodeStatus(st *NodeStatus) {
 	st.BufferPool.Alloc = bufs.Alloc()
 	st.BufferPool.Cap = bufs.Cap()
 	st.BufferPool.Len = bufs.Len()
+	st.PullQueue = getWorkQueueStatus(pullq)
+	st.TrashQueue = getWorkQueueStatus(trashq)
 	runtime.ReadMemStats(&st.Memory)
+}
+
+// return a WorkQueueStatus for the given queue. If q is nil (which
+// should never happen except in test suites), return a zero status
+// value instead of crashing.
+func getWorkQueueStatus(q *WorkQueue) WorkQueueStatus {
+	if q == nil {
+		// This should only happen during tests.
+		return WorkQueueStatus{}
+	}
+	return q.Status()
 }
 
 // DeleteHandler processes DELETE requests.
