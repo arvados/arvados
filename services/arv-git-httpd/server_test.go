@@ -103,6 +103,10 @@ func (s *IntegrationSuite) SetUpSuite(c *check.C) {
 	arvadostest.StartAPI()
 }
 
+func (s *IntegrationSuite) TearDownSuite(c *check.C) {
+	arvadostest.StopAPI()
+}
+
 func (s *IntegrationSuite) SetUpTest(c *check.C) {
 	arvadostest.ResetEnv()
 	s.testServer = &server{}

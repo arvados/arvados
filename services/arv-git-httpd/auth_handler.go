@@ -6,32 +6,14 @@ import (
 	"net/http/cgi"
 	"os"
 	"strings"
-	"sync"
 	"time"
 
 	"git.curoverse.com/arvados.git/sdk/go/arvadosclient"
+	"git.curoverse.com/arvados.git/sdk/go/auth"
+	"git.curoverse.com/arvados.git/sdk/go/httpserver"
 )
 
-func newArvadosClient() interface{} {
-	arv, err := arvadosclient.MakeArvadosClient()
-	if err != nil {
-		log.Println("MakeArvadosClient:", err)
-		return nil
-	}
-	return &arv
-}
-
-var connectionPool = &sync.Pool{New: newArvadosClient}
-
-type spyingResponseWriter struct {
-	http.ResponseWriter
-	wroteStatus *int
-}
-
-func (w spyingResponseWriter) WriteHeader(s int) {
-	*w.wroteStatus = s
-	w.ResponseWriter.WriteHeader(s)
-}
+var clientPool = arvadosclient.MakeClientPool()
 
 type authHandler struct {
 	handler *cgi.Handler
@@ -40,16 +22,16 @@ type authHandler struct {
 func (h *authHandler) ServeHTTP(wOrig http.ResponseWriter, r *http.Request) {
 	var statusCode int
 	var statusText string
-	var username, password string
+	var apiToken string
 	var repoName string
-	var wroteStatus int
 	var validApiToken bool
 
-	w := spyingResponseWriter{wOrig, &wroteStatus}
+	w := httpserver.WrapResponseWriter(wOrig)
 
 	defer func() {
-		if wroteStatus == 0 {
-			// Nobody has called WriteHeader yet: that must be our job.
+		if w.WroteStatus() == 0 {
+			// Nobody has called WriteHeader yet: that
+			// must be our job.
 			w.WriteHeader(statusCode)
 			w.Write([]byte(statusText))
 		}
@@ -58,24 +40,23 @@ func (h *authHandler) ServeHTTP(wOrig http.ResponseWriter, r *http.Request) {
 		// Otherwise: log the string <invalid> if a password is given, else an empty string.
 		passwordToLog := ""
 		if !validApiToken {
-			if len(password) > 0 {
+			if len(apiToken) > 0 {
 				passwordToLog = "<invalid>"
 			}
 		} else {
-			passwordToLog = password[0:10]
+			passwordToLog = apiToken[0:10]
 		}
 
-		log.Println(quoteStrings(r.RemoteAddr, username, passwordToLog, wroteStatus, statusText, repoName, r.Method, r.URL.Path)...)
+		httpserver.Log(r.RemoteAddr, passwordToLog, w.WroteStatus(), statusText, repoName, r.Method, r.URL.Path)
 	}()
 
-	// HTTP request username is logged, but unused. Password is an
-	// Arvados API token.
-	username, password, ok := BasicAuth(r)
-	if !ok || username == "" || password == "" {
+	creds := auth.NewCredentialsFromHTTPRequest(r)
+	if len(creds.Tokens) == 0 {
 		statusCode, statusText = http.StatusUnauthorized, "no credentials provided"
 		w.Header().Add("WWW-Authenticate", "Basic realm=\"git\"")
 		return
 	}
+	apiToken = creds.Tokens[0]
 
 	// Access to paths "/foo/bar.git/*" and "/foo/bar/.git/*" are
 	// protected by the permissions on the repository named
@@ -88,16 +69,16 @@ func (h *authHandler) ServeHTTP(wOrig http.ResponseWriter, r *http.Request) {
 	repoName = pathParts[0]
 	repoName = strings.TrimRight(repoName, "/")
 
-	arv, ok := connectionPool.Get().(*arvadosclient.ArvadosClient)
-	if !ok || arv == nil {
-		statusCode, statusText = http.StatusInternalServerError, "connection pool failed"
+	arv := clientPool.Get()
+	if arv == nil {
+		statusCode, statusText = http.StatusInternalServerError, "connection pool failed: "+clientPool.Err().Error()
 		return
 	}
-	defer connectionPool.Put(arv)
+	defer clientPool.Put(arv)
 
 	// Ask API server whether the repository is readable using
 	// this token (by trying to read it!)
-	arv.ApiToken = password
+	arv.ApiToken = apiToken
 	reposFound := arvadosclient.Dict{}
 	if err := arv.List("repositories", arvadosclient.Dict{
 		"filters": [][]string{{"name", "=", repoName}},
@@ -172,17 +153,4 @@ func (h *authHandler) ServeHTTP(wOrig http.ResponseWriter, r *http.Request) {
 	handlerCopy := *h.handler
 	handlerCopy.Env = append(handlerCopy.Env, "REMOTE_USER="+r.RemoteAddr) // Should be username
 	handlerCopy.ServeHTTP(&w, r)
-}
-
-var escaper = strings.NewReplacer("\"", "\\\"", "\\", "\\\\", "\n", "\\n")
-
-// Transform strings so they are safer to write in logs (e.g.,
-// 'foo"bar' becomes '"foo\"bar"'). Non-string args are left alone.
-func quoteStrings(args ...interface{}) []interface{} {
-	for i, arg := range args {
-		if s, ok := arg.(string); ok {
-			args[i] = "\"" + escaper.Replace(s) + "\""
-		}
-	}
-	return args
 }
