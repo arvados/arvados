@@ -44,7 +44,7 @@ RUN useradd -ms /bin/bash active
 # Test with python (SIGSEGV during tests)
 #ADD . /pam
 #WORKDIR /pam
-#CMD rsyslogd & tail -F /var/log/auth.log & python setup.py test
+#CMD rsyslogd & tail -F /var/log/auth.log & python setup.py test --test-suite integration_tests
 
 # Test with perl (SIGSEGV when program exits)
 RUN apt-get install -qy libauthen-pam-perl
