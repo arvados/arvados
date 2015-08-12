@@ -314,6 +314,25 @@ fpm_build () {
     COMMAND_ARR+=("$i")
   done
 
+  # Append --depends X and other arguments specified by fpm-info.sh in
+  # the package source dir. These are added last so they can override
+  # the arguments added by this script.
+  declare -a fpm_args=()
+  declare -a fpm_depends=()
+  if [[ -d "$PACKAGE" ]]; then
+      FPM_INFO="$PACKAGE/fpm-info.sh"
+  else
+      FPM_INFO="${WORKSPACE}/backports/${PACKAGE_TYPE}-${PACKAGE}/fpm-info.sh"
+  fi
+  if [[ -e "$FPM_INFO" ]]; then
+      debug_echo "Loading fpm overrides from $FPM_INFO"
+      source "$FPM_INFO"
+  fi
+  for i in "${fpm_depends[@]}"; do
+    COMMAND_ARR+=('--depends' "$i")
+  done
+  COMMAND_ARR+=("${fpm_args[@]}")
+
   COMMAND_ARR+=("$PACKAGE")
 
   debug_echo -e "\n${COMMAND_ARR[@]}\n"
