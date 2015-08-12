@@ -9,6 +9,7 @@ import (
 	"io"
 	"net/http"
 	"testing"
+	"time"
 )
 
 type PullWorkerTestSuite struct{}
@@ -22,7 +23,6 @@ func TestPullWorker(t *testing.T) {
 var _ = Suite(&PullWorkerTestSuite{})
 
 var testPullLists map[string]string
-var processedPullLists map[string]string
 var readContent string
 var readError error
 var putContent []byte
@@ -39,7 +39,6 @@ func (s *PullWorkerTestSuite) SetUpTest(c *C) {
 	// This behavior is verified using these two maps in the
 	// "TestPullWorker_pull_list_with_two_items_latest_replacing_old"
 	testPullLists = make(map[string]string)
-	processedPullLists = make(map[string]string)
 }
 
 // Since keepstore does not come into picture in tests,
@@ -237,16 +236,23 @@ func (s *PullWorkerTestSuite) TestPullWorker_invalid_data_manager_token(c *C) {
 }
 
 func performTest(testData PullWorkerTestData, c *C) {
+	KeepVM = MakeTestVolumeManager(2)
+	defer KeepVM.Close()
+
 	RunTestPullWorker(c)
+	defer pullq.Close()
 
 	currentTestData = testData
 	testPullLists[testData.name] = testData.response_body
 
-	// Override GetContent to mock keepclient Get functionality
-	defer func(orig func(string, *keepclient.KeepClient)(io.ReadCloser, int64, string, error)) { GetContent = orig }(GetContent)
-	GetContent = func(signedLocator string, keepClient *keepclient.KeepClient) (
-		reader io.ReadCloser, contentLength int64, url string, err error) {
+	processedPullLists := make(map[string]string)
 
+	// Override GetContent to mock keepclient Get functionality
+	defer func(orig func(string, *keepclient.KeepClient) (io.ReadCloser, int64, string, error)) {
+		GetContent = orig
+	}(GetContent)
+	GetContent = func(signedLocator string, keepClient *keepclient.KeepClient) (reader io.ReadCloser, contentLength int64, url string, err error) {
+		c.Assert(getStatusItem("PullQueue", "InProgress"), Equals, float64(1))
 		processedPullLists[testData.name] = testData.response_body
 		if testData.read_error {
 			err = errors.New("Error getting data")
@@ -262,7 +268,7 @@ func performTest(testData PullWorkerTestData, c *C) {
 	}
 
 	// Override PutContent to mock PutBlock functionality
-	defer func(orig func([]byte, string)(error)) { PutContent = orig }(PutContent)
+	defer func(orig func([]byte, string) error) { PutContent = orig }(PutContent)
 	PutContent = func(content []byte, locator string) (err error) {
 		if testData.put_error {
 			err = errors.New("Error putting data")
@@ -274,13 +280,17 @@ func performTest(testData PullWorkerTestData, c *C) {
 		}
 	}
 
+	c.Assert(getStatusItem("PullQueue", "InProgress"), Equals, float64(0))
+	c.Assert(getStatusItem("PullQueue", "Queued"), Equals, float64(0))
+
 	response := IssueRequest(&testData.req)
 	c.Assert(response.Code, Equals, testData.response_code)
 	c.Assert(response.Body.String(), Equals, testData.response_body)
 
-	expectWorkerChannelEmpty(c, pullq.NextItem)
-
-	pullq.Close()
+	expectEqualWithin(c, time.Second, 0, func() interface{} {
+		st := pullq.Status()
+		return st.InProgress + st.Queued
+	})
 
 	if testData.name == "TestPullWorker_pull_list_with_two_items_latest_replacing_old" {
 		c.Assert(len(testPullLists), Equals, 2)
@@ -311,6 +321,8 @@ func performTest(testData PullWorkerTestData, c *C) {
 			c.Assert(string(putContent), Equals, testData.read_content)
 		}
 	}
+
+	expectChannelEmpty(c, pullq.NextItem)
 }
 
 type ClosingBuffer struct {
@@ -319,20 +331,4 @@ type ClosingBuffer struct {
 
 func (cb *ClosingBuffer) Close() (err error) {
 	return
-}
-
-func expectWorkerChannelEmpty(c *C, workerChannel <-chan interface{}) {
-	select {
-	case item := <-workerChannel:
-		c.Fatalf("Received value (%v) from channel that was expected to be empty", item)
-	default:
-	}
-}
-
-func expectWorkerChannelNotEmpty(c *C, workerChannel <-chan interface{}) {
-	select {
-	case item := <-workerChannel:
-		c.Fatalf("Received value (%v) from channel that was expected to be empty", item)
-	default:
-	}
 }

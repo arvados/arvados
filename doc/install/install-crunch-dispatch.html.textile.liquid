@@ -149,37 +149,37 @@ Without getting this error:
 ArgumentError: Specified script_version does not resolve to a commit
 </pre>
 
-h2. Running jobs
+h2. Run the Crunch dispatcher service
 
-* @services/api/script/crunch-dispatch.rb@ must be running.
-* @crunch-dispatch.rb@ needs @services/crunch/crunch-job@ in its @PATH@.
+To dispatch Arvados jobs:
+
+* The API server script @crunch-dispatch.rb@ must be running.
 * @crunch-job@ needs the installation path of the Perl SDK in its @PERLLIB@.
-* @crunch-job@ needs the @ARVADOS_API_HOST@ (and, if necessary in a development environment, @ARVADOS_API_HOST_INSECURE@) environment variable set.
+* @crunch-job@ needs the @ARVADOS_API_HOST@ (and, if necessary, @ARVADOS_API_HOST_INSECURE@) environment variable set.
 
-Example @/var/service/arvados_crunch_dispatch/run@ script:
+We recommend you run @crunch-dispatch.rb@ under "runit":http://smarden.org/runit/ or a similar supervisor.  Here's an example runit service script:
 
-<pre>
-#!/bin/sh
+<notextile>
+<pre><code>#!/bin/sh
 set -e
 
 rvmexec=""
-## uncomment this line if you use rvm:
+## Uncomment this line if you use RVM:
 #rvmexec="/usr/local/rvm/bin/rvm-exec default"
 
-export PATH="$PATH":/path/to/arvados/services/crunch
-export ARVADOS_API_HOST={{ site.arvados_api_host }}
+export ARVADOS_API_HOST=<span class="userinput">uuid_prefix.your.domain</span>
 export CRUNCH_DISPATCH_LOCKFILE=/var/lock/crunch-dispatch
+export RAILS_ENV=production
+
+## Uncomment this line if your cluster uses self-signed SSL certificates:
+#export ARVADOS_API_HOST_INSECURE=yes
 
 # This is the path to docker on your compute nodes. You might need to
 # change it to "docker", "/opt/bin/docker", etc.
-export CRUNCH_JOB_DOCKER_BIN=docker.io
+export CRUNCH_JOB_DOCKER_BIN=<span class="userinput">docker.io</span>
 
 fuser -TERM -k $CRUNCH_DISPATCH_LOCKFILE || true
-
-## Only if your SSL cert is unverifiable:
-# export ARVADOS_API_HOST_INSECURE=yes
-
-cd /path/to/arvados/services/api
-export RAILS_ENV=production
+cd /var/www/arvados-api/services/api
 exec $rvmexec bundle exec ./script/crunch-dispatch.rb 2>&1
-</pre>
+</code></pre>
+</notextile>

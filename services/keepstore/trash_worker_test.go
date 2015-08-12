@@ -258,8 +258,36 @@ func performTrashWorkerTest(testData TrashWorkerTestData, t *testing.T) {
 	}
 	go RunTrashWorker(trashq)
 
+	// Install gate so all local operations block until we say go
+	gate := make(chan struct{})
+	for _, v := range vols {
+		v.(*MockVolume).Gate = gate
+	}
+
+	assertStatusItem := func(k string, expect float64) {
+		if v := getStatusItem("TrashQueue", k); v != expect {
+			t.Errorf("Got %s %v, expected %v", k, v, expect)
+		}
+	}
+
+	assertStatusItem("InProgress", 0)
+	assertStatusItem("Queued", 0)
+
+	listLen := trashList.Len()
 	trashq.ReplaceQueue(trashList)
-	time.Sleep(10 * time.Millisecond) // give a moment to finish processing the list
+
+	// Wait for worker to take request(s)
+	expectEqualWithin(t, time.Second, listLen, func() interface{} { return trashq.Status().InProgress })
+
+	// Ensure status.json also reports work is happening
+	assertStatusItem("InProgress", float64(1))
+	assertStatusItem("Queued", float64(listLen-1))
+
+	// Let worker proceed
+	close(gate)
+
+	// Wait for worker to finish
+	expectEqualWithin(t, time.Second, 0, func() interface{} { return trashq.Status().InProgress })
 
 	// Verify Locator1 to be un/deleted as expected
 	data, _ := GetBlock(testData.Locator1, false)

@@ -45,8 +45,6 @@ Usage of default:
 </code></pre>
 </notextile>
 
-It's recommended to run Keepproxy under "runit":http://smarden.org/runit/ or something similar.
-
 h3. Create an API token for the Keepproxy server
 
 The Keepproxy server needs a token to talk to the API server.
@@ -58,7 +56,14 @@ On the <strong>API server</strong>, use the following command to create the toke
 hoShoomoo2bai3Ju1xahg6aeng1siquuaZ1yae2gi2Uhaeng2r
 </code></pre></notextile>
 
-The value for the @api_token@ field should be added to Keepproxy's environment as ARVADOS_API_TOKEN. Make sure to also set ARVADOS_API_HOST to @uuid_prefix@.your.domain.
+h3. Set up the Keepproxy service
+
+We recommend you run Keepproxy under "runit":http://smarden.org/runit/ or a similar supervisor.  Make sure the launcher sets the envirnoment variables @ARVADOS_API_TOKEN@ (with the token you just generated), @ARVADOS_API_HOST@, and, if needed, @ARVADOS_API_HOST_INSECURE@.  The core keepproxy command to run is:
+
+<notextile>
+<pre><code>ARVADOS_API_TOKEN=<span class="userinput">[generated token]</span> ARVADOS_API_HOST=<span class="userinput">uuid_prefix.your.domain</span> exec keepproxy
+</code></pre>
+</notextile>
 
 h3. Set up a reverse proxy with SSL support
 
