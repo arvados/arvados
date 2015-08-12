@@ -436,37 +436,25 @@ handle_python_package
 cd "$WORKSPACE/services/nodemanager"
 handle_python_package
 
-# Arvados-src
-# We use $WORKSPACE/src-build-dir as the clean directory from which to build the src package
-if [[ ! -d "$WORKSPACE/src-build-dir" ]]; then
-  mkdir "$WORKSPACE/src-build-dir"
-  cd "$WORKSPACE"
-  git clone $DASHQ_UNLESS_DEBUG https://github.com/curoverse/arvados.git src-build-dir
-fi
+# arvados-src
+(
+    set -e
 
-# Get the commit hash we're building against, from the working directory
-cd "$WORKSPACE"
-MASTER_COMMIT_HASH=$(format_last_commit_here "%H")
+    cd "$WORKSPACE"
+    COMMIT_HASH=$(format_last_commit_here "%H")
 
-# Make sure we check out that commit in the clean $WORKSPACE/src-build-dir directory
-cd "$WORKSPACE/src-build-dir"
-# just in case, check out master
-git checkout $DASHQ_UNLESS_DEBUG master
-git pull $DASHQ_UNLESS_DEBUG
-# go into detached-head state
-MASTER_COMMIT_HASH=$(format_last_commit_here "%H")
-git checkout $DASHQ_UNLESS_DEBUG "$MASTER_COMMIT_HASH"
-echo "$MASTER_COMMIT_HASH" >git-commit.version
+    SRC_BUILD_DIR=$(mktemp -d)
+    git clone $DASHQ_UNLESS_DEBUG --branch "$COMMIT_HASH" "$WORKSPACE/.git" "$SRC_BUILD_DIR"
+    cd "$SRC_BUILD_DIR"
+    echo "$COMMIT_HASH" >git-commit.version
 
-# Build arvados src deb package
-cd "$WORKSPACE"
-PKG_VERSION=$(version_from_git)
-cd $WORKSPACE/packages/$TARGET
-fpm_build $WORKSPACE/src-build-dir/=/usr/local/arvados/src arvados-src 'Curoverse, Inc.' 'dir' "$PKG_VERSION" "--exclude=usr/local/arvados/src/.git" "--url=https://arvados.org" "--license=GNU Affero General Public License, version 3.0" "--description=The Arvados source code" "--architecture=all"
+    cd "$SRC_BUILD_DIR"
+    PKG_VERSION=$(version_from_git)
+    cd $WORKSPACE/packages/$TARGET
+    fpm_build $SRC_BUILD_DIR/=/usr/local/arvados/src arvados-src 'Curoverse, Inc.' 'dir' "$PKG_VERSION" "--exclude=usr/local/arvados/src/.git" "--url=https://arvados.org" "--license=GNU Affero General Public License, version 3.0" "--description=The Arvados source code" "--architecture=all"
 
-# clean up, check out master and step away from detached-head state
-cd "$WORKSPACE/src-build-dir"
-git checkout $DASHQ_UNLESS_DEBUG master
+    rm -r "$SRC_BUILD_DIR"
+)
 
 # Keep
 export GOPATH=$(mktemp -d)
