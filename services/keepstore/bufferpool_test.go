@@ -21,6 +21,11 @@ func init() {
 	bufs = newBufferPool(maxBuffers, BLOCKSIZE)
 }
 
+// Restore sane default after bufferpool's own tests
+func (s *BufferPoolSuite) TearDownTest(c *C) {
+	bufs = newBufferPool(maxBuffers, BLOCKSIZE)
+}
+
 func (s *BufferPoolSuite) TestBufferPoolBufSize(c *C) {
 	bufs := newBufferPool(2, 10)
 	b1 := bufs.Get(1)
