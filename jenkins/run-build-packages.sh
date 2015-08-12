@@ -233,20 +233,18 @@ handle_python_package () {
 handle_ruby_gem() {
     local gem_name=$1; shift
     local gem_version=$(nohash_version_from_git)
+    local gem_src_dir="$(pwd)"
 
-    if [ -e "${gem_name}-${gem_version}.gem" ]; then
-        # This gem doesn't need rebuilding.
-        return
+    if ! [[ -e "${gem_name}-${gem_version}.gem" ]]; then
+        find -maxdepth 1 -name "${gem_name}-*.gem" -delete
+
+        # -q appears to be broken in gem version 2.2.2
+        $GEM build "$gem_name.gemspec" $DASHQ_UNLESS_DEBUG >"$STDOUT_IF_DEBUG" 2>"$STDERR_IF_DEBUG"
     fi
 
-    find -maxdepth 1 -name "${gem_name}-*.gem" -delete
-
-    # -q appears to be broken in gem version 2.2.2
-    gem build "$gem_name.gemspec" $DASHQ_UNLESS_DEBUG >"$STDOUT_IF_DEBUG" 2>"$STDERR_IF_DEBUG"
-
-    fpm_build "$gem_name"-*.gem "" "Curoverse, Inc." gem "" \
+    cd "$WORKSPACE/packages/$TARGET"
+    fpm_build "$gem_src_dir/$gem_name"-*.gem "" "Curoverse, Inc." gem "" \
         --prefix "$FPM_GEM_PREFIX"
-    mv -t "$WORKSPACE/packages/$TARGET/" "$gem_name"*."$FORMAT"
 }
 
 # Build packages for everything
@@ -368,7 +366,10 @@ fpm_verify () {
 }
 
 if [[ -f /etc/profile.d/rvm.sh ]]; then
-  source /etc/profile.d/rvm.sh
+    source /etc/profile.d/rvm.sh
+    GEM="rvm-exec default gem"
+else
+    GEM=gem
 fi
 
 # Make all files world-readable -- jenkins runs with umask 027, and has checked
@@ -409,11 +410,7 @@ perl Makefile.PL INSTALL_BASE=install >"$STDOUT_IF_DEBUG" && \
 # Ruby gems
 debug_echo -e "\nRuby gems\n"
 
-if type rvm-exec >/dev/null 2>&1; then
-  FPM_GEM_PREFIX=$(rvm-exec system gem environment gemdir)
-else
-  FPM_GEM_PREFIX=$(gem environment gemdir)
-fi
+FPM_GEM_PREFIX=$($GEM environment gemdir)
 
 cd "$WORKSPACE/sdk/ruby"
 handle_ruby_gem arvados
