@@ -59,6 +59,19 @@ while [ $# -gt 0 ]; do
     shift
 done
 
+STDOUT_IF_DEBUG=/dev/null
+STDERR_IF_DEBUG=/dev/null
+DASHQ_UNLESS_DEBUG=-q
+if [[ "$DEBUG" != 0 ]]; then
+    STDOUT_IF_DEBUG=/dev/stdout
+    STDERR_IF_DEBUG=/dev/stderr
+    DASHQ_UNLESS_DEBUG=
+fi
+
+debug_echo () {
+    echo "$@" >"$STDOUT_IF_DEBUG"
+}
+
 declare -a PYTHON_BACKPORTS PYTHON3_BACKPORTS
 
 PYTHON2_VERSION=2.7
@@ -183,10 +196,8 @@ if [ -z "$RUN_BUILD_PACKAGES_PATH" ] ; then
   exit 1  # fail
 fi
 
-if [[ "$DEBUG" != 0 ]]; then
-  echo "$0 is running from $RUN_BUILD_PACKAGES_PATH"
-  echo "Workspace is $WORKSPACE"
-fi
+debug_echo "$0 is running from $RUN_BUILD_PACKAGES_PATH"
+debug_echo "Workspace is $WORKSPACE"
 
 format_last_commit_here() {
     local format=$1; shift
@@ -216,11 +227,7 @@ handle_python_package () {
     return
   fi
   # Make sure only to use sdist - that's the only format pip can deal with (sigh)
-  if [[ "$DEBUG" != 0 ]]; then
-    python setup.py sdist
-  else
-    python setup.py -q sdist
-  fi
+  python setup.py $DASHQ_UNLESS_DEBUG sdist
 }
 
 handle_ruby_gem() {
@@ -234,12 +241,8 @@ handle_ruby_gem() {
 
     find -maxdepth 1 -name "${gem_name}-*.gem" -delete
 
-    if [[ "$DEBUG" != 0 ]]; then
-        gem build "$gem_name.gemspec"
-    else
-        # -q appears to be broken in gem version 2.2.2
-        gem build "$gem_name.gemspec" -q >/dev/null 2>&1
-    fi
+    # -q appears to be broken in gem version 2.2.2
+    gem build "$gem_name.gemspec" $DASHQ_UNLESS_DEBUG >"$STDOUT_IF_DEBUG" 2>"$STDERR_IF_DEBUG"
 
     fpm_build "$gem_name"-*.gem "" "Curoverse, Inc." gem "" \
         --prefix "$FPM_GEM_PREFIX"
@@ -313,11 +316,7 @@ fpm_build () {
 
   COMMAND_ARR+=("$PACKAGE")
 
-  if [[ "$DEBUG" != 0 ]]; then
-    echo
-    echo "${COMMAND_ARR[@]}"
-    echo
-  fi
+  debug_echo -e "\n${COMMAND_ARR[@]}\n"
 
   FPM_RESULTS=$("${COMMAND_ARR[@]}")
   FPM_EXIT_CODE=$?
@@ -364,46 +363,32 @@ find -type d -name 'bin' |xargs -I {} find {} -type f |xargs -I {} chmod 755 {}
 # gems and packages
 umask 0022
 
-if [[ "$DEBUG" != 0 ]]; then
-  echo "umask is" `umask`
-fi
+debug_echo "umask is" `umask`
 
 if [[ ! -d "$WORKSPACE/packages/$TARGET" ]]; then
   mkdir -p $WORKSPACE/packages/$TARGET
 fi
 
 # Perl packages
-if [[ "$DEBUG" != 0 ]]; then
-  echo -e "\nPerl packages\n"
-fi
-
-if [[ "$DEBUG" != 0 ]]; then
-  PERL_OUT=/dev/stdout
-else
-  PERL_OUT=/dev/null
-fi
+debug_echo -e "\nPerl packages\n"
 
 cd "$WORKSPACE/sdk/perl"
 
 if [[ -e Makefile ]]; then
-  make realclean >"$PERL_OUT"
+  make realclean >"$STDOUT_IF_DEBUG"
 fi
 find -maxdepth 1 \( -name 'MANIFEST*' -or -name "libarvados-perl*.$FORMAT" \) \
     -delete
 rm -rf install
 
-perl Makefile.PL INSTALL_BASE=install >"$PERL_OUT" && \
-    make install INSTALLDIRS=perl >"$PERL_OUT" && \
+perl Makefile.PL INSTALL_BASE=install >"$STDOUT_IF_DEBUG" && \
+    make install INSTALLDIRS=perl >"$STDOUT_IF_DEBUG" && \
     fpm_build install/lib/=/usr/share libarvados-perl \
     "Curoverse, Inc." dir "$(version_from_git)" install/man/=/usr/share/man && \
     mv libarvados-perl*.$FORMAT "$WORKSPACE/packages/$TARGET/"
 
 # Ruby gems
-if [[ "$DEBUG" != 0 ]]; then
-  echo
-  echo "Ruby gems"
-  echo
-fi
+debug_echo -e "\nRuby gems\n"
 
 if type rvm-exec >/dev/null 2>&1; then
   FPM_GEM_PREFIX=$(rvm-exec system gem environment gemdir)
@@ -418,11 +403,7 @@ cd "$WORKSPACE/sdk/cli"
 handle_ruby_gem arvados-cli
 
 # Python packages
-if [[ "$DEBUG" != 0 ]]; then
-  echo
-  echo "Python packages"
-  echo
-fi
+debug_echo -e "\nPython packages\n"
 
 cd "$WORKSPACE/sdk/pam"
 handle_python_package
@@ -441,11 +422,7 @@ handle_python_package
 if [[ ! -d "$WORKSPACE/src-build-dir" ]]; then
   mkdir "$WORKSPACE/src-build-dir"
   cd "$WORKSPACE"
-  if [[ "$DEBUG" != 0 ]]; then
-    git clone https://github.com/curoverse/arvados.git src-build-dir
-  else
-    git clone -q https://github.com/curoverse/arvados.git src-build-dir
-  fi
+  git clone $DASHQ_UNLESS_DEBUG https://github.com/curoverse/arvados.git src-build-dir
 fi
 
 # Get the commit hash we're building against, from the working directory
@@ -455,17 +432,11 @@ MASTER_COMMIT_HASH=$(format_last_commit_here "%H")
 # Make sure we check out that commit in the clean $WORKSPACE/src-build-dir directory
 cd "$WORKSPACE/src-build-dir"
 # just in case, check out master
-if [[ "$DEBUG" != 0 ]]; then
-  git checkout master
-  git pull
-  # go into detached-head state
-  git checkout "$MASTER_COMMIT_HASH"
-else
-  git checkout -q master
-  git pull -q
-  # go into detached-head state
-  git checkout -q "$MASTER_COMMIT_HASH"
-fi
+git checkout $DASHQ_UNLESS_DEBUG master
+git pull $DASHQ_UNLESS_DEBUG
+# go into detached-head state
+MASTER_COMMIT_HASH=$(format_last_commit_here "%H")
+git checkout $DASHQ_UNLESS_DEBUG "$MASTER_COMMIT_HASH"
 echo "$MASTER_COMMIT_HASH" >git-commit.version
 
 # Build arvados src deb package
@@ -476,11 +447,7 @@ fpm_build $WORKSPACE/src-build-dir/=/usr/local/arvados/src arvados-src 'Curovers
 
 # clean up, check out master and step away from detached-head state
 cd "$WORKSPACE/src-build-dir"
-if [[ "$DEBUG" != 0 ]]; then
-  git checkout master
-else
-  git checkout -q master
-fi
+git checkout $DASHQ_UNLESS_DEBUG master
 
 # Keep
 export GOPATH=$(mktemp -d)
@@ -610,11 +577,8 @@ if [[ ! -d "$WORKSPACE/services/api/tmp" ]]; then
   mkdir $WORKSPACE/services/api/tmp
 fi
 
-BUNDLE_OUTPUT=`bundle install --path vendor/bundle`
 
-if [[ "$DEBUG" != 0 ]]; then
-  echo $BUNDLE_OUTPUT
-fi
+bundle install --path vendor/bundle >"$STDOUT_IF_DEBUG"
 
 /usr/bin/git rev-parse HEAD > git-commit.version
 
@@ -631,11 +595,7 @@ cd $WORKSPACE/packages/$TARGET
 if [[ "$BUILD_BUNDLE_PACKAGES" != 0 ]]; then
   declare -a COMMAND_ARR=("fpm" "--maintainer=Ward Vandewege <ward@curoverse.com>" "--vendor='Curoverse, Inc.'" "--url='https://arvados.org'" "--description='Arvados API server - Arvados is a free and open source platform for big data science.'" "--license='GNU Affero General Public License, version 3.0'" "-s" "dir" "-t" "$FORMAT" "-n" "${PACKAGE_NAME}-with-bundle" "-v" "$API_VERSION" "-x" "var/www/arvados-api/current/tmp" "-x" "var/www/arvados-api/current/log" "-x" "var/www/arvados-api/current/vendor/cache/*" "-x" "var/www/arvados-api/current/coverage" "-x" "var/www/arvados-api/current/Capfile*" "-x" "var/www/arvados-api/current/config/deploy*" "--after-install=$RUN_BUILD_PACKAGES_PATH/arvados-api-server-extras/postinst.sh" "$WORKSPACE/services/api/=/var/www/arvados-api/current" "$RUN_BUILD_PACKAGES_PATH/arvados-api-server-extras/arvados-api-server-upgrade.sh=/usr/local/bin/arvados-api-server-upgrade.sh")
 
-  if [[ "$DEBUG" != 0 ]]; then
-    echo
-    echo "${COMMAND_ARR[@]}"
-    echo
-  fi
+  debug_echo -e "\n${COMMAND_ARR[@]}\n"
 
   FPM_RESULTS=$("${COMMAND_ARR[@]}")
   FPM_EXIT_CODE=$?
@@ -645,11 +605,7 @@ fi
 # Build the 'bare' package without vendor/bundle.
 declare -a COMMAND_ARR=("fpm" "--maintainer=Ward Vandewege <ward@curoverse.com>" "--vendor='Curoverse, Inc.'" "--url='https://arvados.org'" "--description='Arvados API server - Arvados is a free and open source platform for big data science.'" "--license='GNU Affero General Public License, version 3.0'" "-s" "dir" "-t" "$FORMAT" "-n" "${PACKAGE_NAME}" "-v" "$API_VERSION" "-x" "var/www/arvados-api/current/tmp" "-x" "var/www/arvados-api/current/log" "-x" "var/www/arvados-api/current/vendor/bundle" "-x" "var/www/arvados-api/current/vendor/cache/*" "-x" "var/www/arvados-api/current/coverage" "-x" "var/www/arvados-api/current/Capfile*" "-x" "var/www/arvados-api/current/config/deploy*" "--after-install=$RUN_BUILD_PACKAGES_PATH/arvados-api-server-extras/postinst.sh" "$WORKSPACE/services/api/=/var/www/arvados-api/current" "$RUN_BUILD_PACKAGES_PATH/arvados-api-server-extras/arvados-api-server-upgrade.sh=/usr/local/bin/arvados-api-server-upgrade.sh")
 
-if [[ "$DEBUG" != 0 ]]; then
-  echo
-  echo "${COMMAND_ARR[@]}"
-  echo
-fi
+debug_echo -e "\n${COMMAND_ARR[@]}\n"
 
 FPM_RESULTS=$("${COMMAND_ARR[@]}")
 FPM_EXIT_CODE=$?
@@ -668,11 +624,7 @@ if [[ ! -d "$WORKSPACE/apps/workbench/tmp" ]]; then
   mkdir $WORKSPACE/apps/workbench/tmp
 fi
 
-BUNDLE_OUTPUT=`bundle install --path vendor/bundle`
-
-if [[ "$DEBUG" != 0 ]]; then
-  echo $BUNDLE_OUTPUT
-fi
+bundle install --path vendor/bundle >"$STDOUT_IF_DEBUG"
 
 /usr/bin/git rev-parse HEAD > git-commit.version
 
@@ -701,11 +653,7 @@ if [[ "$BUILD_BUNDLE_PACKAGES" != 0 ]]; then
 
   declare -a COMMAND_ARR=("fpm" "--maintainer=Ward Vandewege <ward@curoverse.com>" "--vendor='Curoverse, Inc.'" "--url='https://arvados.org'" "--description='Arvados Workbench - Arvados is a free and open source platform for big data science.'" "--license='GNU Affero General Public License, version 3.0'" "-s" "dir" "-t" "$FORMAT" "-n" "${PACKAGE_NAME}-with-bundle" "-v" "$WORKBENCH_VERSION" "-x" "var/www/arvados-workbench/current/log" "-x" "var/www/arvados-workbench/current/vendor/cache/*" "-x" "var/www/arvados-workbench/current/coverage" "-x" "var/www/arvados-workbench/current/Capfile*" "-x" "var/www/arvados-workbench/current/config/deploy*" "--after-install=$RUN_BUILD_PACKAGES_PATH/arvados-workbench-extras/postinst.sh" "$WORKSPACE/apps/workbench/=/var/www/arvados-workbench/current" "$RUN_BUILD_PACKAGES_PATH/arvados-workbench-extras/arvados-workbench-upgrade.sh=/usr/local/bin/arvados-workbench-upgrade.sh")
 
-  if [[ "$DEBUG" != 0 ]]; then
-    echo
-    echo "${COMMAND_ARR[@]}"
-    echo
-  fi
+  debug_echo -e "\n${COMMAND_ARR[@]}\n"
 
   FPM_RESULTS=$("${COMMAND_ARR[@]}")
   FPM_EXIT_CODE=$?
@@ -716,11 +664,7 @@ fi
 
 declare -a COMMAND_ARR=("fpm" "--maintainer=Ward Vandewege <ward@curoverse.com>" "--vendor='Curoverse, Inc.'" "--url='https://arvados.org'" "--description='Arvados Workbench - Arvados is a free and open source platform for big data science.'" "--license='GNU Affero General Public License, version 3.0'" "-s" "dir" "-t" "$FORMAT" "-n" "${PACKAGE_NAME}" "-v" "$WORKBENCH_VERSION" "-x" "var/www/arvados-workbench/current/log" "-x" "var/www/arvados-workbench/current/vendor/bundle" "-x" "var/www/arvados-workbench/current/vendor/cache/*" "-x" "var/www/arvados-workbench/current/coverage" "-x" "var/www/arvados-workbench/current/Capfile*" "-x" "var/www/arvados-workbench/current/config/deploy*" "--after-install=$RUN_BUILD_PACKAGES_PATH/arvados-workbench-extras/postinst.sh" "$WORKSPACE/apps/workbench/=/var/www/arvados-workbench/current" "$RUN_BUILD_PACKAGES_PATH/arvados-workbench-extras/arvados-workbench-upgrade.sh=/usr/local/bin/arvados-workbench-upgrade.sh")
 
-if [[ "$DEBUG" != 0 ]]; then
-  echo
-  echo "${COMMAND_ARR[@]}"
-  echo
-fi
+debug_echo -e "\n${COMMAND_ARR[@]}\n"
 
 FPM_RESULTS=$("${COMMAND_ARR[@]}")
 FPM_EXIT_CODE=$?
