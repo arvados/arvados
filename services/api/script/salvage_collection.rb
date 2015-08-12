@@ -34,12 +34,10 @@ uuid, reason = ARGV
 require File.dirname(__FILE__) + '/../config/environment'
 require 'arvados/keep'
 include ApplicationHelper
+require 'tempfile'
 
 def salvage_collection uuid, reason
   act_as_system_user do
-    root_dir = '/tmp/salvage_uuids'
-    Dir.mkdir(root_dir) unless File.exists?(root_dir)
-
     src = Collection.find_by_uuid uuid
     if !src
       puts "No collection found for #{uuid}"
@@ -49,12 +47,7 @@ def salvage_collection uuid, reason
     begin
       src_manifest_text = src.manifest_text || ''
 
-      # write the manifest_text to a file
-      dir = root_dir+"/"+uuid
-      Dir.mkdir(dir) unless File.exists?(dir)
-      File.write(dir+"/invalid_manifest_text.txt", src_manifest_text)
-
-      # also, create another file with the locators from the collection manifest_text
+      # Get all the locators from the original manifest
       locators = []
       src_manifest_text.each_line do |line|
         line.split(' ').each do |word|
@@ -64,28 +57,41 @@ def salvage_collection uuid, reason
           end
         end
       end
+      locators << 'd41d8cd98f00b204e9800998ecf8427e+0' if !locators.any?
 
-      locators_str = locators.join(' ')
-      File.write(dir+"/salvaged_data", locators_str)
+      # create new collection using 'arv-put' with original manifest_text as the data
+      temp_file = Tempfile.new('temp')
+      temp_file.write(src.manifest_text)
 
-=begin
-      # create new collection with salvaged data
-      dest_manifest_text = ". "
-      dest_manifest_text += (src.portable_data_hash + " 0:#{src_manifest_text.length}:invalid_manifest_text.txt\n")
-      dest_manifest_text += (". " + locators_str + " 0:#{locators_str.length}:salvaged_data\n")
-      dest_name = "Salvaged from " + uuid + ", " + src.portable_data_hash
-      dest = Collection.new name: dest_name, manifest_text: dest_manifest_text
-      dest.save!
-=end
+      created = %x(arv-put --use-filename invalid_manifest_text.txt #{temp_file.path})
 
-      # create new collection with salvaged data using 'arv keep put'
-      created = %x(arv keep put #{dir}/*)
+      temp_file.close
+      temp_file.unlink
+
       created.rstrip!
       match = created.match HasUuid::UUID_REGEX
       raise "uuid not found" if !match
-      puts "Created salvaged collection for #{uuid} with uuid: #{created}  #{match}"
+
+      # update this new collection manifest to reference all locators from the original manifest
+      new_collection = Collection.find_by_uuid created
+
+      new_manifest = new_collection['manifest_text']
+      new_manifest = new_manifest.gsub(/\+A[^+]*/, '')
+      total_size = 0
+      locators.each do |locator|
+        total_size += locator.split('+')[1].to_i
+      end
+      new_manifest += (". #{locators.join(' ')} 0:#{total_size}:salvaged_data\n")
+
+      new_collection.name = "salvaged from #{src.uuid}, #{src.portable_data_hash}"
+      new_collection.manifest_text = new_manifest
+      new_collection.portable_data_hash = Digest::MD5.hexdigest(new_manifest)
+
+      new_collection.save!
+
+      puts "Created collection for salvaged #{uuid} with uuid: #{created}  #{match}"
     rescue => error
-      puts "Error creating salvaged collection for #{uuid}: #{error}"
+      puts "Error creating collection for #{uuid}: #{error}"
       return
     end
 
@@ -95,9 +101,9 @@ def salvage_collection uuid, reason
       src.manifest_text = ''
       src.portable_data_hash = 'd41d8cd98f00b204e9800998ecf8427e+0'
       src.save!
-      puts "Updated collection #{uuid}"
+      puts "Salvaged collection #{uuid}"
     rescue => error
-      puts "Error updating source collection #{uuid}: #{error}"
+      puts "Error salvaging collection #{uuid}: #{error}"
     end
   end
 end
