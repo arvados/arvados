@@ -531,7 +531,7 @@ class PipelineInstancesTest < ActionDispatch::IntegrationTest
         assert_equal(true, found_count>=expected_min,
           "Found too few items. Expected at least #{expected_min} and found #{found_count}")
         assert_equal(true, found_count<=expected_max,
-          "Found too many items. Expected at most #{expected_max} and found #{found_count}")z
+          "Found too many items. Expected at most #{expected_max} and found #{found_count}")
       end
     end
   end
