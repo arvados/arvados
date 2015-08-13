@@ -1,0 +1,14 @@
+# 1. Change "api.example" to your ARVADOS_API_HOST
+# 2. Change "shell.example" to this host's hostname
+#    (as it appears in the Arvados virtual_machines list)
+# 3. Install in /usr/share/pam-configs/arvados
+# 4. Run `pam-auth-update arvados`
+
+Name: Arvados authentication
+Default: yes
+Priority: 256
+Auth-Type: Primary
+Auth:
+	[success=end default=ignore]	pam_python.so /lib/security/libpam_arvados.py api.example shell.example
+Auth-Initial:
+	[success=end default=ignore]	pam_python.so /lib/security/libpam_arvados.py api.example shell.example

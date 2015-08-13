@@ -1,6 +1,6 @@
 // +build go1.4
 
-package main
+package auth
 
 import (
 	"net/http"

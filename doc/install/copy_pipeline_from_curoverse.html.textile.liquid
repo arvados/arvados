@@ -1,0 +1,63 @@
+---
+layout: default
+navsection: installguide
+title: Copy pipeline from Curoverse cloud
+...
+
+This tutorial describes how to find and copy a publicly shared pipeline from Curoverse cloud. Please note that you can use similar steps to copy any template you can access from Curoverse cloud to your cluster.
+
+h3. Access a public pipeline in Curoverse cloud using Workbench
+
+Curoverse cloud provides access to some public data, which can be used to experience Arvados in action. Let's access a public pipeline and copy it to your cluster, so that you can run it in your environment.
+
+Start by visiting the "*Curoverse public projects page*":https://cloud.curoverse.com/projects/public. This page lists all the publicly accessible projects in this arvados installation. Click on one of these projects to open it. We will use "*lobSTR v.3 (Public)*":https://cloud.curoverse.com/projects/qr1hi-j7d0g-up6qgpqz5ie2vfq as the example in this tutorial.
+
+Once in the "*lobSTR v.3 (Public)*":https://cloud.curoverse.com/projects/qr1hi-j7d0g-up6qgpqz5ie2vfq project, click on the *Pipeline templates* tab. In the pipeline templates tab, you will see a template named *lobSTR v.3*. Click on the <span class="fa fa-lg fa-gears"></span> *Show* button to the left of this name. This will take to you to the "*lobSTR v.3*":https://cloud.curoverse.com/pipeline_templates/qr1hi-p5p6p-9pkaxt6qjnkxhhu template page.
+
+Once in this page, you can take the *uuid* of this template from the address bar, which is *qr1hi-p5p6p-9pkaxt6qjnkxhhu*. Next, we will copy this template to your Arvados instance.
+
+h3. Copying a pipeline template from Curoverse cloud to your cluster
+
+As described above, navigate to the publicly shared pipeline template "*lobSTR v.3*":https://cloud.curoverse.com/pipeline_templates/qr1hi-p5p6p-9pkaxt6qjnkxhhu using Curoverse Workbench.  We will now copy this template with uuid *qr1hi-p5p6p-9pkaxt6qjnkxhhu* to your cluster.
+
+{% include 'tutorial_expectations' %}
+
+We will use the Arvados *arv-copy* command to copy this template to your cluster. In order to use arv-copy, first you need to setup the source and destination cluster configuration files. Here, *qr1hi* would be the source cluster and your Arvados instance would be the *dst_cluster*.
+
+During this setup, if you have an account in Curoverse cloud, you can use "your access token":#using-your-token to create the source configuration file. If you do not have an account in Curoverse cloud, you can use the "anonymous access token":#using-anonymous-token for the source cluster configuration.
+
+h4(#using-anonymous-token). *Configuring source and destination setup files using anonymous access token*
+
+Configure the source and destination clusters as described in the "*Using arv-copy*":http://doc.arvados.org/user/topics/arv-copy.html tutorial in user guide, while using *5vqmz9mik2ou2k9objb8pnyce8t97p6vocyaouqo3qalvpmjs5* as the API token for source configuration.
+
+<notextile>
+<pre><code>~$ <span class="userinput">cd ~/.config/arvados</span>
+~$ <span class="userinput">echo "ARVADOS_API_HOST=qr1hi.arvadosapi.com" >> qr1hi.conf</span>
+~$ <span class="userinput">echo "ARVADOS_API_TOKEN=5vqmz9mik2ou2k9objb8pnyce8t97p6vocyaouqo3qalvpmjs5" >> qr1hi.conf</span>
+</code></pre>
+</notextile>
+
+You can now copy the pipeline template from *qr1hi* to *your cluster*. Replace *dst_cluster* with the *uuid_prefix* of your cluster.
+
+<notextile>
+<pre><code>~$ <span class="userinput"> arv-copy --no-recursive --src qr1hi --dst dst_cluster qr1hi-p5p6p-9pkaxt6qjnkxhhu</span>
+</code></pre>
+</notextile>
+
+*Note:* When you are using anonymous access token to copy the template, you will not be able to do a recursive copy since you will not be able to provide the dst-git-repo parameter. In order to perform a recursive copy of the template, you would need to use the Arvados API token from your account as explained in the "using your token":#using-your-token section below.
+
+h4(#using-your-token). *Configuring source and destination setup files using personal access token*
+
+If you already have an account in Curoverse cloud, you can follow the instructions in the "*Using arv-copy*":http://doc.arvados.org/user/topics/arv-copy.html user guide to get your *Current token* for source and destination clusters, and use them to create the source *qr1hi.conf* and dst_cluster.conf configuration files.
+
+You can now copy the pipeline template from *qr1hi* to *your cluster* with or without recursion. Replace *dst_cluster* with the *uuid_prefix* of your cluster.
+
+*Non-recursive copy:*
+<notextile>
+<pre><code>~$ <span class="userinput"> arv-copy --no-recursive --src qr1hi --dst dst_cluster qr1hi-p5p6p-9pkaxt6qjnkxhhu</span></code></pre>
+</notextile>
+
+*Recursive copy:*
+<notextile>
+<pre><code>~$ <span class="userinput">arv-copy --src qr1hi --dst dst_cluster --dst-git-repo $USER/tutorial qr1hi-p5p6p-9pkaxt6qjnkxhhu</span></code></pre>
+</notextile>
