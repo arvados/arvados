@@ -382,9 +382,7 @@ class ProjectsTest < ActionDispatch::IntegrationTest
       my_project = api_fixture('groups')['aproject']
       my_collection = api_fixture('collections')['collection_to_move_around_in_aproject']
 
-      visit page_with_token user, '/'
-      find("#projects-menu").click
-      find(".dropdown-menu a", text: my_project['name']).click
+      visit page_with_token user, "/projects/#{my_project['uuid']}"
       click_link 'Data collections'
       assert page.has_text?(my_collection['name']), 'Collection not found in project'
 
@@ -559,13 +557,13 @@ class ProjectsTest < ActionDispatch::IntegrationTest
 
     # Add a new project
     find("#projects-menu").click
-    click_link 'Add a new project'
+    click_link 'Create a new project'
     assert_text 'New project'
     assert_text 'No description provided'
 
     # Add one more new project
     find("#projects-menu").click
-    click_link 'Add a new project'
+    click_link 'Create a new project'
     match = /New project \(\d\)/.match page.text
     assert match, 'Expected project name not found'
     assert_text 'No description provided'

@@ -211,7 +211,7 @@
                           action_name: 'Show',
                           action_href: url_for(controller: :actions, action: :show),
                           action_method: 'get',
-                          action_data: {selection_param: 'uuid', success: 'redirect-to-created-object', copy_from_search_box: true}.to_json),          
+                          action_data: {selection_param: 'uuid', success: 'redirect-to-created-object', copy_from_search_box: true}.to_json),
                 { remote: true, method: 'get', title: "Search" }) do %>
                     <i class="glyphicon fa-fw glyphicon-search"></i> Search all projects
                   <% end %>

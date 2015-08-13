@@ -282,3 +282,19 @@ subproject_in_asubproject_with_same_name_as_one_in_active_user_home:
   name: Subproject to test owner uuid and name unique key violation upon removal
   description: "Removing this will result in name conflict with 'A project' in Home project and hence get renamed."
   group_class: project
+
+# Test Helper trims the rest of the file
+
+# Do not add your fixtures below this line as the rest of this file will be trimmed by test_helper
+
+# projects owned by user1_with_load
+<% for i in 1..201 do %>
+project_<%=i%>_of_201:
+  uuid: zzzzz-j7d0g-201gneyn6brd<%= i.to_s.rjust(3, '0') %>
+  owner_uuid: zzzzz-tpzed-user1withloadab
+  created_at: <%= i.minute.ago.to_s(:db) %>
+  name: Project_<%= i %>
+  group_class: project
+<% end %>
+
+# Do not add your fixtures below this line as the rest of this file will be trimmed by test_helper

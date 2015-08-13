@@ -24,9 +24,9 @@ class ApplicationLayoutTest < ActionDispatch::IntegrationTest
       else
         assert page.has_link?("Projects"), 'Not found link - Projects'
         page.find("#projects-menu").click
-        assert_selector 'a', text: 'Add a new project'
+        assert_selector 'a', text: 'Create a new project'
         assert_no_selector 'a', text: 'Browse public projects'
-        assert page.has_text?('Projects shared with me'), 'Not found text - Project shared with me'
+        assert page.has_text?('My projects'), 'Not found text - My projects'
       end
     elsif invited
       assert page.has_text?('Please check the box below to indicate that you have read and accepted the user agreement'), 'Not found text - Please check the box below . . .'
