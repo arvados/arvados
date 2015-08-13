@@ -744,8 +744,8 @@ class ApplicationController < ActionController::Base
 
   helper_method :all_projects
   def all_projects
-    @all_projects ||= Group.
-      filter([['group_class','=','project']]).order('name')
+    @all_projects = Group.
+      filter([['group_class','=','project']]).order('name').limit(10000)
   end
 
   helper_method :my_projects

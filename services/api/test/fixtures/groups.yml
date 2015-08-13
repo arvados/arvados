@@ -288,9 +288,9 @@ subproject_in_asubproject_with_same_name_as_one_in_active_user_home:
 # Do not add your fixtures below this line as the rest of this file will be trimmed by test_helper
 
 # projects owned by user1_with_load
-<% for i in 1..201 do %>
-project_<%=i%>_of_201:
-  uuid: zzzzz-j7d0g-201gneyn6brd<%= i.to_s.rjust(3, '0') %>
+<% for i in 1..301 do %>
+project_<%=i%>_of_301:
+  uuid: zzzzz-j7d0g-301gneyn6brd<%= i.to_s.rjust(3, '0') %>
   owner_uuid: zzzzz-tpzed-user1withloadab
   created_at: <%= i.minute.ago.to_s(:db) %>
   name: Project_<%= i %>
