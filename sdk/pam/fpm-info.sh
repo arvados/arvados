@@ -10,7 +10,7 @@ esac
 
 case "$FORMAT" in
     deb)
-        fpm_args+=('--deb-recommends=rsyslog')
+        fpm_args+=('--deb-recommends=system-log-daemon')
         ;;
 esac
 
