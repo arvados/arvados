@@ -563,9 +563,11 @@ rm -rf "$WORKSPACE/sdk/python/build"
 fpm_build $WORKSPACE/sdk/python "${PYTHON2_PKG_PREFIX}-arvados-python-client" 'Curoverse, Inc.' 'python' "$(awk '($1 == "Version:"){print $2}' $WORKSPACE/sdk/python/arvados_python_client.egg-info/PKG-INFO)" "--url=https://arvados.org" "--description=The Arvados Python SDK" --deb-recommends=git
 
 # The PAM module
-cd $WORKSPACE/packages/$TARGET
-rm -rf "$WORKSPACE/sdk/pam/build"
-fpm_build $WORKSPACE/sdk/pam libpam-arvados 'Curoverse, Inc.' 'python' "$(awk '($1 == "Version:"){print $2}' $WORKSPACE/sdk/pam/arvados_pam.egg-info/PKG-INFO)" "--url=https://arvados.org" "--description=PAM module for authenticating shell logins using Arvados API tokens" --depends libpam-python
+if [[ $TARGET =~ debian|ubuntu ]]; then
+    cd $WORKSPACE/packages/$TARGET
+    rm -rf "$WORKSPACE/sdk/pam/build"
+    fpm_build $WORKSPACE/sdk/pam libpam-arvados 'Curoverse, Inc.' 'python' "$(awk '($1 == "Version:"){print $2}' $WORKSPACE/sdk/pam/arvados_pam.egg-info/PKG-INFO)" "--url=https://arvados.org" "--description=PAM module for authenticating shell logins using Arvados API tokens" --depends libpam-python
+fi
 
 # The FUSE driver
 # Please see comment about --no-python-fix-name above; we stay consistent and do
