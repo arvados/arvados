@@ -13,5 +13,3 @@ case "$FORMAT" in
         fpm_args+=('--deb-recommends=system-log-daemon')
         ;;
 esac
-
-fpm_args+=('--config-files=examples/pam-auth-update_arvados')

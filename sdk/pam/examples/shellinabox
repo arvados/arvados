@@ -1,4 +1,6 @@
-# Install in /etc/pam.d/shellinabox
+# This example is a stock debian "login" file with libpam_arvados
+# replacing pam_unix, and the "noprompt" option in use. It can be
+# installed as /etc/pam.d/shellinabox .
 
 auth       optional   pam_faildelay.so  delay=3000000
 auth [success=ok new_authtok_reqd=ok ignore=ignore user_unknown=bad default=die] pam_securetty.so
@@ -7,7 +9,7 @@ session [success=ok ignore=ignore module_unknown=ignore default=bad] pam_selinux
 session       required   pam_env.so readenv=1
 session       required   pam_env.so readenv=1 envfile=/etc/default/locale
 
-auth [success=1 default=ignore] pam_python.so /usr/local/lib/python2.7/dist-packages/arvados_pam/__init__.py api.example shell.example noprompt
+auth [success=1 default=ignore] pam_python.so /lib/security/libpam_arvados.py api.example shell.example noprompt
 auth	requisite			pam_deny.so
 auth	required			pam_permit.so
 
