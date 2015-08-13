@@ -471,6 +471,18 @@ class ProjectsTest < ActionDispatch::IntegrationTest
     end
   end
 
+  test "project menu shows all projects owned" do
+    visit page_with_token("user1_with_load")
+    find("#projects-menu").click
+    # Verify that expected number of projects are found
+    found_items = page.all('li')
+    found_count = found_items.count
+    assert_equal(true, found_count>=211,
+      "Found too few items. Expected at least 200 and found #{found_count}")
+    assert_equal(true, found_count<=220,
+      "Found too many items. Expected at most 210 and found #{found_count}")
+  end
+
   [
     ['project_with_10_collections', 10],
     ['project_with_201_collections', 201], # two pages of data

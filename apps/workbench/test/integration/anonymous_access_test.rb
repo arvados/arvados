@@ -20,7 +20,7 @@ class AnonymousAccessTest < ActionDispatch::IntegrationTest
         assert_selector 'a', text: 'Projects'
         page.find("#projects-menu").click
         assert_selector 'a', text: 'Create a new project'
-        assert_selector 'a', text: 'Browse public projects'
+        assert_selector "a[href=\"/projects/public\"]", text: 'Browse public projects'
         assert page.has_text?('My projects'), 'Not found text - My projects'
       else
         assert_text 'indicate that you have read and accepted the user agreement'
