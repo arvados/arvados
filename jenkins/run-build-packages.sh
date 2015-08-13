@@ -418,6 +418,9 @@ handle_ruby_gem arvados
 cd "$WORKSPACE/sdk/cli"
 handle_ruby_gem arvados-cli
 
+cd "$WORKSPACE/services/login-sync"
+handle_ruby_gem arvados-login-sync
+
 # Python packages
 debug_echo -e "\nPython packages\n"
 

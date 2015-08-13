@@ -60,6 +60,7 @@ services/dockercleaner
 services/fuse
 services/keepproxy
 services/keepstore
+services/login-sync
 services/nodemanager
 services/arv-git-httpd
 sdk/cli
@@ -558,12 +559,18 @@ install_doc() {
 }
 do_install doc
 
-install_ruby_sdk() {
-    with_test_gemset gem_uninstall_if_exists arvados \
-        && cd "$WORKSPACE/sdk/ruby" \
+install_gem() {
+    gemname=$1
+    srcpath=$2
+    with_test_gemset gem_uninstall_if_exists "$gemname" \
+        && cd "$WORKSPACE/$srcpath" \
         && bundle_install_trylocal \
-        && gem build arvados.gemspec \
-        && with_test_gemset gem install --no-ri --no-rdoc `ls -t arvados-*.gem|head -n1`
+        && gem build "$gemname.gemspec" \
+        && with_test_gemset gem install --no-ri --no-rdoc $(ls -t "$gemname"-*.gem|head -n1)
+}
+
+install_ruby_sdk() {
+    install_gem arvados sdk/ruby
 }
 do_install sdk/ruby ruby_sdk
 
@@ -575,13 +582,14 @@ install_perl_sdk() {
 do_install sdk/perl perl_sdk
 
 install_cli() {
-    with_test_gemset gem_uninstall_if_exists arvados-cli \
-        && cd "$WORKSPACE/sdk/cli" \
-        && bundle_install_trylocal \
-        && gem build arvados-cli.gemspec \
-        && with_test_gemset gem install --no-ri --no-rdoc `ls -t arvados-cli-*.gem|head -n1`
+    install_gem arvados-cli sdk/cli
 }
 do_install sdk/cli cli
+
+install_login-sync() {
+    install_gem arvados-login-sync services/login-sync
+}
+do_install services/login-sync login-sync
 
 # Install the Python SDK early. Various other test suites (like
 # keepproxy) bring up run_test_server.py, which imports the arvados
@@ -718,6 +726,12 @@ test_cli() {
         && KEEP_LOCAL_STORE=/tmp/keep bundle exec rake test TESTOPTS=-v ${testargs[sdk/cli]}
 }
 do_test sdk/cli cli
+
+test_login-sync() {
+    cd "$WORKSPACE/services/login-sync" \
+        && bundle exec rake test TESTOPTS=-v ${testargs[services/login-sync]}
+}
+do_test services/login-sync login-sync
 
 for p in "${pythonstuff[@]}"
 do
