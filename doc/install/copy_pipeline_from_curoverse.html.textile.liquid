@@ -26,7 +26,7 @@ We will use the Arvados *arv-copy* command to copy this template to your cluster
 
 During this setup, if you have an account in Curoverse cloud, you can use "your access token":#using-your-token to create the source configuration file. If you do not have an account in Curoverse cloud, you can use the "anonymous access token":#using-anonymous-token for the source cluster configuration.
 
-h4(#using-anonymous-token). *Configure source and destination while using anonymous access token for source*
+h4(#using-anonymous-token). *Configuring source and destination setup files using anonymous access token*
 
 Configure the source and destination clusters as described in the "*Using arv-copy*":http://doc.arvados.org/user/topics/arv-copy.html tutorial in user guide, while using *5vqmz9mik2ou2k9objb8pnyce8t97p6vocyaouqo3qalvpmjs5* as the API token for source configuration.
 
@@ -46,7 +46,7 @@ You can now copy the pipeline template from *qr1hi* to *your cluster*. Replace *
 
 *Note:* When you are using anonymous access token to copy the template, you will not be able to do a recursive copy since you will not be able to provide the dst-git-repo parameter. In order to perform a recursive copy of the template, you would need to use the Arvados API token from your account as explained in the "using your token":#using-your-token section below.
 
-h4(#using-your-token). *Configuring using your access tokens*
+h4(#using-your-token). *Configuring source and destination setup files using personal access token*
 
 If you already have an account in Curoverse cloud, you can follow the instructions in the "*Using arv-copy*":http://doc.arvados.org/user/topics/arv-copy.html user guide to get your *Current token* for source and destination clusters, and use them to create the source *qr1hi.conf* and dst_cluster.conf configuration files.
 
