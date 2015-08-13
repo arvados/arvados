@@ -7,50 +7,31 @@ require 'etc'
 require 'fileutils'
 require 'yaml'
 
-# This script does the actual account/key management on disk for the shell machine(s).
-#
-# Ward Vandewege <ward@curoverse.com>
-
-# Default is development
-production = ARGV[0] == "production"
-
-ENV["RAILS_ENV"] = "development"
-ENV["RAILS_ENV"] = "production" if production
-
-DEBUG = 1
-
-# load and merge in the environment-specific application config info
-# if present, overriding base config parameters as specified
-path = File.dirname(__FILE__) + '/config/arvados-clients.yml'
-if File.exists?(path) then
-	cp_config = YAML.load_file(path)[ENV['RAILS_ENV']]
-else
-	puts "Please create a\n " + File.dirname(__FILE__) + "/config/arvados-clients.yml\n file"
-	exit 1
+req_envs = %w(ARVADOS_API_HOST ARVADOS_API_TOKEN ARVADOS_VIRTUAL_MACHINE_UUID)
+req_envs.each do |k|
+  unless ENV[k]
+    abort "Fatal: These environment vars must be set: #{req_envs}"
+  end
 end
-
-shell_hostname = cp_config['arvados_shell_hostname']
-
-ENV['ARVADOS_API_HOST'] = cp_config['arvados_api_host']
-ENV['ARVADOS_API_TOKEN'] = cp_config['arvados_api_token']
 
 keys = ''
 
 seen = Hash.new
 
 begin
-
   uids = Hash[Etc.to_enum(:passwd).map { |ent| [ent.name, ent.uid] }]
   gids = Hash[Etc.to_enum(:group).map { |ent| [ent.name, ent.gid] }]
-  arv = Arvados.new( { :suppress_ssl_warnings => false } )
+  arv = Arvados.new({ :suppress_ssl_warnings => false })
+
+  vm_uuid = ENV['ARVADOS_VIRTUAL_MACHINE_UUID']
 
   begin
-    logins = arv.virtual_machine.get_all_logins(limit: 10000, uuid: cp_config['vm_uuid'])[:items]
+    logins = arv.virtual_machine.get_all_logins(limit: 10000, uuid: vm_uuid)[:items]
   rescue
-    logins = arv.virtual_machine.logins(:uuid => cp_config['vm_uuid'])[:items]
+    logins = arv.virtual_machine.logins(:uuid => vm_uuid)[:items]
   end
   logins = [] if logins.nil?
-  logins = logins.reject { |l| l[:username].nil? or l[:hostname].nil? or l[:public_key].nil? or l[:hostname] != shell_hostname }
+  logins = logins.reject { |l| l[:username].nil? or l[:hostname].nil? or l[:public_key].nil? or l[:virtual_machine_uuid] != vm_uuid }
 
   # No system users
   uid_min = 1000
