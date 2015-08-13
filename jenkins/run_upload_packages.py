@@ -187,9 +187,11 @@ def _define_suite(suite_class, *rel_globs, **kwargs):
 
 PACKAGE_SUITES = {
     'python': _define_suite(PythonPackageSuite,
+                            'sdk/pam/dist/*.tar.gz',
                             'sdk/python/dist/*.tar.gz',
+                            'services/nodemanager/dist/*.tar.gz',
                             'services/fuse/dist/*.tar.gz',
-                            'services/nodemanager/dist/*.tar.gz'),
+                        ),
     'gems': _define_suite(GemPackageSuite, 'sdk/ruby/*.gem', 'sdk/cli/*.gem'),
     }
 for target in ['debian7', 'debian8', 'ubuntu1204', 'ubuntu1404']:
