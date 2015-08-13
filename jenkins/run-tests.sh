@@ -63,6 +63,7 @@ services/keepstore
 services/nodemanager
 services/arv-git-httpd
 sdk/cli
+sdk/pam
 sdk/python
 sdk/ruby
 sdk/go/arvadosclient
@@ -390,6 +391,10 @@ ln -sfn "$WORKSPACE" "$GOPATH/src/git.curoverse.com/arvados.git" \
 virtualenv --setuptools "$VENVDIR" || fatal "virtualenv $VENVDIR failed"
 . "$VENVDIR/bin/activate"
 
+if (pip install setuptools | grep setuptools-0) || [ "$($VENVDIR/bin/easy_install --version | cut -d\  -f2 | cut -d. -f1)" -lt 18 ]; then
+    pip install --upgrade setuptools
+fi
+
 # Note: this must be the last time we change PATH, otherwise rvm will
 # whine a lot.
 setup_ruby_environment
@@ -506,10 +511,10 @@ do_install() {
             # the source dist package to avoid a pip bug.
             # see https://arvados.org/issues/5766 for details.
 
-            # Also need to install twice, because if it belives the package is
+            # Also need to install twice, because if it believes the package is
             # already installed, pip it won't install it.  So the first "pip
             # install" ensures that the dependencies are met, the second "pip
-            # install" ensures that we've actually install the local package
+            # install" ensures that we've actually installed the local package
             # we just built.
             cd "$WORKSPACE/$1" \
                 && "${3}python" setup.py sdist rotate --keep=1 --match .tar.gz \
@@ -585,6 +590,7 @@ do_install sdk/cli cli
 # keepproxy).
 declare -a pythonstuff
 pythonstuff=(
+    sdk/pam
     sdk/python
     services/fuse
     services/nodemanager
