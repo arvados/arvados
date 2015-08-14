@@ -11,6 +11,7 @@
 #   Set portable_data_hash to "d41d8cd98f00b204e9800998ecf8427e+0"
 
 require 'trollop'
+require './lib/salvage_collection'
 
 opts = Trollop::options do
   banner ''
@@ -21,76 +22,5 @@ opts = Trollop::options do
   opt :reason, "Reason for salvaging.", type: :string, required: false
 end
 
-require File.dirname(__FILE__) + '/../config/environment'
-require 'arvados/keep'
-include ApplicationHelper
-require 'tempfile'
-require 'shellwords'
-
-def salvage_collection uuid, reason
-  act_as_system_user do
-    src_collection = Collection.find_by_uuid uuid
-    if !src_collection
-      $stderr.puts "No collection found for #{uuid}. Returning."
-      exit 1
-    end
-
-    begin
-      src_manifest = src_collection.manifest_text || ''
-
-      # Get all the locators from the original manifest
-      locators = []
-      src_manifest.each_line do |line|
-        line.split(' ').each do |word|
-          if match = Keep::Locator::LOCATOR_REGEXP.match(word)
-            word = word.split('+')[0..1].join('+')  # get rid of any hints
-            locators << word if !word.start_with?('00000000000000000000000000000000')
-          end
-        end
-      end
-      locators << 'd41d8cd98f00b204e9800998ecf8427e+0' if !locators.any?
-
-      # create new collection using 'arv-put' with original manifest_text as the data
-      temp_file = Tempfile.new('temp')
-      temp_file.write(src_manifest)
-      temp_file.close
-      new_manifest = %x(arv-put --as-stream --use-filename invalid_manifest_text.txt #{Shellwords::shellescape(temp_file.path)})
-      temp_file.unlink
-
-      new_collection = Collection.new
-
-      total_size = 0
-      locators.each do |locator|
-        total_size += locator.split('+')[1].to_i
-      end
-      new_manifest += (". #{locators.join(' ')} 0:#{total_size}:salvaged_data\n")
-
-      new_collection.name = "salvaged from #{src_collection.uuid}, #{src_collection.portable_data_hash}"
-      new_collection.manifest_text = new_manifest
-      new_collection.portable_data_hash = Digest::MD5.hexdigest(new_manifest)
-
-      created = new_collection.save!
-      raise "New collection creation failed." if !created
-
-      $stderr.puts "Salvaged manifest and data for #{uuid} are in #{new_collection.uuid}."
-      puts "Created new collection #{created}"
-    rescue => error
-      $stderr.puts "Error creating collection for #{uuid}: #{error}"
-      exit 1
-    end
-
-    begin
-      # update src_collection collection name, pdh, and manifest_text
-      src_collection.name = (src_collection.name || '') + ' (' + (reason || '') + '; salvaged data at ' + created + ')'
-      src_collection.portable_data_hash = 'd41d8cd98f00b204e9800998ecf8427e+0'
-      src_collection.save!
-      $stderr.puts "Collection #{uuid} emptied and renamed to #{src_collection.name.inspect}."
-    rescue => error
-      $stderr.puts "Error salvaging collection #{uuid}: #{error}"
-      exit 1
-    end
-  end
-end
-
 # Salvage the collection with the given uuid
-salvage_collection opts.uuid, opts.reason
+SalvageCollection.salvage_collection opts.uuid, opts.reason
