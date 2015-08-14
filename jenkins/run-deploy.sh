@@ -224,7 +224,7 @@ if [[ "$SUM_ECODE" != "0" ]]; then
   exit $EXITCODE
 fi
 
-for n in manage $SHELL_NODES $KEEP_NODES; do
+for n in manage switchyard $SHELL_NODES $KEEP_NODES; do
   ECODE=0
   if [[ $n =~ $ARVADOS_API_HOST$ ]]; then
     # e.g. keep.qr1hi.arvadosapi.com
