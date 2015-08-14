@@ -9,6 +9,8 @@ from libcloud.compute.base import NodeDriver
 
 from ...config import NETWORK_ERRORS
 
+import pprint
+
 class BaseComputeNodeDriver(object):
     """Abstract base class for compute node drivers.
 
@@ -56,7 +58,7 @@ class BaseComputeNodeDriver(object):
     def _init_ping_host(self, ping_host):
         self.ping_host = ping_host
 
-    def search_for(self, term, list_method, key=attrgetter('id')):
+    def search_for(self, term, list_method, key=attrgetter('id'), **kwargs):
         """Return one matching item from a list of cloud objects.
 
         Raises ValueError if the number of matching objects is not exactly 1.
@@ -71,7 +73,8 @@ class BaseComputeNodeDriver(object):
         """
         cache_key = (list_method, term)
         if cache_key not in self.SEARCH_CACHE:
-            results = [item for item in getattr(self.real, list_method)()
+            items = getattr(self.real, list_method)(**kwargs)
+            results = [item for item in items
                        if key(item) == term]
             count = len(results)
             if count != 1:

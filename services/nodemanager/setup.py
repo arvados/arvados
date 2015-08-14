@@ -25,7 +25,7 @@ setup(name='arvados-node-manager',
       license='GNU Affero General Public License, version 3.0',
       packages=find_packages(),
       install_requires=[
-        'apache-libcloud>=0.16',
+        'apache-libcloud>=0.18',
         'arvados-python-client>=0.1.20150206225333',
         'pykka',
         'python-daemon',
