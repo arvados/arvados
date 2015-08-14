@@ -81,7 +81,7 @@ begin
       groups << "fuse"
       groups.select! { |name| gids[name] }
       # Create new user
-      next unless system("/usr/sbin/useradd", "-m",
+      next unless system("useradd", "-m",
                          "-c", l[:username],
                          "-s", "/bin/bash",
                          "-G", groups.join(","),
