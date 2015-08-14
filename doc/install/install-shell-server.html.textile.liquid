@@ -58,3 +58,98 @@ Configure git to use the ARVADOS_API_TOKEN environment variable to authenticate 
 <code>~$ <span class="userinput">sudo git config --system 'credential.https://git.<b>uuid_prefix.your.domain</b>/.helper' '!cred(){ cat >/dev/null; if [ "$1" = get ]; then echo password=$ARVADOS_API_TOKEN; fi; };cred'</span></code>
 </pre>
 </notextile>
+
+h2. Install arvados-login-sync
+
+This program makes it possible for Arvados users to log in to the shell server -- subject to permissions assigned by the Arvados administrator -- using the SSH keys they upload to Workbench. It sets up login accounts, updates group membership, and adds users' public keys to the appropriate @authorized_keys@ files.
+
+Create an Arvados virtual_machine object representing this shell server. This will assign a UUID.
+
+<notextile>
+<pre>
+<code>apiserver:~$ <span class="userinput">arv --format=uuid virtual_machine create --virtual-machine '{"hostname":"<b>your.shell.server.hostname</b>"}'</span>
+zzzzz-2x53u-zzzzzzzzzzzzzzz</code>
+</pre>
+</notextile>
+
+Create a token that is allowed to read login information for this VM.
+
+<notextile>
+<pre>
+<code>apiserver:~$ <span class="userinput">arv api_client_authorization create --api-client-authorization '{"scopes":["GET /arvados/v1/virtual_machines/<b>zzzzz-2x53u-zzzzzzzzzzzzzzz</b>/"]}'
+{
+ ...
+ "api_token":"zzzzzzzzzzzzzzzzzzzzzzzzzzzzzzzzzzzzzzzzzzzzzzzzzz",
+ ...
+}</code>
+</pre>
+</notextile>
+
+Note the UUID and the API token output by the above commands: you will need them in a minute.
+
+Install the arvados-login-sync program.
+
+If you're using RVM:
+
+<notextile>
+<pre>
+<code>shellserver:~$ <span class="userinput">sudo -i `which rvm-exec` default gem install arvados-login-sync</span></code>
+</pre>
+</notextile>
+
+If you're not using RVM:
+
+<notextile>
+<pre>
+<code>shellserver:~$ <span class="userinput">sudo -i gem install arvados-login-sync</span></code>
+</pre>
+</notextile>
+
+Install cron.
+
+On Debian-based systems:
+
+<notextile>
+<pre><code>~$ <span class="userinput">sudo apt-get install cron</span>
+</code></pre>
+</notextile>
+
+On Red Hat-based systems:
+
+<notextile>
+<pre><code>~$ <span class="userinput">sudo yum install cron</span>
+</code></pre>
+</notextile>
+
+Configure cron to run the @arvados-login-sync@ program every 2 minutes.
+
+If you're using RVM:
+
+<notextile>
+<pre>
+<code>shellserver:~$ <span class="userinput">sudo bash -c 'umask 077; tee /etc/cron.d/arvados-login-sync' &lt;&lt;'EOF'
+ARVADOS_API_HOST="<strong>uuid_prefix.your.domain</strong>"
+ARVADOS_API_TOKEN="<strong>the_token_you_created_above</strong>"
+ARVADOS_VIRTUAL_MACHINE_UUID="<strong>zzzzz-2x53u-zzzzzzzzzzzzzzz</strong>"
+*/2 * * * * root /usr/local/rvm/bin/rvm-exec default arvados-login-sync
+EOF</span></code>
+</pre>
+</notextile>
+
+If you're not using RVM:
+
+<notextile>
+<pre>
+<code>shellserver:~$ <span class="userinput">sudo bash -c 'umask 077; tee /etc/cron.d/arvados-login-sync' &lt;&lt;'EOF'
+ARVADOS_API_HOST="<strong>uuid_prefix.your.domain</strong>"
+ARVADOS_API_TOKEN="<strong>the_token_you_created_above</strong>"
+ARVADOS_VIRTUAL_MACHINE_UUID="<strong>zzzzz-2x53u-zzzzzzzzzzzzzzz</strong>"
+*/2 * * * * root arvados-login-sync
+EOF</span></code>
+</pre>
+</notextile>
+
+A user should be able to log in to the shell server when the following conditions are satisfied:
+* The user has uploaded an SSH public key: Workbench &rarr; Account menu &rarr; "SSH keys" item &rarr; "Add new SSH key" button.
+* As an admin user, you have given the user permission to log in: Workbench &rarr; Admin menu &rarr; "Users" item &rarr; "Show" button &rarr; "Admin" tab &rarr; "Setup shell account" button.
+* Two minutes have elapsed since the above conditions were satisfied, and the cron job has had a chance to run.
