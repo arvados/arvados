@@ -146,7 +146,7 @@ class DebianPackageSuite(DistroPackageSuite):
 cd "$1"; shift
 DISTNAME=$1; shift
 freight add "$@" "apt/$DISTNAME"
-freight cache
+freight cache "apt/$DISTNAME"
 rm "$@"
 """
     TARGET_DISTNAMES = {
