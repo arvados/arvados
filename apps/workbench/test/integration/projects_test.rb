@@ -707,4 +707,25 @@ class ProjectsTest < ActionDispatch::IntegrationTest
       assert_no_selector 'li.disabled', text: 'Copy selected'
     end
   end
+
+  test "test search all projects menu item in projects menu" do
+     visit page_with_token('active')
+     find('#projects-menu').click
+     within('.dropdown-menu') do
+       assert_selector 'a', text: 'Search all projects'
+       find('a', text: 'Search all projects').click
+     end
+     within('.modal-content') do
+        assert page.has_text?('All projects'), 'No text - All projects'
+        assert page.has_text?('Search'), 'No text - Search'
+        assert page.has_text?('Cancel'), 'No text - Cancel'
+        fill_in "Search", with: 'Unrestricted public data'
+        sleep 2
+        assert_selector 'div', text: 'Unrestricted public data'
+        find(:xpath, '//*[@id="choose-scroll"]/div[2]/div').click
+        click_button 'Show'
+     end
+     assert page.has_text?('Unrestricted public data'), 'No text - Unrestriced public data'
+     assert page.has_text?('An anonymously accessible project'), 'No text - An anonymously accessible project'
+  end
 end
