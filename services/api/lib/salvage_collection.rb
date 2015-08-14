@@ -15,17 +15,22 @@ module SalvageCollection
   require 'tempfile'
   require 'shellwords'
 
-  def self.salvage_collection uuid, reason
+  def self.salvage_collection uuid, reason='salvaged - see #6277, #6859'
     act_as_system_user do
-      if !ENV['ARVADOS_API_TOKEN'] or !ENV['ARVADOS_API_HOST']
-        $stderr.puts "Please set ARVADOS_API_HOST and ARVADOS_API_TOKEN environment variables. Exiting."
+      if !ENV['ARVADOS_API_TOKEN'].present? or !ENV['ARVADOS_API_HOST'].present?
+        $stderr.puts "Please set your admin user credentials as ARVADOS environment variables."
         exit 1
+      end
+
+      if !uuid.present?
+        $stderr.puts "Required uuid argument is missing."
+        return false
       end
 
       src_collection = Collection.find_by_uuid uuid
       if !src_collection
         $stderr.puts "No collection found for #{uuid}. Returning."
-        exit 1
+        return false
       end
 
       begin
@@ -48,11 +53,12 @@ module SalvageCollection
         temp_file.write(src_manifest)
         temp_file.close
         new_manifest = %x(arv-put --as-stream --use-filename invalid_manifest_text.txt #{Shellwords::shellescape(temp_file.path)})
+
         temp_file.unlink
 
         if !new_manifest.present?
           $stderr.puts "arv-put --as-stream failed for #{uuid}"
-          exit 1
+          return false
         end
 
         words = []
@@ -85,7 +91,7 @@ module SalvageCollection
         puts "Created new collection #{new_collection.uuid}"
       rescue => error
         $stderr.puts "Error creating collection for #{uuid}: #{error}"
-        exit 1
+        return false
       end
 
       begin
@@ -97,7 +103,7 @@ module SalvageCollection
         $stderr.puts "Collection #{uuid} emptied and renamed to #{src_collection.name.inspect}."
       rescue => error
         $stderr.puts "Error salvaging collection #{new_collection.uuid}: #{error}"
-        exit 1
+        return false
       end
     end
   end
