@@ -441,8 +441,11 @@ handle_python_package
     COMMIT_HASH=$(format_last_commit_here "%H")
 
     SRC_BUILD_DIR=$(mktemp -d)
-    git clone $DASHQ_UNLESS_DEBUG --branch "$COMMIT_HASH" "$WORKSPACE/.git" "$SRC_BUILD_DIR"
+    git clone $DASHQ_UNLESS_DEBUG "$WORKSPACE/.git" "$SRC_BUILD_DIR"
     cd "$SRC_BUILD_DIR"
+
+    # go into detached-head state
+    git checkout $DASHQ_UNLESS_DEBUG "$COMMIT_HASH"
     echo "$COMMIT_HASH" >git-commit.version
 
     cd "$SRC_BUILD_DIR"
