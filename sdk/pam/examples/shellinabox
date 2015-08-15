@@ -9,7 +9,7 @@ session [success=ok ignore=ignore module_unknown=ignore default=bad] pam_selinux
 session       required   pam_env.so readenv=1
 session       required   pam_env.so readenv=1 envfile=/etc/default/locale
 
-auth [success=1 default=ignore] pam_python.so /lib/security/libpam_arvados.py api.example shell.example noprompt
+auth [success=1 default=ignore] pam_python.so /usr/local/lib/security/libpam_arvados.py api.example shell.example noprompt
 auth	requisite			pam_deny.so
 auth	required			pam_permit.so
 
