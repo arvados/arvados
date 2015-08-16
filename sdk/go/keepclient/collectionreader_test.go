@@ -20,7 +20,8 @@ type IntegrationSuite struct{}
 
 type SuccessHandler struct {
 	disk map[string][]byte
-	lock chan struct{}
+	lock chan struct{}	// channel with buffer==1: full when an operation is in progress.
+	ops  *int		// number of operations completed
 }
 
 func (h SuccessHandler) ServeHTTP(resp http.ResponseWriter, req *http.Request) {
@@ -34,12 +35,18 @@ func (h SuccessHandler) ServeHTTP(resp http.ResponseWriter, req *http.Request) {
 		pdh := fmt.Sprintf("%x+%d", md5.Sum(buf), len(buf))
 		h.lock <- struct{}{}
 		h.disk[pdh] = buf
+		if h.ops != nil {
+			(*h.ops)++
+		}
 		<- h.lock
 		resp.Write([]byte(pdh))
 	case "GET":
 		pdh := req.URL.Path[1:]
 		h.lock <- struct{}{}
 		buf, ok := h.disk[pdh]
+		if h.ops != nil {
+			(*h.ops)++
+		}
 		<- h.lock
 		if !ok {
 			resp.WriteHeader(http.StatusNotFound)
@@ -57,6 +64,14 @@ type rdrTest struct {
 	want interface{} // error or string to expect
 }
 
+func StubWithFakeServers(kc *KeepClient, h http.Handler) {
+	localRoots := make(map[string]string)
+	for i, k := range RunSomeFakeKeepServers(h, 4) {
+		localRoots[fmt.Sprintf("zzzzz-bi6l4-fakefakefake%03d", i)] = k.url
+	}
+	kc.SetServiceRoots(localRoots, localRoots, nil)
+}
+
 func (s *ServerRequiredSuite) TestCollectionReaderContent(c *check.C) {
 	arv, err := arvadosclient.MakeArvadosClient()
 	c.Assert(err, check.IsNil)
@@ -66,12 +81,11 @@ func (s *ServerRequiredSuite) TestCollectionReaderContent(c *check.C) {
 	c.Assert(err, check.IsNil)
 
 	{
-		localRoots := make(map[string]string)
-		h := SuccessHandler{disk: make(map[string][]byte), lock: make(chan struct{}, 1)}
-		for i, k := range RunSomeFakeKeepServers(h, 4) {
-			localRoots[fmt.Sprintf("zzzzz-bi6l4-fakefakefake%03d", i)] = k.url
+		h := SuccessHandler{
+			disk: make(map[string][]byte),
+			lock: make(chan struct{}, 1),
 		}
-		kc.SetServiceRoots(localRoots, localRoots, nil)
+		StubWithFakeServers(kc, h)
 		kc.PutB([]byte("foo"))
 		kc.PutB([]byte("bar"))
 		kc.PutB([]byte("Hello world\n"))
@@ -120,4 +134,50 @@ func (s *ServerRequiredSuite) TestCollectionReaderContent(c *check.C) {
 			c.Check(rdr.Close(), check.Equals, nil)
 		}
 	}
+}
+
+func (s *ServerRequiredSuite) TestCollectionReaderCloseEarly(c *check.C) {
+	arv, err := arvadosclient.MakeArvadosClient()
+	c.Assert(err, check.IsNil)
+	arv.ApiToken = arvadostest.ActiveToken
+
+	kc, err := MakeKeepClient(&arv)
+	c.Assert(err, check.IsNil)
+
+	h := SuccessHandler{
+		disk: make(map[string][]byte),
+		lock: make(chan struct{}, 1),
+		ops: new(int),
+	}
+	StubWithFakeServers(kc, h)
+	kc.PutB([]byte("foo"))
+
+	mt := ". "
+	for i := 0; i < 1000; i++ {
+		mt += "acbd18db4cc2f85cedef654fccc4a4d8+3 "
+	}
+	mt += "0:3000:foo1000.txt\n"
+
+	// Grab the stub server's lock, ensuring our cfReader doesn't
+	// get anything back from its first call to kc.Get() before we
+	// have a chance to call Close().
+	h.lock <- struct{}{}
+	opsBeforeRead := *h.ops
+
+	rdr, err := kc.CollectionFileReader(map[string]interface{}{"manifest_text": mt}, "foo1000.txt")
+	c.Assert(err, check.IsNil)
+	err = rdr.Close()
+	c.Assert(err, check.IsNil)
+	c.Assert(rdr.Error(), check.IsNil)
+
+	// Release the stub server's lock. The first GET operation will proceed.
+	<-h.lock
+
+	// doGet() should close toRead before sending any more bufs to it.
+	if what, ok := <-rdr.toRead;  ok {
+		c.Errorf("Got %+v, expected toRead to be closed", what)
+	}
+
+	// Stub should have handled exactly one GET request.
+	c.Assert(*h.ops, check.Equals, opsBeforeRead+1)
 }
