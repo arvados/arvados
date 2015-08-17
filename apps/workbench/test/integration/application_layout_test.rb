@@ -27,7 +27,7 @@ class ApplicationLayoutTest < ActionDispatch::IntegrationTest
         assert_selector 'a', text: 'Search all projects'
         assert_no_selector 'a', text: 'Browse public projects'
         assert_selector 'a', text: 'Create a new project'
-        assert page.has_text?('My projects'), 'Not found text - My projects'
+        assert_selector 'li[class="dropdown-header"]', text: 'My projects'
       end
     elsif invited
       assert page.has_text?('Please check the box below to indicate that you have read and accepted the user agreement'), 'Not found text - Please check the box below . . .'
