@@ -9,6 +9,6 @@ Default: yes
 Priority: 256
 Auth-Type: Primary
 Auth:
-	[success=end default=ignore]	pam_python.so /lib/security/libpam_arvados.py api.example shell.example
+	[success=end default=ignore]	pam_python.so /usr/local/lib/security/libpam_arvados.py api.example shell.example
 Auth-Initial:
-	[success=end default=ignore]	pam_python.so /lib/security/libpam_arvados.py api.example shell.example
+	[success=end default=ignore]	pam_python.so /usr/local/lib/security/libpam_arvados.py api.example shell.example

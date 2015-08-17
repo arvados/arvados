@@ -32,8 +32,9 @@ setup(name='arvados-pam',
       scripts=[
       ],
       data_files=[
-          ('/usr/share/pam-configs', ['pam-configs/arvados']),
-          ('/lib/security', ['lib/libpam_arvados.py']),
+          ('lib/security', ['lib/libpam_arvados.py']),
+          ('share/arvados-pam', ['examples/shellinabox']),
+          ('share/pam-configs', ['pam-configs/arvados']),
       ],
       install_requires=[
           'arvados-python-client>=0.1.20150801000000',

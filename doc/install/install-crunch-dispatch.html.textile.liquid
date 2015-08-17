@@ -7,6 +7,33 @@ title: Install the Crunch dispatcher
 
 The dispatcher normally runs on the same host/VM as the API server.
 
+h2. Test the Arvados job queue
+
+Crunch dispatches work from the job queue on the Arvados API server.  Before you start installing the Crunch dispatcher, now's a good time to check that the API server and Git server can coordinate to create job records.  Run these commands *on your shell server* to create a collection, and a job to calculate the MD5 checksum of every file in it:
+
+<notextile>
+<pre><code>~$ <span class="userinput">echo 'Hello, Crunch!' | arv-put --portable-data-hash -</span>
+&hellip;
+d40c7f35d80da669afb9db1896e760ad+49
+~$ <span class="userinput">read -rd $'\000' newjob &lt;&lt;EOF; arv job create --job "$newjob"
+{"script_parameters":{"input":"d40c7f35d80da669afb9db1896e760ad+49"},
+ "script_version":"0988acb472849dc0",
+ "script":"hash",
+ "repository":"arvados"}
+EOF</span>
+</code></pre>
+</notextile>
+
+If you get the error
+
+<pre>
+ArgumentError: Specified script_version does not resolve to a commit
+</pre>
+
+it often means that the API server can't read the specified repository&mdash;either because it doesn't exist, or because the user running the API server doesn't have permission to read the repository files.  Check the API server's log (@/var/www/arvados-api/current/log/production.log@) for details, and double-check the instructions in the "Git server installation guide":install-arv-git-httpd.html.
+
+If everything goes well, the API server should create a job record, and your @arv@ command will output the JSON for that record.  It should have state @Queued@ and script_version @0988acb472849dc08d576ee40493e70bde2132ca@.  If the job JSON includes those fields, you can proceed to install the Crunch dispatcher and a compute node.  This job will remain queued until you install those services.
+
 h2. Perl SDK dependencies
 
 Install the Perl SDK on the controller.
@@ -127,27 +154,6 @@ In your API server's @application.yml@ configuration file, add the line @crunch_
 h2. Crunch user account
 
 Run @sudo adduser crunch@.  The crunch user should have the same UID, GID, and home directory on all compute nodes and on the dispatcher (API server).
-
-h2. Git Repositories
-
-Crunch scripts must be in Git repositories in the directory configured as @git_repositories_dir@/*.git (see the "API server installation":install-api-server.html#git_repositories_dir).
-
-Once you have a repository with commits -- and you have read access to the repository -- you should be able to create a new job:
-
-<pre>
-read -rd $'\000' newjob <<EOF; arv job create --job "$newjob"
-{"script_parameters":{"input":"f815ec01d5d2f11cb12874ab2ed50daa"},
- "script_version":"master",
- "script":"hash",
- "repository":"arvados"}
-EOF
-</pre>
-
-Without getting this error:
-
-<pre>
-ArgumentError: Specified script_version does not resolve to a commit
-</pre>
 
 h2. Run the Crunch dispatcher service
 
