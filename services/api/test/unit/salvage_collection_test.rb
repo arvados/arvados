@@ -34,6 +34,11 @@ class SalvageCollectionTest < ActiveSupport::TestCase
     ENV['ARVADOS_API_TOKEN'] = 'unused_by_test'
   end
 
+  teardown do
+    ENV['ARVADOS_API_HOST'] = ''
+    ENV['ARVADOS_API_TOKEN'] = ''
+  end
+
   test "salvage test collection" do
     # create a collection to test salvaging
     src_collection = Collection.new name: "test collection", manifest_text: TEST_MANIFEST
