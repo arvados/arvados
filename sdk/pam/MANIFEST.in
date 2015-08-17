@@ -1,3 +1,4 @@
 include README.rst
+include examples/shellinabox
 include lib/libpam_arvados.py
 include pam-configs/arvados
