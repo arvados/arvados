@@ -20,7 +20,7 @@ module Kernel
   end
 
   def exit code
-    raise "Exit code #{code}" if code != 0
+    raise "Exit code #{code}" if code == 200
   end
 end
 
@@ -81,7 +81,7 @@ class SalvageCollectionTest < ActiveSupport::TestCase
       ENV['ARVADOS_API_TOKEN'] = ''
       SalvageCollection.salvage_collection collections('user_agreement').uuid
     rescue => e
-      assert_equal "Exit code 1", e.message
+      assert_equal "Exit code 200", e.message
       exited = true
     end
     assert_equal true, exited

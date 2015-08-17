@@ -19,7 +19,8 @@ module SalvageCollection
     act_as_system_user do
       if !ENV['ARVADOS_API_TOKEN'].present? or !ENV['ARVADOS_API_HOST'].present?
         $stderr.puts "Please set your admin user credentials as ARVADOS environment variables."
-        exit 1
+        # exit with a code outside the range of special exit codes; http://tldp.org/LDP/abs/html/exitcodes.html
+        exit 200
       end
 
       if !uuid.present?
