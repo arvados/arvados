@@ -330,9 +330,10 @@ def copy_collections(obj, src, dst, args):
         obj = arvados.util.collection_uuid_pattern.sub(copy_collection_fn, obj)
         return obj
     elif isinstance(obj, dict):
-        return {v: copy_collections(obj[v], src, dst, args) for v in obj}
+        return type(v)((v, copy_collections(obj[v], src, dst, args))
+                       for v in obj)
     elif isinstance(obj, list):
-        return [copy_collections(v, src, dst, args) for v in obj]
+        return type(v)(copy_collections(v, src, dst, args) for v in obj)
     return obj
 
 def migrate_jobspec(jobspec, src, dst, dst_repo, args):
