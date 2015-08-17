@@ -471,26 +471,6 @@ class ProjectsTest < ActionDispatch::IntegrationTest
     end
   end
 
-  test "project menu shows all projects owned" do
-    visit page_with_token("user1_with_load")
-    find("#projects-menu").click
-    page_scrolls = 301/20 + 2  # scroll num_pages+2 times to test scrolling is disabled when it should be
-    within('.dropdown-menu') do
-      (0..page_scrolls).each do |i|
-        page.driver.scroll_to 0, 999000
-        begin
-          wait_for_ajax
-        rescue
-        end
-      end
-    end
-    # Verify that expected number of projects are found
-    found_items = page.all('li')
-    found_count = found_items.count
-    assert_equal(true, found_count>=301,
-      "Found too few items. Expected at least 301 and found #{found_count}")
-  end
-
   [
     ['project_with_10_collections', 10],
     ['project_with_201_collections', 201], # two pages of data
