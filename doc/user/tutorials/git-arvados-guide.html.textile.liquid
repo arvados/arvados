@@ -4,22 +4,33 @@ navsection: userguide
 title: Working with your Arvados Git Repository
 ...
 
-Working with your Arvados git repository is analogous to working with your other repositories, the difference being that you push to Arvados rather than Github or Bitbucket.
+Working with your Arvados git repository is analogous to working with your other public repositories. If you are already familiar with git, feel free to skip this part of the documentation.
 
-Include: This tutorial assumes that you have a working Arvados repository. If you need to create one, you can go to the /user/tutorials/add-new-repository.html section and follow those instructions.
+This tutorial describes how to work with your new Arvados git repository. It will show you how to upload custom scripts to a remote Arvados repository, so you can use it in Arvados pipelines.
 
-Using the example $USER/tutorial repository from the "Add new Arvados repository":http://doc.arvados.org/user/tutorials/add-new-repository.html page, first,  clone your remote repository into a new local directory.
+{% include 'tutorial_git_repo_expectations' %}
+
+First, clone your remote repository into a new local directory. Note, a new directory named tutorial will be created, and this will act as your local git repository.
 
 <notextile>
-<pre><code>~$ <span class="userinput">git clone $USER/tutorial.git</span>
+<pre><code>~$ <span class="userinput">git clone git@git.qr1hi.arvadosapi.com:$USER/tutorial.git</span>
 </code></pre>
 </notextile>
 
-You may get warning: You appear to have cloned an empty repository., Do not worry about this.
+You may get the following warning:
 
-Now go into your new repository and we'll create a new script for you to push to Arvados.
+<pre>warning: You appear to have cloned an empty repository.</pre>
 
-Start by creating a file in your local repository.
+Do not worry about this, cloning an empty repository is not a problem.
+
+Next, lets create a new branch for you to work in. 
+
+<notextile>
+<pre><code>~$ <span class="userinput">git checkout -b tutorial_branch</span>
+</code></pre>
+</notextile>
+
+Next, lets create a new file in your local repository.
 
 <notextile>
 <pre><code>~$ <span class="userinput">cd tutorial</span>
@@ -27,10 +38,25 @@ Start by creating a file in your local repository.
 </code></pre>
 </notextile>
 
-Now, add your file to the index:
+Next, add your file to the git index.
 
 <notextile>
 <pre><code>~$ <span class="userinput">git add tutorial.txt</span>
 </code></pre>
 </notextile>
 
+Next, commit all the changes to your repository, along with a message of what you've accomplished.
+
+<notextile>
+<pre><code>~$ <span class="userinput">git commit -a -m "Added tutorial.txt"</span>
+</code></pre>
+</notextile>
+
+Next, push the changes in your local repository to the remote repository.
+
+<notextile>
+<pre><code>~$ <span class="userinput">git push origin tutorial_branch</span>
+</code></pre>
+</notextile>
+
+Now you're ready to use this script as part of an Arvados job!
