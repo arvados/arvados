@@ -22,7 +22,7 @@ class AnonymousAccessTest < ActionDispatch::IntegrationTest
         within('.dropdown-menu') do
           assert_selector 'a', text: 'Search all projects'
           assert_selector "a[href=\"/projects/public\"]", text: 'Browse public projects'
-          assert_selector 'a', text: 'Create a new project'
+          assert_selector 'a', text: 'Add a new project'
           assert_selector 'li[class="dropdown-header"]', text: 'My projects'
         end
       else

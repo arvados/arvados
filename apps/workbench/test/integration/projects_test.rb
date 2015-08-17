@@ -557,13 +557,13 @@ class ProjectsTest < ActionDispatch::IntegrationTest
 
     # Add a new project
     find("#projects-menu").click
-    click_link 'Create a new project'
+    click_link 'Add a new project'
     assert_text 'New project'
     assert_text 'No description provided'
 
     # Add one more new project
     find("#projects-menu").click
-    click_link 'Create a new project'
+    click_link 'Add a new project'
     match = /New project \(\d\)/.match page.text
     assert match, 'Expected project name not found'
     assert_text 'No description provided'
@@ -689,6 +689,7 @@ class ProjectsTest < ActionDispatch::IntegrationTest
   end
 
   test "test search all projects menu item in projects menu" do
+     need_selenium
      visit page_with_token('active')
      find('#projects-menu').click
      within('.dropdown-menu') do
@@ -700,7 +701,7 @@ class ProjectsTest < ActionDispatch::IntegrationTest
         assert page.has_text?('Search'), 'No text - Search'
         assert page.has_text?('Cancel'), 'No text - Cancel'
         fill_in "Search", with: 'Unrestricted public data'
-        sleep 2
+        wait_for_ajax
         assert_selector 'div', text: 'Unrestricted public data'
         find(:xpath, '//*[@id="choose-scroll"]/div[2]/div').click
         click_button 'Show'

@@ -26,7 +26,7 @@ class ApplicationLayoutTest < ActionDispatch::IntegrationTest
         page.find("#projects-menu").click
         assert_selector 'a', text: 'Search all projects'
         assert_no_selector 'a', text: 'Browse public projects'
-        assert_selector 'a', text: 'Create a new project'
+        assert_selector 'a', text: 'Add a new project'
         assert_selector 'li[class="dropdown-header"]', text: 'My projects'
       end
     elsif invited
