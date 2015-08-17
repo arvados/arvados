@@ -6,9 +6,16 @@ TEST_MANIFEST = ". 341dabea2bd78ad0d6fc3f5b926b450e+85626+Ad391622a17f61e4a254ed
 module Kernel
   def `(cmd)    # override kernel ` method
     if cmd.include? 'arv-put'
-      ". " +
-      Digest::MD5.hexdigest(TEST_MANIFEST) +
-      " 0:" + TEST_MANIFEST.length.to_s + ":invalid_manifest_text.txt\n"
+      file_contents = file = File.new(cmd.split[-1], "r").gets
+
+      # simulate arv-put error when it is 'user_agreement'
+      if file_contents.include? 'GNU_General_Public_License'
+        return ''
+      else
+        ". " +
+        Digest::MD5.hexdigest(TEST_MANIFEST) +
+        " 0:" + TEST_MANIFEST.length.to_s + ":invalid_manifest_text.txt\n"
+      end
     end
   end
 
@@ -78,5 +85,11 @@ class SalvageCollectionTest < ActiveSupport::TestCase
       exited = true
     end
     assert_equal true, exited
+  end
+
+  test "salvage collection with during arv-put" do
+    # try to salvage collection while mimicking error during arv-put
+    status = SalvageCollection.salvage_collection collections('user_agreement').uuid
+    assert_equal false, status
   end
 end
