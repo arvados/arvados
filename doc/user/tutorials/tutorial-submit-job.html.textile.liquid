@@ -13,44 +13,9 @@ This tutorial uses @$USER@ to denote your username.  Replace @$USER@ with your u
 
 Also, this tutorial uses the @tutorial@ arvados repository created in "Adding a new arvados repository":add-new-repository.html as the example repository.
 
-h2. Clone arvados repository
+h2. Clone Arvados repository
 
-All Crunch scripts are managed through the Git revision control system.  Before you start using Git, you should do some basic configuration (you only need to do this the first time):
-
-<notextile>
-<pre><code>~$ <span class="userinput">git config --global user.name "Your Name"</span>
-~$ <span class="userinput">git config --global user.email $USER@example.com</span></code></pre>
-</notextile>
-
-On the Arvados Workbench, click on the dropdown menu icon <span class="fa fa-lg fa-user"></span> <span class="caret"></span> in the upper right corner of the top navigation menu to access the user settings menu, and click on the menu item *Repositories*. In the *Repositories* page, you should see the @$USER/tutorial@ repository listed in the *name* column.  Next to *name* is the column *URL*. Copy the *URL* value associated with your repository.  This should look like <notextile><code>https://git.{{ site.arvados_api_host }}/$USER/tutorial.git</code></notextile>. Alternatively, you can use <notextile><code>git@git.{{ site.arvados_api_host }}:$USER/tutorial.git</code></notextile>
-
-Next, on the Arvados virtual machine, clone your Git repository:
-
-<notextile>
-<pre><code>~$ <span class="userinput">cd $HOME</span> # (or wherever you want to install)
-~$ <span class="userinput">git clone https://git.{{ site.arvados_api_host }}/$USER/tutorial.git</span>
-Cloning into 'tutorial'...</code></pre>
-</notextile>
-
-This will create a Git repository in the directory called @tutorial@ in your home directory. Say yes when prompted to continue with connection.
-Ignore any warning that you are cloning an empty repository.
-
-*Note:* If you are prompted for username and password when you try to git clone using this command, you may first need to update your git configuration. Execute the following commands to update your git configuration.
-
-<notextile>
-<pre>
-<code>~$ <span class="userinput">git config 'credential.https://git.{{ site.arvados_api_host }}/.username' none</span></code>
-<code>~$ <span class="userinput">git config 'credential.https://git.{{ site.arvados_api_host }}/.helper' '!cred(){ cat >/dev/null; if [ "$1" = get ]; then echo password=$ARVADOS_API_TOKEN; fi; };cred'</span></code>
-</pre>
-</notextile>
-
-{% include 'notebox_begin' %}
-For more information about using Git, try
-
-notextile. <pre><code>$ <span class="userinput">man gittutorial</span></code></pre>
-
-or go to our "Working with an Arvados Git Repository page":{{site.baseurl}}/user/tutorials/add-new-repository.html, or *"search Google for Git tutorials":http://google.com/#q=git+tutorial*.
-{% include 'notebox_end' %}
+Please clone the tutorial repository using the instructions from "Working with Arvados git repository":git-arvados-guide.html.
 
 h2. Creating a Crunch script
 

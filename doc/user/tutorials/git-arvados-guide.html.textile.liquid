@@ -4,13 +4,18 @@ navsection: userguide
 title: Working with an Arvados git repository
 ...
 
-Working with an Arvados git repository is analogous to working with other public repositories. If you are already familiar with git, feel free to skip this part of the documentation.
-
-This tutorial describes how to work with a new Arvados git repository. It will show you how to upload custom scripts to a remote Arvados repository, so you can use it in Arvados pipelines.
+This tutorial describes how to work with a new Arvados git repository. Working with an Arvados git repository is analogous to working with other public git repositories. It will show you how to upload custom scripts to a remote Arvados repository, so you can use it in Arvados pipelines.
 
 {% include 'tutorial_expectations' %}
 
 {% include 'tutorial_git_repo_expectations' %}
+
+{% include 'notebox_begin' %}
+For more information about using Git, try
+<notextile>
+<pre><code>$ <span class="userinput">man gittutorial</span></code></pre>
+</notextile> or *"search Google for Git tutorials":http://google.com/#q=git+tutorial*.
+{% include 'notebox_end' %}
 
 h2. Cloning an Arvados repository
 
@@ -43,17 +48,17 @@ Ignore any warning that you are cloning an empty repository.
 </pre>
 </notextile>
 
-h2. Creating a git branch
+h2. Creating a git branch in an Arvados repository
 
 <notextile>
 <pre><code>~$ <span class="userinput">cd tutorial</span>
-<span class="userinput">git checkout -b tutorial_branch</span>
+~$ <span class="userinput">git checkout -b tutorial_branch</span>
 </code></pre>
 </notextile>
 
-h2. Adding a script to git
+h2. Adding files or scripts to an Arvados repository
 
-First, create a new file in the local repository.
+Create a file named *tutorial.txt* in the local repository.
 
 <notextile>
 <pre><code>~$ <span class="userinput">echo 'hello world' > tutorial.txt</span>
@@ -67,7 +72,7 @@ Next, add the new file to the git index.
 </code></pre>
 </notextile>
 
-Next, commit all the changes to the local repository, along with a message of what you've accomplished.
+Next, commit all the changes to the local repository, along with a commit message tht describes what this script does.
 
 <notextile>
 <pre><code>~$ <span class="userinput">git commit -a -m "Added tutorial.txt"</span>
