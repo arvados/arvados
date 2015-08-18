@@ -49,17 +49,17 @@ For more information about using Git, try
 
 notextile. <pre><code>$ <span class="userinput">man gittutorial</span></code></pre>
 
-or *"search Google for Git tutorials":http://google.com/#q=git+tutorial*.
+or go to our "Working with an Arvados Git Repository page":{{site.baseurl}}/user/tutorials/add-new-repository.html, or *"search Google for Git tutorials":http://google.com/#q=git+tutorial*.
 {% include 'notebox_end' %}
 
 h2. Creating a Crunch script
 
-Start by entering the @tutorial@ directory created by @git clone@.  Next create a subdirectory called @crunch_scripts@ and change to that directory:
+Start by entering the @tutorial@ directory created by @git clone@. Next, create a subdirectory called @crunch_scripts@ and change to that directory:
 
 <notextile>
-<pre><code>~$ <span class="userinput">cd $USER</span>
-~/$USER$ <span class="userinput">mkdir crunch_scripts</span>
-~/$USER$ <span class="userinput">cd crunch_scripts</span></code></pre>
+<pre><code>>~$ <span class="userinput">cd tutorial</span>
+~/tutorial$ <span class="userinput">mkdir crunch_scripts</span>
+~/tutorial$ <span class="userinput">cd crunch_scripts</span></code></pre>
 </notextile>
 
 Next, using @nano@ or your favorite Unix text editor, create a new file called @hash.py@ in the @crunch_scripts@ directory.
@@ -81,7 +81,7 @@ notextile. <pre><code>~/tutorial/crunch_scripts$ <span class="userinput">git add
 Next, commit your changes.  All staged changes are recorded into the local git repository:
 
 <notextile>
-<pre><code>~/tutorial/crunch_scripts$ <span class="userinput">git commit -m"my first script"</span>
+<pre><code>~/tutorial/crunch_scripts$ <span class="userinput">git commit -m "my first script"</span>
 [master (root-commit) 27fd88b] my first script
  1 file changed, 45 insertions(+)
  create mode 100755 crunch_scripts/hash.py</code></pre>

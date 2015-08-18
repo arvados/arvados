@@ -1,0 +1,84 @@
+---
+layout: default
+navsection: userguide
+title: Working with an Arvados git repository
+...
+
+Working with an Arvados git repository is analogous to working with other public repositories. If you are already familiar with git, feel free to skip this part of the documentation.
+
+This tutorial describes how to work with a new Arvados git repository. It will show you how to upload custom scripts to a remote Arvados repository, so you can use it in Arvados pipelines.
+
+{% include 'tutorial_expectations' %}
+
+{% include 'tutorial_git_repo_expectations' %}
+
+h2. Cloning an Arvados repository
+
+Before you start using Git, you should do some basic configuration (you only need to do this the first time):
+
+<notextile>
+<pre><code>~$ <span class="userinput">git config --global user.name "Your Name"</span>
+~$ <span class="userinput">git config --global user.email $USER@example.com</span></code></pre>
+</notextile>
+
+On the Arvados Workbench, click on the dropdown menu icon <span class="fa fa-lg fa-user"></span> <span class="caret"></span> in the upper right corner of the top navigation menu to access the user settings menu, and click on the menu item *Repositories*. In the *Repositories* page, you should see the @$USER/tutorial@ repository listed in the *name* column.  Next to *name* is the column *URL*. Copy the *URL* value associated with your repository.  This should look like <notextile><code>https://git.{{ site.arvados_api_host }}/$USER/tutorial.git</code></notextile>. Alternatively, you can use <notextile><code>git@git.{{ site.arvados_api_host }}:$USER/tutorial.git</code></notextile>
+
+Next, on the Arvados virtual machine, clone your Git repository:
+
+<notextile>
+<pre><code>~$ <span class="userinput">cd $HOME</span> # (or wherever you want to install)
+~$ <span class="userinput">git clone https://git.{{ site.arvados_api_host }}/$USER/tutorial.git</span>
+Cloning into 'tutorial'...</code></pre>
+</notextile>
+
+This will create a Git repository in the directory called @tutorial@ in your home directory. Say yes when prompted to continue with connection.
+Ignore any warning that you are cloning an empty repository.
+
+*Note:* If you are prompted for username and password when you try to git clone using this command, you may first need to update your git configuration. Execute the following commands to update your git configuration.
+
+<notextile>
+<pre>
+<code>~$ <span class="userinput">git config 'credential.https://git.{{ site.arvados_api_host }}/.username' none</span></code>
+<code>~$ <span class="userinput">git config 'credential.https://git.{{ site.arvados_api_host }}/.helper' '!cred(){ cat >/dev/null; if [ "$1" = get ]; then echo password=$ARVADOS_API_TOKEN; fi; };cred'</span></code>
+</pre>
+</notextile>
+
+h2. Creating a git branch
+
+<notextile>
+<pre><code>~$ <span class="userinput">cd tutorial</span>
+<span class="userinput">git checkout -b tutorial_branch</span>
+</code></pre>
+</notextile>
+
+h2. Adding a script to git
+
+First, create a new file in the local repository.
+
+<notextile>
+<pre><code>~$ <span class="userinput">echo 'hello world' > tutorial.txt</span>
+</code></pre>
+</notextile>
+
+Next, add the new file to the git index.
+
+<notextile>
+<pre><code>~$ <span class="userinput">git add tutorial.txt</span>
+</code></pre>
+</notextile>
+
+Next, commit all the changes to the local repository, along with a message of what you've accomplished.
+
+<notextile>
+<pre><code>~$ <span class="userinput">git commit -a -m "Added tutorial.txt"</span>
+</code></pre>
+</notextile>
+
+Next, push the changes in the local repository to the remote repository.
+
+<notextile>
+<pre><code>~$ <span class="userinput">git push origin tutorial_branch</span>
+</code></pre>
+</notextile>
+
+Although this tutorial showed how to add a text file to Arvados, this tutorial should also show the necessary steps for adding your custom bash, R, or python scripts to an Arvados repository.
