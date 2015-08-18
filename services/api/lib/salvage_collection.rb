@@ -15,6 +15,10 @@ module SalvageCollection
   require 'tempfile'
   require 'shellwords'
 
+  def self.salvage_collection_arv_put temp_file
+    %x(arv-put --as-stream --use-filename invalid_manifest_text.txt #{Shellwords::shellescape(temp_file.path)})
+  end
+
   def self.salvage_collection uuid, reason='salvaged - see #6277, #6859'
     act_as_system_user do
       if !ENV['ARVADOS_API_TOKEN'].present? or !ENV['ARVADOS_API_HOST'].present?
@@ -53,7 +57,8 @@ module SalvageCollection
         temp_file = Tempfile.new('temp')
         temp_file.write(src_manifest)
         temp_file.close
-        new_manifest = %x(arv-put --as-stream --use-filename invalid_manifest_text.txt #{Shellwords::shellescape(temp_file.path)})
+
+        new_manifest = salvage_collection_arv_put temp_file
 
         temp_file.unlink
 

@@ -4,23 +4,23 @@ require 'salvage_collection'
 TEST_MANIFEST = ". 341dabea2bd78ad0d6fc3f5b926b450e+85626+Ad391622a17f61e4a254eda85d1ca751c4f368da9@55e076ce 0:85626:brca2-hg19.fa\n. d7321a918923627c972d8f8080c07d29+82570+A22e0a1d9b9bc85c848379d98bedc64238b0b1532@55e076ce 0:82570:brca1-hg19.fa\n"
 
 module Kernel
-  def `(cmd)    # override kernel ` method
-    if cmd.include? 'arv-put'
-      file_contents = file = File.new(cmd.split[-1], "r").gets
-
-      # simulate arv-put error when it is 'user_agreement'
-      if file_contents.include? 'GNU_General_Public_License'
-        return ''
-      else
-        ". " +
-        Digest::MD5.hexdigest(TEST_MANIFEST) +
-        " 0:" + TEST_MANIFEST.length.to_s + ":invalid_manifest_text.txt\n"
-      end
-    end
-  end
-
   def exit code
     raise "Exit code #{code}" if code == 200
+  end
+end
+
+module SalvageCollection
+  def self.salvage_collection_arv_put(temp_file)
+    file_contents = file = File.new(temp_file.path, "r").gets
+
+    # simulate arv-put error when it is 'user_agreement'
+    if file_contents.include? 'GNU_General_Public_License'
+      return ''
+    else
+      ". " +
+      Digest::MD5.hexdigest(TEST_MANIFEST) +
+      " 0:" + TEST_MANIFEST.length.to_s + ":invalid_manifest_text.txt\n"
+    end
   end
 end
 
@@ -92,7 +92,7 @@ class SalvageCollectionTest < ActiveSupport::TestCase
     assert_equal true, exited
   end
 
-  test "salvage collection with during arv-put" do
+  test "salvage collection with error during arv-put" do
     # try to salvage collection while mimicking error during arv-put
     status = SalvageCollection.salvage_collection collections('user_agreement').uuid
     assert_equal false, status
