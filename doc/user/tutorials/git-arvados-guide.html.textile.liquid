@@ -50,6 +50,8 @@ Ignore any warning that you are cloning an empty repository.
 
 h2. Creating a git branch in an Arvados repository
 
+Create a git branch named *tutorial_branch* in the *tutorial* Arvados git repository.
+
 <notextile>
 <pre><code>~$ <span class="userinput">cd tutorial</span>
 ~$ <span class="userinput">git checkout -b tutorial_branch</span>
@@ -58,7 +60,7 @@ h2. Creating a git branch in an Arvados repository
 
 h2. Adding files or scripts to an Arvados repository
 
-Create a file named *tutorial.txt* in the local repository.
+First, create a file named *tutorial.txt* in the local repository. Although this tutorial shows how to add a text file to Arvados, the same steps can be used to add any of your custom bash, R, or python scripts to an Arvados repository.
 
 <notextile>
 <pre><code>~$ <span class="userinput">echo 'hello world' > tutorial.txt</span>
@@ -72,18 +74,16 @@ Next, add the new file to the git index.
 </code></pre>
 </notextile>
 
-Next, commit all the changes to the local repository, along with a commit message tht describes what this script does.
+Next, commit all the changes to the local repository, along with a commit message that describes what this script does.
 
 <notextile>
 <pre><code>~$ <span class="userinput">git commit -a -m "Added tutorial.txt"</span>
 </code></pre>
 </notextile>
 
-Next, push the changes in the local repository to the remote repository.
+Finally, push the changes in the local repository to the remote repository.
 
 <notextile>
 <pre><code>~$ <span class="userinput">git push origin tutorial_branch</span>
 </code></pre>
 </notextile>
-
-Although this tutorial showed how to add a text file to Arvados, this tutorial should also show the necessary steps for adding your custom bash, R, or python scripts to an Arvados repository.
