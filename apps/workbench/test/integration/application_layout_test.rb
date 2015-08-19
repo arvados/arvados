@@ -240,10 +240,12 @@ class ApplicationLayoutTest < ActionDispatch::IntegrationTest
       if add_button_text
         assert_selector 'button', text: "Add a new #{add_button_text}"
         find('button', text: "Add a new #{add_button_text}").click
+      else
+        assert_no_selector 'button', text:"Add a new"
       end
 
       # look for unique property in the current page
-      assert page.has_text? look_for
+      assert_text look_for
     end
   end
 end
