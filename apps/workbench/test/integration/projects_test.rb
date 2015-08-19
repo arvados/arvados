@@ -709,4 +709,26 @@ class ProjectsTest < ActionDispatch::IntegrationTest
      assert page.has_text?('Unrestricted public data'), 'No text - Unrestriced public data'
      assert page.has_text?('An anonymously accessible project'), 'No text - An anonymously accessible project'
   end
+
+  #this test fails, only shows 200 projects
+  test "project menu shows all projects owned on dashboard" do
+    visit page_with_token("user1_with_load", "/")
+    find("#projects-menu").click
+    # Verify that expected number of projects are found
+    found_items = page.all('li')
+    found_count = found_items.count
+    assert_equal(true, found_count>=301,
+      "Found too few items. Expected at least 301 and found #{found_count}")
+  end
+
+  #this test passes, shows all 301 projects
+  test "project menu shows all projects owned on home projects" do
+    visit page_with_token("user1_with_load", "/users/zzzzz-tpzed-user1withloadab")
+    find("#projects-menu").click
+    # Verify that expected number of projects are found
+    found_items = page.all('li')
+    found_count = found_items.count
+    assert_equal(true, found_count>=301,
+      "Found too few items. Expected at least 301 and found #{found_count}")
+  end
 end
