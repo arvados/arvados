@@ -8,6 +8,6 @@ class AuthorizedKey < ArvadosBase
   end
 
   def self.creatable?
-    current_user
+    false
   end
 end

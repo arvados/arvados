@@ -219,6 +219,10 @@ table.table-fixed-header-row tbody {
     overflow-y: auto;
 }
 
+.dropdown-menu a {
+    cursor: pointer;
+}
+
 .row-fill-height, .row-fill-height>div[class*='col-'] {
     display: flex;
 }
