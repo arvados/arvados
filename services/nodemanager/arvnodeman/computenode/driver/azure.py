@@ -38,6 +38,7 @@ class ComputeNodeDriver(BaseComputeNodeDriver):
         tags = {
             'booted_at': time.strftime(ARVADOS_TIMEFMT, time.gmtime()),
             'arv-ping-url': self._make_ping_url(arvados_node),
+            'hostname': arvados_node_fqdn(arvados_node)
         }
         tags.update(self.tags)
         return {
@@ -46,8 +47,7 @@ class ComputeNodeDriver(BaseComputeNodeDriver):
         }
 
     def sync_node(self, cloud_node, arvados_node):
-        hostname = arvados_node_fqdn(arvados_node)
-        self.real.ex_create_tags(cloud_node, {"hostname": hostname})
+        pass
 
     def _init_image(self, urn):
         return "image", self.list_images(ex_urn=urn)[0]
