@@ -32,7 +32,7 @@ class AzureComputeNodeDriverTestCase(testutil.DriverTestMixin, unittest.TestCase
         driver = self.new_driver(create_kwargs={'image': 'id_b'})
         self.assertEqual(1, list_method.call_count)
 
-    def test_create_includes_ping_url(self):
+    def test_create_includes_ping_and_hostname(self):
         arv_node = testutil.arvados_node_mock(info={'ping_secret': 'ssshh'})
         driver = self.new_driver()
         driver.create_node(testutil.MockSize(1), arv_node)
@@ -41,6 +41,8 @@ class AzureComputeNodeDriverTestCase(testutil.DriverTestMixin, unittest.TestCase
         print(create_method.call_args[1])
         self.assertIn('ping_secret=ssshh',
                       create_method.call_args[1].get('ex_tags', {}).get('arv-ping-url', ""))
+        self.assertEqual('compute99.zzzzz.arvadosapi.com',
+                      create_method.call_args[1].get('ex_tags', {}).get('hostname', ""))
 
     def test_name_from_new_arvados_node(self):
         arv_node = testutil.arvados_node_mock(hostname=None)
@@ -53,14 +55,6 @@ class AzureComputeNodeDriverTestCase(testutil.DriverTestMixin, unittest.TestCase
         self.assertTrue(tag_mock.called)
         self.assertIs(cloud_node, tag_mock.call_args[0][0])
         self.assertEqual(expected_tags, tag_mock.call_args[0][1])
-
-    def test_sync_node(self):
-        arv_node = testutil.arvados_node_mock(1)
-        cloud_node = testutil.cloud_node_mock(2)
-        driver = self.new_driver()
-        driver.sync_node(cloud_node, arv_node)
-        self.check_node_tagged(cloud_node,
-                               {'hostname': 'compute1.zzzzz.arvadosapi.com'})
 
     def test_node_create_time(self):
         refsecs = int(time.time())
