@@ -382,9 +382,7 @@ class ProjectsTest < ActionDispatch::IntegrationTest
       my_project = api_fixture('groups')['aproject']
       my_collection = api_fixture('collections')['collection_to_move_around_in_aproject']
 
-      visit page_with_token user, '/'
-      find("#projects-menu").click
-      find(".dropdown-menu a", text: my_project['name']).click
+      visit page_with_token user, "/projects/#{my_project['uuid']}"
       click_link 'Data collections'
       assert page.has_text?(my_collection['name']), 'Collection not found in project'
 
@@ -688,5 +686,27 @@ class ProjectsTest < ActionDispatch::IntegrationTest
       assert_selector 'li', text: 'Create new collection with selected collections'
       assert_no_selector 'li.disabled', text: 'Copy selected'
     end
+  end
+
+  test "test search all projects menu item in projects menu" do
+     need_selenium
+     visit page_with_token('active')
+     find('#projects-menu').click
+     within('.dropdown-menu') do
+       assert_selector 'a', text: 'Search all projects'
+       find('a', text: 'Search all projects').click
+     end
+     within('.modal-content') do
+        assert page.has_text?('All projects'), 'No text - All projects'
+        assert page.has_text?('Search'), 'No text - Search'
+        assert page.has_text?('Cancel'), 'No text - Cancel'
+        fill_in "Search", with: 'Unrestricted public data'
+        wait_for_ajax
+        assert_selector 'div', text: 'Unrestricted public data'
+        find(:xpath, '//*[@id="choose-scroll"]/div[2]/div').click
+        click_button 'Show'
+     end
+     assert page.has_text?('Unrestricted public data'), 'No text - Unrestricted public data'
+     assert page.has_text?('An anonymously accessible project'), 'No text - An anonymously accessible project'
   end
 end
