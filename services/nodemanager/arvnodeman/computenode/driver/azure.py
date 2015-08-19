@@ -19,7 +19,11 @@ class ComputeNodeDriver(BaseComputeNodeDriver):
 
     def __init__(self, auth_kwargs, list_kwargs, create_kwargs,
                  driver_class=DEFAULT_DRIVER):
-        list_kwargs["ex_resource_group"] = create_kwargs["ex_resource_group"]
+
+        if not list_kwargs.get("ex_resource_group"):
+            raise Exception("Must include ex_resource_group in Cloud List configuration (list_kwargs)")
+
+        create_kwargs["ex_resource_group"] = list_kwargs["ex_resource_group"]
 
         self.tags = {key[4:]: value
                      for key, value in create_kwargs.iteritems()
@@ -43,7 +47,7 @@ class ComputeNodeDriver(BaseComputeNodeDriver):
 
     def sync_node(self, cloud_node, arvados_node):
         hostname = arvados_node_fqdn(arvados_node)
-        self.real.ex_create_tags(cloud_node.id, {"hostname": hostname})
+        self.real.ex_create_tags(cloud_node, {"hostname": hostname})
 
     def _init_image(self, urn):
         return "image", self.list_images(ex_urn=urn)[0]
