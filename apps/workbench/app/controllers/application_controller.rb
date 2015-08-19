@@ -744,12 +744,8 @@ class ApplicationController < ActionController::Base
 
   helper_method :all_projects
   def all_projects
-    limit = @limit
-    @limit = nil
     @all_projects ||= Group.
       filter([['group_class','=','project']]).order('name')
-    @limit = limit
-    @all_projects
   end
 
   helper_method :my_projects
