@@ -3,19 +3,13 @@ require 'salvage_collection'
 
 TEST_MANIFEST = ". 341dabea2bd78ad0d6fc3f5b926b450e+85626+Ad391622a17f61e4a254eda85d1ca751c4f368da9@55e076ce 0:85626:brca2-hg19.fa\n. d7321a918923627c972d8f8080c07d29+82570+A22e0a1d9b9bc85c848379d98bedc64238b0b1532@55e076ce 0:82570:brca1-hg19.fa\n"
 
-module Kernel
-  def exit code
-    raise "Exit code #{code}" if code == 200
-  end
-end
-
 module SalvageCollection
-  def self.salvage_collection_arv_put(temp_file)
-    file_contents = file = File.new(temp_file.path, "r").gets
+  def self.salvage_collection_arv_put(cmd)
+    file_contents = File.new(cmd.split[-1], "r").gets
 
     # simulate arv-put error when it is 'user_agreement'
     if file_contents.include? 'GNU_General_Public_License'
-      return ''
+      raise("Error during arv-put")
     else
       ". " +
       Digest::MD5.hexdigest(TEST_MANIFEST) +
@@ -24,7 +18,7 @@ module SalvageCollection
   end
 end
 
-class SalvageCollectionTest < ActiveSupport::TestCase
+class SalvageCollectionMockTest < ActiveSupport::TestCase
   include SalvageCollection
 
   setup do
@@ -70,31 +64,62 @@ class SalvageCollectionTest < ActiveSupport::TestCase
   end
 
   test "salvage collection with no uuid required argument" do
-    status = SalvageCollection.salvage_collection nil
-    assert_equal false, status
+    raised = false
+    begin    
+      SalvageCollection.salvage_collection nil
+    rescue => e
+      assert_equal "Collection UUID is required.", e.message
+      raised = true
+    end
+    assert_equal true, raised
   end
 
   test "salvage collection with bogus uuid" do
-    status = SalvageCollection.salvage_collection 'bogus-uuid'
-    assert_equal false, status
+    raised = false
+    begin
+      SalvageCollection.salvage_collection 'bogus-uuid'
+    rescue => e
+      assert_equal "No collection found for bogus-uuid.", e.message
+      raised = true
+    end
+    assert_equal true, raised
   end
 
   test "salvage collection with no env ARVADOS_API_HOST" do
-    exited = false
+    raised = false
     begin
       ENV['ARVADOS_API_HOST'] = ''
       ENV['ARVADOS_API_TOKEN'] = ''
       SalvageCollection.salvage_collection collections('user_agreement').uuid
     rescue => e
-      assert_equal "Exit code 200", e.message
-      exited = true
+      assert_equal "ARVADOS environment variables missing. Please set your admin user credentials as ARVADOS environment variables.", e.message
+      raised = true
     end
-    assert_equal true, exited
+    assert_equal true, raised
   end
 
   test "salvage collection with error during arv-put" do
     # try to salvage collection while mimicking error during arv-put
-    status = SalvageCollection.salvage_collection collections('user_agreement').uuid
-    assert_equal false, status
+    raised = false
+    begin
+      SalvageCollection.salvage_collection collections('user_agreement').uuid
+    rescue => e
+      assert_equal "Error during arv-put", e.message
+      raised = true
+    end
+    assert_equal true, raised
+  end
+
+  test "invalid locators dropped during salvaging" do
+    manifest = ". 341dabea2bd78ad0d6fc3f5b926b450e+abc 0:85626:brca2-hg19.fa\n. 341dabea2bd78ad0d6fc3f5b926b450e+1000 0:1000:brca-hg19.fa\n . d7321a918923627c972d8f8080c07d29+2000+A22e0a1d9b9bc85c848379d98bedc64238b0b1532@55e076ce 0:2000:brca1-hg19.fa\n"
+
+    # salvage this collection
+    locator_data = SalvageCollection.salvage_collection_locator_data manifest
+
+    assert_equal true, locator_data[0].size.eql?(2)
+    assert_equal false, locator_data[0].include?("341dabea2bd78ad0d6fc3f5b926b450e+abc")
+    assert_equal true, locator_data[0].include?("341dabea2bd78ad0d6fc3f5b926b450e+1000")
+    assert_equal true, locator_data[0].include?("d7321a918923627c972d8f8080c07d29+2000")
+    assert_equal true, locator_data[1].eql?(1000 + 2000)   # size
   end
 end
