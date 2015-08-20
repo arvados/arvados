@@ -3,7 +3,7 @@
 set -e
 
 if [ -e /etc/redhat-release ]; then
-    WWW_OWNER=apache:apache
+    WWW_OWNER=nginx:nginx
 else
     # Assume we're on a Debian-based system for now.
     WWW_OWNER=www-data:www-data
