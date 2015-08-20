@@ -26,11 +26,10 @@ class AzureComputeNodeDriverTestCase(testutil.DriverTestMixin, unittest.TestCase
         self.assertEqual(kwargs, self.driver_mock.call_args[1])
 
     def test_create_image_loaded_at_initialization(self):
-        list_method = self.driver_mock().list_images
-        list_method.return_value = [testutil.cloud_object_mock(c)
-                                    for c in 'abc']
+        get_method = self.driver_mock().get_image
+        get_method.return_value = [testutil.cloud_object_mock('id_b')]
         driver = self.new_driver(create_kwargs={'image': 'id_b'})
-        self.assertEqual(1, list_method.call_count)
+        self.assertEqual(1, get_method.call_count)
 
     def test_create_includes_ping_and_hostname(self):
         arv_node = testutil.arvados_node_mock(info={'ping_secret': 'ssshh'})
