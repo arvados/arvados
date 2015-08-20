@@ -18,8 +18,14 @@ func (srv *server) Start() error {
 		Env: []string{
 			"GIT_PROJECT_ROOT=" + theConfig.Root,
 			"GIT_HTTP_EXPORT_ALL=",
+			"SERVER_ADDR=" + theConfig.Addr,
 		},
-		InheritEnv: []string{"PATH"},
+		InheritEnv: []string{
+			"PATH",
+			// Needed if GitCommand is gitolite-shell:
+			"GITOLITE_HTTP_HOME",
+			"GL_BYPASS_ACCESS_CHECKS",
+		},
 		Args:       []string{"http-backend"},
 	}
 	mux := http.NewServeMux()

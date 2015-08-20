@@ -19,7 +19,7 @@ func init() {
 	flag.StringVar(&theConfig.Addr, "address", "0.0.0.0:80",
 		"Address to listen on, \"host:port\".")
 	flag.StringVar(&theConfig.GitCommand, "git-command", "/usr/bin/git",
-		"Path to git executable. Each authenticated request will execute this program with a single argument, \"http-backend\".")
+		"Path to git or gitolite-shell executable. Each authenticated request will execute this program with a single argument, \"http-backend\".")
 	cwd, err := os.Getwd()
 	if err != nil {
 		log.Fatalln("Getwd():", err)
