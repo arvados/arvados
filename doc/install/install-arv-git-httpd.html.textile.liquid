@@ -291,8 +291,9 @@ EOF</span>
 #!/bin/sh
 export ARVADOS_API_HOST=<b>uuid_prefix.your.domain</b>
 export GITOLITE_HTTP_HOME=/var/lib/arvados/git
+export GL_BYPASS_ACCESS_CHECKS=1
 export PATH="$PATH:/var/lib/arvados/git/bin"
-exec chpst -u git:git arvados-git-httpd -address=:9001 -git-command="$(which git)" -repo-root=<b>/var/lib/arvados/git/repositories</b> 2&gt;&1
+exec chpst -u git:git arvados-git-httpd -address=:9001 -git-command=/var/lib/arvados/git/gitolite/src/gitolite-shell -repo-root=<b>/var/lib/arvados/git</b>/repositories 2&gt;&1
 EOF</span>
 /etc/sv/arvados-git-httpd$ <span class="userinput">sudo chmod +x run log/run</span>
 </code></pre>
@@ -304,8 +305,9 @@ If you are using a different daemon supervisor, or if you want to test the daemo
 <pre><code>sudo -u git \
   ARVADOS_API_HOST=<span class="userinput">uuid_prefix.your.domain</span> \
   GITOLITE_HTTP_HOME=/var/lib/arvados/git \
+  GL_BYPASS_ACCESS_CHECKS=1 \
   PATH="$PATH:/var/lib/arvados/git/bin" \
-  arvados-git-httpd -address=:9001 -git-command="$(which git)" -repo-root=<span class="userinput">/var/lib/arvados/git/repositories</span> 2&gt;&1
+  arvados-git-httpd -address=:9001 -git-command=/var/lib/arvados/git/gitolite/src/gitolite-shell -repo-root=/var/lib/arvados/git/repositories 2&gt;&1
 </code></pre>
 </notextile>
 
