@@ -50,7 +50,7 @@ class ComputeNodeDriver(BaseComputeNodeDriver):
         pass
 
     def _init_image(self, urn):
-        return "image", self.list_images(ex_urn=urn)[0]
+        return "image", self.get_image(urn)
 
     def _init_ssh_key(self, filename):
         with open(filename) as ssh_file:
