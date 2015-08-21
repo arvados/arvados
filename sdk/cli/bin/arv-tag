@@ -17,11 +17,13 @@ def usage
 end
 
 def api_call(method, parameters:{}, request_body:{})
-  request_body[:api_token] = ENV['ARVADOS_API_TOKEN']
   result = $client.execute(:api_method => method,
                            :parameters => parameters,
                            :body_object => request_body,
-                           :authenticated => false)
+                           :authenticated => false,
+                           :headers => {
+                             authorization: "OAuth2 #{ENV['ARVADOS_API_TOKEN']}",
+                           })
 
   begin
     results = JSON.parse result.body
