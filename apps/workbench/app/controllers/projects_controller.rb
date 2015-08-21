@@ -184,7 +184,11 @@ class ProjectsController < ApplicationController
   end
 
   def find_objects_for_index
-    @objects = all_projects
+    # We can use the all_projects helper, but we have to dup the
+    # result -- otherwise, when we apply our per-request filters and
+    # limits, they will infect the @all_projects cache too (see
+    # #6640).
+    @objects = all_projects.dup
     super
   end
 
