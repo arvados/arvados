@@ -101,7 +101,8 @@ $arvados_api_host = ENV['ARVADOS_API_HOST'] or
   abort "#{$0}: fatal: ARVADOS_API_HOST environment variable not set."
 $arvados_api_token = ENV['ARVADOS_API_TOKEN'] or
   abort "#{$0}: fatal: ARVADOS_API_TOKEN environment variable not set."
-$arvados_api_host_insecure = ENV['ARVADOS_API_HOST_INSECURE'] == 'yes'
+$arvados_api_host_insecure = %w(1 true yes).
+  include?((ENV['ARVADOS_API_HOST_INSECURE'] || "").downcase)
 
 begin
   require 'rubygems'
