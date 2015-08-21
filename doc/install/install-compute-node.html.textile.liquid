@@ -108,7 +108,10 @@ set -e
 if ! test -f /root/node.json ; then
     python - &lt;&lt;EOF
 import arvados, json, socket
-node = arvados.api('v1').nodes().create(body={'hostname': socket.gethostname()}).execute()
+fqdn = socket.getfqdn()
+hostname, _, domain = fqdn.partition('.')
+ip_address = socket.gethostbyname(fqdn)
+node = arvados.api('v1').nodes().create(body={'hostname': hostname, 'domain': domain, 'ip_address': ip_address}).execute()
 with open('/root/node.json', 'w') as node_file:
     json.dump(node, node_file, indent=2)
 EOF
@@ -121,10 +124,10 @@ UUID=`grep \"uuid\" /root/node.json  |cut -f4 -d\"`
 PING_SECRET=`grep \"ping_secret\" /root/node.json  |cut -f4 -d\"`
 
 if ! test -f /etc/cron.d/node_ping ; then
-    echo "*/5 * * * * root /usr/bin/curl -k -d ping_secret=$PING_SECRET https://api/arvados/v1/nodes/$UUID/ping" > /etc/cron.d/node_ping
+    echo "*/5 * * * * root /usr/bin/curl -k -d ping_secret=$PING_SECRET https://$ARVADOS_API_HOST/arvados/v1/nodes/$UUID/ping" > /etc/cron.d/node_ping
 fi
 
-/usr/bin/curl -k -d ping_secret=$PING_SECRET https://api/arvados/v1/nodes/$UUID/ping?ping_secret=$PING_SECRET
+/usr/bin/curl -k -d ping_secret=$PING_SECRET https://$ARVADOS_API_HOST/arvados/v1/nodes/$UUID/ping?ping_secret=$PING_SECRET
 </code>
 </pre>
 </notextile>
