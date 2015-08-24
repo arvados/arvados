@@ -78,7 +78,7 @@ upstream keepproxy {
 
 server {
   listen       <span class="userinput">[your public IP address]</span>:443 ssl;
-  server_name keep.example.com
+  server_name  <span class="userinput">keep.@uuid_prefix@.your.domain</span>
 
   ssl on;
   ssl_certificate           /etc/nginx/keep.example.com-ssl.crt;
@@ -86,7 +86,6 @@ server {
 
   # Clients need to be able to upload blocks of data up to 64MiB in size.
   client_max_body_size 64m;
-  client_body_buffer_size 64M;
 
   location / {
     proxy_pass            http://keepproxy;
