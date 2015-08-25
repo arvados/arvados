@@ -73,31 +73,26 @@ This is best achieved by putting a reverse proxy with SSL support in front of Ke
 
 <notextile><pre>
 upstream keepproxy {
-  server     127.0.0.1:25107  fail_timeout=10s;
+  server                127.0.0.1:<span class="userinput">25107</span>;
 }
 
 server {
-  listen       <span class="userinput">[your public IP address]</span>:443 ssl;
-  server_name  <span class="userinput">keep.@uuid_prefix@.your.domain</span>
+  listen                <span class="userinput">[your public IP address]</span>:443 ssl;
+  server_name           keep.<span class="userinput">uuid_prefix</span>.your.domain
 
-  ssl on;
-  ssl_certificate           /etc/nginx/keep.example.com-ssl.crt;
-  ssl_certificate_key       /etc/nginx/keep.example.com-ssl.key;
+  proxy_connect_timeout 90s;
+  proxy_read_timeout    300s;
+  proxy_set_header      X-Real-IP $remote_addr;
+
+  ssl                   on;
+  ssl_certificate       /etc/nginx/keep.example.com-ssl.crt;
+  ssl_certificate_key   /etc/nginx/keep.example.com-ssl.key;
 
   # Clients need to be able to upload blocks of data up to 64MiB in size.
-  client_max_body_size 64m;
+  client_max_body_size  64m;
 
   location / {
-    proxy_pass            http://keepproxy;
-    proxy_redirect        off;
-    proxy_connect_timeout 90;
-    proxy_read_timeout    300;
-
-    proxy_set_header      X-Forwarded-Proto https;
-    proxy_set_header      Host $http_host;
-    proxy_set_header      X-External-Client $external_client;
-    proxy_set_header      X-Real-IP $remote_addr;
-    proxy_set_header      X-Forwarded-For $proxy_add_x_forwarded_for;
+    proxy_pass          http://keepproxy;
   }
 }
 </pre></notextile>
