@@ -9,8 +9,6 @@ from libcloud.compute.base import NodeDriver
 
 from ...config import NETWORK_ERRORS
 
-import pprint
-
 class BaseComputeNodeDriver(object):
     """Abstract base class for compute node drivers.
 
@@ -57,6 +55,11 @@ class BaseComputeNodeDriver(object):
 
     def _init_ping_host(self, ping_host):
         self.ping_host = ping_host
+
+    def _init_ssh_key(self, filename):
+        with open(filename) as ssh_file:
+            key = cloud_base.NodeAuthSSHKey(ssh_file.read())
+        return 'auth', key
 
     def search_for(self, term, list_method, key=attrgetter('id'), **kwargs):
         """Return one matching item from a list of cloud objects.

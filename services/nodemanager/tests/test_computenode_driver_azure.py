@@ -27,21 +27,19 @@ class AzureComputeNodeDriverTestCase(testutil.DriverTestMixin, unittest.TestCase
 
     def test_create_image_loaded_at_initialization(self):
         get_method = self.driver_mock().get_image
-        get_method.return_value = [testutil.cloud_object_mock('id_b')]
+        get_method.return_value = testutil.cloud_object_mock('id_b')
         driver = self.new_driver(create_kwargs={'image': 'id_b'})
         self.assertEqual(1, get_method.call_count)
 
-    def test_create_includes_ping_and_hostname(self):
+    def test_create_includes_ping(self):
         arv_node = testutil.arvados_node_mock(info={'ping_secret': 'ssshh'})
+        arv_node["hostname"] = None
         driver = self.new_driver()
         driver.create_node(testutil.MockSize(1), arv_node)
         create_method = self.driver_mock().create_node
         self.assertTrue(create_method.called)
-        print(create_method.call_args[1])
         self.assertIn('ping_secret=ssshh',
                       create_method.call_args[1].get('ex_tags', {}).get('arv-ping-url', ""))
-        self.assertEqual('compute99.zzzzz.arvadosapi.com',
-                      create_method.call_args[1].get('ex_tags', {}).get('hostname', ""))
 
     def test_name_from_new_arvados_node(self):
         arv_node = testutil.arvados_node_mock(hostname=None)
@@ -81,3 +79,11 @@ class AzureComputeNodeDriverTestCase(testutil.DriverTestMixin, unittest.TestCase
         self.assertFalse(
             azure.ComputeNodeDriver.is_cloud_exception(ValueError("test error")),
             "ValueError flagged as cloud exception")
+
+    def test_sync_node(self):
+        arv_node = testutil.arvados_node_mock(1)
+        cloud_node = testutil.cloud_node_mock(2)
+        driver = self.new_driver()
+        driver.sync_node(cloud_node, arv_node)
+        self.check_node_tagged(cloud_node,
+                               {'hostname': 'compute1.zzzzz.arvadosapi.com'})

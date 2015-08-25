@@ -3,7 +3,6 @@
 from __future__ import absolute_import, print_function
 
 import time
-from operator import attrgetter
 
 import libcloud.compute.base as cloud_base
 import libcloud.compute.providers as cloud_provider
@@ -37,8 +36,7 @@ class ComputeNodeDriver(BaseComputeNodeDriver):
         name = 'compute-{}-{}'.format(node_id, cluster_id)
         tags = {
             'booted_at': time.strftime(ARVADOS_TIMEFMT, time.gmtime()),
-            'arv-ping-url': self._make_ping_url(arvados_node),
-            'hostname': arvados_node_fqdn(arvados_node)
+            'arv-ping-url': self._make_ping_url(arvados_node)
         }
         tags.update(self.tags)
         return {
@@ -47,15 +45,11 @@ class ComputeNodeDriver(BaseComputeNodeDriver):
         }
 
     def sync_node(self, cloud_node, arvados_node):
-        pass
+        self.real.ex_create_tags(cloud_node,
+                                 {'hostname': arvados_node_fqdn(arvados_node)})
 
     def _init_image(self, urn):
         return "image", self.get_image(urn)
-
-    def _init_ssh_key(self, filename):
-        with open(filename) as ssh_file:
-            key = cloud_base.NodeAuthSSHKey(ssh_file.read())
-        return 'auth', key
 
     def list_nodes(self):
         # Azure only supports filtering node lists by resource group.

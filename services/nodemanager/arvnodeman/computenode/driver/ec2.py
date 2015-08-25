@@ -64,11 +64,6 @@ class ComputeNodeDriver(BaseComputeNodeDriver):
     def _init_subnet_id(self, subnet_id):
         return 'ex_subnet', self.search_for(subnet_id, 'ex_list_subnets')
 
-    def _init_ssh_key(self, filename):
-        with open(filename) as ssh_file:
-            key = cloud_base.NodeAuthSSHKey(ssh_file.read())
-        return 'auth', key
-
     def arvados_create_kwargs(self, arvados_node):
         return {'name': arvados_node_fqdn(arvados_node),
                 'ex_userdata': self._make_ping_url(arvados_node)}
