@@ -25,11 +25,7 @@ begin
 
   vm_uuid = ENV['ARVADOS_VIRTUAL_MACHINE_UUID']
 
-  begin
-    logins = arv.virtual_machine.get_all_logins(limit: 10000, uuid: vm_uuid)[:items]
-  rescue
-    logins = arv.virtual_machine.logins(:uuid => vm_uuid)[:items]
-  end
+  logins = arv.virtual_machine.logins(:uuid => vm_uuid)[:items]
   logins = [] if logins.nil?
   logins = logins.reject { |l| l[:username].nil? or l[:hostname].nil? or l[:public_key].nil? or l[:virtual_machine_uuid] != vm_uuid }
 
