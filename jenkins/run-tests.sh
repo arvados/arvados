@@ -661,6 +661,7 @@ gostuff=(
     services/keepproxy
     services/datamanager/summary
     services/datamanager/collection
+    services/datamanager
     sdk/go/arvadosclient
     sdk/go/keepclient
     sdk/go/streamer
@@ -727,7 +728,13 @@ do_test services/dockercleaner pip "$VENV3DIR/bin/"
 
 for g in "${gostuff[@]}"
 do
-    do_test "$g" go
+    if [[ "$g" == "services/datamanager" ]]
+    then
+        testargs["$g"]="-data-manager-token-file $WORKSPACE/tmp/keep.data-manager-token-file"
+        do_test "$g" go
+    else
+        do_test "$g" go
+    fi
 done
 
 test_workbench() {
