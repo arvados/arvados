@@ -4,18 +4,22 @@ class Arvados::V1::VirtualMachinesController < ApplicationController
   before_filter(:admin_required,
                 :only => [:logins, :get_all_logins])
 
+  # Get all login permissons (user uuid, login account, SSH key) for a
+  # single VM
   def logins
-    get_all_logins
+    render_logins_for VirtualMachine.where(uuid: @object.uuid)
   end
 
+  # Get all login permissons for all VMs
   def get_all_logins
+    render_logins_for VirtualMachine
+  end
+
+  protected
+
+  def render_logins_for vm_query
     @response = []
-    @vms = VirtualMachine.eager_load :login_permissions
-    if @object
-      @vms = @vms.where uuid: @object.uuid
-    else
-      @vms = @vms.all
-    end
+    @vms = vm_query.eager_load :login_permissions
     @users = {}
     User.eager_load(:authorized_keys).
       where('users.uuid in (?)',
