@@ -212,7 +212,7 @@
                           action_href: url_for(controller: :actions, action: :show),
                           action_method: 'get',
                           action_data: {selection_param: 'uuid', success: 'redirect-to-created-object'}.to_json),
-                { remote: true, method: 'get', title: "Search" }) do %>
+                        { remote: true, method: 'get', title: "Search" }) do %>
                     <i class="glyphicon fa-fw glyphicon-search"></i> Search all projects ...
                   <% end %>
                </li>
@@ -225,7 +225,7 @@
                   <i class="fa fa-fw fa-plus"></i> Add a new project
                 <% end %>
               </li>
-               <li role="presentation" class="divider"></li>
+              <li role="presentation" class="divider"></li>
               <%= render partial: "projects_tree_menu", locals: {
                   :project_link_to => Proc.new do |pnode, &block|
                     link_to(project_path(pnode[:object].uuid),

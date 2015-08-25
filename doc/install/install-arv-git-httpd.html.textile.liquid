@@ -34,20 +34,22 @@ DNS and network configuration should be set up so port 443 reaches your HTTPS pr
 
 h2. Generate an API token
 
-On the API server, if you are using RVM:
+Use the following command to generate an API token, changing *@webserver-user@* to the user of the web server process.  This is typically *@www-data@* on Debian systems by default, other systems may use different defaults such the name of the web server software (for example, *@nginx@*).
+
+Using RVM:
 
 <notextile>
 <pre><code>gitserver:~$ <span class="userinput">cd /var/www/arvados-api/current</span>
-gitserver:/var/www/arvados-api/current$ <span class="userinput">sudo -u www-data RAILS_ENV=production `which rvm-exec` default bundle exec ./script/create_superuser_token.rb</span>
+gitserver:/var/www/arvados-api/current$ <span class="userinput">sudo -u <b>webserver-user</b> RAILS_ENV=production `which rvm-exec` default bundle exec ./script/create_superuser_token.rb</span>
 zzzzzzzzzzzzzzzzzzzzzzzzzzzzzzzzzzzzzzzzzzzzzzzzzz
 </code></pre>
 </notextile>
 
-If you are not using RVM:
+Not using RVM:
 
 <notextile>
 <pre><code>gitserver:~$ <span class="userinput">cd /var/www/arvados-api/current</span>
-gitserver:/var/www/arvados-api/current$ <span class="userinput">sudo -u www-data RAILS_ENV=production bundle exec ./script/create_superuser_token.rb</span>
+gitserver:/var/www/arvados-api/current$ <span class="userinput">sudo -u <b>webserver-user</b> RAILS_ENV=production bundle exec ./script/create_superuser_token.rb</span>
 zzzzzzzzzzzzzzzzzzzzzzzzzzzzzzzzzzzzzzzzzzzzzzzzzz
 </code></pre>
 </notextile>
