@@ -408,20 +408,14 @@ class ProjectsControllerTest < ActionController::TestCase
     assert_includes @response.body, "<a href=\"/projects/public\">Public Projects</a>"
   end
 
-  test "project menu shows all projects owned" do
-    use_token :user1_with_load
-
-    # API server returns 100 objects per request even if more exist.
-    # So create 101 objects to verify that multiple pages are fetched as needed
-    (1..101).each do |i|
-      Group.create(name: "My new project #{i}", group_class: 'project')
-    end
-
-    # Get all_projects readable by this user
-    all_projects = @controller.send :all_projects
-    refute_nil all_projects
-
-    assert_equal true, all_projects.items_available>101
-    assert_equal all_projects.items_available, all_projects.results.length
+  test 'all_projects unaffected by params after use by ProjectsController (#6640)' do
+    @controller = ProjectsController.new
+    project_uuid = api_fixture('groups')['aproject']['uuid']
+    get :index, {
+      filters: [['uuid', '<', project_uuid]].to_json,
+      limit: 0,
+      offset: 1000,
+    }, session_for(:active)
+    assert_select "#projects-menu + ul li.divider ~ li a[href=/projects/#{project_uuid}]"
   end
 end

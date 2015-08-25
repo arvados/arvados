@@ -144,9 +144,6 @@ navbar:
   installguide:
     - Overview:
       - install/index.html.textile.liquid
-    - Docker-based installation:
-      - install/pre-built-docker.html.textile.liquid
-      - install/install-docker.html.textile.liquid
     - Manual installation:
       - install/install-manual-prerequisites.html.textile.liquid
       - install/install-sso.html.textile.liquid
