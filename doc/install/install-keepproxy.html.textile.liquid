@@ -85,8 +85,8 @@ server {
   proxy_set_header      X-Real-IP $remote_addr;
 
   ssl                   on;
-  ssl_certificate       /etc/nginx/keep.example.com-ssl.crt;
-  ssl_certificate_key   /etc/nginx/keep.example.com-ssl.key;
+  ssl_certificate       /etc/nginx/keep.<span class="userinput">uuid_prefix</span>.your.domain-ssl.crt;
+  ssl_certificate_key   /etc/nginx/keep.<span class="userinput">uuid_prefix</span>.your.domain-ssl.key;
 
   # Clients need to be able to upload blocks of data up to 64MiB in size.
   client_max_body_size  64m;
@@ -104,11 +104,11 @@ h3. Tell the API server about the Keepproxy server
 The API server needs to be informed about the presence of your Keepproxy server. Please execute the following commands on your <strong>shell server</strong>.
 
 <notextile>
-<pre><code>~$ <span class="userinput">prefix=`arv --format=uuid user current | cut -d- -f1`</span>
-~$ <span class="userinput">echo "Site prefix is '$prefix'"</span>
+<pre><code>~$ <span class="userinput">uuid_prefix=`arv --format=uuid user current | cut -d- -f1`</span>
+~$ <span class="userinput">echo "Site prefix is '$uuid_prefix'"</span>
 ~$ <span class="userinput">read -rd $'\000' keepservice &lt;&lt;EOF; arv keep_service create --keep-service "$keepservice"</span>
 <span class="userinput">{
- "service_host":"<strong>keep.$prefix.your.domain</strong>",
+ "service_host":"<strong>keep.$uuid_prefix.your.domain</strong>",
  "service_port":443,
  "service_ssl_flag":true,
  "service_type":"proxy"
