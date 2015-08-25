@@ -332,6 +332,9 @@ def run_keep(blob_signing_key=None, enforce_permissions=False):
             f.write(blob_signing_key)
     if enforce_permissions:
         keep_args['--enforce-permissions'] = 'true'
+    with open(os.path.join(TEST_TMPDIR, "keep.data-manager-token-file"), "w") as f:
+        keep_args['--data-manager-token-file'] = f.name
+        f.write(os.environ['ARVADOS_API_TOKEN'])
 
     api = arvados.api(
         version='v1',
@@ -364,6 +367,8 @@ def _stop_keep(n):
         os.unlink("{}/keep{}.volume".format(TEST_TMPDIR, n))
     if os.path.exists(os.path.join(TEST_TMPDIR, "keep.blob_signing_key")):
         os.remove(os.path.join(TEST_TMPDIR, "keep.blob_signing_key"))
+    if os.path.exists(os.path.join(TEST_TMPDIR, "keep.data-manager-token-file")):
+        os.remove(os.path.join(TEST_TMPDIR, "keep.data-manager-token-file"))
 
 def stop_keep():
     _stop_keep(0)
