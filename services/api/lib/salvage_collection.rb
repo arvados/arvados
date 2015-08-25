@@ -10,7 +10,6 @@ module SalvageCollection
   #   Set portable_data_hash to "d41d8cd98f00b204e9800998ecf8427e+0"
 
   require File.dirname(__FILE__) + '/../config/environment'
-  require 'arvados/keep'
   include ApplicationHelper
   require 'tempfile'
   require 'shellwords'
@@ -24,16 +23,26 @@ module SalvageCollection
     end
   end
 
+  LOCATOR_REGEXP = /^([[:xdigit:]]{32})(\+(.*))?\z/
   def self.salvage_collection_locator_data manifest
       # Get all the locators from the original manifest
       locators = []
       size = 0
       manifest.each_line do |line|
         line.split(' ').each do |word|
-          if match = Keep::Locator::LOCATOR_REGEXP.match(word)
-            word = match[1]+match[2]     # get rid of any hints
+          if match = LOCATOR_REGEXP.match(word)
+            if match.size > 3 and match[3]
+              size_str = match[3].split('+')[0]
+              if size_str.to_i.to_s == size_str
+                word = match[1] + '+' + size_str     # get rid of any hints
+                size += size_str.to_i
+              else
+                word = match[1]
+              end
+            else
+              word = match[1]
+            end
             locators << word
-            size += match[3].to_i
           end
         end
       end

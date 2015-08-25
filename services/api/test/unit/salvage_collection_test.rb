@@ -64,60 +64,48 @@ class SalvageCollectionMockTest < ActiveSupport::TestCase
   end
 
   test "salvage collection with no uuid required argument" do
-    raised = false
-    begin    
+    e = assert_raises RuntimeError do
       SalvageCollection.salvage_collection nil
-    rescue => e
-      assert_equal "Collection UUID is required.", e.message
-      raised = true
     end
-    assert_equal true, raised
   end
 
   test "salvage collection with bogus uuid" do
-    raised = false
-    begin
+    e = assert_raises RuntimeError do
       SalvageCollection.salvage_collection 'bogus-uuid'
-    rescue => e
-      assert_equal "No collection found for bogus-uuid.", e.message
-      raised = true
     end
-    assert_equal true, raised
+    assert_equal "No collection found for bogus-uuid.", e.message
   end
 
   test "salvage collection with no env ARVADOS_API_HOST" do
-    raised = false
-    begin
+    e = assert_raises RuntimeError do
       ENV['ARVADOS_API_HOST'] = ''
       ENV['ARVADOS_API_TOKEN'] = ''
       SalvageCollection.salvage_collection collections('user_agreement').uuid
-    rescue => e
-      assert_equal "ARVADOS environment variables missing. Please set your admin user credentials as ARVADOS environment variables.", e.message
-      raised = true
     end
-    assert_equal true, raised
+    assert_equal "ARVADOS environment variables missing. Please set your admin user credentials as ARVADOS environment variables.", e.message
   end
 
   test "salvage collection with error during arv-put" do
     # try to salvage collection while mimicking error during arv-put
-    raised = false
-    begin
+    e = assert_raises RuntimeError do
       SalvageCollection.salvage_collection collections('user_agreement').uuid
-    rescue => e
-      assert_equal "Error during arv-put", e.message
-      raised = true
     end
-    assert_equal true, raised
+    assert_equal "Error during arv-put", e.message
   end
 
+  # This test has two invalid locators:
+  #     341dabea2bd78ad0d6fc3f5b926b450e+abc
+  #     341dabea2bd78ad0d6fc3f5b926b450e
+  # These locators should be preserved in salvaged_data
   test "invalid locators dropped during salvaging" do
-    manifest = ". 341dabea2bd78ad0d6fc3f5b926b450e+abc 0:85626:brca2-hg19.fa\n. 341dabea2bd78ad0d6fc3f5b926b450e+1000 0:1000:brca-hg19.fa\n . d7321a918923627c972d8f8080c07d29+2000+A22e0a1d9b9bc85c848379d98bedc64238b0b1532@55e076ce 0:2000:brca1-hg19.fa\n"
+    manifest = ". 341dabea2bd78ad0d6fc3f5b926b450e+abc 341dabea2bd78ad0d6fc3f5b926abcdf 0:85626:brca2-hg19.fa\n. 341dabea2bd78ad0d6fc3f5b926b450e+1000 0:1000:brca-hg19.fa\n . d7321a918923627c972d8f8080c07d29+2000+A22e0a1d9b9bc85c848379d98bedc64238b0b1532@55e076ce 0:2000:brca1-hg19.fa\n"
 
     # salvage this collection
     locator_data = SalvageCollection.salvage_collection_locator_data manifest
-
-    assert_equal true, locator_data[0].size.eql?(2)
+    assert_equal true, locator_data[0].size.eql?(4)
     assert_equal false, locator_data[0].include?("341dabea2bd78ad0d6fc3f5b926b450e+abc")
+    assert_equal true, locator_data[0].include?("341dabea2bd78ad0d6fc3f5b926b450e")
+    assert_equal true, locator_data[0].include?("341dabea2bd78ad0d6fc3f5b926abcdf")
     assert_equal true, locator_data[0].include?("341dabea2bd78ad0d6fc3f5b926b450e+1000")
     assert_equal true, locator_data[0].include?("d7321a918923627c972d8f8080c07d29+2000")
     assert_equal true, locator_data[1].eql?(1000 + 2000)   # size

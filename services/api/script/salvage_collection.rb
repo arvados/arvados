@@ -23,9 +23,4 @@ opts = Trollop::options do
 end
 
 # Salvage the collection with the given uuid
-begin
-  SalvageCollection.salvage_collection opts.uuid, opts.reason
-rescue => e
-  $stderr.puts "Error during arv-put"
-  exit 1
-end
+SalvageCollection.salvage_collection opts.uuid, opts.reason
