@@ -19,7 +19,7 @@ module SalvageCollection
     if $?.success?
       new_manifest
     else
-      raise "Error during arv-put."
+      raise "Error during arv-put: #{$?} (cmd was #{cmd.inspect})"
     end
   end
 
@@ -84,7 +84,6 @@ module SalvageCollection
       new_collection = Collection.new
       new_collection.name = "salvaged from #{src_collection.uuid}, #{src_collection.portable_data_hash}"
       new_collection.manifest_text = new_manifest
-      new_collection.portable_data_hash = Digest::MD5.hexdigest(new_collection.manifest_text)
 
       created = new_collection.save!
       raise "New collection creation failed." if !created
