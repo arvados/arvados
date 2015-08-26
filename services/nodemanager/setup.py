@@ -25,14 +25,17 @@ setup(name='arvados-node-manager',
       license='GNU Affero General Public License, version 3.0',
       packages=find_packages(),
       install_requires=[
-        'apache-libcloud>=0.18',
+        'apache-libcloud>=0.16',
         'arvados-python-client>=0.1.20150206225333',
         'pykka',
         'python-daemon',
         ],
+      dependency_links = [
+          "https://github.com/curoverse/libcloud/archive/apache-libcloud-0.18.0+azurearm.zip"
+      ],
       scripts=['bin/arvados-node-manager'],
       test_suite='tests',
-      tests_require=['mock>=1.0'],
+      tests_require=['mock>=1.0', "apache-libcloud==0.18.0+azurearm"],
       zip_safe=False,
       cmdclass={'egg_info': tagger},
       )
