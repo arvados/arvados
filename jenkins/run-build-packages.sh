@@ -241,10 +241,6 @@ handle_ruby_gem() {
         # -q appears to be broken in gem version 2.2.2
         $GEM build "$gem_name.gemspec" $DASHQ_UNLESS_DEBUG >"$STDOUT_IF_DEBUG" 2>"$STDERR_IF_DEBUG"
     fi
-
-    cd "$WORKSPACE/packages/$TARGET"
-    fpm_build "$gem_src_dir/$gem_name"-*.gem "" "Curoverse, Inc." gem "" \
-        --prefix "$FPM_GEM_PREFIX"
 }
 
 # Build packages for everything
@@ -417,6 +413,9 @@ handle_ruby_gem arvados
 
 cd "$WORKSPACE/sdk/cli"
 handle_ruby_gem arvados-cli
+
+cd "$WORKSPACE/services/login-sync"
+handle_ruby_gem arvados-login-sync
 
 # Python packages
 debug_echo -e "\nPython packages\n"

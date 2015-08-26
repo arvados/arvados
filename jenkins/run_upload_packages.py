@@ -192,7 +192,11 @@ PACKAGE_SUITES = {
                             'services/nodemanager/dist/*.tar.gz',
                             'services/fuse/dist/*.tar.gz',
                         ),
-    'gems': _define_suite(GemPackageSuite, 'sdk/ruby/*.gem', 'sdk/cli/*.gem'),
+    'gems': _define_suite(GemPackageSuite,
+                          'sdk/ruby/*.gem',
+                          'sdk/cli/*.gem',
+                          'services/login-sync/*.gem',
+                      ),
     }
 for target in ['debian7', 'debian8', 'ubuntu1204', 'ubuntu1404']:
     PACKAGE_SUITES[target] = _define_suite(
