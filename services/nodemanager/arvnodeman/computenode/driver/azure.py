@@ -27,6 +27,10 @@ class ComputeNodeDriver(BaseComputeNodeDriver):
         self.tags = {key[4:]: value
                      for key, value in create_kwargs.iteritems()
                      if key.startswith('tag_')}
+        # filter out tags from create_kwargs
+        create_kwargs = {key: value
+                         for key, value in create_kwargs.iteritems()
+                         if not key.startswith('tag_')}
         super(ComputeNodeDriver, self).__init__(
             auth_kwargs, list_kwargs, create_kwargs,
             driver_class)
