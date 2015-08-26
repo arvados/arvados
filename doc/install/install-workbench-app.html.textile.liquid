@@ -87,25 +87,6 @@ h2. Configure Piwik
 
 In @/var/www/arvados-workbench/current/config@, copy @piwik.yml.example@ to @piwik.yml@ and edit to suit.
 
-h2. Prepare the Workbench deployment
-
-Now that all your configuration is in place, run @/usr/local/bin/arvados-workbench-upgrade.sh@.  This will install and check your configuration, and install necessary gems.
-
-{% include 'notebox_begin' %}
-You can safely ignore the following error message you may see when installing gems:
-<notextile>
-<pre><code>themes_for_rails at /usr/local/rvm/gems/ruby-2.1.1/bundler/gems/themes_for_rails-1fd2d7897d75 did not have a valid gemspec.
-This prevents bundler from installing bins or native extensions, but that may not affect its functionality.
-The validation message from Rubygems was:
-  duplicate dependency on rails (= 3.0.11, development), (>= 3.0.0) use:
-    add_runtime_dependency 'rails', '= 3.0.11', '>= 3.0.0'
-Using themes_for_rails (0.5.1) from https://github.com/holtkampw/themes_for_rails (at 1fd2d78)
-</code></pre>
-</notextile>
-{% include 'notebox_end' %}
-
-This command aborts when it encounters an error.  It's safe to rerun multiple times, so if there's a problem with your configuration, you can fix that and try again.
-
 h2. Set up Web server
 
 For best performance, we recommend you use Nginx as your Web server front-end, with a Passenger backend to serve Workbench.  To do that:
@@ -113,6 +94,14 @@ For best performance, we recommend you use Nginx as your Web server front-end, w
 <notextile>
 <ol>
 <li><a href="https://www.phusionpassenger.com/documentation/Users%20guide%20Nginx.html">Install Nginx and Phusion Passenger</a>.</li>
+
+<li>If you're deploying on CentOS and using the python27 Software Collection, configure Nginx to use it:
+
+<pre><code>~$ <span class="userinput">sudo usermod --shell /bin/bash nginx</span>
+~$ <span class="userinput">sudo -u nginx sh -c 'echo "[[ -z \$PS1 && -e /opt/rh/python27/enable ]] && source /opt/rh/python27/enable" >>~/.bash_profile'</span>
+</code></pre>
+
+</li>
 
 <li><p>Edit the http section of your Nginx configuration to run the Passenger server, and act as a front-end for it.  You might add a block like the following, adding SSL and logging parameters to taste:</p>
 
@@ -164,6 +153,25 @@ server {
 
 </ol>
 </notextile>
+
+h2. Prepare the Workbench deployment
+
+Now that all your configuration is in place, run @/usr/local/bin/arvados-workbench-upgrade.sh@.  This will install and check your configuration, and install necessary gems.
+
+{% include 'notebox_begin' %}
+You can safely ignore the following error message you may see when installing gems:
+<notextile>
+<pre><code>themes_for_rails at /usr/local/rvm/gems/ruby-2.1.1/bundler/gems/themes_for_rails-1fd2d7897d75 did not have a valid gemspec.
+This prevents bundler from installing bins or native extensions, but that may not affect its functionality.
+The validation message from Rubygems was:
+  duplicate dependency on rails (= 3.0.11, development), (>= 3.0.0) use:
+    add_runtime_dependency 'rails', '= 3.0.11', '>= 3.0.0'
+Using themes_for_rails (0.5.1) from https://github.com/holtkampw/themes_for_rails (at 1fd2d78)
+</code></pre>
+</notextile>
+{% include 'notebox_end' %}
+
+This command aborts when it encounters an error.  It's safe to rerun multiple times, so if there's a problem with your configuration, you can fix that and try again.
 
 h2. Trusted client setting
 
