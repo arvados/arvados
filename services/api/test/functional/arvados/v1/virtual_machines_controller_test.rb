@@ -65,4 +65,11 @@ class Arvados::V1::VirtualMachinesControllerTest < ActionController::TestCase
     assert_equal u.uuid, json_response['items'][0]['user_uuid']
     assert_equal 'bobblogin', json_response['items'][0]['username']
   end
+
+  test 'get all logins' do
+    authorize_with :admin
+    get :get_all_logins
+    find_login :admin
+    find_login :active
+  end
 end

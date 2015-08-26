@@ -1,0 +1,9 @@
+#!/bin/bash
+
+stub="${0##*/}"
+
+# Record what actually happened in the "spy" file
+echo "$stub $*" >> "$ARVADOS_LOGIN_SYNC_TMPDIR/spy"
+
+# Exit 0 if this command was listed in the "succeed" file
+exec fgrep -qx -- "$stub $*" "$ARVADOS_LOGIN_SYNC_TMPDIR/succeed"

@@ -2,6 +2,9 @@
 .rvmrc
 *~
 *.pyc
+*.gem
+*.rpm
+*.deb
 docker/*/generated
 docker/config.yml
 doc/.site

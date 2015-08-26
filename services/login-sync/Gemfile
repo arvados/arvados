@@ -1,0 +1,7 @@
+source 'https://rubygems.org'
+gemspec
+group :test, :performance do
+  gem 'minitest', '>= 5.0.0'
+  gem 'mocha', require: false
+  gem 'rake'
+end
