@@ -1,6 +1,7 @@
 package main
 
 import (
+	"fmt"
 	"git.curoverse.com/arvados.git/sdk/go/arvadosclient"
 	"git.curoverse.com/arvados.git/sdk/go/arvadostest"
 	"git.curoverse.com/arvados.git/sdk/go/keepclient"
@@ -103,17 +104,15 @@ func CreateCollection(t *testing.T, data string) string {
 		t.Fatalf("Error running arv-put %s", err)
 	}
 
-	collection_uuid := string(output[0:27]) // trim terminating char
-	return collection_uuid
+	uuid := string(output[0:27]) // trim terminating char
+	return uuid
 }
 
 // Get collection using arv-get
-var locatorMatcher = regexp.MustCompile("^([0-9a-f]{32})([+](.*))?$")
+var locatorMatcher = regexp.MustCompile(`^([0-9a-f]{32})\+(\d*)(.*)$`)
 
-func GetCollection(t *testing.T, collection_uuid string) string {
-	// get collection
-	output, err := exec.Command("arv-get", collection_uuid).Output()
-
+func GetCollection(t *testing.T, uuid string) string {
+	output, err := exec.Command("arv-get", uuid).Output()
 	if err != nil {
 		t.Fatalf("Error during arv-get %s", err)
 	}
@@ -123,19 +122,20 @@ func GetCollection(t *testing.T, collection_uuid string) string {
 	if match == nil {
 		t.Fatalf("No locator found in collection manifest %s", string(output))
 	}
-	return match[1]
+
+	return match[1] + "+" + match[2]
 }
 
 type Dict map[string]interface{}
 
-func DeleteCollection(t *testing.T, collection_uuid string) {
+func DeleteCollection(t *testing.T, uuid string) {
 	getback := make(Dict)
-	err := arv.Delete("collections", collection_uuid, nil, &getback)
+	err := arv.Delete("collections", uuid, nil, &getback)
 	if err != nil {
 		t.Fatalf("Error deleting collection %s", err)
 	}
-	if getback["uuid"] != collection_uuid {
-		t.Fatalf("Delete collection uuid did not match original: $s, result: $s", collection_uuid, getback["uuid"])
+	if getback["uuid"] != uuid {
+		t.Fatalf("Delete collection uuid did not match original: $s, result: $s", uuid, getback["uuid"])
 	}
 }
 
@@ -151,7 +151,6 @@ func MakeRequest(t *testing.T, path string) string {
 	req, err := http.NewRequest("GET", path, strings.NewReader("resp"))
 	req.Header.Add("Authorization", "OAuth2 "+keep.GetDataManagerToken(nil))
 	req.Header.Add("Content-Type", "application/octet-stream")
-	//	resp, err := client.Do(req)
 	resp, err := client.Do(req)
 	if err != nil {
 		t.Fatalf("Error during %s %s", path, err)
@@ -197,11 +196,73 @@ func VerifyBlocks(t *testing.T, not_expected []string, expected []string) {
 
 func ValueInArray(value string, list []string) bool {
 	for _, v := range list {
-		if strings.HasPrefix(v, value) {
+		if value == v {
 			return true
 		}
 	}
 	return false
+}
+
+/*
+Test env uses two keep volumes. The volume names can be found by reading the files
+  ARVADOS_HOME/tmp/keep0.volume and ARVADOS_HOME/tmp/keep1.volume
+
+The keep volumes are of the dir structure:
+  volumeN/subdir/locator
+*/
+func BackdateBlocks(t *testing.T, oldBlockLocators []string) {
+	// First get rid of any size hints in the locators
+	var trimmedBlockLocators []string
+	for _, block := range oldBlockLocators {
+		trimmedBlockLocators = append(trimmedBlockLocators, strings.Split(block, "+")[0])
+	}
+
+	// Get the working dir so that we can read keep{n}.volume files
+	wd, err := os.Getwd()
+	if err != nil {
+		t.Fatalf("Error getting working dir %s", err)
+	}
+
+	// Now cycle through the two keep volumes
+	oldTime := time.Now().AddDate(0, -1, 0)
+	for i := 0; i < 2; i++ {
+		filename := fmt.Sprintf("%s/../../tmp/keep%d.volume", wd, i)
+		volumeDir, err := ioutil.ReadFile(filename)
+		if err != nil {
+			t.Fatalf("Error reading keep volume file %s %s", filename, err)
+		}
+
+		// Read the keep volume dir structure
+		volumeContents, err := ioutil.ReadDir(string(volumeDir))
+		if err != nil {
+			t.Fatalf("Error reading keep dir %s %s", string(volumeDir), err)
+		}
+
+		// Read each subdir for each of the keep volume dir
+		for _, subdir := range volumeContents {
+			subdirName := fmt.Sprintf("%s/%s", volumeDir, subdir.Name())
+			subdirContents, err := ioutil.ReadDir(string(subdirName))
+			if err != nil {
+				t.Fatalf("Error reading keep dir %s %s", string(subdirName), err)
+			}
+
+			// Now we got to the files. The files are names are the block locators
+			for _, fileInfo := range subdirContents {
+				blockName := fileInfo.Name()
+				myname := fmt.Sprintf("%s/%s", subdirName, blockName)
+				if ValueInArray(blockName, trimmedBlockLocators) {
+					err = os.Chtimes(myname, oldTime, oldTime)
+				}
+			}
+		}
+	}
+}
+
+func GetStatus(t *testing.T) {
+	for i := 0; i < len(keepServers); i++ {
+		resp := MakeRequest(t, keepServers[i]+"/status.json")
+		log.Printf("Status from keepserver %d = %s", i, resp)
+	}
 }
 
 func TestPutAndGetBlocks(t *testing.T) {
@@ -209,7 +270,7 @@ func TestPutAndGetBlocks(t *testing.T) {
 	defer TearDownDataManagerTest(t)
 	SetupDataManagerTest(t)
 
-	// Put some blocks and change their mtime to old
+	// Put some blocks and change their mtime to before ttl
 	var oldBlockLocators []string
 	oldBlockData := "this block will have older mtime"
 	for i := 0; i < 2; i++ {
@@ -219,7 +280,7 @@ func TestPutAndGetBlocks(t *testing.T) {
 		GetBlock(t, oldBlockLocators[i], oldBlockData+string(i))
 	}
 
-	// Put some more new blocks
+	// Put some more blocks whose mtime won't be changed
 	var newBlockLocators []string
 	newBlockData := "this block is newer"
 	for i := 0; i < 1; i++ {
@@ -229,40 +290,51 @@ func TestPutAndGetBlocks(t *testing.T) {
 		GetBlock(t, newBlockLocators[i], newBlockData+string(i))
 	}
 
-	// Create a collection
-	collection_uuid := CreateCollection(t, "some data for collection creation")
+	// Create a collection that would be deleted
+	to_delete_collection_uuid := CreateCollection(t, "some data for collection creation")
+	to_delete_collection_locator := GetCollection(t, to_delete_collection_uuid)
 
-	collection_locator := GetCollection(t, collection_uuid)
+	// Create another collection that has the same data as the one of the old blocks
+	old_block_collection_uuid := CreateCollection(t, "this block will have older mtime0")
+	old_block_collection_locator := GetCollection(t, old_block_collection_uuid)
+	exists := ValueInArray(strings.Split(old_block_collection_locator, "+")[0], oldBlockLocators)
+	if exists {
+		t.Fatalf("Locator of the collection with the same data as old block is different %s", old_block_collection_locator)
+	}
+
+	GetStatus(t)
 
 	/*
-	  // Invoking datamanager singlerun or /index several times is resulting in errors
-	  // Hence, for now just invoke once at the end of test
-		     var expected []string
-		     expected = append(expected, oldBlockLocators...)
-		     expected = append(expected, newBlockLocators...)
-		     expected = append(expected, collection_locator)
+		  // Invoking datamanager singlerun or /index several times is resulting in errors
+		  // Hence, for now just invoke once at the end of test
+			     var expected []string
+			     expected = append(expected, oldBlockLocators...)
+			     expected = append(expected, newBlockLocators...)
+			     expected = append(expected, to_delete_collection_locator)
 
-		   	VerifyBlocks(t, nil, expected)
+			   	VerifyBlocks(t, nil, expected)
 
-		   	// Run datamanager in singlerun mode
-		   	DataManagerSingleRun(t)
+			   	// Run datamanager in singlerun mode
+			   	DataManagerSingleRun(t)
 	*/
 
 	// Change mtime on old blocks and delete the collection
-	DeleteCollection(t, collection_uuid)
+	DeleteCollection(t, to_delete_collection_uuid)
+	BackdateBlocks(t, oldBlockLocators)
 
 	time.Sleep(1 * time.Second)
 	DataManagerSingleRun(t)
 
 	// Give some time for pull worker and trash worker to finish
-	time.Sleep(10 * time.Second)
+	time.Sleep(5 * time.Second)
 
 	// Get block indexes and verify that the deleted collection block is no longer found
 	var not_expected []string
 	not_expected = append(not_expected, oldBlockLocators...)
-	not_expected = append(not_expected, collection_locator)
-	//VerifyBlocks(t, not_expected, newBlockLocators)
-	VerifyBlocks(t, nil, newBlockLocators)
+	not_expected = append(not_expected, to_delete_collection_locator)
+
+	GetStatus(t)
+	VerifyBlocks(t, not_expected, newBlockLocators)
 }
 
 // Invoking datamanager singlerun several times results in errors.
