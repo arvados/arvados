@@ -1,0 +1,111 @@
+#!/usr/bin/env ruby
+
+require 'rubygems'
+require 'pp'
+require 'arvados'
+require 'etc'
+require 'fileutils'
+require 'yaml'
+
+req_envs = %w(ARVADOS_API_HOST ARVADOS_API_TOKEN ARVADOS_VIRTUAL_MACHINE_UUID)
+req_envs.each do |k|
+  unless ENV[k]
+    abort "Fatal: These environment vars must be set: #{req_envs}"
+  end
+end
+
+keys = ''
+
+seen = Hash.new
+
+begin
+  uids = Hash[Etc.to_enum(:passwd).map { |ent| [ent.name, ent.uid] }]
+  gids = Hash[Etc.to_enum(:group).map { |ent| [ent.name, ent.gid] }]
+  arv = Arvados.new({ :suppress_ssl_warnings => false })
+
+  vm_uuid = ENV['ARVADOS_VIRTUAL_MACHINE_UUID']
+
+  logins = arv.virtual_machine.logins(:uuid => vm_uuid)[:items]
+  logins = [] if logins.nil?
+  logins = logins.reject { |l| l[:username].nil? or l[:hostname].nil? or l[:public_key].nil? or l[:virtual_machine_uuid] != vm_uuid }
+
+  # No system users
+  uid_min = 1000
+  open("/etc/login.defs", encoding: "utf-8") do |login_defs|
+    login_defs.each_line do |line|
+      next unless match = /^UID_MIN\s+(\S+)$/.match(line)
+      if match[1].start_with?("0x")
+        base = 16
+      elsif match[1].start_with?("0")
+        base = 8
+      else
+        base = 10
+      end
+      new_uid_min = match[1].to_i(base)
+      uid_min = new_uid_min if (new_uid_min > 0)
+    end
+  end
+  logins.reject! { |l| (uids[l[:username]] || 65535) < uid_min }
+
+  keys = Hash.new()
+
+  # Collect all keys
+  logins.each do |l|
+    keys[l[:username]] = Array.new() if not keys.has_key?(l[:username])
+    key = l[:public_key]
+    # Handle putty-style ssh public keys
+    key.sub!(/^(Comment: "r[^\n]*\n)(.*)$/m,'ssh-rsa \2 \1')
+    key.sub!(/^(Comment: "d[^\n]*\n)(.*)$/m,'ssh-dss \2 \1')
+    key.gsub!(/\n/,'')
+    key.strip
+
+    keys[l[:username]].push(key) if not keys[l[:username]].include?(key)
+  end
+
+  seen = Hash.new()
+  devnull = open("/dev/null", "w")
+
+  logins.each do |l|
+    next if seen[l[:username]]
+    seen[l[:username]] = true if not seen.has_key?(l[:username])
+    @homedir = "/home/#{l[:username]}"
+
+    unless uids[l[:username]]
+      STDERR.puts "Creating account #{l[:username]}"
+      groups = l[:groups] || []
+      # Adding users to the FUSE group has long been hardcoded behavior.
+      groups << "fuse"
+      groups.select! { |name| gids[name] }
+      # Create new user
+      next unless system("useradd", "-m",
+                         "-c", l[:username],
+                         "-s", "/bin/bash",
+                         "-G", groups.join(","),
+                         l[:username],
+                         out: devnull)
+    end
+    # Create .ssh directory if necessary
+    userdotssh = File.join(@homedir, ".ssh")
+    Dir.mkdir(userdotssh) if !File.exists?(userdotssh)
+    @key = "#######################################################################################
+#  THIS FILE IS MANAGED BY #{$0} -- CHANGES WILL BE OVERWRITTEN  #
+#######################################################################################\n\n"
+    @key += keys[l[:username]].join("\n") + "\n"
+    userauthkeys = File.join(userdotssh, "authorized_keys")
+    if !File.exists?(userauthkeys) or IO::read(userauthkeys) != @key then
+      f = File.new(userauthkeys, 'w')
+      f.write(@key)
+      f.close()
+    end
+    FileUtils.chown_R(l[:username], l[:username], userdotssh)
+    File.chmod(0700, userdotssh)
+    File.chmod(0750, @homedir)
+  end
+
+  devnull.close
+rescue Exception => bang
+  puts "Error: " + bang.to_s
+  puts bang.backtrace.join("\n")
+  exit 1
+end
+
