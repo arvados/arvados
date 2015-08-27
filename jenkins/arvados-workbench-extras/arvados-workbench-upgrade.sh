@@ -29,8 +29,8 @@ RELEASE_PATH=/var/www/arvados-workbench/current
 SHARED_PATH=/var/www/arvados-workbench/shared
 CONFIG_PATH=/etc/arvados/workbench/
 
-echo "Assumption: $NGINX_SERVICE is configured to serve workbench.$HOSTNAME from /var/www/workbench.$HOSTNAME/current"
-echo "Assumption: /var/www/$HOSTNAME is symlinked to /var/www/arvados-workbench"
+echo "Assumption: $NGINX_SERVICE is configured to serve your workbench URL from "
+echo "            /var/www/arvados-workbench/current"
 echo "Assumption: configuration files are in /etc/arvados/workbench/"
 echo "Assumption: $NGINX_SERVICE and passenger run as $WWW_OWNER"
 echo
