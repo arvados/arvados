@@ -14,7 +14,7 @@ module SalvageCollection
   require 'tempfile'
   require 'shellwords'
 
-  def self.salvage_collection_arv_put cmd
+  def salvage_collection_arv_put cmd
     new_manifest = %x(#{cmd})
     if $?.success?
       new_manifest
@@ -25,7 +25,7 @@ module SalvageCollection
 
   # Get all the locators from the original manifest
   LOCATOR_REGEXP = /((.*))?([[:xdigit:]]{32})(\+(.*))?\z/
-  def self.salvage_collection_locator_data manifest
+  def salvage_collection_locator_data manifest
       locators = []
       size = 0
       manifest.each_line do |line|
@@ -50,7 +50,7 @@ module SalvageCollection
       return [locators, size]
   end
 
-  def self.salvage_collection uuid, reason='salvaged - see #6277, #6859'
+  def salvage_collection uuid, reason='salvaged - see #6277, #6859'
     act_as_system_user do
       if !ENV['ARVADOS_API_TOKEN'].present? or !ENV['ARVADOS_API_HOST'].present?
         raise "ARVADOS environment variables missing. Please set your admin user credentials as ARVADOS environment variables."
