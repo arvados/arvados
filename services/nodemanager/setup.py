@@ -31,11 +31,11 @@ setup(name='arvados-node-manager',
         'python-daemon',
         ],
       dependency_links = [
-          "https://github.com/curoverse/libcloud/archive/apache-libcloud-0.18.0+azurearm.zip"
+          "git+git://github.com/curoverse/libcloud.git@8c16e5c84388e6557c5e1791a2111e571a0bf9de#egg=apache_libcloud-0.18.0.dev1"
       ],
       scripts=['bin/arvados-node-manager'],
       test_suite='tests',
-      tests_require=['mock>=1.0', "apache-libcloud==0.18.0+azurearm"],
+      tests_require=['mock>=1.0', "apache-libcloud==0.18.0.dev1"],
       zip_safe=False,
       cmdclass={'egg_info': tagger},
       )
