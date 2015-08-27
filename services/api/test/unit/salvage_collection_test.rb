@@ -15,7 +15,7 @@ TEST_MANIFEST_STRIPPED = ". 341dabea2bd78ad0d6fc3f5b926b450e+85626 0:85626:brca2
 #     341dabea2bd78ad0d6fc3f5b926b450e+abc
 #     341dabea2bd78ad0d6fc3f5b926abcdf
 # Expectation: All these locators are preserved in salvaged_data
-BAD_MANIFEST = "faaaafaafaafaabd78ad0d6fc3f5b926b450e+foo bar-baabaabaabd78ad0d6fc3f5b926b450e bad12345dae58ad0d6fc3f5b926b450e+ 341dabea2bd78ad0d6fc3f5b926b450e+abc 341dabea2bd78ad0d6fc3f5b926abcdf 0:85626:brca2-hg19.fa\n. abcdabea2bd78ad0d6fc3f5b926b450e+1000 0:1000:brca-hg19.fa\n. d7321a918923627c972d8f8080c07d29+2000+A22e0a1d9b9bc85c848379d98bedc64238b0b1532@55e076ce 0:2000:brca1-hg19.fa\n"
+BAD_MANIFEST = "faafaafaabd78ad0d6fc3f5b926b450e+foo bar-baabaabaabd78ad0d6fc3f5b926b450e_bad12345dae58ad0d6fc3f5b926b450e+ 341dabea2bd78ad0d6fc3f5b926b450e+abc 341dabea2bd78ad0d6fc3f5b926abcdf 0:85626:brca2-hg19.fa\n. abcdabea2bd78ad0d6fc3f5b926b450e+1000 0:1000:brca-hg19.fa\n. d7321a918923627c972d8f8080c07d29+2000+A22e0a1d9b9bc85c848379d98bedc64238b0b1532@55e076ce 0:2000:brca1-hg19.fa\n"
 
 class SalvageCollectionTest < ActiveSupport::TestCase
   include SalvageCollection
@@ -121,19 +121,16 @@ class SalvageCollectionTest < ActiveSupport::TestCase
   # Expectation: All these locators are preserved in salvaged_data
   test "invalid locators preserved during salvaging" do
     locator_data = salvage_collection_locator_data BAD_MANIFEST
-    assert_equal 7, locator_data[0].size
-    assert_equal false, locator_data[0].include?("foo-faafaafaabd78ad0d6fc3f5b926b450e+foo")
-    assert_equal true,  locator_data[0].include?("faafaafaabd78ad0d6fc3f5b926b450e")
-    assert_equal false, locator_data[0].include?("bar-baabaabaabd78ad0d6fc3f5b926b450e")
-    assert_equal true,  locator_data[0].include?("baabaabaabd78ad0d6fc3f5b926b450e")
-    assert_equal false, locator_data[0].include?("bad12345dae58ad0d6fc3f5b926b450e+")
-    assert_equal true,  locator_data[0].include?("bad12345dae58ad0d6fc3f5b926b450e")
-    assert_equal false, locator_data[0].include?("341dabea2bd78ad0d6fc3f5b926b450e+abc")
-    assert_equal true,  locator_data[0].include?("341dabea2bd78ad0d6fc3f5b926b450e")
-    assert_equal true,  locator_data[0].include?("341dabea2bd78ad0d6fc3f5b926abcdf")
-    assert_equal true,  locator_data[0].include?("abcdabea2bd78ad0d6fc3f5b926b450e+1000")
-    assert_equal true,  locator_data[0].include?("d7321a918923627c972d8f8080c07d29+2000")
-    assert_equal true,  locator_data[1].eql?(1000 + 2000)   # size
+    assert_equal \
+    ["faafaafaabd78ad0d6fc3f5b926b450e",
+     "baabaabaabd78ad0d6fc3f5b926b450e",
+     "bad12345dae58ad0d6fc3f5b926b450e",
+     "341dabea2bd78ad0d6fc3f5b926b450e",
+     "341dabea2bd78ad0d6fc3f5b926abcdf",
+     "abcdabea2bd78ad0d6fc3f5b926b450e+1000",
+     "d7321a918923627c972d8f8080c07d29+2000",
+    ], locator_data[0]
+    assert_equal 1000+2000, locator_data[1]
   end
 
   test "salvage a collection with invalid manifest text" do

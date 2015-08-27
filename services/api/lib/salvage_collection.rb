@@ -23,31 +23,22 @@ module SalvageCollection
     end
   end
 
-  # Get all the locators from the original manifest
-  LOCATOR_REGEXP = /((.*))?([[:xdigit:]]{32})(\+(.*))?\z/
+  # Get all the locators (and perhaps other strings that look a lot
+  # like a locators) from the original manifest, even if they don't
+  # appear in the correct positions with the correct space delimiters.
   def salvage_collection_locator_data manifest
-      locators = []
-      size = 0
-      manifest.each_line do |line|
-        line.split(' ').each do |word|
-          if match = LOCATOR_REGEXP.match(word)
-            if match.size == 6 and match[5]
-              size_str = match[5].split('+')[0]
-              if size_str.to_i.to_s == size_str
-                word = match[3] + '+' + size_str     # get rid of any other hints
-                size += size_str.to_i
-              else
-                word = match[3]
-              end
-            else
-              word = match[3]
-            end
-            locators << word
-          end
-        end
+    locators = []
+    size = 0
+    manifest.scan /(^|[^[:xdigit:]])([[:xdigit:]]{32})((\+\d+)(\+|\b))?/ do |_, hash, _, sizehint, _|
+      if sizehint
+        locators << hash.downcase + sizehint
+        size += sizehint.to_i
+      else
+        locators << hash.downcase
       end
-      locators << 'd41d8cd98f00b204e9800998ecf8427e+0' if !locators.any?
-      return [locators, size]
+    end
+    locators << 'd41d8cd98f00b204e9800998ecf8427e+0' if !locators.any?
+    return [locators, size]
   end
 
   def salvage_collection uuid, reason='salvaged - see #6277, #6859'
