@@ -3,7 +3,6 @@ package main
 import (
 	"log"
 	"net/http"
-	"net/http/cgi"
 	"os"
 	"strings"
 	"time"
@@ -16,7 +15,7 @@ import (
 var clientPool = arvadosclient.MakeClientPool()
 
 type authHandler struct {
-	handler *cgi.Handler
+	handler http.Handler
 }
 
 func (h *authHandler) ServeHTTP(wOrig http.ResponseWriter, r *http.Request) {
@@ -150,7 +149,5 @@ func (h *authHandler) ServeHTTP(wOrig http.ResponseWriter, r *http.Request) {
 	}
 	r.URL.Path = rewrittenPath
 
-	handlerCopy := *h.handler
-	handlerCopy.Env = append(handlerCopy.Env, "REMOTE_USER="+r.RemoteAddr) // Should be username
-	handlerCopy.ServeHTTP(&w, r)
+	h.handler.ServeHTTP(&w, r)
 }
