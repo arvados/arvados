@@ -3,27 +3,30 @@ require 'salvage_collection'
 
 # Valid manifest_text
 TEST_MANIFEST = ". 341dabea2bd78ad0d6fc3f5b926b450e+85626+Ad391622a17f61e4a254eda85d1ca751c4f368da9@55e076ce 0:85626:brca2-hg19.fa\n. d7321a918923627c972d8f8080c07d29+82570+A22e0a1d9b9bc85c848379d98bedc64238b0b1532@55e076ce 0:82570:brca1-hg19.fa\n"
+TEST_MANIFEST_STRIPPED = ". 341dabea2bd78ad0d6fc3f5b926b450e+85626 0:85626:brca2-hg19.fa\n. d7321a918923627c972d8f8080c07d29+82570 0:82570:brca1-hg19.fa\n"
 
 # This invalid manifest_text has the following flaws:
 #   Missing stream name with locator in it's place
-#   Two invalid locators:
+#   Invalid locators:
+#     foofaafaafaabd78ad0d6fc3f5b926b450e+foo
+#     bar-baabaabaabd78ad0d6fc3f5b926b450e
+#     bad12345dae58ad0d6fc3f5b926b450e+
 #     341dabea2bd78ad0d6fc3f5b926b450e+abc
-#     341dabea2bd78ad0d6fc3f5b926b450e
-# Expectation: These locators are preserved in salvaged_data
-BAD_MANIFEST = "341dabea2bd78ad0d6fc3f5b926b450e+abc 341dabea2bd78ad0d6fc3f5b926abcdf 0:85626:brca2-hg19.fa\n. abcdabea2bd78ad0d6fc3f5b926b450e+1000 0:1000:brca-hg19.fa\n . d7321a918923627c972d8f8080c07d29+2000+A22e0a1d9b9bc85c848379d98bedc64238b0b1532@55e076ce 0:2000:brca1-hg19.fa\n"
+#     341dabea2bd78ad0d6fc3f5b926abcdf
+# Expectation: All these locators are preserved in salvaged_data
+BAD_MANIFEST = "faaaafaafaafaabd78ad0d6fc3f5b926b450e+foo bar-baabaabaabd78ad0d6fc3f5b926b450e bad12345dae58ad0d6fc3f5b926b450e+ 341dabea2bd78ad0d6fc3f5b926b450e+abc 341dabea2bd78ad0d6fc3f5b926abcdf 0:85626:brca2-hg19.fa\n. abcdabea2bd78ad0d6fc3f5b926b450e+1000 0:1000:brca-hg19.fa\n. d7321a918923627c972d8f8080c07d29+2000+A22e0a1d9b9bc85c848379d98bedc64238b0b1532@55e076ce 0:2000:brca1-hg19.fa\n"
 
 # Mock arv_put
 module SalvageCollection
   def self.salvage_collection_arv_put(cmd)
-    file_contents = File.new(cmd.split[-1], "r").gets
-
+    file_contents = File.open(cmd.split[-1], "r").read
     # simulate arv-put error when it is 'user_agreement'
     if file_contents.include? 'GNU_General_Public_License'
       raise("Error during arv-put")
     else
       ". " +
-      Digest::MD5.hexdigest(TEST_MANIFEST) + "+" + TEST_MANIFEST.length.to_s +
-      " 0:" + TEST_MANIFEST.length.to_s + ":invalid_manifest_text.txt\n"
+      Digest::MD5.hexdigest(file_contents) + "+" + file_contents.length.to_s +
+      " 0:" + file_contents.length.to_s + ":invalid_manifest_text.txt\n"
     end
   end
 end
@@ -69,8 +72,10 @@ class SalvageCollectionTest < ActiveSupport::TestCase
     assert_equal src_collection.uuid, match[1]
 
     # verify the new collection's manifest format
-    match = new_collection.manifest_text.match /^. (.*) (.*):invalid_manifest_text.txt\n. (.*) (.*):salvaged_data/
-    assert_not_nil match
+    expected_manifest = ". " + Digest::MD5.hexdigest(TEST_MANIFEST_STRIPPED) + "+" +
+      TEST_MANIFEST_STRIPPED.length.to_s + " 0:" + TEST_MANIFEST_STRIPPED.length.to_s +
+      ":invalid_manifest_text.txt\n. 341dabea2bd78ad0d6fc3f5b926b450e+85626 d7321a918923627c972d8f8080c07d29+82570 0:168196:salvaged_data\n"
+    assert_equal expected_manifest, new_collection.manifest_text
   end
 
   test "salvage collection with no uuid required argument" do
@@ -105,19 +110,28 @@ class SalvageCollectionTest < ActiveSupport::TestCase
 
   # This test uses BAD_MANIFEST, which has the following flaws:
   #   Missing stream name with locator in it's place
-  #   Two invalid locators:
+  #   Invalid locators:
+  #     foo-faafaafaabd78ad0d6fc3f5b926b450e+foo
+  #     bar-baabaabaabd78ad0d6fc3f5b926b450e
+  #     bad12345dae58ad0d6fc3f5b926b450e+
   #     341dabea2bd78ad0d6fc3f5b926b450e+abc
-  #     341dabea2bd78ad0d6fc3f5b926b450e
-  # Expectation: These locators are preserved in salvaged_data
+  #     341dabea2bd78ad0d6fc3f5b926abcdf
+  # Expectation: All these locators are preserved in salvaged_data
   test "invalid locators preserved during salvaging" do
     locator_data = SalvageCollection.salvage_collection_locator_data BAD_MANIFEST
-    assert_equal true, locator_data[0].size.eql?(4)
+    assert_equal 7, locator_data[0].size
+    assert_equal false, locator_data[0].include?("foo-faafaafaabd78ad0d6fc3f5b926b450e+foo")
+    assert_equal true,  locator_data[0].include?("faafaafaabd78ad0d6fc3f5b926b450e")
+    assert_equal false, locator_data[0].include?("bar-baabaabaabd78ad0d6fc3f5b926b450e")
+    assert_equal true,  locator_data[0].include?("baabaabaabd78ad0d6fc3f5b926b450e")
+    assert_equal false, locator_data[0].include?("bad12345dae58ad0d6fc3f5b926b450e+")
+    assert_equal true,  locator_data[0].include?("bad12345dae58ad0d6fc3f5b926b450e")
     assert_equal false, locator_data[0].include?("341dabea2bd78ad0d6fc3f5b926b450e+abc")
-    assert_equal true, locator_data[0].include?("341dabea2bd78ad0d6fc3f5b926b450e")
-    assert_equal true, locator_data[0].include?("341dabea2bd78ad0d6fc3f5b926abcdf")
-    assert_equal true, locator_data[0].include?("abcdabea2bd78ad0d6fc3f5b926b450e+1000")
-    assert_equal true, locator_data[0].include?("d7321a918923627c972d8f8080c07d29+2000")
-    assert_equal true, locator_data[1].eql?(1000 + 2000)   # size
+    assert_equal true,  locator_data[0].include?("341dabea2bd78ad0d6fc3f5b926b450e")
+    assert_equal true,  locator_data[0].include?("341dabea2bd78ad0d6fc3f5b926abcdf")
+    assert_equal true,  locator_data[0].include?("abcdabea2bd78ad0d6fc3f5b926b450e+1000")
+    assert_equal true,  locator_data[0].include?("d7321a918923627c972d8f8080c07d29+2000")
+    assert_equal true,  locator_data[1].eql?(1000 + 2000)   # size
   end
 
   test "salvage a collection with invalid manifest text" do
@@ -144,10 +158,9 @@ class SalvageCollectionTest < ActiveSupport::TestCase
     match = new_collection.name.match /^salvaged from (.*),.*/
     assert_not_nil match
     assert_equal src_collection.uuid, match[1]
-
     # verify the new collection's manifest includes the bad locators
-    match = new_collection.manifest_text.match /^. (.*) (.*):invalid_manifest_text.txt\n. (.*) (.*):salvaged_data/
-    assert_not_nil match
-    assert_includes(new_collection.manifest_text, ". 341dabea2bd78ad0d6fc3f5b926b450e 341dabea2bd78ad0d6fc3f5b926abcdf abcdabea2bd78ad0d6fc3f5b926b450e+1000 d7321a918923627c972d8f8080c07d29+2000 0:3000:salvaged_data")
+    expected_manifest = ". " + Digest::MD5.hexdigest(BAD_MANIFEST) + "+" + BAD_MANIFEST.length.to_s +
+      " 0:" + BAD_MANIFEST.length.to_s + ":invalid_manifest_text.txt\n. faafaafaabd78ad0d6fc3f5b926b450e baabaabaabd78ad0d6fc3f5b926b450e bad12345dae58ad0d6fc3f5b926b450e 341dabea2bd78ad0d6fc3f5b926b450e 341dabea2bd78ad0d6fc3f5b926abcdf abcdabea2bd78ad0d6fc3f5b926b450e+1000 d7321a918923627c972d8f8080c07d29+2000 0:3000:salvaged_data\n"
+    assert_equal expected_manifest, new_collection.manifest_text
   end
 end

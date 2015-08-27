@@ -23,24 +23,24 @@ module SalvageCollection
     end
   end
 
-  LOCATOR_REGEXP = /^([[:xdigit:]]{32})(\+(.*))?\z/
+  # Get all the locators from the original manifest
+  LOCATOR_REGEXP = /((.*))?([[:xdigit:]]{32})(\+(.*))?\z/
   def self.salvage_collection_locator_data manifest
-      # Get all the locators from the original manifest
       locators = []
       size = 0
       manifest.each_line do |line|
         line.split(' ').each do |word|
           if match = LOCATOR_REGEXP.match(word)
-            if match.size > 3 and match[3]
-              size_str = match[3].split('+')[0]
+            if match.size == 6 and match[5]
+              size_str = match[5].split('+')[0]
               if size_str.to_i.to_s == size_str
-                word = match[1] + '+' + size_str     # get rid of any hints
+                word = match[3] + '+' + size_str     # get rid of any other hints
                 size += size_str.to_i
               else
-                word = match[1]
+                word = match[3]
               end
             else
-              word = match[1]
+              word = match[3]
             end
             locators << word
           end
@@ -70,6 +70,7 @@ module SalvageCollection
       # create new collection using 'arv-put' with original manifest_text as the data
       temp_file = Tempfile.new('temp')
       temp_file.write(src_manifest)
+
       temp_file.close
 
       new_manifest = salvage_collection_arv_put "arv-put --as-stream --use-filename invalid_manifest_text.txt #{Shellwords::shellescape(temp_file.path)}"
