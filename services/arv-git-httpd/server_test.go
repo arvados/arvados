@@ -136,7 +136,7 @@ func (s *IntegrationSuite) SetUpTest(c *check.C) {
 	c.Assert(err, check.Equals, nil)
 
 	theConfig = &config{
-		Addr:       ":",
+		Addr:       ":0",
 		GitCommand: "/usr/bin/git",
 		Root:       s.tmpRepoRoot,
 	}
