@@ -316,7 +316,7 @@ func TestPutSerialized(t *testing.T) {
 	}(sem)
 
 	// Wait for all goroutines to finish
-	for done := 0; done < 2; {
+	for done := 0; done < 3; {
 		done += <-sem
 	}
 
