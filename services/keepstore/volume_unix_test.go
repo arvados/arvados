@@ -5,6 +5,9 @@ import (
 	"fmt"
 	"io/ioutil"
 	"os"
+	"regexp"
+	"sort"
+	"strings"
 	"syscall"
 	"testing"
 	"time"
@@ -71,6 +74,42 @@ func TestGetNotFound(t *testing.T) {
 		t.Errorf("Read should have failed, returned %s", string(buf))
 	default:
 		t.Errorf("Read expected ErrNotExist, got: %s", err)
+	}
+}
+
+func TestIndexTo(t *testing.T) {
+	v := TempUnixVolume(t, false, false)
+	defer _teardown(v)
+
+	_store(t, v, TEST_HASH, TEST_BLOCK)
+	_store(t, v, TEST_HASH_2, TEST_BLOCK_2)
+	_store(t, v, TEST_HASH_3, TEST_BLOCK_3)
+
+	buf := new(bytes.Buffer)
+	v.IndexTo("", buf)
+	index_rows := strings.Split(string(buf.Bytes()), "\n")
+	sort.Strings(index_rows)
+	sorted_index := strings.Join(index_rows, "\n")
+	m, err := regexp.MatchString(
+		`^\n`+TEST_HASH+`\+\d+ \d+\n`+
+			TEST_HASH_3+`\+\d+ \d+\n`+
+			TEST_HASH_2+`\+\d+ \d+$`,
+		sorted_index)
+	if err != nil {
+		t.Error(err)
+	} else if !m {
+		t.Errorf("Got index %q for empty prefix", sorted_index)
+	}
+
+	for _, prefix := range []string{"f", "f15", "f15ac"} {
+		buf = new(bytes.Buffer)
+		v.IndexTo(prefix, buf)
+		m, err := regexp.MatchString(`^`+TEST_HASH_2+`\+\d+ \d+\n$`, string(buf.Bytes()))
+		if err != nil {
+			t.Error(err)
+		} else if !m {
+			t.Errorf("Got index %q for prefix %q", string(buf.Bytes()), prefix)
+		}
 	}
 }
 
