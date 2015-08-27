@@ -12,15 +12,15 @@ import (
 
 var _ = check.Suite(&GitHandlerSuite{})
 
-type GitHandlerSuite struct {}
+type GitHandlerSuite struct{}
 
 func (s *GitHandlerSuite) TestEnvVars(c *check.C) {
 	u, err := url.Parse("git.zzzzz.arvadosapi.com/test")
 	c.Check(err, check.Equals, nil)
 	resp := httptest.NewRecorder()
 	req := &http.Request{
-		Method: "GET",
-		URL: u,
+		Method:     "GET",
+		URL:        u,
 		RemoteAddr: "[::1]:12345",
 	}
 	h := newGitHandler()
@@ -37,7 +37,7 @@ func (s *GitHandlerSuite) TestEnvVars(c *check.C) {
 	c.Check(body, check.Matches, `(?ms).*^GL_BYPASS_ACCESS_CHECKS=yesplease$.*`)
 	c.Check(body, check.Matches, `(?ms).*^REMOTE_HOST=::1$.*`)
 	c.Check(body, check.Matches, `(?ms).*^REMOTE_PORT=12345$.*`)
-	c.Check(body, check.Matches, `(?ms).*^SERVER_ADDR=` + regexp.QuoteMeta(theConfig.Addr) + `$.*`)
+	c.Check(body, check.Matches, `(?ms).*^SERVER_ADDR=`+regexp.QuoteMeta(theConfig.Addr)+`$.*`)
 }
 
 func (s *GitHandlerSuite) TestCGIError(c *check.C) {
@@ -45,8 +45,8 @@ func (s *GitHandlerSuite) TestCGIError(c *check.C) {
 	c.Check(err, check.Equals, nil)
 	resp := httptest.NewRecorder()
 	req := &http.Request{
-		Method: "GET",
-		URL: u,
+		Method:     "GET",
+		URL:        u,
 		RemoteAddr: "bogus",
 	}
 	h := newGitHandler()

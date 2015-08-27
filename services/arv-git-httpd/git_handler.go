@@ -31,7 +31,7 @@ func newGitHandler() http.Handler {
 				"GITOLITE_HTTP_HOME",
 				"GL_BYPASS_ACCESS_CHECKS",
 			},
-			Args:       []string{"http-backend"},
+			Args: []string{"http-backend"},
 		},
 	}
 }
