@@ -62,6 +62,11 @@ func (h *handler) ServeHTTP(wOrig http.ResponseWriter, r *http.Request) {
 	var statusCode = 0
 	var statusText string
 
+	remoteAddr := r.RemoteAddr
+	if xff := r.Header.Get("X-Forwarded-For"); xff != "" {
+		remoteAddr = xff + "," + remoteAddr
+	}
+
 	w := httpserver.WrapResponseWriter(wOrig)
 	defer func() {
 		if statusCode == 0 {
@@ -75,7 +80,7 @@ func (h *handler) ServeHTTP(wOrig http.ResponseWriter, r *http.Request) {
 		if statusText == "" {
 			statusText = http.StatusText(statusCode)
 		}
-		httpserver.Log(r.RemoteAddr, statusCode, statusText, w.WroteBodyBytes(), r.Method, r.Host, r.URL.Path, r.URL.RawQuery)
+		httpserver.Log(remoteAddr, statusCode, statusText, w.WroteBodyBytes(), r.Method, r.Host, r.URL.Path, r.URL.RawQuery)
 	}()
 
 	if r.Method != "GET" && r.Method != "POST" {
