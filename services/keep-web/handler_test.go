@@ -42,6 +42,10 @@ func (s *IntegrationSuite) TestVhost404(c *check.C) {
 	}
 }
 
+// An authorizer modifies an HTTP request to make use of the given
+// token -- by adding it to a header, cookie, query param, or whatever
+// -- and returns the HTTP status code we should expect from keep-web if
+// the token is invalid.
 type authorizer func(*http.Request, string) int
 
 func (s *IntegrationSuite) TestVhostViaAuthzHeader(c *check.C) {
