@@ -1,6 +1,22 @@
 #!/bin/bash
 
-# Orchestrate run-build-packages.sh for every target.
+read -rd "\000" helpmessage <<EOF
+$(basename $0): Orchestrate run-build-packages.sh for every target
+
+Syntax:
+        WORKSPACE=/path/to/arvados $(basename $0)
+
+WORKSPACE=path         Path to the Arvados source tree to build packages from
+
+EOF
+
+if ! [[ -n "$WORKSPACE" ]]; then
+  echo >&2 "$helpmessage"
+  echo >&2
+  echo >&2 "Error: WORKSPACE environment variable not set"
+  echo >&2
+  exit 1
+fi
 
 set -e
 
