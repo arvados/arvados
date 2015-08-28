@@ -4,9 +4,9 @@ navsection: installguide
 title: Install Keepproxy server
 ...
 
-The Keepproxy server is a gateway into your Keep storage. Unlike the Keepstore servers, which are only accessible on the local LAN, Keepproxy is designed to provide secure access into Keep from anywhere on the internet.
+The Keepproxy server is a gateway into your Keep storage. Unlike the Keepstore servers, which are only accessible on the local LAN, Keepproxy is suitable for lower-bandwidth clients located elsewhere on the internet: a client sends a single copy of a data block, and Keepproxy sends copies to the appropriate Keepstore servers. Keepproxy also accepts requests from clients that do not compute data hashes before uploading data: notably, the browser-based upload feature in Workbench requires Keepproxy.
 
-By convention, we use the following hostname for the Keepproxy:
+By convention, we use the following hostname for the Keepproxy server:
 
 <div class="offset1">
 table(table table-bordered table-condensed).
