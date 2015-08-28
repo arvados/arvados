@@ -10,8 +10,8 @@ import (
 var address string
 
 func init() {
-	flag.StringVar(&address, "address", "0.0.0.0:80",
-		"Address to listen on, \"host:port\".")
+	flag.StringVar(&address, "address", ":80",
+		"Address to listen on: \"host:port\", or \":port\" to listen on all interfaces.")
 }
 
 type server struct {

@@ -17,16 +17,10 @@ import (
 	"git.curoverse.com/arvados.git/sdk/go/keepclient"
 )
 
-var clientPool = arvadosclient.MakeClientPool()
-
-var anonymousTokens []string
-
 type handler struct{}
 
-func init() {
-	// TODO(TC): Get anonymousTokens from flags
-	anonymousTokens = []string{}
-}
+var clientPool = arvadosclient.MakeClientPool()
+var anonymousTokens []string
 
 // return a UUID or PDH if s begins with a UUID or URL-encoded PDH;
 // otherwise return "".
