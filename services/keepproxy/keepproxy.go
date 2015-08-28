@@ -37,7 +37,7 @@ func main() {
 		pidfile          string
 	)
 
-	flagset := flag.NewFlagSet("default", flag.ExitOnError)
+	flagset := flag.NewFlagSet("keepproxy", flag.ExitOnError)
 
 	flagset.StringVar(
 		&listen,
