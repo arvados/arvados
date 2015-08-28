@@ -29,7 +29,7 @@ func (s *IntegrationSuite) TestNoToken(c *check.C) {
 		"bogustoken",
 	} {
 		hdr, body, _ := s.runCurl(c, token, "dl.example.com", "/collections/"+arvadostest.FooCollection+"/foo")
-		c.Check(hdr, check.Matches, `(?s)HTTP/1.1 401 Unauthorized\r\n.*`)
+		c.Check(hdr, check.Matches, `(?s)HTTP/1.1 404 Not Found\r\n.*`)
 		c.Check(body, check.Equals, "")
 
 		if token != "" {
@@ -119,6 +119,14 @@ func (s *IntegrationSuite) test100BlockFile(c *check.C, blocksize int) {
 	c.Check(size, check.Equals, int64(blocksize)*100)
 }
 
+type curlCase struct {
+	id      string
+	auth    string
+	host    string
+	path    string
+	dataMD5 string
+}
+
 func (s *IntegrationSuite) Test200(c *check.C) {
 	anonymousTokens = []string{arvadostest.AnonymousToken}
 	arv, err := arvadosclient.MakeArvadosClient()
@@ -128,28 +136,101 @@ func (s *IntegrationSuite) Test200(c *check.C) {
 	c.Assert(err, check.Equals, nil)
 	kc.PutB([]byte("Hello world\n"))
 	kc.PutB([]byte("foo"))
-	for _, spec := range [][]string{
+	for _, spec := range []curlCase{
 		// My collection
-		{arvadostest.ActiveToken, "/collections/" + arvadostest.FooCollection + "/foo", "acbd18db4cc2f85cedef654fccc4a4d8"},
-		{"", "/collections/download/" + arvadostest.FooCollection + "/" + arvadostest.ActiveToken + "/foo", "acbd18db4cc2f85cedef654fccc4a4d8"},
-		{"tokensobogus", "/collections/download/" + arvadostest.FooCollection + "/" + arvadostest.ActiveToken + "/foo", "acbd18db4cc2f85cedef654fccc4a4d8"},
-		{arvadostest.ActiveToken, "/collections/download/" + arvadostest.FooCollection + "/" + arvadostest.ActiveToken + "/foo", "acbd18db4cc2f85cedef654fccc4a4d8"},
-		{arvadostest.AnonymousToken, "/collections/download/" + arvadostest.FooCollection + "/" + arvadostest.ActiveToken + "/foo", "acbd18db4cc2f85cedef654fccc4a4d8"},
-		// Anonymously accessible user agreement.
-		{"", "/collections/" + arvadostest.HelloWorldCollection + "/Hello%20world.txt", "f0ef7081e1539ac00ef5b761b4fb01b3"},
-		{arvadostest.ActiveToken, "/collections/" + arvadostest.HelloWorldCollection + "/Hello%20world.txt", "f0ef7081e1539ac00ef5b761b4fb01b3"},
-		{arvadostest.SpectatorToken, "/collections/" + arvadostest.HelloWorldCollection + "/Hello%20world.txt", "f0ef7081e1539ac00ef5b761b4fb01b3"},
-		{arvadostest.SpectatorToken, "/collections/download/" + arvadostest.HelloWorldCollection + "/" + arvadostest.SpectatorToken + "/Hello%20world.txt", "f0ef7081e1539ac00ef5b761b4fb01b3"},
+		{
+			auth: arvadostest.ActiveToken,
+			host: arvadostest.FooCollection + "--dl.example.com",
+			path: "/foo",
+			dataMD5: "acbd18db4cc2f85cedef654fccc4a4d8",
+		},
+		{
+			host: strings.Replace(arvadostest.FooPdh, "+", "-", 1) + ".dl.example.com",
+			path: "/t=" + arvadostest.ActiveToken + "/foo",
+			dataMD5: "acbd18db4cc2f85cedef654fccc4a4d8",
+		},
+		{
+			path: "/c=" + arvadostest.FooPdh + "/t=" + arvadostest.ActiveToken + "/foo",
+			dataMD5: "acbd18db4cc2f85cedef654fccc4a4d8",
+		},
+		{
+			path: "/c=" + strings.Replace(arvadostest.FooPdh, "+", "-", 1) + "/t=" + arvadostest.ActiveToken + "/_/foo",
+			dataMD5: "acbd18db4cc2f85cedef654fccc4a4d8",
+		},
+		{
+			path: "/collections/download/" + arvadostest.FooCollection + "/" + arvadostest.ActiveToken + "/foo",
+			dataMD5: "acbd18db4cc2f85cedef654fccc4a4d8",
+		},
+		{
+			auth: "tokensobogus",
+			path: "/collections/download/" + arvadostest.FooCollection + "/" + arvadostest.ActiveToken + "/foo",
+			dataMD5: "acbd18db4cc2f85cedef654fccc4a4d8",
+		},
+		{
+			auth: arvadostest.ActiveToken,
+			path: "/collections/download/" + arvadostest.FooCollection + "/" + arvadostest.ActiveToken + "/foo",
+			dataMD5: "acbd18db4cc2f85cedef654fccc4a4d8",
+		},
+		{
+			auth: arvadostest.AnonymousToken,
+			path: "/collections/download/" + arvadostest.FooCollection + "/" + arvadostest.ActiveToken + "/foo",
+			dataMD5: "acbd18db4cc2f85cedef654fccc4a4d8",
+		},
+
+		// Anonymously accessible user agreement
+		{
+			path: "/c=" + arvadostest.HelloWorldCollection + "/Hello%20world.txt",
+			dataMD5: "f0ef7081e1539ac00ef5b761b4fb01b3",
+		},
+		{
+			host: arvadostest.HelloWorldCollection + ".dl.example.com",
+			path: "/Hello%20world.txt",
+			dataMD5: "f0ef7081e1539ac00ef5b761b4fb01b3",
+		},
+		{
+			host: arvadostest.HelloWorldCollection + ".dl.example.com",
+			path: "/_/Hello%20world.txt",
+			dataMD5: "f0ef7081e1539ac00ef5b761b4fb01b3",
+		},
+		{
+			path: "/collections/" + arvadostest.HelloWorldCollection + "/Hello%20world.txt",
+			dataMD5: "f0ef7081e1539ac00ef5b761b4fb01b3",
+		},
+		{
+			auth: arvadostest.ActiveToken,
+			path: "/collections/" + arvadostest.HelloWorldCollection + "/Hello%20world.txt",
+			dataMD5: "f0ef7081e1539ac00ef5b761b4fb01b3",
+		},
+		{
+			auth: arvadostest.SpectatorToken,
+			path: "/collections/" + arvadostest.HelloWorldCollection + "/Hello%20world.txt",
+			dataMD5: "f0ef7081e1539ac00ef5b761b4fb01b3",
+		},
+		{
+			auth: arvadostest.SpectatorToken,
+			host: arvadostest.HelloWorldCollection + "--dl.example.com",
+			path: "/Hello%20world.txt",
+			dataMD5: "f0ef7081e1539ac00ef5b761b4fb01b3",
+		},
+		{
+			auth: arvadostest.SpectatorToken,
+			path: "/collections/download/" + arvadostest.HelloWorldCollection + "/" + arvadostest.SpectatorToken + "/Hello%20world.txt",
+			dataMD5: "f0ef7081e1539ac00ef5b761b4fb01b3",
+		},
 	} {
-		hdr, body, _ := s.runCurl(c, spec[0], "dl.example.com", spec[1])
+		host := spec.host
+		if host == "" {
+			host = "dl.example.com"
+		}
+		hdr, body, _ := s.runCurl(c, spec.auth, host, spec.path)
 		c.Check(hdr, check.Matches, `(?s)HTTP/1.1 200 OK\r\n.*`)
-		if strings.HasSuffix(spec[1], ".txt") {
+		if strings.HasSuffix(spec.path, ".txt") {
 			c.Check(hdr, check.Matches, `(?s).*\r\nContent-Type: text/plain.*`)
 			// TODO: Check some types that aren't
 			// automatically detected by Go's http server
 			// by sniffing the content.
 		}
-		c.Check(fmt.Sprintf("%x", md5.Sum([]byte(body))), check.Equals, spec[2])
+		c.Check(fmt.Sprintf("%x", md5.Sum([]byte(body))), check.Equals, spec.dataMD5)
 	}
 }
 

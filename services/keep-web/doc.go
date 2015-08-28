@@ -52,13 +52,12 @@
 // "Same-origin mode" below.
 //
 //   http://dl.example.com/c=uuid_or_pdh/path/file.txt
-//   http://dl.example.com/c=uuid_or_pdh/path/t=TOKEN/file.txt
+//   http://dl.example.com/c=uuid_or_pdh/t=TOKEN/path/file.txt
 //
 // The following "multiple origin" URL patterns are supported for all
 // collections:
 //
 //   http://uuid_or_pdh--dl.example.com/path/file.txt
-//   http://uuid_or_pdh--dl.example.com/t=/path/file.txt
 //   http://uuid_or_pdh--dl.example.com/t=TOKEN/path/file.txt
 //
 // In the "multiple origin" form, the string "--" can be replaced with
@@ -81,16 +80,34 @@
 // collection UUID or a portable data hash with the "+" character
 // replaced by "-".
 //
+// In all of the above forms, a top level directory called "_" is
+// skipped. In cases where the "path/file.txt" part might start with
+// "t=" or "c=" or "_/", links should be constructed with a leading
+// "_/" to ensure the top level directory is not interpreted as a
+// token or collection ID.
+//
 // Assuming there is a collection with UUID
 // zzzzz-4zz18-znfnqtbbv4spc3w and portable data hash
 // 1f4b0bc7583c2a7f9102c395f4ffc5e3+45, the following URLs are
 // interchangeable:
 //
 //   http://zzzzz-4zz18-znfnqtbbv4spc3w.dl.example.com/foo
-//   http://zzzzz-4zz18-znfnqtbbv4spc3w.dl.example.com/t=/foo
-//   http://zzzzz-4zz18-znfnqtbbv4spc3w--dl.example.com/t=/foo
+//   http://zzzzz-4zz18-znfnqtbbv4spc3w.dl.example.com/_/foo
+//   http://zzzzz-4zz18-znfnqtbbv4spc3w--dl.example.com/_/foo
 //   http://1f4b0bc7583c2a7f9102c395f4ffc5e3-45--foo.example.com/foo
 //   http://1f4b0bc7583c2a7f9102c395f4ffc5e3-45--.invalid/foo
+//
+// An additional form is supported specifically to make it more
+// convenient to maintain support for existing Workbench download
+// links:
+//
+//   http://dl.example.com/collections/download/uuid_or_pdh/TOKEN/path/file.txt
+//
+// A regular Workbench "download" link is also accepted, but
+// credentials passed via cookie, header, etc. are ignored. Only
+// public data can be served this way:
+//
+//   http://dl.example.com/collections/uuid_or_pdh/path/file.txt
 //
 // Authorization mechanisms
 //
@@ -158,7 +175,7 @@
 //
 package main
 
-// TODO(TC): Implement
+// TODO(TC): Implement?
 //
 // Trusted content
 //
