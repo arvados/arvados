@@ -584,7 +584,9 @@ if [[ ! -d "$WORKSPACE/services/api/tmp" ]]; then
 fi
 
 
-bundle install --path vendor/bundle >"$STDOUT_IF_DEBUG"
+if [[ "$BUILD_BUNDLE_PACKAGES" != 0 ]]; then
+  bundle install --path vendor/bundle >"$STDOUT_IF_DEBUG"
+fi
 
 /usr/bin/git rev-parse HEAD > git-commit.version
 
@@ -630,6 +632,8 @@ if [[ ! -d "$WORKSPACE/apps/workbench/tmp" ]]; then
   mkdir $WORKSPACE/apps/workbench/tmp
 fi
 
+# We need to bundle to be ready even when we build a package without vendor directory
+# because asset compilation requires it.
 bundle install --path vendor/bundle >"$STDOUT_IF_DEBUG"
 
 /usr/bin/git rev-parse HEAD > git-commit.version
