@@ -17,6 +17,9 @@ func init() {
 
 func main() {
 	flag.Parse()
+	if os.Getenv("ARVADOS_API_HOST") == "" {
+		log.Fatal("ARVADOS_API_HOST environment variable must be set.")
+	}
 	srv := &server{}
 	if err := srv.Start(); err != nil {
 		log.Fatal(err)
