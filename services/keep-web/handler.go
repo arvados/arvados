@@ -28,7 +28,8 @@ func init() {
 	anonymousTokens = []string{}
 }
 
-// return s if s is a UUID or a PDH, otherwise ""
+// return a UUID or PDH if s begins with a UUID or URL-encoded PDH;
+// otherwise return "".
 func parseCollectionIdFromDNSName(s string) string {
 	// Strip domain.
 	if i := strings.IndexRune(s, '.'); i >= 0 {
@@ -40,10 +41,13 @@ func parseCollectionIdFromDNSName(s string) string {
 	if i := strings.Index(s, "--"); i >= 0 {
 		s = s[:i]
 	}
-	if !arvadosclient.UUIDMatch(s) && !arvadosclient.PDHMatch(s) {
-		return ""
+	if arvadosclient.UUIDMatch(s) {
+		return s
 	}
-	return s
+	if pdh := strings.Replace(s, "-", "+", 1); arvadosclient.PDHMatch(pdh) {
+		return pdh
+	}
+	return ""
 }
 
 func (h *handler) ServeHTTP(wOrig http.ResponseWriter, r *http.Request) {

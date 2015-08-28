@@ -93,7 +93,17 @@ func authzViaPOST(r *http.Request, tok string) int {
 // Try some combinations of {url, token} using the given authorization
 // mechanism, and verify the result is correct.
 func doVhostRequests(c *check.C, authz authorizer) {
-	hostPath := arvadostest.FooCollection + ".example.com/foo"
+	for _, hostPath := range []string{
+		arvadostest.FooCollection + ".example.com/foo",
+		arvadostest.FooPdh + ".example.com/foo",
+		strings.Replace(arvadostest.FooPdh, "+", "-", -1) + ".example.com/foo",
+	} {
+		c.Log("doRequests: ", hostPath)
+		doVhostRequestsWithHostPath(c, authz, hostPath)
+	}
+}
+
+func doVhostRequestsWithHostPath(c *check.C, authz authorizer, hostPath string) {
 	for _, tok := range []string{
 		arvadostest.ActiveToken,
 		arvadostest.ActiveToken[:15],

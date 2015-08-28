@@ -74,7 +74,8 @@
 // upstream proxy.
 //
 // In all of the above forms, the "dl.example.com" part can be
-// anything at all.
+// anything at all: keep-web ignores everything after the first "." or
+// "--".
 //
 // In all of the above forms, the "uuid_or_pdh" part can be either a
 // collection UUID or a portable data hash with the "+" character
