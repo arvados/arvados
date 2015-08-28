@@ -4,6 +4,8 @@
 // can be installed anywhere with access to Keep services, typically
 // behind a web proxy that supports TLS.
 //
+// See http://doc.arvados.org/install/install-keep-web.html.
+//
 // Starting the server
 //
 // Serve HTTP requests at port 1234 on all interfaces:
