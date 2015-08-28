@@ -18,6 +18,7 @@ func RunTrashWorker(trashq *WorkQueue) {
 	for item := range trashq.NextItem {
 		trashRequest := item.(TrashRequest)
 		TrashItem(trashRequest)
+		trashq.DoneItem <- struct{}{}
 	}
 }
 

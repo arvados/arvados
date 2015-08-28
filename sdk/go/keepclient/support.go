@@ -1,4 +1,3 @@
-/* Internal methods to support keepclient.go */
 package keepclient
 
 import (

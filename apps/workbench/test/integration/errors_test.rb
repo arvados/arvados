@@ -51,10 +51,10 @@ class ErrorsTest < ActionDispatch::IntegrationTest
   # it has a too-limited token, these tests will need to be adjusted.
   test "API error page includes error token" do
     start_stamp = now_timestamp
-    visit(page_with_token("active_readonly", "/authorized_keys"))
-    click_on "Add a new authorized key"
+    visit(page_with_token("active_readonly", "/groups"))
+    click_on "Add a new group"
     assert(page.has_text?(/fiddlesticks/i),
-           "Not on an error page after making an SSH key out of scope")
+           "Not on an error page after making a group out of scope")
     assert(page_has_error_token?(start_stamp), "no error token on 404 page")
   end
 

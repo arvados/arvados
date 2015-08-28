@@ -407,4 +407,15 @@ class ProjectsControllerTest < ActionController::TestCase
     refute_empty css_select("[href=\"/projects/#{project['uuid']}\"]")
     assert_includes @response.body, "<a href=\"/projects/public\">Public Projects</a>"
   end
+
+  test 'all_projects unaffected by params after use by ProjectsController (#6640)' do
+    @controller = ProjectsController.new
+    project_uuid = api_fixture('groups')['aproject']['uuid']
+    get :index, {
+      filters: [['uuid', '<', project_uuid]].to_json,
+      limit: 0,
+      offset: 1000,
+    }, session_for(:active)
+    assert_select "#projects-menu + ul li.divider ~ li a[href=/projects/#{project_uuid}]"
+  end
 end

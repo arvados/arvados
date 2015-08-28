@@ -41,6 +41,16 @@ When using @run-command@, the tool should write its output to the current workin
 
 See the "run-command reference":{{site.baseurl}}/user/topics/run-command.html for more information about using @run-command@.
 
+*Note:* When trying to get job reproducibility without re-computation, you need to set these parameters to their specific hashes. Using a version such as master in @"arvados_sdk_version"@ will grab the latest version hash, which will allow Arvados to re-compute your job if the sdk gets updated.
+* @"arvados_sdk_version"@ : The latest version can be found on the "Arvados Python sdk repository":https://arvados.org/projects/arvados/repository/revisions/master/show/sdk/python under *Latest revisions*.
+* @"script_version"@ : The current version of your script in your git repository can be found by using the following command:
+
+<notextile>
+<pre><code>~$ <span class="userinput">git rev-parse HEAD</span></code></pre>
+</notextile>
+
+* @"docker_image"@ : The docker image hash used is found on the "Collection page":https://cloud.curoverse.com/collections/qr1hi-4zz18-dov6im679g3jr1n as the *Content address*.
+
 h2. Running your pipeline
 
 Your new pipeline template should appear at the top of the Workbench "pipeline&nbsp;templates":{{site.arvados_workbench_host}}/pipeline_templates page.  You can run your pipeline "using Workbench":tutorial-pipeline-workbench.html or the "command line.":{{site.baseurl}}/user/topics/running-pipeline-command-line.html

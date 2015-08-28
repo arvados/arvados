@@ -26,3 +26,4 @@ common:
   activation_contact_link: @@WORKBENCH_ACTIVATION_CONTACT_LINK@@
 
   arvados_docsite: http://doc.@@ARVADOS_DOMAIN@@
+  force_ssl: false

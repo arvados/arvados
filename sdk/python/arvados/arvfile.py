@@ -129,7 +129,7 @@ class ArvadosFileReaderBase(_FileLikeObjectBase):
     @_FileLikeObjectBase._before_close
     @retry_method
     def decompress(self, decompress, size, num_retries=None):
-        for segment in self.readall(size, num_retries):
+        for segment in self.readall(size, num_retries=num_retries):
             data = decompress(segment)
             if data:
                 yield data
@@ -1070,7 +1070,7 @@ class ArvadosFileWriter(ArvadosFileReader):
     @retry_method
     def writelines(self, seq, num_retries=None):
         for s in seq:
-            self.write(s, num_retries)
+            self.write(s, num_retries=num_retries)
 
     @_FileLikeObjectBase._before_close
     def truncate(self, size=None):

@@ -24,9 +24,10 @@ class ApplicationLayoutTest < ActionDispatch::IntegrationTest
       else
         assert page.has_link?("Projects"), 'Not found link - Projects'
         page.find("#projects-menu").click
-        assert_selector 'a', text: 'Add a new project'
+        assert_selector 'a', text: 'Search all projects'
         assert_no_selector 'a', text: 'Browse public projects'
-        assert page.has_text?('Projects shared with me'), 'Not found text - Project shared with me'
+        assert_selector 'a', text: 'Add a new project'
+        assert_selector 'li[class="dropdown-header"]', text: 'My projects'
       end
     elsif invited
       assert page.has_text?('Please check the box below to indicate that you have read and accepted the user agreement'), 'Not found text - Please check the box below . . .'
@@ -217,9 +218,9 @@ class ApplicationLayoutTest < ActionDispatch::IntegrationTest
   end
 
    [
-    ['Repositories','repository','Attributes'],
+    ['Repositories',nil,'s0uqq'],
     ['Virtual machines','virtual machine','current_user_logins'],
-    ['SSH keys','authorized key','public_key'],
+    ['SSH keys',nil,'public_key'],
     ['Links','link','link_class'],
     ['Groups','group','group_class'],
     ['Compute nodes','node','info[ping_secret'],
@@ -227,8 +228,6 @@ class ApplicationLayoutTest < ActionDispatch::IntegrationTest
     ['Keep disks', 'keep disk','bytes_free'],
   ].each do |page_name, add_button_text, look_for|
     test "test system menu #{page_name} link" do
-      skip 'Skip repositories test until #6652 is fixed.' if page_name == 'Repositories'
-
       visit page_with_token('admin')
       within('.navbar-fixed-top') do
         page.find("#system-menu").click
@@ -238,12 +237,16 @@ class ApplicationLayoutTest < ActionDispatch::IntegrationTest
         end
       end
 
-      # click the add button
-      assert_selector 'button', text: "Add a new #{add_button_text}"
-      find('button', text: "Add a new #{add_button_text}").click
+      # click the add button if it exists
+      if add_button_text
+        assert_selector 'button', text: "Add a new #{add_button_text}"
+        find('button', text: "Add a new #{add_button_text}").click
+      else
+        assert_no_selector 'button', text:"Add a new"
+      end
 
-      # look for unique property in the created object page
-      assert page.has_text? look_for
+      # look for unique property in the current page
+      assert_text look_for
     end
   end
 end

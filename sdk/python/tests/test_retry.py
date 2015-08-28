@@ -201,8 +201,10 @@ class RetryMethodTestCase(unittest.TestCase):
             return (a, num_retries, z)
 
 
-    def test_positional_arg_passed(self):
-        self.assertEqual((3, 2, 0), self.Tester().check(3, 2))
+    def test_positional_arg_raises(self):
+        # unsupported use -- make sure we raise rather than ignore
+        with self.assertRaises(TypeError):
+            self.assertEqual((3, 2, 0), self.Tester().check(3, 2))
 
     def test_keyword_arg_passed(self):
         self.assertEqual((4, 3, 0), self.Tester().check(num_retries=3, a=4))

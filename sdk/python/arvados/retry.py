@@ -148,8 +148,7 @@ def retry_method(orig_func):
     """
     @functools.wraps(orig_func)
     def num_retries_setter(self, *args, **kwargs):
-        arg_vals = inspect.getcallargs(orig_func, self, *args, **kwargs)
-        if arg_vals['num_retries'] is None:
+        if kwargs.get('num_retries') is None:
             kwargs['num_retries'] = self.num_retries
         return orig_func(self, *args, **kwargs)
     return num_retries_setter

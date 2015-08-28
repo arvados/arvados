@@ -48,7 +48,7 @@ func TestVerifySignatureExtraHints(t *testing.T) {
 	PermissionSecret = []byte(known_key)
 	defer func() { PermissionSecret = nil }()
 
-	if VerifySignature(known_locator+"+K@xyzzy"+known_sig_hint, known_token) != nil{
+	if VerifySignature(known_locator+"+K@xyzzy"+known_sig_hint, known_token) != nil {
 		t.Fatal("Verify cannot handle hint before permission signature")
 	}
 

@@ -330,9 +330,10 @@ def copy_collections(obj, src, dst, args):
         obj = arvados.util.collection_uuid_pattern.sub(copy_collection_fn, obj)
         return obj
     elif isinstance(obj, dict):
-        return {v: copy_collections(obj[v], src, dst, args) for v in obj}
+        return type(obj)((v, copy_collections(obj[v], src, dst, args))
+                         for v in obj)
     elif isinstance(obj, list):
-        return [copy_collections(v, src, dst, args) for v in obj]
+        return type(obj)(copy_collections(v, src, dst, args) for v in obj)
     return obj
 
 def migrate_jobspec(jobspec, src, dst, dst_repo, args):
@@ -547,31 +548,30 @@ def copy_collection(obj_uuid, src, dst, args):
     else:
         progress_writer = None
 
-    for line in manifest.splitlines(True):
+    for line in manifest.splitlines():
         words = line.split()
-        dst_manifest_line = words[0]
+        dst_manifest += words[0]
         for word in words[1:]:
             try:
                 loc = arvados.KeepLocator(word)
-                blockhash = loc.md5sum
-                # copy this block if we haven't seen it before
-                # (otherwise, just reuse the existing dst_locator)
-                if blockhash not in dst_locators:
-                    logger.debug("Copying block %s (%s bytes)", blockhash, loc.size)
-                    if progress_writer:
-                        progress_writer.report(obj_uuid, bytes_written, bytes_expected)
-                    data = src_keep.get(word)
-                    dst_locator = dst_keep.put(data)
-                    dst_locators[blockhash] = dst_locator
-                    bytes_written += loc.size
-                dst_manifest_line += ' ' + dst_locators[blockhash]
             except ValueError:
                 # If 'word' can't be parsed as a locator,
                 # presume it's a filename.
-                dst_manifest_line += ' ' + word
-        dst_manifest += dst_manifest_line
-        if line.endswith("\n"):
-            dst_manifest += "\n"
+                dst_manifest += ' ' + word
+                continue
+            blockhash = loc.md5sum
+            # copy this block if we haven't seen it before
+            # (otherwise, just reuse the existing dst_locator)
+            if blockhash not in dst_locators:
+                logger.debug("Copying block %s (%s bytes)", blockhash, loc.size)
+                if progress_writer:
+                    progress_writer.report(obj_uuid, bytes_written, bytes_expected)
+                data = src_keep.get(word)
+                dst_locator = dst_keep.put(data)
+                dst_locators[blockhash] = dst_locator
+                bytes_written += loc.size
+            dst_manifest += ' ' + dst_locators[blockhash]
+        dst_manifest += "\n"
 
     if progress_writer:
         progress_writer.report(obj_uuid, bytes_written, bytes_expected)
@@ -580,7 +580,6 @@ def copy_collection(obj_uuid, src, dst, args):
     # Copy the manifest and save the collection.
     logger.debug('saving %s with manifest: <%s>', obj_uuid, dst_manifest)
 
-    dst_keep.put(dst_manifest.encode('utf-8'))
     c['manifest_text'] = dst_manifest
     return create_collection_from(c, src, dst, args)
 

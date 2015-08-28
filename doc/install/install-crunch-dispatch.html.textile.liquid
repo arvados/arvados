@@ -7,6 +7,33 @@ title: Install the Crunch dispatcher
 
 The dispatcher normally runs on the same host/VM as the API server.
 
+h2. Test the Arvados job queue
+
+Crunch dispatches work from the job queue on the Arvados API server.  Before you start installing the Crunch dispatcher, now's a good time to check that the API server and Git server can coordinate to create job records.  Run these commands *on your shell server* to create a collection, and a job to calculate the MD5 checksum of every file in it:
+
+<notextile>
+<pre><code>~$ <span class="userinput">echo 'Hello, Crunch!' | arv-put --portable-data-hash -</span>
+&hellip;
+d40c7f35d80da669afb9db1896e760ad+49
+~$ <span class="userinput">read -rd $'\000' newjob &lt;&lt;EOF; arv job create --job "$newjob"
+{"script_parameters":{"input":"d40c7f35d80da669afb9db1896e760ad+49"},
+ "script_version":"0988acb472849dc0",
+ "script":"hash",
+ "repository":"arvados"}
+EOF</span>
+</code></pre>
+</notextile>
+
+If you get the error
+
+<pre>
+ArgumentError: Specified script_version does not resolve to a commit
+</pre>
+
+it often means that the API server can't read the specified repository&mdash;either because it doesn't exist, or because the user running the API server doesn't have permission to read the repository files.  Check the API server's log (@/var/www/arvados-api/current/log/production.log@) for details, and double-check the instructions in the "Git server installation guide":install-arv-git-httpd.html.
+
+If everything goes well, the API server should create a job record, and your @arv@ command will output the JSON for that record.  It should have state @Queued@ and script_version @0988acb472849dc08d576ee40493e70bde2132ca@.  If the job JSON includes those fields, you can proceed to install the Crunch dispatcher and a compute node.  This job will remain queued until you install those services.
+
 h2. Perl SDK dependencies
 
 Install the Perl SDK on the controller.
@@ -128,58 +155,37 @@ h2. Crunch user account
 
 Run @sudo adduser crunch@.  The crunch user should have the same UID, GID, and home directory on all compute nodes and on the dispatcher (API server).
 
-h2. Git Repositories
+h2. Run the Crunch dispatcher service
 
-Crunch scripts must be in Git repositories in the directory configured as @git_repositories_dir@/*.git (see the "API server installation":install-api-server.html#git_repositories_dir).
+To dispatch Arvados jobs:
 
-Once you have a repository with commits -- and you have read access to the repository -- you should be able to create a new job:
-
-<pre>
-read -rd $'\000' newjob <<EOF; arv job create --job "$newjob"
-{"script_parameters":{"input":"f815ec01d5d2f11cb12874ab2ed50daa"},
- "script_version":"master",
- "script":"hash",
- "repository":"arvados"}
-EOF
-</pre>
-
-Without getting this error:
-
-<pre>
-ArgumentError: Specified script_version does not resolve to a commit
-</pre>
-
-h2. Running jobs
-
-* @services/api/script/crunch-dispatch.rb@ must be running.
-* @crunch-dispatch.rb@ needs @services/crunch/crunch-job@ in its @PATH@.
+* The API server script @crunch-dispatch.rb@ must be running.
 * @crunch-job@ needs the installation path of the Perl SDK in its @PERLLIB@.
-* @crunch-job@ needs the @ARVADOS_API_HOST@ (and, if necessary in a development environment, @ARVADOS_API_HOST_INSECURE@) environment variable set.
+* @crunch-job@ needs the @ARVADOS_API_HOST@ (and, if necessary, @ARVADOS_API_HOST_INSECURE@) environment variable set.
 
-Example @/var/service/arvados_crunch_dispatch/run@ script:
+We recommend you run @crunch-dispatch.rb@ under "runit":http://smarden.org/runit/ or a similar supervisor.  Here's an example runit service script:
 
-<pre>
-#!/bin/sh
+<notextile>
+<pre><code>#!/bin/sh
 set -e
 
 rvmexec=""
-## uncomment this line if you use rvm:
+## Uncomment this line if you use RVM:
 #rvmexec="/usr/local/rvm/bin/rvm-exec default"
 
-export PATH="$PATH":/path/to/arvados/services/crunch
-export ARVADOS_API_HOST={{ site.arvados_api_host }}
+export ARVADOS_API_HOST=<span class="userinput">uuid_prefix.your.domain</span>
 export CRUNCH_DISPATCH_LOCKFILE=/var/lock/crunch-dispatch
+export RAILS_ENV=production
+
+## Uncomment this line if your cluster uses self-signed SSL certificates:
+#export ARVADOS_API_HOST_INSECURE=yes
 
 # This is the path to docker on your compute nodes. You might need to
 # change it to "docker", "/opt/bin/docker", etc.
-export CRUNCH_JOB_DOCKER_BIN=docker.io
+export CRUNCH_JOB_DOCKER_BIN=<span class="userinput">docker.io</span>
 
 fuser -TERM -k $CRUNCH_DISPATCH_LOCKFILE || true
-
-## Only if your SSL cert is unverifiable:
-# export ARVADOS_API_HOST_INSECURE=yes
-
-cd /path/to/arvados/services/api
-export RAILS_ENV=production
+cd /var/www/arvados-api/services/api
 exec $rvmexec bundle exec ./script/crunch-dispatch.rb 2>&1
-</pre>
+</code></pre>
+</notextile>
