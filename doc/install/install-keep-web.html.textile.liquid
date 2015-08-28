@@ -95,22 +95,20 @@ server {
 }
 </pre></notextile>
 
+h3. Configure DNS
+
+Configure your DNS servers so the following names resolve to your Nginx proxy's public IP address.
+* @*--dl.uuid_prefix.your.domain@, if your DNS server allows this without interfering with other DNS names; or
+* @*.dl.uuid_prefix.your.domain@, if you have a wildcard SSL certificate valid for these names; or
+* @dl.uuid_prefix.your.domain@, if neither of the above options is feasible. In this case, only unauthenticated requests will be served, i.e., public data and collection sharing links.
+
 h3. Tell the API server about the keep-web service
 
-If your wildcard certificate is valid for <code>*.dl.<span class="userinput">uuid_prefix</span>.your.domain</code>, add the following entry to your API server's @config/application.yml@ file:
-
-<notextile>
-<pre><code>keep-web: https://%{uuid_or_pdh}.dl.<span class="userinput">uuid_prefix</span>.your.domain
-</code></pre>
-</notextile>
-
-If your wildcard certificate is valid for <code>*.<span class="userinput">uuid_prefix</span>.your.domain</code>, add the following entry to your API server's @config/application.yml@ file. This approach requires a wildcard DNS entry covering <code>*--dl.<span class="userinput">uuid_prefix</span>.your.domain</code>, which might be difficult to do without affecting other services, depending on your DNS server software.
+Add *one* of the following entries to your API server's @config/application.yml@ file, depending on your DNS setup:
 
 <notextile>
 <pre><code>keep-web: https://%{uuid_or_pdh}--dl.<span class="userinput">uuid_prefix</span>.your.domain
+keep-web: https://%{uuid_or_pdh}.dl.<span class="userinput">uuid_prefix</span>.your.domain
+keep-web: https://dl.<span class="userinput">uuid_prefix</span>.your.domain
 </code></pre>
 </notextile>
-
-h3. Configure DNS
-
-Configure your DNS servers so <code>*--dl.<span class="userinput">uuid_prefix</span>.your.domain</code> or <code>*.dl.<span class="userinput">uuid_prefix</span>.your.domain</code> (according to the way you configured Workbench), as well as <code>dl.<span class="userinput">uuid_prefix</span>.your.domain</code>, resolve to your Nginx proxy's public IP address.
