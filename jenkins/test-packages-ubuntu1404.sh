@@ -1,3 +1,3 @@
 #!/bin/sh
 
-exec ./test-packages-deb-common.sh --run-test ubuntu1404 ubuntu:trusty
+exec ./deb-common-test-packages.sh --run-test ubuntu1404 ubuntu:trusty

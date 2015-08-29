@@ -7,10 +7,16 @@ if test "$1" = --run-test ; then
         exit 1
     fi
 
+    self=$(readlink -f $0)
+    base=$(dirname $self)
+
+    createrepo $WORKSPACE/packages/centos6
+
     exec docker run \
          --rm \
          --volume=$WORKSPACE/packages/centos6:/mnt \
          --volume=$(readlink -f $0):/root/run-test.sh \
+         --volume=$base/common-test-packages.sh:/root/common-test.sh \
          --workdir=/mnt \
          centos:6 \
          /root/run-test.sh --install-scl
@@ -24,7 +30,19 @@ if test "$1" = --install-scl ; then
     exec scl enable python27 $0
 fi
 
-yum install --assumeyes python27-python*.rpm
+cat >/etc/yum.repos.d/localrepo.repo <<EOF
+[localrepo]
+name=Arvados Test
+baseurl=file:///mnt
+gpgcheck=0
+enabled=1
+EOF
+
+yum clean all
+yum update
+if ! yum install --assumeyes python27-python-arvados-python-client python27-python-arvados-fuse ; then
+    exit 1
+fi
 
 mkdir -p /tmp/opts
 cd /tmp/opts
@@ -33,18 +51,4 @@ for r in /mnt/python27-python-*x86_64.rpm ; do
     rpm2cpio $r | cpio -idm
 done
 
-FAIL=0
-
-for so in $(find . -name "*.so") ; do
-    if ldd $so | grep "not found" ; then
-        echo "^^^ Missing while scanning $so ^^^"
-        FAIL=1
-    fi
-done
-
-python <<EOF
-import arvados
-import arvados_fuse
-EOF
-
-exit $FAIL
+exec /root/common-test.sh

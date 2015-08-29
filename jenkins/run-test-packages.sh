@@ -5,6 +5,13 @@ if test -z "$WORKSPACE" ; then
     exit 1
 fi
 
-for pkg in test-packages-*.sh ; do
-    $pkg --run-test
+FAIL=0
+
+for pkg in ./test-packages-*.sh ; do
+    if ! $pkg --run-test ; then
+        FAIL=1
+        echo "$pkg has install errors"
+    fi
 done
+
+exit $FAIL

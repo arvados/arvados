@@ -8,13 +8,16 @@ if test "$1" = --run-test ; then
     fi
 
     self=$(readlink -f $0)
-    cd $WORKSPACE/packages/debian7
+    base=$(dirname $self)
+
+    cd $WORKSPACE/packages/$2
     dpkg-scanpackages . /dev/null | gzip -c9 > Packages.gz
 
     exec docker run \
          --rm \
          --volume=$WORKSPACE/packages/$2:/mnt \
          --volume=$self:/root/run-test.sh \
+         --volume=$base/common-test-packages.sh:/root/common-test.sh \
          --workdir=/mnt \
          $3 \
          /root/run-test.sh
@@ -22,9 +25,15 @@ fi
 
 echo "deb file:///mnt /" >>/etc/apt/sources.list
 apt-get update
-apt-get --assume-yes --force-yes install python-arvados-python-client python-arvados-fuse
+if ! apt-get --assume-yes --force-yes install python-arvados-python-client python-arvados-fuse ; then
+    exit 1
+fi
 
-python <<EOF
-import arvados
-import arvados_fuse
-EOF
+mkdir -p /tmp/opts
+cd /tmp/opts
+
+for r in /mnt/python-*amd64.deb ; do
+    dpkg-deb -x $r .
+done
+
+exec /root/common-test.sh
