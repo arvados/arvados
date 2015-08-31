@@ -397,7 +397,7 @@ LIBCLOUD_DIR=$(mktemp -d)
     git checkout apache-libcloud-0.18.1.dev1
     handle_python_package
 )
-fpm_build $LIBCLOUD_DIR python-apache-libcloud
+fpm_build $LIBCLOUD_DIR "$PYTHON2_PKG_PREFIX"-apache-libcloud
 rm -rf $LIBCLOUD_DIR
 
 # A few dependencies
