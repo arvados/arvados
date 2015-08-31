@@ -25,7 +25,9 @@ fi
 
 echo "deb file:///mnt /" >>/etc/apt/sources.list
 apt-get -qq update
-if ! apt-get -qq --assume-yes --force-yes install python-arvados-python-client python-arvados-fuse ; then
+if ! apt-get -qq --assume-yes --force-yes install \
+     python-arvados-python-client python-arvados-fuse arvados-node-manager
+then
     exit 1
 fi
 

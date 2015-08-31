@@ -40,7 +40,9 @@ EOF
 
 yum -q clean all
 yum -q update
-if ! yum -q install --assumeyes python27-python-arvados-python-client python27-python-arvados-fuse ; then
+if ! yum -q install --assumeyes \
+     python27-python-arvados-python-client python27-python-arvados-fuse arvados-node-manager
+then
     exit 1
 fi
 
