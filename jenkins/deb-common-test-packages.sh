@@ -24,8 +24,8 @@ if test "$1" = --run-test ; then
 fi
 
 echo "deb file:///mnt /" >>/etc/apt/sources.list
-apt-get update
-if ! apt-get --assume-yes --force-yes install python-arvados-python-client python-arvados-fuse ; then
+apt-get -qq update
+if ! apt-get -qq --assume-yes --force-yes install python-arvados-python-client python-arvados-fuse ; then
     exit 1
 fi
 
@@ -34,6 +34,12 @@ cd /tmp/opts
 
 for r in /mnt/python-*amd64.deb ; do
     dpkg-deb -x $r .
+done
+
+for so in $(find . -name "*.so") ; do
+    echo
+    echo "== Packages dependencies for $so =="
+    ldd $so | awk '($3 ~ /^\//){print $3}' | sort -u | xargs dpkg -S | cut -d: -f1 | sort -u
 done
 
 exec /root/common-test.sh

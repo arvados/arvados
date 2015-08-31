@@ -2,6 +2,7 @@
 
 FAIL=0
 
+echo
 for so in $(find . -name "*.so") ; do
     if ldd $so | grep "not found" ; then
         echo "^^^ Missing while scanning $so ^^^"
@@ -9,6 +10,7 @@ for so in $(find . -name "*.so") ; do
     fi
 done
 
+echo
 if ! python <<EOF
 import arvados
 import arvados_fuse
