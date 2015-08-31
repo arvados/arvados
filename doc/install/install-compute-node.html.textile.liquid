@@ -11,14 +11,14 @@ First, "add the appropriate package repository for your distribution":{{ site.ba
 On Debian-based systems:
 
 <notextile>
-<pre><code>~$ <span class="userinput">sudo apt-get install perl python-virtualenv fuse python-arvados-python-client python-arvados-fuse crunchstat iptables ca-certificates</span>
+<pre><code>~$ <span class="userinput">sudo apt-get install perl python-virtualenv fuse python-arvados-python-client python-arvados-fuse crunchstat arvados-docker-cleaner iptables ca-certificates</span>
 </code></pre>
 </notextile>
 
 On Red Hat-based systems:
 
 <notextile>
-<pre><code>~$ <span class="userinput">sudo yum install perl python27-python-virtualenv fuse python27-python-arvados-python-client python27-python-arvados-fuse crunchstat iptables ca-certificates</span>
+<pre><code>~$ <span class="userinput">sudo yum install perl python27-python-virtualenv fuse python27-python-arvados-python-client python27-python-arvados-fuse crunchstat arvados-docker-cleaner iptables ca-certificates</span>
 </code></pre>
 </notextile>
 
@@ -74,7 +74,45 @@ user_allow_other
 </pre>
 </notextile>
 
-h2. Crunch user account
+h2. Configure the Docker cleaner
+
+The arvados-docker-cleaner program removes least recently used docker images as needed to keep disk usage below a configured limit.
+
+On Debian-based systems, install runit:
+
+<notextile>
+<pre><code>~$ <span class="userinput">sudo apt-get install runit</span>
+</code></pre>
+</notextile>
+
+On Red Hat-based systems, "install runit from source":http://smarden.org/runit/install.html or use an alternative daemon supervisor.
+
+Configure runit to run the image cleaner using a suitable quota for your compute nodes and workload:
+
+<notextile>
+<pre><code>~$ <span class="userinput">cd /etc/sv</span>
+/etc/sv$ <span class="userinput">sudo mkdir arvados-docker-cleaner; cd arvados-docker-cleaner</span>
+/etc/sv/arvados-docker-cleaner$ <span class="userinput">sudo mkdir log log/main</span>
+/etc/sv/arvados-docker-cleaner$ <span class="userinput">sudo sh -c 'cat &gt;log/run' &lt;&lt;'EOF'
+#!/bin/sh
+exec svlogd -tt main
+EOF</span>
+/etc/sv/arvados-docker-cleaner$ <span class="userinput">sudo sh -c 'cat &gt;run' &lt;&lt;'EOF'
+#!/bin/sh
+exec python3 -m arvados_docker.cleaner --quota <b>50G</b>
+EOF</span>
+/etc/sv/arvados-docker-cleaner$ <span class="userinput">sudo chmod +x run log/run</span>
+</code></pre>
+</notextile>
+
+If you are using a different daemon supervisor, or if you want to test the daemon in a terminal window, an equivalent shell command to run arvados-docker-cleaner is:
+
+<notextile>
+<pre><code><span class="userinput">python3 -m arvados_docker.cleaner --quota <b>50G</b></span>
+</code></pre>
+</notextile>
+
+h2. Add a Crunch user account
 
 Create a Crunch user account, and add it to the @fuse@ and @docker@ groups so it can use those tools:
 
