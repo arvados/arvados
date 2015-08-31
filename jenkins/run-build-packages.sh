@@ -15,6 +15,9 @@ Options:
     Output debug information (default: false)
 --target
     Distribution to build packages for (default: debian7)
+--command
+    Build command to execute (defaults to the run command defined in the
+    Docker image)
 
 WORKSPACE=path         Path to the Arvados source tree to build packages from
 
@@ -49,6 +52,9 @@ while [ $# -gt 0 ]; do
         --build-bundle-packages)
             BUILD_BUNDLE_PACKAGES=1
             ;;
+        --command)
+            COMMAND="$2"; shift
+            ;;
         --)
             if [ $# -gt 1 ]; then
                 echo >&2 "$0: unrecognized argument '$2'. Try: $0 --help"
@@ -58,6 +64,10 @@ while [ $# -gt 0 ]; do
     esac
     shift
 done
+
+if [[ "$COMMAND" != "" ]]; then
+  COMMAND="/usr/local/rvm/bin/rvm-exec default bash /jenkins/$COMMAND --target $TARGET"
+fi
 
 STDOUT_IF_DEBUG=/dev/null
 STDERR_IF_DEBUG=/dev/null
