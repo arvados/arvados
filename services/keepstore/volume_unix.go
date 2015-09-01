@@ -9,6 +9,7 @@ import (
 	"log"
 	"os"
 	"path/filepath"
+	"regexp"
 	"strconv"
 	"strings"
 	"sync"
@@ -167,6 +168,8 @@ func (v *UnixVolume) Status() *VolumeStatus {
 	return &VolumeStatus{v.root, devnum, free, used}
 }
 
+var blockDirRe = regexp.MustCompile(`^[0-9a-f]+$`)
+
 // IndexTo writes (to the given Writer) a list of blocks found on this
 // volume which begin with the specified prefix. If the prefix is an
 // empty string, IndexTo writes a complete list of blocks.
@@ -182,31 +185,54 @@ func (v *UnixVolume) Status() *VolumeStatus {
 //     e4de7a2810f5554cd39b36d8ddb132ff+67108864 1388701136
 //
 func (v *UnixVolume) IndexTo(prefix string, w io.Writer) error {
-	return filepath.Walk(v.root,
-		func(path string, info os.FileInfo, err error) error {
-			if err != nil {
-				log.Printf("%s: IndexTo Walk error at %s: %s",
-					v, path, err)
-				return nil
-			}
-			basename := filepath.Base(path)
-			if info.IsDir() &&
-				!strings.HasPrefix(basename, prefix) &&
-				!strings.HasPrefix(prefix, basename) {
-				// Skip directories that do not match
-				// prefix. We know there is nothing
-				// interesting inside.
-				return filepath.SkipDir
-			}
-			if info.IsDir() ||
-				!IsValidLocator(basename) ||
-				!strings.HasPrefix(basename, prefix) {
-				return nil
-			}
-			_, err = fmt.Fprintf(w, "%s+%d %d\n",
-				basename, info.Size(), info.ModTime().Unix())
+	var lastErr error = nil
+	rootdir, err := os.Open(v.root)
+	if err != nil {
+		return err
+	}
+	defer rootdir.Close()
+	for {
+		names, err := rootdir.Readdirnames(1)
+		if err == io.EOF {
+			return lastErr
+		} else if err != nil {
 			return err
-		})
+		}
+		if !strings.HasPrefix(names[0], prefix) && !strings.HasPrefix(prefix, names[0]) {
+			// prefix excludes all blocks stored in this dir
+			continue
+		}
+		if !blockDirRe.MatchString(names[0]) {
+			continue
+		}
+		blockdirpath := filepath.Join(v.root, names[0])
+		blockdir, err := os.Open(blockdirpath)
+		if err != nil {
+			log.Print("Error reading ", blockdirpath, ": ", err)
+			lastErr = err
+			continue
+		}
+		for {
+			fileInfo, err := blockdir.Readdir(1)
+			if err == io.EOF {
+				break
+			} else if err != nil {
+				log.Print("Error reading ", blockdirpath, ": ", err)
+				lastErr = err
+				break
+			}
+			name := fileInfo[0].Name()
+			if !strings.HasPrefix(name, prefix) {
+				continue
+			}
+			_, err = fmt.Fprint(w,
+				name,
+				"+", fileInfo[0].Size(),
+				" ", fileInfo[0].ModTime().Unix(),
+				"\n")
+		}
+		blockdir.Close()
+	}
 }
 
 func (v *UnixVolume) Delete(loc string) error {
