@@ -1,5 +1,6 @@
 #!/bin/bash
 
+. ./run-library.sh
 
 read -rd "\000" helpmessage <<EOF
 $(basename $0): Build Arvados SSO package
@@ -68,10 +69,6 @@ if [[ "$DEBUG" != 0 ]]; then
     DASHQ_UNLESS_DEBUG=
 fi
 
-debug_echo () {
-    echo "$@" >"$STDOUT_IF_DEBUG"
-}
-
 case "$TARGET" in
     debian7)
         FORMAT=deb
@@ -93,7 +90,6 @@ case "$TARGET" in
         exit 1
         ;;
 esac
-
 
 if ! [[ -n "$WORKSPACE" ]]; then
   echo >&2 "$helpmessage"
@@ -132,51 +128,6 @@ fi
 
 debug_echo "$0 is running from $RUN_BUILD_PACKAGES_PATH"
 debug_echo "Workspace is $WORKSPACE"
-
-format_last_commit_here() {
-    local format=$1; shift
-    TZ=UTC git log -n1 --first-parent "--format=format:$format" .
-}
-
-version_from_git() {
-  # Generates a version number from the git log for the current working
-  # directory, and writes it to stdout.
-  local git_ts git_hash
-  declare $(format_last_commit_here "git_ts=%ct git_hash=%h")
-  echo "0.1.$(date -ud "@$git_ts" +%Y%m%d%H%M%S).$git_hash"
-}
-
-nohash_version_from_git() {
-    version_from_git | cut -d. -f1-3
-}
-
-timestamp_from_git() {
-    format_last_commit_here "%ct"
-}
-
-# verify build results
-fpm_verify () {
-  FPM_EXIT_CODE=$1
-  shift
-  FPM_RESULTS=$@
-
-  FPM_PACKAGE_NAME=''
-  if [[ $FPM_RESULTS =~ ([A-Za-z0-9_\.-]*\.)(deb|rpm) ]]; then
-    FPM_PACKAGE_NAME=${BASH_REMATCH[1]}${BASH_REMATCH[2]}
-  fi
-
-  if [[ "$FPM_PACKAGE_NAME" == "" ]]; then
-    EXITCODE=1
-    echo "Error: $PACKAGE: Unable to figure out package name from fpm results:"
-    echo
-    echo $FPM_RESULTS
-    echo
-  elif [[ "$FPM_RESULTS" =~ "File already exists" ]]; then
-    echo "Package $FPM_PACKAGE_NAME exists, not rebuilding"
-  elif [[ 0 -ne "$FPM_EXIT_CODE" ]]; then
-    echo "Error building package for $1:\n $FPM_RESULTS"
-  fi
-}
 
 if [[ -f /etc/profile.d/rvm.sh ]]; then
     source /etc/profile.d/rvm.sh
