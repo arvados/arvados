@@ -27,6 +27,7 @@ EXITCODE=0
 DEBUG=${ARVADOS_DEBUG:-0}
 BUILD_BUNDLE_PACKAGES=0
 TARGET=debian7
+COMMAND=
 
 PARSEDOPTS=$(getopt --name "$0" --longoptions \
     help,build-bundle-packages,debug,target: \

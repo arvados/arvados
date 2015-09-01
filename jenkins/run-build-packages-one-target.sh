@@ -97,8 +97,4 @@ cd ..
 
 run_docker $TARGET
 
-#for dockerfile_path in $(find -name Dockerfile); do
-#    run_docker "$(basename $(dirname "$dockerfile_path"))"
-#done
-
 exit $FINAL_EXITCODE

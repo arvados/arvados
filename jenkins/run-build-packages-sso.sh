@@ -228,6 +228,23 @@ cd $WORKSPACE/packages/$TARGET
 # package. Then remove that database.yml file again. It has to be a valid file though.
 #RAILS_ENV=production RAILS_GROUPS=assets bundle exec rake assets:precompile
 
+# There are just 2 excludes left here, all the others are pulled in via fpm-info.sh.
+# The .git directory is excluded by git implicitly, so we can't pick it up from .gitignore.
+# The packages directory needs to be explictly excluded here because it will only be listed
+# if it exists at the time fpm-info.sh runs. If it does not exist at that time, this script
+# will create it and when fpm runs, it will include the directory. So we add it to the exclude
+# list explicitly here, just in case.
+declare -a COMMAND_ARR=("fpm" "--maintainer=Ward Vandewege <ward@curoverse.com>" "--vendor='Curoverse, Inc.'" "--url='https://arvados.org'" "--description='Arvados SSO server - Arvados is a free and open source platform for big data science.'" "--license='Expat License'" "-s" "dir" "-t" "$FORMAT" "-v" "$SSO_VERSION" "-x" "var/www/arvados-sso/current/.git" "-x" "var/www/arvados-sso/current/packages" "--after-install=$RUN_BUILD_PACKAGES_PATH/arvados-sso-server-extras/postinst.sh")
+
+if [[ "$BUILD_BUNDLE_PACKAGES" != 0 ]]; then
+  # This is the complete package with vendor/bundle included.
+  # It's big, so we do not build it by default.
+  COMMAND_ARR+=("-n" "${PACKAGE_NAME}-with-bundle")
+else
+  # The default package excludes vendor/bundle
+  COMMAND_ARR+=("-n" "${PACKAGE_NAME}" "-x" "var/www/arvados-sso/current/vendor/bundle")
+fi
+
 # Append --depends X and other arguments specified by fpm-info.sh in
 # the package source dir. These are added last so they can override
 # the arguments added by this script.
@@ -238,28 +255,6 @@ if [[ -e "$FPM_INFO" ]]; then
   debug_echo "Loading fpm overrides from $FPM_INFO"
   source "$FPM_INFO"
 fi
-
-# This is the complete package with vendor/bundle included.
-# It's big, so we do not build it by default.
-if [[ "$BUILD_BUNDLE_PACKAGES" != 0 ]]; then
-  declare -a COMMAND_ARR=("fpm" "--maintainer=Ward Vandewege <ward@curoverse.com>" "--vendor='Curoverse, Inc.'" "--url='https://arvados.org'" "--description='Arvados SSO server - Arvados is a free and open source platform for big data science.'" "--license='Expat License'" "-s" "dir" "-t" "$FORMAT" "-n" "${PACKAGE_NAME}-with-bundle" "-v" "$SSO_VERSION" "-x" "var/www/arvados-sso/current/.git" "-x" "var/www/arvados-sso/current/tmp" "-x" "var/www/arvados-sso/current/log" "-x" "var/www/arvados-sso/current/vendor/cache/*" "-x" "var/www/arvados-sso/current/packages" "--after-install=$RUN_BUILD_PACKAGES_PATH/arvados-sso-server-extras/postinst.sh")
-
-  for i in "${fpm_depends[@]}"; do
-    COMMAND_ARR+=('--depends' "$i")
-  done
-  COMMAND_ARR+=("${fpm_args[@]}")
-  COMMAND_ARR+=("$WORKSPACE/=/var/www/arvados-sso/current" "$RUN_BUILD_PACKAGES_PATH/arvados-sso-server-extras/arvados-sso-server-upgrade.sh=/usr/local/bin/arvados-sso-server-upgrade.sh")
-
-  debug_echo -e "\n${COMMAND_ARR[@]}\n"
-
-  FPM_RESULTS=$("${COMMAND_ARR[@]}")
-  FPM_EXIT_CODE=$?
-  fpm_verify $FPM_EXIT_CODE $FPM_RESULTS
-fi
-
-# Build the 'bare' package without vendor/bundle.
-declare -a COMMAND_ARR=("fpm" "--maintainer=Ward Vandewege <ward@curoverse.com>" "--vendor='Curoverse, Inc.'" "--url='https://arvados.org'" "--description='Arvados SSO server - Arvados is a free and open source platform for big data science.'" "--license='Expat License'" "-s" "dir" "-t" "$FORMAT" "-n" "${PACKAGE_NAME}" "-v" "$SSO_VERSION" "-x" "var/www/arvados-sso/current/.git" "-x" "var/www/arvados-sso/current/tmp" "-x" "var/www/arvados-sso/current/log" "-x" "var/www/arvados-sso/current/vendor/bundle" "-x" "var/www/arvados-sso/current/vendor/cache/*" "-x" "var/www/arvados-sso/current/packages" "--after-install=$RUN_BUILD_PACKAGES_PATH/arvados-sso-server-extras/postinst.sh")
-
 
 for i in "${fpm_depends[@]}"; do
   COMMAND_ARR+=('--depends' "$i")
