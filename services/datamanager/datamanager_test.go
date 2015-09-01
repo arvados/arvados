@@ -1,11 +1,13 @@
 package main
 
 import (
+	"encoding/json"
 	"fmt"
 	"git.curoverse.com/arvados.git/sdk/go/arvadosclient"
 	"git.curoverse.com/arvados.git/sdk/go/arvadostest"
 	"git.curoverse.com/arvados.git/sdk/go/keepclient"
 	"git.curoverse.com/arvados.git/services/datamanager/keep"
+	"io"
 	"io/ioutil"
 	"log"
 	"net/http"
@@ -146,30 +148,43 @@ func DataManagerSingleRun(t *testing.T) {
 	}
 }
 
-func MakeRequest(t *testing.T, path string) string {
+func MakeRequest(t *testing.T, path string) io.Reader {
 	client := http.Client{}
 	req, err := http.NewRequest("GET", path, strings.NewReader("resp"))
 	req.Header.Add("Authorization", "OAuth2 "+keep.GetDataManagerToken(nil))
 	req.Header.Add("Content-Type", "application/octet-stream")
 	resp, err := client.Do(req)
+	defer resp.Body.Close()
+
 	if err != nil {
 		t.Fatalf("Error during %s %s", path, err)
 	}
 
-	body, err := ioutil.ReadAll(resp.Body)
-	if err != nil {
-		t.Fatalf("Error reading response from %s %s", path, err)
-	}
-
-	return string(body)
+	return resp.Body
 }
 
 func GetBlockIndexes(t *testing.T) []string {
 	var indexes []string
 
 	for i := 0; i < len(keepServers); i++ {
-		resp := MakeRequest(t, keepServers[i]+"/index")
-		lines := strings.Split(resp, "\n")
+		path := keepServers[i] + "/index"
+		client := http.Client{}
+		req, err := http.NewRequest("GET", path, strings.NewReader("resp"))
+		req.Header.Add("Authorization", "OAuth2 "+keep.GetDataManagerToken(nil))
+		req.Header.Add("Content-Type", "application/octet-stream")
+		resp, err := client.Do(req)
+		defer resp.Body.Close()
+
+		if err != nil {
+			t.Fatalf("Error during %s %s", path, err)
+		}
+
+		body, err := ioutil.ReadAll(resp.Body)
+		if err != nil {
+			t.Fatalf("Error reading response from %s %s", path, err)
+		}
+
+		lines := strings.Split(string(body), "\n")
 		for _, line := range lines {
 			indexes = append(indexes, strings.Split(line, " ")...)
 		}
@@ -258,11 +273,22 @@ func BackdateBlocks(t *testing.T, oldBlockLocators []string) {
 	}
 }
 
-func GetStatus(t *testing.T) {
-	for i := 0; i < len(keepServers); i++ {
-		resp := MakeRequest(t, keepServers[i]+"/status.json")
-		log.Printf("Status from keepserver %d = %s", i, resp)
+func GetStatus(t *testing.T, path string) interface{} {
+	client := http.Client{}
+	req, err := http.NewRequest("GET", path, strings.NewReader("resp"))
+	req.Header.Add("Authorization", "OAuth2 "+keep.GetDataManagerToken(nil))
+	req.Header.Add("Content-Type", "application/octet-stream")
+	resp, err := client.Do(req)
+	defer resp.Body.Close()
+
+	if err != nil {
+		t.Fatalf("Error during %s %s", path, err)
 	}
+
+	var s interface{}
+	json.NewDecoder(resp.Body).Decode(&s)
+
+	return s
 }
 
 func TestPutAndGetBlocks(t *testing.T) {
@@ -302,42 +328,58 @@ func TestPutAndGetBlocks(t *testing.T) {
 		t.Fatalf("Locator of the collection with the same data as old block is different %s", old_block_collection_locator)
 	}
 
-	GetStatus(t)
+	// Invoking datamanager singlerun or /index several times is resulting in errors
+	// Hence, for now just invoke once at the end of test
 
-	/*
-		  // Invoking datamanager singlerun or /index several times is resulting in errors
-		  // Hence, for now just invoke once at the end of test
-			     var expected []string
-			     expected = append(expected, oldBlockLocators...)
-			     expected = append(expected, newBlockLocators...)
-			     expected = append(expected, to_delete_collection_locator)
+	var expected []string
+	expected = append(expected, oldBlockLocators...)
+	expected = append(expected, newBlockLocators...)
+	expected = append(expected, to_delete_collection_locator)
 
-			   	VerifyBlocks(t, nil, expected)
+	VerifyBlocks(t, nil, expected)
 
-			   	// Run datamanager in singlerun mode
-			   	DataManagerSingleRun(t)
-	*/
+	// Run datamanager in singlerun mode
+	DataManagerSingleRun(t)
 
 	// Change mtime on old blocks and delete the collection
 	DeleteCollection(t, to_delete_collection_uuid)
 	BackdateBlocks(t, oldBlockLocators)
 
+	// Run data manager
 	time.Sleep(1 * time.Second)
 	DataManagerSingleRun(t)
 
-	// Give some time for pull worker and trash worker to finish
-	time.Sleep(5 * time.Second)
+	// Wait until PullQueue and TrashQueue finish their work
+	for {
+		var done [2]bool
+		for i := 0; i < 2; i++ {
+			s := GetStatus(t, keepServers[i]+"/status.json")
+			var pullQueueStatus interface{}
+			pullQueueStatus = s.(map[string]interface{})["PullQueue"]
+			var trashQueueStatus interface{}
+			trashQueueStatus = s.(map[string]interface{})["TrashQueue"]
+			if pullQueueStatus.(map[string]interface{})["Queued"] == float64(0) &&
+				pullQueueStatus.(map[string]interface{})["InProgress"] == float64(0) &&
+				trashQueueStatus.(map[string]interface{})["Queued"] == float64(0) &&
+				trashQueueStatus.(map[string]interface{})["InProgress"] == float64(0) {
+				done[i] = true
+			}
+		}
+		if done[0] && done[1] {
+			break
+		} else {
+			time.Sleep(1 * time.Second)
+		}
+	}
 
 	// Get block indexes and verify that the deleted collection block is no longer found
 	var not_expected []string
 	not_expected = append(not_expected, oldBlockLocators...)
 	not_expected = append(not_expected, to_delete_collection_locator)
-
-	GetStatus(t)
 	VerifyBlocks(t, not_expected, newBlockLocators)
 }
 
-// Invoking datamanager singlerun several times results in errors.
+// Invoking datamanager singlerun several times resulting in errors.
 // Until that issue is resolved, don't run this test in the meantime.
 func x_TestInvokeDatamanagerSingleRunRepeatedly(t *testing.T) {
 	defer TearDownDataManagerTest(t)
