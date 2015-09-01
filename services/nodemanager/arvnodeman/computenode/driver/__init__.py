@@ -5,7 +5,7 @@ from __future__ import absolute_import, print_function
 from operator import attrgetter
 
 import libcloud.common.types as cloud_types
-from libcloud.compute.base import NodeDriver
+from libcloud.compute.base import NodeDriver, NodeAuthSSHKey
 
 from ...config import NETWORK_ERRORS
 
@@ -58,7 +58,7 @@ class BaseComputeNodeDriver(object):
 
     def _init_ssh_key(self, filename):
         with open(filename) as ssh_file:
-            key = cloud_base.NodeAuthSSHKey(ssh_file.read())
+            key = NodeAuthSSHKey(ssh_file.read())
         return 'auth', key
 
     def search_for(self, term, list_method, key=attrgetter('id'), **kwargs):
