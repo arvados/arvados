@@ -6,10 +6,12 @@ $(basename $0): Orchestrate run-build-packages.sh for every target
 Syntax:
         WORKSPACE=/path/to/arvados $(basename $0) [options]
 
-WORKSPACE=path         Path to the Arvados source tree to build packages from
+Options:
 
 --command
     Build command to execute (default: use built-in Docker image command)
+
+WORKSPACE=path         Path to the Arvados source tree to build packages from
 
 EOF
 
