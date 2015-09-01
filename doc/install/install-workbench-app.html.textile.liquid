@@ -180,12 +180,22 @@ Log in to Workbench once to ensure that the Arvados API server has a record of t
 In the <strong>API server</strong> project root, start the rails console.  Locate the ApiClient record for your Workbench installation (typically, while you're setting this up, the @last@ one in the database is the one you want), then set the @is_trusted@ flag for the appropriate client record:
 
 <notextile><pre><code>/var/www/arvados-api/current$ <span class="userinput">RAILS_ENV=production bundle exec rails console</span>
-irb(main):001:0&gt; <span class="userinput">wb = ApiClient.all.last; [wb.url_prefix, wb.created_at]</span>
-=&gt; ["https://workbench.example.com/", Sat, 19 Apr 2014 03:35:12 UTC +00:00]
-irb(main):002:0&gt; <span class="userinput">include CurrentApiClient</span>
-=&gt; true
-irb(main):003:0&gt; <span class="userinput">act_as_system_user do wb.update_attributes!(is_trusted: true) end</span>
-=&gt; true
+Loading production environment (Rails 3.2.17)
+2.1.0 :001 &gt; <span class="userinput">wb = ApiClient.all.last; [wb.url_prefix, wb.created_at]</span>
+  ApiClient Load (0.9ms)  SELECT "api_clients".* FROM "api_clients"
+ =&gt; ["https://workbench.zzzzz.arvadosapi.com/", Wed, 26 Aug 2015 13:55:45 UTC +00:00]
+2.1.0 :002 &gt; <span class="userinput">include CurrentApiClient</span>
+ =&gt; Object
+2.1.0 :003 &gt; <span class="userinput">act_as_system_user do wb.update_attributes!(is_trusted: true) end</span>
+  User Load (1.3ms)  SELECT "users".* FROM "users" WHERE "users"."uuid" = 'zzzzz-tpzed-000000000000000' LIMIT 1
+   (0.1ms)  BEGIN
+   (0.2ms)  SELECT clock_timestamp()
+   (0.5ms)  UPDATE "api_clients" SET "is_trusted" = 't', "updated_at" = '2015-08-26 14:25:57.588693', "modified_at" = '2015-08-26 14:25:57.588693' WHERE "api_clients"."id" = 1
+   (0.3ms)  SELECT clock_timestamp()
+  SQL (1.6ms)  INSERT INTO "logs" ("created_at", "event_at", "event_type", "modified_at", "modified_by_client_uuid", "modified_by_user_uuid", "object_owner_uuid", "object_uuid", "owner_uuid", "properties", "summary", "updated_at", "uuid") VALUES ($1, $2, $3, $4, $5, $6, $7, $8, $9, $10, $11, $12, $13) RETURNING "id"  [["created_at", Wed, 26 Aug 2015 14:25:57 UTC +00:00], ["event_at", Wed, 26 Aug 2015 14:25:57 UTC +00:00], ["event_type", "update"], ["modified_at", Wed, 26 Aug 2015 14:25:57 UTC +00:00], ["modified_by_client_uuid", nil], ["modified_by_user_uuid", "zzzzz-tpzed-000000000000000"], ["object_owner_uuid", "zzzzz-tpzed-000000000000000"], ["object_uuid", "zzzzz-ozdt8-0po2xo0rvmebwo3"], ["owner_uuid", "zzzzz-tpzed-000000000000000"], ["properties", "---\nold_etag: 1ehxdk182j456frs12lpopfrv\nold_attributes:\n  id: 1\n  uuid: zzzzz-ozdt8-0po2xo0rvmebwo3\n  owner_uuid: zzzzz-tpzed-000000000000000\n  modified_by_client_uuid: \n  modified_by_user_uuid: zzzzz-tpzed-000000000000000\n  modified_at: 2015-08-26 13:55:45.747597000 Z\n  name: \n  url_prefix: https://workbench.zzzzz.arvadosapi.com/\n  created_at: 2015-08-26 13:55:45.748222000 Z\n  updated_at: 2015-08-26 13:55:45.747597000 Z\n  is_trusted: false\nnew_etag: 7335bl8rxg8fmuw9g4simg1m8\nnew_attributes:\n  id: 1\n  uuid: zzzzz-ozdt8-0po2xo0rvmebwo3\n  owner_uuid: zzzzz-tpzed-000000000000000\n  modified_by_client_uuid: \n  modified_by_user_uuid: zzzzz-tpzed-000000000000000\n  modified_at: 2015-08-26 14:25:57.588693000 Z\n  name: \n  url_prefix: https://workbench.zzzzz.arvadosapi.com/\n  created_at: 2015-08-26 13:55:45.748222000 Z\n  updated_at: 2015-08-26 14:25:57.588693000 Z\n  is_trusted: true\n"], ["summary", "update of zzzzz-ozdt8-0po2xo0rvmebwo3"], ["updated_at", Wed, 26 Aug 2015 14:25:57 UTC +00:00], ["uuid", "zzzzz-57u5n-e33a853zo5vx5jg"]]
+   (0.1ms)  NOTIFY logs, '39'
+   (327.2ms)  COMMIT
+ =&gt; true
 </code></pre>
 </notextile>
 
@@ -195,10 +205,24 @@ Next, we're going to use the rails console on the <strong>API server</strong> to
 
 <notextile>
 <pre><code>/var/www/arvados-api/current$ <span class="userinput">RAILS_ENV=production bundle exec rails console</span>
-irb(main):001:0&gt; <span class="userinput">Thread.current[:user] = User.all.select(&:identity_url).last</span>
-irb(main):002:0&gt; <span class="userinput">Thread.current[:user].update_attributes is_admin: true, is_active: true</span>
-irb(main):003:0&gt; <span class="userinput">User.where(is_admin: true).collect &:email</span>
-=&gt; ["root", "<b>your_address@example.com</b>"]
+2.1.0 :004 &gt; <span class="userinput">Thread.current[:user] = User.all.select(&:identity_url).last</span>
+  User Load (0.7ms)  SELECT "users".* FROM "users"
+ =&gt; #&lt;User id: 4, uuid: "zzzzz-tpzed-tdfft2p27g07eal", owner_uuid: "zzzzz-tpzed-000000000000000", created_at: "2015-08-26 13:56:43", modified_by_client_uuid: "zzzzz-ozdt8-0po2xo0rvmebwo3", modified_by_user_uuid: "zzzzz-tpzed-tdfft2p27g07eal", modified_at: "2015-08-26 13:57:01", email: "user@example.com", first_name: "Nico", last_name: "Cesar", identity_url: "login-tpzed-9rd42kgnm67fk8r", is_admin: nil, prefs: {"getting_started_shown"=&gt;2015-08-26T13:57:01.626+00:00"}, updated_at: "2015-08-26 13:57:01", default_owner_uuid: nil, is_active: true, username: "user"&gt;
+2.1.0 :005 &gt; <span class="userinput">Thread.current[:user].update_attributes is_admin: true, is_active: true</span>
+   (0.3ms)  BEGIN
+  User Exists (0.7ms)  SELECT 1 AS one FROM "users" WHERE ("users"."username" = 'user' AND "users"."id" != 4) LIMIT 1
+   (0.2ms)  SELECT clock_timestamp()
+   (0.5ms)  UPDATE "users" SET "is_admin" = 't', "updated_at" = '2015-08-26 14:28:04.719347', "modified_at" = '2015-08-26 14:28:04.719347', "modified_by_client_uuid" = NULL, "prefs" = '---
+getting_started_shown: ''2015-08-26T13:57:01.626+00:00''
+' WHERE "users"."id" = 4
+   (0.2ms)  SELECT clock_timestamp()
+  SQL (0.7ms)  INSERT INTO "logs" ("created_at", "event_at", "event_type", "modified_at", "modified_by_client_uuid", "modified_by_user_uuid", "object_owner_uuid", "object_uuid", "owner_uuid", "properties", "summary", "updated_at", "uuid") VALUES ($1, $2, $3, $4, $5, $6, $7, $8, $9, $10, $11, $12, $13) RETURNING "id"  [["created_at", Wed, 26 Aug 2015 14:28:04 UTC +00:00], ["event_at", Wed, 26 Aug 2015 14:28:04 UTC +00:00], ["event_type", "update"], ["modified_at", Wed, 26 Aug 2015 14:28:04 UTC +00:00], ["modified_by_client_uuid", nil], ["modified_by_user_uuid", "zzzzz-tpzed-tdfft2p27g07eal"], ["object_owner_uuid", "zzzzz-tpzed-000000000000000"], ["object_uuid", "zzzzz-tpzed-tdfft2p27g07eal"], ["owner_uuid", "zzzzz-tpzed-tdfft2p27g07eal"], ["properties", "---\nold_etag: 6rxxhrylc3zw0h1zkjzn4fpv3\nold_attributes:\n  id: 4\n  uuid: zzzzz-tpzed-tdfft2p27g07eal\n  owner_uuid: zzzzz-tpzed-000000000000000\n  created_at: 2015-08-26 13:56:43.262189000 Z\n  modified_by_client_uuid: zzzzz-ozdt8-0po2xo0rvmebwo3\n  modified_by_user_uuid: zzzzz-tpzed-tdfft2p27g07eal\n  modified_at: 2015-08-26 13:57:01.666131000 Z\n  email: user@example.com\n  first_name: Nico\n  last_name: Cesar\n  identity_url: login-tpzed-9rd42kgnm67fk8r\n  is_admin: \n  prefs:\n    getting_started_shown: '2015-08-26T13:57:01.626+00:00'\n  updated_at: 2015-08-26 13:57:01.666131000 Z\n  default_owner_uuid: \n  is_active: true\n  username: user\nnew_etag: 3wixs7bznbhpk3f6nqvlqq5la\nnew_attributes:\n  id: 4\n  uuid: zzzzz-tpzed-tdfft2p27g07eal\n  owner_uuid: zzzzz-tpzed-000000000000000\n  created_at: 2015-08-26 13:56:43.262189000 Z\n  modified_by_client_uuid: \n  modified_by_user_uuid: zzzzz-tpzed-tdfft2p27g07eal\n  modified_at: 2015-08-26 14:28:04.719347000 Z\n  email: user@example.com\n  first_name: Nico\n  last_name: Cesar\n  identity_url: login-tpzed-9rd42kgnm67fk8r\n  is_admin: true\n  prefs:\n    getting_started_shown: '2015-08-26T13:57:01.626+00:00'\n  updated_at: 2015-08-26 14:28:04.719347000 Z\n  default_owner_uuid: \n  is_active: true\n  username: user\n"], ["summary", "update of zzzzz-tpzed-tdfft2p27g07eal"], ["updated_at", Wed, 26 Aug 2015 14:28:04 UTC +00:00], ["uuid", "zzzzz-57u5n-l45zherk4omft7q"]]
+   (0.1ms)  NOTIFY logs, '40'
+   (11.8ms)  COMMIT
+ =&gt; true
+2.1.0 :006 &gt; <span class="userinput">User.where(is_admin: true).collect &:email</span>
+  User Load (0.8ms)  SELECT "users".* FROM "users" WHERE "users"."is_admin" = 't'
+ =&gt; ["root", "user@example.com"]
 </code></pre></notextile>
 
 At this point, you should have a working Workbench login with administrator privileges. Revisit your Workbench URL in a browser and reload the page to access it.
