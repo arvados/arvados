@@ -7,7 +7,6 @@ import (
 	"git.curoverse.com/arvados.git/sdk/go/arvadostest"
 	"git.curoverse.com/arvados.git/sdk/go/keepclient"
 	"git.curoverse.com/arvados.git/services/datamanager/keep"
-	"io"
 	"io/ioutil"
 	"log"
 	"net/http"
@@ -148,28 +147,13 @@ func DataManagerSingleRun(t *testing.T) {
 	}
 }
 
-func MakeRequest(t *testing.T, path string) io.Reader {
-	client := http.Client{}
-	req, err := http.NewRequest("GET", path, strings.NewReader("resp"))
-	req.Header.Add("Authorization", "OAuth2 "+keep.GetDataManagerToken(nil))
-	req.Header.Add("Content-Type", "application/octet-stream")
-	resp, err := client.Do(req)
-	defer resp.Body.Close()
-
-	if err != nil {
-		t.Fatalf("Error during %s %s", path, err)
-	}
-
-	return resp.Body
-}
-
 func GetBlockIndexes(t *testing.T) []string {
 	var indexes []string
 
 	for i := 0; i < len(keepServers); i++ {
 		path := keepServers[i] + "/index"
 		client := http.Client{}
-		req, err := http.NewRequest("GET", path, strings.NewReader("resp"))
+		req, err := http.NewRequest("GET", path, nil)
 		req.Header.Add("Authorization", "OAuth2 "+keep.GetDataManagerToken(nil))
 		req.Header.Add("Content-Type", "application/octet-stream")
 		resp, err := client.Do(req)
@@ -275,7 +259,7 @@ func BackdateBlocks(t *testing.T, oldBlockLocators []string) {
 
 func GetStatus(t *testing.T, path string) interface{} {
 	client := http.Client{}
-	req, err := http.NewRequest("GET", path, strings.NewReader("resp"))
+	req, err := http.NewRequest("GET", path, nil)
 	req.Header.Add("Authorization", "OAuth2 "+keep.GetDataManagerToken(nil))
 	req.Header.Add("Content-Type", "application/octet-stream")
 	resp, err := client.Do(req)
@@ -381,7 +365,9 @@ func TestPutAndGetBlocks(t *testing.T) {
 
 // Invoking datamanager singlerun several times resulting in errors.
 // Until that issue is resolved, don't run this test in the meantime.
-func x_TestInvokeDatamanagerSingleRunRepeatedly(t *testing.T) {
+func TestDatamanagerSingleRunRepeatedly(t *testing.T) {
+	log.Print("TestDatamanagerSingleRunRepeatedly start")
+
 	defer TearDownDataManagerTest(t)
 	SetupDataManagerTest(t)
 
@@ -391,5 +377,32 @@ func x_TestInvokeDatamanagerSingleRunRepeatedly(t *testing.T) {
 			t.Fatalf("Got an error during datamanager singlerun: %v", err)
 		}
 		time.Sleep(1 * time.Second)
+	}
+}
+
+func TestGetStatusRepeatedly(t *testing.T) {
+	log.Print("TestGetStatusRepeatedly start")
+
+	defer TearDownDataManagerTest(t)
+	SetupDataManagerTest(t)
+
+	for i := 0; i < 10; i++ {
+		for j := 0; j < 2; j++ {
+			s := GetStatus(t, keepServers[j]+"/status.json")
+
+			var pullQueueStatus interface{}
+			pullQueueStatus = s.(map[string]interface{})["PullQueue"]
+			var trashQueueStatus interface{}
+			trashQueueStatus = s.(map[string]interface{})["TrashQueue"]
+
+			if pullQueueStatus.(map[string]interface{})["Queued"] == nil ||
+				pullQueueStatus.(map[string]interface{})["InProgress"] == nil ||
+				trashQueueStatus.(map[string]interface{})["Queued"] == nil ||
+				trashQueueStatus.(map[string]interface{})["InProgress"] == nil {
+				t.Fatalf("PullQueue and TrashQueue status not found")
+			}
+
+			time.Sleep(1 * time.Second)
+		}
 	}
 }
