@@ -392,11 +392,13 @@ mkdir -p "$GOPATH/src/git.curoverse.com"
 ln -sfn "$WORKSPACE" "$GOPATH/src/git.curoverse.com/arvados.git" \
     || fatal "symlink failed"
 
-virtualenv --setuptools "$VENVDIR" || fatal "virtualenv $VENVDIR failed"
+if ! [[ -e "$VENVDIR/bin/activate" ]] || ! [[ -e "$VENVDIR/bin/pip" ]]; then
+    virtualenv --setuptools "$VENVDIR" || fatal "virtualenv $VENVDIR failed"
+fi
 . "$VENVDIR/bin/activate"
 
 if (pip install setuptools | grep setuptools-0) || [ "$($VENVDIR/bin/easy_install --version | cut -d\  -f2 | cut -d. -f1)" -lt 18 ]; then
-    pip install --upgrade setuptools
+    pip install --upgrade setuptools pip
 fi
 
 # Note: this must be the last time we change PATH, otherwise rvm will
