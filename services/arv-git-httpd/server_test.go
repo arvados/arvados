@@ -26,6 +26,7 @@ type IntegrationSuite struct {
 	tmpRepoRoot string
 	tmpWorkdir  string
 	testServer  *server
+	Config      *config
 }
 
 func (s *IntegrationSuite) TestPathVariants(c *check.C) {
@@ -41,7 +42,7 @@ func (s *IntegrationSuite) TestReadonly(c *check.C) {
 	c.Assert(err, check.Equals, nil)
 	err = s.runGit(c, spectatorToken, "push", "active/foo.git", "master:newbranchfail")
 	c.Assert(err, check.ErrorMatches, `.*HTTP code = 403.*`)
-	_, err = os.Stat(s.tmpRepoRoot + "/zzzzz-s0uqq-382brsig8rp3666/.git/refs/heads/newbranchfail")
+	_, err = os.Stat(s.tmpRepoRoot + "/zzzzz-s0uqq-382brsig8rp3666.git/refs/heads/newbranchfail")
 	c.Assert(err, check.FitsTypeOf, &os.PathError{})
 }
 
@@ -50,7 +51,7 @@ func (s *IntegrationSuite) TestReadwrite(c *check.C) {
 	c.Assert(err, check.Equals, nil)
 	err = s.runGit(c, activeToken, "push", "active/foo.git", "master:newbranch")
 	c.Assert(err, check.Equals, nil)
-	_, err = os.Stat(s.tmpRepoRoot + "/zzzzz-s0uqq-382brsig8rp3666/.git/refs/heads/newbranch")
+	_, err = os.Stat(s.tmpRepoRoot + "/zzzzz-s0uqq-382brsig8rp3666.git/refs/heads/newbranch")
 	c.Assert(err, check.Equals, nil)
 }
 
@@ -111,15 +112,19 @@ func (s *IntegrationSuite) SetUpTest(c *check.C) {
 	arvadostest.ResetEnv()
 	s.testServer = &server{}
 	var err error
-	s.tmpRepoRoot, err = ioutil.TempDir("", "arv-git-httpd")
-	c.Assert(err, check.Equals, nil)
+	if s.tmpRepoRoot == "" {
+		s.tmpRepoRoot, err = ioutil.TempDir("", "arv-git-httpd")
+		c.Assert(err, check.Equals, nil)
+	}
 	s.tmpWorkdir, err = ioutil.TempDir("", "arv-git-httpd")
 	c.Assert(err, check.Equals, nil)
-	_, err = exec.Command("git", "init", s.tmpRepoRoot+"/zzzzz-s0uqq-382brsig8rp3666").Output()
-	c.Assert(err, check.Equals, nil)
-	_, err = exec.Command("sh", "-c", "cd "+s.tmpRepoRoot+"/zzzzz-s0uqq-382brsig8rp3666 && echo test >test && git add test && git -c user.name=Foo -c user.email=Foo commit -am 'foo: test'").CombinedOutput()
+	_, err = exec.Command("git", "init", "--bare", s.tmpRepoRoot+"/zzzzz-s0uqq-382brsig8rp3666.git").Output()
 	c.Assert(err, check.Equals, nil)
 	_, err = exec.Command("git", "init", s.tmpWorkdir).Output()
+	c.Assert(err, check.Equals, nil)
+	_, err = exec.Command("sh", "-c", "cd "+s.tmpWorkdir+" && echo initial >initial && git add initial && git -c user.name=Initial -c user.email=Initial commit -am 'foo: initial commit'").CombinedOutput()
+	c.Assert(err, check.Equals, nil)
+	_, err = exec.Command("sh", "-c", "cd "+s.tmpWorkdir+" && git push "+s.tmpRepoRoot+"/zzzzz-s0uqq-382brsig8rp3666.git master:master").CombinedOutput()
 	c.Assert(err, check.Equals, nil)
 	_, err = exec.Command("sh", "-c", "cd "+s.tmpWorkdir+" && echo work >work && git add work && git -c user.name=Foo -c user.email=Foo commit -am 'workdir: test'").CombinedOutput()
 	c.Assert(err, check.Equals, nil)
@@ -135,11 +140,14 @@ func (s *IntegrationSuite) SetUpTest(c *check.C) {
 		"none").Output()
 	c.Assert(err, check.Equals, nil)
 
-	theConfig = &config{
-		Addr:       ":0",
-		GitCommand: "/usr/bin/git",
-		Root:       s.tmpRepoRoot,
+	if s.Config == nil {
+		s.Config = &config{
+			Addr:       ":0",
+			GitCommand: "/usr/bin/git",
+			Root:       s.tmpRepoRoot,
+		}
 	}
+	theConfig = s.Config
 	err = s.testServer.Start()
 	c.Assert(err, check.Equals, nil)
 
@@ -154,14 +162,21 @@ func (s *IntegrationSuite) TearDownTest(c *check.C) {
 		err = s.testServer.Close()
 	}
 	c.Check(err, check.Equals, nil)
+	s.testServer = nil
+
 	if s.tmpRepoRoot != "" {
 		err = os.RemoveAll(s.tmpRepoRoot)
 		c.Check(err, check.Equals, nil)
 	}
+	s.tmpRepoRoot = ""
+
 	if s.tmpWorkdir != "" {
 		err = os.RemoveAll(s.tmpWorkdir)
 		c.Check(err, check.Equals, nil)
 	}
+	s.tmpWorkdir = ""
+
+	s.Config = nil
 }
 
 func (s *IntegrationSuite) runGit(c *check.C, token, gitCmd, repo string, args ...string) error {
