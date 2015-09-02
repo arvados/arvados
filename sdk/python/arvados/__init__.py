@@ -23,6 +23,7 @@ from collection import CollectionReader, CollectionWriter, ResumableCollectionWr
 from keep import *
 from stream import *
 from arvfile import StreamFileReader
+from retry import RetryLoop
 import errors
 import util
 
@@ -37,36 +38,60 @@ logger.addHandler(log_handler)
 logger.setLevel(logging.DEBUG if config.get('ARVADOS_DEBUG')
                 else logging.WARNING)
 
-def task_set_output(self,s):
-    api('v1').job_tasks().update(uuid=self['uuid'],
-                                 body={
-            'output':s,
-            'success':True,
-            'progress':1.0
-            }).execute()
+def task_set_output(self, s, num_retries=5):
+    for tries_left in RetryLoop(num_retries=num_retries, backoff_start=0):
+        try:
+            return api('v1').job_tasks().update(
+                uuid=self['uuid'],
+                body={
+                    'output':s,
+                    'success':True,
+                    'progress':1.0
+                }).execute()
+        except errors.ApiError as error:
+            if retry.check_http_response_success(error.resp.status) is None and tries_left > 0:
+                logger.debug("task_set_output: job_tasks().update() raised {}, retrying with {} tries left".format(repr(error),tries_left))
+            else:
+                raise
 
 _current_task = None
-def current_task():
+def current_task(num_retries=5):
     global _current_task
     if _current_task:
         return _current_task
-    t = api('v1').job_tasks().get(uuid=os.environ['TASK_UUID']).execute()
-    t = UserDict.UserDict(t)
-    t.set_output = types.MethodType(task_set_output, t)
-    t.tmpdir = os.environ['TASK_WORK']
-    _current_task = t
-    return t
+
+    for tries_left in RetryLoop(num_retries=num_retries, backoff_start=2):
+        try:
+            task = api('v1').job_tasks().get(uuid=os.environ['TASK_UUID']).execute()
+            task = UserDict.UserDict(task)
+            task.set_output = types.MethodType(task_set_output, task)
+            task.tmpdir = os.environ['TASK_WORK']
+            _current_task = task
+            return task
+        except errors.ApiError as error:
+            if retry.check_http_response_success(error.resp.status) is None and tries_left > 0:
+                logger.debug("current_task: job_tasks().get() raised {}, retrying with {} tries left".format(repr(error),tries_left))
+            else:
+                raise
 
 _current_job = None
-def current_job():
+def current_job(num_retries=5):
     global _current_job
     if _current_job:
         return _current_job
-    t = api('v1').jobs().get(uuid=os.environ['JOB_UUID']).execute()
-    t = UserDict.UserDict(t)
-    t.tmpdir = os.environ['JOB_WORK']
-    _current_job = t
-    return t
+
+    for tries_left in RetryLoop(num_retries=num_retries, backoff_start=2):
+        try:
+            job = api('v1').jobs().get(uuid=os.environ['JOB_UUID']).execute()
+            job = UserDict.UserDict(job)
+            job.tmpdir = os.environ['JOB_WORK']
+            _current_job = job
+            return job
+        except errors.ApiError as error:
+            if retry.check_http_response_success(error.resp.status) is None and tries_left > 0:
+                logger.debug("current_job: jobs().get() raised {}, retrying with {} tries left".format(repr(error),tries_left))
+            else:
+                raise
 
 def getjobparam(*args):
     return current_job()['script_parameters'].get(*args)
