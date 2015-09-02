@@ -51,6 +51,17 @@ class ComputeNodeDriver(BaseComputeNodeDriver):
     def sync_node(self, cloud_node, arvados_node):
         self.real.ex_create_tags(cloud_node,
                                  {'hostname': arvados_node_fqdn(arvados_node)})
+        self.real.ex_run_command(cloud_node,
+                                 """bash -c '
+                                 mkdir -p /var/tmp/arv-node-data/meta-data
+                                 echo "%s" > /var/tmp/arv-node-data/arv-ping-url
+                                 echo "%s" > /var/tmp/arv-node-data/meta-data/instance-id
+                                 echo "%s" > /var/tmp/arv-node-data/meta-data/instance-type
+                                 echo "%s" > /var/tmp/arv-node-data/meta-data/local-ipv4
+                                 '""" % (self._make_ping_url(arvados_node),
+                                         cloud_node.id,
+                                         cloud_node.extra["properties"]["hardwareProfile"]["vmSize"],
+                                         cloud_node.private_ips[0]))
 
     def _init_image(self, urn):
         return "image", self.get_image(urn)
