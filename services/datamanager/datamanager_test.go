@@ -68,7 +68,8 @@ func PutBlock(t *testing.T, data string) string {
 		t.Fatalf("No locator found after putting test data")
 	}
 
-	return locator
+	splits := strings.Split(locator, "+")
+	return splits[0] + "+" + splits[1]
 }
 
 func GetBlock(t *testing.T, locator string, data string) {
@@ -223,7 +224,7 @@ func BackdateBlocks(t *testing.T, oldBlockLocators []string) {
 	}
 
 	// Now cycle through the two keep volumes
-	oldTime := time.Now().AddDate(0, -1, 0)
+	oldTime := time.Now().AddDate(0, -2, 0)
 	for i := 0; i < 2; i++ {
 		filename := fmt.Sprintf("%s/../../tmp/keep%d.volume", wd, i)
 		volumeDir, err := ioutil.ReadFile(filename)
@@ -325,6 +326,8 @@ func TestPutAndGetBlocks(t *testing.T) {
 	// Run datamanager in singlerun mode
 	DataManagerSingleRun(t)
 
+	log.Print("Backdating blocks now")
+
 	// Change mtime on old blocks and delete the collection
 	DeleteCollection(t, to_delete_collection_uuid)
 	BackdateBlocks(t, oldBlockLocators)
@@ -342,6 +345,7 @@ func TestPutAndGetBlocks(t *testing.T) {
 			pullQueueStatus = s.(map[string]interface{})["PullQueue"]
 			var trashQueueStatus interface{}
 			trashQueueStatus = s.(map[string]interface{})["TrashQueue"]
+
 			if pullQueueStatus.(map[string]interface{})["Queued"] == float64(0) &&
 				pullQueueStatus.(map[string]interface{})["InProgress"] == float64(0) &&
 				trashQueueStatus.(map[string]interface{})["Queued"] == float64(0) &&
@@ -363,8 +367,6 @@ func TestPutAndGetBlocks(t *testing.T) {
 	VerifyBlocks(t, not_expected, newBlockLocators)
 }
 
-// Invoking datamanager singlerun several times resulting in errors.
-// Until that issue is resolved, don't run this test in the meantime.
 func TestDatamanagerSingleRunRepeatedly(t *testing.T) {
 	log.Print("TestDatamanagerSingleRunRepeatedly start")
 
@@ -380,7 +382,7 @@ func TestDatamanagerSingleRunRepeatedly(t *testing.T) {
 	}
 }
 
-func TestGetStatusRepeatedly(t *testing.T) {
+func _TestGetStatusRepeatedly(t *testing.T) {
 	log.Print("TestGetStatusRepeatedly start")
 
 	defer TearDownDataManagerTest(t)
