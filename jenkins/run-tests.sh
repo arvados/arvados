@@ -177,6 +177,9 @@ sanity_checks() {
         perl -e "use $mod; print \"\$$mod::VERSION\\n\"" \
             || fatal "No $mod. Try: apt-get install perl-modules libcrypt-ssleay-perl libjson-perl"
     done
+    echo -n 'gitolite: '
+    which gitolite \
+        || fatal "No gitolite. Try: apt-get install gitolite3"
 }
 
 rotate_logfile() {
