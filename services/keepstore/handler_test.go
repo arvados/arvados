@@ -807,6 +807,39 @@ func ExpectBody(
 	}
 }
 
+// See #7121
+func TestPutNeedsOnlyOneBuffer(t *testing.T) {
+	defer teardown()
+	KeepVM = MakeTestVolumeManager(1)
+	defer KeepVM.Close()
+
+	defer func(orig *bufferPool) {
+		bufs = orig
+	}(bufs)
+	bufs = newBufferPool(1, BLOCKSIZE)
+
+	ok := make(chan struct{})
+	go func() {
+		for i := 0; i < 2; i++ {
+			response := IssueRequest(
+				&RequestTester{
+					method:       "PUT",
+					uri:          "/" + TEST_HASH,
+					request_body: TEST_BLOCK,
+				})
+			ExpectStatusCode(t,
+				"TestPutNeedsOnlyOneBuffer", http.StatusOK, response)
+		}
+		ok <- struct{}{}
+	}()
+
+	select {
+	case <-ok:
+	case <-time.After(time.Second):
+		t.Fatal("PUT deadlocks with maxBuffers==1")
+	}
+}
+
 // Invoke the PutBlockHandler a bunch of times to test for bufferpool resource
 // leak.
 func TestPutHandlerNoBufferleak(t *testing.T) {
