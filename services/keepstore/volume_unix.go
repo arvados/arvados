@@ -1,5 +1,3 @@
-// A UnixVolume is a Volume backed by a locally mounted disk.
-//
 package main
 
 import (
@@ -111,12 +109,7 @@ func (v *UnixVolume) Get(loc string) ([]byte, error) {
 // Compare returns nil if Get(loc) would return the same content as
 // cmp. It is functionally equivalent to Get() followed by
 // bytes.Compare(), but uses less memory.
-//
-// TODO(TC): Before returning CollisionError, compute the MD5 digest
-// of the data on disk (i.e., known-to-be-equal data in cmp +
-// remaining data on disk) and return DiskHashError instead of
-// CollisionError if it doesn't equal loc[:32].
-func (v *UnixVolume) Compare(loc string, cmp []byte) error {
+func (v *UnixVolume) Compare(loc string, expect []byte) error {
 	path := v.blockPath(loc)
 	stat, err := v.stat(path)
 	if err != nil {
@@ -126,6 +119,7 @@ func (v *UnixVolume) Compare(loc string, cmp []byte) error {
 	if int64(bufLen) > stat.Size() {
 		bufLen = int(stat.Size())
 	}
+	cmp := expect
 	buf := make([]byte, bufLen)
 	return v.getFunc(path, func(rdr io.Reader) error {
 		// Loop invariants: all data read so far matched what
@@ -134,17 +128,13 @@ func (v *UnixVolume) Compare(loc string, cmp []byte) error {
 		// reader.
 		for {
 			n, err := rdr.Read(buf)
-			if n > len(cmp) {
-				// file on disk is too long
-				return CollisionError
-			} else if n > 0 && bytes.Compare(cmp[:n], buf[:n]) != 0 {
-				return CollisionError
+			if n > len(cmp) || bytes.Compare(cmp[:n], buf[:n]) != 0 {
+				return collisionOrCorrupt(loc[:32], expect[:len(expect)-len(cmp)], buf[:n], rdr)
 			}
 			cmp = cmp[n:]
 			if err == io.EOF {
 				if len(cmp) != 0 {
-					// file on disk is too short
-					return CollisionError
+					return collisionOrCorrupt(loc[:32], expect[:len(expect)-len(cmp)], nil, nil)
 				}
 				return nil
 			} else if err != nil {
