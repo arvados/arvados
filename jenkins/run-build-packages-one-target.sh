@@ -1,13 +1,13 @@
 #!/bin/bash
 
 read -rd "\000" helpmessage <<EOF
-$(basename $0): Orchestrate run-build-packages.sh for every target
+$(basename $0): Orchestrate run-build-packages.sh for one target
 
 Syntax:
         WORKSPACE=/path/to/arvados $(basename $0) [options]
 
-Options:
-
+--target <target>
+    Distribution to build packages for (default: debian7)
 --command
     Build command to execute (default: use built-in Docker image command)
 
@@ -31,15 +31,14 @@ if ! [[ -d "$WORKSPACE" ]]; then
   exit 1
 fi
 
-set -e
-
 PARSEDOPTS=$(getopt --name "$0" --longoptions \
-    help,command: \
+    help,target:,command: \
     -- "" "$@")
 if [ $? -ne 0 ]; then
     exit 1
 fi
 
+TARGET=debian7
 COMMAND=
 
 eval set -- "$PARSEDOPTS"
@@ -49,6 +48,9 @@ while [ $# -gt 0 ]; do
             echo >&2 "$helpmessage"
             echo >&2
             exit 1
+            ;;
+        --target)
+            TARGET="$2"; shift
             ;;
         --command)
             COMMAND="$2"; shift
@@ -63,8 +65,10 @@ while [ $# -gt 0 ]; do
     shift
 done
 
+set -e
+
 if [[ "$COMMAND" != "" ]]; then
-  COMMAND="/usr/local/rvm/bin/rvm-exec default bash /jenkins/$COMMAND"
+  COMMAND="/usr/local/rvm/bin/rvm-exec default bash /jenkins/$COMMAND --target $TARGET"
 fi
 
 FINAL_EXITCODE=0
@@ -72,9 +76,6 @@ JENKINS_DIR=$(dirname "$(readlink -e "$0")")
 
 run_docker() {
     local tag=$1; shift
-    if [[ "$COMMAND" != "" ]]; then
-      COMMAND="$COMMAND --target $tag"
-    fi
     if docker run -v "$JENKINS_DIR:/jenkins" -v "$WORKSPACE:/arvados" \
           --env ARVADOS_DEBUG=1 "arvados/build:$tag" $COMMAND; then
         # Success - nothing more to do.
@@ -85,14 +86,15 @@ run_docker() {
     fi
 }
 
-# In case it's needed, build the containers. This costs just a few
-# seconds when the containers already exist, so it's not a big deal to
+# In case it's needed, build the container. This costs just a few
+# seconds when the container already exist, so it's not a big deal to
 # do it on each run.
 cd "$JENKINS_DIR/dockerfiles"
-time ./build-all-build-containers.sh
+echo $TARGET
+cd $TARGET
+time docker build -t arvados/build:$TARGET .
+cd ..
 
-for dockerfile_path in $(find -name Dockerfile); do
-    run_docker "$(basename $(dirname "$dockerfile_path"))"
-done
+run_docker $TARGET
 
 exit $FINAL_EXITCODE

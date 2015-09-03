@@ -29,8 +29,8 @@ RELEASE_PATH=/var/www/arvados-api/current
 SHARED_PATH=/var/www/arvados-api/shared
 CONFIG_PATH=/etc/arvados/api/
 
-echo "Assumption: $NGINX_SERVICE is configured to serve $HOSTNAME from /var/www/$HOSTNAME/current"
-echo "Assumption: /var/www/$HOSTNAME is symlinked to /var/www/arvados-api"
+echo "Assumption: $NGINX_SERVICE is configured to serve your API server URL from
+echo "            /var/www/arvados-api/current"
 echo "Assumption: configuration files are in /etc/arvados/api/"
 echo "Assumption: $NGINX_SERVICE and passenger run as $WWW_OWNER"
 echo
