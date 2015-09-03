@@ -3,6 +3,7 @@
 package main
 
 import (
+	"bytes"
 	"fmt"
 	"io"
 	"io/ioutil"
@@ -57,40 +58,100 @@ func (v *UnixVolume) Mtime(loc string) (time.Time, error) {
 	}
 }
 
-// Get retrieves a block identified by the locator string "loc", and
-// returns its contents as a byte slice.
-//
-// If the block could not be found, opened, or read, Get returns a nil
-// slice and whatever non-nil error was returned by Stat or ReadFile.
-func (v *UnixVolume) Get(loc string) ([]byte, error) {
-	path := v.blockPath(loc)
-	stat, err := os.Stat(path)
-	if err != nil {
-		return nil, err
-	}
-	if stat.Size() < 0 {
-		return nil, os.ErrInvalid
-	} else if stat.Size() == 0 {
-		return bufs.Get(0), nil
-	} else if stat.Size() > BLOCKSIZE {
-		return nil, TooLongError
-	}
+// Open the given file, apply the serialize lock if enabled, and call
+// the given function if and when the file is ready to read.
+func (v *UnixVolume) getFunc(path string, fn func(io.Reader) error) error {
 	f, err := os.Open(path)
 	if err != nil {
-		return nil, err
+		return err
 	}
 	defer f.Close()
-	buf := bufs.Get(int(stat.Size()))
 	if v.serialize {
 		v.mutex.Lock()
 		defer v.mutex.Unlock()
 	}
-	_, err = io.ReadFull(f, buf)
+	return fn(f)
+}
+
+// stat is os.Stat() with some extra sanity checks.
+func (v *UnixVolume) stat(path string) (os.FileInfo, error) {
+	stat, err := os.Stat(path)
+	if err == nil {
+		if stat.Size() < 0 {
+			err = os.ErrInvalid
+		} else if stat.Size() > BLOCKSIZE {
+			err = TooLongError
+		}
+	}
+	return stat, err
+}
+
+// Get retrieves a block identified by the locator string "loc", and
+// returns its contents as a byte slice.
+//
+// Get returns a nil buffer IFF it returns a non-nil error.
+func (v *UnixVolume) Get(loc string) ([]byte, error) {
+	path := v.blockPath(loc)
+	stat, err := v.stat(path)
+	if err != nil {
+		return nil, err
+	}
+	buf := bufs.Get(int(stat.Size()))
+	err = v.getFunc(path, func(rdr io.Reader) error {
+		_, err = io.ReadFull(rdr, buf)
+		return err
+	})
 	if err != nil {
 		bufs.Put(buf)
 		return nil, err
 	}
 	return buf, nil
+}
+
+// Compare returns nil if Get(loc) would return the same content as
+// cmp. It is functionally equivalent to Get() followed by
+// bytes.Compare(), but uses less memory.
+//
+// TODO(TC): Before returning CollisionError, compute the MD5 digest
+// of the data on disk (i.e., known-to-be-equal data in cmp +
+// remaining data on disk) and return DiskHashError instead of
+// CollisionError if it doesn't equal loc[:32].
+func (v *UnixVolume) Compare(loc string, cmp []byte) error {
+	path := v.blockPath(loc)
+	stat, err := v.stat(path)
+	if err != nil {
+		return err
+	}
+	bufLen := 1 << 20
+	if int64(bufLen) > stat.Size() {
+		bufLen = int(stat.Size())
+	}
+	buf := make([]byte, bufLen)
+	return v.getFunc(path, func(rdr io.Reader) error {
+		// Loop invariants: all data read so far matched what
+		// we expected, and the first N bytes of cmp are
+		// expected to equal the next N bytes read from
+		// reader.
+		for {
+			n, err := rdr.Read(buf)
+			if n > len(cmp) {
+				// file on disk is too long
+				return CollisionError
+			} else if n > 0 && bytes.Compare(cmp[:n], buf[:n]) != 0 {
+				return CollisionError
+			}
+			cmp = cmp[n:]
+			if err == io.EOF {
+				if len(cmp) != 0 {
+					// file on disk is too short
+					return CollisionError
+				}
+				return nil
+			} else if err != nil {
+				return err
+			}
+		}
+	})
 }
 
 // Put stores a block of data identified by the locator string

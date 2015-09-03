@@ -15,7 +15,12 @@ type Volume interface {
 	// put the returned slice back into the buffer pool when it's
 	// finished with it.
 	Get(loc string) ([]byte, error)
-	Put(loc string, block []byte) error
+	// Confirm Get() would return buf. If so, return nil. If not,
+	// return CollisionError or DiskHashError (depending on
+	// whether the data on disk matches the expected hash), or
+	// whatever error was encountered opening/reading the file.
+	Compare(loc string, data []byte) error
+	Put(loc string, data []byte) error
 	Touch(loc string) error
 	Mtime(loc string) (time.Time, error)
 	IndexTo(prefix string, writer io.Writer) error

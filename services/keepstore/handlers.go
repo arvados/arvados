@@ -8,7 +8,6 @@ package main
 // StatusHandler   (GET /status.json)
 
 import (
-	"bytes"
 	"container/list"
 	"crypto/md5"
 	"encoding/json"
@@ -74,7 +73,7 @@ func GetBlockHandler(resp http.ResponseWriter, req *http.Request) {
 		}
 	}
 
-	block, err := GetBlock(mux.Vars(req)["hash"], false)
+	block, err := GetBlock(mux.Vars(req)["hash"])
 	if err != nil {
 		// This type assertion is safe because the only errors
 		// GetBlock can return are DiskHashError or NotFoundError.
@@ -442,10 +441,7 @@ func TrashHandler(resp http.ResponseWriter, req *http.Request) {
 // which volume to check for fetching blocks, storing blocks, etc.
 
 // ==============================
-// GetBlock fetches and returns the block identified by "hash".  If
-// the update_timestamp argument is true, GetBlock also updates the
-// block's file modification time (for the sake of PutBlock, which
-// must update the file's timestamp when the block already exists).
+// GetBlock fetches and returns the block identified by "hash".
 //
 // On success, GetBlock returns a byte slice with the block data, and
 // a nil error.
@@ -456,22 +452,11 @@ func TrashHandler(resp http.ResponseWriter, req *http.Request) {
 // DiskHashError.
 //
 
-func GetBlock(hash string, update_timestamp bool) ([]byte, error) {
+func GetBlock(hash string) ([]byte, error) {
 	// Attempt to read the requested hash from a keep volume.
 	error_to_caller := NotFoundError
 
-	var vols []Volume
-	if update_timestamp {
-		// Pointless to find the block on an unwritable volume
-		// because Touch() will fail -- this is as good as
-		// "not found" for purposes of callers who need to
-		// update_timestamp.
-		vols = KeepVM.AllWritable()
-	} else {
-		vols = KeepVM.AllReadable()
-	}
-
-	for _, vol := range vols {
+	for _, vol := range KeepVM.AllReadable() {
 		buf, err := vol.Get(hash)
 		if err != nil {
 			// IsNotExist is an expected error and may be
@@ -499,15 +484,6 @@ func GetBlock(hash string, update_timestamp bool) ([]byte, error) {
 		if error_to_caller == DiskHashError {
 			log.Printf("%s: checksum mismatch for request %s but a good copy was found on another volume and returned",
 				vol, hash)
-		}
-		if update_timestamp {
-			if err := vol.Touch(hash); err != nil {
-				error_to_caller = GenericError
-				log.Printf("%s: Touch %s failed: %s",
-					vol, hash, error_to_caller)
-				bufs.Put(buf)
-				continue
-			}
 		}
 		return buf, nil
 	}
@@ -548,21 +524,11 @@ func PutBlock(block []byte, hash string) error {
 		return RequestHashError
 	}
 
-	// If we already have a block on disk under this identifier, return
-	// success (but check for MD5 collisions).  While fetching the block,
-	// update its timestamp.
-	// The only errors that GetBlock can return are DiskHashError and NotFoundError.
-	// In either case, we want to write our new (good) block to disk,
-	// so there is nothing special to do if err != nil.
-	//
-	if oldblock, err := GetBlock(hash, true); err == nil {
-		defer bufs.Put(oldblock)
-		if bytes.Compare(block, oldblock) == 0 {
-			// The block already exists; return success.
-			return nil
-		} else {
-			return CollisionError
-		}
+	// If we already have this data, it's intact on disk, and we
+	// can update its timestamp, return success. If we have
+	// different data with the same hash, return failure.
+	if err := CompareAndTouch(hash, block); err == nil || err == CollisionError {
+		return err
 	}
 
 	// Choose a Keep volume to write to.
@@ -601,6 +567,35 @@ func PutBlock(block []byte, hash string) error {
 		// Already logged the non-full errors.
 		return GenericError
 	}
+}
+
+// CompareAndTouch returns nil if one of the volumes already has the
+// given content and it successfully updates the relevant block's
+// modification time in order to protect it from premature garbage
+// collection.
+func CompareAndTouch(hash string, buf []byte) error {
+	var bestErr error = NotFoundError
+	for _, vol := range KeepVM.AllWritable() {
+		if err := vol.Compare(hash, buf); err == CollisionError {
+			// Stop if we have a block with same hash but
+			// different content. (It will be impossible
+			// to tell which one is wanted if we have
+			// both, so there's no point writing it even
+			// on a different volume.)
+			return err
+		} else if err != nil {
+			// Couldn't find, couldn't open, etc.: try next volume.
+			continue
+		}
+		if err := vol.Touch(hash); err != nil {
+			log.Printf("%s: Touch %s failed: %s", vol, hash, err)
+			bestErr = err
+			continue
+		}
+		// Compare and Touch both worked --> done.
+		return nil
+	}
+	return bestErr
 }
 
 var validLocatorRe = regexp.MustCompile(`^[0-9a-f]{32}$`)

@@ -231,6 +231,9 @@ func TestPutAndDeleteSkipReadonlyVolumes(t *testing.T) {
 			uri:          "/" + TEST_HASH,
 			request_body: TEST_BLOCK,
 		})
+	defer func(orig bool) {
+		never_delete = orig
+	}(never_delete)
 	never_delete = false
 	IssueRequest(
 		&RequestTester{
@@ -246,10 +249,13 @@ func TestPutAndDeleteSkipReadonlyVolumes(t *testing.T) {
 	}
 	for _, e := range []expect{
 		{0, "Get", 0},
+		{0, "Compare", 0},
 		{0, "Touch", 0},
 		{0, "Put", 0},
 		{0, "Delete", 0},
-		{1, "Get", 1},
+		{1, "Get", 0},
+		{1, "Compare", 1},
+		{1, "Touch", 1},
 		{1, "Put", 1},
 		{1, "Delete", 1},
 	} {

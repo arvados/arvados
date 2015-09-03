@@ -2,7 +2,9 @@ package main
 
 import (
 	"bytes"
+	"errors"
 	"fmt"
+	"io"
 	"io/ioutil"
 	"os"
 	"regexp"
@@ -383,5 +385,85 @@ func TestNodeStatus(t *testing.T) {
 	}
 	if volinfo.BytesUsed == 0 {
 		t.Errorf("uninitialized bytes_used in %v", volinfo)
+	}
+}
+
+func TestUnixVolumeGetFuncWorkerError(t *testing.T) {
+	v := TempUnixVolume(t, false, false)
+	defer _teardown(v)
+
+	v.Put(TEST_HASH, TEST_BLOCK)
+	mockErr := errors.New("Mock error")
+	err := v.getFunc(v.blockPath(TEST_HASH), func(rdr io.Reader) error {
+		return mockErr
+	})
+	if err != mockErr {
+		t.Errorf("Got %v, expected %v", err, mockErr)
+	}
+}
+
+func TestUnixVolumeGetFuncFileError(t *testing.T) {
+	v := TempUnixVolume(t, false, false)
+	defer _teardown(v)
+
+	funcCalled := false
+	err := v.getFunc(v.blockPath(TEST_HASH), func(rdr io.Reader) error {
+		funcCalled = true
+		return nil
+	})
+	if err == nil {
+		t.Errorf("Expected error opening non-existent file")
+	}
+	if funcCalled {
+		t.Errorf("Worker func should not have been called")
+	}
+}
+
+func TestUnixVolumeGetFuncWorkerWaitsOnMutex(t *testing.T) {
+	v := TempUnixVolume(t, true, false)
+	defer _teardown(v)
+
+	v.mutex.Lock()
+	locked := true
+	go func() {
+		// TODO(TC): Don't rely on Sleep. Mock the mutex instead?
+		time.Sleep(10 * time.Millisecond)
+		locked = false
+		v.mutex.Unlock()
+	}()
+	v.getFunc(v.blockPath(TEST_HASH), func(rdr io.Reader) error {
+		if locked {
+			t.Errorf("Worker func called before serialize lock was obtained")
+		}
+		return nil
+	})
+}
+
+func TestUnixVolumeCompare(t *testing.T) {
+	v := TempUnixVolume(t, false, false)
+	defer _teardown(v)
+
+	v.Put(TEST_HASH, TEST_BLOCK)
+	err := v.Compare(TEST_HASH, TEST_BLOCK)
+	if err != nil {
+		t.Errorf("Got err %q, expected nil", err)
+	}
+
+	err = v.Compare(TEST_HASH, []byte("baddata"))
+	if err != CollisionError {
+		t.Errorf("Got err %q, expected %q", err, CollisionError)
+	}
+
+	_store(t, v, TEST_HASH, []byte("baddata"))
+	err = v.Compare(TEST_HASH, TEST_BLOCK)
+	if err != DiskHashError {
+		t.Errorf("Got err %q, expected %q", err, DiskHashError)
+	}
+
+	p := fmt.Sprintf("%s/%s/%s", v.root, TEST_HASH[:3], TEST_HASH)
+	os.Chmod(p, 000)
+	err = v.Compare(TEST_HASH, TEST_BLOCK)
+	if err == nil || strings.Index(err.Error(), "permission denied") < 0 {
+		t.Errorf("Got err %q, expected %q", err, "permission denied")
 	}
 }
