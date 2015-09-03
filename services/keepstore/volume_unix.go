@@ -18,10 +18,12 @@ import (
 
 // A UnixVolume stores and retrieves blocks in a local directory.
 type UnixVolume struct {
-	root      string // path to the volume's root directory
-	serialize bool
-	readonly  bool
-	mutex     sync.Mutex
+	// path to the volume's root directory
+	root string
+	// something to lock during IO, typically a sync.Mutex (or nil
+	// to skip locking)
+	locker   sync.Locker
+	readonly bool
 }
 
 func (v *UnixVolume) Touch(loc string) error {
@@ -34,9 +36,9 @@ func (v *UnixVolume) Touch(loc string) error {
 		return err
 	}
 	defer f.Close()
-	if v.serialize {
-		v.mutex.Lock()
-		defer v.mutex.Unlock()
+	if v.locker != nil {
+		v.locker.Lock()
+		defer v.locker.Unlock()
 	}
 	if e := lockfile(f); e != nil {
 		return e
@@ -56,17 +58,17 @@ func (v *UnixVolume) Mtime(loc string) (time.Time, error) {
 	}
 }
 
-// Open the given file, apply the serialize lock if enabled, and call
-// the given function if and when the file is ready to read.
+// Open the given file, lock the "serialize" locker if enabled, and
+// call the given function if and when the file is ready to read.
 func (v *UnixVolume) getFunc(path string, fn func(io.Reader) error) error {
 	f, err := os.Open(path)
 	if err != nil {
 		return err
 	}
 	defer f.Close()
-	if v.serialize {
-		v.mutex.Lock()
-		defer v.mutex.Unlock()
+	if v.locker != nil {
+		v.locker.Lock()
+		defer v.locker.Unlock()
 	}
 	return fn(f)
 }
@@ -169,9 +171,9 @@ func (v *UnixVolume) Put(loc string, block []byte) error {
 	}
 	bpath := v.blockPath(loc)
 
-	if v.serialize {
-		v.mutex.Lock()
-		defer v.mutex.Unlock()
+	if v.locker != nil {
+		v.locker.Lock()
+		defer v.locker.Unlock()
 	}
 	if _, err := tmpfile.Write(block); err != nil {
 		log.Printf("%s: writing to %s: %s\n", v, bpath, err)
@@ -298,9 +300,9 @@ func (v *UnixVolume) Delete(loc string) error {
 	if v.readonly {
 		return MethodDisabledError
 	}
-	if v.serialize {
-		v.mutex.Lock()
-		defer v.mutex.Unlock()
+	if v.locker != nil {
+		v.locker.Lock()
+		defer v.locker.Unlock()
 	}
 	p := v.blockPath(loc)
 	f, err := os.OpenFile(p, os.O_RDWR|os.O_APPEND, 0644)

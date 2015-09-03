@@ -10,6 +10,7 @@ import (
 	"regexp"
 	"sort"
 	"strings"
+	"sync"
 	"syscall"
 	"testing"
 	"time"
@@ -20,10 +21,14 @@ func TempUnixVolume(t *testing.T, serialize bool, readonly bool) *UnixVolume {
 	if err != nil {
 		t.Fatal(err)
 	}
+	var locker sync.Locker
+	if serialize {
+		locker = &sync.Mutex{}
+	}
 	return &UnixVolume{
-		root:      d,
-		serialize: serialize,
-		readonly:  readonly,
+		root:     d,
+		locker:   locker,
+		readonly: readonly,
 	}
 }
 
@@ -420,23 +425,38 @@ func TestUnixVolumeGetFuncFileError(t *testing.T) {
 }
 
 func TestUnixVolumeGetFuncWorkerWaitsOnMutex(t *testing.T) {
-	v := TempUnixVolume(t, true, false)
+	v := TempUnixVolume(t, false, false)
 	defer _teardown(v)
 
-	v.mutex.Lock()
-	locked := true
-	go func() {
-		// TODO(TC): Don't rely on Sleep. Mock the mutex instead?
-		time.Sleep(10 * time.Millisecond)
-		locked = false
-		v.mutex.Unlock()
-	}()
-	v.getFunc(v.blockPath(TEST_HASH), func(rdr io.Reader) error {
-		if locked {
-			t.Errorf("Worker func called before serialize lock was obtained")
-		}
+	v.Put(TEST_HASH, TEST_BLOCK)
+
+	mtx := NewMockMutex()
+	v.locker = mtx
+
+	funcCalled := make(chan struct{})
+	go v.getFunc(v.blockPath(TEST_HASH), func(rdr io.Reader) error {
+		funcCalled <- struct{}{}
 		return nil
 	})
+	select {
+	case mtx.AllowLock <- struct{}{}:
+	case <-funcCalled:
+		t.Fatal("Function was called before mutex was acquired")
+	case <-time.After(5 * time.Second):
+		t.Fatal("Timed out before mutex was acquired")
+	}
+	select {
+	case <-funcCalled:
+	case mtx.AllowUnlock <- struct{}{}:
+		t.Fatal("Mutex was released before function was called")
+	case <-time.After(5 * time.Second):
+		t.Fatal("Timed out waiting for funcCalled")
+	}
+	select {
+	case mtx.AllowUnlock <- struct{}{}:
+	case <-time.After(5 * time.Second):
+		t.Fatal("Timed out waiting for getFunc() to release mutex")
+	}
 }
 
 func TestUnixVolumeCompare(t *testing.T) {
