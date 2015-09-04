@@ -55,8 +55,7 @@ class ComputeNodeDriver(BaseComputeNodeDriver):
     def _init_image(self, urn):
         return "image", self.get_image(urn)
 
-    def create_node(self, size, arvados_node):
-        cloud_node = super(ComputeNodeDriver, self).create_node(size, arvados_node)
+    def post_create_node(self, cloud_node):
         self.real.ex_run_command(cloud_node,
                                  """bash -c '
                                  mkdir -p /var/tmp/arv-node-data/meta-data
@@ -68,8 +67,7 @@ class ComputeNodeDriver(BaseComputeNodeDriver):
                                          cloud_node.id,
                                          cloud_node.extra["properties"]["hardwareProfile"]["vmSize"],
                                          cloud_node.private_ips[0]),
-                                 timestamp=time.time())
-        return cloud_node
+                                 timestamp=int(time.time()))
 
     def list_nodes(self):
         # Azure only supports filtering node lists by resource group.
