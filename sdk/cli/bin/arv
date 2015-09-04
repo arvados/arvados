@@ -258,11 +258,6 @@ def arv_edit client, arvados, global_opts, remaining_opts
     exit 255
   end
 
-  if not $stdout.tty?
-    puts "Not connected to a TTY, cannot run interactive editor."
-    exit 1
-  end
-
   # determine controller
 
   m = /([a-z0-9]{5})-([a-z0-9]{5})-([a-z0-9]{15})/.match uuid
