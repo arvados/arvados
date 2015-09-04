@@ -84,6 +84,17 @@ func singlerun() error {
 		arvLogger.AddWriteHook(loggerutil.LogMemoryAlloc)
 	}
 
+  // Verify that datamanager token belongs to an admin user
+  dataManagerToken := keep.GetDataManagerToken(arvLogger)
+  origArvToken := arv.ApiToken
+  arv.ApiToken = dataManagerToken
+	if is_admin, err := util.UserIsAdmin(arv); err != nil {
+		log.Fatalf("Error querying arvados user for data manager token %s", err.Error())
+	} else if !is_admin {
+		log.Fatalf("Datamanager token does not belong to an admin user.")
+	}
+  arv.ApiToken = origArvToken
+
 	var (
 		dataFetcher     summary.DataFetcher
 		readCollections collection.ReadCollections
@@ -154,7 +165,7 @@ func singlerun() error {
 	if trashErr != nil {
 		return err
 	} else {
-		keep.SendTrashLists(keep.GetDataManagerToken(arvLogger), kc, trashLists)
+		keep.SendTrashLists(dataManagerToken, kc, trashLists)
 	}
 
 	return nil
