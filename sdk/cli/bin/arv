@@ -309,9 +309,9 @@ def arv_edit client, arvados, global_opts, remaining_opts
                        authorization: 'OAuth2 '+ENV['ARVADOS_API_TOKEN']
                      })
       results = check_response result
-      puts "Updated object #{results['uuid']}"
+      STDERR.puts "Updated object #{results['uuid']}"
     else
-      puts "Object is unchanged, did not update."
+      STDERR.puts "Object is unchanged, did not update."
     end
   end
 
