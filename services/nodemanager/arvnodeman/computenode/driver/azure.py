@@ -67,7 +67,8 @@ class ComputeNodeDriver(BaseComputeNodeDriver):
                                  '""" % (self._make_ping_url(arvados_node),
                                          cloud_node.id,
                                          cloud_node.extra["properties"]["hardwareProfile"]["vmSize"],
-                                         cloud_node.private_ips[0]))
+                                         cloud_node.private_ips[0]),
+                                 timestamp=time.time())
         return cloud_node
 
     def list_nodes(self):
