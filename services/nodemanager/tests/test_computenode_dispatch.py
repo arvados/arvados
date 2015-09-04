@@ -79,14 +79,16 @@ class ComputeNodeSetupActorTestCase(testutil.ActorTestMixin, unittest.TestCase):
         self.make_mocks(
             arverror.ApiError(httplib2.Response({'status': '500'}), ""))
         self.make_actor()
-        self.setup_actor.stop_if_no_cloud_node()
+        self.assertTrue(
+            self.setup_actor.stop_if_no_cloud_node().get(self.TIMEOUT))
         self.assertTrue(
             self.setup_actor.actor_ref.actor_stopped.wait(self.TIMEOUT))
 
     def test_no_stop_when_cloud_node(self):
         self.make_actor()
         self.wait_for_assignment(self.setup_actor, 'cloud_node')
-        self.setup_actor.stop_if_no_cloud_node().get(self.TIMEOUT)
+        self.assertFalse(
+            self.setup_actor.stop_if_no_cloud_node().get(self.TIMEOUT))
         self.assertTrue(self.stop_proxy(self.setup_actor),
                         "actor was stopped by stop_if_no_cloud_node")
 
@@ -119,6 +121,7 @@ class ComputeNodeShutdownActorMixin(testutil.ActorTestMixin):
         self.shutdowns = testutil.MockShutdownTimer()
         self.shutdowns._set_state(shutdown_open, 300)
         self.cloud_client = mock.MagicMock(name='cloud_client')
+        self.arvados_client = mock.MagicMock(name='arvados_client')
         self.updates = mock.MagicMock(name='update_mock')
         if cloud_node is None:
             cloud_node = testutil.cloud_node_mock()
@@ -133,7 +136,8 @@ class ComputeNodeShutdownActorMixin(testutil.ActorTestMixin):
             testutil.cloud_node_fqdn, self.timer, self.updates,
             self.arvados_node)
         self.shutdown_actor = self.ACTOR_CLASS.start(
-            self.timer, self.cloud_client, monitor_actor, cancellable).proxy()
+            self.timer, self.cloud_client, self.arvados_client, monitor_actor,
+            cancellable).proxy()
         self.monitor_actor = monitor_actor.proxy()
 
     def check_success_flag(self, expected, allow_msg_count=1):
@@ -154,6 +158,31 @@ class ComputeNodeShutdownActorMixin(testutil.ActorTestMixin):
         self.shutdowns._set_state(True, 600)
         self.cloud_client.destroy_node.return_value = True
         self.check_success_flag(True)
+
+    def test_arvados_node_cleaned_after_shutdown(self, *mocks):
+        cloud_node = testutil.cloud_node_mock(62)
+        arv_node = testutil.arvados_node_mock(62)
+        self.make_mocks(cloud_node, arv_node)
+        self.make_actor()
+        self.check_success_flag(True, 3)
+        update_mock = self.arvados_client.nodes().update
+        self.assertTrue(update_mock.called)
+        update_kwargs = update_mock.call_args_list[0][1]
+        self.assertEqual(arv_node['uuid'], update_kwargs.get('uuid'))
+        self.assertIn('body', update_kwargs)
+        for clear_key in ['slot_number', 'hostname', 'ip_address',
+                          'first_ping_at', 'last_ping_at']:
+            self.assertIn(clear_key, update_kwargs['body'])
+            self.assertIsNone(update_kwargs['body'][clear_key])
+        self.assertTrue(update_mock().execute.called)
+
+    def test_arvados_node_not_cleaned_after_shutdown_cancelled(self, *mocks):
+        cloud_node = testutil.cloud_node_mock(61)
+        arv_node = testutil.arvados_node_mock(61)
+        self.make_mocks(cloud_node, arv_node, shutdown_open=False)
+        self.make_actor(cancellable=True)
+        self.check_success_flag(False, 2)
+        self.assertFalse(self.arvados_client.nodes().update.called)
 
 
 class ComputeNodeShutdownActorTestCase(ComputeNodeShutdownActorMixin,

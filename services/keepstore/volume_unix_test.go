@@ -5,30 +5,34 @@ import (
 	"fmt"
 	"io/ioutil"
 	"os"
+	"regexp"
+	"sort"
+	"strings"
 	"syscall"
 	"testing"
 	"time"
 )
 
-func TempUnixVolume(t *testing.T, serialize bool) UnixVolume {
+func TempUnixVolume(t *testing.T, serialize bool, readonly bool) *UnixVolume {
 	d, err := ioutil.TempDir("", "volume_test")
 	if err != nil {
 		t.Fatal(err)
 	}
-	return MakeUnixVolume(d, serialize)
+	return &UnixVolume{
+		root:      d,
+		serialize: serialize,
+		readonly:  readonly,
+	}
 }
 
-func _teardown(v UnixVolume) {
-	if v.queue != nil {
-		close(v.queue)
-	}
+func _teardown(v *UnixVolume) {
 	os.RemoveAll(v.root)
 }
 
-// store writes a Keep block directly into a UnixVolume, for testing
-// UnixVolume methods.
-//
-func _store(t *testing.T, vol UnixVolume, filename string, block []byte) {
+// _store writes a Keep block directly into a UnixVolume, bypassing
+// the overhead and safeguards of Put(). Useful for storing bogus data
+// and isolating unit tests from Put() behavior.
+func _store(t *testing.T, vol *UnixVolume, filename string, block []byte) {
 	blockdir := fmt.Sprintf("%s/%s", vol.root, filename[:3])
 	if err := os.MkdirAll(blockdir, 0755); err != nil {
 		t.Fatal(err)
@@ -44,7 +48,7 @@ func _store(t *testing.T, vol UnixVolume, filename string, block []byte) {
 }
 
 func TestGet(t *testing.T) {
-	v := TempUnixVolume(t, false)
+	v := TempUnixVolume(t, false, false)
 	defer _teardown(v)
 	_store(t, v, TEST_HASH, TEST_BLOCK)
 
@@ -58,7 +62,7 @@ func TestGet(t *testing.T) {
 }
 
 func TestGetNotFound(t *testing.T) {
-	v := TempUnixVolume(t, false)
+	v := TempUnixVolume(t, false, false)
 	defer _teardown(v)
 	_store(t, v, TEST_HASH, TEST_BLOCK)
 
@@ -73,8 +77,44 @@ func TestGetNotFound(t *testing.T) {
 	}
 }
 
+func TestIndexTo(t *testing.T) {
+	v := TempUnixVolume(t, false, false)
+	defer _teardown(v)
+
+	_store(t, v, TEST_HASH, TEST_BLOCK)
+	_store(t, v, TEST_HASH_2, TEST_BLOCK_2)
+	_store(t, v, TEST_HASH_3, TEST_BLOCK_3)
+
+	buf := new(bytes.Buffer)
+	v.IndexTo("", buf)
+	index_rows := strings.Split(string(buf.Bytes()), "\n")
+	sort.Strings(index_rows)
+	sorted_index := strings.Join(index_rows, "\n")
+	m, err := regexp.MatchString(
+		`^\n`+TEST_HASH+`\+\d+ \d+\n`+
+			TEST_HASH_3+`\+\d+ \d+\n`+
+			TEST_HASH_2+`\+\d+ \d+$`,
+		sorted_index)
+	if err != nil {
+		t.Error(err)
+	} else if !m {
+		t.Errorf("Got index %q for empty prefix", sorted_index)
+	}
+
+	for _, prefix := range []string{"f", "f15", "f15ac"} {
+		buf = new(bytes.Buffer)
+		v.IndexTo(prefix, buf)
+		m, err := regexp.MatchString(`^`+TEST_HASH_2+`\+\d+ \d+\n$`, string(buf.Bytes()))
+		if err != nil {
+			t.Error(err)
+		} else if !m {
+			t.Errorf("Got index %q for prefix %q", string(buf.Bytes()), prefix)
+		}
+	}
+}
+
 func TestPut(t *testing.T) {
-	v := TempUnixVolume(t, false)
+	v := TempUnixVolume(t, false, false)
 	defer _teardown(v)
 
 	err := v.Put(TEST_HASH, TEST_BLOCK)
@@ -91,7 +131,7 @@ func TestPut(t *testing.T) {
 }
 
 func TestPutBadVolume(t *testing.T) {
-	v := TempUnixVolume(t, false)
+	v := TempUnixVolume(t, false, false)
 	defer _teardown(v)
 
 	os.Chmod(v.root, 000)
@@ -101,11 +141,44 @@ func TestPutBadVolume(t *testing.T) {
 	}
 }
 
+func TestUnixVolumeReadonly(t *testing.T) {
+	v := TempUnixVolume(t, false, false)
+	defer _teardown(v)
+
+	// First write something before marking readonly
+	err := v.Put(TEST_HASH, TEST_BLOCK)
+	if err != nil {
+		t.Error("got err %v, expected nil", err)
+	}
+
+	v.readonly = true
+
+	_, err = v.Get(TEST_HASH)
+	if err != nil {
+		t.Error("got err %v, expected nil", err)
+	}
+
+	err = v.Put(TEST_HASH, TEST_BLOCK)
+	if err != MethodDisabledError {
+		t.Error("got err %v, expected MethodDisabledError", err)
+	}
+
+	err = v.Touch(TEST_HASH)
+	if err != MethodDisabledError {
+		t.Error("got err %v, expected MethodDisabledError", err)
+	}
+
+	err = v.Delete(TEST_HASH)
+	if err != MethodDisabledError {
+		t.Error("got err %v, expected MethodDisabledError", err)
+	}
+}
+
 // TestPutTouch
 //     Test that when applying PUT to a block that already exists,
 //     the block's modification time is updated.
 func TestPutTouch(t *testing.T) {
-	v := TempUnixVolume(t, false)
+	v := TempUnixVolume(t, false, false)
 	defer _teardown(v)
 
 	if err := v.Put(TEST_HASH, TEST_BLOCK); err != nil {
@@ -165,7 +238,7 @@ func TestPutTouch(t *testing.T) {
 //
 func TestGetSerialized(t *testing.T) {
 	// Create a volume with I/O serialization enabled.
-	v := TempUnixVolume(t, true)
+	v := TempUnixVolume(t, true, false)
 	defer _teardown(v)
 
 	_store(t, v, TEST_HASH, TEST_BLOCK)
@@ -214,7 +287,7 @@ func TestGetSerialized(t *testing.T) {
 
 func TestPutSerialized(t *testing.T) {
 	// Create a volume with I/O serialization enabled.
-	v := TempUnixVolume(t, true)
+	v := TempUnixVolume(t, true, false)
 	defer _teardown(v)
 
 	sem := make(chan int)
@@ -243,7 +316,7 @@ func TestPutSerialized(t *testing.T) {
 	}(sem)
 
 	// Wait for all goroutines to finish
-	for done := 0; done < 2; {
+	for done := 0; done < 3; {
 		done += <-sem
 	}
 
@@ -274,7 +347,7 @@ func TestPutSerialized(t *testing.T) {
 }
 
 func TestIsFull(t *testing.T) {
-	v := TempUnixVolume(t, false)
+	v := TempUnixVolume(t, false, false)
 	defer _teardown(v)
 
 	full_path := v.root + "/full"
@@ -290,5 +363,25 @@ func TestIsFull(t *testing.T) {
 	os.Symlink(expired, full_path)
 	if v.IsFull() {
 		t.Errorf("%s: should no longer be full", v)
+	}
+}
+
+func TestNodeStatus(t *testing.T) {
+	v := TempUnixVolume(t, false, false)
+	defer _teardown(v)
+
+	// Get node status and make a basic sanity check.
+	volinfo := v.Status()
+	if volinfo.MountPoint != v.root {
+		t.Errorf("GetNodeStatus mount_point %s, expected %s", volinfo.MountPoint, v.root)
+	}
+	if volinfo.DeviceNum == 0 {
+		t.Errorf("uninitialized device_num in %v", volinfo)
+	}
+	if volinfo.BytesFree == 0 {
+		t.Errorf("uninitialized bytes_free in %v", volinfo)
+	}
+	if volinfo.BytesUsed == 0 {
+		t.Errorf("uninitialized bytes_used in %v", volinfo)
 	}
 }

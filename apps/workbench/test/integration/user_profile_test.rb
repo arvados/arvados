@@ -24,11 +24,22 @@ class UserProfileTest < ActionDispatch::IntegrationTest
         assert page.has_no_text?('Save profile'), 'Found text - Save profile'
       end
     elsif invited
-      assert page.has_text?('Please check the box below to indicate that you have read and accepted the user agreement'), 'Not found text - Please check the box below . . .'
+      assert page.has_text?('Please check the box below to indicate that you have read and accepted the user agreement'),
+        'Not found text - Please check the box below . . .'
       assert page.has_no_text?('Save profile'), 'Found text - Save profile'
     else
       assert page.has_text?('Your account is inactive'), 'Not found text - Your account is inactive'
       assert page.has_no_text?('Save profile'), 'Found text - Save profile'
+    end
+
+    # If the user has not already seen getting_started modal, it will be shown on first visit.
+    if user and user['is_active'] and !user['prefs']['getting_started_shown']
+      within '.modal-content' do
+        assert_text 'Getting Started'
+        assert_selector 'button', text: 'Next'
+        assert_selector 'button', text: 'Prev'
+        first('button', text: 'x').click
+      end
     end
 
     within('.navbar-fixed-top') do
@@ -36,14 +47,17 @@ class UserProfileTest < ActionDispatch::IntegrationTest
         assert page.has_link?('Log in'), 'Not found link - Log in'
       else
         # my account menu
-        assert page.has_link?("#{user['email']}"), 'Not found link - email'
-        find('a', text: "#{user['email']}").click
+        assert(page.has_link?("notifications-menu"), 'no user menu')
+        page.find("#notifications-menu").click
         within('.dropdown-menu') do
           if user['is_active']
             assert page.has_no_link?('Not active'), 'Found link - Not active'
             assert page.has_no_link?('Sign agreements'), 'Found link - Sign agreements'
 
-            assert page.has_link?('Manage account'), 'No link - Manage account'
+            assert page.has_link?('Virtual machines'), 'No link - Virtual machines'
+            assert page.has_link?('Repositories'), 'No link - Repositories'
+            assert page.has_link?('Current token'), 'No link - Current token'
+            assert page.has_link?('SSH keys'), 'No link - SSH Keys'
 
             if profile_config
               assert page.has_link?('Manage profile'), 'No link - Manage profile'
@@ -98,7 +112,11 @@ class UserProfileTest < ActionDispatch::IntegrationTest
     click_button "Save profile"
     # profile saved and in profile page now with success
     assert page.has_text?('Thank you for filling in your profile'), 'No text - Thank you for filling'
-    click_link 'Back to work!'
+    if user['prefs']['getting_started_shown']
+      click_link 'Back to work!'
+    else
+      click_link 'Get started'
+    end
 
     # profile saved and in home page now
     assert page.has_text?('Active pipelines'), 'No text - Active pipelines'
@@ -111,7 +129,10 @@ class UserProfileTest < ActionDispatch::IntegrationTest
     ['active', api_fixture('users')['active'], true, true],
     ['admin', api_fixture('users')['admin'], true, true],
     ['active_no_prefs', api_fixture('users')['active_no_prefs'], true, false],
-    ['active_no_prefs_profile', api_fixture('users')['active_no_prefs_profile'], true, false],
+    ['active_no_prefs_profile_no_getting_started_shown',
+      api_fixture('users')['active_no_prefs_profile_no_getting_started_shown'], true, false],
+    ['active_no_prefs_profile_with_getting_started_shown',
+      api_fixture('users')['active_no_prefs_profile_with_getting_started_shown'], true, false],
   ].each do |token, user, invited, has_profile|
 
     test "visit home page when profile is configured for user #{token}" do

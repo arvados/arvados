@@ -223,11 +223,15 @@ class CollectionTest < Minitest::Test
     assert_equal(expected.join(""), coll.manifest_text)
   end
 
-  def test_copy_stream_over_file_raises_ENOTDIR
+  def test_copy_stream_over_file_raises_ENOTDIR(source="./s1", target="./f2")
     coll = Arv::Collection.new(TWO_BY_TWO_MANIFEST_S)
     assert_raises(Errno::ENOTDIR) do
-      coll.cp_r("./s1", "./f2")
+      coll.cp_r(source, target)
     end
+  end
+
+  def test_copy_file_under_file_raises_ENOTDIR
+    test_copy_stream_over_file_raises_ENOTDIR("./f1", "./f2/newfile")
   end
 
   def test_copy_stream_over_nonempty_stream_merges_and_overwrites
@@ -323,6 +327,20 @@ class CollectionTest < Minitest::Test
     assert_equal(expect_lines.join(""), coll.manifest_text)
   end
 
+  def test_copy_file_into_new_stream_with_implicit_filename
+    coll = Arv::Collection.new(SIMPLEST_MANIFEST)
+    coll.cp_r("./simple.txt", "./new/")
+    assert_equal(SIMPLEST_MANIFEST + SIMPLEST_MANIFEST.sub(". ", "./new "),
+                 coll.manifest_text)
+  end
+
+  def test_copy_file_into_new_stream_with_explicit_filename
+    coll = Arv::Collection.new(SIMPLEST_MANIFEST)
+    coll.cp_r("./simple.txt", "./new/newfile.txt")
+    new_line = SIMPLEST_MANIFEST.sub(". ", "./new ").sub(":simple", ":newfile")
+    assert_equal(SIMPLEST_MANIFEST + new_line, coll.manifest_text)
+  end
+
   def test_copy_stream_contents_into_root
     coll = Arv::Collection.new(TWO_BY_TWO_MANIFEST_S)
     coll.cp_r("./s1/", ".")
@@ -372,6 +390,71 @@ class CollectionTest < Minitest::Test
 
   def test_copy_empty_destination_path_raises_ArgumentError
     test_copy_empty_source_path_raises_ArgumentError(".", "")
+  end
+
+  ### .each_file_path
+
+  def test_each_file_path
+    coll = Arv::Collection.new(TWO_BY_TWO_MANIFEST_S)
+    if block_given?
+      result = yield(coll)
+    else
+      result = []
+      coll.each_file_path { |path| result << path }
+    end
+    assert_equal(["./f1", "./f2", "./s1/f1", "./s1/f3"], result.sort)
+  end
+
+  def test_each_file_path_without_block
+    test_each_file_path { |coll| coll.each_file_path.to_a }
+  end
+
+  def test_each_file_path_empty_collection
+    assert_empty(Arv::Collection.new.each_file_path.to_a)
+  end
+
+  def test_each_file_path_after_collection_emptied
+    coll = Arv::Collection.new(SIMPLEST_MANIFEST)
+    coll.rm("simple.txt")
+    assert_empty(coll.each_file_path.to_a)
+  end
+
+  def test_each_file_path_deduplicates_manifest_listings
+    coll = Arv::Collection.new(MULTIBLOCK_FILE_MANIFEST)
+    assert_equal(["./repfile", "./s1/repfile", "./s1/uniqfile",
+                  "./uniqfile", "./uniqfile2"],
+                 coll.each_file_path.to_a.sort)
+  end
+
+  ### .exist?
+
+  def test_exist(test_method=:assert, path="f2")
+    coll = Arv::Collection.new(TWO_BY_TWO_MANIFEST_S)
+    send(test_method, coll.exist?(path))
+  end
+
+  def test_file_not_exist
+    test_exist(:refute, "f3")
+  end
+
+  def test_stream_exist
+    test_exist(:assert, "s1")
+  end
+
+  def test_file_inside_stream_exist
+    test_exist(:assert, "s1/f1")
+  end
+
+  def test_path_inside_stream_not_exist
+    test_exist(:refute, "s1/f2")
+  end
+
+  def test_path_under_file_not_exist
+    test_exist(:refute, "f2/nonexistent")
+  end
+
+  def test_deep_substreams_not_exist
+    test_exist(:refute, "a/b/c/d/e/f/g")
   end
 
   ### .rename

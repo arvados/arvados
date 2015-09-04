@@ -8,20 +8,21 @@
 
 baseurl:
 arvados_api_host: localhost
-arvados_workbench_host: localhost
+arvados_workbench_host: http://localhost
 
 exclude: ["Rakefile", "tmp", "vendor"]
 
 navbar:
-  start:
-    - Getting Started:
-      - start/index.html.textile.liquid
-    - Quickstart:
-      - start/getting_started/firstpipeline.html.textile.liquid
-    - Common Use Cases:
-      - start/getting_started/sharedata.html.textile.liquid
-    - Next Steps:
-      - start/getting_started/nextsteps.html.textile.liquid
+  #start:
+    #- Getting Started:
+      #- start/index.html.textile.liquid
+    #- Quickstart:
+      #- start/getting_started/publicproject.html.textile.liquid
+      #- start/getting_started/firstpipeline.html.textile.liquid
+    #- Common Use Cases:
+      #- start/getting_started/sharedata.html.textile.liquid
+    #- Next Steps:
+      #- start/getting_started/nextsteps.html.textile.liquid
 
   userguide:
     - Welcome:
@@ -31,6 +32,7 @@ navbar:
       - user/getting_started/workbench.html.textile.liquid
       - user/tutorials/tutorial-pipeline-workbench.html.textile.liquid
     - Access an Arvados virtual machine:
+      - user/getting_started/vm-login-with-webshell.html.textile.liquid
       - user/getting_started/ssh-access-unix.html.textile.liquid
       - user/getting_started/ssh-access-windows.html.textile.liquid
       - user/getting_started/check-environment.html.textile.liquid
@@ -40,9 +42,13 @@ navbar:
       - user/tutorials/tutorial-keep-get.html.textile.liquid
       - user/tutorials/tutorial-keep-mount.html.textile.liquid
       - user/topics/keep.html.textile.liquid
+      - user/topics/arv-copy.html.textile.liquid
     - Run a pipeline on the command line:
       - user/topics/running-pipeline-command-line.html.textile.liquid
       - user/topics/arv-run.html.textile.liquid
+    - Working with Arvados Repositories:
+      - user/tutorials/add-new-repository.html.textile.liquid
+      - user/tutorials/git-arvados-guide.html.textile.liquid
     - Develop a new pipeline:
       - user/tutorials/intro-crunch.html.textile.liquid
       - user/tutorials/running-external-program.html.textile.liquid
@@ -138,19 +144,18 @@ navbar:
   installguide:
     - Overview:
       - install/index.html.textile.liquid
-    - Docker:
-      - install/pre-built-docker.html.textile.liquid
-      - install/install-docker.html.textile.liquid
     - Manual installation:
       - install/install-manual-prerequisites.html.textile.liquid
+      - install/install-sso.html.textile.liquid
       - install/install-api-server.html.textile.liquid
+      - install/install-arv-git-httpd.html.textile.liquid
       - install/install-workbench-app.html.textile.liquid
       - install/install-shell-server.html.textile.liquid
       - install/create-standard-objects.html.textile.liquid
       - install/install-keepstore.html.textile.liquid
       - install/install-keepproxy.html.textile.liquid
       - install/install-crunch-dispatch.html.textile.liquid
+      - install/install-compute-node.html.textile.liquid
+    - Helpful hints:
+      - install/copy_pipeline_from_curoverse.html.textile.liquid
       - install/cheat_sheet.html.textile.liquid
-    - Software prerequisites:
-      - install/install-manual-prerequisites-ruby.html.textile.liquid
-      - install/install-sso.html.textile.liquid

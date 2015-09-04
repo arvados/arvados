@@ -4,180 +4,344 @@ navsection: installguide
 title: Install the API server
 ...
 
-This installation guide assumes you are on a 64 bit Debian or Ubuntu system.
-
 h2. Install prerequisites
 
-<notextile>
-<pre><code>~$ <span class="userinput">sudo apt-get install \
-    bison build-essential gettext libcurl3 libcurl3-gnutls \
-    libcurl4-openssl-dev libpcre3-dev libpq-dev libreadline-dev \
-    libssl-dev libxslt1.1 postgresql git wget zlib1g-dev
-</span></code></pre></notextile>
+The Arvados package repository includes an API server package that can help automate much of the deployment.
 
-Also make sure you have "Ruby and bundler":install-manual-prerequisites-ruby.html installed.
+h3(#install_ruby_and_bundler). Install Ruby and Bundler
 
-h2. Download the source tree
+{% include 'install_ruby_and_bundler' %}
 
-<notextile>
-<pre><code>~$ <span class="userinput">cd $HOME</span> # (or wherever you want to install)
-~$ <span class="userinput">git clone https://github.com/curoverse/arvados.git</span>
-</code></pre></notextile>
+h3(#install_postgres). Install PostgreSQL
 
-See also: "Downloading the source code":https://arvados.org/projects/arvados/wiki/Download on the Arvados wiki.
+{% include 'install_postgres' %}
 
-The API server is in @services/api@ in the source tree.
+h2(#install_apiserver). Install API server and dependencies
 
-h2. Install gem dependencies
+On a Debian-based system, install the following packages:
 
 <notextile>
-<pre><code>~$ <span class="userinput">cd arvados/services/api</span>
-~/arvados/services/api$ <span class="userinput">bundle install</span>
-</code></pre></notextile>
+<pre><code>~$ <span class="userinput">sudo apt-get install bison build-essential libcurl4-openssl-dev git arvados-api-server</span>
+</code></pre>
+</notextile>
 
-h2. Choose your environment
-
-The API server can be run in @development@ or in @production@ mode. Unless this installation is going to be used for development on the Arvados API server itself, you should run it in @production@ mode.
-
-Copy the example environment file for your environment. For example, if you choose @production@:
+On a Red Hat-based system, install the following packages:
 
 <notextile>
-<pre><code>~/arvados/services/api$ <span class="userinput">cp -i config/environments/production.rb.example config/environments/production.rb</span>
-</code></pre></notextile>
+<pre><code>~$ <span class="userinput">sudo yum install bison make automake gcc gcc-c++ libcurl-devel git arvados-api-server</span>
+</code></pre>
+</notextile>
 
-h2. Configure the API server
-
-First, copy the example configuration file:
-
-<notextile>
-<pre><code>~/arvados/services/api$ <span class="userinput">cp -i config/application.yml.example config/application.yml</span>
-</code></pre></notextile>
-
-The API server reads the @config/application.yml@ file, as well as the @config/application.defaults.yml@ file. Values in @config/application.yml@ take precedence over the defaults that are defined in @config/application.defaults.yml@. The @config/application.yml.example@ file is not read by the API server and is provided for installation convenience, only.
-
-Consult @config/application.default.yml@ for a full list of configuration options. Always put your local configuration in @config/application.yml@, never edit @config/application.default.yml@.
-
-h3(#uuid_prefix). uuid_prefix
-
-Define your @uuid_prefix@ in @config/application.yml@ by setting the @uuid_prefix@ field in the section for your environment.  This prefix is used for all database identifiers to identify the record as originating from this site.  It must be exactly 5 alphanumeric characters (lowercase ASCII letters and digits).
-
-h3(#git_repositories_dir). git_repositories_dir
-
-This field defaults to @/var/lib/arvados/git@. You can override the value by defining it in @config/application.yml@.
-
-Make sure a clone of the arvados repository exists in @git_repositories_dir@.
-
-<notextile>
-<pre><code>~/arvados/services/api$ <span class="userinput">sudo mkdir -p /var/lib/arvados/git</span>
-~/arvados/services/api$ <span class="userinput">sudo git clone --bare ../../.git /var/lib/arvados/git/arvados.git</span>
-</code></pre></notextile>
-
-h3. secret_token
-
-Generate a new secret token for signing cookies:
-
-<notextile>
-<pre><code>~/arvados/services/api$ <span class="userinput">rake secret</span>
-zzzzzzzzzzzzzzzzzzzzzzzzzzzzzzzzzzzzzzzzzzzzzzzzzzzzzzzz
-</code></pre></notextile>
-
-Then put that value in the @secret_token@ field.
-
-h3. blob_signing_key
-
-If you want access control on your "Keepstore":install-keepstore.html server(s), you should set @blob_signing_key@ to the same value as the permission key you provide to your Keepstore daemon(s).
-
-h3. workbench_address
-
-Fill in the url of your workbench application in @workbench_address@, for example
-
-&nbsp;&nbsp;https://workbench.@prefix_uuid@.your.domain
-
-h3. other options
-
-Consult @application.default.yml@ for a full list of configuration options. Always put your local configuration in @application.yml@ instead of editing @application.default.yml@.
+{% include 'install_git' %}
 
 h2. Set up the database
 
 Generate a new database password. Nobody ever needs to memorize it or type it, so we'll make a strong one:
 
 <notextile>
-<pre><code>~/arvados/services/api$ <span class="userinput">ruby -e 'puts rand(2**128).to_s(36)'</span>
+<pre><code>~$ <span class="userinput">ruby -e 'puts rand(2**128).to_s(36)'</span>
 6gqa1vu492idd7yca9tfandj3
 </code></pre></notextile>
 
-Create a new database user with permission to create its own databases.
+Create a new database user.
 
 <notextile>
-<pre><code>~/arvados/services/api$ <span class="userinput">sudo -u postgres createuser --createdb --encrypted -R -S --pwprompt arvados</span>
+<pre><code>~$ <span class="userinput">sudo -u postgres createuser --encrypted -R -S --pwprompt arvados</span>
 [sudo] password for <b>you</b>: <span class="userinput">yourpassword</span>
 Enter password for new role: <span class="userinput">paste-password-you-generated</span>
 Enter it again: <span class="userinput">paste-password-again</span>
 </code></pre></notextile>
 
-Configure API server to connect to your database by creating and updating @config/database.yml@. Replace the @xxxxxxxx@ database password placeholders with the new password you generated above.
-
-<notextile>
-<pre><code>~/arvados/services/api$ <span class="userinput">cp -i config/database.yml.sample config/database.yml</span>
-~/arvados/services/api$ <span class="userinput">edit config/database.yml</span>
-</code></pre></notextile>
-
-Create and initialize the database. If you are planning a production system, choose the @production@ rails environment, otherwise use @development@.
-
-<notextile>
-<pre><code>~/arvados/services/api$ <span class="userinput">RAILS_ENV=production bundle exec rake db:setup</span>
-</code></pre></notextile>
-
-Alternatively, if the database user you intend to use for the API server is not allowed to create new databases, you can create the database first and then populate it with rake. Be sure to adjust the database name if you are using the @development@ environment. This sequence of commands is functionally equivalent to the rake db:setup command above.
-
-<notextile>
-<pre><code>~/arvados/services/api$ <span class="userinput">su postgres createdb arvados_production -E UTF8 -O arvados</span>
-~/arvados/services/api$ <span class="userinput">RAILS_ENV=production bundle exec rake db:structure:load</span>
-~/arvados/services/api$ <span class="userinput">RAILS_ENV=production bundle exec rake db:seed</span>
-</code></pre></notextile>
-
 {% include 'notebox_begin' %}
-You can safely ignore the following error message you may see when loading the database structure:
-<notextile>
-<pre><code>ERROR:  must be owner of extension plpgsql</code></pre></notextile>
+
+This user setup assumes that your PostgreSQL is configured to accept password authentication.  Red Hat systems use ident-based authentication by default.  You may need to either adapt the user creation, or reconfigure PostgreSQL (in @pg_hba.conf@) to accept password authentication.
+
 {% include 'notebox_end' %}
 
-h2(#omniauth). Set up omniauth
-
-First copy the omniauth configuration file:
+Create the database:
 
 <notextile>
-<pre><code>~/arvados/services/api$ <span class="userinput">cp -i config/initializers/omniauth.rb.example config/initializers/omniauth.rb
-</code></pre></notextile>
-
-Edit @config/initializers/omniauth.rb@ to configure the SSO server for authentication.  @APP_ID@ and @APP_SECRET@ correspond to the @app_id@ and @app_secret@ set in "Create arvados-server client for Single Sign On (SSO)":install-sso.html#client and @CUSTOM_PROVIDER_URL@ is the address of your SSO server.
-
-<notextile>
-<pre><code>APP_ID = 'arvados-server'
-APP_SECRET = 'xxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxx'
-CUSTOM_PROVIDER_URL = 'https://sso.example.com/'
+<pre><code>~$ <span class="userinput">sudo -u postgres createdb arvados_production -T template0 -E UTF8 -O arvados</span>
 </code></pre>
 </notextile>
 
-h2. Start the API server
+h2. Set up configuration files
 
-h3. Development environment
-
-If you plan to run in development mode, you can now run the development server this way:
+The API server package uses configuration files that you write to @/etc/arvados/api@ and ensures they're consistently deployed.  Create this directory and copy the example configuration files to it:
 
 <notextile>
-<pre><code>~/arvados/services/api$ <span class="userinput">bundle exec rails server --port=3030
+<pre><code>~$ <span class="userinput">sudo mkdir -p /etc/arvados/api</span>
+~$ <span class="userinput">sudo chmod 700 /etc/arvados/api</span>
+~$ <span class="userinput">cd /var/www/arvados-api/current</span>
+/var/www/arvados-api/current$ <span class="userinput">sudo cp config/database.yml.example /etc/arvados/api/database.yml</span>
+/var/www/arvados-api/current$ <span class="userinput">sudo cp config/application.yml.example /etc/arvados/api/application.yml</span>
+</code></pre>
+</notextile>
+
+h2. Configure the database connection
+
+Edit @/etc/arvados/api/database.yml@ and replace the @xxxxxxxx@ database password placeholders with the PostgreSQL password you generated above.
+
+h2(#configure_application). Configure the API server
+
+Edit @/etc/arvados/api/application.yml@ to configure the settings described in the following sections.  The deployment script will consistently deploy this to the API server's configuration directory.  The API server reads both @application.yml@ and its own @config/application.default.yml@ file.  The settings in @application.yml@ take precedence over the defaults that are defined in @config/application.default.yml@.  The @config/application.yml.example@ file is not read by the API server and is provided as a starting template only.
+
+@config/application.default.yml@ documents additional configuration settings not listed here.  You can "view the current source version":https://arvados.org/projects/arvados/repository/revisions/master/entry/services/api/config/application.default.yml for reference.
+
+Only put local configuration in @application.yml@.  Do not edit @application.default.yml@.
+
+h3(#uuid_prefix). uuid_prefix
+
+Define your @uuid_prefix@ in @application.yml@ by setting the @uuid_prefix@ field in the section for your environment.  This prefix is used for all database identifiers to identify the record as originating from this site.  It must be exactly 5 lowercase ASCII letters and digits.
+
+Example @application.yml@:
+
+<notextile>
+<pre><code>  uuid_prefix: <span class="userinput">zzzzz</span></code></pre>
+</notextile>
+
+h3. secret_token
+
+The @secret_token@ is used for for signing cookies.  IMPORTANT: This is a site secret. It should be at least 50 characters.  Generate a random value and set it in @application.yml@:
+
+<notextile>
+<pre><code>~$ <span class="userinput">ruby -e 'puts rand(2**400).to_s(36)'</span>
+yyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyy
 </code></pre></notextile>
 
-h3. Production environment
-
-We recommend "Passenger":https://www.phusionpassenger.com/ to run the API server in production.
-
-Point it to the services/api directory in the source tree.
-
-To enable streaming so users can monitor crunch jobs in real time, make sure to add the following to your Passenger configuration:
+Example @application.yml@:
 
 <notextile>
-<pre><code><span class="userinput">PassengerBufferResponse off</span>
+<pre><code>  secret_token: <span class="userinput">yyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyy</span></code></pre>
+</notextile>
+
+h3(#blob_signing_key). blob_signing_key
+
+The @blob_signing_key@ is used to enforce access control to Keep blocks.  This same key must be provided to the Keepstore daemons when "installing Keepstore servers.":install-keepstore.html  IMPORTANT: This is a site secret. It should be at least 50 characters.  Generate a random value and set it in @application.yml@:
+
+<notextile>
+<pre><code>~$ <span class="userinput">ruby -e 'puts rand(2**400).to_s(36)'</span>
+xxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxx
+</code></pre></notextile>
+
+Example @application.yml@:
+
+<notextile>
+<pre><code>  blob_signing_key: <span class="userinput">xxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxx</span></code></pre>
+</notextile>
+
+h3(#omniauth). sso_app_secret, sso_app_id, sso_provider_url
+
+The following settings enable the API server to communicate with the "Single Sign On (SSO) server":install-sso.html to authenticate user log in.
+
+Set @sso_provider_url@ to the base URL where your SSO server is installed.  This should be a URL consisting of the scheme and host (and optionally, port), without a trailing slash.
+
+Set @sso_app_secret@ and @sso_app_id@ to the corresponding values for @app_secret@ and @app_id@ used in the "Create arvados-server client for Single Sign On (SSO)":install-sso.html#client step.
+
+Example @application.yml@:
+
+<notextile>
+<pre><code>  sso_app_id: <span class="userinput">arvados-server</span>
+  sso_app_secret: <span class="userinput">wwwwwwwwwwwwwwwwwwwwwwwwwwwwwwwwwwwwwwwwwwwwwwwwwwwwwwww</span>
+  sso_provider_url: <span class="userinput">https://sso.example.com</span>
 </code></pre>
+</notextile>
+
+h3. workbench_address
+
+Set @workbench_address@ to the URL of your workbench application after following "Install Workbench.":install-workbench-app.html
+
+Example @application.yml@:
+
+<notextile>
+<pre><code>  workbench_address: <span class="userinput">https://workbench.zzzzz.example.com</span></code></pre>
+</notextile>
+
+h3. websocket_address
+
+Set @websocket_address@ to the @wss://@ URL of the API server websocket endpoint after following "Set up Web servers":#set_up.  The path of the default endpoint is @/websocket@.
+
+Example @application.yml@:
+
+<notextile>
+<pre><code>  websocket_address: <span class="userinput">wss://ws.zzzzz.example.com</span>/websocket</code></pre>
+</notextile>
+
+h3(#git_repositories_dir). git_repositories_dir
+
+The @git_repositories_dir@ setting specifies the directory where user git repositories will be stored.
+
+The git server setup process is covered on "its own page":install-arv-git-httpd.html. For now, create an empty directory in the default location:
+
+<notextile>
+<pre><code>~$ <span class="userinput">sudo mkdir -p /var/lib/arvados/git/repositories</span>
+</code></pre></notextile>
+
+If you intend to store your git repositories in a different location, specify that location in @application.yml@.
+
+Default setting in @application.default.yml@:
+
+<notextile>
+<pre><code>  git_repositories_dir: <span class="userinput">/var/lib/arvados/git/repositories</span>
+</code></pre>
+</notextile>
+
+h3(#git_internal_dir). git_internal_dir
+
+The @git_internal_dir@ setting specifies the location of Arvados' internal git repository.  By default this is @/var/lib/arvados/internal.git@.  This repository stores git commits that have been used to run Crunch jobs.  It should _not_ be a subdirectory of @git_repositories_dir@.
+
+Example @application.yml@:
+
+<notextile>
+<pre><code>  git_internal_dir: <span class="userinput">/var/lib/arvados/internal.git</span>
+</code></pre>
+</notextile>
+
+h2. Prepare the API server deployment
+
+Now that all your configuration is in place, run @/usr/local/bin/arvados-api-server-upgrade.sh@.  This will install and check your configuration, install necessary gems, and run any necessary database setup.
+
+{% include 'notebox_begin' %}
+You can safely ignore the following messages if they appear while this script runs:
+<pre>Don't run Bundler as root. Bundler can ask for sudo if it is needed, and installing your bundle as root will
+break this application for all non-root users on this machine.</pre>
+<pre>fatal: Not a git repository (or any of the parent directories): .git</pre>
+{% include 'notebox_end' %}
+
+This command aborts when it encounters an error.  It's safe to rerun multiple times, so if there's a problem with your configuration, you can fix that and try again.
+
+h2(#set_up). Set up Web servers
+
+For best performance, we recommend you use Nginx as your Web server front-end, with a Passenger backend for the main API server and a Puma backend for API server Websockets.  To do that:
+
+<notextile>
+<ol>
+<li><a href="https://www.phusionpassenger.com/documentation/Users%20guide%20Nginx.html">Install Nginx and Phusion Passenger</a>.</li>
+
+<li><p>Puma is already included with the API server's gems.  We recommend you run it as a service under <a href="http://smarden.org/runit/">runit</a> or a similar tool.  Here's a sample runit script for that:</p>
+
+<pre><code>#!/bin/bash
+
+set -e
+exec 2>&1
+
+# Uncomment the line below if you're using RVM.
+#source /etc/profile.d/rvm.sh
+
+envdir="`pwd`/env"
+mkdir -p "$envdir"
+echo ws-only > "$envdir/ARVADOS_WEBSOCKETS"
+
+cd /var/www/arvados-api/current
+echo "Starting puma in `pwd`"
+
+# Change arguments below to match your deployment, "webserver-user" and
+# "webserver-group" should be changed to the user and group of the web server
+# process.  This is typically "www-data:www-data" on Debian systems by default,
+# other systems may use different defaults such the name of the web server
+# software (for example, "nginx:nginx").
+exec chpst -m 1073741824 -u webserver-user:webserver-group -e "$envdir" \
+  bundle exec puma -t 0:512 -e production -b tcp://127.0.0.1:8100
+</code></pre>
+</li>
+
+<li><p>Edit the http section of your Nginx configuration to run the Passenger server, and act as a front-end for both it and Puma.  You might add a block like the following, adding SSL and logging parameters to taste:</p>
+
+<pre><code>server {
+  listen 127.0.0.1:8000;
+  server_name localhost-api;
+
+  root /var/www/arvados-api/current/public;
+  index  index.html index.htm index.php;
+
+  passenger_enabled on;
+  # If you're using RVM, uncomment the line below.
+  #passenger_ruby /usr/local/rvm/wrappers/default/ruby;
+}
+
+upstream api {
+  server     127.0.0.1:8000  fail_timeout=10s;
+}
+
+upstream websockets {
+  # The address below must match the one specified in puma's -b option.
+  server     127.0.0.1:8100  fail_timeout=10s;
+}
+
+proxy_http_version 1.1;
+
+# When Keep clients request a list of Keep services from the API server, the
+# server will automatically return the list of available proxies if
+# the request headers include X-External-Client: 1.  Following the example
+# here, at the end of this section, add a line for each netmask that has
+# direct access to Keep storage daemons to set this header value to 0.
+geo $external_client {
+  default        1;
+  <span class="userinput">10.20.30.0/24</span>  0;
+}
+
+server {
+  listen       <span class="userinput">[your public IP address]</span>:443 ssl;
+  server_name  <span class="userinput">uuid_prefix.your.domain</span>;
+
+  ssl on;
+  ssl_certificate     <span class="userinput">/YOUR/PATH/TO/cert.pem</span>;
+  ssl_certificate_key <span class="userinput">/YOUR/PATH/TO/cert.key</span>;
+
+  index  index.html index.htm index.php;
+
+  # This value effectively limits the size of API objects users can create,
+  # especially collections.  If you change this, you should also set
+  # `max_request_size` in the API server's application.yml file to the same
+  # value.
+  client_max_body_size 128m;
+
+  location / {
+    proxy_pass            http://api;
+    proxy_redirect        off;
+    proxy_connect_timeout 90s;
+    proxy_read_timeout    300s;
+
+    proxy_set_header      X-Forwarded-Proto https;
+    proxy_set_header      Host $http_host;
+    proxy_set_header      X-External-Client $external_client;
+    proxy_set_header      X-Real-IP $remote_addr;
+    proxy_set_header      X-Forwarded-For $proxy_add_x_forwarded_for;
+  }
+}
+
+server {
+  listen       <span class="userinput">[your public IP address]</span>:443 ssl;
+  server_name  ws.<span class="userinput">uuid_prefix.your.domain</span>;
+
+  ssl on;
+  ssl_certificate     <span class="userinput">/YOUR/PATH/TO/cert.pem</span>;
+  ssl_certificate_key <span class="userinput">/YOUR/PATH/TO/cert.key</span>;
+
+  index  index.html index.htm index.php;
+
+  location / {
+    proxy_pass            http://websockets;
+    proxy_redirect        off;
+    proxy_connect_timeout 90s;
+    proxy_read_timeout    300s;
+
+    proxy_set_header      Upgrade $http_upgrade;
+    proxy_set_header      Connection "upgrade";
+    proxy_set_header      Host $host;
+    proxy_set_header      X-Real-IP $remote_addr;
+    proxy_set_header      X-Forwarded-For $proxy_add_x_forwarded_for;
+  }
+}
+</code></pre>
+</li>
+
+<li><p>Restart Nginx:</p>
+
+<pre><code>~$ <span class="userinput">sudo nginx -s reload</span>
+</code></pre>
+
+</li>
+
+</ol>
 </notextile>

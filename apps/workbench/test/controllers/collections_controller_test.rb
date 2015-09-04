@@ -400,8 +400,39 @@ class CollectionsControllerTest < ActionController::TestCase
     }, session_for(:active)
     assert_response :success
     assert_not_nil assigns(:object)
+    # Ensure the Workbench response still has the original manifest_text
     assert_equal 'test description update', assigns(:object).description
-    assert_equal collection['manifest_text'], assigns(:object).manifest_text
+    assert_equal true, strip_signatures_and_compare(collection['manifest_text'], assigns(:object).manifest_text)
+    # Ensure the API server still has the original manifest_text after
+    # we called arvados.v1.collections.update
+    use_token :active do
+      assert_equal true, strip_signatures_and_compare(Collection.find(collection['uuid']).manifest_text,
+                                                      collection['manifest_text'])
+    end
+  end
+
+  # Since we got the initial collection from fixture, there are no signatures in manifest_text.
+  # However, after update or find, the collection retrieved will have singed manifest_text.
+  # Hence, let's compare each line after excluding signatures.
+  def strip_signatures_and_compare m1, m2
+    m1_lines = m1.split "\n"
+    m2_lines = m2.split "\n"
+
+    return false if m1_lines.size != m2_lines.size
+
+    m1_lines.each_with_index do |line, i|
+      m1_words = []
+      line.split.each do |word|
+        m1_words << word.split('+A')[0]
+      end
+      m2_words = []
+      m2_lines[i].split.each do |word|
+        m2_words << word.split('+A')[0]
+      end
+      return false if !m1_words.join(' ').eql?(m2_words.join(' '))
+    end
+
+    return true
   end
 
   test "view collection and verify none of the file types listed are disabled" do
@@ -429,5 +460,58 @@ class CollectionsControllerTest < ActionController::TestCase
     end
 
     assert_equal files.sort, disabled.sort, "Expected to see all collection files in disabled list of files"
+  end
+
+  test "anonymous user accesses collection in shared project" do
+    Rails.configuration.anonymous_user_token =
+      api_fixture('api_client_authorizations')['anonymous']['api_token']
+    collection = api_fixture('collections')['public_text_file']
+    get(:show, {id: collection['uuid']})
+
+    response_object = assigns(:object)
+    assert_equal collection['name'], response_object['name']
+    assert_equal collection['uuid'], response_object['uuid']
+    assert_includes @response.body, 'Hello world'
+    assert_includes @response.body, 'Content address'
+    refute_nil css_select('[href="#Advanced"]')
+  end
+
+  test "can view empty collection" do
+    get :show, {id: 'd41d8cd98f00b204e9800998ecf8427e+0'}, session_for(:active)
+    assert_includes @response.body, 'The following collections have this content'
+  end
+
+  test "collection portable data hash redirect" do
+    di = api_fixture('collections')['docker_image']
+    get :show, {id: di['portable_data_hash']}, session_for(:active)
+    assert_match /\/collections\/#{di['uuid']}/, @response.redirect_url
+  end
+
+  test "collection portable data hash with multiple matches" do
+    pdh = api_fixture('collections')['foo_file']['portable_data_hash']
+    get :show, {id: pdh}, session_for(:admin)
+    matches = api_fixture('collections').select {|k,v| v["portable_data_hash"] == pdh}
+    assert matches.size > 1
+
+    matches.each do |k,v|
+      assert_match /href="\/collections\/#{v['uuid']}">.*#{v['name']}<\/a>/, @response.body
+    end
+
+    assert_includes @response.body, 'The following collections have this content:'
+    assert_not_includes @response.body, 'more results are not shown'
+    assert_not_includes @response.body, 'Activity'
+    assert_not_includes @response.body, 'Sharing and permissions'
+  end
+
+  test "collection page renders name" do
+    collection = api_fixture('collections')['foo_file']
+    get :show, {id: collection['uuid']}, session_for(:active)
+    assert_includes @response.body, collection['name']
+    assert_match /href="#{collection['uuid']}\/foo" ><\/i> foo</, @response.body
+  end
+
+  test "No Upload tab on non-writable collection" do
+    get :show, {id: api_fixture('collections')['user_agreement']['uuid']}, session_for(:active)
+    assert_not_includes @response.body, '<a href="#Upload"'
   end
 end

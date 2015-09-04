@@ -469,7 +469,7 @@ class PipelineInstancesTest < ActionDispatch::IntegrationTest
       page_text = page.text
 
       if run_time
-        match = /This pipeline started at (.*)\. It failed after (.*) seconds at (.*)\. Check the Log/.match page_text
+        match = /This pipeline started at (.*)\. It failed after (.*) at (.*)\. Check the Log/.match page_text
       else
         match = /This pipeline started at (.*). It has been active for(.*)/.match page_text
       end
@@ -540,5 +540,46 @@ class PipelineInstancesTest < ActionDispatch::IntegrationTest
     pi = api_fixture('pipeline_instances', 'has_component_with_completed_jobs')
     visit page_with_token 'active', '/pipeline_instances/' + pi['uuid']
     assert_text 'Queued for '
+  end
+
+  test "job logs linked for running pipeline" do
+    pi = api_fixture("pipeline_instances", "running_pipeline_with_complete_job")
+    visit(page_with_token("active", "/pipeline_instances/#{pi['uuid']}"))
+    click_on "Log"
+    within "#Log" do
+      assert_text "Log for previous"
+      log_link = find("a", text: "Log for previous")
+      assert_includes(log_link[:href],
+                      pi["components"]["previous"]["job"]["log"])
+      assert_selector "#event_log_div"
+    end
+  end
+
+  test "job logs linked for complete pipeline" do
+    pi = api_fixture("pipeline_instances", "complete_pipeline_with_two_jobs")
+    visit(page_with_token("active", "/pipeline_instances/#{pi['uuid']}"))
+    click_on "Log"
+    within "#Log" do
+      assert_text "Log for previous"
+      pi["components"].each do |cname, cspec|
+        log_link = find("a", text: "Log for #{cname}")
+        assert_includes(log_link[:href], cspec["job"]["log"])
+      end
+      assert_no_selector "#event_log_div"
+    end
+  end
+
+  test "job logs linked for failed pipeline" do
+    pi = api_fixture("pipeline_instances", "failed_pipeline_with_two_jobs")
+    visit(page_with_token("active", "/pipeline_instances/#{pi['uuid']}"))
+    click_on "Log"
+    within "#Log" do
+      assert_text "Log for previous"
+      pi["components"].each do |cname, cspec|
+        log_link = find("a", text: "Log for #{cname}")
+        assert_includes(log_link[:href], cspec["job"]["log"])
+      end
+      assert_no_selector "#event_log_div"
+    end
   end
 end

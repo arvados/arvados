@@ -23,6 +23,7 @@ class ArvadosModel < ActiveRecord::Base
   after_destroy :log_destroy
   after_find :convert_serialized_symbols_to_strings
   before_validation :normalize_collection_uuids
+  before_validation :set_default_owner
   validate :ensure_serialized_attribute_type
   validate :ensure_valid_uuids
 
@@ -101,6 +102,13 @@ class ArvadosModel < ActiveRecord::Base
       end
     end
     api_column_map
+  end
+
+  def self.columns_for_attributes(select_attributes)
+    # Given an array of attribute names to select, return an array of column
+    # names that must be fetched from the database to satisfy the request.
+    api_column_map = attributes_required_columns
+    select_attributes.flat_map { |attr| api_column_map[attr] }.uniq
   end
 
   def self.default_orders
@@ -219,21 +227,20 @@ class ArvadosModel < ActiveRecord::Base
 
   def self.full_text_searchable_columns
     self.columns.select do |col|
-      if col.type == :string or col.type == :text
-        true
-      end
+      col.type == :string or col.type == :text
     end.map(&:name)
   end
 
   def self.full_text_tsvector
-    tsvector_str = "to_tsvector('english', "
-    first = true
-    self.full_text_searchable_columns.each do |column|
-      tsvector_str += " || ' ' || " if not first
-      tsvector_str += "coalesce(#{column},'')"
-      first = false
+    parts = full_text_searchable_columns.collect do |column|
+      "coalesce(#{column},'')"
     end
-    tsvector_str += ")"
+    # We prepend a space to the tsvector() argument here. Otherwise,
+    # it might start with a column that has its own (non-full-text)
+    # index, which causes Postgres to use the column index instead of
+    # the tsvector index, which causes full text queries to be just as
+    # slow as if we had no index at all.
+    "to_tsvector('english', ' ' || #{parts.join(" || ' ' || ")})"
   end
 
   protected
@@ -270,12 +277,14 @@ class ArvadosModel < ActiveRecord::Base
     true
   end
 
-  def ensure_owner_uuid_is_permitted
-    raise PermissionDeniedError if !current_user
-
-    if new_record? and respond_to? :owner_uuid=
+  def set_default_owner
+    if new_record? and current_user and respond_to? :owner_uuid=
       self.owner_uuid ||= current_user.uuid
     end
+  end
+
+  def ensure_owner_uuid_is_permitted
+    raise PermissionDeniedError if !current_user
 
     if self.owner_uuid.nil?
       errors.add :owner_uuid, "cannot be nil"
@@ -308,8 +317,13 @@ class ArvadosModel < ActiveRecord::Base
     # Verify "write" permission on new owner
     # default fail unless one of:
     # current_user is this object
-    # current user can_write new owner
-    unless current_user == self or current_user.can? write: owner_uuid
+    # current user can_write new owner, or this object if owner unchanged
+    if new_record? or owner_uuid_changed? or is_a?(ApiClientAuthorization)
+      write_target = owner_uuid
+    else
+      write_target = uuid
+    end
+    unless current_user == self or current_user.can? write: write_target
       logger.warn "User #{current_user.uuid} tried to modify #{self.class.to_s} #{uuid} but does not have permission to write new owner_uuid #{owner_uuid}"
       errors.add :owner_uuid, "cannot be changed without write permission on new owner"
       raise PermissionDeniedError

@@ -10,8 +10,8 @@ class KeepRequestErrorTestCase(unittest.TestCase):
     REQUEST_ERRORS = [
         ('http://keep1.zzzzz.example.org/', IOError("test IOError")),
         ('http://keep3.zzzzz.example.org/', MemoryError("test MemoryError")),
-        ('http://keep5.zzzzz.example.org/', tutil.fake_requests_response(
-                500, "test 500")),
+        ('http://keep5.zzzzz.example.org/',
+         arv_error.HttpError(500, "Internal Server Error")),
         ('http://keep7.zzzzz.example.org/', IOError("second test IOError")),
         ]
 

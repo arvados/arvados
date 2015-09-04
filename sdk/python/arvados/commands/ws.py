@@ -14,6 +14,7 @@ def main(arguments=None):
     parser = argparse.ArgumentParser()
     parser.add_argument('-u', '--uuid', type=str, default="", help="Filter events on object_uuid")
     parser.add_argument('-f', '--filters', type=str, default="", help="Arvados query filter to apply to log events (JSON encoded)")
+    parser.add_argument('-s', '--start-time', type=str, default="", help="Arvados query filter to fetch log events created at or after this time. This will be server time in UTC. Allowed format: YYYY-MM-DD or YYYY-MM-DD hh:mm:ss")
 
     group = parser.add_mutually_exclusive_group()
     group.add_argument('--poll-interval', default=15, type=int, help="If websockets is not available, specify the polling interval, default is every 15 seconds")
@@ -60,6 +61,12 @@ def main(arguments=None):
     if args.pipeline:
         filters += [ ['object_uuid', '=', args.pipeline] ]
 
+    if args.start_time:
+        last_log_id = 1
+        filters += [ ['created_at', '>=', args.start_time] ]
+    else:
+        last_log_id = None
+
     def on_message(ev):
         global filters
         global ws
@@ -85,7 +92,7 @@ def main(arguments=None):
             print json.dumps(ev)
 
     try:
-        ws = subscribe(arvados.api('v1'), filters, on_message, poll_fallback=args.poll_interval)
+        ws = subscribe(arvados.api('v1'), filters, on_message, poll_fallback=args.poll_interval, last_log_id=last_log_id)
         if ws:
             if args.pipeline:
                 c = api.pipeline_instances().get(uuid=args.pipeline).execute()

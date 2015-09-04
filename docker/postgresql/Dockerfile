@@ -1,7 +1,7 @@
 # PostgreSQL Docker container for Arvados.
 
 FROM arvados/debian:wheezy
-MAINTAINER Tim Pierce <twp@curoverse.com>
+MAINTAINER Ward Vandewege <ward@curoverse.com>
 
 # TODO(twp): parameterize variables via autoconf or similar.
 ENV POSTGRES_ROOT_PW   dummy_pw
@@ -19,7 +19,7 @@ ENV ARVADOS_PROD_USER  arvados
 ENV ARVADOS_PROD_PW    dummy_pw
 
 # Install postgres and apache
-RUN apt-get -q -y install procps postgresql postgresql-server-dev-9.1
+RUN apt-get install -qy procps postgresql postgresql-server-dev-9.1
 
 # Configure databases and users.
 ADD postgresql.conf /etc/postgresql/9.1/main/

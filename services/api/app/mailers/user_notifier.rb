@@ -5,7 +5,7 @@ class UserNotifier < ActionMailer::Base
 
   def account_is_setup(user)
     @user = user
-    mail(to: user.email, subject: 'Welcome to Curoverse')
+    mail(to: user.email, subject: 'Welcome to Curoverse - shell account enabled')
   end
 
 end

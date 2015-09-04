@@ -19,6 +19,7 @@ Each User has, in addition to the usual "attributes of Arvados resources":{{site
 table(table table-bordered table-condensed).
 |_. Attribute|_. Type|_. Description|_. Example|
 |email|string|||
+|username|string|The username used for the user's git repositories and virtual machine logins.  Usernames must start with a letter, and contain only alphanumerics.  When a new user is created, a default username is set from their e-mail address.  Only administrators may change the username.||
 |first_name|string|||
 |last_name|string|||
 |identity_url|string|||

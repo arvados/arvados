@@ -8,19 +8,20 @@ import (
 )
 
 type RootSorterSuite struct{}
+
 var _ = Suite(&RootSorterSuite{})
 
-func FakeSvcRoot(i uint64) (string) {
+func FakeSvcRoot(i uint64) string {
 	return fmt.Sprintf("https://%x.svc/", i)
 }
 
-func FakeSvcUuid(i uint64) (string) {
+func FakeSvcUuid(i uint64) string {
 	return fmt.Sprintf("zzzzz-bi6l4-%015x", i)
 }
 
-func FakeServiceRoots(n uint64) (map[string]string) {
+func FakeServiceRoots(n uint64) map[string]string {
 	sr := map[string]string{}
-	for i := uint64(0); i < n; i ++ {
+	for i := uint64(0); i < n; i++ {
 		sr[FakeSvcUuid(i)] = FakeSvcRoot(i)
 	}
 	return sr

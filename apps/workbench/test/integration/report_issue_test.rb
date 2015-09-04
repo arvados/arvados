@@ -84,7 +84,8 @@ class ReportIssueTest < ActionDispatch::IntegrationTest
     ['active', api_fixture('users')['active']],
     ['admin', api_fixture('users')['admin']],
     ['active_no_prefs', api_fixture('users')['active_no_prefs']],
-    ['active_no_prefs_profile', api_fixture('users')['active_no_prefs_profile']],
+    ['active_no_prefs_profile_no_getting_started_shown',
+        api_fixture('users')['active_no_prefs_profile_no_getting_started_shown']],
   ].each do |token, user|
 
     test "check version info and report issue for user #{token}" do

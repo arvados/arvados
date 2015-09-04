@@ -11,14 +11,12 @@
     </blockquote>
 
     <p>
-      As an admin, you can setup this user. Please input a VM and
-      repository for the user. If you had previously provided any of
-      these items, they are pre-filled for you and you can leave them
-      as is if you would like to reuse them.
+      As an admin, you can setup a shell account for this user.
+      The login name is automatically generated from the user's e-mail address.
     </p>
 
     <blockquote>
-      <%= link_to "Setup #{@object.full_name}", setup_popup_user_url(id: @object.uuid),  {class: 'btn btn-primary', :remote => true, 'data-toggle' =>  "modal", 'data-target' => '#user-setup-modal-window'}  %>
+      <%= link_to "Setup shell account #{'for ' if @object.full_name.present?} #{@object.full_name}", setup_popup_user_url(id: @object.uuid),  {class: 'btn btn-primary', :remote => true, 'data-toggle' =>  "modal", 'data-target' => '#user-setup-modal-window'}  %>
     </blockquote>
 
     <p>

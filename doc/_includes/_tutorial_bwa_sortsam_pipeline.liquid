@@ -7,7 +7,7 @@
             "repository": "arvados",
             "script_parameters": {
                 "command": [
-                    "bwa",
+                    "$(dir $(bwa_collection))/bwa",
                     "mem",
                     "-t",
                     "$(node.cores)",
@@ -21,14 +21,20 @@
                     "required": true,
                     "dataclass": "Collection"
                 },
+                "bwa_collection": {
+                    "required": true,
+                    "dataclass": "Collection",
+                    "default": "39c6f22d40001074f4200a72559ae7eb+5745"
+                },
                 "sample": {
                     "required": true,
                     "dataclass": "Collection"
                 },
-                "stdout": "$(basename $(glob $(dir $(sample))/*_1.fastq)).sam"
+                "task.stdout": "$(basename $(glob $(dir $(sample))/*_1.fastq)).sam"
             },
             "runtime_constraints": {
-                "docker_image": "arvados/jobs-java-bwa-samtools"
+                "docker_image": "bcosc/arv-base-java",
+                "arvados_sdk_version": "master"
             }
         },
         "SortSam": {
@@ -58,7 +64,8 @@
                 }
             },
             "runtime_constraints": {
-                "docker_image": "arvados/jobs-java-bwa-samtools"
+                "docker_image": "bcosc/arv-base-java",
+                "arvados_sdk_version": "master"
             }
         }
     }

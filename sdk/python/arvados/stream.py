@@ -35,7 +35,7 @@ class StreamReader(object):
             s = re.match(r'^[0-9a-f]{32}\+(\d+)(\+\S+)*$', tok)
             if s:
                 blocksize = long(s.group(1))
-                self._data_locators.append(Range(tok, streamoffset, blocksize))
+                self._data_locators.append(Range(tok, streamoffset, blocksize, 0))
                 streamoffset += blocksize
                 continue
 
@@ -45,7 +45,7 @@ class StreamReader(object):
                 size = long(s.group(2))
                 name = s.group(3).replace('\\040', ' ')
                 if name not in self._files:
-                    self._files[name] = StreamFileReader(self, [Range(pos, 0, size)], name)
+                    self._files[name] = StreamFileReader(self, [Range(pos, 0, size, 0)], name)
                 else:
                     filereader = self._files[name]
                     filereader.segments.append(Range(pos, filereader.size(), size))

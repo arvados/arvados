@@ -6,11 +6,14 @@ title: "Using arv-web"
 
 @arv-web@ enables you to run a custom web service from the contents of an Arvados collection.
 
+{% include 'tutorial_expectations_workstation' %}
+
 h2. Usage
 
 @arv-web@ enables you to set up a web service based on the most recent collection in a project.  An arv-web application is a reproducible, immutable application bundle where the web app is packaged with both the code to run and the data to serve.  Because Arvados Collections can be updated with minimum duplication, it is efficient to produce a new application bundle when the code or data needs to be updated; retaining old application bundles makes it easy to go back and run older versions of your web app.
 
 <pre>
+$ cd $HOME/arvados/services/arv-web
 usage: arv-web.py [-h] --project-uuid PROJECT_UUID [--port PORT]
                   [--image IMAGE]
 

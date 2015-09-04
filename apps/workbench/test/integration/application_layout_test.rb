@@ -24,7 +24,10 @@ class ApplicationLayoutTest < ActionDispatch::IntegrationTest
       else
         assert page.has_link?("Projects"), 'Not found link - Projects'
         page.find("#projects-menu").click
-        assert page.has_text?('Projects shared with me'), 'Not found text - Project shared with me'
+        assert_selector 'a', text: 'Search all projects'
+        assert_no_selector 'a', text: 'Browse public projects'
+        assert_selector 'a', text: 'Add a new project'
+        assert_selector 'li[class="dropdown-header"]', text: 'My projects'
       end
     elsif invited
       assert page.has_text?('Please check the box below to indicate that you have read and accepted the user agreement'), 'Not found text - Please check the box below . . .'
@@ -40,22 +43,30 @@ class ApplicationLayoutTest < ActionDispatch::IntegrationTest
       else
         # my account menu
         assert_selector 'a', text: Rails.configuration.site_name.downcase
-        assert page.has_link?("#{user['email']}"), 'Not found link - email'
-        find('a', text: "#{user['email']}").click
+        assert(page.has_link?("notifications-menu"), 'no user menu')
+        page.find("#notifications-menu").click
         within('.dropdown-menu') do
           if user['is_active']
             assert page.has_no_link?('Not active'), 'Found link - Not active'
             assert page.has_no_link?('Sign agreements'), 'Found link - Sign agreements'
 
-            assert page.has_link?('Manage account'), 'No link - Manage account'
+            assert_selector "a[href=\"/projects/#{user['uuid']}\"]", text: 'Home project'
+            assert_selector "a[href=\"/users/#{user['uuid']}/virtual_machines\"]", text: 'Virtual machines'
+            assert_selector "a[href=\"/users/#{user['uuid']}/repositories\"]", text: 'Repositories'
+            assert_selector "a[href=\"/current_token\"]", text: 'Current token'
+            assert_selector "a[href=\"/users/#{user['uuid']}/ssh_keys\"]", text: 'SSH keys'
 
             if profile_config
-              assert page.has_link?('Manage profile'), 'No link - Manage profile'
+              assert_selector "a[href=\"/users/#{user['uuid']}/profile\"]", text: 'Manage profile'
             else
-              assert page.has_no_link?('Manage profile'), 'Found link - Manage profile'
+              assert_no_selector "a[href=\"/users/#{user['uuid']}/profile\"]", text: 'Manage profile'
             end
           else
-            assert page.has_no_link?('Manage account'), 'Found link - Manage account'
+            assert_no_selector 'a', text: 'Home project'
+            assert page.has_no_link?('Virtual machines'), 'Found link - Virtual machines'
+            assert page.has_no_link?('Repositories'), 'Found link - Repositories'
+            assert page.has_no_link?('Current token'), 'Found link - Current token'
+            assert page.has_no_link?('SSH keys'), 'Found link - SSH keys'
             assert page.has_no_link?('Manage profile'), 'Found link - Manage profile'
           end
           assert page.has_link?('Log out'), 'No link - Log out'
@@ -69,6 +80,8 @@ class ApplicationLayoutTest < ActionDispatch::IntegrationTest
     within('.navbar-fixed-top') do
       page.find("#arv-help").click
       within('.dropdown-menu') do
+        assert_selector 'a', text:'Getting Started ...'
+        assert_selector 'a', text:'Public Pipelines and Data sets'
         assert page.has_link?('Tutorials and User guide'), 'No link - Tutorials and User guide'
         assert page.has_link?('API Reference'), 'No link - API Reference'
         assert page.has_link?('SDK Reference'), 'No link - SDK Reference'
@@ -106,7 +119,8 @@ class ApplicationLayoutTest < ActionDispatch::IntegrationTest
     ['active', api_fixture('users')['active'], true, true],
     ['admin', api_fixture('users')['admin'], true, true],
     ['active_no_prefs', api_fixture('users')['active_no_prefs'], true, false],
-    ['active_no_prefs_profile', api_fixture('users')['active_no_prefs_profile'], true, false],
+    ['active_no_prefs_profile_no_getting_started_shown',
+        api_fixture('users')['active_no_prefs_profile_no_getting_started_shown'], true, false],
   ].each do |token, user, invited, has_profile|
 
     test "visit home page for user #{token}" do
@@ -137,6 +151,102 @@ class ApplicationLayoutTest < ActionDispatch::IntegrationTest
       end
 
       verify_system_menu user
+    end
+  end
+
+  test "test getting started help menu item" do
+    visit page_with_token('active')
+    within '.navbar-fixed-top' do
+      find('.help-menu > a').click
+      find('.help-menu .dropdown-menu a', text: 'Getting Started ...').click
+    end
+
+    within '.modal-content' do
+      assert_text 'Getting Started'
+      assert_selector 'button:not([disabled])', text: 'Next'
+      assert_no_selector 'button:not([disabled])', text: 'Prev'
+
+      # Use Next button to enable Prev button
+      click_button 'Next'
+      assert_selector 'button:not([disabled])', text: 'Prev'  # Prev button is now enabled
+      click_button 'Prev'
+      assert_no_selector 'button:not([disabled])', text: 'Prev'  # Prev button is again disabled
+
+      # Click Next until last page is reached and verify that it is disabled
+      (0..20).each do |i|   # currently we only have 4 pages, and don't expect to have more than 20 in future
+        click_button 'Next'
+        begin
+          find('button:not([disabled])', text: 'Next')
+        rescue => e
+          break
+        end
+      end
+      assert_no_selector 'button:not([disabled])', text: 'Next'  # Next button is disabled
+      assert_selector 'button:not([disabled])', text: 'Prev'     # Prev button is enabled
+      click_button 'Prev'
+      assert_selector 'button:not([disabled])', text: 'Next'     # Next button is now enabled
+
+      first('button', text: 'x').click
+    end
+    assert_text 'Active pipelines' # seeing dashboard now
+  end
+
+  test "test arvados_public_data_doc_url config unset" do
+    Rails.configuration.arvados_public_data_doc_url = false
+
+    visit page_with_token('active')
+    within '.navbar-fixed-top' do
+      find('.help-menu > a').click
+
+      assert_no_selector 'a', text:'Public Pipelines and Data sets'
+
+      assert_selector 'a', text:'Getting Started ...'
+      assert page.has_link?('Tutorials and User guide'), 'No link - Tutorials and User guide'
+      assert page.has_link?('API Reference'), 'No link - API Reference'
+      assert page.has_link?('SDK Reference'), 'No link - SDK Reference'
+      assert page.has_link?('Show version / debugging info ...'), 'No link - Show version / debugging info'
+      assert page.has_link?('Report a problem ...'), 'No link - Report a problem'
+    end
+  end
+
+  test "no SSH public key notification when shell_in_a_box_url is configured" do
+    Rails.configuration.shell_in_a_box_url = 'example.com'
+    visit page_with_token('job_reader')
+    click_link 'notifications-menu'
+    assert_no_selector 'a', text:'Click here to set up an SSH public key for use with Arvados.'
+    assert_selector 'a', text:'Click here to learn how to run an Arvados Crunch pipeline'
+  end
+
+   [
+    ['Repositories',nil,'s0uqq'],
+    ['Virtual machines','virtual machine','current_user_logins'],
+    ['SSH keys',nil,'public_key'],
+    ['Links','link','link_class'],
+    ['Groups','group','group_class'],
+    ['Compute nodes','node','info[ping_secret'],
+    ['Keep services','keep service','service_ssl_flag'],
+    ['Keep disks', 'keep disk','bytes_free'],
+  ].each do |page_name, add_button_text, look_for|
+    test "test system menu #{page_name} link" do
+      visit page_with_token('admin')
+      within('.navbar-fixed-top') do
+        page.find("#system-menu").click
+        within('.dropdown-menu') do
+          assert_selector 'a', text: page_name
+          find('a', text: page_name).click
+        end
+      end
+
+      # click the add button if it exists
+      if add_button_text
+        assert_selector 'button', text: "Add a new #{add_button_text}"
+        find('button', text: "Add a new #{add_button_text}").click
+      else
+        assert_no_selector 'button', text:"Add a new"
+      end
+
+      # look for unique property in the current page
+      assert_text look_for
     end
   end
 end

@@ -7,8 +7,6 @@ import arvados.errors as arv_error
 import arvados.retry as arv_retry
 import mock
 
-from arvados_testutil import fake_requests_response
-
 class RetryLoopTestMixin(object):
     @staticmethod
     def loop_success(result):
@@ -150,8 +148,7 @@ class RetryLoopBackoffTestCase(unittest.TestCase, RetryLoopTestMixin):
 class CheckHTTPResponseSuccessTestCase(unittest.TestCase):
     def results_map(self, *codes):
         for code in codes:
-            response = fake_requests_response(code, None)
-            yield code, arv_retry.check_http_response_success(response)
+            yield code, arv_retry.check_http_response_success(code)
 
     def check(assert_name):
         def check_method(self, expected, *codes):
@@ -204,8 +201,10 @@ class RetryMethodTestCase(unittest.TestCase):
             return (a, num_retries, z)
 
 
-    def test_positional_arg_passed(self):
-        self.assertEqual((3, 2, 0), self.Tester().check(3, 2))
+    def test_positional_arg_raises(self):
+        # unsupported use -- make sure we raise rather than ignore
+        with self.assertRaises(TypeError):
+            self.assertEqual((3, 2, 0), self.Tester().check(3, 2))
 
     def test_keyword_arg_passed(self):
         self.assertEqual((4, 3, 0), self.Tester().check(num_retries=3, a=4))

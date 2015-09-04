@@ -34,7 +34,7 @@ class EC2ComputeNodeDriverTestCase(testutil.DriverTestMixin, unittest.TestCase):
         list_method = self.driver_mock().list_images
         list_method.return_value = [testutil.cloud_object_mock(c)
                                     for c in 'abc']
-        driver = self.new_driver(create_kwargs={'image_id': 'b'})
+        driver = self.new_driver(create_kwargs={'image_id': 'id_b'})
         self.assertEqual(1, list_method.call_count)
 
     def test_create_includes_ping_secret(self):

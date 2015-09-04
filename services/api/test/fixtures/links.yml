@@ -405,6 +405,20 @@ admin_can_write_aproject:
   head_uuid: zzzzz-j7d0g-v955i6s2oi1cbso
   properties: {}
 
+project_viewer_member_of_all_users_group:
+  uuid: zzzzz-o0j2j-cdnq6627g0h0r2x
+  owner_uuid: zzzzz-tpzed-000000000000000
+  created_at: 2015-07-28T21:34:41.361747000Z
+  modified_by_client_uuid: zzzzz-ozdt8-brczlopd8u8d0jr
+  modified_by_user_uuid: zzzzz-tpzed-000000000000000
+  modified_at: 2015-07-28T21:34:41.361747000Z
+  updated_at: 2015-07-28T21:34:41.361747000Z
+  tail_uuid: zzzzz-tpzed-projectviewer1a
+  link_class: permission
+  name: can_read
+  head_uuid: zzzzz-j7d0g-fffffffffffffff
+  properties: {}
+
 project_viewer_can_read_project:
   uuid: zzzzz-o0j2j-projviewerreadp
   owner_uuid: zzzzz-tpzed-000000000000000
@@ -643,6 +657,36 @@ ancient_docker_image_collection_hash:
   properties:
     image_timestamp: "2010-06-10T14:30:00.184019565Z"
 
+ancient_docker_image_collection_tag:
+  uuid: zzzzz-o0j2j-dockercolltagzz
+  owner_uuid: zzzzz-tpzed-xurymjxw79nv3jz
+  created_at: 2014-06-12 14:30:00.184389725 Z
+  modified_by_client_uuid: zzzzz-ozdt8-brczlopd8u8d0jr
+  modified_by_user_uuid: zzzzz-tpzed-000000000000000
+  modified_at: 2014-06-12 14:30:00.184019565 Z
+  updated_at: 2014-06-12 14:30:00.183829316 Z
+  link_class: docker_image_repo+tag
+  name: arvados/apitestfixture:latest
+  tail_uuid: ~
+  head_uuid: zzzzz-4zz18-t68oksiu9m80s4y
+  properties:
+    image_timestamp: "2010-06-10T14:30:00.184019565Z"
+
+docker_image_tag_like_hash:
+  uuid: zzzzz-o0j2j-dockerhashtagaa
+  owner_uuid: zzzzz-tpzed-xurymjxw79nv3jz
+  created_at: 2014-06-11 14:30:00.184389725 Z
+  modified_by_client_uuid: zzzzz-ozdt8-brczlopd8u8d0jr
+  modified_by_user_uuid: zzzzz-tpzed-000000000000000
+  modified_at: 2014-06-11 14:30:00.184019565 Z
+  updated_at: 2014-06-11 14:30:00.183829316 Z
+  link_class: docker_image_repo+tag
+  name: aaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaa:latest
+  tail_uuid: ~
+  head_uuid: zzzzz-4zz18-1v45jub259sjjgb
+  properties:
+    image_timestamp: "2014-06-10T14:30:00.184019565Z"
+
 job_reader_can_read_previous_job_run:
   # Permission link giving job_reader permission
   # to read previous_job_run
@@ -771,6 +815,49 @@ auto_setup_vm_login_username_can_login_to_test_vm:
   name: can_login
   head_uuid: zzzzz-2x53u-382brsig8rp3064
   properties: {username: 'auto_setup_vm_login'}
+  updated_at: 2014-08-06 22:11:51.242010312 Z
+
+admin_can_login_to_testvm2:
+  uuid: zzzzz-o0j2j-peek9mecohgh3ai
+  owner_uuid: zzzzz-tpzed-d9tiejq69daie8f
+  created_at: 2014-08-06 22:11:51.242392533 Z
+  modified_by_client_uuid: zzzzz-ozdt8-brczlopd8u8d0jr
+  modified_by_user_uuid: zzzzz-tpzed-d9tiejq69daie8f
+  modified_at: 2014-08-06 22:11:51.242150425 Z
+  tail_uuid: zzzzz-tpzed-d9tiejq69daie8f
+  link_class: permission
+  name: can_login
+  head_uuid: zzzzz-2x53u-382brsig8rp3065
+  # username is not obviously related to other user data.
+  properties: {username: 'adminroot', groups: ['docker', 'admin']}
+  updated_at: 2014-08-06 22:11:51.242010312 Z
+
+active_can_login_to_testvm2:
+  uuid: zzzzz-o0j2j-rah2ya1ohx9xaev
+  owner_uuid: zzzzz-tpzed-d9tiejq69daie8f
+  created_at: 2014-08-06 22:11:51.242392533 Z
+  modified_by_client_uuid: zzzzz-ozdt8-brczlopd8u8d0jr
+  modified_by_user_uuid: zzzzz-tpzed-d9tiejq69daie8f
+  modified_at: 2014-08-06 22:11:51.242150425 Z
+  tail_uuid: zzzzz-tpzed-xurymjxw79nv3jz
+  link_class: permission
+  name: can_login
+  head_uuid: zzzzz-2x53u-382brsig8rp3065
+  # No groups.
+  properties: {username: 'active'}
+  updated_at: 2014-08-06 22:11:51.242010312 Z
+
+spectator_login_link_for_testvm2_without_username:
+  uuid: zzzzz-o0j2j-aem0eilie1jigh9
+  owner_uuid: zzzzz-tpzed-d9tiejq69daie8f
+  created_at: 2014-08-06 22:11:51.242392533 Z
+  modified_by_client_uuid: zzzzz-ozdt8-brczlopd8u8d0jr
+  modified_by_user_uuid: zzzzz-tpzed-d9tiejq69daie8f
+  modified_at: 2014-08-06 22:11:51.242150425 Z
+  tail_uuid: zzzzz-tpzed-l1s2piq4t4mps8r
+  link_class: permission
+  name: can_login
+  head_uuid: zzzzz-2x53u-382brsig8rp3065
   updated_at: 2014-08-06 22:11:51.242010312 Z
 
 user_foo_can_read_sharing_group:

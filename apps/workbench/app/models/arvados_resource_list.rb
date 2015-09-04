@@ -16,6 +16,11 @@ class ArvadosResourceList
     self
   end
 
+  def distinct(bool=true)
+    @distinct = bool
+    self
+  end
+
   def limit(max_results)
     if not max_results.nil? and not max_results.is_a? Integer
       raise ArgumentError("argument to limit() must be an Integer or nil")
@@ -178,6 +183,7 @@ class ArvadosResourceList
     api_params[:select] = @select if @select
     api_params[:order] = @orderby_spec if @orderby_spec
     api_params[:filters] = @filters if @filters
+    api_params[:distinct] = @distinct if @distinct
 
 
     item_count = 0

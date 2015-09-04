@@ -14,6 +14,20 @@ from . import testutil
 class GCEComputeNodeDriverTestCase(testutil.DriverTestMixin, unittest.TestCase):
     TEST_CLASS = gce.ComputeNodeDriver
 
+    def setUp(self):
+        super(GCEComputeNodeDriverTestCase, self).setUp()
+        self.driver_mock().list_images.return_value = [
+            testutil.cloud_object_mock('testimage', selfLink='image-link')]
+        self.driver_mock().ex_list_disktypes.return_value = [
+            testutil.cloud_object_mock(name, selfLink=name + '-link')
+            for name in ['pd-standard', 'pd-ssd', 'local-ssd']]
+        self.driver_mock.reset_mock()
+
+    def new_driver(self, auth_kwargs={}, list_kwargs={}, create_kwargs={}):
+        create_kwargs.setdefault('image', 'testimage')
+        return super(GCEComputeNodeDriverTestCase, self).new_driver(
+            auth_kwargs, list_kwargs, create_kwargs)
+
     def test_driver_instantiation(self):
         kwargs = {'user_id': 'foo'}
         driver = self.new_driver(auth_kwargs=kwargs)
@@ -24,7 +38,7 @@ class GCEComputeNodeDriverTestCase(testutil.DriverTestMixin, unittest.TestCase):
         image_mocks = [testutil.cloud_object_mock(c) for c in 'abc']
         list_method = self.driver_mock().list_images
         list_method.return_value = image_mocks
-        driver = self.new_driver(create_kwargs={'image': 'B'})
+        driver = self.new_driver(create_kwargs={'image': 'b'})
         self.assertEqual(1, list_method.call_count)
 
     def test_create_includes_ping_secret(self):
@@ -49,6 +63,26 @@ class GCEComputeNodeDriverTestCase(testutil.DriverTestMixin, unittest.TestCase):
         driver.create_node(testutil.MockSize(1), testutil.arvados_node_mock())
         self.assertEqual(['testA', 'testB'],
                          self.driver_mock().create_node.call_args[1]['ex_tags'])
+
+    def test_create_with_two_disks_attached(self):
+        driver = self.new_driver(create_kwargs={'image': 'testimage'})
+        driver.create_node(testutil.MockSize(1), testutil.arvados_node_mock())
+        create_disks = self.driver_mock().create_node.call_args[1].get(
+            'ex_disks_gce_struct', [])
+        self.assertEqual(2, len(create_disks))
+        self.assertTrue(create_disks[0].get('autoDelete'))
+        self.assertTrue(create_disks[0].get('boot'))
+        self.assertEqual('PERSISTENT', create_disks[0].get('type'))
+        init_params = create_disks[0].get('initializeParams', {})
+        self.assertEqual('pd-standard-link', init_params.get('diskType'))
+        self.assertEqual('image-link', init_params.get('sourceImage'))
+        # Our node images expect the SSD to be named `tmp` to find and mount it.
+        self.assertEqual('tmp', create_disks[1].get('deviceName'))
+        self.assertTrue(create_disks[1].get('autoDelete'))
+        self.assertFalse(create_disks[1].get('boot', 'unset'))
+        self.assertEqual('SCRATCH', create_disks[1].get('type'))
+        init_params = create_disks[1].get('initializeParams', {})
+        self.assertEqual('local-ssd-link', init_params.get('diskType'))
 
     def test_list_nodes_requires_tags_match(self):
         # A node matches if our list tags are a subset of the node's tags.
@@ -82,7 +116,7 @@ class GCEComputeNodeDriverTestCase(testutil.DriverTestMixin, unittest.TestCase):
         driver = self.new_driver()
         driver.sync_node(cloud_node, arv_node)
         args, kwargs = self.driver_mock().connection.async_request.call_args
-        self.assertEqual('/zones/TESTZONE/instances/2/setMetadata', args[0])
+        self.assertEqual('/zones/testzone/instances/2/setMetadata', args[0])
         for key in ['kind', 'fingerprint']:
             self.assertEqual(start_metadata[key], kwargs['data'][key])
         plain_metadata['hostname'] = 'compute1.zzzzz.arvadosapi.com'

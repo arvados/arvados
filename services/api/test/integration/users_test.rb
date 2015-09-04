@@ -5,7 +5,7 @@ class UsersTest < ActionDispatch::IntegrationTest
   include UsersTestHelper
 
   test "setup user multiple times" do
-    repo_name = 'test_repo'
+    repo_name = 'usertestrepo'
 
     post "/arvados/v1/users/setup", {
       repo_name: repo_name,
@@ -35,7 +35,7 @@ class UsersTest < ActionDispatch::IntegrationTest
         created['uuid'], created['email'], 'arvados#user', false, 'arvados#user'
 
     verify_link response_items, 'arvados#repository', true, 'permission', 'can_manage',
-        repo_name, created['uuid'], 'arvados#repository', true, 'Repository'
+        'foo/usertestrepo', created['uuid'], 'arvados#repository', true, 'Repository'
 
     verify_link response_items, 'arvados#group', true, 'permission', 'can_read',
         'All users', created['uuid'], 'arvados#group', true, 'Group'
@@ -71,7 +71,7 @@ class UsersTest < ActionDispatch::IntegrationTest
 
     # arvados#user, repo link and link add user to 'All users' group
     verify_link response_items, 'arvados#repository', true, 'permission', 'can_manage',
-        repo_name, created['uuid'], 'arvados#repository', true, 'Repository'
+        'foo/usertestrepo', created['uuid'], 'arvados#repository', true, 'Repository'
 
     verify_link response_items, 'arvados#group', true, 'permission', 'can_read',
         'All users', created['uuid'], 'arvados#group', true, 'Group'
@@ -105,16 +105,13 @@ class UsersTest < ActionDispatch::IntegrationTest
     verify_link response_items, 'arvados#group', true, 'permission', 'can_read',
         'All users', created['uuid'], 'arvados#group', true, 'Group'
 
-    verify_link response_items, 'arvados#repository', false, 'permission', 'can_manage',
-        'test_repo', created['uuid'], 'arvados#repository', true, 'Repository'
-
     verify_link response_items, 'arvados#virtualMachine', false, 'permission', 'can_login',
         nil, created['uuid'], 'arvados#virtualMachine', false, 'VirtualMachine'
 
    # invoke setup with a repository
     post "/arvados/v1/users/setup", {
       openid_prefix: 'http://www.example.com/account',
-      repo_name: 'new_repo',
+      repo_name: 'newusertestrepo',
       uuid: created['uuid']
     }, auth(:admin)
 
@@ -130,7 +127,7 @@ class UsersTest < ActionDispatch::IntegrationTest
         'All users', created['uuid'], 'arvados#group', true, 'Group'
 
     verify_link response_items, 'arvados#repository', true, 'permission', 'can_manage',
-        'new_repo', created['uuid'], 'arvados#repository', true, 'Repository'
+        'foo/newusertestrepo', created['uuid'], 'arvados#repository', true, 'Repository'
 
     verify_link response_items, 'arvados#virtualMachine', false, 'permission', 'can_login',
         nil, created['uuid'], 'arvados#virtualMachine', false, 'VirtualMachine'
@@ -156,17 +153,13 @@ class UsersTest < ActionDispatch::IntegrationTest
     verify_link response_items, 'arvados#group', true, 'permission', 'can_read',
         'All users', created['uuid'], 'arvados#group', true, 'Group'
 
-    # since no repo name in input, we won't get any; even though user has one
-    verify_link response_items, 'arvados#repository', false, 'permission', 'can_manage',
-        'new_repo', created['uuid'], 'arvados#repository', true, 'Repository'
-
     verify_link response_items, 'arvados#virtualMachine', true, 'permission', 'can_login',
         virtual_machines(:testvm).uuid, created['uuid'], 'arvados#virtualMachine', false, 'VirtualMachine'
   end
 
   test "setup and unsetup user" do
     post "/arvados/v1/users/setup", {
-      repo_name: 'test_repo',
+      repo_name: 'newusertestrepo',
       vm_uuid: virtual_machines(:testvm).uuid,
       user: {email: 'foo@example.com'},
       openid_prefix: 'https://www.google.com/accounts/o8/id'
@@ -186,7 +179,7 @@ class UsersTest < ActionDispatch::IntegrationTest
         'All users', created['uuid'], 'arvados#group', true, 'Group'
 
     verify_link response_items, 'arvados#repository', true, 'permission', 'can_manage',
-        'test_repo', created['uuid'], 'arvados#repository', true, 'Repository'
+        'foo/newusertestrepo', created['uuid'], 'arvados#repository', true, 'Repository'
 
     verify_link response_items, 'arvados#virtualMachine', true, 'permission', 'can_login',
         virtual_machines(:testvm).uuid, created['uuid'], 'arvados#virtualMachine', false, 'VirtualMachine'

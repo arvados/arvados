@@ -16,4 +16,20 @@ class RepositoriesController < ApplicationController
     panes.delete('Attributes') if !current_user.is_admin
     panes
   end
+
+  def show_tree
+    @commit = params[:commit]
+    @path = params[:path] || ''
+    @subtree = @object.ls_subtree @commit, @path.chomp('/')
+  end
+
+  def show_blob
+    @commit = params[:commit]
+    @path = params[:path]
+    @blobdata = @object.cat_file @commit, @path
+  end
+
+  def show_commit
+    @commit = params[:commit]
+  end
 end

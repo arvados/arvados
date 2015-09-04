@@ -1,6 +1,7 @@
    <%= image_tag "dax.png", class: "dax" %>
     <div>
       Hi, I noticed that you have not yet set up an SSH public key for use with Arvados.
-      <%= link_to "Click here to set up an SSH public key for use with Arvados.",
-      "/manage_account", style: "font-weight: bold" %>
+      <%= link_to ssh_keys_user_path(current_user) do %>
+        <b>Click here to set up an SSH public key for use with Arvados.</b>
+      <%end%>
     </div>

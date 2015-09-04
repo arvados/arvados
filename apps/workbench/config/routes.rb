@@ -17,6 +17,7 @@ ArvadosWorkbench::Application.routes.draw do
   resources :traits
   resources :api_client_authorizations
   resources :virtual_machines
+  get '/virtual_machines/:id/webshell/:login' => 'virtual_machines#webshell', :as => :webshell_virtual_machine
   resources :authorized_keys
   resources :job_tasks
   resources :jobs do
@@ -26,6 +27,11 @@ ArvadosWorkbench::Application.routes.draw do
   resources :repositories do
     post 'share_with', on: :member
   end
+  # {format: false} prevents rails from treating "foo.png" as foo?format=png
+  get '/repositories/:id/tree/:commit' => 'repositories#show_tree'
+  get '/repositories/:id/tree/:commit/*path' => 'repositories#show_tree', as: :show_repository_tree, format: false
+  get '/repositories/:id/blob/:commit/*path' => 'repositories#show_blob', as: :show_repository_blob, format: false
+  get '/repositories/:id/commit/:commit' => 'repositories#show_commit', as: :show_repository_commit
   match '/logout' => 'sessions#destroy', via: [:get, :post]
   get '/logged_out' => 'sessions#index'
   resources :users do
@@ -40,8 +46,11 @@ ArvadosWorkbench::Application.routes.draw do
     get 'setup_popup', :on => :member
     get 'profile', :on => :member
     post 'request_shell_access', :on => :member
+    get 'virtual_machines', :on => :member
+    get 'repositories', :on => :member
+    get 'ssh_keys', :on => :member
   end
-  get '/manage_account' => 'users#manage_account'
+  get '/current_token' => 'users#current_token'
   get "/add_ssh_key_popup" => 'users#add_ssh_key_popup', :as => :add_ssh_key_popup
   get "/add_ssh_key" => 'users#add_ssh_key', :as => :add_ssh_key
   resources :logs
@@ -77,7 +86,9 @@ ArvadosWorkbench::Application.routes.draw do
     get 'choose', on: :collection
     post 'share_with', on: :member
     get 'tab_counts', on: :member
+    get 'public', on: :collection
   end
+
   resources :search do
     get 'choose', :on => :collection
   end

@@ -219,6 +219,10 @@ table.table-fixed-header-row tbody {
     overflow-y: auto;
 }
 
+.dropdown-menu a {
+    cursor: pointer;
+}
+
 .row-fill-height, .row-fill-height>div[class*='col-'] {
     display: flex;
 }
@@ -295,4 +299,16 @@ span.editable-textile {
 /* tabs */
 ul.nav.nav-tabs {
     font-size: 90%
+}
+
+.hover-dropdown:hover .dropdown-menu {
+  display: block;
+}
+
+.arv-description-as-subtitle .editable-inline,
+.arv-description-as-subtitle .editable-inline .form-group,
+.arv-description-as-subtitle .editable-inline .form-group .editable-input,
+.arv-description-as-subtitle .editable-inline .form-group .editable-input textarea,
+{
+    width: 98%!important;
 }

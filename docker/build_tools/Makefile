@@ -4,7 +4,7 @@ OLD_SHELL := $(SHELL)
 SHELL = $(warning [$@])$(OLD_SHELL) -x
 endif
 
-all: skydns-image skydock-image api-image compute-image doc-image workbench-image keep-image sso-image shell-image
+all: skydns-image skydock-image api-image compute-image doc-image workbench-image keep-image keep-proxy-image sso-image shell-image
 
 IMAGE_FILES := $(shell ls *-image 2>/dev/null |grep -v -E 'debian-arvados-image|skydns-image|skydock-image')
 GENERATED_DIRS := $(shell ls */generated 2>/dev/null)
@@ -19,9 +19,15 @@ clean:
 
 DEBIAN_IMAGE := $(shell $(DOCKER) images -q arvados/debian |head -n1)
 
-REALCLEAN_CONTAINERS := $(shell $(DOCKER) ps -a |grep -e arvados -e api_server -e keep_server -e doc_server -e workbench_server |cut -f 1 -d' ')
-REALCLEAN_IMAGES := $(shell $(DOCKER) images -q arvados/* |grep -v $(DEBIAN_IMAGE) 2>/dev/null)
-DEEPCLEAN_IMAGES := $(shell $(DOCKER) images -q arvados/*)
+REALCLEAN_CONTAINERS := $(shell $(DOCKER) ps -a |grep -e arvados -e api_server -e keep_server -e keep_proxy_server -e doc_server -e workbench_server |cut -f 1 -d' ')
+# Generate a list of docker images tagged as arvados/*
+# but exclude those tagged as arvados/build
+ADI_TEMPFILE := $(shell mktemp)
+ARVADOS_DOCKER_IMAGES := $(shell $(DOCKER) images -q arvados/* |sort > $(ADI_TEMPFILE))
+ABDI_TEMPFILE := $(shell mktemp)
+ARVADOS_BUILD_DOCKER_IMAGES := $(shell $(DOCKER) images -q arvados/build |sort > $(ABDI_TEMPFILE))
+REALCLEAN_IMAGES := $(shell comm -3 $(ADI_TEMPFILE) $(ABDI_TEMPFILE) |grep -v $(DEBIAN_IMAGE) 2>/dev/null)
+DEEPCLEAN_IMAGES := $(shell comm -3 $(ADI_TEMPFILE) $(ABDI_TEMPFILE))
 SKYDNS_CONTAINERS := $(shell $(DOCKER) ps -a |grep -e crosbymichael/skydns -e crosbymichael/skydock |cut -f 1 -d' ')
 SKYDNS_IMAGES := $(shell $(DOCKER) images -q crosbymichael/skyd*)
 
@@ -70,13 +76,15 @@ SHELL_DEPS = shell/* config.yml $(SHELL_GENERATED)
 
 COMPUTE_DEPS = compute/* config.yml $(COMPUTE_GENERATED)
 
-DOC_DEPS = doc/Dockerfile doc/apache2_vhost
+DOC_DEPS = doc/Dockerfile $(DOC_GENERATED)
 
 WORKBENCH_DEPS = workbench/Dockerfile \
                  config.yml \
                  $(WORKBENCH_GENERATED)
 
 KEEP_DEPS = keep/Dockerfile config.yml $(KEEP_GENERATED)
+
+KEEP_PROXY_DEPS = keepproxy/Dockerfile config.yml $(KEEP_PROXY_GENERATED)
 
 SSO_DEPS = config.yml $(SSO_GENERATED)
 
@@ -89,6 +97,9 @@ COMPUTE_GENERATED      = compute/generated/*
 
 KEEP_GENERATED_IN      = keep/*.in
 KEEP_GENERATED         = keep/generated/*
+
+KEEP_PROXY_GENERATED_IN      = keepproxy/*.in
+KEEP_PROXY_GENERATED         = keepproxy/generated/*
 
 API_GENERATED_IN       = api/*.in
 API_GENERATED          = api/generated/*
@@ -105,12 +116,21 @@ WORKBENCH_GENERATED    = workbench/generated/*
 SSO_GENERATED_IN       = sso/*.in
 SSO_GENERATED          = sso/generated/*
 
+DOC_GENERATED_IN       = doc/*.in
+DOC_GENERATED          = doc/generated/*
+
 KEEP_DEPS += keep/generated/bin/keepproxy
 KEEP_DEPS += keep/generated/bin/keepstore
 keep/generated/bin/%: $(wildcard build/services/%/*.go)
 	mkdir -p keep/generated/src/git.curoverse.com
 	ln -sfn ../../../../.. keep/generated/src/git.curoverse.com/arvados.git
 	GOPATH=$(shell pwd)/keep/generated go get $(@:keep/generated/bin/%=git.curoverse.com/arvados.git/services/%)
+
+KEEP_PROXY_DEPS += keepproxy/generated/bin/keepproxy
+keepproxy/generated/bin/%: $(wildcard build/services/%/*.go)
+	mkdir -p keepproxy/generated/src/git.curoverse.com
+	ln -sfn ../../../../.. keepproxy/generated/src/git.curoverse.com/arvados.git
+	GOPATH=$(shell pwd)/keepproxy/generated go get $(@:keepproxy/generated/bin/%=git.curoverse.com/arvados.git/services/%)
 
 $(BUILD):
 	mkdir -p build
@@ -147,8 +167,14 @@ $(COMPUTE_GENERATED): $(COMPUTE_GENERATED_IN)
 $(SSO_GENERATED): $(SSO_GENERATED_IN)
 	$(CONFIG_RB) sso
 
+$(DOC_GENERATED): $(DOC_GENERATED_IN)
+	$(CONFIG_RB) doc
+
 $(KEEP_GENERATED): $(KEEP_GENERATED_IN)
 	$(CONFIG_RB) keep
+
+$(KEEP_PROXY_GENERATED): $(KEEP_PROXY_GENERATED_IN)
+	$(CONFIG_RB) keepproxy
 
 DOCKER_BUILD = $(DOCKER) build --rm=true
 
@@ -185,7 +211,12 @@ keep-image: debian-arvados-image $(BUILD) $(KEEP_DEPS)
 	$(DOCKER_BUILD) -t arvados/keep keep
 	date >keep-image
 
-jobs-image: base-image $(BUILD) $(JOBS_DEPS)
+keep-proxy-image: debian-arvados-image $(BUILD) $(KEEP_PROXY_DEPS)
+	@echo "Building keep-proxy-image"
+	$(DOCKER_BUILD) -t arvados/keepproxy keepproxy
+	date >keep-proxy-image
+
+jobs-image: debian-arvados-image $(BUILD) $(JOBS_DEPS)
 	$(DOCKER_BUILD) -t arvados/jobs jobs
 	date >jobs-image
 
@@ -236,7 +267,7 @@ base-image: debian-arvados-image $(BASE_DEPS)
 
 debian-arvados-image:
 	@echo "Building debian-arvados-image"
-	./mkimage-debootstrap.sh arvados/debian wheezy ftp://ftp.us.debian.org/debian/
+	./mkimage-debootstrap.sh arvados/debian wheezy http://ftp.us.debian.org/debian/
 	date >debian-arvados-image
 
 skydns-image:

@@ -5,8 +5,6 @@ class TestRunPipelineInstance < Minitest::Test
   end
 
   def test_run_pipeline_instance_get_help
-    skip "Waiting unitl #4534 is implemented"
-
     out, err = capture_subprocess_io do
       system ('arv-run-pipeline-instance -h')
     end

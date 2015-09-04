@@ -88,7 +88,7 @@ test:
   action_controller.allow_forgery_protection: false
   action_mailer.delivery_method: :test
   active_support.deprecation: :stderr
-  profiling_enabled: false
+  profiling_enabled: true
   secret_token: <%= rand(2**256).to_s(36) %>
   secret_key_base: <%= rand(2**256).to_s(36) %>
 
@@ -131,6 +131,7 @@ common:
   arvados_insecure_https: true
   activation_contact_link: mailto:info@arvados.org
   arvados_docsite: http://doc.arvados.org
+  arvados_public_data_doc_url: http://arvados.org/projects/arvados/wiki/Public_Pipelines_and_Datasets
   arvados_theme: default
   show_user_agreement_inline: false
   secret_token: ~
@@ -138,8 +139,14 @@ common:
   default_openid_prefix: https://www.google.com/accounts/o8/id
   send_user_setup_notification_email: true
 
-  # Set user_profile_form_fields to enable and configure the user profile page.
-  # Default is set to false. A commented setting with full description is provided below.
+  # Scratch directory used by the remote repository browsing
+  # feature. If it doesn't exist, it (and any missing parents) will be
+  # created using mkdir_p.
+  repository_cache: <%= File.expand_path 'tmp/git', Rails.root %>
+
+  # Set user_profile_form_fields to enable and configure the user
+  # profile page. Default is set to false. A commented example with
+  # full description is provided below.
   user_profile_form_fields: false
 
   # Below is a sample setting of user_profile_form_fields config parameter.
@@ -201,3 +208,19 @@ common:
   # the token by running "bundle exec ./script/get_anonymous_user_token.rb"
   # in the directory where your API server is running.
   anonymous_user_token: false
+
+  # when anonymous_user_token is configured, show public projects page
+  enable_public_projects_page: true
+
+  # Ask Arvados API server to compress its response payloads.
+  api_response_compression: true
+
+  # ShellInABox service endpoint URL for a given VM.  If false, do not
+  # offer web shell logins.
+  #
+  # E.g., using a path-based proxy server to forward connections to shell hosts:
+  # https://webshell.uuid_prefix.arvadosapi.com/%{hostname}
+  #
+  # E.g., using a name-based proxy server to forward connections to shell hosts:
+  # https://%{hostname}.webshell.uuid_prefix.arvadosapi.com/
+  shell_in_a_box_url: false

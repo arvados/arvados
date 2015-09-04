@@ -7,7 +7,7 @@ ARVADOS_USER_NAME:
 
 # ARVADOS_DOMAIN: the Internet domain of this installation.
 # ARVADOS_DNS_SERVER: the authoritative nameserver for ARVADOS_DOMAIN.
-ARVADOS_DOMAIN:         # e.g. arvados.internal
+ARVADOS_DOMAIN: dev.arvados
 ARVADOS_DNS_SERVER:     # e.g. 192.168.0.1
 
 # ==============================
@@ -79,8 +79,6 @@ WORKBENCH_VCF_PIPELINE_UUID:
 WORKBENCH_SITE_NAME: Arvados Workbench
 WORKBENCH_INSECURE_HTTPS: true
 WORKBENCH_ACTIVATION_CONTACT_LINK: mailto:arvados@curoverse.com
-WORKBENCH_ARVADOS_LOGIN_BASE: https://@@API_HOSTNAME@@.@@ARVADOS_DOMAIN@@/login
-WORKBENCH_ARVADOS_V1_BASE: https://@@API_HOSTNAME@@.@@ARVADOS_DOMAIN@@/arvados/v1
 WORKBENCH_SECRET:
 
 # ==============================
@@ -89,11 +87,5 @@ WORKBENCH_SECRET:
 SSO_HOSTNAME: sso
 SSO_SECRET:
 SSO_CLIENT_NAME: devsandbox
-# ==============================
-# Default to using auth.curoverse.com as SSO server
-# To use your a local Docker SSO server, set OMNIAUTH_URL and SSO_CLIENT_SECRET
-# to the empty string
-# ==============================
-OMNIAUTH_URL: https://auth.curoverse.com
 SSO_CLIENT_APP_ID: local_docker_installation
-SSO_CLIENT_SECRET: yohbai4eecohshoo1Yoot7tea9zoca9Eiz3Tajahweo9eePaeshaegh9meiye2ph
+SSO_CLIENT_SECRET:

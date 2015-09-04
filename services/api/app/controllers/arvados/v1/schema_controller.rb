@@ -35,6 +35,7 @@ class Arvados::V1::SchemaController < ApplicationController
         servicePath: "arvados/v1/",
         batchPath: "batch",
         defaultTrashLifetime: Rails.application.config.default_trash_lifetime,
+        blobSignatureTtl: Rails.application.config.blob_signature_ttl,
         maxRequestSize: Rails.application.config.max_request_size,
         parameters: {
           alt: {

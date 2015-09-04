@@ -54,3 +54,27 @@ was_idle_now_down:
     ping_secret: "1bd1yi0x4lb5q4gzqqtrnq30oyj08r8dtdimmanbqw49z1anz2"
     slurm_state: "idle"
     total_cpu_cores: 16
+
+new_with_no_hostname:
+  uuid: zzzzz-7ekkf-newnohostname00
+  owner_uuid: zzzzz-tpzed-000000000000000
+  hostname: ~
+  slot_number: ~
+  ip_address: 172.17.2.173
+  last_ping_at: ~
+  first_ping_at: ~
+  job_uuid: ~
+  info:
+    ping_secret: "abcdyi0x4lb5q4gzqqtrnq30oyj08r8dtdimmanbqw49z1anz2"
+
+new_with_custom_hostname:
+  uuid: zzzzz-7ekkf-newwithhostname
+  owner_uuid: zzzzz-tpzed-000000000000000
+  hostname: custom1
+  slot_number: 23
+  ip_address: 172.17.2.173
+  last_ping_at: ~
+  first_ping_at: ~
+  job_uuid: ~
+  info:
+    ping_secret: "abcdyi0x4lb5q4gzqqtrnq30oyj08r8dtdimmanbqw49z1anz2"

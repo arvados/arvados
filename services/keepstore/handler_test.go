@@ -43,9 +43,9 @@ func TestGetHandler(t *testing.T) {
 
 	// Prepare two test Keep volumes. Our block is stored on the second volume.
 	KeepVM = MakeTestVolumeManager(2)
-	defer KeepVM.Quit()
+	defer KeepVM.Close()
 
-	vols := KeepVM.Volumes()
+	vols := KeepVM.AllWritable()
 	if err := vols[0].Put(TEST_HASH, TEST_BLOCK); err != nil {
 		t.Error(err)
 	}
@@ -54,11 +54,11 @@ func TestGetHandler(t *testing.T) {
 	// Turn on permission settings so we can generate signed locators.
 	enforce_permissions = true
 	PermissionSecret = []byte(known_key)
-	permission_ttl = time.Duration(300) * time.Second
+	blob_signature_ttl = 300 * time.Second
 
 	var (
 		unsigned_locator  = "/" + TEST_HASH
-		valid_timestamp   = time.Now().Add(permission_ttl)
+		valid_timestamp   = time.Now().Add(blob_signature_ttl)
 		expired_timestamp = time.Now().Add(-time.Hour)
 		signed_locator    = "/" + SignLocator(TEST_HASH, known_token, valid_timestamp)
 		expired_locator   = "/" + SignLocator(TEST_HASH, known_token, expired_timestamp)
@@ -151,7 +151,7 @@ func TestPutHandler(t *testing.T) {
 
 	// Prepare two test Keep volumes.
 	KeepVM = MakeTestVolumeManager(2)
-	defer KeepVM.Quit()
+	defer KeepVM.Close()
 
 	// --------------
 	// No server key.
@@ -176,7 +176,7 @@ func TestPutHandler(t *testing.T) {
 	// With a server key.
 
 	PermissionSecret = []byte(known_key)
-	permission_ttl = time.Duration(300) * time.Second
+	blob_signature_ttl = 300 * time.Second
 
 	// When a permission key is available, the locator returned
 	// from an authenticated PUT request will be signed.
@@ -195,7 +195,7 @@ func TestPutHandler(t *testing.T) {
 		"Authenticated PUT, signed locator, with server key",
 		http.StatusOK, response)
 	response_locator := strings.TrimSpace(response.Body.String())
-	if !VerifySignature(response_locator, known_token) {
+	if VerifySignature(response_locator, known_token) != nil {
 		t.Errorf("Authenticated PUT, signed locator, with server key:\n"+
 			"response '%s' does not contain a valid signature",
 			response_locator)
@@ -218,6 +218,47 @@ func TestPutHandler(t *testing.T) {
 		TEST_HASH_PUT_RESPONSE, response)
 }
 
+func TestPutAndDeleteSkipReadonlyVolumes(t *testing.T) {
+	defer teardown()
+	data_manager_token = "fake-data-manager-token"
+	vols := []*MockVolume{CreateMockVolume(), CreateMockVolume()}
+	vols[0].Readonly = true
+	KeepVM = MakeRRVolumeManager([]Volume{vols[0], vols[1]})
+	defer KeepVM.Close()
+	IssueRequest(
+		&RequestTester{
+			method:       "PUT",
+			uri:          "/" + TEST_HASH,
+			request_body: TEST_BLOCK,
+		})
+	never_delete = false
+	IssueRequest(
+		&RequestTester{
+			method:       "DELETE",
+			uri:          "/" + TEST_HASH,
+			request_body: TEST_BLOCK,
+			api_token:    data_manager_token,
+		})
+	type expect struct {
+		volnum    int
+		method    string
+		callcount int
+	}
+	for _, e := range []expect{
+		{0, "Get", 0},
+		{0, "Touch", 0},
+		{0, "Put", 0},
+		{0, "Delete", 0},
+		{1, "Get", 1},
+		{1, "Put", 1},
+		{1, "Delete", 1},
+	} {
+		if calls := vols[e.volnum].CallCount(e.method); calls != e.callcount {
+			t.Errorf("Got %d %s() on vol %d, expect %d", calls, e.method, e.volnum, e.callcount)
+		}
+	}
+}
+
 // Test /index requests:
 //   - unauthenticated /index request
 //   - unauthenticated /index/prefix request
@@ -236,9 +277,9 @@ func TestIndexHandler(t *testing.T) {
 	// Include multiple blocks on different volumes, and
 	// some metadata files (which should be omitted from index listings)
 	KeepVM = MakeTestVolumeManager(2)
-	defer KeepVM.Quit()
+	defer KeepVM.Close()
 
-	vols := KeepVM.Volumes()
+	vols := KeepVM.AllWritable()
 	vols[0].Put(TEST_HASH, TEST_BLOCK)
 	vols[1].Put(TEST_HASH_2, TEST_BLOCK_2)
 	vols[0].Put(TEST_HASH+".meta", []byte("metadata"))
@@ -337,7 +378,7 @@ func TestIndexHandler(t *testing.T) {
 		response)
 
 	expected := `^` + TEST_HASH + `\+\d+ \d+\n` +
-		TEST_HASH_2 + `\+\d+ \d+\n$`
+		TEST_HASH_2 + `\+\d+ \d+\n\n$`
 	match, _ := regexp.MatchString(expected, response.Body.String())
 	if !match {
 		t.Errorf(
@@ -353,7 +394,7 @@ func TestIndexHandler(t *testing.T) {
 		http.StatusOK,
 		response)
 
-	expected = `^` + TEST_HASH + `\+\d+ \d+\n$`
+	expected = `^` + TEST_HASH + `\+\d+ \d+\n\n$`
 	match, _ = regexp.MatchString(expected, response.Body.String())
 	if !match {
 		t.Errorf(
@@ -395,18 +436,20 @@ func TestDeleteHandler(t *testing.T) {
 	// Include multiple blocks on different volumes, and
 	// some metadata files (which should be omitted from index listings)
 	KeepVM = MakeTestVolumeManager(2)
-	defer KeepVM.Quit()
+	defer KeepVM.Close()
 
-	vols := KeepVM.Volumes()
+	vols := KeepVM.AllWritable()
 	vols[0].Put(TEST_HASH, TEST_BLOCK)
 
-	// Explicitly set the permission_ttl to 0 for these
+	// Explicitly set the blob_signature_ttl to 0 for these
 	// tests, to ensure the MockVolume deletes the blocks
 	// even though they have just been created.
-	permission_ttl = time.Duration(0)
+	blob_signature_ttl = time.Duration(0)
 
 	var user_token = "NOT DATA MANAGER TOKEN"
 	data_manager_token = "DATA MANAGER TOKEN"
+
+	never_delete = false
 
 	unauth_req := &RequestTester{
 		method: "DELETE",
@@ -488,10 +531,10 @@ func TestDeleteHandler(t *testing.T) {
 		t.Error("superuser_existing_block_req: block not deleted")
 	}
 
-	// A DELETE request on a block newer than permission_ttl should return
-	// success but leave the block on the volume.
+	// A DELETE request on a block newer than blob_signature_ttl
+	// should return success but leave the block on the volume.
 	vols[0].Put(TEST_HASH, TEST_BLOCK)
-	permission_ttl = time.Duration(1) * time.Hour
+	blob_signature_ttl = time.Hour
 
 	response = IssueRequest(superuser_existing_block_req)
 	ExpectStatusCode(t,
@@ -545,6 +588,8 @@ func TestPullHandler(t *testing.T) {
 	var user_token = "USER TOKEN"
 	data_manager_token = "DATA MANAGER TOKEN"
 
+	pullq = NewWorkQueue()
+
 	good_json := []byte(`[
 		{
 			"locator":"locator_with_two_servers",
@@ -594,7 +639,7 @@ func TestPullHandler(t *testing.T) {
 			"Invalid pull request from the data manager",
 			RequestTester{"/pull", data_manager_token, "PUT", bad_json},
 			http.StatusBadRequest,
-			"Bad Request\n",
+			"",
 		},
 	}
 
@@ -649,6 +694,8 @@ func TestTrashHandler(t *testing.T) {
 	var user_token = "USER TOKEN"
 	data_manager_token = "DATA MANAGER TOKEN"
 
+	trashq = NewWorkQueue()
+
 	good_json := []byte(`[
 		{
 			"locator":"block1",
@@ -696,7 +743,7 @@ func TestTrashHandler(t *testing.T) {
 			"Invalid trash list from the data manager",
 			RequestTester{"/trash", data_manager_token, "PUT", bad_json},
 			http.StatusBadRequest,
-			"Bad Request\n",
+			"",
 		},
 	}
 
@@ -744,7 +791,7 @@ func ExpectStatusCode(
 	expected_status int,
 	response *httptest.ResponseRecorder) {
 	if response.Code != expected_status {
-		t.Errorf("%s: expected status %s, got %+v",
+		t.Errorf("%s: expected status %d, got %+v",
 			testname, expected_status, response)
 	}
 }
@@ -754,8 +801,87 @@ func ExpectBody(
 	testname string,
 	expected_body string,
 	response *httptest.ResponseRecorder) {
-	if response.Body.String() != expected_body {
+	if expected_body != "" && response.Body.String() != expected_body {
 		t.Errorf("%s: expected response body '%s', got %+v",
 			testname, expected_body, response)
+	}
+}
+
+// Invoke the PutBlockHandler a bunch of times to test for bufferpool resource
+// leak.
+func TestPutHandlerNoBufferleak(t *testing.T) {
+	defer teardown()
+
+	// Prepare two test Keep volumes.
+	KeepVM = MakeTestVolumeManager(2)
+	defer KeepVM.Close()
+
+	ok := make(chan bool)
+	go func() {
+		for i := 0; i < maxBuffers+1; i += 1 {
+			// Unauthenticated request, no server key
+			// => OK (unsigned response)
+			unsigned_locator := "/" + TEST_HASH
+			response := IssueRequest(
+				&RequestTester{
+					method:       "PUT",
+					uri:          unsigned_locator,
+					request_body: TEST_BLOCK,
+				})
+			ExpectStatusCode(t,
+				"TestPutHandlerBufferleak", http.StatusOK, response)
+			ExpectBody(t,
+				"TestPutHandlerBufferleak",
+				TEST_HASH_PUT_RESPONSE, response)
+		}
+		ok <- true
+	}()
+	select {
+	case <-time.After(20 * time.Second):
+		// If the buffer pool leaks, the test goroutine hangs.
+		t.Fatal("test did not finish, assuming pool leaked")
+	case <-ok:
+	}
+}
+
+// Invoke the GetBlockHandler a bunch of times to test for bufferpool resource
+// leak.
+func TestGetHandlerNoBufferleak(t *testing.T) {
+	defer teardown()
+
+	// Prepare two test Keep volumes. Our block is stored on the second volume.
+	KeepVM = MakeTestVolumeManager(2)
+	defer KeepVM.Close()
+
+	vols := KeepVM.AllWritable()
+	if err := vols[0].Put(TEST_HASH, TEST_BLOCK); err != nil {
+		t.Error(err)
+	}
+
+	ok := make(chan bool)
+	go func() {
+		for i := 0; i < maxBuffers+1; i += 1 {
+			// Unauthenticated request, unsigned locator
+			// => OK
+			unsigned_locator := "/" + TEST_HASH
+			response := IssueRequest(
+				&RequestTester{
+					method: "GET",
+					uri:    unsigned_locator,
+				})
+			ExpectStatusCode(t,
+				"Unauthenticated request, unsigned locator", http.StatusOK, response)
+			ExpectBody(t,
+				"Unauthenticated request, unsigned locator",
+				string(TEST_BLOCK),
+				response)
+		}
+		ok <- true
+	}()
+	select {
+	case <-time.After(20 * time.Second):
+		// If the buffer pool leaks, the test goroutine hangs.
+		t.Fatal("test did not finish, assuming pool leaked")
+	case <-ok:
 	}
 }

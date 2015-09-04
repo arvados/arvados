@@ -1,5 +1,6 @@
 require 'integration_helper'
 require 'helpers/share_object_helper'
+require_relative 'integration_test_utils'
 
 class ProjectsTest < ActionDispatch::IntegrationTest
   include ShareObjectHelper
@@ -33,109 +34,6 @@ class ProjectsTest < ActionDispatch::IntegrationTest
     visit current_path
     assert(find?('.container-fluid', text: 'I just edited this.'),
            "Description update did not survive page refresh")
-  end
-
-  test 'Find a project and edit description to textile description' do
-    visit page_with_token 'active', '/'
-    find("#projects-menu").click
-    find(".dropdown-menu a", text: "A Project").click
-    within('.container-fluid', text: api_fixture('groups')['aproject']['name']) do
-      find('span', text: api_fixture('groups')['aproject']['name']).click
-      within('.arv-description-as-subtitle') do
-        find('.fa-pencil').click
-        find('.editable-input textarea').set('<p>*Textile description for A project* - "take me home":/ </p><p>And a new paragraph in description.</p>')
-        find('.editable-submit').click
-      end
-      wait_for_ajax
-    end
-
-    # visit project page
-    visit current_path
-    assert_no_text '*Textile description for A project*'
-    assert(find?('.container-fluid', text: 'Textile description for A project'),
-           "Description update did not survive page refresh")
-    assert(find?('.container-fluid', text: 'And a new paragraph in description'),
-           "Description did not contain the expected new paragraph")
-    assert(page.has_link?("take me home"), "link not found in description")
-
-    click_link 'take me home'
-
-    # now in dashboard
-    assert(page.has_text?('Active pipelines'), 'Active pipelines - not found on dashboard')
-  end
-
-  test 'Find a project and edit description to html description' do
-    visit page_with_token 'active', '/'
-    find("#projects-menu").click
-    find(".dropdown-menu a", text: "A Project").click
-    within('.container-fluid', text: api_fixture('groups')['aproject']['name']) do
-      find('span', text: api_fixture('groups')['aproject']['name']).click
-      within('.arv-description-as-subtitle') do
-        find('.fa-pencil').click
-        find('.editable-input textarea').set('<br>Textile description for A project</br> - <a href="/">take me home</a>')
-        find('.editable-submit').click
-      end
-      wait_for_ajax
-    end
-    visit current_path
-    assert(find?('.container-fluid', text: 'Textile description for A project'),
-           "Description update did not survive page refresh")
-    assert(!find?('.container-fluid', text: '<br>Textile description for A project</br>'),
-           "Textile description is displayed with uninterpreted formatting characters")
-    assert(page.has_link?("take me home"),"link not found in description")
-    click_link 'take me home'
-    assert page.has_text?('Active pipelines')
-  end
-
-  test 'Find a project and edit description to textile description with link to object' do
-    visit page_with_token 'active', '/'
-    find("#projects-menu").click
-    find(".dropdown-menu a", text: "A Project").click
-    within('.container-fluid', text: api_fixture('groups')['aproject']['name']) do
-      find('span', text: api_fixture('groups')['aproject']['name']).click
-      within('.arv-description-as-subtitle') do
-        find('.fa-pencil').click
-        find('.editable-input textarea').set('*Textile description for A project* - "go to sub-project":' + api_fixture('groups')['asubproject']['uuid'] + "'")
-        find('.editable-submit').click
-      end
-      wait_for_ajax
-    end
-    visit current_path
-    assert(find?('.container-fluid', text: 'Textile description for A project'),
-           "Description update did not survive page refresh")
-    assert(!find?('.container-fluid', text: '*Textile description for A project*'),
-           "Textile description is displayed with uninterpreted formatting characters")
-    assert(page.has_link?("go to sub-project"), "link not found in description")
-    click_link 'go to sub-project'
-    assert(page.has_text?(api_fixture('groups')['asubproject']['name']), 'sub-project name not found after clicking link')
-  end
-
-  test 'Add a new name, then edit it, without creating a duplicate' do
-    project_uuid = api_fixture('groups')['aproject']['uuid']
-    specimen_uuid = api_fixture('traits')['owned_by_aproject_with_no_name']['uuid']
-    visit page_with_token 'active', '/projects/' + project_uuid
-    click_link 'Other objects'
-    within '.selection-action-container' do
-      # Wait for the tab to load:
-      assert_selector 'tr[data-kind="arvados#trait"]'
-      within first('tr', text: 'Trait') do
-        find(".fa-pencil").click
-        find('.editable-input input').set('Now I have a name.')
-        find('.glyphicon-ok').click
-        assert_selector '.editable', text: 'Now I have a name.'
-        find(".fa-pencil").click
-        find('.editable-input input').set('Now I have a new name.')
-        find('.glyphicon-ok').click
-      end
-      wait_for_ajax
-      assert_selector '.editable', text: 'Now I have a new name.'
-    end
-    visit current_path
-    click_link 'Other objects'
-    within '.selection-action-container' do
-      find '.editable', text: 'Now I have a new name.'
-      assert_no_selector '.editable', text: 'Now I have a name.'
-    end
   end
 
   test 'Create a project and move it into a different project' do
@@ -199,12 +97,6 @@ class ProjectsTest < ActionDispatch::IntegrationTest
     open_groups_sharing
     assert_selector(".modal-container .selectable",
                     text: group_name("anonymous_group"))
-  end
-
-  test "project viewer can't see project sharing tab" do
-    show_object_using('project_viewer', 'groups', 'aproject', 'A Project')
-    assert(page.has_no_link?("Sharing"),
-           "read-only project user sees sharing tab")
   end
 
   test "project owner can manage sharing for another user" do
@@ -490,9 +382,7 @@ class ProjectsTest < ActionDispatch::IntegrationTest
       my_project = api_fixture('groups')['aproject']
       my_collection = api_fixture('collections')['collection_to_move_around_in_aproject']
 
-      visit page_with_token user, '/'
-      find("#projects-menu").click
-      find(".dropdown-menu a", text: my_project['name']).click
+      visit page_with_token user, "/projects/#{my_project['uuid']}"
       click_link 'Data collections'
       assert page.has_text?(my_collection['name']), 'Collection not found in project'
 
@@ -513,18 +403,6 @@ class ProjectsTest < ActionDispatch::IntegrationTest
         assert page.has_text?("Created new collection in your Home project"),
                               'Not found flash message that new collection is created in Home project'
       end
-    end
-  end
-
-  [
-    ["jobs", "/jobs"],
-    ["pipelines", "/pipeline_instances"],
-    ["collections", "/collections"]
-  ].each do |target,path|
-    test "Test dashboard button all #{target}" do
-      visit page_with_token 'active', '/'
-      click_link "All #{target}"
-      assert_equal path, current_path
     end
   end
 
@@ -650,33 +528,13 @@ class ProjectsTest < ActionDispatch::IntegrationTest
     end
   end
 
-  # Move button accessibility
-  [
-    ['admin', true],
-    ['active', true],  # project owner
-    ['project_viewer', false],
-    ].each do |user, can_move|
-    test "#{user} can move subproject under another user's Home #{can_move}" do
-      project = api_fixture('groups')['aproject']
-      collection = api_fixture('collections')['collection_to_move_around_in_aproject']
-
-      # verify the project move button
-      visit page_with_token user, "/projects/#{project['uuid']}"
-      if can_move
-        assert page.has_link? 'Move project...'
-      else
-        assert page.has_no_link? 'Move project...'
-      end
-    end
-  end
-
   test "error while loading tab" do
     original_arvados_v1_base = Rails.configuration.arvados_v1_base
 
     visit page_with_token 'active', '/projects/' + api_fixture('groups')['aproject']['uuid']
 
     # Point to a bad api server url to generate error
-    Rails.configuration.arvados_v1_base = "https://[100::f]:1/"
+    Rails.configuration.arvados_v1_base = "https://[::1]:1/"
     click_link 'Other objects'
     within '#Other_objects' do
       # Error
@@ -721,5 +579,134 @@ class ProjectsTest < ActionDispatch::IntegrationTest
     assert_text("API response")
     find("#page-wrapper .nav-tabs :first-child a").click
     assert_text("Collection modified at")
+  end
+
+  # "Select all" and "Unselect all" options
+  test "select all and unselect all actions" do
+    need_selenium 'to check and uncheck checkboxes'
+
+    visit page_with_token 'active', '/projects/' + api_fixture('groups')['aproject']['uuid']
+
+    # Go to "Data collections" tab and click on "Select all"
+    click_link 'Data collections'
+    wait_for_ajax
+
+    # Initially, all selection options for this tab should be disabled
+    click_button 'Selection'
+    within('.selection-action-container') do
+      assert_selector 'li.disabled', text: 'Create new collection with selected collections'
+      assert_selector 'li.disabled', text: 'Copy selected'
+    end
+
+    # Select all
+    click_button 'Select all'
+
+    assert_checkboxes_state('input[type=checkbox]', true, '"select all" should check all checkboxes')
+
+    # Now the selection options should be enabled
+    click_button 'Selection'
+    within('.selection-action-container') do
+      assert_selector 'li', text: 'Create new collection with selected collections'
+      assert_no_selector 'li.disabled', text: 'Copy selected'
+      assert_selector 'li', text: 'Create new collection with selected collections'
+      assert_no_selector 'li.disabled', text: 'Copy selected'
+    end
+
+    # Go to Jobs and pipelines tab and assert none selected
+    click_link 'Jobs and pipelines'
+    wait_for_ajax
+
+    # Since this is the first visit to this tab, all selection options should be disabled
+    click_button 'Selection'
+    within('.selection-action-container') do
+      assert_selector 'li.disabled', text: 'Create new collection with selected collections'
+      assert_selector 'li.disabled', text: 'Copy selected'
+    end
+
+    assert_checkboxes_state('input[type=checkbox]', false, '"select all" should check all checkboxes')
+
+    # Select all
+    click_button 'Select all'
+    assert_checkboxes_state('input[type=checkbox]', true, '"select all" should check all checkboxes')
+
+    # Applicable selection options should be enabled
+    click_button 'Selection'
+    within('.selection-action-container') do
+      assert_selector 'li.disabled', text: 'Create new collection with selected collections'
+      assert_selector 'li', text: 'Copy selected'
+      assert_no_selector 'li.disabled', text: 'Copy selected'
+    end
+
+    # Unselect all
+    click_button 'Unselect all'
+    assert_checkboxes_state('input[type=checkbox]', false, '"select all" should check all checkboxes')
+
+    # All selection options should be disabled again
+    click_button 'Selection'
+    within('.selection-action-container') do
+      assert_selector 'li.disabled', text: 'Create new collection with selected collections'
+      assert_selector 'li.disabled', text: 'Copy selected'
+    end
+
+    # Go back to Data collections tab and verify all are still selected
+    click_link 'Data collections'
+    wait_for_ajax
+
+    # Selection options should be enabled based on the fact that all collections are still selected in this tab
+    click_button 'Selection'
+    within('.selection-action-container') do
+      assert_selector 'li', text: 'Create new collection with selected collections'
+      assert_no_selector 'li.disabled', text: 'Copy selected'
+      assert_selector 'li', text: 'Create new collection with selected collections'
+      assert_no_selector 'li.disabled', text: 'Copy selected'
+    end
+
+    assert_checkboxes_state('input[type=checkbox]', true, '"select all" should check all checkboxes')
+
+    # Unselect all
+    find('button#unselect-all').click
+    assert_checkboxes_state('input[type=checkbox]', false, '"unselect all" should clear all checkboxes')
+
+    # Now all selection options should be disabled because none of the collections are checked
+    click_button 'Selection'
+    within('.selection-action-container') do
+      assert_selector 'li.disabled', text: 'Copy selected'
+      assert_selector 'li.disabled', text: 'Copy selected'
+    end
+
+    # Verify checking just one checkbox still works as expected
+    within('tr', text: api_fixture('collections')['collection_to_move_around_in_aproject']['name']) do
+      find('input[type=checkbox]').click
+    end
+
+    click_button 'Selection'
+    within('.selection-action-container') do
+      assert_selector 'li', text: 'Create new collection with selected collections'
+      assert_no_selector 'li.disabled', text: 'Copy selected'
+      assert_selector 'li', text: 'Create new collection with selected collections'
+      assert_no_selector 'li.disabled', text: 'Copy selected'
+    end
+  end
+
+  test "test search all projects menu item in projects menu" do
+     need_selenium
+     visit page_with_token('active')
+     find('#projects-menu').click
+     within('.dropdown-menu') do
+       assert_selector 'a', text: 'Search all projects'
+       find('a', text: 'Search all projects').click
+     end
+     within('.modal-content') do
+        assert page.has_text?('All projects'), 'No text - All projects'
+        assert page.has_text?('Search'), 'No text - Search'
+        assert page.has_text?('Cancel'), 'No text - Cancel'
+        fill_in "Search", with: 'Unrestricted public data'
+        wait_for_ajax
+        assert_selector 'div', text: 'Unrestricted public data'
+        find(:xpath, '//*[@id="choose-scroll"]/div[2]/div').click
+        click_button 'Show'
+     end
+     assert page.has_text?('Unrestricted public data'), 'No text - Unrestricted public data'
+     assert page.has_text?('An anonymously accessible project'), 'No text - An anonymously accessible project'
   end
 end

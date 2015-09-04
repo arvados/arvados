@@ -23,11 +23,17 @@ ArvadosWorkbench::Application.configure do
     ks.each do |kk|
       cfg = cfg.send(kk)
     end
-    if cfg.respond_to?(k.to_sym) and !cfg.send(k).nil?
-      # Config must have been set already in environments/*.rb.
+    if v.nil? and cfg.respond_to?(k) and !cfg.send(k).nil?
+      # Config is nil in *.yml, but has been set already in
+      # environments/*.rb (or has a Rails default). Don't overwrite
+      # the default/upstream config with nil.
       #
       # After config files have been migrated, this mechanism should
-      # be deprecated, then removed.
+      # be removed.
+      Rails.logger.warn <<EOS
+DEPRECATED: Inheriting config.#{ks.join '.'} from Rails config.
+            Please move this config into config/application.yml.
+EOS
     elsif v.nil?
       # Config variables are not allowed to be nil. Make a "naughty"
       # list, and present it below.

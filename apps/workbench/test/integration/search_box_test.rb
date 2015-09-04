@@ -8,17 +8,20 @@ class SearchBoxTest < ActionDispatch::IntegrationTest
   # test the search box
   def verify_search_box user
     if user && user['is_active']
-      # let's search for a valid uuid
+      aproject_uuid = api_fixture('groups')['aproject']['uuid']
+      # let's search for aproject by uuid
       within('.navbar-fixed-top') do
         page.has_field?('search')
-        page.find_field('search').set user['uuid']
+        page.find_field('search').set aproject_uuid
         page.find('.glyphicon-search').click
       end
 
-      # we should now be in the user's home project as a result of search
-      assert_selector "#Data_collections[data-object-uuid='#{user['uuid']}']", "Expected to be in user page after search click"
+      # we should now be in aproject as a result of search
+      assert_selector 'a', text:'Data collections'
+      click_link 'Data collections'
+      assert_selector "#Data_collections[data-object-uuid='#{aproject_uuid}']", "Expected to be in user page after search click"
 
-      # let's search again for an invalid valid uuid
+      # let's search again for an invalid uuid
       within('.navbar-fixed-top') do
         search_for = String.new user['uuid']
         search_for[0]='1'

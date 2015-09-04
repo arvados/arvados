@@ -7,7 +7,7 @@
     <div class="modal-header">
       <button type="button" class="close" onClick="reset_form()" data-dismiss="modal" aria-hidden="true">&times;</button>
       <div>
-        <div class="col-sm-6"> <h4 class="modal-title">Setup User</h4> </div>
+        <div class="col-sm-6"> <h4 class="modal-title">Setup Shell Account</h4> </div>
         <div class="spinner spinner-32px spinner-h-center col-sm-1" hidden="true"></div>
       </div>
       <br/>
@@ -21,12 +21,12 @@
       <% disable_email = uuid != nil %>
       <% identity_url_prefix = @current_selections[:identity_url_prefix] %>
       <% disable_url_prefix = identity_url_prefix != nil %>
-      <% selected_repo = @current_selections[:repo_name] %>
       <% selected_vm = @current_selections[:vm_uuid] %>
+      <% groups = @current_selections[:groups] %>
 
       <input id="user_uuid" maxlength="250" name="user_uuid" type="hidden" value="<%=uuid%>">
       <div class="form-group">
-	<label for="email">Email</label>
+        <label for="email">Email</label>
         <% if disable_email %>
         <input class="form-control" id="email" maxlength="250" name="email" type="text" value="<%=email%>" disabled>
         <% else %>
@@ -44,22 +44,22 @@
         <% end %>
       </div>
       <div class="form-group">
-        <label for="repo_name">Repository Name and Shell Login</label>
-        <input class="form-control" id="repo_name" maxlength="250" name="repo_name" type="text" value="<%=selected_repo%>">
-      </div>
-      <div class="form-group">
         <label for="vm_uuid">Virtual Machine</label>
         <select class="form-control" name="vm_uuid">
           <option value="" <%= 'selected' unless selected_vm %>>
-	    Choose One:
-	  </option>
+            Choose One:
+          </option>
           <% @vms.each do |vm| %>
             <option value="<%=vm.uuid%>"
-		    <%= 'selected' if selected_vm == vm.uuid %>>
-	      <%= vm.hostname %>
-	    </option>
+              <%= 'selected' if selected_vm == vm.uuid %>>
+              <%= vm.hostname %>
+            </option>
           <% end %>
         </select>
+      </div>
+      <div class="groups-group">
+        <label for="groups">Groups for virtual machine (comma separated list)</label>
+        <input class="form-control" id="groups" maxlength="250" name="groups" type="text" value="<%=groups%>">
       </div>
     </div>
 

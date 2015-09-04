@@ -48,6 +48,7 @@
 
   <%= link_to(send("choose_#{share_class}_path",
       title: "Share with #{share_class}",
+      message: "Only #{share_class} you are allowed to access are shown. Please contact your administrator if you need to be added to a specific group.",
       by_project: false,
       preview_pane: false,
       multiple: true,

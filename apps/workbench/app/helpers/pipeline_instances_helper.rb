@@ -289,7 +289,7 @@ module PipelineInstancesHelper
     else
       s = ""
       if days > 0
-        s += "#{days}<span class='time-label-divider'>d</span> "
+        s += "#{days}<span class='time-label-divider'>d</span>"
       end
 
       if (hours > 0)
@@ -298,7 +298,7 @@ module PipelineInstancesHelper
 
       s += "#{minutes}<span class='time-label-divider'>m</span>"
 
-      if not round_to_min
+      if not round_to_min or (days == 0 and hours == 0 and minutes == 0)
         s += "#{seconds}<span class='time-label-divider'>s</span>"
       end
     end
@@ -306,4 +306,11 @@ module PipelineInstancesHelper
     raw(s)
   end
 
+  def render_unreadable_inputs_present
+    if current_user and controller.class.name.eql?('PipelineInstancesController') and unreadable_inputs_present?
+      raw('<div class="alert alert-danger unreadable-inputs-present">' +
+            '<p>One or more inputs provided are not readable by you. ' +
+              'Please correct these before you can run the pipeline.</p></div>')
+    end
+  end
 end

@@ -7,7 +7,7 @@ APP_SECRET = '@@SSO_CLIENT_SECRET@@'
 if '@@OMNIAUTH_URL@@' != ''
   CUSTOM_PROVIDER_URL = '@@OMNIAUTH_URL@@'
 else
-  CUSTOM_PROVIDER_URL = 'https://' + ENV['SSO_PORT_443_TCP_ADDR'].to_s
+  CUSTOM_PROVIDER_URL = 'https://@@SSO_HOSTNAME@@.@@ARVADOS_DOMAIN@@'
 end
 
 # This is a development sandbox, we use self-signed certificates

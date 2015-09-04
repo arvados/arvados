@@ -2,6 +2,9 @@
 .rvmrc
 *~
 *.pyc
+*.gem
+*.rpm
+*.deb
 docker/*/generated
 docker/config.yml
 doc/.site
@@ -16,3 +19,5 @@ sdk/java/target
 *.class
 sdk/java/log
 /tmp
+sdk/python/tmp
+services/fuse/tmp

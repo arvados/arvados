@@ -1,18 +1,9 @@
 require 'integration_helper'
+require_relative 'integration_test_utils'
 
 class CollectionsTest < ActionDispatch::IntegrationTest
   setup do
     need_javascript
-  end
-
-  # check_checkboxes_state asserts that the page holds at least one
-  # checkbox matching 'selector', and that all matching checkboxes
-  # are in state 'checkbox_status' (i.e. checked if true, unchecked otherwise)
-  def assert_checkboxes_state(selector, checkbox_status, msg=nil)
-    assert page.has_selector?(selector)
-    page.all(selector).each do |checkbox|
-      assert(checkbox.checked? == checkbox_status, msg)
-    end
   end
 
   test "Can copy a collection to a project" do
@@ -27,17 +18,6 @@ class CollectionsTest < ActionDispatch::IntegrationTest
     # Should navigate to the Data collections tab of the project after copying
     assert_text project_name
     assert_text "Copy of #{collection_name}"
-  end
-
-  test "Collection page renders name" do
-    Capybara.current_driver = :rack_test
-    uuid = api_fixture('collections')['foo_file']['uuid']
-    coll_name = api_fixture('collections')['foo_file']['name']
-    visit page_with_token('active', "/collections/#{uuid}")
-    assert(page.has_text?(coll_name), "Collection page did not include name")
-    # Now check that the page is otherwise normal, and the collection name
-    # isn't only showing up in an error message.
-    assert(page.has_link?('foo'), "Collection page did not include file link")
   end
 
   def check_sharing(want_state, link_regexp)
@@ -98,13 +78,6 @@ class CollectionsTest < ActionDispatch::IntegrationTest
       click_link "foo"
       assert_equal("foo\nfile\n", page.html)
     end
-  end
-
-  test "can view empty collection" do
-    Capybara.current_driver = :rack_test
-    uuid = 'd41d8cd98f00b204e9800998ecf8427e+0'
-    visit page_with_token('active', "/collections/#{uuid}")
-    assert page.has_text?(/This collection is empty|The following collections have this content/)
   end
 
   test "combine selected collections into new collection" do
@@ -200,29 +173,16 @@ class CollectionsTest < ActionDispatch::IntegrationTest
     assert(page.has_text?('file2_in_subdir4.txt'), 'file not found - file1_in_subdir4.txt')
   end
 
-  test "Collection portable data hash redirect" do
-    di = api_fixture('collections')['docker_image']
-    visit page_with_token('active', "/collections/#{di['portable_data_hash']}")
-
-    # check redirection
-    assert current_path.end_with?("/collections/#{di['uuid']}")
-    assert page.has_text?("docker_image")
-    assert page.has_text?("Activity")
-    assert page.has_text?("Sharing and permissions")
-  end
-
-  test "Collection portable data hash with multiple matches" do
+  test "Collection portable data hash with multiple matches with more than one page of results" do
     pdh = api_fixture('collections')['baz_file']['portable_data_hash']
     visit page_with_token('admin', "/collections/#{pdh}")
 
-    matches = api_fixture('collections').select {|k,v| v["portable_data_hash"] == pdh}
-    assert matches.size > 1
+    assert_selector 'a', text: 'Collection_1'
 
-    matches.each do |k,v|
-      assert page.has_link?(v["name"]), "Page /collections/#{pdh} should contain link '#{v['name']}'"
-    end
-    assert page.has_no_text?("Activity")
-    assert page.has_no_text?("Sharing and permissions")
+    assert_text 'The following collections have this content:'
+    assert_text 'more results are not shown'
+    assert_no_text 'Activity'
+    assert_no_text 'Sharing and permissions'
   end
 
   test "Filtering collection files by regexp" do

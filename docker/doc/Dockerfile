@@ -5,8 +5,8 @@ maintainer Ward Vandewege <ward@curoverse.com>
 
 # Install packages
 RUN /bin/mkdir -p /usr/src/arvados && \
-    apt-get update -qq && \
-    apt-get install -qqy curl procps apache2-mpm-worker
+    apt-get update -q && \
+    apt-get install -qy curl procps apache2-mpm-worker
 
 ADD generated/doc.tar.gz /usr/src/arvados/
 
@@ -14,10 +14,11 @@ ADD generated/doc.tar.gz /usr/src/arvados/
 RUN /usr/local/rvm/bin/rvm-exec default bundle install --gemfile=/usr/src/arvados/doc/Gemfile && \
     /bin/sed -ri 's/^baseurl: .*$/baseurl: /' /usr/src/arvados/doc/_config.yml && \
     cd /usr/src/arvados/doc && \
-    LANG="en_US.UTF-8" LC_ALL="en_US.UTF-8" /usr/local/rvm/bin/rvm-exec default bundle exec rake
+    LANG="en_US.UTF-8" LC_ALL="en_US.UTF-8" /usr/local/rvm/bin/rvm-exec default bundle exec rake generate arvados_api_host=api.dev.arvados arvados_workbench_host=workbench.dev.arvados
+
 
 # Configure Apache
-ADD apache2_vhost /etc/apache2/sites-available/doc
+ADD generated/apache2_vhost /etc/apache2/sites-available/doc
 RUN \
   a2dissite default && \
   a2ensite doc

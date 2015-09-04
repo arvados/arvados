@@ -9,6 +9,137 @@ class UserTest < ActiveSupport::TestCase
     system_user
   end
 
+  %w(a aa a0 aA Aa AA A0).each do |username|
+    test "#{username.inspect} is a valid username" do
+      user = User.new(username: username)
+      assert(user.valid?)
+    end
+  end
+
+  test "username is not required" do
+    user = User.new(username: nil)
+    assert(user.valid?)
+  end
+
+  test "username beginning with numeral is invalid" do
+    user = User.new(username: "0a")
+    refute(user.valid?)
+  end
+
+  "\\.-_/!@#$%^&*()[]{}".each_char do |bad_char|
+    test "username containing #{bad_char.inspect} is invalid" do
+      user = User.new(username: "bad#{bad_char}username")
+      refute(user.valid?)
+    end
+  end
+
+  test "username must be unique" do
+    user = User.new(username: users(:active).username)
+    refute(user.valid?)
+  end
+
+  test "non-admin can't update username" do
+    set_user_from_auth :rominiadmin
+    user = User.find_by_uuid(users(:rominiadmin).uuid)
+    user.username = "selfupdate"
+    assert_not_allowed { user.save }
+  end
+
+  def check_admin_username_change(fixture_name)
+    set_user_from_auth :admin_trustedclient
+    user = User.find_by_uuid(users(fixture_name).uuid)
+    user.username = "newnamefromtest"
+    assert(user.save)
+  end
+
+  test "admin can set username" do
+    check_admin_username_change(:active_no_prefs)
+  end
+
+  test "admin can update username" do
+    check_admin_username_change(:active)
+  end
+
+  test "admin can update own username" do
+    check_admin_username_change(:admin)
+  end
+
+  def check_new_username_setting(email_name, expect_name)
+    set_user_from_auth :admin
+    user = User.create!(email: "#{email_name}@example.org")
+    assert_equal(expect_name, user.username)
+  end
+
+  test "new username set from e-mail" do
+    check_new_username_setting("dakota", "dakota")
+  end
+
+  test "new username set from e-mail with leading digits" do
+    check_new_username_setting("1dakota9", "dakota9")
+  end
+
+  test "new username set from e-mail with punctuation" do
+    check_new_username_setting("dakota.9", "dakota9")
+  end
+
+  test "new username set from e-mail with leading digits and punctuation" do
+    check_new_username_setting("1.dakota.z", "dakotaz")
+  end
+
+  test "new username set from e-mail with extra part" do
+    check_new_username_setting("dakota+arvados", "dakota")
+  end
+
+  test "new username set with deduplication" do
+    name = users(:active).username
+    check_new_username_setting(name, "#{name}2")
+  end
+
+  test "new username set avoiding blacklist" do
+    Rails.configuration.auto_setup_name_blacklist = ["root"]
+    check_new_username_setting("root", "root2")
+  end
+
+  test "no username set when no base available" do
+    check_new_username_setting("_", nil)
+  end
+
+  test "updating username updates repository names" do
+    set_user_from_auth :admin
+    user = users(:active)
+    user.username = "newtestname"
+    assert(user.save, "username update failed")
+    {foo: "newtestname/foo", repository2: "newtestname/foo2"}.
+        each_pair do |repo_sym, expect_name|
+      assert_equal(expect_name, repositories(repo_sym).name)
+    end
+  end
+
+  test "admin can clear username when user owns no repositories" do
+    set_user_from_auth :admin
+    user = users(:spectator)
+    user.username = nil
+    assert(user.save)
+    assert_nil(user.username)
+  end
+
+  test "admin can't clear username when user owns repositories" do
+    set_user_from_auth :admin
+    user = users(:active)
+    start_username = user.username
+    user.username = nil
+    assert_not_allowed { user.save }
+    refute_empty(user.errors[:username])
+  end
+
+  test "failed username update doesn't change repository names" do
+    set_user_from_auth :admin
+    user = users(:active)
+    user.username = users(:fuse).username
+    assert_not_allowed { user.save }
+    assert_equal("active/foo", repositories(:foo).name)
+  end
+
   [[false, 'foo@example.com', true, nil],
    [false, 'bar@example.com', nil, true],
    [true, 'foo@example.com', true, nil],
@@ -195,106 +326,60 @@ class UserTest < ActiveSupport::TestCase
   test "create new user with notifications" do
     set_user_from_auth :admin
 
-    create_user_and_verify_setup_and_notifications true, 'active-notify-address@example.com', 'inactive-notify-address@example.com', nil, false
-    create_user_and_verify_setup_and_notifications true, 'active-notify-address@example.com', [], nil, false
-    create_user_and_verify_setup_and_notifications true, [], [], nil, false
-    create_user_and_verify_setup_and_notifications false, 'active-notify-address@example.com', 'inactive-notify-address@example.com', nil, false
-    create_user_and_verify_setup_and_notifications false, [], 'inactive-notify-address@example.com', nil, false
-    create_user_and_verify_setup_and_notifications false, [], [], nil, false
+    create_user_and_verify_setup_and_notifications true, 'active-notify-address@example.com', 'inactive-notify-address@example.com', nil, nil
+    create_user_and_verify_setup_and_notifications true, 'active-notify-address@example.com', [], nil, nil
+    create_user_and_verify_setup_and_notifications true, [], [], nil, nil
+    create_user_and_verify_setup_and_notifications false, 'active-notify-address@example.com', 'inactive-notify-address@example.com', nil, nil
+    create_user_and_verify_setup_and_notifications false, [], 'inactive-notify-address@example.com', nil, nil
+    create_user_and_verify_setup_and_notifications false, [], [], nil, nil
   end
 
   [
-    [false, [], [], 'inactive-none@example.com', false, false, true],
-    [false, [], [], 'inactive-vm@example.com', true, false, true],
-    [false, [], [], 'inactive-repo@example.com', false, true, true],
-    [false, [], [], 'inactive-both@example.com', true, true, true],
+    # Easy inactive user tests.
+    [false, [], [], "inactive-none@example.com", false, false, "inactivenone"],
+    [false, [], [], "inactive-vm@example.com", true, false, "inactivevm"],
+    [false, [], [], "inactive-repo@example.com", false, true, "inactiverepo"],
+    [false, [], [], "inactive-both@example.com", true, true, "inactiveboth"],
 
-    [true, 'active-notify@example.com', 'inactive-notify@example.com', 'active-none@example.com', false, false, true],
-    [true, 'active-notify@example.com', 'inactive-notify@example.com', 'active-vm@example.com', true, false, true],
-    [true, 'active-notify@example.com', 'inactive-notify@example.com', 'active-repo@example.com', false, true, true],
-    [true, 'active-notify@example.com', 'inactive-notify@example.com', 'active-both@example.com', true, true, true],
+    # Easy active user tests.
+    [true, "active-notify@example.com", "inactive-notify@example.com", "active-none@example.com", false, false, "activenone"],
+    [true, "active-notify@example.com", "inactive-notify@example.com", "active-vm@example.com", true, false, "activevm"],
+    [true, "active-notify@example.com", "inactive-notify@example.com", "active-repo@example.com", false, true, "activerepo"],
+    [true, "active-notify@example.com", "inactive-notify@example.com", "active-both@example.com", true, true, "activeboth"],
 
-    [false, [], [], nil, true, true, false],
+    # Test users with malformed e-mail addresses.
+    [false, [], [], nil, true, true, nil],
+    [false, [], [], "arvados", true, true, nil],
+    [false, [], [], "@example.com", true, true, nil],
+    [true, "active-notify@example.com", "inactive-notify@example.com", "*!*@example.com", true, false, nil],
+    [true, "active-notify@example.com", "inactive-notify@example.com", "*!*@example.com", false, false, nil],
 
-    [false, [], [], 'arvados', true, true, false],
-    [false, [], [], 'arvados', true, false, false],   # blacklisted username
-    [false, [], [], 'arvados', false, false, true],   # since we are not creating repo and vm login, this blacklisted name is not a problem
-
-    [false, [], [], 'arvados@example.com', false, false, true],   # since we are not creating repo and vm login, this blacklisted name is not a problem
-    [true, 'active-notify@example.com', 'inactive-notify@example.com', 'arvados@example.com', false, false, true],   # since we are not creating repo and vm login, this blacklisted name is not a problem
-    [true, 'active-notify@example.com', 'inactive-notify@example.com', 'root@example.com', true, false, false], # blacklisted name
-    [false, 'active-notify@example.com', 'inactive-notify@example.com', 'root@example.com', true, false, false], # blacklisted name
-    [true, 'active-notify@example.com', 'inactive-notify@example.com', 'roo_t@example.com', false, true, true], # not blacklisted name
-
-    [false, [], [], '@example.com', true, false, false],  # incorrect format
-    [false, [], [], '@example.com', false, true, false],
-    [false, [], [], '@example.com', false, false, true],  # no repo and vm login, so no issue with email format
-
-    [false, [], [], '^^incorrect_format@example.com', true, true, false],
-
-    [false, 'active-notify@example.com', 'inactive-notify@example.com', 'auto_setup_repo@example.com', true, true, true],  # existing repository name 'auto_setup_repo'
-    [true, 'active-notify@example.com', 'inactive-notify@example.com', 'auto_setup_repo@example.com', true, false, true],  # existing repository name 'auto_setup_repo'
-    [false, 'active-notify@example.com', 'inactive-notify@example.com', 'auto_setup_repo@example.com', false, true, true],  # existing repository name 'auto_setup_repo'
-    [false, 'active-notify@example.com', 'inactive-notify@example.com', 'auto_setup_repo@example.com', false, false, true],  # existing repository name 'auto_setup_repo', but we are not creating repo or login link
-
-    [false, 'active-notify@example.com', 'inactive-notify@example.com', 'auto_setup_vm_login@example.com', true, true, true], # existing vm login name
-    [true, 'active-notify@example.com', 'inactive-notify@example.com', 'auto_setup_vm_login@example.com', true, false, true], # existing vm login name
-    [false, 'active-notify@example.com', 'inactive-notify@example.com', 'auto_setup_vm_login@example.com', false, true, true], # existing vm login name
-    [false, 'active-notify@example.com', 'inactive-notify@example.com', 'auto_setup_vm_login@example.com', false, false, true], # existing vm login name, but we are not creating repo or login link
-
-    [true, 'active-notify@example.com', 'inactive-notify@example.com', '*!*@example.com', true, false, false], # username is invalid format
-    [false, 'active-notify@example.com', 'inactive-notify@example.com', '*!*@example.com', false, false, true], # since no repo and vm login, username is ok (not validated)
-    [true, 'active-notify@example.com', 'inactive-notify@example.com', '*!*@example.com', false, false, true], # since no repo and vm login, username is ok (not validated)
-
-    [true, 'active-notify@example.com', 'inactive-notify@example.com', '&4ad@example.com', true, true, false], # username is invalid format
-    [true, 'active-notify@example.com', 'inactive-notify@example.com', '&4ad@example.com', false, false, true], # no repo or vm login, so format not checked
-    [false, 'active-notify@example.com', 'inactive-notify@example.com', '&4ad@example.com', true, true, false], # username is invalid format
-    [false, 'active-notify@example.com', 'inactive-notify@example.com', '&4ad@example.com', false, false, true], # no repo or vm login, so format not checked
-
-    [true, 'active-notify@example.com', 'inactive-notify@example.com', '4ad@example.com', true, true, false], # username is invalid format
-    [true, 'active-notify@example.com', 'inactive-notify@example.com', '4ad@example.com', false, false, true], # no repo or vm login, so format not checked
-    [false, 'active-notify@example.com', 'inactive-notify@example.com', '4ad@example.com', false, false, true], # no repo or vm login, so format not checked
-
-    [true, 'active-notify@example.com', 'inactive-notify@example.com', '.foo@example.com', false, false, true], # no repo or vm login, so format not checked
-    [true, 'active-notify@example.com', 'inactive-notify@example.com', '.foo@example.com', true, false, false], # invalid format
-
-    [true, 'active-notify@example.com', 'inactive-notify@example.com', 'bar.@example.com', false, false, true], # no repo or vm login, so format not checked
-    [true, 'active-notify@example.com', 'inactive-notify@example.com', 'bar.@example.com', true, false, false], # valid format
-
-    [true, 'active-notify@example.com', 'inactive-notify@example.com', 'ice9@example.com', false, false, true], # no repo or vm login, so format not checked
-    [true, 'active-notify@example.com', 'inactive-notify@example.com', 'ice9@example.com', true, false, true], # valid format
-
-    [true, 'active-notify@example.com', 'inactive-notify@example.com', 'o_o@example.com', false, false, true], # no repo or vm login, so format not checked
-    [true, 'active-notify@example.com', 'inactive-notify@example.com', 'o_o@example.com', true, false, true], # valid format
-
-    [true, 'active-notify@example.com', 'inactive-notify@example.com', 'r00t@example.com', false, false, true], # no repo or vm login, so format not checked
-    [true, 'active-notify@example.com', 'inactive-notify@example.com', 'r00t@example.com', true, false, true], # valid format
-
-  ].each do |active, new_user_recipients, inactive_recipients, email, auto_setup_vm, auto_setup_repo, ok_to_auto_setup|
+    # Test users with various username transformations.
+    [false, [], [], "arvados@example.com", false, false, "arvados2"],
+    [true, "active-notify@example.com", "inactive-notify@example.com", "arvados@example.com", false, false, "arvados2"],
+    [true, "active-notify@example.com", "inactive-notify@example.com", "root@example.com", true, false, "root2"],
+    [false, "active-notify@example.com", "inactive-notify@example.com", "root@example.com", true, false, "root2"],
+    [true, "active-notify@example.com", "inactive-notify@example.com", "roo_t@example.com", false, true, "root2"],
+    [false, [], [], "^^incorrect_format@example.com", true, true, "incorrectformat"],
+    [true, "active-notify@example.com", "inactive-notify@example.com", "&4a_d9.@example.com", true, true, "ad9"],
+    [true, "active-notify@example.com", "inactive-notify@example.com", "&4a_d9.@example.com", false, false, "ad9"],
+    [false, "active-notify@example.com", "inactive-notify@example.com", "&4a_d9.@example.com", true, true, "ad9"],
+    [false, "active-notify@example.com", "inactive-notify@example.com", "&4a_d9.@example.com", false, false, "ad9"],
+  ].each do |active, new_user_recipients, inactive_recipients, email, auto_setup_vm, auto_setup_repo, expect_username|
     test "create new user with auto setup #{active} #{email} #{auto_setup_vm} #{auto_setup_repo}" do
-      auto_setup_new_users = Rails.configuration.auto_setup_new_users
-      auto_setup_new_users_with_vm_uuid = Rails.configuration.auto_setup_new_users_with_vm_uuid
-      auto_setup_new_users_with_repository = Rails.configuration.auto_setup_new_users_with_repository
+      set_user_from_auth :admin
 
-      begin
-        set_user_from_auth :admin
+      Rails.configuration.auto_setup_new_users = true
 
-        Rails.configuration.auto_setup_new_users = true
-
-        if auto_setup_vm
-          Rails.configuration.auto_setup_new_users_with_vm_uuid = virtual_machines(:testvm)['uuid']
-        else
-          Rails.configuration.auto_setup_new_users_with_vm_uuid = false
-        end
-
-        Rails.configuration.auto_setup_new_users_with_repository = auto_setup_repo
-
-        create_user_and_verify_setup_and_notifications active, new_user_recipients, inactive_recipients, email, ok_to_auto_setup
-      ensure
-        Rails.configuration.auto_setup_new_users = auto_setup_new_users
-        Rails.configuration.auto_setup_new_users_with_vm_uuid = auto_setup_new_users_with_vm_uuid
-        Rails.configuration.auto_setup_new_users_with_repository = auto_setup_new_users_with_repository
+      if auto_setup_vm
+        Rails.configuration.auto_setup_new_users_with_vm_uuid = virtual_machines(:testvm)['uuid']
+      else
+        Rails.configuration.auto_setup_new_users_with_vm_uuid = false
       end
+
+      Rails.configuration.auto_setup_new_users_with_repository = auto_setup_repo
+
+      create_user_and_verify_setup_and_notifications active, new_user_recipients, inactive_recipients, email, expect_username
     end
   end
 
@@ -338,14 +423,7 @@ class UserTest < ActiveSupport::TestCase
 
   test "create new user as non-admin user" do
     set_user_from_auth :active
-
-    begin
-      user = User.new
-      user.save
-    rescue ArvadosModel::PermissionDeniedError => e
-    end
-    assert (e.message.include? 'PermissionDeniedError'),
-        'Expected PermissionDeniedError'
+    assert_not_allowed { User.new.save }
   end
 
   test "setup new user" do
@@ -358,7 +436,7 @@ class UserTest < ActiveSupport::TestCase
 
     vm = VirtualMachine.create
 
-    response = User.setup user, openid_prefix, 'test_repo', vm.uuid
+    response = User.setup user, openid_prefix, 'foo/testrepo', vm.uuid
 
     resp_user = find_obj_in_resp response, 'User'
     verify_user resp_user, email
@@ -379,6 +457,7 @@ class UserTest < ActiveSupport::TestCase
 
     vm_perm = find_obj_in_resp response, 'Link', 'arvados#virtualMachine'
     verify_link vm_perm, 'permission', 'can_login', resp_user[:uuid], vm.uuid
+    assert_equal("foo", vm_perm.properties["username"])
   end
 
   test "setup new user with junk in database" do
@@ -400,7 +479,7 @@ class UserTest < ActiveSupport::TestCase
 
     verify_link resp_link, 'permission', 'can_login', email, bad_uuid
 
-    response = User.setup user, openid_prefix, 'test_repo', vm.uuid
+    response = User.setup user, openid_prefix, 'foo/testrepo', vm.uuid
 
     resp_user = find_obj_in_resp response, 'User'
     verify_user resp_user, email
@@ -421,6 +500,7 @@ class UserTest < ActiveSupport::TestCase
 
     vm_perm = find_obj_in_resp response, 'Link', 'arvados#virtualMachine'
     verify_link vm_perm, 'permission', 'can_login', resp_user[:uuid], vm.uuid
+    assert_equal("foo", vm_perm.properties["username"])
   end
 
   test "setup new user in multiple steps" do
@@ -446,7 +526,7 @@ class UserTest < ActiveSupport::TestCase
     verify_link group_perm, 'permission', 'can_read', resp_user[:uuid], nil
 
     # invoke setup again with repo_name
-    response = User.setup user, openid_prefix, 'test_repo'
+    response = User.setup user, openid_prefix, 'foo/testrepo'
     resp_user = find_obj_in_resp response, 'User', nil
     verify_user resp_user, email
     assert_equal user.uuid, resp_user[:uuid], 'expected uuid not found'
@@ -460,7 +540,7 @@ class UserTest < ActiveSupport::TestCase
     # invoke setup again with a vm_uuid
     vm = VirtualMachine.create
 
-    response = User.setup user, openid_prefix, 'test_repo', vm.uuid
+    response = User.setup user, openid_prefix, 'foo/testrepo', vm.uuid
 
     resp_user = find_obj_in_resp response, 'User', nil
     verify_user resp_user, email
@@ -474,6 +554,7 @@ class UserTest < ActiveSupport::TestCase
 
     vm_perm = find_obj_in_resp response, 'Link', 'arvados#virtualMachine'
     verify_link vm_perm, 'permission', 'can_login', resp_user[:uuid], vm.uuid
+    assert_equal("foo", vm_perm.properties["username"])
   end
 
   def find_obj_in_resp (response_items, object_type, head_kind=nil)
@@ -521,78 +602,42 @@ class UserTest < ActiveSupport::TestCase
     end
   end
 
-  def create_user_and_verify_setup_and_notifications (active, new_user_recipients, inactive_recipients, email, ok_to_auto_setup)
+  def create_user_and_verify_setup_and_notifications (active, new_user_recipients, inactive_recipients, email, expect_username)
     Rails.configuration.new_user_notification_recipients = new_user_recipients
     Rails.configuration.new_inactive_user_notification_recipients = inactive_recipients
 
-    assert_equal new_user_recipients, Rails.configuration.new_user_notification_recipients
-    assert_equal inactive_recipients, Rails.configuration.new_inactive_user_notification_recipients
-
     ActionMailer::Base.deliveries = []
+
+    can_setup = (Rails.configuration.auto_setup_new_users and
+                 (not expect_username.nil?))
+    expect_repo_name = "#{expect_username}/#{expect_username}"
+    prior_repo = Repository.where(name: expect_repo_name).first
 
     user = User.new
     user.first_name = "first_name_for_newly_created_user"
     user.email = email
     user.is_active = active
     user.save!
+    assert_equal(expect_username, user.username)
 
     # check user setup
-    group = Group.where(name: 'All users').select do |g|
-      g[:uuid].match /-f+$/
-    end.first
-
-    if !Rails.configuration.auto_setup_new_users || !ok_to_auto_setup
-      # verify that the user is not added to "All groups" by auto_setup
-      verify_link_exists false, group[:uuid], user.uuid, 'permission', 'can_read', nil, nil
-
-      # check oid login link not created by auto_setup
-      verify_link_exists false, user.uuid, user.email, 'permission', 'can_login', nil, nil
-    else
-      # verify that auto_setup took place
-      # verify that the user is added to "All groups"
-      verify_link_exists true, group[:uuid], user.uuid, 'permission', 'can_read', nil, nil
-
-      # check oid login link
-      verify_link_exists true, user.uuid, user.email, 'permission', 'can_login', nil, nil
-
-      username = user.email.partition('@')[0] if email
-
-      # check repo
-      repo_names = []
-      if Rails.configuration.auto_setup_new_users_with_repository
-        repos = Repository.where('name like ?', "%#{username}%")
-        assert_not_nil repos, 'repository not found'
-        assert_equal true, repos.any?, 'repository not found'
-        repo_uuids = []
-        repos.each do |repo|
-          repo_uuids << repo[:uuid]
-          repo_names << repo[:name]
-        end
-        if username == 'auto_setup_repo'
-          begin
-            repo_names.delete('auto_setup_repo')
-          ensure
-            assert_equal true, repo_names.any?, 'Repository name for username foo is not unique'
-          end
-        end
-        verify_link_exists true, repo_uuids, user.uuid, 'permission', 'can_manage', nil, nil
-      end
-
-      # if username is existing vm login name, make sure the username used to generate any repo is unique
-      if username == 'auto_setup_vm_login' || username == 'auto_setup_repo'
-        if repo_names.any?
-          assert repo_names.first.start_with? username
-          assert_not_nil /\d$/.match(repo_names.first)
-        end
-      end
-
-      # check vm uuid
-      vm_uuid = Rails.configuration.auto_setup_new_users_with_vm_uuid
-      if vm_uuid
-        verify_link_exists true, vm_uuid, user.uuid, 'permission', 'can_login', 'username', (username == 'auto_setup_repo' ? repo_names.first : username)
-      else
-        verify_link_exists false, vm_uuid, user.uuid, 'permission', 'can_login', 'username', (username == 'auto_setup_repo' ? repo_names.first : username)
-      end
+    verify_link_exists(Rails.configuration.auto_setup_new_users,
+                       groups(:all_users).uuid, user.uuid,
+                       "permission", "can_read")
+    # Check for OID login link.
+    verify_link_exists(Rails.configuration.auto_setup_new_users,
+                       user.uuid, user.email, "permission", "can_login")
+    # Check for repository.
+    if named_repo = (prior_repo or
+                     Repository.where(name: expect_repo_name).first)
+      verify_link_exists((can_setup and prior_repo.nil? and
+                          Rails.configuration.auto_setup_new_users_with_repository),
+                         named_repo.uuid, user.uuid, "permission", "can_manage")
+    end
+    # Check for VM login.
+    if auto_vm_uuid = Rails.configuration.auto_setup_new_users_with_vm_uuid
+      verify_link_exists(can_setup, auto_vm_uuid, user.uuid,
+                         "permission", "can_login", "username", expect_username)
     end
 
     # check email notifications
@@ -601,7 +646,7 @@ class UserTest < ActiveSupport::TestCase
 
     new_user_email_subject = "#{Rails.configuration.email_subject_prefix}New user created notification"
     if Rails.configuration.auto_setup_new_users
-      new_user_email_subject = (ok_to_auto_setup || active) ?
+      new_user_email_subject = (expect_username or active) ?
                                  "#{Rails.configuration.email_subject_prefix}New user created and setup notification" :
                                  "#{Rails.configuration.email_subject_prefix}New user created, but not setup notification"
     end
@@ -641,7 +686,7 @@ class UserTest < ActiveSupport::TestCase
 
   end
 
-  def verify_link_exists link_exists, head_uuid, tail_uuid, link_class, link_name, property_name, property_value
+  def verify_link_exists link_exists, head_uuid, tail_uuid, link_class, link_name, property_name=nil, property_value=nil
     all_links = Link.where(head_uuid: head_uuid,
                            tail_uuid: tail_uuid,
                            link_class: link_class,

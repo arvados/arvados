@@ -1,11 +1,14 @@
 import fcntl
 import hashlib
+import httplib2
 import os
 import re
 import subprocess
 import errno
 import sys
-from arvados.collection import *
+
+import arvados
+from arvados.collection import CollectionReader
 
 HEX_RE = re.compile(r'^[0-9a-fA-F]+$')
 
@@ -42,7 +45,7 @@ def run_command(execargs, **kwargs):
     p = subprocess.Popen(execargs, **kwargs)
     stdoutdata, stderrdata = p.communicate(None)
     if p.returncode != 0:
-        raise errors.CommandFailedError(
+        raise arvados.errors.CommandFailedError(
             "run_command %s exit %d:\n%s" %
             (execargs, p.returncode, stderrdata))
     return stdoutdata, stderrdata
@@ -107,7 +110,7 @@ def tarball_extract(tarball, path):
             elif re.search('\.tar$', f.name()):
                 p = tar_extractor(path, '')
             else:
-                raise errors.AssertionError(
+                raise arvados.errors.AssertionError(
                     "tarball_extract cannot handle filename %s" % f.name())
             while True:
                 buf = f.read(2**20)
@@ -118,7 +121,7 @@ def tarball_extract(tarball, path):
             p.wait()
             if p.returncode != 0:
                 lockfile.close()
-                raise errors.CommandFailedError(
+                raise arvados.errors.CommandFailedError(
                     "tar exited %d" % p.returncode)
         os.symlink(tarball, os.path.join(path, '.locator'))
     tld_extracts = filter(lambda f: f != '.locator', os.listdir(path))
@@ -162,7 +165,7 @@ def zipball_extract(zipball, path):
 
         for f in CollectionReader(zipball).all_files():
             if not re.search('\.zip$', f.name()):
-                raise errors.NotImplementedError(
+                raise arvados.errors.NotImplementedError(
                     "zipball_extract cannot handle filename %s" % f.name())
             zip_filename = os.path.join(path, os.path.basename(f.name()))
             zip_file = open(zip_filename, 'wb')
@@ -183,7 +186,7 @@ def zipball_extract(zipball, path):
             p.wait()
             if p.returncode != 0:
                 lockfile.close()
-                raise errors.CommandFailedError(
+                raise arvados.errors.CommandFailedError(
                     "unzip exited %d" % p.returncode)
             os.unlink(zip_filename)
         os.symlink(zipball, os.path.join(path, '.locator'))
@@ -247,7 +250,7 @@ def collection_extract(collection, path, files=[], decompress=True):
                     outfile.write(buf)
                 outfile.close()
     if len(files_got) < len(files):
-        raise errors.AssertionError(
+        raise arvados.errors.AssertionError(
             "Wanted files %s but only got %s from %s" %
             (files, files_got,
              [z.name() for z in CollectionReader(collection).all_files()]))
@@ -302,7 +305,7 @@ def stream_extract(stream, path, files=[], decompress=True):
                 outfile.write(buf)
             outfile.close()
     if len(files_got) < len(files):
-        raise errors.AssertionError(
+        raise arvados.errors.AssertionError(
             "Wanted files %s but only got %s from %s" %
             (files, files_got, [z.name() for z in stream.all_files()]))
     lockfile.close()
@@ -349,8 +352,8 @@ def is_hex(s, *length_args):
     """
     num_length_args = len(length_args)
     if num_length_args > 2:
-        raise errors.ArgumentError("is_hex accepts up to 3 arguments ({} given)"
-                                   .format(1 + num_length_args))
+        raise arvados.errors.ArgumentError(
+            "is_hex accepts up to 3 arguments ({} given)".format(1 + num_length_args))
     elif num_length_args == 2:
         good_len = (length_args[0] <= len(s) <= length_args[1])
     elif num_length_args == 1:
@@ -369,3 +372,20 @@ def list_all(fn, num_retries=0, **kwargs):
         items_available = c['items_available']
         offset = c['offset'] + len(c['items'])
     return items
+
+def ca_certs_path(fallback=httplib2.CA_CERTS):
+    """Return the path of the best available CA certs source.
+
+    This function searches for various distribution sources of CA
+    certificates, and returns the first it finds.  If it doesn't find any,
+    it returns the value of `fallback` (httplib2's CA certs by default).
+    """
+    for ca_certs_path in [
+        # Debian:
+        '/etc/ssl/certs/ca-certificates.crt',
+        # Red Hat:
+        '/etc/pki/tls/certs/ca-bundle.crt',
+        ]:
+        if os.path.exists(ca_certs_path):
+            return ca_certs_path
+    return fallback

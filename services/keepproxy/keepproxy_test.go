@@ -115,12 +115,16 @@ func runProxy(c *C, args []string, port int, bogusClientToken bool) keepclient.K
 		Using_proxy:   true,
 		Client:        &http.Client{},
 	}
-	kc.SetServiceRoots(map[string]string{
+	locals := map[string]string{
 		"proxy": fmt.Sprintf("http://localhost:%v", port),
-	})
+	}
+	writableLocals := map[string]string{
+		"proxy": fmt.Sprintf("http://localhost:%v", port),
+	}
+	kc.SetServiceRoots(locals, writableLocals, nil)
 	c.Check(kc.Using_proxy, Equals, true)
-	c.Check(len(kc.ServiceRoots()), Equals, 1)
-	for _, root := range kc.ServiceRoots() {
+	c.Check(len(kc.LocalRoots()), Equals, 1)
+	for _, root := range kc.LocalRoots() {
 		c.Check(root, Equals, fmt.Sprintf("http://localhost:%v", port))
 	}
 	log.Print("keepclient created")
@@ -154,8 +158,8 @@ func (s *ServerRequiredSuite) TestPutAskGet(c *C) {
 	c.Assert(err, Equals, nil)
 	c.Check(kc.Arvados.External, Equals, true)
 	c.Check(kc.Using_proxy, Equals, true)
-	c.Check(len(kc.ServiceRoots()), Equals, 1)
-	for _, root := range kc.ServiceRoots() {
+	c.Check(len(kc.LocalRoots()), Equals, 1)
+	for _, root := range kc.LocalRoots() {
 		c.Check(root, Equals, "http://localhost:29950")
 	}
 	os.Setenv("ARVADOS_EXTERNAL_CLIENT", "")
@@ -385,4 +389,20 @@ func (s *ServerRequiredSuite) TestPostWithoutHash(c *C) {
 		c.Check(string(body), Equals,
 			fmt.Sprintf("%x+%d", md5.Sum([]byte("qux")), 3))
 	}
+}
+
+func (s *ServerRequiredSuite) TestStripHint(c *C) {
+	c.Check(removeHint.ReplaceAllString("http://keep.zzzzz.arvadosapi.com:25107/2228819a18d3727630fa30c81853d23f+67108864+A37b6ab198qqqq28d903b975266b23ee711e1852c@55635f73+K@zzzzz", "$1"),
+		Equals,
+		"http://keep.zzzzz.arvadosapi.com:25107/2228819a18d3727630fa30c81853d23f+67108864+A37b6ab198qqqq28d903b975266b23ee711e1852c@55635f73")
+	c.Check(removeHint.ReplaceAllString("http://keep.zzzzz.arvadosapi.com:25107/2228819a18d3727630fa30c81853d23f+67108864+K@zzzzz+A37b6ab198qqqq28d903b975266b23ee711e1852c@55635f73", "$1"),
+		Equals,
+		"http://keep.zzzzz.arvadosapi.com:25107/2228819a18d3727630fa30c81853d23f+67108864+A37b6ab198qqqq28d903b975266b23ee711e1852c@55635f73")
+	c.Check(removeHint.ReplaceAllString("http://keep.zzzzz.arvadosapi.com:25107/2228819a18d3727630fa30c81853d23f+67108864+A37b6ab198qqqq28d903b975266b23ee711e1852c@55635f73+K@zzzzz-zzzzz-zzzzzzzzzzzzzzz", "$1"),
+		Equals,
+		"http://keep.zzzzz.arvadosapi.com:25107/2228819a18d3727630fa30c81853d23f+67108864+A37b6ab198qqqq28d903b975266b23ee711e1852c@55635f73+K@zzzzz-zzzzz-zzzzzzzzzzzzzzz")
+	c.Check(removeHint.ReplaceAllString("http://keep.zzzzz.arvadosapi.com:25107/2228819a18d3727630fa30c81853d23f+67108864+K@zzzzz-zzzzz-zzzzzzzzzzzzzzz+A37b6ab198qqqq28d903b975266b23ee711e1852c@55635f73", "$1"),
+		Equals,
+		"http://keep.zzzzz.arvadosapi.com:25107/2228819a18d3727630fa30c81853d23f+67108864+K@zzzzz-zzzzz-zzzzzzzzzzzzzzz+A37b6ab198qqqq28d903b975266b23ee711e1852c@55635f73")
+
 }

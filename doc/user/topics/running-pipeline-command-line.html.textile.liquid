@@ -7,12 +7,13 @@ title: "Running a pipeline on the command line"
 This tutorial demonstrates how to use the command line to run the same pipeline as described in "running a pipeline using Workbench.":{{site.baseurl}}/user/tutorials/tutorial-pipeline-workbench.html
 
 {% include 'tutorial_expectations' %}
+{% include 'tutorial_cluster_name' %}
 
 When you use the command line, you must use Arvados unique identifiers to refer to objects.  The identifiers in this example correspond to the following Arvados objects:
 
-* <i class="fa fa-fw fa-gear"></i> "Tutorial align using bwa mem (qr1hi-p5p6p-itzkwxblfermlwv)":https://{{ site.arvados_workbench_host }}/pipeline_templates/qr1hi-p5p6p-itzkwxblfermlwv
-* <i class="fa fa-fw fa-archive"></i> "Tutorial chromosome 19 reference (2463fa9efeb75e099685528b3b9071e0+438)":https://{{ site.arvados_workbench_host }}/collections/2463fa9efeb75e099685528b3b9071e0+438
-* <i class="fa fa-fw fa-archive"></i> "Tutorial sample exome (3229739b505d2b878b62aed09895a55a+142)":https://{{ site.arvados_workbench_host }}/collections/3229739b505d2b878b62aed09895a55a+142
+* <i class="fa fa-fw fa-gear"></i> "Tutorial align using bwa mem (qr1hi-p5p6p-itzkwxblfermlwv)":{{site.arvados_workbench_host}}/pipeline_templates/qr1hi-p5p6p-itzkwxblfermlwv
+* <i class="fa fa-fw fa-archive"></i> "Tutorial chromosome 19 reference (2463fa9efeb75e099685528b3b9071e0+438)":{{site.arvados_workbench_host}}/collections/2463fa9efeb75e099685528b3b9071e0+438
+* <i class="fa fa-fw fa-archive"></i> "Tutorial sample exome (3229739b505d2b878b62aed09895a55a+142)":{{site.arvados_workbench_host}}/collections/3229739b505d2b878b62aed09895a55a+142
 
 Use @arv pipeline run@ to run the pipeline, supplying the inputs to the bwa-mem component on the command line:
 
@@ -32,9 +33,10 @@ bwa-mem qr1hi-8i9sb-67n1qvsronmd2z6 49bae1066f4ebce72e2587a3efa61c7d+88
 
 This instantiates your pipeline and displays periodic status reports in your terminal window. The new pipeline instance will also show up on the Workbench Dashboard.
 
+
 @arv pipeline run@ submits a job for each pipeline component as soon as the component's inputs are known (i.e., any dependencies are satsified). It terminates when there is no work left to do: this means either all components are satisfied and all jobs have completed successfully, _or_ one or more jobs have failed and it is therefore unproductive to submit any further jobs.
 
-The Keep locators of the output of of the @bwa-mem@ components are available from the last status report shown above:
+The Keep locators of the output of the @bwa-mem@ components are available from the last status report shown above:
 
 <notextile>
 <pre><code>~$ <span class="userinput">arv keep ls -s 49bae1066f4ebce72e2587a3efa61c7d+88</span>

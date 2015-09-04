@@ -30,9 +30,12 @@ setup(name='arvados-node-manager',
         'pykka',
         'python-daemon',
         ],
+      dependency_links = [
+          "https://github.com/curoverse/libcloud/archive/apache-libcloud-0.18.1.dev1.zip"
+      ],
       scripts=['bin/arvados-node-manager'],
       test_suite='tests',
-      tests_require=['mock>=1.0'],
+      tests_require=['mock>=1.0', "apache-libcloud==0.18.1.dev1"],
       zip_safe=False,
       cmdclass={'egg_info': tagger},
       )

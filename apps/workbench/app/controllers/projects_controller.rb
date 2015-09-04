@@ -1,8 +1,8 @@
 class ProjectsController < ApplicationController
-  before_filter :set_share_links, if: -> { defined? @object }
+  before_filter :set_share_links, if: -> { defined? @object and @object}
   skip_around_filter :require_thread_api_token, if: proc { |ctrl|
     Rails.configuration.anonymous_user_token and
-    %w(show tab_counts).include? ctrl.action_name
+    %w(show tab_counts public).include? ctrl.action_name
   }
 
   def model_class
@@ -10,12 +10,22 @@ class ProjectsController < ApplicationController
   end
 
   def find_object_by_uuid
-    if current_user and params[:uuid] == current_user.uuid
-      @object = current_user.dup
-      @object.uuid = current_user.uuid
+    if (current_user and params[:uuid] == current_user.uuid) or
+       (resource_class_for_uuid(params[:uuid]) == User)
+      if params[:uuid] != current_user.uuid
+        @object = User.find(params[:uuid])
+      else
+        @object = current_user.dup
+        @object.uuid = current_user.uuid
+      end
+
       class << @object
         def name
-          'Home'
+          if current_user.uuid == self.uuid
+            'Home'
+          else
+            "Home for #{self.email}"
+          end
         end
         def description
           ''
@@ -65,7 +75,7 @@ class ProjectsController < ApplicationController
       {
         :name => 'Subprojects',
         :filters => [%w(uuid is_a arvados#group)]
-      } if current_user
+      }
     pane_list <<
       {
         :name => 'Other_objects',
@@ -136,7 +146,7 @@ class ProjectsController < ApplicationController
           item.update_attributes owner_uuid: current_user.uuid
           @removed_uuids << item.uuid
         rescue ArvadosApiClient::ApiErrorResponseException => e
-          if e.message.include? 'collection_owner_uuid_name_unique'
+          if e.message.include? '_owner_uuid_name_unique'
             rename_to = item.name + ' removed from ' +
                         (@object.name ? @object.name : @object.uuid) +
                         ' at ' + Time.now.to_s
@@ -174,7 +184,11 @@ class ProjectsController < ApplicationController
   end
 
   def find_objects_for_index
-    @objects = all_projects
+    # We can use the all_projects helper, but we have to dup the
+    # result -- otherwise, when we apply our per-request filters and
+    # limits, they will infect the @all_projects cache too (see
+    # #6640).
+    @objects = all_projects.dup
     super
   end
 
@@ -306,5 +320,12 @@ class ProjectsController < ApplicationController
       end
     end
     objects_and_names
+  end
+
+  def public  # Yes 'public' is the name of the action for public projects
+    return render_not_found if not Rails.configuration.anonymous_user_token or not Rails.configuration.enable_public_projects_page
+    @objects = using_specific_api_token Rails.configuration.anonymous_user_token do
+      Group.where(group_class: 'project').order("updated_at DESC")
+    end
   end
 end

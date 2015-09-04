@@ -138,6 +138,33 @@ class ProjectsControllerTest < ActionController::TestCase
     assert_equal api_fixture('users', 'subproject_admin')['uuid'], new_specimen.owner_uuid
   end
 
+  # An object which does not offer an expired_at field but has a xx_owner_uuid_name_unique constraint
+  # will be renamed when removed and another object with the same name exists in user's home project.
+  [
+    ['groups', 'subproject_in_asubproject_with_same_name_as_one_in_active_user_home'],
+    ['pipeline_templates', 'template_in_asubproject_with_same_name_as_one_in_active_user_home'],
+  ].each do |dm, fixture|
+    test "removing #{dm} from a subproject results in renaming it when there is another such object with same name in home project" do
+      object = api_fixture(dm, fixture)
+      delete(:remove_item,
+             { id: api_fixture('groups', 'asubproject')['uuid'],
+               item_uuid: object['uuid'],
+               format: 'js' },
+             session_for(:active))
+      assert_response :success
+      assert_match(/\b#{object['uuid']}\b/, @response.body,
+                   "removed object not named in response")
+      use_token :active
+      if dm.eql?('groups')
+        found = Group.find(object['uuid'])
+      else
+        found = PipelineTemplate.find(object['uuid'])
+      end
+      assert_equal api_fixture('users', 'active')['uuid'], found.owner_uuid
+      assert_equal true, found.name.include?(object['name'] + ' removed from ')
+    end
+  end
+
   test 'projects#show tab infinite scroll partial obeys limit' do
     get_contents_rows(limit: 1, filters: [['uuid','is_a',['arvados#job']]])
     assert_response :success
@@ -220,5 +247,175 @@ class ProjectsControllerTest < ActionController::TestCase
     get(:index)
     assert_response :redirect
     assert_match /\/users\/welcome/, @response.redirect_url
+  end
+
+  [
+    nil,
+    :active,
+  ].each do |user|
+    test "visit public projects page when anon config is enabled, as user #{user}, and expect page" do
+      Rails.configuration.anonymous_user_token = api_fixture('api_client_authorizations')['anonymous']['api_token']
+
+      if user
+        get :public, {}, session_for(user)
+      else
+        get :public
+      end
+
+      assert_response :success
+      assert_not_nil assigns(:objects)
+      project_names = assigns(:objects).collect(&:name)
+      assert_includes project_names, 'Unrestricted public data'
+      assert_not_includes project_names, 'A Project'
+      refute_empty css_select('[href="/projects/public"]')
+    end
+  end
+
+  test "visit public projects page when anon config is not enabled as active user and expect 404" do
+    get :public, {}, session_for(:active)
+    assert_response 404
+  end
+
+  test "visit public projects page when anon config is enabled but public projects page is disabled as active user and expect 404" do
+    Rails.configuration.anonymous_user_token = api_fixture('api_client_authorizations')['anonymous']['api_token']
+    Rails.configuration.enable_public_projects_page = false
+    get :public, {}, session_for(:active)
+    assert_response 404
+  end
+
+  test "visit public projects page when anon config is not enabled as anonymous and expect login page" do
+    get :public
+    assert_response :redirect
+    assert_match /\/users\/welcome/, @response.redirect_url
+    assert_empty css_select('[href="/projects/public"]')
+  end
+
+  test "visit public projects page when anon config is enabled and public projects page is disabled and expect login page" do
+    Rails.configuration.anonymous_user_token = api_fixture('api_client_authorizations')['anonymous']['api_token']
+    Rails.configuration.enable_public_projects_page = false
+    get :index
+    assert_response :redirect
+    assert_match /\/users\/welcome/, @response.redirect_url
+    assert_empty css_select('[href="/projects/public"]')
+  end
+
+  test "visit public projects page when anon config is not enabled and public projects page is enabled and expect login page" do
+    Rails.configuration.enable_public_projects_page = true
+    get :index
+    assert_response :redirect
+    assert_match /\/users\/welcome/, @response.redirect_url
+    assert_empty css_select('[href="/projects/public"]')
+  end
+
+  test "find a project and edit its description" do
+    project = api_fixture('groups')['aproject']
+    use_token :active
+    found = Group.find(project['uuid'])
+    found.description = 'test description update'
+    found.save!
+    get(:show, {id: project['uuid']}, session_for(:active))
+    assert_includes @response.body, 'test description update'
+  end
+
+  test "find a project and edit description to textile description" do
+    project = api_fixture('groups')['aproject']
+    use_token :active
+    found = Group.find(project['uuid'])
+    found.description = '*test bold description for textile formatting*'
+    found.save!
+    get(:show, {id: project['uuid']}, session_for(:active))
+    assert_includes @response.body, '<strong>test bold description for textile formatting</strong>'
+  end
+
+  test "find a project and edit description to html description" do
+    project = api_fixture('groups')['aproject']
+    use_token :active
+    found = Group.find(project['uuid'])
+    found.description = 'Textile description with link to home page <a href="/">take me home</a>.'
+    found.save!
+    get(:show, {id: project['uuid']}, session_for(:active))
+    assert_includes @response.body, 'Textile description with link to home page <a href="/">take me home</a>.'
+  end
+
+  test "find a project and edit description to textile description with link to object" do
+    project = api_fixture('groups')['aproject']
+    use_token :active
+    found = Group.find(project['uuid'])
+
+    # uses 'Link to object' as a hyperlink for the object
+    found.description = '"Link to object":' + api_fixture('groups')['asubproject']['uuid']
+    found.save!
+    get(:show, {id: project['uuid']}, session_for(:active))
+
+    # check that input was converted to textile, not staying as inputted
+    refute_includes  @response.body,'"Link to object"'
+    refute_empty css_select('[href="/groups/zzzzz-j7d0g-axqo7eu9pwvna1x"]')
+  end
+
+  test "project viewer can't see project sharing tab" do
+    project = api_fixture('groups')['aproject']
+    get(:show, {id: project['uuid']}, session_for(:project_viewer))
+    refute_includes @response.body, '<div id="Sharing"'
+    assert_includes @response.body, '<div id="Data_collections"'
+  end
+
+  [
+    'admin',
+    'active',
+  ].each do |username|
+    test "#{username} can see project sharing tab" do
+     project = api_fixture('groups')['aproject']
+     get(:show, {id: project['uuid']}, session_for(username))
+     assert_includes @response.body, '<div id="Sharing"'
+     assert_includes @response.body, '<div id="Data_collections"'
+    end
+  end
+
+  [
+    ['admin',true],
+    ['active',true],
+    ['project_viewer',false],
+  ].each do |user, can_move|
+    test "#{user} can move subproject from project #{can_move}" do
+      get(:show, {id: api_fixture('groups')['aproject']['uuid']}, session_for(user))
+      if can_move
+        assert_includes @response.body, 'Move project...'
+      else
+        refute_includes @response.body, 'Move project...'
+      end
+    end
+  end
+
+  [
+    ["jobs", "/jobs"],
+    ["pipelines", "/pipeline_instances"],
+    ["collections", "/collections"],
+  ].each do |target,path|
+    test "test dashboard button all #{target}" do
+      get :index, {}, session_for(:active)
+      assert_includes @response.body, "href=\"#{path}\""
+      assert_includes @response.body, "All #{target}"
+    end
+  end
+
+  test "visit a public project and verify the public projects page link exists" do
+    Rails.configuration.anonymous_user_token = api_fixture('api_client_authorizations')['anonymous']['api_token']
+    uuid = api_fixture('groups')['anonymously_accessible_project']['uuid']
+    get :show, {id: uuid}
+    project = assigns(:object)
+    assert_equal uuid, project['uuid']
+    refute_empty css_select("[href=\"/projects/#{project['uuid']}\"]")
+    assert_includes @response.body, "<a href=\"/projects/public\">Public Projects</a>"
+  end
+
+  test 'all_projects unaffected by params after use by ProjectsController (#6640)' do
+    @controller = ProjectsController.new
+    project_uuid = api_fixture('groups')['aproject']['uuid']
+    get :index, {
+      filters: [['uuid', '<', project_uuid]].to_json,
+      limit: 0,
+      offset: 1000,
+    }, session_for(:active)
+    assert_select "#projects-menu + ul li.divider ~ li a[href=/projects/#{project_uuid}]"
   end
 end

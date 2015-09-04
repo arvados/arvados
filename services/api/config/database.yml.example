@@ -1,0 +1,27 @@
+development:
+  adapter: postgresql
+  template: template0
+  encoding: utf8
+  database: arvados_development
+  username: arvados
+  password: xxxxxxxx
+  host: localhost
+
+test:
+  adapter: postgresql
+  template: template0
+  encoding: utf8
+  database: arvados_test
+  username: arvados
+  password: xxxxxxxx
+  host: localhost
+
+production:
+  adapter: postgresql
+  template: template0
+  encoding: utf8
+  database: arvados_production
+  username: arvados
+  password: xxxxxxxx
+  host: localhost
+

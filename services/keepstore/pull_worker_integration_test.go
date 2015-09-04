@@ -1,16 +1,19 @@
 package main
 
 import (
+	"bytes"
+	"errors"
 	"git.curoverse.com/arvados.git/sdk/go/arvadosclient"
 	"git.curoverse.com/arvados.git/sdk/go/arvadostest"
 	"git.curoverse.com/arvados.git/sdk/go/keepclient"
+	"io"
 	"net/http"
 	"os"
 	"strings"
 	"testing"
 )
 
-var keepClient keepclient.KeepClient
+var keepClient *keepclient.KeepClient
 
 type PullWorkIntegrationTestData struct {
 	Name     string
@@ -33,7 +36,7 @@ func SetupPullWorkerIntegrationTest(t *testing.T, testData PullWorkIntegrationTe
 	}
 
 	// keep client
-	keepClient = keepclient.KeepClient{
+	keepClient = &keepclient.KeepClient{
 		Arvados:       &arv,
 		Want_replicas: 1,
 		Using_proxy:   true,
@@ -42,17 +45,15 @@ func SetupPullWorkerIntegrationTest(t *testing.T, testData PullWorkIntegrationTe
 
 	// discover keep services
 	var servers []string
-	service_roots, err := keepClient.DiscoverKeepServers()
-	if err != nil {
+	if err := keepClient.DiscoverKeepServers(); err != nil {
 		t.Error("Error discovering keep services")
 	}
-	for _, host := range service_roots {
+	for _, host := range keepClient.LocalRoots() {
 		servers = append(servers, host)
 	}
 
 	// Put content if the test needs it
 	if wantData {
-		keepClient.SetServiceRoots(service_roots)
 		locator, _, err := keepClient.PutB([]byte(testData.Content))
 		if err != nil {
 			t.Errorf("Error putting test data in setup for %s %s %v", testData.Content, locator, err)
@@ -106,6 +107,7 @@ func TestPullWorkerIntegration_GetExistingLocator(t *testing.T) {
 func performPullWorkerIntegrationTest(testData PullWorkIntegrationTestData, pullRequest PullRequest, t *testing.T) {
 
 	// Override PutContent to mock PutBlock functionality
+	defer func(orig func([]byte, string) error) { PutContent = orig }(PutContent)
 	PutContent = func(content []byte, locator string) (err error) {
 		if string(content) != testData.Content {
 			t.Errorf("PutContent invoked with unexpected data. Expected: %s; Found: %s", testData.Content, content)
@@ -113,16 +115,29 @@ func performPullWorkerIntegrationTest(testData PullWorkIntegrationTestData, pull
 		return
 	}
 
+	// Override GetContent to mock keepclient Get functionality
+	defer func(orig func(string, *keepclient.KeepClient) (io.ReadCloser, int64, string, error)) {
+		GetContent = orig
+	}(GetContent)
+	GetContent = func(signedLocator string, keepClient *keepclient.KeepClient) (
+		reader io.ReadCloser, contentLength int64, url string, err error) {
+		if testData.GetError != "" {
+			return nil, 0, "", errors.New(testData.GetError)
+		}
+		rdr := &ClosingBuffer{bytes.NewBufferString(testData.Content)}
+		return rdr, int64(len(testData.Content)), "", nil
+	}
+
 	keepClient.Arvados.ApiToken = GenerateRandomApiToken()
 	err := PullItemAndProcess(pullRequest, keepClient.Arvados.ApiToken, keepClient)
 
 	if len(testData.GetError) > 0 {
 		if (err == nil) || (!strings.Contains(err.Error(), testData.GetError)) {
-			t.Errorf("Got error %v", err)
+			t.Errorf("Got error %v, expected %v", err, testData.GetError)
 		}
 	} else {
 		if err != nil {
-			t.Errorf("Got error %v", err)
+			t.Errorf("Got error %v, expected nil", err)
 		}
 	}
 }

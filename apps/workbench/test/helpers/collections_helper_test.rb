@@ -1,6 +1,8 @@
 require 'test_helper'
 
 class CollectionsHelperTest < ActionView::TestCase
+  reset_api_fixtures :after_each_test, false
+
   [
     ["filename.csv", true],
     ["filename.fa", true],
@@ -25,6 +27,7 @@ class CollectionsHelperTest < ActionView::TestCase
     ["filename.yml", true],
 
     ["filename.bam", false],
+    ["filename.tar", false],
     ["filename", false],
   ].each do |file_name, preview_allowed|
     test "verify '#{file_name}' is allowed for preview #{preview_allowed}" do

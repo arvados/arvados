@@ -1,10 +1,9 @@
 source 'https://rubygems.org'
 
 gem 'rails', '~> 4.1.0'
-gem 'arvados', '>= 0.1.20150313191637'
+gem 'arvados', '>= 0.1.20150511150219'
 
-gem 'sqlite3'
-
+gem 'activerecord-nulldb-adapter'
 gem 'multi_json'
 gem 'oj'
 gem 'sass'
@@ -88,7 +87,7 @@ gem 'piwik_analytics'
 gem 'httpclient', '~> 2.5'
 
 # This fork has Rails 4 compatible routes
-gem 'themes_for_rails', git: 'https://github.com/holtkampw/themes_for_rails', ref: '1fd2d7897d75ae0d6375f4c390df87b8e91ad417'
+gem 'themes_for_rails', git: 'https://github.com/curoverse/themes_for_rails'
 
 gem "deep_merge", :require => 'deep_merge/rails_compat'
 

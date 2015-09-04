@@ -9,7 +9,7 @@ class ErrorsTest < ActionDispatch::IntegrationTest
 
   test "error page renders user navigation" do
     visit(page_with_token("active", "/collections/#{BAD_UUID}"))
-    assert(page.has_text?(api_fixture("users")["active"]["email"]),
+    assert(page.has_link?("notifications-menu"),
            "User information missing from error page")
     assert(page.has_no_text?(/log ?in/i),
            "Logged in user prompted to log in on error page")
@@ -17,7 +17,7 @@ class ErrorsTest < ActionDispatch::IntegrationTest
 
   test "no user navigation with expired token" do
     visit(page_with_token("expired", "/collections/#{BAD_UUID}"))
-    assert(page.has_no_text?(api_fixture("users")["active"]["email"]),
+    assert(page.has_no_link?("notifications-menu"),
            "Page visited with expired token included user information")
     assert(page.has_selector?("a", text: /log ?in/i),
            "Login prompt missing on expired token error page")
@@ -51,10 +51,10 @@ class ErrorsTest < ActionDispatch::IntegrationTest
   # it has a too-limited token, these tests will need to be adjusted.
   test "API error page includes error token" do
     start_stamp = now_timestamp
-    visit(page_with_token("active_readonly", "/authorized_keys"))
-    click_on "Add a new authorized key"
+    visit(page_with_token("active_readonly", "/groups"))
+    click_on "Add a new group"
     assert(page.has_text?(/fiddlesticks/i),
-           "Not on an error page after making an SSH key out of scope")
+           "Not on an error page after making a group out of scope")
     assert(page_has_error_token?(start_stamp), "no error token on 404 page")
   end
 
@@ -79,50 +79,45 @@ class ErrorsTest < ActionDispatch::IntegrationTest
   end
 
   test "API error page has Report problem button" do
+    # point to a bad api server url to generate fiddlesticks error
     original_arvados_v1_base = Rails.configuration.arvados_v1_base
+    Rails.configuration.arvados_v1_base = "https://[::1]:1/"
 
-    begin
-      # point to a bad api server url to generate fiddlesticks error
-      Rails.configuration.arvados_v1_base = "https://[100::f]:1/"
+    visit page_with_token("active")
 
-      visit page_with_token("active")
+    assert_text 'fiddlesticks'
 
-      assert_text 'fiddlesticks'
+    # reset api server base config to let the popup rendering to work
+    Rails.configuration.arvados_v1_base = original_arvados_v1_base
 
-      # reset api server base config to let the popup rendering to work
-      Rails.configuration.arvados_v1_base = original_arvados_v1_base
+    click_link 'Report problem'
 
-      click_link 'Report problem'
+    within '.modal-content' do
+      assert_text 'Report a problem'
+      assert_no_text 'Version / debugging info'
+      assert_text 'Describe the problem'
+      assert_text 'Send problem report'
+      # "Send" button should be disabled until text is entered
+      assert_no_selector 'a,button:not([disabled])', text: 'Send problem report'
+      assert_selector 'a,button', text: 'Cancel'
 
-      within '.modal-content' do
-        assert_text 'Report a problem'
-        assert_no_text 'Version / debugging info'
-        assert_text 'Describe the problem'
-        assert_text 'Send problem report'
-        # "Send" button should be disabled until text is entered
-        assert_no_selector 'a,button:not([disabled])', text: 'Send problem report'
-        assert_selector 'a,button', text: 'Cancel'
+      report = mock
+      report.expects(:deliver).returns true
+      IssueReporter.expects(:send_report).returns report
 
-        report = mock
-        report.expects(:deliver).returns true
-        IssueReporter.expects(:send_report).returns report
+      # enter a report text and click on report
+      find_field('report_issue_text').set 'my test report text'
+      click_button 'Send problem report'
 
-        # enter a report text and click on report
-        find_field('report_issue_text').set 'my test report text'
-        click_button 'Send problem report'
-
-        # ajax success updated button texts and added footer message
-        assert_no_selector 'a,button', text: 'Send problem report'
-        assert_no_selector 'a,button', text: 'Cancel'
-        assert_text 'Report sent'
-        assert_text 'Thanks for reporting this issue'
-        click_button 'Close'
-      end
-
-      # out of the popup now and should be back in the error page
-      assert_text 'fiddlesticks'
-    ensure
-      Rails.configuration.arvados_v1_base = original_arvados_v1_base
+      # ajax success updated button texts and added footer message
+      assert_no_selector 'a,button', text: 'Send problem report'
+      assert_no_selector 'a,button', text: 'Cancel'
+      assert_text 'Report sent'
+      assert_text 'Thanks for reporting this issue'
+      click_button 'Close'
     end
+
+    # out of the popup now and should be back in the error page
+    assert_text 'fiddlesticks'
   end
 end

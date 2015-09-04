@@ -32,6 +32,8 @@
 <% if n_inputs == 0 %>
   <p>This pipeline does not need any further inputs specified. You can start it by clicking the "Run" button whenever you're ready. (It's not too late to change existing settings, though.)</p>
 <% else %>
+  <%= render_unreadable_inputs_present %>
+
   <p><i>Provide <%= n_inputs > 1 ? 'values' : 'a value' %> for the following <%= n_inputs > 1 ? 'parameters' : 'parameter' %>, then click the "Run" button to start the pipeline.</i></p>
   <% if @object.editable? %>
     <%= content_for :pi_input_form %>

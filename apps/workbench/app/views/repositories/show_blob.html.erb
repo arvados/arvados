@@ -1,0 +1,13 @@
+<%= render partial: 'repository_breadcrumbs' %>
+
+<% if not @blobdata.valid_encoding? %>
+  <div class="alert alert-warning">
+    <p>
+      This file has an invalid text encoding, so it can't be shown
+      here.  (This probably just means it's a binary file, not a text
+      file.)
+    </p>
+  </div>
+<% else %>
+  <pre><%= @blobdata %></pre>
+<% end %>

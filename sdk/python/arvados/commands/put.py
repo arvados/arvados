@@ -5,6 +5,7 @@
 
 import argparse
 import arvados
+import arvados.collection
 import base64
 import datetime
 import errno
@@ -166,7 +167,9 @@ def parse_arguments(arguments):
     args = arg_parser.parse_args(arguments)
 
     if len(args.paths) == 0:
-        args.paths += ['/dev/stdin']
+        args.paths = ['-']
+
+    args.paths = map(lambda x: "-" if x == "/dev/stdin" else x, args.paths)
 
     if len(args.paths) != 1 or os.path.isdir(args.paths[0]):
         if args.filename:
@@ -181,9 +184,9 @@ def parse_arguments(arguments):
         args.progress = True
 
     if args.paths == ['-']:
-        args.paths = ['/dev/stdin']
+        args.resume = False
         if not args.filename:
-            args.filename = '-'
+            args.filename = 'stdin'
 
     return args
 
@@ -465,7 +468,16 @@ def main(arguments=None, stdout=sys.stdout, stderr=sys.stderr):
     writer.report_progress()
     writer.do_queued_work()  # Do work resumed from cache.
     for path in args.paths:  # Copy file data to Keep.
-        if os.path.isdir(path):
+        if path == '-':
+            writer.start_new_stream()
+            writer.start_new_file(args.filename)
+            r = sys.stdin.read(64*1024)
+            while r:
+                # Need to bypass _queued_file check in ResumableCollectionWriter.write() to get
+                # CollectionWriter.write().
+                super(arvados.collection.ResumableCollectionWriter, writer).write(r)
+                r = sys.stdin.read(64*1024)
+        elif os.path.isdir(path):
             writer.write_directory_tree(
                 path, max_manifest_depth=args.max_manifest_depth)
         else:
@@ -479,14 +491,14 @@ def main(arguments=None, stdout=sys.stdout, stderr=sys.stderr):
     if args.stream:
         output = writer.manifest_text()
         if args.normalize:
-            output = CollectionReader(output).manifest_text(normalize=True)
+            output = arvados.collection.CollectionReader(output).manifest_text(normalize=True)
     elif args.raw:
         output = ','.join(writer.data_locators())
     else:
         try:
             manifest_text = writer.manifest_text()
             if args.normalize:
-                manifest_text = CollectionReader(manifest_text).manifest_text(normalize=True)
+                manifest_text = arvados.collection.CollectionReader(manifest_text).manifest_text(normalize=True)
             replication_attr = 'replication_desired'
             if api_client._schema.schemas['Collection']['properties'].get(replication_attr, None) is None:
                 # API called it 'redundancy' before #3410.

@@ -1,0 +1,6 @@
+{
+  "service_host": "localhost",
+  "service_port": 9902,
+  "service_ssl_flag": "false",
+  "service_type": "proxy"
+}

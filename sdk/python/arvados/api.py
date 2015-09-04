@@ -1,3 +1,4 @@
+import collections
 import httplib2
 import json
 import logging
@@ -13,6 +14,26 @@ import errors
 import util
 
 _logger = logging.getLogger('arvados.api')
+
+class OrderedJsonModel(apiclient.model.JsonModel):
+    """Model class for JSON that preserves the contents' order.
+
+    API clients that care about preserving the order of fields in API
+    server responses can use this model to do so, like this::
+
+        from arvados.api import OrderedJsonModel
+        client = arvados.api('v1', ..., model=OrderedJsonModel())
+    """
+
+    def deserialize(self, content):
+        # This is a very slightly modified version of the parent class'
+        # implementation.  Copyright (c) 2010 Google.
+        content = content.decode('utf-8')
+        body = json.loads(content, object_pairs_hook=collections.OrderedDict)
+        if self._data_wrapper and isinstance(body, dict) and 'data' in body:
+            body = body['data']
+        return body
+
 
 def _intercept_http_request(self, uri, **kwargs):
     from httplib import BadStatusLine
@@ -69,7 +90,10 @@ def _new_http_error(cls, *args, **kwargs):
 apiclient_errors.HttpError.__new__ = staticmethod(_new_http_error)
 
 def http_cache(data_type):
-    path = os.environ['HOME'] + '/.cache/arvados/' + data_type
+    homedir = os.environ.get('HOME')
+    if not homedir or len(homedir) == 0:
+        return None
+    path = homedir + '/.cache/arvados/' + data_type
     try:
         util.mkdir_dash_p(path)
     except OSError:
@@ -134,11 +158,7 @@ def api(version=None, cache=True, host=None, token=None, insecure=False, **kwarg
             'https://%s/discovery/v1/apis/{api}/{apiVersion}/rest' % (host,))
 
     if 'http' not in kwargs:
-        http_kwargs = {}
-        # Prefer system's CA certificates (if available) over httplib2's.
-        certs_path = '/etc/ssl/certs/ca-certificates.crt'
-        if os.path.exists(certs_path):
-            http_kwargs['ca_certs'] = certs_path
+        http_kwargs = {'ca_certs': util.ca_certs_path()}
         if cache:
             http_kwargs['cache'] = http_cache('discovery')
         if insecure:

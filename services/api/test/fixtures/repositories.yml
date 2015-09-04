@@ -1,34 +1,48 @@
 crunch_dispatch_test:
   uuid: zzzzz-s0uqq-382brsig8rp3665
   owner_uuid: zzzzz-tpzed-xurymjxw79nv3jz # active user
-  name: crunch_dispatch_test
+  name: active/crunchdispatchtest
+  created_at: 2015-01-01T00:00:00.123456Z
+  modified_at: 2015-01-01T00:00:00.123456Z
 
 arvados:
   uuid: zzzzz-s0uqq-arvadosrepo0123
   owner_uuid: zzzzz-tpzed-000000000000000 # root
   name: arvados
+  created_at: 2015-01-01T00:00:00.123456Z
+  modified_at: 2015-01-01T00:00:00.123456Z
 
 foo:
   uuid: zzzzz-s0uqq-382brsig8rp3666
   owner_uuid: zzzzz-tpzed-xurymjxw79nv3jz # active user
-  name: foo
+  name: active/foo
+  created_at: 2015-01-01T00:00:00.123456Z
+  modified_at: 2015-01-01T00:00:00.123456Z
 
 repository2:
   uuid: zzzzz-s0uqq-382brsig8rp3667
   owner_uuid: zzzzz-tpzed-xurymjxw79nv3jz # active user
-  name: foo2
+  name: active/foo2
+  created_at: 2015-01-01T00:00:00.123456Z
+  modified_at: 2015-01-01T00:00:00.123456Z
 
 repository3:
   uuid: zzzzz-s0uqq-38orljkqpyo1j61
   owner_uuid: zzzzz-tpzed-d9tiejq69daie8f # admin user
-  name: foo3
+  name: admin/foo3
+  created_at: 2015-01-01T00:00:00.123456Z
+  modified_at: 2015-01-01T00:00:00.123456Z
 
 repository4:
   uuid: zzzzz-s0uqq-38oru8hnk57ht34
   owner_uuid: zzzzz-tpzed-d9tiejq69daie8f # admin user
-  name: foo4
+  name: admin/foo4
+  created_at: 2015-01-01T00:00:00.123456Z
+  modified_at: 2015-01-01T00:00:00.123456Z
 
-auto_setup_repository:
-  uuid: zzzzz-s0uqq-382brabc8rp3667
+has_branch_with_commit_hash_name:
+  uuid: zzzzz-s0uqq-382brsig8rp3668
   owner_uuid: zzzzz-tpzed-xurymjxw79nv3jz # active user
-  name: auto_setup_repo
+  name: active/shabranchnames
+  created_at: 2015-01-01T00:00:00.123456Z
+  modified_at: 2015-01-01T00:00:00.123456Z

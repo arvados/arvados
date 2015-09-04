@@ -23,7 +23,10 @@ table(table table-bordered table-condensed).
 |_. Attribute|_. Type|_. Description|_. Notes|
 |script|string|The filename of the job script.|This program will be invoked by Crunch for each job task. It is given as a path to an executable file, relative to the @/crunch_scripts@ directory in the Git tree specified by the _repository_ and _script_version_ attributes.|
 |script_parameters|hash|The input parameters for the job.|Conventionally, one of the parameters is called @"input"@. Typically, some parameter values are collection UUIDs. Ultimately, though, the significance of parameters is left entirely up to the script itself.|
-|repository|string|Git repository|Given as the name of a locally hosted Git repository.|
+|repository|string|Git repository name or URL.|Source of the repository where the given script_version is to be found. This can be given as the name of a locally hosted repository, or as a publicly accessible URL starting with @git://@, @http://@, or @https://@.
+Examples:
+@yourusername/yourrepo@
+@https://github.com/curoverse/arvados.git@|
 |script_version|string|Git commit|During a **create** transaction, this is the Git branch, tag, or hash supplied by the client. Before the job starts, Arvados updates it to the full 40-character SHA-1 hash of the commit used by the job.
 See "Specifying Git versions":#script_version below for more detail about acceptable ways to specify a commit.|
 |cancelled_by_client_uuid|string|API client ID|Is null if job has not been cancelled|

@@ -24,10 +24,9 @@ parser.add_argument('locator', type=str,
                     help="""
 Collection locator, optionally with a file path or prefix.
 """)
-parser.add_argument('destination', type=str, nargs='?', default='/dev/stdout',
+parser.add_argument('destination', type=str, nargs='?', default='-',
                     help="""
-Local file or directory where the data is to be written. Default:
-/dev/stdout.
+Local file or directory where the data is to be written. Default: stdout.
 """)
 group = parser.add_mutually_exclusive_group()
 group.add_argument('--progress', action='store_true',
@@ -74,7 +73,7 @@ group.add_argument('-f', action='store_true',
                    help="""
 Overwrite existing files while writing. The default behavior is to
 refuse to write *anything* if any of the output files already
-exist. As a special case, -f is not needed to write to /dev/stdout.
+exist. As a special case, -f is not needed to write to stdout.
 """)
 group.add_argument('--skip-existing', action='store_true',
                    help="""
@@ -100,9 +99,10 @@ if not args.r and (os.path.isdir(args.destination) or
     logger.debug("Appended source file name to destination directory: %s",
                  args.destination)
 
-if args.destination == '-':
-    args.destination = '/dev/stdout'
 if args.destination == '/dev/stdout':
+    args.destination = "-"
+
+if args.destination == '-':
     # Normally you have to use -f to write to a file (or device) that
     # already exists, but "-" and "/dev/stdout" are common enough to
     # merit a special exception.
@@ -115,7 +115,7 @@ else:
 # that isn't a tty.
 if (not (args.batch_progress or args.no_progress)
     and sys.stderr.isatty()
-    and (args.destination != '/dev/stdout'
+    and (args.destination != '-'
          or not sys.stdout.isatty())):
     args.progress = True
 
@@ -134,9 +134,12 @@ if not get_prefix:
         if not args.f:
             open_flags |= os.O_EXCL
         try:
-            out_fd = os.open(args.destination, open_flags)
-            with os.fdopen(out_fd, 'wb') as out_file:
-                out_file.write(reader.manifest_text())
+            if args.destination == "-":
+                sys.stdout.write(reader.manifest_text())
+            else:
+                out_fd = os.open(args.destination, open_flags)
+                with os.fdopen(out_fd, 'wb') as out_file:
+                    out_file.write(reader.manifest_text())
         except (IOError, OSError) as error:
             abort("can't write to '{}': {}".format(args.destination, error))
         except (arvados.errors.ApiError, arvados.errors.KeepReadError) as error:
@@ -156,12 +159,15 @@ try:
                 if 0 != string.find(os.path.join(s.name(), f.name()),
                                     '.' + get_prefix):
                     continue
-                dest_path = os.path.join(
-                    args.destination,
-                    os.path.join(s.name(), f.name())[len(get_prefix)+1:])
-                if (not (args.n or args.f or args.skip_existing) and
-                    os.path.exists(dest_path)):
-                    abort('Local file %s already exists.' % (dest_path,))
+                if args.destination == "-":
+                    dest_path = "-"
+                else:
+                    dest_path = os.path.join(
+                        args.destination,
+                        os.path.join(s.name(), f.name())[len(get_prefix)+1:])
+                    if (not (args.n or args.f or args.skip_existing) and
+                        os.path.exists(dest_path)):
+                        abort('Local file %s already exists.' % (dest_path,))
             else:
                 if os.path.join(s.name(), f.name()) != '.' + get_prefix:
                     continue
@@ -178,20 +184,23 @@ for s,f,outfilename in todo:
     outfile = None
     digestor = None
     if not args.n:
-        if args.skip_existing and os.path.exists(outfilename):
-            logger.debug('Local file %s exists. Skipping.', outfilename)
-            continue
-        elif not args.f and (os.path.isfile(outfilename) or
-                           os.path.isdir(outfilename)):
-            # Good thing we looked again: apparently this file wasn't
-            # here yet when we checked earlier.
-            abort('Local file %s already exists.' % (outfilename,))
-        if args.r:
-            arvados.util.mkdir_dash_p(os.path.dirname(outfilename))
-        try:
-            outfile = open(outfilename, 'wb')
-        except Exception as error:
-            abort('Open(%s) failed: %s' % (outfilename, error))
+        if outfilename == "-":
+            outfile = sys.stdout
+        else:
+            if args.skip_existing and os.path.exists(outfilename):
+                logger.debug('Local file %s exists. Skipping.', outfilename)
+                continue
+            elif not args.f and (os.path.isfile(outfilename) or
+                               os.path.isdir(outfilename)):
+                # Good thing we looked again: apparently this file wasn't
+                # here yet when we checked earlier.
+                abort('Local file %s already exists.' % (outfilename,))
+            if args.r:
+                arvados.util.mkdir_dash_p(os.path.dirname(outfilename))
+            try:
+                outfile = open(outfilename, 'wb')
+            except Exception as error:
+                abort('Open(%s) failed: %s' % (outfilename, error))
     if args.hash:
         digestor = hashlib.new(args.hash)
     try:
@@ -216,8 +225,8 @@ for s,f,outfilename in todo:
             sys.stderr.write("%s  %s/%s\n"
                              % (digestor.hexdigest(), s.name(), f.name()))
     except KeyboardInterrupt:
-        if outfile and outfilename != '/dev/stdout':
-            os.unlink(outfilename)
+        if outfile and (outfile.fileno() > 2) and not outfile.closed:
+            os.unlink(outfile.name)
         break
 
 if args.progress:

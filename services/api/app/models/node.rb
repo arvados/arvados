@@ -13,15 +13,6 @@ class Node < ArvadosModel
   belongs_to(:job, foreign_key: :job_uuid, primary_key: :uuid)
   attr_accessor :job_readable
 
-  MAX_SLOTS = 64
-
-  @@dns_server_conf_dir = Rails.configuration.dns_server_conf_dir
-  @@dns_server_conf_template = Rails.configuration.dns_server_conf_template
-  @@dns_server_reload_command = Rails.configuration.dns_server_reload_command
-  @@uuid_prefix = Rails.configuration.uuid_prefix
-  @@domain = Rails.configuration.compute_node_domain rescue `hostname --domain`.strip
-  @@nameservers = Rails.configuration.compute_node_nameservers
-
   api_accessible :user, :extend => :common do |t|
     t.add :hostname
     t.add :domain
@@ -36,11 +27,11 @@ class Node < ArvadosModel
   api_accessible :superuser, :extend => :user do |t|
     t.add :first_ping_at
     t.add :info
-    t.add lambda { |x| @@nameservers }, :as => :nameservers
+    t.add lambda { |x| Rails.configuration.compute_node_nameservers }, :as => :nameservers
   end
 
   def domain
-    super || @@domain
+    super || Rails.configuration.compute_node_domain
   end
 
   def api_job_uuid
@@ -103,7 +94,7 @@ class Node < ArvadosModel
       end
     end
 
-    # Assign hostname
+    # Assign slot_number
     if self.slot_number.nil?
       try_slot = 0
       begin
@@ -114,8 +105,12 @@ class Node < ArvadosModel
         rescue ActiveRecord::RecordNotUnique
           try_slot += 1
         end
-        raise "No available node slots" if try_slot == MAX_SLOTS
+        raise "No available node slots" if try_slot == Rails.configuration.max_compute_nodes
       end while true
+    end
+
+    # Assign hostname
+    if self.hostname.nil? and Rails.configuration.assign_node_hostname
       self.hostname = self.class.hostname_for_slot(self.slot_number)
     end
 
@@ -156,45 +151,77 @@ class Node < ArvadosModel
     end
   end
 
-  def self.dns_server_update(hostname, ip_address)
-    return unless @@dns_server_conf_dir and @@dns_server_conf_template
+  def self.dns_server_update hostname, ip_address
+    ok = true
+
     ptr_domain = ip_address.
       split('.').reverse.join('.').concat('.in-addr.arpa')
-    hostfile = File.join @@dns_server_conf_dir, "#{hostname}.conf"
 
-    begin
-      template = IO.read(@@dns_server_conf_template)
-    rescue => e
-      STDERR.puts "Unable to read dns_server_conf_template #{@@dns_server_conf_template}: #{e.message}"
-      return
-    end
+    template_vars = {
+      hostname: hostname,
+      uuid_prefix: Rails.configuration.uuid_prefix,
+      ip_address: ip_address,
+      ptr_domain: ptr_domain,
+    }
 
-    populated = template % {hostname:hostname, uuid_prefix:@@uuid_prefix, ip_address:ip_address, ptr_domain:ptr_domain}
+    if Rails.configuration.dns_server_conf_dir and Rails.configuration.dns_server_conf_template
+      begin
+        begin
+          template = IO.read(Rails.configuration.dns_server_conf_template)
+        rescue => e
+          logger.error "Reading #{Rails.configuration.dns_server_conf_template}: #{e.message}"
+          raise
+        end
 
-    begin
-      File.open hostfile, 'w' do |f|
-        f.puts populated
+        hostfile = File.join Rails.configuration.dns_server_conf_dir, "#{hostname}.conf"
+        File.open hostfile+'.tmp', 'w' do |f|
+          f.puts template % template_vars
+        end
+        File.rename hostfile+'.tmp', hostfile
+      rescue => e
+        logger.error "Writing #{hostfile}: #{e.message}"
+        ok = false
       end
-    rescue => e
-      STDERR.puts "Unable to write #{hostfile}: #{e.message}"
-      return
     end
-    File.open(File.join(@@dns_server_conf_dir, 'restart.txt'), 'w') do |f|
-      # this will trigger a dns server restart
-      f.puts @@dns_server_reload_command
+
+    if Rails.configuration.dns_server_update_command
+      cmd = Rails.configuration.dns_server_update_command % template_vars
+      if not system cmd
+        logger.error "dns_server_update_command #{cmd.inspect} failed: #{$?}"
+        ok = false
+      end
     end
+
+    if Rails.configuration.dns_server_conf_dir and Rails.configuration.dns_server_reload_command
+      restartfile = File.join(Rails.configuration.dns_server_conf_dir, 'restart.txt')
+      begin
+        File.open(restartfile, 'w') do |f|
+          # Typically, this is used to trigger a dns server restart
+          f.puts Rails.configuration.dns_server_reload_command
+        end
+      rescue => e
+        logger.error "Unable to write #{restartfile}: #{e.message}"
+        ok = false
+      end
+    end
+
+    ok
   end
 
   def self.hostname_for_slot(slot_number)
-    "compute#{slot_number}"
+    config = Rails.configuration.assign_node_hostname
+
+    return nil if !config
+
+    sprintf(config, {:slot_number => slot_number})
   end
 
   # At startup, make sure all DNS entries exist.  Otherwise, slurmctld
   # will refuse to start.
-  if @@dns_server_conf_dir and @@dns_server_conf_template
-    (0..MAX_SLOTS-1).each do |slot_number|
+  if Rails.configuration.dns_server_conf_dir and Rails.configuration.dns_server_conf_template and Rails.configuration.assign_node_hostname
+    (0..Rails.configuration.max_compute_nodes-1).each do |slot_number|
       hostname = hostname_for_slot(slot_number)
-      hostfile = File.join @@dns_server_conf_dir, "#{hostname}.conf"
+      hostfile = File.join Rails.configuration.dns_server_conf_dir, "#{hostname}.conf"
       if !File.exists? hostfile
         n = Node.where(:slot_number => slot_number).first
         if n.nil? or n.ip_address.nil?

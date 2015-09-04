@@ -77,11 +77,11 @@ class ArvadosFileWriterTestCase(unittest.TestCase):
             writer.seek(0, os.SEEK_SET)
             self.assertEqual("01234567", writer.read(12))
 
-            self.assertEqual(None, c.manifest_locator())
-            self.assertEqual(True, c.modified())
+            self.assertIsNone(c.manifest_locator())
+            self.assertTrue(c.modified())
             c.save_new("test_truncate")
             self.assertEqual("zzzzz-4zz18-mockcollection0", c.manifest_locator())
-            self.assertEqual(False, c.modified())
+            self.assertFalse(c.modified())
 
     def test_write_to_end(self):
         keep = ArvadosFileWriterTestCase.MockKeep({"781e5e245d69b566979b86e28d23f2c7+10": "0123456789"})
@@ -104,13 +104,13 @@ class ArvadosFileWriterTestCase(unittest.TestCase):
             writer.seek(5, os.SEEK_SET)
             self.assertEqual("56789foo", writer.read(8))
 
-            self.assertEqual(None, c.manifest_locator())
-            self.assertEqual(True, c.modified())
-            self.assertEqual(None, keep.get("acbd18db4cc2f85cedef654fccc4a4d8+3"))
+            self.assertIsNone(c.manifest_locator())
+            self.assertTrue(c.modified())
+            self.assertIsNone(keep.get("acbd18db4cc2f85cedef654fccc4a4d8+3"))
 
             c.save_new("test_append")
             self.assertEqual("zzzzz-4zz18-mockcollection0", c.manifest_locator())
-            self.assertEqual(False, c.modified())
+            self.assertFalse(c.modified())
             self.assertEqual("foo", keep.get("acbd18db4cc2f85cedef654fccc4a4d8+3"))
 
 
@@ -128,7 +128,7 @@ class ArvadosFileWriterTestCase(unittest.TestCase):
         writer.write("world")
         self.assertEqual(writer.read(20), "0123456789helloworld")
 
-        self.assertEqual(". 781e5e245d69b566979b86e28d23f2c7+10 fc5e038d38a57032085441e7fe7010b0+10 0:20:count.txt\n", c.manifest_text())
+        self.assertEqual(". 781e5e245d69b566979b86e28d23f2c7+10 fc5e038d38a57032085441e7fe7010b0+10 0:20:count.txt\n", c.portable_manifest_text())
 
     def test_write_at_beginning(self):
         keep = ArvadosFileWriterTestCase.MockKeep({"781e5e245d69b566979b86e28d23f2c7+10": "0123456789"})
@@ -140,14 +140,36 @@ class ArvadosFileWriterTestCase(unittest.TestCase):
             writer.write("foo")
             self.assertEqual(writer.size(), 10)
             self.assertEqual("foo3456789", writer.readfrom(0, 13))
-            self.assertEqual(". acbd18db4cc2f85cedef654fccc4a4d8+3 781e5e245d69b566979b86e28d23f2c7+10 0:3:count.txt 6:7:count.txt\n", c.manifest_text())
+            self.assertEqual(". acbd18db4cc2f85cedef654fccc4a4d8+3 781e5e245d69b566979b86e28d23f2c7+10 0:3:count.txt 6:7:count.txt\n", c.portable_manifest_text())
 
     def test_write_empty(self):
         keep = ArvadosFileWriterTestCase.MockKeep({})
         with Collection(keep_client=keep) as c:
             writer = c.open("count.txt", "w")
             self.assertEqual(writer.size(), 0)
-            self.assertEqual(". d41d8cd98f00b204e9800998ecf8427e+0 0:0:count.txt\n", c.manifest_text())
+            self.assertEqual(". d41d8cd98f00b204e9800998ecf8427e+0 0:0:count.txt\n", c.portable_manifest_text())
+
+    def test_save_manifest_text(self):
+        keep = ArvadosFileWriterTestCase.MockKeep({})
+        with Collection(keep_client=keep) as c:
+            writer = c.open("count.txt", "w")
+            writer.write("0123456789")
+            self.assertEqual('. 781e5e245d69b566979b86e28d23f2c7+10 0:10:count.txt\n', c.portable_manifest_text())
+            self.assertNotIn('781e5e245d69b566979b86e28d23f2c7+10', keep.blocks)
+
+            self.assertEqual('. 781e5e245d69b566979b86e28d23f2c7+10 0:10:count.txt\n', c.save_new(create_collection_record=False))
+            self.assertIn('781e5e245d69b566979b86e28d23f2c7+10', keep.blocks)
+
+    def test_get_manifest_text_commits(self):
+         keep = ArvadosFileWriterTestCase.MockKeep({})
+         with Collection(keep_client=keep) as c:
+             writer = c.open("count.txt", "w")
+             writer.write("0123456789")
+             self.assertEqual('. 781e5e245d69b566979b86e28d23f2c7+10 0:10:count.txt\n', c.portable_manifest_text())
+             self.assertNotIn('781e5e245d69b566979b86e28d23f2c7+10', keep.blocks)
+             self.assertEqual('. 781e5e245d69b566979b86e28d23f2c7+10 0:10:count.txt\n', c.manifest_text())
+             self.assertIn('781e5e245d69b566979b86e28d23f2c7+10', keep.blocks)
+
 
     def test_write_in_middle(self):
         keep = ArvadosFileWriterTestCase.MockKeep({"781e5e245d69b566979b86e28d23f2c7+10": "0123456789"})
@@ -159,7 +181,7 @@ class ArvadosFileWriterTestCase(unittest.TestCase):
             writer.write("foo")
             self.assertEqual(writer.size(), 10)
             self.assertEqual("012foo6789", writer.readfrom(0, 13))
-            self.assertEqual(". 781e5e245d69b566979b86e28d23f2c7+10 acbd18db4cc2f85cedef654fccc4a4d8+3 0:3:count.txt 10:3:count.txt 6:4:count.txt\n", c.manifest_text())
+            self.assertEqual(". 781e5e245d69b566979b86e28d23f2c7+10 acbd18db4cc2f85cedef654fccc4a4d8+3 0:3:count.txt 10:3:count.txt 6:4:count.txt\n", c.portable_manifest_text())
 
     def test_write_at_end(self):
         keep = ArvadosFileWriterTestCase.MockKeep({"781e5e245d69b566979b86e28d23f2c7+10": "0123456789"})
@@ -171,7 +193,7 @@ class ArvadosFileWriterTestCase(unittest.TestCase):
             writer.write("foo")
             self.assertEqual(writer.size(), 10)
             self.assertEqual("0123456foo", writer.readfrom(0, 13))
-            self.assertEqual(". 781e5e245d69b566979b86e28d23f2c7+10 acbd18db4cc2f85cedef654fccc4a4d8+3 0:7:count.txt 10:3:count.txt\n", c.manifest_text())
+            self.assertEqual(". 781e5e245d69b566979b86e28d23f2c7+10 acbd18db4cc2f85cedef654fccc4a4d8+3 0:7:count.txt 10:3:count.txt\n", c.portable_manifest_text())
 
     def test_write_across_segment_boundary(self):
         keep = ArvadosFileWriterTestCase.MockKeep({"781e5e245d69b566979b86e28d23f2c7+10": "0123456789"})
@@ -183,7 +205,7 @@ class ArvadosFileWriterTestCase(unittest.TestCase):
             writer.write("foobar")
             self.assertEqual(writer.size(), 20)
             self.assertEqual("0123456foobar34", writer.readfrom(0, 15))
-            self.assertEqual(". 781e5e245d69b566979b86e28d23f2c7+10 3858f62230ac3c915f300c664312c63f+6 0:7:count.txt 10:6:count.txt 3:7:count.txt\n", c.manifest_text())
+            self.assertEqual(". 781e5e245d69b566979b86e28d23f2c7+10 3858f62230ac3c915f300c664312c63f+6 0:7:count.txt 10:6:count.txt 3:7:count.txt\n", c.portable_manifest_text())
 
     def test_write_across_several_segments(self):
         keep = ArvadosFileWriterTestCase.MockKeep({"781e5e245d69b566979b86e28d23f2c7+10": "0123456789"})
@@ -195,7 +217,7 @@ class ArvadosFileWriterTestCase(unittest.TestCase):
             writer.write("abcdefg")
             self.assertEqual(writer.size(), 12)
             self.assertEqual("01abcdefg123", writer.readfrom(0, 15))
-            self.assertEqual(". 781e5e245d69b566979b86e28d23f2c7+10 7ac66c0f148de9519b8bd264312c4d64+7 0:2:count.txt 10:7:count.txt 1:3:count.txt\n", c.manifest_text())
+            self.assertEqual(". 781e5e245d69b566979b86e28d23f2c7+10 7ac66c0f148de9519b8bd264312c4d64+7 0:2:count.txt 10:7:count.txt 1:3:count.txt\n", c.portable_manifest_text())
 
     def test_write_large(self):
         keep = ArvadosFileWriterTestCase.MockKeep({})
@@ -206,16 +228,33 @@ class ArvadosFileWriterTestCase(unittest.TestCase):
         with Collection('. ' + arvados.config.EMPTY_BLOCK_LOCATOR + ' 0:0:count.txt',
                              api_client=api, keep_client=keep) as c:
             writer = c.open("count.txt", "r+")
-            text = ''.join(["0123456789" for a in xrange(0, 100)])
+            text = "0123456789" * 100
             for b in xrange(0, 100000):
                 writer.write(text)
             self.assertEqual(writer.size(), 100000000)
 
-            self.assertEqual(None, c.manifest_locator())
-            self.assertEqual(True, c.modified())
+            self.assertIsNone(c.manifest_locator())
+            self.assertTrue(c.modified())
             c.save_new("test_write_large")
             self.assertEqual("zzzzz-4zz18-mockcollection0", c.manifest_locator())
-            self.assertEqual(False, c.modified())
+            self.assertFalse(c.modified())
+
+
+    def test_large_write(self):
+        keep = ArvadosFileWriterTestCase.MockKeep({})
+        api = ArvadosFileWriterTestCase.MockApi({}, {})
+        with Collection('. ' + arvados.config.EMPTY_BLOCK_LOCATOR + ' 0:0:count.txt',
+                             api_client=api, keep_client=keep) as c:
+            writer = c.open("count.txt", "r+")
+            self.assertEqual(writer.size(), 0)
+
+            text = "0123456789"
+            writer.write(text)
+            text = "0123456789" * 9999999
+            writer.write(text)
+            self.assertEqual(writer.size(), 100000000)
+
+            self.assertEqual(c.manifest_text(), ". 781e5e245d69b566979b86e28d23f2c7+10 48dd23ea1645fd47d789804d71b5bb8e+67108864 77c57dc6ac5a10bb2205caaa73187994+32891126 0:100000000:count.txt\n")
 
     def test_rewrite_on_empty_file(self):
         keep = ArvadosFileWriterTestCase.MockKeep({})
@@ -228,11 +267,11 @@ class ArvadosFileWriterTestCase(unittest.TestCase):
 
             self.assertEqual(writer.size(), 10)
             self.assertEqual("0123456789", writer.readfrom(0, 20))
-            self.assertEqual(". 7a08b07e84641703e5f2c836aa59a170+100 90:10:count.txt\n", c.manifest_text())
+            self.assertEqual(". 7a08b07e84641703e5f2c836aa59a170+100 90:10:count.txt\n", c.portable_manifest_text())
             writer.flush()
             self.assertEqual(writer.size(), 10)
             self.assertEqual("0123456789", writer.readfrom(0, 20))
-            self.assertEqual(". 781e5e245d69b566979b86e28d23f2c7+10 0:10:count.txt\n", c.manifest_text())
+            self.assertEqual(". 781e5e245d69b566979b86e28d23f2c7+10 0:10:count.txt\n", c.portable_manifest_text())
 
     def test_rewrite_append_existing_file(self):
         keep = ArvadosFileWriterTestCase.MockKeep({"781e5e245d69b566979b86e28d23f2c7+10": "0123456789"})
@@ -245,12 +284,12 @@ class ArvadosFileWriterTestCase(unittest.TestCase):
 
             self.assertEqual(writer.size(), 20)
             self.assertEqual("0123456789abcdefghij", writer.readfrom(0, 20))
-            self.assertEqual(". 781e5e245d69b566979b86e28d23f2c7+10 ae5f43bab79cf0be33f025fa97ae7398+100 0:10:count.txt 100:10:count.txt\n", c.manifest_text())
+            self.assertEqual(". 781e5e245d69b566979b86e28d23f2c7+10 ae5f43bab79cf0be33f025fa97ae7398+100 0:10:count.txt 100:10:count.txt\n", c.portable_manifest_text())
 
             writer.arvadosfile.flush()
             self.assertEqual(writer.size(), 20)
             self.assertEqual("0123456789abcdefghij", writer.readfrom(0, 20))
-            self.assertEqual(". 781e5e245d69b566979b86e28d23f2c7+10 a925576942e94b2ef57a066101b48876+10 0:20:count.txt\n", c.manifest_text())
+            self.assertEqual(". 781e5e245d69b566979b86e28d23f2c7+10 a925576942e94b2ef57a066101b48876+10 0:20:count.txt\n", c.portable_manifest_text())
 
     def test_rewrite_over_existing_file(self):
         keep = ArvadosFileWriterTestCase.MockKeep({"781e5e245d69b566979b86e28d23f2c7+10": "0123456789"})
@@ -263,13 +302,13 @@ class ArvadosFileWriterTestCase(unittest.TestCase):
 
             self.assertEqual(writer.size(), 15)
             self.assertEqual("01234abcdefghij", writer.readfrom(0, 20))
-            self.assertEqual(". 781e5e245d69b566979b86e28d23f2c7+10 ae5f43bab79cf0be33f025fa97ae7398+100 0:5:count.txt 100:10:count.txt\n", c.manifest_text())
+            self.assertEqual(". 781e5e245d69b566979b86e28d23f2c7+10 ae5f43bab79cf0be33f025fa97ae7398+100 0:5:count.txt 100:10:count.txt\n", c.portable_manifest_text())
 
             writer.arvadosfile.flush()
 
             self.assertEqual(writer.size(), 15)
             self.assertEqual("01234abcdefghij", writer.readfrom(0, 20))
-            self.assertEqual(". 781e5e245d69b566979b86e28d23f2c7+10 a925576942e94b2ef57a066101b48876+10 0:5:count.txt 10:10:count.txt\n", c.manifest_text())
+            self.assertEqual(". 781e5e245d69b566979b86e28d23f2c7+10 a925576942e94b2ef57a066101b48876+10 0:5:count.txt 10:10:count.txt\n", c.portable_manifest_text())
 
     def test_write_large_rewrite(self):
         keep = ArvadosFileWriterTestCase.MockKeep({})
@@ -287,11 +326,11 @@ class ArvadosFileWriterTestCase(unittest.TestCase):
             writer.write("foo")
             self.assertEqual(writer.size(), 100000000)
 
-            self.assertEqual(None, c.manifest_locator())
-            self.assertEqual(True, c.modified())
+            self.assertIsNone(c.manifest_locator())
+            self.assertTrue(c.modified())
             c.save_new("test_write_large")
             self.assertEqual("zzzzz-4zz18-mockcollection0", c.manifest_locator())
-            self.assertEqual(False, c.modified())
+            self.assertFalse(c.modified())
 
     def test_create(self):
         keep = ArvadosFileWriterTestCase.MockKeep({})
@@ -305,12 +344,12 @@ class ArvadosFileWriterTestCase(unittest.TestCase):
             writer.write("01234567")
             self.assertEqual(writer.size(), 8)
 
-            self.assertEqual(None, c.manifest_locator())
-            self.assertEqual(True, c.modified())
-            self.assertEqual(None, keep.get("2e9ec317e197819358fbc43afca7d837+8"))
+            self.assertIsNone(c.manifest_locator())
+            self.assertTrue(c.modified())
+            self.assertIsNone(keep.get("2e9ec317e197819358fbc43afca7d837+8"))
             c.save_new("test_create")
             self.assertEqual("zzzzz-4zz18-mockcollection0", c.manifest_locator())
-            self.assertEqual(False, c.modified())
+            self.assertFalse(c.modified())
             self.assertEqual("01234567", keep.get("2e9ec317e197819358fbc43afca7d837+8"))
 
 
@@ -324,7 +363,9 @@ class ArvadosFileWriterTestCase(unittest.TestCase):
             self.assertIsNone(c.api_response())
             writer = c.open("foo/bar/count.txt", "w+")
             writer.write("01234567")
+            self.assertFalse(c.committed())
             c.save_new("test_create")
+            self.assertTrue(c.committed())
             self.assertEqual(c.api_response(), api.response)
 
     def test_overwrite(self):
@@ -340,11 +381,11 @@ class ArvadosFileWriterTestCase(unittest.TestCase):
             writer.write("01234567")
             self.assertEqual(writer.size(), 8)
 
-            self.assertEqual(None, c.manifest_locator())
-            self.assertEqual(True, c.modified())
+            self.assertIsNone(c.manifest_locator())
+            self.assertTrue(c.modified())
             c.save_new("test_overwrite")
             self.assertEqual("zzzzz-4zz18-mockcollection0", c.manifest_locator())
-            self.assertEqual(False, c.modified())
+            self.assertFalse(c.modified())
 
     def test_file_not_found(self):
         with Collection('. 781e5e245d69b566979b86e28d23f2c7+10 0:10:count.txt\n') as c:
@@ -370,12 +411,12 @@ class ArvadosFileWriterTestCase(unittest.TestCase):
             self.assertEqual(w1.size(), 8)
             self.assertEqual(w2.size(), 8)
 
-            self.assertEqual(None, c.manifest_locator())
-            self.assertEqual(True, c.modified())
-            self.assertEqual(None, keep.get("2e9ec317e197819358fbc43afca7d837+8"))
+            self.assertIsNone(c.manifest_locator())
+            self.assertTrue(c.modified())
+            self.assertIsNone(keep.get("2e9ec317e197819358fbc43afca7d837+8"))
             c.save_new("test_create_multiple")
             self.assertEqual("zzzzz-4zz18-mockcollection0", c.manifest_locator())
-            self.assertEqual(False, c.modified())
+            self.assertFalse(c.modified())
             self.assertEqual("01234567", keep.get("2e9ec317e197819358fbc43afca7d837+8"))
 
 
@@ -415,23 +456,28 @@ class ArvadosFileReaderTestCase(StreamFileReaderTestCase):
             blocks[loc] = d
             stream.append(Range(loc, n, len(d)))
             n += len(d)
-        af = ArvadosFile(ArvadosFileReaderTestCase.MockParent(blocks, nocache), stream=stream, segments=[Range(1, 0, 3), Range(6, 3, 3), Range(11, 6, 3)])
-        return ArvadosFileReader(af, "count.txt")
+        af = ArvadosFile(ArvadosFileReaderTestCase.MockParent(blocks, nocache), "count.txt", stream=stream, segments=[Range(1, 0, 3), Range(6, 3, 3), Range(11, 6, 3)])
+        return ArvadosFileReader(af)
 
-    def test_read_returns_first_block(self):
-        # read() calls will be aligned on block boundaries - see #3663.
+    def test_read_block_crossing_behavior(self):
+        # read() needs to return all the data requested if possible, even if it
+        # crosses uncached blocks: https://arvados.org/issues/5856
         sfile = self.make_count_reader(nocache=True)
-        self.assertEqual('123', sfile.read(10))
+        self.assertEqual('12345678', sfile.read(8))
 
     def test_successive_reads(self):
+        # Override StreamFileReaderTestCase.test_successive_reads
         sfile = self.make_count_reader(nocache=True)
-        for expect in ['123', '456', '789', '']:
-            self.assertEqual(expect, sfile.read(10))
+        self.assertEqual('1234', sfile.read(4))
+        self.assertEqual('5678', sfile.read(4))
+        self.assertEqual('9', sfile.read(4))
+        self.assertEqual('', sfile.read(4))
 
     def test_tell_after_block_read(self):
+        # Override StreamFileReaderTestCase.test_tell_after_block_read
         sfile = self.make_count_reader(nocache=True)
-        sfile.read(5)
-        self.assertEqual(3, sfile.tell())
+        self.assertEqual('12345678', sfile.read(8))
+        self.assertEqual(8, sfile.tell())
 
     def test_prefetch(self):
         keep = ArvadosFileWriterTestCase.MockKeep({"2e9ec317e197819358fbc43afca7d837+8": "01234567", "e8dc4081b13434b45189a720b77b6818+8": "abcdefgh"})
@@ -450,8 +496,8 @@ class ArvadosFileReaderTestCase(StreamFileReaderTestCase):
     def test__eq__from_writes(self):
         with Collection('. 781e5e245d69b566979b86e28d23f2c7+10 0:10:count1.txt') as c1:
             with Collection() as c2:
-                with c2.open("count1.txt", "w") as f:
-                    f.write("0123456789")
+                f = c2.open("count1.txt", "w")
+                f.write("0123456789")
 
                 self.assertTrue(c1["count1.txt"] == c2["count1.txt"])
                 self.assertFalse(c1["count1.txt"] != c2["count1.txt"])
@@ -459,8 +505,8 @@ class ArvadosFileReaderTestCase(StreamFileReaderTestCase):
     def test__ne__(self):
         with Collection('. 781e5e245d69b566979b86e28d23f2c7+10 0:10:count1.txt') as c1:
             with Collection() as c2:
-                with c2.open("count1.txt", "w") as f:
-                    f.write("1234567890")
+                f = c2.open("count1.txt", "w")
+                f.write("1234567890")
 
                 self.assertTrue(c1["count1.txt"] != c2["count1.txt"])
                 self.assertFalse(c1["count1.txt"] == c2["count1.txt"])
@@ -483,10 +529,10 @@ class ArvadosFileReadTestCase(unittest.TestCase, StreamRetryTestMixin):
         blockmanager = arvados.arvfile._BlockManager(self.keep_client())
         blockmanager.prefetch_enabled = False
         col = Collection(keep_client=self.keep_client(), block_manager=blockmanager)
-        af = ArvadosFile(col,
+        af = ArvadosFile(col, "test",
                          stream=stream,
                          segments=segments)
-        return ArvadosFileReader(af, "test", **kwargs)
+        return ArvadosFileReader(af, **kwargs)
 
     def read_for_test(self, reader, byte_count, **kwargs):
         return reader.read(byte_count, **kwargs)
@@ -514,75 +560,85 @@ class ArvadosFileReadlinesTestCase(ArvadosFileReadTestCase):
 class BlockManagerTest(unittest.TestCase):
     def test_bufferblock_append(self):
         keep = ArvadosFileWriterTestCase.MockKeep({})
-        blockmanager = arvados.arvfile._BlockManager(keep)
-        bufferblock = blockmanager.alloc_bufferblock()
-        bufferblock.append("foo")
+        with arvados.arvfile._BlockManager(keep) as blockmanager:
+            bufferblock = blockmanager.alloc_bufferblock()
+            bufferblock.append("foo")
 
-        self.assertEqual(bufferblock.size(), 3)
-        self.assertEqual(bufferblock.buffer_view[0:3], "foo")
-        self.assertEqual(bufferblock.locator(), "acbd18db4cc2f85cedef654fccc4a4d8+3")
+            self.assertEqual(bufferblock.size(), 3)
+            self.assertEqual(bufferblock.buffer_view[0:3], "foo")
+            self.assertEqual(bufferblock.locator(), "acbd18db4cc2f85cedef654fccc4a4d8+3")
 
-        bufferblock.append("bar")
-
-        self.assertEqual(bufferblock.size(), 6)
-        self.assertEqual(bufferblock.buffer_view[0:6], "foobar")
-        self.assertEqual(bufferblock.locator(), "3858f62230ac3c915f300c664312c63f+6")
-
-        bufferblock.set_state(arvados.arvfile._BufferBlock.PENDING)
-        with self.assertRaises(arvados.errors.AssertionError):
             bufferblock.append("bar")
+
+            self.assertEqual(bufferblock.size(), 6)
+            self.assertEqual(bufferblock.buffer_view[0:6], "foobar")
+            self.assertEqual(bufferblock.locator(), "3858f62230ac3c915f300c664312c63f+6")
+
+            bufferblock.set_state(arvados.arvfile._BufferBlock.PENDING)
+            with self.assertRaises(arvados.errors.AssertionError):
+                bufferblock.append("bar")
 
     def test_bufferblock_dup(self):
         keep = ArvadosFileWriterTestCase.MockKeep({})
-        blockmanager = arvados.arvfile._BlockManager(keep)
-        bufferblock = blockmanager.alloc_bufferblock()
-        bufferblock.append("foo")
+        with arvados.arvfile._BlockManager(keep) as blockmanager:
+            bufferblock = blockmanager.alloc_bufferblock()
+            bufferblock.append("foo")
 
-        self.assertEqual(bufferblock.size(), 3)
-        self.assertEqual(bufferblock.buffer_view[0:3], "foo")
-        self.assertEqual(bufferblock.locator(), "acbd18db4cc2f85cedef654fccc4a4d8+3")
-        bufferblock.set_state(arvados.arvfile._BufferBlock.PENDING)
+            self.assertEqual(bufferblock.size(), 3)
+            self.assertEqual(bufferblock.buffer_view[0:3], "foo")
+            self.assertEqual(bufferblock.locator(), "acbd18db4cc2f85cedef654fccc4a4d8+3")
+            bufferblock.set_state(arvados.arvfile._BufferBlock.PENDING)
 
-        bufferblock2 = blockmanager.dup_block(bufferblock, None)
-        self.assertNotEqual(bufferblock.blockid, bufferblock2.blockid)
+            bufferblock2 = blockmanager.dup_block(bufferblock, None)
+            self.assertNotEqual(bufferblock.blockid, bufferblock2.blockid)
 
-        bufferblock2.append("bar")
+            bufferblock2.append("bar")
 
-        self.assertEqual(bufferblock2.size(), 6)
-        self.assertEqual(bufferblock2.buffer_view[0:6], "foobar")
-        self.assertEqual(bufferblock2.locator(), "3858f62230ac3c915f300c664312c63f+6")
+            self.assertEqual(bufferblock2.size(), 6)
+            self.assertEqual(bufferblock2.buffer_view[0:6], "foobar")
+            self.assertEqual(bufferblock2.locator(), "3858f62230ac3c915f300c664312c63f+6")
 
-        self.assertEqual(bufferblock.size(), 3)
-        self.assertEqual(bufferblock.buffer_view[0:3], "foo")
-        self.assertEqual(bufferblock.locator(), "acbd18db4cc2f85cedef654fccc4a4d8+3")
+            self.assertEqual(bufferblock.size(), 3)
+            self.assertEqual(bufferblock.buffer_view[0:3], "foo")
+            self.assertEqual(bufferblock.locator(), "acbd18db4cc2f85cedef654fccc4a4d8+3")
 
     def test_bufferblock_get(self):
         keep = ArvadosFileWriterTestCase.MockKeep({"781e5e245d69b566979b86e28d23f2c7+10": "0123456789"})
-        blockmanager = arvados.arvfile._BlockManager(keep)
-        bufferblock = blockmanager.alloc_bufferblock()
-        bufferblock.append("foo")
+        with arvados.arvfile._BlockManager(keep) as blockmanager:
+            bufferblock = blockmanager.alloc_bufferblock()
+            bufferblock.append("foo")
 
-        self.assertEqual(blockmanager.get_block_contents("781e5e245d69b566979b86e28d23f2c7+10", 1), "0123456789")
-        self.assertEqual(blockmanager.get_block_contents(bufferblock.blockid, 1), "foo")
+            self.assertEqual(blockmanager.get_block_contents("781e5e245d69b566979b86e28d23f2c7+10", 1), "0123456789")
+            self.assertEqual(blockmanager.get_block_contents(bufferblock.blockid, 1), "foo")
 
     def test_bufferblock_commit(self):
         mockkeep = mock.MagicMock()
-        blockmanager = arvados.arvfile._BlockManager(mockkeep)
-        bufferblock = blockmanager.alloc_bufferblock()
-        bufferblock.append("foo")
-        blockmanager.commit_all()
-        self.assertTrue(mockkeep.put.called)
-        self.assertEqual(bufferblock.state(), arvados.arvfile._BufferBlock.COMMITTED)
-        self.assertIsNone(bufferblock.buffer_view)
+        with arvados.arvfile._BlockManager(mockkeep) as blockmanager:
+            bufferblock = blockmanager.alloc_bufferblock()
+            bufferblock.owner = mock.MagicMock()
+            def flush(sync=None):
+                blockmanager.commit_bufferblock(bufferblock, sync)
+            bufferblock.owner.flush.side_effect = flush
+            bufferblock.append("foo")
+            blockmanager.commit_all()
+            self.assertTrue(bufferblock.owner.flush.called)
+            self.assertTrue(mockkeep.put.called)
+            self.assertEqual(bufferblock.state(), arvados.arvfile._BufferBlock.COMMITTED)
+            self.assertIsNone(bufferblock.buffer_view)
 
 
     def test_bufferblock_commit_with_error(self):
         mockkeep = mock.MagicMock()
         mockkeep.put.side_effect = arvados.errors.KeepWriteError("fail")
-        blockmanager = arvados.arvfile._BlockManager(mockkeep)
-        bufferblock = blockmanager.alloc_bufferblock()
-        bufferblock.append("foo")
-        with self.assertRaises(arvados.errors.KeepWriteError) as err:
-            blockmanager.commit_all()
-        self.assertEqual(str(err.exception), "Error writing some blocks: block acbd18db4cc2f85cedef654fccc4a4d8+3 raised KeepWriteError (fail)")
-        self.assertEqual(bufferblock.state(), arvados.arvfile._BufferBlock.PENDING)
+        with arvados.arvfile._BlockManager(mockkeep) as blockmanager:
+            bufferblock = blockmanager.alloc_bufferblock()
+            bufferblock.owner = mock.MagicMock()
+            def flush(sync=None):
+                blockmanager.commit_bufferblock(bufferblock, sync)
+            bufferblock.owner.flush.side_effect = flush
+            bufferblock.append("foo")
+            with self.assertRaises(arvados.errors.KeepWriteError) as err:
+                blockmanager.commit_all()
+            self.assertTrue(bufferblock.owner.flush.called)
+            self.assertEqual(str(err.exception), "Error writing some blocks: block acbd18db4cc2f85cedef654fccc4a4d8+3 raised KeepWriteError (fail)")
+            self.assertEqual(bufferblock.state(), arvados.arvfile._BufferBlock.ERROR)

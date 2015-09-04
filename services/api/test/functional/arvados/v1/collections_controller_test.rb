@@ -91,6 +91,71 @@ class Arvados::V1::CollectionsControllerTest < ActionController::TestCase
     assert_equal 99999, resp['offset']
   end
 
+  def request_capped_index(params={})
+    authorize_with :user1_with_load
+    coll1 = collections(:collection_1_of_201)
+    Rails.configuration.max_index_database_read =
+      yield(coll1.manifest_text.size)
+    get :index, {
+      select: %w(uuid manifest_text),
+      filters: [["owner_uuid", "=", coll1.owner_uuid]],
+      limit: 300,
+    }.merge(params)
+  end
+
+  test "index with manifest_text limited by max_index_database_read returns non-empty" do
+    request_capped_index() { |_| 1 }
+    assert_response :success
+    assert_equal(1, json_response["items"].size)
+    assert_equal(1, json_response["limit"])
+    assert_equal(201, json_response["items_available"])
+  end
+
+  test "max_index_database_read size check follows same order as real query" do
+    authorize_with :user1_with_load
+    txt = '.' + ' d41d8cd98f00b204e9800998ecf8427e+0'*1000 + " 0:0:empty.txt\n"
+    c = Collection.create! manifest_text: txt, name: '0000000000000000000'
+    request_capped_index(select: %w(uuid manifest_text name),
+                         order: ['name asc'],
+                         filters: [['name','>=',c.name]]) do |_|
+      txt.length - 1
+    end
+    assert_response :success
+    assert_equal(1, json_response["items"].size)
+    assert_equal(1, json_response["limit"])
+    assert_equal(c.uuid, json_response["items"][0]["uuid"])
+    # The effectiveness of the test depends on >1 item matching the filters.
+    assert_operator(1, :<, json_response["items_available"])
+  end
+
+  test "index with manifest_text limited by max_index_database_read" do
+    request_capped_index() { |size| (size * 3) + 1 }
+    assert_response :success
+    assert_equal(3, json_response["items"].size)
+    assert_equal(3, json_response["limit"])
+    assert_equal(201, json_response["items_available"])
+  end
+
+  test "max_index_database_read does not interfere with limit" do
+    request_capped_index(limit: 5) { |size| size * 20 }
+    assert_response :success
+    assert_equal(5, json_response["items"].size)
+    assert_equal(5, json_response["limit"])
+    assert_equal(201, json_response["items_available"])
+  end
+
+  test "max_index_database_read does not interfere with order" do
+    request_capped_index(select: %w(uuid manifest_text name),
+                         order: "name DESC") { |size| (size * 11) + 1 }
+    assert_response :success
+    assert_equal(11, json_response["items"].size)
+    assert_empty(json_response["items"].reject do |coll|
+                   coll["name"] =~ /^Collection_9/
+                 end)
+    assert_equal(11, json_response["limit"])
+    assert_equal(201, json_response["items_available"])
+  end
+
   test "admin can create collection with unsigned manifest" do
     authorize_with :admin
     test_collection = {
@@ -466,8 +531,8 @@ EOS
     }
 
     # Generate a locator with a bad signature.
-    unsigned_locator = "d41d8cd98f00b204e9800998ecf8427e+0"
-    bad_locator = unsigned_locator + "+Affffffff@ffffffff"
+    unsigned_locator = "acbd18db4cc2f85cedef654fccc4a4d8+3"
+    bad_locator = unsigned_locator + "+Affffffffffffffffffffffffffffffffffffffff@ffffffff"
     assert !Blob.verify_signature(bad_locator, signing_opts)
 
     # Creating a collection with this locator should
@@ -510,6 +575,16 @@ EOS
     }
 
     assert_response 422
+  end
+
+  test "reject manifest with unsigned block as stream name" do
+    authorize_with :active
+    post :create, {
+      collection: {
+        manifest_text: "00000000000000000000000000000000+1234 d41d8cd98f00b204e9800998ecf8427e+0 0:0:foo.txt\n"
+      }
+    }
+    assert_includes [422, 403], response.code.to_i
   end
 
   test "multiple locators per line" do
@@ -733,5 +808,83 @@ EOS
     assert_response :success
     assert_not_nil json_response['uuid']
     assert_equal 'value_1', json_response['properties']['property_1']
+  end
+
+  [
+    ". 0:0:foo.txt",
+    ". d41d8cd98f00b204e9800998ecf8427e foo.txt",
+    "d41d8cd98f00b204e9800998ecf8427e 0:0:foo.txt",
+    ". d41d8cd98f00b204e9800998ecf8427e 0:0:foo.txt",
+  ].each do |manifest_text|
+    test "create collection with invalid manifest #{manifest_text} and expect error" do
+      authorize_with :active
+      post :create, {
+        collection: {
+          manifest_text: manifest_text,
+          portable_data_hash: "d41d8cd98f00b204e9800998ecf8427e+0"
+        }
+      }
+      assert_response 422
+      response_errors = json_response['errors']
+      assert_not_nil response_errors, 'Expected error in response'
+      assert(response_errors.first.include?('Invalid manifest'),
+             "Expected 'Invalid manifest' error in #{response_errors.first}")
+    end
+  end
+
+  [
+    [nil, "d41d8cd98f00b204e9800998ecf8427e+0"],
+    ["", "d41d8cd98f00b204e9800998ecf8427e+0"],
+    [". d41d8cd98f00b204e9800998ecf8427e 0:0:foo.txt\n", "d30fe8ae534397864cb96c544f4cf102+47"],
+  ].each do |manifest_text, pdh|
+    test "create collection with valid manifest #{manifest_text.inspect} and expect success" do
+      authorize_with :active
+      post :create, {
+        collection: {
+          manifest_text: manifest_text,
+          portable_data_hash: pdh
+        }
+      }
+      assert_response 200
+    end
+  end
+
+  [
+    ". 0:0:foo.txt",
+    ". d41d8cd98f00b204e9800998ecf8427e foo.txt",
+    "d41d8cd98f00b204e9800998ecf8427e 0:0:foo.txt",
+    ". d41d8cd98f00b204e9800998ecf8427e 0:0:foo.txt",
+  ].each do |manifest_text|
+    test "update collection with invalid manifest #{manifest_text} and expect error" do
+      authorize_with :active
+      post :update, {
+        id: 'zzzzz-4zz18-bv31uwvy3neko21',
+        collection: {
+          manifest_text: manifest_text,
+        }
+      }
+      assert_response 422
+      response_errors = json_response['errors']
+      assert_not_nil response_errors, 'Expected error in response'
+      assert(response_errors.first.include?('Invalid manifest'),
+             "Expected 'Invalid manifest' error in #{response_errors.first}")
+    end
+  end
+
+  [
+    nil,
+    "",
+    ". d41d8cd98f00b204e9800998ecf8427e 0:0:foo.txt\n",
+  ].each do |manifest_text|
+    test "update collection with valid manifest #{manifest_text.inspect} and expect success" do
+      authorize_with :active
+      post :update, {
+        id: 'zzzzz-4zz18-bv31uwvy3neko21',
+        collection: {
+          manifest_text: manifest_text,
+        }
+      }
+      assert_response 200
+    end
   end
 end

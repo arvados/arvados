@@ -33,20 +33,27 @@ class Arvados::V1::JobsController < ApplicationController
         @filters =
           [["repository", "=", resource_attrs[:repository]],
            ["script", "=", resource_attrs[:script]],
-           ["script_version", "in git",
-            params[:minimum_script_version] || resource_attrs[:script_version]],
            ["script_version", "not in git", params[:exclude_script_versions]],
           ].reject { |filter| filter.last.nil? or filter.last.empty? }
+        if !params[:minimum_script_version].blank?
+          @filters << ["script_version", "in git",
+                       params[:minimum_script_version]]
+        else
+          add_default_git_filter("script_version", resource_attrs[:repository],
+                                 resource_attrs[:script_version])
+        end
         if image_search = resource_attrs[:runtime_constraints].andand["docker_image"]
           if image_tag = resource_attrs[:runtime_constraints]["docker_image_tag"]
             image_search += ":#{image_tag}"
           end
-          @filters.append(["docker_image_locator", "in docker", image_search])
+          image_locator = Collection.
+            for_latest_docker_image(image_search).andand.portable_data_hash
         else
-          @filters.append(["docker_image_locator", "=", nil])
+          image_locator = nil
         end
+        @filters << ["docker_image_locator", "=", image_locator]
         if sdk_version = resource_attrs[:runtime_constraints].andand["arvados_sdk_version"]
-          @filters.append(["arvados_sdk_version", "in git", sdk_version])
+          add_default_git_filter("arvados_sdk_version", "arvados", sdk_version)
         end
         begin
           load_job_specific_filters
@@ -199,6 +206,16 @@ class Arvados::V1::JobsController < ApplicationController
 
   protected
 
+  def add_default_git_filter(attr_name, repo_name, refspec)
+    # Add a filter to @filters for `attr_name` = the latest commit available
+    # in `repo_name` at `refspec`.  No filter is added if refspec can't be
+    # resolved.
+    commits = Commit.find_commit_range(repo_name, nil, refspec, nil)
+    if commit_hash = commits.first
+      @filters << [attr_name, "=", commit_hash]
+    end
+  end
+
   def load_job_specific_filters
     # Convert Job-specific @filters entries into general SQL filters.
     script_info = {"repository" => nil, "script" => nil}
@@ -254,18 +271,17 @@ class Arvados::V1::JobsController < ApplicationController
       else
         raise ArgumentError.new("unknown attribute for git filter: #{attr}")
       end
-      version_range = Commit.find_commit_range(current_user,
-                                               filter["repository"],
-                                               filter["min_version"],
-                                               filter["max_version"],
-                                               filter["exclude_versions"])
-      if version_range.nil?
+      revisions = Commit.find_commit_range(filter["repository"],
+                                           filter["min_version"],
+                                           filter["max_version"],
+                                           filter["exclude_versions"])
+      if revisions.empty?
         raise ArgumentError.
           new("error searching #{filter['repository']} from " +
               "'#{filter['min_version']}' to '#{filter['max_version']}', " +
               "excluding #{filter['exclude_versions']}")
       end
-      @filters.append([attr, "in", version_range])
+      @filters.append([attr, "in", revisions])
     end
   end
 

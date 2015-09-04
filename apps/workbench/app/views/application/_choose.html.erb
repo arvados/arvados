@@ -7,6 +7,10 @@
       </div>
 
       <div class="modal-body">
+        <% if params[:message].present? %>
+          <p> <%= params[:message] %> </p>
+        <% end %>
+
         <% project_filters, chooser_filters = (params[:filters] || []).partition do |attr, op, val|
              attr == "owner_uuid" and op == "="
            end %>

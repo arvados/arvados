@@ -14,66 +14,58 @@ h3. Installation
 
 If you are logged in to an Arvados VM, the Python SDK should be installed.
 
-To use the Python SDK elsewhere, you can either install the Python SDK via PyPI or build and install the package using the arvados source tree.
+To use the Python SDK elsewhere, you can install from a distribution package, PyPI, or source.
 
 {% include 'notebox_begin' %}
-The Python SDK requires Python 2.7
+The Python SDK requires Python 2.7.
 {% include 'notebox_end' %}
 
-h4. Option 1: install with PyPI
+h4. Option 1: Install from distribution packages
+
+First, "add the appropriate package repository for your distribution":{{ site.baseurl }}/install/install-manual-prerequisites.html#repos.
+
+On Debian-based systems:
 
 <notextile>
-<pre>
-$ <code class="userinput">sudo apt-get install python-pip python-dev libattr1-dev libfuse-dev pkg-config python-yaml</code>
-$ <code class="userinput">sudo pip install arvados-python-client</code>
-</pre>
+<pre><code>~$ <span class="userinput">sudo apt-get install python-arvados-python-client</code>
+</code></pre>
 </notextile>
 
-_If your version of @pip@ is 1.4 or newer, the @pip install@ command might give an error: "Could not find a version that satisfies the requirement arvados-python-client". If this happens, fix it by adding a @--pre@ flag:_
+On Red Hat-based systems:
 
 <notextile>
-<pre>
-$ <code class="userinput">sudo pip install --pre arvados-python-client</code>
-</pre>
+<pre><code>~$ <span class="userinput">sudo yum install python27-python-arvados-python-client</code>
+</code></pre>
 </notextile>
 
-h4. Option 2: install from distribution packages (Debian/Ubuntu only)
+{% include 'note_python27_sc' %}
 
-First add @http://apt.arvados.org@ to your list of apt repositories:
+h4. Option 2: Install with pip
+
+Run @pip-2.7 install arvados-python-client@ in an appropriate installation environment, such as a virtualenv.
+
+If your version of @pip@ is 1.4 or newer, the @pip install@ command might give an error: "Could not find a version that satisfies the requirement arvados-python-client". If this happens, try @pip-2.7 install --pre arvados-python-client@.
+
+h4. Option 3: Install from source
+
+Install the @python-setuptools@ package from your distribution.  Then run the following:
 
 <notextile>
-<pre>
-$ <code class="userinput">echo "deb http://apt.arvados.org/ wheezy main" | sudo tee /etc/apt/sources.list.d/apt.arvados.org.list</code>
-</pre>
+<pre><code>~$ <span class="userinput">git clone https://github.com/curoverse/arvados.git</span>
+~$ <span class="userinput">cd arvados/sdk/python</span>
+~$ <span class="userinput">python2.7 setup.py install</span>
+</code></pre>
 </notextile>
 
-Then install the package:
-
-<notextile>
-<pre>
-$ <code class="userinput">sudo apt-get update</code>
-$ <code class="userinput">sudo apt-get install python-arvados-python-client</code>
-</pre>
-</notextile>
-
-h4. Option 3: build and install from source
-
-<notextile>
-<pre>
-~$ <code class="userinput">sudo apt-get install python-dev libattr1-dev libfuse-dev pkg-config</code>
-~$ <code class="userinput">git clone https://github.com/curoverse/arvados.git</code>
-~$ <code class="userinput">cd arvados/sdk/python</code>
-~/arvados/sdk/python$ <code class="userinput">sudo python setup.py install</code>
-</pre>
-</notextile>
+You may optionally run the final installation command in a virtualenv, or with the @--user@ option.
 
 h4. Test installation
 
 If the SDK is installed and your @ARVADOS_API_HOST@ and @ARVADOS_API_TOKEN@ environment variables are set up correctly (see "api-tokens":{{site.baseurl}}/user/reference/api-tokens.html for details), @import arvados@ should produce no errors:
 
 <notextile>
-<pre>$ <code class="userinput">python</code>
-Python 2.7.4 (default, Sep 26 2013, 03:20:26) 
+<pre>~$ <code class="userinput">python2.7</code>
+Python 2.7.4 (default, Sep 26 2013, 03:20:26)
 [GCC 4.7.3] on linux2
 Type "help", "copyright", "credits" or "license" for more information.
 >>> <code class="userinput">import arvados</code>
@@ -160,4 +152,3 @@ j = arv.jobs().list().execute()
 </notextile>
 
 The SDK retrieves the list of API methods from the server at run time. Therefore, the set of available methods is determined by the server version rather than the SDK version.
-

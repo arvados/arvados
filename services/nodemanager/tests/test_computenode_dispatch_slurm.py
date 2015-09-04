@@ -66,3 +66,8 @@ class SLURMComputeNodeShutdownActorTestCase(ComputeNodeShutdownActorMixin,
         self.check_success_flag(False, 2)
         self.check_slurm_got_args(proc_mock, 'NodeName=compute99',
                                   'State=RESUME')
+
+    def test_arvados_node_cleaned_after_shutdown(self, proc_mock):
+        proc_mock.return_value = 'drain\n'
+        super(SLURMComputeNodeShutdownActorTestCase,
+              self).test_arvados_node_cleaned_after_shutdown()

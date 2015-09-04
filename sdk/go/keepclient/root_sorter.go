@@ -5,12 +5,12 @@ import (
 )
 
 type RootSorter struct {
-	root         []string
-	weight       []string
-	order        []int
+	root   []string
+	weight []string
+	order  []int
 }
 
-func NewRootSorter(serviceRoots map[string]string, hash string) (*RootSorter) {
+func NewRootSorter(serviceRoots map[string]string, hash string) *RootSorter {
 	rs := new(RootSorter)
 	rs.root = make([]string, len(serviceRoots))
 	rs.weight = make([]string, len(serviceRoots))
@@ -26,7 +26,7 @@ func NewRootSorter(serviceRoots map[string]string, hash string) (*RootSorter) {
 	return rs
 }
 
-func (rs RootSorter) getWeight(hash string, uuid string) (string) {
+func (rs RootSorter) getWeight(hash string, uuid string) string {
 	if len(uuid) == 27 {
 		return Md5String(hash + uuid[12:])
 	} else {
@@ -35,7 +35,7 @@ func (rs RootSorter) getWeight(hash string, uuid string) (string) {
 	}
 }
 
-func (rs RootSorter) GetSortedRoots() ([]string) {
+func (rs RootSorter) GetSortedRoots() []string {
 	sorted := make([]string, len(rs.order))
 	for i := range rs.order {
 		sorted[i] = rs.root[rs.order[i]]
