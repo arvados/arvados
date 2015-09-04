@@ -63,7 +63,7 @@ class ComputeNodeDriver(BaseComputeNodeDriver):
                                  echo "%s" > /var/tmp/arv-node-data/meta-data/instance-id
                                  echo "%s" > /var/tmp/arv-node-data/meta-data/instance-type
                                  echo "%s" > /var/tmp/arv-node-data/meta-data/local-ipv4
-                                 '""" % (self._make_ping_url(arvados_node),
+                                 '""" % (cloud_node.extra["tags"]["arv-ping-url"],
                                          cloud_node.id,
                                          cloud_node.extra["properties"]["hardwareProfile"]["vmSize"],
                                          cloud_node.private_ips[0]),
