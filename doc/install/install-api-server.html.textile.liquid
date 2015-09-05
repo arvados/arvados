@@ -86,7 +86,7 @@ h2(#configure_application). Configure the API server
 
 Edit @/etc/arvados/api/application.yml@ to configure the settings described in the following sections.  The deployment script will consistently deploy this to the API server's configuration directory.  The API server reads both @application.yml@ and its own @config/application.default.yml@ file.  The settings in @application.yml@ take precedence over the defaults that are defined in @config/application.default.yml@.  The @config/application.yml.example@ file is not read by the API server and is provided as a starting template only.
 
-@config/application.default.yml@ documents additional configuration settings not listed here.  You can "view the current source version":https://arvados.org/projects/arvados/repository/revisions/master/entry/services/api/config/application.default.yml for reference.
+@config/application.default.yml@ documents additional configuration settings not listed here.  You can "view the current source version":https://dev.arvados.org/projects/arvados/repository/revisions/master/entry/services/api/config/application.default.yml for reference.
 
 Only put local configuration in @application.yml@.  Do not edit @application.default.yml@.
 

@@ -4,7 +4,7 @@ This is the source code for "doc.arvados.org":http://doc.arvados.org.
 
 Here's how to build the HTML pages locally so you can preview your updates before you commit and push.
 
-Additional information is available on the "'Documentation' page on the Arvados wiki":https://arvados.org/projects/arvados/wiki/Documentation.
+Additional information is available on the "'Documentation' page on the Arvados wiki":https://dev.arvados.org/projects/arvados/wiki/Documentation.
 
 h2. Install dependencies
 
