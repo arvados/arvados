@@ -88,11 +88,11 @@ end
 subcommands = %w(copy create edit get keep pipeline run tag ws)
 
 def exec_bin bin, opts
-  @bin_path = `which #{bin}`.strip
-  if @bin_path.empty?
+  bin_path = `which #{bin}`.strip
+  if bin_path.empty?
     raise "#{bin}: command not found"
   end
-  exec @bin_path, *opts
+  exec bin_path, *opts
 end
 
 def check_subcommands client, arvados, subcommand, global_opts, remaining_opts
