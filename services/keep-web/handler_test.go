@@ -201,6 +201,30 @@ func (s *IntegrationSuite) TestVhostRedirectQueryTokenTrustAllContent(c *check.C
 	)
 }
 
+func (s *IntegrationSuite) TestVhostRedirectQueryTokenAttachmentOnlyHost(c *check.C) {
+	defer func(orig string) {
+		attachmentOnlyHost = orig
+	}(attachmentOnlyHost)
+	attachmentOnlyHost = "example.com:1234"
+
+	s.testVhostRedirectTokenToCookie(c, "GET",
+		"example.com/c=" + arvadostest.FooCollection + "/foo",
+		"?api_token=" + arvadostest.ActiveToken,
+		"text/plain",
+		"",
+		http.StatusBadRequest,
+	)
+
+	resp := s.testVhostRedirectTokenToCookie(c, "GET",
+		"example.com:1234/c=" + arvadostest.FooCollection + "/foo",
+		"?api_token=" + arvadostest.ActiveToken,
+		"text/plain",
+		"",
+		http.StatusOK,
+	)
+	c.Check(resp.Header().Get("Content-Disposition"), check.Equals, "attachment")
+}
+
 func (s *IntegrationSuite) TestVhostRedirectPOSTFormTokenToCookie(c *check.C) {
 	s.testVhostRedirectTokenToCookie(c, "POST",
 		arvadostest.FooCollection + ".example.com/foo",
@@ -221,7 +245,7 @@ func (s *IntegrationSuite) TestVhostRedirectPOSTFormTokenToCookie404(c *check.C)
 	)
 }
 
-func (s *IntegrationSuite) testVhostRedirectTokenToCookie(c *check.C, method, hostPath, queryString, contentType, body string, expectStatus int) {
+func (s *IntegrationSuite) testVhostRedirectTokenToCookie(c *check.C, method, hostPath, queryString, contentType, body string, expectStatus int) *httptest.ResponseRecorder {
 	u, _ := url.Parse(`http://` + hostPath + queryString)
 	req := &http.Request{
 		Method: method,
@@ -235,7 +259,7 @@ func (s *IntegrationSuite) testVhostRedirectTokenToCookie(c *check.C, method, ho
 	(&handler{}).ServeHTTP(resp, req)
 	if resp.Code != http.StatusSeeOther {
 		c.Assert(resp.Code, check.Equals, expectStatus)
-		return
+		return resp
 	}
 	c.Check(resp.Body.String(), check.Matches, `.*href="//` + regexp.QuoteMeta(html.EscapeString(hostPath)) + `".*`)
 	cookies := (&http.Response{Header: resp.Header()}).Cookies()
@@ -258,4 +282,5 @@ func (s *IntegrationSuite) testVhostRedirectTokenToCookie(c *check.C, method, ho
 	if expectStatus == http.StatusOK {
 		c.Check(resp.Body.String(), check.Equals, "foo")
 	}
+	return resp
 }

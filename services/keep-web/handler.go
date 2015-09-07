@@ -24,11 +24,14 @@ var (
 	clientPool      = arvadosclient.MakeClientPool()
 	trustAllContent = false
 	anonymousTokens []string
+	attachmentOnlyHost = ""
 )
 
 func init() {
 	flag.BoolVar(&trustAllContent, "trust-all-content", false,
 		"Serve non-public content from a single origin. Dangerous: read docs before using!")
+	flag.StringVar(&attachmentOnlyHost, "attachment-only-host", "",
+		"Accept credentials, and add \"Content-Disposition: attachment\" response headers, for requests at this hostname:port. Prohibiting inline display makes it possible to serve untrusted and non-public content from a single origin, i.e., without wildcard DNS or SSL.")
 }
 
 // return a UUID or PDH if s begins with a UUID or URL-encoded PDH;
@@ -111,7 +114,15 @@ func (h *handler) ServeHTTP(wOrig http.ResponseWriter, r *http.Request) {
 	var tokens []string
 	var reqTokens []string
 	var pathToken bool
+	var attachment bool
 	credentialsOK := trustAllContent
+
+	if r.Host != "" && r.Host == attachmentOnlyHost {
+		credentialsOK = true
+		attachment = true
+	} else if r.FormValue("disposition") == "attachment" {
+		attachment = true
+	}
 
 	if targetId = parseCollectionIdFromDNSName(r.Host); targetId != "" {
 		// http://ID.dl.example/PATH...
@@ -293,6 +304,9 @@ func (h *handler) ServeHTTP(wOrig http.ResponseWriter, r *http.Request) {
 		}
 	}
 	w.Header().Set("Content-Length", fmt.Sprintf("%d", rdr.Len()))
+	if attachment {
+		w.Header().Set("Content-Disposition", "attachment")
+	}
 
 	w.WriteHeader(http.StatusOK)
 	_, err = io.Copy(w, rdr)

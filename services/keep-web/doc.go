@@ -173,6 +173,19 @@
 // (``https://dl.example.com/'') and upload it to some other site
 // chosen by the author of collection X.
 //
+// Attachment-Only host
+//
+// It is possible to serve untrusted content and accept user
+// credentials at the same origin as long as the content is only
+// downloaded, never executed by browsers. A single origin (hostname
+// and port) can be designated as an "attachment-only" origin: cookies
+// will be accepted and all responses will have a
+// "Content-Disposition: attachment" header. This behavior is invoked
+// only when the designated origin matches exactly the Host header
+// provided by the client or upstream proxy.
+//
+//   keep-web -attachment-only-host domain.example:9999
+//
 // Trust All Content mode
 //
 // In "trust all content" mode, Keep-web will accept credentials (API
