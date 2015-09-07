@@ -1,6 +1,7 @@
 package main
 
 import (
+	"flag"
 	"fmt"
 	"html"
 	"io"
@@ -19,8 +20,16 @@ import (
 
 type handler struct{}
 
-var clientPool = arvadosclient.MakeClientPool()
-var anonymousTokens []string
+var (
+	clientPool      = arvadosclient.MakeClientPool()
+	trustAllContent = false
+	anonymousTokens []string
+)
+
+func init() {
+	flag.BoolVar(&trustAllContent, "trust-all-content", false,
+		"Serve non-public content from a single origin. Dangerous: read docs before using!")
+}
 
 // return a UUID or PDH if s begins with a UUID or URL-encoded PDH;
 // otherwise return "".
@@ -102,7 +111,7 @@ func (h *handler) ServeHTTP(wOrig http.ResponseWriter, r *http.Request) {
 	var tokens []string
 	var reqTokens []string
 	var pathToken bool
-	var credentialsOK bool
+	credentialsOK := trustAllContent
 
 	if targetId = parseCollectionIdFromDNSName(r.Host); targetId != "" {
 		// http://ID.dl.example/PATH...
@@ -139,7 +148,8 @@ func (h *handler) ServeHTTP(wOrig http.ResponseWriter, r *http.Request) {
 		if !credentialsOK {
 			// It is not safe to copy the provided token
 			// into a cookie unless the current vhost
-			// (origin) serves only a single collection.
+			// (origin) serves only a single collection or
+			// we are in trustAllContent mode.
 			statusCode = http.StatusBadRequest
 			return
 		}
@@ -160,7 +170,7 @@ func (h *handler) ServeHTTP(wOrig http.ResponseWriter, r *http.Request) {
 			Name:     "api_token",
 			Value:    auth.EncodeTokenCookie([]byte(t)),
 			Path:     "/",
-			Expires:  time.Now().AddDate(10,0,0),
+			Expires:  time.Now().AddDate(10, 0, 0),
 			HttpOnly: true,
 		})
 		redir := (&url.URL{Host: r.Host, Path: r.URL.Path}).String()

@@ -177,6 +177,30 @@ func (s *IntegrationSuite) TestVhostRedirectQueryTokenToCookie(c *check.C) {
 	)
 }
 
+func (s *IntegrationSuite) TestVhostRedirectQueryTokenSingleOriginError(c *check.C) {
+	s.testVhostRedirectTokenToCookie(c, "GET",
+		"example.com/c=" + arvadostest.FooCollection + "/foo",
+		"?api_token=" + arvadostest.ActiveToken,
+		"text/plain",
+		"",
+		http.StatusBadRequest,
+	)
+}
+
+func (s *IntegrationSuite) TestVhostRedirectQueryTokenTrustAllContent(c *check.C) {
+	defer func(orig bool) {
+		trustAllContent = orig
+	}(trustAllContent)
+	trustAllContent = true
+	s.testVhostRedirectTokenToCookie(c, "GET",
+		"example.com/c=" + arvadostest.FooCollection + "/foo",
+		"?api_token=" + arvadostest.ActiveToken,
+		"text/plain",
+		"",
+		http.StatusOK,
+	)
+}
+
 func (s *IntegrationSuite) TestVhostRedirectPOSTFormTokenToCookie(c *check.C) {
 	s.testVhostRedirectTokenToCookie(c, "POST",
 		arvadostest.FooCollection + ".example.com/foo",
@@ -209,7 +233,10 @@ func (s *IntegrationSuite) testVhostRedirectTokenToCookie(c *check.C, method, ho
 
 	resp := httptest.NewRecorder()
 	(&handler{}).ServeHTTP(resp, req)
-	c.Assert(resp.Code, check.Equals, http.StatusSeeOther)
+	if resp.Code != http.StatusSeeOther {
+		c.Assert(resp.Code, check.Equals, expectStatus)
+		return
+	}
 	c.Check(resp.Body.String(), check.Matches, `.*href="//` + regexp.QuoteMeta(html.EscapeString(hostPath)) + `".*`)
 	cookies := (&http.Response{Header: resp.Header()}).Cookies()
 

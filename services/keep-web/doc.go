@@ -49,7 +49,7 @@
 // The following "same origin" URL patterns are supported for public
 // collections (i.e., collections which can be served by keep-web
 // without making use of any credentials supplied by the client). See
-// "Same-origin mode" below.
+// "Same-origin URLs" below.
 //
 //   http://dl.example.com/c=uuid_or_pdh/path/file.txt
 //   http://dl.example.com/c=uuid_or_pdh/t=TOKEN/path/file.txt
@@ -163,7 +163,7 @@
 // the local network -- the upstream proxy should configured to return
 // 401 for all paths beginning with "/c=".
 //
-// Same-origin mode
+// Same-origin URLs
 //
 // Without the same-origin protection outlined above, a web page
 // stored in collection X could execute JavaScript code that uses the
@@ -173,19 +173,7 @@
 // (``https://dl.example.com/'') and upload it to some other site
 // chosen by the author of collection X.
 //
-package main
-
-// TODO(TC): Implement?
-//
-// Trusted content
-//
-// Normally, Keep-web is installed using a wildcard DNS entry and a
-// wildcard HTTPS certificate, serving data from collection X at
-// ``https://X--dl.example.com/path/file.ext''.
-//
-// It will also serve publicly accessible data at
-// ``https://dl.example.com/collections/X/path/file.txt'', but it does not
-// accept any kind of credentials at paths like these.
+// Trust All Content mode
 //
 // In "trust all content" mode, Keep-web will accept credentials (API
 // tokens) and serve any collection X at
@@ -198,4 +186,4 @@ package main
 //
 //   keep-web -trust-all-content [...]
 //
-// In the general case, this should not be enabled: 
+package main
