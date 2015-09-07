@@ -185,6 +185,8 @@ def edit_and_commit_object initial_obj, tmp_stem, global_opts, &block
                    Oj.load(newcontent)
                  when 'yaml'
                    YAML.load(newcontent)
+                 else
+                   abort "Unrecognized format #{global_opts[:format]}"
                  end
 
         yield newobj
