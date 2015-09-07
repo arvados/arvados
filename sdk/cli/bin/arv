@@ -322,11 +322,6 @@ def arv_edit client, arvados, global_opts, remaining_opts
     exit 255
   end
 
-  if not $stdout.tty?
-    puts "Not connected to a TTY, cannot run interactive editor."
-    exit 1
-  end
-
   rsc = lookup_uuid_rsc arvados, uuid
   oldobj = fetch_rsc_obj client, arvados, rsc, uuid, remaining_opts
 
@@ -341,9 +336,9 @@ def arv_edit client, arvados, global_opts, remaining_opts
                        authorization: 'OAuth2 '+ENV['ARVADOS_API_TOKEN']
                      })
       results = check_response result
-      puts "Updated object #{results['uuid']}"
+      STDERR.puts "Updated object #{results['uuid']}"
     else
-      puts "Object is unchanged, did not update."
+      STDERR.puts "Object is unchanged, did not update."
     end
   end
 
