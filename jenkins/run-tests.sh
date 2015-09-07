@@ -469,22 +469,28 @@ do_test() {
 }
 
 do_test_once() {
+    unset result
     if [[ -z "${skip[$1]}" ]] && ( [[ -z "$only" ]] || [[ "$only" == "$1" ]] )
     then
         title "Running $1 tests"
         timer_reset
         if [[ "$2" == "go" ]]
         then
+            covername="coverage-$(echo "$1" | sed -e 's/\//_/g')"
+            coverflags=("-covermode=count" "-coverprofile=$WORKSPACE/tmp/.$covername.tmp")
             if [[ -n "${testargs[$1]}" ]]
             then
                 # "go test -check.vv giturl" doesn't work, but this
                 # does:
-                cd "$WORKSPACE/$1" && go test ${testargs[$1]}
+                cd "$WORKSPACE/$1" && go test ${coverflags[@]} ${testargs[$1]}
             else
                 # The above form gets verbose even when testargs is
                 # empty, so use this form in such cases:
-                go test "git.curoverse.com/arvados.git/$1"
+                go test ${coverflags[@]} "git.curoverse.com/arvados.git/$1"
             fi
+            result="$?"
+            go tool cover -html="$WORKSPACE/tmp/.$covername.tmp" -o "$WORKSPACE/tmp/$covername.html"
+            rm "$WORKSPACE/tmp/.$covername.tmp"
         elif [[ "$2" == "pip" ]]
         then
             # $3 can name a path directory for us to use, including trailing
@@ -497,7 +503,7 @@ do_test_once() {
         else
             "test_$1"
         fi
-        result="$?"
+        result=${result:-$?}
         checkexit $result "$1 tests"
         title "End of $1 tests (`timer`)"
         return $result
