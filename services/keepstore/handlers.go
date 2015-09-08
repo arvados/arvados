@@ -582,9 +582,17 @@ func CompareAndTouch(hash string, buf []byte) error {
 			// to tell which one is wanted if we have
 			// both, so there's no point writing it even
 			// on a different volume.)
+			log.Printf("%s: Compare(%s): %s", vol, hash, err)
 			return err
+		} else if os.IsNotExist(err) {
+			// Block does not exist. This is the only
+			// "normal" error: we don't log anything.
+			continue
 		} else if err != nil {
-			// Couldn't find, couldn't open, etc.: try next volume.
+			// Couldn't open file, data is corrupt on
+			// disk, etc.: log this abnormal condition,
+			// and try the next volume.
+			log.Printf("%s: Compare(%s): %s", vol, hash, err)
 			continue
 		}
 		if err := vol.Touch(hash); err != nil {
