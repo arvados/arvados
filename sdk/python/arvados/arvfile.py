@@ -929,7 +929,7 @@ class ArvadosFile(object):
                 bb = self.parent._my_block_manager().get_bufferblock(s.locator)
                 if bb:
                     if bb.state() != _BufferBlock.COMMITTED:
-                        self.parent._my_block_manager().commit_bufferblock(self._current_bblock, sync=True)
+                        self.parent._my_block_manager().commit_bufferblock(bb, sync=True)
                     to_delete.add(s.locator)
                     s.locator = bb.locator()
             for s in to_delete:
