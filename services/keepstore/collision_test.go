@@ -39,6 +39,14 @@ func (s *CollisionSuite) TestCollisionOrCorrupt(c *check.C) {
 		check.Equals, DiskHashError)
 	c.Check(collisionOrCorrupt(fooMD5, []byte{}, nil, bytes.NewBufferString("")),
 		check.Equals, DiskHashError)
+	c.Check(collisionOrCorrupt(fooMD5, []byte{'f', 'O'}, nil, bytes.NewBufferString("o")),
+		check.Equals, DiskHashError)
+	c.Check(collisionOrCorrupt(fooMD5, []byte{'f', 'O', 'o'}, nil, nil),
+		check.Equals, DiskHashError)
+	c.Check(collisionOrCorrupt(fooMD5, []byte{'f', 'o'}, []byte{'O'}, nil),
+		check.Equals, DiskHashError)
+	c.Check(collisionOrCorrupt(fooMD5, []byte{'f', 'o'}, nil, bytes.NewBufferString("O")),
+		check.Equals, DiskHashError)
 
 	c.Check(collisionOrCorrupt(fooMD5, []byte{}, nil, iotest.TimeoutReader(iotest.OneByteReader(bytes.NewBufferString("foo")))),
 		check.Equals, iotest.ErrTimeout)
