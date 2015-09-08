@@ -761,11 +761,9 @@ for g in "${gostuff[@]}"
 do
     if [[ "$g" == "services/datamanager" ]]
     then
-        testargs["$g"]="-data-manager-token-file $WORKSPACE/tmp/keep.data-manager-token-file"
-        do_test "$g" go
-    else
-        do_test "$g" go
+        testargs["$g"]+=" -data-manager-token-file $WORKSPACE/tmp/keep.data-manager-token-file"
     fi
+    do_test "$g" go
 done
 
 test_workbench() {
