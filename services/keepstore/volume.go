@@ -13,7 +13,9 @@ import (
 type Volume interface {
 	// Get a block. IFF the returned error is nil, the caller must
 	// put the returned slice back into the buffer pool when it's
-	// finished with it.
+	// finished with it. (Otherwise, the buffer pool will be
+	// depleted and eventually -- when all available buffers are
+	// used and not returned -- operations will reach deadlock.)
 	Get(loc string) ([]byte, error)
 	// Confirm Get() would return a buffer with exactly the same
 	// content as buf. If so, return nil. If not, return
