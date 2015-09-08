@@ -95,7 +95,7 @@ case "$TARGET" in
         PYTHON_BACKPORTS=(python-gflags pyvcf google-api-python-client \
             oauth2client pyasn1==0.1.7 pyasn1-modules==0.0.5 \
             rsa uritemplate httplib2 ws4py \
-            virtualenv pykka apache-libcloud requests six pyexecjs jsonschema \
+            virtualenv pykka requests six pyexecjs jsonschema \
             ciso8601 pycrypto backports.ssl_match_hostname pycurl llfuse)
         PYTHON3_BACKPORTS=(docker-py six requests websocket-client)
         ;;
@@ -108,7 +108,7 @@ case "$TARGET" in
         PYTHON_BACKPORTS=(python-gflags pyvcf google-api-python-client \
             oauth2client pyasn1==0.1.7 pyasn1-modules==0.0.5 \
             rsa uritemplate httplib2 ws4py \
-            virtualenv pykka apache-libcloud requests six pyexecjs jsonschema \
+            virtualenv pykka requests six pyexecjs jsonschema \
             ciso8601 pycrypto backports.ssl_match_hostname pycurl llfuse)
         PYTHON3_BACKPORTS=(docker-py six requests websocket-client)
         ;;
@@ -121,7 +121,7 @@ case "$TARGET" in
         PYTHON_BACKPORTS=(python-gflags pyvcf google-api-python-client \
             oauth2client pyasn1==0.1.7 pyasn1-modules==0.0.5 \
             rsa uritemplate httplib2 ws4py \
-            virtualenv pykka apache-libcloud requests six pyexecjs jsonschema \
+            virtualenv pykka requests six pyexecjs jsonschema \
             ciso8601 pycrypto backports.ssl_match_hostname pycurl llfuse)
         PYTHON3_BACKPORTS=(docker-py six requests websocket-client)
         ;;
@@ -133,7 +133,7 @@ case "$TARGET" in
         PYTHON3_PKG_PREFIX=python3
         PYTHON_BACKPORTS=(pyasn1==0.1.7 pyvcf pyasn1-modules==0.0.5 llfuse ciso8601 \
             google-api-python-client six uritemplate oauth2client httplib2 \
-            rsa apache-libcloud pycurl backports.ssl_match_hostname)
+            rsa pycurl backports.ssl_match_hostname)
         PYTHON3_BACKPORTS=(docker-py requests websocket-client)
         ;;
     centos6)
@@ -145,7 +145,7 @@ case "$TARGET" in
         PYTHON_BACKPORTS=(python-gflags pyvcf google-api-python-client \
             oauth2client pyasn1==0.1.7 pyasn1-modules==0.0.5 \
             rsa uritemplate httplib2 ws4py \
-            pykka apache-libcloud requests six pyexecjs jsonschema \
+            pykka requests six pyexecjs jsonschema \
             ciso8601 pycrypto backports.ssl_match_hostname pycurl
             python-daemon lockfile llfuse)
         PYTHON3_BACKPORTS=(docker-py six requests)
@@ -388,6 +388,17 @@ fpm_build $WORKSPACE/services/nodemanager arvados-node-manager 'Curoverse, Inc.'
 cd $WORKSPACE/packages/$TARGET
 rm -rf "$WORKSPACE/services/dockercleaner/build"
 fpm_build $WORKSPACE/services/dockercleaner arvados-docker-cleaner 'Curoverse, Inc.' 'python3' "$(awk '($1 == "Version:"){print $2}' $WORKSPACE/services/dockercleaner/arvados_docker_cleaner.egg-info/PKG-INFO)" "--url=https://arvados.org" "--description=The Arvados Docker image cleaner"
+
+# Forked libcloud
+LIBCLOUD_DIR=$(mktemp -d)
+(
+    cd $LIBCLOUD_DIR
+    git clone $DASHQ_UNLESS_DEBUG https://github.com/curoverse/libcloud.git .
+    git checkout apache-libcloud-0.18.1.dev2
+    handle_python_package
+)
+fpm_build $LIBCLOUD_DIR "$PYTHON2_PKG_PREFIX"-apache-libcloud
+rm -rf $LIBCLOUD_DIR
 
 # A few dependencies
 for deppkg in "${PYTHON_BACKPORTS[@]}"; do

@@ -419,8 +419,8 @@ pip freeze 2>/dev/null | egrep ^PyYAML= \
 
 # Preinstall forked version of libcloud, because nodemanager "pip install"
 # won't pick it up by default.
-pip freeze 2>/dev/null | egrep ^apache-libcloud==0.18.1.dev1 \
-    || pip install --pre --ignore-installed https://github.com/curoverse/libcloud/archive/apache-libcloud-0.18.1.dev1.zip >/dev/null \
+pip freeze 2>/dev/null | egrep ^apache-libcloud==0.18.1.dev2 \
+    || pip install --pre --ignore-installed https://github.com/curoverse/libcloud/archive/apache-libcloud-0.18.1.dev2.zip >/dev/null \
     || fatal "pip install apache-libcloud failed"
 
 # If Python 3 is available, set up its virtualenv in $VENV3DIR.
