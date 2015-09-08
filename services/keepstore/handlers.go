@@ -210,8 +210,8 @@ func StatusHandler(resp http.ResponseWriter, req *http.Request) {
 	if err == nil {
 		resp.Write(jstat)
 	} else {
-		log.Printf("json.Marshal: %s\n", err)
-		log.Printf("NodeStatus = %v\n", &st)
+		log.Printf("json.Marshal: %s", err)
+		log.Printf("NodeStatus = %v", &st)
 		http.Error(resp, err.Error(), 500)
 	}
 }
@@ -321,7 +321,7 @@ func DeleteHandler(resp http.ResponseWriter, req *http.Request) {
 		if body, err := json.Marshal(result); err == nil {
 			resp.Write(body)
 		} else {
-			log.Printf("json.Marshal: %s (result = %v)\n", err, result)
+			log.Printf("json.Marshal: %s (result = %v)", err, result)
 			http.Error(resp, err.Error(), 500)
 		}
 	}
@@ -465,7 +465,7 @@ func GetBlock(hash string) ([]byte, error) {
 			// volumes. If all volumes report IsNotExist,
 			// we return a NotFoundError.
 			if !os.IsNotExist(err) {
-				log.Printf("GetBlock: reading %s: %s\n", hash, err)
+				log.Printf("%s: Get(%s): %s", vol, hash, err)
 			}
 			continue
 		}
@@ -475,7 +475,7 @@ func GetBlock(hash string) ([]byte, error) {
 		if filehash != hash {
 			// TODO: Try harder to tell a sysadmin about
 			// this.
-			log.Printf("%s: checksum mismatch for request %s (actual %s)\n",
+			log.Printf("%s: checksum mismatch for request %s (actual %s)",
 				vol, hash, filehash)
 			error_to_caller = DiskHashError
 			bufs.Put(buf)
@@ -556,7 +556,7 @@ func PutBlock(block []byte, hash string) error {
 			// write did not succeed.  Report the
 			// error and continue trying.
 			allFull = false
-			log.Printf("%s: Write(%s): %s\n", vol, hash, err)
+			log.Printf("%s: Write(%s): %s", vol, hash, err)
 		}
 	}
 
@@ -637,7 +637,7 @@ func GetApiToken(req *http.Request) string {
 func IsExpired(timestamp_hex string) bool {
 	ts, err := strconv.ParseInt(timestamp_hex, 16, 0)
 	if err != nil {
-		log.Printf("IsExpired: %s\n", err)
+		log.Printf("IsExpired: %s", err)
 		return true
 	}
 	return time.Unix(ts, 0).Before(time.Now())
