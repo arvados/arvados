@@ -34,7 +34,7 @@ func SetupDataManagerTest(t *testing.T) {
 	var err error
 	arv, err = arvadosclient.MakeArvadosClient()
 	if err != nil {
-		t.Fatal("Error creating arv")
+		t.Fatalf("Error setting up arvados client: %s", err)
 	}
 
 	// keep client
@@ -47,7 +47,7 @@ func SetupDataManagerTest(t *testing.T) {
 
 	// discover keep services
 	if err := keepClient.DiscoverKeepServers(); err != nil {
-		t.Fatal("Error discovering keep services")
+		t.Fatalf("Error discovering keep services: %s", err)
 	}
 	for _, host := range keepClient.LocalRoots() {
 		keepServers = append(keepServers, host)
@@ -59,7 +59,7 @@ func TearDownDataManagerTest(t *testing.T) {
 	arvadostest.StopAPI()
 }
 
-func PutBlock(t *testing.T, data string) string {
+func putBlock(t *testing.T, data string) string {
 	locator, _, err := keepClient.PutB([]byte(data))
 	if err != nil {
 		t.Fatalf("Error putting test data for %s %s %v", data, locator, err)
@@ -72,7 +72,7 @@ func PutBlock(t *testing.T, data string) string {
 	return splits[0] + "+" + splits[1]
 }
 
-func GetBlock(t *testing.T, locator string, data string) {
+func getBlock(t *testing.T, locator string, data string) {
 	reader, blocklen, _, err := keepClient.Get(locator)
 	if err != nil {
 		t.Fatalf("Error getting test data in setup for %s %s %v", data, locator, err)
@@ -91,7 +91,7 @@ func GetBlock(t *testing.T, locator string, data string) {
 }
 
 // Create a collection using arv-put
-func CreateCollection(t *testing.T, data string) string {
+func createCollection(t *testing.T, data string) string {
 	tempfile, err := ioutil.TempFile(os.TempDir(), "temp-test-file")
 	defer os.Remove(tempfile.Name())
 
@@ -110,25 +110,22 @@ func CreateCollection(t *testing.T, data string) string {
 	return uuid
 }
 
-// Get collection using arv-get
+// Get collection locator
 var locatorMatcher = regexp.MustCompile(`^([0-9a-f]{32})\+(\d*)(.*)$`)
 
-func GetCollectionManifest(t *testing.T, uuid string) string {
-	output, err := exec.Command("arv-get", uuid).Output()
-	if err != nil {
-		t.Fatalf("Error during arv-get %s", err)
-	}
+func getCollectionLocator(t *testing.T, uuid string) string {
+	manifest := getCollection(t, uuid)["manifest_text"].(string)
 
-	locator := strings.Split(string(output), " ")[1]
+	locator := strings.Split(manifest, " ")[1]
 	match := locatorMatcher.FindStringSubmatch(locator)
 	if match == nil {
-		t.Fatalf("No locator found in collection manifest %s", string(output))
+		t.Fatalf("No locator found in collection manifest %s", manifest)
 	}
 
 	return match[1] + "+" + match[2]
 }
 
-func GetCollection(t *testing.T, uuid string) Dict {
+func getCollection(t *testing.T, uuid string) Dict {
 	getback := make(Dict)
 	err := arv.Get("collections", uuid, nil, &getback)
 	if err != nil {
@@ -141,7 +138,7 @@ func GetCollection(t *testing.T, uuid string) Dict {
 	return getback
 }
 
-func UpdateCollection(t *testing.T, uuid string, paramName string, paramValue string) {
+func updateCollection(t *testing.T, uuid string, paramName string, paramValue string) {
 	err := arv.Update("collections", uuid, arvadosclient.Dict{
 		"collection": arvadosclient.Dict{
 			paramName: paramValue,
@@ -155,7 +152,7 @@ func UpdateCollection(t *testing.T, uuid string, paramName string, paramValue st
 
 type Dict map[string]interface{}
 
-func DeleteCollection(t *testing.T, uuid string) {
+func deleteCollection(t *testing.T, uuid string) {
 	getback := make(Dict)
 	err := arv.Delete("collections", uuid, nil, &getback)
 	if err != nil {
@@ -166,14 +163,14 @@ func DeleteCollection(t *testing.T, uuid string) {
 	}
 }
 
-func DataManagerSingleRun(t *testing.T) {
+func dataManagerSingleRun(t *testing.T) {
 	err := singlerun()
 	if err != nil {
 		t.Fatalf("Error during singlerun %s", err)
 	}
 }
 
-func GetBlockIndexesForServer(t *testing.T, i int) []string {
+func getBlockIndexesForServer(t *testing.T, i int) []string {
 	var indexes []string
 
 	path := keepServers[i] + "/index"
@@ -201,32 +198,32 @@ func GetBlockIndexesForServer(t *testing.T, i int) []string {
 	return indexes
 }
 
-func GetBlockIndexes(t *testing.T) []string {
+func getBlockIndexes(t *testing.T) []string {
 	var indexes []string
 
 	for i := 0; i < len(keepServers); i++ {
-		indexes = append(indexes, GetBlockIndexesForServer(t, i)...)
+		indexes = append(indexes, getBlockIndexesForServer(t, i)...)
 	}
 	return indexes
 }
 
-func VerifyBlocks(t *testing.T, notExpected []string, expected []string) {
-	blocks := GetBlockIndexes(t)
+func verifyBlocks(t *testing.T, notExpected []string, expected []string) {
+	blocks := getBlockIndexes(t)
 	for _, block := range notExpected {
-		exists := ValueInArray(block, blocks)
+		exists := valueInArray(block, blocks)
 		if exists {
 			t.Fatalf("Found unexpected block in index %s", block)
 		}
 	}
 	for _, block := range expected {
-		exists := ValueInArray(block, blocks)
+		exists := valueInArray(block, blocks)
 		if !exists {
 			t.Fatalf("Did not find expected block in index %s", block)
 		}
 	}
 }
 
-func ValueInArray(value string, list []string) bool {
+func valueInArray(value string, list []string) bool {
 	for _, v := range list {
 		if value == v {
 			return true
@@ -242,10 +239,10 @@ Test env uses two keep volumes. The volume names can be found by reading the fil
 The keep volumes are of the dir structure:
   volumeN/subdir/locator
 */
-func BackdateBlocks(t *testing.T, oldBlockLocators []string) {
+func backdateBlocks(t *testing.T, oldUnusedBlockLocators []string) {
 	// First get rid of any size hints in the locators
 	var trimmedBlockLocators []string
-	for _, block := range oldBlockLocators {
+	for _, block := range oldUnusedBlockLocators {
 		trimmedBlockLocators = append(trimmedBlockLocators, strings.Split(block, "+")[0])
 	}
 
@@ -282,7 +279,7 @@ func BackdateBlocks(t *testing.T, oldBlockLocators []string) {
 			for _, fileInfo := range subdirContents {
 				blockName := fileInfo.Name()
 				myname := fmt.Sprintf("%s/%s", subdirName, blockName)
-				if ValueInArray(blockName, trimmedBlockLocators) {
+				if valueInArray(blockName, trimmedBlockLocators) {
 					err = os.Chtimes(myname, oldTime, oldTime)
 				}
 			}
@@ -290,7 +287,7 @@ func BackdateBlocks(t *testing.T, oldBlockLocators []string) {
 	}
 }
 
-func GetStatus(t *testing.T, path string) interface{} {
+func getStatus(t *testing.T, path string) interface{} {
 	client := http.Client{}
 	req, err := http.NewRequest("GET", path, nil)
 	req.Header.Add("Authorization", "OAuth2 "+keep.GetDataManagerToken(nil))
@@ -308,12 +305,12 @@ func GetStatus(t *testing.T, path string) interface{} {
 	return s
 }
 
-func WaitUntilQueuesFinishWork(t *testing.T) {
+func waitUntilQueuesFinishWork(t *testing.T) {
 	// Wait until PullQueue and TrashQueue finish their work
 	for {
 		var done [2]bool
 		for i := 0; i < 2; i++ {
-			s := GetStatus(t, keepServers[i]+"/status.json")
+			s := getStatus(t, keepServers[i]+"/status.json")
 			var pullQueueStatus interface{}
 			pullQueueStatus = s.(map[string]interface{})["PullQueue"]
 			var trashQueueStatus interface{}
@@ -329,7 +326,7 @@ func WaitUntilQueuesFinishWork(t *testing.T) {
 		if done[0] && done[1] {
 			break
 		} else {
-			time.Sleep(1 * time.Second)
+			time.Sleep(100 * time.Millisecond)
 		}
 	}
 }
@@ -347,130 +344,130 @@ func TestPutAndGetBlocks(t *testing.T) {
 	// Put some blocks which will be backdated later on
 	// The first one will also be used in a collection and hence should not be deleted when datamanager runs.
 	// The rest will be old and unreferenced and hence should be deleted when datamanager runs.
-	var oldBlockLocators []string
-	oldBlockData := "this block will have older mtime"
+	var oldUnusedBlockLocators []string
+	oldUnusedBlockData := "this block will have older mtime"
 	for i := 0; i < 5; i++ {
-		oldBlockLocators = append(oldBlockLocators, PutBlock(t, fmt.Sprintf("%s%d", oldBlockData, i)))
+		oldUnusedBlockLocators = append(oldUnusedBlockLocators, putBlock(t, fmt.Sprintf("%s%d", oldUnusedBlockData, i)))
 	}
 	for i := 0; i < 5; i++ {
-		GetBlock(t, oldBlockLocators[i], fmt.Sprintf("%s%d", oldBlockData, i))
+		getBlock(t, oldUnusedBlockLocators[i], fmt.Sprintf("%s%d", oldUnusedBlockData, i))
 	}
+
+	// The rest will be old and unreferenced and hence should be deleted when datamanager runs.
+	oldUsedBlockData := "this collection block will have older mtime"
+	oldUsedBlockLocator := putBlock(t, oldUsedBlockData)
+	getBlock(t, oldUsedBlockLocator, oldUsedBlockData)
 
 	// Put some more blocks which will not be backdated; hence they are still new, but not in any collection.
 	// Hence, even though unreferenced, these should not be deleted when datamanager runs.
 	var newBlockLocators []string
 	newBlockData := "this block is newer"
 	for i := 0; i < 5; i++ {
-		newBlockLocators = append(newBlockLocators, PutBlock(t, fmt.Sprintf("%s%d", newBlockData, i)))
+		newBlockLocators = append(newBlockLocators, putBlock(t, fmt.Sprintf("%s%d", newBlockData, i)))
 	}
 	for i := 0; i < 5; i++ {
-		GetBlock(t, newBlockLocators[i], fmt.Sprintf("%s%d", newBlockData, i))
+		getBlock(t, newBlockLocators[i], fmt.Sprintf("%s%d", newBlockData, i))
 	}
 
 	// Create a collection that would be deleted later on
-	toBeDeletedCollectionUuid := CreateCollection(t, "some data for collection creation")
-	toBeDeletedCollectionLocator := GetCollectionManifest(t, toBeDeletedCollectionUuid)
+	toBeDeletedCollectionUuid := createCollection(t, "some data for collection creation")
+	toBeDeletedCollectionLocator := getCollectionLocator(t, toBeDeletedCollectionUuid)
 
 	// Create another collection that has the same data as the one of the old blocks
-	oldBlockCollectionUuid := CreateCollection(t, "this block will have older mtime0")
-	oldBlockCollectionLocator := GetCollectionManifest(t, oldBlockCollectionUuid)
-	exists := ValueInArray(strings.Split(oldBlockCollectionLocator, "+")[0], oldBlockLocators)
-	if exists {
-		t.Fatalf("Locator of the collection with the same data as old block is different %s", oldBlockCollectionLocator)
+	oldUsedBlockCollectionUuid := createCollection(t, oldUsedBlockData)
+	oldUsedBlockCollectionLocator := getCollectionLocator(t, oldUsedBlockCollectionUuid)
+	if oldUsedBlockCollectionLocator != oldUsedBlockLocator {
+		t.Fatalf("Locator of the collection with the same data as old block is different %s", oldUsedBlockCollectionLocator)
 	}
 
 	// Create another collection whose replication level will be changed
-	replicationCollectionUuid := CreateCollection(t, "replication level on this collection will be reduced")
-	replicationCollectionLocator := GetCollectionManifest(t, replicationCollectionUuid)
+	replicationCollectionUuid := createCollection(t, "replication level on this collection will be reduced")
+	replicationCollectionLocator := getCollectionLocator(t, replicationCollectionUuid)
 
 	// Create two collections with same data; one will be deleted later on
 	dataForTwoCollections := "one of these collections will be deleted"
-	oneOfTwoWithSameDataUuid := CreateCollection(t, dataForTwoCollections)
-	oneOfTwoWithSameDataLocator := GetCollectionManifest(t, oneOfTwoWithSameDataUuid)
-	secondOfTwoWithSameDataUuid := CreateCollection(t, dataForTwoCollections)
-	secondOfTwoWithSameDataLocator := GetCollectionManifest(t, secondOfTwoWithSameDataUuid)
+	oneOfTwoWithSameDataUuid := createCollection(t, dataForTwoCollections)
+	oneOfTwoWithSameDataLocator := getCollectionLocator(t, oneOfTwoWithSameDataUuid)
+	secondOfTwoWithSameDataUuid := createCollection(t, dataForTwoCollections)
+	secondOfTwoWithSameDataLocator := getCollectionLocator(t, secondOfTwoWithSameDataUuid)
 	if oneOfTwoWithSameDataLocator != secondOfTwoWithSameDataLocator {
 		t.Fatalf("Locators for both these collections expected to be same: %s %s", oneOfTwoWithSameDataLocator, secondOfTwoWithSameDataLocator)
 	}
 
 	// Verify blocks before doing any backdating / deleting.
 	var expected []string
-	expected = append(expected, oldBlockLocators...)
+	expected = append(expected, oldUnusedBlockLocators...)
 	expected = append(expected, newBlockLocators...)
 	expected = append(expected, toBeDeletedCollectionLocator)
 	expected = append(expected, replicationCollectionLocator)
 	expected = append(expected, oneOfTwoWithSameDataLocator)
 	expected = append(expected, secondOfTwoWithSameDataLocator)
 
-	VerifyBlocks(t, nil, expected)
+	verifyBlocks(t, nil, expected)
 
 	// Run datamanager in singlerun mode
-	DataManagerSingleRun(t)
-	WaitUntilQueuesFinishWork(t)
+	dataManagerSingleRun(t)
+	waitUntilQueuesFinishWork(t)
+
+	verifyBlocks(t, nil, expected)
 
 	log.Print("Backdating blocks and deleting collection now")
 
 	// Backdate the to-be old blocks and delete the collections
-	BackdateBlocks(t, oldBlockLocators)
-	DeleteCollection(t, toBeDeletedCollectionUuid)
-	DeleteCollection(t, secondOfTwoWithSameDataUuid)
+	backdateBlocks(t, oldUnusedBlockLocators)
+	deleteCollection(t, toBeDeletedCollectionUuid)
+	deleteCollection(t, secondOfTwoWithSameDataUuid)
 
 	// Run data manager again
-	time.Sleep(1 * time.Second)
-	DataManagerSingleRun(t)
-	WaitUntilQueuesFinishWork(t)
+	dataManagerSingleRun(t)
+	waitUntilQueuesFinishWork(t)
 
-	// Get block indexes and verify that all backdated blocks except the first one are not included.
-	// The first block was also used in a collection that is not deleted and hence should remain.
-	var notExpected []string
-	notExpected = append(notExpected, oldBlockLocators[1:]...)
-
+	// Get block indexes and verify that all backdated blocks except the first one used in collection are not included.
 	expected = expected[:0]
-	expected = append(expected, oldBlockLocators[0])
+	expected = append(expected, oldUsedBlockLocator)
 	expected = append(expected, newBlockLocators...)
 	expected = append(expected, toBeDeletedCollectionLocator)
 	expected = append(expected, replicationCollectionLocator)
 	expected = append(expected, oneOfTwoWithSameDataLocator)
 	expected = append(expected, secondOfTwoWithSameDataLocator)
 
-	VerifyBlocks(t, notExpected, expected)
+	verifyBlocks(t, oldUnusedBlockLocators, expected)
 
 	// Reduce replication on replicationCollectionUuid collection and verify that the overreplicated blocks are untouched.
 
 	// Default replication level is 2; first verify that the replicationCollectionLocator appears in both volumes
 	for i := 0; i < len(keepServers); i++ {
-		indexes := GetBlockIndexesForServer(t, i)
-		if !ValueInArray(replicationCollectionLocator, indexes) {
+		indexes := getBlockIndexesForServer(t, i)
+		if !valueInArray(replicationCollectionLocator, indexes) {
 			t.Fatalf("Not found block in index %s", replicationCollectionLocator)
 		}
 	}
 
 	// Now reduce replication level on this collection and verify that it still appears in both volumes
-	UpdateCollection(t, replicationCollectionUuid, "replication_desired", "1")
-	collection := GetCollection(t, replicationCollectionUuid)
+	updateCollection(t, replicationCollectionUuid, "replication_desired", "1")
+	collection := getCollection(t, replicationCollectionUuid)
 	if collection["replication_desired"].(interface{}) != float64(1) {
 		t.Fatalf("After update replication_desired is not 1; instead it is %v", collection["replication_desired"])
 	}
 
 	// Run data manager again
-	time.Sleep(1 * time.Second)
-	DataManagerSingleRun(t)
-	WaitUntilQueuesFinishWork(t)
+	time.Sleep(100 * time.Millisecond)
+	dataManagerSingleRun(t)
+	waitUntilQueuesFinishWork(t)
 
 	for i := 0; i < len(keepServers); i++ {
-		indexes := GetBlockIndexesForServer(t, i)
-		if !ValueInArray(replicationCollectionLocator, indexes) {
+		indexes := getBlockIndexesForServer(t, i)
+		if !valueInArray(replicationCollectionLocator, indexes) {
 			t.Fatalf("Not found block in index %s", replicationCollectionLocator)
 		}
 	}
-
 	// Done testing reduce replication on collection
 
 	// Verify blocks one more time
-	VerifyBlocks(t, notExpected, expected)
+	verifyBlocks(t, oldUnusedBlockLocators, expected)
 }
 
-func TestDatamanagerSingleRunRepeatedly(t *testing.T) {
+func _TestDatamanagerSingleRunRepeatedly(t *testing.T) {
 	log.Print("TestDatamanagerSingleRunRepeatedly start")
 
 	defer TearDownDataManagerTest(t)
@@ -481,7 +478,7 @@ func TestDatamanagerSingleRunRepeatedly(t *testing.T) {
 		if err != nil {
 			t.Fatalf("Got an error during datamanager singlerun: %v", err)
 		}
-		time.Sleep(1 * time.Second)
+		time.Sleep(100 * time.Millisecond)
 	}
 }
 
@@ -493,7 +490,7 @@ func _TestGetStatusRepeatedly(t *testing.T) {
 
 	for i := 0; i < 10; i++ {
 		for j := 0; j < 2; j++ {
-			s := GetStatus(t, keepServers[j]+"/status.json")
+			s := getStatus(t, keepServers[j]+"/status.json")
 
 			var pullQueueStatus interface{}
 			pullQueueStatus = s.(map[string]interface{})["PullQueue"]
@@ -507,7 +504,7 @@ func _TestGetStatusRepeatedly(t *testing.T) {
 				t.Fatalf("PullQueue and TrashQueue status not found")
 			}
 
-			time.Sleep(1 * time.Second)
+			time.Sleep(100 * time.Millisecond)
 		}
 	}
 }
