@@ -109,7 +109,7 @@ func (v *UnixVolume) Get(loc string) ([]byte, error) {
 }
 
 // Compare returns nil if Get(loc) would return the same content as
-// cmp. It is functionally equivalent to Get() followed by
+// expect. It is functionally equivalent to Get() followed by
 // bytes.Compare(), but uses less memory.
 func (v *UnixVolume) Compare(loc string, expect []byte) error {
 	path := v.blockPath(loc)
