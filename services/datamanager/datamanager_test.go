@@ -113,7 +113,7 @@ func createCollection(t *testing.T, data string) string {
 // Get collection locator
 var locatorMatcher = regexp.MustCompile(`^([0-9a-f]{32})\+(\d*)(.*)$`)
 
-func getCollectionLocator(t *testing.T, uuid string) string {
+func getFirstLocatorFromCollection(t *testing.T, uuid string) string {
 	manifest := getCollection(t, uuid)["manifest_text"].(string)
 
 	locator := strings.Split(manifest, " ")[1]
@@ -232,7 +232,7 @@ func verifyBlocks(t *testing.T, notExpected []string, expected []string) {
 	}
 
 	for _, block := range expected {
-		if blockExists[block] == nil || len(blockExists[block]) != 2 {
+		if blockExists[block] == nil || len(blockExists[block]) < 2 {
 			t.Fatalf("Expected to find two replicas for block %s; found %d", block, len(blockExists[block]))
 		}
 	}
@@ -386,25 +386,25 @@ func TestPutAndGetBlocks(t *testing.T) {
 
 	// Create a collection that would be deleted later on
 	toBeDeletedCollectionUuid := createCollection(t, "some data for collection creation")
-	toBeDeletedCollectionLocator := getCollectionLocator(t, toBeDeletedCollectionUuid)
+	toBeDeletedCollectionLocator := getFirstLocatorFromCollection(t, toBeDeletedCollectionUuid)
 
 	// Create another collection that has the same data as the one of the old blocks
 	oldUsedBlockCollectionUuid := createCollection(t, oldUsedBlockData)
-	oldUsedBlockCollectionLocator := getCollectionLocator(t, oldUsedBlockCollectionUuid)
+	oldUsedBlockCollectionLocator := getFirstLocatorFromCollection(t, oldUsedBlockCollectionUuid)
 	if oldUsedBlockCollectionLocator != oldUsedBlockLocator {
 		t.Fatalf("Locator of the collection with the same data as old block is different %s", oldUsedBlockCollectionLocator)
 	}
 
 	// Create another collection whose replication level will be changed
 	replicationCollectionUuid := createCollection(t, "replication level on this collection will be reduced")
-	replicationCollectionLocator := getCollectionLocator(t, replicationCollectionUuid)
+	replicationCollectionLocator := getFirstLocatorFromCollection(t, replicationCollectionUuid)
 
 	// Create two collections with same data; one will be deleted later on
 	dataForTwoCollections := "one of these collections will be deleted"
 	oneOfTwoWithSameDataUuid := createCollection(t, dataForTwoCollections)
-	oneOfTwoWithSameDataLocator := getCollectionLocator(t, oneOfTwoWithSameDataUuid)
+	oneOfTwoWithSameDataLocator := getFirstLocatorFromCollection(t, oneOfTwoWithSameDataUuid)
 	secondOfTwoWithSameDataUuid := createCollection(t, dataForTwoCollections)
-	secondOfTwoWithSameDataLocator := getCollectionLocator(t, secondOfTwoWithSameDataUuid)
+	secondOfTwoWithSameDataLocator := getFirstLocatorFromCollection(t, secondOfTwoWithSameDataUuid)
 	if oneOfTwoWithSameDataLocator != secondOfTwoWithSameDataLocator {
 		t.Fatalf("Locators for both these collections expected to be same: %s %s", oneOfTwoWithSameDataLocator, secondOfTwoWithSameDataLocator)
 	}
@@ -480,7 +480,7 @@ func TestPutAndGetBlocks(t *testing.T) {
 	verifyBlocks(t, oldUnusedBlockLocators, expected)
 }
 
-func _TestDatamanagerSingleRunRepeatedly(t *testing.T) {
+func TestDatamanagerSingleRunRepeatedly(t *testing.T) {
 	log.Print("TestDatamanagerSingleRunRepeatedly start")
 
 	defer TearDownDataManagerTest(t)
@@ -495,8 +495,8 @@ func _TestDatamanagerSingleRunRepeatedly(t *testing.T) {
 	}
 }
 
-func _TestGetStatusRepeatedly(t *testing.T) {
-	log.Print("TestGetStatusRepeatedly start")
+func TestGetStatusRepeatedly(t *testing.T) {
+	t.Skip("This test still fails. Skip it until it is fixed.")
 
 	defer TearDownDataManagerTest(t)
 	SetupDataManagerTest(t)
