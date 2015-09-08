@@ -15,10 +15,11 @@ type Volume interface {
 	// put the returned slice back into the buffer pool when it's
 	// finished with it.
 	Get(loc string) ([]byte, error)
-	// Confirm Get() would return buf. If so, return nil. If not,
-	// return CollisionError or DiskHashError (depending on
-	// whether the data on disk matches the expected hash), or
-	// whatever error was encountered opening/reading the file.
+	// Confirm Get() would return a buffer with exactly the same
+	// content as buf. If so, return nil. If not, return
+	// CollisionError or DiskHashError (depending on whether the
+	// data on disk matches the expected hash), or whatever error
+	// was encountered opening/reading the file.
 	Compare(loc string, data []byte) error
 	Put(loc string, data []byte) error
 	Touch(loc string) error
