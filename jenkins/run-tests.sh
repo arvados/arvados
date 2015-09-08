@@ -177,6 +177,9 @@ sanity_checks() {
         perl -e "use $mod; print \"\$$mod::VERSION\\n\"" \
             || fatal "No $mod. Try: apt-get install perl-modules libcrypt-ssleay-perl libjson-perl"
     done
+    echo -n 'gitolite: '
+    which gitolite \
+        || fatal "No gitolite. Try: apt-get install gitolite3"
 }
 
 rotate_logfile() {
@@ -389,11 +392,13 @@ mkdir -p "$GOPATH/src/git.curoverse.com"
 ln -sfn "$WORKSPACE" "$GOPATH/src/git.curoverse.com/arvados.git" \
     || fatal "symlink failed"
 
-virtualenv --setuptools "$VENVDIR" || fatal "virtualenv $VENVDIR failed"
+if ! [[ -e "$VENVDIR/bin/activate" ]] || ! [[ -e "$VENVDIR/bin/pip" ]]; then
+    virtualenv --setuptools "$VENVDIR" || fatal "virtualenv $VENVDIR failed"
+fi
 . "$VENVDIR/bin/activate"
 
 if (pip install setuptools | grep setuptools-0) || [ "$($VENVDIR/bin/easy_install --version | cut -d\  -f2 | cut -d. -f1)" -lt 18 ]; then
-    pip install --upgrade setuptools
+    pip install --upgrade setuptools pip
 fi
 
 # Note: this must be the last time we change PATH, otherwise rvm will
@@ -414,8 +419,8 @@ pip freeze 2>/dev/null | egrep ^PyYAML= \
 
 # Preinstall forked version of libcloud, because nodemanager "pip install"
 # won't pick it up by default.
-pip freeze 2>/dev/null | egrep ^apache-libcloud==0.18.1.dev1 \
-    || pip install --pre --ignore-installed https://github.com/curoverse/libcloud/archive/apache-libcloud-0.18.1.dev1.zip >/dev/null \
+pip freeze 2>/dev/null | egrep ^apache-libcloud==0.18.1.dev2 \
+    || pip install --pre --ignore-installed https://github.com/curoverse/libcloud/archive/apache-libcloud-0.18.1.dev2.zip >/dev/null \
     || fatal "pip install apache-libcloud failed"
 
 # If Python 3 is available, set up its virtualenv in $VENV3DIR.
@@ -464,22 +469,28 @@ do_test() {
 }
 
 do_test_once() {
+    unset result
     if [[ -z "${skip[$1]}" ]] && ( [[ -z "$only" ]] || [[ "$only" == "$1" ]] )
     then
         title "Running $1 tests"
         timer_reset
         if [[ "$2" == "go" ]]
         then
+            covername="coverage-$(echo "$1" | sed -e 's/\//_/g')"
+            coverflags=("-covermode=count" "-coverprofile=$WORKSPACE/tmp/.$covername.tmp")
             if [[ -n "${testargs[$1]}" ]]
             then
                 # "go test -check.vv giturl" doesn't work, but this
                 # does:
-                cd "$WORKSPACE/$1" && go test ${testargs[$1]}
+                cd "$WORKSPACE/$1" && go test ${coverflags[@]} ${testargs[$1]}
             else
                 # The above form gets verbose even when testargs is
                 # empty, so use this form in such cases:
-                go test "git.curoverse.com/arvados.git/$1"
+                go test ${coverflags[@]} "git.curoverse.com/arvados.git/$1"
             fi
+            result="$?"
+            go tool cover -html="$WORKSPACE/tmp/.$covername.tmp" -o "$WORKSPACE/tmp/$covername.html"
+            rm "$WORKSPACE/tmp/.$covername.tmp"
         elif [[ "$2" == "pip" ]]
         then
             # $3 can name a path directory for us to use, including trailing
@@ -492,7 +503,7 @@ do_test_once() {
         else
             "test_$1"
         fi
-        result="$?"
+        result=${result:-$?}
         checkexit $result "$1 tests"
         title "End of $1 tests (`timer`)"
         return $result
