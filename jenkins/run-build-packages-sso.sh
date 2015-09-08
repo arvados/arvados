@@ -1,6 +1,6 @@
 #!/bin/bash
 
-. ./run-library.sh
+. `dirname "$(readlink -f "$0")"`/run-library.sh
 
 read -rd "\000" helpmessage <<EOF
 $(basename $0): Build Arvados SSO package
