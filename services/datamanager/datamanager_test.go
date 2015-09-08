@@ -40,7 +40,7 @@ func SetupDataManagerTest(t *testing.T) {
 	// keep client
 	keepClient = &keepclient.KeepClient{
 		Arvados:       &arv,
-		Want_replicas: 1,
+		Want_replicas: 2,
 		Using_proxy:   true,
 		Client:        &http.Client{},
 	}
@@ -198,11 +198,11 @@ func getBlockIndexesForServer(t *testing.T, i int) []string {
 	return indexes
 }
 
-func getBlockIndexes(t *testing.T) []string {
-	var indexes []string
+func getBlockIndexes(t *testing.T) [][]string {
+	var indexes [][]string
 
 	for i := 0; i < len(keepServers); i++ {
-		indexes = append(indexes, getBlockIndexesForServer(t, i)...)
+		indexes = append(indexes, getBlockIndexesForServer(t, i))
 	}
 	return indexes
 }
@@ -210,15 +210,30 @@ func getBlockIndexes(t *testing.T) []string {
 func verifyBlocks(t *testing.T, notExpected []string, expected []string) {
 	blocks := getBlockIndexes(t)
 	for _, block := range notExpected {
-		exists := valueInArray(block, blocks)
-		if exists {
-			t.Fatalf("Found unexpected block in index %s", block)
+		for i := 0; i < len(blocks); i++ {
+			exists := valueInArray(block, blocks[i])
+			if exists {
+				t.Fatalf("Found unexpected block in index %s", block)
+			}
 		}
 	}
+
+	//	var blockExists [][]string
+	blockExists := make(map[string][]string)
 	for _, block := range expected {
-		exists := valueInArray(block, blocks)
-		if !exists {
-			t.Fatalf("Did not find expected block in index %s", block)
+		var blockArray []string
+		for i := 0; i < len(blocks); i++ {
+			exists := valueInArray(block, blocks[i])
+			if exists {
+				blockArray = append(blockArray, block)
+			}
+		}
+		blockExists[block] = blockArray
+	}
+
+	for _, block := range expected {
+		if blockExists[block] == nil || len(blockExists[block]) != 2 {
+			t.Fatalf("Expected to find two replicas for block %s; found %d", block, len(blockExists[block]))
 		}
 	}
 }
@@ -410,8 +425,6 @@ func TestPutAndGetBlocks(t *testing.T) {
 	waitUntilQueuesFinishWork(t)
 
 	verifyBlocks(t, nil, expected)
-
-	log.Print("Backdating blocks and deleting collection now")
 
 	// Backdate the to-be old blocks and delete the collections
 	backdateBlocks(t, oldUnusedBlockLocators)
