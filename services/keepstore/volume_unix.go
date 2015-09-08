@@ -58,18 +58,18 @@ func (v *UnixVolume) Mtime(loc string) (time.Time, error) {
 	}
 }
 
-// Open the given file, lock the "serialize" locker if enabled, and
+// Lock the locker (if one is in use), open the file for reading, and
 // call the given function if and when the file is ready to read.
 func (v *UnixVolume) getFunc(path string, fn func(io.Reader) error) error {
+	if v.locker != nil {
+		v.locker.Lock()
+		defer v.locker.Unlock()
+	}
 	f, err := os.Open(path)
 	if err != nil {
 		return err
 	}
 	defer f.Close()
-	if v.locker != nil {
-		v.locker.Lock()
-		defer v.locker.Unlock()
-	}
 	return fn(f)
 }
 
