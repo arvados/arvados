@@ -59,6 +59,12 @@ func (v *TestableUnixVolume) Teardown() {
 	}
 }
 
+func TestUnixVolumeWithGenericTests(t *testing.T) {
+	DoGenericVolumeTests(t, func(t *testing.T) TestableVolume {
+		return NewTestableUnixVolume(t, false, false)
+	})
+}
+
 func TestGet(t *testing.T) {
 	v := NewTestableUnixVolume(t, false, false)
 	defer v.Teardown()
@@ -177,39 +183,6 @@ func TestUnixVolumeReadonly(t *testing.T) {
 	err = v.Delete(TEST_HASH)
 	if err != MethodDisabledError {
 		t.Errorf("got err %v, expected MethodDisabledError", err)
-	}
-}
-
-func TestUnixVolumeDeleteNewBlock(t *testing.T) {
-	v := NewTestableUnixVolume(t, false, false)
-	defer v.Teardown()
-
-	v.Put(TEST_HASH, TEST_BLOCK)
-
-	if err := v.Delete(TEST_HASH); err != nil {
-		t.Error(err)
-	}
-	// This isn't reported as an error, but the block should not
-	// have been deleted: it's newer than blob_signature_ttl.
-	if data, err := v.Get(TEST_HASH); err != nil {
-		t.Error(err)
-	} else if bytes.Compare(data, TEST_BLOCK) != 0 {
-		t.Error("Content incorrect after delete failed")
-	}
-}
-
-func TestUnixVolumeDeleteOldBlock(t *testing.T) {
-	v := NewTestableUnixVolume(t, false, false)
-	defer v.Teardown()
-
-	v.Put(TEST_HASH, TEST_BLOCK)
-	v.TouchWithDate(TEST_HASH, time.Now().Add(-2*blob_signature_ttl*time.Second))
-
-	if err := v.Delete(TEST_HASH); err != nil {
-		t.Error(err)
-	}
-	if _, err := v.Get(TEST_HASH); !os.IsNotExist(err) {
-		t.Errorf("os.IsNotExist(%v) should have been true", err.Error())
 	}
 }
 
