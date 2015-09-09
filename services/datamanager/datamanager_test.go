@@ -207,31 +207,24 @@ func getBlockIndexes(t *testing.T) [][]string {
 
 func verifyBlocks(t *testing.T, notExpected []string, expected []string) {
 	blocks := getBlockIndexes(t)
+
 	for _, block := range notExpected {
-		for i := 0; i < len(blocks); i++ {
-			exists := valueInArray(block, blocks[i])
-			if exists {
-				t.Fatalf("Found unexpected block in index %s", block)
+		for _, idx := range blocks {
+			if valueInArray(block, idx) {
+				t.Fatalf("Found unexpected block %s", block)
 			}
 		}
 	}
 
-	//	var blockExists [][]string
-	blockExists := make(map[string][]string)
 	for _, block := range expected {
-		var blockArray []string
-		for i := 0; i < len(blocks); i++ {
-			exists := valueInArray(block, blocks[i])
-			if exists {
-				blockArray = append(blockArray, block)
+		nFound := 0
+		for _, idx := range blocks {
+			if valueInArray(block, idx) {
+				nFound++
 			}
 		}
-		blockExists[block] = blockArray
-	}
-
-	for _, block := range expected {
-		if blockExists[block] == nil || len(blockExists[block]) < 2 {
-			t.Fatalf("Expected to find two replicas for block %s; found %d", block, len(blockExists[block]))
+		if nFound < 2 {
+			t.Fatalf("Found %d replicas of block %s, expected >= 2", nFound, block)
 		}
 	}
 }
