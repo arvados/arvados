@@ -50,12 +50,15 @@ type Volume interface {
 	// different content, Put must either overwrite the existing
 	// data with the new data or return a non-nil error.
 	//
+	// Put also sets the timestamp for the given locator to the
+	// current time.
+	//
 	// Put must return a non-nil error unless it can guarantee
 	// that the entire block has been written and flushed to
-	// persistent storage. Of course, this guarantee is only as
-	// good as the underlying storage device, but it is Put's
-	// responsibility to at least get whatever guarantee is
-	// offered by the storage device.
+	// persistent storage, and that its timestamp is current. Of
+	// course, this guarantee is only as good as the underlying
+	// storage device, but it is Put's responsibility to at least
+	// get whatever guarantee is offered by the storage device.
 	//
 	// Put should not verify that loc==hash(block): this is the
 	// caller's responsibility.
@@ -119,32 +122,48 @@ type Volume interface {
 	// If the timestamp for the given locator is newer than
 	// blob_signature_ttl, Delete must not delete the data.
 	//
-	// If callers in different goroutines invoke overlapping
-	// Delete() and Touch() operations on the same locator, the
-	// implementation must guarantee that Touch() returns a
-	// non-nil error, or Delete() does not delete the block, or
-	// both.
+	// If a Delete operation overlaps with any Touch or Put
+	// operations on the same locator, the implementation must
+	// ensure one of the following outcomes:
+	//
+	//   - Touch and Put return a non-nil error, or
+	//   - Delete does not delete the block, or
+	//   - Both of the above.
+	//
+	// If it is possible for the storage device to be accessed by
+	// a different process or host, the synchronization mechanism
+	// should also guard against races with other processes and
+	// hosts. If such a mechanism is not available, there must be
+	// a mechanism for detecting unsafe configurations, alerting
+	// the operator, and aborting or falling back to a read-only
+	// state. In other words, running multiple keepstore processes
+	// with the same underlying storage device must either work
+	// reliably or fail outright.
+	//
+	// Corollary: A successful Touch or Put guarantees a block
+	// will not be deleted for at least blob_signature_ttl
+	// seconds.
 	Delete(loc string) error
 
-	// Status() returns a *VolumeStatus representing the current
+	// Status returns a *VolumeStatus representing the current
 	// in-use and available storage capacity and an
 	// implementation-specific volume identifier (e.g., "mount
 	// point" for a UnixVolume).
 	Status() *VolumeStatus
 
-	// String() returns an identifying label for this volume,
+	// String returns an identifying label for this volume,
 	// suitable for including in log messages. It should contain
 	// enough information to uniquely identify the underlying
 	// storage device, but should not contain any credentials or
 	// secrets.
 	String() string
 
-	// Writable() returns false if all future Put(), Mtime(), and
-	// Delete() calls are expected to fail.
+	// Writable returns false if all future Put, Mtime, and Delete
+	// calls are expected to fail.
 	//
-	// If the volume is only temporarily unwritable -- or if Put()
-	// will fail because it is full, but Mtime() or Delete() can
-	// succeed -- then Writable() should return false.
+	// If the volume is only temporarily unwritable -- or if Put
+	// will fail because it is full, but Mtime or Delete can
+	// succeed -- then Writable should return false.
 	Writable() bool
 }
 
