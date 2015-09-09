@@ -330,14 +330,14 @@ def run_keep(blob_signing_key=None, enforce_permissions=False):
     if not blob_signing_key:
         blob_signing_key = 'zfhgfenhffzltr9dixws36j1yhksjoll2grmku38mi7yxd66h5j4q9w4jzanezacp8s6q0ro3hxakfye02152hncy6zml2ed0uc'
     with open(os.path.join(TEST_TMPDIR, "keep.blob_signing_key"), "w") as f:
-        keep_args['--blob-signing-key-file'] = f.name
+        keep_args['-blob-signing-key-file'] = f.name
         f.write(blob_signing_key)
     if enforce_permissions:
-        keep_args['--enforce-permissions'] = 'true'
+        keep_args['-enforce-permissions'] = 'true'
     with open(os.path.join(TEST_TMPDIR, "keep.data-manager-token-file"), "w") as f:
-        keep_args['--data-manager-token-file'] = f.name
+        keep_args['-data-manager-token-file'] = f.name
         f.write(os.environ['ARVADOS_API_TOKEN'])
-    keep_args['--never-delete'] = 'false'
+    keep_args['-never-delete'] = 'false'
 
     api = arvados.api(
         version='v1',
