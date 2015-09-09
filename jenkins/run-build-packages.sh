@@ -1,6 +1,7 @@
 #!/bin/bash
 
 . `dirname "$(readlink -f "$0")"`/run-library.sh
+. `dirname "$(readlink -f "$0")"`/libcloud-pin
 
 read -rd "\000" helpmessage <<EOF
 $(basename $0): Build Arvados packages
@@ -394,7 +395,7 @@ LIBCLOUD_DIR=$(mktemp -d)
 (
     cd $LIBCLOUD_DIR
     git clone $DASHQ_UNLESS_DEBUG https://github.com/curoverse/libcloud.git .
-    git checkout apache-libcloud-0.18.1.dev2
+    git checkout apache-libcloud-$LIBCLOUD_PIN
     handle_python_package
 )
 fpm_build $LIBCLOUD_DIR "$PYTHON2_PKG_PREFIX"-apache-libcloud
