@@ -94,11 +94,6 @@ func GetKeepServersAndSummarize(params GetKeepServersParams) (results ReadServer
 }
 
 func GetKeepServers(params GetKeepServersParams) (results ReadServers) {
-	if &params.Client == nil {
-		log.Fatalf("params.Client passed to GetKeepServers() should " +
-			"contain a valid ArvadosClient, but instead it is nil.")
-	}
-
 	sdkParams := arvadosclient.Dict{
 		"filters": [][]string{[]string{"service_type", "=", "disk"}},
 	}
