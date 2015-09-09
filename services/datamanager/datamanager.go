@@ -44,7 +44,7 @@ func main() {
 	if minutesBetweenRuns == 0 {
 		err := singlerun(makeArvadosClient())
 		if err != nil {
-			log.Fatalf("Got an error: %v", err)
+			log.Fatalf("singlerun: %v", err)
 		}
 	} else {
 		waitTime := time.Minute * time.Duration(minutesBetweenRuns)
@@ -52,7 +52,7 @@ func main() {
 			log.Println("Beginning Run")
 			err := singlerun(makeArvadosClient())
 			if err != nil {
-				log.Printf("Got an error: %v", err)
+				log.Printf("singlerun: %v", err)
 			}
 			log.Printf("Sleeping for %d minutes", minutesBetweenRuns)
 			time.Sleep(waitTime)
@@ -70,12 +70,10 @@ func makeArvadosClient() arvadosclient.ArvadosClient {
 
 func singlerun(arv arvadosclient.ArvadosClient) error {
 	var err error
-	if is_admin, err := util.UserIsAdmin(arv); err != nil {
-		log.Printf("Error querying current arvados user %s", err.Error())
-		return err
-	} else if !is_admin {
-		log.Printf("Current user is not an admin. Datamanager can only be run by admins.")
-		return errors.New("Current user is not an admin. Datamanager can only be run by admins.")
+	if isAdmin, err := util.UserIsAdmin(arv); err != nil {
+		return errors.New("Error verifying admin token: " + err.Error())
+	} else if !isAdmin {
+		return errors.New("Current user is not an admin. Datamanager requires a privileged token.")
 	}
 
 	var arvLogger *logger.Logger
