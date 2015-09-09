@@ -20,7 +20,7 @@ type Volume interface {
 	//
 	// Get should not verify the integrity of the returned data:
 	// it should just return whatever was found in its backing
-	// store.
+	// store. (Integrity checking is the caller's responsibility.)
 	//
 	// If an error is encountered that prevents it from
 	// retrieving the data, that error should be returned so the
@@ -69,9 +69,25 @@ type Volume interface {
 	//
 	// loc is as described in Get.
 	//
-	// Touch must return a non-nil error unless it can guarantee
-	// that a future call to Mtime() will return a timestamp newer
-	// than {now minus one second}.
+	// If invoked at time t0, Touch must guarantee that a
+	// subsequent call to Mtime will return a timestamp no older
+	// than {t0 minus one second}. For example, if Touch is called
+	// at 2015-07-07T01:23:45.67890123Z, it is acceptable for a
+	// subsequent Mtime to return any of the following:
+	//
+	//   - 2015-07-07T01:23:45.00000000Z
+	//   - 2015-07-07T01:23:45.67890123Z
+	//   - 2015-07-07T01:23:46.67890123Z
+	//   - 2015-07-08T00:00:00.00000000Z
+	//
+	// It is not acceptable for a subsequente Mtime to return
+	// either of the following:
+	//
+	//   - 2015-07-07T00:00:00.00000000Z -- ERROR
+	//   - 2015-07-07T01:23:44.00000000Z -- ERROR
+	//
+	// Touch must return a non-nil error if the timestamp cannot
+	// be updated.
 	Touch(loc string) error
 
 	// Mtime returns the stored timestamp for the given locator.
@@ -172,19 +188,25 @@ type Volume interface {
 type VolumeManager interface {
 	// AllReadable returns all volumes.
 	AllReadable() []Volume
+
 	// AllWritable returns all volumes that aren't known to be in
 	// a read-only state. (There is no guarantee that a write to
 	// one will succeed, though.)
 	AllWritable() []Volume
+
 	// NextWritable returns the volume where the next new block
 	// should be written. A VolumeManager can select a volume in
 	// order to distribute activity across spindles, fill up disks
 	// with more free space, etc.
 	NextWritable() Volume
+
 	// Close shuts down the volume manager cleanly.
 	Close()
 }
 
+// RRVolumeManager is a round-robin VolumeManager: the Nth call to
+// NextWritable returns the (N % len(writables))th writable Volume
+// (where writables are all Volumes v where v.Writable()==true).
 type RRVolumeManager struct {
 	readables []Volume
 	writables []Volume

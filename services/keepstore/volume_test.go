@@ -18,9 +18,11 @@ type TestableVolume interface {
 	// [Over]write content for a locator with the given data,
 	// bypassing all constraints like readonly and serialize.
 	PutRaw(locator string, data []byte)
+
 	// Specify the value Mtime() should return, until the next
 	// call to Touch, TouchWithDate, or Put.
 	TouchWithDate(locator string, lastPut time.Time)
+
 	// Clean up, delete temporary files.
 	Teardown()
 }
@@ -29,14 +31,18 @@ type TestableVolume interface {
 type MockVolume struct {
 	Store      map[string][]byte
 	Timestamps map[string]time.Time
+
 	// Bad volumes return an error for every operation.
 	Bad bool
+
 	// Touchable volumes' Touch() method succeeds for a locator
 	// that has been Put().
 	Touchable bool
+
 	// Readonly volumes return an error for Put, Delete, and
 	// Touch.
 	Readonly bool
+
 	// Gate is a "starting gate", allowing test cases to pause
 	// volume operations long enough to inspect state. Every
 	// operation (except Status) starts by receiving from
@@ -45,6 +51,7 @@ type MockVolume struct {
 	// closed channel, so all operations proceed without
 	// blocking. See trash_worker_test.go for an example.
 	Gate   chan struct{}
+
 	called map[string]int
 	mutex  sync.Mutex
 }
