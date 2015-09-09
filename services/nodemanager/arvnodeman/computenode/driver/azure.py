@@ -54,7 +54,7 @@ class ComputeNodeDriver(BaseComputeNodeDriver):
             self.real.ex_create_tags(cloud_node,
                                      {'hostname': arvados_node_fqdn(arvados_node)})
             return True
-        except BaseHTTPError as b
+        except BaseHTTPError as b:
             return False
 
     def _init_image(self, urn):
