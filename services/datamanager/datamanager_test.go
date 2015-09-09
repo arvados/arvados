@@ -6,7 +6,6 @@ import (
 	"git.curoverse.com/arvados.git/sdk/go/arvadosclient"
 	"git.curoverse.com/arvados.git/sdk/go/arvadostest"
 	"git.curoverse.com/arvados.git/sdk/go/keepclient"
-	"git.curoverse.com/arvados.git/services/datamanager/keep"
 	"io/ioutil"
 	"net/http"
 	"os"
@@ -17,7 +16,10 @@ import (
 	"time"
 )
 
-const ACTIVE_USER_TOKEN = "3kg6k6lzmp9kj5cpkcoxie963cmvjahbt2fod9zru30k1jqdmi"
+const (
+	ActiveUserToken = "3kg6k6lzmp9kj5cpkcoxie963cmvjahbt2fod9zru30k1jqdmi"
+	AdminToken = "4axaw8zxe0qm22wa6urpp5nskcne8z88cvbupv653y1njyi05h"
+)
 
 var arv arvadosclient.ArvadosClient
 var keepClient *keepclient.KeepClient
@@ -172,7 +174,7 @@ func getBlockIndexesForServer(t *testing.T, i int) []string {
 	path := keepServers[i] + "/index"
 	client := http.Client{}
 	req, err := http.NewRequest("GET", path, nil)
-	req.Header.Add("Authorization", "OAuth2 "+keep.GetDataManagerToken(nil))
+	req.Header.Add("Authorization", "OAuth2 " + AdminToken)
 	req.Header.Add("Content-Type", "application/octet-stream")
 	resp, err := client.Do(req)
 	defer resp.Body.Close()
@@ -301,7 +303,7 @@ func backdateBlocks(t *testing.T, oldUnusedBlockLocators []string) {
 func getStatus(t *testing.T, path string) interface{} {
 	client := http.Client{}
 	req, err := http.NewRequest("GET", path, nil)
-	req.Header.Add("Authorization", "OAuth2 "+keep.GetDataManagerToken(nil))
+	req.Header.Add("Authorization", "OAuth2 " + AdminToken)
 	req.Header.Add("Content-Type", "application/octet-stream")
 	resp, err := client.Do(req)
 	defer resp.Body.Close()
@@ -531,22 +533,10 @@ func TestRunDatamanagerAsNonAdminUser(t *testing.T) {
 	defer TearDownDataManagerTest(t)
 	SetupDataManagerTest(t)
 
-	arv.ApiToken = ACTIVE_USER_TOKEN
+	arv.ApiToken = ActiveUserToken
 
 	err := singlerun(arv)
 	if err == nil {
 		t.Fatalf("Expected error during singlerun as non-admin user")
-	}
-}
-
-func TestRunDatamanagerWithNonAdminDataManagerToken(t *testing.T) {
-	defer TearDownDataManagerTest(t)
-	SetupDataManagerTest(t)
-
-	dataManagerToken = ACTIVE_USER_TOKEN
-
-	err := singlerun(arv)
-	if err == nil {
-		t.Fatalf("Expected error during singlerun with non-admin user token as datamanager token")
 	}
 }

@@ -68,8 +68,6 @@ func makeArvadosClient() arvadosclient.ArvadosClient {
 	return arv
 }
 
-var dataManagerToken string
-
 func singlerun(arv arvadosclient.ArvadosClient) error {
 	var err error
 	if is_admin, err := util.UserIsAdmin(arv); err != nil {
@@ -92,21 +90,6 @@ func singlerun(arv arvadosclient.ArvadosClient) error {
 	if arvLogger != nil {
 		arvLogger.AddWriteHook(loggerutil.LogMemoryAlloc)
 	}
-
-	// Verify that datamanager token belongs to an admin user
-	if dataManagerToken == "" {
-		dataManagerToken = keep.GetDataManagerToken(arvLogger)
-	}
-	origArvToken := arv.ApiToken
-	arv.ApiToken = dataManagerToken
-	if is_admin, err := util.UserIsAdmin(arv); err != nil {
-		log.Printf("Error querying arvados user for data manager token %s", err.Error())
-		return err
-	} else if !is_admin {
-		log.Printf("Datamanager token does not belong to an admin user.")
-		return errors.New("Datamanager token does not belong to an admin user.")
-	}
-	arv.ApiToken = origArvToken
 
 	var (
 		dataFetcher     summary.DataFetcher
@@ -178,7 +161,7 @@ func singlerun(arv arvadosclient.ArvadosClient) error {
 	if trashErr != nil {
 		return err
 	} else {
-		keep.SendTrashLists(dataManagerToken, kc, trashLists)
+		keep.SendTrashLists(kc, trashLists)
 	}
 
 	return nil

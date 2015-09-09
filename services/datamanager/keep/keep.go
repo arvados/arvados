@@ -6,7 +6,6 @@ import (
 	"bufio"
 	"encoding/json"
 	"errors"
-	"flag"
 	"fmt"
 	"git.curoverse.com/arvados.git/sdk/go/arvadosclient"
 	"git.curoverse.com/arvados.git/sdk/go/blockdigest"
@@ -19,7 +18,6 @@ import (
 	"net/http"
 	"strconv"
 	"strings"
-	"sync"
 	"time"
 )
 
@@ -71,21 +69,6 @@ type KeepServiceList struct {
 	KeepServers    []ServerAddress `json:"items"`
 }
 
-var (
-	// Don't access the token directly, use getDataManagerToken() to
-	// make sure it's been read.
-	dataManagerToken             string
-	dataManagerTokenFile         string
-	dataManagerTokenFileReadOnce sync.Once
-)
-
-func init() {
-	flag.StringVar(&dataManagerTokenFile,
-		"data-manager-token-file",
-		"",
-		"File with the API token we should use to contact keep servers.")
-}
-
 // TODO(misha): Change this to include the UUID as well.
 func (s ServerAddress) String() string {
 	return s.URL()
@@ -97,28 +80,6 @@ func (s ServerAddress) URL() string {
 	} else {
 		return fmt.Sprintf("http://%s:%d", s.Host, s.Port)
 	}
-}
-
-func GetDataManagerToken(arvLogger *logger.Logger) string {
-	readDataManagerToken := func() {
-		if dataManagerTokenFile == "" {
-			flag.Usage()
-			loggerutil.FatalWithMessage(arvLogger,
-				"Data Manager Token needed, but data manager token file not specified.")
-		} else {
-			rawRead, err := ioutil.ReadFile(dataManagerTokenFile)
-			if err != nil {
-				loggerutil.FatalWithMessage(arvLogger,
-					fmt.Sprintf("Unexpected error reading token file %s: %v",
-						dataManagerTokenFile,
-						err))
-			}
-			dataManagerToken = strings.TrimSpace(string(rawRead))
-		}
-	}
-
-	dataManagerTokenFileReadOnce.Do(readDataManagerToken)
-	return dataManagerToken
 }
 
 func GetKeepServersAndSummarize(params GetKeepServersParams) (results ReadServers) {
@@ -177,9 +138,6 @@ func GetKeepServers(params GetKeepServersParams) (results ReadServers) {
 
 	log.Printf("Got Server Addresses: %v", results)
 
-	// This is safe for concurrent use
-	client := http.Client{}
-
 	// Send off all the index requests concurrently
 	responseChan := make(chan ServerResponse)
 	for _, keepServer := range sdkResponse.KeepServers {
@@ -192,7 +150,7 @@ func GetKeepServers(params GetKeepServersParams) (results ReadServers) {
 		go func(keepServer ServerAddress) {
 			responseChan <- GetServerContents(params.Logger,
 				keepServer,
-				client)
+				params.Client)
 		}(keepServer)
 	}
 
@@ -220,12 +178,12 @@ func GetKeepServers(params GetKeepServersParams) (results ReadServers) {
 
 func GetServerContents(arvLogger *logger.Logger,
 	keepServer ServerAddress,
-	client http.Client) (response ServerResponse) {
+	arv arvadosclient.ArvadosClient) (response ServerResponse) {
 
-	GetServerStatus(arvLogger, keepServer, client)
+	GetServerStatus(arvLogger, keepServer, arv)
 
-	req := CreateIndexRequest(arvLogger, keepServer)
-	resp, err := client.Do(req)
+	req := CreateIndexRequest(arvLogger, keepServer, arv)
+	resp, err := arv.Client.Do(req)
 	if err != nil {
 		loggerutil.FatalWithMessage(arvLogger,
 			fmt.Sprintf("Error fetching %s: %v. Response was %+v",
@@ -239,7 +197,7 @@ func GetServerContents(arvLogger *logger.Logger,
 
 func GetServerStatus(arvLogger *logger.Logger,
 	keepServer ServerAddress,
-	client http.Client) {
+	arv arvadosclient.ArvadosClient) {
 	url := fmt.Sprintf("http://%s:%d/status.json",
 		keepServer.Host,
 		keepServer.Port)
@@ -257,7 +215,7 @@ func GetServerStatus(arvLogger *logger.Logger,
 		})
 	}
 
-	resp, err := client.Get(url)
+	resp, err := arv.Client.Get(url)
 	if err != nil {
 		loggerutil.FatalWithMessage(arvLogger,
 			fmt.Sprintf("Error getting keep status from %s: %v", url, err))
@@ -289,7 +247,8 @@ func GetServerStatus(arvLogger *logger.Logger,
 }
 
 func CreateIndexRequest(arvLogger *logger.Logger,
-	keepServer ServerAddress) (req *http.Request) {
+	keepServer ServerAddress,
+	arv arvadosclient.ArvadosClient) (req *http.Request) {
 	url := fmt.Sprintf("http://%s:%d/index", keepServer.Host, keepServer.Port)
 	log.Println("About to fetch keep server contents from " + url)
 
@@ -308,8 +267,7 @@ func CreateIndexRequest(arvLogger *logger.Logger,
 			fmt.Sprintf("Error building http request for %s: %v", url, err))
 	}
 
-	req.Header.Add("Authorization",
-		fmt.Sprintf("OAuth2 %s", GetDataManagerToken(arvLogger)))
+	req.Header.Add("Authorization", "OAuth2 " + arv.ApiToken)
 	return
 }
 
@@ -462,7 +420,7 @@ type TrashRequest struct {
 
 type TrashList []TrashRequest
 
-func SendTrashLists(dataManagerToken string, kc *keepclient.KeepClient, spl map[string]TrashList) (errs []error) {
+func SendTrashLists(kc *keepclient.KeepClient, spl map[string]TrashList) (errs []error) {
 	count := 0
 	barrier := make(chan error)
 
@@ -487,8 +445,7 @@ func SendTrashLists(dataManagerToken string, kc *keepclient.KeepClient, spl map[
 				return
 			}
 
-			// Add api token header
-			req.Header.Add("Authorization", fmt.Sprintf("OAuth2 %s", dataManagerToken))
+			req.Header.Add("Authorization", "OAuth2 " + kc.Arvados.ApiToken)
 
 			// Make the request
 			var resp *http.Response
