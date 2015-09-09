@@ -290,7 +290,7 @@ func performTrashWorkerTest(testData TrashWorkerTestData, t *testing.T) {
 	expectEqualWithin(t, time.Second, 0, func() interface{} { return trashq.Status().InProgress })
 
 	// Verify Locator1 to be un/deleted as expected
-	data, _ := GetBlock(testData.Locator1, false)
+	data, _ := GetBlock(testData.Locator1)
 	if testData.ExpectLocator1 {
 		if len(data) == 0 {
 			t.Errorf("Expected Locator1 to be still present: %s", testData.Locator1)
@@ -303,7 +303,7 @@ func performTrashWorkerTest(testData TrashWorkerTestData, t *testing.T) {
 
 	// Verify Locator2 to be un/deleted as expected
 	if testData.Locator1 != testData.Locator2 {
-		data, _ = GetBlock(testData.Locator2, false)
+		data, _ = GetBlock(testData.Locator2)
 		if testData.ExpectLocator2 {
 			if len(data) == 0 {
 				t.Errorf("Expected Locator2 to be still present: %s", testData.Locator2)

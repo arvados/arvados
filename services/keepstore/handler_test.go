@@ -231,6 +231,9 @@ func TestPutAndDeleteSkipReadonlyVolumes(t *testing.T) {
 			uri:          "/" + TEST_HASH,
 			request_body: TEST_BLOCK,
 		})
+	defer func(orig bool) {
+		never_delete = orig
+	}(never_delete)
 	never_delete = false
 	IssueRequest(
 		&RequestTester{
@@ -246,10 +249,13 @@ func TestPutAndDeleteSkipReadonlyVolumes(t *testing.T) {
 	}
 	for _, e := range []expect{
 		{0, "Get", 0},
+		{0, "Compare", 0},
 		{0, "Touch", 0},
 		{0, "Put", 0},
 		{0, "Delete", 0},
-		{1, "Get", 1},
+		{1, "Get", 0},
+		{1, "Compare", 1},
+		{1, "Touch", 1},
 		{1, "Put", 1},
 		{1, "Delete", 1},
 	} {
@@ -804,6 +810,39 @@ func ExpectBody(
 	if expected_body != "" && response.Body.String() != expected_body {
 		t.Errorf("%s: expected response body '%s', got %+v",
 			testname, expected_body, response)
+	}
+}
+
+// See #7121
+func TestPutNeedsOnlyOneBuffer(t *testing.T) {
+	defer teardown()
+	KeepVM = MakeTestVolumeManager(1)
+	defer KeepVM.Close()
+
+	defer func(orig *bufferPool) {
+		bufs = orig
+	}(bufs)
+	bufs = newBufferPool(1, BLOCKSIZE)
+
+	ok := make(chan struct{})
+	go func() {
+		for i := 0; i < 2; i++ {
+			response := IssueRequest(
+				&RequestTester{
+					method:       "PUT",
+					uri:          "/" + TEST_HASH,
+					request_body: TEST_BLOCK,
+				})
+			ExpectStatusCode(t,
+				"TestPutNeedsOnlyOneBuffer", http.StatusOK, response)
+		}
+		ok <- struct{}{}
+	}()
+
+	select {
+	case <-ok:
+	case <-time.After(time.Second):
+		t.Fatal("PUT deadlocks with maxBuffers==1")
 	}
 }
 

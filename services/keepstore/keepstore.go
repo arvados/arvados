@@ -14,6 +14,7 @@ import (
 	"os"
 	"os/signal"
 	"strings"
+	"sync"
 	"syscall"
 	"time"
 )
@@ -132,10 +133,14 @@ func (vs *volumeSet) Set(value string) error {
 	if _, err := os.Stat(value); err != nil {
 		return err
 	}
+	var locker sync.Locker
+	if flagSerializeIO {
+		locker = &sync.Mutex{}
+	}
 	*vs = append(*vs, &UnixVolume{
-		root:      value,
-		serialize: flagSerializeIO,
-		readonly:  flagReadonly,
+		root:     value,
+		locker:   locker,
+		readonly: flagReadonly,
 	})
 	return nil
 }

@@ -1,6 +1,8 @@
 package main
 
 import (
+	"bytes"
+	"crypto/md5"
 	"errors"
 	"fmt"
 	"io"
@@ -68,6 +70,24 @@ func (v *MockVolume) gotCall(method string) {
 		v.called[method] = 1
 	} else {
 		v.called[method]++
+	}
+}
+
+func (v *MockVolume) Compare(loc string, buf []byte) error {
+	v.gotCall("Compare")
+	<-v.Gate
+	if v.Bad {
+		return errors.New("Bad volume")
+	} else if block, ok := v.Store[loc]; ok {
+		if fmt.Sprintf("%x", md5.Sum(block)) != loc {
+			return DiskHashError
+		}
+		if bytes.Compare(buf, block) != 0 {
+			return CollisionError
+		}
+		return nil
+	} else {
+		return NotFoundError
 	}
 }
 

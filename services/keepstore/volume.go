@@ -13,9 +13,17 @@ import (
 type Volume interface {
 	// Get a block. IFF the returned error is nil, the caller must
 	// put the returned slice back into the buffer pool when it's
-	// finished with it.
+	// finished with it. (Otherwise, the buffer pool will be
+	// depleted and eventually -- when all available buffers are
+	// used and not returned -- operations will reach deadlock.)
 	Get(loc string) ([]byte, error)
-	Put(loc string, block []byte) error
+	// Confirm Get() would return a buffer with exactly the same
+	// content as buf. If so, return nil. If not, return
+	// CollisionError or DiskHashError (depending on whether the
+	// data on disk matches the expected hash), or whatever error
+	// was encountered opening/reading the file.
+	Compare(loc string, data []byte) error
+	Put(loc string, data []byte) error
 	Touch(loc string) error
 	Mtime(loc string) (time.Time, error)
 	IndexTo(prefix string, writer io.Writer) error
