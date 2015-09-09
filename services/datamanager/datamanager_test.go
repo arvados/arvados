@@ -47,6 +47,7 @@ func SetupDataManagerTest(t *testing.T) {
 	if err := keepClient.DiscoverKeepServers(); err != nil {
 		t.Fatalf("Error discovering keep services: %s", err)
 	}
+	keepServers = []string{}
 	for _, host := range keepClient.LocalRoots() {
 		keepServers = append(keepServers, host)
 	}
@@ -299,11 +300,10 @@ func getStatus(t *testing.T, path string) interface{} {
 	req.Header.Add("Authorization", "OAuth2 " + AdminToken)
 	req.Header.Add("Content-Type", "application/octet-stream")
 	resp, err := client.Do(req)
-	defer resp.Body.Close()
-
 	if err != nil {
 		t.Fatalf("Error during %s %s", path, err)
 	}
+	defer resp.Body.Close()
 
 	var s interface{}
 	json.NewDecoder(resp.Body).Decode(&s)
@@ -311,28 +311,18 @@ func getStatus(t *testing.T, path string) interface{} {
 	return s
 }
 
+// Wait until PullQueue and TrashQueue are empty on all keepServers.
 func waitUntilQueuesFinishWork(t *testing.T) {
-	// Wait until PullQueue and TrashQueue finish their work
-	for {
-		var done [2]bool
-		for i := 0; i < 2; i++ {
-			s := getStatus(t, keepServers[i]+"/status.json")
-			var pullQueueStatus interface{}
-			pullQueueStatus = s.(map[string]interface{})["PullQueue"]
-			var trashQueueStatus interface{}
-			trashQueueStatus = s.(map[string]interface{})["TrashQueue"]
-
-			if pullQueueStatus.(map[string]interface{})["Queued"] == float64(0) &&
-				pullQueueStatus.(map[string]interface{})["InProgress"] == float64(0) &&
-				trashQueueStatus.(map[string]interface{})["Queued"] == float64(0) &&
-				trashQueueStatus.(map[string]interface{})["InProgress"] == float64(0) {
-				done[i] = true
-			}
-		}
-		if done[0] && done[1] {
-			break
-		} else {
+	for _, ks := range keepServers {
+		for done := false; !done; {
 			time.Sleep(100 * time.Millisecond)
+			s := getStatus(t, ks + "/status.json")
+			for _, qName := range []string{"PullQueue", "TrashQueue"} {
+				qStatus := s.(map[string]interface{})[qName].(map[string]interface{})
+				if qStatus["Queued"].(float64) + qStatus["InProgress"].(float64) == 0 {
+					done = true
+				}
+			}
 		}
 	}
 }
@@ -484,8 +474,6 @@ func TestDatamanagerSingleRunRepeatedly(t *testing.T) {
 }
 
 func TestGetStatusRepeatedly(t *testing.T) {
-	t.Skip("This test still fails. Skip it until it is fixed.")
-
 	defer TearDownDataManagerTest(t)
 	SetupDataManagerTest(t)
 
