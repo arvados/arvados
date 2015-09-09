@@ -8,7 +8,6 @@ import (
 	"git.curoverse.com/arvados.git/sdk/go/keepclient"
 	"git.curoverse.com/arvados.git/services/datamanager/keep"
 	"io/ioutil"
-	"log"
 	"net/http"
 	"os"
 	"os/exec"
@@ -17,6 +16,8 @@ import (
 	"testing"
 	"time"
 )
+
+const ACTIVE_USER_TOKEN = "3kg6k6lzmp9kj5cpkcoxie963cmvjahbt2fod9zru30k1jqdmi"
 
 var arv arvadosclient.ArvadosClient
 var keepClient *keepclient.KeepClient
@@ -30,12 +31,7 @@ func SetupDataManagerTest(t *testing.T) {
 	arvadostest.StartAPI()
 	arvadostest.StartKeep()
 
-	// make arvadosclient
-	var err error
-	arv, err = arvadosclient.MakeArvadosClient()
-	if err != nil {
-		t.Fatalf("Error setting up arvados client: %s", err)
-	}
+	arv = makeArvadosClient()
 
 	// keep client
 	keepClient = &keepclient.KeepClient{
@@ -164,7 +160,7 @@ func deleteCollection(t *testing.T, uuid string) {
 }
 
 func dataManagerSingleRun(t *testing.T) {
-	err := singlerun()
+	err := singlerun(arv)
 	if err != nil {
 		t.Fatalf("Error during singlerun %s", err)
 	}
@@ -352,7 +348,6 @@ Also create some collections and delete some of them.
 Verify block indexes.
 */
 func TestPutAndGetBlocks(t *testing.T) {
-	log.Print("TestPutAndGetBlocks start")
 	defer TearDownDataManagerTest(t)
 	SetupDataManagerTest(t)
 
@@ -481,13 +476,11 @@ func TestPutAndGetBlocks(t *testing.T) {
 }
 
 func TestDatamanagerSingleRunRepeatedly(t *testing.T) {
-	log.Print("TestDatamanagerSingleRunRepeatedly start")
-
 	defer TearDownDataManagerTest(t)
 	SetupDataManagerTest(t)
 
 	for i := 0; i < 10; i++ {
-		err := singlerun()
+		err := singlerun(arv)
 		if err != nil {
 			t.Fatalf("Got an error during datamanager singlerun: %v", err)
 		}
@@ -519,5 +512,41 @@ func TestGetStatusRepeatedly(t *testing.T) {
 
 			time.Sleep(100 * time.Millisecond)
 		}
+	}
+}
+
+func TestRunDatamanagerWithBogusServer(t *testing.T) {
+	defer TearDownDataManagerTest(t)
+	SetupDataManagerTest(t)
+
+	arv.ApiServer = "bogus-server"
+
+	err := singlerun(arv)
+	if err == nil {
+		t.Fatalf("Expected error during singlerun with bogus server")
+	}
+}
+
+func TestRunDatamanagerAsNonAdminUser(t *testing.T) {
+	defer TearDownDataManagerTest(t)
+	SetupDataManagerTest(t)
+
+	arv.ApiToken = ACTIVE_USER_TOKEN
+
+	err := singlerun(arv)
+	if err == nil {
+		t.Fatalf("Expected error during singlerun as non-admin user")
+	}
+}
+
+func TestRunDatamanagerWithNonAdminDataManagerToken(t *testing.T) {
+	defer TearDownDataManagerTest(t)
+	SetupDataManagerTest(t)
+
+	dataManagerToken = ACTIVE_USER_TOKEN
+
+	err := singlerun(arv)
+	if err == nil {
+		t.Fatalf("Expected error during singlerun with non-admin user token as datamanager token")
 	}
 }
