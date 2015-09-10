@@ -206,7 +206,7 @@ func getBlockIndexes(t *testing.T) [][]string {
 	return indexes
 }
 
-func verifyBlocks(t *testing.T, notExpected []string, expected []string) {
+func verifyBlocks(t *testing.T, notExpected []string, expected []string, minReplication int) {
 	blocks := getBlockIndexes(t)
 
 	for _, block := range notExpected {
@@ -224,8 +224,8 @@ func verifyBlocks(t *testing.T, notExpected []string, expected []string) {
 				nFound++
 			}
 		}
-		if nFound < 2 {
-			t.Fatalf("Found %d replicas of block %s, expected >= 2", nFound, block)
+		if nFound < minReplication {
+			t.Fatalf("Found %d replicas of block %s, expected >= %d", nFound, block, minReplication)
 		}
 	}
 }
@@ -398,13 +398,13 @@ func TestPutAndGetBlocks(t *testing.T) {
 	expected = append(expected, oneOfTwoWithSameDataLocator)
 	expected = append(expected, secondOfTwoWithSameDataLocator)
 
-	verifyBlocks(t, nil, expected)
+	verifyBlocks(t, nil, expected, 2)
 
 	// Run datamanager in singlerun mode
 	dataManagerSingleRun(t)
 	waitUntilQueuesFinishWork(t)
 
-	verifyBlocks(t, nil, expected)
+	verifyBlocks(t, nil, expected, 2)
 
 	// Backdate the to-be old blocks and delete the collections
 	backdateBlocks(t, oldUnusedBlockLocators)
@@ -420,43 +420,35 @@ func TestPutAndGetBlocks(t *testing.T) {
 	expected = append(expected, oldUsedBlockLocator)
 	expected = append(expected, newBlockLocators...)
 	expected = append(expected, toBeDeletedCollectionLocator)
-	expected = append(expected, replicationCollectionLocator)
 	expected = append(expected, oneOfTwoWithSameDataLocator)
 	expected = append(expected, secondOfTwoWithSameDataLocator)
 
-	verifyBlocks(t, oldUnusedBlockLocators, expected)
+	verifyBlocks(t, oldUnusedBlockLocators, expected, 2)
 
-	// Reduce replication on replicationCollectionUuid collection and verify that the overreplicated blocks are untouched.
+	// Reduce desired replication on replicationCollectionUuid
+	// collection, and verify that Data Manager does not reduce
+	// actual replication any further than that. (It might not
+	// reduce actual replication at all; that's OK for this test.)
 
-	// Default replication level is 2; first verify that the replicationCollectionLocator appears in both volumes
-	for i := 0; i < len(keepServers); i++ {
-		indexes := getBlockIndexesForServer(t, i)
-		if !valueInArray(replicationCollectionLocator, indexes) {
-			t.Fatalf("Not found block in index %s", replicationCollectionLocator)
-		}
-	}
-
-	// Now reduce replication level on this collection and verify that it still appears in both volumes
+	// Reduce desired replication level.
 	updateCollection(t, replicationCollectionUuid, "replication_desired", "1")
 	collection := getCollection(t, replicationCollectionUuid)
 	if collection["replication_desired"].(interface{}) != float64(1) {
 		t.Fatalf("After update replication_desired is not 1; instead it is %v", collection["replication_desired"])
 	}
 
+	// Verify data is currently overreplicated.
+	verifyBlocks(t, nil, []string{replicationCollectionLocator}, 2)
+
 	// Run data manager again
 	dataManagerSingleRun(t)
 	waitUntilQueuesFinishWork(t)
 
-	for i := 0; i < len(keepServers); i++ {
-		indexes := getBlockIndexesForServer(t, i)
-		if !valueInArray(replicationCollectionLocator, indexes) {
-			t.Fatalf("Not found block in index %s", replicationCollectionLocator)
-		}
-	}
-	// Done testing reduce replication on collection
+	// Verify data is not underreplicated.
+	verifyBlocks(t, nil, []string{replicationCollectionLocator}, 1)
 
-	// Verify blocks one more time
-	verifyBlocks(t, oldUnusedBlockLocators, expected)
+	// Verify *other* collections' data is not underreplicated.
+	verifyBlocks(t, oldUnusedBlockLocators, expected, 2)
 }
 
 func TestDatamanagerSingleRunRepeatedly(t *testing.T) {
