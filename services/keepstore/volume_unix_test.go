@@ -2,12 +2,15 @@ package main
 
 import (
 	"bytes"
+	"errors"
 	"fmt"
+	"io"
 	"io/ioutil"
 	"os"
 	"regexp"
 	"sort"
 	"strings"
+	"sync"
 	"syscall"
 	"testing"
 	"time"
@@ -23,11 +26,15 @@ func NewTestableUnixVolume(t *testing.T, serialize bool, readonly bool) *Testabl
 	if err != nil {
 		t.Fatal(err)
 	}
+	var locker sync.Locker
+	if serialize {
+		locker = &sync.Mutex{}
+	}
 	return &TestableUnixVolume{
 		UnixVolume: UnixVolume{
-			root:      d,
-			serialize: serialize,
-			readonly:  readonly,
+			root:     d,
+			locker:   locker,
+			readonly: readonly,
 		},
 		t: t,
 	}
@@ -386,5 +393,100 @@ func TestNodeStatus(t *testing.T) {
 	}
 	if volinfo.BytesUsed == 0 {
 		t.Errorf("uninitialized bytes_used in %v", volinfo)
+	}
+}
+
+func TestUnixVolumeGetFuncWorkerError(t *testing.T) {
+	v := NewTestableUnixVolume(t, false, false)
+	defer v.Teardown()
+
+	v.Put(TEST_HASH, TEST_BLOCK)
+	mockErr := errors.New("Mock error")
+	err := v.getFunc(v.blockPath(TEST_HASH), func(rdr io.Reader) error {
+		return mockErr
+	})
+	if err != mockErr {
+		t.Errorf("Got %v, expected %v", err, mockErr)
+	}
+}
+
+func TestUnixVolumeGetFuncFileError(t *testing.T) {
+	v := NewTestableUnixVolume(t, false, false)
+	defer v.Teardown()
+
+	funcCalled := false
+	err := v.getFunc(v.blockPath(TEST_HASH), func(rdr io.Reader) error {
+		funcCalled = true
+		return nil
+	})
+	if err == nil {
+		t.Errorf("Expected error opening non-existent file")
+	}
+	if funcCalled {
+		t.Errorf("Worker func should not have been called")
+	}
+}
+
+func TestUnixVolumeGetFuncWorkerWaitsOnMutex(t *testing.T) {
+	v := NewTestableUnixVolume(t, false, false)
+	defer v.Teardown()
+
+	v.Put(TEST_HASH, TEST_BLOCK)
+
+	mtx := NewMockMutex()
+	v.locker = mtx
+
+	funcCalled := make(chan struct{})
+	go v.getFunc(v.blockPath(TEST_HASH), func(rdr io.Reader) error {
+		funcCalled <- struct{}{}
+		return nil
+	})
+	select {
+	case mtx.AllowLock <- struct{}{}:
+	case <-funcCalled:
+		t.Fatal("Function was called before mutex was acquired")
+	case <-time.After(5 * time.Second):
+		t.Fatal("Timed out before mutex was acquired")
+	}
+	select {
+	case <-funcCalled:
+	case mtx.AllowUnlock <- struct{}{}:
+		t.Fatal("Mutex was released before function was called")
+	case <-time.After(5 * time.Second):
+		t.Fatal("Timed out waiting for funcCalled")
+	}
+	select {
+	case mtx.AllowUnlock <- struct{}{}:
+	case <-time.After(5 * time.Second):
+		t.Fatal("Timed out waiting for getFunc() to release mutex")
+	}
+}
+
+func TestUnixVolumeCompare(t *testing.T) {
+	v := NewTestableUnixVolume(t, false, false)
+	defer v.Teardown()
+
+	v.Put(TEST_HASH, TEST_BLOCK)
+	err := v.Compare(TEST_HASH, TEST_BLOCK)
+	if err != nil {
+		t.Errorf("Got err %q, expected nil", err)
+	}
+
+	err = v.Compare(TEST_HASH, []byte("baddata"))
+	if err != CollisionError {
+		t.Errorf("Got err %q, expected %q", err, CollisionError)
+	}
+
+	v.Put(TEST_HASH, []byte("baddata"))
+	err = v.Compare(TEST_HASH, TEST_BLOCK)
+	if err != DiskHashError {
+		t.Errorf("Got err %q, expected %q", err, DiskHashError)
+	}
+
+	p := fmt.Sprintf("%s/%s/%s", v.root, TEST_HASH[:3], TEST_HASH)
+	os.Chmod(p, 000)
+	err = v.Compare(TEST_HASH, TEST_BLOCK)
+	if err == nil || strings.Index(err.Error(), "permission denied") < 0 {
+		t.Errorf("Got err %q, expected %q", err, "permission denied")
 	}
 }

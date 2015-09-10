@@ -13,7 +13,9 @@ import (
 type Volume interface {
 	// Get a block. IFF the returned error is nil, the caller must
 	// put the returned slice back into the buffer pool when it's
-	// finished with it.
+	// finished with it. (Otherwise, the buffer pool will be
+	// depleted and eventually -- when all available buffers are
+	// used and not returned -- operations will reach deadlock.)
 	//
 	// loc is guaranteed to consist of 32 or more lowercase hex
 	// digits.
@@ -39,6 +41,13 @@ type Volume interface {
 	// Get is permitted to return an error without reading any of
 	// the data.
 	Get(loc string) ([]byte, error)
+
+	// Compare the given data with the stored data (i.e., what Get
+	// would return). If equal, return nil. If not, return
+	// CollisionError or DiskHashError (depending on whether the
+	// data on disk matches the expected hash), or whatever error
+	// was encountered opening/reading the stored data.
+	Compare(loc string, data []byte) error
 
 	// Put writes a block to an underlying storage device.
 	//
