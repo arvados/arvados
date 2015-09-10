@@ -444,7 +444,6 @@ func TestPutAndGetBlocks(t *testing.T) {
 	}
 
 	// Run data manager again
-	time.Sleep(100 * time.Millisecond)
 	dataManagerSingleRun(t)
 	waitUntilQueuesFinishWork(t)
 
@@ -469,7 +468,6 @@ func TestDatamanagerSingleRunRepeatedly(t *testing.T) {
 		if err != nil {
 			t.Fatalf("Got an error during datamanager singlerun: %v", err)
 		}
-		time.Sleep(100 * time.Millisecond)
 	}
 }
 
