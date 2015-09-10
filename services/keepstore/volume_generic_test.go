@@ -17,6 +17,54 @@ type TestableVolumeFactory func(t *testing.T) TestableVolume
 // TestableVolume for each test case, to avoid leaking state between
 // tests.
 func DoGenericVolumeTests(t *testing.T, factory TestableVolumeFactory) {
+	/*
+		testGetBlock(t, factory)
+		testGetNoSuchBlock(t, factory)
+		testGetSystemError(t, factory)
+
+		testCompareSameContent(t, factory)
+		testCompareWithCollisionError(t, factory)
+		testCompareWithCorruptError(t, factory)
+		testCompareSystemError(t, factory)
+
+		testPutBlock(t, factory)
+		testPutMultipleBlocks(t, factory)
+		testPutBlockWithSameContent(t, factory)
+		testPutBlockWithDifferentContent(t, factory)
+		testPutBlockSystemError(t, factory)
+
+		testTouch(t, factory)
+		testTouchNoSuchBlock(t, factory)
+		testTouchSystemError(t, factory)
+
+		testMtime(t, factory)
+		testMtimeNoSuchBlock(t, factory)
+		testMtimeSystemError(t, factory)
+
+		testIndexToWithNoPrefix(t, factory)
+		testIndexToWithPrefix(t, factory)
+		testIndexToWithNoSuchPrefix(t, factory)
+		testIndexToOnEmptyVolume(t, factory)
+		testIndexToSystemError(t, factory)
+
+		testDeleteNewBlock(t, factory)
+		testDeleteOldWithOnlyBlockInVol(t, factory)
+		testDeleteOldWithOtherBlocksInVol(t, factory)
+		testDeleteNoSuchBlock(t, factory)
+		testDeleteSystemError(t, factory)
+
+		testStatus(t, factory)
+		testStatusWithError(t, factory)
+		testStatusSystemError(t, factory)
+
+		testString(t, factory)
+		testStringSystemError(t, factory)
+
+		testWritableTrue(t, factory)
+		testWritableFalse(t, factory)
+		testWritableSystemError(t, factory)
+	*/
+
 	testDeleteNewBlock(t, factory)
 	testDeleteOldBlock(t, factory)
 }
