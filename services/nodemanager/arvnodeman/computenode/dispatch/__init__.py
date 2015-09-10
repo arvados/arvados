@@ -327,7 +327,7 @@ class ComputeNodeMonitorActor(config.actor_class):
             return timestamp_fresh(self.cloud_node_start_time,
                                    self.node_stale_after)
         else:
-            return self.in_state('idle')
+            return self.in_state('idle', 'down')
 
     def consider_shutdown(self):
         next_opening = self._shutdowns.next_opening()
