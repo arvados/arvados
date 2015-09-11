@@ -177,13 +177,6 @@ func IndexHandler(resp http.ResponseWriter, req *http.Request) {
 //            * device_num (an integer identifying the underlying filesystem)
 //            * bytes_free
 //            * bytes_used
-//
-type VolumeStatus struct {
-	MountPoint string `json:"mount_point"`
-	DeviceNum  uint64 `json:"device_num"`
-	BytesFree  uint64 `json:"bytes_free"`
-	BytesUsed  uint64 `json:"bytes_used"`
-}
 
 type PoolStatus struct {
 	Alloc uint64 `json:"BytesAllocated"`

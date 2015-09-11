@@ -122,7 +122,7 @@ type Volume interface {
 	//
 	//   - size is the number of bytes of content, given as a
 	//     decimal number with one or more digits
-	//     
+	//
 	//   - timestamp is the timestamp stored for the locator,
 	//     given as a decimal number of seconds after January 1,
 	//     1970 UTC.
@@ -250,4 +250,16 @@ func (vm *RRVolumeManager) NextWritable() Volume {
 }
 
 func (vm *RRVolumeManager) Close() {
+}
+
+// VolumeStatus
+//   * mount_point
+//   * device_num (an integer identifying the underlying storage system)
+//   * bytes_free
+//   * bytes_used
+type VolumeStatus struct {
+	MountPoint string `json:"mount_point"`
+	DeviceNum  uint64 `json:"device_num"`
+	BytesFree  uint64 `json:"bytes_free"`
+	BytesUsed  uint64 `json:"bytes_used"`
 }
