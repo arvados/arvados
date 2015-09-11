@@ -157,14 +157,24 @@ func testPutBlockWithDifferentContent(t *testing.T, factory TestableVolumeFactor
 		t.Errorf("Got err putting block %q: %q, expected nil", TEST_BLOCK, err)
 	}
 
-	// Whether Put with the same loc with different content fails or succeeds
-	// is implementation dependent. So, just check loc exists after overwriting.
-	// We also do not want to see if loc has block1 or block2, for the same reason.
-	if err = v.Put(TEST_HASH, TEST_BLOCK_2); err != nil {
-		t.Errorf("Got err putting block with different content %q: %q, expected nil", TEST_BLOCK, err)
+	putErr := v.Put(TEST_HASH, TEST_BLOCK_2)
+	buf, getErr := v.Get(TEST_HASH)
+	if putErr == nil {
+		// Put must not return a nil error unless it has
+		// overwritten the existing data.
+		if bytes.Compare(buf, TEST_BLOCK_2) != 0 {
+			t.Errorf("Put succeeded but Get returned %+v, expected %+v", buf, TEST_BLOCK_2)
+		}
+	} else {
+		// It is permissible for Put to fail, but it must
+		// leave us with either the original data, the new
+		// data, or nothing at all.
+		if getErr == nil && bytes.Compare(buf, TEST_BLOCK) != 0 && bytes.Compare(buf, TEST_BLOCK_2) != 0 {
+			t.Errorf("Put failed but Get returned %+v, which is neither %+v nor %+v", buf, TEST_BLOCK, TEST_BLOCK_2)
+		}
 	}
-	if _, err := v.Get(TEST_HASH); err != nil {
-		t.Errorf("Got err getting block %q: %q, expected nil", TEST_BLOCK, err)
+	if getErr == nil {
+		bufs.Put(buf)
 	}
 }
 
