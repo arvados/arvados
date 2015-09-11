@@ -7,6 +7,7 @@ import (
 	"os/exec"
 	"strings"
 	"testing"
+	"log"
 
 	"git.curoverse.com/arvados.git/sdk/go/arvadostest"
 	check "gopkg.in/check.v1"
@@ -59,6 +60,7 @@ func (s *IntegrationSuite) SetUpTest(c *check.C) {
 		"--file", s.tmpWorkdir+"/.git/config",
 		"credential.http://"+s.testServer.Addr+"/.helper",
 		"!cred(){ cat >/dev/null; if [ \"$1\" = get ]; then echo password=$ARVADOS_API_TOKEN; fi; };cred").Output()
+	log.Printf("integration_test: SetUpTest: wrote git config to %v", s.tmpWorkdir+"/.git/config")
 	c.Assert(err, check.Equals, nil)
 	_, err = exec.Command("git", "config",
 		"--file", s.tmpWorkdir+"/.git/config",
@@ -80,6 +82,7 @@ func (s *IntegrationSuite) SetUpTest(c *check.C) {
 	// Clear ARVADOS_API_TOKEN after starting up the server, to
 	// make sure arv-git-httpd doesn't use it.
 	os.Setenv("ARVADOS_API_TOKEN", "unused-token-placates-client-library")
+
 }
 
 func (s *IntegrationSuite) TearDownTest(c *check.C) {
@@ -116,6 +119,7 @@ func (s *IntegrationSuite) RunGit(c *check.C, token, gitCmd, repo string, args .
 	}, args...)
 	cmd := exec.Command("git", gitargs...)
 	cmd.Env = append(os.Environ(), "ARVADOS_API_TOKEN="+token)
+	log.Printf("integration_test: RunGit: executing command %v", cmd.Args)
 	w, err := cmd.StdinPipe()
 	c.Assert(err, check.Equals, nil)
 	w.Close()

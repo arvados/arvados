@@ -3,6 +3,7 @@ package main
 import (
 	"os"
 	"os/exec"
+	"log"
 
 	check "gopkg.in/check.v1"
 )
@@ -21,6 +22,7 @@ type GitSuite struct {
 }
 
 func (s *GitSuite) TestPathVariants(c *check.C) {
+	log.Printf("server_test: TestPathVariants()")
 	s.makeArvadosRepo(c)
 	for _, repo := range []string{"active/foo.git", "active/foo/.git", "arvados.git", "arvados/.git"} {
 		err := s.RunGit(c, spectatorToken, "fetch", repo)
@@ -29,6 +31,7 @@ func (s *GitSuite) TestPathVariants(c *check.C) {
 }
 
 func (s *GitSuite) TestReadonly(c *check.C) {
+	log.Printf("server_test: TestReadonly()")
 	err := s.RunGit(c, spectatorToken, "fetch", "active/foo.git")
 	c.Assert(err, check.Equals, nil)
 	err = s.RunGit(c, spectatorToken, "push", "active/foo.git", "master:newbranchfail")
@@ -38,6 +41,7 @@ func (s *GitSuite) TestReadonly(c *check.C) {
 }
 
 func (s *GitSuite) TestReadwrite(c *check.C) {
+	log.Printf("server_test: TestReadwrite()")
 	err := s.RunGit(c, activeToken, "fetch", "active/foo.git")
 	c.Assert(err, check.Equals, nil)
 	err = s.RunGit(c, activeToken, "push", "active/foo.git", "master:newbranch")
@@ -47,16 +51,19 @@ func (s *GitSuite) TestReadwrite(c *check.C) {
 }
 
 func (s *GitSuite) TestNonexistent(c *check.C) {
+	log.Printf("server_test: TestNonexistent()")
 	err := s.RunGit(c, spectatorToken, "fetch", "thisrepodoesnotexist.git")
 	c.Assert(err, check.ErrorMatches, `.* not found.*`)
 }
 
 func (s *GitSuite) TestMissingGitdirReadableRepository(c *check.C) {
+	log.Printf("server_test: TestMissingGitdirReadableRepository()")
 	err := s.RunGit(c, activeToken, "fetch", "active/foo2.git")
 	c.Assert(err, check.ErrorMatches, `.* not found.*`)
 }
 
 func (s *GitSuite) TestNoPermission(c *check.C) {
+	log.Printf("server_test: TestNoPermission()")
 	for _, repo := range []string{"active/foo.git", "active/foo/.git"} {
 		err := s.RunGit(c, anonymousToken, "fetch", repo)
 		c.Assert(err, check.ErrorMatches, `.* not found.*`)
@@ -64,6 +71,7 @@ func (s *GitSuite) TestNoPermission(c *check.C) {
 }
 
 func (s *GitSuite) TestExpiredToken(c *check.C) {
+	log.Printf("server_test: TestExpiredToken()")
 	for _, repo := range []string{"active/foo.git", "active/foo/.git"} {
 		err := s.RunGit(c, expiredToken, "fetch", repo)
 		c.Assert(err, check.ErrorMatches, `.* 500 while accessing.*`)
@@ -71,6 +79,7 @@ func (s *GitSuite) TestExpiredToken(c *check.C) {
 }
 
 func (s *GitSuite) TestInvalidToken(c *check.C) {
+	log.Printf("server_test: TestInvalidToken()")
 	for _, repo := range []string{"active/foo.git", "active/foo/.git"} {
 		err := s.RunGit(c, "s3cr3tp@ssw0rd", "fetch", repo)
 		c.Assert(err, check.ErrorMatches, `.* requested URL returned error.*`)
@@ -78,6 +87,7 @@ func (s *GitSuite) TestInvalidToken(c *check.C) {
 }
 
 func (s *GitSuite) TestShortToken(c *check.C) {
+	log.Printf("server_test: TestShortToken()")
 	for _, repo := range []string{"active/foo.git", "active/foo/.git"} {
 		err := s.RunGit(c, "s3cr3t", "fetch", repo)
 		c.Assert(err, check.ErrorMatches, `.* 500 while accessing.*`)
@@ -85,6 +95,7 @@ func (s *GitSuite) TestShortToken(c *check.C) {
 }
 
 func (s *GitSuite) TestShortTokenBadReq(c *check.C) {
+	log.Printf("server_test: TestShortTokenBadReq()")
 	for _, repo := range []string{"bogus"} {
 		err := s.RunGit(c, "s3cr3t", "fetch", repo)
 		c.Assert(err, check.ErrorMatches, `.* requested URL returned error.*`)
