@@ -48,8 +48,8 @@ func DoGenericVolumeTests(t *testing.T, factory TestableVolumeFactory) {
 
 	testWritableTrue(t, factory)
 
-	testGetSerialized(t, factory)
-	testPutSerialized(t, factory)
+	testGetConcurrent(t, factory)
+	testPutConcurrent(t, factory)
 }
 
 // DoGenericReadOnlyVolumeTests runs a set of tests that every
@@ -71,6 +71,9 @@ func testGet(t *testing.T, factory TestableVolumeFactory) {
 	if err != nil {
 		t.Error(err)
 	}
+
+	bufs.Put(buf)
+
 	if bytes.Compare(buf, TEST_BLOCK) != 0 {
 		t.Errorf("expected %s, got %s", string(TEST_BLOCK), string(buf))
 	}
@@ -198,23 +201,29 @@ func testPutMultipleBlocks(t *testing.T, factory TestableVolumeFactory) {
 		t.Errorf("Got err putting block %q: %q, expected nil", TEST_BLOCK_3, err)
 	}
 
-	if data, err := v.Get(TEST_HASH); err != nil {
+	data, err := v.Get(TEST_HASH)
+	if err != nil {
 		t.Error(err)
 	} else if bytes.Compare(data, TEST_BLOCK) != 0 {
 		t.Errorf("Block present, but content is incorrect: Expected: %v  Found: %v", data, TEST_BLOCK)
 	}
+	bufs.Put(data)
 
-	if data, err := v.Get(TEST_HASH_2); err != nil {
+	data, err = v.Get(TEST_HASH_2)
+	if err != nil {
 		t.Error(err)
 	} else if bytes.Compare(data, TEST_BLOCK_2) != 0 {
 		t.Errorf("Block present, but content is incorrect: Expected: %v  Found: %v", data, TEST_BLOCK_2)
 	}
+	bufs.Put(data)
 
-	if data, err := v.Get(TEST_HASH_3); err != nil {
+	data, err = v.Get(TEST_HASH_3)
+	if err != nil {
 		t.Error(err)
 	} else if bytes.Compare(data, TEST_BLOCK_3) != 0 {
 		t.Errorf("Block present, but content is incorrect: Expected: %v  Found: %v", data, TEST_BLOCK_3)
 	}
+	bufs.Put(data)
 }
 
 // testPutAndTouch
@@ -261,11 +270,7 @@ func testTouchNoSuchBlock(t *testing.T, factory TestableVolumeFactory) {
 	v := factory(t)
 	defer v.Teardown()
 
-	if err := v.Put(TEST_HASH, TEST_BLOCK); err != nil {
-		t.Error(err)
-	}
-
-	if err := v.Touch(TEST_HASH); err != nil {
+	if err := v.Touch(TEST_HASH); err == nil {
 		t.Error("Expected error when attempted to touch a non-existing block")
 	}
 }
@@ -341,11 +346,13 @@ func testDeleteNewBlock(t *testing.T, factory TestableVolumeFactory) {
 	if err := v.Delete(TEST_HASH); err != nil {
 		t.Error(err)
 	}
-	if data, err := v.Get(TEST_HASH); err != nil {
+	data, err := v.Get(TEST_HASH)
+	if err != nil {
 		t.Error(err)
 	} else if bytes.Compare(data, TEST_BLOCK) != 0 {
 		t.Error("Block still present, but content is incorrect: %+v != %+v", data, TEST_BLOCK)
 	}
+	bufs.Put(data)
 }
 
 // Calling Delete() for a block with a timestamp older than
@@ -437,9 +444,13 @@ func testUpdateReadOnly(t *testing.T, factory TestableVolumeFactory) {
 		t.Errorf("got err %v, expected nil", err)
 	}
 
-	err = v.Put(TEST_HASH, TEST_BLOCK)
+	err = v.Put(TEST_HASH_2, TEST_BLOCK_2)
 	if err == nil {
 		t.Errorf("Expected error when putting block in a read-only volume")
+	}
+	_, err = v.Get(TEST_HASH_2)
+	if err == nil {
+		t.Errorf("Expected error when getting block whose put in read-only volume failed")
 	}
 
 	err = v.Touch(TEST_HASH)
@@ -453,22 +464,8 @@ func testUpdateReadOnly(t *testing.T, factory TestableVolumeFactory) {
 	}
 }
 
-// Serialization tests: launch a bunch of concurrent
-//
-// TODO(twp): show that the underlying Read/Write operations executed
-// serially and not concurrently. The easiest way to do this is
-// probably to activate verbose or debug logging, capture log output
-// and examine it to confirm that Reads and Writes did not overlap.
-//
-// TODO(twp): a proper test of I/O serialization requires that a
-// second request start while the first one is still underway.
-// Guaranteeing that the test behaves this way requires some tricky
-// synchronization and mocking.  For now we'll just launch a bunch of
-// requests simultaenously in goroutines and demonstrate that they
-// return accurate results.
-//
-
-func testGetSerialized(t *testing.T, factory TestableVolumeFactory) {
+// Launch concurrent Gets
+func testGetConcurrent(t *testing.T, factory TestableVolumeFactory) {
 	v := factory(t)
 	defer v.Teardown()
 
@@ -482,6 +479,7 @@ func testGetSerialized(t *testing.T, factory TestableVolumeFactory) {
 		if err != nil {
 			t.Errorf("err1: %v", err)
 		}
+		bufs.Put(buf)
 		if bytes.Compare(buf, TEST_BLOCK) != 0 {
 			t.Errorf("buf should be %s, is %s", string(TEST_BLOCK), string(buf))
 		}
@@ -493,6 +491,7 @@ func testGetSerialized(t *testing.T, factory TestableVolumeFactory) {
 		if err != nil {
 			t.Errorf("err2: %v", err)
 		}
+		bufs.Put(buf)
 		if bytes.Compare(buf, TEST_BLOCK_2) != 0 {
 			t.Errorf("buf should be %s, is %s", string(TEST_BLOCK_2), string(buf))
 		}
@@ -504,6 +503,7 @@ func testGetSerialized(t *testing.T, factory TestableVolumeFactory) {
 		if err != nil {
 			t.Errorf("err3: %v", err)
 		}
+		bufs.Put(buf)
 		if bytes.Compare(buf, TEST_BLOCK_3) != 0 {
 			t.Errorf("buf should be %s, is %s", string(TEST_BLOCK_3), string(buf))
 		}
@@ -516,7 +516,8 @@ func testGetSerialized(t *testing.T, factory TestableVolumeFactory) {
 	}
 }
 
-func testPutSerialized(t *testing.T, factory TestableVolumeFactory) {
+// Launch concurrent Puts
+func testPutConcurrent(t *testing.T, factory TestableVolumeFactory) {
 	v := factory(t)
 	defer v.Teardown()
 
@@ -555,6 +556,7 @@ func testPutSerialized(t *testing.T, factory TestableVolumeFactory) {
 	if err != nil {
 		t.Errorf("Get #1: %v", err)
 	}
+	bufs.Put(buf)
 	if bytes.Compare(buf, TEST_BLOCK) != 0 {
 		t.Errorf("Get #1: expected %s, got %s", string(TEST_BLOCK), string(buf))
 	}
@@ -563,6 +565,7 @@ func testPutSerialized(t *testing.T, factory TestableVolumeFactory) {
 	if err != nil {
 		t.Errorf("Get #2: %v", err)
 	}
+	bufs.Put(buf)
 	if bytes.Compare(buf, TEST_BLOCK_2) != 0 {
 		t.Errorf("Get #2: expected %s, got %s", string(TEST_BLOCK_2), string(buf))
 	}
@@ -571,6 +574,7 @@ func testPutSerialized(t *testing.T, factory TestableVolumeFactory) {
 	if err != nil {
 		t.Errorf("Get #3: %v", err)
 	}
+	bufs.Put(buf)
 	if bytes.Compare(buf, TEST_BLOCK_3) != 0 {
 		t.Errorf("Get #3: expected %s, got %s", string(TEST_BLOCK_3), string(buf))
 	}

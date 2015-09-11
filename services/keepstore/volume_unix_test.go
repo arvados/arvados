@@ -70,9 +70,21 @@ func TestUnixVolumeWithGenericTests(t *testing.T) {
 	})
 }
 
+func TestUnixVolumeWithGenericTestsSerialized(t *testing.T) {
+	DoGenericVolumeTests(t, func(t *testing.T) TestableVolume {
+		return NewTestableUnixVolume(t, true, false)
+	})
+}
+
 func TestUnixReadOnlyVolumeWithGenericTests(t *testing.T) {
 	DoGenericReadOnlyVolumeTests(t, func(t *testing.T) TestableVolume {
 		return NewTestableUnixVolume(t, false, true)
+	})
+}
+
+func TestUnixReadOnlyVolumeWithGenericTestsSerialized(t *testing.T) {
+	DoGenericReadOnlyVolumeTests(t, func(t *testing.T) TestableVolume {
+		return NewTestableUnixVolume(t, true, true)
 	})
 }
 
@@ -281,3 +293,15 @@ func TestUnixVolumeCompare(t *testing.T) {
 		t.Errorf("Got err %q, expected %q", err, "permission denied")
 	}
 }
+
+// TODO(twp): show that the underlying Read/Write operations executed
+// serially and not concurrently. The easiest way to do this is
+// probably to activate verbose or debug logging, capture log output
+// and examine it to confirm that Reads and Writes did not overlap.
+//
+// TODO(twp): a proper test of I/O serialization requires that a
+// second request start while the first one is still underway.
+// Guaranteeing that the test behaves this way requires some tricky
+// synchronization and mocking.  For now we'll just launch a bunch of
+// requests simultaenously in goroutines and demonstrate that they
+// return accurate results.
