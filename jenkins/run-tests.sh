@@ -300,12 +300,11 @@ fi
 # Set up temporary install dirs (unless existing dirs were supplied)
 for tmpdir in VENVDIR VENV3DIR GOPATH GEMHOME PERLINSTALLBASE
 do
-    if [[ -n "${!tmpdir}" ]]; then
-        # Support old user-named temp dirs (but --temp {base} would
-        # be more convenient)
-        mkdir -p "${!tmpdir}"
-    else
+    if [[ -z "${!tmpdir}" ]]; then
         eval "$tmpdir"="$temp/$tmpdir"
+    fi
+    if ! [[ -d "${!tmpdir}" ]]; then
+        mkdir "${!tmpdir}" || fatal "can't create ${!tmpdir} (does $temp exist?)"
     fi
 done
 
