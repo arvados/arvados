@@ -57,7 +57,13 @@ type Volume interface {
 	//
 	// If a block is already stored under the same name (loc) with
 	// different content, Put must either overwrite the existing
-	// data with the new data or return a non-nil error.
+	// data with the new data or return a non-nil error. When
+	// overwriting existing data, it must never leave the storage
+	// device in an inconsistent state: a subsequent call to Get
+	// must return either the entire old block, the entire new
+	// block, or an error. (An implementation that cannot peform
+	// atomic updates must leave the old data alone and return an
+	// error.)
 	//
 	// Put also sets the timestamp for the given locator to the
 	// current time.
