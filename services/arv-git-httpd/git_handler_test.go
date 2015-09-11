@@ -6,6 +6,7 @@ import (
 	"net/url"
 	"os"
 	"regexp"
+	"log"
 
 	check "gopkg.in/check.v1"
 )
@@ -15,6 +16,7 @@ var _ = check.Suite(&GitHandlerSuite{})
 type GitHandlerSuite struct{}
 
 func (s *GitHandlerSuite) TestEnvVars(c *check.C) {
+	log.Printf("git_handler_test: TestEnvVars()")
 	u, err := url.Parse("git.zzzzz.arvadosapi.com/test")
 	c.Check(err, check.Equals, nil)
 	resp := httptest.NewRecorder()

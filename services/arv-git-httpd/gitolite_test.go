@@ -4,6 +4,7 @@ import (
 	"os"
 	"os/exec"
 	"io/ioutil"
+	"log"
 
 	check "gopkg.in/check.v1"
 )
@@ -60,16 +61,19 @@ func (s *GitoliteSuite) TearDownTest(c *check.C) {
 }
 
 func (s *GitoliteSuite) TestFetch(c *check.C) {
+	log.Printf("gitolite_test: TestFetch()")
 	err := s.RunGit(c, activeToken, "fetch", "active/foo.git")
 	c.Check(err, check.Equals, nil)
 }
 
 func (s *GitoliteSuite) TestFetchUnreadable(c *check.C) {
+	log.Printf("gitolite_test: TestFetchUnreadable()")
 	err := s.RunGit(c, anonymousToken, "fetch", "active/foo.git")
 	c.Check(err, check.ErrorMatches, `.* not found.*`)
 }
 
 func (s *GitoliteSuite) TestPush(c *check.C) {
+	log.Printf("gitolite_test: TestPush()")
 	err := s.RunGit(c, activeToken, "push", "active/foo.git")
 	c.Check(err, check.Equals, nil)
 
@@ -88,6 +92,7 @@ func (s *GitoliteSuite) TestPush(c *check.C) {
 }
 
 func (s *GitoliteSuite) TestPushUnwritable(c *check.C) {
+	log.Printf("gitolite_test: TestPushUnwritable()")
 	err := s.RunGit(c, spectatorToken, "push", "active/foo.git")
 	c.Check(err, check.ErrorMatches, `.*HTTP code = 403.*`)
 }
