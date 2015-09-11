@@ -25,7 +25,7 @@ func (s *GitHandlerSuite) TestEnvVars(c *check.C) {
 	}
 	h := newGitHandler()
 	h.(*gitHandler).Path = "/bin/sh"
-	h.(*gitHandler).Args = []string{"-c", "echo HTTP/1.1 200 OK; echo Content-Type: text/plain; echo; env"}
+	h.(*gitHandler).Args = []string{"-c", "printf 'Content-Type: text/plain\r\n\r\n'; env"}
 	os.Setenv("GITOLITE_HTTP_HOME", "/test/ghh")
 	os.Setenv("GL_BYPASS_ACCESS_CHECKS", "yesplease")
 
@@ -41,13 +41,14 @@ func (s *GitHandlerSuite) TestEnvVars(c *check.C) {
 }
 
 func (s *GitHandlerSuite) TestCGIError(c *check.C) {
+	log.Printf("git_handler_test: TestCGIError() - expecting a SplitHostPort error, so it is safe to ignore!")
 	u, err := url.Parse("git.zzzzz.arvadosapi.com/test")
 	c.Check(err, check.Equals, nil)
 	resp := httptest.NewRecorder()
 	req := &http.Request{
 		Method:     "GET",
 		URL:        u,
-		RemoteAddr: "bogus",
+		RemoteAddr: "bogus", // intentionally invalid (will trigger SplitHostPort error below)
 	}
 	h := newGitHandler()
 	h.ServeHTTP(resp, req)
