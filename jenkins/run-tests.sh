@@ -14,9 +14,11 @@ Options:
 
 --skip FOO     Do not test the FOO component.
 --only FOO     Do not test anything except the FOO component.
+--temp DIR     Install components and dependencies under DIR instead of
+               making a new temporary directory. Implies --leave-temp.
 --leave-temp   Do not remove GOPATH, virtualenv, and other temp dirs at exit.
-               Instead, show which directories were used this time so they
-               can be reused in subsequent invocations.
+               Instead, show the path to give as --temp to reuse them in
+               subsequent invocations.
 --skip-install Do not run any install steps. Just run tests.
                You should provide GOPATH, GEMHOME, and VENVDIR options
                from a previous invocation if you use this option.
@@ -91,26 +93,18 @@ PERLINSTALLBASE=
 
 COLUMNS=80
 
-leave_temp=
 skip_install=
+temp=
+temp_preserve=
 
-declare -A leave_temp
 clear_temp() {
-    leaving=""
-    for var in VENVDIR VENV3DIR GOPATH GITDIR GEMHOME PERLINSTALLBASE
-    do
-        if [[ -z "${leave_temp[$var]}" ]]
-        then
-            if [[ -n "${!var}" ]]
-            then
-                rm -rf "${!var}"
-            fi
-        else
-            leaving+=" $var=\"${!var}\""
-        fi
-    done
-    if [[ -n "$leaving" ]]; then
-        echo "Leaving behind temp dirs: $leaving"
+    if [[ -z "$temp" ]]; then
+        # we didn't even get as far as making a temp dir
+        :
+    elif [[ -z "$temp_preserve" ]]; then
+        rm -rf "$temp"
+    else
+        echo "Leaving behind temp dirs in $temp"
     fi
 }
 
@@ -222,12 +216,12 @@ do
             skip_install=1
             only_install="$1"; shift
             ;;
+        --temp)
+            temp="$1"; shift
+            temp_preserve=1
+            ;;
         --leave-temp)
-            leave_temp[VENVDIR]=1
-            leave_temp[VENV3DIR]=1
-            leave_temp[GOPATH]=1
-            leave_temp[GEMHOME]=1
-            leave_temp[PERLINSTALLBASE]=1
+            temp_preserve=1
             ;;
         --retry)
             retry=1
@@ -299,14 +293,18 @@ fi
 cd "$WORKSPACE"
 find -name '*.pyc' -delete
 
+if [[ -z "$temp" ]]; then
+    temp="$(mktemp -d)"
+fi
+
 # Set up temporary install dirs (unless existing dirs were supplied)
 for tmpdir in VENVDIR VENV3DIR GOPATH GEMHOME PERLINSTALLBASE
 do
-    if [[ -n "${!tmpdir}" ]]; then
-        leave_temp[$tmpdir]=1
-        mkdir -p "${!tmpdir}"
-    else
-        eval "$tmpdir"='$(mktemp -d)'
+    if [[ -z "${!tmpdir}" ]]; then
+        eval "$tmpdir"="$temp/$tmpdir"
+    fi
+    if ! [[ -d "${!tmpdir}" ]]; then
+        mkdir "${!tmpdir}" || fatal "can't create ${!tmpdir} (does $temp exist?)"
     fi
 done
 
