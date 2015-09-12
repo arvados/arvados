@@ -27,21 +27,22 @@ import (
 
 // Default TCP address on which to listen for requests.
 // Initialized by the --listen flag.
-const DEFAULT_ADDR = ":25107"
+const DefaultAddr = ":25107"
 
 // A Keep "block" is 64MB.
-const BLOCKSIZE = 64 * 1024 * 1024
+const BlockSize = 64 * 1024 * 1024
 
-// A Keep volume must have at least MIN_FREE_KILOBYTES available
+// A Keep volume must have at least MinFreeKilobytes available
 // in order to permit writes.
-const MIN_FREE_KILOBYTES = BLOCKSIZE / 1024
+const MinFreeKilobytes = BlockSize / 1024
 
-var PROC_MOUNTS = "/proc/mounts"
+// ProcMounts /proc/mounts
+var ProcMounts = "/proc/mounts"
 
-// enforce_permissions controls whether permission signatures
+// enforcePermissions controls whether permission signatures
 // should be enforced (affecting GET and DELETE requests).
 // Initialized by the -enforce-permissions flag.
-var enforce_permissions bool
+var enforcePermissions bool
 
 // blob_signature_ttl is the time duration for which new permission
 // signatures (returned by PUT requests) will be valid.
@@ -60,8 +61,7 @@ var never_delete = true
 var maxBuffers = 128
 var bufs *bufferPool
 
-// ==========
-// Error types.
+// KeepError types.
 //
 type KeepError struct {
 	HTTPCode int
@@ -161,15 +161,15 @@ func (vs *volumeSet) String() string {
 // other than "/". It returns the number of volumes added.
 func (vs *volumeSet) Discover() int {
 	added := 0
-	f, err := os.Open(PROC_MOUNTS)
+	f, err := os.Open(ProcMounts)
 	if err != nil {
-		log.Fatalf("opening %s: %s", PROC_MOUNTS, err)
+		log.Fatalf("opening %s: %s", ProcMounts, err)
 	}
 	scanner := bufio.NewScanner(f)
 	for scanner.Scan() {
 		args := strings.Fields(scanner.Text())
 		if err := scanner.Err(); err != nil {
-			log.Fatalf("reading %s: %s", PROC_MOUNTS, err)
+			log.Fatalf("reading %s: %s", ProcMounts, err)
 		}
 		dev, mount := args[0], args[1]
 		if mount == "/" {
@@ -225,14 +225,14 @@ func main() {
 		"File with the API token used by the Data Manager. All DELETE "+
 			"requests or GET /index requests must carry this token.")
 	flag.BoolVar(
-		&enforce_permissions,
+		&enforcePermissions,
 		"enforce-permissions",
 		false,
 		"Enforce permission signatures on requests.")
 	flag.StringVar(
 		&listen,
 		"listen",
-		DEFAULT_ADDR,
+		DefaultAddr,
 		"Listening address, in the form \"host:port\". e.g., 10.0.1.24:8000. Omit the host part to listen on all interfaces.")
 	flag.BoolVar(
 		&never_delete,
@@ -289,7 +289,7 @@ func main() {
 		&maxBuffers,
 		"max-buffers",
 		maxBuffers,
-		fmt.Sprintf("Maximum RAM to use for data buffers, given in multiples of block size (%d MiB). When this limit is reached, HTTP requests requiring buffers (like GET and PUT) will wait for buffer space to be released.", BLOCKSIZE>>20))
+		fmt.Sprintf("Maximum RAM to use for data buffers, given in multiples of block size (%d MiB). When this limit is reached, HTTP requests requiring buffers (like GET and PUT) will wait for buffer space to be released.", BlockSize>>20))
 
 	flag.Parse()
 
@@ -300,7 +300,7 @@ func main() {
 	if maxBuffers < 0 {
 		log.Fatal("-max-buffers must be greater than zero.")
 	}
-	bufs = newBufferPool(maxBuffers, BLOCKSIZE)
+	bufs = newBufferPool(maxBuffers, BlockSize)
 
 	if pidfile != "" {
 		f, err := os.OpenFile(pidfile, os.O_RDWR|os.O_CREATE, 0777)
@@ -358,7 +358,7 @@ func main() {
 	blob_signature_ttl = time.Duration(permission_ttl_sec) * time.Second
 
 	if PermissionSecret == nil {
-		if enforce_permissions {
+		if enforcePermissions {
 			log.Fatal("-enforce-permissions requires a permission key")
 		} else {
 			log.Println("Running without a PermissionSecret. Block locators " +

@@ -36,7 +36,7 @@ type Volume interface {
 	// access log if the block is not found on any other volumes
 	// either).
 	//
-	// If the data in the backing store is bigger than BLOCKSIZE,
+	// If the data in the backing store is bigger than BlockSize,
 	// Get is permitted to return an error without reading any of
 	// the data.
 	Get(loc string) ([]byte, error)
@@ -52,7 +52,7 @@ type Volume interface {
 	//
 	// loc is as described in Get.
 	//
-	// len(block) is guaranteed to be between 0 and BLOCKSIZE.
+	// len(block) is guaranteed to be between 0 and BlockSize.
 	//
 	// If a block is already stored under the same name (loc) with
 	// different content, Put must either overwrite the existing

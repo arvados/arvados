@@ -79,7 +79,7 @@ func (v *UnixVolume) stat(path string) (os.FileInfo, error) {
 	if err == nil {
 		if stat.Size() < 0 {
 			err = os.ErrInvalid
-		} else if stat.Size() > BLOCKSIZE {
+		} else if stat.Size() > BlockSize {
 			err = TooLongError
 		}
 	}
@@ -343,7 +343,7 @@ func (v *UnixVolume) blockPath(loc string) string {
 }
 
 // IsFull returns true if the free space on the volume is less than
-// MIN_FREE_KILOBYTES.
+// MinFreeKilobytes.
 //
 func (v *UnixVolume) IsFull() (isFull bool) {
 	fullSymlink := v.root + "/full"
@@ -359,7 +359,7 @@ func (v *UnixVolume) IsFull() (isFull bool) {
 	}
 
 	if avail, err := v.FreeDiskSpace(); err == nil {
-		isFull = avail < MIN_FREE_KILOBYTES
+		isFull = avail < MinFreeKilobytes
 	} else {
 		log.Printf("%s: FreeDiskSpace: %s\n", v, err)
 		isFull = false

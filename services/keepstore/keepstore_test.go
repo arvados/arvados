@@ -309,7 +309,7 @@ func TestDiscoverTmpfs(t *testing.T) {
 		}
 	}
 
-	// Set up a bogus PROC_MOUNTS file.
+	// Set up a bogus ProcMounts file.
 	f, err := ioutil.TempFile("", "keeptest")
 	if err != nil {
 		t.Fatal(err)
@@ -327,7 +327,7 @@ func TestDiscoverTmpfs(t *testing.T) {
 		fmt.Fprintf(f, "tmpfs %s tmpfs %s 0 0\n", path.Dir(vol), opts)
 	}
 	f.Close()
-	PROC_MOUNTS = f.Name()
+	ProcMounts = f.Name()
 
 	var resultVols volumeSet
 	added := resultVols.Discover()
@@ -355,7 +355,7 @@ func TestDiscoverTmpfs(t *testing.T) {
 func TestDiscoverNone(t *testing.T) {
 	defer teardown()
 
-	// Set up a bogus PROC_MOUNTS file with no Keep vols.
+	// Set up a bogus ProcMounts file with no Keep vols.
 	f, err := ioutil.TempFile("", "keeptest")
 	if err != nil {
 		t.Fatal(err)
@@ -367,7 +367,7 @@ func TestDiscoverNone(t *testing.T) {
 	fmt.Fprintln(f, "udev /dev devtmpfs opts 0 0")
 	fmt.Fprintln(f, "devpts /dev/pts devpts opts 0 0")
 	f.Close()
-	PROC_MOUNTS = f.Name()
+	ProcMounts = f.Name()
 
 	var resultVols volumeSet
 	added := resultVols.Discover()
@@ -431,7 +431,7 @@ func MakeTestVolumeManager(num_volumes int) VolumeManager {
 // teardown cleans up after each test.
 func teardown() {
 	data_manager_token = ""
-	enforce_permissions = false
+	enforcePermissions = false
 	PermissionSecret = nil
 	KeepVM = nil
 }

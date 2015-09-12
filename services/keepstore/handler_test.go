@@ -52,7 +52,7 @@ func TestGetHandler(t *testing.T) {
 
 	// Create locators for testing.
 	// Turn on permission settings so we can generate signed locators.
-	enforce_permissions = true
+	enforcePermissions = true
 	PermissionSecret = []byte(known_key)
 	blob_signature_ttl = 300 * time.Second
 
@@ -66,7 +66,7 @@ func TestGetHandler(t *testing.T) {
 
 	// -----------------
 	// Test unauthenticated request with permissions off.
-	enforce_permissions = false
+	enforcePermissions = false
 
 	// Unauthenticated request, unsigned locator
 	// => OK
@@ -90,7 +90,7 @@ func TestGetHandler(t *testing.T) {
 
 	// ----------------
 	// Permissions: on.
-	enforce_permissions = true
+	enforcePermissions = true
 
 	// Authenticated request, signed locator
 	// => OK
@@ -274,7 +274,7 @@ func TestPutAndDeleteSkipReadonlyVolumes(t *testing.T) {
 //   - authenticated   /index/prefix request | superuser
 //
 // The only /index requests that should succeed are those issued by the
-// superuser. They should pass regardless of the value of enforce_permissions.
+// superuser. They should pass regardless of the value of enforcePermissions.
 //
 func TestIndexHandler(t *testing.T) {
 	defer teardown()
@@ -326,15 +326,15 @@ func TestIndexHandler(t *testing.T) {
 	// Only the superuser should be allowed to issue /index requests.
 
 	// ---------------------------
-	// enforce_permissions enabled
+	// enforcePermissions enabled
 	// This setting should not affect tests passing.
-	enforce_permissions = true
+	enforcePermissions = true
 
 	// unauthenticated /index request
 	// => UnauthorizedError
 	response := IssueRequest(unauthenticatedReq)
 	ExpectStatusCode(t,
-		"enforce_permissions on, unauthenticated request",
+		"enforcePermissions on, unauthenticated request",
 		UnauthorizedError.HTTPCode,
 		response)
 
@@ -371,9 +371,9 @@ func TestIndexHandler(t *testing.T) {
 		response)
 
 	// ----------------------------
-	// enforce_permissions disabled
+	// enforcePermissions disabled
 	// Valid Request should still pass.
-	enforce_permissions = false
+	enforcePermissions = false
 
 	// superuser /index request
 	// => OK
@@ -822,7 +822,7 @@ func TestPutNeedsOnlyOneBuffer(t *testing.T) {
 	defer func(orig *bufferPool) {
 		bufs = orig
 	}(bufs)
-	bufs = newBufferPool(1, BLOCKSIZE)
+	bufs = newBufferPool(1, BlockSize)
 
 	ok := make(chan struct{})
 	go func() {
