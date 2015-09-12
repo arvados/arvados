@@ -1,7 +1,3 @@
-// A Volume is an interface representing a Keep back-end storage unit:
-// for example, a single mounted disk, a RAID array, an Amazon S3 volume,
-// etc.
-
 package main
 
 import (
@@ -10,6 +6,9 @@ import (
 	"time"
 )
 
+// A Volume is an interface representing a Keep back-end storage unit:
+// for example, a single mounted disk, a RAID array, an Amazon S3 volume,
+// etc.
 type Volume interface {
 	// Get a block. IFF the returned error is nil, the caller must
 	// put the returned slice back into the buffer pool when it's
@@ -228,6 +227,7 @@ type RRVolumeManager struct {
 	counter   uint32
 }
 
+// MakeRRVolumeManager initializes RRVolumeManager
 func MakeRRVolumeManager(volumes []Volume) *RRVolumeManager {
 	vm := &RRVolumeManager{}
 	for _, v := range volumes {
@@ -239,14 +239,17 @@ func MakeRRVolumeManager(volumes []Volume) *RRVolumeManager {
 	return vm
 }
 
+// AllReadable returns an array of all readable volumes
 func (vm *RRVolumeManager) AllReadable() []Volume {
 	return vm.readables
 }
 
+// AllWritable returns an array of all writable volumes
 func (vm *RRVolumeManager) AllWritable() []Volume {
 	return vm.writables
 }
 
+// NextWritable returns the next writable
 func (vm *RRVolumeManager) NextWritable() Volume {
 	if len(vm.writables) == 0 {
 		return nil
@@ -255,10 +258,11 @@ func (vm *RRVolumeManager) NextWritable() Volume {
 	return vm.writables[i%uint32(len(vm.writables))]
 }
 
+// Close the RRVolumeManager
 func (vm *RRVolumeManager) Close() {
 }
 
-// VolumeStatus
+// VolumeStatus provides status information of the volume consisting of:
 //   * mount_point
 //   * device_num (an integer identifying the underlying storage system)
 //   * bytes_free

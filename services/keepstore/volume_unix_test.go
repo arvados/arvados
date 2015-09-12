@@ -163,17 +163,17 @@ func TestIsFull(t *testing.T) {
 	v := NewTestableUnixVolume(t, false, false)
 	defer v.Teardown()
 
-	full_path := v.root + "/full"
+	fullPath := v.root + "/full"
 	now := fmt.Sprintf("%d", time.Now().Unix())
-	os.Symlink(now, full_path)
+	os.Symlink(now, fullPath)
 	if !v.IsFull() {
 		t.Errorf("%s: claims not to be full", v)
 	}
-	os.Remove(full_path)
+	os.Remove(fullPath)
 
 	// Test with an expired /full link.
 	expired := fmt.Sprintf("%d", time.Now().Unix()-3605)
-	os.Symlink(expired, full_path)
+	os.Symlink(expired, fullPath)
 	if v.IsFull() {
 		t.Errorf("%s: should no longer be full", v)
 	}

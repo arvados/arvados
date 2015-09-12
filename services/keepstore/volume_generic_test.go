@@ -299,18 +299,18 @@ func testIndexTo(t *testing.T, factory TestableVolumeFactory) {
 
 	buf := new(bytes.Buffer)
 	v.IndexTo("", buf)
-	index_rows := strings.Split(string(buf.Bytes()), "\n")
-	sort.Strings(index_rows)
-	sorted_index := strings.Join(index_rows, "\n")
+	indexRows := strings.Split(string(buf.Bytes()), "\n")
+	sort.Strings(indexRows)
+	sortedIndex := strings.Join(indexRows, "\n")
 	m, err := regexp.MatchString(
 		`^\n`+TEST_HASH+`\+\d+ \d+\n`+
 			TEST_HASH_3+`\+\d+ \d+\n`+
 			TEST_HASH_2+`\+\d+ \d+$`,
-		sorted_index)
+		sortedIndex)
 	if err != nil {
 		t.Error(err)
 	} else if !m {
-		t.Errorf("Got index %q for empty prefix", sorted_index)
+		t.Errorf("Got index %q for empty prefix", sortedIndex)
 	}
 
 	for _, prefix := range []string{"f", "f15", "f15ac"} {
