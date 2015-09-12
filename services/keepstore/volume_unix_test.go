@@ -64,27 +64,24 @@ func (v *TestableUnixVolume) Teardown() {
 	}
 }
 
+// serialize = false; readonly = false
 func TestUnixVolumeWithGenericTests(t *testing.T) {
 	DoGenericVolumeTests(t, func(t *testing.T) TestableVolume {
 		return NewTestableUnixVolume(t, false, false)
 	})
 }
 
-func TestUnixVolumeWithGenericTestsSerialized(t *testing.T) {
+// serialize = false; readonly = true
+func TestUnixVolumeWithGenericTestsReadOnly(t *testing.T) {
 	DoGenericVolumeTests(t, func(t *testing.T) TestableVolume {
-		return NewTestableUnixVolume(t, true, false)
-	})
-}
-
-func TestUnixReadOnlyVolumeWithGenericTests(t *testing.T) {
-	DoGenericReadOnlyVolumeTests(t, func(t *testing.T) TestableVolume {
 		return NewTestableUnixVolume(t, false, true)
 	})
 }
 
-func TestUnixReadOnlyVolumeWithGenericTestsSerialized(t *testing.T) {
-	DoGenericReadOnlyVolumeTests(t, func(t *testing.T) TestableVolume {
-		return NewTestableUnixVolume(t, true, true)
+// serialize = true; readonly = false
+func TestUnixVolumeWithGenericTestsSerialized(t *testing.T) {
+	DoGenericVolumeTests(t, func(t *testing.T) TestableVolume {
+		return NewTestableUnixVolume(t, true, false)
 	})
 }
 

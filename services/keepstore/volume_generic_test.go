@@ -11,14 +11,13 @@ import (
 )
 
 // A TestableVolumeFactory returns a new TestableVolume. The factory
-// function, and the TestableVolume it returns, can use t to write
+// function, and the TestableVolume it returns, can use "t" to write
 // logs, fail the current test, etc.
 type TestableVolumeFactory func(t *testing.T) TestableVolume
 
 // DoGenericVolumeTests runs a set of tests that every TestableVolume
-// is expected to pass. It calls factory to create a new writable
-// TestableVolume for each test case, to avoid leaking state between
-// tests.
+// is expected to pass. It calls factory to create a new TestableVolume
+// for each test case, to avoid leaking state between tests.
 func DoGenericVolumeTests(t *testing.T, factory TestableVolumeFactory) {
 	testGet(t, factory)
 	testGetNoSuchBlock(t, factory)
@@ -46,26 +45,19 @@ func DoGenericVolumeTests(t *testing.T, factory TestableVolumeFactory) {
 
 	testString(t, factory)
 
-	testWritableTrue(t, factory)
+	testUpdateReadOnly(t, factory)
 
 	testGetConcurrent(t, factory)
 	testPutConcurrent(t, factory)
 }
 
-// DoGenericReadOnlyVolumeTests runs a set of tests that every
-// read-only TestableVolume is expected to pass. It calls factory
-// to create a new read-only TestableVolume for each test case,
-// to avoid leaking state between tests.
-func DoGenericReadOnlyVolumeTests(t *testing.T, factory TestableVolumeFactory) {
-	testWritableFalse(t, factory)
-	testUpdateReadOnly(t, factory)
-}
-
 // Put a test block, get it and verify content
+// Test should pass for both writable and read-only volumes
 func testGet(t *testing.T, factory TestableVolumeFactory) {
 	v := factory(t)
 	defer v.Teardown()
-	v.Put(TEST_HASH, TEST_BLOCK)
+
+	v.PutRaw(TEST_HASH, TEST_BLOCK)
 
 	buf, err := v.Get(TEST_HASH)
 	if err != nil {
@@ -80,10 +72,10 @@ func testGet(t *testing.T, factory TestableVolumeFactory) {
 }
 
 // Invoke get on a block that does not exist in volume; should result in error
+// Test should pass for both writable and read-only volumes
 func testGetNoSuchBlock(t *testing.T, factory TestableVolumeFactory) {
 	v := factory(t)
 	defer v.Teardown()
-	v.Put(TEST_HASH, TEST_BLOCK)
 
 	if _, err := v.Get(TEST_HASH_2); err == nil {
 		t.Errorf("Expected error while getting non-existing block %v", TEST_HASH_2)
@@ -91,11 +83,12 @@ func testGetNoSuchBlock(t *testing.T, factory TestableVolumeFactory) {
 }
 
 // Put a test block and compare the locator with same content
+// Test should pass for both writable and read-only volumes
 func testCompareSameContent(t *testing.T, factory TestableVolumeFactory) {
 	v := factory(t)
 	defer v.Teardown()
 
-	v.Put(TEST_HASH, TEST_BLOCK)
+	v.PutRaw(TEST_HASH, TEST_BLOCK)
 
 	// Compare the block locator with same content
 	err := v.Compare(TEST_HASH, TEST_BLOCK)
@@ -106,11 +99,12 @@ func testCompareSameContent(t *testing.T, factory TestableVolumeFactory) {
 
 // Put a test block and compare the locator with a different content
 // Expect error due to collision
+// Test should pass for both writable and read-only volumes
 func testCompareWithDifferentContent(t *testing.T, factory TestableVolumeFactory) {
 	v := factory(t)
 	defer v.Teardown()
 
-	v.Put(TEST_HASH, TEST_BLOCK)
+	v.PutRaw(TEST_HASH, TEST_BLOCK)
 
 	// Compare the block locator with different content; collision
 	err := v.Compare(TEST_HASH, []byte("baddata"))
@@ -120,13 +114,14 @@ func testCompareWithDifferentContent(t *testing.T, factory TestableVolumeFactory
 }
 
 // Put a test block with bad data (hash does not match, but Put does not verify)
-// Compare the locator with good data whose has matches with locator
+// Compare the locator with good data whose hash matches with locator
 // Expect error due to corruption.
+// Test should pass for both writable and read-only volumes
 func testCompareWithBadData(t *testing.T, factory TestableVolumeFactory) {
 	v := factory(t)
 	defer v.Teardown()
 
-	v.Put(TEST_HASH, []byte("baddata"))
+	v.PutRaw(TEST_HASH, []byte("baddata"))
 
 	err := v.Compare(TEST_HASH, TEST_BLOCK)
 	if err == nil {
@@ -135,9 +130,14 @@ func testCompareWithBadData(t *testing.T, factory TestableVolumeFactory) {
 }
 
 // Put a block and put again with same content
+// Test is intended for only writable volumes
 func testPutBlockWithSameContent(t *testing.T, factory TestableVolumeFactory) {
 	v := factory(t)
 	defer v.Teardown()
+
+	if v.Writable() == false {
+		return
+	}
 
 	err := v.Put(TEST_HASH, TEST_BLOCK)
 	if err != nil {
@@ -151,9 +151,14 @@ func testPutBlockWithSameContent(t *testing.T, factory TestableVolumeFactory) {
 }
 
 // Put a block and put again with different content
+// Test is intended for only writable volumes
 func testPutBlockWithDifferentContent(t *testing.T, factory TestableVolumeFactory) {
 	v := factory(t)
 	defer v.Teardown()
+
+	if v.Writable() == false {
+		return
+	}
 
 	err := v.Put(TEST_HASH, TEST_BLOCK)
 	if err != nil {
@@ -182,9 +187,14 @@ func testPutBlockWithDifferentContent(t *testing.T, factory TestableVolumeFactor
 }
 
 // Put and get multiple blocks
+// Test is intended for only writable volumes
 func testPutMultipleBlocks(t *testing.T, factory TestableVolumeFactory) {
 	v := factory(t)
 	defer v.Teardown()
+
+	if v.Writable() == false {
+		return
+	}
 
 	err := v.Put(TEST_HASH, TEST_BLOCK)
 	if err != nil {
@@ -229,9 +239,14 @@ func testPutMultipleBlocks(t *testing.T, factory TestableVolumeFactory) {
 // testPutAndTouch
 //   Test that when applying PUT to a block that already exists,
 //   the block's modification time is updated.
+// Test is intended for only writable volumes
 func testPutAndTouch(t *testing.T, factory TestableVolumeFactory) {
 	v := factory(t)
 	defer v.Teardown()
+
+	if v.Writable() == false {
+		return
+	}
 
 	if err := v.Put(TEST_HASH, TEST_BLOCK); err != nil {
 		t.Error(err)
@@ -266,6 +281,7 @@ func testPutAndTouch(t *testing.T, factory TestableVolumeFactory) {
 }
 
 // Touching a non-existing block should result in error.
+// Test should pass for both writable and read-only volumes
 func testTouchNoSuchBlock(t *testing.T, factory TestableVolumeFactory) {
 	v := factory(t)
 	defer v.Teardown()
@@ -276,6 +292,7 @@ func testTouchNoSuchBlock(t *testing.T, factory TestableVolumeFactory) {
 }
 
 // Invoking Mtime on a non-existing block should result in error.
+// Test should pass for both writable and read-only volumes
 func testMtimeNoSuchBlock(t *testing.T, factory TestableVolumeFactory) {
 	v := factory(t)
 	defer v.Teardown()
@@ -289,13 +306,14 @@ func testMtimeNoSuchBlock(t *testing.T, factory TestableVolumeFactory) {
 // * no prefix
 // * with a prefix
 // * with no such prefix
+// Test should pass for both writable and read-only volumes
 func testIndexTo(t *testing.T, factory TestableVolumeFactory) {
 	v := factory(t)
 	defer v.Teardown()
 
-	v.Put(TEST_HASH, TEST_BLOCK)
-	v.Put(TEST_HASH_2, TEST_BLOCK_2)
-	v.Put(TEST_HASH_3, TEST_BLOCK_3)
+	v.PutRaw(TEST_HASH, TEST_BLOCK)
+	v.PutRaw(TEST_HASH_2, TEST_BLOCK_2)
+	v.PutRaw(TEST_HASH_3, TEST_BLOCK_3)
 
 	buf := new(bytes.Buffer)
 	v.IndexTo("", buf)
@@ -338,9 +356,15 @@ func testIndexTo(t *testing.T, factory TestableVolumeFactory) {
 
 // Calling Delete() for a block immediately after writing it (not old enough)
 // should neither delete the data nor return an error.
+// Test is intended for only writable volumes
 func testDeleteNewBlock(t *testing.T, factory TestableVolumeFactory) {
 	v := factory(t)
 	defer v.Teardown()
+
+	if v.Writable() == false {
+		return
+	}
+
 	v.Put(TEST_HASH, TEST_BLOCK)
 
 	if err := v.Delete(TEST_HASH); err != nil {
@@ -357,9 +381,15 @@ func testDeleteNewBlock(t *testing.T, factory TestableVolumeFactory) {
 
 // Calling Delete() for a block with a timestamp older than
 // blob_signature_ttl seconds in the past should delete the data.
+// Test is intended for only writable volumes
 func testDeleteOldBlock(t *testing.T, factory TestableVolumeFactory) {
 	v := factory(t)
 	defer v.Teardown()
+
+	if v.Writable() == false {
+		return
+	}
+
 	v.Put(TEST_HASH, TEST_BLOCK)
 	v.TouchWithDate(TEST_HASH, time.Now().Add(-2*blob_signature_ttl*time.Second))
 
@@ -372,10 +402,10 @@ func testDeleteOldBlock(t *testing.T, factory TestableVolumeFactory) {
 }
 
 // Calling Delete() for a block that does not exist should result in error.
+// Test should pass for both writable and read-only volumes
 func testDeleteNoSuchBlock(t *testing.T, factory TestableVolumeFactory) {
 	v := factory(t)
 	defer v.Teardown()
-	v.Put(TEST_HASH, TEST_BLOCK)
 
 	if err := v.Delete(TEST_HASH_2); err == nil {
 		t.Errorf("Expected error when attempting to delete a non-existing block")
@@ -383,6 +413,7 @@ func testDeleteNoSuchBlock(t *testing.T, factory TestableVolumeFactory) {
 }
 
 // Invoke Status and verify that VolumeStatus is returned
+// Test should pass for both writable and read-only volumes
 func testStatus(t *testing.T, factory TestableVolumeFactory) {
 	v := factory(t)
 	defer v.Teardown()
@@ -403,6 +434,7 @@ func testStatus(t *testing.T, factory TestableVolumeFactory) {
 }
 
 // Invoke String for the volume; expect non-empty result
+// Test should pass for both writable and read-only volumes
 func testString(t *testing.T, factory TestableVolumeFactory) {
 	v := factory(t)
 	defer v.Teardown()
@@ -412,38 +444,25 @@ func testString(t *testing.T, factory TestableVolumeFactory) {
 	}
 }
 
-// Verify Writable is true on a writable volume
-func testWritableTrue(t *testing.T, factory TestableVolumeFactory) {
-	v := factory(t)
-	defer v.Teardown()
-
-	if v.Writable() == false {
-		t.Errorf("Expected writable to be true on a writable volume")
-	}
-}
-
-// Verify Writable is false on a read-only volume
-func testWritableFalse(t *testing.T, factory TestableVolumeFactory) {
-	v := factory(t)
-	defer v.Teardown()
-
-	if v.Writable() != false {
-		t.Errorf("Expected writable to be false on a read-only volume")
-	}
-}
-
-// Updating, touching, and deleting blocks from a read-only volume result in error.
+// Putting, updating, touching, and deleting blocks from a read-only volume result in error.
+// Test is intended for only read-only volumes
 func testUpdateReadOnly(t *testing.T, factory TestableVolumeFactory) {
 	v := factory(t)
 	defer v.Teardown()
 
+	if v.Writable() == true {
+		return
+	}
+
 	v.PutRaw(TEST_HASH, TEST_BLOCK)
 
+	// Get from read-only volume should succeed
 	_, err := v.Get(TEST_HASH)
 	if err != nil {
 		t.Errorf("got err %v, expected nil", err)
 	}
 
+	// Put a new block to read-only volume should result in error
 	err = v.Put(TEST_HASH_2, TEST_BLOCK_2)
 	if err == nil {
 		t.Errorf("Expected error when putting block in a read-only volume")
@@ -453,25 +472,34 @@ func testUpdateReadOnly(t *testing.T, factory TestableVolumeFactory) {
 		t.Errorf("Expected error when getting block whose put in read-only volume failed")
 	}
 
+	// Touch a block in read-only volume should result in error
 	err = v.Touch(TEST_HASH)
 	if err == nil {
 		t.Errorf("Expected error when touching block in a read-only volume")
 	}
 
+	// Delete a block from a read-only volume should result in error
 	err = v.Delete(TEST_HASH)
 	if err == nil {
 		t.Errorf("Expected error when deleting block from a read-only volume")
 	}
+
+	// Overwriting an existing block in read-only volume should result in error
+	err = v.Put(TEST_HASH, TEST_BLOCK)
+	if err == nil {
+		t.Errorf("Expected error when putting block in a read-only volume")
+	}
 }
 
 // Launch concurrent Gets
+// Test should pass for both writable and read-only volumes
 func testGetConcurrent(t *testing.T, factory TestableVolumeFactory) {
 	v := factory(t)
 	defer v.Teardown()
 
-	v.Put(TEST_HASH, TEST_BLOCK)
-	v.Put(TEST_HASH_2, TEST_BLOCK_2)
-	v.Put(TEST_HASH_3, TEST_BLOCK_3)
+	v.PutRaw(TEST_HASH, TEST_BLOCK)
+	v.PutRaw(TEST_HASH_2, TEST_BLOCK_2)
+	v.PutRaw(TEST_HASH_3, TEST_BLOCK_3)
 
 	sem := make(chan int)
 	go func(sem chan int) {
@@ -517,9 +545,14 @@ func testGetConcurrent(t *testing.T, factory TestableVolumeFactory) {
 }
 
 // Launch concurrent Puts
+// Test is intended for only writable volumes
 func testPutConcurrent(t *testing.T, factory TestableVolumeFactory) {
 	v := factory(t)
 	defer v.Teardown()
+
+	if v.Writable() == false {
+		return
+	}
 
 	sem := make(chan int)
 	go func(sem chan int) {
