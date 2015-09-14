@@ -52,7 +52,7 @@ type MockVolume struct {
 	// channel unblocks all operations. By default, Gate is a
 	// closed channel, so all operations proceed without
 	// blocking. See trash_worker_test.go for an example.
-	Gate   chan struct{}
+	Gate chan struct{}
 
 	called map[string]int
 	mutex  sync.Mutex
@@ -78,11 +78,11 @@ func CreateMockVolume() *MockVolume {
 func (v *MockVolume) CallCount(method string) int {
 	v.mutex.Lock()
 	defer v.mutex.Unlock()
-	if c, ok := v.called[method]; !ok {
+	c, ok := v.called[method]
+	if !ok {
 		return 0
-	} else {
-		return c
 	}
+	return c
 }
 
 func (v *MockVolume) gotCall(method string) {

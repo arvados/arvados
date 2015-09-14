@@ -55,15 +55,15 @@ func TestTrashWorkerIntegration_GetNonExistingLocator(t *testing.T) {
 func TestTrashWorkerIntegration_LocatorInVolume1(t *testing.T) {
 	never_delete = false
 	testData := TrashWorkerTestData{
-		Locator1: TEST_HASH,
-		Block1:   TEST_BLOCK,
+		Locator1: TestHash,
+		Block1:   TestBlock,
 
-		Locator2: TEST_HASH_2,
-		Block2:   TEST_BLOCK_2,
+		Locator2: TestHash2,
+		Block2:   TestBlock2,
 
 		CreateData: true,
 
-		DeleteLocator: TEST_HASH, // first locator
+		DeleteLocator: TestHash, // first locator
 
 		ExpectLocator1: false,
 		ExpectLocator2: true,
@@ -77,15 +77,15 @@ func TestTrashWorkerIntegration_LocatorInVolume1(t *testing.T) {
 func TestTrashWorkerIntegration_LocatorInVolume2(t *testing.T) {
 	never_delete = false
 	testData := TrashWorkerTestData{
-		Locator1: TEST_HASH,
-		Block1:   TEST_BLOCK,
+		Locator1: TestHash,
+		Block1:   TestBlock,
 
-		Locator2: TEST_HASH_2,
-		Block2:   TEST_BLOCK_2,
+		Locator2: TestHash2,
+		Block2:   TestBlock2,
 
 		CreateData: true,
 
-		DeleteLocator: TEST_HASH_2, // locator 2
+		DeleteLocator: TestHash2, // locator 2
 
 		ExpectLocator1: true,
 		ExpectLocator2: false,
@@ -99,15 +99,15 @@ func TestTrashWorkerIntegration_LocatorInVolume2(t *testing.T) {
 func TestTrashWorkerIntegration_LocatorInBothVolumes(t *testing.T) {
 	never_delete = false
 	testData := TrashWorkerTestData{
-		Locator1: TEST_HASH,
-		Block1:   TEST_BLOCK,
+		Locator1: TestHash,
+		Block1:   TestBlock,
 
-		Locator2: TEST_HASH,
-		Block2:   TEST_BLOCK,
+		Locator2: TestHash,
+		Block2:   TestBlock,
 
 		CreateData: true,
 
-		DeleteLocator: TEST_HASH,
+		DeleteLocator: TestHash,
 
 		ExpectLocator1: false,
 		ExpectLocator2: false,
@@ -121,16 +121,16 @@ func TestTrashWorkerIntegration_LocatorInBothVolumes(t *testing.T) {
 func TestTrashWorkerIntegration_MtimeMatchesForLocator1ButNotForLocator2(t *testing.T) {
 	never_delete = false
 	testData := TrashWorkerTestData{
-		Locator1: TEST_HASH,
-		Block1:   TEST_BLOCK,
+		Locator1: TestHash,
+		Block1:   TestBlock,
 
-		Locator2: TEST_HASH,
-		Block2:   TEST_BLOCK,
+		Locator2: TestHash,
+		Block2:   TestBlock,
 
 		CreateData:      true,
 		DifferentMtimes: true,
 
-		DeleteLocator: TEST_HASH,
+		DeleteLocator: TestHash,
 
 		ExpectLocator1: true,
 		ExpectLocator2: false,
@@ -145,16 +145,16 @@ func TestTrashWorkerIntegration_MtimeMatchesForLocator1ButNotForLocator2(t *test
 func TestTrashWorkerIntegration_TwoDifferentLocatorsInVolume1(t *testing.T) {
 	never_delete = false
 	testData := TrashWorkerTestData{
-		Locator1: TEST_HASH,
-		Block1:   TEST_BLOCK,
+		Locator1: TestHash,
+		Block1:   TestBlock,
 
-		Locator2: TEST_HASH_2,
-		Block2:   TEST_BLOCK_2,
+		Locator2: TestHash2,
+		Block2:   TestBlock2,
 
 		CreateData:      true,
 		CreateInVolume1: true,
 
-		DeleteLocator: TEST_HASH, // locator 1
+		DeleteLocator: TestHash, // locator 1
 
 		ExpectLocator1: false,
 		ExpectLocator2: true,
@@ -168,18 +168,18 @@ func TestTrashWorkerIntegration_TwoDifferentLocatorsInVolume1(t *testing.T) {
 func TestTrashWorkerIntegration_SameLocatorInTwoVolumesWithDefaultTrashLifeTime(t *testing.T) {
 	never_delete = false
 	testData := TrashWorkerTestData{
-		Locator1: TEST_HASH,
-		Block1:   TEST_BLOCK,
+		Locator1: TestHash,
+		Block1:   TestBlock,
 
-		Locator2: TEST_HASH_2,
-		Block2:   TEST_BLOCK_2,
+		Locator2: TestHash2,
+		Block2:   TestBlock2,
 
 		CreateData:      true,
 		CreateInVolume1: true,
 
 		UseTrashLifeTime: true,
 
-		DeleteLocator: TEST_HASH, // locator 1
+		DeleteLocator: TestHash, // locator 1
 
 		// Since trash life time is in effect, block won't be deleted.
 		ExpectLocator1: true,
@@ -194,15 +194,15 @@ func TestTrashWorkerIntegration_SameLocatorInTwoVolumesWithDefaultTrashLifeTime(
 func TestTrashWorkerIntegration_NeverDelete(t *testing.T) {
 	never_delete = true
 	testData := TrashWorkerTestData{
-		Locator1: TEST_HASH,
-		Block1:   TEST_BLOCK,
+		Locator1: TestHash,
+		Block1:   TestBlock,
 
-		Locator2: TEST_HASH,
-		Block2:   TEST_BLOCK,
+		Locator2: TestHash,
+		Block2:   TestBlock,
 
 		CreateData: true,
 
-		DeleteLocator: TEST_HASH,
+		DeleteLocator: TestHash,
 
 		ExpectLocator1: true,
 		ExpectLocator2: true,

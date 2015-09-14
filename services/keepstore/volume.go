@@ -1,7 +1,3 @@
-// A Volume is an interface representing a Keep back-end storage unit:
-// for example, a single mounted disk, a RAID array, an Amazon S3 volume,
-// etc.
-
 package main
 
 import (
@@ -10,6 +6,9 @@ import (
 	"time"
 )
 
+// A Volume is an interface representing a Keep back-end storage unit:
+// for example, a single mounted disk, a RAID array, an Amazon S3 volume,
+// etc.
 type Volume interface {
 	// Get a block. IFF the returned error is nil, the caller must
 	// put the returned slice back into the buffer pool when it's
@@ -37,7 +36,7 @@ type Volume interface {
 	// access log if the block is not found on any other volumes
 	// either).
 	//
-	// If the data in the backing store is bigger than BLOCKSIZE,
+	// If the data in the backing store is bigger than BlockSize,
 	// Get is permitted to return an error without reading any of
 	// the data.
 	Get(loc string) ([]byte, error)
@@ -53,11 +52,17 @@ type Volume interface {
 	//
 	// loc is as described in Get.
 	//
-	// len(block) is guaranteed to be between 0 and BLOCKSIZE.
+	// len(block) is guaranteed to be between 0 and BlockSize.
 	//
 	// If a block is already stored under the same name (loc) with
 	// different content, Put must either overwrite the existing
-	// data with the new data or return a non-nil error.
+	// data with the new data or return a non-nil error. When
+	// overwriting existing data, it must never leave the storage
+	// device in an inconsistent state: a subsequent call to Get
+	// must return either the entire old block, the entire new
+	// block, or an error. (An implementation that cannot peform
+	// atomic updates must leave the old data alone and return an
+	// error.)
 	//
 	// Put also sets the timestamp for the given locator to the
 	// current time.
@@ -122,7 +127,7 @@ type Volume interface {
 	//
 	//   - size is the number of bytes of content, given as a
 	//     decimal number with one or more digits
-	//     
+	//
 	//   - timestamp is the timestamp stored for the locator,
 	//     given as a decimal number of seconds after January 1,
 	//     1970 UTC.
@@ -222,6 +227,7 @@ type RRVolumeManager struct {
 	counter   uint32
 }
 
+// MakeRRVolumeManager initializes RRVolumeManager
 func MakeRRVolumeManager(volumes []Volume) *RRVolumeManager {
 	vm := &RRVolumeManager{}
 	for _, v := range volumes {
@@ -233,14 +239,17 @@ func MakeRRVolumeManager(volumes []Volume) *RRVolumeManager {
 	return vm
 }
 
+// AllReadable returns an array of all readable volumes
 func (vm *RRVolumeManager) AllReadable() []Volume {
 	return vm.readables
 }
 
+// AllWritable returns an array of all writable volumes
 func (vm *RRVolumeManager) AllWritable() []Volume {
 	return vm.writables
 }
 
+// NextWritable returns the next writable
 func (vm *RRVolumeManager) NextWritable() Volume {
 	if len(vm.writables) == 0 {
 		return nil
@@ -249,5 +258,18 @@ func (vm *RRVolumeManager) NextWritable() Volume {
 	return vm.writables[i%uint32(len(vm.writables))]
 }
 
+// Close the RRVolumeManager
 func (vm *RRVolumeManager) Close() {
+}
+
+// VolumeStatus provides status information of the volume consisting of:
+//   * mount_point
+//   * device_num (an integer identifying the underlying storage system)
+//   * bytes_free
+//   * bytes_used
+type VolumeStatus struct {
+	MountPoint string `json:"mount_point"`
+	DeviceNum  uint64 `json:"device_num"`
+	BytesFree  uint64 `json:"bytes_free"`
+	BytesUsed  uint64 `json:"bytes_used"`
 }
