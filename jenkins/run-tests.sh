@@ -686,6 +686,7 @@ gostuff=(
     services/keepproxy
     services/datamanager/summary
     services/datamanager/collection
+    services/datamanager
     sdk/go/arvadosclient
     sdk/go/keepclient
     sdk/go/streamer
