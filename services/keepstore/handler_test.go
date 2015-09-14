@@ -46,22 +46,22 @@ func TestGetHandler(t *testing.T) {
 	defer KeepVM.Close()
 
 	vols := KeepVM.AllWritable()
-	if err := vols[0].Put(TEST_HASH, TEST_BLOCK); err != nil {
+	if err := vols[0].Put(TestHash, TestBlock); err != nil {
 		t.Error(err)
 	}
 
 	// Create locators for testing.
 	// Turn on permission settings so we can generate signed locators.
 	enforcePermissions = true
-	PermissionSecret = []byte(known_key)
+	PermissionSecret = []byte(knownKey)
 	blob_signature_ttl = 300 * time.Second
 
 	var (
-		unsignedLocator  = "/" + TEST_HASH
+		unsignedLocator  = "/" + TestHash
 		validTimestamp   = time.Now().Add(blob_signature_ttl)
 		expiredTimestamp = time.Now().Add(-time.Hour)
-		signedLocator    = "/" + SignLocator(TEST_HASH, known_token, validTimestamp)
-		expiredLocator   = "/" + SignLocator(TEST_HASH, known_token, expiredTimestamp)
+		signedLocator    = "/" + SignLocator(TestHash, knownToken, validTimestamp)
+		expiredLocator   = "/" + SignLocator(TestHash, knownToken, expiredTimestamp)
 	)
 
 	// -----------------
@@ -79,11 +79,11 @@ func TestGetHandler(t *testing.T) {
 		"Unauthenticated request, unsigned locator", http.StatusOK, response)
 	ExpectBody(t,
 		"Unauthenticated request, unsigned locator",
-		string(TEST_BLOCK),
+		string(TestBlock),
 		response)
 
 	receivedLen := response.Header().Get("Content-Length")
-	expectedLen := fmt.Sprintf("%d", len(TEST_BLOCK))
+	expectedLen := fmt.Sprintf("%d", len(TestBlock))
 	if receivedLen != expectedLen {
 		t.Errorf("expected Content-Length %s, got %s", expectedLen, receivedLen)
 	}
@@ -97,15 +97,15 @@ func TestGetHandler(t *testing.T) {
 	response = IssueRequest(&RequestTester{
 		method:   "GET",
 		uri:      signedLocator,
-		apiToken: known_token,
+		apiToken: knownToken,
 	})
 	ExpectStatusCode(t,
 		"Authenticated request, signed locator", http.StatusOK, response)
 	ExpectBody(t,
-		"Authenticated request, signed locator", string(TEST_BLOCK), response)
+		"Authenticated request, signed locator", string(TestBlock), response)
 
 	receivedLen = response.Header().Get("Content-Length")
-	expectedLen = fmt.Sprintf("%d", len(TEST_BLOCK))
+	expectedLen = fmt.Sprintf("%d", len(TestBlock))
 	if receivedLen != expectedLen {
 		t.Errorf("expected Content-Length %s, got %s", expectedLen, receivedLen)
 	}
@@ -115,7 +115,7 @@ func TestGetHandler(t *testing.T) {
 	response = IssueRequest(&RequestTester{
 		method:   "GET",
 		uri:      unsignedLocator,
-		apiToken: known_token,
+		apiToken: knownToken,
 	})
 	ExpectStatusCode(t, "unsigned locator", PermissionError.HTTPCode, response)
 
@@ -134,7 +134,7 @@ func TestGetHandler(t *testing.T) {
 	response = IssueRequest(&RequestTester{
 		method:   "GET",
 		uri:      expiredLocator,
-		apiToken: known_token,
+		apiToken: knownToken,
 	})
 	ExpectStatusCode(t,
 		"Authenticated request, expired locator",
@@ -158,24 +158,24 @@ func TestPutHandler(t *testing.T) {
 
 	// Unauthenticated request, no server key
 	// => OK (unsigned response)
-	unsignedLocator := "/" + TEST_HASH
+	unsignedLocator := "/" + TestHash
 	response := IssueRequest(
 		&RequestTester{
 			method:      "PUT",
 			uri:         unsignedLocator,
-			requestBody: TEST_BLOCK,
+			requestBody: TestBlock,
 		})
 
 	ExpectStatusCode(t,
 		"Unauthenticated request, no server key", http.StatusOK, response)
 	ExpectBody(t,
 		"Unauthenticated request, no server key",
-		TEST_HASH_PUT_RESPONSE, response)
+		TestHashPutResp, response)
 
 	// ------------------
 	// With a server key.
 
-	PermissionSecret = []byte(known_key)
+	PermissionSecret = []byte(knownKey)
 	blob_signature_ttl = 300 * time.Second
 
 	// When a permission key is available, the locator returned
@@ -187,15 +187,15 @@ func TestPutHandler(t *testing.T) {
 		&RequestTester{
 			method:      "PUT",
 			uri:         unsignedLocator,
-			requestBody: TEST_BLOCK,
-			apiToken:    known_token,
+			requestBody: TestBlock,
+			apiToken:    knownToken,
 		})
 
 	ExpectStatusCode(t,
 		"Authenticated PUT, signed locator, with server key",
 		http.StatusOK, response)
 	responseLocator := strings.TrimSpace(response.Body.String())
-	if VerifySignature(responseLocator, known_token) != nil {
+	if VerifySignature(responseLocator, knownToken) != nil {
 		t.Errorf("Authenticated PUT, signed locator, with server key:\n"+
 			"response '%s' does not contain a valid signature",
 			responseLocator)
@@ -207,7 +207,7 @@ func TestPutHandler(t *testing.T) {
 		&RequestTester{
 			method:      "PUT",
 			uri:         unsignedLocator,
-			requestBody: TEST_BLOCK,
+			requestBody: TestBlock,
 		})
 
 	ExpectStatusCode(t,
@@ -215,7 +215,7 @@ func TestPutHandler(t *testing.T) {
 		http.StatusOK, response)
 	ExpectBody(t,
 		"Unauthenticated PUT, unsigned locator, with server key",
-		TEST_HASH_PUT_RESPONSE, response)
+		TestHashPutResp, response)
 }
 
 func TestPutAndDeleteSkipReadonlyVolumes(t *testing.T) {
@@ -228,8 +228,8 @@ func TestPutAndDeleteSkipReadonlyVolumes(t *testing.T) {
 	IssueRequest(
 		&RequestTester{
 			method:      "PUT",
-			uri:         "/" + TEST_HASH,
-			requestBody: TEST_BLOCK,
+			uri:         "/" + TestHash,
+			requestBody: TestBlock,
 		})
 	defer func(orig bool) {
 		never_delete = orig
@@ -238,8 +238,8 @@ func TestPutAndDeleteSkipReadonlyVolumes(t *testing.T) {
 	IssueRequest(
 		&RequestTester{
 			method:      "DELETE",
-			uri:         "/" + TEST_HASH,
-			requestBody: TEST_BLOCK,
+			uri:         "/" + TestHash,
+			requestBody: TestBlock,
 			apiToken:    data_manager_token,
 		})
 	type expect struct {
@@ -286,10 +286,10 @@ func TestIndexHandler(t *testing.T) {
 	defer KeepVM.Close()
 
 	vols := KeepVM.AllWritable()
-	vols[0].Put(TEST_HASH, TEST_BLOCK)
-	vols[1].Put(TEST_HASH_2, TEST_BLOCK_2)
-	vols[0].Put(TEST_HASH+".meta", []byte("metadata"))
-	vols[1].Put(TEST_HASH_2+".meta", []byte("metadata"))
+	vols[0].Put(TestHash, TestBlock)
+	vols[1].Put(TestHash2, TestBlock2)
+	vols[0].Put(TestHash+".meta", []byte("metadata"))
+	vols[1].Put(TestHash2+".meta", []byte("metadata"))
 
 	data_manager_token = "DATA MANAGER TOKEN"
 
@@ -300,7 +300,7 @@ func TestIndexHandler(t *testing.T) {
 	authenticatedReq := &RequestTester{
 		method:   "GET",
 		uri:      "/index",
-		apiToken: known_token,
+		apiToken: knownToken,
 	}
 	superuserReq := &RequestTester{
 		method:   "GET",
@@ -309,16 +309,16 @@ func TestIndexHandler(t *testing.T) {
 	}
 	unauthPrefixReq := &RequestTester{
 		method: "GET",
-		uri:    "/index/" + TEST_HASH[0:3],
+		uri:    "/index/" + TestHash[0:3],
 	}
 	authPrefixReq := &RequestTester{
 		method:   "GET",
-		uri:      "/index/" + TEST_HASH[0:3],
-		apiToken: known_token,
+		uri:      "/index/" + TestHash[0:3],
+		apiToken: knownToken,
 	}
 	superuserPrefixReq := &RequestTester{
 		method:   "GET",
-		uri:      "/index/" + TEST_HASH[0:3],
+		uri:      "/index/" + TestHash[0:3],
 		apiToken: data_manager_token,
 	}
 
@@ -383,8 +383,8 @@ func TestIndexHandler(t *testing.T) {
 		http.StatusOK,
 		response)
 
-	expected := `^` + TEST_HASH + `\+\d+ \d+\n` +
-		TEST_HASH_2 + `\+\d+ \d+\n\n$`
+	expected := `^` + TestHash + `\+\d+ \d+\n` +
+		TestHash2 + `\+\d+ \d+\n\n$`
 	match, _ := regexp.MatchString(expected, response.Body.String())
 	if !match {
 		t.Errorf(
@@ -400,7 +400,7 @@ func TestIndexHandler(t *testing.T) {
 		http.StatusOK,
 		response)
 
-	expected = `^` + TEST_HASH + `\+\d+ \d+\n\n$`
+	expected = `^` + TestHash + `\+\d+ \d+\n\n$`
 	match, _ = regexp.MatchString(expected, response.Body.String())
 	if !match {
 		t.Errorf(
@@ -445,7 +445,7 @@ func TestDeleteHandler(t *testing.T) {
 	defer KeepVM.Close()
 
 	vols := KeepVM.AllWritable()
-	vols[0].Put(TEST_HASH, TEST_BLOCK)
+	vols[0].Put(TestHash, TestBlock)
 
 	// Explicitly set the blob_signature_ttl to 0 for these
 	// tests, to ensure the MockVolume deletes the blocks
@@ -459,24 +459,24 @@ func TestDeleteHandler(t *testing.T) {
 
 	unauthReq := &RequestTester{
 		method: "DELETE",
-		uri:    "/" + TEST_HASH,
+		uri:    "/" + TestHash,
 	}
 
 	userReq := &RequestTester{
 		method:   "DELETE",
-		uri:      "/" + TEST_HASH,
+		uri:      "/" + TestHash,
 		apiToken: userToken,
 	}
 
 	superuserExistingBlockReq := &RequestTester{
 		method:   "DELETE",
-		uri:      "/" + TEST_HASH,
+		uri:      "/" + TestHash,
 		apiToken: data_manager_token,
 	}
 
 	superuserNonexistentBlockReq := &RequestTester{
 		method:   "DELETE",
-		uri:      "/" + TEST_HASH_2,
+		uri:      "/" + TestHash2,
 		apiToken: data_manager_token,
 	}
 
@@ -531,7 +531,7 @@ func TestDeleteHandler(t *testing.T) {
 			expectedDc, responseDc)
 	}
 	// Confirm the block has been deleted
-	_, err := vols[0].Get(TEST_HASH)
+	_, err := vols[0].Get(TestHash)
 	var blockDeleted = os.IsNotExist(err)
 	if !blockDeleted {
 		t.Error("superuserExistingBlockReq: block not deleted")
@@ -539,7 +539,7 @@ func TestDeleteHandler(t *testing.T) {
 
 	// A DELETE request on a block newer than blob_signature_ttl
 	// should return success but leave the block on the volume.
-	vols[0].Put(TEST_HASH, TEST_BLOCK)
+	vols[0].Put(TestHash, TestBlock)
 	blob_signature_ttl = time.Hour
 
 	response = IssueRequest(superuserExistingBlockReq)
@@ -555,7 +555,7 @@ func TestDeleteHandler(t *testing.T) {
 			expectedDc, responseDc)
 	}
 	// Confirm the block has NOT been deleted.
-	_, err = vols[0].Get(TEST_HASH)
+	_, err = vols[0].Get(TestHash)
 	if err != nil {
 		t.Errorf("testing delete on new block: %s\n", err)
 	}
@@ -830,8 +830,8 @@ func TestPutNeedsOnlyOneBuffer(t *testing.T) {
 			response := IssueRequest(
 				&RequestTester{
 					method:      "PUT",
-					uri:         "/" + TEST_HASH,
-					requestBody: TEST_BLOCK,
+					uri:         "/" + TestHash,
+					requestBody: TestBlock,
 				})
 			ExpectStatusCode(t,
 				"TestPutNeedsOnlyOneBuffer", http.StatusOK, response)
@@ -860,18 +860,18 @@ func TestPutHandlerNoBufferleak(t *testing.T) {
 		for i := 0; i < maxBuffers+1; i++ {
 			// Unauthenticated request, no server key
 			// => OK (unsigned response)
-			unsignedLocator := "/" + TEST_HASH
+			unsignedLocator := "/" + TestHash
 			response := IssueRequest(
 				&RequestTester{
 					method:      "PUT",
 					uri:         unsignedLocator,
-					requestBody: TEST_BLOCK,
+					requestBody: TestBlock,
 				})
 			ExpectStatusCode(t,
 				"TestPutHandlerBufferleak", http.StatusOK, response)
 			ExpectBody(t,
 				"TestPutHandlerBufferleak",
-				TEST_HASH_PUT_RESPONSE, response)
+				TestHashPutResp, response)
 		}
 		ok <- true
 	}()
@@ -893,7 +893,7 @@ func TestGetHandlerNoBufferleak(t *testing.T) {
 	defer KeepVM.Close()
 
 	vols := KeepVM.AllWritable()
-	if err := vols[0].Put(TEST_HASH, TEST_BLOCK); err != nil {
+	if err := vols[0].Put(TestHash, TestBlock); err != nil {
 		t.Error(err)
 	}
 
@@ -902,7 +902,7 @@ func TestGetHandlerNoBufferleak(t *testing.T) {
 		for i := 0; i < maxBuffers+1; i++ {
 			// Unauthenticated request, unsigned locator
 			// => OK
-			unsignedLocator := "/" + TEST_HASH
+			unsignedLocator := "/" + TestHash
 			response := IssueRequest(
 				&RequestTester{
 					method: "GET",
@@ -912,7 +912,7 @@ func TestGetHandlerNoBufferleak(t *testing.T) {
 				"Unauthenticated request, unsigned locator", http.StatusOK, response)
 			ExpectBody(t,
 				"Unauthenticated request, unsigned locator",
-				string(TEST_BLOCK),
+				string(TestBlock),
 				response)
 		}
 		ok <- true

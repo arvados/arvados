@@ -51,65 +51,66 @@ import (
 var PermissionSecret []byte
 
 // MakePermSignature returns a string representing the signed permission
-// hint for the blob identified by blob_hash, api_token and expiration timestamp.
-func MakePermSignature(blob_hash string, api_token string, expiry string) string {
+// hint for the blob identified by blobHash, apiToken and expiration timestamp.
+func MakePermSignature(blobHash string, apiToken string, expiry string) string {
 	hmac := hmac.New(sha1.New, PermissionSecret)
-	hmac.Write([]byte(blob_hash))
+	hmac.Write([]byte(blobHash))
 	hmac.Write([]byte("@"))
-	hmac.Write([]byte(api_token))
+	hmac.Write([]byte(apiToken))
 	hmac.Write([]byte("@"))
 	hmac.Write([]byte(expiry))
 	digest := hmac.Sum(nil)
 	return fmt.Sprintf("%x", digest)
 }
 
-// SignLocator takes a blob_locator, an api_token and an expiry time, and
+// SignLocator takes a blobLocator, an apiToken and an expiry time, and
 // returns a signed locator string.
-func SignLocator(blob_locator string, api_token string, expiry time.Time) string {
+func SignLocator(blobLocator string, apiToken string, expiry time.Time) string {
 	// If no permission secret or API token is available,
 	// return an unsigned locator.
-	if PermissionSecret == nil || api_token == "" {
-		return blob_locator
+	if PermissionSecret == nil || apiToken == "" {
+		return blobLocator
 	}
 	// Extract the hash from the blob locator, omitting any size hint that may be present.
-	blob_hash := strings.Split(blob_locator, "+")[0]
+	blobHash := strings.Split(blobLocator, "+")[0]
 	// Return the signed locator string.
-	timestamp_hex := fmt.Sprintf("%08x", expiry.Unix())
-	return blob_locator +
-		"+A" + MakePermSignature(blob_hash, api_token, timestamp_hex) +
-		"@" + timestamp_hex
+	timestampHex := fmt.Sprintf("%08x", expiry.Unix())
+	return blobLocator +
+		"+A" + MakePermSignature(blobHash, apiToken, timestampHex) +
+		"@" + timestampHex
 }
 
 var signedLocatorRe = regexp.MustCompile(`^([[:xdigit:]]{32}).*\+A([[:xdigit:]]{40})@([[:xdigit:]]{8})`)
 
-// VerifySignature returns nil if the signature on the signed_locator
-// can be verified using the given api_token. Otherwise it returns
+// VerifySignature returns nil if the signature on the signedLocator
+// can be verified using the given apiToken. Otherwise it returns
 // either ExpiredError (if the timestamp has expired, which is
 // something the client could have figured out independently) or
 // PermissionError.
-func VerifySignature(signed_locator string, api_token string) error {
-	matches := signedLocatorRe.FindStringSubmatch(signed_locator)
+func VerifySignature(signedLocator string, apiToken string) error {
+	matches := signedLocatorRe.FindStringSubmatch(signedLocator)
 	if matches == nil {
 		// Could not find a permission signature at all
 		return PermissionError
 	}
-	blob_hash := matches[1]
-	sig_hex := matches[2]
-	exp_hex := matches[3]
-	if exp_time, err := ParseHexTimestamp(exp_hex); err != nil {
+	blobHash := matches[1]
+	sigHex := matches[2]
+	expHex := matches[3]
+	if expTime, err := ParseHexTimestamp(expHex); err != nil {
 		return PermissionError
-	} else if exp_time.Before(time.Now()) {
+	} else if expTime.Before(time.Now()) {
 		return ExpiredError
 	}
-	if sig_hex != MakePermSignature(blob_hash, api_token, exp_hex) {
+	if sigHex != MakePermSignature(blobHash, apiToken, expHex) {
 		return PermissionError
 	}
 	return nil
 }
 
-func ParseHexTimestamp(timestamp_hex string) (ts time.Time, err error) {
-	if ts_int, e := strconv.ParseInt(timestamp_hex, 16, 0); e == nil {
-		ts = time.Unix(ts_int, 0)
+// ParseHexTimestamp parses timestamp
+func ParseHexTimestamp(timestampHex string) (ts time.Time, err error) {
+	if tsInt, e := strconv.ParseInt(timestampHex, 16, 0); e == nil {
+		ts = time.Unix(tsInt, 0)
 	} else {
 		err = e
 	}

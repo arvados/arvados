@@ -88,9 +88,9 @@ func TestUnixVolumeWithGenericTestsSerialized(t *testing.T) {
 func TestGetNotFound(t *testing.T) {
 	v := NewTestableUnixVolume(t, false, false)
 	defer v.Teardown()
-	v.Put(TEST_HASH, TEST_BLOCK)
+	v.Put(TestHash, TestBlock)
 
-	buf, err := v.Get(TEST_HASH_2)
+	buf, err := v.Get(TestHash2)
 	switch {
 	case os.IsNotExist(err):
 		break
@@ -105,16 +105,16 @@ func TestPut(t *testing.T) {
 	v := NewTestableUnixVolume(t, false, false)
 	defer v.Teardown()
 
-	err := v.Put(TEST_HASH, TEST_BLOCK)
+	err := v.Put(TestHash, TestBlock)
 	if err != nil {
 		t.Error(err)
 	}
-	p := fmt.Sprintf("%s/%s/%s", v.root, TEST_HASH[:3], TEST_HASH)
+	p := fmt.Sprintf("%s/%s/%s", v.root, TestHash[:3], TestHash)
 	if buf, err := ioutil.ReadFile(p); err != nil {
 		t.Error(err)
-	} else if bytes.Compare(buf, TEST_BLOCK) != 0 {
+	} else if bytes.Compare(buf, TestBlock) != 0 {
 		t.Errorf("Write should have stored %s, did store %s",
-			string(TEST_BLOCK), string(buf))
+			string(TestBlock), string(buf))
 	}
 }
 
@@ -123,7 +123,7 @@ func TestPutBadVolume(t *testing.T) {
 	defer v.Teardown()
 
 	os.Chmod(v.root, 000)
-	err := v.Put(TEST_HASH, TEST_BLOCK)
+	err := v.Put(TestHash, TestBlock)
 	if err == nil {
 		t.Error("Write should have failed")
 	}
@@ -133,24 +133,24 @@ func TestUnixVolumeReadonly(t *testing.T) {
 	v := NewTestableUnixVolume(t, false, true)
 	defer v.Teardown()
 
-	v.PutRaw(TEST_HASH, TEST_BLOCK)
+	v.PutRaw(TestHash, TestBlock)
 
-	_, err := v.Get(TEST_HASH)
+	_, err := v.Get(TestHash)
 	if err != nil {
 		t.Errorf("got err %v, expected nil", err)
 	}
 
-	err = v.Put(TEST_HASH, TEST_BLOCK)
+	err = v.Put(TestHash, TestBlock)
 	if err != MethodDisabledError {
 		t.Errorf("got err %v, expected MethodDisabledError", err)
 	}
 
-	err = v.Touch(TEST_HASH)
+	err = v.Touch(TestHash)
 	if err != MethodDisabledError {
 		t.Errorf("got err %v, expected MethodDisabledError", err)
 	}
 
-	err = v.Delete(TEST_HASH)
+	err = v.Delete(TestHash)
 	if err != MethodDisabledError {
 		t.Errorf("got err %v, expected MethodDisabledError", err)
 	}
@@ -200,9 +200,9 @@ func TestUnixVolumeGetFuncWorkerError(t *testing.T) {
 	v := NewTestableUnixVolume(t, false, false)
 	defer v.Teardown()
 
-	v.Put(TEST_HASH, TEST_BLOCK)
+	v.Put(TestHash, TestBlock)
 	mockErr := errors.New("Mock error")
-	err := v.getFunc(v.blockPath(TEST_HASH), func(rdr io.Reader) error {
+	err := v.getFunc(v.blockPath(TestHash), func(rdr io.Reader) error {
 		return mockErr
 	})
 	if err != mockErr {
@@ -215,7 +215,7 @@ func TestUnixVolumeGetFuncFileError(t *testing.T) {
 	defer v.Teardown()
 
 	funcCalled := false
-	err := v.getFunc(v.blockPath(TEST_HASH), func(rdr io.Reader) error {
+	err := v.getFunc(v.blockPath(TestHash), func(rdr io.Reader) error {
 		funcCalled = true
 		return nil
 	})
@@ -231,13 +231,13 @@ func TestUnixVolumeGetFuncWorkerWaitsOnMutex(t *testing.T) {
 	v := NewTestableUnixVolume(t, false, false)
 	defer v.Teardown()
 
-	v.Put(TEST_HASH, TEST_BLOCK)
+	v.Put(TestHash, TestBlock)
 
 	mtx := NewMockMutex()
 	v.locker = mtx
 
 	funcCalled := make(chan struct{})
-	go v.getFunc(v.blockPath(TEST_HASH), func(rdr io.Reader) error {
+	go v.getFunc(v.blockPath(TestHash), func(rdr io.Reader) error {
 		funcCalled <- struct{}{}
 		return nil
 	})
@@ -266,26 +266,26 @@ func TestUnixVolumeCompare(t *testing.T) {
 	v := NewTestableUnixVolume(t, false, false)
 	defer v.Teardown()
 
-	v.Put(TEST_HASH, TEST_BLOCK)
-	err := v.Compare(TEST_HASH, TEST_BLOCK)
+	v.Put(TestHash, TestBlock)
+	err := v.Compare(TestHash, TestBlock)
 	if err != nil {
 		t.Errorf("Got err %q, expected nil", err)
 	}
 
-	err = v.Compare(TEST_HASH, []byte("baddata"))
+	err = v.Compare(TestHash, []byte("baddata"))
 	if err != CollisionError {
 		t.Errorf("Got err %q, expected %q", err, CollisionError)
 	}
 
-	v.Put(TEST_HASH, []byte("baddata"))
-	err = v.Compare(TEST_HASH, TEST_BLOCK)
+	v.Put(TestHash, []byte("baddata"))
+	err = v.Compare(TestHash, TestBlock)
 	if err != DiskHashError {
 		t.Errorf("Got err %q, expected %q", err, DiskHashError)
 	}
 
-	p := fmt.Sprintf("%s/%s/%s", v.root, TEST_HASH[:3], TEST_HASH)
+	p := fmt.Sprintf("%s/%s/%s", v.root, TestHash[:3], TestHash)
 	os.Chmod(p, 000)
-	err = v.Compare(TEST_HASH, TEST_BLOCK)
+	err = v.Compare(TestHash, TestBlock)
 	if err == nil || strings.Index(err.Error(), "permission denied") < 0 {
 		t.Errorf("Got err %q, expected %q", err, "permission denied")
 	}

@@ -618,7 +618,7 @@ func IsValidLocator(loc string) bool {
 
 var authRe = regexp.MustCompile(`^OAuth2\s+(.*)`)
 
-// GetAPIToken returns the OAuth2 token from the Authorization
+// GetApiToken returns the OAuth2 token from the Authorization
 // header of a HTTP request, or an empty string if no matching
 // token is found.
 func GetApiToken(req *http.Request) string {
