@@ -27,7 +27,7 @@ func (bs BlockSet) Union(obs BlockSet) {
 
 // We use the collection index to save space. To convert to and from
 // the uuid, use collection.ReadCollections' fields
-// CollectionIndexToUuid and CollectionUuidToIndex.
+// CollectionIndexToUUID and CollectionUUIDToIndex.
 type CollectionIndexSet map[int]struct{}
 
 // Adds a single collection to the set. The collection is specified by
@@ -254,7 +254,7 @@ func (rlbsm ReplicationLevelBlockSetMap) SummarizeBuckets(
 	rs.OverReplicatedBlocks.ToCollectionIndexSet(readCollections,
 		&rs.OverReplicatedCollections)
 
-	for i := range readCollections.CollectionIndexToUuid {
+	for i := range readCollections.CollectionIndexToUUID {
 		if _, notInKeep := rs.CollectionsNotFullyInKeep[i]; notInKeep {
 		} else if _, underReplicated := rs.UnderReplicatedCollections[i]; underReplicated {
 		} else if _, overReplicated := rs.OverReplicatedCollections[i]; overReplicated {
