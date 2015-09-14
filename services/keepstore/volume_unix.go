@@ -26,6 +26,7 @@ type UnixVolume struct {
 	readonly bool
 }
 
+// Touch sets the timestamp for the given locator to the current time
 func (v *UnixVolume) Touch(loc string) error {
 	if v.readonly {
 		return MethodDisabledError
@@ -49,13 +50,14 @@ func (v *UnixVolume) Touch(loc string) error {
 	return syscall.Utime(p, &utime)
 }
 
+// Mtime returns the stored timestamp for the given locator.
 func (v *UnixVolume) Mtime(loc string) (time.Time, error) {
 	p := v.blockPath(loc)
-	if fi, err := os.Stat(p); err != nil {
+	fi, err := os.Stat(p)
+	if err != nil {
 		return time.Time{}, err
-	} else {
-		return fi.ModTime(), nil
 	}
+	return fi.ModTime(), nil
 }
 
 // Lock the locker (if one is in use), open the file for reading, and
@@ -288,6 +290,7 @@ func (v *UnixVolume) IndexTo(prefix string, w io.Writer) error {
 	}
 }
 
+// Delete deletes the block data from the unix storage
 func (v *UnixVolume) Delete(loc string) error {
 	// Touch() must be called before calling Write() on a block.  Touch()
 	// also uses lockfile().  This avoids a race condition between Write()
@@ -391,6 +394,7 @@ func (v *UnixVolume) String() string {
 	return fmt.Sprintf("[UnixVolume %s]", v.root)
 }
 
+// Writable returns false if all future Put, Mtime, and Delete calls are expected to fail.
 func (v *UnixVolume) Writable() bool {
 	return !v.readonly
 }

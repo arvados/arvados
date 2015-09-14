@@ -11,6 +11,7 @@ import (
 	"time"
 )
 
+// LoggingResponseWriter has anonymous fields ResponseWriter and ResponseBody
 type LoggingResponseWriter struct {
 	Status int
 	Length int
@@ -18,6 +19,7 @@ type LoggingResponseWriter struct {
 	ResponseBody string
 }
 
+// WriteHeader writes header to ResponseWriter
 func (loggingWriter *LoggingResponseWriter) WriteHeader(code int) {
 	loggingWriter.Status = code
 	loggingWriter.ResponseWriter.WriteHeader(code)
@@ -31,10 +33,12 @@ func (loggingWriter *LoggingResponseWriter) Write(data []byte) (int, error) {
 	return loggingWriter.ResponseWriter.Write(data)
 }
 
+// LoggingRESTRouter is used to add logging capabilities to mux.Router
 type LoggingRESTRouter struct {
 	router *mux.Router
 }
 
+// MakeLoggingRESTRouter initializes LoggingRESTRouter
 func MakeLoggingRESTRouter() *LoggingRESTRouter {
 	router := MakeRESTRouter()
 	return (&LoggingRESTRouter{router})

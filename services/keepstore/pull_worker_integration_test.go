@@ -128,7 +128,7 @@ func performPullWorkerIntegrationTest(testData PullWorkIntegrationTestData, pull
 		return rdr, int64(len(testData.Content)), "", nil
 	}
 
-	keepClient.Arvados.ApiToken = GenerateRandomApiToken()
+	keepClient.Arvados.ApiToken = GenerateRandomAPIToken()
 	err := PullItemAndProcess(pullRequest, keepClient.Arvados.ApiToken, keepClient)
 
 	if len(testData.GetError) > 0 {
