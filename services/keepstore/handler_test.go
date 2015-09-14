@@ -25,10 +25,10 @@ import (
 // A RequestTester represents the parameters for an HTTP request to
 // be issued on behalf of a unit test.
 type RequestTester struct {
-	uri          string
-	api_token    string
-	method       string
-	request_body []byte
+	uri         string
+	apiToken    string
+	method      string
+	requestBody []byte
 }
 
 // Test GetBlockHandler on the following situations:
@@ -46,76 +46,76 @@ func TestGetHandler(t *testing.T) {
 	defer KeepVM.Close()
 
 	vols := KeepVM.AllWritable()
-	if err := vols[0].Put(TEST_HASH, TEST_BLOCK); err != nil {
+	if err := vols[0].Put(TestHash, TestBlock); err != nil {
 		t.Error(err)
 	}
 
 	// Create locators for testing.
 	// Turn on permission settings so we can generate signed locators.
-	enforce_permissions = true
-	PermissionSecret = []byte(known_key)
+	enforcePermissions = true
+	PermissionSecret = []byte(knownKey)
 	blob_signature_ttl = 300 * time.Second
 
 	var (
-		unsigned_locator  = "/" + TEST_HASH
-		valid_timestamp   = time.Now().Add(blob_signature_ttl)
-		expired_timestamp = time.Now().Add(-time.Hour)
-		signed_locator    = "/" + SignLocator(TEST_HASH, known_token, valid_timestamp)
-		expired_locator   = "/" + SignLocator(TEST_HASH, known_token, expired_timestamp)
+		unsignedLocator  = "/" + TestHash
+		validTimestamp   = time.Now().Add(blob_signature_ttl)
+		expiredTimestamp = time.Now().Add(-time.Hour)
+		signedLocator    = "/" + SignLocator(TestHash, knownToken, validTimestamp)
+		expiredLocator   = "/" + SignLocator(TestHash, knownToken, expiredTimestamp)
 	)
 
 	// -----------------
 	// Test unauthenticated request with permissions off.
-	enforce_permissions = false
+	enforcePermissions = false
 
 	// Unauthenticated request, unsigned locator
 	// => OK
 	response := IssueRequest(
 		&RequestTester{
 			method: "GET",
-			uri:    unsigned_locator,
+			uri:    unsignedLocator,
 		})
 	ExpectStatusCode(t,
 		"Unauthenticated request, unsigned locator", http.StatusOK, response)
 	ExpectBody(t,
 		"Unauthenticated request, unsigned locator",
-		string(TEST_BLOCK),
+		string(TestBlock),
 		response)
 
-	received_cl := response.Header().Get("Content-Length")
-	expected_cl := fmt.Sprintf("%d", len(TEST_BLOCK))
-	if received_cl != expected_cl {
-		t.Errorf("expected Content-Length %s, got %s", expected_cl, received_cl)
+	receivedLen := response.Header().Get("Content-Length")
+	expectedLen := fmt.Sprintf("%d", len(TestBlock))
+	if receivedLen != expectedLen {
+		t.Errorf("expected Content-Length %s, got %s", expectedLen, receivedLen)
 	}
 
 	// ----------------
 	// Permissions: on.
-	enforce_permissions = true
+	enforcePermissions = true
 
 	// Authenticated request, signed locator
 	// => OK
 	response = IssueRequest(&RequestTester{
-		method:    "GET",
-		uri:       signed_locator,
-		api_token: known_token,
+		method:   "GET",
+		uri:      signedLocator,
+		apiToken: knownToken,
 	})
 	ExpectStatusCode(t,
 		"Authenticated request, signed locator", http.StatusOK, response)
 	ExpectBody(t,
-		"Authenticated request, signed locator", string(TEST_BLOCK), response)
+		"Authenticated request, signed locator", string(TestBlock), response)
 
-	received_cl = response.Header().Get("Content-Length")
-	expected_cl = fmt.Sprintf("%d", len(TEST_BLOCK))
-	if received_cl != expected_cl {
-		t.Errorf("expected Content-Length %s, got %s", expected_cl, received_cl)
+	receivedLen = response.Header().Get("Content-Length")
+	expectedLen = fmt.Sprintf("%d", len(TestBlock))
+	if receivedLen != expectedLen {
+		t.Errorf("expected Content-Length %s, got %s", expectedLen, receivedLen)
 	}
 
 	// Authenticated request, unsigned locator
 	// => PermissionError
 	response = IssueRequest(&RequestTester{
-		method:    "GET",
-		uri:       unsigned_locator,
-		api_token: known_token,
+		method:   "GET",
+		uri:      unsignedLocator,
+		apiToken: knownToken,
 	})
 	ExpectStatusCode(t, "unsigned locator", PermissionError.HTTPCode, response)
 
@@ -123,7 +123,7 @@ func TestGetHandler(t *testing.T) {
 	// => PermissionError
 	response = IssueRequest(&RequestTester{
 		method: "GET",
-		uri:    signed_locator,
+		uri:    signedLocator,
 	})
 	ExpectStatusCode(t,
 		"Unauthenticated request, signed locator",
@@ -132,9 +132,9 @@ func TestGetHandler(t *testing.T) {
 	// Authenticated request, expired locator
 	// => ExpiredError
 	response = IssueRequest(&RequestTester{
-		method:    "GET",
-		uri:       expired_locator,
-		api_token: known_token,
+		method:   "GET",
+		uri:      expiredLocator,
+		apiToken: knownToken,
 	})
 	ExpectStatusCode(t,
 		"Authenticated request, expired locator",
@@ -158,24 +158,24 @@ func TestPutHandler(t *testing.T) {
 
 	// Unauthenticated request, no server key
 	// => OK (unsigned response)
-	unsigned_locator := "/" + TEST_HASH
+	unsignedLocator := "/" + TestHash
 	response := IssueRequest(
 		&RequestTester{
-			method:       "PUT",
-			uri:          unsigned_locator,
-			request_body: TEST_BLOCK,
+			method:      "PUT",
+			uri:         unsignedLocator,
+			requestBody: TestBlock,
 		})
 
 	ExpectStatusCode(t,
 		"Unauthenticated request, no server key", http.StatusOK, response)
 	ExpectBody(t,
 		"Unauthenticated request, no server key",
-		TEST_HASH_PUT_RESPONSE, response)
+		TestHashPutResp, response)
 
 	// ------------------
 	// With a server key.
 
-	PermissionSecret = []byte(known_key)
+	PermissionSecret = []byte(knownKey)
 	blob_signature_ttl = 300 * time.Second
 
 	// When a permission key is available, the locator returned
@@ -185,29 +185,29 @@ func TestPutHandler(t *testing.T) {
 	// => OK (signed response)
 	response = IssueRequest(
 		&RequestTester{
-			method:       "PUT",
-			uri:          unsigned_locator,
-			request_body: TEST_BLOCK,
-			api_token:    known_token,
+			method:      "PUT",
+			uri:         unsignedLocator,
+			requestBody: TestBlock,
+			apiToken:    knownToken,
 		})
 
 	ExpectStatusCode(t,
 		"Authenticated PUT, signed locator, with server key",
 		http.StatusOK, response)
-	response_locator := strings.TrimSpace(response.Body.String())
-	if VerifySignature(response_locator, known_token) != nil {
+	responseLocator := strings.TrimSpace(response.Body.String())
+	if VerifySignature(responseLocator, knownToken) != nil {
 		t.Errorf("Authenticated PUT, signed locator, with server key:\n"+
 			"response '%s' does not contain a valid signature",
-			response_locator)
+			responseLocator)
 	}
 
 	// Unauthenticated PUT, unsigned locator
 	// => OK
 	response = IssueRequest(
 		&RequestTester{
-			method:       "PUT",
-			uri:          unsigned_locator,
-			request_body: TEST_BLOCK,
+			method:      "PUT",
+			uri:         unsignedLocator,
+			requestBody: TestBlock,
 		})
 
 	ExpectStatusCode(t,
@@ -215,7 +215,7 @@ func TestPutHandler(t *testing.T) {
 		http.StatusOK, response)
 	ExpectBody(t,
 		"Unauthenticated PUT, unsigned locator, with server key",
-		TEST_HASH_PUT_RESPONSE, response)
+		TestHashPutResp, response)
 }
 
 func TestPutAndDeleteSkipReadonlyVolumes(t *testing.T) {
@@ -227,17 +227,20 @@ func TestPutAndDeleteSkipReadonlyVolumes(t *testing.T) {
 	defer KeepVM.Close()
 	IssueRequest(
 		&RequestTester{
-			method:       "PUT",
-			uri:          "/" + TEST_HASH,
-			request_body: TEST_BLOCK,
+			method:      "PUT",
+			uri:         "/" + TestHash,
+			requestBody: TestBlock,
 		})
+	defer func(orig bool) {
+		never_delete = orig
+	}(never_delete)
 	never_delete = false
 	IssueRequest(
 		&RequestTester{
-			method:       "DELETE",
-			uri:          "/" + TEST_HASH,
-			request_body: TEST_BLOCK,
-			api_token:    data_manager_token,
+			method:      "DELETE",
+			uri:         "/" + TestHash,
+			requestBody: TestBlock,
+			apiToken:    data_manager_token,
 		})
 	type expect struct {
 		volnum    int
@@ -246,10 +249,13 @@ func TestPutAndDeleteSkipReadonlyVolumes(t *testing.T) {
 	}
 	for _, e := range []expect{
 		{0, "Get", 0},
+		{0, "Compare", 0},
 		{0, "Touch", 0},
 		{0, "Put", 0},
 		{0, "Delete", 0},
-		{1, "Get", 1},
+		{1, "Get", 0},
+		{1, "Compare", 1},
+		{1, "Touch", 1},
 		{1, "Put", 1},
 		{1, "Delete", 1},
 	} {
@@ -268,7 +274,7 @@ func TestPutAndDeleteSkipReadonlyVolumes(t *testing.T) {
 //   - authenticated   /index/prefix request | superuser
 //
 // The only /index requests that should succeed are those issued by the
-// superuser. They should pass regardless of the value of enforce_permissions.
+// superuser. They should pass regardless of the value of enforcePermissions.
 //
 func TestIndexHandler(t *testing.T) {
 	defer teardown()
@@ -280,61 +286,61 @@ func TestIndexHandler(t *testing.T) {
 	defer KeepVM.Close()
 
 	vols := KeepVM.AllWritable()
-	vols[0].Put(TEST_HASH, TEST_BLOCK)
-	vols[1].Put(TEST_HASH_2, TEST_BLOCK_2)
-	vols[0].Put(TEST_HASH+".meta", []byte("metadata"))
-	vols[1].Put(TEST_HASH_2+".meta", []byte("metadata"))
+	vols[0].Put(TestHash, TestBlock)
+	vols[1].Put(TestHash2, TestBlock2)
+	vols[0].Put(TestHash+".meta", []byte("metadata"))
+	vols[1].Put(TestHash2+".meta", []byte("metadata"))
 
 	data_manager_token = "DATA MANAGER TOKEN"
 
-	unauthenticated_req := &RequestTester{
+	unauthenticatedReq := &RequestTester{
 		method: "GET",
 		uri:    "/index",
 	}
-	authenticated_req := &RequestTester{
-		method:    "GET",
-		uri:       "/index",
-		api_token: known_token,
+	authenticatedReq := &RequestTester{
+		method:   "GET",
+		uri:      "/index",
+		apiToken: knownToken,
 	}
-	superuser_req := &RequestTester{
-		method:    "GET",
-		uri:       "/index",
-		api_token: data_manager_token,
+	superuserReq := &RequestTester{
+		method:   "GET",
+		uri:      "/index",
+		apiToken: data_manager_token,
 	}
-	unauth_prefix_req := &RequestTester{
+	unauthPrefixReq := &RequestTester{
 		method: "GET",
-		uri:    "/index/" + TEST_HASH[0:3],
+		uri:    "/index/" + TestHash[0:3],
 	}
-	auth_prefix_req := &RequestTester{
-		method:    "GET",
-		uri:       "/index/" + TEST_HASH[0:3],
-		api_token: known_token,
+	authPrefixReq := &RequestTester{
+		method:   "GET",
+		uri:      "/index/" + TestHash[0:3],
+		apiToken: knownToken,
 	}
-	superuser_prefix_req := &RequestTester{
-		method:    "GET",
-		uri:       "/index/" + TEST_HASH[0:3],
-		api_token: data_manager_token,
+	superuserPrefixReq := &RequestTester{
+		method:   "GET",
+		uri:      "/index/" + TestHash[0:3],
+		apiToken: data_manager_token,
 	}
 
 	// -------------------------------------------------------------
 	// Only the superuser should be allowed to issue /index requests.
 
 	// ---------------------------
-	// enforce_permissions enabled
+	// enforcePermissions enabled
 	// This setting should not affect tests passing.
-	enforce_permissions = true
+	enforcePermissions = true
 
 	// unauthenticated /index request
 	// => UnauthorizedError
-	response := IssueRequest(unauthenticated_req)
+	response := IssueRequest(unauthenticatedReq)
 	ExpectStatusCode(t,
-		"enforce_permissions on, unauthenticated request",
+		"enforcePermissions on, unauthenticated request",
 		UnauthorizedError.HTTPCode,
 		response)
 
 	// unauthenticated /index/prefix request
 	// => UnauthorizedError
-	response = IssueRequest(unauth_prefix_req)
+	response = IssueRequest(unauthPrefixReq)
 	ExpectStatusCode(t,
 		"permissions on, unauthenticated /index/prefix request",
 		UnauthorizedError.HTTPCode,
@@ -342,7 +348,7 @@ func TestIndexHandler(t *testing.T) {
 
 	// authenticated /index request, non-superuser
 	// => UnauthorizedError
-	response = IssueRequest(authenticated_req)
+	response = IssueRequest(authenticatedReq)
 	ExpectStatusCode(t,
 		"permissions on, authenticated request, non-superuser",
 		UnauthorizedError.HTTPCode,
@@ -350,7 +356,7 @@ func TestIndexHandler(t *testing.T) {
 
 	// authenticated /index/prefix request, non-superuser
 	// => UnauthorizedError
-	response = IssueRequest(auth_prefix_req)
+	response = IssueRequest(authPrefixReq)
 	ExpectStatusCode(t,
 		"permissions on, authenticated /index/prefix request, non-superuser",
 		UnauthorizedError.HTTPCode,
@@ -358,27 +364,27 @@ func TestIndexHandler(t *testing.T) {
 
 	// superuser /index request
 	// => OK
-	response = IssueRequest(superuser_req)
+	response = IssueRequest(superuserReq)
 	ExpectStatusCode(t,
 		"permissions on, superuser request",
 		http.StatusOK,
 		response)
 
 	// ----------------------------
-	// enforce_permissions disabled
+	// enforcePermissions disabled
 	// Valid Request should still pass.
-	enforce_permissions = false
+	enforcePermissions = false
 
 	// superuser /index request
 	// => OK
-	response = IssueRequest(superuser_req)
+	response = IssueRequest(superuserReq)
 	ExpectStatusCode(t,
 		"permissions on, superuser request",
 		http.StatusOK,
 		response)
 
-	expected := `^` + TEST_HASH + `\+\d+ \d+\n` +
-		TEST_HASH_2 + `\+\d+ \d+\n\n$`
+	expected := `^` + TestHash + `\+\d+ \d+\n` +
+		TestHash2 + `\+\d+ \d+\n\n$`
 	match, _ := regexp.MatchString(expected, response.Body.String())
 	if !match {
 		t.Errorf(
@@ -388,13 +394,13 @@ func TestIndexHandler(t *testing.T) {
 
 	// superuser /index/prefix request
 	// => OK
-	response = IssueRequest(superuser_prefix_req)
+	response = IssueRequest(superuserPrefixReq)
 	ExpectStatusCode(t,
 		"permissions on, superuser request",
 		http.StatusOK,
 		response)
 
-	expected = `^` + TEST_HASH + `\+\d+ \d+\n\n$`
+	expected = `^` + TestHash + `\+\d+ \d+\n\n$`
 	match, _ = regexp.MatchString(expected, response.Body.String())
 	if !match {
 		t.Errorf(
@@ -439,51 +445,51 @@ func TestDeleteHandler(t *testing.T) {
 	defer KeepVM.Close()
 
 	vols := KeepVM.AllWritable()
-	vols[0].Put(TEST_HASH, TEST_BLOCK)
+	vols[0].Put(TestHash, TestBlock)
 
 	// Explicitly set the blob_signature_ttl to 0 for these
 	// tests, to ensure the MockVolume deletes the blocks
 	// even though they have just been created.
 	blob_signature_ttl = time.Duration(0)
 
-	var user_token = "NOT DATA MANAGER TOKEN"
+	var userToken = "NOT DATA MANAGER TOKEN"
 	data_manager_token = "DATA MANAGER TOKEN"
 
 	never_delete = false
 
-	unauth_req := &RequestTester{
+	unauthReq := &RequestTester{
 		method: "DELETE",
-		uri:    "/" + TEST_HASH,
+		uri:    "/" + TestHash,
 	}
 
-	user_req := &RequestTester{
-		method:    "DELETE",
-		uri:       "/" + TEST_HASH,
-		api_token: user_token,
+	userReq := &RequestTester{
+		method:   "DELETE",
+		uri:      "/" + TestHash,
+		apiToken: userToken,
 	}
 
-	superuser_existing_block_req := &RequestTester{
-		method:    "DELETE",
-		uri:       "/" + TEST_HASH,
-		api_token: data_manager_token,
+	superuserExistingBlockReq := &RequestTester{
+		method:   "DELETE",
+		uri:      "/" + TestHash,
+		apiToken: data_manager_token,
 	}
 
-	superuser_nonexistent_block_req := &RequestTester{
-		method:    "DELETE",
-		uri:       "/" + TEST_HASH_2,
-		api_token: data_manager_token,
+	superuserNonexistentBlockReq := &RequestTester{
+		method:   "DELETE",
+		uri:      "/" + TestHash2,
+		apiToken: data_manager_token,
 	}
 
 	// Unauthenticated request returns PermissionError.
 	var response *httptest.ResponseRecorder
-	response = IssueRequest(unauth_req)
+	response = IssueRequest(unauthReq)
 	ExpectStatusCode(t,
 		"unauthenticated request",
 		PermissionError.HTTPCode,
 		response)
 
 	// Authenticated non-admin request returns PermissionError.
-	response = IssueRequest(user_req)
+	response = IssueRequest(userReq)
 	ExpectStatusCode(t,
 		"authenticated non-admin request",
 		PermissionError.HTTPCode,
@@ -494,9 +500,9 @@ func TestDeleteHandler(t *testing.T) {
 		Deleted int `json:"copies_deleted"`
 		Failed  int `json:"copies_failed"`
 	}
-	var response_dc, expected_dc deletecounter
+	var responseDc, expectedDc deletecounter
 
-	response = IssueRequest(superuser_nonexistent_block_req)
+	response = IssueRequest(superuserNonexistentBlockReq)
 	ExpectStatusCode(t,
 		"data manager request, nonexistent block",
 		http.StatusNotFound,
@@ -504,7 +510,7 @@ func TestDeleteHandler(t *testing.T) {
 
 	// Authenticated admin request for existing block while never_delete is set.
 	never_delete = true
-	response = IssueRequest(superuser_existing_block_req)
+	response = IssueRequest(superuserExistingBlockReq)
 	ExpectStatusCode(t,
 		"authenticated request, existing block, method disabled",
 		MethodDisabledError.HTTPCode,
@@ -512,44 +518,44 @@ func TestDeleteHandler(t *testing.T) {
 	never_delete = false
 
 	// Authenticated admin request for existing block.
-	response = IssueRequest(superuser_existing_block_req)
+	response = IssueRequest(superuserExistingBlockReq)
 	ExpectStatusCode(t,
 		"data manager request, existing block",
 		http.StatusOK,
 		response)
 	// Expect response {"copies_deleted":1,"copies_failed":0}
-	expected_dc = deletecounter{1, 0}
-	json.NewDecoder(response.Body).Decode(&response_dc)
-	if response_dc != expected_dc {
-		t.Errorf("superuser_existing_block_req\nexpected: %+v\nreceived: %+v",
-			expected_dc, response_dc)
+	expectedDc = deletecounter{1, 0}
+	json.NewDecoder(response.Body).Decode(&responseDc)
+	if responseDc != expectedDc {
+		t.Errorf("superuserExistingBlockReq\nexpected: %+v\nreceived: %+v",
+			expectedDc, responseDc)
 	}
 	// Confirm the block has been deleted
-	_, err := vols[0].Get(TEST_HASH)
-	var block_deleted = os.IsNotExist(err)
-	if !block_deleted {
-		t.Error("superuser_existing_block_req: block not deleted")
+	_, err := vols[0].Get(TestHash)
+	var blockDeleted = os.IsNotExist(err)
+	if !blockDeleted {
+		t.Error("superuserExistingBlockReq: block not deleted")
 	}
 
 	// A DELETE request on a block newer than blob_signature_ttl
 	// should return success but leave the block on the volume.
-	vols[0].Put(TEST_HASH, TEST_BLOCK)
+	vols[0].Put(TestHash, TestBlock)
 	blob_signature_ttl = time.Hour
 
-	response = IssueRequest(superuser_existing_block_req)
+	response = IssueRequest(superuserExistingBlockReq)
 	ExpectStatusCode(t,
 		"data manager request, existing block",
 		http.StatusOK,
 		response)
 	// Expect response {"copies_deleted":1,"copies_failed":0}
-	expected_dc = deletecounter{1, 0}
-	json.NewDecoder(response.Body).Decode(&response_dc)
-	if response_dc != expected_dc {
-		t.Errorf("superuser_existing_block_req\nexpected: %+v\nreceived: %+v",
-			expected_dc, response_dc)
+	expectedDc = deletecounter{1, 0}
+	json.NewDecoder(response.Body).Decode(&responseDc)
+	if responseDc != expectedDc {
+		t.Errorf("superuserExistingBlockReq\nexpected: %+v\nreceived: %+v",
+			expectedDc, responseDc)
 	}
 	// Confirm the block has NOT been deleted.
-	_, err = vols[0].Get(TEST_HASH)
+	_, err = vols[0].Get(TestHash)
 	if err != nil {
 		t.Errorf("testing delete on new block: %s\n", err)
 	}
@@ -585,12 +591,12 @@ func TestDeleteHandler(t *testing.T) {
 func TestPullHandler(t *testing.T) {
 	defer teardown()
 
-	var user_token = "USER TOKEN"
+	var userToken = "USER TOKEN"
 	data_manager_token = "DATA MANAGER TOKEN"
 
 	pullq = NewWorkQueue()
 
-	good_json := []byte(`[
+	goodJSON := []byte(`[
 		{
 			"locator":"locator_with_two_servers",
 			"servers":[
@@ -608,36 +614,36 @@ func TestPullHandler(t *testing.T) {
 		}
 	]`)
 
-	bad_json := []byte(`{ "key":"I'm a little teapot" }`)
+	badJSON := []byte(`{ "key":"I'm a little teapot" }`)
 
 	type pullTest struct {
-		name          string
-		req           RequestTester
-		response_code int
-		response_body string
+		name         string
+		req          RequestTester
+		responseCode int
+		responseBody string
 	}
 	var testcases = []pullTest{
 		{
 			"Valid pull list from an ordinary user",
-			RequestTester{"/pull", user_token, "PUT", good_json},
+			RequestTester{"/pull", userToken, "PUT", goodJSON},
 			http.StatusUnauthorized,
 			"Unauthorized\n",
 		},
 		{
 			"Invalid pull request from an ordinary user",
-			RequestTester{"/pull", user_token, "PUT", bad_json},
+			RequestTester{"/pull", userToken, "PUT", badJSON},
 			http.StatusUnauthorized,
 			"Unauthorized\n",
 		},
 		{
 			"Valid pull request from the data manager",
-			RequestTester{"/pull", data_manager_token, "PUT", good_json},
+			RequestTester{"/pull", data_manager_token, "PUT", goodJSON},
 			http.StatusOK,
 			"Received 3 pull requests\n",
 		},
 		{
 			"Invalid pull request from the data manager",
-			RequestTester{"/pull", data_manager_token, "PUT", bad_json},
+			RequestTester{"/pull", data_manager_token, "PUT", badJSON},
 			http.StatusBadRequest,
 			"",
 		},
@@ -645,8 +651,8 @@ func TestPullHandler(t *testing.T) {
 
 	for _, tst := range testcases {
 		response := IssueRequest(&tst.req)
-		ExpectStatusCode(t, tst.name, tst.response_code, response)
-		ExpectBody(t, tst.name, tst.response_body, response)
+		ExpectStatusCode(t, tst.name, tst.responseCode, response)
+		ExpectBody(t, tst.name, tst.responseBody, response)
 	}
 
 	// The Keep pull manager should have received one good list with 3
@@ -691,12 +697,12 @@ func TestPullHandler(t *testing.T) {
 func TestTrashHandler(t *testing.T) {
 	defer teardown()
 
-	var user_token = "USER TOKEN"
+	var userToken = "USER TOKEN"
 	data_manager_token = "DATA MANAGER TOKEN"
 
 	trashq = NewWorkQueue()
 
-	good_json := []byte(`[
+	goodJSON := []byte(`[
 		{
 			"locator":"block1",
 			"block_mtime":1409082153
@@ -711,37 +717,37 @@ func TestTrashHandler(t *testing.T) {
 		}
 	]`)
 
-	bad_json := []byte(`I am not a valid JSON string`)
+	badJSON := []byte(`I am not a valid JSON string`)
 
 	type trashTest struct {
-		name          string
-		req           RequestTester
-		response_code int
-		response_body string
+		name         string
+		req          RequestTester
+		responseCode int
+		responseBody string
 	}
 
 	var testcases = []trashTest{
 		{
 			"Valid trash list from an ordinary user",
-			RequestTester{"/trash", user_token, "PUT", good_json},
+			RequestTester{"/trash", userToken, "PUT", goodJSON},
 			http.StatusUnauthorized,
 			"Unauthorized\n",
 		},
 		{
 			"Invalid trash list from an ordinary user",
-			RequestTester{"/trash", user_token, "PUT", bad_json},
+			RequestTester{"/trash", userToken, "PUT", badJSON},
 			http.StatusUnauthorized,
 			"Unauthorized\n",
 		},
 		{
 			"Valid trash list from the data manager",
-			RequestTester{"/trash", data_manager_token, "PUT", good_json},
+			RequestTester{"/trash", data_manager_token, "PUT", goodJSON},
 			http.StatusOK,
 			"Received 3 trash requests\n",
 		},
 		{
 			"Invalid trash list from the data manager",
-			RequestTester{"/trash", data_manager_token, "PUT", bad_json},
+			RequestTester{"/trash", data_manager_token, "PUT", badJSON},
 			http.StatusBadRequest,
 			"",
 		},
@@ -749,8 +755,8 @@ func TestTrashHandler(t *testing.T) {
 
 	for _, tst := range testcases {
 		response := IssueRequest(&tst.req)
-		ExpectStatusCode(t, tst.name, tst.response_code, response)
-		ExpectBody(t, tst.name, tst.response_body, response)
+		ExpectStatusCode(t, tst.name, tst.responseCode, response)
+		ExpectBody(t, tst.name, tst.responseBody, response)
 	}
 
 	// The trash collector should have received one good list with 3
@@ -773,10 +779,10 @@ func TestTrashHandler(t *testing.T) {
 // REST router.  It returns the HTTP response to the request.
 func IssueRequest(rt *RequestTester) *httptest.ResponseRecorder {
 	response := httptest.NewRecorder()
-	body := bytes.NewReader(rt.request_body)
+	body := bytes.NewReader(rt.requestBody)
 	req, _ := http.NewRequest(rt.method, rt.uri, body)
-	if rt.api_token != "" {
-		req.Header.Set("Authorization", "OAuth2 "+rt.api_token)
+	if rt.apiToken != "" {
+		req.Header.Set("Authorization", "OAuth2 "+rt.apiToken)
 	}
 	loggingRouter := MakeLoggingRESTRouter()
 	loggingRouter.ServeHTTP(response, req)
@@ -788,22 +794,55 @@ func IssueRequest(rt *RequestTester) *httptest.ResponseRecorder {
 func ExpectStatusCode(
 	t *testing.T,
 	testname string,
-	expected_status int,
+	expectedStatus int,
 	response *httptest.ResponseRecorder) {
-	if response.Code != expected_status {
+	if response.Code != expectedStatus {
 		t.Errorf("%s: expected status %d, got %+v",
-			testname, expected_status, response)
+			testname, expectedStatus, response)
 	}
 }
 
 func ExpectBody(
 	t *testing.T,
 	testname string,
-	expected_body string,
+	expectedBody string,
 	response *httptest.ResponseRecorder) {
-	if expected_body != "" && response.Body.String() != expected_body {
+	if expectedBody != "" && response.Body.String() != expectedBody {
 		t.Errorf("%s: expected response body '%s', got %+v",
-			testname, expected_body, response)
+			testname, expectedBody, response)
+	}
+}
+
+// See #7121
+func TestPutNeedsOnlyOneBuffer(t *testing.T) {
+	defer teardown()
+	KeepVM = MakeTestVolumeManager(1)
+	defer KeepVM.Close()
+
+	defer func(orig *bufferPool) {
+		bufs = orig
+	}(bufs)
+	bufs = newBufferPool(1, BlockSize)
+
+	ok := make(chan struct{})
+	go func() {
+		for i := 0; i < 2; i++ {
+			response := IssueRequest(
+				&RequestTester{
+					method:      "PUT",
+					uri:         "/" + TestHash,
+					requestBody: TestBlock,
+				})
+			ExpectStatusCode(t,
+				"TestPutNeedsOnlyOneBuffer", http.StatusOK, response)
+		}
+		ok <- struct{}{}
+	}()
+
+	select {
+	case <-ok:
+	case <-time.After(time.Second):
+		t.Fatal("PUT deadlocks with maxBuffers==1")
 	}
 }
 
@@ -818,21 +857,21 @@ func TestPutHandlerNoBufferleak(t *testing.T) {
 
 	ok := make(chan bool)
 	go func() {
-		for i := 0; i < maxBuffers+1; i += 1 {
+		for i := 0; i < maxBuffers+1; i++ {
 			// Unauthenticated request, no server key
 			// => OK (unsigned response)
-			unsigned_locator := "/" + TEST_HASH
+			unsignedLocator := "/" + TestHash
 			response := IssueRequest(
 				&RequestTester{
-					method:       "PUT",
-					uri:          unsigned_locator,
-					request_body: TEST_BLOCK,
+					method:      "PUT",
+					uri:         unsignedLocator,
+					requestBody: TestBlock,
 				})
 			ExpectStatusCode(t,
 				"TestPutHandlerBufferleak", http.StatusOK, response)
 			ExpectBody(t,
 				"TestPutHandlerBufferleak",
-				TEST_HASH_PUT_RESPONSE, response)
+				TestHashPutResp, response)
 		}
 		ok <- true
 	}()
@@ -854,26 +893,26 @@ func TestGetHandlerNoBufferleak(t *testing.T) {
 	defer KeepVM.Close()
 
 	vols := KeepVM.AllWritable()
-	if err := vols[0].Put(TEST_HASH, TEST_BLOCK); err != nil {
+	if err := vols[0].Put(TestHash, TestBlock); err != nil {
 		t.Error(err)
 	}
 
 	ok := make(chan bool)
 	go func() {
-		for i := 0; i < maxBuffers+1; i += 1 {
+		for i := 0; i < maxBuffers+1; i++ {
 			// Unauthenticated request, unsigned locator
 			// => OK
-			unsigned_locator := "/" + TEST_HASH
+			unsignedLocator := "/" + TestHash
 			response := IssueRequest(
 				&RequestTester{
 					method: "GET",
-					uri:    unsigned_locator,
+					uri:    unsignedLocator,
 				})
 			ExpectStatusCode(t,
 				"Unauthenticated request, unsigned locator", http.StatusOK, response)
 			ExpectBody(t,
 				"Unauthenticated request, unsigned locator",
-				string(TEST_BLOCK),
+				string(TestBlock),
 				response)
 		}
 		ok <- true

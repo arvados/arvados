@@ -6,14 +6,12 @@ import (
 	"time"
 )
 
-/*
-	Keepstore initiates trash worker channel goroutine.
-	The channel will process trash list.
-		For each (next) trash request:
-      Delete the block indicated by the trash request Locator
-		Repeat
-*/
-
+// RunTrashWorker is used by Keepstore to initiate trash worker channel goroutine.
+//	The channel will process trash list.
+//		For each (next) trash request:
+//      Delete the block indicated by the trash request Locator
+//		Repeat
+//
 func RunTrashWorker(trashq *WorkQueue) {
 	for item := range trashq.NextItem {
 		trashRequest := item.(TrashRequest)

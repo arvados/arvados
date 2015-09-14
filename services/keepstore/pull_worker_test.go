@@ -37,7 +37,7 @@ func (s *PullWorkerTestSuite) SetUpTest(c *C) {
 
 	// When a new pull request arrives, the old one will be overwritten.
 	// This behavior is verified using these two maps in the
-	// "TestPullWorker_pull_list_with_two_items_latest_replacing_old"
+	// "TestPullWorkerPullList_with_two_items_latest_replacing_old"
 	testPullLists = make(map[string]string)
 }
 
@@ -53,7 +53,7 @@ func RunTestPullWorker(c *C) {
 	go RunPullWorker(pullq, keepClient)
 }
 
-var first_pull_list = []byte(`[
+var firstPullList = []byte(`[
 		{
 			"locator":"acbd18db4cc2f85cedef654fccc4a4d8+3",
 			"servers":[
@@ -68,7 +68,7 @@ var first_pull_list = []byte(`[
 		}
 	]`)
 
-var second_pull_list = []byte(`[
+var secondPullList = []byte(`[
 		{
 			"locator":"73feffa4b7f6bb68e44cf984c85f6e88+3",
 			"servers":[
@@ -79,44 +79,44 @@ var second_pull_list = []byte(`[
 	]`)
 
 type PullWorkerTestData struct {
-	name          string
-	req           RequestTester
-	response_code int
-	response_body string
-	read_content  string
-	read_error    bool
-	put_error     bool
+	name         string
+	req          RequestTester
+	responseCode int
+	responseBody string
+	readContent  string
+	readError    bool
+	putError     bool
 }
 
-func (s *PullWorkerTestSuite) TestPullWorker_pull_list_with_two_locators(c *C) {
+func (s *PullWorkerTestSuite) TestPullWorkerPullList_with_two_locators(c *C) {
 	defer teardown()
 
 	data_manager_token = "DATA MANAGER TOKEN"
 	testData := PullWorkerTestData{
-		name:          "TestPullWorker_pull_list_with_two_locators",
-		req:           RequestTester{"/pull", data_manager_token, "PUT", first_pull_list},
-		response_code: http.StatusOK,
-		response_body: "Received 2 pull requests\n",
-		read_content:  "hello",
-		read_error:    false,
-		put_error:     false,
+		name:         "TestPullWorkerPullList_with_two_locators",
+		req:          RequestTester{"/pull", data_manager_token, "PUT", firstPullList},
+		responseCode: http.StatusOK,
+		responseBody: "Received 2 pull requests\n",
+		readContent:  "hello",
+		readError:    false,
+		putError:     false,
 	}
 
 	performTest(testData, c)
 }
 
-func (s *PullWorkerTestSuite) TestPullWorker_pull_list_with_one_locator(c *C) {
+func (s *PullWorkerTestSuite) TestPullWorkerPullList_with_one_locator(c *C) {
 	defer teardown()
 
 	data_manager_token = "DATA MANAGER TOKEN"
 	testData := PullWorkerTestData{
-		name:          "TestPullWorker_pull_list_with_one_locator",
-		req:           RequestTester{"/pull", data_manager_token, "PUT", second_pull_list},
-		response_code: http.StatusOK,
-		response_body: "Received 1 pull requests\n",
-		read_content:  "hola",
-		read_error:    false,
-		put_error:     false,
+		name:         "TestPullWorkerPullList_with_one_locator",
+		req:          RequestTester{"/pull", data_manager_token, "PUT", secondPullList},
+		responseCode: http.StatusOK,
+		responseBody: "Received 1 pull requests\n",
+		readContent:  "hola",
+		readError:    false,
+		putError:     false,
 	}
 
 	performTest(testData, c)
@@ -127,13 +127,13 @@ func (s *PullWorkerTestSuite) TestPullWorker_error_on_get_one_locator(c *C) {
 
 	data_manager_token = "DATA MANAGER TOKEN"
 	testData := PullWorkerTestData{
-		name:          "TestPullWorker_error_on_get_one_locator",
-		req:           RequestTester{"/pull", data_manager_token, "PUT", second_pull_list},
-		response_code: http.StatusOK,
-		response_body: "Received 1 pull requests\n",
-		read_content:  "unused",
-		read_error:    true,
-		put_error:     false,
+		name:         "TestPullWorker_error_on_get_one_locator",
+		req:          RequestTester{"/pull", data_manager_token, "PUT", secondPullList},
+		responseCode: http.StatusOK,
+		responseBody: "Received 1 pull requests\n",
+		readContent:  "unused",
+		readError:    true,
+		putError:     false,
 	}
 
 	performTest(testData, c)
@@ -144,13 +144,13 @@ func (s *PullWorkerTestSuite) TestPullWorker_error_on_get_two_locators(c *C) {
 
 	data_manager_token = "DATA MANAGER TOKEN"
 	testData := PullWorkerTestData{
-		name:          "TestPullWorker_error_on_get_two_locators",
-		req:           RequestTester{"/pull", data_manager_token, "PUT", first_pull_list},
-		response_code: http.StatusOK,
-		response_body: "Received 2 pull requests\n",
-		read_content:  "unused",
-		read_error:    true,
-		put_error:     false,
+		name:         "TestPullWorker_error_on_get_two_locators",
+		req:          RequestTester{"/pull", data_manager_token, "PUT", firstPullList},
+		responseCode: http.StatusOK,
+		responseBody: "Received 2 pull requests\n",
+		readContent:  "unused",
+		readError:    true,
+		putError:     false,
 	}
 
 	performTest(testData, c)
@@ -161,13 +161,13 @@ func (s *PullWorkerTestSuite) TestPullWorker_error_on_put_one_locator(c *C) {
 
 	data_manager_token = "DATA MANAGER TOKEN"
 	testData := PullWorkerTestData{
-		name:          "TestPullWorker_error_on_put_one_locator",
-		req:           RequestTester{"/pull", data_manager_token, "PUT", second_pull_list},
-		response_code: http.StatusOK,
-		response_body: "Received 1 pull requests\n",
-		read_content:  "hello hello",
-		read_error:    false,
-		put_error:     true,
+		name:         "TestPullWorker_error_on_put_one_locator",
+		req:          RequestTester{"/pull", data_manager_token, "PUT", secondPullList},
+		responseCode: http.StatusOK,
+		responseBody: "Received 1 pull requests\n",
+		readContent:  "hello hello",
+		readError:    false,
+		putError:     true,
 	}
 
 	performTest(testData, c)
@@ -178,13 +178,13 @@ func (s *PullWorkerTestSuite) TestPullWorker_error_on_put_two_locators(c *C) {
 
 	data_manager_token = "DATA MANAGER TOKEN"
 	testData := PullWorkerTestData{
-		name:          "TestPullWorker_error_on_put_two_locators",
-		req:           RequestTester{"/pull", data_manager_token, "PUT", first_pull_list},
-		response_code: http.StatusOK,
-		response_body: "Received 2 pull requests\n",
-		read_content:  "hello again",
-		read_error:    false,
-		put_error:     true,
+		name:         "TestPullWorker_error_on_put_two_locators",
+		req:          RequestTester{"/pull", data_manager_token, "PUT", firstPullList},
+		responseCode: http.StatusOK,
+		responseBody: "Received 2 pull requests\n",
+		readContent:  "hello again",
+		readError:    false,
+		putError:     true,
 	}
 
 	performTest(testData, c)
@@ -194,7 +194,7 @@ func (s *PullWorkerTestSuite) TestPullWorker_error_on_put_two_locators(c *C) {
 // is used to check that behavior by first putting an item on the queue,
 // and then performing the test. Thus the "testPullLists" has two entries;
 // however, processedPullLists will see only the newest item in the list.
-func (s *PullWorkerTestSuite) TestPullWorker_pull_list_with_two_items_latest_replacing_old(c *C) {
+func (s *PullWorkerTestSuite) TestPullWorkerPullList_with_two_items_latest_replacing_old(c *C) {
 	defer teardown()
 
 	var firstInput = []int{1}
@@ -204,13 +204,13 @@ func (s *PullWorkerTestSuite) TestPullWorker_pull_list_with_two_items_latest_rep
 
 	data_manager_token = "DATA MANAGER TOKEN"
 	testData := PullWorkerTestData{
-		name:          "TestPullWorker_pull_list_with_two_items_latest_replacing_old",
-		req:           RequestTester{"/pull", data_manager_token, "PUT", second_pull_list},
-		response_code: http.StatusOK,
-		response_body: "Received 1 pull requests\n",
-		read_content:  "hola de nuevo",
-		read_error:    false,
-		put_error:     false,
+		name:         "TestPullWorkerPullList_with_two_items_latest_replacing_old",
+		req:          RequestTester{"/pull", data_manager_token, "PUT", secondPullList},
+		responseCode: http.StatusOK,
+		responseBody: "Received 1 pull requests\n",
+		readContent:  "hola de nuevo",
+		readError:    false,
+		putError:     false,
 	}
 
 	performTest(testData, c)
@@ -223,13 +223,13 @@ func (s *PullWorkerTestSuite) TestPullWorker_invalid_data_manager_token(c *C) {
 	data_manager_token = "DATA MANAGER TOKEN"
 
 	testData := PullWorkerTestData{
-		name:          "TestPullWorker_pull_list_with_two_locators",
-		req:           RequestTester{"/pull", "invalid_data_manager_token", "PUT", first_pull_list},
-		response_code: http.StatusUnauthorized,
-		response_body: "Unauthorized\n",
-		read_content:  "hello",
-		read_error:    false,
-		put_error:     false,
+		name:         "TestPullWorkerPullList_with_two_locators",
+		req:          RequestTester{"/pull", "invalid_data_manager_token", "PUT", firstPullList},
+		responseCode: http.StatusUnauthorized,
+		responseBody: "Unauthorized\n",
+		readContent:  "hello",
+		readError:    false,
+		putError:     false,
 	}
 
 	performTest(testData, c)
@@ -243,7 +243,7 @@ func performTest(testData PullWorkerTestData, c *C) {
 	defer pullq.Close()
 
 	currentTestData = testData
-	testPullLists[testData.name] = testData.response_body
+	testPullLists[testData.name] = testData.responseBody
 
 	processedPullLists := make(map[string]string)
 
@@ -253,53 +253,51 @@ func performTest(testData PullWorkerTestData, c *C) {
 	}(GetContent)
 	GetContent = func(signedLocator string, keepClient *keepclient.KeepClient) (reader io.ReadCloser, contentLength int64, url string, err error) {
 		c.Assert(getStatusItem("PullQueue", "InProgress"), Equals, float64(1))
-		processedPullLists[testData.name] = testData.response_body
-		if testData.read_error {
+		processedPullLists[testData.name] = testData.responseBody
+		if testData.readError {
 			err = errors.New("Error getting data")
 			readError = err
 			return nil, 0, "", err
-		} else {
-			readContent = testData.read_content
-			cb := &ClosingBuffer{bytes.NewBufferString(testData.read_content)}
-			var rc io.ReadCloser
-			rc = cb
-			return rc, int64(len(testData.read_content)), "", nil
 		}
+		readContent = testData.readContent
+		cb := &ClosingBuffer{bytes.NewBufferString(testData.readContent)}
+		var rc io.ReadCloser
+		rc = cb
+		return rc, int64(len(testData.readContent)), "", nil
 	}
 
 	// Override PutContent to mock PutBlock functionality
 	defer func(orig func([]byte, string) error) { PutContent = orig }(PutContent)
 	PutContent = func(content []byte, locator string) (err error) {
-		if testData.put_error {
+		if testData.putError {
 			err = errors.New("Error putting data")
 			putError = err
 			return err
-		} else {
-			putContent = content
-			return nil
 		}
+		putContent = content
+		return nil
 	}
 
 	c.Assert(getStatusItem("PullQueue", "InProgress"), Equals, float64(0))
 	c.Assert(getStatusItem("PullQueue", "Queued"), Equals, float64(0))
 
 	response := IssueRequest(&testData.req)
-	c.Assert(response.Code, Equals, testData.response_code)
-	c.Assert(response.Body.String(), Equals, testData.response_body)
+	c.Assert(response.Code, Equals, testData.responseCode)
+	c.Assert(response.Body.String(), Equals, testData.responseBody)
 
 	expectEqualWithin(c, time.Second, 0, func() interface{} {
 		st := pullq.Status()
 		return st.InProgress + st.Queued
 	})
 
-	if testData.name == "TestPullWorker_pull_list_with_two_items_latest_replacing_old" {
+	if testData.name == "TestPullWorkerPullList_with_two_items_latest_replacing_old" {
 		c.Assert(len(testPullLists), Equals, 2)
 		c.Assert(len(processedPullLists), Equals, 1)
 		c.Assert(testPullLists["Added_before_actual_test_item"], NotNil)
-		c.Assert(testPullLists["TestPullWorker_pull_list_with_two_items_latest_replacing_old"], NotNil)
-		c.Assert(processedPullLists["TestPullWorker_pull_list_with_two_items_latest_replacing_old"], NotNil)
+		c.Assert(testPullLists["TestPullWorkerPullList_with_two_items_latest_replacing_old"], NotNil)
+		c.Assert(processedPullLists["TestPullWorkerPullList_with_two_items_latest_replacing_old"], NotNil)
 	} else {
-		if testData.response_code == http.StatusOK {
+		if testData.responseCode == http.StatusOK {
 			c.Assert(len(testPullLists), Equals, 1)
 			c.Assert(len(processedPullLists), Equals, 1)
 			c.Assert(testPullLists[testData.name], NotNil)
@@ -309,16 +307,16 @@ func performTest(testData PullWorkerTestData, c *C) {
 		}
 	}
 
-	if testData.read_error {
+	if testData.readError {
 		c.Assert(readError, NotNil)
-	} else if testData.response_code == http.StatusOK {
+	} else if testData.responseCode == http.StatusOK {
 		c.Assert(readError, IsNil)
-		c.Assert(readContent, Equals, testData.read_content)
-		if testData.put_error {
+		c.Assert(readContent, Equals, testData.readContent)
+		if testData.putError {
 			c.Assert(putError, NotNil)
 		} else {
 			c.Assert(putError, IsNil)
-			c.Assert(string(putContent), Equals, testData.read_content)
+			c.Assert(string(putContent), Equals, testData.readContent)
 		}
 	}
 

@@ -84,6 +84,7 @@ package main
 
 import "container/list"
 
+// WorkQueue definition
 type WorkQueue struct {
 	getStatus chan WorkQueueStatus
 	newlist   chan *list.List
@@ -96,6 +97,7 @@ type WorkQueue struct {
 	DoneItem chan<- struct{}
 }
 
+// WorkQueueStatus reflects the queue status.
 type WorkQueueStatus struct {
 	InProgress int
 	Queued     int

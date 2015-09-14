@@ -66,7 +66,7 @@ func (s *GitSuite) TestNoPermission(c *check.C) {
 func (s *GitSuite) TestExpiredToken(c *check.C) {
 	for _, repo := range []string{"active/foo.git", "active/foo/.git"} {
 		err := s.RunGit(c, expiredToken, "fetch", repo)
-		c.Assert(err, check.ErrorMatches, `.* 500 while accessing.*`)
+		c.Assert(err, check.ErrorMatches, `.* (500 while accessing|requested URL returned error: 500).*`)
 	}
 }
 
@@ -80,7 +80,7 @@ func (s *GitSuite) TestInvalidToken(c *check.C) {
 func (s *GitSuite) TestShortToken(c *check.C) {
 	for _, repo := range []string{"active/foo.git", "active/foo/.git"} {
 		err := s.RunGit(c, "s3cr3t", "fetch", repo)
-		c.Assert(err, check.ErrorMatches, `.* 500 while accessing.*`)
+		c.Assert(err, check.ErrorMatches, `.* (500 while accessing|requested URL returned error: 500).*`)
 	}
 }
 

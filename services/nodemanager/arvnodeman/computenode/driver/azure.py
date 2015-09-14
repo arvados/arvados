@@ -7,6 +7,7 @@ import time
 import libcloud.compute.base as cloud_base
 import libcloud.compute.providers as cloud_provider
 import libcloud.compute.types as cloud_types
+from libcloud.common.exceptions import BaseHTTPError
 
 from . import BaseComputeNodeDriver
 from .. import arvados_node_fqdn, arvados_timestamp, ARVADOS_TIMEFMT
@@ -49,8 +50,12 @@ class ComputeNodeDriver(BaseComputeNodeDriver):
         }
 
     def sync_node(self, cloud_node, arvados_node):
-        self.real.ex_create_tags(cloud_node,
-                                 {'hostname': arvados_node_fqdn(arvados_node)})
+        try:
+            self.real.ex_create_tags(cloud_node,
+                                     {'hostname': arvados_node_fqdn(arvados_node)})
+            return True
+        except BaseHTTPError as b:
+            return False
 
     def _init_image(self, urn):
         return "image", self.get_image(urn)

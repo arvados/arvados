@@ -12,19 +12,19 @@ import (
 	"testing"
 )
 
-var TEST_BLOCK = []byte("The quick brown fox jumps over the lazy dog.")
-var TEST_HASH = "e4d909c290d0fb1ca068ffaddf22cbd0"
-var TEST_HASH_PUT_RESPONSE = "e4d909c290d0fb1ca068ffaddf22cbd0+44\n"
+var TestBlock = []byte("The quick brown fox jumps over the lazy dog.")
+var TestHash = "e4d909c290d0fb1ca068ffaddf22cbd0"
+var TestHashPutResp = "e4d909c290d0fb1ca068ffaddf22cbd0+44\n"
 
-var TEST_BLOCK_2 = []byte("Pack my box with five dozen liquor jugs.")
-var TEST_HASH_2 = "f15ac516f788aec4f30932ffb6395c39"
+var TestBlock2 = []byte("Pack my box with five dozen liquor jugs.")
+var TestHash2 = "f15ac516f788aec4f30932ffb6395c39"
 
-var TEST_BLOCK_3 = []byte("Now is the time for all good men to come to the aid of their country.")
-var TEST_HASH_3 = "eed29bbffbc2dbe5e5ee0bb71888e61f"
+var TestBlock3 = []byte("Now is the time for all good men to come to the aid of their country.")
+var TestHash3 = "eed29bbffbc2dbe5e5ee0bb71888e61f"
 
-// BAD_BLOCK is used to test collisions and corruption.
+// BadBlock is used to test collisions and corruption.
 // It must not match any test hashes.
-var BAD_BLOCK = []byte("The magic words are squeamish ossifrage.")
+var BadBlock = []byte("The magic words are squeamish ossifrage.")
 
 // TODO(twp): Tests still to be written
 //
@@ -55,17 +55,17 @@ func TestGetBlock(t *testing.T) {
 	defer KeepVM.Close()
 
 	vols := KeepVM.AllReadable()
-	if err := vols[1].Put(TEST_HASH, TEST_BLOCK); err != nil {
+	if err := vols[1].Put(TestHash, TestBlock); err != nil {
 		t.Error(err)
 	}
 
 	// Check that GetBlock returns success.
-	result, err := GetBlock(TEST_HASH, false)
+	result, err := GetBlock(TestHash)
 	if err != nil {
 		t.Errorf("GetBlock error: %s", err)
 	}
-	if fmt.Sprint(result) != fmt.Sprint(TEST_BLOCK) {
-		t.Errorf("expected %s, got %s", TEST_BLOCK, result)
+	if fmt.Sprint(result) != fmt.Sprint(TestBlock) {
+		t.Errorf("expected %s, got %s", TestBlock, result)
 	}
 }
 
@@ -80,7 +80,7 @@ func TestGetBlockMissing(t *testing.T) {
 	defer KeepVM.Close()
 
 	// Check that GetBlock returns failure.
-	result, err := GetBlock(TEST_HASH, false)
+	result, err := GetBlock(TestHash)
 	if err != NotFoundError {
 		t.Errorf("Expected NotFoundError, got %v", result)
 	}
@@ -98,10 +98,10 @@ func TestGetBlockCorrupt(t *testing.T) {
 	defer KeepVM.Close()
 
 	vols := KeepVM.AllReadable()
-	vols[0].Put(TEST_HASH, BAD_BLOCK)
+	vols[0].Put(TestHash, BadBlock)
 
 	// Check that GetBlock returns failure.
-	result, err := GetBlock(TEST_HASH, false)
+	result, err := GetBlock(TestHash)
 	if err != DiskHashError {
 		t.Errorf("Expected DiskHashError, got %v (buf: %v)", err, result)
 	}
@@ -122,18 +122,18 @@ func TestPutBlockOK(t *testing.T) {
 	defer KeepVM.Close()
 
 	// Check that PutBlock stores the data as expected.
-	if err := PutBlock(TEST_BLOCK, TEST_HASH); err != nil {
+	if err := PutBlock(TestBlock, TestHash); err != nil {
 		t.Fatalf("PutBlock: %v", err)
 	}
 
 	vols := KeepVM.AllReadable()
-	result, err := vols[1].Get(TEST_HASH)
+	result, err := vols[1].Get(TestHash)
 	if err != nil {
 		t.Fatalf("Volume #0 Get returned error: %v", err)
 	}
-	if string(result) != string(TEST_BLOCK) {
+	if string(result) != string(TestBlock) {
 		t.Fatalf("PutBlock stored '%s', Get retrieved '%s'",
-			string(TEST_BLOCK), string(result))
+			string(TestBlock), string(result))
 	}
 }
 
@@ -152,18 +152,18 @@ func TestPutBlockOneVol(t *testing.T) {
 	vols[0].(*MockVolume).Bad = true
 
 	// Check that PutBlock stores the data as expected.
-	if err := PutBlock(TEST_BLOCK, TEST_HASH); err != nil {
+	if err := PutBlock(TestBlock, TestHash); err != nil {
 		t.Fatalf("PutBlock: %v", err)
 	}
 
-	result, err := GetBlock(TEST_HASH, false)
+	result, err := GetBlock(TestHash)
 	if err != nil {
 		t.Fatalf("GetBlock: %v", err)
 	}
-	if string(result) != string(TEST_BLOCK) {
+	if string(result) != string(TestBlock) {
 		t.Error("PutBlock/GetBlock mismatch")
 		t.Fatalf("PutBlock stored '%s', GetBlock retrieved '%s'",
-			string(TEST_BLOCK), string(result))
+			string(TestBlock), string(result))
 	}
 }
 
@@ -180,12 +180,12 @@ func TestPutBlockMD5Fail(t *testing.T) {
 
 	// Check that PutBlock returns the expected error when the hash does
 	// not match the block.
-	if err := PutBlock(BAD_BLOCK, TEST_HASH); err != RequestHashError {
+	if err := PutBlock(BadBlock, TestHash); err != RequestHashError {
 		t.Error("Expected RequestHashError, got %v", err)
 	}
 
 	// Confirm that GetBlock fails to return anything.
-	if result, err := GetBlock(TEST_HASH, false); err != NotFoundError {
+	if result, err := GetBlock(TestHash); err != NotFoundError {
 		t.Errorf("GetBlock succeeded after a corrupt block store (result = %s, err = %v)",
 			string(result), err)
 	}
@@ -202,17 +202,17 @@ func TestPutBlockCorrupt(t *testing.T) {
 	KeepVM = MakeTestVolumeManager(2)
 	defer KeepVM.Close()
 
-	// Store a corrupted block under TEST_HASH.
+	// Store a corrupted block under TestHash.
 	vols := KeepVM.AllWritable()
-	vols[0].Put(TEST_HASH, BAD_BLOCK)
-	if err := PutBlock(TEST_BLOCK, TEST_HASH); err != nil {
+	vols[0].Put(TestHash, BadBlock)
+	if err := PutBlock(TestBlock, TestHash); err != nil {
 		t.Errorf("PutBlock: %v", err)
 	}
 
-	// The block on disk should now match TEST_BLOCK.
-	if block, err := GetBlock(TEST_HASH, false); err != nil {
+	// The block on disk should now match TestBlock.
+	if block, err := GetBlock(TestHash); err != nil {
 		t.Errorf("GetBlock: %v", err)
-	} else if bytes.Compare(block, TEST_BLOCK) != 0 {
+	} else if bytes.Compare(block, TestBlock) != 0 {
 		t.Errorf("GetBlock returned: '%s'", string(block))
 	}
 }
@@ -260,35 +260,35 @@ func TestPutBlockTouchFails(t *testing.T) {
 	// Store a block and then make the underlying volume bad,
 	// so a subsequent attempt to update the file timestamp
 	// will fail.
-	vols[0].Put(TEST_HASH, BAD_BLOCK)
-	old_mtime, err := vols[0].Mtime(TEST_HASH)
+	vols[0].Put(TestHash, BadBlock)
+	oldMtime, err := vols[0].Mtime(TestHash)
 	if err != nil {
-		t.Fatalf("vols[0].Mtime(%s): %s\n", TEST_HASH, err)
+		t.Fatalf("vols[0].Mtime(%s): %s\n", TestHash, err)
 	}
 
 	// vols[0].Touch will fail on the next call, so the volume
 	// manager will store a copy on vols[1] instead.
 	vols[0].(*MockVolume).Touchable = false
-	if err := PutBlock(TEST_BLOCK, TEST_HASH); err != nil {
+	if err := PutBlock(TestBlock, TestHash); err != nil {
 		t.Fatalf("PutBlock: %v", err)
 	}
 	vols[0].(*MockVolume).Touchable = true
 
 	// Now the mtime on the block on vols[0] should be unchanged, and
 	// there should be a copy of the block on vols[1].
-	new_mtime, err := vols[0].Mtime(TEST_HASH)
+	newMtime, err := vols[0].Mtime(TestHash)
 	if err != nil {
-		t.Fatalf("vols[0].Mtime(%s): %s\n", TEST_HASH, err)
+		t.Fatalf("vols[0].Mtime(%s): %s\n", TestHash, err)
 	}
-	if !new_mtime.Equal(old_mtime) {
-		t.Errorf("mtime was changed on vols[0]:\nold_mtime = %v\nnew_mtime = %v\n",
-			old_mtime, new_mtime)
+	if !newMtime.Equal(oldMtime) {
+		t.Errorf("mtime was changed on vols[0]:\noldMtime = %v\nnewMtime = %v\n",
+			oldMtime, newMtime)
 	}
-	result, err := vols[1].Get(TEST_HASH)
+	result, err := vols[1].Get(TestHash)
 	if err != nil {
 		t.Fatalf("vols[1]: %v", err)
 	}
-	if bytes.Compare(result, TEST_BLOCK) != 0 {
+	if bytes.Compare(result, TestBlock) != 0 {
 		t.Errorf("new block does not match test block\nnew block = %v\n", result)
 	}
 }
@@ -309,7 +309,7 @@ func TestDiscoverTmpfs(t *testing.T) {
 		}
 	}
 
-	// Set up a bogus PROC_MOUNTS file.
+	// Set up a bogus ProcMounts file.
 	f, err := ioutil.TempFile("", "keeptest")
 	if err != nil {
 		t.Fatal(err)
@@ -327,7 +327,7 @@ func TestDiscoverTmpfs(t *testing.T) {
 		fmt.Fprintf(f, "tmpfs %s tmpfs %s 0 0\n", path.Dir(vol), opts)
 	}
 	f.Close()
-	PROC_MOUNTS = f.Name()
+	ProcMounts = f.Name()
 
 	var resultVols volumeSet
 	added := resultVols.Discover()
@@ -355,7 +355,7 @@ func TestDiscoverTmpfs(t *testing.T) {
 func TestDiscoverNone(t *testing.T) {
 	defer teardown()
 
-	// Set up a bogus PROC_MOUNTS file with no Keep vols.
+	// Set up a bogus ProcMounts file with no Keep vols.
 	f, err := ioutil.TempFile("", "keeptest")
 	if err != nil {
 		t.Fatal(err)
@@ -367,7 +367,7 @@ func TestDiscoverNone(t *testing.T) {
 	fmt.Fprintln(f, "udev /dev devtmpfs opts 0 0")
 	fmt.Fprintln(f, "devpts /dev/pts devpts opts 0 0")
 	f.Close()
-	PROC_MOUNTS = f.Name()
+	ProcMounts = f.Name()
 
 	var resultVols volumeSet
 	added := resultVols.Discover()
@@ -388,23 +388,23 @@ func TestIndex(t *testing.T) {
 	defer KeepVM.Close()
 
 	vols := KeepVM.AllReadable()
-	vols[0].Put(TEST_HASH, TEST_BLOCK)
-	vols[1].Put(TEST_HASH_2, TEST_BLOCK_2)
-	vols[0].Put(TEST_HASH_3, TEST_BLOCK_3)
-	vols[0].Put(TEST_HASH+".meta", []byte("metadata"))
-	vols[1].Put(TEST_HASH_2+".meta", []byte("metadata"))
+	vols[0].Put(TestHash, TestBlock)
+	vols[1].Put(TestHash2, TestBlock2)
+	vols[0].Put(TestHash3, TestBlock3)
+	vols[0].Put(TestHash+".meta", []byte("metadata"))
+	vols[1].Put(TestHash2+".meta", []byte("metadata"))
 
 	buf := new(bytes.Buffer)
 	vols[0].IndexTo("", buf)
 	vols[1].IndexTo("", buf)
-	index_rows := strings.Split(string(buf.Bytes()), "\n")
-	sort.Strings(index_rows)
-	sorted_index := strings.Join(index_rows, "\n")
-	expected := `^\n` + TEST_HASH + `\+\d+ \d+\n` +
-		TEST_HASH_3 + `\+\d+ \d+\n` +
-		TEST_HASH_2 + `\+\d+ \d+$`
+	indexRows := strings.Split(string(buf.Bytes()), "\n")
+	sort.Strings(indexRows)
+	sortedIndex := strings.Join(indexRows, "\n")
+	expected := `^\n` + TestHash + `\+\d+ \d+\n` +
+		TestHash3 + `\+\d+ \d+\n` +
+		TestHash2 + `\+\d+ \d+$`
 
-	match, err := regexp.MatchString(expected, sorted_index)
+	match, err := regexp.MatchString(expected, sortedIndex)
 	if err == nil {
 		if !match {
 			t.Errorf("IndexLocators returned:\n%s", string(buf.Bytes()))
@@ -420,8 +420,8 @@ func TestIndex(t *testing.T) {
 
 // MakeTestVolumeManager returns a RRVolumeManager with the specified
 // number of MockVolumes.
-func MakeTestVolumeManager(num_volumes int) VolumeManager {
-	vols := make([]Volume, num_volumes)
+func MakeTestVolumeManager(numVolumes int) VolumeManager {
+	vols := make([]Volume, numVolumes)
 	for i := range vols {
 		vols[i] = CreateMockVolume()
 	}
@@ -431,7 +431,7 @@ func MakeTestVolumeManager(num_volumes int) VolumeManager {
 // teardown cleans up after each test.
 func teardown() {
 	data_manager_token = ""
-	enforce_permissions = false
+	enforcePermissions = false
 	PermissionSecret = nil
 	KeepVM = nil
 }
