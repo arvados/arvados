@@ -441,6 +441,7 @@ def run_nginx():
     nginxconf['GITSSLPORT'] = find_available_port()
     nginxconf['SSLCERT'] = os.path.join(SERVICES_SRC_DIR, 'api', 'tmp', 'self-signed.pem')
     nginxconf['SSLKEY'] = os.path.join(SERVICES_SRC_DIR, 'api', 'tmp', 'self-signed.key')
+    nginxconf['ACCESSLOG'] = os.path.join(TEST_TMPDIR, 'nginx_access_log.fifo')
 
     conftemplatefile = os.path.join(MY_DIRNAME, 'nginx.conf')
     conffile = os.path.join(TEST_TMPDIR, 'nginx.conf')
@@ -452,12 +453,16 @@ def run_nginx():
 
     env = os.environ.copy()
     env['PATH'] = env['PATH']+':/sbin:/usr/sbin:/usr/local/sbin'
+    os.mkfifo(nginxconf['ACCESSLOG'], 0700)
     nginx = subprocess.Popen(
         ['nginx',
          '-g', 'error_log stderr info;',
          '-g', 'pid '+_pidfile('nginx')+';',
          '-c', conffile],
         env=env, stdin=open('/dev/null'), stdout=sys.stderr)
+    cat_access = subprocess.Popen(
+        ['cat', nginxconf['ACCESSLOG']],
+        stdout=sys.stderr)
     _setport('keepproxy-ssl', nginxconf['KEEPPROXYSSLPORT'])
     _setport('arv-git-httpd-ssl', nginxconf['GITSSLPORT'])
 
