@@ -18,7 +18,7 @@ import (
 
 const (
 	ActiveUserToken = "3kg6k6lzmp9kj5cpkcoxie963cmvjahbt2fod9zru30k1jqdmi"
-	AdminToken = "4axaw8zxe0qm22wa6urpp5nskcne8z88cvbupv653y1njyi05h"
+	AdminToken      = "4axaw8zxe0qm22wa6urpp5nskcne8z88cvbupv653y1njyi05h"
 )
 
 var arv arvadosclient.ArvadosClient
@@ -175,7 +175,7 @@ func getBlockIndexesForServer(t *testing.T, i int) []string {
 	path := keepServers[i] + "/index"
 	client := http.Client{}
 	req, err := http.NewRequest("GET", path, nil)
-	req.Header.Add("Authorization", "OAuth2 " + AdminToken)
+	req.Header.Add("Authorization", "OAuth2 "+AdminToken)
 	req.Header.Add("Content-Type", "application/octet-stream")
 	resp, err := client.Do(req)
 	defer resp.Body.Close()
@@ -297,7 +297,7 @@ func backdateBlocks(t *testing.T, oldUnusedBlockLocators []string) {
 func getStatus(t *testing.T, path string) interface{} {
 	client := http.Client{}
 	req, err := http.NewRequest("GET", path, nil)
-	req.Header.Add("Authorization", "OAuth2 " + AdminToken)
+	req.Header.Add("Authorization", "OAuth2 "+AdminToken)
 	req.Header.Add("Content-Type", "application/octet-stream")
 	resp, err := client.Do(req)
 	if err != nil {
@@ -316,10 +316,10 @@ func waitUntilQueuesFinishWork(t *testing.T) {
 	for _, ks := range keepServers {
 		for done := false; !done; {
 			time.Sleep(100 * time.Millisecond)
-			s := getStatus(t, ks + "/status.json")
+			s := getStatus(t, ks+"/status.json")
 			for _, qName := range []string{"PullQueue", "TrashQueue"} {
 				qStatus := s.(map[string]interface{})[qName].(map[string]interface{})
-				if qStatus["Queued"].(float64) + qStatus["InProgress"].(float64) == 0 {
+				if qStatus["Queued"].(float64)+qStatus["InProgress"].(float64) == 0 {
 					done = true
 				}
 			}
@@ -365,26 +365,26 @@ func TestPutAndGetBlocks(t *testing.T) {
 	}
 
 	// Create a collection that would be deleted later on
-	toBeDeletedCollectionUuid := createCollection(t, "some data for collection creation")
-	toBeDeletedCollectionLocator := getFirstLocatorFromCollection(t, toBeDeletedCollectionUuid)
+	toBeDeletedCollectionUUID := createCollection(t, "some data for collection creation")
+	toBeDeletedCollectionLocator := getFirstLocatorFromCollection(t, toBeDeletedCollectionUUID)
 
 	// Create another collection that has the same data as the one of the old blocks
-	oldUsedBlockCollectionUuid := createCollection(t, oldUsedBlockData)
-	oldUsedBlockCollectionLocator := getFirstLocatorFromCollection(t, oldUsedBlockCollectionUuid)
+	oldUsedBlockCollectionUUID := createCollection(t, oldUsedBlockData)
+	oldUsedBlockCollectionLocator := getFirstLocatorFromCollection(t, oldUsedBlockCollectionUUID)
 	if oldUsedBlockCollectionLocator != oldUsedBlockLocator {
 		t.Fatalf("Locator of the collection with the same data as old block is different %s", oldUsedBlockCollectionLocator)
 	}
 
 	// Create another collection whose replication level will be changed
-	replicationCollectionUuid := createCollection(t, "replication level on this collection will be reduced")
-	replicationCollectionLocator := getFirstLocatorFromCollection(t, replicationCollectionUuid)
+	replicationCollectionUUID := createCollection(t, "replication level on this collection will be reduced")
+	replicationCollectionLocator := getFirstLocatorFromCollection(t, replicationCollectionUUID)
 
 	// Create two collections with same data; one will be deleted later on
 	dataForTwoCollections := "one of these collections will be deleted"
-	oneOfTwoWithSameDataUuid := createCollection(t, dataForTwoCollections)
-	oneOfTwoWithSameDataLocator := getFirstLocatorFromCollection(t, oneOfTwoWithSameDataUuid)
-	secondOfTwoWithSameDataUuid := createCollection(t, dataForTwoCollections)
-	secondOfTwoWithSameDataLocator := getFirstLocatorFromCollection(t, secondOfTwoWithSameDataUuid)
+	oneOfTwoWithSameDataUUID := createCollection(t, dataForTwoCollections)
+	oneOfTwoWithSameDataLocator := getFirstLocatorFromCollection(t, oneOfTwoWithSameDataUUID)
+	secondOfTwoWithSameDataUUID := createCollection(t, dataForTwoCollections)
+	secondOfTwoWithSameDataLocator := getFirstLocatorFromCollection(t, secondOfTwoWithSameDataUUID)
 	if oneOfTwoWithSameDataLocator != secondOfTwoWithSameDataLocator {
 		t.Fatalf("Locators for both these collections expected to be same: %s %s", oneOfTwoWithSameDataLocator, secondOfTwoWithSameDataLocator)
 	}
@@ -408,8 +408,8 @@ func TestPutAndGetBlocks(t *testing.T) {
 
 	// Backdate the to-be old blocks and delete the collections
 	backdateBlocks(t, oldUnusedBlockLocators)
-	deleteCollection(t, toBeDeletedCollectionUuid)
-	deleteCollection(t, secondOfTwoWithSameDataUuid)
+	deleteCollection(t, toBeDeletedCollectionUUID)
+	deleteCollection(t, secondOfTwoWithSameDataUUID)
 
 	// Run data manager again
 	dataManagerSingleRun(t)
@@ -425,14 +425,14 @@ func TestPutAndGetBlocks(t *testing.T) {
 
 	verifyBlocks(t, oldUnusedBlockLocators, expected, 2)
 
-	// Reduce desired replication on replicationCollectionUuid
+	// Reduce desired replication on replicationCollectionUUID
 	// collection, and verify that Data Manager does not reduce
 	// actual replication any further than that. (It might not
 	// reduce actual replication at all; that's OK for this test.)
 
 	// Reduce desired replication level.
-	updateCollection(t, replicationCollectionUuid, "replication_desired", "1")
-	collection := getCollection(t, replicationCollectionUuid)
+	updateCollection(t, replicationCollectionUUID, "replication_desired", "1")
+	collection := getCollection(t, replicationCollectionUUID)
 	if collection["replication_desired"].(interface{}) != float64(1) {
 		t.Fatalf("After update replication_desired is not 1; instead it is %v", collection["replication_desired"])
 	}

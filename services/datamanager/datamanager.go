@@ -158,14 +158,13 @@ func singlerun(arv arvadosclient.ArvadosClient) error {
 
 	if trashErr != nil {
 		return err
-	} else {
-		keep.SendTrashLists(kc, trashLists)
 	}
+	keep.SendTrashLists(kc, trashLists)
 
 	return nil
 }
 
-// Returns a data fetcher that fetches data from remote servers.
+// BuildDataFetcher returns a data fetcher that fetches data from remote servers.
 func BuildDataFetcher(arv arvadosclient.ArvadosClient) summary.DataFetcher {
 	return func(arvLogger *logger.Logger,
 		readCollections *collection.ReadCollections,
