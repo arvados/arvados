@@ -44,7 +44,7 @@ setup(name='arvados-python-client',
           'ws4py'
       ],
       test_suite='tests',
-      tests_require=['pbr!=1.7.0', 'mock>=1.0', 'PyYAML'],
+      tests_require=['pbr<1.7.0', 'mock>=1.0', 'PyYAML'],
       zip_safe=False,
       cmdclass={'egg_info': tagger},
       )
