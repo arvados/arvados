@@ -4,7 +4,9 @@ FROM arvados/slurm
 MAINTAINER Ward Vandewege <ward@curoverse.com>
 
 RUN apt-get update -q
-RUN apt-get install -qy supervisor python-pip python-pyvcf python-gflags python-google-api-python-client python-virtualenv libattr1-dev libfuse-dev python-dev python-llfuse fuse crunchstat python-arvados-fuse cron dnsmasq
+## 20150915 nico -- fuse.postint has sporatic failures, spliting this up to see if it helps
+RUN apt-get install -qy fuse
+RUN apt-get install -qy supervisor python-pip python-pyvcf python-gflags python-google-api-python-client python-virtualenv libattr1-dev libfuse-dev python-dev python-llfuse crunchstat python-arvados-fuse cron dnsmasq
 
 ADD fuse.conf /etc/fuse.conf
 RUN chmod 644 /etc/fuse.conf
