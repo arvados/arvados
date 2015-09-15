@@ -6,7 +6,6 @@ import (
 	"bufio"
 	"encoding/json"
 	"errors"
-	"flag"
 	"fmt"
 	"git.curoverse.com/arvados.git/sdk/go/arvadosclient"
 	"git.curoverse.com/arvados.git/sdk/go/blockdigest"
@@ -19,38 +18,41 @@ import (
 	"net/http"
 	"strconv"
 	"strings"
-	"sync"
 	"time"
 )
 
+// ServerAddress struct
 type ServerAddress struct {
 	SSL  bool   `json:service_ssl_flag`
 	Host string `json:"service_host"`
 	Port int    `json:"service_port"`
-	Uuid string `json:"uuid"`
+	UUID string `json:"uuid"`
 }
 
-// Info about a particular block returned by the server
+// BlockInfo is info about a particular block returned by the server
 type BlockInfo struct {
 	Digest blockdigest.DigestWithSize
 	Mtime  int64 // TODO(misha): Replace this with a timestamp.
 }
 
-// Info about a specified block given by a server
+// BlockServerInfo is info about a specified block given by a server
 type BlockServerInfo struct {
 	ServerIndex int
 	Mtime       int64 // TODO(misha): Replace this with a timestamp.
 }
 
+// ServerContents struct
 type ServerContents struct {
 	BlockDigestToInfo map[blockdigest.DigestWithSize]BlockInfo
 }
 
+// ServerResponse struct
 type ServerResponse struct {
 	Address  ServerAddress
 	Contents ServerContents
 }
 
+// ReadServers struct
 type ReadServers struct {
 	ReadAllServers           bool
 	KeepServerIndexToAddress []ServerAddress
@@ -60,67 +62,34 @@ type ReadServers struct {
 	BlockReplicationCounts   map[int]int
 }
 
+// GetKeepServersParams struct
 type GetKeepServersParams struct {
 	Client arvadosclient.ArvadosClient
 	Logger *logger.Logger
 	Limit  int
 }
 
-type KeepServiceList struct {
+// ServiceList consists of the addresses of all the available kee servers
+type ServiceList struct {
 	ItemsAvailable int             `json:"items_available"`
 	KeepServers    []ServerAddress `json:"items"`
 }
 
-var (
-	// Don't access the token directly, use getDataManagerToken() to
-	// make sure it's been read.
-	dataManagerToken             string
-	dataManagerTokenFile         string
-	dataManagerTokenFileReadOnce sync.Once
-)
-
-func init() {
-	flag.StringVar(&dataManagerTokenFile,
-		"data-manager-token-file",
-		"",
-		"File with the API token we should use to contact keep servers.")
-}
-
+// String
 // TODO(misha): Change this to include the UUID as well.
 func (s ServerAddress) String() string {
 	return s.URL()
 }
 
+// URL of the keep server
 func (s ServerAddress) URL() string {
 	if s.SSL {
 		return fmt.Sprintf("https://%s:%d", s.Host, s.Port)
-	} else {
-		return fmt.Sprintf("http://%s:%d", s.Host, s.Port)
 	}
+	return fmt.Sprintf("http://%s:%d", s.Host, s.Port)
 }
 
-func GetDataManagerToken(arvLogger *logger.Logger) string {
-	readDataManagerToken := func() {
-		if dataManagerTokenFile == "" {
-			flag.Usage()
-			loggerutil.FatalWithMessage(arvLogger,
-				"Data Manager Token needed, but data manager token file not specified.")
-		} else {
-			rawRead, err := ioutil.ReadFile(dataManagerTokenFile)
-			if err != nil {
-				loggerutil.FatalWithMessage(arvLogger,
-					fmt.Sprintf("Unexpected error reading token file %s: %v",
-						dataManagerTokenFile,
-						err))
-			}
-			dataManagerToken = strings.TrimSpace(string(rawRead))
-		}
-	}
-
-	dataManagerTokenFileReadOnce.Do(readDataManagerToken)
-	return dataManagerToken
-}
-
+// GetKeepServersAndSummarize gets keep servers from api
 func GetKeepServersAndSummarize(params GetKeepServersParams) (results ReadServers) {
 	results = GetKeepServers(params)
 	log.Printf("Returned %d keep disks", len(results.ServerToContents))
@@ -132,12 +101,8 @@ func GetKeepServersAndSummarize(params GetKeepServersParams) (results ReadServer
 	return
 }
 
+// GetKeepServers from api server
 func GetKeepServers(params GetKeepServersParams) (results ReadServers) {
-	if &params.Client == nil {
-		log.Fatalf("params.Client passed to GetKeepServers() should " +
-			"contain a valid ArvadosClient, but instead it is nil.")
-	}
-
 	sdkParams := arvadosclient.Dict{
 		"filters": [][]string{[]string{"service_type", "=", "disk"}},
 	}
@@ -145,7 +110,7 @@ func GetKeepServers(params GetKeepServersParams) (results ReadServers) {
 		sdkParams["limit"] = params.Limit
 	}
 
-	var sdkResponse KeepServiceList
+	var sdkResponse ServiceList
 	err := params.Client.List("keep_services", sdkParams, &sdkResponse)
 
 	if err != nil {
@@ -177,9 +142,6 @@ func GetKeepServers(params GetKeepServersParams) (results ReadServers) {
 
 	log.Printf("Got Server Addresses: %v", results)
 
-	// This is safe for concurrent use
-	client := http.Client{}
-
 	// Send off all the index requests concurrently
 	responseChan := make(chan ServerResponse)
 	for _, keepServer := range sdkResponse.KeepServers {
@@ -192,7 +154,7 @@ func GetKeepServers(params GetKeepServersParams) (results ReadServers) {
 		go func(keepServer ServerAddress) {
 			responseChan <- GetServerContents(params.Logger,
 				keepServer,
-				client)
+				params.Client)
 		}(keepServer)
 	}
 
@@ -218,14 +180,15 @@ func GetKeepServers(params GetKeepServersParams) (results ReadServers) {
 	return
 }
 
+// GetServerContents of the keep server
 func GetServerContents(arvLogger *logger.Logger,
 	keepServer ServerAddress,
-	client http.Client) (response ServerResponse) {
+	arv arvadosclient.ArvadosClient) (response ServerResponse) {
 
-	GetServerStatus(arvLogger, keepServer, client)
+	GetServerStatus(arvLogger, keepServer, arv)
 
-	req := CreateIndexRequest(arvLogger, keepServer)
-	resp, err := client.Do(req)
+	req := CreateIndexRequest(arvLogger, keepServer, arv)
+	resp, err := arv.Client.Do(req)
 	if err != nil {
 		loggerutil.FatalWithMessage(arvLogger,
 			fmt.Sprintf("Error fetching %s: %v. Response was %+v",
@@ -237,9 +200,10 @@ func GetServerContents(arvLogger *logger.Logger,
 	return ReadServerResponse(arvLogger, keepServer, resp)
 }
 
+// GetServerStatus get keep server status by invoking /status.json
 func GetServerStatus(arvLogger *logger.Logger,
 	keepServer ServerAddress,
-	client http.Client) {
+	arv arvadosclient.ArvadosClient) {
 	url := fmt.Sprintf("http://%s:%d/status.json",
 		keepServer.Host,
 		keepServer.Port)
@@ -253,11 +217,11 @@ func GetServerStatus(arvLogger *logger.Logger,
 			serverInfo["host"] = keepServer.Host
 			serverInfo["port"] = keepServer.Port
 
-			keepInfo[keepServer.Uuid] = serverInfo
+			keepInfo[keepServer.UUID] = serverInfo
 		})
 	}
 
-	resp, err := client.Get(url)
+	resp, err := arv.Client.Get(url)
 	if err != nil {
 		loggerutil.FatalWithMessage(arvLogger,
 			fmt.Sprintf("Error getting keep status from %s: %v", url, err))
@@ -281,15 +245,17 @@ func GetServerStatus(arvLogger *logger.Logger,
 		now := time.Now()
 		arvLogger.Update(func(p map[string]interface{}, e map[string]interface{}) {
 			keepInfo := logger.GetOrCreateMap(p, "keep_info")
-			serverInfo := keepInfo[keepServer.Uuid].(map[string]interface{})
+			serverInfo := keepInfo[keepServer.UUID].(map[string]interface{})
 			serverInfo["status_response_processed_at"] = now
 			serverInfo["status"] = keepStatus
 		})
 	}
 }
 
+// CreateIndexRequest to the keep server
 func CreateIndexRequest(arvLogger *logger.Logger,
-	keepServer ServerAddress) (req *http.Request) {
+	keepServer ServerAddress,
+	arv arvadosclient.ArvadosClient) (req *http.Request) {
 	url := fmt.Sprintf("http://%s:%d/index", keepServer.Host, keepServer.Port)
 	log.Println("About to fetch keep server contents from " + url)
 
@@ -297,7 +263,7 @@ func CreateIndexRequest(arvLogger *logger.Logger,
 		now := time.Now()
 		arvLogger.Update(func(p map[string]interface{}, e map[string]interface{}) {
 			keepInfo := logger.GetOrCreateMap(p, "keep_info")
-			serverInfo := keepInfo[keepServer.Uuid].(map[string]interface{})
+			serverInfo := keepInfo[keepServer.UUID].(map[string]interface{})
 			serverInfo["index_request_sent_at"] = now
 		})
 	}
@@ -308,11 +274,11 @@ func CreateIndexRequest(arvLogger *logger.Logger,
 			fmt.Sprintf("Error building http request for %s: %v", url, err))
 	}
 
-	req.Header.Add("Authorization",
-		fmt.Sprintf("OAuth2 %s", GetDataManagerToken(arvLogger)))
+	req.Header.Add("Authorization", "OAuth2 "+arv.ApiToken)
 	return
 }
 
+// ReadServerResponse reads reasponse from keep server
 func ReadServerResponse(arvLogger *logger.Logger,
 	keepServer ServerAddress,
 	resp *http.Response) (response ServerResponse) {
@@ -328,7 +294,7 @@ func ReadServerResponse(arvLogger *logger.Logger,
 		now := time.Now()
 		arvLogger.Update(func(p map[string]interface{}, e map[string]interface{}) {
 			keepInfo := logger.GetOrCreateMap(p, "keep_info")
-			serverInfo := keepInfo[keepServer.Uuid].(map[string]interface{})
+			serverInfo := keepInfo[keepServer.UUID].(map[string]interface{})
 			serverInfo["index_response_received_at"] = now
 		})
 	}
@@ -375,7 +341,7 @@ func ReadServerResponse(arvLogger *logger.Logger,
 
 		if storedBlock, ok := response.Contents.BlockDigestToInfo[blockInfo.Digest]; ok {
 			// This server returned multiple lines containing the same block digest.
-			numDuplicates += 1
+			numDuplicates++
 			// Keep the block that's newer.
 			if storedBlock.Mtime < blockInfo.Mtime {
 				response.Contents.BlockDigestToInfo[blockInfo.Digest] = blockInfo
@@ -396,7 +362,7 @@ func ReadServerResponse(arvLogger *logger.Logger,
 		now := time.Now()
 		arvLogger.Update(func(p map[string]interface{}, e map[string]interface{}) {
 			keepInfo := logger.GetOrCreateMap(p, "keep_info")
-			serverInfo := keepInfo[keepServer.Uuid].(map[string]interface{})
+			serverInfo := keepInfo[keepServer.UUID].(map[string]interface{})
 
 			serverInfo["processing_finished_at"] = now
 			serverInfo["lines_received"] = numLines
@@ -439,11 +405,12 @@ func parseBlockInfoFromIndexLine(indexLine string) (blockInfo BlockInfo, err err
 	return
 }
 
+// Summarize results from keep server
 func (readServers *ReadServers) Summarize(arvLogger *logger.Logger) {
 	readServers.BlockReplicationCounts = make(map[int]int)
 	for _, infos := range readServers.BlockToServers {
 		replication := len(infos)
-		readServers.BlockReplicationCounts[replication] += 1
+		readServers.BlockReplicationCounts[replication]++
 	}
 
 	if arvLogger != nil {
@@ -452,24 +419,26 @@ func (readServers *ReadServers) Summarize(arvLogger *logger.Logger) {
 			keepInfo["distinct_blocks_stored"] = len(readServers.BlockToServers)
 		})
 	}
-
 }
 
+// TrashRequest struct
 type TrashRequest struct {
 	Locator    string `json:"locator"`
 	BlockMtime int64  `json:"block_mtime"`
 }
 
+// TrashList is an array of TrashRequest objects
 type TrashList []TrashRequest
 
-func SendTrashLists(dataManagerToken string, kc *keepclient.KeepClient, spl map[string]TrashList) (errs []error) {
+// SendTrashLists to trash queue
+func SendTrashLists(kc *keepclient.KeepClient, spl map[string]TrashList) (errs []error) {
 	count := 0
 	barrier := make(chan error)
 
 	client := kc.Client
 
 	for url, v := range spl {
-		count += 1
+		count++
 		log.Printf("Sending trash list to %v", url)
 
 		go (func(url string, v TrashList) {
@@ -487,8 +456,7 @@ func SendTrashLists(dataManagerToken string, kc *keepclient.KeepClient, spl map[
 				return
 			}
 
-			// Add api token header
-			req.Header.Add("Authorization", fmt.Sprintf("OAuth2 %s", dataManagerToken))
+			req.Header.Add("Authorization", "OAuth2 "+kc.Arvados.ApiToken)
 
 			// Make the request
 			var resp *http.Response
@@ -512,7 +480,7 @@ func SendTrashLists(dataManagerToken string, kc *keepclient.KeepClient, spl map[
 
 	}
 
-	for i := 0; i < count; i += 1 {
+	for i := 0; i < count; i++ {
 		b := <-barrier
 		if b != nil {
 			errs = append(errs, b)

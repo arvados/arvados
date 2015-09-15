@@ -36,6 +36,10 @@ const BlockSize = 64 * 1024 * 1024
 // in order to permit writes.
 const MinFreeKilobytes = BlockSize / 1024
 
+// Until #6221 is resolved, never_delete must be true.
+// However, allow it to be false in testing with TEST_DATA_MANAGER_TOKEN
+const TEST_DATA_MANAGER_TOKEN = "4axaw8zxe0qm22wa6urpp5nskcne8z88cvbupv653y1njyi05h"
+
 // ProcMounts /proc/mounts
 var ProcMounts = "/proc/mounts"
 
@@ -293,10 +297,6 @@ func main() {
 
 	flag.Parse()
 
-	if neverDelete != true {
-		log.Fatal("neverDelete must be true, see #6221")
-	}
-
 	if maxBuffers < 0 {
 		log.Fatal("-max-buffers must be greater than zero.")
 	}
@@ -347,6 +347,11 @@ func main() {
 			log.Fatalf("reading data manager token: %s\n", err)
 		}
 	}
+
+	if neverDelete != true && dataManagerToken != TEST_DATA_MANAGER_TOKEN {
+		log.Fatal("never_delete must be true, see #6221")
+	}
+
 	if blobSigningKeyFile != "" {
 		if buf, err := ioutil.ReadFile(blobSigningKeyFile); err == nil {
 			PermissionSecret = bytes.TrimSpace(buf)
