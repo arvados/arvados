@@ -380,7 +380,7 @@ func testDeleteNewBlock(t *testing.T, factory TestableVolumeFactory) {
 }
 
 // Calling Delete() for a block with a timestamp older than
-// blob_signature_ttl seconds in the past should delete the data.
+// blobSignatureTTL seconds in the past should delete the data.
 // Test is intended for only writable volumes
 func testDeleteOldBlock(t *testing.T, factory TestableVolumeFactory) {
 	v := factory(t)
@@ -391,7 +391,7 @@ func testDeleteOldBlock(t *testing.T, factory TestableVolumeFactory) {
 	}
 
 	v.Put(TestHash, TestBlock)
-	v.TouchWithDate(TestHash, time.Now().Add(-2*blob_signature_ttl*time.Second))
+	v.TouchWithDate(TestHash, time.Now().Add(-2*blobSignatureTTL*time.Second))
 
 	if err := v.Delete(TestHash); err != nil {
 		t.Error(err)

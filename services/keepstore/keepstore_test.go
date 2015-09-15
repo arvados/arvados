@@ -430,7 +430,7 @@ func MakeTestVolumeManager(numVolumes int) VolumeManager {
 
 // teardown cleans up after each test.
 func teardown() {
-	data_manager_token = ""
+	dataManagerToken = ""
 	enforcePermissions = false
 	PermissionSecret = nil
 	KeepVM = nil

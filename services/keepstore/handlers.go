@@ -134,7 +134,7 @@ func PutBlockHandler(resp http.ResponseWriter, req *http.Request) {
 	returnHash := fmt.Sprintf("%s+%d", hash, req.ContentLength)
 	apiToken := GetApiToken(req)
 	if PermissionSecret != nil && apiToken != "" {
-		expiry := time.Now().Add(blob_signature_ttl)
+		expiry := time.Now().Add(blobSignatureTTL)
 		returnHash = SignLocator(returnHash, apiToken, expiry)
 	}
 	resp.Write([]byte(returnHash + "\n"))
@@ -281,7 +281,7 @@ func DeleteHandler(resp http.ResponseWriter, req *http.Request) {
 		return
 	}
 
-	if never_delete {
+	if neverDelete {
 		http.Error(resp, MethodDisabledError.Error(), MethodDisabledError.HTTPCode)
 		return
 	}
@@ -662,5 +662,5 @@ func CanDelete(apiToken string) bool {
 // IsDataManagerToken returns true if apiToken represents the data
 // manager's token.
 func IsDataManagerToken(apiToken string) bool {
-	return data_manager_token != "" && apiToken == data_manager_token
+	return dataManagerToken != "" && apiToken == dataManagerToken
 }

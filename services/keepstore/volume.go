@@ -150,7 +150,7 @@ type Volume interface {
 	// loc is as described in Get.
 	//
 	// If the timestamp for the given locator is newer than
-	// blob_signature_ttl, Delete must not delete the data.
+	// blobSignatureTTL, Delete must not delete the data.
 	//
 	// If a Delete operation overlaps with any Touch or Put
 	// operations on the same locator, the implementation must
@@ -171,7 +171,7 @@ type Volume interface {
 	// reliably or fail outright.
 	//
 	// Corollary: A successful Touch or Put guarantees a block
-	// will not be deleted for at least blob_signature_ttl
+	// will not be deleted for at least blobSignatureTTL
 	// seconds.
 	Delete(loc string) error
 
