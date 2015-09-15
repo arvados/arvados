@@ -1,13 +1,16 @@
 /* Ensures that we only have one copy of each unique string. This is
 /* not designed for concurrent access. */
+
 package summary
 
 // This code should probably be moved somewhere more universal.
 
+// CanonicalString struct
 type CanonicalString struct {
 	m map[string]string
 }
 
+// Get a CanonicalString
 func (cs *CanonicalString) Get(s string) (r string) {
 	if cs.m == nil {
 		cs.m = make(map[string]string)

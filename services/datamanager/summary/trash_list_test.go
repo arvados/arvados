@@ -34,7 +34,7 @@ func (s *TrashSuite) TestBuildTrashLists(c *C) {
 				keep.BlockServerInfo{1, 101}}}}
 
 	// only block0 is in delete set
-	var bs BlockSet = make(BlockSet)
+	var bs = make(BlockSet)
 	bs[block0] = struct{}{}
 
 	// Test trash list where only sv0 is on writable list.

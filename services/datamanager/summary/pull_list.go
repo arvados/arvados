@@ -1,4 +1,5 @@
 // Code for generating pull lists as described in https://arvados.org/projects/arvados/wiki/Keep_Design_Doc#Pull-List
+
 package summary
 
 import (
@@ -14,19 +15,21 @@ import (
 	"strings"
 )
 
+// Locator is a block digest
 type Locator blockdigest.DigestWithSize
 
+// MarshalJSON encoding
 func (l Locator) MarshalJSON() ([]byte, error) {
 	return []byte("\"" + blockdigest.DigestWithSize(l).String() + "\""), nil
 }
 
-// One entry in the Pull List
+// PullRequest represents one entry in the Pull List
 type PullRequest struct {
 	Locator Locator  `json:"locator"`
 	Servers []string `json:"servers"`
 }
 
-// The Pull List for a particular server
+// PullList for a particular server
 type PullList []PullRequest
 
 // PullListByLocator implements sort.Interface for PullList based on
@@ -49,6 +52,7 @@ func (a PullListByLocator) Less(i, j int) bool {
 	return false
 }
 
+// PullServers struct
 // For a given under-replicated block, this structure represents which
 // servers should pull the specified block and which servers they can
 // pull it from.
@@ -57,8 +61,8 @@ type PullServers struct {
 	From []string // Servers that already contain the specified block
 }
 
-// Creates a map from block locator to PullServers with one entry for
-// each under-replicated block.
+// ComputePullServers creates a map from block locator to PullServers
+// with one entry for each under-replicated block.
 //
 // This method ignores zero-replica blocks since there are no servers
 // to pull them from, so callers should feel free to omit them, but
@@ -78,7 +82,7 @@ func ComputePullServers(kc *keepclient.KeepClient,
 		writableServers[cs.Get(url)] = struct{}{}
 	}
 
-	for block, _ := range underReplicated {
+	for block := range underReplicated {
 		serversStoringBlock := keepServerInfo.BlockToServers[block]
 		numCopies := len(serversStoringBlock)
 		numCopiesMissing := blockToDesiredReplication[block] - numCopies
@@ -109,9 +113,9 @@ func ComputePullServers(kc *keepclient.KeepClient,
 	return m
 }
 
-// Creates a pull list in which the To and From fields preserve the
-// ordering of sorted servers and the contents are all canonical
-// strings.
+// CreatePullServers creates a pull list in which the To and From
+// fields preserve the ordering of sorted servers and the contents
+// are all canonical strings.
 func CreatePullServers(cs CanonicalString,
 	serverHasBlock map[string]struct{},
 	writableServers map[string]struct{},
@@ -142,12 +146,12 @@ func CreatePullServers(cs CanonicalString,
 	return
 }
 
-// Strips the protocol prefix from a url.
+// RemoveProtocolPrefix strips the protocol prefix from a url.
 func RemoveProtocolPrefix(url string) string {
 	return url[(strings.LastIndex(url, "/") + 1):]
 }
 
-// Produces a PullList for each keep server.
+// BuildPullLists produces a PullList for each keep server.
 func BuildPullLists(lps map[Locator]PullServers) (spl map[string]PullList) {
 	spl = map[string]PullList{}
 	// We don't worry about canonicalizing our strings here, because we
@@ -166,7 +170,7 @@ func BuildPullLists(lps map[Locator]PullServers) (spl map[string]PullList) {
 	return
 }
 
-// Writes each pull list to a file.
+// WritePullLists writes each pull list to a file.
 // The filename is based on the hostname.
 //
 // This is just a hack for prototyping, it is not expected to be used

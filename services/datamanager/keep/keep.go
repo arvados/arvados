@@ -75,7 +75,7 @@ type ServiceList struct {
 	KeepServers    []ServerAddress `json:"items"`
 }
 
-// String 
+// String
 // TODO(misha): Change this to include the UUID as well.
 func (s ServerAddress) String() string {
 	return s.URL()
@@ -274,7 +274,7 @@ func CreateIndexRequest(arvLogger *logger.Logger,
 			fmt.Sprintf("Error building http request for %s: %v", url, err))
 	}
 
-	req.Header.Add("Authorization", "OAuth2 " + arv.ApiToken)
+	req.Header.Add("Authorization", "OAuth2 "+arv.ApiToken)
 	return
 }
 
@@ -456,7 +456,7 @@ func SendTrashLists(kc *keepclient.KeepClient, spl map[string]TrashList) (errs [
 				return
 			}
 
-			req.Header.Add("Authorization", "OAuth2 " + kc.Arvados.ApiToken)
+			req.Header.Add("Authorization", "OAuth2 "+kc.Arvados.ApiToken)
 
 			// Make the request
 			var resp *http.Response

@@ -26,6 +26,7 @@ var (
 	readDataFrom string
 )
 
+// DataFetcher to fetch data from keep servers
 type DataFetcher func(arvLogger *logger.Logger,
 	readCollections *collection.ReadCollections,
 	keepServerInfo *keep.ReadServers)
@@ -41,7 +42,7 @@ func init() {
 		"Avoid network i/o and read summary data from this file instead. Used for development only.")
 }
 
-// Writes data we've read to a file.
+// MaybeWriteData writes data we've read to a file.
 //
 // This is useful for development, so that we don't need to read all
 // our data from the network every time we tweak something.
@@ -53,33 +54,33 @@ func MaybeWriteData(arvLogger *logger.Logger,
 	keepServerInfo keep.ReadServers) bool {
 	if writeDataTo == "" {
 		return false
-	} else {
-		summaryFile, err := os.Create(writeDataTo)
-		if err != nil {
-			loggerutil.FatalWithMessage(arvLogger,
-				fmt.Sprintf("Failed to open %s: %v", writeDataTo, err))
-		}
-		defer summaryFile.Close()
-
-		enc := gob.NewEncoder(summaryFile)
-		data := serializedData{
-			ReadCollections: readCollections,
-			KeepServerInfo:  keepServerInfo}
-		err = enc.Encode(data)
-		if err != nil {
-			loggerutil.FatalWithMessage(arvLogger,
-				fmt.Sprintf("Failed to write summary data: %v", err))
-		}
-		log.Printf("Wrote summary data to: %s", writeDataTo)
-		return true
 	}
+	summaryFile, err := os.Create(writeDataTo)
+	if err != nil {
+		loggerutil.FatalWithMessage(arvLogger,
+			fmt.Sprintf("Failed to open %s: %v", writeDataTo, err))
+	}
+	defer summaryFile.Close()
+
+	enc := gob.NewEncoder(summaryFile)
+	data := serializedData{
+		ReadCollections: readCollections,
+		KeepServerInfo:  keepServerInfo}
+	err = enc.Encode(data)
+	if err != nil {
+		loggerutil.FatalWithMessage(arvLogger,
+			fmt.Sprintf("Failed to write summary data: %v", err))
+	}
+	log.Printf("Wrote summary data to: %s", writeDataTo)
+	return true
 }
 
+// ShouldReadData should not be used outside of development
 func ShouldReadData() bool {
 	return readDataFrom != ""
 }
 
-// Reads data that we've written to a file.
+// ReadData reads data that we've written to a file.
 //
 // This is useful for development, so that we don't need to read all
 // our data from the network every time we tweak something.
