@@ -386,8 +386,8 @@ func (s *ServerRequiredSuite) TestPostWithoutHash(c *C) {
 		c.Check(err, Equals, nil)
 		body, err := ioutil.ReadAll(resp.Body)
 		c.Check(err, Equals, nil)
-		c.Check(string(body), Equals,
-			fmt.Sprintf("%x+%d", md5.Sum([]byte("qux")), 3))
+		c.Check(string(body), Matches,
+			fmt.Sprintf(`^%x\+3(\+.+)?$`, md5.Sum([]byte("qux"))))
 	}
 }
 
