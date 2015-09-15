@@ -318,7 +318,7 @@ func (v *UnixVolume) Delete(loc string) error {
 	}
 	defer unlockfile(f)
 
-	// If the block has been PUT in the last blob_signature_ttl
+	// If the block has been PUT in the last blobSignatureTTL
 	// seconds, return success without removing the block. This
 	// protects data from garbage collection until it is no longer
 	// possible for clients to retrieve the unreferenced blocks
@@ -326,7 +326,7 @@ func (v *UnixVolume) Delete(loc string) error {
 	if fi, err := os.Stat(p); err != nil {
 		return err
 	} else {
-		if time.Since(fi.ModTime()) < blob_signature_ttl {
+		if time.Since(fi.ModTime()) < blobSignatureTTL {
 			return nil
 		}
 	}

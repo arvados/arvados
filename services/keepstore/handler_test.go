@@ -54,11 +54,11 @@ func TestGetHandler(t *testing.T) {
 	// Turn on permission settings so we can generate signed locators.
 	enforcePermissions = true
 	PermissionSecret = []byte(knownKey)
-	blob_signature_ttl = 300 * time.Second
+	blobSignatureTTL = 300 * time.Second
 
 	var (
 		unsignedLocator  = "/" + TestHash
-		validTimestamp   = time.Now().Add(blob_signature_ttl)
+		validTimestamp   = time.Now().Add(blobSignatureTTL)
 		expiredTimestamp = time.Now().Add(-time.Hour)
 		signedLocator    = "/" + SignLocator(TestHash, knownToken, validTimestamp)
 		expiredLocator   = "/" + SignLocator(TestHash, knownToken, expiredTimestamp)
@@ -176,7 +176,7 @@ func TestPutHandler(t *testing.T) {
 	// With a server key.
 
 	PermissionSecret = []byte(knownKey)
-	blob_signature_ttl = 300 * time.Second
+	blobSignatureTTL = 300 * time.Second
 
 	// When a permission key is available, the locator returned
 	// from an authenticated PUT request will be signed.
@@ -220,7 +220,7 @@ func TestPutHandler(t *testing.T) {
 
 func TestPutAndDeleteSkipReadonlyVolumes(t *testing.T) {
 	defer teardown()
-	data_manager_token = "fake-data-manager-token"
+	dataManagerToken = "fake-data-manager-token"
 	vols := []*MockVolume{CreateMockVolume(), CreateMockVolume()}
 	vols[0].Readonly = true
 	KeepVM = MakeRRVolumeManager([]Volume{vols[0], vols[1]})
@@ -232,15 +232,15 @@ func TestPutAndDeleteSkipReadonlyVolumes(t *testing.T) {
 			requestBody: TestBlock,
 		})
 	defer func(orig bool) {
-		never_delete = orig
-	}(never_delete)
-	never_delete = false
+		neverDelete = orig
+	}(neverDelete)
+	neverDelete = false
 	IssueRequest(
 		&RequestTester{
 			method:      "DELETE",
 			uri:         "/" + TestHash,
 			requestBody: TestBlock,
-			apiToken:    data_manager_token,
+			apiToken:    dataManagerToken,
 		})
 	type expect struct {
 		volnum    int
@@ -291,7 +291,7 @@ func TestIndexHandler(t *testing.T) {
 	vols[0].Put(TestHash+".meta", []byte("metadata"))
 	vols[1].Put(TestHash2+".meta", []byte("metadata"))
 
-	data_manager_token = "DATA MANAGER TOKEN"
+	dataManagerToken = "DATA MANAGER TOKEN"
 
 	unauthenticatedReq := &RequestTester{
 		method: "GET",
@@ -305,7 +305,7 @@ func TestIndexHandler(t *testing.T) {
 	superuserReq := &RequestTester{
 		method:   "GET",
 		uri:      "/index",
-		apiToken: data_manager_token,
+		apiToken: dataManagerToken,
 	}
 	unauthPrefixReq := &RequestTester{
 		method: "GET",
@@ -319,7 +319,7 @@ func TestIndexHandler(t *testing.T) {
 	superuserPrefixReq := &RequestTester{
 		method:   "GET",
 		uri:      "/index/" + TestHash[0:3],
-		apiToken: data_manager_token,
+		apiToken: dataManagerToken,
 	}
 
 	// -------------------------------------------------------------
@@ -447,15 +447,15 @@ func TestDeleteHandler(t *testing.T) {
 	vols := KeepVM.AllWritable()
 	vols[0].Put(TestHash, TestBlock)
 
-	// Explicitly set the blob_signature_ttl to 0 for these
+	// Explicitly set the blobSignatureTTL to 0 for these
 	// tests, to ensure the MockVolume deletes the blocks
 	// even though they have just been created.
-	blob_signature_ttl = time.Duration(0)
+	blobSignatureTTL = time.Duration(0)
 
 	var userToken = "NOT DATA MANAGER TOKEN"
-	data_manager_token = "DATA MANAGER TOKEN"
+	dataManagerToken = "DATA MANAGER TOKEN"
 
-	never_delete = false
+	neverDelete = false
 
 	unauthReq := &RequestTester{
 		method: "DELETE",
@@ -471,13 +471,13 @@ func TestDeleteHandler(t *testing.T) {
 	superuserExistingBlockReq := &RequestTester{
 		method:   "DELETE",
 		uri:      "/" + TestHash,
-		apiToken: data_manager_token,
+		apiToken: dataManagerToken,
 	}
 
 	superuserNonexistentBlockReq := &RequestTester{
 		method:   "DELETE",
 		uri:      "/" + TestHash2,
-		apiToken: data_manager_token,
+		apiToken: dataManagerToken,
 	}
 
 	// Unauthenticated request returns PermissionError.
@@ -508,14 +508,14 @@ func TestDeleteHandler(t *testing.T) {
 		http.StatusNotFound,
 		response)
 
-	// Authenticated admin request for existing block while never_delete is set.
-	never_delete = true
+	// Authenticated admin request for existing block while neverDelete is set.
+	neverDelete = true
 	response = IssueRequest(superuserExistingBlockReq)
 	ExpectStatusCode(t,
 		"authenticated request, existing block, method disabled",
 		MethodDisabledError.HTTPCode,
 		response)
-	never_delete = false
+	neverDelete = false
 
 	// Authenticated admin request for existing block.
 	response = IssueRequest(superuserExistingBlockReq)
@@ -537,10 +537,10 @@ func TestDeleteHandler(t *testing.T) {
 		t.Error("superuserExistingBlockReq: block not deleted")
 	}
 
-	// A DELETE request on a block newer than blob_signature_ttl
+	// A DELETE request on a block newer than blobSignatureTTL
 	// should return success but leave the block on the volume.
 	vols[0].Put(TestHash, TestBlock)
-	blob_signature_ttl = time.Hour
+	blobSignatureTTL = time.Hour
 
 	response = IssueRequest(superuserExistingBlockReq)
 	ExpectStatusCode(t,
@@ -592,7 +592,7 @@ func TestPullHandler(t *testing.T) {
 	defer teardown()
 
 	var userToken = "USER TOKEN"
-	data_manager_token = "DATA MANAGER TOKEN"
+	dataManagerToken = "DATA MANAGER TOKEN"
 
 	pullq = NewWorkQueue()
 
@@ -637,13 +637,13 @@ func TestPullHandler(t *testing.T) {
 		},
 		{
 			"Valid pull request from the data manager",
-			RequestTester{"/pull", data_manager_token, "PUT", goodJSON},
+			RequestTester{"/pull", dataManagerToken, "PUT", goodJSON},
 			http.StatusOK,
 			"Received 3 pull requests\n",
 		},
 		{
 			"Invalid pull request from the data manager",
-			RequestTester{"/pull", data_manager_token, "PUT", badJSON},
+			RequestTester{"/pull", dataManagerToken, "PUT", badJSON},
 			http.StatusBadRequest,
 			"",
 		},
@@ -698,7 +698,7 @@ func TestTrashHandler(t *testing.T) {
 	defer teardown()
 
 	var userToken = "USER TOKEN"
-	data_manager_token = "DATA MANAGER TOKEN"
+	dataManagerToken = "DATA MANAGER TOKEN"
 
 	trashq = NewWorkQueue()
 
@@ -741,13 +741,13 @@ func TestTrashHandler(t *testing.T) {
 		},
 		{
 			"Valid trash list from the data manager",
-			RequestTester{"/trash", data_manager_token, "PUT", goodJSON},
+			RequestTester{"/trash", dataManagerToken, "PUT", goodJSON},
 			http.StatusOK,
 			"Received 3 trash requests\n",
 		},
 		{
 			"Invalid trash list from the data manager",
-			RequestTester{"/trash", data_manager_token, "PUT", badJSON},
+			RequestTester{"/trash", dataManagerToken, "PUT", badJSON},
 			http.StatusBadRequest,
 			"",
 		},
