@@ -44,19 +44,19 @@ var ProcMounts = "/proc/mounts"
 // Initialized by the -enforce-permissions flag.
 var enforcePermissions bool
 
-// blob_signature_ttl is the time duration for which new permission
+// blobSignatureTTL is the time duration for which new permission
 // signatures (returned by PUT requests) will be valid.
 // Initialized by the -permission-ttl flag.
-var blob_signature_ttl time.Duration
+var blobSignatureTTL time.Duration
 
-// data_manager_token represents the API token used by the
+// dataManagerToken represents the API token used by the
 // Data Manager, and is required on certain privileged operations.
 // Initialized by the -data-manager-token-file flag.
-var data_manager_token string
+var dataManagerToken string
 
-// never_delete can be used to prevent the DELETE handler from
+// neverDelete can be used to prevent the DELETE handler from
 // actually deleting anything.
-var never_delete = true
+var neverDelete = true
 
 var maxBuffers = 128
 var bufs *bufferPool
@@ -211,15 +211,15 @@ func main() {
 	defer log.Println("keepstore exiting, pid", os.Getpid())
 
 	var (
-		data_manager_token_file string
-		listen                  string
-		blob_signing_key_file   string
-		permission_ttl_sec      int
-		volumes                 volumeSet
-		pidfile                 string
+		dataManagerTokenFile string
+		listen               string
+		blobSigningKeyFile   string
+		permissionTTLSec     int
+		volumes              volumeSet
+		pidfile              string
 	)
 	flag.StringVar(
-		&data_manager_token_file,
+		&dataManagerTokenFile,
 		"data-manager-token-file",
 		"",
 		"File with the API token used by the Data Manager. All DELETE "+
@@ -235,29 +235,29 @@ func main() {
 		DefaultAddr,
 		"Listening address, in the form \"host:port\". e.g., 10.0.1.24:8000. Omit the host part to listen on all interfaces.")
 	flag.BoolVar(
-		&never_delete,
+		&neverDelete,
 		"never-delete",
 		true,
 		"If set, nothing will be deleted. HTTP 405 will be returned "+
 			"for valid DELETE requests.")
 	flag.StringVar(
-		&blob_signing_key_file,
+		&blobSigningKeyFile,
 		"permission-key-file",
 		"",
 		"Synonym for -blob-signing-key-file.")
 	flag.StringVar(
-		&blob_signing_key_file,
+		&blobSigningKeyFile,
 		"blob-signing-key-file",
 		"",
 		"File containing the secret key for generating and verifying "+
 			"blob permission signatures.")
 	flag.IntVar(
-		&permission_ttl_sec,
+		&permissionTTLSec,
 		"permission-ttl",
 		0,
 		"Synonym for -blob-signature-ttl.")
 	flag.IntVar(
-		&permission_ttl_sec,
+		&permissionTTLSec,
 		"blob-signature-ttl",
 		int(time.Duration(2*7*24*time.Hour).Seconds()),
 		"Lifetime of blob permission signatures. "+
@@ -293,8 +293,8 @@ func main() {
 
 	flag.Parse()
 
-	if never_delete != true {
-		log.Fatal("never_delete must be true, see #6221")
+	if neverDelete != true {
+		log.Fatal("neverDelete must be true, see #6221")
 	}
 
 	if maxBuffers < 0 {
@@ -340,22 +340,22 @@ func main() {
 	// Initialize data manager token and permission key.
 	// If these tokens are specified but cannot be read,
 	// raise a fatal error.
-	if data_manager_token_file != "" {
-		if buf, err := ioutil.ReadFile(data_manager_token_file); err == nil {
-			data_manager_token = strings.TrimSpace(string(buf))
+	if dataManagerTokenFile != "" {
+		if buf, err := ioutil.ReadFile(dataManagerTokenFile); err == nil {
+			dataManagerToken = strings.TrimSpace(string(buf))
 		} else {
 			log.Fatalf("reading data manager token: %s\n", err)
 		}
 	}
-	if blob_signing_key_file != "" {
-		if buf, err := ioutil.ReadFile(blob_signing_key_file); err == nil {
+	if blobSigningKeyFile != "" {
+		if buf, err := ioutil.ReadFile(blobSigningKeyFile); err == nil {
 			PermissionSecret = bytes.TrimSpace(buf)
 		} else {
 			log.Fatalf("reading permission key: %s\n", err)
 		}
 	}
 
-	blob_signature_ttl = time.Duration(permission_ttl_sec) * time.Second
+	blobSignatureTTL = time.Duration(permissionTTLSec) * time.Second
 
 	if PermissionSecret == nil {
 		if enforcePermissions {
