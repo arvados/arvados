@@ -35,7 +35,7 @@ setup(name='arvados-node-manager',
       ],
       scripts=['bin/arvados-node-manager'],
       test_suite='tests',
-      tests_require=['mock>=1.0', "apache-libcloud==0.18.1.dev3"],
+      tests_require=['pbr<1.7.0', 'mock>=1.0', "apache-libcloud==0.18.1.dev3"],
       zip_safe=False,
       cmdclass={'egg_info': tagger},
       )

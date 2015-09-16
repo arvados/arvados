@@ -40,7 +40,7 @@ setup(name='arvados-pam',
           'arvados-python-client>=0.1.20150801000000',
       ],
       test_suite='tests',
-      tests_require=['mock>=1.0', 'python-pam'],
+      tests_require=['pbr<1.7.0', 'mock>=1.0', 'python-pam'],
       zip_safe=False,
       cmdclass={'egg_info': tagger},
       )
