@@ -401,17 +401,6 @@ if (pip install setuptools | grep setuptools-0) || [ "$($VENVDIR/bin/easy_instal
     pip install --upgrade setuptools pip
 fi
 
-# Note: this must be the last time we change PATH, otherwise rvm will
-# whine a lot.
-setup_ruby_environment
-
-echo "PATH is $PATH"
-
-if ! which bundler >/dev/null
-then
-    gem install --user-install bundler || fatal 'Could not install bundler'
-fi
-
 # Needed for run_test_server.py which is used by certain (non-Python) tests.
 pip freeze 2>/dev/null | egrep ^PyYAML= \
     || pip install PyYAML >/dev/null \
@@ -423,12 +412,24 @@ pip freeze 2>/dev/null | egrep ^apache-libcloud==$LIBCLOUD_PIN \
     || pip install --pre --ignore-installed https://github.com/curoverse/libcloud/archive/apache-libcloud-$LIBCLOUD_PIN.zip >/dev/null \
     || fatal "pip install apache-libcloud failed"
 
+# Deactivate Python 2 virtualenv
+deactivate
+
 # If Python 3 is available, set up its virtualenv in $VENV3DIR.
 # Otherwise, skip dependent tests.
 PYTHON3=$(which python3)
 if [ "0" = "$?" ]; then
     virtualenv --python "$PYTHON3" --setuptools "$VENV3DIR" \
-        || fatal "python3 virtualenv $VENV3DIR failed"
+	|| fatal "python3 virtualenv $VENV3DIR failed"
+
+    . "$VENV3DIR/bin/activate"
+
+    if (pip install setuptools | grep setuptools-0) || [ "$($VENV3DIR/bin/easy_install --version | cut -d\  -f2 | cut -d. -f1)" -lt 18 ]; then
+	pip install --upgrade setuptools pip
+    fi
+
+    # Deactivate Python 3 virtualenv
+    deactivate
 else
     PYTHON3=
     skip[services/dockercleaner]=1
@@ -438,6 +439,20 @@ Warning: python3 could not be found
 services/dockercleaner install and tests will be skipped
 
 EOF
+fi
+
+# Reactivate Python 2 virtualenv
+. "$VENVDIR/bin/activate"
+
+# Note: this must be the last time we change PATH, otherwise rvm will
+# whine a lot.
+setup_ruby_environment
+
+echo "PATH is $PATH"
+
+if ! which bundler >/dev/null
+then
+    gem install --user-install bundler || fatal 'Could not install bundler'
 fi
 
 checkexit() {
