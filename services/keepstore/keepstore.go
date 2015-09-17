@@ -37,8 +37,8 @@ const BlockSize = 64 * 1024 * 1024
 const MinFreeKilobytes = BlockSize / 1024
 
 // Until #6221 is resolved, never_delete must be true.
-// However, allow it to be false in testing with TEST_DATA_MANAGER_TOKEN
-const TEST_DATA_MANAGER_TOKEN = "4axaw8zxe0qm22wa6urpp5nskcne8z88cvbupv653y1njyi05h"
+// However, allow it to be false in testing with TestDataManagerToken
+const TestDataManagerToken = "4axaw8zxe0qm22wa6urpp5nskcne8z88cvbupv653y1njyi05h"
 
 // ProcMounts /proc/mounts
 var ProcMounts = "/proc/mounts"
@@ -348,7 +348,7 @@ func main() {
 		}
 	}
 
-	if neverDelete != true && dataManagerToken != TEST_DATA_MANAGER_TOKEN {
+	if neverDelete != true && dataManagerToken != TestDataManagerToken {
 		log.Fatal("never_delete must be true, see #6221")
 	}
 

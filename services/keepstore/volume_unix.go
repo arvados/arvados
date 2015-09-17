@@ -143,6 +143,11 @@ func (v *UnixVolume) Compare(loc string, expect []byte) error {
 				return nil
 			} else if err != nil {
 				return err
+			} else if len(expect) == 0 && n == 0 && bytes.Compare(buf, expect) == 0 {
+				// When reading an empty block, EOF is not returned. Probably a Go issue.
+				// This is resulting in an infinite loop resulting in #7329
+				// Handle empty block scenario explicitly until the EOF issue is resolved.
+				return nil
 			}
 		}
 	})

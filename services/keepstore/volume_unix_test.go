@@ -291,6 +291,65 @@ func TestUnixVolumeCompare(t *testing.T) {
 	}
 }
 
+// Put an EmptyBlock and get and compare for EmptyHash
+// With #7329 unresolved, Compare falls in infinite loop
+func TestGetAndCompareEmptyBlock(t *testing.T) {
+	v := NewTestableUnixVolume(t, false, false)
+	defer v.Teardown()
+
+	v.Put(EmptyHash, EmptyBlock)
+
+	buf, err := v.Get(EmptyHash)
+	if err != nil {
+		t.Errorf("Error during Get for %q: %s", EmptyHash, err)
+	}
+
+	err = v.Compare(EmptyHash, buf)
+	if err != nil {
+		t.Errorf("Error during Compare for %q: %s", EmptyHash, err)
+	}
+}
+
+// Put baddata for EmptyHash. Get will succeed, but Compare will raise DiskHashError
+func TestGetAndCompareEmptyHashWithDiskHashError(t *testing.T) {
+	v := NewTestableUnixVolume(t, false, false)
+	defer v.Teardown()
+
+	v.PutRaw(EmptyHash, []byte("baddata"))
+
+	_, err := v.Get(EmptyHash)
+	if err != nil {
+		t.Errorf("Unexpected error after PutRaw EmptyHash with baddata")
+	}
+
+	err = v.Compare(EmptyHash, EmptyBlock)
+	if err != DiskHashError {
+		t.Errorf("Expected DiskHashError when comparing EmptyHash with bad data. Got %s", err)
+	}
+}
+
+// Get non existing empty block; should fail with file not found error.
+func TestGetEmptyBlockNonExisting(t *testing.T) {
+	v := NewTestableUnixVolume(t, false, false)
+	defer v.Teardown()
+
+	buf, err := v.Get(EmptyHash)
+	if err == nil {
+		t.Errorf("Get non existing empty hash should have failed, instead got %q", buf)
+	}
+}
+
+// Compare non existing empty hash should fail with file not found error.
+func TestCompareEmptyHashNonExisting(t *testing.T) {
+	v := NewTestableUnixVolume(t, false, false)
+	defer v.Teardown()
+
+	err := v.Compare(EmptyHash, EmptyBlock)
+	if err == nil {
+		t.Errorf("Expected error no such file. But got no error.")
+	}
+}
+
 // TODO(twp): show that the underlying Read/Write operations executed
 // serially and not concurrently. The easiest way to do this is
 // probably to activate verbose or debug logging, capture log output
