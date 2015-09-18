@@ -44,6 +44,16 @@ class TestArvGet < Minitest::Test
         does_arv_object_as_json_use_value(out, stored_value))
   end
 
+  # TODO: Add tests for selecting specific fields
+  def test_get_valid_object_with_specific_valid_fields()
+    # TODO
+  end
+
+  # TODO: Add tests for selecting specific fields
+  def test_get_valid_object_with_both_specific_valid_and_invalid_fields()
+    # TODO
+  end
+
   # Tests that an valid Arvados object is not retrieved when specifying an
   # invalid format: `arv get [uuid] --format invalid`.
   def test_get_object_invalid_format()
@@ -95,6 +105,11 @@ class TestArvGet < Minitest::Test
     end
     refute_empty(err)
     assert_empty(out)
+  end
+
+  # TODO: Test what happens when valid object but invalid fields
+  def test_get_valid_object_with_specific_invalid_fields()
+    # TODO
   end
 
   protected
