@@ -116,19 +116,24 @@ class TestArvGet < Minitest::Test
       return out
   end
 
-  # Checks whether the Arvados object, represented in JSON format, with the
-  # given uuid, uses the given value.
+  # Checks whether the Arvados object, represented in JSON format, uses the
+  # given value.
   def does_arv_object_as_json_use_value(obj, value)
     parsed = JSON.parse(obj)
-    stored_value = parsed["name"]
-    return (value == stored_value)
+    return does_arv_object_as_object_use_value(parsed, value)
   end
 
-  # Checks whether the Arvados object, represented in YAML format, with the
-  # given uuid, uses the given value.
+  # Checks whether the Arvados object, represented in YAML format, uses the
+  # given value.
   def does_arv_object_as_yaml_use_value(obj, value)
     parsed = YAML.load(obj)
-    stored_value = parsed["name"]
+    return does_arv_object_as_object_use_value(parsed, value)
+  end
+
+  # Checks whether the Arvados object, represented as a Ruby object, uses the
+  # given value.
+  def does_arv_object_as_object_use_value(obj, value)
+    stored_value = obj["name"]
     return (value == stored_value)
   end
 end
