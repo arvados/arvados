@@ -11,7 +11,7 @@ class TestArvGet < Minitest::Test
   # `arv get [uuid] --format json`.
   def test_get_valid_object_json_format()
     stored_value = __method__
-    uuid = create_arv_object_containing_value(stored_value)
+    uuid = create_arv_object_with_value(stored_value)
     out, err = capture_subprocess_io do
       arv_get(uuid, '--format', 'json')
     end
@@ -23,7 +23,7 @@ class TestArvGet < Minitest::Test
   # `arv get [uuid] --format yaml`.
   def test_get_valid_object_yaml_format()
     stored_value = __method__
-    uuid = create_arv_object_containing_value(stored_value)
+    uuid = create_arv_object_with_value(stored_value)
     out, err = capture_subprocess_io do
       arv_get(uuid, '--format', 'yaml')
     end
@@ -35,7 +35,7 @@ class TestArvGet < Minitest::Test
   # using: `arv get [uuid]`.
   def test_get_valid_object_no_format()
     stored_value = __method__
-    uuid = create_arv_object_containing_value(stored_value)
+    uuid = create_arv_object_with_value(stored_value)
     out, err = capture_subprocess_io do
       arv_get(uuid)
     end
@@ -48,7 +48,7 @@ class TestArvGet < Minitest::Test
   # invalid format: `arv get [uuid] --format invalid`.
   def test_get_object_invalid_format()
     stored_value = __method__
-    uuid = create_arv_object_containing_value(stored_value)
+    uuid = create_arv_object_with_value(stored_value)
     out, err = capture_subprocess_io do
       arv_get(uuid, '--format', 'invalid')
     end
@@ -119,20 +119,29 @@ class TestArvGet < Minitest::Test
   # Checks whether the Arvados object, represented in JSON format, uses the
   # given value.
   def does_arv_object_as_json_use_value(obj, value)
-    parsed = JSON.parse(obj)
-    return does_arv_object_as_object_use_value(parsed, value)
+    begin
+      parsed = JSON.parse(obj)
+      return does_arv_object_as_ruby_object_use_value(parsed, value)
+    rescue JSON::ParserError => e
+      raise "Invalid JSON representation of Arvados object"
+    end
   end
 
   # Checks whether the Arvados object, represented in YAML format, uses the
   # given value.
   def does_arv_object_as_yaml_use_value(obj, value)
-    parsed = YAML.load(obj)
-    return does_arv_object_as_object_use_value(parsed, value)
+    begin
+      parsed = YAML.load(obj)
+      return does_arv_object_as_ruby_object_use_value(parsed, value)
+    rescue
+      raise "Invalid YAML representation of Arvados object"
+    end
   end
 
   # Checks whether the Arvados object, represented as a Ruby object, uses the
   # given value.
-  def does_arv_object_as_object_use_value(obj, value)
+  def does_arv_object_as_ruby_object_use_value(obj, value)
+    assert(parsed.instance_of?(Hash))
     stored_value = obj["name"]
     return (value == stored_value)
   end
