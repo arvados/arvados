@@ -1,4 +1,6 @@
 require 'minitest/autorun'
+require 'json'
+require 'yaml'
 
 # Black box tests for 'arv get' command.
 class TestArvGet < Minitest::Test
@@ -14,7 +16,7 @@ class TestArvGet < Minitest::Test
       arv_get(uuid, '--format', 'json')
     end
     assert_empty(err)
-    assert(does_arv_object_as_json_use_value(uuid, stored_value))
+    assert(does_arv_object_as_json_use_value(out, stored_value))
   end
 
   # Tests that a valid Arvados object can be retrieved in YAML format using:
@@ -26,7 +28,7 @@ class TestArvGet < Minitest::Test
       arv_get(uuid, '--format', 'yaml')
     end
     assert_empty(err)
-    assert(does_arv_object_as_yaml_use_value(uuid, stored_value))
+    assert(does_arv_object_as_yaml_use_value(out, stored_value))
   end
 
   # Tests that a valid Arvados object can be retrieved in a supported format
@@ -38,8 +40,8 @@ class TestArvGet < Minitest::Test
       arv_get(uuid)
     end
     assert_empty(err)
-    assert(does_arv_object_as_yaml_use_value(uuid, stored_value) ||
-        does_arv_object_as_json_use_value(uuid, stored_value))
+    assert(does_arv_object_as_yaml_use_value(out, stored_value) ||
+        does_arv_object_as_json_use_value(out, stored_value))
   end
 
   # Tests that an valid Arvados object is not retrieved when specifying an
@@ -98,31 +100,35 @@ class TestArvGet < Minitest::Test
   protected
   # Runs 'arv get <varargs>' with given arguments.
   def arv_get(*args)
-    system ['./bin/arv', 'arv get'], *args
+    system(['./bin/arv', 'arv get'], *args)
   end
 
-  # Creates an Arvados object that stores a given value.
-  # TODO: Must return uuid
+  # Creates an Arvados object that stores a given value. Returns the uuid of the
+  # created object.
   def create_arv_object_with_value(value)
       out, err = capture_subprocess_io do
         # Write (without redirect)
-        system ['./bin/arv', 'arv create log'], *args
+        system(['./bin/arv', "arv tag add #{value} --object testing"])
       end
       if err.length > 0
         raise "Could not create Arvados object with given value"
       end
-#    system ['./bin/arv', 'arv user create'], *args
+      return out
   end
 
   # Checks whether the Arvados object, represented in JSON format, with the
   # given uuid, uses the given value.
-  def does_arv_object_as_json_use_value(uuid, value)
-    # TODO
+  def does_arv_object_as_json_use_value(obj, value)
+    parsed = JSON.parse(obj)
+    stored_value = parsed["name"]
+    return (value == stored_value)
   end
 
   # Checks whether the Arvados object, represented in YAML format, with the
   # given uuid, uses the given value.
-  def does_arv_object_as_yaml_use_value(uuid, value)
-    # TODO
+  def does_arv_object_as_yaml_use_value(obj, value)
+    parsed = YAML.load(obj)
+    stored_value = parsed["name"]
+    return (value == stored_value)
   end
 end
