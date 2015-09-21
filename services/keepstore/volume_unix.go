@@ -122,6 +122,13 @@ func (v *UnixVolume) Compare(loc string, expect []byte) error {
 	bufLen := 1 << 20
 	if int64(bufLen) > stat.Size() {
 		bufLen = int(stat.Size())
+		if bufLen < 1 {
+			// len(buf)==0 would prevent us from handling
+			// empty files the same way as non-empty
+			// files, because reading 0 bytes at a time
+			// never reaches EOF.
+			bufLen = 1
+		}
 	}
 	cmp := expect
 	buf := make([]byte, bufLen)
@@ -143,11 +150,6 @@ func (v *UnixVolume) Compare(loc string, expect []byte) error {
 				return nil
 			} else if err != nil {
 				return err
-			} else if len(expect) == 0 && n == 0 && bytes.Compare(buf, expect) == 0 {
-				// When reading an empty block, EOF is not returned. Probably a Go issue.
-				// This is resulting in an infinite loop resulting in #7329
-				// Handle empty block scenario explicitly until the EOF issue is resolved.
-				return nil
 			}
 		}
 	})
