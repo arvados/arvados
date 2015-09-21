@@ -14,7 +14,7 @@ import (
 	"time"
 )
 
-type keepDisk struct {
+type keepServices struct {
 	Uuid     string `json:"uuid"`
 	Hostname string `json:"service_host"`
 	Port     int    `json:"service_port"`
@@ -23,6 +23,7 @@ type keepDisk struct {
 	ReadOnly bool   `json:"read_only"`
 }
 
+// Md5String returns md5 hash for the bytes in the given string
 func Md5String(s string) string {
 	return fmt.Sprintf("%x", md5.Sum([]byte(s)))
 }
@@ -49,12 +50,11 @@ func (this *KeepClient) setClientSettingsProxy() {
 			TLSHandshakeTimeout: 10 * time.Second,
 		}
 	}
-
 }
 
 // Set timeouts apply when connecting to keepstore services directly (assumed
 // to be on the local network).
-func (this *KeepClient) setClientSettingsStore() {
+func (this *KeepClient) setClientSettingsDisk() {
 	if this.Client.Timeout == 0 {
 		// Maximum time to wait for a complete response
 		this.Client.Timeout = 20 * time.Second
@@ -76,14 +76,17 @@ func (this *KeepClient) setClientSettingsStore() {
 	}
 }
 
+// DiscoverKeepServers gets list of available keep services from api server
 func (this *KeepClient) DiscoverKeepServers() error {
 	type svcList struct {
-		Items []keepDisk `json:"items"`
+		Items []keepServices `json:"items"`
 	}
 	var m svcList
 
+	// Get keep services from api server
 	err := this.Arvados.Call("GET", "keep_services", "", "accessible", nil, &m)
 
+	// If there is error getting keep services, get list of keep disks
 	if err != nil {
 		if err := this.Arvados.List("keep_disks", nil, &m); err != nil {
 			return err
@@ -111,7 +114,7 @@ func (this *KeepClient) DiscoverKeepServers() error {
 		switch service.SvcType {
 		case "disk":
 			localRoots[service.Uuid] = url
-		case "proxy":
+		default:
 			localRoots[service.Uuid] = url
 			this.Using_proxy = true
 		}
@@ -131,7 +134,7 @@ func (this *KeepClient) DiscoverKeepServers() error {
 	if this.Using_proxy {
 		this.setClientSettingsProxy()
 	} else {
-		this.setClientSettingsStore()
+		this.setClientSettingsDisk()
 	}
 
 	this.SetServiceRoots(localRoots, writableLocalRoots, gatewayRoots)

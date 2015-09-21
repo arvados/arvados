@@ -239,15 +239,15 @@ func (kc *KeepClient) SetServiceRoots(newLocals, newWritableLocals map[string]st
 func (kc *KeepClient) getSortedRoots(locator string) []string {
 	var found []string
 	for _, hint := range strings.Split(locator, "+") {
-		if len(hint) < 7 || hint[0:2] != "K@" {
+		if len(hint) < 7 || hint[0:1] == "A" || (hint[0:1] >= "0" && hint[0:1] <= "9") {
 			// Not a service hint.
 			continue
 		}
-		if len(hint) == 7 {
+		if len(hint) == 7 && hint[0:2] == "K@" {
 			// +K@abcde means fetch from proxy at
 			// keep.abcde.arvadosapi.com
 			found = append(found, "https://keep."+hint[2:]+".arvadosapi.com")
-		} else if len(hint) == 29 {
+		} else if len(hint) == 29 && arvadosclient.UUIDMatch(hint[2:]){
 			// +K@abcde-abcde-abcdeabcdeabcde means fetch
 			// from gateway with given uuid
 			if gwURI, ok := kc.GatewayRoots()[hint[2:]]; ok {
