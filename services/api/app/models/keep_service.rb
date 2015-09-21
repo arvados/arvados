@@ -13,4 +13,13 @@ class KeepService < ArvadosModel
   api_accessible :superuser, :extend => :user do |t|
   end
 
+  protected
+
+  def permission_to_create
+    current_user.andand.is_admin
+  end
+
+  def permission_to_update
+    current_user.andand.is_admin
+  end
 end
