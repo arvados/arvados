@@ -34,14 +34,17 @@ const X_Keep_Replicas_Stored = "X-Keep-Replicas-Stored"
 
 // Information about Arvados and Keep servers.
 type KeepClient struct {
-	Arvados       *arvadosclient.ArvadosClient
-	Want_replicas int
-	Using_proxy   bool
-	localRoots    *map[string]string
+	Arvados            *arvadosclient.ArvadosClient
+	Want_replicas      int
+	Using_proxy        bool
+	localRoots         *map[string]string
 	writableLocalRoots *map[string]string
-	gatewayRoots  *map[string]string
-	lock          sync.RWMutex
-	Client        *http.Client
+	gatewayRoots       *map[string]string
+	lock               sync.RWMutex
+	Client             *http.Client
+
+	// set to 1 if all writable services are of disk type, otherwise 0
+	replicasPerService int
 }
 
 // Create a new KeepClient.  This will contact the API server to discover Keep
@@ -247,7 +250,7 @@ func (kc *KeepClient) getSortedRoots(locator string) []string {
 			// +K@abcde means fetch from proxy at
 			// keep.abcde.arvadosapi.com
 			found = append(found, "https://keep."+hint[2:]+".arvadosapi.com")
-		} else if len(hint) == 29 && arvadosclient.UUIDMatch(hint[2:]){
+		} else if len(hint) == 29 && arvadosclient.UUIDMatch(hint[2:]) {
 			// +K@abcde-abcde-abcdeabcdeabcde means fetch
 			// from gateway with given uuid
 			if gwURI, ok := kc.GatewayRoots()[hint[2:]]; ok {

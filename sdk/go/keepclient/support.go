@@ -98,6 +98,8 @@ func (this *KeepClient) DiscoverKeepServers() error {
 	gatewayRoots := make(map[string]string)
 	writableLocalRoots := make(map[string]string)
 
+	this.replicasPerService = 1 // set to 1 until writable non-disk services are found
+
 	for _, service := range m.Items {
 		scheme := "http"
 		if service.SSL {
@@ -111,16 +113,16 @@ func (this *KeepClient) DiscoverKeepServers() error {
 		}
 		listed[url] = true
 
-		switch service.SvcType {
-		case "disk":
-			localRoots[service.Uuid] = url
-		default:
-			localRoots[service.Uuid] = url
+		localRoots[service.Uuid] = url
+		if service.SvcType == "proxy" {
 			this.Using_proxy = true
 		}
 
 		if service.ReadOnly == false {
 			writableLocalRoots[service.Uuid] = url
+			if service.SvcType != "disk" {
+				this.replicasPerService = 0
+			}
 		}
 
 		// Gateway services are only used when specified by
@@ -177,10 +179,7 @@ func (this KeepClient) uploadToKeepServer(host string, hash string, body io.Read
 
 	req.Header.Add("Authorization", fmt.Sprintf("OAuth2 %s", this.Arvados.ApiToken))
 	req.Header.Add("Content-Type", "application/octet-stream")
-
-	if this.Using_proxy {
-		req.Header.Add(X_Keep_Desired_Replicas, fmt.Sprint(this.Want_replicas))
-	}
+	req.Header.Add(X_Keep_Desired_Replicas, fmt.Sprint(this.Want_replicas))
 
 	var resp *http.Response
 	if resp, err = this.Client.Do(req); err != nil {
@@ -237,7 +236,13 @@ func (this KeepClient) putReplicas(
 	remaining_replicas := this.Want_replicas
 
 	for remaining_replicas > 0 {
-		for active < remaining_replicas {
+		replicasPerThread := this.replicasPerService
+		if replicasPerThread < 1 {
+			// unlimited or unknown
+			replicasPerThread = remaining_replicas
+		}
+
+		for active*replicasPerThread < remaining_replicas {
 			// Start some upload requests
 			if next_server < len(sv) {
 				log.Printf("[%v] Begin upload %s to %s", requestId, hash, sv[next_server])
