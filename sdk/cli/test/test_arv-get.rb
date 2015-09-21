@@ -5,13 +5,28 @@ require 'yaml'
 # Black box tests for 'arv get' command.
 class TestArvGet < Minitest::Test
   # UUID for an Arvados object that does not exist
-  NON_EXISTANT_OBJECT_UUID = "qr1hi-tpzed-p8yk1lihjsgwew0"
+  NON_EXISTANT_OBJECT_UUID = "qr1hi-tpzed-p9yk1lihjsgwew0"
   # Name of field of Arvados object that can store any (textual) value
   STORED_VALUE_FIELD_NAME = "name"
   # Name of UUID field of Arvados object
   UUID_FIELD_NAME = "uuid"
   # Name of an invalid field of Arvados object
   INVALID_FIELD_NAME = "invalid"
+
+  # Tests that a valid Arvados object can be retrieved in a supported format
+  # using: `arv get [uuid]`. Given all other `arv foo` commands return JSON
+  # when no format is specified, JSON should be expected in this case.
+  def test_get_valid_object_no_format()
+    stored_value = __method__
+    uuid = create_arv_object_with_value(stored_value)
+    out, err = capture_subprocess_io do
+      arv_get(uuid)
+    end
+    assert_empty(err)
+    refute_empty(out)
+    arv_object = parse_json_arv_object(out)
+    assert(has_field_with_value(arv_object, STORED_VALUE_FIELD_NAME, stored_value))
+  end
 
   # Tests that a valid Arvados object can be retrieved in JSON format using:
   # `arv get [uuid] --format json`.
@@ -22,6 +37,7 @@ class TestArvGet < Minitest::Test
       arv_get(uuid, '--format', 'json')
     end
     assert_empty(err)
+    refute_empty(out)
     arv_object = parse_json_arv_object(out)
     assert(has_field_with_value(arv_object, STORED_VALUE_FIELD_NAME, stored_value))
   end
@@ -35,21 +51,8 @@ class TestArvGet < Minitest::Test
       arv_get(uuid, '--format', 'yaml')
     end
     assert_empty(err)
+    refute_empty(out)
     arv_object = parse_yaml_arv_object(out)
-    assert(has_field_with_value(arv_object, STORED_VALUE_FIELD_NAME, stored_value))
-  end
-
-  # Tests that a valid Arvados object can be retrieved in a supported format
-  # using: `arv get [uuid]`. Given all other `arv foo` commands return JSON
-  # when no format is specified, JSON should be expected in this case.
-  def test_get_valid_object_no_format()
-    stored_value = __method__
-    uuid = create_arv_object_with_value(stored_value)
-    out, err = capture_subprocess_io do
-      arv_get(uuid)
-    end
-    assert_empty(err)
-    arv_object = parse_json_arv_object(out)
     assert(has_field_with_value(arv_object, STORED_VALUE_FIELD_NAME, stored_value))
   end
 
@@ -62,6 +65,7 @@ class TestArvGet < Minitest::Test
       arv_get(uuid, STORED_VALUE_FIELD_NAME, UUID_FIELD_NAME, "--format", "json")
     end
     assert_empty(err)
+    refute_empty(out)
     arv_object = parse_json_arv_object(out)
     assert(has_field_with_value(arv_object, STORED_VALUE_FIELD_NAME, stored_value))
     assert(has_field_with_value(arv_object, UUID_FIELD_NAME, uuid))
@@ -77,6 +81,7 @@ class TestArvGet < Minitest::Test
       arv_get(uuid, STORED_VALUE_FIELD_NAME, INVALID_FIELD_NAME, "--format", "json")
     end
     assert_empty(err)
+    refute_empty(out)
     arv_object = parse_json_arv_object(out)
     assert(has_field_with_value(arv_object, STORED_VALUE_FIELD_NAME, stored_value))
     refute(has_field_with_value(arv_object, INVALID_FIELD_NAME, stored_value))
@@ -91,6 +96,7 @@ class TestArvGet < Minitest::Test
       arv_get(uuid, INVALID_FIELD_NAME, "--format", "json")
     end
     assert_empty(err)
+    refute_empty(out)
     arv_object = parse_json_arv_object(out)
     assert_equal(0, arv_object.fixnum)
   end
@@ -117,10 +123,19 @@ class TestArvGet < Minitest::Test
     assert_empty(out)
   end
 
+  # Tests that help text exists using: `arv get --help`.
+  def test_help_exists()
+    out, err = capture_subprocess_io do
+      arv_get("--help")
+    end
+    assert_empty(err)
+    refute_empty(out)
+  end
+
   protected
   # Runs 'arv get <varargs>' with given arguments.
   def arv_get(*args)
-    system(['./bin/arv', 'arv get'], *args)
+    system(['./bin/arv', 'get'], *args)
   end
 
   # Creates an Arvados object that stores a given value. Returns the uuid of the
@@ -128,7 +143,7 @@ class TestArvGet < Minitest::Test
   def create_arv_object_with_value(value)
       out, err = capture_subprocess_io do
         # Write (without redirect)
-        system(['./bin/arv', "arv tag add #{value} --object testing"])
+        system(['./bin/arv', "tag add #{value} --object testing"])
       end
       if err.length > 0
         raise "Could not create Arvados object with given value"
@@ -144,7 +159,9 @@ class TestArvGet < Minitest::Test
       assert(parsed.instance_of?(Hash))
       return parsed
     rescue JSON::ParserError => e
-      raise "Invalid JSON representation of Arvados object"
+      raise "Invalid JSON representation of Arvados object.\n" \
+            "Parse error: #{e}\n" \
+            "JSON: #{arvObjectAsJson}\n"
     end
   end
 
@@ -156,7 +173,8 @@ class TestArvGet < Minitest::Test
       assert(parsed.instance_of?(Hash))
       return parsed
     rescue
-      raise "Invalid YAML representation of Arvados object"
+      raise "Invalid YAML representation of Arvados object.\n" \
+            "YAML: #{arvObjectAsYaml}\n"
     end
   end
 
