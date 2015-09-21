@@ -396,7 +396,11 @@ LIBCLOUD_DIR=$(mktemp -d)
     cd $LIBCLOUD_DIR
     git clone $DASHQ_UNLESS_DEBUG https://github.com/curoverse/libcloud.git .
     git checkout apache-libcloud-$LIBCLOUD_PIN
+    # libcloud is absurdly noisy without -q, so force -q here
+    OLD_DASHQ_UNLESS_DEBUG=$DASHQ_UNLESS_DEBUG
+    DASHQ_UNLESS_DEBUG=-q
     handle_python_package
+    DASHQ_UNLESS_DEBUG=$OLD_DASHQ_UNLESS_DEBUG
 )
 fpm_build $LIBCLOUD_DIR "$PYTHON2_PKG_PREFIX"-apache-libcloud
 rm -rf $LIBCLOUD_DIR
