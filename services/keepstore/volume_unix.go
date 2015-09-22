@@ -122,6 +122,13 @@ func (v *UnixVolume) Compare(loc string, expect []byte) error {
 	bufLen := 1 << 20
 	if int64(bufLen) > stat.Size() {
 		bufLen = int(stat.Size())
+		if bufLen < 1 {
+			// len(buf)==0 would prevent us from handling
+			// empty files the same way as non-empty
+			// files, because reading 0 bytes at a time
+			// never reaches EOF.
+			bufLen = 1
+		}
 	}
 	cmp := expect
 	buf := make([]byte, bufLen)
