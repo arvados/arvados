@@ -99,6 +99,7 @@ func (this *KeepClient) DiscoverKeepServers() error {
 	writableLocalRoots := make(map[string]string)
 
 	this.replicasPerService = 1 // set to 1 until writable non-disk services are found
+	this.Using_proxy = false
 
 	for _, service := range m.Items {
 		scheme := "http"
