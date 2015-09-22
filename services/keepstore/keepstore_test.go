@@ -418,44 +418,6 @@ func TestIndex(t *testing.T) {
 	}
 }
 
-// TestKeepStoreGetEmptyBlock
-func TestKeepStoreGetEmptyBlock(t *testing.T) {
-	defer teardown()
-
-	// Prepare two mock volumes
-	KeepVM = MakeTestVolumeManager(2)
-	defer KeepVM.Close()
-
-	vols := KeepVM.AllWritable()
-	if err := vols[0].Put(EmptyHash, EmptyBlock); err != nil {
-		t.Error("Error putting empty block: %s", err)
-	}
-
-	// Check that GetBlock returns success.
-	result, err := GetBlock(EmptyHash)
-	if err != nil {
-		t.Errorf("Get error for empty hash: %s", err)
-	}
-	if bytes.Compare(result, EmptyBlock) != 0 {
-		t.Errorf("Get response incorrect. Expected %q; found %q", EmptyBlock, result)
-	}
-}
-
-// TestKeepStoreGetEmptyBlockNotExists that does not exist
-func TestKeepStoreGetEmptyBlockNotExists(t *testing.T) {
-	defer teardown()
-
-	// Prepare two mock volumes
-	KeepVM = MakeTestVolumeManager(2)
-	defer KeepVM.Close()
-
-	// Check that GetBlock returns error.
-	_, err := GetBlock(EmptyHash)
-	if err == nil {
-		t.Errorf("Expected error when getting non-existing empty block")
-	}
-}
-
 // ========================================
 // Helper functions for unit tests.
 // ========================================
