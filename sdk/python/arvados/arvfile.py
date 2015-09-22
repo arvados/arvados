@@ -564,11 +564,17 @@ class _BlockManager(object):
             # Mark the block as PENDING so to disallow any more appends.
             block.set_state(_BufferBlock.PENDING)
         except StateChangeError as e:
-            if e.state == _BufferBlock.PENDING and sync:
-                block.wait_for_commit.wait()
-                if block.state() == _BufferBlock.ERROR:
-                    raise block.error
-            return
+            if e.state == _BufferBlock.PENDING:
+                if sync:
+                    block.wait_for_commit.wait()
+                else:
+                    return
+            if block.state() == _BufferBlock.COMMITTED:
+                return
+            elif block.state() == _BufferBlock.ERROR:
+                raise block.error
+            else:
+                raise
 
         if sync:
             try:
