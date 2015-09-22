@@ -70,7 +70,7 @@ func (s *GitoliteSuite) TestFetchUnreadable(c *check.C) {
 }
 
 func (s *GitoliteSuite) TestPush(c *check.C) {
-	err := s.RunGit(c, activeToken, "push", "active/foo.git")
+	err := s.RunGit(c, activeToken, "push", "active/foo.git", "master:gitolite-push")
 	c.Check(err, check.Equals, nil)
 
 	// Check that the commit hash appears in the gitolite log, as
@@ -88,6 +88,6 @@ func (s *GitoliteSuite) TestPush(c *check.C) {
 }
 
 func (s *GitoliteSuite) TestPushUnwritable(c *check.C) {
-	err := s.RunGit(c, spectatorToken, "push", "active/foo.git")
+	err := s.RunGit(c, spectatorToken, "push", "active/foo.git", "master:gitolite-push-fail")
 	c.Check(err, check.ErrorMatches, `.*HTTP code = 403.*`)
 }
