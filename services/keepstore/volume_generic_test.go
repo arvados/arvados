@@ -61,7 +61,7 @@ func testGet(t *testing.T, factory TestableVolumeFactory) {
 
 	buf, err := v.Get(TestHash)
 	if err != nil {
-		t.Error(err)
+		t.Fatal(err)
 	}
 
 	bufs.Put(buf)
@@ -397,7 +397,7 @@ func testDeleteOldBlock(t *testing.T, factory TestableVolumeFactory) {
 		t.Error(err)
 	}
 	if _, err := v.Get(TestHash); err == nil || !os.IsNotExist(err) {
-		t.Errorf("os.IsNotExist(%v) should have been true", err.Error())
+		t.Errorf("os.IsNotExist(%v) should have been true", err)
 	}
 }
 
