@@ -320,7 +320,7 @@ class _BufferBlock(object):
     @synchronized
     def set_state(self, nextstate, val=None):
         if (self._state, nextstate) not in self.STATE_TRANSITIONS:
-            raise StateChangeError("Invalid state change from %s to %s" % (self.state, nextstate), self.state, nextstate)
+            raise StateChangeError("Invalid state change from %s to %s" % (self._state, nextstate), self._state, nextstate)
         self._state = nextstate
 
         if self._state == _BufferBlock.PENDING:
@@ -491,7 +491,7 @@ class _BlockManager(object):
             for i in xrange(0, self.num_put_threads):
                 thread = threading.Thread(target=self._commit_bufferblock_worker)
                 self._put_threads.append(thread)
-                thread.daemon = False
+                thread.daemon = True
                 thread.start()
 
     def _block_prefetch_worker(self):
