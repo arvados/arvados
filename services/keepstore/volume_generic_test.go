@@ -22,12 +22,21 @@ func DoGenericVolumeTests(t *testing.T, factory TestableVolumeFactory) {
 	testGet(t, factory)
 	testGetNoSuchBlock(t, factory)
 
-	testCompareSameContent(t, factory)
-	testCompareWithDifferentContent(t, factory)
-	testCompareWithBadData(t, factory)
+	testCompareSameContent(t, factory, TestHash, TestBlock)
+	testCompareSameContent(t, factory, EmptyHash, EmptyBlock)
+	testCompareWithCollision(t, factory, TestHash, TestBlock, []byte("baddata"))
+	testCompareWithCollision(t, factory, TestHash, TestBlock, EmptyBlock)
+	testCompareWithCollision(t, factory, EmptyHash, EmptyBlock, TestBlock)
+	testCompareWithCorruptStoredData(t, factory, TestHash, TestBlock, []byte("baddata"))
+	testCompareWithCorruptStoredData(t, factory, TestHash, TestBlock, EmptyBlock)
+	testCompareWithCorruptStoredData(t, factory, EmptyHash, EmptyBlock, []byte("baddata"))
 
-	testPutBlockWithSameContent(t, factory)
-	testPutBlockWithDifferentContent(t, factory)
+	testPutBlockWithSameContent(t, factory, TestHash, TestBlock)
+	testPutBlockWithSameContent(t, factory, EmptyHash, EmptyBlock)
+	testPutBlockWithDifferentContent(t, factory, TestHash, TestBlock, TestBlock2)
+	testPutBlockWithDifferentContent(t, factory, TestHash, EmptyBlock, TestBlock)
+	testPutBlockWithDifferentContent(t, factory, TestHash, TestBlock, EmptyBlock)
+	testPutBlockWithDifferentContent(t, factory, EmptyHash, EmptyBlock, TestBlock)
 	testPutMultipleBlocks(t, factory)
 
 	testPutAndTouch(t, factory)
@@ -84,54 +93,56 @@ func testGetNoSuchBlock(t *testing.T, factory TestableVolumeFactory) {
 
 // Put a test block and compare the locator with same content
 // Test should pass for both writable and read-only volumes
-func testCompareSameContent(t *testing.T, factory TestableVolumeFactory) {
+func testCompareSameContent(t *testing.T, factory TestableVolumeFactory, testHash string, testData []byte) {
 	v := factory(t)
 	defer v.Teardown()
 
-	v.PutRaw(TestHash, TestBlock)
+	v.PutRaw(testHash, testData)
 
 	// Compare the block locator with same content
-	err := v.Compare(TestHash, TestBlock)
+	err := v.Compare(testHash, testData)
 	if err != nil {
 		t.Errorf("Got err %q, expected nil", err)
 	}
 }
 
-// Put a test block and compare the locator with a different content
-// Expect error due to collision
+// Test behavior of Compare() when stored data matches expected
+// checksum but differs from new data we need to store. Requires
+// testHash = md5(testDataA).
+//
 // Test should pass for both writable and read-only volumes
-func testCompareWithDifferentContent(t *testing.T, factory TestableVolumeFactory) {
+func testCompareWithCollision(t *testing.T, factory TestableVolumeFactory, testHash string, testDataA, testDataB []byte) {
 	v := factory(t)
 	defer v.Teardown()
 
-	v.PutRaw(TestHash, TestBlock)
+	v.PutRaw(testHash, testDataA)
 
 	// Compare the block locator with different content; collision
-	err := v.Compare(TestHash, []byte("baddata"))
+	err := v.Compare(TestHash, testDataB)
 	if err == nil {
-		t.Errorf("Expected error due to collision")
+		t.Errorf("Got err nil, expected error due to collision")
 	}
 }
 
-// Put a test block with bad data (hash does not match, but Put does not verify)
-// Compare the locator with good data whose hash matches with locator
-// Expect error due to corruption.
+// Test behavior of Compare() when stored data has become
+// corrupted. Requires testHash = md5(testDataA) != md5(testDataB).
+//
 // Test should pass for both writable and read-only volumes
-func testCompareWithBadData(t *testing.T, factory TestableVolumeFactory) {
+func testCompareWithCorruptStoredData(t *testing.T, factory TestableVolumeFactory, testHash string, testDataA, testDataB []byte) {
 	v := factory(t)
 	defer v.Teardown()
 
-	v.PutRaw(TestHash, []byte("baddata"))
+	v.PutRaw(TestHash, testDataB)
 
-	err := v.Compare(TestHash, TestBlock)
-	if err == nil {
-		t.Errorf("Expected error due to corruption")
+	err := v.Compare(testHash, testDataA)
+	if err == nil || err == CollisionError {
+		t.Errorf("Got err %+v, expected non-collision error", err)
 	}
 }
 
 // Put a block and put again with same content
 // Test is intended for only writable volumes
-func testPutBlockWithSameContent(t *testing.T, factory TestableVolumeFactory) {
+func testPutBlockWithSameContent(t *testing.T, factory TestableVolumeFactory, testHash string, testData []byte) {
 	v := factory(t)
 	defer v.Teardown()
 
@@ -139,12 +150,12 @@ func testPutBlockWithSameContent(t *testing.T, factory TestableVolumeFactory) {
 		return
 	}
 
-	err := v.Put(TestHash, TestBlock)
+	err := v.Put(testHash, testData)
 	if err != nil {
 		t.Errorf("Got err putting block %q: %q, expected nil", TestBlock, err)
 	}
 
-	err = v.Put(TestHash, TestBlock)
+	err = v.Put(testHash, testData)
 	if err != nil {
 		t.Errorf("Got err putting block second time %q: %q, expected nil", TestBlock, err)
 	}
@@ -152,7 +163,7 @@ func testPutBlockWithSameContent(t *testing.T, factory TestableVolumeFactory) {
 
 // Put a block and put again with different content
 // Test is intended for only writable volumes
-func testPutBlockWithDifferentContent(t *testing.T, factory TestableVolumeFactory) {
+func testPutBlockWithDifferentContent(t *testing.T, factory TestableVolumeFactory, testHash string, testDataA, testDataB []byte) {
 	v := factory(t)
 	defer v.Teardown()
 
@@ -160,25 +171,25 @@ func testPutBlockWithDifferentContent(t *testing.T, factory TestableVolumeFactor
 		return
 	}
 
-	err := v.Put(TestHash, TestBlock)
+	err := v.Put(testHash, testDataA)
 	if err != nil {
-		t.Errorf("Got err putting block %q: %q, expected nil", TestBlock, err)
+		t.Errorf("Got err putting block %q: %q, expected nil", testDataA, err)
 	}
 
-	putErr := v.Put(TestHash, TestBlock2)
-	buf, getErr := v.Get(TestHash)
+	putErr := v.Put(testHash, testDataB)
+	buf, getErr := v.Get(testHash)
 	if putErr == nil {
 		// Put must not return a nil error unless it has
 		// overwritten the existing data.
-		if bytes.Compare(buf, TestBlock2) != 0 {
-			t.Errorf("Put succeeded but Get returned %+v, expected %+v", buf, TestBlock2)
+		if bytes.Compare(buf, testDataB) != 0 {
+			t.Errorf("Put succeeded but Get returned %+v, expected %+v", buf, testDataB)
 		}
 	} else {
 		// It is permissible for Put to fail, but it must
 		// leave us with either the original data, the new
 		// data, or nothing at all.
-		if getErr == nil && bytes.Compare(buf, TestBlock) != 0 && bytes.Compare(buf, TestBlock2) != 0 {
-			t.Errorf("Put failed but Get returned %+v, which is neither %+v nor %+v", buf, TestBlock, TestBlock2)
+		if getErr == nil && bytes.Compare(buf, testDataA) != 0 && bytes.Compare(buf, testDataB) != 0 {
+			t.Errorf("Put failed but Get returned %+v, which is neither %+v nor %+v", buf, testDataA, testDataB)
 		}
 	}
 	if getErr == nil {

@@ -7,17 +7,17 @@ type MockMutex struct {
 
 func NewMockMutex() *MockMutex {
 	return &MockMutex{
-		AllowLock: make(chan struct{}),
+		AllowLock:   make(chan struct{}),
 		AllowUnlock: make(chan struct{}),
 	}
 }
 
 // Lock waits for someone to send to AllowLock.
 func (m *MockMutex) Lock() {
-	<- m.AllowLock
+	<-m.AllowLock
 }
 
 // Unlock waits for someone to send to AllowUnlock.
 func (m *MockMutex) Unlock() {
-	<- m.AllowUnlock
+	<-m.AllowUnlock
 }
