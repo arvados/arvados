@@ -1,9 +1,7 @@
 package main
 
 import (
-	"bufio"
 	"bytes"
-	"errors"
 	"flag"
 	"fmt"
 	"git.curoverse.com/arvados.git/sdk/go/keepclient"
@@ -14,7 +12,6 @@ import (
 	"os"
 	"os/signal"
 	"strings"
-	"sync"
 	"syscall"
 	"time"
 )
@@ -114,95 +111,16 @@ var KeepVM VolumeManager
 var pullq *WorkQueue
 var trashq *WorkQueue
 
+type volumeSet []Volume
+
 var (
 	flagSerializeIO bool
 	flagReadonly    bool
+	volumes         volumeSet
 )
 
-type volumeSet []Volume
-
-func (vs *volumeSet) Set(value string) error {
-	if dirs := strings.Split(value, ","); len(dirs) > 1 {
-		log.Print("DEPRECATED: using comma-separated volume list.")
-		for _, dir := range dirs {
-			if err := vs.Set(dir); err != nil {
-				return err
-			}
-		}
-		return nil
-	}
-	if len(value) == 0 || value[0] != '/' {
-		return errors.New("Invalid volume: must begin with '/'.")
-	}
-	if _, err := os.Stat(value); err != nil {
-		return err
-	}
-	var locker sync.Locker
-	if flagSerializeIO {
-		locker = &sync.Mutex{}
-	}
-	*vs = append(*vs, &UnixVolume{
-		root:     value,
-		locker:   locker,
-		readonly: flagReadonly,
-	})
-	return nil
-}
-
 func (vs *volumeSet) String() string {
-	s := "["
-	for i, v := range *vs {
-		if i > 0 {
-			s = s + " "
-		}
-		s = s + v.String()
-	}
-	return s + "]"
-}
-
-// Discover adds a volume for every directory named "keep" that is
-// located at the top level of a device- or tmpfs-backed mount point
-// other than "/". It returns the number of volumes added.
-func (vs *volumeSet) Discover() int {
-	added := 0
-	f, err := os.Open(ProcMounts)
-	if err != nil {
-		log.Fatalf("opening %s: %s", ProcMounts, err)
-	}
-	scanner := bufio.NewScanner(f)
-	for scanner.Scan() {
-		args := strings.Fields(scanner.Text())
-		if err := scanner.Err(); err != nil {
-			log.Fatalf("reading %s: %s", ProcMounts, err)
-		}
-		dev, mount := args[0], args[1]
-		if mount == "/" {
-			continue
-		}
-		if dev != "tmpfs" && !strings.HasPrefix(dev, "/dev/") {
-			continue
-		}
-		keepdir := mount + "/keep"
-		if st, err := os.Stat(keepdir); err != nil || !st.IsDir() {
-			continue
-		}
-		// Set the -readonly flag (but only for this volume)
-		// if the filesystem is mounted readonly.
-		flagReadonlyWas := flagReadonly
-		for _, fsopt := range strings.Split(args[3], ",") {
-			if fsopt == "ro" {
-				flagReadonly = true
-				break
-			}
-			if fsopt == "rw" {
-				break
-			}
-		}
-		vs.Set(keepdir)
-		flagReadonly = flagReadonlyWas
-		added++
-	}
-	return added
+	return fmt.Sprintf("%+v", (*vs)[:])
 }
 
 // TODO(twp): continue moving as much code as possible out of main
@@ -219,7 +137,6 @@ func main() {
 		listen               string
 		blobSigningKeyFile   string
 		permissionTTLSec     int
-		volumes              volumeSet
 		pidfile              string
 	)
 	flag.StringVar(
@@ -276,14 +193,6 @@ func main() {
 		"readonly",
 		false,
 		"Do not write, delete, or touch anything on the following volumes.")
-	flag.Var(
-		&volumes,
-		"volumes",
-		"Deprecated synonym for -volume.")
-	flag.Var(
-		&volumes,
-		"volume",
-		"Local storage directory. Can be given more than once to add multiple directories. If none are supplied, the default is to use all directories named \"keep\" that exist in the top level directory of a mount point at startup time. Can be a comma-separated list, but this is deprecated: use multiple -volume arguments instead.")
 	flag.StringVar(
 		&pidfile,
 		"pid",
@@ -328,7 +237,7 @@ func main() {
 	}
 
 	if len(volumes) == 0 {
-		if volumes.Discover() == 0 {
+		if (&unixVolumeAdder{&volumes}).Discover() == 0 {
 			log.Fatal("No volumes found.")
 		}
 	}

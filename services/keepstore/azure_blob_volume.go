@@ -1,12 +1,65 @@
 package main
 
 import (
+	"errors"
+	"flag"
 	"fmt"
 	"io"
+	"io/ioutil"
+	"log"
+	"strings"
 	"time"
 
 	"github.com/Azure/azure-sdk-for-go/storage"
 )
+
+var (
+	azureStorageAccountName    string
+	azureStorageAccountKeyFile string
+)
+
+type azureVolumeAdder struct {
+	*volumeSet
+}
+
+func (s *azureVolumeAdder) Set(containerName string) error {
+	if containerName == "" {
+		return errors.New("no container name given")
+	}
+	buf, err := ioutil.ReadFile(azureStorageAccountKeyFile)
+	if err != nil {
+		return errors.New("reading key from " + azureStorageAccountKeyFile + ": " + err.Error())
+	}
+	accountKey := strings.TrimSpace(string(buf))
+	if accountKey == "" {
+		return errors.New("empty account key in " + azureStorageAccountKeyFile)
+	}
+	azClient, err := storage.NewBasicClient(azureStorageAccountName, accountKey)
+	if err != nil {
+		return errors.New("creating Azure storage client: " + err.Error())
+	}
+	if flagSerializeIO {
+		log.Print("Notice: -serialize is not supported by azure-blob-container volumes.")
+	}
+	*s.volumeSet = append(*s.volumeSet, NewAzureBlobVolume(azClient, containerName, flagReadonly))
+	return nil
+}
+
+func init() {
+	flag.Var(&azureVolumeAdder{&volumes},
+		"azure-storage-container-volume",
+		"Use the given container as a storage volume. Can be given multiple times.")
+	flag.StringVar(
+		&azureStorageAccountName,
+		"azure-storage-account-name",
+		"",
+		"Azure storage account name used for subsequent --azure-storage-container-volume arguments.")
+	flag.StringVar(
+		&azureStorageAccountKeyFile,
+		"azure-storage-account-key-file",
+		"",
+		"File containing the account key used for subsequent --azure-storage-container-volume arguments.")
+}
 
 // An AzureBlobVolume stores and retrieves blocks in an Azure Blob
 // container.
@@ -75,7 +128,7 @@ func (v *AzureBlobVolume) Status() *VolumeStatus {
 }
 
 func (v *AzureBlobVolume) String() string {
-	return fmt.Sprintf("%+v", v.azClient)
+	return fmt.Sprintf("azure-storage-container:%+q", v.containerName)
 }
 
 func (v *AzureBlobVolume) Writable() bool {

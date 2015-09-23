@@ -1,7 +1,10 @@
 package main
 
 import (
+	"bufio"
 	"bytes"
+	"errors"
+	"flag"
 	"fmt"
 	"io"
 	"io/ioutil"
@@ -15,6 +18,97 @@ import (
 	"syscall"
 	"time"
 )
+
+type unixVolumeAdder struct {
+	*volumeSet
+}
+
+func (vs *unixVolumeAdder) Set(value string) error {
+	if dirs := strings.Split(value, ","); len(dirs) > 1 {
+		log.Print("DEPRECATED: using comma-separated volume list.")
+		for _, dir := range dirs {
+			if err := vs.Set(dir); err != nil {
+				return err
+			}
+		}
+		return nil
+	}
+	if len(value) == 0 || value[0] != '/' {
+		return errors.New("Invalid volume: must begin with '/'.")
+	}
+	if _, err := os.Stat(value); err != nil {
+		return err
+	}
+	var locker sync.Locker
+	if flagSerializeIO {
+		locker = &sync.Mutex{}
+	}
+	*vs.volumeSet = append(*vs.volumeSet, &UnixVolume{
+		root:     value,
+		locker:   locker,
+		readonly: flagReadonly,
+	})
+	return nil
+}
+
+func init() {
+	flag.Var(
+		&unixVolumeAdder{&volumes},
+		"volumes",
+		"Deprecated synonym for -volume.")
+	flag.Var(
+		&unixVolumeAdder{&volumes},
+		"volume",
+		"Local storage directory. Can be given more than once to add multiple directories. If none are supplied, the default is to use all directories named \"keep\" that exist in the top level directory of a mount point at startup time. Can be a comma-separated list, but this is deprecated: use multiple -volume arguments instead.")
+}
+
+// Discover adds a UnixVolume for every directory named "keep" that is
+// located at the top level of a device- or tmpfs-backed mount point
+// other than "/". It returns the number of volumes added.
+func (vs *unixVolumeAdder) Discover() int {
+	added := 0
+	f, err := os.Open(ProcMounts)
+	if err != nil {
+		log.Fatalf("opening %s: %s", ProcMounts, err)
+	}
+	scanner := bufio.NewScanner(f)
+	for scanner.Scan() {
+		args := strings.Fields(scanner.Text())
+		if err := scanner.Err(); err != nil {
+			log.Fatalf("reading %s: %s", ProcMounts, err)
+		}
+		dev, mount := args[0], args[1]
+		if mount == "/" {
+			continue
+		}
+		if dev != "tmpfs" && !strings.HasPrefix(dev, "/dev/") {
+			continue
+		}
+		keepdir := mount + "/keep"
+		if st, err := os.Stat(keepdir); err != nil || !st.IsDir() {
+			continue
+		}
+		// Set the -readonly flag (but only for this volume)
+		// if the filesystem is mounted readonly.
+		flagReadonlyWas := flagReadonly
+		for _, fsopt := range strings.Split(args[3], ",") {
+			if fsopt == "ro" {
+				flagReadonly = true
+				break
+			}
+			if fsopt == "rw" {
+				break
+			}
+		}
+		if err := vs.Set(keepdir); err != nil {
+			log.Printf("adding %q: %s", keepdir, err)
+		} else {
+			added++
+		}
+		flagReadonly = flagReadonlyWas
+	}
+	return added
+}
 
 // A UnixVolume stores and retrieves blocks in a local directory.
 type UnixVolume struct {

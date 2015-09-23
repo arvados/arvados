@@ -329,8 +329,8 @@ func TestDiscoverTmpfs(t *testing.T) {
 	f.Close()
 	ProcMounts = f.Name()
 
-	var resultVols volumeSet
-	added := resultVols.Discover()
+	resultVols := volumeSet{}
+	added := (&unixVolumeAdder{&resultVols}).Discover()
 
 	if added != len(resultVols) {
 		t.Errorf("Discover returned %d, but added %d volumes",
@@ -369,8 +369,8 @@ func TestDiscoverNone(t *testing.T) {
 	f.Close()
 	ProcMounts = f.Name()
 
-	var resultVols volumeSet
-	added := resultVols.Discover()
+	resultVols := volumeSet{}
+	added := (&unixVolumeAdder{&resultVols}).Discover()
 	if added != 0 || len(resultVols) != 0 {
 		t.Fatalf("got %d, %v; expected 0, []", added, resultVols)
 	}
