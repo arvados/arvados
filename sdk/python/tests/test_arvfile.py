@@ -7,6 +7,7 @@ import mock
 import os
 import unittest
 import hashlib
+import time
 
 import arvados
 from arvados._ranges import Range
@@ -625,6 +626,20 @@ class BlockManagerTest(unittest.TestCase):
             self.assertTrue(mockkeep.put.called)
             self.assertEqual(bufferblock.state(), arvados.arvfile._BufferBlock.COMMITTED)
             self.assertIsNone(bufferblock.buffer_view)
+
+    def test_bufferblock_commit_pending(self):
+        # Test for bug #7225
+        mockkeep = mock.MagicMock()
+        mockkeep.put.side_effect = lambda x: time.sleep(1)
+        with arvados.arvfile._BlockManager(mockkeep) as blockmanager:
+            bufferblock = blockmanager.alloc_bufferblock()
+            bufferblock.append("foo")
+
+            blockmanager.commit_bufferblock(bufferblock, False)
+            self.assertEqual(bufferblock.state(), arvados.arvfile._BufferBlock.PENDING)
+
+            blockmanager.commit_bufferblock(bufferblock, True)
+            self.assertEqual(bufferblock.state(), arvados.arvfile._BufferBlock.COMMITTED)
 
 
     def test_bufferblock_commit_with_error(self):
