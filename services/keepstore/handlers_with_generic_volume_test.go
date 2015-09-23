@@ -5,15 +5,16 @@ import (
 	"testing"
 )
 
-// A TestableVolumeManagerFactory creates a volume manager with one or more TestableVolumes.
-// The factory function, and the TestableVolumes it returns, can use "t" to write
+// A TestableVolumeManagerFactory creates a volume manager with at least two TestableVolume instances.
+// The factory function, and the TestableVolume instances it returns, can use "t" to write
 // logs, fail the current test, etc.
-type TestableVolumeManagerFactory func(t *testing.T) []TestableVolume
+type TestableVolumeManagerFactory func(t *testing.T) (*RRVolumeManager, []TestableVolume)
 
-// DoGenericVolumeTests runs a set of tests that every TestableVolume
-// is expected to pass. It calls factory to create a new TestableVolume
-// for each test case, to avoid leaking state between tests.
-func DoGenericVolumeFunctionalTests(t *testing.T, factory TestableVolumeManagerFactory) {
+// DoHandlersWithGenericVolumeTests runs a set of handler tests with a
+// Volume Manager comprised of TestableVolume instances.
+// It calls factory to create a volume manager with TestableVolume
+// instances for each test case, to avoid leaking state between tests.
+func DoHandlersWithGenericVolumeTests(t *testing.T, factory TestableVolumeManagerFactory) {
 	testGetBlock(t, factory, TestHash, TestBlock)
 	testGetBlock(t, factory, EmptyHash, EmptyBlock)
 	testPutRawBadDataGetBlock(t, factory, TestHash, TestBlock, []byte("baddata"))
@@ -24,12 +25,22 @@ func DoGenericVolumeFunctionalTests(t *testing.T, factory TestableVolumeManagerF
 	testPutBlockCorrupt(t, factory, EmptyHash, EmptyBlock, []byte("baddata"))
 }
 
+// Setup RRVolumeManager with TestableVolumes
+func setupHandlersWithGenericVolumeTest(t *testing.T, factory TestableVolumeManagerFactory) []TestableVolume {
+	vm, testableVolumes := factory(t)
+	KeepVM = vm
+
+	for _, v := range testableVolumes {
+		defer v.Teardown()
+	}
+	defer KeepVM.Close()
+
+	return testableVolumes
+}
+
 // Put a block using PutRaw in just one volume and Get it using GetBlock
 func testGetBlock(t *testing.T, factory TestableVolumeManagerFactory, testHash string, testBlock []byte) {
-	testableVolumes := factory(t)
-	defer testableVolumes[0].Teardown()
-	defer testableVolumes[1].Teardown()
-	defer KeepVM.Close()
+	testableVolumes := setupHandlersWithGenericVolumeTest(t, factory)
 
 	// Put testBlock in one volume
 	testableVolumes[1].PutRaw(testHash, testBlock)
@@ -47,10 +58,7 @@ func testGetBlock(t *testing.T, factory TestableVolumeManagerFactory, testHash s
 // Put a bad block using PutRaw and get it.
 func testPutRawBadDataGetBlock(t *testing.T, factory TestableVolumeManagerFactory,
 	testHash string, testBlock []byte, badData []byte) {
-	testableVolumes := factory(t)
-	defer testableVolumes[0].Teardown()
-	defer testableVolumes[1].Teardown()
-	defer KeepVM.Close()
+	testableVolumes := setupHandlersWithGenericVolumeTest(t, factory)
 
 	// Put bad data for testHash in both volumes
 	testableVolumes[0].PutRaw(testHash, badData)
@@ -65,10 +73,7 @@ func testPutRawBadDataGetBlock(t *testing.T, factory TestableVolumeManagerFactor
 
 // Invoke PutBlock twice to ensure CompareAndTouch path is tested.
 func testPutBlock(t *testing.T, factory TestableVolumeManagerFactory, testHash string, testBlock []byte) {
-	testableVolumes := factory(t)
-	defer testableVolumes[0].Teardown()
-	defer testableVolumes[1].Teardown()
-	defer KeepVM.Close()
+	setupHandlersWithGenericVolumeTest(t, factory)
 
 	// PutBlock
 	if err := PutBlock(testBlock, testHash); err != nil {
@@ -92,10 +97,7 @@ func testPutBlock(t *testing.T, factory TestableVolumeManagerFactory, testHash s
 // Put a bad block using PutRaw, overwrite it using PutBlock and get it.
 func testPutBlockCorrupt(t *testing.T, factory TestableVolumeManagerFactory,
 	testHash string, testBlock []byte, badData []byte) {
-	testableVolumes := factory(t)
-	defer testableVolumes[0].Teardown()
-	defer testableVolumes[1].Teardown()
-	defer KeepVM.Close()
+	testableVolumes := setupHandlersWithGenericVolumeTest(t, factory)
 
 	// Put bad data for testHash in both volumes
 	testableVolumes[0].PutRaw(testHash, badData)
