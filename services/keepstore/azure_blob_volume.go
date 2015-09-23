@@ -41,7 +41,11 @@ func (s *azureVolumeAdder) Set(containerName string) error {
 	if flagSerializeIO {
 		log.Print("Notice: -serialize is not supported by azure-blob-container volumes.")
 	}
-	*s.volumeSet = append(*s.volumeSet, NewAzureBlobVolume(azClient, containerName, flagReadonly))
+	v := NewAzureBlobVolume(azClient, containerName, flagReadonly)
+	if err := v.Check(); err != nil {
+		return err
+	}
+	*s.volumeSet = append(*s.volumeSet, v)
 	return nil
 }
 
@@ -79,11 +83,24 @@ func NewAzureBlobVolume(client storage.Client, containerName string, readonly bo
 	}
 }
 
+// Check returns nil if the volume is usable.
+func (v *AzureBlobVolume) Check() error {
+	ok, err := v.bsClient.ContainerExists(v.containerName)
+	if err != nil {
+		return err
+	}
+	if !ok {
+		return errors.New("container does not exist")
+	}
+	return nil
+}
+
 func (v *AzureBlobVolume) Get(loc string) ([]byte, error) {
 	rdr, err := v.bsClient.GetBlob(v.containerName, loc)
 	if err != nil {
 		return nil, err
 	}
+	defer rdr.Close()
 	buf := bufs.Get(BlockSize)
 	n, err := io.ReadFull(rdr, buf)
 	switch err {
@@ -100,7 +117,14 @@ func (v *AzureBlobVolume) Compare(loc string, data []byte) error {
 }
 
 func (v *AzureBlobVolume) Put(loc string, block []byte) error {
-	return NotFoundError
+	if err := v.bsClient.CreateBlockBlob(v.containerName, loc); err != nil {
+		return err
+	}
+	// We use the same block ID, base64("0")=="MA==", for everything.
+	if err := v.bsClient.PutBlock(v.containerName, loc, "MA==", block); err != nil {
+		return err
+	}
+	return v.bsClient.PutBlockList(v.containerName, loc, []storage.Block{{"MA==", storage.BlockStatusUncommitted}})
 }
 
 func (v *AzureBlobVolume) Touch(loc string) error {
