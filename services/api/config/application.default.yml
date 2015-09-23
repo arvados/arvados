@@ -8,6 +8,30 @@
 # 4. Section in application.default.yml corresponding to RAILS_ENV
 # 5. Section in application.default.yml called "common"
 
+<%
+source_version = ""
+local_modified = false
+begin
+  status_output = false
+  IO.popen(["git", "status", "-s"], "r", err: [:child, :out]) do |git_pipe|
+    git_pipe.each_line do |_|
+      status_output = true
+    end
+  end
+  if $?.success?
+    source_version = `git log -n1 --format=%H`.strip
+    local_modified = status_output
+  else
+    raise SystemCallError.new("git exited #{$?.exitstatus}")
+  end
+rescue SystemCallError
+  begin
+    source_version = IO.read(Rails.root.join("git-commit.version")).strip
+  rescue SystemCallError
+  end
+end
+%>
+
 common:
   ###
   ### Essential site configuration
@@ -327,7 +351,7 @@ common:
   default_openid_prefix: https://www.google.com/accounts/o8/id
 
   # source_version
-  source_version: "<%= `git log -n 1 --format=%h`.strip %>"
+  source_version: "<%= source_version[0...8] %>"
   local_modified: false
 
 
@@ -345,7 +369,7 @@ development:
   active_record.auto_explain_threshold_in_seconds: 0.5
   assets.compress: false
   assets.debug: true
-  local_modified: "<%= '-modified' if `git status -s` != '' %>"
+  local_modified: "<%= local_modified ? '-modified' : '' %>"
 
 production:
   force_ssl: true

@@ -1,6 +1,30 @@
 # Do not use this file for site configuration. Create application.yml
 # instead (see application.yml.example).
 
+<%
+source_version = ""
+local_modified = false
+begin
+  status_output = false
+  IO.popen(["git", "status", "-s"], "r", err: [:child, :out]) do |git_pipe|
+    git_pipe.each_line do |_|
+      status_output = true
+    end
+  end
+  if $?.success?
+    source_version = `git log -n1 --format=%H`.strip
+    local_modified = status_output
+  else
+    raise SystemCallError.new("git exited #{$?.exitstatus}")
+  end
+rescue SystemCallError
+  begin
+    source_version = IO.read(Rails.root.join("git-commit.version")).strip
+  rescue SystemCallError
+  end
+end
+%>
+
 # Below is a sample setting for diagnostics testing.
 # Configure workbench URL as "arvados_workbench_url"
 # Configure test user tokens as "user_tokens".
@@ -45,7 +69,7 @@ development:
   assets.debug: true
   profiling_enabled: true
   site_name: Arvados Workbench (dev)
-  local_modified: "<%= '-modified' if `git status -s` != '' %>"
+  local_modified: "<%= local_modified ? '-modified' : '' %>"
 
   # API server configuration
   arvados_login_base: ~
@@ -184,7 +208,7 @@ common:
   user_profile_form_message: Welcome to Arvados. All <span style="color:red">required fields</span> must be completed before you can proceed.
 
   # source_version
-  source_version: "<%= `git log -n 1 --format=%h`.strip %>"
+  source_version: "<%= source_version[0...8] %>"
   local_modified: false
 
   # report notification to and from addresses
