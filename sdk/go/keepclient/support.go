@@ -14,7 +14,7 @@ import (
 	"time"
 )
 
-type keepServices struct {
+type keepService struct {
 	Uuid     string `json:"uuid"`
 	Hostname string `json:"service_host"`
 	Port     int    `json:"service_port"`
@@ -79,7 +79,7 @@ func (this *KeepClient) setClientSettingsDisk() {
 // DiscoverKeepServers gets list of available keep services from api server
 func (this *KeepClient) DiscoverKeepServers() error {
 	type svcList struct {
-		Items []keepServices `json:"items"`
+		Items []keepService `json:"items"`
 	}
 	var m svcList
 
