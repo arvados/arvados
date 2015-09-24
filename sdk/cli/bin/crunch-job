@@ -2205,11 +2205,12 @@ if (-d $sdk_root) {
 my $python_dir = "$install_dir/python";
 if ((-d $python_dir) and can_run("python2.7")) {
   open(my $egg_info_pipe, "-|",
-       "python2.7 \Q$python_dir/setup.py\E --quiet egg_info 2>&1 >/dev/null");
+       "python2.7 \Q$python_dir/setup.py\E egg_info 2>&1 >/dev/null");
   my @egg_info_errors = <$egg_info_pipe>;
   close($egg_info_pipe);
+
   if ($?) {
-    if (@egg_info_errors and ($egg_info_errors[-1] =~ /\bgit\b/)) {
+    if (@egg_info_errors and (($egg_info_errors[-1] =~ /\bgit\b/) or ($egg_info_errors[-1] =~ /\[Errno 2\]/))) {
       # egg_info apparently failed because it couldn't ask git for a build tag.
       # Specify no build tag.
       open(my $pysdk_cfg, ">>", "$python_dir/setup.cfg");
@@ -2218,7 +2219,7 @@ if ((-d $python_dir) and can_run("python2.7")) {
     } else {
       my $egg_info_exit = $? >> 8;
       foreach my $errline (@egg_info_errors) {
-        print STDERR_ORIG $errline;
+        warn $errline;
       }
       warn "python setup.py egg_info failed: exit $egg_info_exit";
       exit ($egg_info_exit || 1);
