@@ -22,7 +22,6 @@ import time
 import timer
 import types
 import UserDict
-import util
 import zlib
 
 import arvados
@@ -652,7 +651,7 @@ class KeepClient(object):
                 self._writable_services = self._keep_services
                 self.using_proxy = True
                 self._static_services_list = True
-                self.thread_count = None
+                self.max_replicas_per_service = None
             else:
                 # It's important to avoid instantiating an API client
                 # unless we actually need one, for testing's sake.
@@ -665,7 +664,7 @@ class KeepClient(object):
                 self._writable_services = None
                 self.using_proxy = None
                 self._static_services_list = False
-                self.thread_count = None
+                self.max_replicas_per_service = None
 
     def current_timeout(self, attempt_number):
         """Return the appropriate timeout to use for this client.
@@ -723,10 +722,12 @@ class KeepClient(object):
 
             self.using_proxy = any(ks.get('service_type') == 'proxy'
                                    for ks in self._keep_services)
-            # Use a thread_count of 1 if the service is not a disk
+            # Set max_replicas_per_service to 1 for disk typed services.
+            # In case of, non-disk typed services, we will use None to mean unknown.
+            self.max_replicas_per_service = 1
             for ks in accessible:
-                if ('disk' != ks.get('service_type')) and (True != ks.get('read_only')):
-                    self.thread_count = 1
+                if ('disk' != ks.get('service_type')) and not ks.get('read_only'):
+                    self.max_replicas_per_service = None
 
     def _service_weight(self, data_hash, service_uuid):
         """Compute the weight of a Keep service endpoint for a data
@@ -745,18 +746,15 @@ class KeepClient(object):
         self.build_services_list(force_rebuild)
 
         sorted_roots = []
-
-        # Use the services indicated by the given hints that are
-        # not size or authorization hints.
-        # If it is a K@ hint of size 7, it is a keepproxy
-        # Otherwise, expect the hint to be of len 29 and a uuid
-        # of a remote service that can be resolved to a URI.
+        # Use the services indicated by the given +K@... remote
+        # service hints, if any are present and can be resolved to a
+        # URI.
         for hint in locator.hints:
-            if not hint.startswith('A') and not hint[0].isdigit():
-                if len(hint) == 7 and hint.startswith('K@'):
-                    sorted_roots.append(
-                        "https://keep.{}.arvadosapi.com/".format(hint[2:]))
-                elif len(hint) == 29 and re.match(util.uuid_pattern, hint[2:]):
+            if hint.startswith('K@'):
+                if len(hint) == 7:
+                     sorted_roots.append(
+                         "https://keep.{}.arvadosapi.com/".format(hint[2:]))
+                elif len(hint) == 29:
                     svc = self._gateway_services.get(hint[2:])
                     if svc:
                         sorted_roots.append(svc['_service_root'])
@@ -950,7 +948,7 @@ class KeepClient(object):
         # Tell the proxy how many copies we want it to store
         headers['X-Keep-Desired-Replication'] = str(copies)
         roots_map = {}
-        thread_limiter = KeepClient.ThreadLimiter(1 if 1 == self.thread_count else copies)
+        thread_limiter = KeepClient.ThreadLimiter(1 if self.max_replicas_per_service is None else copies)
         loop = retry.RetryLoop(num_retries, self._check_loop_result,
                                backoff_start=2)
         for tries_left in loop:
