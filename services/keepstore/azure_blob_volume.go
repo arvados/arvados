@@ -7,6 +7,7 @@ import (
 	"io"
 	"io/ioutil"
 	"log"
+	"os"
 	"strings"
 	"time"
 
@@ -18,6 +19,18 @@ var (
 	azureStorageAccountKeyFile string
 )
 
+func readKeyFromFile(file string) (string, error) {
+	buf, err := ioutil.ReadFile(file)
+	if err != nil {
+		return "", errors.New("reading key from " + file + ": " + err.Error())
+	}
+	accountKey := strings.TrimSpace(string(buf))
+	if accountKey == "" {
+		return "", errors.New("empty account key in " + file)
+	}
+	return accountKey, nil
+}
+
 type azureVolumeAdder struct {
 	*volumeSet
 }
@@ -26,13 +39,9 @@ func (s *azureVolumeAdder) Set(containerName string) error {
 	if containerName == "" {
 		return errors.New("no container name given")
 	}
-	buf, err := ioutil.ReadFile(azureStorageAccountKeyFile)
+	accountKey, err := readKeyFromFile(azureStorageAccountKeyFile)
 	if err != nil {
-		return errors.New("reading key from " + azureStorageAccountKeyFile + ": " + err.Error())
-	}
-	accountKey := strings.TrimSpace(string(buf))
-	if accountKey == "" {
-		return errors.New("empty account key in " + azureStorageAccountKeyFile)
+		return err
 	}
 	azClient, err := storage.NewBasicClient(azureStorageAccountName, accountKey)
 	if err != nil {
@@ -98,6 +107,16 @@ func (v *AzureBlobVolume) Check() error {
 func (v *AzureBlobVolume) Get(loc string) ([]byte, error) {
 	rdr, err := v.bsClient.GetBlob(v.containerName, loc)
 	if err != nil {
+		if strings.Contains(err.Error(), "404 Not Found") {
+			// "storage: service returned without a response body (404 Not Found)"
+			return nil, os.ErrNotExist
+		}
+		return nil, err
+	}
+	switch err := err.(type) {
+	case nil:
+	default:
+		log.Printf("ERROR IN Get(): %T %#v", err, err)
 		return nil, err
 	}
 	defer rdr.Close()
@@ -112,11 +131,19 @@ func (v *AzureBlobVolume) Get(loc string) ([]byte, error) {
 	}
 }
 
-func (v *AzureBlobVolume) Compare(loc string, data []byte) error {
-	return NotFoundError
+func (v *AzureBlobVolume) Compare(loc string, expect []byte) error {
+	rdr, err := v.bsClient.GetBlob(v.containerName, loc)
+	if err != nil {
+		return err
+	}
+	defer rdr.Close()
+	return compareReaderWithBuf(rdr, expect, loc[:32])
 }
 
 func (v *AzureBlobVolume) Put(loc string, block []byte) error {
+	if v.readonly {
+		return MethodDisabledError
+	}
 	if err := v.bsClient.CreateBlockBlob(v.containerName, loc); err != nil {
 		return err
 	}
@@ -128,6 +155,14 @@ func (v *AzureBlobVolume) Put(loc string, block []byte) error {
 }
 
 func (v *AzureBlobVolume) Touch(loc string) error {
+	if v.readonly {
+		return MethodDisabledError
+	}
+	if exists, err := v.bsClient.BlobExists(v.containerName, loc); err != nil {
+		return err
+	} else if !exists {
+		return os.ErrNotExist
+	}
 	return v.bsClient.PutBlockList(v.containerName, loc, []storage.Block{{"MA==", storage.BlockStatusCommitted}})
 }
 
@@ -153,7 +188,7 @@ func (v *AzureBlobVolume) IndexTo(prefix string, writer io.Writer) error {
 			if err != nil {
 				return err
 			}
-			fmt.Fprintf(writer, "%s+%d\n", b.Name, t.Unix())
+			fmt.Fprintf(writer, "%s+%d %d\n", b.Name, b.Properties.ContentLength, t.Unix())
 		}
 		if resp.NextMarker == "" {
 			return nil
@@ -164,6 +199,9 @@ func (v *AzureBlobVolume) IndexTo(prefix string, writer io.Writer) error {
 
 func (v *AzureBlobVolume) Delete(loc string) error {
 	// TODO: Use leases to handle races with Touch and Put.
+	if v.readonly {
+		return MethodDisabledError
+	}
 	if t, err := v.Mtime(loc); err != nil {
 		return err
 	} else if time.Since(t) < blobSignatureTTL {

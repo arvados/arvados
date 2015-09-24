@@ -171,14 +171,14 @@ func testPutBlockWithDifferentContent(t *testing.T, factory TestableVolumeFactor
 		// Put must not return a nil error unless it has
 		// overwritten the existing data.
 		if bytes.Compare(buf, TestBlock2) != 0 {
-			t.Errorf("Put succeeded but Get returned %+v, expected %+v", buf, TestBlock2)
+			t.Errorf("Put succeeded but Get returned %+q, expected %+q", buf, TestBlock2)
 		}
 	} else {
 		// It is permissible for Put to fail, but it must
 		// leave us with either the original data, the new
 		// data, or nothing at all.
 		if getErr == nil && bytes.Compare(buf, TestBlock) != 0 && bytes.Compare(buf, TestBlock2) != 0 {
-			t.Errorf("Put failed but Get returned %+v, which is neither %+v nor %+v", buf, TestBlock, TestBlock2)
+			t.Errorf("Put failed but Get returned %+q, which is neither %+q nor %+q", buf, TestBlock, TestBlock2)
 		}
 	}
 	if getErr == nil {
@@ -214,26 +214,32 @@ func testPutMultipleBlocks(t *testing.T, factory TestableVolumeFactory) {
 	data, err := v.Get(TestHash)
 	if err != nil {
 		t.Error(err)
-	} else if bytes.Compare(data, TestBlock) != 0 {
-		t.Errorf("Block present, but content is incorrect: Expected: %v  Found: %v", data, TestBlock)
+	} else {
+		if bytes.Compare(data, TestBlock) != 0 {
+			t.Errorf("Block present, but got %+q, expected %+q", data, TestBlock)
+		}
+		bufs.Put(data)
 	}
-	bufs.Put(data)
 
 	data, err = v.Get(TestHash2)
 	if err != nil {
 		t.Error(err)
-	} else if bytes.Compare(data, TestBlock2) != 0 {
-		t.Errorf("Block present, but content is incorrect: Expected: %v  Found: %v", data, TestBlock2)
+	} else {
+		if bytes.Compare(data, TestBlock2) != 0 {
+			t.Errorf("Block present, but got %+q, expected %+q", data, TestBlock2)
+		}
+		bufs.Put(data)
 	}
-	bufs.Put(data)
 
 	data, err = v.Get(TestHash3)
 	if err != nil {
 		t.Error(err)
-	} else if bytes.Compare(data, TestBlock3) != 0 {
-		t.Errorf("Block present, but content is incorrect: Expected: %v  Found: %v", data, TestBlock3)
+	} else {
+		if bytes.Compare(data, TestBlock3) != 0 {
+			t.Errorf("Block present, but to %+q, expected %+q", data, TestBlock3)
+		}
+		bufs.Put(data)
 	}
-	bufs.Put(data)
 }
 
 // testPutAndTouch
@@ -360,6 +366,7 @@ func testIndexTo(t *testing.T, factory TestableVolumeFactory) {
 func testDeleteNewBlock(t *testing.T, factory TestableVolumeFactory) {
 	v := factory(t)
 	defer v.Teardown()
+	blobSignatureTTL = 300 * time.Second
 
 	if v.Writable() == false {
 		return
@@ -373,10 +380,12 @@ func testDeleteNewBlock(t *testing.T, factory TestableVolumeFactory) {
 	data, err := v.Get(TestHash)
 	if err != nil {
 		t.Error(err)
-	} else if bytes.Compare(data, TestBlock) != 0 {
-		t.Error("Block still present, but content is incorrect: %+v != %+v", data, TestBlock)
+	} else {
+		if bytes.Compare(data, TestBlock) != 0 {
+			t.Errorf("Got data %+q, expected %+q", data, TestBlock)
+		}
+		bufs.Put(data)
 	}
-	bufs.Put(data)
 }
 
 // Calling Delete() for a block with a timestamp older than
@@ -385,13 +394,14 @@ func testDeleteNewBlock(t *testing.T, factory TestableVolumeFactory) {
 func testDeleteOldBlock(t *testing.T, factory TestableVolumeFactory) {
 	v := factory(t)
 	defer v.Teardown()
+	blobSignatureTTL = 300 * time.Second
 
 	if v.Writable() == false {
 		return
 	}
 
 	v.Put(TestHash, TestBlock)
-	v.TouchWithDate(TestHash, time.Now().Add(-2*blobSignatureTTL*time.Second))
+	v.TouchWithDate(TestHash, time.Now().Add(-2*blobSignatureTTL))
 
 	if err := v.Delete(TestHash); err != nil {
 		t.Error(err)

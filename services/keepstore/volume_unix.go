@@ -2,7 +2,6 @@ package main
 
 import (
 	"bufio"
-	"bytes"
 	"errors"
 	"flag"
 	"fmt"
@@ -209,43 +208,11 @@ func (v *UnixVolume) Get(loc string) ([]byte, error) {
 // bytes.Compare(), but uses less memory.
 func (v *UnixVolume) Compare(loc string, expect []byte) error {
 	path := v.blockPath(loc)
-	stat, err := v.stat(path)
-	if err != nil {
+	if _, err := v.stat(path); err != nil {
 		return err
 	}
-	bufLen := 1 << 20
-	if int64(bufLen) > stat.Size() {
-		bufLen = int(stat.Size())
-		if bufLen < 1 {
-			// len(buf)==0 would prevent us from handling
-			// empty files the same way as non-empty
-			// files, because reading 0 bytes at a time
-			// never reaches EOF.
-			bufLen = 1
-		}
-	}
-	cmp := expect
-	buf := make([]byte, bufLen)
 	return v.getFunc(path, func(rdr io.Reader) error {
-		// Loop invariants: all data read so far matched what
-		// we expected, and the first N bytes of cmp are
-		// expected to equal the next N bytes read from
-		// reader.
-		for {
-			n, err := rdr.Read(buf)
-			if n > len(cmp) || bytes.Compare(cmp[:n], buf[:n]) != 0 {
-				return collisionOrCorrupt(loc[:32], expect[:len(expect)-len(cmp)], buf[:n], rdr)
-			}
-			cmp = cmp[n:]
-			if err == io.EOF {
-				if len(cmp) != 0 {
-					return collisionOrCorrupt(loc[:32], expect[:len(expect)-len(cmp)], nil, nil)
-				}
-				return nil
-			} else if err != nil {
-				return err
-			}
-		}
+		return compareReaderWithBuf(rdr, expect, loc[:32])
 	})
 }
 
