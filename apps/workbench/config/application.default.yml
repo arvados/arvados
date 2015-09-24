@@ -2,24 +2,31 @@
 # instead (see application.yml.example).
 
 <%
+# If you change any of the code in this block, you'll probably also want
+# to update it in API server's application.default.yml.
 source_version = ""
 local_modified = false
-begin
-  status_output = false
-  IO.popen(["git", "status", "-s"], "r", err: [:child, :out]) do |git_pipe|
-    git_pipe.each_line do |_|
-      status_output = true
-    end
-  end
-  if $?.success?
-    source_version = `git log -n1 --format=%H`.strip
-    local_modified = status_output
-  else
-    raise SystemCallError.new("git exited #{$?.exitstatus}")
-  end
-rescue SystemCallError
+if Rails.env == "production"
+  # Read the version from our package's git-commit.version file, if available.
   begin
     source_version = IO.read(Rails.root.join("git-commit.version")).strip
+  rescue Errno::ENOENT
+  end
+end
+
+if source_version.empty?
+  begin
+    status_output = false
+    IO.popen(["git", "status", "-s"], "r", err: [:child, :out]) do |git_pipe|
+      git_pipe.each_line do |_|
+        status_output = true
+        # Continue reading the pipe so git doesn't get SIGPIPE.
+      end
+    end
+    if $?.success?
+      source_version = `git log -n1 --format=%H`.strip
+      local_modified = status_output
+    end
   rescue SystemCallError
   end
 end
