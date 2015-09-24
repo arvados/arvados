@@ -236,13 +236,13 @@ func (this KeepClient) putReplicas(
 	// Desired number of replicas
 	remaining_replicas := this.Want_replicas
 
-	for remaining_replicas > 0 {
-		replicasPerThread := this.replicasPerService
-		if replicasPerThread < 1 {
-			// unlimited or unknown
-			replicasPerThread = remaining_replicas
-		}
+	replicasPerThread := this.replicasPerService
+	if replicasPerThread < 1 {
+		// unlimited or unknown
+		replicasPerThread = remaining_replicas
+	}
 
+	for remaining_replicas > 0 {
 		for active*replicasPerThread < remaining_replicas {
 			// Start some upload requests
 			if next_server < len(sv) {
