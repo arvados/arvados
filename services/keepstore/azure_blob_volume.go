@@ -128,19 +128,48 @@ func (v *AzureBlobVolume) Put(loc string, block []byte) error {
 }
 
 func (v *AzureBlobVolume) Touch(loc string) error {
-	return NotFoundError
+	return v.bsClient.PutBlockList(v.containerName, loc, []storage.Block{{"MA==", storage.BlockStatusCommitted}})
 }
 
 func (v *AzureBlobVolume) Mtime(loc string) (time.Time, error) {
-	return time.Time{}, NotFoundError
+	props, err := v.bsClient.GetBlobProperties(v.containerName, loc)
+	if err != nil {
+		return time.Time{}, err
+	}
+	return time.Parse(time.RFC1123, props.LastModified)
 }
 
 func (v *AzureBlobVolume) IndexTo(prefix string, writer io.Writer) error {
-	return nil
+	params := storage.ListBlobsParameters{
+		Prefix: prefix,
+	}
+	for {
+		resp, err := v.bsClient.ListBlobs(v.containerName, params)
+		if err != nil {
+			return err
+		}
+		for _, b := range resp.Blobs {
+			t, err := time.Parse(time.RFC1123, b.Properties.LastModified)
+			if err != nil {
+				return err
+			}
+			fmt.Fprintf(writer, "%s+%d\n", b.Name, t.Unix())
+		}
+		if resp.NextMarker == "" {
+			return nil
+		}
+		params.Marker = resp.NextMarker
+	}
 }
 
 func (v *AzureBlobVolume) Delete(loc string) error {
-	return NotFoundError
+	// TODO: Use leases to handle races with Touch and Put.
+	if t, err := v.Mtime(loc); err != nil {
+		return err
+	} else if time.Since(t) < blobSignatureTTL {
+		return nil
+	}
+	return v.bsClient.DeleteBlob(v.containerName, loc)
 }
 
 func (v *AzureBlobVolume) Status() *VolumeStatus {
