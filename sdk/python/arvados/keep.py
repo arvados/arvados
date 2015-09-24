@@ -752,8 +752,8 @@ class KeepClient(object):
         for hint in locator.hints:
             if hint.startswith('K@'):
                 if len(hint) == 7:
-                     sorted_roots.append(
-                         "https://keep.{}.arvadosapi.com/".format(hint[2:]))
+                    sorted_roots.append(
+                        "https://keep.{}.arvadosapi.com/".format(hint[2:]))
                 elif len(hint) == 29:
                     svc = self._gateway_services.get(hint[2:])
                     if svc:
