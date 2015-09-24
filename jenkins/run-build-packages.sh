@@ -96,7 +96,7 @@ case "$TARGET" in
         PYTHON_BACKPORTS=(python-gflags pyvcf google-api-python-client \
             oauth2client pyasn1==0.1.7 pyasn1-modules==0.0.5 \
             rsa uritemplate httplib2 ws4py \
-            virtualenv pykka requests six pyexecjs jsonschema \
+            pykka requests six pyexecjs jsonschema \
             ciso8601 pycrypto backports.ssl_match_hostname pycurl llfuse)
         PYTHON3_BACKPORTS=(docker-py six requests websocket-client)
         ;;
@@ -109,7 +109,7 @@ case "$TARGET" in
         PYTHON_BACKPORTS=(python-gflags pyvcf google-api-python-client \
             oauth2client pyasn1==0.1.7 pyasn1-modules==0.0.5 \
             rsa uritemplate httplib2 ws4py \
-            virtualenv pykka requests six pyexecjs jsonschema \
+            pykka requests six pyexecjs jsonschema \
             ciso8601 pycrypto backports.ssl_match_hostname pycurl llfuse)
         PYTHON3_BACKPORTS=(docker-py six requests websocket-client)
         ;;
@@ -122,7 +122,7 @@ case "$TARGET" in
         PYTHON_BACKPORTS=(python-gflags pyvcf google-api-python-client \
             oauth2client pyasn1==0.1.7 pyasn1-modules==0.0.5 \
             rsa uritemplate httplib2 ws4py \
-            virtualenv pykka requests six pyexecjs jsonschema \
+            pykka requests six pyexecjs jsonschema \
             ciso8601 pycrypto backports.ssl_match_hostname pycurl llfuse)
         PYTHON3_BACKPORTS=(docker-py six requests websocket-client)
         ;;
