@@ -1,6 +1,45 @@
 # Do not use this file for site configuration. Create application.yml
 # instead (see application.yml.example).
 
+<%
+# If you change any of the code in this block, you'll probably also want
+# to update it in API server's application.default.yml.
+def info_cmd(*args, &block)
+  IO.popen(args, "r", chdir: Rails.root, err: "/dev/null", &block)
+end
+
+source_version = ""
+local_modified = false
+if Rails.env == "production"
+  # Read the version from our package's git-commit.version file, if available.
+  begin
+    source_version = IO.read(Rails.root.join("git-commit.version")).strip
+  rescue Errno::ENOENT
+  end
+end
+
+if source_version.empty?
+  begin
+    status_output = false
+    info_cmd("git", "status", "-s") do |git_pipe|
+      git_pipe.each_line do |_|
+        status_output = true
+        # Continue reading the pipe so git doesn't get SIGPIPE.
+      end
+    end
+    if $?.success?
+      info_cmd("git", "log", "-n1", "--format=%H") do |git_pipe|
+        git_pipe.each_line do |line|
+          source_version = line.chomp
+        end
+      end
+      local_modified = status_output
+    end
+  rescue SystemCallError
+  end
+end
+%>
+
 # Below is a sample setting for diagnostics testing.
 # Configure workbench URL as "arvados_workbench_url"
 # Configure test user tokens as "user_tokens".
@@ -11,7 +50,7 @@
 #   template_uuid: is the uuid of the template to be executed
 #   input_paths: an array of inputs for the pipeline. Use either a collection's "uuid"
 #     or a file's "uuid/file_name" path in this array. If the pipeline does not require
-#     any inputs, this can be omitted. 
+#     any inputs, this can be omitted.
 #   max_wait_seconds: max time in seconds to wait for the pipeline run to complete.
 #     Default value of 30 seconds is used when this value is not provided.
 diagnostics:
@@ -45,7 +84,7 @@ development:
   assets.debug: true
   profiling_enabled: true
   site_name: Arvados Workbench (dev)
-  local_modified: "<%= '-modified' if `git status -s` != '' %>"
+  local_modified: "<%= local_modified ? '-modified' : '' %>"
 
   # API server configuration
   arvados_login_base: ~
@@ -151,7 +190,7 @@ common:
 
   # Below is a sample setting of user_profile_form_fields config parameter.
   # This configuration parameter should be set to either false (to disable) or
-  # to an array as shown below. 
+  # to an array as shown below.
   # Configure the list of input fields to be displayed in the profile page
   # using the attribute "key" for each of the input fields.
   # This sample shows configuration with one required and one optional form fields.
@@ -184,7 +223,7 @@ common:
   user_profile_form_message: Welcome to Arvados. All <span style="color:red">required fields</span> must be completed before you can proceed.
 
   # source_version
-  source_version: "<%= `git log -n 1 --format=%h`.strip %>"
+  source_version: "<%= source_version[0...8] %>"
   local_modified: false
 
   # report notification to and from addresses
