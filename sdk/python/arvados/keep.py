@@ -651,7 +651,7 @@ class KeepClient(object):
                 self._writable_services = self._keep_services
                 self.using_proxy = True
                 self._static_services_list = True
-                self.max_replicas_per_service = None
+                self.max_replicas_per_service = 1
             else:
                 # It's important to avoid instantiating an API client
                 # unless we actually need one, for testing's sake.
@@ -664,7 +664,7 @@ class KeepClient(object):
                 self._writable_services = None
                 self.using_proxy = None
                 self._static_services_list = False
-                self.max_replicas_per_service = None
+                self.max_replicas_per_service = 1
 
     def current_timeout(self, attempt_number):
         """Return the appropriate timeout to use for this client.
@@ -722,11 +722,10 @@ class KeepClient(object):
 
             self.using_proxy = any(ks.get('service_type') == 'proxy'
                                    for ks in self._keep_services)
-            # Set max_replicas_per_service to 1 for disk typed services.
-            # In case of, non-disk typed services, we will use None to mean unknown.
-            self.max_replicas_per_service = 1
+            # For disk type services, max_replicas_per_service is 1
+            # It is unknown or unlimited for non-disk typed services.
             for ks in accessible:
-                if ('disk' != ks.get('service_type')) and not ks.get('read_only'):
+                if ('disk' != ks.get('service_type')) and (not ks.get('read_only')):
                     self.max_replicas_per_service = None
 
     def _service_weight(self, data_hash, service_uuid):
