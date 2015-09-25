@@ -651,6 +651,7 @@ class KeepClient(object):
                 self._writable_services = self._keep_services
                 self.using_proxy = True
                 self._static_services_list = True
+                self.max_replicas_per_service = 1
             else:
                 # It's important to avoid instantiating an API client
                 # unless we actually need one, for testing's sake.
@@ -663,6 +664,7 @@ class KeepClient(object):
                 self._writable_services = None
                 self.using_proxy = None
                 self._static_services_list = False
+                self.max_replicas_per_service = 1
 
     def current_timeout(self, attempt_number):
         """Return the appropriate timeout to use for this client.
@@ -720,6 +722,11 @@ class KeepClient(object):
 
             self.using_proxy = any(ks.get('service_type') == 'proxy'
                                    for ks in self._keep_services)
+            # For disk type services, max_replicas_per_service is 1
+            # It is unknown or unlimited for non-disk typed services.
+            for ks in accessible:
+                if ('disk' != ks.get('service_type')) and (not ks.get('read_only')):
+                    self.max_replicas_per_service = None
 
     def _service_weight(self, data_hash, service_uuid):
         """Compute the weight of a Keep service endpoint for a data
@@ -738,7 +745,6 @@ class KeepClient(object):
         self.build_services_list(force_rebuild)
 
         sorted_roots = []
-
         # Use the services indicated by the given +K@... remote
         # service hints, if any are present and can be resolved to a
         # URI.
@@ -938,11 +944,10 @@ class KeepClient(object):
         locator = KeepLocator(loc_s)
 
         headers = {}
-        if self.using_proxy:
-            # Tell the proxy how many copies we want it to store
-            headers['X-Keep-Desired-Replication'] = str(copies)
+        # Tell the proxy how many copies we want it to store
+        headers['X-Keep-Desired-Replication'] = str(copies)
         roots_map = {}
-        thread_limiter = KeepClient.ThreadLimiter(copies)
+        thread_limiter = KeepClient.ThreadLimiter(1 if self.max_replicas_per_service is None else copies)
         loop = retry.RetryLoop(num_retries, self._check_loop_result,
                                backoff_start=2)
         for tries_left in loop:
