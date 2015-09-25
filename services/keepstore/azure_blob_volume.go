@@ -40,6 +40,9 @@ func (s *azureVolumeAdder) Set(containerName string) error {
 	if containerName == "" {
 		return errors.New("no container name given")
 	}
+	if azureStorageAccountName == "" || azureStorageAccountKeyFile == "" {
+		return errors.New("-azure-storage-account-name and -azure-storage-account-key-file arguments must given before -azure-storage-container-volume")
+	}
 	accountKey, err := readKeyFromFile(azureStorageAccountKeyFile)
 	if err != nil {
 		return err
