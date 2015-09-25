@@ -98,7 +98,8 @@ func (this *KeepClient) DiscoverKeepServers() error {
 	gatewayRoots := make(map[string]string)
 	writableLocalRoots := make(map[string]string)
 
-	this.replicasPerService = 1 // set to 1 until writable non-disk services are found
+	// replicasPerService is 1 for disks; unknown or unlimited otherwise
+	this.replicasPerService = 1
 	this.Using_proxy = false
 
 	for _, service := range m.Items {
