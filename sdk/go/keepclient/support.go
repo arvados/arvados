@@ -85,12 +85,8 @@ func (this *KeepClient) DiscoverKeepServers() error {
 
 	// Get keep services from api server
 	err := this.Arvados.Call("GET", "keep_services", "", "accessible", nil, &m)
-
-	// If there is error getting keep services, get list of keep disks
 	if err != nil {
-		if err := this.Arvados.List("keep_disks", nil, &m); err != nil {
-			return err
-		}
+		return err
 	}
 
 	listed := make(map[string]bool)
