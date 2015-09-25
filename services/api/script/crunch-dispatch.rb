@@ -1,5 +1,9 @@
 #!/usr/bin/env ruby
 
+# We want files written by crunch-dispatch to be writable by other processes
+# with the same GID, see bug #7228
+File.umask(0002)
+
 require 'shellwords'
 include Process
 
@@ -747,6 +751,7 @@ class Dispatcher
 
   def run
     act_as_system_user
+    User.first.group_permissions
     $stderr.puts "dispatch: ready"
     while !$signal[:term] or @running.size > 0
       read_pipes
