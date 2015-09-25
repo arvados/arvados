@@ -210,7 +210,7 @@ KEEP_NODES=`ARVADOS_API_HOST=$ARVADOS_API_HOST ARVADOS_API_TOKEN=$ARVADOS_API_TO
 
 title "Updating workbench"
 SUM_ECODE=0
-if [[ `host workbench.$ARVADOS_API_HOST` != `host $ARVADOS_API_HOST` ]]; then
+if [[ `host workbench.$ARVADOS_API_HOST |cut -f4 -d' '` != `host $ARVADOS_API_HOST |cut -f4 -d' '` ]]; then
   # Workbench runs on a separate host. We need to run puppet there too.
   run_puppet workbench.$IDENTIFIER ECODE
   SUM_ECODE=$(($SUM_ECODE + $ECODE))
