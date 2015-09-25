@@ -5,7 +5,7 @@ require 'yaml'
 # Black box tests for 'arv get' command.
 class TestArvGet < Minitest::Test
   # UUID for an Arvados object that does not exist
-  NON_EXISTANT_OBJECT_UUID = "qr1hi-tpzed-p9yk1lihjsgwew0"
+  NON_EXISTENT_OBJECT_UUID = "zzzzz-zzzzz-zzzzzzzzzzzzzzz"
   # Name of field of Arvados object that can store any (textual) value
   STORED_VALUE_FIELD_NAME = "name"
   # Name of UUID field of Arvados object
@@ -16,7 +16,7 @@ class TestArvGet < Minitest::Test
   # Tests that a valid Arvados object can be retrieved in a supported format
   # using: `arv get [uuid]`. Given all other `arv foo` commands return JSON
   # when no format is specified, JSON should be expected in this case.
-  def test_get_valid_object_no_format_specified()
+  def test_get_valid_object_no_format_specified
     stored_value = __method__.to_s
     uuid = create_arv_object_with_value(stored_value)
     out, err = capture_subprocess_io do
@@ -29,7 +29,7 @@ class TestArvGet < Minitest::Test
 
   # Tests that a valid Arvados object can be retrieved in JSON format using:
   # `arv get [uuid] --format json`.
-  def test_get_valid_object_json_format_specified()
+  def test_get_valid_object_json_format_specified
     stored_value = __method__.to_s
     uuid = create_arv_object_with_value(stored_value)
     out, err = capture_subprocess_io do
@@ -42,7 +42,7 @@ class TestArvGet < Minitest::Test
 
   # Tests that a valid Arvados object can be retrieved in YAML format using:
   # `arv get [uuid] --format yaml`.
-  def test_get_valid_object_yaml_format_specified()
+  def test_get_valid_object_yaml_format_specified
     stored_value = __method__.to_s
     uuid = create_arv_object_with_value(stored_value)
     out, err = capture_subprocess_io do
@@ -55,7 +55,7 @@ class TestArvGet < Minitest::Test
 
   # Tests that a subset of all fields of a valid Arvados object can be retrieved
   # using: `arv get [uuid] [fields...]`.
-  def test_get_valid_object_with_valid_fields()
+  def test_get_valid_object_with_valid_fields
     stored_value = __method__.to_s
     uuid = create_arv_object_with_value(stored_value)
     out, err = capture_subprocess_io do
@@ -70,7 +70,7 @@ class TestArvGet < Minitest::Test
   # Tests that the valid field is retrieved when both a valid and invalid field
   # are requested from a valid Arvados object, using:
   # `arv get [uuid] [fields...]`.
-  def test_get_valid_object_with_both_valid_and_invalid_fields()
+  def test_get_valid_object_with_both_valid_and_invalid_fields
     stored_value = __method__.to_s
     uuid = create_arv_object_with_value(stored_value)
     out, err = capture_subprocess_io do
@@ -84,7 +84,7 @@ class TestArvGet < Minitest::Test
 
   # Tests that no fields are retreived when no valid fields are requested from
   # a valid Arvados object, using: `arv get [uuid] [fields...]`.
-  def test_get_valid_object_with_no_valid_fields()
+  def test_get_valid_object_with_no_valid_fields
     stored_value = __method__.to_s
     uuid = create_arv_object_with_value(stored_value)
     out, err = capture_subprocess_io do
@@ -95,18 +95,18 @@ class TestArvGet < Minitest::Test
     assert_equal(0, arv_object.length)
   end
 
-  # Tests that an invalid (non-existant) Arvados object is not retrieved using:
-  # using: `arv get [non-existant-uuid]`.
-  def test_get_invalid_object()
+  # Tests that an invalid (non-existent) Arvados object is not retrieved using:
+  # using: `arv get [non-existent-uuid]`.
+  def test_get_invalid_object
     out, err = capture_subprocess_io do
-      refute(arv_get_json(NON_EXISTANT_OBJECT_UUID))
+      refute(arv_get_json(NON_EXISTENT_OBJECT_UUID))
     end
     refute_empty(err, "Expected error feedback on request for invalid object")
     assert_empty(out)
   end
 
   # Tests that help text exists using: `arv get --help`.
-  def test_help_exists()
+  def test_help_exists
     out, err = capture_subprocess_io do
 #      assert(arv_get_default("--help"), "Expected exit code 0: #{$?}")
        #XXX: Exit code given is 255. It probably should be 0, which seems to be
