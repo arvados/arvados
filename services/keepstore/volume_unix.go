@@ -467,6 +467,10 @@ func (v *UnixVolume) Writable() bool {
 	return !v.readonly
 }
 
+func (v *UnixVolume) Replication() int {
+	return 1
+}
+
 // lockfile and unlockfile use flock(2) to manage kernel file locks.
 func lockfile(f *os.File) error {
 	return syscall.Flock(int(f.Fd()), syscall.LOCK_EX)

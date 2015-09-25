@@ -122,8 +122,8 @@ func TestPutBlockOK(t *testing.T) {
 	defer KeepVM.Close()
 
 	// Check that PutBlock stores the data as expected.
-	if err := PutBlock(TestBlock, TestHash); err != nil {
-		t.Fatalf("PutBlock: %v", err)
+	if n, err := PutBlock(TestBlock, TestHash); err != nil || n < 1 {
+		t.Fatalf("PutBlock: n %d err %v", n, err)
 	}
 
 	vols := KeepVM.AllReadable()
@@ -152,8 +152,8 @@ func TestPutBlockOneVol(t *testing.T) {
 	vols[0].(*MockVolume).Bad = true
 
 	// Check that PutBlock stores the data as expected.
-	if err := PutBlock(TestBlock, TestHash); err != nil {
-		t.Fatalf("PutBlock: %v", err)
+	if n, err := PutBlock(TestBlock, TestHash); err != nil || n < 1 {
+		t.Fatalf("PutBlock: n %d err %v", n, err)
 	}
 
 	result, err := GetBlock(TestHash)
@@ -180,7 +180,7 @@ func TestPutBlockMD5Fail(t *testing.T) {
 
 	// Check that PutBlock returns the expected error when the hash does
 	// not match the block.
-	if err := PutBlock(BadBlock, TestHash); err != RequestHashError {
+	if _, err := PutBlock(BadBlock, TestHash); err != RequestHashError {
 		t.Error("Expected RequestHashError, got %v", err)
 	}
 
@@ -205,8 +205,8 @@ func TestPutBlockCorrupt(t *testing.T) {
 	// Store a corrupted block under TestHash.
 	vols := KeepVM.AllWritable()
 	vols[0].Put(TestHash, BadBlock)
-	if err := PutBlock(TestBlock, TestHash); err != nil {
-		t.Errorf("PutBlock: %v", err)
+	if n, err := PutBlock(TestBlock, TestHash); err != nil || n < 1 {
+		t.Errorf("PutBlock: n %d err %v", n, err)
 	}
 
 	// The block on disk should now match TestBlock.
@@ -235,10 +235,10 @@ func TestPutBlockCollision(t *testing.T) {
 
 	// Store one block, then attempt to store the other. Confirm that
 	// PutBlock reported a CollisionError.
-	if err := PutBlock(b1, locator); err != nil {
+	if _, err := PutBlock(b1, locator); err != nil {
 		t.Error(err)
 	}
-	if err := PutBlock(b2, locator); err == nil {
+	if _, err := PutBlock(b2, locator); err == nil {
 		t.Error("PutBlock did not report a collision")
 	} else if err != CollisionError {
 		t.Errorf("PutBlock returned %v", err)
@@ -269,8 +269,8 @@ func TestPutBlockTouchFails(t *testing.T) {
 	// vols[0].Touch will fail on the next call, so the volume
 	// manager will store a copy on vols[1] instead.
 	vols[0].(*MockVolume).Touchable = false
-	if err := PutBlock(TestBlock, TestHash); err != nil {
-		t.Fatalf("PutBlock: %v", err)
+	if n, err := PutBlock(TestBlock, TestHash); err != nil || n < 1 {
+		t.Fatalf("PutBlock: n %d err %v", n, err)
 	}
 	vols[0].(*MockVolume).Touchable = true
 

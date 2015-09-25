@@ -232,7 +232,7 @@ type TestableAzureBlobVolume struct {
 	t         *testing.T
 }
 
-func NewTestableAzureBlobVolume(t *testing.T, readonly bool) TestableVolume {
+func NewTestableAzureBlobVolume(t *testing.T, readonly bool, replication int) TestableVolume {
 	azHandler := newAzStubHandler()
 	azStub := httptest.NewServer(azHandler)
 
@@ -259,7 +259,7 @@ func NewTestableAzureBlobVolume(t *testing.T, readonly bool) TestableVolume {
 		}
 	}
 
-	v := NewAzureBlobVolume(azClient, container, readonly)
+	v := NewAzureBlobVolume(azClient, container, readonly, replication)
 
 	return &TestableAzureBlobVolume{
 		AzureBlobVolume: v,
@@ -277,7 +277,7 @@ func TestAzureBlobVolumeWithGeneric(t *testing.T) {
 		Dial: (&azStubDialer{}).Dial,
 	}
 	DoGenericVolumeTests(t, func(t *testing.T) TestableVolume {
-		return NewTestableAzureBlobVolume(t, false)
+		return NewTestableAzureBlobVolume(t, false, azureStorageReplication)
 	})
 }
 
@@ -289,8 +289,18 @@ func TestReadonlyAzureBlobVolumeWithGeneric(t *testing.T) {
 		Dial: (&azStubDialer{}).Dial,
 	}
 	DoGenericVolumeTests(t, func(t *testing.T) TestableVolume {
-		return NewTestableAzureBlobVolume(t, true)
+		return NewTestableAzureBlobVolume(t, true, azureStorageReplication)
 	})
+}
+
+func TestAzureBlobVolumeReplication(t *testing.T) {
+	for r := 1; r <= 4; r++ {
+		v := NewTestableAzureBlobVolume(t, false, r)
+		defer v.Teardown()
+		if n := v.Replication(); n != r {
+			t.Errorf("Got replication %d, expected %d", n, r)
+		}
+	}
 }
 
 func (v *TestableAzureBlobVolume) PutRaw(locator string, data []byte) {

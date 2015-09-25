@@ -17,6 +17,7 @@ import (
 var (
 	azureStorageAccountName    string
 	azureStorageAccountKeyFile string
+	azureStorageReplication    int
 )
 
 func readKeyFromFile(file string) (string, error) {
@@ -50,7 +51,7 @@ func (s *azureVolumeAdder) Set(containerName string) error {
 	if flagSerializeIO {
 		log.Print("Notice: -serialize is not supported by azure-blob-container volumes.")
 	}
-	v := NewAzureBlobVolume(azClient, containerName, flagReadonly)
+	v := NewAzureBlobVolume(azClient, containerName, flagReadonly, azureStorageReplication)
 	if err := v.Check(); err != nil {
 		return err
 	}
@@ -72,6 +73,11 @@ func init() {
 		"azure-storage-account-key-file",
 		"",
 		"File containing the account key used for subsequent --azure-storage-container-volume arguments.")
+	flag.IntVar(
+		&azureStorageReplication,
+		"azure-storage-replication",
+		3,
+		"Replication level to report to clients when data is stored in an Azure container.")
 }
 
 // An AzureBlobVolume stores and retrieves blocks in an Azure Blob
@@ -81,14 +87,16 @@ type AzureBlobVolume struct {
 	bsClient      storage.BlobStorageClient
 	containerName string
 	readonly      bool
+	replication   int
 }
 
-func NewAzureBlobVolume(client storage.Client, containerName string, readonly bool) *AzureBlobVolume {
+func NewAzureBlobVolume(client storage.Client, containerName string, readonly bool, replication int) *AzureBlobVolume {
 	return &AzureBlobVolume{
 		azClient: client,
 		bsClient: client.GetBlobService(),
 		containerName: containerName,
 		readonly: readonly,
+		replication: replication,
 	}
 }
 
@@ -224,4 +232,8 @@ func (v *AzureBlobVolume) String() string {
 
 func (v *AzureBlobVolume) Writable() bool {
 	return !v.readonly
+}
+
+func (v *AzureBlobVolume) Replication() int {
+	return v.replication
 }
