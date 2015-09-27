@@ -187,7 +187,7 @@ cd $WORKSPACE/packages/$TARGET
 # if it exists at the time fpm-info.sh runs. If it does not exist at that time, this script
 # will create it and when fpm runs, it will include the directory. So we add it to the exclude
 # list explicitly here, just in case.
-declare -a COMMAND_ARR=("fpm" "--maintainer=Ward Vandewege <ward@curoverse.com>" "--vendor='Curoverse, Inc.'" "--url='https://arvados.org'" "--description='Arvados SSO server - Arvados is a free and open source platform for big data science.'" "--license='Expat License'" "-s" "dir" "-t" "$FORMAT" "-v" "$SSO_VERSION" "-x" "var/www/arvados-sso/current/.git" "-x" "var/www/arvados-sso/current/packages" "--after-install=$RUN_BUILD_PACKAGES_PATH/arvados-sso-server-extras/arvados-sso-server.postinst")
+declare -a COMMAND_ARR=("fpm" "--maintainer=Ward Vandewege <ward@curoverse.com>" "--vendor='Curoverse, Inc.'" "--url='https://arvados.org'" "--description='Arvados SSO server - Arvados is a free and open source platform for big data science.'" "--license='Expat License'" "-s" "dir" "-t" "$FORMAT" "-v" "$SSO_VERSION" "-x" "var/www/arvados-sso/current/.git" "-x" "var/www/arvados-sso/current/packages" "--after-install=$RUN_BUILD_PACKAGES_PATH/arvados-sso-server-extras/arvados-sso-server.postinst" "--before-remove=$RUN_BUILD_PACKAGES_PATH/arvados-sso-server-extras/arvados-sso-server.prerm" "--after-remove=$RUN_BUILD_PACKAGES_PATH/arvados-sso-server-extras/arvados-sso-server.postrm" )
 
 if [[ "$BUILD_BUNDLE_PACKAGES" != 0 ]]; then
   # This is the complete package with vendor/bundle included.

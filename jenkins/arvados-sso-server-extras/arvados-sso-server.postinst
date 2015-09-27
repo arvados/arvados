@@ -108,8 +108,6 @@ EOF
   chmod 644 $SHARED_PATH/log/*
   echo "... done."
 
-  ls -laF $RELEASE_PATH/tmp
-
   # If we use `grep -q`, rake will write a backtrace on EPIPE.
   if $COMMAND_PREFIX bundle exec rake db:migrate:status | grep '^database: ' >/dev/null; then
       echo -n "Running db:migrate ..."
@@ -124,15 +122,11 @@ EOF
   fi
   echo "... done."
 
-  ls -laF $RELEASE_PATH/tmp
-
   echo -n "Precompiling assets ..."
   # precompile assets; thankfully this does not take long
   $COMMAND_PREFIX bundle exec rake assets:precompile -q -s || exit $?
   chown -R "$WWW_OWNER" $RELEASE_PATH/tmp
   echo "... done."
-
-  ls -laF $RELEASE_PATH/tmp
 
   echo -n "Restarting nginx ..."
   service "$NGINX_SERVICE" restart || exit $?
