@@ -108,17 +108,21 @@ EOF
   chmod 644 $SHARED_PATH/log/*
   echo "... done."
 
-  # If we use `grep -q`, rake will write a backtrace on EPIPE.
-  if $COMMAND_PREFIX bundle exec rake db:migrate:status | grep '^database: ' >/dev/null; then
-      echo -n "Running db:migrate ..."
-      $COMMAND_PREFIX bundle exec rake db:migrate || exit $?
-  elif [ 0 -eq ${PIPESTATUS[0]} ]; then
-      # The database exists, but the migrations table doesn't.
-      echo -n "Setting up database ..."
-      $COMMAND_PREFIX bundle exec rake db:schema:load db:seed || exit $?
+  set +e
+  DB_MIGRATE_STATUS=`$COMMAND_PREFIX bundle exec rake db:migrate:status 2>/dev/null`
+  DB_MIGRATE_STATUS_CODE=$?
+  set -e
+
+  if echo $DB_MIGRATE_STATUS | grep 'Schema migrations table does not exist yet.' >/dev/null; then
+    # The database exists, but the migrations table doesn't.
+    echo -n "Setting up database ..."
+    $COMMAND_PREFIX bundle exec rake db:schema:load db:seed || exit $?
+  elif echo $DB_MIGRATE_STATUS | grep '^database: ' >/dev/null; then
+    echo -n "Running db:migrate ..."
+    $COMMAND_PREFIX bundle exec rake db:migrate || exit $?
   else
-      echo "Error: Database is not ready to set up. Aborting." >&2
-      exit 1
+    echo "Error: Database is not ready to set up. Aborting." >&2
+    exit 1
   fi
   echo "... done."
 
