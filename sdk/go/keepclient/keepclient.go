@@ -28,9 +28,15 @@ var OversizeBlockError = errors.New("Exceeded maximum block size (" + strconv.It
 var MissingArvadosApiHost = errors.New("Missing required environment variable ARVADOS_API_HOST")
 var MissingArvadosApiToken = errors.New("Missing required environment variable ARVADOS_API_TOKEN")
 var InvalidLocatorError = errors.New("Invalid locator")
-var NoSuchKeepServer = errors.New("No keep server matching the given UUID is found")
-var GetIndexError = errors.New("Error getting index")
-var IncompleteIndexError = errors.New("Got incomplete index")
+
+// ErrorGetIndex is the generic GetIndex error
+var ErrorGetIndex = errors.New("Error getting index")
+
+// ErrorNoSuchKeepServer is returned when GetIndex is invoked with a UUID with no matching keep server
+var ErrorNoSuchKeepServer = errors.New("No keep server matching the given UUID is found")
+
+// ErrorIncompleteIndex is returned when the Index response does not end with a new empty line
+var ErrorIncompleteIndex = errors.New("Got incomplete index")
 
 const X_Keep_Desired_Replicas = "X-Keep-Desired-Replicas"
 const X_Keep_Replicas_Stored = "X-Keep-Replicas-Stored"
@@ -194,7 +200,7 @@ func (kc *KeepClient) GetIndex(keepServiceUUID, prefix string) (io.Reader, error
 	url := kc.LocalRoots()[keepServiceUUID]
 	if url == "" {
 		log.Printf("No such keep server found: %v", keepServiceUUID)
-		return nil, NoSuchKeepServer
+		return nil, ErrorNoSuchKeepServer
 	}
 
 	url += "/index"
@@ -205,33 +211,35 @@ func (kc *KeepClient) GetIndex(keepServiceUUID, prefix string) (io.Reader, error
 	req, err := http.NewRequest("GET", url, nil)
 	if err != nil {
 		log.Printf("GET index error: %v", err)
-		return nil, GetIndexError
+		return nil, ErrorGetIndex
 	}
 
 	req.Header.Add("Authorization", fmt.Sprintf("OAuth2 %s", kc.Arvados.ApiToken))
 	resp, err := kc.Client.Do(req)
 	if err != nil || resp.StatusCode != http.StatusOK {
 		log.Printf("GET index error: %v; status code: %v", err, resp.StatusCode)
-		return nil, GetIndexError
+		return nil, ErrorGetIndex
 	}
 
-	var respbody []byte
+	var respBody []byte
 	if resp.Body != nil {
-		respbody, err = ioutil.ReadAll(resp.Body)
+		respBody, err = ioutil.ReadAll(resp.Body)
 		if err != nil {
 			log.Printf("GET index error: %v", err)
-			return nil, GetIndexError
+			return nil, ErrorGetIndex
 		}
 
 		// Got index; verify that it is complete
-		if !strings.HasSuffix(string(respbody), "\n\n") {
+		// The response should be "\n" if no locators matched the prefix
+		// Else, it should be a list of locators followed by a blank line
+		if (!strings.HasSuffix(string(respBody), "\n\n")) && (string(respBody) != "\n") {
 			log.Printf("Got incomplete index for %v", url)
-			return nil, IncompleteIndexError
+			return nil, ErrorIncompleteIndex
 		}
 	}
 
-	// Got complete index or "" if no locators matching prefix
-	return strings.NewReader(string(respbody)), nil
+	// Got complete index
+	return strings.NewReader(string(respBody)), nil
 }
 
 // LocalRoots() returns the map of local (i.e., disk and proxy) Keep

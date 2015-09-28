@@ -273,7 +273,7 @@ func MakeRESTRouter(
 		rest.Handle(`/index`, IndexHandler{kc, t}).Methods("GET")
 
 		// List blocks whose hash has the given prefix
-		rest.Handle(`/index/{prefix}`, IndexHandler{kc, t}).Methods("GET")
+		rest.Handle(`/index/{prefix:[0-9a-f]{0,32}}`, IndexHandler{kc, t}).Methods("GET")
 	}
 
 	if enable_put {
@@ -494,7 +494,14 @@ func (this PutBlockHandler) ServeHTTP(resp http.ResponseWriter, req *http.Reques
 	}
 }
 
-func (this IndexHandler) ServeHTTP(resp http.ResponseWriter, req *http.Request) {
+// ServeHTTP implemenation for IndexHandler
+// Supports only GET requests for /index/{prefix:[0-9a-f]{0,32}}
+// For each keep server found in LocalRoots:
+//   Invokes GetIndex using keepclient
+//   Expects "complete" response (terminating with blank new line)
+//   Aborts on any errors
+// Concatenates responses from all those keep servers and returns
+func (handler IndexHandler) ServeHTTP(resp http.ResponseWriter, req *http.Request) {
 	SetCorsHeaders(resp)
 
 	prefix := mux.Vars(req)["prefix"]
@@ -507,11 +514,11 @@ func (this IndexHandler) ServeHTTP(resp http.ResponseWriter, req *http.Request) 
 		}
 	}()
 
-	kc := *this.KeepClient
+	kc := *handler.KeepClient
 
 	var pass bool
 	var tok string
-	if pass, tok = CheckAuthorizationHeader(kc, this.ApiTokenCache, req); !pass {
+	if pass, tok = CheckAuthorizationHeader(kc, handler.ApiTokenCache, req); !pass {
 		status, err = http.StatusForbidden, BadAuthorizationHeader
 		return
 	}
@@ -526,7 +533,7 @@ func (this IndexHandler) ServeHTTP(resp http.ResponseWriter, req *http.Request) 
 
 	switch req.Method {
 	case "GET":
-		for uuid, _ := range kc.LocalRoots() {
+		for uuid := range kc.LocalRoots() {
 			reader, err = kc.GetIndex(uuid, prefix)
 			if err != nil {
 				break
@@ -539,12 +546,17 @@ func (this IndexHandler) ServeHTTP(resp http.ResponseWriter, req *http.Request) 
 			}
 
 			// Got index; verify that it is complete
-			if !strings.HasSuffix(string(readBytes), "\n\n") {
+			// The response should be "\n" if no locators matched the prefix
+			// Else, it should be a list of locators followed by a blank line
+			if (!strings.HasSuffix(string(readBytes), "\n\n")) && (string(readBytes) != "\n") {
 				err = errors.New("Got incomplete index")
 			}
 
+			// Trim the extra empty new line found in response from each server
 			indexResp = append(indexResp, (readBytes[0 : len(readBytes)-1])...)
 		}
+
+		// Append empty line at the end of concatenation of all server responses
 		indexResp = append(indexResp, ([]byte("\n"))...)
 	default:
 		status, err = http.StatusNotImplemented, MethodNotSupported

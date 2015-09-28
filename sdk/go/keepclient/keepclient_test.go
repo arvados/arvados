@@ -1064,10 +1064,10 @@ func (s *StandaloneSuite) TestGetIndexWithNoSuchServer(c *C) {
 func (s *StandaloneSuite) TestGetIndexWithNoSuchPrefix(c *C) {
 	st := StubGetIndexHandler{
 		c,
-		"/index/xyz",
+		"/index/abcd",
 		"abc123",
 		http.StatusOK,
-		[]byte("")}
+		[]byte("\n")}
 
 	ks := RunFakeKeepServer(st)
 	defer ks.listener.Close()
@@ -1077,6 +1077,10 @@ func (s *StandaloneSuite) TestGetIndexWithNoSuchPrefix(c *C) {
 	arv.ApiToken = "abc123"
 	kc.SetServiceRoots(map[string]string{"x": ks.url}, map[string]string{ks.url: ""}, nil)
 
-	_, err = kc.GetIndex("x", "xyz")
-	c.Check((err != nil), Equals, true)
+	r, err := kc.GetIndex("x", "abcd")
+	c.Check(err, Equals, nil)
+
+	content, err2 := ioutil.ReadAll(r)
+	c.Check(err2, Equals, nil)
+	c.Check(content, DeepEquals, st.body)
 }

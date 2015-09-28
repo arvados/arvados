@@ -407,6 +407,12 @@ func (s *ServerRequiredSuite) TestStripHint(c *C) {
 
 }
 
+// Test GetIndex
+//   Put one block, with 2 replicas
+//   With no prefix (expect the block locator, twice)
+//   With an existing prefix (expect the block locator, twice)
+//   With a valid but non-existing prefix (expect "\n")
+//   With an invalid prefix (expect error)
 func (s *ServerRequiredSuite) TestGetIndex(c *C) {
 	kc := runProxy(c, []string{"keepproxy"}, 28852, false)
 	waitForListener()
@@ -434,7 +440,7 @@ func (s *ServerRequiredSuite) TestGetIndex(c *C) {
 	count := 0
 	for _, locator := range locators {
 		if strings.HasPrefix(locator, hash) {
-			count += 1
+			count++
 		}
 	}
 	c.Assert(2, Equals, count)
@@ -447,12 +453,18 @@ func (s *ServerRequiredSuite) TestGetIndex(c *C) {
 	count = 0
 	for _, locator := range locators {
 		if strings.HasPrefix(locator, hash) {
-			count += 1
+			count++
 		}
 	}
 	c.Assert(2, Equals, count)
 
-	// GetIndex with no such prefix
+	// GetIndex with valid but no such prefix
+	indexReader, err = kc.GetIndex("proxy", "abcd")
+	c.Assert(err, Equals, nil)
+	indexResp, err = ioutil.ReadAll(indexReader)
+	c.Assert(string(indexResp), Equals, "\n")
+
+	// GetIndex with invalid prefix
 	indexReader, err = kc.GetIndex("proxy", "xyz")
 	c.Assert((err != nil), Equals, true)
 }
