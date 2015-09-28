@@ -406,3 +406,53 @@ func (s *ServerRequiredSuite) TestStripHint(c *C) {
 		"http://keep.zzzzz.arvadosapi.com:25107/2228819a18d3727630fa30c81853d23f+67108864+K@zzzzz-zzzzz-zzzzzzzzzzzzzzz+A37b6ab198qqqq28d903b975266b23ee711e1852c@55635f73")
 
 }
+
+func (s *ServerRequiredSuite) TestGetIndex(c *C) {
+	kc := runProxy(c, []string{"keepproxy"}, 28852, false)
+	waitForListener()
+	defer closeListener()
+
+	data := []byte("index-data")
+	hash := fmt.Sprintf("%x", md5.Sum(data))
+
+	hash2, rep, err := kc.PutB(data)
+	c.Check(hash2, Matches, fmt.Sprintf(`^%s\+10(\+.+)?$`, hash))
+	c.Check(rep, Equals, 2)
+	c.Check(err, Equals, nil)
+
+	reader, blocklen, _, err := kc.Get(hash)
+	c.Assert(err, Equals, nil)
+	c.Check(blocklen, Equals, int64(10))
+	all, err := ioutil.ReadAll(reader)
+	c.Check(all, DeepEquals, data)
+
+	// GetIndex with no prefix
+	indexReader, err := kc.GetIndex("proxy", "")
+	c.Assert(err, Equals, nil)
+	indexResp, err := ioutil.ReadAll(indexReader)
+	locators := strings.Split(string(indexResp), "\n")
+	count := 0
+	for _, locator := range locators {
+		if strings.HasPrefix(locator, hash) {
+			count += 1
+		}
+	}
+	c.Assert(2, Equals, count)
+
+	// GetIndex with prefix
+	indexReader, err = kc.GetIndex("proxy", hash[0:3])
+	c.Assert(err, Equals, nil)
+	indexResp, err = ioutil.ReadAll(indexReader)
+	locators = strings.Split(string(indexResp), "\n")
+	count = 0
+	for _, locator := range locators {
+		if strings.HasPrefix(locator, hash) {
+			count += 1
+		}
+	}
+	c.Assert(2, Equals, count)
+
+	// GetIndex with no such prefix
+	indexReader, err = kc.GetIndex("proxy", "xyz")
+	c.Assert((err != nil), Equals, true)
+}

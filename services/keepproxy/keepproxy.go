@@ -16,6 +16,7 @@ import (
 	"os/signal"
 	"reflect"
 	"regexp"
+	"strings"
 	"sync"
 	"syscall"
 	"time"
@@ -241,6 +242,11 @@ type PutBlockHandler struct {
 	*ApiTokenCache
 }
 
+type IndexHandler struct {
+	*keepclient.KeepClient
+	*ApiTokenCache
+}
+
 type InvalidPathHandler struct{}
 
 type OptionsHandler struct{}
@@ -262,6 +268,12 @@ func MakeRESTRouter(
 		rest.Handle(`/{locator:[0-9a-f]{32}\+.*}`,
 			GetBlockHandler{kc, t}).Methods("GET", "HEAD")
 		rest.Handle(`/{locator:[0-9a-f]{32}}`, GetBlockHandler{kc, t}).Methods("GET", "HEAD")
+
+		// List all blocks
+		rest.Handle(`/index`, IndexHandler{kc, t}).Methods("GET")
+
+		// List blocks whose hash has the given prefix
+		rest.Handle(`/index/{prefix}`, IndexHandler{kc, t}).Methods("GET")
 	}
 
 	if enable_put {
@@ -477,6 +489,73 @@ func (this PutBlockHandler) ServeHTTP(resp http.ResponseWriter, req *http.Reques
 			status = http.StatusServiceUnavailable
 		}
 
+	default:
+		status = http.StatusBadGateway
+	}
+}
+
+func (this IndexHandler) ServeHTTP(resp http.ResponseWriter, req *http.Request) {
+	SetCorsHeaders(resp)
+
+	prefix := mux.Vars(req)["prefix"]
+	var err error
+	var status int
+
+	defer func() {
+		if status != http.StatusOK {
+			http.Error(resp, err.Error(), status)
+		}
+	}()
+
+	kc := *this.KeepClient
+
+	var pass bool
+	var tok string
+	if pass, tok = CheckAuthorizationHeader(kc, this.ApiTokenCache, req); !pass {
+		status, err = http.StatusForbidden, BadAuthorizationHeader
+		return
+	}
+
+	// Copy ArvadosClient struct and use the client's API token
+	arvclient := *kc.Arvados
+	arvclient.ApiToken = tok
+	kc.Arvados = &arvclient
+
+	var indexResp []byte
+	var reader io.Reader
+
+	switch req.Method {
+	case "GET":
+		for uuid, _ := range kc.LocalRoots() {
+			reader, err = kc.GetIndex(uuid, prefix)
+			if err != nil {
+				break
+			}
+
+			var readBytes []byte
+			readBytes, err = ioutil.ReadAll(reader)
+			if err != nil {
+				break
+			}
+
+			// Got index; verify that it is complete
+			if !strings.HasSuffix(string(readBytes), "\n\n") {
+				err = errors.New("Got incomplete index")
+			}
+
+			indexResp = append(indexResp, (readBytes[0 : len(readBytes)-1])...)
+		}
+		indexResp = append(indexResp, ([]byte("\n"))...)
+	default:
+		status, err = http.StatusNotImplemented, MethodNotSupported
+		return
+	}
+
+	switch err {
+	case nil:
+		status = http.StatusOK
+		resp.Header().Set("Content-Length", fmt.Sprint(len(indexResp)))
+		_, err = resp.Write(indexResp)
 	default:
 		status = http.StatusBadGateway
 	}

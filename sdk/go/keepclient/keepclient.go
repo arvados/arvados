@@ -28,6 +28,9 @@ var OversizeBlockError = errors.New("Exceeded maximum block size (" + strconv.It
 var MissingArvadosApiHost = errors.New("Missing required environment variable ARVADOS_API_HOST")
 var MissingArvadosApiToken = errors.New("Missing required environment variable ARVADOS_API_TOKEN")
 var InvalidLocatorError = errors.New("Invalid locator")
+var NoSuchKeepServer = errors.New("No keep server matching the given UUID is found")
+var GetIndexError = errors.New("Error getting index")
+var IncompleteIndexError = errors.New("Got incomplete index")
 
 const X_Keep_Desired_Replicas = "X-Keep-Desired-Replicas"
 const X_Keep_Replicas_Stored = "X-Keep-Replicas-Stored"
@@ -180,6 +183,55 @@ func (kc *KeepClient) Ask(locator string) (int64, string, error) {
 		}
 	}
 	return 0, "", BlockNotFound
+}
+
+// GetIndex retrieves a list of blocks stored on the given server whose hashes
+// begin with the given prefix. The returned reader will return an error (other
+// than EOF) if the complete index cannot be retrieved. This should only be
+// expected to return useful results if the client is using a "data manager token"
+// recognized by the Keep services.
+func (kc *KeepClient) GetIndex(keepServiceUUID, prefix string) (io.Reader, error) {
+	url := kc.LocalRoots()[keepServiceUUID]
+	if url == "" {
+		log.Printf("No such keep server found: %v", keepServiceUUID)
+		return nil, NoSuchKeepServer
+	}
+
+	url += "/index"
+	if prefix != "" {
+		url += "/" + prefix
+	}
+
+	req, err := http.NewRequest("GET", url, nil)
+	if err != nil {
+		log.Printf("GET index error: %v", err)
+		return nil, GetIndexError
+	}
+
+	req.Header.Add("Authorization", fmt.Sprintf("OAuth2 %s", kc.Arvados.ApiToken))
+	resp, err := kc.Client.Do(req)
+	if err != nil || resp.StatusCode != http.StatusOK {
+		log.Printf("GET index error: %v; status code: %v", err, resp.StatusCode)
+		return nil, GetIndexError
+	}
+
+	var respbody []byte
+	if resp.Body != nil {
+		respbody, err = ioutil.ReadAll(resp.Body)
+		if err != nil {
+			log.Printf("GET index error: %v", err)
+			return nil, GetIndexError
+		}
+
+		// Got index; verify that it is complete
+		if !strings.HasSuffix(string(respbody), "\n\n") {
+			log.Printf("Got incomplete index for %v", url)
+			return nil, IncompleteIndexError
+		}
+	}
+
+	// Got complete index or "" if no locators matching prefix
+	return strings.NewReader(string(respbody)), nil
 }
 
 // LocalRoots() returns the map of local (i.e., disk and proxy) Keep

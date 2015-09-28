@@ -948,3 +948,135 @@ func (s *StandaloneSuite) TestPutBWithNoWritableLocalRoots(c *C) {
 	c.Check(err, Equals, InsufficientReplicasError)
 	c.Check(replicas, Equals, 0)
 }
+
+type StubGetIndexHandler struct {
+	c              *C
+	expectPath     string
+	expectApiToken string
+	httpStatus     int
+	body           []byte
+}
+
+func (h StubGetIndexHandler) ServeHTTP(resp http.ResponseWriter, req *http.Request) {
+	h.c.Check(req.URL.Path, Equals, h.expectPath)
+	h.c.Check(req.Header.Get("Authorization"), Equals, fmt.Sprintf("OAuth2 %s", h.expectApiToken))
+	resp.WriteHeader(h.httpStatus)
+	resp.Header().Set("Content-Length", fmt.Sprintf("%d", len(h.body)))
+	resp.Write(h.body)
+}
+
+func (s *StandaloneSuite) TestGetIndexWithNoPrefix(c *C) {
+	hash := fmt.Sprintf("%x", md5.Sum([]byte("foo")))
+
+	st := StubGetIndexHandler{
+		c,
+		"/index",
+		"abc123",
+		http.StatusOK,
+		[]byte(string(hash) + "\n\n")}
+
+	ks := RunFakeKeepServer(st)
+	defer ks.listener.Close()
+
+	arv, err := arvadosclient.MakeArvadosClient()
+	kc, _ := MakeKeepClient(&arv)
+	arv.ApiToken = "abc123"
+	kc.SetServiceRoots(map[string]string{"x": ks.url}, map[string]string{ks.url: ""}, nil)
+
+	r, err := kc.GetIndex("x", "")
+	c.Check(err, Equals, nil)
+
+	content, err2 := ioutil.ReadAll(r)
+	c.Check(err2, Equals, nil)
+	c.Check(content, DeepEquals, st.body)
+}
+
+func (s *StandaloneSuite) TestGetIndexWithPrefix(c *C) {
+	hash := fmt.Sprintf("%x", md5.Sum([]byte("foo")))
+
+	st := StubGetIndexHandler{
+		c,
+		"/index/" + hash[0:3],
+		"abc123",
+		http.StatusOK,
+		[]byte(string(hash) + "\n\n")}
+
+	ks := RunFakeKeepServer(st)
+	defer ks.listener.Close()
+
+	arv, err := arvadosclient.MakeArvadosClient()
+	kc, _ := MakeKeepClient(&arv)
+	arv.ApiToken = "abc123"
+	kc.SetServiceRoots(map[string]string{"x": ks.url}, map[string]string{ks.url: ""}, nil)
+
+	r, err := kc.GetIndex("x", hash[0:3])
+	c.Check(err, Equals, nil)
+
+	content, err2 := ioutil.ReadAll(r)
+	c.Check(err2, Equals, nil)
+	c.Check(content, DeepEquals, st.body)
+}
+
+func (s *StandaloneSuite) TestGetIndexIncomplete(c *C) {
+	hash := fmt.Sprintf("%x", md5.Sum([]byte("foo")))
+
+	st := StubGetIndexHandler{
+		c,
+		"/index/" + hash[0:3],
+		"abc123",
+		http.StatusOK,
+		[]byte(string(hash))}
+
+	ks := RunFakeKeepServer(st)
+	defer ks.listener.Close()
+
+	arv, err := arvadosclient.MakeArvadosClient()
+	kc, _ := MakeKeepClient(&arv)
+	arv.ApiToken = "abc123"
+	kc.SetServiceRoots(map[string]string{"x": ks.url}, map[string]string{ks.url: ""}, nil)
+
+	_, err = kc.GetIndex("x", hash[0:3])
+	c.Check(err, Equals, IncompleteIndexError)
+}
+
+func (s *StandaloneSuite) TestGetIndexWithNoSuchServer(c *C) {
+	hash := fmt.Sprintf("%x", md5.Sum([]byte("foo")))
+
+	st := StubGetIndexHandler{
+		c,
+		"/index/" + hash[0:3],
+		"abc123",
+		http.StatusOK,
+		[]byte(string(hash))}
+
+	ks := RunFakeKeepServer(st)
+	defer ks.listener.Close()
+
+	arv, err := arvadosclient.MakeArvadosClient()
+	kc, _ := MakeKeepClient(&arv)
+	arv.ApiToken = "abc123"
+	kc.SetServiceRoots(map[string]string{"x": ks.url}, map[string]string{ks.url: ""}, nil)
+
+	_, err = kc.GetIndex("y", hash[0:3])
+	c.Check(err, Equals, NoSuchKeepServer)
+}
+
+func (s *StandaloneSuite) TestGetIndexWithNoSuchPrefix(c *C) {
+	st := StubGetIndexHandler{
+		c,
+		"/index/xyz",
+		"abc123",
+		http.StatusOK,
+		[]byte("")}
+
+	ks := RunFakeKeepServer(st)
+	defer ks.listener.Close()
+
+	arv, err := arvadosclient.MakeArvadosClient()
+	kc, _ := MakeKeepClient(&arv)
+	arv.ApiToken = "abc123"
+	kc.SetServiceRoots(map[string]string{"x": ks.url}, map[string]string{ks.url: ""}, nil)
+
+	_, err = kc.GetIndex("x", "xyz")
+	c.Check((err != nil), Equals, true)
+}
