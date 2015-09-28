@@ -1036,7 +1036,7 @@ func (s *StandaloneSuite) TestGetIndexIncomplete(c *C) {
 	kc.SetServiceRoots(map[string]string{"x": ks.url}, map[string]string{ks.url: ""}, nil)
 
 	_, err = kc.GetIndex("x", hash[0:3])
-	c.Check(err, Equals, IncompleteIndexError)
+	c.Check(err, Equals, ErrorIncompleteIndex)
 }
 
 func (s *StandaloneSuite) TestGetIndexWithNoSuchServer(c *C) {
@@ -1058,7 +1058,7 @@ func (s *StandaloneSuite) TestGetIndexWithNoSuchServer(c *C) {
 	kc.SetServiceRoots(map[string]string{"x": ks.url}, map[string]string{ks.url: ""}, nil)
 
 	_, err = kc.GetIndex("y", hash[0:3])
-	c.Check(err, Equals, NoSuchKeepServer)
+	c.Check(err, Equals, ErrorNoSuchKeepServer)
 }
 
 func (s *StandaloneSuite) TestGetIndexWithNoSuchPrefix(c *C) {
