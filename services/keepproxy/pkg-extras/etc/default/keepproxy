@@ -1,0 +1,7 @@
+user="root"
+group="root"
+chroot="/"
+chdir="/"
+nice=""
+args="-listen=':9100'"
+
