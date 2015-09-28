@@ -7,6 +7,9 @@ RELEASE_PATH=$INSTALL_PATH/current
 SHARED_PATH=$INSTALL_PATH/shared
 CONFIG_PATH=/etc/arvados/sso
 
+DATABASE_READY=1
+APPLICATION_READY=1
+
 VERSION=`cat $RELEASE_PATH/git-commit.version`
 
 setup_ruby_environment() {
@@ -82,18 +85,35 @@ EOF
 
   echo -n "Symlinking files from $CONFIG_PATH ..."
 
+  if [ ! -f $CONFIG_PATH/database.yml ]; then
+    mkdir -p $CONFIG_PATH
+    cp $RELEASE_PATH/config/database.yml.example $CONFIG_PATH/database.yml
+    DATABASE_READY=0
+  fi
+
   if [ ! -h $RELEASE_PATH/config/database.yml ]; then
     ln -s $CONFIG_PATH/database.yml $RELEASE_PATH/config/database.yml
   fi
+
+  if [ ! -f $CONFIG_PATH/production.rb ]; then
+    mkdir -p $CONFIG_PATH
+    cp $RELEASE_PATH/config/environments/production.rb.example $CONFIG_PATH/production.rb
+  fi
+
   if [ ! -h $RELEASE_PATH/config/environments/production.rb ]; then
-    if [ ! -f $CONFIG_PATH/production.rb ]; then
-      cp $RELEASE_PATH/config/environments/production.rb.example $CONFIG_PATH/production.rb
-    fi
     ln -s $CONFIG_PATH/production.rb $RELEASE_PATH/config/environments/production.rb
   fi
+
+  if [ ! -f $CONFIG_PATH/application.yml ]; then
+    mkdir -p $CONFIG_PATH
+    cp $RELEASE_PATH/config/application.yml.example $CONFIG_PATH/application.yml
+    APPLICATION_READY=0
+  fi
+
   if [ ! -h $RELEASE_PATH/config/application.yml ]; then
     ln -s $CONFIG_PATH/application.yml $RELEASE_PATH/config/application.yml
   fi
+
   echo "... done."
 
   # Before we do anything else, make sure some directories and files are in place
@@ -122,7 +142,7 @@ EOF
   echo "... done."
 
   set +e
-  DB_MIGRATE_STATUS=`$COMMAND_PREFIX bundle exec rake db:migrate:status 2>/dev/null`
+  DB_MIGRATE_STATUS=`$COMMAND_PREFIX bundle exec rake db:migrate:status 2>&1`
   DB_MIGRATE_STATUS_CODE=$?
   set -e
 
@@ -130,28 +150,50 @@ EOF
     # The database exists, but the migrations table doesn't.
     echo -n "Setting up database ..."
     $COMMAND_PREFIX bundle exec rake db:schema:load db:seed || exit $?
+    echo "... done."
   elif echo $DB_MIGRATE_STATUS | grep '^database: ' >/dev/null; then
     echo -n "Running db:migrate ..."
     $COMMAND_PREFIX bundle exec rake db:migrate || exit $?
+    echo "... done."
+  elif echo $DB_MIGRATE_STATUS | grep 'database .* does not exist' >/dev/null; then
+    echo -n "Running db:setup ..."
+    set +e
+    $COMMAND_PREFIX bundle exec rake db:setup 2>/dev/null
+    if [ "$?" = "0" ]; then
+      echo "... done."
+    else
+      echo "... failed."
+      echo "Warning: unable to set up database." >&2
+      DATABASE_READY=0
+    fi
+    set -e
   else
-    echo "Error: Database is not ready to set up. Aborting." >&2
-    exit 1
+    echo "Warning: Database is not ready to set up. Skipping database setup." >&2
+    DATABASE_READY=0
   fi
-  echo "... done."
 
   echo -n "Precompiling assets ..."
   # precompile assets; thankfully this does not take long
-  $COMMAND_PREFIX bundle exec rake assets:precompile -q -s || exit $?
+  if [ "$APPLICATION_READY" = "1" ]; then
+    set +e
+    $COMMAND_PREFIX bundle exec rake assets:precompile -q -s 2>/dev/null
+    if [ "$?" = "0" ]; then
+      echo "... done."
+    else
+      echo "... failed."
+      APPLICATION_READY=0
+    fi
+    set -e
+  else
+    echo "... skipped."
+  fi
   chown -R "$WWW_OWNER" $RELEASE_PATH/tmp
-  echo "... done."
 
   if [ ! -z "$WEB_SERVICE" ]; then
     echo -n "Restarting $WEB_SERVICE ..."
-    service "$WEB_SERVICE" restart || exit $?
+    service "$WEB_SERVICE" restart >/dev/null || exit $?
     echo "... done."
   fi
-
-  echo
 }
 
 if [ "$1" = configure ]; then
@@ -163,3 +205,33 @@ elif [ "$1" = "0" ] || [ "$1" = "1" ] || [ "$1" = "2" ]; then
   setup_ruby_environment
   configure_version $VERSION
 fi
+
+if [ "$DATABASE_READY" = "0" ]; then
+  cat <<EOF
+
+PLEASE NOTE:
+
+The arvados-sso package was not configured completely because
+/etc/arvados/database.yml needs some tweaking. Please refer to the
+documentation at http://doc.arvados.org/install/install-sso.html#configure for
+more details.
+
+When database.yml has been modified, reconfigure or reinstall this package.
+EOF
+fi
+
+if [ "$APPLICATION_READY" = "0" ]; then
+  cat <<EOF
+
+PLEASE NOTE:
+
+The arvados-sso package was not configured completely because
+/etc/arvados/application.yml needs some tweaking. Please refer to the
+documentation at http://doc.arvados.org/install/install-sso.html#configure for
+more details.
+
+When application.yml has been modified, reconfigure or reinstall this package.
+EOF
+fi
+
+echo
