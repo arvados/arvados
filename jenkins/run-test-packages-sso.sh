@@ -110,15 +110,6 @@ if ! [[ -d "$WORKSPACE" ]]; then
   exit 1
 fi
 
-install_package() {
-  PACKAGES=$@
-  if [[ "$FORMAT" == "deb" ]]; then
-    $SUDO apt-get install $PACKAGES --yes
-  elif [[ "$FORMAT" == "rpm" ]]; then
-    $SUDO yum -q -y install $PACKAGES
-  fi
-}
-
 # Find the SSO server package
 
 cd "$WORKSPACE"
@@ -129,7 +120,7 @@ PACKAGE_NAME=arvados-sso
 if [[ "$FORMAT" == "deb" ]]; then
   PACKAGE_PATH=$WORKSPACE/packages/$TARGET/arvados-sso_${SSO_VERSION}_amd64.deb
 elif [[ "$FORMAT" == "rpm" ]]; then
-  PACKAGE_PATH=$WORKSPACE/packages/$TARGET/arvados-sso-${SSO_VERSION}.x86_64.rpm
+  PACKAGE_PATH=$WORKSPACE/packages/$TARGET/arvados-sso-${SSO_VERSION}-1.x86_64.rpm
 fi
 
 # Test 1a: the package to test must exist
@@ -170,7 +161,19 @@ if [[ ! -e "/etc/arvados/sso/application.yml" ]]; then
 fi
 
 if [[ ! -e "/etc/arvados/sso/database.yml" ]]; then
-  install_package postgresql
+  # We haven't installed our dependencies yet, but we need to set up our
+  # database configuration now. Install postgresql if need be.
+  if [[ "$FORMAT" == "deb" ]]; then
+    install_package postgresql
+  elif [[ "$FORMAT" == "rpm" ]]; then
+    install_package postgresql-server
+    # postgres packaging on CentOS6 is kind of primitive, needs an initdb
+    $SUDO service postgresql initdb
+    if [ "$TARGET" = "centos6" ]; then
+      sed -i -e "s/127.0.0.1\/32          ident/127.0.0.1\/32          md5/" /var/lib/pgsql/data/pg_hba.conf
+      sed -i -e "s/::1\/128               ident/::1\/128               md5/" /var/lib/pgsql/data/pg_hba.conf
+    fi
+  fi
   $SUDO service postgresql start
 
   RANDOM_PASSWORD=`date | md5sum |cut -f1 -d' '`
@@ -188,11 +191,14 @@ EOF
     $SUDO -u postgres createdb sso_provider_production -O sso_provider_user
   else
     install_package sudo
+    if [ "$TARGET" = "centos6" ]; then
+      # Work around silly CentOS6 default, cf. https://bugzilla.redhat.com/show_bug.cgi?id=1020147
+      sed -i -e 's/Defaults    requiretty/#Defaults    requiretty/' /etc/sudoers
+    fi
     /usr/bin/sudo -u postgres psql -c "CREATE USER sso_provider_user WITH PASSWORD '$RANDOM_PASSWORD'"
     /usr/bin/sudo -u postgres createdb sso_provider_production -O sso_provider_user
   fi
 fi
-
 
 if [[ "$FORMAT" == "deb" ]]; then
   # Test 2: the package should install cleanly
@@ -238,5 +244,7 @@ elif [[ "$FORMAT" == "rpm" ]]; then
   fi
 
 fi
+
+echo "Testing complete, no errors!"
 
 exit $EXITCODE

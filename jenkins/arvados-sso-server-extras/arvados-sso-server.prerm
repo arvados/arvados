@@ -14,9 +14,13 @@ remove () {
   rm -rf $RELEASE_PATH/public/assets/
   rm -rf $RELEASE_PATH/tmp
   rm -rf $RELEASE_PATH/.bundle
-  rm $RELEASE_PATH/log
+  rm $RELEASE_PATH/log || true
 }
 
 if [ "$1" = 'remove' ]; then
+  # This is a debian-based system and removal was requested
+  remove
+elif [ "$1" = "0" ] || [ "$1" = "1" ] || [ "$1" = "2" ]; then
+  # This is an rpm-based system
   remove
 fi

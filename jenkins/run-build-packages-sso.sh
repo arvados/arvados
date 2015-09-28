@@ -136,6 +136,20 @@ else
     GEM=gem
 fi
 
+if [[ "$TARGET" == "centos6" ]]; then
+  # CentOS6 comes with git 1.7.1, but we want at least 1.7.6
+  # because we use git status --ignore in fpm-info.sh
+  cd /usr/src
+  install_package libcurl-devel zlib-devel wget gettext
+  wget https://www.kernel.org/pub/software/scm/git/git-1.8.5.6.tar.gz
+  tar xzf git-1.8.5.6.tar.gz
+  cd git-1.8.5.6
+  make configure
+  ./configure --prefix=/usr --without-tcltk
+  make all
+  make install
+fi
+
 # Make all files world-readable -- jenkins runs with umask 027, and has checked
 # out our git tree here
 chmod o+r "$WORKSPACE" -R
@@ -218,6 +232,7 @@ debug_echo -e "\n${COMMAND_ARR[@]}\n"
 
 FPM_RESULTS=$("${COMMAND_ARR[@]}")
 FPM_EXIT_CODE=$?
+
 fpm_verify $FPM_EXIT_CODE $FPM_RESULTS
 
 # SSO server package build done

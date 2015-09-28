@@ -31,40 +31,53 @@ configure_version() {
 
   [ "$VERSION" ] || { echo "Error: configure_version: need version parameter" >&2; exit 1; }
 
+  WEB_SERVICE=${WEB_SERVICE:-$(service --status-all 2>/dev/null \
+      | grep -Eo '\bnginx|httpd[^[:space:]]*' || true)}
+  if [ -z "$WEB_SERVICE" ]; then
+    cat >&2 <<EOF
+
+Warning: web service (Nginx or Apache) not found.
+
+To override, set the WEB_SERVICE environment variable to the name of the service
+hosting the Rails server. Alternativey, install nginx.
+
+For Debian-based systems, then reconfigure this package with dpkg-reconfigure.
+
+For RPM-based systems, then reinstall this package.
+
+EOF
+  elif [ "$WEB_SERVICE" != "$(echo "$WEB_SERVICE" | head -n 1)" ]; then
+    WEB_SERVICE=$(echo "$WEB_SERVICE" | head -n 1)
+    cat >&2 <<EOF
+Warning: multiple web services found. Choosing the first one ($WEB_SERVICE).
+
+To override, set the WEB_SERVICE environment variable to the name of the service
+hosting the Rails server.
+
+For Debian-based systems, then reconfigure this package with dpkg-reconfigure.
+
+For RPM-based systems, then reinstall this package.
+
+EOF
+  fi
+
   if [ -e /etc/redhat-release ]; then
-      WWW_OWNER=nginx:nginx
+      if [ "$WEB_SERVICE" = "nginx" ]; then
+        WWW_OWNER=nginx:nginx
+      else
+        WWW_OWNER=apache:apache
+      fi
   else
       # Assume we're on a Debian-based system for now.
+      # Both Apache and Nginx run as www-data by default.
       WWW_OWNER=www-data:www-data
   fi
 
-  NGINX_SERVICE=${NGINX_SERVICE:-$(service --status-all 2>/dev/null \
-      | grep -Eo '\bnginx[^[:space:]]*' || true)}
-  if [ -z "$NGINX_SERVICE" ]; then
-      cat >&2 <<EOF
-Error: nginx service not found. Aborting.
-
-Set NGINX_SERVICE to the name of the service hosting the Rails server
-and reconfigure this package with dpkg-reconfigure.
-
-EOF
-      exit 0
-  elif [ "$NGINX_SERVICE" != "$(echo "$NGINX_SERVICE" | head -n 1)" ]; then
-      cat >&2 <<EOF
-Error: multiple nginx services found. Aborting.
-
-Set NGINX_SERVICE to the name of the service hosting the Rails server
-and reconfigure this package with dpkg-reconfigure.
-
-EOF
-      exit 0
-  fi
-
   echo
-  echo "Assumption: $NGINX_SERVICE is configured to serve your SSO server URL from"
+  echo "Assumption: $WEB_SERVICE is configured to serve your SSO server URL from"
   echo "            /var/www/arvados-sso/current"
   echo "Assumption: configuration files are in /etc/arvados/sso/"
-  echo "Assumption: $NGINX_SERVICE and passenger run as $WWW_OWNER"
+  echo "Assumption: $WEB_SERVICE and passenger run as $WWW_OWNER"
   echo
 
   echo -n "Symlinking files from $CONFIG_PATH ..."
@@ -132,15 +145,21 @@ EOF
   chown -R "$WWW_OWNER" $RELEASE_PATH/tmp
   echo "... done."
 
-  echo -n "Restarting nginx ..."
-  service "$NGINX_SERVICE" restart || exit $?
-  echo "... done."
+  if [ ! -z "$WEB_SERVICE" ]; then
+    echo -n "Restarting $WEB_SERVICE ..."
+    service "$WEB_SERVICE" restart || exit $?
+    echo "... done."
+  fi
+
   echo
 }
 
 if [ "$1" = configure ]; then
+  # This is a debian-based system
   setup_ruby_environment
   configure_version $VERSION "$2"
+elif [ "$1" = "0" ] || [ "$1" = "1" ] || [ "$1" = "2" ]; then
+  # This is an rpm-based system
+  setup_ruby_environment
+  configure_version $VERSION
 fi
-
-

@@ -183,3 +183,12 @@ fpm_verify () {
     echo "Error building package for $1:\n $FPM_RESULTS"
   fi
 }
+
+install_package() {
+  PACKAGES=$@
+  if [[ "$FORMAT" == "deb" ]]; then
+    $SUDO apt-get install $PACKAGES --yes
+  elif [[ "$FORMAT" == "rpm" ]]; then
+    $SUDO yum -q -y install $PACKAGES
+  fi
+}
