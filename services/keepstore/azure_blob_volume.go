@@ -1,6 +1,7 @@
 package main
 
 import (
+	"bytes"
 	"errors"
 	"flag"
 	"fmt"
@@ -11,7 +12,7 @@ import (
 	"strings"
 	"time"
 
-	"github.com/Azure/azure-sdk-for-go/storage"
+	"github.com/curoverse/azure-sdk-for-go/storage"
 )
 
 var (
@@ -155,26 +156,16 @@ func (v *AzureBlobVolume) Put(loc string, block []byte) error {
 	if v.readonly {
 		return MethodDisabledError
 	}
-	if err := v.bsClient.CreateBlockBlob(v.containerName, loc); err != nil {
-		return err
-	}
-	// We use the same block ID, base64("0")=="MA==", for everything.
-	if err := v.bsClient.PutBlock(v.containerName, loc, "MA==", block); err != nil {
-		return err
-	}
-	return v.bsClient.PutBlockList(v.containerName, loc, []storage.Block{{"MA==", storage.BlockStatusUncommitted}})
+	return v.bsClient.CreateBlockBlobFromReader(v.containerName, loc, uint64(len(block)), bytes.NewReader(block))
 }
 
 func (v *AzureBlobVolume) Touch(loc string) error {
 	if v.readonly {
 		return MethodDisabledError
 	}
-	if exists, err := v.bsClient.BlobExists(v.containerName, loc); err != nil {
-		return err
-	} else if !exists {
-		return os.ErrNotExist
-	}
-	return v.bsClient.PutBlockList(v.containerName, loc, []storage.Block{{"MA==", storage.BlockStatusCommitted}})
+	return v.bsClient.SetBlobMetadata(v.containerName, loc, map[string]string{
+		"touch": fmt.Sprintf("%d", time.Now()),
+	})
 }
 
 func (v *AzureBlobVolume) Mtime(loc string) (time.Time, error) {

@@ -17,7 +17,7 @@ import (
 	"testing"
 	"time"
 
-	"github.com/Azure/azure-sdk-for-go/storage"
+	"github.com/curoverse/azure-sdk-for-go/storage"
 )
 
 const (
@@ -102,7 +102,7 @@ func (h *azStubHandler) ServeHTTP(rw http.ResponseWriter, r *http.Request) {
 	blob, blobExists := h.blobs[container + "|" + hash]
 
 	switch {
-	case r.Method == "PUT" && r.Form.Get("comp") == "" && r.Header.Get("Content-Length") == "0":
+	case r.Method == "PUT" && r.Form.Get("comp") == "":
 		rw.WriteHeader(http.StatusCreated)
 		h.blobs[container + "|" + hash] = &azBlob{
 			Data:  body,
