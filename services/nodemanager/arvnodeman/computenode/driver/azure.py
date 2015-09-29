@@ -81,6 +81,10 @@ class ComputeNodeDriver(BaseComputeNodeDriver):
                 super(ComputeNodeDriver, self).list_nodes()
                 if node.extra["tags"].get("arvados-class") == self.tags["arvados-class"]]
 
+    def broken(self, cloud_node):
+        """Return true if libcloud has indicated the node is in a "broken" state."""
+        return (cloud_node.state in (cloud_types.NodeState.ERROR, cloud_types.NodeState.UNKNOWN))
+
     @classmethod
     def node_fqdn(cls, node):
         return node.extra["tags"].get("hostname")

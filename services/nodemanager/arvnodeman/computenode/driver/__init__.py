@@ -103,6 +103,10 @@ class BaseComputeNodeDriver(object):
         """
         raise NotImplementedError("BaseComputeNodeDriver.arvados_create_kwargs")
 
+    def broken(self, cloud_node):
+        """Return true if libcloud has indicated the node is in a "broken" state."""
+        return False
+
     def _make_ping_url(self, arvados_node):
         return 'https://{}/arvados/v1/nodes/{}/ping?ping_secret={}'.format(
             self.ping_host, arvados_node['uuid'],

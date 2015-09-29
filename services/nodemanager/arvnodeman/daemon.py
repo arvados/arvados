@@ -159,7 +159,9 @@ class NodeManagerDaemonActor(actor_class):
             timer_actor=self._timer,
             arvados_node=None,
             poll_stale_after=self.poll_stale_after,
-            node_stale_after=self.node_stale_after).proxy()
+            node_stale_after=self.node_stale_after,
+            cloud_client=self._cloud_driver,
+            boot_fail_after=self.boot_fail_after).proxy()
         actor.subscribe(self._later.node_can_shutdown)
         self._cloud_nodes_actor.subscribe_to(cloud_node.id,
                                              actor.update_cloud_node)
@@ -207,6 +209,12 @@ class NodeManagerDaemonActor(actor_class):
                                  self.cloud_nodes.nodes.itervalues())
                    if busy)
 
+    def _nodes_missing(self):
+        return sum(1 for arv_node in
+                   pykka.get_all(rec.actor.arvados_node for rec in
+                                 self.cloud_nodes.nodes.itervalues())
+                   if arv_node and arv_node.get("status") == "missing")
+
     def _nodes_wanted(self):
         up_count = self._nodes_up()
         under_min = self.min_nodes - up_count
@@ -216,11 +224,11 @@ class NodeManagerDaemonActor(actor_class):
         elif under_min > 0:
             return under_min
         else:
-            up_count -= len(self.shutdowns) + self._nodes_busy()
+            up_count -= len(self.shutdowns) + self._nodes_busy() + self._nodes_missing()
             return len(self.last_wishlist) - up_count
 
     def _nodes_excess(self):
-        up_count = self._nodes_up() - len(self.shutdowns)
+        up_count = self._nodes_up() - len(self.shutdowns) - self._nodes_missing()
         over_min = up_count - self.min_nodes
         if over_min <= 0:
             return over_min
