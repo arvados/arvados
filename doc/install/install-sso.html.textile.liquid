@@ -75,7 +75,37 @@ There are other configuration options in @/etc/arvados/sso/application.yml@. See
 
 h2(#database). Set up the database
 
-Generate a new database password. Nobody ever needs to memorize it or type it, so make a strong one:
+If PostgreSQL was newly installed as a dependency of the @arvados-sso-server@ package, you will need to start the service.
+
+On a Debian-based system:
+
+<notextile>
+<pre><code>~$ <span class="userinput">sudo service postgresql start</span>
+</code></pre>
+</notextile>
+
+On a Red Hat-based system, we also need to initialize the database system:
+
+<notextile>
+<pre><code>~$ <span class="userinput">sudo service postgresql initdb</span>
+~$ <span class="userinput">sudo service postgresql start</span>
+</code></pre>
+</notextile>
+
+{% include 'notebox_begin' %}
+
+If you are installing on CentOS6, you will need to modify PostgreSQL's configuration to allow password authentication for local users. The default configuration allows 'ident' only. The following commands will make the configuration change, and restart PostgreSQL for it to take effect.
+<br/>
+<notextile>
+<pre><code>~$ <span class="userinput">sudo sed -i -e "s/127.0.0.1\/32          ident/127.0.0.1\/32          md5/" /var/lib/pgsql/data/pg_hba.conf</span>
+~$ <span class="userinput">sudo sed -i -e "s/::1\/128               ident/::1\/128               md5/" /var/lib/pgsql/data/pg_hba.conf</span>
+~$ <span class="userinput">sudo service postgresql restart</span>
+</code></pre>
+</notextile>
+{% include 'notebox_end' %}
+
+
+Next, generate a new database password. Nobody ever needs to memorize it or type it, so make a strong one:
 
 <notextile>
 <pre><code>~$ <span class="userinput">ruby -e 'puts rand(2**128).to_s(36)'</span>
@@ -106,18 +136,6 @@ Enter password for new role: <span class="userinput">paste-database-password-you
 Enter it again: <span class="userinput">paste-database-password-you-generated</span>
 ~$ <span class="userinput">sudo -u postgres createdb arvados_sso_production -E UTF8 -O arvados_sso -T template0</span>
 </code></pre></notextile>
-
-{% include 'notebox_begin' %}
-
-If you are installing on CentOS6, you will need to modify PostgreSQL's configuration to allow password authentication for local users. The default configuration allows 'ident' only. The following commands will make the configuration change, and restart PostgreSQL for it to take effect.
-<br/>
-<notextile>
-<pre><code>~$ <span class="userinput">sudo sed -i -e "s/127.0.0.1\/32          ident/127.0.0.1\/32          md5/" /var/lib/pgsql/data/pg_hba.conf</span>
-~$ <span class="userinput">sudo sed -i -e "s/::1\/128               ident/::1\/128               md5/" /var/lib/pgsql/data/pg_hba.conf</span>
-~$ <span class="userinput">sudo service postgresql restart</span>
-</code></pre>
-</notextile>
-{% include 'notebox_end' %}
 
 h2(#reconfigure_package). Reconfigure the package
 
