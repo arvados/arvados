@@ -390,12 +390,12 @@ if (!defined $no_clear_tmp) {
   my $cleanpid = fork();
   if ($cleanpid == 0)
   {
-    # Find FUSE mounts that look like Keep mounts (the mount path has the
-    # word "keep") and unmount them.  Then clean up work directories.
-    # TODO: When #5036 is done and widely deployed, we can get rid of the
-    # regular expression and just unmount everything with type fuse.keep.
+    # Find FUSE mounts under $CRUNCH_TMP and unmount them.
+    # Then clean up work directories.
+    # TODO: When #5036 is done and widely deployed, we can limit mount's
+    # -t option to simply fuse.keep.
     srun (["srun", "--nodelist=$nodelist", "-D", $ENV{'TMPDIR'}],
-          ['bash', '-ec', '-o', 'pipefail', 'mount -t fuse,fuse.keep | awk \'($3 ~ /\ykeep\y/){print $3}\' | xargs -r -n 1 fusermount -u -z; sleep 1; rm -rf $JOB_WORK $CRUNCH_INSTALL $CRUNCH_TMP/task $CRUNCH_TMP/src* $CRUNCH_TMP/*.cid']);
+          ['bash', '-ec', '-o', 'pipefail', 'mount -t fuse,fuse.keep | awk "(index(\$3, \"$CRUNCH_TMP\") == 1){print \$3}" | xargs -r -n 1 fusermount -u -z; sleep 1; rm -rf $JOB_WORK $CRUNCH_INSTALL $CRUNCH_TMP/task $CRUNCH_TMP/src* $CRUNCH_TMP/*.cid']);
     exit (1);
   }
   while (1)
@@ -2205,11 +2205,12 @@ if (-d $sdk_root) {
 my $python_dir = "$install_dir/python";
 if ((-d $python_dir) and can_run("python2.7")) {
   open(my $egg_info_pipe, "-|",
-       "python2.7 \Q$python_dir/setup.py\E --quiet egg_info 2>&1 >/dev/null");
+       "python2.7 \Q$python_dir/setup.py\E egg_info 2>&1 >/dev/null");
   my @egg_info_errors = <$egg_info_pipe>;
   close($egg_info_pipe);
+
   if ($?) {
-    if (@egg_info_errors and ($egg_info_errors[-1] =~ /\bgit\b/)) {
+    if (@egg_info_errors and (($egg_info_errors[-1] =~ /\bgit\b/) or ($egg_info_errors[-1] =~ /\[Errno 2\]/))) {
       # egg_info apparently failed because it couldn't ask git for a build tag.
       # Specify no build tag.
       open(my $pysdk_cfg, ">>", "$python_dir/setup.cfg");
@@ -2218,7 +2219,7 @@ if ((-d $python_dir) and can_run("python2.7")) {
     } else {
       my $egg_info_exit = $? >> 8;
       foreach my $errline (@egg_info_errors) {
-        print STDERR_ORIG $errline;
+        warn $errline;
       }
       warn "python setup.py egg_info failed: exit $egg_info_exit";
       exit ($egg_info_exit || 1);

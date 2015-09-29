@@ -36,7 +36,7 @@ func collisionOrCorrupt(expectMD5 string, buf1, buf2 []byte, rdr io.Reader) erro
 	}
 	var err error
 	for rdr != nil && err == nil {
-		buf := make([]byte, 1 << 18)
+		buf := make([]byte, 1<<18)
 		var n int
 		n, err = rdr.Read(buf)
 		data <- buf[:n]

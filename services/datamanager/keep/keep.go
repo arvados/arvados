@@ -23,10 +23,11 @@ import (
 
 // ServerAddress struct
 type ServerAddress struct {
-	SSL  bool   `json:service_ssl_flag`
-	Host string `json:"service_host"`
-	Port int    `json:"service_port"`
-	UUID string `json:"uuid"`
+	SSL         bool   `json:service_ssl_flag`
+	Host        string `json:"service_host"`
+	Port        int    `json:"service_port"`
+	UUID        string `json:"uuid"`
+	ServiceType string `json:"service_type"`
 }
 
 // BlockInfo is info about a particular block returned by the server
@@ -104,7 +105,7 @@ func GetKeepServersAndSummarize(params GetKeepServersParams) (results ReadServer
 // GetKeepServers from api server
 func GetKeepServers(params GetKeepServersParams) (results ReadServers) {
 	sdkParams := arvadosclient.Dict{
-		"filters": [][]string{[]string{"service_type", "=", "disk"}},
+		"filters": [][]string{[]string{"service_type", "!=", "proxy"}},
 	}
 	if params.Limit > 0 {
 		sdkParams["limit"] = params.Limit
@@ -116,6 +117,14 @@ func GetKeepServers(params GetKeepServersParams) (results ReadServers) {
 	if err != nil {
 		loggerutil.FatalWithMessage(params.Logger,
 			fmt.Sprintf("Error requesting keep disks from API server: %v", err))
+	}
+
+	// Currently, only "disk" types are supported. Stop if any other service types are found.
+	for _, server := range sdkResponse.KeepServers {
+		if server.ServiceType != "disk" {
+			loggerutil.FatalWithMessage(params.Logger,
+				fmt.Sprintf("Unsupported service type %q found for: %v", server.ServiceType, server))
+		}
 	}
 
 	if params.Logger != nil {

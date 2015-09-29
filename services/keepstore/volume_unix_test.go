@@ -85,6 +85,22 @@ func TestUnixVolumeWithGenericTestsSerialized(t *testing.T) {
 	})
 }
 
+// serialize = false; readonly = false
+func TestUnixVolumeHandlersWithGenericVolumeTests(t *testing.T) {
+	DoHandlersWithGenericVolumeTests(t, func(t *testing.T) (*RRVolumeManager, []TestableVolume) {
+		vols := make([]Volume, 2)
+		testableUnixVols := make([]TestableVolume, 2)
+
+		for i := range vols {
+			v := NewTestableUnixVolume(t, false, false)
+			vols[i] = v
+			testableUnixVols[i] = v
+		}
+
+		return MakeRRVolumeManager(vols), testableUnixVols
+	})
+}
+
 func TestGetNotFound(t *testing.T) {
 	v := NewTestableUnixVolume(t, false, false)
 	defer v.Teardown()

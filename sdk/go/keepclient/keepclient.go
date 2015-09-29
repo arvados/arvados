@@ -34,14 +34,17 @@ const X_Keep_Replicas_Stored = "X-Keep-Replicas-Stored"
 
 // Information about Arvados and Keep servers.
 type KeepClient struct {
-	Arvados       *arvadosclient.ArvadosClient
-	Want_replicas int
-	Using_proxy   bool
-	localRoots    *map[string]string
+	Arvados            *arvadosclient.ArvadosClient
+	Want_replicas      int
+	Using_proxy        bool
+	localRoots         *map[string]string
 	writableLocalRoots *map[string]string
-	gatewayRoots  *map[string]string
-	lock          sync.RWMutex
-	Client        *http.Client
+	gatewayRoots       *map[string]string
+	lock               sync.RWMutex
+	Client             *http.Client
+
+	// set to 1 if all writable services are of disk type, otherwise 0
+	replicasPerService int
 }
 
 // Create a new KeepClient.  This will contact the API server to discover Keep
