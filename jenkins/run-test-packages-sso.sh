@@ -110,17 +110,29 @@ if ! [[ -d "$WORKSPACE" ]]; then
   exit 1
 fi
 
+title () {
+    txt="********** $1 **********"
+    printf "\n%*s%s\n\n" $((($COLUMNS-${#txt})/2)) "" "$txt"
+}
+
+checkexit() {
+    if [[ "$1" != "0" ]]; then
+        title "!!!!!! $2 FAILED !!!!!!"
+    fi
+}
+
+
 # Find the SSO server package
 
 cd "$WORKSPACE"
 
 SSO_VERSION=$(version_from_git)
-PACKAGE_NAME=arvados-sso
+PACKAGE_NAME=arvados-sso-server
 
 if [[ "$FORMAT" == "deb" ]]; then
-  PACKAGE_PATH=$WORKSPACE/packages/$TARGET/arvados-sso_${SSO_VERSION}_amd64.deb
+  PACKAGE_PATH=$WORKSPACE/packages/$TARGET/${PACKAGE_NAME}_${SSO_VERSION}_amd64.deb
 elif [[ "$FORMAT" == "rpm" ]]; then
-  PACKAGE_PATH=$WORKSPACE/packages/$TARGET/arvados-sso-${SSO_VERSION}-1.x86_64.rpm
+  PACKAGE_PATH=$WORKSPACE/packages/$TARGET/${PACKAGE_NAME}-${SSO_VERSION}-1.x86_64.rpm
 fi
 
 # Test 1a: the package to test must exist
@@ -132,9 +144,9 @@ fi
 if [[ "$FORMAT" == "deb" ]]; then
   # Test 1b: the system/container where we're running the tests must be clean
   set +e
-  dpkg -l |grep arvados-sso -q
+  dpkg -l |grep $PACKAGE_NAME -q
   if [[ "$?" != "1" ]]; then
-    echo "Please make sure the arvados-sso package is not installed before running this script"
+    echo "Please make sure the $PACKAGE_NAME package is not installed before running this script"
     exit 1
   fi
   set -e
@@ -209,42 +221,73 @@ if [[ "$FORMAT" == "deb" ]]; then
   $SUDO dpkg -i $PACKAGE_PATH > /dev/null 2>&1
   $SUDO apt-get -f install --yes
   set -e
-  $SUDO dpkg -i $PACKAGE_PATH
+  $SUDO dpkg -i $PACKAGE_PATH || EXITCODE=2
+
+  checkexit $EXITCODE "dpkg -i $PACKAGE_PATH"
 
   # Test 3: the package should remove cleanly
-  $SUDO apt-get remove arvados-sso --yes
+  $SUDO apt-get remove $PACKAGE_NAME --yes || EXITCODE=3
+
+  checkexit $EXITCODE "apt-get remove $PACKAGE_PATH --yes"
 
   # Test 4: the package configuration should remove cleanly
-  $SUDO dpkg --purge arvados-sso
+  $SUDO dpkg --purge $PACKAGE_NAME || EXITCODE=4
+
+  checkexit $EXITCODE "dpkg --purge $PACKAGE_PATH"
 
   if [[ -e "/var/www/arvados-sso" ]]; then
-    echo "Error: leftover items under /var/www/arvados-sso."
-    exit 4
+    EXITCODE=4
   fi
+
+  checkexit $EXITCODE "leftover items under /var/www/arvados-sso"
 
   # Test 5: the package should remove cleanly with --purge
-  $SUDO dpkg -i $PACKAGE_PATH
-  $SUDO apt-get remove arvados-sso --purge --yes
+  $SUDO dpkg -i $PACKAGE_PATH || EXITCODE=5
+
+  checkexit $EXITCODE "dpkg -i $PACKAGE_PATH"
+
+  $SUDO apt-get remove $PACKAGE_NAME --purge --yes || EXITCODE=5
+
+  checkexit $EXITCODE "apt-get remove $PACKAGE_PATH --purge --yes"
 
   if [[ -e "/var/www/arvados-sso" ]]; then
-    echo "Error: leftover items under /var/www/arvados-sso."
-    exit 5
+    EXITCODE=5
   fi
+
+  checkexit $EXITCODE "leftover items under /var/www/arvados-sso"
 
 elif [[ "$FORMAT" == "rpm" ]]; then
+
+  # Set up Nginx first
+  # (courtesy of https://www.phusionpassenger.com/library/walkthroughs/deploy/ruby/ownserver/nginx/oss/el6/install_passenger.html)
+  $SUDO yum install -q -y epel-release pygpgme curl
+  $SUDO curl --fail -sSLo /etc/yum.repos.d/passenger.repo https://oss-binaries.phusionpassenger.com/yum/definitions/el-passenger.repo
+  $SUDO yum install -q -y nginx passenger
+  $SUDO sed -i -e 's/^# passenger/passenger/' /etc/nginx/conf.d/passenger.conf
+  # Done setting up Nginx
+
   # Test 2: the package should install cleanly
-  $SUDO yum -q -y --nogpgcheck localinstall $PACKAGE_PATH
+  $SUDO yum -q -y --nogpgcheck localinstall $PACKAGE_PATH || EXITCODE=3
+
+  checkexit $EXITCODE "yum -q -y --nogpgcheck localinstall $PACKAGE_PATH"
 
   # Test 3: the package should remove cleanly
-  $SUDO yum -q -y remove arvados-sso
+  $SUDO yum -q -y remove $PACKAGE_NAME || EXITCODE=3
+
+  checkexit $EXITCODE "yum -q -y remove $PACKAGE_PATH"
 
   if [[ -e "/var/www/arvados-sso" ]]; then
-    echo "Error: leftover items under /var/www/arvados-sso."
-    exit 3
+    EXITCODE=3
   fi
+
+  checkexit $EXITCODE "leftover items under /var/www/arvados-sso"
 
 fi
 
-echo "Testing complete, no errors!"
+if [[ "$EXITCODE" == "0" ]]; then
+  echo "Testing complete, no errors!"
+else
+  echo "Errors while testing!"
+fi
 
 exit $EXITCODE

@@ -3,7 +3,7 @@
 . `dirname "$(readlink -f "$0")"`/run-library.sh
 
 read -rd "\000" helpmessage <<EOF
-$(basename $0): Build Arvados SSO package
+$(basename $0): Build Arvados SSO server package
 
 Syntax:
         WORKSPACE=/path/to/arvados-sso $(basename $0) [options]
@@ -173,7 +173,7 @@ fi
 cd "$WORKSPACE"
 
 SSO_VERSION=$(version_from_git)
-PACKAGE_NAME=arvados-sso
+PACKAGE_NAME=arvados-sso-server
 
 if [[ ! -d "$WORKSPACE/tmp" ]]; then
   mkdir $WORKSPACE/tmp
