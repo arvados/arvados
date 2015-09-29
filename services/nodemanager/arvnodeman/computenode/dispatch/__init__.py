@@ -323,6 +323,9 @@ class ComputeNodeMonitorActor(config.actor_class):
         return result
 
     def shutdown_eligible(self):
+        import logging
+        logging.warn("XXX %s %s", self.arvados_node, self._cloud.broken(self.cloud_node))
+
         if not self._shutdowns.window_open():
             return False
         elif self.arvados_node is None:

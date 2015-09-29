@@ -128,12 +128,14 @@ class ComputeNodeShutdownActorMixin(testutil.ActorTestMixin):
         self.cloud_node = cloud_node
         self.arvados_node = arvados_node
 
-    def make_actor(self, cancellable=True):
+    def make_actor(self, cancellable=True, start_time=None):
         if not hasattr(self, 'timer'):
             self.make_mocks()
+        if start_time is None:
+            start_time = time.time()
         monitor_actor = dispatch.ComputeNodeMonitorActor.start(
-            self.cloud_node, time.time(), self.shutdowns,
-            testutil.cloud_node_fqdn, self.timer, self.updates,
+            self.cloud_node, start_time, self.shutdowns,
+            testutil.cloud_node_fqdn, self.timer, self.updates, self.cloud_client,
             self.arvados_node)
         self.shutdown_actor = self.ACTOR_CLASS.start(
             self.timer, self.cloud_client, self.arvados_client, monitor_actor,
@@ -190,7 +192,7 @@ class ComputeNodeShutdownActorTestCase(ComputeNodeShutdownActorMixin,
     ACTOR_CLASS = dispatch.ComputeNodeShutdownActor
 
     def test_easy_shutdown(self):
-        self.make_actor()
+        self.make_actor(start_time=0)
         self.check_success_flag(True)
         self.assertTrue(self.cloud_client.destroy_node.called)
 
@@ -203,7 +205,7 @@ class ComputeNodeShutdownActorTestCase(ComputeNodeShutdownActorMixin,
     def test_shutdown_retries_when_cloud_fails(self):
         self.make_mocks()
         self.cloud_client.destroy_node.return_value = False
-        self.make_actor()
+        self.make_actor(start_time=0)
         self.assertIsNone(self.shutdown_actor.success.get(self.TIMEOUT))
         self.cloud_client.destroy_node.return_value = True
         self.check_success_flag(True)
@@ -241,6 +243,7 @@ class ComputeNodeMonitorActorTestCase(testutil.ActorTestMixin,
         self.updates = mock.MagicMock(name='update_mock')
         self.cloud_mock = testutil.cloud_node_mock(node_num)
         self.subscriber = mock.Mock(name='subscriber_mock')
+        self.cloud_client = mock.MagicMock(name='cloud_client')
 
     def make_actor(self, node_num=1, arv_node=None, start_time=None):
         if not hasattr(self, 'cloud_mock'):
@@ -249,8 +252,8 @@ class ComputeNodeMonitorActorTestCase(testutil.ActorTestMixin,
             start_time = time.time()
         self.node_actor = dispatch.ComputeNodeMonitorActor.start(
             self.cloud_mock, start_time, self.shutdowns,
-            testutil.cloud_node_fqdn, self.timer, self.updates,
-            arv_node).proxy()
+            testutil.cloud_node_fqdn, self.timer, self.updates, self.cloud_client,
+            arv_node, boot_fail_after=300).proxy()
         self.node_actor.subscribe(self.subscriber).get(self.TIMEOUT)
 
     def node_state(self, *states):
@@ -298,22 +301,49 @@ class ComputeNodeMonitorActorTestCase(testutil.ActorTestMixin,
         self.assertFalse(self.subscriber.called)
 
     def test_shutdown_subscription(self):
-        self.make_actor()
+        self.make_actor(start_time=0)
         self.shutdowns._set_state(True, 600)
         self.node_actor.consider_shutdown().get(self.TIMEOUT)
         self.assertTrue(self.subscriber.called)
         self.assertEqual(self.node_actor.actor_ref.actor_urn,
                          self.subscriber.call_args[0][0].actor_ref.actor_urn)
 
-    def test_shutdown_without_arvados_node(self):
+    def test_no_shutdown_booting(self):
         self.make_actor()
+        self.shutdowns._set_state(True, 600)
+        self.assertFalse(self.node_actor.shutdown_eligible().get(self.TIMEOUT))
+
+    def test_shutdown_without_arvados_node(self):
+        self.make_actor(start_time=0)
         self.shutdowns._set_state(True, 600)
         self.assertTrue(self.node_actor.shutdown_eligible().get(self.TIMEOUT))
 
-    def test_no_shutdown_without_arvados_node_and_old_cloud_node(self):
-        self.make_actor(start_time=0)
+    def test_no_shutdown_missing(self):
+        arv_node = testutil.arvados_node_mock(10, job_uuid=None,
+                                              crunch_worker_state="down",
+                                              status="missing")
+        self.make_actor(10, arv_node)
         self.shutdowns._set_state(True, 600)
+        self.cloud_client.broken.return_value = False
         self.assertFalse(self.node_actor.shutdown_eligible().get(self.TIMEOUT))
+
+    def test_no_shutdown_running_broken(self):
+        arv_node = testutil.arvados_node_mock(12, job_uuid=None,
+                                              crunch_worker_state="down",
+                                              status="running")
+        self.make_actor(12, arv_node)
+        self.shutdowns._set_state(True, 600)
+        self.cloud_client.broken.return_value = True
+        self.assertFalse(self.node_actor.shutdown_eligible().get(self.TIMEOUT))
+
+    def test_shutdown_missing_broken(self):
+        arv_node = testutil.arvados_node_mock(11, job_uuid=None,
+                                              crunch_worker_state="down",
+                                              status="missing")
+        self.make_actor(11, arv_node)
+        self.shutdowns._set_state(True, 600)
+        self.cloud_client.broken.return_value = True
+        self.assertTrue(self.node_actor.shutdown_eligible().get(self.TIMEOUT))
 
     def test_no_shutdown_when_window_closed(self):
         self.make_actor(3, testutil.arvados_node_mock(3, job_uuid=None))

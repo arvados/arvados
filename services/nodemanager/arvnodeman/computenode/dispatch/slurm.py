@@ -15,6 +15,7 @@ class ComputeNodeShutdownActor(ShutdownActorBase):
     def on_start(self):
         arv_node = self._arvados_node()
         if arv_node is None:
+            self._nodename = None
             return super(ComputeNodeShutdownActor, self).on_start()
         else:
             self._nodename = arv_node['hostname']
@@ -29,7 +30,8 @@ class ComputeNodeShutdownActor(ShutdownActorBase):
 
     @ShutdownActorBase._retry((subprocess.CalledProcessError,))
     def cancel_shutdown(self):
-        self._set_node_state('RESUME')
+        if self._nodename:
+            self._set_node_state('RESUME')
         return super(ComputeNodeShutdownActor, self).cancel_shutdown()
 
     @ShutdownActorBase._stop_if_window_closed
