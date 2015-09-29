@@ -10,19 +10,25 @@ h3(#install_ruby_and_bundler). Install Ruby and Bundler
 
 {% include 'install_ruby_and_bundler' %}
 
+h3(#install_web_server). Set up a Web server
+
+For best performance, we recommend you use Nginx as your Web server frontend with a Passenger backend to serve the SSO server. The Passenger team provides "Nginx + Passenger installation instructions":https://www.phusionpassenger.com/library/walkthroughs/deploy/ruby/ownserver/nginx/oss/install_passenger_main.html.
+
+Follow the instructions until you see the section that says you are ready to deploy your Ruby application on the production server.
+
 h2(#install). Install the SSO server
 
 On a Debian-based system, install the following package:
 
 <notextile>
-<pre><code>~$ <span class="userinput">sudo apt-get arvados-sso</span>
+<pre><code>~$ <span class="userinput">sudo apt-get arvados-sso-server</span>
 </code></pre>
 </notextile>
 
 On a Red Hat-based system, install the following package:
 
 <notextile>
-<pre><code>~$ <span class="userinput">sudo yum install arvados-sso</span>
+<pre><code>~$ <span class="userinput">sudo yum install arvados-sso-server</span>
 </code></pre>
 </notextile>
 
@@ -37,7 +43,7 @@ The package has installed three configuration files in @/etc/arvados/sso@:
 </code></pre>
 </notextile>
 
-The SSO server runs from the @/var/www/arvados-sso/current/@ directory. The configuration files in @/etc/arvados/sso/@ are symlinked to @/var/www/arvados-sso/current/config/application.yml@, @/var/www/arvados-sso/current/config/database.yml@ and @/var/www/arvados-sso/current/config/environments/production.rb@.
+The SSO server runs from the @/var/www/arvados-sso/current/@ directory. The files @/var/www/arvados-sso/current/config/application.yml@, @/var/www/arvados-sso/current/config/database.yml@ and @/var/www/arvados-sso/current/config/environments/production.rb@ are symlinked to the configuration files in @/etc/arvados/sso/@.
 
 The SSO server reads the @config/application.yml@ file, as well as the @config/application.defaults.yml@ file. Values in @config/application.yml@ take precedence over the defaults that are defined in @config/application.defaults.yml@. The @config/application.yml.example@ file is not read by the SSO server and is provided for installation convenience only.
 
@@ -48,7 +54,7 @@ h3(#uuid_prefix). uuid_prefix
 Generate a uuid prefix for the single sign on service.  This prefix is used to identify user records as originating from this site.  It must be exactly 5 lowercase ASCII letters and/or digits.  You may use the following snippet to generate a uuid prefix:
 
 <notextile>
-<pre><code>$ <span class="userinput">ruby -e 'puts "#{rand(2**64).to_s(36)[0,5]}"'</span>
+<pre><code>~$ <span class="userinput">ruby -e 'puts "#{rand(2**64).to_s(36)[0,5]}"'</span>
 abcde
 </code></pre></notextile>
 
@@ -59,7 +65,7 @@ h3(#secret_token). secret_token
 Generate a new secret token for signing cookies:
 
 <notextile>
-<pre><code>$ <span class="userinput">ruby -e 'puts rand(2**400).to_s(36)'</span>
+<pre><code>~$ <span class="userinput">ruby -e 'puts rand(2**400).to_s(36)'</span>
 zzzzzzzzzzzzzzzzzzzzzzzzzzzzzzzzzzzzzzzzzzzzzzzzzzzzzzzz
 </code></pre></notextile>
 
@@ -72,20 +78,20 @@ h2(#database). Set up the database
 Generate a new database password. Nobody ever needs to memorize it or type it, so make a strong one:
 
 <notextile>
-<pre><code>$ <span class="userinput">ruby -e 'puts rand(2**128).to_s(36)'</span>
+<pre><code>~$ <span class="userinput">ruby -e 'puts rand(2**128).to_s(36)'</span>
 abcdefghijklmnopqrstuvwxyz012345689
 </code></pre></notextile>
 
 Configure the SSO server to connect to your database by updating @/etc/arvados/sso/database.yml@. Replace the @xxxxxxxx@ database password placeholder with the new password you generated above. Be sure to update the @production@ section.
 
 <notextile>
-<pre><code>$ <span class="userinput">edit /etc/arvados/sso/database.yml</span>
+<pre><code>~$ <span class="userinput">edit /etc/arvados/sso/database.yml</span>
 </code></pre></notextile>
 
 Create a new database user with permission to create its own databases.
 
 <notextile>
-<pre><code>$ <span class="userinput">sudo -u postgres createuser --createdb --encrypted -R -S --pwprompt arvados_sso</span>
+<pre><code>~$ <span class="userinput">sudo -u postgres createuser --createdb --encrypted -R -S --pwprompt arvados_sso</span>
 Enter password for new role: <span class="userinput">paste-database-password-you-generated</span>
 Enter it again: <span class="userinput">paste-database-password-you-generated</span>
 </code></pre></notextile>
@@ -95,10 +101,10 @@ Rails will take care of creating the database, based on the information from @/e
 Alternatively, if the database user you intend to use for the SSO server should not be allowed to create new databases, the user and the database can be created like this:
 
 <notextile>
-<pre><code>$ <span class="userinput">sudo -u postgres createuser --encrypted -R -S --pwprompt arvados_sso</span>
+<pre><code>~$ <span class="userinput">sudo -u postgres createuser --encrypted -R -S --pwprompt arvados_sso</span>
 Enter password for new role: <span class="userinput">paste-database-password-you-generated</span>
 Enter it again: <span class="userinput">paste-database-password-you-generated</span>
-$ <span class="userinput">sudo -u postgres createdb arvados_sso_production -E UTF8 -O arvados_sso -T template0</span>
+~$ <span class="userinput">sudo -u postgres createdb arvados_sso_production -E UTF8 -O arvados_sso -T template0</span>
 </code></pre></notextile>
 
 {% include 'notebox_begin' %}
@@ -106,9 +112,9 @@ $ <span class="userinput">sudo -u postgres createdb arvados_sso_production -E UT
 If you are installing on CentOS6, you will need to modify PostgreSQL's configuration to allow password authentication for local users. The default configuration allows 'ident' only. The following commands will make the configuration change, and restart PostgreSQL for it to take effect.
 <br/>
 <notextile>
-<pre><code>$ <span class="userinput">sudo sed -i -e "s/127.0.0.1\/32          ident/127.0.0.1\/32          md5/" /var/lib/pgsql/data/pg_hba.conf</span>
-$ <span class="userinput">sudo sed -i -e "s/::1\/128               ident/::1\/128               md5/" /var/lib/pgsql/data/pg_hba.conf</span>
-$ <span class="userinput">sudo service postgresql restart</span>
+<pre><code>~$ <span class="userinput">sudo sed -i -e "s/127.0.0.1\/32          ident/127.0.0.1\/32          md5/" /var/lib/pgsql/data/pg_hba.conf</span>
+~$ <span class="userinput">sudo sed -i -e "s/::1\/128               ident/::1\/128               md5/" /var/lib/pgsql/data/pg_hba.conf</span>
+~$ <span class="userinput">sudo service postgresql restart</span>
 </code></pre>
 </notextile>
 {% include 'notebox_end' %}
@@ -120,14 +126,14 @@ Now that the @/etc/arvados/sso/application.yml@ and @/etc/arvados/sso/database.y
 On a Debian-based system:
 
 <notextile>
-<pre><code>~$ <span class="userinput">sudo dpkg-reconfigure arvados-sso</span>
+<pre><code>~$ <span class="userinput">sudo dpkg-reconfigure arvados-sso-server</span>
 </code></pre>
 </notextile>
 
 On a Red Hat-based system, we need to reinstall the package instead:
 
 <notextile>
-<pre><code>~$ <span class="userinput">sudo yum reinstall arvados-sso</span>
+<pre><code>~$ <span class="userinput">sudo yum reinstall arvados-sso-server</span>
 </code></pre>
 </notextile>
 
@@ -136,9 +142,9 @@ h2(#client). Create arvados-server client
 Use @rails console@ to create a @Client@ record that will be used by the Arvados API server.  The values of @app_id@ and @app_secret@ correspond to the values for @sso_app_id@ and @sso_app_secret@ in the "API server's SSO settings.":install-api-server.html#omniauth
 
 <notextile>
-<pre><code>$ <span class="userinput">ruby -e 'puts rand(2**400).to_s(36)'</span>
+<pre><code>~$ <span class="userinput">ruby -e 'puts rand(2**400).to_s(36)'</span>
 xxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxx
-$ <span class="userinput">RAILS_ENV=production bundle exec rails console</span>
+~$ <span class="userinput">RAILS_ENV=production bundle exec rails console</span>
 :001 &gt; <span class="userinput">c = Client.new</span>
 :002 &gt; <span class="userinput">c.name = "joshid"</span>
 :003 &gt; <span class="userinput">c.app_id = "arvados-server"</span>
@@ -147,6 +153,56 @@ $ <span class="userinput">RAILS_ENV=production bundle exec rails console</span>
 :006 &gt; <span class="userinput">quit</span>
 </code></pre>
 </notextile>
+
+h2(#configure_web_server). Configure your web server
+
+Edit the http section of your Nginx configuration to run the Passenger server and act as a frontend for it. You might add a block like the following, adding SSL and logging parameters to taste:
+
+<notextile>
+<pre><code>server {
+  listen 127.0.0.1:8900;
+  server_name localhost-sso;
+
+  root   /var/www/arvados-sso/current/public;
+  index  index.html;
+
+  passenger_enabled on;
+  # If you're not using RVM, comment out the line below.
+  passenger_ruby /usr/local/rvm/wrappers/default/ruby;
+}
+
+upstream sso {
+  server     127.0.0.1:8900  fail_timeout=10s;
+}
+
+proxy_http_version 1.1;
+
+server {
+  listen       <span class="userinput">[your public IP address]</span>:443 ssl;
+  server_name  auth.<span class="userinput">your.domain</span>;
+
+  ssl on;
+  ssl_certificate     <span class="userinput">/YOUR/PATH/TO/cert.pem</span>;
+  ssl_certificate_key <span class="userinput">/YOUR/PATH/TO/cert.key</span>;
+
+  index  index.html;
+
+  location / {
+    proxy_pass            http://sso;
+    proxy_redirect        off;
+    proxy_connect_timeout 90s;
+    proxy_read_timeout    300s;
+
+    proxy_set_header      X-Forwarded-Proto https;
+    proxy_set_header      Host $http_host;
+    proxy_set_header      X-Real-IP $remote_addr;
+    proxy_set_header      X-Forwarded-For $proxy_add_x_forwarded_for;
+  }
+}
+</code></pre>
+</notextile>
+
+Finally, restart Nginx and your Arvados SSO server should be up and running. You can verify that by visiting the URL you configured your Nginx web server to listen on in the server section above (port 443). Read on if you want to configure your Arvados SSO server to use a different authentication backend.
 
 h2(#authentication_methods). Authentication methods
 
@@ -171,7 +227,7 @@ For more information about configuring backend support for sending email (requir
 If @allow_account_registration@ is false, you may manually create local accounts on the SSO server from the rails console:
 
 <notextile>
-<pre><code>~/sso-devise-omniauth-provider$ <span class="userinput">RAILS_ENV=production bundle exec rails console</span>
+<pre><code>~$ <span class="userinput">RAILS_ENV=production bundle exec rails console</span>
 :001 &gt; <span class="userinput">user = User.new(:email =&gt; "test@example.com")</span>
 :002 &gt; <span class="userinput">user.password = "passw0rd"</span>
 :003 &gt; <span class="userinput">user.save!</span>
@@ -231,61 +287,4 @@ In order to use Google+ authentication, you must use the <a href="https://consol
   google_oauth2_client_id: <span class="userinput">"---YOUR---CLIENT---ID---HERE--"-</span>
   google_oauth2_client_secret: <span class="userinput">"---YOUR---CLIENT---SECRET---HERE--"-</span></code></pre></notextile>
 
-h2(#start). Set up a Web server
-
-For best performance, we recommend you use Nginx as your Web server front-end, with a Passenger backend to serve the SSO server.  To do that:
-
-<notextile>
-<ol>
-<li><a href="https://www.phusionpassenger.com/library/walkthroughs/deploy/ruby/ownserver/nginx/oss/install_passenger_main.html">Install Nginx and Phusion Passenger</a>.</li>
-
-<li><p>Edit the http section of your Nginx configuration to run the Passenger server, and act as a front-end for it.  You might add a block like the following, adding SSL and logging parameters to taste:</p>
-
-<pre><code>server {
-  listen 127.0.0.1:8900;
-  server_name localhost-sso;
-
-  root   /var/www/arvados-sso/current/public;
-  index  index.html;
-
-  passenger_enabled on;
-  # If you're not using RVM, comment out the line below.
-  passenger_ruby /usr/local/rvm/wrappers/default/ruby;
-}
-
-upstream sso {
-  server     127.0.0.1:8900  fail_timeout=10s;
-}
-
-proxy_http_version 1.1;
-
-server {
-  listen       <span class="userinput">[your public IP address]</span>:443 ssl;
-  server_name  auth.<span class="userinput">your.domain</span>;
-
-  ssl on;
-  ssl_certificate     <span class="userinput">/YOUR/PATH/TO/cert.pem</span>;
-  ssl_certificate_key <span class="userinput">/YOUR/PATH/TO/cert.key</span>;
-
-  index  index.html;
-
-  location / {
-    proxy_pass            http://sso;
-    proxy_redirect        off;
-    proxy_connect_timeout 90s;
-    proxy_read_timeout    300s;
-
-    proxy_set_header      X-Forwarded-Proto https;
-    proxy_set_header      Host $http_host;
-    proxy_set_header      X-Real-IP $remote_addr;
-    proxy_set_header      X-Forwarded-For $proxy_add_x_forwarded_for;
-  }
-}
-</code></pre>
-</li>
-
-<li>Restart Nginx.</li>
-
-</ol>
-</notextile>
 
