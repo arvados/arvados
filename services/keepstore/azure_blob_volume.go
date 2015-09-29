@@ -96,11 +96,11 @@ type AzureBlobVolume struct {
 
 func NewAzureBlobVolume(client storage.Client, containerName string, readonly bool, replication int) *AzureBlobVolume {
 	return &AzureBlobVolume{
-		azClient: client,
-		bsClient: client.GetBlobService(),
+		azClient:      client,
+		bsClient:      client.GetBlobService(),
 		containerName: containerName,
-		readonly: readonly,
-		replication: replication,
+		readonly:      readonly,
+		replication:   replication,
 	}
 }
 
@@ -200,16 +200,26 @@ func (v *AzureBlobVolume) IndexTo(prefix string, writer io.Writer) error {
 }
 
 func (v *AzureBlobVolume) Delete(loc string) error {
-	// TODO: Use leases to handle races with Touch and Put.
 	if v.readonly {
 		return MethodDisabledError
+	}
+	// Ideally we would use If-Unmodified-Since, but that
+	// particular condition seems to be ignored by Azure. Instead,
+	// we get the Etag before checking Mtime, and use If-Match to
+	// ensure we don't delete data if Put() or Touch() happens
+	// between our calls to Mtime() and DeleteBlob().
+	props, err := v.bsClient.GetBlobProperties(v.containerName, loc)
+	if err != nil {
+		return err
 	}
 	if t, err := v.Mtime(loc); err != nil {
 		return err
 	} else if time.Since(t) < blobSignatureTTL {
 		return nil
 	}
-	return v.bsClient.DeleteBlob(v.containerName, loc)
+	return v.bsClient.DeleteBlob(v.containerName, loc, map[string]string{
+		"If-Match": props.Etag,
+	})
 }
 
 func (v *AzureBlobVolume) Status() *VolumeStatus {

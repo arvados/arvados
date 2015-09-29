@@ -4,8 +4,10 @@ import (
 	"encoding/base64"
 	"encoding/xml"
 	"flag"
+	"fmt"
 	"io/ioutil"
 	"log"
+	"math/rand"
 	"net"
 	"net/http"
 	"net/http/httptest"
@@ -23,7 +25,7 @@ import (
 const (
 	// The same fake credentials used by Microsoft's Azure emulator
 	emulatorAccountName = "devstoreaccount1"
-	emulatorAccountKey = "Eby8vdM02xNOcqFlqUwJPLlmEtlCDXJ1OUzFT50uSRZ6IFsuFq2UVErCz4I6tq/K1SZFPTOtr/KBHBeksoGMGw=="
+	emulatorAccountKey  = "Eby8vdM02xNOcqFlqUwJPLlmEtlCDXJ1OUzFT50uSRZ6IFsuFq2UVErCz4I6tq/K1SZFPTOtr/KBHBeksoGMGw=="
 )
 
 var azureTestContainer string
@@ -36,15 +38,17 @@ func init() {
 		"Name of Azure container to use for testing. Do not use a container with real data! Use -azure-storage-account-name and -azure-storage-key-file arguments to supply credentials.")
 }
 
-type azBlob struct{
+type azBlob struct {
 	Data        []byte
+	Etag        string
+	Metadata    map[string]string
 	Mtime       time.Time
 	Uncommitted map[string][]byte
 }
 
 type azStubHandler struct {
 	sync.Mutex
-	blobs  map[string]*azBlob
+	blobs map[string]*azBlob
 }
 
 func newAzStubHandler() *azStubHandler {
@@ -54,7 +58,7 @@ func newAzStubHandler() *azStubHandler {
 }
 
 func (h *azStubHandler) TouchWithDate(container, hash string, t time.Time) {
-	if blob, ok := h.blobs[container + "|" + hash]; !ok {
+	if blob, ok := h.blobs[container+"|"+hash]; !ok {
 		return
 	} else {
 		blob.Mtime = t
@@ -64,9 +68,9 @@ func (h *azStubHandler) TouchWithDate(container, hash string, t time.Time) {
 func (h *azStubHandler) PutRaw(container, hash string, data []byte) {
 	h.Lock()
 	defer h.Unlock()
-	h.blobs[container + "|" + hash] = &azBlob{
-		Data: data,
-		Mtime: time.Now(),
+	h.blobs[container+"|"+hash] = &azBlob{
+		Data:        data,
+		Mtime:       time.Now(),
 		Uncommitted: make(map[string][]byte),
 	}
 }
@@ -99,17 +103,20 @@ func (h *azStubHandler) ServeHTTP(rw http.ResponseWriter, r *http.Request) {
 		Uncommitted []string
 	}
 
-	blob, blobExists := h.blobs[container + "|" + hash]
+	blob, blobExists := h.blobs[container+"|"+hash]
 
 	switch {
 	case r.Method == "PUT" && r.Form.Get("comp") == "":
-		rw.WriteHeader(http.StatusCreated)
-		h.blobs[container + "|" + hash] = &azBlob{
-			Data:  body,
-			Mtime: time.Now(),
+		// "Put Blob" API
+		h.blobs[container+"|"+hash] = &azBlob{
+			Data:        body,
+			Mtime:       time.Now(),
 			Uncommitted: make(map[string][]byte),
+			Etag:        makeEtag(),
 		}
+		rw.WriteHeader(http.StatusCreated)
 	case r.Method == "PUT" && r.Form.Get("comp") == "block":
+		// "Put Block" API
 		if !blobExists {
 			log.Printf("Got block for nonexistent blob: %+v", r)
 			rw.WriteHeader(http.StatusBadRequest)
@@ -124,6 +131,7 @@ func (h *azStubHandler) ServeHTTP(rw http.ResponseWriter, r *http.Request) {
 		blob.Uncommitted[string(blockID)] = body
 		rw.WriteHeader(http.StatusCreated)
 	case r.Method == "PUT" && r.Form.Get("comp") == "blocklist":
+		// "Put Block List" API
 		bl := &blockListRequestBody{}
 		if err := xml.Unmarshal(body, bl); err != nil {
 			log.Printf("xml Unmarshal: %s", err)
@@ -138,10 +146,31 @@ func (h *azStubHandler) ServeHTTP(rw http.ResponseWriter, r *http.Request) {
 				return
 			}
 			blob.Data = blob.Uncommitted[string(blockID)]
-			log.Printf("body %+q, bl %+v, blockID %+q, data %+q", body, bl, blockID, blob.Data)
+			blob.Etag = makeEtag()
+			blob.Mtime = time.Now()
+			delete(blob.Uncommitted, string(blockID))
 		}
 		rw.WriteHeader(http.StatusCreated)
+	case r.Method == "PUT" && r.Form.Get("comp") == "metadata":
+		// "Set Metadata Headers" API. We don't bother
+		// stubbing "Get Metadata Headers": AzureBlobVolume
+		// sets metadata headers only as a way to bump Etag
+		// and Last-Modified.
+		if !blobExists {
+			log.Printf("Got metadata for nonexistent blob: %+v", r)
+			rw.WriteHeader(http.StatusBadRequest)
+			return
+		}
+		blob.Metadata = make(map[string]string)
+		for k, v := range r.Header {
+			if strings.HasPrefix(strings.ToLower(k), "x-ms-meta-") {
+				blob.Metadata[k] = v[0]
+			}
+		}
+		blob.Mtime = time.Now()
+		blob.Etag = makeEtag()
 	case (r.Method == "GET" || r.Method == "HEAD") && hash != "":
+		// "Get Blob" API
 		if !blobExists {
 			rw.WriteHeader(http.StatusNotFound)
 			return
@@ -154,13 +183,15 @@ func (h *azStubHandler) ServeHTTP(rw http.ResponseWriter, r *http.Request) {
 			}
 		}
 	case r.Method == "DELETE" && hash != "":
+		// "Delete Blob" API
 		if !blobExists {
 			rw.WriteHeader(http.StatusNotFound)
 			return
 		}
-		delete(h.blobs, container + "|" + hash)
+		delete(h.blobs, container+"|"+hash)
 		rw.WriteHeader(http.StatusAccepted)
 	case r.Method == "GET" && r.Form.Get("comp") == "list" && r.Form.Get("restype") == "container":
+		// "List Blobs" API
 		prefix := container + "|" + r.Form.Get("prefix")
 		marker := r.Form.Get("marker")
 
@@ -170,7 +201,7 @@ func (h *azStubHandler) ServeHTTP(rw http.ResponseWriter, r *http.Request) {
 		}
 
 		resp := storage.BlobListResponse{
-			Marker: marker,
+			Marker:     marker,
 			NextMarker: "",
 			MaxResults: int64(maxResults),
 		}
@@ -187,12 +218,13 @@ func (h *azStubHandler) ServeHTTP(rw http.ResponseWriter, r *http.Request) {
 				break
 			}
 			if len(resp.Blobs) > 0 || marker == "" || marker == hash {
-				blob := h.blobs[container + "|" + hash]
+				blob := h.blobs[container+"|"+hash]
 				resp.Blobs = append(resp.Blobs, storage.Blob{
 					Name: hash,
 					Properties: storage.BlobProperties{
-						LastModified: blob.Mtime.Format(time.RFC1123),
+						LastModified:  blob.Mtime.Format(time.RFC1123),
 						ContentLength: int64(len(blob.Data)),
+						Etag:          blob.Etag,
 					},
 				})
 			}
@@ -217,6 +249,7 @@ type azStubDialer struct {
 }
 
 var localHostPortRe = regexp.MustCompile(`(127\.0\.0\.1|localhost|\[::1\]):\d+`)
+
 func (d *azStubDialer) Dial(network, address string) (net.Conn, error) {
 	if hp := localHostPortRe.FindString(address); hp != "" {
 		log.Println("azStubDialer: dial", hp, "instead of", address)
@@ -263,9 +296,9 @@ func NewTestableAzureBlobVolume(t *testing.T, readonly bool, replication int) Te
 
 	return &TestableAzureBlobVolume{
 		AzureBlobVolume: v,
-		azHandler: azHandler,
-		azStub: azStub,
-		t: t,
+		azHandler:       azHandler,
+		azStub:          azStub,
+		t:               t,
 	}
 }
 
@@ -313,4 +346,8 @@ func (v *TestableAzureBlobVolume) TouchWithDate(locator string, lastPut time.Tim
 
 func (v *TestableAzureBlobVolume) Teardown() {
 	v.azStub.Close()
+}
+
+func makeEtag() string {
+	return fmt.Sprintf("0x%x", rand.Int63())
 }
