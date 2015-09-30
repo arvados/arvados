@@ -149,7 +149,7 @@ case "$TARGET" in
             pykka requests six pyexecjs jsonschema \
             ciso8601 pycrypto backports.ssl_match_hostname pycurl
             python-daemon lockfile llfuse)
-        PYTHON3_BACKPORTS=(docker-py six requests)
+        PYTHON3_BACKPORTS=(docker-py six requests websocket-client)
         export PYCURL_SSL_LIBRARY=nss
         ;;
     *)
