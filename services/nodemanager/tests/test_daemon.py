@@ -148,8 +148,8 @@ class NodeManagerDaemonActorTestCase(testutil.ActorTestMixin,
 
     def test_excess_counts_missing(self):
         size = testutil.MockSize(1)
-        self.make_daemon(cloud_nodes=[testutil.cloud_node_mock(1),
-                                      testutil.cloud_node_mock(2)],
+        cloud_nodes = [testutil.cloud_node_mock(1), testutil.cloud_node_mock(2)]
+        self.make_daemon(cloud_nodes=cloud_nodes,
                          arvados_nodes=[testutil.arvados_node_mock(1),
                                         testutil.arvados_node_mock(2, last_ping_at='1970-01-01T01:02:03.04050607Z')],
                          want_sizes=[size])
@@ -157,6 +157,19 @@ class NodeManagerDaemonActorTestCase(testutil.ActorTestMixin,
         for mon_ref in self.monitor_list():
             self.daemon.node_can_shutdown(mon_ref.proxy()).get(self.TIMEOUT)
         self.assertEqual(1, self.node_shutdown.start.call_count)
+
+    def test_missing_shutdown_not_excess(self):
+        size = testutil.MockSize(1)
+        cloud_nodes = [testutil.cloud_node_mock(1), testutil.cloud_node_mock(2)]
+        self.make_daemon(cloud_nodes=cloud_nodes,
+                         arvados_nodes=[testutil.arvados_node_mock(1),
+                                        testutil.arvados_node_mock(2, last_ping_at='1970-01-01T01:02:03.04050607Z')],
+                         want_sizes=[size])
+        self.daemon.shutdowns.get()[cloud_nodes[1].id] = True
+        self.assertEqual(2, self.alive_monitor_count())
+        for mon_ref in self.monitor_list():
+            self.daemon.node_can_shutdown(mon_ref.proxy()).get(self.TIMEOUT)
+        self.assertEqual(0, self.node_shutdown.start.call_count)
 
     def test_booting_nodes_counted(self):
         cloud_node = testutil.cloud_node_mock(1)
