@@ -123,7 +123,28 @@ class NodeManagerDaemonActorTestCase(testutil.ActorTestMixin,
         self.make_daemon([testutil.cloud_node_mock()],
                          want_sizes=[testutil.MockSize(1)])
         self.stop_proxy(self.daemon)
-        self.assertFalse(self.node_setup.called)
+        self.assertFalse(self.node_setup.start.called)
+
+    def test_dont_count_missing_as_busy(self):
+        size = testutil.MockSize(1)
+        self.make_daemon(cloud_nodes=[testutil.cloud_node_mock(1),
+                                      testutil.cloud_node_mock(2)],
+                         arvados_nodes=[testutil.arvados_node_mock(1),
+                                      testutil.arvados_node_mock(2, status="missing")],
+                         want_sizes=[size, size])
+        self.stop_proxy(self.daemon)
+        self.assertTrue(self.node_setup.start.called)
+
+    def test_missing_counts_towards_max(self):
+        size = testutil.MockSize(1)
+        self.make_daemon(cloud_nodes=[testutil.cloud_node_mock(1),
+                                      testutil.cloud_node_mock(2)],
+                         arvados_nodes=[testutil.arvados_node_mock(1),
+                                        testutil.arvados_node_mock(2, status="missing")],
+                         want_sizes=[size, size],
+                         max_nodes=2)
+        self.stop_proxy(self.daemon)
+        self.assertFalse(self.node_setup.start.called)
 
     def test_booting_nodes_counted(self):
         cloud_node = testutil.cloud_node_mock(1)
