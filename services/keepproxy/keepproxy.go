@@ -515,16 +515,15 @@ func (handler IndexHandler) ServeHTTP(resp http.ResponseWriter, req *http.Reques
 
 	kc := *handler.KeepClient
 
-	var pass bool
-	var tok string
-	if pass, tok = CheckAuthorizationHeader(kc, handler.ApiTokenCache, req); !pass {
+	ok, token := CheckAuthorizationHeader(kc, handler.ApiTokenCache, req)
+	if !ok {
 		status, err = http.StatusForbidden, BadAuthorizationHeader
 		return
 	}
 
 	// Copy ArvadosClient struct and use the client's API token
 	arvclient := *kc.Arvados
-	arvclient.ApiToken = tok
+	arvclient.ApiToken = token
 	kc.Arvados = &arvclient
 
 	// Only GET method is supported
@@ -542,7 +541,7 @@ func (handler IndexHandler) ServeHTTP(resp http.ResponseWriter, req *http.Reques
 			return
 		}
 
-		_, err := io.Copy(resp, reader)
+		_, err = io.Copy(resp, reader)
 		if err != nil {
 			status = http.StatusBadGateway
 			return
