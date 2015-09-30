@@ -332,7 +332,6 @@ class ComputeNodeMonitorActor(config.actor_class):
         elif arvados_node_missing(self.arvados_node, self.node_stale_after) and self._cloud.broken(self.cloud_node):
             # Node is paired, but Arvados says it is missing and the cloud says the node
             # is in an error state, so shut it down.
-            self._logger.warn("blah %s %s", arvados_node_missing(self.arvados_node, self.node_stale_after), self._cloud.broken(self.cloud_node))
             return True
         else:
             return self.in_state('idle')

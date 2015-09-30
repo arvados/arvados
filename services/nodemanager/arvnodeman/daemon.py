@@ -228,7 +228,7 @@ class NodeManagerDaemonActor(actor_class):
             return len(self.last_wishlist) - up_count
 
     def _nodes_excess(self):
-        up_count = self._nodes_up() - len(self.shutdowns) - self._nodes_missing()
+        up_count = self._nodes_up() - len(self.shutdowns)
         over_min = up_count - self.min_nodes
         if over_min <= 0:
             return over_min
