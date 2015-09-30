@@ -244,6 +244,7 @@ class ComputeNodeMonitorActorTestCase(testutil.ActorTestMixin,
         self.cloud_mock = testutil.cloud_node_mock(node_num)
         self.subscriber = mock.Mock(name='subscriber_mock')
         self.cloud_client = mock.MagicMock(name='cloud_client')
+        self.cloud_client.broken.return_value = False
 
     def make_actor(self, node_num=1, arv_node=None, start_time=None):
         if not hasattr(self, 'cloud_mock'):
@@ -321,16 +322,14 @@ class ComputeNodeMonitorActorTestCase(testutil.ActorTestMixin,
     def test_no_shutdown_missing(self):
         arv_node = testutil.arvados_node_mock(10, job_uuid=None,
                                               crunch_worker_state="down",
-                                              status="missing")
+                                              last_ping_at='1970-01-01T01:02:03.04050607Z')
         self.make_actor(10, arv_node)
         self.shutdowns._set_state(True, 600)
-        self.cloud_client.broken.return_value = False
         self.assertFalse(self.node_actor.shutdown_eligible().get(self.TIMEOUT))
 
     def test_no_shutdown_running_broken(self):
         arv_node = testutil.arvados_node_mock(12, job_uuid=None,
-                                              crunch_worker_state="down",
-                                              status="running")
+                                              crunch_worker_state="down")
         self.make_actor(12, arv_node)
         self.shutdowns._set_state(True, 600)
         self.cloud_client.broken.return_value = True
@@ -339,7 +338,7 @@ class ComputeNodeMonitorActorTestCase(testutil.ActorTestMixin,
     def test_shutdown_missing_broken(self):
         arv_node = testutil.arvados_node_mock(11, job_uuid=None,
                                               crunch_worker_state="down",
-                                              status="missing")
+                                              last_ping_at='1970-01-01T01:02:03.04050607Z')
         self.make_actor(11, arv_node)
         self.shutdowns._set_state(True, 600)
         self.cloud_client.broken.return_value = True

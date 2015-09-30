@@ -213,7 +213,7 @@ class NodeManagerDaemonActor(actor_class):
         return sum(1 for arv_node in
                    pykka.get_all(rec.actor.arvados_node for rec in
                                  self.cloud_nodes.nodes.itervalues())
-                   if arv_node and arv_node.get("status") == "missing")
+                   if arv_node and cnode.arvados_node_missing(arv_node, self.node_stale_after))
 
     def _nodes_wanted(self):
         up_count = self._nodes_up()

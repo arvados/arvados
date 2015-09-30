@@ -130,7 +130,7 @@ class NodeManagerDaemonActorTestCase(testutil.ActorTestMixin,
         self.make_daemon(cloud_nodes=[testutil.cloud_node_mock(1),
                                       testutil.cloud_node_mock(2)],
                          arvados_nodes=[testutil.arvados_node_mock(1),
-                                      testutil.arvados_node_mock(2, status="missing")],
+                                      testutil.arvados_node_mock(2, last_ping_at='1970-01-01T01:02:03.04050607Z')],
                          want_sizes=[size, size])
         self.stop_proxy(self.daemon)
         self.assertTrue(self.node_setup.start.called)
@@ -140,7 +140,7 @@ class NodeManagerDaemonActorTestCase(testutil.ActorTestMixin,
         self.make_daemon(cloud_nodes=[testutil.cloud_node_mock(1),
                                       testutil.cloud_node_mock(2)],
                          arvados_nodes=[testutil.arvados_node_mock(1),
-                                        testutil.arvados_node_mock(2, status="missing")],
+                                        testutil.arvados_node_mock(2, last_ping_at='1970-01-01T01:02:03.04050607Z')],
                          want_sizes=[size, size],
                          max_nodes=2)
         self.stop_proxy(self.daemon)

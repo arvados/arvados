@@ -10,7 +10,7 @@ import libcloud.common.types as cloud_types
 import pykka
 
 from .. import \
-    arvados_node_fqdn, arvados_node_mtime, arvados_timestamp, timestamp_fresh
+    arvados_node_fqdn, arvados_node_mtime, arvados_timestamp, timestamp_fresh, arvados_node_missing
 from ...clientactor import _notify_subscribers
 from ... import config
 
@@ -329,9 +329,10 @@ class ComputeNodeMonitorActor(config.actor_class):
             # Node is unpaired.
             # If it hasn't pinged Arvados after boot_fail seconds, shut it down
             return not timestamp_fresh(self.cloud_node_start_time, self.boot_fail_after)
-        elif self.arvados_node.get('status') == "missing" and self._cloud.broken(self.cloud_node):
+        elif arvados_node_missing(self.arvados_node, self.node_stale_after) and self._cloud.broken(self.cloud_node):
             # Node is paired, but Arvados says it is missing and the cloud says the node
             # is in an error state, so shut it down.
+            self._logger.warn("blah %s %s", arvados_node_missing(self.arvados_node, self.node_stale_after), self._cloud.broken(self.cloud_node))
             return True
         else:
             return self.in_state('idle')

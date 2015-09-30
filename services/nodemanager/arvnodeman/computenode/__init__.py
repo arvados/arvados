@@ -30,6 +30,9 @@ def arvados_timestamp(timestr):
 def timestamp_fresh(timestamp, fresh_time):
     return (time.time() - timestamp) < fresh_time
 
+def arvados_node_missing(arvados_node, fresh_time):
+    return not timestamp_fresh(arvados_timestamp(arvados_node["last_ping_at"]), fresh_time)
+
 class ShutdownTimer(object):
     """Keep track of a cloud node's shutdown windows.
 
