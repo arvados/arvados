@@ -191,8 +191,10 @@ func (kc *KeepClient) Ask(locator string) (int64, string, error) {
 
 // GetIndex retrieves a list of blocks stored on the given server whose hashes
 // begin with the given prefix. The returned reader will return an error (other
-// than EOF) if the complete index cannot be retrieved. This should only be
-// expected to return useful results if the client is using a "data manager token"
+// than EOF) if the complete index cannot be retrieved.
+//
+// This is meant to be used only by system components and admin tools.
+// It will return an error unless the client is using a "data manager token"
 // recognized by the Keep services.
 func (kc *KeepClient) GetIndex(keepServiceUUID, prefix string) (io.Reader, error) {
 	url := kc.LocalRoots()[keepServiceUUID]
@@ -215,23 +217,24 @@ func (kc *KeepClient) GetIndex(keepServiceUUID, prefix string) (io.Reader, error
 	if err != nil {
 		return nil, err
 	}
+
 	if resp.StatusCode != http.StatusOK {
 		return nil, fmt.Errorf("Got http status code: %d", resp.StatusCode)
 	}
 
-	var respBody []byte
-	if resp.Body != nil {
-		respBody, err = ioutil.ReadAll(resp.Body)
-		if err != nil {
-			return nil, err
-		}
+	defer resp.Body.Close()
 
-		// Got index; verify that it is complete
-		// The response should be "\n" if no locators matched the prefix
-		// Else, it should be a list of locators followed by a blank line
-		if !bytes.Equal(respBody, []byte("\n")) && !bytes.HasSuffix(respBody, []byte("\n\n")) {
-			return nil, ErrIncompleteIndex
-		}
+	var respBody []byte
+	respBody, err = ioutil.ReadAll(resp.Body)
+	if err != nil {
+		return nil, err
+	}
+
+	// Got index; verify that it is complete
+	// The response should be "\n" if no locators matched the prefix
+	// Else, it should be a list of locators followed by a blank line
+	if !bytes.Equal(respBody, []byte("\n")) && !bytes.HasSuffix(respBody, []byte("\n\n")) {
+		return nil, ErrIncompleteIndex
 	}
 
 	// Got complete index; strip the trailing newline and send

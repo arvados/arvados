@@ -533,7 +533,6 @@ func (handler IndexHandler) ServeHTTP(resp http.ResponseWriter, req *http.Reques
 		return
 	}
 
-	contentLen := 0
 	var reader io.Reader
 	for uuid := range kc.LocalRoots() {
 		reader, err = kc.GetIndex(uuid, prefix)
@@ -550,16 +549,14 @@ func (handler IndexHandler) ServeHTTP(resp http.ResponseWriter, req *http.Reques
 		}
 
 		// Got index for this server; write to resp
-		n, err := resp.Write(readBytes)
+		_, err := resp.Write(readBytes)
 		if err != nil {
 			status = http.StatusBadGateway
 			return
 		}
-		contentLen += n
 	}
 
 	// Got index from all the keep servers and wrote to resp
 	status = http.StatusOK
-	resp.Header().Set("Content-Length", fmt.Sprint(contentLen+1))
 	resp.Write([]byte("\n"))
 }
