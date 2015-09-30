@@ -533,6 +533,7 @@ func (handler IndexHandler) ServeHTTP(resp http.ResponseWriter, req *http.Reques
 		return
 	}
 
+	// Get index from all LocalRoots and write to resp
 	var reader io.Reader
 	for uuid := range kc.LocalRoots() {
 		reader, err = kc.GetIndex(uuid, prefix)
@@ -541,15 +542,7 @@ func (handler IndexHandler) ServeHTTP(resp http.ResponseWriter, req *http.Reques
 			return
 		}
 
-		var readBytes []byte
-		readBytes, err = ioutil.ReadAll(reader)
-		if err != nil {
-			status = http.StatusBadGateway
-			return
-		}
-
-		// Got index for this server; write to resp
-		_, err := resp.Write(readBytes)
+		_, err := io.Copy(resp, reader)
 		if err != nil {
 			status = http.StatusBadGateway
 			return

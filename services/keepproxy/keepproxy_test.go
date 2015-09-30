@@ -418,7 +418,7 @@ func (s *ServerRequiredSuite) TestGetIndex(c *C) {
 	waitForListener()
 	defer closeListener()
 
-	// Write "index-data" blocks
+	// Put "index-data" blocks
 	data := []byte("index-data")
 	hash := fmt.Sprintf("%x", md5.Sum(data))
 
@@ -433,54 +433,43 @@ func (s *ServerRequiredSuite) TestGetIndex(c *C) {
 	all, err := ioutil.ReadAll(reader)
 	c.Check(all, DeepEquals, data)
 
-	// Write some more blocks
-	otherData := []byte("some-more-index-data")
-	otherHash := fmt.Sprintf("%x", md5.Sum(otherData))
-	_, rep, err = kc.PutB(otherData)
+	// Put some more blocks
+	_, rep, err = kc.PutB([]byte("some-more-index-data"))
 	c.Check(err, Equals, nil)
 
-	// GetIndex with no prefix; expect both data and otherData blocks
-	indexReader, err := kc.GetIndex("proxy", "")
-	c.Assert(err, Equals, nil)
-	indexResp, err := ioutil.ReadAll(indexReader)
-	locators := strings.Split(string(indexResp), "\n")
-	matchingLocators := 0
-	otherLocators := 0
-	for _, locator := range locators {
-		if strings.HasPrefix(locator, hash) {
-			matchingLocators++
-		} else if strings.HasPrefix(locator, otherHash) {
-			otherLocators++
+	// Invoke GetIndex
+	for _, spec := range []struct {
+		prefix         string
+		expectTestHash bool
+		expectOther    bool
+	}{
+		{"", true, true},         // with no prefix
+		{hash[:3], true, false},  // with matching prefix
+		{"abcdef", false, false}, // with no such prefix
+	} {
+		indexReader, err := kc.GetIndex("proxy", spec.prefix)
+		c.Assert(err, Equals, nil)
+		indexResp, err := ioutil.ReadAll(indexReader)
+		c.Assert(err, Equals, nil)
+		locators := strings.Split(string(indexResp), "\n")
+		gotTestHash := 0
+		gotOther := 0
+		for _, locator := range locators {
+			if locator == "" {
+				continue
+			}
+			c.Check(locator[:len(spec.prefix)], Equals, spec.prefix)
+			if locator[:32] == hash {
+				gotTestHash++
+			} else {
+				gotOther++
+			}
 		}
+		c.Check(gotTestHash == 2, Equals, spec.expectTestHash)
+		c.Check(gotOther > 0, Equals, spec.expectOther)
 	}
-	c.Assert(2, Equals, matchingLocators)
-	c.Assert(2, Equals, otherLocators)
-
-	// GetIndex with prefix
-	indexReader, err = kc.GetIndex("proxy", hash[0:3])
-	c.Assert(err, Equals, nil)
-	indexResp, err = ioutil.ReadAll(indexReader)
-	locators = strings.Split(string(indexResp), "\n")
-	totalLocators := 0
-	matchingLocators = 0
-	for _, locator := range locators {
-		if locator != "" {
-			totalLocators++
-		}
-		if strings.HasPrefix(locator, hash[0:3]) {
-			matchingLocators++
-		}
-	}
-	c.Assert(2, Equals, matchingLocators)
-	c.Assert(totalLocators, Equals, matchingLocators)
-
-	// GetIndex with valid but no such prefix
-	indexReader, err = kc.GetIndex("proxy", "abcd")
-	c.Assert(err, Equals, nil)
-	indexResp, err = ioutil.ReadAll(indexReader)
-	c.Assert(string(indexResp), Equals, "")
 
 	// GetIndex with invalid prefix
-	indexReader, err = kc.GetIndex("proxy", "xyz")
+	_, err = kc.GetIndex("proxy", "xyz")
 	c.Assert((err != nil), Equals, true)
 }

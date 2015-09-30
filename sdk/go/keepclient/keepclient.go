@@ -218,11 +218,11 @@ func (kc *KeepClient) GetIndex(keepServiceUUID, prefix string) (io.Reader, error
 		return nil, err
 	}
 
+	defer resp.Body.Close()
+
 	if resp.StatusCode != http.StatusOK {
 		return nil, fmt.Errorf("Got http status code: %d", resp.StatusCode)
 	}
-
-	defer resp.Body.Close()
 
 	var respBody []byte
 	respBody, err = ioutil.ReadAll(resp.Body)
