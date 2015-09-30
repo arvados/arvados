@@ -16,7 +16,6 @@ import (
 	"os/signal"
 	"reflect"
 	"regexp"
-	"strings"
 	"sync"
 	"syscall"
 	"time"
@@ -494,7 +493,7 @@ func (this PutBlockHandler) ServeHTTP(resp http.ResponseWriter, req *http.Reques
 	}
 }
 
-// ServeHTTP implemenation for IndexHandler
+// ServeHTTP implementation for IndexHandler
 // Supports only GET requests for /index/{prefix:[0-9a-f]{0,32}}
 // For each keep server found in LocalRoots:
 //   Invokes GetIndex using keepclient
@@ -528,47 +527,39 @@ func (handler IndexHandler) ServeHTTP(resp http.ResponseWriter, req *http.Reques
 	arvclient.ApiToken = tok
 	kc.Arvados = &arvclient
 
-	var indexResp []byte
-	var reader io.Reader
-
-	switch req.Method {
-	case "GET":
-		for uuid := range kc.LocalRoots() {
-			reader, err = kc.GetIndex(uuid, prefix)
-			if err != nil {
-				break
-			}
-
-			var readBytes []byte
-			readBytes, err = ioutil.ReadAll(reader)
-			if err != nil {
-				break
-			}
-
-			// Got index; verify that it is complete
-			// The response should be "\n" if no locators matched the prefix
-			// Else, it should be a list of locators followed by a blank line
-			if (!strings.HasSuffix(string(readBytes), "\n\n")) && (string(readBytes) != "\n") {
-				err = errors.New("Got incomplete index")
-			}
-
-			// Trim the extra empty new line found in response from each server
-			indexResp = append(indexResp, (readBytes[0 : len(readBytes)-1])...)
-		}
-
-		// Append empty line at the end of concatenation of all server responses
-		indexResp = append(indexResp, ([]byte("\n"))...)
-	default:
+	// Only GET method is supported
+	if req.Method != "GET" {
 		status, err = http.StatusNotImplemented, MethodNotSupported
 		return
 	}
 
-	switch err {
-	case nil:
-		status = http.StatusOK
-		resp.Header().Set("Content-Length", fmt.Sprint(len(indexResp)))
-		_, err = resp.Write(indexResp)
-	default:
-		status = http.StatusBadGateway
+	contentLen := 0
+	var reader io.Reader
+	for uuid := range kc.LocalRoots() {
+		reader, err = kc.GetIndex(uuid, prefix)
+		if err != nil {
+			status = http.StatusBadGateway
+			return
+		}
+
+		var readBytes []byte
+		readBytes, err = ioutil.ReadAll(reader)
+		if err != nil {
+			status = http.StatusBadGateway
+			return
+		}
+
+		// Got index for this server; write to resp
+		n, err := resp.Write(readBytes)
+		if err != nil {
+			status = http.StatusBadGateway
+			return
+		}
+		contentLen += n
 	}
+
+	// Got index from all the keep servers and wrote to resp
+	status = http.StatusOK
+	resp.Header().Set("Content-Length", fmt.Sprint(contentLen+1))
+	resp.Write([]byte("\n"))
 }

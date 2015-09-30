@@ -418,6 +418,7 @@ func (s *ServerRequiredSuite) TestGetIndex(c *C) {
 	waitForListener()
 	defer closeListener()
 
+	// Write "index-data" blocks
 	data := []byte("index-data")
 	hash := fmt.Sprintf("%x", md5.Sum(data))
 
@@ -432,37 +433,52 @@ func (s *ServerRequiredSuite) TestGetIndex(c *C) {
 	all, err := ioutil.ReadAll(reader)
 	c.Check(all, DeepEquals, data)
 
-	// GetIndex with no prefix
+	// Write some more blocks
+	otherData := []byte("some-more-index-data")
+	otherHash := fmt.Sprintf("%x", md5.Sum(otherData))
+	_, rep, err = kc.PutB(otherData)
+	c.Check(err, Equals, nil)
+
+	// GetIndex with no prefix; expect both data and otherData blocks
 	indexReader, err := kc.GetIndex("proxy", "")
 	c.Assert(err, Equals, nil)
 	indexResp, err := ioutil.ReadAll(indexReader)
 	locators := strings.Split(string(indexResp), "\n")
-	count := 0
+	matchingLocators := 0
+	otherLocators := 0
 	for _, locator := range locators {
 		if strings.HasPrefix(locator, hash) {
-			count++
+			matchingLocators++
+		} else if strings.HasPrefix(locator, otherHash) {
+			otherLocators++
 		}
 	}
-	c.Assert(2, Equals, count)
+	c.Assert(2, Equals, matchingLocators)
+	c.Assert(2, Equals, otherLocators)
 
 	// GetIndex with prefix
 	indexReader, err = kc.GetIndex("proxy", hash[0:3])
 	c.Assert(err, Equals, nil)
 	indexResp, err = ioutil.ReadAll(indexReader)
 	locators = strings.Split(string(indexResp), "\n")
-	count = 0
+	totalLocators := 0
+	matchingLocators = 0
 	for _, locator := range locators {
-		if strings.HasPrefix(locator, hash) {
-			count++
+		if locator != "" {
+			totalLocators++
+		}
+		if strings.HasPrefix(locator, hash[0:3]) {
+			matchingLocators++
 		}
 	}
-	c.Assert(2, Equals, count)
+	c.Assert(2, Equals, matchingLocators)
+	c.Assert(totalLocators, Equals, matchingLocators)
 
 	// GetIndex with valid but no such prefix
 	indexReader, err = kc.GetIndex("proxy", "abcd")
 	c.Assert(err, Equals, nil)
 	indexResp, err = ioutil.ReadAll(indexReader)
-	c.Assert(string(indexResp), Equals, "\n")
+	c.Assert(string(indexResp), Equals, "")
 
 	// GetIndex with invalid prefix
 	indexReader, err = kc.GetIndex("proxy", "xyz")
