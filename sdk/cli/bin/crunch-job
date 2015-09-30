@@ -980,7 +980,7 @@ for (my $todo_ptr = 0; $todo_ptr <= $#jobstep_todo; $todo_ptr ++)
     my $gotsome
 	= readfrompipes ()
 	+ reapchildren ();
-    if (!$gotsome)
+    if (!$gotsome || ($latest_refresh + 2 < scalar time))
     {
       check_refresh_wanted();
       check_squeue();
