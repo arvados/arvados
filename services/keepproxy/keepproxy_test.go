@@ -406,3 +406,70 @@ func (s *ServerRequiredSuite) TestStripHint(c *C) {
 		"http://keep.zzzzz.arvadosapi.com:25107/2228819a18d3727630fa30c81853d23f+67108864+K@zzzzz-zzzzz-zzzzzzzzzzzzzzz+A37b6ab198qqqq28d903b975266b23ee711e1852c@55635f73")
 
 }
+
+// Test GetIndex
+//   Put one block, with 2 replicas
+//   With no prefix (expect the block locator, twice)
+//   With an existing prefix (expect the block locator, twice)
+//   With a valid but non-existing prefix (expect "\n")
+//   With an invalid prefix (expect error)
+func (s *ServerRequiredSuite) TestGetIndex(c *C) {
+	kc := runProxy(c, []string{"keepproxy"}, 28852, false)
+	waitForListener()
+	defer closeListener()
+
+	// Put "index-data" blocks
+	data := []byte("index-data")
+	hash := fmt.Sprintf("%x", md5.Sum(data))
+
+	hash2, rep, err := kc.PutB(data)
+	c.Check(hash2, Matches, fmt.Sprintf(`^%s\+10(\+.+)?$`, hash))
+	c.Check(rep, Equals, 2)
+	c.Check(err, Equals, nil)
+
+	reader, blocklen, _, err := kc.Get(hash)
+	c.Assert(err, Equals, nil)
+	c.Check(blocklen, Equals, int64(10))
+	all, err := ioutil.ReadAll(reader)
+	c.Check(all, DeepEquals, data)
+
+	// Put some more blocks
+	_, rep, err = kc.PutB([]byte("some-more-index-data"))
+	c.Check(err, Equals, nil)
+
+	// Invoke GetIndex
+	for _, spec := range []struct {
+		prefix         string
+		expectTestHash bool
+		expectOther    bool
+	}{
+		{"", true, true},         // with no prefix
+		{hash[:3], true, false},  // with matching prefix
+		{"abcdef", false, false}, // with no such prefix
+	} {
+		indexReader, err := kc.GetIndex("proxy", spec.prefix)
+		c.Assert(err, Equals, nil)
+		indexResp, err := ioutil.ReadAll(indexReader)
+		c.Assert(err, Equals, nil)
+		locators := strings.Split(string(indexResp), "\n")
+		gotTestHash := 0
+		gotOther := 0
+		for _, locator := range locators {
+			if locator == "" {
+				continue
+			}
+			c.Check(locator[:len(spec.prefix)], Equals, spec.prefix)
+			if locator[:32] == hash {
+				gotTestHash++
+			} else {
+				gotOther++
+			}
+		}
+		c.Check(gotTestHash == 2, Equals, spec.expectTestHash)
+		c.Check(gotOther > 0, Equals, spec.expectOther)
+	}
+
+	// GetIndex with invalid prefix
+	_, err = kc.GetIndex("proxy", "xyz")
+	c.Assert((err != nil), Equals, true)
+}

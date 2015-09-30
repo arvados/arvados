@@ -2,6 +2,7 @@
 package keepclient
 
 import (
+	"bytes"
 	"crypto/md5"
 	"crypto/tls"
 	"errors"
@@ -28,6 +29,12 @@ var OversizeBlockError = errors.New("Exceeded maximum block size (" + strconv.It
 var MissingArvadosApiHost = errors.New("Missing required environment variable ARVADOS_API_HOST")
 var MissingArvadosApiToken = errors.New("Missing required environment variable ARVADOS_API_TOKEN")
 var InvalidLocatorError = errors.New("Invalid locator")
+
+// ErrNoSuchKeepServer is returned when GetIndex is invoked with a UUID with no matching keep server
+var ErrNoSuchKeepServer = errors.New("No keep server matching the given UUID is found")
+
+// ErrIncompleteIndex is returned when the Index response does not end with a new empty line
+var ErrIncompleteIndex = errors.New("Got incomplete index")
 
 const X_Keep_Desired_Replicas = "X-Keep-Desired-Replicas"
 const X_Keep_Replicas_Stored = "X-Keep-Replicas-Stored"
@@ -180,6 +187,58 @@ func (kc *KeepClient) Ask(locator string) (int64, string, error) {
 		}
 	}
 	return 0, "", BlockNotFound
+}
+
+// GetIndex retrieves a list of blocks stored on the given server whose hashes
+// begin with the given prefix. The returned reader will return an error (other
+// than EOF) if the complete index cannot be retrieved.
+//
+// This is meant to be used only by system components and admin tools.
+// It will return an error unless the client is using a "data manager token"
+// recognized by the Keep services.
+func (kc *KeepClient) GetIndex(keepServiceUUID, prefix string) (io.Reader, error) {
+	url := kc.LocalRoots()[keepServiceUUID]
+	if url == "" {
+		return nil, ErrNoSuchKeepServer
+	}
+
+	url += "/index"
+	if prefix != "" {
+		url += "/" + prefix
+	}
+
+	req, err := http.NewRequest("GET", url, nil)
+	if err != nil {
+		return nil, err
+	}
+
+	req.Header.Add("Authorization", fmt.Sprintf("OAuth2 %s", kc.Arvados.ApiToken))
+	resp, err := kc.Client.Do(req)
+	if err != nil {
+		return nil, err
+	}
+
+	defer resp.Body.Close()
+
+	if resp.StatusCode != http.StatusOK {
+		return nil, fmt.Errorf("Got http status code: %d", resp.StatusCode)
+	}
+
+	var respBody []byte
+	respBody, err = ioutil.ReadAll(resp.Body)
+	if err != nil {
+		return nil, err
+	}
+
+	// Got index; verify that it is complete
+	// The response should be "\n" if no locators matched the prefix
+	// Else, it should be a list of locators followed by a blank line
+	if !bytes.Equal(respBody, []byte("\n")) && !bytes.HasSuffix(respBody, []byte("\n\n")) {
+		return nil, ErrIncompleteIndex
+	}
+
+	// Got complete index; strip the trailing newline and send
+	return bytes.NewReader(respBody[0 : len(respBody)-1]), nil
 }
 
 // LocalRoots() returns the map of local (i.e., disk and proxy) Keep

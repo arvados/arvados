@@ -321,6 +321,16 @@ func TestIndexHandler(t *testing.T) {
 		uri:      "/index/" + TestHash[0:3],
 		apiToken: dataManagerToken,
 	}
+	superuserNoSuchPrefixReq := &RequestTester{
+		method:   "GET",
+		uri:      "/index/abcd",
+		apiToken: dataManagerToken,
+	}
+	superuserInvalidPrefixReq := &RequestTester{
+		method:   "GET",
+		uri:      "/index/xyz",
+		apiToken: dataManagerToken,
+	}
 
 	// -------------------------------------------------------------
 	// Only the superuser should be allowed to issue /index requests.
@@ -407,6 +417,26 @@ func TestIndexHandler(t *testing.T) {
 			"permissions on, superuser /index/prefix request: expected %s, got:\n%s",
 			expected, response.Body.String())
 	}
+
+	// superuser /index/{no-such-prefix} request
+	// => OK
+	response = IssueRequest(superuserNoSuchPrefixReq)
+	ExpectStatusCode(t,
+		"permissions on, superuser request",
+		http.StatusOK,
+		response)
+
+	if "\n" != response.Body.String() {
+		t.Errorf("Expected empty response for %s. Found %s", superuserNoSuchPrefixReq.uri, response.Body.String())
+	}
+
+	// superuser /index/{invalid-prefix} request
+	// => StatusBadRequest
+	response = IssueRequest(superuserInvalidPrefixReq)
+	ExpectStatusCode(t,
+		"permissions on, superuser request",
+		http.StatusBadRequest,
+		response)
 }
 
 // TestDeleteHandler
