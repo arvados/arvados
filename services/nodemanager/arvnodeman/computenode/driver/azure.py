@@ -16,6 +16,7 @@ class ComputeNodeDriver(BaseComputeNodeDriver):
 
     DEFAULT_DRIVER = cloud_provider.get_driver(cloud_types.Provider.AZURE_ARM)
     SEARCH_CACHE = {}
+    CLOUD_ERRORS = BaseComputeNodeDriver.CLOUD_ERRORS + (BaseHTTPError,)
 
     def __init__(self, auth_kwargs, list_kwargs, create_kwargs,
                  driver_class=DEFAULT_DRIVER):
