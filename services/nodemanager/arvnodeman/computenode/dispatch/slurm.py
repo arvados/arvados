@@ -10,7 +10,9 @@ from . import \
 from . import ComputeNodeShutdownActor as ShutdownActorBase
 
 class ComputeNodeShutdownActor(ShutdownActorBase):
-    SLURM_END_STATES = frozenset(['down\n', 'down*\n', 'drain\n', 'fail\n'])
+    SLURM_END_STATES = frozenset(['down\n', 'down*\n',
+                                  'drain\n', 'drain*\n',
+                                  'fail\n', 'fail*\n'])
 
     def on_start(self):
         arv_node = self._arvados_node()
