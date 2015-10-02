@@ -21,9 +21,9 @@ import (
 type handler struct{}
 
 var (
-	clientPool      = arvadosclient.MakeClientPool()
-	trustAllContent = false
-	anonymousTokens []string
+	clientPool         = arvadosclient.MakeClientPool()
+	trustAllContent    = false
+	anonymousTokens    []string
 	attachmentOnlyHost = ""
 )
 

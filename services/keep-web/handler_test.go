@@ -16,7 +16,7 @@ import (
 
 var _ = check.Suite(&UnitSuite{})
 
-type UnitSuite struct {}
+type UnitSuite struct{}
 
 func mustParseURL(s string) *url.URL {
 	r, err := url.Parse(s)
@@ -34,7 +34,7 @@ func (s *IntegrationSuite) TestVhost404(c *check.C) {
 		resp := httptest.NewRecorder()
 		req := &http.Request{
 			Method: "GET",
-			URL: mustParseURL(testURL),
+			URL:    mustParseURL(testURL),
 		}
 		(&handler{}).ServeHTTP(resp, req)
 		c.Check(resp.Code, check.Equals, http.StatusNotFound)
@@ -52,7 +52,7 @@ func (s *IntegrationSuite) TestVhostViaAuthzHeader(c *check.C) {
 	doVhostRequests(c, authzViaAuthzHeader)
 }
 func authzViaAuthzHeader(r *http.Request, tok string) int {
-	r.Header.Add("Authorization", "OAuth2 " + tok)
+	r.Header.Add("Authorization", "OAuth2 "+tok)
 	return http.StatusUnauthorized
 }
 
@@ -61,7 +61,7 @@ func (s *IntegrationSuite) TestVhostViaCookieValue(c *check.C) {
 }
 func authzViaCookieValue(r *http.Request, tok string) int {
 	r.AddCookie(&http.Cookie{
-		Name: "api_token",
+		Name:  "api_token",
 		Value: auth.EncodeTokenCookie([]byte(tok)),
 	})
 	return http.StatusUnauthorized
@@ -120,8 +120,8 @@ func doVhostRequestsWithHostPath(c *check.C, authz authorizer, hostPath string) 
 		u := mustParseURL("http://" + hostPath)
 		req := &http.Request{
 			Method: "GET",
-			Host: u.Host,
-			URL: u,
+			Host:   u.Host,
+			URL:    u,
 			Header: http.Header{},
 		}
 		failCode := authz(req, tok)
@@ -157,8 +157,8 @@ func doReq(req *http.Request) *httptest.ResponseRecorder {
 	u, _ := req.URL.Parse(resp.Header().Get("Location"))
 	req = &http.Request{
 		Method: "GET",
-		Host: u.Host,
-		URL: u,
+		Host:   u.Host,
+		URL:    u,
 		Header: http.Header{},
 	}
 	for _, c := range cookies {
@@ -169,8 +169,8 @@ func doReq(req *http.Request) *httptest.ResponseRecorder {
 
 func (s *IntegrationSuite) TestVhostRedirectQueryTokenToCookie(c *check.C) {
 	s.testVhostRedirectTokenToCookie(c, "GET",
-		arvadostest.FooCollection + ".example.com/foo",
-		"?api_token=" + arvadostest.ActiveToken,
+		arvadostest.FooCollection+".example.com/foo",
+		"?api_token="+arvadostest.ActiveToken,
 		"text/plain",
 		"",
 		http.StatusOK,
@@ -179,8 +179,8 @@ func (s *IntegrationSuite) TestVhostRedirectQueryTokenToCookie(c *check.C) {
 
 func (s *IntegrationSuite) TestVhostRedirectQueryTokenSingleOriginError(c *check.C) {
 	s.testVhostRedirectTokenToCookie(c, "GET",
-		"example.com/c=" + arvadostest.FooCollection + "/foo",
-		"?api_token=" + arvadostest.ActiveToken,
+		"example.com/c="+arvadostest.FooCollection+"/foo",
+		"?api_token="+arvadostest.ActiveToken,
 		"text/plain",
 		"",
 		http.StatusBadRequest,
@@ -193,8 +193,8 @@ func (s *IntegrationSuite) TestVhostRedirectQueryTokenTrustAllContent(c *check.C
 	}(trustAllContent)
 	trustAllContent = true
 	s.testVhostRedirectTokenToCookie(c, "GET",
-		"example.com/c=" + arvadostest.FooCollection + "/foo",
-		"?api_token=" + arvadostest.ActiveToken,
+		"example.com/c="+arvadostest.FooCollection+"/foo",
+		"?api_token="+arvadostest.ActiveToken,
 		"text/plain",
 		"",
 		http.StatusOK,
@@ -208,16 +208,16 @@ func (s *IntegrationSuite) TestVhostRedirectQueryTokenAttachmentOnlyHost(c *chec
 	attachmentOnlyHost = "example.com:1234"
 
 	s.testVhostRedirectTokenToCookie(c, "GET",
-		"example.com/c=" + arvadostest.FooCollection + "/foo",
-		"?api_token=" + arvadostest.ActiveToken,
+		"example.com/c="+arvadostest.FooCollection+"/foo",
+		"?api_token="+arvadostest.ActiveToken,
 		"text/plain",
 		"",
 		http.StatusBadRequest,
 	)
 
 	resp := s.testVhostRedirectTokenToCookie(c, "GET",
-		"example.com:1234/c=" + arvadostest.FooCollection + "/foo",
-		"?api_token=" + arvadostest.ActiveToken,
+		"example.com:1234/c="+arvadostest.FooCollection+"/foo",
+		"?api_token="+arvadostest.ActiveToken,
 		"text/plain",
 		"",
 		http.StatusOK,
@@ -227,7 +227,7 @@ func (s *IntegrationSuite) TestVhostRedirectQueryTokenAttachmentOnlyHost(c *chec
 
 func (s *IntegrationSuite) TestVhostRedirectPOSTFormTokenToCookie(c *check.C) {
 	s.testVhostRedirectTokenToCookie(c, "POST",
-		arvadostest.FooCollection + ".example.com/foo",
+		arvadostest.FooCollection+".example.com/foo",
 		"",
 		"application/x-www-form-urlencoded",
 		url.Values{"api_token": {arvadostest.ActiveToken}}.Encode(),
@@ -237,7 +237,7 @@ func (s *IntegrationSuite) TestVhostRedirectPOSTFormTokenToCookie(c *check.C) {
 
 func (s *IntegrationSuite) TestVhostRedirectPOSTFormTokenToCookie404(c *check.C) {
 	s.testVhostRedirectTokenToCookie(c, "POST",
-		arvadostest.FooCollection + ".example.com/foo",
+		arvadostest.FooCollection+".example.com/foo",
 		"",
 		"application/x-www-form-urlencoded",
 		url.Values{"api_token": {arvadostest.SpectatorToken}}.Encode(),
@@ -249,10 +249,10 @@ func (s *IntegrationSuite) testVhostRedirectTokenToCookie(c *check.C, method, ho
 	u, _ := url.Parse(`http://` + hostPath + queryString)
 	req := &http.Request{
 		Method: method,
-		Host: u.Host,
-		URL: u,
+		Host:   u.Host,
+		URL:    u,
 		Header: http.Header{"Content-Type": {contentType}},
-		Body: ioutil.NopCloser(strings.NewReader(body)),
+		Body:   ioutil.NopCloser(strings.NewReader(body)),
 	}
 
 	resp := httptest.NewRecorder()
@@ -261,14 +261,14 @@ func (s *IntegrationSuite) testVhostRedirectTokenToCookie(c *check.C, method, ho
 		c.Assert(resp.Code, check.Equals, expectStatus)
 		return resp
 	}
-	c.Check(resp.Body.String(), check.Matches, `.*href="//` + regexp.QuoteMeta(html.EscapeString(hostPath)) + `".*`)
+	c.Check(resp.Body.String(), check.Matches, `.*href="//`+regexp.QuoteMeta(html.EscapeString(hostPath))+`".*`)
 	cookies := (&http.Response{Header: resp.Header()}).Cookies()
 
 	u, _ = u.Parse(resp.Header().Get("Location"))
 	req = &http.Request{
 		Method: "GET",
-		Host: u.Host,
-		URL: u,
+		Host:   u.Host,
+		URL:    u,
 		Header: http.Header{},
 	}
 	for _, c := range cookies {

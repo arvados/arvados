@@ -105,14 +105,14 @@ func (s *IntegrationSuite) test100BlockFile(c *check.C, blocksize int) {
 	err = arv.Create("collections",
 		map[string]interface{}{
 			"collection": map[string]interface{}{
-				"name": fmt.Sprintf("testdata blocksize=%d", blocksize),
+				"name":          fmt.Sprintf("testdata blocksize=%d", blocksize),
 				"manifest_text": mtext,
 			},
 		}, &coll)
 	c.Assert(err, check.Equals, nil)
 	uuid := coll["uuid"].(string)
 
-	hdr, body, size := s.runCurl(c, arv.ApiToken, uuid + ".dl.example.com", "/testdata.bin")
+	hdr, body, size := s.runCurl(c, arv.ApiToken, uuid+".dl.example.com", "/testdata.bin")
 	c.Check(hdr, check.Matches, `(?s)HTTP/1.1 200 OK\r\n.*`)
 	c.Check(hdr, check.Matches, `(?si).*Content-length: `+fmt.Sprintf("%d00", blocksize)+`\r\n.*`)
 	c.Check([]byte(body)[:1234], check.DeepEquals, testdata[:1234])
@@ -139,82 +139,82 @@ func (s *IntegrationSuite) Test200(c *check.C) {
 	for _, spec := range []curlCase{
 		// My collection
 		{
-			auth: arvadostest.ActiveToken,
-			host: arvadostest.FooCollection + "--dl.example.com",
-			path: "/foo",
+			auth:    arvadostest.ActiveToken,
+			host:    arvadostest.FooCollection + "--dl.example.com",
+			path:    "/foo",
 			dataMD5: "acbd18db4cc2f85cedef654fccc4a4d8",
 		},
 		{
-			host: strings.Replace(arvadostest.FooPdh, "+", "-", 1) + ".dl.example.com",
-			path: "/t=" + arvadostest.ActiveToken + "/foo",
+			host:    strings.Replace(arvadostest.FooPdh, "+", "-", 1) + ".dl.example.com",
+			path:    "/t=" + arvadostest.ActiveToken + "/foo",
 			dataMD5: "acbd18db4cc2f85cedef654fccc4a4d8",
 		},
 		{
-			path: "/c=" + arvadostest.FooPdh + "/t=" + arvadostest.ActiveToken + "/foo",
+			path:    "/c=" + arvadostest.FooPdh + "/t=" + arvadostest.ActiveToken + "/foo",
 			dataMD5: "acbd18db4cc2f85cedef654fccc4a4d8",
 		},
 		{
-			path: "/c=" + strings.Replace(arvadostest.FooPdh, "+", "-", 1) + "/t=" + arvadostest.ActiveToken + "/_/foo",
+			path:    "/c=" + strings.Replace(arvadostest.FooPdh, "+", "-", 1) + "/t=" + arvadostest.ActiveToken + "/_/foo",
 			dataMD5: "acbd18db4cc2f85cedef654fccc4a4d8",
 		},
 		{
-			path: "/collections/download/" + arvadostest.FooCollection + "/" + arvadostest.ActiveToken + "/foo",
+			path:    "/collections/download/" + arvadostest.FooCollection + "/" + arvadostest.ActiveToken + "/foo",
 			dataMD5: "acbd18db4cc2f85cedef654fccc4a4d8",
 		},
 		{
-			auth: "tokensobogus",
-			path: "/collections/download/" + arvadostest.FooCollection + "/" + arvadostest.ActiveToken + "/foo",
+			auth:    "tokensobogus",
+			path:    "/collections/download/" + arvadostest.FooCollection + "/" + arvadostest.ActiveToken + "/foo",
 			dataMD5: "acbd18db4cc2f85cedef654fccc4a4d8",
 		},
 		{
-			auth: arvadostest.ActiveToken,
-			path: "/collections/download/" + arvadostest.FooCollection + "/" + arvadostest.ActiveToken + "/foo",
+			auth:    arvadostest.ActiveToken,
+			path:    "/collections/download/" + arvadostest.FooCollection + "/" + arvadostest.ActiveToken + "/foo",
 			dataMD5: "acbd18db4cc2f85cedef654fccc4a4d8",
 		},
 		{
-			auth: arvadostest.AnonymousToken,
-			path: "/collections/download/" + arvadostest.FooCollection + "/" + arvadostest.ActiveToken + "/foo",
+			auth:    arvadostest.AnonymousToken,
+			path:    "/collections/download/" + arvadostest.FooCollection + "/" + arvadostest.ActiveToken + "/foo",
 			dataMD5: "acbd18db4cc2f85cedef654fccc4a4d8",
 		},
 
 		// Anonymously accessible user agreement
 		{
-			path: "/c=" + arvadostest.HelloWorldCollection + "/Hello%20world.txt",
+			path:    "/c=" + arvadostest.HelloWorldCollection + "/Hello%20world.txt",
 			dataMD5: "f0ef7081e1539ac00ef5b761b4fb01b3",
 		},
 		{
-			host: arvadostest.HelloWorldCollection + ".dl.example.com",
-			path: "/Hello%20world.txt",
+			host:    arvadostest.HelloWorldCollection + ".dl.example.com",
+			path:    "/Hello%20world.txt",
 			dataMD5: "f0ef7081e1539ac00ef5b761b4fb01b3",
 		},
 		{
-			host: arvadostest.HelloWorldCollection + ".dl.example.com",
-			path: "/_/Hello%20world.txt",
+			host:    arvadostest.HelloWorldCollection + ".dl.example.com",
+			path:    "/_/Hello%20world.txt",
 			dataMD5: "f0ef7081e1539ac00ef5b761b4fb01b3",
 		},
 		{
-			path: "/collections/" + arvadostest.HelloWorldCollection + "/Hello%20world.txt",
+			path:    "/collections/" + arvadostest.HelloWorldCollection + "/Hello%20world.txt",
 			dataMD5: "f0ef7081e1539ac00ef5b761b4fb01b3",
 		},
 		{
-			auth: arvadostest.ActiveToken,
-			path: "/collections/" + arvadostest.HelloWorldCollection + "/Hello%20world.txt",
+			auth:    arvadostest.ActiveToken,
+			path:    "/collections/" + arvadostest.HelloWorldCollection + "/Hello%20world.txt",
 			dataMD5: "f0ef7081e1539ac00ef5b761b4fb01b3",
 		},
 		{
-			auth: arvadostest.SpectatorToken,
-			path: "/collections/" + arvadostest.HelloWorldCollection + "/Hello%20world.txt",
+			auth:    arvadostest.SpectatorToken,
+			path:    "/collections/" + arvadostest.HelloWorldCollection + "/Hello%20world.txt",
 			dataMD5: "f0ef7081e1539ac00ef5b761b4fb01b3",
 		},
 		{
-			auth: arvadostest.SpectatorToken,
-			host: arvadostest.HelloWorldCollection + "--dl.example.com",
-			path: "/Hello%20world.txt",
+			auth:    arvadostest.SpectatorToken,
+			host:    arvadostest.HelloWorldCollection + "--dl.example.com",
+			path:    "/Hello%20world.txt",
 			dataMD5: "f0ef7081e1539ac00ef5b761b4fb01b3",
 		},
 		{
-			auth: arvadostest.SpectatorToken,
-			path: "/collections/download/" + arvadostest.HelloWorldCollection + "/" + arvadostest.SpectatorToken + "/Hello%20world.txt",
+			auth:    arvadostest.SpectatorToken,
+			path:    "/collections/download/" + arvadostest.HelloWorldCollection + "/" + arvadostest.SpectatorToken + "/Hello%20world.txt",
 			dataMD5: "f0ef7081e1539ac00ef5b761b4fb01b3",
 		},
 	} {
@@ -238,7 +238,7 @@ func (s *IntegrationSuite) Test200(c *check.C) {
 func (s *IntegrationSuite) runCurl(c *check.C, token, host, uri string, args ...string) (hdr, bodyPart string, bodySize int64) {
 	curlArgs := []string{"--silent", "--show-error", "--include"}
 	testHost, testPort, _ := net.SplitHostPort(s.testServer.Addr)
-	curlArgs = append(curlArgs, "--resolve", host + ":" + testPort + ":" + testHost)
+	curlArgs = append(curlArgs, "--resolve", host+":"+testPort+":"+testHost)
 	if token != "" {
 		curlArgs = append(curlArgs, "-H", "Authorization: OAuth2 "+token)
 	}
