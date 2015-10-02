@@ -954,3 +954,19 @@ func TestGetHandlerNoBufferleak(t *testing.T) {
 	case <-ok:
 	}
 }
+
+func TestPutReplicationHeader(t *testing.T) {
+	defer teardown()
+
+	KeepVM = MakeTestVolumeManager(2)
+	defer KeepVM.Close()
+
+	resp := IssueRequest(&RequestTester{
+		method:      "PUT",
+		uri:         "/" + TestHash,
+		requestBody: TestBlock,
+	})
+	if r := resp.Header().Get("X-Keep-Replicas-Stored"); r != "1" {
+		t.Errorf("Got X-Keep-Replicas-Stored: %q, expected %q", r, "1")
+	}
+}

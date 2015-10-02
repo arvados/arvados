@@ -214,3 +214,7 @@ func (v *MockVolume) String() string {
 func (v *MockVolume) Writable() bool {
 	return !v.Readonly
 }
+
+func (v *MockVolume) Replication() int {
+	return 1
+}

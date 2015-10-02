@@ -120,7 +120,7 @@ func PutBlockHandler(resp http.ResponseWriter, req *http.Request) {
 		return
 	}
 
-	err = PutBlock(buf, hash)
+	replication, err := PutBlock(buf, hash)
 	bufs.Put(buf)
 
 	if err != nil {
@@ -137,6 +137,7 @@ func PutBlockHandler(resp http.ResponseWriter, req *http.Request) {
 		expiry := time.Now().Add(blobSignatureTTL)
 		returnHash = SignLocator(returnHash, apiToken, expiry)
 	}
+	resp.Header().Set("X-Keep-Replicas-Stored", strconv.Itoa(replication))
 	resp.Write([]byte(returnHash + "\n"))
 }
 
@@ -517,40 +518,40 @@ func GetBlock(hash string) ([]byte, error) {
 //          all writes failed). The text of the error message should
 //          provide as much detail as possible.
 //
-func PutBlock(block []byte, hash string) error {
+func PutBlock(block []byte, hash string) (int, error) {
 	// Check that BLOCK's checksum matches HASH.
 	blockhash := fmt.Sprintf("%x", md5.Sum(block))
 	if blockhash != hash {
 		log.Printf("%s: MD5 checksum %s did not match request", hash, blockhash)
-		return RequestHashError
+		return 0, RequestHashError
 	}
 
 	// If we already have this data, it's intact on disk, and we
 	// can update its timestamp, return success. If we have
 	// different data with the same hash, return failure.
 	if err := CompareAndTouch(hash, block); err == nil || err == CollisionError {
-		return err
+		return 0, err
 	}
 
 	// Choose a Keep volume to write to.
 	// If this volume fails, try all of the volumes in order.
 	if vol := KeepVM.NextWritable(); vol != nil {
 		if err := vol.Put(hash, block); err == nil {
-			return nil // success!
+			return vol.Replication(), nil // success!
 		}
 	}
 
 	writables := KeepVM.AllWritable()
 	if len(writables) == 0 {
 		log.Print("No writable volumes.")
-		return FullError
+		return 0, FullError
 	}
 
 	allFull := true
 	for _, vol := range writables {
 		err := vol.Put(hash, block)
 		if err == nil {
-			return nil // success!
+			return vol.Replication(), nil // success!
 		}
 		if err != FullError {
 			// The volume is not full but the
@@ -563,10 +564,10 @@ func PutBlock(block []byte, hash string) error {
 
 	if allFull {
 		log.Print("All volumes are full.")
-		return FullError
+		return 0, FullError
 	}
 	// Already logged the non-full errors.
-	return GenericError
+	return 0, GenericError
 }
 
 // CompareAndTouch returns nil if one of the volumes already has the
