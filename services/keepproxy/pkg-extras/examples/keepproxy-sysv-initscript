@@ -44,9 +44,12 @@ start() {
 
 
   # Setup any environmental stuff beforehand
+  
 
   # Run the program!
-  chroot --userspec "$user":"$group" "$chroot" /usr/bin/env -i ARVADOS_API_HOST="$ARVADOS_API_HOST" ARVADOS_API_TOKEN="$ARVADOS_API_TOKEN" sh -c "
+  
+  chroot --userspec "$user":"$group" "$chroot" sh -c "
+    
     cd \"$chdir\"
     exec \"$program\" $args
   " >> /var/log/keepproxy.stdout 2>> /var/log/keepproxy.stderr &

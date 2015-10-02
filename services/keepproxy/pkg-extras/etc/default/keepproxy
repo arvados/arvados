@@ -4,4 +4,5 @@ chroot="/"
 chdir="/"
 nice=""
 args="-listen=':9100'"
-
+ARVADOS_API_HOST="" 
+ARVADOS_API_TOKEN=""

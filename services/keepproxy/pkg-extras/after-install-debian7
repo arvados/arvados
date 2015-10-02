@@ -1,0 +1,26 @@
+#!/bin/bash
+
+set -e
+
+case "$1" in 
+	upgrade)
+	;;
+
+	install)
+	;;
+
+	configure)
+	if [ -x "/etc/init.d/keepproxy" ]; then
+		update-rc.d keepproxy defaults >/dev/null || exit $?
+		invoke-rc.d keepproxy start || exit $?
+	fi
+	;;
+
+        abort-upgrade|abort-remove|abort-deconfigure)
+        ;;
+
+	*)
+	echo "$0 called with unknown argument '$1'" >&2
+	exit 1
+	;;
+esac
