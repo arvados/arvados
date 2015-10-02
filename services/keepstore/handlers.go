@@ -529,8 +529,8 @@ func PutBlock(block []byte, hash string) (int, error) {
 	// If we already have this data, it's intact on disk, and we
 	// can update its timestamp, return success. If we have
 	// different data with the same hash, return failure.
-	if err := CompareAndTouch(hash, block); err == nil || err == CollisionError {
-		return 0, err
+	if n, err := CompareAndTouch(hash, block); err == nil || err == CollisionError {
+		return n, err
 	}
 
 	// Choose a Keep volume to write to.
@@ -570,11 +570,12 @@ func PutBlock(block []byte, hash string) (int, error) {
 	return 0, GenericError
 }
 
-// CompareAndTouch returns nil if one of the volumes already has the
-// given content and it successfully updates the relevant block's
-// modification time in order to protect it from premature garbage
-// collection.
-func CompareAndTouch(hash string, buf []byte) error {
+// CompareAndTouch returns the current replication level if one of the
+// volumes already has the given content and it successfully updates
+// the relevant block's modification time in order to protect it from
+// premature garbage collection. Otherwise, it returns a non-nil
+// error.
+func CompareAndTouch(hash string, buf []byte) (int, error) {
 	var bestErr error = NotFoundError
 	for _, vol := range KeepVM.AllWritable() {
 		if err := vol.Compare(hash, buf); err == CollisionError {
@@ -584,7 +585,7 @@ func CompareAndTouch(hash string, buf []byte) error {
 			// both, so there's no point writing it even
 			// on a different volume.)
 			log.Printf("%s: Compare(%s): %s", vol, hash, err)
-			return err
+			return 0, err
 		} else if os.IsNotExist(err) {
 			// Block does not exist. This is the only
 			// "normal" error: we don't log anything.
@@ -602,9 +603,9 @@ func CompareAndTouch(hash string, buf []byte) error {
 			continue
 		}
 		// Compare and Touch both worked --> done.
-		return nil
+		return vol.Replication(), nil
 	}
-	return bestErr
+	return 0, bestErr
 }
 
 var validLocatorRe = regexp.MustCompile(`^[0-9a-f]{32}$`)
