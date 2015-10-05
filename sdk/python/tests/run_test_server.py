@@ -353,9 +353,11 @@ def run_keep(blob_signing_key=None, enforce_permissions=False):
         api.keep_disks().delete(uuid=d['uuid']).execute()
 
     start_index = 0
+    end_index = 2
     if keep_existing is not None:
         start_index = 2
-    for d in range(start_index, start_index+2):
+        end_index = 3
+    for d in range(start_index, end_index):
         port = _start_keep(d, keep_args)
         svc = api.keep_services().create(body={'keep_service': {
             'uuid': 'zzzzz-bi6l4-keepdisk{:07d}'.format(d),
@@ -380,9 +382,8 @@ def _stop_keep(n):
 def stop_keep():
     _stop_keep(0)
     _stop_keep(1)
-    # We may have created 2 additional keep servers when keep_existing is used
+    # We may have created an additional keep servers when keep_existing is used
     _stop_keep(2)
-    _stop_keep(3)
 
 def run_keep_proxy():
     if 'ARVADOS_TEST_PROXY_SERVICES' in os.environ:

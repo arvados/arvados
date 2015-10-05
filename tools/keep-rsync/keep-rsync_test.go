@@ -68,6 +68,7 @@ func setupRsync(c *C) {
 	// load kcDst
 	kcDst, err = keepclient.MakeKeepClient(&arvDst)
 	c.Assert(err, Equals, nil)
+	kcDst.Want_replicas = 1
 }
 
 // Test readConfigFromFile method
@@ -94,27 +95,48 @@ func (s *ServerRequiredSuite) TestReadConfigFromFile(c *C) {
 
 // Test keep-rsync initialization, with src and dst keep servers.
 // Do a Put and Get in src, both of which should succeed.
-// Do a Get in dst for the same hash, which should raise block not found error.
-func (s *ServerRequiredSuite) TestRsyncPutInSrc_GetFromDstShouldFail(c *C) {
+// Do a Put and Get in dst, both of which should succeed.
+// Do a Get in dst for the src hash, which should raise block not found error.
+// Do a Get in src for the dst hash, which should raise block not found error.
+func (s *ServerRequiredSuite) TestRsyncPutInOne_GetFromOtherShouldFail(c *C) {
 	setupRsync(c)
 
 	// Put a block in src using kcSrc and Get it
-	data := []byte("test-data")
-	hash := fmt.Sprintf("%x", md5.Sum(data))
+	srcData := []byte("test-data1")
+	locatorInSrc := fmt.Sprintf("%x", md5.Sum(srcData))
 
-	hash2, rep, err := kcSrc.PutB(data)
-	c.Check(hash2, Matches, fmt.Sprintf(`^%s\+9(\+.+)?$`, hash))
+	hash, rep, err := kcSrc.PutB(srcData)
+	c.Check(hash, Matches, fmt.Sprintf(`^%s\+10(\+.+)?$`, locatorInSrc))
 	c.Check(rep, Equals, 2)
 	c.Check(err, Equals, nil)
 
-	reader, blocklen, _, err := kcSrc.Get(hash)
+	reader, blocklen, _, err := kcSrc.Get(locatorInSrc)
 	c.Assert(err, Equals, nil)
-	c.Check(blocklen, Equals, int64(9))
+	c.Check(blocklen, Equals, int64(10))
 	all, err := ioutil.ReadAll(reader)
-	c.Check(all, DeepEquals, data)
+	c.Check(all, DeepEquals, srcData)
 
-	// Get using kcDst should fail with NotFound error
-	_, _, _, err = kcDst.Get(hash)
+	// Put a different block in src using kcSrc and Get it
+	dstData := []byte("test-data2")
+	locatorInDst := fmt.Sprintf("%x", md5.Sum(dstData))
+
+	hash, rep, err = kcDst.PutB(dstData)
+	c.Check(hash, Matches, fmt.Sprintf(`^%s\+10(\+.+)?$`, locatorInDst))
+	c.Check(rep, Equals, 1)
+	c.Check(err, Equals, nil)
+
+	reader, blocklen, _, err = kcDst.Get(locatorInDst)
+	c.Assert(err, Equals, nil)
+	c.Check(blocklen, Equals, int64(10))
+	all, err = ioutil.ReadAll(reader)
+	c.Check(all, DeepEquals, dstData)
+
+	// Get srcLocator using kcDst should fail with NotFound error
+	_, _, _, err = kcDst.Get(locatorInSrc)
+	c.Assert(err.Error(), Equals, "Block not found")
+
+	// Get dstLocator using kcSrc should fail with NotFound error
+	_, _, _, err = kcSrc.Get(locatorInDst)
 	c.Assert(err.Error(), Equals, "Block not found")
 }
 
