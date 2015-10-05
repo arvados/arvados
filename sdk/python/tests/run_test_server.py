@@ -324,7 +324,8 @@ def _start_keep(n, keep_args):
     return port
 
 def run_keep(blob_signing_key=None, enforce_permissions=False):
-    stop_keep()
+    if args.keep_existing is None:
+      stop_keep()
 
     keep_args = {}
     if not blob_signing_key:
@@ -344,12 +345,16 @@ def run_keep(blob_signing_key=None, enforce_permissions=False):
         host=os.environ['ARVADOS_API_HOST'],
         token=os.environ['ARVADOS_API_TOKEN'],
         insecure=True)
+
     for d in api.keep_services().list().execute()['items']:
         api.keep_services().delete(uuid=d['uuid']).execute()
     for d in api.keep_disks().list().execute()['items']:
         api.keep_disks().delete(uuid=d['uuid']).execute()
 
-    for d in range(0, 2):
+    start_index = 0
+    if args.keep_existing is not None:
+        start_index = 2
+    for d in range(start_index, start_index+2):
         port = _start_keep(d, keep_args)
         svc = api.keep_services().create(body={'keep_service': {
             'uuid': 'zzzzz-bi6l4-keepdisk{:07d}'.format(d),
@@ -374,6 +379,9 @@ def _stop_keep(n):
 def stop_keep():
     _stop_keep(0)
     _stop_keep(1)
+    # We may have created 2 additional keep servers when keep_existing is used
+    _stop_keep(2)
+    _stop_keep(3)
 
 def run_keep_proxy():
     if 'ARVADOS_TEST_PROXY_SERVICES' in os.environ:
@@ -595,6 +603,7 @@ if __name__ == "__main__":
     parser = argparse.ArgumentParser()
     parser.add_argument('action', type=str, help="one of {}".format(actions))
     parser.add_argument('--auth', type=str, metavar='FIXTURE_NAME', help='Print authorization info for given api_client_authorizations fixture')
+    parser.add_argument('--keep_existing', type=str, help="Used to add additional keep servers, without terminating existing servers")
     args = parser.parse_args()
 
     if args.action not in actions:

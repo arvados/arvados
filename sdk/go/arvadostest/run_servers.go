@@ -99,11 +99,18 @@ func StopAPI() {
 }
 
 func StartKeep() {
+	StartKeepAdditional(false)
+}
+
+func StartKeepAdditional(keepExisting bool) {
 	cwd, _ := os.Getwd()
 	defer os.Chdir(cwd)
 	chdirToPythonTests()
 
 	cmd := exec.Command("python", "run_test_server.py", "start_keep")
+	if keepExisting {
+		cmd = exec.Command("python", "run_test_server.py", "start_keep", "--keep_existing", "true")
+	}
 	stderr, err := cmd.StderrPipe()
 	if err != nil {
 		log.Fatalf("Setting up stderr pipe: %s", err)
