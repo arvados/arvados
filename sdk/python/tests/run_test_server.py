@@ -43,6 +43,7 @@ if not os.path.exists(TEST_TMPDIR):
 
 my_api_host = None
 _cached_config = {}
+keep_existing = None
 
 def find_server_pid(PID_PATH, wait=10):
     now = time.time()
@@ -324,7 +325,7 @@ def _start_keep(n, keep_args):
     return port
 
 def run_keep(blob_signing_key=None, enforce_permissions=False):
-    if args.keep_existing is None:
+    if keep_existing is None:
       stop_keep()
 
     keep_args = {}
@@ -352,7 +353,7 @@ def run_keep(blob_signing_key=None, enforce_permissions=False):
         api.keep_disks().delete(uuid=d['uuid']).execute()
 
     start_index = 0
-    if args.keep_existing is not None:
+    if keep_existing is not None:
         start_index = 2
     for d in range(start_index, start_index+2):
         port = _start_keep(d, keep_args)
@@ -605,6 +606,8 @@ if __name__ == "__main__":
     parser.add_argument('--auth', type=str, metavar='FIXTURE_NAME', help='Print authorization info for given api_client_authorizations fixture')
     parser.add_argument('--keep_existing', type=str, help="Used to add additional keep servers, without terminating existing servers")
     args = parser.parse_args()
+
+    keep_existing = args.keep_existing
 
     if args.action not in actions:
         print("Unrecognized action '{}'. Actions are: {}.".format(args.action, actions), file=sys.stderr)

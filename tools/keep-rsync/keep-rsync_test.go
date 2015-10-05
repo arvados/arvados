@@ -36,7 +36,7 @@ func (s *ServerRequiredSuite) TearDownSuite(c *C) {
 	arvadostest.StopAPI()
 }
 
-// Testing keep-rsync needs two sets of keep services: src and dest.
+// Testing keep-rsync needs two sets of keep services: src and dst.
 // The test setup hence tweaks keep-rsync initialzation to achieve this.
 // First invoke initializeKeepRsync and then invoke StartKeepAdditional
 // to create the keep servers to be used as destination.
@@ -47,11 +47,11 @@ func setupRsync(c *C) {
 	srcConfig["ARVADOS_API_TOKEN"] = os.Getenv("ARVADOS_API_TOKEN")
 	srcConfig["ARVADOS_API_HOST_INSECURE"] = os.Getenv("ARVADOS_API_HOST_INSECURE")
 
-	// destConfig
-	destConfig = make(map[string]string)
-	destConfig["ARVADOS_API_HOST"] = os.Getenv("ARVADOS_API_HOST")
-	destConfig["ARVADOS_API_TOKEN"] = os.Getenv("ARVADOS_API_TOKEN")
-	destConfig["ARVADOS_API_HOST_INSECURE"] = os.Getenv("ARVADOS_API_HOST_INSECURE")
+	// dstConfig
+	dstConfig = make(map[string]string)
+	dstConfig["ARVADOS_API_HOST"] = os.Getenv("ARVADOS_API_HOST")
+	dstConfig["ARVADOS_API_TOKEN"] = os.Getenv("ARVADOS_API_TOKEN")
+	dstConfig["ARVADOS_API_HOST_INSECURE"] = os.Getenv("ARVADOS_API_HOST_INSECURE")
 
 	arvadostest.StartAPI()
 	arvadostest.StartKeep()
@@ -63,8 +63,8 @@ func setupRsync(c *C) {
 	// Create two more keep servers to be used as destination
 	arvadostest.StartKeepAdditional(true)
 
-	// load kcDest
-	kcDest, err = keepclient.MakeKeepClient(&arvDest)
+	// load kcDst
+	kcDst, err = keepclient.MakeKeepClient(&arvDst)
 	c.Assert(err, Equals, nil)
 }
 
@@ -90,10 +90,10 @@ func (s *ServerRequiredSuite) TestReadConfigFromFile(c *C) {
 	c.Assert(config["EXTERNAL_CLIENT"], Equals, "")
 }
 
-// Test keep-rsync initialization, with src and dest keep servers.
+// Test keep-rsync initialization, with src and dst keep servers.
 // Do a Put and Get in src, both of which should succeed.
-// Do a Get in dest for the same hash, which should raise block not found error.
-func (s *ServerRequiredSuite) TestRsyncPutInSrc_GetFromDestShouldFail(c *C) {
+// Do a Get in dst for the same hash, which should raise block not found error.
+func (s *ServerRequiredSuite) TestRsyncPutInSrc_GetFromDstShouldFail(c *C) {
 	setupRsync(c)
 
 	// Put a block in src using kcSrc and Get it
@@ -111,7 +111,7 @@ func (s *ServerRequiredSuite) TestRsyncPutInSrc_GetFromDestShouldFail(c *C) {
 	all, err := ioutil.ReadAll(reader)
 	c.Check(all, DeepEquals, data)
 
-	// Get using kcDest should fail with NotFound error
-	_, _, _, err = kcDest.Get(hash)
+	// Get using kcDst should fail with NotFound error
+	_, _, _, err = kcDst.Get(hash)
 	c.Assert(err.Error(), Equals, "Block not found")
 }

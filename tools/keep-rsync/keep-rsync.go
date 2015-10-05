@@ -11,17 +11,17 @@ import (
 
 // keep-rsync arguments
 var (
-	srcConfig            map[string]string
-	destConfig           map[string]string
-	srcKeepServicesJSON  string
-	destKeepServicesJSON string
-	replications         int
-	prefix               string
+	srcConfig           map[string]string
+	dstConfig           map[string]string
+	srcKeepServicesJSON string
+	dstKeepServicesJSON string
+	replications        int
+	prefix              string
 )
 
 func main() {
 	var srcConfigFile string
-	var destConfigFile string
+	var dstConfigFile string
 
 	flag.StringVar(
 		&srcConfigFile,
@@ -32,8 +32,8 @@ func main() {
 			"ARVADOS_API_HOST, ARVADOS_API_HOST_INSECURE, and ARVADOS_BLOB_SIGNING_KEY.")
 
 	flag.StringVar(
-		&destConfigFile,
-		"dest-config-file",
+		&dstConfigFile,
+		"dst-config-file",
 		"",
 		"Destination configuration filename with full path that contains "+
 			"an ARVADOS_API_TOKEN which is a valid datamanager token recognized by the destination keep servers, "+
@@ -47,11 +47,11 @@ func main() {
 			"If not provided, this list is obtained from api server configured in src-config-file.")
 
 	flag.StringVar(
-		&destKeepServicesJSON,
-		"dest-keep-services-json",
+		&dstKeepServicesJSON,
+		"dst-keep-services-json",
 		"",
 		"An optional list of available destination keepservices. "+
-			"If not provided, this list is obtained from api server configured in dest-config-file.")
+			"If not provided, this list is obtained from api server configured in dst-config-file.")
 
 	flag.IntVar(
 		&replications,
@@ -77,10 +77,10 @@ func main() {
 		log.Fatal("Error reading source configuration: %s", err.Error())
 	}
 
-	if destConfigFile == "" {
-		log.Fatal("-dest-config-file must be specified.")
+	if dstConfigFile == "" {
+		log.Fatal("-dst-config-file must be specified.")
 	}
-	destConfig, err = readConfigFromFile(destConfigFile)
+	dstConfig, err = readConfigFromFile(dstConfigFile)
 	if err != nil {
 		log.Fatal("Error reading destination configuration: %s", err.Error())
 	}
@@ -112,10 +112,10 @@ func readConfigFromFile(filename string) (map[string]string, error) {
 
 // keep-rsync source and destination clients
 var (
-	arvSrc  arvadosclient.ArvadosClient
-	arvDest arvadosclient.ArvadosClient
-	kcSrc   *keepclient.KeepClient
-	kcDest  *keepclient.KeepClient
+	arvSrc arvadosclient.ArvadosClient
+	arvDst arvadosclient.ArvadosClient
+	kcSrc  *keepclient.KeepClient
+	kcDst  *keepclient.KeepClient
 )
 
 // Initializes keep-rsync using the config provided
@@ -125,7 +125,7 @@ func initializeKeepRsync() (err error) {
 		return
 	}
 
-	arvDest, err = arvadosclient.MakeArvadosClientWithConfig(destConfig)
+	arvDst, err = arvadosclient.MakeArvadosClientWithConfig(dstConfig)
 	if err != nil {
 		return
 	}
@@ -135,7 +135,7 @@ func initializeKeepRsync() (err error) {
 		return
 	}
 
-	kcDest, err = keepclient.MakeKeepClient(&arvDest)
+	kcDst, err = keepclient.MakeKeepClient(&arvDst)
 
 	return
 }
