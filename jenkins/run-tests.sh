@@ -493,15 +493,22 @@ do_test_once() {
         then
             covername="coverage-$(echo "$1" | sed -e 's/\//_/g')"
             coverflags=("-covermode=count" "-coverprofile=$WORKSPACE/tmp/.$covername.tmp")
+            # We do "go get -t" here to catch compilation errors
+            # before trying "go test". Otherwise, coverage-reporting
+            # mode makes Go show the wrong line numbers when reporting
+            # compilation errors.
             if [[ -n "${testargs[$1]}" ]]
             then
                 # "go test -check.vv giturl" doesn't work, but this
                 # does:
-                cd "$WORKSPACE/$1" && go test ${coverflags[@]} ${testargs[$1]}
+                cd "$WORKSPACE/$1" && \
+                    go get -t "git.curoverse.com/arvados.git/$1" && \
+                    go test ${coverflags[@]} ${testargs[$1]}
             else
                 # The above form gets verbose even when testargs is
                 # empty, so use this form in such cases:
-                go test ${coverflags[@]} "git.curoverse.com/arvados.git/$1"
+                go get -t "git.curoverse.com/arvados.git/$1" && \
+                    go test ${coverflags[@]} "git.curoverse.com/arvados.git/$1"
             fi
             result="$?"
             go tool cover -html="$WORKSPACE/tmp/.$covername.tmp" -o "$WORKSPACE/tmp/$covername.html"
