@@ -120,22 +120,43 @@ var (
 
 // Initializes keep-rsync using the config provided
 func initializeKeepRsync() (err error) {
+	// arvSrc from srcConfig
 	arvSrc, err = arvadosclient.MakeArvadosClientWithConfig(srcConfig)
 	if err != nil {
 		return
 	}
 
+	// arvDst from dstConfig
 	arvDst, err = arvadosclient.MakeArvadosClientWithConfig(dstConfig)
 	if err != nil {
 		return
 	}
 
-	kcSrc, err = keepclient.MakeKeepClient(&arvSrc)
-	if err != nil {
-		return
+	// if srcKeepServicesJSON is provided, use it to load services; else, use DiscoverKeepServers
+	if srcKeepServicesJSON == "" {
+		kcSrc, err = keepclient.MakeKeepClient(&arvSrc)
+		if err != nil {
+			return
+		}
+	} else {
+		kcSrc, err = keepclient.MakeKeepClientFromJSON(&arvSrc, srcKeepServicesJSON)
+		if err != nil {
+			return
+		}
 	}
 
-	kcDst, err = keepclient.MakeKeepClient(&arvDst)
+	// if dstKeepServicesJSON is provided, use it to load services; else, use DiscoverKeepServers
+	if dstKeepServicesJSON == "" {
+		kcDst, err = keepclient.MakeKeepClient(&arvDst)
+		if err != nil {
+			return
+		}
+	} else {
+		kcDst, err = keepclient.MakeKeepClientFromJSON(&arvDst, dstKeepServicesJSON)
+		if err != nil {
+			return
+		}
+	}
 
 	return
 }

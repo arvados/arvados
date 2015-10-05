@@ -54,9 +54,20 @@ type KeepClient struct {
 	replicasPerService int
 }
 
-// Create a new KeepClient.  This will contact the API server to discover Keep
-// servers.
+// MakeKeepClient creates a new KeepClient by contacting the API server to discover Keep servers.
 func MakeKeepClient(arv *arvadosclient.ArvadosClient) (*KeepClient, error) {
+	kc := initKeepClient(arv)
+	return kc, kc.DiscoverKeepServers()
+}
+
+// MakeKeepClientFromJSON creates a new KeepClient using the given json to load keep servers.
+func MakeKeepClientFromJSON(arv *arvadosclient.ArvadosClient, svcJSON string) (*KeepClient, error) {
+	kc := initKeepClient(arv)
+	return kc, kc.DiscoverKeepServersFromJSON(svcJSON)
+}
+
+// Make a new KeepClient struct.
+func initKeepClient(arv *arvadosclient.ArvadosClient) *KeepClient {
 	var matchTrue = regexp.MustCompile("^(?i:1|yes|true)$")
 	insecure := matchTrue.MatchString(os.Getenv("ARVADOS_API_HOST_INSECURE"))
 	kc := &KeepClient{
@@ -66,7 +77,7 @@ func MakeKeepClient(arv *arvadosclient.ArvadosClient) (*KeepClient, error) {
 		Client: &http.Client{Transport: &http.Transport{
 			TLSClientConfig: &tls.Config{InsecureSkipVerify: insecure}}},
 	}
-	return kc, kc.DiscoverKeepServers()
+	return kc
 }
 
 // Put a block given the block hash, a reader, and the number of bytes

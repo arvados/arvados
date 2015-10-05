@@ -2,6 +2,7 @@ package keepclient
 
 import (
 	"crypto/md5"
+	"encoding/json"
 	"errors"
 	"fmt"
 	"git.curoverse.com/arvados.git/sdk/go/streamer"
@@ -76,19 +77,38 @@ func (this *KeepClient) setClientSettingsDisk() {
 	}
 }
 
+type svcList struct {
+	Items []keepService `json:"items"`
+}
+
 // DiscoverKeepServers gets list of available keep services from api server
 func (this *KeepClient) DiscoverKeepServers() error {
-	type svcList struct {
-		Items []keepService `json:"items"`
-	}
-	var m svcList
+	var list svcList
 
 	// Get keep services from api server
-	err := this.Arvados.Call("GET", "keep_services", "", "accessible", nil, &m)
+	err := this.Arvados.Call("GET", "keep_services", "", "accessible", nil, &list)
 	if err != nil {
 		return err
 	}
 
+	return this.loadKeepServers(list)
+}
+
+// DiscoverKeepServersFromJSON gets list of available keep services from given JSON
+func (this *KeepClient) DiscoverKeepServersFromJSON(services string) error {
+	var list svcList
+
+	// Load keep services from given json
+	dec := json.NewDecoder(strings.NewReader(services))
+	if err := dec.Decode(&list); err != nil {
+		return err
+	}
+
+	return this.loadKeepServers(list)
+}
+
+// loadKeepServers
+func (this *KeepClient) loadKeepServers(list svcList) error {
 	listed := make(map[string]bool)
 	localRoots := make(map[string]string)
 	gatewayRoots := make(map[string]string)
@@ -98,7 +118,7 @@ func (this *KeepClient) DiscoverKeepServers() error {
 	this.replicasPerService = 1
 	this.Using_proxy = false
 
-	for _, service := range m.Items {
+	for _, service := range list.Items {
 		scheme := "http"
 		if service.SSL {
 			scheme = "https"

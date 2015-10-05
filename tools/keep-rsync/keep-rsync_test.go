@@ -29,6 +29,8 @@ func (s *ServerRequiredSuite) SetUpSuite(c *C) {
 
 func (s *ServerRequiredSuite) SetUpTest(c *C) {
 	arvadostest.ResetEnv()
+	srcKeepServicesJSON = ""
+	dstKeepServicesJSON = ""
 }
 
 func (s *ServerRequiredSuite) TearDownSuite(c *C) {
@@ -114,4 +116,30 @@ func (s *ServerRequiredSuite) TestRsyncPutInSrc_GetFromDstShouldFail(c *C) {
 	// Get using kcDst should fail with NotFound error
 	_, _, _, err = kcDst.Get(hash)
 	c.Assert(err.Error(), Equals, "Block not found")
+}
+
+// Test keep-rsync initialization, with srcKeepServicesJSON
+func (s *ServerRequiredSuite) TestRsyncInitializeWithKeepServicesJSON(c *C) {
+	srcKeepServicesJSON = "{ \"kind\":\"arvados#keepServiceList\", \"etag\":\"\", \"self_link\":\"\", \"offset\":null, \"limit\":null, \"items\":[ { \"href\":\"/keep_services/zzzzz-bi6l4-123456789012340\", \"kind\":\"arvados#keepService\", \"etag\":\"641234567890enhj7hzx432e5\", \"uuid\":\"zzzzz-bi6l4-123456789012340\", \"owner_uuid\":\"zzzzz-tpzed-123456789012345\", \"service_host\":\"keep0.zzzzz.arvadosapi.com\", \"service_port\":25107, \"service_ssl_flag\":false, \"service_type\":\"disk\", \"read_only\":false }, { \"href\":\"/keep_services/zzzzz-bi6l4-123456789012341\", \"kind\":\"arvados#keepService\", \"etag\":\"641234567890enhj7hzx432e5\", \"uuid\":\"zzzzz-bi6l4-123456789012341\", \"owner_uuid\":\"zzzzz-tpzed-123456789012345\", \"service_host\":\"keep0.zzzzz.arvadosapi.com\", \"service_port\":25108, \"service_ssl_flag\":false, \"service_type\":\"disk\", \"read_only\":false } ], \"items_available\":2 }"
+
+	setupRsync(c)
+
+	localRoots := kcSrc.LocalRoots()
+	c.Check(localRoots != nil, Equals, true)
+
+	foundIt := false
+	for k, _ := range localRoots {
+		if k == "zzzzz-bi6l4-123456789012340" {
+			foundIt = true
+		}
+	}
+	c.Check(foundIt, Equals, true)
+
+	foundIt = false
+	for k, _ := range localRoots {
+		if k == "zzzzz-bi6l4-123456789012341" {
+			foundIt = true
+		}
+	}
+	c.Check(foundIt, Equals, true)
 }
