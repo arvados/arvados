@@ -76,12 +76,12 @@ func testPutBlock(t *testing.T, factory TestableVolumeManagerFactory, testHash s
 	setupHandlersWithGenericVolumeTest(t, factory)
 
 	// PutBlock
-	if err := PutBlock(testBlock, testHash); err != nil {
+	if _, err := PutBlock(testBlock, testHash); err != nil {
 		t.Fatalf("Error during PutBlock: %s", err)
 	}
 
 	// Check that PutBlock succeeds again even after CompareAndTouch
-	if err := PutBlock(testBlock, testHash); err != nil {
+	if _, err := PutBlock(testBlock, testHash); err != nil {
 		t.Fatalf("Error during PutBlock: %s", err)
 	}
 
@@ -104,7 +104,7 @@ func testPutBlockCorrupt(t *testing.T, factory TestableVolumeManagerFactory,
 	testableVolumes[1].PutRaw(testHash, badData)
 
 	// Check that PutBlock with good data succeeds
-	if err := PutBlock(testBlock, testHash); err != nil {
+	if _, err := PutBlock(testBlock, testHash); err != nil {
 		t.Fatalf("Error during PutBlock for %q: %s", testHash, err)
 	}
 

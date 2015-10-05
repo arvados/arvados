@@ -195,6 +195,11 @@ type Volume interface {
 	// will fail because it is full, but Mtime or Delete can
 	// succeed -- then Writable should return false.
 	Writable() bool
+
+	// Replication returns the storage redundancy of the
+	// underlying device. It will be passed on to clients in
+	// responses to PUT requests.
+	Replication() int
 }
 
 // A VolumeManager tells callers which volumes can read, which volumes
