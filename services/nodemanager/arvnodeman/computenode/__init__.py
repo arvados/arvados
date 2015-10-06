@@ -31,6 +31,13 @@ def timestamp_fresh(timestamp, fresh_time):
     return (time.time() - timestamp) < fresh_time
 
 def arvados_node_missing(arvados_node, fresh_time):
+    """Indicate if cloud node corresponding to the arvados
+    node is "missing".
+
+    If True, this means the node has not pinged the API server within the timeout
+    period.  If False, the ping is up to date.  If the node has never pinged,
+    returns None.
+    """
     if arvados_node["last_ping_at"] is None:
         return None
     else:

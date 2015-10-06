@@ -84,6 +84,8 @@ class ComputeNodeDriver(BaseComputeNodeDriver):
 
     def broken(self, cloud_node):
         """Return true if libcloud has indicated the node is in a "broken" state."""
+        # UNKNOWN means the node state is unrecognized, which in practice means some combination
+        # of failure that the Azure libcloud driver doesn't know how to interpret.
         return (cloud_node.state in (cloud_types.NodeState.ERROR, cloud_types.NodeState.UNKNOWN))
 
     @classmethod
