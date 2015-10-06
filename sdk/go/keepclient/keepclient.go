@@ -140,21 +140,19 @@ func (kc *KeepClient) Get(locator string) (io.ReadCloser, int64, string, error) 
 		url := host + "/" + locator
 		req, err := http.NewRequest("GET", url, nil)
 		if err != nil {
+			errs = append(errs, fmt.Sprintf("%s: %v", url, err))
 			continue
 		}
 		req.Header.Add("Authorization", fmt.Sprintf("OAuth2 %s", kc.Arvados.ApiToken))
 		resp, err := kc.Client.Do(req)
-		if err != nil || resp.StatusCode != http.StatusOK {
-			if resp != nil {
-				var respbody []byte
-				if resp.Body != nil {
-					respbody, _ = ioutil.ReadAll(&io.LimitedReader{resp.Body, 4096})
-				}
-				errs = append(errs, fmt.Sprintf("%s: %d %s",
-					url, resp.StatusCode, strings.TrimSpace(string(respbody))))
-			} else {
-				errs = append(errs, fmt.Sprintf("%s: %v", url, err))
-			}
+		if err != nil {
+			errs = append(errs, fmt.Sprintf("%s: %v", url, err))
+			continue
+		} else if resp.StatusCode != http.StatusOK {
+			respbody, _ := ioutil.ReadAll(&io.LimitedReader{resp.Body, 4096})
+			resp.Body.Close()
+			errs = append(errs, fmt.Sprintf("%s: HTTP %d %q",
+				url, resp.StatusCode, bytes.TrimSpace(respbody)))
 			continue
 		}
 		return HashCheckingReader{
