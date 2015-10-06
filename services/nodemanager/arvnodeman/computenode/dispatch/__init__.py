@@ -10,7 +10,7 @@ import libcloud.common.types as cloud_types
 import pykka
 
 from .. import \
-    arvados_node_fqdn, arvados_node_mtime, arvados_timestamp, timestamp_fresh
+    arvados_node_fqdn, arvados_node_mtime, arvados_timestamp, timestamp_fresh, arvados_node_missing
 from ...clientactor import _notify_subscribers
 from ... import config
 
@@ -273,8 +273,10 @@ class ComputeNodeMonitorActor(config.actor_class):
     for shutdown.
     """
     def __init__(self, cloud_node, cloud_node_start_time, shutdown_timer,
-                 cloud_fqdn_func, timer_actor, update_actor, arvados_node=None,
-                 poll_stale_after=600, node_stale_after=3600):
+                 cloud_fqdn_func, timer_actor, update_actor, cloud_client,
+                 arvados_node=None, poll_stale_after=600, node_stale_after=3600,
+                 boot_fail_after=1800
+    ):
         super(ComputeNodeMonitorActor, self).__init__()
         self._later = self.actor_ref.proxy()
         self._logger = logging.getLogger('arvnodeman.computenode')
@@ -283,10 +285,12 @@ class ComputeNodeMonitorActor(config.actor_class):
         self._cloud_node_fqdn = cloud_fqdn_func
         self._timer = timer_actor
         self._update = update_actor
+        self._cloud = cloud_client
         self.cloud_node = cloud_node
         self.cloud_node_start_time = cloud_node_start_time
         self.poll_stale_after = poll_stale_after
         self.node_stale_after = node_stale_after
+        self.boot_fail_after = boot_fail_after
         self.subscribers = set()
         self.arvados_node = None
         self._later.update_arvados_node(arvados_node)
@@ -322,10 +326,13 @@ class ComputeNodeMonitorActor(config.actor_class):
         if not self._shutdowns.window_open():
             return False
         elif self.arvados_node is None:
-            # If this is a new, unpaired node, it's eligible for
-            # shutdown--we figure there was an error during bootstrap.
-            return timestamp_fresh(self.cloud_node_start_time,
-                                   self.node_stale_after)
+            # Node is unpaired.
+            # If it hasn't pinged Arvados after boot_fail seconds, shut it down
+            return not timestamp_fresh(self.cloud_node_start_time, self.boot_fail_after)
+        elif arvados_node_missing(self.arvados_node, self.node_stale_after) and self._cloud.broken(self.cloud_node):
+            # Node is paired, but Arvados says it is missing and the cloud says the node
+            # is in an error state, so shut it down.
+            return True
         else:
             return self.in_state('idle')
 

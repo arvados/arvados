@@ -55,7 +55,7 @@ class SLURMComputeNodeShutdownActorTestCase(ComputeNodeShutdownActorMixin,
     def test_slurm_bypassed_when_no_arvados_node(self, proc_mock):
         # Test we correctly handle a node that failed to bootstrap.
         proc_mock.return_value = 'idle\n'
-        self.make_actor()
+        self.make_actor(start_time=0)
         self.check_success_flag(True)
         self.assertFalse(proc_mock.called)
 
