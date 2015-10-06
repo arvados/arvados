@@ -6,13 +6,14 @@ import (
 	"git.curoverse.com/arvados.git/sdk/go/keepclient"
 	"io/ioutil"
 	"log"
+	"regexp"
 	"strings"
 )
 
 // keep-rsync arguments
 var (
-	srcConfig           map[string]string
-	dstConfig           map[string]string
+	srcConfig           arvadosclient.APIConfig
+	dstConfig           arvadosclient.APIConfig
 	srcKeepServicesJSON string
 	dstKeepServicesJSON string
 	replications        int
@@ -69,6 +70,7 @@ func main() {
 
 	var err error
 
+	// Load config
 	if srcConfigFile == "" {
 		log.Fatal("-src-config-file must be specified.")
 	}
@@ -85,27 +87,41 @@ func main() {
 		log.Fatal("Error reading destination configuration: %s", err.Error())
 	}
 
+	// Initialize keep-rsync
 	err = initializeKeepRsync()
 	if err != nil {
 		log.Fatal("Error configurating keep-rsync: %s", err.Error())
 	}
 }
 
+var matchTrue = regexp.MustCompile("^(?i:1|yes|true)$")
+
 // Reads config from file
-func readConfigFromFile(filename string) (map[string]string, error) {
+func readConfigFromFile(filename string) (arvadosclient.APIConfig, error) {
+	var config arvadosclient.APIConfig
+
 	content, err := ioutil.ReadFile(filename)
 	if err != nil {
-		return nil, err
+		return config, err
 	}
 
-	config := make(map[string]string)
 	lines := strings.Split(string(content), "\n")
 	for _, line := range lines {
 		if line == "" {
 			continue
 		}
 		kv := strings.Split(line, "=")
-		config[kv[0]] = kv[1]
+
+		switch kv[0] {
+		case "ARVADOS_API_TOKEN":
+			config.APIToken = kv[1]
+		case "ARVADOS_API_HOST":
+			config.APIHost = kv[1]
+		case "ARVADOS_API_HOST_INSECURE":
+			config.APIHostInsecure = matchTrue.MatchString(kv[1])
+		case "ARVADOS_EXTERNAL_CLIENT":
+			config.ExternalClient = matchTrue.MatchString(kv[1])
+		}
 	}
 	return config, nil
 }
@@ -157,6 +173,7 @@ func initializeKeepRsync() (err error) {
 			return
 		}
 	}
+	kcDst.Want_replicas = replications
 
 	return
 }

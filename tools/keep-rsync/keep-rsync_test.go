@@ -5,6 +5,7 @@ import (
 	"fmt"
 	"io/ioutil"
 	"os"
+	"regexp"
 	"testing"
 
 	"git.curoverse.com/arvados.git/sdk/go/arvadostest"
@@ -44,17 +45,18 @@ func (s *ServerRequiredSuite) TearDownSuite(c *C) {
 // to create the keep servers to be used as destination.
 func setupRsync(c *C) {
 	// srcConfig
-	srcConfig = make(map[string]string)
-	srcConfig["ARVADOS_API_HOST"] = os.Getenv("ARVADOS_API_HOST")
-	srcConfig["ARVADOS_API_TOKEN"] = os.Getenv("ARVADOS_API_TOKEN")
-	srcConfig["ARVADOS_API_HOST_INSECURE"] = os.Getenv("ARVADOS_API_HOST_INSECURE")
+	srcConfig.APIHost = os.Getenv("ARVADOS_API_HOST")
+	srcConfig.APIToken = os.Getenv("ARVADOS_API_TOKEN")
+	srcConfig.APIHostInsecure = matchTrue.MatchString(os.Getenv("ARVADOS_API_HOST_INSECURE"))
 
 	// dstConfig
-	dstConfig = make(map[string]string)
-	dstConfig["ARVADOS_API_HOST"] = os.Getenv("ARVADOS_API_HOST")
-	dstConfig["ARVADOS_API_TOKEN"] = os.Getenv("ARVADOS_API_TOKEN")
-	dstConfig["ARVADOS_API_HOST_INSECURE"] = os.Getenv("ARVADOS_API_HOST_INSECURE")
+	dstConfig.APIHost = os.Getenv("ARVADOS_API_HOST")
+	dstConfig.APIToken = os.Getenv("ARVADOS_API_TOKEN")
+	dstConfig.APIHostInsecure = matchTrue.MatchString(os.Getenv("ARVADOS_API_HOST_INSECURE"))
 
+	replications = 1
+
+	// Start API and Keep servers
 	arvadostest.StartAPI()
 	arvadostest.StartKeep()
 
@@ -87,10 +89,10 @@ func (s *ServerRequiredSuite) TestReadConfigFromFile(c *C) {
 	// Invoke readConfigFromFile method with this test filename
 	config, err := readConfigFromFile(file.Name())
 	c.Assert(err, Equals, nil)
-	c.Assert(config["ARVADOS_API_HOST"], Equals, "testhost")
-	c.Assert(config["ARVADOS_API_TOKEN"], Equals, "testtoken")
-	c.Assert(config["ARVADOS_API_HOST_INSECURE"], Equals, "true")
-	c.Assert(config["EXTERNAL_CLIENT"], Equals, "")
+	c.Assert(config.APIHost, Equals, "testhost")
+	c.Assert(config.APIToken, Equals, "testtoken")
+	c.Assert(config.APIHostInsecure, Equals, true)
+	c.Assert(config.ExternalClient, Equals, false)
 }
 
 // Test keep-rsync initialization, with src and dst keep servers.
@@ -150,7 +152,7 @@ func (s *ServerRequiredSuite) TestRsyncInitializeWithKeepServicesJSON(c *C) {
 	c.Check(localRoots != nil, Equals, true)
 
 	foundIt := false
-	for k, _ := range localRoots {
+	for k := range localRoots {
 		if k == "zzzzz-bi6l4-123456789012340" {
 			foundIt = true
 		}
@@ -158,7 +160,7 @@ func (s *ServerRequiredSuite) TestRsyncInitializeWithKeepServicesJSON(c *C) {
 	c.Check(foundIt, Equals, true)
 
 	foundIt = false
-	for k, _ := range localRoots {
+	for k := range localRoots {
 		if k == "zzzzz-bi6l4-123456789012341" {
 			foundIt = true
 		}
