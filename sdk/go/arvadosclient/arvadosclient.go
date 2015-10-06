@@ -78,33 +78,42 @@ type ArvadosClient struct {
 	DiscoveryDoc Dict
 }
 
-// Create a new ArvadosClient, initialized with standard Arvados environment
-// variables ARVADOS_API_HOST, ARVADOS_API_TOKEN, and (optionally)
-// ARVADOS_API_HOST_INSECURE.
+// APIConfig struct consists of:
+//    APIToken        string
+//    APIHost         string
+//    APIHostInsecure bool
+//    ExternalClient  bool
+type APIConfig struct {
+	APIToken        string
+	APIHost         string
+	APIHostInsecure bool
+	ExternalClient  bool
+}
+
+// Create a new ArvadosClient, initialized with standard Arvados environment variables
+// ARVADOS_API_HOST, ARVADOS_API_TOKEN, ARVADOS_API_HOST_INSECURE, ARVADOS_EXTERNAL_CLIENT.
 func MakeArvadosClient() (ac ArvadosClient, err error) {
-	config := make(map[string]string)
-	config["ARVADOS_API_TOKEN"] = os.Getenv("ARVADOS_API_TOKEN")
-	config["ARVADOS_API_HOST"] = os.Getenv("ARVADOS_API_HOST")
-	config["ARVADOS_API_HOST_INSECURE"] = os.Getenv("ARVADOS_API_HOST_INSECURE")
-	config["ARVADOS_EXTERNAL_CLIENT"] = os.Getenv("ARVADOS_EXTERNAL_CLIENT")
+	var config APIConfig
+	config.APIToken = os.Getenv("ARVADOS_API_TOKEN")
+	config.APIHost = os.Getenv("ARVADOS_API_HOST")
+
+	var matchTrue = regexp.MustCompile("^(?i:1|yes|true)$")
+
+	config.APIHostInsecure = matchTrue.MatchString(os.Getenv("ARVADOS_API_HOST_INSECURE"))
+	config.ExternalClient = matchTrue.MatchString(os.Getenv("ARVADOS_EXTERNAL_CLIENT"))
 
 	return MakeArvadosClientWithConfig(config)
 }
 
 // Create a new ArvadosClient, using the given input parameters.
-func MakeArvadosClientWithConfig(config map[string]string) (ac ArvadosClient, err error) {
-	var matchTrue = regexp.MustCompile("^(?i:1|yes|true)$")
-
-	insecure := matchTrue.MatchString(config["ARVADOS_API_HOST_INSECURE"])
-	external := matchTrue.MatchString(config["ARVADOS_EXTERNAL_CLIENT"])
-
+func MakeArvadosClientWithConfig(config APIConfig) (ac ArvadosClient, err error) {
 	ac = ArvadosClient{
-		ApiServer:   config["ARVADOS_API_HOST"],
-		ApiToken:    config["ARVADOS_API_TOKEN"],
-		ApiInsecure: insecure,
+		ApiServer:   config.APIHost,
+		ApiToken:    config.APIToken,
+		ApiInsecure: config.APIHostInsecure,
 		Client: &http.Client{Transport: &http.Transport{
-			TLSClientConfig: &tls.Config{InsecureSkipVerify: insecure}}},
-		External: external}
+			TLSClientConfig: &tls.Config{InsecureSkipVerify: config.APIHostInsecure}}},
+		External: config.ExternalClient}
 
 	if ac.ApiServer == "" {
 		return ac, MissingArvadosApiHost

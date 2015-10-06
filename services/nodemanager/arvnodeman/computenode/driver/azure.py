@@ -16,6 +16,7 @@ class ComputeNodeDriver(BaseComputeNodeDriver):
 
     DEFAULT_DRIVER = cloud_provider.get_driver(cloud_types.Provider.AZURE_ARM)
     SEARCH_CACHE = {}
+    CLOUD_ERRORS = BaseComputeNodeDriver.CLOUD_ERRORS + (BaseHTTPError,)
 
     def __init__(self, auth_kwargs, list_kwargs, create_kwargs,
                  driver_class=DEFAULT_DRIVER):
@@ -80,6 +81,12 @@ class ComputeNodeDriver(BaseComputeNodeDriver):
         return [node for node in
                 super(ComputeNodeDriver, self).list_nodes()
                 if node.extra["tags"].get("arvados-class") == self.tags["arvados-class"]]
+
+    def broken(self, cloud_node):
+        """Return true if libcloud has indicated the node is in a "broken" state."""
+        # UNKNOWN means the node state is unrecognized, which in practice means some combination
+        # of failure that the Azure libcloud driver doesn't know how to interpret.
+        return (cloud_node.state in (cloud_types.NodeState.ERROR, cloud_types.NodeState.UNKNOWN))
 
     @classmethod
     def node_fqdn(cls, node):
