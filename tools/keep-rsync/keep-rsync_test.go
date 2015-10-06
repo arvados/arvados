@@ -55,6 +55,9 @@ func setupRsync(c *C) {
 	dstConfig["ARVADOS_API_TOKEN"] = os.Getenv("ARVADOS_API_TOKEN")
 	dstConfig["ARVADOS_API_HOST_INSECURE"] = os.Getenv("ARVADOS_API_HOST_INSECURE")
 
+	replications = 1
+
+	// Start API and Keep servers
 	arvadostest.StartAPI()
 	arvadostest.StartKeep()
 
@@ -150,7 +153,7 @@ func (s *ServerRequiredSuite) TestRsyncInitializeWithKeepServicesJSON(c *C) {
 	c.Check(localRoots != nil, Equals, true)
 
 	foundIt := false
-	for k, _ := range localRoots {
+	for k := range localRoots {
 		if k == "zzzzz-bi6l4-123456789012340" {
 			foundIt = true
 		}
@@ -158,10 +161,93 @@ func (s *ServerRequiredSuite) TestRsyncInitializeWithKeepServicesJSON(c *C) {
 	c.Check(foundIt, Equals, true)
 
 	foundIt = false
-	for k, _ := range localRoots {
+	for k := range localRoots {
 		if k == "zzzzz-bi6l4-123456789012341" {
 			foundIt = true
 		}
 	}
 	c.Check(foundIt, Equals, true)
+}
+
+// Put 5 blocks in src. Put 2 of those blocks in dst
+// Hence there are 3 additional blocks in src
+// Also, put 2 extra blocks in dts; they are hence only in dst
+// Run rsync and verify that those 7 blocks are now available in dst
+func (s *ServerRequiredSuite) TestKeepRsync(c *C) {
+	setupRsync(c)
+
+	// Put a few blocks in src using kcSrc
+	var srcLocators []string
+	for i := 0; i < 5; i++ {
+		data := []byte(fmt.Sprintf("test-data-%d", i))
+		hash := fmt.Sprintf("%x", md5.Sum(data))
+
+		hash2, rep, err := kcSrc.PutB(data)
+		c.Check(hash2, Matches, fmt.Sprintf(`^%s\+11(\+.+)?$`, hash))
+		c.Check(rep, Equals, 2)
+		c.Check(err, Equals, nil)
+
+		reader, blocklen, _, err := kcSrc.Get(hash)
+		c.Assert(err, Equals, nil)
+		c.Check(blocklen, Equals, int64(11))
+		all, err := ioutil.ReadAll(reader)
+		c.Check(all, DeepEquals, data)
+
+		srcLocators = append(srcLocators, fmt.Sprintf("%s+%d", hash, blocklen))
+	}
+
+	// Put just two of those blocks in dst using kcDst
+	var dstLocators []string
+	for i := 0; i < 2; i++ {
+		data := []byte(fmt.Sprintf("test-data-%d", i))
+		hash := fmt.Sprintf("%x", md5.Sum(data))
+
+		hash2, rep, err := kcDst.PutB(data)
+		c.Check(hash2, Matches, fmt.Sprintf(`^%s\+11(\+.+)?$`, hash))
+		c.Check(rep, Equals, 1)
+		c.Check(err, Equals, nil)
+
+		reader, blocklen, _, err := kcDst.Get(hash)
+		c.Assert(err, Equals, nil)
+		c.Check(blocklen, Equals, int64(11))
+		all, err := ioutil.ReadAll(reader)
+		c.Check(all, DeepEquals, data)
+
+		dstLocators = append(dstLocators, fmt.Sprintf("%s+%d", hash, blocklen))
+	}
+
+	// Put two more blocks in dst; they are not in src at all
+	var extraDstLocators []string
+	for i := 0; i < 2; i++ {
+		data := []byte(fmt.Sprintf("other-data-%d", i))
+		hash := fmt.Sprintf("%x", md5.Sum(data))
+
+		hash2, rep, err := kcDst.PutB(data)
+		c.Check(hash2, Matches, fmt.Sprintf(`^%s\+12(\+.+)?$`, hash))
+		c.Check(rep, Equals, 1)
+		c.Check(err, Equals, nil)
+
+		reader, blocklen, _, err := kcDst.Get(hash)
+		c.Assert(err, Equals, nil)
+		c.Check(blocklen, Equals, int64(12))
+		all, err := ioutil.ReadAll(reader)
+		c.Check(all, DeepEquals, data)
+
+		extraDstLocators = append(extraDstLocators, fmt.Sprintf("%s+%d", hash, blocklen))
+	}
+
+	err := performKeepRsync()
+	c.Check(err, Equals, nil)
+
+	// Now GetIndex from dst and verify that all 5 from src and the 2 extra blocks are found
+	dstIndex, err := getUniqueLocators(kcDst, "")
+	c.Check(err, Equals, nil)
+	for _, locator := range srcLocators {
+		_, ok := dstIndex[locator]
+		c.Assert(ok, Equals, true)
+	}
+	for _, locator := range extraDstLocators {
+		_, ok := dstIndex[locator]
+		c.Assert(ok, Equals, true)
+	}
 }
