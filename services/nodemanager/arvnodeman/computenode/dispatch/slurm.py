@@ -13,6 +13,7 @@ class ComputeNodeShutdownActor(ShutdownActorBase):
     SLURM_END_STATES = frozenset(['down\n', 'down*\n',
                                   'drain\n', 'drain*\n',
                                   'fail\n', 'fail*\n'])
+    SLURM_DRAIN_STATES = frozenset(['drain\n', 'drng\n'])
 
     def on_start(self):
         arv_node = self._arvados_node()
@@ -30,10 +31,26 @@ class ComputeNodeShutdownActor(ShutdownActorBase):
         cmd.extend(args)
         subprocess.check_output(cmd)
 
+    def _get_slurm_state(self):
+        return subprocess.check_output(['sinfo', '--noheader', '-o', '%t', '-n', self._nodename])
+
     @ShutdownActorBase._retry((subprocess.CalledProcessError,))
     def cancel_shutdown(self):
         if self._nodename:
-            self._set_node_state('RESUME')
+            try:
+                self._set_node_state('RESUME')
+            except subprocess.CalledProcessError:
+                slum_state = self._get_slurm_state()
+                if slum_state in self.SLURM_DRAIN_STATES:
+                    # We expect to be able to resume from "drain" or "drng"
+                    # So if scontrol exited non-zero, something actually failed, so
+                    # raise an exception to signal the retry to kick in.
+                    raise
+                else:
+                    # Assume scontrol exited non-zero because the node is already in
+                    # 'idle' or 'alloc' (so it never started draining)
+                    # we don't need to do anything else resume it.
+                    pass
         return super(ComputeNodeShutdownActor, self).cancel_shutdown()
 
     @ShutdownActorBase._stop_if_window_closed
@@ -46,8 +63,7 @@ class ComputeNodeShutdownActor(ShutdownActorBase):
     @ShutdownActorBase._stop_if_window_closed
     @ShutdownActorBase._retry((subprocess.CalledProcessError,))
     def await_slurm_drain(self):
-        output = subprocess.check_output(
-            ['sinfo', '--noheader', '-o', '%t', '-n', self._nodename])
+        output = self._get_slurm_state()
         if output in self.SLURM_END_STATES:
             self._later.shutdown_node()
         else:
