@@ -8,45 +8,6 @@
 # 4. Section in application.default.yml corresponding to RAILS_ENV
 # 5. Section in application.default.yml called "common"
 
-<%
-# If you change any of the code in this block, you'll probably also want
-# to update it in Workbench's application.default.yml.
-def info_cmd(*args, &block)
-  IO.popen(args, "r", chdir: Rails.root, err: "/dev/null", &block)
-end
-
-source_version = ""
-local_modified = false
-if Rails.env == "production"
-  # Read the version from our package's git-commit.version file, if available.
-  begin
-    source_version = IO.read(Rails.root.join("git-commit.version")).strip
-  rescue Errno::ENOENT
-  end
-end
-
-if source_version.empty?
-  begin
-    status_output = false
-    info_cmd("git", "status", "-s") do |git_pipe|
-      git_pipe.each_line do |_|
-        status_output = true
-        # Continue reading the pipe so git doesn't get SIGPIPE.
-      end
-    end
-    if $?.success?
-      info_cmd("git", "log", "-n1", "--format=%H") do |git_pipe|
-        git_pipe.each_line do |line|
-          source_version = line.chomp
-        end
-      end
-      local_modified = status_output
-    end
-  rescue SystemCallError
-  end
-end
-%>
-
 common:
   ###
   ### Essential site configuration
@@ -365,9 +326,11 @@ common:
 
   default_openid_prefix: https://www.google.com/accounts/o8/id
 
-  # source_version
-  source_version: "<%= source_version[0...8] %>"
-  local_modified: false
+  # Override the automatic version string. With the default value of
+  # false, the version string is read from git-commit.version in
+  # Rails.root (included in vendor packages) or determined by invoking
+  # "git log".
+  source_version: false
 
 
 development:
@@ -384,7 +347,6 @@ development:
   active_record.auto_explain_threshold_in_seconds: 0.5
   assets.compress: false
   assets.debug: true
-  local_modified: "<%= local_modified ? '-modified' : '' %>"
 
 production:
   force_ssl: true

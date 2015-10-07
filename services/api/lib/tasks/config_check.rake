@@ -1,6 +1,7 @@
 namespace :config do
   desc 'Ensure site configuration has all required settings'
   task check: :environment do
+    $stderr.puts "%-32s %s" % ["AppVersion (discovered)", AppVersion.hash]
     $application_config.sort.each do |k, v|
       if ENV.has_key?('QUIET') then
         # Make sure we still check for the variable to exist
