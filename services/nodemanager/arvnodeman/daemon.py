@@ -182,9 +182,14 @@ class NodeManagerDaemonActor(actor_class):
                     self._pair_nodes(record, arv_rec.arvados_node)
                     break
         for key, record in self.cloud_nodes.orphans.iteritems():
+            if key in self.shutdowns:
+                try:
+                    self.shutdowns[key].stop().get()
+                except pykka.ActorDeadError:
+                    pass
+                del self.shutdowns[key]
             record.actor.stop()
             record.cloud_node = None
-            self.shutdowns.pop(key, None)
 
     def update_arvados_nodes(self, nodelist):
         self._update_poll_time('arvados_nodes')
