@@ -37,20 +37,13 @@ class ComputeNodeShutdownActor(ShutdownActorBase):
     @ShutdownActorBase._retry((subprocess.CalledProcessError,))
     def cancel_shutdown(self):
         if self._nodename:
-            try:
+            if self._get_slurm_state() in self.SLURM_DRAIN_STATES:
+                # Resume from "drng" or "drain"
                 self._set_node_state('RESUME')
-            except subprocess.CalledProcessError:
-                slum_state = self._get_slurm_state()
-                if slum_state in self.SLURM_DRAIN_STATES:
-                    # We expect to be able to resume from "drain" or "drng"
-                    # So if scontrol exited non-zero, something actually failed, so
-                    # raise an exception to signal the retry to kick in.
-                    raise
-                else:
-                    # Assume scontrol exited non-zero because the node is already in
-                    # 'idle' or 'alloc' (so it never started draining)
-                    # we don't need to do anything else resume it.
-                    pass
+            else:
+                # Node is in a state such as 'idle' or 'alloc' so don't
+                # try to resume it because that will just raise an error.
+                pass
         return super(ComputeNodeShutdownActor, self).cancel_shutdown()
 
     @ShutdownActorBase._stop_if_window_closed
