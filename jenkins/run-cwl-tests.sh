@@ -175,7 +175,8 @@ fi
  ./build-node-docker.sh
 )
 
-./run_test.sh RUNNER=cwltool/cwltool/main.py
+./run_test.sh RUNNER=cwltool/cwltool/main.py DRAFT=draft-2
+./run_test.sh RUNNER=cwltool/cwltool/main.py DRAFT=draft-3
 
 (cd cwltool
  handle_python_package
