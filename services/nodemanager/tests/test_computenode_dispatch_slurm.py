@@ -60,12 +60,19 @@ class SLURMComputeNodeShutdownActorTestCase(ComputeNodeShutdownActorMixin,
         self.assertFalse(proc_mock.called)
 
     def test_node_undrained_when_shutdown_window_closes(self, proc_mock):
-        proc_mock.return_value = 'alloc\n'
+        proc_mock.side_effect = iter(['drng\n', 'idle\n'])
         self.make_mocks(arvados_node=testutil.arvados_node_mock(job_uuid=True))
         self.make_actor()
         self.check_success_flag(False, 2)
-        self.check_slurm_got_args(proc_mock, 'NodeName=compute99',
-                                  'State=RESUME')
+        self.check_slurm_got_args(proc_mock, 'NodeName=compute99', 'State=RESUME')
+
+    def test_alloc_node_undrained_when_shutdown_window_closes(self, proc_mock):
+        proc_mock.side_effect = iter(['alloc\n'])
+        self.make_mocks(arvados_node=testutil.arvados_node_mock(job_uuid=True))
+        self.make_actor()
+        self.check_success_flag(False, 2)
+        self.check_slurm_got_args(proc_mock, 'sinfo', '--noheader', '-o', '%t', '-n', 'compute99')
+
 
     def test_arvados_node_cleaned_after_shutdown(self, proc_mock):
         proc_mock.return_value = 'drain\n'
