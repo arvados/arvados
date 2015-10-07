@@ -3,18 +3,15 @@
   arvados_base = Rails.configuration.arvados_v1_base
   support_email = Rails.configuration.support_email_address
 
-  api_version_link = link_to api_version_text, version_link_target(api_version)
-  wb_version_link = link_to wb_version_text, version_link_target(wb_version)
-
   additional_info = {}
   additional_info['Current location'] = params[:current_location]
   additional_info['User UUID'] = current_user.uuid if current_user
 
   additional_info_str = additional_info.map {|k,v| "#{k}=#{v}"}.join("\n")
 
-  additional_info['api_version'] = api_version_text
+  additional_info['api_source_version'] = api_source_version
   additional_info['generated_at'] = generated_at
-  additional_info['workbench_version'] = wb_version_text
+  additional_info['workbench_version'] = AppVersion.hash
   additional_info['arvados_base'] = arvados_base
   additional_info['support_email'] = support_email
   additional_info['error_message'] = params[:error_message] if params[:error_message]
@@ -71,14 +68,18 @@
         <div class="form-group">
           <label for="wb_version" class="col-sm-4 control-label"> Workbench version </label>
           <div class="col-sm-8">
-            <p class="form-control-static" name="wb_version"><%= wb_version_link %></p>
+            <p class="form-control-static" name="wb_version">
+              <%= link_to AppVersion.hash, version_link_target(AppVersion.hash) %>
+            </p>
           </div>
         </div>
 
         <div class="form-group">
           <label for="server_version" class="col-sm-4 control-label"> API version </label>
           <div class="col-sm-8">
-            <p class="form-control-static" name="server_version"><%= api_version_link %></p>
+            <p class="form-control-static" name="server_version">
+              <%= link_to api_source_version, version_link_target(api_source_version) %>
+            </p>
           </div>
         </div>
 
