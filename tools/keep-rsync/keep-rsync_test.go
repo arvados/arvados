@@ -5,7 +5,6 @@ import (
 	"fmt"
 	"io/ioutil"
 	"os"
-	"regexp"
 	"testing"
 
 	"git.curoverse.com/arvados.git/sdk/go/arvadostest"
