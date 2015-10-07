@@ -141,13 +141,13 @@ var (
 // Initializes keep-rsync using the config provided
 func initializeKeepRsync() (err error) {
 	// arvSrc from srcConfig
-	arvSrc, err = arvadosclient.MakeArvadosClientWithConfig(srcConfig)
+	arvSrc, err = arvadosclient.New(srcConfig)
 	if err != nil {
 		return
 	}
 
 	// arvDst from dstConfig
-	arvDst, err = arvadosclient.MakeArvadosClientWithConfig(dstConfig)
+	arvDst, err = arvadosclient.New(dstConfig)
 	if err != nil {
 		return
 	}
