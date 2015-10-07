@@ -505,3 +505,26 @@ class NodeManagerDaemonActorTestCase(testutil.ActorTestMixin,
         self.timer.deliver()
         self.stop_proxy(self.daemon)
         self.assertEqual(1, self.node_setup.start.call_count)
+
+    def test_shutdown_actor_stopped_when_cloud_node_delisted(self):
+        self.make_daemon(cloud_nodes=[testutil.cloud_node_mock()])
+        self.assertEqual(1, self.alive_monitor_count())
+        monitor = self.monitor_list()[0].proxy()
+        self.daemon.node_can_shutdown(monitor).get(self.TIMEOUT)
+        self.daemon.update_cloud_nodes([]).get(self.TIMEOUT)
+        self.stop_proxy(self.daemon)
+        self.assertEqual(
+            1, self.node_shutdown.start().proxy().stop().get.call_count)
+
+    def test_shutdown_actor_cleanup_copes_with_dead_actors(self):
+        self.make_daemon(cloud_nodes=[testutil.cloud_node_mock()])
+        self.assertEqual(1, self.alive_monitor_count())
+        monitor = self.monitor_list()[0].proxy()
+        self.daemon.node_can_shutdown(monitor).get(self.TIMEOUT)
+        # We're mainly testing that update_cloud_nodes catches and handles
+        # the ActorDeadError.
+        stop_method = self.node_shutdown.start().proxy().stop().get
+        stop_method.side_effect = pykka.ActorDeadError
+        self.daemon.update_cloud_nodes([]).get(self.TIMEOUT)
+        self.stop_proxy(self.daemon)
+        self.assertEqual(1, stop_method.call_count)
