@@ -383,19 +383,15 @@ class ArvadosPutTest(run_test_server.TestCaseWithServers, ArvadosBaseTestCase):
             os.chmod(cachedir, 0o700)
 
     def test_put_block_replication(self):
-        with mock.patch('arvados.collection.KeepClient.local_store_put') as put_mock:
+        with mock.patch('arvados.collection.KeepClient.local_store_put') as put_mock, \
+             mock.patch('arvados.commands.put.ResumeCache.load') as cache_mock:
+            cache_mock.side_effect = ValueError
             put_mock.return_value = 'acbd18db4cc2f85cedef654fccc4a4d8+3'
-            orig_cachedir = arv_put.ResumeCache.CACHE_DIR
-            cachedir = self.make_tmpdir()
-            arv_put.ResumeCache.CACHE_DIR = os.path.join(cachedir, 'cachedir')
-            try:
-                self.call_main_on_test_file(['--replication', '1'])
-                self.call_main_on_test_file(['--replication', '4'])
-                self.call_main_on_test_file(['--replication', '5'])
-            finally:
-                arv_put.ResumeCache.CACHE_DIR = orig_cachedir
+            self.call_main_on_test_file(['--replication', '1'])
+            self.call_main_on_test_file(['--replication', '4'])
+            self.call_main_on_test_file(['--replication', '5'])
             self.assertEqual(
-                [x[len(x)-1].get('copies') for x in put_mock.call_args_list],
+                [x[-1].get('copies') for x in put_mock.call_args_list],
                 [1, 4, 5])
 
     def test_normalize(self):
