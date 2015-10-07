@@ -282,7 +282,9 @@ class ArvPutCollectionWriter(arvados.ResumableCollectionWriter):
                                     replication=replication)
         except (TypeError, ValueError,
                 arvados.errors.StaleWriterStateError) as error:
-            return cls(cache, reporter, bytes_expected, num_retries=num_retries)
+            return cls(cache, reporter, bytes_expected,
+                       num_retries=num_retries,
+                       replication=replication)
         else:
             return writer
 
