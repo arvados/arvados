@@ -64,7 +64,7 @@ func setupRsync(c *C) {
 	c.Assert(err, Equals, nil)
 
 	// Create two more keep servers to be used as destination
-	arvadostest.StartKeepAdditional(true)
+	arvadostest.StartKeepWithParams(true, false)
 
 	// load kcDst
 	kcDst, err = keepclient.MakeKeepClient(&arvDst)

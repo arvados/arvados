@@ -43,7 +43,8 @@ if not os.path.exists(TEST_TMPDIR):
 
 my_api_host = None
 _cached_config = {}
-keep_existing = None
+keep_existing = False
+enforce_permissions = False
 
 def find_server_pid(PID_PATH, wait=10):
     now = time.time()
@@ -324,8 +325,8 @@ def _start_keep(n, keep_args):
 
     return port
 
-def run_keep(blob_signing_key=None, enforce_permissions=False):
-    if keep_existing is None:
+def run_keep(blob_signing_key=None):
+    if not keep_existing:
       stop_keep()
 
     keep_args = {}
@@ -354,7 +355,7 @@ def run_keep(blob_signing_key=None, enforce_permissions=False):
 
     start_index = 0
     end_index = 2
-    if keep_existing is not None:
+    if keep_existing:
         start_index = 2
         end_index = 3
     for d in range(start_index, end_index):
@@ -605,10 +606,15 @@ if __name__ == "__main__":
     parser = argparse.ArgumentParser()
     parser.add_argument('action', type=str, help="one of {}".format(actions))
     parser.add_argument('--auth', type=str, metavar='FIXTURE_NAME', help='Print authorization info for given api_client_authorizations fixture')
-    parser.add_argument('--keep_existing', type=str, help="Used to add additional keep servers, without terminating existing servers")
+    parser.add_argument('--keep-existing', type=str, help="Used to add additional keep servers, without terminating existing servers")
+    parser.add_argument('--keep-enforce-permissions', type=str, help="Enforce keep permissions")
+
     args = parser.parse_args()
 
-    keep_existing = args.keep_existing
+    if args.keep_existing == 'true':
+        keep_existing = True
+    if args.keep_enforce_permissions == 'true':
+        enforce_permissions = True
 
     if args.action not in actions:
         print("Unrecognized action '{}'. Actions are: {}.".format(args.action, actions), file=sys.stderr)
