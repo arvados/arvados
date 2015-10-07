@@ -102,11 +102,11 @@ func MakeArvadosClient() (ac ArvadosClient, err error) {
 	config.APIHostInsecure = matchTrue.MatchString(os.Getenv("ARVADOS_API_HOST_INSECURE"))
 	config.ExternalClient = matchTrue.MatchString(os.Getenv("ARVADOS_EXTERNAL_CLIENT"))
 
-	return MakeArvadosClientWithConfig(config)
+	return New(config)
 }
 
 // Create a new ArvadosClient, using the given input parameters.
-func MakeArvadosClientWithConfig(config APIConfig) (ac ArvadosClient, err error) {
+func New(config APIConfig) (ac ArvadosClient, err error) {
 	ac = ArvadosClient{
 		ApiServer:   config.APIHost,
 		ApiToken:    config.APIToken,
