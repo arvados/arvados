@@ -1,5 +1,5 @@
 # If you change this file, you'll probably also want to make the same
-# changes in apps/workbench/lib/app_version.rb.
+# changes in services/api/lib/app_version.rb.
 
 class AppVersion
   def self.git(*args, &block)
