@@ -8,7 +8,7 @@ class AppVersionTest < ActiveSupport::TestCase
 
   test 'invoke git processes only on first call' do
     AppVersion.expects(:git).
-      with("status", "-s").once.
+      with("status", "--porcelain").once.
       yields " M services/api/README\n"
     AppVersion.expects(:git).
       with("log", "-n1", "--format=%H").once.
