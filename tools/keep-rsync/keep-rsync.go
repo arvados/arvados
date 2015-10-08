@@ -9,6 +9,7 @@ import (
 	"log"
 	"regexp"
 	"strings"
+	"time"
 )
 
 // keep-rsync arguments
@@ -92,7 +93,7 @@ func main() {
 	// Initialize keep-rsync
 	err = initializeKeepRsync()
 	if err != nil {
-		log.Fatal("Error configurating keep-rsync: %s", err.Error())
+		log.Fatal("Error configuring keep-rsync: %s", err.Error())
 	}
 
 	// Copy blocks not found in dst from src
@@ -267,7 +268,13 @@ func copyBlocksToDst(toBeCopied []string) {
 
 		log.Printf("Getting block: %v", locator)
 
-		reader, _, _, err := kcSrc.Get(locator)
+		getLocator := locator
+		expiresAt := time.Now().AddDate(0, 0, 1)
+		if blobSigningKey != "" {
+			getLocator = keepclient.SignLocator(getLocator, arvSrc.ApiToken, expiresAt, []byte(blobSigningKey))
+		}
+
+		reader, _, _, err := kcSrc.Get(getLocator)
 		if err != nil {
 			log.Printf("Error getting block: %q %v", locator, err)
 			failed = append(failed, locator)

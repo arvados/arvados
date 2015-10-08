@@ -40,8 +40,8 @@ func (s *ServerRequiredSuite) TearDownSuite(c *C) {
 }
 
 // Testing keep-rsync needs two sets of keep services: src and dst.
-// The test setup hence tweaks keep-rsync initialzation to achieve this.
-// First invoke initializeKeepRsync and then invoke StartKeepAdditional
+// The test setup hence tweaks keep-rsync initialization to achieve this.
+// First invoke initializeKeepRsync and then invoke StartKeepWithParams
 // to create the keep servers to be used as destination.
 func setupRsync(c *C, enforcePermissions bool) {
 	// srcConfig
@@ -138,11 +138,11 @@ func (s *ServerRequiredSuite) TestRsyncPutInOne_GetFromOtherShouldFail(c *C) {
 	all, err = ioutil.ReadAll(reader)
 	c.Check(all, DeepEquals, dstData)
 
-	// Get srcLocator using kcDst should fail with NotFound error
+	// Get srcLocator using kcDst should fail with Not Found error
 	_, _, _, err = kcDst.Get(locatorInSrc)
 	c.Assert(err.Error(), Equals, "Block not found")
 
-	// Get dstLocator using kcSrc should fail with NotFound error
+	// Get dstLocator using kcSrc should fail with Not Found error
 	_, _, _, err = kcSrc.Get(locatorInDst)
 	c.Assert(err.Error(), Equals, "Block not found")
 }
@@ -173,7 +173,7 @@ func (s *ServerRequiredSuite) TestRsyncInitializeWithKeepServicesJSON(c *C) {
 	c.Check(foundIt, Equals, true)
 }
 
-// Test keep-rsync initialization, with src and dst keep servers with blobSingingKey.
+// Test keep-rsync initialization, with src and dst keep servers with blobSigningKey.
 // Do a Put and Get in src, both of which should succeed.
 // Do a Put and Get in dst, both of which should succeed.
 // Do a Get in dst for the src hash, which should raise block not found error.
@@ -216,23 +216,37 @@ func (s *ServerRequiredSuite) TestRsyncWithBlobSigning_PutInOne_GetFromOtherShou
 	all, err = ioutil.ReadAll(reader)
 	c.Check(all, DeepEquals, dstData)
 
-	// Get srcLocator using kcDst should fail with NotFound error
+	// Get srcLocator using kcDst should fail with Not Found error
 	signedLocator = keepclient.SignLocator(locatorInSrc, arvDst.ApiToken, tomorrow, []byte(blobSigningKey))
 	_, _, _, err = kcDst.Get(locatorInSrc)
 	c.Assert(err.Error(), Equals, "Block not found")
 
-	// Get dstLocator using kcSrc should fail with NotFound error
+	// Get dstLocator using kcSrc should fail with Not Found error
 	signedLocator = keepclient.SignLocator(locatorInDst, arvSrc.ApiToken, tomorrow, []byte(blobSigningKey))
 	_, _, _, err = kcSrc.Get(locatorInDst)
 	c.Assert(err.Error(), Equals, "Block not found")
 }
 
+// Put some blocks in Src and some more in Dst
+// And copy missing blocks from Src to Dst
+func (s *ServerRequiredSuite) TestKeepRsync(c *C) {
+	testKeepRsync(c, false)
+}
+
+// Put some blocks in Src and some more in Dst with blob signing enabled.
+// And copy missing blocks from Src to Dst
+func (s *ServerRequiredSuite) TestKeepRsync_WithBlobSigning(c *C) {
+	testKeepRsync(c, true)
+}
+
 // Put 5 blocks in src. Put 2 of those blocks in dst
 // Hence there are 3 additional blocks in src
-// Also, put 2 extra blocks in dts; they are hence only in dst
+// Also, put 2 extra blocks in dst; they are hence only in dst
 // Run rsync and verify that those 7 blocks are now available in dst
-func (s *ServerRequiredSuite) TestKeepRsync(c *C) {
-	setupRsync(c, false)
+func testKeepRsync(c *C, enforcePermissions bool) {
+	setupRsync(c, enforcePermissions)
+
+	tomorrow := time.Now().AddDate(0, 0, 1)
 
 	// Put a few blocks in src using kcSrc
 	var srcLocators []string
@@ -245,7 +259,12 @@ func (s *ServerRequiredSuite) TestKeepRsync(c *C) {
 		c.Check(rep, Equals, 2)
 		c.Check(err, Equals, nil)
 
-		reader, blocklen, _, err := kcSrc.Get(hash)
+		getLocator := hash
+		if enforcePermissions {
+			getLocator = keepclient.SignLocator(getLocator, arvSrc.ApiToken, tomorrow, []byte(blobSigningKey))
+		}
+
+		reader, blocklen, _, err := kcSrc.Get(getLocator)
 		c.Assert(err, Equals, nil)
 		c.Check(blocklen, Equals, int64(11))
 		all, err := ioutil.ReadAll(reader)
@@ -265,7 +284,12 @@ func (s *ServerRequiredSuite) TestKeepRsync(c *C) {
 		c.Check(rep, Equals, 1)
 		c.Check(err, Equals, nil)
 
-		reader, blocklen, _, err := kcDst.Get(hash)
+		getLocator := hash
+		if enforcePermissions {
+			getLocator = keepclient.SignLocator(getLocator, arvDst.ApiToken, tomorrow, []byte(blobSigningKey))
+		}
+
+		reader, blocklen, _, err := kcDst.Get(getLocator)
 		c.Assert(err, Equals, nil)
 		c.Check(blocklen, Equals, int64(11))
 		all, err := ioutil.ReadAll(reader)
@@ -285,7 +309,12 @@ func (s *ServerRequiredSuite) TestKeepRsync(c *C) {
 		c.Check(rep, Equals, 1)
 		c.Check(err, Equals, nil)
 
-		reader, blocklen, _, err := kcDst.Get(hash)
+		getLocator := hash
+		if enforcePermissions {
+			getLocator = keepclient.SignLocator(getLocator, arvDst.ApiToken, tomorrow, []byte(blobSigningKey))
+		}
+
+		reader, blocklen, _, err := kcDst.Get(getLocator)
 		c.Assert(err, Equals, nil)
 		c.Check(blocklen, Equals, int64(12))
 		all, err := ioutil.ReadAll(reader)
