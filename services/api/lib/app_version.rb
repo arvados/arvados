@@ -30,7 +30,7 @@ class AppVersion
     if @hash.nil? or @hash.empty?
       begin
         local_modified = false
-        git("status", "-s") do |git_pipe|
+        git("status", "--porcelain") do |git_pipe|
           git_pipe.each_line do |_|
             local_modified = true
             # Continue reading the pipe so git doesn't get SIGPIPE.
