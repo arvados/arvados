@@ -408,6 +408,43 @@ func TestAzureBlobVolumeCreateBlobRace(t *testing.T) {
 	<-allDone
 }
 
+func TestAzureBlobVolumeCreateBlobRaceDeadline(t *testing.T) {
+	defer func(t http.RoundTripper) {
+		http.DefaultTransport = t
+	}(http.DefaultTransport)
+	http.DefaultTransport = &http.Transport{
+		Dial: (&azStubDialer{}).Dial,
+	}
+
+	v := NewTestableAzureBlobVolume(t, false, 3)
+	defer v.Teardown()
+
+	azureWriteRaceInterval = 2 * time.Second
+	azureWriteRacePollTime = 5 * time.Millisecond
+
+	v.PutRaw(TestHash, []byte{})
+	v.TouchWithDate(TestHash, time.Now().Add(-1982 * time.Millisecond))
+
+	allDone := make(chan struct{})
+	go func() {
+		defer close(allDone)
+		buf, err := v.Get(TestHash)
+		if err != nil {
+			t.Error(err)
+			return
+		}
+		if len(buf) != 0 {
+			t.Errorf("Got %+q, expected empty buf", buf)
+		}
+		bufs.Put(buf)
+	}()
+	select {
+	case <-allDone:
+	case <-time.After(time.Second):
+		t.Error("Get should have stopped waiting for race when block was 2s old")
+	}
+}
+
 func (v *TestableAzureBlobVolume) PutRaw(locator string, data []byte) {
 	v.azHandler.PutRaw(v.containerName, locator, data)
 }
