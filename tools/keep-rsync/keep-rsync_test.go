@@ -54,7 +54,6 @@ func setupRsync(c *C, enforcePermissions bool) {
 	dstConfig.APIToken = os.Getenv("ARVADOS_API_TOKEN")
 	dstConfig.APIHostInsecure = matchTrue.MatchString(os.Getenv("ARVADOS_API_HOST_INSECURE"))
 
-	replications = 1
 	if enforcePermissions {
 		blobSigningKey = "zfhgfenhffzltr9dixws36j1yhksjoll2grmku38mi7yxd66h5j4q9w4jzanezacp8s6q0ro3hxakfye02152hncy6zml2ed0uc"
 	}
@@ -67,10 +66,13 @@ func setupRsync(c *C, enforcePermissions bool) {
 	err := initializeKeepRsync()
 	c.Assert(err, Equals, nil)
 
+	// Must have got replication value as 2 from dst discovery document
+	c.Assert(replications, Equals, 2)
+
 	// Create two more keep servers to be used as destination
 	arvadostest.StartKeepWithParams(true, enforcePermissions)
 
-	// load kcDst
+	// load kcDst; set Want_replicas as 1 since that is how many keep servers are created for dst.
 	kcDst, err = keepclient.MakeKeepClient(&arvDst)
 	c.Assert(err, Equals, nil)
 	kcDst.Want_replicas = 1

@@ -151,6 +151,12 @@ func initializeKeepRsync() (err error) {
 		return
 	}
 
+	// Get default replication value from destination
+	value, err := arvDst.Discovery("defaultCollectionReplication")
+	if err == nil {
+		replications = int(value.(float64))
+	}
+
 	// if srcKeepServicesJSON is provided, use it to load services; else, use DiscoverKeepServers
 	if srcKeepServicesJSON == "" {
 		kcSrc, err = keepclient.MakeKeepClient(&arvSrc)
