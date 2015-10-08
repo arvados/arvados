@@ -1,6 +1,7 @@
 package main
 
 import (
+	"bytes"
 	"encoding/base64"
 	"encoding/xml"
 	"flag"
@@ -423,6 +424,13 @@ func TestAzureBlobVolumeCreateBlobRaceDeadline(t *testing.T) {
 	azureWriteRacePollTime = 5 * time.Millisecond
 
 	v.PutRaw(TestHash, []byte{})
+
+	buf := new(bytes.Buffer)
+	v.IndexTo("", buf)
+	if buf.Len() != 0 {
+		t.Errorf("Index %+q should be empty", buf.Bytes())
+	}
+
 	v.TouchWithDate(TestHash, time.Now().Add(-1982 * time.Millisecond))
 
 	allDone := make(chan struct{})
@@ -442,6 +450,12 @@ func TestAzureBlobVolumeCreateBlobRaceDeadline(t *testing.T) {
 	case <-allDone:
 	case <-time.After(time.Second):
 		t.Error("Get should have stopped waiting for race when block was 2s old")
+	}
+
+	buf.Reset()
+	v.IndexTo("", buf)
+	if !bytes.HasPrefix(buf.Bytes(), []byte(TestHash+"+0")) {
+		t.Errorf("Index %+q should have %+q", buf.Bytes(), TestHash+"+0")
 	}
 }
 

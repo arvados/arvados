@@ -220,6 +220,14 @@ func (v *AzureBlobVolume) IndexTo(prefix string, writer io.Writer) error {
 			if err != nil {
 				return err
 			}
+			if b.Properties.ContentLength == 0 && t.Add(azureWriteRaceInterval).After(time.Now()) {
+				// A new zero-length blob is probably
+				// just a new non-empty blob that
+				// hasn't committed its data yet (see
+				// Get()), and in any case has no
+				// value.
+				continue
+			}
 			fmt.Fprintf(writer, "%s+%d %d\n", b.Name, b.Properties.ContentLength, t.Unix())
 		}
 		if resp.NextMarker == "" {
