@@ -5,6 +5,7 @@ import (
 	"fmt"
 	"io/ioutil"
 	"os"
+	"strings"
 	"testing"
 	"time"
 
@@ -43,7 +44,7 @@ func (s *ServerRequiredSuite) TearDownSuite(c *C) {
 // The test setup hence tweaks keep-rsync initialization to achieve this.
 // First invoke initializeKeepRsync and then invoke StartKeepWithParams
 // to create the keep servers to be used as destination.
-func setupRsync(c *C, enforcePermissions bool) {
+func setupRsync(c *C, enforcePermissions bool, overwriteReplications bool) {
 	// srcConfig
 	srcConfig.APIHost = os.Getenv("ARVADOS_API_HOST")
 	srcConfig.APIToken = os.Getenv("ARVADOS_API_TOKEN")
@@ -69,7 +70,12 @@ func setupRsync(c *C, enforcePermissions bool) {
 	// Create two more keep servers to be used as destination
 	arvadostest.StartKeepWithParams(true, enforcePermissions)
 
-	// load kcDst; set Want_replicas as 1 since that is how many keep servers are created for dst.
+	// set replications to 1 since those many keep servers were created for dst.
+	if overwriteReplications {
+		replications = 1
+	}
+
+	// load kcDst
 	kcDst, err = keepclient.MakeKeepClient(&arvDst)
 	c.Assert(err, Equals, nil)
 	kcDst.Want_replicas = 1
@@ -105,7 +111,7 @@ func (s *ServerRequiredSuite) TestReadConfigFromFile(c *C) {
 // Do a Get in dst for the src hash, which should raise block not found error.
 // Do a Get in src for the dst hash, which should raise block not found error.
 func (s *ServerRequiredSuite) TestRsyncPutInOne_GetFromOtherShouldFail(c *C) {
-	setupRsync(c, false)
+	setupRsync(c, false, true)
 
 	// Put a block in src using kcSrc and Get it
 	srcData := []byte("test-data1")
@@ -150,7 +156,7 @@ func (s *ServerRequiredSuite) TestRsyncPutInOne_GetFromOtherShouldFail(c *C) {
 func (s *ServerRequiredSuite) TestRsyncInitializeWithKeepServicesJSON(c *C) {
 	srcKeepServicesJSON = "{ \"kind\":\"arvados#keepServiceList\", \"etag\":\"\", \"self_link\":\"\", \"offset\":null, \"limit\":null, \"items\":[ { \"href\":\"/keep_services/zzzzz-bi6l4-123456789012340\", \"kind\":\"arvados#keepService\", \"etag\":\"641234567890enhj7hzx432e5\", \"uuid\":\"zzzzz-bi6l4-123456789012340\", \"owner_uuid\":\"zzzzz-tpzed-123456789012345\", \"service_host\":\"keep0.zzzzz.arvadosapi.com\", \"service_port\":25107, \"service_ssl_flag\":false, \"service_type\":\"disk\", \"read_only\":false }, { \"href\":\"/keep_services/zzzzz-bi6l4-123456789012341\", \"kind\":\"arvados#keepService\", \"etag\":\"641234567890enhj7hzx432e5\", \"uuid\":\"zzzzz-bi6l4-123456789012341\", \"owner_uuid\":\"zzzzz-tpzed-123456789012345\", \"service_host\":\"keep0.zzzzz.arvadosapi.com\", \"service_port\":25108, \"service_ssl_flag\":false, \"service_type\":\"disk\", \"read_only\":false } ], \"items_available\":2 }"
 
-	setupRsync(c, false)
+	setupRsync(c, false, true)
 
 	localRoots := kcSrc.LocalRoots()
 	c.Check(localRoots != nil, Equals, true)
@@ -178,7 +184,7 @@ func (s *ServerRequiredSuite) TestRsyncInitializeWithKeepServicesJSON(c *C) {
 // Do a Get in dst for the src hash, which should raise block not found error.
 // Do a Get in src for the dst hash, which should raise block not found error.
 func (s *ServerRequiredSuite) TestRsyncWithBlobSigning_PutInOne_GetFromOtherShouldFail(c *C) {
-	setupRsync(c, true)
+	setupRsync(c, true, true)
 
 	// Put a block in src using kcSrc and Get it
 	srcData := []byte("test-data1")
@@ -228,7 +234,7 @@ func (s *ServerRequiredSuite) TestRsyncWithBlobSigning_PutInOne_GetFromOtherShou
 
 // Test keep-rsync initialization with default replications count
 func (s *ServerRequiredSuite) TestInitializeRsyncDefaultReplicationsCount(c *C) {
-	setupRsync(c, false)
+	setupRsync(c, false, false)
 
 	// Must have got default replications value as 2 from dst discovery document
 	c.Assert(replications, Equals, 2)
@@ -236,10 +242,10 @@ func (s *ServerRequiredSuite) TestInitializeRsyncDefaultReplicationsCount(c *C) 
 
 // Test keep-rsync initialization with replications count argument
 func (s *ServerRequiredSuite) TestInitializeRsyncReplicationsCount(c *C) {
-	// set replications to 3 to mimic passing input argument
+	// First set replications to 3 to mimic passing input argument
 	replications = 3
 
-	setupRsync(c, false)
+	setupRsync(c, false, false)
 
 	// Since replications value is provided, default is not used
 	c.Assert(replications, Equals, 3)
@@ -248,26 +254,46 @@ func (s *ServerRequiredSuite) TestInitializeRsyncReplicationsCount(c *C) {
 // Put some blocks in Src and some more in Dst
 // And copy missing blocks from Src to Dst
 func (s *ServerRequiredSuite) TestKeepRsync(c *C) {
-	testKeepRsync(c, false)
+	testKeepRsync(c, false, "")
 }
 
 // Put some blocks in Src and some more in Dst with blob signing enabled.
 // And copy missing blocks from Src to Dst
 func (s *ServerRequiredSuite) TestKeepRsync_WithBlobSigning(c *C) {
-	testKeepRsync(c, true)
+	testKeepRsync(c, true, "")
+}
+
+// Put some blocks in Src and some more in Dst
+// Use prefix while doing rsync
+// And copy missing blocks from Src to Dst
+func (s *ServerRequiredSuite) TestKeepRsync_WithPrefix(c *C) {
+	data := []byte("test-data-4")
+	hash := fmt.Sprintf("%x", md5.Sum(data))
+
+	testKeepRsync(c, false, hash[0:3])
+}
+
+// Put some blocks in Src and some more in Dst
+// Use prefix not in src while doing rsync
+// And copy missing blocks from Src to Dst
+func (s *ServerRequiredSuite) TestKeepRsync_WithNoSuchPrefixInSrc(c *C) {
+	testKeepRsync(c, false, "999")
 }
 
 // Put 5 blocks in src. Put 2 of those blocks in dst
 // Hence there are 3 additional blocks in src
 // Also, put 2 extra blocks in dst; they are hence only in dst
 // Run rsync and verify that those 7 blocks are now available in dst
-func testKeepRsync(c *C, enforcePermissions bool) {
-	setupRsync(c, enforcePermissions)
+func testKeepRsync(c *C, enforcePermissions bool, indexPrefix string) {
+	setupRsync(c, enforcePermissions, true)
+
+	prefix = indexPrefix
 
 	tomorrow := time.Now().AddDate(0, 0, 1)
 
 	// Put a few blocks in src using kcSrc
 	var srcLocators []string
+	var srcLocatorsMatchingPrefix []string
 	for i := 0; i < 5; i++ {
 		data := []byte(fmt.Sprintf("test-data-%d", i))
 		hash := fmt.Sprintf("%x", md5.Sum(data))
@@ -289,9 +315,12 @@ func testKeepRsync(c *C, enforcePermissions bool) {
 		c.Check(all, DeepEquals, data)
 
 		srcLocators = append(srcLocators, fmt.Sprintf("%s+%d", hash, blocklen))
+		if strings.HasPrefix(hash, indexPrefix) {
+			srcLocatorsMatchingPrefix = append(srcLocatorsMatchingPrefix, fmt.Sprintf("%s+%d", hash, blocklen))
+		}
 	}
 
-	// Put just two of those blocks in dst using kcDst
+	// Put first two of those src blocks in dst using kcDst
 	var dstLocators []string
 	for i := 0; i < 2; i++ {
 		data := []byte(fmt.Sprintf("test-data-%d", i))
@@ -347,12 +376,29 @@ func testKeepRsync(c *C, enforcePermissions bool) {
 	// Now GetIndex from dst and verify that all 5 from src and the 2 extra blocks are found
 	dstIndex, err := getUniqueLocators(kcDst, "")
 	c.Check(err, Equals, nil)
-	for _, locator := range srcLocators {
-		_, ok := dstIndex[locator]
-		c.Assert(ok, Equals, true)
+
+	if prefix == "" {
+		for _, locator := range srcLocators {
+			_, ok := dstIndex[locator]
+			c.Assert(ok, Equals, true)
+		}
+	} else {
+		for _, locator := range srcLocatorsMatchingPrefix {
+			_, ok := dstIndex[locator]
+			c.Assert(ok, Equals, true)
+		}
 	}
+
 	for _, locator := range extraDstLocators {
 		_, ok := dstIndex[locator]
 		c.Assert(ok, Equals, true)
+	}
+
+	if prefix == "" {
+		// all blocks from src and the two extra blocks
+		c.Assert(len(dstIndex), Equals, len(srcLocators)+len(extraDstLocators))
+	} else {
+		// one matching prefix, 2 that were initially copied into dst along with src, and the extra blocks
+		c.Assert(len(dstIndex), Equals, len(srcLocatorsMatchingPrefix)+len(extraDstLocators)+2)
 	}
 }

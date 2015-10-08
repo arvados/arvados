@@ -221,11 +221,11 @@ func performKeepRsync() error {
 }
 
 // Get list of unique locators from the specified cluster
-func getUniqueLocators(kc *keepclient.KeepClient, prefix string) (map[string]bool, error) {
+func getUniqueLocators(kc *keepclient.KeepClient, indexPrefix string) (map[string]bool, error) {
 	var indexBytes []byte
 
 	for uuid := range kc.LocalRoots() {
-		reader, err := kc.GetIndex(uuid, prefix)
+		reader, err := kc.GetIndex(uuid, indexPrefix)
 		if err != nil {
 			return nil, err
 		}
