@@ -58,7 +58,7 @@ func main() {
 	flag.IntVar(
 		&replications,
 		"replications",
-		3,
+		0,
 		"Number of replications to write to the destination.")
 
 	flag.StringVar(
@@ -151,10 +151,14 @@ func initializeKeepRsync() (err error) {
 		return
 	}
 
-	// Get default replication value from destination
-	value, err := arvDst.Discovery("defaultCollectionReplication")
-	if err == nil {
-		replications = int(value.(float64))
+	// Get default replications value from destination, if it is not already provided
+	if replications == 0 {
+		value, err := arvDst.Discovery("defaultCollectionReplication")
+		if err == nil {
+			replications = int(value.(float64))
+		} else {
+			replications = 2
+		}
 	}
 
 	// if srcKeepServicesJSON is provided, use it to load services; else, use DiscoverKeepServers

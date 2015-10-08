@@ -66,9 +66,6 @@ func setupRsync(c *C, enforcePermissions bool) {
 	err := initializeKeepRsync()
 	c.Assert(err, Equals, nil)
 
-	// Must have got replication value as 2 from dst discovery document
-	c.Assert(replications, Equals, 2)
-
 	// Create two more keep servers to be used as destination
 	arvadostest.StartKeepWithParams(true, enforcePermissions)
 
@@ -227,4 +224,23 @@ func (s *ServerRequiredSuite) TestRsyncWithBlobSigning_PutInOne_GetFromOtherShou
 	signedLocator = keepclient.SignLocator(locatorInDst, arvSrc.ApiToken, tomorrow, []byte(blobSigningKey))
 	_, _, _, err = kcSrc.Get(locatorInDst)
 	c.Assert(err.Error(), Equals, "Block not found")
+}
+
+// Test keep-rsync initialization with default replications count
+func (s *ServerRequiredSuite) TestInitializeRsyncDefaultReplicationsCount(c *C) {
+	setupRsync(c, false)
+
+	// Must have got default replications value as 2 from dst discovery document
+	c.Assert(replications, Equals, 2)
+}
+
+// Test keep-rsync initialization with replications count argument
+func (s *ServerRequiredSuite) TestInitializeRsyncReplicationsCount(c *C) {
+	// set replications to 3 to mimic passing input argument
+	replications = 3
+
+	setupRsync(c, false)
+
+	// Since replications value is provided, default is not used
+	c.Assert(replications, Equals, 3)
 }
