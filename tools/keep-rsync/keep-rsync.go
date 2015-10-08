@@ -14,6 +14,7 @@ import (
 var (
 	srcConfig           arvadosclient.APIConfig
 	dstConfig           arvadosclient.APIConfig
+	blobSigningKey      string
 	srcKeepServicesJSON string
 	dstKeepServicesJSON string
 	replications        int
@@ -30,7 +31,7 @@ func main() {
 		"",
 		"Source configuration filename with full path that contains "+
 			"an ARVADOS_API_TOKEN which is a valid datamanager token recognized by the source keep servers, "+
-			"ARVADOS_API_HOST, ARVADOS_API_HOST_INSECURE, and ARVADOS_BLOB_SIGNING_KEY.")
+			"ARVADOS_API_HOST, ARVADOS_API_HOST_INSECURE, ARVADOS_EXTERNAL_CLIENT and ARVADOS_BLOB_SIGNING_KEY.")
 
 	flag.StringVar(
 		&dstConfigFile,
@@ -38,7 +39,7 @@ func main() {
 		"",
 		"Destination configuration filename with full path that contains "+
 			"an ARVADOS_API_TOKEN which is a valid datamanager token recognized by the destination keep servers, "+
-			"ARVADOS_API_HOST, ARVADOS_API_HOST_INSECURE, and ARVADOS_BLOB_SIGNING_KEY.")
+			"ARVADOS_API_HOST, ARVADOS_API_HOST_INSECURE, ARVADOS_EXTERNAL_CLIENT and ARVADOS_BLOB_SIGNING_KEY.")
 
 	flag.StringVar(
 		&srcKeepServicesJSON,
@@ -121,6 +122,8 @@ func readConfigFromFile(filename string) (arvadosclient.APIConfig, error) {
 			config.APIHostInsecure = matchTrue.MatchString(kv[1])
 		case "ARVADOS_EXTERNAL_CLIENT":
 			config.ExternalClient = matchTrue.MatchString(kv[1])
+		case "ARVADOS_BLOB_SIGNING_KEY":
+			blobSigningKey = kv[1]
 		}
 	}
 	return config, nil
