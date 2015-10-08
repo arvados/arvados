@@ -38,6 +38,7 @@ package keepclient
 import (
 	"crypto/hmac"
 	"crypto/sha1"
+	"errors"
 	"fmt"
 	"regexp"
 	"strconv"
@@ -45,21 +46,12 @@ import (
 	"time"
 )
 
-// KeepError types.
-//
-type KeepError struct {
-	HTTPCode int
-	ErrMsg   string
-}
-
 var (
-	PermissionError = &KeepError{403, "Forbidden"}
-	ExpiredError    = &KeepError{401, "Expired permission signature"}
+	ErrSignatureExpired   = errors.New("Signature expired")
+	ErrSignatureInvalid   = errors.New("Invalid signature")
+	ErrSignatureMalformed = errors.New("Malformed signature")
+	ErrSignatureMissing   = errors.New("Missing signature")
 )
-
-func (e *KeepError) Error() string {
-	return e.ErrMsg
-}
 
 // makePermSignature returns a string representing the signed permission
 // hint for the blob identified by blobHash, apiToken, expiration timestamp, and permission secret.
@@ -105,18 +97,18 @@ func VerifySignature(signedLocator string, apiToken string, permissionSecret []b
 	matches := signedLocatorRe.FindStringSubmatch(signedLocator)
 	if matches == nil {
 		// Could not find a permission signature at all
-		return PermissionError
+		return ErrSignatureMissing
 	}
 	blobHash := matches[1]
 	sigHex := matches[2]
 	expHex := matches[3]
 	if expTime, err := parseHexTimestamp(expHex); err != nil {
-		return PermissionError
+		return ErrSignatureMalformed
 	} else if expTime.Before(time.Now()) {
-		return ExpiredError
+		return ErrSignatureExpired
 	}
 	if sigHex != makePermSignature(blobHash, apiToken, expHex, permissionSecret) {
-		return PermissionError
+		return ErrSignatureInvalid
 	}
 	return nil
 }
