@@ -16,10 +16,15 @@ import (
 )
 
 var (
-	ErrSignatureExpired   = errors.New("Signature expired")
-	ErrSignatureInvalid   = errors.New("Invalid signature")
-	ErrSignatureMalformed = errors.New("Malformed signature")
-	ErrSignatureMissing   = errors.New("Missing signature")
+	// ErrSignatureExpired - a signature was rejected because the
+	// expiry time has passed.
+	ErrSignatureExpired = errors.New("Signature expired")
+	// ErrSignatureInvalid - a signature was rejected because it
+	// was badly formatted or did not match the given secret key.
+	ErrSignatureInvalid = errors.New("Invalid signature")
+	// ErrSignatureMissing - the given locator does not have a
+	// signature hint.
+	ErrSignatureMissing = errors.New("Missing signature")
 )
 
 // makePermSignature generates a SHA-1 HMAC digest for the given blob,
@@ -57,9 +62,11 @@ var signedLocatorRe = regexp.MustCompile(`^([[:xdigit:]]{32}).*\+A([[:xdigit:]]{
 
 // VerifySignature returns nil if the signature on the signedLocator
 // can be verified using the given apiToken. Otherwise it returns
-// either ExpiredError (if the timestamp has expired, which is
-// something the client could have figured out independently) or
-// PermissionError.
+// ErrSignatureExpired (if the signature's expiry time has passed,
+// which is something the client could have figured out
+// independently), ErrSignatureMissing (if there is no signature hint
+// at all), or ErrSignatureInvalid (if the signature is present but
+// badly formatted or incorrect).
 //
 // This function is intended to be used by system components and admin
 // utilities: userland programs do not know the permissionSecret.
@@ -72,7 +79,7 @@ func VerifySignature(signedLocator, apiToken string, permissionSecret []byte) er
 	sigHex := matches[2]
 	expHex := matches[3]
 	if expTime, err := parseHexTimestamp(expHex); err != nil {
-		return ErrSignatureMalformed
+		return ErrSignatureInvalid
 	} else if expTime.Before(time.Now()) {
 		return ErrSignatureExpired
 	}
