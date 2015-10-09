@@ -184,6 +184,31 @@ func (fh FailHandler) ServeHTTP(resp http.ResponseWriter, req *http.Request) {
 	fh.handled <- fmt.Sprintf("http://%s", req.Host)
 }
 
+type FailThenSucceedHandler struct {
+	handled        chan string
+	count          int
+	successhandler StubGetHandler
+}
+
+func (fh *FailThenSucceedHandler) ServeHTTP(resp http.ResponseWriter, req *http.Request) {
+	if fh.count == 0 {
+		resp.WriteHeader(500)
+		fh.count += 1
+		fh.handled <- fmt.Sprintf("http://%s", req.Host)
+	} else {
+		fh.successhandler.ServeHTTP(resp, req)
+	}
+}
+
+type Error404Handler struct {
+	handled chan string
+}
+
+func (fh Error404Handler) ServeHTTP(resp http.ResponseWriter, req *http.Request) {
+	resp.WriteHeader(404)
+	fh.handled <- fmt.Sprintf("http://%s", req.Host)
+}
+
 func (s *StandaloneSuite) TestFailedUploadToStubKeepServer(c *C) {
 	log.Printf("TestFailedUploadToStubKeepServer")
 
@@ -479,6 +504,26 @@ func (s *StandaloneSuite) TestGet(c *C) {
 	log.Printf("TestGet done")
 }
 
+func (s *StandaloneSuite) TestGet404(c *C) {
+	hash := fmt.Sprintf("%x", md5.Sum([]byte("foo")))
+
+	st := Error404Handler{make(chan string, 1)}
+
+	ks := RunFakeKeepServer(st)
+	defer ks.listener.Close()
+
+	arv, err := arvadosclient.MakeArvadosClient()
+	kc, _ := MakeKeepClient(&arv)
+	arv.ApiToken = "abc123"
+	kc.SetServiceRoots(map[string]string{"x": ks.url}, map[string]string{ks.url: ""}, nil)
+
+	r, n, url2, err := kc.Get(hash)
+	c.Check(err, Equals, BlockNotFound)
+	c.Check(n, Equals, int64(0))
+	c.Check(url2, Equals, "")
+	c.Check(r, Equals, nil)
+}
+
 func (s *StandaloneSuite) TestGetFail(c *C) {
 	hash := fmt.Sprintf("%x", md5.Sum([]byte("foo")))
 
@@ -493,7 +538,52 @@ func (s *StandaloneSuite) TestGetFail(c *C) {
 	kc.SetServiceRoots(map[string]string{"x": ks.url}, map[string]string{ks.url: ""}, nil)
 
 	r, n, url2, err := kc.Get(hash)
-	c.Check(err, Equals, BlockNotFound)
+	c.Check(err, Equals, KeepServerError)
+	c.Check(n, Equals, int64(0))
+	c.Check(url2, Equals, "")
+	c.Check(r, Equals, nil)
+}
+
+func (s *StandaloneSuite) TestGetFailRetry(c *C) {
+	hash := fmt.Sprintf("%x", md5.Sum([]byte("foo")))
+
+	st := &FailThenSucceedHandler{make(chan string, 1), 0,
+		StubGetHandler{
+			c,
+			hash,
+			"abc123",
+			http.StatusOK,
+			[]byte("foo")}}
+
+	ks := RunFakeKeepServer(st)
+	defer ks.listener.Close()
+
+	arv, err := arvadosclient.MakeArvadosClient()
+	kc, _ := MakeKeepClient(&arv)
+	arv.ApiToken = "abc123"
+	kc.SetServiceRoots(map[string]string{"x": ks.url}, map[string]string{ks.url: ""}, nil)
+
+	r, n, url2, err := kc.Get(hash)
+	defer r.Close()
+	c.Check(err, Equals, nil)
+	c.Check(n, Equals, int64(3))
+	c.Check(url2, Equals, fmt.Sprintf("%s/%s", ks.url, hash))
+
+	content, err2 := ioutil.ReadAll(r)
+	c.Check(err2, Equals, nil)
+	c.Check(content, DeepEquals, []byte("foo"))
+}
+
+func (s *StandaloneSuite) TestGetNetError(c *C) {
+	hash := fmt.Sprintf("%x", md5.Sum([]byte("foo")))
+
+	arv, err := arvadosclient.MakeArvadosClient()
+	kc, _ := MakeKeepClient(&arv)
+	arv.ApiToken = "abc123"
+	kc.SetServiceRoots(map[string]string{"x": "http://localhost:62222"}, map[string]string{"http://localhost:62222": ""}, nil)
+
+	r, n, url2, err := kc.Get(hash)
+	c.Check(err, Equals, KeepServerError)
 	c.Check(n, Equals, int64(0))
 	c.Check(url2, Equals, "")
 	c.Check(r, Equals, nil)
@@ -675,7 +765,7 @@ func (s *StandaloneSuite) TestGetWithFailures(c *C) {
 	content := []byte("waz")
 	hash := fmt.Sprintf("%x", md5.Sum(content))
 
-	fh := FailHandler{
+	fh := Error404Handler{
 		make(chan string, 4)}
 
 	st := StubGetHandler{

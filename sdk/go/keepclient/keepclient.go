@@ -29,6 +29,7 @@ var OversizeBlockError = errors.New("Exceeded maximum block size (" + strconv.It
 var MissingArvadosApiHost = errors.New("Missing required environment variable ARVADOS_API_HOST")
 var MissingArvadosApiToken = errors.New("Missing required environment variable ARVADOS_API_TOKEN")
 var InvalidLocatorError = errors.New("Invalid locator")
+var KeepServerError = errors.New("One or more keep servers returned an error")
 
 // ErrNoSuchKeepServer is returned when GetIndex is invoked with a UUID with no matching keep server
 var ErrNoSuchKeepServer = errors.New("No keep server matching the given UUID is found")
@@ -49,6 +50,7 @@ type KeepClient struct {
 	gatewayRoots       *map[string]string
 	lock               sync.RWMutex
 	Client             *http.Client
+	Retries            int
 
 	// set to 1 if all writable services are of disk type, otherwise 0
 	replicasPerService int
@@ -59,12 +61,23 @@ type KeepClient struct {
 func MakeKeepClient(arv *arvadosclient.ArvadosClient) (*KeepClient, error) {
 	var matchTrue = regexp.MustCompile("^(?i:1|yes|true)$")
 	insecure := matchTrue.MatchString(os.Getenv("ARVADOS_API_HOST_INSECURE"))
+
+	defaultReplicationLevel := 2
+	value, err := arv.Discovery("defaultCollectionReplication")
+	if err == nil {
+		v, ok := value.(float64)
+		if ok && v > 0 {
+			defaultReplicationLevel = int(v)
+		}
+	}
+
 	kc := &KeepClient{
 		Arvados:       arv,
-		Want_replicas: 2,
+		Want_replicas: defaultReplicationLevel,
 		Using_proxy:   false,
 		Client: &http.Client{Transport: &http.Transport{
 			TLSClientConfig: &tls.Config{InsecureSkipVerify: insecure}}},
+		Retries: 2,
 	}
 	return kc, kc.DiscoverKeepServers()
 }
@@ -136,35 +149,63 @@ func (kc *KeepClient) PutR(r io.Reader) (locator string, replicas int, err error
 // instead of EOF.
 func (kc *KeepClient) Get(locator string) (io.ReadCloser, int64, string, error) {
 	var errs []string
+	server_error := false
+
 	for _, host := range kc.getSortedRoots(locator) {
 		url := host + "/" + locator
-		req, err := http.NewRequest("GET", url, nil)
-		if err != nil {
-			continue
-		}
-		req.Header.Add("Authorization", fmt.Sprintf("OAuth2 %s", kc.Arvados.ApiToken))
-		resp, err := kc.Client.Do(req)
-		if err != nil || resp.StatusCode != http.StatusOK {
-			if resp != nil {
-				var respbody []byte
-				if resp.Body != nil {
-					respbody, _ = ioutil.ReadAll(&io.LimitedReader{resp.Body, 4096})
-				}
-				errs = append(errs, fmt.Sprintf("%s: %d %s",
-					url, resp.StatusCode, strings.TrimSpace(string(respbody))))
-			} else {
-				errs = append(errs, fmt.Sprintf("%s: %v", url, err))
+		tries_remaining := 1 + kc.Retries
+		for tries_remaining > 0 {
+			tries_remaining -= 1
+			req, err := http.NewRequest("GET", url, nil)
+			if err != nil {
+				continue
 			}
-			continue
+			req.Header.Add("Authorization", fmt.Sprintf("OAuth2 %s", kc.Arvados.ApiToken))
+			resp, err := kc.Client.Do(req)
+			if err != nil || resp.StatusCode != http.StatusOK {
+				if resp != nil {
+					var respbody []byte
+					if resp.Body != nil {
+						respbody, _ = ioutil.ReadAll(&io.LimitedReader{resp.Body, 4096})
+					}
+					errs = append(errs, fmt.Sprintf("%s: %d %s",
+						url, resp.StatusCode, strings.TrimSpace(string(respbody))))
+
+					if resp.StatusCode >= 500 {
+						// Server side failure, may be
+						// transient, can try again.
+						server_error = true
+					} else {
+						// Some other error (4xx),
+						// typically 403 or 404, don't
+						// try again.
+						tries_remaining = 0
+					}
+				} else {
+					// Probably a network error, may be
+					// transient, can try again.
+					server_error = true
+					errs = append(errs, fmt.Sprintf("%s: %v", url, err))
+				}
+			} else {
+				// Success.
+				return HashCheckingReader{
+					Reader: resp.Body,
+					Hash:   md5.New(),
+					Check:  locator[0:32],
+				}, resp.ContentLength, url, nil
+			}
 		}
-		return HashCheckingReader{
-			Reader: resp.Body,
-			Hash:   md5.New(),
-			Check:  locator[0:32],
-		}, resp.ContentLength, url, nil
 	}
 	log.Printf("DEBUG: GET %s failed: %v", locator, errs)
-	return nil, 0, "", BlockNotFound
+
+	if server_error {
+		// There was at least one failure to get a final answer
+		return nil, 0, "", KeepServerError
+	} else {
+		// Ever server returned a 4xx error
+		return nil, 0, "", BlockNotFound
+	}
 }
 
 // Ask() verifies that a block with the given hash is available and
