@@ -194,6 +194,7 @@ func (kc *KeepClient) getOrHead(method string, locator string) (io.ReadCloser, i
 					return nil, resp.ContentLength, url, nil
 				}
 			}
+
 		}
 		serversToTry = retryList
 	}
