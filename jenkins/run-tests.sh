@@ -385,6 +385,14 @@ gem_uninstall_if_exists() {
     fi
 }
 
+setup_virtualenv() {
+    local venvdest=$1; shift
+    if ! [[ -e "$venvdest/bin/activate" ]] || ! [[ -e "$venvdest/bin/pip" ]]; then
+        virtualenv --setuptools "$@" "$venvdest" || fatal "virtualenv $venvdest failed"
+    fi
+    "$venvdest/bin/pip" install 'setuptools>=18' 'pip>=7'
+}
+
 export PERLINSTALLBASE
 export PERLLIB="$PERLINSTALLBASE/lib/perl5:${PERLLIB:+$PERLLIB}"
 
@@ -393,14 +401,8 @@ mkdir -p "$GOPATH/src/git.curoverse.com"
 ln -sfn "$WORKSPACE" "$GOPATH/src/git.curoverse.com/arvados.git" \
     || fatal "symlink failed"
 
-if ! [[ -e "$VENVDIR/bin/activate" ]] || ! [[ -e "$VENVDIR/bin/pip" ]]; then
-    virtualenv --setuptools "$VENVDIR" || fatal "virtualenv $VENVDIR failed"
-fi
+setup_virtualenv "$VENVDIR" --python python2.7
 . "$VENVDIR/bin/activate"
-
-if (pip install setuptools | grep setuptools-0) || [ "$($VENVDIR/bin/easy_install --version | cut -d\  -f2 | cut -d. -f1)" -lt 18 ]; then
-    pip install --upgrade setuptools pip
-fi
 
 # Needed for run_test_server.py which is used by certain (non-Python) tests.
 pip freeze 2>/dev/null | egrep ^PyYAML= \
@@ -420,17 +422,7 @@ deactivate
 # Otherwise, skip dependent tests.
 PYTHON3=$(which python3)
 if [ "0" = "$?" ]; then
-    virtualenv --python "$PYTHON3" --setuptools "$VENV3DIR" \
-	|| fatal "python3 virtualenv $VENV3DIR failed"
-
-    . "$VENV3DIR/bin/activate"
-
-    if (pip install setuptools | grep setuptools-0) || [ "$($VENV3DIR/bin/easy_install --version | cut -d\  -f2 | cut -d. -f1)" -lt 18 ]; then
-	pip install --upgrade setuptools pip
-    fi
-
-    # Deactivate Python 3 virtualenv
-    deactivate
+    setup_virtualenv "$VENV3DIR" --python python3
 else
     PYTHON3=
     skip[services/dockercleaner]=1
@@ -494,15 +486,22 @@ do_test_once() {
         then
             covername="coverage-$(echo "$1" | sed -e 's/\//_/g')"
             coverflags=("-covermode=count" "-coverprofile=$WORKSPACE/tmp/.$covername.tmp")
+            # We do "go get -t" here to catch compilation errors
+            # before trying "go test". Otherwise, coverage-reporting
+            # mode makes Go show the wrong line numbers when reporting
+            # compilation errors.
             if [[ -n "${testargs[$1]}" ]]
             then
                 # "go test -check.vv giturl" doesn't work, but this
                 # does:
-                cd "$WORKSPACE/$1" && go test ${coverflags[@]} ${testargs[$1]}
+                cd "$WORKSPACE/$1" && \
+                    go get -t "git.curoverse.com/arvados.git/$1" && \
+                    go test ${coverflags[@]} ${testargs[$1]}
             else
                 # The above form gets verbose even when testargs is
                 # empty, so use this form in such cases:
-                go test ${coverflags[@]} "git.curoverse.com/arvados.git/$1"
+                go get -t "git.curoverse.com/arvados.git/$1" && \
+                    go test ${coverflags[@]} "git.curoverse.com/arvados.git/$1"
             fi
             result="$?"
             go tool cover -html="$WORKSPACE/tmp/.$covername.tmp" -o "$WORKSPACE/tmp/$covername.html"
