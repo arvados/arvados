@@ -40,10 +40,10 @@ func (s *ServerRequiredSuite) TearDownSuite(c *C) {
 }
 
 // Testing keep-rsync needs two sets of keep services: src and dst.
-// The test setup hence tweaks keep-rsync initialzation to achieve this.
-// First invoke initializeKeepRsync and then invoke StartKeepAdditional
+// The test setup hence tweaks keep-rsync initialization to achieve this.
+// First invoke initializeKeepRsync and then invoke StartKeepWithParams
 // to create the keep servers to be used as destination.
-func setupRsync(c *C, enforcePermissions bool) {
+func setupRsync(c *C, enforcePermissions bool, overwriteReplications bool) {
 	// srcConfig
 	srcConfig.APIHost = os.Getenv("ARVADOS_API_HOST")
 	srcConfig.APIToken = os.Getenv("ARVADOS_API_TOKEN")
@@ -69,7 +69,12 @@ func setupRsync(c *C, enforcePermissions bool) {
 	// Create two more keep servers to be used as destination
 	arvadostest.StartKeepWithParams(true, enforcePermissions)
 
-	// load kcDst; set Want_replicas as 1 since that is how many keep servers are created for dst.
+	// set replications to 1 since those many keep servers were created for dst.
+	if overwriteReplications {
+		replications = 1
+	}
+
+	// load kcDst
 	kcDst, err = keepclient.MakeKeepClient(&arvDst)
 	c.Assert(err, Equals, nil)
 	kcDst.Want_replicas = 1
@@ -105,7 +110,7 @@ func (s *ServerRequiredSuite) TestReadConfigFromFile(c *C) {
 // Do a Get in dst for the src hash, which should raise block not found error.
 // Do a Get in src for the dst hash, which should raise block not found error.
 func (s *ServerRequiredSuite) TestRsyncPutInOne_GetFromOtherShouldFail(c *C) {
-	setupRsync(c, false)
+	setupRsync(c, false, true)
 
 	// Put a block in src using kcSrc and Get it
 	srcData := []byte("test-data1")
@@ -137,11 +142,11 @@ func (s *ServerRequiredSuite) TestRsyncPutInOne_GetFromOtherShouldFail(c *C) {
 	all, err = ioutil.ReadAll(reader)
 	c.Check(all, DeepEquals, dstData)
 
-	// Get srcLocator using kcDst should fail with NotFound error
+	// Get srcLocator using kcDst should fail with Not Found error
 	_, _, _, err = kcDst.Get(locatorInSrc)
 	c.Assert(err.Error(), Equals, "Block not found")
 
-	// Get dstLocator using kcSrc should fail with NotFound error
+	// Get dstLocator using kcSrc should fail with Not Found error
 	_, _, _, err = kcSrc.Get(locatorInDst)
 	c.Assert(err.Error(), Equals, "Block not found")
 }
@@ -150,7 +155,7 @@ func (s *ServerRequiredSuite) TestRsyncPutInOne_GetFromOtherShouldFail(c *C) {
 func (s *ServerRequiredSuite) TestRsyncInitializeWithKeepServicesJSON(c *C) {
 	srcKeepServicesJSON = "{ \"kind\":\"arvados#keepServiceList\", \"etag\":\"\", \"self_link\":\"\", \"offset\":null, \"limit\":null, \"items\":[ { \"href\":\"/keep_services/zzzzz-bi6l4-123456789012340\", \"kind\":\"arvados#keepService\", \"etag\":\"641234567890enhj7hzx432e5\", \"uuid\":\"zzzzz-bi6l4-123456789012340\", \"owner_uuid\":\"zzzzz-tpzed-123456789012345\", \"service_host\":\"keep0.zzzzz.arvadosapi.com\", \"service_port\":25107, \"service_ssl_flag\":false, \"service_type\":\"disk\", \"read_only\":false }, { \"href\":\"/keep_services/zzzzz-bi6l4-123456789012341\", \"kind\":\"arvados#keepService\", \"etag\":\"641234567890enhj7hzx432e5\", \"uuid\":\"zzzzz-bi6l4-123456789012341\", \"owner_uuid\":\"zzzzz-tpzed-123456789012345\", \"service_host\":\"keep0.zzzzz.arvadosapi.com\", \"service_port\":25108, \"service_ssl_flag\":false, \"service_type\":\"disk\", \"read_only\":false } ], \"items_available\":2 }"
 
-	setupRsync(c, false)
+	setupRsync(c, false, true)
 
 	localRoots := kcSrc.LocalRoots()
 	c.Check(localRoots != nil, Equals, true)
@@ -172,13 +177,13 @@ func (s *ServerRequiredSuite) TestRsyncInitializeWithKeepServicesJSON(c *C) {
 	c.Check(foundIt, Equals, true)
 }
 
-// Test keep-rsync initialization, with src and dst keep servers with blobSingingKey.
+// Test keep-rsync initialization, with src and dst keep servers with blobSigningKey.
 // Do a Put and Get in src, both of which should succeed.
 // Do a Put and Get in dst, both of which should succeed.
 // Do a Get in dst for the src hash, which should raise block not found error.
 // Do a Get in src for the dst hash, which should raise block not found error.
 func (s *ServerRequiredSuite) TestRsyncWithBlobSigning_PutInOne_GetFromOtherShouldFail(c *C) {
-	setupRsync(c, true)
+	setupRsync(c, true, true)
 
 	// Put a block in src using kcSrc and Get it
 	srcData := []byte("test-data1")
@@ -215,12 +220,12 @@ func (s *ServerRequiredSuite) TestRsyncWithBlobSigning_PutInOne_GetFromOtherShou
 	all, err = ioutil.ReadAll(reader)
 	c.Check(all, DeepEquals, dstData)
 
-	// Get srcLocator using kcDst should fail with NotFound error
+	// Get srcLocator using kcDst should fail with Not Found error
 	signedLocator = keepclient.SignLocator(locatorInSrc, arvDst.ApiToken, tomorrow, []byte(blobSigningKey))
 	_, _, _, err = kcDst.Get(locatorInSrc)
 	c.Assert(err.Error(), Equals, "Block not found")
 
-	// Get dstLocator using kcSrc should fail with NotFound error
+	// Get dstLocator using kcSrc should fail with Not Found error
 	signedLocator = keepclient.SignLocator(locatorInDst, arvSrc.ApiToken, tomorrow, []byte(blobSigningKey))
 	_, _, _, err = kcSrc.Get(locatorInDst)
 	c.Assert(err.Error(), Equals, "Block not found")
@@ -228,7 +233,7 @@ func (s *ServerRequiredSuite) TestRsyncWithBlobSigning_PutInOne_GetFromOtherShou
 
 // Test keep-rsync initialization with default replications count
 func (s *ServerRequiredSuite) TestInitializeRsyncDefaultReplicationsCount(c *C) {
-	setupRsync(c, false)
+	setupRsync(c, false, false)
 
 	// Must have got default replications value as 2 from dst discovery document
 	c.Assert(replications, Equals, 2)
@@ -236,10 +241,10 @@ func (s *ServerRequiredSuite) TestInitializeRsyncDefaultReplicationsCount(c *C) 
 
 // Test keep-rsync initialization with replications count argument
 func (s *ServerRequiredSuite) TestInitializeRsyncReplicationsCount(c *C) {
-	// set replications to 3 to mimic passing input argument
+	// First set replications to 3 to mimic passing input argument
 	replications = 3
 
-	setupRsync(c, false)
+	setupRsync(c, false, false)
 
 	// Since replications value is provided, default is not used
 	c.Assert(replications, Equals, 3)
