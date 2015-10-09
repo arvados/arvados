@@ -167,11 +167,9 @@ func (kc *KeepClient) getOrHead(method string, locator string) (io.ReadCloser, i
 				retryList = append(retryList, host)
 			} else if resp.StatusCode != http.StatusOK {
 				var respbody []byte
-				if resp.Body != nil {
-					respbody, _ = ioutil.ReadAll(&io.LimitedReader{resp.Body, 4096})
-					resp.Body.Close()
-				}
-				errs = append(errs, fmt.Sprintf("%s: %d %s",
+				respbody, _ = ioutil.ReadAll(&io.LimitedReader{resp.Body, 4096})
+				resp.Body.Close()
+				errs = append(errs, fmt.Sprintf("%s: HTTP %d %q",
 					url, resp.StatusCode, bytes.TrimSpace(respbody)))
 
 				if resp.StatusCode == 408 ||
@@ -191,6 +189,7 @@ func (kc *KeepClient) getOrHead(method string, locator string) (io.ReadCloser, i
 						Check:  locator[0:32],
 					}, resp.ContentLength, url, nil
 				} else {
+					resp.Body.Close()
 					return nil, resp.ContentLength, url, nil
 				}
 			}
@@ -198,7 +197,7 @@ func (kc *KeepClient) getOrHead(method string, locator string) (io.ReadCloser, i
 		}
 		serversToTry = retryList
 	}
-	log.Printf("DEBUG: GET %s failed: %v", locator, errs)
+	log.Printf("DEBUG: %s %s failed: %v", method, locator, errs)
 
 	return nil, 0, "", BlockNotFound
 }
