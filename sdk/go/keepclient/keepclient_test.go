@@ -69,6 +69,22 @@ func (s *ServerRequiredSuite) TestMakeKeepClient(c *C) {
 	}
 }
 
+func (s *ServerRequiredSuite) TestDefaultReplications(c *C) {
+	arv, err := arvadosclient.MakeArvadosClient()
+	c.Assert(err, Equals, nil)
+
+	kc, err := MakeKeepClient(&arv)
+	c.Assert(kc.Want_replicas, Equals, 2)
+
+	arv.DiscoveryDoc["defaultCollectionReplication"] = 3.0
+	kc, err = MakeKeepClient(&arv)
+	c.Assert(kc.Want_replicas, Equals, 3)
+
+	arv.DiscoveryDoc["defaultCollectionReplication"] = 1.0
+	kc, err = MakeKeepClient(&arv)
+	c.Assert(kc.Want_replicas, Equals, 1)
+}
+
 type StubPutHandler struct {
 	c              *C
 	expectPath     string
