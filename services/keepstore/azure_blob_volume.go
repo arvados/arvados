@@ -122,7 +122,7 @@ func (v *AzureBlobVolume) Get(loc string) ([]byte, error) {
 	var deadline time.Time
 	haveDeadline := false
 	buf, err := v.get(loc)
-	for err == nil && len(buf) == 0 && loc[:32] != "d41d8cd98f00b204e9800998ecf8427e" {
+	for err == nil && len(buf) == 0 && loc != "d41d8cd98f00b204e9800998ecf8427e" {
 		// Seeing a brand new empty block probably means we're
 		// in a race with CreateBlob, which under the hood
 		// (apparently) does "CreateEmpty" and "CommitData"
@@ -134,14 +134,20 @@ func (v *AzureBlobVolume) Get(loc string) ([]byte, error) {
 				break
 			}
 			deadline = t.Add(azureWriteRaceInterval)
+			if time.Now().After(deadline) {
+				break
+			}
+			log.Printf("Race? Block %s is 0 bytes, %s old. Polling until %s", loc, time.Since(t), deadline)
 			haveDeadline = true
-		}
-		if time.Now().After(deadline) {
+		} else if time.Now().After(deadline) {
 			break
 		}
 		bufs.Put(buf)
 		time.Sleep(azureWriteRacePollTime)
 		buf, err = v.get(loc)
+	}
+	if haveDeadline {
+		log.Printf("Race ended with len(buf)==%d", len(buf))
 	}
 	return buf, err
 }
