@@ -158,34 +158,31 @@ func (kc *KeepClient) Get(locator string) (io.ReadCloser, int64, string, error) 
 			tries_remaining -= 1
 			req, err := http.NewRequest("GET", url, nil)
 			if err != nil {
+				errs = append(errs, fmt.Sprintf("%s: %v", url, err))
 				continue
 			}
 			req.Header.Add("Authorization", fmt.Sprintf("OAuth2 %s", kc.Arvados.ApiToken))
 			resp, err := kc.Client.Do(req)
-			if err != nil || resp.StatusCode != http.StatusOK {
-				if resp != nil {
-					var respbody []byte
-					if resp.Body != nil {
-						respbody, _ = ioutil.ReadAll(&io.LimitedReader{resp.Body, 4096})
-					}
-					errs = append(errs, fmt.Sprintf("%s: %d %s",
-						url, resp.StatusCode, strings.TrimSpace(string(respbody))))
+			if err != nil {
+				// Probably a network error, may be
+				// transient, can try again.
+				server_error = true
+				errs = append(errs, fmt.Sprintf("%s: %v", url, err))
+			} else if resp.StatusCode != http.StatusOK {
+				respbody, _ := ioutil.ReadAll(&io.LimitedReader{resp.Body, 4096})
+				resp.Body.Close()
+				errs = append(errs, fmt.Sprintf("%s: %d %s",
+					url, resp.StatusCode, bytes.TrimSpace(respbody)))
 
-					if resp.StatusCode >= 500 {
-						// Server side failure, may be
-						// transient, can try again.
-						server_error = true
-					} else {
-						// Some other error (4xx),
-						// typically 403 or 404, don't
-						// try again.
-						tries_remaining = 0
-					}
-				} else {
-					// Probably a network error, may be
+				if resp.StatusCode >= 500 {
+					// Server side failure, may be
 					// transient, can try again.
 					server_error = true
-					errs = append(errs, fmt.Sprintf("%s: %v", url, err))
+				} else {
+					// Some other error (4xx),
+					// typically 403 or 404, don't
+					// try again.
+					tries_remaining = 0
 				}
 			} else {
 				// Success.
