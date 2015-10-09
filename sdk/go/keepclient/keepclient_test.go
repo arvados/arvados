@@ -554,7 +554,7 @@ func (s *StandaloneSuite) TestGetFail(c *C) {
 	kc.SetServiceRoots(map[string]string{"x": ks.url}, map[string]string{ks.url: ""}, nil)
 
 	r, n, url2, err := kc.Get(hash)
-	c.Check(err, Equals, KeepServerError)
+	c.Check(err, Equals, BlockNotFound)
 	c.Check(n, Equals, int64(0))
 	c.Check(url2, Equals, "")
 	c.Check(r, Equals, nil)
@@ -599,7 +599,7 @@ func (s *StandaloneSuite) TestGetNetError(c *C) {
 	kc.SetServiceRoots(map[string]string{"x": "http://localhost:62222"}, map[string]string{"http://localhost:62222": ""}, nil)
 
 	r, n, url2, err := kc.Get(hash)
-	c.Check(err, Equals, KeepServerError)
+	c.Check(err, Equals, BlockNotFound)
 	c.Check(n, Equals, int64(0))
 	c.Check(url2, Equals, "")
 	c.Check(r, Equals, nil)

@@ -29,7 +29,6 @@ var OversizeBlockError = errors.New("Exceeded maximum block size (" + strconv.It
 var MissingArvadosApiHost = errors.New("Missing required environment variable ARVADOS_API_HOST")
 var MissingArvadosApiToken = errors.New("Missing required environment variable ARVADOS_API_TOKEN")
 var InvalidLocatorError = errors.New("Invalid locator")
-var KeepServerError = errors.New("One or more keep servers returned an error")
 
 // ErrNoSuchKeepServer is returned when GetIndex is invoked with a UUID with no matching keep server
 var ErrNoSuchKeepServer = errors.New("No keep server matching the given UUID is found")
@@ -140,14 +139,7 @@ func (kc *KeepClient) PutR(r io.Reader) (locator string, replicas int, err error
 	}
 }
 
-// Get() retrieves a block, given a locator. Returns a reader, the
-// expected data length, the URL the block is being fetched from, and
-// an error.
-//
-// If the block checksum does not match, the final Read() on the
-// reader returned by this method will return a BadChecksum error
-// instead of EOF.
-func (kc *KeepClient) Get(locator string) (io.ReadCloser, int64, string, error) {
+func (kc *KeepClient) getOrHead(method string, locator string) (io.ReadCloser, int64, string, error) {
 	var errs []string
 
 	tries_remaining := 1 + kc.Retries
@@ -161,7 +153,7 @@ func (kc *KeepClient) Get(locator string) (io.ReadCloser, int64, string, error) 
 		for _, host := range serversToTry {
 			url := host + "/" + locator
 
-			req, err := http.NewRequest("GET", url, nil)
+			req, err := http.NewRequest(method, url, nil)
 			if err != nil {
 				errs = append(errs, fmt.Sprintf("%s: %v", url, err))
 				continue
@@ -174,36 +166,51 @@ func (kc *KeepClient) Get(locator string) (io.ReadCloser, int64, string, error) 
 				errs = append(errs, fmt.Sprintf("%s: %v", url, err))
 				retryList = append(retryList, host)
 			} else if resp.StatusCode != http.StatusOK {
-				respbody, _ := ioutil.ReadAll(&io.LimitedReader{resp.Body, 4096})
-				resp.Body.Close()
+				var respbody []byte
+				if resp.Body != nil {
+					respbody, _ = ioutil.ReadAll(&io.LimitedReader{resp.Body, 4096})
+					resp.Body.Close()
+				}
 				errs = append(errs, fmt.Sprintf("%s: %d %s",
 					url, resp.StatusCode, bytes.TrimSpace(respbody)))
 
-				if resp.StatusCode >= 500 {
-					// Server side failure, may be
-					// transient, can try again.
+				if resp.StatusCode == 408 ||
+					resp.StatusCode == 429 ||
+					resp.StatusCode >= 500 {
+					// Timeout, too many requests, or other
+					// server side failure, transient
+					// error, can try again.
 					retryList = append(retryList, host)
 				}
 			} else {
 				// Success.
-				return HashCheckingReader{
-					Reader: resp.Body,
-					Hash:   md5.New(),
-					Check:  locator[0:32],
-				}, resp.ContentLength, url, nil
+				if method == "GET" {
+					return HashCheckingReader{
+						Reader: resp.Body,
+						Hash:   md5.New(),
+						Check:  locator[0:32],
+					}, resp.ContentLength, url, nil
+				} else {
+					return nil, resp.ContentLength, url, nil
+				}
 			}
 		}
 		serversToTry = retryList
 	}
 	log.Printf("DEBUG: GET %s failed: %v", locator, errs)
 
-	if len(retryList) > 0 {
-		// There was at least one failure to get a final answer
-		return nil, 0, "", KeepServerError
-	} else {
-		// Ever server returned a 4xx error
-		return nil, 0, "", BlockNotFound
-	}
+	return nil, 0, "", BlockNotFound
+}
+
+// Get() retrieves a block, given a locator. Returns a reader, the
+// expected data length, the URL the block is being fetched from, and
+// an error.
+//
+// If the block checksum does not match, the final Read() on the
+// reader returned by this method will return a BadChecksum error
+// instead of EOF.
+func (kc *KeepClient) Get(locator string) (io.ReadCloser, int64, string, error) {
+	return kc.getOrHead("GET", locator)
 }
 
 // Ask() verifies that a block with the given hash is available and
@@ -214,18 +221,8 @@ func (kc *KeepClient) Get(locator string) (io.ReadCloser, int64, string, error) 
 // Returns the data size (content length) reported by the Keep service
 // and the URI reporting the data size.
 func (kc *KeepClient) Ask(locator string) (int64, string, error) {
-	for _, host := range kc.getSortedRoots(locator) {
-		url := host + "/" + locator
-		req, err := http.NewRequest("HEAD", url, nil)
-		if err != nil {
-			continue
-		}
-		req.Header.Add("Authorization", fmt.Sprintf("OAuth2 %s", kc.Arvados.ApiToken))
-		if resp, err := kc.Client.Do(req); err == nil && resp.StatusCode == http.StatusOK {
-			return resp.ContentLength, url, nil
-		}
-	}
-	return 0, "", BlockNotFound
+	_, size, url, err := kc.getOrHead("HEAD", locator)
+	return size, url, err
 }
 
 // GetIndex retrieves a list of blocks stored on the given server whose hashes
