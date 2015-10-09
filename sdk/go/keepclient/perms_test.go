@@ -65,26 +65,26 @@ func TestVerifySignatureWrongSize(t *testing.T) {
 
 func TestVerifySignatureBadSig(t *testing.T) {
 	badLocator := knownLocator + "+Aaaaaaaaaaaaaaaa@" + knownTimestamp
-	if VerifySignature(badLocator, knownToken, []byte(knownKey)) != PermissionError {
+	if VerifySignature(badLocator, knownToken, []byte(knownKey)) != ErrSignatureMissing {
 		t.Fail()
 	}
 }
 
 func TestVerifySignatureBadTimestamp(t *testing.T) {
 	badLocator := knownLocator + "+A" + knownSignature + "@OOOOOOOl"
-	if VerifySignature(badLocator, knownToken, []byte(knownKey)) != PermissionError {
+	if VerifySignature(badLocator, knownToken, []byte(knownKey)) != ErrSignatureMissing {
 		t.Fail()
 	}
 }
 
 func TestVerifySignatureBadSecret(t *testing.T) {
-	if VerifySignature(knownSignedLocator, knownToken, []byte("00000000000000000000")) != PermissionError {
+	if VerifySignature(knownSignedLocator, knownToken, []byte("00000000000000000000")) != ErrSignatureInvalid {
 		t.Fail()
 	}
 }
 
 func TestVerifySignatureBadToken(t *testing.T) {
-	if VerifySignature(knownSignedLocator, "00000000", []byte(knownKey)) != PermissionError {
+	if VerifySignature(knownSignedLocator, "00000000", []byte(knownKey)) != ErrSignatureInvalid {
 		t.Fail()
 	}
 }
@@ -92,7 +92,7 @@ func TestVerifySignatureBadToken(t *testing.T) {
 func TestVerifySignatureExpired(t *testing.T) {
 	yesterday := time.Now().AddDate(0, 0, -1)
 	expiredLocator := SignLocator(knownHash, knownToken, yesterday, []byte(knownKey))
-	if VerifySignature(expiredLocator, knownToken, []byte(knownKey)) != ExpiredError {
+	if VerifySignature(expiredLocator, knownToken, []byte(knownKey)) != ErrSignatureExpired {
 		t.Fail()
 	}
 }

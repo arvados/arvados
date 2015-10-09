@@ -1,12 +1,13 @@
 namespace :config do
   desc 'Ensure site configuration has all required settings'
   task check: :environment do
+    $stderr.puts "%-32s %s" % ["AppVersion (discovered)", AppVersion.hash]
     $application_config.sort.each do |k, v|
       if ENV.has_key?('QUIET') then
         # Make sure we still check for the variable to exist
         eval("Rails.configuration.#{k}")
       else
-        if /(password|secret)/.match(k) then
+        if /(password|secret|signing_key)/.match(k) then
           # Make sure we still check for the variable to exist, but don't print the value
           eval("Rails.configuration.#{k}")
           $stderr.puts "%-32s %s" % [k, '*********']

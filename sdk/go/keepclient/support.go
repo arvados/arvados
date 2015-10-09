@@ -248,7 +248,17 @@ func (this KeepClient) putReplicas(
 
 	// Used to communicate status from the upload goroutines
 	upload_status := make(chan uploadStatus)
-	defer close(upload_status)
+	defer func() {
+		// Wait for any abandoned uploads (e.g., we started
+		// two uploads and the first replied with replicas=2)
+		// to finish before closing the status channel.
+		go func() {
+			for active > 0 {
+				<-upload_status
+			}
+			close(upload_status)
+		}()
+	}()
 
 	// Desired number of replicas
 	remaining_replicas := this.Want_replicas

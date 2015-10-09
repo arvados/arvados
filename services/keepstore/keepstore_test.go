@@ -185,7 +185,7 @@ func TestPutBlockMD5Fail(t *testing.T) {
 	// Check that PutBlock returns the expected error when the hash does
 	// not match the block.
 	if _, err := PutBlock(BadBlock, TestHash); err != RequestHashError {
-		t.Error("Expected RequestHashError, got %v", err)
+		t.Errorf("Expected RequestHashError, got %v", err)
 	}
 
 	// Confirm that GetBlock fails to return anything.
