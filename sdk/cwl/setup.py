@@ -29,7 +29,7 @@ setup(name='arvados-cwl-runner',
           'bin/cwl-runner'
       ],
       install_requires=[
-          'cwltool',
+          'cwltool==1.0.20150722144138',
           'arvados-python-client'
       ],
       zip_safe=True,
