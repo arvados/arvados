@@ -76,14 +76,14 @@ func VerifySignature(signedLocator, apiToken string, permissionSecret []byte) er
 		return ErrSignatureMissing
 	}
 	blobHash := matches[1]
-	sigHex := matches[2]
-	expHex := matches[3]
-	if expTime, err := parseHexTimestamp(expHex); err != nil {
+	signatureHex := matches[2]
+	expiryHex := matches[3]
+	if expiryTime, err := parseHexTimestamp(expiryHex); err != nil {
 		return ErrSignatureInvalid
-	} else if expTime.Before(time.Now()) {
+	} else if expiryTime.Before(time.Now()) {
 		return ErrSignatureExpired
 	}
-	if sigHex != makePermSignature(blobHash, apiToken, expHex, permissionSecret) {
+	if signatureHex != makePermSignature(blobHash, apiToken, expiryHex, permissionSecret) {
 		return ErrSignatureInvalid
 	}
 	return nil
