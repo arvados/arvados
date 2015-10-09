@@ -149,13 +149,18 @@ func (kc *KeepClient) PutR(r io.Reader) (locator string, replicas int, err error
 // instead of EOF.
 func (kc *KeepClient) Get(locator string) (io.ReadCloser, int64, string, error) {
 	var errs []string
-	server_error := false
 
-	for _, host := range kc.getSortedRoots(locator) {
-		url := host + "/" + locator
-		tries_remaining := 1 + kc.Retries
-		for tries_remaining > 0 {
-			tries_remaining -= 1
+	tries_remaining := 1 + kc.Retries
+	serversToTry := kc.getSortedRoots(locator)
+	var retryList []string
+
+	for tries_remaining > 0 {
+		tries_remaining -= 1
+		retryList = nil
+
+		for _, host := range serversToTry {
+			url := host + "/" + locator
+
 			req, err := http.NewRequest("GET", url, nil)
 			if err != nil {
 				errs = append(errs, fmt.Sprintf("%s: %v", url, err))
@@ -164,10 +169,10 @@ func (kc *KeepClient) Get(locator string) (io.ReadCloser, int64, string, error) 
 			req.Header.Add("Authorization", fmt.Sprintf("OAuth2 %s", kc.Arvados.ApiToken))
 			resp, err := kc.Client.Do(req)
 			if err != nil {
-				// Probably a network error, may be
-				// transient, can try again.
-				server_error = true
+				// Probably a network error, may be transient,
+				// can try again.
 				errs = append(errs, fmt.Sprintf("%s: %v", url, err))
+				retryList = append(retryList, host)
 			} else if resp.StatusCode != http.StatusOK {
 				respbody, _ := ioutil.ReadAll(&io.LimitedReader{resp.Body, 4096})
 				resp.Body.Close()
@@ -177,12 +182,7 @@ func (kc *KeepClient) Get(locator string) (io.ReadCloser, int64, string, error) 
 				if resp.StatusCode >= 500 {
 					// Server side failure, may be
 					// transient, can try again.
-					server_error = true
-				} else {
-					// Some other error (4xx),
-					// typically 403 or 404, don't
-					// try again.
-					tries_remaining = 0
+					retryList = append(retryList, host)
 				}
 			} else {
 				// Success.
@@ -193,10 +193,11 @@ func (kc *KeepClient) Get(locator string) (io.ReadCloser, int64, string, error) 
 				}, resp.ContentLength, url, nil
 			}
 		}
+		serversToTry = retryList
 	}
 	log.Printf("DEBUG: GET %s failed: %v", locator, errs)
 
-	if server_error {
+	if len(retryList) > 0 {
 		// There was at least one failure to get a final answer
 		return nil, 0, "", KeepServerError
 	} else {
