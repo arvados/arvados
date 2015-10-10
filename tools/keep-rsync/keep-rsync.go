@@ -2,6 +2,7 @@ package main
 
 import (
 	"bytes"
+	"errors"
 	"flag"
 	"git.curoverse.com/arvados.git/sdk/go/arvadosclient"
 	"git.curoverse.com/arvados.git/sdk/go/keepclient"
@@ -97,7 +98,10 @@ func main() {
 	}
 
 	// Copy blocks not found in dst from src
-	performKeepRsync()
+	err = performKeepRsync()
+	if err != nil {
+		log.Fatal("Error while syncing data: %s", err.Error())
+	}
 }
 
 var matchTrue = regexp.MustCompile("^(?i:1|yes|true)$")
@@ -215,9 +219,9 @@ func performKeepRsync() error {
 	toBeCopied := getMissingLocators(srcIndex, dstIndex)
 
 	// Copy each missing block to dst
-	copyBlocksToDst(toBeCopied)
+	err = copyBlocksToDst(toBeCopied)
 
-	return nil
+	return err
 }
 
 // Get list of unique locators from the specified cluster
@@ -268,10 +272,9 @@ func getMissingLocators(srcLocators map[string]bool, dstLocators map[string]bool
 }
 
 // Copy blocks from src to dst; only those that are missing in dst are copied
-func copyBlocksToDst(toBeCopied []string) {
+func copyBlocksToDst(toBeCopied []string) error {
 	done := 0
 	total := len(toBeCopied)
-	var failed []string
 
 	for _, locator := range toBeCopied {
 		log.Printf("Getting block %d of %d", done+1, total)
@@ -287,33 +290,29 @@ func copyBlocksToDst(toBeCopied []string) {
 		reader, _, _, err := kcSrc.Get(getLocator)
 		if err != nil {
 			log.Printf("Error getting block: %q %v", locator, err)
-			failed = append(failed, locator)
-			continue
+			return err
 		}
 		data, err := ioutil.ReadAll(reader)
 		if err != nil {
 			log.Printf("Error reading block data: %q %v", locator, err)
-			failed = append(failed, locator)
-			continue
+			return err
 		}
 
 		log.Printf("Copying block: %q", locator)
 		_, rep, err := kcDst.PutB(data)
 		if err != nil {
 			log.Printf("Error putting block data: %q %v", locator, err)
-			failed = append(failed, locator)
-			continue
+			return err
 		}
 		if rep != replications {
 			log.Printf("Failed to put enough number of replicas. Wanted: %d; Put: %d", replications, rep)
-			failed = append(failed, locator)
-			continue
+			return errors.New("Failed to put enough number of replicas")
 		}
 
 		done++
 		log.Printf("%.2f%% done", float64(done)/float64(total)*100)
 	}
 
-	log.Printf("Successfully copied to destination %d and failed %d out of a total of %d", done, len(failed), total)
-	log.Printf("Failed blocks %v", failed)
+	log.Printf("Successfully copied to destination %d blocks.", total)
+	return nil
 }
