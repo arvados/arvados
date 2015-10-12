@@ -1,4 +1,6 @@
 require "arvados/keep"
+require "uri"
+require "cgi"
 
 class CollectionsController < ApplicationController
   include ActionController::Live
@@ -130,11 +132,27 @@ class CollectionsController < ApplicationController
     usable_token = find_usable_token(tokens) do
       coll = Collection.find(params[:uuid])
     end
+    if usable_token.nil?
+      # Response already rendered.
+      return
+    end
+
+    if Rails.configuration.keep_web_url
+      opts = {}
+      if usable_token == params[:reader_token]
+        opts[:path_token] = usable_token
+      elsif usable_token == Rails.configuration.anonymous_user_token
+        # Don't pass a token at all
+      else
+        # We pass the current user's real token only if it's necessary
+        # to read the collection.
+        opts[:query_token] = usable_token
+      end
+      return redirect_to keep_web_url(params[:uuid], params[:file], opts)
+    end
 
     file_name = params[:file].andand.sub(/^(\.\/|\/|)/, './')
-    if usable_token.nil?
-      return  # Response already rendered.
-    elsif file_name.nil? or not coll.manifest.has_file?(file_name)
+    if file_name.nil? or not coll.manifest.has_file?(file_name)
       return render_not_found
     end
 
@@ -303,6 +321,21 @@ class CollectionsController < ApplicationController
       render_not_found(*most_specific_error)
     end
     return nil
+  end
+
+  def keep_web_url(uuid_or_pdh, file, opts)
+    fmt = {uuid_or_pdh: uuid_or_pdh.sub('+', '-')}
+    uri = URI.parse(Rails.configuration.keep_web_url % fmt)
+    uri.path += '/' unless uri.path.end_with? '/'
+    if opts[:path_token]
+      uri.path += 't=' + opts[:path_token] + '/'
+    end
+    uri.path += '_/'
+    uri.path += CGI::escape(file)
+    if opts[:query_token]
+      uri.query = 'api_token=' + CGI::escape(opts[:query_token])
+    end
+    uri.to_s
   end
 
   # Note: several controller and integration tests rely on stubbing

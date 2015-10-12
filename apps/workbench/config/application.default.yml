@@ -225,3 +225,11 @@ common:
   # E.g., using a name-based proxy server to forward connections to shell hosts:
   # https://%{hostname}.webshell.uuid_prefix.arvadosapi.com/
   shell_in_a_box_url: false
+
+  # Format of download/preview links. If false, use Workbench's
+  # download facility.
+  #
+  # Examples:
+  # keep_web_url: https://%{uuid_or_pdh}.dl.zzzzz.your.domain
+  # keep_web_url: https://%{uuid_or_pdh}--dl.zzzzz.your.domain
+  keep_web_url: false
