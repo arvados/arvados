@@ -325,16 +325,21 @@ class ComputeNodeMonitorActor(config.actor_class):
     def shutdown_eligible(self):
         if not self._shutdowns.window_open():
             return False
-        elif self.arvados_node is None:
+        if self.arvados_node is None:
             # Node is unpaired.
             # If it hasn't pinged Arvados after boot_fail seconds, shut it down
             return not timestamp_fresh(self.cloud_node_start_time, self.boot_fail_after)
-        elif arvados_node_missing(self.arvados_node, self.node_stale_after) and self._cloud.broken(self.cloud_node):
+        missing = arvados_node_missing(self.arvados_node, self.node_stale_after)
+        if missing and self._cloud.broken(self.cloud_node):
             # Node is paired, but Arvados says it is missing and the cloud says the node
             # is in an error state, so shut it down.
             return True
-        else:
-            return self.in_state('idle')
+        if missing is None and self._cloud.broken(self.cloud_node):
+            self._logger.warning(
+                "cloud reports broken node, but paired node %s never pinged "
+                "(bug?) -- skipped check for node_stale_after",
+                self.arvados_node['uuid'])
+        return self.in_state('idle')
 
     def consider_shutdown(self):
         next_opening = self._shutdowns.next_opening()
