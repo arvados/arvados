@@ -339,6 +339,8 @@ func TestAzureBlobVolumeWithGeneric(t *testing.T) {
 	http.DefaultTransport = &http.Transport{
 		Dial: (&azStubDialer{}).Dial,
 	}
+	azureWriteRaceInterval = time.Millisecond
+	azureWriteRacePollTime = time.Nanosecond
 	DoGenericVolumeTests(t, func(t *testing.T) TestableVolume {
 		return NewTestableAzureBlobVolume(t, false, azureStorageReplication)
 	})
@@ -351,6 +353,8 @@ func TestReadonlyAzureBlobVolumeWithGeneric(t *testing.T) {
 	http.DefaultTransport = &http.Transport{
 		Dial: (&azStubDialer{}).Dial,
 	}
+	azureWriteRaceInterval = time.Millisecond
+	azureWriteRacePollTime = time.Nanosecond
 	DoGenericVolumeTests(t, func(t *testing.T) TestableVolume {
 		return NewTestableAzureBlobVolume(t, true, azureStorageReplication)
 	})
