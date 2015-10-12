@@ -2,7 +2,6 @@ package main
 
 import (
 	"bytes"
-	"errors"
 	"flag"
 	"git.curoverse.com/arvados.git/sdk/go/arvadosclient"
 	"git.curoverse.com/arvados.git/sdk/go/keepclient"
@@ -299,14 +298,10 @@ func copyBlocksToDst(toBeCopied []string) error {
 		}
 
 		log.Printf("Copying block: %q", locator)
-		_, rep, err := kcDst.PutB(data)
+		_, _, err = kcDst.PutB(data)
 		if err != nil {
 			log.Printf("Error putting block data: %q %v", locator, err)
 			return err
-		}
-		if rep != replications {
-			log.Printf("Failed to put enough number of replicas. Wanted: %d; Put: %d", replications, rep)
-			return errors.New("Failed to put enough number of replicas")
 		}
 
 		done++

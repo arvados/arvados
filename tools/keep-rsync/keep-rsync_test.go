@@ -9,6 +9,7 @@ import (
 	"testing"
 	"time"
 
+	"git.curoverse.com/arvados.git/sdk/go/arvadosclient"
 	"git.curoverse.com/arvados.git/sdk/go/arvadostest"
 	"git.curoverse.com/arvados.git/sdk/go/keepclient"
 
@@ -31,11 +32,19 @@ func (s *ServerRequiredSuite) SetUpSuite(c *C) {
 
 func (s *ServerRequiredSuite) SetUpTest(c *C) {
 	arvadostest.ResetEnv()
+
+	// reset all variables between tests
+	srcConfig = arvadosclient.APIConfig{}
+	dstConfig = arvadosclient.APIConfig{}
+	blobSigningKey = ""
 	srcKeepServicesJSON = ""
 	dstKeepServicesJSON = ""
 	replications = 0
 	prefix = ""
-	blobSigningKey = ""
+	arvSrc = arvadosclient.ArvadosClient{}
+	arvDst = arvadosclient.ArvadosClient{}
+	kcSrc = &keepclient.KeepClient{}
+	kcDst = &keepclient.KeepClient{}
 }
 
 func (s *ServerRequiredSuite) TearDownSuite(c *C) {
@@ -49,7 +58,7 @@ var testKeepServicesJSON = "{ \"kind\":\"arvados#keepServiceList\", \"etag\":\"\
 // The test setup hence tweaks keep-rsync initialization to achieve this.
 // First invoke initializeKeepRsync and then invoke StartKeepWithParams
 // to create the keep servers to be used as destination.
-func setupRsync(c *C, enforcePermissions bool, overwrite bool) {
+func setupRsync(c *C, enforcePermissions bool, setupDstServers bool) {
 	// srcConfig
 	srcConfig.APIHost = os.Getenv("ARVADOS_API_HOST")
 	srcConfig.APIToken = os.Getenv("ARVADOS_API_TOKEN")
@@ -74,7 +83,7 @@ func setupRsync(c *C, enforcePermissions bool, overwrite bool) {
 
 	// Create an additional keep server to be used as destination and reload kcDst
 	// Set replications to 1 since those many keep servers were created for dst.
-	if overwrite {
+	if setupDstServers {
 		arvadostest.StartKeepWithParams(true, enforcePermissions)
 		replications = 1
 
@@ -292,86 +301,8 @@ func testKeepRsync(c *C, enforcePermissions bool, indexPrefix string) {
 
 	prefix = indexPrefix
 
-	tomorrow := time.Now().AddDate(0, 0, 1)
-
-	// Put a few blocks in src using kcSrc
-	var srcLocators []string
-	var srcLocatorsMatchingPrefix []string
-	for i := 0; i < 5; i++ {
-		data := []byte(fmt.Sprintf("test-data-%d", i))
-		hash := fmt.Sprintf("%x", md5.Sum(data))
-
-		hash2, rep, err := kcSrc.PutB(data)
-		c.Check(hash2, Matches, fmt.Sprintf(`^%s\+11(\+.+)?$`, hash))
-		c.Check(rep, Equals, 2)
-		c.Check(err, IsNil)
-
-		getLocator := hash
-		if enforcePermissions {
-			getLocator = keepclient.SignLocator(getLocator, arvSrc.ApiToken, tomorrow, []byte(blobSigningKey))
-		}
-
-		reader, blocklen, _, err := kcSrc.Get(getLocator)
-		c.Check(err, IsNil)
-		c.Check(blocklen, Equals, int64(11))
-		all, err := ioutil.ReadAll(reader)
-		c.Check(all, DeepEquals, data)
-
-		srcLocators = append(srcLocators, fmt.Sprintf("%s+%d", hash, blocklen))
-		if strings.HasPrefix(hash, indexPrefix) {
-			srcLocatorsMatchingPrefix = append(srcLocatorsMatchingPrefix, fmt.Sprintf("%s+%d", hash, blocklen))
-		}
-	}
-
-	// Put first two of those src blocks in dst using kcDst
-	var dstLocators []string
-	for i := 0; i < 2; i++ {
-		data := []byte(fmt.Sprintf("test-data-%d", i))
-		hash := fmt.Sprintf("%x", md5.Sum(data))
-
-		hash2, rep, err := kcDst.PutB(data)
-		c.Check(hash2, Matches, fmt.Sprintf(`^%s\+11(\+.+)?$`, hash))
-		c.Check(rep, Equals, 1)
-		c.Check(err, IsNil)
-
-		getLocator := hash
-		if enforcePermissions {
-			getLocator = keepclient.SignLocator(getLocator, arvDst.ApiToken, tomorrow, []byte(blobSigningKey))
-		}
-
-		reader, blocklen, _, err := kcDst.Get(getLocator)
-		c.Check(err, IsNil)
-		c.Check(blocklen, Equals, int64(11))
-		all, err := ioutil.ReadAll(reader)
-		c.Check(all, DeepEquals, data)
-
-		dstLocators = append(dstLocators, fmt.Sprintf("%s+%d", hash, blocklen))
-	}
-
-	// Put two more blocks in dst; they are not in src at all
-	var extraDstLocators []string
-	for i := 0; i < 2; i++ {
-		data := []byte(fmt.Sprintf("other-data-%d", i))
-		hash := fmt.Sprintf("%x", md5.Sum(data))
-
-		hash2, rep, err := kcDst.PutB(data)
-		c.Check(hash2, Matches, fmt.Sprintf(`^%s\+12(\+.+)?$`, hash))
-		c.Check(rep, Equals, 1)
-		c.Check(err, IsNil)
-
-		getLocator := hash
-		if enforcePermissions {
-			getLocator = keepclient.SignLocator(getLocator, arvDst.ApiToken, tomorrow, []byte(blobSigningKey))
-		}
-
-		reader, blocklen, _, err := kcDst.Get(getLocator)
-		c.Check(err, IsNil)
-		c.Check(blocklen, Equals, int64(12))
-		all, err := ioutil.ReadAll(reader)
-		c.Check(all, DeepEquals, data)
-
-		extraDstLocators = append(extraDstLocators, fmt.Sprintf("%s+%d", hash, blocklen))
-	}
+	// setupTestData
+	setupTestData(c, enforcePermissions, prefix)
 
 	err := performKeepRsync()
 	c.Check(err, IsNil)
@@ -406,15 +337,105 @@ func testKeepRsync(c *C, enforcePermissions bool, indexPrefix string) {
 	}
 }
 
+// Setup test data in src and dst.
+var srcLocators []string
+var srcLocatorsMatchingPrefix []string
+var dstLocators []string
+var extraDstLocators []string
+
+func setupTestData(c *C, enforcePermissions bool, indexPrefix string) {
+	srcLocators = []string{}
+	srcLocatorsMatchingPrefix = []string{}
+	dstLocators = []string{}
+	extraDstLocators = []string{}
+
+	tomorrow := time.Now().AddDate(0, 0, 1)
+
+	// Put a few blocks in src using kcSrc
+	for i := 0; i < 5; i++ {
+		data := []byte(fmt.Sprintf("test-data-%d", i))
+		hash := fmt.Sprintf("%x", md5.Sum(data))
+
+		hash2, rep, err := kcSrc.PutB(data)
+		c.Check(hash2, Matches, fmt.Sprintf(`^%s\+11(\+.+)?$`, hash))
+		c.Check(rep, Equals, 2)
+		c.Check(err, IsNil)
+
+		getLocator := hash
+		if enforcePermissions {
+			getLocator = keepclient.SignLocator(getLocator, arvSrc.ApiToken, tomorrow, []byte(blobSigningKey))
+		}
+
+		reader, blocklen, _, err := kcSrc.Get(getLocator)
+		c.Check(err, IsNil)
+		c.Check(blocklen, Equals, int64(11))
+		all, err := ioutil.ReadAll(reader)
+		c.Check(all, DeepEquals, data)
+
+		srcLocators = append(srcLocators, fmt.Sprintf("%s+%d", hash, blocklen))
+		if strings.HasPrefix(hash, indexPrefix) {
+			srcLocatorsMatchingPrefix = append(srcLocatorsMatchingPrefix, fmt.Sprintf("%s+%d", hash, blocklen))
+		}
+	}
+
+	// Put first two of those src blocks in dst using kcDst
+	for i := 0; i < 2; i++ {
+		data := []byte(fmt.Sprintf("test-data-%d", i))
+		hash := fmt.Sprintf("%x", md5.Sum(data))
+
+		hash2, rep, err := kcDst.PutB(data)
+		c.Check(hash2, Matches, fmt.Sprintf(`^%s\+11(\+.+)?$`, hash))
+		c.Check(rep, Equals, 1)
+		c.Check(err, IsNil)
+
+		getLocator := hash
+		if enforcePermissions {
+			getLocator = keepclient.SignLocator(getLocator, arvDst.ApiToken, tomorrow, []byte(blobSigningKey))
+		}
+
+		reader, blocklen, _, err := kcDst.Get(getLocator)
+		c.Check(err, IsNil)
+		c.Check(blocklen, Equals, int64(11))
+		all, err := ioutil.ReadAll(reader)
+		c.Check(all, DeepEquals, data)
+
+		dstLocators = append(dstLocators, fmt.Sprintf("%s+%d", hash, blocklen))
+	}
+
+	// Put two more blocks in dst; they are not in src at all
+	for i := 0; i < 2; i++ {
+		data := []byte(fmt.Sprintf("other-data-%d", i))
+		hash := fmt.Sprintf("%x", md5.Sum(data))
+
+		hash2, rep, err := kcDst.PutB(data)
+		c.Check(hash2, Matches, fmt.Sprintf(`^%s\+12(\+.+)?$`, hash))
+		c.Check(rep, Equals, 1)
+		c.Check(err, IsNil)
+
+		getLocator := hash
+		if enforcePermissions {
+			getLocator = keepclient.SignLocator(getLocator, arvDst.ApiToken, tomorrow, []byte(blobSigningKey))
+		}
+
+		reader, blocklen, _, err := kcDst.Get(getLocator)
+		c.Check(err, IsNil)
+		c.Check(blocklen, Equals, int64(12))
+		all, err := ioutil.ReadAll(reader)
+		c.Check(all, DeepEquals, data)
+
+		extraDstLocators = append(extraDstLocators, fmt.Sprintf("%s+%d", hash, blocklen))
+	}
+}
+
 // Setup rsync using srcKeepServicesJSON with fake keepservers.
 // Expect error during performKeepRsync due to unreachable src keepservers.
 func (s *ServerRequiredSuite) TestErrorDuringRsync_FakeSrcKeepservers(c *C) {
 	srcKeepServicesJSON = testKeepServicesJSON
 
-	setupRsync(c, false, true)
+	setupRsync(c, false, false)
 
 	err := performKeepRsync()
-	c.Check(err, NotNil)
+	c.Check(strings.HasSuffix(err.Error(), "no such host"), Equals, true)
 }
 
 // Setup rsync using dstKeepServicesJSON with fake keepservers.
@@ -425,5 +446,33 @@ func (s *ServerRequiredSuite) TestErrorDuringRsync_FakeDstKeepservers(c *C) {
 	setupRsync(c, false, false)
 
 	err := performKeepRsync()
-	c.Check(err, NotNil)
+	c.Check(strings.HasSuffix(err.Error(), "no such host"), Equals, true)
+}
+
+// Test rsync with signature error during Get from src.
+func (s *ServerRequiredSuite) TestErrorDuringRsync_ErrorGettingBlockFromSrc(c *C) {
+	setupRsync(c, true, true)
+
+	// put some blocks in src and dst
+	setupTestData(c, true, "")
+
+	// Change blob signing key to a fake key, so that Get from src fails
+	blobSigningKey = "123456789012345678901234yhksjoll2grmku38mi7yxd66h5j4q9w4jzanezacp8s6q0ro3hxakfye02152hncy6zml2ed0uc"
+
+	err := performKeepRsync()
+	c.Check(err.Error(), Equals, "Block not found")
+}
+
+// Test rsync with error during Put to src.
+func (s *ServerRequiredSuite) TestErrorDuringRsync_ErrorPuttingBlockInDst(c *C) {
+	setupRsync(c, false, true)
+
+	// put some blocks in src and dst
+	setupTestData(c, true, "")
+
+	// Increase Want_replicas on dst to result in insufficient replicas error during Put
+	kcDst.Want_replicas = 2
+
+	err := performKeepRsync()
+	c.Check(err.Error(), Equals, "Could not write sufficient replicas")
 }
