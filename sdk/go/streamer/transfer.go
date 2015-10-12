@@ -249,9 +249,7 @@ func (this *AsyncStream) transfer(source_reader io.Reader) {
 					}
 				}
 			} else {
-				if reader_status == io.EOF {
-					// no more reads expected, so this is ok
-				} else {
+				if reader_status == nil {
 					// slices channel closed without signaling EOF
 					reader_status = io.ErrUnexpectedEOF
 				}
