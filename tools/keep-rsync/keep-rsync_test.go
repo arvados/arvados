@@ -41,6 +41,8 @@ func (s *ServerRequiredSuite) SetUpTest(c *C) {
 	dstKeepServicesJSON = ""
 	replications = 0
 	prefix = ""
+	srcConfigFile = ""
+	dstConfigFile = ""
 	arvSrc = arvadosclient.ArvadosClient{}
 	arvDst = arvadosclient.ArvadosClient{}
 	kcSrc = &keepclient.KeepClient{}
@@ -91,30 +93,6 @@ func setupRsync(c *C, enforcePermissions bool, setupDstServers bool) {
 		c.Check(err, IsNil)
 		kcDst.Want_replicas = 1
 	}
-}
-
-// Test readConfigFromFile method
-func (s *ServerRequiredSuite) TestReadConfigFromFile(c *C) {
-	// Setup a test config file
-	file, err := ioutil.TempFile(os.TempDir(), "config")
-	c.Check(err, IsNil)
-	defer os.Remove(file.Name())
-
-	fileContent := "ARVADOS_API_HOST=testhost\n"
-	fileContent += "ARVADOS_API_TOKEN=testtoken\n"
-	fileContent += "ARVADOS_API_HOST_INSECURE=true\n"
-	fileContent += "ARVADOS_BLOB_SIGNING_KEY=abcdefg"
-
-	_, err = file.Write([]byte(fileContent))
-
-	// Invoke readConfigFromFile method with this test filename
-	config, err := readConfigFromFile(file.Name())
-	c.Check(err, IsNil)
-	c.Assert(config.APIHost, Equals, "testhost")
-	c.Assert(config.APIToken, Equals, "testtoken")
-	c.Assert(config.APIHostInsecure, Equals, true)
-	c.Assert(config.ExternalClient, Equals, false)
-	c.Assert(blobSigningKey, Equals, "abcdefg")
 }
 
 // Test keep-rsync initialization, with src and dst keep servers.
@@ -475,4 +453,95 @@ func (s *ServerRequiredSuite) TestErrorDuringRsync_ErrorPuttingBlockInDst(c *C) 
 
 	err := performKeepRsync()
 	c.Check(err.Error(), Equals, "Could not write sufficient replicas")
+}
+
+// Test loadConfig func
+func (s *ServerRequiredSuite) TestLoadConfig(c *C) {
+	// Setup a src config file
+	srcFile := setupConfigFile(c, "src-config")
+	defer os.Remove(srcFile.Name())
+	srcConfigFile = srcFile.Name()
+
+	// Setup a dst config file
+	dstFile := setupConfigFile(c, "dst-config")
+	defer os.Remove(dstFile.Name())
+	dstConfigFile = dstFile.Name()
+
+	// load configuration from those files
+	err := loadConfig()
+	c.Check(err, IsNil)
+
+	c.Assert(srcConfig.APIHost, Equals, "testhost")
+	c.Assert(srcConfig.APIToken, Equals, "testtoken")
+	c.Assert(srcConfig.APIHostInsecure, Equals, true)
+	c.Assert(srcConfig.ExternalClient, Equals, false)
+
+	c.Assert(dstConfig.APIHost, Equals, "testhost")
+	c.Assert(dstConfig.APIToken, Equals, "testtoken")
+	c.Assert(dstConfig.APIHostInsecure, Equals, true)
+	c.Assert(dstConfig.ExternalClient, Equals, false)
+
+	c.Assert(blobSigningKey, Equals, "abcdefg")
+}
+
+// Test loadConfig func without setting up the config files
+func (s *ServerRequiredSuite) TestLoadConfig_MissingSrcConfig(c *C) {
+	srcConfigFile = ""
+	err := loadConfig()
+	c.Assert(err.Error(), Equals, "-src-config-file must be specified")
+}
+
+// Test loadConfig func - error reading src config
+func (s *ServerRequiredSuite) TestLoadConfig_ErrorLoadingSrcConfig(c *C) {
+	srcConfigFile = "no-such-config-file"
+
+	// load configuration
+	err := loadConfig()
+	c.Assert(strings.HasSuffix(err.Error(), "no such file or directory"), Equals, true)
+}
+
+// Test loadConfig func with no dst config file specified
+func (s *ServerRequiredSuite) TestLoadConfig_MissingDstConfig(c *C) {
+	// Setup a src config file
+	srcFile := setupConfigFile(c, "src-config")
+	defer os.Remove(srcFile.Name())
+	srcConfigFile = srcFile.Name()
+
+	// But do not setup the dst config file
+	dstConfigFile = ""
+
+	// load configuration
+	err := loadConfig()
+	c.Assert(err.Error(), Equals, "-dst-config-file must be specified")
+}
+
+// Test loadConfig func
+func (s *ServerRequiredSuite) TestLoadConfig_ErrorLoadingDstConfig(c *C) {
+	// Setup a src config file
+	srcFile := setupConfigFile(c, "src-config")
+	defer os.Remove(srcFile.Name())
+	srcConfigFile = srcFile.Name()
+
+	// But do not setup the dst config file
+	dstConfigFile = "no-such-config-file"
+
+	// load configuration
+	err := loadConfig()
+	c.Assert(strings.HasSuffix(err.Error(), "no such file or directory"), Equals, true)
+}
+
+func setupConfigFile(c *C, name string) *os.File {
+	// Setup a config file
+	file, err := ioutil.TempFile(os.TempDir(), name)
+	c.Check(err, IsNil)
+
+	fileContent := "ARVADOS_API_HOST=testhost\n"
+	fileContent += "ARVADOS_API_TOKEN=testtoken\n"
+	fileContent += "ARVADOS_API_HOST_INSECURE=true\n"
+	fileContent += "ARVADOS_BLOB_SIGNING_KEY=abcdefg"
+
+	_, err = file.Write([]byte(fileContent))
+	c.Check(err, IsNil)
+
+	return file
 }

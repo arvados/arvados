@@ -2,6 +2,7 @@ package main
 
 import (
 	"bytes"
+	"errors"
 	"flag"
 	"git.curoverse.com/arvados.git/sdk/go/arvadosclient"
 	"git.curoverse.com/arvados.git/sdk/go/keepclient"
@@ -23,10 +24,10 @@ var (
 	prefix              string
 )
 
-func main() {
-	var srcConfigFile string
-	var dstConfigFile string
+var srcConfigFile string
+var dstConfigFile string
 
+func main() {
 	flag.StringVar(
 		&srcConfigFile,
 		"src-config-file",
@@ -73,21 +74,9 @@ func main() {
 
 	var err error
 
-	// Load config
-	if srcConfigFile == "" {
-		log.Fatal("-src-config-file must be specified.")
-	}
-	srcConfig, err = readConfigFromFile(srcConfigFile)
+	err = loadConfig()
 	if err != nil {
-		log.Fatal("Error reading source configuration: %s", err.Error())
-	}
-
-	if dstConfigFile == "" {
-		log.Fatal("-dst-config-file must be specified.")
-	}
-	dstConfig, err = readConfigFromFile(dstConfigFile)
-	if err != nil {
-		log.Fatal("Error reading destination configuration: %s", err.Error())
+		log.Fatal("Error loading configuration from files: %s", err.Error())
 	}
 
 	// Initialize keep-rsync
@@ -101,6 +90,31 @@ func main() {
 	if err != nil {
 		log.Fatal("Error while syncing data: %s", err.Error())
 	}
+}
+
+// Load src and dst config from given files
+func loadConfig() error {
+	if srcConfigFile == "" {
+		return errors.New("-src-config-file must be specified")
+	}
+
+	var err error
+
+	srcConfig, err = readConfigFromFile(srcConfigFile)
+	if err != nil {
+		log.Printf("Error reading source configuration: %s", err.Error())
+		return err
+	}
+
+	if dstConfigFile == "" {
+		return errors.New("-dst-config-file must be specified")
+	}
+	dstConfig, err = readConfigFromFile(dstConfigFile)
+	if err != nil {
+		log.Printf("Error reading destination configuration: %s", err.Error())
+	}
+
+	return err
 }
 
 var matchTrue = regexp.MustCompile("^(?i:1|yes|true)$")
