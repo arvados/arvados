@@ -345,7 +345,7 @@ def run_keep(blob_signing_key=None, enforce_permissions=False, num_servers=2):
         token=os.environ['ARVADOS_API_TOKEN'],
         insecure=True)
 
-    for d in api.keep_services().list().execute()['items']:
+    for d in api.keep_services().list(filters=[['service_type','=','disk']]).execute()['items']:
         api.keep_services().delete(uuid=d['uuid']).execute()
     for d in api.keep_disks().list().execute()['items']:
         api.keep_disks().delete(uuid=d['uuid']).execute()
@@ -438,10 +438,35 @@ def stop_arv_git_httpd():
         return
     kill_server_pid(_pidfile('arv-git-httpd'), wait=0)
 
+def run_keep_web():
+    if 'ARVADOS_TEST_PROXY_SERVICES' in os.environ:
+        return
+    stop_keep_web()
+
+    keepwebport = find_available_port()
+    env = os.environ.copy()
+    env.pop('ARVADOS_API_TOKEN', None)
+    keepweb = subprocess.Popen(
+        ['keep-web',
+         '-attachment-only-host=localhost:'+str(keepwebport),
+         '-address=:'+str(keepwebport)],
+        env=env, stdin=open('/dev/null'), stdout=sys.stderr)
+    with open(_pidfile('keep-web'), 'w') as f:
+        f.write(str(keepweb.pid))
+    _setport('keep-web', keepwebport)
+    _wait_until_port_listens(keepwebport)
+
+def stop_keep_web():
+    if 'ARVADOS_TEST_PROXY_SERVICES' in os.environ:
+        return
+    kill_server_pid(_pidfile('keep-web'), wait=0)
+
 def run_nginx():
     if 'ARVADOS_TEST_PROXY_SERVICES' in os.environ:
         return
     nginxconf = {}
+    nginxconf['KEEPWEBPORT'] = _getport('keep-web')
+    nginxconf['KEEPWEBSSLPORT'] = find_available_port()
     nginxconf['KEEPPROXYPORT'] = _getport('keepproxy')
     nginxconf['KEEPPROXYSSLPORT'] = find_available_port()
     nginxconf['GITPORT'] = _getport('arv-git-httpd')
@@ -465,6 +490,7 @@ def run_nginx():
          '-g', 'pid '+_pidfile('nginx')+';',
          '-c', conffile],
         env=env, stdin=open('/dev/null'), stdout=sys.stderr)
+    _setport('keep-web-ssl', nginxconf['KEEPWEBSSLPORT'])
     _setport('keepproxy-ssl', nginxconf['KEEPPROXYSSLPORT'])
     _setport('arv-git-httpd-ssl', nginxconf['GITSSLPORT'])
 
@@ -546,6 +572,7 @@ class TestCaseWithServers(unittest.TestCase):
     MAIN_SERVER = None
     KEEP_SERVER = None
     KEEP_PROXY_SERVER = None
+    KEEP_WEB_SERVER = None
 
     @staticmethod
     def _restore_dict(src, dest):
@@ -564,7 +591,8 @@ class TestCaseWithServers(unittest.TestCase):
         for server_kwargs, start_func, stop_func in (
                 (cls.MAIN_SERVER, run, reset),
                 (cls.KEEP_SERVER, run_keep, stop_keep),
-                (cls.KEEP_PROXY_SERVER, run_keep_proxy, stop_keep_proxy)):
+                (cls.KEEP_PROXY_SERVER, run_keep_proxy, stop_keep_proxy),
+                (cls.KEEP_WEB_SERVER, run_keep_web, stop_keep_web)):
             if server_kwargs is not None:
                 start_func(**server_kwargs)
                 cls._cleanup_funcs.append(stop_func)
@@ -590,6 +618,7 @@ if __name__ == "__main__":
         'start', 'stop',
         'start_keep', 'stop_keep',
         'start_keep_proxy', 'stop_keep_proxy',
+        'start_keep-web', 'stop_keep-web',
         'start_arv-git-httpd', 'stop_arv-git-httpd',
         'start_nginx', 'stop_nginx',
     ]
@@ -629,6 +658,10 @@ if __name__ == "__main__":
         run_arv_git_httpd()
     elif args.action == 'stop_arv-git-httpd':
         stop_arv_git_httpd()
+    elif args.action == 'start_keep-web':
+        run_keep_web()
+    elif args.action == 'stop_keep-web':
+        stop_keep_web()
     elif args.action == 'start_nginx':
         run_nginx()
     elif args.action == 'stop_nginx':
