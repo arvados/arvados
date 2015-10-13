@@ -2,6 +2,8 @@ package main
 
 import (
 	"bytes"
+	"crypto/md5"
+	"fmt"
 	"os"
 	"regexp"
 	"sort"
@@ -58,6 +60,8 @@ func DoGenericVolumeTests(t *testing.T, factory TestableVolumeFactory) {
 
 	testGetConcurrent(t, factory)
 	testPutConcurrent(t, factory)
+
+	testPutFullBlock(t, factory)
 }
 
 // Put a test block, get it and verify content
@@ -631,5 +635,33 @@ func testPutConcurrent(t *testing.T, factory TestableVolumeFactory) {
 	bufs.Put(buf)
 	if bytes.Compare(buf, TestBlock3) != 0 {
 		t.Errorf("Get #3: expected %s, got %s", string(TestBlock3), string(buf))
+	}
+}
+
+// Write and read back a full size block
+func testPutFullBlock(t *testing.T, factory TestableVolumeFactory) {
+	v := factory(t)
+	defer v.Teardown()
+
+	if !v.Writable() {
+		return
+	}
+
+	wdata := make([]byte, BlockSize)
+	wdata[0] = 'a'
+	wdata[BlockSize-1] = 'z'
+	hash := fmt.Sprintf("%x", md5.Sum(wdata))
+	err := v.Put(hash, wdata)
+	if err != nil {
+		t.Fatal(err)
+	}
+	rdata, err := v.Get(hash)
+	if err != nil {
+		t.Error(err)
+	} else {
+		defer bufs.Put(rdata)
+	}
+	if bytes.Compare(rdata, wdata) != 0 {
+		t.Error("rdata != wdata")
 	}
 }

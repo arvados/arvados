@@ -161,17 +161,11 @@ func (v *AzureBlobVolume) get(loc string) ([]byte, error) {
 		}
 		return nil, err
 	}
-	switch err := err.(type) {
-	case nil:
-	default:
-		log.Printf("ERROR IN Get(): %T %#v", err, err)
-		return nil, err
-	}
 	defer rdr.Close()
 	buf := bufs.Get(BlockSize)
 	n, err := io.ReadFull(rdr, buf)
 	switch err {
-	case io.EOF, io.ErrUnexpectedEOF:
+	case nil, io.EOF, io.ErrUnexpectedEOF:
 		return buf[:n], nil
 	default:
 		bufs.Put(buf)
