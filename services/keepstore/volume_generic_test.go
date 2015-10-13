@@ -24,6 +24,7 @@ func DoGenericVolumeTests(t *testing.T, factory TestableVolumeFactory) {
 	testGet(t, factory)
 	testGetNoSuchBlock(t, factory)
 
+	testCompareNonexistent(t, factory)
 	testCompareSameContent(t, factory, TestHash, TestBlock)
 	testCompareSameContent(t, factory, EmptyHash, EmptyBlock)
 	testCompareWithCollision(t, factory, TestHash, TestBlock, []byte("baddata"))
@@ -92,6 +93,19 @@ func testGetNoSuchBlock(t *testing.T, factory TestableVolumeFactory) {
 
 	if _, err := v.Get(TestHash2); err == nil {
 		t.Errorf("Expected error while getting non-existing block %v", TestHash2)
+	}
+}
+
+// Compare() should return os.ErrNotExist if the block does not exist.
+// Otherwise, writing new data causes CompareAndTouch() to generate
+// error logs even though everything is working fine.
+func testCompareNonexistent(t *testing.T, factory TestableVolumeFactory) {
+	v := factory(t)
+	defer v.Teardown()
+
+	err := v.Compare(TestHash, TestBlock)
+	if err != os.ErrNotExist {
+		t.Errorf("Got err %T %q, expected os.ErrNotExist", err, err)
 	}
 }
 

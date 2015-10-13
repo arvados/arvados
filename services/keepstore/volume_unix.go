@@ -189,7 +189,7 @@ func (v *UnixVolume) Get(loc string) ([]byte, error) {
 	path := v.blockPath(loc)
 	stat, err := v.stat(path)
 	if err != nil {
-		return nil, err
+		return nil, v.translateError(err)
 	}
 	buf := bufs.Get(int(stat.Size()))
 	err = v.getFunc(path, func(rdr io.Reader) error {
@@ -209,7 +209,7 @@ func (v *UnixVolume) Get(loc string) ([]byte, error) {
 func (v *UnixVolume) Compare(loc string, expect []byte) error {
 	path := v.blockPath(loc)
 	if _, err := v.stat(path); err != nil {
-		return err
+		return v.translateError(err)
 	}
 	return v.getFunc(path, func(rdr io.Reader) error {
 		return compareReaderWithBuf(rdr, expect, loc[:32])
@@ -478,4 +478,17 @@ func lockfile(f *os.File) error {
 
 func unlockfile(f *os.File) error {
 	return syscall.Flock(int(f.Fd()), syscall.LOCK_UN)
+}
+
+// Where appropriate, translate a more specific filesystem error to an
+// error recognized by handlers, like os.ErrNotExist.
+func (v *UnixVolume) translateError(err error) error {
+	switch err.(type) {
+	case *os.PathError:
+		// stat() returns a PathError if the parent directory
+		// (not just the file itself) is missing
+		return os.ErrNotExist
+	default:
+		return err
+	}
 }

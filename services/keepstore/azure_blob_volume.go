@@ -155,11 +155,7 @@ func (v *AzureBlobVolume) Get(loc string) ([]byte, error) {
 func (v *AzureBlobVolume) get(loc string) ([]byte, error) {
 	rdr, err := v.bsClient.GetBlob(v.containerName, loc)
 	if err != nil {
-		if strings.Contains(err.Error(), "404 Not Found") {
-			// "storage: service returned without a response body (404 Not Found)"
-			return nil, os.ErrNotExist
-		}
-		return nil, err
+		return nil, v.translateError(err)
 	}
 	defer rdr.Close()
 	buf := bufs.Get(BlockSize)
@@ -176,7 +172,7 @@ func (v *AzureBlobVolume) get(loc string) ([]byte, error) {
 func (v *AzureBlobVolume) Compare(loc string, expect []byte) error {
 	rdr, err := v.bsClient.GetBlob(v.containerName, loc)
 	if err != nil {
-		return err
+		return v.translateError(err)
 	}
 	defer rdr.Close()
 	return compareReaderWithBuf(rdr, expect, loc[:32])
@@ -278,4 +274,18 @@ func (v *AzureBlobVolume) Writable() bool {
 
 func (v *AzureBlobVolume) Replication() int {
 	return v.replication
+}
+
+// If possible, translate an Azure SDK error to a recognizable error
+// like os.ErrNotExist.
+func (v *AzureBlobVolume) translateError(err error) error {
+	switch {
+	case err == nil:
+		return err
+	case strings.Contains(err.Error(), "404 Not Found"):
+		// "storage: service returned without a response body (404 Not Found)"
+		return os.ErrNotExist
+	default:
+		return err
+	}
 }
