@@ -9,6 +9,7 @@ import (
 	"io/ioutil"
 	"log"
 	"os"
+	"regexp"
 	"strings"
 	"time"
 
@@ -216,6 +217,9 @@ func (v *AzureBlobVolume) IndexTo(prefix string, writer io.Writer) error {
 			if err != nil {
 				return err
 			}
+			if !v.isKeepBlock(b.Name) {
+				continue
+			}
 			if b.Properties.ContentLength == 0 && t.Add(azureWriteRaceInterval).After(time.Now()) {
 				// A new zero-length blob is probably
 				// just a new non-empty blob that
@@ -288,4 +292,9 @@ func (v *AzureBlobVolume) translateError(err error) error {
 	default:
 		return err
 	}
+}
+
+var keepBlockRegexp = regexp.MustCompile(`^[0-9a-f]{32}$`)
+func (v *AzureBlobVolume) isKeepBlock(s string) bool {
+	return keepBlockRegexp.MatchString(s)
 }

@@ -427,7 +427,7 @@ func TestAzureBlobVolumeCreateBlobRaceDeadline(t *testing.T) {
 	azureWriteRaceInterval = 2 * time.Second
 	azureWriteRacePollTime = 5 * time.Millisecond
 
-	v.PutRaw(TestHash, []byte{})
+	v.PutRaw(TestHash, nil)
 
 	buf := new(bytes.Buffer)
 	v.IndexTo("", buf)

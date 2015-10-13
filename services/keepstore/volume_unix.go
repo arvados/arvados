@@ -292,6 +292,7 @@ func (v *UnixVolume) Status() *VolumeStatus {
 }
 
 var blockDirRe = regexp.MustCompile(`^[0-9a-f]+$`)
+var blockFileRe = regexp.MustCompile(`^[0-9a-f]{32}$`)
 
 // IndexTo writes (to the given Writer) a list of blocks found on this
 // volume which begin with the specified prefix. If the prefix is an
@@ -346,6 +347,9 @@ func (v *UnixVolume) IndexTo(prefix string, w io.Writer) error {
 			}
 			name := fileInfo[0].Name()
 			if !strings.HasPrefix(name, prefix) {
+				continue
+			}
+			if !blockFileRe.MatchString(name) {
 				continue
 			}
 			_, err = fmt.Fprint(w,
