@@ -2,6 +2,8 @@ package main
 
 import (
 	"bytes"
+	"crypto/md5"
+	"fmt"
 	"os"
 	"regexp"
 	"sort"
@@ -22,6 +24,7 @@ func DoGenericVolumeTests(t *testing.T, factory TestableVolumeFactory) {
 	testGet(t, factory)
 	testGetNoSuchBlock(t, factory)
 
+	testCompareNonexistent(t, factory)
 	testCompareSameContent(t, factory, TestHash, TestBlock)
 	testCompareSameContent(t, factory, EmptyHash, EmptyBlock)
 	testCompareWithCollision(t, factory, TestHash, TestBlock, []byte("baddata"))
@@ -58,6 +61,8 @@ func DoGenericVolumeTests(t *testing.T, factory TestableVolumeFactory) {
 
 	testGetConcurrent(t, factory)
 	testPutConcurrent(t, factory)
+
+	testPutFullBlock(t, factory)
 }
 
 // Put a test block, get it and verify content
@@ -88,6 +93,19 @@ func testGetNoSuchBlock(t *testing.T, factory TestableVolumeFactory) {
 
 	if _, err := v.Get(TestHash2); err == nil {
 		t.Errorf("Expected error while getting non-existing block %v", TestHash2)
+	}
+}
+
+// Compare() should return os.ErrNotExist if the block does not exist.
+// Otherwise, writing new data causes CompareAndTouch() to generate
+// error logs even though everything is working fine.
+func testCompareNonexistent(t *testing.T, factory TestableVolumeFactory) {
+	v := factory(t)
+	defer v.Teardown()
+
+	err := v.Compare(TestHash, TestBlock)
+	if err != os.ErrNotExist {
+		t.Errorf("Got err %T %q, expected os.ErrNotExist", err, err)
 	}
 }
 
@@ -631,5 +649,33 @@ func testPutConcurrent(t *testing.T, factory TestableVolumeFactory) {
 	bufs.Put(buf)
 	if bytes.Compare(buf, TestBlock3) != 0 {
 		t.Errorf("Get #3: expected %s, got %s", string(TestBlock3), string(buf))
+	}
+}
+
+// Write and read back a full size block
+func testPutFullBlock(t *testing.T, factory TestableVolumeFactory) {
+	v := factory(t)
+	defer v.Teardown()
+
+	if !v.Writable() {
+		return
+	}
+
+	wdata := make([]byte, BlockSize)
+	wdata[0] = 'a'
+	wdata[BlockSize-1] = 'z'
+	hash := fmt.Sprintf("%x", md5.Sum(wdata))
+	err := v.Put(hash, wdata)
+	if err != nil {
+		t.Fatal(err)
+	}
+	rdata, err := v.Get(hash)
+	if err != nil {
+		t.Error(err)
+	} else {
+		defer bufs.Put(rdata)
+	}
+	if bytes.Compare(rdata, wdata) != 0 {
+		t.Error("rdata != wdata")
 	}
 }
