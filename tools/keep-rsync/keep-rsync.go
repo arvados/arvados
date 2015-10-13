@@ -1,9 +1,10 @@
 package main
 
 import (
-	"bytes"
+	"bufio"
 	"errors"
 	"flag"
+	"fmt"
 	"git.curoverse.com/arvados.git/sdk/go/arvadosclient"
 	"git.curoverse.com/arvados.git/sdk/go/keepclient"
 	"io/ioutil"
@@ -15,19 +16,13 @@ import (
 
 // keep-rsync arguments
 var (
-	srcConfig           arvadosclient.APIConfig
-	dstConfig           arvadosclient.APIConfig
-	blobSigningKey      string
-	srcKeepServicesJSON string
-	dstKeepServicesJSON string
-	replications        int
-	prefix              string
+	blobSigningKey string
 )
 
-var srcConfigFile string
-var dstConfigFile string
-
 func main() {
+	var srcConfigFile, dstConfigFile, srcKeepServicesJSON, dstKeepServicesJSON, prefix string
+	var replications int
+
 	flag.StringVar(
 		&srcConfigFile,
 		"src-config-file",
@@ -72,54 +67,49 @@ func main() {
 
 	flag.Parse()
 
-	var err error
-
-	err = loadConfig()
+	srcConfig, dstConfig, err := loadConfig(srcConfigFile, dstConfigFile)
 	if err != nil {
-		log.Fatal("Error loading configuration from files: %s", err.Error())
+		log.Fatalf("Error loading configuration from files: %s", err.Error())
 	}
 
-	// Initialize keep-rsync
-	err = initializeKeepRsync()
+	// setup src and dst keepclients
+	kcSrc, kcDst, err := setupKeepClients(srcConfig, dstConfig, srcKeepServicesJSON, dstKeepServicesJSON, replications)
 	if err != nil {
-		log.Fatal("Error configuring keep-rsync: %s", err.Error())
+		log.Fatalf("Error configuring keep-rsync: %s", err.Error())
 	}
 
 	// Copy blocks not found in dst from src
-	err = performKeepRsync()
+	err = performKeepRsync(kcSrc, kcDst, prefix)
 	if err != nil {
-		log.Fatal("Error while syncing data: %s", err.Error())
+		log.Fatalf("Error while syncing data: %s", err.Error())
 	}
 }
 
 // Load src and dst config from given files
-func loadConfig() error {
+func loadConfig(srcConfigFile, dstConfigFile string) (srcConfig, dstConfig arvadosclient.APIConfig, err error) {
 	if srcConfigFile == "" {
-		return errors.New("-src-config-file must be specified")
+		return srcConfig, dstConfig, errors.New("-src-config-file must be specified")
 	}
-
-	var err error
 
 	srcConfig, err = readConfigFromFile(srcConfigFile)
 	if err != nil {
-		log.Printf("Error reading source configuration: %s", err.Error())
-		return err
+		return srcConfig, dstConfig, fmt.Errorf("Error reading source configuration: %v", err)
 	}
 
 	if dstConfigFile == "" {
-		return errors.New("-dst-config-file must be specified")
+		return srcConfig, dstConfig, errors.New("-dst-config-file must be specified")
 	}
 	dstConfig, err = readConfigFromFile(dstConfigFile)
 	if err != nil {
-		log.Printf("Error reading destination configuration: %s", err.Error())
+		return srcConfig, dstConfig, fmt.Errorf("Error reading destination configuration: %v", err)
 	}
 
-	return err
+	return srcConfig, dstConfig, err
 }
 
 var matchTrue = regexp.MustCompile("^(?i:1|yes|true)$")
 
-// Reads config from file
+// Read config from file
 func readConfigFromFile(filename string) (arvadosclient.APIConfig, error) {
 	var config arvadosclient.APIConfig
 
@@ -133,44 +123,39 @@ func readConfigFromFile(filename string) (arvadosclient.APIConfig, error) {
 		if line == "" {
 			continue
 		}
-		kv := strings.Split(line, "=")
 
-		switch kv[0] {
+		kv := strings.SplitN(line, "=", 2)
+		key := strings.TrimSpace(kv[0])
+		value := strings.TrimSpace(kv[1])
+
+		switch key {
 		case "ARVADOS_API_TOKEN":
-			config.APIToken = kv[1]
+			config.APIToken = value
 		case "ARVADOS_API_HOST":
-			config.APIHost = kv[1]
+			config.APIHost = value
 		case "ARVADOS_API_HOST_INSECURE":
-			config.APIHostInsecure = matchTrue.MatchString(kv[1])
+			config.APIHostInsecure = matchTrue.MatchString(value)
 		case "ARVADOS_EXTERNAL_CLIENT":
-			config.ExternalClient = matchTrue.MatchString(kv[1])
+			config.ExternalClient = matchTrue.MatchString(value)
 		case "ARVADOS_BLOB_SIGNING_KEY":
-			blobSigningKey = kv[1]
+			blobSigningKey = value
 		}
 	}
 	return config, nil
 }
 
-// keep-rsync source and destination clients
-var (
-	arvSrc arvadosclient.ArvadosClient
-	arvDst arvadosclient.ArvadosClient
-	kcSrc  *keepclient.KeepClient
-	kcDst  *keepclient.KeepClient
-)
-
 // Initializes keep-rsync using the config provided
-func initializeKeepRsync() (err error) {
+func setupKeepClients(srcConfig, dstConfig arvadosclient.APIConfig, srcKeepServicesJSON, dstKeepServicesJSON string, replications int) (kcSrc, kcDst *keepclient.KeepClient, err error) {
 	// arvSrc from srcConfig
-	arvSrc, err = arvadosclient.New(srcConfig)
+	arvSrc, err := arvadosclient.New(srcConfig)
 	if err != nil {
-		return
+		return kcSrc, kcDst, err
 	}
 
 	// arvDst from dstConfig
-	arvDst, err = arvadosclient.New(dstConfig)
+	arvDst, err := arvadosclient.New(dstConfig)
 	if err != nil {
-		return
+		return kcSrc, kcDst, err
 	}
 
 	// Get default replications value from destination, if it is not already provided
@@ -187,12 +172,12 @@ func initializeKeepRsync() (err error) {
 	if srcKeepServicesJSON == "" {
 		kcSrc, err = keepclient.MakeKeepClient(&arvSrc)
 		if err != nil {
-			return
+			return nil, nil, err
 		}
 	} else {
 		kcSrc, err = keepclient.MakeKeepClientFromJSON(&arvSrc, srcKeepServicesJSON)
 		if err != nil {
-			return
+			return kcSrc, kcDst, err
 		}
 	}
 
@@ -200,22 +185,22 @@ func initializeKeepRsync() (err error) {
 	if dstKeepServicesJSON == "" {
 		kcDst, err = keepclient.MakeKeepClient(&arvDst)
 		if err != nil {
-			return
+			return kcSrc, kcDst, err
 		}
 	} else {
 		kcDst, err = keepclient.MakeKeepClientFromJSON(&arvDst, dstKeepServicesJSON)
 		if err != nil {
-			return
+			return kcSrc, kcDst, err
 		}
 	}
 	kcDst.Want_replicas = replications
 
-	return
+	return kcSrc, kcDst, nil
 }
 
 // Get unique block locators from src and dst
 // Copy any blocks missing in dst
-func performKeepRsync() error {
+func performKeepRsync(kcSrc, kcDst *keepclient.KeepClient, prefix string) error {
 	// Get unique locators from src
 	srcIndex, err := getUniqueLocators(kcSrc, prefix)
 	if err != nil {
@@ -232,49 +217,32 @@ func performKeepRsync() error {
 	toBeCopied := getMissingLocators(srcIndex, dstIndex)
 
 	// Copy each missing block to dst
-	err = copyBlocksToDst(toBeCopied)
+	err = copyBlocksToDst(toBeCopied, kcSrc, kcDst)
 
 	return err
 }
 
 // Get list of unique locators from the specified cluster
-func getUniqueLocators(kc *keepclient.KeepClient, indexPrefix string) (map[string]bool, error) {
-	var indexBytes []byte
-
-	for uuid := range kc.LocalRoots() {
-		reader, err := kc.GetIndex(uuid, indexPrefix)
-		if err != nil {
-			return nil, err
-		}
-
-		var readBytes []byte
-		readBytes, err = ioutil.ReadAll(reader)
-		if err != nil {
-			return nil, err
-		}
-
-		indexBytes = append(indexBytes, readBytes...)
-	}
-
-	// Got index; Now dedup it
-	locators := bytes.Split(indexBytes, []byte("\n"))
-
+func getUniqueLocators(kc *keepclient.KeepClient, prefix string) (map[string]bool, error) {
 	uniqueLocators := map[string]bool{}
-	for _, loc := range locators {
-		if len(loc) == 0 {
-			continue
-		}
 
-		locator := string(bytes.Split(loc, []byte(" "))[0])
-		if _, ok := uniqueLocators[locator]; !ok {
-			uniqueLocators[locator] = true
+	// Get index and dedup
+	for uuid := range kc.LocalRoots() {
+		reader, err := kc.GetIndex(uuid, prefix)
+		if err != nil {
+			return uniqueLocators, err
+		}
+		scanner := bufio.NewScanner(reader)
+		for scanner.Scan() {
+			uniqueLocators[strings.Split(scanner.Text(), " ")[0]] = true
 		}
 	}
+
 	return uniqueLocators, nil
 }
 
 // Get list of locators that are in src but not in dst
-func getMissingLocators(srcLocators map[string]bool, dstLocators map[string]bool) []string {
+func getMissingLocators(srcLocators, dstLocators map[string]bool) []string {
 	var missingLocators []string
 	for locator := range srcLocators {
 		if _, ok := dstLocators[locator]; !ok {
@@ -285,37 +253,32 @@ func getMissingLocators(srcLocators map[string]bool, dstLocators map[string]bool
 }
 
 // Copy blocks from src to dst; only those that are missing in dst are copied
-func copyBlocksToDst(toBeCopied []string) error {
+func copyBlocksToDst(toBeCopied []string, kcSrc, kcDst *keepclient.KeepClient) error {
 	done := 0
 	total := len(toBeCopied)
 
 	for _, locator := range toBeCopied {
-		log.Printf("Getting block %d of %d", done+1, total)
-
-		log.Printf("Getting block: %v", locator)
+		log.Printf("Getting block %d of %d: %v", done+1, total, locator)
 
 		getLocator := locator
 		expiresAt := time.Now().AddDate(0, 0, 1)
 		if blobSigningKey != "" {
-			getLocator = keepclient.SignLocator(getLocator, arvSrc.ApiToken, expiresAt, []byte(blobSigningKey))
+			getLocator = keepclient.SignLocator(getLocator, kcSrc.Arvados.ApiToken, expiresAt, []byte(blobSigningKey))
 		}
 
 		reader, _, _, err := kcSrc.Get(getLocator)
 		if err != nil {
-			log.Printf("Error getting block: %q %v", locator, err)
-			return err
+			return fmt.Errorf("Error getting block: %v %v", locator, err)
 		}
 		data, err := ioutil.ReadAll(reader)
 		if err != nil {
-			log.Printf("Error reading block data: %q %v", locator, err)
-			return err
+			return fmt.Errorf("Error reading block data: %v %v", locator, err)
 		}
 
-		log.Printf("Copying block: %q", locator)
+		log.Printf("Writing block%d of %d: %v", locator)
 		_, _, err = kcDst.PutB(data)
 		if err != nil {
-			log.Printf("Error putting block data: %q %v", locator, err)
-			return err
+			return fmt.Errorf("Error putting block data: %v %v", locator, err)
 		}
 
 		done++
