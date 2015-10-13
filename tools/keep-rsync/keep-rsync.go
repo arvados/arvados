@@ -2,6 +2,7 @@ package main
 
 import (
 	"bufio"
+	"crypto/tls"
 	"errors"
 	"flag"
 	"fmt"
@@ -9,19 +10,16 @@ import (
 	"git.curoverse.com/arvados.git/sdk/go/keepclient"
 	"io/ioutil"
 	"log"
+	"net/http"
 	"regexp"
 	"strings"
 	"time"
 )
 
-// keep-rsync arguments
-var (
-	blobSigningKey string
-)
-
 func main() {
 	var srcConfigFile, dstConfigFile, srcKeepServicesJSON, dstKeepServicesJSON, prefix string
 	var replications int
+	var srcBlobSigningKey string
 
 	flag.StringVar(
 		&srcConfigFile,
@@ -67,7 +65,7 @@ func main() {
 
 	flag.Parse()
 
-	srcConfig, dstConfig, err := loadConfig(srcConfigFile, dstConfigFile)
+	srcConfig, dstConfig, srcBlobSigningKey, _, err := loadConfig(srcConfigFile, dstConfigFile)
 	if err != nil {
 		log.Fatalf("Error loading configuration from files: %s", err.Error())
 	}
@@ -79,43 +77,41 @@ func main() {
 	}
 
 	// Copy blocks not found in dst from src
-	err = performKeepRsync(kcSrc, kcDst, prefix)
+	err = performKeepRsync(kcSrc, kcDst, srcBlobSigningKey, prefix)
 	if err != nil {
 		log.Fatalf("Error while syncing data: %s", err.Error())
 	}
 }
 
 // Load src and dst config from given files
-func loadConfig(srcConfigFile, dstConfigFile string) (srcConfig, dstConfig arvadosclient.APIConfig, err error) {
+func loadConfig(srcConfigFile, dstConfigFile string) (srcConfig, dstConfig arvadosclient.APIConfig, srcBlobSigningKey, dstBlobSigningKey string, err error) {
 	if srcConfigFile == "" {
-		return srcConfig, dstConfig, errors.New("-src-config-file must be specified")
+		return srcConfig, dstConfig, srcBlobSigningKey, dstBlobSigningKey, errors.New("-src-config-file must be specified")
 	}
 
-	srcConfig, err = readConfigFromFile(srcConfigFile)
+	srcConfig, srcBlobSigningKey, err = readConfigFromFile(srcConfigFile)
 	if err != nil {
-		return srcConfig, dstConfig, fmt.Errorf("Error reading source configuration: %v", err)
+		return srcConfig, dstConfig, srcBlobSigningKey, dstBlobSigningKey, fmt.Errorf("Error reading source configuration: %v", err)
 	}
 
 	if dstConfigFile == "" {
-		return srcConfig, dstConfig, errors.New("-dst-config-file must be specified")
+		return srcConfig, dstConfig, srcBlobSigningKey, dstBlobSigningKey, errors.New("-dst-config-file must be specified")
 	}
-	dstConfig, err = readConfigFromFile(dstConfigFile)
+	dstConfig, dstBlobSigningKey, err = readConfigFromFile(dstConfigFile)
 	if err != nil {
-		return srcConfig, dstConfig, fmt.Errorf("Error reading destination configuration: %v", err)
+		return srcConfig, dstConfig, srcBlobSigningKey, dstBlobSigningKey, fmt.Errorf("Error reading destination configuration: %v", err)
 	}
 
-	return srcConfig, dstConfig, err
+	return
 }
 
 var matchTrue = regexp.MustCompile("^(?i:1|yes|true)$")
 
 // Read config from file
-func readConfigFromFile(filename string) (arvadosclient.APIConfig, error) {
-	var config arvadosclient.APIConfig
-
+func readConfigFromFile(filename string) (config arvadosclient.APIConfig, blobSigningKey string, err error) {
 	content, err := ioutil.ReadFile(filename)
 	if err != nil {
-		return config, err
+		return config, "", err
 	}
 
 	lines := strings.Split(string(content), "\n")
@@ -141,21 +137,29 @@ func readConfigFromFile(filename string) (arvadosclient.APIConfig, error) {
 			blobSigningKey = value
 		}
 	}
-	return config, nil
+	return
 }
 
 // Initializes keep-rsync using the config provided
 func setupKeepClients(srcConfig, dstConfig arvadosclient.APIConfig, srcKeepServicesJSON, dstKeepServicesJSON string, replications int) (kcSrc, kcDst *keepclient.KeepClient, err error) {
 	// arvSrc from srcConfig
-	arvSrc, err := arvadosclient.New(srcConfig)
-	if err != nil {
-		return kcSrc, kcDst, err
+	arvSrc := arvadosclient.ArvadosClient{
+		ApiToken:    srcConfig.APIToken,
+		ApiServer:   srcConfig.APIHost,
+		ApiInsecure: srcConfig.APIHostInsecure,
+		Client: &http.Client{Transport: &http.Transport{
+			TLSClientConfig: &tls.Config{InsecureSkipVerify: srcConfig.APIHostInsecure}}},
+		External: srcConfig.ExternalClient,
 	}
 
 	// arvDst from dstConfig
-	arvDst, err := arvadosclient.New(dstConfig)
-	if err != nil {
-		return kcSrc, kcDst, err
+	arvDst := arvadosclient.ArvadosClient{
+		ApiToken:    dstConfig.APIToken,
+		ApiServer:   dstConfig.APIHost,
+		ApiInsecure: dstConfig.APIHostInsecure,
+		Client: &http.Client{Transport: &http.Transport{
+			TLSClientConfig: &tls.Config{InsecureSkipVerify: dstConfig.APIHostInsecure}}},
+		External: dstConfig.ExternalClient,
 	}
 
 	// Get default replications value from destination, if it is not already provided
@@ -200,7 +204,7 @@ func setupKeepClients(srcConfig, dstConfig arvadosclient.APIConfig, srcKeepServi
 
 // Get unique block locators from src and dst
 // Copy any blocks missing in dst
-func performKeepRsync(kcSrc, kcDst *keepclient.KeepClient, prefix string) error {
+func performKeepRsync(kcSrc, kcDst *keepclient.KeepClient, blobSigningKey, prefix string) error {
 	// Get unique locators from src
 	srcIndex, err := getUniqueLocators(kcSrc, prefix)
 	if err != nil {
@@ -217,7 +221,7 @@ func performKeepRsync(kcSrc, kcDst *keepclient.KeepClient, prefix string) error 
 	toBeCopied := getMissingLocators(srcIndex, dstIndex)
 
 	// Copy each missing block to dst
-	err = copyBlocksToDst(toBeCopied, kcSrc, kcDst)
+	err = copyBlocksToDst(toBeCopied, kcSrc, kcDst, blobSigningKey)
 
 	return err
 }
@@ -253,7 +257,7 @@ func getMissingLocators(srcLocators, dstLocators map[string]bool) []string {
 }
 
 // Copy blocks from src to dst; only those that are missing in dst are copied
-func copyBlocksToDst(toBeCopied []string, kcSrc, kcDst *keepclient.KeepClient) error {
+func copyBlocksToDst(toBeCopied []string, kcSrc, kcDst *keepclient.KeepClient, blobSigningKey string) error {
 	done := 0
 	total := len(toBeCopied)
 

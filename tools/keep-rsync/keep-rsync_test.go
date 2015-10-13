@@ -30,6 +30,9 @@ type ServerRequiredSuite struct{}
 func (s *ServerRequiredSuite) SetUpSuite(c *C) {
 }
 
+var kcSrc, kcDst *keepclient.KeepClient
+var srcKeepServicesJSON, dstKeepServicesJSON, blobSigningKey string
+
 func (s *ServerRequiredSuite) SetUpTest(c *C) {
 	arvadostest.ResetEnv()
 
@@ -45,11 +48,6 @@ func (s *ServerRequiredSuite) TearDownSuite(c *C) {
 	arvadostest.StopKeep()
 	arvadostest.StopAPI()
 }
-
-var kcSrc *keepclient.KeepClient
-var kcDst *keepclient.KeepClient
-var srcKeepServicesJSON string
-var dstKeepServicesJSON string
 
 var testKeepServicesJSON = "{ \"kind\":\"arvados#keepServiceList\", \"etag\":\"\", \"self_link\":\"\", \"offset\":null, \"limit\":null, \"items\":[ { \"href\":\"/keep_services/zzzzz-bi6l4-123456789012340\", \"kind\":\"arvados#keepService\", \"etag\":\"641234567890enhj7hzx432e5\", \"uuid\":\"zzzzz-bi6l4-123456789012340\", \"owner_uuid\":\"zzzzz-tpzed-123456789012345\", \"service_host\":\"keep0.zzzzz.arvadosapi.com\", \"service_port\":25107, \"service_ssl_flag\":false, \"service_type\":\"disk\", \"read_only\":false }, { \"href\":\"/keep_services/zzzzz-bi6l4-123456789012341\", \"kind\":\"arvados#keepService\", \"etag\":\"641234567890enhj7hzx432e5\", \"uuid\":\"zzzzz-bi6l4-123456789012341\", \"owner_uuid\":\"zzzzz-tpzed-123456789012345\", \"service_host\":\"keep0.zzzzz.arvadosapi.com\", \"service_port\":25108, \"service_ssl_flag\":false, \"service_type\":\"disk\", \"read_only\":false } ], \"items_available\":2 }"
 
@@ -272,9 +270,9 @@ func testKeepRsync(c *C, enforcePermissions bool, prefix string) {
 	setupRsync(c, enforcePermissions, true, 1)
 
 	// setupTestData
-	setupTestData(c, enforcePermissions, prefix)
+	setupTestData(c, prefix)
 
-	err := performKeepRsync(kcSrc, kcDst, prefix)
+	err := performKeepRsync(kcSrc, kcDst, blobSigningKey, prefix)
 	c.Check(err, IsNil)
 
 	// Now GetIndex from dst and verify that all 5 from src and the 2 extra blocks are found
@@ -309,7 +307,8 @@ func testKeepRsync(c *C, enforcePermissions bool, prefix string) {
 
 // Setup test data in src and dst.
 var srcLocators, srcLocatorsMatchingPrefix, dstLocators, extraDstLocators []string
-func setupTestData(c *C, enforcePermissions bool, indexPrefix string) {
+
+func setupTestData(c *C, indexPrefix string) {
 	srcLocators = []string{}
 	srcLocatorsMatchingPrefix = []string{}
 	dstLocators = []string{}
@@ -349,7 +348,7 @@ func (s *ServerRequiredSuite) TestErrorDuringRsync_FakeSrcKeepservers(c *C) {
 
 	setupRsync(c, false, false, 1)
 
-	err := performKeepRsync(kcSrc, kcDst, "")
+	err := performKeepRsync(kcSrc, kcDst, "", "")
 	c.Check(strings.HasSuffix(err.Error(), "no such host"), Equals, true)
 }
 
@@ -360,7 +359,7 @@ func (s *ServerRequiredSuite) TestErrorDuringRsync_FakeDstKeepservers(c *C) {
 
 	setupRsync(c, false, false, 1)
 
-	err := performKeepRsync(kcSrc, kcDst, "")
+	err := performKeepRsync(kcSrc, kcDst, "", "")
 	c.Check(strings.HasSuffix(err.Error(), "no such host"), Equals, true)
 }
 
@@ -369,12 +368,12 @@ func (s *ServerRequiredSuite) TestErrorDuringRsync_ErrorGettingBlockFromSrc(c *C
 	setupRsync(c, true, true, 1)
 
 	// put some blocks in src and dst
-	setupTestData(c, true, "")
+	setupTestData(c, "")
 
 	// Change blob signing key to a fake key, so that Get from src fails
-	blobSigningKey = "123456789012345678901234yhksjoll2grmku38mi7yxd66h5j4q9w4jzanezacp8s6q0ro3hxakfye02152hncy6zml2ed0uc"
+	blobSigningKey = "thisisfakeblobsigningkey"
 
-	err := performKeepRsync(kcSrc, kcDst, "")
+	err := performKeepRsync(kcSrc, kcDst, blobSigningKey, "")
 	c.Check(strings.HasSuffix(err.Error(), "Block not found"), Equals, true)
 }
 
@@ -383,12 +382,12 @@ func (s *ServerRequiredSuite) TestErrorDuringRsync_ErrorPuttingBlockInDst(c *C) 
 	setupRsync(c, false, true, 1)
 
 	// put some blocks in src and dst
-	setupTestData(c, true, "")
+	setupTestData(c, "")
 
 	// Increase Want_replicas on dst to result in insufficient replicas error during Put
 	kcDst.Want_replicas = 2
 
-	err := performKeepRsync(kcSrc, kcDst, "")
+	err := performKeepRsync(kcSrc, kcDst, blobSigningKey, "")
 	c.Check(strings.HasSuffix(err.Error(), "Could not write sufficient replicas"), Equals, true)
 }
 
@@ -405,7 +404,7 @@ func (s *ServerRequiredSuite) TestLoadConfig(c *C) {
 	dstConfigFile := dstFile.Name()
 
 	// load configuration from those files
-	srcConfig, dstConfig, err := loadConfig(srcConfigFile, dstConfigFile)
+	srcConfig, dstConfig, srcBlobSigningKey, _, err := loadConfig(srcConfigFile, dstConfigFile)
 	c.Check(err, IsNil)
 
 	c.Assert(srcConfig.APIHost, Equals, "testhost")
@@ -418,18 +417,18 @@ func (s *ServerRequiredSuite) TestLoadConfig(c *C) {
 	c.Assert(dstConfig.APIHostInsecure, Equals, true)
 	c.Assert(dstConfig.ExternalClient, Equals, false)
 
-	c.Assert(blobSigningKey, Equals, "abcdefg")
+	c.Assert(srcBlobSigningKey, Equals, "abcdefg")
 }
 
 // Test loadConfig func without setting up the config files
 func (s *ServerRequiredSuite) TestLoadConfig_MissingSrcConfig(c *C) {
-	_, _, err := loadConfig("", "")
+	_, _, _, _, err := loadConfig("", "")
 	c.Assert(err.Error(), Equals, "-src-config-file must be specified")
 }
 
 // Test loadConfig func - error reading src config
 func (s *ServerRequiredSuite) TestLoadConfig_ErrorLoadingSrcConfig(c *C) {
-	_, _, err := loadConfig("no-such-config-file", "")
+	_, _, _, _, err := loadConfig("no-such-config-file", "")
 	c.Assert(strings.HasSuffix(err.Error(), "no such file or directory"), Equals, true)
 }
 
@@ -441,7 +440,7 @@ func (s *ServerRequiredSuite) TestLoadConfig_MissingDstConfig(c *C) {
 	srcConfigFile := srcFile.Name()
 
 	// load configuration
-	_, _, err := loadConfig(srcConfigFile, "")
+	_, _, _, _, err := loadConfig(srcConfigFile, "")
 	c.Assert(err.Error(), Equals, "-dst-config-file must be specified")
 }
 
@@ -453,7 +452,7 @@ func (s *ServerRequiredSuite) TestLoadConfig_ErrorLoadingDstConfig(c *C) {
 	srcConfigFile := srcFile.Name()
 
 	// load configuration
-	_, _, err := loadConfig(srcConfigFile, "no-such-config-file")
+	_, _, _, _, err := loadConfig(srcConfigFile, "no-such-config-file")
 	c.Assert(strings.HasSuffix(err.Error(), "no such file or directory"), Equals, true)
 }
 
