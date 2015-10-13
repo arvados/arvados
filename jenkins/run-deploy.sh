@@ -143,7 +143,7 @@ title "Updating API server"
 SUM_ECODE=0
 run_puppet $IDENTIFIER.arvadosapi.com ECODE
 SUM_ECODE=$(($SUM_ECODE + $ECODE))
-run_command $IDENTIFIER.arvadosapi.com ECODE "/usr/local/bin/arvados-api-server-upgrade.sh"
+run_command $IDENTIFIER.arvadosapi.com ECODE "/usr/local/rvm/bin/rvm-exec /usr/local/bin/arvados-api-server-upgrade.sh"
 SUM_ECODE=$(($SUM_ECODE + $ECODE))
 if [ ! "$IDENTIFIER" = "c97qk" ]
 then
@@ -219,7 +219,7 @@ if [[ `host workbench.$ARVADOS_API_HOST |cut -f4 -d' '` != `host $ARVADOS_API_HO
   SUM_ECODE=$(($SUM_ECODE + $ECODE))
 fi
 
-run_command workbench.$IDENTIFIER ECODE "/usr/local/bin/arvados-workbench-upgrade.sh"
+run_command workbench.$IDENTIFIER ECODE "/usr/local/rvm/bin/rvm-exec /usr/local/bin/arvados-workbench-upgrade.sh"
 SUM_ECODE=$(($SUM_ECODE + $ECODE))
 
 if [[ "$SUM_ECODE" != "0" ]]; then
