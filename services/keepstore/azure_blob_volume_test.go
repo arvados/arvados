@@ -60,11 +60,11 @@ func newAzStubHandler() *azStubHandler {
 }
 
 func (h *azStubHandler) TouchWithDate(container, hash string, t time.Time) {
-	if blob, ok := h.blobs[container+"|"+hash]; !ok {
+	blob, ok := h.blobs[container+"|"+hash]
+	if !ok {
 		return
-	} else {
-		blob.Mtime = t
 	}
+	blob.Mtime = t
 }
 
 func (h *azStubHandler) PutRaw(container, hash string, data []byte) {
