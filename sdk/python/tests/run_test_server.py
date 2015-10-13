@@ -44,7 +44,6 @@ if not os.path.exists(TEST_TMPDIR):
 my_api_host = None
 _cached_config = {}
 keep_existing = False
-enforce_permissions = False
 
 def find_server_pid(PID_PATH, wait=10):
     now = time.time()
@@ -325,7 +324,7 @@ def _start_keep(n, keep_args):
 
     return port
 
-def run_keep(blob_signing_key=None):
+def run_keep(blob_signing_key=None, enforce_permissions=False):
     if not keep_existing:
       stop_keep()
 
@@ -606,15 +605,12 @@ if __name__ == "__main__":
     parser = argparse.ArgumentParser()
     parser.add_argument('action', type=str, help="one of {}".format(actions))
     parser.add_argument('--auth', type=str, metavar='FIXTURE_NAME', help='Print authorization info for given api_client_authorizations fixture')
-    parser.add_argument('--keep-existing', type=str, help="Used to add additional keep servers, without terminating existing servers")
-    parser.add_argument('--keep-enforce-permissions', type=str, help="Enforce keep permissions")
+    parser.add_argument('--keep-existing', action="store_true", help="Used to add additional keep servers, without terminating existing servers")
+    parser.add_argument('--keep-enforce-permissions', action="store_true", help="Enforce keep permissions")
 
     args = parser.parse_args()
 
-    if args.keep_existing == 'true':
-        keep_existing = True
-    if args.keep_enforce_permissions == 'true':
-        enforce_permissions = True
+    keep_existing = args.keep_existing
 
     if args.action not in actions:
         print("Unrecognized action '{}'. Actions are: {}.".format(args.action, actions), file=sys.stderr)
@@ -633,7 +629,7 @@ if __name__ == "__main__":
     elif args.action == 'stop':
         stop(force=('ARVADOS_TEST_API_HOST' not in os.environ))
     elif args.action == 'start_keep':
-        run_keep()
+        run_keep(enforce_permissions=args.keep_enforce_permissions)
     elif args.action == 'stop_keep':
         stop_keep()
     elif args.action == 'start_keep_proxy':

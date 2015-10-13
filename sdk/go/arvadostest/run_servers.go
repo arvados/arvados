@@ -111,15 +111,15 @@ func StartKeepWithParams(keepExisting bool, enforcePermissions bool) {
 	defer os.Chdir(cwd)
 	chdirToPythonTests()
 
-	keepExistingStr := ""
+	cmdArgs := []string{"run_test_server.py", "start_keep"}
 	if keepExisting {
-		keepExistingStr = "true"
+		cmdArgs = append(cmdArgs, "--keep-existing")
 	}
-	enforcePermissionsStr := ""
 	if enforcePermissions {
-		enforcePermissionsStr = "true"
+		cmdArgs = append(cmdArgs, "--keep-enforce-permissions")
 	}
-	cmd := exec.Command("python", "run_test_server.py", "start_keep", "--keep-existing", keepExistingStr, "--keep-enforce-permissions", enforcePermissionsStr)
+
+	cmd := exec.Command("python", cmdArgs...)
 
 	stderr, err := cmd.StderrPipe()
 	if err != nil {
