@@ -99,21 +99,21 @@ func StopAPI() {
 }
 
 // StartKeep is used to start keep servers
-// with keepExisting = false and enforcePermissions = false
+// with needMore = false and enforcePermissions = false
 func StartKeep() {
 	StartKeepWithParams(false, false)
 }
 
 // StartKeepWithParams is used to start keep servers while specifying
-// keepExisting and enforcePermissions parameters.
-func StartKeepWithParams(keepExisting bool, enforcePermissions bool) {
+// needMore and enforcePermissions parameters.
+func StartKeepWithParams(needMore bool, enforcePermissions bool) {
 	cwd, _ := os.Getwd()
 	defer os.Chdir(cwd)
 	chdirToPythonTests()
 
 	cmdArgs := []string{"run_test_server.py", "start_keep"}
-	if keepExisting {
-		cmdArgs = append(cmdArgs, "--keep-existing")
+	if needMore {
+		cmdArgs = append(cmdArgs, "--need-more")
 	}
 	if enforcePermissions {
 		cmdArgs = append(cmdArgs, "--keep-enforce-permissions")

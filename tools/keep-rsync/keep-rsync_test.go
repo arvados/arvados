@@ -52,10 +52,9 @@ func (s *ServerRequiredSuite) TearDownSuite(c *C) {
 var testKeepServicesJSON = "{ \"kind\":\"arvados#keepServiceList\", \"etag\":\"\", \"self_link\":\"\", \"offset\":null, \"limit\":null, \"items\":[ { \"href\":\"/keep_services/zzzzz-bi6l4-123456789012340\", \"kind\":\"arvados#keepService\", \"etag\":\"641234567890enhj7hzx432e5\", \"uuid\":\"zzzzz-bi6l4-123456789012340\", \"owner_uuid\":\"zzzzz-tpzed-123456789012345\", \"service_host\":\"keep0.zzzzz.arvadosapi.com\", \"service_port\":25107, \"service_ssl_flag\":false, \"service_type\":\"disk\", \"read_only\":false }, { \"href\":\"/keep_services/zzzzz-bi6l4-123456789012341\", \"kind\":\"arvados#keepService\", \"etag\":\"641234567890enhj7hzx432e5\", \"uuid\":\"zzzzz-bi6l4-123456789012341\", \"owner_uuid\":\"zzzzz-tpzed-123456789012345\", \"service_host\":\"keep0.zzzzz.arvadosapi.com\", \"service_port\":25108, \"service_ssl_flag\":false, \"service_type\":\"disk\", \"read_only\":false } ], \"items_available\":2 }"
 
 // Testing keep-rsync needs two sets of keep services: src and dst.
-// The test setup hence tweaks keep-rsync initialization to achieve this.
-// First invoke setupKeepClients and then invoke StartKeepWithParams
-// to create the keep servers to be used as destination.
-func setupRsync(c *C, enforcePermissions, setupDstServers bool, replications int) {
+// The test setup hence creates 3 servers instead of the default 2,
+// and uses the first 2 as src and the 3rd as dst keep servers.
+func setupRsync(c *C, enforcePermissions, updateDstReplications bool, replications int) {
 	// srcConfig
 	var srcConfig arvadosclient.APIConfig
 	srcConfig.APIHost = os.Getenv("ARVADOS_API_HOST")
@@ -74,18 +73,46 @@ func setupRsync(c *C, enforcePermissions, setupDstServers bool, replications int
 
 	// Start API and Keep servers
 	arvadostest.StartAPI()
-	arvadostest.StartKeepWithParams(false, enforcePermissions)
+	arvadostest.StartKeepWithParams(true, enforcePermissions)
 
 	// setup keepclients
 	var err error
 	kcSrc, kcDst, err = setupKeepClients(srcConfig, dstConfig, srcKeepServicesJSON, dstKeepServicesJSON, replications)
 	c.Check(err, IsNil)
 
-	// Create an additional keep server to be used as destination and reload kcDst
-	if setupDstServers {
-		arvadostest.StartKeepWithParams(true, enforcePermissions)
-		kcDst, err = keepclient.MakeKeepClient(kcDst.Arvados)
-		c.Check(err, IsNil)
+	for uuid := range kcSrc.LocalRoots() {
+		if strings.HasSuffix(uuid, "02") {
+			delete(kcSrc.LocalRoots(), uuid)
+		}
+	}
+	for uuid := range kcSrc.GatewayRoots() {
+		if strings.HasSuffix(uuid, "02") {
+			delete(kcSrc.GatewayRoots(), uuid)
+		}
+	}
+	for uuid := range kcSrc.WritableLocalRoots() {
+		if strings.HasSuffix(uuid, "02") {
+			delete(kcSrc.WritableLocalRoots(), uuid)
+		}
+	}
+
+	for uuid := range kcDst.LocalRoots() {
+		if strings.HasSuffix(uuid, "00") || strings.HasSuffix(uuid, "01") {
+			delete(kcDst.LocalRoots(), uuid)
+		}
+	}
+	for uuid := range kcDst.GatewayRoots() {
+		if strings.HasSuffix(uuid, "00") || strings.HasSuffix(uuid, "01") {
+			delete(kcDst.GatewayRoots(), uuid)
+		}
+	}
+	for uuid := range kcDst.WritableLocalRoots() {
+		if strings.HasSuffix(uuid, "00") || strings.HasSuffix(uuid, "01") {
+			delete(kcDst.WritableLocalRoots(), uuid)
+		}
+	}
+
+	if updateDstReplications {
 		kcDst.Want_replicas = replications
 	}
 }

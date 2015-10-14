@@ -43,7 +43,6 @@ if not os.path.exists(TEST_TMPDIR):
 
 my_api_host = None
 _cached_config = {}
-keep_existing = False
 
 def find_server_pid(PID_PATH, wait=10):
     now = time.time()
@@ -324,9 +323,8 @@ def _start_keep(n, keep_args):
 
     return port
 
-def run_keep(blob_signing_key=None, enforce_permissions=False):
-    if not keep_existing:
-      stop_keep()
+def run_keep(blob_signing_key=None, enforce_permissions=False, num_keep_servers=2):
+    stop_keep()
 
     keep_args = {}
     if not blob_signing_key:
@@ -352,12 +350,7 @@ def run_keep(blob_signing_key=None, enforce_permissions=False):
     for d in api.keep_disks().list().execute()['items']:
         api.keep_disks().delete(uuid=d['uuid']).execute()
 
-    start_index = 0
-    end_index = 2
-    if keep_existing:
-        start_index = 2
-        end_index = 3
-    for d in range(start_index, end_index):
+    for d in range(0, num_keep_servers):
         port = _start_keep(d, keep_args)
         svc = api.keep_services().create(body={'keep_service': {
             'uuid': 'zzzzz-bi6l4-keepdisk{:07d}'.format(d),
@@ -382,7 +375,7 @@ def _stop_keep(n):
 def stop_keep():
     _stop_keep(0)
     _stop_keep(1)
-    # We may have created an additional keep servers when keep_existing is used
+    # We may have created an additional keep server for keep-rsync testing
     _stop_keep(2)
 
 def run_keep_proxy():
@@ -605,12 +598,14 @@ if __name__ == "__main__":
     parser = argparse.ArgumentParser()
     parser.add_argument('action', type=str, help="one of {}".format(actions))
     parser.add_argument('--auth', type=str, metavar='FIXTURE_NAME', help='Print authorization info for given api_client_authorizations fixture')
-    parser.add_argument('--keep-existing', action="store_true", help="Used to add additional keep servers, without terminating existing servers")
+    parser.add_argument('--need-more', action="store_true", help="Used to indicate need one more than the default 2 keep servers")
     parser.add_argument('--keep-enforce-permissions', action="store_true", help="Enforce keep permissions")
 
     args = parser.parse_args()
 
-    keep_existing = args.keep_existing
+    num_keep_servers = 2
+    if args.need_more:
+        num_keep_servers = 3
 
     if args.action not in actions:
         print("Unrecognized action '{}'. Actions are: {}.".format(args.action, actions), file=sys.stderr)
@@ -629,7 +624,7 @@ if __name__ == "__main__":
     elif args.action == 'stop':
         stop(force=('ARVADOS_TEST_API_HOST' not in os.environ))
     elif args.action == 'start_keep':
-        run_keep(enforce_permissions=args.keep_enforce_permissions)
+        run_keep(enforce_permissions=args.keep_enforce_permissions, num_keep_servers=num_keep_servers)
     elif args.action == 'stop_keep':
         stop_keep()
     elif args.action == 'start_keep_proxy':
