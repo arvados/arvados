@@ -11,6 +11,7 @@ import (
 	"io/ioutil"
 	"log"
 	"net/http"
+	"os"
 	"regexp"
 	"strings"
 	"time"
@@ -109,7 +110,12 @@ var matchTrue = regexp.MustCompile("^(?i:1|yes|true)$")
 
 // Read config from file
 func readConfigFromFile(filename string) (config arvadosclient.APIConfig, blobSigningKey string, err error) {
+	if !strings.Contains(filename, "/") {
+		filename = os.Getenv("HOME") + "/.config/arvados/" + filename
+	}
+
 	content, err := ioutil.ReadFile(filename)
+
 	if err != nil {
 		return config, "", err
 	}
