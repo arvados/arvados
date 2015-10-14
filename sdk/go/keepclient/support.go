@@ -94,8 +94,8 @@ func (this *KeepClient) DiscoverKeepServers() error {
 	return this.loadKeepServers(list)
 }
 
-// DiscoverKeepServersFromJSON gets list of available keep services from given JSON
-func (this *KeepClient) DiscoverKeepServersFromJSON(services string) error {
+// LoadKeepServicesFromJSON gets list of available keep services from given JSON
+func (this *KeepClient) LoadKeepServicesFromJSON(services string) error {
 	var list svcList
 
 	// Load keep services from given json

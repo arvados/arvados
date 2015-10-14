@@ -13,7 +13,6 @@ import (
 	"io/ioutil"
 	"log"
 	"net/http"
-	"os"
 	"regexp"
 	"strconv"
 	"strings"
@@ -56,26 +55,19 @@ type KeepClient struct {
 
 // MakeKeepClient creates a new KeepClient by contacting the API server to discover Keep servers.
 func MakeKeepClient(arv *arvadosclient.ArvadosClient) (*KeepClient, error) {
-	kc := initKeepClient(arv)
+	kc := New(arv)
 	return kc, kc.DiscoverKeepServers()
 }
 
-// MakeKeepClientFromJSON creates a new KeepClient using the given json to load keep servers.
-func MakeKeepClientFromJSON(arv *arvadosclient.ArvadosClient, svcJSON string) (*KeepClient, error) {
-	kc := initKeepClient(arv)
-	return kc, kc.DiscoverKeepServersFromJSON(svcJSON)
-}
-
-// Make a new KeepClient struct.
-func initKeepClient(arv *arvadosclient.ArvadosClient) *KeepClient {
-	var matchTrue = regexp.MustCompile("^(?i:1|yes|true)$")
-	insecure := matchTrue.MatchString(os.Getenv("ARVADOS_API_HOST_INSECURE"))
+// New func creates a new KeepClient struct.
+// This func does not discover keep servers. It is the caller's responsibility.
+func New(arv *arvadosclient.ArvadosClient) *KeepClient {
 	kc := &KeepClient{
 		Arvados:       arv,
 		Want_replicas: 2,
 		Using_proxy:   false,
 		Client: &http.Client{Transport: &http.Transport{
-			TLSClientConfig: &tls.Config{InsecureSkipVerify: insecure}}},
+			TLSClientConfig: &tls.Config{InsecureSkipVerify: arv.ApiInsecure}}},
 	}
 	return kc
 }

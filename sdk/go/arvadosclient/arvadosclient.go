@@ -78,18 +78,6 @@ type ArvadosClient struct {
 	DiscoveryDoc Dict
 }
 
-// APIConfig struct consists of:
-//    APIToken        string
-//    APIHost         string
-//    APIHostInsecure bool
-//    ExternalClient  bool
-type APIConfig struct {
-	APIToken        string
-	APIHost         string
-	APIHostInsecure bool
-	ExternalClient  bool
-}
-
 // Create a new ArvadosClient, initialized with standard Arvados environment
 // variables ARVADOS_API_HOST, ARVADOS_API_TOKEN, and (optionally)
 // ARVADOS_API_HOST_INSECURE.

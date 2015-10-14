@@ -56,7 +56,8 @@ func main() {
 		&replications,
 		"replications",
 		0,
-		"Number of replications to write to the destination.")
+		"Number of replications to write to the destination. If replications not specified, "+
+			"default replication level configured on destination server will be used.")
 
 	flag.StringVar(
 		&prefix,
@@ -66,15 +67,25 @@ func main() {
 
 	flag.Parse()
 
-	srcConfig, dstConfig, srcBlobSigningKey, _, err := loadConfig(srcConfigFile, dstConfigFile)
+	srcConfig, srcBlobSigningKey, err := loadConfig(srcConfigFile)
 	if err != nil {
-		log.Fatalf("Error loading configuration from files: %s", err.Error())
+		log.Fatalf("Error loading src configuration from file: %s", err.Error())
+	}
+
+	dstConfig, _, err := loadConfig(dstConfigFile)
+	if err != nil {
+		log.Fatalf("Error loading dst configuration from file: %s", err.Error())
 	}
 
 	// setup src and dst keepclients
-	kcSrc, kcDst, err := setupKeepClients(srcConfig, dstConfig, srcKeepServicesJSON, dstKeepServicesJSON, replications)
+	kcSrc, err := setupKeepClient(srcConfig, srcKeepServicesJSON, false, 0)
 	if err != nil {
-		log.Fatalf("Error configuring keep-rsync: %s", err.Error())
+		log.Fatalf("Error configuring src keepclient: %s", err.Error())
+	}
+
+	kcDst, err := setupKeepClient(dstConfig, dstKeepServicesJSON, true, replications)
+	if err != nil {
+		log.Fatalf("Error configuring dst keepclient: %s", err.Error())
 	}
 
 	// Copy blocks not found in dst from src
@@ -84,23 +95,22 @@ func main() {
 	}
 }
 
+type apiConfig struct {
+	APIToken        string
+	APIHost         string
+	APIHostInsecure bool
+	ExternalClient  bool
+}
+
 // Load src and dst config from given files
-func loadConfig(srcConfigFile, dstConfigFile string) (srcConfig, dstConfig arvadosclient.APIConfig, srcBlobSigningKey, dstBlobSigningKey string, err error) {
-	if srcConfigFile == "" {
-		return srcConfig, dstConfig, srcBlobSigningKey, dstBlobSigningKey, errors.New("-src-config-file must be specified")
+func loadConfig(configFile string) (config apiConfig, blobSigningKey string, err error) {
+	if configFile == "" {
+		return config, blobSigningKey, errors.New("config file not specified")
 	}
 
-	srcConfig, srcBlobSigningKey, err = readConfigFromFile(srcConfigFile)
+	config, blobSigningKey, err = readConfigFromFile(configFile)
 	if err != nil {
-		return srcConfig, dstConfig, srcBlobSigningKey, dstBlobSigningKey, fmt.Errorf("Error reading source configuration: %v", err)
-	}
-
-	if dstConfigFile == "" {
-		return srcConfig, dstConfig, srcBlobSigningKey, dstBlobSigningKey, errors.New("-dst-config-file must be specified")
-	}
-	dstConfig, dstBlobSigningKey, err = readConfigFromFile(dstConfigFile)
-	if err != nil {
-		return srcConfig, dstConfig, srcBlobSigningKey, dstBlobSigningKey, fmt.Errorf("Error reading destination configuration: %v", err)
+		return config, blobSigningKey, fmt.Errorf("Error reading config file: %v", err)
 	}
 
 	return
@@ -109,7 +119,7 @@ func loadConfig(srcConfigFile, dstConfigFile string) (srcConfig, dstConfig arvad
 var matchTrue = regexp.MustCompile("^(?i:1|yes|true)$")
 
 // Read config from file
-func readConfigFromFile(filename string) (config arvadosclient.APIConfig, blobSigningKey string, err error) {
+func readConfigFromFile(filename string) (config apiConfig, blobSigningKey string, err error) {
 	if !strings.Contains(filename, "/") {
 		filename = os.Getenv("HOME") + "/.config/arvados/" + filename
 	}
@@ -146,66 +156,46 @@ func readConfigFromFile(filename string) (config arvadosclient.APIConfig, blobSi
 	return
 }
 
-// Initializes keep-rsync using the config provided
-func setupKeepClients(srcConfig, dstConfig arvadosclient.APIConfig, srcKeepServicesJSON, dstKeepServicesJSON string, replications int) (kcSrc, kcDst *keepclient.KeepClient, err error) {
-	// arvSrc from srcConfig
-	arvSrc := arvadosclient.ArvadosClient{
-		ApiToken:    srcConfig.APIToken,
-		ApiServer:   srcConfig.APIHost,
-		ApiInsecure: srcConfig.APIHostInsecure,
+// setup keepclient using the config provided
+func setupKeepClient(config apiConfig, keepServicesJSON string, isDst bool, replications int) (kc *keepclient.KeepClient, err error) {
+	arv := arvadosclient.ArvadosClient{
+		ApiToken:    config.APIToken,
+		ApiServer:   config.APIHost,
+		ApiInsecure: config.APIHostInsecure,
 		Client: &http.Client{Transport: &http.Transport{
-			TLSClientConfig: &tls.Config{InsecureSkipVerify: srcConfig.APIHostInsecure}}},
-		External: srcConfig.ExternalClient,
+			TLSClientConfig: &tls.Config{InsecureSkipVerify: config.APIHostInsecure}}},
+		External: config.ExternalClient,
 	}
 
-	// arvDst from dstConfig
-	arvDst := arvadosclient.ArvadosClient{
-		ApiToken:    dstConfig.APIToken,
-		ApiServer:   dstConfig.APIHost,
-		ApiInsecure: dstConfig.APIHostInsecure,
-		Client: &http.Client{Transport: &http.Transport{
-			TLSClientConfig: &tls.Config{InsecureSkipVerify: dstConfig.APIHostInsecure}}},
-		External: dstConfig.ExternalClient,
-	}
-
-	// Get default replications value from destination, if it is not already provided
-	if replications == 0 {
-		value, err := arvDst.Discovery("defaultCollectionReplication")
-		if err == nil {
-			replications = int(value.(float64))
-		} else {
-			replications = 2
-		}
-	}
-
-	// if srcKeepServicesJSON is provided, use it to load services; else, use DiscoverKeepServers
-	if srcKeepServicesJSON == "" {
-		kcSrc, err = keepclient.MakeKeepClient(&arvSrc)
+	// if keepServicesJSON is provided, use it to load services; else, use DiscoverKeepServers
+	if keepServicesJSON == "" {
+		kc, err = keepclient.MakeKeepClient(&arv)
 		if err != nil {
-			return nil, nil, err
+			return nil, err
 		}
 	} else {
-		kcSrc, err = keepclient.MakeKeepClientFromJSON(&arvSrc, srcKeepServicesJSON)
+		kc = keepclient.New(&arv)
+		err = kc.LoadKeepServicesFromJSON(keepServicesJSON)
 		if err != nil {
-			return kcSrc, kcDst, err
+			return kc, err
 		}
 	}
 
-	// if dstKeepServicesJSON is provided, use it to load services; else, use DiscoverKeepServers
-	if dstKeepServicesJSON == "" {
-		kcDst, err = keepclient.MakeKeepClient(&arvDst)
-		if err != nil {
-			return kcSrc, kcDst, err
+	if isDst {
+		// Get default replications value from destination, if it is not already provided
+		if replications == 0 {
+			value, err := arv.Discovery("defaultCollectionReplication")
+			if err == nil {
+				replications = int(value.(float64))
+			} else {
+				return nil, err
+			}
 		}
-	} else {
-		kcDst, err = keepclient.MakeKeepClientFromJSON(&arvDst, dstKeepServicesJSON)
-		if err != nil {
-			return kcSrc, kcDst, err
-		}
-	}
-	kcDst.Want_replicas = replications
 
-	return kcSrc, kcDst, nil
+		kc.Want_replicas = replications
+	}
+
+	return kc, nil
 }
 
 // Get unique block locators from src and dst

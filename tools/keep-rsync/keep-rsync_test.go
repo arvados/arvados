@@ -9,7 +9,6 @@ import (
 	"testing"
 	"time"
 
-	"git.curoverse.com/arvados.git/sdk/go/arvadosclient"
 	"git.curoverse.com/arvados.git/sdk/go/arvadostest"
 	"git.curoverse.com/arvados.git/sdk/go/keepclient"
 
@@ -45,7 +44,7 @@ func (s *ServerRequiredSuite) SetUpTest(c *C) {
 }
 
 func (s *ServerRequiredSuite) TearDownSuite(c *C) {
-	arvadostest.StopKeep()
+	arvadostest.StopKeepServers(3)
 	arvadostest.StopAPI()
 }
 
@@ -56,13 +55,13 @@ var testKeepServicesJSON = "{ \"kind\":\"arvados#keepServiceList\", \"etag\":\"\
 // and uses the first 2 as src and the 3rd as dst keep servers.
 func setupRsync(c *C, enforcePermissions, updateDstReplications bool, replications int) {
 	// srcConfig
-	var srcConfig arvadosclient.APIConfig
+	var srcConfig apiConfig
 	srcConfig.APIHost = os.Getenv("ARVADOS_API_HOST")
 	srcConfig.APIToken = os.Getenv("ARVADOS_API_TOKEN")
 	srcConfig.APIHostInsecure = matchTrue.MatchString(os.Getenv("ARVADOS_API_HOST_INSECURE"))
 
 	// dstConfig
-	var dstConfig arvadosclient.APIConfig
+	var dstConfig apiConfig
 	dstConfig.APIHost = os.Getenv("ARVADOS_API_HOST")
 	dstConfig.APIToken = os.Getenv("ARVADOS_API_TOKEN")
 	dstConfig.APIHostInsecure = matchTrue.MatchString(os.Getenv("ARVADOS_API_HOST_INSECURE"))
@@ -77,7 +76,10 @@ func setupRsync(c *C, enforcePermissions, updateDstReplications bool, replicatio
 
 	// setup keepclients
 	var err error
-	kcSrc, kcDst, err = setupKeepClients(srcConfig, dstConfig, srcKeepServicesJSON, dstKeepServicesJSON, replications)
+	kcSrc, err = setupKeepClient(srcConfig, srcKeepServicesJSON, false, 0)
+	c.Check(err, IsNil)
+
+	kcDst, err = setupKeepClient(dstConfig, dstKeepServicesJSON, true, replications)
 	c.Check(err, IsNil)
 
 	for uuid := range kcSrc.LocalRoots() {
@@ -431,13 +433,16 @@ func (s *ServerRequiredSuite) TestLoadConfig(c *C) {
 	dstConfigFile := dstFile.Name()
 
 	// load configuration from those files
-	srcConfig, dstConfig, srcBlobSigningKey, _, err := loadConfig(srcConfigFile, dstConfigFile)
+	srcConfig, srcBlobSigningKey, err := loadConfig(srcConfigFile)
 	c.Check(err, IsNil)
 
 	c.Assert(srcConfig.APIHost, Equals, "testhost")
 	c.Assert(srcConfig.APIToken, Equals, "testtoken")
 	c.Assert(srcConfig.APIHostInsecure, Equals, true)
 	c.Assert(srcConfig.ExternalClient, Equals, false)
+
+	dstConfig, _, err := loadConfig(dstConfigFile)
+	c.Check(err, IsNil)
 
 	c.Assert(dstConfig.APIHost, Equals, "testhost")
 	c.Assert(dstConfig.APIToken, Equals, "testtoken")
@@ -449,37 +454,13 @@ func (s *ServerRequiredSuite) TestLoadConfig(c *C) {
 
 // Test loadConfig func without setting up the config files
 func (s *ServerRequiredSuite) TestLoadConfig_MissingSrcConfig(c *C) {
-	_, _, _, _, err := loadConfig("", "")
-	c.Assert(err.Error(), Equals, "-src-config-file must be specified")
+	_, _, err := loadConfig("")
+	c.Assert(err.Error(), Equals, "config file not specified")
 }
 
-// Test loadConfig func - error reading src config
+// Test loadConfig func - error reading config
 func (s *ServerRequiredSuite) TestLoadConfig_ErrorLoadingSrcConfig(c *C) {
-	_, _, _, _, err := loadConfig("no-such-config-file", "")
-	c.Assert(strings.HasSuffix(err.Error(), "no such file or directory"), Equals, true)
-}
-
-// Test loadConfig func with no dst config file specified
-func (s *ServerRequiredSuite) TestLoadConfig_MissingDstConfig(c *C) {
-	// Setup a src config file
-	srcFile := setupConfigFile(c, "src-config")
-	defer os.Remove(srcFile.Name())
-	srcConfigFile := srcFile.Name()
-
-	// load configuration
-	_, _, _, _, err := loadConfig(srcConfigFile, "")
-	c.Assert(err.Error(), Equals, "-dst-config-file must be specified")
-}
-
-// Test loadConfig func
-func (s *ServerRequiredSuite) TestLoadConfig_ErrorLoadingDstConfig(c *C) {
-	// Setup a src config file
-	srcFile := setupConfigFile(c, "src-config")
-	defer os.Remove(srcFile.Name())
-	srcConfigFile := srcFile.Name()
-
-	// load configuration
-	_, _, _, _, err := loadConfig(srcConfigFile, "no-such-config-file")
+	_, _, err := loadConfig("no-such-config-file")
 	c.Assert(strings.HasSuffix(err.Error(), "no such file or directory"), Equals, true)
 }
 

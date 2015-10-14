@@ -133,9 +133,20 @@ func StartKeepWithParams(numKeepServers int, enforcePermissions bool) {
 }
 
 func StopKeep() {
+	StopKeepServers(2)
+}
+
+// StopKeepServers is used to stop keep servers while specifying numKeepServers
+func StopKeepServers(numKeepServers int) {
 	cwd, _ := os.Getwd()
 	defer os.Chdir(cwd)
 	chdirToPythonTests()
 
-	exec.Command("python", "run_test_server.py", "stop_keep").Run()
+	cmdArgs := []string{"run_test_server.py", "stop_keep"}
+
+	if numKeepServers != 2 {
+		cmdArgs = append(cmdArgs, "--num-keep-servers", strconv.Itoa(numKeepServers))
+	}
+
+	exec.Command("python", cmdArgs...)
 }
