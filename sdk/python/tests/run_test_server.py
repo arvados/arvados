@@ -323,7 +323,7 @@ def _start_keep(n, keep_args):
 
     return port
 
-def run_keep(blob_signing_key=None, enforce_permissions=False, num_keep_servers=2):
+def run_keep(blob_signing_key=None, enforce_permissions=False, num_servers=2):
     stop_keep()
 
     keep_args = {}
@@ -350,7 +350,7 @@ def run_keep(blob_signing_key=None, enforce_permissions=False, num_keep_servers=
     for d in api.keep_disks().list().execute()['items']:
         api.keep_disks().delete(uuid=d['uuid']).execute()
 
-    for d in range(0, num_keep_servers):
+    for d in range(0, num_servers):
         port = _start_keep(d, keep_args)
         svc = api.keep_services().create(body={'keep_service': {
             'uuid': 'zzzzz-bi6l4-keepdisk{:07d}'.format(d),
@@ -598,14 +598,14 @@ if __name__ == "__main__":
     parser = argparse.ArgumentParser()
     parser.add_argument('action', type=str, help="one of {}".format(actions))
     parser.add_argument('--auth', type=str, metavar='FIXTURE_NAME', help='Print authorization info for given api_client_authorizations fixture')
-    parser.add_argument('--need-more', action="store_true", help="Used to indicate need one more than the default 2 keep servers")
+    parser.add_argument('--num-keep-servers', metavar='int', type=int, help="Number of keep servers desired; default is 2 keep servers")
     parser.add_argument('--keep-enforce-permissions', action="store_true", help="Enforce keep permissions")
 
     args = parser.parse_args()
 
-    num_keep_servers = 2
-    if args.need_more:
-        num_keep_servers = 3
+    num_servers = 2
+    if args.num_keep_servers is not None:
+        num_servers = args.num_keep_servers
 
     if args.action not in actions:
         print("Unrecognized action '{}'. Actions are: {}.".format(args.action, actions), file=sys.stderr)
@@ -624,7 +624,7 @@ if __name__ == "__main__":
     elif args.action == 'stop':
         stop(force=('ARVADOS_TEST_API_HOST' not in os.environ))
     elif args.action == 'start_keep':
-        run_keep(enforce_permissions=args.keep_enforce_permissions, num_keep_servers=num_keep_servers)
+        run_keep(enforce_permissions=args.keep_enforce_permissions, num_servers=num_servers)
     elif args.action == 'stop_keep':
         stop_keep()
     elif args.action == 'start_keep_proxy':

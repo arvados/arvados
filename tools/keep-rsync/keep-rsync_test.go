@@ -73,7 +73,7 @@ func setupRsync(c *C, enforcePermissions, updateDstReplications bool, replicatio
 
 	// Start API and Keep servers
 	arvadostest.StartAPI()
-	arvadostest.StartKeepWithParams(true, enforcePermissions)
+	arvadostest.StartKeepWithParams(3, enforcePermissions)
 
 	// setup keepclients
 	var err error

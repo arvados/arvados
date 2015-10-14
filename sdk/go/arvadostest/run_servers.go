@@ -9,6 +9,7 @@ import (
 	"log"
 	"os"
 	"os/exec"
+	"strconv"
 	"strings"
 )
 
@@ -101,19 +102,19 @@ func StopAPI() {
 // StartKeep is used to start keep servers
 // with needMore = false and enforcePermissions = false
 func StartKeep() {
-	StartKeepWithParams(false, false)
+	StartKeepWithParams(2, false)
 }
 
 // StartKeepWithParams is used to start keep servers while specifying
-// needMore and enforcePermissions parameters.
-func StartKeepWithParams(needMore bool, enforcePermissions bool) {
+// numKeepServers and enforcePermissions parameters.
+func StartKeepWithParams(numKeepServers int, enforcePermissions bool) {
 	cwd, _ := os.Getwd()
 	defer os.Chdir(cwd)
 	chdirToPythonTests()
 
 	cmdArgs := []string{"run_test_server.py", "start_keep"}
-	if needMore {
-		cmdArgs = append(cmdArgs, "--need-more")
+	if numKeepServers != 2 {
+		cmdArgs = append(cmdArgs, "--num-keep-servers", strconv.Itoa(numKeepServers))
 	}
 	if enforcePermissions {
 		cmdArgs = append(cmdArgs, "--keep-enforce-permissions")
