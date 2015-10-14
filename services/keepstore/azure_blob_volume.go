@@ -9,6 +9,7 @@ import (
 	"io/ioutil"
 	"log"
 	"os"
+	"regexp"
 	"strings"
 	"time"
 
@@ -19,8 +20,8 @@ var (
 	azureStorageAccountName    string
 	azureStorageAccountKeyFile string
 	azureStorageReplication    int
-	azureWriteRaceInterval     time.Duration = 15 * time.Second
-	azureWriteRacePollTime     time.Duration = time.Second
+	azureWriteRaceInterval     = 15 * time.Second
+	azureWriteRacePollTime     = time.Second
 )
 
 func readKeyFromFile(file string) (string, error) {
@@ -96,6 +97,9 @@ type AzureBlobVolume struct {
 	replication   int
 }
 
+// NewAzureBlobVolume returns a new AzureBlobVolume using the given
+// client and container name. The replication argument specifies the
+// replication level to report when writing data.
 func NewAzureBlobVolume(client storage.Client, containerName string, readonly bool, replication int) *AzureBlobVolume {
 	return &AzureBlobVolume{
 		azClient:      client,
@@ -118,6 +122,12 @@ func (v *AzureBlobVolume) Check() error {
 	return nil
 }
 
+// Get reads a Keep block that has been stored as a block blob in the
+// container.
+//
+// If the block is younger than azureWriteRaceInterval and is
+// unexpectedly empty, assume a PutBlob operation is in progress, and
+// wait for it to finish writing.
 func (v *AzureBlobVolume) Get(loc string) ([]byte, error) {
 	var deadline time.Time
 	haveDeadline := false
@@ -169,6 +179,7 @@ func (v *AzureBlobVolume) get(loc string) ([]byte, error) {
 	}
 }
 
+// Compare the given data with existing stored data.
 func (v *AzureBlobVolume) Compare(loc string, expect []byte) error {
 	rdr, err := v.bsClient.GetBlob(v.containerName, loc)
 	if err != nil {
@@ -178,6 +189,7 @@ func (v *AzureBlobVolume) Compare(loc string, expect []byte) error {
 	return compareReaderWithBuf(rdr, expect, loc[:32])
 }
 
+// Put sotres a Keep block as a block blob in the container.
 func (v *AzureBlobVolume) Put(loc string, block []byte) error {
 	if v.readonly {
 		return MethodDisabledError
@@ -185,6 +197,7 @@ func (v *AzureBlobVolume) Put(loc string, block []byte) error {
 	return v.bsClient.CreateBlockBlobFromReader(v.containerName, loc, uint64(len(block)), bytes.NewReader(block))
 }
 
+// Touch updates the last-modified property of a block blob.
 func (v *AzureBlobVolume) Touch(loc string) error {
 	if v.readonly {
 		return MethodDisabledError
@@ -194,6 +207,7 @@ func (v *AzureBlobVolume) Touch(loc string) error {
 	})
 }
 
+// Mtime returns the last-modified property of a block blob.
 func (v *AzureBlobVolume) Mtime(loc string) (time.Time, error) {
 	props, err := v.bsClient.GetBlobProperties(v.containerName, loc)
 	if err != nil {
@@ -202,6 +216,8 @@ func (v *AzureBlobVolume) Mtime(loc string) (time.Time, error) {
 	return time.Parse(time.RFC1123, props.LastModified)
 }
 
+// IndexTo writes a list of Keep blocks that are stored in the
+// container.
 func (v *AzureBlobVolume) IndexTo(prefix string, writer io.Writer) error {
 	params := storage.ListBlobsParameters{
 		Prefix: prefix,
@@ -215,6 +231,9 @@ func (v *AzureBlobVolume) IndexTo(prefix string, writer io.Writer) error {
 			t, err := time.Parse(time.RFC1123, b.Properties.LastModified)
 			if err != nil {
 				return err
+			}
+			if !v.isKeepBlock(b.Name) {
+				continue
 			}
 			if b.Properties.ContentLength == 0 && t.Add(azureWriteRaceInterval).After(time.Now()) {
 				// A new zero-length blob is probably
@@ -233,6 +252,7 @@ func (v *AzureBlobVolume) IndexTo(prefix string, writer io.Writer) error {
 	}
 }
 
+// Delete a Keep block.
 func (v *AzureBlobVolume) Delete(loc string) error {
 	if v.readonly {
 		return MethodDisabledError
@@ -256,6 +276,7 @@ func (v *AzureBlobVolume) Delete(loc string) error {
 	})
 }
 
+// Status returns a VolumeStatus struct with placeholder data.
 func (v *AzureBlobVolume) Status() *VolumeStatus {
 	return &VolumeStatus{
 		DeviceNum: 1,
@@ -264,14 +285,19 @@ func (v *AzureBlobVolume) Status() *VolumeStatus {
 	}
 }
 
+// String returns a volume label, including the container name.
 func (v *AzureBlobVolume) String() string {
 	return fmt.Sprintf("azure-storage-container:%+q", v.containerName)
 }
 
+// Writable returns true, unless the -readonly flag was on when the
+// volume was added.
 func (v *AzureBlobVolume) Writable() bool {
 	return !v.readonly
 }
 
+// Replication returns the replication level of the container, as
+// specified by the -azure-storage-replication argument.
 func (v *AzureBlobVolume) Replication() int {
 	return v.replication
 }
@@ -288,4 +314,9 @@ func (v *AzureBlobVolume) translateError(err error) error {
 	default:
 		return err
 	}
+}
+
+var keepBlockRegexp = regexp.MustCompile(`^[0-9a-f]{32}$`)
+func (v *AzureBlobVolume) isKeepBlock(s string) bool {
+	return keepBlockRegexp.MatchString(s)
 }
