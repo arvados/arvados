@@ -34,7 +34,7 @@ class ComputeNodeShutdownActor(ShutdownActorBase):
     def _get_slurm_state(self):
         return subprocess.check_output(['sinfo', '--noheader', '-o', '%t', '-n', self._nodename])
 
-    @ShutdownActorBase._retry((subprocess.CalledProcessError,))
+    @ShutdownActorBase._retry((subprocess.CalledProcessError, OSError))
     def cancel_shutdown(self):
         if self._nodename:
             if self._get_slurm_state() in self.SLURM_DRAIN_STATES:
@@ -47,14 +47,14 @@ class ComputeNodeShutdownActor(ShutdownActorBase):
         return super(ComputeNodeShutdownActor, self).cancel_shutdown()
 
     @ShutdownActorBase._stop_if_window_closed
-    @ShutdownActorBase._retry((subprocess.CalledProcessError,))
+    @ShutdownActorBase._retry((subprocess.CalledProcessError, OSError))
     def issue_slurm_drain(self):
         self._set_node_state('DRAIN', 'Reason=Node Manager shutdown')
         self._logger.info("Waiting for SLURM node %s to drain", self._nodename)
         self._later.await_slurm_drain()
 
     @ShutdownActorBase._stop_if_window_closed
-    @ShutdownActorBase._retry((subprocess.CalledProcessError,))
+    @ShutdownActorBase._retry((subprocess.CalledProcessError, OSError))
     def await_slurm_drain(self):
         output = self._get_slurm_state()
         if output in self.SLURM_END_STATES:
