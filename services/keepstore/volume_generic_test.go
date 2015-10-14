@@ -350,6 +350,13 @@ func testIndexTo(t *testing.T, factory TestableVolumeFactory) {
 	v.PutRaw(TestHash2, TestBlock2)
 	v.PutRaw(TestHash3, TestBlock3)
 
+	// Blocks whose names aren't Keep hashes should be omitted from
+	// index
+	v.PutRaw("fffffffffnotreallyahashfffffffff", nil)
+	v.PutRaw("FFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFF", nil)
+	v.PutRaw("f0000000000000000000000000000000f", nil)
+	v.PutRaw("f00", nil)
+
 	buf := new(bytes.Buffer)
 	v.IndexTo("", buf)
 	indexRows := strings.Split(string(buf.Bytes()), "\n")
