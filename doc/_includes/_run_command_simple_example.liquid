@@ -1,29 +1,36 @@
 {
     "name":"run-command example pipeline",
     "components":{
-        "bwa-mem": {
+         "bwa-mem": {
             "script": "run-command",
             "script_version": "master",
             "repository": "arvados",
             "script_parameters": {
                 "command": [
-                    "bwa",
+                    "$(dir $(bwa_collection))/bwa",
                     "mem",
                     "-t",
                     "$(node.cores)",
+                    "-R",
+                    "@RG\\\tID:group_id\\\tPL:illumina\\\tSM:sample_id",
                     "$(glob $(dir $(reference_collection))/*.fasta)",
                     "$(glob $(dir $(sample))/*_1.fastq)",
                     "$(glob $(dir $(sample))/*_2.fastq)"
                 ],
-                "task.stdout": "$(basename $(glob $(dir $(sample))/*_1.fastq)).sam",
                 "reference_collection": {
                     "required": true,
                     "dataclass": "Collection"
                 },
+                "bwa_collection": {
+                    "required": true,
+                    "dataclass": "Collection",
+                    "default": "39c6f22d40001074f4200a72559ae7eb+5745"
+                },
                 "sample": {
                     "required": true,
                     "dataclass": "Collection"
-                }
+                },
+                "task.stdout": "$(basename $(glob $(dir $(sample))/*_1.fastq)).sam"
             }
         }
     }
