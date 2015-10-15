@@ -24,13 +24,13 @@ func main() {
 
 	flag.StringVar(
 		&srcConfigFile,
-		"src-config-file",
+		"src",
 		"",
 		"Source configuration filename. May be either a pathname to a config file, or (for example) 'foo' as shorthand for $HOME/.config/arvados/foo.conf")
 
 	flag.StringVar(
 		&dstConfigFile,
-		"dst-config-file",
+		"dst",
 		"",
 		"Destination configuration filename. May be either a pathname to a config file, or (for example) 'foo' as shorthand for $HOME/.config/arvados/foo.conf")
 
@@ -117,10 +117,7 @@ var matchTrue = regexp.MustCompile("^(?i:1|yes|true)$")
 // Read config from file
 func readConfigFromFile(filename string) (config apiConfig, blobSigningKey string, err error) {
 	if !strings.Contains(filename, "/") {
-		filename = os.Getenv("HOME") + "/.config/arvados/" + filename
-		if !strings.HasSuffix(filename, ".conf") {
-			filename = filename + ".conf"
-		}
+		filename = os.Getenv("HOME") + "/.config/arvados/" + filename + ".conf"
 	}
 
 	content, err := ioutil.ReadFile(filename)
@@ -256,13 +253,18 @@ func getMissingLocators(srcLocators, dstLocators map[string]bool) []string {
 
 // Copy blocks from src to dst; only those that are missing in dst are copied
 func copyBlocksToDst(toBeCopied []string, kcSrc, kcDst *keepclient.KeepClient, blobSigningKey string) error {
-	done := 0
 	total := len(toBeCopied)
 
 	startedAt := time.Now()
-	var blockTime int64
-	for _, locator := range toBeCopied {
-		log.Printf("Getting block %d of %d: %v", done+1, total, locator)
+	for done, locator := range toBeCopied {
+		if done == 0 {
+			log.Printf("Copying data block %d of %d (%.2f%% done): %v", done+1, total,
+				float64(done)/float64(total)*100, locator)
+		} else {
+			timePerBlock := time.Since(startedAt) / time.Duration(done)
+			log.Printf("Copying data block %d of %d (%.2f%% done, ETA %v): %v", done+1, total,
+				float64(done)/float64(total)*100, timePerBlock*time.Duration(total-done), locator)
+		}
 
 		getLocator := locator
 		expiresAt := time.Now().AddDate(0, 0, 1)
@@ -275,23 +277,10 @@ func copyBlocksToDst(toBeCopied []string, kcSrc, kcDst *keepclient.KeepClient, b
 			return fmt.Errorf("Error getting block: %v %v", locator, err)
 		}
 
-		if done == 0 {
-			log.Printf("Copying data block %d of %d (%.2f%% done): %v", done+1, total,
-				float64(done)/float64(total)*100, locator)
-		} else {
-			log.Printf("Copying data block %d of %d (%.2f%% done, ETA %v): %v", done+1, total,
-				float64(done)/float64(total)*100, time.Duration(blockTime*int64(total-done)), locator)
-		}
 		_, _, err = kcDst.PutHR(getLocator[:32], reader, len)
 		if err != nil {
 			return fmt.Errorf("Error copying data block: %v %v", locator, err)
 		}
-
-		if done == 0 {
-			blockTime = int64(time.Now().Sub(startedAt))
-		}
-
-		done++
 	}
 
 	log.Printf("Successfully copied to destination %d blocks.", total)
