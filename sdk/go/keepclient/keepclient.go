@@ -49,6 +49,7 @@ type KeepClient struct {
 	gatewayRoots       *map[string]string
 	lock               sync.RWMutex
 	Client             *http.Client
+	Retries            int
 
 	// set to 1 if all writable services are of disk type, otherwise 0
 	replicasPerService int
@@ -59,12 +60,23 @@ type KeepClient struct {
 func MakeKeepClient(arv *arvadosclient.ArvadosClient) (*KeepClient, error) {
 	var matchTrue = regexp.MustCompile("^(?i:1|yes|true)$")
 	insecure := matchTrue.MatchString(os.Getenv("ARVADOS_API_HOST_INSECURE"))
+
+	defaultReplicationLevel := 2
+	value, err := arv.Discovery("defaultCollectionReplication")
+	if err == nil {
+		v, ok := value.(float64)
+		if ok && v > 0 {
+			defaultReplicationLevel = int(v)
+		}
+	}
+
 	kc := &KeepClient{
 		Arvados:       arv,
-		Want_replicas: 2,
+		Want_replicas: defaultReplicationLevel,
 		Using_proxy:   false,
 		Client: &http.Client{Transport: &http.Transport{
 			TLSClientConfig: &tls.Config{InsecureSkipVerify: insecure}}},
+		Retries: 2,
 	}
 	return kc, kc.DiscoverKeepServers()
 }
@@ -127,6 +139,69 @@ func (kc *KeepClient) PutR(r io.Reader) (locator string, replicas int, err error
 	}
 }
 
+func (kc *KeepClient) getOrHead(method string, locator string) (io.ReadCloser, int64, string, error) {
+	var errs []string
+
+	tries_remaining := 1 + kc.Retries
+	serversToTry := kc.getSortedRoots(locator)
+	var retryList []string
+
+	for tries_remaining > 0 {
+		tries_remaining -= 1
+		retryList = nil
+
+		for _, host := range serversToTry {
+			url := host + "/" + locator
+
+			req, err := http.NewRequest(method, url, nil)
+			if err != nil {
+				errs = append(errs, fmt.Sprintf("%s: %v", url, err))
+				continue
+			}
+			req.Header.Add("Authorization", fmt.Sprintf("OAuth2 %s", kc.Arvados.ApiToken))
+			resp, err := kc.Client.Do(req)
+			if err != nil {
+				// Probably a network error, may be transient,
+				// can try again.
+				errs = append(errs, fmt.Sprintf("%s: %v", url, err))
+				retryList = append(retryList, host)
+			} else if resp.StatusCode != http.StatusOK {
+				var respbody []byte
+				respbody, _ = ioutil.ReadAll(&io.LimitedReader{resp.Body, 4096})
+				resp.Body.Close()
+				errs = append(errs, fmt.Sprintf("%s: HTTP %d %q",
+					url, resp.StatusCode, bytes.TrimSpace(respbody)))
+
+				if resp.StatusCode == 408 ||
+					resp.StatusCode == 429 ||
+					resp.StatusCode >= 500 {
+					// Timeout, too many requests, or other
+					// server side failure, transient
+					// error, can try again.
+					retryList = append(retryList, host)
+				}
+			} else {
+				// Success.
+				if method == "GET" {
+					return HashCheckingReader{
+						Reader: resp.Body,
+						Hash:   md5.New(),
+						Check:  locator[0:32],
+					}, resp.ContentLength, url, nil
+				} else {
+					resp.Body.Close()
+					return nil, resp.ContentLength, url, nil
+				}
+			}
+
+		}
+		serversToTry = retryList
+	}
+	log.Printf("DEBUG: %s %s failed: %v", method, locator, errs)
+
+	return nil, 0, "", BlockNotFound
+}
+
 // Get() retrieves a block, given a locator. Returns a reader, the
 // expected data length, the URL the block is being fetched from, and
 // an error.
@@ -135,34 +210,7 @@ func (kc *KeepClient) PutR(r io.Reader) (locator string, replicas int, err error
 // reader returned by this method will return a BadChecksum error
 // instead of EOF.
 func (kc *KeepClient) Get(locator string) (io.ReadCloser, int64, string, error) {
-	var errs []string
-	for _, host := range kc.getSortedRoots(locator) {
-		url := host + "/" + locator
-		req, err := http.NewRequest("GET", url, nil)
-		if err != nil {
-			errs = append(errs, fmt.Sprintf("%s: %v", url, err))
-			continue
-		}
-		req.Header.Add("Authorization", fmt.Sprintf("OAuth2 %s", kc.Arvados.ApiToken))
-		resp, err := kc.Client.Do(req)
-		if err != nil {
-			errs = append(errs, fmt.Sprintf("%s: %v", url, err))
-			continue
-		} else if resp.StatusCode != http.StatusOK {
-			respbody, _ := ioutil.ReadAll(&io.LimitedReader{resp.Body, 4096})
-			resp.Body.Close()
-			errs = append(errs, fmt.Sprintf("%s: HTTP %d %q",
-				url, resp.StatusCode, bytes.TrimSpace(respbody)))
-			continue
-		}
-		return HashCheckingReader{
-			Reader: resp.Body,
-			Hash:   md5.New(),
-			Check:  locator[0:32],
-		}, resp.ContentLength, url, nil
-	}
-	log.Printf("DEBUG: GET %s failed: %v", locator, errs)
-	return nil, 0, "", BlockNotFound
+	return kc.getOrHead("GET", locator)
 }
 
 // Ask() verifies that a block with the given hash is available and
@@ -173,18 +221,8 @@ func (kc *KeepClient) Get(locator string) (io.ReadCloser, int64, string, error) 
 // Returns the data size (content length) reported by the Keep service
 // and the URI reporting the data size.
 func (kc *KeepClient) Ask(locator string) (int64, string, error) {
-	for _, host := range kc.getSortedRoots(locator) {
-		url := host + "/" + locator
-		req, err := http.NewRequest("HEAD", url, nil)
-		if err != nil {
-			continue
-		}
-		req.Header.Add("Authorization", fmt.Sprintf("OAuth2 %s", kc.Arvados.ApiToken))
-		if resp, err := kc.Client.Do(req); err == nil && resp.StatusCode == http.StatusOK {
-			return resp.ContentLength, url, nil
-		}
-	}
-	return 0, "", BlockNotFound
+	_, size, url, err := kc.getOrHead("HEAD", locator)
+	return size, url, err
 }
 
 // GetIndex retrieves a list of blocks stored on the given server whose hashes
