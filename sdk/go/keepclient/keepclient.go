@@ -13,7 +13,6 @@ import (
 	"io/ioutil"
 	"log"
 	"net/http"
-	"os"
 	"regexp"
 	"strconv"
 	"strings"
@@ -55,12 +54,15 @@ type KeepClient struct {
 	replicasPerService int
 }
 
-// Create a new KeepClient.  This will contact the API server to discover Keep
-// servers.
+// MakeKeepClient creates a new KeepClient by contacting the API server to discover Keep servers.
 func MakeKeepClient(arv *arvadosclient.ArvadosClient) (*KeepClient, error) {
-	var matchTrue = regexp.MustCompile("^(?i:1|yes|true)$")
-	insecure := matchTrue.MatchString(os.Getenv("ARVADOS_API_HOST_INSECURE"))
+	kc := New(arv)
+	return kc, kc.DiscoverKeepServers()
+}
 
+// New func creates a new KeepClient struct.
+// This func does not discover keep servers. It is the caller's responsibility.
+func New(arv *arvadosclient.ArvadosClient) *KeepClient {
 	defaultReplicationLevel := 2
 	value, err := arv.Discovery("defaultCollectionReplication")
 	if err == nil {
@@ -75,10 +77,10 @@ func MakeKeepClient(arv *arvadosclient.ArvadosClient) (*KeepClient, error) {
 		Want_replicas: defaultReplicationLevel,
 		Using_proxy:   false,
 		Client: &http.Client{Transport: &http.Transport{
-			TLSClientConfig: &tls.Config{InsecureSkipVerify: insecure}}},
+			TLSClientConfig: &tls.Config{InsecureSkipVerify: arv.ApiInsecure}}},
 		Retries: 2,
 	}
-	return kc, kc.DiscoverKeepServers()
+	return kc
 }
 
 // Put a block given the block hash, a reader, and the number of bytes

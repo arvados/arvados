@@ -9,6 +9,7 @@ import (
 	"log"
 	"os"
 	"os/exec"
+	"strconv"
 	"strings"
 )
 
@@ -98,12 +99,25 @@ func StopAPI() {
 	exec.Command("python", "run_test_server.py", "stop").Run()
 }
 
+// StartKeep starts 2 keep servers with enforcePermissions=false
 func StartKeep() {
+	StartKeepWithParams(2, false)
+}
+
+// StartKeepWithParams starts the given number of keep servers,
+// optionally with -enforce-permissions enabled.
+func StartKeepWithParams(numKeepServers int, enforcePermissions bool) {
 	cwd, _ := os.Getwd()
 	defer os.Chdir(cwd)
 	chdirToPythonTests()
 
-	cmd := exec.Command("python", "run_test_server.py", "start_keep")
+	cmdArgs := []string{"run_test_server.py", "start_keep", "--num-keep-servers", strconv.Itoa(numKeepServers)}
+	if enforcePermissions {
+		cmdArgs = append(cmdArgs, "--keep-enforce-permissions")
+	}
+
+	cmd := exec.Command("python", cmdArgs...)
+
 	stderr, err := cmd.StderrPipe()
 	if err != nil {
 		log.Fatalf("Setting up stderr pipe: %s", err)
@@ -115,9 +129,16 @@ func StartKeep() {
 }
 
 func StopKeep() {
+	StopKeepWithParams(2)
+}
+
+// StopKeepServers stops keep servers that were started with
+// StartKeep. numkeepServers should be the same value that was passed
+// to StartKeep.
+func StopKeepWithParams(numKeepServers int) {
 	cwd, _ := os.Getwd()
 	defer os.Chdir(cwd)
 	chdirToPythonTests()
 
-	exec.Command("python", "run_test_server.py", "stop_keep").Run()
+	exec.Command("python", "run_test_server.py", "stop_keep", "--num-keep-servers", strconv.Itoa(numKeepServers))
 }

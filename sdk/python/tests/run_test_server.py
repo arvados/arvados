@@ -323,8 +323,8 @@ def _start_keep(n, keep_args):
 
     return port
 
-def run_keep(blob_signing_key=None, enforce_permissions=False):
-    stop_keep()
+def run_keep(blob_signing_key=None, enforce_permissions=False, num_servers=2):
+    stop_keep(num_servers)
 
     keep_args = {}
     if not blob_signing_key:
@@ -344,12 +344,13 @@ def run_keep(blob_signing_key=None, enforce_permissions=False):
         host=os.environ['ARVADOS_API_HOST'],
         token=os.environ['ARVADOS_API_TOKEN'],
         insecure=True)
+
     for d in api.keep_services().list().execute()['items']:
         api.keep_services().delete(uuid=d['uuid']).execute()
     for d in api.keep_disks().list().execute()['items']:
         api.keep_disks().delete(uuid=d['uuid']).execute()
 
-    for d in range(0, 2):
+    for d in range(0, num_servers):
         port = _start_keep(d, keep_args)
         svc = api.keep_services().create(body={'keep_service': {
             'uuid': 'zzzzz-bi6l4-keepdisk{:07d}'.format(d),
@@ -371,9 +372,9 @@ def _stop_keep(n):
     if os.path.exists(os.path.join(TEST_TMPDIR, "keep.blob_signing_key")):
         os.remove(os.path.join(TEST_TMPDIR, "keep.blob_signing_key"))
 
-def stop_keep():
-    _stop_keep(0)
-    _stop_keep(1)
+def stop_keep(num_servers=2):
+    for n in range(0, num_servers):
+        _stop_keep(n)
 
 def run_keep_proxy():
     if 'ARVADOS_TEST_PROXY_SERVICES' in os.environ:
@@ -595,6 +596,9 @@ if __name__ == "__main__":
     parser = argparse.ArgumentParser()
     parser.add_argument('action', type=str, help="one of {}".format(actions))
     parser.add_argument('--auth', type=str, metavar='FIXTURE_NAME', help='Print authorization info for given api_client_authorizations fixture')
+    parser.add_argument('--num-keep-servers', metavar='int', type=int, default=2, help="Number of keep servers desired")
+    parser.add_argument('--keep-enforce-permissions', action="store_true", help="Enforce keep permissions")
+
     args = parser.parse_args()
 
     if args.action not in actions:
@@ -614,7 +618,7 @@ if __name__ == "__main__":
     elif args.action == 'stop':
         stop(force=('ARVADOS_TEST_API_HOST' not in os.environ))
     elif args.action == 'start_keep':
-        run_keep()
+        run_keep(enforce_permissions=args.keep_enforce_permissions, num_servers=args.num_keep_servers)
     elif args.action == 'stop_keep':
         stop_keep()
     elif args.action == 'start_keep_proxy':
