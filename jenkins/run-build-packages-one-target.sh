@@ -12,6 +12,8 @@ Syntax:
     Build command to execute (default: use built-in Docker image command)
 --test-packages
     Run package install test script "test-packages-$target.sh"
+--debug
+    Output debug information (default: false)
 
 WORKSPACE=path         Path to the Arvados source tree to build packages from
 
@@ -34,7 +36,7 @@ if ! [[ -d "$WORKSPACE" ]]; then
 fi
 
 PARSEDOPTS=$(getopt --name "$0" --longoptions \
-    help,test-packages,target:,command: \
+    help,debug,test-packages,target:,command: \
     -- "" "$@")
 if [ $? -ne 0 ]; then
     exit 1
@@ -42,6 +44,7 @@ fi
 
 TARGET=debian7
 COMMAND=
+DEBUG=
 
 eval set -- "$PARSEDOPTS"
 while [ $# -gt 0 ]; do
@@ -53,6 +56,9 @@ while [ $# -gt 0 ]; do
             ;;
         --target)
             TARGET="$2"; shift
+            ;;
+        --debug)
+            DEBUG=" --debug"
             ;;
         --command)
             COMMAND="$2"; shift
@@ -88,7 +94,7 @@ if [[ -n "$test_packages" ]]; then
 else
     IMAGE="arvados/build:$TARGET"
     if [[ "$COMMAND" != "" ]]; then
-        COMMAND="/usr/local/rvm/bin/rvm-exec default bash /jenkins/$COMMAND --target $TARGET"
+        COMMAND="/usr/local/rvm/bin/rvm-exec default bash /jenkins/$COMMAND --target $TARGET$DEBUG"
     fi
 fi
 

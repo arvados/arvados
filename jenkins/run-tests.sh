@@ -74,6 +74,7 @@ sdk/ruby
 sdk/go/arvadosclient
 sdk/go/keepclient
 sdk/go/streamer
+tools/keep-rsync
 
 EOF
 
@@ -694,16 +695,17 @@ do_install services/api apiserver
 
 declare -a gostuff
 gostuff=(
+    sdk/go/arvadosclient
+    sdk/go/streamer
     services/arv-git-httpd
     services/crunchstat
     services/keepstore
+    sdk/go/keepclient
     services/keepproxy
     services/datamanager/summary
     services/datamanager/collection
     services/datamanager
-    sdk/go/arvadosclient
-    sdk/go/keepclient
-    sdk/go/streamer
+    tools/keep-rsync
     )
 for g in "${gostuff[@]}"
 do

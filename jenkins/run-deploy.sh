@@ -64,6 +64,21 @@ EXITCODE=0
 
 COLUMNS=80
 
+PUPPET_AGENT='
+now() { date +%s; }
+let endtime="$(now) + 600"
+while [ "$endtime" -gt "$(now)" ]; do
+    puppet agent --test --detailed-exitcodes
+    agent_exitcode=$?
+    if [ 0 = "$agent_exitcode" ] || [ 2 = "$agent_exitcode" ]; then
+        break
+    else
+        sleep 10s
+    fi
+done
+exit ${agent_exitcode:-99}
+'
+
 title () {
   date=`date +'%Y-%m-%d %H:%M:%S'`
   printf "$date $1\n"
@@ -76,12 +91,12 @@ function run_puppet() {
   title "Running puppet on $node"
   TMP_FILE=`mktemp`
   if [[ "$DEBUG" != "0" ]]; then
-    ssh -t -p2222 -o "StrictHostKeyChecking no" -o "ConnectTimeout 5" root@$node -C "/usr/bin/puppet agent -t" | tee $TMP_FILE
+    ssh -t -p2222 -o "StrictHostKeyChecking no" -o "ConnectTimeout 5" root@$node -C bash -c "'$PUPPET_AGENT'" | tee $TMP_FILE
   else
-    ssh -t -p2222 -o "StrictHostKeyChecking no" -o "ConnectTimeout 5" root@$node -C "/usr/bin/puppet agent -t" > $TMP_FILE 2>&1
+    ssh -t -p2222 -o "StrictHostKeyChecking no" -o "ConnectTimeout 5" root@$node -C bash -c "'$PUPPET_AGENT'" > $TMP_FILE 2>&1
   fi
 
-  ECODE=$?
+  ECODE=${PIPESTATUS[0]}
   RESULT=$(cat $TMP_FILE)
 
   if [[ "$ECODE" != "255" && ! ("$RESULT" =~ 'already in progress') && "$ECODE" != "2" && "$ECODE" != "0"  ]]; then
@@ -143,10 +158,13 @@ title "Updating API server"
 SUM_ECODE=0
 run_puppet $IDENTIFIER.arvadosapi.com ECODE
 SUM_ECODE=$(($SUM_ECODE + $ECODE))
-run_command $IDENTIFIER.arvadosapi.com ECODE "/usr/local/bin/arvados-api-server-upgrade.sh"
+run_command $IDENTIFIER.arvadosapi.com ECODE "/usr/local/rvm/bin/rvm-exec /usr/local/bin/arvados-api-server-upgrade.sh"
 SUM_ECODE=$(($SUM_ECODE + $ECODE))
-run_command $IDENTIFIER.arvadosapi.com ECODE "dpkg -L arvados-mailchimp-plugin 2>/dev/null && apt-get install arvados-mailchimp-plugin --reinstall || echo"
-SUM_ECODE=$(($SUM_ECODE + $ECODE))
+if [ ! "$IDENTIFIER" = "c97qk" ]
+then
+  run_command $IDENTIFIER.arvadosapi.com ECODE "dpkg -L arvados-mailchimp-plugin 2>/dev/null && apt-get install arvados-mailchimp-plugin --reinstall || echo"
+  SUM_ECODE=$(($SUM_ECODE + $ECODE))
+fi
 
 if [[ "$SUM_ECODE" != "0" ]]; then
   title "ERROR: Updating API server FAILED"
@@ -216,7 +234,7 @@ if [[ `host workbench.$ARVADOS_API_HOST |cut -f4 -d' '` != `host $ARVADOS_API_HO
   SUM_ECODE=$(($SUM_ECODE + $ECODE))
 fi
 
-run_command workbench.$IDENTIFIER ECODE "/usr/local/bin/arvados-workbench-upgrade.sh"
+run_command workbench.$IDENTIFIER ECODE "/usr/local/rvm/bin/rvm-exec /usr/local/bin/arvados-workbench-upgrade.sh"
 SUM_ECODE=$(($SUM_ECODE + $ECODE))
 
 if [[ "$SUM_ECODE" != "0" ]]; then

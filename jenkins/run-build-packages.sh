@@ -271,6 +271,8 @@ handle_python_package
     COMMIT_HASH=$(format_last_commit_here "%H")
 
     SRC_BUILD_DIR=$(mktemp -d)
+    # mktemp creates the directory with 0700 permissions by default
+    chmod 755 $SRC_BUILD_DIR
     git clone $DASHQ_UNLESS_DEBUG "$WORKSPACE/.git" "$SRC_BUILD_DIR"
     cd "$SRC_BUILD_DIR"
 
