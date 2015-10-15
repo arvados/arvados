@@ -262,7 +262,7 @@ func copyBlocksToDst(toBeCopied []string, kcSrc, kcDst *keepclient.KeepClient, b
 				float64(done)/float64(total)*100, locator)
 		} else {
 			timePerBlock := time.Since(startedAt) / time.Duration(done)
-			log.Printf("Copying data block %d of %d (%.2f%% done, ETA %v): %v", done+1, total,
+			log.Printf("Copying data block %d of %d (%.2f%% done, %v est. time remaining): %v", done+1, total,
 				float64(done)/float64(total)*100, timePerBlock*time.Duration(total-done), locator)
 		}
 
