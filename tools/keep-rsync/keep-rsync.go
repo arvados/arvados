@@ -24,13 +24,13 @@ func main() {
 
 	flag.StringVar(
 		&srcConfigFile,
-		"src-config-file",
+		"src",
 		"",
 		"Source configuration filename. May be either a pathname to a config file, or (for example) 'foo' as shorthand for $HOME/.config/arvados/foo.conf")
 
 	flag.StringVar(
 		&dstConfigFile,
-		"dst-config-file",
+		"dst",
 		"",
 		"Destination configuration filename. May be either a pathname to a config file, or (for example) 'foo' as shorthand for $HOME/.config/arvados/foo.conf")
 
@@ -117,10 +117,7 @@ var matchTrue = regexp.MustCompile("^(?i:1|yes|true)$")
 // Read config from file
 func readConfigFromFile(filename string) (config apiConfig, blobSigningKey string, err error) {
 	if !strings.Contains(filename, "/") {
-		filename = os.Getenv("HOME") + "/.config/arvados/" + filename
-		if !strings.HasSuffix(filename, ".conf") {
-			filename = filename + ".conf"
-		}
+		filename = os.Getenv("HOME") + "/.config/arvados/" + filename + ".conf"
 	}
 
 	content, err := ioutil.ReadFile(filename)
