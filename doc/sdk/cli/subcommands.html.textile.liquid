@@ -27,19 +27,11 @@ h3(#arv-get). arv get
 
 <notextile>
 <pre>
-$ <code class="userinput">arv arv get --help</code>
-Usage: arv get [uuid] [fields...]
+$ <code class="userinput">arv get --help</code>
+Usage: arv [--format json|yaml] get [uuid] [fields...]
+
 Fetch the specified Arvados object, select the specified fields,
-and print a text representation (json or yaml, use --format).
-</pre>
-</notextile>
-*Note*: the 'format' flag is used by @arv@ (not @arv get@), as detailed on the "arv CLI overview page":{{site.baseurl}}/sdk/cli/index.html.
-
-This command can be used instead of the previously required:
-
-<notextile>
-<pre>
-$ <code class="userinput">EDITOR=cat arv edit [uuid]</code>
+and print a text representation.
 </pre>
 </notextile>
 

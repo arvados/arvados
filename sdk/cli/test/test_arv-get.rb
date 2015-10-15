@@ -142,16 +142,13 @@ class TestArvGet < Minitest::Test
   # Creates an Arvados object that stores a given value. Returns the uuid of the
   # created object.
   def create_arv_object_with_value(value)
-      out, err = capture_subprocess_io do
-        if !system("arv", "tag", "add", "#{value}", "--object", "testing")
-          raise "Command failure running `arv tag` with arguments #{args}: #{$?}"
-        end
-      end
-      if err.length > 0 || out.length == 0
-        raise "Could not create Arvados object with given value"
-      end
-      out = out.delete!("\n")
-      return out
+    out, err = capture_subprocess_io do
+      system("arv", "tag", "add", value, "--object", "testing")
+      assert $?.success?, "Command failure running `arv tag`: #{$?}"
+    end
+    assert_equal '', err
+    assert_operator 0, :<, out.strip.length
+    out.strip
   end
 
   # Parses the given JSON representation of an Arvados object, returning

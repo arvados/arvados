@@ -5,6 +5,7 @@
 # Ward Vandewege <ward@curoverse.com>
 
 require 'fileutils'
+require 'shellwords'
 
 if RUBY_VERSION < '1.9.3' then
   abort <<-EOS
@@ -88,7 +89,7 @@ end
 subcommands = %w(copy create edit get keep pipeline run tag ws)
 
 def exec_bin bin, opts
-  bin_path = `which #{bin}`.strip
+  bin_path = `which #{bin.shellescape}`.strip
   if bin_path.empty?
     raise "#{bin}: command not found"
   end
@@ -346,9 +347,9 @@ def arv_get client, arvados, global_opts, remaining_opts
   uuid = remaining_opts.shift
   if uuid.nil? or uuid == "-h" or uuid == "--help"
     puts head_banner
-    puts "Usage: arv get [uuid] [fields...]\n\n"
-    puts "Fetch the specified Arvados object, select the specified fields, \n"
-    puts "and print a text representation (json or yaml, use --format).\n"
+    puts "Usage: arv [--format json|yaml] get [uuid] [fields...]\n\n"
+    puts "Fetch the specified Arvados object, select the specified fields,\n"
+    puts "and print a text representation.\n"
     exit 255
   end
 
