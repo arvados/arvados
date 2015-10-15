@@ -156,25 +156,39 @@ fi
 
 cd "$WORKSPACE"
 
-pushd reference
-python setup.py install
-python setup.py test
-./build-node-docker.sh
-popd
+if test -d cwltool ; then
+    (cd cwltool
+     git fetch
+     git reset --hard origin/master
+    )
+else
+    git clone git@github.com:common-workflow-language/cwltool.git
+    (cd cwltool
+     git config user.email "sysadmin@curoverse.com"
+     git config user.name "Curoverse build bot"
+    )
+fi
 
-pushd conformance
-pwd
-./run_test.sh
-popd
+(cd cwltool
+ python setup.py install
+ python setup.py test
+ ./build-node-docker.sh
+)
 
-cd reference
-handle_python_package
+./run_test.sh RUNNER=cwltool/cwltool/main.py DRAFT=draft-2
+./run_test.sh RUNNER=cwltool/cwltool/main.py DRAFT=draft-3
 
-cd cwl-runner
-handle_python_package
-cd ..
+(cd cwltool
+ handle_python_package
+)
 
-./build-cwl-docker.sh
+(cd cwltool/cwl-runner
+ handle_python_package
+)
+
+(cd cwltool
+ ./build-cwl-docker.sh
+)
 
 if [[ "$UPLOAD_DOCKER" != 0 ]]; then
     docker push commonworkflowlanguage/cwltool_module
@@ -182,27 +196,23 @@ if [[ "$UPLOAD_DOCKER" != 0 ]]; then
     docker push commonworkflowlanguage/nodejs-engine
 fi
 
-# Setup virtualenv and build documentation.
-
-virtualenv ../venv
-. ../venv/bin/activate
-python setup.py install
-cd ..
-
 if test -d common-workflow-language.github.io ; then
-    cd common-workflow-language.github.io
-    git fetch
-    git reset --hard origin/master
-    cd ..
+    (cd common-workflow-language.github.io
+     git fetch
+     git reset --hard origin/master
+    )
 else
     git clone git@github.com:common-workflow-language/common-workflow-language.github.io.git
-    cd common-workflow-language.github.io
-    git config user.email "sysadmin@curoverse.com"
-    git config user.name "Curoverse build bot"
-    cd ..
+    (cd common-workflow-language.github.io
+     git config user.email "sysadmin@curoverse.com"
+     git config user.name "Curoverse build bot"
+    )
 fi
-python -mcwltool --outdir=$PWD/common-workflow-language.github.io specification/cwlsite.cwl specification/cwlsite-job.json
-cd common-workflow-language.github.io
-git add --all
-git diff-index --quiet HEAD || git commit -m"Build bot"
-git push
+
+python -mcwltool --outdir=$PWD/common-workflow-language.github.io site/cwlsite.cwl site/cwlsite-job.json
+
+(cd common-workflow-language.github.io
+ git add --all
+ git diff-index --quiet HEAD || git commit -m"Build bot"
+ git push
+)

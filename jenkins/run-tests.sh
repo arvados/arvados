@@ -1,5 +1,7 @@
 #!/bin/bash
 
+. `dirname "$(readlink -f "$0")"`/libcloud-pin
+
 read -rd "\000" helpmessage <<EOF
 $(basename $0): Install and test Arvados components.
 
@@ -12,9 +14,11 @@ Options:
 
 --skip FOO     Do not test the FOO component.
 --only FOO     Do not test anything except the FOO component.
+--temp DIR     Install components and dependencies under DIR instead of
+               making a new temporary directory. Implies --leave-temp.
 --leave-temp   Do not remove GOPATH, virtualenv, and other temp dirs at exit.
-               Instead, show which directories were used this time so they
-               can be reused in subsequent invocations.
+               Instead, show the path to give as --temp to reuse them in
+               subsequent invocations.
 --skip-install Do not run any install steps. Just run tests.
                You should provide GOPATH, GEMHOME, and VENVDIR options
                from a previous invocation if you use this option.
@@ -89,26 +93,18 @@ PERLINSTALLBASE=
 
 COLUMNS=80
 
-leave_temp=
 skip_install=
+temp=
+temp_preserve=
 
-declare -A leave_temp
 clear_temp() {
-    leaving=""
-    for var in VENVDIR VENV3DIR GOPATH GITDIR GEMHOME PERLINSTALLBASE
-    do
-        if [[ -z "${leave_temp[$var]}" ]]
-        then
-            if [[ -n "${!var}" ]]
-            then
-                rm -rf "${!var}"
-            fi
-        else
-            leaving+=" $var=\"${!var}\""
-        fi
-    done
-    if [[ -n "$leaving" ]]; then
-        echo "Leaving behind temp dirs: $leaving"
+    if [[ -z "$temp" ]]; then
+        # we didn't even get as far as making a temp dir
+        :
+    elif [[ -z "$temp_preserve" ]]; then
+        rm -rf "$temp"
+    else
+        echo "Leaving behind temp dirs in $temp"
     fi
 }
 
@@ -177,6 +173,9 @@ sanity_checks() {
         perl -e "use $mod; print \"\$$mod::VERSION\\n\"" \
             || fatal "No $mod. Try: apt-get install perl-modules libcrypt-ssleay-perl libjson-perl"
     done
+    echo -n 'gitolite: '
+    which gitolite \
+        || fatal "No gitolite. Try: apt-get install gitolite3"
 }
 
 rotate_logfile() {
@@ -217,12 +216,12 @@ do
             skip_install=1
             only_install="$1"; shift
             ;;
+        --temp)
+            temp="$1"; shift
+            temp_preserve=1
+            ;;
         --leave-temp)
-            leave_temp[VENVDIR]=1
-            leave_temp[VENV3DIR]=1
-            leave_temp[GOPATH]=1
-            leave_temp[GEMHOME]=1
-            leave_temp[PERLINSTALLBASE]=1
+            temp_preserve=1
             ;;
         --retry)
             retry=1
@@ -294,14 +293,18 @@ fi
 cd "$WORKSPACE"
 find -name '*.pyc' -delete
 
+if [[ -z "$temp" ]]; then
+    temp="$(mktemp -d)"
+fi
+
 # Set up temporary install dirs (unless existing dirs were supplied)
 for tmpdir in VENVDIR VENV3DIR GOPATH GEMHOME PERLINSTALLBASE
 do
-    if [[ -n "${!tmpdir}" ]]; then
-        leave_temp[$tmpdir]=1
-        mkdir -p "${!tmpdir}"
-    else
-        eval "$tmpdir"='$(mktemp -d)'
+    if [[ -z "${!tmpdir}" ]]; then
+        eval "$tmpdir"="$temp/$tmpdir"
+    fi
+    if ! [[ -d "${!tmpdir}" ]]; then
+        mkdir "${!tmpdir}" || fatal "can't create ${!tmpdir} (does $temp exist?)"
     fi
 done
 
@@ -381,6 +384,14 @@ gem_uninstall_if_exists() {
     fi
 }
 
+setup_virtualenv() {
+    local venvdest=$1; shift
+    if ! [[ -e "$venvdest/bin/activate" ]] || ! [[ -e "$venvdest/bin/pip" ]]; then
+        virtualenv --setuptools "$@" "$venvdest" || fatal "virtualenv $venvdest failed"
+    fi
+    "$venvdest/bin/pip" install 'setuptools>=18' 'pip>=7'
+}
+
 export PERLINSTALLBASE
 export PERLLIB="$PERLINSTALLBASE/lib/perl5:${PERLLIB:+$PERLLIB}"
 
@@ -389,12 +400,41 @@ mkdir -p "$GOPATH/src/git.curoverse.com"
 ln -sfn "$WORKSPACE" "$GOPATH/src/git.curoverse.com/arvados.git" \
     || fatal "symlink failed"
 
-virtualenv --setuptools "$VENVDIR" || fatal "virtualenv $VENVDIR failed"
+setup_virtualenv "$VENVDIR" --python python2.7
 . "$VENVDIR/bin/activate"
 
-if (pip install setuptools | grep setuptools-0) || [ "$($VENVDIR/bin/easy_install --version | cut -d\  -f2 | cut -d. -f1)" -lt 18 ]; then
-    pip install --upgrade setuptools
+# Needed for run_test_server.py which is used by certain (non-Python) tests.
+pip freeze 2>/dev/null | egrep ^PyYAML= \
+    || pip install PyYAML >/dev/null \
+    || fatal "pip install PyYAML failed"
+
+# Preinstall forked version of libcloud, because nodemanager "pip install"
+# won't pick it up by default.
+pip freeze 2>/dev/null | egrep ^apache-libcloud==$LIBCLOUD_PIN \
+    || pip install --pre --ignore-installed https://github.com/curoverse/libcloud/archive/apache-libcloud-$LIBCLOUD_PIN.zip >/dev/null \
+    || fatal "pip install apache-libcloud failed"
+
+# Deactivate Python 2 virtualenv
+deactivate
+
+# If Python 3 is available, set up its virtualenv in $VENV3DIR.
+# Otherwise, skip dependent tests.
+PYTHON3=$(which python3)
+if [ "0" = "$?" ]; then
+    setup_virtualenv "$VENV3DIR" --python python3
+else
+    PYTHON3=
+    skip[services/dockercleaner]=1
+    cat >&2 <<EOF
+
+Warning: python3 could not be found
+services/dockercleaner install and tests will be skipped
+
+EOF
 fi
+
+# Reactivate Python 2 virtualenv
+. "$VENVDIR/bin/activate"
 
 # Note: this must be the last time we change PATH, otherwise rvm will
 # whine a lot.
@@ -405,34 +445,6 @@ echo "PATH is $PATH"
 if ! which bundler >/dev/null
 then
     gem install --user-install bundler || fatal 'Could not install bundler'
-fi
-
-# Needed for run_test_server.py which is used by certain (non-Python) tests.
-pip freeze 2>/dev/null | egrep ^PyYAML= \
-    || pip install PyYAML >/dev/null \
-    || fatal "pip install PyYAML failed"
-
-# Preinstall forked version of libcloud, because nodemanager "pip install"
-# won't pick it up by default.
-pip freeze 2>/dev/null | egrep ^apache-libcloud==0.18.1.dev1 \
-    || pip install --pre --ignore-installed https://github.com/curoverse/libcloud/archive/apache-libcloud-0.18.1.dev1.zip >/dev/null \
-    || fatal "pip install apache-libcloud failed"
-
-# If Python 3 is available, set up its virtualenv in $VENV3DIR.
-# Otherwise, skip dependent tests.
-PYTHON3=$(which python3)
-if [ "0" = "$?" ]; then
-    virtualenv --python "$PYTHON3" --setuptools "$VENV3DIR" \
-        || fatal "python3 virtualenv $VENV3DIR failed"
-else
-    PYTHON3=
-    skip[services/dockercleaner]=1
-    cat >&2 <<EOF
-
-Warning: python3 could not be found
-services/dockercleaner install and tests will be skipped
-
-EOF
 fi
 
 checkexit() {
@@ -464,22 +476,35 @@ do_test() {
 }
 
 do_test_once() {
+    unset result
     if [[ -z "${skip[$1]}" ]] && ( [[ -z "$only" ]] || [[ "$only" == "$1" ]] )
     then
         title "Running $1 tests"
         timer_reset
         if [[ "$2" == "go" ]]
         then
+            covername="coverage-$(echo "$1" | sed -e 's/\//_/g')"
+            coverflags=("-covermode=count" "-coverprofile=$WORKSPACE/tmp/.$covername.tmp")
+            # We do "go get -t" here to catch compilation errors
+            # before trying "go test". Otherwise, coverage-reporting
+            # mode makes Go show the wrong line numbers when reporting
+            # compilation errors.
             if [[ -n "${testargs[$1]}" ]]
             then
                 # "go test -check.vv giturl" doesn't work, but this
                 # does:
-                cd "$WORKSPACE/$1" && go test ${testargs[$1]}
+                cd "$WORKSPACE/$1" && \
+                    go get -t "git.curoverse.com/arvados.git/$1" && \
+                    go test ${coverflags[@]} ${testargs[$1]}
             else
                 # The above form gets verbose even when testargs is
                 # empty, so use this form in such cases:
-                go test "git.curoverse.com/arvados.git/$1"
+                go get -t "git.curoverse.com/arvados.git/$1" && \
+                    go test ${coverflags[@]} "git.curoverse.com/arvados.git/$1"
             fi
+            result="$?"
+            go tool cover -html="$WORKSPACE/tmp/.$covername.tmp" -o "$WORKSPACE/tmp/$covername.html"
+            rm "$WORKSPACE/tmp/.$covername.tmp"
         elif [[ "$2" == "pip" ]]
         then
             # $3 can name a path directory for us to use, including trailing
@@ -492,7 +517,7 @@ do_test_once() {
         else
             "test_$1"
         fi
-        result="$?"
+        result=${result:-$?}
         checkexit $result "$1 tests"
         title "End of $1 tests (`timer`)"
         return $result
@@ -675,6 +700,7 @@ gostuff=(
     services/keepproxy
     services/datamanager/summary
     services/datamanager/collection
+    services/datamanager
     sdk/go/arvadosclient
     sdk/go/keepclient
     sdk/go/streamer
