@@ -64,6 +64,21 @@ EXITCODE=0
 
 COLUMNS=80
 
+PUPPET_AGENT='
+now() { date +%s; }
+let endtime="$(now) + 600"
+while [ "$endtime" -gt "$(now)" ]; do
+    puppet agent --test --detailed-exitcodes
+    agent_exitcode=$?
+    if [ 0 = "$agent_exitcode" ] || [ 2 = "$agent_exitcode" ]; then
+        break
+    else
+        sleep 10s
+    fi
+done
+exit ${agent_exitcode:-99}
+'
+
 title () {
   date=`date +'%Y-%m-%d %H:%M:%S'`
   printf "$date $1\n"
@@ -76,12 +91,12 @@ function run_puppet() {
   title "Running puppet on $node"
   TMP_FILE=`mktemp`
   if [[ "$DEBUG" != "0" ]]; then
-    ssh -t -p2222 -o "StrictHostKeyChecking no" -o "ConnectTimeout 5" root@$node -C "/usr/bin/puppet agent -t" | tee $TMP_FILE
+    ssh -t -p2222 -o "StrictHostKeyChecking no" -o "ConnectTimeout 5" root@$node -C bash -c "'$PUPPET_AGENT'" | tee $TMP_FILE
   else
-    ssh -t -p2222 -o "StrictHostKeyChecking no" -o "ConnectTimeout 5" root@$node -C "/usr/bin/puppet agent -t" > $TMP_FILE 2>&1
+    ssh -t -p2222 -o "StrictHostKeyChecking no" -o "ConnectTimeout 5" root@$node -C bash -c "'$PUPPET_AGENT'" > $TMP_FILE 2>&1
   fi
 
-  ECODE=$?
+  ECODE=${PIPESTATUS[0]}
   RESULT=$(cat $TMP_FILE)
 
   if [[ "$ECODE" != "255" && ! ("$RESULT" =~ 'already in progress') && "$ECODE" != "2" && "$ECODE" != "0"  ]]; then
