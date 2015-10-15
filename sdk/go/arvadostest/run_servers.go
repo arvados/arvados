@@ -111,7 +111,7 @@ func StartKeepWithParams(numKeepServers int, enforcePermissions bool) {
 	defer os.Chdir(cwd)
 	chdirToPythonTests()
 
-	cmdArgs := []string{"run_test_server.py", "start_keep",	"--num-keep-servers", strconv.Itoa(numKeepServers)}
+	cmdArgs := []string{"run_test_server.py", "start_keep", "--num-keep-servers", strconv.Itoa(numKeepServers)}
 	if enforcePermissions {
 		cmdArgs = append(cmdArgs, "--keep-enforce-permissions")
 	}
@@ -129,13 +129,13 @@ func StartKeepWithParams(numKeepServers int, enforcePermissions bool) {
 }
 
 func StopKeep() {
-	StopKeepServers(2)
+	StopKeepWithParams(2)
 }
 
 // StopKeepServers stops keep servers that were started with
 // StartKeep. numkeepServers should be the same value that was passed
 // to StartKeep.
-func StopKeepServers(numKeepServers int) {
+func StopKeepWithParams(numKeepServers int) {
 	cwd, _ := os.Getwd()
 	defer os.Chdir(cwd)
 	chdirToPythonTests()
