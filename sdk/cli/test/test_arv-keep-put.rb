@@ -1,7 +1,7 @@
 require 'minitest/autorun'
 require 'digest/md5'
 
-class TestArvPut < Minitest::Test
+class TestArvKeepPut < Minitest::Test
   def setup
     begin Dir.mkdir './tmp' rescue Errno::EEXIST end
     begin Dir.mkdir './tmp/empty_dir' rescue Errno::EEXIST end
