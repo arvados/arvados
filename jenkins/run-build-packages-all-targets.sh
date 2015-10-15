@@ -10,6 +10,8 @@ Options:
 
 --command
     Build command to execute (default: use built-in Docker image command)
+--debug
+    Output debug information (default: false)
 
 WORKSPACE=path         Path to the Arvados source tree to build packages from
 
@@ -34,13 +36,14 @@ fi
 set -e
 
 PARSEDOPTS=$(getopt --name "$0" --longoptions \
-    help,command: \
+    help,debug,command: \
     -- "" "$@")
 if [ $? -ne 0 ]; then
     exit 1
 fi
 
 COMMAND=
+DEBUG=
 
 eval set -- "$PARSEDOPTS"
 while [ $# -gt 0 ]; do
@@ -49,6 +52,9 @@ while [ $# -gt 0 ]; do
             echo >&2 "$helpmessage"
             echo >&2
             exit 1
+            ;;
+        --debug)
+            DEBUG=" --debug"
             ;;
         --command)
             COMMAND="$2"; shift
@@ -64,7 +70,7 @@ while [ $# -gt 0 ]; do
 done
 
 if [[ "$COMMAND" != "" ]]; then
-  COMMAND="/usr/local/rvm/bin/rvm-exec default bash /jenkins/$COMMAND"
+  COMMAND="/usr/local/rvm/bin/rvm-exec default bash /jenkins/$COMMAND$DEBUG"
 fi
 
 FINAL_EXITCODE=0
