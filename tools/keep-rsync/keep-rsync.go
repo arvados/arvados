@@ -26,17 +26,13 @@ func main() {
 		&srcConfigFile,
 		"src-config-file",
 		"",
-		"Source configuration filename with full path that contains "+
-			"an ARVADOS_API_TOKEN which is a valid datamanager token recognized by the source keep servers, "+
-			"ARVADOS_API_HOST, ARVADOS_API_HOST_INSECURE, ARVADOS_EXTERNAL_CLIENT and ARVADOS_BLOB_SIGNING_KEY.")
+		"Source configuration filename. May be either a pathname to a config file, or (for example) 'foo' as shorthand for $HOME/.config/arvados/foo.conf")
 
 	flag.StringVar(
 		&dstConfigFile,
 		"dst-config-file",
 		"",
-		"Destination configuration filename with full path that contains "+
-			"an ARVADOS_API_TOKEN which is a valid datamanager token recognized by the destination keep servers, "+
-			"ARVADOS_API_HOST, ARVADOS_API_HOST_INSECURE, ARVADOS_EXTERNAL_CLIENT and ARVADOS_BLOB_SIGNING_KEY.")
+		"Destination configuration filename. May be either a pathname to a config file, or (for example) 'foo' as shorthand for $HOME/.config/arvados/foo.conf")
 
 	flag.StringVar(
 		&srcKeepServicesJSON,
@@ -122,6 +118,9 @@ var matchTrue = regexp.MustCompile("^(?i:1|yes|true)$")
 func readConfigFromFile(filename string) (config apiConfig, blobSigningKey string, err error) {
 	if !strings.Contains(filename, "/") {
 		filename = os.Getenv("HOME") + "/.config/arvados/" + filename
+		if !strings.HasSuffix(filename, ".conf") {
+			filename = filename + ".conf"
+		}
 	}
 
 	content, err := ioutil.ReadFile(filename)
@@ -217,6 +216,9 @@ func performKeepRsync(kcSrc, kcDst *keepclient.KeepClient, blobSigningKey, prefi
 	toBeCopied := getMissingLocators(srcIndex, dstIndex)
 
 	// Copy each missing block to dst
+	log.Printf("Before keep-rsync, there are %d blocks in src and %d blocks in dst. Start copying %d blocks from src not found in dst.",
+		len(srcIndex), len(dstIndex), len(toBeCopied))
+
 	err = copyBlocksToDst(toBeCopied, kcSrc, kcDst, blobSigningKey)
 
 	return err
@@ -257,6 +259,8 @@ func copyBlocksToDst(toBeCopied []string, kcSrc, kcDst *keepclient.KeepClient, b
 	done := 0
 	total := len(toBeCopied)
 
+	startedAt := time.Now()
+	var blockTime int64
 	for _, locator := range toBeCopied {
 		log.Printf("Getting block %d of %d: %v", done+1, total, locator)
 
@@ -266,23 +270,28 @@ func copyBlocksToDst(toBeCopied []string, kcSrc, kcDst *keepclient.KeepClient, b
 			getLocator = keepclient.SignLocator(getLocator, kcSrc.Arvados.ApiToken, expiresAt, []byte(blobSigningKey))
 		}
 
-		reader, _, _, err := kcSrc.Get(getLocator)
+		reader, len, _, err := kcSrc.Get(getLocator)
 		if err != nil {
 			return fmt.Errorf("Error getting block: %v %v", locator, err)
 		}
-		data, err := ioutil.ReadAll(reader)
+
+		if done == 0 {
+			log.Printf("Copying data block %d of %d (%.2f%% done): %v", done+1, total,
+				float64(done)/float64(total)*100, locator)
+		} else {
+			log.Printf("Copying data block %d of %d (%.2f%% done, ETA %v): %v", done+1, total,
+				float64(done)/float64(total)*100, time.Duration(blockTime*int64(total-done)), locator)
+		}
+		_, _, err = kcDst.PutHR(getLocator[:32], reader, len)
 		if err != nil {
-			return fmt.Errorf("Error reading block data: %v %v", locator, err)
+			return fmt.Errorf("Error copying data block: %v %v", locator, err)
 		}
 
-		log.Printf("Writing block%d of %d: %v", locator)
-		_, _, err = kcDst.PutB(data)
-		if err != nil {
-			return fmt.Errorf("Error putting block data: %v %v", locator, err)
+		if done == 0 {
+			blockTime = int64(time.Now().Sub(startedAt))
 		}
 
 		done++
-		log.Printf("%.2f%% done", float64(done)/float64(total)*100)
 	}
 
 	log.Printf("Successfully copied to destination %d blocks.", total)

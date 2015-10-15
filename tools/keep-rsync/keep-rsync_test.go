@@ -22,19 +22,26 @@ func Test(t *testing.T) {
 
 // Gocheck boilerplate
 var _ = Suite(&ServerRequiredSuite{})
+var _ = Suite(&ServerNotRequiredSuite{})
 
 // Tests that require the Keep server running
 type ServerRequiredSuite struct{}
+type ServerNotRequiredSuite struct{}
 
 func (s *ServerRequiredSuite) SetUpSuite(c *C) {
+	// Start API server
+	arvadostest.StartAPI()
+}
+
+func (s *ServerRequiredSuite) TearDownSuite(c *C) {
+	arvadostest.StopAPI()
+	arvadostest.ResetEnv()
 }
 
 var kcSrc, kcDst *keepclient.KeepClient
 var srcKeepServicesJSON, dstKeepServicesJSON, blobSigningKey string
 
 func (s *ServerRequiredSuite) SetUpTest(c *C) {
-	arvadostest.ResetEnv()
-
 	// reset all variables between tests
 	blobSigningKey = ""
 	srcKeepServicesJSON = ""
@@ -43,9 +50,8 @@ func (s *ServerRequiredSuite) SetUpTest(c *C) {
 	kcDst = &keepclient.KeepClient{}
 }
 
-func (s *ServerRequiredSuite) TearDownSuite(c *C) {
+func (s *ServerRequiredSuite) TearDownTest(c *C) {
 	arvadostest.StopKeepServers(3)
-	arvadostest.StopAPI()
 }
 
 var testKeepServicesJSON = "{ \"kind\":\"arvados#keepServiceList\", \"etag\":\"\", \"self_link\":\"\", \"offset\":null, \"limit\":null, \"items\":[ { \"href\":\"/keep_services/zzzzz-bi6l4-123456789012340\", \"kind\":\"arvados#keepService\", \"etag\":\"641234567890enhj7hzx432e5\", \"uuid\":\"zzzzz-bi6l4-123456789012340\", \"owner_uuid\":\"zzzzz-tpzed-123456789012345\", \"service_host\":\"keep0.zzzzz.arvadosapi.com\", \"service_port\":25107, \"service_ssl_flag\":false, \"service_type\":\"disk\", \"read_only\":false }, { \"href\":\"/keep_services/zzzzz-bi6l4-123456789012341\", \"kind\":\"arvados#keepService\", \"etag\":\"641234567890enhj7hzx432e5\", \"uuid\":\"zzzzz-bi6l4-123456789012341\", \"owner_uuid\":\"zzzzz-tpzed-123456789012345\", \"service_host\":\"keep0.zzzzz.arvadosapi.com\", \"service_port\":25108, \"service_ssl_flag\":false, \"service_type\":\"disk\", \"read_only\":false } ], \"items_available\":2 }"
@@ -53,7 +59,7 @@ var testKeepServicesJSON = "{ \"kind\":\"arvados#keepServiceList\", \"etag\":\"\
 // Testing keep-rsync needs two sets of keep services: src and dst.
 // The test setup hence creates 3 servers instead of the default 2,
 // and uses the first 2 as src and the 3rd as dst keep servers.
-func setupRsync(c *C, enforcePermissions, updateDstReplications bool, replications int) {
+func setupRsync(c *C, enforcePermissions bool, replications int) {
 	// srcConfig
 	var srcConfig apiConfig
 	srcConfig.APIHost = os.Getenv("ARVADOS_API_HOST")
@@ -70,7 +76,7 @@ func setupRsync(c *C, enforcePermissions, updateDstReplications bool, replicatio
 		blobSigningKey = "zfhgfenhffzltr9dixws36j1yhksjoll2grmku38mi7yxd66h5j4q9w4jzanezacp8s6q0ro3hxakfye02152hncy6zml2ed0uc"
 	}
 
-	// Start API and Keep servers
+	// Start Keep servers
 	arvadostest.StartAPI()
 	arvadostest.StartKeepWithParams(3, enforcePermissions)
 
@@ -114,63 +120,53 @@ func setupRsync(c *C, enforcePermissions, updateDstReplications bool, replicatio
 		}
 	}
 
-	if updateDstReplications {
-		kcDst.Want_replicas = replications
+	if replications == 0 {
+		// Must have got default replications value of 2 from dst discovery document
+		c.Assert(kcDst.Want_replicas, Equals, 2)
+	} else {
+		// Since replications value is provided, it is used
+		c.Assert(kcDst.Want_replicas, Equals, replications)
 	}
 }
 
-// Test keep-rsync initialization, with src and dst keep servers.
-// Do a Put and Get in src, both of which should succeed.
-// Do a Put and Get in dst, both of which should succeed.
-// Do a Get in dst for the src hash, which should raise block not found error.
-// Do a Get in src for the dst hash, which should raise block not found error.
 func (s *ServerRequiredSuite) TestRsyncPutInOne_GetFromOtherShouldFail(c *C) {
-	setupRsync(c, false, true, 1)
+	setupRsync(c, false, 1)
 
-	// Put a block in src using kcSrc and Get it
-	srcData := []byte("test-data1")
-	locatorInSrc := fmt.Sprintf("%x", md5.Sum(srcData))
+	// Put a block in src and verify that it is not found in dst
+	testNoCrosstalk(c, "test-data-1", kcSrc, kcDst)
 
-	hash, rep, err := kcSrc.PutB(srcData)
-	c.Check(hash, Matches, fmt.Sprintf(`^%s\+10(\+.+)?$`, locatorInSrc))
-	c.Check(rep, Equals, 2)
-	c.Check(err, Equals, nil)
+	// Put a block in dst and verify that it is not found in src
+	testNoCrosstalk(c, "test-data-2", kcDst, kcSrc)
+}
 
-	reader, blocklen, _, err := kcSrc.Get(locatorInSrc)
-	c.Check(err, IsNil)
-	c.Check(blocklen, Equals, int64(10))
-	all, err := ioutil.ReadAll(reader)
-	c.Check(all, DeepEquals, srcData)
+func (s *ServerRequiredSuite) TestRsyncWithBlobSigning_PutInOne_GetFromOtherShouldFail(c *C) {
+	setupRsync(c, true, 1)
 
-	// Put a different block in src using kcSrc and Get it
-	dstData := []byte("test-data2")
-	locatorInDst := fmt.Sprintf("%x", md5.Sum(dstData))
+	// Put a block in src and verify that it is not found in dst
+	testNoCrosstalk(c, "test-data-1", kcSrc, kcDst)
 
-	hash, rep, err = kcDst.PutB(dstData)
-	c.Check(hash, Matches, fmt.Sprintf(`^%s\+10(\+.+)?$`, locatorInDst))
-	c.Check(rep, Equals, 1)
-	c.Check(err, Equals, nil)
+	// Put a block in dst and verify that it is not found in src
+	testNoCrosstalk(c, "test-data-2", kcDst, kcSrc)
+}
 
-	reader, blocklen, _, err = kcDst.Get(locatorInDst)
-	c.Check(err, IsNil)
-	c.Check(blocklen, Equals, int64(10))
-	all, err = ioutil.ReadAll(reader)
-	c.Check(all, DeepEquals, dstData)
+// Do a Put in the first and Get from the second,
+// which should raise block not found error.
+func testNoCrosstalk(c *C, testData string, kc1, kc2 *keepclient.KeepClient) {
+	// Put a block using kc1
+	locator, _, err := kc1.PutB([]byte(testData))
+	c.Assert(err, Equals, nil)
 
-	// Get srcLocator using kcDst should fail with Not Found error
-	_, _, _, err = kcDst.Get(locatorInSrc)
-	c.Assert(err.Error(), Equals, "Block not found")
-
-	// Get dstLocator using kcSrc should fail with Not Found error
-	_, _, _, err = kcSrc.Get(locatorInDst)
-	c.Assert(err.Error(), Equals, "Block not found")
+	locator = strings.Split(locator, "+")[0]
+	_, _, _, err = kc2.Get(keepclient.SignLocator(locator, kc2.Arvados.ApiToken, time.Now().AddDate(0, 0, 1), []byte(blobSigningKey)))
+	c.Assert(err, NotNil)
+	c.Check(err.Error(), Equals, "Block not found")
 }
 
 // Test keep-rsync initialization, with srcKeepServicesJSON
 func (s *ServerRequiredSuite) TestRsyncInitializeWithKeepServicesJSON(c *C) {
 	srcKeepServicesJSON = testKeepServicesJSON
 
-	setupRsync(c, false, true, 1)
+	setupRsync(c, false, 1)
 
 	localRoots := kcSrc.LocalRoots()
 	c.Check(localRoots, NotNil)
@@ -192,74 +188,14 @@ func (s *ServerRequiredSuite) TestRsyncInitializeWithKeepServicesJSON(c *C) {
 	c.Check(foundIt, Equals, true)
 }
 
-// Test keep-rsync initialization, with src and dst keep servers with blobSigningKey.
-// Do a Put and Get in src, both of which should succeed.
-// Do a Put and Get in dst, both of which should succeed.
-// Do a Get in dst for the src hash, which should raise block not found error.
-// Do a Get in src for the dst hash, which should raise block not found error.
-func (s *ServerRequiredSuite) TestRsyncWithBlobSigning_PutInOne_GetFromOtherShouldFail(c *C) {
-	setupRsync(c, true, true, 1)
-
-	// Put a block in src using kcSrc and Get it
-	srcData := []byte("test-data1")
-	locatorInSrc := fmt.Sprintf("%x", md5.Sum(srcData))
-
-	hash, rep, err := kcSrc.PutB(srcData)
-	c.Check(hash, Matches, fmt.Sprintf(`^%s\+10(\+.+)?$`, locatorInSrc))
-	c.Check(rep, Equals, 2)
-	c.Check(err, Equals, nil)
-
-	tomorrow := time.Now().AddDate(0, 0, 1)
-	signedLocator := keepclient.SignLocator(locatorInSrc, kcSrc.Arvados.ApiToken, tomorrow, []byte(blobSigningKey))
-
-	reader, blocklen, _, err := kcSrc.Get(signedLocator)
-	c.Check(err, IsNil)
-	c.Check(blocklen, Equals, int64(10))
-	all, err := ioutil.ReadAll(reader)
-	c.Check(all, DeepEquals, srcData)
-
-	// Put a different block in src using kcSrc and Get it
-	dstData := []byte("test-data2")
-	locatorInDst := fmt.Sprintf("%x", md5.Sum(dstData))
-
-	hash, rep, err = kcDst.PutB(dstData)
-	c.Check(hash, Matches, fmt.Sprintf(`^%s\+10(\+.+)?$`, locatorInDst))
-	c.Check(rep, Equals, 1)
-	c.Check(err, Equals, nil)
-
-	signedLocator = keepclient.SignLocator(locatorInDst, kcDst.Arvados.ApiToken, tomorrow, []byte(blobSigningKey))
-
-	reader, blocklen, _, err = kcDst.Get(signedLocator)
-	c.Check(err, IsNil)
-	c.Check(blocklen, Equals, int64(10))
-	all, err = ioutil.ReadAll(reader)
-	c.Check(all, DeepEquals, dstData)
-
-	// Get srcLocator using kcDst should fail with Not Found error
-	signedLocator = keepclient.SignLocator(locatorInSrc, kcDst.Arvados.ApiToken, tomorrow, []byte(blobSigningKey))
-	_, _, _, err = kcDst.Get(locatorInSrc)
-	c.Assert(err.Error(), Equals, "Block not found")
-
-	// Get dstLocator using kcSrc should fail with Not Found error
-	signedLocator = keepclient.SignLocator(locatorInDst, kcSrc.Arvados.ApiToken, tomorrow, []byte(blobSigningKey))
-	_, _, _, err = kcSrc.Get(locatorInDst)
-	c.Assert(err.Error(), Equals, "Block not found")
-}
-
 // Test keep-rsync initialization with default replications count
 func (s *ServerRequiredSuite) TestInitializeRsyncDefaultReplicationsCount(c *C) {
-	setupRsync(c, false, false, 0)
-
-	// Must have got default replications value as 2 from dst discovery document
-	c.Assert(kcDst.Want_replicas, Equals, 2)
+	setupRsync(c, false, 0)
 }
 
 // Test keep-rsync initialization with replications count argument
 func (s *ServerRequiredSuite) TestInitializeRsyncReplicationsCount(c *C) {
-	setupRsync(c, false, false, 3)
-
-	// Since replications value is provided, default is not used
-	c.Assert(kcDst.Want_replicas, Equals, 3)
+	setupRsync(c, false, 3)
 }
 
 // Put some blocks in Src and some more in Dst
@@ -282,6 +218,7 @@ func (s *ServerRequiredSuite) TestKeepRsync_WithPrefix(c *C) {
 	hash := fmt.Sprintf("%x", md5.Sum(data))
 
 	testKeepRsync(c, false, hash[0:3])
+	c.Check(len(dstIndex) > len(dstLocators), Equals, true)
 }
 
 // Put some blocks in Src and some more in Dst
@@ -289,6 +226,7 @@ func (s *ServerRequiredSuite) TestKeepRsync_WithPrefix(c *C) {
 // And copy missing blocks from Src to Dst
 func (s *ServerRequiredSuite) TestKeepRsync_WithNoSuchPrefixInSrc(c *C) {
 	testKeepRsync(c, false, "999")
+	c.Check(len(dstIndex), Equals, len(dstLocators))
 }
 
 // Put 5 blocks in src. Put 2 of those blocks in dst
@@ -296,7 +234,7 @@ func (s *ServerRequiredSuite) TestKeepRsync_WithNoSuchPrefixInSrc(c *C) {
 // Also, put 2 extra blocks in dst; they are hence only in dst
 // Run rsync and verify that those 7 blocks are now available in dst
 func testKeepRsync(c *C, enforcePermissions bool, prefix string) {
-	setupRsync(c, enforcePermissions, true, 1)
+	setupRsync(c, enforcePermissions, 1)
 
 	// setupTestData
 	setupTestData(c, prefix)
@@ -305,19 +243,12 @@ func testKeepRsync(c *C, enforcePermissions bool, prefix string) {
 	c.Check(err, IsNil)
 
 	// Now GetIndex from dst and verify that all 5 from src and the 2 extra blocks are found
-	dstIndex, err := getUniqueLocators(kcDst, "")
+	dstIndex, err = getUniqueLocators(kcDst, "")
 	c.Check(err, IsNil)
 
-	if prefix == "" {
-		for _, locator := range srcLocators {
-			_, ok := dstIndex[locator]
-			c.Assert(ok, Equals, true)
-		}
-	} else {
-		for _, locator := range srcLocatorsMatchingPrefix {
-			_, ok := dstIndex[locator]
-			c.Assert(ok, Equals, true)
-		}
+	for _, locator := range srcLocatorsMatchingPrefix {
+		_, ok := dstIndex[locator]
+		c.Assert(ok, Equals, true)
 	}
 
 	for _, locator := range extraDstLocators {
@@ -329,19 +260,21 @@ func testKeepRsync(c *C, enforcePermissions bool, prefix string) {
 		// all blocks from src and the two extra blocks
 		c.Assert(len(dstIndex), Equals, len(srcLocators)+len(extraDstLocators))
 	} else {
-		// one matching prefix, 2 that were initially copied into dst along with src, and the extra blocks
+		// 1 matching prefix and copied over, 2 that were initially copied into dst along with src, and the 2 extra blocks
 		c.Assert(len(dstIndex), Equals, len(srcLocatorsMatchingPrefix)+len(extraDstLocators)+2)
 	}
 }
 
 // Setup test data in src and dst.
 var srcLocators, srcLocatorsMatchingPrefix, dstLocators, extraDstLocators []string
+var dstIndex map[string]bool
 
 func setupTestData(c *C, indexPrefix string) {
 	srcLocators = []string{}
 	srcLocatorsMatchingPrefix = []string{}
 	dstLocators = []string{}
 	extraDstLocators = []string{}
+	dstIndex = make(map[string]bool)
 
 	// Put a few blocks in src using kcSrc
 	for i := 0; i < 5; i++ {
@@ -375,7 +308,7 @@ func setupTestData(c *C, indexPrefix string) {
 func (s *ServerRequiredSuite) TestErrorDuringRsync_FakeSrcKeepservers(c *C) {
 	srcKeepServicesJSON = testKeepServicesJSON
 
-	setupRsync(c, false, false, 1)
+	setupRsync(c, false, 1)
 
 	err := performKeepRsync(kcSrc, kcDst, "", "")
 	c.Check(strings.HasSuffix(err.Error(), "no such host"), Equals, true)
@@ -386,7 +319,7 @@ func (s *ServerRequiredSuite) TestErrorDuringRsync_FakeSrcKeepservers(c *C) {
 func (s *ServerRequiredSuite) TestErrorDuringRsync_FakeDstKeepservers(c *C) {
 	dstKeepServicesJSON = testKeepServicesJSON
 
-	setupRsync(c, false, false, 1)
+	setupRsync(c, false, 1)
 
 	err := performKeepRsync(kcSrc, kcDst, "", "")
 	c.Check(strings.HasSuffix(err.Error(), "no such host"), Equals, true)
@@ -394,7 +327,7 @@ func (s *ServerRequiredSuite) TestErrorDuringRsync_FakeDstKeepservers(c *C) {
 
 // Test rsync with signature error during Get from src.
 func (s *ServerRequiredSuite) TestErrorDuringRsync_ErrorGettingBlockFromSrc(c *C) {
-	setupRsync(c, true, true, 1)
+	setupRsync(c, true, 1)
 
 	// put some blocks in src and dst
 	setupTestData(c, "")
@@ -408,7 +341,7 @@ func (s *ServerRequiredSuite) TestErrorDuringRsync_ErrorGettingBlockFromSrc(c *C
 
 // Test rsync with error during Put to src.
 func (s *ServerRequiredSuite) TestErrorDuringRsync_ErrorPuttingBlockInDst(c *C) {
-	setupRsync(c, false, true, 1)
+	setupRsync(c, false, 1)
 
 	// put some blocks in src and dst
 	setupTestData(c, "")
@@ -421,7 +354,7 @@ func (s *ServerRequiredSuite) TestErrorDuringRsync_ErrorPuttingBlockInDst(c *C) 
 }
 
 // Test loadConfig func
-func (s *ServerRequiredSuite) TestLoadConfig(c *C) {
+func (s *ServerNotRequiredSuite) TestLoadConfig(c *C) {
 	// Setup a src config file
 	srcFile := setupConfigFile(c, "src-config")
 	defer os.Remove(srcFile.Name())
@@ -453,13 +386,13 @@ func (s *ServerRequiredSuite) TestLoadConfig(c *C) {
 }
 
 // Test loadConfig func without setting up the config files
-func (s *ServerRequiredSuite) TestLoadConfig_MissingSrcConfig(c *C) {
+func (s *ServerNotRequiredSuite) TestLoadConfig_MissingSrcConfig(c *C) {
 	_, _, err := loadConfig("")
 	c.Assert(err.Error(), Equals, "config file not specified")
 }
 
 // Test loadConfig func - error reading config
-func (s *ServerRequiredSuite) TestLoadConfig_ErrorLoadingSrcConfig(c *C) {
+func (s *ServerNotRequiredSuite) TestLoadConfig_ErrorLoadingSrcConfig(c *C) {
 	_, _, err := loadConfig("no-such-config-file")
 	c.Assert(strings.HasSuffix(err.Error(), "no such file or directory"), Equals, true)
 }
