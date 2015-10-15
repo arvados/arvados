@@ -22,9 +22,9 @@ type TestHandler struct {
 	request TrashList
 }
 
-func (this *TestHandler) ServeHTTP(writer http.ResponseWriter, req *http.Request) {
+func (ts *TestHandler) ServeHTTP(writer http.ResponseWriter, req *http.Request) {
 	r := json.NewDecoder(req.Body)
-	r.Decode(&this.request)
+	r.Decode(&ts.request)
 }
 
 func (s *KeepSuite) TestSendTrashLists(c *C) {
@@ -53,7 +53,7 @@ func (s *KeepSuite) TestSendTrashLists(c *C) {
 type TestHandlerError struct {
 }
 
-func (this *TestHandlerError) ServeHTTP(writer http.ResponseWriter, req *http.Request) {
+func (tse *TestHandlerError) ServeHTTP(writer http.ResponseWriter, req *http.Request) {
 	http.Error(writer, "I'm a teapot", 418)
 }
 

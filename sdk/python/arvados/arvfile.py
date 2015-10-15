@@ -320,7 +320,7 @@ class _BufferBlock(object):
     @synchronized
     def set_state(self, nextstate, val=None):
         if (self._state, nextstate) not in self.STATE_TRANSITIONS:
-            raise StateChangeError("Invalid state change from %s to %s" % (self.state, nextstate), self.state, nextstate)
+            raise StateChangeError("Invalid state change from %s to %s" % (self._state, nextstate), self._state, nextstate)
         self._state = nextstate
 
         if self._state == _BufferBlock.PENDING:
@@ -491,7 +491,7 @@ class _BlockManager(object):
             for i in xrange(0, self.num_put_threads):
                 thread = threading.Thread(target=self._commit_bufferblock_worker)
                 self._put_threads.append(thread)
-                thread.daemon = False
+                thread.daemon = True
                 thread.start()
 
     def _block_prefetch_worker(self):
@@ -564,11 +564,17 @@ class _BlockManager(object):
             # Mark the block as PENDING so to disallow any more appends.
             block.set_state(_BufferBlock.PENDING)
         except StateChangeError as e:
-            if e.state == _BufferBlock.PENDING and sync:
-                block.wait_for_commit.wait()
-                if block.state() == _BufferBlock.ERROR:
-                    raise block.error
-            return
+            if e.state == _BufferBlock.PENDING:
+                if sync:
+                    block.wait_for_commit.wait()
+                else:
+                    return
+            if block.state() == _BufferBlock.COMMITTED:
+                return
+            elif block.state() == _BufferBlock.ERROR:
+                raise block.error
+            else:
+                raise
 
         if sync:
             try:
@@ -929,7 +935,7 @@ class ArvadosFile(object):
                 bb = self.parent._my_block_manager().get_bufferblock(s.locator)
                 if bb:
                     if bb.state() != _BufferBlock.COMMITTED:
-                        self.parent._my_block_manager().commit_bufferblock(self._current_bblock, sync=True)
+                        self.parent._my_block_manager().commit_bufferblock(bb, sync=True)
                     to_delete.add(s.locator)
                     s.locator = bb.locator()
             for s in to_delete:

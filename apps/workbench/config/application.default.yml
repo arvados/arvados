@@ -11,7 +11,7 @@
 #   template_uuid: is the uuid of the template to be executed
 #   input_paths: an array of inputs for the pipeline. Use either a collection's "uuid"
 #     or a file's "uuid/file_name" path in this array. If the pipeline does not require
-#     any inputs, this can be omitted. 
+#     any inputs, this can be omitted.
 #   max_wait_seconds: max time in seconds to wait for the pipeline run to complete.
 #     Default value of 30 seconds is used when this value is not provided.
 diagnostics:
@@ -45,7 +45,6 @@ development:
   assets.debug: true
   profiling_enabled: true
   site_name: Arvados Workbench (dev)
-  local_modified: "<%= '-modified' if `git status -s` != '' %>"
 
   # API server configuration
   arvados_login_base: ~
@@ -151,7 +150,7 @@ common:
 
   # Below is a sample setting of user_profile_form_fields config parameter.
   # This configuration parameter should be set to either false (to disable) or
-  # to an array as shown below. 
+  # to an array as shown below.
   # Configure the list of input fields to be displayed in the profile page
   # using the attribute "key" for each of the input fields.
   # This sample shows configuration with one required and one optional form fields.
@@ -183,9 +182,11 @@ common:
   # the profile page.
   user_profile_form_message: Welcome to Arvados. All <span style="color:red">required fields</span> must be completed before you can proceed.
 
-  # source_version
-  source_version: "<%= `git log -n 1 --format=%h`.strip %>"
-  local_modified: false
+  # Override the automatic version string. With the default value of
+  # false, the version string is read from git-commit.version in
+  # Rails.root (included in vendor packages) or determined by invoking
+  # "git log".
+  source_version: false
 
   # report notification to and from addresses
   issue_reporter_email_from: arvados@example.com

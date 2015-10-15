@@ -1,4 +1,5 @@
 // Code for generating trash lists
+
 package summary
 
 import (
@@ -9,6 +10,7 @@ import (
 	"time"
 )
 
+// BuildTrashLists builds list of blocks to be sent to trash queue
 func BuildTrashLists(kc *keepclient.KeepClient,
 	keepServerInfo *keep.ReadServers,
 	keepBlocksNotInCollections BlockSet) (m map[string]keep.TrashList, err error) {
@@ -40,19 +42,19 @@ func buildTrashListsInternal(writableServers map[string]struct{},
 	m = make(map[string]keep.TrashList)
 
 	for block := range keepBlocksNotInCollections {
-		for _, block_on_server := range keepServerInfo.BlockToServers[block] {
-			if block_on_server.Mtime >= expiry {
+		for _, blockOnServer := range keepServerInfo.BlockToServers[block] {
+			if blockOnServer.Mtime >= expiry {
 				continue
 			}
 
 			// block is older than expire cutoff
-			srv := keepServerInfo.KeepServerIndexToAddress[block_on_server.ServerIndex].String()
+			srv := keepServerInfo.KeepServerIndexToAddress[blockOnServer.ServerIndex].String()
 
 			if _, writable := writableServers[srv]; !writable {
 				continue
 			}
 
-			m[srv] = append(m[srv], keep.TrashRequest{Locator: block.Digest.String(), BlockMtime: block_on_server.Mtime})
+			m[srv] = append(m[srv], keep.TrashRequest{Locator: block.Digest.String(), BlockMtime: blockOnServer.Mtime})
 		}
 	}
 	return

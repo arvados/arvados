@@ -14,7 +14,7 @@ import (
 	"time"
 )
 
-type keepDisk struct {
+type keepService struct {
 	Uuid     string `json:"uuid"`
 	Hostname string `json:"service_host"`
 	Port     int    `json:"service_port"`
@@ -23,6 +23,7 @@ type keepDisk struct {
 	ReadOnly bool   `json:"read_only"`
 }
 
+// Md5String returns md5 hash for the bytes in the given string
 func Md5String(s string) string {
 	return fmt.Sprintf("%x", md5.Sum([]byte(s)))
 }
@@ -49,12 +50,11 @@ func (this *KeepClient) setClientSettingsProxy() {
 			TLSHandshakeTimeout: 10 * time.Second,
 		}
 	}
-
 }
 
 // Set timeouts apply when connecting to keepstore services directly (assumed
 // to be on the local network).
-func (this *KeepClient) setClientSettingsStore() {
+func (this *KeepClient) setClientSettingsDisk() {
 	if this.Client.Timeout == 0 {
 		// Maximum time to wait for a complete response
 		this.Client.Timeout = 20 * time.Second
@@ -76,24 +76,27 @@ func (this *KeepClient) setClientSettingsStore() {
 	}
 }
 
+// DiscoverKeepServers gets list of available keep services from api server
 func (this *KeepClient) DiscoverKeepServers() error {
 	type svcList struct {
-		Items []keepDisk `json:"items"`
+		Items []keepService `json:"items"`
 	}
 	var m svcList
 
+	// Get keep services from api server
 	err := this.Arvados.Call("GET", "keep_services", "", "accessible", nil, &m)
-
 	if err != nil {
-		if err := this.Arvados.List("keep_disks", nil, &m); err != nil {
-			return err
-		}
+		return err
 	}
 
 	listed := make(map[string]bool)
 	localRoots := make(map[string]string)
 	gatewayRoots := make(map[string]string)
 	writableLocalRoots := make(map[string]string)
+
+	// replicasPerService is 1 for disks; unknown or unlimited otherwise
+	this.replicasPerService = 1
+	this.Using_proxy = false
 
 	for _, service := range m.Items {
 		scheme := "http"
@@ -108,16 +111,16 @@ func (this *KeepClient) DiscoverKeepServers() error {
 		}
 		listed[url] = true
 
-		switch service.SvcType {
-		case "disk":
-			localRoots[service.Uuid] = url
-		case "proxy":
-			localRoots[service.Uuid] = url
+		localRoots[service.Uuid] = url
+		if service.SvcType == "proxy" {
 			this.Using_proxy = true
 		}
 
 		if service.ReadOnly == false {
 			writableLocalRoots[service.Uuid] = url
+			if service.SvcType != "disk" {
+				this.replicasPerService = 0
+			}
 		}
 
 		// Gateway services are only used when specified by
@@ -131,7 +134,7 @@ func (this *KeepClient) DiscoverKeepServers() error {
 	if this.Using_proxy {
 		this.setClientSettingsProxy()
 	} else {
-		this.setClientSettingsStore()
+		this.setClientSettingsDisk()
 	}
 
 	this.SetServiceRoots(localRoots, writableLocalRoots, gatewayRoots)
@@ -174,10 +177,7 @@ func (this KeepClient) uploadToKeepServer(host string, hash string, body io.Read
 
 	req.Header.Add("Authorization", fmt.Sprintf("OAuth2 %s", this.Arvados.ApiToken))
 	req.Header.Add("Content-Type", "application/octet-stream")
-
-	if this.Using_proxy {
-		req.Header.Add(X_Keep_Desired_Replicas, fmt.Sprint(this.Want_replicas))
-	}
+	req.Header.Add(X_Keep_Desired_Replicas, fmt.Sprint(this.Want_replicas))
 
 	var resp *http.Response
 	if resp, err = this.Client.Do(req); err != nil {
@@ -228,13 +228,29 @@ func (this KeepClient) putReplicas(
 
 	// Used to communicate status from the upload goroutines
 	upload_status := make(chan uploadStatus)
-	defer close(upload_status)
+	defer func() {
+		// Wait for any abandoned uploads (e.g., we started
+		// two uploads and the first replied with replicas=2)
+		// to finish before closing the status channel.
+		go func() {
+			for active > 0 {
+				<-upload_status
+			}
+			close(upload_status)
+		}()
+	}()
 
 	// Desired number of replicas
 	remaining_replicas := this.Want_replicas
 
+	replicasPerThread := this.replicasPerService
+	if replicasPerThread < 1 {
+		// unlimited or unknown
+		replicasPerThread = remaining_replicas
+	}
+
 	for remaining_replicas > 0 {
-		for active < remaining_replicas {
+		for active*replicasPerThread < remaining_replicas {
 			// Start some upload requests
 			if next_server < len(sv) {
 				log.Printf("[%v] Begin upload %s to %s", requestId, hash, sv[next_server])

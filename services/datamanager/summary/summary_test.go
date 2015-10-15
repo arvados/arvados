@@ -215,6 +215,6 @@ func TestMixedReplication(t *testing.T) {
 	returnedSummary := SummarizeReplication(rc, keepInfo)
 
 	if !reflect.DeepEqual(returnedSummary, expectedSummary) {
-		t.Fatalf("Expected returnedSummary to look like: \n%+v but instead it is: \n%+v. Index to UUID is %v. BlockToCollectionIndices is %v.", expectedSummary, returnedSummary, rc.CollectionIndexToUuid, rc.BlockToCollectionIndices)
+		t.Fatalf("Expected returnedSummary to look like: \n%+v but instead it is: \n%+v. Index to UUID is %v. BlockToCollectionIndices is %v.", expectedSummary, returnedSummary, rc.CollectionIndexToUUID, rc.BlockToCollectionIndices)
 	}
 }

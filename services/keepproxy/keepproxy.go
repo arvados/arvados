@@ -241,6 +241,11 @@ type PutBlockHandler struct {
 	*ApiTokenCache
 }
 
+type IndexHandler struct {
+	*keepclient.KeepClient
+	*ApiTokenCache
+}
+
 type InvalidPathHandler struct{}
 
 type OptionsHandler struct{}
@@ -262,6 +267,12 @@ func MakeRESTRouter(
 		rest.Handle(`/{locator:[0-9a-f]{32}\+.*}`,
 			GetBlockHandler{kc, t}).Methods("GET", "HEAD")
 		rest.Handle(`/{locator:[0-9a-f]{32}}`, GetBlockHandler{kc, t}).Methods("GET", "HEAD")
+
+		// List all blocks
+		rest.Handle(`/index`, IndexHandler{kc, t}).Methods("GET")
+
+		// List blocks whose hash has the given prefix
+		rest.Handle(`/index/{prefix:[0-9a-f]{0,32}}`, IndexHandler{kc, t}).Methods("GET")
 	}
 
 	if enable_put {
@@ -480,4 +491,64 @@ func (this PutBlockHandler) ServeHTTP(resp http.ResponseWriter, req *http.Reques
 	default:
 		status = http.StatusBadGateway
 	}
+}
+
+// ServeHTTP implementation for IndexHandler
+// Supports only GET requests for /index/{prefix:[0-9a-f]{0,32}}
+// For each keep server found in LocalRoots:
+//   Invokes GetIndex using keepclient
+//   Expects "complete" response (terminating with blank new line)
+//   Aborts on any errors
+// Concatenates responses from all those keep servers and returns
+func (handler IndexHandler) ServeHTTP(resp http.ResponseWriter, req *http.Request) {
+	SetCorsHeaders(resp)
+
+	prefix := mux.Vars(req)["prefix"]
+	var err error
+	var status int
+
+	defer func() {
+		if status != http.StatusOK {
+			http.Error(resp, err.Error(), status)
+		}
+	}()
+
+	kc := *handler.KeepClient
+
+	ok, token := CheckAuthorizationHeader(kc, handler.ApiTokenCache, req)
+	if !ok {
+		status, err = http.StatusForbidden, BadAuthorizationHeader
+		return
+	}
+
+	// Copy ArvadosClient struct and use the client's API token
+	arvclient := *kc.Arvados
+	arvclient.ApiToken = token
+	kc.Arvados = &arvclient
+
+	// Only GET method is supported
+	if req.Method != "GET" {
+		status, err = http.StatusNotImplemented, MethodNotSupported
+		return
+	}
+
+	// Get index from all LocalRoots and write to resp
+	var reader io.Reader
+	for uuid := range kc.LocalRoots() {
+		reader, err = kc.GetIndex(uuid, prefix)
+		if err != nil {
+			status = http.StatusBadGateway
+			return
+		}
+
+		_, err = io.Copy(resp, reader)
+		if err != nil {
+			status = http.StatusBadGateway
+			return
+		}
+	}
+
+	// Got index from all the keep servers and wrote to resp
+	status = http.StatusOK
+	resp.Write([]byte("\n"))
 }

@@ -1,6 +1,8 @@
 package main
 
 import (
+	"bytes"
+	"crypto/md5"
 	"errors"
 	"fmt"
 	"io"
@@ -10,18 +12,39 @@ import (
 	"time"
 )
 
+// A TestableVolume allows test suites to manipulate the state of an
+// underlying Volume, in order to test behavior in cases that are
+// impractical to achieve with a sequence of normal Volume operations.
+type TestableVolume interface {
+	Volume
+	// [Over]write content for a locator with the given data,
+	// bypassing all constraints like readonly and serialize.
+	PutRaw(locator string, data []byte)
+
+	// Specify the value Mtime() should return, until the next
+	// call to Touch, TouchWithDate, or Put.
+	TouchWithDate(locator string, lastPut time.Time)
+
+	// Clean up, delete temporary files.
+	Teardown()
+}
+
 // MockVolumes are test doubles for Volumes, used to test handlers.
 type MockVolume struct {
 	Store      map[string][]byte
 	Timestamps map[string]time.Time
+
 	// Bad volumes return an error for every operation.
 	Bad bool
+
 	// Touchable volumes' Touch() method succeeds for a locator
 	// that has been Put().
 	Touchable bool
+
 	// Readonly volumes return an error for Put, Delete, and
 	// Touch.
 	Readonly bool
+
 	// Gate is a "starting gate", allowing test cases to pause
 	// volume operations long enough to inspect state. Every
 	// operation (except Status) starts by receiving from
@@ -29,7 +52,8 @@ type MockVolume struct {
 	// channel unblocks all operations. By default, Gate is a
 	// closed channel, so all operations proceed without
 	// blocking. See trash_worker_test.go for an example.
-	Gate   chan struct{}
+	Gate chan struct{}
+
 	called map[string]int
 	mutex  sync.Mutex
 }
@@ -54,11 +78,11 @@ func CreateMockVolume() *MockVolume {
 func (v *MockVolume) CallCount(method string) int {
 	v.mutex.Lock()
 	defer v.mutex.Unlock()
-	if c, ok := v.called[method]; !ok {
+	c, ok := v.called[method]
+	if !ok {
 		return 0
-	} else {
-		return c
 	}
+	return c
 }
 
 func (v *MockVolume) gotCall(method string) {
@@ -68,6 +92,24 @@ func (v *MockVolume) gotCall(method string) {
 		v.called[method] = 1
 	} else {
 		v.called[method]++
+	}
+}
+
+func (v *MockVolume) Compare(loc string, buf []byte) error {
+	v.gotCall("Compare")
+	<-v.Gate
+	if v.Bad {
+		return errors.New("Bad volume")
+	} else if block, ok := v.Store[loc]; ok {
+		if fmt.Sprintf("%x", md5.Sum(block)) != loc {
+			return DiskHashError
+		}
+		if bytes.Compare(buf, block) != 0 {
+			return CollisionError
+		}
+		return nil
+	} else {
+		return NotFoundError
 	}
 }
 
@@ -148,7 +190,7 @@ func (v *MockVolume) Delete(loc string) error {
 		return MethodDisabledError
 	}
 	if _, ok := v.Store[loc]; ok {
-		if time.Since(v.Timestamps[loc]) < blob_signature_ttl {
+		if time.Since(v.Timestamps[loc]) < blobSignatureTTL {
 			return nil
 		}
 		delete(v.Store, loc)
@@ -171,4 +213,8 @@ func (v *MockVolume) String() string {
 
 func (v *MockVolume) Writable() bool {
 	return !v.Readonly
+}
+
+func (v *MockVolume) Replication() int {
+	return 1
 }

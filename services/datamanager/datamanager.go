@@ -3,6 +3,7 @@
 package main
 
 import (
+	"errors"
 	"flag"
 	"fmt"
 	"git.curoverse.com/arvados.git/sdk/go/arvadosclient"
@@ -41,17 +42,17 @@ func init() {
 func main() {
 	flag.Parse()
 	if minutesBetweenRuns == 0 {
-		err := singlerun()
+		err := singlerun(makeArvadosClient())
 		if err != nil {
-			log.Fatalf("Got an error: %v", err)
+			log.Fatalf("singlerun: %v", err)
 		}
 	} else {
 		waitTime := time.Minute * time.Duration(minutesBetweenRuns)
 		for {
 			log.Println("Beginning Run")
-			err := singlerun()
+			err := singlerun(makeArvadosClient())
 			if err != nil {
-				log.Printf("Got an error: %v", err)
+				log.Printf("singlerun: %v", err)
 			}
 			log.Printf("Sleeping for %d minutes", minutesBetweenRuns)
 			time.Sleep(waitTime)
@@ -59,16 +60,20 @@ func main() {
 	}
 }
 
-func singlerun() error {
+func makeArvadosClient() arvadosclient.ArvadosClient {
 	arv, err := arvadosclient.MakeArvadosClient()
 	if err != nil {
-		log.Fatalf("Error setting up arvados client %s", err.Error())
+		log.Fatalf("Error setting up arvados client: %s", err)
 	}
+	return arv
+}
 
-	if is_admin, err := util.UserIsAdmin(arv); err != nil {
-		log.Fatalf("Error querying current arvados user %s", err.Error())
-	} else if !is_admin {
-		log.Fatalf("Current user is not an admin. Datamanager can only be run by admins.")
+func singlerun(arv arvadosclient.ArvadosClient) error {
+	var err error
+	if isAdmin, err := util.UserIsAdmin(arv); err != nil {
+		return errors.New("Error verifying admin token: " + err.Error())
+	} else if !isAdmin {
+		return errors.New("Current user is not an admin. Datamanager requires a privileged token.")
 	}
 
 	var arvLogger *logger.Logger
@@ -153,14 +158,13 @@ func singlerun() error {
 
 	if trashErr != nil {
 		return err
-	} else {
-		keep.SendTrashLists(keep.GetDataManagerToken(arvLogger), kc, trashLists)
 	}
+	keep.SendTrashLists(kc, trashLists)
 
 	return nil
 }
 
-// Returns a data fetcher that fetches data from remote servers.
+// BuildDataFetcher returns a data fetcher that fetches data from remote servers.
 func BuildDataFetcher(arv arvadosclient.ArvadosClient) summary.DataFetcher {
 	return func(arvLogger *logger.Logger,
 		readCollections *collection.ReadCollections,

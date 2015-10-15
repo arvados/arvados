@@ -123,7 +123,53 @@ class NodeManagerDaemonActorTestCase(testutil.ActorTestMixin,
         self.make_daemon([testutil.cloud_node_mock()],
                          want_sizes=[testutil.MockSize(1)])
         self.stop_proxy(self.daemon)
-        self.assertFalse(self.node_setup.called)
+        self.assertFalse(self.node_setup.start.called)
+
+    def test_dont_count_missing_as_busy(self):
+        size = testutil.MockSize(1)
+        self.make_daemon(cloud_nodes=[testutil.cloud_node_mock(1),
+                                      testutil.cloud_node_mock(2)],
+                         arvados_nodes=[testutil.arvados_node_mock(1),
+                                      testutil.arvados_node_mock(2, last_ping_at='1970-01-01T01:02:03.04050607Z')],
+                         want_sizes=[size, size])
+        self.stop_proxy(self.daemon)
+        self.assertTrue(self.node_setup.start.called)
+
+    def test_missing_counts_towards_max(self):
+        size = testutil.MockSize(1)
+        self.make_daemon(cloud_nodes=[testutil.cloud_node_mock(1),
+                                      testutil.cloud_node_mock(2)],
+                         arvados_nodes=[testutil.arvados_node_mock(1),
+                                        testutil.arvados_node_mock(2, last_ping_at='1970-01-01T01:02:03.04050607Z')],
+                         want_sizes=[size, size],
+                         max_nodes=2)
+        self.stop_proxy(self.daemon)
+        self.assertFalse(self.node_setup.start.called)
+
+    def test_excess_counts_missing(self):
+        size = testutil.MockSize(1)
+        cloud_nodes = [testutil.cloud_node_mock(1), testutil.cloud_node_mock(2)]
+        self.make_daemon(cloud_nodes=cloud_nodes,
+                         arvados_nodes=[testutil.arvados_node_mock(1),
+                                        testutil.arvados_node_mock(2, last_ping_at='1970-01-01T01:02:03.04050607Z')],
+                         want_sizes=[size])
+        self.assertEqual(2, self.alive_monitor_count())
+        for mon_ref in self.monitor_list():
+            self.daemon.node_can_shutdown(mon_ref.proxy()).get(self.TIMEOUT)
+        self.assertEqual(1, self.node_shutdown.start.call_count)
+
+    def test_missing_shutdown_not_excess(self):
+        size = testutil.MockSize(1)
+        cloud_nodes = [testutil.cloud_node_mock(1), testutil.cloud_node_mock(2)]
+        self.make_daemon(cloud_nodes=cloud_nodes,
+                         arvados_nodes=[testutil.arvados_node_mock(1),
+                                        testutil.arvados_node_mock(2, last_ping_at='1970-01-01T01:02:03.04050607Z')],
+                         want_sizes=[size])
+        self.daemon.shutdowns.get()[cloud_nodes[1].id] = True
+        self.assertEqual(2, self.alive_monitor_count())
+        for mon_ref in self.monitor_list():
+            self.daemon.node_can_shutdown(mon_ref.proxy()).get(self.TIMEOUT)
+        self.assertEqual(0, self.node_shutdown.start.call_count)
 
     def test_booting_nodes_counted(self):
         cloud_node = testutil.cloud_node_mock(1)
@@ -459,3 +505,26 @@ class NodeManagerDaemonActorTestCase(testutil.ActorTestMixin,
         self.timer.deliver()
         self.stop_proxy(self.daemon)
         self.assertEqual(1, self.node_setup.start.call_count)
+
+    def test_shutdown_actor_stopped_when_cloud_node_delisted(self):
+        self.make_daemon(cloud_nodes=[testutil.cloud_node_mock()])
+        self.assertEqual(1, self.alive_monitor_count())
+        monitor = self.monitor_list()[0].proxy()
+        self.daemon.node_can_shutdown(monitor).get(self.TIMEOUT)
+        self.daemon.update_cloud_nodes([]).get(self.TIMEOUT)
+        self.stop_proxy(self.daemon)
+        self.assertEqual(
+            1, self.node_shutdown.start().proxy().stop().get.call_count)
+
+    def test_shutdown_actor_cleanup_copes_with_dead_actors(self):
+        self.make_daemon(cloud_nodes=[testutil.cloud_node_mock()])
+        self.assertEqual(1, self.alive_monitor_count())
+        monitor = self.monitor_list()[0].proxy()
+        self.daemon.node_can_shutdown(monitor).get(self.TIMEOUT)
+        # We're mainly testing that update_cloud_nodes catches and handles
+        # the ActorDeadError.
+        stop_method = self.node_shutdown.start().proxy().stop().get
+        stop_method.side_effect = pykka.ActorDeadError
+        self.daemon.update_cloud_nodes([]).get(self.TIMEOUT)
+        self.stop_proxy(self.daemon)
+        self.assertEqual(1, stop_method.call_count)

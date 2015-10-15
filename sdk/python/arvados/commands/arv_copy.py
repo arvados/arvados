@@ -71,10 +71,10 @@ def main():
         help='Perform copy even if the object appears to exist at the remote destination.')
     copy_opts.add_argument(
         '--src', dest='source_arvados', required=True,
-        help='The name of the source Arvados instance (required). May be either a pathname to a config file, or the basename of a file in $HOME/.config/arvados/instance_name.conf.')
+        help='The name of the source Arvados instance (required) - points at an Arvados config file. May be either a pathname to a config file, or (for example) "foo" as shorthand for $HOME/.config/arvados/foo.conf.')
     copy_opts.add_argument(
         '--dst', dest='destination_arvados', required=True,
-        help='The name of the destination Arvados instance (required). May be either a pathname to a config file, or the basename of a file in $HOME/.config/arvados/instance_name.conf.')
+        help='The name of the destination Arvados instance (required) - points at an Arvados config file. May be either a pathname to a config file, or (for example) "foo" as shorthand for $HOME/.config/arvados/foo.conf.')
     copy_opts.add_argument(
         '--recursive', dest='recursive', action='store_true',
         help='Recursively copy any dependencies for this object. (default)')

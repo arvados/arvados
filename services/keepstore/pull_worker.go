@@ -11,19 +11,18 @@ import (
 	"time"
 )
 
-/*
-	Keepstore initiates pull worker channel goroutine.
-	The channel will process pull list.
-		For each (next) pull request:
-			For each locator listed, execute Pull on the server(s) listed
-			Skip the rest of the servers if no errors
-		Repeat
-*/
+// RunPullWorker is used by Keepstore to initiate pull worker channel goroutine.
+//	The channel will process pull list.
+//		For each (next) pull request:
+//			For each locator listed, execute Pull on the server(s) listed
+//			Skip the rest of the servers if no errors
+//		Repeat
+//
 func RunPullWorker(pullq *WorkQueue, keepClient *keepclient.KeepClient) {
 	nextItem := pullq.NextItem
 	for item := range nextItem {
 		pullRequest := item.(PullRequest)
-		err := PullItemAndProcess(item.(PullRequest), GenerateRandomApiToken(), keepClient)
+		err := PullItemAndProcess(item.(PullRequest), GenerateRandomAPIToken(), keepClient)
 		pullq.DoneItem <- struct{}{}
 		if err == nil {
 			log.Printf("Pull %s success", pullRequest)
@@ -33,25 +32,25 @@ func RunPullWorker(pullq *WorkQueue, keepClient *keepclient.KeepClient) {
 	}
 }
 
-/*
-	For each Pull request:
-		Generate a random API token.
-		Generate a permission signature using this token, timestamp ~60 seconds in the future, and desired block hash.
-		Using this token & signature, retrieve the given block.
-		Write to storage
-*/
+// PullItemAndProcess pulls items from PullQueue and processes them.
+//	For each Pull request:
+//		Generate a random API token.
+//		Generate a permission signature using this token, timestamp ~60 seconds in the future, and desired block hash.
+//		Using this token & signature, retrieve the given block.
+//		Write to storage
+//
 func PullItemAndProcess(pullRequest PullRequest, token string, keepClient *keepclient.KeepClient) (err error) {
 	keepClient.Arvados.ApiToken = token
 
-	service_roots := make(map[string]string)
+	serviceRoots := make(map[string]string)
 	for _, addr := range pullRequest.Servers {
-		service_roots[addr] = addr
+		serviceRoots[addr] = addr
 	}
-	keepClient.SetServiceRoots(service_roots, nil, nil)
+	keepClient.SetServiceRoots(serviceRoots, nil, nil)
 
 	// Generate signature with a random token
-	expires_at := time.Now().Add(60 * time.Second)
-	signedLocator := SignLocator(pullRequest.Locator, token, expires_at)
+	expiresAt := time.Now().Add(60 * time.Second)
+	signedLocator := SignLocator(pullRequest.Locator, token, expiresAt)
 
 	reader, contentLen, _, err := GetContent(signedLocator, keepClient)
 	if err != nil {
@@ -62,16 +61,16 @@ func PullItemAndProcess(pullRequest PullRequest, token string, keepClient *keepc
 	}
 	defer reader.Close()
 
-	read_content, err := ioutil.ReadAll(reader)
+	readContent, err := ioutil.ReadAll(reader)
 	if err != nil {
 		return err
 	}
 
-	if (read_content == nil) || (int64(len(read_content)) != contentLen) {
+	if (readContent == nil) || (int64(len(readContent)) != contentLen) {
 		return errors.New(fmt.Sprintf("Content not found for: %s", signedLocator))
 	}
 
-	err = PutContent(read_content, pullRequest.Locator)
+	err = PutContent(readContent, pullRequest.Locator)
 	return
 }
 
@@ -82,19 +81,20 @@ var GetContent = func(signedLocator string, keepClient *keepclient.KeepClient) (
 	return reader, blocklen, url, err
 }
 
-const ALPHA_NUMERIC = "0123456789abcdefghijklmnopqrstuvwxyz"
+const alphaNumeric = "0123456789abcdefghijklmnopqrstuvwxyz"
 
-func GenerateRandomApiToken() string {
+// GenerateRandomAPIToken generates a random api token
+func GenerateRandomAPIToken() string {
 	var bytes = make([]byte, 36)
 	rand.Read(bytes)
 	for i, b := range bytes {
-		bytes[i] = ALPHA_NUMERIC[b%byte(len(ALPHA_NUMERIC))]
+		bytes[i] = alphaNumeric[b%byte(len(alphaNumeric))]
 	}
 	return (string(bytes))
 }
 
 // Put block
 var PutContent = func(content []byte, locator string) (err error) {
-	err = PutBlock(content, locator)
+	_, err = PutBlock(content, locator)
 	return
 }

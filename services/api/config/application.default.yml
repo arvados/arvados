@@ -326,9 +326,11 @@ common:
 
   default_openid_prefix: https://www.google.com/accounts/o8/id
 
-  # source_version
-  source_version: "<%= `git log -n 1 --format=%h`.strip %>"
-  local_modified: false
+  # Override the automatic version string. With the default value of
+  # false, the version string is read from git-commit.version in
+  # Rails.root (included in vendor packages) or determined by invoking
+  # "git log".
+  source_version: false
 
 
 development:
@@ -345,7 +347,6 @@ development:
   active_record.auto_explain_threshold_in_seconds: 0.5
   assets.compress: false
   assets.debug: true
-  local_modified: "<%= '-modified' if `git status -s` != '' %>"
 
 production:
   force_ssl: true

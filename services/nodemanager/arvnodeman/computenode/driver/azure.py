@@ -7,6 +7,7 @@ import time
 import libcloud.compute.base as cloud_base
 import libcloud.compute.providers as cloud_provider
 import libcloud.compute.types as cloud_types
+from libcloud.common.exceptions import BaseHTTPError
 
 from . import BaseComputeNodeDriver
 from .. import arvados_node_fqdn, arvados_timestamp, ARVADOS_TIMEFMT
@@ -15,6 +16,7 @@ class ComputeNodeDriver(BaseComputeNodeDriver):
 
     DEFAULT_DRIVER = cloud_provider.get_driver(cloud_types.Provider.AZURE_ARM)
     SEARCH_CACHE = {}
+    CLOUD_ERRORS = BaseComputeNodeDriver.CLOUD_ERRORS + (BaseHTTPError,)
 
     def __init__(self, auth_kwargs, list_kwargs, create_kwargs,
                  driver_class=DEFAULT_DRIVER):
@@ -49,11 +51,29 @@ class ComputeNodeDriver(BaseComputeNodeDriver):
         }
 
     def sync_node(self, cloud_node, arvados_node):
-        self.real.ex_create_tags(cloud_node,
-                                 {'hostname': arvados_node_fqdn(arvados_node)})
+        try:
+            self.real.ex_create_tags(cloud_node,
+                                     {'hostname': arvados_node_fqdn(arvados_node)})
+            return True
+        except BaseHTTPError as b:
+            return False
 
     def _init_image(self, urn):
         return "image", self.get_image(urn)
+
+    def post_create_node(self, cloud_node):
+        self.real.ex_run_command(cloud_node,
+                                 """bash -c '
+                                 mkdir -p /var/tmp/arv-node-data/meta-data
+                                 echo "%s" > /var/tmp/arv-node-data/arv-ping-url
+                                 echo "%s" > /var/tmp/arv-node-data/meta-data/instance-id
+                                 echo "%s" > /var/tmp/arv-node-data/meta-data/instance-type
+                                 echo "%s" > /var/tmp/arv-node-data/meta-data/local-ipv4
+                                 '""" % (cloud_node.extra["tags"]["arv-ping-url"],
+                                         cloud_node.id,
+                                         cloud_node.extra["properties"]["hardwareProfile"]["vmSize"],
+                                         cloud_node.private_ips[0]),
+                                 timestamp=int(time.time()))
 
     def list_nodes(self):
         # Azure only supports filtering node lists by resource group.
@@ -61,6 +81,12 @@ class ComputeNodeDriver(BaseComputeNodeDriver):
         return [node for node in
                 super(ComputeNodeDriver, self).list_nodes()
                 if node.extra["tags"].get("arvados-class") == self.tags["arvados-class"]]
+
+    def broken(self, cloud_node):
+        """Return true if libcloud has indicated the node is in a "broken" state."""
+        # UNKNOWN means the node state is unrecognized, which in practice means some combination
+        # of failure that the Azure libcloud driver doesn't know how to interpret.
+        return (cloud_node.state in (cloud_types.NodeState.ERROR, cloud_types.NodeState.UNKNOWN))
 
     @classmethod
     def node_fqdn(cls, node):

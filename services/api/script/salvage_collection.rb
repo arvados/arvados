@@ -12,6 +12,7 @@
 
 require 'trollop'
 require './lib/salvage_collection'
+include SalvageCollection
 
 opts = Trollop::options do
   banner ''

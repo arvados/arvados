@@ -110,15 +110,12 @@ def check_subcommands client, arvados, subcommand, global_opts, remaining_opts
     if ['get', 'put', 'ls', 'normalize'].index @sub then
       # Native Arvados
       exec_bin "arv-#{@sub}", remaining_opts
-    elsif ['less', 'check'].index @sub then
-      # wh* shims
-      exec_bin "wh#{@sub}", remaining_opts
     elsif @sub == 'docker'
       exec_bin "arv-keepdocker", remaining_opts
     else
       puts "Usage: arv keep [method] [--parameters]\n"
       puts "Use 'arv keep [method] --help' to get more information about specific methods.\n\n"
-      puts "Available methods: ls, get, put, less, check, docker"
+      puts "Available methods: ls, get, put, docker"
     end
     abort
   when 'pipeline'

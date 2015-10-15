@@ -86,7 +86,7 @@ h2(#configure_application). Configure the API server
 
 Edit @/etc/arvados/api/application.yml@ to configure the settings described in the following sections.  The deployment script will consistently deploy this to the API server's configuration directory.  The API server reads both @application.yml@ and its own @config/application.default.yml@ file.  The settings in @application.yml@ take precedence over the defaults that are defined in @config/application.default.yml@.  The @config/application.yml.example@ file is not read by the API server and is provided as a starting template only.
 
-@config/application.default.yml@ documents additional configuration settings not listed here.  You can "view the current source version":https://arvados.org/projects/arvados/repository/revisions/master/entry/services/api/config/application.default.yml for reference.
+@config/application.default.yml@ documents additional configuration settings not listed here.  You can "view the current source version":https://dev.arvados.org/projects/arvados/repository/revisions/master/entry/services/api/config/application.default.yml for reference.
 
 Only put local configuration in @application.yml@.  Do not edit @application.default.yml@.
 
@@ -197,26 +197,13 @@ Example @application.yml@:
 </code></pre>
 </notextile>
 
-h2. Prepare the API server deployment
-
-Now that all your configuration is in place, run @/usr/local/bin/arvados-api-server-upgrade.sh@.  This will install and check your configuration, install necessary gems, and run any necessary database setup.
-
-{% include 'notebox_begin' %}
-You can safely ignore the following messages if they appear while this script runs:
-<pre>Don't run Bundler as root. Bundler can ask for sudo if it is needed, and installing your bundle as root will
-break this application for all non-root users on this machine.</pre>
-<pre>fatal: Not a git repository (or any of the parent directories): .git</pre>
-{% include 'notebox_end' %}
-
-This command aborts when it encounters an error.  It's safe to rerun multiple times, so if there's a problem with your configuration, you can fix that and try again.
-
 h2(#set_up). Set up Web servers
 
 For best performance, we recommend you use Nginx as your Web server front-end, with a Passenger backend for the main API server and a Puma backend for API server Websockets.  To do that:
 
 <notextile>
 <ol>
-<li><a href="https://www.phusionpassenger.com/documentation/Users%20guide%20Nginx.html">Install Nginx and Phusion Passenger</a>.</li>
+<li><a href="https://www.phusionpassenger.com/library/walkthroughs/deploy/ruby/ownserver/nginx/oss/install_passenger_main.html">Install Nginx and Phusion Passenger</a>.</li>
 
 <li><p>Puma is already included with the API server's gems.  We recommend you run it as a service under <a href="http://smarden.org/runit/">runit</a> or a similar tool.  Here's a sample runit script for that:</p>
 
@@ -345,3 +332,17 @@ server {
 
 </ol>
 </notextile>
+
+h2. Prepare the API server deployment
+
+Now that all your configuration is in place, run @/usr/local/bin/arvados-api-server-upgrade.sh@.  This will install and check your configuration, install necessary gems, and run any necessary database setup.
+
+{% include 'notebox_begin' %}
+You can safely ignore the following messages if they appear while this script runs:
+<pre>Don't run Bundler as root. Bundler can ask for sudo if it is needed, and installing your bundle as root will
+break this application for all non-root users on this machine.</pre>
+<pre>fatal: Not a git repository (or any of the parent directories): .git</pre>
+{% include 'notebox_end' %}
+
+This command aborts when it encounters an error.  It's safe to rerun multiple times, so if there's a problem with your configuration, you can fix that and try again.
+

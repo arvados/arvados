@@ -35,7 +35,7 @@ setup(name='arvados_fuse',
         'ciso8601'
         ],
       test_suite='tests',
-      tests_require=['mock>=1.0', 'PyYAML'],
+      tests_require=['pbr<1.7.0', 'mock>=1.0', 'PyYAML'],
       zip_safe=False,
       cmdclass={'egg_info': tagger},
       )

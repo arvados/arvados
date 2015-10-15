@@ -24,38 +24,43 @@ var (
 	maxManifestSize   uint64
 )
 
+// Collection representation
 type Collection struct {
-	Uuid              string
-	OwnerUuid         string
+	UUID              string
+	OwnerUUID         string
 	ReplicationLevel  int
 	BlockDigestToSize map[blockdigest.BlockDigest]int
 	TotalSize         int
 }
 
+// ReadCollections holds information about collections from API server
 type ReadCollections struct {
 	ReadAllCollections        bool
-	UuidToCollection          map[string]Collection
+	UUIDToCollection          map[string]Collection
 	OwnerToCollectionSize     map[string]int
 	BlockToDesiredReplication map[blockdigest.DigestWithSize]int
-	CollectionUuidToIndex     map[string]int
-	CollectionIndexToUuid     []string
+	CollectionUUIDToIndex     map[string]int
+	CollectionIndexToUUID     []string
 	BlockToCollectionIndices  map[blockdigest.DigestWithSize][]int
 }
 
+// GetCollectionsParams params
 type GetCollectionsParams struct {
 	Client    arvadosclient.ArvadosClient
 	Logger    *logger.Logger
 	BatchSize int
 }
 
+// SdkCollectionInfo holds collection info from api
 type SdkCollectionInfo struct {
-	Uuid         string    `json:"uuid"`
-	OwnerUuid    string    `json:"owner_uuid"`
+	UUID         string    `json:"uuid"`
+	OwnerUUID    string    `json:"owner_uuid"`
 	Redundancy   int       `json:"redundancy"`
 	ModifiedAt   time.Time `json:"modified_at"`
 	ManifestText string    `json:"manifest_text"`
 }
 
+// SdkCollectionList lists collections from api
 type SdkCollectionList struct {
 	ItemsAvailable int                 `json:"items_available"`
 	Items          []SdkCollectionInfo `json:"items"`
@@ -68,7 +73,7 @@ func init() {
 		"File to write the heap profiles to. Leave blank to skip profiling.")
 }
 
-// Write the heap profile to a file for later review.
+// WriteHeapProfile writes the heap profile to a file for later review.
 // Since a file is expected to only contain a single heap profile this
 // function overwrites the previously written profile, so it is safe
 // to call multiple times in a single run.
@@ -77,27 +82,28 @@ func init() {
 func WriteHeapProfile() {
 	if heapProfileFilename != "" {
 
-		heap_profile, err := os.Create(heapProfileFilename)
+		heapProfile, err := os.Create(heapProfileFilename)
 		if err != nil {
 			log.Fatal(err)
 		}
 
-		defer heap_profile.Close()
+		defer heapProfile.Close()
 
-		err = pprof.WriteHeapProfile(heap_profile)
+		err = pprof.WriteHeapProfile(heapProfile)
 		if err != nil {
 			log.Fatal(err)
 		}
 	}
 }
 
+// GetCollectionsAndSummarize gets collections from api and summarizes
 func GetCollectionsAndSummarize(params GetCollectionsParams) (results ReadCollections) {
 	results = GetCollections(params)
 	results.Summarize(params.Logger)
 
 	log.Printf("Uuid to Size used: %v", results.OwnerToCollectionSize)
 	log.Printf("Read and processed %d collections",
-		len(results.UuidToCollection))
+		len(results.UUIDToCollection))
 
 	// TODO(misha): Add a "readonly" flag. If we're in readonly mode,
 	// lots of behaviors can become warnings (and obviously we can't
@@ -109,6 +115,7 @@ func GetCollectionsAndSummarize(params GetCollectionsParams) (results ReadCollec
 	return
 }
 
+// GetCollections gets collections from api
 func GetCollections(params GetCollectionsParams) (results ReadCollections) {
 	if &params.Client == nil {
 		log.Fatalf("params.Client passed to GetCollections() should " +
@@ -157,7 +164,7 @@ func GetCollections(params GetCollectionsParams) (results ReadCollections) {
 	// that we don't have to grow the map in most cases.
 	maxExpectedCollections := int(
 		float64(initialNumberOfCollectionsAvailable) * 1.01)
-	results.UuidToCollection = make(map[string]Collection, maxExpectedCollections)
+	results.UUIDToCollection = make(map[string]Collection, maxExpectedCollections)
 
 	if params.Logger != nil {
 		params.Logger.Update(func(p map[string]interface{}, e map[string]interface{}) {
@@ -191,11 +198,11 @@ func GetCollections(params GetCollectionsParams) (results ReadCollections) {
 			ProcessCollections(params.Logger,
 				collections.Items,
 				defaultReplicationLevel,
-				results.UuidToCollection).Format(time.RFC3339)
+				results.UUIDToCollection).Format(time.RFC3339)
 
 		// update counts
 		previousTotalCollections = totalCollections
-		totalCollections = len(results.UuidToCollection)
+		totalCollections = len(results.UUIDToCollection)
 
 		log.Printf("%d collections read, %d new in last batch, "+
 			"%s latest modified date, %.0f %d %d avg,max,total manifest size",
@@ -229,13 +236,14 @@ func StrCopy(s string) string {
 	return string([]byte(s))
 }
 
+// ProcessCollections read from api server
 func ProcessCollections(arvLogger *logger.Logger,
 	receivedCollections []SdkCollectionInfo,
 	defaultReplicationLevel int,
-	uuidToCollection map[string]Collection) (latestModificationDate time.Time) {
+	UUIDToCollection map[string]Collection) (latestModificationDate time.Time) {
 	for _, sdkCollection := range receivedCollections {
-		collection := Collection{Uuid: StrCopy(sdkCollection.Uuid),
-			OwnerUuid:         StrCopy(sdkCollection.OwnerUuid),
+		collection := Collection{UUID: StrCopy(sdkCollection.UUID),
+			OwnerUUID:         StrCopy(sdkCollection.OwnerUUID),
 			ReplicationLevel:  sdkCollection.Redundancy,
 			BlockDigestToSize: make(map[blockdigest.BlockDigest]int)}
 
@@ -260,7 +268,7 @@ func ProcessCollections(arvLogger *logger.Logger,
 		manifest := manifest.Manifest{sdkCollection.ManifestText}
 		manifestSize := uint64(len(sdkCollection.ManifestText))
 
-		if _, alreadySeen := uuidToCollection[collection.Uuid]; !alreadySeen {
+		if _, alreadySeen := UUIDToCollection[collection.UUID]; !alreadySeen {
 			totalManifestSize += manifestSize
 		}
 		if manifestSize > maxManifestSize {
@@ -269,11 +277,11 @@ func ProcessCollections(arvLogger *logger.Logger,
 
 		blockChannel := manifest.BlockIterWithDuplicates()
 		for block := range blockChannel {
-			if stored_size, stored := collection.BlockDigestToSize[block.Digest]; stored && stored_size != block.Size {
+			if storedSize, stored := collection.BlockDigestToSize[block.Digest]; stored && storedSize != block.Size {
 				message := fmt.Sprintf(
 					"Collection %s contains multiple sizes (%d and %d) for block %s",
-					collection.Uuid,
-					stored_size,
+					collection.UUID,
+					storedSize,
 					block.Size,
 					block.Digest)
 				loggerutil.FatalWithMessage(arvLogger, message)
@@ -284,7 +292,7 @@ func ProcessCollections(arvLogger *logger.Logger,
 		for _, size := range collection.BlockDigestToSize {
 			collection.TotalSize += size
 		}
-		uuidToCollection[collection.Uuid] = collection
+		UUIDToCollection[collection.UUID] = collection
 
 		// Clear out all the manifest strings that we don't need anymore.
 		// These hopefully form the bulk of our memory usage.
@@ -295,22 +303,23 @@ func ProcessCollections(arvLogger *logger.Logger,
 	return
 }
 
+// Summarize the collections read
 func (readCollections *ReadCollections) Summarize(arvLogger *logger.Logger) {
 	readCollections.OwnerToCollectionSize = make(map[string]int)
 	readCollections.BlockToDesiredReplication = make(map[blockdigest.DigestWithSize]int)
-	numCollections := len(readCollections.UuidToCollection)
-	readCollections.CollectionUuidToIndex = make(map[string]int, numCollections)
-	readCollections.CollectionIndexToUuid = make([]string, 0, numCollections)
+	numCollections := len(readCollections.UUIDToCollection)
+	readCollections.CollectionUUIDToIndex = make(map[string]int, numCollections)
+	readCollections.CollectionIndexToUUID = make([]string, 0, numCollections)
 	readCollections.BlockToCollectionIndices = make(map[blockdigest.DigestWithSize][]int)
 
-	for _, coll := range readCollections.UuidToCollection {
-		collectionIndex := len(readCollections.CollectionIndexToUuid)
-		readCollections.CollectionIndexToUuid =
-			append(readCollections.CollectionIndexToUuid, coll.Uuid)
-		readCollections.CollectionUuidToIndex[coll.Uuid] = collectionIndex
+	for _, coll := range readCollections.UUIDToCollection {
+		collectionIndex := len(readCollections.CollectionIndexToUUID)
+		readCollections.CollectionIndexToUUID =
+			append(readCollections.CollectionIndexToUUID, coll.UUID)
+		readCollections.CollectionUUIDToIndex[coll.UUID] = collectionIndex
 
-		readCollections.OwnerToCollectionSize[coll.OwnerUuid] =
-			readCollections.OwnerToCollectionSize[coll.OwnerUuid] + coll.TotalSize
+		readCollections.OwnerToCollectionSize[coll.OwnerUUID] =
+			readCollections.OwnerToCollectionSize[coll.OwnerUUID] + coll.TotalSize
 
 		for block, size := range coll.BlockDigestToSize {
 			locator := blockdigest.DigestWithSize{Digest: block, Size: uint32(size)}
