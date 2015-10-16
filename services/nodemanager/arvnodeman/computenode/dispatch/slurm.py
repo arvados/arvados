@@ -46,15 +46,15 @@ class ComputeNodeShutdownActor(ShutdownActorBase):
                 pass
         return super(ComputeNodeShutdownActor, self).cancel_shutdown()
 
-    @ShutdownActorBase._stop_if_window_closed
     @ShutdownActorBase._retry((subprocess.CalledProcessError, OSError))
+    @ShutdownActorBase._stop_if_window_closed
     def issue_slurm_drain(self):
         self._set_node_state('DRAIN', 'Reason=Node Manager shutdown')
         self._logger.info("Waiting for SLURM node %s to drain", self._nodename)
         self._later.await_slurm_drain()
 
-    @ShutdownActorBase._stop_if_window_closed
     @ShutdownActorBase._retry((subprocess.CalledProcessError, OSError))
+    @ShutdownActorBase._stop_if_window_closed
     def await_slurm_drain(self):
         output = self._get_slurm_state()
         if output in self.SLURM_END_STATES:
