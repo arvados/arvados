@@ -45,14 +45,14 @@ func (s *ServerRequiredSuite) SetUpSuite(c *C) {
 		return
 	}
 	arvadostest.StartAPI()
-	arvadostest.StartKeep()
+	arvadostest.StartKeep(2, false)
 }
 
 func (s *ServerRequiredSuite) TearDownSuite(c *C) {
 	if *no_server {
 		return
 	}
-	arvadostest.StopKeep()
+	arvadostest.StopKeep(2)
 	arvadostest.StopAPI()
 }
 

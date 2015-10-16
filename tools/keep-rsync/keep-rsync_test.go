@@ -59,7 +59,7 @@ func (s *ServerRequiredSuite) SetUpTest(c *C) {
 }
 
 func (s *ServerRequiredSuite) TearDownTest(c *C) {
-	arvadostest.StopKeepWithParams(3)
+	arvadostest.StopKeep(3)
 }
 
 func (s *DoMainTestSuite) SetUpTest(c *C) {
@@ -94,7 +94,7 @@ func setupRsync(c *C, enforcePermissions bool, replications int) {
 	}
 
 	// Start Keep servers
-	arvadostest.StartKeepWithParams(3, enforcePermissions)
+	arvadostest.StartKeep(3, enforcePermissions)
 
 	// setup keepclients
 	var err error
@@ -421,6 +421,7 @@ func setupConfigFile(c *C, name string) *os.File {
 	fileContent := "ARVADOS_API_HOST=" + os.Getenv("ARVADOS_API_HOST") + "\n"
 	fileContent += "ARVADOS_API_TOKEN=" + os.Getenv("ARVADOS_API_TOKEN") + "\n"
 	fileContent += "ARVADOS_API_HOST_INSECURE=" + os.Getenv("ARVADOS_API_HOST_INSECURE") + "\n"
+	fileContent += "ARVADOS_EXTERNAL_CLIENT=false\n"
 	fileContent += "ARVADOS_BLOB_SIGNING_KEY=abcdefg"
 
 	_, err = file.Write([]byte(fileContent))
@@ -468,7 +469,7 @@ func (s *DoMainTestSuite) Test_doMainWithSrcAndDstConfig(c *C) {
 
 	// Start keepservers. Since we are not doing any tweaking as in setupRsync func,
 	// kcSrc and kcDst will be the same and no actual copying to dst will happen, but that's ok.
-	arvadostest.StartKeep()
+	arvadostest.StartKeep(2, false)
 
 	err := doMain()
 	c.Check(err, IsNil)
