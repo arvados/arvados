@@ -332,93 +332,6 @@ class KeepClientServiceTestCase(unittest.TestCase, tutil.ApiClientMock):
                 mock.responses[0].getopt(pycurl.TIMEOUT_MS),
                 int(arvados.KeepClient.DEFAULT_PROXY_TIMEOUT[1]*1000))
 
-    def test_probe_order_reference_set(self):
-        # expected_order[i] is the probe order for
-        # hash=md5(sprintf("%064x",i)) where there are 16 services
-        # with uuid sprintf("anything-%015x",j) with j in 0..15. E.g.,
-        # the first probe for the block consisting of 64 "0"
-        # characters is the service whose uuid is
-        # "zzzzz-bi6l4-000000000000003", so expected_order[0][0]=='3'.
-        expected_order = [
-            list('3eab2d5fc9681074'),
-            list('097dba52e648f1c3'),
-            list('c5b4e023f8a7d691'),
-            list('9d81c02e76a3bf54'),
-            ]
-        hashes = [
-            hashlib.md5("{:064x}".format(x)).hexdigest()
-            for x in range(len(expected_order))]
-        api_client = self.mock_keep_services(count=16)
-        keep_client = arvados.KeepClient(api_client=api_client)
-        for i, hash in enumerate(hashes):
-            roots = keep_client.weighted_service_roots(arvados.KeepLocator(hash))
-            got_order = [
-                re.search(r'//\[?keep0x([0-9a-f]+)', root).group(1)
-                for root in roots]
-            self.assertEqual(expected_order[i], got_order)
-
-    def test_probe_waste_adding_one_server(self):
-        hashes = [
-            hashlib.md5("{:064x}".format(x)).hexdigest() for x in range(100)]
-        initial_services = 12
-        api_client = self.mock_keep_services(count=initial_services)
-        keep_client = arvados.KeepClient(api_client=api_client)
-        probes_before = [
-            keep_client.weighted_service_roots(arvados.KeepLocator(hash)) for hash in hashes]
-        for added_services in range(1, 12):
-            api_client = self.mock_keep_services(count=initial_services+added_services)
-            keep_client = arvados.KeepClient(api_client=api_client)
-            total_penalty = 0
-            for hash_index in range(len(hashes)):
-                probe_after = keep_client.weighted_service_roots(
-                    arvados.KeepLocator(hashes[hash_index]))
-                penalty = probe_after.index(probes_before[hash_index][0])
-                self.assertLessEqual(penalty, added_services)
-                total_penalty += penalty
-            # Average penalty per block should not exceed
-            # N(added)/N(orig) by more than 20%, and should get closer
-            # to the ideal as we add data points.
-            expect_penalty = (
-                added_services *
-                len(hashes) / initial_services)
-            max_penalty = (
-                expect_penalty *
-                (120 - added_services)/100)
-            min_penalty = (
-                expect_penalty * 8/10)
-            self.assertTrue(
-                min_penalty <= total_penalty <= max_penalty,
-                "With {}+{} services, {} blocks, penalty {} but expected {}..{}".format(
-                    initial_services,
-                    added_services,
-                    len(hashes),
-                    total_penalty,
-                    min_penalty,
-                    max_penalty))
-
-    def check_64_zeros_error_order(self, verb, exc_class):
-        data = '0' * 64
-        if verb == 'get':
-            data = hashlib.md5(data).hexdigest() + '+1234'
-        # Arbitrary port number:
-        aport = random.randint(1024,65535)
-        api_client = self.mock_keep_services(service_port=aport, count=16)
-        keep_client = arvados.KeepClient(api_client=api_client)
-        with mock.patch('pycurl.Curl') as curl_mock, \
-             self.assertRaises(exc_class) as err_check:
-            curl_mock.return_value.side_effect = socket.timeout
-            getattr(keep_client, verb)(data)
-        urls = [urlparse.urlparse(url)
-                for url in err_check.exception.request_errors()]
-        self.assertEqual([('keep0x' + c, aport) for c in '3eab2d5fc9681074'],
-                         [(url.hostname, url.port) for url in urls])
-
-    def test_get_error_shows_probe_order(self):
-        self.check_64_zeros_error_order('get', arvados.errors.KeepReadError)
-
-    def test_put_error_shows_probe_order(self):
-        self.check_64_zeros_error_order('put', arvados.errors.KeepWriteError)
-
     def check_no_services_error(self, verb, exc_class):
         api_client = mock.MagicMock(name='api_client')
         api_client.keep_services().accessible().execute.side_effect = (
@@ -473,6 +386,125 @@ class KeepClientServiceTestCase(unittest.TestCase, tutil.ApiClientMock):
           keep_client.put(data)
         self.assertEqual(True, ("no Keep services available" in str(exc_check.exception)))
         self.assertEqual(0, len(exc_check.exception.request_errors()))
+
+
+@tutil.skip_sleep
+class KeepClientRendezvousTestCase(unittest.TestCase, tutil.ApiClientMock):
+
+    def setUp(self):
+        # expected_order[i] is the probe order for
+        # hash=md5(sprintf("%064x",i)) where there are 16 services
+        # with uuid sprintf("anything-%015x",j) with j in 0..15. E.g.,
+        # the first probe for the block consisting of 64 "0"
+        # characters is the service whose uuid is
+        # "zzzzz-bi6l4-000000000000003", so expected_order[0][0]=='3'.
+        self.services = 16
+        self.expected_order = [
+            list('3eab2d5fc9681074'),
+            list('097dba52e648f1c3'),
+            list('c5b4e023f8a7d691'),
+            list('9d81c02e76a3bf54'),
+            ]
+        self.blocks = [
+            "{:064x}".format(x)
+            for x in range(len(self.expected_order))]
+        self.hashes = [
+            hashlib.md5(self.blocks[x]).hexdigest()
+            for x in range(len(self.expected_order))]
+        self.api_client = self.mock_keep_services(count=self.services)
+        self.keep_client = arvados.KeepClient(api_client=self.api_client)
+
+    def test_weighted_service_roots_against_reference_set(self):
+        # Confirm weighted_service_roots() returns the correct order
+        for i, hash in enumerate(self.hashes):
+            roots = self.keep_client.weighted_service_roots(arvados.KeepLocator(hash))
+            got_order = [
+                re.search(r'//\[?keep0x([0-9a-f]+)', root).group(1)
+                for root in roots]
+            self.assertEqual(self.expected_order[i], got_order)
+
+    def test_get_probe_order_against_reference_set(self):
+        self._test_probe_order_against_reference_set(
+            lambda i: self.keep_client.get(self.hashes[i], num_retries=1))
+
+    def test_put_probe_order_against_reference_set(self):
+        # copies=1 prevents the test from being sensitive to races
+        # between writer threads.
+        self._test_probe_order_against_reference_set(
+            lambda i: self.keep_client.put(self.blocks[i], num_retries=1, copies=1))
+
+    def _test_probe_order_against_reference_set(self, op):
+        for i in range(len(self.blocks)):
+            with tutil.mock_keep_responses('', *[500 for _ in range(self.services*2)]) as mock, \
+                 self.assertRaises(arvados.errors.KeepRequestError):
+                op(i)
+            got_order = [
+                re.search(r'//\[?keep0x([0-9a-f]+)', resp.getopt(pycurl.URL)).group(1)
+                for resp in mock.responses]
+            self.assertEqual(self.expected_order[i]*2, got_order)
+
+    def test_probe_waste_adding_one_server(self):
+        hashes = [
+            hashlib.md5("{:064x}".format(x)).hexdigest() for x in range(100)]
+        initial_services = 12
+        self.api_client = self.mock_keep_services(count=initial_services)
+        self.keep_client = arvados.KeepClient(api_client=self.api_client)
+        probes_before = [
+            self.keep_client.weighted_service_roots(arvados.KeepLocator(hash)) for hash in hashes]
+        for added_services in range(1, 12):
+            api_client = self.mock_keep_services(count=initial_services+added_services)
+            keep_client = arvados.KeepClient(api_client=api_client)
+            total_penalty = 0
+            for hash_index in range(len(hashes)):
+                probe_after = keep_client.weighted_service_roots(
+                    arvados.KeepLocator(hashes[hash_index]))
+                penalty = probe_after.index(probes_before[hash_index][0])
+                self.assertLessEqual(penalty, added_services)
+                total_penalty += penalty
+            # Average penalty per block should not exceed
+            # N(added)/N(orig) by more than 20%, and should get closer
+            # to the ideal as we add data points.
+            expect_penalty = (
+                added_services *
+                len(hashes) / initial_services)
+            max_penalty = (
+                expect_penalty *
+                (120 - added_services)/100)
+            min_penalty = (
+                expect_penalty * 8/10)
+            self.assertTrue(
+                min_penalty <= total_penalty <= max_penalty,
+                "With {}+{} services, {} blocks, penalty {} but expected {}..{}".format(
+                    initial_services,
+                    added_services,
+                    len(hashes),
+                    total_penalty,
+                    min_penalty,
+                    max_penalty))
+
+    def check_64_zeros_error_order(self, verb, exc_class):
+        data = '0' * 64
+        if verb == 'get':
+            data = hashlib.md5(data).hexdigest() + '+1234'
+        # Arbitrary port number:
+        aport = random.randint(1024,65535)
+        api_client = self.mock_keep_services(service_port=aport, count=self.services)
+        keep_client = arvados.KeepClient(api_client=api_client)
+        with mock.patch('pycurl.Curl') as curl_mock, \
+             self.assertRaises(exc_class) as err_check:
+            curl_mock.return_value.side_effect = socket.timeout
+            getattr(keep_client, verb)(data)
+        urls = [urlparse.urlparse(url)
+                for url in err_check.exception.request_errors()]
+        self.assertEqual([('keep0x' + c, aport) for c in '3eab2d5fc9681074'],
+                         [(url.hostname, url.port) for url in urls])
+
+    def test_get_error_shows_probe_order(self):
+        self.check_64_zeros_error_order('get', arvados.errors.KeepReadError)
+
+    def test_put_error_shows_probe_order(self):
+        self.check_64_zeros_error_order('put', arvados.errors.KeepWriteError)
+
 
 class KeepClientTimeout(unittest.TestCase, tutil.ApiClientMock):
     DATA = 'x' * 2**10
