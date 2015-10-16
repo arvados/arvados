@@ -453,6 +453,12 @@ def run_nginx():
 
     env = os.environ.copy()
     env['PATH'] = env['PATH']+':/sbin:/usr/sbin:/usr/local/sbin'
+
+    try:
+        os.remove(nginxconf['ACCESSLOG'])
+    except OSError:
+        pass
+
     os.mkfifo(nginxconf['ACCESSLOG'], 0700)
     nginx = subprocess.Popen(
         ['nginx',
