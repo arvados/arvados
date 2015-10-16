@@ -73,6 +73,15 @@ class SLURMComputeNodeShutdownActorTestCase(ComputeNodeShutdownActorMixin,
         self.check_success_flag(False, 2)
         self.check_slurm_got_args(proc_mock, 'sinfo', '--noheader', '-o', '%t', '-n', 'compute99')
 
+    def test_cancel_shutdown_retry(self, proc_mock):
+        proc_mock.side_effect = iter([OSError, 'drain\n', OSError, 'idle\n'])
+        self.make_mocks(arvados_node=testutil.arvados_node_mock(job_uuid=True))
+        self.make_actor()
+        self.check_success_flag(False, 2)
+
+    def test_issue_slurm_drain_retry(self, proc_mock):
+        proc_mock.side_effect = iter([OSError, '', OSError, 'drng\n'])
+        self.check_success_after_reset(proc_mock)
 
     def test_arvados_node_cleaned_after_shutdown(self, proc_mock):
         proc_mock.return_value = 'drain\n'
