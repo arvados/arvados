@@ -443,6 +443,31 @@ class KeepClientRendezvousTestCase(unittest.TestCase, tutil.ApiClientMock):
                 for resp in mock.responses]
             self.assertEqual(self.expected_order[i]*2, got_order)
 
+    def test_put_probe_order_multiple_copies(self):
+        for copies in range(2, 4):
+            for i in range(len(self.blocks)):
+                with tutil.mock_keep_responses('', *[500 for _ in range(self.services*3)]) as mock, \
+                     self.assertRaises(arvados.errors.KeepWriteError):
+                    self.keep_client.put(self.blocks[i], num_retries=2, copies=copies)
+                got_order = [
+                    re.search(r'//\[?keep0x([0-9a-f]+)', resp.getopt(pycurl.URL)).group(1)
+                    for resp in mock.responses]
+                for pos, expected in enumerate(self.expected_order[i]*3):
+                    # With C threads racing to make requests, the
+                    # position of a given server in the sequence of
+                    # HTTP requests (got_order) should be within C-1
+                    # positions of that server's position in the
+                    # reference probe sequence (expected_order).
+                    close_enough = False
+                    for diff in range(1-copies, copies):
+                        if 0 <= pos+diff < len(got_order):
+                            if expected == got_order[pos+diff]:
+                                close_enough = True
+                    self.assertEqual(
+                        True, close_enough,
+                        "With copies={}, got {}, expected {}".format(
+                            copies, repr(got_order), repr(self.expected_order[i]*3)))
+
     def test_probe_waste_adding_one_server(self):
         hashes = [
             hashlib.md5("{:064x}".format(x)).hexdigest() for x in range(100)]
