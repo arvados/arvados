@@ -34,6 +34,14 @@ class ComputeNodeShutdownActor(ShutdownActorBase):
     def _get_slurm_state(self):
         return subprocess.check_output(['sinfo', '--noheader', '-o', '%t', '-n', self._nodename])
 
+    # The following methods retry on OSError.  This is intended to mitigate bug
+    # #6321 where fork() of node manager raises "OSError: [Errno 12] Cannot
+    # allocate memory" resulting in the untimely death of the shutdown actor
+    # and tends to result in node manager getting into a wedged state where it
+    # won't allocate new nodes or shut down gracefully.  The underlying causes
+    # of the excessive memory usage that result in the "Cannot allocate memory"
+    # error are still being investigated.
+
     @ShutdownActorBase._retry((subprocess.CalledProcessError, OSError))
     def cancel_shutdown(self):
         if self._nodename:
