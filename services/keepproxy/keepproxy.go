@@ -108,7 +108,7 @@ func main() {
 		log.Fatalf("Could not listen on %v", listen)
 	}
 
-	go RefreshServicesList(kc)
+	go RefreshServicesList(kc, 5*time.Minute, 3*time.Second)
 
 	// Shut down the server gracefully (by closing the listener)
 	// if SIGTERM is received.
@@ -135,27 +135,39 @@ type ApiTokenCache struct {
 	expireTime int64
 }
 
-// Refresh the keep service list every five minutes.
-func RefreshServicesList(kc *keepclient.KeepClient) {
+// Refresh the keep service list on SIGHUP; when the given interval
+// has elapsed since the last refresh; and (if the last refresh
+// failed) the given errInterval has elapsed.
+func RefreshServicesList(kc *keepclient.KeepClient, interval, errInterval time.Duration) {
 	var previousRoots = []map[string]string{}
-	var delay time.Duration = 0
+
+	timer := time.NewTimer(interval)
+	gotHUP := make(chan os.Signal, 1)
+	signal.Notify(gotHUP, syscall.SIGHUP)
+
 	for {
-		time.Sleep(delay * time.Second)
-		delay = 300
+		select {
+		case <-gotHUP:
+		case <-timer.C:
+		}
+		timer.Reset(interval)
+
 		if err := kc.DiscoverKeepServers(); err != nil {
-			log.Println("Error retrieving services list:", err)
-			delay = 3
+			log.Println("Error retrieving services list: %v (retrying in %v)", err, errInterval)
+			timer.Reset(errInterval)
 			continue
 		}
 		newRoots := []map[string]string{kc.LocalRoots(), kc.GatewayRoots()}
+
 		if !reflect.DeepEqual(previousRoots, newRoots) {
 			log.Printf("Updated services list: locals %v gateways %v", newRoots[0], newRoots[1])
+			previousRoots = newRoots
 		}
+
 		if len(newRoots[0]) == 0 {
-			log.Print("WARNING: No local services. Retrying in 3 seconds.")
-			delay = 3
+			log.Printf("WARNING: No local services (retrying in %v)", errInterval)
+			timer.Reset(errInterval)
 		}
-		previousRoots = newRoots
 	}
 }
 
