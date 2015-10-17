@@ -198,12 +198,8 @@ func (this *ApiTokenCache) RecallToken(token string) bool {
 }
 
 func GetRemoteAddress(req *http.Request) string {
-	if realip := req.Header.Get("X-Real-IP"); realip != "" {
-		if forwarded := req.Header.Get("X-Forwarded-For"); forwarded != realip {
-			return fmt.Sprintf("%s (X-Forwarded-For %s)", realip, forwarded)
-		} else {
-			return realip
-		}
+	if xff := req.Header.Get("X-Forwarded-For"); xff != "" {
+		return xff + "," + req.RemoteAddr
 	}
 	return req.RemoteAddr
 }
