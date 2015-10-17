@@ -22,8 +22,8 @@ import (
 )
 
 // Default TCP address on which to listen for requests.
-// Initialized by the -listen flag.
-const DEFAULT_ADDR = ":25107"
+// Override with -listen.
+const DefaultAddr = ":25107"
 
 var listener net.Listener
 
@@ -42,7 +42,7 @@ func main() {
 	flagset.StringVar(
 		&listen,
 		"listen",
-		DEFAULT_ADDR,
+		DefaultAddr,
 		"Interface on which to listen for requests, in the format "+
 			"ipaddr:port. e.g. -listen=10.0.1.24:8000. Use -listen=:port "+
 			"to listen on all network interfaces.")
@@ -79,16 +79,6 @@ func main() {
 
 	flagset.Parse(os.Args[1:])
 
-	arv, err := arvadosclient.MakeArvadosClient()
-	if err != nil {
-		log.Fatalf("Error setting up arvados client %s", err.Error())
-	}
-
-	kc, err := keepclient.MakeKeepClient(&arv)
-	if err != nil {
-		log.Fatalf("Error setting up keep client %s", err.Error())
-	}
-
 	if pidfile != "" {
 		f, err := os.Create(pidfile)
 		if err != nil {
@@ -99,16 +89,23 @@ func main() {
 		defer os.Remove(pidfile)
 	}
 
+	arv, err := arvadosclient.MakeArvadosClient()
+	if err != nil {
+		log.Fatalf("setting up arvados client: %v", err)
+	}
+	kc, err := keepclient.MakeKeepClient(&arv)
+	if err != nil {
+		log.Fatalf("setting up keep client: %v", err)
+	}
 	kc.Want_replicas = default_replicas
-
 	kc.Client.Timeout = time.Duration(timeout) * time.Second
+	go RefreshServicesList(kc, 5*time.Minute, 3*time.Second)
 
 	listener, err = net.Listen("tcp", listen)
 	if err != nil {
 		log.Fatalf("Could not listen on %v", listen)
 	}
-
-	go RefreshServicesList(kc, 5*time.Minute, 3*time.Second)
+	log.Printf("Arvados Keep proxy started listening on %v", listener.Addr())
 
 	// Shut down the server gracefully (by closing the listener)
 	// if SIGTERM is received.
@@ -121,9 +118,7 @@ func main() {
 	signal.Notify(term, syscall.SIGTERM)
 	signal.Notify(term, syscall.SIGINT)
 
-	log.Printf("Arvados Keep proxy started listening on %v", listener.Addr())
-
-	// Start listening for requests.
+	// Start serving requests.
 	http.Serve(listener, MakeRESTRouter(!no_get, !no_put, kc))
 
 	log.Println("shutting down")
