@@ -148,7 +148,7 @@ case "$TARGET" in
             rsa uritemplate httplib2 ws4py \
             pykka requests six pyexecjs jsonschema \
             ciso8601 pycrypto backports.ssl_match_hostname pycurl
-            python-daemon lockfile llfuse)
+            python-daemon lockfile llfuse 'pbr<1.0')
         PYTHON3_BACKPORTS=(docker-py six requests websocket-client)
         export PYCURL_SSL_LIBRARY=nss
         ;;
