@@ -21,7 +21,7 @@ type ServerRequiredSuite struct{}
 
 func (s *ServerRequiredSuite) SetUpSuite(c *C) {
 	arvadostest.StartAPI()
-	arvadostest.StartKeep()
+	arvadostest.StartKeep(2, false)
 }
 
 func (s *ServerRequiredSuite) SetUpTest(c *C) {
