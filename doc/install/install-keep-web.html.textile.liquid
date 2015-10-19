@@ -90,6 +90,7 @@ server {
 
   location / {
     proxy_pass          http://keep-web;
+    proxy_set_header    Host            $host;
     proxy_set_header    X-Forwarded-For $proxy_add_x_forwarded_for;
   }
 }
@@ -104,11 +105,11 @@ Configure your DNS servers so the following names resolve to your Nginx proxy's 
 
 h3. Tell the API server about the keep-web service
 
-Add *one* of the following entries to your API server's @config/application.yml@ file, depending on your DNS setup:
+Add *one* of the following entries to your Workbench configuration file (@/etc/arvados/workbench/application.yml@), depending on your DNS setup:
 
 <notextile>
-<pre><code>keep-web: https://%{uuid_or_pdh}--dl.<span class="userinput">uuid_prefix</span>.your.domain
-keep-web: https://%{uuid_or_pdh}.dl.<span class="userinput">uuid_prefix</span>.your.domain
-keep-web: https://dl.<span class="userinput">uuid_prefix</span>.your.domain
+<pre><code>keep_web_url: https://%{uuid_or_pdh}--dl.<span class="userinput">uuid_prefix</span>.your.domain
+keep_web_url: https://%{uuid_or_pdh}.dl.<span class="userinput">uuid_prefix</span>.your.domain
+keep_web_url: https://dl.<span class="userinput">uuid_prefix</span>.your.domain
 </code></pre>
 </notextile>
