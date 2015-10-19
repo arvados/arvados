@@ -1186,3 +1186,53 @@ func (s *StandaloneSuite) TestGetIndexWithNoSuchPrefix(c *C) {
 	c.Check(err2, Equals, nil)
 	c.Check(content, DeepEquals, st.body[0:len(st.body)-1])
 }
+
+type FailThenSucceedPutHandler struct {
+	handled        chan string
+	count          int
+	successhandler StubPutHandler
+}
+
+func (h *FailThenSucceedPutHandler) ServeHTTP(resp http.ResponseWriter, req *http.Request) {
+	if h.count == 0 {
+		resp.WriteHeader(500)
+		h.count += 1
+		h.handled <- fmt.Sprintf("http://%s", req.Host)
+	} else {
+		h.successhandler.ServeHTTP(resp, req)
+	}
+}
+
+func (s *StandaloneSuite) TestPutBRetry(c *C) {
+	st := &FailThenSucceedPutHandler{make(chan string, 1), 0,
+		StubPutHandler{
+			c,
+			Md5String("foo"),
+			"abc123",
+			"foo",
+			make(chan string, 5)}}
+
+	arv, _ := arvadosclient.MakeArvadosClient()
+	kc, _ := MakeKeepClient(&arv)
+
+	kc.Want_replicas = 2
+	arv.ApiToken = "abc123"
+	localRoots := make(map[string]string)
+	writableLocalRoots := make(map[string]string)
+
+	ks := RunSomeFakeKeepServers(st, 2)
+
+	for i, k := range ks {
+		localRoots[fmt.Sprintf("zzzzz-bi6l4-fakefakefake%03d", i)] = k.url
+		writableLocalRoots[fmt.Sprintf("zzzzz-bi6l4-fakefakefake%03d", i)] = k.url
+		defer k.listener.Close()
+	}
+
+	kc.SetServiceRoots(localRoots, writableLocalRoots, nil)
+
+	hash, replicas, err := kc.PutB([]byte("foo"))
+
+	c.Check(err, Equals, nil)
+	c.Check(hash, Equals, "")
+	c.Check(replicas, Equals, 2)
+}
