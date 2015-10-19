@@ -99,14 +99,10 @@ func StopAPI() {
 	exec.Command("python", "run_test_server.py", "stop").Run()
 }
 
-// StartKeep starts 2 keep servers with enforcePermissions=false
-func StartKeep() {
-	StartKeepWithParams(2, false)
-}
-
-// StartKeepWithParams starts the given number of keep servers,
+// StartKeep starts the given number of keep servers,
 // optionally with -enforce-permissions enabled.
-func StartKeepWithParams(numKeepServers int, enforcePermissions bool) {
+// Use numKeepServers = 2 and enforcePermissions = false under all normal circumstances.
+func StartKeep(numKeepServers int, enforcePermissions bool) {
 	cwd, _ := os.Getwd()
 	defer os.Chdir(cwd)
 	chdirToPythonTests()
@@ -128,14 +124,10 @@ func StartKeepWithParams(numKeepServers int, enforcePermissions bool) {
 	}
 }
 
-func StopKeep() {
-	StopKeepWithParams(2)
-}
-
-// StopKeepServers stops keep servers that were started with
-// StartKeep. numkeepServers should be the same value that was passed
-// to StartKeep.
-func StopKeepWithParams(numKeepServers int) {
+// StopKeep stops keep servers that were started with StartKeep.
+// numkeepServers should be the same value that was passed to StartKeep,
+// which is 2 under all normal circumstances.
+func StopKeep(numKeepServers int) {
 	cwd, _ := os.Getwd()
 	defer os.Chdir(cwd)
 	chdirToPythonTests()

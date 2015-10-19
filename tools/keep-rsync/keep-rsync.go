@@ -18,77 +18,79 @@ import (
 )
 
 func main() {
-	var srcConfigFile, dstConfigFile, srcKeepServicesJSON, dstKeepServicesJSON, prefix string
-	var replications int
-	var srcBlobSigningKey string
+	err := doMain()
+	if err != nil {
+		log.Fatalf("%v", err)
+	}
+}
 
-	flag.StringVar(
-		&srcConfigFile,
+func doMain() error {
+	flags := flag.NewFlagSet("keep-rsync", flag.ExitOnError)
+
+	srcConfigFile := flags.String(
 		"src",
 		"",
 		"Source configuration filename. May be either a pathname to a config file, or (for example) 'foo' as shorthand for $HOME/.config/arvados/foo.conf")
 
-	flag.StringVar(
-		&dstConfigFile,
+	dstConfigFile := flags.String(
 		"dst",
 		"",
 		"Destination configuration filename. May be either a pathname to a config file, or (for example) 'foo' as shorthand for $HOME/.config/arvados/foo.conf")
 
-	flag.StringVar(
-		&srcKeepServicesJSON,
+	srcKeepServicesJSON := flags.String(
 		"src-keep-services-json",
 		"",
 		"An optional list of available source keepservices. "+
 			"If not provided, this list is obtained from api server configured in src-config-file.")
 
-	flag.StringVar(
-		&dstKeepServicesJSON,
+	dstKeepServicesJSON := flags.String(
 		"dst-keep-services-json",
 		"",
 		"An optional list of available destination keepservices. "+
 			"If not provided, this list is obtained from api server configured in dst-config-file.")
 
-	flag.IntVar(
-		&replications,
+	replications := flags.Int(
 		"replications",
 		0,
 		"Number of replications to write to the destination. If replications not specified, "+
 			"default replication level configured on destination server will be used.")
 
-	flag.StringVar(
-		&prefix,
+	prefix := flags.String(
 		"prefix",
 		"",
 		"Index prefix")
 
-	flag.Parse()
+	// Parse args; omit the first arg which is the command name
+	flags.Parse(os.Args[1:])
 
-	srcConfig, srcBlobSigningKey, err := loadConfig(srcConfigFile)
+	srcConfig, srcBlobSigningKey, err := loadConfig(*srcConfigFile)
 	if err != nil {
-		log.Fatalf("Error loading src configuration from file: %s", err.Error())
+		return fmt.Errorf("Error loading src configuration from file: %s", err.Error())
 	}
 
-	dstConfig, _, err := loadConfig(dstConfigFile)
+	dstConfig, _, err := loadConfig(*dstConfigFile)
 	if err != nil {
-		log.Fatalf("Error loading dst configuration from file: %s", err.Error())
+		return fmt.Errorf("Error loading dst configuration from file: %s", err.Error())
 	}
 
 	// setup src and dst keepclients
-	kcSrc, err := setupKeepClient(srcConfig, srcKeepServicesJSON, false, 0)
+	kcSrc, err := setupKeepClient(srcConfig, *srcKeepServicesJSON, false, 0)
 	if err != nil {
-		log.Fatalf("Error configuring src keepclient: %s", err.Error())
+		return fmt.Errorf("Error configuring src keepclient: %s", err.Error())
 	}
 
-	kcDst, err := setupKeepClient(dstConfig, dstKeepServicesJSON, true, replications)
+	kcDst, err := setupKeepClient(dstConfig, *dstKeepServicesJSON, true, *replications)
 	if err != nil {
-		log.Fatalf("Error configuring dst keepclient: %s", err.Error())
+		return fmt.Errorf("Error configuring dst keepclient: %s", err.Error())
 	}
 
 	// Copy blocks not found in dst from src
-	err = performKeepRsync(kcSrc, kcDst, srcBlobSigningKey, prefix)
+	err = performKeepRsync(kcSrc, kcDst, srcBlobSigningKey, *prefix)
 	if err != nil {
-		log.Fatalf("Error while syncing data: %s", err.Error())
+		return fmt.Errorf("Error while syncing data: %s", err.Error())
 	}
+
+	return nil
 }
 
 type apiConfig struct {
