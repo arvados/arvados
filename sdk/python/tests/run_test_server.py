@@ -55,9 +55,7 @@ def find_server_pid(PID_PATH, wait=10):
             with open(PID_PATH, 'r') as f:
                 server_pid = int(f.read())
             good_pid = (os.kill(server_pid, 0) is None)
-        except IOError:
-            good_pid = False
-        except OSError:
+        except EnvironmentError:
             good_pid = False
         now = time.time()
 
@@ -92,9 +90,7 @@ def kill_server_pid(pidfile, wait=10, passenger_root=False):
             os.getpgid(server_pid)
             time.sleep(0.1)
             now = time.time()
-    except IOError:
-        pass
-    except OSError:
+    except EnvironmentError:
         pass
 
 def find_available_port():
