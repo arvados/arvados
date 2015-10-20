@@ -411,7 +411,7 @@ if (!defined $no_clear_tmp) {
 }
 
 # If this job requires a Docker image, install that.
-my ($docker_locator, $docker_stream, $docker_hash, $docker_limitmem);
+my ($docker_locator, $docker_stream, $docker_hash, $docker_limitmem, $dockeruser);
 if ($docker_locator = $Job->{docker_image_locator}) {
   ($docker_stream, $docker_hash) = find_docker_image($docker_locator);
   if (!$docker_hash)
@@ -448,6 +448,28 @@ fi
        ["/bin/sh", "-ec", "$docker_bin run --help | grep -qe --memory-swap="],
       {fork => 1});
   $docker_limitmem = ($? == 0);
+
+  # Find a non-root Docker user to use.
+  # Tries the default user for the container, then 'crunch', then 'nobody',
+  # testing for whether the actual user id is non-zero.  This defends against
+  # mistakes but not malice, but we intend to harden the security in the future
+  # so we don't want anyone getting used to their jobs running as root in their
+  # Docker containers.
+  foreach my $try_user ("", "--user=crunch", "--user=nobody") {
+    srun(["srun", "--nodelist=" . $node[0]],
+         ["/bin/sh", "-ec",
+          "a=`$docker_bin run --rm $try_user $docker_hash id --user 2>/dev/null` && " .
+          " test \$a -ne 0"],
+         {fork => 1});
+    if ($? == 0) {
+      $dockeruser = $try_user;
+      last;
+    }
+  }
+
+  if (!$dockeruser) {
+    croak("Docker image default user is 'root', and does not have a non-root 'crunch' or 'nobody' user.");
+  }
 
   if ($Job->{arvados_sdk_version}) {
     # The job also specifies an Arvados SDK version.  Add the SDKs to the
@@ -859,7 +881,7 @@ for (my $todo_ptr = 0; $todo_ptr <= $#jobstep_todo; $todo_ptr ++)
     {
       my $cidfile = "$ENV{CRUNCH_TMP}/$Jobstep->{arvados_task}->{uuid}-$Jobstep->{failures}.cid";
       $command .= "crunchstat -cgroup-root=/sys/fs/cgroup -cgroup-parent=docker -cgroup-cid=$cidfile -poll=10000 ";
-      $command .= "$docker_bin run --rm=true --attach=stdout --attach=stderr --attach=stdin -i --user=crunch --cidfile=$cidfile --sig-proxy ";
+      $command .= "$docker_bin run --rm=true --attach=stdout --attach=stderr --attach=stdin -i \Q$dockeruser\E --cidfile=$cidfile --sig-proxy ";
       # We only set memory limits if Docker lets us limit both memory and swap.
       # Memory limits alone have been supported longer, but subprocesses tend
       # to get SIGKILL if they exceed that without any swap limit set.
@@ -918,7 +940,12 @@ for (my $todo_ptr = 0; $todo_ptr <= $#jobstep_todo; $todo_ptr ++)
       $command .= "--env=\QHOME=$ENV{HOME}\E ";
       $command .= "\Q$docker_hash\E ";
       $command .= "stdbuf --output=0 --error=0 ";
-      $command .= "perl - $ENV{CRUNCH_SRC}/crunch_scripts/" . $Job->{"script"};
+
+      if ($Job->{arvados_sdk_version}) {
+        $command .= "perl - \Q$ENV{CRUNCH_SRC}/crunch_scripts/$Job->{script}\E";
+      } else {
+        $command .= "/bin/sh -c \'mkdir -p \"$ENV{JOB_WORK}\" \"$ENV{TASK_WORK}\" && exec \Q$ENV{CRUNCH_SRC}/crunch_scripts/$Job->{script}\E\'";
+      }
     } else {
       # Non-docker run
       $command .= "crunchstat -cgroup-root=/sys/fs/cgroup -poll=10000 ";
