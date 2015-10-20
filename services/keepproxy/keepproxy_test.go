@@ -172,14 +172,18 @@ func (s *ServerRequiredSuite) TestPutAskGet(c *C) {
 
 	{
 		_, _, err := kc.Ask(hash)
-		c.Check(err, Equals, keepclient.BlockNotFound)
+		errNotFound, _ := err.(keepclient.ErrNotFound)
+		c.Check(errNotFound, NotNil)
+		c.Check(strings.Contains(err.Error(), "Block not found"), Equals, true)
 		log.Print("Finished Ask (expected BlockNotFound)")
 	}
 
 	{
 		reader, _, _, err := kc.Get(hash)
 		c.Check(reader, Equals, nil)
-		c.Check(err, Equals, keepclient.BlockNotFound)
+		errNotFound, _ := err.(keepclient.ErrNotFound)
+		c.Check(errNotFound, NotNil)
+		c.Check(strings.Contains(err.Error(), "Block not found"), Equals, true)
 		log.Print("Finished Get (expected BlockNotFound)")
 	}
 
@@ -251,7 +255,9 @@ func (s *ServerRequiredSuite) TestPutAskGetForbidden(c *C) {
 
 	{
 		_, _, err := kc.Ask(hash)
-		c.Check(err, Equals, keepclient.BlockNotFound)
+		errNotFound, _ := err.(keepclient.ErrNotFound)
+		c.Check(errNotFound, NotNil)
+		c.Assert(strings.Contains(err.Error(), "HTTP 403"), Equals, true)
 		log.Print("Ask 1")
 	}
 
@@ -265,14 +271,18 @@ func (s *ServerRequiredSuite) TestPutAskGetForbidden(c *C) {
 
 	{
 		blocklen, _, err := kc.Ask(hash)
-		c.Assert(err, Equals, keepclient.BlockNotFound)
+		errNotFound, _ := err.(keepclient.ErrNotFound)
+		c.Check(errNotFound, NotNil)
+		c.Assert(strings.Contains(err.Error(), "HTTP 403"), Equals, true)
 		c.Check(blocklen, Equals, int64(0))
 		log.Print("Ask 2")
 	}
 
 	{
 		_, blocklen, _, err := kc.Get(hash)
-		c.Assert(err, Equals, keepclient.BlockNotFound)
+		errNotFound, _ := err.(keepclient.ErrNotFound)
+		c.Check(errNotFound, NotNil)
+		c.Assert(strings.Contains(err.Error(), "HTTP 403"), Equals, true)
 		c.Check(blocklen, Equals, int64(0))
 		log.Print("Get")
 	}
@@ -291,7 +301,9 @@ func (s *ServerRequiredSuite) TestGetDisabled(c *C) {
 
 	{
 		_, _, err := kc.Ask(hash)
-		c.Check(err, Equals, keepclient.BlockNotFound)
+		errNotFound, _ := err.(keepclient.ErrNotFound)
+		c.Check(errNotFound, NotNil)
+		c.Assert(strings.Contains(err.Error(), "HTTP 400"), Equals, true)
 		log.Print("Ask 1")
 	}
 
@@ -305,14 +317,18 @@ func (s *ServerRequiredSuite) TestGetDisabled(c *C) {
 
 	{
 		blocklen, _, err := kc.Ask(hash)
-		c.Assert(err, Equals, keepclient.BlockNotFound)
+		errNotFound, _ := err.(keepclient.ErrNotFound)
+		c.Check(errNotFound, NotNil)
+		c.Assert(strings.Contains(err.Error(), "HTTP 400"), Equals, true)
 		c.Check(blocklen, Equals, int64(0))
 		log.Print("Ask 2")
 	}
 
 	{
 		_, blocklen, _, err := kc.Get(hash)
-		c.Assert(err, Equals, keepclient.BlockNotFound)
+		errNotFound, _ := err.(keepclient.ErrNotFound)
+		c.Check(errNotFound, NotNil)
+		c.Assert(strings.Contains(err.Error(), "HTTP 400"), Equals, true)
 		c.Check(blocklen, Equals, int64(0))
 		log.Print("Get")
 	}

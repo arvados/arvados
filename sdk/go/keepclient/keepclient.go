@@ -22,7 +22,33 @@ import (
 // A Keep "block" is 64MB.
 const BLOCKSIZE = 64 * 1024 * 1024
 
-var BlockNotFound = errors.New("Block not found")
+// Error interface with an error and boolean indicating whether the error is temporary
+type Error interface {
+	error
+	Temporary() bool
+}
+
+// multipleResponseError is of type Error
+type multipleResponseError struct {
+	error
+	isTemp bool
+}
+
+func (e *multipleResponseError) Temporary() bool {
+	return e.isTemp
+}
+
+// BlockNotFound is a multipleResponseError where isTemp is false
+var BlockNotFound = &ErrNotFound{multipleResponseError{
+	error:  errors.New("Block not found"),
+	isTemp: false,
+}}
+
+// ErrNotFound is a multipleResponseError where isTemp can be true or false
+type ErrNotFound struct {
+	multipleResponseError
+}
+
 var InsufficientReplicasError = errors.New("Could not write sufficient replicas")
 var OversizeBlockError = errors.New("Exceeded maximum block size (" + strconv.Itoa(BLOCKSIZE) + ")")
 var MissingArvadosApiHost = errors.New("Missing required environment variable ARVADOS_API_HOST")
@@ -143,6 +169,7 @@ func (kc *KeepClient) PutR(r io.Reader) (locator string, replicas int, err error
 
 func (kc *KeepClient) getOrHead(method string, locator string) (io.ReadCloser, int64, string, error) {
 	var errs []string
+	var count404 int
 
 	tries_remaining := 1 + kc.Retries
 	serversToTry := kc.getSortedRoots(locator)
@@ -181,6 +208,8 @@ func (kc *KeepClient) getOrHead(method string, locator string) (io.ReadCloser, i
 					// server side failure, transient
 					// error, can try again.
 					retryList = append(retryList, host)
+				} else if resp.StatusCode == 404 {
+					count404++
 				}
 			} else {
 				// Success.
@@ -201,7 +230,16 @@ func (kc *KeepClient) getOrHead(method string, locator string) (io.ReadCloser, i
 	}
 	log.Printf("DEBUG: %s %s failed: %v", method, locator, errs)
 
-	return nil, 0, "", BlockNotFound
+	var err error
+	if count404 == len(kc.getSortedRoots(locator)) {
+		err = BlockNotFound
+	} else {
+		err = &ErrNotFound{multipleResponseError{
+			error:  fmt.Errorf("%s %s failed: %v", method, locator, errs),
+			isTemp: len(serversToTry) > 0,
+		}}
+	}
+	return nil, 0, "", err
 }
 
 // Get() retrieves a block, given a locator. Returns a reader, the

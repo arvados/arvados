@@ -362,7 +362,7 @@ func (this GetBlockHandler) ServeHTTP(resp http.ResponseWriter, req *http.Reques
 		log.Println("Warning:", GetRemoteAddress(req), req.Method, proxiedURI, "Content-Length not provided")
 	}
 
-	switch err {
+	switch respErr := err.(type) {
 	case nil:
 		status = http.StatusOK
 		resp.Header().Set("Content-Length", fmt.Sprint(expectLength))
@@ -375,10 +375,16 @@ func (this GetBlockHandler) ServeHTTP(resp http.ResponseWriter, req *http.Reques
 				err = ContentLengthMismatch
 			}
 		}
-	case keepclient.BlockNotFound:
-		status = http.StatusNotFound
+	case keepclient.Error:
+		if respErr.Error() == "Block not found" {
+			status = http.StatusNotFound
+		} else if respErr.Temporary() {
+			status = http.StatusBadGateway
+		} else {
+			status = 422
+		}
 	default:
-		status = http.StatusBadGateway
+		status = http.StatusInternalServerError
 	}
 }
 
