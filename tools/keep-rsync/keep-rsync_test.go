@@ -352,7 +352,7 @@ func (s *ServerRequiredSuite) TestErrorDuringRsync_ErrorGettingBlockFromSrc(c *C
 	blobSigningKey = "thisisfakeblobsigningkey"
 
 	err := performKeepRsync(kcSrc, kcDst, blobSigningKey, "")
-	c.Check(strings.HasSuffix(err.Error(), "Block not found"), Equals, true)
+	c.Check(strings.Contains(err.Error(), "HTTP 403 \"Forbidden\""), Equals, true)
 }
 
 // Test rsync with error during Put to src.
