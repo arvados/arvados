@@ -442,6 +442,7 @@ func (s *StandaloneSuite) TestPutWithTooManyFail(c *C) {
 	kc, _ := MakeKeepClient(&arv)
 
 	kc.Want_replicas = 2
+	kc.Retries = 0
 	arv.ApiToken = "abc123"
 	localRoots := make(map[string]string)
 	writableLocalRoots := make(map[string]string)
@@ -552,6 +553,7 @@ func (s *StandaloneSuite) TestGetFail(c *C) {
 	kc, _ := MakeKeepClient(&arv)
 	arv.ApiToken = "abc123"
 	kc.SetServiceRoots(map[string]string{"x": ks.url}, nil, nil)
+	kc.Retries = 0
 
 	r, n, url2, err := kc.Get(hash)
 	c.Check(err, Equals, BlockNotFound)
@@ -808,6 +810,7 @@ func (s *StandaloneSuite) TestGetWithFailures(c *C) {
 	}
 
 	kc.SetServiceRoots(localRoots, writableLocalRoots, nil)
+	kc.Retries = 0
 
 	// This test works only if one of the failing services is
 	// attempted before the succeeding service. Otherwise,
