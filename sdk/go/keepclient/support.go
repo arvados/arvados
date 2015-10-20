@@ -235,7 +235,7 @@ func (this KeepClient) putReplicas(
 
 	// Take the hash of locator and timestamp in order to identify this
 	// specific transaction in log statements.
-	requestId := fmt.Sprintf("%x", md5.Sum([]byte(locator+time.Now().String())))[0:8]
+	requestId := fmt.Sprintf("%x", md5.Sum([]byte(hash+time.Now().String())))[0:8]
 
 	// Calculate the ordering for uploading to servers
 	sv := NewRootSorter(this.WritableLocalRoots(), hash).GetSortedRoots()
@@ -304,7 +304,8 @@ func (this KeepClient) putReplicas(
 					// good news!
 					remaining_replicas -= status.replicas_stored
 					locator = status.response
-				} else if status.statusCode == 408 || status.statusCode == 429 || status.statusCode >= 500 {
+				} else if status.statusCode == 0 || status.statusCode == 408 || status.statusCode == 429 ||
+					(status.statusCode >= 500 && status.statusCode != 503) {
 					// Timeout, too many requests, or other server side failure
 					retryServers = append(retryServers, status.url[0:strings.LastIndex(status.url, "/")])
 				}
