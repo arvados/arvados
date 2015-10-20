@@ -3,6 +3,7 @@
 from __future__ import print_function
 import argparse
 import atexit
+import errno
 import httplib2
 import os
 import pipes
@@ -456,8 +457,9 @@ def run_nginx():
 
     try:
         os.remove(nginxconf['ACCESSLOG'])
-    except OSError:
-        pass
+    except OSError as error:
+        if error.errno != errno.ENOENT:
+            raise
 
     os.mkfifo(nginxconf['ACCESSLOG'], 0700)
     nginx = subprocess.Popen(
