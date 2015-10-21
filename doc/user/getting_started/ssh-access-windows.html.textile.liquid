@@ -4,7 +4,7 @@ navsection: userguide
 title: Accessing an Arvados VM with SSH - Windows Environments
 ...
 
-This document is for accessing an arvados VM using SSK keys in Windows environments. If you would like to use to access VM through your browser, please visit the "Accessing an Arvados VM with Webshell":vm-login-with-webshell.html page. If you are using a Unix environment (Linux, OS X, Cygwin), please visit the "Accessing an Arvados VM with SSH - Unix Environments":ssh-access-unix.html page.
+This document is for accessing an Arvados VM using SSH keys in Windows environments. If you would like to use to access VM through your browser, please visit the "Accessing an Arvados VM with Webshell":vm-login-with-webshell.html page. If you are using a Unix environment (Linux, OS X, Cygwin), please visit the "Accessing an Arvados VM with SSH - Unix Environments":ssh-access-unix.html page.
 
 {% include 'ssh_intro' %}
 
@@ -23,7 +23,7 @@ h3. Step 1 - Adding PuTTY to the PATH
 # After downloading PuTTY and installing it, you should have a PuTTY folder in @C:\Program Files\@ or @C:\Program Files (x86)\@ (if you are using a 64 bit operating system).
 # Open the Control Panel.
 # Select _Advanced System Settings_, and choose _Environment Variables_.
-If you are using newer systems like Windows 7, you may use the following to open _Advanced System Settings_. Open Control Panel. Click on _System and Security_. Click on _System_. Click on _Advanced system settings_ and choose _Environment Variables..._
+If you are using newer systems like Windows 10, you may use the following to open _Advanced System Settings_. Open Control Panel. Click on _System and Security_. Click on _System_. Click on _Advanced system settings_ and choose _Environment Variables..._
 # Under system variables, find and edit @PATH@.
 # If you installed PuTTY in @C:\Program Files\PuTTY\@, add the following to the end of PATH:
 <code>;C:\Program Files\PuTTY</code>
@@ -55,7 +55,7 @@ h3. Initial configuration
 # Open PuTTY from the Start Menu.
 # On the Session screen set the Host Name (or IP address) to “shell”, which is the hostname listed in the _Virtual Machines_ page.
 # On the Session screen set the Port to “22”.
-# On the Connection %(rarr)&rarr;% Data screen set the Auto-login username to the username listed in the *logins* column on the Arvados Workbench _Settings %(rarr)&rarr;% Virtual machines_ page.
+# On the Connection %(rarr)&rarr;% Data screen set the Auto-login username to the username listed in the *Login name* column on the Arvados Workbench Virtual machines_ page.
 # On the Connection %(rarr)&rarr;% Proxy screen set the Proxy Type to “Local”.
 # On the Connection %(rarr)&rarr;% Proxy screen in the “Telnet command, or local proxy command” box enter:
 <code>plink -P 2222 turnout@switchyard.{{ site.arvados_api_host }} %host</code>
