@@ -85,7 +85,7 @@ if [[ -n "$test_packages" ]]; then
 
     if [[ -n "$(find $WORKSPACE/packages/$TARGET -name *.deb)" ]] ; then
         (cd $WORKSPACE/packages/$TARGET
-         dpkg-scanpackages . /dev/null | gzip -c > Packages.gz
+         dpkg-scanpackages .  2> >(grep -v 'warning' 1>&2) | gzip -c > Packages.gz
         )
     fi
 
