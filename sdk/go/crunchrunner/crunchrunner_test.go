@@ -63,7 +63,7 @@ func (s *TestSuite) TestSimpleRun(c *C) {
 }
 
 func checkOutput(c *C, tmpdir string) {
-	file, err := os.Open(tmpdir + "/" + "outdir/output.txt")
+	file, err := os.Open(tmpdir + "/zzzz-ot0gb-111111111111111/output.txt")
 	c.Assert(err, IsNil)
 
 	data := make([]byte, 100)
@@ -105,8 +105,8 @@ func (s *TestSuite) TestRedirect(c *C) {
 
 	tmpfile, _ := ioutil.TempFile("", "")
 	tmpfile.Write([]byte("foo\n"))
-	tmpfile.Sync()
-	defer tmpfile.Close()
+	tmpfile.Close()
+	defer os.Remove(tmpfile.Name())
 
 	tmpdir, _ := ioutil.TempDir("", "")
 	defer func() {
@@ -212,4 +212,112 @@ func (s *TestSuite) TestScheduleSubtask(c *C) {
 		Task{sequence: 0})
 	c.Check(err, IsNil)
 
+}
+
+func (s *TestSuite) TestRunFail(c *C) {
+
+	api := ArvTestClient{}
+
+	tmpdir, _ := ioutil.TempDir("", "")
+	defer func() {
+		os.RemoveAll(tmpdir)
+	}()
+
+	err := runner(api,
+		"zzzz-8i9sb-111111111111111",
+		"zzzz-ot0gb-111111111111111",
+		tmpdir,
+		"",
+		Job{script_parameters: Tasks{[]TaskDef{TaskDef{
+			commands: []string{"/bin/sh", "-c", "exit 1"}}}}},
+		Task{sequence: 0})
+	c.Check(err, FitsTypeOf, PermFail{})
+}
+
+func (s *TestSuite) TestRunSuccessCode(c *C) {
+
+	api := ArvTestClient{}
+
+	tmpdir, _ := ioutil.TempDir("", "")
+	defer func() {
+		os.RemoveAll(tmpdir)
+	}()
+
+	err := runner(api,
+		"zzzz-8i9sb-111111111111111",
+		"zzzz-ot0gb-111111111111111",
+		tmpdir,
+		"",
+		Job{script_parameters: Tasks{[]TaskDef{TaskDef{
+			commands:     []string{"/bin/sh", "-c", "exit 1"},
+			successCodes: []int{0, 1}}}}},
+		Task{sequence: 0})
+	c.Check(err, IsNil)
+}
+
+func (s *TestSuite) TestRunFailCode(c *C) {
+	api := ArvTestClient{}
+
+	tmpdir, _ := ioutil.TempDir("", "")
+	defer func() {
+		os.RemoveAll(tmpdir)
+	}()
+
+	err := runner(api,
+		"zzzz-8i9sb-111111111111111",
+		"zzzz-ot0gb-111111111111111",
+		tmpdir,
+		"",
+		Job{script_parameters: Tasks{[]TaskDef{TaskDef{
+			commands:           []string{"/bin/sh", "-c", "exit 0"},
+			permanentFailCodes: []int{0, 1}}}}},
+		Task{sequence: 0})
+	c.Check(err, FitsTypeOf, PermFail{})
+}
+
+func (s *TestSuite) TestRunTempFailCode(c *C) {
+	api := ArvTestClient{}
+
+	tmpdir, _ := ioutil.TempDir("", "")
+	defer func() {
+		os.RemoveAll(tmpdir)
+	}()
+
+	err := runner(api,
+		"zzzz-8i9sb-111111111111111",
+		"zzzz-ot0gb-111111111111111",
+		tmpdir,
+		"",
+		Job{script_parameters: Tasks{[]TaskDef{TaskDef{
+			commands:           []string{"/bin/sh", "-c", "exit 1"},
+			temporaryFailCodes: []int{1}}}}},
+		Task{sequence: 0})
+	c.Check(err, FitsTypeOf, TempFail{})
+}
+
+func (s *TestSuite) TestVwd(c *C) {
+	api := ArvTestClient{}
+
+	tmpfile, _ := ioutil.TempFile("", "")
+	tmpfile.Write([]byte("foo\n"))
+	tmpfile.Close()
+	defer os.Remove(tmpfile.Name())
+
+	tmpdir, _ := ioutil.TempDir("", "")
+	defer func() {
+		os.RemoveAll(tmpdir)
+	}()
+
+	err := runner(api,
+		"zzzz-8i9sb-111111111111111",
+		"zzzz-ot0gb-111111111111111",
+		tmpdir,
+		"",
+		Job{script_parameters: Tasks{[]TaskDef{TaskDef{
+			commands: []string{"ls", "output.txt"},
+			vwd: map[string]string{
+				"output.txt": tmpfile.Name()}}}}},
+		Task{sequence: 0})
+	c.Check(err, IsNil)
+	checkOutput(c, tmpdir)
 }

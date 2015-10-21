@@ -12,13 +12,13 @@ import (
 
 type TaskDef struct {
 	commands           []string          `json:"commands"`
-	env                map[string]string `json:"task.env"`
-	stdin              string            `json:"task.stdin"`
-	stdout             string            `json:"task.stdout"`
-	vwd                map[string]string `json:"task.vwd"`
-	successCodes       []int             `json:"task.successCodes"`
-	permanentFailCodes []int             `json:"task.permanentFailCodes"`
-	temporaryFailCodes []int             `json:"task.temporaryFailCodes"`
+	env                map[string]string `json:"env"`
+	stdin              string            `json:"stdin"`
+	stdout             string            `json:"stdout"`
+	vwd                map[string]string `json:"vwd"`
+	successCodes       []int             `json:"successCodes"`
+	permanentFailCodes []int             `json:"permanentFailCodes"`
+	temporaryFailCodes []int             `json:"temporaryFailCodes"`
 }
 
 type Tasks struct {
@@ -39,7 +39,7 @@ type Task struct {
 	progress                 float32 `json:"sequence"`
 }
 
-func setupDirectories(tmpdir string) (outdir string, err error) {
+func setupDirectories(tmpdir, taskUuid string) (outdir string, err error) {
 	err = os.Chdir(tmpdir)
 	if err != nil {
 		return "", err
@@ -50,12 +50,12 @@ func setupDirectories(tmpdir string) (outdir string, err error) {
 		return "", err
 	}
 
-	err = os.Mkdir("outdir", 0700)
+	err = os.Mkdir(taskUuid, 0700)
 	if err != nil {
 		return "", err
 	}
 
-	os.Chdir("outdir")
+	os.Chdir(taskUuid)
 	if err != nil {
 		return "", err
 	}
@@ -71,16 +71,17 @@ func setupDirectories(tmpdir string) (outdir string, err error) {
 func setupCommand(cmd *exec.Cmd, taskp TaskDef, keepmount, outdir string) error {
 	var err error
 
-	//if taskp.vwd != nil {
-	// Set up VWD symlinks in outdir
-	// TODO
-	//}
+	if taskp.vwd != nil {
+		for k, v := range taskp.vwd {
+			os.Symlink(keepmount+"/"+v, outdir+"/"+k)
+		}
+	}
 
 	if taskp.stdin != "" {
 		// Set up stdin redirection
 		cmd.Stdin, err = os.Open(keepmount + "/" + taskp.stdin)
 		if err != nil {
-			log.Fatal(err)
+			return err
 		}
 	}
 
@@ -88,7 +89,7 @@ func setupCommand(cmd *exec.Cmd, taskp TaskDef, keepmount, outdir string) error 
 		// Set up stdout redirection
 		cmd.Stdout, err = os.Create(outdir + "/" + taskp.stdout)
 		if err != nil {
-			log.Fatal(err)
+			return err
 		}
 	} else {
 		cmd.Stdout = os.Stdout
@@ -183,7 +184,7 @@ func runner(api arvadosclient.IArvadosClient,
 	cmd := exec.Command(taskp.commands[0], taskp.commands[1:]...)
 
 	var outdir string
-	outdir, err = setupDirectories(tmpdir)
+	outdir, err = setupDirectories(tmpdir, taskUuid)
 	if err != nil {
 		return TempFail{err}
 	}
@@ -203,7 +204,11 @@ func runner(api arvadosclient.IArvadosClient,
 	err = cmd.Run()
 
 	if err != nil {
-		return TempFail{err}
+		// Run() returns ExitError on non-zero exit code, but we handle
+		// that down below.  So only return if it's not ExitError.
+		if _, ok := err.(*exec.ExitError); !ok {
+			return TempFail{err}
+		}
 	}
 
 	const success = 1
@@ -218,7 +223,7 @@ func runner(api arvadosclient.IArvadosClient,
 	} else if inCodes(exitCode, taskp.permanentFailCodes) {
 		status = permfail
 	} else if inCodes(exitCode, taskp.temporaryFailCodes) {
-		os.Exit(TASK_TEMPFAIL)
+		return TempFail{nil}
 	} else if cmd.ProcessState.Success() {
 		status = success
 	} else {
