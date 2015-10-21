@@ -52,7 +52,7 @@ def is_in_collection(root, branch):
         else:
             sp = os.path.split(root)
             return is_in_collection(sp[0], os.path.join(sp[1], branch))
-    except IOError, OSError:
+    except (IOError, OSError):
         return (None, None)
 
 # Determine the project to place the output of this command by searching upward
@@ -73,7 +73,7 @@ def determine_project(root, current_user):
         else:
             sp = os.path.split(root)
             return determine_project(sp[0], current_user)
-    except IOError, OSError:
+    except (IOError, OSError):
         return current_user
 
 # Determine if string corresponds to a file, and if that file is part of a
