@@ -78,6 +78,14 @@ type ArvadosClient struct {
 	DiscoveryDoc Dict
 }
 
+type IArvadosClient interface {
+	Create(resourceType string, parameters Dict, output interface{}) error
+	Delete(resource string, uuid string, parameters Dict, output interface{}) (err error)
+	Update(resourceType string, uuid string, parameters Dict, output interface{}) (err error)
+	Get(resourceType string, uuid string, parameters Dict, output interface{}) (err error)
+	List(resource string, parameters Dict, output interface{}) (err error)
+}
+
 // Create a new ArvadosClient, initialized with standard Arvados environment
 // variables ARVADOS_API_HOST, ARVADOS_API_TOKEN, and (optionally)
 // ARVADOS_API_HOST_INSECURE.

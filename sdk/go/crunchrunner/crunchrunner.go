@@ -3,7 +3,6 @@ package main
 import (
 	"git.curoverse.com/arvados.git/sdk/go/arvadosclient"
 	//"git.curoverse.com/arvados.git/sdk/go/keepclient"
-	"errors"
 	"log"
 	"os"
 	"os/exec"
@@ -11,13 +10,33 @@ import (
 	"syscall"
 )
 
-func getRecord(api arvadosclient.ArvadosClient, rsc, uuid string) (r arvadosclient.Dict) {
-	r = make(arvadosclient.Dict)
-	err := api.Get(rsc, uuid, nil, &r)
-	if err != nil {
-		log.Fatal(err)
-	}
-	return r
+type TaskDef struct {
+	commands           []string          `json:"commands"`
+	env                map[string]string `json:"task.env"`
+	stdin              string            `json:"task.stdin"`
+	stdout             string            `json:"task.stdout"`
+	vwd                map[string]string `json:"task.vwd"`
+	successCodes       []int             `json:"task.successCodes"`
+	permanentFailCodes []int             `json:"task.permanentFailCodes"`
+	temporaryFailCodes []int             `json:"task.temporaryFailCodes"`
+}
+
+type Tasks struct {
+	tasks []TaskDef `json:"script_parameters"`
+}
+
+type Job struct {
+	script_parameters Tasks `json:"script_parameters"`
+}
+
+type Task struct {
+	job_uuid                 string  `json:"job_uuid"`
+	created_by_job_task_uuid string  `json:"created_by_job_task_uuid"`
+	parameters               TaskDef `json:"parameters"`
+	sequence                 int     `json:"sequence"`
+	output                   string  `json:"output"`
+	success                  bool    `json:"success"`
+	progress                 float32 `json:"sequence"`
 }
 
 func setupDirectories(tmpdir string) (outdir string, err error) {
@@ -49,34 +68,25 @@ func setupDirectories(tmpdir string) (outdir string, err error) {
 	return outdir, nil
 }
 
-func setupCommand(cmd *exec.Cmd, taskp map[string]interface{}, keepmount, outdir string) error {
+func setupCommand(cmd *exec.Cmd, taskp TaskDef, keepmount, outdir string) error {
 	var err error
 
-	if taskp["task.vwd"] != nil {
-		// Set up VWD symlinks in outdir
-		// TODO
-	}
+	//if taskp.vwd != nil {
+	// Set up VWD symlinks in outdir
+	// TODO
+	//}
 
-	if taskp["task.stdin"] != nil {
-		stdin, ok := taskp["task.stdin"].(string)
-		if !ok {
-			return errors.New("Could not cast task.stdin to string")
-		}
+	if taskp.stdin != "" {
 		// Set up stdin redirection
-		cmd.Stdin, err = os.Open(keepmount + "/" + stdin)
+		cmd.Stdin, err = os.Open(keepmount + "/" + taskp.stdin)
 		if err != nil {
 			log.Fatal(err)
 		}
 	}
 
-	if taskp["task.stdout"] != nil {
-		stdout, ok := taskp["task.stdout"].(string)
-		if !ok {
-			return errors.New("Could not cast task.stdout to string")
-		}
-
+	if taskp.stdout != "" {
 		// Set up stdout redirection
-		cmd.Stdout, err = os.Open(outdir + "/" + stdout)
+		cmd.Stdout, err = os.Create(outdir + "/" + taskp.stdout)
 		if err != nil {
 			log.Fatal(err)
 		}
@@ -84,21 +94,11 @@ func setupCommand(cmd *exec.Cmd, taskp map[string]interface{}, keepmount, outdir
 		cmd.Stdout = os.Stdout
 	}
 
-	if taskp["task.env"] != nil {
-		taskenv, ok := taskp["task.env"].(map[string]interface{})
-		if !ok {
-			return errors.New("Could not cast task.env to map")
-		}
-
+	if taskp.env != nil {
 		// Set up subprocess environment
 		cmd.Env = os.Environ()
-		for k, v := range taskenv {
-			var vstr string
-			vstr, ok = v.(string)
-			if !ok {
-				return errors.New("Could not cast environment value to string")
-			}
-			cmd.Env = append(cmd.Env, k+"="+vstr)
+		for k, v := range taskp.env {
+			cmd.Env = append(cmd.Env, k+"="+v)
 		}
 	}
 	return nil
@@ -119,16 +119,10 @@ func setupSignals(cmd *exec.Cmd) {
 	signal.Notify(sigChan, syscall.SIGQUIT)
 }
 
-func inCodes(code int, codes interface{}) bool {
+func inCodes(code int, codes []int) bool {
 	if codes != nil {
-		codesArray, ok := codes.([]interface{})
-		if !ok {
-			return false
-		}
-		for _, c := range codesArray {
-			var num float64
-			num, ok = c.(float64)
-			if ok && code == int(num) {
+		for _, c := range codes {
+			if code == c {
 				return true
 			}
 		}
@@ -149,76 +143,44 @@ func (s PermFail) Error() string {
 	return "PermFail"
 }
 
-func runner(api arvadosclient.ArvadosClient,
-	jobUuid, taskUuid, tmpdir, keepmount string, jobStruct,
-	taskStruct arvadosclient.Dict) error {
+func runner(api arvadosclient.IArvadosClient,
+	jobUuid, taskUuid, tmpdir, keepmount string,
+	jobStruct Job, taskStruct Task) error {
 
 	var err error
-	var ok bool
-	var jobp, taskp map[string]interface{}
-	jobp, ok = jobStruct["script_parameters"].(map[string]interface{})
-	if !ok {
-		return errors.New("Could not cast job script_parameters to map")
-	}
-
-	taskp, ok = taskStruct["parameters"].(map[string]interface{})
-	if !ok {
-		return errors.New("Could not cast task parameters to map")
-	}
+	taskp := taskStruct.parameters
 
 	// If this is task 0 and there are multiple tasks, dispatch subtasks
 	// and exit.
-	if taskStruct["sequence"] == 0.0 {
-		var tasks []interface{}
-		tasks, ok = jobp["tasks"].([]interface{})
-		if !ok {
-			return errors.New("Could not cast tasks to array")
-		}
-
-		if len(tasks) == 1 {
-			taskp = tasks[0].(map[string]interface{})
+	if taskStruct.sequence == 0 {
+		if len(jobStruct.script_parameters.tasks) == 1 {
+			taskp = jobStruct.script_parameters.tasks[0]
 		} else {
-			for task := range tasks {
-				err := api.Call("POST", "job_tasks", "", "",
-					arvadosclient.Dict{
-						"job_uuid":                 jobUuid,
-						"created_by_job_task_uuid": "",
-						"sequence":                 1,
-						"parameters":               task},
+			for _, task := range jobStruct.script_parameters.tasks {
+				err := api.Create("job_tasks",
+					map[string]interface{}{
+						"job_task": Task{job_uuid: jobUuid,
+							created_by_job_task_uuid: taskUuid,
+							sequence:                 1,
+							parameters:               task}},
 					nil)
 				if err != nil {
 					return TempFail{err}
 				}
 			}
-			err = api.Call("PUT", "job_tasks", taskUuid, "",
-				arvadosclient.Dict{
-					"job_task": arvadosclient.Dict{
-						"output":   "",
-						"success":  true,
-						"progress": 1.0}},
+			err = api.Update("job_tasks", taskUuid,
+				map[string]interface{}{
+					"job_task": Task{
+						output:   "",
+						success:  true,
+						progress: 1.0}},
 				nil)
 			return nil
 		}
 	}
 
 	// Set up subprocess
-	var commandline []string
-	var commandsarray []interface{}
-
-	commandsarray, ok = taskp["command"].([]interface{})
-	if !ok {
-		return errors.New("Could not cast commands to array")
-	}
-
-	for _, c := range commandsarray {
-		var cstr string
-		cstr, ok = c.(string)
-		if !ok {
-			return errors.New("Could not cast command argument to string")
-		}
-		commandline = append(commandline, cstr)
-	}
-	cmd := exec.Command(commandline[0], commandline[1:]...)
+	cmd := exec.Command(taskp.commands[0], taskp.commands[1:]...)
 
 	var outdir string
 	outdir, err = setupDirectories(tmpdir)
@@ -251,11 +213,11 @@ func runner(api arvadosclient.ArvadosClient,
 
 	exitCode := cmd.ProcessState.Sys().(syscall.WaitStatus).ExitStatus()
 
-	if inCodes(exitCode, taskp["task.successCodes"]) {
+	if inCodes(exitCode, taskp.successCodes) {
 		status = success
-	} else if inCodes(exitCode, taskp["task.permanentFailCodes"]) {
+	} else if inCodes(exitCode, taskp.permanentFailCodes) {
 		status = permfail
-	} else if inCodes(exitCode, taskp["task.temporaryFailCodes"]) {
+	} else if inCodes(exitCode, taskp.temporaryFailCodes) {
 		os.Exit(TASK_TEMPFAIL)
 	} else if cmd.ProcessState.Success() {
 		status = success
@@ -267,9 +229,9 @@ func runner(api arvadosclient.ArvadosClient,
 	// TODO
 
 	// Set status
-	err = api.Call("PUT", "job_tasks", taskUuid, "",
-		arvadosclient.Dict{
-			"job_task": arvadosclient.Dict{
+	err = api.Update("job_tasks", taskUuid,
+		map[string]interface{}{
+			"job_task": map[string]interface{}{
 				"output":   "",
 				"success":  status == success,
 				"progress": 1.0}},
@@ -298,8 +260,17 @@ func main() {
 	tmpdir := os.Getenv("TASK_WORK")
 	keepmount := os.Getenv("TASK_KEEPMOUNT")
 
-	jobStruct := getRecord(api, "jobs", jobUuid)
-	taskStruct := getRecord(api, "job_tasks", taskUuid)
+	var jobStruct Job
+	var taskStruct Task
+
+	err = api.Get("jobs", jobUuid, nil, &jobStruct)
+	if err != nil {
+		log.Fatal(err)
+	}
+	err = api.Get("job_tasks", taskUuid, nil, &taskStruct)
+	if err != nil {
+		log.Fatal(err)
+	}
 
 	err = runner(api, jobUuid, taskUuid, tmpdir, keepmount, jobStruct, taskStruct)
 
