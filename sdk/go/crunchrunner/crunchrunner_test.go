@@ -19,6 +19,9 @@ type TestSuite struct{}
 var _ = Suite(&TestSuite{})
 
 type ArvTestClient struct {
+	c        *C
+	manifest string
+	success  bool
 }
 
 func (t ArvTestClient) Create(resourceType string, parameters arvadosclient.Dict, output interface{}) error {
@@ -30,6 +33,11 @@ func (t ArvTestClient) Delete(resource string, uuid string, parameters arvadoscl
 }
 
 func (t ArvTestClient) Update(resourceType string, uuid string, parameters arvadosclient.Dict, output interface{}) (err error) {
+	t.c.Check(resourceType, Equals, "job_tasks")
+	t.c.Check(parameters, DeepEquals, arvadosclient.Dict{"job_task": Task{
+		output:   t.manifest,
+		success:  t.success,
+		progress: 1}})
 	return nil
 }
 
@@ -42,15 +50,13 @@ func (t ArvTestClient) List(resource string, parameters arvadosclient.Dict, outp
 }
 
 func (s *TestSuite) TestSimpleRun(c *C) {
-
-	api := ArvTestClient{}
-
 	tmpdir, _ := ioutil.TempDir("", "")
 	defer func() {
 		os.RemoveAll(tmpdir)
 	}()
 
-	err := runner(api,
+	err := runner(ArvTestClient{c, "", true},
+		KeepTestClient{},
 		"zzzz-8i9sb-111111111111111",
 		"zzzz-ot0gb-111111111111111",
 		tmpdir,
@@ -74,15 +80,14 @@ func checkOutput(c *C, tmpdir string) {
 }
 
 func (s *TestSuite) TestSimpleRunSubtask(c *C) {
-
-	api := ArvTestClient{}
-
 	tmpdir, _ := ioutil.TempDir("", "")
 	defer func() {
 		os.RemoveAll(tmpdir)
 	}()
 
-	err := runner(api,
+	err := runner(ArvTestClient{c,
+		". d3b07384d113edec49eaa6238ad5ff00+4 0:4:output.txt\n", true},
+		KeepTestClient{},
 		"zzzz-8i9sb-111111111111111",
 		"zzzz-ot0gb-111111111111111",
 		tmpdir,
@@ -100,9 +105,6 @@ func (s *TestSuite) TestSimpleRunSubtask(c *C) {
 }
 
 func (s *TestSuite) TestRedirect(c *C) {
-
-	api := ArvTestClient{}
-
 	tmpfile, _ := ioutil.TempFile("", "")
 	tmpfile.Write([]byte("foo\n"))
 	tmpfile.Close()
@@ -113,7 +115,9 @@ func (s *TestSuite) TestRedirect(c *C) {
 		os.RemoveAll(tmpdir)
 	}()
 
-	err := runner(api,
+	err := runner(ArvTestClient{c,
+		". d3b07384d113edec49eaa6238ad5ff00+4 0:4:output.txt\n", true},
+		KeepTestClient{},
 		"zzzz-8i9sb-111111111111111",
 		"zzzz-ot0gb-111111111111111",
 		tmpdir,
@@ -129,15 +133,13 @@ func (s *TestSuite) TestRedirect(c *C) {
 }
 
 func (s *TestSuite) TestEnv(c *C) {
-
-	api := ArvTestClient{}
-
 	tmpdir, _ := ioutil.TempDir("", "")
 	defer func() {
 		os.RemoveAll(tmpdir)
 	}()
 
-	err := runner(api,
+	err := runner(ArvTestClient{c, ". d3b07384d113edec49eaa6238ad5ff00+4 0:4:output.txt\n", true},
+		KeepTestClient{},
 		"zzzz-8i9sb-111111111111111",
 		"zzzz-ot0gb-111111111111111",
 		tmpdir,
@@ -201,7 +203,7 @@ func (s *TestSuite) TestScheduleSubtask(c *C) {
 		os.RemoveAll(tmpdir)
 	}()
 
-	err := runner(&api,
+	err := runner(&api, KeepTestClient{},
 		"zzzz-8i9sb-111111111111111",
 		"zzzz-ot0gb-111111111111111",
 		tmpdir,
@@ -215,15 +217,12 @@ func (s *TestSuite) TestScheduleSubtask(c *C) {
 }
 
 func (s *TestSuite) TestRunFail(c *C) {
-
-	api := ArvTestClient{}
-
 	tmpdir, _ := ioutil.TempDir("", "")
 	defer func() {
 		os.RemoveAll(tmpdir)
 	}()
 
-	err := runner(api,
+	err := runner(ArvTestClient{c, "", false}, KeepTestClient{},
 		"zzzz-8i9sb-111111111111111",
 		"zzzz-ot0gb-111111111111111",
 		tmpdir,
@@ -235,15 +234,12 @@ func (s *TestSuite) TestRunFail(c *C) {
 }
 
 func (s *TestSuite) TestRunSuccessCode(c *C) {
-
-	api := ArvTestClient{}
-
 	tmpdir, _ := ioutil.TempDir("", "")
 	defer func() {
 		os.RemoveAll(tmpdir)
 	}()
 
-	err := runner(api,
+	err := runner(ArvTestClient{c, "", true}, KeepTestClient{},
 		"zzzz-8i9sb-111111111111111",
 		"zzzz-ot0gb-111111111111111",
 		tmpdir,
@@ -256,14 +252,12 @@ func (s *TestSuite) TestRunSuccessCode(c *C) {
 }
 
 func (s *TestSuite) TestRunFailCode(c *C) {
-	api := ArvTestClient{}
-
 	tmpdir, _ := ioutil.TempDir("", "")
 	defer func() {
 		os.RemoveAll(tmpdir)
 	}()
 
-	err := runner(api,
+	err := runner(ArvTestClient{c, "", false}, KeepTestClient{},
 		"zzzz-8i9sb-111111111111111",
 		"zzzz-ot0gb-111111111111111",
 		tmpdir,
@@ -276,14 +270,12 @@ func (s *TestSuite) TestRunFailCode(c *C) {
 }
 
 func (s *TestSuite) TestRunTempFailCode(c *C) {
-	api := ArvTestClient{}
-
 	tmpdir, _ := ioutil.TempDir("", "")
 	defer func() {
 		os.RemoveAll(tmpdir)
 	}()
 
-	err := runner(api,
+	err := runner(ArvTestClient{c, "", false}, KeepTestClient{},
 		"zzzz-8i9sb-111111111111111",
 		"zzzz-ot0gb-111111111111111",
 		tmpdir,
@@ -296,8 +288,6 @@ func (s *TestSuite) TestRunTempFailCode(c *C) {
 }
 
 func (s *TestSuite) TestVwd(c *C) {
-	api := ArvTestClient{}
-
 	tmpfile, _ := ioutil.TempFile("", "")
 	tmpfile.Write([]byte("foo\n"))
 	tmpfile.Close()
@@ -308,7 +298,8 @@ func (s *TestSuite) TestVwd(c *C) {
 		os.RemoveAll(tmpdir)
 	}()
 
-	err := runner(api,
+	err := runner(ArvTestClient{c, ". d3b07384d113edec49eaa6238ad5ff00+4 0:4:output.txt\n", true},
+		KeepTestClient{},
 		"zzzz-8i9sb-111111111111111",
 		"zzzz-ot0gb-111111111111111",
 		tmpdir,

@@ -2,7 +2,7 @@ package main
 
 import (
 	"git.curoverse.com/arvados.git/sdk/go/arvadosclient"
-	//"git.curoverse.com/arvados.git/sdk/go/keepclient"
+	"git.curoverse.com/arvados.git/sdk/go/keepclient"
 	"log"
 	"os"
 	"os/exec"
@@ -145,6 +145,7 @@ func (s PermFail) Error() string {
 }
 
 func runner(api arvadosclient.IArvadosClient,
+	kc IKeepClient,
 	jobUuid, taskUuid, tmpdir, keepmount string,
 	jobStruct Job, taskStruct Task) error {
 
@@ -218,6 +219,8 @@ func runner(api arvadosclient.IArvadosClient,
 
 	exitCode := cmd.ProcessState.Sys().(syscall.WaitStatus).ExitStatus()
 
+	log.Printf("Completed with exit code %v", exitCode)
+
 	if inCodes(exitCode, taskp.successCodes) {
 		status = success
 	} else if inCodes(exitCode, taskp.permanentFailCodes) {
@@ -231,15 +234,18 @@ func runner(api arvadosclient.IArvadosClient,
 	}
 
 	// Upload output directory
-	// TODO
+	manifest, err := WriteTree(kc, outdir)
+	if err != nil {
+		return TempFail{err}
+	}
 
 	// Set status
 	err = api.Update("job_tasks", taskUuid,
 		map[string]interface{}{
-			"job_task": map[string]interface{}{
-				"output":   "",
-				"success":  status == success,
-				"progress": 1.0}},
+			"job_task": Task{
+				output:   manifest,
+				success:  status == success,
+				progress: 1}},
 		nil)
 	if err != nil {
 		return TempFail{err}
@@ -277,7 +283,9 @@ func main() {
 		log.Fatal(err)
 	}
 
-	err = runner(api, jobUuid, taskUuid, tmpdir, keepmount, jobStruct, taskStruct)
+	var kc IKeepClient
+	kc, err = keepclient.MakeKeepClient(&api)
+	err = runner(api, kc, jobUuid, taskUuid, tmpdir, keepmount, jobStruct, taskStruct)
 
 	if err == nil {
 		os.Exit(0)

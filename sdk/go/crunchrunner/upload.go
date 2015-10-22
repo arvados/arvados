@@ -8,6 +8,7 @@ import (
 	"git.curoverse.com/arvados.git/sdk/go/keepclient"
 	"git.curoverse.com/arvados.git/sdk/go/manifest"
 	"io"
+	"log"
 	"os"
 	"path/filepath"
 )
@@ -95,6 +96,9 @@ func (m *ManifestWriter) WalkFunc(path string, info os.FileInfo, err error) erro
 	if len(path) > (len(m.stripPrefix) + len(info.Name()) + 1) {
 		dir = path[len(m.stripPrefix)+1 : (len(path) - len(info.Name()) - 1)]
 	}
+	if dir == "" {
+		dir = "."
+	}
 
 	fn := path[(len(path) - len(info.Name())):]
 
@@ -117,6 +121,8 @@ func (m *ManifestWriter) WalkFunc(path string, info os.FileInfo, err error) erro
 	if err != nil {
 		return err
 	}
+
+	log.Printf("Uploading %v/%v (%v bytes)", dir, fn, info.Size())
 
 	var count int64
 	count, err = io.Copy(stream, file)
@@ -164,7 +170,7 @@ func (m *ManifestWriter) ManifestText() string {
 	m.Finish()
 	var buf bytes.Buffer
 	for k, v := range m.Streams {
-		if k == "" {
+		if k == "." {
 			buf.WriteString(".")
 		} else {
 			buf.WriteString("./" + k)
