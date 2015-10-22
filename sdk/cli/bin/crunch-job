@@ -953,9 +953,9 @@ for (my $todo_ptr = 0; $todo_ptr <= $#jobstep_todo; $todo_ptr ++)
       }
       $command .= "--env=\QHOME=$ENV{HOME}\E ";
       $command .= "\Q$docker_hash\E ";
-      $command .= "stdbuf --output=0 --error=0 ";
 
       if ($Job->{arvados_sdk_version}) {
+        $command .= "stdbuf --output=0 --error=0 ";
         $command .= "perl - \Q$ENV{CRUNCH_SRC}/crunch_scripts/$Job->{script}\E";
       } else {
         $command .= "/bin/sh -c \'mkdir -p \"$ENV{JOB_WORK}\" \"$ENV{TASK_WORK}\" && exec \Q$ENV{CRUNCH_SRC}/crunch_scripts/$Job->{script}\E\'";
