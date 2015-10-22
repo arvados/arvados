@@ -6,7 +6,6 @@ import (
 	"fmt"
 	. "gopkg.in/check.v1"
 	"io/ioutil"
-	"log"
 	"os"
 )
 
@@ -23,8 +22,6 @@ func (k KeepTestClient) PutHB(hash string, buf []byte) (string, int, error) {
 }
 
 func (s *TestSuite) TestSimpleUpload(c *C) {
-	log.Print("--TestSimpleUpload--")
-
 	tmpdir, _ := ioutil.TempDir("", "")
 	defer func() {
 		os.RemoveAll(tmpdir)
@@ -38,8 +35,6 @@ func (s *TestSuite) TestSimpleUpload(c *C) {
 }
 
 func (s *TestSuite) TestSimpleUploadTwofiles(c *C) {
-	log.Print("--TestSimpleUploadTwofiles--")
-
 	tmpdir, _ := ioutil.TempDir("", "")
 	defer func() {
 		os.RemoveAll(tmpdir)
@@ -54,8 +49,6 @@ func (s *TestSuite) TestSimpleUploadTwofiles(c *C) {
 }
 
 func (s *TestSuite) TestSimpleUploadSubdir(c *C) {
-	log.Print("--TestSimpleUploadSubdir--")
-
 	tmpdir, _ := ioutil.TempDir("", "")
 	defer func() {
 		os.RemoveAll(tmpdir)
@@ -74,8 +67,6 @@ func (s *TestSuite) TestSimpleUploadSubdir(c *C) {
 }
 
 func (s *TestSuite) TestSimpleUploadLarge(c *C) {
-	log.Print("--TestSimpleUploadLarge--")
-
 	tmpdir, _ := ioutil.TempDir("", "")
 	defer func() {
 		os.RemoveAll(tmpdir)
@@ -83,7 +74,7 @@ func (s *TestSuite) TestSimpleUploadLarge(c *C) {
 
 	file, _ := os.Create(tmpdir + "/" + "file1.txt")
 	data := make([]byte, 1024*1024-1)
-	for i := 0; i < 1024*1024-1; i++ {
+	for i := range data {
 		data[i] = byte(i % 10)
 	}
 	for i := 0; i < 65; i++ {
@@ -99,8 +90,6 @@ func (s *TestSuite) TestSimpleUploadLarge(c *C) {
 }
 
 func (s *TestSuite) TestUploadEmptySubdir(c *C) {
-	log.Print("--TestUploadEmptySubdir--")
-
 	tmpdir, _ := ioutil.TempDir("", "")
 	defer func() {
 		os.RemoveAll(tmpdir)
@@ -117,8 +106,6 @@ func (s *TestSuite) TestUploadEmptySubdir(c *C) {
 }
 
 func (s *TestSuite) TestUploadEmptyFile(c *C) {
-	log.Print("--TestUploadEmptyFile--")
-
 	tmpdir, _ := ioutil.TempDir("", "")
 	defer func() {
 		os.RemoveAll(tmpdir)
@@ -140,8 +127,6 @@ func (k KeepErrorTestClient) PutHB(hash string, buf []byte) (string, int, error)
 }
 
 func (s *TestSuite) TestUploadError(c *C) {
-	log.Print("--TestSimpleUpload--")
-
 	tmpdir, _ := ioutil.TempDir("", "")
 	defer func() {
 		os.RemoveAll(tmpdir)

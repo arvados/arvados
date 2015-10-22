@@ -1,24 +1,26 @@
 package main
 
 import (
+	"fmt"
 	"git.curoverse.com/arvados.git/sdk/go/arvadosclient"
 	"git.curoverse.com/arvados.git/sdk/go/keepclient"
 	"log"
 	"os"
 	"os/exec"
 	"os/signal"
+	"strings"
 	"syscall"
 )
 
 type TaskDef struct {
-	commands           []string          `json:"commands"`
-	env                map[string]string `json:"env"`
-	stdin              string            `json:"stdin"`
-	stdout             string            `json:"stdout"`
-	vwd                map[string]string `json:"vwd"`
-	successCodes       []int             `json:"successCodes"`
-	permanentFailCodes []int             `json:"permanentFailCodes"`
-	temporaryFailCodes []int             `json:"temporaryFailCodes"`
+	command            []string          `json:"command"`
+	env                map[string]string `json:"task.env"`
+	stdin              string            `json:"task.stdin"`
+	stdout             string            `json:"task.stdout"`
+	vwd                map[string]string `json:"task.vwd"`
+	successCodes       []int             `json:"task.successCodes"`
+	permanentFailCodes []int             `json:"task.permanentFailCodes"`
+	temporaryFailCodes []int             `json:"task.temporaryFailCodes"`
 }
 
 type Tasks struct {
@@ -39,57 +41,73 @@ type Task struct {
 	progress                 float32 `json:"sequence"`
 }
 
-func setupDirectories(tmpdir, taskUuid string) (outdir string, err error) {
-	err = os.Chdir(tmpdir)
-	if err != nil {
-		return "", err
-	}
-
-	err = os.Mkdir("tmpdir", 0700)
-	if err != nil {
-		return "", err
-	}
-
-	err = os.Mkdir(taskUuid, 0700)
-	if err != nil {
-		return "", err
-	}
-
-	os.Chdir(taskUuid)
-	if err != nil {
-		return "", err
-	}
-
-	outdir, err = os.Getwd()
-	if err != nil {
-		return "", err
-	}
-
-	return outdir, nil
+type IArvadosClient interface {
+	Create(resourceType string, parameters arvadosclient.Dict, output interface{}) error
+	Update(resourceType string, uuid string, parameters arvadosclient.Dict, output interface{}) (err error)
 }
 
-func setupCommand(cmd *exec.Cmd, taskp TaskDef, keepmount, outdir string) error {
-	var err error
+func setupDirectories(crunchtmpdir, taskUuid string) (tmpdir, outdir string, err error) {
+	tmpdir = crunchtmpdir + "/tmpdir"
+	err = os.Mkdir(tmpdir, 0700)
+	if err != nil {
+		return "", "", err
+	}
 
+	outdir = crunchtmpdir + "/outdir"
+	err = os.Mkdir(outdir, 0700)
+	if err != nil {
+		return "", "", err
+	}
+
+	return tmpdir, outdir, nil
+}
+
+func checkOutputFilename(outdir, fn string) error {
+	if strings.HasPrefix(fn, "/") || strings.HasSuffix(fn, "/") {
+		return fmt.Errorf("Path must not start or end with '/'")
+	}
+	if strings.Index("../", fn) != -1 {
+		return fmt.Errorf("Path must not contain '../'")
+	}
+
+	sl := strings.LastIndex(fn, "/")
+	if sl != -1 {
+		os.MkdirAll(outdir+"/"+fn[0:sl], 0777)
+	}
+	return nil
+}
+
+func setupCommand(cmd *exec.Cmd, taskp TaskDef, outdir string, replacements map[string]string) (stdin, stdout string, err error) {
 	if taskp.vwd != nil {
 		for k, v := range taskp.vwd {
-			os.Symlink(keepmount+"/"+v, outdir+"/"+k)
+			v = substitute(v, replacements)
+			err = checkOutputFilename(outdir, k)
+			if err != nil {
+				return "", "", err
+			}
+			os.Symlink(v, outdir+"/"+k)
 		}
 	}
 
 	if taskp.stdin != "" {
 		// Set up stdin redirection
-		cmd.Stdin, err = os.Open(keepmount + "/" + taskp.stdin)
+		stdin = substitute(taskp.stdin, replacements)
+		cmd.Stdin, err = os.Open(stdin)
 		if err != nil {
-			return err
+			return "", "", err
 		}
 	}
 
 	if taskp.stdout != "" {
-		// Set up stdout redirection
-		cmd.Stdout, err = os.Create(outdir + "/" + taskp.stdout)
+		err = checkOutputFilename(outdir, taskp.stdout)
 		if err != nil {
-			return err
+			return "", "", err
+		}
+		// Set up stdout redirection
+		stdout = outdir + "/" + taskp.stdout
+		cmd.Stdout, err = os.Create(stdout)
+		if err != nil {
+			return "", "", err
 		}
 	} else {
 		cmd.Stdout = os.Stdout
@@ -99,25 +117,25 @@ func setupCommand(cmd *exec.Cmd, taskp TaskDef, keepmount, outdir string) error 
 		// Set up subprocess environment
 		cmd.Env = os.Environ()
 		for k, v := range taskp.env {
+			v = substitute(v, replacements)
 			cmd.Env = append(cmd.Env, k+"="+v)
 		}
 	}
-	return nil
+	return stdin, stdout, nil
 }
 
-func setupSignals(cmd *exec.Cmd) {
+func setupSignals(cmd *exec.Cmd) chan os.Signal {
 	// Set up signal handlers
 	// Forward SIGINT, SIGTERM and SIGQUIT to inner process
 	sigChan := make(chan os.Signal, 1)
 	go func(sig <-chan os.Signal) {
 		catch := <-sig
-		if cmd.Process != nil {
-			cmd.Process.Signal(catch)
-		}
+		cmd.Process.Signal(catch)
 	}(sigChan)
 	signal.Notify(sigChan, syscall.SIGTERM)
 	signal.Notify(sigChan, syscall.SIGINT)
 	signal.Notify(sigChan, syscall.SIGQUIT)
+	return sigChan
 }
 
 func inCodes(code int, codes []int) bool {
@@ -133,20 +151,23 @@ func inCodes(code int, codes []int) bool {
 
 const TASK_TEMPFAIL = 111
 
-type TempFail struct{ InnerError error }
+type TempFail struct{ error }
 type PermFail struct{}
-
-func (s TempFail) Error() string {
-	return s.InnerError.Error()
-}
 
 func (s PermFail) Error() string {
 	return "PermFail"
 }
 
-func runner(api arvadosclient.IArvadosClient,
+func substitute(inp string, subst map[string]string) string {
+	for k, v := range subst {
+		inp = strings.Replace(inp, k, v, -1)
+	}
+	return inp
+}
+
+func runner(api IArvadosClient,
 	kc IKeepClient,
-	jobUuid, taskUuid, tmpdir, keepmount string,
+	jobUuid, taskUuid, crunchtmpdir, keepmount string,
 	jobStruct Job, taskStruct Task) error {
 
 	var err error
@@ -181,28 +202,46 @@ func runner(api arvadosclient.IArvadosClient,
 		}
 	}
 
-	// Set up subprocess
-	cmd := exec.Command(taskp.commands[0], taskp.commands[1:]...)
-
-	var outdir string
-	outdir, err = setupDirectories(tmpdir, taskUuid)
+	var tmpdir, outdir string
+	tmpdir, outdir, err = setupDirectories(crunchtmpdir, taskUuid)
 	if err != nil {
 		return TempFail{err}
 	}
 
+	replacements := map[string]string{
+		"$(task.tmpdir)": tmpdir,
+		"$(task.outdir)": outdir,
+		"$(task.keep)":   keepmount}
+
+	// Set up subprocess
+	for k, v := range taskp.command {
+		taskp.command[k] = substitute(v, replacements)
+	}
+
+	cmd := exec.Command(taskp.command[0], taskp.command[1:]...)
+
 	cmd.Dir = outdir
 
-	err = setupCommand(cmd, taskp, keepmount, outdir)
+	var stdin, stdout string
+	stdin, stdout, err = setupCommand(cmd, taskp, outdir, replacements)
 	if err != nil {
 		return err
 	}
 
-	setupSignals(cmd)
-
 	// Run subprocess and wait for it to complete
-	log.Printf("Running %v", cmd.Args)
+	if stdin != "" {
+		stdin = " < " + stdin
+	}
+	if stdout != "" {
+		stdout = " > " + stdout
+	}
+	log.Printf("Running %v%v%v", cmd.Args, stdin, stdout)
 
-	err = cmd.Run()
+	err = cmd.Start()
+
+	signals := setupSignals(cmd)
+	err = cmd.Wait()
+	signal.Stop(signals)
 
 	if err != nil {
 		// Run() returns ExitError on non-zero exit code, but we handle
@@ -212,25 +251,20 @@ func runner(api arvadosclient.IArvadosClient,
 		}
 	}
 
-	const success = 1
-	const permfail = 2
-	const tempfail = 2
-	var status int
+	var success bool
 
 	exitCode := cmd.ProcessState.Sys().(syscall.WaitStatus).ExitStatus()
 
 	log.Printf("Completed with exit code %v", exitCode)
 
-	if inCodes(exitCode, taskp.successCodes) {
-		status = success
-	} else if inCodes(exitCode, taskp.permanentFailCodes) {
-		status = permfail
+	if inCodes(exitCode, taskp.permanentFailCodes) {
+		success = false
 	} else if inCodes(exitCode, taskp.temporaryFailCodes) {
-		return TempFail{nil}
-	} else if cmd.ProcessState.Success() {
-		status = success
+		return TempFail{fmt.Errorf("Process tempfail with exit code %v", exitCode)}
+	} else if inCodes(exitCode, taskp.successCodes) || cmd.ProcessState.Success() {
+		success = true
 	} else {
-		status = permfail
+		success = false
 	}
 
 	// Upload output directory
@@ -244,14 +278,14 @@ func runner(api arvadosclient.IArvadosClient,
 		map[string]interface{}{
 			"job_task": Task{
 				output:   manifest,
-				success:  status == success,
+				success:  success,
 				progress: 1}},
 		nil)
 	if err != nil {
 		return TempFail{err}
 	}
 
-	if status == success {
+	if success {
 		return nil
 	} else {
 		return PermFail{}
@@ -259,8 +293,6 @@ func runner(api arvadosclient.IArvadosClient,
 }
 
 func main() {
-	syscall.Umask(0077)
-
 	api, err := arvadosclient.MakeArvadosClient()
 	if err != nil {
 		log.Fatal(err)

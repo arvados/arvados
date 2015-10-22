@@ -11,6 +11,8 @@ import (
 	"log"
 	"os"
 	"path/filepath"
+	"sort"
+	"strings"
 )
 
 type Block struct {
@@ -169,10 +171,23 @@ func (m *ManifestWriter) Finish() error {
 func (m *ManifestWriter) ManifestText() string {
 	m.Finish()
 	var buf bytes.Buffer
-	for k, v := range m.Streams {
+
+	dirs := make([]string, len(m.Streams))
+	i := 0
+	for k := range m.Streams {
+		dirs[i] = k
+		i++
+	}
+	sort.Strings(dirs)
+
+	for _, k := range dirs {
+		v := m.Streams[k]
+
 		if k == "." {
 			buf.WriteString(".")
 		} else {
+			k = strings.Replace(k, " ", "\\040", -1)
+			k = strings.Replace(k, "\n", "", -1)
 			buf.WriteString("./" + k)
 		}
 		for _, b := range v.Blocks {
@@ -181,6 +196,8 @@ func (m *ManifestWriter) ManifestText() string {
 		}
 		for _, f := range v.Files {
 			buf.WriteString(" ")
+			f = strings.Replace(f, " ", "\\040", -1)
+			f = strings.Replace(f, "\n", "", -1)
 			buf.WriteString(f)
 		}
 		buf.WriteString("\n")
