@@ -452,21 +452,29 @@ class KeepClientRendezvousTestCase(unittest.TestCase, tutil.ApiClientMock):
                 got_order = [
                     re.search(r'//\[?keep0x([0-9a-f]+)', resp.getopt(pycurl.URL)).group(1)
                     for resp in mock.responses]
+                # With T threads racing to make requests, the position
+                # of a given server in the sequence of HTTP requests
+                # (got_order) cannot be more than T-1 positions
+                # earlier than that server's position in the reference
+                # probe sequence (expected_order).
+                #
+                # Loop invariant: we have accounted for +pos+ expected
+                # probes, either by seeing them in +got_order+ or by
+                # putting them in +pending+ in the hope of seeing them
+                # later. As long as +len(pending)<T+, we haven't
+                # started a request too early.
+                pending = []
                 for pos, expected in enumerate(self.expected_order[i]*3):
-                    # With C threads racing to make requests, the
-                    # position of a given server in the sequence of
-                    # HTTP requests (got_order) should be within C-1
-                    # positions of that server's position in the
-                    # reference probe sequence (expected_order).
-                    close_enough = False
-                    for diff in range(1-copies, copies):
-                        if 0 <= pos+diff < len(got_order):
-                            if expected == got_order[pos+diff]:
-                                close_enough = True
-                    self.assertEqual(
-                        True, close_enough,
-                        "With copies={}, got {}, expected {}".format(
-                            copies, repr(got_order), repr(self.expected_order[i]*3)))
+                    got = got_order[pos-len(pending)]
+                    while got in pending:
+                        del pending[pending.index(got)]
+                        got = got_order[pos-len(pending)]
+                    if got != expected:
+                        pending.append(expected)
+                        self.assertLess(
+                            len(pending), copies,
+                            "pending={}, with copies={}, got {}, expected {}".format(
+                                pending, copies, repr(got_order), repr(self.expected_order[i]*3)))
 
     def test_probe_waste_adding_one_server(self):
         hashes = [
