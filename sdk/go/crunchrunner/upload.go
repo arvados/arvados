@@ -3,11 +3,11 @@ package main
 import (
 	"bytes"
 	"crypto/md5"
+	"errors"
 	"fmt"
 	"git.curoverse.com/arvados.git/sdk/go/keepclient"
 	"git.curoverse.com/arvados.git/sdk/go/manifest"
 	"io"
-	"log"
 	"os"
 	"path/filepath"
 )
@@ -23,6 +23,7 @@ type ManifestStreamWriter struct {
 	offset int64
 	*Block
 	uploader chan *Block
+	finish   chan []error
 }
 
 type IKeepClient interface {
@@ -58,16 +59,25 @@ func (m *ManifestStreamWriter) ReadFrom(r io.Reader) (n int64, err error) {
 }
 
 func (m *ManifestStreamWriter) goUpload() {
-	select {
-	case block, valid := <-m.uploader:
-		if !valid {
-			return
+	var errors []error
+	uploader := m.uploader
+	finish := m.finish
+	for true {
+		select {
+		case block, valid := <-uploader:
+			if !valid {
+				finish <- errors
+				return
+			}
+			hash := fmt.Sprintf("%x", md5.Sum(block.data[0:block.offset]))
+			signedHash, _, err := m.ManifestWriter.IKeepClient.PutHB(hash, block.data[0:block.offset])
+			if err != nil {
+				errors = append(errors, err)
+			} else {
+				m.ManifestStream.Blocks = append(m.ManifestStream.Blocks, signedHash)
+			}
 		}
-		hash := fmt.Sprintf("%x", md5.Sum(block.data[0:block.offset]))
-		signedHash, _, _ := m.ManifestWriter.IKeepClient.PutHB(hash, block.data[0:block.offset])
-		m.ManifestStream.Blocks = append(m.ManifestStream.Blocks, signedHash)
 	}
-
 }
 
 type ManifestWriter struct {
@@ -76,23 +86,16 @@ type ManifestWriter struct {
 	Streams     map[string]*ManifestStreamWriter
 }
 
-type walker struct {
-	currentDir string
-	m          *ManifestWriter
-}
-
-func (w walker) WalkFunc(path string, info os.FileInfo, err error) error {
-	log.Print("path ", path, " ", info.Name(), " ", info.IsDir())
-
+func (m *ManifestWriter) WalkFunc(path string, info os.FileInfo, err error) error {
 	if info.IsDir() {
-		if path == w.currentDir {
-			return nil
-		}
-		return filepath.Walk(path, walker{path, w.m}.WalkFunc)
+		return nil
 	}
-	m := w.m
 
-	dir := path[len(m.stripPrefix)+1 : (len(path) - len(info.Name()))]
+	var dir string
+	if len(path) > (len(m.stripPrefix) + len(info.Name()) + 1) {
+		dir = path[len(m.stripPrefix)+1 : (len(path) - len(info.Name()) - 1)]
+	}
+
 	fn := path[(len(path) - len(info.Name())):]
 
 	if m.Streams[dir] == nil {
@@ -101,7 +104,8 @@ func (w walker) WalkFunc(path string, info os.FileInfo, err error) error {
 			&manifest.ManifestStream{StreamName: dir},
 			0,
 			nil,
-			make(chan *Block)}
+			make(chan *Block),
+			make(chan []error)}
 		go m.Streams[dir].goUpload()
 	}
 
@@ -128,7 +132,8 @@ func (w walker) WalkFunc(path string, info os.FileInfo, err error) error {
 	return nil
 }
 
-func (m *ManifestWriter) Finish() {
+func (m *ManifestWriter) Finish() error {
+	var errstring string
 	for _, v := range m.Streams {
 		if v.uploader != nil {
 			if v.Block != nil {
@@ -136,7 +141,22 @@ func (m *ManifestWriter) Finish() {
 			}
 			close(v.uploader)
 			v.uploader = nil
+
+			errors := <-v.finish
+			close(v.finish)
+			v.finish = nil
+
+			if errors != nil {
+				for _, r := range errors {
+					errstring = fmt.Sprintf("%v%v\n", errstring, r.Error())
+				}
+			}
 		}
+	}
+	if errstring != "" {
+		return errors.New(errstring)
+	} else {
+		return nil
 	}
 }
 
@@ -164,13 +184,16 @@ func (m *ManifestWriter) ManifestText() string {
 
 func WriteTree(kc IKeepClient, root string) (manifest string, err error) {
 	mw := ManifestWriter{kc, root, map[string]*ManifestStreamWriter{}}
-	err = filepath.Walk(root, walker{root, &mw}.WalkFunc)
-	mw.Finish()
+	err = filepath.Walk(root, mw.WalkFunc)
 
 	if err != nil {
 		return "", err
-	} else {
-		return mw.ManifestText(), nil
 	}
 
+	err = mw.Finish()
+	if err != nil {
+		return "", err
+	}
+
+	return mw.ManifestText(), nil
 }
