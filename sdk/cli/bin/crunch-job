@@ -467,7 +467,7 @@ fi
     }
     srun(["srun", "--nodelist=" . $node[0]],
          ["/bin/sh", "-ec",
-          "a=`$docker_bin run --rm --user=$try_user $docker_hash id --user` && " .
+          "a=`$docker_bin run --rm $try_user_arg $docker_hash id --user` && " .
           " test \$a -ne 0"],
          {fork => 1});
     if ($? == 0) {
