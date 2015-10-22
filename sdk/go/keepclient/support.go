@@ -307,6 +307,7 @@ func (this KeepClient) putReplicas(
 				} else if status.statusCode == 0 || status.statusCode == 408 || status.statusCode == 429 ||
 					(status.statusCode >= 500 && status.statusCode != 503) {
 					// Timeout, too many requests, or other server side failure
+					// Do not retry when status code is 503, which means the keep server is full
 					retryServers = append(retryServers, status.url[0:strings.LastIndex(status.url, "/")])
 				}
 			} else {
