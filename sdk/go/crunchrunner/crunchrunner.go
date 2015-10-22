@@ -13,32 +13,32 @@ import (
 )
 
 type TaskDef struct {
-	command            []string          `json:"command"`
-	env                map[string]string `json:"task.env"`
-	stdin              string            `json:"task.stdin"`
-	stdout             string            `json:"task.stdout"`
-	vwd                map[string]string `json:"task.vwd"`
-	successCodes       []int             `json:"task.successCodes"`
-	permanentFailCodes []int             `json:"task.permanentFailCodes"`
-	temporaryFailCodes []int             `json:"task.temporaryFailCodes"`
+	Command            []string          `json:"command"`
+	Env                map[string]string `json:"task.env"`
+	Stdin              string            `json:"task.stdin"`
+	Stdout             string            `json:"task.stdout"`
+	Vwd                map[string]string `json:"task.vwd"`
+	SuccessCodes       []int             `json:"task.successCodes"`
+	PermanentFailCodes []int             `json:"task.permanentFailCodes"`
+	TemporaryFailCodes []int             `json:"task.temporaryFailCodes"`
 }
 
 type Tasks struct {
-	tasks []TaskDef `json:"script_parameters"`
+	Tasks []TaskDef `json:"tasks"`
 }
 
 type Job struct {
-	script_parameters Tasks `json:"script_parameters"`
+	Script_parameters Tasks `json:"script_parameters"`
 }
 
 type Task struct {
-	job_uuid                 string  `json:"job_uuid"`
-	created_by_job_task_uuid string  `json:"created_by_job_task_uuid"`
-	parameters               TaskDef `json:"parameters"`
-	sequence                 int     `json:"sequence"`
-	output                   string  `json:"output"`
-	success                  bool    `json:"success"`
-	progress                 float32 `json:"sequence"`
+	Job_uuid                 string  `json:"job_uuid"`
+	Created_by_job_task_uuid string  `json:"created_by_job_task_uuid"`
+	Parameters               TaskDef `json:"parameters"`
+	Sequence                 int     `json:"sequence"`
+	Output                   string  `json:"output"`
+	Success                  bool    `json:"success"`
+	Progress                 float32 `json:"sequence"`
 }
 
 type IArvadosClient interface {
@@ -78,8 +78,8 @@ func checkOutputFilename(outdir, fn string) error {
 }
 
 func setupCommand(cmd *exec.Cmd, taskp TaskDef, outdir string, replacements map[string]string) (stdin, stdout string, err error) {
-	if taskp.vwd != nil {
-		for k, v := range taskp.vwd {
+	if taskp.Vwd != nil {
+		for k, v := range taskp.Vwd {
 			v = substitute(v, replacements)
 			err = checkOutputFilename(outdir, k)
 			if err != nil {
@@ -89,22 +89,22 @@ func setupCommand(cmd *exec.Cmd, taskp TaskDef, outdir string, replacements map[
 		}
 	}
 
-	if taskp.stdin != "" {
+	if taskp.Stdin != "" {
 		// Set up stdin redirection
-		stdin = substitute(taskp.stdin, replacements)
+		stdin = substitute(taskp.Stdin, replacements)
 		cmd.Stdin, err = os.Open(stdin)
 		if err != nil {
 			return "", "", err
 		}
 	}
 
-	if taskp.stdout != "" {
-		err = checkOutputFilename(outdir, taskp.stdout)
+	if taskp.Stdout != "" {
+		err = checkOutputFilename(outdir, taskp.Stdout)
 		if err != nil {
 			return "", "", err
 		}
 		// Set up stdout redirection
-		stdout = outdir + "/" + taskp.stdout
+		stdout = outdir + "/" + taskp.Stdout
 		cmd.Stdout, err = os.Create(stdout)
 		if err != nil {
 			return "", "", err
@@ -113,10 +113,10 @@ func setupCommand(cmd *exec.Cmd, taskp TaskDef, outdir string, replacements map[
 		cmd.Stdout = os.Stdout
 	}
 
-	if taskp.env != nil {
+	if taskp.Env != nil {
 		// Set up subprocess environment
 		cmd.Env = os.Environ()
-		for k, v := range taskp.env {
+		for k, v := range taskp.Env {
 			v = substitute(v, replacements)
 			cmd.Env = append(cmd.Env, k+"="+v)
 		}
@@ -171,21 +171,21 @@ func runner(api IArvadosClient,
 	jobStruct Job, taskStruct Task) error {
 
 	var err error
-	taskp := taskStruct.parameters
+	taskp := taskStruct.Parameters
 
 	// If this is task 0 and there are multiple tasks, dispatch subtasks
 	// and exit.
-	if taskStruct.sequence == 0 {
-		if len(jobStruct.script_parameters.tasks) == 1 {
-			taskp = jobStruct.script_parameters.tasks[0]
+	if taskStruct.Sequence == 0 {
+		if len(jobStruct.Script_parameters.Tasks) == 1 {
+			taskp = jobStruct.Script_parameters.Tasks[0]
 		} else {
-			for _, task := range jobStruct.script_parameters.tasks {
+			for _, task := range jobStruct.Script_parameters.Tasks {
 				err := api.Create("job_tasks",
 					map[string]interface{}{
-						"job_task": Task{job_uuid: jobUuid,
-							created_by_job_task_uuid: taskUuid,
-							sequence:                 1,
-							parameters:               task}},
+						"job_task": Task{Job_uuid: jobUuid,
+							Created_by_job_task_uuid: taskUuid,
+							Sequence:                 1,
+							Parameters:               task}},
 					nil)
 				if err != nil {
 					return TempFail{err}
@@ -194,9 +194,9 @@ func runner(api IArvadosClient,
 			err = api.Update("job_tasks", taskUuid,
 				map[string]interface{}{
 					"job_task": Task{
-						output:   "",
-						success:  true,
-						progress: 1.0}},
+						Output:   "",
+						Success:  true,
+						Progress: 1.0}},
 				nil)
 			return nil
 		}
@@ -214,11 +214,11 @@ func runner(api IArvadosClient,
 		"$(task.keep)":   keepmount}
 
 	// Set up subprocess
-	for k, v := range taskp.command {
-		taskp.command[k] = substitute(v, replacements)
+	for k, v := range taskp.Command {
+		taskp.Command[k] = substitute(v, replacements)
 	}
 
-	cmd := exec.Command(taskp.command[0], taskp.command[1:]...)
+	cmd := exec.Command(taskp.Command[0], taskp.Command[1:]...)
 
 	cmd.Dir = outdir
 
@@ -257,11 +257,11 @@ func runner(api IArvadosClient,
 
 	log.Printf("Completed with exit code %v", exitCode)
 
-	if inCodes(exitCode, taskp.permanentFailCodes) {
+	if inCodes(exitCode, taskp.PermanentFailCodes) {
 		success = false
-	} else if inCodes(exitCode, taskp.temporaryFailCodes) {
+	} else if inCodes(exitCode, taskp.TemporaryFailCodes) {
 		return TempFail{fmt.Errorf("Process tempfail with exit code %v", exitCode)}
-	} else if inCodes(exitCode, taskp.successCodes) || cmd.ProcessState.Success() {
+	} else if inCodes(exitCode, taskp.SuccessCodes) || cmd.ProcessState.Success() {
 		success = true
 	} else {
 		success = false
@@ -277,9 +277,9 @@ func runner(api IArvadosClient,
 	err = api.Update("job_tasks", taskUuid,
 		map[string]interface{}{
 			"job_task": Task{
-				output:   manifest,
-				success:  success,
-				progress: 1}},
+				Output:   manifest,
+				Success:  success,
+				Progress: 1}},
 		nil)
 	if err != nil {
 		return TempFail{err}
@@ -317,6 +317,10 @@ func main() {
 
 	var kc IKeepClient
 	kc, err = keepclient.MakeKeepClient(&api)
+	if err != nil {
+		log.Fatal(err)
+	}
+
 	err = runner(api, kc, jobUuid, taskUuid, tmpdir, keepmount, jobStruct, taskStruct)
 
 	if err == nil {
