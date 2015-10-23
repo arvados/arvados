@@ -904,7 +904,7 @@ for (my $todo_ptr = 0; $todo_ptr <= $#jobstep_todo; $todo_ptr ++)
       # to get SIGKILL if they exceed that without any swap limit set.
       # See #5642 for additional background.
       if ($docker_limitmem) {
-        #$command .= "--memory=\${MEMLIMIT}k --memory-swap=\${SWAPLIMIT}k ";
+        $command .= "--memory=\${MEMLIMIT}k --memory-swap=\${SWAPLIMIT}k ";
       }
 
       # The source tree and $destdir directory (which we have
