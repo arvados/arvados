@@ -40,7 +40,7 @@ def arv_docker_get_image(api_client, dockerRequirement, pull_image):
 
     return dockerRequirement["dockerImageId"]
 
-class CollectionFsAccess(cwltool.draft2tool.StdFsAccess):
+class CollectionFsAccess(cwltool.process.StdFsAccess):
     def __init__(self, basedir):
         self.collections = {}
         self.basedir = basedir
@@ -97,6 +97,7 @@ class ArvadosJob(object):
 
         if self.generatefiles:
             vwd = arvados.collection.Collection()
+            script_parameters["task.vwd"] = {}
             for t in self.generatefiles:
                 if isinstance(self.generatefiles[t], dict):
                     src, rest = self.arvrunner.fs_access.get_collection(self.generatefiles[t]["path"][6:])
@@ -105,7 +106,8 @@ class ArvadosJob(object):
                     with vwd.open(t, "w") as f:
                         f.write(self.generatefiles[t])
             vwd.save_new()
-            script_parameters["task.vwd"] = vwd.portable_data_hash()
+            for t in self.generatefiles:
+                script_parameters["task.vwd"][t] = "$(task.keep)/%s/%s" % (vwd.portable_data_hash(), t)
 
         script_parameters["task.env"] = {"TMPDIR": "$(task.tmpdir)"}
         if self.environment:
@@ -120,13 +122,12 @@ class ArvadosJob(object):
         (docker_req, docker_is_req) = get_feature(self, "DockerRequirement")
         if docker_req and kwargs.get("use_container") is not False:
             runtime_constraints["docker_image"] = arv_docker_get_image(self.arvrunner.api, docker_req, pull_image)
-            runtime_constraints["arvados_sdk_version"] = "master"
 
         response = self.arvrunner.api.jobs().create(body={
-            "script": "run-command",
-            "repository": "arvados",
+            "script": "crunchrunner",
+            "repository": "peteramstutz/cr",
             "script_version": "master",
-            "script_parameters": script_parameters,
+            "script_parameters": {"tasks": [script_parameters]},
             "runtime_constraints": runtime_constraints
         }, find_or_create=kwargs.get("enable_reuse", True)).execute()
 
@@ -164,9 +165,9 @@ class ArvPathMapper(cwltool.pathmapper.PathMapper):
 
         for src in referenced_files:
             if isinstance(src, basestring) and pdh_path.match(src):
-                self._pathmap[src] = (src, "/keep/%s" % src)
+                self._pathmap[src] = (src, "$(task.keep)/%s" % src)
             else:
-                ab = src if os.path.isabs(src) else os.path.join(basedir, src)
+                ab = cwltool.pathmapper.abspath(src, basedir)
                 st = arvados.commands.run.statfile("", ab)
                 if kwargs.get("conformance_test"):
                     self._pathmap[src] = (src, ab)
@@ -178,7 +179,11 @@ class ArvPathMapper(cwltool.pathmapper.PathMapper):
                     raise cwltool.workflow.WorkflowException("Input file path '%s' is invalid" % st)
 
         if uploadfiles:
-            arvados.commands.run.uploadfiles([u[2] for u in uploadfiles], arvrunner.api, dry_run=kwargs.get("dry_run"), num_retries=3)
+            arvados.commands.run.uploadfiles([u[2] for u in uploadfiles],
+                                             arvrunner.api,
+                                             dry_run=kwargs.get("dry_run"),
+                                             num_retries=3,
+                                             fnPattern="$(task.keep)/%s/%s")
 
         for src, ab, st in uploadfiles:
             self._pathmap[src] = (ab, st.fn)
@@ -187,7 +192,7 @@ class ArvPathMapper(cwltool.pathmapper.PathMapper):
 
 class ArvadosCommandTool(cwltool.draft2tool.CommandLineTool):
     def __init__(self, arvrunner, toolpath_object, **kwargs):
-        super(ArvadosCommandTool, self).__init__(toolpath_object, **kwargs)
+        super(ArvadosCommandTool, self).__init__(toolpath_object, outdir="$(task.outdir)", tmpdir="$(task.tmpdir)", **kwargs)
         self.arvrunner = arvrunner
 
     def makeJobRunner(self):
@@ -282,7 +287,7 @@ class ArvCwlRunner(object):
 
 def main(args, stdout, stderr, api_client=None):
     runner = ArvCwlRunner(api_client=arvados.api('v1'))
-    args.append("--leave-outputs")
+    args.insert(0, "--leave-outputs")
     parser = cwltool.main.arg_parser()
     exgroup = parser.add_mutually_exclusive_group()
     exgroup.add_argument("--enable-reuse", action="store_true",
