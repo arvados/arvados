@@ -25,8 +25,8 @@ class ArvadosApiTest(run_test_server.TestCaseWithServers):
     MAIN_SERVER = {}
     ERROR_HEADERS = {'Content-Type': mimetypes.types_map['.json']}
 
-    def api_error_response(cls, code, *errors):
-        return (fake_httplib2_response(code, **cls.ERROR_HEADERS),
+    def api_error_response(self, code, *errors):
+        return (fake_httplib2_response(code, **self.ERROR_HEADERS),
                 json.dumps({'errors': errors,
                             'error_token': '1234567890+12345678'}))
 
