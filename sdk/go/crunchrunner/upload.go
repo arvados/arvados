@@ -33,10 +33,9 @@ type IKeepClient interface {
 	PutHB(hash string, buf []byte) (string, int, error)
 }
 
-func (m *ManifestStreamWriter) Write(p []byte) (n int, err error) {
-	// Needed to conform to Writer interface, but not implemented
-	// because io.Copy will actually use ReadFrom instead.
-	return 0, nil
+func (m *ManifestStreamWriter) Write(p []byte) (int, error) {
+	n, err := m.ReadFrom(bytes.NewReader(p))
+	return int(n), err
 }
 
 func (m *ManifestStreamWriter) ReadFrom(r io.Reader) (n int64, err error) {
@@ -50,37 +49,34 @@ func (m *ManifestStreamWriter) ReadFrom(r io.Reader) (n int64, err error) {
 		count, err = r.Read(m.Block.data[m.Block.offset:])
 		total += int64(count)
 		m.Block.offset += int64(count)
-		if count > 0 {
-			if m.Block.offset == keepclient.BLOCKSIZE {
-				m.uploader <- m.Block
-				m.Block = nil
-			}
+		if m.Block.offset == keepclient.BLOCKSIZE {
+			m.uploader <- m.Block
+			m.Block = nil
 		}
 	}
 
-	return total, err
+	if err == io.EOF {
+		return total, nil
+	} else {
+		return total, err
+	}
+
 }
 
 func (m *ManifestStreamWriter) goUpload() {
 	var errors []error
 	uploader := m.uploader
 	finish := m.finish
-	for true {
-		select {
-		case block, valid := <-uploader:
-			if !valid {
-				finish <- errors
-				return
-			}
-			hash := fmt.Sprintf("%x", md5.Sum(block.data[0:block.offset]))
-			signedHash, _, err := m.ManifestWriter.IKeepClient.PutHB(hash, block.data[0:block.offset])
-			if err != nil {
-				errors = append(errors, err)
-			} else {
-				m.ManifestStream.Blocks = append(m.ManifestStream.Blocks, signedHash)
-			}
+	for block := range uploader {
+		hash := fmt.Sprintf("%x", md5.Sum(block.data[0:block.offset]))
+		signedHash, _, err := m.ManifestWriter.IKeepClient.PutHB(hash, block.data[0:block.offset])
+		if err != nil {
+			errors = append(errors, err)
+		} else {
+			m.ManifestStream.Blocks = append(m.ManifestStream.Blocks, signedHash)
 		}
 	}
+	finish <- errors
 }
 
 type ManifestWriter struct {
@@ -128,7 +124,7 @@ func (m *ManifestWriter) WalkFunc(path string, info os.FileInfo, err error) erro
 
 	var count int64
 	count, err = io.Copy(stream, file)
-	if err != nil && err != io.EOF {
+	if err != nil {
 		return err
 	}
 
@@ -142,23 +138,22 @@ func (m *ManifestWriter) WalkFunc(path string, info os.FileInfo, err error) erro
 
 func (m *ManifestWriter) Finish() error {
 	var errstring string
-	for _, v := range m.Streams {
-		if v.uploader != nil {
-			if v.Block != nil {
-				v.uploader <- v.Block
-			}
-			close(v.uploader)
-			v.uploader = nil
+	for _, stream := range m.Streams {
+		if stream.uploader == nil {
+			continue
+		}
+		if stream.Block != nil {
+			stream.uploader <- stream.Block
+		}
+		close(stream.uploader)
+		stream.uploader = nil
 
-			errors := <-v.finish
-			close(v.finish)
-			v.finish = nil
+		errors := <-stream.finish
+		close(stream.finish)
+		stream.finish = nil
 
-			if errors != nil {
-				for _, r := range errors {
-					errstring = fmt.Sprintf("%v%v\n", errstring, r.Error())
-				}
-			}
+		for _, r := range errors {
+			errstring = fmt.Sprintf("%v%v\n", errstring, r.Error())
 		}
 	}
 	if errstring != "" {

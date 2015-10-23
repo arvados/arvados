@@ -128,10 +128,6 @@ func setupSignals(cmd *exec.Cmd) chan os.Signal {
 	// Set up signal handlers
 	// Forward SIGINT, SIGTERM and SIGQUIT to inner process
 	sigChan := make(chan os.Signal, 1)
-	go func(sig <-chan os.Signal) {
-		catch := <-sig
-		cmd.Process.Signal(catch)
-	}(sigChan)
 	signal.Notify(sigChan, syscall.SIGTERM)
 	signal.Notify(sigChan, syscall.SIGINT)
 	signal.Notify(sigChan, syscall.SIGQUIT)
@@ -237,11 +233,30 @@ func runner(api IArvadosClient,
 	}
 	log.Printf("Running %v%v%v", cmd.Args, stdin, stdout)
 
-	err = cmd.Start()
+	var caughtSignal os.Signal
+	{
+		sigChan := setupSignals(cmd)
+		defer signal.Stop(sigChan)
 
-	signals := setupSignals(cmd)
-	err = cmd.Wait()
-	signal.Stop(signals)
+		err = cmd.Start()
+		if err != nil {
+			return TempFail{err}
+		}
+
+		go func(sig <-chan os.Signal) {
+			for sig := range sig {
+				caughtSignal = sig
+				cmd.Process.Signal(caughtSignal)
+			}
+		}(sigChan)
+
+		err = cmd.Wait()
+	}
+
+	if caughtSignal != nil {
+		log.Printf("Caught signal %v", caughtSignal)
+		return PermFail{}
+	}
 
 	if err != nil {
 		// Run() returns ExitError on non-zero exit code, but we handle
@@ -321,6 +336,7 @@ func main() {
 		log.Fatal(err)
 	}
 
+	syscall.Umask(0022)
 	err = runner(api, kc, jobUuid, taskUuid, tmpdir, keepmount, jobStruct, taskStruct)
 
 	if err == nil {
