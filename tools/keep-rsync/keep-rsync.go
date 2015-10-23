@@ -30,12 +30,12 @@ func doMain() error {
 	srcConfigFile := flags.String(
 		"src",
 		"",
-		"Source configuration filename. May be either a pathname to a config file, or (for example) 'foo' as shorthand for $HOME/.config/arvados/foo.conf")
+		"Source configuration filename. May be either a pathname to a config file, or (for example) 'foo' as shorthand for $HOME/.config/arvados/foo.conf file. This file is expected to specify the values for ARVADOS_API_TOKEN, ARVADOS_API_HOST, ARVADOS_API_HOST_INSECURE, and ARVADOS_BLOB_SIGNING_KEY for the source.")
 
 	dstConfigFile := flags.String(
 		"dst",
 		"",
-		"Destination configuration filename. May be either a pathname to a config file, or (for example) 'foo' as shorthand for $HOME/.config/arvados/foo.conf")
+		"Destination configuration filename. May be either a pathname to a config file, or (for example) 'foo' as shorthand for $HOME/.config/arvados/foo.conf file. This file is expected to specify the values for ARVADOS_API_TOKEN, ARVADOS_API_HOST, and ARVADOS_API_HOST_INSECURE for the destination.")
 
 	srcKeepServicesJSON := flags.String(
 		"src-keep-services-json",

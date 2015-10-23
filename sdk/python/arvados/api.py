@@ -4,6 +4,7 @@ import json
 import logging
 import os
 import re
+import socket
 import types
 
 import apiclient
@@ -59,6 +60,16 @@ def _intercept_http_request(self, uri, **kwargs):
         # Unfortunately, we are not absolutely certain that the
         # previous call did not succeed, so this is slightly
         # risky.
+        return self.orig_http_request(uri, **kwargs)
+    except socket.error:
+        # This is the one case where httplib2 doesn't close the
+        # underlying connection first.  Close all open connections,
+        # expecting this object only has the one connection to the API
+        # server.  This is safe because httplib2 reopens connections when
+        # needed.
+        _logger.debug("Retrying API request after socket error", exc_info=True)
+        for conn in self.connections.itervalues():
+            conn.close()
         return self.orig_http_request(uri, **kwargs)
 
 def _patch_http_request(http, api_token):

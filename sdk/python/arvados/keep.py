@@ -257,9 +257,9 @@ class KeepClient(object):
                 # we wait here until N other threads have started.
                 while self._started < self._local.sequence:
                     self._start_lock.wait()
+            self._todo_lock.acquire()
             self._started += 1
             self._start_lock.notifyAll()
-            self._todo_lock.acquire()
             self._start_lock.release()
             return self
 
