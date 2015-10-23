@@ -46,6 +46,15 @@ if [[ ! -e $RELEASE_PATH/tmp ]]; then mkdir -p $RELEASE_PATH/tmp; fi
 if [[ ! -e $RELEASE_PATH/log ]]; then ln -s $SHARED_PATH/log $RELEASE_PATH/log; fi
 if [[ ! -e $SHARED_PATH/log/production.log ]]; then touch $SHARED_PATH/log/production.log; fi
 
+echo "Making sure bundle is installed"
+set +e
+which bundle > /dev/null
+if [[ "$?" != "0" ]]; then
+  gem install bundle
+fi
+set -e
+echo "Done."
+
 echo "Running bundle install"
 (cd $RELEASE_PATH && RAILS_ENV=production bundle install --path $SHARED_PATH/vendor_bundle)
 echo "Done."

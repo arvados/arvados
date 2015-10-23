@@ -126,6 +126,15 @@ EOF
   cd "$RELEASE_PATH"
   export RAILS_ENV=production
 
+  echo "Making sure bundle is installed ..."
+  set +e
+  which bundle > /dev/null
+  if [[ "$?" != "0" ]]; then
+    $COMMAND_PREFIX gem install bundle
+  fi
+  set -e
+  echo "... done."
+
   echo -n "Running bundle install ..."
   $COMMAND_PREFIX bundle install --path $SHARED_PATH/vendor_bundle --quiet || exit $?
   echo "... done."

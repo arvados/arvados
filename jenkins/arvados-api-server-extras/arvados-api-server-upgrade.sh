@@ -53,6 +53,15 @@ if [[ ! -e $SHARED_PATH/log/production.log ]]; then touch $SHARED_PATH/log/produ
 cd "$RELEASE_PATH"
 export RAILS_ENV=production
 
+echo "Making sure bundle is installed"
+set +e
+which bundle > /dev/null
+if [[ "$?" != "0" ]]; then
+  gem install bundle
+fi
+set -e
+echo "Done."
+
 echo "Running bundle install"
 bundle install --path $SHARED_PATH/vendor_bundle
 echo "Done."
