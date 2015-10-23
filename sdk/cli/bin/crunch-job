@@ -880,6 +880,9 @@ for (my $todo_ptr = 0; $todo_ptr <= $#jobstep_todo; $todo_ptr ++)
       qw(-n1 -c1 -N1 -D), $ENV{'TMPDIR'},
       "--job-name=$job_id.$id.$$",
 	);
+
+    my $stdbuf = " stdbuf --output=0 --error=0 ";
+
     my $command =
 	"if [ -e $ENV{TASK_WORK} ]; then rm -rf $ENV{TASK_WORK}; fi; "
         ."mkdir -p $ENV{CRUNCH_TMP} $ENV{JOB_WORK} $ENV{TASK_WORK} $ENV{TASK_KEEPMOUNT} "
@@ -901,7 +904,7 @@ for (my $todo_ptr = 0; $todo_ptr <= $#jobstep_todo; $todo_ptr ++)
       # to get SIGKILL if they exceed that without any swap limit set.
       # See #5642 for additional background.
       if ($docker_limitmem) {
-        $command .= "--memory=\${MEMLIMIT}k --memory-swap=\${SWAPLIMIT}k ";
+        #$command .= "--memory=\${MEMLIMIT}k --memory-swap=\${SWAPLIMIT}k ";
       }
 
       # The source tree and $destdir directory (which we have
@@ -954,17 +957,15 @@ for (my $todo_ptr = 0; $todo_ptr <= $#jobstep_todo; $todo_ptr ++)
       $command .= "--env=\QHOME=$ENV{HOME}\E ";
       $command .= "\Q$docker_hash\E ";
 
-      my $stdbuf = " stdbuf --output=0 --error=0 ";
-
       if ($Job->{arvados_sdk_version}) {
         $command .= $stdbuf;
         $command .= "perl - \Q$ENV{CRUNCH_SRC}/crunch_scripts/$Job->{script}\E";
       } else {
         $command .= "/bin/sh -c \'mkdir -p \"$ENV{JOB_WORK}\" \"$ENV{TASK_WORK}\" && " .
-            "if which stdbuf >/dev/null ; then "
-            "  exec $stdbuf \Q$ENV{CRUNCH_SRC}/crunch_scripts/$Job->{script}\E" .
+            "if which stdbuf >/dev/null ; then " .
+            "  exec $stdbuf \Q$ENV{CRUNCH_SRC}/crunch_scripts/$Job->{script}\E ;" .
             " else " .
-            "  exec \Q$ENV{CRUNCH_SRC}/crunch_scripts/$Job->{script}\E" .
+            "  exec \Q$ENV{CRUNCH_SRC}/crunch_scripts/$Job->{script}\E ;" .
             " fi\'";
       }
     } else {
