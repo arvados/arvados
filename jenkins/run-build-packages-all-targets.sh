@@ -10,6 +10,8 @@ Options:
 
 --command
     Build command to execute (default: use built-in Docker image command)
+--test-packages
+    Run package install tests
 --debug
     Output debug information (default: false)
 
@@ -36,7 +38,7 @@ fi
 set -e
 
 PARSEDOPTS=$(getopt --name "$0" --longoptions \
-    help,debug,command: \
+    help,test-packages,debug,command: \
     -- "" "$@")
 if [ $? -ne 0 ]; then
     exit 1
@@ -44,6 +46,7 @@ fi
 
 COMMAND=
 DEBUG=
+TEST_PACKAGES=
 
 eval set -- "$PARSEDOPTS"
 while [ $# -gt 0 ]; do
@@ -54,10 +57,13 @@ while [ $# -gt 0 ]; do
             exit 1
             ;;
         --debug)
-            DEBUG=" --debug"
+            DEBUG="--debug"
             ;;
         --command)
             COMMAND="$2"; shift
+            ;;
+        --test-packages)
+            TEST_PACKAGES="--test-packages"
             ;;
         --)
             if [ $# -gt 1 ]; then
@@ -69,36 +75,6 @@ while [ $# -gt 0 ]; do
     shift
 done
 
-if [[ "$COMMAND" != "" ]]; then
-  COMMAND="/usr/local/rvm/bin/rvm-exec default bash /jenkins/$COMMAND$DEBUG"
-fi
-
-FINAL_EXITCODE=0
-JENKINS_DIR=$(dirname "$(readlink -e "$0")")
-
-run_docker() {
-    local tag=$1; shift
-    if [[ "$COMMAND" != "" ]]; then
-      COMMAND="$COMMAND --target $tag"
-    fi
-    if docker run -v "$JENKINS_DIR:/jenkins" -v "$WORKSPACE:/arvados" \
-          --env ARVADOS_DEBUG=1 "arvados/build:$tag" $COMMAND; then
-        # Success - nothing more to do.
-        true
-    else
-        FINAL_EXITCODE=$?
-        echo "ERROR: $tag build failed with exit status $FINAL_EXITCODE." >&2
-    fi
-}
-
-# In case it's needed, build the containers. This costs just a few
-# seconds when the containers already exist, so it's not a big deal to
-# do it on each run.
-cd "$JENKINS_DIR/dockerfiles"
-time ./build-all-build-containers.sh
-
 for dockerfile_path in $(find -name Dockerfile); do
-    run_docker "$(basename $(dirname "$dockerfile_path"))"
+    ./run-build-packages-one-target.sh --target "$(basename $(dirname "$dockerfile_path"))" --command "$COMMAND" $DEBUG $TEST_PACKAGES
 done
-
-exit $FINAL_EXITCODE
