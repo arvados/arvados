@@ -559,7 +559,6 @@ func (s *StandaloneSuite) TestGetFail(c *C) {
 	r, n, url2, err := kc.Get(hash)
 	errNotFound, _ := err.(ErrNotFound)
 	c.Check(errNotFound, NotNil)
-	c.Check(strings.Contains(err.Error(), "use of closed network connection"), Equals, true)
 	c.Check(n, Equals, int64(0))
 	c.Check(url2, Equals, "")
 	c.Check(r, Equals, nil)

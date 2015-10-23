@@ -172,18 +172,14 @@ func (s *ServerRequiredSuite) TestPutAskGet(c *C) {
 
 	{
 		_, _, err := kc.Ask(hash)
-		errNotFound, _ := err.(keepclient.ErrNotFound)
-		c.Check(errNotFound, NotNil)
-		c.Check(strings.Contains(err.Error(), "Block not found"), Equals, true)
+		c.Check(err, Equals, keepclient.BlockNotFound)
 		log.Print("Finished Ask (expected BlockNotFound)")
 	}
 
 	{
 		reader, _, _, err := kc.Get(hash)
 		c.Check(reader, Equals, nil)
-		errNotFound, _ := err.(keepclient.ErrNotFound)
-		c.Check(errNotFound, NotNil)
-		c.Check(strings.Contains(err.Error(), "Block not found"), Equals, true)
+		c.Check(err, Equals, keepclient.BlockNotFound)
 		log.Print("Finished Get (expected BlockNotFound)")
 	}
 
@@ -488,4 +484,37 @@ func (s *ServerRequiredSuite) TestGetIndex(c *C) {
 	// GetIndex with invalid prefix
 	_, err = kc.GetIndex("proxy", "xyz")
 	c.Assert((err != nil), Equals, true)
+}
+
+func (s *ServerRequiredSuite) TestPutAskGetInvalidToken(c *C) {
+	kc := runProxy(c, []string{"keepproxy"}, 28852, false)
+	waitForListener()
+	defer closeListener()
+
+	// Put a test block
+	hash, rep, err := kc.PutB([]byte("foo"))
+	c.Check(err, Equals, nil)
+	c.Check(rep, Equals, 2)
+
+	for _, token := range []string{
+		"nosuchtoken",
+		"2ym314ysp27sk7h943q6vtc378srb06se3pq6ghurylyf3pdmx", // expired
+	} {
+		// Change token to given bad token
+		kc.Arvados.ApiToken = token
+
+		// Ask should result in error
+		_, _, err = kc.Ask(hash)
+		c.Check(err, NotNil)
+		errNotFound, _ := err.(keepclient.ErrNotFound)
+		c.Check(errNotFound.Temporary(), Equals, false)
+		c.Assert(strings.Contains(err.Error(), "HTTP 403"), Equals, true)
+
+		// Get should result in error
+		_, _, _, err = kc.Get(hash)
+		c.Check(err, NotNil)
+		errNotFound, _ = err.(keepclient.ErrNotFound)
+		c.Check(errNotFound.Temporary(), Equals, false)
+		c.Assert(strings.Contains(err.Error(), "HTTP 403 \"Missing or invalid Authorization header\""), Equals, true)
+	}
 }

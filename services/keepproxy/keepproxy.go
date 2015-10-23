@@ -376,7 +376,7 @@ func (this GetBlockHandler) ServeHTTP(resp http.ResponseWriter, req *http.Reques
 			}
 		}
 	case keepclient.Error:
-		if respErr.Error() == "Block not found" {
+		if respErr == keepclient.BlockNotFound {
 			status = http.StatusNotFound
 		} else if respErr.Temporary() {
 			status = http.StatusBadGateway

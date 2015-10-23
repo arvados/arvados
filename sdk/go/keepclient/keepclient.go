@@ -169,10 +169,14 @@ func (kc *KeepClient) PutR(r io.Reader) (locator string, replicas int, err error
 
 func (kc *KeepClient) getOrHead(method string, locator string) (io.ReadCloser, int64, string, error) {
 	var errs []string
-	var count404 int
 
 	tries_remaining := 1 + kc.Retries
+
 	serversToTry := kc.getSortedRoots(locator)
+
+	numServers := len(serversToTry)
+	count404 := 0
+
 	var retryList []string
 
 	for tries_remaining > 0 {
@@ -231,7 +235,7 @@ func (kc *KeepClient) getOrHead(method string, locator string) (io.ReadCloser, i
 	log.Printf("DEBUG: %s %s failed: %v", method, locator, errs)
 
 	var err error
-	if count404 == len(kc.getSortedRoots(locator)) {
+	if count404 == numServers {
 		err = BlockNotFound
 	} else {
 		err = &ErrNotFound{multipleResponseError{
