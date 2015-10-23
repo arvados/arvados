@@ -6,13 +6,16 @@ import httplib2
 import json
 import mimetypes
 import os
-import run_test_server
+import socket
 import string
 import unittest
+
+import mock
+import run_test_server
+
 from apiclient import errors as apiclient_errors
 from apiclient import http as apiclient_http
 from arvados.api import OrderedJsonModel
-
 from arvados_testutil import fake_httplib2_response
 
 if not mimetypes.inited:
@@ -102,6 +105,21 @@ class ArvadosApiTest(run_test_server.TestCaseWithServers):
                           requestBuilder=req_builder, model=OrderedJsonModel())
         result = api.humans().get(uuid='test').execute()
         self.assertEqual(string.hexdigits, ''.join(result.keys()))
+
+    def test_socket_errors_retried(self):
+        api = arvados.api('v1')
+        self.assertTrue(hasattr(api._http, 'orig_http_request'),
+                        "test doesn't know how to intercept HTTP requests")
+        api._http.orig_http_request = mock.MagicMock()
+        mock_response = {'user': 'person'}
+        api._http.orig_http_request.side_effect = [
+            socket.error("mock error"),
+            (fake_httplib2_response(200), json.dumps(mock_response))
+            ]
+        actual_response = api.users().current().execute()
+        self.assertEqual(mock_response, actual_response)
+        self.assertGreater(api._http.orig_http_request.call_count, 1,
+                           "client got the right response without retrying")
 
 
 if __name__ == '__main__':
