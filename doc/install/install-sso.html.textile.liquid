@@ -164,7 +164,8 @@ Use @rails console@ to create a @Client@ record that will be used by the Arvados
 <notextile>
 <pre><code>~$ <span class="userinput">ruby -e 'puts rand(2**400).to_s(36)'</span>
 xxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxx
-~$ <span class="userinput">RAILS_ENV=production bundle exec rails console</span>
+~$ <span class="userinput">cd /var/www/arvados-sso/current</span>
+/var/www/arvados-sso/current$ <span class="userinput">RAILS_ENV=production bundle exec rails console</span>
 :001 &gt; <span class="userinput">c = Client.new</span>
 :002 &gt; <span class="userinput">c.name = "joshid"</span>
 :003 &gt; <span class="userinput">c.app_id = "arvados-server"</span>

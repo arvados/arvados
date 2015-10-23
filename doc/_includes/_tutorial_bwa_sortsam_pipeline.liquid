@@ -12,7 +12,7 @@
                     "-t",
                     "$(node.cores)",
                     "-R",
-                    "@RG\\tID:group_id\\tPL:illumina\\tSM:sample_id",
+                    "@RG\\\tID:group_id\\\tPL:illumina\\\tSM:sample_id",
                     "$(glob $(dir $(reference_collection))/*.fasta)",
                     "$(glob $(dir $(sample))/*_1.fastq)",
                     "$(glob $(dir $(sample))/*_2.fastq)"
