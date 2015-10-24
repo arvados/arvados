@@ -518,3 +518,30 @@ func (s *ServerRequiredSuite) TestPutAskGetInvalidToken(c *C) {
 		c.Assert(strings.Contains(err.Error(), "HTTP 403 \"Missing or invalid Authorization header\""), Equals, true)
 	}
 }
+
+func (s *ServerRequiredSuite) TestPutAskGetConnectionError(c *C) {
+	arv, err := arvadosclient.MakeArvadosClient()
+	c.Assert(err, Equals, nil)
+
+	// keepclient with no such keep server
+	kc := keepclient.New(&arv)
+	locals := map[string]string{
+		"proxy": "http://localhost:12345",
+	}
+	kc.SetServiceRoots(locals, nil, nil)
+
+	// Ask should result in temporary connection refused error
+	hash := fmt.Sprintf("%x", md5.Sum([]byte("foo")))
+	_, _, err = kc.Ask(hash)
+	c.Check(err, NotNil)
+	errNotFound, _ := err.(*keepclient.ErrNotFound)
+	c.Check(errNotFound.Temporary(), Equals, true)
+	c.Assert(strings.Contains(err.Error(), "connection refused"), Equals, true)
+
+	// Get should result in temporary connection refused error
+	_, _, _, err = kc.Get(hash)
+	c.Check(err, NotNil)
+	errNotFound, _ = err.(*keepclient.ErrNotFound)
+	c.Check(errNotFound.Temporary(), Equals, true)
+	c.Assert(strings.Contains(err.Error(), "connection refused"), Equals, true)
+}
