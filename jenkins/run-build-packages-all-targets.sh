@@ -75,6 +75,8 @@ while [ $# -gt 0 ]; do
     shift
 done
 
+cd $(dirname $0)
+
 for dockerfile_path in $(find -name Dockerfile); do
     ./run-build-packages-one-target.sh --target "$(basename $(dirname "$dockerfile_path"))" --command "$COMMAND" $DEBUG $TEST_PACKAGES
 done
