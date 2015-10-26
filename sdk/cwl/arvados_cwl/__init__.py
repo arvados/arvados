@@ -14,6 +14,7 @@ import fnmatch
 import logging
 import re
 import os
+import copy
 from cwltool.process import get_feature
 
 logger = logging.getLogger('arvados.cwl-runner')
@@ -56,6 +57,8 @@ class CollectionFsAccess(cwltool.process.StdFsAccess):
 
     def _match(self, collection, patternsegments, parent):
         ret = []
+        if len(patternsegments) == 0:
+            return ret
         for filename in collection:
             if fnmatch.fnmatch(filename, patternsegments[0]):
                 cur = os.path.join(parent, filename)
@@ -63,6 +66,8 @@ class CollectionFsAccess(cwltool.process.StdFsAccess):
                     ret.append(cur)
                 else:
                     ret.extend(self._match(collection[filename], patternsegments[1:], cur))
+            elif patternsegments[0] == '.':
+                ret.extend(self._match(collection, patternsegments[1:], parent))
         return ret
 
     def glob(self, pattern):
@@ -149,7 +154,7 @@ class ArvadosJob(object):
                 outputs = {}
                 outputs = self.collect_outputs(record["output"])
             except Exception as e:
-                logger.warn(str(e))
+                logger.exception("Got exception while collecting job outputs:")
                 processStatus = "permanentFail"
 
             self.output_callback(outputs, processStatus)
@@ -158,7 +163,7 @@ class ArvadosJob(object):
 
 class ArvPathMapper(cwltool.pathmapper.PathMapper):
     def __init__(self, arvrunner, referenced_files, basedir, **kwargs):
-        self._pathmap = {}
+        self._pathmap = copy.copy(arvrunner.uploaded)
         uploadfiles = []
 
         pdh_path = re.compile(r'^[0-9a-f]{32}\+\d+/.+')
@@ -166,6 +171,8 @@ class ArvPathMapper(cwltool.pathmapper.PathMapper):
         for src in referenced_files:
             if isinstance(src, basestring) and pdh_path.match(src):
                 self._pathmap[src] = (src, "$(task.keep)/%s" % src)
+            if src in self._pathmap:
+                pass
             else:
                 ab = cwltool.pathmapper.abspath(src, basedir)
                 st = arvados.commands.run.statfile("", ab)
@@ -186,6 +193,7 @@ class ArvPathMapper(cwltool.pathmapper.PathMapper):
                                              fnPattern="$(task.keep)/%s/%s")
 
         for src, ab, st in uploadfiles:
+            arvrunner.uploaded[src] = (ab, st.fn)
             self._pathmap[src] = (ab, st.fn)
 
 
@@ -209,6 +217,7 @@ class ArvCwlRunner(object):
         self.lock = threading.Lock()
         self.cond = threading.Condition(self.lock)
         self.final_output = None
+        self.uploaded = {}
 
     def arvMakeTool(self, toolpath_object, **kwargs):
         if "class" in toolpath_object and toolpath_object["class"] == "CommandLineTool":
