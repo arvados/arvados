@@ -40,15 +40,14 @@ func (s *GitHandlerSuite) TestEnvVars(c *check.C) {
 	c.Check(body, check.Matches, `(?ms).*^SERVER_ADDR=`+regexp.QuoteMeta(theConfig.Addr)+`$.*`)
 }
 
-func (s *GitHandlerSuite) TestCGIError(c *check.C) {
-	log.Printf("git_handler_test: TestCGIError() - expecting a SplitHostPort error, so it is safe to ignore!")
+func (s *GitHandlerSuite) TestCGIErrorOnSplitHostPortError(c *check.C) {
 	u, err := url.Parse("git.zzzzz.arvadosapi.com/test")
 	c.Check(err, check.Equals, nil)
 	resp := httptest.NewRecorder()
 	req := &http.Request{
 		Method:     "GET",
 		URL:        u,
-		RemoteAddr: "bogus", // intentionally invalid (will trigger SplitHostPort error below)
+		RemoteAddr: "test.bad.address.missing.port",
 	}
 	h := newGitHandler()
 	h.ServeHTTP(resp, req)
