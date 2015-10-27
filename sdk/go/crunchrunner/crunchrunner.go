@@ -124,9 +124,9 @@ func setupCommand(cmd *exec.Cmd, taskp TaskDef, outdir string, replacements map[
 	return stdin, stdout, nil
 }
 
+// Set up signal handlers.  Go sends signal notifications to a "signal
+// channel".
 func setupSignals(cmd *exec.Cmd) chan os.Signal {
-	// Set up signal handlers
-	// Forward SIGINT, SIGTERM and SIGQUIT to inner process
 	sigChan := make(chan os.Signal, 1)
 	signal.Notify(sigChan, syscall.SIGTERM)
 	signal.Notify(sigChan, syscall.SIGINT)
@@ -234,24 +234,28 @@ func runner(api IArvadosClient,
 	log.Printf("Running %v%v%v", cmd.Args, stdin, stdout)
 
 	var caughtSignal os.Signal
-	{
-		sigChan := setupSignals(cmd)
-		defer signal.Stop(sigChan)
+	sigChan := setupSignals(cmd)
 
-		err = cmd.Start()
-		if err != nil {
-			return TempFail{err}
-		}
-
-		go func(sig <-chan os.Signal) {
-			for sig := range sig {
-				caughtSignal = sig
-				cmd.Process.Signal(caughtSignal)
-			}
-		}(sigChan)
-
-		err = cmd.Wait()
+	err = cmd.Start()
+	if err != nil {
+		signal.Stop(sigChan)
+		return TempFail{err}
 	}
+
+	finishedSignalNotify := make(chan struct{})
+	go func(sig <-chan os.Signal) {
+		for sig := range sig {
+			caughtSignal = sig
+			cmd.Process.Signal(caughtSignal)
+		}
+		close(finishedSignalNotify)
+	}(sigChan)
+
+	err = cmd.Wait()
+	signal.Stop(sigChan)
+
+	close(sigChan)
+	<-finishedSignalNotify
 
 	if caughtSignal != nil {
 		log.Printf("Caught signal %v", caughtSignal)
