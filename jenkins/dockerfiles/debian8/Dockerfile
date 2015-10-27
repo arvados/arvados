@@ -2,7 +2,7 @@ FROM debian:jessie
 MAINTAINER Ward Vandewege <ward@curoverse.com>
 
 # Install dependencies and set up system.
-RUN /usr/bin/apt-get update && /usr/bin/apt-get install -q -y python2.7-dev python3 python-setuptools python3-setuptools libcurl4-gnutls-dev curl git procps libattr1-dev libfuse-dev libgnutls28-dev libpq-dev
+RUN /usr/bin/apt-get update && /usr/bin/apt-get install -q -y python2.7-dev python3 python-setuptools python3-setuptools libcurl4-gnutls-dev curl git procps libattr1-dev libfuse-dev libgnutls28-dev libpq-dev python-pip
 
 # Install RVM
 RUN gpg --keyserver hkp://pool.sks-keyservers.net:80 --recv-keys D39DC0E3 && \
