@@ -41,6 +41,7 @@ def arv_docker_get_image(api_client, dockerRequirement, pull_image):
 
     return dockerRequirement["dockerImageId"]
 
+
 class CollectionFsAccess(cwltool.process.StdFsAccess):
     def __init__(self, basedir):
         self.collections = {}
@@ -48,10 +49,11 @@ class CollectionFsAccess(cwltool.process.StdFsAccess):
 
     def get_collection(self, path):
         p = path.split("/")
-        if arvados.util.keep_locator_pattern.match(p[0]):
-            if p[0] not in self.collections:
-                self.collections[p[0]] = arvados.collection.CollectionReader(p[0])
-            return (self.collections[p[0]], "/".join(p[1:]))
+        if p[0].startswith("keep:") and arvados.util.keep_locator_pattern.match(p[0][5:]):
+            pdh = p[0][5:]
+            if pdh not in self.collections:
+                self.collections[pdh] = arvados.collection.CollectionReader(pdh)
+            return (self.collections[pdh], "/".join(p[1:]))
         else:
             return (None, path)
 
@@ -157,7 +159,7 @@ class ArvadosJob(object):
 
             try:
                 outputs = {}
-                outputs = self.collect_outputs(record["output"])
+                outputs = self.collect_outputs("keep:" + record["output"])
             except Exception as e:
                 logger.exception("Got exception while collecting job outputs:")
                 processStatus = "permanentFail"
