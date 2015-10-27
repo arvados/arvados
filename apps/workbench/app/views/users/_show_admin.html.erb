@@ -34,6 +34,12 @@
     <div class="panel panel-default">
       <div class="panel-heading">
         Group memberships
+
+        <div class="pull-right">
+          <%= link_to raw('<i class="fa fa-plus"></i> Add new group'), "#",
+                       {class: 'btn btn-xs btn-primary', 'data-toggle' => "modal",
+                        'data-target' => '#add-group-modal'}  %>
+        </div>
       </div>
       <div class="panel-body">
         <div class="alert alert-info">
@@ -92,7 +98,7 @@
         </form>
       </div>
       <div class="panel-footer">
-        To manage these groups (roles), use:
+        These groups (roles) can also be managed from the command line. For example:
         <ul>
           <li><code>arv group create \<br/>--group '{"group_class":"role","name":"New group"}'</code></li>
           <li><code>arv group list \<br/>--filters '[["group_class","=","role"]]' \<br/>--select '["uuid","name"]'</code></li>
@@ -104,3 +110,4 @@
 </div>
 
 <div id="user-setup-modal-window" class="modal fade" role="dialog" aria-labelledby="myModalLabel" aria-hidden="true"></div>
+<%= render partial: "add_group_modal" %>
