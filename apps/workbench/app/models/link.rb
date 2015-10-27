@@ -18,4 +18,8 @@ class Link < ArvadosBase
     result = arvados_api_client.api("permissions", "/#{uuid}")
     arvados_api_client.unpack_api_response(result)
   end
+
+  def self.creatable?
+    false
+  end
 end
