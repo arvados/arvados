@@ -9,7 +9,7 @@ ADD generated/golang-amd64.tar.gz /usr/local/
 RUN ln -s /usr/local/go/bin/go /usr/local/bin/
 
 # Install RVM
-RUN gpg --keyserver pool.sks-keyservers.net --recv-keys D39DC0E3 && \
+RUN gpg --keyserver hkp://pool.sks-keyservers.net:80 --recv-keys D39DC0E3 && \
     curl -L https://get.rvm.io | bash -s stable && \
     /usr/local/rvm/bin/rvm install 2.1 && \
     /usr/local/rvm/bin/rvm alias create default ruby-2.1 && \

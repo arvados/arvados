@@ -5,7 +5,7 @@ MAINTAINER Ward Vandewege <ward@curoverse.com>
 RUN /usr/bin/apt-get update && /usr/bin/apt-get install -q -y python2.7-dev python3 python-setuptools python3-setuptools libcurl4-gnutls-dev curl git procps libattr1-dev libfuse-dev libgnutls28-dev libpq-dev
 
 # Install RVM
-RUN gpg --keyserver pool.sks-keyservers.net --recv-keys D39DC0E3 && \
+RUN gpg --keyserver hkp://pool.sks-keyservers.net:80 --recv-keys D39DC0E3 && \
     curl -L https://get.rvm.io | bash -s stable && \
     /usr/local/rvm/bin/rvm install 2.1 && \
     /usr/local/rvm/bin/rvm alias create default ruby-2.1 && \
