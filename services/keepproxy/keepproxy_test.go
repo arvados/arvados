@@ -30,6 +30,12 @@ var _ = Suite(&ServerRequiredSuite{})
 // Tests that require the Keep server running
 type ServerRequiredSuite struct{}
 
+// Gocheck boilerplate
+var _ = Suite(&NoKeepServerSuite{})
+
+// Test with no keepserver to simulate errors
+type NoKeepServerSuite struct{}
+
 // Wait (up to 1 second) for keepproxy to listen on a port. This
 // avoids a race condition where we hit a "connection refused" error
 // because we start testing the proxy too soon.
@@ -62,6 +68,18 @@ func (s *ServerRequiredSuite) SetUpTest(c *C) {
 
 func (s *ServerRequiredSuite) TearDownSuite(c *C) {
 	arvadostest.StopKeep(2)
+	arvadostest.StopAPI()
+}
+
+func (s *NoKeepServerSuite) SetUpSuite(c *C) {
+	arvadostest.StartAPI()
+}
+
+func (s *NoKeepServerSuite) SetUpTest(c *C) {
+	arvadostest.ResetEnv()
+}
+
+func (s *NoKeepServerSuite) TearDownSuite(c *C) {
 	arvadostest.StopAPI()
 }
 
@@ -519,7 +537,7 @@ func (s *ServerRequiredSuite) TestPutAskGetInvalidToken(c *C) {
 	}
 }
 
-func (s *ServerRequiredSuite) TestPutAskGetConnectionError(c *C) {
+func (s *ServerRequiredSuite) TestAskGetKeepProxyConnectionError(c *C) {
 	arv, err := arvadosclient.MakeArvadosClient()
 	c.Assert(err, Equals, nil)
 
@@ -544,4 +562,25 @@ func (s *ServerRequiredSuite) TestPutAskGetConnectionError(c *C) {
 	errNotFound, _ = err.(*keepclient.ErrNotFound)
 	c.Check(errNotFound.Temporary(), Equals, true)
 	c.Assert(strings.Contains(err.Error(), "connection refused"), Equals, true)
+}
+
+func (s *NoKeepServerSuite) TestAskGetNoKeepServerError(c *C) {
+	kc := runProxy(c, []string{"keepproxy"}, 29999, false)
+	waitForListener()
+	defer closeListener()
+
+	// Ask should result in temporary connection refused error
+	hash := fmt.Sprintf("%x", md5.Sum([]byte("foo")))
+	_, _, err := kc.Ask(hash)
+	c.Check(err, NotNil)
+	errNotFound, _ := err.(*keepclient.ErrNotFound)
+	c.Check(errNotFound.Temporary(), Equals, true)
+	c.Assert(strings.Contains(err.Error(), "HTTP 502"), Equals, true)
+
+	// Get should result in temporary connection refused error
+	_, _, _, err = kc.Get(hash)
+	c.Check(err, NotNil)
+	errNotFound, _ = err.(*keepclient.ErrNotFound)
+	c.Check(errNotFound.Temporary(), Equals, true)
+	c.Assert(strings.Contains(err.Error(), "HTTP 502"), Equals, true)
 }
