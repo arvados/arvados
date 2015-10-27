@@ -1,0 +1,62 @@
+---
+layout: default
+navsection: installguide
+title: Configure Azure Blob storage
+...
+
+As an alternative to local and network-attached POSIX filesystems, Keepstore can store data in an Azure Storage container.
+
+h2. Create a container
+
+Normally, all keepstore services are configured to share a single Azure Storage container.
+
+Using the Azure web portal or command line tool, create or choose a storage account with a suitable redundancy profile and availability region. Use the storage account keys to create a new container.
+
+<notextile>
+<pre><code>~$ <span class="userinput">azure config mode arm</span>
+~$ <span class="userinput">azure login</span>
+~$ <span class="userinput">azure group create exampleGroupName eastus</span>
+~$ <span class="userinput">azure storage account create --type LRS --location eastus --resource-group exampleGroupName exampleStorageAccountName</span>
+~$ <span class="userinput">azure storage account keys list --resource-group exampleGroupName exampleStorageAccountName</span>
+info:    Executing command storage account keys list
++ Getting storage account keys
+data:    Primary: zzzzzzzzzzzzzzzzzzzzzzzzzzzzzzzzzzzzzzzzzzzzzzzzzzzzzzzzzzzzzzzzzzzzzzzzzzzzzzzzzzzzzz==
+data:    Secondary: yyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyy==
+info:    storage account keys list command OK
+~$ <span class="userinput">AZURE_STORAGE_ACCOUNT="exampleStorageAccountName" \
+AZURE_STORAGE_ACCESS_KEY="zzzzzzzzzzzzzzzzzzzzzzzzzzzzzzzzzzzzzzzzzzzzzzzzzzzzzzzzzzzzzzzzzzzzzzzzzzzzzzzzzzzzzz==" \
+azure storage container create exampleContainerName</span>
+</code></pre>
+</notextile>
+
+h2. Configure keepstore
+
+Copy the primary storage account key to a file where it will be accessible to keepstore at startup time.
+
+<notextile>
+<pre><code>~$ <span class="userinput">sudo sh -c 'cat &gt;/etc/sv/keepstore/exampleStorageAccountName.key &lt;&lt;EOF'
+zzzzzzzzzzzzzzzzzzzzzzzzzzzzzzzzzzzzzzzzzzzzzzzzzzzzzzzzzzzzzzzzzzzzzzzzzzzzzzzzzzzzzz==
+EOF</span>
+~$ <span class="userinput">sudo chmod 0400 /etc/sv/keepstore/exampleStorageAccountName.key</span>
+</code></pre>
+</notextile>
+
+In your keepstore startup script, instead of specifying a local storage using @-volume /path@ or discovering mount points automatically, use @-azure-*@ arguments to specify the storage container:
+
+<notextile>
+<pre><code>#!/bin/sh
+
+exec 2&gt;&amp;1
+exec keepstore \
+ -azure-storage-account-key-file <span class="userinput">/etc/sv/keepstore/exampleStorageAccountName.key</span> \
+ -azure-storage-account-name <span class="userinput">exampleStorageAccountName</span> \
+ -azure-storage-container-volume <span class="userinput">exampleContainerName</span>
+</code></pre>
+</notextile>
+
+Start (or restart) keepstore, and check its log file to confirm it is using the new configuration.
+
+<notextile>
+<pre><code>2015/10/26 21:06:24 Using volume azure-storage-container:"exampleContainerName" (writable=true)
+</code></pre>
+</notextile>

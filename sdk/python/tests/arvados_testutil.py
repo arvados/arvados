@@ -43,6 +43,10 @@ def mock_responses(body, *codes, **headers):
     return mock.patch('httplib2.Http.request', side_effect=queue_with((
         (fake_httplib2_response(code, **headers), body) for code in codes)))
 
+def mock_api_responses(api_client, body, codes, headers={}):
+    return mock.patch.object(api_client._http, 'request', side_effect=queue_with((
+        (fake_httplib2_response(code, **headers), body) for code in codes)))
+
 
 class FakeCurl:
     @classmethod

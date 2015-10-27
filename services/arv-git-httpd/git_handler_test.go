@@ -25,7 +25,7 @@ func (s *GitHandlerSuite) TestEnvVars(c *check.C) {
 	}
 	h := newGitHandler()
 	h.(*gitHandler).Path = "/bin/sh"
-	h.(*gitHandler).Args = []string{"-c", "echo HTTP/1.1 200 OK; echo Content-Type: text/plain; echo; env"}
+	h.(*gitHandler).Args = []string{"-c", "printf 'Content-Type: text/plain\r\n\r\n'; env"}
 	os.Setenv("GITOLITE_HTTP_HOME", "/test/ghh")
 	os.Setenv("GL_BYPASS_ACCESS_CHECKS", "yesplease")
 
@@ -40,14 +40,14 @@ func (s *GitHandlerSuite) TestEnvVars(c *check.C) {
 	c.Check(body, check.Matches, `(?ms).*^SERVER_ADDR=`+regexp.QuoteMeta(theConfig.Addr)+`$.*`)
 }
 
-func (s *GitHandlerSuite) TestCGIError(c *check.C) {
+func (s *GitHandlerSuite) TestCGIErrorOnSplitHostPortError(c *check.C) {
 	u, err := url.Parse("git.zzzzz.arvadosapi.com/test")
 	c.Check(err, check.Equals, nil)
 	resp := httptest.NewRecorder()
 	req := &http.Request{
 		Method:     "GET",
 		URL:        u,
-		RemoteAddr: "bogus",
+		RemoteAddr: "test.bad.address.missing.port",
 	}
 	h := newGitHandler()
 	h.ServeHTTP(resp, req)
