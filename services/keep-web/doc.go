@@ -6,6 +6,8 @@
 //
 // See http://doc.arvados.org/install/install-keep-web.html.
 //
+// Run "keep-web -help" to show all supported options.
+//
 // Starting the server
 //
 // Serve HTTP requests at port 1234 on all interfaces:
@@ -67,18 +69,21 @@
 //   http://uuid_or_pdh--dl.example.com/path/file.txt
 //   http://uuid_or_pdh.dl.example.com/path/file.txt
 //
-// The first form minimizes the cost and effort of deploying a
-// wildcard TLS certificate for *.dl.example.com. The second form is
-// likely to be easier to configure, and more efficient to run, on an
-// upstream proxy.
+// The first form ("uuid_or_pdh--dl.example.com") minimizes the cost
+// and effort of deploying a wildcard TLS certificate for
+// *.dl.example.com. The second form is likely to be easier to
+// configure, and more efficient to run, on an upstream proxy.
 //
 // In all of the above forms, the "dl.example.com" part can be
-// anything at all: keep-web ignores everything after the first "." or
-// "--".
+// anything at all: keep-web itself ignores everything after the first
+// "." or "--". (Of course, in order for clients to connect at all,
+// DNS and any relevant proxies must be configured accordingly.)
 //
 // In all of the above forms, the "uuid_or_pdh" part can be either a
 // collection UUID or a portable data hash with the "+" character
-// replaced by "-".
+// optionally replaced by "-". (Replacing "+" with "-" is mandatory
+// when "uuid_or_pdh" appears in the domain name only because "+" is
+// not a valid character in a domain name.)
 //
 // In all of the above forms, a top level directory called "_" is
 // skipped. In cases where the "path/file.txt" part might start with
@@ -91,23 +96,23 @@
 // 1f4b0bc7583c2a7f9102c395f4ffc5e3+45, the following URLs are
 // interchangeable:
 //
-//   http://zzzzz-4zz18-znfnqtbbv4spc3w.dl.example.com/foo
-//   http://zzzzz-4zz18-znfnqtbbv4spc3w.dl.example.com/_/foo
-//   http://zzzzz-4zz18-znfnqtbbv4spc3w--dl.example.com/_/foo
-//   http://1f4b0bc7583c2a7f9102c395f4ffc5e3-45--foo.example.com/foo
-//   http://1f4b0bc7583c2a7f9102c395f4ffc5e3-45--.invalid/foo
+//   http://zzzzz-4zz18-znfnqtbbv4spc3w.dl.example.com/foo/bar.txt
+//   http://zzzzz-4zz18-znfnqtbbv4spc3w.dl.example.com/_/foo/bar.txt
+//   http://zzzzz-4zz18-znfnqtbbv4spc3w--dl.example.com/_/foo/bar.txt
+//   http://1f4b0bc7583c2a7f9102c395f4ffc5e3-45--foo.example.com/foo/bar.txt
+//   http://1f4b0bc7583c2a7f9102c395f4ffc5e3-45--.invalid/foo/bar.txt
 //
 // An additional form is supported specifically to make it more
 // convenient to maintain support for existing Workbench download
 // links:
 //
-//   http://dl.example.com/collections/download/uuid_or_pdh/TOKEN/path/file.txt
+//   http://dl.example.com/collections/download/uuid_or_pdh/TOKEN/foo/bar.txt
 //
 // A regular Workbench "download" link is also accepted, but
 // credentials passed via cookie, header, etc. are ignored. Only
 // public data can be served this way:
 //
-//   http://dl.example.com/collections/uuid_or_pdh/path/file.txt
+//   http://dl.example.com/collections/uuid_or_pdh/foo/bar.txt
 //
 // Authorization mechanisms
 //
@@ -121,13 +126,13 @@
 //
 // A token can be provided in an URL-encoded query string:
 //
-//   GET /foo.txt?api_token=o07j4px7RlJK4CuMYp7C0LDT4CzR1J1qBE5Avo7eCcUjOTikxK
+//   GET /foo/bar.txt?api_token=o07j4px7RlJK4CuMYp7C0LDT4CzR1J1qBE5Avo7eCcUjOTikxK
 //
 // A suitably encoded token can be provided in a POST body if the
 // request has a content type of application/x-www-form-urlencoded or
 // multipart/form-data:
 //
-//   POST /foo.txt
+//   POST /foo/bar.txt
 //   Content-Type: application/x-www-form-urlencoded
 //   [...]
 //   api_token=o07j4px7RlJK4CuMYp7C0LDT4CzR1J1qBE5Avo7eCcUjOTikxK
@@ -184,7 +189,7 @@
 // only when the designated origin matches exactly the Host header
 // provided by the client or upstream proxy.
 //
-//   keep-web -attachment-only-host domain.example:9999
+//   keep-web -address :9999 -attachment-only-host domain.example:9999
 //
 // Trust All Content mode
 //
@@ -197,6 +202,12 @@
 //
 // In such cases you can enable trust-all-content mode.
 //
-//   keep-web -trust-all-content [...]
+//   keep-web -address :9999 -trust-all-content
+//
+// When using trust-all-content mode, the only effect of the
+// -attachment-only-host option is to add a "Content-Disposition:
+// attachment" header.
+//
+//   keep-web -address :9999 -attachment-only-host domain.example:9999 -trust-all-content
 //
 package main
