@@ -32,4 +32,8 @@ class Group < ArvadosBase
   def textile_attributes
     [ 'description' ]
   end
+
+  def self.creatable?
+    false
+  end
 end

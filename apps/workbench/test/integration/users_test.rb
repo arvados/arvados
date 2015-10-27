@@ -197,4 +197,26 @@ class UsersTest < ActionDispatch::IntegrationTest
     click_link 'Metadata'
     assert page.has_text? 'VirtualMachine: testvm.shell'
   end
+
+  test "test add group button" do
+    need_javascript
+
+    user_url = "/users/#{api_fixture('users')['active']['uuid']}"
+    visit page_with_token('admin_trustedclient', user_url)
+
+    # Setup user
+    click_link 'Admin'
+    assert page.has_text? 'As an admin, you can setup'
+
+    click_link 'Add new group'
+
+    within '.modal-content' do
+      fill_in "group_name_input", :with => "test-group-added-in-modal"
+      click_button "Create"
+    end
+    wait_for_ajax
+
+    # Back in the user "Admin" tab
+    assert page.has_text? 'test-group-added-in-modal'
+  end
 end
