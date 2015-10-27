@@ -2,7 +2,7 @@ class VirtualMachine < ArvadosBase
   attr_accessor :current_user_logins
 
   def self.creatable?
-    current_user and current_user.is_admin
+    false
   end
 
   def attributes_for_display
