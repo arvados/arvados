@@ -1,5 +1,5 @@
 class KeepService < ArvadosBase
   def self.creatable?
-    false
+    current_user and current_user.is_admin
   end
 end
