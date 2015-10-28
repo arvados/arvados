@@ -355,7 +355,7 @@ func (s *ServerRequiredSuite) TestErrorDuringRsync_ErrorGettingBlockFromSrc(c *C
 	blobSigningKey = "thisisfakeblobsigningkey"
 
 	err := performKeepRsync(kcSrc, kcDst, blobSigningKey, "")
-	c.Check(strings.HasSuffix(err.Error(), "Block not found"), Equals, true)
+	c.Check(strings.Contains(err.Error(), "HTTP 403 \"Forbidden\""), Equals, true)
 }
 
 // Test rsync with error during Put to src.
@@ -369,7 +369,7 @@ func (s *ServerRequiredSuite) TestErrorDuringRsync_ErrorPuttingBlockInDst(c *C) 
 	kcDst.Want_replicas = 2
 
 	err := performKeepRsync(kcSrc, kcDst, blobSigningKey, "")
-	c.Check(strings.HasSuffix(err.Error(), "Could not write sufficient replicas"), Equals, true)
+	c.Check(strings.Contains(err.Error(), "Could not write sufficient replicas"), Equals, true)
 }
 
 // Test loadConfig func
@@ -413,7 +413,7 @@ func (s *ServerNotRequiredSuite) TestLoadConfig_MissingSrcConfig(c *C) {
 // Test loadConfig func - error reading config
 func (s *ServerNotRequiredSuite) TestLoadConfig_ErrorLoadingSrcConfig(c *C) {
 	_, _, err := loadConfig("no-such-config-file")
-	c.Assert(strings.HasSuffix(err.Error(), "no such file or directory"), Equals, true)
+	c.Assert(strings.Contains(err.Error(), "no such file or directory"), Equals, true)
 }
 
 func setupConfigFile(c *C, name string) *os.File {

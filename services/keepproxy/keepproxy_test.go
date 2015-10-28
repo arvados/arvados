@@ -30,6 +30,12 @@ var _ = Suite(&ServerRequiredSuite{})
 // Tests that require the Keep server running
 type ServerRequiredSuite struct{}
 
+// Gocheck boilerplate
+var _ = Suite(&NoKeepServerSuite{})
+
+// Test with no keepserver to simulate errors
+type NoKeepServerSuite struct{}
+
 // Wait (up to 1 second) for keepproxy to listen on a port. This
 // avoids a race condition where we hit a "connection refused" error
 // because we start testing the proxy too soon.
@@ -62,6 +68,18 @@ func (s *ServerRequiredSuite) SetUpTest(c *C) {
 
 func (s *ServerRequiredSuite) TearDownSuite(c *C) {
 	arvadostest.StopKeep(2)
+	arvadostest.StopAPI()
+}
+
+func (s *NoKeepServerSuite) SetUpSuite(c *C) {
+	arvadostest.StartAPI()
+}
+
+func (s *NoKeepServerSuite) SetUpTest(c *C) {
+	arvadostest.ResetEnv()
+}
+
+func (s *NoKeepServerSuite) TearDownSuite(c *C) {
 	arvadostest.StopAPI()
 }
 
@@ -251,7 +269,9 @@ func (s *ServerRequiredSuite) TestPutAskGetForbidden(c *C) {
 
 	{
 		_, _, err := kc.Ask(hash)
-		c.Check(err, Equals, keepclient.BlockNotFound)
+		errNotFound, _ := err.(keepclient.ErrNotFound)
+		c.Check(errNotFound, NotNil)
+		c.Assert(strings.Contains(err.Error(), "HTTP 403"), Equals, true)
 		log.Print("Ask 1")
 	}
 
@@ -265,14 +285,18 @@ func (s *ServerRequiredSuite) TestPutAskGetForbidden(c *C) {
 
 	{
 		blocklen, _, err := kc.Ask(hash)
-		c.Assert(err, Equals, keepclient.BlockNotFound)
+		errNotFound, _ := err.(keepclient.ErrNotFound)
+		c.Check(errNotFound, NotNil)
+		c.Assert(strings.Contains(err.Error(), "HTTP 403"), Equals, true)
 		c.Check(blocklen, Equals, int64(0))
 		log.Print("Ask 2")
 	}
 
 	{
 		_, blocklen, _, err := kc.Get(hash)
-		c.Assert(err, Equals, keepclient.BlockNotFound)
+		errNotFound, _ := err.(keepclient.ErrNotFound)
+		c.Check(errNotFound, NotNil)
+		c.Assert(strings.Contains(err.Error(), "HTTP 403"), Equals, true)
 		c.Check(blocklen, Equals, int64(0))
 		log.Print("Get")
 	}
@@ -291,7 +315,9 @@ func (s *ServerRequiredSuite) TestGetDisabled(c *C) {
 
 	{
 		_, _, err := kc.Ask(hash)
-		c.Check(err, Equals, keepclient.BlockNotFound)
+		errNotFound, _ := err.(keepclient.ErrNotFound)
+		c.Check(errNotFound, NotNil)
+		c.Assert(strings.Contains(err.Error(), "HTTP 400"), Equals, true)
 		log.Print("Ask 1")
 	}
 
@@ -305,14 +331,18 @@ func (s *ServerRequiredSuite) TestGetDisabled(c *C) {
 
 	{
 		blocklen, _, err := kc.Ask(hash)
-		c.Assert(err, Equals, keepclient.BlockNotFound)
+		errNotFound, _ := err.(keepclient.ErrNotFound)
+		c.Check(errNotFound, NotNil)
+		c.Assert(strings.Contains(err.Error(), "HTTP 400"), Equals, true)
 		c.Check(blocklen, Equals, int64(0))
 		log.Print("Ask 2")
 	}
 
 	{
 		_, blocklen, _, err := kc.Get(hash)
-		c.Assert(err, Equals, keepclient.BlockNotFound)
+		errNotFound, _ := err.(keepclient.ErrNotFound)
+		c.Check(errNotFound, NotNil)
+		c.Assert(strings.Contains(err.Error(), "HTTP 400"), Equals, true)
 		c.Check(blocklen, Equals, int64(0))
 		log.Print("Get")
 	}
@@ -472,4 +502,85 @@ func (s *ServerRequiredSuite) TestGetIndex(c *C) {
 	// GetIndex with invalid prefix
 	_, err = kc.GetIndex("proxy", "xyz")
 	c.Assert((err != nil), Equals, true)
+}
+
+func (s *ServerRequiredSuite) TestPutAskGetInvalidToken(c *C) {
+	kc := runProxy(c, []string{"keepproxy"}, 28852, false)
+	waitForListener()
+	defer closeListener()
+
+	// Put a test block
+	hash, rep, err := kc.PutB([]byte("foo"))
+	c.Check(err, Equals, nil)
+	c.Check(rep, Equals, 2)
+
+	for _, token := range []string{
+		"nosuchtoken",
+		"2ym314ysp27sk7h943q6vtc378srb06se3pq6ghurylyf3pdmx", // expired
+	} {
+		// Change token to given bad token
+		kc.Arvados.ApiToken = token
+
+		// Ask should result in error
+		_, _, err = kc.Ask(hash)
+		c.Check(err, NotNil)
+		errNotFound, _ := err.(keepclient.ErrNotFound)
+		c.Check(errNotFound.Temporary(), Equals, false)
+		c.Assert(strings.Contains(err.Error(), "HTTP 403"), Equals, true)
+
+		// Get should result in error
+		_, _, _, err = kc.Get(hash)
+		c.Check(err, NotNil)
+		errNotFound, _ = err.(keepclient.ErrNotFound)
+		c.Check(errNotFound.Temporary(), Equals, false)
+		c.Assert(strings.Contains(err.Error(), "HTTP 403 \"Missing or invalid Authorization header\""), Equals, true)
+	}
+}
+
+func (s *ServerRequiredSuite) TestAskGetKeepProxyConnectionError(c *C) {
+	arv, err := arvadosclient.MakeArvadosClient()
+	c.Assert(err, Equals, nil)
+
+	// keepclient with no such keep server
+	kc := keepclient.New(&arv)
+	locals := map[string]string{
+		"proxy": "http://localhost:12345",
+	}
+	kc.SetServiceRoots(locals, nil, nil)
+
+	// Ask should result in temporary connection refused error
+	hash := fmt.Sprintf("%x", md5.Sum([]byte("foo")))
+	_, _, err = kc.Ask(hash)
+	c.Check(err, NotNil)
+	errNotFound, _ := err.(*keepclient.ErrNotFound)
+	c.Check(errNotFound.Temporary(), Equals, true)
+	c.Assert(strings.Contains(err.Error(), "connection refused"), Equals, true)
+
+	// Get should result in temporary connection refused error
+	_, _, _, err = kc.Get(hash)
+	c.Check(err, NotNil)
+	errNotFound, _ = err.(*keepclient.ErrNotFound)
+	c.Check(errNotFound.Temporary(), Equals, true)
+	c.Assert(strings.Contains(err.Error(), "connection refused"), Equals, true)
+}
+
+func (s *NoKeepServerSuite) TestAskGetNoKeepServerError(c *C) {
+	kc := runProxy(c, []string{"keepproxy"}, 29999, false)
+	waitForListener()
+	defer closeListener()
+
+	// Ask should result in temporary connection refused error
+	hash := fmt.Sprintf("%x", md5.Sum([]byte("foo")))
+	_, _, err := kc.Ask(hash)
+	c.Check(err, NotNil)
+	errNotFound, _ := err.(*keepclient.ErrNotFound)
+	c.Check(errNotFound.Temporary(), Equals, true)
+	c.Assert(strings.Contains(err.Error(), "HTTP 502"), Equals, true)
+
+	// Get should result in temporary connection refused error
+	_, _, _, err = kc.Get(hash)
+	c.Check(err, NotNil)
+	errNotFound, _ = err.(*keepclient.ErrNotFound)
+	c.Check(errNotFound.Temporary(), Equals, true)
+	c.Assert(strings.Contains(err.Error(), "HTTP 502"), Equals, true)
 }
