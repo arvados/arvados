@@ -257,6 +257,9 @@ handle_python_package
 cd "$WORKSPACE/sdk/python"
 handle_python_package
 
+cd "$WORKSPACE/sdk/cwl"
+handle_python_package
+
 cd "$WORKSPACE/services/fuse"
 handle_python_package
 
