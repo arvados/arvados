@@ -107,7 +107,7 @@ class ArvadosJob(object):
             script_parameters["task.vwd"] = {}
             for t in self.generatefiles:
                 if isinstance(self.generatefiles[t], dict):
-                    src, rest = self.arvrunner.fs_access.get_collection(self.generatefiles[t]["path"][13:])
+                    src, rest = self.arvrunner.fs_access.get_collection(self.generatefiles[t]["path"].replace("$(task.keep)/", "keep:"))
                     vwd.copy(rest, t, source_collection=src)
                 else:
                     with vwd.open(t, "w") as f:
