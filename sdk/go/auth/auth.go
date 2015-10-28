@@ -68,7 +68,7 @@ func (a *Credentials) LoadTokensFromHTTPRequest(r *http.Request) {
 }
 
 func (a *Credentials) loadTokenFromCookie(r *http.Request) {
-	cookie, err := r.Cookie("api_token")
+	cookie, err := r.Cookie("arvados_api_token")
 	if err != nil || len(cookie.Value) == 0 {
 		return
 	}

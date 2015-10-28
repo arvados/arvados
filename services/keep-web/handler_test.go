@@ -61,7 +61,7 @@ func (s *IntegrationSuite) TestVhostViaCookieValue(c *check.C) {
 }
 func authzViaCookieValue(r *http.Request, tok string) int {
 	r.AddCookie(&http.Cookie{
-		Name:  "api_token",
+		Name:  "arvados_api_token",
 		Value: auth.EncodeTokenCookie([]byte(tok)),
 	})
 	return http.StatusUnauthorized

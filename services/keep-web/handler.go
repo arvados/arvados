@@ -178,7 +178,7 @@ func (h *handler) ServeHTTP(wOrig http.ResponseWriter, r *http.Request) {
 		// resulting page.
 
 		http.SetCookie(w, &http.Cookie{
-			Name:     "api_token",
+			Name:     "arvados_api_token",
 			Value:    auth.EncodeTokenCookie([]byte(t)),
 			Path:     "/",
 			Expires:  time.Now().AddDate(10, 0, 0),
