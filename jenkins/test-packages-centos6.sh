@@ -5,7 +5,7 @@ if ! python --version |& grep "Python 2.7" >/dev/null ; then
     exec scl enable python27 $0
 else
     yum -q clean all
-    yum -q update
+    yum -q -y update
     if ! yum -q install --assumeyes \
          python27-python-arvados-python-client python27-python-arvados-fuse arvados-node-manager
     then
