@@ -4,6 +4,7 @@ import (
 	"crypto/md5"
 	"fmt"
 	"io/ioutil"
+	"log"
 	"os"
 	"strings"
 	"testing"
@@ -327,7 +328,8 @@ func (s *ServerRequiredSuite) TestErrorDuringRsync_FakeSrcKeepservers(c *C) {
 	setupRsync(c, false, 1)
 
 	err := performKeepRsync(kcSrc, kcDst, "", "")
-	c.Check(strings.HasSuffix(err.Error(), "no such host"), Equals, true)
+	log.Printf("Err = %v", err)
+	c.Check(strings.Contains(err.Error(), "no such host"), Equals, true)
 }
 
 // Setup rsync using dstKeepServicesJSON with fake keepservers.
@@ -338,7 +340,8 @@ func (s *ServerRequiredSuite) TestErrorDuringRsync_FakeDstKeepservers(c *C) {
 	setupRsync(c, false, 1)
 
 	err := performKeepRsync(kcSrc, kcDst, "", "")
-	c.Check(strings.HasSuffix(err.Error(), "no such host"), Equals, true)
+	log.Printf("Err = %v", err)
+	c.Check(strings.Contains(err.Error(), "no such host"), Equals, true)
 }
 
 // Test rsync with signature error during Get from src.
