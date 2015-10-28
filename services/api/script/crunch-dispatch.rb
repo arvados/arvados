@@ -194,7 +194,7 @@ class Dispatcher
     # Otherwise, return nil.
     need_procs = NODE_CONSTRAINT_MAP.each_pair.map do |job_key, node_key|
       Proc.new do |node|
-        positive_int(node.info[node_key], 0) >=
+        positive_int(node.properties[node_key], 0) >=
           positive_int(job.runtime_constraints[job_key], 0)
       end
     end
