@@ -132,7 +132,7 @@ class ArvadosJob(object):
 
         try:
             response = self.arvrunner.api.jobs().create(body={
-                "script": "crunchrunner",
+                "script": "peter/crunchrunner",
                 "repository": kwargs["repository"],
                 "script_version": "master",
                 "script_parameters": {"tasks": [script_parameters]},
