@@ -31,7 +31,7 @@
 //	  }
 //	  server {
 //	    listen *:443 ssl;
-//	    server_name dl.example.com *.dl.example.com ~.*--dl.example.com;
+//	    server_name collections.example.com *.collections.example.com ~.*--collections.example.com;
 //	    ssl_certificate /root/wildcard.example.com.crt;
 //	    ssl_certificate_key /root/wildcard.example.com.key;
 //	    location  / {
@@ -53,31 +53,31 @@
 // without making use of any credentials supplied by the client). See
 // "Same-origin URLs" below.
 //
-//   http://dl.example.com/c=uuid_or_pdh/path/file.txt
-//   http://dl.example.com/c=uuid_or_pdh/t=TOKEN/path/file.txt
+//   http://collections.example.com/c=uuid_or_pdh/path/file.txt
+//   http://collections.example.com/c=uuid_or_pdh/t=TOKEN/path/file.txt
 //
 // The following "multiple origin" URL patterns are supported for all
 // collections:
 //
-//   http://uuid_or_pdh--dl.example.com/path/file.txt
-//   http://uuid_or_pdh--dl.example.com/t=TOKEN/path/file.txt
+//   http://uuid_or_pdh--collections.example.com/path/file.txt
+//   http://uuid_or_pdh--collections.example.com/t=TOKEN/path/file.txt
 //
 // In the "multiple origin" form, the string "--" can be replaced with
 // "." with identical results (assuming the upstream proxy is
 // configured accordingly). These two are equivalent:
 //
-//   http://uuid_or_pdh--dl.example.com/path/file.txt
-//   http://uuid_or_pdh.dl.example.com/path/file.txt
+//   http://uuid_or_pdh--collections.example.com/path/file.txt
+//   http://uuid_or_pdh.collections.example.com/path/file.txt
 //
-// The first form ("uuid_or_pdh--dl.example.com") minimizes the cost
-// and effort of deploying a wildcard TLS certificate for
-// *.dl.example.com. The second form is likely to be easier to
-// configure, and more efficient to run, on an upstream proxy.
+// The first form ("uuid_or_pdh--collections.example.com") minimizes
+// the cost and effort of deploying a wildcard TLS certificate for
+// *.collections.example.com. The second form is likely to be easier
+// to configure, and more efficient to run, on an upstream proxy.
 //
-// In all of the above forms, the "dl.example.com" part can be
-// anything at all: keep-web itself ignores everything after the first
-// "." or "--". (Of course, in order for clients to connect at all,
-// DNS and any relevant proxies must be configured accordingly.)
+// In all of the above forms, the "collections.example.com" part can
+// be anything at all: keep-web itself ignores everything after the
+// first "." or "--". (Of course, in order for clients to connect at
+// all, DNS and any relevant proxies must be configured accordingly.)
 //
 // In all of the above forms, the "uuid_or_pdh" part can be either a
 // collection UUID or a portable data hash with the "+" character
@@ -96,9 +96,9 @@
 // 1f4b0bc7583c2a7f9102c395f4ffc5e3+45, the following URLs are
 // interchangeable:
 //
-//   http://zzzzz-4zz18-znfnqtbbv4spc3w.dl.example.com/foo/bar.txt
-//   http://zzzzz-4zz18-znfnqtbbv4spc3w.dl.example.com/_/foo/bar.txt
-//   http://zzzzz-4zz18-znfnqtbbv4spc3w--dl.example.com/_/foo/bar.txt
+//   http://zzzzz-4zz18-znfnqtbbv4spc3w.collections.example.com/foo/bar.txt
+//   http://zzzzz-4zz18-znfnqtbbv4spc3w.collections.example.com/_/foo/bar.txt
+//   http://zzzzz-4zz18-znfnqtbbv4spc3w--collections.example.com/_/foo/bar.txt
 //   http://1f4b0bc7583c2a7f9102c395f4ffc5e3-45--foo.example.com/foo/bar.txt
 //   http://1f4b0bc7583c2a7f9102c395f4ffc5e3-45--.invalid/foo/bar.txt
 //
@@ -106,13 +106,13 @@
 // convenient to maintain support for existing Workbench download
 // links:
 //
-//   http://dl.example.com/collections/download/uuid_or_pdh/TOKEN/foo/bar.txt
+//   http://collections.example.com/collections/download/uuid_or_pdh/TOKEN/foo/bar.txt
 //
 // A regular Workbench "download" link is also accepted, but
 // credentials passed via cookie, header, etc. are ignored. Only
 // public data can be served this way:
 //
-//   http://dl.example.com/collections/uuid_or_pdh/foo/bar.txt
+//   http://collections.example.com/collections/uuid_or_pdh/foo/bar.txt
 //
 // Authorization mechanisms
 //
@@ -141,6 +141,14 @@
 // response is an HTTP 303 redirect to an equivalent GET request, with
 // the token stripped from the query string and added to a cookie
 // instead.
+//
+// Indexes
+//
+// Currently, keep-web does not generate HTML index listings, nor does
+// it serve a default file like "index.html" when a directory is
+// requested. These features are likely to be added in future
+// versions. Until then, keep-web responds with 404 if a directory
+// name (or any path ending with "/") is requested.
 //
 // Compatibility
 //
@@ -175,8 +183,8 @@
 // current viewer's credentials to download additional data from
 // collection Y -- data which is accessible to the current viewer, but
 // not to the author of collection X -- from the same origin
-// (``https://dl.example.com/'') and upload it to some other site
-// chosen by the author of collection X.
+// (``https://collections.example.com/'') and upload it to some other
+// site chosen by the author of collection X.
 //
 // Attachment-Only host
 //
@@ -195,10 +203,10 @@
 //
 // In "trust all content" mode, Keep-web will accept credentials (API
 // tokens) and serve any collection X at
-// "https://dl.example.com/collections/X/path/file.ext".  This is
-// UNSAFE except in the special case where everyone who is able write
-// ANY data to Keep, and every JavaScript and HTML file written to
-// Keep, is also trusted to read ALL of the data in Keep.
+// "https://collections.example.com/collections/X/path/file.ext".
+// This is UNSAFE except in the special case where everyone who is
+// able write ANY data to Keep, and every JavaScript and HTML file
+// written to Keep, is also trusted to read ALL of the data in Keep.
 //
 // In such cases you can enable trust-all-content mode.
 //

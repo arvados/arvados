@@ -28,17 +28,17 @@ func (s *IntegrationSuite) TestNoToken(c *check.C) {
 		"",
 		"bogustoken",
 	} {
-		hdr, body, _ := s.runCurl(c, token, "dl.example.com", "/collections/"+arvadostest.FooCollection+"/foo")
+		hdr, body, _ := s.runCurl(c, token, "collections.example.com", "/collections/"+arvadostest.FooCollection+"/foo")
 		c.Check(hdr, check.Matches, `(?s)HTTP/1.1 404 Not Found\r\n.*`)
 		c.Check(body, check.Equals, "")
 
 		if token != "" {
-			hdr, body, _ = s.runCurl(c, token, "dl.example.com", "/collections/download/"+arvadostest.FooCollection+"/"+token+"/foo")
+			hdr, body, _ = s.runCurl(c, token, "collections.example.com", "/collections/download/"+arvadostest.FooCollection+"/"+token+"/foo")
 			c.Check(hdr, check.Matches, `(?s)HTTP/1.1 404 Not Found\r\n.*`)
 			c.Check(body, check.Equals, "")
 		}
 
-		hdr, body, _ = s.runCurl(c, token, "dl.example.com", "/bad-route")
+		hdr, body, _ = s.runCurl(c, token, "collections.example.com", "/bad-route")
 		c.Check(hdr, check.Matches, `(?s)HTTP/1.1 404 Not Found\r\n.*`)
 		c.Check(body, check.Equals, "")
 	}
@@ -67,7 +67,7 @@ func (s *IntegrationSuite) Test404(c *check.C) {
 		"/collections/" + arvadostest.NonexistentCollection + "/theperthcountyconspiracy",
 		"/collections/download/" + arvadostest.NonexistentCollection + "/" + arvadostest.ActiveToken + "/theperthcountyconspiracy",
 	} {
-		hdr, body, _ := s.runCurl(c, arvadostest.ActiveToken, "dl.example.com", uri)
+		hdr, body, _ := s.runCurl(c, arvadostest.ActiveToken, "collections.example.com", uri)
 		c.Check(hdr, check.Matches, "(?s)HTTP/1.1 404 Not Found\r\n.*")
 		c.Check(body, check.Equals, "")
 	}
@@ -112,7 +112,7 @@ func (s *IntegrationSuite) test100BlockFile(c *check.C, blocksize int) {
 	c.Assert(err, check.Equals, nil)
 	uuid := coll["uuid"].(string)
 
-	hdr, body, size := s.runCurl(c, arv.ApiToken, uuid+".dl.example.com", "/testdata.bin")
+	hdr, body, size := s.runCurl(c, arv.ApiToken, uuid+".collections.example.com", "/testdata.bin")
 	c.Check(hdr, check.Matches, `(?s)HTTP/1.1 200 OK\r\n.*`)
 	c.Check(hdr, check.Matches, `(?si).*Content-length: `+fmt.Sprintf("%d00", blocksize)+`\r\n.*`)
 	c.Check([]byte(body)[:1234], check.DeepEquals, testdata[:1234])
@@ -140,12 +140,12 @@ func (s *IntegrationSuite) Test200(c *check.C) {
 		// My collection
 		{
 			auth:    arvadostest.ActiveToken,
-			host:    arvadostest.FooCollection + "--dl.example.com",
+			host:    arvadostest.FooCollection + "--collections.example.com",
 			path:    "/foo",
 			dataMD5: "acbd18db4cc2f85cedef654fccc4a4d8",
 		},
 		{
-			host:    strings.Replace(arvadostest.FooPdh, "+", "-", 1) + ".dl.example.com",
+			host:    strings.Replace(arvadostest.FooPdh, "+", "-", 1) + ".collections.example.com",
 			path:    "/t=" + arvadostest.ActiveToken + "/foo",
 			dataMD5: "acbd18db4cc2f85cedef654fccc4a4d8",
 		},
@@ -183,12 +183,12 @@ func (s *IntegrationSuite) Test200(c *check.C) {
 			dataMD5: "f0ef7081e1539ac00ef5b761b4fb01b3",
 		},
 		{
-			host:    arvadostest.HelloWorldCollection + ".dl.example.com",
+			host:    arvadostest.HelloWorldCollection + ".collections.example.com",
 			path:    "/Hello%20world.txt",
 			dataMD5: "f0ef7081e1539ac00ef5b761b4fb01b3",
 		},
 		{
-			host:    arvadostest.HelloWorldCollection + ".dl.example.com",
+			host:    arvadostest.HelloWorldCollection + ".collections.example.com",
 			path:    "/_/Hello%20world.txt",
 			dataMD5: "f0ef7081e1539ac00ef5b761b4fb01b3",
 		},
@@ -208,7 +208,7 @@ func (s *IntegrationSuite) Test200(c *check.C) {
 		},
 		{
 			auth:    arvadostest.SpectatorToken,
-			host:    arvadostest.HelloWorldCollection + "--dl.example.com",
+			host:    arvadostest.HelloWorldCollection + "--collections.example.com",
 			path:    "/Hello%20world.txt",
 			dataMD5: "f0ef7081e1539ac00ef5b761b4fb01b3",
 		},
@@ -220,7 +220,7 @@ func (s *IntegrationSuite) Test200(c *check.C) {
 	} {
 		host := spec.host
 		if host == "" {
-			host = "dl.example.com"
+			host = "collections.example.com"
 		}
 		hdr, body, _ := s.runCurl(c, spec.auth, host, spec.path)
 		c.Check(hdr, check.Matches, `(?s)HTTP/1.1 200 OK\r\n.*`)

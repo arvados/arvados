@@ -41,9 +41,9 @@ func parseCollectionIdFromDNSName(s string) string {
 	if i := strings.IndexRune(s, '.'); i >= 0 {
 		s = s[:i]
 	}
-	// Names like {uuid}--dl.example.com serve the same purpose as
-	// {uuid}.dl.example.com but can reduce cost/effort of using
-	// [additional] wildcard certificates.
+	// Names like {uuid}--collections.example.com serve the same
+	// purpose as {uuid}.collections.example.com but can reduce
+	// cost/effort of using [additional] wildcard certificates.
 	if i := strings.Index(s, "--"); i >= 0 {
 		s = s[:i]
 	}
@@ -125,7 +125,7 @@ func (h *handler) ServeHTTP(wOrig http.ResponseWriter, r *http.Request) {
 	}
 
 	if targetId = parseCollectionIdFromDNSName(r.Host); targetId != "" {
-		// http://ID.dl.example/PATH...
+		// http://ID.collections.example/PATH...
 		credentialsOK = true
 		targetPath = pathParts
 	} else if len(pathParts) >= 2 && strings.HasPrefix(pathParts[0], "c=") {
@@ -216,10 +216,11 @@ func (h *handler) ServeHTTP(wOrig http.ResponseWriter, r *http.Request) {
 
 	if len(targetPath) > 0 && targetPath[0] == "_" {
 		// If a collection has a directory called "t=foo" or
-		// "_", it can be served at //dl.example/_/t=foo/ or
-		// //dl.example/_/_/ respectively: //dl.example/t=foo/
-		// won't work because t=foo will be interpreted as a
-		// token "foo".
+		// "_", it can be served at
+		// //collections.example/_/t=foo/ or
+		// //collections.example/_/_/ respectively:
+		// //collections.example/t=foo/ won't work because
+		// t=foo will be interpreted as a token "foo".
 		targetPath = targetPath[1:]
 	}
 
@@ -273,7 +274,7 @@ func (h *handler) ServeHTTP(wOrig http.ResponseWriter, r *http.Request) {
 		// someone trying (anonymously) to download public
 		// data that has been deleted.  Allow a referrer to
 		// provide this context somehow?
-		w.Header().Add("WWW-Authenticate", "Basic realm=\"dl\"")
+		w.Header().Add("WWW-Authenticate", "Basic realm=\"collections\"")
 		statusCode = http.StatusUnauthorized
 		return
 	}

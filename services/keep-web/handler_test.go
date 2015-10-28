@@ -99,10 +99,10 @@ func authzViaPOST(r *http.Request, tok string) int {
 func doVhostRequests(c *check.C, authz authorizer) {
 	for _, hostPath := range []string{
 		arvadostest.FooCollection + ".example.com/foo",
-		arvadostest.FooCollection + "--dl.example.com/foo",
-		arvadostest.FooCollection + "--dl.example.com/_/foo",
+		arvadostest.FooCollection + "--collections.example.com/foo",
+		arvadostest.FooCollection + "--collections.example.com/_/foo",
 		arvadostest.FooPdh + ".example.com/foo",
-		strings.Replace(arvadostest.FooPdh, "+", "-", -1) + "--dl.example.com/foo",
+		strings.Replace(arvadostest.FooPdh, "+", "-", -1) + "--collections.example.com/foo",
 	} {
 		c.Log("doRequests: ", hostPath)
 		doVhostRequestsWithHostPath(c, authz, hostPath)
