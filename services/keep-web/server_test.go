@@ -50,14 +50,18 @@ func (s *IntegrationSuite) TestNoToken(c *check.C) {
 // really works against the server.
 func (s *IntegrationSuite) Test404(c *check.C) {
 	for _, uri := range []string{
-		// Routing errors
+		// Routing errors (always 404 regardless of what's stored in Keep)
 		"/",
 		"/foo",
 		"/download",
 		"/collections",
 		"/collections/",
+		// Implicit/generated index is not implemented yet;
+		// until then, return 404.
 		"/collections/" + arvadostest.FooCollection,
 		"/collections/" + arvadostest.FooCollection + "/",
+		"/collections/" + arvadostest.FooBarDirCollection + "/dir1",
+		"/collections/" + arvadostest.FooBarDirCollection + "/dir1/",
 		// Non-existent file in collection
 		"/collections/" + arvadostest.FooCollection + "/theperthcountyconspiracy",
 		"/collections/download/" + arvadostest.FooCollection + "/" + arvadostest.ActiveToken + "/theperthcountyconspiracy",
@@ -120,7 +124,6 @@ func (s *IntegrationSuite) test100BlockFile(c *check.C, blocksize int) {
 }
 
 type curlCase struct {
-	id      string
 	auth    string
 	host    string
 	path    string
@@ -134,6 +137,12 @@ func (s *IntegrationSuite) Test200(c *check.C) {
 		{
 			auth:    arvadostest.ActiveToken,
 			host:    arvadostest.FooCollection + "--collections.example.com",
+			path:    "/foo",
+			dataMD5: "acbd18db4cc2f85cedef654fccc4a4d8",
+		},
+		{
+			auth:    arvadostest.ActiveToken,
+			host:    arvadostest.FooCollection + ".collections.example.com",
 			path:    "/foo",
 			dataMD5: "acbd18db4cc2f85cedef654fccc4a4d8",
 		},
@@ -170,7 +179,7 @@ func (s *IntegrationSuite) Test200(c *check.C) {
 			dataMD5: "acbd18db4cc2f85cedef654fccc4a4d8",
 		},
 
-		// Anonymously accessible user agreement
+		// Anonymously accessible data
 		{
 			path:    "/c=" + arvadostest.HelloWorldCollection + "/Hello%20world.txt",
 			dataMD5: "f0ef7081e1539ac00ef5b761b4fb01b3",
