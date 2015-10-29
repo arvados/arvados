@@ -38,6 +38,7 @@ idle:
   info:
     ping_secret: "69udawxvn3zzj45hs8bumvndricrha4lcpi23pd69e44soanc0"
     slurm_state: "idle"
+  properties:
     total_cpu_cores: 16
 
 was_idle_now_down:
@@ -53,6 +54,7 @@ was_idle_now_down:
   info:
     ping_secret: "1bd1yi0x4lb5q4gzqqtrnq30oyj08r8dtdimmanbqw49z1anz2"
     slurm_state: "idle"
+  properties:
     total_cpu_cores: 16
 
 new_with_no_hostname:
