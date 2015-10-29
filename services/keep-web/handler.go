@@ -304,7 +304,9 @@ func (h *handler) ServeHTTP(wOrig http.ResponseWriter, r *http.Request) {
 			w.Header().Set("Content-Type", t)
 		}
 	}
-	w.Header().Set("Content-Length", fmt.Sprintf("%d", rdr.Len()))
+	if rdr, ok := rdr.(keepclient.ReadCloserWithLen); ok {
+		w.Header().Set("Content-Length", fmt.Sprintf("%d", rdr.Len()))
+	}
 	if attachment {
 		w.Header().Set("Content-Disposition", "attachment")
 	}

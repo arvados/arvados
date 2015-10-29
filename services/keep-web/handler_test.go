@@ -294,7 +294,7 @@ func (s *IntegrationSuite) TestVhostRedirectPOSTFormTokenToCookie404(c *check.C)
 func (s *IntegrationSuite) TestAnonymousTokenOK(c *check.C) {
 	anonymousTokens = []string{arvadostest.AnonymousToken}
 	s.testVhostRedirectTokenToCookie(c, "GET",
-		"example.com/c=" + arvadostest.HelloWorldCollection + "/Hello%20world.txt",
+		"example.com/c="+arvadostest.HelloWorldCollection+"/Hello%20world.txt",
 		"",
 		"",
 		"",
@@ -306,7 +306,7 @@ func (s *IntegrationSuite) TestAnonymousTokenOK(c *check.C) {
 func (s *IntegrationSuite) TestAnonymousTokenError(c *check.C) {
 	anonymousTokens = []string{"anonymousTokenConfiguredButInvalid"}
 	s.testVhostRedirectTokenToCookie(c, "GET",
-		"example.com/c=" + arvadostest.HelloWorldCollection + "/Hello%20world.txt",
+		"example.com/c="+arvadostest.HelloWorldCollection+"/Hello%20world.txt",
 		"",
 		"",
 		"",

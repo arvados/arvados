@@ -103,7 +103,7 @@ func setupProxyService() {
 	}
 }
 
-func runProxy(c *C, args []string, port int, bogusClientToken bool) keepclient.KeepClient {
+func runProxy(c *C, args []string, port int, bogusClientToken bool) *keepclient.KeepClient {
 	if bogusClientToken {
 		os.Setenv("ARVADOS_API_TOKEN", "bogus-token")
 	}
@@ -138,7 +138,7 @@ func runProxy(c *C, args []string, port int, bogusClientToken bool) keepclient.K
 		go main()
 	}
 
-	return kc
+	return &kc
 }
 
 func (s *ServerRequiredSuite) TestPutAskGet(c *C) {

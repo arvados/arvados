@@ -169,7 +169,7 @@ type uploadStatus struct {
 	response        string
 }
 
-func (this KeepClient) uploadToKeepServer(host string, hash string, body io.ReadCloser,
+func (this *KeepClient) uploadToKeepServer(host string, hash string, body io.ReadCloser,
 	upload_status chan<- uploadStatus, expectedLength int64, requestId string) {
 
 	var req *http.Request
@@ -214,7 +214,7 @@ func (this KeepClient) uploadToKeepServer(host string, hash string, body io.Read
 	defer resp.Body.Close()
 	defer io.Copy(ioutil.Discard, resp.Body)
 
-	respbody, err2 := ioutil.ReadAll(&io.LimitedReader{resp.Body, 4096})
+	respbody, err2 := ioutil.ReadAll(&io.LimitedReader{R: resp.Body, N: 4096})
 	response := strings.TrimSpace(string(respbody))
 	if err2 != nil && err2 != io.EOF {
 		log.Printf("[%v] Upload %v error: %v response: %v", requestId, url, err2.Error(), response)
@@ -228,7 +228,7 @@ func (this KeepClient) uploadToKeepServer(host string, hash string, body io.Read
 	}
 }
 
-func (this KeepClient) putReplicas(
+func (this *KeepClient) putReplicas(
 	hash string,
 	tr *streamer.AsyncStream,
 	expectedLength int64) (locator string, replicas int, err error) {

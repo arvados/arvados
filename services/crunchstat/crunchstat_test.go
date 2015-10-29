@@ -101,7 +101,7 @@ func TestCopyPipeToChildLogLongLines(t *testing.T) {
 	}
 
 	if after, err := rcv.ReadBytes('\n'); err != nil || string(after) != "after\n" {
-		t.Fatal("\"after\n\" not received (got \"%s\", %s)", after, err)
+		t.Fatalf("\"after\n\" not received (got \"%s\", %s)", after, err)
 	}
 
 	select {
