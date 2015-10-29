@@ -103,6 +103,7 @@ func doVhostRequests(c *check.C, authz authorizer) {
 		arvadostest.FooCollection + "--collections.example.com/_/foo",
 		arvadostest.FooPdh + ".example.com/foo",
 		strings.Replace(arvadostest.FooPdh, "+", "-", -1) + "--collections.example.com/foo",
+		arvadostest.FooBarDirCollection + ".example.com/dir1/foo",
 	} {
 		c.Log("doRequests: ", hostPath)
 		doVhostRequestsWithHostPath(c, authz, hostPath)

@@ -129,13 +129,6 @@ type curlCase struct {
 
 func (s *IntegrationSuite) Test200(c *check.C) {
 	anonymousTokens = []string{arvadostest.AnonymousToken}
-	arv, err := arvadosclient.MakeArvadosClient()
-	c.Assert(err, check.Equals, nil)
-	arv.ApiToken = arvadostest.ActiveToken
-	kc, err := keepclient.MakeKeepClient(&arv)
-	c.Assert(err, check.Equals, nil)
-	kc.PutB([]byte("Hello world\n"))
-	kc.PutB([]byte("foo"))
 	for _, spec := range []curlCase{
 		// My collection
 		{
@@ -281,6 +274,15 @@ func (s *IntegrationSuite) runCurl(c *check.C, token, host, uri string, args ...
 func (s *IntegrationSuite) SetUpSuite(c *check.C) {
 	arvadostest.StartAPI()
 	arvadostest.StartKeep()
+
+	arv, err := arvadosclient.MakeArvadosClient()
+	c.Assert(err, check.Equals, nil)
+	arv.ApiToken = arvadostest.ActiveToken
+	kc, err := keepclient.MakeKeepClient(&arv)
+	c.Assert(err, check.Equals, nil)
+	kc.PutB([]byte("Hello world\n"))
+	kc.PutB([]byte("foo"))
+	kc.PutB([]byte("foobar"))
 }
 
 func (s *IntegrationSuite) TearDownSuite(c *check.C) {

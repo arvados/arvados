@@ -7,6 +7,7 @@ const (
 	FooCollection         = "zzzzz-4zz18-fy296fx3hot09f7"
 	NonexistentCollection = "zzzzz-4zz18-totallynotexist"
 	HelloWorldCollection  = "zzzzz-4zz18-4en62shvi99lxd4"
+	FooBarDirCollection   = "zzzzz-4zz18-foonbarfilesdir"
 	FooPdh                = "1f4b0bc7583c2a7f9102c395f4ffc5e3+45"
 	HelloWorldPdh         = "55713e6a34081eb03609e7ad5fcad129+62"
 	PathologicalManifest  = ". acbd18db4cc2f85cedef654fccc4a4d8+3 37b51d194a7513e45b56f6524f2d51f2+3 73feffa4b7f6bb68e44cf984c85f6e88+3+Z+K@xyzzy acbd18db4cc2f85cedef654fccc4a4d8+3 0:0:zero@0 0:1:f 1:0:zero@1 1:4:ooba 4:0:zero@4 5:1:r 5:4:rbaz 9:0:zero@9\n" +
