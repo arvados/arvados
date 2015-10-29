@@ -36,7 +36,7 @@ func init() {
 
 // return a UUID or PDH if s begins with a UUID or URL-encoded PDH;
 // otherwise return "".
-func parseCollectionIdFromDNSName(s string) string {
+func parseCollectionIDFromDNSName(s string) string {
 	// Strip domain.
 	if i := strings.IndexRune(s, '.'); i >= 0 {
 		s = s[:i]
@@ -60,7 +60,7 @@ var urlPDHDecoder = strings.NewReplacer(" ", "+", "-", "+")
 
 // return a UUID or PDH if s is a UUID or a PDH (even if it is a PDH
 // with "+" replaced by " " or "-"); otherwise return "".
-func parseCollectionIdFromURL(s string) string {
+func parseCollectionIDFromURL(s string) string {
 	if arvadosclient.UUIDMatch(s) {
 		return s
 	}
@@ -109,7 +109,7 @@ func (h *handler) ServeHTTP(wOrig http.ResponseWriter, r *http.Request) {
 
 	pathParts := strings.Split(r.URL.Path[1:], "/")
 
-	var targetId string
+	var targetID string
 	var targetPath []string
 	var tokens []string
 	var reqTokens []string
@@ -124,24 +124,24 @@ func (h *handler) ServeHTTP(wOrig http.ResponseWriter, r *http.Request) {
 		attachment = true
 	}
 
-	if targetId = parseCollectionIdFromDNSName(r.Host); targetId != "" {
+	if targetID = parseCollectionIDFromDNSName(r.Host); targetID != "" {
 		// http://ID.collections.example/PATH...
 		credentialsOK = true
 		targetPath = pathParts
 	} else if len(pathParts) >= 2 && strings.HasPrefix(pathParts[0], "c=") {
 		// /c=ID/PATH...
-		targetId = parseCollectionIdFromURL(pathParts[0][2:])
+		targetID = parseCollectionIDFromURL(pathParts[0][2:])
 		targetPath = pathParts[1:]
 	} else if len(pathParts) >= 3 && pathParts[0] == "collections" {
 		if len(pathParts) >= 5 && pathParts[1] == "download" {
 			// /collections/download/ID/TOKEN/PATH...
-			targetId = pathParts[2]
+			targetID = pathParts[2]
 			tokens = []string{pathParts[3]}
 			targetPath = pathParts[4:]
 			pathToken = true
 		} else {
 			// /collections/ID/PATH...
-			targetId = pathParts[1]
+			targetID = pathParts[1]
 			tokens = anonymousTokens
 			targetPath = pathParts[2:]
 		}
@@ -228,7 +228,7 @@ func (h *handler) ServeHTTP(wOrig http.ResponseWriter, r *http.Request) {
 	collection := make(map[string]interface{})
 	found := false
 	for _, arv.ApiToken = range tokens {
-		err := arv.Get("collections", targetId, nil, &collection)
+		err := arv.Get("collections", targetID, nil, &collection)
 		if err == nil {
 			// Success
 			found = true
