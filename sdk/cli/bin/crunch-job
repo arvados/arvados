@@ -411,7 +411,7 @@ if (!defined $no_clear_tmp) {
 }
 
 # If this job requires a Docker image, install that.
-my ($docker_locator, $docker_stream, $docker_hash, $docker_limitmem);
+my ($docker_locator, $docker_stream, $docker_hash, $docker_limitmem, $dockeruserarg);
 if ($docker_locator = $Job->{docker_image_locator}) {
   ($docker_stream, $docker_hash) = find_docker_image($docker_locator);
   if (!$docker_hash)
@@ -448,6 +448,42 @@ fi
        ["/bin/sh", "-ec", "$docker_bin run --help | grep -qe --memory-swap="],
       {fork => 1});
   $docker_limitmem = ($? == 0);
+
+  # Find a non-root Docker user to use.
+  # Tries the default user for the container, then 'crunch', then 'nobody',
+  # testing for whether the actual user id is non-zero.  This defends against
+  # mistakes but not malice, but we intend to harden the security in the future
+  # so we don't want anyone getting used to their jobs running as root in their
+  # Docker containers.
+  my @tryusers = ("", "crunch", "nobody");
+  foreach my $try_user (@tryusers) {
+    my $try_user_arg;
+    if ($try_user eq "") {
+      Log(undef, "Checking if container default user is not UID 0");
+      $try_user_arg = "";
+    } else {
+      Log(undef, "Checking if user '$try_user' is not UID 0");
+      $try_user_arg = "--user=$try_user";
+    }
+    srun(["srun", "--nodelist=" . $node[0]],
+         ["/bin/sh", "-ec",
+          "a=`$docker_bin run --rm $try_user_arg $docker_hash id --user` && " .
+          " test \$a -ne 0"],
+         {fork => 1});
+    if ($? == 0) {
+      $dockeruserarg = $try_user_arg;
+      if ($try_user eq "") {
+        Log(undef, "Container will run with default user");
+      } else {
+        Log(undef, "Container will run with $dockeruserarg");
+      }
+      last;
+    }
+  }
+
+  if (!defined $dockeruserarg) {
+    croak("Could not find a user in container that is not UID 0 (tried default user, @tryusers) or there was a problem running 'id' in the container.");
+  }
 
   if ($Job->{arvados_sdk_version}) {
     # The job also specifies an Arvados SDK version.  Add the SDKs to the
@@ -844,6 +880,9 @@ for (my $todo_ptr = 0; $todo_ptr <= $#jobstep_todo; $todo_ptr ++)
       qw(-n1 -c1 -N1 -D), $ENV{'TMPDIR'},
       "--job-name=$job_id.$id.$$",
 	);
+
+    my $stdbuf = " stdbuf --output=0 --error=0 ";
+
     my $command =
 	"if [ -e $ENV{TASK_WORK} ]; then rm -rf $ENV{TASK_WORK}; fi; "
         ."mkdir -p $ENV{CRUNCH_TMP} $ENV{JOB_WORK} $ENV{TASK_WORK} $ENV{TASK_KEEPMOUNT} "
@@ -859,7 +898,7 @@ for (my $todo_ptr = 0; $todo_ptr <= $#jobstep_todo; $todo_ptr ++)
     {
       my $cidfile = "$ENV{CRUNCH_TMP}/$Jobstep->{arvados_task}->{uuid}-$Jobstep->{failures}.cid";
       $command .= "crunchstat -cgroup-root=/sys/fs/cgroup -cgroup-parent=docker -cgroup-cid=$cidfile -poll=10000 ";
-      $command .= "$docker_bin run --rm=true --attach=stdout --attach=stderr --attach=stdin -i --user=crunch --cidfile=$cidfile --sig-proxy ";
+      $command .= "$docker_bin run --rm=true --attach=stdout --attach=stderr --attach=stdin -i \Q$dockeruserarg\E --cidfile=$cidfile --sig-proxy ";
       # We only set memory limits if Docker lets us limit both memory and swap.
       # Memory limits alone have been supported longer, but subprocesses tend
       # to get SIGKILL if they exceed that without any swap limit set.
@@ -917,12 +956,22 @@ for (my $todo_ptr = 0; $todo_ptr <= $#jobstep_todo; $todo_ptr ++)
       }
       $command .= "--env=\QHOME=$ENV{HOME}\E ";
       $command .= "\Q$docker_hash\E ";
-      $command .= "stdbuf --output=0 --error=0 ";
-      $command .= "perl - $ENV{CRUNCH_SRC}/crunch_scripts/" . $Job->{"script"};
+
+      if ($Job->{arvados_sdk_version}) {
+        $command .= $stdbuf;
+        $command .= "perl - \Q$ENV{CRUNCH_SRC}/crunch_scripts/$Job->{script}\E";
+      } else {
+        $command .= "/bin/sh -c \'mkdir -p \"$ENV{JOB_WORK}\" \"$ENV{TASK_WORK}\" && " .
+            "if which stdbuf >/dev/null ; then " .
+            "  exec $stdbuf \Q$ENV{CRUNCH_SRC}/crunch_scripts/$Job->{script}\E ;" .
+            " else " .
+            "  exec \Q$ENV{CRUNCH_SRC}/crunch_scripts/$Job->{script}\E ;" .
+            " fi\'";
+      }
     } else {
       # Non-docker run
       $command .= "crunchstat -cgroup-root=/sys/fs/cgroup -poll=10000 ";
-      $command .= "stdbuf --output=0 --error=0 ";
+      $command .= $stdbuf;
       $command .= "perl - $ENV{CRUNCH_SRC}/crunch_scripts/" . $Job->{"script"};
     }
 

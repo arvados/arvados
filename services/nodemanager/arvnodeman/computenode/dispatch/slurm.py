@@ -34,7 +34,15 @@ class ComputeNodeShutdownActor(ShutdownActorBase):
     def _get_slurm_state(self):
         return subprocess.check_output(['sinfo', '--noheader', '-o', '%t', '-n', self._nodename])
 
-    @ShutdownActorBase._retry((subprocess.CalledProcessError,))
+    # The following methods retry on OSError.  This is intended to mitigate bug
+    # #6321 where fork() of node manager raises "OSError: [Errno 12] Cannot
+    # allocate memory" resulting in the untimely death of the shutdown actor
+    # and tends to result in node manager getting into a wedged state where it
+    # won't allocate new nodes or shut down gracefully.  The underlying causes
+    # of the excessive memory usage that result in the "Cannot allocate memory"
+    # error are still being investigated.
+
+    @ShutdownActorBase._retry((subprocess.CalledProcessError, OSError))
     def cancel_shutdown(self):
         if self._nodename:
             if self._get_slurm_state() in self.SLURM_DRAIN_STATES:
@@ -46,15 +54,15 @@ class ComputeNodeShutdownActor(ShutdownActorBase):
                 pass
         return super(ComputeNodeShutdownActor, self).cancel_shutdown()
 
+    @ShutdownActorBase._retry((subprocess.CalledProcessError, OSError))
     @ShutdownActorBase._stop_if_window_closed
-    @ShutdownActorBase._retry((subprocess.CalledProcessError,))
     def issue_slurm_drain(self):
         self._set_node_state('DRAIN', 'Reason=Node Manager shutdown')
         self._logger.info("Waiting for SLURM node %s to drain", self._nodename)
         self._later.await_slurm_drain()
 
+    @ShutdownActorBase._retry((subprocess.CalledProcessError, OSError))
     @ShutdownActorBase._stop_if_window_closed
-    @ShutdownActorBase._retry((subprocess.CalledProcessError,))
     def await_slurm_drain(self):
         output = self._get_slurm_state()
         if output in self.SLURM_END_STATES:

@@ -31,7 +31,7 @@ func SetupDataManagerTest(t *testing.T) {
 	// start api and keep servers
 	arvadostest.ResetEnv()
 	arvadostest.StartAPI()
-	arvadostest.StartKeep()
+	arvadostest.StartKeep(2, false)
 
 	arv = makeArvadosClient()
 
@@ -54,7 +54,7 @@ func SetupDataManagerTest(t *testing.T) {
 }
 
 func TearDownDataManagerTest(t *testing.T) {
-	arvadostest.StopKeep()
+	arvadostest.StopKeep(2)
 	arvadostest.StopAPI()
 }
 
