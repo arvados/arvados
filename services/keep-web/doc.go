@@ -49,9 +49,10 @@
 // Download URLs
 //
 // The following "same origin" URL patterns are supported for public
-// collections (i.e., collections which can be served by keep-web
-// without making use of any credentials supplied by the client). See
-// "Same-origin URLs" below.
+// collections and collections shared anonymously via secret links
+// (i.e., collections which can be served by keep-web without making
+// use of any implicit credentials like cookies). See "Same-origin
+// URLs" below.
 //
 //   http://collections.example.com/c=uuid_or_pdh/path/file.txt
 //   http://collections.example.com/c=uuid_or_pdh/t=TOKEN/path/file.txt
@@ -63,16 +64,18 @@
 //   http://uuid_or_pdh--collections.example.com/t=TOKEN/path/file.txt
 //
 // In the "multiple origin" form, the string "--" can be replaced with
-// "." with identical results (assuming the upstream proxy is
+// "." with identical results (assuming the downstream proxy is
 // configured accordingly). These two are equivalent:
 //
 //   http://uuid_or_pdh--collections.example.com/path/file.txt
 //   http://uuid_or_pdh.collections.example.com/path/file.txt
 //
-// The first form ("uuid_or_pdh--collections.example.com") minimizes
-// the cost and effort of deploying a wildcard TLS certificate for
-// *.collections.example.com. The second form is likely to be easier
-// to configure, and more efficient to run, on an upstream proxy.
+// The first form (with "--" instead of ".") avoids the cost and
+// effort of deploying a wildcard TLS certificate for
+// *.collections.example.com at sites that already have a wildcard
+// certificate for *.example.com. The second form is likely to be
+// easier to configure, and more efficient to run, on a downstream
+// proxy.
 //
 // In all of the above forms, the "collections.example.com" part can
 // be anything at all: keep-web itself ignores everything after the
@@ -173,8 +176,8 @@
 // In such cases -- for example, a site which is not reachable from
 // the internet, where some data is world-readable from Arvados's
 // perspective but is intended to be available only to users within
-// the local network -- the upstream proxy should configured to return
-// 401 for all paths beginning with "/c=".
+// the local network -- the downstream proxy should configured to
+// return 401 for all paths beginning with "/c=".
 //
 // Same-origin URLs
 //
@@ -195,7 +198,7 @@
 // will be accepted and all responses will have a
 // "Content-Disposition: attachment" header. This behavior is invoked
 // only when the designated origin matches exactly the Host header
-// provided by the client or upstream proxy.
+// provided by the client or downstream proxy.
 //
 //   keep-web -address :9999 -attachment-only-host domain.example:9999
 //
