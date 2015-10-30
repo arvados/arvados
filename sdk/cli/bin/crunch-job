@@ -467,7 +467,7 @@ fi
     }
     srun(["srun", "--nodelist=" . $node[0]],
          ["/bin/sh", "-ec",
-          "a=`$docker_bin run --rm $try_user_arg $docker_hash id --user` && " .
+          "a=`$docker_bin run $try_user_arg $docker_hash id --user` && " .
           " test \$a -ne 0"],
          {fork => 1});
     if ($? == 0) {
@@ -898,7 +898,7 @@ for (my $todo_ptr = 0; $todo_ptr <= $#jobstep_todo; $todo_ptr ++)
     {
       my $cidfile = "$ENV{CRUNCH_TMP}/$Jobstep->{arvados_task}->{uuid}-$Jobstep->{failures}.cid";
       $command .= "crunchstat -cgroup-root=/sys/fs/cgroup -cgroup-parent=docker -cgroup-cid=$cidfile -poll=10000 ";
-      $command .= "$docker_bin run --rm=true --attach=stdout --attach=stderr --attach=stdin -i \Q$dockeruserarg\E --cidfile=$cidfile --sig-proxy ";
+      $command .= "$docker_bin run --attach=stdout --attach=stderr --attach=stdin -i \Q$dockeruserarg\E --cidfile=$cidfile --sig-proxy ";
       # We only set memory limits if Docker lets us limit both memory and swap.
       # Memory limits alone have been supported longer, but subprocesses tend
       # to get SIGKILL if they exceed that without any swap limit set.
