@@ -42,7 +42,6 @@ module CreateSuperUserToken
         end
       end
 
-      puts api_client_auth.api_token
       api_client_auth.api_token
     end
   end

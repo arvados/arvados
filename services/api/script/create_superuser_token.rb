@@ -11,5 +11,5 @@ include CreateSuperUserToken
 
 supplied_token = ARGV[0]
 
-CreateSuperUserToken.create_superuser_token supplied_token
-
+token = CreateSuperUserToken.create_superuser_token supplied_token
+puts token
