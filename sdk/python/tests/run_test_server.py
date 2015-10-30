@@ -139,6 +139,26 @@ def _wait_until_port_listens(port, timeout=10):
         format(port, timeout),
         file=sys.stderr)
 
+def _fifo2stderr(label):
+    """Create a fifo, and copy it to stderr, prepending label to each line.
+
+    Return value is the path to the new FIFO.
+
+    +label+ should contain only alphanumerics: it is also used as part
+    of the FIFO filename.
+    """
+    fifo = os.path.join(TEST_TMPDIR, label+'.fifo')
+    try:
+        os.remove(fifo)
+    except OSError as error:
+        if error.errno != errno.ENOENT:
+            raise
+    os.mkfifo(fifo, 0700)
+    subprocess.Popen(
+        ['sed', '-e', 's/^/['+label+'] /', fifo],
+        stdout=sys.stderr)
+    return fifo
+
 def run(leave_running_atexit=False):
     """Ensure an API server is running, and ARVADOS_API_* env vars have
     admin credentials for it.
@@ -307,9 +327,10 @@ def _start_keep(n, keep_args):
     for arg, val in keep_args.iteritems():
         keep_cmd.append("{}={}".format(arg, val))
 
-    logf = open(os.path.join(TEST_TMPDIR, 'keep{}.log'.format(n)), 'a+')
+    logf = open(_fifo2stderr('keep{}'.format(n)), 'w')
     kp0 = subprocess.Popen(
         keep_cmd, stdin=open('/dev/null'), stdout=logf, stderr=logf, close_fds=True)
+
     with open(_pidfile('keep{}'.format(n)), 'w') as f:
         f.write(str(kp0.pid))
 
@@ -388,11 +409,12 @@ def run_keep_proxy():
     port = find_available_port()
     env = os.environ.copy()
     env['ARVADOS_API_TOKEN'] = admin_token
+    logf = open(_fifo2stderr('keepproxy'), 'w')
     kp = subprocess.Popen(
         ['keepproxy',
          '-pid='+_pidfile('keepproxy'),
          '-listen=:{}'.format(port)],
-        env=env, stdin=open('/dev/null'), stdout=sys.stderr)
+        env=env, stdin=open('/dev/null'), stdout=logf, stderr=logf, close_fds=True)
 
     api = arvados.api(
         version='v1',
@@ -477,7 +499,7 @@ def run_nginx():
     nginxconf['GITSSLPORT'] = find_available_port()
     nginxconf['SSLCERT'] = os.path.join(SERVICES_SRC_DIR, 'api', 'tmp', 'self-signed.pem')
     nginxconf['SSLKEY'] = os.path.join(SERVICES_SRC_DIR, 'api', 'tmp', 'self-signed.key')
-    nginxconf['ACCESSLOG'] = os.path.join(TEST_TMPDIR, 'nginx_access_log.fifo')
+    nginxconf['ACCESSLOG'] = _fifo2stderr('nginx_access_log')
 
     conftemplatefile = os.path.join(MY_DIRNAME, 'nginx.conf')
     conffile = os.path.join(TEST_TMPDIR, 'nginx.conf')
@@ -490,22 +512,12 @@ def run_nginx():
     env = os.environ.copy()
     env['PATH'] = env['PATH']+':/sbin:/usr/sbin:/usr/local/sbin'
 
-    try:
-        os.remove(nginxconf['ACCESSLOG'])
-    except OSError as error:
-        if error.errno != errno.ENOENT:
-            raise
-
-    os.mkfifo(nginxconf['ACCESSLOG'], 0700)
     nginx = subprocess.Popen(
         ['nginx',
          '-g', 'error_log stderr info;',
          '-g', 'pid '+_pidfile('nginx')+';',
          '-c', conffile],
         env=env, stdin=open('/dev/null'), stdout=sys.stderr)
-    cat_access = subprocess.Popen(
-        ['cat', nginxconf['ACCESSLOG']],
-        stdout=sys.stderr)
     _setport('keep-web-ssl', nginxconf['KEEPWEBSSLPORT'])
     _setport('keepproxy-ssl', nginxconf['KEEPPROXYSSLPORT'])
     _setport('arv-git-httpd-ssl', nginxconf['GITSSLPORT'])
