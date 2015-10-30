@@ -282,7 +282,7 @@ func (s *IntegrationSuite) runCurl(c *check.C, token, host, uri string, args ...
 
 func (s *IntegrationSuite) SetUpSuite(c *check.C) {
 	arvadostest.StartAPI()
-	arvadostest.StartKeep()
+	arvadostest.StartKeep(2, true)
 
 	arv, err := arvadosclient.MakeArvadosClient()
 	c.Assert(err, check.Equals, nil)
@@ -295,7 +295,7 @@ func (s *IntegrationSuite) SetUpSuite(c *check.C) {
 }
 
 func (s *IntegrationSuite) TearDownSuite(c *check.C) {
-	arvadostest.StopKeep()
+	arvadostest.StopKeep(2)
 	arvadostest.StopAPI()
 }
 
