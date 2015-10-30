@@ -46,6 +46,15 @@
 // proxy. However, TLS is not used between nginx and keep-web, so
 // intervening networks must be secured by other means.
 //
+// Anonymous downloads
+//
+// Use the -anonymous-token option to specify a token to use when clients
+// try to retrieve files without providing their own Arvados API token.
+//
+//   keep-web [...] -anonymous-token=zzzzzzzzzzzzzzzzzzzzzzzzzzzzzzzz
+//
+// See http://doc.arvados.org/install/install-keep-web.html for examples.
+//
 // Download URLs
 //
 // The following "same origin" URL patterns are supported for public
