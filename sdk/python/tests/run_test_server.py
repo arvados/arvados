@@ -405,10 +405,9 @@ def run_keep_proxy():
         return
     stop_keep_proxy()
 
-    admin_token = auth_token('admin')
     port = find_available_port()
     env = os.environ.copy()
-    env['ARVADOS_API_TOKEN'] = admin_token
+    env['ARVADOS_API_TOKEN'] = auth_token('anonymous')
     logf = open(_fifo2stderr('keepproxy'), 'w')
     kp = subprocess.Popen(
         ['keepproxy',
@@ -419,7 +418,7 @@ def run_keep_proxy():
     api = arvados.api(
         version='v1',
         host=os.environ['ARVADOS_API_HOST'],
-        token=admin_token,
+        token=auth_token('admin'),
         insecure=True)
     for d in api.keep_services().list(
             filters=[['service_type','=','proxy']]).execute()['items']:
