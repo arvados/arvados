@@ -23,15 +23,14 @@ type handler struct{}
 var (
 	clientPool         = arvadosclient.MakeClientPool()
 	trustAllContent    = false
-	anonymousTokens    []string
 	attachmentOnlyHost = ""
 )
 
 func init() {
-	flag.BoolVar(&trustAllContent, "trust-all-content", false,
-		"Serve non-public content from a single origin. Dangerous: read docs before using!")
 	flag.StringVar(&attachmentOnlyHost, "attachment-only-host", "",
 		"Accept credentials, and add \"Content-Disposition: attachment\" response headers, for requests at this hostname:port. Prohibiting inline display makes it possible to serve untrusted and non-public content from a single origin, i.e., without wildcard DNS or SSL.")
+	flag.BoolVar(&trustAllContent, "trust-all-content", false,
+		"Serve non-public content from a single origin. Dangerous: read docs before using!")
 }
 
 // return a UUID or PDH if s begins with a UUID or URL-encoded PDH;
