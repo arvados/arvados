@@ -451,6 +451,7 @@ def run_keep_web():
     env.pop('ARVADOS_API_TOKEN', None)
     keepweb = subprocess.Popen(
         ['keep-web',
+         '-anonymous-token='+fixture('api_client_authorizations')['anonymous']['api_token'],
          '-attachment-only-host=localhost:'+str(keepwebport),
          '-address=:'+str(keepwebport)],
         env=env, stdin=open('/dev/null'), stdout=sys.stderr)
