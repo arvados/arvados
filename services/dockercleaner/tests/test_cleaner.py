@@ -354,3 +354,23 @@ class RunTestCase(unittest.TestCase):
         self.assertLessEqual(test_start_time, event_kwargs[0]['until'])
         self.assertIn('since', event_kwargs[1])
         self.assertEqual(event_kwargs[0]['until'], event_kwargs[1]['since'])
+
+
+class ContainerRemovalTestCase(unittest.TestCase):
+    def setUp(self):
+        self.args = mock.MagicMock(name='args')
+        self.docker_client = mock.MagicMock(name='docker_client')
+
+    def test_remove_on_die(self):
+        mockID = MockDockerId()
+        self.docker_client.events.return_value = [
+            MockEvent(x, docker_id=mockID).encoded()
+            for x in ['create', 'attach', 'start', 'resize', 'die', 'destroy']]
+        cleaner.run(self.args, self.docker_client)
+        self.docker_client.remove_container.assert_called_once_with(mockID)
+
+    def test_disabled_flag(self):
+        self.args.remove_stopped_containers = False
+        self.docker_client.events.return_value = [MockEvent('die').encoded()]
+        cleaner.run(self.args, self.docker_client)
+        self.assertEqual(0, self.docker_client.remove_container.call_count)

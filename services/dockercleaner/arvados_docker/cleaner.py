@@ -177,9 +177,10 @@ class DockerImageUseRecorder(DockerEventListener):
 class DockerImageCleaner(DockerImageUseRecorder):
     event_handlers = DockerImageUseRecorder.event_handlers.copy()
 
-    def __init__(self, images, docker_client, events):
+    def __init__(self, images, docker_client, events, remove_stopped_containers=False):
         super().__init__(images, docker_client, events)
         self.logged_unknown = set()
+        self.remove_stopped_containers = remove_stopped_containers
 
     def new_container(self, event, container_hash):
         container_image_id = container_hash['Image']
@@ -187,6 +188,18 @@ class DockerImageCleaner(DockerImageUseRecorder):
             image_hash = self.docker_client.inspect_image(container_image_id)
             self.images.add_image(image_hash)
         return super().new_container(event, container_hash)
+
+    @event_handlers.on('die')
+    def clean_container(self, event=None):
+        if not self.remove_stopped_containers:
+            return
+        cid = event['id']
+        try:
+            self.docker_client.remove_container(cid)
+        except docker.errors.APIError as error:
+            logger.warning("Failed to remove container %s: %s", cid, error)
+        else:
+            logger.info("Removed container %s", cid)
 
     @event_handlers.on('destroy')
     def clean_images(self, event=None):
@@ -226,6 +239,10 @@ def parse_arguments(arguments):
         '--quota', action='store', type=human_size, required=True,
         help="space allowance for Docker images, suffixed with K/M/G/T")
     parser.add_argument(
+        '--no-remove-stopped-containers', action='store_false', default=True,
+        dest='remove_stopped_containers',
+        help="do not remove containers (default: remove on exit)")
+    parser.add_argument(
         '--verbose', '-v', action='count', default=0,
         help="log more information")
     return parser.parse_args(arguments)
@@ -246,7 +263,8 @@ def run(args, docker_client):
         images, docker_client, docker_client.events(since=1, until=start_time))
     use_recorder.run()
     cleaner = DockerImageCleaner(
-        images, docker_client, docker_client.events(since=start_time))
+        images, docker_client, docker_client.events(since=start_time),
+        remove_stopped_containers=args.remove_stopped_containers)
     logger.info("Starting cleanup loop")
     cleaner.clean_images()
     cleaner.run()
