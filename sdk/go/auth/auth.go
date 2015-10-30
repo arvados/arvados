@@ -67,13 +67,8 @@ func (a *Credentials) LoadTokensFromHTTPRequest(r *http.Request) {
 	// secret is known)
 }
 
-// TODO: LoadTokensFromHttpRequestBody(). We can't assume in
-// LoadTokensFromHttpRequest() that [or how] we should read and parse
-// the request body. This has to be requested explicitly by the
-// application.
-
 func (a *Credentials) loadTokenFromCookie(r *http.Request) {
-	cookie, err := r.Cookie("api_token")
+	cookie, err := r.Cookie("arvados_api_token")
 	if err != nil || len(cookie.Value) == 0 {
 		return
 	}
@@ -83,3 +78,8 @@ func (a *Credentials) loadTokenFromCookie(r *http.Request) {
 	}
 	a.Tokens = append(a.Tokens, string(token))
 }
+
+// TODO: LoadTokensFromHttpRequestBody(). We can't assume in
+// LoadTokensFromHttpRequest() that [or how] we should read and parse
+// the request body. This has to be requested explicitly by the
+// application.

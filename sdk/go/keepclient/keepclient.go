@@ -22,7 +22,33 @@ import (
 // A Keep "block" is 64MB.
 const BLOCKSIZE = 64 * 1024 * 1024
 
-var BlockNotFound = errors.New("Block not found")
+// Error interface with an error and boolean indicating whether the error is temporary
+type Error interface {
+	error
+	Temporary() bool
+}
+
+// multipleResponseError is of type Error
+type multipleResponseError struct {
+	error
+	isTemp bool
+}
+
+func (e *multipleResponseError) Temporary() bool {
+	return e.isTemp
+}
+
+// BlockNotFound is a multipleResponseError where isTemp is false
+var BlockNotFound = &ErrNotFound{multipleResponseError{
+	error:  errors.New("Block not found"),
+	isTemp: false,
+}}
+
+// ErrNotFound is a multipleResponseError where isTemp can be true or false
+type ErrNotFound struct {
+	multipleResponseError
+}
+
 var InsufficientReplicasError = errors.New("Could not write sufficient replicas")
 var OversizeBlockError = errors.New("Exceeded maximum block size (" + strconv.Itoa(BLOCKSIZE) + ")")
 var MissingArvadosApiHost = errors.New("Missing required environment variable ARVADOS_API_HOST")
@@ -145,7 +171,12 @@ func (kc *KeepClient) getOrHead(method string, locator string) (io.ReadCloser, i
 	var errs []string
 
 	tries_remaining := 1 + kc.Retries
+
 	serversToTry := kc.getSortedRoots(locator)
+
+	numServers := len(serversToTry)
+	count404 := 0
+
 	var retryList []string
 
 	for tries_remaining > 0 {
@@ -169,7 +200,7 @@ func (kc *KeepClient) getOrHead(method string, locator string) (io.ReadCloser, i
 				retryList = append(retryList, host)
 			} else if resp.StatusCode != http.StatusOK {
 				var respbody []byte
-				respbody, _ = ioutil.ReadAll(&io.LimitedReader{resp.Body, 4096})
+				respbody, _ = ioutil.ReadAll(&io.LimitedReader{R: resp.Body, N: 4096})
 				resp.Body.Close()
 				errs = append(errs, fmt.Sprintf("%s: HTTP %d %q",
 					url, resp.StatusCode, bytes.TrimSpace(respbody)))
@@ -181,6 +212,8 @@ func (kc *KeepClient) getOrHead(method string, locator string) (io.ReadCloser, i
 					// server side failure, transient
 					// error, can try again.
 					retryList = append(retryList, host)
+				} else if resp.StatusCode == 404 {
+					count404++
 				}
 			} else {
 				// Success.
@@ -201,7 +234,16 @@ func (kc *KeepClient) getOrHead(method string, locator string) (io.ReadCloser, i
 	}
 	log.Printf("DEBUG: %s %s failed: %v", method, locator, errs)
 
-	return nil, 0, "", BlockNotFound
+	var err error
+	if count404 == numServers {
+		err = BlockNotFound
+	} else {
+		err = &ErrNotFound{multipleResponseError{
+			error:  fmt.Errorf("%s %s failed: %v", method, locator, errs),
+			isTemp: len(serversToTry) > 0,
+		}}
+	}
+	return nil, 0, "", err
 }
 
 // Get() retrieves a block, given a locator. Returns a reader, the

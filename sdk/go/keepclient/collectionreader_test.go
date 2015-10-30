@@ -36,7 +36,7 @@ func (s *CollectionReaderUnit) SetUpTest(c *check.C) {
 	s.handler = SuccessHandler{
 		disk: make(map[string][]byte),
 		lock: make(chan struct{}, 1),
-		ops: new(int),
+		ops:  new(int),
 	}
 	localRoots := make(map[string]string)
 	for i, k := range RunSomeFakeKeepServers(s.handler, 4) {
@@ -47,8 +47,8 @@ func (s *CollectionReaderUnit) SetUpTest(c *check.C) {
 
 type SuccessHandler struct {
 	disk map[string][]byte
-	lock chan struct{}	// channel with buffer==1: full when an operation is in progress.
-	ops  *int		// number of operations completed
+	lock chan struct{} // channel with buffer==1: full when an operation is in progress.
+	ops  *int          // number of operations completed
 }
 
 func (h SuccessHandler) ServeHTTP(resp http.ResponseWriter, req *http.Request) {
@@ -65,7 +65,7 @@ func (h SuccessHandler) ServeHTTP(resp http.ResponseWriter, req *http.Request) {
 		if h.ops != nil {
 			(*h.ops)++
 		}
-		<- h.lock
+		<-h.lock
 		resp.Write([]byte(pdh))
 	case "GET":
 		pdh := req.URL.Path[1:]
@@ -74,7 +74,7 @@ func (h SuccessHandler) ServeHTTP(resp http.ResponseWriter, req *http.Request) {
 		if h.ops != nil {
 			(*h.ops)++
 		}
-		<- h.lock
+		<-h.lock
 		if !ok {
 			resp.WriteHeader(http.StatusNotFound)
 		} else {
@@ -192,7 +192,7 @@ func (s *CollectionReaderUnit) TestCollectionReaderCloseEarly(c *check.C) {
 	}()
 	err = rdr.Close()
 	c.Assert(err, check.IsNil)
-	c.Assert(rdr.Error(), check.IsNil)
+	c.Assert(rdr.(*cfReader).Error(), check.IsNil)
 
 	// Release the stub server's lock. The first GET operation will proceed.
 	<-s.handler.lock
@@ -202,7 +202,7 @@ func (s *CollectionReaderUnit) TestCollectionReaderCloseEarly(c *check.C) {
 	<-firstReadDone
 
 	// doGet() should close toRead before sending any more bufs to it.
-	if what, ok := <-rdr.toRead; ok {
+	if what, ok := <-rdr.(*cfReader).toRead; ok {
 		c.Errorf("Got %q, expected toRead to be closed", string(what))
 	}
 
@@ -217,7 +217,7 @@ func (s *CollectionReaderUnit) TestCollectionReaderDataError(c *check.C) {
 	c.Check(err, check.IsNil)
 	for i := 0; i < 2; i++ {
 		_, err = io.ReadFull(rdr, buf)
-		c.Check(err, check.Not(check.IsNil))
+		c.Check(err, check.NotNil)
 		c.Check(err, check.Not(check.Equals), io.EOF)
 	}
 }

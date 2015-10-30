@@ -204,7 +204,7 @@ func GetRemoteAddress(req *http.Request) string {
 	return req.RemoteAddr
 }
 
-func CheckAuthorizationHeader(kc keepclient.KeepClient, cache *ApiTokenCache, req *http.Request) (pass bool, tok string) {
+func CheckAuthorizationHeader(kc *keepclient.KeepClient, cache *ApiTokenCache, req *http.Request) (pass bool, tok string) {
 	var auth string
 	if auth = req.Header.Get("Authorization"); auth == "" {
 		return false, ""
@@ -334,7 +334,7 @@ func (this GetBlockHandler) ServeHTTP(resp http.ResponseWriter, req *http.Reques
 
 	var pass bool
 	var tok string
-	if pass, tok = CheckAuthorizationHeader(kc, this.ApiTokenCache, req); !pass {
+	if pass, tok = CheckAuthorizationHeader(&kc, this.ApiTokenCache, req); !pass {
 		status, err = http.StatusForbidden, BadAuthorizationHeader
 		return
 	}
@@ -365,7 +365,7 @@ func (this GetBlockHandler) ServeHTTP(resp http.ResponseWriter, req *http.Reques
 		log.Println("Warning:", GetRemoteAddress(req), req.Method, proxiedURI, "Content-Length not provided")
 	}
 
-	switch err {
+	switch respErr := err.(type) {
 	case nil:
 		status = http.StatusOK
 		resp.Header().Set("Content-Length", fmt.Sprint(expectLength))
@@ -378,10 +378,16 @@ func (this GetBlockHandler) ServeHTTP(resp http.ResponseWriter, req *http.Reques
 				err = ContentLengthMismatch
 			}
 		}
-	case keepclient.BlockNotFound:
-		status = http.StatusNotFound
+	case keepclient.Error:
+		if respErr == keepclient.BlockNotFound {
+			status = http.StatusNotFound
+		} else if respErr.Temporary() {
+			status = http.StatusBadGateway
+		} else {
+			status = 422
+		}
 	default:
-		status = http.StatusBadGateway
+		status = http.StatusInternalServerError
 	}
 }
 
@@ -435,7 +441,7 @@ func (this PutBlockHandler) ServeHTTP(resp http.ResponseWriter, req *http.Reques
 
 	var pass bool
 	var tok string
-	if pass, tok = CheckAuthorizationHeader(kc, this.ApiTokenCache, req); !pass {
+	if pass, tok = CheckAuthorizationHeader(&kc, this.ApiTokenCache, req); !pass {
 		err = BadAuthorizationHeader
 		status = http.StatusForbidden
 		return
@@ -518,7 +524,7 @@ func (handler IndexHandler) ServeHTTP(resp http.ResponseWriter, req *http.Reques
 
 	kc := *handler.KeepClient
 
-	ok, token := CheckAuthorizationHeader(kc, handler.ApiTokenCache, req)
+	ok, token := CheckAuthorizationHeader(&kc, handler.ApiTokenCache, req)
 	if !ok {
 		status, err = http.StatusForbidden, BadAuthorizationHeader
 		return

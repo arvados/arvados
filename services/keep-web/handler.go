@@ -23,27 +23,26 @@ type handler struct{}
 var (
 	clientPool         = arvadosclient.MakeClientPool()
 	trustAllContent    = false
-	anonymousTokens    []string
 	attachmentOnlyHost = ""
 )
 
 func init() {
-	flag.BoolVar(&trustAllContent, "trust-all-content", false,
-		"Serve non-public content from a single origin. Dangerous: read docs before using!")
 	flag.StringVar(&attachmentOnlyHost, "attachment-only-host", "",
 		"Accept credentials, and add \"Content-Disposition: attachment\" response headers, for requests at this hostname:port. Prohibiting inline display makes it possible to serve untrusted and non-public content from a single origin, i.e., without wildcard DNS or SSL.")
+	flag.BoolVar(&trustAllContent, "trust-all-content", false,
+		"Serve non-public content from a single origin. Dangerous: read docs before using!")
 }
 
 // return a UUID or PDH if s begins with a UUID or URL-encoded PDH;
 // otherwise return "".
-func parseCollectionIdFromDNSName(s string) string {
+func parseCollectionIDFromDNSName(s string) string {
 	// Strip domain.
 	if i := strings.IndexRune(s, '.'); i >= 0 {
 		s = s[:i]
 	}
-	// Names like {uuid}--dl.example.com serve the same purpose as
-	// {uuid}.dl.example.com but can reduce cost/effort of using
-	// [additional] wildcard certificates.
+	// Names like {uuid}--collections.example.com serve the same
+	// purpose as {uuid}.collections.example.com but can reduce
+	// cost/effort of using [additional] wildcard certificates.
 	if i := strings.Index(s, "--"); i >= 0 {
 		s = s[:i]
 	}
@@ -60,7 +59,7 @@ var urlPDHDecoder = strings.NewReplacer(" ", "+", "-", "+")
 
 // return a UUID or PDH if s is a UUID or a PDH (even if it is a PDH
 // with "+" replaced by " " or "-"); otherwise return "".
-func parseCollectionIdFromURL(s string) string {
+func parseCollectionIDFromURL(s string) string {
 	if arvadosclient.UUIDMatch(s) {
 		return s
 	}
@@ -109,7 +108,7 @@ func (h *handler) ServeHTTP(wOrig http.ResponseWriter, r *http.Request) {
 
 	pathParts := strings.Split(r.URL.Path[1:], "/")
 
-	var targetId string
+	var targetID string
 	var targetPath []string
 	var tokens []string
 	var reqTokens []string
@@ -124,24 +123,24 @@ func (h *handler) ServeHTTP(wOrig http.ResponseWriter, r *http.Request) {
 		attachment = true
 	}
 
-	if targetId = parseCollectionIdFromDNSName(r.Host); targetId != "" {
-		// http://ID.dl.example/PATH...
+	if targetID = parseCollectionIDFromDNSName(r.Host); targetID != "" {
+		// http://ID.collections.example/PATH...
 		credentialsOK = true
 		targetPath = pathParts
 	} else if len(pathParts) >= 2 && strings.HasPrefix(pathParts[0], "c=") {
 		// /c=ID/PATH...
-		targetId = parseCollectionIdFromURL(pathParts[0][2:])
+		targetID = parseCollectionIDFromURL(pathParts[0][2:])
 		targetPath = pathParts[1:]
 	} else if len(pathParts) >= 3 && pathParts[0] == "collections" {
 		if len(pathParts) >= 5 && pathParts[1] == "download" {
 			// /collections/download/ID/TOKEN/PATH...
-			targetId = pathParts[2]
+			targetID = pathParts[2]
 			tokens = []string{pathParts[3]}
 			targetPath = pathParts[4:]
 			pathToken = true
 		} else {
 			// /collections/ID/PATH...
-			targetId = pathParts[1]
+			targetID = pathParts[1]
 			tokens = anonymousTokens
 			targetPath = pathParts[2:]
 		}
@@ -178,7 +177,7 @@ func (h *handler) ServeHTTP(wOrig http.ResponseWriter, r *http.Request) {
 		// resulting page.
 
 		http.SetCookie(w, &http.Cookie{
-			Name:     "api_token",
+			Name:     "arvados_api_token",
 			Value:    auth.EncodeTokenCookie([]byte(t)),
 			Path:     "/",
 			Expires:  time.Now().AddDate(10, 0, 0),
@@ -216,10 +215,11 @@ func (h *handler) ServeHTTP(wOrig http.ResponseWriter, r *http.Request) {
 
 	if len(targetPath) > 0 && targetPath[0] == "_" {
 		// If a collection has a directory called "t=foo" or
-		// "_", it can be served at //dl.example/_/t=foo/ or
-		// //dl.example/_/_/ respectively: //dl.example/t=foo/
-		// won't work because t=foo will be interpreted as a
-		// token "foo".
+		// "_", it can be served at
+		// //collections.example/_/t=foo/ or
+		// //collections.example/_/_/ respectively:
+		// //collections.example/t=foo/ won't work because
+		// t=foo will be interpreted as a token "foo".
 		targetPath = targetPath[1:]
 	}
 
@@ -227,7 +227,7 @@ func (h *handler) ServeHTTP(wOrig http.ResponseWriter, r *http.Request) {
 	collection := make(map[string]interface{})
 	found := false
 	for _, arv.ApiToken = range tokens {
-		err := arv.Get("collections", targetId, nil, &collection)
+		err := arv.Get("collections", targetID, nil, &collection)
 		if err == nil {
 			// Success
 			found = true
@@ -273,7 +273,7 @@ func (h *handler) ServeHTTP(wOrig http.ResponseWriter, r *http.Request) {
 		// someone trying (anonymously) to download public
 		// data that has been deleted.  Allow a referrer to
 		// provide this context somehow?
-		w.Header().Add("WWW-Authenticate", "Basic realm=\"dl\"")
+		w.Header().Add("WWW-Authenticate", "Basic realm=\"collections\"")
 		statusCode = http.StatusUnauthorized
 		return
 	}
@@ -303,7 +303,9 @@ func (h *handler) ServeHTTP(wOrig http.ResponseWriter, r *http.Request) {
 			w.Header().Set("Content-Type", t)
 		}
 	}
-	w.Header().Set("Content-Length", fmt.Sprintf("%d", rdr.Len()))
+	if rdr, ok := rdr.(keepclient.ReadCloserWithLen); ok {
+		w.Header().Set("Content-Length", fmt.Sprintf("%d", rdr.Len()))
+	}
 	if attachment {
 		w.Header().Set("Content-Disposition", "attachment")
 	}

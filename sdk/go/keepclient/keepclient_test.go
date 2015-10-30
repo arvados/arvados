@@ -14,6 +14,7 @@ import (
 	"net"
 	"net/http"
 	"os"
+	"strings"
 	"testing"
 )
 
@@ -45,14 +46,14 @@ func (s *ServerRequiredSuite) SetUpSuite(c *C) {
 		return
 	}
 	arvadostest.StartAPI()
-	arvadostest.StartKeep()
+	arvadostest.StartKeep(2, false)
 }
 
 func (s *ServerRequiredSuite) TearDownSuite(c *C) {
 	if *no_server {
 		return
 	}
-	arvadostest.StopKeep()
+	arvadostest.StopKeep(2)
 	arvadostest.StopAPI()
 }
 
@@ -442,6 +443,7 @@ func (s *StandaloneSuite) TestPutWithTooManyFail(c *C) {
 	kc, _ := MakeKeepClient(&arv)
 
 	kc.Want_replicas = 2
+	kc.Retries = 0
 	arv.ApiToken = "abc123"
 	localRoots := make(map[string]string)
 	writableLocalRoots := make(map[string]string)
@@ -552,9 +554,13 @@ func (s *StandaloneSuite) TestGetFail(c *C) {
 	kc, _ := MakeKeepClient(&arv)
 	arv.ApiToken = "abc123"
 	kc.SetServiceRoots(map[string]string{"x": ks.url}, nil, nil)
+	kc.Retries = 0
 
 	r, n, url2, err := kc.Get(hash)
-	c.Check(err, Equals, BlockNotFound)
+	errNotFound, _ := err.(*ErrNotFound)
+	c.Check(errNotFound, NotNil)
+	c.Check(strings.Contains(errNotFound.Error(), "HTTP 500"), Equals, true)
+	c.Check(errNotFound.Temporary(), Equals, true)
 	c.Check(n, Equals, int64(0))
 	c.Check(url2, Equals, "")
 	c.Check(r, Equals, nil)
@@ -599,7 +605,10 @@ func (s *StandaloneSuite) TestGetNetError(c *C) {
 	kc.SetServiceRoots(map[string]string{"x": "http://localhost:62222"}, nil, nil)
 
 	r, n, url2, err := kc.Get(hash)
-	c.Check(err, Equals, BlockNotFound)
+	errNotFound, _ := err.(*ErrNotFound)
+	c.Check(errNotFound, NotNil)
+	c.Check(strings.Contains(errNotFound.Error(), "connection refused"), Equals, true)
+	c.Check(errNotFound.Temporary(), Equals, true)
 	c.Check(n, Equals, int64(0))
 	c.Check(url2, Equals, "")
 	c.Check(r, Equals, nil)
@@ -808,6 +817,7 @@ func (s *StandaloneSuite) TestGetWithFailures(c *C) {
 	}
 
 	kc.SetServiceRoots(localRoots, writableLocalRoots, nil)
+	kc.Retries = 0
 
 	// This test works only if one of the failing services is
 	// attempted before the succeeding service. Otherwise,
@@ -1185,4 +1195,54 @@ func (s *StandaloneSuite) TestGetIndexWithNoSuchPrefix(c *C) {
 	content, err2 := ioutil.ReadAll(r)
 	c.Check(err2, Equals, nil)
 	c.Check(content, DeepEquals, st.body[0:len(st.body)-1])
+}
+
+type FailThenSucceedPutHandler struct {
+	handled        chan string
+	count          int
+	successhandler StubPutHandler
+}
+
+func (h *FailThenSucceedPutHandler) ServeHTTP(resp http.ResponseWriter, req *http.Request) {
+	if h.count == 0 {
+		resp.WriteHeader(500)
+		h.count += 1
+		h.handled <- fmt.Sprintf("http://%s", req.Host)
+	} else {
+		h.successhandler.ServeHTTP(resp, req)
+	}
+}
+
+func (s *StandaloneSuite) TestPutBRetry(c *C) {
+	st := &FailThenSucceedPutHandler{make(chan string, 1), 0,
+		StubPutHandler{
+			c,
+			Md5String("foo"),
+			"abc123",
+			"foo",
+			make(chan string, 5)}}
+
+	arv, _ := arvadosclient.MakeArvadosClient()
+	kc, _ := MakeKeepClient(&arv)
+
+	kc.Want_replicas = 2
+	arv.ApiToken = "abc123"
+	localRoots := make(map[string]string)
+	writableLocalRoots := make(map[string]string)
+
+	ks := RunSomeFakeKeepServers(st, 2)
+
+	for i, k := range ks {
+		localRoots[fmt.Sprintf("zzzzz-bi6l4-fakefakefake%03d", i)] = k.url
+		writableLocalRoots[fmt.Sprintf("zzzzz-bi6l4-fakefakefake%03d", i)] = k.url
+		defer k.listener.Close()
+	}
+
+	kc.SetServiceRoots(localRoots, writableLocalRoots, nil)
+
+	hash, replicas, err := kc.PutB([]byte("foo"))
+
+	c.Check(err, Equals, nil)
+	c.Check(hash, Equals, "")
+	c.Check(replicas, Equals, 2)
 }

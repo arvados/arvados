@@ -61,7 +61,7 @@ func (s *IntegrationSuite) TestVhostViaCookieValue(c *check.C) {
 }
 func authzViaCookieValue(r *http.Request, tok string) int {
 	r.AddCookie(&http.Cookie{
-		Name:  "api_token",
+		Name:  "arvados_api_token",
 		Value: auth.EncodeTokenCookie([]byte(tok)),
 	})
 	return http.StatusUnauthorized
@@ -99,10 +99,11 @@ func authzViaPOST(r *http.Request, tok string) int {
 func doVhostRequests(c *check.C, authz authorizer) {
 	for _, hostPath := range []string{
 		arvadostest.FooCollection + ".example.com/foo",
-		arvadostest.FooCollection + "--dl.example.com/foo",
-		arvadostest.FooCollection + "--dl.example.com/_/foo",
+		arvadostest.FooCollection + "--collections.example.com/foo",
+		arvadostest.FooCollection + "--collections.example.com/_/foo",
 		arvadostest.FooPdh + ".example.com/foo",
-		strings.Replace(arvadostest.FooPdh, "+", "-", -1) + "--dl.example.com/foo",
+		strings.Replace(arvadostest.FooPdh, "+", "-", -1) + "--collections.example.com/foo",
+		arvadostest.FooBarDirCollection + ".example.com/dir1/foo",
 	} {
 		c.Log("doRequests: ", hostPath)
 		doVhostRequestsWithHostPath(c, authz, hostPath)
@@ -171,9 +172,48 @@ func (s *IntegrationSuite) TestVhostRedirectQueryTokenToCookie(c *check.C) {
 	s.testVhostRedirectTokenToCookie(c, "GET",
 		arvadostest.FooCollection+".example.com/foo",
 		"?api_token="+arvadostest.ActiveToken,
-		"text/plain",
+		"",
 		"",
 		http.StatusOK,
+		"foo",
+	)
+}
+
+func (s *IntegrationSuite) TestSingleOriginSecretLink(c *check.C) {
+	s.testVhostRedirectTokenToCookie(c, "GET",
+		"example.com/c="+arvadostest.FooCollection+"/t="+arvadostest.ActiveToken+"/foo",
+		"",
+		"",
+		"",
+		http.StatusOK,
+		"foo",
+	)
+}
+
+// Bad token in URL is 404 Not Found because it doesn't make sense to
+// retry the same URL with different authorization.
+func (s *IntegrationSuite) TestSingleOriginSecretLinkBadToken(c *check.C) {
+	s.testVhostRedirectTokenToCookie(c, "GET",
+		"example.com/c="+arvadostest.FooCollection+"/t=bogus/foo",
+		"",
+		"",
+		"",
+		http.StatusNotFound,
+		"",
+	)
+}
+
+// Bad token in a cookie (even if it got there via our own
+// query-string-to-cookie redirect) is, in principle, retryable at the
+// same URL so it's 401 Unauthorized.
+func (s *IntegrationSuite) TestVhostRedirectQueryTokenToBogusCookie(c *check.C) {
+	s.testVhostRedirectTokenToCookie(c, "GET",
+		arvadostest.FooCollection+".example.com/foo",
+		"?api_token=thisisabogustoken",
+		"",
+		"",
+		http.StatusUnauthorized,
+		"",
 	)
 }
 
@@ -181,9 +221,10 @@ func (s *IntegrationSuite) TestVhostRedirectQueryTokenSingleOriginError(c *check
 	s.testVhostRedirectTokenToCookie(c, "GET",
 		"example.com/c="+arvadostest.FooCollection+"/foo",
 		"?api_token="+arvadostest.ActiveToken,
-		"text/plain",
+		"",
 		"",
 		http.StatusBadRequest,
+		"",
 	)
 }
 
@@ -195,9 +236,10 @@ func (s *IntegrationSuite) TestVhostRedirectQueryTokenTrustAllContent(c *check.C
 	s.testVhostRedirectTokenToCookie(c, "GET",
 		"example.com/c="+arvadostest.FooCollection+"/foo",
 		"?api_token="+arvadostest.ActiveToken,
-		"text/plain",
+		"",
 		"",
 		http.StatusOK,
+		"foo",
 	)
 }
 
@@ -210,17 +252,19 @@ func (s *IntegrationSuite) TestVhostRedirectQueryTokenAttachmentOnlyHost(c *chec
 	s.testVhostRedirectTokenToCookie(c, "GET",
 		"example.com/c="+arvadostest.FooCollection+"/foo",
 		"?api_token="+arvadostest.ActiveToken,
-		"text/plain",
+		"",
 		"",
 		http.StatusBadRequest,
+		"",
 	)
 
 	resp := s.testVhostRedirectTokenToCookie(c, "GET",
 		"example.com:1234/c="+arvadostest.FooCollection+"/foo",
 		"?api_token="+arvadostest.ActiveToken,
-		"text/plain",
+		"",
 		"",
 		http.StatusOK,
+		"foo",
 	)
 	c.Check(resp.Header().Get("Content-Disposition"), check.Equals, "attachment")
 }
@@ -232,6 +276,7 @@ func (s *IntegrationSuite) TestVhostRedirectPOSTFormTokenToCookie(c *check.C) {
 		"application/x-www-form-urlencoded",
 		url.Values{"api_token": {arvadostest.ActiveToken}}.Encode(),
 		http.StatusOK,
+		"foo",
 	)
 }
 
@@ -242,23 +287,52 @@ func (s *IntegrationSuite) TestVhostRedirectPOSTFormTokenToCookie404(c *check.C)
 		"application/x-www-form-urlencoded",
 		url.Values{"api_token": {arvadostest.SpectatorToken}}.Encode(),
 		http.StatusNotFound,
+		"",
 	)
 }
 
-func (s *IntegrationSuite) testVhostRedirectTokenToCookie(c *check.C, method, hostPath, queryString, contentType, body string, expectStatus int) *httptest.ResponseRecorder {
+func (s *IntegrationSuite) TestAnonymousTokenOK(c *check.C) {
+	anonymousTokens = []string{arvadostest.AnonymousToken}
+	s.testVhostRedirectTokenToCookie(c, "GET",
+		"example.com/c="+arvadostest.HelloWorldCollection+"/Hello%20world.txt",
+		"",
+		"",
+		"",
+		http.StatusOK,
+		"Hello world\n",
+	)
+}
+
+func (s *IntegrationSuite) TestAnonymousTokenError(c *check.C) {
+	anonymousTokens = []string{"anonymousTokenConfiguredButInvalid"}
+	s.testVhostRedirectTokenToCookie(c, "GET",
+		"example.com/c="+arvadostest.HelloWorldCollection+"/Hello%20world.txt",
+		"",
+		"",
+		"",
+		http.StatusNotFound,
+		"",
+	)
+}
+
+func (s *IntegrationSuite) testVhostRedirectTokenToCookie(c *check.C, method, hostPath, queryString, contentType, reqBody string, expectStatus int, expectRespBody string) *httptest.ResponseRecorder {
 	u, _ := url.Parse(`http://` + hostPath + queryString)
 	req := &http.Request{
 		Method: method,
 		Host:   u.Host,
 		URL:    u,
 		Header: http.Header{"Content-Type": {contentType}},
-		Body:   ioutil.NopCloser(strings.NewReader(body)),
+		Body:   ioutil.NopCloser(strings.NewReader(reqBody)),
 	}
 
 	resp := httptest.NewRecorder()
+	defer func() {
+		c.Check(resp.Code, check.Equals, expectStatus)
+		c.Check(resp.Body.String(), check.Equals, expectRespBody)
+	}()
+
 	(&handler{}).ServeHTTP(resp, req)
 	if resp.Code != http.StatusSeeOther {
-		c.Assert(resp.Code, check.Equals, expectStatus)
 		return resp
 	}
 	c.Check(resp.Body.String(), check.Matches, `.*href="//`+regexp.QuoteMeta(html.EscapeString(hostPath))+`".*`)
@@ -278,9 +352,5 @@ func (s *IntegrationSuite) testVhostRedirectTokenToCookie(c *check.C, method, ho
 	resp = httptest.NewRecorder()
 	(&handler{}).ServeHTTP(resp, req)
 	c.Check(resp.Header().Get("Location"), check.Equals, "")
-	c.Check(resp.Code, check.Equals, expectStatus)
-	if expectStatus == http.StatusOK {
-		c.Check(resp.Body.String(), check.Equals, "foo")
-	}
 	return resp
 }

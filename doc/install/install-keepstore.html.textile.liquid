@@ -37,6 +37,10 @@ Verify that Keepstore is functional:
 <pre><code>~$ <span class="userinput">keepstore -h</span>
 2015/05/08 13:41:16 keepstore starting, pid 2565
 Usage of ./keepstore:
+  -azure-storage-account-key-file="": File containing the account key used for subsequent --azure-storage-container-volume arguments.
+  -azure-storage-account-name="": Azure storage account name used for subsequent --azure-storage-container-volume arguments.
+  -azure-storage-container-volume=[]: Use the given container as a storage volume. Can be given multiple times.
+  -azure-storage-replication=3: Replication level to report to clients when data is stored in an Azure container.
   -blob-signature-ttl=1209600: Lifetime of blob permission signatures. See services/api/config/application.default.yml.
   -blob-signing-key-file="": File containing the secret key for generating and verifying blob permission signatures.
   -data-manager-token-file="": File with the API token used by the Data Manager. All DELETE requests or GET /index requests must carry this token.
@@ -54,23 +58,67 @@ Usage of ./keepstore:
 </code></pre>
 </notextile>
 
-If you want access control on your Keepstore server(s), you must specify the @-enforce-permissions@ flag and provide a signing key. The @-blob-signing-key-file@ argument should be a file containing a long random alphanumeric string with no internal line breaks (it is also possible to use a socket or FIFO: keepstore reads it only once, at startup). This key must be the same as the @blob_signing_key@ configured in the "API server":install-api-server.html config/application.yml file.
+h3. Prepare storage volumes
 
-The @-max-buffers@ argument can be used to restrict keepstore's memory use. By default, keepstore will allocate no more than 128 blocks (8 GiB) worth of data buffers at a time. Normally this should be set as high as possible without risking swapping.
+{% include 'notebox_begin' %}
+This section uses a local filesystem as a backing store. If you are using Azure Storage, follow the setup instructions on the "Azure Blob Storage":configure-azure-blob-storage.html page instead.
+{% include 'notebox_end' %}
 
-Prepare one or more volumes for Keepstore to use. Simply create a /keep directory on all the partitions you would like Keepstore to use, and then start Keepstore. For example, using 2 tmpfs volumes:
+There are two ways to specify a set of local directories where keepstore should store its data files.
+# Implicitly, by creating a directory called @keep@ at the top level of each filesystem you intend to use, and omitting @-volume@ arguments.
+# Explicitly, by providing a @-volume@ argument for each directory.
+
+For example, if there are filesystems mounted at @/mnt@ and @/mnt2@:
 
 <notextile>
-<pre><code>~$ <span class="userinput">keepstore -blob-signing-key-file=./blob-signing-key</span>
+<pre><code>~$ <span class="userinput">mkdir /mnt/keep /mnt2/keep</span>
+~$ <span class="userinput">keepstore</span>
 2015/05/08 13:44:26 keepstore starting, pid 2765
 2015/05/08 13:44:26 Using volume [UnixVolume /mnt/keep] (writable=true)
+2015/05/08 13:44:26 Using volume [UnixVolume /mnt2/keep] (writable=true)
 2015/05/08 13:44:26 listening at :25107
 </code></pre>
 </notextile>
 
-It's recommended to run Keepstore under "runit":http://smarden.org/runit/ or something similar.
+Equivalently:
 
-Repeat this section for each Keepstore server you are setting up.
+<notextile>
+<pre><code>~$ <span class="userinput">mkdir /mnt/keep /mnt2/keep</span>
+~$ <span class="userinput">keepstore -volume=/mnt/keep -volume=/mnt2/keep</span>
+2015/05/08 13:44:26 keepstore starting, pid 2765
+2015/05/08 13:44:26 Using volume [UnixVolume /mnt/keep] (writable=true)
+2015/05/08 13:44:26 Using volume [UnixVolume /mnt2/keep] (writable=true)
+2015/05/08 13:44:26 listening at :25107
+</code></pre>
+</notextile>
+
+h3. Run keepstore as a supervised service
+
+We recommend running Keepstore under "runit":http://smarden.org/runit/ or something similar, using a run script like the following:
+
+<notextile>
+<pre><code>#!/bin/sh
+
+exec 2>&1
+exec GOGC=10 GOMAXPROCS=<span class="userinput">4</span> keepstore \
+ -enforce-permissions=true \
+ -blob-signing-key-file=<span class="userinput">/etc/keepstore/blob-signing.key</span> \
+ -max-buffers=<span class="userinput">100</span> \
+ -serialize=true \
+ -volume=<span class="userinput">/mnt/keep</span> \
+ -volume=<span class="userinput">/mnt2/keep</span>
+</code></pre>
+</notextile>
+
+The @GOMAXPROCS@ environment variable determines the maximum number of concurrent threads, and should normally be set to the number of CPU cores present.
+
+The @-max-buffers@ argument limits keepstore's memory usage. It should be set such that @max-buffers * 64MiB + 10%@ fits comfortably in memory. For example, @-max-buffers=100@ is suitable for a host with 8 GiB RAM.
+
+If you want access control on your Keepstore server(s), you must specify the @-enforce-permissions@ flag and provide a signing key. The @-blob-signing-key-file@ argument should be a file containing a long random alphanumeric string with no internal line breaks (it is also possible to use a socket or FIFO: keepstore reads it only once, at startup). This key must be the same as the @blob_signing_key@ configured in the "API server's":install-api-server.html configuration file, @/etc/arvados/api/application.yml@.
+
+h3. Set up additional servers
+
+Repeat the above sections to prepare volumes and bring up supervised services on each Keepstore server you are setting up.
 
 h3. Tell the API server about the Keepstore servers
 
@@ -90,6 +138,3 @@ Make sure to update the @service_host@ value to match each of your Keepstore ser
 }
 EOF</span>
 </code></pre></notextile>
-
-
-
