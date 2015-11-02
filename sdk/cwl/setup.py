@@ -30,8 +30,8 @@ setup(name='arvados-cwl-runner',
           'bin/arvados-cwl-runner'
       ],
       install_requires=[
-          'cwltool>=1.0.20151014024436',
-          'arvados-python-client'
+          'cwltool>=1.0.20151026181844',
+          'arvados-python-client>=0.1.20151023214338'
       ],
       zip_safe=True,
       cmdclass={'egg_info': tagger},

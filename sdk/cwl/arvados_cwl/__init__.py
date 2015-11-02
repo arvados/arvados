@@ -14,7 +14,7 @@ import fnmatch
 import logging
 import re
 import os
-import copy
+
 from cwltool.process import get_feature
 
 logger = logging.getLogger('arvados.cwl-runner')
@@ -58,18 +58,25 @@ class CollectionFsAccess(cwltool.process.StdFsAccess):
             return (None, path)
 
     def _match(self, collection, patternsegments, parent):
+        if not patternsegments:
+            return []
+
+        if not isinstance(collection, arvados.collection.RichCollectionBase):
+            return []
+
         ret = []
-        if len(patternsegments) == 0:
-            return ret
+        # iterate over the files and subcollections in 'collection'
         for filename in collection:
-            if fnmatch.fnmatch(filename, patternsegments[0]):
+            if patternsegments[0] == '.':
+                # Pattern contains something like "./foo" so just shift
+                # past the "./"
+                ret.extend(self._match(collection, patternsegments[1:], parent))
+            elif fnmatch.fnmatch(filename, patternsegments[0]):
                 cur = os.path.join(parent, filename)
                 if len(patternsegments) == 1:
                     ret.append(cur)
                 else:
                     ret.extend(self._match(collection[filename], patternsegments[1:], cur))
-            elif patternsegments[0] == '.':
-                ret.extend(self._match(collection, patternsegments[1:], parent))
         return ret
 
     def glob(self, pattern):
@@ -132,7 +139,7 @@ class ArvadosJob(object):
 
         try:
             response = self.arvrunner.api.jobs().create(body={
-                "script": "peter/crunchrunner",
+                "script": "crunchrunner",
                 "repository": kwargs["repository"],
                 "script_version": "master",
                 "script_parameters": {"tasks": [script_parameters]},
@@ -171,7 +178,7 @@ class ArvadosJob(object):
 
 class ArvPathMapper(cwltool.pathmapper.PathMapper):
     def __init__(self, arvrunner, referenced_files, basedir, **kwargs):
-        self._pathmap = copy.copy(arvrunner.uploaded)
+        self._pathmap = arvrunner.get_uploaded()
         uploadfiles = []
 
         pdh_path = re.compile(r'^keep:[0-9a-f]{32}\+\d+/.+')
@@ -199,7 +206,7 @@ class ArvPathMapper(cwltool.pathmapper.PathMapper):
                                              fnPattern="$(task.keep)/%s/%s")
 
         for src, ab, st in uploadfiles:
-            arvrunner.uploaded[src] = (ab, st.fn)
+            arvrunner.add_uploaded(src, (ab, st.fn))
             self._pathmap[src] = (ab, st.fn)
 
 
@@ -253,6 +260,12 @@ class ArvCwlRunner(object):
                             self.cond.notify()
                         finally:
                             self.cond.release()
+
+    def get_uploaded(self):
+        return self.uploaded.copy()
+
+    def add_uploaded(self, src, pair):
+        self.uploaded[src] = pair
 
     def arvExecutor(self, tool, job_order, input_basedir, args, **kwargs):
         events = arvados.events.subscribe(arvados.api('v1'), [["object_uuid", "is_a", "arvados#job"]], self.on_message)
@@ -313,6 +326,6 @@ def main(args, stdout, stderr, api_client=None):
                         default=False, dest="enable_reuse",
                         help="")
 
-    parser.add_argument('--repository', type=str, default="crunchrunner", help="Repository containing the 'crunchrunner' program.")
+    parser.add_argument('--repository', type=str, default="peter/crunchrunner", help="Repository containing the 'crunchrunner' program.")
 
     return cwltool.main.main(args, executor=runner.arvExecutor, makeTool=runner.arvMakeTool, parser=parser)
