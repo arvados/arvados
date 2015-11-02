@@ -26,7 +26,9 @@ production:
   #git_internal_dir: ~
   #git_repo_ssh_base: "git@git.uuid_prefix.your.domain:"
   #git_repo_http_base: https://git.uuid_prefix.your.domain/
+  #auto_admin_first_user: false
   #crunch_job_wrapper: :slurm_immediate
+  #sso_insecure: false
 
 development:
   # Separate settings for development configuration.
@@ -42,8 +44,9 @@ development:
   #git_internal_dir: ~
   #git_repo_ssh_base: "git@git.uuid_prefix.your.domain:"
   #git_repo_http_base: https://git.uuid_prefix.your.domain/
+  #auto_admin_first_user: false
   #crunch_job_wrapper: :slurm_immediate
-
+  sso_insecure: true
 
 test:
   # Tests should be able to run without further configuration, but if you do
