@@ -223,13 +223,14 @@ class DockerImagesTestCase(unittest.TestCase):
 
 class DockerImageUseRecorderTestCase(unittest.TestCase):
     TEST_CLASS = cleaner.DockerImageUseRecorder
+    TEST_CLASS_INIT_KWARGS = {}
 
     def setUp(self):
         self.images = mock.MagicMock(name='images')
         self.docker_client = mock.MagicMock(name='docker_client')
         self.events = []
         self.recorder = self.TEST_CLASS(self.images, self.docker_client,
-                                        self.encoded_events)
+                                        self.encoded_events, **self.TEST_CLASS_INIT_KWARGS)
 
     @property
     def encoded_events(self):
@@ -308,6 +309,23 @@ class DockerImageCleanerTestCase(DockerImageUseRecorderTestCase):
         self.recorder.run()
         self.docker_client.remove_image.assert_called_with(delete_id)
         self.assertFalse(self.images.del_image.called)
+
+
+class DockerContainerCleanerTestCase(DockerImageUseRecorderTestCase):
+    TEST_CLASS = cleaner.DockerImageCleaner
+    TEST_CLASS_INIT_KWARGS = {'remove_stopped_containers': True}
+
+    @mock.patch('arvados_docker.cleaner.logger')
+    def test_failed_container_deletion_handling(self, mockLogger):
+        cid = MockDockerId()
+        self.docker_client.remove_container.side_effect = MockException(500)
+        self.events.append(MockEvent('die', docker_id=cid))
+        self.recorder.run()
+        self.docker_client.remove_container.assert_called_with(cid)
+        self.assertEqual("Failed to remove container %s: %s",
+                         mockLogger.warning.call_args[0][0])
+        self.assertEqual(cid,
+                         mockLogger.warning.call_args[0][1])
 
 
 class HumanSizeTestCase(unittest.TestCase):
