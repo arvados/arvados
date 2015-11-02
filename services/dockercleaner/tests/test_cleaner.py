@@ -313,7 +313,7 @@ class DockerImageCleanerTestCase(DockerImageUseRecorderTestCase):
 
 class DockerContainerCleanerTestCase(DockerImageUseRecorderTestCase):
     TEST_CLASS = cleaner.DockerImageCleaner
-    TEST_CLASS_INIT_KWARGS = {'remove_stopped_containers': True}
+    TEST_CLASS_INIT_KWARGS = {'remove_containers_onexit': True}
 
     @mock.patch('arvados_docker.cleaner.logger')
     def test_failed_container_deletion_handling(self, mockLogger):

@@ -177,10 +177,10 @@ class DockerImageUseRecorder(DockerEventListener):
 class DockerImageCleaner(DockerImageUseRecorder):
     event_handlers = DockerImageUseRecorder.event_handlers.copy()
 
-    def __init__(self, images, docker_client, events, remove_stopped_containers=False):
+    def __init__(self, images, docker_client, events, remove_containers_onexit=False):
         super().__init__(images, docker_client, events)
         self.logged_unknown = set()
-        self.remove_stopped_containers = remove_stopped_containers
+        self.remove_containers_onexit = remove_containers_onexit
 
     def new_container(self, event, container_hash):
         container_image_id = container_hash['Image']
@@ -199,9 +199,8 @@ class DockerImageCleaner(DockerImageUseRecorder):
 
     @event_handlers.on('die')
     def clean_container(self, event=None):
-        if not self.remove_stopped_containers:
-            return
-        self._remove_container(event['id'])
+        if self.remove_containers_onexit:
+            self._remove_container(event['id'])
 
     def check_stopped_containers(self, remove=False):
         logger.info("Checking for stopped containers")
@@ -278,7 +277,7 @@ def run(args, docker_client):
     use_recorder.run()
     cleaner = DockerImageCleaner(
         images, docker_client, docker_client.events(since=start_time),
-        remove_stopped_containers=args.remove_stopped_containers != 'never')
+        remove_containers_onexit=args.remove_stopped_containers != 'never')
     cleaner.check_stopped_containers(
         remove=args.remove_stopped_containers == 'always')
     logger.info("Checking image quota at startup")
