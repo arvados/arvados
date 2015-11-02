@@ -375,20 +375,54 @@ class RunTestCase(unittest.TestCase):
 
 
 class ContainerRemovalTestCase(unittest.TestCase):
+    LIFECYCLE = ['create', 'attach', 'start', 'resize', 'die', 'destroy']
+
     def setUp(self):
         self.args = mock.MagicMock(name='args')
         self.docker_client = mock.MagicMock(name='docker_client')
-
-    def test_remove_on_die(self):
-        mockID = MockDockerId()
+        self.existingCID = MockDockerId()
+        self.docker_client.containers.return_value = [{
+            'Id': self.existingCID,
+            'Status': 'Exited (0) 6 weeks ago',
+        }, {
+            # If docker_client.containers() returns non-exited
+            # containers for some reason, do not remove them.
+            'Id': MockDockerId(),
+            'Status': 'Running',
+        }]
+        self.newCID = MockDockerId()
         self.docker_client.events.return_value = [
-            MockEvent(x, docker_id=mockID).encoded()
-            for x in ['create', 'attach', 'start', 'resize', 'die', 'destroy']]
-        cleaner.run(self.args, self.docker_client)
-        self.docker_client.remove_container.assert_called_once_with(mockID)
+            MockEvent(e, docker_id=self.newCID).encoded()
+            for e in self.LIFECYCLE]
 
-    def test_disabled_flag(self):
-        self.args.remove_stopped_containers = False
-        self.docker_client.events.return_value = [MockEvent('die').encoded()]
+    def test_remove_onexit(self):
+        self.args.remove_stopped_containers = 'onexit'
+        cleaner.run(self.args, self.docker_client)
+        self.docker_client.remove_container.assert_called_once_with(self.newCID)
+
+    def test_remove_always(self):
+        self.args.remove_stopped_containers = 'always'
+        cleaner.run(self.args, self.docker_client)
+        self.docker_client.remove_container.assert_any_call(self.existingCID)
+        self.docker_client.remove_container.assert_any_call(self.newCID)
+        self.assertEqual(2, self.docker_client.remove_container.call_count)
+
+    def test_remove_never(self):
+        self.args.remove_stopped_containers = 'never'
         cleaner.run(self.args, self.docker_client)
         self.assertEqual(0, self.docker_client.remove_container.call_count)
+
+    def test_container_exited_between_subscribe_events_and_check_existing(self):
+        self.args.remove_stopped_containers = 'always'
+        self.docker_client.events.return_value = [
+            MockEvent(e, docker_id=self.existingCID).encoded()
+            for e in ['die', 'destroy']]
+        cleaner.run(self.args, self.docker_client)
+        # Subscribed to events before getting the list of existing
+        # exited containers?
+        self.docker_client.assert_has_calls([
+            mock.call.events(since=mock.ANY),
+            mock.call.containers(filters={'status':'exited'})])
+        # Asked to delete the container twice?
+        self.docker_client.remove_container.assert_has_calls([mock.call(self.existingCID)] * 2)
+        self.assertEqual(2, self.docker_client.remove_container.call_count)

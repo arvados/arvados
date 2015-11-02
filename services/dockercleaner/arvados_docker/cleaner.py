@@ -189,17 +189,29 @@ class DockerImageCleaner(DockerImageUseRecorder):
             self.images.add_image(image_hash)
         return super().new_container(event, container_hash)
 
-    @event_handlers.on('die')
-    def clean_container(self, event=None):
-        if not self.remove_stopped_containers:
-            return
-        cid = event['id']
+    def _remove_container(self, cid):
         try:
             self.docker_client.remove_container(cid)
         except docker.errors.APIError as error:
             logger.warning("Failed to remove container %s: %s", cid, error)
         else:
             logger.info("Removed container %s", cid)
+
+    @event_handlers.on('die')
+    def clean_container(self, event=None):
+        if not self.remove_stopped_containers:
+            return
+        self._remove_container(event['id'])
+
+    def check_stopped_containers(self, remove=False):
+        logger.info("Checking for stopped containers")
+        for c in self.docker_client.containers(filters={'status': 'exited'}):
+            logger.info("Container %s %s", c['Id'], c['Status'])
+            if c['Status'][:6] != 'Exited':
+                logger.error("Unexpected status %s for container %s",
+                             c['Status'], c['Id'])
+            elif remove:
+                self._remove_container(c['Id'])
 
     @event_handlers.on('destroy')
     def clean_images(self, event=None):
@@ -239,9 +251,11 @@ def parse_arguments(arguments):
         '--quota', action='store', type=human_size, required=True,
         help="space allowance for Docker images, suffixed with K/M/G/T")
     parser.add_argument(
-        '--no-remove-stopped-containers', action='store_false', default=True,
-        dest='remove_stopped_containers',
-        help="do not remove containers (default: remove on exit)")
+        '--remove-stopped-containers', type=str, default='always',
+        choices=['never', 'onexit', 'always'],
+        help="""when to remove stopped containers (default: always, i.e., remove
+        stopped containers found at startup, and remove containers as
+        soon as they exit)""")
     parser.add_argument(
         '--verbose', '-v', action='count', default=0,
         help="log more information")
@@ -264,9 +278,12 @@ def run(args, docker_client):
     use_recorder.run()
     cleaner = DockerImageCleaner(
         images, docker_client, docker_client.events(since=start_time),
-        remove_stopped_containers=args.remove_stopped_containers)
-    logger.info("Starting cleanup loop")
+        remove_stopped_containers=args.remove_stopped_containers != 'never')
+    cleaner.check_stopped_containers(
+        remove=args.remove_stopped_containers == 'always')
+    logger.info("Checking image quota at startup")
     cleaner.clean_images()
+    logger.info("Listening for docker events")
     cleaner.run()
 
 def main(arguments):
