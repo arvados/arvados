@@ -496,10 +496,11 @@ point the collection will actually be looked up on the server and the directory
 will appear if it exists.
 """.lstrip()
 
-    def __init__(self, parent_inode, inodes, api, num_retries):
+    def __init__(self, parent_inode, inodes, api, num_retries, by_pdh=False):
         super(MagicDirectory, self).__init__(parent_inode, inodes)
         self.api = api
         self.num_retries = num_retries
+        self.by_pdh = by_pdh
 
     def __setattr__(self, name, value):
         super(MagicDirectory, self).__setattr__(name, value)
@@ -516,6 +517,9 @@ will appear if it exists.
     def __contains__(self, k):
         if k in self._entries:
             return True
+
+        if self.by_pdh and uuid_pattern.match(k):
+            raise llfuse.FUSEError(errno.ENOENT)
 
         if not portable_data_hash_pattern.match(k) and not uuid_pattern.match(k):
             return False
