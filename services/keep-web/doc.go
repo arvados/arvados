@@ -93,8 +93,8 @@
 //
 // In all of the above forms, the "uuid_or_pdh" part can be either a
 // collection UUID or a portable data hash with the "+" character
-// optionally replaced by "-". (Replacing "+" with "-" is mandatory
-// when "uuid_or_pdh" appears in the domain name only because "+" is
+// optionally replaced by "-". (When "uuid_or_pdh" appears in the
+// domain name, replacing "+" with "-" is mandatory, because "+" is
 // not a valid character in a domain name.)
 //
 // In all of the above forms, a top level directory called "_" is
