@@ -84,6 +84,9 @@ func main() {
 		log.Fatalf("Error setting up arvados client %s", err.Error())
 	}
 
+	if os.Getenv("ARVADOS_DEBUG") != "" {
+		keepclient.DebugPrintf = log.Printf
+	}
 	kc, err := keepclient.MakeKeepClient(&arv)
 	if err != nil {
 		log.Fatalf("Error setting up keep client %s", err.Error())
