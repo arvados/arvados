@@ -10,7 +10,6 @@ import (
 	"net/url"
 	"os"
 	"strings"
-	"time"
 
 	"git.curoverse.com/arvados.git/sdk/go/arvadosclient"
 	"git.curoverse.com/arvados.git/sdk/go/auth"
@@ -180,7 +179,6 @@ func (h *handler) ServeHTTP(wOrig http.ResponseWriter, r *http.Request) {
 			Name:     "arvados_api_token",
 			Value:    auth.EncodeTokenCookie([]byte(t)),
 			Path:     "/",
-			Expires:  time.Now().AddDate(10, 0, 0),
 			HttpOnly: true,
 		})
 		redir := (&url.URL{Host: r.Host, Path: r.URL.Path}).String()
