@@ -8,3 +8,6 @@ case "$TARGET" in
         fpm_depends+=(libc6 libfuse2)
         ;;
 esac
+
+# FIXME: Remove this line after #6885 is done.
+fpm_args+=(--iteration 2)
