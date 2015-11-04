@@ -320,6 +320,21 @@ go get "git.curoverse.com/arvados.git/services/keepproxy"
 cd $WORKSPACE/packages/$TARGET
 fpm_build $GOPATH/bin/keepproxy=/usr/bin/keepproxy keepproxy 'Curoverse, Inc.' 'dir' "$PKG_VERSION" "--url=https://arvados.org" "--license=GNU Affero General Public License, version 3.0" "--description=Keepproxy makes a Keep cluster accessible to clients that are not on the LAN"
 
+# keep-web
+cd "$GOPATH/src/git.curoverse.com/arvados.git/services/keep-web"
+KEEP_WEB_VERSION=$(version_from_git)
+KEEP_WEB_TIMESTAMP=$(timestamp_from_git)
+
+if [[ "$GO_SDK_TIMESTAMP" -gt "$KEEP_WEB_TIMESTAMP" ]]; then
+  PKG_VERSION=$GO_SDK_VERSION
+else
+  PKG_VERSION=$KEEP_WEB_VERSION
+fi
+
+go get "git.curoverse.com/arvados.git/services/keep-web"
+cd $WORKSPACE/packages/$TARGET
+fpm_build $GOPATH/bin/keep-web=/usr/bin/keep-web keep-web 'Curoverse, Inc.' 'dir' "$PKG_VERSION" "--url=https://arvados.org" "--license=GNU Affero General Public License, version 3.0" "--description=Static web hosting service for user data stored in Arvados Keep"
+
 # datamanager
 cd "$GOPATH/src/git.curoverse.com/arvados.git/services/datamanager"
 DATAMANAGER_VERSION=$(version_from_git)

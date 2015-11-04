@@ -59,14 +59,15 @@ apps/workbench_benchmark
 apps/workbench_profile
 doc
 services/api
+services/arv-git-httpd
 services/crunchstat
 services/dockercleaner
 services/fuse
+services/keep-web
 services/keepproxy
 services/keepstore
 services/login-sync
 services/nodemanager
-services/arv-git-httpd
 sdk/cli
 sdk/pam
 sdk/python
@@ -699,6 +700,7 @@ gostuff=(
     sdk/go/streamer
     services/arv-git-httpd
     services/crunchstat
+    services/keep-web
     services/keepstore
     sdk/go/keepclient
     services/keepproxy
