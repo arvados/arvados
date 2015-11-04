@@ -25,6 +25,7 @@ class _BaseNodeTracker(object):
     def __init__(self):
         self.nodes = {}
         self.orphans = {}
+        self._blacklist = set()
 
     # Proxy the methods listed below to self.nodes.
     def _proxy_method(name):
@@ -43,6 +44,9 @@ class _BaseNodeTracker(object):
     def add(self, record):
         self.nodes[self.record_key(record)] = record
 
+    def blacklist(self, key):
+        self._blacklist.add(key)
+
     def update_record(self, key, item):
         setattr(self.nodes[key], self.RECORD_ATTR, item)
 
@@ -50,7 +54,9 @@ class _BaseNodeTracker(object):
         unseen = set(self.nodes.iterkeys())
         for item in response:
             key = self.item_key(item)
-            if key in unseen:
+            if key in self._blacklist:
+                continue
+            elif key in unseen:
                 unseen.remove(key)
                 self.update_record(key, item)
             else:
@@ -346,11 +352,13 @@ class NodeManagerDaemonActor(actor_class):
             self._begin_node_shutdown(record.actor, cancellable=False)
 
     def node_finished_shutdown(self, shutdown_actor):
-        success, cloud_node = self._get_actor_attrs(shutdown_actor, 'success',
-                                                    'cloud_node')
+        cloud_node, success, cancel_reason = self._get_actor_attrs(
+            shutdown_actor, 'cloud_node', 'success', 'cancel_reason')
         shutdown_actor.stop()
         cloud_node_id = cloud_node.id
         if not success:
+            if cancel_reason == self._node_shutdown.NODE_BROKEN:
+                self.cloud_nodes.blacklist(cloud_node_id)
             del self.shutdowns[cloud_node_id]
         elif cloud_node_id in self.booted:
             self.booted.pop(cloud_node_id).actor.stop()

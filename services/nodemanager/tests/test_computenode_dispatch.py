@@ -116,11 +116,12 @@ class ComputeNodeSetupActorTestCase(testutil.ActorTestMixin, unittest.TestCase):
 
 class ComputeNodeShutdownActorMixin(testutil.ActorTestMixin):
     def make_mocks(self, cloud_node=None, arvados_node=None,
-                   shutdown_open=True):
+                   shutdown_open=True, node_broken=False):
         self.timer = testutil.MockTimer()
         self.shutdowns = testutil.MockShutdownTimer()
         self.shutdowns._set_state(shutdown_open, 300)
         self.cloud_client = mock.MagicMock(name='cloud_client')
+        self.cloud_client.broken.return_value = node_broken
         self.arvados_client = mock.MagicMock(name='arvados_client')
         self.updates = mock.MagicMock(name='update_mock')
         if cloud_node is None:
@@ -201,6 +202,8 @@ class ComputeNodeShutdownActorTestCase(ComputeNodeShutdownActorMixin,
         self.make_actor()
         self.check_success_flag(False, 2)
         self.assertFalse(self.cloud_client.destroy_node.called)
+        self.assertEqual(self.ACTOR_CLASS.WINDOW_CLOSED,
+                         self.shutdown_actor.cancel_reason.get(self.TIMEOUT))
 
     def test_shutdown_retries_when_cloud_fails(self):
         self.make_mocks()
@@ -209,6 +212,15 @@ class ComputeNodeShutdownActorTestCase(ComputeNodeShutdownActorMixin,
         self.assertIsNone(self.shutdown_actor.success.get(self.TIMEOUT))
         self.cloud_client.destroy_node.return_value = True
         self.check_success_flag(True)
+
+    def test_shutdown_cancelled_when_cloud_fails_on_broken_node(self):
+        self.make_mocks(node_broken=True)
+        self.cloud_client.destroy_node.return_value = False
+        self.make_actor(start_time=0)
+        self.check_success_flag(False, 2)
+        self.assertEqual(1, self.cloud_client.destroy_node.call_count)
+        self.assertEqual(self.ACTOR_CLASS.NODE_BROKEN,
+                         self.shutdown_actor.cancel_reason.get(self.TIMEOUT))
 
     def test_late_subscribe(self):
         self.make_actor()
