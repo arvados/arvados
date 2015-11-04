@@ -200,7 +200,7 @@ func (kc *KeepClient) getOrHead(method string, locator string) (io.ReadCloser, i
 				retryList = append(retryList, host)
 			} else if resp.StatusCode != http.StatusOK {
 				var respbody []byte
-				respbody, _ = ioutil.ReadAll(&io.LimitedReader{resp.Body, 4096})
+				respbody, _ = ioutil.ReadAll(&io.LimitedReader{R: resp.Body, N: 4096})
 				resp.Body.Close()
 				errs = append(errs, fmt.Sprintf("%s: HTTP %d %q",
 					url, resp.StatusCode, bytes.TrimSpace(respbody)))

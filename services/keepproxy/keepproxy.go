@@ -37,7 +37,7 @@ func main() {
 		pidfile          string
 	)
 
-	flagset := flag.NewFlagSet("default", flag.ExitOnError)
+	flagset := flag.NewFlagSet("keepproxy", flag.ExitOnError)
 
 	flagset.StringVar(
 		&listen,
@@ -84,6 +84,9 @@ func main() {
 		log.Fatalf("Error setting up arvados client %s", err.Error())
 	}
 
+	if os.Getenv("ARVADOS_DEBUG") != "" {
+		keepclient.DebugPrintf = log.Printf
+	}
 	kc, err := keepclient.MakeKeepClient(&arv)
 	if err != nil {
 		log.Fatalf("Error setting up keep client %s", err.Error())
@@ -201,7 +204,7 @@ func GetRemoteAddress(req *http.Request) string {
 	return req.RemoteAddr
 }
 
-func CheckAuthorizationHeader(kc keepclient.KeepClient, cache *ApiTokenCache, req *http.Request) (pass bool, tok string) {
+func CheckAuthorizationHeader(kc *keepclient.KeepClient, cache *ApiTokenCache, req *http.Request) (pass bool, tok string) {
 	var auth string
 	if auth = req.Header.Get("Authorization"); auth == "" {
 		return false, ""
@@ -331,7 +334,7 @@ func (this GetBlockHandler) ServeHTTP(resp http.ResponseWriter, req *http.Reques
 
 	var pass bool
 	var tok string
-	if pass, tok = CheckAuthorizationHeader(kc, this.ApiTokenCache, req); !pass {
+	if pass, tok = CheckAuthorizationHeader(&kc, this.ApiTokenCache, req); !pass {
 		status, err = http.StatusForbidden, BadAuthorizationHeader
 		return
 	}
@@ -438,7 +441,7 @@ func (this PutBlockHandler) ServeHTTP(resp http.ResponseWriter, req *http.Reques
 
 	var pass bool
 	var tok string
-	if pass, tok = CheckAuthorizationHeader(kc, this.ApiTokenCache, req); !pass {
+	if pass, tok = CheckAuthorizationHeader(&kc, this.ApiTokenCache, req); !pass {
 		err = BadAuthorizationHeader
 		status = http.StatusForbidden
 		return
@@ -521,7 +524,7 @@ func (handler IndexHandler) ServeHTTP(resp http.ResponseWriter, req *http.Reques
 
 	kc := *handler.KeepClient
 
-	ok, token := CheckAuthorizationHeader(kc, handler.ApiTokenCache, req)
+	ok, token := CheckAuthorizationHeader(&kc, handler.ApiTokenCache, req)
 	if !ok {
 		status, err = http.StatusForbidden, BadAuthorizationHeader
 		return
