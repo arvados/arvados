@@ -12,7 +12,7 @@ var m = require('mithril')
 window.jQuery = require('jquery');
 require('bootstrap');
 
-var connections = m.prop('4xphq qr1hi 9tee4 su92l tb05z'.split(' ').map(
+var connections = m.prop('4xphq a855m c97qk qr1hi 9tee4 su92l tb05z wx7k5'.split(' ').map(
     function(site) {
         return ArvadosConnection.make(site);
     }));
