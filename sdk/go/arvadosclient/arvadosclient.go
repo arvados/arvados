@@ -26,7 +26,10 @@ var MissingArvadosApiHost = errors.New("Missing required environment variable AR
 var MissingArvadosApiToken = errors.New("Missing required environment variable ARVADOS_API_TOKEN")
 var ErrInvalidArgument = errors.New("Invalid argument")
 
-// Before a POST or DELERE request, close any connections that were idle for this long
+// A common failure mode is to reuse a keepalive connection that has been
+// terminated (in a way that we can't detect) for being idle too long.
+// POST and DELETE are not safe to retry automatically, so we minimize
+// such failures by always using a new or recently active socket.
 var MaxIdleConnectionDuration = 30 * time.Second
 
 // Indicates an error that was returned by the API server.
@@ -166,7 +169,8 @@ func (c ArvadosClient) CallRaw(method string, resourceType string, uuid string, 
 		req.Header.Add("X-External-Client", "1")
 	}
 
-	// Before a POST or DELETE, close any idle connections
+	// POST and DELETE are not safe to retry automatically, so we minimize
+	// such failures by always using a new or recently active socket
 	if method == "POST" || method == "DELETE" {
 		if time.Since(c.lastClosedIdlesAt) > MaxIdleConnectionDuration {
 			c.lastClosedIdlesAt = time.Now()
