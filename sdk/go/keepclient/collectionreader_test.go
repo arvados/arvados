@@ -203,7 +203,7 @@ func (s *CollectionReaderUnit) TestCollectionReaderCloseEarly(c *check.C) {
 
 	// doGet() should close toRead before sending any more bufs to it.
 	if what, ok := <-rdr.(*cfReader).toRead; ok {
-		c.Errorf("Got %q, expected toRead to be closed", string(what))
+		c.Errorf("Got %q, expected toRead to be closed", what)
 	}
 
 	// Stub should have handled exactly one GET request.

@@ -210,7 +210,7 @@ GET:
 			close(r.errNotNil)
 			return
 		}
-		for bOff, bLen := fs.Offset, dataSliceSize; bOff <= fs.Offset+fs.Len && bLen > 0; bOff += bLen {
+		for bOff, bLen := fs.Offset, dataSliceSize; bOff < fs.Offset+fs.Len && bLen > 0; bOff += bLen {
 			if bOff+bLen > fs.Offset+fs.Len {
 				bLen = fs.Offset + fs.Len - bOff
 			}
