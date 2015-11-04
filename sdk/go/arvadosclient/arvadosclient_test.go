@@ -3,8 +3,10 @@ package arvadosclient
 import (
 	"git.curoverse.com/arvados.git/sdk/go/arvadostest"
 	. "gopkg.in/check.v1"
+	"net"
 	"net/http"
 	"os"
+	"strings"
 	"testing"
 )
 
@@ -15,6 +17,7 @@ func Test(t *testing.T) {
 
 var _ = Suite(&ServerRequiredSuite{})
 var _ = Suite(&UnitSuite{})
+var _ = Suite(&MockArvadosServerSuite{})
 
 // Tests that require the Keep server running
 type ServerRequiredSuite struct{}
@@ -205,4 +208,122 @@ func (s *UnitSuite) TestPDHMatch(c *C) {
 	c.Assert(PDHMatch("d41d8cd98f00b204e9800998ecf8427e+12345\n"), Equals, false)
 	c.Assert(PDHMatch("+12345"), Equals, false)
 	c.Assert(PDHMatch(""), Equals, false)
+}
+
+// Tests that use mock arvados server
+type MockArvadosServerSuite struct{}
+
+func (s *MockArvadosServerSuite) SetUpSuite(c *C) {
+}
+
+func (s *MockArvadosServerSuite) SetUpTest(c *C) {
+	arvadostest.ResetEnv()
+}
+
+type APIServer struct {
+	listener net.Listener
+	url      string
+}
+
+func RunFakeArvadosServer(st http.Handler) (api APIServer, err error) {
+	api.listener, err = net.ListenTCP("tcp", &net.TCPAddr{Port: 0})
+	if err != nil {
+		return
+	}
+	api.url = api.listener.Addr().String()
+	go http.Serve(api.listener, st)
+	return
+}
+
+type FailHandler struct {
+	status int
+}
+
+func (h FailHandler) ServeHTTP(resp http.ResponseWriter, req *http.Request) {
+	resp.WriteHeader(h.status)
+}
+
+func (s *MockArvadosServerSuite) TestFailWithRetries(c *C) {
+	for _, testCase := range []string{
+		"get",
+		"create",
+	} {
+		stub := FailHandler{500}
+
+		api, err := RunFakeArvadosServer(stub)
+		c.Check(err, IsNil)
+
+		defer api.listener.Close()
+
+		arv := ArvadosClient{
+			Scheme:      "http",
+			ApiServer:   api.url,
+			ApiToken:    "abc123",
+			ApiInsecure: true,
+			Client:      &http.Client{},
+			Retries:     2}
+
+		getback := make(Dict)
+		switch testCase {
+		case "get":
+			err = arv.Get("collections", "zzzzz-4zz18-znfnqtbbv4spc3w", nil, &getback)
+		case "create":
+			err = arv.Create("collections",
+				Dict{"collection": Dict{"name": "testing"}},
+				&getback)
+		}
+		c.Check(err, NotNil)
+		c.Check(strings.Contains(err.Error(), "arvados API server error: 500"), Equals, true)
+		c.Assert(err.(APIServerError).HttpStatusCode, Equals, 500)
+	}
+}
+
+type FailThenSucceedHandler struct {
+	count      int
+	failStatus int
+}
+
+func (h *FailThenSucceedHandler) ServeHTTP(resp http.ResponseWriter, req *http.Request) {
+	if h.count == 0 {
+		resp.WriteHeader(h.failStatus)
+		h.count += 1
+	} else {
+		resp.WriteHeader(http.StatusOK)
+		respJSON := []byte(`{"name":"testing"}`)
+		resp.Write(respJSON)
+	}
+}
+
+func (s *MockArvadosServerSuite) TestFailThenSucceed(c *C) {
+	for _, testCase := range []string{
+		"get",
+		"create",
+	} {
+		stub := &FailThenSucceedHandler{0, 500}
+
+		api, err := RunFakeArvadosServer(stub)
+		c.Check(err, IsNil)
+
+		defer api.listener.Close()
+
+		arv := ArvadosClient{
+			Scheme:      "http",
+			ApiServer:   api.url,
+			ApiToken:    "abc123",
+			ApiInsecure: true,
+			Client:      &http.Client{},
+			Retries:     2}
+
+		getback := make(Dict)
+		switch testCase {
+		case "get":
+			err = arv.Get("collections", "zzzzz-4zz18-znfnqtbbv4spc3w", nil, &getback)
+		case "create":
+			err = arv.Create("collections",
+				Dict{"collection": Dict{"name": "testing"}},
+				&getback)
+		}
+		c.Check(err, IsNil)
+		c.Assert(getback["name"], Equals, "testing")
+	}
 }
