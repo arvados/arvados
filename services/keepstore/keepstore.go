@@ -33,10 +33,6 @@ const BlockSize = 64 * 1024 * 1024
 // in order to permit writes.
 const MinFreeKilobytes = BlockSize / 1024
 
-// Until #6221 is resolved, never_delete must be true.
-// However, allow it to be false in testing with TestDataManagerToken
-const TestDataManagerToken = "4axaw8zxe0qm22wa6urpp5nskcne8z88cvbupv653y1njyi05h"
-
 // ProcMounts /proc/mounts
 var ProcMounts = "/proc/mounts"
 
@@ -159,8 +155,9 @@ func main() {
 		&neverDelete,
 		"never-delete",
 		true,
-		"If set, nothing will be deleted. HTTP 405 will be returned "+
-			"for valid DELETE requests.")
+		"If true, nothing will be deleted. "+
+			"Warning: the relevant features in keepstore and data manager have not been extensively tested. "+
+			"You should leave this option alone unless you can afford to lose data.")
 	flag.StringVar(
 		&blobSigningKeyFile,
 		"permission-key-file",
@@ -257,8 +254,9 @@ func main() {
 		}
 	}
 
-	if neverDelete != true && dataManagerToken != TestDataManagerToken {
-		log.Fatal("never_delete must be true, see #6221")
+	if neverDelete != true {
+		log.Print("never-delete is not set. Warning: the relevant features in keepstore and data manager have not " +
+			"been extensively tested. You should leave this option alone unless you can afford to lose data.")
 	}
 
 	if blobSigningKeyFile != "" {
