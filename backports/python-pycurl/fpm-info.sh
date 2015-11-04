@@ -1,3 +1,6 @@
+# FIXME: Remove this line after #6885 is done.
+fpm_args+=(--iteration 2)
+
 case "$TARGET" in
     centos6)
             fpm_depends+=(
