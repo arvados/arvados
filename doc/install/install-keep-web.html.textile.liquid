@@ -40,6 +40,10 @@ Usage of keep-web:
         Address to listen on: "host:port", or ":port" to listen on all interfaces. (default ":80")
   -anonymous-token value
         API token to try when none of the tokens provided in an HTTP request succeed in reading the desired collection. If this flag is used more than once, each token will be attempted in turn until one works. (default [])
+  -attachment-only-host string
+        Accept credentials, and add "Content-Disposition: attachment" response headers, for requests at this hostname:port. Prohibiting inline display makes it possible to serve untrusted and non-public content from a single origin, i.e., without wildcard DNS or SSL.
+  -trust-all-content
+        Serve non-public content from a single origin. Dangerous: read docs before using!
 </code></pre>
 </notextile>
 

@@ -20,5 +20,5 @@ func (ts *tokenSet) String() string {
 
 func init() {
 	flag.Var(&anonymousTokens, "anonymous-token",
-		"Try using the specified token when a client does not provide a valid token. If this flag is used multiple times, each token will be tried in turn until one works.")
+		"API token to try when none of the tokens provided in an HTTP request succeed in reading the desired collection. Multiple anonymous tokens can be provided by using this flag more than once; each token will be attempted in turn until one works.")
 }

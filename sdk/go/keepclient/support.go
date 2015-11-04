@@ -9,11 +9,17 @@ import (
 	"io"
 	"io/ioutil"
 	"log"
+	"math/rand"
 	"net"
 	"net/http"
 	"strings"
 	"time"
 )
+
+// Function used to emit debug messages. The easiest way to enable
+// keepclient debug messages in your application is to assign
+// log.Printf to DebugPrintf.
+var DebugPrintf = func(string, ...interface{}) {}
 
 type keepService struct {
 	Uuid     string `json:"uuid"`
@@ -170,13 +176,13 @@ type uploadStatus struct {
 }
 
 func (this *KeepClient) uploadToKeepServer(host string, hash string, body io.ReadCloser,
-	upload_status chan<- uploadStatus, expectedLength int64, requestId string) {
+	upload_status chan<- uploadStatus, expectedLength int64, requestID int32) {
 
 	var req *http.Request
 	var err error
 	var url = fmt.Sprintf("%s/%s", host, hash)
 	if req, err = http.NewRequest("PUT", url, nil); err != nil {
-		log.Printf("[%v] Error creating request PUT %v error: %v", requestId, url, err.Error())
+		log.Printf("[%08x] Error creating request PUT %v error: %v", requestID, url, err.Error())
 		upload_status <- uploadStatus{err, url, 0, 0, ""}
 		body.Close()
 		return
@@ -201,7 +207,7 @@ func (this *KeepClient) uploadToKeepServer(host string, hash string, body io.Rea
 
 	var resp *http.Response
 	if resp, err = this.Client.Do(req); err != nil {
-		log.Printf("[%v] Upload failed %v error: %v", requestId, url, err.Error())
+		log.Printf("[%08x] Upload failed %v error: %v", requestID, url, err.Error())
 		upload_status <- uploadStatus{err, url, 0, 0, ""}
 		return
 	}
@@ -217,13 +223,13 @@ func (this *KeepClient) uploadToKeepServer(host string, hash string, body io.Rea
 	respbody, err2 := ioutil.ReadAll(&io.LimitedReader{R: resp.Body, N: 4096})
 	response := strings.TrimSpace(string(respbody))
 	if err2 != nil && err2 != io.EOF {
-		log.Printf("[%v] Upload %v error: %v response: %v", requestId, url, err2.Error(), response)
+		log.Printf("[%08x] Upload %v error: %v response: %v", requestID, url, err2.Error(), response)
 		upload_status <- uploadStatus{err2, url, resp.StatusCode, rep, response}
 	} else if resp.StatusCode == http.StatusOK {
-		log.Printf("[%v] Upload %v success", requestId, url)
+		log.Printf("[%08x] Upload %v success", requestID, url)
 		upload_status <- uploadStatus{nil, url, resp.StatusCode, rep, response}
 	} else {
-		log.Printf("[%v] Upload %v error: %v response: %v", requestId, url, resp.StatusCode, response)
+		log.Printf("[%08x] Upload %v error: %v response: %v", requestID, url, resp.StatusCode, response)
 		upload_status <- uploadStatus{errors.New(resp.Status), url, resp.StatusCode, rep, response}
 	}
 }
@@ -233,9 +239,9 @@ func (this *KeepClient) putReplicas(
 	tr *streamer.AsyncStream,
 	expectedLength int64) (locator string, replicas int, err error) {
 
-	// Take the hash of locator and timestamp in order to identify this
-	// specific transaction in log statements.
-	requestId := fmt.Sprintf("%x", md5.Sum([]byte(hash+time.Now().String())))[0:8]
+	// Generate an arbitrary ID to identify this specific
+	// transaction in debug logs.
+	requestID := rand.Int31()
 
 	// Calculate the ordering for uploading to servers
 	sv := NewRootSorter(this.WritableLocalRoots(), hash).GetSortedRoots()
@@ -280,8 +286,8 @@ func (this *KeepClient) putReplicas(
 			for active*replicasPerThread < remaining_replicas {
 				// Start some upload requests
 				if next_server < len(sv) {
-					log.Printf("[%v] Begin upload %s to %s", requestId, hash, sv[next_server])
-					go this.uploadToKeepServer(sv[next_server], hash, tr.MakeStreamReader(), upload_status, expectedLength, requestId)
+					log.Printf("[%08x] Begin upload %s to %s", requestID, hash, sv[next_server])
+					go this.uploadToKeepServer(sv[next_server], hash, tr.MakeStreamReader(), upload_status, expectedLength, requestID)
 					next_server += 1
 					active += 1
 				} else {
@@ -292,8 +298,8 @@ func (this *KeepClient) putReplicas(
 					}
 				}
 			}
-			log.Printf("[%v] Replicas remaining to write: %v active uploads: %v",
-				requestId, remaining_replicas, active)
+			log.Printf("[%08x] Replicas remaining to write: %v active uploads: %v",
+				requestID, remaining_replicas, active)
 
 			// Now wait for something to happen.
 			if active > 0 {

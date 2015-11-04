@@ -79,6 +79,19 @@ func main() {
 
 	flagset.Parse(os.Args[1:])
 
+	arv, err := arvadosclient.MakeArvadosClient()
+	if err != nil {
+		log.Fatalf("Error setting up arvados client %s", err.Error())
+	}
+
+	if os.Getenv("ARVADOS_DEBUG") != "" {
+		keepclient.DebugPrintf = log.Printf
+	}
+	kc, err := keepclient.MakeKeepClient(&arv)
+	if err != nil {
+		log.Fatalf("Error setting up keep client %s", err.Error())
+	}
+
 	if pidfile != "" {
 		f, err := os.Create(pidfile)
 		if err != nil {
@@ -89,14 +102,6 @@ func main() {
 		defer os.Remove(pidfile)
 	}
 
-	arv, err := arvadosclient.MakeArvadosClient()
-	if err != nil {
-		log.Fatalf("setting up arvados client: %v", err)
-	}
-	kc, err := keepclient.MakeKeepClient(&arv)
-	if err != nil {
-		log.Fatalf("setting up keep client: %v", err)
-	}
 	kc.Want_replicas = default_replicas
 	kc.Client.Timeout = time.Duration(timeout) * time.Second
 	go RefreshServicesList(kc, 5*time.Minute, 3*time.Second)

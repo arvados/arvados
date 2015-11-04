@@ -46,6 +46,15 @@
 // proxy. However, TLS is not used between nginx and keep-web, so
 // intervening networks must be secured by other means.
 //
+// Anonymous downloads
+//
+// Use the -anonymous-token option to specify a token to use when clients
+// try to retrieve files without providing their own Arvados API token.
+//
+//   keep-web [...] -anonymous-token=zzzzzzzzzzzzzzzzzzzzzzzzzzzzzzzz
+//
+// See http://doc.arvados.org/install/install-keep-web.html for examples.
+//
 // Download URLs
 //
 // The following "same origin" URL patterns are supported for public
@@ -84,8 +93,8 @@
 //
 // In all of the above forms, the "uuid_or_pdh" part can be either a
 // collection UUID or a portable data hash with the "+" character
-// optionally replaced by "-". (Replacing "+" with "-" is mandatory
-// when "uuid_or_pdh" appears in the domain name only because "+" is
+// optionally replaced by "-". (When "uuid_or_pdh" appears in the
+// domain name, replacing "+" with "-" is mandatory, because "+" is
 // not a valid character in a domain name.)
 //
 // In all of the above forms, a top level directory called "_" is

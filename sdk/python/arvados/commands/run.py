@@ -101,7 +101,7 @@ def statfile(prefix, fn):
 
     return prefix+fn
 
-def uploadfiles(files, api, dry_run=False, num_retries=0, project=None):
+def uploadfiles(files, api, dry_run=False, num_retries=0, project=None, fnPattern="$(file %s/%s)"):
     # Find the smallest path prefix that includes all the files that need to be uploaded.
     # This starts at the root and iteratively removes common parent directory prefixes
     # until all file pathes no longer have a common parent.
@@ -153,7 +153,7 @@ def uploadfiles(files, api, dry_run=False, num_retries=0, project=None):
         logger.info("Uploaded to %s", item["uuid"])
 
     for c in files:
-        c.fn = "$(file %s/%s)" % (pdh, c.fn)
+        c.fn = fnPattern % (pdh, c.fn)
 
     os.chdir(orgdir)
 
