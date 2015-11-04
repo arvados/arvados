@@ -81,7 +81,10 @@ chown -R "$WWW_OWNER" $RELEASE_PATH/tmp
 chown -R "$WWW_OWNER" $SHARED_PATH/log
 chown "$WWW_OWNER" $RELEASE_PATH/db/structure.sql
 chmod 644 $SHARED_PATH/log/*
-chmod -R 2775 $RELEASE_PATH/tmp/cache/
+# Rails creates the cache directory if it doesn't exist
+if [[ -d $RELEASE_PATH/tmp/cache/ ]]; then
+  chmod -R 2775 $RELEASE_PATH/tmp/cache/
+fi
 echo "Done."
 
 echo "Running sanity check"
