@@ -101,14 +101,16 @@ func (s *ServerRequiredSuite) TestInvalidResourceType(c *C) {
 }
 
 func (s *ServerRequiredSuite) TestCreatePipelineTemplate(c *C) {
+	arv, err := MakeArvadosClient()
+
 	for _, idleConnections := range []bool{
 		false,
 		true,
 	} {
-		arv, err := MakeArvadosClient()
-
 		if idleConnections {
 			arv.lastClosedIdlesAt = time.Now().Add(-time.Minute)
+		} else {
+			arv.lastClosedIdlesAt = time.Now()
 		}
 
 		getback := make(Dict)
