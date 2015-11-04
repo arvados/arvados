@@ -43,7 +43,7 @@ class ComputeNodeShutdownActor(ShutdownActorBase):
     # error are still being investigated.
 
     @ShutdownActorBase._retry((subprocess.CalledProcessError, OSError))
-    def cancel_shutdown(self):
+    def cancel_shutdown(self, reason):
         if self._nodename:
             if self._get_slurm_state() in self.SLURM_DRAIN_STATES:
                 # Resume from "drng" or "drain"
@@ -52,7 +52,7 @@ class ComputeNodeShutdownActor(ShutdownActorBase):
                 # Node is in a state such as 'idle' or 'alloc' so don't
                 # try to resume it because that will just raise an error.
                 pass
-        return super(ComputeNodeShutdownActor, self).cancel_shutdown()
+        return super(ComputeNodeShutdownActor, self).cancel_shutdown(reason)
 
     @ShutdownActorBase._retry((subprocess.CalledProcessError, OSError))
     @ShutdownActorBase._stop_if_window_closed
