@@ -272,7 +272,7 @@ func (s *MockArvadosServerSuite) TestFailWithRetries(c *C) {
 			ApiServer:   api.url,
 			ApiToken:    "abc123",
 			ApiInsecure: true,
-			Client:      &http.Client{},
+			Client:      &http.Client{Transport: &http.Transport{}},
 			Retries:     2}
 
 		getback := make(Dict)
@@ -323,7 +323,7 @@ func (s *MockArvadosServerSuite) TestFailThenSucceed(c *C) {
 			ApiServer:   api.url,
 			ApiToken:    "abc123",
 			ApiInsecure: true,
-			Client:      &http.Client{},
+			Client:      &http.Client{Transport: &http.Transport{}},
 			Retries:     2}
 
 		getback := make(Dict)
