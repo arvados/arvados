@@ -23,7 +23,7 @@ import (
 
 // ServerAddress struct
 type ServerAddress struct {
-	SSL         bool   `json:service_ssl_flag`
+	SSL         bool   `json:"service_ssl_flag"`
 	Host        string `json:"service_host"`
 	Port        int    `json:"service_port"`
 	UUID        string `json:"uuid"`
