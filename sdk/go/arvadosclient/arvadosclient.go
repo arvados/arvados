@@ -58,6 +58,9 @@ type Dict map[string]interface{}
 
 // Information about how to contact the Arvados server
 type ArvadosClient struct {
+	// https
+	Scheme string
+
 	// Arvados API server, form "host:port"
 	ApiServer string
 
@@ -76,6 +79,9 @@ type ArvadosClient struct {
 
 	// Discovery document
 	DiscoveryDoc Dict
+
+	// Number of retries
+	Retries int
 }
 
 // Create a new ArvadosClient, initialized with standard Arvados environment
@@ -87,12 +93,14 @@ func MakeArvadosClient() (ac ArvadosClient, err error) {
 	external := matchTrue.MatchString(os.Getenv("ARVADOS_EXTERNAL_CLIENT"))
 
 	ac = ArvadosClient{
+		Scheme:      "https",
 		ApiServer:   os.Getenv("ARVADOS_API_HOST"),
 		ApiToken:    os.Getenv("ARVADOS_API_TOKEN"),
 		ApiInsecure: insecure,
 		Client: &http.Client{Transport: &http.Transport{
 			TLSClientConfig: &tls.Config{InsecureSkipVerify: insecure}}},
-		External: external}
+		External: external,
+		Retries:  2}
 
 	if ac.ApiServer == "" {
 		return ac, MissingArvadosApiHost
@@ -107,10 +115,12 @@ func MakeArvadosClient() (ac ArvadosClient, err error) {
 // CallRaw is the same as Call() but returns a Reader that reads the
 // response body, instead of taking an output object.
 func (c ArvadosClient) CallRaw(method string, resourceType string, uuid string, action string, parameters Dict) (reader io.ReadCloser, err error) {
-	var req *http.Request
-
+	scheme := c.Scheme
+	if scheme == "" {
+		scheme = "https"
+	}
 	u := url.URL{
-		Scheme: "https",
+		Scheme: scheme,
 		Host:   c.ApiServer}
 
 	if resourceType != API_DISCOVERY_RESOURCE {
@@ -140,36 +150,71 @@ func (c ArvadosClient) CallRaw(method string, resourceType string, uuid string, 
 		}
 	}
 
-	if method == "GET" || method == "HEAD" {
-		u.RawQuery = vals.Encode()
-		if req, err = http.NewRequest(method, u.String(), nil); err != nil {
-			return nil, err
-		}
-	} else {
-		if req, err = http.NewRequest(method, u.String(), bytes.NewBufferString(vals.Encode())); err != nil {
-			return nil, err
-		}
-		req.Header.Add("Content-Type", "application/x-www-form-urlencoded")
-	}
-
-	// Add api token header
-	req.Header.Add("Authorization", fmt.Sprintf("OAuth2 %s", c.ApiToken))
-	if c.External {
-		req.Header.Add("X-External-Client", "1")
-	}
-
 	// Make the request
+	remainingTries := 1 + c.Retries
+	var req *http.Request
 	var resp *http.Response
-	if resp, err = c.Client.Do(req); err != nil {
-		return nil, err
+	var errs []string
+	var badResp bool
+
+	for remainingTries > 0 {
+		if method == "GET" || method == "HEAD" {
+			u.RawQuery = vals.Encode()
+			if req, err = http.NewRequest(method, u.String(), nil); err != nil {
+				return nil, err
+			}
+		} else {
+			if req, err = http.NewRequest(method, u.String(), bytes.NewBufferString(vals.Encode())); err != nil {
+				return nil, err
+			}
+			req.Header.Add("Content-Type", "application/x-www-form-urlencoded")
+		}
+
+		// Add api token header
+		req.Header.Add("Authorization", fmt.Sprintf("OAuth2 %s", c.ApiToken))
+		if c.External {
+			req.Header.Add("X-External-Client", "1")
+		}
+
+		resp, err = c.Client.Do(req)
+		if err != nil {
+			if method == "GET" || method == "HEAD" || method == "PUT" {
+				errs = append(errs, err.Error())
+				badResp = false
+				remainingTries -= 1
+				continue
+			} else {
+				return nil, err
+			}
+		}
+
+		if resp.StatusCode == http.StatusOK {
+			return resp.Body, nil
+		}
+
+		defer resp.Body.Close()
+
+		if resp.StatusCode == 408 ||
+			resp.StatusCode == 409 ||
+			resp.StatusCode == 422 ||
+			resp.StatusCode == 423 ||
+			resp.StatusCode == 500 ||
+			resp.StatusCode == 502 ||
+			resp.StatusCode == 503 ||
+			resp.StatusCode == 504 {
+			badResp = true
+			remainingTries -= 1
+			continue
+		} else {
+			return nil, newAPIServerError(c.ApiServer, resp)
+		}
 	}
 
-	if resp.StatusCode == http.StatusOK {
-		return resp.Body, nil
+	if badResp {
+		return nil, newAPIServerError(c.ApiServer, resp)
+	} else {
+		return nil, fmt.Errorf("%v", errs)
 	}
-
-	defer resp.Body.Close()
-	return nil, newAPIServerError(c.ApiServer, resp)
 }
 
 func newAPIServerError(ServerAddress string, resp *http.Response) APIServerError {
