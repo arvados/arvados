@@ -33,7 +33,11 @@ func SetupDataManagerTest(t *testing.T) {
 	arvadostest.StartAPI()
 	arvadostest.StartKeep(2, false)
 
-	arv = makeArvadosClient()
+	var err error
+	arv, err = makeArvadosClient()
+	if err != nil {
+		t.Fatalf("Error making arvados client: %s", err)
+	}
 
 	// keep client
 	keepClient = &keepclient.KeepClient{
@@ -44,7 +48,7 @@ func SetupDataManagerTest(t *testing.T) {
 	}
 
 	// discover keep services
-	if err := keepClient.DiscoverKeepServers(); err != nil {
+	if err = keepClient.DiscoverKeepServers(); err != nil {
 		t.Fatalf("Error discovering keep services: %s", err)
 	}
 	keepServers = []string{}

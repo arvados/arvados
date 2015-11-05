@@ -42,7 +42,11 @@ func init() {
 func main() {
 	flag.Parse()
 	if minutesBetweenRuns == 0 {
-		err := singlerun(makeArvadosClient())
+		arv, err := makeArvadosClient()
+		if err != nil {
+			log.Fatalf("makeArvadosClient: %v", err)
+		}
+		err = singlerun(arv)
 		if err != nil {
 			log.Fatalf("singlerun: %v", err)
 		}
@@ -50,7 +54,11 @@ func main() {
 		waitTime := time.Minute * time.Duration(minutesBetweenRuns)
 		for {
 			log.Println("Beginning Run")
-			err := singlerun(makeArvadosClient())
+			arv, err := makeArvadosClient()
+			if err != nil {
+				log.Fatalf("makeArvadosClient: %v", err)
+			}
+			err = singlerun(arv)
 			if err != nil {
 				log.Printf("singlerun: %v", err)
 			}
@@ -60,12 +68,8 @@ func main() {
 	}
 }
 
-func makeArvadosClient() arvadosclient.ArvadosClient {
-	arv, err := arvadosclient.MakeArvadosClient()
-	if err != nil {
-		log.Fatalf("Error setting up arvados client: %s", err)
-	}
-	return arv
+func makeArvadosClient() (arvadosclient.ArvadosClient, error) {
+	return arvadosclient.MakeArvadosClient()
 }
 
 func singlerun(arv arvadosclient.ArvadosClient) error {
