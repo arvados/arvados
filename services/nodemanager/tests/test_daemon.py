@@ -9,6 +9,7 @@ import mock
 import pykka
 
 import arvnodeman.daemon as nmdaemon
+from arvnodeman.jobqueue import ServerCalculator
 from arvnodeman.computenode.dispatch import ComputeNodeMonitorActor
 from . import testutil
 
@@ -21,7 +22,7 @@ class NodeManagerDaemonActorTestCase(testutil.ActorTestMixin,
         return self.last_setup
 
     def make_daemon(self, cloud_nodes=[], arvados_nodes=[], want_sizes=[],
-                    min_size=testutil.MockSize(1), min_nodes=0, max_nodes=8):
+                    avail_sizes=[(testutil.MockSize(1), {"cores": 1})], min_nodes=0, max_nodes=8):
         for name in ['cloud_nodes', 'arvados_nodes', 'server_wishlist']:
             setattr(self, name + '_poller', mock.MagicMock(name=name + '_mock'))
         self.arv_factory = mock.MagicMock(name='arvados_mock')
@@ -37,7 +38,8 @@ class NodeManagerDaemonActorTestCase(testutil.ActorTestMixin,
             self.server_wishlist_poller, self.arvados_nodes_poller,
             self.cloud_nodes_poller, self.cloud_updates, self.timer,
             self.arv_factory, self.cloud_factory,
-            [54, 5, 1], min_size, min_nodes, max_nodes, 600, 1800, 3600,
+            [54, 5, 1], ServerCalculator(avail_sizes),
+            min_nodes, max_nodes, 600, 1800, 3600,
             self.node_setup, self.node_shutdown).proxy()
         if cloud_nodes is not None:
             self.daemon.update_cloud_nodes(cloud_nodes).get(self.TIMEOUT)

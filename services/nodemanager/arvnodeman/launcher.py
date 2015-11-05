@@ -114,7 +114,7 @@ def main(args=None):
         cloud_node_updater, timer,
         config.new_arvados_client, config.new_cloud_client,
         config.shutdown_windows(),
-        server_calculator.cheapest_size(),
+        server_calculator,
         config.getint('Daemon', 'min_nodes'),
         config.getint('Daemon', 'max_nodes'),
         config.getint('Daemon', 'poll_stale_after'),

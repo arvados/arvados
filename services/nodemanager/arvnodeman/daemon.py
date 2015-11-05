@@ -103,7 +103,8 @@ class NodeManagerDaemonActor(actor_class):
     def __init__(self, server_wishlist_actor, arvados_nodes_actor,
                  cloud_nodes_actor, cloud_update_actor, timer_actor,
                  arvados_factory, cloud_factory,
-                 shutdown_windows, min_size, min_nodes, max_nodes,
+                 shutdown_windows, server_calculator,
+                 min_nodes, max_nodes,
                  poll_stale_after=600,
                  boot_fail_after=1800,
                  node_stale_after=7200,
@@ -122,7 +123,8 @@ class NodeManagerDaemonActor(actor_class):
         self._logger = logging.getLogger('arvnodeman.daemon')
         self._later = self.actor_ref.proxy()
         self.shutdown_windows = shutdown_windows
-        self.min_cloud_size = min_size
+        self.server_calculator = server_calculator
+        self.min_cloud_size = self.server_calculator.cheapest_size()
         self.min_nodes = min_nodes
         self.max_nodes = max_nodes
         self.poll_stale_after = poll_stale_after
