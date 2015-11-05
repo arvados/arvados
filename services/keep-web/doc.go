@@ -12,11 +12,11 @@
 //
 // Serve HTTP requests at port 1234 on all interfaces:
 //
-//   keep-web -address=:1234
+//   keep-web -listen=:1234
 //
 // Serve HTTP requests at port 1234 on the interface with IP address 1.2.3.4:
 //
-//   keep-web -address=1.2.3.4:1234
+//   keep-web -listen=1.2.3.4:1234
 //
 // Proxy configuration
 //
@@ -209,7 +209,7 @@
 // only when the designated origin matches exactly the Host header
 // provided by the client or downstream proxy.
 //
-//   keep-web -address :9999 -attachment-only-host domain.example:9999
+//   keep-web -listen :9999 -attachment-only-host domain.example:9999
 //
 // Trust All Content mode
 //
@@ -222,12 +222,12 @@
 //
 // In such cases you can enable trust-all-content mode.
 //
-//   keep-web -address :9999 -trust-all-content
+//   keep-web -listen :9999 -trust-all-content
 //
 // When using trust-all-content mode, the only effect of the
 // -attachment-only-host option is to add a "Content-Disposition:
 // attachment" header.
 //
-//   keep-web -address :9999 -attachment-only-host domain.example:9999 -trust-all-content
+//   keep-web -listen :9999 -attachment-only-host domain.example:9999 -trust-all-content
 //
 package main

@@ -36,12 +36,12 @@ Verify that @keep-web@ is functional:
 <notextile>
 <pre><code>~$ <span class="userinput">keep-web -h</span>
 Usage of keep-web:
-  -address string
-        Address to listen on: "host:port", or ":port" to listen on all interfaces. (default ":80")
   -anonymous-token value
         API token to try when none of the tokens provided in an HTTP request succeed in reading the desired collection. If this flag is used more than once, each token will be attempted in turn until one works. (default [])
   -attachment-only-host string
         Accept credentials, and add "Content-Disposition: attachment" response headers, for requests at this hostname:port. Prohibiting inline display makes it possible to serve untrusted and non-public content from a single origin, i.e., without wildcard DNS or SSL.
+  -listen string
+        Address to listen on: "host:port", or ":port" to listen on all interfaces. (default ":80")
   -trust-all-content
         Serve non-public content from a single origin. Dangerous: read docs before using!
 </code></pre>
@@ -58,7 +58,7 @@ We recommend running @keep-web@ under "runit":https://packages.debian.org/search
 
 <notextile>
 <pre><code>export ARVADOS_API_HOST=<span class="userinput">uuid_prefix</span>.your.domain
-exec sudo -u nobody keep-web -address=<span class="userinput">:9002</span> -anonymous-token=<span class="userinput">hoShoomoo2bai3Ju1xahg6aeng1siquuaZ1yae2gi2Uhaeng2r</span> 2&gt;&amp;1
+exec sudo -u nobody keep-web -listen=<span class="userinput">:9002</span> -anonymous-token=<span class="userinput">hoShoomoo2bai3Ju1xahg6aeng1siquuaZ1yae2gi2Uhaeng2r</span> 2&gt;&amp;1
 </code></pre>
 </notextile>
 
