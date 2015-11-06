@@ -12,7 +12,9 @@ func init() {
 	// different token before doing anything with the client). We
 	// set this dummy value during init so it doesn't clobber the
 	// one used by "run test servers".
-	os.Setenv("ARVADOS_API_TOKEN", "xxx")
+	if os.Getenv("ARVADOS_API_TOKEN") == "" {
+		os.Setenv("ARVADOS_API_TOKEN", "xxx")
+	}
 }
 
 func main() {

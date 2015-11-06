@@ -333,7 +333,7 @@ def run_keep(blob_signing_key=None, enforce_permissions=False, num_servers=2):
         keep_args['-enforce-permissions'] = 'true'
     with open(os.path.join(TEST_TMPDIR, "keep.data-manager-token-file"), "w") as f:
         keep_args['-data-manager-token-file'] = f.name
-        f.write(os.environ['ARVADOS_API_TOKEN'])
+        f.write(auth_token('data_manager'))
     keep_args['-never-delete'] = 'false'
 
     api = arvados.api(

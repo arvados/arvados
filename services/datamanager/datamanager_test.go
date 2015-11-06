@@ -16,11 +16,6 @@ import (
 	"time"
 )
 
-const (
-	ActiveUserToken = "3kg6k6lzmp9kj5cpkcoxie963cmvjahbt2fod9zru30k1jqdmi"
-	AdminToken      = "4axaw8zxe0qm22wa6urpp5nskcne8z88cvbupv653y1njyi05h"
-)
-
 var arv arvadosclient.ArvadosClient
 var keepClient *keepclient.KeepClient
 var keepServers []string
@@ -34,6 +29,7 @@ func SetupDataManagerTest(t *testing.T) {
 	arvadostest.StartKeep(2, false)
 
 	arv = makeArvadosClient()
+	arv.ApiToken = arvadostest.DataManagerToken
 
 	// keep client
 	keepClient = &keepclient.KeepClient{
@@ -124,7 +120,18 @@ func getFirstLocatorFromCollection(t *testing.T, uuid string) string {
 	return match[1] + "+" + match[2]
 }
 
+func switchToken(t string) func() {
+	orig := arv.ApiToken
+	restore := func() {
+		arv.ApiToken = orig
+	}
+	arv.ApiToken = t
+	return restore
+}
+
 func getCollection(t *testing.T, uuid string) Dict {
+	defer switchToken(arvadostest.AdminToken)()
+
 	getback := make(Dict)
 	err := arv.Get("collections", uuid, nil, &getback)
 	if err != nil {
@@ -138,6 +145,8 @@ func getCollection(t *testing.T, uuid string) Dict {
 }
 
 func updateCollection(t *testing.T, uuid string, paramName string, paramValue string) {
+	defer switchToken(arvadostest.AdminToken)()
+
 	err := arv.Update("collections", uuid, arvadosclient.Dict{
 		"collection": arvadosclient.Dict{
 			paramName: paramValue,
@@ -152,6 +161,8 @@ func updateCollection(t *testing.T, uuid string, paramName string, paramValue st
 type Dict map[string]interface{}
 
 func deleteCollection(t *testing.T, uuid string) {
+	defer switchToken(arvadostest.AdminToken)()
+
 	getback := make(Dict)
 	err := arv.Delete("collections", uuid, nil, &getback)
 	if err != nil {
@@ -175,7 +186,7 @@ func getBlockIndexesForServer(t *testing.T, i int) []string {
 	path := keepServers[i] + "/index"
 	client := http.Client{}
 	req, err := http.NewRequest("GET", path, nil)
-	req.Header.Add("Authorization", "OAuth2 "+AdminToken)
+	req.Header.Add("Authorization", "OAuth2 "+arvadostest.DataManagerToken)
 	req.Header.Add("Content-Type", "application/octet-stream")
 	resp, err := client.Do(req)
 	defer resp.Body.Close()
@@ -297,7 +308,7 @@ func backdateBlocks(t *testing.T, oldUnusedBlockLocators []string) {
 func getStatus(t *testing.T, path string) interface{} {
 	client := http.Client{}
 	req, err := http.NewRequest("GET", path, nil)
-	req.Header.Add("Authorization", "OAuth2 "+AdminToken)
+	req.Header.Add("Authorization", "OAuth2 "+arvadostest.DataManagerToken)
 	req.Header.Add("Content-Type", "application/octet-stream")
 	resp, err := client.Do(req)
 	if err != nil {
@@ -504,7 +515,7 @@ func TestRunDatamanagerAsNonAdminUser(t *testing.T) {
 	defer TearDownDataManagerTest(t)
 	SetupDataManagerTest(t)
 
-	arv.ApiToken = ActiveUserToken
+	arv.ApiToken = arvadostest.ActiveToken
 
 	err := singlerun(arv)
 	if err == nil {
