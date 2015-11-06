@@ -83,6 +83,12 @@ class ServerCalculator(object):
     def cheapest_size(self):
         return self.cloud_sizes[0]
 
+    def find_size(self, sz):
+        for s in self.cloud_sizes:
+            if s.id == sz.id:
+                return s
+        return None
+
 
 class JobQueueMonitorActor(clientactor.RemotePollLoopActor):
     """Actor to generate server wishlists from the job queue.

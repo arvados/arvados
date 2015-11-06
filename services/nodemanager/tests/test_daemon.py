@@ -12,13 +12,20 @@ import arvnodeman.daemon as nmdaemon
 from arvnodeman.jobqueue import ServerCalculator
 from arvnodeman.computenode.dispatch import ComputeNodeMonitorActor
 from . import testutil
+import logging
 
 class NodeManagerDaemonActorTestCase(testutil.ActorTestMixin,
                                      unittest.TestCase):
-    def new_setup_proxy(self):
+    def new_setup(self, **kwargs):
         # Make sure that every time the daemon starts a setup actor,
         # it gets a new mock object back.
-        self.last_setup = mock.MagicMock(name='setup_proxy_mock')
+        get_cloud_node = mock.MagicMock()
+        get_cloud_node.get.return_value = mock.NonCallableMock(size=kwargs["cloud_size"])
+
+        self.last_setup = mock.NonCallableMock(name='setup_mock',
+                                               cloud_node=get_cloud_node)
+        self.last_setup.proxy = mock.MagicMock(return_value = self.last_setup)
+
         return self.last_setup
 
     def make_daemon(self, cloud_nodes=[], arvados_nodes=[], want_sizes=[],
@@ -30,8 +37,9 @@ class NodeManagerDaemonActorTestCase(testutil.ActorTestMixin,
         self.cloud_factory().node_start_time.return_value = time.time()
         self.cloud_updates = mock.MagicMock(name='updates_mock')
         self.timer = testutil.MockTimer(deliver_immediately=False)
+
         self.node_setup = mock.MagicMock(name='setup_mock')
-        self.node_setup.start().proxy.side_effect = self.new_setup_proxy
+        self.node_setup.start.side_effect = self.new_setup
         self.node_setup.reset_mock()
         self.node_shutdown = mock.MagicMock(name='shutdown_mock')
         self.daemon = nmdaemon.NodeManagerDaemonActor.start(
@@ -167,7 +175,7 @@ class NodeManagerDaemonActorTestCase(testutil.ActorTestMixin,
                          arvados_nodes=[testutil.arvados_node_mock(1),
                                         testutil.arvados_node_mock(2, last_ping_at='1970-01-01T01:02:03.04050607Z')],
                          want_sizes=[size])
-        self.daemon.shutdowns.get()[cloud_nodes[1].id] = True
+        self.daemon.shutdowns.get()[cloud_nodes[1].id] = mock.MagicMock(name='shutdown_proxy_mock')
         self.assertEqual(2, self.alive_monitor_count())
         for mon_ref in self.monitor_list():
             self.daemon.node_can_shutdown(mon_ref.proxy()).get(self.TIMEOUT)
@@ -194,7 +202,9 @@ class NodeManagerDaemonActorTestCase(testutil.ActorTestMixin,
     def test_boot_new_node_below_min_nodes(self):
         min_size = testutil.MockSize(1)
         wish_size = testutil.MockSize(3)
-        self.make_daemon([], [], None, min_size=min_size, min_nodes=2)
+        avail_sizes = [(min_size, {"cores": 1}),
+                       (wish_size, {"cores": 3})]
+        self.make_daemon([], [], None, avail_sizes=avail_sizes, min_nodes=2)
         self.daemon.update_server_wishlist([wish_size]).get(self.TIMEOUT)
         self.daemon.update_cloud_nodes([]).get(self.TIMEOUT)
         self.daemon.update_server_wishlist([wish_size]).get(self.TIMEOUT)
