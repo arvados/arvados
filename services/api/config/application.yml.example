@@ -19,7 +19,7 @@ production:
   blob_signing_key: ~
   sso_app_secret: ~
   sso_app_id: arvados-server
-  sso_provider_url: https://uuid_prefix.your.domain
+  sso_provider_url: https://auth.your.domain
   workbench_address: https://workbench.uuid_prefix.your.domain
   websocket_address: wss://ws.uuid_prefix.your.domain/websocket
   #git_repositories_dir: ~
@@ -37,7 +37,7 @@ development:
   blob_signing_key: ~
   sso_app_secret: ~
   sso_app_id: arvados-server
-  sso_provider_url: https://uuid_prefix.your.domain
+  sso_provider_url: https://auth.your.domain
   workbench_address: https://workbench.uuid_prefix.your.domain
   websocket_address: wss://ws.uuid_prefix.your.domain/websocket
   #git_repositories_dir: ~
