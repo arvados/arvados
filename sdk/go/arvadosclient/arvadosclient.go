@@ -32,6 +32,8 @@ var ErrInvalidArgument = errors.New("Invalid argument")
 // such failures by always using a new or recently active socket.
 var MaxIdleConnectionDuration = 30 * time.Second
 
+var RetryDelay = 2 * time.Second
+
 // Indicates an error that was returned by the API server.
 type APIServerError struct {
 	// Address of server returning error, of the form "host:port".
@@ -161,14 +163,26 @@ func (c ArvadosClient) CallRaw(method string, resourceType string, uuid string, 
 		}
 	}
 
+	retryable := false
+	switch method {
+	case "GET", "HEAD", "PUT", "OPTIONS", "POST", "DELETE":
+		retryable = true
+	}
+
+	// POST and DELETE are not safe to retry automatically, so we minimize
+	// such failures by always using a new or recently active socket
+	if method == "POST" || method == "DELETE" {
+		if time.Since(c.lastClosedIdlesAt) > MaxIdleConnectionDuration {
+			c.lastClosedIdlesAt = time.Now()
+			c.Client.Transport.(*http.Transport).CloseIdleConnections()
+		}
+	}
+
 	// Make the request
-	remainingTries := 1 + c.Retries
 	var req *http.Request
 	var resp *http.Response
-	var errs []string
-	var badResp bool
 
-	for remainingTries > 0 {
+	for attempt := 0; attempt <= c.Retries; attempt++ {
 		if method == "GET" || method == "HEAD" {
 			u.RawQuery = vals.Encode()
 			if req, err = http.NewRequest(method, u.String(), nil); err != nil {
@@ -187,21 +201,10 @@ func (c ArvadosClient) CallRaw(method string, resourceType string, uuid string, 
 			req.Header.Add("X-External-Client", "1")
 		}
 
-		// POST and DELETE are not safe to retry automatically, so we minimize
-		// such failures by always using a new or recently active socket
-		if method == "POST" || method == "DELETE" {
-			if time.Since(c.lastClosedIdlesAt) > MaxIdleConnectionDuration {
-				c.lastClosedIdlesAt = time.Now()
-				c.Client.Transport.(*http.Transport).CloseIdleConnections()
-			}
-		}
-
 		resp, err = c.Client.Do(req)
 		if err != nil {
-			if method == "GET" || method == "HEAD" || method == "PUT" {
-				errs = append(errs, err.Error())
-				badResp = false
-				remainingTries -= 1
+			if retryable {
+				time.Sleep(RetryDelay)
 				continue
 			} else {
 				return nil, err
@@ -214,26 +217,19 @@ func (c ArvadosClient) CallRaw(method string, resourceType string, uuid string, 
 
 		defer resp.Body.Close()
 
-		if resp.StatusCode == 408 ||
-			resp.StatusCode == 409 ||
-			resp.StatusCode == 422 ||
-			resp.StatusCode == 423 ||
-			resp.StatusCode == 500 ||
-			resp.StatusCode == 502 ||
-			resp.StatusCode == 503 ||
-			resp.StatusCode == 504 {
-			badResp = true
-			remainingTries -= 1
+		switch resp.StatusCode {
+		case 408, 409, 422, 423, 500, 502, 503, 504:
+			time.Sleep(RetryDelay)
 			continue
-		} else {
+		default:
 			return nil, newAPIServerError(c.ApiServer, resp)
 		}
 	}
 
-	if badResp {
+	if resp != nil {
 		return nil, newAPIServerError(c.ApiServer, resp)
 	} else {
-		return nil, fmt.Errorf("%v", errs)
+		return nil, err
 	}
 }
 

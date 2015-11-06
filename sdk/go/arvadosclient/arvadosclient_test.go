@@ -26,6 +26,7 @@ type ServerRequiredSuite struct{}
 func (s *ServerRequiredSuite) SetUpSuite(c *C) {
 	arvadostest.StartAPI()
 	arvadostest.StartKeep(2, false)
+	RetryDelay = 0
 }
 
 func (s *ServerRequiredSuite) SetUpTest(c *C) {
@@ -226,6 +227,7 @@ func (s *UnitSuite) TestPDHMatch(c *C) {
 type MockArvadosServerSuite struct{}
 
 func (s *MockArvadosServerSuite) SetUpSuite(c *C) {
+	RetryDelay = 0
 }
 
 func (s *MockArvadosServerSuite) SetUpTest(c *C) {
