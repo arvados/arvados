@@ -216,7 +216,7 @@ class NodeManagerDaemonActor(actor_class):
         up = 0
         up += sum(1
                   for c in self.booting.itervalues()
-                  if size is None or c.cloud_node.get().size.id == size.id)
+                  if size is None or c.cloud_size.get().id == size.id)
         up += sum(1
                   for i in (self.booted, self.cloud_nodes.nodes)
                   for c in i.itervalues()
@@ -256,8 +256,6 @@ class NodeManagerDaemonActor(actor_class):
             up_count = self._nodes_up(size) - (self._size_shutdowns(size) +
                                                self._nodes_busy(size) +
                                                self._nodes_missing(size))
-            #self._logger.info("_nodes_up for %s is %s", size.id, self._nodes_up(size))
-            #self._logger.info("counts %s %s %s", len(self.booting), len(self.booted), len(self.cloud_nodes))
             return self._size_wishlist(size) - up_count
 
     def _nodes_excess(self, size):
