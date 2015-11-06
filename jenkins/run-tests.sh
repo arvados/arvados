@@ -151,7 +151,7 @@ sanity_checks() {
     echo Checking dependencies:
     echo -n 'virtualenv: '
     virtualenv --version \
-        || fatal "No virtualenv. Try: apt-get install virtualenv"
+        || fatal "No virtualenv. Try: apt-get install virtualenv (on ubuntu: python-virtualenv)"
     echo -n 'go: '
     go version \
         || fatal "No go binary. See http://golang.org/doc/install"
@@ -173,7 +173,7 @@ sanity_checks() {
     for mod in ExtUtils::MakeMaker JSON LWP Net::SSL; do
         echo -n "perl $mod: "
         perl -e "use $mod; print \"\$$mod::VERSION\\n\"" \
-            || fatal "No $mod. Try: apt-get install perl-modules libcrypt-ssleay-perl libjson-perl"
+            || fatal "No $mod. Try: apt-get install perl-modules libcrypt-ssleay-perl libjson-perl libwww-perl"
     done
     echo -n 'gitolite: '
     which gitolite \
@@ -392,6 +392,8 @@ setup_virtualenv() {
         virtualenv --setuptools "$@" "$venvdest" || fatal "virtualenv $venvdest failed"
     fi
     "$venvdest/bin/pip" install 'setuptools>=18' 'pip>=7'
+    # ubuntu1404 can't seem to install mock via tests_require, but it can do this.
+    "$venvdest/bin/pip" install 'mock>=1.0'
 }
 
 export PERLINSTALLBASE
