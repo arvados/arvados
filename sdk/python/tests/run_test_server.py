@@ -469,12 +469,12 @@ def run_keep_web():
 
     keepwebport = find_available_port()
     env = os.environ.copy()
-    env.pop('ARVADOS_API_TOKEN', None)
+    env['ARVADOS_API_TOKEN'] = auth_token('anonymous')
     keepweb = subprocess.Popen(
         ['keep-web',
-         '-anonymous-token='+fixture('api_client_authorizations')['anonymous']['api_token'],
+         '-allow-anonymous',
          '-attachment-only-host=localhost:'+str(keepwebport),
-         '-address=:'+str(keepwebport)],
+         '-listen=:'+str(keepwebport)],
         env=env, stdin=open('/dev/null'), stdout=sys.stderr)
     with open(_pidfile('keep-web'), 'w') as f:
         f.write(str(keepweb.pid))
