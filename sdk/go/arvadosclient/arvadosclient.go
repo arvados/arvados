@@ -14,6 +14,7 @@ import (
 	"os"
 	"regexp"
 	"strings"
+	"time"
 )
 
 type StringMatcher func(string) bool
@@ -24,6 +25,12 @@ var PDHMatch StringMatcher = regexp.MustCompile(`^[0-9a-f]{32}\+\d+$`).MatchStri
 var MissingArvadosApiHost = errors.New("Missing required environment variable ARVADOS_API_HOST")
 var MissingArvadosApiToken = errors.New("Missing required environment variable ARVADOS_API_TOKEN")
 var ErrInvalidArgument = errors.New("Invalid argument")
+
+// A common failure mode is to reuse a keepalive connection that has been
+// terminated (in a way that we can't detect) for being idle too long.
+// POST and DELETE are not safe to retry automatically, so we minimize
+// such failures by always using a new or recently active socket.
+var MaxIdleConnectionDuration = 30 * time.Second
 
 // Indicates an error that was returned by the API server.
 type APIServerError struct {
@@ -76,6 +83,8 @@ type ArvadosClient struct {
 
 	// Discovery document
 	DiscoveryDoc Dict
+
+	lastClosedIdlesAt time.Time
 }
 
 // Create a new ArvadosClient, initialized with standard Arvados environment
@@ -100,6 +109,8 @@ func MakeArvadosClient() (ac ArvadosClient, err error) {
 	if ac.ApiToken == "" {
 		return ac, MissingArvadosApiToken
 	}
+
+	ac.lastClosedIdlesAt = time.Now()
 
 	return ac, err
 }
@@ -156,6 +167,15 @@ func (c ArvadosClient) CallRaw(method string, resourceType string, uuid string, 
 	req.Header.Add("Authorization", fmt.Sprintf("OAuth2 %s", c.ApiToken))
 	if c.External {
 		req.Header.Add("X-External-Client", "1")
+	}
+
+	// POST and DELETE are not safe to retry automatically, so we minimize
+	// such failures by always using a new or recently active socket
+	if method == "POST" || method == "DELETE" {
+		if time.Since(c.lastClosedIdlesAt) > MaxIdleConnectionDuration {
+			c.lastClosedIdlesAt = time.Now()
+			c.Client.Transport.(*http.Transport).CloseIdleConnections()
+		}
 	}
 
 	// Make the request

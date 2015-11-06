@@ -449,6 +449,26 @@ class NodeManagerDaemonActorTestCase(testutil.ActorTestMixin,
         self.daemon.node_can_shutdown(monitor).get(self.TIMEOUT)
         self.assertTrue(shutdown_proxy.called)
 
+    def test_broken_node_blackholed_after_cancelled_shutdown(self):
+        cloud_node = testutil.cloud_node_mock(8)
+        wishlist = [testutil.MockSize(8)]
+        self.make_daemon([cloud_node], [testutil.arvados_node_mock(8)],
+                         wishlist)
+        self.assertEqual(1, self.alive_monitor_count())
+        self.assertFalse(self.node_setup.start.called)
+        monitor = self.monitor_list()[0].proxy()
+        shutdown_proxy = self.node_shutdown.start().proxy
+        shutdown_proxy().cloud_node.get.return_value = cloud_node
+        shutdown_proxy().success.get.return_value = False
+        shutdown_proxy().cancel_reason.get.return_value = self.node_shutdown.NODE_BROKEN
+        self.daemon.update_server_wishlist([]).get(self.TIMEOUT)
+        self.daemon.node_can_shutdown(monitor).get(self.TIMEOUT)
+        self.daemon.node_finished_shutdown(shutdown_proxy()).get(self.TIMEOUT)
+        self.daemon.update_cloud_nodes([cloud_node]).get(self.TIMEOUT)
+        self.daemon.update_server_wishlist(wishlist).get(self.TIMEOUT)
+        self.stop_proxy(self.daemon)
+        self.assertEqual(1, self.node_setup.start.call_count)
+
     def test_nodes_shutting_down_replaced_below_max_nodes(self):
         cloud_node = testutil.cloud_node_mock(6)
         self.make_daemon([cloud_node], [testutil.arvados_node_mock(6)])

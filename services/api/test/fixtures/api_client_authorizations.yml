@@ -18,6 +18,18 @@ admin_trustedclient:
   api_token: 1a9ffdcga2o7cw8q12dndskomgs1ygli3ns9k2o9hgzgmktc78
   expires_at: 2038-01-01 00:00:00
 
+data_manager:
+  api_client: untrusted
+  user: system_user
+  api_token: 320mkve8qkswstz7ff61glpk3mhgghmg67wmic7elw4z41pke1
+  expires_at: 2038-01-01 00:00:00
+  scopes:
+    - GET /arvados/v1/collections
+    - GET /arvados/v1/keep_services
+    - GET /arvados/v1/keep_services/accessible
+    - GET /arvados/v1/users/current
+    - POST /arvados/v1/logs
+
 miniadmin:
   api_client: untrusted
   user: miniadmin

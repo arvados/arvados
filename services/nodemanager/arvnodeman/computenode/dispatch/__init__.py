@@ -154,6 +154,10 @@ class ComputeNodeShutdownActor(ComputeNodeStateChangeBase):
 
     This actor simply destroys a cloud node, retrying as needed.
     """
+    # Reasons for a shutdown to be cancelled.
+    WINDOW_CLOSED = "shutdown window closed"
+    NODE_BROKEN = "cloud failed to shut down broken node"
+
     def __init__(self, timer_actor, cloud_client, arvados_client, node_monitor,
                  cancellable=True, retry_wait=1, max_retry_wait=180):
         # If a ShutdownActor is cancellable, it will ask the
@@ -167,6 +171,7 @@ class ComputeNodeShutdownActor(ComputeNodeStateChangeBase):
         self._monitor = node_monitor.proxy()
         self.cloud_node = self._monitor.cloud_node.get()
         self.cancellable = cancellable
+        self.cancel_reason = None
         self.success = None
 
     def on_start(self):
@@ -180,7 +185,10 @@ class ComputeNodeShutdownActor(ComputeNodeStateChangeBase):
             self.success = success_flag
         return super(ComputeNodeShutdownActor, self)._finished()
 
-    def cancel_shutdown(self):
+    def cancel_shutdown(self, reason):
+        self.cancel_reason = reason
+        self._logger.info("Cloud node %s shutdown cancelled: %s.",
+                          self.cloud_node.id, reason)
         self._finished(success_flag=False)
 
     def _stop_if_window_closed(orig_func):
@@ -188,10 +196,7 @@ class ComputeNodeShutdownActor(ComputeNodeStateChangeBase):
         def stop_wrapper(self, *args, **kwargs):
             if (self.cancellable and
                   (not self._monitor.shutdown_eligible().get())):
-                self._logger.info(
-                    "Cloud node %s shutdown cancelled - no longer eligible.",
-                    self.cloud_node.id)
-                self._later.cancel_shutdown()
+                self._later.cancel_shutdown(self.WINDOW_CLOSED)
                 return None
             else:
                 return orig_func(self, *args, **kwargs)
@@ -201,8 +206,11 @@ class ComputeNodeShutdownActor(ComputeNodeStateChangeBase):
     @ComputeNodeStateChangeBase._retry()
     def shutdown_node(self):
         if not self._cloud.destroy_node(self.cloud_node):
-            # Force a retry.
-            raise cloud_types.LibcloudError("destroy_node failed")
+            if self._cloud.broken(self.cloud_node):
+                self._later.cancel_shutdown(self.NODE_BROKEN)
+            else:
+                # Force a retry.
+                raise cloud_types.LibcloudError("destroy_node failed")
         self._logger.info("Cloud node %s shut down.", self.cloud_node.id)
         arv_node = self._arvados_node()
         if arv_node is None:
