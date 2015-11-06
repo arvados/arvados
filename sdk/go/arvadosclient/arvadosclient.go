@@ -228,9 +228,8 @@ func (c ArvadosClient) CallRaw(method string, resourceType string, uuid string, 
 
 	if resp != nil {
 		return nil, newAPIServerError(c.ApiServer, resp)
-	} else {
-		return nil, err
 	}
+	return nil, err
 }
 
 func newAPIServerError(ServerAddress string, resp *http.Response) APIServerError {

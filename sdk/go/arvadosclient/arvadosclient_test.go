@@ -7,7 +7,6 @@ import (
 	"net"
 	"net/http"
 	"os"
-	"strconv"
 	"strings"
 	"testing"
 	"time"
@@ -251,11 +250,6 @@ func RunFakeArvadosServer(st http.Handler) (api APIServer, err error) {
 	return
 }
 
-type APIStub struct {
-	count      int
-	respStatus []int
-}
-
 func (h *APIStub) ServeHTTP(resp http.ResponseWriter, req *http.Request) {
 	resp.WriteHeader(h.respStatus[h.count])
 
@@ -265,46 +259,57 @@ func (h *APIStub) ServeHTTP(resp http.ResponseWriter, req *http.Request) {
 		resp.Write([]byte(``))
 	}
 
-	h.count += 1
+	h.count++
+}
+
+type APIStub struct {
+	method       string
+	count        int
+	expected     int
+	respStatus   []int
+	responseBody []string
 }
 
 func (s *MockArvadosServerSuite) TestWithRetries(c *C) {
-	// Each testCase below specifies the operation to be used ("get", "create" etc),
-	// the "expected" outcome (500 or 401 or success etc,
-	// and an array of response statuses to be returned in that order for each (re)try.
-	//
-	// The tests are using retry count of 2,
-	// and hence the first "non-retryable" code (such as 401)
-	// or whatever is the third status code is to be expected.
-	for _, testCase := range []map[string][]int{
-		{"get:500": []int{500, 500, 500, 200}},
-		{"create:500": []int{500, 500, 500, 200}},
-		{"update:500": []int{500, 500, 500, 200}},
-		{"delete:500": []int{500, 500, 500, 200}},
-		{"get:502": []int{500, 500, 502, 200}},
-		{"create:502": []int{500, 500, 502, 200}},
-		{"get:success": []int{500, 500, 200}},
-		{"create:success": []int{500, 500, 200}},
-		{"get:401": []int{401, 200}},
-		{"create:401": []int{401, 200}},
-		{"get:404": []int{404, 200}},
-		{"create:404": []int{404, 200}},
-		{"get:401": []int{500, 401, 200}},
-		{"create:401": []int{500, 401, 200}},
+	for _, stub := range []APIStub{
+		{
+			"get", 0, 500, []int{500, 500, 500, 200}, []string{``, ``, ``, `{"ok":"ok"}`},
+		},
+		{
+			"create", 0, 500, []int{500, 500, 500, 200}, []string{``, ``, ``, `{"ok":"ok"}`},
+		},
+		{
+			"update", 0, 500, []int{500, 500, 500, 200}, []string{``, ``, ``, `{"ok":"ok"}`},
+		},
+		{
+			"delete", 0, 500, []int{500, 500, 500, 200}, []string{``, ``, ``, `{"ok":"ok"}`},
+		},
+		{
+			"get", 0, 502, []int{500, 500, 502, 200}, []string{``, ``, ``, `{"ok":"ok"}`},
+		},
+		{
+			"create", 0, 502, []int{500, 500, 502, 200}, []string{``, ``, ``, `{"ok":"ok"}`},
+		},
+		{
+			"get", 0, 200, []int{500, 500, 200}, []string{``, ``, `{"ok":"ok"}`},
+		},
+		{
+			"create", 0, 200, []int{500, 500, 200}, []string{``, ``, `{"ok":"ok"}`},
+		},
+		{
+			"get", 0, 401, []int{401, 200}, []string{``, `{"ok":"ok"}`},
+		},
+		{
+			"create", 0, 401, []int{401, 200}, []string{``, `{"ok":"ok"}`},
+		},
+		{
+			"get", 0, 404, []int{404, 200}, []string{``, `{"ok":"ok"}`},
+		},
+		{
+			"get", 0, 401, []int{500, 401, 200}, []string{``, ``, `{"ok":"ok"}`},
+		},
 	} {
-		var method string
-		var statusCodes []int
-		var expected string
-
-		for key, value := range testCase {
-			method = key[:strings.Index(key, ":")]
-			expected = key[strings.Index(key, ":")+1:]
-			statusCodes = value
-		}
-
-		stub := &APIStub{0, statusCodes}
-
-		api, err := RunFakeArvadosServer(stub)
+		api, err := RunFakeArvadosServer(&stub)
 		c.Check(err, IsNil)
 
 		defer api.listener.Close()
@@ -318,7 +323,7 @@ func (s *MockArvadosServerSuite) TestWithRetries(c *C) {
 			Retries:     2}
 
 		getback := make(Dict)
-		switch method {
+		switch stub.method {
 		case "get":
 			err = arv.Get("collections", "zzzzz-4zz18-znfnqtbbv4spc3w", nil, &getback)
 		case "create":
@@ -333,14 +338,13 @@ func (s *MockArvadosServerSuite) TestWithRetries(c *C) {
 			err = arv.Delete("pipeline_templates", "zzzzz-4zz18-znfnqtbbv4spc3w", nil, &getback)
 		}
 
-		if expected == "success" {
+		if stub.expected == 200 {
 			c.Check(err, IsNil)
 			c.Assert(getback["ok"], Equals, "ok")
 		} else {
 			c.Check(err, NotNil)
-			expectedStatus, _ := strconv.Atoi(expected)
-			c.Check(strings.Contains(err.Error(), fmt.Sprintf("%s%s", "arvados API server error: ", expected)), Equals, true)
-			c.Assert(err.(APIServerError).HttpStatusCode, Equals, expectedStatus)
+			c.Check(strings.Contains(err.Error(), fmt.Sprintf("%s%d", "arvados API server error: ", stub.expected)), Equals, true)
+			c.Assert(err.(APIServerError).HttpStatusCode, Equals, stub.expected)
 		}
 	}
 }
