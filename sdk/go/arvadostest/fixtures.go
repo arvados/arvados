@@ -4,7 +4,9 @@ package arvadostest
 const (
 	SpectatorToken        = "zw2f4gwx8hw8cjre7yp6v1zylhrhn3m5gvjq73rtpwhmknrybu"
 	ActiveToken           = "3kg6k6lzmp9kj5cpkcoxie963cmvjahbt2fod9zru30k1jqdmi"
+	AdminToken            = "4axaw8zxe0qm22wa6urpp5nskcne8z88cvbupv653y1njyi05h"
 	AnonymousToken        = "4kg6k6lzmp9kj4cpkcoxie964cmvjahbt4fod9zru44k4jqdmi"
+	DataManagerToken      = "320mkve8qkswstz7ff61glpk3mhgghmg67wmic7elw4z41pke1"
 	FooCollection         = "zzzzz-4zz18-fy296fx3hot09f7"
 	NonexistentCollection = "zzzzz-4zz18-totallynotexist"
 	HelloWorldCollection  = "zzzzz-4zz18-4en62shvi99lxd4"
