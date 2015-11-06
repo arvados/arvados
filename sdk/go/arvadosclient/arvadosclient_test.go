@@ -1,11 +1,13 @@
 package arvadosclient
 
 import (
+	"fmt"
 	"git.curoverse.com/arvados.git/sdk/go/arvadostest"
 	. "gopkg.in/check.v1"
 	"net"
 	"net/http"
 	"os"
+	"strconv"
 	"strings"
 	"testing"
 	"time"
@@ -249,71 +251,58 @@ func RunFakeArvadosServer(st http.Handler) (api APIServer, err error) {
 	return
 }
 
-type FailHandler struct {
-	status int
-}
-
-func (h FailHandler) ServeHTTP(resp http.ResponseWriter, req *http.Request) {
-	resp.WriteHeader(h.status)
-}
-
-func (s *MockArvadosServerSuite) TestFailWithRetries(c *C) {
-	for _, testCase := range []string{
-		"get",
-		"create",
-	} {
-		stub := FailHandler{500}
-
-		api, err := RunFakeArvadosServer(stub)
-		c.Check(err, IsNil)
-
-		defer api.listener.Close()
-
-		arv := ArvadosClient{
-			Scheme:      "http",
-			ApiServer:   api.url,
-			ApiToken:    "abc123",
-			ApiInsecure: true,
-			Client:      &http.Client{Transport: &http.Transport{}},
-			Retries:     2}
-
-		getback := make(Dict)
-		switch testCase {
-		case "get":
-			err = arv.Get("collections", "zzzzz-4zz18-znfnqtbbv4spc3w", nil, &getback)
-		case "create":
-			err = arv.Create("collections",
-				Dict{"collection": Dict{"name": "testing"}},
-				&getback)
-		}
-		c.Check(err, NotNil)
-		c.Check(strings.Contains(err.Error(), "arvados API server error: 500"), Equals, true)
-		c.Assert(err.(APIServerError).HttpStatusCode, Equals, 500)
-	}
-}
-
-type FailThenSucceedHandler struct {
+type APIStub struct {
 	count      int
-	failStatus int
+	respStatus []int
 }
 
-func (h *FailThenSucceedHandler) ServeHTTP(resp http.ResponseWriter, req *http.Request) {
-	if h.count == 0 {
-		resp.WriteHeader(h.failStatus)
-		h.count += 1
+func (h *APIStub) ServeHTTP(resp http.ResponseWriter, req *http.Request) {
+	resp.WriteHeader(h.respStatus[h.count])
+
+	if h.respStatus[h.count] == 200 {
+		resp.Write([]byte(`{"ok":"ok"}`))
 	} else {
-		resp.WriteHeader(http.StatusOK)
-		respJSON := []byte(`{"name":"testing"}`)
-		resp.Write(respJSON)
+		resp.Write([]byte(``))
 	}
+
+	h.count += 1
 }
 
-func (s *MockArvadosServerSuite) TestFailThenSucceed(c *C) {
-	for _, testCase := range []string{
-		"get",
-		"create",
+func (s *MockArvadosServerSuite) TestWithRetries(c *C) {
+	// Each testCase below specifies the operation to be used ("get", "create" etc),
+	// the "expected" outcome (500 or 401 or success etc,
+	// and an array of response statuses to be returned in that order for each (re)try.
+	//
+	// The tests are using retry count of 2,
+	// and hence the first "non-retryable" code (such as 401)
+	// or whatever is the third status code is to be expected.
+	for _, testCase := range []map[string][]int{
+		{"get:500": []int{500, 500, 500, 200}},
+		{"create:500": []int{500, 500, 500, 200}},
+		{"update:500": []int{500, 500, 500, 200}},
+		{"delete:500": []int{500, 500, 500, 200}},
+		{"get:502": []int{500, 500, 502, 200}},
+		{"create:502": []int{500, 500, 502, 200}},
+		{"get:success": []int{500, 500, 200}},
+		{"create:success": []int{500, 500, 200}},
+		{"get:401": []int{401, 200}},
+		{"create:401": []int{401, 200}},
+		{"get:404": []int{404, 200}},
+		{"create:404": []int{404, 200}},
+		{"get:401": []int{500, 401, 200}},
+		{"create:401": []int{500, 401, 200}},
 	} {
-		stub := &FailThenSucceedHandler{0, 500}
+		var method string
+		var statusCodes []int
+		var expected string
+
+		for key, value := range testCase {
+			method = key[:strings.Index(key, ":")]
+			expected = key[strings.Index(key, ":")+1:]
+			statusCodes = value
+		}
+
+		stub := &APIStub{0, statusCodes}
 
 		api, err := RunFakeArvadosServer(stub)
 		c.Check(err, IsNil)
@@ -329,15 +318,29 @@ func (s *MockArvadosServerSuite) TestFailThenSucceed(c *C) {
 			Retries:     2}
 
 		getback := make(Dict)
-		switch testCase {
+		switch method {
 		case "get":
 			err = arv.Get("collections", "zzzzz-4zz18-znfnqtbbv4spc3w", nil, &getback)
 		case "create":
 			err = arv.Create("collections",
 				Dict{"collection": Dict{"name": "testing"}},
 				&getback)
+		case "update":
+			err = arv.Update("collections", "zzzzz-4zz18-znfnqtbbv4spc3w",
+				Dict{"collection": Dict{"name": "testing"}},
+				&getback)
+		case "delete":
+			err = arv.Delete("pipeline_templates", "zzzzz-4zz18-znfnqtbbv4spc3w", nil, &getback)
 		}
-		c.Check(err, IsNil)
-		c.Assert(getback["name"], Equals, "testing")
+
+		if expected == "success" {
+			c.Check(err, IsNil)
+			c.Assert(getback["ok"], Equals, "ok")
+		} else {
+			c.Check(err, NotNil)
+			expectedStatus, _ := strconv.Atoi(expected)
+			c.Check(strings.Contains(err.Error(), fmt.Sprintf("%s%s", "arvados API server error: ", expected)), Equals, true)
+			c.Assert(err.(APIServerError).HttpStatusCode, Equals, expectedStatus)
+		}
 	}
 }
