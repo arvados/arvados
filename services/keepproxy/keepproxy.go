@@ -14,7 +14,6 @@ import (
 	"net/http"
 	"os"
 	"os/signal"
-	"reflect"
 	"regexp"
 	"sync"
 	"syscall"
@@ -104,7 +103,7 @@ func main() {
 
 	kc.Want_replicas = default_replicas
 	kc.Client.Timeout = time.Duration(timeout) * time.Second
-	go RefreshServicesList(kc, 5*time.Minute, 3*time.Second)
+	go kc.RefreshServices(5*time.Minute, 3*time.Second)
 
 	listener, err = net.Listen("tcp", listen)
 	if err != nil {
@@ -133,42 +132,6 @@ type ApiTokenCache struct {
 	tokens     map[string]int64
 	lock       sync.Mutex
 	expireTime int64
-}
-
-// Refresh the keep service list on SIGHUP; when the given interval
-// has elapsed since the last refresh; and (if the last refresh
-// failed) the given errInterval has elapsed.
-func RefreshServicesList(kc *keepclient.KeepClient, interval, errInterval time.Duration) {
-	var previousRoots = []map[string]string{}
-
-	timer := time.NewTimer(interval)
-	gotHUP := make(chan os.Signal, 1)
-	signal.Notify(gotHUP, syscall.SIGHUP)
-
-	for {
-		select {
-		case <-gotHUP:
-		case <-timer.C:
-		}
-		timer.Reset(interval)
-
-		if err := kc.DiscoverKeepServers(); err != nil {
-			log.Println("Error retrieving services list: %v (retrying in %v)", err, errInterval)
-			timer.Reset(errInterval)
-			continue
-		}
-		newRoots := []map[string]string{kc.LocalRoots(), kc.GatewayRoots()}
-
-		if !reflect.DeepEqual(previousRoots, newRoots) {
-			log.Printf("Updated services list: locals %v gateways %v", newRoots[0], newRoots[1])
-			previousRoots = newRoots
-		}
-
-		if len(newRoots[0]) == 0 {
-			log.Printf("WARNING: No local services (retrying in %v)", errInterval)
-			timer.Reset(errInterval)
-		}
-	}
 }
 
 // Cache the token and set an expire time.  If we already have an expire time
