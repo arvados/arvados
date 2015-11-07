@@ -447,11 +447,12 @@ def run_arv_git_httpd():
     gitport = find_available_port()
     env = os.environ.copy()
     env.pop('ARVADOS_API_TOKEN', None)
+    logf = open(_fifo2stderr('arv-git-httpd'), 'w')
     agh = subprocess.Popen(
         ['arv-git-httpd',
          '-repo-root='+gitdir+'/test',
          '-address=:'+str(gitport)],
-        env=env, stdin=open('/dev/null'), stdout=sys.stderr)
+        env=env, stdin=open('/dev/null'), stdout=logf, stderr=logf)
     with open(_pidfile('arv-git-httpd'), 'w') as f:
         f.write(str(agh.pid))
     _setport('arv-git-httpd', gitport)
@@ -470,12 +471,13 @@ def run_keep_web():
     keepwebport = find_available_port()
     env = os.environ.copy()
     env['ARVADOS_API_TOKEN'] = auth_token('anonymous')
+    logf = open(_fifo2stderr('keep-web'), 'w')
     keepweb = subprocess.Popen(
         ['keep-web',
          '-allow-anonymous',
          '-attachment-only-host=localhost:'+str(keepwebport),
          '-listen=:'+str(keepwebport)],
-        env=env, stdin=open('/dev/null'), stdout=sys.stderr)
+        env=env, stdin=open('/dev/null'), stdout=logf, stderr=logf)
     with open(_pidfile('keep-web'), 'w') as f:
         f.write(str(keepweb.pid))
     _setport('keep-web', keepwebport)
