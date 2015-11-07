@@ -273,6 +273,12 @@ type APIStub struct {
 func (s *MockArvadosServerSuite) TestWithRetries(c *C) {
 	for _, stub := range []APIStub{
 		{
+			"get", 0, 200, []int{200, 500}, []string{`{"ok":"ok"}`, ``},
+		},
+		{
+			"create", 0, 200, []int{200, 500}, []string{`{"ok":"ok"}`, ``},
+		},
+		{
 			"get", 0, 500, []int{500, 500, 500, 200}, []string{``, ``, ``, `{"ok":"ok"}`},
 		},
 		{
@@ -295,6 +301,12 @@ func (s *MockArvadosServerSuite) TestWithRetries(c *C) {
 		},
 		{
 			"create", 0, 200, []int{500, 500, 200}, []string{``, ``, `{"ok":"ok"}`},
+		},
+		{
+			"delete", 0, 200, []int{500, 500, 200}, []string{``, ``, `{"ok":"ok"}`},
+		},
+		{
+			"update", 0, 200, []int{500, 500, 200}, []string{``, ``, `{"ok":"ok"}`},
 		},
 		{
 			"get", 0, 401, []int{401, 200}, []string{``, `{"ok":"ok"}`},

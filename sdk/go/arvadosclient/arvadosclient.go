@@ -165,13 +165,13 @@ func (c ArvadosClient) CallRaw(method string, resourceType string, uuid string, 
 
 	retryable := false
 	switch method {
-	case "GET", "HEAD", "PUT", "OPTIONS", "POST", "DELETE":
+	case "GET", "HEAD", "PUT", "OPTIONS", "DELETE":
 		retryable = true
 	}
 
-	// POST and DELETE are not safe to retry automatically, so we minimize
-	// such failures by always using a new or recently active socket
-	if method == "POST" || method == "DELETE" {
+	// Non-retryable methods such as POST are not safe to retry automatically,
+	// so we minimize such failures by always using a new or recently active socket
+	if !retryable {
 		if time.Since(c.lastClosedIdlesAt) > MaxIdleConnectionDuration {
 			c.lastClosedIdlesAt = time.Now()
 			c.Client.Transport.(*http.Transport).CloseIdleConnections()
