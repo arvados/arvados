@@ -32,7 +32,6 @@ import arvados.config
 
 ARVADOS_DIR = os.path.realpath(os.path.join(MY_DIRNAME, '../../..'))
 SERVICES_SRC_DIR = os.path.join(ARVADOS_DIR, 'services')
-SERVER_PID_PATH = 'tmp/pids/test-server.pid'
 if 'GOPATH' in os.environ:
     gopaths = os.environ['GOPATH'].split(':')
     gobins = [os.path.join(path, 'bin') for path in gopaths]
@@ -70,28 +69,62 @@ def kill_server_pid(pidfile, wait=10, passenger_root=False):
     import signal
     import subprocess
     import time
-    try:
-        if passenger_root:
-            # First try to shut down nicely
-            restore_cwd = os.getcwd()
-            os.chdir(passenger_root)
-            subprocess.call([
-                'bundle', 'exec', 'passenger', 'stop', '--pid-file', pidfile])
-            os.chdir(restore_cwd)
-        now = time.time()
-        timeout = now + wait
-        with open(pidfile, 'r') as f:
-            server_pid = int(f.read())
-        while now <= timeout:
-            if not passenger_root or timeout - now < wait / 2:
-                # Half timeout has elapsed. Start sending SIGTERM
-                os.kill(server_pid, signal.SIGTERM)
-            # Raise OSError if process has disappeared
-            os.getpgid(server_pid)
+
+    now = time.time()
+    startTERM = now
+    deadline = now + wait
+
+    if passenger_root:
+        # First try to shut down nicely
+        restore_cwd = os.getcwd()
+        os.chdir(passenger_root)
+        subprocess.call([
+            'bundle', 'exec', 'passenger', 'stop', '--pid-file', pidfile])
+        os.chdir(restore_cwd)
+        # Use up to half of the +wait+ period waiting for "passenger
+        # stop" to work. If the process hasn't exited by then, start
+        # sending TERM signals.
+        startTERM += wait/2
+
+    server_pid = None
+    while now <= deadline and server_pid is None:
+        try:
+            with open(pidfile, 'r') as f:
+                server_pid = int(f.read())
+        except IOError:
+            # No pidfile = nothing to kill.
+            return
+        except ValueError as error:
+            # Pidfile exists, but we can't parse it. Perhaps the
+            # server has created the file but hasn't written its PID
+            # yet?
+            print("Parse error reading pidfile {}: {}".format(pidfile, error))
             time.sleep(0.1)
             now = time.time()
-    except EnvironmentError:
-        pass
+
+    while now <= deadline:
+        try:
+            exited, _ = os.waitpid(server_pid, os.WNOHANG)
+            if exited > 0:
+                return
+        except OSError:
+            # already exited, or isn't our child process
+            pass
+        try:
+            if now >= startTERM:
+                os.kill(server_pid, signal.SIGTERM)
+                print("Sent SIGTERM to {} ({})".format(server_pid, pidfile))
+        except OSError as error:
+            if error.errno == errno.ESRCH:
+                # Thrown by os.getpgid() or os.kill() if the process
+                # does not exist, i.e., our work here is done.
+                return
+            raise
+        time.sleep(0.1)
+        now = time.time()
+
+    print("Server PID {} ({}) did not exit, giving up after {}s".
+          format(server_pid, pidfile, wait))
 
 def find_available_port():
     """Return an IPv4 port number that is not in use right now.
@@ -179,7 +212,7 @@ def run(leave_running_atexit=False):
     # Delete cached discovery document.
     shutil.rmtree(arvados.http_cache('discovery'))
 
-    pid_file = os.path.join(SERVICES_SRC_DIR, 'api', SERVER_PID_PATH)
+    pid_file = _pidfile('api')
     pid_file_ok = find_server_pid(pid_file, 0)
 
     existing_api_host = os.environ.get('ARVADOS_TEST_API_HOST', my_api_host)
@@ -251,7 +284,7 @@ def run(leave_running_atexit=False):
     start_msg = subprocess.check_output(
         ['bundle', 'exec',
          'passenger', 'start', '-d', '-p{}'.format(port),
-         '--pid-file', os.path.join(os.getcwd(), pid_file),
+         '--pid-file', pid_file,
          '--log-file', os.path.join(os.getcwd(), 'log/test.log'),
          '--ssl',
          '--ssl-certificate', 'tmp/self-signed.pem',
@@ -313,7 +346,7 @@ def stop(force=False):
     """
     global my_api_host
     if force or my_api_host is not None:
-        kill_server_pid(os.path.join(SERVICES_SRC_DIR, 'api', SERVER_PID_PATH))
+        kill_server_pid(_pidfile('api'))
         my_api_host = None
 
 def _start_keep(n, keep_args):
@@ -388,7 +421,7 @@ def run_keep(blob_signing_key=None, enforce_permissions=False, num_servers=2):
         os.kill(int(open(proxypidfile).read()), signal.SIGHUP)
 
 def _stop_keep(n):
-    kill_server_pid(_pidfile('keep{}'.format(n)), 0)
+    kill_server_pid(_pidfile('keep{}'.format(n)))
     if os.path.exists("{}/keep{}.volume".format(TEST_TMPDIR, n)):
         with open("{}/keep{}.volume".format(TEST_TMPDIR, n), 'r') as r:
             shutil.rmtree(r.read(), True)
@@ -436,7 +469,7 @@ def run_keep_proxy():
 def stop_keep_proxy():
     if 'ARVADOS_TEST_PROXY_SERVICES' in os.environ:
         return
-    kill_server_pid(_pidfile('keepproxy'), wait=0)
+    kill_server_pid(_pidfile('keepproxy'))
 
 def run_arv_git_httpd():
     if 'ARVADOS_TEST_PROXY_SERVICES' in os.environ:
@@ -461,7 +494,7 @@ def run_arv_git_httpd():
 def stop_arv_git_httpd():
     if 'ARVADOS_TEST_PROXY_SERVICES' in os.environ:
         return
-    kill_server_pid(_pidfile('arv-git-httpd'), wait=0)
+    kill_server_pid(_pidfile('arv-git-httpd'))
 
 def run_keep_web():
     if 'ARVADOS_TEST_PROXY_SERVICES' in os.environ:
@@ -486,7 +519,7 @@ def run_keep_web():
 def stop_keep_web():
     if 'ARVADOS_TEST_PROXY_SERVICES' in os.environ:
         return
-    kill_server_pid(_pidfile('keep-web'), wait=0)
+    kill_server_pid(_pidfile('keep-web'))
 
 def run_nginx():
     if 'ARVADOS_TEST_PROXY_SERVICES' in os.environ:
@@ -526,7 +559,7 @@ def run_nginx():
 def stop_nginx():
     if 'ARVADOS_TEST_PROXY_SERVICES' in os.environ:
         return
-    kill_server_pid(_pidfile('nginx'), wait=0)
+    kill_server_pid(_pidfile('nginx'))
 
 def _pidfile(program):
     return os.path.join(TEST_TMPDIR, program + '.pid')
@@ -678,7 +711,7 @@ if __name__ == "__main__":
     elif args.action == 'start_keep':
         run_keep(enforce_permissions=args.keep_enforce_permissions, num_servers=args.num_keep_servers)
     elif args.action == 'stop_keep':
-        stop_keep()
+        stop_keep(num_servers=args.num_keep_servers)
     elif args.action == 'start_keep_proxy':
         run_keep_proxy()
     elif args.action == 'stop_keep_proxy':

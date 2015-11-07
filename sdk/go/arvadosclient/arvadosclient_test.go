@@ -25,6 +25,11 @@ func (s *ServerRequiredSuite) SetUpSuite(c *C) {
 	arvadostest.StartKeep(2, false)
 }
 
+func (s *ServerRequiredSuite) TearDownSuite(c *C) {
+	arvadostest.StopKeep(2)
+	arvadostest.StopAPI()
+}
+
 func (s *ServerRequiredSuite) SetUpTest(c *C) {
 	arvadostest.ResetEnv()
 }
