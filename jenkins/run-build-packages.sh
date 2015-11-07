@@ -422,10 +422,42 @@ LIBCLOUD_DIR=$(mktemp -d)
 fpm_build $LIBCLOUD_DIR "$PYTHON2_PKG_PREFIX"-apache-libcloud
 rm -rf $LIBCLOUD_DIR
 
-# A few dependencies
+# Python 2 dependencies
 for deppkg in "${PYTHON_BACKPORTS[@]}"; do
     outname=$(echo "$deppkg" | sed -e 's/^python-//' -e 's/[<=>].*//' -e 's/_/-/g' -e "s/^/${PYTHON2_PKG_PREFIX}-/")
-    fpm_build "$deppkg" "$outname"
+    case "$deppkg" in
+        httplib2)
+        # Work around 0640 permissions on some package files on Debian 8
+        # and Ubuntu 14.04.  See #7591.
+            httplib2_workdir=$(mktemp -d httplib2-XXXXXX) && (
+                set -e
+                cd "$httplib2_workdir"
+                pip install --download . httplib2
+                tar -xf httplib2-*.tar*
+                cd httplib2-*/
+                "python$PYTHON2_VERSION" setup.py $DASHQ_UNLESS_DEBUG egg_info build
+                chmod -R go+rX .
+                set +e
+                # --iteration 2 provides an upgrade for previously built
+                # buggy packages.  Arguments past $outname can be removed
+                # once we're building httplib2 > 0.9.2.
+                fpm_build . "$outname" "" python "" --iteration 2
+                # The upload step uses the package timestamp to determine
+                # whether it's new.  --no-clobber plays nice with that.
+                mv --no-clobber "$outname"*.$FORMAT "$WORKSPACE/packages/$TARGET"
+            )
+            if [ 0 != "$?" ]; then
+                echo "ERROR: httplib2 build process failed"
+                EXITCODE=1
+            fi
+            if [ -n "$httplib2_workdir" ]; then
+                rm -rf "$httplib2_workdir"
+            fi
+            ;;
+        *)
+            fpm_build "$deppkg" "$outname"
+            ;;
+    esac
 done
 
 # Python 3 dependencies
