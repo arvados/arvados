@@ -27,6 +27,7 @@ Capybara.register_driver :selenium_with_download do |app|
   profile['browser.download.folderList'] = 2 # "save to user-defined location"
   profile['browser.download.manager.showWhenStarting'] = false
   profile['browser.helperApps.alwaysAsk.force'] = false
+  profile['browser.helperApps.neverAsk.saveToDisk'] = 'text/plain,application/octet-stream'
   Capybara::Selenium::Driver.new app, profile: profile
 end
 

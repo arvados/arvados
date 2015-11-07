@@ -9,6 +9,7 @@ import (
 	"net/http"
 	"net/url"
 	"os"
+	"strconv"
 	"strings"
 
 	"git.curoverse.com/arvados.git/sdk/go/arvadosclient"
@@ -304,8 +305,24 @@ func (h *handler) ServeHTTP(wOrig http.ResponseWriter, r *http.Request) {
 	if rdr, ok := rdr.(keepclient.ReadCloserWithLen); ok {
 		w.Header().Set("Content-Length", fmt.Sprintf("%d", rdr.Len()))
 	}
+
+	disposition := "inline"
 	if attachment {
-		w.Header().Set("Content-Disposition", "attachment")
+		disposition = "attachment"
+	}
+	if strings.ContainsRune(r.RequestURI, '?') {
+		// Help the UA realize that the filename is just
+		// "filename.txt", not
+		// "filename.txt?disposition=attachment".
+		//
+		// TODO(TC): Follow advice at RFC 6266 appendix D
+		if basenamePos < 0 {
+			basenamePos = 0
+		}
+		disposition += "; filename=" + strconv.QuoteToASCII(filename[basenamePos:])
+	}
+	if disposition != "inline" {
+		w.Header().Set("Content-Disposition", disposition)
 	}
 
 	w.WriteHeader(http.StatusOK)

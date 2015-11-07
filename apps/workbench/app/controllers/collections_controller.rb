@@ -148,6 +148,7 @@ class CollectionsController < ApplicationController
         # to read the collection.
         opts[:query_token] = usable_token
       end
+      opts[:disposition] = params[:disposition]
       return redirect_to keep_web_url(params[:uuid], params[:file], opts)
     end
 
@@ -332,9 +333,18 @@ class CollectionsController < ApplicationController
     end
     uri.path += '_/'
     uri.path += CGI::escape(file)
-    if opts[:query_token]
-      uri.query = 'api_token=' + CGI::escape(opts[:query_token])
+
+    query_params = []
+    { query_token: 'api_token',
+      disposition: 'disposition' }.each do |opt, param|
+      if opts[opt]
+        query_params << param + '=' + CGI::escape(opts[opt])
+      end
     end
+    unless query_params.empty?
+      uri.query = query_params.join '&'
+    end
+
     uri.to_s
   end
 

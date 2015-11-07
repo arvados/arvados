@@ -230,6 +230,13 @@ common:
   # download facility.
   #
   # Examples:
-  # keep_web_url: https://%{uuid_or_pdh}.dl.zzzzz.your.domain
-  # keep_web_url: https://%{uuid_or_pdh}--dl.zzzzz.your.domain
+  # keep_web_url: https://%{uuid_or_pdh}.collections.uuid_prefix.arvadosapi.com
+  # keep_web_url: https://%{uuid_or_pdh}--collections.uuid_prefix.arvadosapi.com
+  #
+  # Example supporting only public data and collection-sharing links:
+  # keep_web_url: https://collections.uuid_prefix.arvadosapi.com/c=%{uuid_or_pdh}
+  #
+  # Example supporting only download/attachment: (using keep-web
+  # -attachment-only-host collections.uuid_prefix.arvadosapi.com):
+  # keep_web_url: https://collections.uuid_prefix.arvadosapi.com/c=%{uuid_or_pdh}
   keep_web_url: false
