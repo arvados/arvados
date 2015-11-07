@@ -250,24 +250,18 @@ func RunFakeArvadosServer(st http.Handler) (api APIServer, err error) {
 	return
 }
 
-func (h *APIStub) ServeHTTP(resp http.ResponseWriter, req *http.Request) {
-	resp.WriteHeader(h.respStatus[h.count])
-
-	if h.respStatus[h.count] == 200 {
-		resp.Write([]byte(`{"ok":"ok"}`))
-	} else {
-		resp.Write([]byte(``))
-	}
-
-	h.count++
-}
-
 type APIStub struct {
 	method       string
 	count        int
 	expected     int
 	respStatus   []int
 	responseBody []string
+}
+
+func (h *APIStub) ServeHTTP(resp http.ResponseWriter, req *http.Request) {
+	resp.WriteHeader(h.respStatus[h.count])
+	resp.Write([]byte(h.responseBody[h.count]))
+	h.count++
 }
 
 func (s *MockArvadosServerSuite) TestWithRetries(c *C) {
