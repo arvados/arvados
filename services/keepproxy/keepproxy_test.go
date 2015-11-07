@@ -73,6 +73,10 @@ func (s *ServerRequiredSuite) TearDownSuite(c *C) {
 
 func (s *NoKeepServerSuite) SetUpSuite(c *C) {
 	arvadostest.StartAPI()
+	// We need API to have some keep services listed, but the
+	// services themselves should be unresponsive.
+	arvadostest.StartKeep(2, false)
+	arvadostest.StopKeep(2)
 }
 
 func (s *NoKeepServerSuite) SetUpTest(c *C) {
@@ -103,7 +107,7 @@ func runProxy(c *C, args []string, bogusClientToken bool) *keepclient.KeepClient
 	kc.Arvados.External = true
 	kc.Using_proxy = true
 
-	return &kc
+	return kc
 }
 
 func (s *ServerRequiredSuite) TestPutAskGet(c *C) {
@@ -407,8 +411,7 @@ func (s *ServerRequiredSuite) TestGetIndex(c *C) {
 }
 
 func (s *ServerRequiredSuite) TestPutAskGetInvalidToken(c *C) {
-	kc := runProxy(c, []string{"keepproxy"}, 28852, false)
-	waitForListener()
+	kc := runProxy(c, nil, false)
 	defer closeListener()
 
 	// Put a test block
@@ -446,7 +449,7 @@ func (s *ServerRequiredSuite) TestAskGetKeepProxyConnectionError(c *C) {
 	// keepclient with no such keep server
 	kc := keepclient.New(&arv)
 	locals := map[string]string{
-		"proxy": "http://localhost:12345",
+		TestProxyUUID: "http://localhost:12345",
 	}
 	kc.SetServiceRoots(locals, nil, nil)
 
@@ -467,22 +470,24 @@ func (s *ServerRequiredSuite) TestAskGetKeepProxyConnectionError(c *C) {
 }
 
 func (s *NoKeepServerSuite) TestAskGetNoKeepServerError(c *C) {
-	kc := runProxy(c, []string{"keepproxy"}, 29999, false)
-	waitForListener()
+	kc := runProxy(c, nil, false)
 	defer closeListener()
 
-	// Ask should result in temporary connection refused error
 	hash := fmt.Sprintf("%x", md5.Sum([]byte("foo")))
-	_, _, err := kc.Ask(hash)
-	c.Check(err, NotNil)
-	errNotFound, _ := err.(*keepclient.ErrNotFound)
-	c.Check(errNotFound.Temporary(), Equals, true)
-	c.Assert(strings.Contains(err.Error(), "HTTP 502"), Equals, true)
-
-	// Get should result in temporary connection refused error
-	_, _, _, err = kc.Get(hash)
-	c.Check(err, NotNil)
-	errNotFound, _ = err.(*keepclient.ErrNotFound)
-	c.Check(errNotFound.Temporary(), Equals, true)
-	c.Assert(strings.Contains(err.Error(), "HTTP 502"), Equals, true)
+	for _, f := range []func()error {
+		func() error {
+			_, _, err := kc.Ask(hash)
+			return err
+		},
+		func() error {
+			_, _, _, err := kc.Get(hash)
+			return err
+		},
+	} {
+		err := f()
+		c.Assert(err, NotNil)
+		errNotFound, _ := err.(*keepclient.ErrNotFound)
+		c.Check(errNotFound.Temporary(), Equals, true)
+		c.Check(err, ErrorMatches, `.*HTTP 502.*`)
+	}
 }
