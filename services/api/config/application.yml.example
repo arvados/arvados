@@ -20,6 +20,7 @@ production:
   sso_app_secret: ~
   sso_app_id: arvados-server
   sso_provider_url: https://auth.your.domain
+  #sso_insecure: false
   workbench_address: https://workbench.uuid_prefix.your.domain
   websocket_address: wss://ws.uuid_prefix.your.domain/websocket
   #git_repositories_dir: ~
@@ -28,7 +29,6 @@ production:
   #git_repo_http_base: https://git.uuid_prefix.your.domain/
   #auto_admin_first_user: false
   #crunch_job_wrapper: :slurm_immediate
-  #sso_insecure: false
 
 development:
   # Separate settings for development configuration.
@@ -38,6 +38,7 @@ development:
   sso_app_secret: ~
   sso_app_id: arvados-server
   sso_provider_url: https://auth.your.domain
+  sso_insecure: true
   workbench_address: https://workbench.uuid_prefix.your.domain
   websocket_address: wss://ws.uuid_prefix.your.domain/websocket
   #git_repositories_dir: ~
@@ -46,7 +47,6 @@ development:
   #git_repo_http_base: https://git.uuid_prefix.your.domain/
   #auto_admin_first_user: false
   #crunch_job_wrapper: :slurm_immediate
-  sso_insecure: true
 
 test:
   # Tests should be able to run without further configuration, but if you do
