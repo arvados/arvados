@@ -27,6 +27,3 @@ production:
   arvados_login_base: https://uuid_prefix.your.domain/login
   arvados_v1_base: https://uuid_prefix.your.domain/arvados/v1
   arvados_insecure_https: false
-
-  # You might want to name your workbench
-  #site_name: ~
