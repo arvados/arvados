@@ -183,7 +183,17 @@ func (h *handler) ServeHTTP(wOrig http.ResponseWriter, r *http.Request) {
 			Path:     "/",
 			HttpOnly: true,
 		})
-		redir := (&url.URL{Host: r.Host, Path: r.URL.Path}).String()
+
+		// Propagate query parameters (except api_token) from
+		// the original request.
+		redirQuery := r.URL.Query()
+		redirQuery.Del("api_token")
+
+		redir := (&url.URL{
+			Host:     r.Host,
+			Path:     r.URL.Path,
+			RawQuery: redirQuery.Encode(),
+		}).String()
 
 		w.Header().Add("Location", redir)
 		statusCode, statusText = http.StatusSeeOther, redir
