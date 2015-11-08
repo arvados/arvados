@@ -9,6 +9,7 @@ import (
 	"net/http"
 	"net/url"
 	"os"
+	"regexp"
 	"strconv"
 	"strings"
 
@@ -293,8 +294,10 @@ func (h *handler) ServeHTTP(wOrig http.ResponseWriter, r *http.Request) {
 	}
 	defer rdr.Close()
 
-	// One or both of these can be -1 if not found:
 	basenamePos := strings.LastIndex(filename, "/")
+	if basenamePos < 0 {
+		basenamePos = 0
+	}
 	extPos := strings.LastIndex(filename, ".")
 	if extPos > basenamePos {
 		// Now extPos is safely >= 0.
@@ -306,8 +309,41 @@ func (h *handler) ServeHTTP(wOrig http.ResponseWriter, r *http.Request) {
 		w.Header().Set("Content-Length", fmt.Sprintf("%d", rdr.Len()))
 	}
 
+	applyContentDispositionHdr(w, r, filename[basenamePos:], attachment)
+	rangeRdr, statusCode := applyRangeHdr(w, r, rdr)
+
+	w.WriteHeader(statusCode)
+	_, err = io.Copy(w, rangeRdr)
+	if err != nil {
+		statusCode, statusText = http.StatusBadGateway, err.Error()
+	}
+}
+
+var rangeRe = regexp.MustCompile(`^bytes=0-([0-9]*)$`)
+
+func applyRangeHdr(w http.ResponseWriter, r *http.Request, rdr keepclient.ReadCloserWithLen) (io.Reader, int) {
+	w.Header().Set("Accept-Ranges", "bytes")
+	hdr := r.Header.Get("Range")
+	fields := rangeRe.FindStringSubmatch(hdr)
+	if fields == nil {
+		return rdr, http.StatusOK
+	}
+	rangeEnd, err := strconv.ParseInt(fields[1], 10, 64)
+	if err != nil {
+		// Empty or too big for int64 == send entire content
+		return rdr, http.StatusOK
+	}
+	if uint64(rangeEnd) >= rdr.Len() {
+		return rdr, http.StatusOK
+	}
+	w.Header().Set("Content-Length", fmt.Sprintf("%d", rangeEnd+1))
+	w.Header().Set("Content-Range", fmt.Sprintf("bytes %d-%d/%d", 0, rangeEnd, rdr.Len()))
+	return &io.LimitedReader{R: rdr, N: rangeEnd + 1}, http.StatusPartialContent
+}
+
+func applyContentDispositionHdr(w http.ResponseWriter, r *http.Request, filename string, isAttachment bool) {
 	disposition := "inline"
-	if attachment {
+	if isAttachment {
 		disposition = "attachment"
 	}
 	if strings.ContainsRune(r.RequestURI, '?') {
@@ -316,18 +352,9 @@ func (h *handler) ServeHTTP(wOrig http.ResponseWriter, r *http.Request) {
 		// "filename.txt?disposition=attachment".
 		//
 		// TODO(TC): Follow advice at RFC 6266 appendix D
-		if basenamePos < 0 {
-			basenamePos = 0
-		}
-		disposition += "; filename=" + strconv.QuoteToASCII(filename[basenamePos:])
+		disposition += "; filename=" + strconv.QuoteToASCII(filename)
 	}
 	if disposition != "inline" {
 		w.Header().Set("Content-Disposition", disposition)
-	}
-
-	w.WriteHeader(http.StatusOK)
-	_, err = io.Copy(w, rdr)
-	if err != nil {
-		statusCode, statusText = http.StatusBadGateway, err.Error()
 	}
 }

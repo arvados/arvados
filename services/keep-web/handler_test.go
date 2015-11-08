@@ -315,6 +315,47 @@ func (s *IntegrationSuite) TestAnonymousTokenError(c *check.C) {
 	)
 }
 
+func (s *IntegrationSuite) TestRange(c *check.C) {
+	u, _ := url.Parse("http://example.com/c="+arvadostest.HelloWorldCollection+"/Hello%20world.txt")
+	req := &http.Request{
+		Method: "GET",
+		Host:   u.Host,
+		URL:    u,
+		Header: http.Header{"Range": {"bytes=0-4"}},
+	}
+	resp := httptest.NewRecorder()
+	(&handler{}).ServeHTTP(resp, req)
+	c.Check(resp.Code, check.Equals, http.StatusPartialContent)
+	c.Check(resp.Body.String(), check.Equals, "Hello")
+	c.Check(resp.Header().Get("Content-Length"), check.Equals, "5")
+	c.Check(resp.Header().Get("Content-Range"), check.Equals, "bytes 0-4/12")
+
+	req.Header.Set("Range", "bytes=0-")
+	resp = httptest.NewRecorder()
+	(&handler{}).ServeHTTP(resp, req)
+	// 200 and 206 are both correct:
+	c.Check(resp.Code, check.Equals, http.StatusOK)
+	c.Check(resp.Body.String(), check.Equals, "Hello world\n")
+	c.Check(resp.Header().Get("Content-Length"), check.Equals, "12")
+
+	// Unsupported ranges are ignored
+	for _, hdr := range []string{
+		"bytes=5-5",  // non-zero start byte
+		"bytes=-5",   // last 5 bytes
+		"cubits=0-5", // unsupported unit
+		"bytes=0-340282366920938463463374607431768211456", // 2^128
+	} {
+		req.Header.Set("Range", hdr)
+		resp = httptest.NewRecorder()
+		(&handler{}).ServeHTTP(resp, req)
+		c.Check(resp.Code, check.Equals, http.StatusOK)
+		c.Check(resp.Body.String(), check.Equals, "Hello world\n")
+		c.Check(resp.Header().Get("Content-Length"), check.Equals, "12")
+		c.Check(resp.Header().Get("Content-Range"), check.Equals, "")
+		c.Check(resp.Header().Get("Accept-Ranges"), check.Equals, "bytes")
+	}
+}
+
 func (s *IntegrationSuite) testVhostRedirectTokenToCookie(c *check.C, method, hostPath, queryString, contentType, reqBody string, expectStatus int, expectRespBody string) *httptest.ResponseRecorder {
 	u, _ := url.Parse(`http://` + hostPath + queryString)
 	req := &http.Request{
