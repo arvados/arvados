@@ -521,7 +521,7 @@ class CollectionsControllerTest < ActionController::TestCase
     assert_not_includes @response.body, '<a href="#Upload"'
   end
 
-  def setup_for_keep_web cfg='https://%{uuid_or_pdh}.dl.zzzzz.example'
+  def setup_for_keep_web cfg='https://%{uuid_or_pdh}.collections.zzzzz.example'
     Rails.configuration.keep_web_url = cfg
     @controller.expects(:file_enumerator).never
   end
@@ -533,7 +533,7 @@ class CollectionsControllerTest < ActionController::TestCase
       id = api_fixture('collections')['w_a_z_file'][id_type]
       get :show_file, {uuid: id, file: "w a z"}, session_for(:active)
       assert_response :redirect
-      assert_equal "https://#{id.sub '+', '-'}.dl.zzzzz.example/_/w+a+z?api_token=#{tok}", @response.redirect_url
+      assert_equal "https://#{id.sub '+', '-'}.collections.zzzzz.example/_/w+a+z?api_token=#{tok}", @response.redirect_url
     end
 
     test "Redirect to keep_web_url via #{id_type} with reader token" do
@@ -542,7 +542,7 @@ class CollectionsControllerTest < ActionController::TestCase
       id = api_fixture('collections')['w_a_z_file'][id_type]
       get :show_file, {uuid: id, file: "w a z", reader_token: tok}, session_for(:expired)
       assert_response :redirect
-      assert_equal "https://#{id.sub '+', '-'}.dl.zzzzz.example/t=#{tok}/_/w+a+z", @response.redirect_url
+      assert_equal "https://#{id.sub '+', '-'}.collections.zzzzz.example/t=#{tok}/_/w+a+z", @response.redirect_url
     end
 
     test "Redirect to keep_web_url via #{id_type} with no token" do
@@ -551,16 +551,29 @@ class CollectionsControllerTest < ActionController::TestCase
       id = api_fixture('collections')['public_text_file'][id_type]
       get :show_file, {uuid: id, file: "Hello World.txt"}
       assert_response :redirect
-      assert_equal "https://#{id.sub '+', '-'}.dl.zzzzz.example/_/Hello+World.txt", @response.redirect_url
+      assert_equal "https://#{id.sub '+', '-'}.collections.zzzzz.example/_/Hello+World.txt", @response.redirect_url
+    end
+
+    test "Redirect to keep_web_url via #{id_type} with disposition param" do
+      setup_for_keep_web
+      config_anonymous true
+      id = api_fixture('collections')['public_text_file'][id_type]
+      get :show_file, {
+        uuid: id,
+        file: "Hello World.txt",
+        disposition: 'attachment',
+      }
+      assert_response :redirect
+      assert_equal "https://#{id.sub '+', '-'}.collections.zzzzz.example/_/Hello+World.txt?disposition=attachment", @response.redirect_url
     end
 
     test "Redirect to keep_web_url via #{id_type} using -attachment-only-host mode" do
-      setup_for_keep_web 'https://dl.zzzzz.example/c=%{uuid_or_pdh}'
+      setup_for_keep_web 'https://collections.zzzzz.example/c=%{uuid_or_pdh}'
       tok = api_fixture('api_client_authorizations')['active']['api_token']
       id = api_fixture('collections')['w_a_z_file'][id_type]
       get :show_file, {uuid: id, file: "w a z"}, session_for(:active)
       assert_response :redirect
-      assert_equal "https://dl.zzzzz.example/c=#{id.sub '+', '-'}/_/w+a+z?api_token=#{tok}", @response.redirect_url
+      assert_equal "https://collections.zzzzz.example/c=#{id.sub '+', '-'}/_/w+a+z?api_token=#{tok}", @response.redirect_url
     end
   end
 

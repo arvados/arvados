@@ -148,7 +148,7 @@ class CollectionsController < ApplicationController
         # to read the collection.
         opts[:query_token] = usable_token
       end
-      opts[:disposition] = params[:disposition]
+      opts[:disposition] = params[:disposition] if params[:disposition]
       return redirect_to keep_web_url(params[:uuid], params[:file], opts)
     end
 
@@ -325,7 +325,8 @@ class CollectionsController < ApplicationController
   end
 
   def keep_web_url(uuid_or_pdh, file, opts)
-    fmt = {uuid_or_pdh: uuid_or_pdh.sub('+', '-')}
+    munged_id = uuid_or_pdh.sub('+', '-')
+    fmt = {uuid_or_pdh: munged_id}
     uri = URI.parse(Rails.configuration.keep_web_url % fmt)
     uri.path += '/' unless uri.path.end_with? '/'
     if opts[:path_token]
@@ -334,15 +335,26 @@ class CollectionsController < ApplicationController
     uri.path += '_/'
     uri.path += CGI::escape(file)
 
-    query_params = []
+    query = CGI::parse(uri.query || '')
     { query_token: 'api_token',
       disposition: 'disposition' }.each do |opt, param|
-      if opts[opt]
-        query_params << param + '=' + CGI::escape(opts[opt])
+      if opts.include? opt
+        query[param] = opts[opt]
       end
     end
-    unless query_params.empty?
-      uri.query = query_params.join '&'
+    unless query.empty?
+      uri.query = query.to_query
+    end
+
+    if query.include? 'api_token' and
+        query['disposition'] != 'attachment' and
+        not uri.host.start_with?(munged_id + "--") and
+        not uri.host.start_with?(munged_id + ".")
+      # keep-web refuses query tokens ("?api_token=X") unless it sees
+      # the collection ID in the hostname, or is running in
+      # attachment-only mode.
+      logger.warn("Single-origin keep_web_url can't serve inline content, " \
+                  "but redirecting anyway: #{uri.to_s}")
     end
 
     uri.to_s
