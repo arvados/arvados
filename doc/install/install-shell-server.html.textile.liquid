@@ -128,6 +128,8 @@ If you're using RVM:
 <notextile>
 <pre>
 <code>shellserver:~$ <span class="userinput">sudo bash -c 'umask 077; tee /etc/cron.d/arvados-login-sync' &lt;&lt;'EOF'
+SHELL=/bin/bash
+PATH=/usr/local/sbin:/usr/local/bin:/sbin:/bin:/usr/sbin:/usr/bin
 ARVADOS_API_HOST="<strong>uuid_prefix.your.domain</strong>"
 ARVADOS_API_TOKEN="<strong>the_token_you_created_above</strong>"
 ARVADOS_VIRTUAL_MACHINE_UUID="<strong>zzzzz-2x53u-zzzzzzzzzzzzzzz</strong>"
@@ -141,6 +143,8 @@ If you're not using RVM:
 <notextile>
 <pre>
 <code>shellserver:~$ <span class="userinput">sudo bash -c 'umask 077; tee /etc/cron.d/arvados-login-sync' &lt;&lt;'EOF'
+SHELL=/bin/bash
+PATH=/usr/local/sbin:/usr/local/bin:/sbin:/bin:/usr/sbin:/usr/bin
 ARVADOS_API_HOST="<strong>uuid_prefix.your.domain</strong>"
 ARVADOS_API_TOKEN="<strong>the_token_you_created_above</strong>"
 ARVADOS_VIRTUAL_MACHINE_UUID="<strong>zzzzz-2x53u-zzzzzzzzzzzzzzz</strong>"
