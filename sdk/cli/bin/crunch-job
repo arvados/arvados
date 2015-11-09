@@ -820,6 +820,9 @@ update_progress_stats();
 THISROUND:
 for (my $todo_ptr = 0; $todo_ptr <= $#jobstep_todo; $todo_ptr ++)
 {
+  # Don't create new tasks if we already know the job's final result.
+  last if defined($main::success);
+
   my $id = $jobstep_todo[$todo_ptr];
   my $Jobstep = $jobstep[$id];
   if ($Jobstep->{level} != $level)
@@ -1018,7 +1021,7 @@ for (my $todo_ptr = 0; $todo_ptr <= $#jobstep_todo; $todo_ptr ++)
 	 ||
 	 ($round_num_freeslots > @freeslot && $todo_ptr+1 > $#jobstep_todo))
   {
-    last THISROUND if $main::please_freeze || defined($main::success);
+    last THISROUND if $main::please_freeze;
     if ($main::please_info)
     {
       $main::please_info = 0;
