@@ -10,6 +10,15 @@ class CollectionsControllerTest < ActionController::TestCase
 
   NONEXISTENT_COLLECTION = "ffffffffffffffffffffffffffffffff+0"
 
+  def config_anonymous enable
+    Rails.configuration.anonymous_user_token =
+      if enable
+        api_fixture('api_client_authorizations')['anonymous']['api_token']
+      else
+        false
+      end
+  end
+
   def stub_file_content
     # For the duration of the current test case, stub file download
     # content with a randomized (but recognizable) string. Return the
@@ -167,8 +176,7 @@ class CollectionsControllerTest < ActionController::TestCase
   end
 
   test 'anonymous download' do
-    Rails.configuration.anonymous_user_token =
-      api_fixture('api_client_authorizations')['anonymous']['api_token']
+    config_anonymous true
     expect_content = stub_file_content
     get :show_file, {
       uuid: api_fixture('collections')['user_agreement_in_anonymously_accessible_project']['uuid'],
@@ -205,15 +213,14 @@ class CollectionsControllerTest < ActionController::TestCase
                      "using a reader token set the session's API token")
   end
 
-  [false, api_fixture('api_client_authorizations')['anonymous']['api_token']].
-    each do |anon_conf|
-    test "download a file using a reader token with insufficient scope (anon_conf=#{!!anon_conf})" do
-      Rails.configuration.anonymous_user_token = anon_conf
+  [false, true].each do |anon|
+    test "download a file using a reader token with insufficient scope, anon #{anon}" do
+      config_anonymous anon
       params = collection_params(:foo_file, 'foo')
       params[:reader_token] =
         api_fixture('api_client_authorizations')['active_noscope']['api_token']
       get(:show_file, params)
-      if anon_conf
+      if anon
         # Some files can be shown without a valid token, but not this one.
         assert_response 404
       else
@@ -463,8 +470,7 @@ class CollectionsControllerTest < ActionController::TestCase
   end
 
   test "anonymous user accesses collection in shared project" do
-    Rails.configuration.anonymous_user_token =
-      api_fixture('api_client_authorizations')['anonymous']['api_token']
+    config_anonymous true
     collection = api_fixture('collections')['public_text_file']
     get(:show, {id: collection['uuid']})
 
@@ -541,8 +547,7 @@ class CollectionsControllerTest < ActionController::TestCase
 
     test "Redirect to keep_web_url via #{id_type} with no token" do
       setup_for_keep_web
-      Rails.configuration.anonymous_user_token =
-        api_fixture('api_client_authorizations')['anonymous']['api_token']
+      config_anonymous true
       id = api_fixture('collections')['public_text_file'][id_type]
       get :show_file, {uuid: id, file: "Hello World.txt"}
       assert_response :redirect
@@ -559,10 +564,13 @@ class CollectionsControllerTest < ActionController::TestCase
     end
   end
 
-  test "No redirect to keep_web_url if collection not found" do
-    setup_for_keep_web
-    id = api_fixture('collections')['w_a_z_file']['uuid']
-    get :show_file, {uuid: id, file: "w a z"}, session_for(:spectator)
-    assert_response 404
+  [false, true].each do |anon|
+    test "No redirect to keep_web_url if collection not found, anon #{anon}" do
+      setup_for_keep_web
+      config_anonymous anon
+      id = api_fixture('collections')['w_a_z_file']['uuid']
+      get :show_file, {uuid: id, file: "w a z"}, session_for(:spectator)
+      assert_response 404
+    end
   end
 end

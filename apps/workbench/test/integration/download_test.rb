@@ -19,21 +19,27 @@ class DownloadTest < ActionDispatch::IntegrationTest
     end
   end
 
-  test "download from keep-web with a reader token" do
-    uuid = api_fixture('collections')['foo_file']['uuid']
-    token = api_fixture('api_client_authorizations')['active_all_collections']['api_token']
-    visit "/collections/download/#{uuid}/#{token}/"
-    within "#collection_files" do
-      click_link "foo"
+  ['uuid', 'portable_data_hash'].each do |id_type|
+    test "download from keep-web by #{id_type} using a reader token" do
+      uuid_or_pdh = api_fixture('collections')['foo_file'][id_type]
+      token = api_fixture('api_client_authorizations')['active_all_collections']['api_token']
+      visit "/collections/download/#{uuid_or_pdh}/#{token}/"
+      within "#collection_files" do
+        click_link "foo"
+      end
+      wait_for_download 'foo', 'foo'
     end
+  end
+
+  def wait_for_download filename, expect_data
     data = nil
     tries = 0
     while tries < 20
       sleep 0.1
       tries += 1
-      data = File.read(DownloadHelper.path.join 'foo') rescue nil
+      data = File.read(DownloadHelper.path.join filename) rescue nil
     end
-    assert_equal 'foo', data
+    assert_equal expect_data, data
   end
 
   # TODO(TC): test "view pages hosted by keep-web, using session
