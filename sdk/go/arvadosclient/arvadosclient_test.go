@@ -1,8 +1,10 @@
 package arvadosclient
 
 import (
+	"fmt"
 	"git.curoverse.com/arvados.git/sdk/go/arvadostest"
 	. "gopkg.in/check.v1"
+	"net"
 	"net/http"
 	"os"
 	"testing"
@@ -16,6 +18,7 @@ func Test(t *testing.T) {
 
 var _ = Suite(&ServerRequiredSuite{})
 var _ = Suite(&UnitSuite{})
+var _ = Suite(&MockArvadosServerSuite{})
 
 // Tests that require the Keep server running
 type ServerRequiredSuite struct{}
@@ -23,6 +26,7 @@ type ServerRequiredSuite struct{}
 func (s *ServerRequiredSuite) SetUpSuite(c *C) {
 	arvadostest.StartAPI()
 	arvadostest.StartKeep(2, false)
+	RetryDelay = 0
 }
 
 func (s *ServerRequiredSuite) SetUpTest(c *C) {
@@ -217,4 +221,154 @@ func (s *UnitSuite) TestPDHMatch(c *C) {
 	c.Assert(PDHMatch("d41d8cd98f00b204e9800998ecf8427e+12345\n"), Equals, false)
 	c.Assert(PDHMatch("+12345"), Equals, false)
 	c.Assert(PDHMatch(""), Equals, false)
+}
+
+// Tests that use mock arvados server
+type MockArvadosServerSuite struct{}
+
+func (s *MockArvadosServerSuite) SetUpSuite(c *C) {
+	RetryDelay = 0
+}
+
+func (s *MockArvadosServerSuite) SetUpTest(c *C) {
+	arvadostest.ResetEnv()
+}
+
+type APIServer struct {
+	listener net.Listener
+	url      string
+}
+
+func RunFakeArvadosServer(st http.Handler) (api APIServer, err error) {
+	api.listener, err = net.ListenTCP("tcp", &net.TCPAddr{Port: 0})
+	if err != nil {
+		return
+	}
+	api.url = api.listener.Addr().String()
+	go http.Serve(api.listener, st)
+	return
+}
+
+type APIStub struct {
+	method        string
+	retryAttempts int
+	expected      int
+	respStatus    []int
+	responseBody  []string
+}
+
+func (h *APIStub) ServeHTTP(resp http.ResponseWriter, req *http.Request) {
+	resp.WriteHeader(h.respStatus[h.retryAttempts])
+	resp.Write([]byte(h.responseBody[h.retryAttempts]))
+	h.retryAttempts++
+}
+
+func (s *MockArvadosServerSuite) TestWithRetries(c *C) {
+	for _, stub := range []APIStub{
+		{
+			"get", 0, 200, []int{200, 500}, []string{`{"ok":"ok"}`, ``},
+		},
+		{
+			"create", 0, 200, []int{200, 500}, []string{`{"ok":"ok"}`, ``},
+		},
+		{
+			"get", 0, 500, []int{500, 500, 500, 200}, []string{``, ``, ``, `{"ok":"ok"}`},
+		},
+		{
+			"create", 0, 500, []int{500, 500, 500, 200}, []string{``, ``, ``, `{"ok":"ok"}`},
+		},
+		{
+			"update", 0, 500, []int{500, 500, 500, 200}, []string{``, ``, ``, `{"ok":"ok"}`},
+		},
+		{
+			"delete", 0, 500, []int{500, 500, 500, 200}, []string{``, ``, ``, `{"ok":"ok"}`},
+		},
+		{
+			"get", 0, 502, []int{500, 500, 502, 200}, []string{``, ``, ``, `{"ok":"ok"}`},
+		},
+		{
+			"create", 0, 502, []int{500, 500, 502, 200}, []string{``, ``, ``, `{"ok":"ok"}`},
+		},
+		{
+			"get", 0, 200, []int{500, 500, 200}, []string{``, ``, `{"ok":"ok"}`},
+		},
+		{
+			"create", 0, 200, []int{500, 500, 200}, []string{``, ``, `{"ok":"ok"}`},
+		},
+		{
+			"delete", 0, 200, []int{500, 500, 200}, []string{``, ``, `{"ok":"ok"}`},
+		},
+		{
+			"update", 0, 200, []int{500, 500, 200}, []string{``, ``, `{"ok":"ok"}`},
+		},
+		{
+			"get", 0, 401, []int{401, 200}, []string{``, `{"ok":"ok"}`},
+		},
+		{
+			"create", 0, 401, []int{401, 200}, []string{``, `{"ok":"ok"}`},
+		},
+		{
+			"get", 0, 404, []int{404, 200}, []string{``, `{"ok":"ok"}`},
+		},
+		{
+			"get", 0, 401, []int{500, 401, 200}, []string{``, ``, `{"ok":"ok"}`},
+		},
+		// Use nil responseBody to simulate error during request processing
+		// Even though retryable, the simulated error applies during reties also, and hence "get" also eventually fails in this test.
+		{
+			"get", 0, -1, nil, nil,
+		},
+		{
+			"create", 0, -1, nil, nil,
+		},
+	} {
+		api, err := RunFakeArvadosServer(&stub)
+		c.Check(err, IsNil)
+
+		defer api.listener.Close()
+
+		arv := ArvadosClient{
+			Scheme:      "http",
+			ApiServer:   api.url,
+			ApiToken:    "abc123",
+			ApiInsecure: true,
+			Client:      &http.Client{Transport: &http.Transport{}},
+			Retries:     2}
+
+		// We use nil responseBody to look for errors during request processing
+		// Simulate an error using https (but the arv.Client transport used does not support it)
+		if stub.responseBody == nil {
+			arv.Scheme = "https"
+		}
+
+		getback := make(Dict)
+		switch stub.method {
+		case "get":
+			err = arv.Get("collections", "zzzzz-4zz18-znfnqtbbv4spc3w", nil, &getback)
+		case "create":
+			err = arv.Create("collections",
+				Dict{"collection": Dict{"name": "testing"}},
+				&getback)
+		case "update":
+			err = arv.Update("collections", "zzzzz-4zz18-znfnqtbbv4spc3w",
+				Dict{"collection": Dict{"name": "testing"}},
+				&getback)
+		case "delete":
+			err = arv.Delete("pipeline_templates", "zzzzz-4zz18-znfnqtbbv4spc3w", nil, &getback)
+		}
+
+		if stub.expected == 200 {
+			c.Check(err, IsNil)
+			c.Assert(getback["ok"], Equals, "ok")
+		} else {
+			c.Check(err, NotNil)
+
+			if stub.responseBody == nil { // test uses empty responseBody to look for errors during request processing
+				c.Assert(err, ErrorMatches, "* oversized record received.*")
+			} else {
+				c.Assert(err, ErrorMatches, fmt.Sprintf("%s%d.*", "arvados API server error: ", stub.expected))
+				c.Assert(err.(APIServerError).HttpStatusCode, Equals, stub.expected)
+			}
+		}
+	}
 }
