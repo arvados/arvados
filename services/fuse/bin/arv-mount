@@ -32,7 +32,7 @@ with "--".
 
     mount_mode = parser.add_mutually_exclusive_group()
 
-    mount_mode.add_argument('--all', action='store_true', help="""Mount a subdirectory for each mode: home, shared, by_tag, by_pdh, by_id (default).""")
+    mount_mode.add_argument('--all', action='store_true', help="""Mount a subdirectory for each mode: home, shared, by_tag, by_id (default).""")
     mount_mode.add_argument('--home', action='store_true', help="""Mount only the user's home project.""")
     mount_mode.add_argument('--shared', action='store_true', help="""Mount only list of projects shared with the user.""")
     mount_mode.add_argument('--by-tag', action='store_true',
@@ -132,7 +132,7 @@ with "--".
             e = operations.inodes.add_entry(Directory(llfuse.ROOT_INODE, operations.inodes))
             dir_args[0] = e.inode
 
-            e._entries['by_id'] = operations.inodes.add_entry(MagicDirectory(*dir_args, by_pdh=True if args.by_pdh else False))
+            e._entries['by_id'] = operations.inodes.add_entry(MagicDirectory(*dir_args, pdh_only=True if args.by_pdh else False))
 
             e._entries['by_tag'] = operations.inodes.add_entry(TagsDirectory(*dir_args))
 
