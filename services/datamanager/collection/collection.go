@@ -79,26 +79,29 @@ func init() {
 // to call multiple times in a single run.
 // Otherwise we would see cumulative numbers as explained here:
 // https://groups.google.com/d/msg/golang-nuts/ZyHciRglQYc/2nh4Ndu2fZcJ
-func WriteHeapProfile() {
+func WriteHeapProfile() error {
 	if heapProfileFilename != "" {
-
 		heapProfile, err := os.Create(heapProfileFilename)
 		if err != nil {
-			log.Fatal(err)
+			return err
 		}
 
 		defer heapProfile.Close()
 
 		err = pprof.WriteHeapProfile(heapProfile)
-		if err != nil {
-			log.Fatal(err)
-		}
+		return err
 	}
+
+	return nil
 }
 
 // GetCollectionsAndSummarize gets collections from api and summarizes
-func GetCollectionsAndSummarize(params GetCollectionsParams) (results ReadCollections) {
-	results = GetCollections(params)
+func GetCollectionsAndSummarize(arvLogger *logger.Logger, params GetCollectionsParams) (results ReadCollections) {
+	results, err := GetCollections(params)
+	if err != nil {
+		loggerutil.LogErrorMessage(arvLogger, fmt.Sprintf("Error during GetCollections with params %v: %v", params, err))
+	}
+
 	results.Summarize(params.Logger)
 
 	log.Printf("Uuid to Size used: %v", results.OwnerToCollectionSize)
@@ -116,9 +119,9 @@ func GetCollectionsAndSummarize(params GetCollectionsParams) (results ReadCollec
 }
 
 // GetCollections gets collections from api
-func GetCollections(params GetCollectionsParams) (results ReadCollections) {
+func GetCollections(params GetCollectionsParams) (results ReadCollections, err error) {
 	if &params.Client == nil {
-		log.Fatalf("params.Client passed to GetCollections() should " +
+		err = fmt.Errorf("params.Client passed to GetCollections() should " +
 			"contain a valid ArvadosClient, but instead it is nil.")
 	}
 
@@ -139,26 +142,25 @@ func GetCollections(params GetCollectionsParams) (results ReadCollections) {
 
 	var defaultReplicationLevel int
 	{
-		value, err := params.Client.Discovery("defaultCollectionReplication")
+		var value interface{}
+		value, err = params.Client.Discovery("defaultCollectionReplication")
 		if err != nil {
-			loggerutil.FatalWithMessage(params.Logger,
-				fmt.Sprintf("Error querying default collection replication: %v", err))
+			return
 		}
 
 		defaultReplicationLevel = int(value.(float64))
 		if defaultReplicationLevel <= 0 {
-			loggerutil.FatalWithMessage(params.Logger,
-				fmt.Sprintf("Default collection replication returned by arvados SDK "+
-					"should be a positive integer but instead it was %d.",
-					defaultReplicationLevel))
+			err = fmt.Errorf("Default collection replication returned by arvados SDK "+
+				"should be a positive integer but instead it was %d.",
+				defaultReplicationLevel)
+			return
 		}
 	}
 
 	initialNumberOfCollectionsAvailable, err :=
 		util.NumberItemsAvailable(params.Client, "collections")
 	if err != nil {
-		loggerutil.FatalWithMessage(params.Logger,
-			fmt.Sprintf("Error querying collection count: %v", err))
+		return
 	}
 	// Include a 1% margin for collections added while we're reading so
 	// that we don't have to grow the map in most cases.
@@ -183,22 +185,28 @@ func GetCollections(params GetCollectionsParams) (results ReadCollections) {
 		// We're still finding new collections
 
 		// Write the heap profile for examining memory usage
-		WriteHeapProfile()
+		err = WriteHeapProfile()
+		if err != nil {
+			return
+		}
 
 		// Get next batch of collections.
 		var collections SdkCollectionList
-		err := params.Client.List("collections", sdkParams, &collections)
+		err = params.Client.List("collections", sdkParams, &collections)
 		if err != nil {
-			loggerutil.FatalWithMessage(params.Logger,
-				fmt.Sprintf("Error querying collections: %v", err))
+			return
 		}
 
 		// Process collection and update our date filter.
-		sdkParams["filters"].([][]string)[0][2] =
-			ProcessCollections(params.Logger,
-				collections.Items,
-				defaultReplicationLevel,
-				results.UUIDToCollection).Format(time.RFC3339)
+		var latestModificationDate time.Time
+		latestModificationDate, err = ProcessCollections(params.Logger,
+			collections.Items,
+			defaultReplicationLevel,
+			results.UUIDToCollection)
+		if err != nil {
+			return
+		}
+		sdkParams["filters"].([][]string)[0][2] = latestModificationDate.Format(time.RFC3339)
 
 		// update counts
 		previousTotalCollections = totalCollections
@@ -240,7 +248,7 @@ func StrCopy(s string) string {
 func ProcessCollections(arvLogger *logger.Logger,
 	receivedCollections []SdkCollectionInfo,
 	defaultReplicationLevel int,
-	UUIDToCollection map[string]Collection) (latestModificationDate time.Time) {
+	UUIDToCollection map[string]Collection) (latestModificationDate time.Time, err error) {
 	for _, sdkCollection := range receivedCollections {
 		collection := Collection{UUID: StrCopy(sdkCollection.UUID),
 			OwnerUUID:         StrCopy(sdkCollection.OwnerUUID),
@@ -248,13 +256,12 @@ func ProcessCollections(arvLogger *logger.Logger,
 			BlockDigestToSize: make(map[blockdigest.BlockDigest]int)}
 
 		if sdkCollection.ModifiedAt.IsZero() {
-			loggerutil.FatalWithMessage(arvLogger,
-				fmt.Sprintf(
-					"Arvados SDK collection returned with unexpected zero "+
-						"modification date. This probably means that either we failed to "+
-						"parse the modification date or the API server has changed how "+
-						"it returns modification dates: %+v",
-					collection))
+			return latestModificationDate, fmt.Errorf(
+				"Arvados SDK collection returned with unexpected zero "+
+					"modification date. This probably means that either we failed to "+
+					"parse the modification date or the API server has changed how "+
+					"it returns modification dates: %+v",
+				collection)
 		}
 
 		if sdkCollection.ModifiedAt.After(latestModificationDate) {
@@ -278,13 +285,13 @@ func ProcessCollections(arvLogger *logger.Logger,
 		blockChannel := manifest.BlockIterWithDuplicates()
 		for block := range blockChannel {
 			if storedSize, stored := collection.BlockDigestToSize[block.Digest]; stored && storedSize != block.Size {
-				message := fmt.Sprintf(
+				err = fmt.Errorf(
 					"Collection %s contains multiple sizes (%d and %d) for block %s",
 					collection.UUID,
 					storedSize,
 					block.Size,
 					block.Digest)
-				loggerutil.FatalWithMessage(arvLogger, message)
+				return
 			}
 			collection.BlockDigestToSize[block.Digest] = block.Size
 		}

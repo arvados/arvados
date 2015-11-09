@@ -50,3 +50,12 @@ func FatalWithMessage(arvLogger *logger.Logger, message string) {
 
 	log.Fatalf(message)
 }
+
+func LogErrorMessage(arvLogger *logger.Logger, message string) {
+	if arvLogger != nil {
+		arvLogger.Update(func(p map[string]interface{}, e map[string]interface{}) {
+			runInfo := logger.GetOrCreateMap(p, "run_info")
+			runInfo["ERROR"] = message
+		})
+	}
+}

@@ -91,8 +91,8 @@ func (s ServerAddress) URL() string {
 }
 
 // GetKeepServersAndSummarize gets keep servers from api
-func GetKeepServersAndSummarize(params GetKeepServersParams) (results ReadServers) {
-	results = GetKeepServers(params)
+func GetKeepServersAndSummarize(params GetKeepServersParams) (results ReadServers, err error) {
+	results, err = GetKeepServers(params)
 	log.Printf("Returned %d keep disks", len(results.ServerToContents))
 
 	results.Summarize(params.Logger)
@@ -103,7 +103,7 @@ func GetKeepServersAndSummarize(params GetKeepServersParams) (results ReadServer
 }
 
 // GetKeepServers from api server
-func GetKeepServers(params GetKeepServersParams) (results ReadServers) {
+func GetKeepServers(params GetKeepServersParams) (results ReadServers, err error) {
 	sdkParams := arvadosclient.Dict{
 		"filters": [][]string{[]string{"service_type", "!=", "proxy"}},
 	}
@@ -112,18 +112,16 @@ func GetKeepServers(params GetKeepServersParams) (results ReadServers) {
 	}
 
 	var sdkResponse ServiceList
-	err := params.Client.List("keep_services", sdkParams, &sdkResponse)
+	err = params.Client.List("keep_services", sdkParams, &sdkResponse)
 
 	if err != nil {
-		loggerutil.FatalWithMessage(params.Logger,
-			fmt.Sprintf("Error requesting keep disks from API server: %v", err))
+		return
 	}
 
 	// Currently, only "disk" types are supported. Stop if any other service types are found.
 	for _, server := range sdkResponse.KeepServers {
 		if server.ServiceType != "disk" {
-			loggerutil.FatalWithMessage(params.Logger,
-				fmt.Sprintf("Unsupported service type %q found for: %v", server.ServiceType, server))
+			return results, fmt.Errorf("Unsupported service type %q found for: %v", server.ServiceType, server)
 		}
 	}
 
@@ -139,8 +137,7 @@ func GetKeepServers(params GetKeepServersParams) (results ReadServers) {
 	log.Printf("Received keep services list: %+v", sdkResponse)
 
 	if len(sdkResponse.KeepServers) < sdkResponse.ItemsAvailable {
-		loggerutil.FatalWithMessage(params.Logger,
-			fmt.Sprintf("Did not receive all available keep servers: %+v", sdkResponse))
+		return results, fmt.Errorf("Did not receive all available keep servers: %+v", sdkResponse)
 	}
 
 	results.KeepServerIndexToAddress = sdkResponse.KeepServers
@@ -174,6 +171,12 @@ func GetKeepServers(params GetKeepServersParams) (results ReadServers) {
 	for i := range sdkResponse.KeepServers {
 		_ = i // Here to prevent go from complaining.
 		response := <-responseChan
+
+		// There might have been an error during GetServerContents; so check if the response is empty
+		if response.Address.Host == "" {
+			return results, fmt.Errorf("Error during GetServerContents; no host info found")
+		}
+
 		log.Printf("Received channel response from %v containing %d files",
 			response.Address,
 			len(response.Contents.BlockDigestToInfo))
@@ -194,25 +197,42 @@ func GetServerContents(arvLogger *logger.Logger,
 	keepServer ServerAddress,
 	arv arvadosclient.ArvadosClient) (response ServerResponse) {
 
-	GetServerStatus(arvLogger, keepServer, arv)
+	err := GetServerStatus(arvLogger, keepServer, arv)
+	if err != nil {
+		loggerutil.LogErrorMessage(arvLogger, fmt.Sprintf("Error during GetServerStatus: %v", err))
+		return ServerResponse{}
+	}
 
-	req := CreateIndexRequest(arvLogger, keepServer, arv)
+	req, err := CreateIndexRequest(arvLogger, keepServer, arv)
+	if err != nil {
+		loggerutil.LogErrorMessage(arvLogger, fmt.Sprintf("Error building CreateIndexRequest: %v", err))
+		return ServerResponse{}
+	}
+
 	resp, err := arv.Client.Do(req)
 	if err != nil {
-		loggerutil.FatalWithMessage(arvLogger,
+		loggerutil.LogErrorMessage(arvLogger,
 			fmt.Sprintf("Error fetching %s: %v. Response was %+v",
 				req.URL.String(),
 				err,
 				resp))
+		return ServerResponse{}
 	}
 
-	return ReadServerResponse(arvLogger, keepServer, resp)
+	response, err = ReadServerResponse(arvLogger, keepServer, resp)
+	if err != nil {
+		loggerutil.LogErrorMessage(arvLogger,
+			fmt.Sprintf("Error during ReadServerResponse %v", err))
+		return ServerResponse{}
+	}
+
+	return
 }
 
 // GetServerStatus get keep server status by invoking /status.json
 func GetServerStatus(arvLogger *logger.Logger,
 	keepServer ServerAddress,
-	arv arvadosclient.ArvadosClient) {
+	arv arvadosclient.ArvadosClient) error {
 	url := fmt.Sprintf("http://%s:%d/status.json",
 		keepServer.Host,
 		keepServer.Port)
@@ -232,13 +252,11 @@ func GetServerStatus(arvLogger *logger.Logger,
 
 	resp, err := arv.Client.Get(url)
 	if err != nil {
-		loggerutil.FatalWithMessage(arvLogger,
-			fmt.Sprintf("Error getting keep status from %s: %v", url, err))
+		return fmt.Errorf("Error getting keep status from %s: %v", url, err)
 	} else if resp.StatusCode != 200 {
-		loggerutil.FatalWithMessage(arvLogger,
-			fmt.Sprintf("Received error code %d in response to request "+
-				"for %s status: %s",
-				resp.StatusCode, url, resp.Status))
+		return fmt.Errorf("Received error code %d in response to request "+
+			"for %s status: %s",
+			resp.StatusCode, url, resp.Status)
 	}
 
 	var keepStatus map[string]interface{}
@@ -246,8 +264,7 @@ func GetServerStatus(arvLogger *logger.Logger,
 	decoder.UseNumber()
 	err = decoder.Decode(&keepStatus)
 	if err != nil {
-		loggerutil.FatalWithMessage(arvLogger,
-			fmt.Sprintf("Error decoding keep status from %s: %v", url, err))
+		return fmt.Errorf("Error decoding keep status from %s: %v", url, err)
 	}
 
 	if arvLogger != nil {
@@ -259,12 +276,14 @@ func GetServerStatus(arvLogger *logger.Logger,
 			serverInfo["status"] = keepStatus
 		})
 	}
+
+	return nil
 }
 
 // CreateIndexRequest to the keep server
 func CreateIndexRequest(arvLogger *logger.Logger,
 	keepServer ServerAddress,
-	arv arvadosclient.ArvadosClient) (req *http.Request) {
+	arv arvadosclient.ArvadosClient) (req *http.Request, err error) {
 	url := fmt.Sprintf("http://%s:%d/index", keepServer.Host, keepServer.Port)
 	log.Println("About to fetch keep server contents from " + url)
 
@@ -277,26 +296,24 @@ func CreateIndexRequest(arvLogger *logger.Logger,
 		})
 	}
 
-	req, err := http.NewRequest("GET", url, nil)
+	req, err = http.NewRequest("GET", url, nil)
 	if err != nil {
-		loggerutil.FatalWithMessage(arvLogger,
-			fmt.Sprintf("Error building http request for %s: %v", url, err))
+		return req, fmt.Errorf("Error building http request for %s: %v", url, err)
 	}
 
 	req.Header.Add("Authorization", "OAuth2 "+arv.ApiToken)
-	return
+	return req, err
 }
 
 // ReadServerResponse reads reasponse from keep server
 func ReadServerResponse(arvLogger *logger.Logger,
 	keepServer ServerAddress,
-	resp *http.Response) (response ServerResponse) {
+	resp *http.Response) (response ServerResponse, err error) {
 
 	if resp.StatusCode != 200 {
-		loggerutil.FatalWithMessage(arvLogger,
-			fmt.Sprintf("Received error code %d in response to request "+
-				"for %s index: %s",
-				resp.StatusCode, keepServer.String(), resp.Status))
+		return response, fmt.Errorf("Received error code %d in response to request "+
+			"for %s index: %s",
+			resp.StatusCode, keepServer.String(), resp.Status)
 	}
 
 	if arvLogger != nil {
@@ -317,35 +334,30 @@ func ReadServerResponse(arvLogger *logger.Logger,
 		numLines++
 		line, err := reader.ReadString('\n')
 		if err == io.EOF {
-			loggerutil.FatalWithMessage(arvLogger,
-				fmt.Sprintf("Index from %s truncated at line %d",
-					keepServer.String(), numLines))
+			return response, fmt.Errorf("Index from %s truncated at line %d",
+				keepServer.String(), numLines)
 		} else if err != nil {
-			loggerutil.FatalWithMessage(arvLogger,
-				fmt.Sprintf("Error reading index response from %s at line %d: %v",
-					keepServer.String(), numLines, err))
+			return response, fmt.Errorf("Error reading index response from %s at line %d: %v",
+				keepServer.String(), numLines, err)
 		}
 		if line == "\n" {
 			if _, err := reader.Peek(1); err == nil {
 				extra, _ := reader.ReadString('\n')
-				loggerutil.FatalWithMessage(arvLogger,
-					fmt.Sprintf("Index from %s had trailing data at line %d after EOF marker: %s",
-						keepServer.String(), numLines+1, extra))
+				return response, fmt.Errorf("Index from %s had trailing data at line %d after EOF marker: %s",
+					keepServer.String(), numLines+1, extra)
 			} else if err != io.EOF {
-				loggerutil.FatalWithMessage(arvLogger,
-					fmt.Sprintf("Index from %s had read error after EOF marker at line %d: %v",
-						keepServer.String(), numLines, err))
+				return response, fmt.Errorf("Index from %s had read error after EOF marker at line %d: %v",
+					keepServer.String(), numLines, err)
 			}
 			numLines--
 			break
 		}
 		blockInfo, err := parseBlockInfoFromIndexLine(line)
 		if err != nil {
-			loggerutil.FatalWithMessage(arvLogger,
-				fmt.Sprintf("Error parsing BlockInfo from index line "+
-					"received from %s: %v",
-					keepServer.String(),
-					err))
+			return response, fmt.Errorf("Error parsing BlockInfo from index line "+
+				"received from %s: %v",
+				keepServer.String(),
+				err)
 		}
 
 		if storedBlock, ok := response.Contents.BlockDigestToInfo[blockInfo.Digest]; ok {

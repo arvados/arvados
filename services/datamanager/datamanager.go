@@ -130,8 +130,7 @@ func singlerun(arv arvadosclient.ArvadosClient) error {
 
 	kc, err := keepclient.MakeKeepClient(&arv)
 	if err != nil {
-		loggerutil.FatalWithMessage(arvLogger,
-			fmt.Sprintf("Error setting up keep client %s", err.Error()))
+		return fmt.Errorf("Error setting up keep client %v", err.Error())
 	}
 
 	// Log that we're finished. We force the recording, since go will
@@ -158,7 +157,10 @@ func singlerun(arv arvadosclient.ArvadosClient) error {
 		&keepServerInfo,
 		replicationSummary.KeepBlocksNotInCollections)
 
-	summary.WritePullLists(arvLogger, pullLists)
+	err = summary.WritePullLists(arvLogger, pullLists)
+	if err != nil {
+		return err
+	}
 
 	if trashErr != nil {
 		return err
@@ -177,17 +179,23 @@ func BuildDataFetcher(arv arvadosclient.ArvadosClient) summary.DataFetcher {
 
 		go func() {
 			collectionChannel <- collection.GetCollectionsAndSummarize(
+				arvLogger,
 				collection.GetCollectionsParams{
 					Client:    arv,
 					Logger:    arvLogger,
 					BatchSize: 50})
 		}()
 
-		*keepServerInfo = keep.GetKeepServersAndSummarize(
+		var err error
+		*keepServerInfo, err = keep.GetKeepServersAndSummarize(
 			keep.GetKeepServersParams{
 				Client: arv,
 				Logger: arvLogger,
 				Limit:  1000})
+
+		if err != nil {
+			return
+		}
 
 		*readCollections = <-collectionChannel
 	}
