@@ -47,7 +47,9 @@ class NodeManagerDaemonActorTestCase(testutil.ActorTestMixin,
         return mock_actor
 
     def make_daemon(self, cloud_nodes=[], arvados_nodes=[], want_sizes=[],
-                    avail_sizes=[(testutil.MockSize(1), {"cores": 1})], min_nodes=0, max_nodes=8):
+                    avail_sizes=[(testutil.MockSize(1), {"cores": 1})],
+                    min_nodes=0, max_nodes=8,
+                    shutdown_windows=[54, 5, 1]):
         for name in ['cloud_nodes', 'arvados_nodes', 'server_wishlist']:
             setattr(self, name + '_poller', mock.MagicMock(name=name + '_mock'))
         self.arv_factory = mock.MagicMock(name='arvados_mock')
@@ -67,7 +69,7 @@ class NodeManagerDaemonActorTestCase(testutil.ActorTestMixin,
             self.server_wishlist_poller, self.arvados_nodes_poller,
             self.cloud_nodes_poller, self.cloud_updates, self.timer,
             self.arv_factory, self.cloud_factory,
-            [54, 5, 1], ServerCalculator(avail_sizes),
+            shutdown_windows, ServerCalculator(avail_sizes),
             min_nodes, max_nodes, 600, 1800, 3600,
             self.node_setup, self.node_shutdown).proxy()
         if cloud_nodes is not None:
@@ -594,3 +596,61 @@ class NodeManagerDaemonActorTestCase(testutil.ActorTestMixin,
         self.daemon.update_cloud_nodes([]).get(self.TIMEOUT)
         self.stop_proxy(self.daemon)
         self.assertEqual(1, self.last_shutdown.stop.call_count)
+
+    def test_node_create_two_sizes(self):
+        small = testutil.MockSize(1)
+        big = testutil.MockSize(2)
+        avail_sizes = [(testutil.MockSize(1), {"cores":1}),
+                        (testutil.MockSize(2), {"cores":2})]
+        self.make_daemon(want_sizes=[small, small, big],
+                         avail_sizes=avail_sizes)
+        booting = self.daemon.booting.get()
+        self.stop_proxy(self.daemon)
+        self.assertEqual(3, self.node_setup.start.call_count)
+        sizecounts = {a[0].id: 0 for a in avail_sizes}
+        for b in booting.itervalues():
+            sizecounts[b.cloud_size.get().id] += 1
+        logging.info(sizecounts)
+        self.assertEqual(2, sizecounts[small.id])
+        self.assertEqual(1, sizecounts[big.id])
+
+    def test_wishlist_reconfigure(self):
+        small = testutil.MockSize(1)
+        big = testutil.MockSize(2)
+        avail_sizes = [(small, {"cores":1}), (big, {"cores":2})]
+
+        self.make_daemon(cloud_nodes=[testutil.cloud_node_mock(1, small),
+                                      testutil.cloud_node_mock(2, small),
+                                      testutil.cloud_node_mock(3, big)],
+                         arvados_nodes=[testutil.arvados_node_mock(1),
+                                        testutil.arvados_node_mock(2),
+                                        testutil.arvados_node_mock(3)],
+                         want_sizes=[small, small, big],
+                         avail_sizes=avail_sizes)
+
+        self.daemon.update_server_wishlist([small, big, big]).get(self.TIMEOUT)
+
+        self.assertEqual(0, self.node_shutdown.start.call_count)
+
+        for c in self.daemon.cloud_nodes.get().nodes.itervalues():
+            self.daemon.node_can_shutdown(c.actor)
+
+        booting = self.daemon.booting.get()
+        shutdowns = self.daemon.shutdowns.get()
+
+        self.stop_proxy(self.daemon)
+
+        self.assertEqual(1, self.node_setup.start.call_count)
+        self.assertEqual(1, self.node_shutdown.start.call_count)
+
+        sizecounts = {a[0].id: 0 for a in avail_sizes}
+        for b in booting.itervalues():
+            sizecounts[b.cloud_size.get().id] += 1
+        self.assertEqual(0, sizecounts[small.id])
+        self.assertEqual(1, sizecounts[big.id])
+
+        sizecounts = {a[0].id: 0 for a in avail_sizes}
+        for b in shutdowns.itervalues():
+            sizecounts[b.cloud_node.get().size.id] += 1
+        self.assertEqual(1, sizecounts[small.id])
+        self.assertEqual(0, sizecounts[big.id])
