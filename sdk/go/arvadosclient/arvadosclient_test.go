@@ -251,17 +251,17 @@ func RunFakeArvadosServer(st http.Handler) (api APIServer, err error) {
 }
 
 type APIStub struct {
-	method       string
-	count        int
-	expected     int
-	respStatus   []int
-	responseBody []string
+	method        string
+	retryAttempts int
+	expected      int
+	respStatus    []int
+	responseBody  []string
 }
 
 func (h *APIStub) ServeHTTP(resp http.ResponseWriter, req *http.Request) {
-	resp.WriteHeader(h.respStatus[h.count])
-	resp.Write([]byte(h.responseBody[h.count]))
-	h.count++
+	resp.WriteHeader(h.respStatus[h.retryAttempts])
+	resp.Write([]byte(h.responseBody[h.retryAttempts]))
+	h.retryAttempts++
 }
 
 func (s *MockArvadosServerSuite) TestWithRetries(c *C) {
@@ -314,6 +314,14 @@ func (s *MockArvadosServerSuite) TestWithRetries(c *C) {
 		{
 			"get", 0, 401, []int{500, 401, 200}, []string{``, ``, `{"ok":"ok"}`},
 		},
+		// Use expected = 0 to simulate error during request processing
+		// Even though retryable, the simulated error applies during reties also, and hence "get" also eventually fails in this test.
+		{
+			"get", 0, 0, []int{500, 500, 500}, []string{``, ``, ``},
+		},
+		{
+			"create", 0, 0, []int{500, 500, 500}, []string{``, ``, ``},
+		},
 	} {
 		api, err := RunFakeArvadosServer(&stub)
 		c.Check(err, IsNil)
@@ -327,6 +335,12 @@ func (s *MockArvadosServerSuite) TestWithRetries(c *C) {
 			ApiInsecure: true,
 			Client:      &http.Client{Transport: &http.Transport{}},
 			Retries:     2}
+
+		// We use expected = 0 to look for errors during request processing
+		// Simulate an error using https (but the arv.Client transport used does not support it)
+		if stub.expected == 0 {
+			arv.Scheme = "https"
+		}
 
 		getback := make(Dict)
 		switch stub.method {
@@ -349,8 +363,13 @@ func (s *MockArvadosServerSuite) TestWithRetries(c *C) {
 			c.Assert(getback["ok"], Equals, "ok")
 		} else {
 			c.Check(err, NotNil)
-			c.Check(strings.Contains(err.Error(), fmt.Sprintf("%s%d", "arvados API server error: ", stub.expected)), Equals, true)
-			c.Assert(err.(APIServerError).HttpStatusCode, Equals, stub.expected)
+
+			if stub.expected == 0 { // test uses 0 to look for errors during request processing
+				c.Check(strings.Contains(err.Error(), fmt.Sprintf("%s", "tls: oversized record received")), Equals, true)
+			} else {
+				c.Check(strings.Contains(err.Error(), fmt.Sprintf("%s%d", "arvados API server error: ", stub.expected)), Equals, true)
+				c.Assert(err.(APIServerError).HttpStatusCode, Equals, stub.expected)
+			}
 		}
 	}
 }
