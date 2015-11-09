@@ -143,10 +143,9 @@ func (s *StandaloneSuite) TestUploadToStubKeepServer(c *C) {
 		make(chan string)}
 
 	UploadToStubHelper(c, st,
-		func(kc *KeepClient, url string, reader io.ReadCloser,
-			writer io.WriteCloser, upload_status chan uploadStatus) {
+		func(kc *KeepClient, url string, reader io.ReadCloser, writer io.WriteCloser, upload_status chan uploadStatus) {
 
-			go kc.uploadToKeepServer(url, st.expectPath, reader, upload_status, int64(len("foo")), "TestUploadToStubKeepServer")
+			go kc.uploadToKeepServer(url, st.expectPath, reader, upload_status, int64(len("foo")), 0)
 
 			writer.Write([]byte("foo"))
 			writer.Close()
@@ -178,7 +177,7 @@ func (s *StandaloneSuite) TestUploadToStubKeepServerBufferReader(c *C) {
 
 			br1 := tr.MakeStreamReader()
 
-			go kc.uploadToKeepServer(url, st.expectPath, br1, upload_status, 3, "TestUploadToStubKeepServerBufferReader")
+			go kc.uploadToKeepServer(url, st.expectPath, br1, upload_status, 3, 0)
 
 			writer.Write([]byte("foo"))
 			writer.Close()
@@ -238,7 +237,7 @@ func (s *StandaloneSuite) TestFailedUploadToStubKeepServer(c *C) {
 		func(kc *KeepClient, url string, reader io.ReadCloser,
 			writer io.WriteCloser, upload_status chan uploadStatus) {
 
-			go kc.uploadToKeepServer(url, hash, reader, upload_status, 3, "TestFailedUploadToStubKeepServer")
+			go kc.uploadToKeepServer(url, hash, reader, upload_status, 3, 0)
 
 			writer.Write([]byte("foo"))
 			writer.Close()

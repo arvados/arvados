@@ -177,9 +177,10 @@ class DockerImageUseRecorder(DockerEventListener):
 class DockerImageCleaner(DockerImageUseRecorder):
     event_handlers = DockerImageUseRecorder.event_handlers.copy()
 
-    def __init__(self, images, docker_client, events):
+    def __init__(self, images, docker_client, events, remove_containers_onexit=False):
         super().__init__(images, docker_client, events)
         self.logged_unknown = set()
+        self.remove_containers_onexit = remove_containers_onexit
 
     def new_container(self, event, container_hash):
         container_image_id = container_hash['Image']
@@ -187,6 +188,29 @@ class DockerImageCleaner(DockerImageUseRecorder):
             image_hash = self.docker_client.inspect_image(container_image_id)
             self.images.add_image(image_hash)
         return super().new_container(event, container_hash)
+
+    def _remove_container(self, cid):
+        try:
+            self.docker_client.remove_container(cid)
+        except docker.errors.APIError as error:
+            logger.warning("Failed to remove container %s: %s", cid, error)
+        else:
+            logger.info("Removed container %s", cid)
+
+    @event_handlers.on('die')
+    def clean_container(self, event=None):
+        if self.remove_containers_onexit:
+            self._remove_container(event['id'])
+
+    def check_stopped_containers(self, remove=False):
+        logger.info("Checking for stopped containers")
+        for c in self.docker_client.containers(filters={'status': 'exited'}):
+            logger.info("Container %s %s", c['Id'], c['Status'])
+            if c['Status'][:6] != 'Exited':
+                logger.error("Unexpected status %s for container %s",
+                             c['Status'], c['Id'])
+            elif remove:
+                self._remove_container(c['Id'])
 
     @event_handlers.on('destroy')
     def clean_images(self, event=None):
@@ -226,6 +250,12 @@ def parse_arguments(arguments):
         '--quota', action='store', type=human_size, required=True,
         help="space allowance for Docker images, suffixed with K/M/G/T")
     parser.add_argument(
+        '--remove-stopped-containers', type=str, default='always',
+        choices=['never', 'onexit', 'always'],
+        help="""when to remove stopped containers (default: always, i.e., remove
+        stopped containers found at startup, and remove containers as
+        soon as they exit)""")
+    parser.add_argument(
         '--verbose', '-v', action='count', default=0,
         help="log more information")
     return parser.parse_args(arguments)
@@ -246,9 +276,13 @@ def run(args, docker_client):
         images, docker_client, docker_client.events(since=1, until=start_time))
     use_recorder.run()
     cleaner = DockerImageCleaner(
-        images, docker_client, docker_client.events(since=start_time))
-    logger.info("Starting cleanup loop")
+        images, docker_client, docker_client.events(since=start_time),
+        remove_containers_onexit=args.remove_stopped_containers != 'never')
+    cleaner.check_stopped_containers(
+        remove=args.remove_stopped_containers == 'always')
+    logger.info("Checking image quota at startup")
     cleaner.clean_images()
+    logger.info("Listening for docker events")
     cleaner.run()
 
 def main(arguments):
