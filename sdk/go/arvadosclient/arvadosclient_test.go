@@ -258,8 +258,17 @@ type APIStub struct {
 }
 
 func (h *APIStub) ServeHTTP(resp http.ResponseWriter, req *http.Request) {
-	resp.WriteHeader(h.respStatus[h.retryAttempts])
-	resp.Write([]byte(h.responseBody[h.retryAttempts]))
+	if req.URL.Path == "/redirect-loop" {
+		http.Redirect(resp, req, "/redirect-loop", http.StatusFound)
+		return
+	}
+	if h.respStatus[h.retryAttempts] < 0 {
+		// Fail the client's Do() by starting a redirect loop
+		http.Redirect(resp, req, "/redirect-loop", http.StatusFound)
+	} else {
+		resp.WriteHeader(h.respStatus[h.retryAttempts])
+		resp.Write([]byte(h.responseBody[h.retryAttempts]))
+	}
 	h.retryAttempts++
 }
 
@@ -316,10 +325,10 @@ func (s *MockArvadosServerSuite) TestWithRetries(c *C) {
 		// Use nil responseBody to simulate error during request processing
 		// Even though retryable, the simulated error applies during reties also, and hence "get" also eventually fails in this test.
 		{
-			"get", 0, -1, nil, nil,
+			"get", 0, 200, []int{-1, -1, 200}, []string{``, ``, `{"ok":"ok"}`},
 		},
 		{
-			"create", 0, -1, nil, nil,
+			"create", 0, -1, []int{-1, 200}, []string{``, `{"ok":"ok"}`},
 		},
 	} {
 		api, err := RunFakeArvadosServer(&stub)
@@ -334,12 +343,6 @@ func (s *MockArvadosServerSuite) TestWithRetries(c *C) {
 			ApiInsecure: true,
 			Client:      &http.Client{Transport: &http.Transport{}},
 			Retries:     2}
-
-		// We use nil responseBody to look for errors during request processing
-		// Simulate an error using https (but the arv.Client transport used does not support it)
-		if stub.responseBody == nil {
-			arv.Scheme = "https"
-		}
 
 		getback := make(Dict)
 		switch stub.method {
@@ -357,18 +360,17 @@ func (s *MockArvadosServerSuite) TestWithRetries(c *C) {
 			err = arv.Delete("pipeline_templates", "zzzzz-4zz18-znfnqtbbv4spc3w", nil, &getback)
 		}
 
-		if stub.expected == 200 {
+		switch stub.expected {
+		case 200:
 			c.Check(err, IsNil)
-			c.Assert(getback["ok"], Equals, "ok")
-		} else {
+			c.Check(getback["ok"], Equals, "ok")
+		case -1:
 			c.Check(err, NotNil)
-
-			if stub.responseBody == nil { // test uses empty responseBody to look for errors during request processing
-				c.Assert(err, ErrorMatches, "* oversized record received.*")
-			} else {
-				c.Assert(err, ErrorMatches, fmt.Sprintf("%s%d.*", "arvados API server error: ", stub.expected))
-				c.Assert(err.(APIServerError).HttpStatusCode, Equals, stub.expected)
-			}
+			c.Check(err, ErrorMatches, `.*stopped after \d+ redirects`)
+		default:
+			c.Check(err, NotNil)
+			c.Check(err, ErrorMatches, fmt.Sprintf("arvados API server error: %d.*", stub.expected))
+			c.Check(err.(APIServerError).HttpStatusCode, Equals, stub.expected)
 		}
 	}
 }
