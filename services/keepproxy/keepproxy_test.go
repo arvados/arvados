@@ -507,7 +507,7 @@ func (s *ServerRequiredSuite) TestGetIndex(c *C) {
 }
 
 func (s *ServerRequiredSuite) TestPutAskGetInvalidToken(c *C) {
-	kc := runProxy(c, []string{"keepproxy"}, 28852, false)
+	kc := runProxy(c, []string{"keepproxy"}, 28853, false)
 	waitForListener()
 	defer closeListener()
 
