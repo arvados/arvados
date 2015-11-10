@@ -512,7 +512,7 @@ will appear if it exists.
             # If we're the root directory, add an identical by_id subdirectory.
             if self.inode == llfuse.ROOT_INODE:
                 self._entries['by_id'] = self.inodes.add_entry(MagicDirectory(
-                        self.inode, self.inodes, self.api, self.num_retries))
+                        self.inode, self.inodes, self.api, self.num_retries, self.pdh_only))
 
     def __contains__(self, k):
         if k in self._entries:

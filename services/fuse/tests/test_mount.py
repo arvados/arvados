@@ -1076,8 +1076,11 @@ class FuseMagicTestPDHOnly(MountTestBase):
         created = self.api.collections().create(body={"manifest_text":self.test_manifest}).execute()
         self.testcollectionuuid = str(created['uuid'])
 
-    def runTest(self):
-        self.make_mount(fuse.MagicDirectory, pdh_only=True)
+    def verify_pdh_only(self, pdh_only=False, skip_pdh_only=False):
+        if skip_pdh_only is True:
+            self.make_mount(fuse.MagicDirectory)    # in this case, the default by_id applies
+        else:
+            self.make_mount(fuse.MagicDirectory, pdh_only=pdh_only)
 
         mount_ls = llfuse.listdir(self.mounttmp)
         self.assertIn('README', mount_ls)
@@ -1086,7 +1089,7 @@ class FuseMagicTestPDHOnly(MountTestBase):
                              for fn in mount_ls),
                          "new FUSE MagicDirectory lists Collection")
 
-        # look up using pdh should succeed
+        # look up using pdh should succeed in all cases
         self.assertDirContents(self.testcollection, ['thing1.txt'])
         self.assertDirContents(os.path.join('by_id', self.testcollection),
                                ['thing1.txt'])
@@ -1103,7 +1106,20 @@ class FuseMagicTestPDHOnly(MountTestBase):
             with open(os.path.join(self.mounttmp, k)) as f:
                 self.assertEqual(v, f.read())
 
-        # look up using uuid should fail
-        with self.assertRaises(OSError):
+        # look up using uuid should fail when pdh_only is set
+        if pdh_only is True:
+            with self.assertRaises(OSError):
+                self.assertDirContents(os.path.join('by_id', self.testcollectionuuid),
+                               ['thing1.txt'])
+        else:
             self.assertDirContents(os.path.join('by_id', self.testcollectionuuid),
                                ['thing1.txt'])
+
+    def test_with_pdh_only_true(self):
+        self.verify_pdh_only(pdh_only=True)
+
+    def test_with_pdh_only_false(self):
+        self.verify_pdh_only(pdh_only=False)
+
+    def test_with_default_by_id(self):
+        self.verify_pdh_only(skip_pdh_only=True)
