@@ -108,6 +108,7 @@ with "--".
         if args.by_id or args.by_pdh:
             # Set up the request handler with the 'magic directory' at the root
             dir_class = MagicDirectory
+            dir_args.append(args.by_pdh)
         elif args.by_tag:
             dir_class = TagsDirectory
         elif args.shared:
@@ -132,7 +133,7 @@ with "--".
             e = operations.inodes.add_entry(Directory(llfuse.ROOT_INODE, operations.inodes))
             dir_args[0] = e.inode
 
-            e._entries['by_id'] = operations.inodes.add_entry(MagicDirectory(*dir_args, pdh_only=True if args.by_pdh else False))
+            e._entries['by_id'] = operations.inodes.add_entry(MagicDirectory(*dir_args))
 
             e._entries['by_tag'] = operations.inodes.add_entry(TagsDirectory(*dir_args))
 
