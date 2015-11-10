@@ -322,11 +322,16 @@ func (s *MockArvadosServerSuite) TestWithRetries(c *C) {
 		{
 			"get", 0, 401, []int{500, 401, 200}, []string{``, ``, `{"ok":"ok"}`},
 		},
-		// Use nil responseBody to simulate error during request processing
-		// Even though retryable, the simulated error applies during reties also, and hence "get" also eventually fails in this test.
+
+		// Response code -1 simulates an HTTP/network error
+		// (i.e., Do() returns an error; there is no HTTP
+		// response status code).
+
+		// Succeed on second retry
 		{
 			"get", 0, 200, []int{-1, -1, 200}, []string{``, ``, `{"ok":"ok"}`},
 		},
+		// "POST" is not safe to retry: fail after one error
 		{
 			"create", 0, -1, []int{-1, 200}, []string{``, `{"ok":"ok"}`},
 		},
