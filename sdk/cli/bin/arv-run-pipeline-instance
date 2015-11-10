@@ -149,6 +149,10 @@ p = Trollop::Parser.new do
       "Description for the pipeline instance.",
       :short => :none,
       :type => :string)
+  opt(:project_uuid,
+      "UUID of the project for the pipeline instance.",
+      short: :none,
+      type: :string)
   stop_on [:'--']
 end
 $options = Trollop::with_standard_exception_handling p do
@@ -440,18 +444,23 @@ class WhRunPipelineInstance
         end
       end
     else
-      description = $options[:description]
-      description = ("Created at #{Time.now.localtime}" + (@template[:name].andand.size.andand>0 ? " using the pipeline template *#{@template[:name]}*" : "")) if !description
-      @instance = PipelineInstance.
-        create(components: @components,
-               properties: {
-                 run_options: {
-                   enable_job_reuse: !@options[:no_reuse]
-                 }
-               },
-               pipeline_template_uuid: @template[:uuid],
-               description: description,
-               state: ($options[:submit] ? 'RunningOnServer' : 'RunningOnClient'))
+      description = $options[:description] ||
+                    ("Created at #{Time.now.localtime}" + (@template[:name].andand.size.andand>0 ? " using the pipeline template *#{@template[:name]}*" : ""))
+      instance_body = {
+        components: @components,
+        properties: {
+          run_options: {
+            enable_job_reuse: !@options[:no_reuse]
+          }
+        },
+        pipeline_template_uuid: @template[:uuid],
+        description: description,
+        state: ($options[:submit] ? 'RunningOnServer' : 'RunningOnClient')
+      }
+      if @options[:project_uuid]
+        instance_body[:owner_uuid] = @options[:project_uuid]
+      end
+      @instance = PipelineInstance.create(instance_body)
     end
     self
   end
