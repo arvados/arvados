@@ -285,92 +285,25 @@ handle_python_package
     cd $WORKSPACE/packages/$TARGET
     fpm_build $SRC_BUILD_DIR/=/usr/local/arvados/src arvados-src 'Curoverse, Inc.' 'dir' "$PKG_VERSION" "--exclude=usr/local/arvados/src/.git" "--url=https://arvados.org" "--license=GNU Affero General Public License, version 3.0" "--description=The Arvados source code" "--architecture=all"
 
-    rm -r "$SRC_BUILD_DIR"
+    rm -rf "$SRC_BUILD_DIR"
 )
 
-# Keep
+# Go binaries
 export GOPATH=$(mktemp -d)
-mkdir -p "$GOPATH/src/git.curoverse.com"
-ln -sfn "$WORKSPACE" "$GOPATH/src/git.curoverse.com/arvados.git"
-
-# keepstore
-cd "$GOPATH/src/git.curoverse.com/arvados.git/services/keepstore"
-PKG_VERSION=$(version_from_git)
-go get "git.curoverse.com/arvados.git/services/keepstore"
-cd $WORKSPACE/packages/$TARGET
-fpm_build $GOPATH/bin/keepstore=/usr/bin/keepstore keepstore 'Curoverse, Inc.' 'dir' "$PKG_VERSION" "--url=https://arvados.org" "--license=GNU Affero General Public License, version 3.0" "--description=Keepstore is the Keep storage daemon, accessible to clients on the LAN"
-
-# Get GO SDK version
-cd "$GOPATH/src/git.curoverse.com/arvados.git/sdk/go"
-GO_SDK_VERSION=$(version_from_git)
-GO_SDK_TIMESTAMP=$(timestamp_from_git)
-
-# keepproxy
-cd "$GOPATH/src/git.curoverse.com/arvados.git/services/keepproxy"
-KEEPPROXY_VERSION=$(version_from_git)
-KEEPPROXY_TIMESTAMP=$(timestamp_from_git)
-
-if [[ "$GO_SDK_TIMESTAMP" -gt "$KEEPPROXY_TIMESTAMP" ]]; then
-  PKG_VERSION=$GO_SDK_VERSION
-else
-  PKG_VERSION=$KEEPPROXY_VERSION
-fi
-
-go get "git.curoverse.com/arvados.git/services/keepproxy"
-cd $WORKSPACE/packages/$TARGET
-fpm_build $GOPATH/bin/keepproxy=/usr/bin/keepproxy keepproxy 'Curoverse, Inc.' 'dir' "$PKG_VERSION" "--url=https://arvados.org" "--license=GNU Affero General Public License, version 3.0" "--description=Keepproxy makes a Keep cluster accessible to clients that are not on the LAN"
-
-# keep-web
-cd "$GOPATH/src/git.curoverse.com/arvados.git/services/keep-web"
-KEEP_WEB_VERSION=$(version_from_git)
-KEEP_WEB_TIMESTAMP=$(timestamp_from_git)
-
-if [[ "$GO_SDK_TIMESTAMP" -gt "$KEEP_WEB_TIMESTAMP" ]]; then
-  PKG_VERSION=$GO_SDK_VERSION
-else
-  PKG_VERSION=$KEEP_WEB_VERSION
-fi
-
-go get "git.curoverse.com/arvados.git/services/keep-web"
-cd $WORKSPACE/packages/$TARGET
-fpm_build $GOPATH/bin/keep-web=/usr/bin/keep-web keep-web 'Curoverse, Inc.' 'dir' "$PKG_VERSION" "--url=https://arvados.org" "--license=GNU Affero General Public License, version 3.0" "--description=Static web hosting service for user data stored in Arvados Keep"
-
-# datamanager
-cd "$GOPATH/src/git.curoverse.com/arvados.git/services/datamanager"
-DATAMANAGER_VERSION=$(version_from_git)
-DATAMANAGER_TIMESTAMP=$(timestamp_from_git)
-
-if [[ "$GO_SDK_TIMESTAMP" -gt "$DATAMANAGER_TIMESTAMP" ]]; then
-  PKG_VERSION=$GO_SDK_VERSION
-else
-  PKG_VERSION=$DATAMANAGER_VERSION
-fi
-
-go get "git.curoverse.com/arvados.git/services/datamanager"
-cd $WORKSPACE/packages/$TARGET
-fpm_build $GOPATH/bin/datamanager=/usr/bin/arvados-data-manager arvados-data-manager 'Curoverse, Inc.' 'dir' "$PKG_VERSION" "--url=https://arvados.org" "--license=GNU Affero General Public License, version 3.0" "--description=Datamanager ensures block replication levels, reports on disk usage and determines which blocks should be deleted when space is needed."
-
-# arv-git-httpd
-cd "$GOPATH/src/git.curoverse.com/arvados.git/services/arv-git-httpd"
-ARVGITHTTPD_VERSION=$(version_from_git)
-ARVGITHTTPD_TIMESTAMP=$(timestamp_from_git)
-
-if [[ "$GO_SDK_TIMESTAMP" -gt "$ARVGITHTTPD_TIMESTAMP" ]]; then
-  PKG_VERSION=$GO_SDK_VERSION
-else
-  PKG_VERSION=$ARVGITHTTPD_VERSION
-fi
-
-go get "git.curoverse.com/arvados.git/services/arv-git-httpd"
-cd $WORKSPACE/packages/$TARGET
-fpm_build $GOPATH/bin/arv-git-httpd=/usr/bin/arvados-git-httpd arvados-git-httpd 'Curoverse, Inc.' 'dir' "$PKG_VERSION" "--url=https://arvados.org" "--license=GNU Affero General Public License, version 3.0" "--description=Provides authenticated http access to Arvados-hosted git repositories."
-
-# crunchstat
-cd "$GOPATH/src/git.curoverse.com/arvados.git/services/crunchstat"
-PKG_VERSION=$(version_from_git)
-go get "git.curoverse.com/arvados.git/services/crunchstat"
-cd $WORKSPACE/packages/$TARGET
-fpm_build $GOPATH/bin/crunchstat=/usr/bin/crunchstat crunchstat 'Curoverse, Inc.' 'dir' "$PKG_VERSION" "--url=https://arvados.org" "--license=GNU Affero General Public License, version 3.0" "--description=Crunchstat gathers cpu/memory/network statistics of running Crunch jobs"
+package_go_binary services/keepstore keepstore \
+    "Keep storage daemon, accessible to clients on the LAN"
+package_go_binary services/keepproxy keepproxy \
+    "Make a Keep cluster accessible to clients that are not on the LAN"
+package_go_binary services/keep-web keep-web \
+    "Static web hosting service for user data stored in Arvados Keep"
+package_go_binary services/datamanager arvados-data-manager \
+    "Ensure block replication levels, report disk usage, and determine which blocks should be deleted when space is needed"
+package_go_binary services/arv-git-httpd arvados-git-httpd \
+    "Provide authenticated http access to Arvados-hosted git repositories"
+package_go_binary services/crunchstat crunchstat \
+    "Gather cpu/memory/network statistics of running Crunch jobs"
+package_go_binary tools/keep-rsync keep-rsync \
+    "Copy all data from one set of Keep servers to another"
 
 # The Python SDK
 # Please resist the temptation to add --no-python-fix-name to the fpm call here

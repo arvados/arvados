@@ -66,6 +66,37 @@ handle_ruby_gem() {
     fi
 }
 
+# Usage: package_go_binary services/foo arvados-foo "Compute foo to arbitrary precision"
+package_go_binary() {
+    local src_path="$1"; shift
+    local prog="$1"; shift
+    local description="$1"; shift
+
+    debug_echo "package_go_binary $src_path as $prog"
+
+    local basename="${src_path##*/}"
+
+    mkdir -p "$GOPATH/src/git.curoverse.com"
+    ln -sfn "$WORKSPACE" "$GOPATH/src/git.curoverse.com/arvados.git"
+
+    cd "$GOPATH/src/git.curoverse.com/arvados.git/$src_path"
+    local version=$(version_from_git)
+    local timestamp=$(timestamp_from_git)
+
+    # If the command imports anything from the Arvados SDK, bump the
+    # version number and build a new package whenever the SDK changes.
+    if grep -qr git.curoverse.com/arvados .; then
+        cd "$GOPATH/src/git.curoverse.com/arvados.git/sdk/go"
+        if [[ $(timestamp_from_git) -gt "$timestamp" ]]; then
+            version=$(version_from_git)
+        fi
+    fi
+
+    cd $WORKSPACE/packages/$TARGET
+    go get "git.curoverse.com/arvados.git/$src_path"
+    fpm_build "$GOPATH/bin/$basename=/usr/bin/$prog" "$prog" 'Curoverse, Inc.' dir "$version" "--url=https://arvados.org" "--license=GNU Affero General Public License, version 3.0" "--description=$description"
+}
+
 # Build packages for everything
 fpm_build () {
   # The package source.  Depending on the source type, this can be a
