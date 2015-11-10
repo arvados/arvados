@@ -137,7 +137,8 @@ class CollectionsController < ApplicationController
       return
     end
 
-    if Rails.configuration.keep_web_url
+    if Rails.configuration.keep_web_url or
+        Rails.configuration.keep_web_download_url
       opts = {}
       if usable_token == params[:reader_token]
         opts[:path_token] = usable_token
@@ -327,7 +328,37 @@ class CollectionsController < ApplicationController
   def keep_web_url(uuid_or_pdh, file, opts)
     munged_id = uuid_or_pdh.sub('+', '-')
     fmt = {uuid_or_pdh: munged_id}
-    uri = URI.parse(Rails.configuration.keep_web_url % fmt)
+
+    tmpl = Rails.configuration.keep_web_url
+    if Rails.configuration.keep_web_download_url and
+        (!tmpl or opts[:disposition] == 'attachment')
+      # Prefer the attachment-only-host when we want an attachment
+      # (and when there is no preview link configured)
+      tmpl = Rails.configuration.keep_web_download_url
+    else
+      test_uri = URI.parse(tmpl % fmt)
+      if opts[:query_token] and
+          not test_uri.host.start_with?(munged_id + "--") and
+          not test_uri.host.start_with?(munged_id + ".")
+        # We're about to pass a token in the query string, but
+        # keep-web can't accept that safely at a single-origin URL
+        # template (unless it's -attachment-only-host).
+        tmpl = Rails.configuration.keep_web_download_url
+        if not tmpl
+          raise ArgumentError, "Download precluded by site configuration"
+        end
+        logger.warn("Using download link, even though inline content " \
+                    "was requested: #{test_uri.to_s}")
+      end
+    end
+
+    if tmpl == Rails.configuration.keep_web_download_url
+      # This takes us to keep-web's -attachment-only-host so there is
+      # no need to add ?disposition=attachment.
+      opts.delete :disposition
+    end
+
+    uri = URI.parse(tmpl % fmt)
     uri.path += '/' unless uri.path.end_with? '/'
     if opts[:path_token]
       uri.path += 't=' + opts[:path_token] + '/'
@@ -344,17 +375,6 @@ class CollectionsController < ApplicationController
     end
     unless query.empty?
       uri.query = query.to_query
-    end
-
-    if query.include? 'api_token' and
-        query['disposition'] != 'attachment' and
-        not uri.host.start_with?(munged_id + "--") and
-        not uri.host.start_with?(munged_id + ".")
-      # keep-web refuses query tokens ("?api_token=X") unless it sees
-      # the collection ID in the hostname, or is running in
-      # attachment-only mode.
-      logger.warn("Single-origin keep_web_url can't serve inline content, " \
-                  "but redirecting anyway: #{uri.to_s}")
     end
 
     uri.to_s

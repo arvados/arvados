@@ -6,14 +6,15 @@ title: Install the keep-web server
 
 The keep-web server provides read-only HTTP access to files stored in Keep. It serves public data to unauthenticated clients, and serves private data to clients that supply Arvados API tokens. It can be installed anywhere with access to Keep services, typically behind a web proxy that provides SSL support. See the "godoc page":http://godoc.org/github.com/curoverse/arvados/services/keep-web for more detail.
 
-By convention, we use the following hostname for the keep-web service:
+By convention, we use the following hostnames for the keep-web service:
 
 <notextile>
-<pre><code>collections.<span class="userinput">uuid_prefix</span>.your.domain
+<pre><code>download.<span class="userinput">uuid_prefix</span>.your.domain
+collections.<span class="userinput">uuid_prefix</span>.your.domain
 </code></pre>
 </notextile>
 
-This hostname should resolve from anywhere on the internet.
+The above hostnames should resolve from anywhere on the internet.
 
 h2. Install keep-web
 
@@ -59,7 +60,11 @@ We recommend running @keep-web@ under "runit":https://packages.debian.org/search
 <notextile>
 <pre><code>export ARVADOS_API_HOST=<span class="userinput">uuid_prefix</span>.your.domain
 export ARVADOS_API_TOKEN="<span class="userinput">hoShoomoo2bai3Ju1xahg6aeng1siquuaZ1yae2gi2Uhaeng2r</span>"
-exec sudo -u nobody keep-web -listen=<span class="userinput">:9002</span> -allow-anonymous 2&gt;&amp;1
+exec sudo -u nobody keep-web \
+ -listen=<span class="userinput">:9002</span> \
+ -attachment-only-host=<span class="userinput">download.uuid_prefix.your.domain</span> \
+ -allow-anonymous \
+ 2&gt;&amp;1
 </code></pre>
 </notextile>
 
@@ -84,7 +89,10 @@ upstream keep-web {
 
 server {
   listen                <span class="userinput">[your public IP address]</span>:443 ssl;
-  server_name           collections.<span class="userinput">uuid_prefix</span>.your.domain *.collections.<span class="userinput">uuid_prefix</span>.your.domain ~.*--collections.<span class="userinput">uuid_prefix</span>.your.domain;
+  server_name           download.<span class="userinput">uuid_prefix</span>.your.domain
+                        collections.<span class="userinput">uuid_prefix</span>.your.domain
+                        *.collections.<span class="userinput">uuid_prefix</span>.your.domain
+                        ~.*--collections.<span class="userinput">uuid_prefix</span>.your.domain;
 
   proxy_connect_timeout 90s;
   proxy_read_timeout    300s;
@@ -104,17 +112,27 @@ server {
 h3. Configure DNS
 
 Configure your DNS servers so the following names resolve to your Nginx proxy's public IP address.
-* @*--collections.uuid_prefix.your.domain@, if your DNS server allows this without interfering with other DNS names; or
-* @*.collections.uuid_prefix.your.domain@, if you have a wildcard SSL certificate valid for these names; or
-* @collections.uuid_prefix.your.domain@, if neither of the above options is feasible. In this case, only unauthenticated requests will be served, i.e., public data and collection sharing links.
+* @download.uuid_prefix.your.domain@
+* @collections.uuid_prefix.your.domain@
+* @*--collections.uuid_prefix.your.domain@, if you have a wildcard SSL certificate valid for @*.uuid_prefix.your.domain@ and your DNS server allows this without interfering with other DNS names.
+* @*.collections.uuid_prefix.your.domain@, if you have a wildcard SSL certificate valid for these names.
+
+If neither of the above wildcard options is feasible, only unauthenticated requests (public data and collection sharing links) will be served as web content at @collections.uuid_prefix.your.domain@. The @download@ name will be used to serve authenticated content, but only as file downloads.
 
 h3. Tell Workbench about the keep-web service
 
-Add *one* of the following entries to your Workbench configuration file (@/etc/arvados/workbench/application.yml@), depending on your DNS setup:
+Add the following entry to your Workbench configuration file (@/etc/arvados/workbench/application.yml@):
+
+<notextile>
+<pre><code>keep_web_download_url: https://download.<span class="userinput">uuid_prefix</span>.your.domain/c=%{uuid_or_pdh}
+</code></pre>
+</notextile>
+
+Additionally, add *one* of the following entries to your Workbench configuration file, depending on your DNS setup:
 
 <notextile>
 <pre><code>keep_web_url: https://%{uuid_or_pdh}--collections.<span class="userinput">uuid_prefix</span>.your.domain
 keep_web_url: https://%{uuid_or_pdh}.collections.<span class="userinput">uuid_prefix</span>.your.domain
-keep_web_url: https://collections.<span class="userinput">uuid_prefix</span>.your.domain
+keep_web_url: https://collections.<span class="userinput">uuid_prefix</span>.your.domain/c=%{uuid_or_pdh}
 </code></pre>
 </notextile>

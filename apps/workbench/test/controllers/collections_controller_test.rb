@@ -521,8 +521,9 @@ class CollectionsControllerTest < ActionController::TestCase
     assert_not_includes @response.body, '<a href="#Upload"'
   end
 
-  def setup_for_keep_web cfg='https://%{uuid_or_pdh}.collections.zzzzz.example'
+  def setup_for_keep_web cfg='https://%{uuid_or_pdh}.example', dl_cfg=false
     Rails.configuration.keep_web_url = cfg
+    Rails.configuration.keep_web_download_url = dl_cfg
     @controller.expects(:file_enumerator).never
   end
 
@@ -533,7 +534,7 @@ class CollectionsControllerTest < ActionController::TestCase
       id = api_fixture('collections')['w_a_z_file'][id_type]
       get :show_file, {uuid: id, file: "w a z"}, session_for(:active)
       assert_response :redirect
-      assert_equal "https://#{id.sub '+', '-'}.collections.zzzzz.example/_/w+a+z?api_token=#{tok}", @response.redirect_url
+      assert_equal "https://#{id.sub '+', '-'}.example/_/w+a+z?api_token=#{tok}", @response.redirect_url
     end
 
     test "Redirect to keep_web_url via #{id_type} with reader token" do
@@ -542,7 +543,7 @@ class CollectionsControllerTest < ActionController::TestCase
       id = api_fixture('collections')['w_a_z_file'][id_type]
       get :show_file, {uuid: id, file: "w a z", reader_token: tok}, session_for(:expired)
       assert_response :redirect
-      assert_equal "https://#{id.sub '+', '-'}.collections.zzzzz.example/t=#{tok}/_/w+a+z", @response.redirect_url
+      assert_equal "https://#{id.sub '+', '-'}.example/t=#{tok}/_/w+a+z", @response.redirect_url
     end
 
     test "Redirect to keep_web_url via #{id_type} with no token" do
@@ -551,7 +552,7 @@ class CollectionsControllerTest < ActionController::TestCase
       id = api_fixture('collections')['public_text_file'][id_type]
       get :show_file, {uuid: id, file: "Hello World.txt"}
       assert_response :redirect
-      assert_equal "https://#{id.sub '+', '-'}.collections.zzzzz.example/_/Hello+World.txt", @response.redirect_url
+      assert_equal "https://#{id.sub '+', '-'}.example/_/Hello+World.txt", @response.redirect_url
     end
 
     test "Redirect to keep_web_url via #{id_type} with disposition param" do
@@ -564,16 +565,17 @@ class CollectionsControllerTest < ActionController::TestCase
         disposition: 'attachment',
       }
       assert_response :redirect
-      assert_equal "https://#{id.sub '+', '-'}.collections.zzzzz.example/_/Hello+World.txt?disposition=attachment", @response.redirect_url
+      assert_equal "https://#{id.sub '+', '-'}.example/_/Hello+World.txt?disposition=attachment", @response.redirect_url
     end
 
-    test "Redirect to keep_web_url via #{id_type} using -attachment-only-host mode" do
-      setup_for_keep_web 'https://collections.zzzzz.example/c=%{uuid_or_pdh}'
+    test "Redirect to keep_web_download_url via #{id_type}" do
+      setup_for_keep_web('https://collections.example/c=%{uuid_or_pdh}',
+                         'https://download.example/c=%{uuid_or_pdh}')
       tok = api_fixture('api_client_authorizations')['active']['api_token']
       id = api_fixture('collections')['w_a_z_file'][id_type]
       get :show_file, {uuid: id, file: "w a z"}, session_for(:active)
       assert_response :redirect
-      assert_equal "https://collections.zzzzz.example/c=#{id.sub '+', '-'}/_/w+a+z?api_token=#{tok}", @response.redirect_url
+      assert_equal "https://download.example/c=#{id.sub '+', '-'}/_/w+a+z?api_token=#{tok}", @response.redirect_url
     end
   end
 
@@ -585,5 +587,42 @@ class CollectionsControllerTest < ActionController::TestCase
       get :show_file, {uuid: id, file: "w a z"}, session_for(:spectator)
       assert_response 404
     end
+
+    test "Redirect download to keep_web_download_url, anon #{anon}" do
+      config_anonymous anon
+      setup_for_keep_web('https://collections.example/c=%{uuid_or_pdh}',
+                         'https://download.example/c=%{uuid_or_pdh}')
+      tok = api_fixture('api_client_authorizations')['active']['api_token']
+      id = api_fixture('collections')['public_text_file']['uuid']
+      get :show_file, {
+        uuid: id,
+        file: 'Hello world.txt',
+        disposition: 'attachment',
+      }, session_for(:active)
+      assert_response :redirect
+      expect_url = "https://download.example/c=#{id.sub '+', '-'}/_/Hello+world.txt"
+      if not anon
+        expect_url += "?api_token=#{tok}"
+      end
+      assert_equal expect_url, @response.redirect_url
+    end
+  end
+
+  test "Error if file is impossible to retrieve from keep_web_url" do
+    # Cannot pass a session token using a single-origin keep-web URL,
+    # cannot read this collection without a session token.
+    setup_for_keep_web 'https://collections.example/c=%{uuid_or_pdh}', false
+    id = api_fixture('collections')['w_a_z_file']['uuid']
+    get :show_file, {uuid: id, file: "w a z"}, session_for(:active)
+    assert_response 422
+  end
+
+  test "Redirect preview to keep_web_download_url when preview is disabled" do
+    setup_for_keep_web false, 'https://download.example/c=%{uuid_or_pdh}'
+    tok = api_fixture('api_client_authorizations')['active']['api_token']
+    id = api_fixture('collections')['w_a_z_file']['uuid']
+    get :show_file, {uuid: id, file: "w a z"}, session_for(:active)
+    assert_response :redirect
+    assert_equal "https://download.example/c=#{id.sub '+', '-'}/_/w+a+z?api_token=#{tok}", @response.redirect_url
   end
 end
