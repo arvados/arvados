@@ -225,11 +225,13 @@ class KeepBlockCache(object):
 class KeepClient(object):
 
     # Default Keep server connection timeout:  2 seconds
-    # Default Keep server read timeout:      300 seconds
+    # Default Keep server read timeout:       64 seconds
+    # Default Keep server bandwidth minimum:  32 KiB per second
     # Default Keep proxy connection timeout:  20 seconds
-    # Default Keep proxy read timeout:       300 seconds
-    DEFAULT_TIMEOUT = (2, 300)
-    DEFAULT_PROXY_TIMEOUT = (20, 300)
+    # Default Keep proxy read timeout:        64 seconds
+    # Default Keep proxy bandwidth minimum:   32 KiB per second
+    DEFAULT_TIMEOUT = (2, 64, 32)
+    DEFAULT_PROXY_TIMEOUT = (20, 64, 32)
 
     class ThreadLimiter(object):
         """
@@ -490,11 +492,13 @@ class KeepClient(object):
             if not timeouts:
                 return
             elif isinstance(timeouts, tuple):
-                conn_t, xfer_t = timeouts
+                conn_t, xfer_t, bandwidth_kib_per_s = timeouts
             else:
                 conn_t, xfer_t = (timeouts, timeouts)
+                bandwidth_kib_per_s = self.DEFAULT_TIMEOUT[2]
             curl.setopt(pycurl.CONNECTTIMEOUT_MS, int(conn_t*1000))
-            curl.setopt(pycurl.TIMEOUT_MS, int(xfer_t*1000))
+            curl.setopt(pycurl.LOW_SPEED_TIME, int(xfer_t))
+            curl.setopt(pycurl.LOW_SPEED_LIMIT, int(bandwidth_kib_per_s*1024))
 
         def _headerfunction(self, header_line):
             header_line = header_line.decode('iso-8859-1')
@@ -598,20 +602,20 @@ class KeepClient(object):
 
         :timeout:
           The initial timeout (in seconds) for HTTP requests to Keep
-          non-proxy servers.  A tuple of two floats is interpreted as
-          (connection_timeout, read_timeout): see
+          non-proxy servers.  A tuple of three floats is interpreted as
+          (connection_timeout, read_timeout, minimum_bandwidth): see
           http://docs.python-requests.org/en/latest/user/advanced/#timeouts.
           Because timeouts are often a result of transient server load, the
           actual connection timeout will be increased by a factor of two on
           each retry.
-          Default: (2, 300).
+          Default: (2, 64, 32).
 
         :proxy_timeout:
           The initial timeout (in seconds) for HTTP requests to
-          Keep proxies. A tuple of two floats is interpreted as
-          (connection_timeout, read_timeout). The behavior described
-          above for adjusting connection timeouts on retry also applies.
-          Default: (20, 300).
+          Keep proxies. A tuple of three floats is interpreted as
+          (connection_timeout, read_timeout, minimum_bandwidth). The behavior
+          described above for adjusting connection timeouts on retry also applies.
+          Default: (20, 64, 32).
 
         :api_token:
           If you're not using an API client, but only talking
@@ -698,7 +702,7 @@ class KeepClient(object):
         # TODO(twp): the timeout should be a property of a
         # KeepService, not a KeepClient. See #4488.
         t = self.proxy_timeout if self.using_proxy else self.timeout
-        return (t[0] * (1 << attempt_number), t[1])
+        return (t[0] * (1 << attempt_number), t[1], t[2])
 
     def build_services_list(self, force_rebuild=False):
         if (self._static_services_list or
