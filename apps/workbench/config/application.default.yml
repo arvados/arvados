@@ -225,3 +225,32 @@ common:
   # E.g., using a name-based proxy server to forward connections to shell hosts:
   # https://%{hostname}.webshell.uuid_prefix.arvadosapi.com/
   shell_in_a_box_url: false
+
+  # Format of preview links. If false, use keep_web_download_url
+  # instead, and disable inline preview. If both are false, use
+  # Workbench's built-in file download/preview mechanism.
+  #
+  # Examples:
+  # keep_web_url: https://%{uuid_or_pdh}.collections.uuid_prefix.arvadosapi.com
+  # keep_web_url: https://%{uuid_or_pdh}--collections.uuid_prefix.arvadosapi.com
+  #
+  # Example supporting only public data and collection-sharing links
+  # (other data will be handled as downloads via keep_web_download_url):
+  # keep_web_url: https://collections.uuid_prefix.arvadosapi.com/c=%{uuid_or_pdh}
+  keep_web_url: false
+
+  # Format of download links. If false, use keep_web_url with
+  # disposition=attachment query param.
+  #
+  # The host part of the keep_web_download_url value here must match
+  # the -attachment-only-host argument given to keep-web: if
+  # keep_web_download_url is "https://FOO.EXAMPLE/c=..." then keep-web
+  # must run with "-attachment-only-host=FOO.EXAMPLE".
+  #
+  # If keep_web_download_url is false, and keep_web_url uses a
+  # single-origin form, then Workbench will show an error page
+  # when asked to download or preview private data.
+  #
+  # Example:
+  # keep_web_download_url: https://download.uuid_prefix.arvadosapi.com/c=%{uuid_or_pdh}
+  keep_web_download_url: false

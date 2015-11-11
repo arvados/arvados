@@ -32,7 +32,6 @@ import arvados.config
 
 ARVADOS_DIR = os.path.realpath(os.path.join(MY_DIRNAME, '../../..'))
 SERVICES_SRC_DIR = os.path.join(ARVADOS_DIR, 'services')
-SERVER_PID_PATH = 'tmp/pids/test-server.pid'
 if 'GOPATH' in os.environ:
     gopaths = os.environ['GOPATH'].split(':')
     gobins = [os.path.join(path, 'bin') for path in gopaths]
@@ -70,28 +69,62 @@ def kill_server_pid(pidfile, wait=10, passenger_root=False):
     import signal
     import subprocess
     import time
-    try:
-        if passenger_root:
-            # First try to shut down nicely
-            restore_cwd = os.getcwd()
-            os.chdir(passenger_root)
-            subprocess.call([
-                'bundle', 'exec', 'passenger', 'stop', '--pid-file', pidfile])
-            os.chdir(restore_cwd)
-        now = time.time()
-        timeout = now + wait
-        with open(pidfile, 'r') as f:
-            server_pid = int(f.read())
-        while now <= timeout:
-            if not passenger_root or timeout - now < wait / 2:
-                # Half timeout has elapsed. Start sending SIGTERM
-                os.kill(server_pid, signal.SIGTERM)
-            # Raise OSError if process has disappeared
-            os.getpgid(server_pid)
+
+    now = time.time()
+    startTERM = now
+    deadline = now + wait
+
+    if passenger_root:
+        # First try to shut down nicely
+        restore_cwd = os.getcwd()
+        os.chdir(passenger_root)
+        subprocess.call([
+            'bundle', 'exec', 'passenger', 'stop', '--pid-file', pidfile])
+        os.chdir(restore_cwd)
+        # Use up to half of the +wait+ period waiting for "passenger
+        # stop" to work. If the process hasn't exited by then, start
+        # sending TERM signals.
+        startTERM += wait/2
+
+    server_pid = None
+    while now <= deadline and server_pid is None:
+        try:
+            with open(pidfile, 'r') as f:
+                server_pid = int(f.read())
+        except IOError:
+            # No pidfile = nothing to kill.
+            return
+        except ValueError as error:
+            # Pidfile exists, but we can't parse it. Perhaps the
+            # server has created the file but hasn't written its PID
+            # yet?
+            print("Parse error reading pidfile {}: {}".format(pidfile, error))
             time.sleep(0.1)
             now = time.time()
-    except EnvironmentError:
-        pass
+
+    while now <= deadline:
+        try:
+            exited, _ = os.waitpid(server_pid, os.WNOHANG)
+            if exited > 0:
+                return
+        except OSError:
+            # already exited, or isn't our child process
+            pass
+        try:
+            if now >= startTERM:
+                os.kill(server_pid, signal.SIGTERM)
+                print("Sent SIGTERM to {} ({})".format(server_pid, pidfile))
+        except OSError as error:
+            if error.errno == errno.ESRCH:
+                # Thrown by os.getpgid() or os.kill() if the process
+                # does not exist, i.e., our work here is done.
+                return
+            raise
+        time.sleep(0.1)
+        now = time.time()
+
+    print("Server PID {} ({}) did not exit, giving up after {}s".
+          format(server_pid, pidfile, wait))
 
 def find_available_port():
     """Return an IPv4 port number that is not in use right now.
@@ -139,6 +172,26 @@ def _wait_until_port_listens(port, timeout=10):
         format(port, timeout),
         file=sys.stderr)
 
+def _fifo2stderr(label):
+    """Create a fifo, and copy it to stderr, prepending label to each line.
+
+    Return value is the path to the new FIFO.
+
+    +label+ should contain only alphanumerics: it is also used as part
+    of the FIFO filename.
+    """
+    fifo = os.path.join(TEST_TMPDIR, label+'.fifo')
+    try:
+        os.remove(fifo)
+    except OSError as error:
+        if error.errno != errno.ENOENT:
+            raise
+    os.mkfifo(fifo, 0700)
+    subprocess.Popen(
+        ['sed', '-e', 's/^/['+label+'] /', fifo],
+        stdout=sys.stderr)
+    return fifo
+
 def run(leave_running_atexit=False):
     """Ensure an API server is running, and ARVADOS_API_* env vars have
     admin credentials for it.
@@ -159,7 +212,7 @@ def run(leave_running_atexit=False):
     # Delete cached discovery document.
     shutil.rmtree(arvados.http_cache('discovery'))
 
-    pid_file = os.path.join(SERVICES_SRC_DIR, 'api', SERVER_PID_PATH)
+    pid_file = _pidfile('api')
     pid_file_ok = find_server_pid(pid_file, 0)
 
     existing_api_host = os.environ.get('ARVADOS_TEST_API_HOST', my_api_host)
@@ -231,7 +284,7 @@ def run(leave_running_atexit=False):
     start_msg = subprocess.check_output(
         ['bundle', 'exec',
          'passenger', 'start', '-d', '-p{}'.format(port),
-         '--pid-file', os.path.join(os.getcwd(), pid_file),
+         '--pid-file', pid_file,
          '--log-file', os.path.join(os.getcwd(), 'log/test.log'),
          '--ssl',
          '--ssl-certificate', 'tmp/self-signed.pem',
@@ -293,7 +346,7 @@ def stop(force=False):
     """
     global my_api_host
     if force or my_api_host is not None:
-        kill_server_pid(os.path.join(SERVICES_SRC_DIR, 'api', SERVER_PID_PATH))
+        kill_server_pid(_pidfile('api'))
         my_api_host = None
 
 def _start_keep(n, keep_args):
@@ -307,9 +360,10 @@ def _start_keep(n, keep_args):
     for arg, val in keep_args.iteritems():
         keep_cmd.append("{}={}".format(arg, val))
 
-    logf = open(os.path.join(TEST_TMPDIR, 'keep{}.log'.format(n)), 'a+')
+    logf = open(_fifo2stderr('keep{}'.format(n)), 'w')
     kp0 = subprocess.Popen(
         keep_cmd, stdin=open('/dev/null'), stdout=logf, stderr=logf, close_fds=True)
+
     with open(_pidfile('keep{}'.format(n)), 'w') as f:
         f.write(str(kp0.pid))
 
@@ -342,7 +396,7 @@ def run_keep(blob_signing_key=None, enforce_permissions=False, num_servers=2):
         token=os.environ['ARVADOS_API_TOKEN'],
         insecure=True)
 
-    for d in api.keep_services().list().execute()['items']:
+    for d in api.keep_services().list(filters=[['service_type','=','disk']]).execute()['items']:
         api.keep_services().delete(uuid=d['uuid']).execute()
     for d in api.keep_disks().list().execute()['items']:
         api.keep_disks().delete(uuid=d['uuid']).execute()
@@ -360,8 +414,14 @@ def run_keep(blob_signing_key=None, enforce_permissions=False, num_servers=2):
             'keep_disk': {'keep_service_uuid': svc['uuid'] }
         }).execute()
 
+    # If keepproxy is running, send SIGHUP to make it discover the new
+    # keepstore services.
+    proxypidfile = _pidfile('keepproxy')
+    if os.path.exists(proxypidfile):
+        os.kill(int(open(proxypidfile).read()), signal.SIGHUP)
+
 def _stop_keep(n):
-    kill_server_pid(_pidfile('keep{}'.format(n)), 0)
+    kill_server_pid(_pidfile('keep{}'.format(n)))
     if os.path.exists("{}/keep{}.volume".format(TEST_TMPDIR, n)):
         with open("{}/keep{}.volume".format(TEST_TMPDIR, n), 'r') as r:
             shutil.rmtree(r.read(), True)
@@ -378,20 +438,20 @@ def run_keep_proxy():
         return
     stop_keep_proxy()
 
-    admin_token = auth_token('admin')
     port = find_available_port()
     env = os.environ.copy()
-    env['ARVADOS_API_TOKEN'] = admin_token
+    env['ARVADOS_API_TOKEN'] = auth_token('anonymous')
+    logf = open(_fifo2stderr('keepproxy'), 'w')
     kp = subprocess.Popen(
         ['keepproxy',
          '-pid='+_pidfile('keepproxy'),
          '-listen=:{}'.format(port)],
-        env=env, stdin=open('/dev/null'), stdout=sys.stderr)
+        env=env, stdin=open('/dev/null'), stdout=logf, stderr=logf, close_fds=True)
 
     api = arvados.api(
         version='v1',
         host=os.environ['ARVADOS_API_HOST'],
-        token=admin_token,
+        token=auth_token('admin'),
         insecure=True)
     for d in api.keep_services().list(
             filters=[['service_type','=','proxy']]).execute()['items']:
@@ -409,7 +469,7 @@ def run_keep_proxy():
 def stop_keep_proxy():
     if 'ARVADOS_TEST_PROXY_SERVICES' in os.environ:
         return
-    kill_server_pid(_pidfile('keepproxy'), wait=0)
+    kill_server_pid(_pidfile('keepproxy'))
 
 def run_arv_git_httpd():
     if 'ARVADOS_TEST_PROXY_SERVICES' in os.environ:
@@ -420,11 +480,12 @@ def run_arv_git_httpd():
     gitport = find_available_port()
     env = os.environ.copy()
     env.pop('ARVADOS_API_TOKEN', None)
+    logf = open(_fifo2stderr('arv-git-httpd'), 'w')
     agh = subprocess.Popen(
         ['arv-git-httpd',
          '-repo-root='+gitdir+'/test',
          '-address=:'+str(gitport)],
-        env=env, stdin=open('/dev/null'), stdout=sys.stderr)
+        env=env, stdin=open('/dev/null'), stdout=logf, stderr=logf)
     with open(_pidfile('arv-git-httpd'), 'w') as f:
         f.write(str(agh.pid))
     _setport('arv-git-httpd', gitport)
@@ -433,19 +494,46 @@ def run_arv_git_httpd():
 def stop_arv_git_httpd():
     if 'ARVADOS_TEST_PROXY_SERVICES' in os.environ:
         return
-    kill_server_pid(_pidfile('arv-git-httpd'), wait=0)
+    kill_server_pid(_pidfile('arv-git-httpd'))
+
+def run_keep_web():
+    if 'ARVADOS_TEST_PROXY_SERVICES' in os.environ:
+        return
+    stop_keep_web()
+
+    keepwebport = find_available_port()
+    env = os.environ.copy()
+    env['ARVADOS_API_TOKEN'] = auth_token('anonymous')
+    logf = open(_fifo2stderr('keep-web'), 'w')
+    keepweb = subprocess.Popen(
+        ['keep-web',
+         '-allow-anonymous',
+         '-attachment-only-host=localhost:'+str(keepwebport),
+         '-listen=:'+str(keepwebport)],
+        env=env, stdin=open('/dev/null'), stdout=logf, stderr=logf)
+    with open(_pidfile('keep-web'), 'w') as f:
+        f.write(str(keepweb.pid))
+    _setport('keep-web', keepwebport)
+    _wait_until_port_listens(keepwebport)
+
+def stop_keep_web():
+    if 'ARVADOS_TEST_PROXY_SERVICES' in os.environ:
+        return
+    kill_server_pid(_pidfile('keep-web'))
 
 def run_nginx():
     if 'ARVADOS_TEST_PROXY_SERVICES' in os.environ:
         return
     nginxconf = {}
+    nginxconf['KEEPWEBPORT'] = _getport('keep-web')
+    nginxconf['KEEPWEBSSLPORT'] = find_available_port()
     nginxconf['KEEPPROXYPORT'] = _getport('keepproxy')
     nginxconf['KEEPPROXYSSLPORT'] = find_available_port()
     nginxconf['GITPORT'] = _getport('arv-git-httpd')
     nginxconf['GITSSLPORT'] = find_available_port()
     nginxconf['SSLCERT'] = os.path.join(SERVICES_SRC_DIR, 'api', 'tmp', 'self-signed.pem')
     nginxconf['SSLKEY'] = os.path.join(SERVICES_SRC_DIR, 'api', 'tmp', 'self-signed.key')
-    nginxconf['ACCESSLOG'] = os.path.join(TEST_TMPDIR, 'nginx_access_log.fifo')
+    nginxconf['ACCESSLOG'] = _fifo2stderr('nginx_access_log')
 
     conftemplatefile = os.path.join(MY_DIRNAME, 'nginx.conf')
     conffile = os.path.join(TEST_TMPDIR, 'nginx.conf')
@@ -458,29 +546,20 @@ def run_nginx():
     env = os.environ.copy()
     env['PATH'] = env['PATH']+':/sbin:/usr/sbin:/usr/local/sbin'
 
-    try:
-        os.remove(nginxconf['ACCESSLOG'])
-    except OSError as error:
-        if error.errno != errno.ENOENT:
-            raise
-
-    os.mkfifo(nginxconf['ACCESSLOG'], 0700)
     nginx = subprocess.Popen(
         ['nginx',
          '-g', 'error_log stderr info;',
          '-g', 'pid '+_pidfile('nginx')+';',
          '-c', conffile],
         env=env, stdin=open('/dev/null'), stdout=sys.stderr)
-    cat_access = subprocess.Popen(
-        ['cat', nginxconf['ACCESSLOG']],
-        stdout=sys.stderr)
+    _setport('keep-web-ssl', nginxconf['KEEPWEBSSLPORT'])
     _setport('keepproxy-ssl', nginxconf['KEEPPROXYSSLPORT'])
     _setport('arv-git-httpd-ssl', nginxconf['GITSSLPORT'])
 
 def stop_nginx():
     if 'ARVADOS_TEST_PROXY_SERVICES' in os.environ:
         return
-    kill_server_pid(_pidfile('nginx'), wait=0)
+    kill_server_pid(_pidfile('nginx'))
 
 def _pidfile(program):
     return os.path.join(TEST_TMPDIR, program + '.pid')
@@ -555,6 +634,7 @@ class TestCaseWithServers(unittest.TestCase):
     MAIN_SERVER = None
     KEEP_SERVER = None
     KEEP_PROXY_SERVER = None
+    KEEP_WEB_SERVER = None
 
     @staticmethod
     def _restore_dict(src, dest):
@@ -573,7 +653,8 @@ class TestCaseWithServers(unittest.TestCase):
         for server_kwargs, start_func, stop_func in (
                 (cls.MAIN_SERVER, run, reset),
                 (cls.KEEP_SERVER, run_keep, stop_keep),
-                (cls.KEEP_PROXY_SERVER, run_keep_proxy, stop_keep_proxy)):
+                (cls.KEEP_PROXY_SERVER, run_keep_proxy, stop_keep_proxy),
+                (cls.KEEP_WEB_SERVER, run_keep_web, stop_keep_web)):
             if server_kwargs is not None:
                 start_func(**server_kwargs)
                 cls._cleanup_funcs.append(stop_func)
@@ -599,6 +680,7 @@ if __name__ == "__main__":
         'start', 'stop',
         'start_keep', 'stop_keep',
         'start_keep_proxy', 'stop_keep_proxy',
+        'start_keep-web', 'stop_keep-web',
         'start_arv-git-httpd', 'stop_arv-git-httpd',
         'start_nginx', 'stop_nginx',
     ]
@@ -629,7 +711,7 @@ if __name__ == "__main__":
     elif args.action == 'start_keep':
         run_keep(enforce_permissions=args.keep_enforce_permissions, num_servers=args.num_keep_servers)
     elif args.action == 'stop_keep':
-        stop_keep()
+        stop_keep(num_servers=args.num_keep_servers)
     elif args.action == 'start_keep_proxy':
         run_keep_proxy()
     elif args.action == 'stop_keep_proxy':
@@ -638,6 +720,10 @@ if __name__ == "__main__":
         run_arv_git_httpd()
     elif args.action == 'stop_arv-git-httpd':
         stop_arv_git_httpd()
+    elif args.action == 'start_keep-web':
+        run_keep_web()
+    elif args.action == 'stop_keep-web':
+        stop_keep_web()
     elif args.action == 'start_nginx':
         run_nginx()
     elif args.action == 'stop_nginx':

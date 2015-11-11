@@ -19,6 +19,18 @@ Capybara.register_driver :poltergeist_without_file_api do |app|
   Capybara::Poltergeist::Driver.new app, POLTERGEIST_OPTS.merge(extensions: [js])
 end
 
+Capybara.register_driver :selenium_with_download do |app|
+  profile = Selenium::WebDriver::Firefox::Profile.new
+  profile['browser.download.dir'] = DownloadHelper.path.to_s
+  profile['browser.download.downloadDir'] = DownloadHelper.path.to_s
+  profile['browser.download.defaultFolder'] = DownloadHelper.path.to_s
+  profile['browser.download.folderList'] = 2 # "save to user-defined location"
+  profile['browser.download.manager.showWhenStarting'] = false
+  profile['browser.helperApps.alwaysAsk.force'] = false
+  profile['browser.helperApps.neverAsk.saveToDisk'] = 'text/plain,application/octet-stream'
+  Capybara::Selenium::Driver.new app, profile: profile
+end
+
 module WaitForAjax
   Capybara.default_wait_time = 5
   def wait_for_ajax
@@ -73,8 +85,8 @@ module HeadlessHelper
     end
   end
 
-  def need_selenium reason=nil
-    Capybara.current_driver = :selenium
+  def need_selenium reason=nil, driver=:selenium
+    Capybara.current_driver = driver
     unless ENV['ARVADOS_TEST_HEADFUL'] or @headless
       @headless = HeadlessSingleton.get
       @headless.start
