@@ -29,6 +29,10 @@ class DatabaseController < ApplicationController
     fixturesets = Dir.glob(Rails.root.join('test', 'fixtures', '*.yml')).
       collect { |yml| yml.match(/([^\/]*)\.yml$/)[1] }
 
+    # Don't reset keep_services: clients need to discover our
+    # integration-testing keepstores, not test fixtures.
+    fixturesets -= %w[keep_services]
+
     table_names = '"' + ActiveRecord::Base.connection.tables.join('","') + '"'
 
     attempts_left = 20

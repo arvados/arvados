@@ -14,7 +14,6 @@ import (
 	"net/http"
 	"os"
 	"os/signal"
-	"reflect"
 	"regexp"
 	"sync"
 	"syscall"
@@ -22,8 +21,8 @@ import (
 )
 
 // Default TCP address on which to listen for requests.
-// Initialized by the -listen flag.
-const DEFAULT_ADDR = ":25107"
+// Override with -listen.
+const DefaultAddr = ":25107"
 
 var listener net.Listener
 
@@ -42,7 +41,7 @@ func main() {
 	flagset.StringVar(
 		&listen,
 		"listen",
-		DEFAULT_ADDR,
+		DefaultAddr,
 		"Interface on which to listen for requests, in the format "+
 			"ipaddr:port. e.g. -listen=10.0.1.24:8000. Use -listen=:port "+
 			"to listen on all network interfaces.")
@@ -103,15 +102,14 @@ func main() {
 	}
 
 	kc.Want_replicas = default_replicas
-
 	kc.Client.Timeout = time.Duration(timeout) * time.Second
+	go kc.RefreshServices(5*time.Minute, 3*time.Second)
 
 	listener, err = net.Listen("tcp", listen)
 	if err != nil {
 		log.Fatalf("Could not listen on %v", listen)
 	}
-
-	go RefreshServicesList(kc)
+	log.Printf("Arvados Keep proxy started listening on %v", listener.Addr())
 
 	// Shut down the server gracefully (by closing the listener)
 	// if SIGTERM is received.
@@ -124,9 +122,7 @@ func main() {
 	signal.Notify(term, syscall.SIGTERM)
 	signal.Notify(term, syscall.SIGINT)
 
-	log.Printf("Arvados Keep proxy started listening on %v", listener.Addr())
-
-	// Start listening for requests.
+	// Start serving requests.
 	http.Serve(listener, MakeRESTRouter(!no_get, !no_put, kc))
 
 	log.Println("shutting down")
@@ -136,30 +132,6 @@ type ApiTokenCache struct {
 	tokens     map[string]int64
 	lock       sync.Mutex
 	expireTime int64
-}
-
-// Refresh the keep service list every five minutes.
-func RefreshServicesList(kc *keepclient.KeepClient) {
-	var previousRoots = []map[string]string{}
-	var delay time.Duration = 0
-	for {
-		time.Sleep(delay * time.Second)
-		delay = 300
-		if err := kc.DiscoverKeepServers(); err != nil {
-			log.Println("Error retrieving services list:", err)
-			delay = 3
-			continue
-		}
-		newRoots := []map[string]string{kc.LocalRoots(), kc.GatewayRoots()}
-		if !reflect.DeepEqual(previousRoots, newRoots) {
-			log.Printf("Updated services list: locals %v gateways %v", newRoots[0], newRoots[1])
-		}
-		if len(newRoots[0]) == 0 {
-			log.Print("WARNING: No local services. Retrying in 3 seconds.")
-			delay = 3
-		}
-		previousRoots = newRoots
-	}
 }
 
 // Cache the token and set an expire time.  If we already have an expire time
@@ -194,12 +166,8 @@ func (this *ApiTokenCache) RecallToken(token string) bool {
 }
 
 func GetRemoteAddress(req *http.Request) string {
-	if realip := req.Header.Get("X-Real-IP"); realip != "" {
-		if forwarded := req.Header.Get("X-Forwarded-For"); forwarded != realip {
-			return fmt.Sprintf("%s (X-Forwarded-For %s)", realip, forwarded)
-		} else {
-			return realip
-		}
+	if xff := req.Header.Get("X-Forwarded-For"); xff != "" {
+		return xff + "," + req.RemoteAddr
 	}
 	return req.RemoteAddr
 }

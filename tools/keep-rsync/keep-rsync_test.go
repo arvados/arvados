@@ -470,9 +470,11 @@ func (s *DoMainTestSuite) Test_doMainWithSrcAndDstConfig(c *C) {
 	args := []string{"-src", srcConfig.Name(), "-dst", dstConfig.Name()}
 	os.Args = append(os.Args, args...)
 
-	// Start keepservers. Since we are not doing any tweaking as in setupRsync func,
-	// kcSrc and kcDst will be the same and no actual copying to dst will happen, but that's ok.
+	// Start keepservers. Since we are not doing any tweaking as
+	// in setupRsync func, kcSrc and kcDst will be the same and no
+	// actual copying to dst will happen, but that's ok.
 	arvadostest.StartKeep(2, false)
+	defer arvadostest.StopKeep(2)
 
 	err := doMain()
 	c.Check(err, IsNil)
