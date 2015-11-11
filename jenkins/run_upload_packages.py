@@ -189,6 +189,7 @@ PACKAGE_SUITES = {
     'python': _define_suite(PythonPackageSuite,
                             'sdk/pam/dist/*.tar.gz',
                             'sdk/python/dist/*.tar.gz',
+                            'sdk/cwl/dist/*.tar.gz',
                             'services/nodemanager/dist/*.tar.gz',
                             'services/fuse/dist/*.tar.gz',
                         ),
