@@ -368,7 +368,7 @@ class KeepClientServiceTestCase(unittest.TestCase, tutil.ApiClientMock):
 
     def test_put_error_does_not_include_successful_puts(self):
         data = 'partial failure test'
-        data_loc = '{}+{}'.format(hashlib.md5(data).hexdigest(), len(data))
+        data_loc = tutil.str_keep_locator(data)
         api_client = self.mock_keep_services(count=3)
         with tutil.mock_keep_responses(data_loc, 200, 500, 500) as req_mock, \
                 self.assertRaises(arvados.errors.KeepWriteError) as exc_check:
@@ -378,7 +378,7 @@ class KeepClientServiceTestCase(unittest.TestCase, tutil.ApiClientMock):
 
     def test_proxy_put_with_no_writable_services(self):
         data = 'test with no writable services'
-        data_loc = '{}+{}'.format(hashlib.md5(data).hexdigest(), len(data))
+        data_loc = tutil.str_keep_locator(data)
         api_client = self.mock_keep_services(service_type='proxy', read_only=True, count=1)
         with tutil.mock_keep_responses(data_loc, 200, 500, 500) as req_mock, \
                 self.assertRaises(arvados.errors.KeepWriteError) as exc_check:
@@ -518,7 +518,7 @@ class KeepClientRendezvousTestCase(unittest.TestCase, tutil.ApiClientMock):
     def check_64_zeros_error_order(self, verb, exc_class):
         data = '0' * 64
         if verb == 'get':
-            data = hashlib.md5(data).hexdigest() + '+1234'
+            data = tutil.str_keep_locator(data)
         # Arbitrary port number:
         aport = random.randint(1024,65535)
         api_client = self.mock_keep_services(service_port=aport, count=self.services)

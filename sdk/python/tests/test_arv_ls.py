@@ -1,7 +1,6 @@
 #!/usr/bin/env python
 # -*- coding: utf-8 -*-
 
-import hashlib
 import io
 import random
 
@@ -10,6 +9,8 @@ import mock
 import arvados.errors as arv_error
 import arvados.commands.ls as arv_ls
 import run_test_server
+
+from arvados_testutil import str_keep_locator
 
 class ArvLsTestCase(run_test_server.TestCaseWithServers):
     FAKE_UUID = 'zzzzz-4zz18-12345abcde12345'
@@ -24,8 +25,7 @@ class ArvLsTestCase(run_test_server.TestCaseWithServers):
 
     def mock_api_for_manifest(self, manifest_lines, uuid=FAKE_UUID):
         manifest_text = self.newline_join(manifest_lines)
-        pdh = '{}+{}'.format(hashlib.md5(manifest_text).hexdigest(),
-                             len(manifest_text))
+        pdh = str_keep_locator(manifest_text)
         coll_info = {'uuid': uuid,
                      'portable_data_hash': pdh,
                      'manifest_text': manifest_text}
