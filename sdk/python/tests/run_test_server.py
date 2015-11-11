@@ -508,7 +508,7 @@ def run_keep_web():
     keepweb = subprocess.Popen(
         ['keep-web',
          '-allow-anonymous',
-         '-attachment-only-host=localhost:'+str(keepwebport),
+         '-attachment-only-host=download:'+str(keepwebport),
          '-listen=:'+str(keepwebport)],
         env=env, stdin=open('/dev/null'), stdout=logf, stderr=logf)
     with open(_pidfile('keep-web'), 'w') as f:
@@ -526,6 +526,7 @@ def run_nginx():
         return
     nginxconf = {}
     nginxconf['KEEPWEBPORT'] = _getport('keep-web')
+    nginxconf['KEEPWEBDLSSLPORT'] = find_available_port()
     nginxconf['KEEPWEBSSLPORT'] = find_available_port()
     nginxconf['KEEPPROXYPORT'] = _getport('keepproxy')
     nginxconf['KEEPPROXYSSLPORT'] = find_available_port()
@@ -552,6 +553,7 @@ def run_nginx():
          '-g', 'pid '+_pidfile('nginx')+';',
          '-c', conffile],
         env=env, stdin=open('/dev/null'), stdout=sys.stderr)
+    _setport('keep-web-dl-ssl', nginxconf['KEEPWEBDLSSLPORT'])
     _setport('keep-web-ssl', nginxconf['KEEPWEBSSLPORT'])
     _setport('keepproxy-ssl', nginxconf['KEEPPROXYSSLPORT'])
     _setport('arv-git-httpd-ssl', nginxconf['GITSSLPORT'])
