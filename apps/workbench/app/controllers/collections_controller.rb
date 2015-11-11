@@ -137,6 +137,8 @@ class CollectionsController < ApplicationController
       return
     end
 
+    # If we are configured to use a keep-web server, just redirect to
+    # the appropriate URL.
     if Rails.configuration.keep_web_url or
         Rails.configuration.keep_web_download_url
       opts = {}
@@ -152,6 +154,9 @@ class CollectionsController < ApplicationController
       opts[:disposition] = params[:disposition] if params[:disposition]
       return redirect_to keep_web_url(params[:uuid], params[:file], opts)
     end
+
+    # No keep-web server available. Get the file data with arv-get,
+    # and serve it through Rails.
 
     file_name = params[:file].andand.sub(/^(\.\/|\/|)/, './')
     if file_name.nil? or not coll.manifest.has_file?(file_name)
@@ -336,10 +341,10 @@ class CollectionsController < ApplicationController
       # (and when there is no preview link configured)
       tmpl = Rails.configuration.keep_web_download_url
     else
-      test_uri = URI.parse(tmpl % fmt)
+      check_uri = URI.parse(tmpl % fmt)
       if opts[:query_token] and
-          not test_uri.host.start_with?(munged_id + "--") and
-          not test_uri.host.start_with?(munged_id + ".")
+          not check_uri.host.start_with?(munged_id + "--") and
+          not check_uri.host.start_with?(munged_id + ".")
         # We're about to pass a token in the query string, but
         # keep-web can't accept that safely at a single-origin URL
         # template (unless it's -attachment-only-host).
@@ -348,7 +353,7 @@ class CollectionsController < ApplicationController
           raise ArgumentError, "Download precluded by site configuration"
         end
         logger.warn("Using download link, even though inline content " \
-                    "was requested: #{test_uri.to_s}")
+                    "was requested: #{check_uri.to_s}")
       end
     end
 

@@ -228,7 +228,7 @@ common:
 
   # Format of preview links. If false, use keep_web_download_url
   # instead, and disable inline preview. If both are false, use
-  # Workbench's built-in download mechanism.
+  # Workbench's built-in file download/preview mechanism.
   #
   # Examples:
   # keep_web_url: https://%{uuid_or_pdh}.collections.uuid_prefix.arvadosapi.com
@@ -242,8 +242,10 @@ common:
   # Format of download links. If false, use keep_web_url with
   # disposition=attachment query param.
   #
-  # The host here should match the -attachment-only-host argument
-  # given to keep-web.
+  # The host part of the keep_web_download_url value here must match
+  # the -attachment-only-host argument given to keep-web: if
+  # keep_web_download_url is "https://FOO.EXAMPLE/c=..." then keep-web
+  # must run with "-attachment-only-host=FOO.EXAMPLE".
   #
   # If keep_web_download_url is false, and keep_web_url uses a
   # single-origin form, then Workbench will show an error page

@@ -78,7 +78,7 @@ The keep-web service will be accessible from anywhere on the internet, so we rec
 
 This is best achieved by putting a reverse proxy with SSL support in front of keep-web, running on port 443 and passing requests to keep-web on port 9002 (or whatever port you chose in your run script).
 
-Note: A wildcard SSL certificate is required in order to proxy keep-web effectively.
+Note: A wildcard SSL certificate is required in order to support a full-featured secure keep-web service. Without it, keep-web can offer file downloads for all Keep data; however, in order to avoid cross-site scripting vulnerabilities, keep-web refuses to serve private data as web content except when it is accessed using a "secret link" share. With a wildcard SSL certificate and DNS configured appropriately, all data can be served as web content.
 
 For example, using Nginx:
 
@@ -121,14 +121,16 @@ If neither of the above wildcard options is feasible, only unauthenticated reque
 
 h3. Tell Workbench about the keep-web service
 
-Add the following entry to your Workbench configuration file (@/etc/arvados/workbench/application.yml@):
+Workbench has features like "download file from collection" and "show image" which work better if the content is served by keep-web rather than Workbench itself. We recommend using the two different hostnames ("download" and "collections" above) for file downloads and inline content respectively.
+
+Add the following entry to your Workbench configuration file (@/etc/arvados/workbench/application.yml@). This URL will be used for file downloads.
 
 <notextile>
 <pre><code>keep_web_download_url: https://download.<span class="userinput">uuid_prefix</span>.your.domain/c=%{uuid_or_pdh}
 </code></pre>
 </notextile>
 
-Additionally, add *one* of the following entries to your Workbench configuration file, depending on your DNS setup:
+Additionally, add *one* of the following entries to your Workbench configuration file, depending on your DNS setup. This URL will be used to serve user content that can be displayed in the browser, like image previews and static HTML pages.
 
 <notextile>
 <pre><code>keep_web_url: https://%{uuid_or_pdh}--collections.<span class="userinput">uuid_prefix</span>.your.domain
