@@ -2,11 +2,14 @@ package keep
 
 import (
 	"encoding/json"
-	"git.curoverse.com/arvados.git/sdk/go/keepclient"
-	. "gopkg.in/check.v1"
 	"net/http"
 	"net/http/httptest"
 	"testing"
+
+	"git.curoverse.com/arvados.git/sdk/go/arvadosclient"
+	"git.curoverse.com/arvados.git/sdk/go/keepclient"
+
+	. "gopkg.in/check.v1"
 )
 
 // Gocheck boilerplate
@@ -30,16 +33,18 @@ func (ts *TestHandler) ServeHTTP(writer http.ResponseWriter, req *http.Request) 
 func (s *KeepSuite) TestSendTrashLists(c *C) {
 	th := TestHandler{}
 	server := httptest.NewServer(&th)
+	defer server.Close()
 
 	tl := map[string]TrashList{
 		server.URL: TrashList{TrashRequest{"000000000000000000000000deadbeef", 99}}}
 
-	kc := keepclient.KeepClient{Client: &http.Client{}}
+	arv := arvadosclient.ArvadosClient{ApiToken: "abc123"}
+	kc := keepclient.KeepClient{Arvados: &arv, Client: &http.Client{}}
 	kc.SetServiceRoots(map[string]string{"xxxx": server.URL},
 		map[string]string{"xxxx": server.URL},
 		map[string]string{})
 
-	err := SendTrashLists("", &kc, tl)
+	err := SendTrashLists(&kc, tl)
 	server.Close()
 
 	c.Check(err, IsNil)
@@ -61,19 +66,22 @@ func sendTrashListError(c *C, server *httptest.Server) {
 	tl := map[string]TrashList{
 		server.URL: TrashList{TrashRequest{"000000000000000000000000deadbeef", 99}}}
 
-	kc := keepclient.KeepClient{Client: &http.Client{}}
+	arv := arvadosclient.ArvadosClient{ApiToken: "abc123"}
+	kc := keepclient.KeepClient{Arvados: &arv, Client: &http.Client{}}
 	kc.SetServiceRoots(map[string]string{"xxxx": server.URL},
 		map[string]string{"xxxx": server.URL},
 		map[string]string{})
 
-	err := SendTrashLists("", &kc, tl)
+	err := SendTrashLists(&kc, tl)
 
 	c.Check(err, NotNil)
 	c.Check(err[0], NotNil)
 }
 
 func (s *KeepSuite) TestSendTrashListErrorResponse(c *C) {
-	sendTrashListError(c, httptest.NewServer(&TestHandlerError{}))
+	server := httptest.NewServer(&TestHandlerError{})
+	sendTrashListError(c, server)
+	defer server.Close()
 }
 
 func (s *KeepSuite) TestSendTrashListUnreachable(c *C) {
