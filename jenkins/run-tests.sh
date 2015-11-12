@@ -710,6 +710,7 @@ gostuff=(
     services/keepproxy
     services/datamanager/summary
     services/datamanager/collection
+    services/datamanager/keep
     services/datamanager
     tools/keep-rsync
     )
