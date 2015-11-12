@@ -82,6 +82,8 @@ func TestPullWorkerIntegration_GetNonExistingLocator(t *testing.T) {
 	}
 
 	pullRequest := SetupPullWorkerIntegrationTest(t, testData, false)
+	defer arvadostest.StopAPI()
+	defer arvadostest.StopKeep(2)
 
 	performPullWorkerIntegrationTest(testData, pullRequest, t)
 }
@@ -97,6 +99,8 @@ func TestPullWorkerIntegration_GetExistingLocator(t *testing.T) {
 	}
 
 	pullRequest := SetupPullWorkerIntegrationTest(t, testData, true)
+	defer arvadostest.StopAPI()
+	defer arvadostest.StopKeep(2)
 
 	performPullWorkerIntegrationTest(testData, pullRequest, t)
 }

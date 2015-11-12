@@ -7,9 +7,19 @@ class CollectionUploadTest < ActionDispatch::IntegrationTest
         io.write content
       end
     end
+    # Database reset doesn't restore KeepServices; we have to
+    # save/restore manually.
+    use_token :admin do
+      @keep_services = KeepService.all.to_a
+    end
   end
 
   teardown do
+    use_token :admin do
+      @keep_services.each do |ks|
+        KeepService.find(ks.uuid).update_attributes(ks.attributes)
+      end
+    end
     testfiles.each do |filename, _|
       File.unlink(testfile_path filename)
     end
@@ -42,7 +52,7 @@ class CollectionUploadTest < ActionDispatch::IntegrationTest
     assert_match /_text":"\. d41d8\S+ 0:0:empty.txt\\n\. d41d8\S+ 0:0:empty\\\\040\(1\).txt\\n"/, body
   end
 
-  test "Upload non-empty files, report errors" do
+  test "Upload non-empty files" do
     need_selenium "to make file uploads work"
     visit page_with_token 'active', sandbox_path
     find('.nav-tabs a', text: 'Upload').click
@@ -50,24 +60,17 @@ class CollectionUploadTest < ActionDispatch::IntegrationTest
     attach_file 'file_selector', testfile_path('foo.txt')
     assert_selector 'button:not([disabled])', text: 'Start'
     click_button 'Start'
-    if "test environment does not have a keepproxy yet, see #4534" != "fixed"
-      using_wait_time 20 do
-        assert_text :visible, 'error'
-      end
-    else
-      assert_text :visible, 'Done!'
-      visit sandbox_path+'.json'
-      assert_match /_text":"\. 0cc1\S+ 0:1:a\\n\. acbd\S+ 0:3:foo.txt\\n"/, body
-    end
+    assert_text :visible, 'Done!'
+    visit sandbox_path+'.json'
+    assert_match /_text":"\. 0cc1\S+ 0:1:a\\n\. acbd\S+ 0:3:foo.txt\\n"/, body
   end
 
   test "Report mixed-content error" do
     skip 'Test suite does not use TLS'
     need_selenium "to make file uploads work"
-    begin
-      use_token :admin
-      proxy = KeepService.find(api_fixture('keep_services')['proxy']['uuid'])
-      proxy.update_attributes service_ssl_flag: false
+    use_token :admin do
+      KeepService.where(service_type: 'proxy').first.
+        update_attributes(service_ssl_flag: false)
     end
     visit page_with_token 'active', sandbox_path
     find('.nav-tabs a', text: 'Upload').click
@@ -82,11 +85,12 @@ class CollectionUploadTest < ActionDispatch::IntegrationTest
 
   test "Report network error" do
     need_selenium "to make file uploads work"
-    begin
-      use_token :admin
-      proxy = KeepService.find(api_fixture('keep_services')['proxy']['uuid'])
-      # Even if you somehow do port>2^16, surely nx.example.net won't respond
-      proxy.update_attributes service_host: 'nx.example.net', service_port: 99999
+    use_token :admin do
+      # Even if you somehow do port>2^16, surely nx.example.net won't
+      # respond
+      KeepService.where(service_type: 'proxy').first.
+        update_attributes(service_host: 'nx.example.net',
+                          service_port: 99999)
     end
     visit page_with_token 'active', sandbox_path
     find('.nav-tabs a', text: 'Upload').click

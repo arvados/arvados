@@ -32,9 +32,11 @@ func (s *IntegrationSuite) TestVhost404(c *check.C) {
 		arvadostest.NonexistentCollection + ".example.com/t=" + arvadostest.ActiveToken + "/theperthcountyconspiracy",
 	} {
 		resp := httptest.NewRecorder()
+		u := mustParseURL(testURL)
 		req := &http.Request{
-			Method: "GET",
-			URL:    mustParseURL(testURL),
+			Method:     "GET",
+			URL:        u,
+			RequestURI: u.RequestURI(),
 		}
 		(&handler{}).ServeHTTP(resp, req)
 		c.Check(resp.Code, check.Equals, http.StatusNotFound)
@@ -120,10 +122,11 @@ func doVhostRequestsWithHostPath(c *check.C, authz authorizer, hostPath string) 
 	} {
 		u := mustParseURL("http://" + hostPath)
 		req := &http.Request{
-			Method: "GET",
-			Host:   u.Host,
-			URL:    u,
-			Header: http.Header{},
+			Method:     "GET",
+			Host:       u.Host,
+			URL:        u,
+			RequestURI: u.RequestURI(),
+			Header:     http.Header{},
 		}
 		failCode := authz(req, tok)
 		resp := doReq(req)
@@ -157,10 +160,11 @@ func doReq(req *http.Request) *httptest.ResponseRecorder {
 	cookies := (&http.Response{Header: resp.Header()}).Cookies()
 	u, _ := req.URL.Parse(resp.Header().Get("Location"))
 	req = &http.Request{
-		Method: "GET",
-		Host:   u.Host,
-		URL:    u,
-		Header: http.Header{},
+		Method:     "GET",
+		Host:       u.Host,
+		URL:        u,
+		RequestURI: u.RequestURI(),
+		Header:     http.Header{},
 	}
 	for _, c := range cookies {
 		req.AddCookie(c)
@@ -226,6 +230,21 @@ func (s *IntegrationSuite) TestVhostRedirectQueryTokenSingleOriginError(c *check
 		http.StatusBadRequest,
 		"",
 	)
+}
+
+// If client requests an attachment by putting ?disposition=attachment
+// in the query string, and gets redirected, the redirect target
+// should respond with an attachment.
+func (s *IntegrationSuite) TestVhostRedirectQueryTokenRequestAttachment(c *check.C) {
+	resp := s.testVhostRedirectTokenToCookie(c, "GET",
+		arvadostest.FooCollection+".example.com/foo",
+		"?disposition=attachment&api_token="+arvadostest.ActiveToken,
+		"",
+		"",
+		http.StatusOK,
+		"foo",
+	)
+	c.Check(strings.Split(resp.Header().Get("Content-Disposition"), ";")[0], check.Equals, "attachment")
 }
 
 func (s *IntegrationSuite) TestVhostRedirectQueryTokenTrustAllContent(c *check.C) {
@@ -315,14 +334,57 @@ func (s *IntegrationSuite) TestAnonymousTokenError(c *check.C) {
 	)
 }
 
+func (s *IntegrationSuite) TestRange(c *check.C) {
+	u, _ := url.Parse("http://example.com/c=" + arvadostest.HelloWorldCollection + "/Hello%20world.txt")
+	req := &http.Request{
+		Method:     "GET",
+		Host:       u.Host,
+		URL:        u,
+		RequestURI: u.RequestURI(),
+		Header:     http.Header{"Range": {"bytes=0-4"}},
+	}
+	resp := httptest.NewRecorder()
+	(&handler{}).ServeHTTP(resp, req)
+	c.Check(resp.Code, check.Equals, http.StatusPartialContent)
+	c.Check(resp.Body.String(), check.Equals, "Hello")
+	c.Check(resp.Header().Get("Content-Length"), check.Equals, "5")
+	c.Check(resp.Header().Get("Content-Range"), check.Equals, "bytes 0-4/12")
+
+	req.Header.Set("Range", "bytes=0-")
+	resp = httptest.NewRecorder()
+	(&handler{}).ServeHTTP(resp, req)
+	// 200 and 206 are both correct:
+	c.Check(resp.Code, check.Equals, http.StatusOK)
+	c.Check(resp.Body.String(), check.Equals, "Hello world\n")
+	c.Check(resp.Header().Get("Content-Length"), check.Equals, "12")
+
+	// Unsupported ranges are ignored
+	for _, hdr := range []string{
+		"bytes=5-5",  // non-zero start byte
+		"bytes=-5",   // last 5 bytes
+		"cubits=0-5", // unsupported unit
+		"bytes=0-340282366920938463463374607431768211456", // 2^128
+	} {
+		req.Header.Set("Range", hdr)
+		resp = httptest.NewRecorder()
+		(&handler{}).ServeHTTP(resp, req)
+		c.Check(resp.Code, check.Equals, http.StatusOK)
+		c.Check(resp.Body.String(), check.Equals, "Hello world\n")
+		c.Check(resp.Header().Get("Content-Length"), check.Equals, "12")
+		c.Check(resp.Header().Get("Content-Range"), check.Equals, "")
+		c.Check(resp.Header().Get("Accept-Ranges"), check.Equals, "bytes")
+	}
+}
+
 func (s *IntegrationSuite) testVhostRedirectTokenToCookie(c *check.C, method, hostPath, queryString, contentType, reqBody string, expectStatus int, expectRespBody string) *httptest.ResponseRecorder {
 	u, _ := url.Parse(`http://` + hostPath + queryString)
 	req := &http.Request{
-		Method: method,
-		Host:   u.Host,
-		URL:    u,
-		Header: http.Header{"Content-Type": {contentType}},
-		Body:   ioutil.NopCloser(strings.NewReader(reqBody)),
+		Method:     method,
+		Host:       u.Host,
+		URL:        u,
+		RequestURI: u.RequestURI(),
+		Header:     http.Header{"Content-Type": {contentType}},
+		Body:       ioutil.NopCloser(strings.NewReader(reqBody)),
 	}
 
 	resp := httptest.NewRecorder()
@@ -335,15 +397,16 @@ func (s *IntegrationSuite) testVhostRedirectTokenToCookie(c *check.C, method, ho
 	if resp.Code != http.StatusSeeOther {
 		return resp
 	}
-	c.Check(resp.Body.String(), check.Matches, `.*href="//`+regexp.QuoteMeta(html.EscapeString(hostPath))+`".*`)
+	c.Check(resp.Body.String(), check.Matches, `.*href="//`+regexp.QuoteMeta(html.EscapeString(hostPath))+`(\?[^"]*)?".*`)
 	cookies := (&http.Response{Header: resp.Header()}).Cookies()
 
 	u, _ = u.Parse(resp.Header().Get("Location"))
 	req = &http.Request{
-		Method: "GET",
-		Host:   u.Host,
-		URL:    u,
-		Header: http.Header{},
+		Method:     "GET",
+		Host:       u.Host,
+		URL:        u,
+		RequestURI: u.RequestURI(),
+		Header:     http.Header{},
 	}
 	for _, c := range cookies {
 		req.AddCookie(c)
