@@ -338,6 +338,9 @@ server {
   ssl_certificate         <span class="userinput">/YOUR/PATH/TO/cert.pem</span>;
   ssl_certificate_key     <span class="userinput">/YOUR/PATH/TO/cert.key</span>;
 
+  # The server needs to accept potentially large refpacks from push clients.
+  client_max_body_size 50m;
+
   location  / {
     proxy_pass            http://arvados-git-httpd;
   }
