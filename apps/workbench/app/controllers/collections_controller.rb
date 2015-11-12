@@ -1,6 +1,5 @@
 require "arvados/keep"
 require "uri"
-require "cgi"
 
 class CollectionsController < ApplicationController
   include ActionController::Live
@@ -369,9 +368,9 @@ class CollectionsController < ApplicationController
       uri.path += 't=' + opts[:path_token] + '/'
     end
     uri.path += '_/'
-    uri.path += CGI::escape(file)
+    uri.path += URI.escape(file)
 
-    query = CGI::parse(uri.query || '')
+    query = Hash[URI.decode_www_form(uri.query || '')]
     { query_token: 'api_token',
       disposition: 'disposition' }.each do |opt, param|
       if opts.include? opt
@@ -379,7 +378,7 @@ class CollectionsController < ApplicationController
       end
     end
     unless query.empty?
-      uri.query = query.to_query
+      uri.query = URI.encode_www_form(query)
     end
 
     uri.to_s
