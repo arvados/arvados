@@ -698,7 +698,7 @@ class KeepClientTimeout(unittest.TestCase, tutil.ApiClientMock):
     def test_high_bandwidth_large_server_delay_success(self):
         self.server.setbandwidth(63*self.BANDWIDTH_LOW_LIM)
         kc = self.keepClient()
-        self.server.setdelays(response=self.TIMEOUT_TIME-self.TIMEOUT_DELTA)
+        self.server.setdelays(response=self.TIMEOUT_TIME-2*self.TIMEOUT_DELTA)
         loc = kc.put(self.DATA, copies=1, num_retries=0)
         self.assertEqual(self.DATA, kc.get(loc, num_retries=0))
 
