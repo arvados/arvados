@@ -65,7 +65,8 @@ class Handler(BaseHTTPServer.BaseHTTPRequestHandler, object):
             num_bytes = len(data_to_write)
             num_sent_bytes = 0
             while num_sent_bytes < num_bytes:
-                if num_sent_bytes > 1000 and not outage_happened:
+                if num_sent_bytes > self.server.bandwidth and not outage_happened:
+                    print "Delaying write %fs" % (self.server.delays['mid_write'])
                     self.server._do_delay('mid_write')
                     outage_happened = True
                 num_write_bytes = min(BYTES_PER_WRITE, num_bytes - num_sent_bytes)
@@ -88,7 +89,8 @@ class Handler(BaseHTTPServer.BaseHTTPRequestHandler, object):
             outage_happened = False
             bytes_read = 0
             while bytes_to_read > bytes_read:
-                if bytes_read > 1000 and not outage_happened:
+                if bytes_read > self.server.bandwidth and not outage_happened:
+                    print "Delaying read %fs" % (self.server.delays['mid_read'])
                     self.server._do_delay('mid_read')
                     outage_happened = True
                 next_bytes_to_read = min(BYTES_PER_READ, bytes_to_read - bytes_read)
