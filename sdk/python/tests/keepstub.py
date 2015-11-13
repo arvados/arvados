@@ -39,7 +39,7 @@ class Server(SocketServer.ThreadingMixIn, BaseHTTPServer.HTTPServer, object):
 
     def setbandwidth(self, bandwidth):
         """For future requests, impose bandwidth limits."""
-        self.bandwidth = bandwidth*1024.0
+        self.bandwidth = float(bandwidth)
 
     def _sleep_at_least(self, seconds):
         """Sleep for given time, even if signals are received."""
@@ -50,17 +50,17 @@ class Server(SocketServer.ThreadingMixIn, BaseHTTPServer.HTTPServer, object):
             todo = wake - time.time()
 
     def _do_delay(self, k):
-        #if self.delays[k] > 0:
-        #    print "Delaying %f seconds for %s delay" % (self.delays[k], k)
+        if self.delays[k] > 0:
+            print "Delaying %f seconds for %s delay" % (self.delays[k], k)
         self._sleep_at_least(self.delays[k])
 
 
 class Handler(BaseHTTPServer.BaseHTTPRequestHandler, object):
     def wfile_bandwidth_write(self, data_to_write):
-        BYTES_PER_WRITE = 10
         if self.server.bandwidth == None and self.server.delays['mid_write'] == 0:
             self.wfile.write(data_to_write)
         else:
+            BYTES_PER_WRITE = int(self.server.bandwidth/4.0) or 32768
             outage_happened = False
             num_bytes = len(data_to_write)
             num_sent_bytes = 0
@@ -74,17 +74,17 @@ class Handler(BaseHTTPServer.BaseHTTPRequestHandler, object):
                     wait = 0
                 else:
                     wait = num_write_bytes / self.server.bandwidth
-                #print "Bandwidth: %f KiB. Want to write total of %f bytes. Writing %f bytes now. Waiting %f seconds" % (self.server.bandwidth/1024.0, num_bytes, num_write_bytes, wait)
+                print "Bandwidth: %f b/s. Want to write total of %f bytes. Writing %f bytes now. Waiting %f seconds" % (self.server.bandwidth, num_bytes, num_write_bytes, wait)
                 self.server._sleep_at_least(wait)
                 self.wfile.write(data_to_write[num_sent_bytes:num_sent_bytes+num_write_bytes])
                 num_sent_bytes += num_write_bytes
         return None
 
     def rfile_bandwidth_read(self, bytes_to_read):
-        BYTES_PER_READ = 10
         if self.server.bandwidth == None and self.server.delays['mid_read'] == 0:
             return self.rfile.read(bytes_to_read)
         else:
+            BYTES_PER_READ = int(self.server.bandwidth/4.0) or 32768
             data = ''
             outage_happened = False
             bytes_read = 0
@@ -101,7 +101,7 @@ class Handler(BaseHTTPServer.BaseHTTPRequestHandler, object):
                     wait = 0
                 else:
                     wait = next_bytes_to_read / self.server.bandwidth - time_spent_getting_data
-                #print "Bandwidth: %f KiB. Wanted total of %f bytes. Now reading %f bytes. Have read %f bytes. Waiting %f seconds" % (self.server.bandwidth/1024.0, bytes_to_read, next_bytes_to_read, len(data), wait)
+                print "Bandwidth: %f b/s. Wanted total of %f bytes. Now reading %f bytes. Have read %f bytes. Waiting %f seconds" % (self.server.bandwidth, bytes_to_read, next_bytes_to_read, len(data), wait)
                 if wait > 0:
                     self.server._sleep_at_least(wait)
                 bytes_read += next_bytes_to_read

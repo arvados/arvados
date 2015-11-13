@@ -291,7 +291,7 @@ class KeepClientServiceTestCase(unittest.TestCase, tutil.ApiClientMock):
                 int(arvados.KeepClient.DEFAULT_TIMEOUT[1]))
             self.assertEqual(
                 mock.responses[0].getopt(pycurl.LOW_SPEED_LIMIT),
-                int(arvados.KeepClient.DEFAULT_TIMEOUT[2]*1024))
+                int(arvados.KeepClient.DEFAULT_TIMEOUT[2]))
 
     def test_put_timeout(self):
         api_client = self.mock_keep_services(count=1)
@@ -308,7 +308,7 @@ class KeepClientServiceTestCase(unittest.TestCase, tutil.ApiClientMock):
                 int(arvados.KeepClient.DEFAULT_TIMEOUT[1]))
             self.assertEqual(
                 mock.responses[0].getopt(pycurl.LOW_SPEED_LIMIT),
-                int(arvados.KeepClient.DEFAULT_TIMEOUT[2]*1024))
+                int(arvados.KeepClient.DEFAULT_TIMEOUT[2]))
 
     def test_proxy_get_timeout(self):
         api_client = self.mock_keep_services(service_type='proxy', count=1)
@@ -325,7 +325,7 @@ class KeepClientServiceTestCase(unittest.TestCase, tutil.ApiClientMock):
                 int(arvados.KeepClient.DEFAULT_PROXY_TIMEOUT[1]))
             self.assertEqual(
                 mock.responses[0].getopt(pycurl.LOW_SPEED_LIMIT),
-                int(arvados.KeepClient.DEFAULT_PROXY_TIMEOUT[2]*1024))
+                int(arvados.KeepClient.DEFAULT_PROXY_TIMEOUT[2]))
 
     def test_proxy_put_timeout(self):
         api_client = self.mock_keep_services(service_type='proxy', count=1)
@@ -342,7 +342,7 @@ class KeepClientServiceTestCase(unittest.TestCase, tutil.ApiClientMock):
                 int(arvados.KeepClient.DEFAULT_PROXY_TIMEOUT[1]))
             self.assertEqual(
                 mock.responses[0].getopt(pycurl.LOW_SPEED_LIMIT),
-                int(arvados.KeepClient.DEFAULT_PROXY_TIMEOUT[2]*1024))
+                int(arvados.KeepClient.DEFAULT_PROXY_TIMEOUT[2]))
 
     def check_no_services_error(self, verb, exc_class):
         api_client = mock.MagicMock(name='api_client')
@@ -550,8 +550,8 @@ class KeepClientRendezvousTestCase(unittest.TestCase, tutil.ApiClientMock):
     def test_put_error_shows_probe_order(self):
         self.check_64_zeros_error_order('put', arvados.errors.KeepWriteError)
 
-
-class KeepClientTimeout(unittest.TestCase, tutil.ApiClientMock):
+@unittest.skip('Takes a long time')
+class KeepClientTimeoutTakesTime(unittest.TestCase, tutil.ApiClientMock):
     SMALL_DATA = 'x'*2**22
     MEDIUM_DATA = 'x'*2**22
     BIG_DATA = 'x' * 2**22
@@ -611,18 +611,6 @@ class KeepClientTimeout(unittest.TestCase, tutil.ApiClientMock):
         return arvados.KeepClient(
             api_client=self.api_client,
             timeout=timeouts)
-
-    def test_timeout_slow_connect(self):
-        # Can't simulate TCP delays with our own socket. Leave our
-        # stub server running uselessly, and try to connect to an
-        # unroutable IP address instead.
-        self.api_client = self.mock_keep_services(
-            count=1,
-            service_host='240.0.0.0',
-        )
-        with self.assertTakesBetween(0.1, 0.5):
-            with self.assertRaises(arvados.errors.KeepWriteError):
-                self.keepClient().put(self.SMALL_DATA, copies=1, num_retries=0)
 
     def test_low_bandwidth_no_delays_success(self):
         self.server.setbandwidth(self.BANDWIDTH_LOW_LIM+self.BANDWIDTH_DELTA)
@@ -747,6 +735,114 @@ class KeepClientTimeout(unittest.TestCase, tutil.ApiClientMock):
         with self.assertTakesGreater(self.TIMEOUT_TIME):
             with self.assertRaises(arvados.errors.KeepWriteError):
                 kc.put(self.BIG_DATA, copies=1, num_retries=0)
+
+class KeepClientTimeout(unittest.TestCase, tutil.ApiClientMock):
+    DATA = 'x'*2**11
+    BANDWIDTH_LOW_LIM = 1024
+    BANDWIDTH_DELTA = 128
+    TIMEOUT_TIME = 1.0
+    #Needs to be low to trigger bandwidth errors before we run out of data
+    TIMEOUT_DELTA = 0.5
+    #This is a variable determined by trial-and-error which probably depends on
+    #  the implementation of keepstub.py
+    class assertTakesBetween(unittest.TestCase):
+        def __init__(self, tmin, tmax):
+            self.tmin = tmin
+            self.tmax = tmax
+
+        def __enter__(self):
+            self.t0 = time.time()
+
+        def __exit__(self, *args, **kwargs):
+            self.assertGreater(time.time() - self.t0, self.tmin)
+            self.assertLess(time.time() - self.t0, self.tmax)
+
+    class assertTakesGreater(unittest.TestCase):
+        def __init__(self, tmin):
+            self.tmin = tmin
+
+        def __enter__(self):
+            self.t0 = time.time()
+
+        def __exit__(self, *args, **kwargs):
+            self.assertGreater(time.time() - self.t0, self.tmin)
+
+    def setUp(self):
+        sock = socket.socket()
+        sock.bind(('0.0.0.0', 0))
+        self.port = sock.getsockname()[1]
+        sock.close()
+        self.server = keepstub.Server(('0.0.0.0', self.port), keepstub.Handler)
+        self.thread = threading.Thread(target=self.server.serve_forever)
+        self.thread.daemon = True # Exit thread if main proc exits
+        self.thread.start()
+        self.api_client = self.mock_keep_services(
+            count=1,
+            service_host='localhost',
+            service_port=self.port,
+        )
+
+    def tearDown(self):
+        self.server.shutdown()
+
+    def keepClient(self, timeouts=(0.1, TIMEOUT_TIME, BANDWIDTH_LOW_LIM)):
+        return arvados.KeepClient(
+            api_client=self.api_client,
+            timeout=timeouts)
+
+    def test_timeout_slow_connect(self):
+        # Can't simulate TCP delays with our own socket. Leave our
+        # stub server running uselessly, and try to connect to an
+        # unroutable IP address instead.
+        self.api_client = self.mock_keep_services(
+            count=1,
+            service_host='240.0.0.0',
+        )
+        with self.assertTakesBetween(0.1, 0.5):
+            with self.assertRaises(arvados.errors.KeepWriteError):
+                self.keepClient().put(self.DATA, copies=1, num_retries=0)
+
+    def test_low_bandwidth_no_delays_success(self):
+        self.server.setbandwidth(self.BANDWIDTH_LOW_LIM+self.BANDWIDTH_DELTA)
+        kc = self.keepClient()
+        loc = kc.put(self.DATA, copies=1, num_retries=0)
+        self.assertEqual(self.DATA, kc.get(loc, num_retries=0))
+
+    def test_too_low_bandwidth_no_delays_failure(self):
+        kc = self.keepClient()
+        loc = kc.put(self.DATA, copies=1, num_retries=0)
+        self.server.setbandwidth(self.BANDWIDTH_LOW_LIM-self.BANDWIDTH_DELTA)
+        # Check that lessening bandwidth corresponds to failing
+        with self.assertTakesGreater(self.TIMEOUT_TIME):
+            with self.assertRaises(arvados.errors.KeepReadError) as e:
+                kc.get(loc, num_retries=0)
+        with self.assertTakesGreater(self.TIMEOUT_TIME):
+            with self.assertRaises(arvados.errors.KeepWriteError):
+                kc.put(self.DATA, copies=1, num_retries=0)
+
+    def test_low_bandwidth_with_server_response_delay_failure(self):
+        kc = self.keepClient()
+        loc = kc.put(self.DATA, copies=1, num_retries=0)
+        self.server.setbandwidth(self.BANDWIDTH_LOW_LIM)
+        self.server.setdelays(response=self.TIMEOUT_DELTA)
+        with self.assertTakesGreater(self.TIMEOUT_TIME):
+            with self.assertRaises(arvados.errors.KeepReadError) as e:
+                kc.get(loc, num_retries=0)
+        with self.assertTakesGreater(self.TIMEOUT_TIME):
+            with self.assertRaises(arvados.errors.KeepWriteError):
+                kc.put(self.DATA, copies=1, num_retries=0)
+
+    def test_low_bandwidth_with_server_mid_delay_failure(self):
+        kc = self.keepClient()
+        loc = kc.put(self.DATA, copies=1, num_retries=0)
+        self.server.setbandwidth(self.BANDWIDTH_LOW_LIM)
+        self.server.setdelays(mid_write=self.TIMEOUT_DELTA, mid_read=self.TIMEOUT_DELTA)
+        with self.assertTakesGreater(self.TIMEOUT_TIME):
+            with self.assertRaises(arvados.errors.KeepReadError) as e:
+                kc.get(loc, num_retries=0)
+        with self.assertTakesGreater(self.TIMEOUT_TIME):
+            with self.assertRaises(arvados.errors.KeepWriteError):
+                kc.put(self.DATA, copies=1, num_retries=0)
 
 class KeepClientGatewayTestCase(unittest.TestCase, tutil.ApiClientMock):
     def mock_disks_and_gateways(self, disks=3, gateways=1):
