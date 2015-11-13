@@ -22,7 +22,9 @@ class Server(SocketServer.ThreadingMixIn, BaseHTTPServer.HTTPServer, object):
             'response_body': 0,
             # before returning from handler (thus setting response EOF)
             'response_close': 0,
+            # after writing over 1s worth of data at self.bandwidth
             'mid_write': 0,
+            # after reading over 1s worth of data at self.bandwidth
             'mid_read': 0,
         }
         #If self.bandwidth = None, function at maximum bandwidth
@@ -64,17 +66,17 @@ class Handler(BaseHTTPServer.BaseHTTPRequestHandler, object):
             num_sent_bytes = 0
             while num_sent_bytes < num_bytes:
                 if num_sent_bytes > self.server.bandwidth and not outage_happened:
-                    #print "Delaying write %fs" % (self.server.delays['mid_write'])
                     self.server._do_delay('mid_write')
                     outage_happened = True
-                num_write_bytes = min(BYTES_PER_WRITE, num_bytes - num_sent_bytes)
+                num_write_bytes = min(BYTES_PER_WRITE,
+                    num_bytes - num_sent_bytes)
                 if self.server.bandwidth == None:
                     wait = 0
                 else:
                     wait = num_write_bytes / self.server.bandwidth
-                #print "Bandwidth: %f b/s. Want to write total of %f bytes. Writing %f bytes now. Waiting %f seconds" % (self.server.bandwidth, num_bytes, num_write_bytes, wait)
                 self.server._sleep_at_least(wait)
-                self.wfile.write(data_to_write[num_sent_bytes:num_sent_bytes+num_write_bytes])
+                self.wfile.write(data_to_write[
+                    num_sent_bytes:num_sent_bytes+num_write_bytes])
                 num_sent_bytes += num_write_bytes
         return None
 
@@ -88,18 +90,17 @@ class Handler(BaseHTTPServer.BaseHTTPRequestHandler, object):
             bytes_read = 0
             while bytes_to_read > bytes_read:
                 if bytes_read > self.server.bandwidth and not outage_happened:
-                    #print "Delaying read %fs" % (self.server.delays['mid_read'])
                     self.server._do_delay('mid_read')
                     outage_happened = True
-                next_bytes_to_read = min(BYTES_PER_READ, bytes_to_read - bytes_read)
+                next_bytes_to_read = min(BYTES_PER_READ,
+                    bytes_to_read - bytes_read)
                 t0 = time.time()
                 data += self.rfile.read(next_bytes_to_read)
                 time_spent_getting_data = time.time() - t0
                 if self.server.bandwidth == None:
                     wait = 0
                 else:
-                    wait = next_bytes_to_read / self.server.bandwidth - time_spent_getting_data
-                #print "Bandwidth: %f b/s. Wanted total of %f bytes. Now reading %f bytes. Have read %f bytes. Waiting %f seconds" % (self.server.bandwidth, bytes_to_read, next_bytes_to_read, len(data), wait)
+                    wait = next_bytes_to_read/self.server.bandwidth - time_spent_getting_data
                 if wait > 0:
                     self.server._sleep_at_least(wait)
                 bytes_read += next_bytes_to_read
@@ -121,13 +122,11 @@ class Handler(BaseHTTPServer.BaseHTTPRequestHandler, object):
         self.send_header('Content-type', 'application/octet-stream')
         self.end_headers()
         self.server._do_delay('response_body')
-        #print "Writing to client"
         self.wfile_bandwidth_write(self.server.store[datahash])
         self.server._do_delay('response_close')
 
     def do_PUT(self):
         self.server._do_delay('request_body')
-
         # The comments at https://bugs.python.org/issue1491 implies that Python
         # 2.7 BaseHTTPRequestHandler was patched to support 100 Continue, but
         # reading the actual code that ships in Debian it clearly is not, so we
@@ -135,7 +134,6 @@ class Handler(BaseHTTPServer.BaseHTTPRequestHandler, object):
         #print "Writing continue"
         self.wfile_bandwidth_write("%s %d %s\r\n\r\n" %
                          (self.protocol_version, 100, "Continue"))
-        #print "Reading input from client"
         data = self.rfile_bandwidth_read(int(self.headers.getheader('content-length')))
         datahash = hashlib.md5(data).hexdigest()
         self.server.store[datahash] = data
@@ -144,7 +142,6 @@ class Handler(BaseHTTPServer.BaseHTTPRequestHandler, object):
         self.send_header('Content-type', 'text/plain')
         self.end_headers()
         self.server._do_delay('response_body')
-        #print "Write output hash"
         self.wfile_bandwidth_write(datahash + '+' + str(len(data)))
         self.server._do_delay('response_close')
 
