@@ -4,6 +4,9 @@ import (
 	"encoding/json"
 	"net/http"
 	"net/http/httptest"
+	"net/url"
+	"strconv"
+	"strings"
 	"testing"
 
 	"git.curoverse.com/arvados.git/sdk/go/arvadosclient"
@@ -45,7 +48,6 @@ func (s *KeepSuite) TestSendTrashLists(c *C) {
 		map[string]string{})
 
 	err := SendTrashLists(&kc, tl)
-	server.Close()
 
 	c.Check(err, IsNil)
 
@@ -86,4 +88,151 @@ func (s *KeepSuite) TestSendTrashListErrorResponse(c *C) {
 
 func (s *KeepSuite) TestSendTrashListUnreachable(c *C) {
 	sendTrashListError(c, httptest.NewUnstartedServer(&TestHandler{}))
+}
+
+type APIStub struct {
+	respStatus   int
+	responseBody string
+}
+
+func (h *APIStub) ServeHTTP(resp http.ResponseWriter, req *http.Request) {
+	resp.WriteHeader(h.respStatus)
+	resp.Write([]byte(h.responseBody))
+}
+
+type KeepServerStub struct {
+}
+
+func (ts *KeepServerStub) ServeHTTP(resp http.ResponseWriter, req *http.Request) {
+	http.Error(resp, "oops", 500)
+}
+
+func (s *KeepSuite) TestGetKeepServers_UnsupportedServiceType(c *C) {
+	keepServers := ServiceList{
+		ItemsAvailable: 1,
+		KeepServers: []ServerAddress{{
+			SSL:         false,
+			Host:        "example.com",
+			Port:        12345,
+			UUID:        "abcdefg",
+			ServiceType: "nondisk",
+		}},
+	}
+
+	ksJSON, _ := json.Marshal(keepServers)
+	apiStub := APIStub{200, string(ksJSON)}
+
+	api := httptest.NewServer(&apiStub)
+	defer api.Close()
+
+	arv := arvadosclient.ArvadosClient{
+		Scheme:    "http",
+		ApiServer: api.URL[7:],
+		ApiToken:  "abc123",
+		Client:    &http.Client{Transport: &http.Transport{}},
+	}
+
+	kc := keepclient.KeepClient{Arvados: &arv, Client: &http.Client{}}
+	kc.SetServiceRoots(map[string]string{"xxxx": "http://example.com:23456"},
+		map[string]string{"xxxx": "http://example.com:23456"},
+		map[string]string{})
+
+	params := GetKeepServersParams{
+		Client: arv,
+		Logger: nil,
+		Limit:  10,
+	}
+
+	_, err := GetKeepServersAndSummarize(params)
+	c.Assert(err, ErrorMatches, ".*Unsupported service type.*")
+}
+
+func (s *KeepSuite) TestGetKeepServers_ReceivedTooFewServers(c *C) {
+	keepServers := ServiceList{
+		ItemsAvailable: 2,
+		KeepServers: []ServerAddress{{
+			SSL:         false,
+			Host:        "example.com",
+			Port:        12345,
+			UUID:        "abcdefg",
+			ServiceType: "disk",
+		}},
+	}
+
+	ksJSON, _ := json.Marshal(keepServers)
+	apiStub := APIStub{200, string(ksJSON)}
+
+	api := httptest.NewServer(&apiStub)
+	defer api.Close()
+
+	arv := arvadosclient.ArvadosClient{
+		Scheme:    "http",
+		ApiServer: api.URL[7:],
+		ApiToken:  "abc123",
+		Client:    &http.Client{Transport: &http.Transport{}},
+	}
+
+	kc := keepclient.KeepClient{Arvados: &arv, Client: &http.Client{}}
+	kc.SetServiceRoots(map[string]string{"xxxx": "http://example.com:23456"},
+		map[string]string{"xxxx": "http://example.com:23456"},
+		map[string]string{})
+
+	params := GetKeepServersParams{
+		Client: arv,
+		Logger: nil,
+		Limit:  10,
+	}
+
+	_, err := GetKeepServersAndSummarize(params)
+	c.Assert(err, ErrorMatches, ".*Did not receive all available keep servers.*")
+}
+
+func (s *KeepSuite) TestGetKeepServers_ErrorGettingKeepServerStatus(c *C) {
+	ksStub := KeepServerStub{}
+	ks := httptest.NewServer(&ksStub)
+	defer ks.Close()
+
+	ksURL, err := url.Parse(ks.URL)
+	c.Check(err, IsNil)
+	ksURLParts := strings.Split(ksURL.Host, ":")
+	ksPort, err := strconv.Atoi(ksURLParts[1])
+	c.Check(err, IsNil)
+
+	servers_list := ServiceList{
+		ItemsAvailable: 1,
+		KeepServers: []ServerAddress{{
+			SSL:         false,
+			Host:        strings.Split(ksURL.Host, ":")[0],
+			Port:        ksPort,
+			UUID:        "abcdefg",
+			ServiceType: "disk",
+		}},
+	}
+	ksJSON, _ := json.Marshal(servers_list)
+	apiStub := APIStub{200, string(ksJSON)}
+
+	api := httptest.NewServer(&apiStub)
+	defer api.Close()
+
+	arv := arvadosclient.ArvadosClient{
+		Scheme:    "http",
+		ApiServer: api.URL[7:],
+		ApiToken:  "abc123",
+		Client:    &http.Client{Transport: &http.Transport{}},
+	}
+
+	kc := keepclient.KeepClient{Arvados: &arv, Client: &http.Client{}}
+	kc.SetServiceRoots(map[string]string{"xxxx": ks.URL},
+		map[string]string{"xxxx": ks.URL},
+		map[string]string{})
+
+	params := GetKeepServersParams{
+		Client: arv,
+		Logger: nil,
+		Limit:  10,
+	}
+
+	// This fails during GetServerStatus
+	_, err = GetKeepServersAndSummarize(params)
+	c.Assert(err, ErrorMatches, ".*Error during GetServerContents; no host info found.*")
 }
