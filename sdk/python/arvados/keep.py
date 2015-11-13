@@ -226,12 +226,12 @@ class KeepClient(object):
 
     # Default Keep server connection timeout:  2 seconds
     # Default Keep server read timeout:       64 seconds
-    # Default Keep server bandwidth minimum:  32 KiB per second
+    # Default Keep server bandwidth minimum:  32768 bytes per second
     # Default Keep proxy connection timeout:  20 seconds
     # Default Keep proxy read timeout:        64 seconds
-    # Default Keep proxy bandwidth minimum:   32 KiB per second
-    DEFAULT_TIMEOUT = (2, 64, 32)
-    DEFAULT_PROXY_TIMEOUT = (20, 64, 32)
+    # Default Keep proxy bandwidth minimum:   32768 bytes per second
+    DEFAULT_TIMEOUT = (2, 64, 32768)
+    DEFAULT_PROXY_TIMEOUT = (20, 64, 32768)
 
     class ThreadLimiter(object):
         """
@@ -498,7 +498,7 @@ class KeepClient(object):
                 bandwidth_kib_per_s = self.DEFAULT_TIMEOUT[2]
             curl.setopt(pycurl.CONNECTTIMEOUT_MS, int(conn_t*1000))
             curl.setopt(pycurl.LOW_SPEED_TIME, int(xfer_t))
-            curl.setopt(pycurl.LOW_SPEED_LIMIT, int(bandwidth_kib_per_s*1024))
+            curl.setopt(pycurl.LOW_SPEED_LIMIT, int(bandwidth_kib_per_s))
 
         def _headerfunction(self, header_line):
             header_line = header_line.decode('iso-8859-1')
