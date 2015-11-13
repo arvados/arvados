@@ -1698,20 +1698,24 @@ sub log_writer_finish()
 
   close($log_pipe_in);
 
+  my $logger_failed = 0;
   my $read_result = log_writer_read_output(120);
   if ($read_result == -1) {
+    $logger_failed = -1;
     Log (undef, "timed out reading from 'arv-put'");
   } elsif ($read_result != 0) {
+    $logger_failed = -2;
     Log(undef, "failed to read arv-put log manifest to EOF");
   }
 
   waitpid($log_pipe_pid, 0);
   if ($?) {
+    $logger_failed ||= $?;
     Log(undef, "log_writer_finish: arv-put exited " . exit_status_s($?))
   }
 
   close($log_pipe_out);
-  my $arv_put_output = $log_pipe_out_buf;
+  my $arv_put_output = $logger_failed ? undef : $log_pipe_out_buf;
   $log_pipe_pid = $log_pipe_in = $log_pipe_out = $log_pipe_out_buf =
       $log_pipe_out_select = undef;
 
@@ -1777,13 +1781,13 @@ sub save_meta
   my $justcheckpoint = shift; # false if this will be the last meta saved
   return if $justcheckpoint;  # checkpointing is not relevant post-Warehouse.pm
   return unless log_writer_is_active();
+  my $log_manifest = log_writer_finish();
+  return unless defined($log_manifest);
 
-  my $log_manifest = "";
   if ($Job->{log}) {
     my $prev_log_coll = api_call("collections/get", uuid => $Job->{log});
-    $log_manifest .= $prev_log_coll->{manifest_text};
+    $log_manifest = $prev_log_coll->{manifest_text} . $log_manifest;
   }
-  $log_manifest .= log_writer_finish();
 
   my $log_coll = api_call(
     "collections/create", ensure_unique_name => 1, collection => {
