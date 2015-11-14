@@ -553,12 +553,8 @@ class KeepClientRendezvousTestCase(unittest.TestCase, tutil.ApiClientMock):
 class KeepClientTimeout(unittest.TestCase, tutil.ApiClientMock):
     DATA = 'x'*2**11
     BANDWIDTH_LOW_LIM = 1024
-    BANDWIDTH_DELTA = 256
     TIMEOUT_TIME = 1.0
     #Needs to be low to trigger bandwidth errors before we run out of data
-    TIMEOUT_DELTA = 0.5
-    #This is a variable determined by trial-and-error which probably depends on
-    #  the implementation of keepstub.py
     class assertTakesBetween(unittest.TestCase):
         def __init__(self, tmin, tmax):
             self.tmin = tmin
@@ -617,7 +613,7 @@ class KeepClientTimeout(unittest.TestCase, tutil.ApiClientMock):
                 self.keepClient().put(self.DATA, copies=1, num_retries=0)
 
     def test_low_bandwidth_no_delays_success(self):
-        self.server.setbandwidth(self.BANDWIDTH_LOW_LIM+self.BANDWIDTH_DELTA)
+        self.server.setbandwidth(2*self.BANDWIDTH_LOW_LIM)
         kc = self.keepClient()
         loc = kc.put(self.DATA, copies=1, num_retries=0)
         self.assertEqual(self.DATA, kc.get(loc, num_retries=0))
@@ -625,7 +621,7 @@ class KeepClientTimeout(unittest.TestCase, tutil.ApiClientMock):
     def test_too_low_bandwidth_no_delays_failure(self):
         kc = self.keepClient()
         loc = kc.put(self.DATA, copies=1, num_retries=0)
-        self.server.setbandwidth(self.BANDWIDTH_LOW_LIM-self.BANDWIDTH_DELTA)
+        self.server.setbandwidth(0.5*self.BANDWIDTH_LOW_LIM)
         # Check that lessening bandwidth corresponds to failing
         with self.assertTakesGreater(self.TIMEOUT_TIME):
             with self.assertRaises(arvados.errors.KeepReadError) as e:
@@ -638,7 +634,7 @@ class KeepClientTimeout(unittest.TestCase, tutil.ApiClientMock):
         kc = self.keepClient()
         loc = kc.put(self.DATA, copies=1, num_retries=0)
         self.server.setbandwidth(self.BANDWIDTH_LOW_LIM)
-        self.server.setdelays(response=self.TIMEOUT_DELTA)
+        self.server.setdelays(response=self.TIMEOUT_TIME)
         with self.assertTakesGreater(self.TIMEOUT_TIME):
             with self.assertRaises(arvados.errors.KeepReadError) as e:
                 kc.get(loc, num_retries=0)
@@ -650,7 +646,7 @@ class KeepClientTimeout(unittest.TestCase, tutil.ApiClientMock):
         kc = self.keepClient()
         loc = kc.put(self.DATA, copies=1, num_retries=0)
         self.server.setbandwidth(self.BANDWIDTH_LOW_LIM)
-        self.server.setdelays(mid_write=self.TIMEOUT_DELTA, mid_read=self.TIMEOUT_DELTA)
+        self.server.setdelays(mid_write=self.TIMEOUT_TIME, mid_read=self.TIMEOUT_TIME)
         with self.assertTakesGreater(self.TIMEOUT_TIME):
             with self.assertRaises(arvados.errors.KeepReadError) as e:
                 kc.get(loc, num_retries=0)
