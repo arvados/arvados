@@ -64,17 +64,17 @@ class Handler(BaseHTTPServer.BaseHTTPRequestHandler, object):
             outage_happened = False
             num_bytes = len(data_to_write)
             num_sent_bytes = 0
+            target_time = time.time()
             while num_sent_bytes < num_bytes:
                 if num_sent_bytes > self.server.bandwidth and not outage_happened:
                     self.server._do_delay('mid_write')
+                    target_time += self.delays['mid_write']
                     outage_happened = True
                 num_write_bytes = min(BYTES_PER_WRITE,
                     num_bytes - num_sent_bytes)
-                if self.server.bandwidth == None:
-                    wait = 0
-                else:
-                    wait = num_write_bytes / self.server.bandwidth
-                self.server._sleep_at_least(wait)
+                if self.server.bandwidth is not None:
+                    target_time += num_write_bytes / self.server.bandwidth
+                    self.server._sleep_at_least(target_time - time.time())
                 self.wfile.write(data_to_write[
                     num_sent_bytes:num_sent_bytes+num_write_bytes])
                 num_sent_bytes += num_write_bytes
@@ -88,21 +88,18 @@ class Handler(BaseHTTPServer.BaseHTTPRequestHandler, object):
             data = ''
             outage_happened = False
             bytes_read = 0
+            target_time = time.time()
             while bytes_to_read > bytes_read:
                 if bytes_read > self.server.bandwidth and not outage_happened:
                     self.server._do_delay('mid_read')
+                    target_time += self.delays['mid_read']
                     outage_happened = True
                 next_bytes_to_read = min(BYTES_PER_READ,
                     bytes_to_read - bytes_read)
-                t0 = time.time()
                 data += self.rfile.read(next_bytes_to_read)
-                time_spent_getting_data = time.time() - t0
-                if self.server.bandwidth == None:
-                    wait = 0
-                else:
-                    wait = next_bytes_to_read/self.server.bandwidth - time_spent_getting_data
-                if wait > 0:
-                    self.server._sleep_at_least(wait)
+                if self.server.bandwidth is not None:
+                    target_time += next_bytes_to_read / self.server.bandwidth
+                    self.server._sleep_at_least(target_time - time.time())
                 bytes_read += next_bytes_to_read
         return data
 
