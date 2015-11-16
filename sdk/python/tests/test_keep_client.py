@@ -581,10 +581,10 @@ class KeepClientRendezvousTestCase(unittest.TestCase, tutil.ApiClientMock):
         self.check_64_zeros_error_order('put', arvados.errors.KeepWriteError)
 
 class KeepClientTimeout(unittest.TestCase, tutil.ApiClientMock):
+    #Needs to be low to trigger bandwidth errors before we run out of data
     DATA = 'x'*2**11
     BANDWIDTH_LOW_LIM = 1024
     TIMEOUT_TIME = 1.0
-    #Needs to be low to trigger bandwidth errors before we run out of data
     class assertTakesBetween(unittest.TestCase):
         def __init__(self, tmin, tmax):
             self.tmin = tmin
@@ -653,10 +653,10 @@ class KeepClientTimeout(unittest.TestCase, tutil.ApiClientMock):
         self.assertEqual(self.DATA, kc.get(loc, num_retries=0))
 
     def test_too_low_bandwidth_no_delays_failure(self):
+        # Check that lessening bandwidth corresponds to failing
         kc = self.keepClient()
         loc = kc.put(self.DATA, copies=1, num_retries=0)
         self.server.setbandwidth(0.5*self.BANDWIDTH_LOW_LIM)
-        # Check that lessening bandwidth corresponds to failing
         with self.assertTakesGreater(self.TIMEOUT_TIME):
             with self.assertRaises(arvados.errors.KeepReadError) as e:
                 kc.get(loc, num_retries=0)
@@ -685,6 +685,40 @@ class KeepClientTimeout(unittest.TestCase, tutil.ApiClientMock):
             with self.assertRaises(arvados.errors.KeepReadError) as e:
                 kc.get(loc, num_retries=0)
         with self.assertTakesGreater(self.TIMEOUT_TIME):
+            with self.assertRaises(arvados.errors.KeepWriteError):
+                kc.put(self.DATA, copies=1, num_retries=0)
+
+    def test_timeout_slow_request(self):
+        self.server.setdelays(request=0.2)
+        self._test_200ms()
+
+    def test_timeout_slow_response(self):
+        self.server.setdelays(response=0.2)
+        self._test_200ms()
+
+    def test_timeout_slow_response_body(self):
+        self.server.setdelays(response_body=0.2)
+        self._test_200ms()
+
+    def _test_200ms(self):
+        """Connect should be t<100ms, request should be 200ms <= t < 300ms"""
+
+        # Allow 100ms to connect, then 1s for response. Everything
+        # should work, and everything should take at least 200ms to
+        # return.
+        kc = self.keepClient(timeouts=(.1, 1))
+        with self.assertTakesBetween(.2, .3):
+            loc = kc.put(self.DATA, copies=1, num_retries=0)
+        with self.assertTakesBetween(.2, .3):
+            self.assertEqual(self.DATA, kc.get(loc, num_retries=0))
+
+        # Allow 1s to connect, then 100ms for response. Nothing should
+        # work, and everything should take at least 100ms to return.
+        kc = self.keepClient(timeouts=(1, .1)
+        with self.assertTakesBetween(.1, .2):
+            with self.assertRaises(arvados.errors.KeepReadError):
+                kc.get(loc, num_retries=0)
+        with self.assertTakesBetween(.1, .2):
             with self.assertRaises(arvados.errors.KeepWriteError):
                 kc.put(self.DATA, copies=1, num_retries=0)
 

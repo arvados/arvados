@@ -27,9 +27,6 @@ class Server(SocketServer.ThreadingMixIn, BaseHTTPServer.HTTPServer, object):
             # after reading over 1s worth of data at self.bandwidth
             'mid_read': 0,
         }
-        #If self.bandwidth = None, function at maximum bandwidth
-        #Otherwise, self.bandwidth is the maximum number of bytes per second to
-        #   operate at.
         self.bandwidth = None
         super(Server, self).__init__(*args, **kwargs)
 
@@ -40,7 +37,9 @@ class Server(SocketServer.ThreadingMixIn, BaseHTTPServer.HTTPServer, object):
             self.delays[k] = v
 
     def setbandwidth(self, bandwidth):
-        """For future requests, impose bandwidth limits."""
+        """For future requests, set the maximum bandwidth (number of bytes per
+        second) to operate at. If setbandwidth is never called, function at
+        maximum bandwidth possible"""
         self.bandwidth = float(bandwidth)
 
     def _sleep_at_least(self, seconds):
@@ -128,7 +127,6 @@ class Handler(BaseHTTPServer.BaseHTTPRequestHandler, object):
         # 2.7 BaseHTTPRequestHandler was patched to support 100 Continue, but
         # reading the actual code that ships in Debian it clearly is not, so we
         # need to send the response on the socket directly.
-        #print "Writing continue"
         self.wfile_bandwidth_write("%s %d %s\r\n\r\n" %
                          (self.protocol_version, 100, "Continue"))
         data = self.rfile_bandwidth_read(int(self.headers.getheader('content-length')))
