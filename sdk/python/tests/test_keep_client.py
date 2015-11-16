@@ -714,7 +714,7 @@ class KeepClientTimeout(unittest.TestCase, tutil.ApiClientMock):
 
         # Allow 1s to connect, then 100ms for response. Nothing should
         # work, and everything should take at least 100ms to return.
-        kc = self.keepClient(timeouts=(1, .1)
+        kc = self.keepClient(timeouts=(1, .1))
         with self.assertTakesBetween(.1, .2):
             with self.assertRaises(arvados.errors.KeepReadError):
                 kc.get(loc, num_retries=0)
