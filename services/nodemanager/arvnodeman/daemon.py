@@ -222,7 +222,7 @@ class NodeManagerDaemonActor(actor_class):
         up += sum(1
                   for i in (self.booted, self.cloud_nodes.nodes)
                   for c in i.itervalues()
-                  if size is None or c.cloud_node.size.id == size.id)
+                  if size is None or (c.cloud_node.size and c.cloud_node.size.id == size.id))
         return up
 
     def _total_price(self):
@@ -230,22 +230,23 @@ class NodeManagerDaemonActor(actor_class):
         cost += sum(c.cloud_size.get().price
                   for c in self.booting.itervalues())
         cost += sum(c.cloud_node.size.price
-                  for i in (self.booted, self.cloud_nodes.nodes)
-                  for c in i.itervalues())
+                    for i in (self.booted, self.cloud_nodes.nodes)
+                    for c in i.itervalues()
+                    if c.cloud_node.size)
         return cost
 
     def _nodes_busy(self, size):
         return sum(1 for busy in
                    pykka.get_all(rec.actor.in_state('busy') for rec in
                                  self.cloud_nodes.nodes.itervalues()
-                                 if rec.cloud_node.size.id == size.id)
+                                 if (rec.cloud_node.size and rec.cloud_node.size.id == size.id))
                    if busy)
 
     def _nodes_missing(self, size):
         return sum(1 for arv_node in
                    pykka.get_all(rec.actor.arvados_node for rec in
                                  self.cloud_nodes.nodes.itervalues()
-                                 if rec.cloud_node.size.id == size.id and rec.actor.cloud_node.get().id not in self.shutdowns)
+                                 if rec.cloud_node.size and rec.cloud_node.size.id == size.id and rec.actor.cloud_node.get().id not in self.shutdowns)
                    if arv_node and cnode.arvados_node_missing(arv_node, self.node_stale_after))
 
     def _size_wishlist(self, size):
@@ -263,17 +264,20 @@ class NodeManagerDaemonActor(actor_class):
 
         if over_max >= 0:
             return -over_max
-        elif self.max_total_price and ((total_price + size.price) > self.max_total_price):
-            self._logger.info("Not booting new %s (price %s) because with current total_price of %s it would exceed max_total_price of %s",
-                              size.name, size.price, total_price, self.max_total_price)
-            return 0
         elif under_min > 0 and size.id == self.min_cloud_size.id:
             return under_min
 
         up_count = self._nodes_up(size) - (self._size_shutdowns(size) +
                                            self._nodes_busy(size) +
                                            self._nodes_missing(size))
-        return self._size_wishlist(size) - up_count
+
+        wanted = self._size_wishlist(size) - up_count
+        if wanted > 0 and self.max_total_price and ((total_price + size.price) > self.max_total_price):
+                self._logger.info("Not booting %s (price %s) because with it would exceed max_total_price of %s (current total_price is %s)",
+                                  size.name, size.price, self.max_total_price, total_price)
+                return 0
+
+        return
 
     def _nodes_excess(self, size):
         up_count = self._nodes_up(size) - self._size_shutdowns(size)
