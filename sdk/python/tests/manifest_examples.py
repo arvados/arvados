@@ -1,6 +1,5 @@
 import arvados
 import arvados_testutil as tutil
-import hashlib
 
 class ManifestExamples(object):
     def make_manifest(self,
@@ -9,8 +8,7 @@ class ManifestExamples(object):
                       files_per_stream=1,
                       streams=1):
         datablip = 'x' * bytes_per_block
-        data_loc = '{}+{}'.format(hashlib.md5(datablip).hexdigest(),
-                                  bytes_per_block)
+        data_loc = tutil.str_keep_locator(datablip)
         with tutil.mock_keep_responses(data_loc, 200):
             coll = arvados.CollectionWriter()
             for si in range(0, streams):

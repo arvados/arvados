@@ -4,7 +4,6 @@
 
 import arvados
 import copy
-import hashlib
 import mock
 import os
 import pprint
@@ -395,7 +394,7 @@ class ArvadosCollectionsTest(run_test_server.TestCaseWithServers,
     def test_write_directory_tree_with_zero_recursion(self):
         cwriter = arvados.CollectionWriter(self.api_client)
         content = 'd1/d2/f3d1/f2f1'
-        blockhash = hashlib.md5(content).hexdigest() + '+' + str(len(content))
+        blockhash = tutil.str_keep_locator(content)
         cwriter.write_directory_tree(
             self.build_directory_tree(['f1', 'd1/f2', 'd1/d2/f3']),
             max_manifest_depth=0)
@@ -739,7 +738,7 @@ class CollectionWriterTestCase(unittest.TestCase, CollectionTestMixin):
             self.assertEqual('.', writer.current_stream_name())
             self.assertEqual('out', writer.current_file_name())
             out_file.write('test data')
-            data_loc = hashlib.md5('test data').hexdigest() + '+9'
+            data_loc = tutil.str_keep_locator('test data')
         self.assertTrue(out_file.closed, "writer file not closed after context")
         self.assertRaises(ValueError, out_file.write, 'extra text')
         with self.mock_keep(data_loc, 200) as keep_mock:
@@ -751,15 +750,15 @@ class CollectionWriterTestCase(unittest.TestCase, CollectionTestMixin):
         writer = arvados.CollectionWriter(client)
         with writer.open('six') as out_file:
             out_file.writelines(['12', '34', '56'])
-            data_loc = hashlib.md5('123456').hexdigest() + '+6'
+            data_loc = tutil.str_keep_locator('123456')
         with self.mock_keep(data_loc, 200) as keep_mock:
             self.assertEqual(". {} 0:6:six\n".format(data_loc),
                              writer.manifest_text())
 
     def test_open_flush(self):
         client = self.api_client_mock()
-        data_loc1 = hashlib.md5('flush1').hexdigest() + '+6'
-        data_loc2 = hashlib.md5('flush2').hexdigest() + '+6'
+        data_loc1 = tutil.str_keep_locator('flush1')
+        data_loc2 = tutil.str_keep_locator('flush2')
         with self.mock_keep((data_loc1, 200), (data_loc2, 200)) as keep_mock:
             writer = arvados.CollectionWriter(client)
             with writer.open('flush_test') as out_file:
@@ -777,15 +776,15 @@ class CollectionWriterTestCase(unittest.TestCase, CollectionTestMixin):
             out_file.write('1st')
         with writer.open('.', '2') as out_file:
             out_file.write('2nd')
-        data_loc = hashlib.md5('1st2nd').hexdigest() + '+6'
+        data_loc = tutil.str_keep_locator('1st2nd')
         with self.mock_keep(data_loc, 200) as keep_mock:
             self.assertEqual(". {} 0:3:1 3:3:2\n".format(data_loc),
                              writer.manifest_text())
 
     def test_two_opens_two_streams(self):
         client = self.api_client_mock()
-        data_loc1 = hashlib.md5('file').hexdigest() + '+4'
-        data_loc2 = hashlib.md5('indir').hexdigest() + '+5'
+        data_loc1 = tutil.str_keep_locator('file')
+        data_loc2 = tutil.str_keep_locator('indir')
         with self.mock_keep((data_loc1, 200), (data_loc2, 200)) as keep_mock:
             writer = arvados.CollectionWriter(client)
             with writer.open('file') as out_file:

@@ -6,7 +6,6 @@ import io
 import mock
 import os
 import unittest
-import hashlib
 import time
 
 import arvados
@@ -30,7 +29,7 @@ class ArvadosFileWriterTestCase(unittest.TestCase):
             self.requests.append(locator)
             return self.blocks.get(locator)
         def put(self, data, num_retries=None):
-            pdh = "%s+%i" % (hashlib.md5(data).hexdigest(), len(data))
+            pdh = tutil.str_keep_locator(data)
             self.blocks[pdh] = str(data)
             return pdh
 
@@ -453,7 +452,7 @@ class ArvadosFileReaderTestCase(StreamFileReaderTestCase):
         n = 0
         blocks = {}
         for d in ['01234', '34567', '67890']:
-            loc = '{}+{}'.format(hashlib.md5(d).hexdigest(), len(d))
+            loc = tutil.str_keep_locator(d)
             blocks[loc] = d
             stream.append(Range(loc, n, len(d)))
             n += len(d)

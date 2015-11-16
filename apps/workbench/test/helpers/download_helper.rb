@@ -6,7 +6,7 @@ module DownloadHelper
   end
 
   def clear
-    FileUtils.rm_f path
+    FileUtils.rm_r path
     begin
       Dir.mkdir path
     rescue Errno::EEXIST

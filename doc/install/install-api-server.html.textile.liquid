@@ -244,6 +244,14 @@ exec chpst -m 1073741824 -u webserver-user:webserver-group -e "$envdir" \
   passenger_enabled on;
   # If you're using RVM, uncomment the line below.
   #passenger_ruby /usr/local/rvm/wrappers/default/ruby;
+
+  # This value effectively limits the size of API objects users can
+  # create, especially collections.  If you change this, you should
+  # also ensure the following settings match it:
+  # * `client_max_body_size` in the server section below
+  # * `client_max_body_size` in the Workbench Nginx configuration (twice)
+  # * `max_request_size` in the API server's application.yml file
+  client_max_body_size 128m;
 }
 
 upstream api {
@@ -277,10 +285,7 @@ server {
 
   index  index.html index.htm index.php;
 
-  # This value effectively limits the size of API objects users can create,
-  # especially collections.  If you change this, you should also set
-  # `max_request_size` in the API server's application.yml file to the same
-  # value.
+  # Refer to the comment about this setting in the server section above.
   client_max_body_size 128m;
 
   location / {

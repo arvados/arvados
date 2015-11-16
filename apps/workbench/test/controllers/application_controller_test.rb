@@ -334,6 +334,26 @@ class ApplicationControllerTest < ActionController::TestCase
     assert_response 404
   end
 
+  [".navbar .login-menu a",
+   ".navbar .login-menu .dropdown-menu a"
+  ].each do |css_selector|
+    test "login link at #{css_selector.inspect} includes return_to param" do
+      # Without an anonymous token, we're immediately redirected to login.
+      Rails.configuration.anonymous_user_token =
+        api_fixture("api_client_authorizations", "anonymous", "api_token")
+      @controller = ProjectsController.new
+      test_uuid = "zzzzz-j7d0g-zzzzzzzzzzzzzzz"
+      get(:show, {id: test_uuid})
+      login_link = css_select(css_selector).first
+      assert_not_nil(login_link, "failed to select login link")
+      login_href = URI.unescape(login_link.attributes["href"])
+      # The parameter needs to include the full URL to work.
+      assert_includes(login_href, "://")
+      assert_match(/[\?&]return_to=[^&]*\/projects\/#{test_uuid}(&|$)/,
+                   login_href)
+    end
+  end
+
   test "Workbench returns 4xx when API server is unreachable" do
     # We're really testing ApplicationController's render_exception.
     # Our primary concern is that it doesn't raise an error and
