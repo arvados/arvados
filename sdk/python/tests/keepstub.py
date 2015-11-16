@@ -72,12 +72,12 @@ class Handler(BaseHTTPServer.BaseHTTPRequestHandler, object):
                     outage_happened = True
                 num_write_bytes = min(BYTES_PER_WRITE,
                     num_bytes - num_sent_bytes)
-                if self.server.bandwidth is not None:
-                    target_time += num_write_bytes / self.server.bandwidth
-                    self.server._sleep_at_least(target_time - time.time())
                 self.wfile.write(data_to_write[
                     num_sent_bytes:num_sent_bytes+num_write_bytes])
                 num_sent_bytes += num_write_bytes
+                if self.server.bandwidth is not None:
+                    target_time += num_write_bytes / self.server.bandwidth
+                    self.server._sleep_at_least(target_time - time.time())
         return None
 
     def rfile_bandwidth_read(self, bytes_to_read):
@@ -97,10 +97,10 @@ class Handler(BaseHTTPServer.BaseHTTPRequestHandler, object):
                 next_bytes_to_read = min(BYTES_PER_READ,
                     bytes_to_read - bytes_read)
                 data += self.rfile.read(next_bytes_to_read)
+                bytes_read += next_bytes_to_read
                 if self.server.bandwidth is not None:
                     target_time += next_bytes_to_read / self.server.bandwidth
                     self.server._sleep_at_least(target_time - time.time())
-                bytes_read += next_bytes_to_read
         return data
 
     def handle(self, *args, **kwargs):
