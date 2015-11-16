@@ -120,7 +120,8 @@ def main(args=None):
         config.getint('Daemon', 'poll_stale_after'),
         config.getint('Daemon', 'boot_fail_after'),
         config.getint('Daemon', 'node_stale_after'),
-        node_setup, node_shutdown, node_monitor).proxy()
+        node_setup, node_shutdown, node_monitor,
+        max_total_price=config.getfloat('Daemon', 'max_total_price')).proxy()
 
     signal.pause()
     daemon_stopped = node_daemon.actor_ref.actor_stopped.is_set

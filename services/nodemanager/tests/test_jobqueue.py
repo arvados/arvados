@@ -57,6 +57,45 @@ class ServerCalculatorTestCase(unittest.TestCase):
         servcalc = self.make_calculator([2, 4, 1, 3])
         self.assertEqual(testutil.MockSize(1), servcalc.cheapest_size())
 
+    def test_next_biggest(self):
+        servcalc = self.make_calculator([1, 2, 4, 8])
+        servlist = self.calculate(servcalc,
+                                  {'min_cores_per_node': 3},
+                                  {'min_cores_per_node': 6})
+        self.assertEqual([servcalc.cloud_sizes[2].id,
+                          servcalc.cloud_sizes[3].id],
+                         [s.id for s in servlist])
+
+    def test_multiple_sizes(self):
+        servcalc = self.make_calculator([1, 2])
+        servlist = self.calculate(servcalc,
+                                  {'min_cores_per_node': 2},
+                                  {'min_cores_per_node': 1},
+                                  {'min_cores_per_node': 1})
+        self.assertEqual([servcalc.cloud_sizes[1].id,
+                          servcalc.cloud_sizes[0].id,
+                          servcalc.cloud_sizes[0].id],
+                         [s.id for s in servlist])
+
+        servlist = self.calculate(servcalc,
+                                  {'min_cores_per_node': 1},
+                                  {'min_cores_per_node': 2},
+                                  {'min_cores_per_node': 1})
+        self.assertEqual([servcalc.cloud_sizes[0].id,
+                          servcalc.cloud_sizes[1].id,
+                          servcalc.cloud_sizes[0].id],
+                         [s.id for s in servlist])
+
+        servlist = self.calculate(servcalc,
+                                  {'min_cores_per_node': 1},
+                                  {'min_cores_per_node': 1},
+                                  {'min_cores_per_node': 2})
+        self.assertEqual([servcalc.cloud_sizes[0].id,
+                          servcalc.cloud_sizes[0].id,
+                          servcalc.cloud_sizes[1].id],
+                         [s.id for s in servlist])
+
+
 
 class JobQueueMonitorActorTestCase(testutil.RemotePollLoopActorTestMixin,
                                    unittest.TestCase):
@@ -82,4 +121,3 @@ class JobQueueMonitorActorTestCase(testutil.RemotePollLoopActorTestMixin,
 
 if __name__ == '__main__':
     unittest.main()
-

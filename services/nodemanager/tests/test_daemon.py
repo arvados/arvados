@@ -49,7 +49,8 @@ class NodeManagerDaemonActorTestCase(testutil.ActorTestMixin,
     def make_daemon(self, cloud_nodes=[], arvados_nodes=[], want_sizes=[],
                     avail_sizes=[(testutil.MockSize(1), {"cores": 1})],
                     min_nodes=0, max_nodes=8,
-                    shutdown_windows=[54, 5, 1]):
+                    shutdown_windows=[54, 5, 1],
+                    max_total_price=None):
         for name in ['cloud_nodes', 'arvados_nodes', 'server_wishlist']:
             setattr(self, name + '_poller', mock.MagicMock(name=name + '_mock'))
         self.arv_factory = mock.MagicMock(name='arvados_mock')
@@ -71,7 +72,8 @@ class NodeManagerDaemonActorTestCase(testutil.ActorTestMixin,
             self.arv_factory, self.cloud_factory,
             shutdown_windows, ServerCalculator(avail_sizes),
             min_nodes, max_nodes, 600, 1800, 3600,
-            self.node_setup, self.node_shutdown).proxy()
+            self.node_setup, self.node_shutdown,
+            max_total_price=max_total_price).proxy()
         if cloud_nodes is not None:
             self.daemon.update_cloud_nodes(cloud_nodes).get(self.TIMEOUT)
         if arvados_nodes is not None:
@@ -597,16 +599,40 @@ class NodeManagerDaemonActorTestCase(testutil.ActorTestMixin,
         self.stop_proxy(self.daemon)
         self.assertEqual(1, self.last_shutdown.stop.call_count)
 
+    def busywait(self, f):
+        n = 0
+        while not f() and n < 10:
+            time.sleep(.1)
+            n += 1
+        self.assertTrue(f())
+
     def test_node_create_two_sizes(self):
         small = testutil.MockSize(1)
         big = testutil.MockSize(2)
         avail_sizes = [(testutil.MockSize(1), {"cores":1}),
                         (testutil.MockSize(2), {"cores":2})]
-        self.make_daemon(want_sizes=[small, small, big],
-                         avail_sizes=avail_sizes)
-        booting = self.daemon.booting.get()
+        self.make_daemon(want_sizes=[small, small, small, big],
+                         avail_sizes=avail_sizes, max_nodes=4)
+        self.busywait(lambda: self.node_setup.start.call_count == 4)
+        booting = self.daemon.booting.get(self.TIMEOUT)
         self.stop_proxy(self.daemon)
-        self.assertEqual(3, self.node_setup.start.call_count)
+        sizecounts = {a[0].id: 0 for a in avail_sizes}
+        for b in booting.itervalues():
+            sizecounts[b.cloud_size.get().id] += 1
+        logging.info(sizecounts)
+        self.assertEqual(3, sizecounts[small.id])
+        self.assertEqual(1, sizecounts[big.id])
+
+    def test_node_max_nodes_two_sizes(self):
+        small = testutil.MockSize(1)
+        big = testutil.MockSize(2)
+        avail_sizes = [(testutil.MockSize(1), {"cores":1}),
+                        (testutil.MockSize(2), {"cores":2})]
+        self.make_daemon(want_sizes=[small, small, small, big],
+                         avail_sizes=avail_sizes, max_nodes=3)
+        self.busywait(lambda: self.node_setup.start.call_count == 3)
+        booting = self.daemon.booting.get(self.TIMEOUT)
+        self.stop_proxy(self.daemon)
         sizecounts = {a[0].id: 0 for a in avail_sizes}
         for b in booting.itervalues():
             sizecounts[b.cloud_size.get().id] += 1
@@ -643,14 +669,38 @@ class NodeManagerDaemonActorTestCase(testutil.ActorTestMixin,
         self.assertEqual(1, self.node_setup.start.call_count)
         self.assertEqual(1, self.node_shutdown.start.call_count)
 
+        # booting a new big node
         sizecounts = {a[0].id: 0 for a in avail_sizes}
         for b in booting.itervalues():
             sizecounts[b.cloud_size.get().id] += 1
         self.assertEqual(0, sizecounts[small.id])
         self.assertEqual(1, sizecounts[big.id])
 
+        # shutting down a small node
         sizecounts = {a[0].id: 0 for a in avail_sizes}
         for b in shutdowns.itervalues():
             sizecounts[b.cloud_node.get().size.id] += 1
         self.assertEqual(1, sizecounts[small.id])
         self.assertEqual(0, sizecounts[big.id])
+
+    def test_node_max_price(self):
+        small = testutil.MockSize(1)
+        big = testutil.MockSize(2)
+        avail_sizes = [(testutil.MockSize(1), {"cores":1, "price":1}),
+                        (testutil.MockSize(2), {"cores":2, "price":2})]
+        self.make_daemon(want_sizes=[small, small, small, big],
+                         avail_sizes=avail_sizes,
+                         max_nodes=4,
+                         max_total_price=4)
+        self.busywait(lambda: self.node_setup.start.call_count == 3)
+        booting = self.daemon.booting.get()
+        self.stop_proxy(self.daemon)
+        self.assertEqual(3, self.node_setup.start.call_count)
+        sizecounts = {a[0].id: 0 for a in avail_sizes}
+        for b in booting.itervalues():
+            sizecounts[b.cloud_size.get().id] += 1
+        logging.info(sizecounts)
+        # The way the update_server_wishlist() works effectively results in a
+        # round-robin creation of one node of each size in the wishlist
+        self.assertEqual(2, sizecounts[small.id])
+        self.assertEqual(1, sizecounts[big.id])

@@ -110,7 +110,8 @@ class NodeManagerDaemonActor(actor_class):
                  node_stale_after=7200,
                  node_setup_class=dispatch.ComputeNodeSetupActor,
                  node_shutdown_class=dispatch.ComputeNodeShutdownActor,
-                 node_actor_class=dispatch.ComputeNodeMonitorActor):
+                 node_actor_class=dispatch.ComputeNodeMonitorActor,
+                 max_total_price=0):
         super(NodeManagerDaemonActor, self).__init__()
         self._node_setup = node_setup_class
         self._node_shutdown = node_shutdown_class
@@ -127,6 +128,7 @@ class NodeManagerDaemonActor(actor_class):
         self.min_cloud_size = self.server_calculator.cheapest_size()
         self.min_nodes = min_nodes
         self.max_nodes = max_nodes
+        self.max_total_price = max_total_price
         self.poll_stale_after = poll_stale_after
         self.boot_fail_after = boot_fail_after
         self.node_stale_after = node_stale_after
@@ -223,6 +225,15 @@ class NodeManagerDaemonActor(actor_class):
                   if size is None or c.cloud_node.size.id == size.id)
         return up
 
+    def _total_price(self):
+        cost = 0
+        cost += sum(c.cloud_size.get().price
+                  for c in self.booting.itervalues())
+        cost += sum(c.cloud_node.size.price
+                  for i in (self.booted, self.cloud_nodes.nodes)
+                  for c in i.itervalues())
+        return cost
+
     def _nodes_busy(self, size):
         return sum(1 for busy in
                    pykka.get_all(rec.actor.in_state('busy') for rec in
@@ -248,15 +259,21 @@ class NodeManagerDaemonActor(actor_class):
         total_up_count = self._nodes_up(None)
         under_min = self.min_nodes - total_up_count
         over_max = total_up_count - self.max_nodes
+        total_price = self._total_price()
+
         if over_max >= 0:
             return -over_max
+        elif self.max_total_price and ((total_price + size.price) > self.max_total_price):
+            self._logger.info("Not booting new %s (price %s) because with current total_price of %s it would exceed max_total_price of %s",
+                              size.name, size.price, total_price, self.max_total_price)
+            return 0
         elif under_min > 0 and size.id == self.min_cloud_size.id:
             return under_min
-        else:
-            up_count = self._nodes_up(size) - (self._size_shutdowns(size) +
-                                               self._nodes_busy(size) +
-                                               self._nodes_missing(size))
-            return self._size_wishlist(size) - up_count
+
+        up_count = self._nodes_up(size) - (self._size_shutdowns(size) +
+                                           self._nodes_busy(size) +
+                                           self._nodes_missing(size))
+        return self._size_wishlist(size) - up_count
 
     def _nodes_excess(self, size):
         up_count = self._nodes_up(size) - self._size_shutdowns(size)
