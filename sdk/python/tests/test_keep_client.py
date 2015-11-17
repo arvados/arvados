@@ -689,15 +689,15 @@ class KeepClientTimeout(unittest.TestCase, tutil.ApiClientMock):
                 kc.put(self.DATA, copies=1, num_retries=0)
 
     def test_timeout_slow_request(self):
-        self.server.setdelays(request=0.2)
+        self.server.setdelays(request=2)
         self._test_200ms()
 
     def test_timeout_slow_response(self):
-        self.server.setdelays(response=0.2)
+        self.server.setdelays(response=2)
         self._test_200ms()
 
     def test_timeout_slow_response_body(self):
-        self.server.setdelays(response_body=0.2)
+        self.server.setdelays(response_body=2)
         self._test_200ms()
 
     def _test_200ms(self):
@@ -706,19 +706,19 @@ class KeepClientTimeout(unittest.TestCase, tutil.ApiClientMock):
         # Allow 100ms to connect, then 1s for response. Everything
         # should work, and everything should take at least 200ms to
         # return.
-        kc = self.keepClient(timeouts=(.1, 1))
-        with self.assertTakesBetween(.2, .3):
+        kc = self.keepClient(timeouts=(1, 10))
+        with self.assertTakesBetween(2, 3):
             loc = kc.put(self.DATA, copies=1, num_retries=0)
-        with self.assertTakesBetween(.2, .3):
+        with self.assertTakesBetween(2, 3):
             self.assertEqual(self.DATA, kc.get(loc, num_retries=0))
 
-        # Allow 1s to connect, then 100ms for response. Nothing should
+        # Allow 1s to connect, then 2s for response. Nothing should
         # work, and everything should take at least 100ms to return.
-        kc = self.keepClient(timeouts=(1, .1))
-        with self.assertTakesBetween(.1, .2):
+        kc = self.keepClient(timeouts=(10, 1))
+        with self.assertTakesBetween(1, 2):
             with self.assertRaises(arvados.errors.KeepReadError):
                 kc.get(loc, num_retries=0)
-        with self.assertTakesBetween(.1, .2):
+        with self.assertTakesBetween(1, 2):
             with self.assertRaises(arvados.errors.KeepWriteError):
                 kc.put(self.DATA, copies=1, num_retries=0)
 
