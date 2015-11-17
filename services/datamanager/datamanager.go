@@ -107,7 +107,14 @@ func singlerun(arv arvadosclient.ArvadosClient) error {
 
 	dataFetcher(arvLogger, &readCollections, &keepServerInfo)
 
-	summary.MaybeWriteData(arvLogger, readCollections, keepServerInfo)
+	if len(readCollections.UUIDToCollection) == 0 {
+		return nil // no collections read so no more work to do?
+	}
+
+	_, err = summary.MaybeWriteData(arvLogger, readCollections, keepServerInfo)
+	if err != nil {
+		return err
+	}
 
 	buckets := summary.BucketReplication(readCollections, keepServerInfo)
 	bucketCounts := buckets.Counts()

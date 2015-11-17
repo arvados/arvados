@@ -22,7 +22,7 @@ type serializedData struct {
 }
 
 var (
-	writeDataTo  string
+	WriteDataTo  string
 	readDataFrom string
 )
 
@@ -32,7 +32,7 @@ type DataFetcher func(arvLogger *logger.Logger,
 	keepServerInfo *keep.ReadServers)
 
 func init() {
-	flag.StringVar(&writeDataTo,
+	flag.StringVar(&WriteDataTo,
 		"write-data-to",
 		"",
 		"Write summary of data received to this file. Used for development only.")
@@ -51,14 +51,13 @@ func init() {
 // working with stale data.
 func MaybeWriteData(arvLogger *logger.Logger,
 	readCollections collection.ReadCollections,
-	keepServerInfo keep.ReadServers) bool {
-	if writeDataTo == "" {
-		return false
+	keepServerInfo keep.ReadServers) (bool, error) {
+	if WriteDataTo == "" {
+		return false, nil
 	}
-	summaryFile, err := os.Create(writeDataTo)
+	summaryFile, err := os.Create(WriteDataTo)
 	if err != nil {
-		loggerutil.FatalWithMessage(arvLogger,
-			fmt.Sprintf("Failed to open %s: %v", writeDataTo, err))
+		return false, err
 	}
 	defer summaryFile.Close()
 
@@ -68,11 +67,10 @@ func MaybeWriteData(arvLogger *logger.Logger,
 		KeepServerInfo:  keepServerInfo}
 	err = enc.Encode(data)
 	if err != nil {
-		loggerutil.FatalWithMessage(arvLogger,
-			fmt.Sprintf("Failed to write summary data: %v", err))
+		return false, err
 	}
-	log.Printf("Wrote summary data to: %s", writeDataTo)
-	return true
+	log.Printf("Wrote summary data to: %s", WriteDataTo)
+	return true, nil
 }
 
 // ShouldReadData should not be used outside of development

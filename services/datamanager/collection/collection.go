@@ -18,7 +18,7 @@ import (
 )
 
 var (
-	heapProfileFilename string
+	HeapProfileFilename string
 	// globals for debugging
 	totalManifestSize uint64
 	maxManifestSize   uint64
@@ -67,7 +67,7 @@ type SdkCollectionList struct {
 }
 
 func init() {
-	flag.StringVar(&heapProfileFilename,
+	flag.StringVar(&HeapProfileFilename,
 		"heap-profile",
 		"",
 		"File to write the heap profiles to. Leave blank to skip profiling.")
@@ -80,8 +80,8 @@ func init() {
 // Otherwise we would see cumulative numbers as explained here:
 // https://groups.google.com/d/msg/golang-nuts/ZyHciRglQYc/2nh4Ndu2fZcJ
 func WriteHeapProfile() error {
-	if heapProfileFilename != "" {
-		heapProfile, err := os.Create(heapProfileFilename)
+	if HeapProfileFilename != "" {
+		heapProfile, err := os.Create(HeapProfileFilename)
 		if err != nil {
 			return err
 		}
@@ -100,6 +100,8 @@ func GetCollectionsAndSummarize(arvLogger *logger.Logger, params GetCollectionsP
 	results, err := GetCollections(params)
 	if err != nil {
 		loggerutil.LogErrorMessage(arvLogger, fmt.Sprintf("Error during GetCollections with params %v: %v", params, err))
+		results = ReadCollections{}
+		return
 	}
 
 	results.Summarize(params.Logger)
@@ -232,7 +234,7 @@ func GetCollections(params GetCollectionsParams) (results ReadCollections, err e
 	}
 
 	// Write the heap profile for examining memory usage
-	WriteHeapProfile()
+	err = WriteHeapProfile()
 
 	return
 }
