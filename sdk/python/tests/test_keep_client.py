@@ -689,36 +689,44 @@ class KeepClientTimeout(unittest.TestCase, tutil.ApiClientMock):
                 kc.put(self.DATA, copies=1, num_retries=0)
 
     def test_timeout_slow_request(self):
+        loc = self.keepClient().put(self.DATA, copies=1, num_retries=0)
+        self.server.setdelays(request=.2)
+        self._test_connect_timeout_under_200ms(loc)
         self.server.setdelays(request=2)
-        self._test_200ms()
+        self._test_response_timeout_under_2s(loc)
 
     def test_timeout_slow_response(self):
+        loc = self.keepClient().put(self.DATA, copies=1, num_retries=0)
+        self.server.setdelays(response=.2)
+        self._test_connect_timeout_under_200ms(loc)
         self.server.setdelays(response=2)
-        self._test_200ms()
+        self._test_response_timeout_under_2s(loc)
 
     def test_timeout_slow_response_body(self):
+        loc = self.keepClient().put(self.DATA, copies=1, num_retries=0)
+        self.server.setdelays(response_body=.2)
+        self._test_connect_timeout_under_200ms(loc)
         self.server.setdelays(response_body=2)
-        self._test_200ms()
+        self._test_response_timeout_under_2s(loc)
 
-    def _test_200ms(self):
-        """Connect should be t<100ms, request should be 200ms <= t < 300ms"""
-
+    def _test_connect_timeout_under_200ms(self, loc):
         # Allow 100ms to connect, then 1s for response. Everything
         # should work, and everything should take at least 200ms to
         # return.
-        kc = self.keepClient(timeouts=(1, 10))
-        with self.assertTakesBetween(2, 3):
-            loc = kc.put(self.DATA, copies=1, num_retries=0)
-        with self.assertTakesBetween(2, 3):
+        kc = self.keepClient(timeouts=(.1, 1))
+        with self.assertTakesBetween(.2, .3):
+            kc.put(self.DATA, copies=1, num_retries=0)
+        with self.assertTakesBetween(.2, .3):
             self.assertEqual(self.DATA, kc.get(loc, num_retries=0))
 
-        # Allow 1s to connect, then 2s for response. Nothing should
-        # work, and everything should take at least 100ms to return.
+    def _test_response_timeout_under_2s(self, loc):
+        # Allow 10s to connect, then 1s for response. Nothing should
+        # work, and everything should take at least 1s to return.
         kc = self.keepClient(timeouts=(10, 1))
-        with self.assertTakesBetween(1, 2):
+        with self.assertTakesBetween(1, 1.9):
             with self.assertRaises(arvados.errors.KeepReadError):
                 kc.get(loc, num_retries=0)
-        with self.assertTakesBetween(1, 2):
+        with self.assertTakesBetween(1, 1.9):
             with self.assertRaises(arvados.errors.KeepWriteError):
                 kc.put(self.DATA, copies=1, num_retries=0)
 
