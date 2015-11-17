@@ -427,12 +427,16 @@ class FuseWriteFileTest(MountTestBase):
 
         self.assertNotIn("file1.txt", collection)
 
+        self.assertEqual(0, self.operations.write_counter.get())
         self.pool.apply(fuseWriteFileTestHelperWriteFile, (self.mounttmp,))
+        self.assertEqual(12, self.operations.write_counter.get())
 
         with collection.open("file1.txt") as f:
             self.assertEqual(f.read(), "Hello world!")
 
+        self.assertEqual(0, self.operations.read_counter.get())
         self.pool.apply(fuseWriteFileTestHelperReadFile, (self.mounttmp,))
+        self.assertEqual(12, self.operations.read_counter.get())
 
         collection2 = self.api.collections().get(uuid=collection.manifest_locator()).execute()
         self.assertRegexpMatches(collection2["manifest_text"],

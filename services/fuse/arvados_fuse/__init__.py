@@ -66,6 +66,7 @@ import itertools
 import ciso8601
 import collections
 import functools
+import arvados.keep
 
 import Queue
 
@@ -323,6 +324,9 @@ class Operations(llfuse.Operations):
 
         self.num_retries = num_retries
 
+        self.read_counter = arvados.keep.Counter()
+        self.write_counter = arvados.keep.Counter()
+
         self.events = None
 
     def init(self):
@@ -491,7 +495,10 @@ class Operations(llfuse.Operations):
 
         self.inodes.touch(handle.obj)
 
-        return handle.obj.readfrom(off, size, self.num_retries)
+        r = handle.obj.readfrom(off, size, self.num_retries)
+        if r:
+            self.read_counter.add(len(r))
+        return r
 
     @catch_exceptions
     def write(self, fh, off, buf):
@@ -506,7 +513,10 @@ class Operations(llfuse.Operations):
 
         self.inodes.touch(handle.obj)
 
-        return handle.obj.writeto(off, buf, self.num_retries)
+        w = handle.obj.writeto(off, buf, self.num_retries)
+        if w:
+            self.write_counter.add(w)
+        return w
 
     @catch_exceptions
     def release(self, fh):

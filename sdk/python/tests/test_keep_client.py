@@ -29,14 +29,21 @@ class KeepTestCase(run_test_server.TestCaseWithServers):
                                              proxy='', local_store='')
 
     def test_KeepBasicRWTest(self):
+        self.assertEqual(0, self.keep_client.upload_counter.get())
         foo_locator = self.keep_client.put('foo')
         self.assertRegexpMatches(
             foo_locator,
             '^acbd18db4cc2f85cedef654fccc4a4d8\+3',
             'wrong md5 hash from Keep.put("foo"): ' + foo_locator)
+
+        # 6 bytes because uploaded 2 copies
+        self.assertEqual(6, self.keep_client.upload_counter.get())
+
+        self.assertEqual(0, self.keep_client.download_counter.get())
         self.assertEqual(self.keep_client.get(foo_locator),
                          'foo',
                          'wrong content from Keep.get(md5("foo"))')
+        self.assertEqual(3, self.keep_client.download_counter.get())
 
     def test_KeepBinaryRWTest(self):
         blob_str = '\xff\xfe\xf7\x00\x01\x02'
