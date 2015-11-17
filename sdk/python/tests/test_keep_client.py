@@ -580,11 +580,15 @@ class KeepClientRendezvousTestCase(unittest.TestCase, tutil.ApiClientMock):
     def test_put_error_shows_probe_order(self):
         self.check_64_zeros_error_order('put', arvados.errors.KeepWriteError)
 
+
 class KeepClientTimeout(unittest.TestCase, tutil.ApiClientMock):
-    #Needs to be low to trigger bandwidth errors before we run out of data
+    # BANDWIDTH_LOW_LIM must be less than len(DATA) so we can transfer
+    # 1s worth of data and then trigger bandwidth errors before running
+    # out of data.
     DATA = 'x'*2**11
     BANDWIDTH_LOW_LIM = 1024
     TIMEOUT_TIME = 1.0
+
     class assertTakesBetween(unittest.TestCase):
         def __init__(self, tmin, tmax):
             self.tmin = tmin
@@ -729,6 +733,7 @@ class KeepClientTimeout(unittest.TestCase, tutil.ApiClientMock):
         with self.assertTakesBetween(1, 1.9):
             with self.assertRaises(arvados.errors.KeepWriteError):
                 kc.put(self.DATA, copies=1, num_retries=0)
+
 
 class KeepClientGatewayTestCase(unittest.TestCase, tutil.ApiClientMock):
     def mock_disks_and_gateways(self, disks=3, gateways=1):
