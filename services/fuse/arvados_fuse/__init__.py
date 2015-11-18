@@ -326,6 +326,8 @@ class Operations(llfuse.Operations):
 
         self.read_counter = arvados.keep.Counter()
         self.write_counter = arvados.keep.Counter()
+        self.read_ops_counter = arvados.keep.Counter()
+        self.write_ops_counter = arvados.keep.Counter()
 
         self.events = None
 
@@ -488,6 +490,8 @@ class Operations(llfuse.Operations):
     @catch_exceptions
     def read(self, fh, off, size):
         _logger.debug("arv-mount read %i %i %i", fh, off, size)
+        self.read_ops_counter.add(1)
+
         if fh in self._filehandles:
             handle = self._filehandles[fh]
         else:
@@ -503,6 +507,8 @@ class Operations(llfuse.Operations):
     @catch_exceptions
     def write(self, fh, off, buf):
         _logger.debug("arv-mount write %i %i %i", fh, off, len(buf))
+        self.write_ops_counter.add(1)
+
         if fh in self._filehandles:
             handle = self._filehandles[fh]
         else:

@@ -669,6 +669,8 @@ class KeepClient(object):
         self._user_agent_pool = Queue.LifoQueue()
         self.upload_counter = Counter()
         self.download_counter = Counter()
+        self.put_counter = Counter()
+        self.get_counter = Counter()
 
         if local_store:
             self.local_store = local_store
@@ -875,6 +877,9 @@ class KeepClient(object):
         """
         if ',' in loc_s:
             return ''.join(self.get(x) for x in loc_s.split(','))
+
+        self.get_counter.add(1)
+
         locator = KeepLocator(loc_s)
         slot, first = self.block_cache.reserve_cache(locator.md5sum)
         if not first:
@@ -979,6 +984,8 @@ class KeepClient(object):
             data = data.encode("ascii")
         elif not isinstance(data, str):
             raise arvados.errors.ArgumentError("Argument 'data' to KeepClient.put is not type 'str'")
+
+        self.put_counter.add(1)
 
         data_hash = hashlib.md5(data).hexdigest()
         loc_s = data_hash + '+' + str(len(data))
