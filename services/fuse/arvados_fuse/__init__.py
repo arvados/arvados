@@ -76,7 +76,7 @@ import Queue
 
 llfuse.capi._notify_queue = Queue.Queue()
 
-from fusedir import sanitize_filename, Directory, CollectionDirectory, MagicDirectory, TagsDirectory, ProjectDirectory, SharedDirectory, CollectionDirectoryBase
+from fusedir import sanitize_filename, Directory, CollectionDirectory, TmpCollectionDirectory, MagicDirectory, TagsDirectory, ProjectDirectory, SharedDirectory, CollectionDirectoryBase
 from fusefile import StringFile, FuseArvadosFile
 
 _logger = logging.getLogger('arvados.arvados_fuse')
@@ -304,8 +304,10 @@ class Operations(llfuse.Operations):
 
     """
 
-    def __init__(self, uid, gid, encoding="utf-8", inode_cache=None, num_retries=4, enable_write=False):
+    def __init__(self, uid, gid, api_client, encoding="utf-8", inode_cache=None, num_retries=4, enable_write=False):
         super(Operations, self).__init__()
+
+        self._api_client = api_client
 
         if not inode_cache:
             inode_cache = InodeCache(cap=256*1024*1024)
@@ -347,8 +349,8 @@ class Operations(llfuse.Operations):
     def access(self, inode, mode, ctx):
         return True
 
-    def listen_for_events(self, api_client):
-        self.events = arvados.events.subscribe(api_client,
+    def listen_for_events(self):
+        self.events = arvados.events.subscribe(self._api_client,
                                  [["event_type", "in", ["create", "update", "delete"]]],
                                  self.on_event)
 

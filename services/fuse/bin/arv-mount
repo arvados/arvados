@@ -7,6 +7,7 @@ import logging
 import os
 import signal
 import subprocess
+import sys
 import time
 
 import arvados.commands._util as arv_cmd
@@ -92,17 +93,44 @@ with "--".
 
     mount_mode = parser.add_mutually_exclusive_group()
 
-    mount_mode.add_argument('--all', action='store_true', help="""Mount a subdirectory for each mode: home, shared, by_tag, by_id (default).""")
-    mount_mode.add_argument('--home', action='store_true', help="""Mount only the user's home project.""")
-    mount_mode.add_argument('--shared', action='store_true', help="""Mount only list of projects shared with the user.""")
-    mount_mode.add_argument('--by-tag', action='store_true',
+    mount_mode.add_argument('--all', action='store_const', const='all', dest='mode',
+                            help="""Mount a subdirectory for each mode: home, shared, by_tag, by_id (default if no --mount-* arguments are given).""")
+    mount_mode.add_argument('--custom', action='store_const', const=None, dest='mode',
+                            help="""Mount a top level meta-directory with subdirectories as specified by additional --mount-* arguments (default if any --mount-* arguments are given).""")
+    mount_mode.add_argument('--home', action='store_const', const='home', dest='mode',
+                            help="""Mount only the user's home project.""")
+    mount_mode.add_argument('--shared', action='store_const', const='shared', dest='mode',
+                            help="""Mount only list of projects shared with the user.""")
+    mount_mode.add_argument('--by-tag', action='store_const', const='by_tag', dest='mode',
                             help="""Mount subdirectories listed by tag.""")
-    mount_mode.add_argument('--by-id', action='store_true',
+    mount_mode.add_argument('--by-id', action='store_const', const='by_id', dest='mode',
                             help="""Mount subdirectories listed by portable data hash or uuid.""")
-    mount_mode.add_argument('--by-pdh', action='store_true',
+    mount_mode.add_argument('--by-pdh', action='store_const', const='by_pdh', dest='mode',
                             help="""Mount subdirectories listed by portable data hash.""")
-    mount_mode.add_argument('--project', type=str, help="""Mount a specific project.""")
-    mount_mode.add_argument('--collection', type=str, help="""Mount only the specified collection.""")
+    mount_mode.add_argument('--project', type=str, metavar='UUID',
+                            help="""Mount the specified project.""")
+    mount_mode.add_argument('--collection', type=str, metavar='UUID_or_PDH',
+                            help="""Mount only the specified collection.""")
+
+    mounts = parser.add_argument_group('Custom mount options')
+    mounts.add_argument('--mount-by-pdh',
+                        type=str, metavar='PATH', action='append', default=[],
+                        help="Mount each readable collection at mountpoint/PATH/P where P is the collection's portable data hash.")
+    mounts.add_argument('--mount-by-id',
+                        type=str, metavar='PATH', action='append', default=[],
+                        help="Mount each readable collection at mountpoint/PATH/UUID and mountpoint/PATH/PDH where PDH is the collection's portable data hash and UUID is its UUID.")
+    mounts.add_argument('--mount-by-tag',
+                        type=str, metavar='PATH', action='append', default=[],
+                        help="Mount all collections with tag TAG at mountpoint/PATH/TAG/UUID.")
+    mounts.add_argument('--mount-home',
+                        type=str, metavar='PATH', action='append', default=[],
+                        help="Mount the current user's home project at mountpoint/PATH.")
+    mounts.add_argument('--mount-shared',
+                        type=str, metavar='PATH', action='append', default=[],
+                        help="Mount projects shared with the current user at mountpoint/PATH.")
+    mounts.add_argument('--mount-tmp',
+                        type=str, metavar='PATH', action='append', default=[],
+                        help="Create a new collection, mount it in read/write mode at mountpoint/PATH, and delete it when unmounting.")
 
     parser.add_argument('--debug', action='store_true', help="""Debug mode""")
     parser.add_argument('--logfile', help="""Write debug logs and errors to the specified file (default stderr).""")
@@ -154,14 +182,16 @@ with "--".
     logger.info("enable write is %s", args.enable_write)
 
     try:
+        api = ThreadSafeApiCache(apiconfig=arvados.config.settings(),
+                                 keep_params={"block_cache": arvados.keep.KeepBlockCache(args.file_cache)})
+
         # Create the request handler
         operations = Operations(os.getuid(),
                                 os.getgid(),
+                                api_client=api,
                                 encoding=args.encoding,
                                 inode_cache=InodeCache(cap=args.directory_cache),
                                 enable_write=args.enable_write)
-        api = ThreadSafeApiCache(apiconfig=arvados.config.settings(),
-                                 keep_params={"block_cache": arvados.keep.KeepBlockCache(args.file_cache)})
 
         if args.crunchstat_interval:
             statsthread = threading.Thread(target=statlogger, args=(args.crunchstat_interval, api.keep, operations))
@@ -172,19 +202,38 @@ with "--".
         now = time.time()
         dir_class = None
         dir_args = [llfuse.ROOT_INODE, operations.inodes, api, args.retries]
-        if args.by_id or args.by_pdh:
+        mount_readme = False
+
+        if args.mode is not None and (
+                args.mount_by_id or
+                args.mount_by_pdh or
+                args.mount_by_tag or
+                args.mount_home or
+                args.mount_shared or
+                args.mount_tmp or
+                args.mount_collection):
+            sys.exit("Cannot combine '{}' mode with custom --mount-* options.".
+                     format(args.mode))
+
+        if args.mode in ['by_id', 'by_pdh']:
             # Set up the request handler with the 'magic directory' at the root
             dir_class = MagicDirectory
-            dir_args.append(args.by_pdh)
-        elif args.by_tag:
+            dir_args.append(args.mode == 'by_pdh')
+        elif args.mode == 'by_tag':
             dir_class = TagsDirectory
-        elif args.shared:
+        elif args.mode == 'shared':
             dir_class = SharedDirectory
             dir_args.append(usr)
-        elif args.home:
+        elif args.mode == 'home':
             dir_class = ProjectDirectory
             dir_args.append(usr)
             dir_args.append(True)
+        elif args.mode == 'all':
+            args.mount_by_id = ['by_id']
+            args.mount_by_tag = ['by_tag']
+            args.mount_home = ['home']
+            args.mount_shared = ['shared']
+            mount_readme = True
         elif args.collection is not None:
             # Set up the request handler with the collection at the root
             dir_class = CollectionDirectory
@@ -200,19 +249,29 @@ with "--".
             e = operations.inodes.add_entry(Directory(llfuse.ROOT_INODE, operations.inodes))
             dir_args[0] = e.inode
 
-            e._entries['by_id'] = operations.inodes.add_entry(MagicDirectory(*dir_args))
+            def addMount(tld, name, ent):
+                if name in ['', '.', '..'] or '/' in name:
+                    sys.exit("Mount point '{}' is not supported.".format(name))
+                tld._entries[name] = operations.inodes.add_entry(ent)
 
-            e._entries['by_tag'] = operations.inodes.add_entry(TagsDirectory(*dir_args))
+            for name in args.mount_by_id:
+                addMount(e, name, MagicDirectory(*dir_args, pdh_only=False))
+            for name in args.mount_by_pdh:
+                addMount(e, name, MagicDirectory(*dir_args, pdh_only=True))
+            for name in args.mount_by_tag:
+                addMount(e, name, TagsDirectory(*dir_args))
+            for name in args.mount_home:
+                addMount(e, name, ProjectDirectory(*dir_args, project_object=usr, poll=True))
+            for name in args.mount_shared:
+                addMount(e, name, SharedDirectory(*dir_args, exclude=usr, poll=True))
+            for name in args.mount_tmp:
+                addMount(e, name, TmpCollectionDirectory(*dir_args))
 
-            dir_args.append(usr)
-            dir_args.append(True)
-            e._entries['home'] = operations.inodes.add_entry(ProjectDirectory(*dir_args))
-            e._entries['shared'] = operations.inodes.add_entry(SharedDirectory(*dir_args))
-
-            text = '''
-Welcome to Arvados!  This directory provides file system access to files and objects
-available on the Arvados installation located at '{}'
-using credentials for user '{}'.
+            if mount_readme:
+                text = '''
+Welcome to Arvados!  This directory provides file system access to
+files and objects available on the Arvados installation located at
+'{}' using credentials for user '{}'.
 
 From here, the following directories are available:
 
@@ -221,9 +280,7 @@ From here, the following directories are available:
   home/      The contents of your home project.
   shared/    Projects shared with you.
 '''.format(arvados.config.get('ARVADOS_API_HOST'), usr['email'])
-
-            e._entries["README"] = operations.inodes.add_entry(StringFile(e.inode, text, now))
-
+                addMount(e, StringFile(e.inode, text, now))
 
     except Exception:
         logger.exception("arv-mount: exception during API setup")
@@ -241,8 +298,8 @@ From here, the following directories are available:
         llfuse.init(operations, args.mountpoint, opts)
 
         # Subscribe to change events from API server
-        if not args.by_pdh:
-            operations.listen_for_events(api)
+        if args.mode != 'by_pdh':
+            operations.listen_for_events()
 
         t = threading.Thread(None, lambda: llfuse.main())
         t.start()
@@ -283,7 +340,7 @@ From here, the following directories are available:
             llfuse.init(operations, args.mountpoint, opts)
 
             # Subscribe to change events from API server
-            operations.listen_for_events(api)
+            operations.listen_for_events()
 
             llfuse.main()
         except Exception as e:

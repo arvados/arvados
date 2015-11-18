@@ -474,6 +474,74 @@ class CollectionDirectory(CollectionDirectoryBase):
             self.collection.stop_threads()
 
 
+class TmpCollectionDirectory(CollectionDirectoryBase):
+    """A directory backed by an Arvados collection that never gets saved.
+
+    This supports using Keep as scratch space. A userspace program can
+    read the .arvados#collection file to get a current manifest in
+    order to save a snapshot of the scratch data or use it as a crunch
+    job output.
+    """
+
+    def __init__(self, parent_inode, inodes, api_client, num_retries):
+        collection = arvados.collection.Collection(
+            api_client=api_client,
+            keep_client=api_client.keep)
+        collection.save = self._commit_collection
+        collection.save_new = self._commit_collection
+        super(TmpCollectionDirectory, self).__init__(
+            parent_inode, inodes, collection)
+        self.collection_record_file = None
+        self._subscribed = False
+        self._update_collection_record()
+
+    def update(self, *args, **kwargs):
+        if not self._subscribed:
+            with llfuse.lock_released:
+                self.populate(self.mtime())
+            self._subscribed = True
+
+    @use_counter
+    def _commit_collection(self):
+        """Commit the data blocks, but don't save the collection to API.
+
+        Update the content of the special .arvados#collection file, if
+        it has been instantiated.
+        """
+        self.collection.flush()
+        self._update_collection_record()
+        if self.collection_record_file is not None:
+            self.collection_record_file.update(self.collection_record)
+            self.inodes.invalidate_inode(self.collection_record_file.inode)
+
+    def _update_collection_record(self):
+        self.collection_record = {
+            "uuid": None,
+            "manifest_text": self.collection.manifest_text(),
+            "portable_data_hash": self.collection.portable_data_hash(),
+        }
+
+    def __contains__(self, k):
+        return (k == '.arvados#collection' or
+                super(TmpCollectionDirectory, self).__contains__(k))
+
+    @use_counter
+    def __getitem__(self, item):
+        if item == '.arvados#collection':
+            if self.collection_record_file is None:
+                self.collection_record_file = ObjectFile(
+                    self.inode, self.collection_record)
+                self.inodes.add_entry(self.collection_record_file)
+            return self.collection_record_file
+        return super(TmpCollectionDirectory, self).__getitem__(item)
+
+    def writable(self):
+        return True
+
+    def finalize(self):
+        self.collection.stop_threads()
+
+
 class MagicDirectory(Directory):
     """A special directory that logically contains the set of all extant keep locators.
 
