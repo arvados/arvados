@@ -287,8 +287,11 @@ class KeepClientServiceTestCase(unittest.TestCase, tutil.ApiClientMock):
                 mock.responses[0].getopt(pycurl.CONNECTTIMEOUT_MS),
                 int(arvados.KeepClient.DEFAULT_TIMEOUT[0]*1000))
             self.assertEqual(
-                mock.responses[0].getopt(pycurl.TIMEOUT_MS),
-                int(arvados.KeepClient.DEFAULT_TIMEOUT[1]*1000))
+                mock.responses[0].getopt(pycurl.LOW_SPEED_TIME),
+                int(arvados.KeepClient.DEFAULT_TIMEOUT[1]))
+            self.assertEqual(
+                mock.responses[0].getopt(pycurl.LOW_SPEED_LIMIT),
+                int(arvados.KeepClient.DEFAULT_TIMEOUT[2]))
 
     def test_put_timeout(self):
         api_client = self.mock_keep_services(count=1)
@@ -301,8 +304,11 @@ class KeepClientServiceTestCase(unittest.TestCase, tutil.ApiClientMock):
                 mock.responses[0].getopt(pycurl.CONNECTTIMEOUT_MS),
                 int(arvados.KeepClient.DEFAULT_TIMEOUT[0]*1000))
             self.assertEqual(
-                mock.responses[0].getopt(pycurl.TIMEOUT_MS),
-                int(arvados.KeepClient.DEFAULT_TIMEOUT[1]*1000))
+                mock.responses[0].getopt(pycurl.LOW_SPEED_TIME),
+                int(arvados.KeepClient.DEFAULT_TIMEOUT[1]))
+            self.assertEqual(
+                mock.responses[0].getopt(pycurl.LOW_SPEED_LIMIT),
+                int(arvados.KeepClient.DEFAULT_TIMEOUT[2]))
 
     def test_proxy_get_timeout(self):
         api_client = self.mock_keep_services(service_type='proxy', count=1)
@@ -315,8 +321,11 @@ class KeepClientServiceTestCase(unittest.TestCase, tutil.ApiClientMock):
                 mock.responses[0].getopt(pycurl.CONNECTTIMEOUT_MS),
                 int(arvados.KeepClient.DEFAULT_PROXY_TIMEOUT[0]*1000))
             self.assertEqual(
-                mock.responses[0].getopt(pycurl.TIMEOUT_MS),
-                int(arvados.KeepClient.DEFAULT_PROXY_TIMEOUT[1]*1000))
+                mock.responses[0].getopt(pycurl.LOW_SPEED_TIME),
+                int(arvados.KeepClient.DEFAULT_PROXY_TIMEOUT[1]))
+            self.assertEqual(
+                mock.responses[0].getopt(pycurl.LOW_SPEED_LIMIT),
+                int(arvados.KeepClient.DEFAULT_PROXY_TIMEOUT[2]))
 
     def test_proxy_put_timeout(self):
         api_client = self.mock_keep_services(service_type='proxy', count=1)
@@ -329,8 +338,11 @@ class KeepClientServiceTestCase(unittest.TestCase, tutil.ApiClientMock):
                 mock.responses[0].getopt(pycurl.CONNECTTIMEOUT_MS),
                 int(arvados.KeepClient.DEFAULT_PROXY_TIMEOUT[0]*1000))
             self.assertEqual(
-                mock.responses[0].getopt(pycurl.TIMEOUT_MS),
-                int(arvados.KeepClient.DEFAULT_PROXY_TIMEOUT[1]*1000))
+                mock.responses[0].getopt(pycurl.LOW_SPEED_TIME),
+                int(arvados.KeepClient.DEFAULT_PROXY_TIMEOUT[1]))
+            self.assertEqual(
+                mock.responses[0].getopt(pycurl.LOW_SPEED_LIMIT),
+                int(arvados.KeepClient.DEFAULT_PROXY_TIMEOUT[2]))
 
     def check_no_services_error(self, verb, exc_class):
         api_client = mock.MagicMock(name='api_client')
@@ -570,7 +582,12 @@ class KeepClientRendezvousTestCase(unittest.TestCase, tutil.ApiClientMock):
 
 
 class KeepClientTimeout(unittest.TestCase, tutil.ApiClientMock):
-    DATA = 'x' * 2**10
+    # BANDWIDTH_LOW_LIM must be less than len(DATA) so we can transfer
+    # 1s worth of data and then trigger bandwidth errors before running
+    # out of data.
+    DATA = 'x'*2**11
+    BANDWIDTH_LOW_LIM = 1024
+    TIMEOUT_TIME = 1.0
 
     class assertTakesBetween(unittest.TestCase):
         def __init__(self, tmin, tmax):
@@ -581,8 +598,22 @@ class KeepClientTimeout(unittest.TestCase, tutil.ApiClientMock):
             self.t0 = time.time()
 
         def __exit__(self, *args, **kwargs):
-            self.assertGreater(time.time() - self.t0, self.tmin)
-            self.assertLess(time.time() - self.t0, self.tmax)
+            # Round times to milliseconds, like CURL. Otherwise, we
+            # fail when CURL reaches a 1s timeout at 0.9998s.
+            delta = round(time.time() - self.t0, 3)
+            self.assertGreaterEqual(delta, self.tmin)
+            self.assertLessEqual(delta, self.tmax)
+
+    class assertTakesGreater(unittest.TestCase):
+        def __init__(self, tmin):
+            self.tmin = tmin
+
+        def __enter__(self):
+            self.t0 = time.time()
+
+        def __exit__(self, *args, **kwargs):
+            delta = round(time.time() - self.t0, 3)
+            self.assertGreaterEqual(delta, self.tmin)
 
     def setUp(self):
         sock = socket.socket()
@@ -602,7 +633,7 @@ class KeepClientTimeout(unittest.TestCase, tutil.ApiClientMock):
     def tearDown(self):
         self.server.shutdown()
 
-    def keepClient(self, timeouts=(0.1, 1.0)):
+    def keepClient(self, timeouts=(0.1, TIMEOUT_TIME, BANDWIDTH_LOW_LIM)):
         return arvados.KeepClient(
             api_client=self.api_client,
             timeout=timeouts)
@@ -617,39 +648,89 @@ class KeepClientTimeout(unittest.TestCase, tutil.ApiClientMock):
         )
         with self.assertTakesBetween(0.1, 0.5):
             with self.assertRaises(arvados.errors.KeepWriteError):
-                self.keepClient((0.1, 1)).put(self.DATA, copies=1, num_retries=0)
+                self.keepClient().put(self.DATA, copies=1, num_retries=0)
+
+    def test_low_bandwidth_no_delays_success(self):
+        self.server.setbandwidth(2*self.BANDWIDTH_LOW_LIM)
+        kc = self.keepClient()
+        loc = kc.put(self.DATA, copies=1, num_retries=0)
+        self.assertEqual(self.DATA, kc.get(loc, num_retries=0))
+
+    def test_too_low_bandwidth_no_delays_failure(self):
+        # Check that lessening bandwidth corresponds to failing
+        kc = self.keepClient()
+        loc = kc.put(self.DATA, copies=1, num_retries=0)
+        self.server.setbandwidth(0.5*self.BANDWIDTH_LOW_LIM)
+        with self.assertTakesGreater(self.TIMEOUT_TIME):
+            with self.assertRaises(arvados.errors.KeepReadError) as e:
+                kc.get(loc, num_retries=0)
+        with self.assertTakesGreater(self.TIMEOUT_TIME):
+            with self.assertRaises(arvados.errors.KeepWriteError):
+                kc.put(self.DATA, copies=1, num_retries=0)
+
+    def test_low_bandwidth_with_server_response_delay_failure(self):
+        kc = self.keepClient()
+        loc = kc.put(self.DATA, copies=1, num_retries=0)
+        self.server.setbandwidth(self.BANDWIDTH_LOW_LIM)
+        self.server.setdelays(response=self.TIMEOUT_TIME)
+        with self.assertTakesGreater(self.TIMEOUT_TIME):
+            with self.assertRaises(arvados.errors.KeepReadError) as e:
+                kc.get(loc, num_retries=0)
+        with self.assertTakesGreater(self.TIMEOUT_TIME):
+            with self.assertRaises(arvados.errors.KeepWriteError):
+                kc.put(self.DATA, copies=1, num_retries=0)
+
+    def test_low_bandwidth_with_server_mid_delay_failure(self):
+        kc = self.keepClient()
+        loc = kc.put(self.DATA, copies=1, num_retries=0)
+        self.server.setbandwidth(self.BANDWIDTH_LOW_LIM)
+        self.server.setdelays(mid_write=self.TIMEOUT_TIME, mid_read=self.TIMEOUT_TIME)
+        with self.assertTakesGreater(self.TIMEOUT_TIME):
+            with self.assertRaises(arvados.errors.KeepReadError) as e:
+                kc.get(loc, num_retries=0)
+        with self.assertTakesGreater(self.TIMEOUT_TIME):
+            with self.assertRaises(arvados.errors.KeepWriteError):
+                kc.put(self.DATA, copies=1, num_retries=0)
 
     def test_timeout_slow_request(self):
-        self.server.setdelays(request=0.2)
-        self._test_200ms()
+        loc = self.keepClient().put(self.DATA, copies=1, num_retries=0)
+        self.server.setdelays(request=.2)
+        self._test_connect_timeout_under_200ms(loc)
+        self.server.setdelays(request=2)
+        self._test_response_timeout_under_2s(loc)
 
     def test_timeout_slow_response(self):
-        self.server.setdelays(response=0.2)
-        self._test_200ms()
+        loc = self.keepClient().put(self.DATA, copies=1, num_retries=0)
+        self.server.setdelays(response=.2)
+        self._test_connect_timeout_under_200ms(loc)
+        self.server.setdelays(response=2)
+        self._test_response_timeout_under_2s(loc)
 
     def test_timeout_slow_response_body(self):
-        self.server.setdelays(response_body=0.2)
-        self._test_200ms()
+        loc = self.keepClient().put(self.DATA, copies=1, num_retries=0)
+        self.server.setdelays(response_body=.2)
+        self._test_connect_timeout_under_200ms(loc)
+        self.server.setdelays(response_body=2)
+        self._test_response_timeout_under_2s(loc)
 
-    def _test_200ms(self):
-        """Connect should be t<100ms, request should be 200ms <= t < 300ms"""
-
+    def _test_connect_timeout_under_200ms(self, loc):
         # Allow 100ms to connect, then 1s for response. Everything
         # should work, and everything should take at least 200ms to
         # return.
-        kc = self.keepClient((.1, 1))
+        kc = self.keepClient(timeouts=(.1, 1))
         with self.assertTakesBetween(.2, .3):
-            loc = kc.put(self.DATA, copies=1, num_retries=0)
+            kc.put(self.DATA, copies=1, num_retries=0)
         with self.assertTakesBetween(.2, .3):
             self.assertEqual(self.DATA, kc.get(loc, num_retries=0))
 
-        # Allow 1s to connect, then 100ms for response. Nothing should
-        # work, and everything should take at least 100ms to return.
-        kc = self.keepClient((1, .1))
-        with self.assertTakesBetween(.1, .2):
+    def _test_response_timeout_under_2s(self, loc):
+        # Allow 10s to connect, then 1s for response. Nothing should
+        # work, and everything should take at least 1s to return.
+        kc = self.keepClient(timeouts=(10, 1))
+        with self.assertTakesBetween(1, 1.9):
             with self.assertRaises(arvados.errors.KeepReadError):
                 kc.get(loc, num_retries=0)
-        with self.assertTakesBetween(.1, .2):
+        with self.assertTakesBetween(1, 1.9):
             with self.assertRaises(arvados.errors.KeepWriteError):
                 kc.put(self.DATA, copies=1, num_retries=0)
 
