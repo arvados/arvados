@@ -613,6 +613,9 @@ class NodeManagerDaemonActorTestCase(testutil.ActorTestMixin,
                         (testutil.MockSize(2), {"cores":2})]
         self.make_daemon(want_sizes=[small, small, small, big],
                          avail_sizes=avail_sizes, max_nodes=4)
+
+        # the daemon runs in another thread, so we need to wait and see
+        # if it does all the work we're expecting it to do before stopping it.
         self.busywait(lambda: self.node_setup.start.call_count == 4)
         booting = self.daemon.booting.get(self.TIMEOUT)
         self.stop_proxy(self.daemon)
@@ -630,13 +633,15 @@ class NodeManagerDaemonActorTestCase(testutil.ActorTestMixin,
                         (testutil.MockSize(2), {"cores":2})]
         self.make_daemon(want_sizes=[small, small, small, big],
                          avail_sizes=avail_sizes, max_nodes=3)
+
+        # the daemon runs in another thread, so we need to wait and see
+        # if it does all the work we're expecting it to do before stopping it.
         self.busywait(lambda: self.node_setup.start.call_count == 3)
         booting = self.daemon.booting.get(self.TIMEOUT)
         self.stop_proxy(self.daemon)
         sizecounts = {a[0].id: 0 for a in avail_sizes}
         for b in booting.itervalues():
             sizecounts[b.cloud_size.get().id] += 1
-        logging.info(sizecounts)
         self.assertEqual(2, sizecounts[small.id])
         self.assertEqual(1, sizecounts[big.id])
 
@@ -692,15 +697,25 @@ class NodeManagerDaemonActorTestCase(testutil.ActorTestMixin,
                          avail_sizes=avail_sizes,
                          max_nodes=4,
                          max_total_price=4)
+        # the daemon runs in another thread, so we need to wait and see
+        # if it does all the work we're expecting it to do before stopping it.
         self.busywait(lambda: self.node_setup.start.call_count == 3)
         booting = self.daemon.booting.get()
         self.stop_proxy(self.daemon)
+
+        # technically something could happen between finishing the busywait and
+        # stopping the daemon so check again
         self.assertEqual(3, self.node_setup.start.call_count)
+
         sizecounts = {a[0].id: 0 for a in avail_sizes}
         for b in booting.itervalues():
             sizecounts[b.cloud_size.get().id] += 1
         logging.info(sizecounts)
-        # The way the update_server_wishlist() works effectively results in a
-        # round-robin creation of one node of each size in the wishlist
+
+        # Booting 3 small nodes and not booting a big node would also partially
+        # satisfy the wishlist and come in under the price cap, however the way
+        # the update_server_wishlist() currently works effectively results in a
+        # round-robin creation of one node of each size in the wishlist, so
+        # test for that.
         self.assertEqual(2, sizecounts[small.id])
         self.assertEqual(1, sizecounts[big.id])
